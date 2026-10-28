@@ -1,0 +1,89 @@
+# Coverage checklist for block topology `inamp` - what a designer must hold
+# before designing ANY single-supply instrumentation-amplifier front end.
+# First research pass on this topology (bb-amp P2, task block-inamp-1).
+# maturity draft: the owner approves a checklist, research only proposes one.
+id: inamp
+kind: coverage-checklist
+applies:
+  topologies: [inamp]
+requires:
+  - class: selection
+    min_level: topology
+    note: >
+      The three gates that decide whether the part can work at all at the
+      operating point: the internal-node headroom rule (a 3-op-amp in-amp
+      saturates between its stages before its inputs or its output do), the
+      gain split that rule forces, and the escape when the split is not
+      enough. Bandwidth-at-gain and the offset/noise budget ride on the same
+      records because both scale with the FIRST stage's gain.
+  - class: feedback
+    min_level: topology
+    note: >
+      The gain-setting network and the difference amplifier's own bridge.
+      The REF pin is one leg of that bridge, so the impedance driving it is
+      a direct common-mode error - this is the class that catches a bare
+      resistor divider on REF, the single most common single-supply mistake.
+  - class: diff-pair
+    min_level: topology
+    note: >
+      The two input paths and the gain-setting pins, matched in impedance
+      AND capacitance. CMRR over frequency is bought here and nowhere else:
+      an asymmetry converts common mode to differential ahead of the part,
+      and no in-amp specification recovers it.
+  - class: decoupling
+    min_level: principle
+    note: >
+      A precision in-amp turns supply noise into output error. Local HF
+      bypass at every supply pin plus shared bulk - a principle: the vendor
+      states it without bounding it to an operating point.
+  - class: return-path
+    min_level: principle
+    note: >
+      Where REF and the load return to, and the DC return path the input
+      bias currents need. The device-side half (REF and load referred to the
+      part's own local ground) is a principle; the source-side half (the
+      cable/connector bias return) belongs to the input-interface slot.
+maturity: approved
+sources:
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 21
+    section: "AD8226 Rev. C, printed p.20 - REFERENCE TERMINAL, INPUT VOLTAGE RANGE, Table 8, LAYOUT"
+    note: >
+      Read: the REF <2 ohm rule with Figure 59 (bare divider marked
+      INCORRECT, op-amp buffer marked CORRECT), the internal-node
+      inequalities 1-3 with the Table 8 constants, and the vendor's own
+      remedy (less gain in the in-amp, more later, or the AD8227). These
+      three subjects are why the selection and feedback rows exist.
+  - file: reference/knowledge/sources/slyt226.pdf
+    page: 1
+    section: "TI SLYT226 (AAJ 4Q2005) printed p.25 - INA principles, Figure 1"
+    note: >
+      Read: Figure 1 (classic three-op-amp INA with its internal nodes
+      V1 = Vcm - G1(Vd/2), V2 = Vcm + G1(Vd/2)) and the opening statement
+      that input-stage saturation makes a wrong output look normal to the
+      following circuitry - the cross-vendor form of the same gate, which
+      is why `selection` sits at topology level rather than part level.
+prose: >
+  What a designer must hold before designing a single-supply in-amp front
+  end. The five rows are the ones that decide whether the circuit works at
+  all on a low rail: (selection) the internal-node headroom rule and the
+  gain split it forces; (feedback) the gain network and the REF leg of the
+  difference amplifier, whose drive impedance is a direct CMRR error;
+  (diff-pair) matching of the two input paths and of the gain-pin
+  parasitics, which is what CMRR over frequency actually buys; (decoupling)
+  and (return-path) the part's own local supply and ground environment.
+  `constraints-emission` is deliberately absent - what a block emits into
+  constraints.json is a pipeline convention, not vendor physics, and belongs
+  to an owner-ruled record rather than to a research pass. Interface-side
+  classes (esd, connector/cable/shield, and the bias-current return the
+  SOURCE must provide) are covered by the input-interface slot; their
+  absence here is a scope boundary, not an engineering finding.
+origin: research:block-inamp-1
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q3; not the owner's own ruling. Approved after a
+    coverage run on the five breadboard boards (bb-buck, bb-mcu, bb-ldo, bb-
+    amp, bb-adc) at the default floor. No row needed lowering.

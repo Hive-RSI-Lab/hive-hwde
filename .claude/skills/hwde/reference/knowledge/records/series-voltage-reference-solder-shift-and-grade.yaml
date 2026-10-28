@@ -1,0 +1,73 @@
+id: series-voltage-reference-solder-shift-and-grade
+classes: [sourcing]
+applies:
+  topologies: [series-voltage-reference]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  solder_heat_shift: "a PERMANENT post-reflow shift, package stress on the die; ADI 0.02 pct typ, TI measured 0.03 pct (LCCC) and -0.04 pct (VSSOP)"
+  vs_initial_accuracy: "same order as the whole initial-accuracy spec - the datasheet accuracy is a pre-assembly number"
+  worse_with: "lead-free profiles, and board size/thickness/material"
+  assembly_rule: "if the board sees multiple reflows, the reference must be soldered in the LAST pass"
+  grade_suffix: "sets both initial accuracy and tempco on the same die and package"
+  removed_by: "single-point calibration only - not by anything on the board"
+  enforced_by: null
+prose: >
+  Two of this block's error terms are bought, not designed. GRADE: the ADR4520
+  B grade is +/-0.02 pct and 2 ppm/C, the A grade +/-0.04 pct and 4 ppm/C, in the
+  same 8-lead SOIC (p3) - the suffix, not the base part number, is what the
+  budget depends on, so a BOM or a distributor line item without it is not a
+  specification. REFLOW: the same table lists SOLDER HEAT SHIFT +/-0.02 pct - as
+  large as the entire B-grade initial accuracy. ADI p29 defines it as a permanent
+  shift induced by reflow, "caused by changes in the stress exhibited on the die
+  by the package materials when these materials are exposed to high
+  temperatures", more pronounced with lead-free profiles. TI measured it (REF70
+  p19): 32 devices on 1.65 mm FR4 boards, 114 x 152 mm, lead-free paste, profile
+  peaking near 250 C; the LCCC population centres at +0.03 pct and the VSSOP one
+  at -0.04 pct - both larger than those parts' +/-0.025 pct accuracy spec (p9) -
+  with the warning that "higher shifts are also possible depending on the size,
+  thickness, and material of the printed circuit board". The actionable part is
+  an assembly constraint: exposure to multiple reflows causes additional shifts,
+  so "if the PCB is exposed to multiple reflows, the device must be soldered in
+  the last pass". On an uncalibrated board none of this is recoverable - per
+  SNAA320B p6 Table 5-1 solder shift is removed by calibration, nothing else.
+sources:
+  - file: reference/knowledge/sources/1599556.pdf
+    page: 3
+    note: "ADR4520 Table 3: SOLDER HEAT SHIFT +/-0.02 pct as its own row; initial error B grade +/-0.02 pct (410 uV) vs A grade +/-0.04 pct (820 uV); TC 2 ppm/C B grade vs 4 ppm/C A grade over -40 to +125 C [ADI Rev 0, 2012, farnell.com mirror]"
+  - file: reference/knowledge/sources/1599556.pdf
+    page: 29
+    note: "Terminology, Solder Heat Resistance (SHR) Shift: permanent output shift induced by reflow soldering, caused by changes in the stress the package materials exert on the die at high temperature, more pronounced with lead-free processes [ADI Rev 0, 2012, farnell.com mirror]"
+  - file: reference/knowledge/sources/ref70.pdf
+    page: 19
+    note: "Sec 8.1 Solder Heat Shift: differing CTEs stress the die during soldering and degrade initial accuracy; test = 32 devices on two 1.65 mm FR4 PCBs 114 x 152 mm with lead-free paste, Fig 8-1 reflow profile peaking ~250 C; Fig 8-2 LCCC shift centred +0.03 pct (0.01-0.05), Fig 8-3 VSSOP centred -0.04 pct (-0.08 to 0); multiple reflows add shift so the device must be soldered in the last pass"
+  - file: reference/knowledge/sources/ref70.pdf
+    page: 9
+    note: "REF70 electrical characteristics: 'Output voltage accuracy TA = 25 C' = -0.025 / +0.025 pct in the Min/Max columns - the initial-accuracy spec that the measured solder shifts of p19 (+0.03 pct LCCC, -0.04 pct VSSOP) exceed"
+  - file: reference/knowledge/sources/snaa320b.pdf
+    page: 6
+    note: "Table 5-1: single-point calibration removes initial accuracy, solder shift and thermal hysteresis; multipoint additionally removes temperature drift - an uncalibrated board carries all of them"
+status: active
+origin: research:block-series-voltage-reference-1
+level: topology
+envelope:
+  initial_accuracy_max_pct: {max: 0.1}
+maturity: approved
+generalizes: []
+envelope_note: >
+  Scales with how tight the accuracy target is, because the shift is a fixed
+  ~0.02-0.04 pct of output regardless of the part: at a 0.02-0.05 pct target it
+  is comparable to the entire initial-accuracy budget and it dictates the grade
+  choice and the reflow-pass constraint, while a design specified at ~0.1 pct or
+  looser can absorb it as a minor term and needs no assembly-order rule. The
+  bound is on the requirement, not on the part - a 0.02 pct part used in a 1 pct
+  application does not need this record.
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read for the added REF70 p9 citation. It lands: the p9 electrical-characteristics table carries 'Output voltage accuracy TA = 25 C' with -0.025 in the MIN column (value x=393, MIN header x=403) and 0.025 in the MAX column (value x=488, MAX header x=490), unit percent - so the +/-0.025 pct accuracy the record compares against is now on a cited page instead of the uncited front page. Worth noting for a later pass: that particular row belongs to the REF7030 table on p9 (the REF7025 table's accuracy row is on p8), while the p19 solder-shift measurements are package-level (LCCC and VSSOP) - the comparison is still sound because +/-0.025 pct is the REF70 family grade, and +0.03 and -0.04 pct both exceed it. ADI p3 confirmed visually: SOLDER HEAT SHIFT is its own parameter row and its +/-0.02 pct value sits in the Typ column (x=465) with the Max column empty, matching the record's 'ADI 0.02 pct typ'; grades confirmed as B +/-0.02 pct / 410 uV / 2 ppm per C versus A +/-0.04 pct / 820 uV / 4 ppm per C, and p1 confirms the single 8-lead SOIC package. ADI p29 SHR Shift is verbatim (permanent shift induced by reflow, caused by changes in the stress the package materials exert on the die at high temperature, more pronounced in lead-free processes). REF70 p19 is verbatim: differing CTEs, 32 devices on two FR4 boards of 1.65 mm thickness and 114 mm x 152 mm area, 16 per board, lead-free paste with the paste manufacturer's suggested profile, Figure 8-1; and the assembly directive is TI's own words - 'If the PCB is exposed to multiple reflows, the device must be soldered in the last pass to minimize its exposure to thermal stress'. SNAA320B p6 Table 5-1 confirms solder shift is removed by calibration and by nothing on the board. Unchanged minor point: the quoted spreads (0.01-0.05 and -0.08 to 0) are the histogram axis extents rather than the populated bins."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

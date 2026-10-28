@@ -1,0 +1,4 @@
+- P3 parts: J1 PZ254V-11-02P C492401 (Ext), C1 CL10A475KO8NNNC C19666 4.7uF 16V (Basic), R1 470R C23179 (Basic), D1 KT-0603G C12624 green (Ext, Vf 3.1 V listing).
+- LED current 3.5-4.6 mA over 4.75-5.25 V. Parts ~$0.22 for 5 boards.
+- Library pulled + load-checked 4/4; 0603 courtyards widened by hand (decision); fp_verify not run (no extractions).
+- Coverage P3: same single gap (led-indicator), decision recorded.

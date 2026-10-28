@@ -1,0 +1,71 @@
+id: sar-adc-reference-sets-the-gain
+classes: [selection]
+applies:
+  topologies: [sar-adc]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  transfer_function: "code = (2^N - 1) * (Vin - VREFLO) / (VREFHI - VREFLO)"
+  reference_dc_error_maps_to: "gain error, one for one"
+  rejection_of_reference_noise: "none - the reference is the scale, not a supply"
+  ratiometric_trap: "a part whose REF is its own VDD cannot beat the supply's tolerance and ripple"
+  lsb_at_2v5_16bit_uv: 38.15
+prose: >
+  The reference is the scale factor, so its DC error IS gain error, one for
+  one. SPRABY5 p.2 eq 2 for a 16-bit single-ended converter: RESULT = 65535 *
+  (ADCIN - VREFLO) / (VREFHI - VREFLO). p.3 works the consequence: with
+  VREFHI at 2.5 V each of a 12-bit converter's codes is worth about 0.61 mV,
+  but if VREFHI sags to 2.4 V each code is worth about 0.59 mV, so code 4090
+  still looks like almost 2.5 V while the real input is nearly 100 mV lower -
+  a 4 pct error with nothing whatever wrong at the input. Two selection
+  consequences. (1) A converter whose reference is its own supply can never
+  beat that supply's tolerance and ripple: ADS8326 p.26 states the part
+  "offers no inherent rejection of noise or voltage variation in regards to
+  the reference input", that this is "of particular concern when the
+  reference input is tied to the power supply", and that while HF noise can
+  be filtered, line-frequency (50/60 Hz) variation is the part that is hard
+  to remove. (2) Resolution without reference accuracy is decoration:
+  ADS8326 p.22 gives LSB = VREF/65536 = 38.15 uV at VREF = 2.5 V, notes that
+  any offset or gain error inherent in the converter GROWS in LSB terms as
+  VREF is reduced, and that the quoted < 0.5 LSB transition noise assumes the
+  peak-to-peak noise of both the input signal AND the reference stays below
+  50 uV.
+sources:
+  - file: reference/knowledge/sources/spraby5.pdf
+    page: 2
+    note: "1.1 Symptoms of an Unreliable Reference ('high gain error can be caused by an ADC reference voltage with DC error') and 1.2 ADC Principle of Operation, eq 1/2: RESULT = 4095 or 65535 times (ADCIN - VREFLO)/(VREFHI - VREFLO), i.e. the conversion is a ratio to the reference"
+  - file: reference/knowledge/sources/spraby5.pdf
+    page: 3
+    note: "1.5 VREFHI Example: at VREFHI = 2.5 V each 12-bit code is 0.61 mV; if VREFHI drops to 2.4 V each code is 0.59 mV, so code 4090 reads as almost 2.5 V while the true input is almost 100 mV lower"
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 22
+    note: "REFERENCE INPUT: LSB = VREF/65536 (38.15 uV at 2.5 V, 76.3 uV at 5 V); offset and gain error appear to grow in LSB terms as VREF is reduced; internal noise doubles in LSB terms from 5 V to 2.5 V; achieving the quoted transition noise needs input and reference peak-to-peak noise below 50 uV"
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 26
+    note: "LAYOUT: 'the ADS8326 offers no inherent rejection of noise or voltage variation in regards to the reference input. This is of particular concern when the reference input is tied to the power supply' - supply noise and ripple appear directly in the digital results, and line-frequency variation is difficult to remove"
+status: active
+origin: "research:block-sar-adc-1"
+level: topology
+envelope:
+  calibration_kind: {in: [uncalibrated]}
+maturity: approved
+generalizes: []
+envelope_note: >
+  The 1:1 mapping from reference error to gain error is architecture; its
+  BUDGET consequence, which is what makes this a SELECTION rule, is bounded
+  to uncalibrated operation. Uncalibrated, the reference's initial tolerance
+  lands whole in the terminal gain budget, so its architecture and grade must
+  be settled first. Calibrated, an end-point measurement removes the initial
+  error and only drift and noise survive - a cheaper reference, or a truly
+  ratiometric architecture where excitation and reference share the error,
+  then becomes the right answer and this rule stops driving the choice.
+verification: {by: "research-second-reader", date: "2026-08-16", note: "spraby5 p.2 verbatim: 1.1 'high gain error can be caused by an ADC reference voltage with DC error', eq 1 ADCRESULTx = 4095 x (ADCINy - VREFLO)/(VREFHI - VREFLO) and eq 2 the same with 65535 for a single-ended 16-bit ADC - which is rule.transfer_function. p.3 section 1.5 exact: at VREFHI 2.5V each 12-bit code is about .61mV, at 2.4V about .59mV, code 4090 appears to be almost 2.5V while the real input is almost 100mV lower (the record's 4 pct is that arithmetic, correctly not attributed to TI). ads8326 p.22 verbatim: LSB = reference divided by 65,536, 38.15uV at 2.5V and 76.3uV at 5V, offset and gain error appear to increase in LSB terms as VREF falls, internal noise 1.5LSB pk-pk at 5V and two times larger at 2.5V, and the quoted transition noise requires input AND reference pk-pk noise below 50uV. p.26 verbatim: 'the ADS8326 offers no inherent rejection of noise or voltage variation in regards to the reference input. This is of particular concern when the reference input is tied to the power supply', with line-frequency variation hard to remove. Envelope calibration_kind=uncalibrated is the researcher's inference and the envelope_note argues it in its own voice rather than claiming the source's authority. Cannot refute."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

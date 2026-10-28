@@ -1,0 +1,50 @@
+{
+  "interface": "usb-fs",
+  "role": "USB 2.0 full-speed DEVICE (12 Mb/s; no HS path)",
+  "_provenance": "Seeded T6 2026-08-06 from boards/usb-buck/research/interface-usb.json - opus-verified against USB2.0 / ST AN4879 Rev5 / NXP AN11392 / DS5319 once; the board passed P8 verify 8/8 first try. START from this, do not re-derive: re-verify applicability, adapt net names + stackup-dependent keys, mark deltas. Sources per number: reference/interfaces/usb-fs.md",
+  "high_speed": [
+    {
+      "net": "/USB_DP",
+      "reference": "GND",
+      "k": 3,
+      "t_rise_ns": 4.0,
+      "return_via_radius_mm": 2.0
+    },
+    {
+      "net": "/USB_DM",
+      "reference": "GND",
+      "k": 3,
+      "t_rise_ns": 4.0,
+      "return_via_radius_mm": 2.0
+    }
+  ],
+  "diff_pairs": [
+    {
+      "p": "/USB_DP",
+      "n": "/USB_DM",
+      "base": "USB",
+      "impedance_ohm": 90,
+      "max_skew_mm": 5.0,
+      "max_uncoupled_mm": 5.0
+    }
+  ],
+  "voltages": [],
+  "notes": [
+    "NET NAMES /USB_DP //USB_DM are the standard's conventional proposals - the architect reconciles them with the sheet plan; netlist_audit (P4) verifies they exist.",
+    "STACKUP-DEPENDENT KEY deliberately dropped: gap_mm (centre-to-centre pitch = trace width + edge gap of the chosen stackup's diff_90 profile; on JLC04161H-3313 it was 0.314 + 0.2104 = 0.52). Emit it only after P2 picks the stackup, or leave it out and let check_diffpair auto-derive from the routed median.",
+    "t_rise_ns 4.0 = the FASTEST edge a compliant FS driver may produce (USB2.0 Table 7-9, 4-20 ns 10-90%). Do NOT substitute the 500 ps HS figure on a device with no HS path.",
+    "return_via_radius_mm 2.0 is ASSUMED good practice, emitted because the t_rise-derived radius at 4 ns (c/(f_knee*20) = 119.9 mm) exceeds any small board and would make check_return_path vacuous; explicit radius takes precedence. Best outcome is still ZERO vias on the pair.",
+    "impedance_ohm 90 (USB2.0 7.1.1.3) is worth targeting ONLY when the stackup has a published diff_90 profile (free on JLC04161H-3313). FS at <100 mm does not need controlled impedance (NXP AN11392 3.2); on a 2-layer stackup with no reference plane DROP the 90 ohm target rather than fake it - keep the pair short and coupled.",
+    "max_skew_mm 5.0 / max_uncoupled_mm 5.0 are tidiness bars, not physics: the FS physical skew budget (10% of a 4 ns edge) is ~69 mm. Do not spend fix loops chasing a skew warning beyond a trivial reroute.",
+    "DP PULL-UP IS PHY-SPECIFIC - CHECK THE VENDOR TABLE EVERY TIME. USB2.0 7.1.5.1: 1.5 kohm from D+ to a 3.0-3.6 V supply is mandatory for FS; many PHYs embed it, the STM32F102/F103 line does NOT (AN4879 Rev5 Tables 3/4: 'a 1.5 kohm resistor must be added', 1% per Fig 5/7). Bus-powered boards may wire it straight to +3V3 (the rail derives from VBUS, satisfying 7.1.5.1); SELF-powered designs need the GPIO-switched pull-up (AN4879 3.1.1). The 10 k seen on Blue Pill clones fails enumeration.",
+    "NO series resistors on D+/D- when the PHY embeds its output impedance (AN4879 FAQ/3.1 for ST; NXP LPC parts DO need 33R per AN11392 2.1 - check the PHY's datasheet, never copy another vendor's habit). Wrong series R pushes Z_DRV out of USB2.0 Table 7-9's 28-44 ohm window.",
+    "ESD at the receptacle: matched 2-channel array (D+/D- capacitance must match within 10%, USB2.0 7.1.6.1) placed as close as possible to the connector, in-line so the pair passes through with no stubs, GND pin straight into the plane (AN4879 2.3/3.1.2, Table 11: USBLC6-2SC6 class + a VBUS TVS). FS capacitance headroom is generous: <= 50 pF/line recommended (AN11392 2.6), 100 pF/line port limit - no ultra-low-Cj HS part needed.",
+    "Do NOT add ferrite beads on D+/D- (USB2.0 7.1.6.1: 'discouraged' for FS) and do not add edge-rate caps for a PHY that already meets the eye.",
+    "Routing: pair parallel + tightly coupled over an UNBROKEN GND reference, short and direct (matters more than impedance at FS), minimal corners, ideally zero vias, no plane split/slot beneath (AN11392 3.1/3.2); keep the pair away from any switch node/inductor and route VBUS away from it (AN4879 3.3).",
+    "VBUS bulk capacitance (including capacitance visible through the regulator) <= 10 uF in parallel with 44 ohm, else the device needs inrush limiting (USB2.0 7.2.4.1). Hard cap on the input capacitor stack of anything fed from VBUS.",
+    "Clock: FS data-rate tolerance is +/-0.25% (USB2.0 Table 7-9). Check whether the PHY requires a crystal - the F102/F103 have NO crystal-less USB ('HSI cannot be used', AN4879 2.4 + FAQ); any +/-30 to +/-50 ppm crystal clears the budget by ~50x.",
+    "Supply: transceiver range is typically 3.0-3.6 V; USB electrical characteristics degrade below 3.0 V and eye tests fail (AN4879 2.5/FAQ, DS5319 Table 44 note 3) - the 3.3 V rail must hold >= 3.0 V under load.",
+    "Connector: receptacle at a board edge (architect's placement.edges entry). Micro-B ID pin unconnected for device-only (AN4879 3.3); shield bonded directly to GND for a bare single-ground board (ASSUMED - USB2.0 6.8 defers to industry practice; the bead/RC alternative needs its own copper island, so decide at P2).",
+    "VBUS sensing is NOT mandatory for a bus-powered device (AN4879 2.6); if fitted, divide down (33k/82k class) into a tolerant pin - never raw 5 V into a GPIO. The divider + pull-up current counts against the 500 uA suspend budget (USB2.0 7.2.3)."
+  ]
+}

@@ -1,0 +1,3 @@
+- P5 board setup inline: board_init 2L JLC2313_1.6, outline auto 26.2x22.4 mm (provisional, fit after P6), 0 holes, corner r 2.0.
+- Self-check: parity 0, setup_violations 0, unconnected 5 (P7's). Fab profile 2layer_1oz, floors 0.127/0.127, via 0.6/0.3.
+- rules_gen: capability_class 2layer_1oz, pass.

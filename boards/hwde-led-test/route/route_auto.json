@@ -1,0 +1,42 @@
+{
+ "script": "route_auto",
+ "status": "pass",
+ "board": "/work/boards/hwde-led-test/kicad/hwde-led-test.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "facts": {
+  "completion": 1.0,
+  "routable_nets": 3,
+  "unrouted_nets": [],
+  "tracks_before": 0,
+  "tracks_after": 14,
+  "ses_items_added": 16,
+  "best_rung": 1,
+  "rungs": [
+   {
+    "rung": 1,
+    "options": {
+     "mp": 20
+    },
+    "unrouted": 0,
+    "started_unrouted": 5,
+    "final_score": 998.18,
+    "passes": 2,
+    "timed_out": false,
+    "kill_reason": null,
+    "ses_written": true
+   }
+  ],
+  "fr_completion": 1.0,
+  "power_layers": [],
+  "dsn_net_rules": [],
+  "dsn_wires_merged": 0,
+  "krt_finish": null,
+  "ses_echo_dups_removed": 0,
+  "work_dir": "/work/boards/hwde-led-test/kicad/route"
+ }
+}

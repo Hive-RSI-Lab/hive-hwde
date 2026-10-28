@@ -1,0 +1,75 @@
+id: in-aggressor-separation
+classes:
+- emi
+applies:
+  topologies: []
+  packages: []
+  interfaces:
+  - in
+  parts: []
+rule:
+  enforced_by: null
+  aggressors: >-
+    the supply entry; AUTHOR REASONING, on no cited page: the amplifier's own output as an
+    aggressor
+  separation: >-
+    sensor traces separated from power and from digital nets, by distance and by layer (01258b
+    p17)
+  placement: >-
+    amplifier as close to the sensor connector as the terminal allows; input pair short, equal
+    and parallel (ina333 Fig 40); gain-setting parts at the device pins
+prose: >-
+  Vendor practice, read from a precision sensor board (01258b p17): "Sensor traces are separated
+  from power (top layer) and digital (bottom layer) traces to reduce crosstalk"; the amplifier
+  is placed "as close to the sensor as possible" and on the opposite surface from the noisy
+  digital part, which "minimizes electrical and thermal crosstalk"; power traces are "kept
+  short, straight and above ground plane for minimal crosstalk". p4 adds that low-profile
+  parts have reduced electrical crosstalk. The in-amp data sheet's layout section (ina333
+  p20) says keep traces short, use a ground plane, place parts close to the device pins, and
+  its Fig 40 draws the two input traces as an equal-width parallel pair with the gain resistor
+  across the gain pads. Author reasoning only, not on any cited page: that the amplifier's
+  own output is the largest aggressor next to the smallest signal, that the pair should run
+  over unbroken reference copper with no split or slot, that nothing should be routed between
+  the inputs as a rule, and that the tolerable coupling ratio is the error budget over the
+  output swing.
+sources:
+- file: reference/knowledge/sources/01258b.pdf
+  page: 17
+  section: Design Example - PCB Layout, Figure 38/39 callouts 1/6/7
+  note: >-
+    Read the top-metal figure and its callouts: sensor traces separated from power (top) and
+    digital (bottom) traces; amplifier placed as close to the sensor as possible and on the
+    opposite surface from the microcontroller to minimize electrical and thermal crosstalk;
+    power traces short, straight and over the ground plane.
+- file: reference/knowledge/sources/ina333.pdf
+  page: 20
+  section: 10.1 Layout Guidelines, 10.2 Figure 40 Layout Example
+  note: >-
+    Read: keep traces short, use a PCB ground plane, place surface-mount parts as close to
+    the device pins as possible, 0.1 uF bypass across the supply pins - and Figure 40, where
+    VIN+ and VIN- enter as an equal-width parallel pair with nothing between them and the
+    gain resistor straddles both gain pads.
+- file: reference/knowledge/sources/01258b.pdf
+  page: 4
+  section: Slow Temperature Changes / Low profile components
+  note: >-
+    Read: low-profile parts have "reduced exposure to the external environment" and "the additional
+    advantage of reduced electrical crosstalk" - the same separation argument applied to part
+    choice.
+status: active
+origin: research:interface-in-1
+level: principle
+envelope: null
+maturity: verified
+generalizes: []
+verification:
+  by: second-reader
+  date: '2026-10-04'
+  note: >-
+    Second read 2026-10-04 against 01258b p17 and p4; ina333 p20 (Fig 40 viewed). Held: sensor
+    traces separated from power/digital, amplifier near the sensor on the opposite surface,
+    short straight power traces, p4 low-profile crosstalk, INA333 layout text and the Fig
+    40 parallel input pair. Edits: removed from rule the unsupported unbroken-reference and
+    coupling-budget keys and the output-as-aggressor and between-the-inputs claims, which
+    prose now labels author reasoning only; envelope (vout_v, vsig_mv) and envelope_note dropped
+    because 1 V and 100 mV appear in no source.

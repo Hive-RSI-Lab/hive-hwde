@@ -1,0 +1,42 @@
+id: buck-power-ground-isolation
+classes: [return-path, power-loop]
+applies:
+  topologies: [buck]
+  packages: []
+  interfaces: []
+rule:
+  enforced_by: null
+  pgnd_agnd: isolate; join only at the LOW-noise point (output cap ground)
+  never_join_at: free-wheel diode / input capacitor ground (highest HF noise)
+prose: >
+  Ground strategy (ROHM s8): analog small-signal ground and power ground
+  must be ISOLATED, and power ground laid on the TOP layer without
+  splitting is the ideal - dropping an isolated power ground to the bottom
+  layer through vias adds via R and L and worsens noise. Inner/bottom
+  ground planes are SUPPLEMENTARY (DC loss, shielding, heat), not the
+  return path design. Multilayer recipe (fig 9): power-ground plane on L2
+  stitched to top with MANY vias; common ground L3, signal ground L4;
+  connect the ground families together ONLY at the output capacitor's
+  power ground (the low-HF-noise point) - NEVER at the free-wheel diode or
+  input-capacitor ground, which carry the highest switching noise. This is
+  the class-level reason the pipeline's In1-GND-under-the-IC default works,
+  and where to join AGND islands when a board has them.
+sources:
+  - {file: reference/knowledge/sources/rohm-buck-pcb-layout-an.pdf, page: 8, section: "s8, fig 8/9"}
+status: active
+origin: app-note:rohm-buck-pcb-layout-an (ROHM 60AN066E Rev.004, 2024-01)
+
+# --- schema v2 governance (U14 backfill, owner-ruled 2026-08-15) ---
+level: topology
+envelope:
+  board_layers: {min: 2, max: 4}
+maturity: approved
+approval:
+  by: owner
+  date: "2026-08-15"
+  note: >
+    Scales with layer count: the isolate-PGND/AGND rule holds everywhere,
+    but the JOIN recipe the record actually carries is a 4-layer assignment
+    (ROHM fig 9: L2 power ground stitched to top, L3 common, L4 signal,
+    joined only at the output cap). On 6+ layers the assignment must be
+    re-derived, so the record stops being the answer.

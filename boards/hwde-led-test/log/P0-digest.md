@@ -1,0 +1,4 @@
+- P0 intake: requirements.md written by requirements-analyst, check_requirements clean.
+- 5 V on J1 (2-pin header), green 0603 LED + series R at 3-5 mA, 0603 input cap.
+- 2L 1.6 mm, ~15x12 mm soft, no holes, JLC basic parts, qty 5.
+- No safety flags; OPEN: none.

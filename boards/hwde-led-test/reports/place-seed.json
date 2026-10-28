@@ -1,0 +1,41 @@
+{
+ "script": "place_seed",
+ "status": "pass",
+ "board": "hwde-led-test.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "clusters": [
+  {
+   "anchor": "D1",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "J1",
+   "satellites": [
+    "C1"
+   ],
+   "edge": "left"
+  },
+  {
+   "anchor": "R1",
+   "satellites": [],
+   "edge": null
+  }
+ ],
+ "warnings": [],
+ "hpwl_before_mm": 44.97,
+ "hpwl_seed_mm": 29.7222,
+ "ops_out": "anneal/seed.ops.json",
+ "applied": true,
+ "hpwl_applied_mm": 29.7222,
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T13:45:10+00:00",
+ "input": "kicad/hwde-led-test.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:1349bbb8bd5b403960ba711ab0ef956c441dc02d94fc6f0f11838a41fff033e2"
+}

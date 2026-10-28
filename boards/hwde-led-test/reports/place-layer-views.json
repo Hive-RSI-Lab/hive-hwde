@@ -1,0 +1,19 @@
+{
+  "script": "layer_views",
+  "status": "pass",
+  "input": "kicad/hwde-led-test.kicad_pcb",
+  "layers": [
+    {
+      "layer": "F.Cu",
+      "path": "renders/place/hwde-led-test_F_Cu.pdf",
+      "labels": 8
+    },
+    {
+      "layer": "B.Cu",
+      "path": "renders/place/hwde-led-test_B_Cu.pdf",
+      "labels": 2
+    }
+  ],
+  "views": [],
+  "warnings": []
+}

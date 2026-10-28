@@ -1,0 +1,106 @@
+id: buck-cmode-internal-comp-cout-window
+classes: [feedback]
+applies:
+  topologies: [buck]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  floor: "load-step equation gives a minimum C_OUT and a maximum ESR for a stated dVout/dIout"
+  worked_floor: "5 V / 400 kHz, 250 mV on a 2 A step -> 52 uF and ESR under 0.11 ohm"
+  derating: "add tolerance and DC bias before comparing - 52 uF becomes 72 uF of nameplate, met by 4 x 22 uF"
+  voltage_class: "16 V or more for a 5 V output; 10 V class only at 3.3 V and below"
+  ceiling: "total C_OUT under about 10x the design value, or 1000 uF, whichever is smaller"
+  above_ceiling: "owe a full-load start-up study and a Bode plot, not a guess"
+  hf_adder_nf: "1 to 100"
+prose: >
+  A peak-current-mode part with FIXED internal compensation does not just
+  have a minimum output capacitance - it has a WINDOW, and the ceiling is
+  the half designers forget. Floor: the load-transient equation yields
+  both a minimum C_OUT and a maximum ESR for a stated dVout on a stated
+  dIout; the vendor's own 5 V / 400 kHz example needs 52 uF and ESR below
+  0.11 ohm to hold 250 mV on a 2 A step. Then derate before comparing -
+  20% tolerance plus 10% DC-bias derating turns that 52 uF into 72 uF of
+  nameplate, met with 4 x 22 uF 16 V 1210 parts, and a 5 V output wants
+  16 V-class ceramics (10 V class is for 3.3 V and below). Ceiling: total
+  output capacitance must stay under about 10x the design value or
+  1000 uF, whichever is smaller, because the internal compensation and the
+  fixed soft start were designed against a bank of the intended size; a
+  much larger bank degrades start-up behaviour as well as loop stability,
+  and going past it buys a full-load start-up study and a Bode plot.
+  Two adjacent levers, not substitutes for bulk: a 1-100 nF small-case
+  ceramic on the output kills the HF spikes that inductor and board
+  parasitics leave on the rail, and a feedforward capacitor across the top
+  divider resistor is the phase-margin lever when that resistor is large
+  (recommended 100 kohm, 1 Mohm maximum and then C_FF is mandatory).
+sources:
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 22
+    section: "9.2.2.5 Output Capacitor Selection, Equations 6-7"
+    note: >
+      Equation 6 gives the lower bound on total output capacitance and the
+      upper bound on ESR required to meet a specified load transient, with
+      D = Vout/Vin and K the ripple factor; Equation 7 then checks the
+      peak-to-peak output ripple. Worked example: dVout 250 mV at a
+      dIout 2 A step needs 52 uF and ESR at most 0.11 ohm; with 20%
+      tolerance and 10% bias de-rating that becomes 72 uF minimum,
+      achieved with 4 x 22 uF 16 V 1210 ceramics. Text: use 10 V or more
+      for outputs at or below 3.3 V and 16 V or more at 5 V and above; the
+      output capacitor has the most influence on transient response and
+      loop phase margin, so load-transient testing and Bode plots must
+      always be completed before production.
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 23
+    section: "9.2.2.5 (continued)"
+    note: >
+      The maximum total output capacitance must be limited to about 10
+      times the design value, or 1000 uF, whichever is smaller: large
+      values adversely affect the start-up behaviour of the regulator as
+      well as loop stability, and anything larger requires a careful study
+      of start-up at full load and of loop stability. Also: a small
+      ceramic of 1 nF to 100 nF on the output reduces voltage spikes
+      caused by inductor and board parasitics.
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 21
+    section: "9.2.2.3 Setting the Output Voltage"
+    note: >
+      The divider resistance is a compromise between noise pick-up and
+      loading of the output: smaller values reduce noise sensitivity but
+      hurt light-load efficiency. Recommended top resistor 100 kohm with a
+      1 Mohm maximum, and if 1 Mohm is used a feedforward capacitor must
+      be added across it for adequate loop phase margin.
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 24
+    section: "9.2.2.9 C_FF Selection, Equation 9"
+    note: >
+      A feedforward capacitor across the top divider resistor improves
+      load-transient response or phase margin, and is especially needed
+      above 100 kohm because a large top resistor plus the FB pin's
+      parasitic capacitance creates a pole that interferes with loop
+      stability. Equation 9 gives an upper bound as a starting point.
+status: active
+origin: research:block-buck-1
+level: family
+envelope:
+  control_kind: {in: [cmode]}
+maturity: approved
+generalizes: []
+envelope_note: >
+  Bounded by the control architecture, exactly as
+  cot-ripple-injection-raises-vout is. The window exists because a
+  current-mode loop with FIXED internal compensation was designed against
+  one output pole: move C_OUT far off it and crossover and phase margin
+  move too. An externally compensated part re-derives its network for the
+  bank it actually has, and a COT or hysteretic part carries no
+  compensator at all - it needs ripple or ESR at FB instead of a
+  capacitance ceiling. Inside cmode the ceiling is RELATIVE (10x the
+  design value), so it scales with the bank chosen, not with vin or iout.
+verification: {by: "second-reader", date: "2026-08-15", note: "Re-read lmr33630 p21/p22/p23/p24. The unusual half - the ceiling - is printed verbatim on p23: the maximum value of total output capacitance must be limited to about 10 times the design value, or 1000 uF, whichever is smaller, because large values can adversely affect the start-up behavior of the regulator as well as the loop stability, and larger values require a careful study of start-up at full load and loop stability. That is the datasheet stating it, not the author inferring it from the fixed-compensation argument. p22 carries the floor exactly as quoted: Equation 6 gives the lower bound on total output capacitance and the upper bound on ESR, worked at dVout 250 mV for a dIout 2 A step to 52 uF and 0.11 ohm, then a 20 percent tolerance plus 10 percent bias de-rating to 72 uF achieved with 4 x 22 uF 16 V 1210 ceramics, plus the 10 V at or below 3.3 V and 16 V at 5 V and above split and the requirement that load-transient testing and Bode plots always be completed before production. p23 gives the 1 nF to 100 nF small-case adder for inductor and board parasitic spikes; p21 gives the 100 kohm recommended / 1 Mohm maximum divider with a mandatory CFF at 1 Mohm; p24 Equation 9 gives the CFF upper bound and the FB-pin parasitic pole. The cmode envelope narrows rather than widens the source, and the datasheet supplies loop stability as the stated mechanism, so nothing is claimed that the pages do not support."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

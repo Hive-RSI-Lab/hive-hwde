@@ -1,0 +1,112 @@
+id: swd-debug-port-nrst-on-the-header
+classes: [sequencing]
+applies:
+  topologies: [swd-debug-port]
+  packages: []
+  interfaces: [swd]
+  parts: [STM32F030F4P6TR, STM32F030F4P6, C89040]
+rule:
+  enforced_by: null
+  nrst_on_header: true
+  external_pullup_required: false
+  internal_rpu_kohm_typ: 40
+  filtered_pulse_max_ns: 100
+  guaranteed_pulse_min_ns: 300
+  guaranteed_pulse_min_ns_2v4_to_2v7: 500
+  datasheet_recommended_cap_uf: 0.1
+  probe_must_pull_below: 0.3 x VDD + 0.07 V
+prose: >
+  Bring reset out on the debug header, and drive nothing onto it from the
+  board. STM32F030x4/x6/x8/xC s6.3.15: "The NRST pin input driver uses the
+  CMOS technology. It is connected to a permanent pull-up resistor, RPU" -
+  Table 49 specifies RPU at 25 / 40 / 55 kOhm, matching Table 10's pin type
+  "RST - bidirectional reset pin with embedded weak pull-up resistor". So no
+  external pull-up. Table 49 also sets the PULSE a probe must produce:
+  VF(NRST), an input pulse of up to 100 ns, is filtered OUT; VNF(NRST), the
+  pulse guaranteed not to be filtered, is 300 ns minimum at 2.7-3.6 V and
+  500 ns minimum at 2.4-3.6 V. Figure 21 note 2 sets the LEVEL: the user must
+  ensure the level on NRST can go below VIL(NRST) max, 0.3 VDD + 0.07,
+  "otherwise the reset will not be taken into account by the device".
+  Figure 21 is the datasheet's own recommended NRST circuit and it puts a
+  0.1 uF capacitor at the pin, which note 1 says "protects the device against
+  parasitic resets" - it also loads whatever the probe drives, so it belongs
+  in the reset budget rather than being added blind. Reset earns a header
+  position at all because the SWD pins become ordinary GPIO once firmware
+  claims them (Table 11 note 7 configures them as SWD only AFTER RESET);
+  holding reset is how a probe regains such a target. Infineon puts nRESET on
+  pin 10 of the standard connector for the same reason.
+sources:
+  - file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf
+    page: 65
+    section: s6.3.15 / Table 49 NRST pin characteristics
+    note: >
+      Read s6.3.15 and Table 49. Text: the NRST input driver is CMOS and "is
+      connected to a permanent pull-up resistor, RPU". Table rows read:
+      VIL(NRST) max 0.3 VDD + 0.07; VIH(NRST) min 0.445 VDD + 0.398;
+      Vhys(NRST) 200 mV typ; RPU 25 / 40 / 55 kOhm; VF(NRST) NRST input
+      FILTERED pulse max 100 ns; VNF(NRST) NRST input NOT filtered pulse min
+      300 ns for 2.7 < VDD < 3.6 and 500 ns for 2.4 < VDD < 3.6. Figure 20 on
+      the same page defines tr/tf 10-90 percent for the I/O AC table.
+  - file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf
+    page: 66
+    section: Figure 21 Recommended NRST pin protection
+    note: >
+      Read Figure 21: the internal side shows RPU to VDD, a Schmitt trigger
+      and a Filter feeding the internal reset; the external side shows the
+      external reset circuit with a 0.1 uF capacitor from NRST to ground.
+      Note 1: "The external capacitor protects the device against parasitic
+      resets." Note 2: the user must ensure the level on NRST can go below
+      the VIL(NRST) max level of Table 49, otherwise the reset is not taken.
+  - file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf
+    page: 27
+    section: Table 10 legend / Table 11 first rows
+    note: >
+      Read the pinout-table legend: I/O structure "RST" is "bidirectional
+      reset pin with embedded weak pull-up resistor". Table 11 begins on this
+      page and gives NRST as TSSOP20 pin 4, pin type I/O, structure RST,
+      function "Device reset input / internal reset output (active low)" -
+      the pin is an output as well as an input, which is why nothing else on
+      the board should fight it.
+  - file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf
+    page: 32
+    section: Table 11 note 7
+    note: >
+      Read note 7: the SWD alternate function on PA13/PA14 is what the pins
+      do AFTER RESET. It is a reset-state default, not a permanent
+      assignment, which is the reason a probe needs the reset line to recover
+      a target whose firmware has repurposed those pins.
+  - file: reference/knowledge/sources/infineon-an220270-hardware-design-guide-for-the-traveo-t2g-family-applicationnotes-en.pdf
+    page: 29
+    section: s9.2 Figure 20
+    note: >
+      Read Figure 20's pin assignment: the 10-pin Cortex debug connector
+      spends position 10 on nRESET, i.e. the standard connector carries the
+      target reset alongside clock and data - cross-vendor corroboration that
+      reset belongs on a debug header, not only on this board.
+status: active
+origin: research:block-swd-debug-port-1
+level: family
+envelope:
+  vio_v: {min: 2.4, max: 3.6}
+envelope_note: >
+  Scales with the supply. Table 49 makes the guaranteed-not-filtered reset
+  pulse a FUNCTION of VDD - 300 ns minimum over 2.7 to 3.6 V, widening to
+  500 ns minimum over 2.4 to 3.6 V - and VIL(NRST) max is 0.3 VDD + 0.07, so
+  the level a probe must reach moves with the rail too. The envelope is
+  written for the 2.7-3.6 V band where the 300 ns figure holds; a board
+  running 2.4 to 2.7 V keeps the rule but must budget 500 ns. Below 2.4 V ST
+  specifies neither number and the rule stops being usable.
+maturity: approved
+# no generalizes: the parent principle covers TERMINATION; this record's rule
+# is the reset pulse/level contract, which is not a specialization of it.
+generalizes: []
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read ST p65 (s6.3.15 + Table 49), p66 (Figure 21), p27 (Table 10 RST legend; Table 11 NRST = TSSOP20 pin 4, 'Device reset input / internal reset output (active low)'), p32 (note 7) and Infineon p29 Figure 20. Every number is on the page as written: permanent pull-up RPU 25/40/55 kOhm, VF(NRST) filtered pulse max 100 ns, VNF(NRST) not-filtered min 300 ns for 2.7<VDD<3.6 and 500 ns for 2.4<VDD<3.6, VIL(NRST) max 0.3 VDD+0.07, Vhys 200 mV typ. Figure 21 notes 1 and 2 are quoted verbatim and it does show 0.1 uF at the pin; Figure 20 does put nRESET on position 10. Envelope 2.7-3.6 V is exactly the band Table 49 attaches to the 300 ns row and envelope_note names the 2.4-2.7 V / 500 ns case correctly. No ESD ruling smuggled in."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Supply band
+    corrected to 2.4-3.6 V (both this record's pages and its sibling swd-
+    debug-port-stm32f0-internal-pulls support it); below 2.7 V the
+    guaranteed reset pulse is 500 ns, not 300 ns (rule field added).

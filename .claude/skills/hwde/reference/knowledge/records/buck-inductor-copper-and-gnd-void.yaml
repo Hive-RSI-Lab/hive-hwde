@@ -1,0 +1,41 @@
+id: buck-inductor-copper-and-gnd-void
+classes: [emi]
+applies:
+  topologies: [buck]
+  packages: []
+  interfaces: []
+rule:
+  enforced_by: null
+  width_per_amp_1oz_mm: 1.0
+  width_per_amp_2oz_mm: 0.7
+  gnd_plane_under_inductor: avoid (eddy current derates L, couples noise)
+prose: >
+  Inductor region rules (ROHM s5): place L close to the IC but NOT as close
+  as the input cap; do NOT expand the SW/inductor copper beyond what current
+  needs - enlarged copper works as an antenna (EMI), even though instinct
+  says more copper = cooler. Practical width floors with margin: 1 mm per A
+  at 1 oz, 0.7 mm per A at 2 oz. Do not put a ground plane DIRECTLY UNDER
+  the inductor: eddy currents derate the inductance and Q, and any signal
+  line under it picks up switching noise - keep wiring out from under L, or
+  use a closed-magnetic-circuit (shielded) inductor when routing there is
+  unavoidable. Keep the two inductor terminals' wiring apart: close spacing
+  couples the SW edge to the output through stray capacitance (fig 6-d).
+sources:
+  - {file: reference/knowledge/sources/rohm-buck-pcb-layout-an.pdf, page: 5, section: s5}
+  - {file: reference/knowledge/sources/rohm-buck-pcb-layout-an.pdf, page: 6, section: fig 6-a..6-d}
+status: active
+origin: app-note:rohm-buck-pcb-layout-an (ROHM 60AN066E Rev.004, 2024-01)
+
+# --- schema v2 governance (U14 backfill, owner-ruled 2026-08-15) ---
+level: topology
+envelope:
+  switching_kind: {in: [hard]}
+maturity: approved
+approval:
+  by: owner
+  date: "2026-08-15"
+  note: >
+    Scales with edge content: enlarged SW/inductor copper radiates and the
+    eddy-current derating under L is driven by the switching field. The 1
+    mm/A at 1 oz and 0.7 mm/A at 2 oz widths are rule PARAMETERS (the record
+    carries both weights), not applicability bounds.

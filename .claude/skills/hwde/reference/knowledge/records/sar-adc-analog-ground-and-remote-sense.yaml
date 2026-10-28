@@ -1,0 +1,77 @@
+id: sar-adc-analog-ground-and-remote-sense
+classes: [return-path]
+applies:
+  topologies: [sar-adc]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  device_placement: "the WHOLE converter on the analog ground/power - never straddling analog and digital planes (that is the delta-sigma rule, not the SAR rule)"
+  gnd_pin: "a clean analog ground point, away from the MCU/DSP grounding point"
+  no_plane_fallback: "run a ground trace directly from the converter to the power-supply connection point; keep plane breaks minimal so return current is not pinched"
+  thermal_pad: "analog ground or floating, kept off the digital ground"
+  pseudo_diff_minus_in: "a remote-ground SENSE terminal, tied where the signal is referenced"
+  minus_in_range_v: "-0.3 to +0.5"
+  bus_isolation: "a digital buffer between a high-resolution SAR and bus activity"
+prose: >
+  Ground geometry decides what a 16-bit converter actually resolves. AN688
+  p.2: for a SAR "the entire device should be connected to the analog power
+  and ground planes" - straddling the analog and digital planes is the common
+  error (delta-sigma parts, being mostly digital, are the ones that should
+  straddle), and a high-resolution SAR wants a digital buffer between it and
+  bus activity. Its fig 2b maps the board: digital nearest the connector, a
+  digital-buffer strip, pure analog furthest away. ADS8326 p.26 agrees from
+  the part side: the GND pin belongs on a clean analog ground point, NOT near
+  an MCU/DSP ground point; with no plane, run a ground trace straight from
+  the converter to the supply connection point; an analog ground plane under
+  the converter and its analog circuitry is the ideal. p.7 note 1 adds that
+  the SON thermal pad goes to analog ground or floats, kept off digital
+  ground. In pseudo-differential use -IN is a SENSE terminal, not a ground
+  pin: p.20 limits it to -0.3/+0.5 V and says it "is best used to sense a
+  remote signal ground that may move slightly with respect to the local
+  ground potential" - so tie -IN where the signal is referenced, not to
+  convenient copper. Measured: fig 4 (no plane) spreads a DC input over codes
+  2503-2517, tallest bar ~810 of 4096; fig 6 - same ACTIVE devices, different
+  passives, with a bottom-layer pour (fig 5) - puts ~1300/~1380 counts on
+  codes 2501/2502.
+sources:
+  - file: reference/knowledge/sources/00688b.pdf
+    page: 2
+    note: "Device Placement: 'if the A/D Converter uses a Successive Approximation Register (SAR) design approach, the entire device should be connected to the analog power and ground planes. A common error is to have the converter straddle the analog and digital planes'; delta-sigma converters should straddle; a digital buffer isolates a high-resolution SAR from bus activity. Fig 2a/2b: high-frequency parts by the connector, digital block then digital buffer then analog. Fig 3: the 2-layer test board WITHOUT any ground plane"
+  - file: reference/knowledge/sources/00688b.pdf
+    page: 3
+    note: "Fig 5: the same 2-layer board with a bottom-layer ground pour (breaks kept to a minimum so return current is not pinched). Fig 4 histogram (no plane) spreads 4096 samples of a DC input across codes 2503-2517, tallest bar ~810 at 2512; fig 6 (with the plane) puts ~1300 and ~1380 counts on codes 2501 and 2502 with a skirt from 2496 to 2506. The text notes the same ACTIVE devices were used for both tests while the passive devices differed, causing a slight offset difference"
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 26
+    note: "LAYOUT: 'The GND pin on the ADS8326 should be placed on a clean ground point ... Avoid connecting the GND pin too close to the grounding point for a microprocessor, microcontroller, or digital signal processor. If needed, run a ground trace directly from the converter to the power-supply connection point. The ideal layout will include an analog ground plane for the converter and associated analog circuitry.'"
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 20
+    note: "ANALOG INPUT: the -IN range is limited to -0.3 V to +0.5 V, and 'the -IN input is best used to sense a remote signal ground that may move slightly with respect to the local ground potential'; figs 38/39/40 show the pseudo-differential drive and the common-mode range vs VREF"
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 7
+    note: "Pin configuration note 1: the SON-8 thermal pad is internally connected to the substrate, may be connected to analog ground or left floating, and should be kept separate from the digital ground"
+status: active
+origin: "research:block-sar-adc-1"
+level: topology
+envelope:
+  board_layers: {min: 2, max: 4}
+maturity: approved
+generalizes: []
+envelope_note: >
+  The recipe - one analog ground pour, the converter sitting entirely on it,
+  and a direct trace back to the supply connection point where copper is
+  scarce - is a 2 to 4 layer answer, and that is exactly where the evidence
+  sits: AN688's measured pair (fig 4 vs fig 6) is a 2-layer board with and
+  without a bottom-layer pour. At 6+ layers with dedicated plane pairs the
+  question changes shape - which plane carries the return, and where the
+  reference plane changes under the signal - and this rule stops being the
+  whole answer.
+verification: {by: "research-second-reader", date: "2026-08-16", note: "Re-ruled because the record was edited; the edits are right and the board decision holds. THE LOAD-BEARING CLAIM, re-confirmed independently from the datasheet text: ads8326 p.20 says verbatim 'The range of the -IN input is limited to -0.3V to +0.5V' and 'the -IN input is best used to sense a remote signal ground that may move slightly with respect to the local ground potential'; p.21 repeats the window in the absolute-input paragraph ('the -IN input should not drop below GND - 0.3V or exceed GND + 0.5V'). So -IN as a remote-ground sense terminal, bounded at -0.3/+0.5 in rule.minus_in_range_v, is the datasheet's own specification on two pages. The corrected numbers were measured off the rendered histograms, not eyeballed: fig 6 (p.3, plane + bypass caps) gives 2501 = 1296 and 2502 = 1375 counts with a skirt occupying 2496 through 2506 and zero at 2495 and 2507 - the record's '~1300/~1380 on codes 2501/2502' and 'skirt 2496 to 2506' are exact; fig 4 (p.3, no plane) occupies 2503 through 2517 with the tallest bar 814 at 2512 - '2503-2517, tallest bar ~810' is exact. AN688 p.3 body text verbatim: 'The same active devices were used for both tests. The passive devices were different causing a slight offset difference' - the prose's 'same ACTIVE devices, different passives' now matches the source, which is the fix that was needed. p.2 verbatim on the whole SAR sitting on the analog power and ground planes, straddling as the common error, delta-sigma as the exception and a digital buffer for a high-resolution SAR; fig 2b rendered and matching. ads8326 p.26 GND-pin paragraph and p.7 note 1 verbatim. Fig 3 (no plane) vs fig 5 (bottom-layer pour) are the same 2-layer board, which is what the envelope's board_layers 2-4 rests on. Standing nuance, not a defect: p.20 opens 'The analog input of ADS8326 is differential', so 'pseudo-differential' is the record's framing of the usage the datasheet describes, not the datasheet's word."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

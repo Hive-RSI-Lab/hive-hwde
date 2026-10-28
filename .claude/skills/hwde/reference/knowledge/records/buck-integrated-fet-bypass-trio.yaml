@@ -1,0 +1,110 @@
+id: buck-integrated-fet-bypass-trio
+classes: [decoupling]
+applies:
+  topologies: [buck]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  loops: "three, not one: C_IN/C_HF across VIN-PGND, C_BOOT across BOOT-SW, C_VCC across VCC-GND"
+  cin_min_uf: 10
+  cin_voltage_rating: "at least the maximum input voltage, preferably twice it"
+  chf_nf: 220
+  chf_dielectric: "50 V X7R, small case, as close to the pins as possible"
+  cin_irms: "about Iout/2"
+  cboot_nf: 100
+  cvcc: "1 uF 16 V ceramic; do not load VCC externally beyond a power-good pull-up"
+  cout_hf_nf: "1 to 100"
+prose: >
+  An integrated-FET regulator hides the power switches but exposes THREE
+  high-di/dt bypass loops, and all three are short-loop items at their own
+  pins. (1) Input: a minimum of 10 uF of ceramic, rated for at least the
+  maximum input voltage and preferably twice it - at a 30 V input that
+  argues for 63 V-class parts, and it is the DC-bias derating at working
+  voltage that decides whether "10 uF" is really 10 uF. Beside it a
+  small-case 220 nF - not the generic 100 nF - as close to the pins as
+  possible: the datasheet calls it the high-frequency bypass for the
+  control circuits INSIDE the device and specifies 50 V X7R. Input RMS
+  current is about Iout/2, so 1 A at this operating point; check it
+  against the ceramic's rating. (2) Bootstrap: 100 nF, 10 V or better,
+  across BOOT and SW on short wide traces - this is the high-side gate
+  driver's own loop, high di/dt at low energy. (3) Internal bias: 1 uF
+  16 V from VCC to GND, with nothing else hung on VCC except optionally
+  the power-good pull-up. The vendor's sync-buck figure draws C_BOOT and
+  C_VCC hard against their pins for exactly this reason. On the output
+  side the bulk bank gets a 1-100 nF small-case partner for the spikes
+  that inductor and board parasitics leave on the rail.
+sources:
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 23
+    section: "9.2.2.6 Input Capacitor Selection, 9.2.2.7 C_BOOT, 9.2.2.8 VCC"
+    note: >
+      A minimum of 10 uF of ceramic capacitance is required at the input,
+      rated for at least the maximum input voltage the application
+      requires and preferably twice it; in addition a small case size
+      220 nF ceramic must be used at the input as close as possible to the
+      regulator, providing high-frequency bypass for the control circuits
+      internal to the device (the example uses 4.7 uF 50 V X7R plus a
+      220 nF also rated 50 V X7R). Equation 8 gives the worst-case input
+      RMS current as Iout/2, to be checked against the capacitor rating.
+      An electrolytic in parallel with the ceramics is called out for long
+      leads or traces (moderate ESR damps supply ringing and helps with
+      dips from a high-impedance source). C_BOOT is a required high
+      quality 100 nF, at least 10 V. VCC needs a 1 uF 16 V ceramic to GND
+      for proper operation, must not be loaded by external circuitry, and
+      can supply the power-good pull-up (100 kohm is a good choice).
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 5
+    section: "Table 6-1 Pin Functions"
+    note: >
+      VIN row: "Connect a high-quality bypass capacitor or capacitors
+      directly to this pin and PGND." PGND row: connect to system ground
+      and AGND, and to the bypass capacitor with short wide traces. VCC
+      row: output of the internal 5 V LDO, do not connect to external
+      loads, may be used as the logic supply for the power-good flag, 1 uF
+      to GND. BOOT row: high-quality 100 nF to SW.
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 33
+    section: "10.1 Layout Guidelines, rules 2 and 3"
+    note: >
+      Rule 2: place the VCC bypass capacitor close to the VCC pin, routed
+      with short wide traces to the VCC and GND pins. Rule 3: use wide
+      traces for C_BOOT and place it close to the device with short, wide
+      traces to the BOOT and SW pins.
+  - file: reference/knowledge/sources/snva721a.pdf
+    page: 5
+    section: "2.3 Minimize Area of Gate Driver Loops, Figure 8"
+    note: >
+      In a synchronous buck the high-side gate driver connects to C_BOOT
+      through the BOOT and SW pins and the low-side driver to C_VCC
+      through the VCC and GND pins; Figure 8 draws both loops inside the
+      IC boundary with the two capacitors immediately outside their pins.
+      Text: to minimise the driver loops the bypass capacitors must be
+      placed as close as possible to the corresponding pins with short and
+      wide traces.
+status: active
+origin: research:block-buck-1
+level: topology
+envelope:
+  integration_kind: {in: [integrated-fet]}
+maturity: approved
+generalizes: []
+envelope_note: >
+  Scales with where the gate drivers live. A monolithic regulator brings
+  its bootstrap and internal-LDO loops out to two extra pin pairs, so they
+  are board-level short-loop items and VCC is a rail that must not be
+  loaded - that is the claim the envelope bounds. With a controller plus
+  external FETs the gate loops run between driver and FET gates instead,
+  a longer loop with its own rules, and the input ceramics belong at the
+  FETs rather than at the IC. The input-side numbers themselves (10 uF
+  floor, ~2x voltage rating, Iout/2 RMS) are generic buck and survive
+  outside the envelope.
+verification: {by: "second-reader", date: "2026-08-15", note: "Re-read lmr33630 p23, p5 and p33 rules 2-3, plus snva721a p5. p23 carries every number as stated: a minimum of 10 uF of ceramic capacitance is required at the input, rated for at least the maximum input voltage and preferably twice it; a small case size 220 nF ceramic must be used at the input as close as possible to the regulator, providing high frequency bypass for the control circuits internal to the device; Equation 8 gives worst-case input IRMS as Iout/2; CBOOT is a required high-quality 100 nF at least 10 V; VCC requires a 1 uF 16 V ceramic, must not be loaded by external circuitry, and can supply the power-good pull-up at 100 kohm. Table 6-1 on p5 confirms the VIN, PGND, VCC and BOOT pin rows word for word. snva721a p5 section 2.3 and Figure 8 do show the two gate-driver loops closing through CBOOT via BOOT/SW and CVCC via VCC/GND with the capacitors immediately outside their own pins, which is exactly the integrated-fet bound the envelope claims. One thing to tidy on a later pass, not a refutation: rule.chf_dielectric states 50 V X7R flatly, whereas p23 gives that inside a 6-36 V worked example - the citation note does disclose this, but it sits oddly beside the 63 V-class argument the record itself makes for a 30 V input."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

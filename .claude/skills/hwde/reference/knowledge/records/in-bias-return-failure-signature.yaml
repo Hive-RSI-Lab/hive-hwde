@@ -1,0 +1,85 @@
+id: in-bias-return-failure-signature
+classes: [return-path]
+applies:
+  topologies: []
+  packages: []
+  interfaces: [in]
+  parts: [AD8226]
+rule:
+  enforced_by: null
+  headline: "a missing bias-current return path has NO reliable output symptom - do not diagnose it from the output pin"
+  mechanism: "with no dc path the bias current accumulates on the stray capacitance at the inputs until the inputs are clamped to the rails by the protection diodes"
+  symptom_a: "vendor-stated: the output then SLOWLY increases or decreases until it saturates into the VS+ or VS- rail - so the fault can pass a power-up check and appear minutes later"
+  symptom_b: "vendor-stated, same vendor's sensor front-end paper: a saturated input stage 'could appear normal to the processing circuitry, yet have disastrous consequences'"
+  ad8226_says: "the AD8226 data sheet states the REQUIREMENT and draws the fixes but prints no symptom at all - nothing in this ledger licenses 'the output parks at a rail' as the AD8226's signature"
+  bringup_test: "measure the dc potential at each input pin against the amplifier's own ground reference instead: with a pnp input stage each input must sit at a defined level ABOVE the return node and stay there, not drift"
+prose: >-
+  The correction that matters for bring-up: the two symptoms in the
+  literature contradict each other, so neither is a test. AN1298 p.14 gives
+  the mechanism and one ending - "Without a DC return path, the input bias
+  current will accumulate on any stray capacitance on the inputs until they
+  are clamped to the rails by the protection diodes. The output of the
+  Instrumentation Amplifier will slowly increase or decrease until it
+  saturates into the VS+ or VS- rail." The same vendor's in-amp sensor
+  paper gives the other ending on its first page - "A saturated input stage
+  could appear normal to the processing circuitry, yet have disastrous
+  consequences" - because a three-op-amp in-amp with both input amplifiers
+  pinned takes their DIFFERENCE, which can be small. The AD8226's own
+  INPUT BIAS CURRENT RETURN PATH section states the requirement and draws
+  Figure 62, and says nothing about what a missing path looks like. (The
+  TI INA333 data sheet in this workspace's round-one ledger, not fetched
+  into this one, describes the near-zero/appears-normal ending explicitly;
+  treat that as unwitnessed here.) So: an output that looks sane is not
+  evidence the return path exists, and neither is an output at a rail proof
+  that it is missing. Probe the input pins, and watch them over minutes -
+  the drift is a bias current charging stray capacitance, so it is slow.
+sources:
+  - file: reference/knowledge/sources/an1298-instrumentation-amplifier-application-note.pdf
+    page: 14
+    section: "Renesas/Intersil AN1298 Rev 2.00, p.14 - DC return path paragraph"
+    note: >-
+      Read verbatim: bias current accumulates on any stray capacitance on
+      the inputs until they are clamped to the rails by the protection
+      diodes, and the output slowly increases or decreases until it
+      saturates into the VS+ or VS- rail; plus "A DC return path as shown
+      in the following circuits must be supplied".
+  - file: reference/knowledge/sources/how-monitor-sensor-health-instrumentation-amplifiers.pdf
+    page: 1
+    section: "Renesas white paper, p.1 - Three Op Amp INA Basics"
+    note: >-
+      Read verbatim: "A saturated input stage could appear normal to the
+      processing circuitry, yet have disastrous consequences", in the
+      paragraph warning that VCM and VD must be accounted for to avoid
+      saturating the INA's input stage.
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 22
+    section: "AD8226 Rev. C, printed p.21 - INPUT BIAS CURRENT RETURN PATH"
+    note: >-
+      Read the whole section: it states the must-have requirement and
+      points at Figure 62's corrected topologies, and prints NO description
+      of the failure symptom - the absence is the citation here.
+status: active
+origin: research:interface-in-2
+level: part
+envelope:
+  ibias_ua: {min: 0.005, max: 0.035}
+maturity: approved
+generalizes: [inamp-internal-node-saturation]
+envelope_note: >-
+  The symptom's TIMING scales with bias current: the input node is a stray
+  capacitance charged by Ib, so the drift toward the clamp runs at Ib/C
+  volts per second. Bounded on the AD8226's own guaranteed 5 nA to 35 nA
+  span (Table 3) - at nanoamps into a few picofarads the fault develops in
+  seconds to minutes, which is exactly what lets it survive a quick
+  power-up check; at picoamp-class inputs it can take hours and at
+  microamps it is instantaneous. The contradiction between the two vendor
+  endings is not bounded: it holds for any three-op-amp in-amp.
+verification: {by: "second-reader", date: "2026-08-16", note: "Both quoted sentences are on the cited pages, verbatim. AN1298 Rev 2.00 p.14 (zoomed): 'Without a DC return path, the input bias current will accumulate on any stray capacitance on the inputs until they are clamped to the rails by the protection diodes. The output of the Instrumentation Amplifier will slowly increase or decrease until it saturates into the VS+ or VS- rail.' plus 'A DC return path as shown in the following circuits must be supplied'. Renesas sensor-health white paper p.1, Three Op Amp INA Basics: 'A saturated input stage could appear normal to the processing circuitry, yet have disastrous consequences', in exactly the paragraph the note names (VCM and VD must be taken into account to avoid saturating the INA input stage). AD8226 printed p.21 INPUT BIAS CURRENT RETURN PATH re-read in full: two sentences plus the Figure 62 pointer, NO symptom description anywhere - the absence-citation is accurate. No overclaim found: the record confines itself to 'not diagnostic - probe the input pins', labels the white-paper sentence as being about a saturated input stage generally (its cause there is CM/VD headroom, not a missing return path - the record's bridging clause about a three-op-amp in-amp taking the difference is flagged in prose as its own reasoning), states plainly that nothing in this ledger licenses a rail-park signature for the AD8226, and marks the INA333 'appears normal' account as unwitnessed here. The bring-up test (each input sits a defined I*R above the return node) follows from the verified pnp footnote 1. Envelope 5-35 nA is Table 3's own span and the Ib/C drift-rate scaling is sound."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Level part: the
+    ibias bound is one part's (AD8226) Ib span, and applies.parts already
+    names it.

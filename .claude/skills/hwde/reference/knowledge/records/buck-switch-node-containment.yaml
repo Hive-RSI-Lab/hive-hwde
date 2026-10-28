@@ -1,0 +1,41 @@
+id: buck-switch-node-containment
+classes: [emi]
+applies:
+  topologies: [buck]
+  packages: []
+  interfaces: []
+rule:
+  enforced_by: null
+  sw_copper: smallest electrically possible
+  victims: antenna, high-Z analog, diff pairs -> separation/keepout entry
+prose: >
+  Keep SW copper as small as electrically possible and treat SW + L as an
+  AGGRESSOR: lumina-par's 2.4 GHz antenna 11 mm from a switch node drove a
+  4-layer stackup + containment plan; usb-buck keeps the USB pair away from
+  SW/L per ST AN4879 3.3. Hand P6 a separation/keepout entry
+  (constraints placement.separation / placement.keepouts) whenever any
+  antenna, high-Z analog node, or diff pair shares the board; the switch
+  node is also why high_speed references demand an UNBROKEN plane under
+  victims (check_return_path enforces the plane; the separation entry is
+  what keeps the aggressor out of the corridor in the first place). A /SW
+  test-point tap must be a short stub that does not extend the SW pour -
+  it counts against the SW copper budget.
+sources:
+  - {file: boards/usb-buck/research/interface-usb.md, section: AN4879 3.3 (USB vs switcher)}
+  - {file: boards/sbuck-5v3a/architecture/blocks.md, section: s8 (/SW tap stub rule)}
+status: active
+origin: migration:topologies/buck (T6 2026-08-06, three shipped runs)
+
+# --- schema v2 governance (U14 backfill, owner-ruled 2026-08-15) ---
+level: topology
+envelope:
+  switching_kind: {in: [hard]}
+maturity: approved
+approval:
+  by: owner
+  date: "2026-08-15"
+  note: >
+    Scales with dv/dt: SW is an aggressor because the edge is hard. The
+    victim list (antenna, high-Z analog, diff pair) is a board property, not
+    an envelope dim - it selects whether the record produces a separation
+    entry, not whether the record is true.

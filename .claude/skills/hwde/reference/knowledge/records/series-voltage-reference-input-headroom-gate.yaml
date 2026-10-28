@@ -1,0 +1,89 @@
+id: series-voltage-reference-input-headroom-gate
+classes: [selection]
+applies:
+  topologies: [series-voltage-reference]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  vin_min_v: "max(stated input-range minimum, vout_v + VDO_max at your load and max temperature)"
+  specified_per_member: "dropout is a per-output-voltage number, not a family number"
+  runs_inverse_to_vout: "in this family the LOWEST-output member has the WORST dropout - 10x the high-VOUT members"
+  adr45xx_vdo_max_mv: "ADR4520 1000 (no load and at 2 mA), ADR4525 500 (both), ADR4530/4533/4540/4550 100 no load and 300 at 2 mA"
+  adr45xx_vin_floor_v_no_load: "ADR4520 3.048, ADR4525 3.0, ADR4530 3.1, ADR4533 3.4, ADR4540 4.2, ADR4550 5.1"
+  where_the_flat_condition_binds: "the VIN = 3 V to 15 V table condition is the floor wherever VOUT + VDO_max falls below 3 V; the ADR4525 lands exactly on it at no load, while the ADR4520's dropout row binds above it at 3.048 V"
+  compare_against: "worst-case rail (tolerance + IR drop + ripple trough), never nominal"
+  family_attribute: "not a spec - the 300 mV headline is footnoted (VOUT >= 3 V)"
+  vdo_definition: "the differential at which VOUT has ALREADY degraded 0.1 pct"
+  vdo_scales_with: "load current and temperature, but only above the flat region (~6 mA here)"
+  revision_caveat: "read from ADI Rev 0 (2012) via a farnell.com mirror - the VDO and LOAD CAPACITANCE rows must be re-confirmed against the current ADI revision before BOM release"
+  enforced_by: null
+prose: >
+  Minimum input voltage is the first gate a series reference must pass, it is a
+  per-MEMBER number, and in this family it runs INVERSE to output voltage. ADI
+  ADR4520 (2.048 V): Table 3 (p3) conditions the spec on VIN = 3 V to 15 V and
+  gives DROPOUT VOLTAGE 1 V MAX over -40 to +125 C at no load AND at 2 mA, so the
+  floor is max(3.0, 2.048 + 1.0) = 3.048 V. Fig 6 (p11) shows the shape: all
+  three temperature curves sit flat at about 0.90 V from -10 mA to +6 mA and only
+  split past ~6 mA (+25 C reaching ~1.02 V and +125 C ~1.36 V at 10 mA, -40 C
+  staying flat) - the floor is structural, not a load effect. Across the family:
+  ADR4525 (2.5 V) is 500 mV at both no load and 2 mA (p4), while every member at
+  or above 3 V is 100 mV no load / 300 mV at 2 mA (p8). The lowest-output member
+  therefore has the worst dropout by 10x, and a 2.048 V part has LESS headroom on
+  a 3.3 V rail than a 2.5 V one (floors 3.048 V vs 3.0 V). That is exactly why the
+  front-page headline "low dropout voltage: 300 mV at 2 mA" carries the footnote
+  "(VOUT >= 3 V)" (p1) - a distributor attribute copied from it is not a spec.
+  TI REF70 states the other convention, VIN min = VOUT + VDO with a fixed 2.75 V
+  floor for VOUT < 2.5 V (p6), and changed both in one revision (p3). Dropout is
+  defined where VOUT has ALREADY degraded 0.1 pct (p29) - 2 mV at 2.048 V.
+sources:
+  - file: reference/knowledge/sources/1599556.pdf
+    page: 3
+    note: "ADR4520 Table 3 (Rev 0, 2012 print): header condition VIN = 3 V to 15 V; DROPOUT VOLTAGE VDO = 1 V in the Max column for BOTH 'no load' and 'IL = 2 mA' over -40 to +125 C -> guaranteed floor 3.048 V for a 2.048 V output"
+  - file: reference/knowledge/sources/1599556.pdf
+    page: 1
+    note: "Features list (Rev 0): 'Input voltage range: 3 V to 15 V' and 'Low dropout voltage: 300 mV at 2 mA (VOUT >= 3 V)' - the headline dropout is explicitly footnoted to the high-output members only"
+  - file: reference/knowledge/sources/1599556.pdf
+    page: 11
+    note: "Fig 6 ADR4520 Dropout Voltage vs Load Current, read at 5x: all three curves flat at ~0.90 V from -10 mA to ~+6 mA; past the break the +25 C curve reaches ~1.02 V and the +125 C curve ~1.36 V (below the 1.4 gridline) at 10 mA, while -40 C stays flat at 0.90 V [ADI Rev 0, 2012, farnell.com mirror]"
+  - file: reference/knowledge/sources/1599556.pdf
+    page: 4
+    note: "ADR4525 (2.5 V) Table 4: DROPOUT VOLTAGE 500 mV max at no load AND at IL = 2 mA - load-independent up to 2 mA, like the ADR4520, and half its value [ADI Rev 0, 2012, farnell.com mirror]"
+  - file: reference/knowledge/sources/1599556.pdf
+    page: 8
+    note: "ADR4550 (5.0 V) Table 8: DROPOUT VOLTAGE 100 mV max no load, 300 mV max at IL = 2 mA - the identical rows appear for ADR4530 (p5), ADR4533 (p6) and ADR4540 (p7), all read in the same pass; the >= 3 V members show the classic load dependence the low-VOUT members do not [ADI Rev 0, 2012, farnell.com mirror]"
+  - file: reference/knowledge/sources/1599556.pdf
+    page: 29
+    note: "Terminology: VDO defined as the minimum VIN-VOUT differential such that VOUT is maintained within 0.1 pct accuracy, always specified at a given load, increasing with load current in series-mode devices [ADI Rev 0, 2012, farnell.com mirror]"
+  - file: reference/knowledge/sources/ref70.pdf
+    page: 6
+    note: "Sec 7.3 Recommended Operating Conditions: VIN MIN = VOUT + VDO, MAX 18 V, footnote (1) 'VDO = Dropout voltage. For VOUT < 2.5 V minimum VIN = 2.75 V' - a fixed floor overriding the computed one"
+  - file: reference/knowledge/sources/ref70.pdf
+    page: 3
+    note: "Revision history B->C: 'Changed Dropout voltage to min VIN = 2.75 V for VOUT < 2.5 V' and 'Changed VINMIN from 3 V to VOUT + VDO' - the min input voltage changed twice in one datasheet revision"
+  - file: reference/knowledge/sources/ref70.pdf
+    page: 9
+    note: "REF70 table: VDO 250 mV max at IL = 5 mA and 400 mV max at IL = 10 mA, both over -40 to +125 C - the guaranteed limits behind the typical curves of Fig 10-6 (p32, 0 mA ~30-65 mV, 10 mA ~135-210 mV)"
+status: active
+origin: research:block-series-voltage-reference-1
+level: topology
+envelope:
+  vout_v: {max: 3.0}
+maturity: approved
+generalizes: []
+envelope_note: >
+  Scales with output voltage, because the elevated floor is a LOW-VOUT
+  phenomenon and that is where the rule bites. The measured split is inside one
+  family: 1 V of dropout at 2.048 V out, 500 mV at 2.5 V, but 100 mV (no load) /
+  300 mV at 2 mA for every member at or above 3 V; TI applies its fixed 2.75 V
+  floor only for VOUT < 2.5 V. At or above ~3 V out the minimum input is just
+  VOUT plus a small, ordinary dropout, and the "the catalog range is not your
+  number" warning stops being load-bearing.
+verification: {by: "second-reader", date: "2026-08-16", note: "Fig 6 (ADI p11) re-read at 9x AND re-measured from the PDF vector paths against tick-calibrated axes: all three plotted curves carry 0.905 V data points from -10 mA through +6 mA, and past the break the -40 C trace stays at 0.905 V, the +25 C trace ends at 1.025 V and the +125 C trace ends at 1.360 V at +10 mA - below the 1.4 gridline. Both halves of the correction are exact and the earlier refutation is cured. The per-member dropout table was checked cell by cell on its own page, with the Min/Typ/Max header x-positions read per page because the columns shift: p3 ADR4520 (VOUT 2.048) = 1 V in Max for BOTH 'no load' and 'IL = 2 mA'; p4 ADR4525 (2.500) = 500 mV Max for both; p5 ADR4530 (3.000), p6 ADR4533 (3.300), p7 ADR4540 (4.096) and p8 ADR4550 (5.000) = 100 mV Max no load / 300 mV Max at 2 mA. The floor list is better supported than the record claims: 3.1 / 3.4 / 4.2 / 5.1 V are ADI's own per-page 'Unless otherwise noted, VIN = ...' table conditions rather than derived numbers, while p3 and p4 both state VIN = 3 V to 15 V - so 3.048 (2.048+1.0) and 3.0 (2.5+0.5) stand and where_the_flat_condition_binds holds. p1 carries 'Input voltage range: 3 V to 15 V' and 'Low dropout voltage: 300 mV at 2 mA (VOUT >= 3 V)' verbatim under a Rev. 0 / 2012 ADI masthead, and p29's VDO definition is verbatim. REF70 p6 footnote (1) and the p3 B-to-C revision lines are verbatim, and the new p9 citation lands: VDO 250 mV at IL = 5 mA and 400 mV at IL = 10 mA both sit in the MAX column (values at x=494, MAX header at x=490) over -40 to +125 C, with Fig 10-6 typicals measuring ~33-65 mV at 0 mA and ~137-208 mV at 10 mA. Board arithmetic re-derived from the pages: 3.135 - 3.048 = 87 mV. One wording flaw, not refuting: on p1 '(VOUT >= 3 V)' is an inline parenthetical inside the Features bullet, not a footnote, yet rule.family_attribute, the prose and the p1 note all call it footnoted while quoting it correctly."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

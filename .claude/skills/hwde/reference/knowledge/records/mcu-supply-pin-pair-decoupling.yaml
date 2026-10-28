@@ -1,0 +1,61 @@
+id: mcu-supply-pin-pair-decoupling
+classes: [decoupling]
+applies:
+  topologies: [mcu]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  hf_caps_per_supply_pin_pair: 1
+  counted_by: "supply PINS bonded out in the package, not the device"
+  bulk_scope: "per RAIL - never a substitute for a missing per-pin cap"
+  values: "per-part - take them from the datasheet in hand, see prose"
+prose: >
+  Count the decoupling bank by SUPPLY PIN and by RAIL, never by device. Three
+  documents show it independently: AN2519 s2.1 - "for devices with multiple
+  pairs of power and ground pins it is essential that there is a decoupling
+  capacitor for every pair of pins"; ST Figure 12, whose bank is written per pin
+  group ("2 x 100 nF" against "2 x VDD") under a Caution that each supply pair
+  must be decoupled; and AN13033 Table 6, which tabulates a decoupling capacitor
+  PER PIN in a separate column from the bulk/bypass per DOMAIN. The count
+  follows the package, not the part number: in TSSOP-20 this part bonds one VDD
+  (16), one VSS (15), one VDDA (5) and no VSSA, so it takes one digital pair's
+  worth plus one analog; the same die in LQFP takes more. Two consequences:
+  bulk is per rail and the HF cap is per pin, so a second bulk never repairs a
+  missing per-pin cap; and pin geometry decides which cap is easy - VDD/VSS are
+  adjacent here, a naturally tiny loop, while VDDA sits ten positions away and
+  returns to that same VSS.
+  The VALUES are per-part, not universal. ST Figure 12 gives THIS family
+  2 x 100 nF + 1 x 4.7 uF on the digital pair and 10 nF + 1 uF on VDDA/VSSA,
+  calling them "filtering ceramic" with no dielectric code. AN13033 Table 6
+  gives a different part a different set: 0.1 uF X7R ceramic per pin plus 10 uF
+  bulk per domain. AN2519 asks only for a tantalum or ceramic on the main
+  supply. Take values from the part in hand, not from here.
+sources:
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 41,
+     note: "Fig 12 power supply scheme: external bank labelled 2 x 100 nF + 1 x 4.7 uF against the 2 x VDD / 2 x VSS pin group and 10 nF + 1 uF on VDDA/VSSA - written per pin group, not per device; the Caution requires each power supply pair to be decoupled with filtering ceramic capacitors placed as close as possible to, or below, the pins, and names no dielectric code and no voltage condition"}
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 26,
+     note: "Fig 8 TSSOP20 pinout (top view): BOOT0=1, NRST=4, VDDA=5, VSS=15, VDD=16, PA13=19, PA14=20 - VDD and VSS adjacent, VDDA on the opposite side, no VSSA pin on this package"}
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 32,
+     note: "Table 11 rows VSS (TSSOP20 pin 15, Ground) and VDD (TSSOP20 pin 16, Digital power supply) - one digital pair bonded out in this package, against two in the LQFP columns of the same rows"}
+  - {file: reference/knowledge/sources/00002519A.pdf, page: 6,
+     note: "AN2519 s2.1: for devices with multiple pairs of power and ground pins it is essential that there is a decoupling capacitor for every pair of pins; the main power supply should also have a tantalum or ceramic capacitor to stabilize it. s2.2 - the analog supply must be decoupled separately, typical value 100 nF"}
+  - {file: reference/knowledge/sources/AN13033.pdf, page: 5,
+     note: "Table 6: a 'Decoupling capacitor per pin' column (0.1 uF, Characteristics X7R ceramic) held separately from 'Bulk/Bypass capacitor for domain' (10 uF) - per-pin and per-domain are different roles. The table's rows are discriminated by domain ROLE, not voltage: the I/O-supply VDD row and the core VBAT_DCDC/VBAT_PMU row (22 uF + 100 nF + 47 pF) both read 1.8 V - 3.3 V, and the VDD_PMU row's voltage cell is an em dash"}
+status: active
+origin: research:block-mcu-1
+level: principle
+maturity: approved
+generalizes: []
+verification: {by: "second-reader", date: "2026-08-16", note: "VERIFIED on the third pass. Re-read DS p41 / p26 / p32 (plus uncited p29-p31 to test one clause), AN2519 p6, AN13033 p5. LEVEL AND SCHEMA: envelope and envelope_note are both genuinely gone - the file carries only id/classes/applies/rule/prose/sources/status/origin/level/maturity/generalizes, and knowledgelib ENVELOPE_FORBIDDEN_AT machine-confirms it (task validates, exit 0). principle is not a bounded claim in unbounded clothes: rule now holds only hf_caps_per_supply_pin_pair 1, counted_by supply pins bonded out in the package, bulk_scope per rail and values per-part - no part, family, package or dielectric token anywhere in it - and none of the three sources conditions the COUNT on volts, current, edge rate or package. The quantity that actually varies (the values) is now named as varying instead of fenced by an invented bound, which is what both earlier refutations asked for. generalizes [] is forced rather than evasive: the lint fires when LEVEL_RANK theirs is not below mine, so principle-to-principle is illegal. PER-PIN CLAIM CARRIED BY ALL THREE SOURCES INDEPENDENTLY, each re-read: AN2519 p6, tail of s2.1, verbatim - For devices with multiple pairs of power and ground pins, it is essential that there is a decoupling capacitor for every pair of pins - followed by The main power supply should also have a tantalum or ceramic capacitor to stabilize it (that ALSO is what earns bulk_scope never a substitute), with s2.2 on the same page for separate analog decoupling at 100 nF typical. DS p41 Fig 12 labels 2 x 100 nF + 1 x 4.7 uF against the 2 x VDD / 2 x VSS pin group and 10 nF + 1 uF across VDDA/VSSA, under the Caution quoted verbatim, and the page attaches no dielectric code and no voltage condition. AN13033 p5 Table 6 holds a Decoupling capacitor per pin column (0.1 uF) separate from Bulk/Bypass capacitor for domain, and s3.2 on that same page adds Place all decoupling capacitors as close as possible to each of their respective power supply pin. VALUES PROPERLY DEMOTED: no capacitance survives in rule; every number in prose names its owner - ST for THIS family and quoted as filtering ceramic with no dielectric code, AN13033 as a different part, AN2519 as tantalum-or-ceramic only. X7R occurs exactly twice in the file, both inside an AN13033 attribution and verbatim from that table's Characteristics column; no X5R survives; no dielectric is generalized across vendors. The AN13033 p5 note is accurate and does not overstate: the VDD row (Single power supply powering I/Os) Voltage cell reads 1.8 V - 3.3 V, the merged VBAT_DCDC/VBAT_PMU row (22 uF + 100 nF + 47 pF) reads the same 1.8 V - 3.3 V, and VDD_PMU Voltage is an em dash - two banks over one voltage range, discriminated by the Description column, i.e. domain role, exactly as written. ONE PAGE-LEVEL DEFECT FOUND, RECORDED NOT FATAL - the p32 note's comparative clause. Its primary content is exact (VSS row 63/47/32/15 Ground; VDD row 64/48/1/16 Digital power supply), but against two in the LQFP columns of the same rows is NOT on p32: every LQFP cell in those two rows holds ONE pin number. Table 11's second supply pair lives in DIFFERENT rows on p29 (31 23 16 - VSS, and 32 24 17 16 VDD), which the record does not cite, and LQFP64/48 take a third VSS on p31 for xC parts. Sharper still: that p29 VDD row puts TSSOP20 = 16, the SAME pin as the p32 row, so Table 11 read alone lists this package's VDD twice and does not by itself establish one digital pair bonded out. I do not refute on it because the destination is right and rests on a CITED page: p26 Fig 8 is exact as noted (BOOT0 1, NRST 4, VDDA 5, VSS 15, VDD 16, PA13 19, PA14 20, no VSSA pin) and settles the TSSOP20 count, while Fig 7 on that same cited p26 shows LQFP32 with VDD at 1 and 17 and VSS at 16 and 32 - the LQFP-takes-more claim, on an acquired page. No rule field, no value and no level decision rests on the misdescribed clause; it is the species of slip the earlier readers flagged without breaking the sibling records. Smaller residuals for the author, none load-bearing: ten positions away misdescribes the geometry - on TSSOP20 pin 5 sits directly ACROSS the body from pin 16 (left row 5 against right row 5), 11 apart by index or 9 the other way round the perimeter, though the conclusion that the VDDA loop is the big one holds because its return is VSS 15; the same die in LQFP is a gloss the datasheet never makes (it states more supply pins in bigger packages, not one die); 10 uF bulk per domain is true of Table 6's I/O and analog rows but not its core rows, which take 22 uF + 100 nF + 47 pF - the record's own p5 note has that right, so only the prose summary is partial; and 2 x 100 nF + 1 x 4.7 uF on the digital pair reads as per-pair in isolation, disambiguated only by the earlier sentence. Nothing the record claims needs a page outside the ledger. For the record: the mcu checklist decoupling min_level topology, and the coverage gap a principle-level record leaves, played no part - I ruled on the pages."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

@@ -1,0 +1,54 @@
+{
+ "script": "check_route_style",
+ "status": "violations",
+ "board": "hwde-led-test.kicad_pcb",
+ "counts": {
+  "total": 1,
+  "by_severity": {
+   "warning": 1
+  },
+  "by_source": {
+   "check_route_style": 1
+  }
+ },
+ "violations": [
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    17.0567,
+    18.975
+   ],
+   "layer": "F.Cu",
+   "net": "/LED_A",
+   "refs": [],
+   "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /LED_A F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.150 mm",
+     "pos": [
+      17.0567,
+      18.975
+     ],
+     "uuid": "1f2a17b7-e753-491e-83c5-57398c376aa7"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  }
+ ],
+ "style": {
+  "segments": 14,
+  "arcs": 0,
+  "off_angle": 0,
+  "jogs": 1,
+  "flagged": 1,
+  "score": 0.929
+ },
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T14:05:43+00:00",
+ "input": "kicad/hwde-led-test.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316"
+}

@@ -1,0 +1,58 @@
+id: series-voltage-reference-error-stack
+classes: [selection]
+applies:
+  topologies: [series-voltage-reference]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  worst_case: "accuracy + tempco + hysteresis + long_term_drift + noise (all in ppm)"
+  rss: "sqrt(sum of squares); reality sits between the two, nearer RSS"
+  appears_as: "converter gain error - proportional to reading, zero at zero"
+  single_point_cal_removes: "initial accuracy, solder shift, thermal hysteresis"
+  multipoint_cal_also_removes: "temperature drift"
+  uncalibrated_removes: "nothing"
+  enforced_by: null
+prose: >
+  A series reference contributes NO offset and all gain: its error multiplies
+  every reading, so it must be budgeted at the measurement, not at the
+  reference. TI SNAA320B p5 Fig 4-2 draws it - the error bowtie opens linearly
+  from mid-scale to positive and negative full scale - and gives the stack, Eq 1
+  worst case = accuracy + tempco + hysteresis + long-term drift + 1/f noise, Eq 2
+  the RSS of the same terms, with the note that a real system lands between the
+  two but closer to RSS. p6 Table 4-1 works it for a 0.05% / 6 ppm-per-C part:
+  initial accuracy 500 ppm, tempco 990 ppm (over -40 to +125 C), hysteresis
+  40 ppm, 1/f noise 15 ppm; worst case 1545 ppm, RSS 1110 ppm. Two lessons in
+  those numbers: the tempco term dominates an uncalibrated design (990 of
+  1545 ppm), and the example openly omits solder shift, long-term drift and
+  line/load regulation, so a real budget is worse than the table. p6 Table 5-1
+  says what calibration buys: a single-point (25 C) calibration removes initial
+  accuracy, solder shift and thermal hysteresis; only multipoint removes
+  temperature drift. An uncalibrated non-ratiometric board therefore carries
+  every row, which is why part selection - not layout - is where this block's
+  error budget is won or lost. Vendors spec each term separately (ADI ADR4520
+  Table 3 lists accuracy, TC, solder heat shift, hysteresis and long-term drift
+  as five distinct rows), so the stack can always be assembled from the datasheet.
+sources:
+  - file: reference/knowledge/sources/snaa320b.pdf
+    page: 5
+    note: "Fig 4-2 ADC gain-error bowtie (error in LSB vs analog input, fanning to PFS/NFS); Eq 1 worst-case and Eq 2 RSS stacking of accuracy + TempCo + TempHyst + LongTerm Drift + 1/f noise; text: real error is between the two, closer to RSS"
+  - file: reference/knowledge/sources/snaa320b.pdf
+    page: 6
+    note: "Table 4-1 REF3425 worked budget (500/990/40/15 ppm -> 1545 worst case, 1110 RSS, 202 with 25C+tempco calibration) and Table 5-1 which terms single-point vs multipoint calibration removes; Eq 3 LSB = gain error(ppm) * 2^N"
+  - file: reference/knowledge/sources/1599556.pdf
+    page: 3
+    note: "ADR4520 Table 3: initial error 0.02% B grade, TC 2 ppm/C, solder heat shift 0.02%, hysteresis 50 ppm, long-term drift 25 ppm, noise 1 uV p-p - the five stack terms as separate datasheet rows [ADI Rev 0, 2012, farnell.com mirror]"
+status: active
+origin: research:block-series-voltage-reference-1
+level: principle
+maturity: approved
+generalizes: []
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read after the provenance edit (the ADI p3 note is now tagged Rev 0, 2012, farnell.com mirror, which the source confirms: PDF title 'ADR4520/.../ADR4550 (Rev. 0)', p1 masthead 'Rev. 0' and copyright 2012 Analog Devices). SNAA320B p5 is verbatim: Figure 4-2 ADC Gain Error with the error fanning to NFS and PFS between Gain Error Max and Gain Error Min, Eq 1 worst case = Accuracy + TempCo + TempHyst + LongTerm Drift + 1/f Noise, Eq 2 the RSS of the same terms, and 'In the real world, the error is between the worst-case and RSS method of results but closer to the RSS result'. p6 Table 4-1 REF3425 is exact in every cell: initial accuracy 0.05 pct = 500 ppm, TempCo 6 ppm per C = 990 ppm, thermal hysteresis 40 ppm (cycle 1 30 ppm, cycle 2 10 ppm), 1/f noise 15 uV p-p = 15 ppm, worst-case total 1545 ppm, RSS total 1110 ppm, RSS with 25 C calibration 991 ppm and with 25 C plus TempCo calibration 202 ppm; Eq 3 gives LSB from gain error ppm times 2^N; Table 5-1 marks initial accuracy, solder shift and thermal hysteresis under BOTH calibration columns and temperature drift under multipoint only, so 'uncalibrated removes nothing' is right. The example's silence on solder shift, long-term drift and line/load regulation is genuine - those rows are simply absent from Table 4-1 - so the record's warning that a real budget is worse than the table is supported. ADI p3 carries all five terms as separate rows (initial output voltage error 0.02 pct B grade, TC 2 ppm per C, solder heat shift 0.02 pct, hysteresis 50 ppm, long-term drift 25 ppm, output voltage noise 1.0 uV p-p), which is what the record claims of it. Nothing to refute."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

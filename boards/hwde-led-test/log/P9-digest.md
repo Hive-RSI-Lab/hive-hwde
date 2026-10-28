@@ -1,0 +1,3 @@
+- P9 DFM: fab_export (JLC gerbers + drill, zipped), bom_cpl (BOM/CPL/prebuy, 4/4 LCSC after refdes added to parts.json); dfm gate PASS 0/0.
+- Extended parts in prebuy: D1 C12624, J1 C492401.
+- Stopped before P10 (ordering is the person's).

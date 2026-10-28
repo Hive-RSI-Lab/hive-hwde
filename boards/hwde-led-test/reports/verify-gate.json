@@ -1,0 +1,112 @@
+{
+  "script": "gate",
+  "gate": "verify",
+  "phase": "P8",
+  "tool": "verify",
+  "input": "/work/boards/hwde-led-test/kicad/hwde-led-test.kicad_pcb",
+  "input_digest": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+  "status": "pass",
+  "criteria": {
+    "fail_severities": [
+      "error"
+    ],
+    "max_count": 0
+  },
+  "counts": {
+    "total": 2,
+    "by_severity": {
+      "warning": 2
+    },
+    "by_source": {
+      "check_route_style": 1,
+      "check_ratings": 1
+    },
+    "by_check": {
+      "check_return_path": 0,
+      "check_current": 0,
+      "check_decoupling": 0,
+      "check_diffpair": 0,
+      "check_creepage": 0,
+      "check_thermal": 0,
+      "check_silk": 0,
+      "check_route_style": 1,
+      "check_mating": 0,
+      "check_pdn": 0,
+      "check_ratings": 1,
+      "check_bom_sync": 0,
+      "check_mate_pins": 0,
+      "check_model_paths": 0
+    }
+  },
+  "failing_count": 0,
+  "failing": [],
+  "coverage": {
+    "strict": false,
+    "required": [
+      "check_return_path",
+      "check_current",
+      "check_decoupling",
+      "check_diffpair",
+      "check_creepage",
+      "check_thermal",
+      "check_silk",
+      "check_route_style",
+      "check_mating",
+      "check_pdn",
+      "check_ratings",
+      "check_bom_sync",
+      "check_mate_pins",
+      "check_model_paths"
+    ],
+    "ran": [
+      "check_return_path",
+      "check_current",
+      "check_decoupling",
+      "check_diffpair",
+      "check_creepage",
+      "check_thermal",
+      "check_silk",
+      "check_route_style",
+      "check_mating",
+      "check_pdn",
+      "check_ratings",
+      "check_bom_sync",
+      "check_mate_pins",
+      "check_model_paths"
+    ],
+    "passed": [
+      "check_return_path",
+      "check_current",
+      "check_decoupling",
+      "check_diffpair",
+      "check_creepage",
+      "check_thermal",
+      "check_silk",
+      "check_route_style",
+      "check_mating",
+      "check_pdn",
+      "check_ratings",
+      "check_bom_sync",
+      "check_mate_pins",
+      "check_model_paths"
+    ],
+    "failed": [],
+    "waived": [],
+    "not_applicable": {},
+    "skipped_error": {}
+  },
+  "record_result": {
+    "ok": true,
+    "recorded": true,
+    "workspace": "/work/boards/hwde-led-test",
+    "gate": "verify",
+    "status": "pass",
+    "attempts": 5,
+    "inputs": {
+      "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
+      "decoupling": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
+      "waivers": null
+    }
+  }
+}

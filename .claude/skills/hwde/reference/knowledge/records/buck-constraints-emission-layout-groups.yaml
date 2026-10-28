@@ -1,0 +1,99 @@
+id: buck-constraints-emission-layout-groups
+classes: [constraints-emission]
+applies:
+  topologies: [buck]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  thermal_entry: "emit a copper-area target with the watts - RthetaJA is set by area, layer count and via count, and the tabulated value is not a design number"
+  thermal_entry_states_stack: "say which layer count and copper weight the assumed RthetaJA came from"
+  placement_groups: "three, not one - hot loop (IC + C_IN + HF bypass at VIN/PGND), gate-drive caps (C_BOOT at BOOT-SW, C_VCC at VCC-GND), FB divider at the FB pin"
+  route_facts: "plane continuity under the hot loop, the SW node and the inductor; FB sense taken at the output bank and kept off the SW corridor"
+  footprint_fact: "the exposed-pad via array is part of the land pattern, not a DFM afterthought"
+prose: >
+  What a buck block must hand downstream beyond the generic power,
+  thermal and blocks entries, because nothing later can infer it. (1) The
+  thermal entry needs a COPPER-AREA target next to the watts: effective
+  RthetaJA is set by copper area, layer count and the number of vias under
+  the pad, the datasheet's tabulated figure is explicitly not a design
+  number, and the vendor's area curve is drawn for a four-layer 2/1/1/2 oz
+  stack - so a board with a different stack must state its own assumption
+  or the temperature rise is fiction. (2) Layout notes must produce THREE
+  placement groups, not one: the hot loop (IC plus C_IN plus the HF bypass
+  hard against the VIN and PGND pins), the gate-drive capacitors (C_BOOT
+  across BOOT-SW, C_VCC across VCC-GND, each at its own pins), and the FB
+  divider at the FB pin with its sense connection taken at the output
+  bank. A placer told only about the hot loop will happily scatter the
+  other two. (3) Emit copper CONTINUITY as a route fact rather than a
+  hope: no route may cross the ground pour under the hot loop, the SW node
+  or the inductor, because a cut there was measured to cost the entire
+  benefit of the plane. (4) The exposed-pad via array is a land-pattern
+  fact that must travel with the footprint, since it is simultaneously the
+  thermal path and the ground reference.
+sources:
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 7
+    section: "7.4 Thermal Information"
+    note: >
+      RthetaJA 42.9 C/W for the 8-pin DDA package with the explicit note
+      that it is only valid for comparison with other packages, was
+      simulated on a 4-layer JEDEC board, and can not be used for design
+      purposes - the reason a thermal entry cannot be built from the
+      datasheet table alone.
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 25
+    section: "9.2.2.11 Maximum Ambient Temperature, Figure 9-3"
+    note: >
+      Effective RthetaJA depends on power dissipation, air flow, PCB area,
+      copper heat-sink area, the number of thermal vias under the package
+      and adjacent component placement; Figure 9-3's curve (about 43 C/W
+      at a few cm2 to about 28 C/W at 20 cm2) is captioned as per-layer
+      copper area on a four-layer board with 2 oz outers and 1 oz inners.
+      Equation 11 turns RthetaJA and ambient into the maximum output
+      current, which is the number a thermal entry is really asserting.
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 33
+    section: "10.1 Layout Guidelines, rules 1-4, 6, 9"
+    note: >
+      The numbered rules that become placement groups and route facts:
+      input capacitors as close as possible to the VIN and GND terminals
+      (rule 1); the VCC bypass close to the VCC pin (rule 2); C_BOOT close
+      with short wide traces to BOOT and SW (rule 3); the feedback divider
+      and C_FF physically close to the FB pin with the longer Vout
+      connection kept away from any noise source such as SW (rule 4); the
+      thermal pad soldered to the ground plane as heatsink and electrical
+      ground (rule 6); switch-node copper short, wide and small in total
+      area (rule 9).
+  - file: reference/knowledge/sources/snva721a.pdf
+    page: 6
+    section: "2.4 Ground Shielding, Figures 11 and 14"
+    note: >
+      The four-layer board whose ground planes carry a rectangular cut
+      right under the SW node measured 33.5 dBuV/m against 34 dBuV/m for
+      the two-layer board with no shielding at all - i.e. a break in the
+      pour under the noisy node discards the benefit of the plane. This is
+      why plane continuity has to be emitted as an explicit route
+      constraint rather than left to the router.
+  - file: reference/knowledge/sources/snva721a.pdf
+    page: 5
+    section: "2.3 Minimize Area of Gate Driver Loops, Figure 8"
+    note: >
+      C_BOOT (BOOT to SW) and C_VCC (VCC to GND) are separate high-di/dt
+      gate-driver loops that must be placed as close as possible to their
+      own pins with short wide traces - the second placement group, which
+      a hot-loop-only constraint would miss.
+status: active
+origin: research:block-buck-1
+level: principle
+maturity: approved
+generalizes: []
+verification: {by: "second-reader", date: "2026-08-15", note: "Re-read lmr33630 p7, p25 and p33, plus snva721a p5 and p6. p7 and p25 support the thermal-entry demand exactly: the 42.9 C/W is captioned only valid for comparison with other packages and can not be used for design purposes; 9.2.2.11 names power dissipation, PCB area, copper heat-sink area, the number of thermal vias under the package and adjacent component placement as the effective RthetaJA drivers; Figure 9-3 is captioned as per-layer copper area on a four-layer board with 2 oz outers and 1 oz inners; and Equation 11 turns RthetaJA and ambient into the maximum output current, which is what a thermal entry really asserts. p33 rules 1, 2, 3, 4, 6 and 9 are precisely the placement groups and route facts claimed, snva721a p5 Figure 8 is the separate gate-drive group, and snva721a p6 Figures 11 and 14 give the 33.5 versus 34 dBuV/m cut-under-SW result behind emitting plane continuity as an explicit route constraint. On the level question: this record governs the SHAPE of what a buck block hands downstream, and none of the P2 dimensions bounds emit a copper-area target with the stack, emit more than one placement group, emit continuity as a route fact, or the pad via array travels with the land pattern. The gap asks constraints-emission at min_level principle and the record meets it without inventing a filler dimension. The CBOOT/CVCC group list is integrated-fet flavoured, but the emitted rule (do not collapse layout guidance into the hot loop alone) is general, so no envelope is owed."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

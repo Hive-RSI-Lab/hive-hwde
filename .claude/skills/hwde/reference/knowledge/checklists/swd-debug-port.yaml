@@ -1,0 +1,113 @@
+# Coverage checklist for an ARM Serial Wire Debug (SWD) port block: the
+# connector that hands a debug probe the target's clock, data, reset and rail.
+# First research pass on this topology (block-swd-debug-port-1, bb-mcu).
+# Written for the GENERAL case, not for bb-mcu's 5-pin 0.1 in header - the
+# connector kind, probe kind and keying are operating-point dims, not part of
+# what a designer must hold.
+#
+# Rows selection / sequencing / emi are filled by this pass's records.
+# Rows return-path / esd / decoupling / constraints-emission are honest GAPS:
+# nothing in the library covers them for a debug port yet, and this board's
+# scope tier (block-only) excludes protection, so no record here may be read
+# as ruling that a debug header does not need them.
+id: swd-debug-port
+kind: coverage-checklist
+applies:
+  topologies: [swd-debug-port]
+requires:
+  - class: selection
+    min_level: topology
+    note: >
+      The connector and what hangs on its pins: pin count, pitch, keying,
+      which lines are brought out, and whether ANY external pull, pull-down
+      or series part is needed - which the target silicon's own internal
+      terminations decide, not the board. On an STM32 target the connector
+      defaults to ST's STDC14 (record swd-debug-port-stm32-stdc14-default);
+      a TC2030 or a 0.1 in header only when the brief names one.
+  - class: sequencing
+    min_level: topology
+    note: >
+      The reset path and pin ownership over time: whether reset is on the
+      header at all (the SWD pins become ordinary GPIO once firmware claims
+      them), the reset pin's internal pull, its input filter, and the pulse
+      width and level a probe must produce to be taken.
+  - class: emi
+    min_level: topology
+    note: >
+      What the port's EDGES demand of layout: the target's own tr/tf against
+      the interconnect's propagation delay is what decides series
+      termination, an impedance target, and any length limit. The datasheet
+      I/O AC table publishes the edge; the board supplies the length.
+  - class: return-path
+    min_level: principle
+    note: >
+      GAP. How many ground positions the header needs and where they sit
+      relative to the clock and data pins, and what reference the run
+      crosses - on a 2-layer board especially. The standard Cortex connector
+      spends 4 of 10 positions on GND; no record states the rule.
+  - class: esd
+    min_level: topology
+    note: >
+      GAP. The connector is user-touched and cable-facing and its pins go
+      straight to MCU I/O. The strike path, where any protection part sits,
+      and what it costs the edge are unresearched here.
+  - class: decoupling
+    min_level: topology
+    note: >
+      GAP. The header exports the target's I/O rail to the probe as a
+      voltage reference; what that rail needs at the connector (the
+      cross-vendor figure read here shows 100 nF) is not ruled by any record.
+  - class: constraints-emission
+    min_level: principle
+    note: >
+      GAP. What the block must emit into constraints.json so later stages
+      see it: the blocks entry, the placement/keep-it-short note, and
+      whether a route_critical fact is warranted at all.
+maturity: approved
+sources:
+  - file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf
+    page: 32
+    section: Table 11 note 7
+    note: >
+      Read the footnotes under the pin definitions table: note 7 states that
+      after reset PA13/PA14 are SWDIO/SWCLK alternate functions with the
+      internal pull-up on SWDIO and pull-down on SWCLK activated - the fact
+      that makes the selection row answerable from the datasheet alone.
+  - file: reference/knowledge/sources/infineon-an220270-hardware-design-guide-for-the-traveo-t2g-family-applicationnotes-en.pdf
+    page: 29
+    section: s9.2 / s9.4
+    note: >
+      Read Figure 20 (10-pin Cortex debug connector pinout drawing, with
+      position 7 called out as a KEY with no pin) and section 9.4, which
+      states external termination resistors should not be required when the
+      MCU implements them and that any external one must pull in the same
+      direction as the device - the two facts that set the selection and
+      return-path rows.
+prose: >
+  An SWD debug port is a service interface, not a data path: a small
+  connector that hands a probe the target's clock, data, reset and I/O rail.
+  Before designing one, hold seven things. (1) What the SILICON already
+  implements on those pins - the internal pull directions and values decide
+  whether any external part is needed at all, and a part that disagrees with
+  them makes a divider, not a fix. (2) What the port's EDGES demand of
+  layout - the target's own rise/fall time against the interconnect's
+  propagation delay decides termination, impedance and length, and the
+  datasheet's I/O AC table publishes the edge. (3) The RESET path - whether
+  reset is on the header, its pull, its input filter, and the pulse width
+  and level a probe must produce. (4) The CONNECTOR contract - pin count,
+  pitch, keying, which pins the probe drives and which the target drives,
+  and what a reversed plug does on an unkeyed header. (5) The RETURN -
+  ground positions in the header and the reference under the run. (6) The
+  STRIKE path - the connector is user-touched and cable-facing. (7) What the
+  block emits into constraints.json. Rows 4-7 map to return-path, esd,
+  decoupling and constraints-emission and are open gaps in this library.
+origin: research:block-swd-debug-port-1
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q3; not the owner's own ruling. Approved after a
+    coverage run on the five breadboard boards (bb-buck, bb-mcu, bb-ldo, bb-
+    amp, bb-adc) at the default floor. Lowered to min_level principle
+    because only a principle record can cover them: return-path.

@@ -1,0 +1,1122 @@
+{
+ "version": 2,
+ "board": "hwde-led-test",
+ "workspace_schema": 2,
+ "workspace": "/work/boards/hwde-led-test",
+ "created": "2026-10-28T09:25:11",
+ "updated": "2026-10-28T10:08:43",
+ "phase": "P9",
+ "gates": {
+  "erc": {
+   "phase": "P4",
+   "status": "pass",
+   "attempts": 4,
+   "last": {
+    "ts": "2026-10-28T10:08:43",
+    "status": "pass",
+    "failing_count": 0,
+    "total": 0,
+    "inputs": {
+     "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+     "pro": "json_canonical:e4273b875a1af71d31be97619c9361b8d5f1a06299781c4148aea6f1c8dee338"
+    }
+   },
+   "history": [
+    {
+     "ts": "2026-10-28T09:37:16",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+      "pro": "json_canonical:e4273b875a1af71d31be97619c9361b8d5f1a06299781c4148aea6f1c8dee338"
+     }
+    },
+    {
+     "ts": "2026-10-28T10:00:12",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "sch": "sexpr_no_uuid:4cebfd73edc322ddf30b81775f64b771f75e6b49b759687f432278ca23110ef3",
+      "pro": "json_canonical:e4273b875a1af71d31be97619c9361b8d5f1a06299781c4148aea6f1c8dee338"
+     }
+    },
+    {
+     "ts": "2026-10-28T10:00:21",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+      "pro": "json_canonical:e4273b875a1af71d31be97619c9361b8d5f1a06299781c4148aea6f1c8dee338"
+     }
+    },
+    {
+     "ts": "2026-10-28T10:08:43",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+      "pro": "json_canonical:e4273b875a1af71d31be97619c9361b8d5f1a06299781c4148aea6f1c8dee338"
+     }
+    }
+   ]
+  },
+  "place": {
+   "phase": "P6",
+   "status": "pass",
+   "attempts": 6,
+   "last": {
+    "ts": "2026-10-28T10:05:32",
+    "status": "pass",
+    "failing_count": 0,
+    "total": 0,
+    "inputs": {
+     "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+     "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
+     "decoupling": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
+     "place_waivers": null
+    }
+   },
+   "history": [
+    {
+     "ts": "2026-10-28T09:51:03",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:14cea078587943b7867c5bfb1b0a63601892fe00060d63526b04316dbdfe51cf",
+      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
+      "decoupling": "json_canonical:c156461ca8fe5b4e410206e593718e19ebf76532923b2a38b2b926bc970c87b7",
+      "place_waivers": null
+     }
+    },
+    {
+     "ts": "2026-10-28T09:52:59",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:08adb31bf8b77d5f9776bf8fbbe87ce247824b556bc167f04b1fa41493b3de63",
+      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
+      "decoupling": "json_canonical:c156461ca8fe5b4e410206e593718e19ebf76532923b2a38b2b926bc970c87b7",
+      "place_waivers": null
+     }
+    },
+    {
+     "ts": "2026-10-28T09:54:12",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:1b30e344a8d27ef3ecd1f9761e22867b9c76a1068e3559d43ec5f12827878434",
+      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
+      "decoupling": "json_canonical:c156461ca8fe5b4e410206e593718e19ebf76532923b2a38b2b926bc970c87b7",
+      "place_waivers": null
+     }
+    },
+    {
+     "ts": "2026-10-28T10:04:36",
+     "status": "fail",
+     "failing_count": 1,
+     "total": 1,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:3b9d74706dda3fc536d857cd4c0da80c3fbd629e529d14cb83884fed3c05220d",
+      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
+      "decoupling": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
+      "place_waivers": null
+     }
+    },
+    {
+     "ts": "2026-10-28T10:04:47",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:13126d2acfcd9027380d92485394b77d98bf7fe8a0a52913dbe7f39a822de702",
+      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
+      "decoupling": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
+      "place_waivers": null
+     }
+    },
+    {
+     "ts": "2026-10-28T10:05:32",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
+      "decoupling": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
+      "place_waivers": null
+     }
+    }
+   ]
+  },
+  "drc_routed": {
+   "phase": "P7",
+   "status": "pass",
+   "attempts": 3,
+   "last": {
+    "ts": "2026-10-28T10:05:38",
+    "status": "pass",
+    "failing_count": 0,
+    "total": 0,
+    "inputs": {
+     "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+     "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+     "pro": "json_canonical:e4273b875a1af71d31be97619c9361b8d5f1a06299781c4148aea6f1c8dee338",
+     "dru": "text_eol:d8ebadd7e1821eed90c01ad39683046c5fb68bb2272f3906811d2453b3aa31f0"
+    }
+   },
+   "history": [
+    {
+     "ts": "2026-10-28T09:59:09",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:cf8253f5faf4218e798ea78814541033b8f03bce9a4497c45623842c383dfd25",
+      "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+      "pro": "json_canonical:73f67bf895966a189170a831bad7beb9b283eceb92e8bbb45da6436fd0d6358d",
+      "dru": "text_eol:d8ebadd7e1821eed90c01ad39683046c5fb68bb2272f3906811d2453b3aa31f0"
+     }
+    },
+    {
+     "ts": "2026-10-28T10:00:22",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:cf8253f5faf4218e798ea78814541033b8f03bce9a4497c45623842c383dfd25",
+      "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+      "pro": "json_canonical:e4273b875a1af71d31be97619c9361b8d5f1a06299781c4148aea6f1c8dee338",
+      "dru": "text_eol:d8ebadd7e1821eed90c01ad39683046c5fb68bb2272f3906811d2453b3aa31f0"
+     }
+    },
+    {
+     "ts": "2026-10-28T10:05:38",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+      "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+      "pro": "json_canonical:e4273b875a1af71d31be97619c9361b8d5f1a06299781c4148aea6f1c8dee338",
+      "dru": "text_eol:d8ebadd7e1821eed90c01ad39683046c5fb68bb2272f3906811d2453b3aa31f0"
+     }
+    }
+   ]
+  },
+  "verify": {
+   "phase": "P8",
+   "status": "pass",
+   "attempts": 5,
+   "last": {
+    "ts": "2026-10-28T10:05:41",
+    "status": "pass",
+    "failing_count": 0,
+    "total": 2,
+    "inputs": {
+     "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+     "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
+     "decoupling": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
+     "waivers": null
+    }
+   },
+   "history": [
+    {
+     "ts": "2026-10-28T09:59:37",
+     "status": "fail",
+     "failing_count": 1,
+     "total": 3,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:cf8253f5faf4218e798ea78814541033b8f03bce9a4497c45623842c383dfd25",
+      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
+      "decoupling": "json_canonical:c156461ca8fe5b4e410206e593718e19ebf76532923b2a38b2b926bc970c87b7",
+      "waivers": null
+     }
+    },
+    {
+     "ts": "2026-10-28T10:00:13",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 2,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:cf8253f5faf4218e798ea78814541033b8f03bce9a4497c45623842c383dfd25",
+      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
+      "decoupling": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
+      "waivers": null
+     }
+    },
+    {
+     "ts": "2026-10-28T10:00:25",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 2,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:cf8253f5faf4218e798ea78814541033b8f03bce9a4497c45623842c383dfd25",
+      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
+      "decoupling": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
+      "waivers": null
+     }
+    },
+    {
+     "ts": "2026-10-28T10:01:06",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 2,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:cf8253f5faf4218e798ea78814541033b8f03bce9a4497c45623842c383dfd25",
+      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
+      "decoupling": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
+      "waivers": null
+     }
+    },
+    {
+     "ts": "2026-10-28T10:05:41",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 2,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
+      "decoupling": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
+      "waivers": null
+     }
+    }
+   ]
+  },
+  "dfm": {
+   "phase": "P9",
+   "status": "pass",
+   "attempts": 1,
+   "last": {
+    "ts": "2026-10-28T10:07:12",
+    "status": "pass",
+    "failing_count": 0,
+    "total": 0,
+    "inputs": {
+     "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+     "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+     "parts": null
+    }
+   },
+   "history": [
+    {
+     "ts": "2026-10-28T10:07:12",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+      "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+      "parts": null
+     }
+    }
+   ]
+  }
+ },
+ "human": {},
+ "artifacts": {
+  "sch": {
+   "path": "kicad/hwde-led-test.kicad_sch",
+   "kind": "sch",
+   "sha256": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+   "hashed": "2026-10-28T10:08:43"
+  },
+  "pro": {
+   "path": "kicad/hwde-led-test.kicad_pro",
+   "kind": "pro",
+   "sha256": "json_canonical:e4273b875a1af71d31be97619c9361b8d5f1a06299781c4148aea6f1c8dee338",
+   "hashed": "2026-10-28T10:08:43"
+  },
+  "pcb": {
+   "path": "kicad/hwde-led-test.kicad_pcb",
+   "kind": "pcb",
+   "sha256": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+   "hashed": "2026-10-28T10:07:12"
+  },
+  "constraints": {
+   "path": "kicad/constraints.json",
+   "kind": "constraints",
+   "sha256": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
+   "hashed": "2026-10-28T10:05:41"
+  },
+  "decoupling": {
+   "path": "kicad/decoupling.json",
+   "kind": "decoupling",
+   "sha256": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
+   "hashed": "2026-10-28T10:05:41"
+  },
+  "place_waivers": {
+   "path": "reports/place-waivers.json",
+   "kind": "place_waivers",
+   "sha256": null,
+   "hashed": "2026-10-28T10:05:32"
+  },
+  "gerbers": {
+   "path": "fab/hwde-led-test_gerbers.zip",
+   "kind": "gerbers",
+   "sha256": null,
+   "hashed": "2026-10-28T09:52:42",
+   "stale": [
+    {
+     "ts": "2026-10-28T09:52:42",
+     "edit_class": "outline_change",
+     "refs": [],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-28T09:53:17",
+     "edit_class": "outline_change",
+     "refs": [],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-28T09:53:57",
+     "edit_class": "outline_change",
+     "refs": [],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-28T10:04:28",
+     "edit_class": "outline_change",
+     "refs": [],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-28T10:04:47",
+     "edit_class": "outline_change",
+     "refs": [],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-28T10:05:29",
+     "edit_class": "outline_change",
+     "refs": [],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-28T10:05:30",
+     "edit_class": "silk_edit",
+     "refs": [
+      "J1",
+      "C1"
+     ],
+     "human_hold": 0
+    }
+   ]
+  },
+  "dru": {
+   "path": "kicad/hwde-led-test.kicad_dru",
+   "kind": "dru",
+   "sha256": "text_eol:d8ebadd7e1821eed90c01ad39683046c5fb68bb2272f3906811d2453b3aa31f0",
+   "hashed": "2026-10-28T10:05:38"
+  },
+  "waivers": {
+   "path": "reports/verify-waivers.json",
+   "kind": "waivers",
+   "sha256": null,
+   "hashed": "2026-10-28T10:05:41"
+  },
+  "parts": {
+   "path": "kicad/parts.json",
+   "kind": "parts",
+   "sha256": null,
+   "hashed": "2026-10-28T10:07:12"
+  }
+ },
+ "open_issues": [],
+ "next_issue_id": 1,
+ "budgets": {
+  "fix_loops": {
+   "erc": 3,
+   "place": 3,
+   "drc_routed": 3,
+   "verify": 3,
+   "dfm": 3
+  },
+  "freerouting_retries": 2,
+  "place_edit_iterations": 8,
+  "research": {
+   "per_run": 6,
+   "depth_per_gap": 4
+  },
+  "cross_stage_spawns": {
+   "P4": 2,
+   "P5": 2,
+   "P6": 2,
+   "P7": 2,
+   "P8": 2,
+   "P9": 2
+  }
+ },
+ "decisions": [
+  {
+   "what": "P1 research roster empty: no scout, reference-design, interface or power researcher",
+   "why": "trivially powered (5 V in, one LED branch at ~5 mA); a header, an LED, a resistor and a cap need no research",
+   "phase": "P1",
+   "ts": "2026-10-28T09:26:39"
+  },
+  {
+   "what": "designing under coverage gap: block:B3 led-indicator (no coverage checklist exists for this topology); research not launched",
+   "why": "a single LED + series resistor at 4.3 mA from 5 V is textbook; a research pass would build a checklist for a block with no layout risk. Presented at H1 for the person to overrule",
+   "phase": "P2",
+   "ts": "2026-10-28T09:28:52"
+  },
+  {
+   "what": "D1 KT-0603G (C12624, Extended, Vf 3.1 V listing value); R1 470R (C23179) not 680R",
+   "why": "brief asks for an 0603 green LED and there is no Basic one; at Vf 3.1 V 680R gives 2.4-2.8 mA, below the 3 mA floor, 470R gives 3.5-4.6 mA. Vf is the LCSC listing, the datasheet would not download",
+   "phase": "P3",
+   "ts": "2026-10-28T09:31:06"
+  },
+  {
+   "what": "hand edit: widened the F.CrtYd of C0603, R0603, LED0603-RD from +-0.80x+-0.40 to +-1.40x+-0.70 mm",
+   "why": "the EasyEDA courtyards were the body outline and did not enclose the pads (pads reach +-1.15 x +-0.45); IPC courtyard = pads + 0.25 mm, so placement legality and DRC courtyard checks are not lenient",
+   "phase": "P3",
+   "ts": "2026-10-28T09:32:39"
+  },
+  {
+   "what": "fp_verify and lib_pin_types not run; D1 cathode = pad 1 from symbol K pin + silk chamfer, not datasheet",
+   "why": "no IC on the board, so no datasheet extractions to diff against; the KT-0603G datasheet PDF would not download",
+   "phase": "P3",
+   "ts": "2026-10-28T09:32:40"
+  },
+  {
+   "what": "outline fit 13.05 x 9.08 mm, margin 2.0, corner r 2.0",
+   "why": "margin 1.0/1.5 clipped the J1/R1/D1 refdes silk at the edge; 2.0 keeps all silk on the board and stays under the brief's ~15 x 12 mm",
+   "phase": "P6",
+   "ts": "2026-10-28T09:54:53"
+  },
+  {
+   "what": "parts.json lines now carry refdes and the LCSC attributes",
+   "why": "bom_cpl maps ref->LCSC through refdes; without it BOM.csv had no LCSC column (the schematic reviewer's warning 2)",
+   "phase": "P9",
+   "ts": "2026-10-28T10:07:23"
+  },
+  {
+   "what": "stop at P9: no order, no quote, no board guide",
+   "why": "in the Hive ordering at JLCPCB or any purchase is the person's; this is a pipeline test board, not for ordering",
+   "phase": "P10",
+   "ts": "2026-10-28T10:07:23"
+  }
+ ],
+ "edits": [
+  {
+   "ts": "2026-10-28T09:52:42",
+   "class": "outline_change",
+   "refs": [],
+   "note": "outline -> 11.05x7.08 mm (fit)",
+   "human_hold": 2,
+   "gates": [
+    "place",
+    "drc",
+    "drc_routed",
+    "verify",
+    "dfm"
+   ],
+   "gates_marked": [
+    "place"
+   ],
+   "stale_artifacts": [
+    "gerbers"
+   ]
+  },
+  {
+   "ts": "2026-10-28T09:53:17",
+   "class": "outline_change",
+   "refs": [],
+   "note": "outline -> 12.05x8.08 mm (fit)",
+   "human_hold": 2,
+   "gates": [
+    "place",
+    "drc",
+    "drc_routed",
+    "verify",
+    "dfm"
+   ],
+   "gates_marked": [
+    "place"
+   ],
+   "stale_artifacts": [
+    "gerbers"
+   ]
+  },
+  {
+   "ts": "2026-10-28T09:53:57",
+   "class": "outline_change",
+   "refs": [],
+   "note": "outline -> 13.05x9.08 mm (fit)",
+   "human_hold": 2,
+   "gates": [
+    "place",
+    "drc",
+    "drc_routed",
+    "verify",
+    "dfm"
+   ],
+   "gates_marked": [
+    "place"
+   ],
+   "stale_artifacts": [
+    "gerbers"
+   ]
+  },
+  {
+   "ts": "2026-10-28T10:04:28",
+   "class": "outline_change",
+   "refs": [],
+   "note": "outline -> 15.0x11.0 mm (fixed)",
+   "human_hold": 2,
+   "gates": [
+    "place",
+    "drc",
+    "drc_routed",
+    "verify",
+    "dfm"
+   ],
+   "gates_marked": [
+    "place",
+    "drc_routed",
+    "verify"
+   ],
+   "stale_artifacts": [
+    "gerbers"
+   ]
+  },
+  {
+   "ts": "2026-10-28T10:04:47",
+   "class": "outline_change",
+   "refs": [],
+   "note": "outline -> 13.4x10.5 mm (fixed)",
+   "human_hold": 2,
+   "gates": [
+    "place",
+    "drc",
+    "drc_routed",
+    "verify",
+    "dfm"
+   ],
+   "gates_marked": [
+    "place",
+    "drc_routed",
+    "verify"
+   ],
+   "stale_artifacts": [
+    "gerbers"
+   ]
+  },
+  {
+   "ts": "2026-10-28T10:05:29",
+   "class": "outline_change",
+   "refs": [],
+   "note": "13.05x9.08 -> 13.4x10.5 mm: JLC assembly minimum is 10 mm (verify-reviewer warning 2)",
+   "human_hold": 2,
+   "gates": [
+    "place",
+    "drc",
+    "drc_routed",
+    "verify",
+    "dfm"
+   ],
+   "gates_marked": [
+    "place",
+    "drc_routed",
+    "verify"
+   ],
+   "stale_artifacts": [
+    "gerbers"
+   ]
+  },
+  {
+   "ts": "2026-10-28T10:05:30",
+   "class": "silk_edit",
+   "refs": [
+    "J1",
+    "C1"
+   ],
+   "note": "J1 +/- legend, J1 ref above the header, C1 ref beside C1 (verify-reviewer warnings 1 and 3)",
+   "human_hold": 0,
+   "gates": [
+    "drc_routed",
+    "verify",
+    "dfm"
+   ],
+   "gates_marked": [
+    "drc_routed",
+    "verify"
+   ],
+   "stale_artifacts": [
+    "gerbers"
+   ]
+  }
+ ],
+ "spawns": [
+  {
+   "ts": "2026-10-28T09:26:37",
+   "role": "requirements-analyst",
+   "model": "sonnet",
+   "effort": "default",
+   "phase": "P0",
+   "tokens": 16128,
+   "note": "tier fable/high; sonnet for a 3-part test board, recorded"
+  },
+  {
+   "ts": "2026-10-28T09:28:52",
+   "role": "architect",
+   "model": "sonnet",
+   "phase": "P2",
+   "tokens": 28302,
+   "note": "tier fable/high; sonnet for a 4-part test board"
+  },
+  {
+   "ts": "2026-10-28T09:31:06",
+   "role": "part-sourcer",
+   "model": "sonnet",
+   "phase": "P3",
+   "tokens": 28202,
+   "note": "tier sonnet/high"
+  },
+  {
+   "ts": "2026-10-28T09:32:39",
+   "role": "librarian",
+   "model": "sonnet",
+   "phase": "P3",
+   "tokens": 26453,
+   "note": "tier sonnet/medium"
+  },
+  {
+   "ts": "2026-10-28T09:39:21",
+   "role": "schematic-block",
+   "model": "opus",
+   "phase": "P4",
+   "tokens": 56893,
+   "note": "tier fable/medium; opus"
+  },
+  {
+   "ts": "2026-10-28T09:39:25",
+   "role": "schematic-reviewer",
+   "model": "opus",
+   "phase": "P4",
+   "tokens": 43426,
+   "note": "tier fable/high; opus, fresh context"
+  },
+  {
+   "ts": "2026-10-28T09:54:52",
+   "role": "placement",
+   "model": "opus",
+   "phase": "P6",
+   "tokens": 32798,
+   "note": "tier fable/high; opus"
+  },
+  {
+   "ts": "2026-10-28T09:59:32",
+   "role": "router",
+   "model": "opus",
+   "phase": "P7",
+   "tokens": 39492,
+   "note": "tier fable/max; opus (4-part board)"
+  },
+  {
+   "ts": "2026-10-28T10:06:26",
+   "role": "verify-reviewer",
+   "model": "opus",
+   "phase": "P8",
+   "tokens": 53088,
+   "note": "tier fable/high; opus, fresh context"
+  }
+ ],
+ "history": [
+  {
+   "ts": "2026-10-28T09:25:11",
+   "event": "init",
+   "board": "hwde-led-test",
+   "phase": "P0"
+  },
+  {
+   "ts": "2026-10-28T09:26:37",
+   "event": "spawn",
+   "role": "requirements-analyst",
+   "model": "sonnet"
+  },
+  {
+   "ts": "2026-10-28T09:26:38",
+   "event": "phase",
+   "phase": "P1",
+   "prev": "P0"
+  },
+  {
+   "ts": "2026-10-28T09:26:39",
+   "event": "decision",
+   "what": "P1 research roster empty: no scout, reference-design, interface or power researcher"
+  },
+  {
+   "ts": "2026-10-28T09:26:41",
+   "event": "phase",
+   "phase": "P2",
+   "prev": "P1"
+  },
+  {
+   "ts": "2026-10-28T09:28:52",
+   "event": "spawn",
+   "role": "architect",
+   "model": "sonnet"
+  },
+  {
+   "ts": "2026-10-28T09:28:52",
+   "event": "decision",
+   "what": "designing under coverage gap: block:B3 led-indicator (no coverage checklist exists for this topology); research not launched"
+  },
+  {
+   "ts": "2026-10-28T09:29:14",
+   "event": "phase",
+   "phase": "P3",
+   "prev": "P2"
+  },
+  {
+   "ts": "2026-10-28T09:31:06",
+   "event": "spawn",
+   "role": "part-sourcer",
+   "model": "sonnet"
+  },
+  {
+   "ts": "2026-10-28T09:31:06",
+   "event": "decision",
+   "what": "D1 KT-0603G (C12624, Extended, Vf 3.1 V listing value); R1 470R (C23179) not 680R"
+  },
+  {
+   "ts": "2026-10-28T09:32:39",
+   "event": "spawn",
+   "role": "librarian",
+   "model": "sonnet"
+  },
+  {
+   "ts": "2026-10-28T09:32:39",
+   "event": "decision",
+   "what": "hand edit: widened the F.CrtYd of C0603, R0603, LED0603-RD from +-0.80x+-0.40 to +-1.40x+-0.70 mm"
+  },
+  {
+   "ts": "2026-10-28T09:32:40",
+   "event": "decision",
+   "what": "fp_verify and lib_pin_types not run; D1 cathode = pad 1 from symbol K pin + silk chamfer, not datasheet"
+  },
+  {
+   "ts": "2026-10-28T09:32:52",
+   "event": "phase",
+   "phase": "P4",
+   "prev": "P3"
+  },
+  {
+   "ts": "2026-10-28T09:37:16",
+   "event": "gate",
+   "gate": "erc",
+   "status": "pass",
+   "attempt": 1,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T09:39:21",
+   "event": "spawn",
+   "role": "schematic-block",
+   "model": "opus"
+  },
+  {
+   "ts": "2026-10-28T09:39:25",
+   "event": "spawn",
+   "role": "schematic-reviewer",
+   "model": "opus"
+  },
+  {
+   "ts": "2026-10-28T09:44:22",
+   "event": "phase",
+   "phase": "P5",
+   "prev": "P4"
+  },
+  {
+   "ts": "2026-10-28T09:44:51",
+   "event": "phase",
+   "phase": "P6",
+   "prev": "P5"
+  },
+  {
+   "ts": "2026-10-28T09:51:03",
+   "event": "gate",
+   "gate": "place",
+   "status": "pass",
+   "attempt": 1,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T09:52:42",
+   "event": "edit",
+   "edit_class": "outline_change",
+   "refs": [],
+   "human_hold": 2
+  },
+  {
+   "ts": "2026-10-28T09:52:59",
+   "event": "gate",
+   "gate": "place",
+   "status": "pass",
+   "attempt": 2,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T09:53:17",
+   "event": "edit",
+   "edit_class": "outline_change",
+   "refs": [],
+   "human_hold": 2
+  },
+  {
+   "ts": "2026-10-28T09:53:57",
+   "event": "edit",
+   "edit_class": "outline_change",
+   "refs": [],
+   "human_hold": 2
+  },
+  {
+   "ts": "2026-10-28T09:54:12",
+   "event": "gate",
+   "gate": "place",
+   "status": "pass",
+   "attempt": 3,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T09:54:52",
+   "event": "spawn",
+   "role": "placement",
+   "model": "opus"
+  },
+  {
+   "ts": "2026-10-28T09:54:53",
+   "event": "decision",
+   "what": "outline fit 13.05 x 9.08 mm, margin 2.0, corner r 2.0"
+  },
+  {
+   "ts": "2026-10-28T09:54:55",
+   "event": "phase",
+   "phase": "P7",
+   "prev": "P6"
+  },
+  {
+   "ts": "2026-10-28T09:55:10",
+   "event": "snapshot",
+   "label": "pre-route",
+   "files": 1
+  },
+  {
+   "ts": "2026-10-28T09:58:35",
+   "event": "snapshot",
+   "label": "post-route-auto",
+   "files": 1
+  },
+  {
+   "ts": "2026-10-28T09:58:49",
+   "event": "snapshot",
+   "label": "pre-snap45",
+   "files": 1
+  },
+  {
+   "ts": "2026-10-28T09:59:09",
+   "event": "gate",
+   "gate": "drc_routed",
+   "status": "pass",
+   "attempt": 1,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T09:59:32",
+   "event": "spawn",
+   "role": "router",
+   "model": "opus"
+  },
+  {
+   "ts": "2026-10-28T09:59:34",
+   "event": "phase",
+   "phase": "P8",
+   "prev": "P7"
+  },
+  {
+   "ts": "2026-10-28T09:59:37",
+   "event": "gate",
+   "gate": "verify",
+   "status": "fail",
+   "attempt": 1,
+   "failing_count": 1
+  },
+  {
+   "ts": "2026-10-28T10:00:12",
+   "event": "gate",
+   "gate": "erc",
+   "status": "pass",
+   "attempt": 2,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T10:00:13",
+   "event": "gate",
+   "gate": "verify",
+   "status": "pass",
+   "attempt": 2,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T10:00:21",
+   "event": "gate",
+   "gate": "erc",
+   "status": "pass",
+   "attempt": 3,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T10:00:22",
+   "event": "gate",
+   "gate": "drc_routed",
+   "status": "pass",
+   "attempt": 2,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T10:00:25",
+   "event": "gate",
+   "gate": "verify",
+   "status": "pass",
+   "attempt": 3,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T10:01:06",
+   "event": "gate",
+   "gate": "verify",
+   "status": "pass",
+   "attempt": 4,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T10:04:25",
+   "event": "snapshot",
+   "label": "pre-h4-fixes",
+   "files": 1
+  },
+  {
+   "ts": "2026-10-28T10:04:28",
+   "event": "edit",
+   "edit_class": "outline_change",
+   "refs": [],
+   "human_hold": 2
+  },
+  {
+   "ts": "2026-10-28T10:04:36",
+   "event": "gate",
+   "gate": "place",
+   "status": "fail",
+   "attempt": 4,
+   "failing_count": 1
+  },
+  {
+   "ts": "2026-10-28T10:04:44",
+   "event": "restore",
+   "label": "pre-h4-fixes",
+   "files": 1
+  },
+  {
+   "ts": "2026-10-28T10:04:47",
+   "event": "edit",
+   "edit_class": "outline_change",
+   "refs": [],
+   "human_hold": 2
+  },
+  {
+   "ts": "2026-10-28T10:04:47",
+   "event": "gate",
+   "gate": "place",
+   "status": "pass",
+   "attempt": 5,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T10:05:29",
+   "event": "edit",
+   "edit_class": "outline_change",
+   "refs": [],
+   "human_hold": 2
+  },
+  {
+   "ts": "2026-10-28T10:05:30",
+   "event": "edit",
+   "edit_class": "silk_edit",
+   "refs": [
+    "J1",
+    "C1"
+   ],
+   "human_hold": 0
+  },
+  {
+   "ts": "2026-10-28T10:05:32",
+   "event": "gate",
+   "gate": "place",
+   "status": "pass",
+   "attempt": 6,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T10:05:38",
+   "event": "gate",
+   "gate": "drc_routed",
+   "status": "pass",
+   "attempt": 3,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T10:05:41",
+   "event": "gate",
+   "gate": "verify",
+   "status": "pass",
+   "attempt": 5,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T10:06:26",
+   "event": "spawn",
+   "role": "verify-reviewer",
+   "model": "opus"
+  },
+  {
+   "ts": "2026-10-28T10:06:26",
+   "event": "phase",
+   "phase": "P9",
+   "prev": "P8"
+  },
+  {
+   "ts": "2026-10-28T10:07:12",
+   "event": "gate",
+   "gate": "dfm",
+   "status": "pass",
+   "attempt": 1,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T10:07:23",
+   "event": "decision",
+   "what": "parts.json lines now carry refdes and the LCSC attributes"
+  },
+  {
+   "ts": "2026-10-28T10:07:23",
+   "event": "decision",
+   "what": "stop at P9: no order, no quote, no board guide"
+  },
+  {
+   "ts": "2026-10-28T10:08:43",
+   "event": "gate",
+   "gate": "erc",
+   "status": "pass",
+   "attempt": 4,
+   "failing_count": 0
+  }
+ ]
+}

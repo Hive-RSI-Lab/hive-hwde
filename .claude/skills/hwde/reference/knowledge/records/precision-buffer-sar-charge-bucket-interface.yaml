@@ -1,0 +1,103 @@
+id: precision-buffer-sar-charge-bucket-interface
+classes: [selection, feedback]
+applies:
+  topologies: [precision-buffer]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  topology: "series R from the amplifier output, shunt C at the ADC input pin"
+  c_filt_min: "20 * C_SH"
+  r_filt_max: "t_acq / (12 * C_filt)   (12 tau of the filter inside the window)"
+  driver_gbw_min: "4 / (2*pi*R_filt*C_filt)"
+  conflict: "charge-bucket wants small R / large C; anti-aliasing wants a low corner"
+  not_needed_when: "the ADC has an integrated input buffer"
+prose: >
+  An unbuffered SAR wires its capacitor array straight to the pin: input
+  impedance is time-varying and every switch closure kicks a charge transient
+  back at the driver (p22 comparison table; p23 lists the consequences - low
+  output impedance required, must handle charge injection, adequate bandwidth
+  for fast settling). The standard interface is a series R then a shunt C at
+  the ADC pin. The C is a charge bucket that supplies the kick locally so the
+  amplifier never has to; the R limits the kickback current and at the same
+  time isolates the amplifier from that capacitor. TI sizes both from the
+  CONVERTER, not the signal: C_FLT >= 20*C_SH (18 pF part gives 360 pF, use
+  470 pF), then R_FLT = t_ACQ/(12*C_FLT) so the filter itself settles in about
+  12 time constants inside the acquisition window, then require driver
+  GBW > 4*(1/(2*pi*R_FLT*C_FLT)) so the amplifier is not the slow element
+  (p27). The same pair must also anti-alias and the two jobs pull opposite
+  ways (p26); for an unbuffered converter the charge bucket wins, for a
+  buffered-input converter it is not needed at all. Vendor EVM values, p28:
+  10 ohm + 1 nF at the unbuffered part, 50 ohm + 470 pF + 47 pF at the
+  buffered one. Confirm the RC and the driver in simulation (p27).
+sources:
+  - file: reference/knowledge/sources/sprpeo2.pdf
+    page: 22
+    section: "Buffered vs. Unbuffered Architectures"
+    note: >
+      Side-by-side figure and table: unbuffered = direct capacitor array
+      connection, time-varying input impedance, significant charge injection,
+      driver must handle transient currents, settling time critical.
+  - file: reference/knowledge/sources/sprpeo2.pdf
+    page: 23
+    section: "Understanding the Challenge"
+    note: >
+      Unbuffered challenge panel: SAR capacitor array switching creates
+      transient input currents (kickback) the driver must settle; impact on
+      driver listed as low output impedance, charge injection, bandwidth, and
+      a complex charge-bucket + anti-aliasing filter.
+  - file: reference/knowledge/sources/sprpeo2.pdf
+    page: 26
+    section: "Step 2 - Input Filter Design"
+    note: >
+      Anti-aliasing vs charge-bucket purposes stated side by side, with the
+      limitation box: a charge bucket may not stop aliasing and a pure
+      anti-aliasing filter may not settle the input; for buffered ADCs the
+      charge bucket is not needed.
+  - file: reference/knowledge/sources/sprpeo2.pdf
+    page: 27
+    section: "ADC Driver Design: Input Filter Design"
+    note: >
+      The sizing method: C_FLT >= 20*C_SH >= 20*18 pF -> 470 pF; practical
+      t_FLT_settle = t_ACQ = 12*tau_FLT so R_FLT = t_ACQ/(12*C_FLT) ~ 12 ohm;
+      minimum driver GBW > 4*(1/(2*pi*R_FLT*C_FLT)); simulation recommended.
+  - file: reference/knowledge/sources/sprpeo2.pdf
+    page: 28
+    section: "Step 2 - Input Filter Design (EVM circuits)"
+    note: >
+      Two EVM schematics: unbuffered ADS9327 with 10 ohm series into 1 nF
+      shunt (charge-bucket priority) versus buffered ADS9227 with 50 ohm into
+      470 pF differential + 47 pF common-mode (anti-aliasing priority).
+  - file: reference/knowledge/sources/sprpeo2.pdf
+    page: 29
+    section: "Complete Design Comparison"
+    note: >
+      Comparison table giving the operating-point context for the numbers:
+      unbuffered needs series R 10-22 ohm, shunt C 470 pF-1 nF, source Z under
+      10 ohm, filter cutoff 15-33 MHz, driver BW 25-30 MHz - all at 16-bit,
+      5 MSPS.
+status: active
+origin: research:block-precision-buffer-1
+level: topology
+envelope:
+  load_kind: {in: [switched-cap]}
+maturity: approved
+generalizes: [precision-buffer-settles-not-bandwidth]
+envelope_note: >
+  Scales with the converter, not the signal - both component values come from
+  C_SH and t_ACQ, so the rule holds wherever the load is a switched capacitor
+  array sampled through a finite window. It stops at a buffered-input ADC,
+  whose internal buffer removes the kickback and makes the charge bucket
+  unnecessary (p26), and there the same RC is sized for anti-aliasing instead.
+  The absolute values quoted (10-22 ohm, 470 pF-1 nF, 15-33 MHz corner) belong
+  to a 16-bit 5 MSPS converter with a 70 ns window (p29) and do not transfer;
+  the ratios and the ordering of the three steps do.
+verification: {by: "research-second-reader", date: "2026-08-16", note: "Re-read sprpeo2 p22, p23, p26, p27, p28, p29 visually. All six citations are exact. p22 buffered vs unbuffered table transcribes verbatim: direct capacitor array connection, time-varying (switching) input impedance, significant charge injection, driver must handle transient currents, settling time critical. p23 unbuffered challenge panel lists impact on driver as requires low output impedance, must handle charge injection, needs adequate bandwidth for fast settling, complex input filter design (charge-bucket plus anti-aliasing). p26 states the two purposes side by side with the limitations box - charge bucket filter might not effectively stop aliasing, pure anti-aliasing filter might not be fast enough to settle the input, and for buffered ADCs charge bucket not needed - which is exactly the records conflict and not_needed_when fields. p27 carries all four formulas as written: C_FLT >= 20*C_SH >= 20*18 pF >= 360 pF taken to 470 pF, practical t_FLT_settle = t_ACQ = 12*tau_FLT, R_FLT = t_ACQ/(12*C_FLT) about 12 ohm, minimum driver GBW > 4*(1/(2*pi*R_FLT*C_FLT)), and confirming the RC combination plus driver in simulation is recommended. p28 EVM schematics match, and 10 ohm plus 1 nF for the unbuffered part is TI own summary line on p27; the record omits the 470 pF differential cap present in both dashed boxes but does not misstate anything. p29 comparison table gives series R 10-22 ohm, shunt C 470 pF-1 nF, source Z under 10 ohm, filter cutoff 15-33 MHz, min driver BW 25-30 MHz, all for the 16-bit 5 MSPS pair named on p24. Envelope load_kind switched-cap is sourced, not inferred - p26 is where the rule stops at a buffered-input ADC - and the envelope_note is honest that the absolute values belong to a 5 MSPS / 70 ns converter and do not transfer while the ratios and the step ordering do. Flagged for the designer rather than refuted: neither this record nor precision-buffer-capacitive-load-isolation says the SAME series resistor has to satisfy both the settling ceiling and the stability optimum, and for this block the two bounds cross - t_acq/(12*C) with t_acq = 9 us gives R <= 750 ohm at 1 nF and <= 1.6 kohm at 470 pF, while sboa418 eq 2 with R_O = 2 kohm and f_gbw = 350 kHz asks for about 1.2 kohm and 2.0 kohm respectively. Neither record over-claims exclusivity (one is a max, one is an optimum) and the checklist requires both classes, so the framing is not wrong, only silent on the collision."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

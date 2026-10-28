@@ -1,0 +1,100 @@
+id: inamp-gain-partition-first-stage
+classes: [selection]
+applies:
+  topologies: [inamp]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  offset_law: "Vos_total_RTI = Vosi + Voso/G1"
+  noise_law: "eN_total_RTI = sqrt(eNi^2 + (eNo/G1)^2)"
+  partition_rule: "raise the FIRST stage's gain to whatever the internal-node ceiling allows, then take the remainder in a later stage"
+  crossover_gain: "G1 = Voso/Vosi (drift) or eNo/eNi (noise) - about 5 for the AD8226"
+  ad8226_eni_nv_rthz_typ: 22
+  ad8226_eno_nv_rthz_typ: 120
+  ad8226_vosi_tc_uv_per_c_max_a_grade: 2
+  ad8226_voso_tc_uv_per_c_max_a_grade: 10
+  later_stage_cost: "a later stage's own offset, drift and noise divide by G1 when referred to the input"
+  external_rg: "the gain resistor's tolerance and drift add to the in-amp's own gain accuracy"
+  ti_first_stage_ceiling: "G1_max = 2*(V_SAT - Vcm)/Vd"
+prose: >
+  How much gain belongs in the first stage, and why. Both vendor error laws
+  are printed as conditions in the AD8226 spec table: total offset
+  Vos = Vosi + (Voso/G) and total noise eN = sqrt(eNi^2 + (eNo/G)^2).
+  Everything the in-amp contributes after its input stage - and everything
+  a later stage contributes - is divided by the FIRST stage's gain when
+  referred to the input. The crossover is the ratio of the part's own
+  output-referred to input-referred term: for the AD8226 that is
+  10 / 2 uV/degC of drift and 120 / 22 nV/rtHz of noise, i.e. G1 near 5.
+  Below G1 = 5 the output-referred terms dominate the budget; above it they
+  fall as 1/G1 and become a rounding error (at G1 = 40 the output drift
+  term is about 11 percent of the total).
+  The counter-pressure is the internal-node ceiling
+  (inamp-internal-node-headroom-inequalities), which caps G1 from above.
+  TI writes the ceiling as G1_max = 2*(V_SAT - Vcm)/Vd and prescribes the
+  order explicitly: "Limit the input gain, G1, to avoid saturation of A1
+  and A2 ... apply high gain in the output stage". So the partition is not
+  a preference: set G1 at the ceiling minus margin, put the rest later.
+  A later gain stage is cheap in precision terms and its bandwidth is what
+  it costs. Note also that an external gain resistor's tolerance and drift
+  add to the in-amp's own gain accuracy, so a bigger G1 does not buy gain
+  ACCURACY - only offset and noise.
+sources:
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 6
+    section: "AD8226 Rev. C, printed p.5 - Table 3 (single supply +Vs = 2.7 V), NOISE and VOLTAGE OFFSET blocks"
+    note: >
+      Read in Table 3: the NOISE row condition "Total noise:
+      eN = sqrt(eNi^2 + (eNo/G)^2)" with Input Voltage Noise eNi = 22 typ /
+      24 max nV/rtHz and Output Voltage Noise eNo = 120 typ / 125 max
+      nV/rtHz; the VOLTAGE OFFSET row condition "Total offset voltage:
+      Vos = Vosi + (Voso/G)" with Vosi average TC 0.5 typ / 2 max uV/degC
+      and Voso average TC 2 typ / 10 max uV/degC for the ARZ/ARMZ (A)
+      grade over -40 to +125 C. Also read the DYNAMIC RESPONSE block:
+      -3 dB bandwidth 1500 / 160 / 20 / 2 kHz at G = 1 / 10 / 100 / 1000,
+      i.e. bandwidth falls with the first stage's gain too.
+  - file: reference/knowledge/sources/slyt226.pdf
+    page: 3
+    section: "TI SLYT226, printed p.27 - worked partition of a high-gain front end"
+    note: >
+      Read on the page: the three-step recipe "(1) Limit the input gain,
+      G1, to avoid saturation of A1 and A2; (2) implement low-pass
+      filtering in the output stage ...; (3) apply high gain in the output
+      stage", and the worked ceiling G1 = 2*((V2_SAT - Vcm)/Vd_DC) =
+      2*((5 V - 1.5 V)/400 mV) = 17.5, from which the article picks a
+      conservative G1 = 10 and puts G2 = Gtot/G1 = 500 downstream.
+  - file: reference/knowledge/sources/slyt226.pdf
+    page: 4
+    section: "TI SLYT226, printed p.28 - Figure 4 external gain stage, benefits list, Figure 5 single-supply front end"
+    note: >
+      Read on the page: the bullet "The adjustment of G1 is independent
+      from G2 and f0, allowing the input gain to be set for maximum input
+      common-mode range", Figure 4 where the external stage takes
+      G3 = -Gtot/G1 = -R4/R3, and Figure 5, a single-supply front end that
+      runs the in-amp at G1 = 5 and puts G2 = 200 in the following op-amp
+      stage - the same partition at the extreme.
+status: active
+origin: research:block-inamp-1
+level: topology
+envelope:
+  gain_split_kind: {in: [two-stage]}
+maturity: approved
+generalizes: []
+envelope_note: >
+  The rule scales with the FIRST stage's gain, because every error term
+  after that stage is divided by G1 when referred to the input. Its value
+  collapses once G1 passes the part's own output/input ratio (Voso/Vosi and
+  eNo/eNi, about 5 for the AD8226): below that the later stages dominate
+  the budget, far above it the in-amp's own input-referred terms and the
+  source dominate and further partitioning buys nothing. It is bounded to
+  chains that actually have more than one gain stage - a single-stage chain
+  has no partition to make, only a ceiling to respect.
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read AD8226 PDF p.6 (printed p.5, Table 3, header +Vs = 2.7 V, -Vs = 0 V, VREF = 0 V, +25C, G=1, RL=10k) and SLYT226 pp.3-4 (printed 27-28). Both error laws are printed in Table 3's Conditions column exactly as quoted: 'Total noise: eN = sqrt(eNI^2 + (eNO/G)^2)' and 'Total offset voltage: VOS = VOSI + (VOSO/G)'. All four A-grade (ARZ, ARMZ) numbers verified on the page: eNI 22 typ / 24 max and eNO 120 typ / 125 max nV/rtHz at 1 kHz; VOSI average TC 0.5 typ / 2 max and VOSO average TC 2 typ / 10 max uV/degC over -40C to +125C (B grade is 1 and 5, correctly not used). So the crossover is real: 10/2 = 5 on drift, 120/22 = 5.5 on noise. The 11 pct claim at G1 = 40 checks out (0.25 of 2.25). Bandwidth row 1500/160/20/2 kHz at G = 1/10/100/1000 exact. TI printed p.27 carries the three-step recipe verbatim and the worked ceiling G1 = 2((5 V - 1.5 V)/400 mV) = 17.5 with the conservative G1 = 10 and G2 = 5000/10 = 500. TI printed p.28 carries the independence bullet verbatim, Figure 4's G3 = -GTOT/G1 = -R4/R3, and Figure 5 with INA326 (G=5). Nits: Figure 5's G2 = 200 is read off the printed 1 Mohm / 5 kohm pair rather than printed as 200; and the external_rg claim is vendor text on printed p.19, a page this record does not itself cite."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

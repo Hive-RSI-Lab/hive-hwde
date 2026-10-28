@@ -1,0 +1,146 @@
+id: inamp-cmrr-over-frequency-and-source-imbalance
+classes: [diff-pair]
+applies:
+  topologies: [inamp]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  budget_cmrr_at: "the top of the signal band and the real source imbalance - never the DC-to-60-Hz table row"
+  spec_table_last_cmrr_hz: 5000
+  vendor_curve_last_hz: 100000
+  fig27_fig28_conditions: "T = 25 C, Vs = +/-15 V, RL = 10 kohm (TPC header, printed p.9)"
+  fig27_cmrr_db_lf_g1: 96
+  fig27_cmrr_db_lf_g10: 117
+  fig27_cmrr_db_lf_g100: 133
+  fig27_cmrr_db_lf_g1000: 144
+  fig28_cmrr_db_lf_g1: 96
+  fig28_cmrr_db_lf_g10: 102
+  fig28_cmrr_db_lf_g100: 106
+  fig28_cmrr_db_lf_g1000: 108
+  fig28_imbalance_ohm: 1000
+  imbalance_penalty_db_lf_g10: 15
+  imbalance_penalty_db_lf_g100: 27
+  imbalance_penalty_db_at_1khz_g10_to_g1000: "16 to 17 (17.1 at G=10, 15.9 at G=100, 16.3 at G=1000)"
+  cmrr_db_at_1khz_balanced_g10_g100_g1000: "109.4 / 109.2 / 110.6"
+  cmrr_db_at_1khz_1kohm_imbalance_g10_g100_g1000: "92.3 / 93.3 / 94.3"
+  gain_buys_cmrr_only_when_matched: "balanced, LF CMRR spans about 48 dB from G=1 to G=1000; with 1 kohm imbalance it spans about 12 dB"
+  table2_is_the_matching_15v_table: "Table 2 (printed p.3) is taken at +/-15 V like the figures and carries the SAME minimums as Table 3, so the curves may be read against Table 2 directly"
+  curve_vs_table2_min_at_5khz: "measured 83.9/94.4/95.3/104.5 dB against minimums 80/90/90/100 dB - typ sits 4 to 5 dB over min, as it should"
+  derived_not_quoted: "every dB value is measured off the Figure 27/28 curves by pixel-mapping them against the printed axis gridlines (not eyeballed), good to about +/-1 dB; where two curves overlap the value is bracketed from the neighbouring columns instead. The data sheet prints no numeric table for these curves"
+  scope: "device side - the connector, cable and trace-symmetry half belongs to the input-interface slot"
+prose: >
+  CMRR is not the DC number in the specification table; it is a curve, and
+  the copper's job is to not spend it. Two AD8226 curves make the point,
+  both plotted 0.1 Hz to 100 kHz, both at Vs = +/-15 V, 25 C, RL = 10 kohm.
+  Figure 27, balanced sources: CMRR is flat at about 96, 117, 133 and 144 dB
+  for G = 1, 10, 100 and 1000, holds that plateau only out to somewhere
+  between 50 Hz (G = 1000) and 400 Hz (G = 1), then falls about 20 dB per
+  decade to roughly 56, 68, 84 and 105 dB at 100 kHz; a dashed BANDWIDTH
+  LIMITED ellipse marks where the two high-gain curves flatten above about
+  30 kHz. Figure 28 repeats the same measurement with a 1 kohm SOURCE
+  IMBALANCE and the family collapses: about 96, 102, 106 and 108 dB at low
+  frequency, and above about 1 kHz the G = 1, 10 and 100 curves lie on ONE
+  roll-off, reaching about 55, 55 and 68 dB at 100 kHz.
+  Read the pair together and the rule falls out: GAIN BUYS CMRR ONLY WHILE
+  THE TWO PATHS MATCH. Balanced, low-frequency CMRR spans about 48 dB from
+  G = 1 to G = 1000; with 1 kohm of imbalance it spans about 12 dB. The
+  imbalance costs about 0 dB at G = 1, 15 dB at G = 10, 27 dB at G = 100 at
+  low frequency, and 16 to 17 dB at 1 kHz for G = 10 to 1000. Budget at the
+  top of the band and at the real imbalance. The numeric CMRR rows
+  stop at 5 kHz in BOTH Table 2 and Table 3; the curves do not. Table 2 is
+  the +/-15 V table matching the figures and its minimums equal Table 3's,
+  so the curves read against it directly - at 5 kHz they sit 4-5 dB over.
+sources:
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 14
+    section: "AD8226 Rev. C, printed p.13 - Figure 27 and Figure 28"
+    note: >
+      Read both plots visually, magnified, then measured by pixel-mapping
+      the curves against the printed axis gridlines. Figure 27 "CMRR vs.
+      Frequency, RTI": x = 0.1 Hz to 100 kHz log, y = CMRR 0 to 160 dB,
+      four labelled curves GAIN = 1/10/100/1000 with low-frequency plateaus
+      at 96.4/116.7/133.1/143.4 dB, plateau ending near 400 Hz (G=1) down to
+      near 50 Hz (G=1000), then a roughly 20 dB/decade fall to about
+      56/68/84/105 dB at 100 kHz, with a dashed ellipse annotated
+      "BANDWIDTH LIMITED" over the 30 kHz to 100 kHz region where the
+      G = 1000 and G = 100 curves flatten. At 1 kHz Figure 27 reads
+      109.4/109.2/110.6 dB for G = 10/100/1000 (the G = 10 point is occluded
+      by the crossing curves, so it is bracketed from 878 Hz = 109.9 dB and
+      1289 Hz = 107.9 dB). Figure 28 "CMRR vs. Frequency, RTI, 1 kOhm Source
+      Imbalance": identical axes but y = 0 to 120 dB, the same four gains,
+      plateaus compressed to 96.5/101.7/106.5/108.5 dB, 92.3/93.3/94.3 dB at
+      1 kHz for G = 10/100/1000, and above about 1 kHz the G = 1, 10 and 100
+      curves merge onto a single roll-off ending near 55/55/68 dB at 100 kHz
+      while G = 1000 flattens near 88 dB. So the 1 kHz penalty of the
+      imbalance is 17.1/15.9/16.3 dB. The pair is the vendor's own
+      measurement of what a source imbalance costs versus frequency.
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 10
+    section: "AD8226 Rev. C, printed p.9 - TYPICAL PERFORMANCE CHARACTERISTICS header"
+    note: >
+      Read the conditions line that governs Figure 27 and Figure 28:
+      "T = 25 degC, VS = +/-15 V, RL = 10 kOhm, unless otherwise noted".
+      The figures are therefore a +/-15 V measurement, so they belong
+      against Table 2 (printed p.3) rather than Table 3 (+Vs = 2.7 V).
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 4
+    section: "AD8226 Rev. C, printed p.3 - Table 2, COMMON-MODE REJECTION RATIO block"
+    note: >
+      Read Table 2, whose header is "+VS = +15 V, -VS = -15 V, VREF = 0 V,
+      TA = 25 degC, G = 1, RL = 10 kOhm" - the same supply as Figures 27 and
+      28. Its CMRR block (VCM = -10 V to +10 V) prints minimums DC to 60 Hz
+      of 86/106/120/120 dB and CMRR at 5 kHz of 80/90/90/100 dB for
+      G = 1/10/100/1000 (ARZ, ARMZ) - IDENTICAL to Table 3's minimums. So
+      the supply-condition caveat costs nothing: the curves can be compared
+      against Table 2's minimums directly. Cross-check: the Figure 27 curve
+      values at 5 kHz measure 83.9/94.4/95.3/104.5 dB, sitting 4 to 5 dB
+      above those minimums, which is how typ should sit over min. Table 2's
+      CMRR rows also stop at 5 kHz, confirming the 5 kHz ceiling is a
+      property of the TABLES, not of the characterization.
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 6
+    section: "AD8226 Rev. C, printed p.5 - Table 3, COMMON-MODE REJECTION RATIO block"
+    note: >
+      Read the CMRR block of Table 3 (+Vs = 2.7 V, -Vs = 0 V, VREF = 0 V,
+      25 C, G = 1, RL = 10 kOhm, VCM = 0 V to 1.7 V): CMRR minimum DC to
+      60 Hz is 86 dB at G = 1 (ARZ/ARMZ), 106 dB at G = 10, 120 dB at
+      G = 100 and G = 1000; the only other CMRR row is "CMRR at 5 kHz",
+      80/90/90/100 dB. The numeric table stops at 5 kHz - that is a limit
+      of the TABLE, not of the part's characterization.
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 22
+    section: "AD8226 Rev. C, printed p.21 - Common-Mode Rejection Ratio Over Frequency"
+    note: >
+      Read the mechanism paragraph that the two figures quantify: "Poor
+      layout can cause some of the common-mode signals to be converted to
+      differential signals before reaching the in-amp. Such conversions
+      occur when one input path has a frequency response that is different
+      from the other. To keep CMRR across frequency high, the input source
+      impedance and capacitance of each path should be closely matched."
+status: active
+origin: research:block-inamp-2
+level: topology
+envelope:
+  f_signal_hz: {min: 0, max: 100000}
+maturity: approved
+generalizes: []
+envelope_note: >
+  Scales with FREQUENCY. The bound is a DATA limit, not a mechanism limit:
+  Figures 27 and 28 are both plotted 0.1 Hz to 100 kHz, so 100 kHz is where
+  the vendor's measurement stops, not where the physics does. min is 0
+  because Figure 28's imbalance is resistive and costs 15-36 dB at LOW
+  frequency too - the rule does not switch on partway up the band. Above
+  100 kHz the failure becomes RF rectification, a separate data sheet
+  section with its own remedy, so this record hands off there. The bound is
+  NOT 5 kHz: that is only where Table 3's rows stop, and this chain runs to
+  f3db = 41 kHz.
+verification: {by: "research-second-reader", date: "2026-08-16", note: "RE-RULED after repair; re-measured independently, did not take the researcher's numbers on trust. BOTH CORRECTIONS CONFIRMED. (1) 1 kHz penalty: my reads are Fig27 109.43/109.43/110.57 dB and Fig28 92.40/93.47/94.30 dB at G=10/100/1000, so the true penalties are 17.0/16.0/16.3 dB; the record's 17.1/15.9/16.3 is right to 0.1 dB and its two new raw-read keys subtract exactly (109.4-92.3=17.1, 109.2-93.3=15.9, 110.6-94.3=16.3). The self-inconsistent '20 to 27' range is gone. (2) Fig27 100 kHz ends: measured 55.8/67.8/83.9/104.7 dB, so 56/68/84/105 is right within 0.3 dB - note the 85 also moved to 84, which the coordinator's account said was untouched; the change is an improvement, not a regression. NEW PAGE-4 CITATION IS EXACT: PDF p.4 is printed Page 3 of 28, header reads '+VS = +15 V, -VS = -15 V, VREF = 0 V, TA = 25 degC, G = 1, RL = 10 kOhm, specifications referred to input, unless otherwise noted' - quoted verbatim; Table 2 CMRR block (VCM = -10 V to +10 V) prints ARZ/ARMZ minimums 86/106/120/120 dB DC to 60 Hz and 80/90/90/100 dB at 5 kHz, identical to Table 3 for BOTH grades, and its CMRR rows also stop at 5 kHz. The reworded p.10 note is more accurate, not merely softened: the original 'must NOT be compared against Table 3' implied no comparison was possible, when the data sheet in fact guarantees the same CMRR minimums at 2.7 V and at +/-15 V and prints a matching-condition table; every figure value in the record still carries the +/-15 V condition, and no statement claims the absolute +/-15 V dB transfers to this 3.3 V board. OCCLUSION DISCLOSURE IS LEGITIMATE AND THE POINT IS RECOVERABLE: at 1 kHz the G=10 and G=100 curves are coincident to 0.00 dB (both 109.43), so a raster read genuinely cannot separate them and bracketing is the right move; the asserted 109.4 is correct to 0.03 dB. Two audit-trail looseness items to note, neither refuting: the disclosed bracket endpoints read 109.9 at 878 Hz and 107.9 at 1289 Hz where the curve is 110.5 and 107.3 (each 0.6 dB off, inside the record's declared +/-1 dB), and a straight chord between the DISCLOSED endpoints gives 109.2, not the asserted 109.4 - the asserted value is nonetheless the true one. Same occlusion explains the 5 kHz G=10 read (record 94.4, true 95.05, inside +/-1 dB); 'typ sits 4 to 5 dB over min' is really 3.8 to 5.3 dB. NOTHING ELSE MOVED: envelope {min 0, max 100000} and envelope_note are byte-identical to the version I verified; Fig28 plateaus 96/102/106/108 and ends 55/55/68/88, LF penalties 0/15/27, the 20 dB/decade and plateau-end claims, the BANDWIDTH LIMITED note, the scope key and the p.6 and p.22 source notes are all unchanged and all still check out against the pages. Residual nits for a later pass, not defects: envelope_note still says 'costs 15-36 dB at LOW frequency' where the measured maximum is 34.8 dB (G=1000) - 1.2 dB over the record's own new +/-1 dB tolerance; envelope_note still attributes the 5 kHz ceiling to Table 3 alone although the record now knows Table 2 stops there too; and 'spans about 48 dB' measures 46.9 dB (it does equal the rounded ladder 144-96)."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

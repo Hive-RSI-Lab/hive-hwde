@@ -1,0 +1,177 @@
+# Pipeline gates - machine pass/fail criteria evaluated by scripts/gate.py.
+#
+# A gate names a kicad-cli report to run (via kc.py) and the criteria that make
+# it pass. The orchestrator (SPEC.md sections 3-4) runs a gate at each [G] edge;
+# on pass it git-commits (gate.py --commit), on fail it clusters violations and
+# dispatches fixers, then re-runs the same gate.
+#
+# Gate fields:
+#   phase        pipeline phase this gate guards (documentation)
+#   tool         kc.py report to run: "erc" (needs a .kicad_sch) or
+#                "drc" (needs a .kicad_pcb)
+#   drc_options  for tool: drc - {parity, all_track_errors, require_fresh_fills}
+#                (all default false; gates never refill/save, so evaluation
+#                cannot mutate the board). require_fresh_fills: refuse (exit 2)
+#                on stale/unfilled zones instead of grading phantom clearance
+#                errors (T6; set on drc_routed - the P6 interim gate may
+#                legitimately see boards whose zones predate filling).
+#   fail_severities  severities that count toward failure (default [error]).
+#                    "clean" gates include warning.
+#   max_count    max counted violations allowed to still pass (default 0)
+#   strict       (verify/place/dfm tools; U2, codex C7) release-context
+#                coverage mode: every applicable check must RUN - a missing
+#                input/sidecar or a sub-check that could not execute is a
+#                coverage failure and the gate refuses (exit 2), never a
+#                pass. Applicability is declared per board in
+#                constraints.json (verification.not_applicable, each entry
+#                needing reason + approved), not inferred from file presence.
+#   description  one line
+#
+# Evaluation: a gate FAILS when the number of violations whose severity is in
+# fail_severities exceeds max_count. Those are echoed in the gate result as
+# `failing` (with coordinates) for the fixer dispatch.
+#
+# S2 defined erc/drc/drc_routed; S5 added verify (verify_all.py aggregate);
+# S9 adds place (place_metrics.py legality: courtyard overlaps, declared-edge
+# compliance, keepouts, decoupler distance - the P6 fast-route-completion term
+# arrives with S10/S11 route feedback); S12 adds dfm (dfm_check.py); post-v1
+# adds sim (sim_run.py: SPICE testbench bounds via the KiCad-bundled ngspice).
+# routed (P7 "100% routed") is covered by drc_routed's parity + unconnected.
+#
+# The `verify` gate's tool is "verify": gate.py runs verify_all.py on the board,
+# taking constraints.json / decoupling.json from the board's own directory. Its
+# merged summary carries the same {violations, counts} shape the erc/drc gates
+# produce, so evaluate() gates it identically (fail on error-severity).
+#
+# The `sim` gate's input is a DIRECTORY (unlike every other gate): the
+# workspace kicad/sims/ holding the sim-analyst's testbench .cir files with
+# their .bounds.json sidecars. gate.py runs sim_run.py over it; the report
+# carries the same {violations, counts} shape, so evaluate() gates it
+# identically (fail on error-severity: sim_bound_fail / sim_measure_missing
+# at error, and any sim_engine_error).
+
+version: 1
+
+gates:
+  erc:
+    phase: P4
+    tool: erc
+    fail_severities: [error, warning]   # SPEC P4: ERC "must be clean"
+    max_count: 0
+    description: Schematic ERC clean (errors and warnings; waivers are manual).
+
+  drc:
+    phase: P6
+    tool: drc
+    # parity: true since T6 (ladder row 122): a symbol/footprint mismatch
+    # introduced by P4-P6 edits must surface BEFORE routing - drc_routed
+    # finding it first costs a full re-route cycle. A placed-unrouted board's
+    # unconnected items are warnings and do not fail this [error]-only gate.
+    drc_options: {parity: true, all_track_errors: false}
+    fail_severities: [error]
+    max_count: 0
+    description: Board DRC has no error-level violations (interim placement gate).
+
+  drc_routed:
+    phase: P7
+    tool: drc
+    drc_options: {parity: true, all_track_errors: true, require_fresh_fills: true}
+    fail_severities: [error, warning]
+    max_count: 0
+    description: >-
+      Fully routed and clean: DRC + schematic parity + all track errors, zero
+      violations at any severity (SPEC P7 "100% routed, DRC=0").
+
+  place:
+    phase: P6
+    tool: place
+    fail_severities: [error]
+    max_count: 0
+    description: >-
+      Placement legality (place_metrics.py): no courtyard overlaps, declared
+      connectors on their edges, keepouts respected, decoupler distances in
+      class limits, every mating connector matable (lib/matinglib.py: mouth
+      facing and reaching a board edge, insertion zone clear, finger room
+      round vertical ones). Warnings (missing courtyards) surface without failing.
+
+  verify:
+    phase: P8
+    tool: verify
+    fail_severities: [error]
+    max_count: 0
+    description: >-
+      P8 verification suite (verify_all.py): return path, current, decoupling,
+      diff pairs, creepage, thermal, silk, PDN, pin ratings (check_ratings:
+      every pin's datasheet rating against its net's voltage; needs the
+      workspace parts dir, so it can run from P4 on), routing style
+      (check_route_style: arcs and off-45 segments are errors - the owner's
+      straight-and-45 rule; needless jogs are warnings; an RF or
+      length-matched net that needs its geometry is waived per net), connector mating
+      (check_mating: the place gate's mating rules again, so a later edit
+      cannot turn a connector round unnoticed), plus every check a
+      scripts/checks.d/<name>.yaml fragment registers. Fails on any error-severity
+      finding; warnings are surfaced for human review, not auto-failed.
+      Human-approved residuals can be waived via the verify-waivers.json
+      sidecar (gate.py --waivers; every entry needs reason + approved) so a
+      board with justified exceptions can record a true pass (T6; the carrier
+      shipped with gates.verify permanently 'fail').
+
+  sim:
+    phase: P8
+    tool: sim
+    fail_severities: [error]
+    max_count: 0
+    description: >-
+      SPICE behavioral gate (sim_run.py): every testbench in the input sims
+      directory runs through the KiCad-bundled ngspice shared library and
+      each measured value must sit inside its authored .bounds.json window.
+      Catches the wrong-value defect class (a 47k where 4.7k belongs) that
+      ERC/DRC/verify/DFM are all blind to. Warning bounds surface without
+      failing; an engine crash, timeout or missing measure behind an
+      error-severity bound fails the gate.
+
+  # Release-context gates (U2, codex C4+C7; consumed by U5's release
+  # attestation). Same tools as verify/dfm but strict: a "pass" here means
+  # "every applicable check ran against the canonical inputs and none
+  # failed", never "no failures among whatever happened to run". The
+  # exploratory verify/dfm gates above stay lenient for mid-pipeline use.
+  verify_release:
+    phase: P10
+    tool: verify
+    strict: true
+    fail_severities: [error]
+    max_count: 0
+    description: >-
+      Strict release verification (verify_all --strict): every applicable
+      check must run; a missing constraints/decoupling/parts input or an errored
+      check is a coverage failure (exit 2). Checks may only be excused via
+      constraints.json verification.not_applicable entries carrying reason +
+      approved, or per-violation waivers (reason + approved) in
+      verify-waivers.json.
+
+  dfm_release:
+    phase: P10
+    tool: dfm
+    strict: true
+    fail_severities: [error]
+    max_count: 0
+    description: >-
+      Strict release DFM (dfm_check --strict): a sub-check family that could
+      not run - open Edge.Cuts outline disabling the edge-distance checks
+      (the lumina-carrier P9 silent skip), no netlist for polarity, no
+      parts.json for BOM completeness - is a visible skipped_error and
+      refuses the gate (exit 2) instead of passing on partial coverage.
+
+  dfm:
+    phase: P9
+    tool: dfm
+    fail_severities: [error]
+    max_count: 0
+    description: >-
+      Local DFM on the EXPORTED gerbers (dfm_check.py, gerbonara): trace width,
+      clearance, drill, annular ring, hole/copper to edge, silk over pad, and
+      CPL polarity vs the schematic (the catcher for a polarized part mounted
+      backwards, which net-level schematic parity misses). Advisory classes -
+      KiCad's stock 0.12 mm silk, tight mask dams, missing LCSC numbers - are
+      warnings and do not fail the gate. JLCDFM's own 30+ checks are a separate,
+      semi-manual second opinion (no public API).

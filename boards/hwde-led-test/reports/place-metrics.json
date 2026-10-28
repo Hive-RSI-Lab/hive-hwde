@@ -1,0 +1,205 @@
+{
+ "script": "place_metrics",
+ "status": "pass",
+ "board": "hwde-led-test.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "metrics": {
+  "counts": {
+   "footprints": 4,
+   "movable": 4,
+   "nets": 3
+  },
+  "hpwl": {
+   "total_mm": 14.37,
+   "by_net": {
+    "+5V": 4.55,
+    "/LED_A": 1.8,
+    "GND": 8.02
+   }
+  },
+  "crossings": {
+   "count": 0,
+   "pairs": []
+  },
+  "crossings_signal": {
+   "count": 0,
+   "pairs": []
+  },
+  "congestion": {
+   "cell_mm": 2.0,
+   "cols": 14,
+   "rows": 12,
+   "max": 4,
+   "mean_nonzero": 1.4,
+   "hotspots": [
+    {
+     "cell": [
+      2,
+      5
+     ],
+     "center": [
+      14.0,
+      20.0
+     ],
+     "demand": 4
+    },
+    {
+     "cell": [
+      4,
+      5
+     ],
+     "center": [
+      18.0,
+      20.0
+     ],
+     "demand": 2
+    },
+    {
+     "cell": [
+      0,
+      4
+     ],
+     "center": [
+      10.0,
+      18.0
+     ],
+     "demand": 1
+    },
+    {
+     "cell": [
+      0,
+      6
+     ],
+     "center": [
+      10.0,
+      22.0
+     ],
+     "demand": 1
+    },
+    {
+     "cell": [
+      1,
+      5
+     ],
+     "center": [
+      12.0,
+      20.0
+     ],
+     "demand": 1
+    },
+    {
+     "cell": [
+      1,
+      6
+     ],
+     "center": [
+      12.0,
+      22.0
+     ],
+     "demand": 1
+    },
+    {
+     "cell": [
+      2,
+      4
+     ],
+     "center": [
+      14.0,
+      18.0
+     ],
+     "demand": 1
+    },
+    {
+     "cell": [
+      3,
+      4
+     ],
+     "center": [
+      16.0,
+      18.0
+     ],
+     "demand": 1
+    },
+    {
+     "cell": [
+      3,
+      5
+     ],
+     "center": [
+      16.0,
+      20.0
+     ],
+     "demand": 1
+    },
+    {
+     "cell": [
+      4,
+      4
+     ],
+     "center": [
+      18.0,
+      18.0
+     ],
+     "demand": 1
+    }
+   ]
+  },
+  "congestion_signal_max": 2,
+  "decoupling": [],
+  "mating": [
+   {
+    "ref": "J1",
+    "family": "pin_header",
+    "entry": "vertical",
+    "tall_nearby": [],
+    "height_unknown": []
+   }
+  ],
+  "utilization": {
+   "component_mm2": 24.4682,
+   "board_mm2": 583.7622,
+   "ratio": 0.042
+  }
+ },
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T13:50:50+00:00",
+ "input": "kicad/hwde-led-test.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:a545818946806c19c91fc136d48e1c7fe170a57ce79e99dea16460927b2a6283",
+ "coverage": {
+  "strict": false,
+  "required": [
+   "courtyard",
+   "outline",
+   "edges",
+   "keepouts",
+   "decoupler_distance",
+   "mating"
+  ],
+  "ran": [
+   "courtyard",
+   "outline",
+   "edges",
+   "keepouts",
+   "decoupler_distance",
+   "mating"
+  ],
+  "passed": [
+   "courtyard",
+   "outline",
+   "edges",
+   "keepouts",
+   "decoupler_distance",
+   "mating"
+  ],
+  "failed": [],
+  "waived": [],
+  "not_applicable": {},
+  "skipped_error": {}
+ }
+}

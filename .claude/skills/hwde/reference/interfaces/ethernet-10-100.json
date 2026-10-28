@@ -1,0 +1,67 @@
+{
+  "interface": "ethernet-10-100",
+  "role": "10/100BASE-TX MDI through integrated-magnetics RJ45 (magjack); PHY side only",
+  "_provenance": "Seeded T6 2026-08-06 from boards/lumina-carrier/research/interface-ethernet.json - opus-verified against IEEE 802.3 / ANSI X3.263 (via UNH-IOL) / WIZnet / TI SNLA079D / Pulse once. START from this: re-verify applicability, adapt net names + stackup-dependent keys, mark deltas; PHY-specific rows (support parts, host-bus limits) stay per-run. Sources per number: reference/interfaces/ethernet-10-100.md",
+  "high_speed": [
+    {
+      "net": "/ETH_TXP",
+      "reference": "GND",
+      "t_rise_ns": 3.0
+    },
+    {
+      "net": "/ETH_TXN",
+      "reference": "GND",
+      "t_rise_ns": 3.0
+    },
+    {
+      "net": "/ETH_RXP",
+      "reference": "GND",
+      "t_rise_ns": 3.0
+    },
+    {
+      "net": "/ETH_RXN",
+      "reference": "GND",
+      "t_rise_ns": 3.0
+    }
+  ],
+  "diff_pairs": [
+    {
+      "p": "/ETH_TXP",
+      "n": "/ETH_TXN",
+      "base": "ETH_TX",
+      "impedance_ohm": 100,
+      "max_skew_mm": 2.5,
+      "max_uncoupled_mm": 5.0
+    },
+    {
+      "p": "/ETH_RXP",
+      "n": "/ETH_RXN",
+      "base": "ETH_RX",
+      "impedance_ohm": 100,
+      "max_skew_mm": 2.5,
+      "max_uncoupled_mm": 5.0
+    }
+  ],
+  "voltages": [],
+  "notes": [
+    "NET NAMES ARE PROPOSALS - reconcile at P2, netlist_audit verifies at P4. check_return_path raises CheckError -> exit 2 on a high_speed net not on the board (gates P8 hard); check_diffpair degrades a missing named pair to a warning.",
+    "STACKUP-DEPENDENT KEY deliberately dropped: gap_mm (centre-to-centre pitch = width + gap of the chosen stackup's diff_100 profile; 0.260 + 0.210 = 0.47 on JLC04161H-3313). Emit after stackup selection or let check_diffpair auto-derive. rules_gen recomputes width/gap from impedance_ohm regardless - gap_mm only sets the coupling threshold.",
+    "IMPEDANCE 100 ohm differential / <= 50 ohm single-ended to GND (WIZnet design guide, TI SNLA079D 2.1, Pulse layout note). Not knife-edge: the transmitter return-loss floor is 10 dB at the AOI (ANSI X3.263 9.1.5), roughly 100 +/-45 ohm. impedance_ohm is DELIBERATELY OMITTED from the high_speed entries - an explicit diff_pairs entry wins in rules_gen and a single-ended 50 there would conflict with the differential 100.",
+    "4-LAYER IS EFFECTIVELY REQUIRED for the 100 ohm target: a 2-layer stackup has no adjacent reference plane (JLC 2-layer ships controlled_impedance: []) and solving anyway gives a ~2.4 mm-wide pair. Corroborated: TI SNLA079D s8 ('at minimum a four layer PCB is recommended'), Skyworks AN956 s8.",
+    "EDGE RATE t_rise_ns 3.0 = the FASTEST edge 802.3 clause 25 permits (rise/fall 3.0-5.0 ns, symmetry <= 0.5 ns; ANSI X3.263 9.1.6). The derived return-via radius (~90 mm) is honestly loose - the entries exist for the OTHER thing check_return_path does: verifying an unbroken GND corridor under the pairs.",
+    "max_skew_mm 2.5 is ASSUMED (no clause or vendor gives a number - all say 'matched in length'). Physics allows ~45 mm (10% of the 3 ns edge at 6.71 ps/mm); 2.5 mm is a conservative bar on a <= 25 mm pair. What degrades with mismatch is differential-to-common-mode conversion = EMI.",
+    "max_uncoupled_mm 5.0 (pipeline default kept): a THT magjack's MDI pins sit on a ~2 mm grid so the connector fan-out is INHERENTLY wider than the coupling threshold for 1-2 mm per leg - a tighter value false-positives on correct layout.",
+    "MDI LENGTH: PHY-to-magnetics <= 25 mm recommended / 75 mm absolute max (WIZnet); Pulse wants >= 25 mm from board edges for EMI. The rules MEET AT ~25 mm: put the PHY ~25 mm behind the magjack, pairs clear of other edges.",
+    "MDI SPACING: TX-to-RX pair >= 0.508 mm (20 mil), 0.762 preferred, GND between (WIZnet W/K); any non-MDI signal >= 7.5 mm from the pairs (Pulse); unavoidable crossings on other layers at RIGHT ANGLES. ZERO vias on MDI is the target (WIZnet prohibits; Pulse allows max two). No stubs - check_diffpair measures trunk skew only, so a stub will not inflate reported skew but is still a defect.",
+    "MAGJACK TRANSFORMER SPEC: 1:1 +/-2%, >= 350 uH OCL both ends (typical PHY requirement + TI SNLA079D Table 4 envelope: IL -1 dB 1-100 MHz, RL -16 dB 1-30 MHz, D-to-C rejection -30 dB, isolation 1500 Vrms HIPOT). Verify the PHY's own magnetics table.",
+    "PoE VARIANT - HARD P3 FILTER when the board is a PD: the common low-cost magjack integrates Bob-Smith INSIDE and does NOT pin out the centre taps - physically nowhere to take PoE from. A PD needs the datasheet pinout to SHOW both cable-side centre taps (Mode A) and both spare-pair contacts 4/5 + 7/8 (Mode B) on package pins (Bel 0826/SI-5xxxx, Pulse PoE ICM classes; Skyworks AN956 figs 3/4 wiring), rated for the 802.3at current class the design promises.",
+    "BOB-SMITH TERMINATION vs PoE: standard BST = 75 ohm per cable-side tap to a common node + 1000 pF >= 2 kV to chassis (TI SNLA079D 2.3) - but 'Bob-Smith termination does not apply for PoE applications' (TI): powered taps sit at 37-57 V, a 75 ohm DC path corrupts the 25 kohm detection signature and could burn watts. On a PD keep only the AC half (HV caps to the shield/EMI reference; AN956 fits ferrite beads + 1 nF), coordinate with the PoE agent's schematic.",
+    "PLANES UNDER THE MAGJACK: void signal-GND and power pours on ALL layers under the connector body from the PHY-side pad row outward to the board edge (WIZnet/TI/Pulse reconciled); shielded jack gets a separate chassis island under the shield tabs inside the void. FR-4 between adjacent layers is NOT an isolation barrier at 1500 Vrms (Pulse wants >= 15 mil dielectric; typical 4-layer prepreg is ~8 mil - void BOTH inner layers).",
+    "PIPELINE TRAP - plane void vs check_return_path: corridor deficit >= 0.01 mm of crossing is an ERROR with no gate waiver, so the void must BEGIN AT the magjack's PHY-side pad row (pairs terminate on those pads, never crossing the plane edge), and planes_gen expresses voids only by SIZING positive region rectangles - decide the geometry at P5, not P7.",
+    "CHASSIS vs SIGNAL GROUND depends on the enclosure/isolation answer: classic chassis-island-with-moat construction may have nothing to bridge to on a floating PD with a plastic enclosure. Default: shielded jack's shield to a dedicated pad tied to GND through 1 M || 1 nF (>= 2 kV) with a fitted 0 ohm alternative so EMC testing can move the strap without a respin; an unshielded jack removes the question.",
+    "MDI ESD: magnetics isolation does NOT block fast ESD (couples through interwinding capacitance). Fit a 4-channel LOW-CAPACITANCE TVS array on the PHY side at the magjack end of the pairs; <= 1 pF/line is the binding parameter (return loss must survive) - a general-purpose 20-50 pF array visibly degrades the eye.",
+    "PHY CRYSTAL ppm BUDGET: 802.3 requires the transmit clock at +/-50 ppm TOTAL (125 MHz +/-6.25 kHz, 802.3 24.2.3.4). Initial tolerance + aging + temperature + load-cap error must SUM inside it: specify +/-30 ppm initial or better AND +/-30 ppm over temperature, and compute load caps from the crystal's stated CL (C = 2*(CL - Cstray); most module schematics blindly fit 22 pF which back-solves to CL ~15 pF - wrong for an 18 pF part).",
+    "AUTO-MDIX is PHY-specific: without it (W5500 class) the cable type is a DOCUMENTATION item and the MDI pin order is not free - TX must land on cable pair 1-2, RX on 3-6.",
+    "AOI CONTEXT NUMBERS (ANSI X3.263 via UNH-IOL): differential output 950-1050 mV, symmetry 98-102%, DCD within +/-0.25 ns, jitter <= 1.4 ns pk-pk. These qualify parts, not layout - listed so sign-offs cite the right figures."
+  ]
+}

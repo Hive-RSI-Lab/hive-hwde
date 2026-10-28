@@ -1,0 +1,44 @@
+id: buck-bst-fb-output-caps
+classes: [feedback, decoupling]
+applies:
+  topologies: [buck]
+  packages: []
+  interfaces: []
+rule:
+  enforced_by: null
+  bst_cap_nf: 100
+  fb_divider_at: FB pin, sense point AFTER the output caps
+prose: >
+  BST: integrated-FET parts need the 100 nF BST-SW cap - it is required, not
+  optional (DS41326 s13); confirm value/rating in the family datasheet. FB
+  TRAP (cost a near-miss once): FIXED-output family members tie FB straight
+  to the output sense point - do NOT copy the ADJUSTABLE variant's divider
+  from the shared datasheet figure (AP63203 vs AP63200/1, DS41326 fig 20/21).
+  Adjustable parts: divider AT the FB pin, short FB trace routed away from SW
+  and L, sense point AFTER the output caps. OUTPUT CAPS: ceramic, inside the
+  datasheet's stated C/ESR window - internal compensation assumes it
+  (DS41326 s12); count DC-bias derating (a "22 uF" X5R at bias is
+  ~12-15 uF). When the part has EXTERNAL compensation, the vendor's table
+  values are quoted for a specific C_OUT - a different bank means re-deriving
+  the network, not copying the row (sbuck D-item: 5x 22 uF vs the table's
+  2x 22 uF moved the crossover by 2.5x).
+sources:
+  - {file: boards/usb-buck/parts/C5248536.pdf, section: "DS41326 s12-13, fig 20/21"}
+  - {file: boards/sbuck-5v3a/architecture/blocks.md, section: s3 (compensation re-derive)}
+status: active
+origin: migration:topologies/buck (T6 2026-08-06, three shipped runs)
+
+# --- schema v2 governance (U14 backfill, owner-ruled 2026-08-15) ---
+level: family
+envelope:
+  integration_kind: {in: [integrated-fet]}
+maturity: approved
+approval:
+  by: owner
+  date: "2026-08-15"
+  note: >
+    Family-level, bounded by integration: the mandatory BST-SW cap, the
+    fixed-vs-adjustable FB trap and the internal-compensation C_OUT window
+    are properties of integrated-FET parts (DS41326 class). A controller +
+    external FETs designs its own bootstrap and compensation, so none of the
+    three carries over.

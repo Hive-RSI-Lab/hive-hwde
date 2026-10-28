@@ -1,0 +1,8 @@
+*.lock
+!requirements.lock
+__pycache__/
+*.kicad_prl
+boards/*/state_snapshots/
+# 3D models pulled from LCSC/EasyEDA (manufacturers' material, NOTICE);
+# re-pull with `hwde lib_pull --parts parts/parts.json --project kicad`.
+boards/*/lib/*.3dshapes/

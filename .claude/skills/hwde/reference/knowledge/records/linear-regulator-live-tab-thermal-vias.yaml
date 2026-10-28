@@ -1,0 +1,100 @@
+id: linear-regulator-live-tab-thermal-vias
+classes: [thermal-via]
+applies:
+  topologies: [linear-regulator]
+  packages: [SOT-223, TO-252]
+  interfaces: []
+  parts: [AMS1117, AMS1117-3.3, LM1117]
+rule:
+  enforced_by: null
+  tab_net: vout
+  stitch_to_other_net_plane: forbidden
+  stitch_to_same_net_island: allowed
+  cross_layer_heat_path: dielectric
+  vendor_two_sided_data_assumes_stitch: true
+prose: >
+  On 1117-class parts the tab is the OUTPUT, not ground - AMS1117 p1 pin
+  connections (1 GND/ADJ, 2 VOUT, 3 VIN) with the TO-252 view labelled TAB IS
+  OUTPUT, and LM1117 p3 Fig 6-1 (DCY 4-pin SOT top view) labelled "Tab is VOUT"
+  with Table 6-1 giving VOUT as SOT-223 pins 2 and 4, pin 4 being the tab. Two
+  consequences for the heat path. (1) The top-side heatsink pour IS the VOUT
+  net. The generic advice - "put extra copper on the bottom of the board
+  connected to the top pad by through-hole thermal vias" (AN-1028 p4) - is only
+  available when the far-side copper is on the SAME net, i.e. a VOUT island; a
+  via from that pour to a GND plane is a short, not a heat path. Vendor
+  two-sided theta_JA data presumes the stitch: AN-1028 p8 says its two-sided
+  boards carry 0.02 in plated vias between the planes. (2) The stitch is not
+  needed to make the far-side plane work: AMS1117 p5 states the spreading layer
+  need not be electrically connected and that the FR-4 couples the tab pad to a
+  plane opposite or inside. So on 2 layers with a GND bottom the move is a large
+  top-side VOUT pour with the ground plane continuous underneath it and NO vias
+  through it; any bottom-side VOUT island is stitched only to its own net.
+sources:
+  - file: reference/knowledge/sources/2304140030_Advanced-Monolithic-Systems-AMS1117-3-3_C6186.pdf
+    page: 1
+    section: PIN CONNECTIONS
+    note: >
+      3-pin fixed/adjustable pinout read visually - 1 Ground/Adjust, 2 VOUT, 3
+      VIN - with the SOT-223 top view showing the wide tab as the fourth
+      terminal and the TO-252 front view annotated "TAB IS OUTPUT"; the 8L SOIC
+      view shows four VOUT pins, the same live-node heat spreader in leadframe
+      form
+  - file: reference/knowledge/sources/lm1117.pdf
+    page: 3
+    section: 6 Pin Configuration and Functions - Figure 6-1 + Table 6-1
+    note: >
+      Fig 6-1 (DCY package, 4-pin SOT top view) is drawn with the tab labelled
+      "Tab is VOUT"; Table 6-1 Pin Functions gives VOUT = SOT-223 pins "2, 4"
+      and ADJ/GND = pin 1 described as "Adjust pin for adjustable output option.
+      Ground pin for fixed output option" - so the tab is the output on every
+      tabbed package in the family
+  - file: reference/knowledge/sources/snva036b.pdf
+    page: 4
+    section: 3 Result (recommendation) + 4 Conclusion
+    note: >
+      "For maximum performance, it is recommended to put extra copper on the
+      bottom of the board connected to the top pad by through-hole thermal
+      vias", and the conclusion that top-side placement gives the best thermal
+      performance - the stitching recommendation is the move that a live tab
+      cannot make to a different-net plane
+  - file: reference/knowledge/sources/snva036b.pdf
+    page: 8
+    section: Appendix B.2 - test board construction
+    note: >
+      "For layouts with copper on the top and bottom planes, there are 0.02 inch
+      copper plated vias (heat pipes) connecting the two planes" - the measured
+      two-sided numbers include a galvanic path, so they may not be claimed for
+      a VOUT pour over a GND plane
+  - file: reference/knowledge/sources/2304140030_Advanced-Monolithic-Systems-AMS1117-3-3_C6186.pdf
+    page: 5
+    section: APPLICATION HINTS - Thermal Considerations
+    note: >
+      "Experiments have shown that the heat spreading copper layer does not need
+      to be electrically connected to the tab of the device. The PC material can
+      be very effective at transmitting heat between the pad area ... and a
+      ground plane layer either inside or on the opposite side of the board" -
+      the unstitched path that survives when the tab is a live node
+status: active
+origin: research:block-linear-regulator-1
+level: topology
+envelope:
+  tab_net_kind: {in: [vout, vin]}
+envelope_note: >
+  The rule exists only because the tab is a live node, so it scales with
+  tab_net_kind and nothing else - on a tab-is-GND package the ordinary
+  stitch-the-pad-to-the-plane move is available and this record must not be
+  retrieved. Disclosure: no VIN-tab part appears in this task's ledger, so vin
+  is included on MECHANISM alone - a via between two different nets is a short
+  whichever nets they are - and not on the strength of any page read. Layer
+  count does not bound it: the dielectric path works to an inner plane just as
+  to the opposite face.
+maturity: approved
+generalizes: [linear-regulator-copper-is-the-heatsink]
+verification: {by: "second-reader", date: "2026-08-16", note: "Post-verification edit re-read, and all five cited pages re-read this pass. The required disclosure is present in envelope_note and is honest - Disclosure: no VIN-tab part appears in this task ledger, so vin is included on MECHANISM alone (a via between two different nets is a short whichever nets they are) and not on the strength of any page read - naming both the absence and the basis, and leaving rule tab_net vout resting on its pages. Re-checked every citation. AMS p1 PIN CONNECTIONS gives 1 Ground/Adjust, 2 VOUT, 3 VIN, the TO-252 FRONT VIEW is annotated TAB IS OUTPUT, and the 8L SOIC top view carries four VOUT pins. LM1117 p3 Figure 6-1 (DCY package, 4-Pin SOT, top view) is drawn with the tab labelled Tab is VOUT, and Table 6-1 gives VOUT as SOT-223 pins 2, 4 with TO-252, TO-263 and TO-220 all reading 2, TAB, and pin 1 ADJ/GND described as Adjust pin for adjustable output option. Ground pin for fixed output option. Precision worth carrying: for SOT-223 the table says 2, 4 without the word TAB, so pin 4 = tab is established by Figure 6-1 rather than by the table. AN-1028 p4 reads verbatim For maximum performance, it is recommended to put extra copper on the bottom of the board connected to the top pad by through-hole thermal vias, with the conclusion bullet that placement of the copper pads on the top side of the board gives the best thermal performance. AN-1028 p8 reads verbatim For layouts with copper on the top and bottom planes, there are 0.02 inch copper plated vias (heat pipes) connecting the two planes, so the two-sided vendor data does presume a galvanic stitch. AMS p5 reads verbatim Experiments have shown that the heat spreading copper layer does not need to be electrically connected to the tab of the device. The PC material can be very effective at transmitting heat between the pad area, attached to the pad of the device, and a ground plane layer either inside or on the opposite side of the board. Both consequences in prose follow from those pages rather than from generic advice. Topology level with the envelope on tab_net_kind alone is right."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

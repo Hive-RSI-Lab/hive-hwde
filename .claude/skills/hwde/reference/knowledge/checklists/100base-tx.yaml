@@ -1,0 +1,38 @@
+# Coverage checklist for a 100BASE-TX (Fast Ethernet MDI) interface slot.
+# Authored + approved at U14 (owner, 2026-08-15). The library holds ZERO
+# records for this interface today, so every row below is an honest GAP: a
+# coverage run on lumina-carrier reports gap on interface:eth_rx / eth_tx and
+# emits these classes as research task specs. That is the intended state -
+# U15's research verb consumes exactly this output.
+#
+# applies.interfaces lists the CANONICAL name plus the diff_pairs `base`
+# tokens boards actually declare (lumina-carrier: ETH_RX / ETH_TX), because
+# the slot id is the normalized base, not the protocol name.
+id: 100base-tx
+kind: coverage-checklist
+applies:
+  interfaces: [100base-tx, eth, eth_rx, eth_tx]
+requires:
+  - {class: diff-pair, min_level: topology, note: "100 ohm differential MDI pair: width/gap for the stackup, intra-pair skew budget, no stubs, via/pad discontinuity discipline"}
+  - {class: return-path, min_level: topology, note: "unbroken reference under each pair, and what the reference becomes as the pair crosses the magnetics"}
+  - {class: emi, min_level: topology, note: "cable-side keepout, common-mode termination (Bob Smith) treatment, chassis-gap geometry"}
+  - {class: esd, min_level: topology, note: "MDI ESD/surge path and where it returns without crossing logic ground"}
+  - {class: creepage, min_level: topology, note: "isolation-barrier spacing across the magnetics (1.5 kV class) between MDI copper and logic/chassis"}
+  - {class: selection, min_level: topology, note: "magnetics vs integrated magjack, PHY family, termination network"}
+  - {class: decoupling, min_level: topology, note: "PHY core/analog rails and the PLL supply"}
+  - {class: constraints-emission, min_level: principle, note: "what the interface must emit into constraints.json (diff_pairs impedance/skew, high_speed, planes, keepouts)"}
+maturity: approved
+approval:
+  by: owner
+  date: "2026-08-15"
+  note: >
+    U14 ruling: land the in-fleet interface checklists APPROVED even though
+    no interface records exist, so the slots report an honest gap instead of
+    a silent provisional. lumina-carrier is the board that exercises this.
+    The class list is the owner's, drawn from what the carrier's Ethernet
+    leg actually had to decide; it is not derived from records (there are
+    none) and the first research pass may propose additions.
+prose: >
+  100BASE-TX MDI. No records yet - this checklist exists to make the gap
+  visible and to give the research pass its slot list.
+origin: U14 owner session (2026-08-15) - authored ahead of any record

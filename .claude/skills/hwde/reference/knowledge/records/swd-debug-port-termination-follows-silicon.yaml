@@ -1,0 +1,74 @@
+id: swd-debug-port-termination-follows-silicon
+classes: [selection]
+applies:
+  topologies: [swd-debug-port]
+  packages: []
+  interfaces: [swd]
+  parts: []
+rule:
+  enforced_by: null
+  default_external_termination: none
+  external_pull_direction: must match the device's internal termination
+  hazard_if_opposed: divider against the internal pull
+prose: >
+  A debug port's line terminations are decided by the SILICON, not by the
+  board. An MCU that owns its debug interface implements the pulls
+  internally, so the board's default is NO external part, and any external
+  part that is added must pull the SAME DIRECTION the device does.
+  Infineon AN220270 s9.4 states it plainly: "External termination resistors
+  should not be required for this MCU, because after POR, by default, the
+  JTAG interface is enabled in the boot ROM. If externals are applied on the
+  board, each external signal termination must be in the same direction as
+  it is done in the device implementation." Its Table 5 gives the directions,
+  and the 10 k to 100 k range a board must supply only where the MCU does
+  NOT: pull-DOWN to GND on SWCLK/TCK, pull-UP to VDDIO on SWDIO/TMS, TDI and
+  nTRST, and none on TDO/SWO (push-pull driver). The same page warns that a
+  series element between connector and pin can form "a possible voltage
+  divider in the debug clock signal" against that internal termination. ST's
+  STM32F030 pin table shows the identical posture from the other vendor
+  (Table 11 note 7: after reset the pins are SWD alternate functions with an
+  internal pull-up on SWDIO and pull-down on SWCLK). Nothing bounds this: it
+  is what to ASK of any target before drawing the net, at any supply, clock
+  or connector.
+sources:
+  - file: reference/knowledge/sources/infineon-an220270-hardware-design-guide-for-the-traveo-t2g-family-applicationnotes-en.pdf
+    page: 29
+    section: s9.4 Termination resistors
+    note: >
+      Read s9.4 in full: it rules that external termination resistors should
+      not be required because the MCU enables the debug interface at POR, and
+      that any external termination applied on the board must be in the same
+      direction as the device implementation. Same page carries Figure 20,
+      the 10-pin Cortex connector pinout.
+  - file: reference/knowledge/sources/infineon-an220270-hardware-design-guide-for-the-traveo-t2g-family-applicationnotes-en.pdf
+    page: 30
+    section: Table 5 + text under it
+    note: >
+      Read Table 5 "Termination resistor for debug interface": per signal it
+      gives the required termination if not implemented in the MCU (10 k to
+      100 k, pull-down on TCK/SWCLK, pull-up on TMS/SWDIO, TDI and nTRST,
+      none on TDO/SWO) and an "MCU implementation" column showing this MCU
+      already has them. The paragraph under it warns a series resistor may
+      form a voltage divider with the internal termination.
+  - file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf
+    page: 32
+    section: Table 11 note 7
+    note: >
+      Read the footnote block under the pin definitions table. Note 7: after
+      reset PA13/PA14 are configured as SWDIO and SWCLK alternate functions
+      with the internal pull-up on SWDIO and internal pull-down on SWCLK
+      activated - a second vendor's silicon doing exactly what the principle
+      says to look for, in the same directions.
+status: active
+origin: research:block-swd-debug-port-1
+level: principle
+maturity: approved
+generalizes: []
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read Infineon p29 s9.4 and p30 Table 5 + the paragraph under it, plus ST p32 note 7. The s9.4 sentences are quoted verbatim, including 'each external signal termination must be in the same direction as it is done in the device implementation'. Table 5 does give pull-down to GND on TCK/SWCLK and 10k-100k pull-up to VDDIO on TMS/SWDIO, TDI and nTRST with an MCU-implementation column, and the 'possible voltage divider in the debug clock signal' caution is on p30 as quoted. Level principle with no envelope is right: the rule is supply, clock and connector independent. One imprecision that does not touch the rule: the p30 citation note reads the required-termination column as giving 'none on TDO/SWO', but that column requires a 10k-100k pull-up on TDO - 'None. Termination, push-pull driver implemented' is the MCU-implementation cell."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

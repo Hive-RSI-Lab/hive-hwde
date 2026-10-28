@@ -1,0 +1,54 @@
+id: mcu-decoupler-is-the-local-source
+classes: [decoupling, return-path]
+applies:
+  topologies: [mcu]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  loop: "C -> VDD pin -> die -> VSS pin -> C, shortest on the board"
+  placement: "at the pin, same layer as the IC or directly beneath it"
+  return_via: "ground pad of the cap vias straight down to the ground structure"
+prose: >
+  An MCU's supply current is an average; the die draws it as nanosecond spikes
+  on every clock and I/O edge. AN2519 s2.1: if all eight I/O of a port switch
+  together the pulse can be several hundred mA, and unloaded it lasts only a
+  few ns. "Such a current spike cannot be delivered over long power supply
+  lines; the main source is (or should be) the decoupling capacitor." So the
+  LOOP the capacitor discharges through IS the component. AN2519 Fig 2-1
+  (Incorrect Decoupling) draws the cap far from the MCU with the high-current
+  ellipse enclosing a long path that runs through the power and ground PLANES -
+  the planes then carry the spike and the whole ground plane radiates, not just
+  the loop. Fig 2-2 moves the cap against the pins so the ellipse encloses only
+  the pad-to-pin path, and adds a series ferrite upstream so the spike never
+  reaches the plane (its impedance must stay low enough to drop no significant
+  DC). NXP AN13033 Fig 3 draws the same loop in section: cap on top, one via
+  straight down to the GND plane, one to VDD, the "local current loop" closing
+  vertically over a few mm. ST says it as a Caution under its own power-supply
+  scheme: the filtering capacitors go as close as possible to, or directly
+  below, the pins. Consequence: a correctly chosen decoupler placed 10 mm away
+  is a different, worse component.
+sources:
+  - {file: reference/knowledge/sources/00002519A.pdf, page: 5,
+     note: "s2.1 + Fig 2-1 Incorrect Decoupling: ns-scale spikes, several hundred mA when a port switches; the figure's High Current Loop ellipse runs through the power and ground planes and the whole plane then acts as an antenna; the ferrite's series impedance must not drop significant DC"}
+  - {file: reference/knowledge/sources/00002519A.pdf, page: 6,
+     note: "Fig 2-2 Decoupling with Series Inductor: cap moved against the MCU VCC/GND pins shrinks the High Current Loop ellipse to the pad-to-pin path, ferrite upstream keeps the spike off the plane"}
+  - {file: reference/knowledge/sources/AN13033.pdf, page: 6,
+     note: "Fig 3 bulk and decoupling capacitor connection, side view: the local current loop closes cap -> via to GND plane -> plane -> via to VDD plane; s3.2 bullets - ground side of the cap must via directly down to the internal ground plane, route distance to the power plane as short as possible"}
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 41,
+     note: "Fig 12 power supply scheme and its Caution: each power supply pair must be decoupled with filtering ceramic capacitors placed as close as possible to, or below, the appropriate pins on the underside of the PCB"}
+status: active
+origin: research:block-mcu-1
+level: principle
+maturity: approved
+generalizes: []
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read AN2519 p5/p6, AN13033 p6, DS p41. AN2519 p5 carries verbatim: Such a current spike cannot be delivered over long power supply lines; the main source is (or should be) the decoupling capacitor - plus the several-hundred-mA and few-nanosecond figures, and Fig 2-1 Incorrect Decoupling whose High Current Loop runs through the power and ground planes, with the text stating the whole ground plane will act as an antenna instead of only the high-current loop. p6 Fig 2-2 shows the cap moved against the MCU VCC/GND pins with the ferrite upstream. AN13033 p6 Fig 3 side view shows the local current loop closing through a via to the GND plane and a via to the VDD plane. DS p41 Caution is verbatim. One locator slip found, not enough to break the record: of the two s3.2 bullets the note pins to p6, only the route-distance-to-the-power-plane bullet is on p6; the ground-side-via bullet is the last line of p5, same section, same ledger file. Principle with no envelope is correct - this is the loop physics, nothing bounds it."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

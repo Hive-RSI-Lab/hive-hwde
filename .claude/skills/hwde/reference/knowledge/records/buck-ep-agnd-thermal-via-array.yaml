@@ -1,0 +1,117 @@
+id: buck-ep-agnd-thermal-via-array
+classes: [thermal-via, return-path]
+applies:
+  topologies: [buck]
+  packages: [SO-8-EP, HSOIC-8, DDA]
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  pad_role: "the exposed pad is BOTH the heat path and AGND - all electrical parameters are measured with respect to it"
+  via_array: "minimum 4 x 3 array of 10-mil (0.25 mm) vias, evenly distributed under the pad"
+  destination_on_2_layers: "the bottom-layer ground pour, 2 oz preferred and 1 oz the floor"
+  solder_integrity: "a partly wetted pad degrades effective RthetaJA AND the reference the loop measures against"
+  table_rthetaja: "42.9 C/W is for package comparison only - explicitly not valid for design"
+  area_curve_caveat: "the RthetaJA versus copper-area curve is drawn for a FOUR-layer board with 2 oz outers"
+prose: >
+  On the 8-pin HSOIC the exposed pad is not just a heatsink. The pin table
+  names it AGND - the ground reference for the internal references and
+  logic - and states that ALL electrical parameters are measured with
+  respect to it, so the via array under the pad is simultaneously the
+  thermal path and the analog ground connection. A partly wetted pad
+  therefore degrades both the effective thermal resistance and the
+  reference the feedback comparator works against, which is why the
+  datasheet says the integrity of that solder connection has a direct
+  bearing on effective RthetaJA. The vendor number is a minimum 4 x 3
+  array of 10-mil (0.25 mm) vias evenly distributed under the pad; the
+  library's buck-thermal-via-and-via-current holds ROHM's 0.3 mm at about
+  1.2 mm pitch, and both agree on the reason - small enough to fill with
+  solder instead of wicking it out of the joint. Where the array LANDS is
+  the two-layer catch: with no inner plane it has to reach the
+  bottom-layer ground pour, so that pour must be a real heatsink area
+  (2 oz preferred, 1 oz floor) and must not be cut up by routing. Do not
+  size anything from the 42.9 C/W in the thermal table - the datasheet
+  says it is not valid for design - and do not read the copper-area curve
+  literally either: it is drawn for a four-layer board with 2 oz outers
+  and 1 oz inners, falling from about 43 C/W at small area to about
+  28 C/W near 20 cm2 per layer.
+sources:
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 5
+    section: "Table 6-1 Pin Functions, THERMAL PAD row"
+    note: >
+      The thermal pad is AGND: analog ground for regulator and system,
+      ground reference for internal references and logic, and "all
+      electrical parameters are measured with respect to this pin". For
+      the HSOIC package the pad on the bottom of the device serves as both
+      the AGND connection and a thermal connection to the heat-sink ground
+      plane, and must be soldered to a ground plane to achieve good
+      electrical and thermal performance. The PGND row adds: connect to
+      system ground and AGND.
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 34
+    section: "10.1.1 Ground and Thermal Considerations"
+    note: >
+      TI recommends a minimum 4 x 3 array of 10-mil thermal vias to
+      connect the pad to the system ground-plane heat sink, evenly
+      distributed under the pad, with as much copper as possible on top
+      and bottom layers, and a four-layer 2 oz / 1 oz / 1 oz / 2 oz stack.
+      Same section: AGND and PGND must be connected to the ground planes
+      using vias next to the bypass capacitors.
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 33
+    section: "10.1 Layout Guidelines, rules 6 and 8"
+    note: >
+      Rule 6: the SOIC package's thermal pad must be soldered down to the
+      PCB ground plane; it acts as a heat-sink connection AND an
+      electrical ground connection, and the integrity of this solder
+      connection has a direct bearing on the total effective RthetaJA.
+      Rule 8: enough copper area for a low RthetaJA, 2 oz top and bottom
+      and no less than 1 oz, and with the SOIC package an array of
+      heat-sinking vias connecting the pad to the ground plane on the
+      BOTTOM PCB layer (inner planes only if the design has them).
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 25
+    section: "9.2.2.11 Maximum Ambient Temperature, Figure 9-3"
+    note: >
+      Effective RthetaJA depends on power dissipation, air flow, PCB area,
+      copper heat-sink area, the NUMBER OF THERMAL VIAS UNDER THE PACKAGE
+      and adjacent component placement. Figure 9-3 plots RthetaJA versus
+      copper area for a four-layer board and the HSOIC package: about
+      43 C/W at a few cm2 falling to about 28 C/W at 20 cm2 and about
+      24 C/W by 50-60 cm2. Caption text: the copper area is given per
+      layer, with top and bottom 2 oz and inner layers 1 oz.
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 7
+    section: "7.4 Thermal Information"
+    note: >
+      RthetaJA 42.9 C/W for the 8-pin DDA (HSOIC) package, with the
+      explicit note that the value is only valid for comparison with other
+      packages, was simulated on a 4-layer JEDEC board, does not represent
+      the performance obtained in an actual application, and can not be
+      used for design purposes. RthetaJC(bot) is 4.3 C/W - the pad is the
+      real path.
+status: active
+origin: research:block-buck-1
+level: topology
+envelope:
+  integration_kind: {in: [integrated-fet]}
+maturity: approved
+generalizes: []
+envelope_note: >
+  Scales with whether the die over that pad is both the heat source and
+  the reference. In a monolithic regulator both FETs dissipate into the
+  pad and here the pad is also AGND, so one via array serves two jobs and
+  its quality is a loop-accuracy question as much as a thermal one. With a
+  controller plus external FETs the heat is in the FETs and the
+  controller's pad is a quiet signal ground, not the thermal path. Not
+  bounded on pdiss: the 4 x 3 array is stated as a floor without reference
+  to power, and more dissipation only adds vias and copper.
+verification: {by: "second-reader", date: "2026-08-15", note: "Re-read lmr33630 p5, p7, p25, p33 and p34. The EP-is-AGND claim is not an inference and the datasheet does NOT call the pad a thermal pad tied to PGND: Table 6-1 on p5 names the THERMAL PAD row AGND, Analog ground for regulator and system, Ground reference for internal references and logic, and states that all electrical parameters are measured with respect to this pin, adding that for the HSOIC package the pad on the bottom of the device serves as both the AGND connection and a thermal connection to the heat sink ground plane and must be soldered to a ground plane to achieve good electrical and thermal performance. So the via array is a reference-accuracy item as well as a thermal one, as the record argues. p34 10.1.1 gives the minimum 4 x 3 array of 10-mil thermal vias evenly distributed under the PAD (10 mil = 0.254 mm, so the 0.25 mm gloss is fine) and the four-layer 2/1/1/2 oz stack; p33 rule 6 gives the solder-integrity bearing on total effective RthetaJA and rule 8 the 2 oz / 1 oz copper floor with the SOIC heat-sinking via array landing on the ground plane on the BOTTOM PCB layer, which is the two-layer catch the record draws. p7 carries RthetaJA 42.9 C/W with the explicit note that it is only valid for comparison with other packages and can not be used for design purposes, plus RthetaJC(bot) 4.3 C/W. p25 lists the number of thermal vias under the package among the RthetaJA drivers and captions Figure 9-3 as per-layer copper area on a four-layer board with 2 oz outers and 1 oz inners, the curve running about 43 C/W down to about 28 at 20 cm2 and about 24 by 50-60 cm2."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

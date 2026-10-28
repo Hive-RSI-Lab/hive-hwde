@@ -1,0 +1,187 @@
+(pcb "/work/boards/hwde-led-test/kicad/route/hwde-led-test.dsn"
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "10.0.6")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 1)
+      )
+    )
+    (boundary
+      (path pcb 0  19798.3 -15662.4  19991 -15700.7  20172.5 -15775.9  20335.9 -15885.1
+            20474.9 -16024.1  20584.1 -16187.5  20659.3 -16369  20697.6 -16561.7
+            20700 -16660  20700 -23740  20697.6 -23838.3  20659.3 -24031
+            20584.1 -24212.5  20474.9 -24375.9  20335.9 -24514.9  20172.5 -24624.1
+            19991 -24699.3  19798.3 -24737.6  19700 -24740  8650 -24740
+            8551.75 -24737.6  8359.01 -24699.3  8177.46 -24624.1  8014.07 -24514.9
+            7875.12 -24375.9  7765.94 -24212.5  7690.74 -24031  7652.41 -23838.3
+            7650 -23740  7650 -16660  7652.41 -16561.7  7690.74 -16369  7765.94 -16187.5
+            7875.12 -16024.1  8014.07 -15885.1  8177.46 -15775.9  8359.01 -15700.7
+            8551.75 -15662.4  8650 -15660  19700 -15660  19798.3 -15662.4)
+    )
+    (plane GND (polygon B.Cu 0  8150 -16160  20200 -16160  20200 -24240  8150 -24240  8150 -16160))
+    (via "Via[0-1]_600:300_um")
+    (rule
+      (width 200)
+      (clearance 127)
+      (clearance 31.75 (type smd_smd))
+    )
+  )
+  (placement
+    (component aiee:C0603
+      (place C1 13200 -20200 front -90 (PN 4.7uF))
+    )
+    (component aiee:R0603
+      (place R1 15600 -18900 front 0 (PN 470R))
+    )
+    (component "aiee:HDR-TH_2P-P2.54-V-M"
+      (place J1 10900 -20200 front -90 (PN "PZ254V-11-02P"))
+    )
+    (component "aiee:LED0603-RD"
+      (place D1 18000 -19800 front 90 (PN "KT-0603G"))
+    )
+  )
+  (library
+    (image aiee:C0603
+      (outline (polygon signal 0  1395 695  1395 -695  -1395 -695  -1395 695))
+      (outline (path signal 200  -280 -710  -1080 -710))
+      (outline (path signal 200  280 -710  1080 -710))
+      (outline (path signal 250  -1390 -400  -1390 400))
+      (outline (path signal 250  1390 400  1390 -400))
+      (outline (path signal 200  -280 710  -1080 710))
+      (outline (path signal 200  280 710  1080 710))
+      (outline (polygon signal 0  -1080 -610  -1030 -623.398  -993.397 -660  -980 -710
+            -993.398 -760  -1030 -796.603  -1080 -810  -1186.12 -796.029
+            -1285 -755.07  -1369.91 -689.914  -1435.07 -605  -1476.03 -506.116
+            -1490 -400  -1476.6 -350  -1440 -313.398  -1390 -300  -1340 -313.397
+            -1303.4 -350  -1290 -400  -1290 -433.261  -1269.44 -496.526
+            -1230.34 -550.344  -1176.53 -589.444  -1113.26 -610  -1080 -610))
+      (outline (polygon signal 0  1290 -400  1303.4 -350  1340 -313.397  1390 -300  1440 -313.398
+            1476.6 -350  1490 -400  1476.03 -506.116  1435.07 -605  1369.91 -689.914
+            1285 -755.07  1186.12 -796.029  1080 -810  1030 -796.603  993.398 -760
+            980 -710  993.397 -660  1030 -623.398  1080 -610  1113.26 -610
+            1176.53 -589.444  1230.34 -550.344  1269.44 -496.526  1290 -433.261
+            1290 -400))
+      (outline (polygon signal 0  -1290 400  -1303.4 350  -1340 313.397  -1390 300  -1440 313.398
+            -1476.6 350  -1490 400  -1476.03 506.116  -1435.07 605  -1369.91 689.914
+            -1285 755.07  -1186.12 796.029  -1080 810  -1030 796.603  -993.398 760
+            -980 710  -993.397 660  -1030 623.398  -1080 610  -1113.26 610
+            -1176.53 589.444  -1230.34 550.344  -1269.44 496.526  -1290 433.261
+            -1290 400))
+      (outline (polygon signal 0  1080 610  1030 623.398  993.397 660  980 710  993.398 760
+            1030 796.603  1080 810  1186.12 796.029  1285 755.07  1369.91 689.914
+            1435.07 605  1476.03 506.116  1490 400  1476.6 350  1440 313.398
+            1390 300  1340 313.397  1303.4 350  1290 400  1290 433.261  1269.44 496.526
+            1230.34 550.344  1176.53 589.444  1113.26 610  1080 610))
+      (pin Rect[T]Pad_800.000000x900.000000_um 1 -700 0)
+      (pin Rect[T]Pad_800.000000x900.000000_um 2 700 0)
+    )
+    (image aiee:R0603
+      (outline (polygon signal 0  1395 -695  -1395 -695  -1395 695  1395 695))
+      (outline (path signal 150  -1390 660  -430 660))
+      (outline (path signal 150  -1390 -660  -1390 660))
+      (outline (path signal 150  -430 -660  -1390 -660))
+      (outline (path signal 150  430 -660  1390 -660))
+      (outline (path signal 150  1390 660  430 660))
+      (outline (path signal 150  1390 -660  1390 660))
+      (pin Rect[T]Pad_806.000000x864.000000_um 1 -750 0)
+      (pin Rect[T]Pad_806.000000x864.000000_um 2 750 0)
+    )
+    (image "aiee:HDR-TH_2P-P2.54-V-M"
+      (outline (polygon signal 0  2535 1245  2535 -1245  -2535 -1245  -2535 1245))
+      (outline (path signal 200  -2540 -1270  -2540 1270))
+      (outline (path signal 200  2540 -1270  -2540 -1270))
+      (outline (path signal 200  -2540 1270  -630 1270))
+      (outline (path signal 200  2540 1270  2540 -1270))
+      (outline (path signal 200  2540 1270  -630 1270))
+      (outline (path signal 150  -2540 -1220  -2520.72 -1227.02  -2510.46 -1244.79  -2514.02 -1265
+            -2529.74 -1278.19  -2550.26 -1278.19  -2565.98 -1265  -2569.54 -1244.79
+            -2559.28 -1227.02  -2540 -1220))
+      (pin Rect[A]Pad_2000.000000x2000.000000_um 1 -1270 0)
+      (pin Round[A]Pad_2000.000000_um 2 1270 0)
+    )
+    (image "aiee:LED0603-RD"
+      (outline (polygon signal 0  -1395 -695  -1395 695  1395 695  1395 -695))
+      (outline (path signal 150  1390 760  1390 -720))
+      (outline (path signal 150  240 760  1390 760))
+      (outline (path signal 150  -140 750  -1190 750))
+      (outline (path signal 150  -1490 450  -1190 750))
+      (outline (path signal 150  220 360  220 350))
+      (outline (path signal 150  220 360  220 -320))
+      (outline (path signal 150  220 350  -120 10))
+      (outline (path signal 150  -1490 350  -1490 450))
+      (outline (path signal 150  -1490 350  -1490 -350))
+      (outline (path signal 150  220 10  -120 10))
+      (outline (path signal 150  220 -320  210 -320))
+      (outline (path signal 150  210 -320  -120 10))
+      (outline (path signal 150  -1490 -350  -1490 -450))
+      (outline (path signal 150  -1490 -450  -1190 -750))
+      (outline (path signal 150  240 -740  1390 -740))
+      (outline (path signal 150  -140 -750  -1190 -750))
+      (pin Rect[T]Pad_800.000000x800.000000_um (rotate 90) 1 -750 0)
+      (pin Rect[T]Pad_800.000000x800.000000_um (rotate 90) 2 750 0)
+    )
+    (padstack Round[A]Pad_2000.000000_um
+      (shape (circle F.Cu 2000))
+      (shape (circle B.Cu 2000))
+      (attach off)
+    )
+    (padstack Rect[A]Pad_2000.000000x2000.000000_um
+      (shape (rect F.Cu -1000 -1000 1000 1000))
+      (shape (rect B.Cu -1000 -1000 1000 1000))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_800.000000x800.000000_um
+      (shape (rect F.Cu -400 -400 400 400))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_800.000000x900.000000_um
+      (shape (rect F.Cu -400 -450 400 450))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_806.000000x864.000000_um
+      (shape (rect F.Cu -403 -432 403 432))
+      (attach off)
+    )
+    (padstack "Via[0-1]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net +5V
+      (pins C1-1 R1-1 J1-1)
+    )
+    (net GND
+      (pins C1-2 J1-2 D1-1)
+    )
+    (net /LED_A
+      (pins R1-2 D1-2)
+    )
+    (class kicad_default +5V /LED_A GND
+      (circuit
+        (use_via "Via[0-1]_600:300_um")
+      )
+      (rule
+        (width 200)
+        (clearance 127)
+      )
+    )
+  )
+  (wiring
+  )
+)

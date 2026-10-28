@@ -1,0 +1,58 @@
+id: series-voltage-reference
+kind: coverage-checklist
+applies:
+  topologies: [series-voltage-reference]
+requires:
+  - class: selection
+    min_level: topology
+    note: "input headroom/dropout is a hard gate BEFORE any accuracy talk (per-VOUT, over temperature, at load), then the DC error ladder - initial accuracy, tempco grade, hysteresis, long-term drift, noise - stacked as one budget"
+  - class: decoupling
+    min_level: topology
+    note: "the output capacitor is a stability component with a permitted RANGE (min AND max) plus an ESR band, and the bulk cap a switched-capacitor converter load needs at its REF pin must live inside that same window"
+  - class: thermal
+    min_level: topology
+    note: "the ppm/C is a box, not a slope: converting it to error over the real range, plus thermal hysteresis (per excursion, per cycle) and self-heating"
+  - class: return-path
+    min_level: topology
+    note: "IR drop from the reference output pin to the load pin is uncalibratable gain error - placement at the load, trace budget vs LSB/2, force/sense (Kelvin) when the part offers it"
+  - class: sourcing
+    min_level: topology
+    note: "the grade suffix (not the base part number) sets accuracy and tempco, and reflow permanently shifts the output - assembly order is part of the spec"
+maturity: approved
+sources:
+  - file: reference/knowledge/sources/1599556.pdf
+    page: 3
+    note: "Table 3 ADR4520 electrical characteristics: the classes a designer must hold appear as separate spec rows - dropout, load capacitance min/max, TC by grade, solder heat shift, hysteresis, long-term drift, noise [ADI Rev 0, 2012, farnell.com mirror]"
+  - file: reference/knowledge/sources/1599556.pdf
+    page: 31
+    note: "Applications: Input and Output Capacitors (Table 12 minimum COUT) and Location of Reference in System (IR drop from output trace) - the decoupling and return-path rows [ADI Rev 0, 2012, farnell.com mirror]"
+  - file: reference/knowledge/sources/snaa320b.pdf
+    page: 5
+    note: "Eq 1/2 worst-case and RSS stacking of accuracy + tempco + hysteresis + long-term drift + 1/f noise; Fig 4-2 shows the stack lands as ADC gain error"
+  - file: reference/knowledge/sources/snaa320b.pdf
+    page: 6
+    note: "Table 4-1 worked error budget and Table 5-1 (which error terms single-point vs multipoint calibration removes) - why an uncalibrated board must hold every row"
+  - file: reference/knowledge/sources/ref70.pdf
+    page: 6
+    note: "Sec 7.3 Recommended Operating Conditions: VIN min = VOUT + VDO with footnote 'For VOUT < 2.5 V minimum VIN = 2.75 V' - the selection row's hard gate"
+prose: >
+  Before committing a series voltage reference a designer must hold five things.
+  (1) SELECTION: whether the part can run at all on the worst-case rail - the
+  minimum input voltage is per-output-voltage, specified over temperature and
+  load, and a family catalog attribute is not that number; then the error ladder,
+  because on a non-ratiometric uncalibrated board the reference IS the gain term.
+  (2) DECOUPLING: the output capacitor window (min, max and ESR) and the input
+  bypass, since the cap is inside the control loop. (3) THERMAL: the box-method
+  tempco converted honestly to the application range, plus hysteresis, which the
+  box does not contain. (4) RETURN-PATH: IR drop between the reference pin and
+  the load pin, which no reference accuracy can fix. (5) SOURCING: grade suffix
+  and reflow-induced (solder heat) shift, which lands after the part is bought.
+origin: research:block-series-voltage-reference-1
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q3; not the owner's own ruling. Approved after a
+    coverage run on the five breadboard boards (bb-buck, bb-mcu, bb-ldo, bb-
+    amp, bb-adc) at the default floor. No row needed lowering.

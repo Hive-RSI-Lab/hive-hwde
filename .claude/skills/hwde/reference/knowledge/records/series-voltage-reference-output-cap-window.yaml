@@ -1,0 +1,77 @@
+id: series-voltage-reference-output-cap-window
+classes: [decoupling]
+applies:
+  topologies: [series-voltage-reference]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  cout_is: "a stability component inside the loop, specified as a RANGE - both ends bind"
+  adr4520_cl_uf: "1 min to 100 max (ADR4530 and up: 0.1 min)"
+  ref70_cl_uf: "1 to 100, ESR 1 mohm to 400 mohm"
+  ref35_cl_uf: "0.1 to 10, ESR below 400 mohm"
+  cin_uf: "ADI 1 to 10 uF PLUS a parallel 0.1 uF ceramic; TI 0.1 to 10 uF"
+  cout_min_is_per_member: "ADR4520/ADR4525 need 1 uF minimum, ADR4530 and up only 0.1 uF - the low-VOUT members need 10x more"
+  cost_of_more_c: "longer turn-on time and start-up input current up to ISC"
+  enforced_by: null
+prose: >
+  The output capacitor of a series reference is not decoupling, it is part of the
+  compensation, and the datasheets state a WINDOW rather than a minimum. ADI
+  ADR4520 Table 3 (p3) has a LOAD CAPACITANCE row reading min 1 uF, max 100 uF;
+  p31 repeats the low end as Table 12 "Minimum COUT" - 1.0 uF for the ADR4520 and
+  ADR4525 but 0.1 uF for the ADR4530 and above - under the sentence "An output
+  capacitor is required for stability and to filter out low level voltage noise".
+  So the same family needs 10x more capacitance on its low-voltage members. TI
+  REF70 p25 is stricter: CIN 0.1 uF to 10 uF, "A 1-uF to 100-uF output capacitor
+  (CL) must be connected from OUTF to GND. The equivalent series resistance (ESR)
+  value of CL must be 1 mohm to 400 mohm to ensure output stability" - an ESR
+  band with BOTH ends specified, which rules out both very-low-ESR and lossy
+  parts. TI REF35 p22 gives CL 0.1 uF to 10 uF with ESR below 400 mohm. Adding
+  capacitance is not free: ADI p31 says extra 1-10 uF in parallel improves the
+  response to sudden load changes but increases turn-on time; REF35 p22 says
+  start-up time depends on output capacitance, higher C meaning longer start-up;
+  REF70 p32 warns input current can momentarily rise to ISC at start-up because
+  of the output caps. Pick CL inside the part's window and check the total,
+  including any bulk the load demands, against the window's MAX.
+sources:
+  - file: reference/knowledge/sources/1599556.pdf
+    page: 3
+    note: "ADR4520 Table 3 LOAD CAPACITANCE row: min 1 uF, max 100 uF (a two-ended window); turn-on settling 90 us specified at CL = 1 uF, CIN = 0.1 uF [ADI Rev 0, 2012, farnell.com mirror]"
+  - file: reference/knowledge/sources/1599556.pdf
+    page: 31
+    note: "Applications: 'An output capacitor is required for stability', Table 12 Minimum COUT = 1.0 uF for ADR4520/ADR4525 vs 0.1 uF for ADR4530-ADR4550; input 1-10 uF plus a parallel 0.1 uF ceramic; extra parallel 1-10 uF improves transient response but increases turn-on time [ADI Rev 0, 2012, farnell.com mirror]"
+  - file: reference/knowledge/sources/1599556.pdf
+    page: 5
+    note: "ADR4530 (3.0 V) Table 5: LOAD CAPACITANCE 0.1 uF min to 100 uF max and turn-on settling specified at CL = 0.1 uF - against 1 uF min for the ADR4520 (p3) and ADR4525 (p4), confirming the per-member split of Table 12 [ADI Rev 0, 2012, farnell.com mirror]"
+  - file: reference/knowledge/sources/ref70.pdf
+    page: 25
+    note: "Sec 9.4.1 Basic Connections + Fig 9-1: CIN 0.1-10 uF, CL 1-100 uF from OUTF to GND, ESR of CL must be 1 mohm to 400 mohm to ensure output stability; block diagram shows CL hangs on the reference buffer's output"
+  - file: reference/knowledge/sources/ref35.pdf
+    page: 22
+    note: "Sec 8.4.1 + Fig 8-1: CIN 0.1-10 uF, CL 0.1-10 uF from REF to GND, ESR below 400 mohm; Sec 8.4.2 + Fig 8-2 start-up at CL = 1 uF settles without oscillation and start-up time grows with output capacitance"
+  - file: reference/knowledge/sources/ref70.pdf
+    page: 32
+    note: "Sec 10.3: at start-up the input current can momentarily rise to ISC because of the output capacitors; layout guideline repeats low-ESR 0.1 uF at VIN and 1-100 uF at OUTF"
+status: active
+origin: research:block-series-voltage-reference-1
+level: topology
+envelope:
+  output_cap_kind: {in: [datasheet-defined]}
+maturity: approved
+generalizes: []
+envelope_note: >
+  Bounded by the kind of output capacitor the part demands, because that is what
+  the rule is about: it holds for references whose datasheet DEFINES a stable
+  capacitance range (every series part read here does, and both ends plus an ESR
+  band are specified). It does not transfer to parts advertised as stable with
+  any capacitance or with no output cap, nor to a shunt reference where the
+  capacitor sits across a resistor-fed diode rather than inside an amplifier
+  loop - there the cap is chosen for noise and transient response, not stability.
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read for the cin_uf correction and the added p5 citation. ADI p3 LOAD CAPACITANCE is a two-ended window read off the word coordinates: 1 at x=436 under the Min header (x=436) and 100 at x=498 under Max (x=498), unit uF - so a 47 uF converter REF bypass sits inside the ADR4520's own stable range and this record forces no reference buffer. p31 is verbatim and the corrected cin_uf now matches it exactly: 'A 1 uF to 10 uF electrolytic or ceramic capacitor can be connected to the input... An additional 0.1 uF ceramic capacitor should be connected in parallel to reduce supply noise', alongside 'An output capacitor is required for stability and to filter out low level voltage noise', Table 12 Minimum COUT = 1.0 uF for ADR4520/ADR4525 versus 0.1 uF for ADR4530 through ADR4550, and the extra parallel 1-10 uF that improves transient response but increases turn-on time. The new p5 citation lands: the ADR4530 table gives LOAD CAPACITANCE 0.1 (Min, x=437) to 100 (Max, x=499) uF and its TURN-ON SETTLING TIME row is specified at CL = 0.1 uF, CIN = 0.1 uF, RL = 1 kohm (130 us), against p3's CL = 1 uF, CIN = 0.1 uF (90 us) - so the per-member split of Table 12 is confirmed from the electrical tables themselves, not only from the applications page. REF70 p25 Sec 9.4.1 is verbatim ('A 1-uF to 100-uF output capacitor (CL) must be connected from OUTF to GND. The equivalent series resistance (ESR) value of CL must be 1 mohm to 400 mohm to ensure output stability') and the 1-400 mohm ESR band is repeated as footnote (1) on p9. REF35 p22 is verbatim (CIN 0.1-10 uF, CL 0.1-10 uF from REF to GND, ESR lower than 400 mohm, higher capacitance meaning longer start-up). REF70 p32 start-up inrush to ISC is verbatim. Nothing left to refute here."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

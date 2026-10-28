@@ -1,0 +1,21 @@
+{
+  "power": [
+    {"net": "+5V", "current_a": 0.01, "dt_c": 10}
+  ],
+  "voltages": [
+    {"net": "+5V", "voltage": 5.25}
+  ],
+  "coating": "none",
+  "placement": {
+    "edges": [{"ref": "J1", "edge": "left", "pos": 0.5}],
+    "groups": [{"name": "input", "anchor": "J1", "members": ["C1"]}],
+    "sides": [{"ref": "R1", "side": "front", "reason": "SMD top only"},
+              {"ref": "D1", "side": "front", "reason": "SMD top only"},
+              {"ref": "C1", "side": "front", "reason": "SMD top only"}]
+  },
+  "blocks": [
+    {"topology": "led-indicator", "block": "B3", "name": "R1 + D1 green LED",
+     "operating_point": {"vin_v": 5, "iout_a": 0.0043, "pdiss_w": 0.022,
+                         "board_layers": 2}}
+  ]
+}

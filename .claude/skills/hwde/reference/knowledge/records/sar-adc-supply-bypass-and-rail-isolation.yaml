@@ -1,0 +1,72 @@
+id: sar-adc-supply-bypass-and-rail-isolation
+classes: [decoupling]
+applies:
+  topologies: [sar-adc]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  local_bypass: "0.1 uF ceramic as close as possible to the package"
+  bulk: "1 uF to 10 uF beside it; 10 uF to 100 uF at the supply entry"
+  rail_isolation: "5 ohm or 10 ohm series resistor between a shared digital rail and the converter VDD"
+  two_cap_order: "smaller capacitor closest to the pin, shortest leads"
+  analog_parts_rail: "op amps and the voltage reference on the analog rail, not behind the converter's RC"
+  power_trace_width: "2x to 3x signal-trace width where no plane exists"
+prose: >
+  A SAR has no supply rejection at the instant that matters, so its supply
+  pin must be locally stiff AND isolated from the digital rail it usually
+  shares. ADS8326 p.26: "a 0.1uF ceramic bypass capacitor should be placed as
+  close as possible to the ADS8326 package. In addition, a 1uF to 10uF
+  capacitor and a 5 ohm or 10 ohm series resistor may be used to low-pass
+  filter a noisy supply." p.27 figs 44/45 show the built form: the
+  converter's VDD comes off the microcontroller/DSP rail through a 5 ohm
+  series resistor with 0.1 uF and 10 uF at the pin, which "filters the
+  microcontroller noise on the supply, as well as any high-frequency noise
+  from the supply itself", while the op amps and the voltage reference hang
+  on the analog supply AVDD. AN688 p.4 generalizes the practice: a bypass
+  capacitor for EVERY active device plus 10 uF to 100 uF at the supply entry,
+  value chosen by the device's bandwidth (1 uF at or below about 1 MHz,
+  0.1 uF above about 10 MHz), placed as close as possible to the power pin,
+  the SMALLER of two caps closest to the pin, lead length as short as
+  possible. AN688 p.4 measures what skipping them costs: with the bypass
+  capacitors removed from the ground-plane board, a DC input spreads over
+  codes 2506-2518, the mass piling on 2511-2514 and 2516 (fig 8), where the
+  same board with them fitted puts most of it on two adjacent codes
+  (fig 6, p.3).
+sources:
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 26
+    note: "LAYOUT: power to the converter should be clean and well bypassed - 0.1 uF ceramic as close as possible to the package, plus a 1 uF to 10 uF capacitor and a 5 ohm or 10 ohm series resistor to low-pass filter a noisy supply"
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 27
+    note: "APPLICATION CIRCUITS figs 44/45: the ADS8326 VDD is fed from the DSP/MCU rail (DVDD) through a 5 ohm series resistor with 0.1 uF + 10 uF at the pin - text says this filters microcontroller noise and HF supply noise - while the OPA350/OPA365 and the REF3225/REF3240 reference are connected to the analog supply AVDD"
+  - file: reference/knowledge/sources/00688b.pdf
+    page: 4
+    note: "DID I SAY BY-PASS: bypass capacitors belong in two places - 10 uF to 100 uF at the power supply and one for every active device; 1 uF for devices with bandwidth at or below ~1 MHz, 0.1 uF above ~10 MHz; place as close as possible to the power pin, smaller cap closest, shortest lead length. Same page, fig 8 (4096 samples, ground-plane board with all bypass caps REMOVED), every bar top re-measured against the figure's own 0-to-1400 gridlines: 2505 zero, 2506 30, 2507 40, 2508 zero, 2509 32, 2510 32, 2511 739, 2512 760, 2513 940, 2514 543, 2515 158, 2516 764, 2517 163, 2518 56, 2519 zero. So the occupied span is 2506-2518 (with 2508 empty inside it), the tall bars are 2511-2514 and 2516, and 2515/2517 are dips to about a fifth of their neighbours - the spread is bimodal (peak 2513, dip 2515, second peak 2516), not a smooth hump. Same measurement on fig 6 returns 1296 and 1378 on codes 2501/2502, which is the method check. Its caption says the board 'has a ground plane as shown in the PCB layout in Figure 3' although fig 3 is the plane-LESS board; the body text on this page says the data came from the fig 5 layout minus the bypass caps, which is the reading taken here"
+  - file: reference/knowledge/sources/00688b.pdf
+    page: 3
+    note: "Fig 6 histogram (same board WITH the bypass capacitors, ground plane fitted): the mass sits on codes 2501 and 2502 (about 1300 and 1380 of 4096) with a low skirt from 2496 to 2506. Its caption and the body text ask for power traces two to three times wider than signal traces to reduce power-supply trace inductance"
+status: active
+origin: "research:block-sar-adc-1"
+level: topology
+envelope:
+  pdiss_w: {max: 0.05}
+maturity: approved
+generalizes: []
+envelope_note: >
+  The local 0.1 uF at the pin is unbounded good practice; the RC rail
+  ISOLATION is what carries the bound. A 5-10 ohm series resistor is free
+  only because the converter is micropower - ADS8326 p.19 quotes under 10 mW
+  from VDD, so the drop is a few millivolts. Above roughly 50 mW on a 3.3 V
+  class rail (about 15 mA, i.e. 75-150 mV of drop that moves with activity)
+  the resistor becomes a load-dependent supply error of its own and the
+  isolation has to become an LDO or a ferrite instead.
+verification: {by: "research-second-reader", date: "2026-08-16", note: "Re-read AN688 (00688b.pdf) p.4 fig 8 + p.3 fig 6/fig 4, and ADS8326 p.26/p.27. Method: NOT eyeballed and NOT a naive path envelope - I read the chart's own vector rects with PyMuPDF and applied the white overpaint analytically (visible bar top = max(black rect top, overlapping white rect bottom)), calibrated by least squares on the figure's own 0/200/../1400 gridlines (resid < 3.3 counts). Validated on two figures with independent prior reads: fig 6 codes 2501/2502 = 1297/1377 (researcher 1296/1378, prior verdict 1296/1375) and fig 4 code 2512 = 815 (researcher 815, prior 814). Fig 8 then reads 2505 no bar, 2506 30.0, 2507 40.1, 2508 NO BAR DRAWN AT ALL, 2509 31.7, 2510 31.7, 2511 739.0, 2512 759.1, 2513 940.1, 2514 542.9, 2515 157.4, 2516 764.1, 2517 162.4, 2518 55.2, 2519 no bar - every value within 1.1 counts of the record. Also rendered fig 8 at 6x and looked at it: the 2508 cell between the tick marks is visibly empty, and the bimodal shape (peak 2513, dip 2515, second peak 2516 above 2514) is plain. So the occupied span 2506-2518, the interior zero at 2508, the tall set 2511-2514 plus 2516 and the bimodal description all hold. Bar-to-code mapping cross-checked three ways (fig 4 and fig 6 map correctly under the same nearest-label rule; bar pitch 12.7 pt vs a consistent +0.4 to +0.6 pt label offset, so a one-category shift is impossible). ADS8326 p.26 carries the quoted sentence verbatim ('a 0.1uF ceramic bypass capacitor should be placed as close as possible to the ADS8326 package. In addition, a 1uF to 10uF capacitor and a 5 or 10 ohm series resistor may be used to low-pass filter a noisy supply') plus the SAR-spike-sensitivity paragraph behind the prose's opening claim. p.27 fig 44 rendered and read: DVDD 2.7-3.6V rail (0.1uF+10uF at the DSP) feeds ADS8326 VDD through the 5 ohm series R with 0.1uF+10uF at the converter pin, while REF3225/OPA350/OPA365 hang on AVDD - and the body text says so ('Operational amplifiers and voltage reference are connected to analog power supply, AVDD'). AN688 p.4 text confirms the two-location bypass rule, the 1uF/0.1uF bandwidth split, smaller-cap-closest and shortest-lead; p.3 text confirms the 2x-3x power-trace width and the fig 6 caption. The record's own note about the fig 8 caption naming Figure 3 while the body text says Figure 5 minus the caps is accurate and honestly flagged. Envelope: ADS8326 p.19 does say 'consuming less than 10mW from VDD' verbatim, and the 50 mW / 15 mA / 75-150 mV threshold arithmetic is internally correct; p.19 is simply missing from sources[] (citation hygiene, not an unsupported claim). Nothing refuted."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

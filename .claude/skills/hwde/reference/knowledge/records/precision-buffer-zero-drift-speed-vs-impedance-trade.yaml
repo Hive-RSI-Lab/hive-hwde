@@ -1,0 +1,99 @@
+id: precision-buffer-zero-drift-speed-vs-impedance-trade
+classes: [selection]
+applies:
+  topologies: [precision-buffer]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  trade: "within the zero-drift family, source-impedance ceiling and gain bandwidth move OPPOSITE ways"
+  span: "OPA333 1000 kohm ceiling at 0.35 MHz GBW vs OPA189 1 kohm ceiling at 14 MHz GBW"
+  two_gates: "settling bandwidth AND source-impedance ceiling are independent - the family can fail either"
+  check_settling_not_gbw: "use the datasheet settling-time curve and slew rate, not GBW alone"
+  gbw_test_condition: "GBW is quoted at a stated C_L - re-check it at the real load"
+prose: >
+  Zero-drift amplifiers buy DC accuracy with speed, and the vendor table that
+  ranks them by source-impedance ceiling ranks them the opposite way by
+  bandwidth. In TI's
+  zero-drift selection table (sboa586a p26) the part with the widest
+  source-impedance ceiling, OPA333 at 1000 kohm, has the lowest gain bandwidth
+  in the table, 0.35 MHz, and the highest noise, 55 nV/rtHz; OPA189 at 14 MHz
+  and 5.2 nV/rtHz tolerates only 1 kohm. Column F (max recommended source and
+  feedback impedance) and column D (GBW) move against each other across three
+  decades. For a follower sitting between a high-impedance source and a SAR,
+  those are two INDEPENDENT gates - the settling bandwidth
+  BW >= ln(2^N)/(2*pi*t_settle) (sprpeo2 p25) and the impedance ceiling - and
+  the zero-drift family can fail either, so the part cannot be picked from its
+  offset spec alone. Check the settling curve rather than GBW: OPA333's GBW of
+  350 kHz is specified at C_L = 100 pF with a 0.16 V/us slew rate (opa333 p7),
+  and its measured settling time vs closed-loop gain for a 4 V step (p10 fig
+  14) is about 40 us to 0.01% and 50 us to 0.001% at unity gain. Dividing that
+  slew rate into this block's 2.048 V full-scale input step gives 12.8 us for
+  the slewing alone.
+sources:
+  - file: reference/knowledge/sources/sboa586a.pdf
+    page: 26
+    section: "Table 9-1 Zero-Drift Selection Table"
+    note: >
+      Seven-column table for eight devices. Reading column D (GBW) against
+      column F (max recommended R_IN and Rf||Rg): OPA333 0.35 MHz / 1000 kohm,
+      OPA187 0.55 MHz / 500 kohm, OPA186 0.75 MHz / 500 kohm, OPA188 2 MHz /
+      10 kohm, OPA387 5.7 MHz / 10 kohm, OPA388 10 MHz / 10 kohm, OPA189
+      14 MHz / 1 kohm - bandwidth and impedance ceiling anti-correlated.
+  - file: reference/knowledge/sources/sboa586a.pdf
+    page: 25
+    section: "9 Procedure for Selecting a Zero-Drift Amplifier"
+    note: >
+      The seven-step procedure keeps the gates separate: step 2 screens on
+      source impedance (column F), step 3 on noise (column G), step 6 on
+      chopping noise, and only step 7 checks that bandwidth, slew rate and
+      output drive meet the application - i.e. speed is checked last and can
+      still disqualify a part that passed every DC screen.
+  - file: reference/knowledge/sources/sprpeo2.pdf
+    page: 25
+    section: "ADC Driver Design: Bandwidth"
+    note: >
+      The settling gate this trade is measured against - BW >=
+      ln(2^N)/(2*pi*t_settle), settling time < acquisition time + margin, with
+      extra margin for signal bandwidth and the input RC.
+  - file: reference/knowledge/sources/opa333.pdf
+    page: 7
+    section: "6.6 Electrical Characteristics"
+    note: >
+      Frequency-response block: GBW 350 kHz specified at C_L = 100 pF, slew
+      rate 0.16 V/us at G = +1; alongside Vos 10 uV max and drift 0.05 uV/C
+      max - the DC specs that make the part attractive and the AC specs that
+      may disqualify it.
+  - file: reference/knowledge/sources/opa333.pdf
+    page: 10
+    section: "6.7 Typical Characteristics, Figures 10-14"
+    note: >
+      Fig 14 settling time vs closed-loop gain for a 4 V step: about 40 us to
+      0.01% and 50 us to 0.001% at unity gain (left edge), rising steeply with
+      gain. Figs 10 and 11 show the large- and small-signal step responses at
+      G = 1 into R_L = 10 kohm on 50 us/div and 5 us/div timebases.
+status: active
+origin: research:block-precision-buffer-1
+level: family
+envelope:
+  amp_kind: {in: [zero-drift]}
+  settle_window_us: {max: 100}
+maturity: approved
+generalizes: [precision-buffer-settles-not-bandwidth]
+envelope_note: >
+  Scales with the settling window the block is given: the trade only exists
+  while the window is short enough that a zero-drift part's bandwidth can
+  fail it. The bound comes from the slowest charted device - OPA333 settles a
+  4 V step in about 40-50 us at unity gain (opa333 p10 fig 14) - so past
+  roughly 100 us even the slowest zero-drift amplifier settles comfortably
+  and only the DC gates remain. No lower bound: shorter windows simply make
+  the trade sharper.
+verification: {by: "research-second-reader", date: "2026-08-16", note: "Re-read sboa586a p26 and p25 and opa333 p7 and p10, pushing on the edited lead-in, and re-measured fig 14 out of the vector geometry rather than by eye. The edit is true of the page and the rest of the record still stands. TABLE 9-1 RE-TRANSCRIBED IN FULL from p26, all eight rows and seven columns: header A Device, B Offset (uV), C Drift (uV/C), D GBW (MHz), E N (nV/rtHz), F MAX Recommended R_IN and Rf||Rg (kohm), G Noise Optimized Rf||Rg (kohm). OPA189 3 / 0.02 / 14 / 5.2 / 1 / 0.183; OPA388 5 / 0.05 / 10 / 7 / 10 / 0.331; OPA333 10 / 0.05 / 0.35 / 55 / 1000 / 20.4; OPA187 10 / 0.015 / 0.55 / 15 / 500 / 15.2; OPA188 25 / 0.085 / 2 / 8.8 / 10 / 0.523; OPA186 10 / 0.04 / 0.75 / 40 / 500 / 10.8; OPA182 4 / 0.012 / 5 / 5.7 / 10 / 0.219; OPA387 2 / 0.012 / 5.7 / 8.5 / 10 / 0.488. THE EDITED CLAIM CHECKS OUT where the old one did not. Ordering the eight parts by column F gives ceilings 1000, 500, 500, 10, 10, 10, 10, 1 kohm against GBWs 0.35, 0.55, 0.75, 2, 5, 5.7, 10, 14 MHz - monotone in opposite directions with no inversion anywhere, so ranking by source-impedance ceiling really is the reverse of ranking by bandwidth. The old lead-in on offset was not: column B runs 3, 5, 10, 10, 25, 10, 4, 2 and does not anti-correlate with D at all (OPA387 is 2 uV at 5.7 MHz while OPA188 is 25 uV at 2 MHz). Both anchor rows in the prose are exact - OPA333 has the widest ceiling at 1000 kohm together with the lowest GBW in the table at 0.35 MHz and the highest noise in column E at 55 nV/rtHz, and OPA189 at 14 MHz and 5.2 nV/rtHz is capped at 1 kohm - and column F does span three decades, 1 to 1000 kohm. ONE IMPRECISION, flagged and not load-bearing: the printed ROW ORDER is OPA189, OPA388, OPA333, OPA187, OPA188, OPA186, OPA182, OPA387, which is sorted by neither F nor D nor B, so the lead-in's phrase the vendor table that ranks them by source-impedance ceiling has to be read as the table's COLUMNS ranking them, not as the order the rows are printed in. The sentence supports that reading (the same table gives both rankings and they are opposite), rule.trade states it unambiguously, and the substance is exactly what the page shows, so this is a wording note rather than a refutation - and worth not churning further, since the record already moved once on a reader's advisory. THE REST RE-CHECKED. p25 keeps the gates separate as the record says: step 2 screens source impedance against column F, step 3 noise against column G, step 6 chopper noise, and step 7 is the seventh and last - Finally, assuming all other criteria are acceptable, check all other amplifier specifications. For example, is bandwidth, slew rate, and output drive meeting your application specific requirements - so speed being screened last is the page's own ordering. opa333 p7 confirms Gain-bandwidth product CL = 100 pF 350 kHz and Slew rate G = +1 0.16 V/us. Fig 14 on p10 re-measured independently off the two bezier paths against the frame (x 359.04 = gain 1 to 527.49 = gain 100 over two decades, y 569.02 = 0 us to 454.90 = 600 us): the 0.01 percent curve starts at 40.4 us at unity gain and rises to 390.0 us at gain 100, and the 0.001 percent curve starts at 50.5 us and rises to 499.3 us, so the record's about 40 us and 50 us at unity gain and rising steeply with gain are both exact and the 100 us envelope bound is anchored on real numbers. The datasheet mislabels that x axis Gain (dB) while the scale runs 1 to 100 over two decades; calling the left edge unity gain is right either way. The closing arithmetic is consistent - 2.048 V divided by 0.16 V/us is 12.80 us. Verified."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. amp_kind zero-
+    drift added so a board can find it by kind; level and limits unchanged.

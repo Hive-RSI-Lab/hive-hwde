@@ -1,0 +1,83 @@
+id: in-bias-return-resistor-sizing-ad8226
+classes: [return-path]
+applies:
+  topologies: []
+  packages: []
+  interfaces: [in]
+  parts: [AD8226]
+rule:
+  enforced_by: null
+  vendor_ib_na: "AD8226 Table 3 (+2.7 V single supply, ARZ/ARMZ and BRZ/BRMZ alike): input bias current 5 min / 20 typ / 27 max at +25 C, 5 / 15 / 25 at +125 C, 5 / 30 / 35 at -40 C; average TC 70 pA/degC"
+  vendor_ios_na: "input offset current max 1.0 nA at +25 C and at -40 C, 1.5 nA at +125 C (ARZ/ARMZ); 0.5 / 0.1 / 0.5 nA (BRZ/BRMZ); average TC 5 pA/degC"
+  single_resistor_drop: "ARITHMETIC from those numbers: one resistor carries BOTH inputs' bias currents, so its node sits ~2*Ib*R above the return node - the vendor's own 10 Mohm thermocouple value gives ~0.54 V at +25 C max and ~0.70 V at -40 C max, common-mode, spent out of the input voltage range"
+  single_resistor_hidden_cost: "ARITHMETIC: with the resistor on one input only, the OTHER input's bias current returns through the source itself, so it develops Ib*Rsource DIFFERENTIALLY - on this slot's 350 ohm source that is 9.5 uV at +25 C max and 12.3 uV at -40 C max, already past a 5 uV RTI budget"
+  two_resistor_error: "ARITHMETIC: with one resistor per input each bias current returns through its own resistor, so the differential term is Ios*R + Ib*R*mismatch; at Ios 1 nA, Ib 35 nA and 1 pct mismatch that is 1.35 nA * R"
+  two_resistor_cap: "a 5 uV RTI budget therefore caps a bias-return PAIR at about 3.7 kohm on this part - and 3.7 kohm resistors load a 350 ohm differential source with 2R = 7.4 kohm, about 4.5 pct of signal loss (a gain error, calibratable, unlike the drifting offset term)"
+  do_not_transplant: "the 47k/10k figures printed in CMOS-input in-amp app notes are sized for ~70 pA inputs; on this 20-35 nA part a 47 kohm pair is ~47 uV from offset current plus ~16 uV from 1 pct mismatch, roughly 60 uV differential against a 5 uV budget, on top of ~1.6 mV of common-mode drop per input"
+prose: >-
+  Sizing a created bias-return network for THIS part, from its own Table 3.
+  The vendor prints only two example values (10 Mohm for a thermocouple,
+  an unlabelled R pair behind ac-coupling caps), so the numbers below are
+  arithmetic on the datasheet's currents, not vendor text, and are marked
+  as such in `rule`. Three facts drive it: bias current is 27 nA max at
+  +25 C and 35 nA max at -40 C (not picoamps), offset current is 1 nA max,
+  and the current flows OUT of the part, so every return element sits under
+  a positive drop. A single resistor carries both bias currents (~2*Ib*R,
+  common mode) but forces the far input's bias current back through the
+  source, which on a 350 ohm source is ~10 uV of DIFFERENTIAL error - the
+  balanced pair avoids that because each input returns through its own
+  resistor and only Ios crosses the source. The pair's price is the
+  opposite one: its differential error Ios*R + Ib*R*mismatch caps R near
+  3.7 kohm for a 5 uV budget, and a pair that small loads a 350 ohm source
+  by ~4.5 pct. Both prices are paid only when the source cannot return the
+  current itself; when it can, the vendor creates no network at all.
+sources:
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 6
+    section: "AD8226 Rev. C, printed p.5 - Table 3 (+Vs = 2.7 V single supply), INPUT CURRENT block"
+    note: >-
+      Read the INPUT CURRENT rows: Input Bias Current 5/20/27 nA at +25 C,
+      5/15/25 nA at +125 C, 5/30/35 nA at -40 C with a 70 pA/degC average
+      TC; Input Offset Current max 1 nA (+25 C), 1.5 nA (+125 C), 1 nA
+      (-40 C) for ARZ/ARMZ and 0.5/0.5/0.1 nA for BRZ/BRMZ, 5 pA/degC.
+      Same table heads with CMRR at VCM = 0 V to 1.7 V.
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 5
+    section: "AD8226 Rev. C, printed p.4 - Table 2 footnote 1"
+    note: >-
+      Read footnote 1: "The input stage uses pnp transistors; therefore,
+      input bias current always flows out of the part" - fixes the sign of
+      every drop the return network develops.
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 22
+    section: "AD8226 Rev. C, printed p.21 - Figure 62, CORRECT column"
+    note: >-
+      Read the only two sizing hints the vendor prints: a single 10 Mohm
+      resistor to ground for the thermocouple source, and an unvalued R
+      from each input to ground behind the coupling capacitors with
+      f_HIGH-PASS = 1/(2*pi*RC).
+status: active
+origin: research:interface-in-2
+level: part
+envelope:
+  ibias_ua: {min: 0.005, max: 0.035}
+  err_rti_mv: {max: 0.05}
+maturity: approved
+generalizes: []
+envelope_note: >-
+  Scales with the current the network sinks: every number here is Ib or Ios
+  times a resistance. Bounded on the AD8226's own guaranteed span, 5 nA
+  (+125 C) to 35 nA (-40 C) from Table 3 - outside it the arithmetic holds
+  but the answers move decades: a 70 pA CMOS input tolerates the 47k pairs
+  this part cannot, exactly the transplant this record replaces. Bounded
+  above at 50 uV of referred-to-input budget because past that the
+  offset-current term stops being the binding constraint (the bound the
+  thermal-EMF record on this slot already uses).
+verification: {by: "second-reader", date: "2026-08-16", note: "AD8226 pp.5/6/22 (printed 4/5/21) re-read at 4x zoom. Fig 62 CORRECT thermocouple panel: ONE 10Mohm from the lower input line to ground - single-resistor form confirmed, and 10Mohm is the only return-resistor VALUE the datasheet prints (ac-coupled panel prints unvalued R with f_HP=1/2piRC; a full-text sweep of all 29 pages finds no other bias-return value - 4.02k is the Fig 63 RFI filter, 5k-20k the Fig 64 diff-drive feedback, 10k the Fig 66 ADC-protect, 24.7k/50k internal). Table 3 (+2.7V) INPUT CURRENT rows exact as quoted: Ib 5/20/27 nA at +25C, 5/15/25 at +125C, 5/30/35 at -40C, 70 pA/C, both grades; Ios max 1/1.5/1 nA A-grade, 0.5/0.1/0.5 at 25/-40/+125 B-grade, 5 pA/C. Footnote 1 verbatim: pnp input stage, bias current always flows out of the part. ARITHMETIC ALL REPRODUCES: 27nA*350=9.45uV and 35nA*350=12.25uV (record 9.5/12.3); 2*27nA*10M=0.54V and 2*35nA*10M=0.70V; Ios*R+Ib*R*1pct = 1.35nA*R, 5uV/1.35nA=3.70kohm; 2R=7.4k across 350 ohm = 350/7750 = 4.52 pct loss; 47k pair = 47uV+16.5uV=63uV and 1.65mV CM. Envelope 5-35 nA matches Table 3's guaranteed span; err_rti 50uV matches the verified thermal-EMF record. ONE CAVEAT (not refuting, no board number rests on it): do_not_transplant says the 47k/10k app-note figures are sized for approx 70 pA inputs - 70 pA is not printed in this ledger. In-ledger AN1298 p.4/p.5 do support the substance (PMOS inputs, Ib max 30-50 pA on the PMOS parts) but its bipolar parts are 2-3 nA, so that clause should cite AN1298's own numbers."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

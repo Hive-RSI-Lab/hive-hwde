@@ -1,0 +1,81 @@
+id: swd-debug-port-unkeyed-header-pin-order
+classes: [selection, return-path]
+applies:
+  topologies: [swd-debug-port]
+  packages: []
+  interfaces: [swd]
+  parts: []
+rule:
+  enforced_by: null
+  standard_connector_orientation: mechanical key (a removed pin position)
+  unkeyed_header_remedy: pin ORDER
+  reversal_map: position i maps to (n+1)-i
+  odd_count_centre: the one self-mapping position - give it the rail
+prose: >
+  A standard debug connector solves plug orientation MECHANICALLY, and it
+  spends pins on the return. Infineon AN220270 Figure 20 draws the 10-pin
+  Cortex connector - 1 VTref, 2 SWDIO/TMS, 3 GND, 4 SWCLK/TCK, 5 GND,
+  6 (SWO)/TDO, 7 (KEY) GND, 8 NC/TDI, 9 (GNDDetect) GND, 10 nRESET - and its
+  note 2 reads: "Position 7 (KEY) has no pin and serves only as a key to
+  properly orient the connector." It is a 1.27 mm 10-way shrouded part (for
+  example Samtec FTSH-105-01-L-DV-K) and 4 of its 10 positions are GND, one
+  beside each signal, so every signal has a return next to it. A plain
+  0.1 inch header has neither the key nor those returns, so on an unkeyed
+  header the pin ORDER is the only defence left. The geometry below is a
+  DERIVATION, not a vendor claim, and no source cited here states it:
+  reversing an n-position unkeyed header maps position i to (n+1)-i, so an
+  odd pin count has exactly one self-mapping position, the centre, and
+  putting the RAIL there is the only arrangement in which reversal still
+  lands the board's rail on the connector's rail position. Whether that makes
+  a reversed plug SAFE depends on the probe's rail pin being a sense input
+  rather than a driver, which no cited source states. Figure 23 shows the
+  rail pin's own role: VTref is fed from the target's I/O power domain out to
+  connector pin 1, with 100 nF at the connector, and is the rail the target's
+  debug pull-ups hang on. For an STM32 the default is the keyed STDC14
+  instead (swd-debug-port-stm32-stdc14-default).
+sources:
+  - file: reference/knowledge/sources/infineon-an220270-hardware-design-guide-for-the-traveo-t2g-family-applicationnotes-en.pdf
+    page: 29
+    section: s9.2 Figure 20 + notes
+    note: >
+      Read Figure 20, the 10-pin Cortex debug connector pinout drawing, and
+      the two notes under it. The drawing gives the pin assignment
+      (1 VTref, 2 SWDIO/TMS, 3 GND, 4 SWCLK/TCK, 5 GND, 6 (SWO)/TDO,
+      7 (KEY) GND, 8 NC/TDI, 9 (GNDDetect) GND, 10 nRESET) - 4 of 10
+      positions are ground, interleaved with the signals. Note 1 names the
+      part class: a 10-way 1.27 mm pitch connector, e.g. Samtec
+      FTSH-105-01-L-DV-K. Note 2 is the orientation rule: position 7 has no
+      pin and "serves only as a key to properly orient the connector".
+  - file: reference/knowledge/sources/infineon-an220270-hardware-design-guide-for-the-traveo-t2g-family-applicationnotes-en.pdf
+    page: 31
+    section: Figure 23 + notes
+    note: >
+      Read Figure 23, the SWD connection to the MCU through the 10-pin MIPI
+      SWD connector. VTref is drawn coming OUT of the MCU's I/O power domain
+      and going to connector pin 1, with C7 = 100 nF at the connector; the
+      10 k pull-up on SWDIO and 10 k pull-down on SWCLK hang on that rail,
+      and R16 = 20 ohm sits in the SWCLK line. Note 2 under it tells the
+      designer to check the target board supply against the supported supply
+      level of the probe vendor's hardware, and that a mismatch needs an
+      adapter - the rail pin is a level contract between the two sides.
+  - file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf
+    page: 31
+    section: Table 11 (continued)
+    note: >
+      Read the PA13 (SWDIO) and PA14 (SWCLK) rows to fix which target pins a
+      header must carry, and their TSSOP20 positions 19 and 20. With NRST
+      (pin 4), VSS and VDD these are the five nets a minimal SWD header
+      exports - the set the ordering rule is applied to.
+status: active
+origin: research:block-swd-debug-port-1
+level: principle
+maturity: approved
+generalizes: []
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read Infineon p29 (Figure 20 and its two notes) and p31 (Figure 23 and its notes), plus ST p31 PA13/PA14 rows. Figure 20's assignment matches the record cell for cell (1 VTref, 2 SWDIO/TMS, 3 GND, 4 SWCLK/TCK, 5 GND, 6 (SWO)/TDO, 7 (KEY) GND, 8 NC/TDI, 9 (GNDDetect) GND, 10 nRESET; 4 of 10 positions GND) and note 2 is verbatim. The prose does label the i -> (n+1)-i reversal geometry a DERIVATION that no cited source states, and it does NOT assert a reversed plug is safe: it says safety turns on the probe's rail pin being a sense input, which no cited page states - correct, Figure 23 note 2 only sets a supply-level contract, nothing about the pin's direction or impedance. Figure 23 does show VTref out of the I/O power domain to pin 1 with C7 = 100 nF. Two caveats, neither fatal: 'shrouded' is the record's word (Infineon note 1 says only a 10-way connector with 1.27-mm pitch, e.g. FTSH-105-01-L-DV-K), and the return-path class rests on an observation (4 of 10 GND, and SWDIO's nearest GND is diagonal, not beside it) rather than a rule - at level principle it cannot close the checklist's return-path row in any case."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

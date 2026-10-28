@@ -1,0 +1,48 @@
+id: spiral-inductor-plane-and-heatsink-keepout
+classes: [emi, thermal]
+applies:
+  topologies: [class-e]
+  packages: []
+  interfaces: []
+rule:
+  enforced_by: null
+  plane_under_spiral: keepout on every layer, not just the adjacent one
+  heatsink_under_spiral: forbidden - a metal sink is a shorted turn too
+  floorplan: two zones - heatsink zone (switch, choke, bulk, driver) and
+    magnetics zone (spirals, tank caps), sharing no copper plane
+prose: >
+  An etched PCB spiral (air-core inductor, coupled pair, antenna) is destroyed
+  by solid metal parallel to it: a ground plane under the winding is a shorted
+  turn and collapses Q, and so is a bottom-side metal heatsink. Two
+  independently-correct decisions - bottom-side sink for the hot switch, PCB
+  spirals because no catalog inductor closes the value at MHz current - collide
+  on the same board and force a TWO-ZONE floorplan: the heatsink zone (switch,
+  RF choke, bulk caps, driver) keeps its unbroken plane under the power loop,
+  and the magnetics zone gets a plane keepout on EVERY layer plus no sink
+  coverage. That keepout then splits the ground plane, so the return path has
+  to be re-established deliberately: carry the bridge on the layer with the
+  most copper (1 oz outer beat 0.5 oz inner here) and check the corridor as the
+  minimum PERPENDICULAR gap between keepout discs, not the widest straight
+  strip. Measured on rf-de-20m: r = 20.55 mm keepouts on a 120x80 mm board left
+  a 5.0 mm pinch, and widening it 6 -> 10 mm bought 33 mW and 1.4 nH - i.e. the
+  corridor must exist, but it does not have to be generous.
+sources:
+  - {file: boards/rf-de-20m/LEARNINGS.md, section: 2026-08-07 heatsink under a PCB spiral is a SHORTED TURN}
+  - {file: boards/rf-de-20m/LEARNINGS.md, section: 2026-08-08 Zone B split the GND plane in two}
+  - {file: boards/rf-de-20m/architecture/decisions.md, section: D4}
+status: active
+origin: promotion:boards/rf-de-20m (U6 2026-08-14)
+
+# --- schema v2 governance (U14 backfill, owner-ruled 2026-08-15) ---
+level: topology
+envelope:
+  f_mhz: {min: 0.5, max: 200}
+maturity: approved
+approval:
+  by: owner
+  date: "2026-08-15"
+  note: >
+    Scales with frequency: a plane or heatsink parallel to a PCB spiral is a
+    shorted turn, and the induced-loss Q collapse grows with frequency -
+    negligible below ~0.5 MHz, and above ~200 MHz a PCB spiral is not the
+    structure anyone reaches for. Measured on rf-de-20m at 14 MHz.

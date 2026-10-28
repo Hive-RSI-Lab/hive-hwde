@@ -1,0 +1,120 @@
+id: resistive-attenuator-loading-source-and-load
+classes: [feedback]
+applies:
+  topologies: [resistive-attenuator]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  source_impedance_lands_in: R1, the top leg
+  driving_source_impedance: Rs = R1 // R2
+  switched_cap_equivalent_load: R = sample_period / (Cp + Ch)
+  load_spec_that_matters: charge per sample, or DC bias current through R1 // R2
+  downstream_error_referred_to_input: multiplied by 1/K
+prose: >
+  A divider is loaded at both ends and both loads are gain errors. SOURCE (p4,
+  fig 3-1): "If the source has any output impedance, that can be simply
+  budgeted as part of the R1" - source resistance adds directly to the TOP leg,
+  so a source Z that is x % of R1 is a gain error of order x %. Either keep it
+  far below R1 or buffer ahead of the divider; fig 3-3 (p6) does exactly that,
+  a unity-gain buffer driving R1 to provide "isolation from the resistor
+  divider and sampling capacitor". LOAD: the divider's Thevenin impedance IS
+  the load's driving source impedance, Rs = R1 // R2 (p5, fig 3-2, which models
+  the input as Cp, a sampling switch, Ron and Ch). A switched-capacitor input
+  draws no DC current, so given enough acquisition time the node settles
+  exactly (p4) - but sampled every t it presents an EQUIVALENT AVERAGE
+  resistance R = t / (Cp + Ch). Worked case: a 5 Mohm ladder sampled every 1 us
+  sees about 100 kohm, "significant compared to the resistor ladder and hence
+  will provide considerable error in measurement"; at 1 ms the same input is
+  about 100 Mohm and harmless. The load spec that matters is therefore CHARGE
+  PER SAMPLE - or, for a DC-coupled amplifier, input bias current flowing
+  through R1 // R2 (AN-241 p6: unbalanced, it offsets a summing node by several
+  hundred millivolts) - not the load's quoted input resistance. And every
+  downstream error refers back to the divider INPUT multiplied by 1/K: p7 shows
+  a 2 LSB offset staying 2 LSB while the LSB grows from 3.3/4096 to 5/4096.
+sources:
+  - file: reference/knowledge/sources/sprad89.pdf
+    page: 4
+    section: "s3, fig 3-1, s3.1"
+    note: >
+      Read: fig 3-1, the resistive attenuator schematic (Vin - R1 - tap - R2 -
+      ground, Vout at the tap) with eq 1 Vout = Vin x R2/(R1+R2). Text: source
+      output impedance is budgeted as part of R1; the ladder's ground is best
+      shorted to the clean analog ground. s3.1: the SAR's capacitive input
+      network provides no resistive loading, so given enough sampling time the
+      input settles to the correct Vout.
+  - file: reference/knowledge/sources/sprad89.pdf
+    page: 5
+    section: "fig 3-2, s3.2"
+    note: >
+      Read: fig 3-2, the ADC interface - R1/R2 ladder plus external Cs feeding a
+      SAR input model of Cp, a switch, Ron and Ch. Text names Rs = R1 // R2 as
+      the ADC driving source impedance and says lower R1, R2, Cs give a faster
+      network. s3.2 works the high-impedance case: R1 = 1.7 Mohm, R2 = 3.3 Mohm
+      with Cs = 30 nF presents 5 Mohm to the sensor; sampling that ladder every
+      1 us gives a worst-case average load of R = 1 us/(Cp+Ch) of about 100 kohm
+      - considerable measurement error - which becomes about 100 Mohm and
+      harmless at a 1 ms period. The ladder also forms an approximately 4 Hz
+      filter.
+  - file: reference/knowledge/sources/sprad89.pdf
+    page: 6
+    section: "fig 3-3"
+    note: >
+      Read: fig 3-3, an OPA320 unity-gain buffer placed BEFORE the divider,
+      driving R1, with the R2/Cs node feeding the SAR input model. Caption text
+      on the preceding page states the buffer provides a high input impedance
+      and a low output impedance, isolating the source from the divider and
+      sampling capacitor - the sourced remedy when the source cannot drive the
+      ladder.
+  - file: reference/knowledge/sources/sprad89.pdf
+    page: 7
+    section: "s4.1 ADC gain, offset, INL and DNL"
+    note: >
+      Read: eqs 3-8 and the conclusion that a resistor ladder simply SCALES the
+      LSB while the offset stays the same NUMBER of LSBs - a 2 LSB offset with
+      LSB = 3.3/4096 becomes a 2 LSB offset with LSB = 5/4096 referred to the
+      divider input. Gain error, INL and DNL scale the same way. This is the
+      1/K multiplication of every downstream error term.
+  - file: reference/knowledge/sources/snoa664.pdf
+    page: 6
+    section: "High-value resistors, figs 9 and 11 (doc p5)"
+    note: >
+      Read: the DC-coupled load case, which sprad89 never covers - it treats
+      only a switched-capacitor input. Fig 9 is a follower whose input network
+      (R2 = 10 Mohm, R1 = 1 Mohm, R3 = 10 k) synthesises 1 Gohm of input
+      resistance; the caption states the input offset voltage is multiplied by
+      100 with the input open, and the text that the error is reduced once the
+      source is below 1 Gohm. Right column, verbatim: "For an ac-coupled input,
+      a second 10 Mohm resistor could be connected in series with the inverting
+      input to virtually eliminate bias current error; bypassing it would give
+      minimal noise." Fig 11's text gives the general remedy and a magnitude -
+      matching the resistance the two inputs see makes the error depend on
+      OFFSET current rather than BIAS current, and without it "the summing node
+      would be offset several hundred millivolts from ground". That is bias
+      current times source resistance appearing as a DC offset, which for an
+      attenuator is I_B x (R1 // R2).
+status: active
+origin: research:block-resistive-attenuator-1
+level: topology
+envelope:
+  rtot_ohm: {max: 5000000}
+maturity: approved
+generalizes: []
+envelope_note: >
+  Scales with the divider's own impedance: both loading errors are ratios
+  against Rtot (source Z against the top leg, the load's equivalent average
+  resistance against R1 // R2), so they grow linearly with Rtot. Capped at
+  5 Mohm because that is the largest ladder the source works (1.7 Mohm +
+  3.3 Mohm) and the mitigations it prescribes there - a large charge-sharing
+  capacitor and a reduced sample rate - are already at their useful limit.
+  Above that the equivalent-average-resistance model and the low-pass corner
+  the ladder creates both need re-deriving.
+verification: {by: "research-second-reader", date: "2026-08-16", note: "Re-ruled after the researcher added snoa664 p6 under my earlier caveat; verdict unchanged. Re-read snoa664 p6 (doc p5) visually - the one page of this record I had not seen. Fig 9 is the LM11 follower with R3 10k, R2 10M and R1 1M exactly as the note says; text and caption confirm the 1 Gohm input resistance built from standard values, offset voltage multiplied by 100 with the input open, and the error reduced once the source is below 1 Gohm. The ac-coupled sentence is verbatim including its trailing clause - For an ac-coupled input, a second 10 Mohm resistor could be connected in series with the inverting input to virtually eliminate bias current error; bypassing it would give minimal noise. Fig 11 text is verbatim on both fragments the note uses - the error can be made dependent on offset current rather than bias current, and the summing node would be offset several hundred millivolts from ground - and the magnitude is consistent with the page own circuit (an LM11-class bias current through a 10 Gohm feedback resistor is a few hundred mV). The bias-current clause is therefore sourced now, and the generalization to I_B x (R1//R2) for an attenuator is sound. Imprecision, not a refutation: the page attributes the several-hundred-mV summing-node offset to the large-value-resistor alternative and the offset-versus-bias-current improvement to the fig 11 method, while the note attributes both to matching or not matching the resistance the two inputs see; the balancing claim is still supported on the same page by the ac-coupled sentence. Everything I verified on the four sprad89 pages is untouched - rule fields, envelope and every number are unchanged, the prose gained only the AN-241 parenthetical. Note the prose is now 1498 of the 1500-char cap, so any further edit must trim first."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

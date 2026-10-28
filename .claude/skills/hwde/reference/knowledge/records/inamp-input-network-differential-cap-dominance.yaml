@@ -1,0 +1,104 @@
+id: inamp-input-network-differential-cap-dominance
+classes: [diff-pair]
+applies:
+  topologies: [inamp]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  sizing_rule: "CD >= 10 * CC - the differential capacitor must dominate the two common-mode capacitors"
+  why: "the two CC cannot be matched, and it is their MISMATCH that converts common mode to differential; a CD an order larger sets the differential response instead"
+  f_diff_equation: "FilterFrequency_DIFF = 1 / (2*pi*R*(2*CD + CC))"
+  f_cm_equation: "FilterFrequency_CM = 1 / (2*pi*R*CC)"
+  fig63_r_ohm: 4020
+  fig63_cc_nf: 1
+  fig63_cd_nf: 10
+  fig63_f_cm_khz_derived: 39.6
+  fig63_f_diff_khz_derived: 1.89
+  fig63_pole_ratio_derived: 21
+  series_r_placement: "any series resistance in an input path belongs close to the in-amp input pins, which minimises its interaction with PCB trace parasitic capacitance"
+  stray_case: "with no network fitted CD = 0 and CC is whatever each trace, pad and pin field presents to ground; nothing swamps the mismatch, so only geometric symmetry defends CMRR"
+  derived_not_quoted: "the two pole frequencies and their 21x ratio are computed from the printed equations and the printed Figure 63 component values; ADI prints the equations and the values but not the resulting frequencies"
+  scope: "device side - the connector, cable and shield half belongs to the input-interface slot"
+prose: >
+  An in-amp input network is deliberately ASYMMETRIC in its capacitors, and
+  that asymmetry is the whole trick. ADI's Figure 63 (RFI Suppression) puts
+  R = 4.02 kohm in each input leg, CC = 1 nF from each leg to ground, and
+  CD = 10 nF bridging the two legs, with the printed relations
+  FilterFrequency_DIFF = 1/(2*pi*R*(2*CD + CC)) and
+  FilterFrequency_CM = 1/(2*pi*R*CC), where CD >= 10 CC. Those values put
+  the common-mode pole at 39.6 kHz and the differential pole at 1.9 kHz,
+  about 21x lower (derived). The reason is stated plainly: "Mismatch
+  between the R x CC at the positive input and the R x CC at the negative
+  input degrades the CMRR of the AD8226. By using a value of CD that is one
+  magnitude larger than CC, the effect of the mismatch is reduced and
+  performance is improved." Two ordinary-tolerance 1 nF parts cannot be
+  matched; one CD ten times larger sets the differential response instead.
+  Placement rides along: series R in an input path "should be placed close
+  to the in-amp inputs, which minimizes their interaction with parasitic
+  capacitance from the PCB traces".
+  The STRAY case is the same law with CD = 0: nothing is fitted, CC is
+  whatever each trace, pad and pin field presents to ground, and nothing
+  swamps its mismatch - so only geometry defends CMRR: equal length,
+  mirrored neighbours, equal clearance to ground copper on both layers.
+  SCOPE: this board fits no input R/C network. That is a block-only scope
+  exclusion for this run, NOT a finding that the network is unnecessary.
+sources:
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 23
+    section: "AD8226 Rev. C, printed p.22 - RADIO FREQUENCY INTERFERENCE (RFI) and Figure 63"
+    note: >
+      Read the RFI section and Figure 63 "RFI Suppression" visually. The
+      schematic draws a series R in each input leg labelled 4.02 kOhm, a
+      CC = 1 nF from each leg to ground, and a CD = 10 nF bridging +IN to
+      -IN across the two legs, with RG across the gain pins and 0.1 uF +
+      10 uF on each supply rail. Printed with it: "The filter limits the
+      input signal bandwidth according to the following relationship",
+      FilterFrequency_DIFF = 1/(2*pi*R*(2*CD + CC)), FilterFrequency_CM =
+      1/(2*pi*R*CC), "where CD >= 10 CC"; and the paragraph beside the
+      figure: "CD affects the difference signal and CC affects the
+      common-mode signal. Values of R and CC should be chosen to minimize
+      RFI. Mismatch between the R x CC at the positive input and the R x CC
+      at the negative input degrades the CMRR of the AD8226. By using a
+      value of CD that is one magnitude larger than CC, the effect of the
+      mismatch is reduced and performance is improved." Also read on the
+      same page that RF rectification "can appear as a small dc offset
+      voltage" - the reason the network exists at all.
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 22
+    section: "AD8226 Rev. C, printed p.21 - Common-Mode Rejection Ratio Over Frequency"
+    note: >
+      Read the two paragraphs that make this a LAYOUT rule and not only a
+      filter-design rule: conversions of common mode to differential "occur
+      when one input path has a frequency response that is different from
+      the other", so "the input source impedance and capacitance of each
+      path should be closely matched"; "Additional source resistance in the
+      input path (for example, for input protection) should be placed close
+      to the in-amp inputs, which minimizes their interaction with parasitic
+      capacitance from the PCB traces"; and the second paragraph making
+      parasitic capacitance at the gain-setting pins a part-selection
+      constraint for any switch or jumper placed there.
+status: active
+origin: research:block-inamp-2
+level: principle
+envelope: null
+maturity: approved
+generalizes: []
+envelope_note: >
+  No envelope, deliberately. CD >= 10 CC is a relation between two
+  capacitors in one network. It does not scale with supply, gain,
+  temperature, source resistance or frequency: change R, CC and CD together
+  and the inequality still holds, because it is about which capacitor SETS
+  the differential response, not about where the poles land. The pole
+  frequencies do move with R and C, but they are outputs of the printed
+  equations, not bounds on this rule. The stray corollary (CD = 0, symmetry
+  the only defence) is the same relation at its limit.
+verification: {by: "research-second-reader", date: "2026-08-16", note: "Re-read p.23 (printed 22) and p.22 (printed 21) in full. Printed p.22 RADIO FREQUENCY INTERFERENCE (RFI) carries both equations exactly as cited - FilterFrequency_DIFF = 1/(2*pi*R*(2*CD + CC)) and FilterFrequency_CM = 1/(2*pi*R*CC), 'where CD >= 10 CC' - and Figure 63 'RFI Suppression' draws R = 4.02 kOhm in each input leg, CC = 1 nF from each leg to ground, CD = 10 nF bridging +IN to -IN, RG across the gain pins and 0.1 uF + 10 uF on each rail, exactly as the citation note says. The paragraph beside the figure is quoted word for word ('Mismatch between the R x CC at the positive input and the R x CC at the negative input degrades the CMRR of the AD8226. By using a value of CD that is one magnitude larger than CC, the effect of the mismatch is reduced and performance is improved.'), and the same page carries the RF-rectification-as-small-dc-offset sentence. ARITHMETIC RECOMPUTED: f_CM = 1/(2*pi*4020*1e-9) = 39.59 kHz, f_DIFF = 1/(2*pi*4020*21e-9) = 1.885 kHz, ratio = (2CD+CC)/CC = 21.0 exactly - the record's 39.6 kHz / 1.89 kHz / 21x is right, and it is correctly flagged derived_not_quoted since ADI prints the equations and the values but not the frequencies. Printed p.21 carries both quoted layout sentences verbatim (conversions 'occur when one input path has a frequency response that is different from the other', 'the input source impedance and capacitance of each path should be closely matched', and additional series R 'should be placed close to the in-amp inputs, which minimizes their interaction with parasitic capacitance from the PCB traces') plus the gain-pin parasitic-capacitance paragraph. The CD = 0 corollary is ARGUED, not asserted: it is the printed f_DIFF equation at its limit, where f_DIFF collapses onto f_CM and nothing swamps the leg-to-leg CC mismatch, closed by the vendor's own instruction to match each path's capacitance. SCOPE GUARDRAIL PRESENT AND CORRECT: the prose states plainly that fitting no input R/C network is a block-only scope exclusion for this run and NOT a finding that the network is unnecessary. level principle with no envelope is right - CD >= 10 CC is a relation between two capacitors, independent of supply, gain and temperature. On the +/-15 V conditions caveat: this record cites no TPC figure and quotes no dB from the curves, so that caveat has nothing to attach to here; its absence is not a defect. One wording flag, not refuting: the opening 'deliberately ASYMMETRIC in its capacitors' means CD >> CC, not leg-to-leg asymmetry - the same sentence and the stray-case paragraph make that clear, but a tighter phrasing would remove the risk of a reader inverting it."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

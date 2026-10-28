@@ -1,0 +1,124 @@
+id: linear-regulator-tab-copper-area-theta-ja
+classes: [thermal]
+applies:
+  topologies: [linear-regulator]
+  packages: [SOT-223, TO-252]
+  interfaces: []
+  parts: [AMS1117, AMS1117-3.3, LM1117]
+rule:
+  enforced_by: null
+  theta_ja_min_pad_c_per_w: 90
+  theta_ja_top1000mm2_c_per_w: 65
+  theta_ja_top1000mm2_back1000mm2_c_per_w: 60
+  theta_ja_top1000mm2_back2500mm2_c_per_w: 55
+  theta_ja_top645mm2_ti_c_per_w: 66
+  backside_plane_coupling: dielectric
+  backside_plane_net: any
+  best_placement: top-side-on-the-tab-net
+prose: >
+  AMS1117 Table 1 (p5): theta_JA vs copper area, 1/16 in FR-4, 1 oz foil - min
+  pad 90 C/W (p2); 1000 sq mm top + 0 back = 65; 1000 + 1000 back = 60; 1000 +
+  2500 back = 55; 100 + 2500 = 80 C/W. Footnote: tab attached
+  to TOPSIDE copper. What is the back side connected to? Nothing. The paragraph
+  above it states the spreading layer "does not need to be electrically
+  connected to the tab of the device" and that the PC material carries heat from
+  the tab pad to "a ground plane layer either inside or on the opposite side of
+  the board". So the back-side rows are DIELECTRIC-coupled on ANY net: a
+  VOUT-tab 1117 keeps them over a GND bottom plane. 55 C/W is no package floor
+  either - the same page gives junction-to-tab 15 and tab-to-ambient as low as
+  30 C/W, i.e. 45 total on a well-coppered board. Cross-check LM1117 Table 9-2
+  (p18-19): top-only 0.0123 sq in = 136, 0.3 = 84, 1 sq in (645 sq mm) = 66 C/W
+  - agreeing with AMS's 1000 sq mm -> 65, though all TI's numbers sit in section
+  9, which TI opens (p14) by disclaiming as "not part of the TI component
+  specification". TI's two-sided rows are a DIFFERENT experiment:
+  their split totals (0.132, 0.35, 0.568, 0.784, 1.0 sq in) are exactly AN-1028
+  layouts 12-16, whose boards carry 0.02 in plated vias (p8). No contradiction -
+  TI SPLITS a fixed budget (Fig 9-11 ranks Top Cu best), AMS ADDS back-side area
+  under a fixed top pour (~5 C/W). At TA 50 C even 55 C/W caps near 1.36 W: the
+  envelope's 1.5 W marks where this record stops, never a licence.
+sources:
+  - file: reference/knowledge/sources/2304140030_Advanced-Monolithic-Systems-AMS1117-3-3_C6186.pdf
+    page: 5
+    section: APPLICATION HINTS - Thermal Considerations + Table 1
+    note: >
+      Table 1 read visually - COPPER AREA (TOP SIDE* / BACK SIDE) | BOARD AREA |
+      THERMAL RESISTANCE, rows 2500/2500/2500=55, 1000/2500/2500=55,
+      225/2500/2500=65, 100/2500/2500=80, 1000/1000/1000=60, 1000/0/1000=65
+      C/W, footnote "* Tab of device attached to topside copper"; the paragraph
+      above it states the spreading layer need not be electrically connected to
+      the tab and that the FR-4 couples the pad to a ground plane inside or
+      opposite, data taken on 1/16 in FR-4 with 1 oz copper foil; same page also
+      gives junction-to-tab 15 C/W and tab-to-ambient as low as 30 C/W
+  - file: reference/knowledge/sources/2304140030_Advanced-Monolithic-Systems-AMS1117-3-3_C6186.pdf
+    page: 2
+    section: ABSOLUTE MAXIMUM RATINGS - Thermal Resistance
+    note: >
+      SOT-223 theta_JA = 90 C/W with the asterisk footnote - "With package
+      soldering to copper area OVER backside ground plane or internal power
+      plane theta_JA can vary from 46 C/W to >90 C/W depending on mounting
+      technique and the size of the copper area"; the wording again places the
+      copper OVER a different-net plane rather than tied to it
+  - file: reference/knowledge/sources/lm1117.pdf
+    page: 14
+    section: 9 Application and Implementation - opening Note
+    note: >
+      The boxed note opening section 9, read verbatim - "Information in the
+      following applications sections is not part of the TI component
+      specification, and TI does not warrant its accuracy or completeness";
+      Table 9-2, Fig 9-11 and Fig 9-13, all cited by this record, sit inside
+      that section and inherit it
+  - file: reference/knowledge/sources/lm1117.pdf
+    page: 18
+    section: 9.5.1.1 + Table 9-2 (layouts 1-7)
+    note: >
+      Table 9-2 top-side rows for SOT-223 - 0.0123 sq in = 136, 0.066 = 123,
+      0.3 = 84, 0.53 = 75, 0.76 = 69, 1 = 66 C/W (TO-252 column alongside), and
+      row 7 starting the bottom-only block at 0 top / 0.2 bottom = 115 C/W
+  - file: reference/knowledge/sources/lm1117.pdf
+    page: 19
+    section: Table 9-2 (layouts 8-16) + Figures 9-11 and 9-13
+    note: >
+      Bottom-only rows to 0/1 = 79 C/W and split rows 0.066+0.066 = 125 down to
+      0.5+0.5 = 70 C/W (totals 0.132 to 1.0 sq in, matching AN-1028 layouts
+      12-16), with footnote (1) "Tab of device attached to topside copper";
+      Fig 9-11 (RthJA vs 1-oz copper area, SOT-223, still air, TA 25 C) shows
+      three curves labelled Bottom Cu, 1/2 Top + 1/2 Bottom and Top Cu, Top Cu
+      lowest across the whole sweep - note the figure says 1 oz while AN-1028's
+      own board was 2 oz clad; Fig 9-13 on the same page plots max allowable
+      dissipation vs ambient for SOT-223 per theta_JA curve (136, 123, 84, 75,
+      69, 66 C/W), the 66 C/W curve reaching ~1.5 W at TA 25 C and falling to
+      0 W at TJ 125 C - the basis for this record's pdiss_w bound
+  - file: reference/knowledge/sources/snva036b.pdf
+    page: 8
+    section: Appendix B.2 - Junction-to-Ambient Measurement
+    note: >
+      "For layouts with copper on the top and bottom planes, there are 0.02 inch
+      copper plated vias (heat pipes) connecting the two planes" - the TI
+      two-sided data assumes a galvanic stitch, which is what makes AMS's
+      unstitched Table 1 a different (and for a live tab, the applicable)
+      experiment
+status: active
+origin: research:block-linear-regulator-1
+level: family
+envelope:
+  pdiss_w: {max: 1.5}
+  cooling_kind: {in: [natural-convection]}
+envelope_note: >
+  Scales with the heat the package must move in still air. The 1.5 W bound is
+  LM1117 Fig 9-13 (p19), whose best SOT-223 curve (66 C/W) reaches ~1.5 W at
+  TA 25 C; below it AMS Note 2 guarantees regulation only to 1.2 W and AN-1028
+  Fig 4 gives ~1.3 W at the recommended pad, and at TA 50 C the best AMS row
+  caps near 1.36 W. The max marks where the record stops being retrievable,
+  never a permitted dissipation. Every cited table is 1-cubic-foot still air; with
+  forced air or a sink the case-to-ambient term is no longer copper-limited and
+  these rows understate the design.
+maturity: approved
+generalizes: [linear-regulator-copper-is-the-heatsink]
+verification: {by: "second-reader", date: "2026-08-16", note: "Delta pass on the post-verification edit (mtime 19:36 vs verdict 19:28): section-9 clause, LM1117 p14 citation, the new 45 C/W clause, and the trim. All four hold. LM1117 p14 reopened: the boxed Note opening section 9 reads verbatim Information in the following applications sections is not part of the TI component specification, and TI does not warrant its accuracy or completeness; Table 9-2, Fig 9-11 and Fig 9-13 all sit in 9.5.1.1 inside that section, so the citation scope claim is exact. AMS p5 reopened for the 45 C/W clause: The thermal resistance from the junction to the tab for the AMS1117 is 15 C/W. The thermal resistance from tab to ambient can be as low as 30 C/W - and the page states the sum ITSELF, The total thermal resistance from junction to ambient can be as low as 45 C/W. This requires a reasonable sized PC board with at least on layer of copper to spread the heat across the board and couple it into the surrounding air. So 45 total on a well-coppered board is the page own sentence rather than record arithmetic, and 55 C/W is demonstrably not a package floor. The trim claim checks out number by number. Everything still in prose sits on its page: AMS p5 Table 1 rows 1000/0/1000 = 65, 1000/1000/1000 = 60, 1000/2500/2500 = 55, 100/2500/2500 = 80, footnote Tab of device attached to topside copper, 1/16 in FR-4 with 1 oz copper foil as a rough guideline; AMS p2 SOT-223 theta_JA 90 C/W with the footnote that with package soldering to copper area over backside ground plane or internal power plane it can vary from 46 C/W to >90 C/W; LM1117 p18 Table 9-2 0.0123 = 136, 0.3 = 84, 1 sq in = 66 (1 sq in = 645 sq mm, so the agreement with AMS 1000 sq mm = 65 is fair); p19 splits 0.066+0.066 = 125 through 0.5+0.5 = 70, totals 0.132/0.35/0.568/0.784/1.0, Fig 9-11 ranking Top Cu lowest across the sweep, Fig 9-13 six curves 136, 123, 84, 75, 69, 66 with the 66 curve at about 1.5 W at TA 25 C. The dropped numbers are all still in citation notes and none was load-bearing. AMS 225/2500/2500 = 65 remains in the p5 note; no rule key used it, and the two ladders that carry claims are intact - the back-side ladder 65 -> 60 -> 55 (the about 5 C/W claim) and the top-area ladder 100 = 80 vs 1000 = 55. TI 0.066 = 123, 0.53 = 75, 0.76 = 69 remain in the p18 note and again in the p19 Fig 9-13 curve list, while the endpoints 136 and 66 plus the mid point 84 stay in prose, which is all the cross-check with AMS needs. All five rule keys still land on their rows: 90, 65, 60, 55, 66. Two standing caveats unchanged and still flagged by the record: LM1117 Fig 9-11 and 9-13 are captioned 1 oz while the AN-1028 boards behind the same 16 layouts were 2 oz clad, and the 1.5 W envelope max marks where retrieval stops, never a permitted dissipation ((125-50)/55 = 1.36 W at TA 50 C)."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

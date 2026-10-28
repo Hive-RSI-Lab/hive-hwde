@@ -1,0 +1,69 @@
+id: mcu-boot-select-strap-stm32f0
+classes: [selection]
+applies:
+  topologies: [mcu]
+  packages: []
+  interfaces: []
+  parts: [STM32F030F4P6TR, STM32F030F4P6]
+rule:
+  enforced_by: null
+  boot0_internal_pull: "none - the die provides no level"
+  boot0_pin_type: "I (input only), I/O structure B (dedicated BOOT0 pin)"
+  board_must_define_level: true
+  vin_boot0_v: "0 to 5.5"
+  level_to_boot_source_mapping: "NOT in the datasheet - see the reference manual"
+prose: >
+  On the STM32F030x4/x6/x8/xC family the boot-memory select pin is a dedicated,
+  input-only pin - Table 11 gives it pin type I, I/O structure B, TSSOP-20 pin 1,
+  function "Boot memory selection" - and its Notes cell is EMPTY. Table 10's
+  blanket rule therefore applies: it is a floating input during and after reset.
+  Nothing on the die defines it. A board that leaves BOOT0 unconnected has an
+  undefined boot source that can move with flux residue, humidity or a probe
+  near the pin, and it must still be defined when no programmer is attached, so
+  the level has to come from the board, at the pin. Note carefully what this
+  record does NOT carry: the datasheet names the pin and gives its input range
+  (VIN on BOOT0, 0 to 5.5 V) but never states which LEVEL selects which memory.
+  That mapping lives in the reference manual (RM0360), which was not reachable
+  on an allowlisted host during this pass - take the polarity from there, not
+  from here. The sibling contrast is the useful part: NXP's boot select is an
+  ordinary port pin whose default state is input-with-pull-up, so it lands in
+  the boot-from-flash state unaided. Dedicated pin with no pull versus shared
+  pin with a pull - that asymmetry is the entire difference in part count
+  between two otherwise interchangeable MCUs.
+sources:
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 32,
+     note: "Table 11 BOOT0 row: LQFP64 60 / LQFP48 44 / LQFP32 31 / TSSOP20 pin 1, pin type I, I/O structure B, Notes cell empty, function Boot memory selection - and the note list below it, where no note covers BOOT0"}
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 27,
+     note: "Table 10 legend: structure B = dedicated BOOT0 pin; Notes row - unless otherwise specified by a note, all I/Os are floating inputs during and after reset (this is what makes the empty cell load-bearing)"}
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 44,
+     note: "Table 21 (continued) VIN row for BOOT0: 0 to 5.5 V input range - the datasheet's only other statement about the pin, and it says nothing about which level picks which boot memory"}
+  - {file: reference/knowledge/sources/AN13033.pdf, page: 10,
+     note: "Table 8 boot mode: ISP0 HIGH = passive boot, look for a valid image in internal flash; LOW = ISP boot over a serial interface - the level sampled at reset picks the path"}
+  - {file: reference/knowledge/sources/AN13033.pdf, page: 15,
+     note: "Table 12: all PIOn_m pins (which includes the ISP0 boot-select pin PIO0_5) default to Input, pull-up - the die holds that vendor's boot pin at the flash-boot level with no external part"}
+status: active
+origin: research:block-mcu-1
+level: family
+envelope:
+  boot_kind: {in: [external-strap]}
+envelope_note: >
+  Bounded by HOW the part chooses its boot source. This rule is true where the
+  boot mode is set by an EXTERNAL strap because the die leaves the select pin
+  floating. On a part whose boot/ISP pin carries an internal pull (AN13033
+  Table 12) or that has no boot-select pin at all, the rule does not weaken -
+  it does not apply, because the pin is a different pin. boot_kind is the only
+  dim that moves the answer: supply, clock and package do not change whether
+  the die defines the level.
+maturity: approved
+generalizes: [mcu-reset-sampled-pin-audit]
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read DS p27/p32/p44 + AN13033 p10/p15. p32 Table 11 BOOT0 row is LQFP64 60 / LQFP48 44 / LQFP32 31 / TSSOP20 1, pin type I, I/O structure B, function Boot memory selection; the Notes cell holds a dash rather than being literally blank (record says empty - same meaning, and notes 1 to 7 printed below the table were each checked, none covers BOOT0). p27 Table 10 legend confirms B = dedicated BOOT0 pin and the blanket Notes row: unless otherwise specified by a note, all I/Os are set as floating inputs during and after reset. p44 Table 21 VIN row for BOOT0 is 0 to 5.5 V. The refusal to state which level picks which memory is HONEST: a full-text scan of all 91 datasheet pages finds boot modes only in s3.3 on p12, which names the three boot options and says the boot pin AND a boot selector option bit choose between them, without ever giving the BOOT0 polarity. The NXP mapping from AN13033 p10 Table 8 stays on the NXP side of the prose. envelope boot_kind is a genuine bound - the rule stops applying where the die pulls the pin."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

@@ -1,0 +1,67 @@
+id: mcu-package-power-budget
+classes: [thermal]
+applies:
+  topologies: [mcu]
+  packages: [TSSOP-20]
+  interfaces: []
+  parts: [STM32F030F4P6TR, STM32F030F4P6]
+rule:
+  enforced_by: null
+  pd_max_w: "(TJmax - TAmax) / theta_JA"
+  tj_max_c: 105
+  theta_ja_tssop20_c_per_w: 76
+  datasheet_pd_mw_at_85c: 263
+  ivdd_per_pin_max_ma: 100
+  ivdd_total_max_ma: 120
+  theta_ja_basis: "JESD51-2 natural convection, still air"
+prose: >
+  The single power-dissipation number in an MCU datasheet is quoted at ONE
+  ambient and is not the board's budget. STM32F030 Table 21 lists PD for TSSOP20
+  as 263 mW - at TA = 85 C, with its own note "if TA is lower, higher PD values
+  are allowed as long as TJ does not exceed TJmax". Section 7.5 gives the
+  equation to redo it: TJmax = TAmax + (PDmax x theta_JA), with theta_JA for
+  TSSOP20 (6.5 x 6.4 mm) = 76 C/W and TJ max = 105 C for the suffix-6 grade. At
+  TA = 50 C that is (105 - 50) / 76 = 0.72 W, nearly three times the headline
+  figure. Two cautions travel with it. First, theta_JA is a JESD51-2 natural
+  convection (still air) figure measured on a standard test board (s7.5.1) - it
+  is a package-plus-testboard number, so a small 2-layer board with little
+  copper is not automatically at or better than it, and forced air is not
+  covered at all. Second, PD is not only core power: s7.5 defines PDmax = PINTmax
+  + PI/Omax, where PINT is IDD x VDD and PI/O sums VOL x IOL and (VDD - VOH) x
+  IOH over the driven pins, so I/O drive counts against the same budget. The
+  other ceiling is per PIN, not per die: Table 19 allows 100 mA into each VDD
+  power pin and 120 mA total into all of them - on a package that bonds a single
+  VDD pin the 120 mA is unreachable and 100 mA is the real limit.
+sources:
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 44,
+     note: "Table 21 (continued): PD at TA = 85 C for suffix 6 - LQFP64 455, LQFP48 364, LQFP32 357, TSSOP20 263 mW; note 1 - if TA is lower, higher PD is allowed as long as TJ does not exceed TJmax; TA -40 to 85 C at maximum power dissipation, TJ -40 to 105 C for suffix 6"}
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 87,
+     note: "s7.5 thermal characteristics: TJmax = TAmax + (PDmax x theta_JA), PDmax = PINTmax + PI/Omax with PINT = IDD x VDD and PI/O = sum(VOL x IOL) + sum((VDD - VOH) x IOH); Table 63 theta_J junction-ambient TSSOP20 6.5 x 6.4 mm = 76 C/W; s7.5.1 cites JESD51-2 natural convection (still air)"}
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 43,
+     note: "Table 19 current characteristics: total current into sum of all VDD power lines 120 mA, maximum current into EACH VDD power pin 100 mA (and -100 mA out of each VSS pin); Table 20 TJ absolute max 150 C"}
+status: active
+origin: research:block-mcu-1
+level: topology
+envelope:
+  ambient_max_c: {min: -40, max: 85}
+envelope_note: >
+  The rule IS a function of ambient - PDmax = (TJmax - TA) / theta_JA - so it is
+  bounded by the TA range the part's grade is specified over: -40 to +85 C for
+  the suffix-6 maximum-power-dissipation row (Table 21). Outside it the TJ limit
+  and the grade change and the arithmetic stops describing the part. Second
+  bound, not a dim because it is not an operating point: theta_JA is a JESD51-2
+  still-air figure on a standard test board, so with forced air or deliberate
+  heat spreading it stops predicting - do not size copper from this record.
+maturity: approved
+generalizes: []
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read DS p44/p87/p43. p44 Table 21 PD row is explicitly headed Power dissipation at TA = 85 C for suffix 6, with TSSOP20 = 263 mW, and note 1 allows higher PD if TA is lower as long as TJ stays under TJmax; TJ suffix 6 is -40 to 105 C; the TA row splits into Maximum power dissipation -40 to 85 C and Low power dissipation -40 to 105 C, and the envelope correctly takes the max-dissipation row and names it. p87 s7.5 gives TJmax = TAmax + (PDmax x theta_JA) and PDmax = PINTmax + PI/Omax with the exact VOL x IOL and (VDD-VOH) x IOH sums; Table 63 lists thermal resistance junction-ambient TSSOP20 6.5 mm x 6.4 mm = 76 C/W; s7.5.1 cites JESD51-2 natural convection, still air. The re-derivation (105-50)/76 = 0.72 W checks. p43 Table 19 is read correctly and the per-pin and total limits are NOT confused: maximum current into each VDD power pin 100 mA, total current into sum of all VDD power lines 120 mA; Table 20 TJ 150 C. Only gloss beyond the page: standard test board is JEDEC convention, s7.5.1 names only JESD51-2 - it errs conservative and does not break the rule."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

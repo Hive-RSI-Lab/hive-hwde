@@ -1,0 +1,142 @@
+id: linear-regulator-1117-output-cap-esr-window
+classes: [feedback, decoupling]
+applies:
+  topologies: [linear-regulator]
+  packages: [SOT-223, TO-252]
+  interfaces: []
+  parts: [AMS1117, AMS1117-3.3, LM1117]
+rule:
+  enforced_by: null
+  cout_min_uf: 10
+  cout_min_dielectric: tantalum
+  cout_esr_min_ohm: 0.3
+  cout_esr_max_ohm: 22
+  cout_recommended_uf: 22
+  cout_recommended_dielectric: solid-tantalum
+  cin_uf: 10
+  cin_dielectric: tantalum
+prose: >
+  The 1117 output cap is a compensation element. LM1117 p15: minimum 10 uF if a
+  tantalum is used, "the ESR of the output capacitor should range between 0.3
+  ohm to 22 ohm", 22 uF for the adjustable part with CADJ. AMS1117 p4 gives no
+  ESR bound - only "part of the device frequency compensation", 22 uF solid
+  tantalum "will ensure stability for all operating conditions", and without an
+  adjust bypass "smaller capacitors can be used with equally good results". So
+  22 uF is conservative, TI's tantalum floor is 10 uF, and a FIXED 1117 has no
+  adjust terminal. PROVENANCE: the window sits in LM1117 section 9, which opens
+  (p14) with TI's note that these sections are "not part of the TI component
+  specification" - guidance, not a guaranteed limit. CONSEQUENCE, restating the
+  bound only: a candidate qualifies only if
+  ITS OWN datasheet puts ESR inside 0.3-22 ohm; under 0.3 ohm it is outside the
+  window. No source here states any dielectric
+  family's ESR: "does THIS 22 uF part qualify" is a P3 part-slot question
+  needing that part's datasheet, absent here. Why a floor exists is
+  SLVA115A's mechanism (the loop needs an ESR zero); its p6 conclusion contrasts
+  newer LDOs "inherently ceramic capacitor stable" with this older generation,
+  where ESR "is very important to consider". INFERENCE: no 1117 page gives a
+  frequency for 0.3 ohm; SLVA115A p2/p6 read ESR as the capacitor's minimum over
+  frequency - the conservative reading, settled on a marginal part by ring
+  count.
+sources:
+  - file: reference/knowledge/sources/lm1117.pdf
+    page: 15
+    section: 9.2.2.1.3 Output Capacitor
+    note: >
+      Read verbatim - the output capacitor "must meet the required conditions
+      for both minimum amount of capacitance and equivalent series resistance
+      (ESR)", minimum 10 uF if a tantalum is used, "The ESR of the output
+      capacitor should range between 0.3 ohm to 22 ohm", and a larger 22 uF
+      tantalum when CADJ is used on the adjustable part; no measurement
+      frequency is given anywhere on the page
+  - file: reference/knowledge/sources/lm1117.pdf
+    page: 14
+    section: 9 Application and Implementation - opening Note + 9.2.2.1.1
+    note: >
+      Section 9 opens with the boxed Note read verbatim - "Information in the
+      following applications sections is not part of the TI component
+      specification, and TI does not warrant its accuracy or completeness" -
+      which the 0.3-22 ohm window, Table 9-2, Fig 9-11 and Fig 9-13 all inherit;
+      same page, 9.2.2.1.1 gives "A 10-uF tantalum on the input is a suitable
+      input capacitor for almost all applications" and 9.2.2.1.2 the ADJ bypass
+      rule 1/(2*pi*f*CADJ) < R1
+  - file: reference/knowledge/sources/2304140030_Advanced-Monolithic-Systems-AMS1117-3-3_C6186.pdf
+    page: 4
+    section: APPLICATION HINTS - Stability
+    note: >
+      The AMS wording read visually - the output capacitor is "part of the
+      device frequency compensation", 22 uF solid tantalum ensures stability for
+      all operating conditions, and 22 uF "covers all cases of bypassing the
+      adjustment terminal" while "without bypassing the adjustment terminal
+      smaller capacitors can be used with equally good results" - so 22 uF is
+      the conservative figure, not a floor; no ESR bound appears anywhere on the
+      page, and Fig 1 draws COUT as a polarized 22 uF part
+  - file: reference/knowledge/sources/2304140030_Advanced-Monolithic-Systems-AMS1117-3-3_C6186.pdf
+    page: 3
+    section: ELECTRICAL CHARACTERISTICS - Ripple Rejection rows
+    note: >
+      Every ripple-rejection line, including the AMS1117-3.3 row (60 dB min /
+      72 dB typ at VIN 4.75 V), is conditioned on "COUT = 22 uF Tantalum,
+      IOUT = 1 A" - the datasheet's own test capacitor is a tantalum, not a
+      ceramic
+  - file: reference/knowledge/sources/lm1117.pdf
+    page: 3
+    section: Table 6-1 Pin Functions
+    note: >
+      The page behind this record's clause that a FIXED 1117 has no adjust
+      terminal to bypass: pin 1 ADJ/GND is described as "Adjust pin for
+      adjustable output option. Ground pin for fixed output option", so the CADJ
+      bypass that raises the output-capacitor requirement exists only on the
+      adjustable variant
+  - file: reference/knowledge/sources/slva115a.pdf
+    page: 2
+    section: Figure 2 + the NOTE beneath it
+    note: >
+      Source of the frequency basis this record carries as an INFERENCE only -
+      Fig 2 is the TPS76050 (PMOS/PNP-pass) region-of-stability chart of ESR vs
+      output current, and its NOTE reads "The ESR used in these plots is the
+      minimum ESR of the capacitor as ESR does vary over frequency", scoped by
+      its own wording to those plots; the LM1117 has no equivalent chart
+  - file: reference/knowledge/sources/slva115a.pdf
+    page: 3
+    section: paragraph under Figure 2
+    note: >
+      "The curve of this device requires that, for the minimum 2.2-uF of output
+      capacitance, the ESR must be between 0.1 ohm and 20 ohm. Few capacitors
+      have more than 2 ohm of ESR, so the upper limit on the ESR can usually be
+      ignored" - the basis for treating the 22 ohm ceiling as nearly free; same
+      page works the lower limit into fZ(ESR) = 72.3 kHz for 0.1 ohm and 2.2 uF
+  - file: reference/knowledge/sources/slva115a.pdf
+    page: 6
+    section: 2 Conclusion
+    note: >
+      Read verbatim, and broader than the p2 NOTE this record also cites - "When
+      designing with older linear regulators, ESR is very important to consider
+      when selecting the output capacitor. As the ESR is a function of
+      frequency, the minimum ESR is used in simulations. Newer LDOs like the
+      TPS7A26 device are inherently ceramic capacitor stable" - stated for older
+      linear regulators generally rather than only for the plotted charts, which
+      is why the minimum-over-frequency reading is carried here as the
+      conservative one
+status: active
+origin: research:block-linear-regulator-1
+level: family
+envelope:
+  cout_stability_kind: {in: [esr-dependent]}
+envelope_note: >
+  Bounded by the regulator's compensation scheme and nothing else. An
+  ESR-compensated loop needs the zero the capacitor's ESR provides, so both the
+  floor and the ceiling bite; a ceramic-stable (internally compensated) LDO
+  inverts the rule - there a bare MLCC is the correct part and this record must
+  not be retrieved. Load current does not bound it: the vendor window is stated
+  for the whole specified current range. Values ride in rule, the part family in
+  applies.
+maturity: approved
+generalizes: [linear-regulator-esr-zero-compensation]
+verification: {by: "second-reader", date: "2026-08-16", note: "Third pass. Every cited page reopened visually and the WHOLE prose re-read hunting for the relocated dielectric claim: none survives. The CONSEQUENCE paragraph is now a pure restatement of LM1117 p15 - a candidate qualifies only if ITS OWN datasheet puts ESR inside 0.3-22 ohm, under 0.3 ohm is outside - followed by the admission that no source here states a dielectric family ESR and that the concrete part is a P3 question. The only dielectric names left in prose are vendor words: tantalum from LM1117 p15 (The minimum output capacitance required by the LM1117 is 10 uF, if a tantalum capacitor is used) and AMS p4 (The addition of 22uF solid tantalum on the output will ensure stability for all operating conditions), and ceramic only inside the verbatim SLVA115A p6 quote about NEWER LDOs. Nothing asserts or implies what any capacitor technology ESR IS. Negative claim checked exhaustively by text search of all four PDFs: polymer, MLCC, multilayer, X7R and X5R occur in none of them; ceramic occurs only in SLVA115A; the string ESR occurs in LM1117 on p15 alone and NOWHERE in the AMS datasheet - so neither 1117 datasheet carries an ESR-vs-IOUT chart or a measurement frequency, as the record says. Rule keys re-verified on their pages: p15 sec 9.2.2.1.3 verbatim - must meet the required conditions for both minimum amount of capacitance and equivalent series resistance (ESR), the 10 uF tantalum minimum, The ESR of the output capacitor should range between 0.3 ohm to 22 ohm, and In the case of the adjustable regulator, when the CADJ is used, a larger output capacitance (22-uF tantalum) is required; LM1117 p14 sec 9.2.2.1.1 gives A 10-uF tantalum on the input is a suitable input capacitor for almost all applications; AMS p4 gives 22 uF solid tantalum with no ESR bound on the page; AMS p3 conditions every ripple-rejection row (AMS1117-3.3: 60 min / 72 typ at VIN 4.75 V) on COUT = 22 uF Tantalum, IOUT = 1 A. Both new citations hold. LM1117 p14 carries the boxed section-9 Note verbatim - Information in the following applications sections is not part of the TI component specification, and TI does not warrant its accuracy or completeness - and 9.2.2.1.3 sits inside section 9, so PROVENANCE is right. SLVA115A p6 Conclusion reads verbatim - When designing with older linear regulators, ESR is very important to consider when selecting the output capacitor. As the ESR is a function of frequency, the minimum ESR is used in simulations. Newer LDOs like the TPS7A26 device are inherently ceramic capacitor stable - and it IS broader than the p2 NOTE, which qualifies the same convention with in these plots. The AMS p4 extensions are verbatim: The value of 22uF tantalum covers all cases of bypassing the adjustment terminal, and Without bypassing the adjustment terminal smaller capacitors can be used with equally good results - exactly what the prose concludes (22 uF conservative rather than mandatory for a part with no adjust terminal to bypass; TI tantalum floor 10 uF). Three precisions for later, none load-bearing. (1) CONSEQUENCE says at the operating point while INFERENCE prescribes the minimum ESR over frequency - two different tests, and no page states either condition; keep the INFERENCE wording if one must win. (2) SLVA115A p4, NOT cited here, calls the DUT a 2.2-uF ceramic (low ESR) capacitor - the nearest page evidence that a dielectric is low ESR, still qualitative and about one part, so the record negative claim stands, but a future pass wanting to name typical failures now has p4 plus p3 rather than nothing. (3) envelope_note keeps one dielectric sentence - for a ceramic-stable LDO a bare MLCC is the correct part - but it is out-of-envelope scoping and its content is on SLVA115A p6 (inherently ceramic capacitor stable, improving cost, size and performance) and p3 (no need to be concerned about ESR); only the acronym MLCC is the record own wording. Same for a FIXED 1117 has no adjust terminal: true in the ledger (LM1117 p3 Table 6-1, AMS p5) but on pages this record does not cite."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

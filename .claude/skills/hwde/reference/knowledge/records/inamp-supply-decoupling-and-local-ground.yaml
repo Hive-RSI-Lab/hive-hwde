@@ -1,0 +1,68 @@
+id: inamp-supply-decoupling-and-local-ground
+classes: [decoupling, return-path]
+applies:
+  topologies: [inamp]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  hf_cap_uf: 0.1
+  hf_placement: "as close as possible to EACH supply pin - both pins on a dual-supply part"
+  bulk_cap_uf: 10
+  bulk_placement: "farther from the part; may be shared with other precision ICs on the same rail"
+  supply_quality: "a stable dc voltage - noise on the supply pins degrades the measurement"
+  ref_return: "tie REF to the appropriate local ground, because the output is developed with respect to REF"
+  load_return: "the load returns to that same local ground"
+prose: >
+  The in-amp's own local power and ground environment, as its vendor
+  specifies it. Three parts, all from the AD8226 LAYOUT section and its
+  Figure 61.
+  (a) Supply quality is a measurement parameter, not a housekeeping detail:
+  "A stable dc voltage should be used to power the instrumentation
+  amplifier. Note that noise on the supply pins can adversely affect
+  performance." A precision in-amp converts supply noise into output error
+  through its finite PSR, and PSR is specified per gain.
+  (b) Decoupling is two-tier and the tiers are placed differently: "A
+  0.1 uF capacitor should be placed as close as possible to each supply
+  pin. As shown in Figure 61, a 10 uF tantalum capacitor can be used
+  farther away from the part. In most cases, it can be shared by other
+  precision integrated circuits." So the HF cap is per pin and local; the
+  bulk cap is per rail and may be shared - a distinction that matters when
+  a layout tries to save parts by sharing the wrong one.
+  (c) The reference and the load must return to the part's own local
+  ground. Figure 61 is titled "Supply Decoupling, REF, and Output Referred
+  to Local Ground" and draws exactly that; the text adds "The output
+  voltage of the AD8226 is developed with respect to the potential on the
+  reference terminal. Care should be taken to tie REF to the appropriate
+  local ground." Any IR drop between the REF return and the load return
+  appears at the output multiplied by one - it is not divided by the gain.
+sources:
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 22
+    section: "AD8226 Rev. C, printed p.21 - LAYOUT / Power Supplies, Figure 61, References"
+    note: >
+      Read on the page: the Power Supplies paragraph ("A stable dc voltage
+      should be used ... noise on the supply pins can adversely affect
+      performance" and "A 0.1 uF capacitor should be placed as close as
+      possible to each supply pin ... a 10 uF tantalum capacitor can be
+      used farther away from the part. In most cases, it can be shared by
+      other precision integrated circuits"); Figure 61 "Supply Decoupling,
+      REF, and Output Referred to Local Ground", which draws 0.1 uF and
+      10 uF on each of the +Vs and -Vs pins, REF tied to the local ground
+      symbol, and the LOAD returned to that same local ground; and the
+      References paragraph "Care should be taken to tie REF to the
+      appropriate local ground."
+status: active
+origin: research:block-inamp-1
+level: principle
+maturity: approved
+generalizes: []
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read AD8226 PDF p.22 (printed p.21, LAYOUT / Power Supplies, Figure 61, References). Every quote is verbatim: 'A stable dc voltage should be used to power the instrumentation amplifier. Note that noise on the supply pins can adversely affect performance'; 'A 0.1 uF capacitor should be placed as close as possible to each supply pin. As shown in Figure 61, a 10 uF tantalum capacitor can be used farther away from the part. In most cases, it can be shared by other precision integrated circuits'; and 'The output voltage of the AD8226 is developed with respect to the potential on the reference terminal. Care should be taken to tie REF to the appropriate local ground.' Figure 61 is titled exactly 'Supply Decoupling, REF, and Output Referred to Local Ground' and does draw 0.1 uF and 10 uF on each of the +Vs and -Vs pins, REF tied to the local ground symbol, and the LOAD returned to that same symbol. The two-tier distinction the record leans on (HF cap per pin and local, bulk per rail and shareable) is the vendor's own wording, not an embellishment. Scope guardrail clean: nothing here is called unnecessary, and the shareability of the bulk cap is quoted, not inferred. Nit: 'PSR is specified per gain' and the unity REF-to-output gain behind the IR-drop remark are Table 3 facts on PDF p.6, a page this record does not cite, though the cited page does point to the PSRR curves in Figures 23 and 24."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

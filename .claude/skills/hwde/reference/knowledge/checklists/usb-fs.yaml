@@ -1,0 +1,39 @@
+# Coverage checklist for a USB full-speed (12 Mbit/s D+/D- pair) interface
+# slot. Authored + approved at U14 (owner, 2026-08-15). Like 100base-tx, the
+# library holds no interface records yet, so most rows are honest gaps that
+# feed U15's research verb. One row is NOT a gap: buck-upstream-inrush-limit
+# already keys on interface `usb`, so the inrush row reports provisional
+# (its source_kind envelope dim is undeclared on today's boards) rather than
+# gap - the retrieval mechanism reaching across a topology record into an
+# interface slot, working as designed.
+#
+# applies.interfaces lists the canonical name plus the diff_pairs `base`
+# token boards declare (usb-buck: USB).
+id: usb-fs
+kind: coverage-checklist
+applies:
+  interfaces: [usb-fs, usb]
+requires:
+  - {class: diff-pair, min_level: topology, note: "90 ohm differential D+/D-: width/gap for the stackup, intra-pair skew, no stubs, series-resistor and connector pad discontinuities"}
+  - {class: return-path, min_level: topology, note: "unbroken reference under the pair from connector to PHY, including layer changes"}
+  - {class: emi, min_level: topology, note: "separation from switch nodes and inductors (the aggressor side lives in buck-switch-node-containment)"}
+  - {class: esd, min_level: topology, note: "VBUS / D+ / D- ESD parts, their placement at the connector, and the return path for the strike"}
+  - {class: decoupling, min_level: topology, note: "VBUS bulk within the attach limit + PHY rail decoupling"}
+  - {class: inrush, min_level: topology, note: "attach capacitance limit set by the source (USB 2.0 s7.2.4.1 / PD contract)"}
+  - {class: selection, min_level: topology, note: "receptacle, CC/BC1.2 handling, common-mode choke and ESD part choice"}
+  - {class: constraints-emission, min_level: principle, note: "what the interface must emit into constraints.json (diff_pairs impedance/skew, high_speed, placement)"}
+maturity: approved
+approval:
+  by: owner
+  date: "2026-08-15"
+  note: >
+    U14 ruling: approved with no records behind it, so usb-buck's
+    interface:usb slot reports an honest gap. Scoped to FULL SPEED
+    deliberately - a high-speed (480 Mbit/s) checklist is a different set of
+    decisions (eye budget, on-die termination, layer transitions) and gets
+    its own record when a board needs it.
+prose: >
+  USB full speed D+/D- pair. No interface records yet - this checklist
+  exists to make the gap visible and to give the research pass its slot
+  list.
+origin: U14 owner session (2026-08-15) - authored ahead of any record

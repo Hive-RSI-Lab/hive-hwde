@@ -1,0 +1,92 @@
+id: buck-two-layer-ground-shield-continuity
+classes: [emi, return-path]
+applies:
+  topologies: [buck]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  measured_peak_2l_dbuv_per_m: 34
+  measured_peak_4l_unbroken_dbuv_per_m: 28.5
+  measured_peak_4l_cut_under_sw_dbuv_per_m: 33.5
+  two_layer_penalty: "about 5 dBuV/m against a 4-layer board with unbroken mid-planes"
+  plane_continuity: "no route may break the ground pour under the hot loop, the SW node or the inductor"
+  vendor_baseline: "the datasheet asks for a mid-layer ground plane and a 4-layer 2/1/1/2 oz stack - 2 layers is a documented deviation"
+prose: >
+  Three boards with identical top and bottom layouts, materials and
+  operating conditions were scanned for radiated EMI: a 2-layer board with
+  no ground-plane shielding peaked at 34 dBuV/m; a 4-layer board with two
+  unbroken mid-layer ground planes peaked at 28.5; a 4-layer board whose
+  planes carry a rectangular cut right under the SW node peaked at 33.5 -
+  i.e. breaking the shield under the noisy node throws away the whole
+  benefit of the extra layers and lands back at 2-layer performance. The
+  mechanism is the mirror return: an unbroken plane under a top-layer
+  current lets an opposite-direction image current form directly beneath,
+  shrinking the loop so the two fields nearly cancel. Three consequences
+  at 2 layers. (1) The ~5 dBuV/m is a budget item, not a surprise: the
+  part's own layout rule 5 asks for a ground plane in a middle layer and
+  10.1.1 recommends a 4-layer 2/1/1/2 oz stack, so a 2-layer board is a
+  documented deviation and the EMI margin must absorb it. (2) The bottom
+  pour IS the shield - nothing may be routed across it under the hot loop,
+  the SW node or the inductor, because a bottom-layer trace there is
+  precisely the cut that measured 33.5 dBuV/m. (3) The datasheet's
+  "constrain PGND, VIN and SW to one side of the ground plane and put
+  sensitive routes on the other" becomes one side of the BOARD, not one
+  side of a layer stack.
+sources:
+  - file: reference/knowledge/sources/snva721a.pdf
+    page: 6
+    section: "2.4 Ground Shielding, Figures 9-14"
+    note: >
+      Cross-sections 9/10/11 (2-layer, 4-layer unbroken mid-planes,
+      4-layer with a rectangular cut under the SW node) and the matching
+      radiated scans 12/13/14 annotated Peak = 34, 28.5 and 33.5 dBuV/m.
+      Text: the three boards share top and bottom layouts, materials and
+      operating conditions; the mid-layer plane forms a mirror return
+      under a top-layer current so the fields nearly cancel; the 4-layer
+      shielding is worth 5 dBuV/m but a broken plane performs comparably
+      to the 2-layer design, so do not break the copper under noisy
+      traces.
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 33
+    section: "10.1 Layout Guidelines, rules 5 and 8"
+    note: >
+      Rule 5 "Use at least one ground plane in one of the middle layers" -
+      the plane acts as a noise shield and a heat dissipation path. Rule 8
+      asks for 2 oz copper on top and bottom, no less than 1 oz, and for
+      the SOIC package an array of heat-sinking vias to the ground plane
+      on the bottom PCB layer.
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 34
+    section: "10.1.1 Ground and Thermal Considerations"
+    note: >
+      PGND carries switching-frequency noise and can bounce with load; the
+      PGND, VIN and SW traces must be constrained to one side of the
+      ground planes and the other side used for sensitive routes; a
+      four-layer 2 oz / 1 oz / 1 oz / 2 oz stack is recommended.
+status: active
+origin: research:block-buck-1
+level: topology
+envelope:
+  board_layers: {max: 2}
+maturity: approved
+generalizes: []
+envelope_note: >
+  Scales with whether a dedicated shield layer exists between the
+  switching copper and the far side of the board. At 2 layers there is
+  none: the bottom pour is the shield and the ~5 dBuV/m gap to a 4-layer
+  board cannot be recovered - the case the quoted numbers are taken
+  against. Above 2 layers an unbroken mid-plane buys that 5 dBuV/m back,
+  so only the plane-continuity half generalises upward (a cut under SW
+  measured 33.5 vs 34 dBuV/m). Bounded on layer count, not vin/iout/fsw:
+  the three boards were measured at one operating condition and only the
+  shield changed.
+verification: {by: "second-reader", date: "2026-08-15", note: "Re-read snva721a p6 and lmr33630 p33/p34. The load-bearing deviation claim holds on the exact pages cited: p33 rule 5 reads Use at least one ground plane in one of the middle layers, acting as a noise shield and a heat dissipation path; rule 8 asks 2 oz top and bottom and no less than 1 oz; and p34 10.1.1 asks for a four-layer 2 oz / 1 oz / 1 oz / 2 oz stack and for PGND, VIN and SW to be constrained to one side of the ground planes. A 2-layer board is therefore a documented deviation, as claimed. snva721a p6 Figures 12/13/14 are annotated Peak = 34, 28.5 and 33.5 dBuV/m on three boards the text says share identical top and bottom layer layouts, building materials and operating conditions, and the text states the four-layer board achieved 5 dBuV/m in noise reduction compared to the two-layer board and that the broken plane performed comparably to the two-layer design. No overreach to 30 V: section 2.4 states no input voltage at all (the 12 V figure belongs to the separate section 2.2 experiment), and the record claims only one common operating condition. One caveat for a later pass, not refuting: the prose maps a bottom-layer trace on a 2-layer board onto the 33.5 dBuV/m broken MID-plane measurement, which is an extrapolation - but the provenance is stated correctly two sentences earlier and the source conclusion (avoid breaking the copper of the shielding plane, especially right underneath the noisy traces) is generic."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

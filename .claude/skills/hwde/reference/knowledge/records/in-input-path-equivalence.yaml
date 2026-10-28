@@ -1,0 +1,84 @@
+id: in-input-path-equivalence
+classes: [diff-pair]
+applies:
+  topologies: []
+  packages: []
+  interfaces: [in]
+  parts: [AD8226]
+rule:
+  enforced_by: null
+  vendor_rule: "AD8226 LAYOUT: 'Poor layout can cause some of the common-mode signals to be converted to differential signals before reaching the in-amp. Such conversions occur when one input path has a frequency response that is different from the other. To keep CMRR across frequency high, the input source impedance and capacitance of each path should be closely matched.'"
+  vendor_placement: "AD8226 LAYOUT: 'Additional source resistance in the input path (for example, for input protection) should be placed close to the in-amp inputs, which minimizes their interaction with parasitic capacitance from the PCB traces' - so a series element belongs at the PIN end of the run, on both sides, not at the connector"
+  what_must_match: "frequency response, i.e. an RC per path: equal trace length, width, via count and reference neighbourhood (equal capacitance to the reference copper), and identical series elements on both legs"
+  why_not_dc_resistance: "the AD8226 input impedance is 0.8 Gohm||2 pF differential and 0.4 Gohm||2 pF common mode, so a few ohms of series mismatch draws no current worth counting at dc; the pins' own 2 pF is the scale against which trace capacitance mismatch is judged"
+  conversion_gain: "ARITHMETIC (not vendor text): unequal shunt capacitance dC across a source of resistance Rsource converts common mode to differential with gain ~ 2*pi*f*(Rsource/2)*dC; at this slot's 350 ohm that is 1.1 ppm (-119 dB) per pF at 1 kHz and 5.5 ppm (-105 dB) per pF at 5 kHz, rising 20 dB/decade"
+  budget: "the part's own CMRR is 86 dB min (G=1) / 120 dB (G=100) from dc to 60 Hz and 80 dB (G=1) / 90 dB (G=100) at 5 kHz, so single-digit pF of path mismatch stays under the part; about 10 pF of mismatch (a stub, an unmatched via, a connector pole with a different neighbour) reaches -85 dB at 5 kHz and becomes the dominant term"
+  not_this: "this is NOT the four-resistor difference-amplifier law CMRR=(G+1)/(4t) - there is no gain-setting resistor network in a trace pair feeding a 0.4 Gohm input - and NOT a controlled-impedance, gap or skew rule: at 1 kHz nothing here is set by characteristic impedance or propagation delay"
+prose: >-
+  The vendor's own frame for the connector-to-pin run: what converts common
+  mode into differential BEFORE the amplifier is a difference in FREQUENCY
+  RESPONSE between the two paths, and the fix is equality of source
+  impedance and capacitance per path. That makes this a matched-RC rule,
+  not a matched-length transmission rule. The dc half costs nothing here
+  because the inputs are 0.8 Gohm||2 pF differential (0.4 Gohm||2 pF common
+  mode) - series resistance mismatch in copper draws no meaningful current.
+  The ac half is real: taking the vendor sentence literally and doing the
+  arithmetic, one picofarad of extra capacitance on one leg against a
+  350 ohm source is about -119 dB of common-mode-to-differential conversion
+  at 1 kHz and -105 dB at 5 kHz, against a part specified at 90 dB (G=100)
+  at 5 kHz. So a picofarad or two of asymmetry is affordable and ten is
+  not - and the asymmetry to hunt is capacitance to the reference copper:
+  a longer leg, an extra via, a different neighbour, a stub to a test
+  point on one side only. The vendor adds the placement half explicitly:
+  any series element in the input path sits close to the in-amp inputs so
+  it interacts as little as possible with the traces' parasitic
+  capacitance - both legs, same position.
+sources:
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 22
+    section: "AD8226 Rev. C, printed p.21 - LAYOUT / Common-Mode Rejection Ratio Over Frequency, first paragraph"
+    note: >-
+      Read the opening paragraph verbatim: poor layout converts common-mode
+      to differential before the in-amp when one input path's frequency
+      response differs from the other; keep the input source impedance and
+      capacitance of each path closely matched; put additional series
+      source resistance close to the in-amp inputs to minimize interaction
+      with PCB-trace parasitic capacitance.
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 5
+    section: "AD8226 Rev. C, printed p.4 - INPUT block of the dual-supply table"
+    note: >-
+      Read the INPUT rows: input impedance 0.8 Gohm||2 pF differential and
+      0.4 Gohm||2 pF common mode over Vs = +-1.35 V to +-18 V - the
+      impedance the trace pair actually works into.
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 6
+    section: "AD8226 Rev. C, printed p.5 - Table 3, COMMON-MODE REJECTION RATIO block"
+    note: >-
+      Read the CMRR rows at VCM = 0 V to 1.7 V: dc to 60 Hz 86 / 106 / 120
+      / 120 dB min for G = 1 / 10 / 100 / 1000, and at 5 kHz 80 / 90 / 90 /
+      100 dB - the budget any layout-induced conversion is spent against.
+status: active
+origin: research:interface-in-2
+level: topology
+envelope:
+  f_signal_hz: {max: 5000}
+maturity: approved
+generalizes: []
+envelope_note: >-
+  The conversion the vendor describes is a frequency-response difference,
+  so the dim is frequency: the term grows 20 dB/decade and vanishes at dc.
+  Bounded at 5 kHz because that is the highest frequency at which this data
+  sheet specifies CMRR (Table 3), so it is the last point where the rule
+  can be held against a vendor number; above it the mechanism is stronger
+  but nothing in this ledger says how strong. The quoted conversion figures
+  also scale linearly with source resistance and are quoted at this slot's
+  350 ohm - halve the source, halve the error.
+verification: {by: "second-reader", date: "2026-08-16", note: "AD8226 printed p.21 LAYOUT / CMRR Over Frequency re-read: the quoted paragraph is verbatim, both halves (poor layout converts CM to differential when one input path has a frequency response different from the other; keep each path's input source impedance AND capacitance closely matched; additional source resistance in the input path, for example for input protection, should be placed close to the in-amp inputs to minimize interaction with parasitic capacitance from the PCB traces). Printed p.4 INPUT block: Input Impedance Differential 0.8||2 and Common Mode 0.4||2 GOhm||pF - printed, exactly as claimed. Printed p.5 Table 3 CMRR block at VCM = 0 V to 1.7 V: DC to 60 Hz 86/106/120/120 dB min and at 5 kHz 80/90/90/100 dB for G=1/10/100/1000 - exact, and 90 dB (G=100) is the right budget row for this board's ~150-165 gain. BOTH DERIVED FIGURES REPRODUCE: 2*pi*1000*175*1e-12 = 1.100e-6 = 1.1 ppm = -119.2 dB per pF at 1 kHz; x5 at 5 kHz = 5.50e-6 = -105.2 dB; 10 pF at 5 kHz = 5.50e-5 = -85.2 dB, i.e. below the 90 dB spec, so the dominant-term claim holds. The Rsource/2 = 175 ohm half-bridge model is stated in the record, not hidden. ENVELOPE JUSTIFICATION CHECKED IN BOTH TABLES: Table 2 (+-15 V) and Table 3 (+2.7 V) each specify CMRR only at DC-to-60 Hz and at 5 kHz - 5 kHz is genuinely the last CMRR SPEC row in the data sheet. Figures 27/28 do plot CMRR vs frequency to 100 kHz, but those are typical curves with no limit, so 'last point where the rule can be held against a vendor number' stands as written. One wording slip, not refuting: the p.4 citation renders the INPUT condition as Vs = +-1.35 V to +-18 V where the table prints 'VS = +-1.35 V to +36 V' - the same 2.7-to-36 V total span, and the impedance values quoted are exact."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

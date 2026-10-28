@@ -1,0 +1,8 @@
+# check_bom_sync: DNP, BOM, CPL and board attributes agree (DFA-07, DFA-04,
+# DFA-08). Needs only the board: it finds the schematic and the fab files
+# beside a workspace's board itself, and reports which legs ran.
+name: check_bom_sync
+needs: []
+args: []
+optional:
+  parts: [--parts, "{parts}"]

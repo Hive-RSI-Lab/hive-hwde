@@ -1,0 +1,123 @@
+id: precision-buffer-settles-not-bandwidth
+classes: [selection]
+applies:
+  topologies: [precision-buffer]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  specified_by: "settling to the target accuracy inside the acquisition window"
+  bw_min: "ln(2^N) / (2*pi*t_settle)   (16-bit: 11.09 tau = 1 LSB = 15.3 ppm; 11.8 tau = 1/2 LSB; solve ln(1/err) for any other target)"
+  window: "t_acq = 1/f_sample - t_conv_max"
+  also_required: "the interface RC must settle inside t_acq and the driver must beat it: GBW > 4/(2*pi*R_FLT*C_FLT)"
+  slew_is_separate: "slew rate bounds a real step in the MEASURED SIGNAL, not the per-conversion kick - check it as its own selection spec"
+  closed_form_is: "a floor - confirm amplifier + interface RC in simulation"
+prose: >
+  A buffer feeding a sampling ADC is specified by SETTLING, not by bandwidth
+  alone. During acquisition the converter closes its sampling switch and the
+  sample-and-hold capacitor C_SH charges through the internal R_SH as one
+  exponential, V_CSH(t) = V_CSH(t0) + [VIN - V_CSH(t0)]*(1 - exp(-t/tau)),
+  tau = R_SH*C_SH (p5), and it must land within 1/2 LSB before the window
+  t_acq = 1/f_smpl - t_conv_max closes (p7). The p7 waveform that dips at
+  switch closure and recovers is the ADC-INTERNAL node - that figure holds
+  only the S/H switch, R_SH, C_SH and the converter - and its recovery is
+  that same R_SH*C_SH exponential, not an amplifier moving. Missing the
+  window is not a noise penalty: the sampled waveform comes out attenuated
+  and distorted, a gain and linearity error (p8). Bandwidth follows from the
+  ACCURACY, not the signal: BW >= ln(2^N)/(2*pi*t_settle), about 11 time
+  constants at 16 bits (p25). The amplifier owes that same requirement one
+  node out: the interface RC must settle inside t_acq and the driver must
+  beat that RC, GBW > 4/(2*pi*R_FLT*C_FLT) (p27), while the per-conversion
+  kick is absorbed locally by the charge-bucket capacitor (p26). Slew rate is
+  a SEPARATE selection spec bounding a real step in the measured signal, not
+  the sampling event - check it on its own (sboa586a p25 step 7; OPA333 SR
+  0.16 V/us, opa333 p7). The closed form is a floor: p25 adds margin for
+  signal bandwidth and the input RC and still recommends simulating the
+  amplifier with that RC.
+sources:
+  - file: reference/knowledge/sources/sprpeo2.pdf
+    page: 5
+    section: "SAR ADC Acquisition & Conversion Phase"
+    note: >
+      Figure: SAR internal model (S1 sampling switch, R_SH, C_SH, comparator,
+      N-bit CDAC) with the exponential settling curve reaching within 1/2 LSB
+      of VIN inside t_AQ, and the equation V_CSH(t) with tau = R_SH*C_SH.
+  - file: reference/knowledge/sources/sprpeo2.pdf
+    page: 7
+    section: "Charging the CSH Capacitor Within tacq"
+    note: >
+      Text plus figure: C_SH must settle to 1/2 LSB within t_acq, where
+      t_acq = 1/f_smpl - t_conv_max. The figure is drawn inside a dashed box
+      labelled ADC chip and contains ONLY the S/H switch, R_SH, C_SH and the
+      ADC - no amplifier - so the plotted dip and recovery is the C_SH
+      voltage on the p5 R_SH*C_SH exponential, labelled settled within
+      1/2 LSB. Nothing on this page mentions slew rate.
+  - file: reference/knowledge/sources/sprpeo2.pdf
+    page: 8
+    section: "Why an ADC Driver Circuit is Needed"
+    note: >
+      Two plots: a clean input sine against the ADC output staircase, which is
+      attenuated and distorted when C_SH is not settled to 1/2 LSB inside
+      t_acq - the failure is gain/linearity error, not added noise.
+  - file: reference/knowledge/sources/sprpeo2.pdf
+    page: 25
+    section: "ADC Driver Design: Bandwidth"
+    note: >
+      Rule of thumb slide: driver must settle to 1/2 LSB, settling time <
+      acquisition time + margin, BW ~ ln(2^N)/(2*pi*t_settle), 11/(2*pi*
+      t_settle) for 16-bit; worked example 5 MSPS with 70 ns acquisition needs
+      ~25 MHz closed-loop BW, and simulating the RC combination is still
+      recommended. Reading the tau count off this formula: the 11 is
+      ln(2^16) = 11.09, the number of time constants that leaves exactly one
+      16-bit LSB, exp(-11.09) = 2^-16 = 15.3 ppm; 1/2 LSB is 11.78 tau and
+      this block's 8 ppm target is 11.74 tau. The slide states no error in
+      ppm - the string "ppm" appears nowhere in sprpeo2, sboa418 or
+      sboa586a - so any ppm equivalence in this record is arithmetic on the
+      sourced formula, not a vendor claim.
+  - file: reference/knowledge/sources/sprpeo2.pdf
+    page: 26
+    section: "Step 2 - Input Filter Design"
+    note: >
+      Charge-Bucket Filter panel: main purpose is to handle the kickback
+      current when the SAR sampling switch closes, charge quickly, and be
+      optimized for settling time - i.e. the per-conversion charge event is
+      supplied by the shunt capacitor, not by the amplifier.
+  - file: reference/knowledge/sources/sprpeo2.pdf
+    page: 27
+    section: "ADC Driver Design: Input Filter Design"
+    note: >
+      What the amplifier itself owes: practical t_FLT_settle = t_ACQ =
+      12*tau_FLT with R_FLT = t_ACQ/(12*C_FLT), and minimum driver
+      GBW > 4*(1/(2*pi*R_FLT*C_FLT)) so the driver is not the slow element;
+      confirming the RC combination plus driver in simulation is recommended.
+  - file: reference/knowledge/sources/sboa586a.pdf
+    page: 25
+    section: "9 Procedure for Selecting a Zero-Drift Amplifier"
+    note: >
+      Step 7 of the selection procedure, the only place in this ledger that
+      asks for a slew-rate check: "assuming all other criteria are
+      acceptable, check all other amplifier specifications. For example, is
+      bandwidth, slew rate, and output drive meeting your application
+      specific requirements" - a standalone selection screen, not part of the
+      acquisition-window waveform.
+  - file: reference/knowledge/sources/opa333.pdf
+    page: 7
+    section: "6.6 Electrical Characteristics"
+    note: >
+      Frequency-response block: SR = 0.16 V/us at G = +1 and GBW 350 kHz at
+      C_L = 100 pF - the concrete slew number a slow precision part carries,
+      quoted here only as the spec that step 7 screens on.
+status: active
+origin: research:block-precision-buffer-1
+level: principle
+maturity: approved
+generalizes: []
+verification: {by: "research-second-reader", date: "2026-08-16", note: "Re-read sprpeo2 p5, p6, p7, p8, p25, p26 and p27, sboa586a p25 and opa333 p7, re-ran the ppm scan myself and re-did the arithmetic. The ppm defect that refuted this record last pass is gone and the replacement is correct and correctly labelled. THE SCAN REPRODUCES EXACTLY. Case-insensitive search for the string ppm over every page of all four ledger PDFs: sprpeo2 0 hits in 54 pages, sboa586a 0 in 27, sboa418 0 in 14 - 95 pages, zero hits - and opa333 exactly 1 hit, on p24, the line 20-ppm/Degrees C Max, 100-uA, SOT23-3 Series Voltage Reference, REF3130, which is an advertisement for a different part and not a settling claim. The p25 source note states precisely that (The slide states no error in ppm - the string ppm appears nowhere in sprpeo2, sboa418 or sboa586a - so any ppm equivalence in this record is arithmetic on the sourced formula, not a vendor claim), so the record now discloses the provenance instead of implying a vendor number. THE ARITHMETIC IS RIGHT. ln(2^16) = 11.0904; exp(-11.0904) = 1.5259e-5 = 2^-16 = 15.26 ppm, i.e. 11.09 tau leaves exactly one 16-bit LSB, which is what rule.bw_min now says; 1/2 LSB = 2^-17 needs -ln(2^-17) = 11.7835 tau, the record's 11.8 in the rule and 11.78 in the note; and this block's 8 ppm target needs -ln(8e-6) = 11.7361 tau, the note's 11.74. The solve ln(1/err) for any other target instruction generalises it correctly. THE SOURCED FORMULA IS ON THE PAGE. sprpeo2 p25 reads For N-bit accuracy BW approximately ln(2^N)/(2*pi*t_settle), For 16-bit BW approximately 11/(2*pi*t_settle), Driver must settle to 16-bit accuracy to 1/2 LSB, Settling time < acquisition time + margin, For 5 MSPS with 70ns acquisition Required closed-loop BW approximately 25 MHz min, Added margin in consideration for signal BW and input RC filter, and the footnote simulating RC combo still recommended - so closed_form_is a floor is the slide's own hedge. EVERY OTHER CITATION RE-READ. p5 carries the SAR internal model with V_CSH(t) = V_CSH(t0) + [VIN - V_CSH(t0)]*(1 - exp(-t/tau)) and tau = R_SH*C_SH, the curve settling inside 1/2 LSB during t_AQ. p7 is exactly as described and this is the claim that most needed re-checking: the figure is a blue dashed box labelled ADC chip containing ONLY the S/H switch, R_SH, C_SH and a block marked ADC - no amplifier - the trace to its right is labelled C_SH voltage, dips at switch closure, recovers and is annotated settled within 1/2 LSB under a t_acq bracket, and the bullets above give the sample-hold capacitor needs to be settled to 1/2 LSB within the ADC acquisition time and t_acq = 1/f_smpl - t_conv_max. The word slew appears nowhere on that page, so the record's insistence that the recovery is the R_SH*C_SH exponential and not an amplifier moving is the page's own content. p8 reads If CSH is not settled to 1/2 LSB within tacq, the ADC sampled waveform will be distorted and attenuated, over an ADC Input Waveform and ADC Output Waveform pair - the record's gloss as gain and linearity error rather than noise is a fair reading of distorted and attenuated. p26 is the charge-bucket panel (main purpose handle the kickback current when a SAR ADC sampling switch closes, quickly charge, must be optimized for settling time). p27 gives practical t_FLT_settle = t_ACQ = 12*tau_FLT, R_FLT = t_ACQ/(12*C_FLT) and Minimum driver GBW > 4*(1/(2*pi*R_FLT*C_FLT)) word for word, which is rule.also_required. sboa586a p25 step 7 is verbatim and is the seventh and last step, so slew being a standalone screen rather than part of the acquisition waveform is the page's own ordering. opa333 p7 confirms SR 0.16 V/us at G = +1 and GBW 350 kHz at C_L = 100 pF. For a principle-level record with three records generalizing onto it I looked specifically for anything left unsourced in the rule block and found none: every field traces to p5, p7, p25, p26, p27 or sboa586a p25, and the one piece of arithmetic is now flagged as arithmetic. Verified."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

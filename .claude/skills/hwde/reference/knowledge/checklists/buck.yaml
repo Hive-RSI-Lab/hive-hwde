@@ -1,0 +1,43 @@
+# Coverage checklist (U13, design decision 5a): the classes + minimum record
+# levels that must be populated - at the block's operating point, at or above
+# the maturity floor - before the pipeline may claim "I know enough to design
+# a buck". APPROVED by the owner at U14 (2026-08-15) over the backfilled
+# 14-record buck set. Two rows sit at min_level `principle` because their
+# records are principles by ruling (they bound no operating point): the
+# enable/UVLO/soft-start rule and the constraints emission contract.
+id: buck
+kind: coverage-checklist
+applies:
+  topologies: [buck]
+requires:
+  - {class: selection, min_level: topology, note: "regulator-type ladder + inductor L/Isat/DCR rules"}
+  - {class: power-loop, min_level: topology, note: "input hot loop, C_IN/C_OUT ground separation, free-wheel/LS return corner"}
+  - {class: emi, min_level: topology, note: "SW containment, inductor copper + gnd void, aggressor separation"}
+  - {class: feedback, min_level: topology, note: "FB divider placement/route, BST cap, output-cap window / compensation"}
+  - {class: decoupling, min_level: topology, note: "HF bypass at VIN, output ceramic bank + DC-bias derating"}
+  - {class: return-path, min_level: topology, note: "PGND/AGND isolation and the one low-noise join point"}
+  - {class: thermal-via, min_level: topology, note: "EP thermal-via drill/pitch + via current sizing"}
+  - {class: inrush, min_level: topology, note: "upstream bulk / inrush limit set by the SOURCE (USB/PD/PoE)"}
+  - {class: sequencing, min_level: principle, note: "EN/UVLO/soft-start behaviour before adding parts - principle: no operating-point bound"}
+  - {class: constraints-emission, min_level: principle, note: "what the block must emit into constraints.json - principle: an emission contract, not physics"}
+maturity: approved
+approval:
+  by: owner
+  date: "2026-08-15"
+  note: >
+    U14 approval session. Class list unchanged from the U13 seed (it came
+    from the record set the three shipped buck runs actually used). Two
+    min_levels dropped to `principle` to match the U14 level rulings on
+    buck-en-softstart-sequencing and buck-constraints-emission - a checklist
+    row must never demand a level its own subject matter cannot reach. A buck
+    block covered against this list must declare eight operating-point dims:
+    switching_kind, rectifier_kind, integration_kind, board_layers, pdiss_w,
+    source_kind, vin_v, iout_a.
+prose: >
+  Seeded by U13 from the buck record set (8 migrated from topologies/buck.md
+  + 6 ROHM app-note records), ruled and approved by the owner at U14.
+  Part-level coverage (each IC's P3 datasheet layout extraction) is checked
+  per part slot, not from this list.
+sources:
+  - {file: reference/topologies/buck.md, section: generated view of the record set}
+origin: U13 seed (2026-08-15), owner-approved U14 (2026-08-15)

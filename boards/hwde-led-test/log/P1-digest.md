@@ -1,0 +1,1 @@
+- P1 research: no researchers spawned (decision recorded): trivially powered, 4 jellybean parts.

@@ -1,0 +1,132 @@
+id: buck-dc-input-hot-plug-overshoot
+classes: [inrush]
+applies:
+  topologies: [buck]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  binding_limit: "hot-plug LC overshoot at the VIN pin, NOT an upstream bulk-capacitance budget"
+  damping_criterion: "R_lead + R_cap > 2*sqrt(L_lead/C_in) - for TI's 9.3 uH cable that is 1.9 ohm at 10 uF C_IN, 1.4 ohm at 20 uF, 0.96 ohm at 40 uF"
+  undamped_peak: "the printed model with zero series R reduces to Vi*(1-cos wt) - a 2x peak"
+  plotted_peaks: "about 30 V (C_IN 20 uF) and 27 V (40 uF) from an ~18.3 V source at Ri = 0.21 ohm, Li = 9.3 uH - 1.5-1.6x Vi"
+  headroom_at_this_op: "30 V nominal against a 38 V abs-max VIN pin = 1.27x; scaling TI's 1.5-1.6x ring onto 30 V gives 45-49 V, over the abs max"
+  fixes: "shorten the leads; 20-100 uF aluminium or tantalum across the ceramics; or an RC snubber (2 ohm 0.5 W + 2.2 uF class)"
+  tvs: "allowed, but never a snap-back (thyristor) type on a regulator input"
+prose: >
+  A bench supply or DC adapter imposes no bulk-capacitance budget the way
+  USB, PD or PoE do - that is buck-upstream-inrush-limit's case. What
+  bounds a dc-input board is the hot-plug transient: lead resistance and
+  inductance in series with a low-ESR ceramic C_IN form an under-damped
+  series LC that a live plug-in steps. With no series resistance the
+  printed model reduces to Vi*(1-cos wt), a 2x peak; TI's plots at
+  Ri = 0.21 ohm, Li = 9.3 uH peak at ~30 V (C_IN 20 uF) and ~27 V (40 uF)
+  on an ~18.3 V source - 1.5-1.6x Vi. More capacitance damps the peak
+  without removing it, more lead inductance raises it and rings longer,
+  and only series resistance suppresses the ring (raising Ri drops the
+  peak ~36 -> ~30 V; ring duration runs the other way on that plot - see
+  the p3 note). The criterion R_lead + R_cap > 2*sqrt(L_lead/C_in) wants
+  1.9 ohm at 10 uF C_IN, 0.96 ohm at 40 uF, for that 9.3 uH cable; real
+  cable is 0.15-0.21 ohm and the pin capacitor cannot carry much series R
+  - short by 5-10x, so every plotted trace rings. Scaled onto this
+  board's 30 V input that is 45-49 V at VIN against a 38 V abs max - a
+  destroy-the-part event. Fixes, in the part's own words:
+  shorten the leads and add a 20-100 uF aluminium or tantalum across the
+  ceramics - its ESR damps the resonance and holds VIN up through load
+  steps; an RC snubber sized by the criterion is cheaper. A TVS is
+  allowed, but never a snap-back type: when it fires it collapses below
+  Vout and the output caps discharge back through it.
+sources:
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 32
+    section: "Power Supply Recommendations"
+    note: >
+      With long wires or traces the parasitic inductance of the input
+      cables in combination with low-ESR ceramic input capacitors forms an
+      under-damped resonant circuit, producing overvoltage transients at
+      the regulator input, while the parasitic resistance dips VIN on load
+      transients (which can trip a reset near minimum input). Remedy
+      stated: reduce the distance from supply to regulator and/or an
+      aluminium or tantalum capacitor in parallel with the ceramics, 20 uF
+      to 100 uF. Also: snap-back (thyristor) TVS explicitly not
+      recommended, because when it fires the clamp falls below Vout and
+      the output capacitors discharge back through it; and an input filter
+      in front of the regulator can cause instability.
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 6
+    section: "7.1 Absolute Maximum Ratings / 7.3 Recommended Operating Conditions"
+    note: >
+      VIN to PGND absolute maximum 38 V (recommended operating maximum
+      36 V, minimum 3.8 V; IOUT 0-3 A). This is the ceiling the hot-plug
+      ring is measured against for a 30 V input.
+  - file: reference/knowledge/sources/sluaal8.pdf
+    page: 2
+    section: "2 Root Cause, Figure 2-1, Equations 1-3"
+    note: >
+      Figure 2-1 models adapter insertion as source Vi behind cable Ri/Li
+      into the pin capacitance Ci with series Rc. Equation 3 gives
+      VCi(t) = Vi - Vi*exp(-Rt*t/2Li)*((Rt/2wLi)*sin wt + cos wt), which
+      at Rt = 0 is Vi*(1-cos wt) - peak 2*Vi. Text: higher Ci damps but
+      does not eliminate the spike, longer leads (higher Li) give higher
+      spikes and longer ringing, and only adding series resistance
+      suppresses the ringing.
+  - file: reference/knowledge/sources/sluaal8.pdf
+    page: 3
+    section: "Figures 2-2, 2-3, 2-4"
+    note: >
+      Three plots of VCi from the p2 model (not scope captures); every
+      trace starts at 0 V and settles to Vi = ~18.3 V. Fig 2-2 is
+      annotated Ri = 0.21 ohm, Li = 9.3 uH: Ci = 20 uF peaks ~30 V at
+      0.42 ms, Ci = 40 uF peaks ~27 V at 0.6 ms, both rung out by ~3.5 ms
+      - so 1.5-1.6x Vi, and more Ci lowers the peak without removing it.
+      Fig 2-3 is annotated Ri = 0.15 ohm, Ci = 40 uF and sweeps Li: 5 uH
+      peaks ~27.5 V and settles by ~3 ms, 12 uH peaks ~30.5 V and is still
+      ringing at 5 ms - higher Li, higher peak, longer ring. Fig 2-4 is
+      annotated Li = 9.3 uH, Ci = 40 uF and sweeps Ri: 0.15 ohm peaks
+      ~36 V, 0.5 ohm peaks ~30 V, so raising Ri lowers the peak. But as
+      drawn the ring duration runs the other way - the 0.5 ohm trace is
+      the one that rings, to ~4 ms, settling ~18.3 V, while the 0.15 ohm
+      trace flat-lines at ~33.5 V, which contradicts Fig 2-2's 0.21 ohm /
+      40 uF case settling at 18.3 V. Take the peak-versus-Ri trend from
+      this page and the ring-suppression claim from the p2 text; do not
+      read ring duration off Fig 2-4. The only inductances printed on the
+      page are 9.3 uH, 5 uH and 12 uH.
+  - file: reference/knowledge/sources/sluaal8.pdf
+    page: 4
+    section: "3 RC Snubber, Equation 4, Figure 3-1"
+    note: >
+      Equation 4 gives the damping condition Ri + Rc > 2*sqrt(Li/Ci).
+      Since cable inductance varies and the IC pin capacitance cannot
+      carry much series resistance, the recommended fix is a separate
+      snubbing branch: Figure 3-1 shows 2 ohm (0.5 W, 1210, anti-surge) in
+      series with 2.2 uF (25 V, 1210) to ground, plus a 0.1 uF 50 V 0805
+      kept very close to the supply pin. The filter may sit at the
+      connector or nearer the IC when long traces and GND returns are
+      used, and TI notes the RC combination can need adjusting for some
+      applications.
+status: active
+origin: research:block-buck-1
+level: topology
+envelope:
+  source_kind: {in: [dc-input]}
+maturity: approved
+generalizes: []
+envelope_note: >
+  Scales with what the SOURCE does at connect. A dc-input source (bench
+  supply or adapter on leads) hands the board an unmanaged voltage step
+  into whatever C_IN was fitted, so the binding number is the LC ring
+  against the part's abs-max VIN, and it bites harder the closer the
+  nominal input sits to that maximum. A USB/PD/PoE port instead specifies
+  the allowed bulk capacitance and ramps its own rail - the already-held
+  rule. The ring needs a STEP: a supply that ramps slowly with the board
+  already connected does not excite it, so this is a hot-plug / fast-start
+  bound, not a steady-state one.
+verification: {by: "second-reader", date: "2026-08-15", note: "Verified from the pages, independent of the earlier pass. sluaal8 p3 annotations re-read at high magnification and all three match the record: Fig 2-2 Ri = 0.21 ohm / Li = 9.3 uH with Ci = 20 and 40 uF; Fig 2-3 Ri = 0.15 ohm / Ci = 40 uF sweeping Li = 5 and 12 uH (blue is the 5 uH trace - it peaks first, 0.42 ms vs 0.68 ms, and its amplitude matches the 5 uH case); Fig 2-4 Li = 9.3 uH / Ci = 40 uF sweeping Ri = 0.15 and 0.5 ohm. I calibrated each curve against its own printed gridlines and measured stroke centrelines instead of eyeballing: 20 uF 29.65 V at 0.42 ms, 40 uF 27.19 V at 0.64 ms, Li 5 uH 27.26 V settled by ~2.5 ms, Li 12 uH 30.28 V still swinging 18.4-19.4 V over 4.5-5 ms, Fig 2-4 0.15 ohm 36.09 V then flat 33.47 V from 2.5 ms, 0.5 ohm 29.81 V with its last swing at 4.34 ms. Every quoted value sits within 0.35 V of the centreline and inside a half stroke-width of the printed curve, so the one-decimal quotes are defensible off this page (33.5 is exact to 0.03 V). Settling tails measure 18.08-18.36 V, so Vi ~18.3 V holds; the 1.5-1.6x band measures 1.49x and 1.62x on Fig 2-2 and is independently corroborated at 1.49x and 1.65x on Fig 2-3, which the record does not even claim. Damping arithmetic is exact: 2*sqrt(9.3 uH / C) = 1.929 / 1.364 / 0.964 ohm at 10 / 20 / 40 uF, and 9.3 uH is printed on p3. p2 Eq 3 is transcribed verbatim, its Rt = 0 reduction to Vi*(1-cos wt) with a 2x peak is algebraically right, and the three p2 text claims are faithful. p4 Eq 4, its reasoning and Fig 3-1 (2 ohm 0.5 W 1210 anti-surge + 2.2 uF 25 V 1210 + 0.1 uF 50 V 0805) all check, including TI own may-need-adjusting caveat. lmr33630 p6 confirms 38 V abs max / 36 V rec max / 3.8 V min / IOUT 0-3 A; p32 confirms every clause including the 20-100 uF aluminium or tantalum remedy, its ESR damping and load-step hold, the snap-back thyristor TVS refusal with the collapse-below-Vout reason, and the input-filter instability warning. The 30 V extrapolation is legitimate rather than an overreach: Eq 3 is linear in Vi, so the overshoot RATIO is Vi-independent by the source own printed model; 1.49-1.62x onto 30 V gives 44.8-48.7 V, the record 45-49 V, well under the source own zero-R ceiling of 2*Vi = 60 V that the record also cites, and destroy-the-part is backed by p6 footnote 1 (permanent damage). Cross-check the author did not run: zeta = (R/2)*sqrt(C/L) at Vi = 18.3 V predicts 29.5/27.4 V for Fig 2-2 and 27.6/30.2 V for Fig 2-3, matching the drawn curves to 0.2 V, so the two figures the rule actually rests on are physically self-consistent and the Fig 2-3 trace assignment is confirmed. Fig 2-4 handling passes: the anomaly is recorded as drawn with an explicit do-not-read-ring-duration caveat and no number in rule comes off that figure. Two cautions for a later pass, not grounds to refute: (1) the p3 note opening claim that every trace starts at 0 V is false for the Fig 2-4 0.15 ohm trace, which is drawn from 17.7 V at t = 0.05 ms and never goes below 17.71 V - the note corrects the settles-to-18.3 half of that sentence but not this half; (2) the Fig 2-4 anomaly is wider than stated - by the model the 0.5 ohm trace should peak at 21.0 V but is drawn at 29.81 V, above Fig 2-2 same-L same-C but LOWER-R 0.21 ohm case at 27.19 V, so cross-figure the drawn data runs opposite to the peak-versus-Ri trend the note takes from that page; the conclusion still stands on the p2 text and Eq 3 / Eq 4, but the warrant is weaker than represented."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

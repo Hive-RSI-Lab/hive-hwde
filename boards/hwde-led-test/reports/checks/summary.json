@@ -1,0 +1,278 @@
+{
+ "script": "verify_all",
+ "board": "hwde-led-test.kicad_pcb",
+ "status": "violations",
+ "counts": {
+  "total": 2,
+  "by_severity": {
+   "warning": 2
+  },
+  "by_source": {
+   "check_route_style": 1,
+   "check_ratings": 1
+  },
+  "by_check": {
+   "check_return_path": 0,
+   "check_current": 0,
+   "check_decoupling": 0,
+   "check_diffpair": 0,
+   "check_creepage": 0,
+   "check_thermal": 0,
+   "check_silk": 0,
+   "check_route_style": 1,
+   "check_mating": 0,
+   "check_pdn": 0,
+   "check_ratings": 1,
+   "check_bom_sync": 0,
+   "check_mate_pins": 0,
+   "check_model_paths": 0
+  }
+ },
+ "checks": {
+  "check_return_path": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_return_path.json"
+  },
+  "check_current": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_current.json"
+  },
+  "check_decoupling": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_decoupling.json"
+  },
+  "check_diffpair": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_diffpair.json"
+  },
+  "check_creepage": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_creepage.json"
+  },
+  "check_thermal": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_thermal.json"
+  },
+  "check_silk": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_silk.json"
+  },
+  "check_route_style": {
+   "status": "violations",
+   "counts": {
+    "total": 1,
+    "by_severity": {
+     "warning": 1
+    },
+    "by_source": {
+     "check_route_style": 1
+    }
+   },
+   "report": "reports/checks/check_route_style.json"
+  },
+  "check_mating": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_mating.json"
+  },
+  "check_pdn": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_pdn.json"
+  },
+  "check_ratings": {
+   "status": "violations",
+   "counts": {
+    "total": 1,
+    "by_severity": {
+     "warning": 1
+    },
+    "by_source": {
+     "check_ratings": 1
+    }
+   },
+   "report": "reports/checks/check_ratings.json"
+  },
+  "check_bom_sync": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_bom_sync.json"
+  },
+  "check_mate_pins": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_mate_pins.json"
+  },
+  "check_model_paths": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_model_paths.json"
+  }
+ },
+ "coverage": {
+  "strict": false,
+  "required": [
+   "check_return_path",
+   "check_current",
+   "check_decoupling",
+   "check_diffpair",
+   "check_creepage",
+   "check_thermal",
+   "check_silk",
+   "check_route_style",
+   "check_mating",
+   "check_pdn",
+   "check_ratings",
+   "check_bom_sync",
+   "check_mate_pins",
+   "check_model_paths"
+  ],
+  "ran": [
+   "check_return_path",
+   "check_current",
+   "check_decoupling",
+   "check_diffpair",
+   "check_creepage",
+   "check_thermal",
+   "check_silk",
+   "check_route_style",
+   "check_mating",
+   "check_pdn",
+   "check_ratings",
+   "check_bom_sync",
+   "check_mate_pins",
+   "check_model_paths"
+  ],
+  "passed": [
+   "check_return_path",
+   "check_current",
+   "check_decoupling",
+   "check_diffpair",
+   "check_creepage",
+   "check_thermal",
+   "check_silk",
+   "check_route_style",
+   "check_mating",
+   "check_pdn",
+   "check_ratings",
+   "check_bom_sync",
+   "check_mate_pins",
+   "check_model_paths"
+  ],
+  "failed": [],
+  "waived": [],
+  "not_applicable": {},
+  "skipped_error": {}
+ },
+ "violations": [
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    17.0567,
+    18.975
+   ],
+   "layer": "F.Cu",
+   "net": "/LED_A",
+   "refs": [],
+   "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /LED_A F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.150 mm",
+     "pos": [
+      17.0567,
+      18.975
+     ],
+     "uuid": "1f2a17b7-e753-491e-83c5-57398c376aa7"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_ratings",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "D1",
+    "R1"
+   ],
+   "msg": "2 two-terminal part(s) have no extraction and no voltage-rated attribute in parts.json: D1, R1",
+   "source": "check_ratings",
+   "items": [
+    {
+     "msg": "2 two-terminal part(s) have no extraction and no voltage-rated attribute in parts.json: D1, R1",
+     "pos": null
+    }
+   ],
+   "kind": "rating_unrated",
+   "pins": [
+    "D1",
+    "R1"
+   ]
+  }
+ ],
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T14:05:43+00:00",
+ "input": "kicad/hwde-led-test.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316"
+}

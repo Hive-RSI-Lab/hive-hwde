@@ -1,0 +1,192 @@
+# invalidation.yaml - freshness-aware state: artifact kinds, gate inputs, and
+# the edit-class invalidation map (T7).
+#
+# Consumed by scripts/lib/statelib.py (hashing + freshness) and scripts/state.py
+# (record-gate input capture, `edit` application, `freshness` reports). T8's
+# board_update and T10's task recipes read the edit classes to decide what to
+# re-run and how much human ceremony an edit carries.
+#
+# Two-layer staleness semantics (statelib.freshness):
+#   1. HASH layer - record-gate stores a normalized content hash of every input
+#      artifact; a gate is hash-valid iff every recorded input hash matches the
+#      artifact's current hash. This catches ANY edit, declared or not.
+#   2. MARK layer - `state.py edit --class <c>` stamps the mapped stale_gates /
+#      stale_artifacts with an explicit stale mark. This catches DERIVED
+#      artifacts whose files have not changed yet (after move_fp the gerber zip
+#      is untouched on disk but no longer derives from the board) and gates
+#      whose inputs the edit will change only after regeneration.
+#   A gate is FRESH iff it has recorded input hashes, they all match, and it
+#   carries no stale mark. Marks clear when the gate re-runs (record-gate) or
+#   the artifact is re-registered (artifact/rehash - see state.py rules).
+#   The `gates` list per edit class is the SEMANTICALLY REQUIRED re-run set;
+#   the hash layer may additionally invalidate other gates when a real edit
+#   touches a shared file (e.g. any pcb edit hash-invalidates every gate that
+#   reads the pcb). That is by design: the map states what MUST re-run, hashes
+#   guarantee nothing silently survives.
+#
+# human_hold weight (scales with blast radius; "a one-footprint move must not
+# carry H4 ceremony"):
+#   0  none        - proceed silently; gates are the whole story (cosmetics)
+#   1  log         - record a decision line; no human interaction
+#   2  review      - summarize the edit + gate deltas at the next human
+#                    checkpoint (or before order for terminal workspaces)
+#   3  approve     - explicit human approval BEFORE ordering/fab artifacts are
+#                    trusted again (fab-truth class: the order could silently
+#                    diverge from the design)
+#
+# artifact_kinds.path is workspace-relative, {board} = state.json's board name.
+# norm names are statelib normalizers:
+#   sexpr_no_uuid    KiCad s-expression text, EOL-normalized, (uuid "..") and
+#                    legacy (tstamp ..) tokens stripped - regeneration churn
+#                    (new UUIDs, CRLF) does not change the hash; any coordinate,
+#                    net, rule or layer change does. version/generator headers
+#                    are KEPT: a file resaved by a different KiCad SHOULD
+#                    invalidate gates (results are toolchain-dependent).
+#   netlist_canonical  parsed netlist (netlist_audit.parse_netlist) reduced to
+#                    components {ref: value+footprint} + nets {name: sorted
+#                    (ref,pin,pintype)} and hashed as canonical JSON - the
+#                    export date header, block order and formatting are
+#                    invisible; a value, footprint or connectivity change hits.
+#   json_canonical   parsed JSON re-serialized with sorted keys (whitespace and
+#                    key order invisible).
+#   text_eol         text with CRLF/CR normalized to LF (checkout EOL churn
+#                    invisible).
+#   dir_text         all files under a directory, name-sorted, each text_eol
+#                    normalized (the sim gate's testbench directory).
+#   gerber_design    lib/fabhash.design_hash - the T1 normalized fab-package
+#                    fingerprint (KiCad's per-export volatile stamps removed).
+# Every stored hash is prefixed "<norm>:" so a normalizer change can never
+# false-match an old hash. Unparsable input falls back to raw bytes (fail-safe:
+# only an identical file matches).
+
+version: 1
+
+artifact_kinds:
+  sch:         {path: "kicad/{board}.kicad_sch", norm: sexpr_no_uuid}
+  pcb:         {path: "kicad/{board}.kicad_pcb", norm: sexpr_no_uuid}
+  pro:         {path: "kicad/{board}.kicad_pro", norm: json_canonical}
+  dru:         {path: "kicad/{board}.kicad_dru", norm: text_eol}
+  netlist:     {path: "kicad/{board}.net", norm: netlist_canonical}
+  constraints: {path: "kicad/constraints.json", norm: json_canonical}
+  decoupling:  {path: "kicad/decoupling.json", norm: json_canonical}
+  parts:       {path: "kicad/parts.json", norm: json_canonical}
+  sims:        {path: "kicad/sims", norm: dir_text}
+  # waivers moved to the WORKSPACE reports/ dir (U5): every real board
+  # keeps the file there and gate.py/attest resolve it workspace-first,
+  # so gate freshness now hashes the file the gate actually APPLIES
+  # (the kicad/reports path hashed null on every board - the rf-de
+  # verify pass was never bound to its waiver file; LEARNINGS 2026-08-08).
+  waivers:     {path: "reports/verify-waivers.json", norm: json_canonical}
+  # the place gate's own sidecar (gate.py WAIVER_SIDECARS, 2026-10-05)
+  place_waivers: {path: "reports/place-waivers.json", norm: json_canonical}
+  gerbers:     {path: "fab/{board}_gerbers.zip", norm: gerber_design}
+  bom:         {path: "fab/BOM.csv", norm: text_eol}
+  bom_full:    {path: "fab/BOM-full.csv", norm: text_eol}
+  cpl:         {path: "fab/CPL.csv", norm: text_eol}
+
+# What each gate actually reads (verified against gate.py run_report_for_gate,
+# T7): erc reads the schematic + project severities; drc gates read the board,
+# the schematic (parity), the project rules and the DRU; place/verify read the
+# board + its sidecars (gate.py takes constraints/decoupling from the board's
+# own directory; verify and place each honor their waiver sidecar); sim reads the
+# testbench directory; dfm re-exports gerbers from the BOARD to scratch and
+# reads the sibling schematic (CPL polarity oracle) + parts.json (BOM leg).
+gate_inputs:
+  erc:        [sch, pro]
+  drc:        [pcb, sch, pro, dru]
+  drc_routed: [pcb, sch, pro, dru]
+  place:      [pcb, constraints, decoupling, place_waivers]
+  verify:     [pcb, constraints, decoupling, waivers]
+  sim:        [sims]
+  dfm:        [pcb, sch, parts]
+  # U2 release-context strict gates: same tools, same inputs - a stale input
+  # invalidates the strict result exactly like the exploratory one.
+  verify_release: [pcb, constraints, decoupling, waivers]
+  dfm_release:    [pcb, sch, parts]
+
+# Edit-class taxonomy -> what an edit of that class makes stale.
+#   mutates          artifacts the edit itself rewrites (the new truth - NOT
+#                    marked stale; their hash change is what invalidates gates)
+#   stale_artifacts  DERIVED artifacts that no longer derive from the mutated
+#                    ones and must be regenerated before they are trusted
+#   gates            gate results that must be re-established (marks land on
+#                    gates that have recorded results; the full list is still
+#                    reported so a router can schedule unrun gates)
+#   human_hold       ceremony weight, see header
+#
+# Ordering artifacts (api_quote/order.json) are deliberately absent: the order
+# create latch already binds to the gerber design hash (T1, order_submit) and
+# refuses a changed design on its own.
+edit_classes:
+  move_fp:
+    mutates: [pcb]
+    stale_artifacts: [gerbers]
+    gates: [place, drc, drc_routed, verify, dfm]
+    human_hold: 1
+  swap_part_same_fp:
+    # value/MPN swap on an unchanged footprint: geometry stays, electrical
+    # meaning + BOM/CPL + sim behavior change (board_update T8 mode a).
+    mutates: [sch, pcb]
+    stale_artifacts: [netlist, bom, bom_full, cpl]
+    gates: [erc, verify, sim, dfm]
+    human_hold: 2
+  swap_part_new_fp:
+    mutates: [sch, pcb]
+    stale_artifacts: [netlist, gerbers, bom, bom_full, cpl]
+    gates: [erc, place, drc, drc_routed, verify, sim, dfm]
+    human_hold: 2
+  add_part:
+    mutates: [sch, pcb]
+    stale_artifacts: [netlist, gerbers, bom, bom_full, cpl]
+    gates: [erc, place, drc, drc_routed, verify, sim, dfm]
+    human_hold: 2
+  del_part:
+    mutates: [sch, pcb]
+    stale_artifacts: [netlist, gerbers, bom, bom_full, cpl]
+    gates: [erc, place, drc, drc_routed, verify, sim, dfm]
+    human_hold: 2
+  reroute_net:
+    mutates: [pcb]
+    stale_artifacts: [gerbers]
+    gates: [drc_routed, verify, dfm]
+    human_hold: 1
+  silk_edit:
+    mutates: [pcb]
+    stale_artifacts: [gerbers]
+    gates: [drc_routed, verify, dfm]
+    human_hold: 0
+  plane_edit:
+    # zone outline/priority/connection changes move return paths and current
+    # capacity - machine gates catch geometry, a human reviews intent.
+    mutates: [pcb]
+    stale_artifacts: [gerbers]
+    gates: [drc_routed, verify, dfm]
+    human_hold: 2
+  outline_change:
+    # Edge.Cuts rewrite (board_edit.py --outline, U17). The boundary moves, so
+    # every edge-relative judgment has to be re-established: placement legality
+    # (outside_outline, edge parts), DRC edge clearance both pre- and
+    # post-route, the verify suite's edge legs and the whole fab package. Zone
+    # fills clip to the outline - they must be REFILLED before drc_routed
+    # means anything (board_edit refills unless --no-refill).
+    mutates: [pcb]
+    stale_artifacts: [gerbers]
+    gates: [place, drc, drc_routed, verify, dfm]
+    human_hold: 2
+  rule_change:
+    # .kicad_pro / .kicad_dru edits (clearances, netclasses, floors). The
+    # carrier shipped a hand-edited DRU that erased 7 of 8 aiee_* fab floors
+    # (V20) - rule edits are exactly where fab-truth silently dies.
+    mutates: [pro, dru]
+    stale_artifacts: []
+    gates: [drc, drc_routed]
+    human_hold: 2
+  stackup_change:
+    # dielectric/copper-weight change with the SAME layer count (a layer-count
+    # change is a re-init, not an edit). Impedance geometry, current capacity
+    # and the order's pcbParams all key off the stackup: the V18 class where
+    # the fab builds a different board than the one verified.
+    mutates: [pcb, pro]
+    stale_artifacts: [gerbers]
+    gates: [verify, dfm]
+    human_hold: 3

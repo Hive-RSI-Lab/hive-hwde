@@ -1,0 +1,118 @@
+# domains.yaml - the research fetch allowlist (U15, v3 design decision 5a).
+#
+# Researcher agents are the ONLY agents with web access, and `research.py
+# fetch` is the ONLY sanctioned way a downloaded document enters a workspace
+# (quarantined under <ws>/research/sources/, sha-pinned in the task ledger).
+# A URL whose host is not covered here is REFUSED (exit 2) - before any
+# network call, and again on every redirect hop. Design/fixer agents stay
+# locked down: they receive researched knowledge through the same
+# `knowledge.py --select` injection every stage gets, never a URL.
+#
+# Matching: https only; the host must EQUAL a listed domain or end in
+# `.<domain>` (`www.ti.com`, `e2e.ti.com` match `ti.com`; `notti.com` does
+# not). `forum_hosts` are subdomains of allowed vendors that host community
+# answers - a fetch from one is FORCED to tier `forum` (never sole-source)
+# whatever the researcher declared.
+#
+# Source tiers (declared per fetch, `--tier`), best first:
+#   vendor-layout   the subject part's OWN datasheet layout section / eval
+#                   board / reference layout - the vendor knows its part
+#   vendor-appnote  the same vendor's application note on the topology
+#   cross-vendor    another vendor's app note on the same topology/interface
+#   forum           community answers - corroboration ONLY, never the sole
+#                   source of a record
+# The tier is a fact about the DOCUMENT vs the SUBJECT part, not about the
+# host: a TI app note is vendor-appnote for a TI part and cross-vendor for an
+# MPS part - which is why the researcher declares it and the ledger keeps it.
+#
+# Growing the list: add the vendor when a real gap needs it (same posture as
+# knowledgelib.CLASSES); kind is one of vendor | distributor | standards |
+# forum. Keep it ASCII; keep one domain per line.
+
+version: 1
+
+domains:
+  # --- semiconductor vendors ------------------------------------------------
+  - {domain: ti.com,                kind: vendor,      note: Texas Instruments}
+  - {domain: analog.com,            kind: vendor,      note: "Analog Devices (incl. LTC, Maxim)"}
+  - {domain: st.com,                kind: vendor,      note: STMicroelectronics}
+  - {domain: nxp.com,               kind: vendor,      note: NXP}
+  - {domain: microchip.com,         kind: vendor,      note: "Microchip (incl. Atmel, Microsemi)"}
+  - {domain: infineon.com,          kind: vendor,      note: "Infineon (incl. Cypress, IR)"}
+  - {domain: onsemi.com,            kind: vendor,      note: onsemi}
+  - {domain: rohm.com,              kind: vendor,      note: ROHM (the buck app-note source)}
+  - {domain: renesas.com,           kind: vendor,      note: "Renesas (incl. Intersil, IDT, Dialog)"}
+  - {domain: monolithicpower.com,   kind: vendor,      note: MPS}
+  - {domain: diodes.com,            kind: vendor,      note: Diodes Inc (AP63203 family)}
+  - {domain: richtek.com,           kind: vendor,      note: Richtek}
+  - {domain: torexsemi.com,         kind: vendor,      note: Torex}
+  - {domain: semtech.com,           kind: vendor,      note: Semtech}
+  - {domain: silabs.com,            kind: vendor,      note: Silicon Labs}
+  - {domain: nordicsemi.com,        kind: vendor,      note: Nordic}
+  - {domain: espressif.com,         kind: vendor,      note: Espressif (ESP32 modules)}
+  - {domain: wch-ic.com,            kind: vendor,      note: "WCH (CH224K PD sink, CH340)"}
+  - {domain: wiznet.io,             kind: vendor,      note: WIZnet (W5500)}
+  - {domain: realtek.com,           kind: vendor,      note: Realtek}
+  - {domain: nexperia.com,          kind: vendor,      note: Nexperia}
+  - {domain: toshiba.com,           kind: vendor,      note: Toshiba}
+  - {domain: toshiba.semicon-storage.com, kind: vendor, note: Toshiba semiconductor}
+  - {domain: vishay.com,            kind: vendor,      note: Vishay}
+  - {domain: littelfuse.com,        kind: vendor,      note: "Littelfuse (TVS, fuses)"}
+  - {domain: bourns.com,            kind: vendor,      note: Bourns}
+  - {domain: epc-co.com,            kind: vendor,      note: EPC (GaN)}
+  - {domain: gansystems.com,        kind: vendor,      note: GaN Systems}
+  - {domain: ftdichip.com,          kind: vendor,      note: FTDI}
+  - {domain: sensirion.com,         kind: vendor,      note: "Sensirion (SHT4x/SHT3x humidity, SGP gas sensors)"}
+  - {domain: cirrus.com,            kind: vendor,      note: Cirrus Logic}
+  - {domain: ablic.com,             kind: vendor,      note: ABLIC}
+  - {domain: aosmd.com,             kind: vendor,      note: Alpha and Omega}
+  - {domain: mpsind.com,            kind: vendor,      note: MPS (alt domain)}
+  # --- passives / magnetics / connectors -----------------------------------
+  - {domain: murata.com,            kind: vendor,      note: Murata}
+  - {domain: tdk.com,               kind: vendor,      note: TDK (incl. EPCOS)}
+  - {domain: product.tdk.com,       kind: vendor,      note: TDK product pages}
+  - {domain: kemet.com,             kind: vendor,      note: KEMET}
+  - {domain: samsungsem.com,        kind: vendor,      note: Samsung Electro-Mechanics}
+  - {domain: yageo.com,             kind: vendor,      note: Yageo}
+  - {domain: we-online.com,         kind: vendor,      note: Wurth Elektronik}
+  - {domain: we-online.de,          kind: vendor,      note: Wurth Elektronik (de)}
+  - {domain: coilcraft.com,         kind: vendor,      note: Coilcraft}
+  - {domain: sumida.com,            kind: vendor,      note: Sumida}
+  - {domain: pulseelectronics.com,  kind: vendor,      note: Pulse (Ethernet magnetics)}
+  - {domain: belfuse.com,           kind: vendor,      note: "Bel Fuse (MagJack, Ethernet magnetics)"}
+  - {domain: hirose.com,            kind: vendor,      note: Hirose}
+  - {domain: jst.com,               kind: vendor,      note: JST}
+  - {domain: jst-mfg.com,           kind: vendor,      note: JST (mfg site)}
+  - {domain: molex.com,             kind: vendor,      note: Molex}
+  - {domain: te.com,                kind: vendor,      note: TE Connectivity}
+  - {domain: amphenol.com,          kind: vendor,      note: Amphenol}
+  - {domain: gct.co,                kind: vendor,      note: GCT (USB-C connectors)}
+  # --- distributors (datasheet mirrors + parametric data) -----------------
+  - {domain: lcsc.com,              kind: distributor, note: LCSC (wmsc.lcsc.com serves the PDFs)}
+  - {domain: jlcpcb.com,            kind: distributor, note: JLCPCB parts library}
+  - {domain: digikey.com,           kind: distributor, note: DigiKey (parametric API - research.py parts)}
+  - {domain: mouser.com,            kind: distributor, note: Mouser (parametric API - research.py parts)}
+  - {domain: arrow.com,             kind: distributor, note: Arrow}
+  - {domain: farnell.com,           kind: distributor, note: Farnell}
+  - {domain: newark.com,            kind: distributor, note: Newark}
+  - {domain: rs-online.com,         kind: distributor, note: RS}
+  # --- standards bodies ----------------------------------------------------
+  - {domain: usb.org,               kind: standards,   note: USB-IF specs}
+  - {domain: ieee.org,              kind: standards,   note: IEEE (802.3 etc.)}
+  - {domain: ipc.org,               kind: standards,   note: IPC}
+  - {domain: jedec.org,             kind: standards,   note: JEDEC}
+  # --- forums (tier forum: corroboration only, never sole-source) ---------
+  - {domain: electronics.stackexchange.com, kind: forum, note: EE StackExchange}
+  - {domain: eevblog.com,           kind: forum,       note: EEVblog forum}
+
+# Vendor-hosted community subdomains: allowed (their parent is), but the tier
+# is FORCED to `forum` - an e2e answer is not the vendor's app note.
+forum_hosts:
+  - e2e.ti.com
+  - ez.analog.com
+  - community.st.com
+  - community.nxp.com
+  - community.infineon.com
+  - forum.digikey.com
+  - forum.microchip.com
+  - devzone.nordicsemi.com

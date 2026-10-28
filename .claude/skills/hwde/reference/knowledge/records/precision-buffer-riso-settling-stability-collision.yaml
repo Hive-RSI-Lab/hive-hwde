@@ -1,0 +1,156 @@
+id: precision-buffer-riso-settling-stability-collision
+classes: [selection, feedback]
+applies:
+  topologies: [precision-buffer]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  test: "SCREEN, not a verdict: one series R carries BOTH bounds - if the settling ceiling lands below the eq-2 optimum, the part must run a SMALLER-than-optimally-damped R and its phase margin at the ceiling value has to be checked"
+  ceiling_settling: "R_FLT <= t_ACQ / (12 * C_FLT) - a hard requirement, the resistor cannot exceed it"
+  optimum_stability: "R_ISO = (1 + sqrt(1 + 8*pi*R_O*C_LOAD*f_gbw)) / (4*pi*C_LOAD*f_gbw) - an OPTIMUM centring 50-60 deg, NOT a maximum"
+  eq2_is_not_a_maximum: "sboa418 p9: the optimal R_ISO is the SMALLEST series R giving an acceptable transient; 45 deg is generally stable and can be targeted when voltage error dominates"
+  reject_when: "the ceiling falls below the R that still holds ~45 deg phase margin, or the ringing at the ceiling R misses the accuracy window - neither has a closed form, so both need the loop simulated"
+  c_floor: "C_FLT >= 20*C_SH - the capacitor cannot be shrunk freely to lift the ceiling"
+  remedy: "lifting the ceiling back ABOVE the optimum takes a higher f_gbw or a lower R_O, not a different resistor; below it the trade is ringing against settling error"
+  verify: "simulate - sboa418 p11 says Spice must verify the resultant phase margin; sprpeo2 p27 says confirm the RC combination plus driver in simulation"
+prose: >
+  Two vendor rules size the SAME series resistor between a buffer and an
+  unbuffered SAR, and they can conflict. Settling sets a CEILING: the charge
+  bucket must settle in ~12 time constants inside the window,
+  R_FLT <= t_ACQ/(12*C_FLT) (sprpeo2 p27). Stability sets an OPTIMUM
+  centring 50-60 deg phase margin,
+  R_ISO = [1 + sqrt(1 + 8*pi*R_O*C_LOAD*f_gbw)]/(4*pi*C_LOAD*f_gbw), from
+  datasheet R_O and f_gbw (sboa418 p5 eq 2). Evaluate BOTH. OPA333 (R_O
+  2 kohm at 350 kHz, f_gbw 350 kHz, opa333 p7) into a 9 us window: at
+  C_FLT = 1 nF the ceiling is 750 ohm against a 1.21 kohm optimum (62%); at
+  470 pF, 1.60 kohm against 1.96 kohm (82%). The ceiling is the hard bound,
+  so the resistor runs UNDER the optimally damped value - under-damped, not
+  illegal: sboa418 p9 says the optimal R_ISO is the SMALLEST R giving an
+  acceptable transient, that 45 deg is generally stable, and that 45 deg can
+  be targeted when voltage error dominates. So this is a SCREEN: it triggers
+  a phase-margin check AT the ceiling R, and rejection only if that margin -
+  or the ringing it leaves inside the accuracy window - fails. No closed form
+  gives the 45-deg R; that takes the simulation both documents demand
+  (sboa418 p11, sprpeo2 p27). Shrinking C does not remove the conflict: the
+  ceiling rises as 1/C, the optimum only as 1/sqrt(C), crossing at ~244 pF -
+  under the C_FLT >= 20*C_SH floor the converter imposes (48 pF here demands
+  >=960 pF). Clearing it outright needs f_gbw >= ~0.8 MHz at 1 nF, R_O 2 kohm.
+sources:
+  - file: reference/knowledge/sources/sprpeo2.pdf
+    page: 27
+    section: "ADC Driver Design: Input Filter Design"
+    note: >
+      The settling side of the collision, verbatim: C_FLT >= 20*C_SH >=
+      20*18 pF >= 360 pF (470 pF standard value); practical t_FLT_settle =
+      t_ACQ = 12*tau_FLT, hence R_FLT = t_ACQ/(12*C_FLT) (~12 ohm in TI's
+      70 ns example); minimum driver GBW > 4*(1/(2*pi*R_FLT*C_FLT)); and a
+      footnote that confirming the RC combination plus driver in simulation is
+      recommended. This is the CEILING on R and the FLOOR on C, from the same
+      slide.
+  - file: reference/knowledge/sources/sboa418.pdf
+    page: 5
+    section: "Equation 2 (optimal RISO)"
+    note: >
+      The stability side: equation 2,
+      R_ISO = [1 + sqrt(1 + 8*pi*R_O*C_LOAD*f_gbw)]/(4*pi*C_LOAD*f_gbw), with
+      f_gbw the datasheet gain bandwidth in Hz, R_O the datasheet open-loop
+      output impedance in ohms and C_LOAD in farads; fig 3-2 shows the value
+      it returns taking the example buffer to 60 degrees phase margin and a
+      clean settle, and the text says to verify the chosen value in SPICE.
+      This is an OPTIMUM, not a maximum - it is the value that centres phase
+      margin.
+  - file: reference/knowledge/sources/opa333.pdf
+    page: 7
+    section: "6.6 Electrical Characteristics"
+    note: >
+      The two datasheet inputs equation 2 needs for the worked case, in the
+      output and frequency-response blocks: open-loop output impedance 2 kohm
+      at f = 350 kHz, I_O = 0 A, and GBW 350 kHz at C_L = 100 pF. Both are
+      typicals at 25 C.
+  - file: reference/knowledge/sources/opa333.pdf
+    page: 11
+    section: "6.7 Typical Characteristics, Figure 15"
+    note: >
+      What this figure can and cannot corroborate, extracted from its vector
+      geometry rather than read by eye: the small-signal overshoot vs load
+      capacitance trace spans ONLY 10.4 pF to ~605 pF and terminates on the
+      40% top of the frame - 9.8% at 100 pF, 24.5% at 300 pF, 33.7% at
+      470 pF, 39.9% at ~605 pF. It carries NO point at 1000 pF and cannot be
+      read there. What it does show is the un-isolated part already past 40%
+      overshoot below the 960 pF this converter's C floor demands, i.e.
+      under-damped at the capacitance the charge bucket forces, by an amount
+      the figure leaves unquantified.
+  - file: reference/knowledge/sources/sboa418.pdf
+    page: 2
+    section: "1 Introduction: Open-Loop Output Impedance (RO)"
+    note: >
+      The precondition on using equation 2 at all: fig 1-1 shows OPA392's R_O
+      flat at ~120 ohm across frequency, and the text limits the document's
+      analysis to amplifiers whose output impedance is flat and resistive
+      across the effective bandwidth. Read as the caveat on the OPA333 case -
+      that datasheet publishes R_O at one frequency, not as a curve.
+  - file: reference/knowledge/sources/sboa418.pdf
+    page: 9
+    section: "5 Derive Equation for Optimal Isolation Resistance"
+    note: >
+      Why this is a screen and not a rejection, in the vendor's own words:
+      "the optimal isolation resistance is the smallest series resistance
+      that produces an acceptable transient response when driving the
+      capacitive load. While a phase margin of 45 deg is generally considered
+      stable, this may not be sufficient for applications that demand low
+      overshoot... If voltage error is of primary concern, a phase margin of
+      45 deg can be targeted as this allows the smallest isolation resistance
+      to be used." And placing f_z1 at the closure frequency "targets a phase
+      margin between 50-60 deg" - eq 2 centres a band, it does not cap R.
+      Fig 5-1 prices going under it on a 10 mV step: 11.04 mV at 60 deg,
+      12.53 mV at 45 deg, 14.33 mV at 30 deg against a 10.09 mV settled
+      level (vertices measured against the printed gridlines).
+  - file: reference/knowledge/sources/sboa418.pdf
+    page: 11
+    section: "Equations 13/14 - optimal RISO derivation and its limits"
+    note: >
+      The simulation this screen hands off to: "Equation 13 can be used to
+      quickly derive the isolation resistance required to target 50-60 deg
+      of phase margin. Spice simulation tools such as TINA-TI must be used to
+      verify the resultant phase margin, as this can vary considerable [sic]
+      depending on the initial phase margin and other circuit conditions."
+      The document publishes no closed form for the R that yields 45 deg, so
+      the floor this record's reject condition sits on can only be located by
+      simulating the loop - which is exactly why the test screens.
+  - file: reference/knowledge/sources/sprpeo2.pdf
+    page: 26
+    section: "Step 2 - Input Filter Design"
+    note: >
+      Where the test stops: the charge-bucket filter exists to handle the
+      kickback when the SAR sampling switch closes and must be optimized for
+      settling time, and the limitation box states outright that for buffered
+      ADCs the charge bucket is not needed - so a buffered-input converter
+      removes the settling ceiling from that resistor and the two bounds stop
+      sharing it.
+status: active
+origin: research:block-precision-buffer-1
+level: topology
+envelope:
+  load_kind: {in: [switched-cap]}
+  topology_kind: {in: [unity-follower]}
+maturity: approved
+generalizes: [precision-buffer-settles-not-bandwidth]
+envelope_note: >
+  Both bounds must land on the SAME resistor. load_kind switched-cap puts them
+  there: the ceiling t_ACQ/(12*C_FLT) exists only because an unbuffered SAR
+  forces a charge bucket, and sprpeo2 p26 says a buffered ADC needs none -
+  then that resistor carries stability alone and the test cannot fire.
+  topology_kind unity-follower bounds the closed form: sboa418 p9 puts the
+  optimum zero at the closure frequency, which equals f_gbw only for a buffer.
+  Caveat: eq 2 wants a flat resistive R_O (sboa418 p2); OPA333 gives R_O only
+  at 350 kHz. These numbers are one operating point - re-evaluate per block.
+verification: {by: "research-second-reader", date: "2026-08-16", note: "Re-read sboa418 p2, p5, p9 and p11, sprpeo2 p26 and p27, and opa333 p7 and p11, re-derived every number from the raw formulas rather than accepting them, and re-measured fig 15 out of the vector geometry with an independent raster cross-check. Both things that were refuted last pass are fixed and nothing new breaks. ALGEBRA, all re-derived independently: ceilings t_ACQ/(12*C) with t_ACQ = 9 us give 750.00 ohm at 1 nF and 1595.74 ohm at 470 pF; eq 2 with R_O = 2 kohm and f_gbw = 350 kHz gives 1207.75 ohm and 1956.52 ohm; ratios 62.1 and 81.6 percent, the record's 62 and 82; the crossover where t/(12C) meets eq 2 reduces to sqrt(1 + 8*pi*R_O*C*f) = pi*f*t/3 - 1 and solves to 243.50 pF; the same equality solved for f at C = 1 nF gives 778.09 kHz, the record's 778.1 kHz and about 0.8 MHz; and 20*48 pF = 960 pF, so the crossover really does sit under the C floor. The 48 pF is a block input rather than a claim about a cited page, and it is factual - the ADS8326 datasheet in this workspace states the 48 pF sampling capacitance on p7 and p21. THE TWO NEW CITATIONS CARRY THE WORDS CLAIMED. sboa418 p9 reads verbatim: the optimal isolation resistance is the smallest series resistance that produces an acceptable transient response when driving the capacitive load; While a phase margin of 45 degrees is generally considered stable, this may not be sufficient for applications that demand low overshoot; In certain cases, it is typical for a phase margin of 60 degrees to be considered optimally damped; If voltage error is of primary concern, a phase margin of 45 degrees can be targeted as this allows the smallest isolation resistance to be used; and Selecting an RISO resistance that places fz1 exactly at the closure frequency, targets a phase margin between 50-60 degrees. The same page also carries the buffer caveat the envelope_note leans on - For a typical amplifier in a buffer configuration, the closure frequency is simply the gain bandwidth of the op amp - together with the qualifier that for a loaded AOL the closure frequency is always less than the gain bandwidth, which the record's own p9 note states. sboa418 p11 reads verbatim: Equation 13 can be used to quickly derive the isolation resistance required to target 50-60 degrees of phase margin. Spice simulation tools such as TINA-TI must be used to verify the resultant phase margin, as this can vary considerable depending on the initial phase margin and other circuit conditions - the sic on considerable is the document's own typo. Eq 13 on that page is eq 2 restated and eq 14 is the gain-stage variant; a scan of all 14 pages for 45 finds it only in p3 prose (45 degrees is a common benchmark, designers commonly target a minimum of 45) and in p9 prose and the fig 5-1 legend, so the record's claim that the document publishes NO closed form for the 45-degree R is exact. THE REWRITTEN TEST NOW STOPS WHERE THE SOURCES STOP. rule.test is a screen that fires a phase-margin check at the ceiling R; eq2_is_not_a_maximum is p9 in p9's own words; reject_when defers BOTH of its conditions - the 45-degree R and the ringing inside the accuracy window - to simulation, which is precisely what sboa418 p11 (Spice must be used) and sprpeo2 p27 (confirming RC combination plus driver in simulation recommended) demand. No part is rejected on unsimulated algebra any more, and the 470 pF case that made the old wording unsupportable at 82 percent of the optimum is now handled by the same screen rather than a verdict. SETTLING SIDE re-read: sprpeo2 p27 carries Pick C_FLT >= 20*C_SH >= 20*18pF >= 360pF with 470pF standard value, Practical t_FLT_settle = t_ACQ = 12*tau_FLT, R_FLT = t_ACQ/(12*C_FLT) approximately 12 ohm, Minimum driver GBW > 4*(1/(2*pi*R_FLT*C_FLT)), and the footnote about simulation, all on one slide - so the floor and the ceiling really do share a page. Its 12 ohm against 470 pF back-solves to 68 ns, consistent with the 70 ns acquisition on p25. p26 carries the limitation box ending For buffered ADCs charge bucket not needed, which is what bounds the envelope to load_kind switched-cap. opa333 p7 confirms Open-loop output impedance f = 350 kHz IO = 0 A 2 kohm and Gain-bandwidth product CL = 100 pF 350 kHz, both typicals. FIG 15 NOTE now matches the figure. Measured from the two cubic beziers against 19 gridlines fitted to 0.0034 decade and cross-checked by an 864-dpi raster scan that agrees within 0.1 percentage point: span 10.4 to 607 pF only, terminating on the 40 percent frame top, 9.74 percent at 100 pF, 24.48 at 300 pF, 33.68 at 470 pF, and zero curve pixels beyond 609 pF, so there is genuinely no 1000 pF reading. No white overpaint rect overlaps that frame - only the frame and the curve do. One synthesis this record makes and neither document states outright: that R_FLT and R_ISO are the same physical resistor. They occupy the same topological position (amplifier output to the shunt C), the envelope_note explains why an unbuffered SAR puts them there, and naming that collision is the record's whole purpose, so it is disclosed rather than smuggled. Verified."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

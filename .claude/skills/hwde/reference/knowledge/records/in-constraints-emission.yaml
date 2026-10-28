@@ -1,0 +1,64 @@
+id: in-constraints-emission
+classes: [constraints-emission]
+applies:
+  topologies: []
+  packages: []
+  interfaces: [in]
+  parts: []
+rule:
+  enforced_by: null
+  placement_group: "one group anchored on the amplifier's INPUT PINS, not on the connector: the input terminal, both legs' series elements and the created bias-return resistors are members, because the vendor puts any additional input-path series resistance 'close to the in-amp inputs' to keep it out of the traces' parasitic capacitance"
+  pair_rule_is_equality: "emit the two input nets as an EQUALITY constraint - equal length, width, via count and reference neighbourhood, i.e. equal capacitance per path - since the vendor's rule is that the two paths' source impedance and capacitance match, and the failure is a frequency-response difference between them"
+  do_not_emit: "no impedance_ohm, gap_mm, max_skew_mm or max_uncoupled_mm for this pair: at a kilohertz signal into a 0.4 Gohm||2 pF input nothing here is set by characteristic impedance or propagation delay, and a designer who satisfies those dims has satisfied nothing that matters"
+  shield_is_a_net: "if the sensor cable is screened, the screen is a net with a DECLARED landing node (0 V, mid-supply, or a driven common-mode buffer) - it must appear in the netlist and the BOM, not in the mechanical notes"
+  return_network_is_schematic: "when the source cannot return bias current, the created return network is schematic content: it must exist in parts/BOM before placement and its resistors sit inside the input group"
+  operating_point_dims: "the dims this slot's records are bounded on and that constraints must therefore carry: rsource_ohm, vcm_v, err_rti_mv, ibias_ua, mismatch_pct, dt_c, f_signal_hz"
+prose: >-
+  What this interface has to hand the rest of the pipeline. Two of the
+  emissions are direct vendor consequences. The AD8226's layout page puts
+  additional input-path series resistance "close to the in-amp inputs,
+  which minimizes their interaction with parasitic capacitance from the PCB
+  traces" - that is a placement GROUP anchored on the input pins, whose
+  members are the terminal, both legs' series parts and any created
+  bias-return resistors; the annealer will not discover it. The same page
+  says the two paths' "input source impedance and capacitance ... should be
+  closely matched", which is a route rule of EQUALITY between two nets -
+  same length, width, via count, neighbourhood - and explicitly not a
+  controlled-impedance rule; emitting gap, skew or uncoupled-length dims
+  here types the slot wrong and lets a designer satisfy the constraint
+  while destroying the measurement. The third emission is the screen: the
+  sensor front-end paper treats it as a driven circuit node with a chosen
+  potential, so it must enter the netlist and BOM with its landing node
+  declared, not be left to assembly. And when the source cannot return the
+  amplifier's bias current, the network that returns it is schematic
+  content with BOM lines, inside the same group.
+sources:
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 22
+    section: "AD8226 Rev. C, printed p.21 - LAYOUT / CMRR Over Frequency + INPUT BIAS CURRENT RETURN PATH"
+    note: >-
+      Read: series input resistance belongs close to the in-amp inputs to
+      minimize interaction with PCB-trace parasitic capacitance (the
+      placement group), the matched source impedance and capacitance per
+      path sentence (the equality route rule), and Figure 62's created
+      return networks (the BOM lines).
+  - file: reference/knowledge/sources/how-monitor-sensor-health-instrumentation-amplifiers.pdf
+    page: 6
+    section: "Renesas white paper p.6 - Active Shield Guard Drive"
+    note: >-
+      Read: the screen is treated as an electrical node whose potential is
+      chosen (chassis/0 V vs mid-supply common mode) and may be actively
+      driven - i.e. it is netlist and BOM content, not a mechanical detail.
+status: active
+origin: research:interface-in-2
+level: principle
+maturity: approved
+generalizes: []
+verification: {by: "second-reader", date: "2026-08-16", note: "Both cited pages re-read. AD8226 printed p.21 carries the two sentences this record turns into emissions, verbatim: 'Additional source resistance in the input path (for example, for input protection) should be placed close to the in-amp inputs, which minimizes their interaction with parasitic capacitance from the PCB traces' (the placement group) and 'the input source impedance and capacitance of each path should be closely matched' after 'Such conversions occur when one input path has a frequency response that is different from the other' (the equality route rule), and the same page's Figure 62 shows created return networks that are real components (the BOM lines). Renesas white paper p.6 does treat the screen as an electrical node whose potential is chosen (chassis/0 V vs mid-supply common mode) and can be actively driven, which supports 'the screen is a net with a declared landing node, not a mechanical note'. do_not_emit is not a scope violation: it declines impedance/gap/skew/uncoupled DIMS for this specific pair on stated physics (a kilohertz signal into 0.4 GOhm||2 pF), and never says any protection or conditioning part is unnecessary - no record in this task does; a grep for not-needed/unnecessary/omit/not-required language across all seven comes back empty. Two soft spots, neither refuting: extending the vendor's 'additional source resistance' placement sentence to cover the terminal and the created bias-return resistors is the author's inference from the same mechanism, not vendor text; and operating_point_dims lists mismatch_pct, which is load-bearing in the sizing record's arithmetic and present in the gap's operating point but is not an envelope dim of any record on this slot - carrying it is conservative, not wrong."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

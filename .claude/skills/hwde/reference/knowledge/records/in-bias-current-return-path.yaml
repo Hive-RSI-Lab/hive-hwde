@@ -1,0 +1,96 @@
+id: in-bias-current-return-path
+classes: [return-path]
+applies:
+  topologies: [inamp]
+  packages: []
+  interfaces: [in]
+  parts: []
+rule:
+  enforced_by: null
+  requirement: "both inputs need a DC path to the amplifier's own ground reference - stated by the vendors as a must for correct operation, not conditioning or protection"
+  when_created: "only when the source cannot provide one (thermocouple, transformer secondary, ac-coupled source, floating sensor); a source already returned to the amplifier's ground IS the path - confirm it, do not assume it"
+  legal_forms: "transformer secondary centre tap to ground; ONE resistor from one input to ground for a low differential source resistance; one resistor per input to ground otherwise or behind ac-coupling caps (which also sets f_highpass = 1/(2*pi*R*C))"
+  direction: "on a pnp-input part (AD8226) bias current always flows OUT of the part, so the network must SINK it and the created node sits above the return node by I*R; a CMOS or npn input stage changes or flips this - check the part's own table"
+  failure_mode: "inputs drift past the input common-mode range and the input stage saturates - the output is wrong regardless of the differential signal"
+  sizing: "see in-bias-return-resistor-sizing-ad8226 (part) and in-bias-return-sizing (topology); the resistor values printed in vendor figures belong to those figures and parts"
+prose: >
+  MERGED (U22 prep, 2026-08-31) from bb-amp research tasks interface-in-1 (INA333)
+  and interface-in-2 (AD8226 + AN1298): one rule witnessed by three vendors. An
+  in-amp presents a near-infinite input impedance and still draws bias current; if
+  the source gives that current no DC path to the amplifier's ground it has nowhere
+  to go. INA333 p16: "Without a bias current path, the inputs float to a potential
+  that exceeds the common-mode range ... and the input amplifiers will saturate."
+  AD8226 layout page: "The input bias current of the AD8226 must have a return path
+  to ground. When the source, such as a thermocouple, cannot provide a return
+  current path, one should be created, as shown in Figure 62." AN1298 p14: bias
+  current "must find a DC path to their home (i.e., Ground)". All three draw the same
+  legal forms - grounded transformer centre tap, a single resistor to ground for a
+  thermocouple, a resistor per input behind ac-coupling caps (f_HP = 1/(2*pi*RC)) -
+  and AD8226 Table 2 footnote 1 fixes the direction for a pnp input stage: current
+  flows OUT of the part, so the network sinks it. A bridge whose excitation return
+  shares this board's ground and arrives as a third conductor already IS the path.
+  The output then parks near a rail however good the differential signal is, and no
+  downstream calibration recovers it - the classic failure of this circuit class.
+sources:
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 22
+    section: AD8226 Rev. C, printed p.21 - INPUT BIAS CURRENT RETURN PATH + Figure 62
+    note: >
+      The must-have-a-return-path sentence and the vendor's conditional; Figure 62's
+      six panels - INCORRECT floating transformer / thermocouple / ac-coupled sources
+      struck out, CORRECT grounded centre tap, single 10 Mohm to ground, R per input
+      with f_HIGH-PASS = 1/(2*pi*RC). Second-read 2026-08-16.
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 5
+    section: AD8226 Rev. C, printed p.4 - Table 2 footnote 1, INPUT block
+    note: >
+      Verbatim: "The input stage uses pnp transistors; therefore, input bias current
+      always flows out of the part." Input impedance 0.8 Gohm||2 pF differential,
+      0.4 Gohm||2 pF common mode. Second-read 2026-08-16.
+  - file: reference/knowledge/sources/an1298-instrumentation-amplifier-application-note.pdf
+    page: 14
+    section: Renesas/Intersil AN1298 Rev 2.00 - DC return path, Figures 28-31
+    note: >
+      Bias current "must find a DC path to their home (i.e., Ground)"; sources that
+      do not provide one are thermocouples, microphones, transformer-coupled and
+      ac-coupled circuits; the same three fixes drawn. Second-read 2026-08-16.
+  - file: reference/knowledge/sources/ina333.pdf
+    page: 16
+    section: 8.2.2.5 Input Bias Current Return Path
+    note: >
+      100 Gohm input impedance, Ib typ +-70 pA, "a path must be provided for the
+      input bias current of both inputs", and the saturation sentence quoted in
+      prose. Carried from draft in-bias-current-return-path (task in-1);
+      second-read 2026-10-04 (U22 Q3).
+  - file: reference/knowledge/sources/ina333.pdf
+    page: 17
+    section: Figure 34, Providing an Input Common-Mode Current Path
+    note: >
+      Three stacked sub-circuits - floating source with a matched 47 kohm pair to
+      ground, thermocouple with one 10 kohm to ground, transformer with a grounded
+      centre tap labelled "Center tap provides bias current return". Carried from
+      draft (task in-1); second-read 2026-10-04 (U22 Q3).
+status: active
+origin: "u22-merge:bb-amp/in-bias-current-return-path+in-bias-return-path-required"
+level: principle
+maturity: approved
+generalizes: []
+verification:
+  by: second-reader
+  date: "2026-08-16"
+  note: >
+    Inherited from in-bias-return-path-required (task interface-in-2): the AD8226
+    p22 must-sentence, Figure 62's six panels, Table 2 footnote 1 (pnp, current out)
+    and AN1298 p14 were re-read visually and held. The level change (topology ->
+    principle) is a U22 prep ruling proposal: the verified record's own envelope
+    note states "the requirement itself does not scale". The two INA333 citations
+    corroborate the same rule; second-read 2026-10-04 (U22 Q3), both held.
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Merge of
+    in-bias-current-return-path and in-bias-return-path-required into one
+    principle with no envelope: the requirement does not scale, and the
+    AD8226 Ib span was one part's spec, not a bound on the rule.

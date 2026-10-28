@@ -1,0 +1,92 @@
+id: precision-buffer-rail-to-rail-output-floor
+classes: [selection]
+applies:
+  topologies: [precision-buffer]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  what_rrio_guarantees: "a swing FROM the rail at a stated load - never the rail itself"
+  spec_form: "voltage output swing from rail, quoted with R_L and temperature"
+  opa333_from_rail_mv: "30 typ / 50 max at R_L = 10 kohm, 25 C; 70 max over -40 to 125 C"
+  light_load_helps: "swing widens as I_OUT approaches zero but the floor does not vanish"
+  reaching_zero: "pulldown resistor (~20 kohm) to a supply BELOW the amplifier V-"
+  pulldown_cost: "several hundred uA extra supply current; accuracy good to 0 V and to about -2 mV"
+prose: >
+  Rail-to-rail output is a swing specified FROM the rail at a stated load,
+  not a guarantee of the rail. OPA333's table (p7) gives voltage output swing
+  from rail 30 mV typ / 50 mV max at R_L = 10 kohm and 25 C, and 70 mV max
+  over -40 to 125 C; the whole DC page - AOL 106 dB min, CMRR, offset - is
+  measured into that same 10 kohm to VS/2, so the load is part of every
+  number. Lighter loading helps but does not remove the floor: p9 fig 6 plots
+  output swing against output current and the curves are widest at I_OUT = 0
+  and collapse as the output sources or sinks milliamps. So a single-supply
+  follower cannot deliver a true 0 V output even into a sampling capacitor
+  that draws almost no average current. The vendor's own remedy is external
+  (p13 section 7.3.4 with fig 19, continued p14): a pulldown resistor, about
+  20 kohm, from the output to a supply MORE NEGATIVE than the amplifier's V-,
+  which pulls the output to and slightly below ground. Accuracy is then
+  excellent from 0 V down to about -2 mV, with limiting and nonlinearity
+  below that; 10 kohm reaches -10 mV. The cost is several hundred microamps
+  of extra supply current against a 17 uA quiescent part. A block whose input
+  range starts at 0 V has to buy that floor deliberately - negative rail plus
+  pulldown, an offset range, or a different output stage.
+sources:
+  - file: reference/knowledge/sources/opa333.pdf
+    page: 7
+    section: "6.6 Electrical Characteristics"
+    note: >
+      Output block: voltage output swing from rail 30 mV typ / 50 mV max at
+      R_L = 10 kohm, 70 mV max over -40 to 125 C; short-circuit current
+      +/-5 mA; and the table header showing every spec is taken at
+      R_L = 10 kohm to VS/2 with V_OUT = VS/2.
+  - file: reference/knowledge/sources/opa333.pdf
+    page: 9
+    section: "6.7 Typical Characteristics, Figure 6"
+    note: >
+      Fig 6 output voltage swing vs output current at VS = +/-2.75 V and
+      +/-0.9 V over -40/+25/+125 C: the swing is widest as output current
+      approaches zero and each curve bends over sharply as the output sources
+      or sinks a few milliamps - the headroom is a function of load current.
+  - file: reference/knowledge/sources/opa333.pdf
+    page: 13
+    section: "7.3.4 Achieving Output Swing to the Op Amp Negative Rail"
+    note: >
+      Text plus fig 19: a good single-supply amplifier swings close to ground
+      but does not reach it; the OPA333 output can be made to swing to or
+      slightly below ground only by adding a pulldown resistor (R_P = 20 kohm
+      in the figure) from the output to an additional supply more negative
+      than the amplifier's V-.
+  - file: reference/knowledge/sources/opa333.pdf
+    page: 14
+    section: "Feature Description (continued)"
+    note: >
+      The numbers for that technique: recommended pulldown about 20 kohm; a
+      NOTE that it raises current consumption by several hundred microamps;
+      accuracy excellent from 0 V down to about -2 mV with limiting and
+      nonlinearity below -2 mV; 10 kohm gives excellent accuracy to -10 mV.
+status: active
+origin: research:block-precision-buffer-1
+level: topology
+envelope:
+  vout_min_v: {min: 0.0, max: 0.1}
+maturity: approved
+generalizes: []
+envelope_note: >
+  Scales with how close to the negative rail the output is required to go -
+  the rule only bites when the demanded minimum output sits inside the output
+  stage's headroom. That headroom is the bound: tens of millivolts, 50 mV max
+  at 10 kohm and 70 mV over temperature for this family (p7), so a block asked
+  for 0 V is inside it and one asked for 100 mV or more is not and can ignore
+  the whole record. The specific millivolts belong to one micropower CMOS
+  rail-to-rail output family; the mechanism - a saturation voltage that grows
+  with output current (p9 fig 6) - is general to CMOS output stages.
+verification: {by: "research-second-reader", date: "2026-08-16", note: "Re-read opa333 p7, p9, p13, p14 visually, pushing specifically on the load condition. The record does not commit the overreach it could have. The p7 table header reads At TA = 25 C, RL = 10 kohm connected to VS/2, VCM = VS/2 and VOUT = VS/2 unless otherwise noted, and the output block gives voltage output swing from rail 30 mV typ / 50 mV max at RL = 10 kohm plus 70 mV max at RL = 10 kohm over -40 to 125 C. The record carries RL = 10 kohm in the rule field, in the prose and in the citation note, and its claim that the whole DC page is measured into that same load is supported both by the header and by the AOL row repeating RL = 10 kohm. The light-load regime is handled rather than ignored: rule.light_load_helps is explicit, and p9 fig 6 output voltage swing vs output current does show the widest swing as IOUT approaches zero with each curve bending over as the output sources or sinks a few milliamps. Critically, the claim that the floor survives at near-zero load current is not a graph extrapolation - opa333 p13 section 7.3.4 states it load-independently: a good single-supply operational amplifier may swing close to single-supply ground but does not reach ground. The remedy is verbatim on p13 fig 19 (RP = 20 kohm from VOUT to a -5 V additional negative supply, more negative than the amplifier V-) and p14 (recommended resistor approximately 20 kohm; NOTE that it increases current consumption by several hundreds of microamps; accuracy excellent down to 0 V and as low as -2 mV with limiting and nonlinearity below -2 mV; resistances as low as 10 kohm give excellent accuracy to -10 mV). The 17 uA quiescent figure the cost is measured against is on p7. Envelope vout_min_v 0 to 0.1 V is anchored on the 50 mV and 70 mV spec values, and the envelope_note is explicit that the specific millivolts belong to one micropower CMOS RRO family while the mechanism - saturation voltage growing with output current, p9 fig 6 - is general."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Level topology:
+    it claimed family with no family key; envelope unchanged.

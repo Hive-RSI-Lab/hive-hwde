@@ -1,0 +1,88 @@
+# JLCPCB CPL (pick-and-place) rotation corrections.
+# The value is ADDED to the KiCad footprint rotation to produce JLC's expected
+# 0-degree orientation (KiCad and JLC disagree on the 0-deg reference for many
+# packages). Consumed by bom_cpl.py (S12). Applied by regex-matching the KiCad
+# footprint NAME (the part after the library colon).
+#
+# Vendored from the community-maintained rotation databases:
+#   - bennymeg/JLC-Plugin-for-KiCad  (cpl_rotations_db.csv)
+#   - KiBot rotation-correction database
+#   - JLCPCB SMT assembly documentation
+# Cross-checked vs kicad_tools jlcpcb_rotations.yaml. Last verified 2026-07-22.
+#
+# Format: <regex>,<rotation_deg>   Lines starting with # are comments.
+# Rows are matched top-to-bottom; the FIRST matching regex wins, so more
+# specific patterns must precede broader ones.
+regex,rotation
+# The table is now only the FALLBACK: bom_cpl.py takes each part's rotation
+# from its own LCSC footprint model (cpl_verify.py) and comes here only when
+# no model is cached or fetchable - dfm_check then fails that part as
+# unverified (cpl_no_model), so a table guess never ships unchecked.
+#
+# --- Footprints pulled by easyeda2kicad (lib_pull.py) ---
+# Their names carry EasyEDA's dimensions (SOT-23-6_L2.9-W1.6-P0.95-LS2.8-BL,
+# LQFP-48_L7.0-W7.0-...). They ARE the LCSC model's geometry, so JLC needs no
+# correction at all. This row must come first: '^SOT-23,180' used to catch
+# the owner's imported SOT-23-5/6 parts and ship them 180 deg off
+# (#ai-ee 2026-10-02), and '^LQFP-' etc. would turn imported ICs 270.
+_L[0-9.]+-W[0-9.]+,0
+# --- SOT / SOD small-outline transistors & diodes (KiCad library names) ---
+# ^SOT-23 also covers KiCad's SOT-23-5 / SOT-23-6, which need 180 against
+# the common LCSC models (TPS563201 C116592: pin 1 bottom-right) - checked
+# per part by cpl_verify.py, so a model drawn the other way is still caught.
+^SOT-23,180
+^SOT-323,180
+^SOT-353,180
+^SOT-363,180
+^SOT-523,180
+^SOT-663,180
+^SOT-666,180
+^SOT-89,180
+^SOT-223,180
+^SOT-669,180
+# --- SOIC / SOP ---
+^SOIC-,270
+^SOP-,270
+^HTSOP-,270
+# --- SSOP / TSSOP / MSOP ---
+^SSOP-,270
+^TSSOP-,270
+^TSOP-,270
+^MSOP-,270
+# --- QFN / DFN / QFP ---
+^QFN-,270
+^DFN-,270
+^VQFN-,270
+^UQFN-,270
+^WQFN-,270
+^LQFP-,270
+^TQFP-,270
+^QFP-,270
+# --- Diode SMD packages ---
+^D_SOD-123,180
+^D_SOD-323,180
+^D_SOD-523,180
+^D_SOD-723,180
+^D_SOD-923,180
+^D_SMA,180
+^D_SMB,180
+^D_SMC,180
+# --- LEDs (polarized chip) ---
+^LED_0402,180
+^LED_0603,180
+^LED_0805,180
+^LED_1206,180
+# --- Power packages ---
+^TO-252,180
+^TO-263,180
+^TO-268,180
+^DPAK,180
+^D2PAK,180
+# --- Crystals (SMD) ---
+^Crystal_SMD_2016,180
+^Crystal_SMD_2520,180
+^Crystal_SMD_3215,180
+^Crystal_SMD_5032,180
+# --- Connectors that DO align (offset 0; listed to document, not correct) ---
+^USB_C_Receptacle,0
+^USB_Micro-B,0

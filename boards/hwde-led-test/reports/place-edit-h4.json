@@ -1,0 +1,37 @@
+{
+ "script": "place_edit",
+ "status": "pass",
+ "board": "kicad/hwde-led-test.kicad_pcb",
+ "applied": 4,
+ "verified": true,
+ "results": [
+  {
+   "ref": "J1",
+   "field": "reference",
+   "x": 10.9,
+   "y": 16.4,
+   "deg": 0.0
+  },
+  {
+   "ref": "C1",
+   "field": "reference",
+   "x": 13.2,
+   "y": 22.6,
+   "deg": 0.0
+  },
+  {
+   "text": "+",
+   "layer": "F.SilkS",
+   "x": 8.5,
+   "y": 18.93,
+   "deg": 0.0
+  },
+  {
+   "text": "-",
+   "layer": "F.SilkS",
+   "x": 8.5,
+   "y": 21.47,
+   "deg": 0.0
+  }
+ ]
+}
