@@ -550,8 +550,12 @@ def _source_exists(file: str, roots=()) -> bool:
         if file_in_boards.is_file() or file_in_boards.with_name(
                 file_in_boards.name + NOT_REDISTRIBUTED_SUFFIX).is_file():
             return True
-    for base in (SKILL, REPO, *(Path(r) for r in roots)):
-        p = base / file
+    cands = [base / file for base in (SKILL, REPO, *(Path(r) for r in roots))]
+    # A copy of the skill without the PDFs points SOURCES_DIR elsewhere.
+    lib_prefix = "reference/knowledge/sources/"
+    if file.startswith(lib_prefix):
+        cands.append(SOURCES_DIR / file[len(lib_prefix):])
+    for p in cands:
         if p.is_file() or p.with_name(p.name + NOT_REDISTRIBUTED_SUFFIX).is_file():
             return True
     return False

@@ -1,0 +1,71 @@
+id: led-indicator-series-resistor-sizing
+classes: [selection]
+applies:
+  topologies: [led-indicator]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  r_series: (VIN_min - VF_max) / IF_target
+  if_check: (VIN_max - VF_min) / R_min <= IF_dc_max derated at the board's max ambient
+  vf_max_source: datasheet VF max at the target IF plus its tolerance, plus the cold rise |TC_VF| x (25 - T_min)
+  vf_min_source: the IF-VF curve at the operating current minus the VF tolerance (datasheets often give no VF min)
+  led_power: VF * IF_max <= PD derated for ambient
+  resistor_power: (VIN_max - VF_min)^2 / R_min within the resistor rating
+  reverse_voltage: a supply connected backwards puts VIN_max across the LED in reverse; above VR it needs a series or reverse-protection diode or an explicit waiver
+prose: >
+  A resistor-fed indicator LED fails three ways: too little current (dark at
+  low line, high VF), too much (past its rating at high line, low VF), or the
+  wrong pins. Size R from the worst corners, never typ. Low corner: VIN(min)
+  - VF(max), where VF(max) is the datasheet max plus its tolerance, raised in
+  the cold by the VF temperature coefficient. A VF stated at 20 mA bounds the
+  drop at 2-5 mA, because VF falls as IF is reduced (see the IF-VF curve).
+  High corner: VIN(max) - VF(min). Datasheets often give no VF min, so read
+  it off the curve at the operating current, less the tolerance. Check the
+  high-corner IF against the DC rating DERATED at the board's max ambient
+  (the derating curve can be a fifth of the 25 C figure at 85 C). Check VF*IF
+  against PD and the resistor's own dissipation. Headroom bites on ~3 V parts
+  (blue, white, InGaN true/emerald green) on 3.3 V rails. VR is small (often
+  5 V), so a supply connected backwards can exceed it: add a diode or waive it
+  explicitly. Polarity is checked by cpl_verify.py (diodes by role). Read the
+  pin-1/cathode mark from the part's own datasheet, because vendors differ.
+sources:
+  - file: reference/knowledge/sources/APT1608SGC.pdf
+    page: 2
+    section: ELECTRICAL / OPTICAL CHARACTERISTICS + ABSOLUTE MAXIMUM RATINGS
+    note: >
+      VF at IF = 20 mA is 2.2 V typ / 2.5 V max, note 2 "Forward voltage:
+      +/-0.1V"; VR 5 V (IR 10 uA max at VR = 5 V); absolute maximum DC
+      forward current 25 mA, power dissipation 62.5 mW, junction 110 C,
+      RthJA 510 C/W; TC of VF -2.0 mV/C
+  - file: reference/knowledge/sources/APT1608SGC.pdf
+    page: 3
+    section: TECHNICAL DATA - Forward Current vs. Forward Voltage; Forward Current Derating Curve
+    note: >
+      The IF-VF curve (Ta = 25 C, 1.7-2.7 V axis) is monotonic: about 2.2 V
+      at 20 mA and about 1.85-1.95 V at 2-5 mA, so VF falls as IF is reduced
+      and the 20 mA VF bounds the drop at indicator currents with about 0.3 V
+      spare at 25 C. The derating curve holds 25 mA flat to 25 C, then falls
+      linearly to about 5 mA at 85 C
+  - file: reference/knowledge/sources/APT1608SGC.pdf
+    page: 1
+    section: PACKAGE DIMENSIONS
+    note: >
+      The polarity mark and the schematic glyph (pin 1 at the bar) put the
+      cathode on pin 1 for this part - one vendor's convention, which is why
+      the record says to read it per part
+status: active
+origin: hive:261028-141932-9b95b3083b
+level: topology
+envelope:
+  iout_a: {min: 0, max: 0.03}
+envelope_note: >
+  Bounded by forward current because the rule is the resistor-fed indicator
+  case: at up to a few tens of mA the LED's own dissipation is tens of mW
+  (62.5 mW PD on the cited 0603 part) and a resistor sets the current well
+  enough. Above that an LED is a lighting load that wants a current-regulated
+  driver and a thermal path, which this record does not cover.
+maturity: verified
+generalizes: []
+verification: {by: "second-reader", date: "2026-10-28", note: "Second read of Kingbright APT1608SGC (Spec DSAD0932 Rev V.22B), fresh context, two passes. p2 ELECTRICAL/OPTICAL at TA 25 C: VF at IF 20 mA 2.2 typ / 2.5 max V, note 2 tolerance +/-0.1 V, IR 10 uA max at VR 5 V, TC of VF -2.0 mV/C over -10 to 85 C. p2 ABSOLUTE MAXIMUM RATINGS: PD 62.5 mW, VR 5 V, Tj 110 C, DC IF 25 mA, RthJA 510 C/W. All source-note numbers match. p3 IF-VF curve: VF about 2.2 V at 20 mA and 1.85-1.95 V at 2-5 mA, monotonic, so the 20 mA max bounds low-current VF. p3 derating curve: 25 mA to 25 C, falling to about 5 mA at 85 C, which matches the one-fifth claim. p1 package drawing: the glyph bar and the bottom-view polarity triangle are at pad 1, so pin 1 is the cathode. Revisions in from the first read: IF checked against the current derated at maximum ambient, VF max raised in the cold by the TC (0.13 V at -40 C here), VF min read from the curve less the tolerance because the datasheet gives none, InGaN green listed among the 3 V parts, a supply connected backwards called out against VR, and the p3 note made explicit. Worst-corner sizing and the envelope (0-30 mA) are correct. On hwde-led-test, R1 470 ohm and the KT-0603G (3.1 V at 5 mA) give 3.5-4.6 mA over 4.75-5.25 V, which is consistent. Its README notes that a reversed supply puts 5.25 V across D1, the case the reverse_voltage rule now names."}

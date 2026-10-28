@@ -2,14 +2,21 @@
 
 `.claude/skills/hwde/` is ihsan-sa/hwde's `.claude/skills/hwde/` at
 `5d7bbe52483ca0bc6bf28a56e4c1e0d24b5ca4b7`, at the same path, because its
-scripts locate each other and the repo root by that depth. It differs in two
-ways:
+scripts locate each other and the repo root by that depth. It differs in
+these ways:
 
 - `reference/knowledge/sources/*.pdf` (36 MB of manufacturers' datasheets and
   application notes) is left out. NOTICE says they're redistributed under
   their owners' terms, not MIT.
 - `scripts/lib/knowledgelib.py`: `SOURCES_DIR` reads `HWDE_KNOWLEDGE_SOURCES`
-  when it's set, so the records can still find those PDFs elsewhere.
+  when it's set, so the records can still find those PDFs elsewhere, and
+  `_source_exists` (what `knowledge --validate` runs) looks there too for a
+  `reference/knowledge/sources/` citation.
+- Knowledge the Hive added (send upstream when it's approved):
+  `reference/knowledge/checklists/led-indicator.yaml`, its covering record
+  `records/led-indicator-series-resistor-sizing.yaml`, and
+  `sources/APT1608SGC.pdf.not-redistributed.md`, the sidecar for the
+  Kingbright datasheet they cite.
 
 `requirements.lock`, `LICENSE` and `NOTICE` are upstream's, from the repo
 root. The tests, plans, docker setup and design notes stay upstream.

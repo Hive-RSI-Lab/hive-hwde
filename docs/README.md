@@ -103,6 +103,15 @@ nothing in the Hive should ask for them.
 - The knowledge records cite manufacturer PDFs that the module doesn't carry
   (see NOTICE). `bin/hwde` points `HWDE_KNOWLEDGE_SOURCES` at the hwde
   project's clone (`$HIVE_PROJECTS/hwde`) when there is one.
+- `knowledge --validate` reports the library records that cite upstream's
+  own board workspaces (`boards/usb-buck/...`), because `boards/` here is
+  this project's. Run it with `HWDE_BOARDS_ROOT` set to an empty folder to
+  check the library alone.
+- Knowledge records the Hive adds start at `verified`, which means a
+  fresh-context second reader has checked them against the cited pages. The
+  checklists start at `draft`. Coverage counts only `approved`, which is the
+  person's sign-off, so until then their slots read `provisional`, not `gap`.
+  The LED-indicator checklist is the first one.
 
 ## The first board
 
