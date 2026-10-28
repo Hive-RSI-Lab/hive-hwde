@@ -52,7 +52,7 @@ From a checkout of hive-hwde, with the module's `bin/hwde` (see `docs/README.md`
 ```sh
 cd boards/hwde-led-test
 eval "$(../../bin/hwde env)"
-PYTHONPATH=$HWDE_MODULE/scripts:$HWDE_MODULE/scripts/lib $HWDE_PY kicad/gen/root.py   # schematic + decoupling.json (new UUIDs: keep the committed .kicad_sch for the board)
+PYTHONPATH=$HWDE_MODULE/scripts:$HWDE_MODULE/scripts/lib $HWDE_PY kicad/gen/root.py   # schematic + decoupling.json, rebuilt in place (keeps its UUIDs)
 ../../bin/hwde lib_pull --parts parts/parts.json --out-dir /tmp/pull && mkdir -p lib/aiee.3dshapes && cp /tmp/pull/aiee.3dshapes/* lib/aiee.3dshapes/   # 3D models, not committed
 for g in erc place drc_routed verify dfm; do f=kicad/hwde-led-test.kicad_pcb; [ $g = erc ] && f=kicad/hwde-led-test.kicad_sch; ../../bin/hwde gate --gate $g $f --workspace .; done
 ../../bin/hwde fab_export --pcb kicad/hwde-led-test.kicad_pcb --out-dir fab
