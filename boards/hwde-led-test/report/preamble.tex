@@ -1,0 +1,6 @@
+% Keep each figure where the text puts it, and let long code paths break.
+\usepackage{float}
+\floatplacement{figure}{H}
+\usepackage{etoolbox}
+\AtBeginEnvironment{longtable}{\small}
+\sloppy
