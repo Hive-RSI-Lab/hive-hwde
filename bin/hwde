@@ -19,6 +19,7 @@ venv=${HWDE_VENV:-$state/venv}
 # KiCad: an explicit pin wins; else the newest KiCad 10 AppDir in the tools
 # folder, through wrappers that put kicad-cli and KiCad's own python (it has
 # the SWIG pcbnew module) side by side, as env.find_kicad_python expects.
+appdir=
 if [ -z "${HWDE_KICAD_CLI:-}" ]; then
 	appdir=$(ls -d "$tools"/kicad-10.* 2>/dev/null | sort -V | tail -n 1)
 	if [ -n "$appdir" ] && [ -x "$appdir/AppRun" ]; then
@@ -62,6 +63,15 @@ if [ ! -x "$venv/bin/python" ] || [ "$here/requirements.lock" -nt "$venv/.hwde-l
 	touch "$venv/.hwde-lock"
 fi
 
+# KiCad 10 ships its stock symbols as one-file-per-symbol .kicad_symdir
+# folders, which kicad-sch-api (the skill's schematic writer) can't read; it
+# gets flat copies of the libraries the skill places by lib_id (power, Device).
+if [ -n "$appdir" ] && [ -z "${KICAD_SYMBOL_DIR:-}" ] && [ -d "$appdir/share/kicad/symbols/power.kicad_symdir" ]; then
+	syms=$state/symbols-$(basename "$appdir")
+	[ -f "$syms/power.kicad_sym" ] || "$venv/bin/python" "$here/bin/flatten-symdirs.py" "$appdir/share/kicad/symbols" "$syms"
+	export KICAD_SYMBOL_DIR=$syms
+fi
+
 export HWDE_KICAD_CLI HWDE_FREEROUTING_JAR HWDE_JAVA HWDE_KNOWLEDGE_SOURCES HWDE_BOARDS_ROOT
 [ -n "${HWDE_KICAD_CLI:-}" ] || unset HWDE_KICAD_CLI
 [ -n "${HWDE_FREEROUTING_JAR:-}" ] || unset HWDE_FREEROUTING_JAR
@@ -78,7 +88,7 @@ fi
 
 case "${1:-}" in
 env)
-	for v in HWDE_KICAD_CLI HWDE_FREEROUTING_JAR HWDE_JAVA HWDE_KNOWLEDGE_SOURCES HWDE_BOARDS_ROOT HWDE_NGSPICE_DLL; do
+	for v in HWDE_KICAD_CLI HWDE_FREEROUTING_JAR HWDE_JAVA HWDE_KNOWLEDGE_SOURCES HWDE_BOARDS_ROOT HWDE_NGSPICE_DLL KICAD_SYMBOL_DIR; do
 		eval "val=\${$v:-}"
 		[ -n "$val" ] && printf "export %s='%s'\n" "$v" "$val"
 	done

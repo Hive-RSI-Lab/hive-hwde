@@ -1,0 +1,75 @@
+{
+ "workspace": "/work/boards/hwde-led-test",
+ "cap_class": "2layer_1oz",
+ "parts": [
+  {
+   "mpn": "PZ254V-11-02P",
+   "package": "PinHeader_1x02_P2.54mm_Vertical (THT)",
+   "gaps": [
+    "courtyard unknown (no land_pattern.courtyard_mm and package not in CHIP_COURTYARD)"
+   ],
+   "lcsc": "C492401",
+   "refs": [],
+   "qty": 1,
+   "extraction": null
+  },
+  {
+   "mpn": "CL10A475KO8NNNC",
+   "package": "0603",
+   "gaps": [],
+   "courtyard": {
+    "w_mm": 3.0,
+    "h_mm": 1.5,
+    "area_mm2": 4.5,
+    "source": "table"
+   },
+   "lcsc": "C19666",
+   "refs": [
+    "C1"
+   ],
+   "qty": 1,
+   "extraction": null
+  },
+  {
+   "mpn": "0603WAF4700T5E",
+   "package": "0603",
+   "gaps": [],
+   "courtyard": {
+    "w_mm": 3.0,
+    "h_mm": 1.5,
+    "area_mm2": 4.5,
+    "source": "table"
+   },
+   "lcsc": "C23179",
+   "refs": [
+    "R1"
+   ],
+   "qty": 1,
+   "extraction": null
+  },
+  {
+   "mpn": "KT-0603G",
+   "package": "0603",
+   "gaps": [],
+   "courtyard": {
+    "w_mm": 3.0,
+    "h_mm": 1.5,
+    "area_mm2": 4.5,
+    "source": "table"
+   },
+   "lcsc": "C12624",
+   "refs": [
+    "D1"
+   ],
+   "qty": 1,
+   "extraction": null
+  }
+ ],
+ "board_budget": {
+  "courtyard_sum_mm2": 13.5,
+  "unknown_parts": [
+   "PZ254V-11-02P"
+  ]
+ },
+ "conflicts": []
+}

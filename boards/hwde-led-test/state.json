@@ -4,11 +4,52 @@
  "workspace_schema": 2,
  "workspace": "/work/boards/hwde-led-test",
  "created": "2026-10-28T09:25:11",
- "updated": "2026-10-28T09:28:52",
- "phase": "P2",
- "gates": {},
+ "updated": "2026-10-28T09:39:25",
+ "phase": "P4",
+ "gates": {
+  "erc": {
+   "phase": "P4",
+   "status": "pass",
+   "attempts": 1,
+   "last": {
+    "ts": "2026-10-28T09:37:16",
+    "status": "pass",
+    "failing_count": 0,
+    "total": 0,
+    "inputs": {
+     "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+     "pro": "json_canonical:e4273b875a1af71d31be97619c9361b8d5f1a06299781c4148aea6f1c8dee338"
+    }
+   },
+   "history": [
+    {
+     "ts": "2026-10-28T09:37:16",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+      "pro": "json_canonical:e4273b875a1af71d31be97619c9361b8d5f1a06299781c4148aea6f1c8dee338"
+     }
+    }
+   ]
+  }
+ },
  "human": {},
- "artifacts": {},
+ "artifacts": {
+  "sch": {
+   "path": "kicad/hwde-led-test.kicad_sch",
+   "kind": "sch",
+   "sha256": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+   "hashed": "2026-10-28T09:37:16"
+  },
+  "pro": {
+   "path": "kicad/hwde-led-test.kicad_pro",
+   "kind": "pro",
+   "sha256": "json_canonical:e4273b875a1af71d31be97619c9361b8d5f1a06299781c4148aea6f1c8dee338",
+   "hashed": "2026-10-28T09:37:16"
+  }
+ },
  "open_issues": [],
  "next_issue_id": 1,
  "budgets": {
@@ -46,6 +87,24 @@
    "why": "a single LED + series resistor at 4.3 mA from 5 V is textbook; a research pass would build a checklist for a block with no layout risk. Presented at H1 for the person to overrule",
    "phase": "P2",
    "ts": "2026-10-28T09:28:52"
+  },
+  {
+   "what": "D1 KT-0603G (C12624, Extended, Vf 3.1 V listing value); R1 470R (C23179) not 680R",
+   "why": "brief asks for an 0603 green LED and there is no Basic one; at Vf 3.1 V 680R gives 2.4-2.8 mA, below the 3 mA floor, 470R gives 3.5-4.6 mA. Vf is the LCSC listing, the datasheet would not download",
+   "phase": "P3",
+   "ts": "2026-10-28T09:31:06"
+  },
+  {
+   "what": "hand edit: widened the F.CrtYd of C0603, R0603, LED0603-RD from +-0.80x+-0.40 to +-1.40x+-0.70 mm",
+   "why": "the EasyEDA courtyards were the body outline and did not enclose the pads (pads reach +-1.15 x +-0.45); IPC courtyard = pads + 0.25 mm, so placement legality and DRC courtyard checks are not lenient",
+   "phase": "P3",
+   "ts": "2026-10-28T09:32:39"
+  },
+  {
+   "what": "fp_verify and lib_pin_types not run; D1 cathode = pad 1 from symbol K pin + silk chamfer, not datasheet",
+   "why": "no IC on the board, so no datasheet extractions to diff against; the KT-0603G datasheet PDF would not download",
+   "phase": "P3",
+   "ts": "2026-10-28T09:32:40"
   }
  ],
  "edits": [],
@@ -66,6 +125,38 @@
    "phase": "P2",
    "tokens": 28302,
    "note": "tier fable/high; sonnet for a 4-part test board"
+  },
+  {
+   "ts": "2026-10-28T09:31:06",
+   "role": "part-sourcer",
+   "model": "sonnet",
+   "phase": "P3",
+   "tokens": 28202,
+   "note": "tier sonnet/high"
+  },
+  {
+   "ts": "2026-10-28T09:32:39",
+   "role": "librarian",
+   "model": "sonnet",
+   "phase": "P3",
+   "tokens": 26453,
+   "note": "tier sonnet/medium"
+  },
+  {
+   "ts": "2026-10-28T09:39:21",
+   "role": "schematic-block",
+   "model": "opus",
+   "phase": "P4",
+   "tokens": 56893,
+   "note": "tier fable/medium; opus"
+  },
+  {
+   "ts": "2026-10-28T09:39:25",
+   "role": "schematic-reviewer",
+   "model": "opus",
+   "phase": "P4",
+   "tokens": 43426,
+   "note": "tier fable/high; opus, fresh context"
   }
  ],
  "history": [
@@ -108,6 +199,65 @@
    "ts": "2026-10-28T09:28:52",
    "event": "decision",
    "what": "designing under coverage gap: block:B3 led-indicator (no coverage checklist exists for this topology); research not launched"
+  },
+  {
+   "ts": "2026-10-28T09:29:14",
+   "event": "phase",
+   "phase": "P3",
+   "prev": "P2"
+  },
+  {
+   "ts": "2026-10-28T09:31:06",
+   "event": "spawn",
+   "role": "part-sourcer",
+   "model": "sonnet"
+  },
+  {
+   "ts": "2026-10-28T09:31:06",
+   "event": "decision",
+   "what": "D1 KT-0603G (C12624, Extended, Vf 3.1 V listing value); R1 470R (C23179) not 680R"
+  },
+  {
+   "ts": "2026-10-28T09:32:39",
+   "event": "spawn",
+   "role": "librarian",
+   "model": "sonnet"
+  },
+  {
+   "ts": "2026-10-28T09:32:39",
+   "event": "decision",
+   "what": "hand edit: widened the F.CrtYd of C0603, R0603, LED0603-RD from +-0.80x+-0.40 to +-1.40x+-0.70 mm"
+  },
+  {
+   "ts": "2026-10-28T09:32:40",
+   "event": "decision",
+   "what": "fp_verify and lib_pin_types not run; D1 cathode = pad 1 from symbol K pin + silk chamfer, not datasheet"
+  },
+  {
+   "ts": "2026-10-28T09:32:52",
+   "event": "phase",
+   "phase": "P4",
+   "prev": "P3"
+  },
+  {
+   "ts": "2026-10-28T09:37:16",
+   "event": "gate",
+   "gate": "erc",
+   "status": "pass",
+   "attempt": 1,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T09:39:21",
+   "event": "spawn",
+   "role": "schematic-block",
+   "model": "opus"
+  },
+  {
+   "ts": "2026-10-28T09:39:25",
+   "event": "spawn",
+   "role": "schematic-reviewer",
+   "model": "opus"
   }
  ]
 }

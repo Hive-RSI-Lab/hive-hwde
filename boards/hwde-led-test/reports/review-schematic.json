@@ -1,0 +1,10 @@
+{"violations": [
+ {"check": "schematic-review", "severity": "warning", "pos": null, "layer": null, "net": null,
+  "refs": ["J1", "C1", "R1", "D1"],
+  "msg": "The placed symbol instances carry no MPN or LCSC field. Only the embedded lib_symbols cache has them, so the netlist comp fields have no part numbers. The footprints spell the field 'LCSC Part', but bom_cpl.board_part_fields only matches 'LCSC', and parts.json entries have no refs. So the JLC BOM can come out with no LCSC numbers, and PCBA would not place the parts.",
+  "source": "review.schematic", "kind": "bom-fields-missing"},
+ {"check": "schematic-review", "severity": "warning", "pos": null, "layer": null, "net": "/LED_A",
+  "refs": ["R1", "D1"],
+  "msg": "The 470R value assumes the 3.1 V typical Vf from the LCSC listing. With no datasheet Vf max, an InGaN green at Vf 3.4 V, a 4.75 V input and +1% on R1 gives (4.75-3.4)/474.7 = 2.8 mA, below the 3 mA lower bound of the requirement. The LED still lights, so this is not a bring-up failure, but the 3-5 mA spec is not proven at worst case.",
+  "source": "review.schematic", "kind": "led-current-margin"}
+]}

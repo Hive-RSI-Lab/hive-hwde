@@ -1,0 +1,96 @@
+{
+ "script": "knowledge",
+ "status": "gaps",
+ "schema_version": 2,
+ "workspace": "/work/boards/hwde-led-test",
+ "board": "hwde-led-test",
+ "phase": "P3",
+ "maturity_floor": "approved",
+ "keys": {
+  "topologies": [
+   "led-indicator"
+  ],
+  "packages": [
+   "0603",
+   "PinHeader_1x02_P2.54mm_Vertical (THT)"
+  ],
+  "interfaces": [],
+  "parts": [
+   "0603WAF4700T5E",
+   "C12624",
+   "C19666",
+   "C23179",
+   "C492401",
+   "CL10A475KO8NNNC",
+   "KT-0603G",
+   "PZ254V-11-02P"
+  ],
+  "sources": {
+   "constraints": "/work/boards/hwde-led-test/architecture/constraints.json",
+   "parts": "/work/boards/hwde-led-test/parts/parts.json"
+  }
+ },
+ "sources": {
+  "constraints": "/work/boards/hwde-led-test/architecture/constraints.json",
+  "parts": "/work/boards/hwde-led-test/parts/parts.json"
+ },
+ "summary": {
+  "slots": 1,
+  "covered": 0,
+  "provisional": 0,
+  "gap": 1,
+  "research_blocked": 0,
+  "draft_unverified": 0
+ },
+ "slots": [
+  {
+   "id": "block:B3",
+   "kind": "block",
+   "topology": "led-indicator",
+   "label": "B3",
+   "operating_point": {
+    "vin_v": 5,
+    "iout_a": 0.0043,
+    "pdiss_w": 0.022,
+    "board_layers": 2
+   },
+   "classes": [],
+   "gap_reasons": [
+    "no coverage checklist for block 'led-indicator' - the first research pass on a new topology/interface produces one (reference/knowledge/checklists/)"
+   ],
+   "checklist": null,
+   "verdict": "gap"
+  }
+ ],
+ "gaps": [
+  {
+   "slot": "block:B3",
+   "kind": "block",
+   "topology": "led-indicator",
+   "operating_point": {
+    "vin_v": 5,
+    "iout_a": 0.0043,
+    "pdiss_w": 0.022,
+    "board_layers": 2
+   },
+   "missing": [
+    {
+     "class": "coverage-checklist",
+     "min_level": null
+    }
+   ],
+   "reasons": [
+    "no coverage checklist for block 'led-indicator' - the first research pass on a new topology/interface produces one (reference/knowledge/checklists/)"
+   ],
+   "related_records": [],
+   "principle_parents": [],
+   "task": "research block 'led-indicator': produce its coverage checklist, then populate it"
+  }
+ ],
+ "warnings": [],
+ "workspace_records": [],
+ "workspace_checklists": [],
+ "draft_unverified": [],
+ "mapping_applied": null,
+ "mapping_request": null
+}

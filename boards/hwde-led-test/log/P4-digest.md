@@ -1,0 +1,4 @@
+- P4 schematic: one root sheet from kicad/gen/root.py; ERC gate PASS 0/0; netlist_audit 0.
+- Nets +5V {J1.1,C1.1,R1.1}, GND {J1.2,C1.2,D1.K}, /LED_A {R1.2,D1.A}.
+- Review (fresh, opus): 0 errors, 2 warnings (LED current margin at unconfirmed Vf max; LCSC field name for BOM) - reports/erc-waivers.md.
+- Module fix found here: KiCad 10 symdir libs flattened by bin/hwde for kicad-sch-api.
