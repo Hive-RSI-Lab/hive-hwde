@@ -343,6 +343,20 @@ def test_na_only_allowed_for_sim(tmp_path, capsys):
     assert any("not_applicable.verify" in p for p in out["problems"])
 
 
+def test_na_pending_approver_refused(tmp_path, capsys):
+    """Issue #27: release.not_applicable with approved PENDING is no
+    approval; the sim gate is not excused."""
+    ws = green_ws(tmp_path)
+    (ws / "kicad" / "constraints.json").write_text(json.dumps({
+        "release": {"not_applicable": {"sim": {
+            "reason": "no sim model", "approved": "PENDING"}}}}),
+        encoding="utf-8")
+    assert attest.main(["build", "--workspace", str(ws), "--force"]) == 1
+    out = json.loads(capsys.readouterr().out)
+    assert any("not_applicable.sim" in p and "placeholder" in p
+               for p in out["problems"])
+
+
 # --------------------------------------------------- invalidation (plan)
 
 def test_board_nudge_invalidates(tmp_path):

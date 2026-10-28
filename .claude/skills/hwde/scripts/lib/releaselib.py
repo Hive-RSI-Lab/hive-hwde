@@ -383,6 +383,10 @@ def _release_na(ws: Path, board: str, imap: dict,
             problems.append(f"release.not_applicable.{gate_name}: needs "
                             "non-empty reason and approved")
             continue
+        bad = checklib.approval_problem(entry.get("approved"))
+        if bad:
+            problems.append(f"release.not_applicable.{gate_name}: {bad}")
+            continue
         out[gate_name] = {"reason": entry["reason"],
                           "approved": entry["approved"]}
     return out, problems
