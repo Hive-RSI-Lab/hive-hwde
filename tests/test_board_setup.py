@@ -307,6 +307,22 @@ MINI_NET = """(export (version "E")
 """
 
 
+def test_resolve_origin(tmp_path):
+    pcb = tmp_path / "b.kicad_pcb"
+    assert board_init.resolve_origin("auto", pcb) == (None, "auto")
+    assert board_init.resolve_origin("keep", pcb)[0] is None   # no board yet
+    assert board_init.resolve_origin("12.5, -3", pcb) == ([12.5, -3.0], "given")
+    pcb.write_text("""(kicad_pcb
+  (gr_line (start 23.5 41) (end 103.5 41) (layer "Edge.Cuts") (width 0.1))
+  (gr_arc (start 20.5 44) (mid 21.38 41.88) (end 23.5 41) (layer "Edge.Cuts"))
+  (gr_line (start 20.5 44) (end 20.5 120) (layer "Edge.Cuts") (width 0.1))
+  (gr_line (start 0 0) (end 5 5) (layer "F.SilkS") (width 0.1))
+)""", encoding="utf-8")
+    assert board_init.resolve_origin("keep", pcb) == ([20.5, 41.0], "kept from b.kicad_pcb")
+    with pytest.raises(RuntimeError, match="bad --origin"):
+        board_init.resolve_origin("left", pcb)
+
+
 def test_parse_netlist(tmp_path):
     n = tmp_path / "m.net"
     n.write_text(MINI_NET, encoding="utf-8")
@@ -702,6 +718,28 @@ def _init_board(tmp_path, netlist, *extra):
         "--schematic", str(GOLDEN / "usbbuck4" / "usbbuck4.kicad_sch"),
         "--out-report", str(rep), *extra])
     return rc, json.loads(rep.read_text("utf-8"))
+
+
+@pytest.mark.smoke
+def test_board_init_keeps_or_pins_the_origin(cli, usbbuck4_net, tmp_path):
+    """A re-run keeps the outline where the board has it (lite-main's planes
+    and pre-route ops were written in absolute coordinates); --origin X,Y
+    pins it and --origin auto is the packed position."""
+    rc, first = _init_board(tmp_path, usbbuck4_net)
+    assert rc == 0 and first["origin_source"].startswith("auto")
+    o1 = first["outline_origin"]
+    # a wider margin packs the parts differently: auto would move the origin
+    rc, auto = _init_board(tmp_path, usbbuck4_net, "--margin", "9", "--origin", "auto")
+    assert rc == 0 and auto["outline_origin"] != o1
+    rc, kept = _init_board(tmp_path, usbbuck4_net, "--margin", "9")
+    assert rc == 0 and kept["status"] == "pass", kept
+    assert kept["outline_origin"] == auto["outline_origin"]   # kept from the last run
+    assert kept["origin_source"] == "kept from usbbuck4.kicad_pcb"
+    rc, pinned = _init_board(tmp_path, usbbuck4_net, "--origin", "10,20")
+    assert rc == 0 and pinned["status"] == "pass", pinned
+    assert pinned["outline_origin"] == [10.0, 20.0]
+    assert pinned["outline_bbox"] == [10.0, 20.0, 110.0, 100.0]
+    assert pinned["self_check"]["setup_violations"] == []
 
 
 @pytest.mark.smoke

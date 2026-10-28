@@ -27,6 +27,15 @@ copper ring and a ring of vias (MountingHole_3.2mm_M3_Pad_Via), joined to the
 ground net. A brief that wants none, a bare NPTH hole or another size says so
 with --mounting-holes 0 / --mounting-hole-fp / --corner-radius 0, and wins.
 
+The outline's top-left corner stays where the board already has it: a re-run
+over an existing board keeps its origin (--origin keep, the default), so
+absolute coordinates written against the first run (constraints planes,
+pre-route ops) still land. Without it the origin follows the parts' packed
+extent and moved on every netlist change: a VBUS stub landed 0.3 mm off and
+shorted a GND pad (hifi-receiver-2 lite-main). --origin X,Y pins it; --origin
+auto is the packed position. The report gives it as outline_origin and says
+where it came from (origin_source).
+
 The outline is PROVISIONAL, and under a build mode whose binding makes geometry
 an output (`state.py mode`, reference/build-modes.md) a fixed `--outline WxH` is
 REFUSED here: the size comes from the placement via `board_edit --outline fit`.
@@ -39,7 +48,8 @@ Emits the normalized DRC report alongside.
 Usage:
   board_init.py --netlist n.net --name board --out dir --layers 4
                 [--copper-oz 1] [--stackup NAME]
-                [--outline auto|WxH] [--mounting-holes auto|N]
+                [--outline auto|WxH] [--origin keep|auto|X,Y]
+                [--mounting-holes auto|N]
                 [--mounting-hole-fp LIB:NAME]
                 [--corner-radius auto|R] [--cutout X,Y,W,H ...]
                 [--workspace DIR] [--allow-fixed-outline]
@@ -402,6 +412,43 @@ def mode_outline_guard(out_dir: Path, outline: str,
 
 # --------------------------------------------------------------- main
 
+_EDGE_XY = re.compile(r"\((?:start|end|mid|center)\s+(-?[\d.]+)\s+(-?[\d.]+)\)")
+
+
+def outline_origin(pcb: Path) -> list[float] | None:
+    """Top-left corner of a board's Edge.Cuts outline, or None."""
+    from lib import fpfix  # noqa: E402  (paren scanner)
+    text = pcb.read_text(encoding="utf-8", errors="replace")
+    xs, ys = [], []
+    for head, a, b in fpfix.top_level_nodes(text):
+        if not head.startswith("gr_"):
+            continue
+        sub = text[a:b]
+        if '"Edge.Cuts"' not in sub and " Edge.Cuts)" not in sub:
+            continue
+        for x, y in _EDGE_XY.findall(sub):
+            xs.append(float(x))
+            ys.append(float(y))
+    return [round(min(xs), 3), round(min(ys), 3)] if xs else None
+
+
+def resolve_origin(arg: str, pcb: Path) -> tuple[list[float] | None, str]:
+    """(origin or None, where it came from) for --origin keep|auto|X,Y."""
+    a = str(arg).strip().lower()
+    if a == "auto":
+        return None, "auto"
+    if a == "keep":
+        if pcb.is_file():
+            o = outline_origin(pcb)
+            if o is not None:
+                return o, f"kept from {pcb.name}"
+        return None, "auto (no board to keep it from)"
+    m = re.fullmatch(r"\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*", a)
+    if not m:
+        raise RuntimeError(f"bad --origin {arg!r} (use keep, auto or X,Y)")
+    return [float(m.group(1)), float(m.group(2))], "given"
+
+
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -419,6 +466,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--stackup", help="stackup name (default: stackups.defaults[layers])")
     ap.add_argument("--outline", default="auto",
                     help="'auto' (bbox+margin) or 'WxH' in mm, e.g. 60x40")
+    ap.add_argument("--origin", default="keep",
+                    help="outline top-left corner: 'keep' (default) = the "
+                         "existing board's, else as 'auto'; 'auto' = where "
+                         "the packed parts put it; 'X,Y' in mm")
     ap.add_argument("--margin", type=float, default=6.0)
     ap.add_argument("--corner-radius", default="auto",
                     help="round the outline corners by this radius in mm; "
@@ -483,6 +534,8 @@ def main(argv: list[str] | None = None) -> int:
         build_mode = mode_outline_guard(out_dir, args.outline, args.workspace,
                                         args.allow_fixed_outline)
 
+        origin, origin_source = resolve_origin(args.origin, pcb_path)
+
         components, netmap = parse_netlist(Path(args.netlist))
 
         stacks = yaml.safe_load(STACKUP_FILE.read_text(encoding="utf-8"))
@@ -537,6 +590,7 @@ def main(argv: list[str] | None = None) -> int:
             "out": str(pcb_path), "layers": args.layers,
             "components": components, "netmap": netmap,
             "fp_paths": args.fp_lib, "margin": args.margin, "outline": outline,
+            "origin": origin,
             "corner_radius": radius_arg, "cutouts": cutouts,
             "mounting_holes": ({"count": holes_arg,
                                 "inset": args.margin / 2.0,
@@ -608,6 +662,7 @@ def main(argv: list[str] | None = None) -> int:
             "mounting_hole_inset": worker.get("mounting_hole_inset"),
             "corner_radius": worker.get("corner_radius", 0.0),
             "outline_origin": worker.get("outline_origin"),
+            "origin_source": origin_source,
             "cutouts": worker.get("cutouts", []),
             "self_check": check, "worker_notes": worker_notes,
             "unconnected_nets_skipped": unconnected_nets_skipped,
