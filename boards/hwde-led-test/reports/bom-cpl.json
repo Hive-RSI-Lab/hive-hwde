@@ -95,16 +95,6 @@
    "Instructions": ""
   },
   {
-   "Comment": "PZ254V-11-02P",
-   "Designator": "J1",
-   "Qty Per Board": "1",
-   "Footprint": "HDR-TH_2P-P2.54-V-M",
-   "MPN": "PZ254V-11-02P",
-   "LCSC": "C492401",
-   "Assembly Class": "smt_placed",
-   "Instructions": ""
-  },
-  {
    "Comment": "470R",
    "Designator": "R1",
    "Qty Per Board": "1",
@@ -113,6 +103,16 @@
    "LCSC": "C23179",
    "Assembly Class": "smt_placed",
    "Instructions": ""
+  },
+  {
+   "Comment": "PZ254V-11-02P",
+   "Designator": "J1",
+   "Qty Per Board": "1",
+   "Footprint": "HDR-TH_2P-P2.54-V-M",
+   "MPN": "PZ254V-11-02P",
+   "LCSC": "C492401",
+   "Assembly Class": "tht",
+   "Instructions": "Through-hole - JLC THT assembly (or hand-solder after reflow); not on the SMT line."
   }
  ],
  "cpl_rows": [
@@ -148,11 +148,12 @@
  "assembly_classes": {
   "C1": "smt_placed",
   "D1": "smt_placed",
-  "J1": "smt_placed",
+  "J1": "tht",
   "R1": "smt_placed"
  },
  "class_counts": {
-  "smt_placed": 4
+  "smt_placed": 3,
+  "tht": 1
  },
  "not_placed": [],
  "rotation_audit": [

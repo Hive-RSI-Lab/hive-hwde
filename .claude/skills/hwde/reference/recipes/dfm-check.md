@@ -21,8 +21,9 @@ part numbers, stock, prices and `<ws>_BOM_cost.json` when the DigiKey/Mouser
 API keys are set. Without keys it says so on stderr and carries on.
 
 Who is in which file is decided by `assembly_class` in canonical parts data,
-never by what the position export happened to contain: `smt_placed` parts go in
-BOM.csv AND CPL.csv, everything else (`hand_install`, `off_board`, `dnp`,
+never by what the position export happened to contain: `smt_placed` parts and
+`tht` parts (a footprint with KiCad's `through_hole` attr, fitted in JLC's THT
+step) go in BOM.csv AND CPL.csv, everything else (`hand_install`, `off_board`, `dnp`,
 `customer_supplied`, `select_on_test`, `board_feature`) appears only in
 BOM-full.csv, marked, with an `Instructions` column. Per-site overrides are
 `refdes_class` / `refdes_dnp` + `refdes_notes` on the parts line. **Do not

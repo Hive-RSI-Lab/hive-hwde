@@ -151,6 +151,52 @@ def test_board_attributes_class_parts_the_pos_export_never_shows(tmp_path):
     assert set(bom_cpl.board_lcsc_map(pcb)) == {"R1", "J1", "C9"}
 
 
+def test_a_through_hole_footprint_is_tht_not_smt_placed(tmp_path):
+    """hive-hwde #15: hwde-led-test's J1 (a 2.54 mm THT header, `(attr
+    through_hole)`) came out smt_placed. It is class tht: still in BOM.csv and
+    CPL.csv (JLC fits it in its THT step), but not called an SMT placement,
+    with a THT instruction in the BOM of record. parts.json still outranks it."""
+    pcb = tmp_path / "t.kicad_pcb"
+    pcb.write_text(
+        '(kicad_pcb (version 20241229)\n'
+        '  (footprint "c" (layer "F.Cu") (at 1 1) (attr smd)'
+        ' (property "Reference" "C1")'
+        ' (property "LCSC" "C111"))\n'
+        '  (footprint "j" (layer "F.Cu") (at 2 1)'
+        ' (attr through_hole) (property "Reference" "J1")'
+        ' (property "LCSC" "C492401"))\n'
+        '  (footprint "k" (layer "F.Cu") (at 4 1)'
+        ' (attr through_hole) (property "Reference" "J2")'
+        ' (property "LCSC" "C492401"))\n)', encoding="utf-8")
+    assert bom_cpl.board_part_fields(pcb)["J1"]["attr_class"] == "tht"
+    pos = tmp_path / "t-pos.csv"
+    pos.write_text("Ref,Val,Package,PosX,PosY,Rot,Side\n"
+                   "C1,100nF,C0402,1.0,-1.0,0,top\n"
+                   "J1,HDR,PinHeader_1x02_P2.54mm_Vertical,2.0,-1.0,0,top\n"
+                   "J2,HDR,PinHeader_1x02_P2.54mm_Vertical,4.0,-1.0,0,top\n",
+                   encoding="utf-8")
+    pj = tmp_path / "parts.json"
+    pj.write_text(json.dumps({"parts": [
+        {"refdes": ["J2"], "lcsc": "C492401", "assembly_class": "hand_install",
+         "package": "PinHeader_1x02_P2.54mm_Vertical (THT)"}]}),
+        encoding="utf-8")
+    out = tmp_path / "fab"
+    rep = bom_cpl.run(pcb, out, pos=pos, parts_json=pj, fetch_models=False,
+                      easyeda_cache=tmp_path / "easyeda")
+    assert rep["status"] == "pass"
+    assert rep["assembly_classes"] == {"C1": "smt_placed", "J1": "tht",
+                                       "J2": "hand_install"}
+    assert rep["n_placed"] == 2 and rep["unplaced_smt"] == []
+    assert _designators(out / "CPL.csv") == ["C1", "J1"]
+    assert _designators(out / "BOM.csv") == ["C1", "J1"]
+    full = {r["Designator"]: r for r in _rows(out / "BOM-full.csv")}
+    assert full["J1"]["Assembly Class"] == "tht"
+    assert "THT" in full["J1"]["Instructions"]
+    # placed parts first: smt_placed, then tht, then the rest
+    assert [r["Designator"] for r in _rows(out / "BOM-full.csv")] == \
+        ["C1", "J1", "J2"]
+
+
 # ============================================== pure: membership + outputs
 
 POS = (

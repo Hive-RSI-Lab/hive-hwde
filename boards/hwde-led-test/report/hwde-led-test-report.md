@@ -105,9 +105,10 @@ fresh for this report:
   Extended-part fee for each one. They may also need buying into your JLC parts
   inventory first (`fab/prebuy.csv`). There is no Basic green LED in 0603, only
   in 0805.
-- **J1 in the CPL:** `fab/CPL.csv` lists J1 as a top-side SMT placement
-  (`smt_placed`), even though it is through-hole. At order time, either hand-solder
-  J1 or order it as THT assembly ([snag 13](#snags-the-run-hit)).
+- **J1 is through-hole:** the BOM of record classes J1 `tht` (it was
+  `smt_placed` until [snag 13](#snags-the-run-hit) was fixed). It stays in
+  `fab/BOM.csv` and `fab/CPL.csv` for JLC's THT assembly step; at order time,
+  either order it as THT assembly or hand-solder it.
 
 The fab package is in `fab/`: `hwde-led-test_gerbers.zip` (the JLC layer set
 plus drill, 11 files), `BOM.csv`, `CPL.csv` and `prebuy.csv`.
@@ -263,7 +264,7 @@ Snags 1–12 come from the run itself and are already filed as seven briefs. Sna
 | 10 | `kicad/gen/root.py` regeneration | New instance UUIDs break board parity | 261028-141934-60618887e0 |
 | 11 | KiCadRoutingTools | It wasn't in `/hive/tools`; it is now, and the skill still has to find it | 261028-141924-4dae199a93 |
 | 12 | `report_gen.py`, board guide | They need the pdf-material-builder house style, which isn't here, so this report was built with pandoc and lualatex instead | 261028-141935-42bdc24230 |
-| 13 | `bom_cpl.py` assembly class | J1 (THT) is classed `smt_placed` and placed in the CPL | 261028-144247-0a37b2952e |
+| 13 | `bom_cpl.py` assembly class | J1 (THT) is classed `smt_placed` and placed in the CPL (fixed: a `through_hole` footprint is now class `tht`) | 261028-144247-0a37b2952e |
 | 14 | `kicad/gen` schematic generator | Net labels sit on pin numbers, and the circuit is tiny in one corner of an A4 sheet | 261028-144249-63ddfa029b |
 | 15 | `lib_pull.py` | Parts that already exist get no 3D models, so the README's "re-pull with lib_pull" fetches none, and `--overwrite` would undo the hand-widened courtyards | 261028-144250-cf7085cecf |
 | 16 | `report_gen.py` file names | It looks for `verify_all.json`, `fab_export.json` and `bom_cpl.json`, but the run saved `verify-summary.json`, `fab-export.json` and `bom-cpl.json` | 261028-144253-daf2ceb304 |

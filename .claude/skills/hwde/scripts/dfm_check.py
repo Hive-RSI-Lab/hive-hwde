@@ -53,8 +53,8 @@ Checks (all thresholds from reference/jlc_capabilities.yaml, keyed
            never the files being audited - a package that dropped a layer must
            read as incomplete, not as a smaller board), drill validity,
            closed Edge.Cuts outline, and the ASSEMBLY-CLASS legs: an
-           `smt_placed` part with no LCSC number, a part classed `smt_placed`
-           with no placement, a declared populate quantity the classes
+           `smt_placed`/`tht` part with no LCSC number, a part classed
+           `smt_placed`/`tht` with no placement, a declared populate quantity the classes
            contradict, and a shipped BOM/CPL that lists a part the declared
            variant does not place (codex C9 - rf-de-20m's nine DNP sites)
 
@@ -802,7 +802,8 @@ def check_release(fab, expected_cu: list[str], vios: list,
                 refs = [item] if isinstance(item, str) else item.get("refs", [])
                 vios.append(checklib.violation(
                     CHECK, "error", None, None, None, sorted(refs),
-                    (f"{item} is classed smt_placed but has no placement"
+                    (f"{item} is classed for assembly (smt_placed/tht) "
+                     f"but has no placement"
                      if kind == "unplaced_smt" else
                      f"{item.get('lcsc') or item.get('mpn')}: parts.json "
                      f"declares {item.get('declared_populated')} populated, "
