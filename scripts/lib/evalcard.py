@@ -45,7 +45,7 @@ import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[4]
+REPO = HERE.parents[1]
 REMEDIATIONS = HERE.parents[1] / "reference" / "remediations"
 SCORECARD_HISTORY = REPO / "docs" / "check-scorecard.jsonl"
 

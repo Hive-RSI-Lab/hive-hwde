@@ -43,4 +43,4 @@ and the P8 `verify` gate (check_mating).
 ## Sources
 - Owner, #ai-ee 2026-10-02: PCB-0021-A J4 and PCB-0018-A J701/J702 shipped
   with their mouths into the board; LEARNINGS 2026-10-02 [placement][connector].
-- .claude/skills/hwde/scripts/lib/matinglib.py - rules and geometry
+- scripts/lib/matinglib.py - rules and geometry

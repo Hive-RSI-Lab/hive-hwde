@@ -52,10 +52,10 @@ KiCad DRC found silk printed into a pad's mask aperture ("Silkscreen clipped by 
 
 ## Verify
 ```
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\place_edit.py --pcb boards\<b>\kicad\<b>.kicad_pcb --ops ops.json --out-report work\silk\edit.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\kc.py drc boards\<b>\kicad\<b>.kicad_pcb --parity --all-track-errors --out work\silk\drc.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\gate.py --gate drc_routed boards\<b>\kicad\<b>.kicad_pcb --out work\silk\gate.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\render.py boards\<b>\kicad\<b>.kicad_pcb --views top --out-dir work\silk
+bin/hwde place_edit --pcb boards/<b>/kicad/<b>.kicad_pcb --ops ops.json --out-report work/silk/edit.json
+bin/hwde kc drc boards/<b>/kicad/<b>.kicad_pcb --parity --all-track-errors --out work/silk/drc.json
+bin/hwde gate --gate drc_routed boards/<b>/kicad/<b>.kicad_pcb --out work/silk/gate.json
+bin/hwde render boards/<b>/kicad/<b>.kicad_pcb --views top --out-dir work/silk
 ```
 Read the render back. Iterate in a scratch copy of pcb+pro+dru+sch - reproduces `drc_routed` exactly at
 ~3.4 s/run, zero risk to the live board (LEARNINGS 1838).

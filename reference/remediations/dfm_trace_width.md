@@ -33,10 +33,10 @@ A conductor on an exported copper gerber is narrower than the fab profile's
 ## Verify
 
 ```
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\route_edit.py --pcb <ws>\kicad\<board>.kicad_pcb --ops <ws>\work\widen_ops.json --out-report <ws>\work\widen_report.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\gate.py --gate dfm <ws>\kicad\<board>.kicad_pcb --out <ws>\work\dfm_after.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\gate.py --gate drc_routed <ws>\kicad\<board>.kicad_pcb --out <ws>\work\drc_after.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\dfm_check.py --pcb <ws>\kicad\<board>.kicad_pcb --out <ws>\work\dfm_facts.json
+bin/hwde route_edit --pcb <ws>/kicad/<board>.kicad_pcb --ops <ws>/work/widen_ops.json --out-report <ws>/work/widen_report.json
+bin/hwde gate --gate dfm <ws>/kicad/<board>.kicad_pcb --out <ws>/work/dfm_after.json
+bin/hwde gate --gate drc_routed <ws>/kicad/<board>.kicad_pcb --out <ws>/work/drc_after.json
+bin/hwde dfm_check --pcb <ws>/kicad/<board>.kicad_pcb --out <ws>/work/dfm_facts.json
 ```
 
 Both gates must pass: widening copper is the classic way to trade a `dfm_trace_width` error for a
@@ -53,12 +53,12 @@ profile floor.
 - LEARNINGS 2026-07-28 [routing][kicad][drc] net-wide track_width floor unmeetable at a fine-pitch pad - pour it (line 782)
 - LEARNINGS 2026-07-28 [routing][rules_gen][freerouting] rules_gen flattens power nets to the widest netclass (line 798)
 - LEARNINGS 2026-07-24 [gerbonara][gerber][geometry] ArcPoly.outline drops curvature (line 478)
-- .claude/skills/hwde/scripts/dfm_check.py:125-139, :84-87, :547, :557
-- .claude/skills/hwde/scripts/lib/gerblib.py:121-151
-- .claude/skills/hwde/scripts/gate.py:74-87, :130-141
-- .claude/skills/hwde/scripts/kc.py:221-232
-- .claude/skills/hwde/scripts/route_edit.py:11-30, :52
-- .claude/skills/hwde/scripts/cluster_violations.py:61, :144-160
-- .claude/skills/hwde/scripts/fix_dispatch.py:46-61
-- .claude/skills/hwde/reference/gates.yaml:104-118
-- .claude/skills/hwde/reference/jlc_capabilities.yaml:34, :52, :70, :88, :106
+- scripts/dfm_check.py:125-139, :84-87, :547, :557
+- scripts/lib/gerblib.py:121-151
+- scripts/gate.py:74-87, :130-141
+- scripts/kc.py:221-232
+- scripts/route_edit.py:11-30, :52
+- scripts/cluster_violations.py:61, :144-160
+- scripts/fix_dispatch.py:46-61
+- reference/gates.yaml:104-118
+- reference/jlc_capabilities.yaml:34, :52, :70, :88, :106

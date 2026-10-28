@@ -70,7 +70,7 @@ import env  # noqa: E402
 import verify_all  # noqa: E402
 
 SCRIPT = "score_checks"
-REPO = HERE.parents[3]
+REPO = HERE.parent
 GOLDEN = REPO / "tests" / "golden"
 TRIAGE = GOLDEN / "scorecard" / "triage.yaml"
 HISTORY = REPO / "docs" / "check-scorecard.jsonl"

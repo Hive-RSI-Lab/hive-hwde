@@ -56,9 +56,9 @@ vertex with same-net copper (track end, via, pad, or same-net fill).
 
 ## Verify
 ```
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\route_edit.py --pcb boards\<ws>\kicad\<board>.kicad_pcb --ops work\fix\ops.json --out-report work\fix\edit.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\kc.py drc boards\<ws>\kicad\<board>.kicad_pcb --parity --all-track-errors --refill --save-board --out work\fix\drc.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\gate.py --gate drc_routed boards\<ws>\kicad\<board>.kicad_pcb
+bin/hwde route_edit --pcb boards/<ws>/kicad/<board>.kicad_pcb --ops work/fix/ops.json --out-report work/fix/edit.json
+bin/hwde kc drc boards/<ws>/kicad/<board>.kicad_pcb --parity --all-track-errors --refill --save-board --out work/fix/drc.json
+bin/hwde gate --gate drc_routed boards/<ws>/kicad/<board>.kicad_pcb
 ```
 
 ## Sources
@@ -66,5 +66,5 @@ vertex with same-net copper (track end, via, pad, or same-net fill).
 - LEARNINGS 2026-07-23 [placement][routing] KRT leaves sub-grid crumbs (line 467); [stitch][geometry] single-layer-bond vias dangle (line 453)
 - LEARNINGS 2026-07-29 [route_edit][kicad] adds BEFORE removes (line 1553); [routing][gates] refill KRT output before DRC (line 1445)
 - PROGRESS.md:101 - V13 route_cleanup loop-breaker demoted to dry-run cherry-pick
-- .claude/skills/hwde/reference/gates.yaml:60 - drc_routed err+warn, max_count 0
-- .claude/skills/hwde/scripts/fix_dispatch.py:46-62 - router domain script list
+- reference/gates.yaml:60 - drc_routed err+warn, max_count 0
+- scripts/fix_dispatch.py:46-62 - router domain script list

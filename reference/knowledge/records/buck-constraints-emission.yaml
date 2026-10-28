@@ -18,7 +18,7 @@ prose: >
   (4) a blocks entry ({topology: buck}) so knowledge retrieval keys on it.
 sources:
   - {file: boards/usb-buck/research/power.md, section: s7-9 (emitted constraints)}
-  - {file: .claude/skills/hwde/reference/constraints_schema.md, section: power / thermal / blocks}
+  - {file: reference/constraints_schema.md, section: power / thermal / blocks}
 status: active
 origin: migration:topologies/buck (T6 2026-08-06, three shipped runs)
 

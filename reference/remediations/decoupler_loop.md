@@ -49,9 +49,9 @@ trace (rail Manhattan distance + ground leg) + 1 nH per via, judged per cap valu
 
 ## Verify
 ```
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\check_decoupling.py --pcb <ws>\kicad\<board>.kicad_pcb --metadata <ws>\kicad\decoupling.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\gate.py --gate drc_routed <ws>\kicad\<board>.kicad_pcb
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\gate.py --gate verify <ws>\kicad\<board>.kicad_pcb
+bin/hwde check_decoupling --pcb <ws>/kicad/<board>.kicad_pcb --metadata <ws>/kicad/decoupling.json
+bin/hwde gate --gate drc_routed <ws>/kicad/<board>.kicad_pcb
+bin/hwde gate --gate verify <ws>/kicad/<board>.kicad_pcb
 ```
 
 ## Sources

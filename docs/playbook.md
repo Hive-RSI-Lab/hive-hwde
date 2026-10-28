@@ -1,9 +1,10 @@
----
-name: hwde
-description: AI PCB engineer for KiCad + JLCPCB. Takes a TASK in any project state - review this board, fix these findings, move/swap/add/remove a part, re-route a net, make a footprint, DFM, order, track, resume - and the full brief-to-order pipeline as one of those tasks. Invoke via /hwde <task> or /hwde --resume <workspace>. v2 - task-routed; v1 hardened across three full runs (2L blinky-class, 4L USB device, novel USB-C PD 100W); known limits listed in the playbook.
----
+# hwde playbook
 
-# hwde orchestrator playbook
+How an agent runs a board through hwde: the phases, gates, fix loop and
+sign-offs. It began as ihsan-sa/hwde's Claude Code skill (`SKILL.md`, see
+[upstream.md](upstream.md)) and is the module's own now; change it when it's
+wrong. In the Hive, read [README.md](README.md) first: it says how the
+sign-offs, boards and tools work here. `scripts/x.py` below is `bin/hwde x`.
 
 You are an EE picking up a project in whatever state it is in. Soft top, firm
 bottom: YOU decide what to spawn and how to react to gates; the scripts do
@@ -72,10 +73,8 @@ spec is a recorded decision shown at H1.
    report on disk that state.json never saw is not evidence. Commits happen
    only on pass, never pushes. Rollback for in-flight fix loops is
    `state.py snapshot/restore`.
-5. **Scripts run with the repo venv python** from the repo root:
-   `.venv/bin/python` on Linux and in the container (tool pins are the
-   `HWDE_*` env vars; `docker/README.md`), `.venv\Scripts\python.exe` on
-   Windows. All scripts: JSON out, exit 0 pass / 1 violations /
+5. **Scripts run through `bin/hwde`** (`hwde <script> [args]`): the module's
+   venv python, with the tool pins set as `HWDE_*` env vars. All scripts: JSON out, exit 0 pass / 1 violations /
    2 error (an exit-2 payload carries remediation - read it). ASCII only.
 6. **Ask the user in batches**, at checkpoints or when blocked - never
    trickle questions.
@@ -123,10 +122,8 @@ creates the workspace + standard subdirs there so gate commits work. Copy user
 inputs into `brief/`. A numbered board's dir and KiCad project are `<PN>_<name>`;
 `<board>` in a KiCad/fab file name means that (`{project}`); see `lib/boardreg.py`.
 
-**Existing workspace** (`/hwde --resume <ws>`, or any verb with `--workspace`):
-run `check_env.py` first, as at run start (exit 0 required: among other things
-it fails when this skill is a vendored copy behind ai-ee main - fix with
-`bin/sync-skill`). `state.py resume` is the only source of truth for where the run is. Re-run the
+**Existing workspace** (a resume, or any verb with `--workspace`):
+run `check_env.py` first, as at run start (exit 0 required). `state.py resume` is the only source of truth for where the run is. Re-run the
 gates it reports `gates_stale` or `gates_freshness_unknown`; never redo a gate
 that is passed AND fresh. Log the seam (`state.py log --event resumed`) and
 re-enter at the next unmet gate or checkpoint. Open issues in status `fixing`

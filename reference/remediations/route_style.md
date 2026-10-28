@@ -58,14 +58,14 @@ straight and 45-degree traces, no needless arcs (owner, from the g0-sense render
 
 ## Verify
 ```
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\route_edit.py --pcb boards\<ws>\kicad\<board>.kicad_pcb --ops work\fix\ops.json --out-report work\fix\edit.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\check_route_style.py --pcb boards\<ws>\kicad\<board>.kicad_pcb --out work\fix\style.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\kc.py drc boards\<ws>\kicad\<board>.kicad_pcb --parity --all-track-errors --refill --out work\fix\drc.json
+bin/hwde route_edit --pcb boards/<ws>/kicad/<board>.kicad_pcb --ops work/fix/ops.json --out-report work/fix/edit.json
+bin/hwde check_route_style --pcb boards/<ws>/kicad/<board>.kicad_pcb --out work/fix/style.json
+bin/hwde kc drc boards/<ws>/kicad/<board>.kicad_pcb --parity --all-track-errors --refill --out work/fix/drc.json
 ```
 
 ## Sources
 - Owner routing preference from the g0-sense render: straight and 45-degree traces, no
   needless arcs (docs/competitive-research.md, backlog item 9)
-- .claude/skills/hwde/scripts/check_route_style.py - thresholds and the score
-- .claude/skills/hwde/reference/remediations/track_dangling.md - route_edit adds before
+- scripts/check_route_style.py - thresholds and the score
+- reference/remediations/track_dangling.md - route_edit adds before
   it removes

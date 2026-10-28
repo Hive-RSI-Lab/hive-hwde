@@ -66,7 +66,7 @@ import knowledgelib
 LIB = Path(__file__).resolve().parent
 SCRIPTS = LIB.parent
 SKILL = SCRIPTS.parent
-REPO = SKILL.parents[2]
+REPO = SKILL
 DOMAINS_PATH = SKILL / "reference" / "knowledge" / "domains.yaml"
 
 TIERS = ("vendor-layout", "vendor-appnote", "cross-vendor", "forum")

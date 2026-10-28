@@ -74,7 +74,7 @@ library wins on an id clash) so a researched class reads provisional, not
 gap, until the owner approves the promoted copy.
 
 Sources PDFs live under reference/knowledge/sources/. Retrieval consumers:
-scripts/knowledge.py (CLI), the orchestrator spawn step (SKILL.md), and
+scripts/knowledge.py (CLI), the orchestrator spawn step (docs/playbook.md), and
 datasheet_extract.py --app-note (record-shaped extraction template).
 
 Matching is normalized: topology/interface tokens casefold; package and part
@@ -94,7 +94,7 @@ import yaml
 LIB = Path(__file__).resolve().parent
 SCRIPTS = LIB.parent
 SKILL = SCRIPTS.parent
-REPO = SKILL.parents[2]
+REPO = SKILL
 RECORDS_DIR = SKILL / "reference" / "knowledge" / "records"
 # The source PDFs are the manufacturers' (NOTICE), so a copy of the skill that
 # doesn't carry them (the Hive's hwde module) points here at where they are.

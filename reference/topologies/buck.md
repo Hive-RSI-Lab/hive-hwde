@@ -58,7 +58,7 @@ What a buck block must emit into constraints.json for the pipeline: (1) power en
 
 Rule: thermal_entry_above_w=0.5
 
-Sources: boards/usb-buck/research/power.md s7-9 (emitted constraints); .claude/skills/hwde/reference/constraints_schema.md power / thermal / blocks
+Sources: boards/usb-buck/research/power.md s7-9 (emitted constraints); reference/constraints_schema.md power / thermal / blocks
 
 ## buck-constraints-emission-layout-groups [constraints-emission] (principle/approved)
 

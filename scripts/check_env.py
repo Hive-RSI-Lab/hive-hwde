@@ -7,17 +7,14 @@ exit 0 = environment OK (warnings allowed), 1 = one or more checks failed,
 machine-parseable.
 
 Run it with the repo venv interpreter - package checks inspect the running
-interpreter:  .venv/Scripts/python .claude/skills/hwde/scripts/check_env.py
+interpreter:  bin/hwde check (the module's runner)
 
 Fast mode (default) checks presence/versions only. --full adds live probes:
 SWIG pcbnew roundtrip via KiCad's bundled python (needed for Specctra DSN/SES
 and KiCad-9 zone refill) and an IPC headless-connect attempt (kipy). Both
 modes run the impedance field solver (lib/impedance.py, pure numpy + scipy -
 nothing to install beyond the venv) on Cohn's exact stripline and fail if it
-is off by 1% or more. Both modes also fail when this skill is a vendored
-copy (a boards repo's) behind ai-ee main and the ai-ee repo is on this
-machine (HWDE_SOURCE_REPO, else ~/dev/ai-ee) - fix: bin/sync-skill; no source
-repo found means no check. Probe
+is off by 1% or more. Probe
 failures are recorded as warnings with the working fallback named, because
 each has a sanctioned alternative path in SPEC.md.
 """
@@ -411,76 +408,6 @@ def check_git() -> dict:
                  "Install git: https://git-scm.com/download/win")
 
 
-SKILL_REL = ".claude/skills/hwde"  # the skill's path in ai-ee and in a vendoring repo
-SYNC_HELP = ("Run bin/sync-skill in the repo that vendors this copy (it pulls "
-             "the skill level with hwde main and commits it), then start the run again.")
-
-
-def _git(repo: Path, *args: str) -> str | None:
-    """stdout of one git command in repo, or None when git or the repo fails."""
-    try:
-        r = subprocess.run(["git", "-C", str(repo), *args], capture_output=True,
-                           text=True, timeout=60)
-    except (OSError, subprocess.TimeoutExpired):
-        return None
-    return r.stdout.strip() if r.returncode == 0 else None
-
-
-def check_skill_copy(skill_dir: Path | None = None,
-                     source: Path | None = None) -> dict | None:
-    """A board repo vendors this skill (boards: bin/sync-skill); a run from a
-    copy behind ai-ee main misses whatever landed since (PCB-0018 routed 57 min
-    without main's HV net classes). Fail when this copy is vendored and the
-    ai-ee source repo is on this machine (HWDE_SOURCE_REPO, else ~/dev/ai-ee)
-    and its main has skill commits the copy lacks. None - no check at all -
-    when the copy is ai-ee itself or the source cannot be found (container,
-    tests). The comparison is local: it reads the source's origin/main (else
-    main) as last fetched, and the copy's committed tree, like sync-skill."""
-    import os
-    skill_dir = (skill_dir or Path(__file__).resolve().parents[1]).resolve()
-    if source is None:
-        source = Path(os.environ.get("HWDE_SOURCE_REPO")
-                      or Path.home() / "dev" / "ai-ee")
-    src_common = _git(source, "rev-parse", "--path-format=absolute",
-                      "--git-common-dir")
-    here_common = _git(skill_dir, "rev-parse", "--path-format=absolute",
-                       "--git-common-dir")
-    if not src_common or not here_common:
-        return None  # no source repo here, or this copy is not in git
-    if Path(src_common).resolve() == Path(here_common).resolve():
-        return None  # running from ai-ee itself or one of its worktrees
-    here_tree = _git(skill_dir, "rev-parse", "HEAD:./")
-    ref = next((r for r in ("origin/main", "main")
-                if _git(source, "rev-parse", "-q", "--verify", r + "^{commit}")), None)
-    if not here_tree or not ref:
-        return None
-    # Skill commits on the source ref, newest first; the copy is N behind when
-    # the newest commit whose skill tree equals the copy's is N-th in that list.
-    log = _git(source, "log", "--format=%H", ref, "--", SKILL_REL)
-    commits = log.split() if log else []
-    trees = (_git(source, "rev-parse", *(f"{c}:{SKILL_REL}" for c in commits)) or ""
-             ).split() if commits else []
-    tip8 = (_git(source, "rev-parse", "--short=8", ref) or ref)
-    name = "skill-copy-current"
-    if len(trees) != len(commits) or not commits:
-        return check(name, False, f"cannot read {SKILL_REL} history in {source}",
-                     SYNC_HELP, warn=True)
-    if here_tree not in trees:
-        return check(name, False,
-                     f"skill copy at {skill_dir} matches no {ref} commit of "
-                     f"{source} (edited in place, or ahead of {ref} {tip8})",
-                     SYNC_HELP + " Check first with bin/sync-skill --check.",
-                     warn=True)
-    behind = trees.index(here_tree)
-    if behind == 0:
-        return check(name, True, f"skill copy is level with ai-ee {ref} {tip8}")
-    return check(name, False,
-                 f"skill copy at {skill_dir} is {behind} commit"
-                 f"{'s' if behind != 1 else ''} behind ai-ee {ref} {tip8} "
-                 f"({source}); a run from it misses what landed since",
-                 SYNC_HELP)
-
-
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):  # cp1252 console guard
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -508,9 +435,6 @@ def main(argv: list[str] | None = None) -> int:
         checks.append(check_impedance_solver())
         if args.full:
             checks.append(probe_ipc())
-        copy = check_skill_copy()
-        if copy is not None:
-            checks.append(copy)
     except Exception:
         print(json.dumps({"script": "check_env", "status": "error",
                           "error": traceback.format_exc()}))

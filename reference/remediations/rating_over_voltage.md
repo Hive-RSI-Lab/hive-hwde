@@ -45,8 +45,8 @@ After P5 any added part is board surgery - see reference/recipes/add-part.md.
 
 ## Verify
 ```
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\check_ratings.py --pcb <ws>\kicad\<board>.kicad_pcb --constraints <ws>\kicad\constraints.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\gate.py --gate verify <ws>\kicad\<board>.kicad_pcb
+bin/hwde check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --constraints <ws>/kicad/constraints.json
+bin/hwde gate --gate verify <ws>/kicad/<board>.kicad_pcb
 ```
 
 ## Sources

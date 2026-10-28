@@ -55,9 +55,8 @@ leaves the single connected reference-net copper component on the adjacent layer
 
 ## Verify
 ```
-cd C:\dev\ai-ee3
-.venv\Scripts\python .claude\skills\hwde\scripts\check_return_path.py --pcb <ws>\<board>.kicad_pcb --constraints <ws>\constraints.json --verify-fill --out <ws>\reports\return_path.json
-.venv\Scripts\python .claude\skills\hwde\scripts\gate.py --gate verify <ws>\<board>.kicad_pcb
+bin/hwde check_return_path --pcb <ws>/<board>.kicad_pcb --constraints <ws>/constraints.json --verify-fill --out <ws>/reports/return_path.json
+bin/hwde gate --gate verify <ws>/<board>.kicad_pcb
 ```
 exit 0 = pass, 1 = ANY violation incl. warning-only (checklib.py:80), 2 = error (stale fill lands here).
 

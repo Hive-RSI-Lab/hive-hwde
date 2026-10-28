@@ -32,7 +32,7 @@ a reversed polarised part, or a negative rail routed to a single-supply part.
 
 ## Verify
 ```
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\check_ratings.py --pcb <ws>\kicad\<board>.kicad_pcb --constraints <ws>\kicad\constraints.json
+bin/hwde check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --constraints <ws>/kicad/constraints.json
 ```
 
 ## Sources

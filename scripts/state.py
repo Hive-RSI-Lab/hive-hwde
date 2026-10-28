@@ -84,7 +84,7 @@ the normal flow never sees the refusal; `--force` is the escape hatch and logs
 CLI `log` event names are machine keys: ^[a-z][a-z0-9_-]{0,31}$ (XC-8: a live
 run stored paragraphs as event names; prose belongs in --data {"msg": ...}).
 `log --event spawn --data {...}` additionally appends the data to the
-first-class `spawns` ledger (the SKILL.md step-5 form keeps working).
+first-class `spawns` ledger (the docs/playbook.md step-5 form keeps working).
 
 Writes are atomic (unique temp + fsync + os.replace, same directory; U12
 safelib). Writer safety (U12, codex C5/C6): every CLI mutation holds the

@@ -52,10 +52,10 @@ neighbour's label or body outline. Warning severity: never fails P6 `drc`, alway
 
 ## Verify
 ```
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\place_edit.py --pcb boards\<ws>\kicad\<board>.kicad_pcb --ops work\silk\ops.json --out-report work\silk\apply.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\kc.py drc boards\<ws>\kicad\<board>.kicad_pcb --out work\silk\drc.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\gate.py --gate drc_routed boards\<ws>\kicad\<board>.kicad_pcb --out work\silk\gate.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\render.py boards\<ws>\kicad\<board>.kicad_pcb --views top --out-dir work\silk
+bin/hwde place_edit --pcb boards/<ws>/kicad/<board>.kicad_pcb --ops work/silk/ops.json --out-report work/silk/apply.json
+bin/hwde kc drc boards/<ws>/kicad/<board>.kicad_pcb --out work/silk/drc.json
+bin/hwde gate --gate drc_routed boards/<ws>/kicad/<board>.kicad_pcb --out work/silk/gate.json
+bin/hwde render boards/<ws>/kicad/<board>.kicad_pcb --views top --out-dir work/silk
 ```
 Read the render back: a DRC-clean label nearer a neighbour than its own part is still wrong, and
 nothing in the pipeline catches that (LEARNINGS 1958).
@@ -66,5 +66,5 @@ nothing in the pipeline catches that (LEARNINGS 1958).
 - LEARNINGS 2026-07-30 [place_edit][placement][silk] moving a footprint on a ROUTED board (1750)
 - LEARNINGS 2026-07-29 [silk][place_edit][kicad] GetTextBox 1.70 vs inked 1.16 mm (1821);
   [parts][silk] blanket (0,-4.0) refdes offsets (1958); refdes must clear OWN silk (1986)
-- .claude/skills/hwde/scripts/board_init.py:225-233, lib/place_swig.py:19-23, check_silk.py:1-11
+- scripts/board_init.py:225-233, lib/place_swig.py:19-23, check_silk.py:1-11
 - boards repo: lumina-carrier/work/p8/silk/probe_geom script, lines 1-40

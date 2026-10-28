@@ -11,7 +11,7 @@ it can:
      where the LLM classifies, and it lands back here as `--verb <name>`, so
      the recipe machinery is the same on both paths.
   3. A verb whose required arguments are missing -> exit 1 with `needs`, each
-     carrying the question to ask. One batch, per SKILL.md rule 6.
+     carrying the question to ask. One batch, per docs/playbook.md rule 6.
 
 The plan is data, never prose: every step is a concrete command (bound to the
 workspace's real paths through statelib.kind_path), a gate name, an agent role,

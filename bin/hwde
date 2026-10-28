@@ -1,16 +1,16 @@
 #!/bin/sh
 # hwde inside the Hive: finds the Hive's KiCad, freerouting and Java, keeps
-# the skill's Python venv in the agent's own HOME, and runs the skill's
-# scripts with the HWDE_* pins set (skill/scripts/lib/env.py reads them).
+# the module's Python venv in the agent's own HOME, and runs its scripts
+# with the HWDE_* pins set (scripts/lib/env.py reads them).
 #
 #   hwde env              print the exports (eval "$(hwde env)")
-#   hwde check            the skill's check_env: every tool the pipeline needs
+#   hwde check            check_env: every tool the pipeline needs
 #   hwde check-all        re-run every board's gates from a scratch copy, and
 #                         check docs/workarounds.md against its probes (the test)
 #   hwde score            the share of gate steps with no workaround (the score)
-#   hwde <script> [args]  run skill/scripts/<script>.py with the venv python
+#   hwde <script> [args]  run scripts/<script>.py with the venv python
 #
-# A shim here that works around a defect in the skill runs only while its id
+# A shim here that works around a defect in the scripts runs only while its id
 # is listed in docs/workarounds.md (wa <id>): delisting it turns it off.
 #
 # Nothing here installs anything outside HOME: KiCad and freerouting are the
@@ -84,8 +84,8 @@ if [ ! -x "$venv/bin/python" ] || [ "$here/requirements.lock" -nt "$venv/.hwde-l
 fi
 
 # KiCad 10 ships its stock symbols as one-file-per-symbol .kicad_symdir
-# folders, which kicad-sch-api (the skill's schematic writer) can't read; it
-# gets flat copies of the libraries the skill places by lib_id (power, Device).
+# folders, which kicad-sch-api (the schematic writer) can't read; it
+# gets flat copies of the libraries the scripts place by lib_id (power, Device).
 if wa symdir && [ -n "$appdir" ] && [ -z "${KICAD_SYMBOL_DIR:-}" ] && [ -d "$appdir/share/kicad/symbols/power.kicad_symdir" ]; then
 	syms=$state/symbols-$(basename "$appdir")
 	[ -f "$syms/power.kicad_sym" ] || "$venv/bin/python" "$here/bin/flatten-symdirs.py" "$appdir/share/kicad/symbols" "$syms"
@@ -112,7 +112,8 @@ env)
 		eval "val=\${$v:-}"
 		[ -n "$val" ] && printf "export %s='%s'\n" "$v" "$val"
 	done
-	printf "export HWDE_SKILL='%s'\nexport HWDE_PY='%s'\n" "$here/.claude/skills/hwde" "$venv/bin/python"
+	# HWDE_SKILL is HWDE_MODULE's old name, which boards written before the move still read.
+	printf "export HWDE_MODULE='%s'\nexport HWDE_SKILL='%s'\nexport HWDE_PY='%s'\n" "$here" "$here" "$venv/bin/python"
 	;;
 check-all)
 	shift
@@ -121,7 +122,7 @@ check-all)
 	;;
 check)
 	shift
-	x "$venv/bin/python" "$here/.claude/skills/hwde/scripts/check_env.py" "$@"
+	x "$venv/bin/python" "$here/scripts/check_env.py" "$@"
 	;;
 "" | -h | --help)
 	sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'
@@ -129,6 +130,6 @@ check)
 *)
 	s=$1
 	shift
-	x "$venv/bin/python" "$here/.claude/skills/hwde/scripts/${s%.py}.py" "$@"
+	x "$venv/bin/python" "$here/scripts/${s%.py}.py" "$@"
 	;;
 esac

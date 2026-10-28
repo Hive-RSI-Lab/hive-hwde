@@ -50,10 +50,9 @@ never per-branch.
 
 ## Verify
 ```
-cd C:\dev\ai-ee3
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\check_current.py --pcb boards\lumina-carrier\kicad\lumina-carrier.kicad_pcb --constraints boards\lumina-carrier\kicad\constraints.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\gate.py --gate drc_routed boards\lumina-carrier\kicad\lumina-carrier.kicad_pcb
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\gate.py --gate verify boards\lumina-carrier\kicad\lumina-carrier.kicad_pcb
+bin/hwde check_current --pcb boards/lumina-carrier/kicad/lumina-carrier.kicad_pcb --constraints boards/lumina-carrier/kicad/constraints.json
+bin/hwde gate --gate drc_routed boards/lumina-carrier/kicad/lumina-carrier.kicad_pcb
+bin/hwde gate --gate verify boards/lumina-carrier/kicad/lumina-carrier.kicad_pcb
 ```
 Compare `checked[].via_clusters` before/after - it must not increase. Run drc_routed as well: an added via can
 regress via_dangling / hole_to_hole, which the verify gate never looks at.

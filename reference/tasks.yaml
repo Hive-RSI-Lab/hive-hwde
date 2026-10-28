@@ -20,7 +20,7 @@
 #   gate:   <name from gates.yaml>        run it via gate.py; the router appends
 #           every remaining mapped gate after the last step, so a recipe only
 #           lists a gate when its ORDER inside the recipe matters.
-#   agent:  <role in agents/>             spawn it; `tier` is the SKILL.md
+#   agent:  <role in agents/>             spawn it; `tier` is the docs/playbook.md
 #           spawn tier for this role in this recipe.
 #   human:  <0-3>                         a hold; see invalidation.yaml weights.
 #   recipe: <verb>                        run that recipe here (composition).

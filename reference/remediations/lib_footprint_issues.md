@@ -53,10 +53,9 @@ the project DRC actually loaded. Says nothing about pad geometry.
 
 ## Verify
 ```
-cd C:\dev\ai-ee3
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\kc.py drc boards\<ws>\kicad\<ws>.kicad_pcb --parity --all-track-errors --out boards\<ws>\work\drc_libchk.json
+bin/hwde kc drc boards/<ws>/kicad/<ws>.kicad_pcb --parity --all-track-errors --out boards/<ws>/work/drc_libchk.json
 .venv\Scripts\python.exe -c "import json;d=json.load(open(r'boards\<ws>\work\drc_libchk.json'));print(sum(1 for v in d['violations'] if v['check']=='lib_footprint_issues'))"
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\gate.py --gate drc_routed boards\<ws>\kicad\<ws>.kicad_pcb
+bin/hwde gate --gate drc_routed boards/<ws>/kicad/<ws>.kicad_pcb
 ```
 
 ## Sources

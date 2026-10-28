@@ -32,7 +32,7 @@ sys.path.insert(0, str(HERE))
 import score  # noqa: E402  (one reader of boards/ and docs/workarounds.md)
 
 HWDE = os.environ.get("HWDE_BIN", str(HERE / "hwde"))
-SKILL = ROOT / ".claude" / "skills" / "hwde" / "scripts"
+SKILL = ROOT / "scripts"
 
 
 def run(cmd: list[str], cwd: Path, log: Path) -> int:

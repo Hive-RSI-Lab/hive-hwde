@@ -37,7 +37,7 @@ class BenchError(Exception):
 # ---------------------------------------------------------------- manifest
 
 def repo_root() -> Path:
-    return _LIB.parents[4]
+    return _LIB.parents[1]
 
 
 def default_manifest() -> Path:

@@ -99,8 +99,8 @@ def repo_root() -> Path:
     for parent in p.parents:
         if (parent / "SPEC.md").exists() or (parent / ".git").exists():
             return parent
-    # Fallback: fixed relative position .claude/skills/hwde/scripts/lib/env.py
-    return p.parents[5]
+    # Fallback: fixed relative position scripts/lib/env.py
+    return p.parents[2]
 
 
 def boards_root() -> Path:

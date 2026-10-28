@@ -53,10 +53,10 @@ the router mills through it, leaving a half-glyph or a smeared outline.
 
 ## Verify
 ```
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\place_edit.py --pcb boards\<name>\kicad\<name>.kicad_pcb --ops work\silk_ops.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\kc.py drc boards\<name>\kicad\<name>.kicad_pcb --parity --all-track-errors --out work\drc_after.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\gate.py --gate drc_routed boards\<name>\kicad\<name>.kicad_pcb
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\render.py boards\<name>\kicad\<name>.kicad_pcb --views top --out-dir work\silk_render
+bin/hwde place_edit --pcb boards/<name>/kicad/<name>.kicad_pcb --ops work/silk_ops.json
+bin/hwde kc drc boards/<name>/kicad/<name>.kicad_pcb --parity --all-track-errors --out work/drc_after.json
+bin/hwde gate --gate drc_routed boards/<name>/kicad/<name>.kicad_pcb
+bin/hwde render boards/<name>/kicad/<name>.kicad_pcb --views top --out-dir work/silk_render
 ```
 
 ## Sources

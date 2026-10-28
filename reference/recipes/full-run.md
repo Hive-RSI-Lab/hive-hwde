@@ -1,7 +1,7 @@
 # full-run - brief to order-ready package
 
 The whole pipeline is one recipe. Its steps are the phases; its gates are the
-gate table in SKILL.md; the fix loop, the checkpoint format and the spawn
+gate table in docs/playbook.md; the fix loop, the checkpoint format and the spawn
 template are shared with every other verb and stay there. Every gate step is
 ONE form - `gate.py --gate <g> <input> --workspace <ws> --out <report>` - run on
 every attempt, pass and fail: `--workspace` RECORDS the result, and `set-phase`

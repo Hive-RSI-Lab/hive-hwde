@@ -30,8 +30,8 @@ explicit form of "unknown": the check never passes a pin silently.
 
 ## Verify
 ```
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\datasheet_extract.py --validate <ws>\parts\<LCSC>.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\check_ratings.py --pcb <ws>\kicad\<board>.kicad_pcb --parts <ws>\parts
+bin/hwde datasheet_extract --validate <ws>/parts/<LCSC>.json
+bin/hwde check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --parts <ws>/parts
 ```
 
 ## Sources

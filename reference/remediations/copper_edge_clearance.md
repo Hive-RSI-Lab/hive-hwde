@@ -48,10 +48,9 @@ Two authorities emit this id and `msg` names which fired: the board-setup floor 
 
 ## Verify
 ```
-cd C:\dev\ai-ee3
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\route_edit.py --pcb boards\<ws>\kicad\<board>.kicad_pcb --ops work\fix-<id>.json --out-report work\fix-<id>-edit.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\kc.py drc boards\<ws>\kicad\<board>.kicad_pcb --refill --save-board --out work\drc_refill.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\gate.py --gate drc_routed boards\<ws>\kicad\<board>.kicad_pcb --out work\drc_after.json
+bin/hwde route_edit --pcb boards/<ws>/kicad/<board>.kicad_pcb --ops work/fix-<id>.json --out-report work/fix-<id>-edit.json
+bin/hwde kc drc boards/<ws>/kicad/<board>.kicad_pcb --refill --save-board --out work/drc_refill.json
+bin/hwde gate --gate drc_routed boards/<ws>/kicad/<board>.kicad_pcb --out work/drc_after.json
 ```
 
 ## Sources

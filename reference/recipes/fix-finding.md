@@ -1,7 +1,7 @@
 # fix-finding - close a violation through the standard loop
 
 The loop is the same for every gate: budget -> snapshot -> dispatch -> fixers ->
-declare the edit -> re-gate -> commit. It is in SKILL.md because every other
+declare the edit -> re-gate -> commit. It is in docs/playbook.md because every other
 recipe falls into it; this file is the part that changes per finding.
 
 ## The findings file

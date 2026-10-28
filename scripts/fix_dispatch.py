@@ -38,7 +38,7 @@ import cluster_violations  # noqa: E402
 from checklib import CheckError  # noqa: E402
 
 SCRIPT = "fix_dispatch"
-SKILL = SCRIPTS.parent  # .claude/skills/hwde
+SKILL = SCRIPTS.parent  # the module root
 
 # Per-domain script whitelists (SPEC 5 rule 2: the prompt lists the scripts the
 # agent may use, in order of preference) and the load-bearing guidance lines.
@@ -199,7 +199,7 @@ def erc_fallback(clusters: list[dict]) -> None:
 
 
 # XC-2 (T6): production dispatches were dominated by one-violation clusters -
-# pd-trigger P8 alone produced 10 single-violation orders, and SKILL.md says
+# pd-trigger P8 alone produced 10 single-violation orders, and docs/playbook.md says
 # "spawn one fixer per order" (= 10 fixer sessions for work one agent provably
 # did in one pass). Small same-domain clusters therefore batch into one order.
 MERGE_MAX_SRC = 2   # clusters at/below this size are merge candidates

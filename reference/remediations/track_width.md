@@ -55,9 +55,8 @@ check id - the board-setup floor (`.kicad_pro` `design_settings.rules.min_track_
 
 ## Verify
 ```
-cd C:\dev\ai-ee3
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\route_edit.py --pcb boards\<ws>\kicad\<board>.kicad_pcb --ops work\fix-<id>.json --out-report work\fix-<id>-edit.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\gate.py --gate drc_routed boards\<ws>\kicad\<board>.kicad_pcb --out work\drc_after.json
+bin/hwde route_edit --pcb boards/<ws>/kicad/<board>.kicad_pcb --ops work/fix-<id>.json --out-report work/fix-<id>-edit.json
+bin/hwde gate --gate drc_routed boards/<ws>/kicad/<board>.kicad_pcb --out work/drc_after.json
 grep -n "min_track_width" boards\<ws>\kicad\<board>.kicad_pro
 grep -n "aiee_track_width_floor" -A 3 boards\<ws>\kicad\<board>.kicad_dru
 ```
@@ -68,6 +67,6 @@ grep -n "aiee_track_width_floor" -A 3 boards\<ws>\kicad\<board>.kicad_dru
 - LEARNINGS 2026-07-28 [drc][kicad-cli] DRC outside the project dir changes the rules (line 754)
 - LEARNINGS 2026-07-28 [routing][kicad][drc] net-wide track_width floor UNMEETABLE - pour it (line 782)
 - LEARNINGS 2026-07-29 [board_init][rules_gen][dfm][gates] min_track_width 0.1 (1939); repeat 2026-07-30 (1808)
-- .claude/skills/hwde/scripts/rules_gen.py:104, :130, :294 - kc.py:90, :394
-- .claude/skills/hwde/scripts/route_edit.py:51 - cluster_violations.py:79 - fix_dispatch.py:46
-- .claude/skills/hwde/reference/gates.yaml:52,60 - boards/lumina-carrier/work/p7/drc_r1_new.json
+- scripts/rules_gen.py:104, :130, :294 - kc.py:90, :394
+- scripts/route_edit.py:51 - cluster_violations.py:79 - fix_dispatch.py:46
+- reference/gates.yaml:52,60 - boards/lumina-carrier/work/p7/drc_r1_new.json

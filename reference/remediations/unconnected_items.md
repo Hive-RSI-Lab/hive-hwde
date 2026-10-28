@@ -51,8 +51,8 @@ One violation per missing pad-to-pad link, so one net emits several (lumina-carr
 
 ## Verify
 ```
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\kc.py drc boards\<board>\kicad\<board>.kicad_pcb --refill --save-board --parity --all-track-errors --out boards\<board>\work\drc-after.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\gate.py --gate drc_routed boards\<board>\kicad\<board>.kicad_pcb
+bin/hwde kc drc boards/<board>/kicad/<board>.kicad_pcb --refill --save-board --parity --all-track-errors --out boards/<board>/work/drc-after.json
+bin/hwde gate --gate drc_routed boards/<board>/kicad/<board>.kicad_pcb
 ```
 
 ## Sources

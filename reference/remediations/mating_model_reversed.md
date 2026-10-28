@@ -50,5 +50,5 @@ gate and the P8 `verify` gate (check_mating).
 - Owner, 2026-10-06, on the PCB-0023-A highlights doc: "SMAs backwards. I
   thought we were doing checks for this kinda thing".
 - learnings.d/2026-10-06-edge-sma-named-like-a-vertical-one.md
-- .claude/skills/hwde/scripts/lib/matinglib.py - model_span_mm,
+- scripts/lib/matinglib.py - model_span_mm,
   model_reversed

@@ -15,7 +15,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SKILL = ROOT / ".claude" / "skills" / "hwde" / "scripts"
+SKILL = ROOT / "scripts"
 HWDE = os.environ.get("HWDE_BIN", str(ROOT / "bin" / "hwde"))
 
 

@@ -54,8 +54,8 @@ rework on the shipped batch).
 
 ## Verify
 ```
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\check_decoupling.py --pcb <ws>\kicad\<board>.kicad_pcb --metadata <ws>\kicad\decoupling.json
-.venv\Scripts\python.exe .claude\skills\hwde\scripts\gate.py --gate verify <ws>\kicad\<board>.kicad_pcb
+bin/hwde check_decoupling --pcb <ws>/kicad/<board>.kicad_pcb --metadata <ws>/kicad/decoupling.json
+bin/hwde gate --gate verify <ws>/kicad/<board>.kicad_pcb
 ```
 
 ## Sources

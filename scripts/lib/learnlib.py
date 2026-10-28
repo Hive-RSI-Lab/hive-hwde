@@ -42,7 +42,7 @@ import yaml
 
 SCRIPTS = Path(__file__).resolve().parents[1]
 SKILL = SCRIPTS.parent
-REPO = SKILL.parents[2]          # <repo>/.claude/skills/hwde -> <repo>
+REPO = SKILL                    # the module root is the repo root
 
 ROOT_LEARNINGS = REPO / "LEARNINGS.md"
 TRIAGE = REPO / "design" / "ladder-triage.md"
