@@ -265,9 +265,24 @@ def _krt_finish(cli: Path, staged: Path, work: Path, drc: dict, *,
         # one batched invocation - KRT only routes what is disconnected, and
         # per-net runs pay the full startup/parse cost ~40x on a fallback
         out = work / "krt_finish.kicad_pcb"
-        rc.run_krt(krt, "route.py", staged, out, ["--nets", *nets],
+        # a net with a .kicad_dru width floor (rules_gen's aiee_pwr_width_*)
+        # is routed at it: KRT knows only netclass widths, and on lite-main
+        # (hifi-receiver-2) it closed VBUS/PVDD taps at 0.2-0.3 mm against a
+        # 0.37 mm rule, three track_width errors the gate failed on
+        wide = {n: w for n, w in rc.dru_net_floors(
+            staged.with_suffix(".kicad_dru"), "track_width").items()
+            if n in nets and w > floors["track_width"] + 1e-6}
+        extra = ["--nets", *nets]
+        if wide:
+            extra += ["--power-nets", *sorted(wide), "--power-nets-widths",
+                      *[f"{wide[n]:g}" for n in sorted(wide)],
+                      "--no-power-tap-neckdown"]
+        rc.run_krt(krt, "route.py", staged, out, extra,
                    floors, fab, 0.05, timeout_s)
         os.replace(out, staged)
+        if wide:   # KRT can still leave base-width bits on those nets
+            rc.normalize_power_widths(staged, [
+                {"net": n, "ipc_min_mm": w} for n, w in wide.items()])
         # KRT can leave sub-grid crumbs (e.g. a 0.017 mm dangling stub) that
         # KiCad flags track_dangling but sit below route_cleanup's touch
         # tolerance. Removal is connectivity-safe: neighbouring round caps
