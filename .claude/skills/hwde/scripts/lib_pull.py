@@ -14,7 +14,8 @@ A raw pull is NOT fabricable as delivered, so two repairs run by default before
 the pull is reported (both idempotent, both text surgery):
   fpfix           silk artifacts on pad copper, outlines under the silk-to-copper
                   bar, plated locating pegs (zero annular ring), legend text
-                  hidden under the body      -> --no-autofix to skip
+                  hidden under the body, courtyards drawn inside their own pads
+                  (EasyEDA's 0603s)          -> --no-autofix to skip
   lib_refdes_norm every reference text sits at a blanket (0,-4.0) mm whatever the
                   part size                  -> --no-refdes-norm to skip
 Every footprint's (model ...) path is then rewritten from the absolute path
@@ -298,11 +299,12 @@ def _register_project(project: Path, nickname: str, sym_lib: Path | None,
 # ------------------------------------------------------------ post-pull hygiene
 
 def _autofix(pretty: Path, names: list[str], dry_run: bool) -> dict:
-    """Sanitise the footprints this pull produced (fpfix rules A-D).
+    """Sanitise the footprints this pull produced (fpfix rules A-E).
 
     Every pull ships the same library-inherent defects - silk artifacts on pad
     copper, outlines under the silk-to-copper bar, plated locating pegs with no
-    annular ring, legend text hidden under the body. They were repaired by hand
+    annular ring, legend text hidden under the body, a courtyard that is the
+    body outline and leaves the pads outside. They were repaired by hand
     on three shipped boards (boards/*/lib/EDITS.md) before this ran at pull time.
     """
     rep = fpfix.fix_lib(pretty, dry_run=dry_run, names=names)
