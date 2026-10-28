@@ -1,0 +1,11 @@
+{
+  "_comment": "Cap<->pin associations for blinky2 (S4 test fixture; S7's schematic generator emits this metadata for real designs). U1 = STM32F103C8 LQFP-48: VBAT=1, VDDA=9, VDD_1=24, VDD_2=36, VDD_3=48. C1 serves pin 48 (the decoupler-moved mutant target).",
+  "associations": [
+    {"cap": "C1", "ic": "U1", "pin": "48", "rail": "+3V3", "value": "100nF"},
+    {"cap": "C2", "ic": "U1", "pin": "24", "rail": "+3V3", "value": "100nF"},
+    {"cap": "C3", "ic": "U1", "pin": "36", "rail": "+3V3", "value": "100nF"},
+    {"cap": "C4", "ic": "U1", "pin": "9", "rail": "+3V3", "value": "100nF"},
+    {"cap": "C5", "ic": "U2", "pin": "2", "rail": "+3V3", "value": "10uF"},
+    {"cap": "C6", "ic": "U2", "pin": "3", "rail": "+5V", "value": "10uF"}
+  ]
+}

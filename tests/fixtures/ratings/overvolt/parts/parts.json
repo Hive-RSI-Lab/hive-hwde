@@ -1,0 +1,610 @@
+{
+ "parts": [
+  {
+   "ref_prefix_hint": "U",
+   "mpn": "STM32F103C8T6",
+   "lcsc": "C8734",
+   "value": "STM32F103C8T6",
+   "package": "LQFP-48(7x7)",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+85\u2103"
+    },
+    {
+     "name": "CPU Maximum Speed",
+     "value": "72MHz"
+    },
+    {
+     "name": "Program Memory Type",
+     "value": "FLASH"
+    },
+    {
+     "name": "Program Storage Size",
+     "value": "64KB"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "2V~3.6V"
+    },
+    {
+     "name": "Core Size",
+     "value": "32 Bit"
+    },
+    {
+     "name": "RAM Size",
+     "value": "20KB"
+    },
+    {
+     "name": "CPU Core",
+     "value": "ARM Cortex-M3"
+    },
+    {
+     "name": "Number of I/O",
+     "value": "37"
+    },
+    {
+     "name": "ADC (Bit)",
+     "value": "12bit"
+    },
+    {
+     "name": "Oscillator Type",
+     "value": "Built-in"
+    }
+   ],
+   "role": "U1 MCU, LQFP-48, 8MHz HSE, PC13 LED sink; the accepted Extended exception"
+  },
+  {
+   "ref_prefix_hint": "U",
+   "mpn": "AMS1117-3.3",
+   "lcsc": "C6186",
+   "value": "AMS1117-3.3",
+   "package": "SOT-223",
+   "attributes": [
+    {
+     "name": "Power Supply Rejection Ratio (PSRR)",
+     "value": "72dB@(120Hz)"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+125\u2103"
+    },
+    {
+     "name": "standby current",
+     "value": "5mA"
+    },
+    {
+     "name": "Noise",
+     "value": "0.003%Vout"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "15V"
+    },
+    {
+     "name": "Output Type",
+     "value": "Fixed"
+    },
+    {
+     "name": "Output Current",
+     "value": "1A"
+    },
+    {
+     "name": "Output Configuration",
+     "value": "Positive"
+    },
+    {
+     "name": "Features",
+     "value": "Over Current Protection\u3001Short Circuit Protection\u3001Thermal shutdown"
+    },
+    {
+     "name": "Output Voltage",
+     "value": "3.3V"
+    },
+    {
+     "name": "Voltage Dropout",
+     "value": "1.1V@(800mA)"
+    },
+    {
+     "name": "Number of Outputs",
+     "value": "1"
+    }
+   ],
+   "role": "U2 3.3V LDO, SOT-223 (tab=VOUT), ~55mA load"
+  },
+  {
+   "ref_prefix_hint": "D",
+   "mpn": "SS34",
+   "lcsc": "C8678",
+   "value": "SS34",
+   "package": "SMA(DO-214AC)",
+   "attributes": [
+    {
+     "name": "Voltage - Forward(Vf@If)",
+     "value": "550mV@3A"
+    },
+    {
+     "name": "Voltage - DC Reverse(Vr)",
+     "value": "40V"
+    },
+    {
+     "name": "Operating Junction Temperature Range",
+     "value": "-55\u2103~+125\u2103"
+    },
+    {
+     "name": "Diode Configuration",
+     "value": "Standalone"
+    },
+    {
+     "name": "Current - Rectified",
+     "value": "3A"
+    },
+    {
+     "name": "Reverse Leakage Current (Ir)",
+     "value": "500uA@40V"
+    }
+   ],
+   "role": "D1 series reverse-polarity Schottky on 5V input, SMA"
+  },
+  {
+   "ref_prefix_hint": "Y",
+   "mpn": "X49SM8MSD2SC",
+   "lcsc": "C12674",
+   "value": "8MHz 20pF",
+   "package": "HC-49S-SMD",
+   "attributes": [
+    {
+     "name": "Load Capacitance",
+     "value": "20pF"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-20\u2103~+70\u2103"
+    },
+    {
+     "name": "Type",
+     "value": "Crystal Oscillator"
+    },
+    {
+     "name": "Normal temperature Frequency Tolerance",
+     "value": "\u00b120ppm"
+    },
+    {
+     "name": "Frequency Stability",
+     "value": "\u00b130ppm"
+    },
+    {
+     "name": "Frequency",
+     "value": "8MHz"
+    }
+   ],
+   "role": "Y1 8MHz HSE crystal, HC-49S-SMD, CL=20pF (arch candidate code C32828 was wrong - it is an ADI vref; package unchanged)"
+  },
+  {
+   "ref_prefix_hint": "D",
+   "mpn": "NCD0805R1",
+   "lcsc": "C84256",
+   "value": "Red 0805",
+   "package": "0805",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-30\u2103~+85\u2103"
+    },
+    {
+     "name": "Wavelength - Dominant",
+     "value": "615nm~630nm"
+    },
+    {
+     "name": "Viewing Angle",
+     "value": "130\u00b0"
+    },
+    {
+     "name": "Forward Current",
+     "value": "25mA"
+    },
+    {
+     "name": "Luminous Intensity",
+     "value": "195mcd"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "65mW"
+    },
+    {
+     "name": "Diode Configuration",
+     "value": "Discrete Diode"
+    },
+    {
+     "name": "Illumination Color",
+     "value": "Red"
+    },
+    {
+     "name": "Peak Wavelength",
+     "value": "630nm"
+    },
+    {
+     "name": "Voltage - Forward(Vf)",
+     "value": "1.6V~2.6V"
+    }
+   ],
+   "role": "D2 user LED, PC13 active-low sink via R1"
+  },
+  {
+   "ref_prefix_hint": "R",
+   "mpn": "0603WAF1001T5E",
+   "lcsc": "C21190",
+   "value": "1k",
+   "package": "0603",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "1k\u03a9"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+155\u2103"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "100mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "75V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b11%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "\u00b1100ppm/\u2103"
+    }
+   ],
+   "role": "R1 1k LED series resistor (~1.3mA, respects PC13 3mA limit)"
+  },
+  {
+   "ref_prefix_hint": "R",
+   "mpn": "0603WAF1002T5E",
+   "lcsc": "C25804",
+   "value": "10k",
+   "package": "0603",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "10k\u03a9"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+155\u2103"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "100mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "75V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b11%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "\u00b1100ppm/\u2103"
+    }
+   ],
+   "role": "R2 10k BOOT0 pulldown (run from flash)"
+  },
+  {
+   "ref_prefix_hint": "C",
+   "mpn": "CC0603KRX7R9BB104",
+   "lcsc": "C14663",
+   "value": "100nF 50V X7R",
+   "package": "0603",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b110%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "100nF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X7R"
+    }
+   ],
+   "role": "100nF X7R decouplers: C1-C3 (U1 VDD pins 48/24/36) + C9 (NRST). Qty 4/board (was 5; VDDA became C4=1uF//C10=10nF per P8 review fix)."
+  },
+  {
+   "ref_prefix_hint": "C",
+   "mpn": "CL21A106KAYNNNE",
+   "lcsc": "C15850",
+   "value": "10uF 25V X5R",
+   "package": "0805",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "25V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b110%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "10uF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X5R"
+    }
+   ],
+   "role": "10uF X5R: C6 (LDO input) + C11 (U1 VDD_3 bulk). Qty 2/board."
+  },
+  {
+   "ref_prefix_hint": "C",
+   "mpn": "CL10C220JB8NNNC",
+   "lcsc": "C1653",
+   "value": "22pF 50V C0G",
+   "package": "0603",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b15%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "22pF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "C0G"
+    }
+   ],
+   "role": "C7/C8 crystal load caps (2/board)"
+  },
+  {
+   "ref_prefix_hint": "J",
+   "mpn": "HX PZ2.54-1x2P ZZ",
+   "lcsc": "C32713268",
+   "value": "1x2 2.54mm male THT",
+   "package": "Plugin,P=2.54mm",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+105\u2103"
+    },
+    {
+     "name": "Number of Rows",
+     "value": "1"
+    },
+    {
+     "name": "Voltage Rating (Max)",
+     "value": "1kV"
+    },
+    {
+     "name": "Insulation Height",
+     "value": "2.5mm"
+    },
+    {
+     "name": "Length of End Connection Pin",
+     "value": "3mm"
+    },
+    {
+     "name": "Color",
+     "value": "Black"
+    },
+    {
+     "name": "Current Rating",
+     "value": "3A"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Through Hole"
+    },
+    {
+     "name": "Contact Plating",
+     "value": "Gold"
+    },
+    {
+     "name": "Number of Pins",
+     "value": "2P"
+    },
+    {
+     "name": "Pitch",
+     "value": "2.54mm"
+    },
+    {
+     "name": "Contact Material",
+     "value": "Brass"
+    },
+    {
+     "name": "Pin Structure",
+     "value": "1x2P"
+    },
+    {
+     "name": "Length of Mating Pin",
+     "value": "6mm"
+    },
+    {
+     "name": "Circluar Pins/Square Pins",
+     "value": "Pin Header"
+    }
+   ],
+   "role": "J1 5V input header, pin1=+5V pin2=GND, vertical THT; hand-solder (economy PCBA is SMT-only)"
+  },
+  {
+   "ref_prefix_hint": "J",
+   "mpn": "HX PZ2.54-1x4P ZZ",
+   "lcsc": "C32713270",
+   "value": "1x4 2.54mm male THT",
+   "package": "Plugin,P=2.54mm",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+105\u2103"
+    },
+    {
+     "name": "Number of Rows",
+     "value": "1"
+    },
+    {
+     "name": "Voltage Rating (Max)",
+     "value": "1kV"
+    },
+    {
+     "name": "Insulation Height",
+     "value": "2.5mm"
+    },
+    {
+     "name": "Length of End Connection Pin",
+     "value": "3mm"
+    },
+    {
+     "name": "Color",
+     "value": "Black"
+    },
+    {
+     "name": "Current Rating",
+     "value": "3A"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Through Hole"
+    },
+    {
+     "name": "Contact Plating",
+     "value": "Gold"
+    },
+    {
+     "name": "Number of Pins",
+     "value": "4P"
+    },
+    {
+     "name": "Pitch",
+     "value": "2.54mm"
+    },
+    {
+     "name": "Contact Material",
+     "value": "Brass"
+    },
+    {
+     "name": "Pin Structure",
+     "value": "1x4P"
+    },
+    {
+     "name": "Length of Mating Pin",
+     "value": "6mm"
+    },
+    {
+     "name": "Circluar Pins/Square Pins",
+     "value": "Pin Header"
+    }
+   ],
+   "role": "J2 SWD header SWDIO/SWCLK/3V3/GND, vertical THT; hand-solder (economy PCBA is SMT-only)"
+  },
+  {
+   "ref_prefix_hint": "C",
+   "mpn": "TAJB226K016RNJ",
+   "lcsc": "C8020",
+   "value": "22uF 16V tantalum",
+   "package": "CASE-B-3528-21(mm)",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+125\u2103"
+    },
+    {
+     "name": "Equivalent Series Resistance(ESR)",
+     "value": "2.3\u03a9@100kHz"
+    },
+    {
+     "name": "Voltage Rating",
+     "value": "16V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b110%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "22uF"
+    }
+   ],
+   "role": "C5 AMS1117 output cap, CASE-B 3528, ESR 2.3R part of LDO compensation - do not substitute ceramic (no Basic tantalum exists; Extended)"
+  },
+  {
+   "ref_prefix_hint": "C",
+   "mpn": "CL10A105KB8NNNC",
+   "lcsc": "C15849",
+   "value": "1uF 50V X5R",
+   "package": "0603",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b110%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "1uF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X5R"
+    }
+   ],
+   "role": "VDDA 1uF decoupler per DS5319 (pairs with 10nF)"
+  },
+  {
+   "ref_prefix_hint": "C",
+   "mpn": "0603B103K500NT",
+   "lcsc": "C57112",
+   "value": "10nF 50V X7R",
+   "package": "0603",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b110%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "10nF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X7R"
+    }
+   ],
+   "role": "VDDA 10nF HF decoupler per DS5319 (pairs with 1uF)"
+  }
+ ]
+}

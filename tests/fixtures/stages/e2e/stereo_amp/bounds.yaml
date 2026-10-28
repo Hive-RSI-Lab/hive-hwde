@@ -1,0 +1,13 @@
+# HIDDEN: never shown to the agent that designs the board (reference/e2e-scoring.md)
+# Minimal bounds for the bare-vs-hwde stereo class-D comparison (PCB-0017-A's
+# brief, word for word). Net and part bounds only check names this brief
+# fixes; the cost target is a rough guess, not a priced reference.
+brief: e2e_stereo_amp
+nets:
+  - {id: vin, pattern: "(?i)^/?\\+?(12V|VIN|PVCC|VCC|PVDD|VDD|V12)"}
+  - {id: gnd, pattern: "(?i)^/?(P|A)?GND$"}
+parts:
+  - {id: amp, value_pattern: "(?i)TPA311[68]", min_count: 1}
+  - {id: out_inductors, value_pattern: "(?i)^10\\s*u\\s*H", min_count: 4}
+layout: {area_mm2_max: 1496, crossings_signal_max: 4, decap_worst_mm_max: 5}
+cost: {qty: 10, target_usd: 6.00}

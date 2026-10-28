@@ -1,0 +1,29 @@
+id: llc-resonant-tank-loop
+classes:
+- power-loop
+applies:
+  topologies:
+  - llc
+rule: null
+prose: 'SEED RECORD (synthetic, mechanism fixture): keep the resonant tank loop (Cr, Lr, transformer
+  primary, half-bridge) tight; fig 3 (p2) shows the loop drawn on the eval board with the
+  resonant capacitor beside the primary pin.'
+sources:
+- file: research/sources/slua123.pdf
+  page: 2
+  note: 'fig 3: resonant tank loop drawn on the eval board'
+status: active
+origin: research:block-llc-1
+level: topology
+envelope:
+  switching_kind:
+    in:
+    - soft
+  f_khz:
+    min: 50
+    max: 500
+envelope_note: bounded by soft switching and the resonant band the loop is sized for - the
+  rule is about resonant current, not edge rate
+maturity: verified
+generalizes: []
+verification: {by: "second-reader", date: "2026-08-15", note: "re-read p2 fig 3: loop as described (seed)"}

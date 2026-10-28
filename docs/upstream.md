@@ -12,7 +12,17 @@ ways:
   when it's set, so the records can still find those PDFs elsewhere.
 
 `requirements.lock`, `LICENSE` and `NOTICE` are upstream's, from the repo
-root. The tests, plans, docker setup and design notes stay upstream.
+root, and so is `docs/failure-modes.yaml` (`bench --scorecard-corpus` maps
+findings to failure modes through it). `tests/` is upstream's `tests/`
+except `check.sh` and the tests of what stays upstream: evals
+(`test_e2e_electrical`, `test_eval_sandbox`, `test_eval_writeset`), the
+showcase (`test_showcase_gallery`), `LEARNINGS.md` and its triage
+(`test_learnings`, `test_remediations`), the docker and CI pins
+(`test_kicad_pin`) and `docs/check-scorecard.jsonl`
+(`test_check_scorecard`). `tests/conftest.py` adds `KNOWN_FAILING`, and
+`tests/test_workarounds.py` and `tests/workarounds/` are the module's own,
+as is `pytest.ini` (upstream's pytest settings from its `pyproject.toml`).
+The plans, docker setup and design notes stay upstream.
 
 Everything specific to the Hive is in `bin/` and `docs/`:
 
@@ -25,4 +35,6 @@ Everything specific to the Hive is in `bin/` and `docs/`:
   and `bin/hwde` points `KICAD_SYMBOL_DIR` at them.
 
 To update, copy upstream's skill folder over this one, drop the source PDFs
-again, re-apply the `SOURCES_DIR` line, and bump the commit above.
+again, re-apply the `SOURCES_DIR` line, and bump the commit above. Copy
+upstream's `tests/` over this one the same way, leaving out the files above
+and keeping `KNOWN_FAILING` and `test_workarounds.py`.

@@ -1,0 +1,35 @@
+{
+ "script": "bench",
+ "stage": "P6",
+ "fixture": "golden_blinky2_place",
+ "board": "blinky2",
+ "metrics": {
+  "footprints": 17,
+  "nets": 11,
+  "hpwl_total_mm": 242.145,
+  "crossings": 17,
+  "crossings_signal": 2,
+  "congestion_max": 7,
+  "congestion_signal_max": 5,
+  "congestion_mean_nonzero": 1.8077,
+  "violations_total": 0,
+  "by_kind": {},
+  "decap_worst_mm": 7.0625,
+  "utilization": 0.152
+ },
+ "metrics_live": null,
+ "penalties": {
+  "hpwl_total_mm": 242.145,
+  "crossings": 2.0,
+  "congestion_max": 5.0,
+  "legality_violations": 0.0,
+  "decap_worst_mm": 7.0625
+ },
+ "composite": 72.36,
+ "composite_inputs": "full",
+ "known_answer": null,
+ "_baseline": {
+  "created": "2026-08-06",
+  "kicad_version": null
+ }
+}

@@ -1,0 +1,115 @@
+{
+  "board": {
+    "design_settings": {
+      "rule_severities": {
+        "lib_footprint_issues": "ignore",
+        "lib_footprint_mismatch": "ignore",
+        "track_width": "error",
+        "clearance": "error",
+        "hole_to_hole": "error",
+        "hole_clearance": "error",
+        "copper_edge_clearance": "error",
+        "annular_width": "error",
+        "drill_out_of_range": "error"
+      },
+      "rules": {
+        "min_clearance": 0.127,
+        "min_track_width": 0.127,
+        "min_via_diameter": 0.6,
+        "min_through_hole_diameter": 0.3,
+        "min_via_annular_width": 0.15,
+        "min_hole_to_hole": 0.5,
+        "min_copper_edge_clearance": 0.3
+      }
+    }
+  },
+  "erc": {
+    "rule_severities": {
+      "lib_symbol_issues": "ignore",
+      "lib_symbol_mismatch": "ignore",
+      "footprint_link_issues": "ignore"
+    }
+  },
+  "meta": {
+    "filename": "PCB-0012-A_bb-ldo.kicad_pro",
+    "version": 3
+  },
+  "schematic": {
+    "legacy_lib_dir": "",
+    "legacy_lib_list": []
+  },
+  "net_settings": {
+    "classes": [
+      {
+        "name": "Default",
+        "clearance": 0.127,
+        "track_width": 0.2,
+        "via_diameter": 0.6,
+        "via_drill": 0.3,
+        "diff_pair_width": 0.2,
+        "diff_pair_gap": 0.25,
+        "diff_pair_via_gap": 0.25,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "line_style": 0,
+        "bus_width": 12,
+        "wire_width": 6,
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgba(0, 0, 0, 0.000)"
+      },
+      {
+        "name": "Pwr_0p255mm",
+        "clearance": 0.2,
+        "track_width": 0.255,
+        "via_diameter": 0.6,
+        "via_drill": 0.3,
+        "diff_pair_width": 0.2,
+        "diff_pair_gap": 0.25,
+        "diff_pair_via_gap": 0.25,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "line_style": 0,
+        "bus_width": 12,
+        "wire_width": 6,
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgba(0, 0, 0, 0.000)"
+      },
+      {
+        "name": "Pwr_0p2575mm",
+        "clearance": 0.2,
+        "track_width": 0.2575,
+        "via_diameter": 0.6,
+        "via_drill": 0.3,
+        "diff_pair_width": 0.2,
+        "diff_pair_gap": 0.25,
+        "diff_pair_via_gap": 0.25,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "line_style": 0,
+        "bus_width": 12,
+        "wire_width": 6,
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgba(0, 0, 0, 0.000)"
+      }
+    ],
+    "meta": {
+      "version": 3
+    },
+    "net_colors": null,
+    "netclass_assignments": null,
+    "netclass_patterns": [
+      {
+        "netclass": "Pwr_0p255mm",
+        "pattern": "+3V3"
+      },
+      {
+        "netclass": "Pwr_0p2575mm",
+        "pattern": "+5V"
+      },
+      {
+        "netclass": "Pwr_0p2575mm",
+        "pattern": "GND"
+      }
+    ]
+  }
+}

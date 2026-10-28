@@ -1,0 +1,61 @@
+{
+ "script": "bench",
+ "stage": "P8",
+ "fixture": "mutant_gndchoke_verify",
+ "board": "pd-trigger",
+ "metrics": {
+  "errors": 18,
+  "warnings": 49,
+  "by_check": {
+   "check_return_path": 0,
+   "check_current": 45,
+   "check_decoupling": 0,
+   "check_diffpair": 0,
+   "check_creepage": 0,
+   "check_thermal": 0,
+   "check_silk": 3,
+   "check_route_style": 3,
+   "check_mating": 0,
+   "check_pdn": 0,
+   "check_ratings": 0,
+   "check_bom_sync": 0,
+   "check_mate_pins": 0,
+   "check_model_paths": 16
+  },
+  "by_kind": {
+   "insufficient_transition_vias": 13,
+   "model_path_absolute": 16,
+   "pour_neckdown": 1,
+   "route_style": 3,
+   "silk_misattributed": 3,
+   "undersized_track": 31
+  },
+  "si": {
+   "decap_worst_loop_nh": 13.1004,
+   "decap_worst_manhattan_mm": 15.97,
+   "diffpair_worst_skew_ps": null,
+   "diffpair_worst_uncoupled_mm": null,
+   "return_corridor_voids": 0
+  }
+ },
+ "metrics_live": null,
+ "penalties": {
+  "errors": 18.0,
+  "warnings": 49.0,
+  "known_answer_missed": 0.0,
+  "forbidden_errors": 0.0
+ },
+ "composite": 86.1,
+ "composite_inputs": "full",
+ "known_answer": {
+  "status": "ok",
+  "matched": 3,
+  "missed": [],
+  "forbidden_errors": 0
+ },
+ "e2e": null,
+ "_baseline": {
+  "created": "2026-10-08",
+  "kicad_version": null
+ }
+}

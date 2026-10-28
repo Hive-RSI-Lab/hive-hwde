@@ -1,0 +1,8 @@
+[
+ {"measure": "i_led_max", "max": 3.0e-3, "severity": "error",
+  "msg": "PC13 sinks the LED: abs-max sink 3 mA through the power switch (STM32F103C8T6 DS5319 Table 5 note 5, parts/C8734.json)"},
+ {"measure": "i_led_max", "min": 5.0e-4, "severity": "warning",
+  "msg": "LED should visibly light (>= 0.5 mA) when PC13 drives low - a dead indicator is a functional miss, not a safety one"},
+ {"measure": "v_sink_low", "max": 0.4, "severity": "warning",
+  "msg": "driven-low LED cathode should sit near VOL (< 0.4 V); higher means the pin model or chain resistance is off"}
+]

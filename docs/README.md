@@ -73,8 +73,8 @@ in your account.
 A workaround you can't avoid gets a row in [workarounds.md](workarounds.md)
 naming the gate steps it touched, and a probe in `tests/workarounds/` that
 exits 0 while its cause stands. That is what the project's score counts
-(`bin/hwde score`), and `bin/hwde check-all` fails while a row and its probe
-disagree. A shim in `bin/hwde` checks its row (`wa <id>`), so it runs only
+(`bin/hwde score`), and the test (`bin/hwde test`) fails while a row and its
+probe disagree. A shim in `bin/hwde` checks its row (`wa <id>`), so it runs only
 while it's listed. When you fix a cause, its probe starts exiting 10: take
 the workaround out, delete the row, keep the probe as a guard, and the score
 goes up.

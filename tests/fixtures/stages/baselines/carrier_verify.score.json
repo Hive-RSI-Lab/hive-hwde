@@ -1,0 +1,67 @@
+{
+ "script": "bench",
+ "stage": "P8",
+ "fixture": "carrier_verify",
+ "board": "lumina-carrier",
+ "metrics": {
+  "errors": 76,
+  "warnings": 162,
+  "by_check": {
+   "check_return_path": 4,
+   "check_current": 71,
+   "check_decoupling": 2,
+   "check_diffpair": 1,
+   "check_creepage": 26,
+   "check_thermal": 0,
+   "check_silk": 3,
+   "check_route_style": 108,
+   "check_mating": 0,
+   "check_pdn": 0,
+   "check_ratings": 0,
+   "check_bom_sync": 0,
+   "check_mate_pins": 0,
+   "check_model_paths": 23
+  },
+  "by_kind": {
+   "corridor_void": 4,
+   "creepage": 26,
+   "decoupler_loop": 1,
+   "diffpair_skew": 1,
+   "gnd_stub_long": 1,
+   "insufficient_transition_vias": 24,
+   "model_path_absolute": 2,
+   "model_path_unanchored": 21,
+   "pour_neckdown": 2,
+   "route_style": 108,
+   "silk_misattributed": 3,
+   "undersized_track": 45
+  },
+  "si": {
+   "decap_worst_loop_nh": 13.6834,
+   "decap_worst_manhattan_mm": 15.0125,
+   "diffpair_worst_skew_ps": 30.2347,
+   "diffpair_worst_uncoupled_mm": 3.5213,
+   "return_corridor_voids": 4
+  }
+ },
+ "metrics_live": null,
+ "penalties": {
+  "errors": 76.0,
+  "warnings": 162.0,
+  "known_answer_missed": 0.0,
+  "forbidden_errors": 0.0
+ },
+ "composite": 45.8,
+ "composite_inputs": "full",
+ "known_answer": {
+  "status": "ok",
+  "matched": 8,
+  "missed": [],
+  "forbidden_errors": 0
+ },
+ "e2e": null,
+ "_baseline": {
+  "created": "2026-10-08",
+  "kicad_version": null
+ }
+}

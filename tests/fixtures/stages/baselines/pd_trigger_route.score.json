@@ -1,0 +1,33 @@
+{
+ "script": "bench",
+ "stage": "P7",
+ "fixture": "pd_trigger_route",
+ "board": "pd-trigger",
+ "metrics": {
+  "track_mm": 410.46,
+  "track_count": 214,
+  "via_count": 44
+ },
+ "metrics_live": {
+  "drc_errors": 0,
+  "drc_warnings": 0,
+  "completion": 1.0,
+  "routable_nets": 21,
+  "unrouted_nets": [],
+  "kicad_version": "10.0.3"
+ },
+ "penalties": {
+  "track_mm": 410.46,
+  "via_count": 44.0,
+  "incompletion_pct": 0.0,
+  "drc_errors": 0.0,
+  "drc_warnings": 0.0
+ },
+ "composite": 91.5,
+ "composite_inputs": "full",
+ "known_answer": null,
+ "_baseline": {
+  "created": "2026-08-06",
+  "kicad_version": "10.0.3"
+ }
+}

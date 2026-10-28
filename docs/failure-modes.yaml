@@ -1,0 +1,4438 @@
+# Machine-readable twin of docs/failure-modes.md. Same ids. Edit both together.
+schema_version: 1
+categories:
+  MECH: Mechanical, enclosure, connector, mounting
+  THERM: Thermal
+  RATE: Electrical ratings and part values
+  PI: Power integrity
+  PROT: Protection
+  EMC: ESD and EMC
+  SI: Signal integrity
+  ANA: Analog and grounding
+  FAB: Fab DFM
+  DFA: Assembly, CPL, BOM, sourcing
+  TEST: Test and bring-up access
+  FW: Firmware-hardware interface
+  SAFE: Safety and compliance
+  CONC: Conceptual and requirements
+modes:
+- id: MECH-01
+  category: MECH
+  mode: Connector mouth faces into the board
+  shows: board cannot be plugged in; passes place/DRC/verify/DFM
+  catch: mating direction table per family; check mouth vs nearest edge
+  coverage:
+    script: check_mating
+    rule: mating_faces_inward
+    level: L2
+  target_level: L3
+  gap: placement does not pick orientation from the family table (T#70); still per-board fixes
+  hit_on:
+  - PCB-0021-A
+  - PCB-0018-A
+  - pd-trigger
+  - bb-adc
+  - usb-111FD
+  sources:
+  - T#70
+  - L677
+  - L731
+  - B:PCB-0021-A
+- id: MECH-02
+  category: MECH
+  mode: Connector mouth recessed behind board edge
+  shows: plug does not seat (0.4-0.5 mm inset)
+  catch: inset limit per family
+  coverage:
+    script: check_mating
+    rule: mating_mouth_inset
+    level: L2
+  target_level: L2
+  gap: none after cd6ca77; keep a mutant
+  hit_on:
+  - pd-trigger
+  - usb-buck
+  - bb-mcu
+  sources:
+  - B reviews
+  - cd6ca77
+- id: MECH-03
+  category: MECH
+  mode: Plug insertion zone blocked by a part or wires
+  shows: plug or cable hits a tall part
+  catch: keepout in front of the mouth
+  coverage:
+    script: check_mating
+    rule: mating_zone_blocked
+    level: L2
+  target_level: L2
+  gap: only declared families
+  hit_on: []
+  sources:
+  - cd6ca77
+- id: MECH-04
+  category: MECH
+  mode: Mouth direction unreadable from footprint
+  shows: check cannot decide, only warns
+  catch: family table entry or explicit direction
+  coverage:
+    script: check_mating
+    rule: mating_direction_unknown
+    level: L1
+  target_level: L2
+  gap: warning only; unknown families pass
+  hit_on:
+  - usb-111FD
+  sources:
+  - L677
+  - cd6ca77
+- id: MECH-05
+  category: MECH
+  mode: Mated pair pinout mirrored or rows swapped
+  shows: supply shorts to GND when daughter board reverse-mounts
+  catch: map pin names across the pair; flip for B.Cu mount; pin-1 per 3 sources
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: no mated-pair net check; fp_verify has no pin-1 rule (T#323)
+  hit_on:
+  - lumina-par
+  - g0-sense
+  sources:
+  - B:commit 2026-08-07
+  - T#323
+  - L4739
+- id: MECH-06
+  category: MECH
+  mode: Identical unkeyed connectors with different rails
+  shows: one-position slip puts a push-pull output on +3V3
+  catch: pin-compatibility review of same-family pairs; key or distinct families
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on:
+  - bb-mcu
+  sources:
+  - B:PCB-0011-A
+- id: MECH-07
+  category: MECH
+  mode: Terminal block or JST entry side misjudged
+  shows: wire entry faces into board; side-entry land mirrored
+  catch: entry face from datasheet; family table
+  coverage:
+    script: check_mating (when family listed)
+    rule: '-'
+    level: L1
+  target_level: L3
+  gap: entry side not in table for all families (T#70, T#189)
+  hit_on:
+  - bb-adc
+  - bb-mcu
+  - bb-amp
+  sources:
+  - L2418
+  - B:PCB-0014-A
+- id: MECH-08
+  category: MECH
+  mode: 3D model offset flips apparent orientation
+  shows: render and WRL bbox mislead review
+  catch: compare model origin to footprint origin
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: T#124 open
+  hit_on:
+  - pd-trigger
+  sources:
+  - L731
+  - L1359
+  - T#124
+- id: MECH-09
+  category: MECH
+  mode: Mounting pattern differs from ICD or enclosure
+  shows: board does not fit; holes 94x74 vs 90x70
+  catch: compare holes and outline to requirements/ICD
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: no brief-vs-board check
+  hit_on:
+  - lumina-carrier
+  - rp2040-mini
+  - bb-buck
+  sources:
+  - B:PCB-0004-A
+  - B:PCB-0019-A
+- id: MECH-10
+  category: MECH
+  mode: Mounting hole keepout violated or hole cut by notch
+  shows: screw head hits part; hole open to notch
+  catch: no SMD or track within ~2-3 mm of hole; pad vs head dia
+  coverage:
+    script: place_metrics
+    rule: keepout_violation (declared only)
+    level: L1
+  target_level: L2
+  gap: keepouts only if declared; schematic holes trip own keepouts (T#220)
+  hit_on:
+  - lumina-par
+  - usbbuck4
+  sources:
+  - L927
+  - L2884
+  - B:PCB-0005-A
+- id: MECH-11
+  category: MECH
+  mode: MLCC or BGA in a board-flex zone
+  shows: cap cracks after depanel or screw-down
+  catch: MLCC >=5 mm from edge, V-score, mount hole; axis parallel to flex
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[8][28]'
+- id: MECH-12
+  category: MECH
+  mode: Mounting holes cannot be placed or leave no standoff
+  shows: no hole at wire-tug corner; 3 holes on a 26 mm edge
+  catch: hole pad dia (not drill) sets width; corner standoffs
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on:
+  - rf-term-150w
+  - pd-trigger
+  sources:
+  - L2325
+- id: MECH-13
+  category: MECH
+  mode: Hole size or plating wrong (PTH vs NPTH, under-drilled library part, plated pegs)
+  shows: screw or pin does not fit; zero-annulus pegs
+  catch: drill = pin + 0.2-0.3 mm; NPTH explicit
+  coverage:
+    script: fp_verify
+    rule: drill_mismatch; dfm_check:dfm_hole_size
+    level: L1
+  target_level: L2
+  gap: fp_verify has no drill handling for imports (T#8)
+  hit_on:
+  - bb-buck
+  - bb-mcu
+  - pd-trigger
+  sources:
+  - L712
+  - L1256
+  - '[1]'
+- id: MECH-14
+  category: MECH
+  mode: Part height or protrusion vs enclosure, shim or heatsink
+  shows: trimmer 4.75 mm below board vs 1.00 mm shim
+  catch: 3D envelope vs mechanical limits in requirements
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: no height budget check
+  hit_on:
+  - rf-term-150w
+  sources:
+  - B:commit 2026-08-09
+- id: MECH-15
+  category: MECH
+  mode: Heatsink land, clamp or mask opening missing
+  shows: power part has no thermal path to sink
+  catch: requirement-driven keepout and mask opening
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on:
+  - rf-de-20m
+  sources:
+  - B:PCB-0007-A
+- id: MECH-16
+  category: MECH
+  mode: Castellated or half-hole edge not buildable
+  shows: fab cannot make it; plain PTH pads shipped instead
+  catch: flag at requirements; hwde cannot build it
+  coverage:
+    script: castellated_fp.py (generator)
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: requirements not checked against flow capability
+  hit_on:
+  - rp2040-mini
+  sources:
+  - B:PCB-0019-A
+  - '[26]'
+- id: MECH-17
+  category: MECH
+  mode: Outline closed, valid and consistent
+  shows: interior rect read as outline; edit drops cutouts; board grown without pour resize
+  catch: closed Edge.Cuts, radii >= 0.5 mm, zone outline follows edge
+  coverage:
+    script: dfm_check
+    rule: dfm_open_outline
+    level: L2
+  target_level: L2
+  gap: grown-board zone check is L0 (T#308, T#96)
+  hit_on:
+  - pd-trigger
+  sources:
+  - '2026-08-16'
+  - L964
+  - T#308
+- id: THERM-01
+  category: THERM
+  mode: Regulator or LDO dissipation exceeds copper
+  shows: thermal shutdown, hot board
+  catch: P = dV*I vs copper area and layers
+  coverage:
+    script: check_thermal
+    rule: thermal_area
+    level: L2
+  target_level: L2
+  gap: model ignores back-side pour (T#331); score is area only
+  hit_on:
+  - g0-sense
+  - sbuck-5v3a
+  - lipo-boost
+  sources:
+  - L2788
+  - L4891
+  - '[16]'
+- id: THERM-02
+  category: THERM
+  mode: Tj above abs max from optimistic theta
+  shows: part over 150 C (EPC2019 theta_BS, 1 A bridge 176 C)
+  catch: size on RthJA at real copper, not headline
+  coverage:
+    script: check_thermal (partial)
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: no Tj vs abs-max compare (T#112)
+  hit_on:
+  - rf-de-20m
+  - lumina-carrier
+  sources:
+  - L1210
+  - B:PCB-0007-A
+- id: THERM-03
+  category: THERM
+  mode: Thermal vias under EP below datasheet minimum
+  shows: 9 vs 12 vias; high theta_JA
+  catch: via count and pitch per datasheet
+  coverage:
+    script: check_thermal
+    rule: thermal_vias
+    level: L1
+  target_level: L2
+  gap: min_vias documentary; window too small (T#214, T#276)
+  hit_on:
+  - bb-buck
+  - bb-ldo
+  - rf-de-20m
+  sources:
+  - L2788
+  - L3863
+  - B:PCB-0010-A
+- id: THERM-04
+  category: THERM
+  mode: Exposed pad missing or mis-sized from package name
+  shows: no EP land (DFN3020 has none); unsolderable
+  catch: read land pattern from datasheet; pad count
+  coverage:
+    script: fp_verify
+    rule: pad_count (partial)
+    level: L1
+  target_level: L2
+  gap: T#211 open
+  hit_on:
+  - buck-5v3a
+  sources:
+  - L2736
+- id: THERM-05
+  category: THERM
+  mode: EP paste aperture or via wicking
+  shows: void or open joint under QFN
+  catch: window-pane paste 50-80%; tent or fill vias
+  coverage:
+    script: dfm_check
+    rule: dfm_pad_tented (partial)
+    level: L1
+  target_level: L2
+  gap: no paste-aperture check (T#285)
+  hit_on:
+  - bb-ldo
+  - rf-de-20m
+  sources:
+  - L4106
+  - '[6]'
+- id: THERM-06
+  category: THERM
+  mode: Trace or plane heating at current
+  shows: discolored trace, V drop
+  catch: IPC-2152 width at declared dT
+  coverage:
+    script: check_current
+    rule: undersized_track
+    level: L2
+  target_level: L2
+  gap: noise on plane-fed rails (see backlog noise row)
+  hit_on:
+  - PCB-0017-A
+  - PCB-0018-A
+  sources:
+  - '[12]'
+- id: THERM-07
+  category: THERM
+  mode: Inductor saturation or Irms heating
+  shows: efficiency collapse, EMI
+  catch: Isat >= 1.2-1.3 x Ipeak; Irms vs dT
+  coverage:
+    script: check_ratings (not for inductors)
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: no inductor rating rule
+  hit_on: []
+  sources:
+  - '[16]'
+- id: THERM-08
+  category: THERM
+  mode: Hot part near heat-sensitive part
+  shows: reference, NTC, crystal, battery drift
+  catch: placement distance rule from thermal map
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[27]'
+- id: THERM-09
+  category: THERM
+  mode: Electrolytic life at board temperature
+  shows: ESR rise, dry-out
+  catch: life halves per +10 C; 105 C part; away from heat
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[14]'
+- id: THERM-10
+  category: THERM
+  mode: Switching and conduction loss in FET or driver
+  shows: BLDC or class-D FET hot
+  catch: Qg*f*V, Rds(on) at hot Tj, dead-time diode loss
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: no loss calc
+  hit_on:
+  - rf-de-20m
+  sources:
+  - '[21][22]'
+- id: THERM-11
+  category: THERM
+  mode: Charger or battery thermal path missing
+  shows: cell overheats
+  catch: NTC wired, charge current <= C-rate
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on:
+  - lipo-boost
+  sources:
+  - '[27]'
+- id: THERM-12
+  category: THERM
+  mode: 2L board rise far above declared
+  shows: BQ24074 rise ~81 C vs 40 C declared
+  catch: thermal model with real layers
+  coverage:
+    script: check_thermal
+    rule: '-'
+    level: L2
+  target_level: L2
+  gap: calibration only
+  hit_on:
+  - sbuck-5v3a
+  - lipo-boost
+  sources:
+  - B:commit 2026-08-09
+- id: THERM-13
+  category: THERM
+  mode: Hot surface or hand-touch hazard not marked
+  shows: burn on 48 V bench board
+  catch: hazard silk when Tsurface > limit
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on:
+  - rf-term-150w
+  - lumina-par
+  sources:
+  - B:reviews
+- id: RATE-01
+  category: RATE
+  mode: Capacitor voltage rating below worst case
+  shows: cap shorts or vents
+  catch: rated V >= 1.5-2x incl. spikes
+  coverage:
+    script: check_ratings
+    rule: rating_over_voltage
+    level: L2
+  target_level: L2
+  gap: needs datasheet extraction
+  hit_on: []
+  sources:
+  - '[14]'
+- id: RATE-02
+  category: RATE
+  mode: Pin absolute-maximum exceeded (V or I)
+  shows: damaged part
+  catch: extracted ratings vs net voltage and current
+  coverage:
+    script: check_ratings
+    rule: rating_over_voltage,rating_over_current
+    level: L2
+  target_level: L2
+  gap: only parts with extraction
+  hit_on:
+  - rf-de-20m
+  sources:
+  - '[26]'
+- id: RATE-03
+  category: RATE
+  mode: Reverse polarity or input above supply
+  shows: part damaged when mis-wired
+  catch: ratings check and ideal-diode review
+  coverage:
+    script: check_ratings
+    rule: rating_reverse_polarity
+    level: L2
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[10][27]'
+- id: RATE-04
+  category: RATE
+  mode: Part has no ratings on file
+  shows: check silently covers nothing
+  catch: extract every part's ratings
+  coverage:
+    script: check_ratings
+    rule: rating_unrated
+    level: L1
+  target_level: L2
+  gap: warning only; 3-18 per board
+  hit_on:
+  - all
+  sources:
+  - baseline.md
+- id: RATE-05
+  category: RATE
+  mode: Outside recommended operating range
+  shows: part out of spec but not destroyed
+  catch: recommended range vs operating point
+  coverage:
+    script: check_ratings
+    rule: rating_outside_recommended
+    level: L2
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[10]'
+- id: RATE-06
+  category: RATE
+  mode: Polarized part reversed (electrolytic, tantalum, diode, LED)
+  shows: pop, vent, dead FET (Zener marker on anode pad)
+  catch: silk and footprint polarity vs datasheet; chamfer meaning
+  coverage:
+    script: dfm_check
+    rule: cpl_polarity (diodes)
+    level: L2
+  target_level: L2
+  gap: caps and tantalum not covered; marker-on-wrong-pad not checked
+  hit_on:
+  - sbuck-5v3a
+  - rf-de-20m
+  - g0-sense
+  sources:
+  - B:commit 2026-08-09
+  - L3387
+  - L4721
+- id: RATE-07
+  category: RATE
+  mode: Feedback divider gives wrong Vout
+  shows: 0.8 V instead of rail; overvoltage
+  catch: recompute Vout from Vfb and resistor values
+  coverage:
+    script: sim_run (bench only)
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: no static recompute from netlist
+  hit_on:
+  - buck-5v3a
+  sources:
+  - L2648
+  - '[10]'
+- id: RATE-08
+  category: RATE
+  mode: Fixed vs adjustable regulator mislabeled
+  shows: FB tied to Vout gives 0.8 V
+  catch: datasheet variant vs vendor type field
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: T#205 open
+  hit_on:
+  - buck-5v3a
+  sources:
+  - L2648
+- id: RATE-09
+  category: RATE
+  mode: Logic level or 5 V tolerance mismatch
+  shows: misread input, back-power
+  catch: Vol/Voh vs Vil/Vih across rails
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[10]'
+- id: RATE-10
+  category: RATE
+  mode: Pull-up or pull-down missing or wrong value
+  shows: I2C stuck; enable latched
+  catch: pull-ups present, value for Cbus; bias current in pull-down sizing
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: 'T#194 open: gates see topology, not value'
+  hit_on:
+  - lumina-par
+  sources:
+  - L2493
+  - '[10]'
+- id: RATE-11
+  category: RATE
+  mode: Unconnected pin or floating input
+  shows: erratic behaviour
+  catch: ERC pin_not_connected; tie unused inputs
+  coverage:
+    script: kc.py (ERC)
+    rule: '-'
+    level: L2
+  target_level: L2
+  gap: no ERC mutant corpus
+  hit_on: []
+  sources:
+  - '[10][11]'
+- id: RATE-12
+  category: RATE
+  mode: Two outputs drive one net
+  shows: heat, damage
+  catch: ERC pin conflict
+  coverage:
+    script: kc.py (ERC)
+    rule: '-'
+    level: L2
+  target_level: L2
+  gap: no ERC mutant corpus
+  hit_on: []
+  sources:
+  - '[11]'
+- id: RATE-13
+  category: RATE
+  mode: Power sequencing or enable pin undefined at power-up
+  shows: drivers latched ON when +12V arrives before +3V3
+  catch: enable pull-downs, sequencing review
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: T#194 open
+  hit_on:
+  - lumina-par
+  sources:
+  - L2493
+  - '[11]'
+- id: RATE-14
+  category: RATE
+  mode: Gate voltage beyond Vgs max
+  shows: eGaN +6 V max with 5 V drive; destroyed on first pulse
+  catch: Vgs max vs worst-case drive rail
+  coverage:
+    script: check_ratings (only if pin extracted)
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: gate-network rule missing (T#254)
+  hit_on:
+  - rf-de-20m
+  sources:
+  - L3360
+- id: RATE-15
+  category: RATE
+  mode: Gate resistance below driver floor or FETs paralleled on one pin
+  shows: 0.975 ohm vs 2 ohm floor
+  catch: network total R vs datasheet
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: T#254 open
+  hit_on:
+  - rf-de-20m
+  sources:
+  - L3360
+  - B:PCB-0007-A
+- id: RATE-16
+  category: RATE
+  mode: Bootstrap cap undersized
+  shows: 2.2 nF vs 10 nF needed; driver undervoltage
+  catch: Cboot >= 10x total Cgs
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on:
+  - rf-de-20m
+  sources:
+  - B:PCB-0007-A
+  - '[21]'
+- id: RATE-17
+  category: RATE
+  mode: Dead time, shoot-through, gate pull-down missing
+  shows: FET destroyed
+  catch: dead time > turn-off delay; pull-down on each gate
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on:
+  - bldc-motor-driver
+  sources:
+  - '[21]'
+- id: RATE-18
+  category: RATE
+  mode: Driver UVLO margin at minimum supply
+  shows: partial enhancement, heat
+  catch: VCC >= UVLO + margin
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[21]'
+- id: RATE-19
+  category: RATE
+  mode: Inrush or hot-plug current
+  shows: USB source collapses; fuse trips
+  catch: soft-start, bulk C limit
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[17]'
+- id: RATE-20
+  category: RATE
+  mode: Crystal load capacitance wrong
+  shows: no start or ppm error
+  catch: CL = C1*C2/(C1+C2)+Cstray; drive; ESR
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[15]'
+- id: RATE-21
+  category: RATE
+  mode: Set-resistor pin wrong (ILIM, ISET, UVLO, charger)
+  shows: wrong current or threshold
+  catch: recompute from datasheet equation
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[10][27]'
+- id: RATE-22
+  category: RATE
+  mode: Charger configuration wrong
+  shows: LiPo overcharged
+  catch: float 4.2 V, termination, precharge, NTC
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on:
+  - lipo-boost
+  sources:
+  - '[27]'
+- id: RATE-23
+  category: RATE
+  mode: Invented or misread datasheet values drive the design
+  shows: Coss and Rds(on) wrong; frozen operating point false
+  catch: second reader on extracted values; cite page
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: T#251 open
+  hit_on:
+  - rf-de-20m
+  sources:
+  - L3295
+- id: RATE-24
+  category: RATE
+  mode: Part derating ignored (fuse voltage, DC bias, tolerance)
+  shows: 1206 PPTC cannot hold 1 A at 30 V
+  catch: derating tables in parts check
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on:
+  - CH224 boards
+  sources:
+  - 2026-08-15 [parts]
+- id: RATE-25
+  category: RATE
+  mode: Control loop unstable or ripple injection missing
+  shows: COT buck has 1-2 mV at FB vs 20 mV
+  catch: compensation and ripple-injection calc; SPICE
+  coverage:
+    script: sim_run (bench only)
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: no static check
+  hit_on:
+  - bb-buck
+  sources:
+  - B:PCB-0010-A
+- id: PI-01
+  category: PI
+  mode: Missing HF decoupling on an IC supply pin
+  shows: resets, ADC noise; 100 nF absent on buck VIN
+  catch: cap per pin within 2-5 mm
+  coverage:
+    script: check_decoupling
+    rule: reg_input_no_hf; check_pdn:pdn_undecoupled
+    level: L2
+  target_level: L2
+  gap: checker classed by value, cannot see absence (L1980); per-pin count none
+  hit_on:
+  - lumina-carrier
+  - rp2040-mini
+  sources:
+  - L1980
+  - '[15][19]'
+- id: PI-02
+  category: PI
+  mode: Decoupler far from pin or high loop inductance
+  shows: ringing, droop
+  catch: distance and loop nH limit
+  coverage:
+    script: check_decoupling
+    rule: decoupler_distance,decoupler_loop; place_metrics:decoupler_distance
+    level: L2
+  target_level: L2
+  gap: centre-to-centre rules; locked refs skipped (T#197, T#219)
+  hit_on:
+  - lumina-carrier
+  - bb-adc
+  sources:
+  - B:PCB-0004-A
+  - '2026-08-19'
+- id: PI-03
+  category: PI
+  mode: Decoupling cap with long GND stub
+  shows: HF bypass lost
+  catch: stub <= 5 mm to GND via
+  coverage:
+    script: check_decoupling
+    rule: gnd_stub_long
+    level: L2
+  target_level: L2
+  gap: warning only
+  hit_on:
+  - PCB-0017-A
+  - lipo-boost
+  sources:
+  - baseline.md
+- id: PI-04
+  category: PI
+  mode: Rail without bulk cap
+  shows: brown-out on load step
+  catch: bulk cap per rail
+  coverage:
+    script: check_pdn
+    rule: pdn_no_bulk
+    level: L1
+  target_level: L2
+  gap: warning only
+  hit_on: []
+  sources:
+  - '[16]'
+- id: PI-05
+  category: PI
+  mode: Buck hot loop or switch-node copper too large
+  shows: EMI, ringing
+  catch: loop area from input cap + switch + GND; SW copper min
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: annealer ignores loops (T#219)
+  hit_on:
+  - lumina-par
+  - sbuck-5v3a
+  sources:
+  - L2872
+  - '[16]'
+- id: PI-06
+  category: PI
+  mode: Feedback trace near switch node
+  shows: jitter, wrong regulation
+  catch: FB over ground, away from SW
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[16]'
+- id: PI-07
+  category: PI
+  mode: Track too narrow for current
+  shows: heating, V drop
+  catch: IPC-2152 width
+  coverage:
+    script: check_current
+    rule: undersized_track
+    level: L2
+  target_level: L2
+  gap: noisy on plane-fed rails; per-segment current unattributed
+  hit_on:
+  - PCB-0017-A
+  - PCB-0018-A
+  - PCB-0019-A
+  sources:
+  - '[12]'
+- id: PI-08
+  category: PI
+  mode: Pour neck or too few vias at layer transition
+  shows: IR hotspot
+  catch: neck width and via count
+  coverage:
+    script: check_current
+    rule: pour_neckdown,insufficient_transition_vias
+    level: L2
+  target_level: L2
+  gap: seam in tiled pours read as neck (T#330); 277 errors on one board
+  hit_on:
+  - PCB-0021-A
+  - PCB-0018-A
+  - g0-sense
+  sources:
+  - L4868
+- id: PI-09
+  category: PI
+  mode: DC IR drop to far loads
+  shows: rail low at load
+  catch: 2.5D resistive solve
+  coverage:
+    script: check_irdrop
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: not in verify (recipe only)
+  hit_on: []
+  sources:
+  - '[26]'
+- id: PI-10
+  category: PI
+  mode: Plane-pair impedance or antiresonance
+  shows: rail resonance
+  catch: cavity Z(f) vs target
+  coverage:
+    script: check_pdn_z
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: not in verify; band-edge model
+  hit_on:
+  - usbbuck4
+  sources:
+  - L991
+- id: PI-11
+  category: PI
+  mode: Single thin track severs a poured power bus
+  shows: 10.4 mohm, 369 mW hot spot, DRC clean
+  catch: net connectivity through copper, not tracks
+  coverage:
+    script: check_current (partial)
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: T#274 open
+  hit_on:
+  - rf-de-20m
+  sources:
+  - 2026-08-08 [P8]
+- id: PI-12
+  category: PI
+  mode: Via swallowed by track or takes the zone's net
+  shows: stitch via lost; GND island open
+  catch: via net vs intended net; dangling via
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: T#263, T#270 open
+  hit_on:
+  - rf-de-20m
+  sources:
+  - L3565
+  - L3732
+- id: PI-13
+  category: PI
+  mode: Pad starved of pour by neighbouring track
+  shows: WCSP GND ball unconnected, no DRC
+  catch: pad connectivity count
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: T#271 open
+  hit_on:
+  - rf-de-20m
+  sources:
+  - L3747
+- id: PI-14
+  category: PI
+  mode: Thermal relief starves a high-current pad
+  shows: 2.5-5 A pad on thin spokes
+  catch: connect_pads yes on power pads
+  coverage:
+    script: planes_gen (generator)
+    rule: '-'
+    level: L3
+  target_level: L3
+  gap: no check on hand-edited boards
+  hit_on:
+  - pd-trigger
+  sources:
+  - L782
+  - L832
+- id: PI-15
+  category: PI
+  mode: Pour missing, not resized, or constraint rect offset
+  shows: no pour under buck; plane over spiral; keepouts unenforced
+  catch: constraint coords vs outline origin; zone covers declared area
+  coverage:
+    script: check_current
+    rule: plane_missing (partial)
+    level: L1
+  target_level: L2
+  gap: T#221, T#260, T#200 open
+  hit_on:
+  - rf-de-20m
+  - bb-buck
+  - sbuck-5v3a
+  sources:
+  - L2892
+  - L2586
+- id: PI-16
+  category: PI
+  mode: No return plane under magnetics
+  shows: 23-30 nH instead of 4 nH; ZVS lost, 121 W -> 53 W
+  catch: loop L estimate with plane present
+  coverage:
+    script: check_return_path
+    rule: no_reference_plane (partial)
+    level: L1
+  target_level: L2
+  gap: checked signals, not power loops (T#280)
+  hit_on:
+  - rf-de-20m
+  sources:
+  - L4007
+- id: PI-17
+  category: PI
+  mode: Net-class widths unmeetable at fine pitch or one class for all power
+  shows: 20 mA nets at 1.75 mm; USB-C pads unroutable
+  catch: per-net width with pad-limited neck
+  coverage:
+    script: rules_gen (generator)
+    rule: '-'
+    level: L2
+  target_level: L3
+  gap: T#224 open
+  hit_on:
+  - pd-trigger
+  sources:
+  - L782
+  - L798
+- id: PI-18
+  category: PI
+  mode: Motor back-EMF or regen pumps the bus
+  shows: bus overvoltage on decel
+  catch: bus cap and TVS sized for regen
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on:
+  - bldc-motor-driver
+  sources:
+  - '[21]'
+- id: PI-19
+  category: PI
+  mode: Class-D supply bounce or ground return
+  shows: hum, THD
+  catch: PVDD decoupling at IC, solid ground
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on:
+  - stereo-class-d-amp
+  sources:
+  - '[22]'
+- id: PI-20
+  category: PI
+  mode: Regenerating the schematic wipes netclasses or decoupling data
+  shows: decoupling.json lost, +5V rule gone
+  catch: round-trip test of sidecars
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L3
+  gap: T#265, T#282 open
+  hit_on:
+  - rf-de-20m
+  sources:
+  - L3614
+  - L4048
+- id: PROT-01
+  category: PROT
+  mode: No ESD protection on a user-touch connector
+  shows: latent or total failure
+  catch: TVS or ESD array at each external port
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: not observed on our boards yet, but nothing checks
+  hit_on: []
+  sources:
+  - '[11][20]'
+- id: PROT-02
+  category: PROT
+  mode: TVS standoff or clamp wrong for the rail
+  shows: conducts at VBUS or clamps too high
+  catch: VRWM > Vmax; Vclamp < downstream abs-max
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[17]'
+- id: PROT-03
+  category: PROT
+  mode: ESD return path long
+  shows: clamp ineffective
+  catch: TVS ground via adjacent, short path
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[20]'
+- id: PROT-04
+  category: PROT
+  mode: No overvoltage or reverse protection on input
+  shows: regulator burned by bad supply
+  catch: OVP, Zener plus fuse, PD 20-28 V vs rail
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[17]'
+- id: PROT-05
+  category: PROT
+  mode: No overcurrent protection on VBUS or battery
+  shows: runaway, fire
+  catch: fuse, PTC or e-fuse
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[27]'
+- id: PROT-06
+  category: PROT
+  mode: LiPo protection absent
+  shows: overdischarge or short fire
+  catch: protection IC, UVLO ~3.0 V
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on:
+  - lipo-boost
+  sources:
+  - '[27]'
+- id: PROT-07
+  category: PROT
+  mode: Hot-plug transient exceeds ratings
+  shows: VBUS spike
+  catch: TVS and damping
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[17]'
+- id: PROT-08
+  category: PROT
+  mode: Shield or chassis bonded wrongly
+  shows: ground loop, ESD through logic
+  catch: single bridge R parallel C
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[20]'
+- id: PROT-09
+  category: PROT
+  mode: Unprotected inputs on harness
+  shows: comparator inputs see 6.8-24 V
+  catch: series R and clamp on cable-fed inputs
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on:
+  - lumina-par
+  - lumina-carrier
+  sources:
+  - B:commit 2026-08-07
+- id: PROT-10
+  category: PROT
+  mode: Unfiltered or unclamped long I/O traces
+  shows: LED lines 55-73 mm into PHY; NRST on flying lead
+  catch: RC or ferrite at entry
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on:
+  - lumina-carrier
+  - bb-mcu
+  sources:
+  - B:PCB-0004-A
+  - B:PCB-0011-A
+- id: PROT-11
+  category: PROT
+  mode: Overtemperature path unused
+  shows: cell not shut down
+  catch: NTC to charger TS or ADC
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[27]'
+- id: PROT-12
+  category: PROT
+  mode: RF input lacks ESD or matching pads
+  shows: LNA damaged
+  catch: low-C diode, Pi pads
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L0
+  gap: rare
+  hit_on: []
+  sources:
+  - '[24]'
+- id: EMC-01
+  category: EMC
+  mode: Signal crosses a plane gap or loses its return corridor
+  shows: radiation, ESD upset
+  catch: corridor of continuous ground under fast nets
+  coverage:
+    script: check_return_path
+    rule: corridor_void
+    level: L2
+  target_level: L2
+  gap: 2L coplanar FP; short fan-in land misread (T#235)
+  hit_on:
+  - esp32c3-node
+  - usbbuck4
+  sources:
+  - L194
+  - L3058
+- id: EMC-02
+  category: EMC
+  mode: Layer change without return via
+  shows: return path breaks
+  catch: stitch via within 1-2 mm
+  coverage:
+    script: check_return_path
+    rule: missing_return_via,missing_stitch_cap
+    level: L2
+  target_level: L2
+  gap: none
+  hit_on:
+  - rf4
+  sources:
+  - '[18][24]'
+- id: EMC-03
+  category: EMC
+  mode: No reference plane under a fast net
+  shows: impedance and EMI
+  catch: ground plane adjacent layer
+  coverage:
+    script: check_return_path
+    rule: no_reference_plane
+    level: L2
+  target_level: L2
+  gap: nearest plane may be a power plane (fixed)
+  hit_on:
+  - lumina-carrier
+  sources:
+  - L1774
+- id: EMC-04
+  category: EMC
+  mode: Fast net near plane edge
+  shows: edge radiation
+  catch: keep >= 20H from plane edge
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[19][20]'
+- id: EMC-05
+  category: EMC
+  mode: Long clock or fast edge on outer layer
+  shows: radiated emissions
+  catch: short, damped, referenced; length cap
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on:
+  - lumina-carrier
+  sources:
+  - B:commit 2026-07-30
+  - '[19]'
+- id: EMC-06
+  category: EMC
+  mode: Large switching loops (class-D, motor, buck)
+  shows: fails EMC
+  catch: loop area budget
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: see PI-05
+  hit_on: []
+  sources:
+  - '[16][22]'
+- id: EMC-07
+  category: EMC
+  mode: Unfiltered I/O at connector entry
+  shows: emissions couple in/out
+  catch: RC or ferrite at entry
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on:
+  - lumina-carrier
+  sources:
+  - '[19][20]'
+- id: EMC-08
+  category: EMC
+  mode: Stitching vias too sparse or tied to THT drills
+  shows: resonant gaps; vias 0.12 mm from drill
+  catch: pitch ~lambda/20; keep clear of drills
+  coverage:
+    script: stitch_vias.py (generator)
+    rule: '-'
+    level: L3
+  target_level: L3
+  gap: generator ignores THT drills (T#227)
+  hit_on:
+  - rf-term-150w
+  - pd-trigger
+  sources:
+  - L819
+  - L2954
+- id: EMC-09
+  category: EMC
+  mode: Common-mode on cable
+  shows: emissions
+  catch: choke, shield termination
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[18][20]'
+- id: EMC-10
+  category: EMC
+  mode: Phase or motor traces form an antenna
+  shows: emissions
+  catch: short wide phase traces
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on:
+  - bldc-motor-driver
+  sources:
+  - '[21]'
+- id: EMC-11
+  category: EMC
+  mode: MCU resets on ESD
+  shows: upset
+  catch: RC on reset and boot, watchdog
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[15]'
+- id: EMC-12
+  category: EMC
+  mode: 'Routing style: arcs, off-45 segments, needless jogs'
+  shows: owner preference; stress
+  catch: 45-degree grid
+  coverage:
+    script: check_route_style
+    rule: route_style
+    level: L1
+  target_level: L1
+  gap: warning only by design
+  hit_on:
+  - PCB-0018-A
+  - rp2040-mini
+  sources:
+  - memory routing-style
+- id: EMC-13
+  category: EMC
+  mode: Antenna keepout wrong or module pads inside it
+  shows: six pins unconnectable
+  catch: keepout from module datasheet
+  coverage:
+    script: place_metrics
+    rule: keepout_violation
+    level: L2
+  target_level: L3
+  gap: T#123 open; false positives (T#125)
+  hit_on:
+  - lumina-carrier
+  sources:
+  - L1345
+  - L1373
+- id: SI-01
+  category: SI
+  mode: Diff-pair impedance off
+  shows: enumeration errors
+  catch: 90 ohm +/-15% from stackup
+  coverage:
+    script: check_diffpair
+    rule: diffpair_impedance
+    level: L2
+  target_level: L2
+  gap: table, not solver (V12/V18)
+  hit_on:
+  - lumina-carrier
+  sources:
+  - '[18][1]'
+- id: SI-02
+  category: SI
+  mode: Diff-pair skew over limit
+  shows: eye closure
+  catch: < 0.15 mm FS/HS
+  coverage:
+    script: check_diffpair
+    rule: diffpair_skew
+    level: L2
+  target_level: L2
+  gap: FP on LF pairs
+  hit_on:
+  - lumina-carrier
+  sources:
+  - L1564
+  - '[18]'
+- id: SI-03
+  category: SI
+  mode: Uncoupled length or meander adds length
+  shows: skew traded for loss
+  catch: uncoupled length cap
+  coverage:
+    script: check_diffpair
+    rule: diffpair_uncoupled
+    level: L2
+  target_level: L2
+  gap: none
+  hit_on:
+  - usb-buck
+  sources:
+  - L311
+- id: SI-04
+  category: SI
+  mode: Via asymmetry in a pair
+  shows: common-mode conversion
+  catch: matched vias
+  coverage:
+    script: check_diffpair
+    rule: diffpair_via_asymmetry
+    level: L2
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[18]'
+- id: SI-05
+  category: SI
+  mode: Open trunk or mesh route on a 3-pad pair
+  shows: only first leg closes
+  catch: connectivity of trunk
+  coverage:
+    script: check_diffpair
+    rule: diffpair_open_trunk
+    level: L2
+  target_level: L3
+  gap: router creates it (T#119)
+  hit_on:
+  - lumina-carrier
+  sources:
+  - L1302
+- id: SI-06
+  category: SI
+  mode: Pair not recognised (naming)
+  shows: check does not run
+  catch: netlist_audit diffpair_naming
+  coverage:
+    script: check_diffpair
+    rule: diffpair_missing_net; netlist_audit
+    level: L1
+  target_level: L2
+  gap: auto-discovery by name only
+  hit_on: []
+  sources:
+  - netlist_audit
+- id: SI-07
+  category: SI
+  mode: Skew gate blind to pad and via ends
+  shows: 35 mm vs 6 mm true; magjack 2.84 mm apart
+  catch: measure end to end incl. vias
+  coverage:
+    script: check_diffpair
+    rule: '-'
+    level: L2
+  target_level: L2
+  gap: fixed; keep a mutant
+  hit_on:
+  - lumina-carrier
+  sources:
+  - L1564
+- id: SI-08
+  category: SI
+  mode: CPW vs microstrip, pour near controlled trace
+  shows: Z0 75 vs 88 ohm
+  catch: solver or coplanar formula
+  coverage:
+    script: check_diffpair (table)
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: T#234 open
+  hit_on:
+  - rf-term-150w
+  sources:
+  - L3046
+- id: SI-09
+  category: SI
+  mode: Order stackup or impedance template differs from design
+  shows: nonexistent template; 1 oz vs 0.5 oz inner
+  catch: compare order stackup to design
+  coverage:
+    script: order_submit (partial)
+    rule: '-'
+    level: L1
+  target_level: L3
+  gap: T#141, T#208 open
+  hit_on:
+  - lumina-carrier
+  sources:
+  - L1654
+  - B:commit 2026-07-30
+- id: SI-10
+  category: SI
+  mode: Crosstalk spacing
+  shows: corrupted data
+  catch: '>= 3x width or guard'
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[19]'
+- id: SI-11
+  category: SI
+  mode: USB D+/D- swapped or CC wiring wrong
+  shows: no detect, no 5 V
+  catch: separate 5.1k Rd per CC; D+ pull-up
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[17][18]'
+- id: SI-12
+  category: SI
+  mode: Stubs and termination on fast nets
+  shows: reflections
+  catch: stub length cap
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[19]'
+- id: SI-13
+  category: SI
+  mode: Clock or crystal routed near sensitive input
+  shows: spurs
+  catch: guard, short, nothing beneath
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[15]'
+- id: ANA-01
+  category: ANA
+  mode: ADC reference or analog supply noisy
+  shows: jittery codes
+  catch: ferrite or RC to VDDA; VREF cap
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[15]'
+- id: ANA-02
+  category: ANA
+  mode: Analog and digital returns mixed
+  shows: offsets
+  catch: partition by placement, single crossing
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[20]'
+- id: ANA-03
+  category: ANA
+  mode: Class-D output couples into inputs
+  shows: hum, whine
+  catch: route inputs away, differential
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on:
+  - stereo-class-d-amp
+  sources:
+  - '[22]'
+- id: ANA-04
+  category: ANA
+  mode: PLL or VCO supply noise
+  shows: phase noise
+  catch: LC filter, own LDO
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L0
+  gap: rare
+  hit_on: []
+  sources:
+  - '[24]'
+- id: ANA-05
+  category: ANA
+  mode: Kelvin sense tied on global GND
+  shows: current sense error
+  catch: Kelvin net ties
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on:
+  - bldc-motor-driver
+  sources:
+  - B:PCB-0018-A
+- id: ANA-06
+  category: ANA
+  mode: Sense RC too slow or wrong range
+  shows: phase sense ~170 Hz too slow for BEMF
+  catch: RC corner vs signal band
+  coverage:
+    script: sim_run (bench only)
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: none
+  hit_on:
+  - bldc-motor-driver
+  sources:
+  - B:PCB-0018-A
+- id: ANA-07
+  category: ANA
+  mode: Return of PWM or sense off GND plane
+  shows: noise, shared return
+  catch: reference plane under signal
+  coverage:
+    script: check_return_path
+    rule: '-'
+    level: L2
+  target_level: L2
+  gap: fixed
+  hit_on:
+  - lumina-par
+  sources:
+  - B:commit 2026-08-08
+- id: ANA-08
+  category: ANA
+  mode: Anti-alias cap far from ADC
+  shows: aliasing, noise
+  catch: satellite distance rule
+  coverage:
+    script: place_metrics (declared separations only)
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: annealer re-derives slots (2026-08-19)
+  hit_on:
+  - bb-adc
+  sources:
+  - 2026-08-19 [placement]
+- id: ANA-09
+  category: ANA
+  mode: NTC or divider range off
+  shows: wrong temperature
+  catch: divider range vs ADC
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[27]'
+- id: ANA-10
+  category: ANA
+  mode: Crystal layout parasitics
+  shows: start failure
+  catch: guard, short, no signals under
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[15]'
+- id: FAB-01
+  category: FAB
+  mode: Track width or spacing below fab minimum
+  shows: opens or shorts
+  catch: JLC 0.127 mm 2L / 0.09 mm 4L
+  coverage:
+    script: dfm_check
+    rule: dfm_trace_width,dfm_clearance
+    level: L2
+  target_level: L2
+  gap: 'held by PR #63'
+  hit_on:
+  - lumina-carrier
+  sources:
+  - '[1]'
+- id: FAB-02
+  category: FAB
+  mode: Annular ring too small
+  shows: breakout
+  catch: '>= 0.125 mm'
+  coverage:
+    script: dfm_check
+    rule: dfm_annular_ring
+    level: L2
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[1][29]'
+- id: FAB-03
+  category: FAB
+  mode: Hole size outside fab range
+  shows: not buildable
+  catch: drill table
+  coverage:
+    script: dfm_check
+    rule: dfm_hole_size
+    level: L2
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[1]'
+- id: FAB-04
+  category: FAB
+  mode: Hole-to-hole too close
+  shows: merged drills; 0.31 mm vs 0.5 mm
+  catch: JLC hole-to-hole
+  coverage:
+    script: dfm_check
+    rule: dfm_hole_to_hole
+    level: L2
+  target_level: L2
+  gap: generator adds vias on top of vias (T#232)
+  hit_on:
+  - lumina-carrier
+  sources:
+  - L1705
+  - L1327
+- id: FAB-05
+  category: FAB
+  mode: Hole or copper too close to board edge
+  shows: exposed copper
+  catch: '>= 0.3 mm'
+  coverage:
+    script: dfm_check
+    rule: dfm_hole_to_edge,dfm_copper_to_edge
+    level: L2
+  target_level: L2
+  gap: edge no-op'd when outline empty (fixed)
+  hit_on:
+  - lumina-carrier
+  sources:
+  - L2178
+  - '[2]'
+- id: FAB-06
+  category: FAB
+  mode: Mask dam or sliver too narrow
+  shows: bridging
+  catch: dam >= 0.1 mm
+  coverage:
+    script: dfm_check
+    rule: dfm_mask_dam
+    level: L2
+  target_level: L2
+  gap: none
+  hit_on:
+  - rf-de-20m
+  sources:
+  - L3763
+- id: FAB-07
+  category: FAB
+  mode: Via in pad not filled or not tented
+  shows: solder wicks
+  catch: fill or offset
+  coverage:
+    script: dfm_check
+    rule: dfm_pad_tented (partial)
+    level: L1
+  target_level: L2
+  gap: T#285 open
+  hit_on:
+  - bb-ldo
+  - rf-de-20m
+  sources:
+  - L4106
+- id: FAB-08
+  category: FAB
+  mode: Silk stroke too thin
+  shows: unprintable
+  catch: '>= 0.15 mm'
+  coverage:
+    script: dfm_check
+    rule: dfm_silk_width
+    level: L1
+  target_level: L2
+  gap: warnings on 4 boards, likely logo graphics
+  hit_on:
+  - PCB-0018-A
+  - rp2040-mini
+  - esp32c3-node
+  - nfc-card
+  sources:
+  - baseline.md
+- id: FAB-09
+  category: FAB
+  mode: Silk over pad or mask opening
+  shows: solder issue
+  catch: clip at openings
+  coverage:
+    script: check_silk
+    rule: silk_over_pad; dfm_check:dfm_silk_over_pad
+    level: L2
+  target_level: L2
+  gap: slivers are noise
+  hit_on:
+  - usb-buck
+  - pd-trigger
+  sources:
+  - L615
+  - L687
+- id: FAB-10
+  category: FAB
+  mode: Refdes attributed to the wrong part
+  shows: reads as another part's label
+  catch: nearest-pad rule
+  coverage:
+    script: check_silk
+    rule: silk_misattributed
+    level: L2
+  target_level: L3
+  gap: silk_place only sometimes fixes (T#238); 26 on one board
+  hit_on:
+  - sbuck-5v3a
+  - rp2040-mini
+  - lumina-carrier
+  sources:
+  - L3103
+- id: FAB-11
+  category: FAB
+  mode: Silk text illegible or has no legal spot
+  shows: unreadable
+  catch: text height, legal spot
+  coverage:
+    script: check_silk
+    rule: silk_thin,silk_illegible
+    level: L2
+  target_level: L2
+  gap: 0.1 in header labels need 1.70 mm run
+  hit_on:
+  - g0-sense
+  sources:
+  - '2026-08-27'
+- id: FAB-12
+  category: FAB
+  mode: Outline open, layer missing, drill file missing
+  shows: fab rejects
+  catch: zip contents check
+  coverage:
+    script: dfm_check
+    rule: dfm_open_outline,dfm_missing_layer,dfm_no_drill
+    level: L2
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[3]'
+- id: FAB-13
+  category: FAB
+  mode: Project rules below fab floor
+  shows: DRC 0/0 but unfabricable; min_track 0.1 mm
+  catch: rules floor = fab floor
+  coverage:
+    script: rules_gen (generator)
+    rule: '-'
+    level: L3
+  target_level: L3
+  gap: no check of .kicad_pro / .kicad_dru
+  hit_on:
+  - lumina-carrier
+  - bb-ldo
+  sources:
+  - L2011
+  - L2178
+- id: FAB-14
+  category: FAB
+  mode: Gerber export wrong (arcs flattened, empty outline, NPTH marked plated)
+  shows: phantom edge errors; checks no-op
+  catch: round-trip against board
+  coverage:
+    script: gerblib / dfm_check
+    rule: '-'
+    level: L1
+  target_level: L3
+  gap: T#286 open
+  hit_on:
+  - lumina-carrier
+  - rf-de-20m
+  sources:
+  - L2510
+  - L2178
+  - L4140
+- id: FAB-15
+  category: FAB
+  mode: Gerber vs netlist mismatch
+  shows: shorts or opens in fab
+  catch: IPC-356 compare
+  coverage:
+    script: dfm_check
+    rule: pad_net_mismatch
+    level: L2
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[2]'
+- id: FAB-16
+  category: FAB
+  mode: Slivers, acid traps, thin thermal-relief spokes
+  shows: etch defects
+  catch: angle and spoke checks
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[2][3]'
+- id: FAB-17
+  category: FAB
+  mode: Order copper, layers or stackup differ from design
+  shows: wrong 1 oz vs 0.5 oz; wrong quote
+  catch: compare order payload to design
+  coverage:
+    script: order_submit (partial)
+    rule: '-'
+    level: L1
+  target_level: L3
+  gap: T#208, T#141
+  hit_on:
+  - buck-5v3a
+  - lumina-carrier
+  sources:
+  - L1654
+  - L2678
+- id: FAB-18
+  category: FAB
+  mode: Order creation fails ambiguously
+  shows: HTTP 200 code 2; unknown if placed
+  catch: idempotency; check order list
+  coverage:
+    script: order_submit
+    rule: '-'
+    level: L2
+  target_level: L3
+  gap: T#162 open
+  hit_on:
+  - lumina-carrier
+  sources:
+  - L1635
+  - L2033
+- id: FAB-19
+  category: FAB
+  mode: Imported footprint geometry self-violating
+  shows: EP no net; courtyard excludes pads; pad stroke inflates copper
+  catch: fp_verify vs datasheet
+  coverage:
+    script: fp_verify
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: T#8, T#218, T#327
+  hit_on:
+  - pd-trigger
+  - g0-sense
+  - lumina-par
+  sources:
+  - L1167
+  - L4807
+- id: FAB-20
+  category: FAB
+  mode: Imported footprint metadata breaks tools
+  shows: through_hole on SMD; User.Drawings layer crashes kicad-cli
+  catch: sanitise on import
+  coverage:
+    script: fpfix.py (generator)
+    rule: '-'
+    level: L3
+  target_level: L3
+  gap: T#212 open
+  hit_on:
+  - rf-term-150w
+  sources:
+  - L2752
+  - L55
+- id: FAB-21
+  category: FAB
+  mode: Land dimension taken from envelope, not pitch
+  shows: GaN gate pad 0.11 mm off
+  catch: datasheet land vs envelope
+  coverage:
+    script: fp_verify
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: T#252 open
+  hit_on:
+  - rf-de-20m
+  sources:
+  - L3324
+- id: FAB-22
+  category: FAB
+  mode: Etched-copper part (spiral) carries no net
+  shows: unconnected and shorting DRC
+  catch: net on fp_poly
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: T#256 open
+  hit_on:
+  - rf-de-20m
+  sources:
+  - L3406
+- id: FAB-23
+  category: FAB
+  mode: Per-net clearance rules pad-blind
+  shows: 406 hv errors; Freerouting ignores DRU
+  catch: pad-aware HV escape check
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: T#117, T#269 open
+  hit_on:
+  - bldc-motor-driver
+  - rf-de-20m
+  sources:
+  - L1280
+  - L3715
+- id: FAB-24
+  category: FAB
+  mode: Rules file silently matches nothing
+  shows: DRU token A.Net ignored; copy outside project changes rules
+  catch: lint DRU against netlist
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L3
+  gap: T#75 open
+  hit_on:
+  - poe_tap
+  sources:
+  - L222
+  - L754
+- id: FAB-25
+  category: FAB
+  mode: Moving a part on a routed board
+  shows: pad onto live trace; orphan stubs
+  catch: post-move DRC and stub check
+  coverage:
+    script: place_edit.py (tool)
+    rule: '-'
+    level: L2
+  target_level: L3
+  gap: T#129, T#145
+  hit_on:
+  - lumina-carrier
+  sources:
+  - L1455
+- id: FAB-26
+  category: FAB
+  mode: Mask or copper-weight capability exceeded
+  shows: 2 oz needs wider spacing
+  catch: capability table by weight
+  coverage:
+    script: dfm_check (partial)
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[1]'
+- id: DFA-01
+  category: DFA
+  mode: Polarized part rotated or marker on wrong pad
+  shows: dead part, destroyed FET
+  catch: per-pad net compare vs CPL
+  coverage:
+    script: dfm_check
+    rule: cpl_polarity
+    level: L2
+  target_level: L2
+  gap: per-pad compare only for diodes; marker-on-wrong-pad open
+  hit_on:
+  - sbuck-5v3a
+  - nfc-card
+  sources:
+  - L495
+  - B:commit 2026-08-09
+- id: DFA-02
+  category: DFA
+  mode: CPL rotation depends on JLC library origin
+  shows: U1/U2 rotated = dead card
+  catch: pin-1 or centroid check against fab origin
+  coverage:
+    script: dfm_check
+    rule: cpl_polarity (partial)
+    level: L1
+  target_level: L2
+  gap: unverifiable offline
+  hit_on:
+  - PCB-0022-A
+  sources:
+  - B:PCB-0022-A
+- id: DFA-03
+  category: DFA
+  mode: Pad nets swapped between schematic and board
+  shows: wrong connection
+  catch: schematic parity
+  coverage:
+    script: kc.py (parity); dfm_check
+    rule: pad_net_mismatch
+    level: L2
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - L141
+- id: DFA-04
+  category: DFA
+  mode: Part missing from BOM or CPL
+  shows: whole-board function absent (250 W load)
+  catch: BOM and CPL vs board refs
+  coverage:
+    script: dfm_check
+    rule: dfm_bom_incomplete
+    level: L2
+  target_level: L2
+  gap: exclude_from_pos_files not checked
+  hit_on:
+  - rf-term-150w
+  sources:
+  - B:PCB-0009-A
+- id: DFA-05
+  category: DFA
+  mode: BOM part not an LCSC part
+  shows: cannot assemble
+  catch: LCSC lookup
+  coverage:
+    script: dfm_check
+    rule: dfm_bom_off_lcsc
+    level: L2
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[1]'
+- id: DFA-06
+  category: DFA
+  mode: Footprint does not match the package
+  shows: wrong part fit
+  catch: footprint vs package
+  coverage:
+    script: dfm_check
+    rule: dfm_unplaced_in_package
+    level: L2
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[10]'
+- id: DFA-07
+  category: DFA
+  mode: DNP not machine-readable
+  shows: 9 DNP parts populated in BOM and CPL
+  catch: DNP attribute vs BOM, CPL and fields
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: U3 assembly classes fixed boards; no check
+  hit_on:
+  - lumina-par
+  - rf-de-20m
+  sources:
+  - L2405
+  - B:commit 2026-08-14
+- id: DFA-08
+  category: DFA
+  mode: parts.json missing, BOM leg silently skipped
+  shows: dfm gate PASS with half the checks off
+  catch: skip is a failure at release
+  coverage:
+    script: dfm_check (strict)
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: T#284, T#335 open
+  hit_on:
+  - rf-de-20m
+  - g0-sense
+  sources:
+  - L4083
+  - L4950
+- id: DFA-09
+  category: DFA
+  mode: Part out of stock, extended-part cost, no alternate
+  shows: order blocked
+  catch: stock and basic/extended count
+  coverage:
+    script: order_quote; distributor_bom
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: stock at BOM review only
+  hit_on:
+  - pd-trigger-lite
+  sources:
+  - 2026-09 [jlc]
+- id: DFA-10
+  category: DFA
+  mode: Schematic and board fields out of sync
+  shows: 15 footprint_symbol_field_mismatch
+  catch: ERC parity
+  coverage:
+    script: kc.py (parity)
+    rule: '-'
+    level: L2
+  target_level: L2
+  gap: stale copies (T#283)
+  hit_on:
+  - rf-de-20m
+  sources:
+  - L4066
+- id: DFA-11
+  category: DFA
+  mode: Tombstoning risk
+  shows: 0402 stands up
+  catch: symmetric pads and copper
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[4][5]'
+- id: DFA-12
+  category: DFA
+  mode: Fine-pitch bridging or decouplers on pin tips
+  shows: 9 shorts and 9 mask bridges
+  catch: mask dams; courtyard from pads
+  coverage:
+    script: kc.py (DRC); place_metrics
+    rule: courtyard_overlap
+    level: L2
+  target_level: L2
+  gap: imported courtyards enclose body only (T#218)
+  hit_on:
+  - stm32-blinky
+  sources:
+  - L561
+  - L1167
+- id: DFA-13
+  category: DFA
+  mode: Land pattern wrong
+  shows: skewed part
+  catch: datasheet land vs footprint
+  coverage:
+    script: fp_verify
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: T#8 open
+  hit_on: []
+  sources:
+  - '[12]'
+- id: DFA-14
+  category: DFA
+  mode: Fiducials missing
+  shows: misplacement
+  catch: '>= 2 board fiducials; local pair for fine pitch'
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[7]'
+- id: DFA-15
+  category: DFA
+  mode: Panel rails and tooling
+  shows: breakage
+  catch: 5 mm rails, V-score vs tab
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[5][7]'
+- id: DFA-16
+  category: DFA
+  mode: Courtyard overlap or part spacing
+  shows: collision, no rework
+  catch: courtyard overlap; 0.2-0.3 mm gap
+  coverage:
+    script: place_metrics
+    rule: courtyard_overlap,courtyard_missing
+    level: L2
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[5][12]'
+- id: DFA-17
+  category: DFA
+  mode: Part near board edge
+  shows: dropped on conveyor
+  catch: 5 mm clear if railless
+  coverage:
+    script: place_metrics
+    rule: edge_violation (declared only)
+    level: L1
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[5][7]'
+- id: DFA-18
+  category: DFA
+  mode: Assembly sides, THT on SMT line, 0201
+  shows: assembly refused or low yield
+  catch: 'economic assembly: top SMD only'
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[1]'
+- id: DFA-19
+  category: DFA
+  mode: Polarity cue hidden or silk misplaced
+  shows: chamfer hidden under part; "+" on pad 1
+  catch: polarity cue vs pad function
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: T#255, T#258, T#322 open
+  hit_on:
+  - rf-de-20m
+  - g0-sense
+  sources:
+  - L3387
+  - L3463
+  - L4721
+- id: DFA-20
+  category: DFA
+  mode: EP paste voiding and BGA joint risk
+  shows: intermittent joint
+  catch: window paste pattern
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[6]'
+- id: DFA-21
+  category: DFA
+  mode: Stencil aperture area ratio
+  shows: opens
+  catch: ratio >= 0.66
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[12]'
+- id: DFA-22
+  category: DFA
+  mode: Passive tolerance or dielectric
+  shows: drift
+  catch: C0G for RF/timing; 1% for dividers
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[10]'
+- id: DFA-23
+  category: DFA
+  mode: 'Sourcing: single source, no US distributor, price tiers wrong'
+  shows: cannot buy
+  catch: two-source check
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: T#299, T#300
+  hit_on:
+  - CH224 boards
+  sources:
+  - L4327
+  - L4342
+- id: DFA-24
+  category: DFA
+  mode: Half-pitch or odd package pulled as through-hole
+  shows: CPL would drop it
+  catch: attr vs pad types
+  coverage:
+    script: fp_verify (partial)
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: none
+  hit_on:
+  - pd-trigger-lite-dip
+  sources:
+  - '2026-09-24'
+- id: DFA-25
+  category: DFA
+  mode: Tin whiskers, finish, flux residue
+  shows: shorts under fine leads
+  catch: finish choice; clean
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L0
+  gap: rare
+  hit_on: []
+  sources:
+  - '[25][9]'
+- id: DFA-26
+  category: DFA
+  mode: Assembly drawing missing
+  shows: wrong orientation or DNP
+  catch: assembly PDF with polarity, pin 1, DNP
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[10]'
+- id: TEST-01
+  category: TEST
+  mode: No test points on rails
+  shows: cannot debug
+  catch: TP per rail and GND
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[10][11]'
+- id: TEST-02
+  category: TEST
+  mode: No SWD or JTAG access
+  shows: cannot flash
+  catch: header or pads
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[15]'
+- id: TEST-03
+  category: TEST
+  mode: Bootloader entry impossible
+  shows: bricked board
+  catch: BOOT0 button or jumper
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[15]'
+- id: TEST-04
+  category: TEST
+  mode: No power or status LED
+  shows: unclear state
+  catch: LED per rail
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[10]'
+- id: TEST-05
+  category: TEST
+  mode: No probe labels or legal silk spot
+  shows: misprobe
+  catch: TP labels, pin 1
+  coverage:
+    script: check_silk (partial)
+    rule: '-'
+    level: L1
+  target_level: L1
+  gap: none
+  hit_on:
+  - g0-sense
+  sources:
+  - '2026-08-27'
+- id: TEST-06
+  category: TEST
+  mode: Debug UART not exposed
+  shows: no logs
+  catch: header or TPs
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[10]'
+- id: TEST-07
+  category: TEST
+  mode: Reset not reachable
+  shows: cannot reset
+  catch: button or TP
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[15]'
+- id: TEST-08
+  category: TEST
+  mode: No board name, revision and date on silk
+  shows: spin confusion
+  catch: silk text
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[10]'
+- id: TEST-09
+  category: TEST
+  mode: Antenna tuning or test connector missing
+  shows: RF off
+  catch: Pi pads, u.FL
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L0
+  gap: rare
+  hit_on: []
+  sources:
+  - '[24]'
+- id: TEST-10
+  category: TEST
+  mode: Gate results not recorded; ERC pass absent from state
+  shows: six gates passed, none recorded
+  catch: state.json records each gate
+  coverage:
+    script: gate.py
+    rule: '-'
+    level: L2
+  target_level: L2
+  gap: fixed; waiver sidecar path wrong (T#281)
+  hit_on:
+  - bb-buck
+  - rf-de-20m
+  sources:
+  - B:commit 2026-08-16
+  - L4029
+- id: TEST-11
+  category: TEST
+  mode: Bench baselines pinned to one KiCad version
+  shows: fail on 10.0.5
+  catch: re-pin baselines on upgrade
+  coverage:
+    script: bench.py
+    rule: '-'
+    level: L2
+  target_level: L2
+  gap: T#317, T#338
+  hit_on:
+  - pd-trigger
+  sources:
+  - L4668
+- id: TEST-12
+  category: TEST
+  mode: Eval corpus too thin
+  shows: one mutant per check; no ERC or DRC mutants
+  catch: see Section 3
+  coverage:
+    script: score_checks.py
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: backlog rows multi-mutant, erc-drc-mutants
+  hit_on: []
+  sources:
+  - checks.md
+- id: FW-01
+  category: FW
+  mode: Boot strap pins floating or wrong
+  shows: wrong boot mode
+  catch: BOOT0 pull-down; ESP32 strapping valid at reset
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on:
+  - g0-sense
+  sources:
+  - '2026-08-27'
+- id: FW-02
+  category: FW
+  mode: NRST handling
+  shows: spurious reset
+  catch: 100 nF, pull-up, supervisor
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on:
+  - bb-mcu
+  sources:
+  - B:PCB-0011-A
+- id: FW-03
+  category: FW
+  mode: SWD pins repurposed
+  shows: cannot reprogram
+  catch: keep PA13/PA14
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[15]'
+- id: FW-04
+  category: FW
+  mode: Pin mux conflict or function absent on pin
+  shows: peripheral missing
+  catch: AF table per pin
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[15]'
+- id: FW-05
+  category: FW
+  mode: ADC or timer channel not on pin
+  shows: PWM or ADC unavailable
+  catch: pin table check
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on:
+  - bldc-motor-driver
+  sources:
+  - '[15][21]'
+- id: FW-06
+  category: FW
+  mode: Peripheral pin clash
+  shows: one disables another
+  catch: per-peripheral allocation
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[15]'
+- id: FW-07
+  category: FW
+  mode: USB clock accuracy or HSE failure
+  shows: enumeration fails
+  catch: CRS, tolerance, CL
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[15]'
+- id: FW-08
+  category: FW
+  mode: GPIO default state drives FETs at reset
+  shows: shoot-through, motor spin
+  catch: external pull-down; tri-state at reset
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on:
+  - bldc-motor-driver
+  sources:
+  - '[21]'
+- id: FW-09
+  category: FW
+  mode: Driver enable polarity or missing enable
+  shows: outputs live at reset; arming only via TIM1 MOE
+  catch: pull-down on EN
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: design constraint
+  hit_on:
+  - bldc-motor-driver
+  sources:
+  - B:PCB-0018-A
+- id: FW-10
+  category: FW
+  mode: GPIO current limits
+  shows: LED overcurrent
+  catch: per-pin and port limits
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[15]'
+- id: FW-11
+  category: FW
+  mode: Interrupt or wake pin floating; sleep leakage
+  shows: spurious wake, drain
+  catch: pull states, Iq
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[27]'
+- id: FW-12
+  category: FW
+  mode: Programmer level mismatch
+  shows: no VTref
+  catch: VTref on header
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[10]'
+- id: FW-13
+  category: FW
+  mode: LSE or HSE expected but absent
+  shows: RTC off
+  catch: config vs hardware
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[15]'
+- id: FW-14
+  category: FW
+  mode: Firmware pin map out of date vs layout
+  shows: works only with wiring hacks
+  catch: pin map regenerated from netlist, diff each spin
+  coverage:
+    script: fwe pinmap (outside hwde gates)
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: not a hwde gate
+  hit_on: []
+  sources:
+  - '[10]'
+- id: FW-15
+  category: FW
+  mode: Strap table inverted
+  shows: would select 5 V not 9 V
+  catch: strap logic vs ON=GND
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: fixed by hand
+  hit_on:
+  - pd-trigger
+  sources:
+  - L843
+- id: FW-16
+  category: FW
+  mode: Complementary timer pins not on one timer
+  shows: BLDC drive impossible
+  catch: timer pin table
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[21]'
+- id: SAFE-01
+  category: SAFE
+  mode: Spacing too small for working voltage
+  shows: arc or tracking
+  catch: IPC-2221 / creepage table
+  coverage:
+    script: check_creepage
+    rule: creepage
+    level: L2
+  target_level: L2
+  gap: 36 FPs on golden; pairs counted as one (T#196)
+  hit_on:
+  - lumina-carrier
+  - PCB-0018-A
+  sources:
+  - L1600
+  - L1889
+- id: SAFE-02
+  category: SAFE
+  mode: High-voltage nets not declared
+  shows: 3 of 7 >= 30 V nets covered; inherits 0.1 mm floor
+  catch: every >= 30 V net in voltages and DRU
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: T#147, T#198 open
+  hit_on:
+  - lumina-par
+  sources:
+  - L1785
+  - L2559
+- id: SAFE-03
+  category: SAFE
+  mode: Isolation barrier collapsed by a replacement footprint
+  shows: 3.58 -> 1.05 mm vs vendor 1.40 mm
+  catch: declared barrier checked vs footprint
+  coverage:
+    script: check_creepage (partial)
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: barrier not declared
+  hit_on:
+  - lumina-carrier
+  sources:
+  - L1110
+  - L1226
+- id: SAFE-04
+  category: SAFE
+  mode: Creepage modelled on wrong pad shape or signed voltage
+  shows: 0.3-0.5 mm answer shift; 8 invented errors
+  catch: pad shape, coating, abs voltage
+  coverage:
+    script: check_creepage
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: T#196 open
+  hit_on:
+  - lumina-carrier
+  sources:
+  - L1401
+  - L1889
+- id: SAFE-05
+  category: SAFE
+  mode: Net-tie or on-die pitch below rule
+  shows: 0.35 mm pitch on 200 V die; 0.014 mm turn gap
+  catch: waivable intra-die only
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: T#259 open; DRC blind in net-tie
+  hit_on:
+  - rf-de-20m
+  sources:
+  - L3470
+- id: SAFE-06
+  category: SAFE
+  mode: Hazard marking absent
+  shows: 48 V bench board unmarked
+  catch: silk for > 50 V and hot surfaces
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on:
+  - lumina-par
+  sources:
+  - B:commit 2026-08-08
+- id: SAFE-07
+  category: SAFE
+  mode: Exposed high-voltage test points
+  shows: shock
+  catch: no exposed > 50 V TPs
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[13]'
+- id: SAFE-08
+  category: SAFE
+  mode: Battery cell certification and shipping
+  shows: fire, UN38.3
+  catch: process rule
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L0
+  gap: out of scope for eda
+  hit_on: []
+  sources:
+  - '[27]'
+- id: SAFE-09
+  category: SAFE
+  mode: USB-C PD sink non-compliance
+  shows: source damaged; draws > 0.5 A early
+  catch: Rd on each CC; negotiation
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[17]'
+- id: SAFE-10
+  category: SAFE
+  mode: RF regulatory and RoHS
+  shows: FCC, CE fail
+  catch: module vs intentional radiator
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L0
+  gap: out of scope
+  hit_on: []
+  sources:
+  - '[24][25]'
+- id: SAFE-11
+  category: SAFE
+  mode: CTI and pollution-degree assumption
+  shows: surface tracking
+  catch: FR4 CTI 175-250 V; PD2
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[13]'
+- id: CONC-01
+  category: CONC
+  mode: Brief number has no calc or sim behind it
+  shows: board powers but misses spec
+  catch: requirement-to-design trace table
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: no brief trace check
+  hit_on:
+  - PCB-0022-A
+  sources:
+  - '[26]'
+- id: CONC-02
+  category: CONC
+  mode: Requirements amended elsewhere, not in requirements.md
+  shows: castellated; ICD table authoritative but wrong
+  catch: requirements.md is the one source
+  coverage:
+    script: check_requirements.py (schema only)
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: checks structure, not content
+  hit_on:
+  - PCB-0019-A
+  - lumina-par
+  sources:
+  - B:PCB-0019-A
+- id: CONC-03
+  category: CONC
+  mode: Built to the wrong format or spec
+  shows: 'NFC card rev A: wrong outline, thickness, layers, coil'
+  catch: brief fields mapped to board facts
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on:
+  - PCB-0022-A
+  sources:
+  - 'B:commit 2026-10-01 #17'
+- id: CONC-04
+  category: CONC
+  mode: Outline, mounting or connector drift vs ICD
+  shows: 48x30 over ceiling; holes 13.05 vs 11.4 mm; owner CLI size lost
+  catch: brief facts vs board facts
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: T#312 open
+  hit_on:
+  - bb-buck
+  - rp2040-mini
+  - lumina-par
+  sources:
+  - '2026-08-16'
+  - L4603
+- id: CONC-05
+  category: CONC
+  mode: Threshold chosen against wrong operating point
+  shows: PY32 BOR 1.8-2.0 V on a 2 V harvester
+  catch: operating point vs part thresholds
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on:
+  - PCB-0022-A
+  sources:
+  - B:commit 2026-10-01
+- id: CONC-06
+  category: CONC
+  mode: Sim bench stale or invalid
+  shows: parasitic 1.3 vs 4.7 pF; .step last point only; empty bounds pass
+  catch: invalidate sims when routed values change
+  coverage:
+    script: sim_run (bounds only)
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: T#233, T#236, T#279 open
+  hit_on:
+  - rf-term-150w
+  - usbbuck4
+  sources:
+  - L3032
+  - L3939
+  - L991
+- id: CONC-07
+  category: CONC
+  mode: Power budget unrealistic
+  shows: batteries die fast
+  catch: sum worst-case loads, efficiency
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[10]'
+- id: CONC-08
+  category: CONC
+  mode: Wrong part for the use
+  shows: temperature grade or supply range mismatch
+  catch: parametric check vs requirements
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[10]'
+- id: CONC-09
+  category: CONC
+  mode: Missing function
+  shows: no charge path, debug or connector
+  catch: block checklist vs brief
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[10][26]'
+- id: CONC-10
+  category: CONC
+  mode: Interface or cable compatibility
+  shows: PD profile, host pinout
+  catch: pinout vs mating device
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[17]'
+- id: CONC-11
+  category: CONC
+  mode: Cost target exceeded
+  shows: BOM over budget
+  catch: BOM cost vs target
+  coverage:
+    script: order_quote (partial)
+    rule: '-'
+    level: L1
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[26][1]'
+- id: CONC-12
+  category: CONC
+  mode: Datasheet pinout read wrong
+  shows: pins or footprint off
+  catch: second reader, pin-count cross-check
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: T#211, T#105
+  hit_on:
+  - g0-sense
+  sources:
+  - L1091
+  - '[26]'
+- id: CONC-13
+  category: CONC
+  mode: Reference-layout deviation unexplained
+  shows: subtle layout bug
+  catch: compare to datasheet layout
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L1
+  gap: none
+  hit_on: []
+  sources:
+  - '[16]'
+- id: CONC-14
+  category: CONC
+  mode: Assumptions and waivers undocumented
+  shows: later contradictory changes
+  catch: durable waivers with reason
+  coverage:
+    script: verify waivers (reason+approved)
+    rule: '-'
+    level: L2
+  target_level: L2
+  gap: none
+  hit_on: []
+  sources:
+  - '[26]'
+- id: CONC-15
+  category: CONC
+  mode: Environment omitted (temp, humidity, vibration)
+  shows: field failure
+  catch: temp grade, coating, CAF spacing
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L0
+  gap: rare
+  hit_on: []
+  sources:
+  - '[9]'
+- id: CONC-16
+  category: CONC
+  mode: Lifetime or update path unspecified
+  shows: field aging; no DFU/OTA
+  catch: plan with hardware support
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L0
+  gap: rare
+  hit_on: []
+  sources:
+  - '[14][15]'
+backlog:
+- rank: 1
+  id: wire-registry
+  title: Load checks and mutants from drop-in fragment files
+  modes:
+  - TEST-12
+  files:
+  - .claude/skills/hwde/scripts/verify_all.py
+  - .claude/skills/hwde/scripts/score_checks.py
+  - tests/test_golden.py
+  - tests/test_check_scorecard.py
+  - .claude/skills/hwde/reference/gates.yaml
+  - .claude/skills/hwde/scripts/checks.d/README.md
+  eval:
+    board: blinky2
+    mutation: add a dummy fragment under checks.d and manifest.d
+    expect_rule: fragment_loaded (test_every_check_has_recall passes for a drop-in check)
+  size: M
+  depends_on: []
+  group: A. foundation
+- rank: 2
+  id: mate-pins
+  title: Check mated connector pairs for mirrored pins and shorts
+  modes:
+  - MECH-05
+  - MECH-06
+  files:
+  - .claude/skills/hwde/scripts/check_mate_pins.py
+  - tests/test_check_mate_pins.py
+  - tests/golden/mutations/mate_pins.py
+  - tests/golden/mutants/mate_pins/**
+  - .claude/skills/hwde/scripts/checks.d/mate_pins.yaml
+  - tests/golden/manifest.d/mate_pins.yaml
+  - .claude/skills/hwde/reference/connector_pinmap.yaml
+  eval:
+    board: usbbuck4
+    mutation: add a second same-family connector and swap two pad nets across the pair
+    expect_rule: mate_pin_mismatch
+  size: M
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 3
+  id: bom-board-sync
+  title: Check DNP, BOM, CPL and board attributes agree
+  modes:
+  - DFA-07
+  - DFA-04
+  - DFA-08
+  files:
+  - .claude/skills/hwde/scripts/check_bom_sync.py
+  - tests/test_check_bom_sync.py
+  - tests/golden/mutations/bom_sync.py
+  - tests/golden/mutants/bom_sync/**
+  - .claude/skills/hwde/scripts/checks.d/bom_sync.yaml
+  - tests/golden/manifest.d/bom_sync.yaml
+  eval:
+    board: blinky2
+    mutation: mark a part DNP in the schematic but leave it in the BOM sidecar
+    expect_rule: bom_dnp_populated
+  size: S
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 4
+  id: polarity-marker
+  title: Check polarity marks sit on the right pad
+  modes:
+  - RATE-06
+  - DFA-19
+  files:
+  - .claude/skills/hwde/scripts/check_polarity.py
+  - tests/test_check_polarity.py
+  - tests/golden/mutations/polarity.py
+  - tests/golden/mutants/polarity/**
+  - .claude/skills/hwde/scripts/checks.d/polarity.yaml
+  - tests/golden/manifest.d/polarity.yaml
+  eval:
+    board: usbbuck4
+    mutation: move a diode silk marker to the anode pad
+    expect_rule: polarity_marker_wrong_pad
+  size: M
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 5
+  id: creepage-v2
+  title: Count every HV pair; declare every 30 V net
+  modes:
+  - SAFE-01
+  - SAFE-02
+  - SAFE-03
+  - SAFE-04
+  - SAFE-05
+  files:
+  - .claude/skills/hwde/scripts/check_creepage.py
+  - .claude/skills/hwde/scripts/check_hv_coverage.py
+  - tests/test_check_hv_coverage.py
+  - tests/test_creepage_v2.py
+  - tests/golden/mutations/hv_undeclared.py
+  - tests/golden/mutants/hv_undeclared/**
+  - .claude/skills/hwde/scripts/checks.d/hv_coverage.yaml
+  - tests/golden/manifest.d/hv_coverage.yaml
+  eval:
+    board: blinky2
+    mutation: add a 48 V net to constraints.voltages but not to the DRU netclass
+    expect_rule: hv_net_undeclared
+  size: M
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 6
+  id: thermal-v2
+  title: 'Fix thermal model: back pour, EP vias, Tj vs abs max'
+  modes:
+  - THERM-01
+  - THERM-02
+  - THERM-03
+  - THERM-12
+  files:
+  - .claude/skills/hwde/scripts/check_thermal.py
+  - tests/test_thermal_v2.py
+  - tests/golden/mutations/ep_vias_removed.py
+  - tests/golden/mutants/ep_vias_removed/**
+  - tests/golden/manifest.d/thermal_v2.yaml
+  eval:
+    board: blinky2
+    mutation: delete the thermal vias under the LDO exposed pad
+    expect_rule: thermal_vias
+  size: M
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 7
+  id: check-noise
+  title: Cut false alarms in current, ratings, route and silk checks
+  modes:
+  - PI-07
+  - PI-08
+  - RATE-04
+  - FAB-10
+  - EMC-12
+  - THERM-06
+  files:
+  - .claude/skills/hwde/scripts/check_current.py
+  - .claude/skills/hwde/scripts/check_ratings.py
+  - .claude/skills/hwde/scripts/check_route_style.py
+  - .claude/skills/hwde/scripts/check_silk.py
+  - tests/test_check_noise.py
+  - tests/golden/scorecard/triage.yaml
+  eval:
+    board: PCB-0017-A to PCB-0021-A (finished boards corpus)
+    mutation: none; goal is fewer warnings on the baseline with the 5 existing mutants still caught
+    expect_rule: undersized_track (still caught); advisory GND findings drop
+  size: M
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 8
+  id: decoupling-absence
+  title: Detect absent decoupling per supply pin, not by value
+  modes:
+  - PI-01
+  - PI-03
+  - PI-04
+  - PI-02
+  files:
+  - .claude/skills/hwde/scripts/check_decoupling.py
+  - .claude/skills/hwde/scripts/check_pdn.py
+  - tests/test_decoupling_absence.py
+  - tests/golden/mutations/pin_cap_removed.py
+  - tests/golden/mutants/pin_cap_removed/**
+  - tests/golden/manifest.d/decoupling_absence.yaml
+  eval:
+    board: usbbuck4
+    mutation: delete the only 100 nF cap on an IC supply pin
+    expect_rule: decoupler_missing
+  size: S
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 9
+  id: rules-integrity
+  title: Check project rules, zones and constraint coordinates
+  modes:
+  - FAB-13
+  - FAB-24
+  - PI-15
+  - PI-20
+  - MECH-17
+  files:
+  - .claude/skills/hwde/scripts/constraints_lint.py
+  - .claude/skills/hwde/scripts/check_board_rules.py
+  - tests/test_check_board_rules.py
+  - tests/golden/mutations/board_rules.py
+  - tests/golden/mutants/board_rules/**
+  - .claude/skills/hwde/scripts/checks.d/board_rules.yaml
+  - tests/golden/manifest.d/board_rules.yaml
+  eval:
+    board: blinky2
+    mutation: set min_track to 0.1 mm in the project file
+    expect_rule: rules_below_fab_floor
+  size: M
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 10
+  id: route-integrity
+  title: Find swallowed vias, starved pads and dead copper
+  modes:
+  - PI-11
+  - PI-12
+  - PI-13
+  - FAB-22
+  files:
+  - .claude/skills/hwde/scripts/check_route_integrity.py
+  - tests/test_check_route_integrity.py
+  - tests/golden/mutations/route_integrity.py
+  - tests/golden/mutants/route_integrity/**
+  - .claude/skills/hwde/scripts/checks.d/route_integrity.yaml
+  - tests/golden/manifest.d/route_integrity.yaml
+  eval:
+    board: rf4
+    mutation: remove the track that ties a stitch via to its pour
+    expect_rule: via_dangling
+  size: M
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 11
+  id: driver-network
+  title: Check gate-drive network values against datasheet floors
+  modes:
+  - RATE-14
+  - RATE-15
+  - RATE-16
+  - RATE-17
+  - RATE-18
+  files:
+  - .claude/skills/hwde/scripts/check_driver.py
+  - tests/test_check_driver.py
+  - tests/golden/mutations/driver.py
+  - tests/golden/mutants/driver/**
+  - .claude/skills/hwde/scripts/checks.d/driver.yaml
+  - tests/golden/manifest.d/driver.yaml
+  eval:
+    board: rf4
+    mutation: set gate resistor sidecar to 0.975 ohm vs 2 ohm floor
+    expect_rule: gate_r_below_floor
+  size: M
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 12
+  id: regulator-values
+  title: Recompute Vout, set-resistors and pull-ups from the netlist
+  modes:
+  - RATE-07
+  - RATE-08
+  - RATE-10
+  - RATE-13
+  - RATE-21
+  - RATE-22
+  files:
+  - .claude/skills/hwde/scripts/check_regulators.py
+  - tests/test_check_regulators.py
+  - tests/golden/mutations/regulators.py
+  - tests/golden/mutants/regulators/**
+  - .claude/skills/hwde/scripts/checks.d/regulators.yaml
+  - tests/golden/manifest.d/regulators.yaml
+  eval:
+    board: usbbuck4
+    mutation: change a feedback divider resistor so Vout is 12 percent high
+    expect_rule: vout_mismatch
+  size: M
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 13
+  id: mech-keepouts
+  title: Check mounting keepouts, flex zones and height budget
+  modes:
+  - MECH-10
+  - MECH-11
+  - MECH-12
+  - MECH-14
+  - MECH-15
+  files:
+  - .claude/skills/hwde/scripts/check_mechanical.py
+  - tests/test_check_mechanical.py
+  - tests/golden/mutations/mechanical.py
+  - tests/golden/mutants/mechanical/**
+  - .claude/skills/hwde/scripts/checks.d/mechanical.yaml
+  - tests/golden/manifest.d/mechanical.yaml
+  eval:
+    board: blinky2
+    mutation: place an MLCC 1.5 mm from a mounting hole
+    expect_rule: mlcc_flex_zone
+  size: M
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 14
+  id: esd-protection
+  title: Check ESD, OVP and fuse parts on every external port
+  modes:
+  - PROT-01
+  - PROT-02
+  - PROT-03
+  - PROT-04
+  - PROT-05
+  - PROT-06
+  - PROT-09
+  - PROT-10
+  files:
+  - .claude/skills/hwde/scripts/check_protection.py
+  - tests/test_check_protection.py
+  - tests/golden/mutations/protection.py
+  - tests/golden/mutants/protection/**
+  - .claude/skills/hwde/scripts/checks.d/protection.yaml
+  - tests/golden/manifest.d/protection.yaml
+  eval:
+    board: usbbuck4
+    mutation: delete the TVS on the USB connector nets
+    expect_rule: esd_missing_on_connector
+  size: M
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 15
+  id: mcu-hardware
+  title: Check boot, reset, SWD, crystal and reset-time pin states
+  modes:
+  - FW-01
+  - FW-02
+  - FW-03
+  - FW-12
+  - FW-13
+  - FW-15
+  - RATE-20
+  - TEST-02
+  - TEST-03
+  - TEST-07
+  files:
+  - .claude/skills/hwde/scripts/check_mcu_hw.py
+  - tests/test_check_mcu_hw.py
+  - tests/golden/mutations/mcu_hw.py
+  - tests/golden/mutants/mcu_hw/**
+  - .claude/skills/hwde/scripts/checks.d/mcu_hw.yaml
+  - tests/golden/manifest.d/mcu_hw.yaml
+  eval:
+    board: blinky2
+    mutation: remove the BOOT0 pull-down
+    expect_rule: boot0_floating
+  size: M
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 16
+  id: pinmux
+  title: Check pin functions against the MCU datasheet pin table
+  modes:
+  - FW-04
+  - FW-05
+  - FW-06
+  - FW-08
+  - FW-09
+  - FW-14
+  - FW-16
+  files:
+  - .claude/skills/hwde/scripts/check_pinmux.py
+  - tests/test_check_pinmux.py
+  - tests/golden/mutations/pinmux.py
+  - tests/golden/mutants/pinmux/**
+  - .claude/skills/hwde/scripts/checks.d/pinmux.yaml
+  - tests/golden/manifest.d/pinmux.yaml
+  eval:
+    board: blinky2
+    mutation: move the LED net to a pin with no timer channel
+    expect_rule: pinmux_no_function
+  size: M
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 17
+  id: testpoints
+  title: Check test points, status LED and revision silk
+  modes:
+  - TEST-01
+  - TEST-04
+  - TEST-05
+  - TEST-06
+  - TEST-08
+  files:
+  - .claude/skills/hwde/scripts/check_testpoints.py
+  - tests/test_check_testpoints.py
+  - tests/golden/mutations/testpoints.py
+  - tests/golden/mutants/testpoints/**
+  - .claude/skills/hwde/scripts/checks.d/testpoints.yaml
+  - tests/golden/manifest.d/testpoints.yaml
+  eval:
+    board: blinky2
+    mutation: delete the +3V3 test point
+    expect_rule: rail_no_testpoint
+  size: S
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 18
+  id: brief-trace
+  title: Check requirements.md facts and numbers against the board
+  modes:
+  - CONC-01
+  - CONC-02
+  - CONC-03
+  - CONC-04
+  - CONC-05
+  - MECH-09
+  - MECH-16
+  files:
+  - .claude/skills/hwde/scripts/check_brief_trace.py
+  - tests/test_check_brief_trace.py
+  - tests/golden/mutations/brief_trace.py
+  - tests/golden/mutants/brief_trace/**
+  - .claude/skills/hwde/scripts/checks.d/brief_trace.yaml
+  - tests/golden/manifest.d/brief_trace.yaml
+  - tests/golden/brief/**
+  eval:
+    board: blinky2
+    mutation: change the outline in requirements.md from 40x30 to 44x34
+    expect_rule: brief_outline_mismatch
+  size: L
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 19
+  id: fp-trust
+  title: 'Verify pulled footprints: drill, pin 1, courtyard, EP'
+  modes:
+  - MECH-13
+  - MECH-08
+  - THERM-04
+  - FAB-19
+  - FAB-21
+  - DFA-13
+  - DFA-24
+  files:
+  - .claude/skills/hwde/scripts/fp_verify.py
+  - tests/test_fp_trust.py
+  - tests/golden/mutations/fp_drill_short.py
+  - tests/golden/mutants/fp_drill_short/**
+  - tests/golden/manifest.d/fp_trust.yaml
+  eval:
+    board: blinky2
+    mutation: shrink a THT footprint drill by 0.2 mm
+    expect_rule: drill_mismatch
+  size: M
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 20
+  id: emc-layout
+  title: Check hot-loop area, fast nets at plane edges, entry filters
+  modes:
+  - EMC-04
+  - EMC-05
+  - EMC-07
+  - EMC-09
+  - EMC-10
+  - PI-05
+  - PI-06
+  - SI-10
+  - SI-12
+  files:
+  - .claude/skills/hwde/scripts/check_emc.py
+  - tests/test_check_emc.py
+  - tests/golden/mutations/emc.py
+  - tests/golden/mutants/emc/**
+  - .claude/skills/hwde/scripts/checks.d/emc.yaml
+  - tests/golden/manifest.d/emc.yaml
+  eval:
+    board: usbbuck4
+    mutation: move the buck input cap 12 mm from the switch
+    expect_rule: hotloop_area
+  size: L
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 21
+  id: dfa-physical
+  title: Check fiducials, tombstone symmetry, paste ratio, sides
+  modes:
+  - DFA-11
+  - DFA-14
+  - DFA-15
+  - DFA-17
+  - DFA-18
+  - DFA-20
+  - DFA-21
+  - FAB-16
+  - FAB-26
+  files:
+  - .claude/skills/hwde/scripts/check_dfa.py
+  - tests/test_check_dfa.py
+  - tests/golden/mutations/dfa.py
+  - tests/golden/mutants/dfa/**
+  - .claude/skills/hwde/scripts/checks.d/dfa.yaml
+  - tests/golden/manifest.d/dfa.yaml
+  eval:
+    board: blinky2
+    mutation: delete the board fiducials
+    expect_rule: fiducials_missing
+  size: M
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 22
+  id: place-metrics-fixes
+  title: Measure placement rules edge to edge; honour locked refs
+  modes:
+  - PI-02
+  - ANA-08
+  - EMC-13
+  files:
+  - .claude/skills/hwde/scripts/place_metrics.py
+  - tests/test_place_metrics_fixes.py
+  - tests/golden/mutations/decoupler_locked.py
+  - tests/golden/mutants/decoupler_locked/**
+  - tests/golden/manifest.d/place_metrics_fixes.yaml
+  eval:
+    board: blinky2
+    mutation: move a decoupler beyond the limit with its reference locked
+    expect_rule: decoupler_distance
+  size: S
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 23
+  id: irdrop-pdnz-promote
+  title: Promote IR-drop and plane-impedance checks into verify
+  modes:
+  - PI-09
+  - PI-10
+  files:
+  - .claude/skills/hwde/scripts/check_irdrop.py
+  - .claude/skills/hwde/scripts/check_pdn_z.py
+  - tests/test_irdrop_pdnz.py
+  - tests/golden/mutations/narrow_neck_irdrop.py
+  - tests/golden/mutants/narrow_neck_irdrop/**
+  - tests/golden/manifest.d/irdrop_pdnz.yaml
+  eval:
+    board: blinky2
+    mutation: narrow the supply path to 0.15 mm
+    expect_rule: irdrop_excess
+  size: S
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 24
+  id: sim-trust
+  title: Reject stale or empty SPICE benches
+  modes:
+  - CONC-06
+  - RATE-25
+  - ANA-06
+  files:
+  - .claude/skills/hwde/scripts/sim_run.py
+  - tests/test_sim_trust.py
+  - tests/fixtures/sim_trust/**
+  eval:
+    board: tests/fixtures/sim (sim fixture)
+    mutation: stale parasitic in the sidecar; empty bounds file
+    expect_rule: sim_stale_parasitic
+  size: S
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 25
+  id: order-safety
+  title: Block orders with doubtful stackup, copper or create call
+  modes:
+  - FAB-17
+  - FAB-18
+  - SI-09
+  - DFA-09
+  files:
+  - .claude/skills/hwde/scripts/order_submit.py
+  - .claude/skills/hwde/scripts/order_quote.py
+  - tests/test_order_safety.py
+  - tests/fixtures/order_safety/**
+  eval:
+    board: tests/fixtures/jlc_impedance (payload fixture)
+    mutation: order payload with 1 oz inner vs 0.5 oz design; create reply code 2
+    expect_rule: order_stackup_mismatch
+  size: M
+  depends_on:
+  - wire-registry
+  group: B. new checks and fixes to checks
+- rank: 26
+  id: multi-mutant
+  title: Add a second mutant for each existing check
+  modes:
+  - TEST-12
+  files:
+  - tests/golden/mutations/*_b.py
+  - tests/golden/mutants/*_b/**
+  - tests/golden/manifest.d/second_mutants.yaml
+  eval:
+    board: rf4, usbbuck4, blinky2
+    mutation: one second mutant per check in verify_all.CHECKS (different board or location)
+    expect_rule: same codes as the first mutants
+  size: M
+  depends_on:
+  - wire-registry
+  group: C. eval corpus and scorecard
+- rank: 27
+  id: erc-drc-mutants
+  title: Seed ERC and DRC faults into the golden boards
+  modes:
+  - RATE-11
+  - RATE-12
+  - DFA-03
+  - DFA-10
+  - DFA-12
+  files:
+  - tests/golden/mutations/erc_*.py
+  - tests/golden/mutations/drc_*.py
+  - tests/golden/mutants/erc_*/**
+  - tests/golden/mutants/drc_*/**
+  - tests/test_erc_drc_eval.py
+  - tests/golden/manifest.d/erc_drc.yaml
+  eval:
+    board: blinky2
+    mutation: delete a wire to leave a pin unconnected; move a pad onto a track
+    expect_rule: pin_not_connected (ERC); clearance (DRC)
+  size: M
+  depends_on:
+  - wire-registry
+  group: C. eval corpus and scorecard
+- rank: 28
+  id: scorecard-record
+  title: Re-record the scorecard and coverage table
+  modes:
+  - TEST-12
+  files:
+  - docs/check-scorecard.md
+  - docs/check-scorecard.jsonl
+  - docs/failure-coverage.md
+  eval:
+    board: all golden boards
+    mutation: run score_checks --record after all rows land; coverage table from this yaml
+    expect_rule: n/a
+  size: S
+  depends_on:
+  - all group B and C rows
+  group: C. eval corpus and scorecard
+- rank: 29
+  id: dfm-extended
+  title: Add wicking, plated-NPTH and skip-is-fail rules to dfm
+  modes:
+  - THERM-05
+  - FAB-07
+  - FAB-08
+  - FAB-14
+  - DFA-08
+  files:
+  - .claude/skills/hwde/scripts/dfm_check.py
+  - tests/test_dfm_extended.py
+  - tests/golden/mutations/via_in_pad_open.py
+  - tests/golden/mutants/via_in_pad_open/**
+  eval:
+    board: blinky2
+    mutation: put an open via inside an SMD pad
+    expect_rule: dfm_via_in_pad
+  size: M
+  depends_on:
+  - PR 63
+  group: D. after PR 63 lands
+- rank: 30
+  id: cpl-origin
+  title: Check CPL rotation and exclude flags against the JLC origin
+  modes:
+  - DFA-01
+  - DFA-02
+  files:
+  - .claude/skills/hwde/scripts/bom_cpl.py
+  - .claude/skills/hwde/scripts/cpl_verify.py
+  - .claude/skills/hwde/scripts/cpl_render.py
+  - tests/test_cpl_origin.py
+  eval:
+    board: blinky2 (cpl-rotation mutant plus a QFN rotation)
+    mutation: rotate a QFN 90 degrees in CPL
+    expect_rule: cpl_polarity
+  size: M
+  depends_on:
+  - PR 63
+  group: D. after PR 63 lands
+- rank: 31
+  id: gate-hardening
+  title: Make a skipped input fail the gate; fix waiver path
+  modes:
+  - TEST-10
+  - DFA-08
+  files:
+  - .claude/skills/hwde/scripts/gate.py
+  - tests/test_gate_hardening.py
+  eval:
+    board: blinky2
+    mutation: delete parts.json then run the dfm gate
+    expect_rule: gate_input_skipped
+  size: S
+  depends_on:
+  - PR 63
+  group: D. after PR 63 lands
+- rank: 32
+  id: import-checks
+  title: Reject bad pulled parts at import (pegs, attrs, offsets)
+  modes:
+  - FAB-20
+  - FAB-19
+  - MECH-08
+  - DFA-24
+  files:
+  - .claude/skills/hwde/scripts/lib/easyeda.py
+  - tests/test_import_checks.py
+  - tests/fixtures/import_checks/**
+  eval:
+    board: tests/fixtures/lib (pristine pulls)
+    mutation: pull fixture with copper dia equal to drill on a peg
+    expect_rule: import_zero_annulus
+  size: M
+  depends_on:
+  - PR 63
+  group: D. after PR 63 lands
+- rank: 33
+  id: bf-0018-power
+  title: Re-check BLDC power tracks, VM_IN neck, creepage, silk
+  modes:
+  - SAFE-01
+  - PI-07
+  - PI-08
+  - FAB-10
+  files:
+  - ~/dev/boards/PCB-0018-A*/kicad/**
+  eval:
+    board: PCB-0018-A
+    mutation: fix the board; no mutation
+    expect_rule: creepage; undersized_track; pour_neckdown; silk_misattributed gone from verify_all
+  size: M
+  depends_on: []
+  group: E. board fixes
+- rank: 34
+  id: bf-0017-12v
+  title: Widen the +12V track for 4 A; fix 7 silk labels
+  modes:
+  - PI-07
+  - FAB-10
+  files:
+  - ~/dev/boards/PCB-0017-A*/kicad/**
+  eval:
+    board: PCB-0017-A
+    mutation: fix the board; no mutation
+    expect_rule: undersized_track; silk_misattributed gone from verify_all
+  size: S
+  depends_on: []
+  group: E. board fixes
+- rank: 35
+  id: bf-0021-sys
+  title: Repair the +SYS pour neck, add vias, fix silk
+  modes:
+  - PI-08
+  - FAB-10
+  files:
+  - ~/dev/boards/PCB-0021-A*/kicad/**
+  eval:
+    board: PCB-0021-A
+    mutation: fix the board; no mutation
+    expect_rule: pour_neckdown; insufficient_transition_vias; silk_misattributed gone from verify_all
+  size: S
+  depends_on: []
+  group: E. board fixes
+- rank: 36
+  id: bf-0019-hfcap
+  title: Add HF cap on VSYS and widen SW_L1
+  modes:
+  - PI-01
+  - PI-07
+  files:
+  - ~/dev/boards/PCB-0019-A*/kicad/**
+  eval:
+    board: PCB-0019-A
+    mutation: fix the board; no mutation
+    expect_rule: reg_input_no_hf; undersized_track gone from verify_all
+  size: S
+  depends_on: []
+  group: E. board fixes
+- rank: 37
+  id: bf-0020-usb
+  title: Close the USB return gap; fix 20 silk labels
+  modes:
+  - EMC-01
+  - FAB-10
+  files:
+  - ~/dev/boards/PCB-0020-A*/kicad/**
+  eval:
+    board: PCB-0020-A
+    mutation: fix the board; no mutation
+    expect_rule: corridor_void; silk_misattributed gone from verify_all
+  size: S
+  depends_on: []
+  group: E. board fixes
+- rank: 38
+  id: bf-0016b-silk
+  title: Move the misattributed J2 refdes silk
+  modes:
+  - FAB-10
+  files:
+  - ~/dev/boards/PCB-0016-B*/kicad/**
+  eval:
+    board: PCB-0016-B
+    mutation: fix the board; no mutation
+    expect_rule: silk_misattributed gone from verify_all
+  size: S
+  depends_on: []
+  group: E. board fixes
+- rank: 39
+  id: bf-0022-cpl
+  title: Verify U1/U2 CPL rotation by pin 1 on the NFC cards
+  modes:
+  - DFA-02
+  files:
+  - ~/dev/boards/PCB-0022-A*/kicad/**
+  - ~/dev/boards/PCB-0022-B*/kicad/**
+  eval:
+    board: PCB-0022-A, PCB-0022-B
+    mutation: fix the board; no mutation
+    expect_rule: cpl rotation (manual pin-1 check) gone from verify_all
+  size: S
+  depends_on: []
+  group: E. board fixes
+- rank: 40
+  id: bf-0019-castle
+  title: Amend requirements or rebuild castellated edge
+  modes:
+  - MECH-16
+  - CONC-02
+  files:
+  - ~/dev/boards/PCB-0019-A*/requirements.md
+  eval:
+    board: PCB-0019-A
+    mutation: fix the board; no mutation
+    expect_rule: requirements vs board gone from verify_all
+  size: S
+  depends_on: []
+  group: E. board fixes
+baseline:
+- board: PCB-0016-A pd-trigger-lite
+  verify_all:
+    errors: 0
+    warnings: 22
+  dfm:
+    errors: 0
+    warnings: 0
+  notes: P8; GND track and via advisories, J1 unrated
+- board: PCB-0016-B pd-trigger-lite-dip
+  verify_all:
+    errors: 0
+    warnings: 17
+  dfm:
+    errors: 0
+    warnings: 0
+  notes: P9; one silk_misattributed
+- board: PCB-0017-A stereo-class-d-amp
+  verify_all:
+    errors: 8
+    warnings: 43
+  dfm:
+    errors: 0
+    warnings: 0
+  notes: P7; +12V track 0.343 mm for 4 A (real); GND stub 17.9 mm on C5
+- board: PCB-0018-A bldc-motor-driver
+  verify_all:
+    errors: 383
+    warnings: 131
+  dfm:
+    errors: 0
+    warnings: 4
+  notes: P9; 277 transition-via, 57 undersized, 23 creepage (45 V, 0.13 mm), 20 pour necks; count inflated per transition
+- board: PCB-0019-A rp2040-mini
+  verify_all:
+    errors: 6
+    warnings: 60
+  dfm:
+    errors: 0
+    warnings: 1
+  notes: P9; reg_input_no_hf on U3 VSYS; SW_L1 0.30 mm for 1 A
+- board: PCB-0020-A esp32c3-node
+  verify_all:
+    errors: 21
+    warnings: 96
+  dfm:
+    errors: 0
+    warnings: 1
+  notes: P8; 18 corridor_void errors on USB_DP; 45 GND via advisories
+- board: PCB-0021-A lipo-boost
+  verify_all:
+    errors: 6
+    warnings: 14
+  dfm:
+    errors: 0
+    warnings: 0
+  notes: P9; +SYS pour neck ~0 mm and 2 vias vs 5
+- board: PCB-0022-A nfc-card
+  verify_all:
+    errors: 0
+    warnings: 13
+  dfm:
+    errors: 0
+    warnings: 0
+  notes: P10; only unrated parts; dfm rerun with kicad/parts.json
+- board: PCB-0022-B nfc-card
+  verify_all:
+    errors: 0
+    warnings: 26
+  dfm:
+    errors: 0
+    warnings: 1
+  notes: P9; route jogs, silk width
