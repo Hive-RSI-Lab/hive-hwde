@@ -367,12 +367,14 @@ def test_board_init_refuses_a_fixed_outline_where_the_size_is_earned(tmp_path):
 
     assert board_init.mode_outline_guard(kicad, "auto")["binding"] == \
         "canonical"
-    with pytest.raises(RuntimeError) as exc:
-        board_init.mode_outline_guard(kicad, "35x25")
-    for bit in ("OUTPUT of the placement", "--outline auto",
-                "board_edit.py --outline fit", "--allow-fixed-outline"):
-        assert bit in str(exc.value)
-    # explicit consent applies, and SAYS SO in the report
+    # a fixed size is built, and the report says it was not earned
+    note = board_init.mode_outline_guard(kicad, "35x25")[
+        "fixed_outline_override"]
+    for bit in ("OUTPUT of the placement", "did NOT come from the placement",
+                "--outline auto", "board_edit.py --outline fit",
+                "state.py decision"):
+        assert bit in note
+    # explicit consent words it as a choice, and SAYS SO in the report
     rec = board_init.mode_outline_guard(kicad, "35x25", allow_fixed=True)
     assert "did NOT come from the placement" in rec["fixed_outline_override"]
 
@@ -381,19 +383,21 @@ def test_board_init_guard_is_silent_without_a_mode(tmp_path):
     ws = tmp_path / "ws"
     state_cli.State.init(ws, "t")
     assert board_init.mode_outline_guard(ws / "kicad", "35x25") is None
-    # a constrained mode does not block either - the size is the input
+    # a constrained mode says nothing either - the size is the input
     state_cli.run(["mode", "--workspace", str(ws), "--token",
                    "learning fit-check:"])
-    assert board_init.mode_outline_guard(ws / "kicad", "35x25")["binding"] == \
-        "constrained"
+    rec = board_init.mode_outline_guard(ws / "kicad", "35x25")
+    assert rec["binding"] == "constrained"
+    assert "fixed_outline_override" not in rec
     # no workspace at all (the golden corpus, a scratch export) = no opinion
     assert board_init.mode_outline_guard(REPO / "tests" / "golden",
                                          "35x25") is None
 
 
-def test_board_init_cli_refuses_before_it_touches_the_netlist(tmp_path):
-    """Exit 2 with the remediation, and no netlist read: the guard is the
-    first thing after the output dir, so a wrong outline costs nothing."""
+def test_board_init_cli_does_not_refuse_a_fixed_outline(tmp_path):
+    """Once exit 2 before the netlist was read; now the outline is the
+    agent's call, so the run goes on to the netlist (missing here, so that is
+    the error) and never stops on the outline itself."""
     ws = tmp_path / "ws"
     state_cli.State.init(ws, "t")
     state_cli.run(["mode", "--workspace", str(ws), "--token",
@@ -403,11 +407,9 @@ def test_board_init_cli_refuses_before_it_touches_the_netlist(tmp_path):
          "--netlist", str(tmp_path / "does-not-exist.net"), "--name", "b",
          "--out", str(ws / "kicad"), "--layers", "2", "--outline", "35x25"],
         capture_output=True, text=True, encoding="utf-8", errors="replace")
-    assert cp.returncode == 2, cp.stdout
     payload = json.loads(cp.stdout)
-    assert payload["status"] == "error"
-    assert "--outline 35x25 refused" in payload["error"]
-    assert "does-not-exist" not in payload["error"]
+    assert "refused" not in payload.get("error", "")
+    assert "does-not-exist" in payload.get("error", "")
 
 
 # ======================================================= P0, the lint tooth
@@ -520,7 +522,7 @@ def test_full_run_wiring():
         encoding="utf-8")
     assert "state.py\nmode --token" in recipe or "state.py mode" in recipe
     assert "board_edit --outline fit" in recipe
-    assert "REFUSED" in recipe                      # the P5 rule
+    assert "noted unearned" in recipe               # the P5 rule
     assert len(recipe.splitlines()) <= 120
 
 
