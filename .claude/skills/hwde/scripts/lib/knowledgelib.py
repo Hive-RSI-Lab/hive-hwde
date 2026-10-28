@@ -786,6 +786,29 @@ def validate(records_dir: Path | str | None = None,
                     not in CLASSES:
                 problems.append(f"{where}: requires[{i}].class "
                                 f"{req.get('class')!r} not in CLASSES")
+        # Alias drift: coverage() selects records by the slot's own token, so
+        # when a record covers a required class under one of the checklist's
+        # tokens but not another, a slot spelled the other way reads `gap`.
+        # (A class no token holds yet is a research gap, not drift.)
+        held = {(f, norm_token(t), norm_token(c))
+                for r in parsed.values() if r.get("status") == "active"
+                for f in ("topologies", "interfaces")
+                for t in (r.get("applies") or {}).get(f) or []
+                for c in r.get("classes") or []}
+        for req in data.get("requires") or []:
+            cls = norm_token(req.get("class", "")) \
+                if isinstance(req, dict) else ""
+            have = [(k, t) for k, t in toks
+                    if (("topologies" if k == "topology" else "interfaces"),
+                        t, cls) in held]
+            if have:
+                for kind, tok in toks:
+                    if (kind, tok) not in have:
+                        problems.append(
+                            f"{where}: {kind} {tok!r} has no active record "
+                            f"for required class {cls!r}, though "
+                            f"{have[0][0]} {have[0][1]!r} does (give the "
+                            "record the checklist's tokens)")
         for i, src in enumerate(data.get("sources") or []):
             if isinstance(src, dict) and not _source_exists(
                     src.get("file", ""), source_roots):

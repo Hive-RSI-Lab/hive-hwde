@@ -1,7 +1,7 @@
 id: led-indicator-series-resistor-sizing
 classes: [selection]
 applies:
-  topologies: [led-indicator]
+  topologies: [led-indicator, led, status-led, indicator-led]
   packages: []
   interfaces: []
   parts: []
