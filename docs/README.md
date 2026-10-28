@@ -48,6 +48,32 @@ the person and sends back their answer. Don't use a warden request for a
 sign-off. If you go on while a sign-off is open, say so in the packet, and
 rework if the answer is no. Record answers with `hwde state human`.
 
+## Every board gets its own docs
+
+A board's `README.md`, at the root of its workspace, says what the board is,
+the design decisions and why they were made, how to rebuild and re-check it,
+and how to test a built one. It has to make sense to someone who has never
+heard of hwde. Write it when the run starts and keep it current at every
+stage: a decision recorded in `state.json` belongs in the README the same day.
+A run isn't finished until its README matches the board.
+[`boards/hwde-led-test/README.md`](../boards/hwde-led-test/README.md) shows
+the shape.
+
+## Be critical of the tools
+
+The skill improves the way the rest of the Hive does: by changing it, not by
+working around it. When a script, check, prompt or recipe gets in the way or
+gets something wrong (a false finding, a missing case, an agent role that left
+out a field, a path that only works upstream), note it with the file it lives
+in. Fix it in this module if it's small and yours to make. Otherwise file it
+as its own change: `hive agent brief --project hive-hwde --title ...
+--done ...`. Board-local workarounds are the failure mode. List what you hit
+in your account.
+
+Record each run's wall time per stage (the `phase` events in
+`state.json` history) and the gate attempts and fix loops per gate. That way
+a later board shows whether the module got faster or cleaner.
+
 ## What it never does
 
 It never orders or pays. P10 (quote, order, payment) is the person's: stop

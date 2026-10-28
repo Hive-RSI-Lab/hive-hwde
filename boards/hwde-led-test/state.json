@@ -4,15 +4,15 @@
  "workspace_schema": 2,
  "workspace": "/work/boards/hwde-led-test",
  "created": "2026-10-28T09:25:11",
- "updated": "2026-10-28T10:07:23",
+ "updated": "2026-10-28T10:08:43",
  "phase": "P9",
  "gates": {
   "erc": {
    "phase": "P4",
    "status": "pass",
-   "attempts": 3,
+   "attempts": 4,
    "last": {
-    "ts": "2026-10-28T10:00:21",
+    "ts": "2026-10-28T10:08:43",
     "status": "pass",
     "failing_count": 0,
     "total": 0,
@@ -44,6 +44,16 @@
     },
     {
      "ts": "2026-10-28T10:00:21",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+      "pro": "json_canonical:e4273b875a1af71d31be97619c9361b8d5f1a06299781c4148aea6f1c8dee338"
+     }
+    },
+    {
+     "ts": "2026-10-28T10:08:43",
      "status": "pass",
      "failing_count": 0,
      "total": 0,
@@ -315,13 +325,13 @@
    "path": "kicad/hwde-led-test.kicad_sch",
    "kind": "sch",
    "sha256": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
-   "hashed": "2026-10-28T10:07:12"
+   "hashed": "2026-10-28T10:08:43"
   },
   "pro": {
    "path": "kicad/hwde-led-test.kicad_pro",
    "kind": "pro",
    "sha256": "json_canonical:e4273b875a1af71d31be97619c9361b8d5f1a06299781c4148aea6f1c8dee338",
-   "hashed": "2026-10-28T10:05:38"
+   "hashed": "2026-10-28T10:08:43"
   },
   "pcb": {
    "path": "kicad/hwde-led-test.kicad_pcb",
@@ -1099,6 +1109,14 @@
    "ts": "2026-10-28T10:07:23",
    "event": "decision",
    "what": "stop at P9: no order, no quote, no board guide"
+  },
+  {
+   "ts": "2026-10-28T10:08:43",
+   "event": "gate",
+   "gate": "erc",
+   "status": "pass",
+   "attempt": 4,
+   "failing_count": 0
   }
  ]
 }
