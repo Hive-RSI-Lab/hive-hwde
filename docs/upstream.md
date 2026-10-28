@@ -16,7 +16,17 @@ these ways:
   rule E, which `lib_pull` runs on every pull, and its `--pcb` mode for placed
   copies; `scripts/board_edit.py`, whose `--outline fit` counts silk and whose
   edits refuse to clip it; `scripts/check_silk.py`, whose silk items carry
-  their footprint's reference.
+  their footprint's reference. From routing lite-main (hifi-receiver-2), a
+  dense 2-layer power board: `stitch_vias` and `planes_gen` read KiCad's
+  hole_to_hole as drill edge to drill edge; `route_auto` carries the hole
+  rules into the DSN (`routelib.dsn_hole_floor`, `ses_restore_vias`,
+  `dsn_npth_keepouts`) and keeps the best of `--tries` shuffled-order routes
+  (`routelib.dsn_shuffle`); `rules_gen` sizes plane_fed taps, writes
+  neck-down rules and caps power-class clearance from the board's pads;
+  `planes_gen` merges touching same-net pours; `scripts/keepout_gen.py`
+  (new, with route_swig's `set_rule_areas`) draws copper keep-outs;
+  `route_critical` rips only the nets whose copper broke DRC; `lib/geom.py`
+  lists NPTH holes (`npth`).
 
 `requirements.lock`, `LICENSE` and `NOTICE` are upstream's, from the repo
 root, and so is `docs/failure-modes.yaml` (`bench --scorecard-corpus` maps
