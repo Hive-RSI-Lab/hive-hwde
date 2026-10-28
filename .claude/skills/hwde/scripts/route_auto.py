@@ -5,8 +5,9 @@ success): refill zones (a stale/unfilled pour exports wrong) -> Specctra DSN
 export via the SWIG worker (wx-suppressed; plane layers marked LT_POWER so the
 DSN carries "(type power)") -> Freerouting CLI over an escalation ladder
 (the DSN first carries each net's .kicad_dru width/clearance floor as its own
-class, routelib.dsn_apply_net_rules, and each pre-routed wire chain as one
-path, routelib.dsn_merge_wires, as split wires overflow Freerouting's stack;
+class, routelib.dsn_apply_net_rules, the board's hole rules the export
+drops, _dsn_hole_rules, and each pre-routed wire chain as one path,
+routelib.dsn_merge_wires, as split wires overflow Freerouting's stack;
 routelib.DEFAULT_LADDER; deterministic flags, per-rung process timeout, score
 logging) -> import the best rung's SES -> refill (imported tracks stale every
 pour they cross - S11-verified: 33 clearance violations before refill, 0
@@ -106,6 +107,49 @@ def _dsn_merge_wires(dsn: Path) -> int:
     return merged
 
 
+def _pro_rules(staged: Path) -> dict:
+    """board.design_settings.rules of the staged board's .kicad_pro."""
+    try:
+        pro = json.loads(staged.with_suffix(".kicad_pro")
+                         .read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return dict(((pro.get("board") or {}).get("design_settings") or {})
+                .get("rules") or {})
+
+
+def _dsn_hole_rules(staged: Path, dsn: Path, bg: geom.BoardGeom) -> dict:
+    """Carry the board's hole rules, which KiCad's DSN export drops, into
+    the DSN: via padstacks grown so copper clearance keeps different-net
+    vias min_hole_to_hole apart (routelib.dsn_hole_floor; undone in the SES
+    by _ses_restore before import), and a keepout over every NPTH hole
+    grown by max(min_hole_clearance, min_copper_edge_clearance)
+    (routelib.dsn_npth_keepouts). Returns the facts, with "grown" (the
+    padstack map _ses_restore needs)."""
+    rules = _pro_rules(staged)
+    h2h = float(rules.get("min_hole_to_hole") or 0.25)
+    margin = max(float(rules.get("min_hole_clearance") or 0.25),
+                 float(rules.get("min_copper_edge_clearance") or 0.0))
+    text = dsn.read_text(encoding="utf-8")
+    text, grown = routelib.dsn_hole_floor(text, h2h)
+    holes = [{"at": list(p.center), "drill": list(p.drill), "angle": p.angle}
+             for p in bg.npth]
+    text, kept_out = routelib.dsn_npth_keepouts(text, holes, margin)
+    dsn.write_text(text, encoding="utf-8")
+    return {"hole_to_hole_mm": h2h, "grown": grown,
+            "via_padstacks_grown": {k: list(v) for k, v in grown.items()},
+            "npth_keepouts": kept_out, "npth_margin_mm": margin}
+
+
+def _ses_restore(ses: Path, grown: dict) -> None:
+    """Put the real via diameters back into a session before import."""
+    if grown and ses.is_file():
+        text, n = routelib.ses_restore_vias(
+            ses.read_text(encoding="utf-8"), grown)
+        if n:
+            ses.write_text(text, encoding="utf-8")
+
+
 def _auto_power_layers(bg: geom.BoardGeom) -> list[str]:
     """Inner copper layers that carry a zone fill and no tracks -> planes."""
     out = []
@@ -174,7 +218,8 @@ def _krt_finish(cli: Path, staged: Path, work: Path, drc: dict, *,
     unconnected - no fanout capability - and drops the odd via a few 10s of
     microns inside the hole-clearance floor). Steps, all on the staged board
     with a backup for full revert:
-      1. remove vias implicated in hole_clearance/clearance DRC ERRORS
+      1. remove vias implicated in hole_clearance/clearance/hole_to_hole
+         DRC ERRORS
          (route_edit remove by uuid from the report's raw items);
       2. run KRT route.py per affected net (grid 0.05, board floors,
          --no-fix-drc-settings) - KRT only routes what is disconnected;
@@ -188,7 +233,8 @@ def _krt_finish(cli: Path, staged: Path, work: Path, drc: dict, *,
     for v in drc["violations"]:
         if v.get("source") != "drc" or v.get("severity") != "error":
             continue
-        if v.get("check") not in ("hole_clearance", "clearance"):
+        if v.get("check") not in ("hole_clearance", "clearance",
+                                  "hole_to_hole"):
             continue
         for item in v.get("items", []):
             m = via_re.match(item.get("msg", ""))
@@ -290,6 +336,7 @@ def route_probe(pcb: Path, *, passes: int = 4, timeout_s: int = 180,
         "verb": "export_dsn", "board": str(staged), "dsn": str(dsn),
         "layer_types": {ly: "power" for ly in _auto_power_layers(bg)}}, work)
     _dsn_net_rules(staged, dsn)
+    _dsn_hole_rules(staged, dsn, bg)
     merged = _dsn_merge_wires(dsn)
     facts = routelib.run_freerouting(
         java, jar, dsn, ses, rung={"mp": passes}, timeout=timeout_s,
@@ -363,6 +410,8 @@ def run(argv: list[str] | None = None):
         "verb": "export_dsn", "board": str(staged), "dsn": str(dsn),
         "layer_types": {ly: "power" for ly in power_layers}}, work)
     dsn_net_rules = _dsn_net_rules(staged, dsn)
+    hole_rules = _dsn_hole_rules(staged, dsn, bg)
+    grown = hole_rules.pop("grown")
     dsn_wires_merged = _dsn_merge_wires(dsn)
 
     # 3. Freerouting escalation ladder
@@ -407,6 +456,7 @@ def run(argv: list[str] | None = None):
     fr_ok = False
     # 4. SES import - best rung first, next-best on a truncated/corrupt SES
     for key, i, ses, facts in sorted(candidates):
+        _ses_restore(ses, grown)
         try:
             imported = routelib.run_worker(bp, {
                 "verb": "import_ses", "board": str(staged), "ses": str(ses),
@@ -487,6 +537,7 @@ def run(argv: list[str] | None = None):
             if fr_ok else None,
             "power_layers": power_layers,
             "dsn_net_rules": dsn_net_rules,
+            "dsn_hole_rules": hole_rules,
             "dsn_wires_merged": dsn_wires_merged,
             "krt_finish": finish_facts,
             "ses_echo_dups_removed": dedup_facts.get("removed", 0),

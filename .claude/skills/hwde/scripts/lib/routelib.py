@@ -521,3 +521,161 @@ def dsn_merge_wires(dsn_text: str) -> tuple[str, int]:
         pos = e
     out.append(dsn_text[pos:])
     return "".join(out), merged
+
+
+_VIA_PADSTACK_RE = re.compile(
+    r'\(padstack\s+"?(Via\[[^\]]*\]_([\d.]+):([\d.]+)_um)"?')
+
+
+def _structure_span(scan: str) -> tuple[int, int] | None:
+    m = re.search(r"\(structure[\s)]", _quote_mask(scan))
+    if not m:
+        return None
+    return m.start(), _sexp_end(scan, m.start())
+
+
+def _parser_blanked(text: str) -> str:
+    """Same-length copy with the parser header's lone `(string_quote ")`
+    quote blanked (see dsn_merge_wires)."""
+    return re.sub(r'\(string_quote\s+"\s*\)',
+                  lambda q: q.group(0).replace('"', " "), text)
+
+
+def dsn_class_clearances(dsn_text: str) -> list[float]:
+    """Every clearance (um) the DSN's rules set without a `(type ...)`:
+    the structure's default and each class's own."""
+    return [float(m.group(1)) for m in
+            re.finditer(r"\(clearance\s+([\d.]+)\s*\)", dsn_text)]
+
+
+def dsn_hole_floor(dsn_text: str, hole_to_hole_mm: float
+                   ) -> tuple[str, dict[str, tuple[float, float]]]:
+    """Make Freerouting keep vias of different nets JLC's hole-to-hole
+    floor apart. Freerouting spaces vias by copper clearance only, so two
+    0.6/0.3 vias at the 0.127 mm floor land 0.727 mm apart, 0.427 mm drill
+    edge to drill edge, under KiCad's 0.5 mm hole_to_hole (lite-main,
+    hifi-receiver-2: four drc_routed errors after every route). Each KiCad
+    via padstack (`Via[0-1]_<dia>:<drill>_um`) has its copper circle grown
+    to hole_to_hole + drill - the least DSN clearance, so copper clearance
+    alone keeps the drills apart. The padstack name keeps the real sizes;
+    ses_restore_vias puts the real diameter back before import. Returns
+    (text, {padstack: (real_um, grown_um)}); anything not in um comes back
+    unchanged."""
+    if not re.search(r"\(resolution\s+um\s+\d+\)", dsn_text) \
+            or not re.search(r"\(unit\s+um\)", dsn_text):
+        return dsn_text, {}
+    clrs = dsn_class_clearances(dsn_text)
+    if not clrs:
+        return dsn_text, {}
+    c_min = min(clrs)
+    grown: dict[str, tuple[float, float]] = {}
+    out, pos = [], 0
+    for m in _VIA_PADSTACK_RE.finditer(dsn_text):
+        name, dia, drill = m.group(1), float(m.group(2)), float(m.group(3))
+        want = round(hole_to_hole_mm * 1000.0 + drill - c_min, 1)
+        if want <= dia + 1e-6:
+            continue
+        end = _sexp_end(dsn_text, m.start())
+        block = dsn_text[m.start():end]
+        nb, n = re.subn(r"\(circle\s+(\S+)\s+([\d.]+)\s*\)",
+                        lambda c: f"(circle {c.group(1)} {want:g})", block)
+        if not n:
+            continue
+        out.append(dsn_text[pos:m.start()])
+        out.append(nb)
+        pos = end
+        grown[name] = (dia, want)
+    out.append(dsn_text[pos:])
+    return "".join(out), grown
+
+
+def ses_restore_vias(ses_text: str, grown: dict[str, tuple[float, float]]
+                     ) -> tuple[str, int]:
+    """Undo dsn_hole_floor in a session file: each grown via padstack in
+    the SES's library_out gets its real diameter back (KiCad's SES import
+    sizes a via from that circle and its drill from the padstack name).
+    Returns (text, padstacks restored)."""
+    if not grown:
+        return ses_text, 0
+    m = re.search(r"\(resolution\s+um\s+(\d+)\)", ses_text)
+    scale = float(m.group(1)) if m else 1.0
+    out, pos, n = [], 0, 0
+    for pm in re.finditer(r'\(padstack\s+"?(Via\[[^\]"]*\]_[\d.]+:[\d.]+_um)"?',
+                          ses_text):
+        real = grown.get(pm.group(1))
+        if real is None:
+            continue
+        end = _sexp_end(ses_text, pm.start())
+        block = ses_text[pm.start():end]
+        dia = real[0] * scale
+        nb = re.sub(r"\(circle\s+(\S+)\s+[\d.]+",
+                    lambda c: f"(circle {c.group(1)} {dia:g}", block)
+        out.append(ses_text[pos:pm.start()])
+        out.append(nb)
+        pos = end
+        n += 1
+    out.append(ses_text[pos:])
+    return "".join(out), n
+
+
+def _slot_pts(cx: float, cy: float, w: float, h: float, angle_deg: float,
+              grow: float, segs: int = 8) -> list[tuple[float, float]]:
+    """Outline (mm, board frame) of a w x h slot grown by `grow`, turned by
+    -angle like geom.Pad.drill_poly; its arcs are circumscribed, so the
+    polygon covers the true stadium."""
+    import math
+    r = (min(w, h) / 2.0 + grow) / math.cos(math.pi / (2 * segs))
+    half = abs(w - h) / 2.0
+    pts = []
+    for end, a0 in ((1, -90.0), (-1, 90.0)):       # long axis along x
+        for k in range(segs + 1):
+            a = math.radians(a0 + 180.0 * k / segs)
+            pts.append((end * half + r * math.cos(a), r * math.sin(a)))
+    t = math.radians(-angle_deg + (0.0 if w >= h else 90.0))
+    ct, st = math.cos(t), math.sin(t)
+    return [(cx + x * ct - y * st, cy + x * st + y * ct) for x, y in pts]
+
+
+def dsn_npth_keepouts(dsn_text: str, holes: list[dict], margin_mm: float
+                      ) -> tuple[str, int]:
+    """Put a keepout on every signal layer over each NPTH hole, grown by
+    `margin_mm` (the board's hole clearance or copper-to-edge rule,
+    whichever is larger: KiCad grades an NPTH hole by both). KiCad's DSN
+    carries an NPTH as a footprint keepout at the bare hole, or, when the
+    pad has copper layers, as a netless pin of the hole's size; either way
+    Freerouting keeps only its copper clearance from it, and on lite-main
+    it routed 0.16 mm from the RCA jacks' locating pegs. holes: [{"at":
+    [x, y], "drill": [w, h], "angle": deg}] in board mm. Returns (text,
+    keepouts added); anything not in um comes back unchanged."""
+    if not holes or not re.search(r"\(unit\s+um\)", dsn_text):
+        return dsn_text, 0
+    scan = _parser_blanked(dsn_text)
+    span = _structure_span(scan)
+    if span is None:
+        return dsn_text, 0
+    s, e = span
+    layers = re.findall(r"\(layer\s+(\S+)\s+\(type\s+(?:signal|power|mixed)\)",
+                        scan[s:e])
+    if not layers:
+        return dsn_text, 0
+    lines = []
+    for h in holes:
+        w, hh = (float(v) for v in h["drill"])
+        x, y = float(h["at"][0]), float(h["at"][1])
+        if abs(w - hh) < 1e-6:
+            d = (w + 2 * margin_mm) * 1000
+            shapes = [f"(circle {ly} {d:.1f} {x * 1000:.1f} {-y * 1000:.1f})"
+                      for ly in layers]
+        else:
+            pts = _slot_pts(x, y, w, hh, float(h.get("angle", 0.0)),
+                            margin_mm)
+            pts.append(pts[0])
+            coords = "  ".join(f"{px * 1000:.1f} {-py * 1000:.1f}"
+                               for px, py in pts)
+            shapes = [f"(polygon {ly} 0  {coords})" for ly in layers]
+        lines += [f'    (keepout "aiee_npth" {sh})' for sh in shapes]
+    # insert just before the structure's closing paren
+    close = e - 1
+    text = dsn_text[:close].rstrip() + "\n" + "\n".join(lines) + "\n  " \
+        + dsn_text[close:]
+    return text, len(holes)
