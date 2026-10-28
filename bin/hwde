@@ -92,6 +92,8 @@ if wa symdir && [ -n "$appdir" ] && [ -z "${KICAD_SYMBOL_DIR:-}" ] && [ -d "$app
 	export KICAD_SYMBOL_DIR=$syms
 fi
 
+# HWDE_PY lets a script tell the runner's venv from another python (partslib's hint).
+export HWDE_PY="$venv/bin/python"
 export HWDE_KICAD_CLI HWDE_FREEROUTING_JAR HWDE_JAVA HWDE_KNOWLEDGE_SOURCES HWDE_BOARDS_ROOT
 [ -n "${HWDE_KICAD_CLI:-}" ] || unset HWDE_KICAD_CLI
 [ -n "${HWDE_FREEROUTING_JAR:-}" ] || unset HWDE_FREEROUTING_JAR
