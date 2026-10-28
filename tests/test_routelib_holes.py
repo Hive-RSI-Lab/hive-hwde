@@ -154,3 +154,37 @@ def test_npth_keepouts_rotated_slot_and_no_holes():
     # turned 90 deg: long axis along y
     assert max(ys) - min(ys) > 1900 and max(xs) - min(xs) < 1100
     assert routelib.dsn_npth_keepouts(DSN, [], 0.3) == (DSN, 0)
+
+
+def test_dsn_shuffle_reorders_components_and_nets_only():
+    dsn = DSN.replace("  (network\n", """  (placement
+    (component R_A
+      (place R1 0 0 front 0)
+    )
+    (component R_B
+      (place R2 1 0 front 0)
+    )
+    (component R_C
+      (place R3 2 0 front 0)
+    )
+  )
+  (network
+    (net A
+      (pins R1-1 R2-1)
+    )
+    (net B
+      (pins R2-2 R3-1)
+    )
+    (net "C(1)"
+      (pins R3-2 R1-2)
+    )
+""")
+    outs = {routelib.dsn_shuffle(dsn, s) for s in range(1, 8)}
+    assert len(outs) > 1                         # the seed matters
+    assert routelib.dsn_shuffle(dsn, 3) == routelib.dsn_shuffle(dsn, 3)
+    for out in outs:
+        assert sorted(out.splitlines()) == sorted(dsn.splitlines())
+        # classes stay after the nets, sections stay in place
+        assert out.index("(class kicad_default") > out.index('(net "C(1)"')
+        assert out.index("(placement") < out.index("(network")
+    assert routelib.dsn_shuffle("(pcb x", 1) == "(pcb x"

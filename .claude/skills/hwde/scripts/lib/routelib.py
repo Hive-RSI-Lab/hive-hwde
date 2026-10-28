@@ -679,3 +679,45 @@ def dsn_npth_keepouts(dsn_text: str, holes: list[dict], margin_mm: float
     text = dsn_text[:close].rstrip() + "\n" + "\n".join(lines) + "\n  " \
         + dsn_text[close:]
     return text, len(holes)
+
+
+def _shuffle_children(text: str, scan: str, head: str, child: str,
+                      rng) -> str:
+    """Shuffle the order of the `(child ...)` children of the first
+    `(head ...)` section; every other child keeps its place."""
+    m = re.search(r"\(" + head + r"[\s)]", _quote_mask(scan))
+    if not m:
+        return text
+    end = _sexp_end(scan, m.start())
+    spans = [sp for sp in _child_spans(scan, m.start(), end)
+             if _sexp_head(scan, *sp) == child]
+    if len(spans) < 2:
+        return text
+    blocks = [text[s:e] for s, e in spans]
+    order = list(range(len(blocks)))
+    rng.shuffle(order)
+    out, pos = [], 0
+    for (s, e), k in zip(spans, order):
+        out.append(text[pos:s])
+        out.append(blocks[k])
+        pos = e
+    out.append(text[pos:])
+    return "".join(out)
+
+
+def dsn_shuffle(dsn_text: str, seed: int) -> str:
+    """The same design with its placement components and network nets in a
+    seeded random order. Freerouting's sequential router is deterministic
+    for one DSN but takes items in file order, so each order is another
+    route of the same board (route_auto --tries). Same length, same
+    content; unparseable input comes back unchanged."""
+    import random
+    rng = random.Random(seed)
+    try:
+        text = dsn_text
+        for head, child in (("placement", "component"), ("network", "net")):
+            text = _shuffle_children(text, _parser_blanked(text), head,
+                                     child, rng)
+        return text
+    except CheckError:
+        return dsn_text

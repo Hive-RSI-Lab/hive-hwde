@@ -25,8 +25,13 @@ completion comes from the log's unrouted counts and the gate is kicad-cli DRC.
 Contract:
   route_auto.py --pcb B.kicad_pcb [--exclude-classes Power,...]
       [--power-layers auto|"In1.Cu,In2.Cu"|none] [--max-rungs N]
-      [--timeout-s S] [--work-dir DIR] [--out-report r.json]
+      [--timeout-s S] [--work-dir DIR] [--out-report r.json] [--tries N]
       [--probe [--probe-passes N]]
+  Freerouting runs single-threaded and sequential, so one board file routes
+  the same way every time; a rebuilt board (fresh uuids, another DSN order)
+  may not. --tries N also routes N-1 shuffled-order DSNs at the best rung,
+  imports each on its own copy, keeps the one DRC grades best and reports
+  the spread (facts tries, graded, variance).
   exit 0 = 100% routed AND DRC clean; 1 = incomplete or violations
   (board still updated - the fix loop owns the remainder); 2 = error
   (original board untouched).
@@ -303,6 +308,12 @@ def _seg_len(block: str) -> float:
     return ((ex - sx) ** 2 + (ey - sy) ** 2) ** 0.5
 
 
+def _variance(graded: list[dict]) -> dict:
+    """[min, max] of each grade over the candidates --tries imported."""
+    return {k: [min(g[k] for g in graded), max(g[k] for g in graded)]
+            for k in ("drc_unrouted_nets", "drc_errors", "drc_total")}
+
+
 def _err_counts(report: dict) -> dict[str, int]:
     out: dict[str, int] = {}
     for v in report["violations"]:
@@ -363,6 +374,11 @@ def run(argv: list[str] | None = None):
     ap.add_argument("--out-report", default=None)
     ap.add_argument("--probe", action="store_true")
     ap.add_argument("--probe-passes", type=int, default=4)
+    ap.add_argument("--tries", type=int, default=1,
+                    help="also run the best rung on N-1 DSNs with shuffled "
+                         "component/net order, import every result on its "
+                         "own copy and keep the one DRC grades best (facts "
+                         "tries, graded, variance); 1 = the ladder only")
     ap.add_argument("--no-krt-finish", action="store_true",
                     help="skip the KRT mop-up pass after the ladder")
     args = ap.parse_args(argv)
@@ -454,37 +470,103 @@ def run(argv: list[str] | None = None):
     best_i = None
     best_facts: dict = {}
     fr_ok = False
-    # 4. SES import - best rung first, next-best on a truncated/corrupt SES
-    for key, i, ses, facts in sorted(candidates):
+    # 3b. --tries: the same rung on DSNs whose component and net order is
+    # shuffled (Freerouting's sequential router is deterministic for one
+    # DSN, but its result turns on that order: lite-main routed 98-100 %
+    # with 0-6 leftovers as its board was rebuilt)
+    tries = []
+    if args.tries > 1 and candidates:
+        base_i = sorted(candidates)[0][1]
+        base_rung = dict(ladder[base_i - 1])
+        if args.exclude_classes:
+            base_rung["inc"] = args.exclude_classes
+        text = dsn.read_text(encoding="utf-8")
+        for t in range(2, args.tries + 1):
+            tdsn, tses = work / f"try{t}.dsn", work / f"try{t}.ses"
+            tdsn.write_text(routelib.dsn_shuffle(text, seed=t),
+                            encoding="utf-8")
+            facts = routelib.run_freerouting(
+                java, jar, tdsn, tses, rung=base_rung, timeout=args.timeout_s,
+                stall_s=args.stall_s, log_file=work / f"try{t}.log")
+            tries.append({"try": t, "seed": t, "rung": base_i,
+                          "unrouted": facts.get("unrouted"),
+                          "final_score": facts.get("final_score"),
+                          "timed_out": facts.get("timed_out")})
+            if facts.get("ses_written") and facts.get("unrouted") is not None:
+                candidates.append(((facts["unrouted"],
+                                    -(facts.get("final_score") or 0.0)),
+                                   f"try{t}", tses, facts))
+
+    sch = work / (pcb.stem + ".kicad_sch")
+    imported = None
+    best_i = None
+    best_facts: dict = {}
+    fr_ok = False
+    dedup_facts = {"removed": 0}
+    drc = None
+    # 4. SES import - best rung first, next-best on a truncated/corrupt SES;
+    # with --tries every candidate is imported on its own copy and graded by
+    # DRC (unrouted nets, then errors), and the best board is kept.
+    pristine = work / ("preimport_" + staged.name)
+    shutil.copy2(staged, pristine)
+    graded = []
+    for key, i, ses, facts in sorted(candidates, key=lambda c: c[0]):
         _ses_restore(ses, grown)
+        trial = staged if args.tries <= 1 else \
+            work / f"cand_{i}_{staged.name}"
+        if trial != staged:
+            shutil.copy2(pristine, trial)
         try:
-            imported = routelib.run_worker(bp, {
-                "verb": "import_ses", "board": str(staged), "ses": str(ses),
-                "out": str(staged)}, work, timeout=600)
-            best_i, best_facts, fr_ok = i, facts, True
-            break
+            imp = routelib.run_worker(bp, {
+                "verb": "import_ses", "board": str(trial), "ses": str(ses),
+                "out": str(trial)}, work, timeout=600)
         except CheckError:
             for e in rungs:
                 if e["rung"] == i:
                     e["ses_import_failed"] = True
+            for e in tries:
+                if f"try{e['try']}" == i:
+                    e["ses_import_failed"] = True
+            continue
+        # 4b. dedup: the SES echoes pre-session guide-wire copper (critical-
+        # net trunks) back through ImportSpecctraSES as EXACT same-net
+        # duplicates - invisible to DRC/gerbers (S14: run (a) shipped 45
+        # echoed segments).
+        dd = routelib.run_worker(bp, {
+            "verb": "dedup_copper", "board": str(trial),
+            "out": str(trial)}, work, timeout=300)
+        if args.tries <= 1:
+            imported, dedup_facts = imp, dd
+            best_i, best_facts, fr_ok = i, facts, True
+            break
+        # 5. (per candidate) refill + DRC
+        if has_zones:
+            kc.run_drc(cli, trial, refill=True, save_board=True)
+        d = kc.run_drc(cli, trial, parity=sch.is_file(), all_track_errors=True)
+        grade = (len(_drc_unrouted(d)), sum(_err_counts(d).values()),
+                 d["counts"]["total"])
+        graded.append({"candidate": i, "fr_unrouted": facts.get("unrouted"),
+                       "drc_unrouted_nets": grade[0], "drc_errors": grade[1],
+                       "drc_total": grade[2]})
+        if drc is None or grade < best_grade:
+            best_grade, drc = grade, d
+            imported, dedup_facts = imp, dd
+            best_i, best_facts, fr_ok, best_trial = i, facts, True, trial
+    if fr_ok and args.tries > 1:
+        shutil.copy2(best_trial, staged)
+    if not fr_ok:
+        shutil.copy2(pristine, staged)
     if not fr_ok and (args.no_krt_finish or env.find_krt() is None):
         raise CheckError("no Freerouting rung produced an importable session "
                          f"and the KRT fallback is unavailable; see {work} "
                          "logs (board untouched)")
 
-    # 4b. dedup: the SES echoes pre-session guide-wire copper (critical-net
-    # trunks) back through ImportSpecctraSES as EXACT same-net duplicates -
-    # invisible to DRC/gerbers (S14: run (a) shipped 45 echoed segments).
-    dedup_facts = {"removed": 0}
-    if fr_ok:
-        dedup_facts = routelib.run_worker(bp, {
-            "verb": "dedup_copper", "board": str(staged),
-            "out": str(staged)}, work, timeout=300)
-
     # 5. refill (post-SES fills are stale) + DRC of the current state
-    if has_zones:
-        kc.run_drc(cli, staged, refill=True, save_board=True)
-    drc = kc.run_drc(cli, staged, parity=sch.is_file(), all_track_errors=True)
+    if drc is None:
+        if has_zones:
+            kc.run_drc(cli, staged, refill=True, save_board=True)
+        drc = kc.run_drc(cli, staged, parity=sch.is_file(),
+                         all_track_errors=True)
 
     # 5b. KRT pass: with a Freerouting result this is the mop-up (fine-pitch
     # pads FR cannot fan out, sliver vias inside the hole-clearance floor);
@@ -533,6 +615,8 @@ def run(argv: list[str] | None = None):
                                 - imported["tracks_before"])
             if imported else 0,
             "best_rung": best_i, "rungs": rungs,
+            "tries": tries, "graded": graded,
+            "variance": _variance(graded) if graded else None,
             "fr_completion": routelib.completion_fraction(best_facts)
             if fr_ok else None,
             "power_layers": power_layers,
