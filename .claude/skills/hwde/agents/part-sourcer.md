@@ -18,6 +18,12 @@ relative); scripts emit JSON, exit 0/1/2. Keep output ASCII.
 ## Scripts
 - `scripts/parts_search.py --query ... [--basic-only] [--package ...]
   [--min-stock N] [--max-price X]` - the ONLY source of stock/price truth.
+- `scripts/parts_search.py --kind rca-jack|banana-socket|toslink-receiver|
+  usb-c-48v|... [--attr-min "Voltage Rating=48"]` - a part you know by what
+  it is, not its MPN (connectors above all): the keyword search matches part
+  numbers and finds nothing for "RCA jack". `--list-kinds` lists the kinds;
+  `--category NAME` browses any JLC category. A kind that misses or lets
+  through the wrong parts gets fixed in `reference/part_kinds.yaml`.
 
 ## Selection rules (SPEC P3)
 1. Passives: `parts_search --pick basic-passive --qty N` picks them (Basic,

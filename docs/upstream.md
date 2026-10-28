@@ -2,14 +2,19 @@
 
 `.claude/skills/hwde/` is ihsan-sa/hwde's `.claude/skills/hwde/` at
 `5d7bbe52483ca0bc6bf28a56e4c1e0d24b5ca4b7`, at the same path, because its
-scripts locate each other and the repo root by that depth. It differs in two
-ways:
+scripts locate each other and the repo root by that depth. It differs in
+these ways:
 
 - `reference/knowledge/sources/*.pdf` (36 MB of manufacturers' datasheets and
   application notes) is left out. NOTICE says they're redistributed under
   their owners' terms, not MIT.
 - `scripts/lib/knowledgelib.py`: `SOURCES_DIR` reads `HWDE_KNOWLEDGE_SOURCES`
   when it's set, so the records can still find those PDFs elsewhere.
+- `scripts/parts_search.py --kind/--category` (with
+  `reference/part_kinds.yaml` and `category_search` in
+  `scripts/lib/partslib.py`): finding a part by what it is, by browsing its
+  JLC category, since the keyword search only matches part numbers. Tested
+  offline by `tests/tools/parts-kind.py`.
 
 `requirements.lock`, `LICENSE` and `NOTICE` are upstream's, from the repo
 root. The tests, plans, docker setup and design notes stay upstream.
