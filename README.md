@@ -29,8 +29,9 @@ An agent designs a PCB from a written brief: research, architecture, parts, sche
   board drop a workaround removes its row and raises the score. A new board
   adds its steps; any workarounds it needs add rows, with a probe each.
   hwde-led-test starts at 0/5: its ERC schematic was written through the
-  symdir shim, its routed board has hand-widened courtyards and a
-  hand-picked outline margin, verify reads a hand-made decoupling entry, and
-  fab and dfm read a hand-added `refdes` per part.
+  symdir shim, verify reads a hand-made decoupling entry, and fab and dfm
+  read a hand-added `refdes` per part. Its routed board had hand-widened
+  courtyards and a hand-picked outline margin until `check_courtyard`, fpfix
+  rule E and silk in `board_edit --outline fit` took those two off.
 
 MIT, like upstream; see NOTICE for what that doesn't cover.
