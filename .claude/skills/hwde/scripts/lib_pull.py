@@ -7,6 +7,10 @@ Wraps `easyeda2kicad --full --lcsc_id=Cxxxx --output <base>`, which writes
   <base>.pretty/<fp>.kicad_mod (footprints, LEGACY (module ...) format)
   <base>.3dshapes/<name>.{wrl,step}
 then appends the libraries to <project>/fp-lib-table + sym-lib-table (idempotent).
+A part already in the library is left as it is (its footprint repairs stay)
+unless --overwrite; only the 3D models its footprint names and <base>.3dshapes
+lacks are fetched (easyeda2kicad --3d), which is how a fresh clone, whose
+gitignored 3dshapes are gone, gets them back.
 Footprints load in KiCad 10 despite the legacy format (LEARNINGS 2026-07-22
 [easyeda2kicad]); --verify-load confirms it with `kicad-cli fp export svg`.
 
@@ -70,10 +74,14 @@ import lib_refdes_norm  # noqa: E402
 from lib import env  # noqa: E402
 
 
-def _run_easyeda(lcsc: str, base: Path, no_3d: bool, overwrite: bool) -> subprocess.CompletedProcess:
+def _run_easyeda(lcsc: str, base: Path, no_3d: bool, overwrite: bool,
+                 only_3d: bool = False) -> subprocess.CompletedProcess:
     cmd = [sys.executable, "-m", "easyeda2kicad",
            f"--lcsc_id={lcsc}", "--output", str(base)]
-    cmd += ["--symbol", "--footprint"] if no_3d else ["--full"]
+    if only_3d:
+        cmd.append("--3d")
+    else:
+        cmd += ["--symbol", "--footprint"] if no_3d else ["--full"]
     if overwrite:
         cmd.append("--overwrite")
     return subprocess.run(cmd, capture_output=True, text=True,
@@ -88,17 +96,34 @@ def _symbol_entry(sym_lib: Path, lcsc: str) -> dict | None:
     return None
 
 
+def _present(lcsc: str, base: Path) -> tuple[dict | None, Path | None]:
+    """(symbol-index entry, footprint file) when this part is in the library."""
+    entry = _symbol_entry(base.with_suffix(".kicad_sym"), lcsc)
+    if entry is None or not entry["footprint"]:
+        return entry, None
+    cand = (Path(str(base) + ".pretty")
+            / (entry["footprint"].split(":")[-1] + ".kicad_mod"))
+    return entry, (cand if cand.exists() else None)
+
+
 def _pull_one(lcsc: str, base: Path, no_3d: bool, overwrite: bool) -> dict:
     sym_lib = base.with_suffix(".kicad_sym")
     pretty = Path(str(base) + ".pretty")
-    try:
-        cp = _run_easyeda(lcsc, base, no_3d, overwrite)
-    except subprocess.TimeoutExpired:
-        return {"lcsc": lcsc, "status": "error", "detail": "easyeda2kicad timed out (network?)"}
-    log = (cp.stdout or "") + (cp.stderr or "")
-
-    already = "already exists" in log
-    created = "Created Kicad footprint" in log or "Created Kicad symbol" in log
+    # A part already in the library is not handed to easyeda2kicad at all: it
+    # stops at the existing symbol, so it fetches no 3D model (that is
+    # _restore_models' job), and a symbol whose name has a space or '/' is
+    # appended again anyway (_dedupe_symbols).
+    entry, fp_file = (None, None) if overwrite else _present(lcsc, base)
+    if entry is not None and fp_file is not None:
+        cp, log, already, created = None, "", True, False
+    else:
+        try:
+            cp = _run_easyeda(lcsc, base, no_3d, overwrite)
+        except subprocess.TimeoutExpired:
+            return {"lcsc": lcsc, "status": "error", "detail": "easyeda2kicad timed out (network?)"}
+        log = (cp.stdout or "") + (cp.stderr or "")
+        already = "already exists" in log
+        created = "Created Kicad footprint" in log or "Created Kicad symbol" in log
     # Success must be judged PER PART, from the filesystem, through the SYMBOL
     # library (LEARNINGS 2026-07-28 [easyeda2kicad][parts]): a part is present
     # iff aiee.kicad_sym holds a top-level (symbol ...) block with
@@ -108,11 +133,8 @@ def _pull_one(lcsc: str, base: Path, no_3d: bool, overwrite: bool) -> dict:
     # first puller's id) reported "error", and a 403'd symbol pull whose id
     # happened to sit in some footprint file reported "pulled" (and C2580
     # substring-matched C25804's file).
-    entry = _symbol_entry(sym_lib, lcsc)
-    fp_file = None
-    if entry is not None and entry["footprint"]:
-        cand = pretty / (entry["footprint"].split(":")[-1] + ".kicad_mod")
-        fp_file = cand if cand.exists() else None
+    if cp is not None:
+        entry, fp_file = _present(lcsc, base)
     if entry is None or fp_file is None:
         if entry is None:
             why = (f'no symbol carrying (property "LCSC Part" "{lcsc}") '
@@ -158,6 +180,20 @@ def _pull_one(lcsc: str, base: Path, no_3d: bool, overwrite: bool) -> dict:
 
 # ------------------------------------------------------- batch pacing + dedupe
 
+class _Pacer:
+    """Spaces the EasyEDA calls of one run pace_s apart, whichever step makes
+    them (the WAF counts requests, not parts)."""
+
+    def __init__(self, pace_s: float):
+        self.pace_s = pace_s
+        self.calls = 0
+
+    def wait(self) -> None:
+        if self.calls and self.pace_s > 0:
+            time.sleep(self.pace_s)
+        self.calls += 1
+
+
 def _auto_pace(n_parts: int) -> float:
     """0 s for small pulls, 15 s otherwise (the measured WAF budget: 4/35s
     tripped CloudFront after ~13 parts; 1/15s ran 31 parts clean)."""
@@ -169,7 +205,7 @@ def _is_rate_limited(detail: str) -> bool:
 
 
 def _pull_all(ids: list[str], base: Path, no_3d: bool, overwrite: bool,
-              pace_s: float) -> tuple[list[dict], int]:
+              pacer: _Pacer) -> tuple[list[dict], int]:
     """Pull every id, paced; on a 403 back off 90 s and retry that part once.
 
     The retried part is re-verified on disk by _pull_one's symbol-index gate
@@ -177,9 +213,9 @@ def _pull_all(ids: list[str], base: Path, no_3d: bool, overwrite: bool,
     """
     results: list[dict] = []
     retried = 0
-    for i, lcsc in enumerate(ids):
-        if i and pace_s > 0:
-            time.sleep(pace_s)
+    for lcsc in ids:
+        if overwrite or None in _present(lcsc, base):
+            pacer.wait()
         r = _pull_one(lcsc, base, no_3d, overwrite)
         if r["status"] == "error" and _is_rate_limited(r.get("detail", "")):
             time.sleep(90.0)      # CloudFront WAF block clears in ~60-120 s
@@ -188,6 +224,67 @@ def _pull_all(ids: list[str], base: Path, no_3d: bool, overwrite: bool,
             retried += 1
         results.append(r)
     return results, retried
+
+
+_MODEL = re.compile(r'\(model\s+"?([^"\s)]+)"?')
+
+
+def _missing_models(fp_file: Path, models: Path) -> list[str]:
+    """Model files this footprint names in <lib>.3dshapes that are not there.
+
+    Only paths into a directory named like `models` count: a footprint that
+    points at KiCad's own 3D library is not this library's to fill."""
+    try:
+        text = fp_file.read_text(encoding="utf-8")
+    except OSError:
+        return []
+    out = []
+    for raw in _MODEL.findall(text):
+        name = raw.replace("\\", "/").rsplit("/", 1)
+        if len(name) == 2 and name[0].rsplit("/", 1)[-1] == models.name \
+                and not (models / name[1]).exists():
+            out.append(name[1])
+    return sorted(set(out))
+
+
+def _restore_models(results: list[dict], base: Path, pacer: _Pacer) -> dict:
+    """Fetch the 3D models a part's footprint names but the library lacks.
+
+    The 3D models are gitignored (manufacturers' material, NOTICE), so a fresh
+    clone has every part in the library and none of its models; easyeda2kicad
+    stops at the existing symbol and fetches none, and --overwrite would undo
+    the footprint repairs. This runs easyeda2kicad --3d alone, which writes
+    only <lib>.3dshapes. A shared footprint is restored once: the parts after
+    the first find its model present. A part whose model has another name than
+    the footprint names (a shared footprint pulled first by another part) is
+    left in `still_missing`, a warning, not a failure."""
+    models = Path(str(base) + ".3dshapes")
+    restored: list[str] = []
+    still: list[str] = []
+    for r in results:
+        if r["status"] == "error":
+            continue
+        for fp in r.get("footprints", []):
+            missing = _missing_models(Path(fp["file"]), models)
+            if not missing:
+                continue
+            pacer.wait()
+            try:
+                cp = _run_easyeda(r["lcsc"], base, False, False, only_3d=True)
+                log = (cp.stdout or "") + (cp.stderr or "")
+            except subprocess.TimeoutExpired:
+                log = "easyeda2kicad timed out (network?)"
+            left = _missing_models(Path(fp["file"]), models)
+            got = sorted(set(missing) - set(left))
+            restored += got
+            fp["models_restored"] = got
+            if left:
+                still += left
+                r.setdefault("warnings", []).append(
+                    f"{fp['name']}: 3D model(s) {', '.join(left)} still missing"
+                    + (" | log: " + log.strip()[-200:] if log.strip() else ""))
+    return {"restored": sorted(set(restored)),
+            "still_missing": sorted(set(still))}
 
 
 _SYM_NAME = re.compile(r'\(\s*symbol\s+"((?:[^"\\]|\\.)*)"')
@@ -233,6 +330,9 @@ def _dedupe_symbols(sym_lib: Path) -> dict:
                 le += 1
             if out[ls:s].strip():
                 ls, le = s, e
+            elif ls and not out[out.rfind("\n", 0, ls - 1) + 1:ls].strip():
+                # easyeda2kicad inserts each symbol after a blank line
+                ls = out.rfind("\n", 0, ls - 1) + 1
             out = out[:ls] + out[le:]
         sym_lib.write_text(out, encoding="utf-8")
     return {"removed": len(drops), "names": sorted(set(names))}
@@ -461,7 +561,10 @@ def main(argv: list[str] | None = None) -> int:
         else:
             ids = list(args.lcsc)
         pace_s = _auto_pace(len(ids)) if args.pace_s is None else max(0.0, args.pace_s)
-        results, n_retried = _pull_all(ids, base, args.no_3d, args.overwrite, pace_s)
+        pacer = _Pacer(pace_s)
+        results, n_retried = _pull_all(ids, base, args.no_3d, args.overwrite, pacer)
+        restored = (None if args.no_3d
+                    else _restore_models(results, base, pacer))
 
         sym_lib = base.with_suffix(".kicad_sym")
         pretty = Path(str(base) + ".pretty")
@@ -514,6 +617,7 @@ def main(argv: list[str] | None = None) -> int:
             "autofix": autofix,
             "refdes_norm": refdes,
             "model_paths": models,
+            "models_restored": restored,
             "load_check": load,
             "drc_check": drc,
         }

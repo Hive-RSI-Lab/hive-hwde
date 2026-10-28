@@ -580,10 +580,14 @@ def test_fplib_symbol_index_reads_lcsc_and_footprint(tmp_path):
 def test_pull_gate_shared_footprint_reports_pulled(tmp_path, monkeypatch):
     """A part whose footprint was first pulled by ANOTHER part must verify:
     the .kicad_mod records only the first puller's id."""
-    lib_dir = _fake_lib(tmp_path,
-                        [("PartA", "C999", "C0603"), ("PartB", "C111", "C0603")],
+    lib_dir = _fake_lib(tmp_path, [("PartA", "C999", "C0603")],
                         [("C0603", "C999")])       # file text lacks C111
-    monkeypatch.setattr(lib_pull, "_run_easyeda", _ok_run)
+
+    def run(*a, **k):                              # the pull adds PartB only
+        _write_sym_lib(lib_dir / "aiee.kicad_sym",
+                       [("PartA", "C999", "C0603"), ("PartB", "C111", "C0603")])
+        return _ok_run()
+    monkeypatch.setattr(lib_pull, "_run_easyeda", run)
     r = lib_pull._pull_one("C111", lib_dir / "aiee", True, False)
     assert r["status"] == "pulled", r
     assert r["symbol_verified"] and r["footprint_verified"]
@@ -609,7 +613,8 @@ def test_pull_gate_lcsc_match_is_exact_not_substring(tmp_path, monkeypatch):
                         [("R0603", "C25804")])
     monkeypatch.setattr(lib_pull, "_run_easyeda", _ok_run)
     assert lib_pull._pull_one("C2580", lib_dir / "aiee", True, False)["status"] == "error"
-    assert lib_pull._pull_one("C25804", lib_dir / "aiee", True, False)["status"] == "pulled"
+    # already in the library: not re-pulled (snag 15), and found by its exact id
+    assert lib_pull._pull_one("C25804", lib_dir / "aiee", True, False)["status"] == "exists"
 
 
 def test_pull_gate_missing_footprint_file_is_an_error(tmp_path, monkeypatch):
@@ -646,7 +651,8 @@ def test_pull_all_paces_between_parts(monkeypatch):
     monkeypatch.setattr(lib_pull.time, "sleep", lambda s: sleeps.append(s))
     monkeypatch.setattr(lib_pull, "_pull_one",
                         lambda l, b, n, o: {"lcsc": l, "status": "pulled"})
-    res, retried = lib_pull._pull_all(["C1", "C2", "C3"], Path("x"), True, False, 15.0)
+    res, retried = lib_pull._pull_all(["C1", "C2", "C3"], Path("x"), True, False,
+                                       lib_pull._Pacer(15.0))
     assert sleeps == [15.0, 15.0] and retried == 0 and len(res) == 3
 
 
