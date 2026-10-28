@@ -194,6 +194,10 @@ def validate_report(gate_name: str, gate: dict, report,
     return rec_p
 
 
+# most below-the-bar findings a gate result carries inline (see evaluate)
+WARNINGS_CAP = 200
+
+
 def load_gates(path: Path) -> dict:
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     gates = data.get("gates", {})
@@ -428,6 +432,15 @@ def evaluate(gate_name: str, gate: dict, report: dict,
         "failing_count": len(failing),
         "failing": failing,
     }
+    # The findings below the fail bar (warnings, info) travel too: a pass is
+    # not "nothing to look at", and verify's merged report lives in a scratch
+    # dir gone by the time the caller reads this. Capped so a noisy DRC
+    # doesn't swamp the result; warnings_count is always the full number.
+    below = [v for v in violations if v.get("severity") not in fail_sev]
+    result["warnings_count"] = len(below)
+    result["warnings"] = below[:WARNINGS_CAP]
+    if len(below) > WARNINGS_CAP:
+        result["warnings_truncated"] = True
     if waivers is not None:
         result["waived_count"] = len(waived)
         result["waived"] = waived
@@ -702,7 +715,8 @@ def main(argv: list[str] | None = None) -> int:
     # one-line human summary to stderr; stdout stays pure JSON
     n = result.get("failing_count", 0)
     print(f"gate {args.gate}: {result['status'].upper()} "
-          f"({n} failing / {result['counts'].get('total', 0)} total)",
+          f"({n} failing, {result.get('warnings_count', 0)} below the bar"
+          f" / {result['counts'].get('total', 0)} total)",
           file=sys.stderr)
     rr = result.get("record_result")
     if rr is not None and not rr.get("ok"):
