@@ -36,6 +36,13 @@ aiee.kicad_sym holds a top-level (symbol ...) block carrying
 aiee.pretty. Footprints are SHARED (one C0603 served 5 parts) and record only
 the first puller's id, so footprint grep is NOT a per-part signal.
 
+A batch keeps to a time budget (--budget-s, default 7 min): a pull that would
+overrun it isn't started, the rest come back `deferred` with status `partial`
+(exit 1), and the fix-ups below still run on what was pulled. A part already
+whole in the library (symbol, footprint and, unless --no-3d, its 3D model) is
+skipped without a network call unless --overwrite, so re-running the same
+command resumes.
+
 `--parts parts/parts.json` pulls every part in ONE paced batch: parts are
 spaced --pace-s apart (auto: 0 for <=10 parts, 15 s for more - EasyEDA's
 CloudFront WAF tripped at 4/35s after ~13 parts while 1/15s ran 31 clean), a
@@ -45,7 +52,7 @@ after the batch.
 
 Contract (SPEC section 6): argparse, JSON to stdout or --out, exit 0/1/2.
   0 = every requested part pulled (or already present)
-  1 = one or more parts failed to pull
+  1 = one or more parts failed to pull, or were deferred (re-run to resume)
   2 = internal error / bad arguments
 
 Examples:
@@ -63,6 +70,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS))
@@ -92,13 +100,40 @@ def _symbol_entry(sym_lib: Path, lcsc: str) -> dict | None:
     return None
 
 
-def _pull_one(lcsc: str, base: Path, no_3d: bool, overwrite: bool) -> dict:
+def _present(lcsc: str, base: Path, no_3d: bool) -> bool:
+    """The part is already in the library, whole: its symbol, the footprint
+    that symbol names and (unless --no-3d) that footprint's 3D model, by
+    name in <base>.3dshapes. A re-run skips it without touching the network,
+    which is what lets an interrupted batch resume."""
+    entry = _symbol_entry(base.with_suffix(".kicad_sym"), lcsc)
+    if entry is None or not entry["footprint"]:
+        return False
+    fp = Path(str(base) + ".pretty") / (entry["footprint"].split(":")[-1] + ".kicad_mod")
+    if not fp.is_file():
+        return False
+    if no_3d:
+        return True
+    m = re.search(r'\(model\s+(?:"([^"]+)"|(\S+))', fp.read_text(encoding="utf-8", errors="replace"))
+    if not m:
+        return False
+    name = Path((m.group(1) or m.group(2)).replace("\\", "/")).name
+    return (Path(str(base) + ".3dshapes") / name).is_file()
+
+
+def _pull_one(lcsc: str, base: Path, no_3d: bool, overwrite: bool,
+              skip: bool = False) -> dict:
+    """Pull one part (or, with skip, take the copy already in the library)
+    and judge it from the library on disk."""
     sym_lib = base.with_suffix(".kicad_sym")
     pretty = Path(str(base) + ".pretty")
-    try:
-        cp = _run_easyeda(lcsc, base, no_3d, overwrite)
-    except subprocess.TimeoutExpired:
-        return {"lcsc": lcsc, "status": "error", "detail": "easyeda2kicad timed out (network?)"}
+    if skip:
+        cp = SimpleNamespace(stdout="already exists (skipped: in the library)",
+                             stderr="", returncode=0)
+    else:
+        try:
+            cp = _run_easyeda(lcsc, base, no_3d, overwrite)
+        except subprocess.TimeoutExpired:
+            return {"lcsc": lcsc, "status": "error", "detail": "easyeda2kicad timed out (network?)"}
     log = (cp.stdout or "") + (cp.stderr or "")
 
     already = "already exists" in log
@@ -162,6 +197,12 @@ def _pull_one(lcsc: str, base: Path, no_3d: bool, overwrite: bool) -> dict:
 
 # ------------------------------------------------------- batch pacing + dedupe
 
+# Seconds of pulling per run by default: a 10-minute tool call keeps a few
+# minutes for the fix-ups, the load check and the report. 21 parts at the
+# 15 s pace once took over 10 minutes; killed, the run left every footprint's
+# 3D path absolute (hifi-receiver-2 lite-main, snag 5).
+DEFAULT_BUDGET_S = 420.0
+
 def _auto_pace(n_parts: int) -> float:
     """0 s for small pulls, 15 s otherwise (the measured WAF budget: 4/35s
     tripped CloudFront after ~13 parts; 1/15s ran 31 parts clean)."""
@@ -172,21 +213,61 @@ def _is_rate_limited(detail: str) -> bool:
     return "403" in detail or "Forbidden" in detail
 
 
+# A part's pull takes about this long before any have been timed.
+EST_PULL_S = 20.0
+# The 403 back-off: CloudFront's WAF block clears in ~60-120 s.
+BACKOFF_S = 90.0
+
+
 def _pull_all(ids: list[str], base: Path, no_3d: bool, overwrite: bool,
-              pace_s: float) -> tuple[list[dict], int]:
+              pace_s: float, budget_s: float | None = None) -> tuple[list[dict], int]:
     """Pull every id, paced; on a 403 back off 90 s and retry that part once.
 
     The retried part is re-verified on disk by _pull_one's symbol-index gate
-    before it can report success. Returns (results, n_retried).
+    before it can report success. A part already whole in the library is
+    taken as it is (no network, no pacing) unless overwrite. With budget_s,
+    a pull (or back-off) that would run past the budget isn't started: that
+    part and the rest come back `deferred`, so the run ends with time left
+    to fix up what it has, and a re-run resumes. Returns (results, n_retried).
     """
     results: list[dict] = []
     retried = 0
+    t0 = time.monotonic()
+    pulls: list[float] = []      # seconds each network pull took
+    fetched = 0
+
+    def fits(extra: float) -> bool:
+        if not budget_s:
+            return True
+        est = sum(pulls) / len(pulls) if pulls else EST_PULL_S
+        return time.monotonic() - t0 + extra + est <= budget_s
+
     for i, lcsc in enumerate(ids):
-        if i and pace_s > 0:
-            time.sleep(pace_s)
+        if not overwrite and _present(lcsc, base, no_3d):
+            results.append(_pull_one(lcsc, base, no_3d, overwrite, skip=True))
+            continue
+        wait = pace_s if fetched and pace_s > 0 else 0.0
+        if not fits(wait):
+            results += [{"lcsc": l, "status": "deferred",
+                         "detail": "not started: the run's time budget"}
+                        for l in ids[i:]]
+            break
+        if wait:
+            time.sleep(wait)
+        t1 = time.monotonic()
         r = _pull_one(lcsc, base, no_3d, overwrite)
+        pulls.append(time.monotonic() - t1)
+        fetched += 1
         if r["status"] == "error" and _is_rate_limited(r.get("detail", "")):
-            time.sleep(90.0)      # CloudFront WAF block clears in ~60-120 s
+            if not fits(BACKOFF_S):
+                results.append(dict(r, status="deferred",
+                                    detail="rate-limited, and a back-off would "
+                                           "overrun the time budget"))
+                results += [{"lcsc": l, "status": "deferred",
+                             "detail": "not started: the run's time budget"}
+                            for l in ids[i + 1:]]
+                break
+            time.sleep(BACKOFF_S)
             r = _pull_one(lcsc, base, no_3d, overwrite)
             r["retried"] = True
             retried += 1
@@ -411,6 +492,11 @@ def main(argv: list[str] | None = None) -> int:
                          "--project is given, else ./lib")
     ap.add_argument("--lib-name", default="aiee", help="library nickname/base (default aiee)")
     ap.add_argument("--project", help="project dir to register the libs into")
+    ap.add_argument("--budget-s", type=float, default=DEFAULT_BUDGET_S,
+                    help="stop starting pulls once this many seconds would be "
+                         "spent (default %(default)s, inside a 10-minute tool "
+                         "call with time for the fix-ups); the rest come back "
+                         "deferred and a re-run resumes. 0 = no budget")
     ap.add_argument("--no-3d", action="store_true", help="skip 3D models (faster)")
     ap.add_argument("--overwrite", action="store_true", help="re-pull existing parts")
     ap.add_argument("--verify-load", action="store_true",
@@ -469,7 +555,8 @@ def main(argv: list[str] | None = None) -> int:
         else:
             ids = list(args.lcsc)
         pace_s = _auto_pace(len(ids)) if args.pace_s is None else max(0.0, args.pace_s)
-        results, n_retried = _pull_all(ids, base, args.no_3d, args.overwrite, pace_s)
+        results, n_retried = _pull_all(ids, base, args.no_3d, args.overwrite,
+                                       pace_s, budget_s=args.budget_s or None)
 
         sym_lib = base.with_suffix(".kicad_sym")
         pretty = Path(str(base) + ".pretty")
@@ -506,10 +593,14 @@ def main(argv: list[str] | None = None) -> int:
                    "by_check": d["by_check"], "missing": d["missing"]}
 
         failed = [r for r in results if r["status"] == "error"]
+        deferred = [r["lcsc"] for r in results if r["status"] == "deferred"]
         payload = {
             "script": "lib_pull",
             "status": "fail" if (failed or (drc and drc["counts"]["total"]))
-                      else "pass",
+                      else "partial" if deferred else "pass",
+            "deferred": deferred,
+            "resume": ("re-run the same command: the parts already in the "
+                       "library are skipped" if deferred else None),
             "lib_name": args.lib_name,
             "parts_file": args.parts,
             "paced_s": pace_s,
@@ -535,7 +626,7 @@ def main(argv: list[str] | None = None) -> int:
         Path(args.out).write_text(text, encoding="utf-8")
     else:
         print(text)
-    return 1 if payload["status"] == "fail" else 0
+    return 1 if payload["status"] in ("fail", "partial") else 0
 
 
 if __name__ == "__main__":
