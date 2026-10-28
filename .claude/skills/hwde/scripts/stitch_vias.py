@@ -26,15 +26,14 @@ Three jobs (SPEC P7.4: "GND stitching at rise-time-derived pitch"):
 
 Every candidate must clear FOREIGN copper (any net != target) on ALL copper
 layers a through via spans (via disc grown by the board clearance) and keep
-a drill-EDGE-aware floor to every known hole (T6, P7A-4): the old model
-kept 0.5 mm CENTRE distance and was drill-size-blind, so a via next to a
-big/slotted THT drill shipped unmanufacturable spacing DRC-green (KiCad
-never checks via drill vs same-net pad hole - LEARNINGS 819). Now every
-hole is its real extent (via drills as discs, pad drills incl. slot
-stadiums via geom.Pad.drill_poly) and a candidate needs
-hole_edge >= EDGE_GAP + its own drill radius, EDGE_GAP = 0.5 - 0.3 =
-0.2 mm - identical to the S11-verified 0.5 mm centre floor for two
-standard 0.3-drill vias, stricter only where drills are bigger. When
+a drill-EDGE-aware floor to every known hole (T6, P7A-4): every hole is
+its real extent (via drills as discs, pad drills incl. slot stadiums via
+geom.Pad.drill_poly, NPTH holes from geom's npth list) and a candidate
+needs hole_edge >= the board's min_hole_to_hole + its own drill radius.
+KiCad's hole_to_hole (JLC's 0.5 mm) is drill EDGE to drill edge: the old
+floor read 0.5 as a centre distance (edge gap 0.2), and on lite-main
+(hifi-receiver-2) 20 GND stitches landed 0.23-0.48 mm from via, mounting-
+hole and thermal-via drills, each a drc_routed hole_to_hole error. When
 stitching several nets, power nets go first and GND always last (prior-
 attempt fact: GND candidates are numerous and box power pads out otherwise).
 
@@ -86,7 +85,7 @@ KNEE_GHZ_NS = 0.35              # f_knee(GHz) = 0.35 / t_rise(ns)
 PITCH_CLAMP = (2.0, 15.0)       # area-stitch pitch bounds, mm
 FENCE_CLAMP = (1.0, 10.0)       # fence pitch bounds, mm
 DEF_T_RISE_NS = 1.0
-MIN_HOLE_DIST = 0.5             # drill centre-to-centre minimum, mm
+MIN_HOLE_DIST = 0.5             # drill edge-to-edge minimum, mm (pro default)
 DEF_CLEARANCE = 0.2             # copper clearance fallback, mm
 EDGE_MARGIN = 1.0               # area vias: min distance to outline, mm
 RING_RADII = (0.65, 0.9, 1.15)  # pad-stitch spot radii from pad centre, mm
@@ -233,9 +232,9 @@ class Scene:
     `holes` entries are shapely geometries of DRILL EXTENTS (T6, P7A-4):
     discs for round drills, stadiums for slots. hole_ok is edge-to-edge:
     a new via (drill radius new_drill_r) is legal iff every hole's edge is
-    >= (min_hole - 0.3) + new_drill_r away from its centre - for two
-    standard 0.3 mm drills that reproduces the S11 0.5 mm centre floor
-    exactly, and big/slot drills are finally seen at their real size.
+    >= min_hole + new_drill_r away from its centre, min_hole being KiCad's
+    hole_to_hole (drill edge to drill edge) - for two standard 0.3 mm
+    drills at JLC's 0.5 that is 0.8 mm centre to centre.
     """
 
     def __init__(self, copper_layers, foreign_of, outline, clearance: float,
@@ -264,7 +263,7 @@ class Scene:
 
     @property
     def edge_gap(self) -> float:
-        return self.min_hole - 0.3
+        return self.min_hole
 
     def hole_ok(self, x: float, y: float) -> bool:
         pt = Point(x, y)
@@ -355,8 +354,15 @@ def board_clearance(pcb: Path) -> float:
     return max(vals) if vals else DEF_CLEARANCE
 
 
+def board_hole_to_hole(pcb: Path) -> float:
+    """The pro's min_hole_to_hole (drill edge to edge), else 0.5 mm."""
+    v = _pro_rules(pcb).get("min_hole_to_hole")
+    return float(v) if isinstance(v, (int, float)) and v > 0 else MIN_HOLE_DIST
+
+
 def build_scene(bg: geom.BoardGeom, clearance: float,
-                new_drill: float = 0.3) -> Scene:
+                new_drill: float = 0.3,
+                min_hole: float = MIN_HOLE_DIST) -> Scene:
     # Foreign copper = tracks + pads + vias of other nets ONLY - never zone
     # FILLS. Fills re-flow at the post-apply refill (a via through a foreign
     # plane gets a legal antipad; a track through a pour region pushes the
@@ -370,27 +376,26 @@ def build_scene(bg: geom.BoardGeom, clearance: float,
         geoms += [v.poly for v in bg.vias_of(layer=layer) if v.net != net]
         return unary_union(geoms)
     sc = Scene(bg.copper_layers, foreign_of, bg.outline, clearance,
-               new_drill=new_drill)
+               min_hole=min_hole, new_drill=new_drill)
     # rule-area keepouts block ring/fence candidates too, not only the area
     # grid (S11 review finding); a through via spans every layer, so any
     # rule area on a copper layer counts.
     sc.keepouts = [ra["outline"] for ra in bg.rule_areas
                    if ra.get("outline") is not None]
     # Holes are DRILL EXTENTS (T6, P7A-4). A via with no recorded drill is
-    # assumed the standard 0.3 mm (never weaker than the old centre floor).
+    # assumed the standard 0.3 mm.
     sc.holes = [Point(v.at).buffer(max(v.drill, 0.3) / 2.0, quad_segs=_QS)
                 for v in bg.vias_of()]
     # THT barrels (pads spanning >1 copper layer) are drills too - at their
     # REAL extents incl. slot stadiums (geom.Pad.drill_poly carries the
-    # -frot/-prot transform; LEARNINGS 819/827). NPTH pads without copper
-    # are invisible to geom; area vias stay drill-safe there because their
-    # disc must sit fully inside the plane fill, which the filler has
-    # already cut back around every hole.
-    for p in bg.pads_of():
-        if len(p.layers) > 1:
-            dp = p.drill_poly
-            sc.holes.append(dp if not dp.is_empty
-                            else Point(p.center).buffer(0.15, quad_segs=_QS))
+    # -frot/-prot transform; LEARNINGS 819/827). NPTH holes count too: one
+    # with copper on every layer is a barrel above, the rest are in geom's
+    # npth list only.
+    barrels = [p for p in bg.pads_of() if len(p.layers) > 1]
+    for p in barrels + [p for p in bg.npth if len(p.layers) <= 1]:
+        dp = p.drill_poly
+        sc.holes.append(dp if not dp.is_empty
+                        else Point(p.center).buffer(0.15, quad_segs=_QS))
     return sc
 
 
@@ -637,7 +642,8 @@ def run(argv: list[str] | None = None):
     clearance = (args.clearance if args.clearance is not None
                  else board_clearance(pcb))
     min_track = float(_pro_rules(pcb).get("min_track_width") or 0.15)
-    scene = build_scene(bg, clearance, new_drill=args.via_drill)
+    scene = build_scene(bg, clearance, new_drill=args.via_drill,
+                        min_hole=board_hole_to_hole(pcb))
     nets = [s.strip() for s in (args.nets or "").split(",") if s.strip()]
     if not nets:
         raise CheckError("--nets is empty")

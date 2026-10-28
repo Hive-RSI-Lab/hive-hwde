@@ -126,8 +126,8 @@ def _scene(clearance=0.2, holes=()):
 
     sc = stitch_vias.Scene(["F.Cu", "B.Cu"], fof, box(0, 0, 20, 20),
                            clearance)
-    # T6: holes are DRILL EXTENTS; (x, y) shorthand = a standard 0.3 drill
-    # (same verdicts as the old 0.5 mm centre floor for standard vias)
+    # T6: holes are DRILL EXTENTS; (x, y) shorthand = a standard 0.3 drill;
+    # the 0.5 mm floor is KiCad's hole_to_hole, drill edge to drill edge
     sc.holes = [Point(x, y).buffer(0.15, quad_segs=16) for x, y in holes]
     return sc
 
@@ -138,20 +138,22 @@ def test_scene_via_check_reasons():
     assert sc.via_check(10.0, 10.0, r, "GND", 0.5) == "foreign_copper"
     assert sc.via_check(11.3, 10.0, r, "GND", 0.5) == "foreign_copper"
     assert sc.via_check(5.4, 5.0, r, "GND", 0.5) == "hole_to_hole"
+    assert sc.via_check(5.6, 5.0, r, "GND", 0.5) == "hole_to_hole"  # 0.3 edge
     assert sc.via_check(0.3, 10.0, r, "GND", 0.5) == "edge"
     assert sc.via_check(25.0, 10.0, r, "GND", 0.5) == "edge"  # outside
-    assert sc.via_check(5.6, 5.0, r, "GND", 0.5) is None
+    assert sc.via_check(5.81, 5.0, r, "GND", 0.5) is None
     assert sc.via_check(12.0, 10.0, r, "GND", 0.5) is None
 
 
 def test_scene_sees_committed_copper():
-    sc = _scene()
+    sc = _scene(clearance=0.4)
     r = 0.3
     sc.commit_via(12.0, 10.0, r, "GND")
-    # new drill enforces 0.5 mm centre spacing for everyone
+    # new drill enforces 0.5 mm edge spacing (0.8 centres) for everyone
     assert sc.via_check(12.3, 10.0, r, "GND", 0.5) == "hole_to_hole"
-    # new copper is foreign to OTHER nets only
-    assert sc.via_check(12.6, 10.0, r, "+3V3", 0.5) == "foreign_copper"
+    assert sc.via_check(12.75, 10.0, r, "GND", 0.5) == "hole_to_hole"
+    # new copper is foreign to OTHER nets only (0.3 + 0.4 + 0.3 = 1.0)
+    assert sc.via_check(12.9, 10.0, r, "+3V3", 0.5) == "foreign_copper"
     assert sc.via_check(14.0, 10.0, r, "+3V3", 0.5) is None
     assert sc.via_check(13.0, 10.0, r, "GND", 0.5) is None
 
@@ -180,13 +182,15 @@ def test_hole_floor_is_drill_edge_aware():
     sc.holes.append(Point(5, 5).buffer(0.5, quad_segs=16))  # 1.0 mm drill
     r = 0.3
     assert sc.via_check(5.5, 5.0, r, "GND", 0.5) == "hole_to_hole"
-    # edge gap 0.2 + new drill r 0.15 -> centre must be >= 0.85 from centre
-    assert sc.via_check(5.84, 5.0, r, "GND", 0.5) == "hole_to_hole"
-    assert sc.via_check(5.86, 5.0, r, "GND", 0.5) is None
-    # two standard 0.3 drills at 0.5 mm centres still accept exactly
+    # edge gap 0.5 + new drill r 0.15 -> centre must be >= 1.15 from centre
+    assert sc.via_check(6.14, 5.0, r, "GND", 0.5) == "hole_to_hole"
+    assert sc.via_check(6.16, 5.0, r, "GND", 0.5) is None
+    # two standard 0.3 drills: 0.8 mm centres (0.5 edge) accept exactly;
+    # lite-main's stitches at 0.53 mm centres (0.23 edge) were DRC errors
     sc2 = _scene(holes=[(5.0, 5.0)])
-    assert sc2.via_check(5.5, 5.0, r, "GND", 0.5) is None
-    assert sc2.via_check(5.49, 5.0, r, "GND", 0.5) == "hole_to_hole"
+    assert sc2.via_check(5.8, 5.0, r, "GND", 0.5) is None
+    assert sc2.via_check(5.79, 5.0, r, "GND", 0.5) == "hole_to_hole"
+    assert sc2.via_check(5.53, 5.0, r, "GND", 0.5) == "hole_to_hole"
 
 
 def test_slot_drill_extents_are_seen():
@@ -198,8 +202,9 @@ def test_slot_drill_extents_are_seen():
                                                             quad_segs=16))
     r = 0.3
     assert sc.via_check(5.0, 6.2, r, "GND", 0.5) == "hole_to_hole"  # 0.2 edge
-    assert sc.via_check(5.0, 6.6, r, "GND", 0.5) is None            # 0.6 edge
-    assert sc.via_check(5.9, 5.0, r, "GND", 0.5) is None            # short axis
+    assert sc.via_check(5.0, 6.6, r, "GND", 0.5) == "hole_to_hole"  # 0.45 edge
+    assert sc.via_check(5.0, 6.7, r, "GND", 0.5) is None            # 0.55 edge
+    assert sc.via_check(5.95, 5.0, r, "GND", 0.5) is None           # short axis
 
 
 def test_build_scene_reads_pad_drills_with_rotation(tmp_path):
@@ -217,8 +222,9 @@ def test_build_scene_reads_pad_drills_with_rotation(tmp_path):
     # slot spans x 13.8..16.2 after the -angle rotation; hole edge at
     # 16.32 is 0.12 mm out -> rejected (old centre model: 1.62 >= 0.5 ok)
     assert sc.via_check(16.32, 15.0, r, "GND", 0.5) == "hole_to_hole"
-    # >= 0.35 mm from the slot edge is drill-legal again (16.2 + 0.35)
-    assert sc.via_check(16.56, 15.0, r, "GND", 0.5) != "hole_to_hole"
+    # >= 0.65 mm from the slot edge is drill-legal again (16.2 + 0.65)
+    assert sc.via_check(16.84, 15.0, r, "GND", 0.5) == "hole_to_hole"
+    assert sc.via_check(16.86, 15.0, r, "GND", 0.5) != "hole_to_hole"
     # far from copper AND drill: fully legal
     assert sc.via_check(19.0, 15.0, r, "GND", 0.5) is None
 
@@ -238,8 +244,8 @@ def test_dry_run_respects_tht_drill_edges(tmp_path):
     drill_edge = Point(12, 10).buffer(0.6)
     for op in payload["ops"]:
         assert op["op"] == "add_via"
-        # centre >= edge_gap(0.2) + new drill r (0.15) from the drill edge
-        assert drill_edge.distance(Point(op["at"])) >= 0.35 - 1e-9, op
+        # centre >= edge_gap(0.5) + new drill r (0.15) from the drill edge
+        assert drill_edge.distance(Point(op["at"])) >= 0.65 - 1e-9, op
 
 
 # ============================================================ pure: CLI fixtures
@@ -296,6 +302,28 @@ def _basic_board(tmp_path: Path) -> Path:
 
 
 # ============================================================ pure: stitch CLI
+
+def test_npth_holes_and_board_hole_to_hole(tmp_path):
+    """A copper-less NPTH hole (geom.npth) is a drill to keep clear of, and
+    the floor is the pro's min_hole_to_hole when it sets one."""
+    body = _fp("J1", 15, 15,
+               '    (pad "" np_thru_hole circle (at 0 0) (size 1.0 1.0)'
+               ' (drill 1.0) (layers "*.Mask"))\n')
+    body += _zone(1, "GND", "B.Cu", 1, 1, 29, 29)
+    pcb = _board(tmp_path, "npth", body)
+    bg = geom.BoardGeom.from_file(pcb)
+    assert [p.drill for p in bg.npth] == [(1.0, 1.0)]
+    assert not bg.pads_of(ref="J1")
+    sc = stitch_vias.build_scene(bg, 0.2)
+    r = 0.3
+    # hole edge at 15.5; legal from 15.5 + 0.5 + 0.15
+    assert sc.via_check(16.14, 15.0, r, "GND", 0.5) == "hole_to_hole"
+    assert sc.via_check(16.16, 15.0, r, "GND", 0.5) is None
+    assert stitch_vias.board_hole_to_hole(pcb) == 0.5
+    pcb.with_suffix(".kicad_pro").write_text(json.dumps(
+        {"board": {"design_settings": {"rules": {"min_hole_to_hole": 0.6}}}}))
+    assert stitch_vias.board_hole_to_hole(pcb) == 0.6
+
 
 def test_dry_run_pad_and_area_stitch(tmp_path):
     pcb = _basic_board(tmp_path)
