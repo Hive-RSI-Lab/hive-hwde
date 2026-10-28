@@ -85,10 +85,10 @@ def pcb_cost(pricing: dict, layers: int, qty: int, w: float, h: float,
     promo = float(pcb.get("promo_max_mm", 100))
     oversize = 0.0
     if w > promo or h > promo:
-        rate = (pcb.get("oversize_per_dm2", {}).get(layers)
-                or pcb.get("oversize_per_dm2", {}).get(str(layers)) or 0.0)
-        area_dm2 = (w * h) / 10000.0
-        oversize = float(rate) * area_dm2 * qty
+        # The base table is the price of the whole order at promo size, so a
+        # bigger board scales it by area (no per-board, per-dm^2 adder: that
+        # priced a 4L 120x100 at qty 100 near 15x the table's own point).
+        oversize = base * max(0.0, (w * h) / (promo * promo) - 1.0)
 
     opts = pricing.get("options", {})
     adders = (float(opts.get("surface_finish", {}).get(finish, 0.0))

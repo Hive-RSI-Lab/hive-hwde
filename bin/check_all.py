@@ -10,6 +10,7 @@ and dfm as `gate --gate <g>`, and fab as fab_export + bom_cpl (offline). A
 board runs each gate its state.json records as passed, and fab once it has a
 fab/ package: a board re-passes everything it once passed. Each probe in
 tests/workarounds/ exits 0 while its cause stands, 10 once it's fixed.
+Each tests/unit/*.py exits 0 when it passes.
 
 Exit 0 when every step passes and the table matches the probes, else 1.
 Run by bin/hwde (venv python, HWDE_* pins, HWDE_BIN set).
@@ -123,6 +124,22 @@ def probes(table: dict[str, score.Workaround]) -> list[str]:
     return bad
 
 
+def units() -> list[str]:
+    """Failures among tests/unit/*.py (each exits 0 on pass)."""
+    bad = []
+    env = dict(os.environ, PYTHONPATH=os.pathsep.join([str(SKILL), str(SKILL / "lib")]))
+    for p in sorted((ROOT / "tests" / "unit").glob("*.py")):
+        r = subprocess.run([sys.executable, str(p)], cwd=ROOT, env=env,
+                           capture_output=True, text=True,
+                           stdin=subprocess.DEVNULL)
+        said = ((r.stdout.strip() or r.stderr.strip()).splitlines() or [""])[-1]
+        print(f"  unit {p.stem}: {'pass' if r.returncode == 0 else 'FAIL'} {said}",
+              flush=True)
+        if r.returncode:
+            bad.append(f"unit {p.stem}: {said}")
+    return bad
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--board", action="append", default=[],
@@ -159,6 +176,8 @@ def main() -> int:
                 if not ok:
                     failed.append(f"{b.name} {s}")
                     print(why, flush=True)
+        print("unit tests:", flush=True)
+        failed += units()
         if not args.no_probes:
             print("workarounds:", flush=True)
             bad = probes(table)

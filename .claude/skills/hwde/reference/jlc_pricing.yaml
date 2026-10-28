@@ -53,11 +53,12 @@ pcb:
     2: {5: 2.00, 10: 2.00, 30: 8.90, 50: 13.90, 100: 24.90}
     4: {5: 5.00, 10: 9.90, 30: 27.90, 50: 42.90, 100: 76.90}
     6: {5: 34.00, 10: 49.00, 30: 109.00, 50: 165.00, 100: 295.00}
-  # Charged per dm^2 once the board exceeds the promo size (rough linear model).
-  oversize_per_dm2:
-    2: 4.50
-    4: 11.00
-    6: 32.00
+  # Past the promo size order_quote scales the base price by board area over
+  # promo_max_mm^2 (a 120x100 board costs 1.2x the 100x100 point). There is no
+  # per-dm^2 rate here: the old oversize_per_dm2 adder (4L: 11 $/dm^2 per board)
+  # put a 4L 120x100 at qty 100 near 15x the base table's own point. Replace
+  # this with transcribed instant-quote points at the board size when one is
+  # measured (see refresh_recipe).
 
 options:
   surface_finish:
