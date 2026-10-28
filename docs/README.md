@@ -11,11 +11,14 @@ an agent runs it inside the Hive.
 - Run `hwde check` (`$HIVE_MODULES/hwde/bin/hwde check --quiet`). It must
   exit 0. On first use it builds the skill's Python venv in your HOME from
   `requirements.lock`, using the Hive's uv; that takes about 15 s.
-- KiCad 10.0.6 and freerouting 2.2.4 are the Hive's, read-only in
-  `/hive/tools` (put there through a warden). Java 25 is the system's.
-  `bin/hwde` finds them all, plus KiCad's own python with `pcbnew` and its
-  ngspice. If `hwde check` can't find one, ask a warden; don't install KiCad
-  yourself.
+- KiCad 10.0.6, freerouting 2.2.4 and KiCadRoutingTools 0.19.0 are the
+  Hive's, read-only in `/hive/tools` (put there through a warden). Java 25
+  is the system's. `bin/hwde` points the skill at that folder
+  (`HWDE_TOOLS_DIR`) and the skill's `env.py` finds them all, plus KiCad's
+  own python with `pcbnew`, its ngspice, its 3D model loaders and its stock
+  symbols (KiCad 10's `.kicad_symdir` libraries, flattened into
+  `~/.cache/hwde/symbols` on first use). If `hwde check` can't find one, ask
+  a warden; don't install KiCad yourself.
 - Boards go in the project you work in, under `boards/<name>/`
   (`HWDE_BOARDS_ROOT`, default `$PWD/boards`). Commit the workspace on your
   branch like any other change. Gate `--commit` isn't needed.
@@ -83,9 +86,6 @@ nothing in the Hive should ask for them.
 
 ## What doesn't work here yet
 
-- `route_critical` and KRT's finishing pass need KiCadRoutingTools 0.19.0,
-  which isn't in `/hive/tools`. A board with diff pairs, high-current power
-  or RF needs it; ask a warden to add it the way KiCad was added.
 - `report_gen` (the design-doc PDF) and the board guide need the
   pdf-material-builder house style, which isn't here. They fall back to
   `--tex-only`, and the skill says that must never gate a run.

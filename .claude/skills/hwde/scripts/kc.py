@@ -344,6 +344,8 @@ ISO_ROTATE = "-45,0,45"
 # kicad-cli parses .wrl/.step models through loader plugins (libs3d_plugin_*)
 # that it looks for ONLY at its compiled install path. Without them it opens
 # every model, parses none, renders a bare board and still exits 0.
+# A KiCad AppImage AppDir (kicad-cli at <appdir>/bin) matches the first glob
+# through its usr/lib/<triplet>/kicad/plugins -> shared/lib/... link.
 _SYS_PLUGIN_GLOBS = ("usr/lib/*/kicad/plugins/3d", "usr/lib*/kicad/plugins/3d",
                      "usr/local/lib/*/kicad/plugins/3d",
                      "usr/local/lib*/kicad/plugins/3d")

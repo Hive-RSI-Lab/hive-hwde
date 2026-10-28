@@ -620,6 +620,10 @@ def _register_project_libs(sch_path: Path) -> list[str]:
         for lib in sorted(root.glob("*.kicad_sym")) + sorted(root.glob("lib/*.kicad_sym")):
             ksa.get_symbol_cache().add_library_path(str(lib))
             found.append(str(lib))
+    # Stock libraries too: a KiCad-10 symdir one is invisible to the cache
+    # until flattened, and save() would drop its symbols just the same.
+    lib_ids = re.findall(r'\(lib_id "([^"]+)"\)', sch_path.read_text(encoding="utf-8"))
+    found += [str(p) for p in env.register_stock_libs(ksa.get_symbol_cache(), lib_ids)]
     return found
 
 

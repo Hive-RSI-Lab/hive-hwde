@@ -74,6 +74,13 @@ STUB = 2.54          # pin stub wire length, two grid steps
 _SCRIPT = "schlib"
 
 
+def _stock_lib(lib_id: str) -> None:
+    """Register lib_id's stock library with kicad-sch-api before placing it:
+    a KiCad-10 .kicad_symdir library is flattened on first use (env)."""
+    with _quiet():
+        env.register_stock_libs(ksa.get_symbol_cache(), [lib_id])
+
+
 @contextlib.contextmanager
 def _quiet():
     """kicad-sch-api also prints at CALL time (emoji 'LOAD' lines on
@@ -160,6 +167,7 @@ class Sheet:
         pin numbers on save: [{"pin_name": "Shield", "wrong": "6",
         "right": "SH"}] (LEARNINGS [python])."""
         assert_on_grid(at[:2], f"{ref} anchor")
+        _stock_lib(lib_id)
         with _quiet():
             c = self.sch.components.add(lib_id, reference=ref, value=value,
                                         position=tuple(at[:2]),
@@ -320,6 +328,7 @@ class Sheet:
         VALUE is enforced through the dedicated attribute too: on power
         symbols it names the exported global net, and set_property("Value")
         is a silent no-op on ksa 0.5.6 (LEARNINGS [kicad-sch-api])."""
+        _stock_lib(lib_id)
         with _quiet():
             c = self.sch.components.add(lib_id, reference=ref, value=value,
                                         position=at)
@@ -670,7 +679,8 @@ def pin_table(lib_id: str, lib_paths: list | None = None) -> dict:
             cache = ksa.get_symbol_cache()
             for p in lib_paths:
                 cache.add_library_path(str(p))
-        sch = ksa.create_schematic("_pins")
+        env.register_stock_libs(ksa.get_symbol_cache(), [lib_id])
+        sch =ksa.create_schematic("_pins")
         c = sch.components.add(lib_id, reference="X1", value="x",
                                position=(127.0, 63.5))
     pins = []
