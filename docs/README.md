@@ -51,6 +51,12 @@ at the module's plainer stand-in (`bin/house-style-fallback/`), so report_gen
 still builds the PDF rather than stopping at `--tex-only`, and the guide is
 built with lualatex directly and skips the skill's style check.
 
+report_gen reads each stage's report from the name the recipes give it
+(`reports/verify_all.json`, `reports/fab_export.json`, `reports/bom_cpl.json`,
+`reports/gate-dfm.json`). It also takes the names earlier runs used:
+verify_all's own `reports/checks/summary.json`, `verify-summary.json`,
+`fab-export.json`, `bom-cpl.json` and `dfm-gate.json`.
+
 ## Sign-offs: H1, H2, H4
 
 The skill stops for the person at H1 (architecture), H2 (schematic) and H4

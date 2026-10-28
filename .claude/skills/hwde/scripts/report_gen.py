@@ -472,6 +472,29 @@ def read_json(ws: Path, rel: str) -> dict | None:
         return None
 
 
+# Each stage's report, by the name the recipes save it under (tasks.yaml,
+# recipes/review.md) first, then the names runs have also used: verify_all
+# itself always writes reports/checks/summary.json, and a run that picks its
+# own --out tends to hyphenate. The first one there is read.
+STAGE_REPORTS = {
+    "verify": ("reports/verify_all.json", "reports/checks/summary.json",
+               "reports/verify-summary.json"),
+    "fab_export": ("reports/fab_export.json", "reports/fab-export.json"),
+    "bom_cpl": ("reports/bom_cpl.json", "reports/bom-cpl.json"),
+    "gate_dfm": ("reports/gate-dfm.json", "reports/dfm-gate.json"),
+}
+
+
+def read_stage(ws: Path, stage: str) -> tuple[dict | None, str]:
+    """A stage's report (STAGE_REPORTS) and the name it was read from; None
+    and the recipes' name when no name holds a JSON object."""
+    for rel in STAGE_REPORTS[stage]:
+        d = read_json(ws, rel)
+        if d is not None:
+            return d, rel
+    return None, STAGE_REPORTS[stage][0]
+
+
 VERIFY_WAIVERS = "verify-waivers.json"
 HL_REASON_CAP = 260   # the highlight cuts a waiver's reason here
 
@@ -849,7 +872,7 @@ class DocBuilder:
         used = []
         self.start("Verification")
         self.body.append(self.gate_line("verify"))
-        va = read_json(self.ws, "reports/verify_all.json")
+        va, va_rel = read_stage(self.ws, "verify")
         if va and isinstance(va.get("checks"), dict):
             rows = []
             for cname, c in va["checks"].items():
@@ -869,9 +892,9 @@ class DocBuilder:
                 "llcp{6cm}",
                 [r"\textbf{Check}", r"\textbf{Status}", r"\textbf{Findings}",
                  r"\textbf{Note}"], rows))
-            used.append("reports/verify_all.json")
+            used.append(va_rel)
         else:
-            self.warn("reports/verify_all.json not found or unparseable")
+            self.warn(f"{va_rel} not found or unparseable")
             self.body.append(r"\emph{reports/verify\_all.json not available.}")
         self.verify_waiver_block(used)
         review = read_text(self.ws, "reports/review-board.md")
@@ -950,23 +973,23 @@ class DocBuilder:
         used = []
         self.start("DFM and Fabrication")
         self.body.append(self.gate_line("dfm"))
-        gd = read_json(self.ws, "reports/gate-dfm.json")
+        gd, gd_rel = read_stage(self.ws, "gate_dfm")
         by_sev = ((gd or {}).get("counts") or {}).get("by_severity")
         if isinstance(by_sev, dict):
             line = ", ".join(f"{k}: {v}" for k, v in sorted(by_sev.items())) or "none"
             self.body.append("DFM findings by severity: " + latex_escape(line) + ".")
-            used.append("reports/gate-dfm.json")
-        fx = read_json(self.ws, "reports/fab_export.json")
+            used.append(gd_rel)
+        fx, fx_rel = read_stage(self.ws, "fab_export")
         if fx and fx.get("layers_exported"):
             self.body.append(r"\subsection*{Fabrication outputs}")
             self.body.append(
                 "Exported layers: "
                 + latex_escape(", ".join(map(str, fx["layers_exported"]))) + ".")
-            used.append("reports/fab_export.json")
+            used.append(fx_rel)
         else:
-            self.warn("reports/fab_export.json not found or has no layers_exported")
+            self.warn(f"{fx_rel} not found or has no layers_exported")
 
-        bom = read_json(self.ws, "reports/bom_cpl.json")
+        bom, bom_rel = read_stage(self.ws, "bom_cpl")
         self.castellation_line(bom, read_json(self.ws, "fab/order.json"))
         rows_ok = bool(bom and isinstance(bom.get("bom_rows"), list)
                        and bom["bom_rows"])
@@ -992,7 +1015,7 @@ class DocBuilder:
                 extras.append("no missing LCSC numbers")
             if extras:
                 self.body.append(latex_escape("; ".join(extras) + "."))
-            used.append("reports/bom_cpl.json")
+            used.append(bom_rel)
 
         order = read_json(self.ws, "fab/order.json")
         hard = self.core(CORE_ORDER, order is not None) or hard
@@ -1188,7 +1211,7 @@ class DocBuilder:
             self.body.append(md_to_latex("\n\n".join(paras[:2])))
             used.append("brief/brief.md")
         init = read_json(self.ws, "reports/board_init.json") or {}
-        bom = read_json(self.ws, "reports/bom_cpl.json") or {}
+        bom = read_stage(self.ws, "bom_cpl")[0] or {}
         gates = self.st.get("gates") or {}
         n_pass = sum(1 for g in gates.values() if g.get("status") == "pass")
         rows = [["part number", self.pn_label()], ["board", self.board],
@@ -1234,7 +1257,8 @@ class DocBuilder:
         """Highlight: the BOM lines and the schematic's first page."""
         self.start("What Is On It")
         used = []
-        rows = (read_json(self.ws, "reports/bom_cpl.json") or {}).get("bom_rows") or []
+        bom, bom_rel = read_stage(self.ws, "bom_cpl")
+        rows = (bom or {}).get("bom_rows") or []
         if rows:
             self.body.append(longtable(
                 "p{3.6cm}p{5.4cm}p{3cm}l",
@@ -1243,7 +1267,7 @@ class DocBuilder:
                 [[latex_escape(r.get("Designator", "")), latex_escape(r.get("Comment", "")),
                   latex_escape(r.get("Footprint", "")), latex_escape(r.get("LCSC", ""))]
                  for r in rows]))
-            used.append("reports/bom_cpl.json")
+            used.append(bom_rel)
         if (self.ws / "reports" / "schematic.pdf").is_file():
             self.body.append(r"\includepdf[pages=1]{reports/schematic.pdf}")
             used.append("reports/schematic.pdf")

@@ -3,7 +3,7 @@
 The whole pipeline is one recipe. Its steps are the phases; its gates are the
 gate table in SKILL.md; the fix loop, the checkpoint format and the spawn
 template are shared with every other verb and stay there. Every gate step is
-ONE form - `gate.py --gate <g> <input> --workspace <ws> --out <report>` - run on
+ONE form - `gate.py --gate <g> <input> --workspace <ws> --out reports/gate-<g>.json` - run on
 every attempt, pass and fail: `--workspace` RECORDS the result, and `set-phase`
 refuses to advance past a gate phase with no recorded result.
 
@@ -75,8 +75,9 @@ boards may use ONE schematic agent (record it).
   `placement_adjust_request` takes the SANCTIONED backward edge: snapshot,
   re-spawn `placement` scoped to the request's refs/region, re-run P7
   (`freerouting_retries` guards the loop). Dead end: `state.py cross-spawn`.
-- **P8 Verification**: run the `verify` gate (all 8 checks), then
-  `verify-reviewer` (fresh context) with the summary + renders. Triage:
+- **P8 Verification**: run the `verify` gate (all 8 checks; verify_all's
+  summary lands in `reports/checks/summary.json`, which the design doc reads),
+  then `verify-reviewer` (fresh context) with the summary + renders. Triage:
   script-check errors -> fix loop; reviewer errors -> fix loop or human;
   warnings -> `reports/verify-waivers.json` (re-gate with it). After ANY
   copper/placement fix re-run `drc_routed` BEFORE `verify`. **H4** (blocking):

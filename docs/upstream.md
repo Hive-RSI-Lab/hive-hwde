@@ -13,6 +13,11 @@ ways:
 - `agents/board-guide.md` finds pdf-material-builder through
   `HWDE_PDF_MATERIAL_BUILDER` before `~/.claude/skills/`, and says how to
   build the guide on a machine without it.
+- `scripts/report_gen.py` (`STAGE_REPORTS`) and `scripts/guide_facts.py`
+  read a stage's report under the names runs have used as well as the
+  recipes' one, and `agents/dfm.md`, `recipes/dfm-check.md` and
+  `recipes/full-run.md` give each report's name (dfm.md's command lines also
+  had `--out` for `--out-dir` and `--parts-json` for `--parts`).
 
 `requirements.lock`, `LICENSE` and `NOTICE` are upstream's, from the repo
 root. The tests, plans, docker setup and design notes stay upstream.
