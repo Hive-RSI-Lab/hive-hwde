@@ -1,0 +1,4 @@
+- P2 architecture: one sheet, blocks J1 header, C1 4.7 uF/16 V input cap, R1 680R + D1 green 0603 LED (~4.3 mA).
+- Stackup JLC2313_1.6, 2L, HASL; size is a P5/P6 output (~15x12 soft).
+- Coverage: 1 slot (led-indicator), gap - no checklist; research not launched (decision).
+- Cost: parts < $0.30/board.

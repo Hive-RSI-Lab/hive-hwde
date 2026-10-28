@@ -69,9 +69,12 @@ export HWDE_KICAD_CLI HWDE_FREEROUTING_JAR HWDE_JAVA HWDE_KNOWLEDGE_SOURCES HWDE
 [ -n "${HWDE_KNOWLEDGE_SOURCES:-}" ] || unset HWDE_KNOWLEDGE_SOURCES
 [ -f "$state/bin/libngspice.so" ] && export HWDE_NGSPICE_DLL="$state/bin/libngspice.so"
 # KiCad's SWIG paths need an X display: with none, a script runs under its own
-# Xvfb (xvfb-run), gone when the script ends.
-x=
-[ -z "${DISPLAY:-}" ] && command -v xvfb-run >/dev/null 2>&1 && x="xvfb-run -a"
+# Xvfb (xvfb-run), gone when the script ends. GLX stays off: H0's Xvfb crashes
+# loading it through the NVIDIA EGL libraries, and KiCad doesn't need it here.
+x() { exec "$@"; }
+if [ -z "${DISPLAY:-}" ] && command -v xvfb-run >/dev/null 2>&1; then
+	x() { exec xvfb-run -a -s "-extension GLX" "$@"; }
+fi
 
 case "${1:-}" in
 env)
@@ -79,11 +82,11 @@ env)
 		eval "val=\${$v:-}"
 		[ -n "$val" ] && printf "export %s='%s'\n" "$v" "$val"
 	done
-	printf "export HWDE_SKILL='%s'\nexport HWDE_PY='%s'\n" "$here/skill" "$venv/bin/python"
+	printf "export HWDE_SKILL='%s'\nexport HWDE_PY='%s'\n" "$here/.claude/skills/hwde" "$venv/bin/python"
 	;;
 check)
 	shift
-	exec $x "$venv/bin/python" "$here/skill/scripts/check_env.py" "$@"
+	x "$venv/bin/python" "$here/.claude/skills/hwde/scripts/check_env.py" "$@"
 	;;
 "" | -h | --help)
 	sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
@@ -91,6 +94,6 @@ check)
 *)
 	s=$1
 	shift
-	exec $x "$venv/bin/python" "$here/skill/scripts/${s%.py}.py" "$@"
+	x "$venv/bin/python" "$here/.claude/skills/hwde/scripts/${s%.py}.py" "$@"
 	;;
 esac
