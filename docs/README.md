@@ -74,6 +74,15 @@ A fix to a script goes in with a test under `tests/` (run them with
 `eval "$(bin/hwde env)"; $HWDE_PY -m pytest -q tests`), and a line in
 [upstream.md](upstream.md) so an update from upstream keeps it.
 
+A workaround you can't avoid gets a row in [workarounds.md](workarounds.md)
+naming the gate steps it touched, and a probe in `tests/workarounds/` that
+exits 0 while its cause stands. That is what the project's score counts
+(`bin/hwde score`), and `bin/hwde check-all` fails while a row and its probe
+disagree. A shim in `bin/hwde` checks its row (`wa <id>`), so it runs only
+while it's listed. When you fix a cause, its probe starts exiting 10: take
+the workaround out, delete the row, keep the probe as a guard, and the score
+goes up.
+
 Record each run's wall time per stage (the `phase` events in
 `state.json` history) and the gate attempts and fix loops per gate. That way
 a later board shows whether the module got faster or cleaner.
@@ -87,9 +96,10 @@ nothing in the Hive should ask for them.
 
 ## What doesn't work here yet
 
-- `route_critical` and KRT's finishing pass need KiCadRoutingTools 0.19.0,
-  which isn't in `/hive/tools`. A board with diff pairs, high-current power
-  or RF needs it; ask a warden to add it the way KiCad was added.
+- `route_critical` and KRT's finishing pass need KiCadRoutingTools 0.19.0.
+  It's now in `/hive/tools/kicad-routing-tools/KiCadRoutingTools-0.19.0`,
+  but nothing points the skill at it yet (brief 261028-141924). A board with
+  diff pairs, high-current power or RF needs it.
 - `report_gen` (the design-doc PDF) and the board guide need the
   pdf-material-builder house style, which isn't here. They fall back to
   `--tex-only`, and the skill says that must never gate a run.

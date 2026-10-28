@@ -5,7 +5,13 @@
 #
 #   hwde env              print the exports (eval "$(hwde env)")
 #   hwde check            the skill's check_env: every tool the pipeline needs
+#   hwde check-all        re-run every board's gates from a scratch copy, and
+#                         check docs/workarounds.md against its probes (the test)
+#   hwde score            the share of gate steps with no workaround (the score)
 #   hwde <script> [args]  run skill/scripts/<script>.py with the venv python
+#
+# A shim here that works around a defect in the skill runs only while its id
+# is listed in docs/workarounds.md (wa <id>): delisting it turns it off.
 #
 # Nothing here installs anything outside HOME: KiCad and freerouting are the
 # Hive's (in its shared tools folder, put there through a warden); the venv is
@@ -15,6 +21,13 @@ here=$(cd "$(dirname "$0")/.." && pwd)
 tools=${HIVE_TOOLS:-/hive/tools}
 state=${HWDE_HOME:-$HOME/.cache/hwde}
 venv=${HWDE_VENV:-$state/venv}
+
+# The score reads files only: no KiCad, no venv.
+if [ "${1:-}" = score ]; then
+	shift
+	exec python3 "$here/bin/score.py" "$@"
+fi
+wa() { grep -q "^| *$1 *|" "$here/docs/workarounds.md" 2>/dev/null; }
 
 # KiCad: an explicit pin wins; else the newest KiCad 10 AppDir in the tools
 # folder, through wrappers that put kicad-cli and KiCad's own python (it has
@@ -36,7 +49,8 @@ if [ -z "${HWDE_KICAD_CLI:-}" ]; then
 		fi
 		# render.py checks for KiCad's 3D model loaders at a distro path
 		# beside the kicad-cli it runs; the AppImage keeps them in shared/lib.
-		if [ -d "$appdir/shared/lib/kicad/plugins/3d" ]; then
+		rm -f "$state/usr/lib/kicad/plugins/3d"
+		if wa render-3d-loaders && [ -d "$appdir/shared/lib/kicad/plugins/3d" ]; then
 			mkdir -p "$state/usr/lib/kicad/plugins"
 			ln -sfn "$appdir/shared/lib/kicad/plugins/3d" "$state/usr/lib/kicad/plugins/3d"
 		fi
@@ -72,7 +86,7 @@ fi
 # KiCad 10 ships its stock symbols as one-file-per-symbol .kicad_symdir
 # folders, which kicad-sch-api (the skill's schematic writer) can't read; it
 # gets flat copies of the libraries the skill places by lib_id (power, Device).
-if [ -n "$appdir" ] && [ -z "${KICAD_SYMBOL_DIR:-}" ] && [ -d "$appdir/share/kicad/symbols/power.kicad_symdir" ]; then
+if wa symdir && [ -n "$appdir" ] && [ -z "${KICAD_SYMBOL_DIR:-}" ] && [ -d "$appdir/share/kicad/symbols/power.kicad_symdir" ]; then
 	syms=$state/symbols-$(basename "$appdir")
 	[ -f "$syms/power.kicad_sym" ] || "$venv/bin/python" "$here/bin/flatten-symdirs.py" "$appdir/share/kicad/symbols" "$syms"
 	export KICAD_SYMBOL_DIR=$syms
@@ -100,12 +114,17 @@ env)
 	done
 	printf "export HWDE_SKILL='%s'\nexport HWDE_PY='%s'\n" "$here/.claude/skills/hwde" "$venv/bin/python"
 	;;
+check-all)
+	shift
+	export HWDE_BIN="$here/bin/hwde" HWDE_APPDIR="$appdir" HWDE_STATE="$state"
+	x "$venv/bin/python" "$here/bin/check_all.py" "$@"
+	;;
 check)
 	shift
 	x "$venv/bin/python" "$here/.claude/skills/hwde/scripts/check_env.py" "$@"
 	;;
 "" | -h | --help)
-	sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
+	sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'
 	;;
 *)
 	s=$1
