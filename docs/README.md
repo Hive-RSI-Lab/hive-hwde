@@ -38,6 +38,19 @@ an agent runs it inside the Hive.
   place of the venv python. Record each spawn with `hwde state spawn`.
   Reviewers always get fresh context.
 
+## Documents: the design doc and the board guide
+
+`hwde report_gen --workspace boards/<name>` builds the board's design doc
+(`--kind highlight` and `--kind full` the shorter and longer ones), and the
+`board-guide` agent writes the owner's guide. Both are set in the
+pdf-material-builder skill's house style. `bin/hwde` finds that skill in
+`~/.claude/skills/`, then `/opt/pdf-material-builder` (where this machine has
+it), then `$HIVE_PROJECTS/pdf-material-builder`, and `hwde env` prints it as
+`HWDE_PDF_MATERIAL_BUILDER`. Where none is installed, `HWDE_HOUSE_STYLE` points
+at the module's plainer stand-in (`bin/house-style-fallback/`), so report_gen
+still builds the PDF rather than stopping at `--tex-only`, and the guide is
+built with lualatex directly and skips the skill's style check.
+
 ## Sign-offs: H1, H2, H4
 
 The skill stops for the person at H1 (architecture), H2 (schematic) and H4
@@ -96,9 +109,6 @@ nothing in the Hive should ask for them.
   It's now in `/hive/tools/kicad-routing-tools/KiCadRoutingTools-0.19.0`,
   but nothing points the skill at it yet (brief 261028-141924). A board with
   diff pairs, high-current power or RF needs it.
-- `report_gen` (the design-doc PDF) and the board guide need the
-  pdf-material-builder house style, which isn't here. They fall back to
-  `--tex-only`, and the skill says that must never gate a run.
 - DigiKey/Mouser price lookups need API keys and stay off.
 - The knowledge records cite manufacturer PDFs that the module doesn't carry
   (see NOTICE). `bin/hwde` points `HWDE_KNOWLEDGE_SOURCES` at the hwde

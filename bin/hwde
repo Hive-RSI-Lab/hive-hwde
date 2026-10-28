@@ -69,6 +69,22 @@ if [ -z "${HWDE_KNOWLEDGE_SOURCES:-}" ]; then
 	src=${HIVE_PROJECTS:-/hive/projects}/hwde/.claude/skills/hwde/reference/knowledge/sources
 	[ -d "$src" ] && HWDE_KNOWLEDGE_SOURCES=$src
 fi
+# report_gen and the board guide are set in the pdf-material-builder skill's
+# house style: an explicit pin, else the skill in HOME, else the machine's
+# install (/opt), else a clone among the Hive's projects. With none, report_gen
+# gets the module's plainer stand-in, so it still builds a PDF.
+if [ -z "${HWDE_PDF_MATERIAL_BUILDER:-}" ]; then
+	for d in "$HOME/.claude/skills/pdf-material-builder" /opt/pdf-material-builder "${HIVE_PROJECTS:-/hive/projects}/pdf-material-builder"; do
+		[ -f "$d/references/house-style/housestyle.sty" ] && { HWDE_PDF_MATERIAL_BUILDER=$d; break; }
+	done
+fi
+if [ -z "${HWDE_HOUSE_STYLE:-}" ]; then
+	HWDE_HOUSE_STYLE=$here/bin/house-style-fallback
+	[ -f "${HWDE_PDF_MATERIAL_BUILDER:-/nonexistent}/references/house-style/housestyle.sty" ] && HWDE_HOUSE_STYLE=$HWDE_PDF_MATERIAL_BUILDER/references/house-style
+fi
+if [ -z "${HWDE_DIAGRAM_MAKER:-}" ] && [ -f "${HWDE_PDF_MATERIAL_BUILDER:-/nonexistent}/diagram-maker/scripts/export.sh" ]; then
+	HWDE_DIAGRAM_MAKER=$HWDE_PDF_MATERIAL_BUILDER/diagram-maker
+fi
 # Boards live in the project the agent works in, under boards/.
 HWDE_BOARDS_ROOT=${HWDE_BOARDS_ROOT:-$PWD/boards}
 
@@ -92,11 +108,13 @@ if wa symdir && [ -n "$appdir" ] && [ -z "${KICAD_SYMBOL_DIR:-}" ] && [ -d "$app
 	export KICAD_SYMBOL_DIR=$syms
 fi
 
-export HWDE_KICAD_CLI HWDE_FREEROUTING_JAR HWDE_JAVA HWDE_KNOWLEDGE_SOURCES HWDE_BOARDS_ROOT
+export HWDE_KICAD_CLI HWDE_FREEROUTING_JAR HWDE_JAVA HWDE_KNOWLEDGE_SOURCES HWDE_BOARDS_ROOT HWDE_HOUSE_STYLE
 [ -n "${HWDE_KICAD_CLI:-}" ] || unset HWDE_KICAD_CLI
 [ -n "${HWDE_FREEROUTING_JAR:-}" ] || unset HWDE_FREEROUTING_JAR
 [ -n "${HWDE_JAVA:-}" ] || unset HWDE_JAVA
 [ -n "${HWDE_KNOWLEDGE_SOURCES:-}" ] || unset HWDE_KNOWLEDGE_SOURCES
+[ -n "${HWDE_PDF_MATERIAL_BUILDER:-}" ] && export HWDE_PDF_MATERIAL_BUILDER
+[ -n "${HWDE_DIAGRAM_MAKER:-}" ] && export HWDE_DIAGRAM_MAKER
 [ -f "$state/bin/libngspice.so" ] && export HWDE_NGSPICE_DLL="$state/bin/libngspice.so"
 # KiCad's SWIG paths need an X display: with none, a script runs under its own
 # Xvfb (xvfb-run), gone when the script ends. GLX stays off: H0's Xvfb crashes
@@ -108,7 +126,7 @@ fi
 
 case "${1:-}" in
 env)
-	for v in HWDE_KICAD_CLI HWDE_FREEROUTING_JAR HWDE_JAVA HWDE_KNOWLEDGE_SOURCES HWDE_BOARDS_ROOT HWDE_NGSPICE_DLL KICAD_SYMBOL_DIR; do
+	for v in HWDE_KICAD_CLI HWDE_FREEROUTING_JAR HWDE_JAVA HWDE_KNOWLEDGE_SOURCES HWDE_BOARDS_ROOT HWDE_NGSPICE_DLL KICAD_SYMBOL_DIR HWDE_HOUSE_STYLE HWDE_PDF_MATERIAL_BUILDER HWDE_DIAGRAM_MAKER; do
 		eval "val=\${$v:-}"
 		[ -n "$val" ] && printf "export %s='%s'\n" "$v" "$val"
 	done
