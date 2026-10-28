@@ -1,0 +1,34 @@
+{
+ "C12624": {
+  "bytes": 576251,
+  "file": "parts/datasheets/C12624.pdf",
+  "final_url": "https://datasheet.lcsc.com/datasheet/pdf/69e84a3abd84e5ab5856c47a2d0334ce.pdf?productCode=C12624",
+  "mpn": "KT-0603G",
+  "sha256": "770831ccd4b3ab793a5d4df9fbf8aeaa80170f904de09f4032b09357595872ad",
+  "url": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1806151818_Hubei-KENTO-Elec-KT-0603G_C12624.pdf"
+ },
+ "C19666": {
+  "bytes": 7856403,
+  "file": "parts/datasheets/C19666.pdf",
+  "final_url": "https://datasheet.lcsc.com/datasheet/pdf/02336ea48ea44ca18c72517dd3cb7b47.pdf?productCode=C19666",
+  "mpn": "CL10A475KO8NNNC",
+  "sha256": "96baebe4bd0ce363e87be28b5b003f511f1502e084a6fc4f02333ded56c808f6",
+  "url": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL10A475KO8NNNC_C19666.pdf"
+ },
+ "C23179": {
+  "bytes": 467557,
+  "file": "parts/datasheets/C23179.pdf",
+  "final_url": "https://datasheet.lcsc.com/datasheet/pdf/0a975aaa49b7c97f38a963127be4a823.pdf?productCode=C23179",
+  "mpn": "0603WAF4700T5E",
+  "sha256": "11cd644d5d8a34a6d12775afb80bf58d8fc11f0c3b700dbd0f7a59942ceaa5ef",
+  "url": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010116_UNI-ROYAL-Uniroyal-Elec-0603WAF4700T5E_C23179.pdf"
+ },
+ "C492401": {
+  "bytes": 138867,
+  "file": "parts/datasheets/C492401.pdf",
+  "final_url": "https://datasheet.lcsc.com/datasheet/pdf/3b85a1cdf6ed945f2e278f00c1e42442.pdf?productCode=C492401",
+  "mpn": "PZ254V-11-02P",
+  "sha256": "d4cb67e0fd15267bd26f8e782f79b44bc2c8e05fd2ac63c5a88712860c9aacd0",
+  "url": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2409302300_XFCN-PZ254V-11-02P_C492401.pdf"
+ }
+}

@@ -6,3 +6,6 @@ boards/*/state_snapshots/
 # 3D models pulled from LCSC/EasyEDA (manufacturers' material, NOTICE);
 # re-pull with `hwde lib_pull --parts parts/parts.json --project kicad`.
 boards/*/lib/*.3dshapes/
+# Part datasheets (manufacturers' material, NOTICE); index.json keeps each
+# one's URL and sha256. Re-fetch with `hwde datasheet_extract --fetch <board>`.
+boards/*/parts/datasheets/*.pdf

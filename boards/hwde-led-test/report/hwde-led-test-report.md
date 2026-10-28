@@ -259,7 +259,7 @@ Snags 1–12 come from the run itself and are already filed as seven briefs. Sna
 | 6 | `lib_pull.py` (EasyEDA) | 0603 courtyards are the body outline, and nothing caught it | 261028-141932-4f01e64893 |
 | 7 | `board_edit.py --outline fit` | The fit margin ignores reference text, and a centred resize can push an edge connector out of tolerance | 261028-141932-4f01e64893 |
 | 8 | `knowledge/checklists/` | There is no LED-indicator checklist, so every LED reads as a coverage gap | 261028-141932-9b95b3083b |
-| 9 | datasheets from wmsc.lcsc.com | They arrive as a ~140-byte stub through the proxy, so there were no extractions or `fp_verify` and D1's polarity is unconfirmed | 261028-141933-6a25b2c09c |
+| 9 | datasheets from wmsc.lcsc.com | They arrived as a 140-byte stub, so there were no extractions or `fp_verify` and D1's polarity was unconfirmed. The stub is a script redirect to datasheet.lcsc.com, and the fetch now follows it (`datasheet_extract.py --fetch`). D1's polarity is confirmed (README) | 261028-141933-6a25b2c09c (fixed) |
 | 10 | `kicad/gen/root.py` regeneration | New instance UUIDs break board parity | 261028-141934-60618887e0 |
 | 11 | KiCadRoutingTools | It wasn't in `/hive/tools`; it is now, and the skill still has to find it | 261028-141924-4dae199a93 |
 | 12 | `report_gen.py`, board guide | They need the pdf-material-builder house style, which isn't here, so this report was built with pandoc and lualatex instead | 261028-141935-42bdc24230 |

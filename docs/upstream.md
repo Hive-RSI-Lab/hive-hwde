@@ -2,7 +2,7 @@
 
 `.claude/skills/hwde/` is ihsan-sa/hwde's `.claude/skills/hwde/` at
 `5d7bbe52483ca0bc6bf28a56e4c1e0d24b5ca4b7`, at the same path, because its
-scripts locate each other and the repo root by that depth. It differs in two
+scripts locate each other and the repo root by that depth. It differs in these
 ways:
 
 - `reference/knowledge/sources/*.pdf` (36 MB of manufacturers' datasheets and
@@ -10,6 +10,12 @@ ways:
   their owners' terms, not MIT.
 - `scripts/lib/knowledgelib.py`: `SOURCES_DIR` reads `HWDE_KNOWLEDGE_SOURCES`
   when it's set, so the records can still find those PDFs elsewhere.
+- `scripts/lib/researchlib.py` `http_transport` follows a short HTML
+  redirect stub (`stub_redirect`) like an HTTP redirect, because
+  wmsc.lcsc.com now answers with one. `scripts/datasheet_extract.py`
+  gains `--fetch` to download a workspace's part datasheets through it.
+  `agents/datasheet-extractor.md` and `reference/recipes/research.md` say so.
+  Offer these upstream.
 
 `requirements.lock`, `LICENSE` and `NOTICE` are upstream's, from the repo
 root. The tests, plans, docker setup and design notes stay upstream.

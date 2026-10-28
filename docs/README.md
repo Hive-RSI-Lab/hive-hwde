@@ -30,6 +30,11 @@ an agent runs it inside the Hive.
 - `eval "$(hwde env)"` puts the same pins in your shell. Its `HWDE_PY` and
   `HWDE_SKILL` are what a board's own generator script (`kicad/gen/*.py`)
   runs with: `PYTHONPATH=$HWDE_SKILL/scripts:$HWDE_SKILL/scripts/lib $HWDE_PY kicad/gen/root.py`.
+- Part datasheets: `hwde datasheet_extract --fetch boards/<name>` puts
+  each parts.json line's PDF in `parts/datasheets/<lcsc>.pdf` (not
+  committed; `index.json` beside them keeps URL and sha256). LCSC's
+  wmsc.lcsc.com answers with a 140-byte script redirect, not the PDF;
+  the fetch follows it, so don't curl datasheets yourself.
 - Start from `hwde task_router --task "<the ask>" --workspace boards/<name>`
   and follow its recipe (`reference/recipes/<verb>.md`). The whole pipeline
   is `full-run`.

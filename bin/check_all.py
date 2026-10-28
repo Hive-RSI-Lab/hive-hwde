@@ -123,6 +123,23 @@ def probes(table: dict[str, score.Workaround]) -> list[str]:
     return bad
 
 
+def units() -> list[str]:
+    """Run each tests/test_*.py (offline, no KiCad); a non-zero exit fails."""
+    skill = ROOT / ".claude" / "skills" / "hwde" / "scripts"
+    env = {**os.environ, "PYTHONPATH": os.pathsep.join(
+        [str(skill), str(skill / "lib"), os.environ.get("PYTHONPATH", "")])}
+    bad = []
+    for t in sorted((ROOT / "tests").glob("test_*.py")):
+        r = subprocess.run([sys.executable, str(t)], cwd=ROOT, env=env,
+                           capture_output=True, text=True, timeout=300)
+        print(f"  {t.name}: {'pass' if r.returncode == 0 else 'FAIL'}",
+              flush=True)
+        if r.returncode:
+            print((r.stdout + r.stderr)[-2000:], flush=True)
+            bad.append(f"tests/{t.name}")
+    return bad
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--board", action="append", default=[],
@@ -159,6 +176,8 @@ def main() -> int:
                 if not ok:
                     failed.append(f"{b.name} {s}")
                     print(why, flush=True)
+        print("unit tests:", flush=True)
+        failed += units()
         if not args.no_probes:
             print("workarounds:", flush=True)
             bad = probes(table)
