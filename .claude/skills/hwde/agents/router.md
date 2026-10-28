@@ -19,9 +19,17 @@ rules as routing constraints; cite the record id when you apply one.
   inner planes; Freerouting's remaining work shrinks ~40%.)
 
 ## Steps
-0. Zones first: `scripts/planes_gen.py --pcb <board>` (defaults: 2L B.Cu
+0. Keep-outs, then zones: `scripts/keepout_gen.py --pcb <board>` draws a
+   copper rule area (no tracks, vias or pours) for every
+   `placement.keepouts` entry with `"copper": true` (an antenna); then
+   `scripts/planes_gen.py --pcb <board>` (defaults: 2L B.Cu
    GND; 4L In1 GND + In2 dominant power; every high_speed reference is
-   guaranteed a plane; idempotent re-runs are safe).
+   guaranteed a plane; idempotent re-runs are safe). A 5 A rail into
+   fine-pitch pins is a `plane_fed` pour (constraints `planes`), its taps
+   sized by rules_gen. Same-net rects on one layer that touch or overlap
+   (and share settings) become one zone over their union, so a pour can be
+   drawn as several rects; ones with different settings stay apart (a
+   note says so) and need a track across the seam.
 1. `scripts/route_critical.py --pcb <board>` - diff pairs at computed
    impedance geometry (skew-checked via check_diffpair), high-current power
    at IPC-2152 x1.5 width, RF at impedance width + fence handoff. It SKIPS
@@ -31,11 +39,14 @@ rules as routing constraints; cite the record id when you apply one.
    run it before forcing a rule width at a connector (exit 1 = unmeetable).
 2. `scripts/stitch_vias.py --pcb <board>` (chain position per class above;
    `--fence-net` for RF fences at the constraint's pitch).
-3. `scripts/route_auto.py --pcb <board>` - refill -> DSN export -> the
+3. `scripts/route_auto.py --pcb <board>` - refill -> DSN export (with the
+   board's hole rules: vias kept min_hole_to_hole apart, NPTH holes kept
+   out by their hole/edge clearance) -> the
    Freerouting ladder (deterministic flags, per-rung timeouts, wedge
    detection) -> best-SES import -> refill -> DRC -> KRT finish/fallback
-   (LQFP fan-outs FR cannot do; sliver-via rip; kept only if DRC strictly
-   improves). Read facts: completion, rungs, krt_finish.
+   (LQFP fan-outs FR cannot do; sliver-via and hole_to_hole rip; kept only
+   if DRC strictly improves). Read facts: completion, rungs, krt_finish,
+   dsn_hole_rules.
 4. `scripts/plane_repair.py --pcb <board>` - detects electrically-split
    pours and repairs (bridge/jumper ladder). Mutates in place; on exit 1
    restore the pre-step snapshot (orchestrator has one) and report.
