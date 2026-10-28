@@ -573,7 +573,8 @@ def test_fplib_symbol_index_reads_lcsc_and_footprint(tmp_path):
     lib_dir = _fake_lib(tmp_path, [("PartA", "C999", "C0603")],
                         [("C0603", "C999")])
     idx = fplib.symbol_index(lib_dir / "aiee.kicad_sym")
-    assert idx == [{"name": "PartA", "lcsc": "C999", "footprint": "aiee:C0603"}]
+    assert idx == [{"name": "PartA", "lcsc": "C999", "footprint": "aiee:C0603",
+                    "reference": "U"}]
     assert fplib.symbol_index(tmp_path / "missing.kicad_sym") == []
 
 

@@ -125,3 +125,78 @@ def test_dedupe_leaves_no_blank_line_where_the_duplicate_was(tmp_path):
     lib.write_text(clean[:-1] + "\n" + block + ")", encoding="utf-8")
     assert lib_pull._dedupe_symbols(lib)["removed"] == 1
     assert lib.read_text(encoding="utf-8") == clean
+
+
+# --------------------------------------------- pin types with no extract
+
+import lib_pin_types  # noqa: E402
+
+PINS = '''(kicad_symbol_lib
+  (version 20211014)
+  (symbol "TCA9535PWR"
+    (property "Reference" "U" (id 0) (at 0 0 0))
+    (property "LCSC Part" "C22396388" (id 5) (at 0 0 0))
+    (symbol "TCA9535PWR_0_1"
+      (pin unspecified line (at 0 0 0) (length 2.54) (name "VCC") (number "24"))
+      (pin unspecified line (at 0 0 0) (length 2.54) (name "GND") (number "12"))
+      (pin unspecified line (at 0 0 0) (length 2.54) (name "SDA") (number "23"))
+      (pin unspecified line (at 0 0 0) (length 2.54) (name "P07") (number "11"))
+    )
+  )
+  (symbol "FPC-05F-20PH20"
+    (property "Reference" "J" (id 0) (at 0 0 0))
+    (property "LCSC Part" "C2856803" (id 5) (at 0 0 0))
+    (symbol "FPC-05F-20PH20_0_1"
+      (pin unspecified line (at 0 0 0) (length 2.54) (name "GND") (number "1"))
+    )
+  )
+  (symbol "KEEP"
+    (property "Reference" "U" (id 0) (at 0 0 0))
+    (property "LCSC Part" "C9" (id 5) (at 0 0 0))
+    (symbol "KEEP_0_1"
+      (pin power_out line (at 0 0 0) (length 2.54) (name "VOUT") (number "1"))
+    )
+  )
+)'''
+
+
+@pytest.mark.parametrize("name,power", [
+    ("VCC", True), ("VDD", True), ("AVDD", True), ("VDDIO", True), ("VCC1", True),
+    ("VDD_3V3", True), ("GND", True), ("AGND", True), ("PGND", True), ("VSS", True),
+    ("vss", True), ("V+", True), ("V-", True),
+    ("SDA", False), ("VOUT", False), ("VIN", False), ("~{INT}", False), ("EP", False),
+    ("1", False)])
+def test_supply_and_ground_names(name, power):
+    assert bool(lib_pin_types.POWER_NAME.match(name)) is power
+
+
+def test_pulled_symbols_get_ic_power_pins_and_passive_elsewhere(tmp_path):
+    sym = tmp_path / "aiee.kicad_sym"
+    sym.write_text(PINS, encoding="utf-8")
+    results = [{"status": "pulled", "symbol": "TCA9535PWR"},
+               {"status": "pulled", "symbol": "FPC-05F-20PH20"},
+               {"status": "exists", "symbol": "KEEP"}]
+    rep = lib_pull._pin_types(sym, results, None)
+    assert rep["power_in"] == ["TCA9535PWR:12", "TCA9535PWR:24"]
+    text = sym.read_text(encoding="utf-8")
+    assert "unspecified" not in text
+    # a connector's GND pin is passive; a symbol already in the library keeps
+    # what it has (types set from an extract since)
+    assert '(pin passive line (at 0 0 0) (length 2.54) (name "GND") (number "1"))' in text
+    assert "(pin power_out line" in text
+    assert lib_pull._pin_types(sym, results, None)["changed"] == 0   # idempotent
+
+
+def test_an_extract_beside_parts_json_wins(tmp_path):
+    sym = tmp_path / "aiee.kicad_sym"
+    sym.write_text(PINS, encoding="utf-8")
+    parts = tmp_path / "parts"
+    parts.mkdir()
+    (parts / "parts.json").write_text('{"parts": []}', encoding="utf-8")
+    (parts / "C22396388.json").write_text(
+        '{"lcsc": "C22396388", "pinout": [{"pin": "24", "type": "power_in"}]}',
+        encoding="utf-8")
+    rep = lib_pull._pin_types(sym, [{"status": "pulled", "symbol": "TCA9535PWR"}],
+                              str(parts / "parts.json"))
+    assert rep["extracts_matched"] == ["C22396388"]
+    assert rep["power_in"] == ["TCA9535PWR:24"]     # GND not in the extract

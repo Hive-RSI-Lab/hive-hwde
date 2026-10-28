@@ -14,14 +14,18 @@ gitignored 3dshapes are gone, gets them back.
 Footprints load in KiCad 10 despite the legacy format (LEARNINGS 2026-07-22
 [easyeda2kicad]); --verify-load confirms it with `kicad-cli fp export svg`.
 
-A raw pull is NOT fabricable as delivered, so two repairs run by default before
-the pull is reported (both idempotent, both text surgery):
+A raw pull is NOT fabricable as delivered, so three repairs run by default before
+the pull is reported (all idempotent, all text surgery):
   fpfix           silk artifacts on pad copper, outlines under the silk-to-copper
                   bar, plated locating pegs (zero annular ring), legend text
                   hidden under the body, courtyards drawn inside their own pads
                   (EasyEDA's 0603s)          -> --no-autofix to skip
   lib_refdes_norm every reference text sits at a blanket (0,-4.0) mm whatever the
                   part size                  -> --no-refdes-norm to skip
+  lib_pin_types   every pin `unspecified`: the symbols this run pulled are
+                  retyped (power_in on an IC's VCC/GND-named pins, else
+                  passive; from parts/<lcsc>.json extracts beside --parts when
+                  there are any)            -> --no-pin-types to skip
 Every footprint's (model ...) path is then rewritten from the absolute path
 easyeda2kicad writes to ${KIPRJMOD}/../lib/<lib>.3dshapes/<name> (relative to
 --project, else <out_dir>/../kicad), so the board survives its checkout moving.
@@ -70,6 +74,7 @@ sys.path.insert(0, str(SCRIPTS / "lib"))
 import fplib  # noqa: E402
 import fpfix  # noqa: E402
 import kc  # noqa: E402
+import lib_pin_types  # noqa: E402
 import lib_refdes_norm  # noqa: E402
 from lib import env  # noqa: E402
 
@@ -431,6 +436,29 @@ def _refdes_norm(pretty: Path, dry_run: bool) -> dict:
             "results": [r for r in rows if r["status"] == "changed"]}
 
 
+def _pin_types(sym_lib: Path, results: list[dict], parts_file: str | None) -> dict:
+    """Retype the pins of the symbols this run pulled (lib_pin_types).
+
+    Only "pulled" symbols: one already in the library may carry types set from
+    a datasheet extract since, which a re-run without it would revert."""
+    names = {r["symbol"] for r in results if r["status"] == "pulled"}
+    if not names or not sym_lib.exists():
+        return {"changed": 0, "symbols": sorted(names)}
+    extracts = {}
+    if parts_file:
+        extracts = lib_pin_types._load_extracts(
+            [str(Path(parts_file).parent / "C*.json")])
+    rules, matched = lib_pin_types.build_rules(fplib.symbol_index(sym_lib), extracts)
+    text = sym_lib.read_text(encoding="utf-8")
+    new, changes = lib_pin_types.retype(text, rules, names)
+    if changes:
+        sym_lib.write_text(new, encoding="utf-8")
+    return {"changed": len(changes), "symbols": sorted(names),
+            "extracts_matched": sorted(matched),
+            "power_in": sorted({f"{c['symbol']}:{c['pin']}" for c in changes
+                                if c["to"] == "power_in"})}
+
+
 def _portable_models(pretty: Path, models: Path, project: Path | None,
                      explicit: bool = False) -> dict:
     """Point every footprint's (model ...) at ${KIPRJMOD}/.. instead of the
@@ -514,6 +542,9 @@ def main(argv: list[str] | None = None) -> int:
                          "every pull ships those defects)")
     ap.add_argument("--no-refdes-norm", action="store_true",
                     help="skip the refdes-offset normalisation")
+    ap.add_argument("--no-pin-types", action="store_true",
+                    help="leave the pulled symbols' pin types as easyeda2kicad "
+                         "wrote them (all unspecified)")
     ap.add_argument("--out", help="write JSON here instead of stdout")
     args = ap.parse_args(argv)
     if bool(args.lcsc) == bool(args.parts):
@@ -569,6 +600,8 @@ def main(argv: list[str] | None = None) -> int:
         sym_lib = base.with_suffix(".kicad_sym")
         pretty = Path(str(base) + ".pretty")
         dedup = _dedupe_symbols(sym_lib)
+        pin_types = (None if args.no_pin_types
+                     else _pin_types(sym_lib, results, args.parts))
 
         pulled_fps = sorted({fp["name"] for r in results
                              for fp in r.get("footprints", [])})
@@ -616,6 +649,7 @@ def main(argv: list[str] | None = None) -> int:
             "registered": registered,
             "autofix": autofix,
             "refdes_norm": refdes,
+            "pin_types": pin_types,
             "model_paths": models,
             "models_restored": restored,
             "load_check": load,

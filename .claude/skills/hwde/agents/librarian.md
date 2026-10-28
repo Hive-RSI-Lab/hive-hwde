@@ -20,7 +20,10 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    (`--lcsc Cxxxx`). LEGACY `(module ...)` footprints are NORMAL (KiCad 10).
 2. `scripts/lib_pin_types.py --lib <lib>/aiee.kicad_sym --datasheet-json
    parts/*.json` - once extracts exist: retype pulled pin electrical types
-   (idempotent; the P4 ERC gate cannot pass on an untouched pulled lib).
+   (idempotent). lib_pull already gave each symbol it pulled a default
+   (power_in on an IC's VCC/VDD/GND/VSS-named pins, passive elsewhere), so
+   this is only for the parts an extract knows better (a regulator's
+   power_out, an open-drain output).
 3. `scripts/fp_verify.py --footprint <lib.pretty/name.kicad_mod>
    --datasheet-json parts/<lcsc>.json` - pad count/pitch/pin-1/size/drill
    diff vs the land pattern + SVG overlay. Errors FAIL; warnings (pad_size,
