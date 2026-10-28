@@ -53,7 +53,9 @@ import contextlib
 import io
 import json
 import math
+import re
 import sys
+import uuid
 from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -155,6 +157,7 @@ class Sheet:
         self._pin_nets: dict[tuple[str, str], str] = {}  # (ref, pad) -> net
         self._pwr_i = pwr_base - 1
         self._flg_i = pwr_base - 1
+        self.uuid_map: dict[str, str] = {}    # save-time ksa uuid -> kept
 
     # ---------------------------------------------------------- components
     def add_component(self, lib_id: str, ref: str, value: str, at,
@@ -452,14 +455,19 @@ class Sheet:
 
     # ---------------------------------------------------------- save
     def save(self, out_dir: Path | str, project: bool = True,
-             place_fields: bool = True) -> Path:
+             place_fields: bool = True, keep_uuids: bool = True) -> Path:
         """Write the sheet. place_fields (default) runs schem_refdes on the
         saved file so Reference/Value land on the correct side and clear of
         wires/labels/bodies (ksa mirrors every field to the wrong side -
-        T6, ladder row 166 L3). Electrically inert; see self.place_report."""
+        T6, ladder row 166 L3). Electrically inert; see self.place_report.
+        keep_uuids (default): regenerating keeps the UUIDs of the file it
+        overwrites, and anything new gets one derived from what it is, so
+        the board's footprint paths keep matching (see stable_uuids)."""
         out_dir = Path(out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         path = out_dir / f"{self.name}.kicad_sch"
+        previous = (path.read_text(encoding="utf-8")
+                    if keep_uuids and path.exists() else None)
         with _quiet():
             self.sch.save(str(path))
         import schem_refdes as sr  # sibling script; deferred (shapely)
@@ -475,6 +483,8 @@ class Sheet:
         # silently wiped by that later whole-file re-save (measured: with
         # the call before place_fields, J3/J4 came back `(dnp no)`).
         apply_native_dnp(self._dnp, path)
+        if keep_uuids:
+            self.uuid_map = stable_uuids(path, previous, self.name)
         if project:
             write_project(self.name, out_dir)
         return path
@@ -555,6 +565,13 @@ class Project:
             c.save(out_dir, project=False, place_fields=place_fields)
         path = self.root.save(out_dir, project=True,
                               place_fields=place_fields)
+        # A child's instance paths name the root's and its sheet's UUIDs,
+        # which the root's save just settled: carry them into every file.
+        moved = {}
+        for sh in (self.root, *self.children):
+            moved.update(sh.uuid_map)
+        for c in self.children:
+            _rewrite_uuids(out_dir / f"{c.name}.kicad_sch", moved)
         if decoupling is not None:
             payload = {"associations": self.decoupling}
             p = Path(decoupling)
@@ -562,6 +579,138 @@ class Project:
             p.write_text(json.dumps(payload, indent=1) + "\n",
                          encoding="utf-8")
         return path
+
+
+_UUID_NS = uuid.UUID("5b0c2a8e-6f3d-4f53-9a8e-6877646573c1")  # hwde schematics
+_UUID_RE = re.compile(
+    r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+_SEXP_TOK = re.compile(r'\(|\)|"(?:[^"\\]|\\.)*"|[^\s()"]+')
+
+
+def _sexp(text: str) -> list:
+    """The file's forms as nested lists; quoted strings keep their quotes
+    (so `"uuid"` the string and `uuid` the head stay apart)."""
+    stack: list[list] = [[]]
+    for tok in _SEXP_TOK.findall(text):
+        if tok == "(":
+            stack.append([])
+        elif tok == ")":
+            done = stack.pop()
+            stack[-1].append(done)
+        else:
+            stack[-1].append(tok)
+    return stack[0]
+
+
+def _unq(tok) -> str:
+    return tok[1:-1] if isinstance(tok, str) and tok[:1] == '"' else str(tok)
+
+
+def _child(form: list, head: str) -> list | None:
+    return next((c for c in form[1:] if isinstance(c, list) and c
+                 and c[0] == head), None)
+
+
+def _prop(form: list, name: str) -> str | None:
+    for c in form[1:]:
+        if isinstance(c, list) and len(c) > 2 and c[0] == "property" \
+                and _unq(c[1]) == name:
+            return _unq(c[2])
+    return None
+
+
+def _uuid_of(form: list) -> str | None:
+    u = _child(form, "uuid")
+    return _unq(u[1]) if u and len(u) > 1 else None
+
+
+def _at(form: list) -> tuple:
+    a = _child(form, "at")
+    return tuple(round(float(v), 4) for v in a[1:3]) if a else ()
+
+
+def uuid_keys(text: str) -> list[tuple[tuple, str]]:
+    """(key, uuid) for every UUID-bearing object of a .kicad_sch, the key
+    being what the object IS, not where ksa happened to number it: the
+    file; a symbol by Reference (+unit) and its pins by number; a wire/bus
+    by its end points; a label, junction, no-connect, text by name and
+    place; a sheet by Sheetname and its pins by name. Duplicate keys get an
+    occurrence index, in file order."""
+    top = next((f for f in _sexp(text) if isinstance(f, list) and f
+                and f[0] == "kicad_sch"), None)
+    if top is None:
+        raise ValueError("not a kicad_sch file")
+    out: list[tuple[tuple, str]] = []
+    for f in top[1:]:
+        if not (isinstance(f, list) and f):
+            continue
+        head = f[0]
+        if head == "uuid":
+            out.append((("file",), _unq(f[1])))
+            continue
+        u = _uuid_of(f)
+        if head == "symbol":
+            unit = _child(f, "unit")
+            base = (_prop(f, "Reference") or "?",
+                    _unq(unit[1]) if unit else "1")
+            key = ("symbol",) + base
+            pins = [(("pin",) + base + (_unq(p[1]),), _uuid_of(p))
+                    for p in f[1:] if isinstance(p, list) and p
+                    and p[0] == "pin"]
+        elif head == "sheet":
+            name = _prop(f, "Sheetname") or _prop(f, "Sheet name") or "?"
+            key = ("sheet", name)
+            pins = [(("sheet_pin", name, _unq(p[1])), _uuid_of(p))
+                    for p in f[1:] if isinstance(p, list) and p
+                    and p[0] == "pin"]
+        else:
+            pts = _child(f, "pts")
+            where = (tuple(sorted(tuple(round(float(v), 4) for v in xy[1:3])
+                                  for xy in pts[1:] if isinstance(xy, list)))
+                     if pts else _at(f))
+            name = _unq(f[1]) if len(f) > 1 and not isinstance(f[1], list) \
+                else ""
+            key = (head, name, where)
+            pins = []
+        if u:
+            out.append((key, u))
+        out.extend((k, pu) for k, pu in pins if pu)
+    seen: dict[tuple, int] = {}
+    numbered = []
+    for k, u in out:
+        n = seen.get(k, 0)
+        seen[k] = n + 1
+        numbered.append((k + (n,) if n else k, u))
+    return numbered
+
+
+def _rewrite_uuids(path: Path, mapping: dict[str, str]) -> None:
+    if not mapping:
+        return
+    text = path.read_text(encoding="utf-8")
+    new = _UUID_RE.sub(lambda m: mapping.get(m.group(0), m.group(0)), text)
+    if new != text:
+        path.write_text(new, encoding="utf-8")
+
+
+def stable_uuids(path: Path, previous: str | None, name: str) -> dict[str, str]:
+    """Give the just-saved schematic at `path` stable UUIDs, in place.
+    kicad-sch-api draws fresh random UUIDs on every run, which would cut the
+    board's footprints (path "/<sheet>/<symbol>") off the schematic each
+    time a generator is re-run. Each object keeps the UUID it had in
+    `previous` (the file this save overwrote) under the same key
+    (uuid_keys); anything new gets uuid5(key), so a fresh generation is
+    the same every time too. Returns {ksa uuid: kept uuid} (instance paths
+    in child sheets need it, see Project.save)."""
+    old = dict(uuid_keys(previous)) if previous else {}
+    mapping: dict[str, str] = {}
+    for key, u in uuid_keys(path.read_text(encoding="utf-8")):
+        want = old.get(key) or str(uuid.uuid5(
+            _UUID_NS, json.dumps([name, *key], default=str)))
+        if want != u:
+            mapping[u] = want
+    _rewrite_uuids(path, mapping)
+    return mapping
 
 
 def apply_pin_number_fixups(fixups: list[dict], sch_path: Path) -> None:
