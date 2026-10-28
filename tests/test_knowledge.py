@@ -219,6 +219,23 @@ def test_interface_keys_from_diff_pairs_base(tmp_path):
     assert payload["keys"]["interfaces"] == ["usb"]
 
 
+def test_usb_fs_slot_reads_the_same_records_as_usb(tmp_path):
+    """The usb-fs checklist claims [usb-fs, usb]: a slot spelled with either
+    token finds the same records per class (issue #44)."""
+    def per_class(base):
+        ws = make_ws(tmp_path / base, constraints={
+            "diff_pairs": [{"p": "/D_P", "n": "/D_N", "base": base}]})
+        payload, _ = run_knowledge(tmp_path, ["--coverage", "--workspace",
+                                              str(ws)])
+        (slot,) = payload["slots"]
+        return {c["class"]: (c["verdict"], [r["id"] for r in c["records"]])
+                for c in slot["classes"]}
+    usb, usb_fs = per_class("USB"), per_class("USB-FS")
+    assert usb_fs == usb
+    for cls in ("inrush", "selection"):
+        assert "buck-upstream-inrush-limit" in usb_fs[cls][1]
+
+
 def test_explicit_blocks_flag_without_workspace(tmp_path):
     payload, code = run_knowledge(tmp_path, ["--select", "--blocks", "Buck"])
     assert code == 0 and payload["count"] >= 8
