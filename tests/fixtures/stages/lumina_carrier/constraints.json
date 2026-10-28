@@ -1,0 +1,443 @@
+{
+ "_comment": "P2 MERGED constraints for lumina-carrier (LUM-CAR-A), from research/power.json + research/interface-poe-48v.json + research/interface-ethernet.json, reconciled with the sheet plan. CANONICAL net names per architecture/sheets.md s1: power symbols are global and BARE (GND, V48_RAW, V48_RTN, +48V_SW, +12V, +3V3); root-crossed signals are /NAME; sheet-internal signals are /<sheet>/NAME. THREE MERGE DECISIONS TO KNOW ABOUT. (1) research/power.json's VPOE and +48V are ONE net here, V48_RAW: the TPS2378-class PD interface switches the RETURN (RTN to VSS), not the positive rail, so there is only one positive 48 V node upstream of the eFuse. research/interface-poe-48v.json's V48_SW is renamed +48V_SW for consistency with the other rails. (2) SUPERSEDED AT P4: the board no longer uses an internally-rectified magjack. J1 is now a LINK-PP LPJG0926HENL (C22457393), which brings out four RAW line-side centre taps VC1..VC4 and has NO internal bridge. Two external bridges (D2 Alt-A, D3 Alt-B, ABS210/C2892567) rectify onto V48_RAW / V48_RTN. The centre-tap nets therefore DO exist on the board again - decisions.md D-A2 is superseded. (3) diff_pairs is an EXPLICIT list, so rules_gen takes impedance from diff_pairs[].impedance_ohm and high_speed[].impedance_ohm is never consulted - which is why the high_speed entries deliberately carry no impedance. ABSENT KEYS ARE DELIBERATE. placement.keepouts and planes[].region are OMITTED because board_init does NOT place the outline at (0,0) - the origin comes from the packed component bbox - so absolute rectangles cannot be authored at P2. They are a MANDATORY P5 STEP with an exact recipe in architecture/stackup.md s7.1: after board_init, read reports/board_init.json.outline_bbox and patch kicad/constraints.json with the antenna keepout and the six plane regions. Skipping that step leaves the ESP32-S3 antenna sitting over a solid GND plane. TWO P5/P7 TRAPS carried from architecture/decisions.md: TRAP-1, rules_gen never reads the voltages key (grep-verified), so nothing makes the P7 router honour the 0.60 mm 48 V clearance - add a named .kicad_dru rule keyed on A.NetName (A.Net silently matches nothing) at P5 or plan a P8-to-P7 rework loop. TRAP-2, rules_gen puts EVERY power net in one Power netclass at the WIDEST width, so +12V's 1.10 mm would be applied to V48_RTN's 0.6 A stub and to Freerouting's DSN - split netclass_patterns before route_auto. GND is deliberately NOT a power entry: it is a plane, and declaring it would make check_current demand IPC width on every GND stub and 5 vias in every GND cluster; the requirement is structural instead (continuous In1 GND, >= 7 connector pins for the return). P5: keepout and plane regions RE-BASED from board_init outline_bbox per stackup.md s7.1 - this file is the board-adjacent copy; architecture/constraints.json stays un-based. P6: placement.fixed added. The two safety-critical blocks were hand-placed BEFORE seed/anneal and pinned so the search treats them as obstacles: (a) the 48->12 buck (buck48 group + C61) into the ICD-declared DC-DC hot zone, board-relative [2,46]-[36,68] = absolute [21.58,103.13]-[55.58,125.13]; (b) the 48 V group (U1 PD front end + both bridges + bulk + U22 eFuse + their satellites) as one compact left-hand column under J1, so the 57 V region does not thread between logic. Every satellite of a fixed anchor is listed too: build_clusters drops the cluster of a fixed anchor, so an unlisted decoupler/group member would never be placed at all. P6/ICD: J1, J3, J4 and H5 are hand-placed on their ICD-01 s7.2 datums and pinned via placement.fixed (their placement.edges entries stay, so place_metrics still VERIFIES the declared edge; fixed only stops the search from moving them). H5's edges entry was REMOVED: at the normative ICD coordinate (46,74) its 6.9 mm courtyard sits 2.55 mm from the bottom edge, 0.05 mm past placelib's EDGE_TOL of 2.5 mm, so the check would fail a coordinate the ICD freezes. placement.fixed is the correct mechanism for 'do not move this'.",
+ "high_speed": [
+  {
+   "net": "/ETH_TXP",
+   "reference": "GND",
+   "k": 3,
+   "t_rise_ns": 3.0
+  },
+  {
+   "net": "/ETH_TXN",
+   "reference": "GND",
+   "k": 3,
+   "t_rise_ns": 3.0
+  },
+  {
+   "net": "/ETH_RXP",
+   "reference": "GND",
+   "k": 3,
+   "t_rise_ns": 3.0
+  },
+  {
+   "net": "/ETH_RXN",
+   "reference": "GND",
+   "k": 3,
+   "t_rise_ns": 3.0
+  },
+  {
+   "net": "/ETH_SCLK",
+   "reference": "GND",
+   "k": 3,
+   "t_rise_ns": 2.0
+  },
+  {
+   "net": "/eth/XI",
+   "reference": "GND",
+   "k": 3,
+   "t_rise_ns": 2.0,
+   "_p8_basis": "P8 REVIEWER FINDING: absent from high_speed, so check_return_path never evaluated a 25 MHz net that reaches 1.05 mm from a board edge. 25 MHz square-ish oscillator output; t_rise 2.0 ns is the conservative CMOS edge for a 25 MHz XO driving a load network."
+  },
+  {
+   "net": "/eth/XO",
+   "reference": "GND",
+   "k": 3,
+   "t_rise_ns": 2.0,
+   "_p8_basis": "P8 REVIEWER FINDING: absent from high_speed, so check_return_path never evaluated a 25 MHz net that reaches 1.05 mm from a board edge. 25 MHz square-ish oscillator output; t_rise 2.0 ns is the conservative CMOS edge for a 25 MHz XO driving a load network."
+  },
+  {
+   "net": "/eth/XO_XTAL",
+   "reference": "GND",
+   "k": 3,
+   "t_rise_ns": 2.0,
+   "_p8_basis": "P8 REVIEWER FINDING: absent from high_speed, so check_return_path never evaluated a 25 MHz net that reaches 1.05 mm from a board edge. 25 MHz square-ish oscillator output; t_rise 2.0 ns is the conservative CMOS edge for a 25 MHz XO driving a load network."
+  }
+ ],
+ "power": [
+  {
+   "net": "V48_RAW",
+   "current_a": 1.0,
+   "dt_c": 10,
+   "via_amps": 0.5,
+   "_p8_basis": "CORRECTED at P8 (was 1.5 A). 1.5 A came from power_tree.md s4.1 / research/power.md s(table) = 'buck at max PLUS the eFuse at its limit, briefly, off the local bulk cap'. That sum is a real TRANSIENT worst case but it is the WRONG basis for an IPC-2152 dT=10C width, which is a CONTINUOUS thermal rating: (a) ICD-01 s6.1 caps what the PSE can ever source at the PD input at 0.350 A DC (802.3af) / 0.600 A DC (802.3at), so 1.5 A cannot be sustained by the supply at all; (b) the 1.5 A surplus comes out of CBULK = 44 uF, which at 1.5 A and a 5 V droop lasts ~147 us - three orders of magnitude below the copper thermal time constant; (c) ICD-01 s6.2 has the PSE overload timer trip in ~50-75 ms regardless. 1.0 A is the HARDWARE FAULT CEILING and is the basis every other rail in this file already uses: +48V_SW 1.0 A = eFuse ILIM (ICD s6.6, R(ILIM) 18 kOhm), +12V 2.0 A = converter OCP, +3V3 1.0 A = converter rating. V48_RAW sits UPSTREAM of the eFuse so it must be >= +48V_SW; 1.0 A is also the TPS2378 PD hot-swap current limit (ICD s6.1: 0.85 A continuous, ~1.0 A limit, foldback to 140 mA). 1.0 A is therefore the largest current this node can carry for a thermally-relevant time, and it is 1.67x the 802.3at sustained maximum. NOT lowered to pass a gate: 1.0 A still demands 0.500 mm outer copper and 2 vias per layer transition, and 4 V48_RAW segments still fail at that width (see work/p8 report)."
+  },
+  {
+   "net": "V48_RTN",
+   "current_a": 0.6,
+   "dt_c": 10,
+   "via_amps": 0.5,
+   "pdn": false
+  },
+  {
+   "net": "+48V_SW",
+   "current_a": 1.0,
+   "dt_c": 10,
+   "via_amps": 0.5,
+   "pdn": false
+  },
+  {
+   "net": "+12V",
+   "current_a": 2.0,
+   "dt_c": 10,
+   "via_amps": 0.5
+  },
+  {
+   "net": "+3V3",
+   "current_a": 1.0,
+   "dt_c": 10,
+   "via_amps": 0.5,
+   "plane_fed": true,
+   "_t6_basis": "T6 calibration (P8A-1): In2.Cu IS the +3V3 plane (planes[] declares 3 regions); all 33 undersized stubs are PHY leaf taps at x94-101 around U10 and all 27 one-via clusters are plane taps, while the actual regulator feed at L21 is a compliant 3-via cluster at (69.45,112-114). check_current's plane_fed semantics (built at T2 FROM this board's measurements) judge exactly these 60 as advisory warnings and keep the 2 In2 pour-trunk necks at error. No override region needed."
+  }
+ ],
+ "coating": "soldermask",
+ "_coating_basis": "T6 calibration (P8A-1): the board is JLC LPI-soldermasked; with no key check_creepage adjudicated tracks on B2 (0.60 mm at 51-100 V) instead of B4 (0.13 mm). Declaring it drops exactly one finding (V48_RAW-/pwr/UVLO 0.35 mm track-track), the class the P8 digest hand-adjudicated. Pads stay on A6 regardless (mask relief exposes lands).",
+ "diff_pairs": [
+  {
+   "p": "/ETH_TXP",
+   "n": "/ETH_TXN",
+   "base": "ETH_TX",
+   "impedance_ohm": 100,
+   "gap_mm": 0.47,
+   "max_skew_mm": 2.5,
+   "max_uncoupled_mm": 5.0
+  },
+  {
+   "p": "/ETH_RXP",
+   "n": "/ETH_RXN",
+   "base": "ETH_RX",
+   "impedance_ohm": 100,
+   "gap_mm": 0.47,
+   "max_skew_mm": 2.5,
+   "max_uncoupled_mm": 5.0
+  }
+ ],
+ "voltages": [
+  {
+   "net": "V48_RAW",
+   "voltage": 57
+  },
+  {
+   "net": "V48_RTN",
+   "voltage": -57
+  },
+  {
+   "net": "+48V_SW",
+   "voltage": 57
+  },
+  {
+   "net": "+12V",
+   "voltage": 12
+  },
+  {
+   "net": "+3V3",
+   "voltage": 3.3
+  },
+  {
+   "net": "GND",
+   "voltage": 0
+  },
+  {
+   "net": "/poe/POE_TAP_A1",
+   "voltage": 57
+  },
+  {
+   "net": "/poe/POE_TAP_A2",
+   "voltage": 57
+  },
+  {
+   "net": "/poe/POE_TAP_B1",
+   "voltage": 57
+  },
+  {
+   "net": "/poe/POE_TAP_B2",
+   "voltage": 57
+  },
+  {
+   "net": "/poe/SHIELD",
+   "voltage": 0
+  },
+  {
+   "net": "",
+   "voltage": 0,
+   "_declares": "J1 BOARD LOCKS - netless plated conductors, DECLARED at H4 by owner decision (e).",
+   "_measured": "Two netless plated 3.2 mm pads at board-rel (15.29,11.041) and (26.72,11.041), present on all four layers, closest approach to 57 V copper 0.66 mm (nearest net /poe/POE_TAP_A2).",
+   "_why": "They are conductors at an undefined potential sitting 0.66 mm from 57 V, and NOTHING modelled them: check_creepage skips them because they carry no net and therefore no declared voltage, and until H4 no .kicad_dru rule referenced them either. The 0.66 mm was luck, not design. Enforced from H4 by the .kicad_dru rule hv_to_netless_conductor at 0.60 mm (IPC-2221 B2, 51-100 V) - set at 0.60 rather than the board-wide 0.635 mm because the connector land itself only achieves 0.6029/0.6127 mm and a rule above what the land can reach would be permanently waived.",
+   "_note": "check_creepage still cannot evaluate this entry - a net name of empty string matches no copper in its model. The entry exists as the DECLARATION of record; DRC is what enforces it."
+  }
+ ],
+ "thermal": [
+  {
+   "ref": "U20",
+   "power_w": 0.55,
+   "net": "GND",
+   "dt_c": 60,
+   "min_vias": 9
+  }
+ ],
+ "placement": {
+  "edges": [
+   {
+    "ref": "J1",
+    "edge": "top",
+    "pos": 0.21
+   },
+   {
+    "ref": "J2",
+    "edge": "top",
+    "pos": 0.87
+   },
+   {
+    "ref": "U30",
+    "edge": "right",
+    "pos": 0.5
+   },
+   {
+    "ref": "J3",
+    "edge": "bottom",
+    "pos": 0.24
+   },
+   {
+    "ref": "J4",
+    "edge": "bottom",
+    "pos": 0.72
+   }
+  ],
+  "groups": [
+   {
+    "name": "pd_front",
+    "anchor": "U1",
+    "members": [
+     "D1",
+     "C1",
+     "C2",
+     "C4",
+     "R1",
+     "R2",
+     "R3",
+     "D2",
+     "D3"
+    ]
+   },
+   {
+    "name": "eth_xtal",
+    "anchor": "U10",
+    "members": [
+     "Y10",
+     "C30",
+     "C31",
+     "R35",
+     "R36"
+    ],
+    "_p8_correction": "P8 REVIEWER FINDING. Was anchor Y10 / members [C30, C31] only. R35 (1M feedback, XI<->XO) and R36 (0R series damping, XO->XO_XTAL) were NEVER listed, so the annealer placed them freely: R36 ended up 28 mm from the driver pin it is supposed to damp, both resistors sat at the top board edge, and the oscillator network reached 115.567 mm of copper with 10 vias and came within 1.05 mm of the board edge. Anchor moved to U10 because the island belongs at the PHY XI/XO pins - anchoring on Y10 let the whole island float. U10 is in placement.fixed so it does not move; the five members do."
+   },
+   {
+    "name": "buck48",
+    "anchor": "U20",
+    "members": [
+     "L20",
+     "D20",
+     "C50",
+     "C51",
+     "C52",
+     "C53",
+     "C54"
+    ]
+   },
+   {
+    "name": "buck33",
+    "anchor": "U21",
+    "members": [
+     "L21",
+     "C55",
+     "C56",
+     "C57",
+     "C58"
+    ]
+   },
+   {
+    "name": "efuse48",
+    "anchor": "U22",
+    "members": [
+     "R65",
+     "R66",
+     "R67",
+     "R69",
+     "C59"
+    ]
+   }
+  ],
+  "separation": [
+   {
+    "a": [
+     "U20",
+     "L20",
+     "D20",
+     "U21",
+     "L21"
+    ],
+    "b": [
+     "U10",
+     "Y10",
+     "J1"
+    ],
+    "min_mm": 25
+   },
+   {
+    "a": [
+     "U20",
+     "L20",
+     "D20"
+    ],
+    "b": [
+     "U30"
+    ],
+    "min_mm": 20
+   },
+   {
+    "a": [
+     "Y10"
+    ],
+    "b": [
+     "J1"
+    ],
+    "min_mm": 25
+   },
+   {
+    "a": [
+     "U1",
+     "D1"
+    ],
+    "b": [
+     "U10",
+     "U30"
+    ],
+    "min_mm": 15
+   },
+   {
+    "a": [
+     "J1"
+    ],
+    "b": [
+     "U10",
+     "Y10",
+     "D10"
+    ],
+    "min_mm": 1.4,
+    "reason": "magjack isolation barrier - chip-side to line-side. NOT derived from working voltage, so check_creepage cannot enforce it; HALO app-note guidance is 55 mils = 1.40 mm at this pitch. The J1 land itself was edited to 1.451 mm at P4; this keeps neighbouring parts out of the gap."
+   }
+  ],
+  "keepouts": [
+   {
+    "rect": [
+     109.58,
+     86.132,
+     119.58,
+     108.132
+    ],
+    "side": "front",
+    "reason": "ESP32-S3-WROOM-1 antenna keepout - no copper on ANY layer. Wi-Fi is a supported control path (H1-Q8), so this is functional, not cosmetic. Espressif HDG wants the antenna overhanging the edge or a 6 mm-deep relief with >=15 mm lateral clearance; the fixed 100x80 outline cannot overhang, so this band is the substitute."
+   }
+  ],
+  "fixed": [
+   "C1",
+   "C2",
+   "C3",
+   "C4",
+   "C5",
+   "C50",
+   "C51",
+   "C52",
+   "C53",
+   "C54",
+   "C59",
+   "C6",
+   "C61",
+   "C62",
+   "C63",
+   "D1",
+   "D2",
+   "D20",
+   "D3",
+   "H5",
+   "J1",
+   "J3",
+   "J4",
+   "L20",
+   "R1",
+   "R2",
+   "R3",
+   "R65",
+   "R66",
+   "R67",
+   "R69",
+   "R70",
+   "U1",
+   "U20",
+   "U22"
+  ]
+ },
+ "planes": [
+  {
+   "layer": "In1.Cu",
+   "net": "GND",
+   "region": [
+    19.58,
+    57.132,
+    119.58,
+    86.132
+   ]
+  },
+  {
+   "layer": "In1.Cu",
+   "net": "GND",
+   "region": [
+    19.58,
+    86.132,
+    109.58,
+    108.132
+   ]
+  },
+  {
+   "layer": "In1.Cu",
+   "net": "GND",
+   "region": [
+    19.58,
+    108.132,
+    119.58,
+    137.132
+   ]
+  },
+  {
+   "layer": "In2.Cu",
+   "net": "+3V3",
+   "region": [
+    45.58,
+    57.132,
+    119.58,
+    86.132
+   ]
+  },
+  {
+   "layer": "In2.Cu",
+   "net": "+3V3",
+   "region": [
+    45.58,
+    86.132,
+    109.58,
+    108.132
+   ]
+  },
+  {
+   "layer": "In2.Cu",
+   "net": "+3V3",
+   "region": [
+    45.58,
+    108.132,
+    119.58,
+    137.132
+   ]
+  }
+ ],
+ "_systemic_finding_H4": "Only 3 of the 7 nets declared at |V| >= 30 V carried any general .kicad_dru clearance rule (V48_RAW, V48_RTN, +48V_SW). The four /poe/POE_TAP_* nets had rules ONLY against the four /ETH_* nets (magjack_isolation_barrier) and against each other (poe_tap_differential_pair, added at P8) - nothing held them to 0.635 mm against the rest of the board. That single gap is why BOTH the 0.2031 mm tap-to-LED_Y_A gap and P7s 0.6029 mm tap-to-board-lock gap existed on a board reporting 0 DRC errors. Closed at H4 by hv_tap_general_clearance and hv_to_netless_conductor. LESSON: after authoring HV rules, enumerate every net in voltages with |V| >= 30 and assert each one appears in at least one general clearance rule - a rule that covers a net against SOME neighbours reads as protection but is not."
+}

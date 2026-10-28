@@ -3,7 +3,8 @@
 Every place where hwde gets a board through its gates only because something
 worked around a defect in the skill, by a shim in `bin/hwde` or by an edit
 made by hand in a board's files. The score (`bin/hwde score`) reads this
-table, and the test (`bin/hwde check-all`) holds it to the truth:
+table, and the test (`bin/hwde test`, and `bin/hwde check-all` after its
+boards) holds it to the truth:
 
 - Each row's id has a probe, `tests/workarounds/<id>.py`, that exits 0 while
   the cause still stands and 10 once it is fixed. The test runs every probe. A

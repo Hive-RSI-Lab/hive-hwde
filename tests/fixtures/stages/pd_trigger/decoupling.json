@@ -1,0 +1,36 @@
+{
+ "associations": [
+  {
+   "cap": "C1A",
+   "ic": "J1",
+   "pin": "A4-B9",
+   "rail": "VBUS",
+   "value": "10uF 50V X5R",
+   "class": "bulk"
+  },
+  {
+   "cap": "C1B",
+   "ic": "J1",
+   "pin": "A4-B9",
+   "rail": "VBUS",
+   "value": "10uF 50V X5R",
+   "class": "bulk"
+  },
+  {
+   "cap": "C2",
+   "ic": "J1",
+   "pin": "A4-B9",
+   "rail": "VBUS",
+   "value": "100nF 50V X7R",
+   "class": "bulk"
+  },
+  {
+   "cap": "C5",
+   "ic": "U1",
+   "pin": "1",
+   "rail": "/VDD",
+   "value": "1uF 50V X5R",
+   "max_dist_mm": 5.0
+  }
+ ]
+}

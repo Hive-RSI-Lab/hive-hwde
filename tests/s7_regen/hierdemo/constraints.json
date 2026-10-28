@@ -1,0 +1,10 @@
+{
+  "_comment": "S7 hierdemo audit fixture. /VIN is a root-local-labelled rail (leading slash); +3V3 is a global power-symbol net (bare). +3V3 sits in voltages[] only: its consumers are passive pins, so a power[] entry would draw a power_no_consumers warning by design.",
+  "power": [
+    {"net": "/VIN", "current_a": 0.5}
+  ],
+  "voltages": [
+    {"net": "/VIN", "voltage": 5.0},
+    {"net": "+3V3", "voltage": 3.3}
+  ]
+}

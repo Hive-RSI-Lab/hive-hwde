@@ -1,0 +1,111 @@
+{
+ "id": "block-llc-1",
+ "slot": "block:PWR",
+ "kind": "block",
+ "token": "llc",
+ "phase": "P2",
+ "status": "closed",
+ "outcome": "verified",
+ "opened": "2026-08-15T02:58:17",
+ "closed": "2026-08-15T02:58:17",
+ "coverage_report": "C:/Users/ihsan/AppData/Local/Temp/claude/C--dev-ai-ee3/3d2c21b7-6c72-41bb-b540-57af90e0bdd9/scratchpad/fixture_build/coverage-P2.json",
+ "gap": {
+  "slot": "block:PWR",
+  "kind": "block",
+  "topology": "llc",
+  "operating_point": {
+   "vin_v": 400,
+   "pout_w": 200,
+   "f_khz": 100,
+   "switching_kind": "soft"
+  },
+  "missing": [
+   {
+    "class": "power-loop",
+    "min_level": "topology"
+   },
+   {
+    "class": "emi",
+    "min_level": "topology"
+   }
+  ],
+  "reasons": [
+   "no record satisfies the class at this operating point and maturity floor"
+  ],
+  "related_records": [],
+  "principle_parents": [],
+  "task": "research block 'llc': populate power-loop, emi"
+ },
+ "checklist_needed": false,
+ "caps": {
+  "depth_per_gap": 4,
+  "attempt_factor": 3
+ },
+ "sources": [
+  {
+   "n": 1,
+   "url": "https://www.ti.com/lit/an/slua123.pdf",
+   "final_url": "https://www.ti.com/lit/an/slua123.pdf",
+   "host": "www.ti.com",
+   "domain": "ti.com",
+   "domain_kind": "vendor",
+   "tier": "vendor-appnote",
+   "declared_tier": "vendor-appnote",
+   "about": "LLC resonant converter",
+   "file": "research/sources/slua123.pdf",
+   "sha256": "2fa2c6b8b46e459b13dc090af1bba134d0e791e17d3f9f108502b8e31d84d234",
+   "bytes": 951,
+   "content_type": "application/pdf",
+   "pages": 5,
+   "fetched": "2026-08-15T02:58:17",
+   "via": "http",
+   "note": "synthetic app note (seed)",
+   "deduplicated": false
+  },
+  {
+   "n": 2,
+   "url": "https://e2e.ti.com/thread/12345",
+   "final_url": "https://e2e.ti.com/thread/12345",
+   "host": "e2e.ti.com",
+   "domain": "ti.com",
+   "domain_kind": "vendor",
+   "tier": "forum",
+   "declared_tier": "vendor-appnote",
+   "about": null,
+   "file": "research/sources/12345.html",
+   "sha256": "64e738104f75d7fd62236fd57be337185590a8a5805a295333ade0e5eed178f9",
+   "bytes": 80,
+   "content_type": "text/html",
+   "pages": null,
+   "fetched": "2026-08-15T02:58:17",
+   "via": "http",
+   "note": "forum corroboration (seed)",
+   "deduplicated": false
+  }
+ ],
+ "attempts": [],
+ "verdicts": {
+  "llc-resonant-tank-loop": {
+   "verdict": "verified",
+   "by": "second-reader",
+   "date": "2026-08-15",
+   "note": "re-read p2 fig 3: loop as described (seed)",
+   "ts": "2026-08-15T02:58:17"
+  },
+  "llc-transformer-shield-winding": {
+   "verdict": "verified",
+   "by": "second-reader",
+   "date": "2026-08-15",
+   "note": "re-read p4 fig 5: winding order as described (seed)",
+   "ts": "2026-08-15T02:58:17"
+  }
+ },
+ "queue_entry": "2026-08-15-research-task-block-llc-1-2-verified",
+ "updated": "2026-08-15T02:58:17",
+ "summary": {
+  "verified": 2,
+  "refuted": 0,
+  "checklists": 0,
+  "sources": 2
+ }
+}

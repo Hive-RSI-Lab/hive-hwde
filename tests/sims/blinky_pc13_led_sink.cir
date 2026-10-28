@@ -1,0 +1,24 @@
+* stm32-blinky PC13 LED sink chain: abs-max sink current check
+* Topology from boards/stm32-blinky/kicad/stm32-blinky.net:
+*   +3V3 -> R1 1k -> /LED_A -> D2 red 0805 (A=pin2 K=pin1) -> /LED -> U1
+*   pin 2 (PC13) which SINKS the LED current (PC13 must not source).
+* Rename map: +3V3->P3V3 /LED_A->N_LED_A /LED->N_LED GND->0
+* Tier-B digital-pin boundary stimulus for U1 PC13 (STM32F103C8T6,
+* boards/stm32-blinky/parts/C8734.json, ST DS5319):
+*   PULSE source VOH=3.3 VOL=0, trise/tfall=100n, blinky-ish 4 ms low /
+*   8 ms period, plus series Rout=50 derived from the datasheet output
+*   point VOL 0.4 V at IOL 8 mA (0.4/8m = 50).
+* THE datasheet bound: PC13 is supplied through the power switch - sink
+* max 3 mA [DS5319 Table 5 note 5]. R1=1k keeps the chain under it.
+.options rshunt=1e9
+.options savecurrents
+V3V3 p3v3 0 DC 3.3
+R1 p3v3 n_led_a 1k
+D2 n_led_a n_led DLEDR     ; red 0805, ~1.9 V at 1 mA
+VPC13 pc13_drv 0 PULSE(3.3 0 1m 100n 100n 4m 8m)
+RPC13 pc13_drv n_led 50    ; Tier-B pin: VOL/IOL series resistance
+.model DLEDR D(IS=1e-18 N=1.8)
+.tran 10u 8m
+.measure tran i_led_max MAX @d2[id]
+.measure tran v_sink_low MIN v(n_led)
+.end

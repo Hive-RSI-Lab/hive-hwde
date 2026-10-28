@@ -1,0 +1,72 @@
+{
+ "script": "bench",
+ "stage": "P4",
+ "fixture": "usbbuck_sch",
+ "board": "usb-buck",
+ "metrics": {
+  "symbols": 38,
+  "wires": 106,
+  "wire_crossings": 0,
+  "label_collisions": 6,
+  "refdes_overlaps": 2,
+  "sheets": 4,
+  "sheet_balance": 2.2105,
+  "per_sheet": [
+   {
+    "sheet": "usb-buck.kicad_sch",
+    "symbols": 0,
+    "wires": 4,
+    "wire_crossings": 0,
+    "label_collisions": 0,
+    "refdes_overlaps": 0
+   },
+   {
+    "sheet": "mcu.kicad_sch",
+    "symbols": 21,
+    "wires": 63,
+    "wire_crossings": 0,
+    "label_collisions": 2,
+    "refdes_overlaps": 0
+   },
+   {
+    "sheet": "power.kicad_sch",
+    "symbols": 13,
+    "wires": 21,
+    "wire_crossings": 0,
+    "label_collisions": 0,
+    "refdes_overlaps": 2
+   },
+   {
+    "sheet": "usb.kicad_sch",
+    "symbols": 4,
+    "wires": 18,
+    "wire_crossings": 0,
+    "label_collisions": 4,
+    "refdes_overlaps": 0
+   }
+  ]
+ },
+ "metrics_live": {
+  "erc_errors": 0,
+  "erc_warnings": 0,
+  "kicad_version": "10.0.3",
+  "netlist_identical": true,
+  "netlist_diffs": 0
+ },
+ "penalties": {
+  "wire_crossings": 0.0,
+  "label_collisions": 6.0,
+  "refdes_overlaps": 2.0,
+  "sheet_balance_excess": 0.2105,
+  "erc_errors": 0.0,
+  "erc_warnings": 0.0,
+  "netlist_diffs": 0.0
+ },
+ "composite": 90.95,
+ "composite_inputs": "full",
+ "known_answer": null,
+ "_baseline": {
+  "created": "2026-08-06",
+  "kicad_version": "10.0.3"
+ }
+}

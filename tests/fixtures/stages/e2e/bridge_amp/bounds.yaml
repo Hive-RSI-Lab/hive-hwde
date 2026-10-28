@@ -1,0 +1,10 @@
+# HIDDEN: never shown to the agent that designs the board (reference/e2e-scoring.md)
+brief: e2e_bridge_amp
+nets:
+  - {id: inp, pattern: "(?i)IN_?P|INP|IN\\+"}
+  - {id: inn, pattern: "(?i)IN_?N|INN|IN-"}
+  - {id: vout, pattern: "(?i)(^|/)V?OUT$"}
+  - {id: vdd, pattern: "(?i)^/?\\+?3V3$"}
+  - {id: gnd, pattern: "^GND$"}
+layout: {area_mm2_max: 1200, crossings_signal_max: 2, decap_worst_mm_max: 4}
+cost: {qty: 10, target_usd: 6.00}
