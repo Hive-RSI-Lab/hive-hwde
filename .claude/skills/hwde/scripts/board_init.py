@@ -24,8 +24,14 @@ A new board looks finished by default: corners rounded (AUTO_CORNER_RADIUS,
 capped at a tenth of the shorter side) and, once the shorter side reaches
 AUTO_HOLES_MIN_SIDE, four M3 mounting holes that are plated with an exposed
 copper ring and a ring of vias (MountingHole_3.2mm_M3_Pad_Via), joined to the
-ground net. A brief that wants none, a bare NPTH hole or another size says so
+ground net. A footprint whose own drills sit closer than the fab profile's
+hole-to-hole floor (KiCad's M2 / M2.5 _Pad_Via via rings, 0.35 / 0.425 mm vs
+0.5) is swapped for its _Pad sibling or refused. A brief that wants none, a bare NPTH hole or another size says so
 with --mounting-holes 0 / --mounting-hole-fp / --corner-radius 0, and wins.
+
+The board lands in the positive quadrant (a wide fixed outline centred on
+the packed parts used to start at negative X, cutting PDF plots off) with
+the aux (drill/place) and grid origin at the outline's lower-left corner.
 
 The outline is PROVISIONAL, and under a build mode whose binding makes geometry
 an output (`state.py mode`, reference/build-modes.md) a fixed `--outline WxH` is
@@ -443,8 +449,12 @@ def main(argv: list[str] | None = None) -> int:
                          "ring of vias, joined to GND. A bare NPTH hole is "
                          "MountingHole:MountingHole_3.2mm_M3; a small board "
                          "asked for M2 wants MountingHole:MountingHole_2.2mm_"
-                         "M2_Pad_Via - the hole SIZE is a mechanical "
-                         "requirement, so state it rather than inheriting M3.")
+                         "M2_Pad - the hole SIZE is a mechanical "
+                         "requirement, so state it rather than inheriting M3. "
+                         "A footprint whose own drills break the fab's "
+                         "hole-to-hole floor (KiCad's M2 and M2.5 _Pad_Via "
+                         "rings) is swapped for its _Pad sibling, noted in "
+                         "worker_notes, or refused.")
     ap.add_argument("--workspace", help="workspace holding state.json "
                     "(default: the first parent of --out that has one) - the "
                     "recorded build mode decides whether a fixed --outline is "
@@ -541,6 +551,7 @@ def main(argv: list[str] | None = None) -> int:
             "mounting_holes": ({"count": holes_arg,
                                 "inset": args.margin / 2.0,
                                 "cu_edge": float(cap["min_copper_to_edge_mm"]),
+                                "hole_to_hole": float(cap["min_hole_to_hole_mm"]),
                                 "fp": args.mounting_hole_fp}
                                if holes_arg else None),
         }
@@ -602,12 +613,12 @@ def main(argv: list[str] | None = None) -> int:
             "components": len(components), "nets": worker["nets"],
             "outline_bbox": worker["bbox"],
             "mounting_holes": worker.get("mounting_holes", 0),
-            "mounting_hole_fp": (args.mounting_hole_fp
-                                 if worker.get("mounting_holes") else None),
+            "mounting_hole_fp": worker.get("mounting_hole_fp"),
             "mounting_hole_net": worker.get("mounting_hole_net"),
             "mounting_hole_inset": worker.get("mounting_hole_inset"),
             "corner_radius": worker.get("corner_radius", 0.0),
             "outline_origin": worker.get("outline_origin"),
+            "aux_origin": worker.get("aux_origin"),
             "cutouts": worker.get("cutouts", []),
             "self_check": check, "worker_notes": worker_notes,
             "unconnected_nets_skipped": unconnected_nets_skipped,
