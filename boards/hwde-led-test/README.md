@@ -29,6 +29,10 @@ A tiny test board that lights one green LED from 5 V. It was the first board the
 
 Every decision is also in `state.json` (`decisions`), stage by stage in `log/P*-digest.md`, and with what it taught in `LEARNINGS.md`.
 
+## The report
+
+[`report/hwde-led-test-report.pdf`](report/hwde-led-test-report.pdf) (source: [`report/hwde-led-test-report.md`](report/hwde-led-test-report.md)) has the whole board in one place: schematic, copper layers, 3D renders, BOM and cost, every gate, the sign-offs and waivers still waiting for the person, and the run's time per stage and snags. `report/build.sh` rebuilds it.
+
 ## The checks it passed
 
 | Gate | Result |
@@ -49,7 +53,7 @@ From a checkout of hive-hwde, with the module's `bin/hwde` (see `docs/README.md`
 cd boards/hwde-led-test
 eval "$(../../bin/hwde env)"
 PYTHONPATH=$HWDE_SKILL/scripts:$HWDE_SKILL/scripts/lib $HWDE_PY kicad/gen/root.py   # schematic + decoupling.json (new UUIDs: keep the committed .kicad_sch for the board)
-../../bin/hwde lib_pull --parts parts/parts.json --project kicad                      # 3D models, not committed
+../../bin/hwde lib_pull --parts parts/parts.json --out-dir /tmp/pull && mkdir -p lib/aiee.3dshapes && cp /tmp/pull/aiee.3dshapes/* lib/aiee.3dshapes/   # 3D models, not committed
 for g in erc place drc_routed verify dfm; do f=kicad/hwde-led-test.kicad_pcb; [ $g = erc ] && f=kicad/hwde-led-test.kicad_sch; ../../bin/hwde gate --gate $g $f --workspace .; done
 ../../bin/hwde fab_export --pcb kicad/hwde-led-test.kicad_pcb --out-dir fab
 ../../bin/hwde bom_cpl --pcb kicad/hwde-led-test.kicad_pcb --out-dir fab --parts parts/parts.json
