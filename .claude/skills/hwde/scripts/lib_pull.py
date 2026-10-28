@@ -15,7 +15,11 @@ the pull is reported (both idempotent, both text surgery):
   fpfix           silk artifacts on pad copper, outlines under the silk-to-copper
                   bar, plated locating pegs (zero annular ring), legend text
                   hidden under the body, courtyards drawn inside their own pads
-                  (EasyEDA's 0603s)          -> --no-autofix to skip
+                  (EasyEDA's 0603s), an exposed pad's unnumbered thermal vias
+                                             -> --no-autofix to skip
+                  It also reads each part's 3D model and lists in
+                  autofix.flags what it can't fix: a model off its footprint,
+                  a peg with no hole, a body outside the courtyard.
   lib_refdes_norm every reference text sits at a blanket (0,-4.0) mm whatever the
                   part size                  -> --no-refdes-norm to skip
 Every footprint's (model ...) path is then rewritten from the absolute path
@@ -310,7 +314,11 @@ def _autofix(pretty: Path, names: list[str], dry_run: bool) -> dict:
     rep = fpfix.fix_lib(pretty, dry_run=dry_run, names=names)
     return {"footprints": rep["footprints"], "changed": rep["changed"],
             "actions": rep["actions"], "residue": rep["residue"],
-            "results": [r for r in rep["results"] if r["changed"] or r["residue"]]}
+            # what no rule can fix: the part's drawing has to settle it
+            "flags": [dict(f, footprint=r["footprint"]) for r in rep["results"]
+                      for f in r.get("flags", [])],
+            "results": [r for r in rep["results"]
+                        if r["changed"] or r["residue"] or r.get("flags")]}
 
 
 def _refdes_norm(pretty: Path, dry_run: bool) -> dict:
