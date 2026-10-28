@@ -527,9 +527,17 @@ def run(argv: list[str] | None = None):
     graded = []
     for key, i, ses, facts in sorted(candidates, key=lambda c: c[0]):
         _ses_restore(ses, grown)
-        trial = staged if args.tries <= 1 else \
-            work / f"cand_{i}_{staged.name}"
-        if trial != staged:
+        trial = staged
+        if args.tries > 1:
+            # its own dir, same file name: DRC and refill read the board's
+            # .kicad_pro/.kicad_dru beside it by stem (a renamed copy was
+            # graded at KiCad's defaults, hundreds of false clearance errors)
+            cdir = work / f"cand_{i}"
+            cdir.mkdir(exist_ok=True)
+            for side in work.glob(staged.stem + ".*"):
+                if side.is_file() and side != staged:
+                    shutil.copy2(side, cdir / side.name)
+            trial = cdir / staged.name
             shutil.copy2(pristine, trial)
         try:
             imp = routelib.run_worker(bp, {
