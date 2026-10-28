@@ -108,7 +108,7 @@ def collect(pcb: Path, constraints_path: Path | None,
             if decoupling_path else {})
 
     violations = placelib.legality_violations(model, placement)
-    mating_v, mating_facts = matinglib.violations(model, pcb)
+    mating_v, mating_facts = matinglib.violations(model, pcb, placement)
     violations.extend(mating_v)
     decoupling_facts: list[dict] = []
     if decoupling_path:
