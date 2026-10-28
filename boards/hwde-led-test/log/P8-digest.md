@@ -1,0 +1,4 @@
+- P8 verify gate PASS (14/14 checks ran): 0 errors, 2 warnings (0.15 mm jog on /LED_A; D1/R1 no recognised voltage-rating attribute).
+- First verify attempt FAILED check_pdn (+5V had no cap association): decoupling.json now records C1 against J1.1; re-gated.
+- verify-reviewer (fresh, opus): 0 errors, 3 warnings - fixed all 3: outline 13.4 x 10.5 mm (JLC assembly 10 mm min), J1 +/- legend, C1 refdes moved. place/drc_routed/verify re-gated PASS.
+- Warnings not waived (a waiver needs the person's approval): asked at H4.

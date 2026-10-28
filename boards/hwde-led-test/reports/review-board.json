@@ -1,0 +1,11 @@
+{"violations": [
+ {"check": "board-review", "severity": "warning", "pos": [10.9, 20.2], "layer": "F.SilkS", "net": "+5V", "refs": ["J1"],
+  "msg": "J1 power input has no +5V/GND (or +/-) silk marking; the square pin-1 pad is hidden under the header body after assembly, so the only polarity cue on the finished board is gone. The board has no reverse-polarity protection and relies on D1 blocking 5.25 V reverse, which is at or above the usual 5 V VR rating of an InGaN LED. Bench leads are easy to swap. Add '+' / '-' (or 5V/GND) text next to pins 1/2 (F.SilkS if it fits, otherwise B.SilkS, where the bottom side is empty).",
+  "source": "review.board", "kind": "connector_polarity_unmarked", "domain": "silk"},
+ {"check": "board-review", "severity": "warning", "pos": null, "layer": "Edge.Cuts", "net": null, "refs": [],
+  "msg": "Outline is 13.05 x 9.08 mm. The 9.08 mm side is under the 10 x 10 mm JLC minimum board size recorded in reference/jlc_capabilities.yaml, and requirements section 7 says JLCPCB PCBA. The board also has no fiducials. As drawn, it can only be assembled as a panel with edge rails (JLC adds the fiducials on the rails), or after the outline is grown to at least 10 mm. The board is not to be ordered now, so this is a warning, but the fab export must panelize or the outline must grow by about 1 mm in Y.",
+  "source": "review.board", "kind": "pcba_min_board_size", "domain": "fab"},
+ {"check": "board-review", "severity": "warning", "pos": [15.2, 22.28], "layer": "F.SilkS", "net": null, "refs": ["C1"],
+  "msg": "The C1 refdes sits about 2 mm right of and below C1, under the gap between R1 and D1, at roughly the same distance from C1 (2.9 mm), R1 (3.4 mm) and D1 (3.7 mm). A reader can pair it with the wrong part during rework or probing. Move it next to C1, e.g. below C1 at about (13.2, 22.3) clear of the GND via at (13.2, 21.74), or shrink it.",
+  "source": "review.board", "kind": "silk_refdes_ambiguous", "domain": "silk"}
+]}

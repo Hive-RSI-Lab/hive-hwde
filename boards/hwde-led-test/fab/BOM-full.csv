@@ -1,0 +1,5 @@
+Comment,Designator,Qty Per Board,Footprint,MPN,LCSC,Assembly Class,Instructions
+4.7uF,C1,1,C0603,CL10A475KO8NNNC,C19666,smt_placed,
+KT-0603G,D1,1,LED0603-RD,KT-0603G,C12624,smt_placed,
+PZ254V-11-02P,J1,1,HDR-TH_2P-P2.54-V-M,PZ254V-11-02P,C492401,smt_placed,
+470R,R1,1,R0603,0603WAF4700T5E,C23179,smt_placed,

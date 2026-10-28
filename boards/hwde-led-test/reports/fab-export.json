@@ -1,0 +1,84 @@
+{
+ "script": "fab_export",
+ "status": "pass",
+ "board": "hwde-led-test.kicad_pcb",
+ "name": "hwde-led-test",
+ "layer_count": 2,
+ "copper_layers": [
+  "F.Cu",
+  "B.Cu"
+ ],
+ "layers_exported": [
+  "F.Cu",
+  "B.Cu",
+  "F.Silkscreen",
+  "B.Silkscreen",
+  "F.Mask",
+  "B.Mask",
+  "F.Paste",
+  "B.Paste",
+  "Edge.Cuts"
+ ],
+ "out_dir": "fab",
+ "gerber_dir": "fab/gerbers",
+ "pos_file": "fab/hwde-led-test-pos.csv",
+ "files": [
+  {
+   "name": "hwde-led-test-B_Cu.gbl",
+   "sha256": "45c718eeda59e538960ff87d8d850cce5a457fdc3afae2645c7ecc1d341b5b60",
+   "bytes": 3673
+  },
+  {
+   "name": "hwde-led-test-B_Mask.gbs",
+   "sha256": "1eeffbdea530906b50dee6762df431a37e3de9bc2d91865d8b03b74066c62981",
+   "bytes": 585
+  },
+  {
+   "name": "hwde-led-test-B_Paste.gbp",
+   "sha256": "2dc3b8de34a7965d8cbff34bd150736c6c20e72fbd0ecedf7c6c2eac885676c4",
+   "bytes": 458
+  },
+  {
+   "name": "hwde-led-test-B_Silkscreen.gbo",
+   "sha256": "b8ec62b8c2bd5f2e476d4af23fe33f470ecbe5093b0e345e69208a2a878befe6",
+   "bytes": 459
+  },
+  {
+   "name": "hwde-led-test-Edge_Cuts.gm1",
+   "sha256": "fa6940a8b28797746867bc477e49bf7d0e2cffb4ad11e9803325aadcba270db1",
+   "bytes": 966
+  },
+  {
+   "name": "hwde-led-test-F_Cu.gtl",
+   "sha256": "4a45aadf3df225ac07bbedcef91dc085ec7a150cd8ed235a7a9014c11f6e3045",
+   "bytes": 2128
+  },
+  {
+   "name": "hwde-led-test-F_Mask.gts",
+   "sha256": "56e99f1e25347e3ab0d3f195e7505bf05e7bbbd68b3b7b114e49036443a5279c",
+   "bytes": 879
+  },
+  {
+   "name": "hwde-led-test-F_Paste.gtp",
+   "sha256": "733fd13747bf2891a0d6f7926e84efd5e8cff9bdcd7c0a4c127c3d3f2a08b9a2",
+   "bytes": 752
+  },
+  {
+   "name": "hwde-led-test-F_Silkscreen.gto",
+   "sha256": "07f92b33b63dead0bd98f21ee09f81d9ea7c7278ab49979ac1147e7dd0013c00",
+   "bytes": 5772
+  },
+  {
+   "name": "hwde-led-test-job.gbrjob",
+   "sha256": "468bec9b9c2721aa3ebfea645d3fdb08ea4d0953031c468032c35975715f99d1",
+   "bytes": 2617
+  },
+  {
+   "name": "hwde-led-test.drl",
+   "sha256": "bc0b948bcddd86be479bd501fe53ccc6b86fa176195c76adf8969fb1928f26de",
+   "bytes": 431
+  }
+ ],
+ "gerber_zip": "fab/hwde-led-test_gerbers.zip",
+ "gerber_zip_sha256": "3cd74611d981956e1b2cc114d24879d47006ff4986a6d5e670aea3fcaeae9172"
+}

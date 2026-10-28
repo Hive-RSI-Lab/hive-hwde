@@ -1,0 +1,39 @@
+{
+ "version": 1,
+ "ops": [
+  {
+   "op": "move_text",
+   "ref": "J1",
+   "field": "reference",
+   "x": 10.9,
+   "y": 16.4,
+   "deg": 0
+  },
+  {
+   "op": "move_text",
+   "ref": "C1",
+   "field": "reference",
+   "x": 13.2,
+   "y": 22.6,
+   "deg": 0
+  },
+  {
+   "op": "add_text",
+   "text": "+",
+   "x": 8.5,
+   "y": 18.93,
+   "layer": "F.SilkS",
+   "size": 1.0,
+   "thickness": 0.15
+  },
+  {
+   "op": "add_text",
+   "text": "-",
+   "x": 8.5,
+   "y": 21.47,
+   "layer": "F.SilkS",
+   "size": 1.0,
+   "thickness": 0.15
+  }
+ ]
+}

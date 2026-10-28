@@ -1,0 +1,128 @@
+(session "hwde-led-test"
+  (base_design "hwde-led-test")
+  (placement
+    (resolution um 10)
+    (component aiee:C0603
+      (place C1 132000 -202000 front 270)
+    )
+    (component aiee:R0603
+      (place R1 156000 -189000 front 0)
+    )
+    (component "aiee:HDR-TH_2P-P2.54-V-M"
+      (place J1 109000 -202000 front 270)
+    )
+    (component "aiee:LED0603-RD"
+      (place D1 180000 -198000 front 90)
+    )
+  )
+  (was_is
+  )
+  (routes 
+    (resolution um 10)
+    (parser
+      (host_cad "KiCad's Pcbnew")
+      (host_version "10.0.6")
+    )
+    (library_out 
+      (padstack "Via[0-1]_600:300_um"
+        (shape
+          (circle F.Cu 6000 0 0)
+        )
+        (shape
+          (circle B.Cu 6000 0 0)
+        )
+        (attach off)
+      )
+      (padstack "Via[0-1]_600:300_um"
+        (shape
+          (circle F.Cu 6000 0 0)
+        )
+        (shape
+          (circle B.Cu 6000 0 0)
+        )
+        (attach off)
+      )
+    )
+    (network_out 
+      (net GND
+        (wire
+          (path F.Cu 2000
+            132000 -217400
+            132000 -209000
+          )
+        )
+        (via "Via[0-1]_600:300_um" 132000 -217400
+        )
+        (wire
+          (path F.Cu 2000
+            188312 -207525
+            186287 -205500
+          )
+        )
+        (wire
+          (path F.Cu 2000
+            180000 -205500
+            186287 -205500
+          )
+        )
+        (via "Via[0-1]_600:300_um" 188312 -207525
+        )
+      )
+      (net +5V
+        (wire
+          (path F.Cu 2000
+            148500 -189000
+            142183 -189000
+          )
+        )
+        (wire
+          (path F.Cu 2000
+            132000 -195000
+            138787 -195000
+          )
+        )
+        (wire
+          (path F.Cu 2000
+            142183 -189000
+            142183 -191604
+            138787 -195000
+          )
+        )
+        (wire
+          (path F.Cu 2000
+            109000 -189300
+            121287 -189300
+          )
+        )
+        (wire
+          (path F.Cu 2000
+            132000 -195000
+            125213 -195000
+          )
+        )
+        (wire
+          (path F.Cu 2000
+            121287 -189300
+            121287 -191074
+            125213 -195000
+          )
+        )
+      )
+      (net "/LED_A"
+        (wire
+          (path F.Cu 2000
+            163500 -189000
+            169817 -189000
+          )
+        )
+        (wire
+          (path F.Cu 2000
+            180000 -190500
+            171317 -190500
+            169817 -189000
+          )
+        )
+      )
+    )
+  )
+)

@@ -34,6 +34,12 @@ if [ -z "${HWDE_KICAD_CLI:-}" ]; then
 			printf '#!/bin/sh\nexport PYTHONPATH="%s/shared/lib/%s/dist-packages${PYTHONPATH:+:$PYTHONPATH}"\nexec "%s/AppRun" %s "$@"\n' "$appdir" "$pyv" "$appdir" "$pyv" >"$state/bin/python3"
 			chmod 0755 "$state/bin/python3"
 		fi
+		# render.py checks for KiCad's 3D model loaders at a distro path
+		# beside the kicad-cli it runs; the AppImage keeps them in shared/lib.
+		if [ -d "$appdir/shared/lib/kicad/plugins/3d" ]; then
+			mkdir -p "$state/usr/lib/kicad/plugins"
+			ln -sfn "$appdir/shared/lib/kicad/plugins/3d" "$state/usr/lib/kicad/plugins/3d"
+		fi
 		[ -f "$appdir/shared/lib/libngspice.so" ] && ln -sf "$appdir/shared/lib/libngspice.so" "$state/bin/libngspice.so"
 		HWDE_KICAD_CLI=$state/bin/kicad-cli
 	fi

@@ -1,0 +1,60 @@
+version: 1
+board: hwde-led-test
+source: LEARNINGS.md
+compiled: '2026-10-28'
+entries:
+- entry: 2026-10-28-part-sourcer-must-write-refdes-on-every
+  line: 3
+  date: '2026-10-28'
+  title: part-sourcer must write refdes on every parts.json line
+  tags:
+  - P3
+  - parts
+  stage: P3
+  proposed_level: null
+  targets: []
+  status: pending
+- entry: 2026-10-28-keep-parts-search-attributes-in-parts-json
+  line: 8
+  date: '2026-10-28'
+  title: keep parts_search attributes in parts.json
+  tags:
+  - P3
+  - parts
+  stage: P3
+  proposed_level: null
+  targets: []
+  status: pending
+- entry: 2026-10-28-easyeda-0603-courtyards-are-the-body-outline
+  line: 13
+  date: '2026-10-28'
+  title: EasyEDA 0603 courtyards are the body outline
+  tags:
+  - P3
+  - library
+  stage: P3
+  proposed_level: null
+  targets: []
+  status: pending
+- entry: 2026-10-28-a-board-with-no-ic-still-needs
+  line: 17
+  date: '2026-10-28'
+  title: a board with no IC still needs its bulk cap in decoupling.json
+  tags:
+  - P8
+  - pdn
+  stage: P8
+  proposed_level: null
+  targets: []
+  status: pending
+- entry: 2026-10-28-fit-margin-must-leave-room-for-refdes
+  line: 21
+  date: '2026-10-28'
+  title: fit margin must leave room for refdes silk
+  tags:
+  - P6
+  - outline
+  stage: P6
+  proposed_level: null
+  targets: []
+  status: pending

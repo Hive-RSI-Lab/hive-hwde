@@ -1,0 +1,215 @@
+{
+ "script": "bom_cpl",
+ "status": "pass",
+ "board": "hwde-led-test.kicad_pcb",
+ "n_parts": 4,
+ "n_placed": 4,
+ "bom": "fab/BOM.csv",
+ "bom_full": "fab/BOM-full.csv",
+ "cpl": "fab/CPL.csv",
+ "prebuy": "fab/prebuy.csv",
+ "build_qty": 5,
+ "distributor_boms": {
+  "digikey": "fab/hwde-led-test_BOM_digikey.csv",
+  "mouser": "fab/hwde-led-test_BOM_mouser.csv",
+  "cost": null,
+  "boards": 1,
+  "lines": 4,
+  "priced": {
+   "digikey": false,
+   "mouser": false
+  },
+  "missing_mpn": [],
+  "warnings": [
+   "digikey: prices not looked up (no HWDE_DIGIKEY_CLIENT_ID, HWDE_DIGIKEY_CLIENT_SECRET)",
+   "mouser: prices not looked up (no HWDE_MOUSER_API_KEY)"
+  ]
+ },
+ "bom_rows": [
+  {
+   "Comment": "4.7uF",
+   "Designator": "C1",
+   "Footprint": "C0603",
+   "LCSC": "C19666"
+  },
+  {
+   "Comment": "KT-0603G",
+   "Designator": "D1",
+   "Footprint": "LED0603-RD",
+   "LCSC": "C12624"
+  },
+  {
+   "Comment": "PZ254V-11-02P",
+   "Designator": "J1",
+   "Footprint": "HDR-TH_2P-P2.54-V-M",
+   "LCSC": "C492401"
+  },
+  {
+   "Comment": "470R",
+   "Designator": "R1",
+   "Footprint": "R0603",
+   "LCSC": "C23179"
+  }
+ ],
+ "prebuy_rows": [
+  {
+   "LCSC": "C12624",
+   "MPN": "KT-0603G",
+   "Comment": "KT-0603G",
+   "Designator": "D1",
+   "Qty Per Board": "1",
+   "Boards": "5",
+   "Qty To Buy": "5",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C492401",
+   "MPN": "PZ254V-11-02P",
+   "Comment": "PZ254V-11-02P",
+   "Designator": "J1",
+   "Qty Per Board": "1",
+   "Boards": "5",
+   "Qty To Buy": "5",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  }
+ ],
+ "bom_full_rows": [
+  {
+   "Comment": "4.7uF",
+   "Designator": "C1",
+   "Qty Per Board": "1",
+   "Footprint": "C0603",
+   "MPN": "CL10A475KO8NNNC",
+   "LCSC": "C19666",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "KT-0603G",
+   "Designator": "D1",
+   "Qty Per Board": "1",
+   "Footprint": "LED0603-RD",
+   "MPN": "KT-0603G",
+   "LCSC": "C12624",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "PZ254V-11-02P",
+   "Designator": "J1",
+   "Qty Per Board": "1",
+   "Footprint": "HDR-TH_2P-P2.54-V-M",
+   "MPN": "PZ254V-11-02P",
+   "LCSC": "C492401",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "470R",
+   "Designator": "R1",
+   "Qty Per Board": "1",
+   "Footprint": "R0603",
+   "MPN": "0603WAF4700T5E",
+   "LCSC": "C23179",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  }
+ ],
+ "cpl_rows": [
+  {
+   "Designator": "C1",
+   "Mid X": "13.2000",
+   "Mid Y": "-20.2000",
+   "Layer": "Top",
+   "Rotation": "270.0000"
+  },
+  {
+   "Designator": "D1",
+   "Mid X": "18.0000",
+   "Mid Y": "-19.8000",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "J1",
+   "Mid X": "10.9000",
+   "Mid Y": "-20.2000",
+   "Layer": "Top",
+   "Rotation": "270.0000"
+  },
+  {
+   "Designator": "R1",
+   "Mid X": "15.6000",
+   "Mid Y": "-18.9000",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  }
+ ],
+ "assembly_classes": {
+  "C1": "smt_placed",
+  "D1": "smt_placed",
+  "J1": "smt_placed",
+  "R1": "smt_placed"
+ },
+ "class_counts": {
+  "smt_placed": 4
+ },
+ "not_placed": [],
+ "rotation_audit": [
+  {
+   "ref": "C1",
+   "package": "C0603",
+   "base_rot": -90.0,
+   "correction": 0.0,
+   "final_rot": 270.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "D1",
+   "package": "LED0603-RD",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "J1",
+   "package": "HDR-TH_2P-P2.54-V-M",
+   "base_rot": -90.0,
+   "correction": 0.0,
+   "final_rot": 270.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R1",
+   "package": "R0603",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  }
+ ],
+ "n_rotation_corrections": 0,
+ "rotation_from_table": [],
+ "easyeda_cache": "/hive/home/.cache/hwde/easyeda",
+ "model_fetch_failed": [],
+ "easyeda_rate_limited": null,
+ "missing_lcsc": [],
+ "missing_lcsc_unplaced": [],
+ "unsourced": [],
+ "off_lcsc": [],
+ "unplaced_smt": [],
+ "qty_mismatch": [],
+ "violations": [],
+ "bom_complete": true,
+ "castellated_pads": 0,
+ "castellated_refs": []
+}

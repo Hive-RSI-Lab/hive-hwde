@@ -1,0 +1,52 @@
+{
+ "script": "silk_place",
+ "status": "pass",
+ "board": "hwde-led-test.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "targets": 4,
+ "moved": 4,
+ "residual": [],
+ "unplaceable": [],
+ "skipped": [],
+ "min_silk_clearance": 0.0,
+ "median_beyond_extent_mm_before": 0.515,
+ "median_beyond_extent_mm": 0.7555,
+ "ops_out": "kicad/silk_ops.json",
+ "results": [
+  {
+   "ref": "C1",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.7463
+  },
+  {
+   "ref": "R1",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.618
+  },
+  {
+   "ref": "D1",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.7648
+  },
+  {
+   "ref": "J1",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.87
+  }
+ ],
+ "applied": true,
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T13:50:55+00:00",
+ "input": "kicad/hwde-led-test.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:14cea078587943b7867c5bfb1b0a63601892fe00060d63526b04316dbdfe51cf"
+}

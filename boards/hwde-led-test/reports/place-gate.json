@@ -1,0 +1,67 @@
+{
+  "script": "gate",
+  "gate": "place",
+  "phase": "P6",
+  "tool": "place",
+  "input": "/work/boards/hwde-led-test/kicad/hwde-led-test.kicad_pcb",
+  "input_digest": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+  "status": "pass",
+  "criteria": {
+    "fail_severities": [
+      "error"
+    ],
+    "max_count": 0
+  },
+  "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+  },
+  "failing_count": 0,
+  "failing": [],
+  "coverage": {
+    "strict": false,
+    "required": [
+      "courtyard",
+      "outline",
+      "edges",
+      "keepouts",
+      "decoupler_distance",
+      "mating"
+    ],
+    "ran": [
+      "courtyard",
+      "outline",
+      "edges",
+      "keepouts",
+      "decoupler_distance",
+      "mating"
+    ],
+    "passed": [
+      "courtyard",
+      "outline",
+      "edges",
+      "keepouts",
+      "decoupler_distance",
+      "mating"
+    ],
+    "failed": [],
+    "waived": [],
+    "not_applicable": {},
+    "skipped_error": {}
+  },
+  "record_result": {
+    "ok": true,
+    "recorded": true,
+    "workspace": "/work/boards/hwde-led-test",
+    "gate": "place",
+    "status": "pass",
+    "attempts": 6,
+    "inputs": {
+      "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
+      "decoupling": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
+      "place_waivers": null
+    }
+  }
+}

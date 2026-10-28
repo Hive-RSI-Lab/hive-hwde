@@ -26,7 +26,7 @@
     "workspace": "/work/boards/hwde-led-test",
     "gate": "erc",
     "status": "pass",
-    "attempts": 1,
+    "attempts": 3,
     "inputs": {
       "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
       "pro": "json_canonical:e4273b875a1af71d31be97619c9361b8d5f1a06299781c4148aea6f1c8dee338"

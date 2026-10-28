@@ -6,8 +6,8 @@ D1.K), /LED_A (R1.2 - D1.A).
 Pin tables from `schlib.py --pins` on lib/aiee.kicad_sym (no IC, so no
 datasheet-extract JSONs): J1/C1/R1 pads 1,2; D1 pad 1 = K, pad 2 = A.
 R1 = 470R (P3 decision: Vf 3.1 V, 680R lead value gave < 3 mA).
-C1 is the input bulk cap at J1, not an IC decoupler: no IC exists, so the
-decoupling metadata carries no associations.
+C1 is the input bulk cap at J1, not an IC decoupler: the decoupling metadata
+records it against J1.1, the +5V rail's source.
 
 Rebuild:
   eval "$(/work/bin/hwde env)"
@@ -80,7 +80,11 @@ def main(argv=None) -> int:
     try:
         sh = build()
         sch = sh.save(out_dir)
-        sh.emit_decoupling(out_dir / "decoupling.json")
+        # C1 is the +5V rail's bulk reservoir at the input header: record it
+        # against J1.1 (the rail's source) so check_pdn sees the rail held up.
+        sh.emit_decoupling(out_dir / "decoupling.json", extra=[
+            {"cap": "C1", "ic": "J1", "pin": "1", "rail": "+5V",
+             "value": "4.7uF"}])
     except Exception as exc:  # noqa: BLE001
         print(json.dumps({"script": "gen.root", "status": "error",
                           "error": f"{type(exc).__name__}: {exc}"}))

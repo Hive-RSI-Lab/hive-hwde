@@ -1,0 +1,477 @@
+(export
+	(version "E")
+	(design
+		(source "/work/boards/hwde-led-test/kicad/hwde-led-test.kicad_sch")
+		(date "2026-10-28T09:44:30")
+		(tool "Eeschema 10.0.6")
+		(sheet
+			(number "1")
+			(name "/")
+			(tstamps "/")
+			(title_block
+				(title "hwde-led-test: 5 V LED indicator")
+				(company "hwde")
+				(rev "1")
+				(date)
+				(source "hwde-led-test.kicad_sch")
+				(comment
+					(number "1")
+					(value "")
+				)
+				(comment
+					(number "2")
+					(value "")
+				)
+				(comment
+					(number "3")
+					(value "")
+				)
+				(comment
+					(number "4")
+					(value "")
+				)
+				(comment
+					(number "5")
+					(value "")
+				)
+				(comment
+					(number "6")
+					(value "")
+				)
+				(comment
+					(number "7")
+					(value "")
+				)
+				(comment
+					(number "8")
+					(value "")
+				)
+				(comment
+					(number "9")
+					(value "")
+				)
+			)
+		)
+	)
+	(components
+		(comp
+			(ref "C1")
+			(value "4.7uF")
+			(footprint "aiee:C0603")
+			(fields
+				(field
+					(name "Footprint") "aiee:C0603")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "aiee")
+				(part "CL10A475KO8NNNC")
+				(description "4.7uF (475) ±10% 16V")
+			)
+			(property
+				(name "Sheetname")
+				(value "hwde-led-test")
+			)
+			(property
+				(name "Sheetfile")
+				(value "hwde-led-test.kicad_sch")
+			)
+			(property
+				(name "ki_keywords")
+				(value "Multilayer Ceramic Capacitors MLCC - SMD/SMT")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "0155e901-9104-441a-97b8-fc8feccebf8b")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "D1")
+			(value "KT-0603G")
+			(footprint "aiee:LED0603-RD")
+			(fields
+				(field
+					(name "Footprint") "aiee:LED0603-RD")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "aiee")
+				(part "0603Green509-620mcd")
+				(description "0603")
+			)
+			(property
+				(name "Sheetname")
+				(value "hwde-led-test")
+			)
+			(property
+				(name "Sheetfile")
+				(value "hwde-led-test.kicad_sch")
+			)
+			(property
+				(name "ki_keywords")
+				(value "Light Emitting Diodes (LED)")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "0af6c50f-abd5-4325-a6a3-49f2a2363184")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "J1")
+			(value "PZ254V-11-02P")
+			(footprint "aiee:HDR-TH_2P-P2.54-V-M")
+			(fields
+				(field
+					(name "Footprint") "aiee:HDR-TH_2P-P2.54-V-M")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "aiee")
+				(part "PZ254V-11-02P")
+				(description "")
+			)
+			(property
+				(name "Sheetname")
+				(value "hwde-led-test")
+			)
+			(property
+				(name "Sheetfile")
+				(value "hwde-led-test.kicad_sch")
+			)
+			(property
+				(name "ki_keywords")
+				(value "Pin Headers")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "76611094-0bfc-4cac-b870-10dfcd8dcfd2")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "R1")
+			(value "470R")
+			(footprint "aiee:R0603")
+			(fields
+				(field
+					(name "Footprint") "aiee:R0603")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "aiee")
+				(part "0603WAF4700T5E")
+				(description "470Ω (4700) ±1%")
+			)
+			(property
+				(name "Sheetname")
+				(value "hwde-led-test")
+			)
+			(property
+				(name "Sheetfile")
+				(value "hwde-led-test.kicad_sch")
+			)
+			(property
+				(name "ki_keywords")
+				(value "Resistors")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "02eae4fc-a7c0-444a-92fd-cba969440890")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+	)
+	(groups)
+	(variants)
+	(libparts
+		(libpart
+			(lib "aiee")
+			(part "0603Green509-620mcd")
+			(description "0603")
+			(docs "https://lcsc.com/product-detail/Light-Emitting-Diodes-LED_0603-Green_C12624.html")
+			(fields
+				(field
+					(name "Reference") "LED")
+				(field
+					(name "Value") "0603 Green 509-620mcd")
+				(field
+					(name "Footprint") "aiee:LED0603-RD")
+				(field
+					(name "Datasheet") "https://lcsc.com/product-detail/Light-Emitting-Diodes-LED_0603-Green_C12624.html")
+				(field
+					(name "Description") "0603")
+				(field
+					(name "Manufacturer") "KENTO")
+				(field
+					(name "MPN") "KT-0603G")
+				(field
+					(name "LCSC Part") "C12624")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "K")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "A")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "aiee")
+			(part "0603WAF4700T5E")
+			(description "470Ω (4700) ±1%")
+			(docs "https://lcsc.com/product-detail/Chip-Resistor-Surface-Mount-UniOhm_470R-4700-1_C23179.html")
+			(fields
+				(field
+					(name "Reference") "R")
+				(field
+					(name "Value") "0603WAF4700T5E")
+				(field
+					(name "Footprint") "aiee:R0603")
+				(field
+					(name "Datasheet") "https://lcsc.com/product-detail/Chip-Resistor-Surface-Mount-UniOhm_470R-4700-1_C23179.html")
+				(field
+					(name "Description") "470Ω (4700) ±1%")
+				(field
+					(name "Manufacturer") "UNI-ROYAL(厚声)")
+				(field
+					(name "MPN") "0603WAF4700T5E")
+				(field
+					(name "LCSC Part") "C23179")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "1")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "2")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "aiee")
+			(part "CL10A475KO8NNNC")
+			(description "4.7uF (475) ±10% 16V")
+			(docs "https://lcsc.com/product-detail/Multilayer-Ceramic-Capacitors-MLCC-SMD-SMT_SAMSUNG_CL10A475KO8NNNC_4-7uF-475-10-16V_C19666.html")
+			(fields
+				(field
+					(name "Reference") "C")
+				(field
+					(name "Value") "CL10A475KO8NNNC")
+				(field
+					(name "Footprint") "aiee:C0603")
+				(field
+					(name "Datasheet") "https://lcsc.com/product-detail/Multilayer-Ceramic-Capacitors-MLCC-SMD-SMT_SAMSUNG_CL10A475KO8NNNC_4-7uF-475-10-16V_C19666.html")
+				(field
+					(name "Description") "4.7uF (475) ±10% 16V")
+				(field
+					(name "Manufacturer") "SAMSUNG(三星)")
+				(field
+					(name "MPN") "CL10A475KO8NNNC")
+				(field
+					(name "LCSC Part") "C19666")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "1")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "2")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "aiee")
+			(part "PZ254V-11-02P")
+			(docs "https://lcsc.com/product-detail/New-Arrivals_XFCN-PZ254V-11-02P_C492401.html")
+			(fields
+				(field
+					(name "Reference") "H")
+				(field
+					(name "Value") "PZ254V-11-02P")
+				(field
+					(name "Footprint") "aiee:HDR-TH_2P-P2.54-V-M")
+				(field
+					(name "Datasheet") "https://lcsc.com/product-detail/New-Arrivals_XFCN-PZ254V-11-02P_C492401.html")
+				(field
+					(name "Description")
+				)
+				(field
+					(name "Manufacturer") "XFCN(兴飞)")
+				(field
+					(name "MPN") "PZ254V-11-02P")
+				(field
+					(name "LCSC Part") "C492401")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "1")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "2")
+					(type "passive")
+				)
+			)
+		)
+	)
+	(libraries
+		(library
+			(logical "aiee")
+			(uri "${KIPRJMOD}/../lib/aiee.kicad_sym")
+		)
+	)
+	(nets
+		(net
+			(code "1")
+			(name "+5V")
+			(class "Default")
+			(node
+				(ref "C1")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "J1")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "R1")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "2")
+			(name "/LED_A")
+			(class "Default")
+			(node
+				(ref "D1")
+				(pin "2")
+				(pinfunction "A_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "R1")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "3")
+			(name "GND")
+			(class "Default")
+			(node
+				(ref "C1")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "D1")
+				(pin "1")
+				(pinfunction "K_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "J1")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "passive")
+			)
+		)
+	)
+)

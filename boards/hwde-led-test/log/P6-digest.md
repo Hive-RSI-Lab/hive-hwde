@@ -1,0 +1,4 @@
+- P6 placement (opus): manual place_edit, annealing skipped (4 parts). J1 left edge rot 270, C1 beside J1, R1 then D1 to the right.
+- HPWL 29.72 -> 14.37 mm; route probe 1.0; place gate PASS 0/0 (re-run after the outline fit).
+- Outline fit to 13.05 x 9.08 mm (margin 2.0; smaller margins clipped refdes silk). silk_place clean; DRC only the 5 unrouted.
+- Module fix: render.py preflight now finds the AppImage's 3D loaders (bin/hwde shim).

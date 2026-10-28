@@ -1,0 +1,62 @@
+{
+ "script": "stitch_vias",
+ "status": "pass",
+ "board": "hwde-led-test.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "requested": 0,
+ "placed": 0,
+ "skipped": [
+  {
+   "ref": "C1.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "D1.1",
+   "reason": "already_stitched",
+   "net": "GND"
+  }
+ ],
+ "via_size": 0.6,
+ "via_drill": 0.3,
+ "clearance_mm": 0.127,
+ "dry_run": false,
+ "applied": false,
+ "refilled": false,
+ "apply_by_status": null,
+ "ops": [],
+ "mode": "stitch",
+ "pitch_mm": 4.283,
+ "t_rise_ns": 1.0,
+ "nets": {
+  "GND": {
+   "plane_layers": [
+    "B.Cu"
+   ],
+   "pads": {
+    "requested": 0,
+    "placed": 0,
+    "skipped": 0
+   },
+   "area": {
+    "candidates": 4,
+    "placed": 0,
+    "rejected": {
+     "single_layer_contact": 2,
+     "near_same_net_via": 2
+    },
+    "capped": false
+   }
+  }
+ },
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T13:58:35+00:00",
+ "input": "/work/boards/hwde-led-test/kicad/hwde-led-test.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:cf8253f5faf4218e798ea78814541033b8f03bce9a4497c45623842c383dfd25"
+}

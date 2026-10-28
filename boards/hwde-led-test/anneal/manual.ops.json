@@ -1,0 +1,6 @@
+{"version":1,"ops":[
+{"op":"place","ref":"J1","x":10.9,"y":20.2,"deg":270,"side":"front"},
+{"op":"place","ref":"C1","x":13.2,"y":20.2,"deg":270,"side":"front"},
+{"op":"place","ref":"R1","x":15.6,"y":18.9,"deg":0,"side":"front"},
+{"op":"place","ref":"D1","x":18.0,"y":19.8,"deg":90,"side":"front"}
+]}

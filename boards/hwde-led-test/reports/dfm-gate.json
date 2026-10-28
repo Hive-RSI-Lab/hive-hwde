@@ -1,0 +1,81 @@
+{
+  "script": "gate",
+  "gate": "dfm",
+  "phase": "P9",
+  "tool": "dfm",
+  "input": "/work/boards/hwde-led-test/kicad/hwde-led-test.kicad_pcb",
+  "input_digest": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+  "status": "pass",
+  "criteria": {
+    "fail_severities": [
+      "error"
+    ],
+    "max_count": 0
+  },
+  "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+  },
+  "failing_count": 0,
+  "failing": [],
+  "coverage": {
+    "strict": false,
+    "required": [
+      "copper",
+      "copper_to_edge",
+      "drill",
+      "hole_to_edge",
+      "silk",
+      "polarity",
+      "placement",
+      "placement_visual",
+      "bom",
+      "release",
+      "castellation"
+    ],
+    "ran": [
+      "copper",
+      "copper_to_edge",
+      "drill",
+      "hole_to_edge",
+      "silk",
+      "polarity",
+      "placement",
+      "bom",
+      "release",
+      "castellation"
+    ],
+    "passed": [
+      "copper",
+      "copper_to_edge",
+      "drill",
+      "hole_to_edge",
+      "silk",
+      "polarity",
+      "placement",
+      "bom",
+      "release",
+      "castellation"
+    ],
+    "failed": [],
+    "waived": [],
+    "not_applicable": {},
+    "skipped_error": {
+      "placement_visual": "no cpl_visual.json - the fab step's image pass has not run"
+    }
+  },
+  "record_result": {
+    "ok": true,
+    "recorded": true,
+    "workspace": "/work/boards/hwde-led-test",
+    "gate": "dfm",
+    "status": "pass",
+    "attempts": 1,
+    "inputs": {
+      "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+      "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+      "parts": null
+    }
+  }
+}
