@@ -24,8 +24,15 @@ invocation applies the whole diff atomically):
                      del_part + add_part (placement defaults to the old
                      position; override via --placements).
 
-Anything else (pad-net rewires / net renames on surviving parts) is
-UNSUPPORTED here - that is reroute territory. --dry-run reports it (exit 1);
+  rewire_pad         a surviving part (same footprint) whose pad nets changed,
+                     where NO track or via touches any changed pad (an
+                     unplaced/unrouted board, or pads not yet routed) ->
+                     the pads are re-netted; no copper is touched, zones are
+                     refilled. Routing the new nets is the fix loop's job.
+
+A pad-net change on a pad that copper DOES touch (a routed rewire / net
+rename) is UNSUPPORTED here - re-netting the pad would leave that copper on
+the wrong net; that is reroute territory. --dry-run reports it (exit 1);
 apply refuses (exit 2) rather than half-applying a diff.
 
 Atomic + rollback (place_edit pattern): the board + project sidecars are
@@ -118,6 +125,7 @@ MODE_CLASSES = {  # plan bucket -> invalidation.yaml edit class
     "swap_new_fp": "swap_part_new_fp",
     "add": "add_part",
     "del": "del_part",
+    "rewire": "rewire_pad",
 }
 
 
@@ -169,7 +177,7 @@ def build_plan(model: placelib.PlaceModel, board_fields: dict,
                comps: list[dict], netmap: dict[str, str]) -> dict:
     """Classify netlist-vs-board differences into the T8 modes."""
     plan = {"swap_same_fp": [], "swap_new_fp": [], "add": [], "del": [],
-            "unsupported": [], "notes": []}
+            "rewire": [], "unsupported": [], "notes": []}
     by_ref = {c["ref"]: c for c in comps}
     board_fps = {ref: f for ref, f in model.footprints.items()
                  if "board_only" not in f.attrs}
@@ -237,11 +245,25 @@ def build_plan(model: placelib.PlaceModel, board_fields: dict,
             mismatches.append({"pad": num, "board": None,
                                "netlist": want[num]})
         if mismatches:
-            plan["unsupported"].append({
-                "ref": ref, "kind": "pad_net_change", "pads": mismatches,
-                "msg": "surviving part's pad nets differ - reroute/rename "
-                       "territory, not a board_update mode"})
-            continue
+            missing = [m["pad"] for m in mismatches if m["board"] is None]
+            routed = _routed_pads(model.bg, ref,
+                                  {m["pad"] for m in mismatches})
+            if missing or routed:
+                why = (f"netlist pin(s) {missing} have no pad on the board"
+                       if missing else
+                       f"copper touches pad(s) {routed} - re-netting would "
+                       "strand it on the old net")
+                plan["unsupported"].append({
+                    "ref": ref, "kind": "pad_net_change", "pads": mismatches,
+                    "routed_pads": routed,
+                    "msg": f"surviving part's pad nets differ and {why} - "
+                           "reroute/rename territory, not a board_update "
+                           "mode"})
+                continue
+            plan["rewire"].append({
+                "ref": ref, "fp": f.fpid, "changes": mismatches,
+                "pads": {m["pad"]: m["netlist"] for m in mismatches}})
+            # a rewired part may ALSO have field changes - fall through
         bf = board_fields.get(ref, {"value": "", "fields": {}})
         field_changes = {}
         for name in sorted(c["fields"]):
@@ -273,6 +295,24 @@ def build_plan(model: placelib.PlaceModel, board_fields: dict,
                     f"({', '.join(live)}) - left in place; clear them by "
                     "hand if the removal was intentional")
     return plan
+
+
+def _routed_pads(bg, ref: str, numbers: set[str]) -> list[str]:
+    """Which of REF's pads `numbers` does a track or via touch (any net,
+    copper-touch on a shared layer)? Zone fills do not count: they are
+    refilled after the apply and follow the pad's new net."""
+    out = []
+    pads = [p for p in bg.pads_of(ref=ref) if p.number in numbers]
+    tracks = bg.tracks_of()
+    vias = bg.vias_of()
+    for p in pads:
+        hit = any(t.layer in p.layers and t.poly.intersects(p.poly)
+                  for t in tracks) or \
+            any(any(v.spans(ly) for ly in p.layers)
+                and v.poly.intersects(p.poly) for v in vias)
+        if hit:
+            out.append(p.number)
+    return sorted(set(out))
 
 
 # ----------------------------------------------------------- orphan analysis
@@ -869,6 +909,8 @@ def apply_update(pcb: Path, plan: dict, resolved: dict, orphans: dict,
                      "x": want["x"], "y": want["y"], "deg": want["deg"],
                      "side": want["side"], "fields": entry["fields"],
                      "pad_nets": entry["pads"]})
+    pad_nets = [{"ref": e["ref"], "pad_nets": e["pads"]}
+                for e in plan["rewire"]]
     remove_refs = [e["ref"] for e in plan["del"] + plan["swap_new_fp"]]
     remove_uuids = [t.uuid for t in orphans["tracks"]] + \
                    [v.uuid for v in orphans["vias"]]
@@ -884,6 +926,7 @@ def apply_update(pcb: Path, plan: dict, resolved: dict, orphans: dict,
         job = {"verb": "apply_update", "board": str(staged),
                "out": str(staged),
                "field_updates": field_updates, "adds": adds,
+               "pad_nets": pad_nets,
                "fp_paths": [str(p) for p in fp_paths],
                "remove_refs": remove_refs, "remove_uuids": remove_uuids}
         result = routelib.run_worker(bp, job, stage, worker=WORKER)
@@ -921,9 +964,11 @@ def apply_update(pcb: Path, plan: dict, resolved: dict, orphans: dict,
                         "run the fix loop, then the drc_routed gate")
     if u_after > u_before:
         warnings.append(f"{u_after - u_before} new unconnected item(s) "
-                        "(the added parts' ratsnest) - route via the fix loop")
+                        "(the added/rewired parts' ratsnest) - route via the "
+                        "fix loop")
     return {
         "worker": {k: result[k] for k in ("fields_updated", "added",
+                                          "pads_renetted",
                                           "removed_refs", "removed_items",
                                           "removed_texts", "absent_uuids")
                    if k in result},
