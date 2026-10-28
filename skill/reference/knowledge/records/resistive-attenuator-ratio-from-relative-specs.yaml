@@ -1,0 +1,72 @@
+id: resistive-attenuator-ratio-from-relative-specs
+classes: [selection]
+applies:
+  topologies: [resistive-attenuator]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  ratio_error_set_by: relative specs (tolerance matching, TCR tracking)
+  absolute_tolerance_sets: absolute value, not ratio
+  common_mode_error: cancels in the ratio
+prose: >
+  A divider's ratio error is set by the RELATIVE specs of its elements -
+  tolerance matching and TCR tracking - not by their absolute tolerance or
+  absolute TCR. Vishay builds the same V = 10 network twice. Discretes (p1,
+  fig 1): TCR +/-25 ppm/K, tolerance +/-0.1 %. Array (p2, fig 3): the SAME
+  absolute TCR +/-25 ppm/K but absolute tolerance +/-0.25 %, two and a half
+  times WORSE, plus relative TCR tracking 10 ppm/K and tolerance matching
+  0.1 %. Figs 2 and 4 plot overall gain error against lifetime on the same
+  0-0.7 % axis: the discrete build reaches about 0.65 % at 90 000 h, the array
+  stays under 0.3 %. The part with the worse absolute tolerance is the better
+  divider. Fig 6 (p3) draws the mechanism: four elements R1..R4 may sit
+  anywhere inside a +/-0.25 % absolute band while lying within +/-0.05 % of
+  EACH OTHER - the offset they share cancels in the ratio and only the spread
+  survives. Buy matching, not accuracy. For a discrete string the same logic
+  holds in reverse: anything common to every element (a lot-wide trim offset,
+  a uniform temperature) cancels and only element-to-element difference reaches
+  the output - but discretes carry no MATCHING spec, so that difference is
+  bounded only by the absolute tolerance, worst case twice it.
+sources:
+  - file: reference/knowledge/sources/incresarr.pdf
+    page: 1
+    section: "s1, s2.1, figs 1-2"
+    note: >
+      Read: fig 1 schematic (non-inverting amp, R2 feedback / R1 to ground) and
+      the discrete spec block TCR +/-25 ppm/K, tolerance +/-0.1 %; fig 2 plots
+      gain error (%) vs lifetime 0-90 000 h with separate tolerance, TCR and
+      drift contributions and an overall gain error reaching about 0.65 %.
+      Note 3 defines resistance layer temperature as ambient plus the electrical
+      energy converted to heat.
+  - file: reference/knowledge/sources/incresarr.pdf
+    page: 2
+    section: "s2.2, s3, figs 3-5"
+    note: >
+      Read: the array spec block (absolute TCR +/-25 ppm/K, absolute tolerance
+      +/-0.25 %, relative TCR tracking 10 ppm/K, relative tolerance matching
+      0.1 %); fig 3 boxes R1 and R2 as one array package; fig 4 is fig 2's plot
+      on the same 0-0.7 % axis with every curve collapsed below 0.3 %. Text
+      defines tolerance matching as "relative tolerance" or "ratio tolerance".
+  - file: reference/knowledge/sources/incresarr.pdf
+    page: 3
+    section: "fig 6"
+    note: >
+      Read: fig 6 plots dR/R for four elements R1..R4 of one array. Red dashed
+      lines mark the +/-0.25 % absolute tolerance band; a narrow blue band marks
+      +/-0.05 % tolerance matching. The four points cluster together, offset
+      from zero but inside the narrow band - the shared offset cancels in the
+      ratio, the spread does not.
+status: active
+origin: research:block-resistive-attenuator-1
+level: principle
+maturity: approved
+generalizes: []
+verification: {by: "research-second-reader", date: "2026-08-16", note: "Re-stamped so the verification block describes the current text; verdict unchanged. The only edit is the closing clause, reworded exactly along the nit in my previous note - discretes carry no MATCHING spec, so that difference is bounded only by the absolute tolerance, worst case twice it. That is arithmetic on the +/-0.1 percent discrete spec block I already read on incresarr p1; it adds no source, changes no number, and it now agrees with the sibling TCR record instead of overreaching past it. Everything else stands as previously verified against incresarr p1, p2, p3: both spec blocks (discrete +/-25 ppm/K and +/-0.1 percent; array +/-25 ppm/K, +/-0.25 percent absolute, 10 ppm/K tracking, 0.1 percent matching), the identical V=10 network in figs 1 and 3 with R1=100 and R2=900, figs 2 and 4 on one 0 to 0.7 percent axis at about 0.65 percent versus under 0.3 percent, fig 6 clustering R1..R4 inside the +/-0.05 percent matching band while free in the +/-0.25 percent absolute band, and the correct absence of an envelope at level principle."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

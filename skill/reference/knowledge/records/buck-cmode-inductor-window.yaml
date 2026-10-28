@@ -1,0 +1,102 @@
+id: buck-cmode-inductor-window
+classes: [selection]
+applies:
+  topologies: [buck]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  ripple_reference: "the DEVICE maximum rated current, not the load current"
+  ripple_target_pct: 30
+  ripple_band_pct: "20 to 40"
+  l_floor: "L >= 0.28 * Vout / fsw (3.5 uH at 5 V and 400 kHz)"
+  l_ceiling: "ripple must stay above about 10% of the device maximum rated current"
+  isat: "must exceed the HIGH-SIDE current limit, not the load (3.85 A min / 5.05 A max on this part)"
+  table_row_400k_5v: "L 8 uH, C_OUT 4 x 22 uF, R_top 100 k, R_bot 24.9 k, C_IN 10 uF + 220 nF, C_BOOT 100 nF, C_VCC 1 uF, C_FF open"
+prose: >
+  "Take the next standard value up" is only half true on a current-mode
+  part: the inductor is bounded on BOTH sides by the modulator. Floor: the
+  datasheet prints L >= 0.28 * Vout / fsw - 3.5 uH at 5 V and 400 kHz -
+  and below it the loop is not stable. Ceiling: the current-mode sensor
+  needs ripple to work on, so the minimum inductor ripple must stay above
+  about 10% of the DEVICE's maximum rated current under nominal
+  conditions; too much inductance starves the sensed ramp. Between them
+  the target is 20-40% ripple, best 30%, and the reference current is the
+  DEVICE maximum rather than the load - explicitly so when the load is
+  much smaller than what the part can deliver. On a 3 A part running a 2 A
+  rail that means sizing ripple against 3 A, which is why the vendor's
+  400 kHz / 5 V table row is 8 uH rather than the larger value a
+  2 A-referenced calculation gives. Saturation: Isat must beat the
+  HIGH-SIDE current limit (3.85 A minimum, 5.05 A maximum here), not the
+  load and not the low-side limit alone, so a 2 A rail still needs an
+  inductor that survives about 5 A; ferrite saturates hard while powdered
+  iron saturates softly and allows some relaxation at the cost of core
+  loss above about 1 MHz. The same table row is the fastest sanity check
+  on the rest of the bank.
+sources:
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 21
+    section: "9.2.2.4 Inductor Selection, Equation 4"
+    note: >
+      Inductance is set by the desired peak-to-peak ripple, normally 20%
+      to 40% of maximum output current with 30% the best value; the text
+      states that when the application's maximum load is much smaller than
+      the maximum available from the device, the MAXIMUM DEVICE CURRENT
+      must be used for the ripple calculation. Equation 4 gives
+      L = (Vin-Vout)/(fsw*K*Iout_max) * Vout/Vin, and the example picks
+      K = 0.3 giving 8.1 uH, rounded to 8 uH. Ideally the saturation
+      rating must be at least the high-side switch current limit I_SC so
+      the inductor does not saturate during an output short.
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 22
+    section: "9.2.2.4 (continued), Equation 5"
+    note: >
+      Saturation current must not be less than the device low-side current
+      limit I_LIMIT; ferrite cores saturate hard, powdered iron softly but
+      with more core loss above roughly 1 MHz. The maximum inductance is
+      limited by the minimum current ripple that current-mode control
+      needs to work correctly - as a rule of thumb no less than about 10%
+      of the device maximum rated current under nominal conditions - and
+      Equation 5 prints the floor L_MIN >= 0.28 * Vout / fsw.
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 7
+    section: "7.5 Electrical Characteristics, CURRENT LIMITS"
+    note: >
+      I_SC high-side current limit 3.85 / 4.5 / 5.05 A and I_LIMIT
+      low-side current limit 2.9 / 3.5 / 4.1 A (min/typ/max) - the numbers
+      an inductor's saturation rating has to beat, independent of the
+      2 A load. Same table: VFB 0.985 / 1 / 1.015 V and FB pin current
+      0.2 nA typ, 50 nA max.
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 20
+    section: "Table 9-2 Typical External Component Values"
+    note: >
+      The 400 kHz / 5 V row: L 8 uH, C_OUT 4 x 22 uF rated capacitance,
+      R_FBT 100 k, R_FBB 24.9 k, C_IN + C_HF 10 uF + 220 nF, C_BOOT
+      100 nF, C_VCC 1 uF, C_FF open. Figure 9-1 above it is the matching
+      400 kHz example circuit at 6-36 V in, 5 V / 3 A out.
+status: active
+origin: research:block-buck-1
+level: family
+envelope:
+  control_kind: {in: [cmode]}
+maturity: approved
+generalizes: [buck-inductor-selection]
+envelope_note: >
+  Both bounds come from the current-mode modulator: the floor is the
+  slope-compensation stability limit and scales as Vout/fsw, so it
+  tightens at high output voltage and low switching frequency; the ceiling
+  is the minimum ripple the current sensor needs to see. A voltage-mode
+  loop has neither and trades only ripple against DCR; a COT part sets its
+  ramp from the on-time instead. The "size ripple against the DEVICE
+  maximum current" half belongs here too - it is the part's own current
+  limit, not the rail's load, that the inductor has to survive.
+verification: {by: "second-reader", date: "2026-08-15", note: "Re-read lmr33630 p20/p21/p22 and p7. Both bounds are printed. p21: ripple normally 20 to 40 percent of maximum output current with 30 percent the best value, and the explicit instruction that when the maximum load is much smaller than the maximum available from the device the maximum device current must be used; Equation 4 as quoted, with K = 0.3 giving 8.1 uH rounded to 8 uH; and Isat ideally at least the high-side switch current limit I_SC so the inductor does not saturate during an output short. p22: the maximum inductance is limited by the minimum current ripple that current mode control needs, rule of thumb no less than about 10 percent of the device maximum rated current under nominal conditions; Isat not less than the low-side I_LIMIT; ferrite hard versus powdered iron soft with more core loss above roughly 1 MHz; and Equation 5 L_MIN >= 0.28 * Vout / fsw, which evaluates to 3.5 uH at 5 V and 400 kHz as the record says. p7 confirms I_SC 3.85 / 4.5 / 5.05 A and I_LIMIT 2.9 / 3.5 / 4.1 A. Table 9-2 on p20 matches the quoted 400 kHz / 5 V row field for field, and Figure 9-1 above it is the 6-36 V in, 5 V / 3 A out example. I also checked the counterfactual the prose asserts: Equation 4 with Iout 2 A and K = 0.3 at 12 V in gives about 12 uH against the table 8 uH, so sizing ripple against the device current really is what makes the row smaller. One gloss, not refuting: the datasheet prints Equation 5 with no stated reason, so below it the loop is not stable is the record inferring a slope-compensation limit - the envelope_note discloses that inference."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

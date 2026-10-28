@@ -1,0 +1,74 @@
+id: sar-adc-reference-bypass-and-recharge
+classes: [decoupling]
+applies:
+  topologies: [sar-adc]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  ref_pin_is: "a switched capacitor recharged at every bit decision (24 pF behind 50 ohm on the ADS8326)"
+  cref_placement: "as close as possible to the REF and GND pins"
+  cref_example_value: "47 uF low-ESR tantalum (ADS8326); a high-quality bypass cap (CREF) generally"
+  source_must: "recharge CREF between bit decisions, else add a reference buffer"
+  buffer_specs: "max output current, offset voltage and drift, bandwidth, output impedance across that bandwidth"
+  high_z_reference: "op amp plus current-limiting series resistor ahead of the capacitors"
+prose: >
+  An external-reference SAR draws its conversion charge from YOUR capacitor.
+  ADS8326 p.22 fig 42 draws the reference input as a 50 ohm switch onto a
+  24 pF capacitor that is "switched on" during the conversion process, and
+  the text requires "a 47uF tantalum capacitor with low ESR ... connected as
+  close as possible to the input pin"; if the reference source has high
+  output impedance, an operational amplifier with a current-limiting resistor
+  must be placed in front of the capacitors - fig 42 shows an OPA350 doing
+  precisely that. SPRABY5 p.2 gives the dynamics: VREFHI is sampled SEVERAL
+  TIMES during each conversion and high-current transients occur as the
+  internal capacitor array is switched and charged at each bit decision, so
+  the pin requires good decoupling with a high-quality bypass capacitor
+  (CREF). p.3 poses the sizing question correctly: the converter draws its
+  per-bit charge FROM CREF, and the reference circuit must RECHARGE CREF
+  between bit decisions - if the reference IC alone cannot do that fast
+  enough, a reference buffer is needed, specified by maximum output current,
+  offset voltage and offset drift (DC accuracy) and bandwidth plus output
+  impedance across that bandwidth (transient response). Average reference
+  current is a red herring: ADS8326 p.26 warns the part draws very little
+  reference current on average yet still places instantaneous demands on the
+  external reference circuitry.
+sources:
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 22
+    note: "REFERENCE INPUT + Figure 42 Input Reference Circuit and Interface: OPA350 with 47 uF at its output driving VREF, internal 50 ohm into a 24 pF capacitor switched on during conversion; text requires the 47 uF low-ESR tantalum as close as possible to the pin and an op amp with a current-limiting resistor ahead of the caps for a high-impedance reference source"
+  - file: reference/knowledge/sources/spraby5.pdf
+    page: 2
+    note: "1.3 Layout Guidelines: 'VREFHI is sampled several times during each conversion of a SAR ADC, and high-current transients occur when the ADC's internal capacitor array is switched and charged as the bit decisions are made'; the reference pin requires good decoupling with a high-quality bypass capacitor (CREF)"
+  - file: reference/knowledge/sources/spraby5.pdf
+    page: 3
+    note: "1.4 Key Reference Buffer Specifications: the ADC reference draws current from Cbypass during the conversion of each bit and the reference circuit must recharge that capacitor between bit decisions; if the reference IC cannot, a buffer is needed - key specs are max output current, offset voltage, offset drift, bandwidth and output impedance across bandwidth"
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 26
+    note: "LAYOUT: the reference should be bypassed with a 47 uF capacitor, a series resistor plus large capacitor may low-pass the reference, an op-amp-driven reference must be stable into that capacitor (the series resistor helps), and although average reference current is very small there are still instantaneous current demands on the external reference circuitry"
+status: active
+origin: "research:block-sar-adc-1"
+level: topology
+envelope:
+  reference_kind: {in: [external]}
+maturity: approved
+generalizes: [sar-adc-acquisition-charge-transfer]
+envelope_note: >
+  This rule exists only where the reference charge crosses the board. With
+  reference_kind external, the per-bit recharge current flows out of an
+  external capacitor and back through external copper, so CREF's value, its
+  ESR and the source's ability to recharge it between bit decisions are all
+  design variables the layout must serve. A part that generates its reference
+  on-die keeps that loop inside the package and the rule has nothing to bind
+  (the pin, if brought out at all, is then an output to be filtered, not a
+  charge reservoir to be sized).
+verification: {by: "research-second-reader", date: "2026-08-16", note: "ads8326 p.22 verbatim: 'During the conversion process, an equivalent capacitor of 24pF is switched on' and 'To ensure a stable reference voltage, a 47uF tantalum capacitor with low ESR should be connected as close as possible to the input pin. If a high output impedance reference source is used, an additional operational amplifier with a current-limiting resistor must be placed in front of the capacitors.' p.26 verbatim on the point the board's open risk rides on: 'If the reference voltage originates from an op amp, make sure that the op amp can drive the bypass capacitor without oscillation (the series resistor can help in this case)', plus low average versus real instantaneous reference current. spraby5 p.2 (VREFHI sampled several times per conversion, high-current transients as the array is switched and charged at each bit decision, good decoupling with a high-quality CREF) and p.3 section 1.4 (the reference draws from Cbypass during each bit and must recharge it between bit decisions, else a buffer; key specs max output current, offset voltage, offset drift, bandwidth, output impedance across bandwidth) are verbatim. The ADS8326-specific 47uF and 24pF are explicitly part-scoped in rule.cref_example_value and rule.ref_pin_is, so the illustration/constant line is kept. One overstatement worth noting, not enough to refute: fig 42 draws OPA350 -> 47uF -> VREF with NO current-limiting resistor, so 'fig 42 shows an OPA350 doing precisely that' covers the buffer only - TI's own figure drives the 47uF bare, which is itself useful evidence for the stability risk."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Linked to its
+    switched-capacitor parent sar-adc-acquisition-charge-transfer
+    (generalizes).

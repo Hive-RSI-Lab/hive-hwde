@@ -1,0 +1,43 @@
+{
+  "interface": "usbc-pd-sink",
+  "role": "UFP power sink over USB-C (receptacle), PD negotiated; data pairs optional/absent",
+  "_provenance": "Seeded T6 2026-08-06 from boards/pd-trigger/research/interface-usbc-pd.json - opus-verified against USB PD spec / GCT product specs / Semtech SI21-03 / TI datasheets once; the board shipped and passed verify. START from this: re-verify applicability, adapt net names, RECOMPUTE current_a/dt_c from YOUR negotiated profile (the values below are the 20 V / 5 A max-SPR worked example). Sources per number: reference/interfaces/usbc-pd-sink.md",
+  "power": [
+    {
+      "net": "VBUS",
+      "current_a": 5.0,
+      "dt_c": 20
+    },
+    {
+      "net": "VOUT",
+      "current_a": 5.0,
+      "dt_c": 20,
+      "pdn": false
+    }
+  ],
+  "voltages": [
+    {"net": "VBUS", "voltage": 20},
+    {"net": "VOUT", "voltage": 20}
+  ],
+  "notes": [
+    "PROFILE-DEPENDENT VALUES: current_a = your board's design current (5.0 here = the max SPR profile); dt_c from the ambient assumption; voltage = the max negotiated PDO (20 V for SPR; 28/36/48 V EPR crosses check_creepage's 30 V threshold and engages it for real). VOUT (post-protection output) only exists on pass-through boards - drop it otherwise.",
+    "NET NAMES ARE PROVISIONAL. check_current raises CheckError (exit 2) on a power net absent from the board; reconcile with the final netlist before P5. check_creepage is safe (skips absent nets).",
+    "THE DIFF_PAIRS:[] TRAP (highest-value line): omitting diff_pairs makes check_diffpair AUTO-DISCOVER pairs by name suffix including DP/DM. PD-only controllers (CH224 class, datasheet 5.5) want DP/DM off the connector and SHORTED TOGETHER at the chip - if that node becomes two nets named /DP and /DM the checker reports skew/gap violations on a deliberate short. Either give the node ONE net name with no DP/DM token, or set an explicit \"diff_pairs\": [] in the MERGED constraints.json (the architect's call, not the fragment's - an empty list here would silently disable the check board-wide).",
+    "CC1/CC2: no impedance control, no length matching, no high_speed entry - PD BMC is 300 kbit/s with 300 ns edges, critical length ~7.5 m (computed; ST TA0357, TI TUSB422). Route short and direct at 0.25-0.3 mm.",
+    "CC WIRING: receptacle A5 -> controller CC1, B5 -> controller CC2, straight through, NO crossover, NO series elements (a series R adds directly to Rd, budget only +/-20% of 5.1 kohm). Orientation independence comes from the controller's two CC pins, and part features can name a specific pin (CH224 E-Mark emulation is CC2-only).",
+    "CC Rd: exactly ONE Rd path per CC line - integrated OR external 5.1 kohm, never both (fitting both halves Rd and shifts the source's detection thresholds). Rd integration is PART-SPECIFIC even within a family (CH224K integrates, CH221K/CH224D do not) - confirm against the exact ordering part number at P3.",
+    "CC CAPACITANCE is the only real electrical budget on those nets: 200 pF min to 600 pF MAX receiver capacitance (USB PD 5.8.6 via onsemi AN-5086; 200 is a minimum). Any CC TVS or filter cap counts toward the ceiling - never add CC caps without the controller's own pin capacitance in hand.",
+    "CC TVS (optional): CC pins can see VBUS on a connector short, so a fitted TVS needs >= 20 V working voltage (Semtech SI21-03, uClamp2411ZA class) AND must keep the 600 pF budget.",
+    "RECEPTACLE CURRENT IS A COLLECTIVE NAMEPLATE RATING: '5.00 A collectively for VBUS pins A4/A9/B4/B9' = 1.25 A per contact, qualified by a 30 C shell-rise test (GCT USB4085 4.1/6.1.5, USB4105 identical). ALL FOUR VBUS and ALL FOUR GND contacts must be landed and ganged in copper at the pad, not through a neck. Reject parts whose clause reads 3.00 A collectively. CHECK THE VOLTAGE RATING TRAP: otherwise-identical parts differ (USB4085 = 48 V DC, USB4105 = 20 V DC - zero margin against a 20 V PDO's +5%); prefer >= 24 V.",
+    "Connector loss at 5 A (computed from 40 mohm max/contact, 4 in parallel): ~0.25 W on VBUS + ~0.25 W on GND in the mated connector - give the receptacle pads copper on both sides, never a thermally isolated island.",
+    "E-MARKED CABLE: >3 A requires an e-marked cable and a source advertising the PDO; a 3 A cable silently caps at 60 W. Nothing on the board changes that - it is a DOCUMENTATION item (silk/manual line). A female-receptacle sink needs no on-board e-marker and no VCONN.",
+    "VBUS TVS IS NOT OPTIONAL: working voltage >= 22 V for a 20 V port, clamp <= ~34 V (Semtech SI21-03; TDS2221PW class 22 V/28 V clamp beats SMAJ24's ~38-39 V). At the connector, BEFORE any fuse/PTC, short wide return with multiple GND vias. Evidence: published CH224 trigger-board teardown with no TVS reports chip failure at 20 V from a cable inductive spike.",
+    "PROTECTION ORDER (class rule): connector -> TVS -> bulk -> controller taps -> resettable element -> output. The controller must keep its supply and its true connector-side VBUS reading through an output fault so it can hold the contract and indicate; bulk goes on the CONNECTOR side so a short dumps through the protective element, not into the fault.",
+    "SINK BULK CAPACITANCE: the binding number is cSnkBulkPd = 100 uF max on a sink's VBUS under a PD contract (TI TPS25730/TPS25751; the familiar 10 uF is the USB 2.0 attach limit). Recommend 10-22 uF + 100 nF per node: at the source slew cap vSrcSlewPos = 30 mV/us, 22 uF draws 0.66 A during a 5->20 V transition while 100 uF would draw 3 A and eat most of a 3 A contract.",
+    "TAP-STUB TRAP for check_current: sense/VDD dropper resistors branch off the full-current VBUS net and a thin spur to their pads gets flagged at the full budget. Preferred fix: land the tap pads INSIDE the VBUS pour (pads in a pour are not tracks); fallback once coordinates exist: power[].overrides {\"near\": [x,y], \"radius_mm\": 3, \"current_a\": <tap current>}.",
+    "GND is deliberately NOT a power entry: listing it at the full current makes check_current demand the full via count in EVERY GND cluster on the board. Power-architect's call, with overrides if budgeted.",
+    "5 A COPPER (computed with check_current, IPC-2152): 1 oz needs 3.500/2.383/1.871 mm at dT 10/20/30 C; 2 oz halves that. Keep the forward path on ONE layer (each transition needs ceil(I/via_amps) vias at the 0.5 A default). Verify a 2 oz choice exists in stackups.yaml BEFORE committing - a capabilities profile without a stackup entry means check_current computes at 1 oz.",
+    "CREEPAGE: at <= 20 V nothing crosses check_creepage's 30 V threshold - clean no-op BY DESIGN; the voltages entries are still emitted so an EPR revision engages the check automatically. Fab minimum clearance dominates below 30 V; 0.3 mm practice clearance from the HV nets is cheap margin.",
+    "UNUSED CONNECTOR PINS (PD-only): SBU1/SBU2 unconnected; SuperSpeed pairs unconnected (prefer a 16-pin / power-only receptacle without them); shell to GND directly on a bare single-ground board. DP/DM handling is controller-specific - see the diff_pairs trap above."
+  ]
+}

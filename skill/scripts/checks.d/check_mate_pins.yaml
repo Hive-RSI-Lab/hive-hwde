@@ -1,0 +1,7 @@
+# Mated connector pairs (MECH-05) and identical unkeyed connectors (MECH-06).
+# constraints.json is optional: without it only the one-board MECH-06 rule runs.
+name: check_mate_pins
+needs: []
+args: []
+optional:
+  constraints: [--constraints, "{constraints}"]

@@ -1,0 +1,130 @@
+id: swd-debug-port-stm32f0-internal-pulls
+classes: [selection]
+applies:
+  topologies: [swd-debug-port]
+  packages: []
+  interfaces: [swd]
+  parts: [STM32F030F4P6TR, STM32F030F4P6, C89040]
+rule:
+  enforced_by: null
+  external_pull_required: false
+  swdio_internal: pull-up
+  swclk_internal: pull-down
+  nrst_internal: permanent pull-up
+  pull_kohm_min: 25
+  pull_kohm_typ: 40
+  pull_kohm_max: 55
+prose: >
+  On an STM32F0 target an SWD header needs no external pull-up and no
+  external pull-down: the silicon holds all three lines itself from reset.
+  STM32F030x4/x6/x8/xC Table 11 note 7: "After reset, these pins are
+  configured as SWDIO and SWCLK alternate functions, and the internal pull-up
+  on SWDIO pin and internal pull-down on SWCLK pin are activated." PA13 is
+  SWDIO and PA14 is SWCLK (Table 11; TSSOP20 pins 19 and 20). Table 46 gives
+  the value for both: RPU and RPD weak pull-up / pull-down equivalent
+  resistor 25 / 40 / 55 kOhm min/typ/max, built as a true resistance in
+  series with a switchable PMOS/NMOS contributing about 10 percent. NRST is
+  not an ordinary GPIO: Table 10 types it "RST - bidirectional reset pin with
+  embedded weak pull-up resistor" and Table 49 gives its PERMANENT RPU as the
+  same 25 / 40 / 55 kOhm. The directions match the cross-vendor table exactly
+  (AN220270 Table 5: pull-down on SWCLK, pull-up on SWDIO) and 25-55 kOhm
+  sits inside its 10-100 kOhm band, so an external pull would only parallel
+  what is already there while loading the probe. Fit none; if a measurement
+  ever demands one, match the internal direction. Whether a SERIES element
+  belongs on the clock is a different question that this record does NOT
+  answer - it is decided per board by the rise-time against line-delay check,
+  not by a family constant.
+sources:
+  - file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf
+    page: 32
+    section: Table 11 note 7
+    note: >
+      Read the footnotes under the pin definitions table. Note 7 is the
+      load-bearing one: after reset PA13/PA14 are SWDIO/SWCLK alternate
+      functions with the internal pull-up on SWDIO and pull-down on SWCLK
+      ACTIVATED. Same page: TSSOP20 pin 15 = VSS, pin 16 = VDD, pin 1 = BOOT0.
+  - file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf
+    page: 31
+    section: Table 11 (continued)
+    note: >
+      Read the pin definitions rows for PA13 (SWDIO) and PA14 (SWCLK): both
+      carry note 7, both are FT I/O, and the TSSOP20 column gives pin 19 for
+      PA13 and pin 20 for PA14. Alternate functions listed are IR_OUT/SWDIO
+      and USART1_TX, USART2_TX/SWCLK.
+  - file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf
+    page: 61
+    section: Table 46 I/O static characteristics
+    note: >
+      Read the RPU and RPD rows of Table 46: weak pull-up equivalent resistor
+      (VIN = VSS) and weak pull-down equivalent resistor (VIN = VDDIOx), both
+      25 / 40 / 55 kOhm min/typ/max. Footnote 4 says they are a true
+      resistance in series with a switchable PMOS/NMOS whose contribution is
+      about 10 percent. CIO I/O pin capacitance typ 5 pF on the same table.
+  - file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf
+    page: 60
+    section: s6.3.14 preamble to Table 46
+    note: >
+      Read the paragraph that opens s6.3.14 I/O port characteristics, where
+      Table 46 begins: "Unless otherwise specified, the parameters given in
+      Table 46 are derived from tests performed under the conditions
+      summarized in Table 21: General operating conditions." This is the link
+      that puts a supply range on the RPU/RPD numbers - Table 46's own
+      Conditions column only says VIN = VSS / VIN = VDDIOx.
+  - file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf
+    page: 43
+    section: Table 21 General operating conditions
+    note: >
+      Read Table 21, the conditions s6.3.14 defers to: VDD "standard
+      operating voltage" Min 2.4, Max 3.6 V (fHCLK and fPCLK 0 to 48 MHz on
+      the same table). This is the page behind this record's vio_v envelope -
+      outside 2.4 to 3.6 V the 25-55 kOhm pull band is not specified.
+  - file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf
+    page: 27
+    section: Table 10 legend
+    note: >
+      Read the pinout-table legend: I/O structure "RST" is defined as
+      "bidirectional reset pin with embedded weak pull-up resistor", and the
+      Notes row states that unless a note says otherwise all I/Os are
+      floating inputs during and after reset - which is why note 7 on the SWD
+      pins matters. Table 11 starts here with NRST as TSSOP20 pin 4.
+  - file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf
+    page: 65
+    section: s6.3.15 / Table 49
+    note: >
+      Read s6.3.15 and Table 49: the NRST input driver "is connected to a
+      permanent pull-up resistor, RPU", specified 25 / 40 / 55 kOhm - the
+      same band as the GPIO pulls, and permanent rather than software-enabled.
+  - file: reference/knowledge/sources/infineon-an220270-hardware-design-guide-for-the-traveo-t2g-family-applicationnotes-en.pdf
+    page: 30
+    section: Table 5
+    note: >
+      Read Table 5 as the cross-vendor cross-check: pull-DOWN on TCK/SWCLK
+      and pull-UP on TMS/SWDIO, 10 k to 100 k where the MCU does not
+      implement them. Directions agree with ST's note 7 and ST's 25-55 kOhm
+      falls inside the range, so the two vendors do not disagree on PULLS.
+      (The same page's series-resistor recommendation is deliberately NOT
+      carried by this record - see swd-debug-port-edge-rate-sets-layout-demand.)
+status: active
+origin: research:block-swd-debug-port-1
+level: family
+envelope:
+  vio_v: {min: 2.4, max: 3.6}
+envelope_note: >
+  Scales with the I/O supply. Table 46's preamble (s6.3.14, p60) refers its
+  conditions to Table 21 General operating conditions, which sets VDD at
+  2.4 to 3.6 V (p43); the 25-55 kOhm pulls and the reset pin's permanent pull
+  are specified only there. Outside that range ST characterises neither, so a
+  level-shifted, 1.8 V or 5 V target must be re-checked before the "no
+  external pull" conclusion is reused. The record is FAMILY level, not part
+  level, because the mechanism is the STM32F0 reset-state pin configuration
+  and its published pull band, not one order code.
+maturity: approved
+generalizes: [swd-debug-port-termination-follows-silicon]
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read ST p32, p31, p61, p60, p43, p27, p65 and Infineon p30 from scratch. The series claim is GONE: the rule dict now holds only enforced_by, external_pull_required, swdio_internal, swclk_internal, nrst_internal and pull_kohm_min/typ/max - no external_series_required key - and grep finds no 'or series resistor' phrase; the only 'series' mentions are Table 46 footnote 4's own wording, the explicit hand-off, and the disclosure in the Infineon note. The hand-off contradicts nothing on its own pages: it declines to rule rather than denying Infineon, and the p30 citation note openly flags that the same page's series recommendation is deliberately not carried. The two NEW citations are load-bearing and both hold verbatim. p60 s6.3.14 opens: 'Unless otherwise specified, the parameters given in Table 46 are derived from tests performed under the conditions summarized in Table 21: General operating conditions.' - exactly the link the record claims. p43 Table 21 gives VDD 'Standard operating voltage' Min 2.4 Max 3.6 V on its own row (fHCLK and fPCLK 0-48 MHz above it), so the vio_v envelope matches the right row, not a neighbour; Table 21 continued on p44 adds no VDDIOx row, so VDD is the I/O supply for this part. Pull directions and values re-derived independently, nothing swapped: p32 note 7 verbatim 'After reset, these pins are configured as SWDIO and SWCLK alternate functions, and the internal pull-up on SWDIO pin and internal pull-down on SWCLK pin are activated'; p31 PA13 (SWDIO) TSSOP20 pin 19 and PA14 (SWCLK) TSSOP20 pin 20, both FT, both carrying note 7; p61 Table 46 RPU (VIN = VSS) and RPD (VIN = VDDIOx) both 25/40/55 kOhm with footnote 4's true-resistance-plus-switchable-PMOS/NMOS ~10 percent and CIO typ 5 pF; p27 Table 10 'RST - Bidirectional reset pin with embedded weak pull-up resistor' plus the all-I/Os-floating-after-reset note; p65 s6.3.15 'It is connected to a permanent pull-up resistor, RPU' with Table 49 RPU 25/40/55 kOhm - and p65's own preamble also defers to Table 21, so the envelope covers NRST too. Infineon p30 Table 5 gives pull-down to GND on TCK/SWCLK and 10k-100k pull-up to VDDIO on TMS/SWDIO, and the record reads that column correctly as 'where the MCU does not implement them'."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

@@ -1,0 +1,110 @@
+id: swd-debug-port-edge-rate-sets-layout-demand
+classes: [emi]
+applies:
+  topologies: [swd-debug-port]
+  packages: []
+  interfaces: [swd]
+  parts: []
+rule:
+  enforced_by: null
+  criterion: rise time >> line one-way delay (tau = length x delta)
+  impedance_target: none
+  length_match: none
+  controlled_stackup_required: false
+  fastest_specified_edge_ns: 5
+  slowest_setting_edge_ns: 125
+  remedy_if_check_fails: series element on the debug CLOCK only
+prose: >
+  What a debug port asks of layout is set by the EDGE, not the bit rate.
+  TI AN-806 (SNLA026A) gives the test: a line loads its driver as a lumped
+  capacitance, C dv/dt = i, "only when the rise time is greater than the time
+  delay of the line (tr >> tau)"; driven by a fast-rise-time step the line is
+  instead "essentially resistive" and the driver sees Z0. Equations 43-44
+  define that delay - delta = sqrt(LC) per unit length, tau = length x delta -
+  so the ratio scales with LENGTH. ST publishes the numerator: Table 48 bounds
+  output tr/tf at 125 ns for the OSPEEDR x0 encoding, 25 ns at 01, and
+  5 / 8 / 12 ns at 11 for CL of 30 pF / 50 pF / 50 pF at low VDD. Read those
+  as ENCODINGS, not as a reset state: Table 48 marks no row as a default and
+  its footnote 1 defers the OSPEEDR register to RM0360, which is not in this
+  ledger. No fmax, tr or tf row carries a Min - the table's only Min is
+  tEXTIpw, an input pulse width, at 10 ns - so 5 ns is the fastest edge ST
+  SPECIFIES, not a floor. Infineon AN220270 names the failure when the ratio
+  inverts: reflections and ringing on the debug clock, after which "the debug
+  interface can interpret the wrong data", fixed with a 20 ohm series element
+  on SWCLK near the connector, with the warning that it divides against the
+  internal pull. So while tr >> tau this block emits no impedance target, no
+  length match and no controlled stackup - only keep-it-short, and a series
+  element on SWCLK alone if a board's own tr against tau check fails.
+sources:
+  - file: reference/knowledge/sources/snla026a.pdf
+    page: 6
+    section: Figure 10 / Figure 11 discussion
+    note: >
+      Read the C(dv/dt) = i passage and Figures 9-10. The criterion is stated
+      twice: the lumped-capacitance estimate holds "if a signal with a rise
+      time long enough to encompass the time delay of the line is used
+      (tr >> tau)", and "Figure 11 shows that C(dv/dt) = i only when the rise
+      time is greater than the time delay of the line". For a fast-rise-time
+      step the text says the line is "essentially resistive, so VIN/IIN = R0
+      = Z0 will give the actual drive current needed". Figure 10 shows peak
+      input current identical for 150 to 3750 ft of line, set by VIN/R0.
+  - file: reference/knowledge/sources/snla026a.pdf
+    page: 9
+    section: Equations 40, 43, 44
+    note: >
+      Read the summary equations: Z0 = sqrt(L/C) for the lossless line,
+      delta = 1/v = sqrt(LC) as the time delay per unit length (eq 43), and
+      tau = length x delta as the total propagation delay of a line of that
+      length (eq 44). This is the denominator of the tr/tau ratio and it is
+      what makes trace LENGTH the free variable.
+  - file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf
+    page: 64
+    section: Table 48 I/O AC characteristics
+    note: >
+      Read Table 48 in full. Output rise and fall time maxima by OSPEEDR
+      ENCODING (the leftmost column is the OSPEEDRy[1:0] value, not a reset
+      state): x0 gives 125 ns with fmax 2 MHz (CL 50 pF, VDDIOx >= 2.4 V);
+      01 gives 25 ns with fmax 10 MHz; 11 gives 5 ns at CL 30 pF and
+      VDDIOx >= 2.7 V, 8 ns at CL 50 pF, 12 ns at CL 50 pF with 2.4 V <=
+      VDDIOx < 2.7 V, with fmax 50 / 30 / 20 MHz for those three rows. No
+      fmax, tr or tf row has a Min value; the ONLY populated Min cell in the
+      table is tEXTIpw = 10 ns ("pulse width of external signals detected by
+      the EXTI controller"), which is an input spec, not an output edge.
+      Footnote 1 refers the OSPEEDR register itself to RM0360 - the table
+      names no default row. Footnote 2 marks the whole table guaranteed by
+      design, not tested in production.
+  - file: reference/knowledge/sources/infineon-an220270-hardware-design-guide-for-the-traveo-t2g-family-applicationnotes-en.pdf
+    page: 30
+    section: text under Table 5 + Figure 22
+    note: >
+      Read the paragraph naming the failure mode: place a series resistor
+      (R16) closer to the connector "to avoid reflections and ringing of the
+      debug clock signal. Otherwise, with strong oscillations during level
+      settlement, the debug interface can interpret the wrong data", plus the
+      caution that the internal termination makes a possible voltage divider
+      with it. Figure 22 draws R16 = 20 ohm in the TCK/SWCLK line only, with
+      10 k pulls on the other lines - the clock is the line they terminate.
+status: active
+origin: research:block-swd-debug-port-1
+level: topology
+envelope:
+  edge_ns: {min: 5}
+envelope_note: >
+  Scales with the ratio of the driver's edge to the interconnect's one-way
+  delay (AN-806 eq 44, tau = length x delta): declared dim edge_ns, free
+  variable length. The floor is 5 ns, the fastest edge ST specifies (Table 48,
+  OSPEEDR encoding 11, CL 30 pF, VDDIOx >= 2.7 V). No fmax, tr or tf row in
+  that table carries a Min, so 5 ns is a specified bound, not a guaranteed
+  floor - a faster target, or a probe driving SWCLK harder than the target
+  drives SWDIO, falls outside and must re-run the check. Delta for a given
+  stackup was NOT sourced here, so the length half stays board data.
+maturity: approved
+generalizes: []
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read ST p64 (Table 48) cell by cell, TI p6 and p9, Infineon p30. Both original objections are cleared ON THE PAGE. (1) Min claim now exact: x0, 01, 11 and the Fm+ configuration block ALL show Min '-' on every fmax/tf/tr row, and the last row tEXTIpw (pulse width of external signals detected by the EXTI controller) is the only populated Min cell at 10 ns - so 'no fmax, tr or tf row carries a Min, the only Min is tEXTIpw = 10 ns' is true as written in all three places it appears (prose, p64 citation note, envelope_note). (2) No post-reset state is asserted anywhere: the rule key is slowest_setting_edge_ns and the prose says 'Read those as ENCODINGS, not as a reset state'. 125 ns IS the slowest row of the whole table - x0 125, 01 25, 11 5/8/12, Fm+ tf 12 / tr 34 - so the field name is earned, and 5 ns is still the fastest specified edge. Footnote 1 (OSPEEDRx[1:0], refer to RM0360 for the GPIO port configuration register) and footnote 2 (guaranteed by design, not tested in production) are as quoted, and no row is marked default. All conditions match: 125 ns at CL 50 pF VDDIOx>=2.4 V with fmax 2 MHz; 25 ns at fmax 10 MHz; 5/8/12 ns at CL 30 pF VDDIOx>=2.7, CL 50 pF VDDIOx>=2.7, CL 50 pF 2.4<=VDDIOx<2.7 with fmax 50/30/20 MHz. TI p6 verbatim: 'if a signal with a rise time long enough to encompass the time delay of the line is used (tr >> tau)', 'Figure 11 shows that C(dv/dt) = i only when the rise time is greater than the time delay of the line', 'the line is essentially resistive, so VIN/IIN = R0 = Z0', and the 20 mA identical for 150-3750 ft. TI p9 eq 40 / 43 / 44 exact, tau = l x delta is the ONE-WAY delay as the criterion says. Infineon p30 series-resistor paragraph and Figure 22 R16 = 20R in the SWCLK_TCK line only are verbatim."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

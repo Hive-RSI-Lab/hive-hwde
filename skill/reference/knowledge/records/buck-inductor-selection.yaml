@@ -1,0 +1,43 @@
+id: buck-inductor-selection
+classes: [selection]
+applies:
+  topologies: [buck]
+  packages: []
+  interfaces: []
+rule:
+  enforced_by: null
+  dcr_mohm_max_a_class_rail: 30
+  isat_must_beat: peak current limit / PFM clamp, not load current
+prose: >
+  The three inductor rules every run re-derived from scratch. L VALUE: start
+  from the vendor's recommended-components table row for your Vout; the next
+  STANDARD value up is usually right - light-load efficiency improves with
+  larger L (DS41326 s10 says so explicitly; usb-buck: table said 3.9 uH,
+  chosen 4.7 uH). ISAT: must beat the part's PEAK CURRENT LIMIT / PFM clamp,
+  not the load current (usb-buck: 450 mA clamp meant a 1 A-rated part was
+  ample at a 57 mA load). DCR: budget it as real dissipation - target
+  < 30 mohm for A-class rails (usb-buck P3 rule, waived at 60 mohm with
+  math); ~0.1 ohm cost 0.29 W at 2 A on the carrier. DCR losses scale I^2 -
+  cheap inductors tax high-current rails hard. Derate Isat/Irms/DCR to the
+  real ambient before comparing (sbuck: 18.5 mohm at 20 C -> 24 mohm hot).
+sources:
+  - {file: boards/usb-buck/parts/C5248536.pdf, section: DS41326 s10 (inductor selection)}
+  - {file: boards/usb-buck/research/power.md, section: s5 (L/Isat/DCR derivation)}
+  - {file: boards/lumina-carrier/research/poe-power.md, section: DCR dissipation at 2 A}
+status: active
+origin: migration:topologies/buck (T6 2026-08-06, three shipped runs)
+
+# --- schema v2 governance (U14 backfill, owner-ruled 2026-08-15) ---
+level: topology
+envelope:
+  iout_a: {min: 0.01, max: 5}
+maturity: approved
+approval:
+  by: owner
+  date: "2026-08-15"
+  note: >
+    Scales with rail current: the DCR budget (< 30 mohm for A-class rails)
+    and the I^2R framing are stated per current class, and the
+    Isat-beats-the-current-limit rule is derived from small integrated
+    parts' peak clamps. Above ~5 A the inductor is chosen by core loss and
+    size first, which this record does not carry.

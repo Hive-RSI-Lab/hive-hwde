@@ -1,0 +1,101 @@
+id: in-leakage-symmetry-and-guarding
+classes:
+- diff-pair
+applies:
+  topologies: []
+  packages: []
+  interfaces:
+  - in
+  parts: []
+rule:
+  enforced_by: null
+  parasitic: >-
+    PCB surface leakage resistance from a sensitive node to a nearby net: approximately 1000
+    Gohm clean and dry, approximately 1 Gohm humid and contaminated
+  error: >-
+    leakage current times the impedance of the node it lands on - EQUAL on both inputs it
+    is a common-mode term and is rejected, UNEQUAL it is a differential error
+  symmetry_regime: >-
+    AUTHOR INFERENCE: at low source impedance the governing technique is equal neighbourhoods:
+    give both inputs the same neighbours at the same distance, and never run only one of them
+    past a supply or output net
+  guard_regime: >-
+    as the node impedance approaches the parasitic, a guard at the node's own potential, driven
+    from a low impedance, typically cuts the leakage about 1000x (vendor worked example)
+  guard_rules: >-
+    no solder mask over the guard; guard both surfaces for through-hole parts; guard any jumper
+    trace of a guarded net, or avoid the jumper
+prose: >-
+  Surface contamination and humidity turn the board into a resistor network: the vendor's
+  typical numbers for close, short traces are a parasitic of about 1000 Gohm clean and dry
+  and about 1 Gohm humid and contaminated, and the model is a resistor from the sensitive
+  node to every nearby net, including the rails. The error that reaches a differential input
+  is not the leakage itself but its ASYMMETRY: a current that arrives equally at both inputs
+  is common mode and is rejected, while a current that arrives at one is a differential error
+  multiplied by the full gain. Two design regimes follow. With a low-impedance sensor the
+  leakage-driven error is the current times a few hundred ohms, so the technique argued here
+  (author inference, not a vendor figure) is symmetry - equal neighbours at equal distance
+  on both inputs, no supply or output net passing one of them alone. As the node impedance
+  climbs toward the parasitic, guarding is what the vendor prescribes: a ring at the same
+  potential as the node, driven from a low impedance, so the drop across the remaining parasitic
+  is only the amplifier's offset voltage and typically the leakage falls by about 1000x (the
+  vendor's worked example: Vos 2 mV against 2 V). The guard must be mask-free, present on
+  both surfaces for through-hole parts (p14), and must follow any jumper of a guarded net
+  or the jumper avoided (p14). Applying this to an in-amp rather than an op-amp is author
+  inference.
+sources:
+- file: reference/knowledge/sources/01258b.pdf
+  page: 12
+  section: Leakage Currents - PCB Surface Leakage, Guard Rings, Figures 26/28
+  note: >-
+    Read: Figure 26 (Thevenin source with parasitic leakage resistors to every nearby node),
+    the typical values RP approximately 1000 Gohm at low humidity and 1 Gohm at high humidity/contamination,
+    the guard-ring rules (no solder mask, biased at the sensitive node's voltage, driven by
+    a low impedance) and Figure 28's SMD guard-ring layout.
+- file: reference/knowledge/sources/01258b.pdf
+  page: 13
+  section: Guard Rings - equivalent circuits, output-driven guard
+  note: >-
+    Read: with the guard driven from the output the voltage across the remaining parasitic
+    is only the amplifier's offset, "the leakage current is typically reduced by a factor
+    of about 1000".
+- file: reference/knowledge/sources/01258b.pdf
+  page: 14
+  section: Guard Rings on Both PCB Surfaces
+  note: >-
+    Read: through-hole parts need guards on both PCB surfaces; jumper traces of guarded nodes
+    need guards too, or the jumper is avoided.
+- file: reference/knowledge/sources/ina333.pdf
+  page: 16
+  section: 8.2.2.5 Input Bias Current Return Path
+  note: >-
+    Read: the input impedance that makes leakage matter at all - approximately 100 Gohm against
+    a bias current of only +-70 pA typ, so a humid-board surface parasitic two decades lower
+    than the device's own input impedance is what the node actually sees.
+status: active
+origin: research:interface-in-1
+level: topology
+envelope:
+  rsource_ohm:
+    max: 1000000
+maturity: verified
+generalizes: []
+envelope_note: >-
+  The leakage error is the parasitic current times the impedance of the node it lands on,
+  so node impedance decides which technique governs. The 1 Mohm bound is the author's engineering
+  split, not a vendor figure: below it (bridge, thermocouple, strain-gauge sources at hundreds
+  of ohms) symmetry of the two paths is the technique argued; at and above it an actively
+  driven guard is what the vendor prescribes. Humidity moves the parasitic three decades,
+  so this is a design-condition bound.
+verification:
+  by: second-reader
+  date: '2026-10-04'
+  note: >-
+    Second read 2026-10-04 against 01258b p12, p13, p14 (searched for the both-surfaces and
+    jumper text) and ina333 p16. Held: RP about 1000 Gohm dry / 1 Gohm humid, the guard rules,
+    the 1000x figure. Edits: added a p14 source (Guard Rings on Both PCB Surfaces) for the
+    both-surfaces and jumper rules and removed those claims from the p13 note; deleted the
+    claim that a humid-board 1 Gohm parasitic gives sub-microvolt errors (3.3 nA x 350 ohm
+    is about 1.2 uV) and the prose 'far below a microvolt'; the 1 Mohm bound is now stated
+    as the author's engineering split; 1000x is stated as the vendor's worked example, 'typically';
+    the symmetry regime and the in-amp application are labelled author inference.

@@ -1,0 +1,97 @@
+id: in-terminal-thermal-emf
+classes: [thermal]
+applies:
+  topologies: []
+  packages: []
+  interfaces: [in]
+  parts: []
+rule:
+  enforced_by: null
+  mechanism: "every dissimilar-metal junction in the input path is a thermocouple; Seebeck coefficients of junctions found on a PCB are typically below +-100 uV/degC"
+  scales_with: "the temperature DIFFERENCE between the two input junctions - shifting every junction equally changes nothing"
+  worked_case: "a 10 degC/inch axial gradient across a 1206 resistor (1.2 degC end to end) develops -38 uV"
+  contact_potential: "a forced dissimilar-metal contact (socket) measured +-1 to +-2 uV on the vendor's bench - solder critical nodes, do not socket them"
+  mitigation: "place the two input junctions adjacent and identically built so their EMFs cancel differentially; same metallurgy on both inputs; small parts spaced close together; align parts along constant-temperature contours; flood copper at the terminal; keep dissipating parts away"
+prose: >-
+  At a microvolt-class error budget the connector is a thermocouple. Every
+  junction in the input path - wire to screw clamp, clamp to pad, solder to
+  copper, via, resistor end cap - generates a Seebeck voltage, and PCB
+  junctions are "typically, but not always, below +-100 uV/degC". What
+  matters is the GRADIENT, not the temperature: the constant-temperature
+  figure I read shows the four junctions of an SMD resistor at +125 degC
+  summing to exactly zero, with the vendor's own note that "when
+  temperature is constant along the direction of current flow, the net
+  change in thermoelectric voltage between two conductors of the same
+  material is zero". The axial-gradient figure gives the price of breaking
+  that: 10 degC/inch, i.e. 1.2 degC across a 1206, produces -38 uV. The
+  cure is symmetry, not exotic metal: "the inputs to an op amp should
+  connect to the same materials", critical parts are oriented along
+  constant-temperature contour lines, and in the vendor's own sensor board
+  the input resistor pair is "arranged so that their thermoelectric
+  voltages cancel" while copper fill tied to the ground plane "minimizes
+  thermal gradients at the cold junction connector". So: the two input
+  poles adjacent and identically built, copper poured around them, nothing
+  that dissipates nearby, and no socket in the input path.
+sources:
+  - file: reference/knowledge/sources/01258b.pdf
+    page: 2
+    section: "Seebeck Voltage, Equation 1, Figure 2/3, Table 1"
+    note: >-
+      Read: the +-100 uV/degC bound on PCB junction Seebeck coefficients,
+      Equation 1, and Figure 3 - four junctions of an SMD resistor at a
+      uniform +125 degC producing zero net thermoelectric change.
+  - file: reference/knowledge/sources/01258b.pdf
+    page: 3
+    section: "Temperature Change in the Axial Direction, Figure 4"
+    note: >-
+      Read Figure 4 and its table: 1206 SMD, +125.0 to +126.2 degC across
+      the part at 10 degC/inch, junction voltages 14.000 / -5.001 / 5.011 /
+      -14.048 mV summing to -38 uV across the resistor.
+  - file: reference/knowledge/sources/01258b.pdf
+    page: 4
+    section: "Curing Thermoelectric Voltage Effects - Metallurgy, Contour Lines"
+    note: >-
+      Read: "the inputs to an op amp should connect to the same materials",
+      and Figure 6 - resistors placed parallel to the constant-temperature
+      contour lines drawn around a heat source.
+  - file: reference/knowledge/sources/01258b.pdf
+    page: 16
+    section: "Other Tips - Contact Potential"
+    note: >-
+      Read: sockets and IC pins are different metals forced into contact
+      (Volta effect); bench measurement on auto-zeroed op amps gave +-1 uV
+      to +-2 uV, so critical components are soldered, never socketed.
+  - file: reference/knowledge/sources/01258b.pdf
+    page: 17
+    section: "Design Example - PCB Layout, Figure 38/39 callouts 2/3a/4"
+    note: >-
+      Read the layout figures: 0805 parts chosen to shorten the gradient
+      across them, the input resistor pair "arranged so that their
+      thermoelectric voltages cancel", and metal fill tied to the ground
+      plane flanking the sensor connector to flatten its local gradient.
+status: active
+origin: research:interface-in-1
+level: topology
+envelope:
+  dt_c: {max: 10}
+  err_rti_mv: {max: 0.05}
+maturity: approved
+generalizes: []
+envelope_note: >-
+  The differential error is the Seebeck coefficient times the temperature
+  DIFFERENCE between the two input junctions, so the dim is the gradient
+  across the pair, not the ambient - the source states that shifting all
+  junctions equally changes nothing. Bounded at 10 degC junction-to-junction
+  because the vendor linearizes the Seebeck response only over small ranges
+  (its stated example is +-10 degC); beyond that the coefficient itself
+  moves. Bounded at 50 uV of referred-to-input error budget: below tens of
+  microvolts this term is a live budget line, above it offset and gain
+  drift dominate.
+verification: {by: "second-reader", date: "2026-08-16", note: "All five cited pages of 01258b re-read; all hold. p2: Seebeck coefficients on PCBs typically, but not always, below +-100 uV/degC; Equation 1; Figure 3 shows four junctions of an SMD resistor at a uniform +125 degC at 14/-5/5/-14 mV summing to zero, with the constant-temperature note quoted verbatim. p3 Figure 4: 1206, +125.0 to +126.2 degC at a 10 degC/in gradient, junction voltages 14.000/-5.001/5.011/-14.048 mV, total -38 uV - exact. p4: the inputs to an op amp should connect to the same materials, verbatim, plus Figure 6 resistors aligned with constant-temperature contour lines. p16: bench tests saw +-1 uV to +-2 uV due to the IC socket, do not use sockets for critical components. p17 callouts 2/3a/4: 0805 parts, arranged so that their thermoelectric voltages cancel, and metal fill connected to the ground plane minimizes thermal gradients at the cold junction connector. Specifically checked the known weak point: the record does NOT reproduce Table 1, whose values p2 itself calls arbitrary illustrative values, and invents no coefficient for the copper/tin/steel screw stack - it carries only the +-100 uV/degC bound and the -38 uV worked gradient case. Envelope +-10 degC is a real vendor statement but lives on p1 (response can be linearized over small temperature ranges, e.g. +-10 degC), which the record does not list as a source."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

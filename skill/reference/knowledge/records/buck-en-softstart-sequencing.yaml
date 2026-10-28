@@ -1,0 +1,52 @@
+id: buck-en-softstart-sequencing
+classes: [sequencing]
+applies:
+  topologies: [buck]
+  packages: []
+  interfaces: []
+rule: null
+prose: >
+  Check the EN pin's OWN behavior before adding parts: many parts auto-start
+  (AP63203: internal 1.5 uA pull-up - tie to VIN or float; adding a divider
+  is wasted parts). When EN is used as a UVLO divider, mind the two traps
+  the sbuck run hit: a narrow hysteresis gap can force a divider into the
+  mA-burn regime via the part's own equations, and hysteresis smaller than
+  the input CABLE DROP at full load motorboats (start -> sag -> stop ->
+  recover). Soft-start time sets the output-cap inrush as seen by the
+  source. Single-rail boards rarely need sequencing; multi-rail: state the
+  order requirement or "none" explicitly in power.md. Three facts from a
+  precision-EN part (LMR33630) invert the auto-start case: EN may be "Do not
+  float" with no internal pull-up (0.2 nA leakage), so tie it to VIN or
+  divide it; a fixed internal soft-start (2.9-6 ms, no SS pin) makes output
+  inrush a derived number, about C_OUT * Vout / t_SS on top of the load;
+  and a UVLO divider's hysteresis is a fixed FRACTION of turn-on,
+  Voff = Von * (1 - Ven_hys/Ven_h), so the window shrinks with Vin.
+sources:
+  - {file: boards/usb-buck/research/power.md, section: s6 (EN/soft-start)}
+  - {file: boards/sbuck-5v3a/architecture/blocks.md, section: s4 (UVLO divider pathology)}
+  - {file: reference/knowledge/sources/lmr33630.pdf, page: 5, section: "Table 6-1 Pin Functions, EN row: Do not float"}
+  - {file: reference/knowledge/sources/lmr33630.pdf, page: 7, section: "7.5 ENABLE block: precision thresholds, 0.2 nA leakage"}
+  - {file: reference/knowledge/sources/lmr33630.pdf, page: 8, section: "7.5 SOFT START: t_SS 2.9/4/6 ms, no SS pin"}
+  - {file: reference/knowledge/sources/lmr33630.pdf, page: 13, section: "8.3.2 Enable and Start-up"}
+  - {file: reference/knowledge/sources/lmr33630.pdf, page: 14, section: "Figures 8-3 and 8-4: precision enable, start-up capture"}
+  - {file: reference/knowledge/sources/lmr33630.pdf, page: 24, section: "9.2.2.10 External UVLO, Equation 10"}
+status: active
+origin: migration:topologies/buck (T6 2026-08-06, three shipped runs)
+
+# --- schema v2 governance (U14 backfill, owner-ruled 2026-08-15) ---
+level: principle
+maturity: approved
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >
+    Principle, no envelope: read the enable pin's OWN behaviour before
+    adding parts, keep UVLO hysteresis wider than the source droop it must
+    ride out, and remember soft-start sets the inrush the source sees. True
+    of any enable/UVLO input on any part; nothing here varies with the
+    buck's operating point. Re-approved 2026-10-04 by perms on the owner's
+    standing redirect (#ai-ee 1791102051.529859), U22 Q1, not the owner's own
+    ruling: bb-buck's buck-precision-en-fixed-softstart folded in (do-not-
+    float EN, fixed soft-start inrush, hysteresis as a fraction of turn-on),
+    six LMR33630 sources added; still a principle. First approved by the
+    owner 2026-08-15.

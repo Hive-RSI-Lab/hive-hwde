@@ -1,0 +1,73 @@
+id: sar-adc-high-z-node-vs-digital-aggressors
+classes: [emi]
+applies:
+  topologies: [sar-adc]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  sensitive_nodes: "REF, +IN, -IN - highest impedance, and most sensitive DURING the conversion"
+  coupling_model: "C = w * L * eo * er / d between two side-by-side traces, where w is the trace THICKNESS (copper height, typ 0.003 mm), L the parallel run and d the gap; I = C * dV/dt into the high-Z node"
+  design_variables: "parallel run length L, separation d, and the aggressor's edge rate - w comes from the stackup, not from routing"
+  routing: "keep +IN/-IN/REF short, never parallel to DCLOCK/DOUT/CS"
+  zoning: "digital by the connector, analog furthest from it; buffer the bus for a high-resolution SAR"
+prose: >
+  The converter's most sensitive nodes are its highest-impedance ones, and
+  they are most sensitive exactly while it converts. AN688 p.4: "the voltage
+  reference input pin to the analog to digital converter is most sensitive
+  while a conversion is occurring", and the IN+/IN- terminals "are also
+  sensitive to injected noise". Its fig 7 makes the coupling computable: two
+  side-by-side traces form a PCB capacitor C = w * L * eo * er / d, and a
+  switching neighbour injects I = C * dV/dt into the high-impedance node.
+  Read the legend exactly: w is "thickness of PCB trace" (the copper's
+  height, typ 0.003 mm, arrow on the trace's vertical face), L the parallel
+  run, d the gap - the coupled area is thickness x length, so the ROUTING
+  levers are L, d and the aggressor's edge rate, while w comes from the
+  stackup and is no lever at all. What follows: keep +IN, -IN and REF short;
+  never run them parallel to DCLOCK, DOUT or CS; digital zone by the
+  connector, analog furthest away (fig 2b), bus buffered for a
+  high-resolution SAR. The size of the target is what makes this
+  cheap to violate: ADS8326 p.22 gives 38.15 uV per LSB at VREF = 2.5 V and
+  warns that with lower reference voltages "the converter is also more
+  sensitive to external sources of error, such as nearby digital signals and
+  electromagnetic interference", with < 50 uV pk-pk required on input and
+  reference; p.26 adds the timing - spikes from digital logic land inside the
+  comparator's decision windows.
+sources:
+  - file: reference/knowledge/sources/00688b.pdf
+    page: 4
+    note: "Signal Traces: keep traces short; input terminals of analog devices are the high-impedance ones; 'the voltage reference input pin to the analog to digital converter is most sensitive while a conversion is occurring' and IN+/IN- are also sensitive to injected noise. Fig 7 (3D drawing of two side-by-side traces on a substrate): C = w L eo er / d pF and I = C dV/dt into the high-impedance trace. Legend, read at 8x: w = thickness of PCB trace (typ 0.003 mm, arrow on the trace's vertical face), L = length of PCB trace (arrow along the run), d = distance between the two PCB traces, eo = 8.85e-12 F/m, er = substrate coating relative to air. The word 'width' does not appear"
+  - file: reference/knowledge/sources/00688b.pdf
+    page: 2
+    note: "Fig 2b zoning drawing - Digital block nearest the connector, a Digital Buffer strip, the A/D and Analog block furthest away - with the text 'the pure analog devices are furthest away from the digital devices to insure that switching noise is not coupled into the analog signal path'"
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 22
+    note: "REFERENCE INPUT: LSB = 38.15 uV at VREF 2.5 V; 'Due to the lower LSB size, the converter is also more sensitive to external sources of error, such as nearby digital signals and electromagnetic interference'; the quoted transition noise needs input and reference peak-to-peak noise below 50 uV"
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 26
+    note: "LAYOUT: the SAR architecture is sensitive to spikes on the power supply, reference and ground connections that occur just prior to latching the comparator output; such spikes originate from switching supplies, digital logic and high-power devices"
+status: active
+origin: "research:block-sar-adc-1"
+level: topology
+envelope:
+  error_budget_mv: {max: 20}
+maturity: approved
+generalizes: []
+envelope_note: >
+  What the rule scales with is what one LSB is worth against the error you
+  are allowed at the terminal. At a few millivolts total budget the LSB is
+  tens of microvolts, so a few hundred microvolts of injected charge is
+  already a visible slice of the budget and the separation, keepout and
+  zoning cost is earned. Above roughly 20 mV of allowed terminal error the
+  same coupling is noise you can afford to average away, and the layout
+  constraints stop paying for themselves - which is why coarse mixed-signal
+  boards get away with routing a clock beside the ADC input.
+verification: {by: "research-second-reader", date: "2026-08-16", note: "The w redefinition is correct at the source. Rendered 00688b p.4 fig 7 at 6.7x: the legend reads, verbatim, 'w = thickness of PCB trace / L = length of PCB trace / d = distance between the two PCB traces / eo = dielectric constant of air = 8.85 X 10-12 F/m / er = dielectric constant of substrate coating relative to air', and the drawing is a 3D view of TWO traces side by side on a substrate with a double-headed arrow labelled 'w (typ 0.003mm)' measuring the trace's VERTICAL height from substrate surface to trace top, L an arrow along the run and d a horizontal arrow across the gap. Formula C = w x L x eo x er / d pF as cited. The re-derivation follows from the source's own body text on the same page: 'the value of the capacitance between two traces is primarily dependent on the distance (d) between the traces and the distance that the two traces are in parallel (L)' - so L and d are the levers and w is a stackup constant, exactly as rule.design_variables now says. Full-text search of all 7 pages of AN688: 'width' occurs twice, both inside 'bandwidth', never as a trace dimension - the note's claim is right. Same search returns ZERO hits for 'right angle', 'right-angle', 'perpendicular' and '90 degree', so dropping 'cross at right angles' was the correct fix and nothing on ads8326 p.22 or p.26 restores it. Remaining citations verbatim: AN688 p.4 'the voltage reference input pin to the analog to digital converter is most sensitive while a conversion is occurring' with IN+/IN- also sensitive, and I = C dV/dt with dV/dt defined as the aggressor's transition; p.2 fig 2b rendered and matching (connector, Digital, Digital Buffer strip, Analog furthest); ads8326 p.22 38.15uV LSB at 2.5V, 'more sensitive to external sources of error, such as nearby digital signals and electromagnetic interference', <50uV pk-pk on input AND reference; p.26 on spikes just prior to latching the comparator. No orphaned source entry. Cannot refute."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

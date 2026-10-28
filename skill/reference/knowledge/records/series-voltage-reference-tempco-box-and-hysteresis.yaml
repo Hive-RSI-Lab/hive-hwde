@@ -1,0 +1,75 @@
+id: series-voltage-reference-tempco-box-and-hysteresis
+classes: [thermal]
+applies:
+  topologies: [series-voltage-reference]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  tempco_method: "box - ADI tests 3 points (-40, +25, +125 C); TI states box for the whole range"
+  box_equation: "TC_ppm_per_C = (Vmax - Vmin) / (Vnom * (Tmax - Tmin)) * 1e6"
+  convert_by: "TC_max * FULL specified span * VOUT - do not pro-rate to a narrower application range"
+  why_no_prorate: "curvature correction makes the drift curve non-linear; the box fixes limits, not shape or slope"
+  hysteresis_is: "a separate term the box does not contain, scaling with excursion, cycle 1 much larger than cycle 2"
+  enforced_by: null
+prose: >
+  A reference's ppm/C is a BOX, not a slope. ADI p29 gives the equation (see
+  rule.box_equation) for T1 = -40, T2 = +25, T3 = +125 C and says the part is
+  fully tested at exactly those three temperatures. TI REF70 p24 states the same
+  method and the consequence: the box "specifies limits for the temperature error
+  but does not specify the exact shape and slope", and drift "is expected to be
+  non-linear" because of curvature correction. So the honest conversion is
+  TC_max times the FULL specified span - SNAA320B p6 does exactly that, turning
+  6 ppm/C into 990 ppm over -40 to +125 C - and a narrower application window
+  buys nothing unless the vendor publishes a narrower-range number. ADI Fig 3
+  (p11) shows a real ADR4520 curve: the trace begins at -40 C at about 2.04800 V
+  (nothing is plotted at -50 C), peaks at about 2.04830 V near +5 C - BELOW room
+  temperature - sags to about 2.04795 V near +85 C, rises to a secondary
+  peak of about 2.04821 V near +110 C and ends about 2.04806 V at
+  +125 C. That is roughly 170 ppm p-p, about half of the 330 ppm its 2 ppm/C box
+  allows, and the shape is neither monotonic nor centred on 25 C - which is why
+  pro-rating a sub-range is guesswork. Thermal hysteresis is a separate,
+  non-recoverable term: ADI specs 50 ppm typ for +25/-40/+125/+25 (p3), its Fig 4
+  distribution (p11) runs one-sided to about -180 ppm, and TI REF35 p5 shows it
+  scales with excursion and cycle - 70 vs 20 ppm (cycles 1 and 2) for
+  -40..105 C, 50 vs 13 ppm for -40..85 C.
+sources:
+  - file: reference/knowledge/sources/1599556.pdf
+    page: 29
+    note: "Terminology: box-method TC equation with T1=-40, T2=+25, T3=+125 C, 'fully tested over three temperatures'; hysteresis equation (VOUT_25C - VOUT_TC)/VOUT_25C * 1e6; long-term stability defined at 60 C / 1000 h; line and load regulation 'account for the effects of self-heating' [ADI Rev 0, 2012, farnell.com mirror]"
+  - file: reference/knowledge/sources/ref70.pdf
+    page: 24
+    note: "Sec 8.5 Temperature Drift: box-method Eq 2 (VREF_MAX - VREF_MIN)/(VREF_25C * Temperature Range)*1e6, explicit statement that the box does not specify shape or slope and that drift is non-linear from curvature correction; Fig 8-14 output voltage vs free-air temperature; Sec 8.6 TJ = TA + PD*RthetaJA"
+  - file: reference/knowledge/sources/1599556.pdf
+    page: 11
+    note: "Fig 3 ADR4520 VOUT vs temperature, read at 5x (Rev 0 print): trace starts at -40 C at ~2.04800 V (nothing plotted at -50 C), peaks ~2.04830 V at about +5 C (below room temperature), minimum ~2.04795 V near +85 C, secondary peak ~2.04821 V near +110 C, ends ~2.04806 V at +125 C - about 170 ppm p-p against a 330 ppm box; Fig 4 hysteresis distribution one-sided, units spread from about -10 to -180 ppm"
+  - file: reference/knowledge/sources/ref35.pdf
+    page: 5
+    note: "Sec 6.5 table: output voltage hysteresis 70 ppm (25/-40/105/25 cycle 1) vs 20 ppm (cycle 2) and 50 ppm (25/-40/85/25 cycle 1) vs 13 ppm (cycle 2) - hysteresis scales with excursion and the first cycle dominates; TC 12 ppm/C max stated over -40 to 105 C"
+  - file: reference/knowledge/sources/snaa320b.pdf
+    page: 6
+    note: "Table 4-1: 6 ppm/C entered as 990 ppm '(40 C to 125 C)' - the ppm/C is multiplied by the full specified span, and post-calibration 1.2 ppm/C gives 198 ppm"
+status: active
+origin: research:block-series-voltage-reference-1
+level: topology
+envelope:
+  ambient_max_c: {min: -40, max: 125}
+maturity: approved
+generalizes: []
+envelope_note: >
+  Bounded by the temperature range the specification itself covers. Every number
+  this rule consumes - the box limits, the three test temperatures, the
+  hysteresis-per-cycle figures - exists only inside the datasheet's specified
+  range (-40 to +125 C for the parts read here, -40 to +105 C for the REF35 TC
+  grade). Outside it there is no box to convert and no tested curve, so the
+  arithmetic has no input and the rule stops applying rather than merely losing
+  accuracy.
+verification: {by: "second-reader", date: "2026-08-16", note: "ADI Fig 3 (p11) re-read at 9x and independently re-measured from the PDF vector path against tick-calibrated axes. Every shape claim now holds: the trace starts at -40 C at 2.04800 V with nothing plotted at -50 C, its maximum is 2.04831 V at about +5 C - below room temperature - a secondary peak of about 2.04822 V sits near +106 to +110 C, and it ends at 2.04806 V at +125 C. The peak-location error the earlier pass refuted is cured, and the non-monotonic, not-centred-on-25-C shape the record exists to govern is exactly what the page shows. Two graphical over-readings remain, neither of which changes a categorical claim: (a) the sag bottoms at 2.04798 to 2.04799 V in the +76 to +93 C region (the drawn path's own bounding box bottoms at 2.047985 V), not the 2.04795 V the prose and the p11 note give, so the true peak-to-peak is 0.00032 to 0.00033 V = 157 to 161 ppm rather than 'roughly 170 ppm' - 'about half of the 330 ppm box' is right either way; (b) Fig 4's populated bins are -160, -130, -100, -80, -40, -30 and -10 ppm, so the one-sided hysteresis distribution reaches -160 ppm, not the '-180 ppm' of the same note; the -200 to -170 stretch of that axis is empty. ADI p29 is verbatim: the box equation with T1 = -40 C, T2 = +25 C, T3 = +125 C, 'fully tested over three temperatures', the hysteresis equation, long-term stability defined at 60 C over 1000 hours, and line and load regulation that 'accounts for the effects of self-heating'. REF70 p24 Sec 8.5 is verbatim including 'The box method specifies limits for the temperature error but does not specify the exact shape and slope of the device under test' and the curvature-correction non-linearity sentence, plus Eq 2 and Fig 8-14. REF35 p5 does carry all four hysteresis rows on that page (70 and 20 ppm for 25/-40/105/25 cycles 1 and 2, 50 and 13 ppm for 25/-40/85/25) and TC 12 ppm/C max over -40 to 105 C. SNAA320B p6 shows 6 ppm/C entered as 990 ppm '(40 C to 125 C)' with the source's own typo, and 1.2 ppm/C as 198 ppm."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note. The ambient range is only where the parts
+    are characterised; kept narrow, not widened to a principle.

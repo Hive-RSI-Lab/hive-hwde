@@ -1,0 +1,1741 @@
+# The human-made board corpus (scripts/human_corpus.py, docs/human-corpus.md).
+# pin, fetch and label fill commit/licence/pcb, layers/kicad_version and
+# evidence; outcome and pair are a person's word and no pass rewrites them.
+boards:
+- id: egg-ldo-1000
+  url: https://github.com/Plaenkler/Egg_LDO_1000
+  commit: f91ce292fac771c3d597df6bb279bebf4ed85ce4
+  licence: BSD-3-Clause
+  licence_source: GitHub licence detection on Plaenkler/Egg_LDO_1000
+  domain: power
+  pcb: Egg_LDO_1000.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20240108
+  layers: 2
+  evidence:
+  - 2 GitHub release(s), latest v1.1.1
+- id: egg-ldo-250
+  url: https://github.com/Plaenkler/Egg_LDO_250
+  commit: 7b009505f8d64f40453c86598f2cc25acd7b0697
+  licence: BSD-3-Clause
+  licence_source: GitHub licence detection on Plaenkler/Egg_LDO_250
+  domain: power
+  pcb: Egg_LDO_250.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20240108
+  layers: 2
+  evidence:
+  - 3 GitHub release(s), latest 1.3.6
+- id: tp4056-power-path
+  url: https://github.com/DoImant/TP4056-Power-Path-PCB
+  commit: 70636f5a07e788547c378111c31cbf150b7c1de7
+  licence: CC-BY-SA-4.0
+  licence_source: GitHub licence detection on DoImant/TP4056-Power-Path-PCB
+  domain: power
+  pcb: TC4056-Bypass.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20211014
+  layers: 2
+  evidence: []
+- id: usbc-pd-reflow-plate
+  url: https://github.com/incend1um3/USB-C-PD-Reflow-Plate
+  commit: cdb72bbe5601b40cef5d6b0a06e30f09096cb202
+  licence: CERN-OHL-S-2.0
+  licence_source: GitHub licence detection on incend1um3/USB-C-PD-Reflow-Plate
+  domain: power
+  pcb: hardware/Reflow Plate Controller/Reflow Plate Controller.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20260206
+  layers: 4
+  evidence: []
+- id: atx12vo-5vsb-adapter
+  url: https://github.com/RandomDelta6/ATX12VO-5VSB-to-12VSB-Adapter
+  commit: 9f015184801110ff122520c622f585df7f1f8488
+  licence: CC-BY-SA-4.0
+  licence_source: GitHub licence detection on RandomDelta6/ATX12VO-5VSB-to-12VSB-Adapter
+  domain: power
+  pcb: 12VSB.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20221018
+  layers: 4
+  evidence: []
+- id: led-driver-9w
+  url: https://github.com/RandomDelta6/9w_LED_Driver_PCB
+  commit: e03c52eb1c991fb13dbe74f1db9665f855ca18bd
+  licence: CC-BY-SA-4.0
+  licence_source: GitHub licence detection on RandomDelta6/9w_LED_Driver_PCB
+  domain: power
+  pcb: 9W LED driver.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20221018
+  layers: 2
+  evidence: []
+- id: bratwurst-power
+  url: https://github.com/Qeteshpony/BratwurstPower
+  commit: 0db7d3d3a7f78dc4896a8fd6fbc16997deb4b25b
+  licence: BSD-2-Clause
+  licence_source: GitHub licence detection on Qeteshpony/BratwurstPower
+  domain: power
+  pcb: pcb/BratwurstPower.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20240108
+  layers: 4
+  evidence:
+  - 3 GitHub release(s), latest v2.1.0
+- id: xt30-power-module
+  url: https://github.com/stephendade/XT30PowerModule
+  commit: 757916f6520fed77a09273ee5f03ebc3c515dccd
+  licence: CERN-OHL-W-2.0
+  licence_source: GitHub licence detection on stephendade/XT30PowerModule
+  domain: power
+  pcb: XT30PowerV2.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20240108
+  layers: 2
+  evidence: []
+- id: soleil-power
+  url: https://github.com/protolux-electronics/soleil_hardware
+  commit: 8c7c922c1e5248b8808cf1ac2964644eca952a06
+  licence: CERN-OHL-P-2.0
+  licence_source: GitHub licence detection on protolux-electronics/soleil_hardware
+  domain: power
+  pcb: soleil.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20241229
+  layers: 4
+  evidence:
+  - 2 GitHub release(s), latest v0.3
+- id: type-c-recessed
+  url: https://github.com/Jana-Marie/type-c-recessed
+  commit: 1a46db05b3a650edfdb58e724d16d166f2e59afe
+  licence: CERN-OHL-S-2.0
+  licence_source: GitHub licence detection on Jana-Marie/type-c-recessed
+  domain: power
+  pcb: hardware files/type-c_recessed.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20240108
+  layers: 2
+  evidence: []
+- id: libresolar-bms-c1
+  url: https://github.com/LibreSolar/bms-c1
+  commit: 0ca09706f49906bdc73f6ccf99635de349d47474
+  licence: CERN-OHL-W-2.0
+  licence_source: README.md "License" section and LICENCE file in LibreSolar/bms-c1
+  domain: power
+  pcb: kicad/bms-c1.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20241229
+  layers: 4
+  evidence:
+  - 'issue #67 (open): Short-circuit protection behavior and results - https://github.com/LibreSolar/bms-c1/issues/67'
+- id: placebo-stm32g0
+  url: https://github.com/dotcypress/placebo
+  commit: c5da1b37fa3adf2bd180505f552df92d45fefc87
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on dotcypress/placebo
+  domain: mcu-usb
+  pcb: placebo.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20221018
+  layers: 2
+  evidence: []
+- id: atsamd20-breakout
+  url: https://github.com/elevendroids/atsamd20-breakout
+  commit: 923de8305832234870665db88a55ea7e3e896a9a
+  licence: CC-BY-SA-4.0
+  licence_source: GitHub licence detection on elevendroids/atsamd20-breakout
+  domain: mcu-usb
+  pcb: atsamd20-breakout.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20211014
+  layers: 2
+  evidence: []
+- id: samd21e-breakout
+  url: https://github.com/mitsake/samd21e-breakout
+  commit: d1896ddeb5ca99c3c2d1348e588ed9c6b477171e
+  licence: CC-BY-SA-4.0
+  licence_source: GitHub licence detection on mitsake/samd21e-breakout
+  domain: mcu-usb
+  pcb: hardware/samd21e_breakout.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20211014
+  layers: 2
+  evidence: []
+- id: rp-micro
+  url: https://github.com/siderakb/rp-micro
+  commit: a7baf36025b974ed55b4676ad1e9f7e79f16bba1
+  licence: CERN-OHL-P-2.0
+  licence_source: GitHub licence detection on siderakb/rp-micro
+  domain: mcu-usb
+  pcb: hardware/rp-micro.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20211014
+  layers: 2
+  evidence:
+  - 2 GitHub release(s), latest v1.1.0
+- id: usb-i2c-bridge
+  url: https://github.com/Jana-Marie/USB-I2C-BRIDGE
+  commit: a772e442bc656c8fbef76fd51cd5546343f9e1ef
+  licence: CERN-OHL-S-2.0
+  licence_source: GitHub licence detection on Jana-Marie/USB-I2C-BRIDGE
+  domain: mcu-usb
+  pcb: USB-I2C-BRIDGE.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20211014
+  layers: 2
+  evidence:
+  - 1 GitHub release(s), latest v1.0.0
+- id: pdk-prog
+  url: https://github.com/brainsmoke/pdk_prog
+  commit: 7894067fdba0543e6bf5d610ac130de6e14004c6
+  licence: CC-BY-4.0
+  licence_source: GitHub licence detection on brainsmoke/pdk_prog
+  domain: mcu-usb
+  pcb: pcb/pdk_prog/project.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20241229
+  layers: 2
+  evidence: []
+- id: rp2040-dmxsun
+  url: https://github.com/OpenLightingProject/rp2040-dmxsun
+  commit: f3b1749c982da85770dc9a11eada035404edc25d
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on OpenLightingProject/rp2040-dmxsun
+  domain: mcu-usb
+  pcb: hardware/baseboard_4slots/baseboard_4slots.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20240108
+  layers: 2
+  evidence: []
+- id: rp2040-dmxsun-iso-io
+  url: https://github.com/OpenLightingProject/rp2040-dmxsun
+  commit: f3b1749c982da85770dc9a11eada035404edc25d
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on OpenLightingProject/rp2040-dmxsun
+  domain: analog
+  pcb: hardware/ioboard_4ports_isolated/ioboard_4ports_isolated.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20240108
+  layers: 2
+  evidence: []
+  notes: isolated 4-port DMX I/O board of rp2040-dmxsun
+- id: buspirate5-rev10
+  url: https://github.com/DangerousPrototypes/BusPirate5-hardware
+  commit: acb9cd667ce608e7eb560a663938787343b424c4
+  licence: MIT
+  licence_source: GitHub licence detection on DangerousPrototypes/BusPirate5-hardware
+  domain: mcu-usb
+  pcb: bus_pirate_pcb/development/5-REV10-PFET-bug/BusPirate-5-rev10.kicad_pcb
+  outcome:
+    label: fixed-in-later-rev
+    source: directory bus_pirate_pcb/development/5-REV10-PFET-bug at the pinned commit; REV10A is the
+      released revision
+  kicad_version: 20221018
+  layers: 4
+  evidence: []
+  pair:
+    with: buspirate5-rev10a
+    role: before
+    note: REV10 has a P-FET bug, named in its directory; REV10A replaces it
+- id: buspirate5-rev10a
+  url: https://github.com/DangerousPrototypes/BusPirate5-hardware
+  commit: acb9cd667ce608e7eb560a663938787343b424c4
+  licence: MIT
+  licence_source: GitHub licence detection on DangerousPrototypes/BusPirate5-hardware
+  domain: mcu-usb
+  pcb: bus_pirate_pcb/5-REV10A/REV10a.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20221018
+  layers: 4
+  evidence: []
+  pair:
+    with: buspirate5-rev10
+    role: after
+    note: fixes the REV10 P-FET bug
+- id: glasgow-revc3
+  url: https://github.com/GlasgowEmbedded/glasgow
+  commit: 50c97c42965612ab28562748f939988a754fd827
+  licence: 0BSD
+  licence_source: GitHub licence detection on GlasgowEmbedded/glasgow
+  domain: mcu-usb
+  pcb: hardware/boards/glasgow/revC3/glasgow.kicad_pcb
+  outcome:
+    label: product
+    source: Crowd Supply campaign https://www.crowdsupply.com/1bitsquared/glasgow shipped revC3
+  kicad_version: 20221018
+  layers: 4
+  evidence:
+  - 'issue #1302 (open): revD1 errata - https://github.com/GlasgowEmbedded/glasgow/issues/1302'
+- id: glasgow-revd0
+  url: https://github.com/GlasgowEmbedded/glasgow
+  commit: 50c97c42965612ab28562748f939988a754fd827
+  licence: 0BSD
+  licence_source: GitHub licence detection on GlasgowEmbedded/glasgow
+  domain: mcu-usb
+  pcb: hardware/boards/glasgow/revD0/glasgow.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20260206
+  layers: 6
+  evidence:
+  - 'issue #1302 (open): revD1 errata - https://github.com/GlasgowEmbedded/glasgow/issues/1302'
+  notes: revD0 precedes revD1; no record says what revD1 fixed, so not a labelled pair
+- id: glasgow-revd1
+  url: https://github.com/GlasgowEmbedded/glasgow
+  commit: 50c97c42965612ab28562748f939988a754fd827
+  licence: 0BSD
+  licence_source: GitHub licence detection on GlasgowEmbedded/glasgow
+  domain: mcu-usb
+  pcb: hardware/boards/glasgow/revD1/glasgow.kicad_pcb
+  outcome:
+    label: errata
+    source: https://github.com/GlasgowEmbedded/glasgow/issues/1302 (revD1 errata, open)
+  kicad_version: 20260206
+  layers: 6
+  evidence:
+  - 'issue #1302 (open): revD1 errata - https://github.com/GlasgowEmbedded/glasgow/issues/1302'
+- id: usbc-cable-tester
+  url: https://github.com/Qeteshpony/USB-C-Cable-Tester
+  commit: b30a134b17b60e51b0f61dec06990cf3eedaaace
+  licence: BSD-2-Clause
+  licence_source: GitHub licence detection on Qeteshpony/USB-C-Cable-Tester
+  domain: mcu-usb
+  pcb: pcb/USB-Cable-Tester.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20221018
+  layers: 2
+  evidence:
+  - 1 GitHub release(s), latest v1.0.0
+- id: gulu-esp32c3-epaper
+  url: https://github.com/Plaenkler/Gulu_ESP32-C3_ePaper
+  commit: d0042d3d2785dde786eeaf29a6713dfa21964c64
+  licence: BSD-3-Clause
+  licence_source: GitHub licence detection on Plaenkler/Gulu_ESP32-C3_ePaper
+  domain: mcu-usb
+  pcb: Gulu_ESP32-C3_ePaper.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20240108
+  layers: 2
+  evidence:
+  - 2 GitHub release(s), latest 2.0.1
+- id: esp32-poe-m1
+  url: https://github.com/OLIMEX/ESP32-POE
+  commit: deb38a377d50eadb04ddc7118a17a5ae58b1ee53
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on OLIMEX/ESP32-POE
+  domain: mcu-usb
+  pcb: HARDWARE/ESP32-PoE-hardware-revision-M1/ESP32-PoE_Rev_M1.kicad_pcb
+  outcome:
+    label: product
+    source: OLIMEX sells the ESP32-PoE https://www.olimex.com/Products/IoT/ESP32/ESP32-POE/ (which revision
+      ships is not recorded)
+  kicad_version: 20221018
+  layers: 4
+  evidence:
+  - 'issue #32 (closed): Example ESP32_PoE_Ethernet_Arduino does not connect (last event SYSTEM_EVENT_ROC_DONE
+    ) ES - https://github.com/OLIMEX/ESP32-POE/issues/32'
+  - 'issue #31 (closed): Ground Issue with PoE on Rev I-Industrial - https://github.com/OLIMEX/ESP32-POE/issues/31'
+  - 'issue #16 (closed): Ethernet initialization error on Olimex ESP32-PoE Rev E - https://github.com/OLIMEX/ESP32-POE/issues/16'
+- id: esp32-poe-m2
+  url: https://github.com/OLIMEX/ESP32-POE
+  commit: deb38a377d50eadb04ddc7118a17a5ae58b1ee53
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on OLIMEX/ESP32-POE
+  domain: mcu-usb
+  pcb: HARDWARE/ESP32-PoE-hardware-revision-M2/ESP32-PoE_Rev_M2.kicad_pcb
+  outcome:
+    label: product
+    source: OLIMEX sells the ESP32-PoE https://www.olimex.com/Products/IoT/ESP32/ESP32-POE/ (which revision
+      ships is not recorded)
+  kicad_version: 20221018
+  layers: 4
+  evidence:
+  - 'issue #32 (closed): Example ESP32_PoE_Ethernet_Arduino does not connect (last event SYSTEM_EVENT_ROC_DONE
+    ) ES - https://github.com/OLIMEX/ESP32-POE/issues/32'
+  - 'issue #31 (closed): Ground Issue with PoE on Rev I-Industrial - https://github.com/OLIMEX/ESP32-POE/issues/31'
+  - 'issue #16 (closed): Ethernet initialization error on Olimex ESP32-PoE Rev E - https://github.com/OLIMEX/ESP32-POE/issues/16'
+- id: thatmicpre
+  url: https://github.com/ojg/thatmicpre
+  commit: c9735275db939b22bd7b8fc5899793add46f3683
+  licence: CC-BY-SA-4.0
+  licence_source: GitHub licence detection on ojg/thatmicpre
+  domain: analog
+  pcb: rack/thatmicpre_v2.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20211014
+  layers: 2
+  evidence: []
+- id: micro-pico-synth
+  url: https://github.com/JordanAceto/micro-pico
+  commit: db0dd1ef577c030f92178ce4661d8089da9d8e99
+  licence: CC-BY-4.0
+  licence_source: GitHub licence detection on JordanAceto/micro-pico
+  domain: analog
+  pcb: main_pcb/kicad_6/micro_pico.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20211014
+  layers: 4
+  evidence:
+  - 2 GitHub release(s), latest v1.0
+- id: current-probe
+  url: https://github.com/Qeteshpony/Current-Probe
+  commit: a5f5ff8346d79c9b314818ef98c800c1141000c0
+  licence: BSD-2-Clause
+  licence_source: GitHub licence detection on Qeteshpony/Current-Probe
+  domain: analog
+  pcb: pcb/Current-Probe.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20221018
+  layers: 2
+  evidence:
+  - 2 GitHub release(s), latest v1.1.0
+- id: thunderscope
+  url: https://github.com/EEVengers/ThunderScope
+  commit: bbe8f30e970db58a71a1da1956026ce1308f5c80
+  licence: MIT
+  licence_source: GitHub licence detection on EEVengers/ThunderScope
+  domain: analog
+  pcb: Hardware/Thunderscope_Rev5.3/Thunderscope_Rev5.3.kicad_pcb
+  outcome:
+    label: errata
+    source: Rev 5.3 issues https://github.com/EEVengers/ThunderScope/issues/431 (+3V3_ACQ current draw),
+      /433 (ADC output resistors), /434 (LDO replacement)
+  kicad_version: 20241229
+  layers: 6
+  evidence:
+  - 'issue #434 (closed): Replace TPS7A2033PDBVR LDOs with NCP161ASN330T1G on Rev 5.3 - https://github.com/EEVengers/ThunderScope/issues/434'
+  - 'issue #433 (closed): Change ADC output resistors from 10R to 4.99R on Rev 5.3 - https://github.com/EEVengers/ThunderScope/issues/433'
+  - 'issue #432 (closed): Tune ADC Output Resistors on Rev 5.3 - https://github.com/EEVengers/ThunderScope/issues/432'
+  - 'issue #431 (closed): Rev 5.3 +3V3_ACQ Current Draw - https://github.com/EEVengers/ThunderScope/issues/431'
+  - 'issue #430 (closed): Rev 5.3 Performance Validation - https://github.com/EEVengers/ThunderScope/issues/430'
+  - 'issue #425 (closed): Increment HWID on Rev 5.3 - https://github.com/EEVengers/ThunderScope/issues/425'
+  - 'issue #423 (closed): Change R1021 to 15R and C1058 to 18pF for Rev 5.3 - https://github.com/EEVengers/ThunderScope/issues/423'
+  - 'issue #417 (closed): Rev 5.2 End to End Bandwidth Lower Than Expected - https://github.com/EEVengers/ThunderScope/issues/417'
+  - 'issue #415 (closed): Change R1037 from 0R for Rev 5.3 - https://github.com/EEVengers/ThunderScope/issues/415'
+  - 'issue #414 (closed): Rev 5.2 Calibration Report - https://github.com/EEVengers/ThunderScope/issues/414'
+  - 'issue #413 (closed): Improve 3D Model Portability For Rev 5.3 - https://github.com/EEVengers/ThunderScope/issues/413'
+  - 'issue #412 (closed): Change C1021 to 3pF for Rev 5.3 - https://github.com/EEVengers/ThunderScope/issues/412'
+- id: scan2000
+  url: https://github.com/PatrickBaus/SCAN2000
+  commit: 41fb4ee67ef8be336a642e199719f239d4784703
+  licence: CERN-OHL-W-2.0
+  licence_source: GitHub licence detection on PatrickBaus/SCAN2000
+  domain: analog
+  pcb: SCAN2000.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20240108
+  layers: 4
+  evidence:
+  - 3 GitHub release(s), latest 2.0.3
+- id: anthracite-fuzz
+  url: https://github.com/trope-oshw/anthracite
+  commit: 6614992f37ef91945056ec160385833c7d838b13
+  licence: CERN-OHL-S-2.0
+  licence_source: GitHub licence detection on trope-oshw/anthracite
+  domain: analog
+  pcb: hardware/bottom/anthracite-bottom.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20260206
+  layers: 4
+  evidence: []
+- id: usb2speakon
+  url: https://github.com/RainbowLabsDE/USB2Speakon
+  commit: 69c398a24398514b7fbed54ed7135db6eff4d0b0
+  licence: CERN-OHL-W-2.0
+  licence_source: GitHub licence detection on RainbowLabsDE/USB2Speakon
+  domain: analog
+  pcb: USB2Speakon_PCB/USB2Speakon_PCB.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20240108
+  layers: 4
+  evidence: []
+- id: nodepilot
+  url: https://github.com/tushroy/NodePilot
+  commit: 3dc6193e7c2d3cd83d47a1502e95121f25e441ab
+  licence: CC-BY-SA-4.0
+  licence_source: GitHub licence detection on tushroy/NodePilot
+  domain: analog
+  pcb: NodePilot.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20260206
+  layers: 2
+  evidence:
+  - 8 GitHub release(s), latest v5.3-575a46b
+- id: moco
+  url: https://github.com/ziteh/moco
+  commit: e0caae5762ac5f7731c79ccb5e8fe11ee3f4468e
+  licence: CERN-OHL-P-2.0
+  licence_source: GitHub licence detection on ziteh/moco
+  domain: motor
+  pcb: hardware/moco-bkd8316/moco-bkd8316.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20221018
+  layers: 2
+  evidence:
+  - 2 GitHub release(s), latest sc1_v1.1.1
+- id: moco-rd501
+  url: https://github.com/ziteh/moco
+  commit: e0caae5762ac5f7731c79ccb5e8fe11ee3f4468e
+  licence: CERN-OHL-P-2.0
+  licence_source: GitHub licence detection on ziteh/moco
+  domain: motor
+  pcb: hardware/moco-rd501/moco-rd501.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20221018
+  layers: 4
+  evidence:
+  - 2 GitHub release(s), latest sc1_v1.1.1
+- id: mini-motor-controller
+  url: https://github.com/Jana-Marie/mini-motor-controller
+  commit: d8c1c296229caca3bbeba733bde94d9f0f1e931e
+  licence: CERN-OHL-S-2.0
+  licence_source: GitHub licence detection on Jana-Marie/mini-motor-controller
+  domain: motor
+  pcb: mini-motor-controller.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20241229
+  layers: 2
+  evidence:
+  - 1 GitHub release(s), latest v1.0.0
+- id: bt-dc-motor-board
+  url: https://github.com/VinnyCordeiro/BT_DC_motor_board
+  commit: b8736f8c4bbb32d2542e4236d1fa0126703e25d7
+  licence: CERN-OHL-S-2.0
+  licence_source: GitHub licence detection on VinnyCordeiro/BT_DC_motor_board
+  domain: motor
+  pcb: BoxTurtle_DC_motors_RPiPico.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20260206
+  layers: 4
+  evidence: []
+- id: openesc-30x30
+  url: https://github.com/OpenDrone-hw/OpenESC-30x30
+  commit: 682268f901f6da70d644b668c8a006ce5e552405
+  licence: CERN-OHL-S-2.0
+  licence_source: GitHub licence detection on OpenDrone-hw/OpenESC-30x30
+  domain: motor
+  pcb: hardware/4in1.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20260206
+  layers: 6
+  evidence:
+  - 4 GitHub release(s), latest rev3.3.1
+- id: mighty-micro-motors
+  url: https://github.com/techy-robot/Mighty-Micro-Motors
+  commit: 8bfaabd3ca5a2f096687f65f07bc4e7a446bae65
+  licence: CERN-OHL-S-2.0
+  licence_source: GitHub licence detection on techy-robot/Mighty-Micro-Motors
+  domain: motor
+  pcb: Kicad/DRV8311 on motor driver/DRV8311 on motor driver.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20240108
+  layers: 4
+  evidence:
+  - 4 GitHub release(s), latest v0.4.0
+- id: rf-prototype-boards
+  url: https://github.com/maelh/radio-frequency-prototype-boards
+  commit: 9814f4fe23854bb84d5c0a55540f08d1cc16084b
+  licence: BSD-3-Clause
+  licence_source: GitHub licence detection on maelh/radio-frequency-prototype-boards
+  domain: rf
+  pcb: RF_ProtoBoard/RF_ProtoBoard.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20221018
+  layers: 2
+  evidence:
+  - 1 GitHub release(s), latest v1.0.0
+- id: mountaineer
+  url: https://github.com/k0swe/mountaineer
+  commit: 0555552a2d3ea741fc4acc02a837dffa03b8e9bb
+  licence: CC-BY-4.0
+  licence_source: GitHub licence detection on k0swe/mountaineer
+  domain: rf
+  pcb: mountaineer.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20221018
+  layers: 2
+  evidence: []
+- id: beaglebone-lora-adapter
+  url: https://github.com/VioletEternity/BeagleBoneLoRaAdapter
+  commit: 867ef41c5f8e9a3f6fe07d36ad67582eeb33c7ba
+  licence: CERN-OHL-P-2.0
+  licence_source: GitHub licence detection on VioletEternity/BeagleBoneLoRaAdapter
+  domain: rf
+  pcb: BeagleBoneLoRaAdapter.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20211014
+  layers: 4
+  evidence: []
+- id: rf-wifi-bridge
+  url: https://github.com/KHit6/RF-WiFi-Bridge
+  commit: 4283ae0797d0e8c115bfc3a9f2dc484db330e891
+  licence: CERN-OHL-W-2.0
+  licence_source: GitHub licence detection on KHit6/RF-WiFi-Bridge
+  domain: rf
+  pcb: RF-Wifi-Bridge.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20241229
+  layers: 2
+  evidence: []
+- id: lorapowerbox
+  url: https://github.com/h0lad/LoRaPowerBox
+  commit: a8856c6bea8a582d830f1405b1dc2726c04a6852
+  licence: CERN-OHL-S-2.0
+  licence_source: GitHub licence detection on h0lad/LoRaPowerBox
+  domain: rf
+  pcb: pcb/LoraPowerBox.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20260206
+  layers: 4
+  evidence:
+  - 3 GitHub release(s), latest v0.0.3
+- id: s-band-antenna
+  url: https://github.com/ICDT-Inatel-Cubesat-Design-Team/S-Band-Antenna
+  commit: 8ef9c60349d1e7b192a29aaf6a1d7324e3d6b010
+  licence: CERN-OHL-W-2.0
+  licence_source: GitHub licence detection on ICDT-Inatel-Cubesat-Design-Team/S-Band-Antenna
+  domain: rf
+  pcb: hardware/PCB/Antenna.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20260206
+  layers: 2
+  evidence:
+  - 1 GitHub release(s), latest v1.0
+- id: ocxo-breakout
+  url: https://github.com/Quantum-Electronic-Devices/OCXO_breakout
+  commit: 2fafd619b224bf2c871ba3aeb69fa98eeb2d5a75
+  licence: CERN-OHL-W-2.0
+  licence_source: GitHub licence detection on Quantum-Electronic-Devices/OCXO_breakout
+  domain: rf
+  pcb: ocxo_breakout.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20241229
+  layers: 4
+  evidence:
+  - 1 GitHub release(s), latest 1.0.0
+- id: jetson-orin-baseboard
+  url: https://github.com/antmicro/jetson-orin-baseboard
+  commit: 34f0e7f5fbca441191e20ed55d93cf8614e12bed
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on antmicro/jetson-orin-baseboard
+  domain: 4-layer
+  pcb: jetson-orin-baseboard.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20240108
+  layers: 8
+  evidence:
+  - 5 GitHub release(s), latest rev.1.3.4
+  - 'issue #26 (closed): Jetson Orin Nano module does not boot or release SYS_RESET* on Antmicro carrier
+    board (Rev - https://github.com/antmicro/jetson-orin-baseboard/issues/26'
+- id: tokay-lite
+  url: https://github.com/maxlab-io/tokay-lite-pcb
+  commit: fd04d94a332d745ad4c09e4e2da0fbb61fde3218
+  licence: CERN-OHL-P-2.0
+  licence_source: GitHub licence detection on maxlab-io/tokay-lite-pcb
+  domain: 4-layer
+  pcb: ai-camera-rev3.2/ai-camera-rev3.2.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20240108
+  layers: 4
+  evidence: []
+- id: tokay-lite-rev3.1
+  url: https://github.com/maxlab-io/tokay-lite-pcb
+  commit: fd04d94a332d745ad4c09e4e2da0fbb61fde3218
+  licence: CERN-OHL-P-2.0
+  licence_source: GitHub licence detection on maxlab-io/tokay-lite-pcb
+  domain: 4-layer
+  pcb: ai-camera-rev3.1/ai-camera-rev3.1.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20221018
+  layers: 4
+  evidence: []
+  notes: earlier revision of tokay-lite (rev3.2); no record says what rev3.2 fixed, so not a labelled
+    pair
+- id: ottercast-audio-v2
+  url: https://github.com/Ottercast/OtterCastAudioV2
+  commit: 199395d7249aaf12432e42bff828dd665546d6a4
+  licence: MIT
+  licence_source: GitHub licence detection on Ottercast/OtterCastAudioV2
+  domain: 4-layer
+  pcb: OtterCastAudioV2.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20221018
+  layers: 4
+  evidence:
+  - 'issue #12 (open): Integrated circuit shortage or obsolete parts management - https://github.com/Ottercast/OtterCastAudioV2/issues/12'
+- id: mackerel-68k
+  url: https://github.com/crmaykish/mackerel-68k
+  commit: 50786ed64897e037c57989c3322f02ea375584b7
+  licence: MIT
+  licence_source: GitHub licence detection on crmaykish/mackerel-68k
+  domain: 4-layer
+  pcb: hardware/mackerel-10-v1/mackerel-10-v1.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20240108
+  layers: 4
+  evidence:
+  - 3 GitHub release(s), latest bootloader-v0.10.0
+- id: etherkraken
+  url: https://github.com/karmakrafts/EtherKraken
+  commit: e4b26c1a6ff5f55719537718233b885f7e9387cf
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on karmakrafts/EtherKraken
+  domain: 4-layer
+  pcb: kicad/EtherKraken.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  kicad_version: 20260410
+  layers: 2
+  evidence: []
+  excluded: board file version 20260410 is a KiCad nightly newer than KiCad 10
+- id: moteus-c1-r1.1
+  url: https://github.com/mjbots/moteus
+  domain: motor
+  pcb: hw/c1/r1.1/moteus_c1.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on mjbots/moteus
+  commit: 8f747f4ac448d117c1390b77ca2d80c27e751a56
+  kicad_version: 20221018
+  layers: 4
+  evidence:
+  - 20 GitHub release(s), latest rust/v0.5.5
+- id: moteus-c1-r1.2
+  url: https://github.com/mjbots/moteus
+  domain: motor
+  pcb: hw/c1/r1.2/moteus_c1.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on mjbots/moteus
+  commit: 8f747f4ac448d117c1390b77ca2d80c27e751a56
+  kicad_version: 20221018
+  layers: 4
+  evidence:
+  - 20 GitHub release(s), latest rust/v0.5.5
+- id: moteus-x1-r1
+  url: https://github.com/mjbots/moteus
+  domain: motor
+  pcb: hw/x1/r1/moteus_x1.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on mjbots/moteus
+  commit: 8f747f4ac448d117c1390b77ca2d80c27e751a56
+  kicad_version: 20240108
+  layers: 6
+  evidence:
+  - 20 GitHub release(s), latest rust/v0.5.5
+- id: rp2040-motor-driver
+  url: https://github.com/Twisted-Fields/rp2040-motor-controller
+  licence: CERN-OHL-P-2.0
+  licence_source: LICENSE in Twisted-Fields/rp2040-motor-controller ("licensed under CERN-OHL-P", 2022)
+  domain: motor
+  pcb: driver_module/driver_module.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  commit: d51dc5441ad7371df24abd6f7f8783ccf11461ff
+  kicad_version: 20240108
+  layers: 4
+  evidence: []
+- id: rp2040-motor-base
+  url: https://github.com/Twisted-Fields/rp2040-motor-controller
+  licence: CERN-OHL-P-2.0
+  licence_source: LICENSE in Twisted-Fields/rp2040-motor-controller ("licensed under CERN-OHL-P", 2022)
+  domain: motor
+  pcb: RP2040_base/RP2040_base.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  commit: d51dc5441ad7371df24abd6f7f8783ccf11461ff
+  kicad_version: 20240108
+  layers: 4
+  evidence: []
+- id: pcb-motor-stator
+  url: https://github.com/ziteh/pcb-motor
+  domain: motor
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on ziteh/pcb-motor
+  commit: dafc018e6b77dd2d10211f0d1bc417b4f86c06b2
+  pcb: pcb-stator-radial/pcb-stator-radial.kicad_pcb
+  kicad_version: 20221018
+  layers: 2
+  evidence: []
+- id: bldc-motor-power
+  url: https://github.com/brenocq/bldc-motor
+  domain: motor
+  pcb: electronics/BLDCM-Power/BLDCM-Power.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on brenocq/bldc-motor
+  commit: b74fb1d7a4637e437ef5a33e78a36db7c28fac7e
+  kicad_version: 20241229
+  layers: 4
+  evidence:
+  - 1 GitHub release(s), latest electronics/v1.0
+- id: wisweep-driver
+  url: https://github.com/slimcdk/wisweep
+  domain: motor
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on slimcdk/wisweep
+  commit: f22ec65c9bee161bd84cd56751ced6f57ec399dd
+  pcb: electronics/driver-board.kicad_pcb
+  kicad_version: 20240108
+  layers: 4
+  evidence: []
+- id: dual-h-bridge
+  url: https://github.com/jayanta525/dual-h-bridge
+  domain: motor
+  pcb: h-bridge-controller.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on jayanta525/dual-h-bridge
+  commit: 3cec5351bed2b3bffda60d719217bca48c510c89
+  kicad_version: 20171130
+  layers: 2
+  excluded: board file version 20171130 predates KiCad 6
+- id: catsniffer
+  url: https://github.com/ElectronicCats/CatSniffer
+  licence: CERN-OHL-1.2
+  licence_source: LICENSE.md in ElectronicCats/CatSniffer (CERN Open Hardware Licence v1.2)
+  domain: rf
+  outcome:
+    label: product
+    source: store page https://electroniccats.com/store/catsniffer/ (linked from the README)
+  commit: 6da5050fefde59138fc11d9e2ecf7c0de36f3a22
+  pcb: hardware/CatSniffer.kicad_pcb
+  kicad_version: 20240108
+  layers: 4
+  evidence:
+  - 7 GitHub release(s), latest v3.3
+- id: bastwan
+  url: https://github.com/ElectronicCats/BastWAN
+  licence: CERN-OHL-1.2
+  licence_source: LICENSE in ElectronicCats/BastWAN (CERN Open Hardware Licence v1.2)
+  domain: rf
+  outcome:
+    label: product
+    source: store page https://electroniccats.com/store/bastwan/ (linked from the README)
+  commit: a7a20c527d667776def65a42b2737b9515827c59
+  pcb: Hardware/Bast_WAN.kicad_pcb
+  kicad_version: 20171130
+  layers: 4
+  excluded: board file version 20171130 predates KiCad 6
+- id: solar-meshtastic-node
+  url: https://github.com/h0lad/SolarMeshtasticNode
+  domain: rf
+  outcome:
+    label: ''
+    source: ''
+  licence: CERN-OHL-S-2.0
+  licence_source: GitHub licence detection on h0lad/SolarMeshtasticNode
+  commit: 84a856f61c059745d9ac1f0b26ea4f7c7c8f25a3
+  pcb: pcb/MeshtasticNode_BQ25185.kicad_pcb
+  kicad_version: 20260206
+  layers: 4
+  evidence:
+  - 11 GitHub release(s), latest v4.0.0
+- id: lora-testing-board
+  url: https://github.com/leonardoward/lora-development-boards
+  domain: rf
+  pcb: lora-testing-board/lora-testing-board.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on leonardoward/lora-development-boards
+  commit: 0a65d8f8f0af73456743d1f87d6a3e7ec5cda8b1
+  kicad_version: 20171130
+  layers: 2
+  excluded: board file version 20171130 predates KiCad 6
+- id: rf-frontend-4ch
+  url: https://github.com/JohnnyGOX17/4ch-RF-FE
+  domain: rf
+  pcb: 4ch_RF_FE_KiCad/4ch_RF_FE_KiCad.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on JohnnyGOX17/4ch-RF-FE
+  commit: e69f06d569a078e92df3398e9315fc2b1c2cf1c1
+  kicad_version: 20171130
+  layers: 4
+  excluded: board file version 20171130 predates KiCad 6
+- id: xl7105-breakout
+  url: https://github.com/mcauser/XL7105-SY-B-Breakout
+  domain: rf
+  pcb: kicad/XL7105-SY-B-Breakout.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on mcauser/XL7105-SY-B-Breakout
+  commit: 278564ea79ab0091712d9d59fd80ef3903cfd099
+  kicad_version: 4
+  layers: 2
+  excluded: board file version 4 predates KiCad 6
+- id: simple-sdr
+  url: https://github.com/pd0wm/simple-sdr
+  domain: rf
+  pcb: pcb/sdr.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on pd0wm/simple-sdr
+  commit: a632c25cba81e7b95857773b1e44b3333065eb43
+  kicad_version: 20171130
+  layers: 2
+  excluded: board file version 20171130 predates KiCad 6
+- id: mikoto
+  url: https://github.com/zhiayang/mikoto
+  domain: rf
+  pcb: mikoto.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on zhiayang/mikoto
+  commit: 86318f6c69495b8308354b6393d85229177b26ae
+  kicad_version: 20240108
+  layers: 4
+  evidence:
+  - 'issue #7 (closed): why short reset pin with a GPIO pin? - https://github.com/zhiayang/mikoto/issues/7'
+- id: m2-smart-iot-module
+  url: https://github.com/antmicro/m2-smart-iot-module
+  domain: rf
+  pcb: m2-smart-iot-module.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on antmicro/m2-smart-iot-module
+  commit: 1b68ecebda08485b42398bfb43df2368939bf9e3
+  kicad_version: 20171130
+  layers: 4
+  excluded: board file version 20171130 predates KiCad 6
+- id: lora-modem
+  url: https://github.com/wangyeee/OpenHardware
+  domain: rf
+  pcb: LoRaModem/LoRaModem.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: BSD-3-Clause
+  licence_source: GitHub licence detection on wangyeee/OpenHardware
+  commit: 4e725d69d7705a40a0cc4b638c63e90efd8188ed
+  kicad_version: 20171130
+  layers: 2
+  excluded: board file version 20171130 predates KiCad 6
+- id: tallytime
+  url: https://github.com/micro-henry/tallytime-hardware
+  domain: rf
+  outcome:
+    label: ''
+    source: ''
+  licence: CERN-OHL-S-2.0
+  licence_source: GitHub licence detection on micro-henry/tallytime-hardware
+  commit: 31e8794abc12e8fc7b8152a420ed52449ce1a3de
+  pcb: tallytime.kicad_pcb
+  kicad_version: 20240108
+  layers: 4
+  evidence: []
+- id: analog-toolkit
+  url: https://github.com/Jana-Marie/analog-toolkit
+  domain: analog
+  pcb: analog-toolkit.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: CERN-OHL-S-2.0
+  licence_source: GitHub licence detection on Jana-Marie/analog-toolkit
+  commit: c97bcc3512fb96a0b8f981e363db583b22aa6423
+  kicad_version: 20241229
+  layers: 4
+  evidence: []
+- id: teensy-eurorack
+  url: https://github.com/newdigate/teensy-eurorack
+  domain: analog
+  pcb: hardware/boards/teensy-eurorack.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on newdigate/teensy-eurorack
+  commit: 237c0e698e3afaa43a0606a6f96fa6ea0d4e08a0
+  kicad_version: 20171130
+  layers: 2
+  excluded: board file version 20171130 predates KiCad 6
+- id: teensy-control-voltage
+  url: https://github.com/newdigate/teensy-control-voltage
+  domain: analog
+  pcb: hardware/boards/teensy-eurorack.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on newdigate/teensy-control-voltage
+  commit: 9665e2779e0fedb07ab447a1358c9c420f1d2b6b
+  kicad_version: 20171130
+  layers: 2
+  excluded: board file version 20171130 predates KiCad 6
+- id: cats-diode-ladder-vcf
+  url: https://github.com/mzuelch/CATs-Eurosynth
+  domain: analog
+  pcb: Modules/HAGIWO/VCF Diode Ladder Filter/Electronics/Main/VCF Diode Ladder Filter.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on mzuelch/CATs-Eurosynth
+  commit: ee70506817f1fb5fa16a87c3e2a54a6ded8ee441
+  kicad_version: 20211014
+  layers: 2
+  evidence: []
+- id: cats-precision-adder
+  url: https://github.com/mzuelch/CATs-Eurosynth
+  domain: analog
+  pcb: Modules/Slim Line/Precision Adder/Electronics/Main/Slim Precision Adder Main.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on mzuelch/CATs-Eurosynth
+  commit: ee70506817f1fb5fa16a87c3e2a54a6ded8ee441
+  kicad_version: 20171130
+  layers: 2
+  excluded: board file version 20171130 predates KiCad 6
+- id: nudac
+  url: https://github.com/danchouzhou/NuDAC
+  domain: analog
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on danchouzhou/NuDAC
+  commit: 4fda6b3c1b6c204d7395027fa509a52759d8a821
+  pcb: kicad/NuDAC.kicad_pcb
+  kicad_version: 20211014
+  layers: 4
+  evidence: []
+- id: gameboy-hifi-audio
+  url: https://github.com/cajunpanda/gameboy-hifi-audio
+  domain: analog
+  pcb: hardware/agb/agb-hifi-audio-pcb/agb-hifi-audio-pcb.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on cajunpanda/gameboy-hifi-audio
+  commit: 941eabcddd73d39ce5b1113d1cf4dea4e6eeeaad
+  kicad_version: 20260206
+  layers: 4
+  evidence:
+  - 4 GitHub release(s), latest v1.3.0
+- id: impedance-tomography
+  url: https://github.com/ashtonchase/portable_impedance_tomography
+  domain: analog
+  pcb: hardware/kicad_project/portable_imedance.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on ashtonchase/portable_impedance_tomography
+  commit: 4aca77eb52db80f94b42bddf0b05a86bf660c719
+  kicad_version: 20170123
+  layers: 2
+  excluded: board file version 20170123 predates KiCad 6
+- id: eurorack-pmod-r3.2
+  url: https://github.com/apfaudio/eurorack-pmod
+  licence: CERN-OHL-S-2.0
+  licence_source: LICENSE in apfaudio/eurorack-pmod (CERN-OHL-S v2)
+  domain: analog
+  pcb: hardware/eurorack-pmod-r3.2/eurorack-pmod-pcb.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  commit: ddb9aa92fab7f74783f7ed3bf248eec56a6ceb00
+  kicad_version: 20221018
+  layers: 4
+  evidence:
+  - 2 GitHub release(s), latest release/hw-r3.3
+- id: eurorack-pmod-r3.5
+  url: https://github.com/apfaudio/eurorack-pmod
+  licence: CERN-OHL-S-2.0
+  licence_source: LICENSE in apfaudio/eurorack-pmod (CERN-OHL-S v2)
+  domain: analog
+  pcb: hardware/eurorack-pmod-r3.5/eurorack-pmod-pcb.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  commit: ddb9aa92fab7f74783f7ed3bf248eec56a6ceb00
+  kicad_version: 20241229
+  layers: 6
+  evidence:
+  - 2 GitHub release(s), latest release/hw-r3.3
+- id: winterbloom-helium
+  url: https://github.com/wntrblm/Helium
+  licence: CERN-OHL-P-2.0
+  licence_source: LICENSE.md in wntrblm/Helium (hardware under CERN-OHL-P v2)
+  domain: analog
+  pcb: hardware/board/board.kicad_pcb
+  outcome:
+    label: product
+    source: store page https://winterbloom.com/shop/helium (linked from the README)
+  commit: 1cecf97abaad73fea063ec5f1eea36465b804c06
+  kicad_version: 20221018
+  layers: 2
+  evidence: []
+- id: winterbloom-speak-to-me
+  url: https://github.com/wntrblm/Speak_to_Me
+  licence: CERN-OHL-P-2.0
+  licence_source: LICENSE.md in wntrblm/Speak_to_Me (hardware under CERN-OHL-P v2)
+  domain: analog
+  pcb: hardware/board/board.kicad_pcb
+  outcome:
+    label: product
+    source: store page https://winterbloom.com/store/speak-to-me (linked from the README)
+  commit: 65988dcd5a19b44e108c3354ebba78de457fe5e2
+  kicad_version: 20240108
+  layers: 4
+  evidence: []
+- id: phone-rtty-rev-b
+  url: https://github.com/4x1md/phone_rtty_interface
+  domain: analog
+  pcb: pcb/phone_rtty_rev_b/phone_rtty_rev_b.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on 4x1md/phone_rtty_interface
+  commit: 6d81b76d2071fbe04922c0e485599d58c10e8ffd
+  kicad_version: 4
+  layers: 2
+  excluded: board file version 4 predates KiCad 6
+- id: hs100b-eval
+  url: https://github.com/k0swe/hs100b-eval
+  domain: analog
+  pcb: hs100b-eval.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: CC-BY-4.0
+  licence_source: GitHub licence detection on k0swe/hs100b-eval
+  commit: 57fe83e5773614ad83c1d66cc0a5f55b5a22dd59
+  kicad_version: 20171130
+  layers: 2
+  excluded: board file version 20171130 predates KiCad 6
+- id: pslab
+  url: https://github.com/fossasia/pslab-hardware
+  domain: analog
+  pcb: schematics/PSLab.kicad_pcb
+  outcome:
+    label: product
+    source: shop https://pslab.io/shop/ (linked from the README); the revision on sale is not stated
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on fossasia/pslab-hardware
+  commit: 404aae216963ea0708e15bb84bde670a94ad3d83
+  kicad_version: 20221018
+  layers: 4
+  evidence:
+  - 3 GitHub release(s), latest V6.0-beta
+- id: winterbloom-micronova
+  url: https://github.com/wntrblm/Micronova
+  licence: CERN-OHL-P-2.0
+  licence_source: LICENSE.md in wntrblm/Micronova (hardware under CERN-OHL-P v2)
+  domain: power
+  pcb: hardware/board/board.kicad_pcb
+  outcome:
+    label: product
+    source: store page https://winterbloom.com/shop/micronova (linked from the README)
+  commit: 263c7df7b15babea188b63f65dbd1757c0a9e65c
+  kicad_version: 20211014
+  layers: 2
+  evidence: []
+- id: pico-ice-rev3
+  url: https://github.com/tinyvision-ai-inc/pico-ice
+  domain: mcu-usb
+  pcb: Board/Rev3/pico-ice.kicad_pcb
+  outcome:
+    label: product
+    source: store https://lectronz.com/stores/tinyvision-ai-store (linked from the README); the revision
+      on sale is not stated
+  licence: MIT
+  licence_source: GitHub licence detection on tinyvision-ai-inc/pico-ice
+  commit: 00e13360969d01fbb9663e4ea17f723c1a8e8400
+  kicad_version: 20240108
+  layers: 4
+  evidence:
+  - 6 GitHub release(s), latest pico-ice-default-v1.6.1
+- id: orangecrab-r0.2.1
+  url: https://github.com/gregdavill/OrangeCrab
+  licence: CERN-OHL-1.2
+  licence_source: LICENCE-CERN-OHL in gregdavill/OrangeCrab (CERN Open Hardware Licence v1.2)
+  domain: 4-layer
+  pcb: hardware/orangecrab_r0.2.1/OrangeCrab.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  commit: c511d569fe2af39467041f888bc231020f40c6ac
+  kicad_version: 20171130
+  layers: 6
+  excluded: board file version 20171130 predates KiCad 6
+- id: jetson-nano-baseboard
+  url: https://github.com/antmicro/jetson-nano-baseboard
+  domain: 4-layer
+  outcome:
+    label: ''
+    source: ''
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on antmicro/jetson-nano-baseboard
+  commit: d8d0b2d71ab4cc4bcdb204a09f78be40d4c8cda3
+  pcb: jetson-nano-baseboard.kicad_pcb
+  kicad_version: 20241229
+  layers: 8
+  evidence:
+  - 5 GitHub release(s), latest v1.4.6
+- id: hdmi-mipi-bridge
+  url: https://github.com/antmicro/hdmi-mipi-bridge
+  domain: 4-layer
+  outcome:
+    label: ''
+    source: ''
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on antmicro/hdmi-mipi-bridge
+  commit: 6c683289a3191ee6c92cf4f9065ca9b6cb2c0784
+  pcb: antmicro-hdmi-mipi-bridge-hw.kicad_pcb
+  kicad_version: 20221018
+  layers: 4
+  evidence: []
+- id: d1600e-psu-breakout
+  url: https://github.com/antmicro/d1600e-psu-breakout
+  domain: power
+  outcome:
+    label: ''
+    source: ''
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on antmicro/d1600e-psu-breakout
+  commit: 3802831dcd6c9c6e278216771e92ca7fe3f9ae41
+  pcb: d1600e-psu-breakout-board.kicad_pcb
+  kicad_version: 20221018
+  layers: 4
+  evidence: []
+- id: esp32-gateway-rev-i
+  url: https://github.com/OLIMEX/ESP32-GATEWAY
+  domain: mcu-usb
+  pcb: HARDWARE/Hardware revision I/ESP32-GATEWAY_Rev_I.kicad_pcb
+  outcome:
+    label: product
+    source: product page https://www.olimex.com/Products/IoT/ESP32/ESP32-GATEWAY/ (linked from the README);
+      the revision on sale is not stated
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on OLIMEX/ESP32-GATEWAY
+  commit: d45c9bc8120534b130a4f8bb8fa6cd3dc78e4ea0
+  kicad_version: 20171130
+  layers: 2
+  excluded: board file version 20171130 predates KiCad 6
+- id: esp32-evb-rev-l
+  url: https://github.com/OLIMEX/ESP32-EVB
+  domain: mcu-usb
+  pcb: HARDWARE/REV-L/ESP32-EVB_Rev_L.kicad_pcb
+  outcome:
+    label: product
+    source: product page https://www.olimex.com/Products/IoT/ESP32/ESP32-EVB/ (linked from the README);
+      the revision on sale is not stated
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on OLIMEX/ESP32-EVB
+  commit: a3ec2f448109cb8f35ce7cb21a027bb7c837ab61
+  kicad_version: 20221018
+  layers: 2
+  evidence:
+  - 'issue #60 (closed): REV K2 SCHEMATIC - https://github.com/OLIMEX/ESP32-EVB/issues/60'
+  - 'issue #40 (closed): pdf for REV K - https://github.com/OLIMEX/ESP32-EVB/issues/40'
+  - 'issue #28 (closed): assets for rev I ?  - https://github.com/OLIMEX/ESP32-EVB/issues/28'
+- id: esp32-devkit-lipo-rev-d
+  url: https://github.com/OLIMEX/ESP32-DevKit-LiPo
+  domain: mcu-usb
+  pcb: HARDWARE/ESP32-DevKit-LiPo-Rev.D/ESP32-DevKit-Lipo_Rev_D.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on OLIMEX/ESP32-DevKit-LiPo
+  commit: 1ebbbb5ceaa84b1d67631d8d542d7f6128c19fc1
+  kicad_version: 20171130
+  layers: 2
+  excluded: board file version 20171130 predates KiCad 6
+- id: otterpill-v1.4
+  url: https://github.com/Jana-Marie/OtterPill
+  licence: CERN-OHL-S-2.0
+  licence_source: LICENSE.md in Jana-Marie/OtterPill (CERN-OHL-S v2)
+  domain: mcu-usb
+  pcb: HW v1.4/OtterPill.kicad_pcb
+  outcome:
+    label: product
+    source: Tindie page https://www.tindie.com/products/jan_henrik/otterpill/ (linked from the README);
+      the revision on sale is not stated
+  commit: f0e7371ea88523a160302d86425b684c089768ad
+  kicad_version: 20211014
+  layers: 2
+  evidence: []
+- id: pd-injector
+  url: https://github.com/Jana-Marie/PD-Injector
+  licence: CERN-OHL-1.2
+  licence_source: LICENSE in Jana-Marie/PD-Injector (CERN Open Hardware Licence v1.2)
+  domain: power
+  outcome:
+    label: ''
+    source: ''
+  commit: 75ef2f62ee7a599e46f87801d2b0e0298f0b728d
+  pcb: PD-Injector.kicad_pcb
+  kicad_version: 20260206
+  layers: 2
+  evidence: []
+- id: mppt-2420-hc
+  url: https://github.com/LibreSolar/mppt-2420-hc
+  licence: CERN-OHL-W-2.0
+  licence_source: LICENCE in LibreSolar/mppt-2420-hc (CERN-OHL-W v2)
+  domain: power
+  pcb: kicad/mppt-2420-hc.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  commit: b1c11fee826d40b0465eae3dd58a15a336be2d7c
+  kicad_version: 20171130
+  layers: 0
+  excluded: board file version 20171130 predates KiCad 6
+- id: opengps
+  url: https://github.com/OpenDrone-hw/OpenGPS
+  domain: rf
+  pcb: hardware/board.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: CERN-OHL-S-2.0
+  licence_source: GitHub licence detection on OpenDrone-hw/OpenGPS
+  commit: 6825d8331cdf36cbb4e9cea1f24538d609753f66
+  kicad_version: 20260206
+  layers: 6
+  evidence: []
+- id: byrandev-nrf52840
+  url: https://github.com/byrantech/byrandev
+  domain: rf
+  pcb: pcb/nrf52840.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on byrantech/byrandev
+  commit: 27c9eff2f96ffc73dcc79c4969b1824b2e72986d
+  kicad_version: 20220331
+  layers: 2
+  evidence: []
+- id: stm32-nrf24-node-revb
+  url: https://github.com/denysderihlazov/stm32-nrf24-wireless-node
+  domain: rf
+  pcb: hardware/revB/kicad/nRF24Radio_STM32G431KB.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on denysderihlazov/stm32-nrf24-wireless-node
+  commit: b3676ea35a3fe1f08146265b2bd97147a73e0635
+  kicad_version: 20241229
+  layers: 2
+  evidence: []
+- id: gnss-7-seg-clock
+  url: https://github.com/Tosainu/gnss-7-seg-clock
+  domain: rf
+  pcb: hardware/gnss-7-seg-clock.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on Tosainu/gnss-7-seg-clock
+  commit: 811781f555e55d32aab4d613a093769882091aa1
+  kicad_version: 20260206
+  layers: 2
+  evidence:
+  - 5 GitHub release(s), latest v0.2.0
+- id: meshsat-aprs
+  url: https://github.com/meshsat/meshsat-fieldkit
+  domain: rf
+  pcb: v2/ecad/pcb-d-aprs/pcb-d-aprs.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: CERN-OHL-S-2.0
+  licence_source: GitHub licence detection on meshsat/meshsat-fieldkit
+  commit: dfea910c10ac1a374af8dce792469ef8d9eea43b
+  kicad_version: 20241229
+  layers: 4
+  evidence:
+  - 1 GitHub release(s), latest revA
+- id: meshsat-rfjunction
+  url: https://github.com/meshsat/meshsat-fieldkit
+  domain: rf
+  pcb: v2/ecad/pcb-e2-rfjunction/pcb-e2-rfjunction.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: CERN-OHL-S-2.0
+  licence_source: GitHub licence detection on meshsat/meshsat-fieldkit
+  commit: dfea910c10ac1a374af8dce792469ef8d9eea43b
+  kicad_version: 20241229
+  layers: 2
+  evidence:
+  - 1 GitHub release(s), latest revA
+- id: openeew-sensor
+  url: https://github.com/openeew/openeew-sensor
+  domain: analog
+  pcb: pcb/pcb.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on openeew/openeew-sensor
+  commit: b1fae4e89ca090c37aefb8ce166741464834da3f
+  kicad_version: 20171130
+  layers: 2
+  excluded: board file version 20171130 predates KiCad 6
+- id: i2c-moisture-sensor
+  url: https://github.com/Miceuz/i2c-moisture-sensor
+  domain: analog
+  pcb: i2c-moist-sensor.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on Miceuz/i2c-moisture-sensor
+  commit: c687328d2fdbe45b1b6c9d6b92627460e9f3167d
+  kicad_version: 20200724
+  layers: 4
+  excluded: board file version 20200724 predates KiCad 6
+- id: sincos-interpolator
+  url: https://github.com/finngineering/sincos_interpolator
+  domain: analog
+  pcb: hardware/sincos_interpolator.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on finngineering/sincos_interpolator
+  commit: 52fcf9e048ec7c88921b739363b2da41bd0dff8d
+  kicad_version: 20211014
+  layers: 2
+  evidence:
+  - 2 GitHub release(s), latest v1.3
+- id: guitar-pedal-stm32
+  url: https://github.com/GuitarML/GuitarPedalSTM32
+  domain: analog
+  pcb: hardware/STM32H7B0_GuitarPedal/STM32H7_GuitarPedal.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on GuitarML/GuitarPedalSTM32
+  commit: 72dfd26114fa515f8440eb86c7d32173be304a98
+  kicad_version: 20241229
+  layers: 4
+  evidence: []
+- id: winterbloom-hydrogen
+  url: https://github.com/wntrblm/Hydrogen
+  licence: CERN-OHL-P-2.0
+  licence_source: LICENSE.md in wntrblm/Hydrogen (hardware under CERN-OHL-P v2)
+  domain: analog
+  pcb: hardware/board/board.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  commit: 116763d35b46999503c506d10d4df5d4087e2ad0
+  kicad_version: 20240108
+  layers: 2
+  evidence: []
+- id: temperature-logger
+  url: https://github.com/Jana-Marie/temperature-logger
+  licence: CERN-OHL-S-2.0
+  licence_source: LICENSE in Jana-Marie/temperature-logger (CERN-OHL-S v2)
+  domain: analog
+  pcb: temperature-logger.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  commit: fa80da42b0d462c2c5406b45c135e0b280243b2a
+  kicad_version: 20211014
+  layers: 4
+  evidence:
+  - 1 GitHub release(s), latest v0.1.0
+- id: moteus-c1-r1.0
+  url: https://github.com/mjbots/moteus
+  domain: motor
+  pcb: hw/c1/r1.0/moteus_c1.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on mjbots/moteus
+  commit: 8f747f4ac448d117c1390b77ca2d80c27e751a56
+  kicad_version: 20221018
+  layers: 4
+  evidence:
+  - 20 GitHub release(s), latest rust/v0.5.5
+- id: jiran-ble-lite
+  url: https://github.com/Ladniy/jiran-ble-lite
+  domain: mcu-usb
+  pcb: pcb/jiran-ble-lite/jiran-ble-lite.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: CERN-OHL-P-2.0
+  licence_source: GitHub licence detection on Ladniy/jiran-ble-lite
+  commit: c2a5ef422c265f0d4e3d38f81c557ca802eab125
+  kicad_version: 20211014
+  layers: 2
+  evidence:
+  - 5 GitHub release(s), latest v1.1.3
+- id: anotter-sensor-hub
+  url: https://github.com/Jana-Marie/anotter-sensor-hub
+  domain: mcu-usb
+  pcb: anotter-sensor-hub.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: CERN-OHL-S-2.0
+  licence_source: GitHub licence detection on Jana-Marie/anotter-sensor-hub
+  commit: 37d2efe854fc6ef036985b8bb3c4b2ab064ad6c1
+  kicad_version: 20211014
+  layers: 2
+  evidence:
+  - 1 GitHub release(s), latest v1.0.0
+- id: pico-ice-rev2
+  url: https://github.com/tinyvision-ai-inc/pico-ice
+  domain: mcu-usb
+  pcb: Board/Rev2/pico-ice.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on tinyvision-ai-inc/pico-ice
+  commit: 00e13360969d01fbb9663e4ea17f723c1a8e8400
+  kicad_version: 20211014
+  layers: 4
+  evidence:
+  - 6 GitHub release(s), latest pico-ice-default-v1.6.1
+- id: eurorack-pmod-r3.3
+  url: https://github.com/apfaudio/eurorack-pmod
+  licence: CERN-OHL-S-2.0
+  licence_source: LICENSE in apfaudio/eurorack-pmod (CERN-OHL-S v2)
+  domain: analog
+  pcb: hardware/eurorack-pmod-r3.3/eurorack-pmod-pcb.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  commit: ddb9aa92fab7f74783f7ed3bf248eec56a6ceb00
+  kicad_version: 20221018
+  layers: 4
+  evidence:
+  - 2 GitHub release(s), latest release/hw-r3.3
+- id: pico-evb
+  url: https://github.com/OLIMEX/PICO-EVB
+  domain: mcu-usb
+  pcb: HARDWARE/PICO-EVB_Rev_A/PICO-EVB_Rev_A.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on OLIMEX/PICO-EVB
+  commit: 5a4360986a678dc177df4ea6674fc5769e91e64d
+  kicad_version: 20221018
+  layers: 2
+  evidence: []
+- id: esp32-p4-pc-rev-c
+  url: https://github.com/OLIMEX/ESP32-P4-PC
+  domain: 4-layer
+  pcb: HARDWARE/ESP32-P4-PC-Rev.C/ESP32-P4-PC_Rev_C.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on OLIMEX/ESP32-P4-PC
+  commit: 04032d68e5c727870f9d40beb9e37b7ab3a66916
+  kicad_version: 20221018
+  layers: 4
+  evidence: []
+- id: kria-k26-devboard
+  url: https://github.com/antmicro/kria-k26-devboard
+  domain: 4-layer
+  pcb: kria-k26-devboard.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on antmicro/kria-k26-devboard
+  commit: 9ead4dfc5b29fa9308206ccdfe013dd8f6d93b67
+  kicad_version: 20221018
+  layers: 8
+  evidence: []
+- id: scalenode-cm4-baseboard
+  url: https://github.com/antmicro/scalenode-cm4-baseboard
+  domain: 4-layer
+  pcb: scalenode-cm4-baseboard.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on antmicro/scalenode-cm4-baseboard
+  commit: 77f5bf281d13e43154cac9645f7cc22a82e56971
+  kicad_version: 20221018
+  layers: 4
+  evidence:
+  - 'issue #4 (open): Short circuit on NMVE Mount - https://github.com/antmicro/scalenode-cm4-baseboard/issues/4'
+- id: gmsl-serializer
+  url: https://github.com/antmicro/gmsl-serializer
+  domain: 4-layer
+  pcb: gmsl-serializer.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on antmicro/gmsl-serializer
+  commit: 58641df7b331050bbb4456cb4cb73e3975ae9de9
+  kicad_version: 20240108
+  layers: 4
+  evidence: []
+- id: sdi-mipi-bridge
+  url: https://github.com/antmicro/sdi-mipi-bridge-hw
+  domain: 4-layer
+  pcb: sdi-mipi-bridge.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: Apache-2.0
+  licence_source: GitHub licence detection on antmicro/sdi-mipi-bridge-hw
+  commit: 0d08a865eba70ac02bfe16601bbf6d719d5c9d41
+  kicad_version: 20221018
+  layers: 6
+  evidence:
+  - 'issue #5 (closed): v1.2.0 errata - https://github.com/antmicro/sdi-mipi-bridge-hw/issues/5'
+- id: usb-c-fusb302-pi
+  url: https://github.com/bentwire/USB-C-FUSB302-PI
+  domain: power
+  pcb: USB-C-FUSB302-PI.kicad_pcb
+  outcome:
+    label: ''
+    source: ''
+  licence: MIT
+  licence_source: GitHub licence detection on bentwire/USB-C-FUSB302-PI
+  commit: 7d95292262b42767bbeefebadb6bafe055923d50
+  kicad_version: 20221018
+  layers: 4
+  evidence: []

@@ -1,0 +1,44 @@
+id: buck-thermal-via-and-via-current
+classes: [thermal-via]
+applies:
+  topologies: [buck]
+  packages: [HTSOP-J8, SO-8-EP, SO-8EP]
+  interfaces: []
+rule:
+  enforced_by: null
+  thermal_via_drill_mm: 0.3
+  thermal_via_pitch_mm: 1.2
+  via_width_per_amp_mm: 2.0
+prose: >
+  Thermal vias under an exposed-pad regulator (ROHM s4, HTSOP-J8 numbers
+  generalize to EP packages): small drill - 0.3 mm inner diameter - so the
+  via can FILL with solder; larger drills suck solder away from the joint
+  at reflow (solder-wicking). Pitch ~1.2 mm, directly below the reverse-
+  side thermal pad; add a ring of extra vias around the IC when the pad
+  area alone is not enough. Copper area helps but the base material is the
+  real radiator - vias carry the heat to the far layers. For CURRENT via
+  sizing (s10-3): a via's equivalent conductor width is pi x diameter but
+  its wall is only ~18 um plating, so use 2 mm of equivalent width per
+  amp - about double the 1 oz surface-trace rule; measured table: 0.3 mm
+  via 0.4 A, 0.6 mm 0.9 A, 1.0 mm 1.5 A. Count vias against that, not
+  against the drill area.
+sources:
+  - {file: reference/knowledge/sources/rohm-buck-pcb-layout-an.pdf, page: 3, section: s4 (thermal via)}
+  - {file: reference/knowledge/sources/rohm-buck-pcb-layout-an.pdf, page: 10, section: s10-3 (via current)}
+status: active
+origin: app-note:rohm-buck-pcb-layout-an (ROHM 60AN066E Rev.004, 2024-01)
+
+# --- schema v2 governance (U14 backfill, owner-ruled 2026-08-15) ---
+level: topology
+envelope:
+  pdiss_w: {max: 5}
+maturity: approved
+approval:
+  by: owner
+  date: "2026-08-15"
+  note: >
+    Scales with dissipated power: vias-into-the-base-material is the heat
+    path the record describes (0.3 mm fillable drill, 1.2 mm pitch, 2 mm/A
+    equivalent width). Past a few watts the design is set by copper area,
+    sink and airflow, which the record does not cover. Package dependence is
+    carried by applies.packages, not the envelope.

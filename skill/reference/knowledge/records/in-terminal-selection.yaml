@@ -1,0 +1,82 @@
+id: in-terminal-selection
+classes: [selection]
+applies:
+  topologies: []
+  packages: []
+  interfaces: [in]
+  parts: []
+rule:
+  enforced_by: null
+  one_body_for_the_pair: "pick ONE multi-pole terminal for the whole input, not two single-pole parts: both signal poles are then the same moulding, the same contact metal and the same plating lot, which is the condition the thermal-EMF rule on this slot needs (identical junctions on both inputs, so their Seebeck voltages cancel when the two poles sit at the same temperature)"
+  metallurgy_witnessed: "the junction stack at a WR-TBL 3611 pole, vendor-stated: copper wire clamped by a BRASS cage against a PHOSPHOR BRONZE contact plated TIN OVER NICKEL, insulator PA66 UL94 V-0 - every pole in the body identical"
+  pole_count: "pole count follows the return-path decision, not the signal count: a source that brings its own dc return, or a screen that must land, needs a conductor of its own - the 3.50 mm order code read here is a 3-pole part (Pl 7 mm, L 10.5 mm), so the 2-signal + 1-return form exists at this pitch"
+  wire_window: "26 to 16 AWG solid or stranded (0.129 to 1.31 mm2), strip length 6 to 7 mm, tightening torque 0.25 N*m - the sensor cable must fall inside this window or the clamp is not the specified joint"
+  contact_resistance: "20 mohm max per pole (cULus and VDE): 57 ppm of this slot's 350 ohm source, i.e. not a term in the error budget here - but it is the floor that decides where this class of terminal stops suiting a low-impedance source"
+  ratings_are_not_the_driver: "10 A / 300 V AC working / 1600 V (cULus) withstanding, -40 to +105 C: for a microvolt sensor input the binding selection parameters are metallurgy, pole count and wire window, not current or voltage headroom"
+  pitch_note: "3.5 mm pitch, first pole 1.75 mm from the end; this slot's declared term_pair_mm of 2.5 mm is BELOW that pitch, so either the dim or the connector class has to move"
+prose: >-
+  The terminal is where the two input conductors become PCB metal, so what
+  matters in the datasheet is the material table, not the current rating.
+  Read off the 3.50 mm WR-TBL order code: insulator PA66 (UL94 V-0),
+  Contact Material Phosphor Bronze, Contact Plating Tin over Nickel, Cage
+  Material Brass, operating -40 to +105 C, contact resistance 20 mohm max,
+  wire 26-16 AWG solid or stranded (0.129-1.31 mm2), strip 6-7 mm, torque
+  0.25 N*m, and this order code carries 3 pins at 3.5 mm pitch with 7 mm
+  end-pole to end-pole. Two consequences for a microvolt input. First,
+  every pole of one body is the same stack, so choosing a single 3-pole
+  part and using adjacent poles for +IN and -IN makes the two thermal
+  junctions identical by construction - the thermal-EMF record on this slot
+  then only needs them to be at the same temperature. Two separate
+  single-pole terminals, or a screw terminal on one input and a header on
+  the other, forfeits that for nothing. Second, the third pole is not
+  spare: it is where a ground-referenced source's return conductor or a
+  cable screen lands, so pole count is decided by the return-path and
+  shield records, not by the signal count. The 20 mohm contact resistance
+  is 57 ppm of a 350 ohm source - invisible here, and the reason this class
+  of terminal suits a bridge but not a milliohm shunt.
+sources:
+  - file: reference/knowledge/sources/691361100003.pdf
+    page: 2
+    section: "WR-TBL Series 3611 - 3.50 mm, order code 691361100003, p.2 - Kind/Material/Electrical/Mechanical/Wire Properties"
+    note: >-
+      Read the property tables: Pitch 3.5 mm; Insulator PA66, UL94 V-0,
+      green; Contact Material Phosphor Bronze; Contact Plating Tin over
+      Nickel; Cage Material Brass; operating temperature -40 to +105 C;
+      rated current 10 A (cULus) / 10.5 A (VDE); working voltage 300 V AC;
+      withstanding 1600 / 2500 V AC; contact resistance 20 mohm max; wire
+      strip length 6 to 7 mm; solid and stranded wire 26 to 16 AWG
+      (0.129 to 1.31 mm2); tightening torque 0.25 N*m.
+  - file: reference/knowledge/sources/691361100003.pdf
+    page: 1
+    section: "same datasheet p.1 - dimension drawings + Article Properties"
+    note: >-
+      Read the drawings and the Article Properties table: pitch 3.5 +-0.10
+      with the first pole 1.75 mm from the end, pin cross-section
+      2.5 x 1.6 mm, body 15.8 x 6.8 mm and 11.1 mm tall, screw heads on
+      the top face with the pins below; this order code is Pins 3, Pin to
+      Pin (Middle) Pl 7 mm, Length L 10.5 mm, type field "Vertical Cable
+      Entry Plug" (the outline views draw the family, six poles).
+status: active
+origin: research:interface-in-2
+level: topology
+envelope:
+  rsource_ohm: {min: 1}
+maturity: approved
+generalizes: []
+envelope_note: >-
+  The one electrical number this class of terminal contributes is 20 mohm
+  of contact resistance per pole, so the rule is bounded from below by
+  source impedance: at this slot's 350 ohm it is 57 ppm and the choice is
+  driven purely by metallurgy, pole count and wire window; at about 1 ohm
+  the same 20 mohm is 2 pct and pole-to-pole spread starts to matter, which
+  is a different selection problem (four-wire sensing, welded or Kelvin
+  joints). No upper bound: the higher the source impedance, the more
+  completely the terminal's own resistance disappears.
+verification: {by: "second-reader", date: "2026-08-16", note: "Wurth 691361100003 (WR-TBL Series 3611 - 3.50 mm) pp.1-2 re-read; EVERY material claim checks out verbatim on p.2: Pitch 3.5 mm; Insulator PA66, UL94 V-0, green; Contact Material Phosphor Bronze; Contact Plating Tin over Nickel; Cage Material Brass; operating -40 up to +105 C; Rated Current 10 A cULus / 10.5 A VDE; Working Voltage 300 V AC; Withstanding 1600 cULus / 2500 VDE; Contact Resistance 20 mOhm max (both cULus and VDE columns); Wire Strip Length 6 up to 7 mm; SOLID and STRANDED wire both 26 to 16 AWG (0.129 to 1.31 mm2); Tightening Torque 0.25 N*m. p.1 Article Properties: Pins 3, Pin to Pin (Middle) Pl 7 mm, Length L 10.5 mm; drawings give 3.5 +-0.10 pitch with 1.75 +-0.10 to the first pole, 2.5 x 1.6 pin section, 6.8/15.8/11.1 body dims, and the outline views do draw six poles (the record says so). Arithmetic: 20 mOhm/350 ohm = 57 ppm, and the envelope's 20 mOhm/1 ohm = 2 pct - both correct. pitch_note is right and useful: 3.5 mm pitch vs the slot's declared term_pair_mm 2.5. THE THERMAL-JUNCTION ARGUMENT IS ARGUED, NOT ASSUMED: one body gives both poles the same moulding, contact metal and plating lot, which supplies the 'identically built, same metallurgy on both inputs' half of the verified in-terminal-thermal-emf record, and the record explicitly leaves the remaining condition (both poles at the same temperature) to that record rather than claiming to solve it. No scope violation - ratings_are_not_the_driver ranks selection parameters, it does not delete a protection feature. ONE GAP for the parts step, not a refutation: this order code's SIZE/TYPE field is 'Vertical Cable Entry Plug', i.e. the cable half of a pluggable pair, so the witnessed stack is wire-brass cage-phosphor bronze/tin over nickel on the PLUG; the board-side header (a different order code) and its footprint are not in this ledger. The one-body argument survives either half, and the record does print the type field, but nothing here selects a solderable part."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Level topology:
+    it claimed family with no family key.

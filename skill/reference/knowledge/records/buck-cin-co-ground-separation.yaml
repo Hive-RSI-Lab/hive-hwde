@@ -1,0 +1,42 @@
+id: buck-cin-co-ground-separation
+classes: [power-loop, emi]
+applies:
+  topologies: [buck]
+  packages: []
+  interfaces: []
+rule:
+  enforced_by: null
+  cin_co_gnd_separation_cm: 1 to 2
+  bypass_same_surface_as_ic: true
+prose: >
+  Two ROHM measurements the generic hot-loop rule does not carry:
+  (1) shortening the CBYPASS wiring EVEN BY 1 mm is worth it - the HF bypass
+  supplies the steepest edge of the switch current, and its loop inductance
+  sets the VIN-pin voltage noise directly; (2) even with CBYPASS tight to
+  the IC, several hundred MHz rides on the INPUT capacitor's ground, so the
+  grounds of C_IN and C_OUT must sit 1-2 cm APART - placed close together
+  the input HF noise couples straight into the output through C_OUT. C_IN
+  placed on the bottom layer through vias is explicitly unsuitable (via
+  inductance); input cap and (for async) the free-wheel diode go on the
+  SAME surface layer as the IC terminals. This refines, not replaces, the
+  shortest-loop rule in buck-input-hot-loop.
+sources:
+  - {file: reference/knowledge/sources/rohm-buck-pcb-layout-an.pdf, page: 3, section: "s3, fig 3-a..3-d"}
+  - {file: reference/knowledge/sources/rohm-buck-pcb-layout-an.pdf, page: 7, section: s6 (output cap)}
+status: active
+origin: app-note:rohm-buck-pcb-layout-an (ROHM 60AN066E Rev.004, 2024-01)
+
+# --- schema v2 governance (U14 backfill, owner-ruled 2026-08-15) ---
+level: topology
+envelope:
+  switching_kind: {in: [hard]}
+maturity: approved
+approval:
+  by: owner
+  date: "2026-08-15"
+  note: >
+    Scales with edge content, not with vin/iout: the several-hundred-MHz
+    riding on C_IN's ground (ROHM 60AN066E p.3, p.7) is a hard-switched
+    artifact, and the 1-2 cm separation number is quoted against it. A
+    resonant/soft-switched edge does not produce it.
+generalizes: [buck-input-hot-loop]

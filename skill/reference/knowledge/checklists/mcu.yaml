@@ -1,0 +1,60 @@
+# First coverage checklist for topology `mcu` (research task block-mcu-1).
+# Seeded from the subject part's own datasheet plus two cross-vendor MCU
+# hardware-design notes, so the ROWS are about microcontrollers and not about
+# one part. Draft: the second reader refutes, the owner approves.
+id: mcu
+kind: coverage-checklist
+applies:
+  topologies: [mcu]
+requires:
+  - {class: decoupling, min_level: principle,
+     note: "the bank is sized per SUPPLY PIN and placed at the pin; the count comes from the package"}
+  - {class: selection, min_level: topology,
+     note: "which reset-sampled pins (boot select, reset, debug) the die defines and which the board must"}
+  - {class: sequencing, min_level: principle,
+     note: "the analog rail's required relation to the digital rail, and the power-down ramp limit - principle: no operating-point bound"}
+  - {class: return-path, min_level: principle,
+     note: "the datasheet's mV budget between the part's own supply/ground pins, and how to meet it with no dedicated plane pair - principle"}
+  - {class: thermal, min_level: topology,
+     note: "package power budget recomputed at YOUR ambient from theta_JA, plus the per-supply-pin current ceiling"}
+maturity: approved
+prose: >
+  What a designer must hold before laying out an MCU block. These five rows are
+  the questions a blank MCU schematic cannot answer without the datasheet open.
+  (1) decoupling - the bank is sized per SUPPLY PIN and sits at the pin; the
+  count follows the package, not the device. (2) selection - of the pins the
+  silicon samples at reset (boot select, reset, debug), which does the die
+  already hold at a defined level and which must the board hold? That one audit
+  is the whole difference in part count between otherwise identical siblings.
+  (3) sequencing - the relation the analog rail must hold to the digital rail,
+  what that forbids (series DC drop into it), and the power-down ramp limit.
+  (4) return-path - the datasheet's own millivolt budget between the part's
+  supply and ground pins, and how to meet it when the stack-up has no dedicated
+  plane pair. (5) thermal - the package power budget recomputed at the design's
+  own ambient, and the per-supply-pin current ceiling that a single-VDD-pin
+  package makes binding. Two rows sit at min_level principle because their
+  subject matter bounds no operating point. Classes deliberately NOT required
+  yet: emi and esd are real MCU concerns, but this pass found no source strong
+  enough to carry a class-level rule for them - add rows when one exists, and do
+  not read their absence as a ruling that they do not matter.
+sources:
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 41,
+     note: "Fig 12 power supply scheme + the Caution under it - each supply pair (VDD/VSS, VDDA/VSSA) decoupled with filtering ceramics placed as close as possible to, or below, the pins; sets the decoupling row"}
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 32,
+     note: "Table 11 end - BOOT0 row (type I, structure B, empty Notes cell) beside note 7 (SWDIO/SWCLK internal pulls activated after reset); the asymmetry that sets the selection row"}
+  - {file: reference/knowledge/sources/00002519A.pdf, page: 6,
+     note: "AN2519 s2.1/s2.2 - a decoupling capacitor for every pair of power and ground pins; analog supply decoupled separately; cross-vendor basis for the decoupling row"}
+  - {file: reference/knowledge/sources/AN13033.pdf, page: 16,
+     note: "AN13033 s9.4.2 grounding + Fig 13 - single continuous ground plane, no floating metal, a shape with only one stitching via drawn as NOT CORRECT; basis for the return-path row"}
+origin: research:block-mcu-1
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q3; not the owner's own ruling. Approved after a
+    coverage run on the five breadboard boards (bb-buck, bb-mcu, bb-ldo, bb-
+    amp, bb-adc) at the default floor. Lowered to min_level principle
+    because only a principle record can cover them: decoupling.

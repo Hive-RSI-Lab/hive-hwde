@@ -1,0 +1,108 @@
+# Coverage checklist for interface slot `in` - a PRECISION LOW-LEVEL
+# DIFFERENTIAL SENSOR INPUT (off-board sensor -> cable -> terminal -> the
+# amplifier's input pins). Authored at P2 by research:interface-in-1, the
+# first research pass on this interface; the library held no interface
+# records for it. maturity draft - the owner approves.
+id: in
+kind: coverage-checklist
+applies:
+  interfaces: [in]
+requires:
+  - class: return-path
+    min_level: topology
+    note: >-
+      The DC path from BOTH inputs to the amplifier's own ground: when the
+      source already supplies it (a third wire from a ground-referenced
+      sensor, a transformer centre tap), when resistors must create it, and
+      how those resistors are sized against input bias current, the offset
+      budget and the loading they put on the source. This is a datasheet
+      requirement for correct operation, not conditioning - it stays in
+      scope at every build mode.
+  - class: diff-pair
+    min_level: topology
+    note: >-
+      The two input paths must be identical by construction - equal length,
+      equal width, equal via count, equal neighbourhood, equal parasitic
+      capacitance to the reference copper. Mismatch, deliberate or stray,
+      converts common mode into differential and is what actually sets this
+      interface's CMRR. Surface leakage belongs here too: leakage is an
+      error only when it is UNEQUAL between the two inputs. This is NOT a
+      controlled-impedance class - see prose.
+  - class: thermal
+    min_level: topology
+    note: >-
+      Thermal EMF. Every dissimilar-metal junction in the input path (screw
+      clamp, solder joint, pad, via, resistor end cap) is a thermocouple,
+      and the error is the temperature GRADIENT across the two input
+      junctions, not the ambient. Governs terminal placement (the two input
+      poles adjacent, away from anything that dissipates, copper fill to
+      flatten the local gradient) and the no-sockets rule on critical nodes.
+  - class: emi
+    min_level: topology
+    note: >-
+      What may sit near the pair. The two aggressors are the supply entry
+      and the amplifier's OWN OUTPUT - at forward gain G the output is a
+      G-times copy of the input, so it is the largest voltage on the board
+      sitting next to the smallest. Also the unbroken reference under the
+      pair. Cable-shield termination (which end, to what node) belongs in
+      this class and is NOT yet covered by any record - see prose.
+  - class: selection
+    min_level: topology
+    note: >-
+      The terminal itself: pole count (the third pole IS the bias-current
+      return), contact metallurgy and plating (thermal EMF and contact
+      potential live at that junction), accepted wire range, and soldered
+      versus socketed/pluggable. No record covers this yet.
+  - class: constraints-emission
+    min_level: principle
+    note: >-
+      What this interface must emit for placement and routing: a corridor
+      from connector to input pins, matched-length and matched-environment
+      rules for the pair, a keepout from the output net and the supply
+      entry, and an unbroken-reference requirement. NOT impedance, gap,
+      skew or uncoupled-length dims.
+maturity: approved
+sources:
+  - file: reference/knowledge/sources/ina333.pdf
+    page: 16
+    section: "8.2.2.5 Input Bias Current Return Path"
+    note: >-
+      Read: the bias-return requirement in the vendor's own words - without
+      a path the inputs float past the common-mode range and the input
+      amplifiers saturate; form depends on differential source resistance.
+  - file: reference/knowledge/sources/01258b.pdf
+    page: 17
+    section: "Design Example - PCB Layout, Figure 38/39"
+    note: >-
+      Read: the sensor-input layout figures - copper fill flattening the
+      gradient at the sensor connector, input resistor pairs arranged so
+      their thermoelectric voltages cancel, sensor traces separated from
+      power and digital traces.
+prose: >-
+  A precision low-level differential sensor input: microvolts of
+  differential signal riding on a common-mode level this board does not
+  control, arriving from an off-board sensor through a cable and a
+  terminal. Everything that makes it work is DC and low frequency - a
+  return path for the amplifier's bias current, symmetry between the two
+  input paths, thermal EMF at the junctions, surface leakage, and distance
+  from the aggressors (above all the amplifier's own amplified output).
+  TYPING NOTE: coverage may reach this slot from a `diff_pairs` constraints
+  entry whose operating point is gap, skew and uncoupled length. Those dims
+  are the wrong frame: at a kilohertz nothing here is set by characteristic
+  impedance or propagation delay, and a designer who satisfies them has
+  satisfied nothing that matters. What the pair needs is EQUALITY (length,
+  width, via count, neighbourhood, capacitance to the reference) and
+  DISTANCE. The dims that do bound these rules are source impedance,
+  common-mode voltage, forward gain, error budget and junction-to-junction
+  temperature difference, so a slot typed only geometrically will report
+  the records below provisional rather than covered - honest, and a signal
+  that the slot typing wants fixing.
+origin: research:interface-in-1
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q3; not the owner's own ruling. Approved after a
+    coverage run on the five breadboard boards (bb-buck, bb-mcu, bb-ldo, bb-
+    amp, bb-adc) at the default floor. No row needed lowering.

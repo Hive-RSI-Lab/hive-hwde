@@ -1,0 +1,94 @@
+id: linear-regulator-copper-is-the-heatsink
+classes: [thermal]
+applies:
+  topologies: [linear-regulator]
+  packages: [SOT-223, TO-252]
+  interfaces: []
+  parts: []
+rule: null
+prose: >
+  A linear regulator turns the whole input-output difference into heat:
+  PD = (VIN-VOUT)*IL + VIN*IG, continuous, at full load (LM1117 p18 eq 2-3).
+  No layout choice reduces it - the only freedom is where the heat goes. In a
+  still-air SMD design the path is junction -> tab/lead -> board copper -> air,
+  so the copper attached to the tab IS the heatsink and its AREA is a
+  first-class design variable: the headline theta_JA on page 1 of a datasheet
+  is only the value for whatever copper the vendor's test board carried. Size
+  it in this order (LM1117 p18 eq 4-5): PD; TR(max) = TJ(max) - TA(max);
+  required RthJA = TR(max)/PD; then read the copper area off the vendor's own
+  area table - noting that this whole procedure sits in LM1117 section 9, which
+  TI opens (p14) by disclaiming as "not part of the TI component specification". Placement matters as much as area. TI measured 16 SOT-223 copper
+  layouts in one cubic foot of still air (AN-1028 p3, Table 1 + Fig 3 - pads
+  0.0123 to 1 sq in, top only / bottom only / half-and-half): RthJA falls from
+  about 110 to about 40 C/W with area, and putting ALL the copper on the
+  component side is 10-15 C/W better than either other placement at equal area
+  (p4 conclusions). Those absolute values belong to AN-1028's power-MOSFET test
+  vehicle, not to a 1117 - carry the shape (area helps, top side wins) and take
+  absolute numbers from the part's own table.
+sources:
+  - file: reference/knowledge/sources/lm1117.pdf
+    page: 18
+    section: 9.5.1.1 Heat Sink Requirements
+    note: >
+      Read the dissipation/sizing chain: eq 2-3 PD = (VIN-VOUT)*IL + VIN*IG with
+      Fig 9-10 power-dissipation diagram, eq 4 TR(max) = TJ(max)-TA(max), eq 5
+      RthJA = TR(max)/PD, and the pointer to Table 9-2 as the design aid
+  - file: reference/knowledge/sources/lm1117.pdf
+    page: 14
+    section: 9 Application and Implementation - opening Note
+    note: >
+      The boxed note that opens section 9, read verbatim - "Information in the
+      following applications sections is not part of the TI component
+      specification, and TI does not warrant its accuracy or completeness" - and
+      the sizing procedure this record cites (9.5.1.1 on p17-18) sits inside
+      that section, so it is vendor guidance rather than a warranted spec
+  - file: reference/knowledge/sources/lm1117.pdf
+    page: 17
+    section: 9.5.1.1 Heat Sink Requirements - Table 9-1 + Figure 9-9
+    note: >
+      Where 9.5.1.1 actually starts: the heat path stated in words - junction ->
+      die attach pad -> lead frame -> case -> printed circuit board -> ambient;
+      Table 9-1 splits RthJC (component variables: lead frame, conduction pins,
+      die size, die attach, molding) from RthJA (application variables:
+      mounting-pad size/material/location, placement and SHAPE of the mounting
+      pad, PCB size and material, trace length/width, adjacent heat sources,
+      volume of air, ambient); Fig 9-9 cross-section draws RthJA = RthJC + RthCA
+      with the mounting pad, a via and an extended copper plane on the far side
+  - file: reference/knowledge/sources/snva036b.pdf
+    page: 3
+    section: 3 Result - Table 1 + Figure 3
+    note: >
+      Table 1 gives the 16-layout matrix (layouts 1-6 top side 0.0123-1 sq in,
+      7-11 bottom side 0.2-1, 12-16 split half top / half bottom); Fig 3 plots
+      junction-to-ambient thermal resistance vs pad area with three labelled
+      curves - Top Cu lowest, 1/2Top+1/2Bottom next, Bottom Cu highest
+  - file: reference/knowledge/sources/snva036b.pdf
+    page: 4
+    section: Conclusion + Figure 4
+    note: >
+      Conclusions read verbatim - increasing pad area lowers RthJA from about
+      110 to 40 C/W over 0.0123 to 1 sq in, and "placing all the copper on the
+      top side of the board further reduces RthJA by 10 C/W to 15 C/W when
+      compared with the other two placements"; Fig 4 gives max steady-state
+      dissipation vs pad area, ~1.3 W for the recommended 0.066 sq in layout
+  - file: reference/knowledge/sources/snva036b.pdf
+    page: 8
+    section: Appendix B - Thermal Measurement
+    note: >
+      Test conditions behind those curves - 1 cubic foot still air, MIL-STD-883
+      / 750 method, 4.5 x 5 in 0.062 in FR-4 (0.29 W/m-C), 2 oz copper clad; B.1
+      shows the K-factor calibration is done on a power MOSFET, so the absolute
+      RthJA values are that vehicle's, not a regulator's
+status: active
+origin: research:block-linear-regulator-1
+level: principle
+maturity: approved
+generalizes: []
+verification: {by: "second-reader", date: "2026-08-16", note: "Delta pass on the post-verification edit (file mtime 19:33 vs verdict 19:27). The new material is one prose clause plus one citation, and both hold. LM1117 p14 reopened visually: section 9 Application and Implementation opens with the boxed Note read verbatim - Information in the following applications sections is not part of the TI component specification, and TI does not warrant its accuracy or completeness. TI customers are responsible for determining suitability of components for their purposes, as well as validating and testing their design implementation to confirm system functionality. The record quotes the load-bearing fragment exactly. The scope claim is right too: 9.5.1.1 Heat Sink Requirements is a subsection of section 9 (starts p17, runs onto p18), so the eq 2-5 sizing chain this record prescribes does inherit the disclaimer, and the citation note states it in those terms. I also reopened LM1117 p18 this pass for the sibling thermal record and it still carries what this record cites: eq 2 IIN = IL + IG, eq 3 PD = (VIN-VOUT)IL + VIN IG with Fig 9-10 Power Dissipation Diagram, eq 4 TR(max) = TJ(max)-TA(max), eq 5 RthJA = TR(max)/PD, and As a design aid, Table 9-2 shows the value of the theta_JA of SOT-223 and TO-252 for different heat sink area, with the page naming AN1028 for power enhancement techniques - which is also why the AN-1028 material this record carries is fairly attached. The AN-1028 p3/p4/p8 citations were not re-opened this pass (unchanged since the standing verdict, which read them page by page). Level principle with rule null and no envelope remains correct: the record prescribes a sizing method and no number, and the added clause only weakens its own authority, which is the safe direction."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

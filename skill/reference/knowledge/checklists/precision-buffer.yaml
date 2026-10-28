@@ -1,0 +1,124 @@
+# Coverage checklist for the `precision-buffer` block - a unity-gain follower
+# placed between a high-impedance source and a switched-capacitor (SAR) input.
+# Seeded by research task block-precision-buffer-1 from four TI documents.
+# DRAFT: the second reader refutes it, the owner approves it.
+id: precision-buffer
+kind: coverage-checklist
+applies:
+  topologies: [precision-buffer]
+requires:
+  - class: selection
+    min_level: topology
+    note: >
+      The amplifier is chosen by SETTLING to the target accuracy inside the
+      acquisition window (BW >= ln(2^N)/(2*pi*t_settle), and a driver faster
+      than the interface RC), then by the DC error terms at the real source
+      impedance - offset, drift, bias-current transients - then by whether its
+      output stage can reach the bottom of the required range, and last by the
+      remaining amplifier specs screened on their own: bandwidth, slew rate
+      and output drive against the application, where slew rate bounds a real
+      step in the MEASURED SIGNAL (sboa586a p25 step 7). Slew rate does not
+      describe the per-conversion charge event - the charge bucket supplies
+      that. Any one of the four can disqualify a part that passes the other
+      three.
+  - class: feedback
+    min_level: topology
+    note: >
+      The loop must stay stable into the charge-reservoir capacitor the ADC
+      interface demands: open-loop output impedance times C_LOAD adds a pole,
+      the series isolation resistor adds the cancelling zero, and that resistor
+      costs DC accuracy and settling time. It is ONE resistor: the settling
+      ceiling t_ACQ/(12*C_FLT) is a hard bound on it, while the stability
+      equation gives an OPTIMUM centring 50-60 degrees, not a maximum. Where
+      the ceiling falls below that optimum the resistor must run under-damped
+      - a SCREENING result, not a disqualification: it triggers a phase-margin
+      check at the ceiling value, and the part is out only if the margin (or
+      the ringing it leaves inside the accuracy window) fails. Hold the
+      phase-margin target, both bounds and their intersection before placing
+      either component.
+  - class: emi
+    min_level: principle
+    note: >
+      A sampled load does not average, so periodic amplifier artifacts (chopper
+      clock transients and tones) and coupled interference land in the code as
+      DC error rather than as visible noise. Hold what the chosen amplifier
+      emits, and what the interface RC removes, before trusting its offset spec.
+  - class: decoupling
+    min_level: principle
+    note: >
+      Supply rejection collapses above a few kilohertz, so the rail must be held
+      quiet AT the pin by a local low-ESR ceramic on each supply. The value and
+      the placement are part of the DC error budget, not housekeeping.
+  - class: return-path
+    min_level: principle
+    note: >
+      The high-impedance input node, the feedback network and the ADC share one
+      reference; a plane on an adjacent layer under the part is what makes that
+      true. Principle level - it bounds no operating point.
+maturity: approved
+sources:
+  - file: reference/knowledge/sources/sprpeo2.pdf
+    page: 25
+    section: "ADC Driver Design: Bandwidth"
+    note: >
+      Slide 25: driver must settle to 1/2 LSB, settling time < acquisition time
+      + margin, and BW ~ ln(2^N)/(2*pi*t_settle) - the settling-first framing
+      that makes `selection` the first checklist row.
+  - file: reference/knowledge/sources/sboa418.pdf
+    page: 4
+    section: "3 Example, Calculate Optimal Isolation Resistance"
+    note: >
+      Fig 3-1: an OPA392 buffer with the load capacitor direct on the output
+      rings for a millisecond at phase margin under 1 degree - why `feedback`
+      is a required class for a block whose load is a capacitor.
+  - file: reference/knowledge/sources/sboa418.pdf
+    page: 9
+    section: "5 Derive Equation for Optimal Isolation Resistance"
+    note: >
+      Why the `feedback` row screens rather than disqualifies: the optimal
+      isolation resistance is the SMALLEST series resistance producing an
+      acceptable transient response, a 45-degree phase margin is generally
+      considered stable and can be targeted when voltage error is of primary
+      concern, and placing f_z1 at the closure frequency targets 50-60
+      degrees - so the stability equation is the centre of a band, not a cap
+      on R.
+  - file: reference/knowledge/sources/sboa586a.pdf
+    page: 25
+    section: "9 Procedure for Selecting a Zero-Drift Amplifier"
+    note: >
+      Seven-step selection procedure; step 2 gates the device on source
+      impedance, step 6 names unity gain with no external filter as the worst
+      case for chopping noise, and step 7 checks the remaining specs -
+      bandwidth, slew rate, output drive - against the application as a
+      standalone last screen: the `selection` and `emi` rows.
+  - file: reference/knowledge/sources/opa333.pdf
+    page: 23
+    section: "10 Layout"
+    note: >
+      Fig 34 layout example: low-ESR ceramic at each supply pin, ground plane
+      on another layer, feedback parts at the pin, input traces away from the
+      supply lines - the `decoupling` and `return-path` rows.
+prose: >
+  Before committing an op amp to drive a SAR, a designer must hold four
+  numbers and one picture. The numbers: the settling requirement translated
+  into a driver bandwidth that fits the acquisition window, with slew rate
+  screened separately against a real input step; the DC error the source
+  impedance produces through bias current at the chosen amplifier's input
+  structure; the isolation resistor that makes the loop stable into the
+  interface capacitor, the settling ceiling on that same resistor and the
+  accuracy it costs; and the output stage's real floor above the negative
+  rail at the actual load. The
+  picture: bypass at the pin, a plane under the part, feedback network at the
+  inverting pin, input traces away from the supply lines. The block's failure
+  mode is silent - it produces a plausible number that is wrong - so every row
+  here is an accuracy row, not a robustness row.
+origin: research:block-precision-buffer-1
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q3; not the owner's own ruling. Approved after a
+    coverage run on the five breadboard boards (bb-buck, bb-mcu, bb-ldo, bb-
+    amp, bb-adc) at the default floor. Lowered to min_level principle
+    because only a principle record can cover them: emi, decoupling.

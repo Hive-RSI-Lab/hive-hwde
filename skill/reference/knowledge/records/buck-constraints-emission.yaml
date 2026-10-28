@@ -1,0 +1,35 @@
+id: buck-constraints-emission
+classes: [constraints-emission]
+applies:
+  topologies: [buck]
+  packages: []
+  interfaces: []
+rule:
+  enforced_by: null
+  thermal_entry_above_w: 0.5
+prose: >
+  What a buck block must emit into constraints.json for the pipeline:
+  (1) power entries with current_a from the RAIL BUDGET (consumer sum +
+  ~30% headroom, rounded to a design ceiling) and dt_c from ambient;
+  (2) a thermal entry when regulator dissipation > ~0.5 W - for async parts
+  add the Schottky's Vf * I * (1-D), the diode often out-heats the IC;
+  (3) layout_notes for P6/P7: hot-loop grouping, SW containment/separation,
+  FB routing - these become placement groups and route_critical facts;
+  (4) a blocks entry ({topology: buck}) so knowledge retrieval keys on it.
+sources:
+  - {file: boards/usb-buck/research/power.md, section: s7-9 (emitted constraints)}
+  - {file: .claude/skills/hwde/reference/constraints_schema.md, section: power / thermal / blocks}
+status: active
+origin: migration:topologies/buck (T6 2026-08-06, three shipped runs)
+
+# --- schema v2 governance (U14 backfill, owner-ruled 2026-08-15) ---
+level: principle
+maturity: approved
+approval:
+  by: owner
+  date: "2026-08-15"
+  note: >
+    Principle, no envelope: this is the pipeline's emission contract (what a
+    block must put into constraints.json so P6/P7 and the checkers see it),
+    not physics. It carries no quantity that varies with the operating
+    point, so any envelope would be filler.

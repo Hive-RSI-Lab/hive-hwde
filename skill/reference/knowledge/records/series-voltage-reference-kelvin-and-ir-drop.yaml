@@ -1,0 +1,72 @@
+id: series-voltage-reference-kelvin-and-ir-drop
+classes: [return-path]
+applies:
+  topologies: [series-voltage-reference]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  ir_drop_is: "in series with the output - indistinguishable from reference gain error, and not removable by a better reference"
+  budget: "Rtrace * Imax much less than LSB/2; it adds directly to load-regulation error"
+  reference_trace_example_as_published_by_adi: "ADI p31 says 1 inch of 5 mm wide 1 oz copper is 'approximately 100 mohm at room temperature', a full 1 mV at 10 mA - quoted, not endorsed: a rho*L/(W*t) estimate of that geometry is ~2.5 mohm, so take the mechanism and re-derive the resistance for your own geometry"
+  placement: "reference as close to the load pin as possible; minimise length for inductance too"
+  force_sense: "if the part brings out a sense pin, close it AT the load pin - the regulated node is wherever sense is tied"
+  keep_away_from: "digital traces run in parallel; cross perpendicular only"
+  enforced_by: null
+prose: >
+  Everything between the reference output pin and the load's reference pin is
+  uncalibratable gain error. ADI p31 "Location of Reference in System": place the
+  reference as close to the load as possible, because current through a PCB trace
+  produces an IR drop that "with longer traces can reach several millivolts or
+  more". ADI's worked case: 1 inch of 5 mm wide 1 oz copper at "approximately
+  100 mohm at room temperature", a full millivolt at 10 mA - though a
+  rho*L/(W*t) estimate of that geometry lands near 2.5 mohm, so take the
+  mechanism and re-derive the resistance. TI SNAA320B p11 gives the budget: the
+  max drop across the trace must be much less than LSB/2, the drop is Rtrace
+  times Imax, "this directly gets added to the load regulation error", trace
+  length should also be minimised for inductance, and "if the reference has VOUT
+  sense pin then the problem of trace resistance can be eliminated by connecting
+  output sense pin to reference pin of ADC". The REF70 block diagram (p25) shows
+  the mechanism: the buffer drives OUTF (force) and closes its loop on OUTS
+  (sense), so the regulated node is wherever OUTS is tied; Fig 9-1 ties them at
+  the load-side capacitor. Where a part has no
+  sense pin the only remedies are proximity and copper. TI's layout guidelines
+  (p32) add the rest: a solid ground plane spreads heat and cuts EMI pickup,
+  external parts sit as close to the device as possible so parasitic (Seebeck)
+  errors do not form, and analog traces never run parallel to digital ones.
+sources:
+  - file: reference/knowledge/sources/1599556.pdf
+    page: 31
+    note: "Applications, 'Location of Reference in System': place the reference as close to the load as possible; IR drop of a 1 inch x 5 mm 1 oz trace is ~100 mohm, a full mV at 10 mA, several mV for longer traces; Fig 96 boosted-output note that VOUT must be tied directly to the load device for maximum accuracy [ADI Rev 0, 2012, farnell.com mirror]"
+  - file: reference/knowledge/sources/snaa320b.pdf
+    page: 11
+    note: "Trace guidance: max drop across the reference-to-ADC trace must be much less than LSB/2, drop = Rtrace * Imax, adds directly to load-regulation error, minimise length for inductance, and connect the reference's output sense pin at the ADC reference pin to eliminate trace resistance"
+  - file: reference/knowledge/sources/ref70.pdf
+    page: 25
+    note: "The unnumbered functional block diagram under Sec 9.2: reference buffer output OUTF with the feedback taken from OUTS (force/sense pair); Fig 9-1 basic connection ties OUTF/OUTS at the output capacitor - the regulated point is where the sense pin is connected"
+  - file: reference/knowledge/sources/ref70.pdf
+    page: 32
+    note: "Sec 10.4.1 Layout Guidelines: low-ESR 0.1 uF at VIN and 1-100 uF at OUTF, solid ground plane distributes heat and reduces EMI pickup, external parts as close as possible to prevent parasitic errors such as the Seebeck effect, no sensitive analog traces parallel to digital traces (perpendicular crossings only)"
+status: active
+origin: research:block-series-voltage-reference-1
+level: topology
+envelope:
+  iout_ua: {max: 10000}
+maturity: approved
+generalizes: []
+envelope_note: >
+  Scales with the current the reference must push down that copper: the error is
+  Rtrace times I, and the sources set their examples and their remedy inside the
+  parts' own +/-10 mA output rating (ADI's 1 mV at 10 mA, TI's Rtrace*Imax vs
+  LSB/2 for a converter reference pin). Beyond ~10 mA a series reference is no
+  longer driving the load directly - the datasheet answer becomes a boosted or
+  buffered output stage (ADI Fig 96) whose own regulation loop, not trace
+  proximity, sets the error - so both the arithmetic and the remedy change.
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read for the two edits. REF70 p25 rendered whole: Section 9.2 'Functional Block Diagram' carries a block diagram with NO figure caption or number - the overview text even refers to it as 'The Section 9.2 is a simplified block diagram' - and it shows the Reference Buffer taking the bandgap on its + input, driving OUTF, with the feedback to its - input taken from OUTS; Figure 9-1 below it ties OUTF and OUTS together at CL. Section 9.4.2 confirms that Figure 9-2 is instead the OPA211 negative-reference circuit, so the 'unnumbered functional block diagram under Sec 9.2' correction is exactly right. The 100 mohm framing is now honest: the rule key is literally named reference_trace_example_as_published_by_adi, its value says 'quoted, not endorsed' and carries the ~2.5 mohm rho*L/(W*t) estimate, and the prose repeats the correction - a layout agent reading either field cannot mistake it for a design constant, and the actionable budget lives in a separate key (Rtrace * Imax much less than LSB/2). I re-derived the physics independently: 1 oz copper is ~34.8 um thick, giving ~0.49 mohm per square, and 25.4 mm / 5 mm is ~5.1 squares, so ~2.5 mohm - ADI's published figure is ~40x high. ADI p31 'Location of Reference in System' is verbatim (place the reference as close to the load as possible, 'with longer traces, this drop can reach several millivolts or more', 'A 1 inch long, 5 mm wide trace of 1 ounce copper has a resistance of approximately 100 mohm at room temperature; at a load current of 10 mA, this can introduce a full millivolt of error', and the Figure 96 sentence that the VOUT pin should be tied directly to the load device). SNAA320B p11 is verbatim on the LSB/2 budget, Rtrace x Imax, 'This directly gets added to the load regulation error', minimising length for inductance, and eliminating trace resistance via the output sense pin at the ADC reference pin. REF70 p32 Sec 10.4.1 layout bullets are verbatim. The 10 mA envelope is the parts' own rating (ADI p3 sourcing 10 mA / sinking -8 mA; REF70 p6 IL -10 to +10 mA)."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

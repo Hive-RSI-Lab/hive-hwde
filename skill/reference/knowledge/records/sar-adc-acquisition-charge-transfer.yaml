@@ -1,0 +1,54 @@
+id: sar-adc-acquisition-charge-transfer
+classes: [selection]
+applies:
+  topologies: [sar-adc]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  what_the_source_must_do: "restore the sampling capacitor to within 1/2 LSB of the input before the hold instant"
+  charge_path: "source -> sampling switch on-resistance -> internal capacitor array"
+  error_if_violated: "the shortfall at the hold instant is the code error; grows with source impedance, shrinks with acquisition time"
+prose: >
+  A SAR samples by CHARGE TRANSFER: closing a switch connects the source to
+  an internal capacitor array through the switch on-resistance, and the
+  SOURCE, not the converter, has to move that charge. ADS8326 p.7's
+  Equivalent Analog Input Circuit draws it exactly - the ANALOG IN pin goes
+  through RON = 50 ohm and a switch into C(SAMPLE) = 48 pF, sitting behind
+  two clamp diodes to VDD and GND (turn-on 0.35 V). Whatever voltage the
+  array holds when that switch opens IS the converted value, so the source
+  must bring the sampled node to within 1/2 LSB of the true input before the
+  hold instant; the shortfall becomes a code error that grows with source
+  impedance and shrinks with acquisition time. TI states it as a hard
+  requirement on the source, not on the converter: "the source of the analog
+  input voltage must be able to charge the input capacitance (48pF) to a
+  16-bit settling level within 4.5 clock cycles (0.750us)" (p.21). SBAA256B
+  p.1 draws the same physics as a settling curve: the sensor's Thevenin
+  model (VTH, RTH) feeds CFLT at the pin, the ADC's switch and RSW lead to
+  CSH, and VCSH(t) must climb from V0 into the 1/2 LSB band by tACQ. This is
+  the parent of every input-drive rule for this topology - acquisition is a
+  charge budget, not a bandwidth specification.
+sources:
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 7
+    note: "Equivalent Analog Input Circuit (VDD = 5 V): ANALOG IN through RON 50 ohm and a switch into C(SAMPLE) 48 pF, clamp diodes to VDD/GND, diode turn-on 0.35 V; the reference input is drawn the same way with 24 pF"
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 21
+    note: "Analog input text: the current into the ADC charges the internal capacitor array during the sample period; 'the source of the analog input voltage must be able to charge the input capacitance (48pF) to a 16-bit settling level within 4.5 clock cycles (0.750us)'; input impedance >1 Gohm in hold/power-down"
+  - file: reference/knowledge/sources/sbaa256b.pdf
+    page: 1
+    note: "Design figure: sensor Thevenin (VTH, RTH) + CFLT at the pin into the SAR's SW/RSW/CSH, with the inset waveform VCSH(t) rising from V0 toward VTH and required to be inside the 1/2 LSB band by tACQ"
+status: active
+origin: "research:block-sar-adc-1"
+level: principle
+maturity: approved
+generalizes: []
+verification: {by: "research-second-reader", date: "2026-08-16", note: "Re-read ads8326 p.7 (Equivalent Input Circuit: ANALOG IN -> RON 50 ohm -> switch -> C(SAMPLE) 48pF, clamp diodes to VDD/GND, 0.35V turn-on; reference input drawn with 24pF) and p.21 ('the source of the analog input voltage must be able to charge the input capacitance (48pF) to a 16-bit settling level within 4.5 clock cycles (0.750us)', >1Gohm in hold/power-down) - both verbatim. sbaa256b p.1 figure matches exactly: sensor Thevenin VTH/RTH plus CFLT at the pin into SW/RSW/CSH with the inset VCSH(t) climbing from V0 into the 1/2 LSB band by tACQ, and p.1 states the note's own scope (slow-moving sensor outputs, 10ksps or so). The 48pF and 24pF are attributed to the ADS8326 in the prose while the rule fields stay part-agnostic, so no single-part number is promoted into a topology constant. Cannot refute."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

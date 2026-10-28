@@ -1,0 +1,116 @@
+# Coverage checklist for a RESISTIVE ATTENUATOR block - a passive divider used
+# as a measurement element, where the number that matters is the RATIO and not
+# any single resistance. Authored by research task block-resistive-attenuator-1
+# (bb-adc, P2) from four sources read page by page; maturity draft - the second
+# reader refutes, the owner approves.
+#
+# The organising idea, and the reason this block needs its own checklist: a
+# divider's accuracy is a RELATIVE property. Every error that is common to both
+# legs cancels in the ratio; only differences between the legs reach the output.
+# That inverts the usual selection instinct (absolute tolerance, absolute TCR)
+# and it is why the classes below are about MATCHING, GRADIENTS, LEAKAGE and
+# LOADING rather than about any element's own rating.
+id: resistive-attenuator
+kind: coverage-checklist
+applies:
+  topologies: [resistive-attenuator]
+requires:
+  - class: selection
+    min_level: topology
+    note: >
+      ratio accuracy comes from RELATIVE specs (tolerance matching, TCR
+      tracking), not absolute tolerance/TCR; element technology (thin vs thick
+      film vs foil), matched network vs discrete string, element value and
+      count. A designer who has not held this buys the wrong resistor.
+  - class: thermal
+    min_level: topology
+    note: >
+      self-heating (dT = P x Rth, with Rth set by the mounting pads and traces)
+      and thermal GRADIENT across the string turn TCR into a RATIO error that
+      no tracking spec covers; power must be split evenly between the legs and
+      the string kept thermally symmetric. Includes the thermal settling time
+      of a DC reading.
+  - class: creepage
+    min_level: topology
+    note: >
+      the tap of a high-value divider is a high-impedance node - board surface
+      leakage, flux residue and moisture become DC offset through I x Rthev.
+      Guard ring: what potential drives it, from what impedance, which side(s)
+      of the board, how wide, and what it must enclose. This is the layout half.
+  - class: feedback
+    min_level: topology
+    note: >
+      loading at both ends. What the divider demands of its SOURCE (source
+      impedance adds to the top leg) and of its LOAD (the divider's own
+      Thevenin R is the load's driving source impedance; a switched-capacitor
+      input presents an equivalent average resistance, a DC-coupled amplifier
+      presents bias current). Also: every downstream error is referred to the
+      divider input multiplied by 1/K.
+  - class: return-path
+    min_level: topology
+    note: >
+      the bottom of the string is a REFERENCE tie, not a ground connection.
+      Offset between it and the load's negative reference is NOT attenuated -
+      it is input-referred at 1/K while the signal is divided by K.
+  - class: constraints-emission
+    min_level: principle
+    note: >
+      what the block must emit into constraints.json - guard-ring net and its
+      driver, keepout around the high-Z node, ratio-critical placement pair,
+      cleanliness/no-clean requirement. GAP - no record holds this yet; it is
+      an emission contract, not physics, hence principle.
+maturity: approved
+prose: >
+  What a designer must HOLD before committing a precision divider: (1) that
+  ratio accuracy is a relative property, so matched/shared-substrate elements
+  beat tighter absolute parts (a Vishay array with 2.5x WORSE absolute
+  tolerance is the more accurate divider); (2) that a catalogue TCR is a chord
+  slope over a wide span, not the local slope in the application band, so
+  discrete elements have no bounded tracking; (3) that unequal leg power or a
+  neighbouring hot part is a ratio error; (4) that above ~100 kohm the tap node
+  needs a driven guard and a cleanliness process, not just a trace; (5) that
+  source impedance lands in the top leg and the load's charge-per-sample or
+  bias current lands in Rthev; (6) that the string's bottom node is a
+  reference, and ground offset there is input-referred at 1/K. Five of the six
+  classes have draft records from this task; constraints-emission is an honest
+  gap.
+sources:
+  - file: reference/knowledge/sources/incresarr.pdf
+    page: 2
+    section: "s2.2, s3"
+    note: >
+      Vishay AN 28194 p2 - the array spec block (absolute TCR +/-25 ppm/K,
+      absolute tolerance +/-0.25 %, TCR tracking 10 ppm/K, tolerance matching
+      0.1 %) and fig 4's gain-error plot; establishes that the relative specs,
+      not the absolute ones, are the divider's parameters.
+  - file: reference/knowledge/sources/nonlinea.pdf
+    page: 5
+    section: "Thermal stability of a ratio of two resistance values"
+    note: >
+      Vishay TN 60108 p5 - the ratio-drift section and eq 9; states that ratio
+      stability needs low absolute TCR AND low change of TCR with temperature,
+      and that leg temperatures differ even on a shared substrate through power
+      density and adjacent heat sources.
+  - file: reference/knowledge/sources/snoa664.pdf
+    page: 4
+    section: "Electrical guarding, fig 5"
+    note: >
+      TI/National AN-241 p4 (doc p3) - the guarding definition and fig 5 a/b/c;
+      the guard must be at the node's potential AND low impedance, on both
+      board sides, and its width sets bulk-leakage reduction.
+  - file: reference/knowledge/sources/sprad89.pdf
+    page: 4
+    section: "s3, fig 3-1"
+    note: >
+      TI SPRAD89 p4 - fig 3-1 resistive attenuator; source output impedance is
+      budgeted into R1, and the ladder's ground must be tied to the load's
+      clean analog reference.
+origin: research:block-resistive-attenuator-1
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q3; not the owner's own ruling. Approved after a
+    coverage run on the five breadboard boards (bb-buck, bb-mcu, bb-ldo, bb-
+    amp, bb-adc) at the default floor. No row needed lowering.

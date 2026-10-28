@@ -1,0 +1,112 @@
+id: inamp-ref-pin-drive-impedance
+classes: [feedback]
+applies:
+  topologies: [inamp]
+  packages: []
+  interfaces: []
+  parts: [AD8226]
+rule:
+  enforced_by: null
+  max_source_impedance_ohm: 2
+  what_ref_is: "one leg of the difference amplifier's own resistor bridge, not a high-impedance reference input"
+  positive_path_gain: "2*(50k + Rref)/(100k + Rref)"
+  cm_gain_at_output_derived: "Rref/(100k + Rref) - about 10 ppm per ohm"
+  cm_gain_at_2_ohm_ppm: 20
+  cm_gain_at_9k2_pct: 8.5
+  rti_conversion: "divide the output-referred common-mode gain by the total gain to refer it to the input"
+  second_error_source: "the REF input draws Iin = 7 uA typ, so an unbuffered divider also shifts by Iin * Rthevenin"
+  ref_input_resistance_kohm: 100
+  ref_gain_to_output_vv: 1
+  fix: "buffer the divider with an op amp (Figure 59 CORRECT half); a bare divider on REF is drawn INCORRECT"
+  abs_max: "REF is ESD-protected and must not exceed either rail by more than 0.3 V"
+prose: >
+  An in-amp's REF pin is not a high-impedance reference input. On a classic
+  3-op-amp part it is one leg of the difference amplifier's own resistor
+  bridge, so any impedance in series with it unbalances that bridge. ADI:
+  "For the best performance, source impedance to the REF terminal should be
+  kept below 2 ohm ... the reference terminal, REF, is at one end of a
+  50 kohm resistor. Additional impedance at the REF terminal adds to this
+  50 kohm resistor and results in amplification of the signal connected to
+  the positive input ... 2(50 kohm + Rref)/(100 kohm + Rref). Only the
+  positive signal path is amplified ... This uneven amplification degrades
+  CMRR." Figure 59 draws a bare resistor divider into REF, crosses it out
+  and labels it INCORRECT; the CORRECT half buffers that divider with an
+  op amp.
+  DERIVED from that expression: the common-mode gain that appears at the
+  output is A - 1 = Rref/(100 kohm + Rref) - about 10 ppm per ohm. At the
+  2 ohm limit that is 20 ppm; at a 9.2 kohm divider Thevenin it is
+  8.5 percent, four orders of magnitude worse, and CMRR is the whole reason
+  the part was bought. Refer it to the input by dividing by the total gain.
+  A second, independent reason to buffer: REF draws Iin = 7 uA typ, so an
+  unbuffered divider also shifts its own pedestal by Iin*Rthevenin - 65 mV
+  on that same 9.2 kohm.
+  TI states the principle for the generic part: a voltage follower
+  "provides low output impedance, which preserves the high CMRR of the
+  difference amplifier".
+sources:
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 21
+    section: "AD8226 Rev. C, printed p.20 - REFERENCE TERMINAL + Figure 59"
+    note: >
+      Read on the page: "For the best performance, source impedance to the
+      REF terminal should be kept below 2 ohm", the 50 kohm bridge-leg
+      explanation, the expression 2(50 kohm + Rref)/(100 kohm + Rref) for
+      the amplification of the positive input path, "Only the positive
+      signal path is amplified; the negative path is unaffected. This
+      uneven amplification degrades CMRR", and the 0.3 V REF abs-max note.
+      Figure 59 "Driving the Reference Pin" is a two-panel drawing: the
+      left panel, headed INCORRECT, shows a two-resistor divider wired
+      straight to REF and is struck through with a large X; the right
+      panel, headed CORRECT, shows the same divider buffered by an op amp
+      (OP1177) driving REF.
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 20
+    section: "AD8226 Rev. C, printed p.19 - Figure 58 Simplified Schematic"
+    note: >
+      Read Figure 58: the difference amplifier A3 is built from R3 to R6,
+      all 50 kohm, and the REF pin is the far end of R6 - the drawing that
+      makes the 50 kohm / 100 kohm arithmetic in the REFERENCE TERMINAL
+      text concrete, and shows why series impedance at REF is a bridge
+      imbalance rather than a simple offset.
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 6
+    section: "AD8226 Rev. C, printed p.5 - Table 3, REFERENCE INPUT block"
+    note: >
+      Read in Table 3: REFERENCE INPUT Rin = 100 kohm typ, Iin = 7 uA typ,
+      Voltage Range -Vs to +Vs, Reference Gain to Output 1 V/V, Reference
+      Gain Error 0.01 percent. The 7 uA is the second reason a bare divider
+      fails: it is a real DC load on whatever sets the pedestal.
+  - file: reference/knowledge/sources/slyt226.pdf
+    page: 2
+    section: "TI SLYT226, printed p.26 - buffered divider in the difference amplifier feedback, Figure 2"
+    note: >
+      Read on the page: "Voltage follower A4 provides low output impedance,
+      which preserves the high CMRR of the difference amplifier", and
+      Figure 2, in which any resistance added to the difference amplifier's
+      feedback leg (Rext) is matched by the same resistance in the Vref leg
+      - the cross-vendor statement that the reference leg is part of the
+      matched network, not an independent input.
+status: active
+origin: research:block-inamp-1
+level: topology
+envelope:
+  inamp_arch_kind: {in: [three-opamp]}
+maturity: approved
+generalizes: []
+envelope_note: >
+  The rule scales with the series resistance at REF measured against the
+  difference amplifier's own bridge resistance: the common-mode leakage is
+  Rref/(Rbridge + Rref), so the tolerable impedance rises with a bigger
+  internal bridge and falls with the CMRR the design must keep. The 2 ohm
+  figure and the 50 k / 100 k arithmetic are the AD8226's; another part has
+  its own. It is bounded to architectures whose REF sits INSIDE the
+  difference-amplifier bridge; a part whose data sheet places REF outside
+  that network must be judged on its own reference-terminal section.
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read AD8226 PDF p.21 (printed p.20, REFERENCE TERMINAL + Figure 59), p.20 (Figure 58), p.6 (printed p.5, Table 3) and SLYT226 p.2. Verbatim on printed p.20: 'For the best performance, source impedance to the REF terminal should be kept below 2 ohm', the 50 kohm bridge-leg explanation, 2(50 kohm + RREF)/(100 kohm + RREF), 'Only the positive signal path is amplified; the negative path is unaffected. This uneven amplification degrades CMRR', and the 0.3 V ESD limit. Figure 59 is exactly as the note describes: left panel headed INCORRECT, a bare two-resistor divider straight into REF, struck through with a large X; right panel headed CORRECT, the same divider buffered by an OP1177. Figure 58 does show R3-R6 all 50 kohm with REF at the far end of R6. Table 3 REFERENCE INPUT confirms RIN 100 kohm typ, IIN 7 uA typ, range -Vs to +Vs, gain to output 1 V/V, gain error 0.01 pct - the 7 uA IS on the page. Derivation checked and correct: A-1 = Rref/(100k+Rref), 10 ppm/ohm, 20 ppm at 2 ohm exact; 7 uA x 9.2 kohm = 64.4 mV supports the 65 mV pedestal. ONE CORRECTION for the author: at Rref = 9.2 kohm the exact figure is 9200/109200 = 8.42 pct, not 8.5 pct, and 8.42 pct against 20 ppm is 3.6 orders of magnitude, not four - a rounding slip in a field already flagged derived, not enough to break the record. TI quote verbatim; Figure 2 does carry Rext in both the feedback and the Vref leg, though its A4 buffers A3's feedback divider rather than the REF pin, so it corroborates the principle rather than the REF rule itself."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

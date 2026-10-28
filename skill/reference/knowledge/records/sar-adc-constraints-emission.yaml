@@ -1,0 +1,66 @@
+id: sar-adc-constraints-emission
+classes: [constraints-emission]
+applies:
+  topologies: [sar-adc]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  blocks_entry: "{topology: sar-adc} so knowledge retrieval keys on the slot"
+  power_entry: "converter supply current AND the reference path's dynamic load (buffer quiescent + recharge current), not the ADC alone"
+  placement_groups: "the reference bypass cap adjacent to the REF and GND pins; 0.1 uF + bulk at VDD with the rail resistor upstream; converter and its analog parts on analog ground"
+  route_critical: "+IN, -IN, REF - short, away from DCLOCK/DOUT/CS, with the -IN sense point named"
+  thermal_entry: "not required for a micropower converter"
+prose: >
+  What a sar-adc block must hand the pipeline, and where each item comes
+  from. (1) A blocks entry {topology: sar-adc} so knowledge retrieval keys on
+  the slot. (2) A power entry for the analog rail carrying BOTH the average
+  supply current and the reference path's dynamic load: ADS8326 p.26 warns
+  the average reference current is small while the instantaneous demand is
+  not, so the reference and any buffer - not the converter alone - size that
+  rail. No thermal entry is warranted for a micropower part (p.19, under
+  10 mW from VDD). (3) layout_notes that become placement groups and route
+  rules downstream: the reference bypass capacitor adjacent to the REF and
+  GND pins, as close as possible to the pin (ADS8326 p.22), with any
+  current-limiting resistor between the reference SOURCE and that capacitor
+  rather than between capacitor and pin (same page); 0.1 uF plus 1-10 uF at
+  VDD with a 5-10 ohm resistor isolating a shared digital rail (ADS8326 p.27
+  figs 44/45); the whole converter on analog ground with the digital zone
+  toward the connector (AN688 p.2 fig 2b). (4) route_critical for +IN, -IN
+  and REF - short, never parallel to DCLOCK/DOUT/CS (AN688 p.4 fig 7,
+  I = C dV/dt) - and the -IN sense point stated explicitly, so the router
+  cannot re-attach the measurement's reference terminal to convenient ground
+  copper (ADS8326 p.20).
+sources:
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 26
+    note: "LAYOUT: instantaneous current demands on the external input and reference circuitry despite low average reference current; 0.1 uF at the package plus 1-10 uF and a 5-10 ohm series resistor; GND pin on a clean analog ground point away from the MCU/DSP - the facts behind the power entry and the ground/decoupling layout notes"
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 27
+    note: "APPLICATION CIRCUITS figs 44/45: the built topology this block emits - reference IC into a buffer into 47 uF at REF, driver amp with 10 ohm + 1000 pF at +IN, 5 ohm from the digital rail into VDD with 0.1 uF + 10 uF at the pin, analog parts on AVDD"
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 22
+    note: "REFERENCE INPUT + fig 42: the 47 uF low-ESR bypass 'connected as close as possible to the input pin', and a current-limiting resistor placed in front of the capacitors when the reference source is high impedance - the two facts behind the reference placement group (fig 1-1 in SPRABY5 shows a damped-shunt arrangement instead and is NOT the source for this group)"
+  - file: reference/knowledge/sources/00688b.pdf
+    page: 2
+    note: "Device Placement / fig 2b: the SAR entirely on the analog planes with the digital zone nearest the connector - the zoning fact behind the placement note"
+  - file: reference/knowledge/sources/00688b.pdf
+    page: 4
+    note: "Signal Traces / fig 7: high-impedance input and reference pins, C = w L eo er / d and I = C dV/dt from a parallel switching trace - the fact behind route_critical and the keepout from the serial-interface nets"
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 20
+    note: "ANALOG INPUT: -IN as a remote-ground sense terminal (-0.3 V to +0.5 V range) - why the sense point, not just the net name, has to be emitted"
+status: active
+origin: "research:block-sar-adc-1"
+level: principle
+maturity: approved
+generalizes: []
+verification: {by: "research-second-reader", date: "2026-08-16", note: "Checked hardest, as the record that turns into copper. SPRABY5 is gone from sources[] - the reference placement group is now cited to ads8326 p.22, and p.22 genuinely carries BOTH halves verbatim: 'a 47uF tantalum capacitor with low ESR should be connected as close as possible to the input pin' AND 'if a high output impedance reference source is used, an additional operational amplifier with a current-limiting resistor must be placed in front of the capacitors'. p.27 fig 44 rendered and read: REF3225 on AVDD -> 10 ohm -> 2.2uF -> OPA350 -> 47uF straight into REF with NOTHING between cap and pin, OPA365 -> 10 ohm -> 1000pF -> +IN, and ADS8326 VDD taken off DVDD (2.7-3.6V) through a 5 ohm with 0.1uF + 10uF at the pin - so the emitted placement group and its resistor ORDER are shown in TI's own application circuit, independent of the disputed figure. p.26 verbatim on instantaneous reference current, the 0.1uF/1-10uF/5-10 ohm set and the GND point away from the MCU. p.20 verbatim on -IN as a remote-ground sense (-0.3V to +0.5V). AN688 p.2 fig 2b rendered: connector at top, Digital zone nearest it, a 'Digital Buffer' strip on the split, Analog with the A/D furthest away - the zoning note is exact. AN688 p.4 fig 7 carries C = w L eo er / d and I = C dV/dt as cited. No orphaned source entry: all six still support something the prose or rule says. Two hygiene items, neither a refutation: (1) the prose cites '(p.19, under 10 mW from VDD)' for rule.thermal_entry but there is no p.19 sources[] entry - the page is in the ledger and the quote is verbatim ('consuming less than 10mW from VDD'), so the claim is supported, but the citation should be listed; (2) 'adjacent to the REF and GND pins' goes one step past p.22, which says only 'as close as possible to the input pin' - the GND half is loop closure, consistent with fig 42/44 and with the power-loop record, so it is a sound derivation rather than a quote."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

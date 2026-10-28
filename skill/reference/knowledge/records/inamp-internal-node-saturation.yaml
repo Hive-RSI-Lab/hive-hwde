@@ -1,0 +1,70 @@
+id: inamp-internal-node-saturation
+classes: [selection]
+applies:
+  topologies: [inamp]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  where: "the internal nodes between the gain stage and the difference amplifier"
+  node_carries: "gained differential signal + the original common-mode signal + a diode drop"
+  failure: "those nodes hit a supply rail while BOTH the inputs and the output are still inside their own specified ranges"
+  symptom: "the output stays in range and looks plausible to whatever reads it, and is wrong"
+  consequence: "an in-amp's input range, output swing and gain specs are necessary but NOT sufficient - the internal node is a third, unmeasurable constraint"
+prose: >
+  A classic in-amp amplifies BEFORE it subtracts: the first stage applies
+  the differential gain, the second stage removes the common mode. So the
+  nodes between the two stages carry a gained differential signal riding on
+  the full, ungained common-mode voltage, shifted by a base-emitter drop.
+  ADI states it directly: those nodes "experience a combination of a gained
+  signal, a common-mode signal, and a diode drop. This combined signal can
+  be limited by the voltage supplies even when the individual input and
+  output signals are not limited" (AD8226 Rev. C, INPUT VOLTAGE RANGE).
+  TI states the same for the generic three-op-amp INA and names the danger:
+  saturation of the input stage "causes the INA output voltage, although of
+  wrong value, to appear normal to the following processing circuitry. This
+  could lead to disastrous effects with unpredictable consequences"
+  (SLYT226). TI's Figure 1 labels the nodes: V1 = Vcm - G1(Vd/2) and
+  V2 = Vcm + G1(Vd/2) - the common mode passes the input stage at unity
+  gain while only the differential half is amplified. These nodes are not
+  brought out to a pin, so no measurement finds the fault; only arithmetic
+  does. Checking input range, output swing and gain is therefore not enough
+  to conclude an in-amp works at an operating point. This is the principle;
+  the closed-form test and its constants are a level down.
+sources:
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 21
+    section: "AD8226 Rev. C, printed p.20 - INPUT VOLTAGE RANGE, opening paragraph"
+    note: >
+      Read on the page: "The 3-op-amp architecture of the AD8226 applies
+      gain in the first stage before removing common-mode voltage with the
+      difference amplifier stage. Internal nodes between the first and
+      second stages (Node 1 and Node 2 in Figure 58) experience a
+      combination of a gained signal, a common-mode signal, and a diode
+      drop. This combined signal can be limited by the voltage supplies
+      even when the individual input and output signals are not limited."
+  - file: reference/knowledge/sources/slyt226.pdf
+    page: 1
+    section: "TI SLYT226, printed p.25 - abstract + Figure 1 + Equations 1-5"
+    note: >
+      Read on the page: Figure 1 "Classic three-op-amp INA and its voltage
+      nodes" labels V1 = Vcm - G1(Vd/2) and V2 = Vcm + G1(Vd/2) with
+      G1 = 1 + 2Rf/Rg, and the abstract states that a saturated input stage
+      makes a wrong output "appear normal to the following processing
+      circuitry". Equation 4 and its text: "only the differential
+      component, Vd/2, is amplified by the input gain, G1, while the
+      common-mode voltage, Vcm, passes the input stage with unity gain."
+status: active
+origin: research:block-inamp-1
+level: principle
+maturity: approved
+generalizes: []
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read AD8226 PDF p.21 (printed p.20, INPUT VOLTAGE RANGE opening paragraph) and SLYT226 PDF p.1 (printed p.25). Both quotes verbatim: ADI 'Internal nodes between the first and second stages (Node 1 and Node 2 in Figure 58) experience a combination of a gained signal, a common-mode signal, and a diode drop. This combined signal can be limited by the voltage supplies even when the individual input and output signals are not limited'; TI 'Saturation causes the INA output voltage, although of wrong value, to appear normal to the following processing circuitry. This could lead to disastrous effects with unpredictable consequences.' TI Figure 1 is titled 'Classic three-op-amp INA and its voltage nodes' and does print V1 = VCM - G1(VD/2), V2 = VCM + G1(VD/2), G1 = 1 + 2RF/RG; the Equation 4 text confirms only VD/2 is amplified while VCM passes the input stage at unity gain. Level principle is right and nothing in the prose overreaches either page."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

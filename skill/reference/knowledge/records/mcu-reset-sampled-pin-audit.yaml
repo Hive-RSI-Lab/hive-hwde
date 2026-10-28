@@ -1,0 +1,54 @@
+id: mcu-reset-sampled-pin-audit
+classes: [selection]
+applies:
+  topologies: [mcu]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  audit: "every pin the silicon samples at or immediately after reset"
+  question_per_pin: "does the die define its level, or must the board?"
+  answer_lives_in: "the datasheet pin table's I/O-structure and Notes columns"
+prose: >
+  Before drawing an MCU schematic, audit every pin the silicon SAMPLES at or
+  immediately after reset - boot/mode select, reset, debug - and ask one
+  question per pin: does the die define its level, or must the board? The
+  datasheet's own pin table answers it, in the columns designers skim past. ST's
+  legend table defines I/O structure "RST" as "bidirectional reset pin with
+  embedded weak pull-up resistor" and "B" as "dedicated BOOT0 pin", and its
+  blanket Notes row says "unless otherwise specified by a note, all I/Os are set
+  as floating inputs during and after reset". So a config pin whose Notes cell is
+  EMPTY is floating at reset and the board owns its level; a pin whose note or
+  structure names an internal pull is already defined, and an external resistor
+  there only builds a divider against the die. Running the same audit at another
+  vendor lands somewhere else entirely: NXP's boot/ISP select is an ordinary port
+  pin (PIO0_5) whose default state is "Input, pull-up", which is why that part
+  reaches its boot-from-flash state with no strap, while ST's dedicated BOOT0 has
+  no pull of any kind. The rule is the audit, not the answer - the answer changes
+  between siblings inside one family, and it is where MCU part count is won or
+  lost.
+sources:
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 27,
+     note: "Table 10 legend: pin type I = input only; I/O structure B = dedicated BOOT0 pin, RST = bidirectional reset pin with embedded weak pull-up resistor; Notes row - unless otherwise specified by a note, all I/Os are floating inputs during and after reset"}
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 32,
+     note: "Table 11: BOOT0 row carries type I, structure B and an EMPTY Notes cell, while note 7 on PA13/PA14 explicitly activates internal pull-up/pull-down - the same table answering the audit both ways"}
+  - {file: reference/knowledge/sources/AN13033.pdf, page: 15,
+     note: "Table 12 termination of unused pins: RESET default state Input, pull-up (can be left unconnected); all PIOn_m default Input, pull-up - the vendor stating the die-provided level pin by pin"}
+  - {file: reference/knowledge/sources/AN13033.pdf, page: 10,
+     note: "Table 8: the state of ISP0 (port pin PIO0_5) at Reset determines the boot source - HIGH looks for a valid image in internal flash, LOW enters ISP boot; cross-vendor confirmation that a level sampled at reset picks the boot path"}
+status: active
+origin: research:block-mcu-1
+level: principle
+maturity: approved
+generalizes: []
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read DS p27/p32 + AN13033 p15/p10. p27 Table 10 legend is verbatim as quoted: pin type I = input only pin; I/O structure B = dedicated BOOT0 pin; RST = bidirectional reset pin with embedded weak pull-up resistor; and the Notes row - unless otherwise specified by a note, all I/Os are set as floating inputs during and after reset. p32 shows the same table answering the audit both ways: the BOOT0 row carries no note while note 7 explicitly activates the PA13/PA14 internal pull-up and pull-down. AN13033 p15 Table 12 gives RESET default state Input, pull-up and all PIOn_m (not open-drain) Input, pull-up; p10 Table 8 confirms the state of PIO0_5 at reset determines the boot source. The record states the audit as a method and imports no ST polarity mapping. Principle with no envelope is right - a method carries no operating-point bound."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

@@ -1,0 +1,94 @@
+id: in-cable-shield-termination
+classes: [emi]
+applies:
+  topologies: []
+  packages: []
+  interfaces: [in]
+  parts: []
+rule:
+  enforced_by: null
+  shield_is_a_circuit_node: "a sensor cable's screen is not a mechanical detail: the vendor states that cable impedance MISMATCH turns into a common-mode error at the amplifier, and that driving the shield to a LOW IMPEDANCE potential is what reduces the mismatch"
+  which_node_single_supply: "for a single-supply front end do NOT reflexively land the screen on 0 V: at 0 V the shield sits at the amplifier's lower supply rail, 'which is typically a common mode voltage where the same CMR performance degrades'; the vendor's rule is to tie the shield at the common-mode voltage of mid supply"
+  which_node_dual_supply: "with dual supplies analog ground IS mid-supply, which is why the usual chassis/0 V habit works there - the habit, not the reason, is what fails on a single rail"
+  active_form: "the stronger form is a driven shield: buffer the input common-mode potential and drive the screen with it - 'Driving the shield to the input common mode voltage reduces cable impedance mismatch and improves CMR performance in single supply sensor applications'"
+  active_form_as_drawn: "in the vendor's schematic the screen lands at the AMPLIFIER end, on the output of a common-mode driver: the two buffered input-stage nodes are summed by a 10 kohm / 10 kohm divider into a unity-gain op amp, whose output reaches the shield through a 100 ohm series resistor (isolation from the cable's capacitance)"
+  ad8226_caveat: "the CMR-degrades-at-0 V half is that vendor's claim about its own rail-to-rail parts; the AD8226 specifies CMRR over VCM = 0 V to 1.7 V on a 2.7 V single supply (Table 3), so it does not transfer unexamined - what transfers is: one low-impedance node, at the inputs' common-mode potential, and mismatch shows up as common-mode error"
+  not_witnessed_here: "only the DRIVEN case's end is witnessed (the amplifier end, in the figure). Whether a passive screen lands near or far, and the current a screen grounded at BOTH ends can inject, are NOT witnessed by any page in this ledger - do not read this record as licensing either answer"
+prose: >-
+  What the ledger actually witnesses about the screen. A vendor sensor
+  front-end paper, drawn around a 350 ohm foil strain gauge bridge feeding
+  a single-supply in-amp - this slot's operating point - says: "Shielded
+  cables offer excellent rejection of noise coupling into signal lines.
+  However, cable impedance mismatch can result in a common mode error into
+  the amplifier. Driving the cable shield to a low impedance potential
+  reduces the impedance mismatch." It then breaks the reflex: the screen is
+  usually tied to chassis ground because that is an excellent low-impedance
+  point, which "works great for dual supply applications", but on a single
+  supply 0 V is the amplifier's lower rail, and "tying the shield at common
+  mode voltage of mid supply results in the operation of the amplifier with
+  the best CMR performance". Its Figure 6 draws the strong form: the screen
+  lands at the amplifier end on a common-mode driver - the two buffered
+  input nodes summed 10 k/10 k into a unity-gain buffer, then 100 ohm in
+  series into the shield. The coupling path is the two
+  conductors' capacitance to that screen - which is why this belongs with
+  the equal-path rule for the pair, and why a screen left floating or
+  landed through a long high-impedance tail is worse than one landed on a
+  defined node. The near/far end question this record does not answer.
+sources:
+  - file: reference/knowledge/sources/how-monitor-sensor-health-instrumentation-amplifiers.pdf
+    page: 6
+    section: "Renesas white paper p.6 - Active Shield Guard Drive + Figure 5"
+    note: >-
+      Read the Active Shield Guard Drive section verbatim: shielded cables
+      reject coupling but cable impedance mismatch becomes a common-mode
+      error; drive the shield to a low impedance potential; chassis ground
+      is the usual low-impedance point and works for dual supply; on a
+      single supply 0 V is the lower rail where CMR degrades; tie the
+      shield at mid-supply common-mode voltage for best CMR. Figure 5 above
+      it is the application: a FOIL STRAIN GAUGE bridge of 350 ohm legs on
+      a +5 V excitation into a single-supply in-amp and a 24-bit ADC.
+  - file: reference/knowledge/sources/how-monitor-sensor-health-instrumentation-amplifiers.pdf
+    page: 7
+    section: "Renesas white paper p.7 - shield guard drive, Figure 6"
+    note: >-
+      Read: driving the shield from the buffered input common-mode pins
+      "reduces cable impedance mismatch and improves CMR performance in
+      single supply sensor applications", with an unused on-chip op amp
+      buffering the shield driver. Figure 6 read as a drawing: a SHIELDED
+      CABLE brings +SIG and -SIG to INA-/INA+, and its screen is landed at
+      the amplifier end on a COMMON MODE DRIVER - VA+ and VA- summed
+      through 10 kohm / 10 kohm into a unity-gain op amp whose output
+      drives the screen through a 100 ohm series resistor.
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 6
+    section: "AD8226 Rev. C, printed p.5 - Table 3, CMRR conditions"
+    note: >-
+      Read the CMRR block's condition line: VCM = 0 V to 1.7 V on a +2.7 V
+      single supply, 86 dB min at G = 1 dc to 60 Hz - this part specifies
+      CMRR down to its negative rail, which is why the other vendor's
+      degrades-at-0 V argument is quoted here as theirs, not adopted.
+status: active
+origin: research:interface-in-2
+level: topology
+envelope:
+  vcm_v: {min: 0, max: 5}
+maturity: approved
+generalizes: []
+envelope_note: >-
+  The rule keys on where the screen sits relative to the input common-mode
+  potential, so the dim is that potential. Bounded 0 V to 5 V because the
+  witnessed discussion is explicitly a 5 V single-supply sensor front end
+  (with the +-2.5 V dual-supply case as its contrast): that is the regime
+  in which "0 V is the lower rail" and "mid supply is the common-mode
+  voltage" are the two candidate nodes. On a higher-voltage or
+  differently-referenced front end the same mechanism holds but the node
+  choice is a different question, and the vendor gives no number for it.
+verification: {by: "second-reader", date: "2026-08-16", note: "Renesas white paper p.6 Active Shield Guard Drive re-read: every quoted clause is verbatim - shielded cables reject coupling BUT cable impedance mismatch can result in a common mode error into the amplifier; driving the cable shield to a low impedance potential reduces the impedance mismatch; the shield is usually tied to chassis ground as an excellent low impedance point, which 'works great for dual supply applications'; with single supply (5V) tying the shield at 0V is the amplifier's lower power supply rail, 'which is typically a common mode voltage where the same CMR performance degrades'; 'Tying the shield at common mode voltage of mid supply results in the operation of the amplifier with the best CMR performance'. Figure 5 above it is indeed a FOIL STRAIN GAUGE bridge of 350 ohm legs on +5 V into a single-supply INA and a 24-bit ADC - this slot's operating point, so not a transplant. p.7 verbatim: 'Driving the shield to the input common mode voltage reduces cable impedance mismatch and improves CMR performance in single supply sensor applications', with the unused on-chip op amp offered as the buffer. Figure 6 zoomed and read as a drawing: SHIELDED CABLE +SIG/-SIG to INA-/INA+, screen landed AT THE AMPLIFIER END on the COMMON MODE DRIVER - VA+/VA- through 10k and 10k to a VCM SENSE node into A4's IN+ with OUT fed back to IN- (unity gain), then 100 ohm in series to the screen. Exactly as the record draws it. AD8226 Table 3 CMRR condition VCM = 0 V to 1.7 V, 86 dB min at G=1 - confirmed, so the record is right to quote the degrades-at-0V argument as the other vendor's (its parts are RRIO per that paper's own conclusion) rather than adopt it. THE ADMISSION IS REALLY IN THE RECORD: rule.not_witnessed_here states that only the driven case's end is witnessed and that passive-screen near/far and both-ends current injection are NOT witnessed, and the prose repeats 'The near/far end question this record does not answer.' Nothing in the record quietly asserts either. No scope violation - it never says a screen or any protection is unnecessary, only which node it should land on. Envelope 0-5 V matches the witnessed +5 V single supply vs +-2.5 V dual contrast. Minor: the parenthetical purpose given for the 100 ohm (isolation from cable capacitance) is the author's reading, not vendor text."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note. The 0-5 V common-mode range is only what
+    was tested; kept narrow, not widened to a principle.

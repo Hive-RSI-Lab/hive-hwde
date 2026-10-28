@@ -1,0 +1,118 @@
+id: precision-buffer-zero-drift-source-impedance-ceiling
+classes: [selection]
+applies:
+  topologies: [precision-buffer]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  mechanism: "chopper input switches inject uA-scale current transients; offset = I_transient * (R_source, R_f||R_g)"
+  gate: "check the device's MAX recommended source and feedback resistance before believing its Vos spec"
+  vendor_table_span: "1 kohm (OPA189) to 1000 kohm (OPA333) - per device, not per family"
+  dc_leg: "IB(T) = IB(125C)/2^((125-T)/10); R_MAX = Vos_max / IB(T) at the real ambient"
+  does_not_work: "balancing source against feedback impedance does not cancel chopper transients"
+prose: >
+  The 10 uV offset on a zero-drift datasheet is a promise about the amplifier,
+  not about the circuit. A chopper's input MOS switches inject charge and feed
+  the clock through on every transition: measured on OPA188 (p11 fig 3-5),
+  2 uA current spikes, two per 1.54 us calibration cycle and annotated 770 ns
+  apart, against a 160 pA average bias current - 12,500 times IB. Those spikes
+  are CURRENTS, so they become offset across
+  whatever impedance they see: the source and the feedback network. p17 fig
+  5-5 plots OPA388 offset against source resistance - flat near 4 uV out to
+  about 10 kohm where the amplifier's own offset dominates, then rising
+  linearly to roughly 400 uV at 1 Mohm where the transients dominate, a 100x
+  error. Every chopper has its own ceiling and TI publishes it (p17 table 5-1,
+  repeated as column F of p26 table 9-1): OPA333 1000 kohm, OPA187 and OPA186
+  500 kohm, OPA388/OPA188/OPA182/OPA387 10 kohm, OPA189 1 kohm. The ceiling
+  spans three decades, so the source impedance you already have selects the
+  part. Two riders: balancing source against feedback impedance does NOT
+  cancel these transients, because their amplitudes are not matched (p19); and
+  the separate DC leg from ESD-diode leakage roughly doubles every 10 C, so
+  re-check at the real ambient with IB(T) = IB(125C)/2^((125-T)/10) and
+  R_MAX = Vos_max/IB(T) (p18 fig 6-1, p19 eqs 3-6).
+sources:
+  - file: reference/knowledge/sources/sboa586a.pdf
+    page: 11
+    section: "3 Chopping Input Current Transients"
+    note: >
+      Fig 3-5 measured OPA188 input current: 2 uA chopping charge-injection
+      spikes on a 1.54 us (650 kHz) clock, 12,500x the 160 pA average IB, with
+      a smaller synchronous-notch transient between them. Text - the impact is
+      minimized by reducing source and feedback impedance.
+  - file: reference/knowledge/sources/sboa586a.pdf
+    page: 17
+    section: "5 Chopping Current Transient Impact on Offset Voltage"
+    note: >
+      Fig 5-5 OPA388 offset vs source resistance: flat ~4 uV to ~10 kohm
+      (op-amp offset dominates), then rising to ~400 uV at 1000 kohm
+      (Ib_transients x Rin dominate). Table 5-1 maximum recommended Rs and
+      Rf||Rg per device - OPA189 1, OPA388 10, OPA333 1000, OPA187 500,
+      OPA188 10, OPA186 500, OPA182 10, OPA387 10 (kohm).
+  - file: reference/knowledge/sources/sboa586a.pdf
+    page: 18
+    section: "6 Input Bias Current versus Bias Transients"
+    note: >
+      Fig 6-1 OPA186 bias current vs temperature: +/-5 pA typ at 25 C rising
+      to +/-900 pA typ and +/-4.8 nA max at 125 C, driven by ESD-diode
+      leakage doubling every ~10 C while MOSFET charge injection stays flat -
+      so table 5-1's numbers are room-temperature numbers.
+  - file: reference/knowledge/sources/sboa586a.pdf
+    page: 19
+    section: "Equations 3-6 and bias current cancellation"
+    note: >
+      Eq 3 IB(T) = IB(125C)/2^((125-T)/10), eq 4 R_MAX = Vos_max/IB(T),
+      worked for OPA186 at 100 C giving 0.849 nA and R_MAX = 11.7 kohm. Text -
+      impedance balancing does not cancel chopper transients because they are
+      not well matched; stay under the table 5-1 value instead.
+  - file: reference/knowledge/sources/sboa586a.pdf
+    page: 26
+    section: "Table 9-1 Zero-Drift Selection Table"
+    note: >
+      Full selection table: offset, drift, GBW, noise density, max recommended
+      R_IN and Rf||Rg, and noise-optimized Rf||Rg for eight devices. OPA333
+      row reads 10 uV, 0.05 uV/C, 0.35 MHz, 55 nV/rtHz, 1000 kohm max,
+      20.4 kohm noise-optimized - showing the low-noise parts are exactly the
+      ones with the tightest source-impedance ceiling.
+  - file: reference/knowledge/sources/opa333.pdf
+    page: 7
+    section: "6.6 Electrical Characteristics"
+    note: >
+      Input bias current block: IB +/-70 pA typ and +/-200 pA max at 25 C,
+      +/-150 pA typ over -40 to 125 C; IOS +/-140 pA typ, +/-400 pA max; Vos
+      2 uV typ / 10 uV max, drift 0.02/0.05 uV/C, CMRR 106 dB min - the
+      published numbers a source-impedance budget is checked against.
+  - file: reference/knowledge/sources/opa333.pdf
+    page: 9
+    section: "6.7 Typical Characteristics, Figures 7-8"
+    note: >
+      Fig 7 bias current vs common-mode voltage (+/-70-80 pA, varying with
+      VCM) and fig 8 bias current vs temperature - for OPA333 the magnitude
+      stays in the 50-150 pA band from -50 to 125 C rather than exploding, so
+      its DC leg is not the limiting term the way OPA186's is.
+status: active
+origin: research:block-precision-buffer-1
+level: family
+envelope:
+  amp_kind: {in: [zero-drift]}
+  rsource_ohm: {min: 1000, max: 1000000}
+maturity: approved
+generalizes: []
+envelope_note: >
+  Scales with source (and feedback) impedance - the error is a transient
+  CURRENT times that impedance, and fig 5-5 is literally that curve. Below
+  ~1 kohm the amplifier's own offset dominates and the check changes nothing
+  (the flat left region of fig 5-5). Above 1 Mohm no charted zero-drift part
+  is recommended at all (table 5-1 tops out at 1000 kohm), so past that bound
+  the rule stops selecting a part and rejects the family. The bounds mark the
+  band where the check changes the answer, not a physical discontinuity; high
+  ambient narrows them further.
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read sboa586a p11, p17, p18, p19 and p26 and opa333 p7 and p9 visually, pushing on the sentence that changed. Fig 3-5 on p11 settles it: the body text says the two large transients correspond to transitioning of the calibration circuit input switches and that the period of the calibration cycle for this example is 1.54 us (f_chop = 650 kHz), the figure annotates 770ns as a double-headed arrow between the two large 2 uA spikes, and the clock trace below annotates 1.54us (650kHz) across the full period - so two per 1.54 us calibration cycle and annotated 770 ns apart is now exactly what the page shows, which is what the earlier wording got loose. The rest re-checked from scratch and holds: 2 uA against I_B average 160 pA is 12,500 times the bias current in the pages own words, and the closing sentence is that since these transients are currents the impact can be minimized by reducing source and feedback impedance. p17 fig 5-5 is OPA388 offset vs source resistance, flat near 4 uV out to about 10 kohm under the label Op-amp offset dominates and rising to about 400 uV at 1000 kohm under Ib_transients x Rin dominate; table 5-1 transcribes exactly for all eight parts (OPA189 1, OPA388 10, OPA333 1000, OPA187 500, OPA188 10, OPA186 500, OPA182 10, OPA387 10 kohm). p18 fig 6-1 gives OPA186 +/-5 pA typ at 25 C rising to +/-900 pA typ and +/-4.8 nA max at 125 C with the ESD-diode explanation, and the text states that the table 5-1 recommendation is correct for room temperature but lower impedances are required at 100 C. p19 eq 3 and eq 4 are as quoted, Example 1 works OPA186 at 100 C to 0.849 nA and R_MAX = 10 uV / 0.849 nA = 11.7 kohm, and the page says to keep source and feedback resistance below the table 5-1 value rather than rely on bias current cancellation because the transient amplitudes are not well balanced. p26 OPA333 row reads 10 uV, 0.05 uV/C, 0.35 MHz, 55 nV/rtHz, 1000 kohm, 20.4 kohm. opa333 p7 and p9 confirm the DC leg: IB +/-70 typ / +/-200 max pA at 25 C and +/-150 pA typ over temperature, and figs 7 and 8 keep the magnitude inside a roughly 50-150 pA band from -50 to 125 C, so the 240 kohm source in this block is limited by the transient ceiling and not by DC bias current. Envelope 1 kohm to 1 Mohm and its note are unchanged and still honest."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. amp_kind zero-
+    drift added so a board can find it by kind; level and limits unchanged.

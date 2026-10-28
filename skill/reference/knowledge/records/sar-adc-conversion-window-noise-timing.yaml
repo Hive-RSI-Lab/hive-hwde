@@ -1,0 +1,57 @@
+id: sar-adc-conversion-window-noise-timing
+classes: [sequencing]
+applies:
+  topologies: [sar-adc]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  vulnerable_windows_per_conversion: "n, one just before each comparator latch, for an n-bit converter"
+  worst_case: "a glitch almost synchronous with the converter clock - the phase drifts with time and temperature, so the error is sporadic"
+  schedule_rule: "keep other digital activity out of the conversion; clock the transfer out fast and leave the rest of the cycle quiet"
+  acquisition_is_the_remainder: "tACQ = tcycle - tconv, so a slow interface clock spends the acquisition window"
+prose: >
+  For a SAR, WHEN a disturbance arrives decides whether it becomes a wrong
+  code. ADS8326 p.26: "during any single conversion for an n-bit SAR
+  converter, there are n windows in which large external transient voltages
+  can easily affect the conversion result" - the architecture is sensitive to
+  spikes on the power supply, reference and ground connections that occur
+  just prior to latching the comparator output, and a hit on an early bit is
+  worth a large fraction of full scale. The nastiest case is named there too:
+  a glitch almost synchronous with the converter's DCLOCK, because the phase
+  between the two changes with time and temperature, causing sporadic
+  misoperation that is "very difficult to track down". Two design
+  consequences. (1) Schedule other digital activity - other SPI traffic, PWM
+  edges, display updates - outside the conversion, so the converter's own
+  clock stays the only synchronous aggressor. (2) The interface schedule also
+  SETS the acquisition window: SBAA256B p.3 tabulates the same 10 kSPS
+  throughput (100 us cycle) yielding 25.01 us of acquisition at a 0.24 MHz
+  SCLK but 99.70 us at 60 MHz - clock the conversion out fast and leave the
+  rest of the cycle quiet, rather than spreading the transfer across the
+  cycle. ADS8326 p.19 confirms the window is exactly what the schedule leaves
+  over: while a conversion is in progress both inputs are disconnected from
+  any internal function.
+sources:
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 26
+    note: "LAYOUT paragraph 2: the basic SAR architecture is sensitive to spikes on power supply, reference and ground just prior to latching the comparator output; 'during any single conversion for an n-bit SAR converter, there are n windows in which large external transient voltages can easily affect the conversion result'; a glitch almost synchronous to the DCLOCK is very difficult to track down because the phase difference changes with time and temperature, causing sporadic misoperation"
+  - file: reference/knowledge/sources/sbaa256b.pdf
+    page: 3
+    note: "'Increasing Acquisition Time of SAR ADC for Input Signal Settling' + table: at a fixed 10 ksps throughput (tcycle 100 us), SCLK 0.24 MHz gives 74.988 us of conversion and only 25.01 us of acquisition, while SCLK 60 MHz gives 0.3 us of conversion and 99.70 us of acquisition"
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 19
+    note: "THEORY OF OPERATION: the DCLOCK input clocks the successive-approximation bit decisions (external clock 24 kHz to 6 MHz); when a conversion is initiated the differential input is sampled onto the internal capacitor array and, while the conversion is in progress, both inputs are disconnected from any internal function"
+status: active
+origin: "research:block-sar-adc-1"
+level: principle
+maturity: approved
+generalizes: []
+verification: {by: "research-second-reader", date: "2026-08-16", note: "ads8326 p.26 verbatim: 'during any single conversion for an n-bit SAR converter, there are n windows in which large external transient voltages can easily affect the conversion result', spikes just prior to latching the comparator output from switching supplies / digital logic / high-power devices, and the glitch almost synchronous to DCLOCK being very hard to track down because the phase difference changes with time and temperature, causing sporadic misoperation. sbaa256b p.3 table is exact: 10ksps, tcycle 100us, SCLK 0.24MHz -> 74.988us conversion / 25.01us acquisition, SCLK 60MHz -> 0.3us / 99.70us, and the column header is literally 'Acquisition Time (tcycle - tconv)', which is rule.acquisition_is_the_remainder word for word. ads8326 p.19 confirms both inputs are disconnected from any internal function while a conversion is in progress and the 24kHz-6MHz external clock range. One phrasing stretch, not a refutation: p.19 says DCLOCK clocks the RESULT out; 'clocks the successive-approximation bit decisions' rests on the p.7 pin table ('determines conversion speed') and p.26's bit-decision-every-167ns rather than on p.19's own sentence."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

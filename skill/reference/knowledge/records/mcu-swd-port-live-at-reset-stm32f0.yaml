@@ -1,0 +1,73 @@
+id: mcu-swd-port-live-at-reset-stm32f0
+classes: [selection]
+applies:
+  topologies: [mcu]
+  packages: []
+  interfaces: []
+  parts: [STM32F030F4P6TR, STM32F030F4P6]
+rule:
+  enforced_by: null
+  swdio_internal_pull: "pull-up, activated after reset"
+  swclk_internal_pull: "pull-down, activated after reset"
+  nrst_internal_pull: "permanent pull-up, 25/40/55 kohm min/typ/max"
+  external_pulls_required: false
+  firmware_required_to_attach: false
+prose: >
+  On STM32F030x4/x6/x8/xC the two SWD pins are already the debug port when the
+  part leaves reset. Table 11 note 7, attached to PA13 (SWDIO, TSSOP-20 pin 19)
+  and PA14 (SWCLK, pin 20): "After reset, these pins are configured as SWDIO and
+  SWCLK alternate functions, and the internal pull-up on SWDIO pin and internal
+  pull-down on SWCLK pin are activated." NRST is defined by the die too - I/O
+  structure RST, "bidirectional reset pin with embedded weak pull-up resistor",
+  specified in s6.3.15 as a PERMANENT pull-up, RPU 25/40/55 kohm min/typ/max. So
+  a blank, never-programmed part is attachable with two signals plus ground and
+  a supply reference: no external pull resistors, no firmware, no strap. The
+  datasheet's Fig 21 shows the only external NRST parts inside a dashed
+  "external reset circuit" bubble - a switch and a 0.1 uF cap - and its note
+  gives their purpose as protection against parasitic resets, not function; its
+  other note is the real constraint, that whatever drives NRST must pull below
+  VIL(NRST) max = 0.3 x VDD + 0.07 V or the reset is ignored. NXP's guidance for
+  a die that does NOT do this is the useful contrast: AN13033 Table 10
+  recommends the identical polarity - SWDIO pull-up, SWCLK pull-down, RESET
+  pull-up - implemented as external 10 kohm resistors (Fig 7), "to increase
+  debugger connection robustness". Same electrical requirement; the only
+  question is whether the silicon already meets it.
+sources:
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 32,
+     note: "Table 11 note 7 verbatim - after reset PA13/PA14 are SWDIO/SWCLK alternate functions with internal pull-up on SWDIO and internal pull-down on SWCLK activated"}
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 31,
+     note: "Table 11 rows PA13 (SWDIO) TSSOP20 pin 19 and PA14 (SWCLK) TSSOP20 pin 20, both carrying note (7); SWDIO/SWCLK are the listed alternate functions"}
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 65,
+     note: "s6.3.15 - the NRST pin is connected to a PERMANENT pull-up resistor RPU; Table 49 gives RPU 25/40/55 kohm, VIL(NRST) max 0.3 VDD + 0.07 V, VIH min 0.445 VDD + 0.398 V, 200 mV hysteresis, filtered pulse 100 ns"}
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 66,
+     note: "Fig 21 Recommended NRST pin protection: internal RPU + Schmitt trigger + Filter drawn inside the device; the external side is a dashed bubble containing a switch and a 0.1 uF cap, note 1 - the external capacitor protects against parasitic resets; note 2 - the driver must be able to pull below VIL(NRST) max"}
+  - {file: reference/knowledge/sources/AN13033.pdf, page: 11,
+     note: "Table 10 JTAG/SWD signal description Recommendation column - SWCLK Input Pull-Down, SWDIO Input Pull-Up, RESET Pull-Up; Fig 7 SWD connector connections draws three 10 kohm pull-ups to VDD and one 10 kohm pull-down; the note calls external pulls a robustness measure"}
+status: active
+origin: research:block-mcu-1
+level: family
+envelope:
+  debug_kind: {in: [swd]}
+  reset_kind: {in: [internal-pullup]}
+envelope_note: >
+  Two dims, one per silicon fact the claim rests on. debug_kind bounds the SWD
+  half: it holds for a 2-wire SWD port whose pins carry the note-7 internal
+  pulls, and stops at a part whose debug pins boot as plain GPIO or that uses
+  single-wire vendor debug - both put resistors and firmware back on the board.
+  reset_kind bounds the NRST half: it holds where the reset pin has an embedded
+  pull-up, and stops where reset comes from an external supervisor or has no
+  internal pull, where the pull-up becomes the board's job (AN13033 Table 10).
+maturity: approved
+generalizes: [mcu-reset-sampled-pin-audit]
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read DS p31/p32/p65/p66 + AN13033 p11. p32 note 7 is verbatim as quoted: after reset these pins are configured as SWDIO and SWCLK alternate functions, and the internal pull-up on SWDIO pin and internal pull-down on SWCLK pin are activated. p31 Table 11 rows PA13 (SWDIO) TSSOP20 pin 19 and PA14 (SWCLK) TSSOP20 pin 20 both carry note (7). p65 s6.3.15 states the NRST pin is connected to a permanent pull-up resistor RPU, and Table 49 gives RPU 25/40/55 kohm, VIL(NRST) max 0.3 VDD + 0.07, VIH min 0.445 VDD + 0.398, 200 mV hysteresis and 100 ns filtered pulse - all exact. p66 Fig 21 Recommended NRST pin protection shows the dashed External reset circuit bubble holding a switch and a 0.1 uF cap, note 1 the external capacitor protects the device against parasitic resets (strictly note 1 covers the capacitor, not the switch the record lumps with it), note 2 the driver must pull below VIL(NRST) max. AN13033 p11 Table 10 recommends SWCLK Input Pull-Down, SWDIO Input Pull-Up, RESET Pull-Up, with Fig 7 drawing three 10 kohm pull-ups and one 10 kohm pull-down, and the note calling external pulls a way to increase debugger connection robustness. Scope guardrail holds: the NRST cap and the SWD resistors are each named as their own vendor names them, nothing is called unnecessary. Hygiene point: the RST I/O-structure quote in prose lives on p27, which this record does not cite - cited p65 carries the same fact independently."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

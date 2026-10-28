@@ -1,0 +1,97 @@
+id: resistive-attenuator-high-z-tap-guard-and-leakage
+classes: [creepage]
+applies:
+  topologies: [resistive-attenuator]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  guard_potential: same as the guarded node
+  guard_driver: low impedance, sized to absorb board leakage without adding offset
+  guard_sides: both sides of the board
+  surface_leakage: virtually eliminated by a guard
+  bulk_leakage_reduction: about one order of magnitude, set by board thickness and guard ring WIDTH
+  also_required: cleaning process, surface coating, mechanical rigidity
+prose: >
+  The tap of a high-value divider is a high-impedance node: any stray current I
+  reaching it develops I x Rthev of error, so board leakage is a DC offset.
+  GUARDING (p4): surround the sensitive node with a conductive trace driven
+  from a LOW-IMPEDANCE point at the SAME potential as the node - with no
+  voltage across the gap no leakage crosses it, and the guard absorbs what the
+  rest of the board injects. Fig 5 draws three cases: the follower (b) drives
+  the guard from the amplifier OUTPUT, the non-inverting case (c) from the
+  feedback divider tap. The caption states both requirements - same potential
+  AND "a low enough impedance to absorb board leakage without introducing
+  excessive offset". A guard driven from the high-Z node itself is not a guard.
+  Geometry (p4): put the ring on BOTH SIDES of the board; single-sided is still
+  recommended but the unguarded face is unanalysable. Surface leakage can be
+  virtually eliminated; BULK leakage falls only about an order of magnitude,
+  and by how much depends on board thickness and GUARD RING WIDTH. Fig 6 (p5)
+  is a real layout: a closed guard loop encircling only the two input pins,
+  every other pin outside it. p3 puts the rest on process - insulating
+  materials, surface contamination, cleaning procedures, surface coating and
+  potting "are at least as important as the IC", and more so as impedance
+  rises. p5 adds that a high-Z node is microphonic, e_n = (dC/C) x V, so keep
+  it short and mechanically rigid.
+sources:
+  - file: reference/knowledge/sources/snoa664.pdf
+    page: 4
+    section: "Electrical guarding, fig 5 a/b/c (doc p3)"
+    note: >
+      Read: the guarding definition - input circuitry surrounded by a conductive
+      trace connected to a low impedance point at the same potential as the
+      inputs, which absorbs board leakage. Fig 5 a/b/c schematics show the guard
+      as a closed loop around pins 2 and 3: inverting (a) tied at the + input
+      reference, follower (b) tied to the OUTPUT, non-inverting (c) tied to the
+      feedback divider tap. Caption demands same potential AND low enough
+      impedance to absorb leakage without introducing excessive offset. Text:
+      guard ring on BOTH sides of the board; surface leakage virtually
+      eliminated but bulk leakage reduced only about an order of magnitude,
+      depending on board thickness and guard ring WIDTH; Teflon inserts and
+      standoffs for the bulk-leakage case.
+  - file: reference/knowledge/sources/snoa664.pdf
+    page: 5
+    section: "fig 6 guarded layout, signal cables, microphonics (doc p4)"
+    note: >
+      Read: fig 6, a bottom-view metal-can layout with a closed quadrilateral
+      guard trace encircling ONLY the two input pins and broken out to a GUARD
+      lead; the balance, V+, output, compensation and V- pins all sit outside
+      the ring. Caption repeats that both sides must be guarded and that bulk
+      leakage reduction depends on ring width. Text: DIP packages provide guard
+      pins adjacent to the inputs, not internally connected, to reduce PACKAGE
+      leakage; locate high-impedance circuits as close as possible to the source;
+      a capacitance variation on a high-Z node generates e_n = (dC/C) x V, so
+      wiring and components on sensitive nodes must be mechanically rigid.
+  - file: reference/knowledge/sources/snoa664.pdf
+    page: 3
+    section: "Reliability (doc p2)"
+    note: >
+      Read: the equipment-level statement that reliability analysis of
+      insulating materials, surface contamination, cleaning procedures, surface
+      coating and potting is at least as important as the IC and other
+      components, and that these factors become MORE important as impedance
+      levels are raised - the sourced basis for treating flux residue, cleaning
+      and conformal coating as design inputs on a high-Z divider tap.
+status: active
+origin: research:block-resistive-attenuator-1
+level: topology
+envelope:
+  rthev_ohm: {min: 100000}
+maturity: approved
+generalizes: []
+envelope_note: >
+  Scales with the node impedance: a leakage current becomes I x Rthev of error,
+  so the guard earns its copper in proportion to Rthev. Floor at 100 kohm -
+  below it board leakage is swamped by other error terms and a guard is not
+  worth the layout cost. No ceiling: the source is written for the 10 Mohm to
+  1 Gohm regime, so the rule only becomes more strongly justified as Rthev
+  rises above the floor.
+verification: {by: "research-second-reader", date: "2026-08-16", note: "Re-read snoa664 p4, p5, p3 visually (doc p3, p4, p2). p4 ELECTRICAL GUARDING gives the definition - input circuitry surrounded by a conductive trace connected to a low impedance point at the same potential as the inputs, absorbing board leakage - plus guard ring on BOTH sides, surface leakage virtually eliminated while bulk leakage falls only about an order of magnitude depending on board thickness and the width of the guard ring, and Teflon inserts/standoffs. Fig 5 caption is verbatim: same potential AND a low enough impedance to absorb board leakage without introducing excessive offset. Fig 5 a/b/c drivers are read correctly (inverting from the + input reference, follower from the output, non-inverting from the feedback divider tap), so the record refusal to let the high-Z node drive its own guard is consistent with the figure. p5 fig 6 is the metal-can bottom view with a closed guard around the two input pins only, caption repeating both-sides and ring width; DIP guard pins, locate close to the source, and microphonic e_n = dC/C x V are all present. p3 reliability paragraph is verbatim. The envelope claim that the source works the 10 Mohm to 1 Gohm regime is corroborated on the uncited p6 - standard precision resistors available up to 10 Mohm, up to 1 Gohm at a cost premium, 1 Gohm follower in fig 9. The 100 kohm floor is the researcher own call and envelope_note does not pretend otherwise."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

@@ -1,0 +1,31 @@
+# NOTICE - third-party material in this repository
+
+The MIT License in `LICENSE` covers the hwde skill: everything under
+`.claude/skills/hwde/`, the tests, the documentation and plans, and the design outputs
+this project produced itself (schematics, board files, fab packages, reports, and the
+knowledge records and learnings it wrote).
+
+It does NOT cover the following. Board workspaces themselves now live in the
+separate boards repo (`~/dev/boards/<name>`, `HWDE_BOARDS_ROOT`), not in this
+one, but the same terms apply to that material wherever it lives - kept
+unmodified for engineering reference and to keep the finished boards
+reproducible, and redistributed under their owners' own terms, not under MIT:
+
+- Manufacturer datasheets and application notes (PDF) under `<board>/parts/`,
+  `<board>/research/sources/`, `<board>/work/` in the boards repo, and
+  `.claude/skills/hwde/reference/knowledge/sources/` here - copyright of the respective
+  manufacturers (Texas Instruments, STMicroelectronics, Analog Devices, Diodes
+  Incorporated, Wurth Elektronik, Sensirion, Espressif, ROHM and others named in the
+  files).
+- Component 3D models (`.step`, `.wrl`) under `<board>/lib/aiee.3dshapes/` in the
+  boards repo - the component manufacturers' models, obtained through LCSC/EasyEDA
+  via easyeda2kicad.
+- Footprints and symbols under `<board>/lib/aiee.pretty/` and `<board>/lib/*.kicad_sym`
+  in the boards repo that were pulled from LCSC/EasyEDA - derived from manufacturer
+  and EasyEDA data.
+
+Rights holders: to have any of this material removed, open an issue on the repository;
+it will be taken down promptly.
+
+Nothing in this repository grants a licence to redistribute the third-party material
+above beyond what its owners allow.

@@ -1,0 +1,6 @@
+# check_model_paths: every footprint 3D model path is ${KICAD*_3DMODEL_DIR}/ or
+# ${KIPRJMOD}/ inside the workspace, never absolute into a checkout that goes
+# away (eleven boards had paths into removed track worktrees). Board only.
+name: check_model_paths
+needs: []
+args: []

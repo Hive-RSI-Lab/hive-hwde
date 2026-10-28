@@ -1,0 +1,111 @@
+id: swd-debug-port-stm32-stdc14-default
+classes: [selection]
+applies:
+  topologies: [swd-debug-port]
+  packages: []
+  interfaces: [swd]
+  parts: [FTSH-107-01-L-DV-K, C5307809]
+rule:
+  enforced_by: null
+  default_connector: STDC14
+  mpn: FTSH-107-01-L-DV-K
+  lcsc: C5307809
+  footprint: HDR-SMD_14P-P1.27_FTSH-107-01-L-DV-K
+  pitch_mm: 1.27
+  positions: 14
+  keyed: true
+  shrouded: false
+  opt_outs: "TC2030, pin-header-2.54 - only when the brief names one"
+  pin_1: RSVD (no connect)
+  pin_2: RSVD (no connect)
+  pin_3: T_VCC (target I/O rail, probe sense input)
+  pin_4: T_SWDIO
+  pin_5: GND
+  pin_6: T_SWCLK
+  pin_7: GND
+  pin_8: T_SWO (target SWO pin, else open)
+  pin_9: T_JRCLK (JTAG only, open for SWD)
+  pin_10: T_JTDI (JTAG only, open for SWD)
+  pin_11: GNDDETECT (tie to GND)
+  pin_12: T_NRST
+  pin_13: T_VCP_RX (target UART RX, driven by the probe)
+  pin_14: T_VCP_TX (target UART TX, read by the probe)
+prose: >
+  An STM32 board's debug port defaults to ST's STDC14: one 2x7 1.27 mm header
+  that carries SWD, SWO, NRST and the STLINK-V3 virtual COM port UART on a
+  single cable. The owner programs with an STLINK-V3MINIE, whose target
+  connector is STDC14, so a 0.1 in SWD header or a Tag-Connect TC2030 needs
+  an adapter on his bench (owner, #ai-ee, 2026-10-08). Use the part the
+  PCB-0026-A retrofit placed: Samtec FTSH-107-01-L-DV-K, LCSC C5307809,
+  footprint HDR-SMD_14P-P1.27_FTSH-107-01-L-DV-K. Its -K option is a KEY for
+  the mating FFSD cable, but the header has NO shroud: the merged PCB-0026-A
+  retrofit (boards d394f58c, 2026-10-08) found JLC cannot place a shrouded
+  1.27 mm STDC14. So tell the user to check the cable's pin-1
+  stripe against the pin-1 silk before plugging in. Pinout (ST UM2910
+  Table 4; UM2448 Table 6): 3 T_VCC to the target I/O rail (a sense input,
+  nothing in series), 4 SWDIO, 6 SWCLK, 8 SWO to the part's TRACESWO pin or
+  open, 12 NRST, 13 T_VCP_RX to the target UART's RX, 14 T_VCP_TX to its TX,
+  5/7/11 GND (11 is GNDDetect), 1/2 reserved and 9/10 JTAG-only, all left
+  open. Pins 3-12 follow the ARM 10-pin Cortex order. Only a brief that
+  names TC2030 or a 0.1 in header opts out; declare that as
+  debug_connector_kind on the swd-debug-port block.
+sources:
+  - file: boards/PCB-0026-A_gan-boost-48v/kicad/gen/mcu.py
+    section: module docstring + J501 b.part call
+    note: >
+      The merged retrofit (boards d394f58c): J501 is the STDC14 connector,
+      Samtec FTSH-107-01-L-DV-K, LCSC C5307809, citing ST UM2910 Table 4,
+      wired 3 +3V3, 4 SWDIO, 5 GND, 6 SWCLK, 7 GND, 8 SWO (PB3), 11 GND,
+      12 NRST, 13 UART_RX, 14 UART_TX, with 1/2 reserved and 9/10 (JTAG
+      only) unconnected. It replaced a 1x5 0.1 in SWD header and a 1x3 UART
+      header.
+  - file: boards/PCB-0026-A_gan-boost-48v/parts/C5307809.json
+    section: pinout + land_pattern
+    note: >
+      The part record transcribes all 14 positions from UM2910 Table 4: 1/2
+      RSVD do not connect, 3 T_VCC (probe senses the target supply),
+      4 T_SWDIO, 6 T_SWCLK, 8 T_SWO, 9 T_JRCLK and 10 T_JTDI JTAG only,
+      11 GNDDETECT tie to GND, 12 T_NRST, 13 T_VCP_RX (target RX, driven by
+      the probe), 14 T_VCP_TX (target TX, received by the probe). The land
+      pattern is 0.74 x 2.79 mm pads on 4.08 mm row centres, 1.27 mm pitch.
+  - file: boards/PCB-0026-A_gan-boost-48v/parts/datasheets/C5307809.pdf
+    page: 1
+    section: Samtec FTSH-1XX-XX-XXX-DV drawing, options block
+    note: >
+      The options block reads "-K: KEYING OPTION FOR MATING WITH FFSD",
+      lead style -01 only. Shrouds are separate options (-ES end shrouds,
+      -EJ ejector shrouds), which this part number does not carry.
+  - file: boards/PCB-0011-A_bb-mcu/research/interface-swd.md
+    section: connector pinout table + VTREF section
+    note: >
+      An independent transcription of ST UM2448 Rev 9 Table 6 (STDC14):
+      3 T_VCC, 4 SWDIO, 5 GND, 6 SWCLK, 7 GND, 8 SWO, 11 GNDDetect,
+      12 T_NRST, pins 3-12 "respecting the ARM10 pinout". It quotes pin 3
+      T_VCC as "Input for STLINK-V3SET", so the rail pin is a sense input,
+      and that the STLINK-V3 does not power the target. It agrees with the
+      PCB-0026-A transcription on every pin it covers.
+status: active
+origin: owner-request:2026-10-08 stlink-v3minie stdc14 (boards d394f58c)
+level: family
+envelope:
+  mcu_family_kind: {in: [stm32]}
+  debug_connector_kind: {in: [stdc14]}
+envelope_note: >
+  Two dims. mcu_family_kind bounds the target: STDC14 is ST's STLINK-V3
+  connector, so it is the default for an STM32 and for nothing else.
+  debug_connector_kind is the opt-out: a brief that names a TC2030 or a
+  0.1 in header gets debug_connector_kind tc2030 or pin-header-2.54 on its
+  swd-debug-port block, and this record falls outside and stops applying.
+  The ST manuals could not be fetched here (st.com is unreachable), so the
+  pinout rests on two board-side transcriptions of them that agree.
+maturity: approved
+approval:
+  by: owner
+  date: "2026-10-08"
+  note: >
+    Ruled by the owner in #ai-ee thread 1791465870.806379: he programs STM32
+    boards with an STLINK-V3MINIE and asked for its STDC14 header on new
+    STM32 boards. The ruling covers the default; the pinout rests on the two
+    board-side transcriptions cited under sources, since the ST manuals were
+    unreachable. Envelope: STM32 targets only, bounded by debug_connector_kind.
+generalizes: []

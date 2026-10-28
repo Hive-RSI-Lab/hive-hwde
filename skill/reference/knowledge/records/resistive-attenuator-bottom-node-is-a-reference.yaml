@@ -1,0 +1,75 @@
+id: resistive-attenuator-bottom-node-is-a-reference
+classes: [return-path]
+applies:
+  topologies: [resistive-attenuator]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  bottom_node_ties_to: the load's own negative reference (clean analog ground)
+  ground_noise_attenuated: false
+  input_referred_penalty: 1/K
+  must_not_share: copper with any return carrying other current
+prose: >
+  The divider's output is the voltage between its tap and its OWN bottom node,
+  so wherever that bottom node sits electrically becomes part of the
+  measurement. p4: "The ground of the resistor ladder is best shorted to the
+  clean analog ground (ADC ground or ADC negative reference) to eliminate
+  unnecessary ground noise injection." p7 says why this matters more than
+  intuition suggests: source noise rides on Vin and is attenuated with the
+  signal, so it does not change SNR - but "common ground noise will not be
+  attenuated by the resistor divider circuit". A potential difference between
+  the divider's bottom node and the load's reference adds to the output
+  UNDIVIDED while the signal is divided by K, so referred to the input it is
+  multiplied by 1/K. TI computes the penalty for their 3.3/5 = 0.66 attenuator
+  as 20 log(0.66) = -3.6 dB of SNR; at K = 0.4 it is 20 log(0.4) = -8 dB, i.e.
+  1 mV of offset between the two nodes appears as 2.5 mV of input-referred
+  error. The bottom of the string is therefore not "a ground connection" but a
+  REFERENCE tie: it must land on the load's own negative reference node, and it
+  must not share copper with a return carrying other current, because that
+  copper's IR drop is added to the signal at full weight.
+sources:
+  - file: reference/knowledge/sources/sprad89.pdf
+    page: 4
+    section: "s3, fig 3-1"
+    note: >
+      Read: fig 3-1 shows the ladder's bottom leg R2 returning to a single
+      ground symbol, and the text directs that ground to the clean analog ground
+      - the ADC ground or ADC negative reference - explicitly to eliminate
+      unnecessary ground noise injection. The divider's reference node is named
+      as a design choice, not an incidental connection.
+  - file: reference/knowledge/sources/sprad89.pdf
+    page: 7
+    section: "s4.2 SNR consideration"
+    note: >
+      Read: the split between source noise and common ground noise. Source noise
+      embedded in Vin is attenuated with the divider and does not affect SNR;
+      common ground noise is NOT attenuated by the resistor divider, so SNR
+      degrades by the attenuation factor. Worked: 3.3/5 = 0.66, 20 log(0.66) is
+      about -3.6 dB, against an ideal N-bit SNR of 6.02N + 1.76 dB. Also on this
+      page, s4.1's result that any downstream offset is input-referred through
+      the same 1/K scaling.
+status: active
+origin: research:block-resistive-attenuator-1
+level: topology
+envelope:
+  coupling_kind: {in: [dc]}
+maturity: approved
+generalizes: []
+envelope_note: >
+  Scales with the attenuation factor: ground offset passes at unity while the
+  signal is divided by K, so the input-referred penalty is 1/K and grows
+  without bound as K falls. Bounded to a DC-coupled divider because the error
+  described is a DC and low-frequency reference offset that an AC-coupled input
+  would reject, and because the source characterizes only the DC-coupled case -
+  an AC-coupled or differential input needs its own common-mode rejection
+  argument instead of this one.
+verification: {by: "research-second-reader", date: "2026-08-16", note: "Re-read sprad89 p4 and p7 visually. p4 fig 3-1 is the divider with R2 to a single ground symbol and the sentence about shorting the ladder ground to the clean analog ground (ADC ground or ADC negative reference) to eliminate unnecessary ground noise injection is verbatim. p7 s4.2 states common ground noise will not be attenuated by the resistor divider circuit, with eqs 9-10 giving 3.3/5=0.66 and 20log(0.66) about -3.6 dB against the ideal 6.02N+1.76; s4.1 eq 8 independently multiplies a downstream offset by (R1+R2)/R1 = 1/K, so the unity-pass direction is the source own conclusion, not an inference. Record extension to this board checks: 20log(0.4) = -7.96 dB and 1 mV / 0.4 = 2.5 mV input-referred. The dc coupling_kind envelope is a researcher-chosen bound but envelope_note says so plainly and the source is dc-coupled throughout."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

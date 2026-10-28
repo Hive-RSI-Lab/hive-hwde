@@ -1,0 +1,73 @@
+id: sar-adc-reference-charge-loop
+classes: [power-loop]
+applies:
+  topologies: [sar-adc]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  loop: "bypass cap -> REF pin -> internal capacitor array -> GND/VREFLO pin -> back to the cap"
+  minimize: "loop inductance - the bypass cap adjacent to the REF and GND pins, wide copper out and back"
+  device_pin_cap: "a capacitor bridging the reference pin to its return AT the device pins (SPRABY5 fig 1-1's unlabeled C, section 1.4's Cbypass)"
+  damped_shunt: "SPRABY5 puts a 0.1 ohm RREF in SERIES with CREF as a shunt branch from the reference node to ground, keeping the overall impedance low and constant at high frequency"
+  isolation_resistor_is_a_different_element: "a large current-limiting resistor belongs between a high-impedance reference SOURCE and the capacitors, never between the bypass cap and the pin"
+prose: >
+  The reference bypass is a LOOP, not a component. Every bit decision pulls a
+  fast current pulse out of the bypass capacitor and returns it to the
+  converter's ground / VREFLO pin; that loop's inductance, not the
+  capacitor's value, decides how far the reference sags and rings before the
+  comparator latches. SPRABY5 p.2 states the rule: "the inductance between
+  the reference capacitor and the REF pin is minimized by placing the
+  capacitor close to the pin and connecting it with wide traces", plus a
+  small 0.1 ohm series resistor (RREF) "to keep the overall impedance low and
+  constant at high frequencies". Its own fig 1-1, traced at high
+  magnification, shows a different arrangement than that sentence suggests:
+  REF50xx Vout reaches VREFHI on ONE unbroken wide pour with no series
+  element in the feed; RREF taps that pour and sits in series with CREF as a
+  damped shunt to ground - RREF at the node end, CREF beyond it at the
+  reference-IC end; the cap that actually bridges VREFHI to VREFLO at the
+  device pins is one of the two unlabeled C's (the other is the REF50xx's
+  TRIM/NR cap). At 0.1 ohm that resistor damps the cap-plus-inductance
+  resonance; it isolates nothing. Isolation is a different element: ADS8326
+  p.22 puts a current-limiting resistor between a high-impedance reference
+  source and the capacitors - upstream of the bypass cap, never between cap
+  and pin, where it would sit in the pulse path. p.26 corroborates the pulsed
+  nature: little average current, real instantaneous demand.
+sources:
+  - file: reference/knowledge/sources/spraby5.pdf
+    page: 2
+    note: "1.3 Layout Guidelines: minimize the inductance between the reference capacitor and the REF pin by placing the capacitor close to the pin and connecting it with wide traces; a small 0.1 ohm series resistor RREF keeps the overall impedance low and constant at high frequencies"
+  - file: reference/knowledge/sources/spraby5.pdf
+    page: 3
+    note: "Figure 1-1 Example Layout, traced at 14x: REF50xx Vout leaves on a wide pour that passes RREF's lower pad and continues unbroken (via one diagonal step) into VREFHI - no series element in the feed. RREF's upper pad runs up to CREF's right pad and CREF's left pad joins the wide diagonal ground pour, so RREF + CREF form a series-RC damped shunt to ground with RREF at the node end and CREF at the reference-IC end. Of the two unlabeled C's, the left one's top pad ties to TRIM/NR (a white gap separates it from the VREFHI band) and the right one bridges VREFHI to VREFLO at the device pins. The figure therefore disagrees with the p.2 sentence about the reference capacitor sitting close to the REF pin"
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 22
+    note: "REFERENCE INPUT + fig 42: 47 uF low-ESR tantalum connected as close as possible to the REF pin, and 'if a high output impedance reference source is used, an additional operational amplifier with a current-limiting resistor must be placed in front of the capacitors' - i.e. the series resistor sits between source and cap, not between cap and pin"
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 26
+    note: "LAYOUT: 'while the ADS8326 draws very little current from the reference on average, there are still instantaneous current demands placed on the external input and reference circuitry'; an op-amp-driven reference must remain stable driving the bypass capacitor, the series resistor helping"
+status: active
+origin: "research:block-sar-adc-1"
+level: topology
+envelope:
+  reference_kind: {in: [external]}
+maturity: approved
+generalizes: [sar-adc-acquisition-charge-transfer]
+envelope_note: >
+  The loop only exists when the per-bit charge pulse crosses board copper,
+  i.e. reference_kind external; with the reference generated on-die there is
+  no external loop to enclose and nothing to place. What the rule scales with
+  is loop INDUCTANCE - cap-to-pin distance and the width of both the feed and
+  the return - not the capacitance value, which is why the placement survives
+  changes of cap value, dielectric and conversion rate while the topology
+  stays the same.
+verification: {by: "research-second-reader", date: "2026-08-16", note: "SETTLED FROM THE PIXELS. Rendered spraby5 p.3 fig 1-1 at 3x, 8x and 14x and traced every pour pad to pad. (a) REF50xx Vout leaves on a wide pour that runs unbroken past RREF's LOWER pad, takes one diagonal step down and lands on VREFHI - there is NO series element in the feed. (b) RREF's UPPER pad runs up a vertical band, then a diagonal up-left onto CREF's RIGHT pad; CREF's LEFT pad drops onto a vertical band that joins the wide pour forking out of the REF50xx GND pad (confirmed at 8x: the GND pour enters from the left, forks inside the body, one arm up-right to CREF's left pad, the other down-right to the bottom band that feeds VREFLO). So RREF + CREF ARE a series-RC damped shunt to ground, RREF at the node end, CREF at the reference-IC end. (c) The disputed point goes to the researcher, NOT the previous reader: at the VREFHI row the band from TRIM/NR runs right and DEAD-ENDS on the LEFT unlabeled C's top pad; a clear white gap follows; the RIGHT unlabeled C's top pad sits on the separate band that drops from the Vout pour and continues into VREFHI. Both C's bottom pads are on the VREFLO/ground band. So only the RIGHT C bridges VREFHI-VREFLO (= section 1.4's Cbypass, 'a capacitor Cbypass is used between VREFHI and VREFLO', verbatim p.3); the LEFT C is TRIM/NR to ground, the REF50xx's noise-reduction cap. Calling both of them Cbypass was wrong. (d) p.2 verbatim, including a prefix the record does not quote and which STRENGTHENS its self-inconsistency finding: 'In the below figure, the inductance between the reference capacitor and the REF pin is minimized by placing the capacitor close to the pin and connecting it with wide traces', after naming CREF as the decoupling cap; the below figure does not place CREF there. 0.1-ohm RREF verbatim. (e) ads8326 p.22 carries the isolation case verbatim - 'a 47uF tantalum capacitor with low ESR should be connected as close as possible to the input pin. If a high output impedance reference source is used, an additional operational amplifier with a current-limiting resistor must be placed in front of the capacitors' - and p.27 fig 44 draws exactly that order (REF3225 -> 10 ohm -> 2.2uF -> OPA350 -> 47uF -> REF, nothing between the 47uF and the pin). p.26 quote verbatim. Cannot refute. One nuance for the record, not a defect: the figure DOES place a cap at the pin (the unlabeled Cbypass), so what disagrees with p.2 is which capacitor carries the CREF label, not the design intent - the record's prose already says this."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Linked to its
+    switched-capacitor parent sar-adc-acquisition-charge-transfer
+    (generalizes).

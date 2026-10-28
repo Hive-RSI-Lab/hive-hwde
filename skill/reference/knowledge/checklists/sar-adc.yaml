@@ -1,0 +1,82 @@
+# Coverage checklist for the `sar-adc` block topology (external-reference,
+# serial-interface successive-approximation converter). Written by
+# research task block-sar-adc-1 (bb-adc, slot block:B3) from four sources:
+# the ADS8326 datasheet (TI SBAS343C), TI SBAA256B (SAR input settling),
+# TI SPRABY5 (SAR reference drive) and Microchip AN688 (12-bit layout).
+# Draft: the owner approves, a second reader verifies the records.
+id: sar-adc
+kind: coverage-checklist
+applies:
+  topologies: [sar-adc]
+requires:
+  - class: selection
+    min_level: topology
+    note: "reference architecture (own REF pin vs ratiometric to VDD) and the input-settling inequality that decides whether a driver is needed"
+  - class: decoupling
+    min_level: topology
+    note: "REF-pin bypass sized for the per-bit charge draw + recharge demand on the reference source; supply bypass and isolation from a shared digital rail"
+  - class: power-loop
+    min_level: topology
+    note: "the reference charge loop: the bypass cap adjacent to the REF/GND pins with wide copper, and any current-limiting resistor between the reference SOURCE and that cap, never between cap and pin"
+  - class: return-path
+    min_level: topology
+    note: "converter entirely on analog ground, GND pin away from the MCU ground point, -IN as a remote-ground sense terminal in pseudo-differential use"
+  - class: emi
+    min_level: topology
+    note: "high-Z input and reference nodes vs the serial-interface aggressors; C dV/dt coupling from parallel runs, keepout and zoning"
+  - class: sequencing
+    min_level: principle
+    note: "n comparator windows per conversion and the acquisition time the interface schedule leaves over - a timing contract, no operating-point bound, so principle"
+  - class: constraints-emission
+    min_level: principle
+    note: "what the block hands the pipeline (blocks/power/layout_notes/route_critical) - an emission contract, not physics, so principle"
+maturity: approved
+prose: >
+  Before laying out any external-reference SAR a designer must hold seven
+  things, in this order. (1) selection - the reference IS the scale factor:
+  its DC error is gain error one for one, so the reference architecture (own
+  REF pin vs ratiometric to VDD) and its accuracy class are decided before
+  anything else, and the input path must satisfy tACQ >= k * Rsource * Cflt
+  or the block DEMANDS a buffer. (2) decoupling - the REF pin's per-bit
+  charge draw sizes CREF and the recharge demand on the reference source;
+  the supply pin needs local ceramic plus isolation from a shared digital
+  rail. (3) power-loop - the reference bypass cap's loop to the REF and GND
+  pins is a pulsed current loop; its inductance, not its capacitance, sets
+  the reference glitch at the bit decision. (4) return-path - a SAR sits entirely on
+  analog ground, and in pseudo-differential use -IN is a remote-ground sense
+  terminal. (5) emi - the high-impedance input and reference nodes are most
+  sensitive DURING a conversion, and coupling is I = C dV/dt from parallel
+  runs. (6) sequencing - n comparator windows per conversion, and the
+  interface schedule sets what acquisition time is left. (7)
+  constraints-emission - what the block hands the pipeline. Deliberately
+  excluded: thermal / thermal-via (a micropower converter), esd and creepage
+  (they belong to the input-terminal block upstream, not to the converter),
+  diff-pair (a fully differential front end would add it).
+sources:
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 26
+    note: "LAYOUT section: the n-windows-per-conversion sensitivity to supply/reference/ground spikes, 0.1 uF at the package + 1-10 uF and 5-10 ohm series R, 47 uF on the reference, GND pin on a clean analog ground point away from the MCU/DSP ground - the source of the decoupling, return-path, emi and sequencing rows"
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 22
+    note: "REFERENCE INPUT + fig 42: 24 pF switched onto the REF pin each conversion, 47 uF low-ESR as close as possible to the pin, LSB = VREF/65536 = 38.15 uV at 2.5 V - the source of the selection and decoupling rows"
+  - file: reference/knowledge/sources/sbaa256b.pdf
+    page: 2
+    note: "Component Selection for ADC Input Settling: tACQ >= k * tau_FLT with tau = RTH * CFLT and k = 11 for a 14-bit converter - the source of the selection row's input-settling half"
+  - file: reference/knowledge/sources/spraby5.pdf
+    page: 3
+    note: "1.4 Key Reference Buffer Specifications (the ADC draws its per-bit charge from Cbypass and the reference must recharge it between bit decisions) plus fig 1-1's example layout, which places the device-pin Cbypass at the VREFHI/VREFLO pins and RREF+CREF as a series damped shunt at the reference-IC end - the source of the power-loop row"
+  - file: reference/knowledge/sources/00688b.pdf
+    page: 2
+    note: "Device Placement and Ground/Power Supply Strategy: a SAR must sit entirely on the analog planes (straddling is the common error), digital buffer for high-resolution SAR, fig 2b digital/analog zoning - the source of the return-path row"
+  - file: reference/knowledge/sources/00688b.pdf
+    page: 4
+    note: "Signal Traces and DID I SAY BY-PASS: the reference input pin is most sensitive while a conversion is occurring, fig 7's PCB-capacitor model C = w L eo er / d with I = C dV/dt, and the per-device bypass rules - the source of the emi row"
+origin: "research:block-sar-adc-1"
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q3; not the owner's own ruling. Approved after a
+    coverage run on the five breadboard boards (bb-buck, bb-mcu, bb-ldo, bb-
+    amp, bb-adc) at the default floor. No row needed lowering.

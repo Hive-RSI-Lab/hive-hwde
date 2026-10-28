@@ -1,0 +1,76 @@
+id: in-bias-return-sizing
+classes:
+- return-path
+applies:
+  topologies: []
+  packages: []
+  interfaces:
+  - in
+  parts: []
+rule:
+  enforced_by: null
+  source_referenced: >-
+    AUTHOR REASONING, no cited page says it: source ground brought to the input terminal as
+    its own pole - no bias resistors, no added noise, no added offset
+  low_source_resistance: one resistor from a single input to ground is sufficient
+  high_source_resistance: >-
+    two EQUAL resistors, one per input - balanced, lower bias-induced offset, better high-frequency
+    CMRR
+  upper_bound: >-
+    R_bias x Ib must stay inside the offset budget, and the two must MATCH or their mismatch
+    converts common mode to differential
+  lower_bound: >-
+    AUTHOR REASONING, no cited page says it: R_bias shunts the source: it costs gain and adds
+    Johnson noise in series with a microvolt-level signal
+prose: >-
+  Which form of bias return to use, and how big it is, follows from the source. The vendor
+  states the fork directly: "If the differential source resistance is low, the bias current
+  return path can be connected to one input (see the thermocouple example in Figure 34). With
+  higher source impedance, using two equal resistors provides a balanced input with possible
+  advantages of lower input offset voltage as a result of bias current and better high-frequency
+  common-mode rejection." Two consequences the sentence carries: the pair must be EQUAL (an
+  unequal pair is exactly the path mismatch that costs CMRR), and R is bounded above by Ib
+  x R against the offset budget. Author reasoning, not on any cited page: the resistors also
+  load the source and add Johnson noise (a lower bound on R), and a sensor whose own supply
+  return brings a third conductor to the terminal needs no bleeder pair (for a 350 ohm bridge,
+  roughly 175 ohm per input).
+sources:
+- file: reference/knowledge/sources/ina333.pdf
+  page: 16
+  section: 8.2.2.5 Input Bias Current Return Path
+  note: >-
+    Read: the low-source-resistance / high-source-impedance fork quoted in prose, plus Ib
+    typ +-70 pA and the 100 Gohm input impedance that set the sizing arithmetic.
+- file: reference/knowledge/sources/ina333.pdf
+  page: 17
+  section: Figure 34, Providing an Input Common-Mode Current Path
+  note: >-
+    Read the figure: the balanced case uses a MATCHED 47 kohm/47 kohm pair (one per input)
+    while the low-impedance thermocouple case uses a single 10 kohm - the vendor's own sizing
+    examples for the two forms.
+status: active
+origin: research:interface-in-1
+level: topology
+envelope:
+  ibias_ua:
+    max: 0.0001
+maturity: verified
+generalizes:
+- in-bias-current-return-path
+envelope_note: >-
+  Form scales with the source's own DC path; sizing scales with bias current and the offset
+  budget (error is Ib x R). Bias current is bounded at 70 pA (0.0001 uA), the one point the
+  source gives: the INA333's typical input bias. Nothing here is characterised for other in-amps.
+  No source-resistance bound is claimed: the vendor's own balanced example is 47 kohm per
+  input and its thermocouple example a single 10 kohm.
+verification:
+  by: second-reader
+  date: '2026-10-04'
+  note: >-
+    Second read 2026-10-04 against ina333 p16 and p17 (Fig 34 viewed). Held: the low/high
+    source-resistance fork quote, 70 pA typ bias, 100 Gohm input impedance, the matched 47
+    kohm pair and the single 10 kohm thermocouple resistor. Edits: ibias_ua max cut from 0.1
+    to 0.0001 uA (70 pA is the only point given) and the envelope_note now says INA333 only;
+    rsource_ohm dropped (the vendor's 47 kohm example is outside the old 10 kohm bound, which
+    was author-derived); rule.source_referenced, rule.lower_bound and the 350 ohm bridge sentence
+    in prose marked author reasoning because no cited page says them.

@@ -1,0 +1,6 @@
+{
+  "name": "hwde",
+  "description": "KiCad hardware design: ihsan-sa/hwde's PCB design skill as a Hive module. An agent takes a board from a written brief through research, architecture, parts, schematic, placement, routing and checks (ERC, DRC, the verify suite, JLCPCB DFM on exported Gerbers) to a fab package, with the person's sign-offs between stages. It runs no program of its own: bin/hwde runs the skill's scripts in the agent's own sandbox with the Hive's KiCad 10 and freerouting from the shared tools folder and a Python venv in the agent's HOME. It never orders or pays: ordering at JLCPCB, or any purchase, stays the person's.",
+  "provides": {"procedures": ["docs/README.md"], "skills": ["skill/SKILL.md"]},
+  "projects": ["*"]
+}

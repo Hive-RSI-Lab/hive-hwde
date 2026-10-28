@@ -1,0 +1,93 @@
+id: inamp-gain-pin-and-input-node-parasitics
+classes:
+- diff-pair
+applies:
+  topologies:
+  - inamp
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  gain_pin_rule: >-
+    parasitic capacitance at the gain-setting pins degrades CMRR over frequency; a component
+    placed there must be chosen for minimum capacitance
+  gain_pin_layout: Rg sits directly across the Rg pins, with the same copper on both pins
+  series_r_placement: >-
+    any series resistance in an input path belongs close to the in-amp input pins, which minimises
+    its interaction with PCB trace capacitance
+  match_what: source impedance AND capacitance of each input path, closely matched
+  ad8226_cmrr_db_dc_to_60hz_g10: 106 dB (minimum, +Vs = 2.7 V single supply, VCM 0 to 1.7
+    V, Table 3)
+  ad8226_cmrr_db_at_5khz_g10: 90 dB (minimum, +Vs = 2.7 V single supply, VCM 0 to 1.7 V, Table
+    3)
+  ad8226_cmrr_db_dc_to_60hz_g100: 120 dB (minimum, +Vs = 2.7 V single supply, VCM 0 to 1.7
+    V, Table 3)
+  ad8226_cmrr_db_at_5khz_g100: 90 dB (minimum, +Vs = 2.7 V single supply, VCM 0 to 1.7 V,
+    Table 3)
+  scope: >-
+    device-side only - the connector/cable/trace symmetry half belongs to the input-interface
+    records
+prose: >-
+  The in-amp's own two high-impedance neighbourhoods - its input pins and its gain-setting
+  pins - carry a CMRR-over-frequency rule that no downstream stage can undo. ADI states both
+  in one place. Inputs: "conversions occur when one input path has a frequency response that
+  is different from the other. To keep CMRR across frequency high, the input source impedance
+  and capacitance of each path should be closely matched. Additional source resistance in
+  the input path (for example, for input protection) should be placed close to the in-amp
+  inputs, which minimizes their interaction with parasitic capacitance from the PCB traces."
+  Note the requirement is on BOTH terms, R and C, and that it makes the PLACEMENT of any input
+  series part a device rule, not a routing preference. Gain pins: "Parasitic capacitance at
+  the gain-setting pins can also affect CMRR over frequency. If the board design has a component
+  at the gain-setting pins (for example, a switch or jumper), the part should be chosen so
+  that the parasitic capacitance is as small as possible." So Rg goes directly across the
+  Rg pins with symmetric copper, and a switch or jumper there is a specification decision.
+  What is at stake is in the part's own table: AD8226 CMRR falls from 106 dB (DC to 60 Hz)
+  to 90 dB at 5 kHz at G = 10, and from 120 dB to 90 dB at G = 100 (all minimum, +Vs = 2.7
+  V single supply, VCM 0 to 1.7 V, Table 3). Asymmetry subtracts from those numbers.
+sources:
+- file: reference/knowledge/sources/2168367.pdf
+  page: 22
+  section: AD8226 Rev. C, printed p.21 - LAYOUT / Common-Mode Rejection Ratio Over Frequency
+  note: >-
+    Read the two paragraphs under "Common-Mode Rejection Ratio Over Frequency": the mechanism
+    (poor layout converts common mode to differential when one input path has a different
+    frequency response from the other), the requirement that "the input source impedance and
+    capacitance of each path should be closely matched", the instruction to place any additional
+    input-path series resistance close to the in-amp inputs to minimise interaction with PCB
+    trace parasitic capacitance, and the second paragraph making parasitic capacitance at
+    the gain-setting pins a part-selection constraint for any switch or jumper placed there.
+- file: reference/knowledge/sources/2168367.pdf
+  page: 6
+  section: AD8226 Rev. C, printed p.5 - Table 3, COMMON-MODE REJECTION RATIO block
+  note: >-
+    Read in Table 3 (single supply, +Vs = 2.7 V): CMRR minimum, DC to 60 Hz, is 86/90 dB at
+    G = 1 (A/B grade), 106 dB at G = 10 and 120 dB at G = 100 and G = 1000; CMRR at 5 kHz
+    is 80 dB at G = 1, 90 dB at G = 10 and G = 100, 100 dB at G = 1000. These are the numbers
+    the matching rule exists to preserve, and the reason it is stated over frequency rather
+    than at DC.
+status: active
+origin: research:block-inamp-1
+level: topology
+envelope:
+  f_signal_hz:
+    max: 5000
+maturity: verified
+generalizes: []
+envelope_note: >-
+  The rule scales with FREQUENCY: the error is a common-mode to differential conversion produced
+  by mismatched time constants, so it vanishes at DC and grows as the band approaches the
+  pole made by a path's resistance and its stray capacitance. The bound is the highest frequency
+  at which the cited part specifies CMRR at all (5 kHz, Table 3) - above it there is no vendor
+  number for the copper to preserve. It also scales with source resistance, since the mismatched
+  pole is R*C (author reasoning, not on p22).
+verification:
+  by: second-reader
+  date: '2026-10-04'
+  note: >-
+    Second read 2026-10-04 against 2168367 p22 (printed p21) and p6 (Table 3). Held: both
+    quoted paragraphs, the gain-pin switch/jumper sentence and all eight CMRR numbers (86/90
+    at G=1, 106, 120, 120; 80, 90, 90, 100 at 5 kHz). Edits: the rule.ad8226_cmrr_* values
+    and the prose now carry the Table 3 conditions (minimum, +Vs = 2.7 V single supply, VCM
+    0 to 1.7 V); the 'a 350 ohm bridge is far more forgiving' claim in envelope_note replaced
+    by an author-reasoning label.

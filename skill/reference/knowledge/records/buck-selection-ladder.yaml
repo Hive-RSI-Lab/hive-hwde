@@ -1,0 +1,41 @@
+id: buck-selection-ladder
+classes: [selection]
+applies:
+  topologies: [buck]
+  packages: []
+  interfaces: []
+rule: null
+prose: >
+  Regulator-type ladder, one line of tradeoff each; if the brief names a part
+  the named part stands (record the alternative as an override option).
+  (1) Integrated synchronous buck is the DEFAULT at <= ~60 V input and
+  <= ~3 A: no catch diode, best efficiency/heat (usb-buck AP63203).
+  (2) Asynchronous + Schottky when the V/I corner has no stocked sync part
+  (lumina-carrier: the only 100 V-rated 2 A part was async COT); the Schottky
+  must be rated >= Vin (SS510 class). (3) Controller + external FETs is the
+  efficiency/current escape hatch (~2-3 pts over async, any current) at the
+  cost of 2 FETs + gate/sense network + layout area (carrier LM5146 fallback).
+  (4) An LDO is the honest option at light load - 3 parts vs 6 and no switch
+  node near analog/RF, at the cost of (Vin-Vout)*I heat; do the comparison
+  table before assuming the buck.
+sources:
+  - {file: boards/usb-buck/research/power.md, section: s4 (LDO-vs-buck table)}
+  - {file: boards/lumina-carrier/research/poe-power.md, section: "s4 (async choice, LM5146 fallback)"}
+status: active
+origin: migration:topologies/buck (T6 2026-08-06, three shipped runs)
+
+# --- schema v2 governance (U14 backfill, owner-ruled 2026-08-15) ---
+level: topology
+envelope:
+  vin_v: {max: 100}
+  iout_a: {max: 10}
+maturity: approved
+approval:
+  by: owner
+  date: "2026-08-15"
+  note: >
+    Scales with the V/I corner, because that is exactly what picks the rung:
+    integrated sync at <= ~60 V / <= ~3 A, async + Schottky where the corner
+    has no stocked sync part, controller + FETs above that. Past ~100 V in
+    or ~10 A the honest options (isolated topologies, multiphase) are not on
+    this ladder at all.

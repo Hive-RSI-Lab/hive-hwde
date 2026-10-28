@@ -1,0 +1,121 @@
+id: linear-regulator
+kind: coverage-checklist
+applies:
+  topologies: [linear-regulator]
+requires:
+  - class: selection
+    min_level: topology
+    note: >
+      headroom at VIN(min) against the SPECIFIED dropout, current and package
+      against continuous dissipation, and what the fixed vs adjustable variant
+      needs at zero load - this is the class that decides the part
+  - class: thermal
+    min_level: topology
+    note: >
+      copper area -> theta_JA. A linear regulator's pour IS its heatsink, so
+      this class sizes the board before placement starts; a headline theta_JA
+      without the copper area behind it is not coverage
+  - class: thermal-via
+    min_level: topology
+    note: >
+      what the tab/pad copper may be stitched to. A tab that is a live node
+      (VOUT on 1117-class parts) forbids the ordinary stitch-to-the-plane move,
+      so the heat path must be settled before the pour is drawn
+  - class: feedback
+    min_level: topology
+    note: >
+      the output capacitor IS the loop compensation. This generation of linear
+      regulator needs an ESR zero in the loop (SLVA115A) and states its
+      compensated region as a RANGE - 0.3 to 22 ohm on the LM1117 (p15) - so a
+      capacitor whose ESR falls outside the window of the chosen part is outside
+      that part's compensated region. What this class demands of a designer is
+      therefore an acceptance test, not a banned-parts list: before an output
+      capacitor is committed, ITS OWN datasheet must put its ESR inside the
+      window the regulator states. The job of this row is to make the designer
+      go and get that number. Re-ask it PER PART - the window and even its
+      existence are part-specific, a newer ceramic-stable LDO inverts the rule
+      outright, which is why the covering record's envelope is keyed on
+      cout_stability_kind. (The one page-level datapoint in this task's ledger
+      on a real capacitor is SLVA115A p4, which describes its 2.2 uF ceramic DUT
+      as "low ESR" - qualitative, one part, and not a statement about ceramics
+      in general.)
+  - class: decoupling
+    min_level: topology
+    note: >
+      the input bypass and output bank the datasheet actually requires, by the
+      part TYPE it names and not by value alone - both 1117 datasheets name a
+      tantalum on input and output (LM1117 p14/p15, AMS p4), which is a fact
+      about what those pages specify, not a claim about any dielectric's
+      properties
+maturity: approved
+sources:
+  - file: reference/knowledge/sources/2304140030_Advanced-Monolithic-Systems-AMS1117-3-3_C6186.pdf
+    page: 4
+    section: APPLICATION HINTS - Stability
+    note: >
+      "The circuit design used in the AMS1117 series requires the use of an
+      output capacitor as part of the device frequency compensation" - the
+      output cap is a loop element, which is why feedback is a required class
+  - file: reference/knowledge/sources/2304140030_Advanced-Monolithic-Systems-AMS1117-3-3_C6186.pdf
+    page: 5
+    section: Thermal Considerations + Table 1
+    note: >
+      Table 1 maps top-side / back-side copper area to theta_JA (55-80 C/W) and
+      the text calls the board copper the heat sink for the device - the thermal
+      and thermal-via rows exist because this table, not a single number, is the
+      design input
+  - file: reference/knowledge/sources/lm1117.pdf
+    page: 15
+    section: 9.2.2.1.3 Output Capacitor
+    note: >
+      "The output capacitor is critical in maintaining regulator stability, and
+      must meet the required conditions for both minimum amount of capacitance
+      and equivalent series resistance (ESR)", with the window stated as 0.3 ohm
+      to 22 ohm and a 10 uF minimum if a tantalum is used - the numbers the
+      feedback row's acceptance test is run against
+  - file: reference/knowledge/sources/slva115a.pdf
+    page: 4
+    section: Figure 4 and the paragraph above it
+    note: >
+      The single page-level datapoint in this ledger on a real capacitor's ESR
+      class, read verbatim: "Figure 4 shows the measured results using a
+      TPS76050 device with a 2.2-uF ceramic (low ESR) capacitor", with the
+      captured ring train and the rule that four rings or fewer indicate
+      sufficient phase margin. Qualitative, one part, one regulator - it
+      supports nothing broader about ceramics
+  - file: reference/knowledge/sources/lm1117.pdf
+    page: 18
+    section: 9.5.1.1 Heat Sink Requirements
+    note: >
+      The sizing arithmetic behind the thermal and selection rows, read on the
+      page that carries it: eq 2-3 PD = (VIN-VOUT)*IL + VIN*IG with Fig 9-10,
+      eq 4 TR(max) = TJ(max)-TA(max), eq 5 RthJA = TR(max)/PD, pointing at
+      Table 9-2 as the copper-area design aid
+prose: >
+  Seeds the linear-regulator domain (bb-ldo P2): the library held 16 records,
+  all buck, and no linear-regulator content at all. The five classes are the
+  ones a three-terminal linear regulator actually fails on. It burns
+  (VIN-VOUT)*IOUT continuously with the board as its only heatsink, so thermal
+  and thermal-via are the sizing constraint rather than a finishing step; its
+  loop is compensated by the output capacitor, so feedback and decoupling are
+  stability; selection carries the headroom, current and variant question that
+  picks the part. Classes tied to a switching node - power-loop, emi - are not
+  on this list because the topology has no switching node; that is a statement
+  about linear regulators, never about any board's scope decisions. One caveat
+  stands over the whole list: these classes are answered PER PART, not once for
+  the topology. The compensation question especially - whether the output
+  capacitor's ESR must sit inside a window at all, and what that window is -
+  belongs to the regulator chosen, and a newer internally compensated
+  (ceramic-stable) part inverts the answer outright; that is why the covering
+  record keys its envelope on cout_stability_kind instead of asserting a value
+  for linear regulators at large. Widen the list through the owner when a
+  linear-regulator run meets a failure this vocabulary cannot express.
+origin: research:block-linear-regulator-1
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q3; not the owner's own ruling. Approved after a
+    coverage run on the five breadboard boards (bb-buck, bb-mcu, bb-ldo, bb-
+    amp, bb-adc) at the default floor. No row needed lowering.

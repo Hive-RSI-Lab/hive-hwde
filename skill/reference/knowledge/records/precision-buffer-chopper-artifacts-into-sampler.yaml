@@ -1,0 +1,99 @@
+id: precision-buffer-chopper-artifacts-into-sampler
+classes: [emi, selection]
+applies:
+  topologies: [precision-buffer]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  mechanism: "chopper calibration clock puts periodic current spikes and output tones at f_chop and harmonics"
+  why_it_matters: "a SAR captures one instant per conversion - periodic artifacts are never averaged out"
+  worst_case: "unity gain, no external output filter, large source or feedback impedance"
+  mitigation: "the interface RC after the amplifier; low source and feedback impedance"
+  also_check: "the chopper's correction period against the acquisition window"
+prose: >
+  A sampled load does not average. A chopper puts periodic artifacts on its
+  own terminals: measured on OPA188, 2 uA input current spikes at the 650 kHz
+  chopping clock plus a smaller synchronous-notch transient between them
+  (sboa586a p11 fig 3-5), and noise-density tones at f_chop and 2*f_chop with
+  harmonics standing above an otherwise flat, flicker-free floor (p11 fig
+  3-6). A SAR holds one C_SH voltage per conversion (sprpeo2 p5), so whatever
+  the artifact is doing then lands in the code; nothing averages it away. TI's
+  selection procedure names this block's exact configuration as the worst
+  case - chopping noise is of greatest concern when the amplifier is in unity
+  gain with no external filter, and large source or feedback impedance raises
+  its amplitude (p25 step 6). The mitigation is the RC the SAR interface
+  already needs: p25 fig 8-6 measures OPA188 transient noise referred to input
+  falling from roughly +/-10 uV unfiltered to a few uV with 1 kohm + 22 pF
+  (7.2 MHz) and less again with 1 kohm + 47 pF (3.4 MHz). Hold the chopping
+  period against the acquisition window - OPA333 runs a time-continuous
+  350 kHz amplifier zero-corrected every 8 us and needs about 100 us after
+  power-up to reach its specified Vos (opa333 p13). That datasheet's "no
+  aliasing or flicker noise" claim is about noise folding inside the
+  amplifier; it does not contradict the switching artifacts the white paper
+  measures at the terminals.
+sources:
+  - file: reference/knowledge/sources/sboa586a.pdf
+    page: 11
+    section: "3 Chopping Input Current Transients"
+    note: >
+      Fig 3-5: measured OPA188 input current, 2 uA spikes on a 1.54 us
+      (650 kHz) chopping clock with a synchronous-notch transient between
+      them. Fig 3-6: OPA188 noise density vs frequency in buffer
+      configuration - no 1/f region, a rise near 100 kHz, and discrete tones
+      at f_chop 650 kHz, 2*f_chop 1.3 MHz and harmonics.
+  - file: reference/knowledge/sources/sboa586a.pdf
+    page: 25
+    section: "8 / 9 External filter and selection procedure"
+    note: >
+      Fig 8-6 noise vs external filter for OPA188 at G = 101 - unfiltered
+      transients reach about +/-10 uV RTI, 1 kohm + 22 pF (7.2 MHz) cuts them
+      and 1 kohm + 47 pF (3.4 MHz) cuts them further. Step 6 of the selection
+      procedure: chopping noise is of greatest concern at unity gain with no
+      external filter, and large source or feedback impedance increases its
+      amplitude.
+  - file: reference/knowledge/sources/opa333.pdf
+    page: 13
+    section: "7.3.3 Internal Offset Correction"
+    note: >
+      Text: the OPA333 uses an auto-calibration technique with a
+      time-continuous 350 kHz amplifier in the signal path, zero-corrected
+      every 8 us, requiring about 100 us after power-up to reach specified
+      Vos, and states the design has no aliasing or flicker noise.
+  - file: reference/knowledge/sources/sprpeo2.pdf
+    page: 5
+    section: "SAR ADC Acquisition & Conversion Phase"
+    note: >
+      The sampling step this record's "does not average" argument rests on:
+      the SAR internal model (S1 sampling switch, R_SH, C_SH, comparator,
+      N-bit CDAC) with V_CSH(t) charging on tau = R_SH*C_SH during t_AQ, and
+      a SAMPLE AND HOLD block feeding the comparator - one snapshot per
+      conversion, no averaging in the converter. (S1 opening, after which the
+      comparator works on the single held C_SH voltage, is drawn on the next
+      slide, p6 Conversion Phase.)
+status: active
+origin: research:block-precision-buffer-1
+level: topology
+envelope:
+  amp_kind: {in: [zero-drift]}
+  load_kind: {in: [switched-cap]}
+maturity: approved
+generalizes: [precision-buffer-settles-not-bandwidth]
+envelope_note: >
+  Scales with the load being SAMPLED rather than continuous: a periodic
+  amplifier artifact only becomes a code error when something takes an
+  instantaneous snapshot of it. Into a continuous load - a meter, a long
+  average, a delta-sigma with heavy decimation - the same tones average away
+  and the rule does not apply, which is why the bound is on the load kind and
+  not on a frequency. Amplitude scales further with source and feedback
+  impedance and with the absence of an output filter (p25 step 6), both of
+  which the sizing records already constrain.
+verification: {by: "research-second-reader", date: "2026-08-16", note: "Re-read sprpeo2 p5 AND p6 side by side, plus sboa586a p11 and p25 and opa333 p13, pushing on the relocated clause. The p5 note is now right about both pages. p5 and p6 carry the SAME slide title, SAR ADC Acquisition and Conversion Phase, and the SAME schematic, and it is the in-figure red annotation that distinguishes them - p5 is annotated Acquisition Phase with S1 drawn CLOSED (its blade lying flat between the two contacts), p6 is annotated Conversion Phase with S1 drawn OPEN (blade lifted off the right contact). So the record's parenthetical - S1 opening, after which the comparator works on the single held C_SH voltage, is drawn on the next slide, p6 Conversion Phase - is exactly what the two pages show, and the imprecision flagged last pass is repaired. The basis it keeps on p5 is genuinely on p5: the balance cartoon has a SAMPLE AND HOLD block on one arm and a DAC block on the other, both resting on a block labelled COMPARATOR, and the schematic gives S1, R_SH, C_SH, S2, Comp, N-Bit CDAC and N-Bit Register with V_CSH(t) = V_CSH(t0) + [VIN - V_CSH(t0)]*(1 - exp(-t/tau)), tau = R_SH*C_SH, and the settling curve landing inside 1/2 LSB at t_AQ - so one C_SH voltage per conversion is sourced, not asserted. THE REST RE-CHECKED FROM SCRATCH. sboa586a p11 is verbatim: the bias current is typically 160pA, the measured transients are 2uA which is 12,500 times the magnitude of the bias current, the two large transients correspond to transitioning of the calibration circuit input switches, the smaller transient between the large transients occurs when the synchronous notch filter is switched, the period of the calibration cycle for this example is 1.54us (fchop = 650kHz), and Since these transients are currents, the impact of the transients can be minimized by reducing the source and feedback impedance. Fig 3-6 on the same page is annotated No 1/f Noise on a flat 9 nV/rtHz floor from 10 Hz out to about 20 kHz, then discrete tones under a bracket labelled Noise tones from chopping calibration with fchop 650kHz and 2fchop 1.3MHz called out and further harmonics to 10 MHz. sboa586a p25 fig 8-6 is OPA188 at G = 101 with the unfiltered blue trace spiking to about -12 and +8 uV RTI, the orange 1kohm + 22pF trace labelled 7.2 MHz clearly reduced, and the red 1kohm + 47pF trace labelled 3.4 MHz reduced further - the record pairs each RC with the right corner frequency and in the right improving order. Step 6 on that page is verbatim, including Chopping noise is of the greatest concern when the amplifier is in unity gain, with no external filter and Also, large source or feedback impedances increase the amplitude of the chopping noise. opa333 p13 section 7.3.3 is verbatim: an auto-calibration technique with a time-continuous 350-kHz operational amplifier in the signal path, zero-corrected every 8 us, approximately 100 us after power up to achieve specified VOS accuracy, This design has no aliasing or flicker noise. The record's reconciliation of that sentence with the white paper stands - the datasheet is claiming no noise folding inside the amplifier, not the absence of switching artifacts at the terminals, which is a different measurement on a different part. ONE IMPRECISION CARRIED OVER, still not load-bearing and still disclosed: the prose calls the fig 3-6 floor otherwise flat while the figure shows a broad hump peaking near 33 nV/rtHz around 150 kHz before the tones start. The source note describes that rise correctly (no 1/f region, a rise near 100 kHz, and discrete tones), the flicker-free half is the page's own annotation, and the record's rule is about periodic artifacts landing in a sampled code rather than about the shape of the floor. Envelope load_kind switched-cap is the right bound and the envelope_note argues it correctly. Verified."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. amp_kind zero-
+    drift added so a board can find it by kind; level and limits unchanged.

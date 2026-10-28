@@ -1,0 +1,59 @@
+id: mcu-analog-rail-tracks-digital-rail
+classes: [sequencing]
+applies:
+  topologies: [mcu]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  vdda_relation: "VDDA must be equal to or higher than VDD"
+  vdd_minus_vdda_max_v: 0.4
+  vdda_always_connected: true
+  series_dc_drop_into_vdda: "not allowed - filter with capacitance, not with series drop"
+  supply_fall_rate_min_us_per_v: 20
+prose: >
+  An MCU's analog supply pin is a constrained rail, not an optional filter node.
+  Three datasheet facts set it on the STM32F030: Table 21 says VDDA "must have a
+  potential equal to or higher than VDD"; Table 18 allows VDD to exceed VDDA by
+  at most 0.4 V; and Table 18 note 1 says all main power (VDD, VDDA) and ground
+  (VSS, VSSA) pins must ALWAYS be connected to the external supply, in the
+  permitted range - VDDA is not skippable on a board that uses no ADC. The layout
+  consequence is the one that bites: the reflex "ferrite bead or series R into
+  VDDA" can only pull VDDA below VDD, the direction the ordering forbids, and
+  AN2519 states the same limit from the other side - a series ferrite's impedance
+  must be low enough that there is no significant drop in the DC voltage. Filter
+  the analog rail with capacitance, not with series DC drop. Fig 12 also shows
+  WHY VDDA matters on a board with no analog function: it feeds the ADC and the
+  block labelled "Analog: (RCs, PLL, ...)" - the internal RC oscillators the CPU
+  clocks from when there is no crystal. Power-DOWN is specified too: Table 22
+  puts a minimum on the fall time RATE of both VDD and VDDA, 20 us/V, so the
+  rails must not be allowed to collapse faster than that (about 66 us from 3.3 V);
+  rise rate is unconstrained (min 0).
+sources:
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 44,
+     note: "Table 21 (continued) VDDA row: analog operating voltage 2.4-3.6 V, Conditions column reads 'Must have a potential equal to or higher than VDD'; Table 22 operating conditions at power-up/power-down - VDD and VDDA rise time rate min 0, FALL time rate min 20 us/V"}
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 42,
+     note: "Table 18 voltage characteristics: VDD-VDDA allowed voltage difference for VDD > VDDA, max 0.4 V; note 1 - all main power (VDD, VDDA) and ground (VSS, VSSA) pins must always be connected to the external power supply in the permitted range"}
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 41,
+     note: "Fig 12 power supply scheme: VDDA feeds the ADC (with VREF+/VREF- tied to it) AND the block labelled 'Analog: (RCs, PLL, ...)', i.e. the internal RC oscillators - VDD instead feeds the core regulator and the IO level shifters"}
+  - {file: reference/knowledge/sources/00002519A.pdf, page: 5,
+     note: "AN2519 s2.1 closing paragraph: a series ferrite bead reduces switching noise on the power plane, but its series impedance must be low enough to ensure that there is no significant drop in the DC voltage"}
+  - {file: reference/knowledge/sources/AN13033.pdf, page: 15,
+     note: "Table 12 termination of unused pins: VDDA 'Tie to VBAT_DCDC' and VSSA 'Tie to VSS' - the analog rail is connected to the supply even when unused, never left open"}
+status: active
+origin: research:block-mcu-1
+level: principle
+maturity: approved
+generalizes: []
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read DS p41/p42/p44 + AN2519 p5 + AN13033 p15. p44 Table 21 VDDA row Conditions column reads verbatim: Must have a potential equal to or higher than VDD (2.4-3.6 V) - it is a General-operating-conditions CONDITION, not an absolute maximum and not a recommendation, exactly as the record types it. p44 Table 22 gives VDD and VDDA fall time rate min 20 us/V, rise min 0. p42 Table 18 gives VDD-VDDA max 0.4 V for VDD greater than VDDA, and note 1 that all main power and ground pins must always be connected to the external supply. p41 Fig 12 does label the block fed off VDDA as Analog: (RCs, PLL, ...) beside the ADC, while VDD feeds the regulator/VCORE and the IO level shifters - the load-bearing claim holds visually. AN2519 p5 ferrite DC-drop caution is quoted correctly and attributed to s2.1, not smuggled in as a VDDA statement. Principle with no envelope is right: no operating-point dim bounds a rail-ordering relation."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

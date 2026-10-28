@@ -1,0 +1,72 @@
+id: sar-adc-input-settling-and-source-impedance
+classes: [selection]
+applies:
+  topologies: [sar-adc]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  inequality: "tACQ >= k * Rsource * Cflt"
+  k_single_pole_multiplier: "11 for a 14-bit converter (TI, quoted); (N+1)*ln2 = 10.4 at 14 bits, so TI's k is the more conservative of the two"
+  settling_target: "< 1/2 LSB at the end of acquisition"
+  filter_cap_dielectric: "COG/NP0"
+  filter_resistor: "0.1 pct, 20 ppm/C film or better"
+  measured_knee: "on TI's D039 sweep (14-bit converter, CFLT 680 pF, 2 to 100 kSPS) 33 ohm, 330 ohm and 3.3 kohm are indistinguishable at 11.9-12.0 ENOB, so that plot prices NO penalty out to 3.3 kohm; the knee falls between 3.3 kohm and 10 kohm at the 100 kSPS end (10 kohm 11.0, 20 kohm 9.6) and moves out as sampling slows - at 10 kSPS all five curves are still 11.9-12.0"
+  if_violated: "the block demands a buffer amplifier ahead of the RC"
+prose: >
+  The driver demand, quantified. SBAA256B p.2: tACQ >= k * tau, tau = Rsource
+  * Cflt, k the single-pole time-constant multiplier for an N-bit converter.
+  TI states k = 11 at 14 bits; settling to 1/2 LSB gives k = (N+1)*ln2 = 10.4
+  at 14 bits, so TI's k carries margin ABOVE the formula and extrapolating it
+  to about 12 at 16 bits sits on the optimistic side of TI's own practice -
+  round up, or take k from TI's table (Analog Engineer's Pocket Reference
+  pp. 96-97, not held here). Worked case: RTH 10 kohm with CFLT 680 pF needs
+  74.80 us of acquisition to settle inside 1/2 LSB (100.5 uV on a 3.15 V
+  14-bit range). (1) Cflt is a local charge bucket AT THE
+  PIN - it, not the source, supplies the sampling kick - so it must far
+  exceed Csample yet stay small enough that k*R*C fits inside tACQ, at the
+  dielectric and resistor grade p.2 notes 3-4 demand. (2) When the source
+  cannot satisfy the inequality, the block DEMANDS a buffer. p.4 plot D039
+  prices that, and NOT at a few kilohms: on a 14-bit part with 680 pF,
+  33 ohm, 330 ohm and 3.3 kohm all run flat at 11.9-12.0 ENOB from 2 to
+  100 kSPS, unseparated - at 100 kSPS 3.3 kohm reads 11.95, ABOVE 330 ohm
+  (11.92) and 33 ohm (11.87). The knee is past 3.3 kohm: 10 kohm 11.0,
+  20 kohm 9.6. ADS8326 p.21 fig 41 shows the accepted form - an OPA365
+  driving 10 ohm + 1000 pF into +IN - and requires MATCHED +IN and -IN
+  source impedances (often a 20 pF cap between the inputs): unmatched drive
+  turns the sampling kick into a differential error.
+sources:
+  - file: reference/knowledge/sources/sbaa256b.pdf
+    page: 2
+    note: "Specifications table (settling error < 0.5 LSB / < 100.5 uV calculated, 36.24 uV simulated, RTH 10 kohm, CFLT 680 pF, 10 ksps) + 'Component Selection for ADC Input Settling': tACQ >= k * tau_FLT, tau_FLT = RTH * CFLT, K = 11 for a 14-bit ADC, worked as 11 * 10 kohm * 680 pF = 74.80 us; design notes 3-4 name COG caps and 0.1 pct 20 ppm/C film resistors"
+  - file: reference/knowledge/sources/sbaa256b.pdf
+    page: 4
+    note: "ENOB vs sampling speed plot (D039) for the ADS7056 (14-bit) with CFLT 680 pF and source impedances 33 ohm / 330 ohm / 3.3 kohm / 10 kohm / 20 kohm. Curves read off the plot's own vector geometry, calibrated on its frame (9.5-12.5 ENOB, 2-100 kSPS): at 100 kSPS 3.3 kohm = 11.95, 330 ohm = 11.92, 33 ohm = 11.87, 10 kohm = 11.00, 20 kohm = 9.60. The first three are flat across the whole sweep (11.87-11.99) and lie in the order 3.3 kohm ABOVE 330 ohm ABOVE 33 ohm - the plot does not resolve source impedance below a few kilohms. Only 10 kohm and 20 kohm bend, and they leave the pack above roughly 10-15 kSPS; at 10 kSPS all five are still 11.9-12.0. Calibration checked against the two values this record already had right, 10 kohm ~11.0 and 20 kohm ~9.6"
+  - file: reference/knowledge/sources/ads8326.pdf
+    page: 21
+    note: "Figure 41 single-ended and differential interface circuits: OPA365 with a 10 ohm series resistor and 1000 pF to ground at +IN (1 nF across the pair in the differential case); text requires matched source output impedance on +IN and -IN, often with a 20 pF cap between the inputs, and low-bandwidth low-pass filtering of the input"
+status: active
+origin: "research:block-sar-adc-1"
+level: topology
+envelope:
+  source_kind: {in: [dc-input]}
+maturity: approved
+generalizes: [sar-adc-acquisition-charge-transfer]
+envelope_note: >
+  What the rule scales with is the source's ability to deliver charge, which
+  is exactly what the k*R*C inequality prices. Its bound is the SOURCE class:
+  with a near-DC input you can always buy settling by enlarging Cflt, because
+  the resulting corner is far below the signal. For an AC source that trade
+  disappears - the same Cflt band-limits the signal, and the amplifier's
+  small-signal settling and slew, not the charge budget alone, set the
+  answer. SBAA256B's own stated scope is a low-power, low-sampling-speed DAQ
+  reading slow-moving sensor outputs (p.1).
+verification: {by: "research-second-reader", date: "2026-08-16", note: "Re-read SBAA256B p.2 and p.4 (plot D039) and ADS8326 p.21 fig 41. Method for D039: NOT eyeballed - I pulled the plot's own stroked polylines with PyMuPDF and calibrated on the axes FRAME rect (220.11,53.19)-(411.26,188.59), then proved the calibration against the four interior vertical gridlines and five interior horizontal gridlines, which come back 22.00/41.99/62.00/82.00 kSPS and 12.0001/11.5001/11.0000/10.5003/10.0005 ENOB. Legend swatches (drawn inside the axes) excluded by their own box; colour-to-impedance mapping fixed by matching each swatch to its legend text baseline (red 33, blue 330, green 3.3k, purple 10k, grey 20k) and confirmed on a 9x render. At 100 kSPS I read 3.3k 11.94, 330 11.91, 33 11.86, 10k 10.99, 20k 9.59 - a uniform 0.01 below the record's 11.95/11.92/11.87/11.00/9.60, i.e. inside the 1.02 pt stroke width. Independent corroboration from the source itself: SBAA256B p.3's table gives the ADS7056 at RTH 10k / CFLT 680 pF as 10.99 ENOB at 100 ksps, exactly the 10k curve endpoint, and 12.05 at 10 ksps. CLAIM 1 (3.3k is the HIGHEST of the three flat curves, not degraded) HOLDS at 100 kSPS by measurement and is plainly visible on a 26x zoom of the right-hand end: green above blue above red. CLAIM 2 (the trio spans only 11.87-11.99 over the whole 2-100 kSPS sweep) HOLDS - my vertex envelope over all three is 11.860-11.979, which is the record's band under its 0.01 offset. CLAIM 3, the scoping of rule.measured_knee, is the one I pushed hardest and it survives: at 10 kSPS I read 33 11.86, 330 11.96, 3.3k 11.98, 10k 11.97, 20k 12.02 - impedance does not separate at all, so the knee is a function of sample rate and not of impedance alone, exactly as the record says; sweeping the curves at 0.1 kSPS steps, 10k and 20k first fall 0.05 ENOB below 3.3k at 14.5 and 14.1 kSPS, which is the note's 'roughly 10-15 kSPS'. The rule string cannot be mined for a universal constant: the conditions open the sentence ('on TI's D039 sweep (14-bit converter, CFLT 680 pF, 2 to 100 kSPS)'), 'at the 100 kSPS end' is welded to the knee clause itself, and the same sentence carries the counterexample ('moves out as sampling slows - at 10 kSPS all five curves are still 11.9-12.0'). And since D039 has no data point between 3.3k and 10k, 'the knee falls between' is the strongest honest statement available - it brackets, it does not locate. Two minor imprecisions, neither load-bearing: (a) the p.4 note's unqualified ordering '3.3 kohm ABOVE 330 ohm ABOVE 33 ohm' inverts for 3.3k vs 330 at the extreme low end (at 2 kSPS 330 = 11.951 vs 3.3k = 11.932, a 0.019 ENOB / 0.86 pt gap under a 1.02 pt stroke, i.e. the two strokes overlap) - the same note already says the plot 'does not resolve source impedance below a few kilohms', and the record's own load-bearing statement is scoped to 100 kSPS where the order is real; (b) '11.9-12.0' is a rounded band, 33 ohm actually sitting at 11.86. p.2 verified against a render of the Specifications table: Calculated cell holds both '< 0.5LSB' and '< 100.5uV', Simulated 36.24 uV, RTH 10k, CFLT 680 pF, 10 ksps, 3.15 V step FSR; the tACQ >= k*tau_FLT relation, tau_FLT = RTH*CFLT, K = 11 for a 14-bit ADC, 11*10k*680pF = 74.80 us and the Pocket Reference pp.96-97 pointer are all on the page as quoted, as are design notes 3-4 (COG caps, 0.1 pct 20 ppm/C film resistors). ADS8326 p.21 rendered and read: fig 41 is titled 'Single-Ended and Differential Methods of Interfacing the ADS8326', shows OPA365 into 10 ohm + 1000 pF at +IN with 1 nF across the pair in the differential half, and the body text demands matched +IN/-IN source output impedance, offers the 20 pF cap between the inputs to match them, and asks for low-bandwidth low-pass filtered inputs. Nothing refuted."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

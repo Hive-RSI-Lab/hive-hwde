@@ -1,0 +1,42 @@
+id: buck-fb-route-rules
+classes: [feedback]
+applies:
+  topologies: [buck]
+  packages: []
+  interfaces: []
+rule:
+  enforced_by: null
+  divider_at_fb_pin: short wire, resistors adjacent and parallel
+  sense_point: after or at both ends of the output capacitor
+  keep_away_from: SW node, inductor, diode; never under L or D; not parallel to power lines
+prose: >
+  The feedback route needs the most attention of any signal wire - noise
+  here becomes output-voltage error and instability. ROHM's four rules
+  (fig 7-a): (a) the FB pin is high impedance - connect the divider network
+  with a SHORT wire at the pin; (b) sense AFTER the output capacitor or at
+  its terminals; (c) wire the two divider resistors adjacent and parallel
+  for noise tolerance; (d) route far from the switching node, never
+  directly under the inductor or diode, and never parallel to a power
+  line - on multilayer boards the same rules apply layer-to-layer, and the
+  worked example drops the FB route to the bottom layer through a via to
+  get away from the SW region. A feedback trace laid parallel beside the
+  inductor picks up its magnetic field (fig 7-d). Matches and extends the
+  FB half of buck-bst-fb-output-caps.
+sources:
+  - {file: reference/knowledge/sources/rohm-buck-pcb-layout-an.pdf, page: 7, section: "s7, fig 7-a/7-b"}
+  - {file: reference/knowledge/sources/rohm-buck-pcb-layout-an.pdf, page: 8, section: fig 7-c/7-d}
+status: active
+origin: app-note:rohm-buck-pcb-layout-an (ROHM 60AN066E Rev.004, 2024-01)
+
+# --- schema v2 governance (U14 backfill, owner-ruled 2026-08-15) ---
+level: topology
+envelope:
+  switching_kind: {in: [hard]}
+maturity: approved
+approval:
+  by: owner
+  date: "2026-08-15"
+  note: >
+    Scales with the aggressor the FB route runs from: the high-Z FB node
+    picks up error because SW and L radiate hard edges. Divider values,
+    layer choice and sense point are consequences, not bounds.

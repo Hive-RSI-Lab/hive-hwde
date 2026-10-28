@@ -1,0 +1,95 @@
+id: resistive-attenuator-self-heating-and-gradient
+classes: [thermal]
+applies:
+  topologies: [resistive-attenuator]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  self_heating_rise: dT_SH = P x Rth
+  rth_set_by: PCB material plus the size of the mounting pads and traces
+  pcr_vs_tcr_ppm_per_c: a few (self-heating is not equivalent to an ambient change)
+  layout_requirement: equal power per leg, thermally symmetric string, no heat source on its axis
+prose: >
+  Two things set an element's film temperature (p3): ambient - INCLUDING the
+  influence of neighbouring heat-producing components - and self-heating
+  dT_SH = P x Rth (eq 1). For SMD parts Rth depends on the PCB material and on
+  the SIZE OF THE MOUNTING PADS AND TRACES, so layout sets it, and the vendor
+  is to be told those details when asked for Rth. Self-heating is not
+  equivalent to an ambient change: the heat leaves through the substrate into
+  the board, so the substrate runs cooler than the resistive alloy and adds
+  thermal strain; the difference is booked as a separate power coefficient PCR,
+  a few ppm/C away from TCR (eq 2). The divider consequence, verbatim (p5):
+  "Temperature differences between the two resistors may occur, even if they
+  share the same substrate, due to difference in power density, in heat
+  dissipation properties or in influence of adjacent heat producing devices."
+  Unequal leg power, or a gradient from a hot neighbour, turns TCR into a RATIO
+  error no tracking spec covers - so split power evenly, keep the string
+  thermally symmetric, keep heat sources off its axis. Fig 8 (p6) times the
+  transient after a power step: thick film jumps about +100 ppm, thin film
+  droops past -100 ppm over ~9 s, foil settles near zero in 1-2 s. A DC reading
+  has a THERMAL settling time, not just an electrical one.
+sources:
+  - file: reference/knowledge/sources/nonlinea.pdf
+    page: 3
+    section: "Resistor's temperature range and the resulting resistance change: TCR vs PCR"
+    note: >
+      Read: the two temperature factors (ambient change including neighbouring
+      heat-producing components; self heating), eq 1 dT_SH = P x Rth, and the
+      statement that for SMD parts Rth depends on the PCB material and the size
+      of the mounting pads and traces. Also the reason PCR differs from TCR by a
+      few ppm/C: heat flows out through the substrate to the PCB, so the
+      substrate sits cooler than the alloy and adds thermal strain (eq 2).
+  - file: reference/knowledge/sources/nonlinea.pdf
+    page: 5
+    section: "Thermal stability of a ratio of two resistance values"
+    note: >
+      Read: the ratio-drift section and eq 9. Quoted claim - temperature
+      differences between the two resistors occur even when they share a
+      substrate, through difference in power density, in heat dissipation
+      properties, or in the influence of adjacent heat producing devices. This
+      is the mechanism by which a gradient becomes a ratio error.
+  - file: reference/knowledge/sources/nonlinea.pdf
+    page: 6
+    section: "fig 8, table 1"
+    note: >
+      Read: fig 8, relative resistance (ppm) vs time 0-9 s after a power step
+      for thick film, thin film and foil. Thick film steps to about +100 ppm,
+      thin film droops below -100 ppm over the full 9 s, foil settles near zero
+      within 1-2 s. The DC value is not final until the part is thermally
+      stable.
+  - file: reference/knowledge/sources/incresarr.pdf
+    page: 3
+    section: "Relative resistance drift, fig 8"
+    note: >
+      Read: fig 8, an IR thermograph of a powered resistor array - four hot
+      elements on a common substrate whose heat merges into one warm field. Text
+      states the Al2O3 substrate's conductivity thermally couples the elements
+      so heat distribution is homogeneous "almost regardless of whether power is
+      applied to one or several resistors and irrespective of where the array is
+      located on the printed circuit board", so all elements age at the same
+      rate. This is the counter-measure to the gradient problem.
+status: active
+origin: research:block-resistive-attenuator-1
+level: topology
+envelope:
+  pdiss_w: {min: 0, max: 0.25}
+maturity: approved
+generalizes: [resistive-attenuator-ratio-from-relative-specs]
+envelope_note: >
+  Scales with the power dissipated in the elements: dT_SH = P x Rth, so the
+  ratio error described here is proportional to the power IMBALANCE between the
+  legs and goes to zero with P. Capped at 0.25 W because the whole treatment -
+  Rth set by pads and traces, the PCR correction, the stabilization curves -
+  is written for precision CHIP resistors run well inside their rating. Above
+  that the element's own derating curve and the substrate-cracking risk the
+  source mentions, not ratio drift, govern the design.
+verification: {by: "research-second-reader", date: "2026-08-16", note: "Re-read nonlinea p3, p5, p6 and incresarr p3 visually. nonlinea p3 carries all of it: the two factors setting film temperature (ambient change INCLUDING the influence of neighboring heat producing components, and self heating), eq 1 dT_SH = P x Rth, the statement that for surface mounted resistors Rth depends on the PCB material and on the size of mounting pads and traces and should be communicated to vendors, and the PCR paragraph - at steady state the heat flows through the substrate to the PCB so the substrate is cooler than the resistive alloy, causing thermal strains that may even break the substrate, a difference of order a few ppm/C booked as eq 2. p5 quote is exact: temperature differences between the two resistors may occur, even if they share the same substrate, due to difference in power density, in heat dissipation properties or in influence of adjacent heat producing devices. p6 fig 8 reads correctly - thick film steps to about +100 ppm, thin film droops past -100 ppm across the 9 s, foil settles near zero in roughly 1-2 s - and the surrounding text makes exactly the electrical-vs-thermal settling point the record draws. incresarr p3 fig 8 is the IR thermograph and its quote about homogeneous heat distribution almost regardless of whether power is applied to one or several resistors is verbatim. The equal-power / thermally-symmetric layout rule is flagged in the prose as the consequence (so), not as a source quote. The 0.25 W pdiss cap is a researcher bound with an honest rationale, and the substrate-cracking risk it leans on is genuinely in the source."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

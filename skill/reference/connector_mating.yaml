@@ -1,0 +1,89 @@
+# Connector mating families - read by scripts/lib/matinglib.py (place gate via
+# place_metrics.py, verify gate via check_mating.py).
+#
+# A footprint is a MATING connector when its footprint name (the part after
+# "lib:") matches one family's `match` regex (case-insensitive, first family
+# wins, so the specific horizontal families come before the generic vertical
+# ones). Anything unmatched is not checked: terminal blocks, wire pads, pogo
+# pads and test points are out of scope.
+#
+# entry: horizontal - the plug goes in parallel to the board. The mouth must
+#          face a board edge and sit at or over it (mouth_tol_mm inside at
+#          most: the courtyard front, which is what is measured, sits a
+#          little ahead of the body, and the copper-to-edge rule keeps pads
+#          off the edge), and no part on the connector's side may sit in the
+#          insertion zone: the mouth's own width from the mouth face to the
+#          board edge, then that width plus grip_mm each side out to
+#          plug_mm + grip_mm past the edge.
+#        vertical   - the plug comes straight down. No part taller than
+#          tall_mm may sit within finger_mm of the connector's courtyard
+#          (another vertical mating connector is exempt: a header row
+#          beside a header row is how they are mated).
+#
+# Mouth direction (horizontal only) comes from the PAD LAYOUT: the contact
+# pads (the most common pad size) sit at the back of the housing and the body
+# extends from them toward the mouth, so the mouth points from the contact-pad
+# centroid toward the courtyard centroid, snapped to the nearest axis. A
+# footprint where that is wrong gets a `mouth` entry here: footprint-name
+# regex -> local direction (+x, -x, +y, -y in the footprint's own frame,
+# KiCad y down). On the boards corpus (2026-10-02) the pad-layout reading
+# put every edge connector of a board that mates as built facing its edge,
+# so no override was needed.
+#
+# The name is a hint and the copper is the part: a connector whose SMD pads
+# sit on both outer copper layers straddles the board edge, so it is checked
+# as horizontal even when its name matched a vertical family (an edge-launch
+# SMA named like a vertical one went unchecked on PCB-0023-A). A horizontal
+# connector's 3D model must also reach ahead of its contact pads toward the
+# mouth (mating_model_reversed), or every render shows it the wrong way round.
+
+defaults:
+  plug_mm: 15.0
+  grip_mm: 3.0
+  mouth_tol_mm: 1.0
+  finger_mm: 2.5
+  tall_mm: 3.0
+
+families:
+  - {family: usb_a, entry: horizontal, plug_mm: 30.0,
+     match: 'USB-?A\b|USB_A'}
+  - {family: usb_c, entry: horizontal, plug_mm: 20.0,
+     match: 'USB-?C|TYPE-?C'}
+  - {family: usb_micro_mini, entry: horizontal, plug_mm: 20.0,
+     match: 'MICRO-?USB|MINI-?USB|USB_MICRO|USB_MINI|USB-SMD_USB-111|USB-?B\b|USB_B'}
+  - {family: barrel_jack, entry: horizontal, plug_mm: 25.0,
+     match: 'DC-?JACK|BARREL|DC-0\d\d|PJ-0\d\d'}
+  - {family: rj45, entry: horizontal, plug_mm: 30.0,
+     match: 'RJ-?45|8P8C'}
+  - {family: card_slot, entry: horizontal, plug_mm: 15.0,
+     match: 'MICRO-?SD|TF-?CARD|SD-?CARD|SIM-?CARD|NANO-?SIM'}
+  # a wire-to-board plug or an FPC tail is held by its wires, so a short
+  # ledge of board in front of the mouth does not stop it going in
+  - {family: fpc_ffc, entry: horizontal, plug_mm: 8.0, grip_mm: 2.0,
+     mouth_tol_mm: 1.5,
+     match: 'FPC|FFC'}
+  # BAT Wireless: KWE = right-angle edge, KE = "PCB-end" edge-launch that
+  # straddles the board (BWSMA-KE-P001, C496550); KHD and the rest are vertical
+  - {family: sma_edge, entry: horizontal, plug_mm: 15.0,
+     match: '(CON|BW)?SMA.*(EDGE|KWE|[-_]KE([-_]|$))'}
+  # JST/Molex wire-to-board, side entry: JST S<n>B-/SM<n>B- (SH-SM08B-GHS-TB
+  # too), and KiCad's *_Horizontal library names
+  - {family: wire_to_board_side, entry: horizontal, plug_mm: 12.0,
+     mouth_tol_mm: 1.5,
+     match: '(^|[^A-Z])SM?\d+B-|JST_.*HORIZONTAL|MOLEX_.*HORIZONTAL'}
+  - {family: header_right_angle, entry: horizontal, plug_mm: 12.0,
+     match: 'HDR-.*-R-|PIN(HEADER|SOCKET)_.*HORIZONTAL'}
+  # vertical
+  - {family: wire_to_board_top, entry: vertical,
+     match: '(^|[^A-Z])BM?\d+B-|JST_.*VERTICAL|MOLEX_.*VERTICAL'}
+  - {family: box_header, entry: vertical,
+     match: 'IDC|BOX|PZ127VS'}
+  - {family: pin_header, entry: vertical,
+     match: 'HDR-|PIN(HEADER|SOCKET)_|DS1021'}
+  # SMA alone is also the DO-214AC diode package (SMA_L4.3-W2.6...), so the
+  # connector has to be named as one
+  - {family: sma_vertical, entry: vertical,
+     match: 'CONSMA|SMA-SMD|SMA[-_](JACK|CONN|VERT)|COAXIAL'}
+
+# footprint-name regex -> mouth direction in the footprint's local frame
+mouth: {}

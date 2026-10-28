@@ -1,0 +1,144 @@
+id: precision-buffer-capacitive-load-isolation
+classes: [feedback]
+applies:
+  topologies: [precision-buffer]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  mechanism: "C_LOAD against open-loop R_O adds pole f_p2 = 1/(2*pi*R_O*C_LOAD); 40 dB/dec rate of closure = ringing"
+  fix: "series R_ISO adds zero f_z1 = 1/(2*pi*R_ISO*C_LOAD), restoring 20 dB/dec"
+  r_iso_optimal: "(1 + sqrt(1 + 8*pi*R_O*C_LOAD*f_gbw)) / (4*pi*C_LOAD*f_gbw)"
+  phase_margin_target_deg: 60
+  inputs_from_datasheet: "open-loop output impedance R_O and gain bandwidth f_gbw"
+  cost: "R_ISO divides against any resistive load and lengthens settling - use the smallest stable value"
+  verify: "simulate the loop; the equation is a starting point"
+prose: >
+  A unity-gain follower driving a capacitor is not automatically stable. The
+  load capacitance works against the amplifier's OPEN-loop output impedance
+  R_O - a datasheet spec, flat at 120 ohm for OPA392 (sboa418 p2 fig 1-1),
+  2 kohm at 350 kHz for OPA333 (opa333 p7) - adding a pole
+  f_p2 = 1/(2*pi*R_O*C_LOAD) to the loaded AOL curve. When f_p2 falls below
+  the amplifier's bandwidth, AOL drops 40 dB/decade into 1/beta and the rate
+  of closure doubles (p6 fig 4-2): p4 fig 3-1 shows an OPA392 buffer with
+  10 uF direct on its output ringing ~1 ms at under 1 degree phase margin.
+  A series isolation resistor adds a zero
+  f_z1 = 1/(2*pi*R_ISO*C_LOAD) that cancels f_p2 and restores 20 dB/decade
+  closure (p7 figs 4-3/4-4). The optimal value puts f_z1 at the closure
+  frequency, phase margin 50-60 degrees:
+  R_ISO = [1 + sqrt(1 + 8*pi*R_O*C_LOAD*f_gbw)]/(4*pi*C_LOAD*f_gbw) (p5 eq 2).
+  R_ISO is not free - it divides against any resistive load (p8 fig 4-5:
+  20 ohm loses 10 mV of 5 V into 10 kohm, 200 ohm loses 100 mV) and it
+  lengthens settling - so take the smallest stable value; p9 fig 5-1 puts
+  30 degrees at 14.33 mV on a 10 mV step (~43%) and 60 degrees, TI's
+  optimally damped case, at 11.04 mV (~10%). The capacitance alone is
+  measurable: OPA333 small-signal overshoot runs ~0% at 10 pF, ~10% at
+  100 pF and ~25% at 300 pF, and the trace leaves the top of the 40% frame
+  at ~605 pF - it is NOT drawn at 1 nF, where overshoot is worse than 40%
+  and unquantified (opa333 p11 fig 15).
+sources:
+  - file: reference/knowledge/sources/sboa418.pdf
+    page: 2
+    section: "1 Introduction: Open-Loop Output Impedance (RO)"
+    note: >
+      Fig 1-1 plus the electrical-table row: OPA392 open-loop output impedance
+      is flat at ~120 ohm across frequency and is published as a datasheet
+      spec (120 ohm at 1 MHz); the analysis applies to amplifiers with a flat
+      resistive R_O.
+  - file: reference/knowledge/sources/sboa418.pdf
+    page: 4
+    section: "3 Example, Calculate Optimal Isolation Resistance"
+    note: >
+      Fig 3-1: OPA392 buffer with a 10 uF capacitor direct from output to
+      ground; the transient plot shows sustained ringing over ~1 ms, phase
+      margin confirmed under 1 degree. Text notes an ADC reference driver is
+      a case where the load capacitor cannot be removed.
+  - file: reference/knowledge/sources/sboa418.pdf
+    page: 5
+    section: "Equation 2 (optimal RISO)"
+    note: >
+      Fig 3-2: a 380 mohm R_ISO takes the same circuit to 60 degrees phase
+      margin and a clean settle. Equation 2 gives R_ISO from f_gbw, R_O and
+      C_LOAD; text says to verify the chosen value in SPICE.
+  - file: reference/knowledge/sources/sboa418.pdf
+    page: 6
+    section: "4 RO, RISO, and Capacitive Load Drive"
+    note: >
+      Fig 4-1 output-resistance model and fig 4-2 Bode plot: C_LOAD with R_O
+      creates f_p2 = 1/(2*pi*R_O*C_LOAD), the loaded AOL falls at 40 dB/dec
+      and closes on 1/beta at 40 dB rate of closure - the instability.
+  - file: reference/knowledge/sources/sboa418.pdf
+    page: 7
+    section: "Effects of RISO on open-loop gain"
+    note: >
+      Figs 4-3/4-4: R_ISO in series with C_LOAD creates zero
+      f_z1 = 1/(2*pi*R_ISO*C_LOAD) and moves the pole to
+      f_p2* = 1/(2*pi*[R_O+R_ISO]*C_LOAD), returning a 20 dB rate of closure.
+  - file: reference/knowledge/sources/sboa418.pdf
+    page: 8
+    section: "RISO voltage error"
+    note: >
+      Fig 4-5: two identical buffers into 10 kohm || 5 nF from 5 V; 20 ohm
+      R_ISO reads 4.99 V at the load, 200 ohm reads 4.90 V. Text - larger
+      R_ISO buys phase margin at the cost of voltage error and settling time.
+  - file: reference/knowledge/sources/sboa418.pdf
+    page: 9
+    section: "5 Derive Equation for Optimal Isolation Resistance"
+    note: >
+      Fig 5-1: small-signal step response at 75/60/45/30 degrees phase
+      margin on a 10 mV step, read off the plot vertices and calibrated on
+      the printed gridlines rather than by eye. Settled level 10.09 mV;
+      peaks 10.09 mV at 75 deg (no overshoot), 11.04 mV at 60 deg (~10% of
+      the step), 12.53 mV at 45 deg (~25%) and 14.33 mV at 30 deg (~43%,
+      with visible ringing). Text: the optimal isolation resistance is the
+      SMALLEST series resistance that produces an acceptable transient
+      response; 45 deg is generally considered stable; placing f_z1 at the
+      closure frequency targets 50-60 deg, and for a loaded buffer that
+      closure frequency is below f_gbw.
+  - file: reference/knowledge/sources/opa333.pdf
+    page: 7
+    section: "6.6 Electrical Characteristics"
+    note: >
+      Output block of the table: open-loop output impedance 2 kohm at
+      f = 350 kHz, I_O = 0 A, and GBW 350 kHz specified at C_L = 100 pF - the
+      two datasheet inputs the R_ISO equation needs, for a micropower part
+      whose R_O is over an order of magnitude above the OPA392 example.
+  - file: reference/knowledge/sources/opa333.pdf
+    page: 11
+    section: "6.7 Typical Characteristics, Figure 15"
+    note: >
+      Fig 15 small-signal overshoot vs load capacitance, extracted from the
+      PDF vector geometry (the trace is two bezier segments; the log x-axis
+      fitted to 19 printed gridlines, max residual 0.003 decade). The curve
+      spans 10.4 pF to ~605 pF ONLY and terminates where it meets the 40%
+      top of the frame: 0.05% at 10.4 pF, 9.8% at 100 pF, 24.5% at 300 pF,
+      33.7% at 470 pF, 39.9% at ~605 pF. 7% falls at 69 pF and 15% at
+      162 pF. THERE IS NO 1000 pF POINT - past ~605 pF the trace is off the
+      chart and the overshoot is unquantified, worse than 40%. The same
+      instability measured on a micropower CMOS follower over the lower half
+      of the capacitance range a SAR charge bucket occupies.
+status: active
+origin: research:block-precision-buffer-1
+level: topology
+envelope:
+  topology_kind: {in: [unity-follower]}
+maturity: approved
+generalizes: []
+envelope_note: >
+  Scales with R_O*C_LOAD against the amplifier's gain bandwidth - the pole
+  moves with that product, so a faster amplifier or a lower open-loop output
+  impedance tolerates more capacitance for the same phase margin. The closed
+  form assumes a UNITY-GAIN buffer (1/beta at 0 dB, closure at f_gbw) and an
+  R_O that is flat and resistive across the useful band (sboa418 p2); an
+  amplifier with a complex output impedance, or the same amplifier configured
+  in gain, changes the closure frequency and needs the loop simulated rather
+  than this equation. Nothing here depends on the supply or the signal level.
+verification: {by: "research-second-reader", date: "2026-08-16", note: "Re-measured BOTH figures from scratch out of the PDF vector geometry and then cross-checked them against an independent 864-dpi raster pixel scan of the same pages, because this record has been edited twice and got worse in between. The current numbers are the right ones. opa333 p11 fig 15: the plot frame is the single path (97.73, 90.86) to (279.99, 214.32); 19 printed gridlines fit px = 6.684 + 91.033*log10(C_pF) with a max residual of 0.0034 decade, and the 7 interior horizontal gridlines sit on an exact 8-way split of the frame to within 0.023 pt, so frame bottom is 0 percent and frame top is 40 percent. The trace is exactly two cubic beziers, (99.42,214.17) to (204.17,171.68) to (260.07,91.28). Evaluated off that: span 10.44 pF to 607 pF, terminating at 39.9 percent on the frame top; 100 pF gives 9.74 percent, 300 pF gives 24.48 percent, 470 pF gives 33.68 percent, and 7 percent falls at 69.3 pF with 15 percent at 161.6 pF. The independent raster scan (curve runs isolated by stroke thickness, vertical gridline columns discarded) agrees to within 0.1 percentage point at every point tested - 69 pF 6.99, 100 pF 9.76 by interpolation across the decade gridline, 150 pF 14.04, 162 pF 15.06, 300 pF 24.5 by interpolation, 470 pF 33.70, 605 pF 39.63 - and finds zero curve pixels anywhere beyond 609 pF, so the trace really does stop there rather than being clipped or overpainted. On the overpaint trap specifically: exactly two paths overlap the fig 15 frame, the frame rect and the curve, and neither is a white fill, so there is no white rectangle inflating this read. The record is therefore right on all three counts that changed - 100 pF is about 10 percent not 7, 300 pF is about 25 percent not 15, and there is no 1000 pF point at all. sboa418 p9 fig 5-1: four 114-segment polylines, matched to phase margin by legend swatch colour (black 75, red 60, dark teal 45, cyan 30 - each swatch line sits on the vertical centre of its own legend text). y frame 343.47 = 0 V, 156.32 = 0.016 V on 8 equal divisions. All four traces start at 0.099 mV and end at 10.0875 mV, so the settled level is 10.09 mV as claimed. Peaks: 75 deg 10.0875 (no overshoot, its peak IS the settled level), 60 deg 11.0394, 45 deg 12.5261, 30 deg 14.3305 mV - the record's 10.09 / 11.04 / 12.53 / 14.33 exactly. On the nominal 10 mV step those are 10.4, 25.3 and 43.3 percent, which is the record's about 10, 25 and 43; against the 10.09 settled level they would be 9.4, 24.2 and 42.0, so the percentages are honest either way. The 30 deg trace does ring visibly - successive maxima 14.33, 10.87, 10.23, 10.11 mV. A white fill rect does exist on this page but it is the legend box at x greater than 348 and y greater than 288, nowhere near any peak. Every other citation re-read and exact: p2 fig 1-1 flat 120 ohm plus the electrical row R_O f = 1 MHz 120 ohm and the sentence limiting the analysis to amplifiers with a flat resistive output impedance; p4 fig 3-1 OPA392 buffer with C3 10u direct on the output, the Vout trace ringing across the full 0 to 1.00 ms axis, phase margin of less than 1 degree, and the ADC reference driver sentence; p5 eq 2 transcribed exactly, 380 mohm giving 60 degrees, and Always use Spice simulation tools such as TINA-TI to verify; p6 eq 3 with the 40 dB/decade rate of closure; p7 eq 4 and eq 5 with the 20 dB ROC restored; p8 fig 4-5 reading 4.99 V at 20 ohm and 4.90 V at 200 ohm into 10 kohm plus 5 nF from 5 V, plus the text that RISO is designed to be as small as tolerable and that a larger one costs voltage error and settling time; opa333 p7 Open-loop output impedance f = 350 kHz IO = 0 A 2 kohm and Gain-bandwidth product CL = 100 pF 350 kHz. p9 also supports the prose's optimally damped label - In certain cases, it is typical for a phase margin of 60 degrees to be considered optimally damped. The one inference in the record, that overshoot past 605 pF is worse than 40 percent, is a one-step monotone extrapolation off a trace that leaves the frame top still rising, and the record labels it unquantified rather than pretending to a number. Nothing here refutes."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

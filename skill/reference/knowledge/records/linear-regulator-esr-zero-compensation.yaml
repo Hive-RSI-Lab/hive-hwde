@@ -1,0 +1,91 @@
+id: linear-regulator-esr-zero-compensation
+classes: [feedback]
+applies:
+  topologies: [linear-regulator]
+  packages: []
+  interfaces: []
+  parts: []
+rule: null
+prose: >
+  Why an older linear regulator names an ESR RANGE instead of just a
+  capacitance. Its loop has three poles (SLVA115A Fig 1, p2): the dominant pole
+  in the error amplifier, a LOAD pole set by COUT x RLOAD that moves with load
+  current, and the pass-device pole from the pass element's parasitic
+  capacitance. A three-pole high-gain loop cannot be stable, so it is
+  compensated with a zero, and the cheapest zero available is the output
+  capacitor's own ESR - fZ(ESR) = 1/(2*pi*RESR*COUT). Both ends of the window
+  follow. Too LITTLE ESR puts fZ too high, so the gain crosses 0 dB at -40
+  dB/decade instead of -20: ringing, then oscillation. Too MUCH ESR puts fZ so
+  low that the gain is still above 0 dB when the pass-device pole arrives. That
+  is why this generation of datasheets plots a REGION OF STABILITY of ESR vs
+  output current (Fig 2) rather than one number. Two practical consequences.
+  The plotted ESR is the capacitor's MINIMUM ESR over frequency (note under Fig
+  2), so compare the window against the ESR at the capacitor's impedance
+  minimum, not its 120 Hz value. And the test that settles it is a fast load
+  transient: four rings or fewer means enough phase margin (p3-5 - a TPS76050
+  with 2.2 uF ceramic rings; the same cap plus 1 ohm does not). SLVA115A is
+  written for PNP/PMOS pass elements - take the mechanism here, the numbers from
+  the part.
+sources:
+  - file: reference/knowledge/sources/slva115a.pdf
+    page: 1
+    section: 1 Introduction
+    note: >
+      The three poles named and located - dominant pole in the error amplifier,
+      load pole P(LOAD) formed by the output capacitor and load "and therefore
+      varies with load current", pass-device pole from the pass element's
+      parasitic capacitance - plus the statement that a three-pole high-gain
+      system needs compensation and that using the output capacitor's ESR is
+      the simplest and least expensive way to generate the compensating zero
+  - file: reference/knowledge/sources/slva115a.pdf
+    page: 2
+    section: Figure 1 + Figure 2 + the ESR-bounds paragraph
+    note: >
+      Fig 1 open-loop gain plot read visually - dominant pole, P(LOAD) with its
+      "Variation in R(LOAD) x C(LOAD)" arrow, fZ(ESR) with its "Variation in
+      C(LOAD) x ESR" arrow, and P(PASS) near 1 MHz; the paragraph gives both
+      bounds (ESR high enough that the crossing is -20 dB/dec, low enough that
+      the gain is below 0 dB before P(PASS)); Fig 2 is the TPS76050 ESR vs
+      output current chart with shaded Region of Instability under ~0.1-0.2 ohm
+      and above ~20 ohm at CO = 2.2 uF; the NOTE states the plotted ESR is the
+      MINIMUM ESR of the capacitor, as ESR varies over frequency
+  - file: reference/knowledge/sources/slva115a.pdf
+    page: 3
+    section: paragraph under Figure 2 + Figure 3
+    note: >
+      The window worked as numbers - "for the minimum 2.2-uF of output
+      capacitance, the ESR must be between 0.1 ohm and 20 ohm", the lower limit
+      setting fZ(ESR) = 1/(2*pi*RESR*COUT) = 72.3 kHz, the stable ESR-times-C
+      product band, and "Few capacitors have more than 2 ohm of ESR, so the
+      upper limit on the ESR can usually be ignored"; this page also carries the
+      load-transient method - "Performing a load transient test and observing
+      the amount of ringing on the output is the best way to determine if the
+      capacitor selected is stable" - with Fig 3's MOSFET-switch jig, preferred
+      to an electronic load because the transient is much faster
+  - file: reference/knowledge/sources/slva115a.pdf
+    page: 4
+    section: Figure 4 - load transient with a 2.2 uF ceramic
+    note: >
+      TPS76050 load-transient capture showing multiple rings after the initial
+      spike = instability, with the text rule that four rings or fewer indicates
+      sufficient phase margin
+  - file: reference/knowledge/sources/slva115a.pdf
+    page: 5
+    section: Figure 5 - the same capacitor plus 1 ohm
+    note: >
+      Same device and same 2.2 uF ceramic with a 1 ohm series resistor added:
+      the transient settles without the ring train, i.e. ESR can be synthesized
+      when the only available capacitor is below the window
+status: active
+origin: research:block-linear-regulator-1
+level: principle
+maturity: approved
+generalizes: []
+verification: {by: "second-reader", date: "2026-08-16", note: "Post-verification edit re-read, and all five cited pages re-read this pass. The added SLVA115A p3 holds exactly: p3 carries the window as numbers (The curve of this device requires that, for the minimum 2.2-uF of output capacitance, the ESR must be between 0.1 ohm and 20 ohm), the worked fZ(ESR) = 1/(2 pi RESR COUT) = 72.3 kHz with RESR 0.1 ohm and COUT 2.2 uF, the stable ESR-times-C product band, the sentence Few capacitors have more than 2 ohm of ESR so the upper limit on the ESR can usually be ignored, AND the load-transient method - Performing a load transient test and observing the amount of ringing on the output is the best way to determine if the capacitor selected is stable - with Figure 3 Load Transient Setup drawn as a MOSFET switch plus function generator and the sentence This setup is preferable to most electronic loads because the simulated transient is much faster. That closes the prior citation slip. The reduced p4 note also holds: p4 carries only Figure 4 TPS76050 Load Transient With 2.2-uF Ceramic Capacitor and the text The results in Figure 4 show multiple oscillations or rings after the initial spike, indicating instability ... Typically, four rings or less indicate sufficient phase margin for the device to be stable; the jig is no longer claimed for p4. Re-checked the rest: p1 names the three poles (dominant pole set in the error amplifier, load pole P(LOAD) formed by the output capacitor and load and therefore varies with load current, pass device pole P(PASS) formed by the parasitic capacitance of the pass element), states that a three-pole high gain system requires compensation, and calls using the ESR of the output capacitor typically the simplest and least expensive method for generating this zero, with the abstract scoping the whole report to LDO regulators with PNP or PMOS pass element; p2 Fig 1 carries the labelled Dominant Pole P(DOM), P(LOAD) with its Variation in R(LOAD) x C(LOAD) arrow, fZ(ESR) with its Variation in C(LOAD) x ESR arrow and P(PASS) near 1 MHz, the paragraph beneath gives both bounds (high enough that the 0 dB crossing is -20 dB/decade, low enough that gain is below 0 dB before P(PASS)), Fig 2 is the TPS76050 region of stability at CO = 2.2 uF and TJ = 25 C, and the NOTE reads The ESR used in these plots is the minimum ESR of the capacitor as ESR does vary over frequency; p5 Fig 5 is the same 2.2-uF ceramic plus a 1-ohm series resistor, settling without the ring train. Principle level with rule null and no envelope is right, and the PNP/PMOS provenance is disclosed in prose. Free strengthener for a later pass: the p6 Conclusion states the same convention more broadly - When designing with older linear regulators ... As the ESR is a function of frequency, the minimum ESR is used in simulations - without the these plots qualifier."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

@@ -1,0 +1,115 @@
+id: buck-sync-hot-loop-cin-placement
+classes: [power-loop, emi]
+applies:
+  topologies: [buck]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  hot_loop_members: "C_IN + HF bypass across the VIN and PGND pins, on the IC's own layer"
+  external_elements_in_loop: "C_IN only - both switches are inside the package"
+  measured_gain_from_tightening: "SW peak 18.1 V -> 14.5 V at 12 V in; Vout noise 75 mV -> 47 mV pk-pk; radiated peak 44 -> 41 dBuV/m"
+  vias_in_hot_loop: "avoid; if unavoidable, several in parallel"
+prose: >
+  In a synchronous buck the commutating loop is C_IN -> high-side FET ->
+  low-side FET -> back to C_IN, and in an integrated-FET part BOTH switches
+  sit inside the package: SNVA721A fig 3 shades exactly that as the
+  "loop area with discontinuous current", and the HS-ON and LS-ON current
+  paths differ only inside the shaded box. So C_IN and its return are the
+  ONLY external elements you can place - the whole hot-loop design freedom
+  is C_IN plus the HF bypass sitting across the VIN and PGND pins on the
+  IC's layer. That is why the async free-wheel-diode corner has no
+  counterpart here: there is no external return element to place or snub.
+  On the LMR33630 pins 1 (PGND) and 2 (VIN) are adjacent, so the loop can
+  be a few mm around; the datasheet's HSOIC layout example puts C_IN and
+  C_HF hard against those two pins with GND pour beneath. Measured payoff
+  on a generic sync buck, same board and conditions: moving C_IN from
+  "same layer but not close" to "as close as possible" cut switch-node
+  overshoot from 18.1 V to 14.5 V on a 12 V input, output noise from 75 mV
+  to 47 mV pk-pk, and the radiated peak from 44 to 41 dBuV/m - CISPR22
+  class B was missed before and met after. Keep the traces to the bypass
+  caps short and wide on the IC's layer, do not route high-di/dt current
+  through a plane, and parallel vias if one is unavoidable.
+sources:
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 33
+    section: "10.1 Layout Guidelines"
+    note: >
+      Opening paragraph plus rule 1: the most critical PCB feature is the
+      loop formed by the input capacitor(s) and power ground; traces in
+      that loop wide and short, loop area as small as possible; VIN and
+      GND pins are adjacent, simplifying input-capacitor placement. Rule 9
+      keeps SW copper short, wide and small in total area.
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 34
+    section: "Figure 10-1 + 10.1.1"
+    note: >
+      Figure 10-1 "Current Loops with Fast Edges": the red KEEP CURRENT
+      LOOP SMALL path runs C_IN -> VIN pin -> HS FET -> SW -> LS FET ->
+      GND pin -> C_IN, i.e. entirely inside the package except C_IN.
+      10.1.1 states the PGND pins connect directly to the source of the
+      low-side MOSFET and to the input and output capacitor grounds.
+  - file: reference/knowledge/sources/lmr33630.pdf
+    page: 35
+    section: "10.2 Figure 10-2 Example Layout for HSOIC (DDA)"
+    note: >
+      Read the figure: C_IN with C_HF between it and the device sits
+      against the adjacent PGND/VIN pins on the top layer over GND pour;
+      the inductor is at the SW pin on the opposite corner with small SW
+      copper; the C_OUT bank is a separate group with the GND heatsink
+      pour between it and C_IN; the Vout sense to the FB divider runs on
+      the bottom layer, away from SW.
+  - file: reference/knowledge/sources/snva721a.pdf
+    page: 3
+    section: "2 + 2.1 Identify critical paths, Figure 3"
+    note: >
+      Figure 3 simplified sync buck: red shaded "Loop Area with
+      Discontinuous Current" = C_IN + HS FET + LS FET; magenta and green
+      dotted overlays are the HS-ON and LS-ON current paths. Text derives
+      v = L*(di/dt) and states loop self-inductance is proportional to the
+      enclosed area, so the critical high-di/dt path must be identified
+      and its area minimised.
+  - file: reference/knowledge/sources/snva721a.pdf
+    page: 4
+    section: "2.2 Minimize High Power High di/dt Path Loop Area, Figures 5-6"
+    note: >
+      Text: for a synchronous buck the switches are integrated inside the
+      IC, so the bypass capacitors go as close as possible to the IC
+      between the VIN and GND pins; traces short and wide on the same
+      layer as the IC; do not route high-di/dt traces through power or
+      ground planes; parallel vias if vias are unavoidable. Figure 6
+      (large loop): SW peak 18.1 V at 12 V in, Vout ripple 75 mV pk-pk,
+      radiated peak 44 dBuV/m over the CISPR22 class B line.
+  - file: reference/knowledge/sources/snva721a.pdf
+    page: 5
+    section: "Figure 7 Optimized Critical Loop Area and Results"
+    note: >
+      Same design and operating condition with C_IN moved close to the
+      pins: SW peak 14.5 V (vs 18.1 V), Vout ripple 47 mV (vs 75 mV),
+      radiated peak 41 dBuV/m - 3 dBuV/m better and under class B.
+status: active
+origin: research:block-buck-1
+level: topology
+envelope:
+  rectifier_kind: {in: [sync]}
+maturity: approved
+generalizes: [buck-input-hot-loop]
+envelope_note: >
+  Scales with WHERE the commutation loop closes. In a sync buck the return
+  corner is the low-side FET, inside the package on an integrated part, so
+  C_IN placement is the only lever and the rule collapses to "C_IN plus HF
+  bypass across the VIN/PGND pins". In an async buck the free-wheel diode
+  is an EXTERNAL element of the same loop and must be placed and snubbed
+  at the IC - a different rule, already held by
+  buck-freewheel-diode-snubber-placement. Not bounded on vin/iout/fsw: it
+  is loop inductance times di/dt that sets the overshoot, and the
+  measurement was taken at 12 V.
+verification: {by: "second-reader", date: "2026-08-15", note: "Re-read lmr33630 p33/p34/p35 and snva721a p3/p4/p5. The p33 opening paragraph and rule 1 do make the CIN-plus-power-ground loop the most critical PCB feature and confirm VIN/GND pin adjacency (pinout p5: pin 1 PGND, pin 2 VIN); rule 9 keeps SW copper short, wide and small in total area. Figure 10-1 on p34 closes the fast loop CIN-VIN-HS-SW-LS-GND with CIN the only external element, and 10.1.1 ties PGND to the low-side source and to the input and output capacitor grounds. Figure 10-2 on p35 does place CIN with CHF between it and the device at the PGND/VIN corner, COUT as a separate group, and the Vout sense to the divider on the bottom layer. snva721a p4/p5 print 18.1 -> 14.5 V SW peak, 75 -> 47 mV Vout ripple and 44 -> 41 dBuV/m for the same design and operating condition, and p4 states the 12 V input outright - the record carries that condition in both rule and prose, so nothing is transported to the 30 V operating point. Two nits that do not refute: on Figure 3 the red shading covers the FET box with the CIN branch as its left edge, so it is the page text (loop formed by the input capacitor, the high side switch and low side switches) rather than the shading that puts CIN in the loop; and class B met after is read off Figure 7 rather than stated, though the reading is right - the 41 dBuV/m peak sits just past the 230 MHz step where the class B line rises, while the 44 dBuV/m miss is stated in words."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

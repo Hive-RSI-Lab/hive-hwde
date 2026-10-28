@@ -1,0 +1,108 @@
+# jlc_pricing.yaml - JLCPCB price POINTS for order_quote.py's estimate matrix.
+#
+# READ THIS BEFORE TRUSTING A NUMBER FROM THIS FILE.
+#
+# These are the published headline prices, transcribed to give the pipeline a
+# cost ORDER OF MAGNITUDE at P2 (architecture checkpoint) and a sanity check at
+# P10. They are NOT a quote. JLC's real price depends on panelisation, current
+# promotions, region, shipping and stock - only the instant-quote page or the
+# credentialed API returns an authoritative figure. order_quote.py therefore
+# marks every derived number `estimated: true` and always emits the
+# instant-quote deep link as the authoritative path.
+#
+# Source (transcribed + last verified 2026-07-24):
+#   https://jlcpcb.com/           (instant quote headline pricing)
+#   https://jlcpcb.com/capabilities/pcb-capabilities
+#   https://jlcpcb.com/parts      (SMT assembly fee structure)
+# Currency: USD, excluding shipping and taxes.
+
+meta:
+  currency: USD
+  estimate: true
+  verified: "2026-07-24"
+  authoritative_quote_url: "https://cart.jlcpcb.com/quote"
+  source_urls:
+    - https://jlcpcb.com/
+    - https://jlcpcb.com/capabilities/pcb-capabilities
+  # MEASURED estimate-vs-API bias (credentialed --api calculate runs against
+  # this table's pcb_cost output). The table has no copper-weight term and
+  # _nearest_qty_price snaps qty silently, so the headline estimate runs
+  # 1.9-3.1x LOW on real boards. order_quote surfaces the observed ratio in
+  # every quote payload ("calibration") and extends the disclaimer with
+  # "treat as a LOWER BOUND". Do NOT invent copper/4L adders here without
+  # freshly transcribed price points - the honesty contract forbids
+  # fabricated precision; the API calculate leg remains the real price.
+  measured_vs_api:
+    - {board: pd-trigger, layers: 2, date: "2026-07-29",
+       estimate_pcb: 2.00, api_price: 6.20}
+    - {board: lumina-carrier, layers: 4, date: "2026-07-30",
+       estimate_pcb: 9.90, api_price: 18.40}
+  # refresh_recipe: open the instant-quote page (authoritative_quote_url)
+  # once per layer count (2/4/6) at 100x100 mm, qty 5/10/30; transcribe the
+  # headline base table into pcb.base below; bump meta.verified to the
+  # transcription date. Add a measured_vs_api point (estimate_pcb from
+  # order_quote, api_price from a credentialed --api run) whenever a new
+  # board gets a live quote.
+
+# Base PCB price for the standard promo tier: boards within `promo_max_mm`
+# on both sides, standard thickness/colour, at the listed quantity.
+pcb:
+  promo_max_mm: 100          # 100 x 100 mm keeps the headline price
+  base:
+    # layers: {qty: price}
+    2: {5: 2.00, 10: 2.00, 30: 8.90, 50: 13.90, 100: 24.90}
+    4: {5: 5.00, 10: 9.90, 30: 27.90, 50: 42.90, 100: 76.90}
+    6: {5: 34.00, 10: 49.00, 30: 109.00, 50: 165.00, 100: 295.00}
+  # Charged per dm^2 once the board exceeds the promo size (rough linear model).
+  oversize_per_dm2:
+    2: 4.50
+    4: 11.00
+    6: 32.00
+
+options:
+  surface_finish:
+    "HASL": 0.00
+    "LeadFree HASL": 0.00
+    "ENIG": 0.00            # free under ~2 dm^2 on the promo tier, else set here
+  solder_mask_color:
+    green: 0.00
+    black: 0.00
+    blue: 0.00
+    red: 0.00
+    white: 0.00
+    yellow: 0.00
+    purple: 0.00
+    "matte black": 0.00
+    "matte green": 0.00
+  thickness_mm:
+    1.6: 0.00
+    0.8: 0.00
+    1.2: 0.00
+    2.0: 3.00
+  # "Castellated Holes: Yes" adder, per order, when the board has any
+  # castellated pad (lib/castellation.py counts them). JLC publishes NO fixed
+  # price for it - it is computed per quote - so this is ONE reported quote
+  # point, not a table: a $36 castellated upcharge reported on JLC orders
+  # (forum.pedalpcb.com/threads/castellated-holes-on-eagle.25247, seen
+  # 2026-10-02). Replace it with a measured API calculate figure (the
+  # castellated board's api_quote.json) when one exists.
+  castellated_holes: 36.00
+
+# SMT assembly. JLC bills a setup fee, a per-part feeder fee for EXTENDED parts
+# (Basic parts are feeder-free - this is why parts_search ranks Basic first),
+# and a per-solder-joint charge.
+assembly:
+  setup_fee: 8.00
+  per_extended_part_feeder: 3.00
+  per_joint: 0.0017
+  stencil: 8.00
+  min_qty: 2
+  note: "Basic parts incur no feeder fee; Extended parts do (per unique part)."
+
+lead_time_days:
+  pcb:
+    2: {standard: 2, expedited: 1}
+    4: {standard: 3, expedited: 2}
+    6: {standard: 5, expedited: 3}
+  assembly_additional: 4
+  note: "Build time only - shipping is separate and region-dependent."

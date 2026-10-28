@@ -1,0 +1,82 @@
+id: precision-buffer-pin-decoupling-and-input-routing
+classes: [decoupling, emi, return-path]
+applies:
+  topologies: [precision-buffer]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  bypass: "low-ESR ceramic 0.1 uF at EACH supply pin, placed closely across the pins"
+  plane: "ground plane on an adjacent layer under the amplifier"
+  feedback_network: "at the inverting pin, resistors adjacent to each other"
+  input_routing: "run input traces as far from the supply lines as possible"
+  why_at_the_pin: "CMRR and PSRR collapse with frequency - above a few kHz the part rejects nothing"
+  symptom: "RFI on a precision amplifier appears as a VARYING DC OFFSET, not as visible noise"
+prose: >
+  A precision follower's layout errors show up as DC offset, not as visible
+  noise: the datasheet states RFI can generally be identified as a variation
+  in offset voltage or DC signal levels with changes in the interfering RF
+  field (p23). Four moves come straight from the vendor's layout example, fig
+  34 on that page. (1) A low-ESR ceramic bypass capacitor at EACH supply pin,
+  drawn at both V+ and V- and returned to the plane, with 0.1 uF called out in
+  the text and placed closely across the supply pins. (2) A ground plane on
+  another layer under the part, with surface-mount components as close to the
+  device pins as possible. (3) The feedback network placed right at the
+  inverting pin with its two resistors adjacent to each other - annotated
+  "place components close to device and to each other to reduce parasitic
+  errors". (4) "Run the input traces as far away from the supply lines as
+  possible"; the figure boxes the whole high-impedance input network away from
+  the supply routing. The reason the bypass must be AT the pin is that the
+  amplifier's own rejection collapses with frequency: p9 figs 4 and 5 show
+  CMRR near 130 dB and PSRR near 110-120 dB at DC, both falling to roughly
+  20 dB by 100 kHz. Above a few kilohertz a rail or common-mode disturbance
+  arrives at the output essentially unrejected, and only the local capacitor
+  and the plane stop it.
+sources:
+  - file: reference/knowledge/sources/opa333.pdf
+    page: 23
+    section: "10 Layout - Guidelines and Figure 34 Layout Example"
+    note: >
+      Section 10.1.1 text - keep traces short, use a PCB ground plane with
+      surface-mount components as close to the device pins as possible, place
+      a 0.1 uF capacitor closely across the supply pins, and RFI identified as
+      a variation in offset voltage with the interfering field. Fig 34 layout
+      example annotations - low-ESR ceramic bypass capacitor at V+ and at V-,
+      "ground (GND) plane on another layer", "place components close to device
+      and to each other to reduce parasitic errors" on the RF/RG pair at the
+      inverting pin, and "run the input traces as far away from the supply
+      lines as possible" boxing the input network.
+  - file: reference/knowledge/sources/opa333.pdf
+    page: 9
+    section: "6.7 Typical Characteristics, Figures 4 and 5"
+    note: >
+      Fig 4 CMRR vs frequency - about 130 dB at 1 Hz, already falling through
+      1 kHz and down near 20 dB by 100 kHz. Fig 5 PSRR vs frequency - +PSRR
+      and -PSRR near 110-120 dB at DC and similarly collapsing by 100 kHz -
+      the quantitative reason local bypass has to do the rejecting.
+status: active
+origin: research:block-precision-buffer-1
+level: principle
+envelope: null
+maturity: approved
+generalizes: []
+envelope_note: >
+  Scales with having a reference plane and pin-adjacent space available: the
+  guidance assumes a ground plane on an adjacent layer and bypass capacitors
+  that physically reach the supply pins, so it needs at least two copper
+  layers and only gets easier above that - hence a minimum with no upper
+  bound. On a single-layer board none of the four moves is available and the
+  block needs a different treatment entirely. The rejection argument behind
+  the pin-local bypass scales with the frequency content that reaches the
+  part, not with layer count, so it holds on any stackup that satisfies the
+  minimum.
+verification: {by: "research-second-reader", date: "2026-08-16", note: "Re-read opa333 p23 and p9 visually. Every one of the four layout moves is on p23 in the vendors own words. Section 10.1.1 text: keep traces short and where possible use a printed-circuit-board ground plane with surface-mount components placed as close to the device pins as possible; place a 0.1-uF capacitor closely across the supply pins; and RFI can generally be identified as a variation in offset voltage or DC signal levels with changes in the interfering RF signal - which is the records symptom field almost verbatim. Figure 34 carries all four annotations the record cites: Use low-ESR ceramic bypass capacitor drawn twice, once at the VS+ / V+ node and once at the VS- side, both returned to the plane; Ground (GND) plane on another layer; Place components close to device and to each other to reduce parasitic errors on the RF/RG pair at the inverting pin; and Run the input traces as far away from the supply lines as possible, with the dashed box around the GND/VIN/RG/RF input network. p9 fig 4 shows CMRR near 127 dB at 1 Hz falling to about 20 dB by 100 kHz and fig 5 shows +PSRR near 118 dB and -PSRR near 105 dB at 1 Hz, both collapsing to about 20 dB by 100 kHz, so the quantitative reason for pin-local bypass holds. Envelope board_layers min 2 is a trivially sound inference from a plane on another layer, and the envelope_note says outright that it is about a reference plane and pin-adjacent space being available. Confirmed absent as claimed: no thermal EMF or Seebeck term, no guard ring, and no CMRR or PSRR referred-to-input arithmetic for a moving common mode anywhere in this record or in any other precision-buffer record - a grep of all bb-adc records, checklists and tasks finds those terms only in the resistive-attenuator and series-voltage-reference records for other blocks. Two minor notes, not refutations: near 110-120 dB at DC is a touch high for the -PSRR trace, which reads about 105 dB at 1 Hz, while the load-bearing half - both collapse to about 20 dB by 100 kHz - is right; and the record omits the same paragraphs claim that the OPA333 is specifically designed to minimize RFI susceptibility, which makes it read slightly more alarmist than the page, though the pages next sentence (strong RF fields may still cause varying offset levels) keeps the guidance valid."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Level principle:
+    its board_layers >= 2 envelope held on every board, so it bounded
+    nothing and is dropped.

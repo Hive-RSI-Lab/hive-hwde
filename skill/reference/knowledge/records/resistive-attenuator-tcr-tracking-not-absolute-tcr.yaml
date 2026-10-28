@@ -1,0 +1,139 @@
+id: resistive-attenuator-tcr-tracking-not-absolute-tcr
+classes: [selection, thermal]
+applies:
+  topologies: [resistive-attenuator]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  ratio_drift_set_by: difference of the legs' LOCAL TCR at the working temperature
+  catalogue_tcr_is: a chord slope between measured points, not the local slope
+  discrete_string_tracking_bound: no matching spec - only the absolute one, worst case 2x
+  best_tracking_requires: elements patterned on the same substrate
+  same_substrate_bounds: the mismatch only - absolute TCR magnitude still moves the ratio
+prose: >
+  Ratio drift is set by the DIFFERENCE between the legs' LOCAL TCRs at the
+  working temperature, not by the catalogue TCR number. A published TCR is a
+  CHORD slope between measured points while dR/R = f(T) is a parabola: fig 3
+  (p3) puts three alloys inside ONE +/-10 ppm/C envelope with quite different
+  curvature - the spec bounds the chord, not the shape. Tables 1-2 (p6, p7),
+  six thin-film vendors' best samples: local TCR spans -4.0..+4.3 ppm/C at 5 C,
+  -1.5..+5.0 at 45 C. Two parts both specified 10 ppm/C (TF3, TF4) agree to
+  0.2 ppm/C at 5 C but differ by 3.1 at 45 C; a 5 and a 10 ppm/C part sit 8
+  apart at 5 C. A discrete string carries no MATCHING spec, so the only bound
+  on the mismatch is the absolute one, worst case twice it. p1 (abstract):
+  "The best tracking can be achieved by forming the resistive patterns of the
+  two resistors on the same substrate in order to impart to them the same
+  resistance vs. temperature characteristic, but even in this case the ratio of
+  resistance values is influenced by the magnitude of their TCR" - a shared
+  substrate bounds the MISMATCH, it does not make absolute TCR stop mattering;
+  p5 adds that ratio stability needs a low absolute TCR AND a low change of TCR
+  with temperature. Array case (fig 7, other source): identical sputtering and
+  heat treatment plus homogeneous heat spreading give +/-5 ppm/K tracking
+  inside a +/-25 ppm/K absolute wedge. Also p2: soldering to FR4 rather than
+  ceramic changes dR/R = f(T) through CTE strain.
+sources:
+  - file: reference/knowledge/sources/nonlinea.pdf
+    page: 1
+    section: "Abstract"
+    note: >
+      Read: the abstract. States that the six thin-film vendors surveyed spec
+      TCR at 5 ppm/C (two vendors), 10 (three) and 25 (one), and that their
+      dR/R = f(T) curves "differ greatly in the non-linearity" - TCR increasing
+      with temperature in some, decreasing in others - which "should be taken
+      into account especially when TCR tracking between two or more resistors
+      is required in order to maintain a stable ratio of their values."
+      Verbatim, and the source of this record's same-substrate claim: "The best
+      tracking can be achieved by forming the resistive patterns of the two
+      resistors on the same substrate in order to impart to them the same
+      resistance vs. temperature characteristic, but even in this case the
+      ratio of resistance values is influenced by the magnitude of their TCR."
+      Also: using a vendor TCR that refers to a different temperature range
+      "may lead to wrong results - especially when resistor's dR/R = f(T) curve
+      has a large curvature", and the application's own range follows from
+      ambient change plus self heating.
+  - file: reference/knowledge/sources/nonlinea.pdf
+    page: 2
+    section: "fig 1, TCR in resistor standards"
+    note: >
+      Read: fig 1, dR/R (ppm) vs temperature -100..150 C for a +/-5 ppm/C part -
+      a nominal parabola with cold chord -2 ppm/C and hot chord +2 ppm/C plus
+      dotted +/-3 ppm/C spread curves; caption states the spec is 2 nominal plus
+      3 spread. Text defines TCR as a chord slope (tangent in the limit) and
+      states that mounting a chip on ceramic vs FR4 gives a different
+      dR/R = f(T) through CTE mismatch and thermal strain.
+  - file: reference/knowledge/sources/nonlinea.pdf
+    page: 3
+    section: "fig 2, fig 3"
+    note: >
+      Read: fig 2, the straight-line +/-10 ppm/C chord envelope for stability
+      class 0.1 (dR/R reaching +/-1500 ppm at the extremes); fig 3 overlays
+      typical measured curves for Z-foil (near flat), NiCr thin film (rising
+      past +400 ppm) and NiCu (falling past -350 ppm) all legally inside that
+      same envelope - the spec bounds the chord, not the curvature.
+  - file: reference/knowledge/sources/nonlinea.pdf
+    page: 5
+    section: "figs 6-7, thermal stability of a ratio"
+    note: >
+      Read: fig 6, two parts with identical ZERO hot chord slope but 10x
+      different curvature (thin film y = 0.02x^2 - 2x reaching +400 ppm, Z-foil
+      y = 0.002x^2 - 0.2x); fig 7 plots their local TCR vs temperature, the NiCr
+      line sweeping -6 to +2 ppm/C while Z-foil stays near zero. Text: the
+      "Thermal stability of a ratio of two resistance values" section and eq 9,
+      whose conclusion is that "high ratio stability requires both low absolute
+      TCR values of both resistors and low change of their TCR with
+      temperature", and that the non-linearity of dR/R = f(T) causes a further
+      change of ratio that eq 9 does not carry. NOTE: this page does NOT carry
+      the same-substrate sentence - that is on p1 (abstract), cited above.
+  - file: reference/knowledge/sources/nonlinea.pdf
+    page: 6
+    section: "table 1"
+    note: >
+      Read: table 1, cold/hot chord slopes for Z-foil plus best-selected samples
+      from six thin-film vendors. Specified max TCR row: 2, 5, 5, 10, 10, 25,
+      10 ppm/C. Row 3 "change, cold to hot slope" ranges 0.3 (Z-foil) to -6.68
+      and +6.64 (thin film) - the curvature the spec does not bound.
+  - file: reference/knowledge/sources/nonlinea.pdf
+    page: 7
+    section: "table 2"
+    note: >
+      Read: table 2, local TCR every 10 C from -55 to 125 C for the same seven
+      samples. At 5 C: TF1 -4.0, TF2 -0.1, TF3 +4.1, TF4 +4.3, TF5 +2.0, TF6
+      +1.2, Z-foil -1.09 ppm/C. At 45 C: TF1 -1.5, TF2 +0.7, TF3 +1.1, TF4 +4.2,
+      TF5 +5.0, TF6 +2.5, Z-foil -0.95. TF3 and TF4 are both 10 ppm/C parts and
+      diverge from 0.2 to 3.1 ppm/C across that 40 C band.
+  - file: reference/knowledge/sources/incresarr.pdf
+    page: 3
+    section: "fig 7, relative temperature coefficient"
+    note: >
+      Read: fig 7 plots dR/R20 vs temperature -55..155 C; two straight red lines
+      form the +/-25 ppm/K absolute envelope while a bundle of near-parallel
+      blue curves sits inside a narrow +/-5 ppm/K tracking wedge. Text explains
+      why tracking can be specified at all - identical sputtering conditions,
+      identical heat treatments, local proximity giving homogeneous layer
+      thickness, and homogeneous heat distribution in operation.
+status: active
+origin: research:block-resistive-attenuator-1
+level: topology
+envelope:
+  ambient_max_c: {min: -55, max: 125}
+maturity: approved
+generalizes: [resistive-attenuator-ratio-from-relative-specs]
+envelope_note: >
+  Scales with the temperature excursion from the reference point: ratio drift
+  is (local TCR mismatch) x dT, so the rule bites in proportion to dT and
+  vanishes at constant temperature. Bounded to -55..+125 C because every number
+  here - the chord-slope definition, the quadratic dR/R = f(T) fit, the
+  measured curvatures and the tabulated local TCRs for six vendors - comes from
+  measurements over exactly that span. Outside it the parabola is extrapolation
+  and the tabulated slopes stop being evidence.
+verification: {by: "research-second-reader", date: "2026-08-16", note: "Re-ruled after correction; the refutation is cured. Re-read nonlinea p1 and p5 visually. p1 (abstract) does carry the same-substrate sentence and the record now quotes it IN FULL, character-for-character, including the qualifier I flagged as dropped - but even in this case the ratio of resistance values is influenced by the magnitude of their TCR. The rest of the new p1 note is verbatim too: TCR specified 5 ppm/C for two vendors, 10 for three, 25 for one; the differ-greatly-in-the-non-linearity sentence with TCR rising in some parts and falling in others; and the warning that a vendor TCR referring to a different temperature range may lead to wrong results especially when the curve has a large curvature. The p5 note now claims only what p5 carries - eq 9 plus the verbatim conclusion that high ratio stability requires both low absolute TCR values of both resistors and low change of their TCR with temperature - and its explicit NOTE that the same-substrate sentence lives on p1 is correct. Trim check: the 1476-char prose dropped the fig-1 spread detail and the alloy names; nothing surviving depends on them, p2 stays load-bearing through the chord-slope definition and the FR4-vs-ceramic claim, so no citation is orphaned, and the mandatory quote survived intact. The unprompted rule split holds on the sources: same_substrate_bounds is the p1 qualifier plus the p5 conclusion, sourced twice; discrete_string_tracking_bound is arithmetic on an absolute spec backed by incresarr p3, whose text explains tracking can be specified BECAUSE elements share sputtering, heat treatment and substrate - the source own reason discretes do not get one. Tables 1 and 2 re-checked against p6 and p7, still exact. One flag, not a refutation: the p5 note says eq 9 assumes constant TCR while the page prints Equation 8 - an evident numbering slip in the source, since eq 8 on p4 is the TCR_25C chord formula, and the record corrects it silently but outside its quotation marks."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note. The ambient range is only where the parts
+    are characterised; kept narrow, not widened to a principle.

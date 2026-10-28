@@ -1,0 +1,37 @@
+id: buck-upstream-inrush-limit
+classes: [inrush, selection]
+applies:
+  topologies: [buck]
+  interfaces: [usb, usb-pd, poe]
+  packages: []
+rule:
+  enforced_by: null
+  usb2_attach_limit: 10 uF or 44 ohm-limited at attach (s7.2.4.1)
+  usbpd_sink_bulk_uf_max: 100
+prose: >
+  Upstream bulk limit trap: a buck's input capacitance is bounded by the
+  SOURCE, not by the buck. USB 2.0 allows 10 uF || 44 ohm at attach
+  (spec s7.2.4.1); a USB-PD sink is allowed 100 uF under contract
+  (cSnkBulkPd); PoE has its own inrush envelope. Check the source's rule
+  BEFORE sizing C_IN. Soft-start makes OUTPUT caps invisible to the source's
+  inrush test (usb-buck power.md s6) - so the output bank is sized by load
+  step, not by the source rule.
+sources:
+  - {file: boards/usb-buck/research/power.md, section: s6-7 (inrush vs source rules)}
+  - {file: boards/usb-buck/research/interface-usb.md, section: attach capacitance}
+status: active
+origin: migration:topologies/buck (T6 2026-08-06, three shipped runs)
+
+# --- schema v2 governance (U14 backfill, owner-ruled 2026-08-15) ---
+level: topology
+envelope:
+  source_kind: {in: [usb, usb-pd, poe]}
+maturity: approved
+approval:
+  by: owner
+  date: "2026-08-15"
+  note: >
+    Bounded by the SOURCE, not the buck: the whole record is that C_IN is
+    capped by the upstream rule (USB 2.0 10 uF / 44 ohm at attach, PD sink
+    100 uF, PoE's own envelope). Behind a bench supply or barrel jack there
+    is no attach test and the record does not apply.

@@ -1,0 +1,116 @@
+id: inamp-internal-node-headroom-inequalities
+classes: [selection]
+applies:
+  topologies: [inamp]
+  packages: []
+  interfaces: []
+  parts: [AD8226]
+rule:
+  enforced_by: null
+  eq1_lower_node: "Vcm - |Vdiff*G/2| > -Vs + V_MINUS_LIMIT"
+  eq2_upper_node: "Vcm + |Vdiff*G/2| < +Vs - V_PLUS_LIMIT"
+  eq3_ref_node: "(Vdiff*G/2 + Vcm + Vref)/2 < +Vs - V_REF_LIMIT"
+  output_form_of_eq2: "Vdiff*G = Vout - Vref, so eq2 reads Vcm + |Vout - Vref|/2 < +Vs - V_PLUS_LIMIT"
+  max_gained_swing: "|Vout - Vref| < 2*(Vs - V_PLUS_LIMIT - Vcm)"
+  v_minus_limit_v_at_minus40c: -0.55
+  v_minus_limit_v_at_25c: -0.35
+  v_minus_limit_v_at_85c: -0.15
+  v_minus_limit_v_at_125c: -0.05
+  v_plus_limit_v_at_minus40c: 0.80
+  v_plus_limit_v_at_25c: 0.70
+  v_plus_limit_v_at_85c: 0.65
+  v_plus_limit_v_at_125c: 0.60
+  v_ref_limit_v_at_minus40c: 1.30
+  v_ref_limit_v_at_25c: 1.15
+  v_ref_limit_v_at_85c: 1.05
+  v_ref_limit_v_at_125c: 0.90
+  worst_corner_positive_rail: "cold - the part needs the most headroom from +Vs at -40 C"
+  worst_corner_negative_rail: "hot - inputs near -Vs are worst at +125 C"
+  design_margin: "a few hundred millivolts beyond the inequality"
+  constants_are: "per part - these are the AD8226's Table 8; another in-amp has its own"
+prose: >
+  The closed-form test for the internal-node limit. ADI publishes it as
+  three inequalities with tabulated constants (AD8226 Rev. C p.20,
+  Equation 1 to 3 and Table 8; the constants are in `rule`). Cold is the
+  worst case against the positive rail, hot the worst case near the
+  negative rail: "the common-mode input range shifts upward with
+  temperature."
+  Because Vdiff*G = Vout - Vref, Equation 2 can be read as
+  Vcm + |Vout - Vref|/2 < +Vs - V_PLUS_LIMIT: a boundary in (Vout, Vcm)
+  that barely moves with gain. That is why the published diamond plots at
+  G = 1 (Figure 9) and G = 100 (Figure 12), both at Vs = +2.7 V, are
+  nearly the same hexagon. The equations reproduce the figure's own
+  annotations: Figure 12 marks a vertex at Vout = +0.02 V, Vcm = +2.0 V,
+  and Equation 2 gives Vcm < 1.99 V there; it marks Vout = +2.4 V at
+  Vcm = +0.8 V, and Equation 2 gives 2.40 V. The model is validated before
+  it is used.
+  Design consequence: on a low single supply the binding quantity is the
+  GAINED differential swing the in-amp may produce,
+  |Vout - Vref| < 2*(Vs - V_PLUS_LIMIT - Vcm), not the gain by itself. At
+  a fixed full-scale Vdiff this caps the in-amp's own gain; above that cap
+  the gain must move to a later stage. ADI: design with "a few hundred
+  millivolts extra margin ... internal transistors begin to saturate,
+  which can affect frequency and linearity performance."
+sources:
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 21
+    section: "AD8226 Rev. C, printed p.20 - INPUT VOLTAGE RANGE, Equation 1-3, Table 8, Performance Across Temperature"
+    note: >
+      Read on the page: Equation (1) Vcm - |(Vdiff)(G)/2| > -Vs + V_-LIMIT,
+      (2) Vcm + |(Vdiff)(G)/2| < +Vs - V_+LIMIT, (3) [(Vdiff)(G)/2 + Vcm +
+      Vref]/2 < +Vs - V_REF_LIMIT; Table 8 "Input Voltage Range Constants
+      for Various Temperatures" giving V_-LIMIT / V_+LIMIT / V_REF_LIMIT as
+      -0.55/0.8/1.3 V at -40 C, -0.35/0.7/1.15 V at +25 C, -0.15/0.65/1.05
+      at +85 C and -0.05/0.6/0.9 at +125 C; the Performance Across
+      Temperature paragraph (range shifts upward with temperature, cold
+      needs extra headroom from +Vs); and the Recommendation for Best
+      Performance paragraph asking for a few hundred millivolts of margin.
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 11
+    section: "AD8226 Rev. C, printed p.10 - Figures 9 to 14, Input Common-Mode Voltage vs. Output Voltage"
+    note: >
+      Read the figures: each plots COMMON-MODE VOLTAGE (y) against OUTPUT
+      VOLTAGE (x) as a hexagon, one trace for Vref = 0 V and one for
+      Vref = +1.35 V (2.7 V panels). Figure 9 (Vs = +2.7 V, G = 1) and
+      Figure 12 (Vs = +2.7 V, G = 100) are nearly identical, confirming the
+      output-voltage form of Equation 2. Vertex annotations read on
+      Figure 12: (+0.02 V, +2.0 V), (+1.35 V, +1.9 V), (+2.67 V, +1.3 V),
+      (+2.4 V, +0.8 V), (+0.02 V, -0.3 V). Figures 10/13 are the +5 V
+      panels and 11/14 the dual-supply ones.
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 20
+    section: "AD8226 Rev. C, printed p.19 - THEORY OF OPERATION, Figure 58 Simplified Schematic"
+    note: >
+      Read Figure 58: gain stage Q1/A1 and Q2/A2 with R1 = R2 = 24.7 kohm
+      and Rg between Node 3 and Node 4; Node 1 and Node 2 are the A1/A2
+      outputs feeding a difference amplifier A3 built from four 50 kohm
+      resistors. The ARCHITECTURE text confirms A1 holds Node 3 "a constant
+      diode drop above the positive input voltage" and that at the A1/A2
+      outputs "in addition to a gained differential signal, the original
+      common-mode signal, shifted a diode drop up, is also still present" -
+      i.e. Node 1/Node 2 are the nodes Equations 1-3 bound.
+status: active
+origin: research:block-inamp-1
+level: topology
+envelope:
+  inamp_arch_kind: {in: [three-opamp]}
+  vs_v: {min: 2.2, max: 36}
+maturity: approved
+generalizes: [inamp-internal-node-saturation]
+envelope_note: >
+  The rule scales with the headroom left after the common mode:
+  (Vs - V_PLUS_LIMIT - Vcm) sets how much GAINED differential swing the
+  part may produce, so it tightens as the supply falls, as Vcm moves toward
+  the positive rail, and as temperature falls (V_PLUS_LIMIT is largest at
+  -40 C). It is bounded to architectures that gain BEFORE they subtract the
+  common mode. The vs_v bound is where cited constants exist: the AD8226's
+  single-supply range, 2.2 to 36 V over -40 to +125 C. Outside it the
+  inequalities still hold but their constants are unknown.
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read AD8226 PDF p.21 (printed p.20), p.20 (printed p.19) and p.11 (printed p.10). Equations 1-3 transcribed exactly. All TWELVE Table 8 constants exact: -40C -0.55/0.8/1.3, +25C -0.35/0.7/1.15, +85C -0.15/0.65/1.05, +125C -0.05/0.6/0.9 V. Performance Across Temperature matches both corner claims. THE CENTRAL GENERALIZATION HOLDS: printed p.19 prints VOUT = G(VIN+ - VIN-) + VREF, so Vdiff*G = Vout - Vref is exact and Eq 2 becomes Vcm + |Vout-Vref|/2 < Vs - V+LIMIT with no G left in it. Confirmed against the figures, not just algebra: Fig 9 (Vs=+2.7V, G=1) and Fig 12 (Vs=+2.7V, G=100) sit side by side on printed p.10 and differ by at most 0.1 V at four vertices. All five claimed Fig 12 annotations are really printed: (+0.02,+2.0), (+1.35,+1.9), (+2.67,+1.3), (+2.4,+0.8), (+0.02,-0.3). Arithmetic at 25C, Vs-V+LIMIT = 2.0: at Vout=+0.02, Vref=0 Eq 2 gives Vcm < 1.99 against 2.0 printed; at Vcm=+0.8 it gives Vout = 2.40 exactly. The Vref=0 diagonal running (0.02,2.0) to (2.4,0.8) is the SAME straight line in both figures. Nits only: the transfer function that licenses the substitution is on cited p.20 but is not named in that page's note, and the 2.2-36 V envelope bound is from printed p.6 (PDF p.7), an uncited page of the same PDF."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

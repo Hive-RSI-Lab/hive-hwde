@@ -1,0 +1,71 @@
+id: series-voltage-reference-switched-cap-load
+classes: [decoupling]
+applies:
+  topologies: [series-voltage-reference]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  load_mechanism: "capacitor-DAC charge redistribution - one current spike per bit decision"
+  peak_current_scales_with: "converter clock frequency; largest at the MSB, varies with input magnitude"
+  charge_window: "the conversion, not the cycle - clocks 3 to 14 of a 0.5 us cycle at 64 MHz is about 0.19 us, the first half"
+  error_kind: "nonlinear (distortion/INL), not a clean offset - the variation acts on the reference output impedance"
+  bulk_cap_placement: "very near the ADC REF pin - it supplies the per-bit charge, the reference loop cannot"
+  bulk_cap_constraint: "must also lie inside the reference's stable capacitance window"
+  buffer_when: "current demand is high - e.g. one reference driving more than one converter"
+  trace_budget: "Rtrace * Imax much less than LSB/2"
+  enforced_by: null
+prose: >
+  A SAR converter is a switched-capacitor load on the reference. TI SNAA320B p10
+  Fig 7-1 shows the mechanism: a binary-weighted array (C, C/2, C/4, C/8, C/16,
+  C/16') whose switches connect each element to VIN or VREF, so every bit
+  decision redistributes charge on the REF pin; the MSB moves the most and the
+  LSB the least. p11 Fig 7-2 measures it on a 12-bit SAR (AD7049, 2 MHz sampling,
+  64 MHz clock, REF3433-Q1, 10 uF at the REF pin, sensed across 500 ohm): a
+  ~350-450 uA baseline carrying bursts to ~600 uA, one burst per conversion, over
+  a plotted span of ~1.0 to 2.4 us - about three cycles, not one. The timing is
+  in the text: each cycle is 0.5 us and the conversion runs clock 3 to clock 14,
+  MSB to LSB, "the first half of one cycle", so ~0.19 us at 64 MHz. The charge
+  demand lands inside a fraction of the period, which is why a local capacitor,
+  not the reference loop, has to supply it.
+  Peak current is proportional to the converter's clock frequency and varies with
+  input magnitude, so the "reference current" is a nonlinear load: the variation
+  works against the reference's output impedance and appears as distortion, not a
+  fixed offset. Rules from p11 - a capacitor very near the ADC REF pin to supply
+  the switching charge, chosen inside the reference's own stable-capacitance
+  window; a low-noise buffer when current demand is high, e.g. one reference
+  feeding several converters; and Rtrace times Imax much less than LSB/2, since
+  it adds directly to load-regulation error.
+sources:
+  - file: reference/knowledge/sources/snaa320b.pdf
+    page: 10
+    note: "Sec 7 Dynamic Error + Fig 7-1 SAR ADC Sampling Architecture: binary cap DAC C..C/16' with switch SB selecting VIN or VREF; text - charge redistribution on every bit conversion, peak current proportional to converter clock frequency, MSB max charge, variation translates into non-linear error"
+  - file: reference/knowledge/sources/snaa320b.pdf
+    page: 11
+    note: "Fig 7-2 measured REF current (12-bit AD7049, 2 MHz CS, 64 MHz clock, REF3433-Q1, 10 uF at REF pin, sensed across 500 ohm), read at 3.2x: ~350-450 uA baseline with bursts to ~600 uA, x-axis spanning ~1.0 to 2.4 us (about three cycles - the span is the plot window, NOT one conversion). Text on the same page: each conversion is 0.5 us and the data conversion runs 3rd to 14th clock, MSB to LSB, the first half of one cycle (~0.19 us at 64 MHz); max REF current 600 uA at 1 V input, varying with input magnitude. Rules - cap very near the ADC REF pin, reference stability considered when selecting it, low-noise buffer if current demand is high (more than one ADC), trace drop Rtrace*Imax much less than LSB/2"
+  - file: reference/knowledge/sources/ref70.pdf
+    page: 27
+    note: "Fig 10-1 Basic Reference Connection: REF7025 with CIN at VIN and CL at OUTF drives the converter REFP0 pin directly (OPA2320s buffer the analog inputs, not the reference) - the reference-side network is CL at the part plus a short run to the REF pin"
+status: active
+origin: research:block-series-voltage-reference-1
+level: topology
+envelope:
+  load_kind: {in: [switched-cap]}
+maturity: approved
+generalizes: [sar-adc-acquisition-charge-transfer]
+envelope_note: >
+  Bounded by the kind of load, which is the whole content of the rule: the
+  per-bit charge kick, the bulk cap at the converter pin and the buffer question
+  exist only because the load samples the reference onto a capacitor array. A
+  resistive or steady load draws its current continuously, and then the
+  reference's DC load regulation and the IR-drop rule cover it with no bulk
+  capacitor sizing and no buffer decision.
+verification: {by: "second-reader", date: "2026-08-16", note: "SNAA320B p11 re-read: the page states verbatim 'Time period for each conversion is 0.5us. The data conversion takes place from 3rd clock to 14th clock from MSB to LSB (which is first half of one cycle)'. Clocks 3 through 14 is 12 clocks; at 64 MHz that is 187.5 ns, so the new charge_window of ~0.19 us is arithmetically exact and 'the first half of one cycle' is the source's own wording, correctly attributed. Figure 7-2 rendered at 5.5x with the x-axis calibrated off its own 1u / 1.5u / 2u ticks (0.1 us minor divisions): the plot frame runs from 1.0 us to 2.5 us, i.e. exactly three 0.5 us cycles - so the span really is the plot window and not one conversion, and the earlier '~1.3 us conversion window' error is cured. The trace wanders on a ~330-450 uA baseline with bursts to ~600-620 uA, matching the page text 'Max current taken by reference pin SAR ADC during conversion is 600uA for 1V input. This current varies with input magnitude.' p10 Fig 7-1 confirmed: capacitor DAC C, C/2, C/4, C/8, C/16, C/16' with switches S1 to S5' plus SA and SB and both VIN and VREF present, under Sec 7 text on charge redistribution at every bit conversion, peak current proportional to the converter clock frequency, MSB requiring maximum charge and 'This variation gets translated into non-linear error'. The p11 design rules are verbatim (a capacitor very near the ADC reference pin, reference stability considered when selecting it, a low-noise buffer if one reference drives more than one ADC, and Rtrace x Imax much less than LSB/2 because it adds directly to load-regulation error). REF70 p27 Fig 10-1 shows REF7025 with CIN and CL driving the ADS124S08 REFP0 pin directly, with the OPA2320s on the analog inputs only. No bulk-cap sizing formula is invented anywhere in the record. Minor, non-refuting: the plot's right frame is 2.5 us, not the '~2.4 us' the prose and the p11 note give; the accompanying 'about three cycles' is exactly right."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Linked to its
+    switched-capacitor parent sar-adc-acquisition-charge-transfer
+    (generalizes).

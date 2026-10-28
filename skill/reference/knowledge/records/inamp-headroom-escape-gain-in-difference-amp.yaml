@@ -1,0 +1,105 @@
+id: inamp-headroom-escape-gain-in-difference-amp
+classes: [selection]
+applies:
+  topologies: [inamp]
+  packages: []
+  interfaces: []
+  parts: [AD8226, AD8227]
+rule:
+  enforced_by: null
+  escape_1: "apply less gain in the in-amp and take the rest later in the signal chain"
+  escape_2: "use an in-amp whose difference amplifier already has gain (ADI names the pin-compatible AD8227)"
+  escape_3: "raise the difference amplifier's own gain: G2' = Gtot/G1'"
+  recovered_cm_range: "Vcm' = Vcm + (Vd/2)*G1'*(G2' - 1)"
+  internal_node_scaling: "at a fixed total gain the gained differential swing at the internal nodes is proportional to Gtot/G2"
+  ad8227_min_gain_internal: 5
+  ad8227_gain_drift_ppm_per_c_max: 5
+  derived_not_quoted: "an in-amp's MINIMUM gain is its difference-amp gain, so min gain 5 implies G2 = 5"
+  escape_3_implementation: "a difference amp with a Vsense pin (Rext matched into the feedback AND the Vref leg) or a buffered divider in A3's feedback"
+  cost: "bandwidth - the in-amp's -3 dB falls with G1 and the later stage's with its own gain"
+  open: "AD8227 input-range constants and bandwidth-at-gain NOT read; its data sheet was not acquirable in this pass"
+prose: >
+  When the internal-node ceiling caps the in-amp's own gain below what the
+  chain needs, the gain has to go somewhere else. Three escapes, all
+  vendor-stated.
+  (1) Move it downstream. ADI: "apply less gain with the AD8226, and then
+  apply additional gain later in the signal chain."
+  (2) Use a part whose difference amplifier already has gain. ADI names it
+  in the next sentence - "Another option is to use the pin-compatible
+  AD8227" - and its gain section adds that the AD8227 "has a default gain
+  of 5 that is set with internal resistors ... the gain drift is extremely
+  low (<5 ppm/degC maximum)". DERIVED, not quoted: an in-amp's MINIMUM gain
+  is its difference-amp gain (AD8226 Figure 58 shows four equal 50 kohm
+  resistors, G2 = 1, and G = 1 + 49.4k/Rg bottoms out at 1), so a minimum
+  gain of 5 means G2 = 5 and, at the same total gain, one fifth of the
+  gained differential swing at the internal nodes. The AD8227's own
+  Table-8 equivalents and bandwidth-at-gain were NOT read here.
+  (3) Raise G2 on the part you have. TI gives the law: preserving Gtot
+  while reducing G1 to G1' "requires an increase in difference amplifier
+  gain from G2 = 1 to G2' = Gtot/G1'", and the recovered range is
+  Vcm' = Vcm + (Vd/2)*G1'*(G2' - 1). Implemented with a Vsense-pin
+  difference amp (Rext matched into the feedback AND the Vref leg) or a
+  buffered divider in A3's feedback.
+sources:
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 21
+    section: "AD8226 Rev. C, printed p.20 - Recommendation for Best Performance"
+    note: >
+      Read on the page, immediately after the margin recommendation: "If
+      the application requirements exceed the boundaries, one solution is
+      to apply less gain with the AD8226, and then apply additional gain
+      later in the signal chain. Another option is to use the pin-
+      compatible AD8227." That is the vendor naming both escapes from its
+      own Equation 1-3 boundary.
+  - file: reference/knowledge/sources/2168367.pdf
+    page: 20
+    section: "AD8226 Rev. C, printed p.19 - GAIN SELECTION + Figure 58"
+    note: >
+      Read on the page: "If a gain of 5 is required and minimal gain drift
+      is important, consider using the AD8227. The AD8227 has a default
+      gain of 5 that is set with internal resistors. Because all resistors
+      are internal, the gain drift is extremely low (<5 ppm/degC
+      maximum)." Also read the gain law G = 1 + 49.4 kohm/Rg with Table 7,
+      and Figure 58 showing the AD8226's difference amplifier A3 built from
+      four equal 50 kohm resistors (R3 to R6) - i.e. its own G2 = 1, which
+      is what makes its minimum gain 1.
+  - file: reference/knowledge/sources/slyt226.pdf
+    page: 2
+    section: "TI SLYT226, printed p.26 - Extending the input common-mode voltage range, Equation 7, Figure 2"
+    note: >
+      Read on the page: "Standard INAs, using unity-gain difference
+      amplifiers, have R2 = R1 and G2 = 1. The total INA gain is then
+      placed into the input stage, making G1 = Gtot ... reducing G1 from
+      Gtot to G1', while preserving Gtot, requires an increase in
+      difference amplifier gain from G2 = 1 to G2' = Gtot/G1'."
+      Equation 7: Vcm' = Vcm + (Vd/2)*Gtot*(1 - 1/G2') = Vcm +
+      (Vd/2)*G1'*(G2' - 1). Figure 2 "Increasing difference amplifier gain
+      via Rext or buffered voltage divider" draws both implementations, with
+      Rext appearing in BOTH the feedback leg and the Vref leg; the text
+      warns the internal resistors can deviate by +-30 percent and that
+      large external resistors add noise.
+status: active
+origin: research:block-inamp-1
+level: topology
+envelope:
+  inamp_arch_kind: {in: [three-opamp]}
+maturity: approved
+generalizes: [inamp-internal-node-saturation]
+envelope_note: >
+  The escape scales with the difference amplifier's gain G2: at a fixed
+  total gain the gained differential signal at the internal nodes is
+  proportional to Gtot/G2, so every factor put into G2 buys back that much
+  internal-node headroom, the recovered range being (Vd/2)*G1'*(G2' - 1).
+  It is bounded to the gain-then-subtract architecture, since it works by
+  moving gain across the point where the common mode is removed. It stops
+  being available when G2 cannot be raised (a fixed unity difference amp
+  with no Vsense access), and stops being worth it when the extra stage
+  costs bandwidth the chain needs.
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read AD8226 PDF p.21 (printed p.20, Recommendation for Best Performance), p.20 (printed p.19, GAIN SELECTION + Figure 58) and SLYT226 p.2. Both ADI escapes are verbatim: 'If the application requirements exceed the boundaries, one solution is to apply less gain with the AD8226, and then apply additional gain later in the signal chain. Another option is to use the pin-compatible AD8227.' The AD8227 sentences on printed p.19 are verbatim too, including '(<5 ppm/degC maximum)'. AD8227 AUDIT, the point that matters: the only two AD8227 numbers anywhere in this record - gain 5 and 5 ppm/degC max drift - are both printed on cited p.19; NO AD8227 input-range constant, bandwidth, noise or offset figure is asserted, and both the open field and the prose state the AD8227 data sheet was not acquired. WORDING DEFECT, not enough to refute: ADI prints 'default gain of 5', while the field is named ad8227_min_gain_internal and the prose converts default to MINIMUM inside the derivation. The step is sound - with no external RG the input stage is unity so the default gain IS the difference-amp gain, giving G2 = 5 - and derived_not_quoted flags it, but the vendor's word is 'default' and the field name should say so. Everything else checks: G = 1 + 49.4 kohm/RG with Table 7, Figure 58's four equal 50 kohm resistors, TI Equation 7 in both printed forms, and Figure 2 showing Rext in the feedback AND the Vref leg with a VSENSE pin plus the +/-30 pct internal-resistor warning."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

@@ -1,0 +1,57 @@
+id: mcu-supply-return-continuity
+classes: [return-path, emi]
+applies:
+  topologies: [mcu]
+  packages: []
+  interfaces: []
+  parts: []
+rule:
+  enforced_by: null
+  max_delta_between_vdd_pins_mv: 50
+  max_delta_between_ground_pins_mv: 50
+  ground: "one continuous structure - do not split into analog/digital/power islands"
+  copper_fill: "stitched to ground at more than one point, or it is not ground"
+prose: >
+  Every supply pin's return is half the connection, and the MCU datasheet puts a
+  NUMBER on how good it has to be: Table 18 allows at most 50 mV between
+  different VDD power pins and at most 50 mV between all the different ground
+  pins. That is a layout budget - IR drop plus L x di/dt across the designer's
+  own copper, driven by the same nanosecond edges the decouplers serve - not a
+  power-supply tolerance line. Two vendors converge on how to meet it. AN13033
+  s9.4.2: route above a solid and unbroken ground plane; do NOT split the ground
+  plane into separate analog, digital and power planes, a single continuous
+  ground plane is recommended; and no floating metal of any kind near the MCU
+  pins - its Fig 13 draws a copper shape with no stitching via AND the same shape
+  with only ONE via, both labelled NOT CORRECT, and the shape stitched at both
+  ends as CORRECT. Its s9.3 covers the board that cannot afford a dedicated
+  plane pair: the requirement does not relax, "the major requirement is to
+  ensure a good structure for the ground and for the power supply". s9.4.3 lists
+  current return loop areas and lack of power and ground planes among the five
+  main sources of radiation. One recorded disagreement: AN2519 s2.2 wants a
+  separate analog ground joined to digital ground at a single point at the
+  supply. On a package that bonds no VSSA pin the question does not arise.
+sources:
+  - {file: reference/knowledge/sources/2304140030_STMicroelectronics-STM32F030F4P6TR_C89040.pdf,
+     page: 42,
+     note: "Table 18: |dVDDx| variations between different VDD power pins max 50 mV, and |VSSx - VSS| variations between all the different ground pins max 50 mV - the part's own budget for the board's supply and return copper"}
+  - {file: reference/knowledge/sources/AN13033.pdf, page: 16,
+     note: "s9.4.2 Grounding bullets - route high-speed signals above a solid unbroken ground plane; do not split the ground plane for analog/digital/power, a single continuous plane is recommended; no floating metal near MCU pins, fill unused area and via it to ground. Fig 13: unstitched shape and singly-stitched shape both NOT CORRECT, shape stitched at both ends CORRECT"}
+  - {file: reference/knowledge/sources/AN13033.pdf, page: 15,
+     note: "s9.3 Printed circuit board: a multilayer PCB with a layer dedicated to ground and another to VDD is best; where economics prohibit it, the major requirement is to ensure a good structure for the ground and for the power supply"}
+  - {file: reference/knowledge/sources/AN13033.pdf, page: 17,
+     note: "s9.4.3: the five main sources of radiation - digital signals on traces, CURRENT RETURN LOOP AREAS, inadequate power supply filtering or decoupling, transmission line effects, lack of power and ground planes; bulk and decoupling caps must have low ESL; create ground pours in free routing space and via them to the ground plane"}
+  - {file: reference/knowledge/sources/00002519A.pdf, page: 6,
+     note: "AN2519 s2.2 (the dissenting view recorded here): if a separate analog ground AGND is present, the analog ground should be separated from the digital ground and the two connected at a single point at the power supply GND"}
+status: active
+origin: research:block-mcu-1
+level: principle
+maturity: approved
+generalizes: []
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read DS p42 + AN13033 p15/p16/p17 + AN2519 p6. p42 Table 18 gives variations between different VDD power pins max 50 mV and variations between all the different ground pins max 50 mV, as cited; worth knowing that Table 18 sits under s6.2 Absolute maximum ratings, so the record treating the number as a hard layout limit is if anything stronger than the source, not weaker. AN13033 p16 s9.4.2 is verbatim: do not split the ground plane into separate planes for analog, digital, and power pins, a single and continuous ground plane is recommended - plus the no-floating-metal bullet; Fig 13 does draw the unstitched shape AND the shape with a single ground via both as NOT CORRECT, with the two-via shape as CORRECT. p15 s9.3 and p17 s9.4.3 five main sources of radiation are both exact. The AN2519 dissent is represented fairly, quoted with its own antecedent - if a separate analog ground AGND is present - and is NOT resolved by fiat: it is set aside because that antecedent is false on a package with no VSSA pin, which is AN2519s own condition, not the author overruling it. Residual flagged rather than refuted: the rule field and applies are package-general while that reconciliation is package-specific, so on a part that does bond VSSA the disagreement is live again."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope note
+    stands as the approval note.

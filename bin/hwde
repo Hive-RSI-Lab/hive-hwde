@@ -1,0 +1,96 @@
+#!/bin/sh
+# hwde inside the Hive: finds the Hive's KiCad, freerouting and Java, keeps
+# the skill's Python venv in the agent's own HOME, and runs the skill's
+# scripts with the HWDE_* pins set (skill/scripts/lib/env.py reads them).
+#
+#   hwde env              print the exports (eval "$(hwde env)")
+#   hwde check            the skill's check_env: every tool the pipeline needs
+#   hwde <script> [args]  run skill/scripts/<script>.py with the venv python
+#
+# Nothing here installs anything outside HOME: KiCad and freerouting are the
+# Hive's (in its shared tools folder, put there through a warden); the venv is
+# built from requirements.lock with the Hive's uv on first use.
+set -e
+here=$(cd "$(dirname "$0")/.." && pwd)
+tools=${HIVE_TOOLS:-/hive/tools}
+state=${HWDE_HOME:-$HOME/.cache/hwde}
+venv=${HWDE_VENV:-$state/venv}
+
+# KiCad: an explicit pin wins; else the newest KiCad 10 AppDir in the tools
+# folder, through wrappers that put kicad-cli and KiCad's own python (it has
+# the SWIG pcbnew module) side by side, as env.find_kicad_python expects.
+if [ -z "${HWDE_KICAD_CLI:-}" ]; then
+	appdir=$(ls -d "$tools"/kicad-10.* 2>/dev/null | sort -V | tail -n 1)
+	if [ -n "$appdir" ] && [ -x "$appdir/AppRun" ]; then
+		mkdir -p "$state/bin"
+		printf '#!/bin/sh\nexec "%s/AppRun" kicad-cli "$@"\n' "$appdir" >"$state/bin/kicad-cli"
+		chmod 0755 "$state/bin/kicad-cli"
+		# The AppImage's python is bin/python3.11, run through sharun; pcbnew
+		# is in its dist-packages.
+		py=$(ls "$appdir"/bin/python3.* 2>/dev/null | sort -V | tail -n 1)
+		if [ -n "$py" ]; then
+			pyv=$(basename "$py")
+			printf '#!/bin/sh\nexport PYTHONPATH="%s/shared/lib/%s/dist-packages${PYTHONPATH:+:$PYTHONPATH}"\nexec "%s/AppRun" %s "$@"\n' "$appdir" "$pyv" "$appdir" "$pyv" >"$state/bin/python3"
+			chmod 0755 "$state/bin/python3"
+		fi
+		[ -f "$appdir/shared/lib/libngspice.so" ] && ln -sf "$appdir/shared/lib/libngspice.so" "$state/bin/libngspice.so"
+		HWDE_KICAD_CLI=$state/bin/kicad-cli
+	fi
+fi
+if [ -z "${HWDE_FREEROUTING_JAR:-}" ]; then
+	jar=$(ls "$tools"/freerouting/freerouting-*.jar 2>/dev/null | sort -V | tail -n 1)
+	[ -n "$jar" ] && HWDE_FREEROUTING_JAR=$jar
+fi
+[ -z "${HWDE_JAVA:-}" ] && command -v java >/dev/null 2>&1 && HWDE_JAVA=$(command -v java)
+# The knowledge records cite manufacturers' PDFs the module doesn't carry
+# (NOTICE); the hwde project's clone has them.
+if [ -z "${HWDE_KNOWLEDGE_SOURCES:-}" ]; then
+	src=${HIVE_PROJECTS:-/hive/projects}/hwde/.claude/skills/hwde/reference/knowledge/sources
+	[ -d "$src" ] && HWDE_KNOWLEDGE_SOURCES=$src
+fi
+# Boards live in the project the agent works in, under boards/.
+HWDE_BOARDS_ROOT=${HWDE_BOARDS_ROOT:-$PWD/boards}
+
+if [ ! -x "$venv/bin/python" ] || [ "$here/requirements.lock" -nt "$venv/.hwde-lock" ]; then
+	uv=$(command -v uv || true)
+	[ -z "$uv" ] && [ -x "$tools/uv/bin/uv" ] && uv=$tools/uv/bin/uv
+	[ -z "$uv" ] && { echo "hwde: needs uv (hive agent install --tool uv)" >&2; exit 127; }
+	mkdir -p "$state"
+	grep -v '^pywin32==' "$here/requirements.lock" >"$state/requirements.txt"
+	"$uv" venv -q --clear --python 3.14 "$venv" >&2
+	VIRTUAL_ENV=$venv "$uv" pip install -q -r "$state/requirements.txt" >&2
+	touch "$venv/.hwde-lock"
+fi
+
+export HWDE_KICAD_CLI HWDE_FREEROUTING_JAR HWDE_JAVA HWDE_KNOWLEDGE_SOURCES HWDE_BOARDS_ROOT
+[ -n "${HWDE_KICAD_CLI:-}" ] || unset HWDE_KICAD_CLI
+[ -n "${HWDE_FREEROUTING_JAR:-}" ] || unset HWDE_FREEROUTING_JAR
+[ -n "${HWDE_JAVA:-}" ] || unset HWDE_JAVA
+[ -n "${HWDE_KNOWLEDGE_SOURCES:-}" ] || unset HWDE_KNOWLEDGE_SOURCES
+[ -f "$state/bin/libngspice.so" ] && export HWDE_NGSPICE_DLL="$state/bin/libngspice.so"
+# KiCad's SWIG paths need an X display: with none, a script runs under its own
+# Xvfb (xvfb-run), gone when the script ends.
+x=
+[ -z "${DISPLAY:-}" ] && command -v xvfb-run >/dev/null 2>&1 && x="xvfb-run -a"
+
+case "${1:-}" in
+env)
+	for v in HWDE_KICAD_CLI HWDE_FREEROUTING_JAR HWDE_JAVA HWDE_KNOWLEDGE_SOURCES HWDE_BOARDS_ROOT HWDE_NGSPICE_DLL; do
+		eval "val=\${$v:-}"
+		[ -n "$val" ] && printf "export %s='%s'\n" "$v" "$val"
+	done
+	printf "export HWDE_SKILL='%s'\nexport HWDE_PY='%s'\n" "$here/skill" "$venv/bin/python"
+	;;
+check)
+	shift
+	exec $x "$venv/bin/python" "$here/skill/scripts/check_env.py" "$@"
+	;;
+"" | -h | --help)
+	sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
+	;;
+*)
+	s=$1
+	shift
+	exec $x "$venv/bin/python" "$here/skill/scripts/${s%.py}.py" "$@"
+	;;
+esac

@@ -1,0 +1,112 @@
+id: linear-regulator-fixed-variant-min-load
+classes: [selection]
+applies:
+  topologies: [linear-regulator]
+  packages: [SOT-223, TO-252]
+  interfaces: []
+  parts: [AMS1117, AMS1117-3.3, LM1117]
+rule:
+  enforced_by: null
+  min_load_spec_applies_to: adjustable-variant
+  min_load_adjustable_ma: 10
+  fixed_variant_bleed_resistor: not-required
+  fixed_variant_specified_from_a: 0
+  iout_specified_max_a: 0.8
+  dropout_max_v_at_0p8a: 1.3
+  dropout_typ_v_at_0p5a: 1.15
+prose: >
+  The 1117 minimum-load spec belongs to the ADJUSTABLE part. AMS1117 p3: the
+  Minimum Load Current row (5 mA typ, 10 mA max, Note 5) carries Device =
+  "AMS1117", the adjustable base, while every fixed suffix (-1.5 ... -5.0) is
+  named on the Current Limit and Quiescent Current rows and NOT on that one; the
+  p6 curve is titled "Minimum Operating Current (Adjustable Device)" (~6 mA at
+  TJ 25 C, ~8 mA at 125 C, flat vs input-output differential). TI agrees
+  independently: LM1117 p6 lists minimum load current only for LM1117-ADJ (1.7
+  mA typ, 5 mA max over temperature) and gives each fixed option a
+  quiescent-current row instead. The fixed part is SPECIFIED at zero load -
+  AMS1117-3.3 load regulation reads "VIN = 4.75 V, 0 <= IOUT <= 0.8 A" (p3) and
+  the whole EC table header is IOUT = 0 mA; LM1117-3.3 is likewise 0 to 800 mA
+  with line regulation at IOUT = 0 mA (p5). Mechanism: on the adjustable part
+  the minimum load is drawn by the external R1/R2 divider (AMS p4 - "this
+  current is normally the specified minimum load current of 10 mA"); on the
+  fixed part that divider is internal (p5 - the top of R1 is Kelvin-connected
+  inside). A FIXED 1117 therefore needs no external bleed resistor. Headroom:
+  dropout is specified only to 0.8 A (Note 4, higher above it), 1.3 V max; TI's
+  curve gives ~1.15 V at 500 mA / 25 C. A 5 V -5% rail leaves 1.45 V at
+  VIN(min) - in spec, with ~150 mV of margin.
+sources:
+  - file: reference/knowledge/sources/2304140030_Advanced-Monolithic-Systems-AMS1117-3-3_C6186.pdf
+    page: 3
+    section: ELECTRICAL CHARACTERISTICS + Notes 4 and 5
+    note: >
+      Read visually - the Minimum Load Current row's Device cell says "AMS1117"
+      alone (5 typ / 10 max mA) while Current Limit and Quiescent Current list
+      the fixed suffixes -1.5/-1.8/-2.5/-2.85/-3.3/-5.0; AMS1117-3.3 load
+      regulation is conditioned "VIN = 4.75 V, 0 <= IOUT <= 0.8 A"; Dropout
+      1.1 typ / 1.3 max V at IOUT 0.8 A; Note 4 says dropout is specified up to
+      0.8 A and is higher above it; Note 5 defines minimum load current as the
+      minimum output current required to maintain regulation; Note 2 caps
+      guaranteed dissipation at 1.2 W for SOT-223
+  - file: reference/knowledge/sources/2304140030_Advanced-Monolithic-Systems-AMS1117-3-3_C6186.pdf
+    page: 6
+    section: TYPICAL PERFORMANCE CHARACTERISTICS
+    note: >
+      The minimum-current curve is titled "Minimum Operating Current (Adjustable
+      Device)" - flat at ~6 mA (TJ 25 C) and ~8 mA (TJ 125 C) across a 0-20 V
+      input/output differential; no equivalent curve exists for the fixed
+      devices
+  - file: reference/knowledge/sources/2304140030_Advanced-Monolithic-Systems-AMS1117-3-3_C6186.pdf
+    page: 4
+    section: APPLICATION HINTS - Output Voltage (Figure 2)
+    note: >
+      On the adjustable connection the current through R1/R2 "is normally the
+      specified minimum load current of 10 mA" - the external divider is what
+      supplies the adjustable part's minimum load
+  - file: reference/knowledge/sources/2304140030_Advanced-Monolithic-Systems-AMS1117-3-3_C6186.pdf
+    page: 5
+    section: APPLICATION HINTS - Load Regulation
+    note: >
+      "In the case of fixed voltage devices the top of R1 is connected Kelvin
+      internally, and the ground pin can be used for negative side sensing" -
+      the fixed part carries its own divider, which is why the external bleed is
+      unnecessary
+  - file: reference/knowledge/sources/lm1117.pdf
+    page: 6
+    section: 7.5 Electrical Characteristics (continued)
+    note: >
+      Minimum load current is listed for LM1117-ADJ only (1.7 mA typ at 25 C,
+      5 mA max over 0-125 C, footnote 5 "the minimum output current required to
+      maintain regulation"), while LM1117-1.8/-2.5/-3.3/-5.0 appear on the
+      Quiescent current rows; dropout 1.15 V typ at 500 mA (1.25 V over temp)
+      and 1.2 V at 800 mA
+  - file: reference/knowledge/sources/lm1117.pdf
+    page: 5
+    section: 7.5 Electrical Characteristics
+    note: >
+      LM1117-3.3 output voltage specified "0 <= IOUT <= 800 mA, 4.75 V <= VIN <=
+      10 V", line regulation at IOUT = 0 mA and load regulation from 0 mA - the
+      fixed variant is characterized at zero load, unlike the ADJ rows which
+      start at 10 mA
+status: active
+origin: research:block-linear-regulator-1
+level: family
+envelope:
+  variant_kind: {in: [fixed]}
+envelope_note: >
+  Scales with output current because that is where the specification stops:
+  AMS Note 4 says dropout is specified up to 0.8 A and is higher above it, and
+  every regulation row in both datasheets is written 0 to 0.8 A (LM1117: 0 to
+  800 mA). The zero-load claim and the headroom arithmetic are only as good as
+  those specified rows, so the record ends at 0.8 A even though the part is sold
+  as a 1 A device and current-limits near 1.1 A.
+maturity: approved
+generalizes: []
+verification: {by: "second-reader", date: "2026-08-16", note: "Re-read AMS p1/p2/p3/p4/p5/p6 and LM1117 p5/p6, pressing on the Device cell. AMS p3: the Minimum Load Current row Device cell reads \"AMS1117\" alone (5 typ / 10 max mA, Note 5) while Current Limit, Quiescent Current and Dropout list -1.5/-1.8/-2.5/-2.85/-3.3/-5.0 - as the note says. Two independent checks remove the ambiguity. (1) AMS p1 ORDERING INFORMATION lists bare AMS1117 as its own SOT-223 orderable part, the adjustable, so that Device cell names a device and not the family; the other bare-AMS1117 rows are ADJ-only parameters (Reference Voltage at IOUT=10 mA, Adjust Pin Current, the CADJ=10 uF ripple row). (2) AMS p2 conditions the adjustable Load Regulation row on 10mA <= IOUT <= 0.8A while every fixed row reads 0 <= IOUT <= 0.8A, and the fixed Output Voltage rows (AMS1117-3.3: 3.201/3.300/3.399 V at VIN=4.8V) inherit the table header \"at IOUT = 0 mA\" - the fixed part is guaranteed at zero load, which Note 5 cannot simultaneously forbid. TI is explicit rather than inferential: LM1117 p6 scopes the Minimum load current row to \"LM1117-ADJ\" (1.7 typ at 25 C, 5 max over temp) and gives -1.8/-2.5/-3.3/-5.0 quiescent-current rows instead; p5 specifies LM1117-3.3 over 0 <= IOUT <= 800 mA with line regulation at IOUT = 0 mA, while every ADJ row starts at 10 mA. AMS p6 curve title is verbatim \"Minimum Operating Current (Adjustable Device)\", flat at about 6 mA (TJ 25 C) and 8 mA (125 C) across 0-20 V differential, with no fixed-device equivalent on the page. AMS p4 verbatim: the R1/R2 current \"is normally the specified minimum load current of 10mA\"; AMS p5 verbatim: \"In the case of fixed voltage devices the top of R1 is connected Kelvin internally\". Dropout numbers match the pages (AMS 1.1 typ / 1.3 max at 0.8 A with Note 4 stopping at 0.8 A; LM1117 p6 1.15 typ at 500 mA, 1.25 over temp, 1.2 at 800 mA), and the headroom arithmetic (4.75 - 3.3 = 1.45 V vs 1.3 V max) is right. Envelope iout_a max 0.8 is exactly where both datasheets stop specifying. The not-required bleed is scoped to fixed 1117-class parts in applies, not claimed in general."}
+approval:
+  by: perms
+  date: "2026-10-04"
+  note: >-
+    Ruled 2026-10-04 by perms on the owner's standing redirect (#ai-ee
+    1791102051.529859), U22 Q1; not the owner's own ruling. Envelope keyed
+    by the fixed variant, not by the 0.8 A where the datasheet rows stop:
+    the minimum-load rule belongs to the fixed-output parts.
