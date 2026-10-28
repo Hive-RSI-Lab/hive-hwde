@@ -6,8 +6,8 @@ D1.K), /LED_A (R1.2 - D1.A).
 Pin tables from `schlib.py --pins` on lib/aiee.kicad_sym (no IC, so no
 datasheet-extract JSONs): J1/C1/R1 pads 1,2; D1 pad 1 = K, pad 2 = A.
 R1 = 470R (P3 decision: Vf 3.1 V, 680R lead value gave < 3 mA).
-C1 is the input bulk cap at J1, not an IC decoupler: the decoupling metadata
-records it against J1.1, the +5V rail's source.
+C1 is the input bulk cap at J1, not an IC decoupler: decoupling.json has no
+association for it, and check_pdn counts it from the board (across +5V/GND).
 
 Rebuild:
   eval "$(/work/bin/hwde env)"
@@ -80,11 +80,9 @@ def main(argv=None) -> int:
     try:
         sh = build()
         sch = sh.save(out_dir)
-        # C1 is the +5V rail's bulk reservoir at the input header: record it
-        # against J1.1 (the rail's source) so check_pdn sees the rail held up.
-        sh.emit_decoupling(out_dir / "decoupling.json", extra=[
-            {"cap": "C1", "ic": "J1", "pin": "1", "rail": "+5V",
-             "value": "4.7uF"}])
+        # No IC, so no cap<->IC-pin association: check_pdn finds C1 on the
+        # board itself, straight across +5V and GND.
+        sh.emit_decoupling(out_dir / "decoupling.json")
     except Exception as exc:  # noqa: BLE001
         print(json.dumps({"script": "gen.root", "status": "error",
                           "error": f"{type(exc).__name__}: {exc}"}))

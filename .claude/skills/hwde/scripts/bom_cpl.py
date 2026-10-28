@@ -212,6 +212,15 @@ def _get_pos(pcb: Path, pos: Path | None, out_dir: Path, name: str) -> str:
 
 # ------------------------------------------------------------------ parts map
 
+# easyeda2kicad (lib_pull) names the field `LCSC Part`; hand-made and older
+# libraries say `LCSC`, JLC's own templates `LCSC Part #` / `LCSC#`.
+_LCSC_FIELD_RE = re.compile(r"^LCSC(?:\s*PART)?(?:\s*(?:#|NO\.?|NUMBER))?$", re.I)
+
+
+def is_lcsc_field(name: str) -> bool:
+    return bool(_LCSC_FIELD_RE.match(name.strip()))
+
+
 def board_part_fields(pcb: Path) -> dict[str, dict]:
     """ref -> {lcsc, mpn, dnp, attr_class} read off the BOARD's own footprints.
 
@@ -252,8 +261,8 @@ def board_part_fields(pcb: Path) -> dict[str, dict]:
                 pname = sval(sub[1])
                 if pname == "Reference":
                     ref = sval(sub[2])
-                elif pname.upper() == "LCSC":
-                    lcsc = sval(sub[2])
+                elif is_lcsc_field(pname):
+                    lcsc = sval(sub[2]).strip() or lcsc
             elif head(sub) == "attr":
                 attrs |= {sval(a) for a in sub[1:]}
         if "dnp" in attrs:
@@ -385,6 +394,24 @@ def load_parts_records(path: Path | None) -> list[dict]:
             "refdes_notes": {str(k): str(v) for k, v in notes_map.items()},
         })
     return recs
+
+
+def bind_refs_by_lcsc(records: list[dict], board_fields: dict[str, dict]
+                      ) -> list[dict]:
+    """Give each refdes-less line (the P3 per-distinct-part shape) the board
+    refs whose footprint carries its LCSC number, so its MPN reaches the BOM
+    of record. Only lines that leave the class at the default: a refdes-less
+    line with its own class is a separate off-board item (see build_bom_full).
+    A ref another line names keeps that line."""
+    named = {r for rec in records for r in rec["refs"]}
+    for rec in records:
+        if rec["refs"] or not rec["lcsc"] or \
+                (rec["cls"] and rec["cls"] != PLACED_CLASS):
+            continue
+        rec["refs"] = sorted((r for r, f in board_fields.items()
+                              if f.get("lcsc") == rec["lcsc"]
+                              and r not in named), key=_natural_key)
+    return records
 
 
 def resolve_assembly(pos_refs: set[str], records: list[dict],
@@ -662,7 +689,7 @@ def run(pcb: Path, out_dir: Path, pos: Path | None = None,
     rules = load_rotations(rotations or REF_ROTATIONS)
     parts = parse_pos_csv(_get_pos(pcb, pos, out_dir, name))
     board_fields = board_part_fields(pcb)
-    records = load_parts_records(parts_json)
+    records = bind_refs_by_lcsc(load_parts_records(parts_json), board_fields)
     # board footprint LCSC fields first; per-ref parts.json entries override
     parts_map = {**{r: f for r, f in board_fields.items() if f.get("lcsc")},
                  **load_parts_map(parts_json)}

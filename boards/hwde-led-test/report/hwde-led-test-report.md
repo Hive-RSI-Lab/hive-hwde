@@ -122,7 +122,7 @@ is recorded in `state.json`. The table shows the last result for each gate.
 | ERC (`erc`) | P4 | **pass**: 0 errors, 0 warnings | 4 | 0 | (re-runs after a decoupling.json change) |
 | Placement (`place`) | P6 | **pass** | 6 | 1 | A centred outline grow left J1 3.0 mm from its edge (limit 2.5); restored and redone |
 | Routed DRC (`drc_routed`) | P7 | **pass**: 0 errors, 0 warnings, 0 unconnected | 3 | 0 | |
-| Verify suite (`verify`) | P8 | **pass**: 14 of 14 checks ran, 0 errors, **2 warnings** | 5 | 1 | check_pdn: +5V had no cap tied to it until C1 was recorded against J1.1 |
+| Verify suite (`verify`) | P8 | **pass**: 14 of 14 checks ran, 0 errors, **2 warnings** | 5 | 1 | check_pdn: +5V had no cap tied to it until C1 was recorded against J1.1 (since snag 5's fix, check_pdn finds C1 on the board) |
 | JLC DFM (`dfm`) | P9 | **pass**: 0 findings | 1 | 0 | |
 
 The verify suite's checks are return path, current, decoupling, diff pairs,
@@ -205,15 +205,14 @@ and D1's anode (y 19.05) don't line up. It is cosmetic and changes nothing
 electrically. The fix is to move D1 up 0.15 mm and re-route that one net.
 **Recommended: waive.** Fix it if the board is touched again.
 
-**Waiver 2: `check_ratings`, D1 and R1 have no voltage rating.** *Waive it?*
-The ratings check found no voltage-rating attribute it recognises on D1 or R1.
-R1 is rated 75 V, but the check doesn't read LCSC's "Voltage-Supply(Max)" field
-(snag 4). D1's reverse rating is unknown without its datasheet. D1 only sees
+**Waiver 2: `check_ratings`, D1 has no voltage rating.** *Waive it?*
+The ratings check found no voltage-rating attribute on D1. (It also named R1
+until snag 4 was fixed: it now reads R1's "Voltage-Supply(Max)", 75 V.)
+D1's reverse rating is unknown without its datasheet. D1 only sees
 reverse voltage, up to 5.25 V, if the leads are swapped. Green InGaN LEDs are
 usually rated for 5 V reverse, and the **+**/**−** silk at J1 makes a swap less
 likely.
-**Recommended: waive** for a bench test board. The R1 half goes away on its own
-once snag 4 is fixed.
+**Recommended: waive** for a bench test board.
 
 The hive-hwde lead also asked whether to treat the board as a passed smoke test
 and move on. If all five answers are yes, it is one.
@@ -253,9 +252,9 @@ Snags 1–12 come from the run itself and are already filed as seven briefs. Sna
 |--:|----------|-------------------------|-------|
 | 1 | `scripts/lib/env.py`, `schlib.py` | kicad-sch-api can't read KiCad 10's `.kicad_symdir` libraries; `bin/hwde` flattens them instead | 261028-141924-4dae199a93 |
 | 2 | `scripts/kc.py` `render_env` | The 3D loaders are only looked for at distro paths and are missed in the AppImage; shimmed in `bin/hwde` | 261028-141924-4dae199a93 |
-| 3 | `agents/part-sourcer.md` | No `refdes` or `attributes` per parts line, so the BOM had no LCSC column and ratings went unread | 261028-141930-114d313009 |
-| 4 | `check_ratings.py` `V_ATTR_RE` | LCSC's "Voltage-Supply(Max)" isn't read, so R1's 75 V shows as unrated (waiver 2) | 261028-141930-114d313009 |
-| 5 | `check_pdn.py` / decoupling | A board with no IC gets no cap association for its bulk cap | 261028-141930-114d313009 |
+| 3 | `agents/part-sourcer.md` | No `refdes` or `attributes` per parts line, so the BOM had no LCSC column and ratings went unread | 261028-141930-114d313009 (fixed: the sourcer copies the row whole, and bom_cpl reads the board's `LCSC Part` field) |
+| 4 | `check_ratings.py` `V_ATTR_RE` | LCSC's "Voltage-Supply(Max)" isn't read, so R1's 75 V shows as unrated (waiver 2) | 261028-141930-114d313009 (fixed) |
+| 5 | `check_pdn.py` / decoupling | A board with no IC gets no cap association for its bulk cap | 261028-141930-114d313009 (fixed: check_pdn counts a cap straight across the rail and ground) |
 | 6 | `lib_pull.py` (EasyEDA) | 0603 courtyards are the body outline, and nothing caught it | 261028-141932-4f01e64893 |
 | 7 | `board_edit.py --outline fit` | The fit margin ignores reference text, and a centred resize can push an edge connector out of tolerance | 261028-141932-4f01e64893 |
 | 8 | `knowledge/checklists/` | There is no LED-indicator checklist, so every LED reads as a coverage gap | 261028-141932-9b95b3083b |

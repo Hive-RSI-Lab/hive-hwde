@@ -95,8 +95,13 @@ IO_TYPES = {"input", "analog", "clock", "bidirectional", "unspecified",
 IN_TYPES = {"input", "analog", "clock", "bidirectional", "unspecified"}
 OUT_TYPES = {"output", "tristate", "open_collector", "bidirectional"}
 REG_OUT_NAMES = {"VOUT", "OUT", "VO", "OUTPUT"}
+# A 2-pad part's working-voltage attribute as LCSC lists it: "Voltage Rated"
+# and "Voltage Rating" (caps, connectors), "Voltage - DC", and the chip
+# resistors' "Voltage-Supply(Max)" / "Working Voltage". Not "Voltage -
+# Forward(Vf)" or "Overload Voltage": neither is a rating across the part.
 V_ATTR_RE = re.compile(r"voltage.*rated|rated.*voltage|voltage rating|"
-                       r"voltage - dc", re.I)
+                       r"voltage - dc|voltage\s*-\s*supply\s*\(max\)|"
+                       r"working voltage", re.I)
 
 
 # --- board ------------------------------------------------------------------
@@ -642,11 +647,17 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                  f"could not be checked - {'; '.join(unrated[:6])}"
                  + (" ..." if len(unrated) > 6 else ""),
                  pins=unrated)
+    lcsc_of = {b["ref"]: b["lcsc"] for b in board}
+    bare = [r for r in unrated_passives
+            if not (bom_by_lcsc.get(lcsc_of.get(r)) or {}).get("attributes")]
     if unrated_passives:
         emit("rating_unrated", "warning", None, None,
              f"{len(unrated_passives)} two-terminal part(s) have no extraction "
              "and no voltage-rated attribute in parts.json: "
-             + ", ".join(unrated_passives), pins=unrated_passives)
+             + ", ".join(unrated_passives)
+             + (f" ({', '.join(bare)}: the parts.json line carries no "
+                "attributes - keep parts_search's row whole)" if bare else ""),
+             pins=unrated_passives)
         out[-1]["refs"] = sorted(unrated_passives)
     facts = {"parts_on_board": len(board), "extractions": sorted(exts),
              "net_volts": {n: {"v": volts[n], "src": vsrc[n]}

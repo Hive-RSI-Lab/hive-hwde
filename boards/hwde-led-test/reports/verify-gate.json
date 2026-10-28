@@ -3,7 +3,7 @@
   "gate": "verify",
   "phase": "P8",
   "tool": "verify",
-  "input": "/work/boards/hwde-led-test/kicad/hwde-led-test.kicad_pcb",
+  "input": "kicad/hwde-led-test.kicad_pcb",
   "input_digest": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
   "status": "pass",
   "criteria": {
@@ -101,11 +101,11 @@
     "workspace": "/work/boards/hwde-led-test",
     "gate": "verify",
     "status": "pass",
-    "attempts": 5,
+    "attempts": 7,
     "inputs": {
       "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
       "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
-      "decoupling": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
+      "decoupling": "json_canonical:c156461ca8fe5b4e410206e593718e19ebf76532923b2a38b2b926bc970c87b7",
       "waivers": null
     }
   }

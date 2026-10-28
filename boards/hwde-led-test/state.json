@@ -4,7 +4,7 @@
  "workspace_schema": 2,
  "workspace": "/work/boards/hwde-led-test",
  "created": "2026-10-28T09:25:11",
- "updated": "2026-10-28T10:08:43",
+ "updated": "2026-10-28T10:57:28",
  "phase": "P9",
  "gates": {
   "erc": {
@@ -213,16 +213,16 @@
   "verify": {
    "phase": "P8",
    "status": "pass",
-   "attempts": 5,
+   "attempts": 7,
    "last": {
-    "ts": "2026-10-28T10:05:41",
+    "ts": "2026-10-28T10:56:32",
     "status": "pass",
     "failing_count": 0,
     "total": 2,
     "inputs": {
      "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
-     "decoupling": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
+     "decoupling": "json_canonical:c156461ca8fe5b4e410206e593718e19ebf76532923b2a38b2b926bc970c87b7",
      "waivers": null
     }
    },
@@ -286,6 +286,30 @@
       "decoupling": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
       "waivers": null
      }
+    },
+    {
+     "ts": "2026-10-28T10:55:32",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 2,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
+      "decoupling": "json_canonical:c156461ca8fe5b4e410206e593718e19ebf76532923b2a38b2b926bc970c87b7",
+      "waivers": null
+     }
+    },
+    {
+     "ts": "2026-10-28T10:56:32",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 2,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
+      "decoupling": "json_canonical:c156461ca8fe5b4e410206e593718e19ebf76532923b2a38b2b926bc970c87b7",
+      "waivers": null
+     }
     }
    ]
   },
@@ -337,19 +361,19 @@
    "path": "kicad/hwde-led-test.kicad_pcb",
    "kind": "pcb",
    "sha256": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
-   "hashed": "2026-10-28T10:07:12"
+   "hashed": "2026-10-28T10:56:32"
   },
   "constraints": {
    "path": "kicad/constraints.json",
    "kind": "constraints",
    "sha256": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
-   "hashed": "2026-10-28T10:05:41"
+   "hashed": "2026-10-28T10:56:32"
   },
   "decoupling": {
    "path": "kicad/decoupling.json",
    "kind": "decoupling",
-   "sha256": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
-   "hashed": "2026-10-28T10:05:41"
+   "sha256": "json_canonical:c156461ca8fe5b4e410206e593718e19ebf76532923b2a38b2b926bc970c87b7",
+   "hashed": "2026-10-28T10:56:32"
   },
   "place_waivers": {
    "path": "reports/place-waivers.json",
@@ -420,7 +444,7 @@
    "path": "reports/verify-waivers.json",
    "kind": "waivers",
    "sha256": null,
-   "hashed": "2026-10-28T10:05:41"
+   "hashed": "2026-10-28T10:56:32"
   },
   "parts": {
    "path": "kicad/parts.json",
@@ -502,6 +526,12 @@
    "why": "in the Hive ordering at JLCPCB or any purchase is the person's; this is a pipeline test board, not for ordering",
    "phase": "P10",
    "ts": "2026-10-28T10:07:23"
+  },
+  {
+   "what": "parts.json re-sourced by the part-sourcer with no hand edits: no refdes, attributes kept; decoupling.json has no associations",
+   "why": "issue #5: bom_cpl maps refs from the board's LCSC Part field, check_ratings reads Voltage-Supply(Max), check_pdn counts C1 from the board",
+   "phase": "P3",
+   "ts": "2026-10-28T10:57:28"
   }
  ],
  "edits": [
@@ -727,6 +757,14 @@
    "phase": "P8",
    "tokens": 53088,
    "note": "tier fable/high; opus, fresh context"
+  },
+  {
+   "ts": "2026-10-28T10:57:26",
+   "role": "part-sourcer",
+   "model": "sonnet",
+   "phase": "P3",
+   "tokens": 22994,
+   "note": "issue #5 re-run with the fixed role prompt; parts.json taken as written"
   }
  ],
  "history": [
@@ -1117,6 +1155,33 @@
    "status": "pass",
    "attempt": 4,
    "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T10:55:32",
+   "event": "gate",
+   "gate": "verify",
+   "status": "pass",
+   "attempt": 6,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T10:56:32",
+   "event": "gate",
+   "gate": "verify",
+   "status": "pass",
+   "attempt": 7,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T10:57:26",
+   "event": "spawn",
+   "role": "part-sourcer",
+   "model": "sonnet"
+  },
+  {
+   "ts": "2026-10-28T10:57:28",
+   "event": "decision",
+   "what": "parts.json re-sourced by the part-sourcer with no hand edits: no refdes, attributes kept; decoupling.json has no associations"
   }
  ]
 }

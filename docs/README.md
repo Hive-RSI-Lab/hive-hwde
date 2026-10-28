@@ -70,6 +70,10 @@ as its own change: `hive agent brief --project hive-hwde --title ...
 --done ...`. Board-local workarounds are the failure mode. List what you hit
 in your account.
 
+A fix to a script goes in with a test under `tests/` (run them with
+`eval "$(bin/hwde env)"; $HWDE_PY -m pytest -q tests`), and a line in
+[upstream.md](upstream.md) so an update from upstream keeps it.
+
 Record each run's wall time per stage (the `phase` events in
 `state.json` history) and the gate attempts and fix loops per gate. That way
 a later board shows whether the module got faster or cleaner.
