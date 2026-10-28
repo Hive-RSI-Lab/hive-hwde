@@ -268,9 +268,11 @@ substitution in the spawn ledger. Never silently drop to a weaker tier.
   board or bring inside the fab edge clearance refuses, listed.
 - Fab floors (.kicad_pro rules + ERROR severities) come from
   lib/fabfloors.py; netclasses split per required width (T1).
-- board_update refuses pad-net rewires and net renames (dry-run exit 1):
-  those are a schematic + re-route job, not surgery. Its region scan for
-  added parts is front-side only.
+- board_update re-nets a surviving part's pads (mode rewire_pad) only where
+  no track or via touches them - an unrouted board, or pads not yet routed.
+  A rewire or net rename on ROUTED pads it refuses (dry-run exit 1,
+  `plan.unsupported[].routed_pads`): that is a schematic + re-route job, not
+  surgery. Its region scan for added parts is front-side only.
 - order_quote figures are estimated:true; the JLC cart is the only real quote.
 - JLCPCB Open API: PCB ordering only - there is NO assembly/PCBA API
   (BOM/CPL ordering stays the JLC web flow), and 4-layer boards are the
