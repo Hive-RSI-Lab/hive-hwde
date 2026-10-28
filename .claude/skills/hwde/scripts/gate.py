@@ -25,6 +25,10 @@ T6 additions:
  - drc gates with drc_options.require_fresh_fills (drc_routed) refuse a
    stale-fill board with exit 2 instead of grading ~375 phantom zone
    clearance errors (LEARNINGS 2026-07-29, hand-run KRT board).
+ - an erc gate on a schematic reports pin_types: how many pins of its
+   multi-pin symbols carry an electrical type, and the symbols with none. With
+   every pin passive (lib_pin_types with no datasheet extracts) the result
+   carries a warning, as a 0/0 ERC then checked no pin conflicts at all.
  - --waivers FILE (default <input dir>/reports/verify-waivers.json for the
    verify gate): human-approved residual findings; each waiver needs
    non-empty `reason` and `approved` and matches on (check|kind) + net
@@ -93,6 +97,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 import traceback
@@ -449,6 +454,61 @@ def evaluate(gate_name: str, gate: dict, report: dict,
     return result
 
 
+_PIN_TYPE = re.compile(r"\(pin\s+([a-z_]+)\s+[a-z_]+")
+_SHEETFILE = re.compile(r'\(property\s+"Sheet ?[Ff]ile"\s+"([^"]+)"')
+
+
+def pin_type_coverage(sch: Path) -> dict:
+    """How many pins of the symbols a schematic embeds carry a real
+    electrical type. ERC finds pin conflicts (output to output, an undriven
+    input) only between typed pins: with every IC pin `passive`
+    (lib_pin_types with no datasheet extracts) a 0/0 ERC checked none.
+    Counts symbols with 3+ pins outside power:, over the whole hierarchy."""
+    from lib import fpfix  # noqa: E402  (paren scanner)
+    seen: set = set()
+    syms: dict[str, dict[str, int]] = {}
+    todo = [Path(sch)]
+    while todo:
+        f = todo.pop()
+        if f in seen or not f.is_file():
+            continue
+        seen.add(f)
+        text = f.read_text(encoding="utf-8", errors="replace")
+        todo += [f.parent / m for m in _SHEETFILE.findall(text)]
+        for head, a, b in fpfix.top_level_nodes(text):
+            if head != "lib_symbols":
+                continue
+            block = text[a:b]
+            for h, x, y in fpfix.top_level_nodes(block):
+                if h != "symbol":
+                    continue
+                sub = block[x:y]
+                m = re.match(r'\(symbol\s+"([^"]+)"', sub)
+                name = m.group(1) if m else "?"
+                if name.startswith("power:"):
+                    continue
+                types: dict[str, int] = {}
+                for t in _PIN_TYPE.findall(sub):
+                    types[t] = types.get(t, 0) + 1
+                syms[name] = types
+    ics = {n: t for n, t in syms.items() if sum(t.values()) >= 3}
+    pins = sum(sum(t.values()) for t in ics.values())
+    passive = sum(t.get("passive", 0) for t in ics.values())
+    out = {"symbols": len(ics), "pins": pins, "passive": passive,
+           "typed": pins - passive,
+           # the symbols ERC can't check at all: every pin passive
+           "untyped": sorted(n for n, t in ics.items()
+                             if t.get("passive", 0) == sum(t.values()))}
+    if pins and passive == pins:
+        out["warning"] = (
+            f"all {pins} pins of the {len(ics)} multi-pin symbols are typed "
+            "passive, so ERC checked no pin conflicts (its 0/0 says nothing "
+            "about drivers or outputs): run lib_pin_types with the parts' "
+            "datasheet extracts (parts/<lcsc>.json), or review the netlist "
+            "pin by pin")
+    return out
+
+
 def workspace_dir(input_file: Path | None) -> Path | None:
     """The board workspace an input path sits in, or None: the directory
     directly under a boards dir (env.boards_root(), or any dir named boards)."""
@@ -677,6 +737,12 @@ def main(argv: list[str] | None = None) -> int:
                 waivers = load_waivers(sidecar)
 
         result = evaluate(args.gate, gate, report, waivers=waivers)
+        if gate.get("tool") == "erc" and eff_input is not None \
+                and Path(eff_input).suffix == ".kicad_sch":
+            cov = pin_type_coverage(Path(eff_input))
+            result["pin_types"] = cov
+            if cov.get("warning"):
+                result.setdefault("warnings", []).append(cov["warning"])
 
         # U16: record BEFORE the commit so state.json rides in it. Pass and
         # fail both record - the fix loop's evidence is every attempt.
@@ -704,6 +770,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"gate {args.gate}: {result['status'].upper()} "
           f"({n} failing / {result['counts'].get('total', 0)} total)",
           file=sys.stderr)
+    for w in result.get("warnings", []):
+        print(f"gate {args.gate}: warning: {w}", file=sys.stderr)
     rr = result.get("record_result")
     if rr is not None and not rr.get("ok"):
         # U16: evidence that did not reach state.json is evidence that does
