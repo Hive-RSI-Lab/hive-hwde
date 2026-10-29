@@ -27,7 +27,9 @@ T6 additions:
    clearance errors (LEARNINGS 2026-07-29, hand-run KRT board).
  - --waivers FILE (default <input dir>/reports/verify-waivers.json for the
    verify gate): human-approved residual findings; each waiver needs
-   non-empty `reason` and `approved` and matches on (check|kind) + net
+   non-empty `reason` and a real `approved` (who/when - a placeholder
+   such as PENDING, TBD or N/A is refused, exit 2) and matches on
+   (check|kind) + net
    (+ refs subset). Waived violations do not count toward failure but are
    echoed in the result as `waived`.
 
@@ -328,8 +330,10 @@ def run_verify(board: Path, strict: bool = False) -> dict:
 
 def load_waivers(path: Path) -> list[dict]:
     """Load and validate a waiver sidecar. Waivers are HUMAN artifacts: every
-    entry must carry a non-empty `reason` and `approved` (who/when), and at
-    least one of check/kind to match on - else the gate errors (exit 2)."""
+    entry must carry a non-empty `reason` and `approved` (who/when) that is
+    not a placeholder (checklib.approval_problem: PENDING, TBD, N/A ...),
+    and at least one of check/kind to match on - else the gate errors
+    (exit 2)."""
     data = json.loads(path.read_text(encoding="utf-8"))
     waivers = data.get("waivers")
     if not isinstance(waivers, list):
@@ -340,6 +344,9 @@ def load_waivers(path: Path) -> list[dict]:
             raise RuntimeError(
                 f"{path}: waiver {i} lacks reason/approved - waivers are "
                 "human artifacts, never agent-invented")
+        bad = checklib.approval_problem(w.get("approved"))
+        if bad:
+            raise RuntimeError(f"{path}: waiver {i}: {bad}")
         if not (w.get("check") or w.get("kind")):
             raise RuntimeError(f"{path}: waiver {i} needs check and/or kind")
     return waivers

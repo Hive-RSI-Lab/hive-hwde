@@ -48,6 +48,8 @@ LCSC numbers come from the board's footprint fields, overridden by parts.json.
 The cache is $HWDE_EASYEDA_CACHE, else <parts.json dir>/easyeda when that
 dir exists, else ~/.cache/hwde/easyeda (env.easyeda_cache); --offline (or HWDE_EASYEDA_OFFLINE=1) never fetches.
 Exit 0 every part verified / 1 a part is wrong or unverified / 2 error.
+In a board workspace each part's `footprint` fact goes into its ledger.json
+(record_footprints, lib/ledgerlib.py) - from dfm's placement leg too.
 """
 from __future__ import annotations
 
@@ -423,7 +425,9 @@ def verify(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
                           f"{cache_dir} - this is not a pin-1 result")
         rows.append(row)
     bad = [r for r in rows if r["verdict"] in FAIL_VERDICTS]
+    led = record_footprints(pcb, rows, lcsc)
     return {"script": "cpl_verify", "board": Path(pcb).name,
+            "ledger": led,
             "status": "violations" if bad else "pass",
             "n_checked": len(rows), "n_failed": len(bad),
             "failed": [r["ref"] for r in bad],
@@ -434,6 +438,40 @@ def verify(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
             "rate_limited": easyeda.rate_limited(),
             "cache_dir": str(cache_dir),
             "parts": rows}
+
+
+# A footprint whose pads land on the LCSC model by number is the part's land
+# pattern whatever the CPL turn says (a wrong rotation is the CPL's fault).
+FOOTPRINT_OK = ("ok", "wrong_rotation")
+
+
+def record_footprints(pcb: Path, rows: list[dict],
+                      lcsc: dict[str, str]) -> str | None:
+    """Each checked part's `footprint` fact into the workspace ledger
+    (lib/ledgerlib.py): verified when the board pads land on the LCSC
+    model's by number, failed when they do not, unknown with no model."""
+    import ledgerlib
+    ws = ledgerlib.workspace_of(pcb)
+    if not ledgerlib.writable(ws):
+        return None
+    facts = []
+    for r in rows:
+        code = lcsc.get(r["ref"], "")
+        v = r.get("verdict")
+        st = ("verified" if v in FOOTPRINT_OK else
+              "failed" if v in ("no_fit", "wrong_polarity") else "unknown")
+        facts.append({
+            "subject": r["ref"], "kind": "footprint", "status": st,
+            "lcsc": code,
+            "value": (f"board pads land on the LCSC model's by "
+                      f"{r.get('basis', 'pad number')}" if st == "verified"
+                      else r.get("why") or v),
+            "source": (f"EasyEDA/LCSC footprint model of {code}"
+                       if st != "unknown" else "")})
+    exp = ledgerlib.expected(ws)
+    out = ledgerlib.put(ws, [f for f in facts if ledgerlib.key(
+        f["subject"], "footprint") in exp], "cpl_verify")
+    return str(out) if out else None
 
 
 def _natural(ref: str):

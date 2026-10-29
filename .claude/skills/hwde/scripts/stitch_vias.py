@@ -239,13 +239,18 @@ class Scene:
     """
 
     def __init__(self, copper_layers, foreign_of, outline, clearance: float,
-                 min_hole: float = MIN_HOLE_DIST, new_drill: float = 0.3):
+                 min_hole: float = MIN_HOLE_DIST, new_drill: float = 0.3,
+                 hole_gap: float = 0.0):
         self.copper_layers = list(copper_layers)
         self._foreign_of = foreign_of
         self._cache: dict = {}
         self.outline = outline
         self.clearance = float(clearance)
         self.min_hole = float(min_hole)
+        # the board's own hole_to_hole rule: KiCad grades it drill EDGE to
+        # edge (a 0.5 mm JLC rule is 0.8 mm centre to centre for two
+        # 0.3 mm drills), so it wins over the 0.5 mm centre floor
+        self.hole_gap = float(hole_gap)
         self.new_drill_r = float(new_drill) / 2.0
         self.holes: list = []     # shapely geoms: drill extents
         self.new: list[tuple[str, str | None, object]] = []
@@ -264,7 +269,7 @@ class Scene:
 
     @property
     def edge_gap(self) -> float:
-        return self.min_hole - 0.3
+        return max(self.min_hole - 0.3, self.hole_gap)
 
     def hole_ok(self, x: float, y: float) -> bool:
         pt = Point(x, y)
@@ -355,8 +360,25 @@ def board_clearance(pcb: Path) -> float:
     return max(vals) if vals else DEF_CLEARANCE
 
 
+def board_hole_to_hole(pcb: Path) -> float:
+    """The hole_to_hole rule DRC grades this board at (edge to edge): the
+    .kicad_dru baseline rule, else the .kicad_pro min_hole_to_hole, else
+    KiCad's 0.25 mm default."""
+    import route_critical as rc
+    dru = Path(pcb).with_suffix(".kicad_dru")
+    if dru.is_file():
+        vals = [r["min_mm"] for r in rc.parse_dru_rules(
+            dru.read_text(encoding="utf-8"))
+            if r["constraint"] == "hole_to_hole" and not r["nets"]
+            and r["condition"] is None]
+        if vals:
+            return max(vals)
+    v = _pro_rules(Path(pcb)).get("min_hole_to_hole")
+    return float(v) if v else 0.25
+
+
 def build_scene(bg: geom.BoardGeom, clearance: float,
-                new_drill: float = 0.3) -> Scene:
+                new_drill: float = 0.3, hole_gap: float = 0.0) -> Scene:
     # Foreign copper = tracks + pads + vias of other nets ONLY - never zone
     # FILLS. Fills re-flow at the post-apply refill (a via through a foreign
     # plane gets a legal antipad; a track through a pour region pushes the
@@ -370,7 +392,7 @@ def build_scene(bg: geom.BoardGeom, clearance: float,
         geoms += [v.poly for v in bg.vias_of(layer=layer) if v.net != net]
         return unary_union(geoms)
     sc = Scene(bg.copper_layers, foreign_of, bg.outline, clearance,
-               new_drill=new_drill)
+               new_drill=new_drill, hole_gap=hole_gap)
     # rule-area keepouts block ring/fence candidates too, not only the area
     # grid (S11 review finding); a through via spans every layer, so any
     # rule area on a copper layer counts.
@@ -637,7 +659,8 @@ def run(argv: list[str] | None = None):
     clearance = (args.clearance if args.clearance is not None
                  else board_clearance(pcb))
     min_track = float(_pro_rules(pcb).get("min_track_width") or 0.15)
-    scene = build_scene(bg, clearance, new_drill=args.via_drill)
+    scene = build_scene(bg, clearance, new_drill=args.via_drill,
+                        hole_gap=board_hole_to_hole(pcb))
     nets = [s.strip() for s in (args.nets or "").split(",") if s.strip()]
     if not nets:
         raise CheckError("--nets is empty")

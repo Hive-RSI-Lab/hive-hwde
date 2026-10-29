@@ -280,7 +280,8 @@ def test_lib_pull_main_before_the_project_exists(tmp_path, monkeypatch,
     assert "${KIPRJMOD}/../lib/aiee.3dshapes/NEW.wrl" in fp
     assert not (tmp_path / "boards" / "core" / "kicad").exists()
     sym = (lib / "aiee.kicad_sym").read_text("utf-8")
-    assert out["pin_retype"] == {"changed": 2, "symbols": ["NEW"]}
+    assert out["pin_types"]["changed"] == 2
+    assert out["pin_types"]["symbols"] == ["NEW"]
     assert "pin unspecified" not in sym and "pin input" not in sym
     assert "pin power_in" in sym
 

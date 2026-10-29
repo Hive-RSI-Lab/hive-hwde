@@ -10,24 +10,75 @@
 #   hwde check-all        re-run every board's gates from a scratch copy, and
 #                         check docs/workarounds.md against its probes (slow)
 #   hwde score            the share of gate steps with no workaround (the score)
+#   hwde publish <dir>    put a self-contained copy at <dir>/hwde (a warden
+#                         runs it into the Hive's tools folder, so a check
+#                         sandbox, which mounts only /work and /hive/tools,
+#                         has /hive/tools/hwde/bin/hwde with no venv to build)
 #   hwde <script> [args]  run skill/scripts/<script>.py with the venv python
+#                         (or the published copy's own)
 #
 # A shim here that works around a defect in the skill runs only while its id
 # is listed in docs/workarounds.md (wa <id>): delisting it turns it off.
 #
-# Nothing here installs anything outside HOME: KiCad and freerouting are the
-# Hive's (in its shared tools folder, put there through a warden); the venv is
-# built from requirements.lock with the Hive's uv on first use.
+# test, check-all and the scripts that run a whole board, the router or a sim
+# wait for `hive agent heavy`'s lease inside a Hive turn (at most 10 minutes,
+# then run anyway): give the shell command a timeout to match.
+#
+# Nothing here installs anything outside HOME but publish's <dir>: KiCad and
+# freerouting are the Hive's (in its shared tools folder, put there through a
+# warden); the venv is built from requirements.lock with the Hive's uv on
+# first use. A published copy carries its own Python 3.14 with the packages
+# installed in it, and uses that instead.
 set -e
 here=$(cd "$(dirname "$0")/.." && pwd)
 tools=${HIVE_TOOLS:-/hive/tools}
 state=${HWDE_HOME:-$HOME/.cache/hwde}
 venv=${HWDE_VENV:-$state/venv}
+finduv() {
+	uv=$(command -v uv || true)
+	[ -z "$uv" ] && [ -x "$tools/uv/bin/uv" ] && uv=$tools/uv/bin/uv
+	[ -n "$uv" ] || { echo "hwde: needs uv (hive agent install --tool uv)" >&2; exit 127; }
+}
 
 # The score reads files only: no KiCad, no venv.
 if [ "${1:-}" = score ]; then
 	shift
 	exec python3 "$here/bin/score.py" "$@"
+fi
+
+# publish builds the copy beside <dir>/hwde and swaps it in, so a check that
+# is running keeps the old one whole. Its python is a python-build-standalone
+# (relocatable: the host's path to the tools folder isn't /hive/tools), with
+# no venv, whose symlinks and pyvenv.cfg would name the host's path.
+if [ "${1:-}" = publish ]; then
+	[ -n "${2:-}" ] && [ -d "$2" ] || { echo "usage: hwde publish <existing dir>" >&2; exit 2; }
+	dest=$(cd "$2" && pwd)
+	finduv
+	ver=$(git -C "$here" rev-parse --short HEAD 2>/dev/null || date -u +%Y%m%d%H%M%S)
+	new=$dest/.hwde-new-$$
+	rm -rf "$new"
+	trap 'rm -rf "$new"' EXIT
+	mkdir -p "$new"
+	(cd "$here" && tar cf - bin docs .claude/skills/hwde requirements.lock module.json LICENSE NOTICE README.md) | (cd "$new" && tar xf -)
+	"$uv" python install -q --install-dir "$new/python" --no-bin 3.14 >&2
+	find "$new/python" -maxdepth 1 -type l -exec rm {} + # absolute links to $new
+	py=$(ls -d "$new"/python/cpython-3.14.*/bin/python3.14 | sort -V | tail -n 1)
+	grep -v '^pywin32==' "$here/requirements.lock" >"$new/python/requirements.txt"
+	"$uv" pip install -q --python "$py" --break-system-packages -r "$new/python/requirements.txt" >&2
+	"$py" -c 'import kicad_sch_api, pytest' # the copy runs, or nothing is swapped
+	# KiCad 10's flat symbol copies (see symdir below), made once here.
+	appdir=$(ls -d "$tools"/kicad-10.* 2>/dev/null | sort -V | tail -n 1)
+	if [ -n "$appdir" ] && [ -d "$appdir/share/kicad/symbols/power.kicad_symdir" ]; then
+		"$py" "$here/bin/flatten-symdirs.py" "$appdir/share/kicad/symbols" "$new/symbols-$(basename "$appdir")"
+	fi
+	echo "$ver" >"$new/VERSION"
+	rm -rf "$dest/.hwde-old"
+	[ -d "$dest/hwde" ] && mv "$dest/hwde" "$dest/.hwde-old"
+	mv "$new" "$dest/hwde"
+	rm -rf "$dest/.hwde-old"
+	echo "$ver" >"$dest/hwde.version"
+	echo "hwde $ver published at $dest/hwde (run $dest/hwde/bin/hwde)"
+	exit 0
 fi
 wa() { grep -q "^| *$1 *|" "$here/docs/workarounds.md" 2>/dev/null; }
 
@@ -43,9 +94,9 @@ if [ -z "${HWDE_KICAD_CLI:-}" ]; then
 		chmod 0755 "$state/bin/kicad-cli"
 		# The AppImage's python is bin/python3.11, run through sharun; pcbnew
 		# is in its dist-packages.
-		py=$(ls "$appdir"/bin/python3.* 2>/dev/null | sort -V | tail -n 1)
-		if [ -n "$py" ]; then
-			pyv=$(basename "$py")
+		kpy=$(ls "$appdir"/bin/python3.* 2>/dev/null | sort -V | tail -n 1)
+		if [ -n "$kpy" ]; then
+			pyv=$(basename "$kpy")
 			printf '#!/bin/sh\nexport PYTHONPATH="%s/shared/lib/%s/dist-packages${PYTHONPATH:+:$PYTHONPATH}"\nexec "%s/AppRun" %s "$@"\n' "$appdir" "$pyv" "$appdir" "$pyv" >"$state/bin/python3"
 			chmod 0755 "$state/bin/python3"
 		fi
@@ -80,10 +131,14 @@ fi
 # Boards live in the project the agent works in, under boards/.
 HWDE_BOARDS_ROOT=${HWDE_BOARDS_ROOT:-$PWD/boards}
 
-if [ ! -x "$venv/bin/python" ] || [ "$here/requirements.lock" -nt "$venv/.hwde-lock" ]; then
-	uv=$(command -v uv || true)
-	[ -z "$uv" ] && [ -x "$tools/uv/bin/uv" ] && uv=$tools/uv/bin/uv
-	[ -z "$uv" ] && { echo "hwde: needs uv (hive agent install --tool uv)" >&2; exit 127; }
+# A published copy's own python (an explicit HWDE_VENV still wins); else the
+# venv in HOME, built when missing or older than the lock.
+py=
+[ -z "${HWDE_VENV:-}" ] && py=$(ls -d "$here"/python/cpython-3.14.*/bin/python3.14 2>/dev/null | sort -V | tail -n 1)
+own=$py
+[ -n "$py" ] || py=$venv/bin/python
+if [ -z "$own" ] && { [ ! -x "$py" ] || [ "$here/requirements.lock" -nt "$venv/.hwde-lock" ]; }; then
+	finduv
 	mkdir -p "$state"
 	grep -v '^pywin32==' "$here/requirements.lock" >"$state/requirements.txt"
 	"$uv" venv -q --clear --python 3.14 "$venv" >&2
@@ -95,13 +150,14 @@ fi
 # folders, which kicad-sch-api (the skill's schematic writer) can't read; it
 # gets flat copies of the libraries the skill places by lib_id (power, Device).
 if wa symdir && [ -n "$appdir" ] && [ -z "${KICAD_SYMBOL_DIR:-}" ] && [ -d "$appdir/share/kicad/symbols/power.kicad_symdir" ]; then
-	syms=$state/symbols-$(basename "$appdir")
-	[ -f "$syms/power.kicad_sym" ] || "$venv/bin/python" "$here/bin/flatten-symdirs.py" "$appdir/share/kicad/symbols" "$syms"
+	syms=$here/symbols-$(basename "$appdir")
+	[ -f "$syms/power.kicad_sym" ] || syms=$state/symbols-$(basename "$appdir")
+	[ -f "$syms/power.kicad_sym" ] || "$py" "$here/bin/flatten-symdirs.py" "$appdir/share/kicad/symbols" "$syms"
 	export KICAD_SYMBOL_DIR=$syms
 fi
 
 # HWDE_PY lets a script tell the runner's venv from another python (partslib's hint).
-export HWDE_PY="$venv/bin/python"
+export HWDE_PY="$py"
 export HWDE_KICAD_CLI HWDE_FREEROUTING_JAR HWDE_JAVA HWDE_KRT_DIR HWDE_KNOWLEDGE_SOURCES HWDE_BOARDS_ROOT
 [ -n "${HWDE_KICAD_CLI:-}" ] || unset HWDE_KICAD_CLI
 [ -n "${HWDE_FREEROUTING_JAR:-}" ] || unset HWDE_FREEROUTING_JAR
@@ -112,10 +168,27 @@ export HWDE_KICAD_CLI HWDE_FREEROUTING_JAR HWDE_JAVA HWDE_KRT_DIR HWDE_KNOWLEDGE
 # KiCad's SWIG paths need an X display: with none, a script runs under its own
 # Xvfb (xvfb-run), gone when the script ends. GLX stays off: H0's Xvfb crashes
 # loading it through the NVIDIA EGL libraries, and KiCad doesn't need it here.
-x() { exec "$@"; }
-if [ -z "${DISPLAY:-}" ] && command -v xvfb-run >/dev/null 2>&1; then
-	x() { exec xvfb-run -a -s "-extension GLX" "$@"; }
-fi
+xvfb=
+[ -z "${DISPLAY:-}" ] && command -v xvfb-run >/dev/null 2>&1 && xvfb=1
+# A heavy command (a pytest suite, the router, whole-board gates) runs under
+# `hive agent heavy`, which waits while the machine is strained and others
+# run one: on 10-28 ten hwde suites and freerouting at once took a 20-core
+# load to 137. Not when it is already inside one (check-all's gates, a test
+# that runs hwde) or the hive at hand has no heavy op yet: then it runs bare.
+heavy=
+lease() {
+	[ -n "$heavy" ] && [ -z "${HWDE_HEAVY_HELD:-}" ] && command -v hive >/dev/null 2>&1 &&
+		hive agent help 2>/dev/null | grep -q '^  heavy '
+}
+x() {
+	[ -n "$xvfb" ] && set -- xvfb-run -a -s "-extension GLX" "$@"
+	if lease; then
+		export HWDE_HEAVY_HELD=1
+		exec hive agent heavy --what "$heavy" -- "$@"
+	fi
+	[ -n "$heavy" ] && export HWDE_HEAVY_HELD=1
+	exec "$@"
+}
 
 case "${1:-}" in
 env)
@@ -123,7 +196,7 @@ env)
 		eval "val=\${$v:-}"
 		[ -n "$val" ] && printf "export %s='%s'\n" "$v" "$val"
 	done
-	printf "export HWDE_SKILL='%s'\nexport HWDE_PY='%s'\n" "$here/.claude/skills/hwde" "$venv/bin/python"
+	printf "export HWDE_SKILL='%s'\nexport HWDE_PY='%s'\n" "$here/.claude/skills/hwde" "$py"
 	;;
 test)
 	# tests/: upstream's unit tests (no smoke or net marks: those need a live
@@ -134,23 +207,30 @@ test)
 	export HWDE_BIN="$here/bin/hwde" HWDE_APPDIR="$appdir" HWDE_STATE="$state"
 	HWDE_BOARDS_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/hwde-noboards-XXXXXX")
 	cd "$here"
-	x "$venv/bin/python" -m pytest -m "not smoke and not net" "$@"
+	heavy="hwde test (the module's pytest suite)"
+	x "$py" -m pytest -m "not smoke and not net" "$@"
 	;;
 check-all)
 	shift
 	export HWDE_BIN="$here/bin/hwde" HWDE_APPDIR="$appdir" HWDE_STATE="$state"
-	x "$venv/bin/python" "$here/bin/check_all.py" "$@"
+	heavy="hwde check-all (every board's gates)"
+	x "$py" "$here/bin/check_all.py" "$@"
 	;;
 check)
 	shift
-	x "$venv/bin/python" "$here/.claude/skills/hwde/scripts/check_env.py" "$@"
+	x "$py" "$here/.claude/skills/hwde/scripts/check_env.py" "$@"
 	;;
 "" | -h | --help)
-	sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'
+	sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'
 	;;
 *)
-	s=$1
+	s=${1%.py}
 	shift
-	x "$venv/bin/python" "$here/.claude/skills/hwde/scripts/${s%.py}.py" "$@"
+	# The scripts that run KiCad over a whole board, the router or a sim.
+	case $s in
+	route_auto | route_critical | place_anneal | gate | verify_all | bench | render | sim_run | fab_export)
+		heavy="hwde $s" ;;
+	esac
+	x "$py" "$here/.claude/skills/hwde/scripts/$s.py" "$@"
 	;;
 esac
