@@ -48,15 +48,24 @@ an agent runs it inside the Hive.
   place of the venv python. Record each spawn with `hwde state spawn`.
   Reviewers always get fresh context.
 
-## Sign-offs: H1, H2, H4
+## Checkpoints are reports, not stops
 
-The skill stops for the person at H1 (architecture), H2 (schematic) and H4
-(verified board). In the Hive, each sign-off is a short packet to the
-project's lead: the files to read on your branch, a digest of 10 lines or
-fewer, and the exact question with a recommended answer. The lead puts it to
-the person and sends back their answer. Don't use a warden request for a
-sign-off. If you go on while a sign-off is open, say so in the packet, and
-rework if the answer is no. Record answers with `hwde state human`.
+hwde's checks are tools you run, not a stage machine: `set-phase` warns
+instead of refusing, the fix-loop and cross-stage budgets count past zero
+(`over: true`), `board_init` notes a fixed outline instead of refusing it, and
+release (`attest.py`) needs the gates passed, not the person's sign-off. Going
+past a default is your judgment; record why with `hwde state decision`.
+
+H1 (architecture), H2 (schematic), H3 and H4 (verified board) are reports you
+write and keep going. Bring the person only what is theirs: waiving an
+error-severity finding on a board that will be built, a cost or feature trade
+the brief didn't settle, and the order itself (H5, money). That goes as a short
+packet to the project's lead: the files to read on your branch, a digest of 10
+lines or fewer, and the exact question with your recommended answer; the lead
+puts it to the person. Don't use a warden request for it, and don't wait on
+it: carry on with your recommendation, say so in the packet, and rework if the
+answer is no. Record answers with `hwde state human` (a rejected H4 blocks
+release until reworked).
 
 ## Every board gets its own docs
 

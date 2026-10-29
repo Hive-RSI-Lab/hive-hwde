@@ -283,8 +283,45 @@ def test_unsupported_rewire_refuses_apply(tmp_path):
     assert payload["status"] == "violations"  # dry-run reports, exit 1
     assert payload["plan"]["unsupported"][0]["ref"] == "C5"
     assert payload["plan"]["unsupported"][0]["kind"] == "pad_net_change"
+    assert payload["plan"]["unsupported"][0]["routed_pads"] == ["1"]
+    assert payload["plan"]["rewire"] == []
     with pytest.raises(CheckError, match="unsupported"):
         _run(PD_PCB, net)  # apply refuses, nothing mutated
+
+
+PD_PLACE = PD / "place" / "pd-trigger.kicad_pcb"
+
+
+def test_rewire_on_unrouted_board_is_planned(tmp_path):
+    """Issue #29: a pad-net change on a board with no copper on the changed
+    pads is a rewire_pad, not a refusal - nothing is stranded."""
+    tree = _load_net(PD_NET)
+    _rewire(tree, "C5", "1", "GND")
+    payload = _run(PD_PLACE, _dump_net(tree, tmp_path / "m.net"),
+                   "--dry-run")
+    assert payload["status"] == "pass"
+    plan = payload["plan"]
+    assert plan["unsupported"] == []
+    assert [e["ref"] for e in plan["rewire"]] == ["C5"]
+    assert plan["rewire"][0]["pads"] == {"1": "GND"}
+    assert payload["changes"] == 1
+
+
+def test_rewire_with_field_change_plans_both(tmp_path):
+    tree = _load_net(PD_NET)
+    _rewire(tree, "C5", "1", "GND")
+    _set_value(tree, "C5", "2.2uF 25V X5R")
+    plan = _run(PD_PLACE, _dump_net(tree, tmp_path / "m.net"),
+                "--dry-run")["plan"]
+    assert [e["ref"] for e in plan["rewire"]] == ["C5"]
+    assert [e["ref"] for e in plan["swap_same_fp"]] == ["C5"]
+
+
+def test_routed_pads_named():
+    bg = geom.load_board(PD_PCB, refresh=True)
+    assert bu._routed_pads(bg, "C5", {"1"}) == ["1"]
+    bg = geom.load_board(PD_PLACE, refresh=True)
+    assert bu._routed_pads(bg, "C5", {"1", "2"}) == []
 
 
 def test_unconnected_star_normalization():
@@ -700,6 +737,41 @@ def test_carrier_del_and_add_4layer(tmp_path):
 # ---------------------------------------------------------------------------
 # smoke: atomicity
 # ---------------------------------------------------------------------------
+
+@pytest.mark.smoke
+def test_rewire_apply_on_unrouted_board(tmp_path):
+    """Issue #29 end-to-end: the unrouted board's pad is re-netted, every
+    other pad and all geometry stay, and state records rewire_pad."""
+    ws = tmp_path / "ws"
+    (ws / "kicad").mkdir(parents=True)
+    pcb = _stage(ws / "kicad", PD_PLACE)
+    orig = tmp_path / "orig.kicad_pcb"
+    shutil.copy2(pcb, orig)
+    tree = _load_net(PD_NET)
+    _rewire(tree, "C5", "1", "GND")
+    net = _dump_net(tree, tmp_path / "m.net")
+    subprocess.run([sys.executable, str(SCRIPTS / "state.py"), "init",
+                    "--workspace", str(ws), "--board", "pd-trigger"],
+                   check=True, capture_output=True)
+    payload = _run(pcb, net, "--state", str(ws / "state.json"))
+    assert payload["status"] == "pass"
+    assert payload["applied"]["worker"]["pads_renetted"] == ["C5.1"]
+    after = {(p.ref, p.number): p.net
+             for p in geom.load_board(pcb, refresh=True).pads_of()}
+    before = {(p.ref, p.number): p.net
+              for p in geom.load_board(orig, refresh=True).pads_of()}
+    assert after[("C5", "1")] == "GND"
+    assert {k: v for k, v in after.items() if k != ("C5", "1")} \
+        == {k: v for k, v in before.items() if k != ("C5", "1")}
+    ma, mb = placelib.PlaceModel(orig), placelib.PlaceModel(pcb)
+    assert {r: f.pos for r, f in ma.footprints.items()} \
+        == {r: f.pos for r, f in mb.footprints.items()}
+    st = json.loads((ws / "state.json").read_text())
+    assert [(e["class"], e["refs"]) for e in st["edits"]] \
+        == [("rewire_pad", ["C5"])]
+    # re-running is a no-op: the board now matches the netlist
+    assert _run(pcb, net, "--dry-run")["changes"] == 0
+
 
 @pytest.mark.smoke
 def test_new_fp_swap_apply(tmp_path):

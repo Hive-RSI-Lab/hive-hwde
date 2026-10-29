@@ -17,6 +17,15 @@ these ways:
   copies; `scripts/board_edit.py`, whose `--outline fit` counts silk and whose
   edits refuse to clip it; `scripts/check_silk.py`, whose silk items carry
   their footprint's reference.
+- The Hive's rules are judgment, not refusals (the person, 10-28): `state.py`
+  `set-phase` warns instead of refusing an unrecorded gate, `budget
+  --consume` and `cross-spawn` count past zero (`over: true`), `research.py
+  open --slot` opens past the per-run cap, `board_init` notes a fixed outline
+  under a geometry-as-output mode instead of refusing it, and the release
+  attestation no longer needs an approved H4 (a rejected one still vetoes).
+  `SKILL.md`, `full-run.md`, `fix-finding.md`, `build-modes.md` and
+  `tasks.yaml` say so: H1-H4 are reports, and only error waivers, cost/feature
+  trades and the order go to the person.
 
 `requirements.lock`, `LICENSE` and `NOTICE` are upstream's, from the repo
 root, and so is `docs/failure-modes.yaml` (`bench --scorecard-corpus` maps
