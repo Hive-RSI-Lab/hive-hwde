@@ -10,7 +10,16 @@ a reversed polarised part, or a negative rail routed to a single-supply part.
 - Fields: net, refs [the part], pin, net_v, limit_v (for the absolute-min case), rating.
   Error, except a volt inferred through a pull-up, which is a warning.
 
+A warning with `scenario` "J1 reversed" is the reversed-input case: a 2-net power input
+plugged in the wrong way round puts its rail's full volts back across a diode (an LED
+said to "block reverse current", an indicator behind its resistor) above that diode's
+reverse rating (VR, often only 5 V for an LED).
+
 ## Is it real?
+- A reversed-input warning: is the input keyed so it can't be reversed (a polarised
+  housing, a USB plug)? Then say so in the review and leave it. An unkeyed pin header,
+  a barrel jack or a battery holder can be reversed; the LED's leakage drop across its
+  resistor (IR * R, microvolts) does not save it.
 - A ground pin "on a positive rail": check the net really is a rail and not a ground with a
   name the check could not read (V48_RTN is ground; a net named after a voltage is not).
   Rename the net or declare it in constraints.json `voltages` with 0.
@@ -23,7 +32,8 @@ a reversed polarised part, or a negative rail routed to a single-supply part.
 ## Fix ladder (cheapest first)
 1. Swapped pins or connector: fix the symbol-to-footprint mapping or the connector pinout.
 2. Reversed input from outside the board: add reverse-polarity protection (a series
-   Schottky, or a P-FET ideal diode for low drop) at the input.
+   Schottky, or a P-FET ideal diode for low drop) at the input; for an LED alone, a
+   diode across it (anti-parallel) or an LED with a higher VR also clears it.
 3. Negative rail on a single-supply part: re-source a part that allows it.
 
 ## Do not
