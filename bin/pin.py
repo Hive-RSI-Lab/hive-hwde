@@ -104,6 +104,13 @@ def main() -> int:
         tmp.rename(dest)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+    # what git won't commit here (the board's own .gitignore, this repo's)
+    # would be missing from a fresh clone and break the digest there
+    rels = "\n".join(str(dest.relative_to(ROOT) / f) for f in score.files(dest))
+    ignored = subprocess.run(["git", "-C", str(ROOT), "check-ignore", "--no-index", "--stdin"],
+                             input=rels, capture_output=True, text=True).stdout.split()
+    for f in ignored:
+        (ROOT / f).unlink()
     have = set(score.scripts(dest))
     design = [s for s in old.get("design", []) if s in have]
     stand_in = {s: w for s, w in old.get("stand_in", {}).items() if s in have}
