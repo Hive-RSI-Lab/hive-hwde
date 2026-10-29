@@ -1,0 +1,39 @@
+{
+  "url": "https://jlcpcb.com/api/jlcTools/impedance/calc",
+  "request": {
+    "accessId": "d3b31b8e3bc94392b22460e3996647ac",
+    "impedance_calc_mark": "OffsetStripline1B1A",
+    "paramMd5": "",
+    "impedance_calc_arg": {
+      "H1": 9.622,
+      "Er1": 3.91,
+      "H2": 41.9291,
+      "Er2": 4.38,
+      "W1": 5.9055,
+      "W2": 5.9055,
+      "T1": 1.378,
+      "dCalculateMode": 3,
+      "isLinkComputingMode": false,
+      "W2LinkW1Incr": 0
+    },
+    "uuid": "89c0e454e68743098f32d6f08c71df72"
+  },
+  "response": {
+    "accessId": "d3b31b8e3bc94392b22460e3996647ac",
+    "impedance_calc_error_msg": "",
+    "impedance_calc_mark": "OffsetStripline1B1A",
+    "impedance_calc_result": {
+      "dCer": 101.830762624,
+      "dDelay": 6763.45534346,
+      "dErEff": 4.11129633719,
+      "dImpedance": 66.4185867723,
+      "dInductance": 449.21914561,
+      "dResultValid": 1
+    },
+    "impedance_calc_status": 0,
+    "impedance_calc_time": 47,
+    "paramMd5": "2b0a3db46fa3cc4f48f0cdaa705dd5ff",
+    "uuid": "89c0e454e68743098f32d6f08c71df72"
+  },
+  "fetched_utc": "2026-09-27T05:52:29.096826Z"
+}

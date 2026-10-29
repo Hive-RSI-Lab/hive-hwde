@@ -4,7 +4,7 @@ KiCad's connectivity engine says two items on the same net are not joined by cop
 One violation per missing pad-to-pad link, so one net emits several (lumina-carrier /pwr/SW: 3).
 
 - Emitted by: kicad-cli `pcb drc` (`unconnected_items` section), normalized by kc.py:141 (`source: "unconnected"`)   Gate: `drc` (P6), `drc_routed` (P7)
-- Fixer domain: router (cluster_violations.py:80)   Scripts you may use: route_edit.py, kc.py, render.py, stitch_vias.py, route_cleanup.py (fix_dispatch.py:47)
+- Fixer domain: router (cluster_violations.py:80)   Scripts you may use: route_finish.py, route_edit.py, kc.py, render.py, stitch_vias.py, route_cleanup.py (fix_dispatch.py:47)
 - Fields on the violation: `msg` is always "Missing connection between items"; `net`, `layer`, `refs`, `pos` = first item's position;
   `items[]` = the TWO endpoints, each {msg "Pad N [net] of REF on LAYER", pos, uuid}. Those uuids are PAD uuids, not removable copper.
 
@@ -27,12 +27,18 @@ One violation per missing pad-to-pad link, so one net emits several (lumina-carr
    `stitch_vias.py --pcb <abs .kicad_pcb> --nets <net> --dry-run`, then rerun without `--dry-run`.
    It rings a via just past the pad edge and adds a short connecting track when the via disc
    misses the pad (stitch_vias.py:5-12). Plane nets are never outer-trunked (line 445).
-3. Two endpoints, clear short gap: `route_edit.py --pcb <abs> --ops ops.json` with
+3. Any number of links, any net: `route_finish.py --pcb <abs .kicad_pcb> --dry-run`, then without
+   `--dry-run`. A grid maze router at the board's own rules (rules_gen widths, clearance,
+   hole-to-hole, keepouts): pads, track stubs and cut-off pour pieces are islands it joins, a pour
+   piece by a via into the plane. It applies, refills and DRCs, takes out any connection DRC names,
+   and keeps a pass only if the unconnected count drops with no new error type. Its `failed`
+   connections have no path at the rules: read them as a placement or topology finding.
+4. Two endpoints, clear short gap: `route_edit.py --pcb <abs> --ops ops.json` with
    `add_track {start,end,width,layer,net}` joining each endpoint to the abutting same-net copper.
    Width = that abutting copper's width, never below the check's minimum (fix_dispatch.py:56-57).
-4. Dangling stub remnants in the region: `route_cleanup.py --pcb <abs> --dry-run` first; it self-guards and reports DEGRADED if
+5. Dangling stub remnants in the region: `route_cleanup.py --pcb <abs> --dry-run` first; it self-guards and reports DEGRADED if
    unconnected grows (route_cleanup.py:609-613).
-5. Escalate: a long haul (tens of mm) with no clear channel is an A* budget problem. Tell the
+6. Escalate: a long haul (tens of mm) with no clear channel is an A* budget problem. Tell the
    orchestrator to re-run KRT with a raised budget - KRT route.py `--max-iterations` defaults to
    200000, and 4000000 routed a 68 mm net first try (lines 1433, 1504). No repo script exposes
    that flag, and route_critical.py / route_auto.py are not in your whitelist.

@@ -1,0 +1,194 @@
+{
+ "script": "bench",
+ "stage": "E2E",
+ "fixture": "e2e_buck_5v",
+ "board": "bb-buck",
+ "metrics": {
+  "workspace": "PCB-0010-A_bb-buck",
+  "artifacts": [
+   "decoupling",
+   "netlist",
+   "parts",
+   "pcb",
+   "sch"
+  ],
+  "net_map": {
+   "vin": "+VIN",
+   "vout": "+5V",
+   "gnd": "GND",
+   "fb": "/FB"
+  },
+  "bom": {
+   "bom_usd": 2.5485,
+   "qty": 10,
+   "bom_lines": 10,
+   "unpriced": []
+  },
+  "checks": [
+   {
+    "id": "net:vin",
+    "category": "electrical",
+    "score": 1.0,
+    "value": "+VIN",
+    "matches": [
+     "+VIN"
+    ],
+    "bound": "(?i)^/?\\+?(VIN|24V|VIN_24V)$"
+   },
+   {
+    "id": "net:vout",
+    "category": "electrical",
+    "score": 1.0,
+    "value": "+5V",
+    "matches": [
+     "+5V"
+    ],
+    "bound": "(?i)^/?\\+?(5V|5V0|VOUT)$"
+   },
+   {
+    "id": "net:gnd",
+    "category": "electrical",
+    "score": 1.0,
+    "value": "GND",
+    "matches": [
+     "GND"
+    ],
+    "bound": "^GND$"
+   },
+   {
+    "id": "net:fb",
+    "category": "electrical",
+    "score": 1.0,
+    "value": "/FB",
+    "matches": [
+     "/FB"
+    ],
+    "bound": "(?i)(^|/)FB[0-9]?$"
+   },
+   {
+    "id": "part:inductor",
+    "category": "electrical",
+    "score": 1.0,
+    "value": [
+     "L1"
+    ],
+    "bound": ">= 1 x (?i)[0-9.]+\\s*[un]H\\b"
+   },
+   {
+    "id": "layout:area",
+    "category": "layout",
+    "score": 1.0,
+    "value": 875.0,
+    "bound": 1400
+   },
+   {
+    "id": "layout:legality",
+    "category": "layout",
+    "score": 1.0,
+    "value": 0,
+    "bound": 0
+   },
+   {
+    "id": "layout:crossings",
+    "category": "layout",
+    "score": 1.0,
+    "value": 0,
+    "bound": 1
+   },
+   {
+    "id": "layout:decap",
+    "category": "layout",
+    "score": 0.332,
+    "value": 8.34,
+    "bound": 5
+   },
+   {
+    "id": "cost:bom",
+    "category": "cost",
+    "score": 0.9806,
+    "value": 2.5485,
+    "bound": 2.5,
+    "qty": 10,
+    "priced_lines": 10,
+    "unpriced": []
+   }
+  ]
+ },
+ "metrics_live": {
+  "checks": [
+   {
+    "id": "erc:errors",
+    "category": "electrical",
+    "score": 1.0,
+    "value": 0,
+    "bound": 0
+   },
+   {
+    "id": "layout:drc",
+    "category": "layout",
+    "score": 1.0,
+    "value": 0,
+    "bound": 0
+   },
+   {
+    "id": "layout:completion",
+    "category": "layout",
+    "score": 1.0,
+    "value": [],
+    "bound": []
+   },
+   {
+    "id": "spice:vout_setpoint",
+    "category": "electrical",
+    "score": 1.0,
+    "bound": {
+     "min": 4.85,
+     "max": 5.15
+    },
+    "value": {
+     "min": 4.99211,
+     "max": 5.008111
+    },
+    "corners": 4,
+    "corners_in_bounds": 4,
+    "vref": 1.0,
+    "vref_from": "U1 LMR33630ADDAR",
+    "parts": [
+     {
+      "ref": "R1",
+      "value": "102k",
+      "tol": 0.001
+     },
+     {
+      "ref": "R2",
+      "value": "25.5k",
+      "tol": 0.001
+     }
+    ],
+    "kind": "divider"
+   }
+  ],
+  "ngspice": true,
+  "kicad_version": "10.0.6"
+ },
+ "penalties": {
+  "electrical_shortfall": 0.0,
+  "layout_shortfall": 0.1113,
+  "cost_shortfall": 0.0194
+ },
+ "composite": 97.09,
+ "composite_inputs": "full",
+ "known_answer": null,
+ "e2e": {
+  "categories": {
+   "electrical": 1.0,
+   "layout": 0.8887,
+   "cost": 0.9806
+  },
+  "eebench_equiv": 99.32
+ },
+ "_baseline": {
+  "created": "2026-09-27",
+  "kicad_version": "10.0.6"
+ }
+}

@@ -134,13 +134,14 @@ def _silk_side(layer: str):
 # ------------------------------------------------------------ silk geometry
 
 class Silk:
-    __slots__ = ("side", "kind", "geom", "text", "height", "thickness", "pos")
+    __slots__ = ("side", "kind", "geom", "text", "height", "thickness", "pos",
+                 "ref")
 
     def __init__(self, side, kind, g, text=None, height=0.0, thickness=0.0,
-                 pos=None):
+                 pos=None, ref=None):
         self.side, self.kind, self.geom = side, kind, g
         self.text, self.height, self.thickness = text, height, thickness
-        self.pos = pos
+        self.pos, self.ref = pos, ref
 
 
 def _text_box(cx, cy, angle, text, size_x, size_y, thickness) -> Polygon:
@@ -277,6 +278,7 @@ def parse_silk(root) -> list[Silk]:
         fn = _nums(fat) if fat is not None else [0, 0, 0]
         fx, fy = fn[0], fn[1]
         fangle = fn[2] if len(fn) > 2 else 0.0
+        first = len(items)
         # reference/value/user fields are stored as (property "Name" "Value" ...)
         for prop in _kids(fp, "property"):
             ln = _kid(prop, "layer")
@@ -304,6 +306,12 @@ def parse_silk(root) -> list[Silk]:
                     if g is not None and not g.is_empty:
                         items.append(Silk(side, kind.replace("fp_", ""), g,
                                           thickness=w))
+        for prop in _kids(fp, "property"):
+            pv = _strs(prop)
+            if len(pv) >= 2 and pv[0] == "Reference":
+                fref = pv[1]
+        for it in items[first:]:
+            it.ref = fref
     return items
 
 

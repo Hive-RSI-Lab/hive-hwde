@@ -1,0 +1,189 @@
+{
+ "associations": [
+  {
+   "cap": "C1",
+   "ic": "U1",
+   "pin": "1",
+   "rail": "V48_RAW",
+   "value": "100nF 100V X7R 0805",
+   "gnd": "V48_RTN"
+  },
+  {
+   "cap": "C2",
+   "ic": "U1",
+   "pin": "1",
+   "rail": "V48_RAW",
+   "value": "10uF 100V X7R 1210"
+  },
+  {
+   "cap": "C4",
+   "ic": "U1",
+   "pin": "1",
+   "rail": "V48_RAW",
+   "value": "10uF 100V X7R 1210"
+  },
+  {
+   "cap": "C5",
+   "ic": "U1",
+   "pin": "1",
+   "rail": "V48_RAW",
+   "value": "10uF 100V X7R 1210"
+  },
+  {
+   "cap": "C6",
+   "ic": "U1",
+   "pin": "1",
+   "rail": "V48_RAW",
+   "value": "10uF 100V X7R 1210"
+  },
+  {
+   "cap": "C34",
+   "ic": "U10",
+   "pin": "4",
+   "rail": "+3V3",
+   "value": "100nF 50V X7R 0603"
+  },
+  {
+   "cap": "C35",
+   "ic": "U10",
+   "pin": "8",
+   "rail": "+3V3",
+   "value": "100nF 50V X7R 0603"
+  },
+  {
+   "cap": "C37",
+   "ic": "U10",
+   "pin": "11",
+   "rail": "+3V3",
+   "value": "100nF 50V X7R 0603"
+  },
+  {
+   "cap": "C38",
+   "ic": "U10",
+   "pin": "15",
+   "rail": "+3V3",
+   "value": "100nF 50V X7R 0603"
+  },
+  {
+   "cap": "C39",
+   "ic": "U10",
+   "pin": "17",
+   "rail": "+3V3",
+   "value": "100nF 50V X7R 0603"
+  },
+  {
+   "cap": "C41",
+   "ic": "U10",
+   "pin": "21",
+   "rail": "+3V3",
+   "value": "100nF 50V X7R 0603"
+  },
+  {
+   "cap": "C36",
+   "ic": "U10",
+   "pin": "21",
+   "rail": "+3V3",
+   "value": "4.7uF 25V X5R 0805",
+   "class": "bulk"
+  },
+  {
+   "cap": "C40",
+   "ic": "U10",
+   "pin": "28",
+   "rail": "+3V3",
+   "value": "100nF 50V X7R 0603"
+  },
+  {
+   "cap": "C32",
+   "ic": "U10",
+   "pin": "20",
+   "rail": "/eth/TOCAP",
+   "value": "4.7uF 25V X5R 0805",
+   "max_dist_mm": 5.0
+  },
+  {
+   "cap": "C33",
+   "ic": "U10",
+   "pin": "22",
+   "rail": "/eth/1V2O",
+   "value": "10nF 50V X7R 0603"
+  },
+  {
+   "cap": "C50",
+   "ic": "U20",
+   "pin": "3",
+   "rail": "V48_RAW",
+   "value": "2.2uF 100V X7R 1210"
+  },
+  {
+   "cap": "C51",
+   "ic": "U20",
+   "pin": "3",
+   "rail": "V48_RAW",
+   "value": "2.2uF 100V X7R 1210"
+  },
+  {
+   "cap": "C61",
+   "ic": "U20",
+   "pin": "3",
+   "rail": "V48_RAW",
+   "value": "100nF 100V X7R 0805"
+  },
+  {
+   "cap": "C55",
+   "ic": "U21",
+   "pin": "3",
+   "rail": "+12V",
+   "value": "22uF 25V X5R 1206"
+  },
+  {
+   "cap": "C62",
+   "ic": "U22",
+   "pin": "1",
+   "rail": "V48_RAW",
+   "value": "100nF 100V X7R 0805"
+  },
+  {
+   "cap": "C63",
+   "ic": "U22",
+   "pin": "18",
+   "rail": "+48V_SW",
+   "value": "100nF 100V X7R 0805"
+  },
+  {
+   "cap": "C80",
+   "ic": "U30",
+   "pin": "2",
+   "rail": "+3V3",
+   "value": "22uF 25V X5R"
+  },
+  {
+   "cap": "C81",
+   "ic": "U30",
+   "pin": "2",
+   "rail": "+3V3",
+   "value": "100nF 50V X7R"
+  },
+  {
+   "cap": "C82",
+   "ic": "U30",
+   "pin": "2",
+   "rail": "+3V3",
+   "value": "100nF 50V X7R"
+  },
+  {
+   "cap": "C83",
+   "ic": "U30",
+   "pin": "2",
+   "rail": "+3V3",
+   "value": "100nF 50V X7R"
+  },
+  {
+   "cap": "C84",
+   "ic": "U30",
+   "pin": "2",
+   "rail": "+3V3",
+   "value": "1uF 50V X5R"
+  }
+ ]
+}

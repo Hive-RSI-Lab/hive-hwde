@@ -1,0 +1,597 @@
+(export
+	(version "E")
+	(design
+		(source "C:\\dev\\ai-ee3\\boards\\bb-ldo\\kicad\\bb-ldo.kicad_sch")
+		(date "2026-08-16T23:27:30")
+		(tool "Eeschema 10.0.3")
+		(sheet
+			(number "1")
+			(name "/")
+			(tstamps "/")
+			(title_block
+				(title "bb-ldo: AMS1117-3.3 1 W linear regulator block")
+				(company "ai-ee")
+				(rev "1")
+				(date "2026-08-16")
+				(source "bb-ldo.kicad_sch")
+				(comment
+					(number "1")
+					(value "")
+				)
+				(comment
+					(number "2")
+					(value "")
+				)
+				(comment
+					(number "3")
+					(value "")
+				)
+				(comment
+					(number "4")
+					(value "")
+				)
+				(comment
+					(number "5")
+					(value "")
+				)
+				(comment
+					(number "6")
+					(value "")
+				)
+				(comment
+					(number "7")
+					(value "")
+				)
+				(comment
+					(number "8")
+					(value "")
+				)
+				(comment
+					(number "9")
+					(value "")
+				)
+			)
+		)
+	)
+	(components
+		(comp
+			(ref "C1")
+			(value "10uF 16V solid tantalum")
+			(footprint "aiee:CAP-SMD_L3.2-W1.6-RD-C7171")
+			(fields
+				(field
+					(name "LCSC") "C7171")
+				(field
+					(name "Footprint") "aiee:CAP-SMD_L3.2-W1.6-RD-C7171")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "aiee")
+				(part "TAJA106K016RNJ")
+				(description "10uF (106) ±10% 16V")
+			)
+			(property
+				(name "LCSC")
+				(value "C7171")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "bb-ldo.kicad_sch")
+			)
+			(property
+				(name "ki_keywords")
+				(value "Tantalum Capacitors")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "e4d9542c-f8fc-4d07-ae96-933404f2df3d")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "1")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "C2")
+			(value "22uF 16V solid tantalum ESR 0.8ohm")
+			(footprint "aiee:CAP-SMD_L7.3-W4.3")
+			(fields
+				(field
+					(name "LCSC") "C215872")
+				(field
+					(name "Footprint") "aiee:CAP-SMD_L7.3-W4.3")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "aiee")
+				(part "293D226X9016D2TE3")
+				(description "")
+			)
+			(property
+				(name "LCSC")
+				(value "C215872")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "bb-ldo.kicad_sch")
+			)
+			(property
+				(name "ki_keywords")
+				(value "Tantalum Capacitors")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "fdaf8e06-4de9-4d96-b29b-edbe5a51fe02")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "J1")
+			(value "2P 5.08mm THT screw terminal")
+			(footprint "aiee:CONN-TH_2P-P5.00_WJ500V-5.08-2P")
+			(fields
+				(field
+					(name "LCSC") "C8465")
+				(field
+					(name "Footprint") "aiee:CONN-TH_2P-P5.00_WJ500V-5.08-2P")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "aiee")
+				(part "WJ500V-5.08-2P-14-00A")
+				(description "WJ500V-5.08-2P")
+			)
+			(property
+				(name "LCSC")
+				(value "C8465")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "bb-ldo.kicad_sch")
+			)
+			(property
+				(name "ki_keywords")
+				(value "Screw terminal")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "b2572674-2461-47b0-be89-ec83203d2e92")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "J2")
+			(value "2P 5.08mm THT screw terminal")
+			(footprint "aiee:CONN-TH_2P-P5.00_WJ500V-5.08-2P")
+			(fields
+				(field
+					(name "LCSC") "C8465")
+				(field
+					(name "Footprint") "aiee:CONN-TH_2P-P5.00_WJ500V-5.08-2P")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "aiee")
+				(part "WJ500V-5.08-2P-14-00A")
+				(description "WJ500V-5.08-2P")
+			)
+			(property
+				(name "LCSC")
+				(value "C8465")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "bb-ldo.kicad_sch")
+			)
+			(property
+				(name "ki_keywords")
+				(value "Screw terminal")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "6032caa9-4ce7-4696-87c3-133e19ebdb93")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "U1")
+			(value "AMS1117-3.3")
+			(footprint "aiee:SOT-223-3_L6.5-W3.4-P2.30-LS7.0-BR")
+			(fields
+				(field
+					(name "LCSC") "C6186")
+				(field
+					(name "Footprint") "aiee:SOT-223-3_L6.5-W3.4-P2.30-LS7.0-BR")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "aiee")
+				(part "AMS1117-3.3")
+				(description "")
+			)
+			(property
+				(name "LCSC")
+				(value "C6186")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "bb-ldo.kicad_sch")
+			)
+			(property
+				(name "ki_keywords")
+				(value "Linear Voltage Regulators (LDO)")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "ae445b70-f164-4b10-82de-b1975d928fde")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "3")
+						)
+						(pin
+							(num "4")
+						)
+					)
+				)
+			)
+		)
+	)
+	(groups)
+	(variants)
+	(libparts
+		(libpart
+			(lib "aiee")
+			(part "293D226X9016D2TE3")
+			(docs "https://lcsc.com/product-detail/Others_Vishay-Intertech_293D226X9016D2TE3_Vishay-Intertech-293D226X9016D2TE3_C215872.html")
+			(fields
+				(field
+					(name "Reference") "C")
+				(field
+					(name "Value") "293D226X9016D2TE3")
+				(field
+					(name "Footprint") "aiee:CAP-SMD_L7.3-W4.3")
+				(field
+					(name "Datasheet") "https://lcsc.com/product-detail/Others_Vishay-Intertech_293D226X9016D2TE3_Vishay-Intertech-293D226X9016D2TE3_C215872.html")
+				(field
+					(name "Description")
+				)
+				(field
+					(name "Manufacturer") "VISHAY(威世)")
+				(field
+					(name "MPN") "293D226X9016D2TE3")
+				(field
+					(name "LCSC Part") "C215872")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "1")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "2")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "aiee")
+			(part "AMS1117-3.3")
+			(docs "https://lcsc.com/product-detail/Low-Dropout-Regulators-LDO_AMS_AMS1117-3-3_AMS1117-3-3_C6186.html")
+			(fields
+				(field
+					(name "Reference") "U")
+				(field
+					(name "Value") "AMS1117-3.3")
+				(field
+					(name "Footprint") "aiee:SOT-223-3_L6.5-W3.4-P2.30-LS7.0-BR")
+				(field
+					(name "Datasheet") "https://lcsc.com/product-detail/Low-Dropout-Regulators-LDO_AMS_AMS1117-3-3_AMS1117-3-3_C6186.html")
+				(field
+					(name "Description")
+				)
+				(field
+					(name "Manufacturer") "Advanced Monolithic Systems")
+				(field
+					(name "MPN") "AMS1117-3.3")
+				(field
+					(name "LCSC Part") "C6186")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "GND")
+					(type "power_in")
+				)
+				(pin
+					(num "2")
+					(name "VOUT")
+					(type "power_out")
+				)
+				(pin
+					(num "3")
+					(name "VIN")
+					(type "power_in")
+				)
+				(pin
+					(num "4")
+					(name "VOUT")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "aiee")
+			(part "TAJA106K016RNJ")
+			(description "10uF (106) ±10% 16V")
+			(docs "https://lcsc.com/product-detail/Tantalum-Capacitors_AVX_TAJA106K016RNJ_10uF-106-10-16V_C7171.html")
+			(fields
+				(field
+					(name "Reference") "C")
+				(field
+					(name "Value") "TAJA106K016RNJ")
+				(field
+					(name "Footprint") "aiee:CAP-SMD_L3.2-W1.6-RD-C7171")
+				(field
+					(name "Datasheet") "https://lcsc.com/product-detail/Tantalum-Capacitors_AVX_TAJA106K016RNJ_10uF-106-10-16V_C7171.html")
+				(field
+					(name "Description") "10uF (106) ±10% 16V")
+				(field
+					(name "Manufacturer") "Kyocera AVX")
+				(field
+					(name "MPN") "TAJA106K016RNJ")
+				(field
+					(name "LCSC Part") "C7171")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "1")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "2")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "aiee")
+			(part "WJ500V-5.08-2P-14-00A")
+			(description "WJ500V-5.08-2P")
+			(docs "https://lcsc.com/product-detail/Terminal-Blocks_WJ500V-5-08-2P_C8465.html")
+			(fields
+				(field
+					(name "Reference") "P")
+				(field
+					(name "Value") "WJ500V-5.08-2P-14-00A")
+				(field
+					(name "Footprint") "aiee:CONN-TH_2P-P5.00_WJ500V-5.08-2P")
+				(field
+					(name "Datasheet") "https://lcsc.com/product-detail/Terminal-Blocks_WJ500V-5-08-2P_C8465.html")
+				(field
+					(name "Description") "WJ500V-5.08-2P")
+				(field
+					(name "Manufacturer") "KANGNEX(康奈克斯电气)")
+				(field
+					(name "MPN") "WJ500V-5.08-2P")
+				(field
+					(name "LCSC Part") "C8465")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "1")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "2")
+					(type "passive")
+				)
+			)
+		)
+	)
+	(libraries
+		(library
+			(logical "aiee")
+			(uri "${KIPRJMOD}/../lib/aiee.kicad_sym")
+		)
+	)
+	(nets
+		(net
+			(code "1")
+			(name "+3V3")
+			(class "Default")
+			(node
+				(ref "C2")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "J2")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "2")
+				(pinfunction "VOUT_2")
+				(pintype "power_out")
+			)
+			(node
+				(ref "U1")
+				(pin "4")
+				(pinfunction "VOUT_4")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "2")
+			(name "+5V")
+			(class "Default")
+			(node
+				(ref "C1")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "J1")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "3")
+				(pinfunction "VIN_3")
+				(pintype "power_in")
+			)
+		)
+		(net
+			(code "3")
+			(name "GND")
+			(class "Default")
+			(node
+				(ref "C1")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "C2")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "J1")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "J2")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "1")
+				(pinfunction "GND_1")
+				(pintype "power_in")
+			)
+		)
+	)
+)

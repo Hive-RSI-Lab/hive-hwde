@@ -1,0 +1,22 @@
+# HIDDEN: never shown to the agent that designs the board (reference/e2e-scoring.md)
+brief: e2e_ntc_front
+nets:
+  - {id: vdd, pattern: "(?i)^/?\\+?3V3$"}
+  - {id: sense, pattern: "(?i)NTC|THERM|TEMP|SENSE|ADC"}
+  - {id: gnd, pattern: "^GND$"}
+parts:
+  - {id: bias, value_pattern: "(?i)^10(\\.0)?\\s*k", min_count: 1}
+spice:
+  # the NTC is off-board, so the deck sees it open: the corner is the bias
+  # resistor's alone, half the in-circuit one at 25 C - hence the wide window
+  - id: lowpass
+    kind: rc_lowpass
+    in: vdd
+    out: sense
+    gnd: gnd
+    tol_r_pct: 1
+    tol_c_pct: 10
+    min: 0.5
+    max: 5
+layout: {area_mm2_max: 250, crossings_signal_max: 0}
+cost: {qty: 100, target_usd: 0.12}

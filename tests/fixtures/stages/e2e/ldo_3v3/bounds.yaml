@@ -1,0 +1,9 @@
+# HIDDEN: never shown to the agent that designs the board (reference/e2e-scoring.md)
+brief: e2e_ldo_3v3
+nets:
+  - {id: vin, pattern: "(?i)^/?\\+?(5V|5V0|VIN|VBUS)$"}
+  - {id: vout, pattern: "(?i)^/?\\+?(3V3|3\\.3V|VOUT)$"}
+  - {id: gnd, pattern: "^GND$"}
+# fixed-output regulators are the normal answer here, so no divider to simulate
+layout: {area_mm2_max: 700, crossings_signal_max: 0, decap_worst_mm_max: 6}
+cost: {qty: 10, target_usd: 0.60}
