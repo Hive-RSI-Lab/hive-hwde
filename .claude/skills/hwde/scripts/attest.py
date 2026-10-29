@@ -13,7 +13,7 @@ Subcommands:
   build        Assemble + write the attestation. Refuses (exit 1, nothing
                written) unless EVERY precondition holds - all applicable
                pipeline gates recorded pass and hash-fresh, no live issues,
-               human checkpoint 4 approved, both strict release reports
+               human checkpoint 4 not rejected, both strict release reports
                present/valid/passing under durable waivers, fab package
                complete, manufacturing options derivable. The refusal lists
                every miss at once. When a valid attestation already exists

@@ -43,8 +43,7 @@ Schema (version 2 - T7 freshness; v1 files upgrade via state_migrate.py):
     current normalized hashes AND it carries no mark (lib/statelib.py; the
     two-layer semantics are documented in invalidation.yaml).
 
-CLI (spec 6 contract: argparse, JSON to stdout, exit 0 ok / 2 error; exit 1
-only for a cross-spawn checkpoint):
+CLI (spec 6 contract: argparse, JSON to stdout, exit 0 ok / 2 error):
     state.py init --workspace DIR --board NAME [--phase P0] [--force]
     state.py show|resume|freshness [--workspace DIR | --state FILE]
         (show/freshness never write; resume first brings the workspace
@@ -70,16 +69,23 @@ only for a cross-spawn checkpoint):
 `cross-spawn` (U9) is the backward-spawn step: a stage at a dead end opens a
 `cross_stage` issue and records a ledger spawn tagged `cross_stage: true` with
 the issue id, consuming `budgets.cross_stage_spawns.<stage>`. Only the read-only
-roles in CROSS_SPAWN_ROLES may be spawned. With the stage's budget spent it
-spawns nothing: the issue opens as `escalated`, a decision and a
-`cross_spawn_checkpoint` event are recorded, the payload's status is
-`checkpoint` and the exit is 1 - the owner decides at the next checkpoint.
+roles in CROSS_SPAWN_ROLES may be spawned. Past the stage's count it still
+spawns, with `over: true`, a `warning` and a `cross_spawn_over` event: the
+agent judges whether a third look upstream is worth it.
 
-`set-phase` REFUSES to advance past a gate phase whose gate has no recorded
-result (U16 - bb-buck reached P9 with six passing gate reports on disk and
-`gates: {}` in state). `gate.py --workspace <ws>` records the result itself, so
-the normal flow never sees the refusal; `--force` is the escape hatch and logs
-`phase_forced` with the missing gates.
+`set-phase` records where the run is; it never refuses. Advancing past a gate
+phase whose gate has no recorded result (U16 - bb-buck reached P9 with six
+passing gate reports on disk and `gates: {}` in state) comes back as a
+`gate_coverage` warning and a `phase_ungated` history event naming the gates,
+so the gap is visible to whoever reads the run; what a release needs is the
+attestation's to say (attest.py), not the phase's. `--force` is accepted and
+changes nothing.
+
+Budgets (`fix_loops`, `cross_stage_spawns`, `research`) are counters, not
+walls: `budget --consume` past zero goes on counting below it and reports
+`over: true`, and `cross-spawn` past its count spawns and says so. Going over
+is the agent's call: weigh whether another attempt is converging, and record
+why (`state.py decision`).
 
 CLI `log` event names are machine keys: ^[a-z][a-z0-9_-]{0,31}$ (XC-8: a live
 run stored paragraphs as event names; prose belongs in --data {"msg": ...}).
@@ -144,8 +150,8 @@ DEFAULT_BUDGETS = {
     "research": {"per_run": 6, "depth_per_gap": 4},
     # U9 backward spawns (design decision 4): a stage at a dead end spawns a
     # read-only scout for an upstream answer, at most this many per stage.
-    # Exhausted = a visible checkpoint to the owner, never a third spawn.
-    # U8/U10 live evidence may tune the default 2 per stage.
+    # Past the count = a visible `over` spawn, the agent's call (U8/U10 live
+    # evidence may tune the default 2 per stage).
     "cross_stage_spawns": {p: 2 for p in ("P4", "P5", "P6", "P7", "P8",
                                           "P9")},
 }
@@ -339,16 +345,15 @@ class State:
         return missing, failed
 
     def set_phase(self, phase: str, require_gates: bool = True) -> list[dict]:
-        """Record the phase; return warn-only digest-discipline findings for
-        the phase just left (T6 XC-4 - drift becomes recorded fact, exit 0).
+        """Record the phase; return warn-only findings (exit 0): gates owed
+        behind the new phase with no recorded or a failing result (U16), and
+        digest discipline for the phase just left (T6 XC-4).
 
-        U16: ADVANCING past a gate phase whose gate has no recorded result is
-        REFUSED (CheckError). bb-buck walked P4 -> P9 with six passing gate
-        reports on disk and `gates: {}` in state, because running the gate and
-        recording it were separate steps and only the first was enforced. The
-        phase machine is now the second tooth: you cannot leave a gate phase
-        without evidence in state.json. `require_gates=False` (CLI --force) is
-        the deliberate escape hatch and records itself in history.
+        U16 once REFUSED to advance past an unrecorded gate. It is a warning
+        now: the phase is workflow position, never a release certificate
+        (attest.py is), so a run that has a reason to move on moves on and
+        the gap is written into history as `phase_ungated` for anyone who
+        reads the run. `require_gates` is kept for callers and ignored.
         """
         if phase not in PHASES:
             raise CheckError(f"unknown phase {phase!r}")
@@ -358,26 +363,20 @@ class State:
                      and PHASES.index(phase) > PHASES.index(prev))
         if advancing:
             missing, failed = self.gate_coverage(phase)
-            if missing and require_gates:
-                raise CheckError(
-                    f"cannot advance {prev} -> {phase}: no recorded gate "
-                    f"result for {', '.join(missing)}. Run the gate with "
-                    "gate.py --workspace <ws> (it records the result itself) "
-                    "or state.py record-gate --gate <g> --result <file>; "
-                    "--force advances anyway and says so in history")
             if missing:
                 warnings.append({
                     "kind": "gate_coverage",
                     "msg": f"advanced to {phase} with no recorded result for "
-                           f"{', '.join(missing)} (--force)"})
-                self._log("phase_forced", phase=phase, prev=prev,
+                           f"{', '.join(missing)} - run them with gate.py "
+                           "--workspace <ws> when they can run; release "
+                           "(attest.py) needs them"})
+                self._log("phase_ungated", phase=phase, prev=prev,
                           missing=missing)
             if failed:
                 warnings.append({
                     "kind": "gate_coverage",
                     "msg": f"advanced to {phase} with {', '.join(failed)} "
-                           "recorded FAIL - the fix loop re-records a pass "
-                           "before the run moves on"})
+                           "recorded FAIL - release needs a pass on record"})
         self.data["phase"] = phase
         self._log("phase", phase=phase, prev=prev)
         if prev != phase and re.fullmatch(r"P\d+", prev or ""):
@@ -606,8 +605,8 @@ class State:
     def cross_spawn(self, stage: str, role: str, model: str, brief: str,
                     kinds: list[str] | None = None,
                     effort: str | None = None) -> dict:
-        """U9 backward spawn: issue + budget + tagged ledger entry, or a
-        visible checkpoint when the stage's budget is spent."""
+        """U9 backward spawn: issue + counted, tagged ledger entry; past the
+        stage's count it spawns anyway and says so (`over`)."""
         if stage not in PHASES:
             raise CheckError(f"unknown stage {stage!r}")
         if role not in CROSS_SPAWN_ROLES:
@@ -616,33 +615,29 @@ class State:
                 "an artifact another stage owns (allowed: "
                 f"{', '.join(CROSS_SPAWN_ROLES)})")
         path = f"cross_stage_spawns.{stage}"
-        remaining = self.budget(path)
+        remaining = self.budget(path, consume=True)
         issue = self.open_issue({
             "gate": None, "phase": stage, "fixer": role,
             "kinds": ["cross_stage", *(kinds or [])], "severity": "blocking",
             "work_order": brief, "cross_stage": True})
-        if remaining <= 0:
-            issue["status"] = "escalated"
-            self.add_decision(
-                what=f"cross-stage spawn budget spent at {stage}: issue "
-                     f"{issue['id']} escalated, no spawn",
-                why=f"budgets.{path} exhausted; visible checkpoint, not a "
-                    "silent third spawn", phase=stage)
-            self._log("cross_spawn_checkpoint", stage=stage,
-                      issue=issue["id"])
-            return {"status": "checkpoint", "checkpoint": "cross_stage_cap",
-                    "issue": issue, "remaining": 0,
-                    "action": ("present at the next human checkpoint: raise "
-                               f"budgets.{path} in state.json and re-run, "
-                               "or rule on the dead end directly (state.py "
-                               "decision), then close the issue")}
-        remaining = self.budget(path, consume=True)
         issue["status"], issue["agent"] = "fixing", role
         spawn = self.record_spawn({
             "role": role, "model": model, "effort": effort, "phase": stage,
             "note": brief, "cross_stage": True, "issue": issue["id"]})
-        return {"status": "spawned", "issue": issue, "spawn": spawn,
-                "remaining": remaining}
+        out = {"status": "spawned", "issue": issue, "spawn": spawn,
+               "remaining": remaining}
+        if remaining < 0:
+            # Past the stage's count: spawned anyway, and visible. Two
+            # backward spawns that did not answer the dead end are a hint
+            # the question is upstream of the stage, not a reason to stop.
+            out["over"] = True
+            out["warning"] = (
+                f"budgets.{path} is spent ({remaining}): this spawn is over "
+                "the count - if the dead end keeps coming back, it is likely "
+                "an upstream choice (part, architecture) to revisit, or a "
+                "cost/feature trade to bring to the person")
+            self._log("cross_spawn_over", stage=stage, issue=issue["id"])
+        return out
 
     def set_mode(self, token: str, stated: str | None = None) -> dict:
         """Record the brief's build mode as FIRST-CLASS state (U18).
@@ -743,10 +738,12 @@ class State:
         if leaf not in node:
             raise CheckError(f"unknown budget path {dotted!r}")
         if consume:
-            if node[leaf] <= 0:
-                raise CheckError(f"budget {dotted} exhausted")
+            # A counter, not a wall: past zero it goes on counting below it
+            # and the history says so. Whether one more attempt is worth it
+            # is the agent's judgment (budget_over is how it shows).
             node[leaf] -= 1
-            self._log("budget", path=dotted, remaining=node[leaf])
+            self._log("budget_over" if node[leaf] < 0 else "budget",
+                      path=dotted, remaining=node[leaf])
         return node[leaf]
 
     # ---- snapshots (fix-loop safety net; SPEC 4 rollback) ----------------
@@ -962,8 +959,8 @@ def run(argv=None):
     common(p)
     p.add_argument("--phase", required=True)
     p.add_argument("--force", action="store_true",
-                   help="advance even when an owed gate has no recorded "
-                        "result (logged as phase_forced with the list)")
+                   help="accepted, changes nothing: set-phase never "
+                        "refuses; an owed gate with no result is a warning")
 
     p = sub.add_parser("record-gate")
     common(p)
@@ -1002,7 +999,7 @@ def run(argv=None):
     p.add_argument("--note")
 
     p = sub.add_parser("cross-spawn", help="U9 backward spawn: issue + "
-                       "budgeted, tagged ledger spawn (checkpoint when spent)")
+                       "counted, tagged ledger spawn (over: true past the count)")
     common(p)
     p.add_argument("--stage", required=True, help="the stage at the dead end")
     p.add_argument("--role", required=True, choices=CROSS_SPAWN_ROLES)
@@ -1178,6 +1175,13 @@ def _mutate(st: "State", args, result: dict):
     elif args.cmd == "budget":
         remaining = st.budget(args.bpath, args.consume)
         result.update(path=args.bpath, remaining=remaining)
+        if remaining < 0 or (remaining == 0 and not args.consume):
+            result["over"] = remaining < 0
+            result["note"] = (
+                f"{args.bpath} is spent: another attempt is your call - is "
+                "the last one converging (fewer violations, a new cause)? If "
+                "not, render, write the digest and change approach (or bring "
+                "the person the trade); record why with state.py decision")
     elif args.cmd == "log":
         if not EVENT_RE.fullmatch(args.event or ""):
             raise CheckError(

@@ -5,9 +5,27 @@ description: AI PCB engineer for KiCad + JLCPCB. Takes a TASK in any project sta
 
 # hwde orchestrator playbook
 
-You are an EE picking up a project in whatever state it is in. Soft top, firm
-bottom: YOU decide what to spawn and how to react to gates; the scripts do
+You are an EE picking up a project in whatever state it is in. YOU decide what
+to spawn, what to run and how to react to what the checks say; the scripts do
 everything checkable. Optimize for a working board at JLCPCB.
+
+**The checks are tools, not a stage machine.** Gates, budgets, phases and
+recipes tell you what is true about the board and what usually works; none of
+them refuses to let you go on. A script that used to stop you now warns and
+writes the gap into `state.json` history (`phase_ungated`, `budget_over`,
+`cross_spawn_over`, a board_init note), so a later reader sees what you chose.
+When you go past one, record why (`state.py decision`). What a check reports
+about the board (a DRC error, a sub-fab clearance, a stackup JLC does not sell)
+is a fact - you fix it or waive it, you do not argue it away. And when a rule
+here keeps getting in the way of a good board, the rule is what to change:
+say so in the run's LEARNINGS and fix the script or this playbook.
+
+**What is the person's** (bring them only this, as a short packet - digest,
+files, the question with your recommendation - and carry on with everything
+else while they answer): waiving an error-severity finding on a board that
+will be built, a cost or feature trade the brief did not settle, and the order
+itself (H5: quote, pay). H1-H4 are reports you write at those points, not
+stops: present them, go on, and rework if an answer comes back no.
 
 ## Front door - route the task first
 
@@ -35,8 +53,10 @@ owner-present teaching session; `research` fills a coverage gap and is also
 what full-run launches automatically on every gap - its recipe carries the
 caps and the allowlist rule.)
 
-Never invent a step a recipe does not have, and never skip its gates: the gate
-set is the invalidation map's answer to "what did this edit invalidate".
+A recipe is the route that has worked, not a script you must follow: add a
+step it lacks or drop one that does not apply, and say so. Its gate set is the
+invalidation map's answer to "what did this edit invalidate" - skip one and the
+release attestation will name it, so skip only what you will re-run later.
 
 **Build modes**: a brief opening with a mode token (`learning <target>:`, or the
 legacy `ultra bare bones design:`) names a TARGET LEARNING OUTCOME that derives
@@ -44,16 +64,16 @@ two dials - read `reference/build-modes.md`. The SCOPE TIER bounds what goes on
 the board (and at `product` makes the ABSENCE of protection/filtering a
 finding); the BINDING LEVEL says whether the stated geometry is an input to the
 design or an OUTPUT of it. Record it at P0 with `state.py mode --token "<it>"`
-(not a bare decision - `board_init` reads it and REFUSES a fixed `--outline WxH`
-where the size must be earned), and carry scope + binding into the P0/P2/P6 and
-reviewer spawns. A mode relaxes geometry, cost and packaging only - never a
+(not a bare decision - `board_init` reads it and notes a fixed `--outline WxH`
+where the size is usually earned), and carry scope + binding into the P0/P2/P6
+and reviewer spawns. A mode relaxes geometry, cost and packaging only - never a
 gate, the coverage check, research, or a safety question - and every relaxed
 spec is a recorded decision shown at H1.
 
 **Other agents** call the same routing, state, gates and review as MCP tools through
 `scripts/mcp_server.py` (stdio, read-only unless `write: true`; see the README).
 
-## Non-negotiable operating rules
+## Operating rules (the ones that keep the run readable)
 
 1. **Never open design files.** No .kicad_sch/.kicad_pcb/netlists/gerbers in
    your context - ever. You read: `state.json`, gate results, agent output
@@ -64,8 +84,9 @@ spec is a recorded decision shown at H1.
 3. **Record everything in state.json** (via `scripts/state.py`) - phases,
    gate results, issues, decisions, human checkpoints, and every declared edit
    (`state.py edit --class <c>`, which is what stamps derived artifacts stale).
-   A killed session must resume from state.json alone. `set-phase` REFUSES to
-   advance past a gate phase whose gate has no recorded result.
+   A killed session must resume from state.json alone. `set-phase` warns
+   (`gate_coverage`) when you advance past a gate with no recorded result,
+   and history keeps it; release still needs it on record.
 4. **Gates carry `--workspace`, and commit on pass**: `scripts/gate.py --gate
    <g> <input> --workspace <ws> --commit "hwde <board>: <gate> pass"`.
    `--workspace` records the result (input hashes, attempt, freshness) - a
@@ -77,8 +98,8 @@ spec is a recorded decision shown at H1.
    `HWDE_*` env vars; `docker/README.md`), `.venv\Scripts\python.exe` on
    Windows. All scripts: JSON out, exit 0 pass / 1 violations /
    2 error (an exit-2 payload carries remediation - read it). ASCII only.
-6. **Ask the user in batches**, at checkpoints or when blocked - never
-   trickle questions.
+6. **Ask the person in batches**, only what is theirs (above) - never
+   trickle questions, and never wait on an answer you can work around.
 
 ## Phase machine
 
@@ -89,6 +110,11 @@ P4 Schematic -[G:erc + review][H2]- P5 Board Setup - P6 Placement
 -[G:verify + review][H4]- P9 DFM -[G:dfm]- board guide - P10 Ordering
 -[H5: pay]
 ```
+
+The phases are where a run usually is, in the order that usually works; H1-H4
+are reports, H5 (pay) is the person's. `[G:...]` are the checks worth running
+before moving on - run them when they can run, and before release they must
+pass (the attestation checks that, the phase does not).
 
 Machine gates (defined in `reference/gates.yaml`, run via
 `scripts/gate.py --gate <name> <input> --workspace <ws>`):
@@ -136,8 +162,10 @@ already have work orders on disk - re-dispatch those.
 
 On gate fail (exit 1, result JSON has `failing` with coordinates):
 
-1. `state.py budget --path fix_loops.<gate> --consume` - exit 2 means the
-   budget is exhausted: ESCALATE (below) instead of looping.
+1. `state.py budget --path fix_loops.<gate> --consume` - a counter, not a
+   wall: `over: true` means this attempt is past the default (3). Judge
+   whether the loop is converging (fewer violations, a new cause each round);
+   if it is, go on and record why; if not, change approach (below).
 2. `state.py snapshot --label pre-fix-<gate>-a<attempt> --files
    <board rel path>` (plus the schematic for erc-phase fixes).
 3. `scripts/fix_dispatch.py --input <gate result> --board <board>
@@ -172,15 +200,17 @@ Special cases:
 - Silk findings: scripted fixes (silk_place.py, place_edit add_text/move_text/
   set_text); pin-locked labels ONLY; footprint-INTERNAL silk stays librarian.
 
-**Escalate** (budget exhausted or unfixable): render the board
-(`scripts/render.py`), write a digest (what failed, what was tried, the
-remaining violations with coordinates), present to the human with options
-(waive / manual guidance / abort). Record the outcome (`state.py human` /
-`decision`).
+**Change approach** (the loop is not converging, or the fix is out of reach):
+render the board (`scripts/render.py`), write a digest (what failed, what was
+tried, the remaining violations with coordinates) and pick the next move
+yourself - a different fixer tier, an upstream change (placement, part,
+architecture), a cross-stage spawn. Record it (`state.py decision`). Only a
+waiver of an error on a board that will be built, or a cost/feature trade, goes
+to the person, as a packet (see "What is the person's").
 
 ## Design document (living, per-run)
 
-Before EVERY human checkpoint (H1-H5) and once more at P10 close, run inline
+At every checkpoint report (H1-H5) and once more at P10 close, run inline
 `scripts/report_gen.py --workspace <ws>` -> `reports/design_doc/<board>-design-doc.pdf`
 (phase-aware: sections not yet due render as pending stubs). NON-BLOCKING: on
 exit 1/2 log `state.py log --event report_gen_degraded` and continue - the
@@ -206,14 +236,15 @@ Digest + artifact, never raw logs. Message shape:
 - The digest (<= 10 lines, numbers first: gate counts, cost, key choices).
 - The files to look at (render PNGs, schematic PDF, the design-doc PDF,
   quote table) as paths.
-- The specific question(s), each with a recommended answer.
-Record the verdict: `state.py human --checkpoint <n> --status approved|
-rejected [--note ...]`; a rejection loops the phase with the human's notes
-as new constraints.
+- The specific question(s), each with a recommended answer - or "none: going
+  on" when nothing in it is the person's.
+Then carry on. Record an answer when one comes: `state.py human --checkpoint
+<n> --status approved|rejected [--note ...]`; a rejection loops the phase with
+the person's notes as new constraints (and a rejected H4 vetoes release).
 
 A recipe's `human_hold` is the ceremony dial for edits outside a full run:
 0 proceed silently, 1 record a decision line, 2 summarize at the next
-checkpoint, 3 explicit approval before fab artifacts are trusted again.
+checkpoint, 3 the person sees it before an order.
 
 ## Agent spawn template
 
