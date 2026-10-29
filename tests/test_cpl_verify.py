@@ -21,6 +21,7 @@ sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 
 import bom_cpl  # noqa: E402
+import checklib  # noqa: E402
 import cpl_render  # noqa: E402
 import cpl_verify as cv  # noqa: E402
 import dfm_check  # noqa: E402
@@ -284,12 +285,10 @@ def test_cache_order_env_then_board_dir_then_shared(tmp_path, monkeypatch):
     monkeypatch.delenv("HWDE_EASYEDA_CACHE", raising=False)
     monkeypatch.delenv("AIEE_EASYEDA_CACHE", raising=False)
     shared = home / ".cache" / "hwde" / "easyeda"
-    # No board-local dir (a worktree checkout): the shared cache.
-    assert cv.default_cache(parts) == shared
-    assert cv.default_cache(None) == shared
-    # A board-local dir that exists wins over the shared one.
-    (board / "easyeda").mkdir()
+    # A board's own dir is its cache, before its first fetch makes it too:
+    # models are kept in the board, not only in one agent's HOME.
     assert cv.default_cache(parts) == board / "easyeda"
+    assert cv.default_cache(None) == shared
     # The env var wins over both.
     monkeypatch.setenv("HWDE_EASYEDA_CACHE", str(tmp_path / "env"))
     assert cv.default_cache(parts) == tmp_path / "env"
@@ -482,3 +481,102 @@ def test_render_records_fetch_error_apart_from_no_model(ws, tmp_path,
     assert "fetch_error" not in idx["parts"]["U1"]
     assert idx["fetch_failed"] == [] and "note" not in idx
     easyeda.reset_rate_limit()
+
+
+# ------------------------- models kept in the board; a refused fetch is unknown
+
+def _raw(model):
+    return {"title": model["title"], "dataStr": {"shape": model["pins"]},
+            "packageDetail": {"title": model["package"], "dataStr": {
+                "head": {"x": model["origin"][0], "y": model["origin"][1]},
+                "shape": model["pads"]}}}
+
+
+def test_board_cache_hit_never_asks_easyeda(ws, tmp_path):
+    """A board that carries its models (a fresh checkout or a scratch copy of
+    it) verifies with EasyEDA refusing every request."""
+    pcb, cache = ws
+    calls = _Calls(_http(403))
+    errs: dict = {}
+    assert easyeda.get("C116592", cache, fetcher=calls, errors=errs)
+    assert calls.asked == [] and errs == {} and easyeda.rate_limited() is None
+
+
+def test_fetch_keeps_the_model_in_the_board_and_the_shared_cache(tmp_path,
+                                                                 monkeypatch):
+    shared = tmp_path / "shared"
+    monkeypatch.setenv("HWDE_EASYEDA_CACHE", str(shared))
+    monkeypatch.setattr(easyeda, "shared_cache", lambda: shared)
+    board = tmp_path / "board" / "parts" / "easyeda"   # not there yet
+    m = easyeda.get("C900001", board, fetcher=lambda _: _raw(LED_MODEL))
+    assert m is not None and m.pin_names == {"1": "A", "2": "K"}
+    assert (board / "C900001.json").is_file()
+    assert (shared / "C900001.json").is_file()
+    # The next run of the board reads it there, with EasyEDA refusing.
+    calls = _Calls(_http(403))
+    assert easyeda.get("C900001", board, fetcher=calls) is not None
+    assert calls.asked == []
+
+
+def test_shared_cache_fills_the_board_cache(tmp_path, monkeypatch):
+    """A model this machine fetched for another board is read, and copied
+    into this board's cache so the board carries it from then on."""
+    shared = tmp_path / "shared"
+    shared.mkdir()
+    shutil.copy(FIX / "C116592.json", shared / "C116592.json")
+    monkeypatch.setattr(easyeda, "shared_cache", lambda: shared)
+    board = tmp_path / "board" / "easyeda"
+    calls = _Calls(_http(403))
+    assert easyeda.get("C116592", board, fetch=False) is not None
+    assert (board / "C116592.json").is_file()
+    assert easyeda.get("C116592", board, fetcher=calls) is not None
+    assert calls.asked == []
+
+
+def _cpl_csv(path, rows):
+    with path.open("w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["Designator", "Mid X", "Mid Y", "Layer", "Rotation"])
+        for ref, x, rot in rows:
+            w.writerow([ref, x, -10, "Top", rot])
+    return path
+
+
+def test_dfm_403_with_no_cache_is_unverified_not_failed(ws, tmp_path,
+                                                        monkeypatch):
+    pcb, _ = ws
+    monkeypatch.setattr(easyeda.time, "sleep", lambda s: None)
+    monkeypatch.setattr(easyeda, "_fetch_raw", _http(403))
+    cpl = _cpl_csv(tmp_path / "CPL.csv", [("U1", 10, 90), ("C1", 40, 0)])
+    pj = tmp_path / "parts.json"
+    pj.write_text(json.dumps({"U1": {"lcsc": "C116592"},
+                              "C1": {"lcsc": "C106245"}}))
+    vios: list = []
+    dfm_check.check_placement(pcb, cpl, pj, None, tmp_path / "empty", True,
+                              vios)
+    g = dfm_check.grade(vios)
+    assert g["status"] == "error"          # exit 2, never 1
+    assert sorted(g["unverified"]["refs"]) == ["C1", "U1"]
+    assert "HTTP 403" in g["unverified"]["reason"]
+    assert g["error"].startswith("placement unverified, not failed")
+    assert checklib.emit({**g}, str(tmp_path / "r.json")) == 2
+    # A real finding beside it still fails the board.
+    vios.append({"severity": "error", "kind": "dfm_trace_width", "refs": []})
+    assert dfm_check.grade(vios) == {"status": "violations"}
+    # Warnings alone pass.
+    assert dfm_check.grade([{"severity": "warning", "kind": "cpl_offset"}]) \
+        == {"status": "pass"}
+
+
+def test_dfm_rotation_mismatch_from_the_cache_still_fails(ws, tmp_path,
+                                                          monkeypatch):
+    pcb, cache = ws
+    monkeypatch.setattr(easyeda, "_fetch_raw", _http(403))
+    cpl = _cpl_csv(tmp_path / "CPL.csv", [("U1", 10, 270)])
+    pj = tmp_path / "parts.json"
+    pj.write_text(json.dumps({"U1": {"lcsc": "C116592"}}))
+    vios: list = []
+    dfm_check.check_placement(pcb, cpl, pj, None, cache, True, vios)
+    assert [v["kind"] for v in vios] == ["cpl_rotation"]
+    assert dfm_check.grade(vios) == {"status": "violations"}
+    assert easyeda.rate_limited() is None   # never asked

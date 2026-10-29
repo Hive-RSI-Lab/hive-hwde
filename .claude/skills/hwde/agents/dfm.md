@@ -34,6 +34,10 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    (violation `cpl_model_fetch_failed`, `easyeda_rate_limited` set on a
    403/429) means EasyEDA refused or the network failed, NOT that the part
    has no model: wait a few minutes and rerun, which fetches into the cache.
+   Commit `parts/easyeda/` with the board: a checkout or scratch copy that
+   carries it never asks EasyEDA again. In `dfm_check` a fetch failure that
+   is the run's only error reads as UNVERIFIED (status error, exit 2,
+   `unverified` naming the parts), never as a failed board.
    - Membership comes from `assembly_class` in canonical parts data
    (`smt_placed`, `hand_install`, `off_board`, `dnp`, `customer_supplied`,
    `select_on_test`, `board_feature`), per-ref via `refdes_class` /
