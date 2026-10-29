@@ -929,7 +929,7 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
                   clearance_margin: float = 0.02, via_size=None,
                   via_drill=None, max_conns=None, parity: bool = False,
                   refill: bool = True, dry_run: bool = False,
-                  passes: int = 4, rip_errors: bool = False,
+                  passes: int = 6, rip_errors: bool = False,
                   rip_board: bool = True,
                   log=None) -> dict:
     """Route the staged board's unconnected pairs in place, in passes: a
