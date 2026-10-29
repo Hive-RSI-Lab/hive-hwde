@@ -1,0 +1,32 @@
+# HIDDEN: never shown to the agent that designs the board (reference/e2e-scoring.md)
+brief: e2e_buck_5v
+nets:
+  - {id: vin, pattern: "(?i)^/?\\+?(VIN|24V|VIN_24V)$"}
+  - {id: vout, pattern: "(?i)^/?\\+?(5V|5V0|VOUT)$"}
+  - {id: gnd, pattern: "^GND$"}
+  - {id: fb, pattern: "(?i)(^|/)FB[0-9]?$"}
+parts:
+  - {id: inductor, value_pattern: "(?i)[0-9.]+\\s*[un]H\\b", min_count: 1}
+spice:
+  - id: vout_setpoint
+    kind: divider
+    top: vout
+    mid: fb
+    bottom: gnd
+    vref:
+      # anchored to the whole part number: an unanchored "TPS543" gave a
+      # TPS54302 (0.596 V) 1.221 V.  A part not listed comes back unscored.
+      by_value:
+        "LMR336[23]0(?![0-9])": 1.0
+        "TPS5430(?![0-9])|TPS5450(?![0-9])": 1.221
+        "TPS5433[12](?![0-9])": 0.8
+        "TPS54302(?![0-9])": 0.596
+        "TPS54360(?![0-9])|TPS54540(?![0-9])": 0.8
+        "MP1584(?![0-9])": 0.8
+        "LM2596[A-Z]*-ADJ": 1.23
+        "XL401[56](?![0-9])": 1.25
+    tol_pct: 1
+    min: 4.85
+    max: 5.15
+layout: {area_mm2_max: 1400, crossings_signal_max: 1, decap_worst_mm_max: 5}
+cost: {qty: 10, target_usd: 2.50}

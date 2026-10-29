@@ -3,12 +3,20 @@ distinct part, no refdes, the board's `LCSC Part` fields (easyeda2kicad's
 name), LCSC's own attribute names, and no decoupling association on a board
 with no IC (hwde-led-test, issue #5)."""
 import json
+import sys
+from pathlib import Path
 
-import bom_cpl
-import check_pdn
-import check_ratings
-import geom
-from conftest import LED_PCB, LED_TEST
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS = ROOT / ".claude" / "skills" / "hwde" / "scripts"
+sys.path[:0] = [str(SCRIPTS), str(SCRIPTS / "lib")]
+
+import bom_cpl  # noqa: E402
+import check_pdn  # noqa: E402
+import check_ratings  # noqa: E402
+import geom  # noqa: E402
+
+LED_TEST = ROOT / "boards" / "hwde-led-test"
+LED_PCB = LED_TEST / "kicad" / "hwde-led-test.kicad_pcb"
 
 
 def sourcer_parts(tmp_path, drop=("refdes",)):

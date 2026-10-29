@@ -15,9 +15,18 @@ datasheet-extract JSONs (parts/<lcsc>.json pinout types):
                                    ERC raises power_out<->power_out
   everything else   -> passive     kills the Unspecified pin_to_pin flood
 
-Symbols with no matching extraction get the blanket passive retype: the junk
-types are library-inherent, not part-specific (the field-proven
-boards/stm32-blinky recipe this script productionizes).
+Symbols with no matching extraction get a default the symbol itself decides:
+an IC (Reference U or IC) gets power_in on the pins NAMED as a supply or ground
+(VCC, VDD, AVDD, VDDIO, GND, AGND, VSS, VEE, V+, V-, with a number or _suffix),
+every other pin and every other part (connectors, switches, LEDs, discretes)
+passive. The junk types are library-inherent, not part-specific (the
+field-proven boards/stm32-blinky recipe this script productionizes). An IC's
+power_in pins then need a driver on their net (a regulator's power_out or a
+PWR_FLAG), which is what ERC should ask of them.
+
+lib_pull runs this on the symbols it pulls, with the extracts beside
+parts.json when there are any; --symbols limits a run to named symbols the
+same way, so types set from an extract earlier are not reverted.
 
 Idempotent text surgery: only the electrical-type token of each `(pin ...`
 node is rewritten; nothing else is reformatted. Re-run after any lib_pull
@@ -51,6 +60,22 @@ DEFAULT = "passive"
 PIN_RE = re.compile(r"\(pin\s+([a-z_]+)\s+([a-z_]+)")
 SYM_RE = re.compile(r'\(symbol\s+"([^"]+)"')
 NUM_RE = re.compile(r'\(number\s+"([^"]+)"')
+NAME_RE = re.compile(r'\(name\s+"([^"]*)"')
+
+# Supply and ground pin names on an IC with no extract (case-insensitive):
+# VCC VDD VSS VEE and GND families, an A/D/P/S prefix, a number or suffix.
+POWER_NAME = re.compile(
+    r"^(?:[ADPS]?(?:VCC|VDD|VSS|VEE|GND)(?:[A-Z]{0,2}|IO)?\d*(?:_\w+)?|V[+-])$",
+    re.IGNORECASE)
+IC_REF = re.compile(r"^(?:U|IC)$", re.IGNORECASE)
+
+
+def default_rules(entry: dict) -> dict[str, str]:
+    """The rules for a symbol with no extract: power_in on an IC's supply and
+    ground names, passive everywhere else."""
+    if IC_REF.match(entry.get("reference", "").strip()):
+        return {"*": DEFAULT, "name:power": "power_in"}
+    return {"*": DEFAULT}
 
 
 def build_rules(index: list[dict], extracts: dict[str, dict]) -> tuple[dict, list[str]]:
@@ -60,6 +85,7 @@ def build_rules(index: list[dict], extracts: dict[str, dict]) -> tuple[dict, lis
     for entry in index:
         ds = extracts.get(entry["lcsc"])
         if ds is None:
+            rules[entry["name"]] = default_rules(entry)
             continue
         matched.append(entry["lcsc"])
         pin_map: dict[str, str] = {}
@@ -82,8 +108,10 @@ def build_rules(index: list[dict], extracts: dict[str, dict]) -> tuple[dict, lis
     return rules, matched
 
 
-def retype(text: str, rules: dict[str, dict[str, str]]) -> tuple[str, list[dict]]:
-    """Rewrite every pin's electrical type; unruled symbols/pins -> passive."""
+def retype(text: str, rules: dict[str, dict[str, str]],
+           only: set[str] | None = None) -> tuple[str, list[dict]]:
+    """Rewrite every pin's electrical type; unruled symbols/pins -> passive.
+    With `only`, symbols not named in it keep their pins as they are."""
     changes: list[dict] = []
     out: list[str] = []
     pos = 0
@@ -92,8 +120,17 @@ def retype(text: str, rules: dict[str, dict[str, str]]) -> tuple[str, list[dict]
         symbol = re.sub(r"_\d+_\d+$", "", sym_matches[-1]) if sym_matches else "?"
         num_m = NUM_RE.search(text, m.end())
         number = num_m.group(1) if num_m else "?"
+        if only is not None and symbol not in only:
+            continue
         sym_rules = rules.get(symbol, {})
-        want = sym_rules.get(number, sym_rules.get("*", DEFAULT))
+        want = sym_rules.get(number)
+        if want is None:
+            name_m = NAME_RE.search(text, m.end())
+            pin_name = name_m.group(1) if name_m else ""
+            if "name:power" in sym_rules and POWER_NAME.match(pin_name):
+                want = sym_rules["name:power"]
+            else:
+                want = sym_rules.get("*", DEFAULT)
         have, style = m.group(1), m.group(2)
         out.append(text[pos:m.start()])
         out.append(f"(pin {want} {style}")
@@ -133,6 +170,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--lib", required=True, help="the pulled .kicad_sym library")
     ap.add_argument("--datasheet-json", nargs="+", default=[],
                     help="datasheet-extract JSON file(s); globs accepted")
+    ap.add_argument("--symbols", nargs="+",
+                    help="retype only these symbols (default: every symbol)")
     ap.add_argument("--dry-run", action="store_true", help="report, do not write")
     ap.add_argument("--out", help="write JSON here instead of stdout")
     args = ap.parse_args(argv)
@@ -145,7 +184,8 @@ def main(argv: list[str] | None = None) -> int:
         index = fplib.symbol_index(lib)
         extracts = _load_extracts(args.datasheet_json)
         rules, matched = build_rules(index, extracts)
-        new, changes = retype(text, rules)
+        new, changes = retype(text, rules,
+                              set(args.symbols) if args.symbols else None)
         if changes and not args.dry_run:
             lib.write_text(new, encoding="utf-8")
         lib_ids = {e["lcsc"] for e in index}

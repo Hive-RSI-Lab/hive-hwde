@@ -178,7 +178,9 @@ def do_open(args) -> tuple[dict, int]:
         except Exception as exc:  # noqa: BLE001
             return {"script": SCRIPT, "status": "error",
                     "error": f"budgets.research unreadable: {exc}"}, 2
-        if remaining <= 0:
+        if remaining <= 0 and not args.slot:
+            # the cap bounds AUTOMATIC launch; a named --slot past it is the
+            # agent's deliberate call and opens (counted below zero, logged)
             left = [g.get("slot") for g in wanted
                     if g.get("slot") not in {o["task"]["slot"] for o in opened}
                     and g.get("slot") not in {s["slot"] for s in skipped}]
@@ -188,10 +190,10 @@ def do_open(args) -> tuple[dict, int]:
                     "automatically on every gap (owner ruling) and this run "
                     "has used its cap",
                 "unopened_slots": left,
-                "action": ("present at the next human checkpoint: raise "
-                           "budgets.research.per_run (state.json) and re-run "
-                           "open, or accept designing under the remaining "
-                           "gaps (state.py decision, per slot)")}
+                "action": ("your call, not the person's: if a remaining "
+                           "gap matters to the board, open it with --slot "
+                           "(past the cap, counted); otherwise record designing "
+                           "under it (state.py decision, per slot)")}
             st.add_decision(
                 what=f"research cap hit: {len(left)} gap slot(s) unresearched",
                 why="budgets.research.per_run exhausted; visible checkpoint, "

@@ -1,0 +1,6 @@
+# check_courtyard: every footprint's courtyard covers its own pads. EasyEDA
+# 0603 pulls ship the body outline as the courtyard, inside the pads, and
+# KiCad's DRC never compares a courtyard with its own copper. Board only.
+name: check_courtyard
+needs: []
+args: []

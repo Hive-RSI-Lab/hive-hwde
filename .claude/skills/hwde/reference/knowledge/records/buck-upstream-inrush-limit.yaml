@@ -2,7 +2,7 @@ id: buck-upstream-inrush-limit
 classes: [inrush, selection]
 applies:
   topologies: [buck]
-  interfaces: [usb, usb-pd, poe]
+  interfaces: [usb, usb-fs, usb-pd, poe]
   packages: []
 rule:
   enforced_by: null
@@ -21,6 +21,9 @@ sources:
   - {file: boards/usb-buck/research/interface-usb.md, section: attach capacitance}
 status: active
 origin: migration:topologies/buck (T6 2026-08-06, three shipped runs)
+# applies.interfaces carries usb-fs (2026-10-28, issue #44) so a slot spelled
+# with the usb-fs checklist's canonical name finds this record as a `usb`
+# slot does; the envelope and the approved rule are unchanged.
 
 # --- schema v2 governance (U14 backfill, owner-ruled 2026-08-15) ---
 level: topology

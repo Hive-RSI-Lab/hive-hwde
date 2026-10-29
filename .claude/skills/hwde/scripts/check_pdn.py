@@ -53,7 +53,8 @@ def board_caps(bg: geom.BoardGeom, rail: str) -> list[dict]:
     IC pin, so a rail with no IC on it (a header feeding an LED, its bulk cap
     beside the header) has none recorded although the cap is there."""
     out = []
-    for ref, fp in sorted(bg.footprints.items()):
+    # a geometry without footprints (a test stub of nets only) has none
+    for ref, fp in sorted((getattr(bg, "footprints", None) or {}).items()):
         if not re.match(r"^C\d+$", ref):
             continue
         nets = {p.net for p in bg.pads_of(ref=ref) if p.net}

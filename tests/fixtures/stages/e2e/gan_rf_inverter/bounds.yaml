@@ -1,0 +1,13 @@
+# HIDDEN: never shown to the agent that designs the board (reference/e2e-scoring.md)
+# Minimal bounds for bare-vs-hwde on PCB-0023-A's brief (13.56 MHz GaN class-DE
+# half-bridge). Net and part bounds only check names the brief fixes; the
+# board is meant to be big, so area is loose; the cost target is a rough guess.
+brief: e2e_gan_rf_inverter
+nets:
+  - {id: vbus, pattern: "(?i)^/?\\+?(VBUS|VIN|HV|80V|VDC|V_?BUS)"}
+  - {id: gnd, pattern: "(?i)^/?(P|PWR)?GND$"}
+parts:
+  - {id: gan, value_pattern: "(?i)EPC2\\d{3}", min_count: 2}
+  - {id: driver, value_pattern: "(?i)LMG10(20|25)", min_count: 2}
+layout: {area_mm2_max: 10000, crossings_signal_max: 8, decap_worst_mm_max: 3}
+cost: {qty: 10, target_usd: 40.00}

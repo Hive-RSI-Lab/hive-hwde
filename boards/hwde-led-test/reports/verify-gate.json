@@ -4,7 +4,7 @@
   "phase": "P8",
   "tool": "verify",
   "input": "kicad/hwde-led-test.kicad_pcb",
-  "input_digest": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+  "input_digest": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55",
   "status": "pass",
   "criteria": {
     "fail_severities": [
@@ -34,12 +34,63 @@
       "check_pdn": 0,
       "check_ratings": 1,
       "check_bom_sync": 0,
+      "check_courtyard": 0,
       "check_mate_pins": 0,
       "check_model_paths": 0
     }
   },
   "failing_count": 0,
   "failing": [],
+  "warnings_count": 2,
+  "warnings": [
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        17.0567,
+        18.975
+      ],
+      "layer": "F.Cu",
+      "net": "/LED_A",
+      "refs": [],
+      "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /LED_A F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.150 mm",
+          "pos": [
+            17.0567,
+            18.975
+          ],
+          "uuid": "1f2a17b7-e753-491e-83c5-57398c376aa7"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_ratings",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "D1"
+      ],
+      "msg": "1 two-terminal part(s) have no extraction and no voltage-rated attribute in parts.json: D1",
+      "source": "check_ratings",
+      "items": [
+        {
+          "msg": "1 two-terminal part(s) have no extraction and no voltage-rated attribute in parts.json: D1",
+          "pos": null
+        }
+      ],
+      "kind": "rating_unrated",
+      "pins": [
+        "D1"
+      ]
+    }
+  ],
   "coverage": {
     "strict": false,
     "required": [
@@ -55,6 +106,7 @@
       "check_pdn",
       "check_ratings",
       "check_bom_sync",
+      "check_courtyard",
       "check_mate_pins",
       "check_model_paths"
     ],
@@ -71,6 +123,7 @@
       "check_pdn",
       "check_ratings",
       "check_bom_sync",
+      "check_courtyard",
       "check_mate_pins",
       "check_model_paths"
     ],
@@ -87,6 +140,7 @@
       "check_pdn",
       "check_ratings",
       "check_bom_sync",
+      "check_courtyard",
       "check_mate_pins",
       "check_model_paths"
     ],
@@ -103,7 +157,7 @@
     "status": "pass",
     "attempts": 7,
     "inputs": {
-      "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+      "pcb": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55",
       "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
       "decoupling": "json_canonical:c156461ca8fe5b4e410206e593718e19ebf76532923b2a38b2b926bc970c87b7",
       "waivers": null

@@ -1,0 +1,18 @@
+{
+ "associations": [
+  {
+   "cap": "C10",
+   "ic": "U3",
+   "pin": "3",
+   "rail": "/VIN",
+   "value": "10uF"
+  },
+  {
+   "cap": "C11",
+   "ic": "U3",
+   "pin": "2",
+   "rail": "+3V3",
+   "value": "10uF"
+  }
+ ]
+}

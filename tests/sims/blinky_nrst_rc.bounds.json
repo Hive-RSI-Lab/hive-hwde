@@ -1,0 +1,6 @@
+[
+ {"measure": "t_rise", "min": 4.0e-3, "max": 1.6e-2, "severity": "error",
+  "msg": "NRST 10-90% rise must be ~8.8 ms (RPU 30-50k x C9 100n +-10% spans 5.9-12.1 ms; window adds margin) - far faster means C9 is missing/undersized, far slower means leakage or a wrong C9"},
+ {"measure": "v_final", "min": 3.2, "severity": "error",
+  "msg": "NRST must settle at VDD (reset actually releases)"}
+]

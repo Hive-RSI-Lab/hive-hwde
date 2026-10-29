@@ -18,7 +18,10 @@ the lines that have no attributes.
 
 ## 2026-10-28 [P3][library] EasyEDA 0603 courtyards are the body outline
 C0603, R0603 and LED0603-RD came with +-0.80 x +-0.40 mm courtyards while the
-pads reach +-1.15 x +-0.45; widened by hand to +-1.40 x +-0.70.
+pads reach +-1.15 x +-0.45; widened by hand to +-1.40 x +-0.70. Later the same
+day fpfix rule E made the repair at pull time (pads + 0.25 mm on a 0.05 mm
+grid), `fpfix.py --pcb` applied it to the placed copies, and check_courtyard
+(verify) fails a courtyard that misses its pads.
 
 ## 2026-10-28 [P8][pdn] a board with no IC still needs its bulk cap in decoupling.json
 check_pdn errors on a power rail with no cap association; C1 recorded against
@@ -29,3 +32,5 @@ across a rail and ground when none is recorded; root.py's hand-written entry is 
 ## 2026-10-28 [P6][outline] fit margin must leave room for refdes silk
 board_edit --outline fit measures copper and footprints, not reference text: at
 1.0 and 1.5 mm margin the J1/R1/D1 refdes were clipped by the edge; 2.0 mm was clean.
+Fixed in board_edit: fit now counts every silk item (check_silk's geometry),
+and any outline edit refuses one that newly clips silk (`silk_clipped`).

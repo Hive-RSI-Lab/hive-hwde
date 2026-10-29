@@ -35,7 +35,15 @@ rules as routing constraints; cite the record id when you apply one.
    Freerouting ladder (deterministic flags, per-rung timeouts, wedge
    detection) -> best-SES import -> refill -> DRC -> KRT finish/fallback
    (LQFP fan-outs FR cannot do; sliver-via rip; kept only if DRC strictly
-   improves). Read facts: completion, rungs, krt_finish.
+   improves; its under-width tracks on power nets are stripped) ->
+   route_finish's maze pass for what is still unconnected. Read facts:
+   completion, rungs, krt_finish, maze_finish.
+   Anything left unconnected after that: `scripts/route_finish.py --pcb
+   <board>` again (it routes from the current DRC; `--nets` to aim it,
+   `--dry-run` to see the plan). It reports each connection it could not
+   lay (`failed`: no path at the board's rules, even at the floor width
+   and a finer grid) - those are placement or topology, not a script to
+   write.
 4. `scripts/plane_repair.py --pcb <board>` - detects electrically-split
    pours and repairs (bridge/jumper ladder). Mutates in place; on exit 1
    restore the pre-step snapshot (orchestrator has one) and report.

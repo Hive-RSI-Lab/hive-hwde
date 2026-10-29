@@ -1,0 +1,13 @@
+{
+  "_comment": "Cap<->pin associations for usbbuck4 (S4 test fixture). U1 = STM32F103C8 LQFP-48 (VBAT=1, VDDA=9, VDD_1=24, VDD_2=36, VDD_3=48); U2 = AP63203 buck (FB=1 senses the 3V3 output, IN=3). C9 (NRST cap) is not a decoupler and is not associated.",
+  "associations": [
+    {"cap": "C1", "ic": "U1", "pin": "48", "rail": "+3V3", "value": "100nF"},
+    {"cap": "C2", "ic": "U1", "pin": "24", "rail": "+3V3", "value": "100nF"},
+    {"cap": "C3", "ic": "U1", "pin": "36", "rail": "+3V3", "value": "100nF"},
+    {"cap": "C4", "ic": "U1", "pin": "9", "rail": "+3V3", "value": "100nF"},
+    {"cap": "C5", "ic": "U1", "pin": "48", "rail": "+3V3", "value": "10uF"},
+    {"cap": "C10", "ic": "U2", "pin": "3", "rail": "VBUS", "value": "10uF"},
+    {"cap": "C11", "ic": "U2", "pin": "1", "rail": "+3V3", "value": "22uF"},
+    {"cap": "C13", "ic": "J1", "pin": "1", "rail": "VBUS", "value": "4.7uF"}
+  ]
+}

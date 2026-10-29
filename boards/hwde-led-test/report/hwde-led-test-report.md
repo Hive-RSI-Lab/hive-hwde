@@ -55,11 +55,13 @@ is the drawn area, cropped from that sheet.
 
 ![Schematic (cropped from reports/schematic.pdf)](img/hwde-led-test_schematic.png){width=100%}
 
-The circuit is right, but the sheet reads poorly. The generator puts each net
-label on top of its pin number, so "+5V" runs into "1". The circuit sits small
-in one corner of an A4 sheet, and the "K"/"A" text overlaps inside D1's symbol.
-This doesn't change the netlist, but it makes the sheet harder to check by eye
-([snag 14](#snags-the-run-hit)).
+The generator first drew this sheet poorly: each net label sat on its pin
+number ("+5V" ran into "1"), the circuit was small in one corner of an A4
+sheet, and D1's "K" and "A" pin names printed over each other
+([snag 14](#snags-the-run-hit)). `schlib` now turns every label away from
+its pin, hides the pin names of two-pin parts, and sizes the paper to the
+drawing (A5 here) with the drawing centred on it. The netlist and the
+symbols' UUIDs didn't change.
 
 # Layout
 
@@ -188,8 +190,8 @@ ERC is 0/0, the netlist audit is clean, and the reviewer found 0 errors. The
 parts are J1 C492401, C1 C19666, R1 C23179 and D1 C12624. D1 and J1 are
 Extended. The reviewer's two warnings are the Vf margin (decision 3) and the BOM
 field name, which was fixed.
-**Recommended: yes.** If you want the sheet to read better first, redraw it
-(snag 14); the netlist and board wouldn't change.
+**Recommended: yes.** The sheet has been redrawn for readability (snag 14);
+the netlist and board didn't change.
 *To read:* `reports/schematic.pdf`, `reports/review-schematic.md`, `reports/erc-waivers.md`.
 
 **H4: verified board.** *Approve the board as verified?*
@@ -263,7 +265,7 @@ Snags 1–12 come from the run itself and are already filed as seven briefs. Sna
 | 11 | KiCadRoutingTools | It wasn't in `/hive/tools`; it is now, and the skill still has to find it | 261028-141924-4dae199a93 |
 | 12 | `report_gen.py`, board guide | They need the pdf-material-builder house style, which isn't here, so this report was built with pandoc and lualatex instead | 261028-141935-42bdc24230 |
 | 13 | `bom_cpl.py` assembly class | J1 (THT) is classed `smt_placed` and placed in the CPL | 261028-144247-0a37b2952e |
-| 14 | `kicad/gen` schematic generator | Net labels sit on pin numbers, and the circuit is tiny in one corner of an A4 sheet | 261028-144249-63ddfa029b |
+| 14 | `kicad/gen` schematic generator | Net labels sat on pin numbers, D1's pin names overlapped, and the circuit was tiny in one corner of an A4 sheet; fixed in `schlib` (labels turn outward, 2-pin parts hide pin names, paper fits the drawing) | 261028-144249-63ddfa029b |
 | 15 | `lib_pull.py` | Parts that already exist get no 3D models, so the README's "re-pull with lib_pull" fetches none, and `--overwrite` would undo the hand-widened courtyards | 261028-144250-cf7085cecf |
 | 16 | `report_gen.py` file names | It looks for `verify_all.json`, `fab_export.json` and `bom_cpl.json`, but the run saved `verify-summary.json`, `fab-export.json` and `bom-cpl.json` | 261028-144253-daf2ceb304 |
 | 17 | `bin/hwde` | It was committed without its execute bit, so `bin/hwde ...` fails from a fresh clone | fixed with this report |

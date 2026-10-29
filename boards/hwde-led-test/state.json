@@ -4,7 +4,7 @@
  "workspace_schema": 2,
  "workspace": "/work/boards/hwde-led-test",
  "created": "2026-10-28T09:25:11",
- "updated": "2026-10-28T10:57:28",
+ "updated": "2026-10-29T09:24:13",
  "phase": "P9",
  "gates": {
   "erc": {
@@ -67,14 +67,14 @@
   "place": {
    "phase": "P6",
    "status": "pass",
-   "attempts": 6,
+   "attempts": 7,
    "last": {
-    "ts": "2026-10-28T10:05:32",
+    "ts": "2026-10-28T11:31:05",
     "status": "pass",
     "failing_count": 0,
     "total": 0,
     "inputs": {
-     "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+     "pcb": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55",
      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
      "decoupling": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
      "place_waivers": null
@@ -152,20 +152,32 @@
       "decoupling": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
       "place_waivers": null
      }
+    },
+    {
+     "ts": "2026-10-28T11:31:05",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55",
+      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
+      "decoupling": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
+      "place_waivers": null
+     }
     }
    ]
   },
   "drc_routed": {
    "phase": "P7",
    "status": "pass",
-   "attempts": 3,
+   "attempts": 4,
    "last": {
-    "ts": "2026-10-28T10:05:38",
+    "ts": "2026-10-28T11:31:06",
     "status": "pass",
     "failing_count": 0,
     "total": 0,
     "inputs": {
-     "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+     "pcb": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55",
      "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
      "pro": "json_canonical:e4273b875a1af71d31be97619c9361b8d5f1a06299781c4148aea6f1c8dee338",
      "dru": "text_eol:d8ebadd7e1821eed90c01ad39683046c5fb68bb2272f3906811d2453b3aa31f0"
@@ -207,6 +219,18 @@
       "pro": "json_canonical:e4273b875a1af71d31be97619c9361b8d5f1a06299781c4148aea6f1c8dee338",
       "dru": "text_eol:d8ebadd7e1821eed90c01ad39683046c5fb68bb2272f3906811d2453b3aa31f0"
      }
+    },
+    {
+     "ts": "2026-10-28T11:31:06",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55",
+      "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+      "pro": "json_canonical:e4273b875a1af71d31be97619c9361b8d5f1a06299781c4148aea6f1c8dee338",
+      "dru": "text_eol:d8ebadd7e1821eed90c01ad39683046c5fb68bb2272f3906811d2453b3aa31f0"
+     }
     }
    ]
   },
@@ -215,12 +239,12 @@
    "status": "pass",
    "attempts": 7,
    "last": {
-    "ts": "2026-10-28T10:56:32",
+    "ts": "2026-10-29T09:23:20",
     "status": "pass",
     "failing_count": 0,
     "total": 2,
     "inputs": {
-     "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+     "pcb": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55",
      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
      "decoupling": "json_canonical:c156461ca8fe5b4e410206e593718e19ebf76532923b2a38b2b926bc970c87b7",
      "waivers": null
@@ -288,24 +312,24 @@
      }
     },
     {
-     "ts": "2026-10-28T10:55:32",
+     "ts": "2026-10-28T11:31:08",
      "status": "pass",
      "failing_count": 0,
      "total": 2,
      "inputs": {
-      "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+      "pcb": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55",
       "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
-      "decoupling": "json_canonical:c156461ca8fe5b4e410206e593718e19ebf76532923b2a38b2b926bc970c87b7",
+      "decoupling": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
       "waivers": null
      }
     },
     {
-     "ts": "2026-10-28T10:56:32",
+     "ts": "2026-10-29T09:23:20",
      "status": "pass",
      "failing_count": 0,
      "total": 2,
      "inputs": {
-      "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+      "pcb": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55",
       "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
       "decoupling": "json_canonical:c156461ca8fe5b4e410206e593718e19ebf76532923b2a38b2b926bc970c87b7",
       "waivers": null
@@ -316,15 +340,15 @@
   "dfm": {
    "phase": "P9",
    "status": "pass",
-   "attempts": 1,
+   "attempts": 3,
    "last": {
-    "ts": "2026-10-28T10:07:12",
+    "ts": "2026-10-29T09:24:13",
     "status": "pass",
     "failing_count": 0,
     "total": 0,
     "inputs": {
-     "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
-     "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+     "pcb": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55",
+     "sch": "sexpr_no_uuid:cc19139cf03581dc464e07f424bad251e06aa545876810a8041450c8d9c60610",
      "parts": null
     }
    },
@@ -339,6 +363,28 @@
       "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
       "parts": null
      }
+    },
+    {
+     "ts": "2026-10-28T11:31:23",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55",
+      "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+      "parts": null
+     }
+    },
+    {
+     "ts": "2026-10-29T09:24:13",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55",
+      "sch": "sexpr_no_uuid:cc19139cf03581dc464e07f424bad251e06aa545876810a8041450c8d9c60610",
+      "parts": null
+     }
     }
    ]
   }
@@ -348,38 +394,38 @@
   "sch": {
    "path": "kicad/hwde-led-test.kicad_sch",
    "kind": "sch",
-   "sha256": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
-   "hashed": "2026-10-28T10:08:43"
+   "sha256": "sexpr_no_uuid:cc19139cf03581dc464e07f424bad251e06aa545876810a8041450c8d9c60610",
+   "hashed": "2026-10-29T09:24:13"
   },
   "pro": {
    "path": "kicad/hwde-led-test.kicad_pro",
    "kind": "pro",
    "sha256": "json_canonical:e4273b875a1af71d31be97619c9361b8d5f1a06299781c4148aea6f1c8dee338",
-   "hashed": "2026-10-28T10:08:43"
+   "hashed": "2026-10-28T11:31:06"
   },
   "pcb": {
    "path": "kicad/hwde-led-test.kicad_pcb",
    "kind": "pcb",
-   "sha256": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
-   "hashed": "2026-10-28T10:56:32"
+   "sha256": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55",
+   "hashed": "2026-10-29T09:24:13"
   },
   "constraints": {
    "path": "kicad/constraints.json",
    "kind": "constraints",
    "sha256": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
-   "hashed": "2026-10-28T10:56:32"
+   "hashed": "2026-10-29T09:23:20"
   },
   "decoupling": {
    "path": "kicad/decoupling.json",
    "kind": "decoupling",
    "sha256": "json_canonical:c156461ca8fe5b4e410206e593718e19ebf76532923b2a38b2b926bc970c87b7",
-   "hashed": "2026-10-28T10:56:32"
+   "hashed": "2026-10-29T09:23:20"
   },
   "place_waivers": {
    "path": "reports/place-waivers.json",
    "kind": "place_waivers",
    "sha256": null,
-   "hashed": "2026-10-28T10:05:32"
+   "hashed": "2026-10-28T11:31:05"
   },
   "gerbers": {
    "path": "fab/hwde-led-test_gerbers.zip",
@@ -438,19 +484,19 @@
    "path": "kicad/hwde-led-test.kicad_dru",
    "kind": "dru",
    "sha256": "text_eol:d8ebadd7e1821eed90c01ad39683046c5fb68bb2272f3906811d2453b3aa31f0",
-   "hashed": "2026-10-28T10:05:38"
+   "hashed": "2026-10-28T11:31:06"
   },
   "waivers": {
    "path": "reports/verify-waivers.json",
    "kind": "waivers",
    "sha256": null,
-   "hashed": "2026-10-28T10:56:32"
+   "hashed": "2026-10-29T09:23:20"
   },
   "parts": {
    "path": "kicad/parts.json",
    "kind": "parts",
    "sha256": null,
-   "hashed": "2026-10-28T10:07:12"
+   "hashed": "2026-10-29T09:24:13"
   }
  },
  "open_issues": [],
@@ -1157,7 +1203,23 @@
    "failing_count": 0
   },
   {
-   "ts": "2026-10-28T10:55:32",
+   "ts": "2026-10-28T11:31:05",
+   "event": "gate",
+   "gate": "place",
+   "status": "pass",
+   "attempt": 7,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T11:31:06",
+   "event": "gate",
+   "gate": "drc_routed",
+   "status": "pass",
+   "attempt": 4,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T11:31:08",
    "event": "gate",
    "gate": "verify",
    "status": "pass",
@@ -1165,11 +1227,11 @@
    "failing_count": 0
   },
   {
-   "ts": "2026-10-28T10:56:32",
+   "ts": "2026-10-28T11:31:23",
    "event": "gate",
-   "gate": "verify",
+   "gate": "dfm",
    "status": "pass",
-   "attempt": 7,
+   "attempt": 2,
    "failing_count": 0
   },
   {
@@ -1182,6 +1244,22 @@
    "ts": "2026-10-28T10:57:28",
    "event": "decision",
    "what": "parts.json re-sourced by the part-sourcer with no hand edits: no refdes, attributes kept; decoupling.json has no associations"
+  },
+  {
+   "ts": "2026-10-29T09:23:20",
+   "event": "gate",
+   "gate": "verify",
+   "status": "pass",
+   "attempt": 7,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-29T09:24:13",
+   "event": "gate",
+   "gate": "dfm",
+   "status": "pass",
+   "attempt": 3,
+   "failing_count": 0
   }
  ]
 }
