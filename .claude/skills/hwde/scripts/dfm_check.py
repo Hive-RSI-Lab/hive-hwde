@@ -49,6 +49,14 @@ Checks (all thresholds from reference/jlc_capabilities.yaml, keyed
            beside it: a part the two disagree on, or one the image pass left
            out, is an ERROR (cpl_visual_disagree); no image pass at all is a
            coverage hole (family placement_visual) that --strict refuses.
+  zone_fill  the BOARD's saved zone fills against each zone's own
+           clearance: a fill that comes nearer another net's pad, track or
+           via than the zone's (connect_pads (clearance x)) is stale - the
+           board was saved without a refill, so DRC (it checks the netclass
+           floor, not the zone's rule) passes and the Gerbers carry the
+           stale copper (FAB-27, hwde-led-test DFM-1: 0.1275 mm vs 0.5 mm).
+           NPTH holes are left out (KiCad clears them by hole clearance).
+           ERROR (dfm_stale_zone_fill); refill before export
   release  gerber layer completeness (against the BOARD's declared layer set,
            never the files being audited - a package that dropped a layer must
            read as incomplete, not as a smaller board), drill validity,
@@ -272,6 +280,45 @@ def check_clearance(fab, rules, vios: list) -> None:
                 f"copper clearance {d:.4f} mm below JLC minimum {lo} mm "
                 f"on {name}", SOURCE, kind="dfm_clearance",
                 clearance_mm=checklib.rnd(d), min_mm=lo))
+
+
+def check_zone_fill(bg, vios: list) -> None:
+    """FAB-27: a zone fill nearer other-net copper than the zone's own
+    clearance. A refill always leaves at least that gap (netclass and DRU
+    rules can only widen it), so a smaller one means the fill is stale."""
+    for z in bg.zones_of():
+        if not z.clearance:
+            continue
+        for layer, polys in z.fills.items():
+            if not polys:
+                continue
+            fill = geom._union(polys)
+            items = [(f"{q.ref}.{q.number}", [q.ref], q.net, q.poly)
+                     for q in bg.pads_of(layer=layer)
+                     if q.kind != "np_thru_hole"]
+            items += [("track", [], t.net, t.poly)
+                      for t in bg.tracks_of(layer=layer)]
+            items += [("via", [], v.net, v.poly)
+                      for v in bg.vias_of(layer=layer)]
+            worst = None
+            for what, refs, net, poly in items:
+                if z.net and net == z.net:
+                    continue
+                d = fill.distance(poly)
+                if worst is None or d < worst[0]:
+                    worst = (d, what, refs, net, poly)
+            if worst is None or not _below(worst[0], z.clearance):
+                continue
+            d, what, refs, net, poly = worst
+            c = poly.centroid
+            vios.append(checklib.violation(
+                CHECK, "error", (c.x, c.y), layer, z.net, refs,
+                f"{z.net or 'no-net'} zone fill on {layer} is {d:.4f} mm from "
+                f"{what} ({net or 'no net'}), under the zone's own clearance "
+                f"{z.clearance} mm: the saved fill is stale - refill zones "
+                f"(kicad-cli pcb drc --refill-zones --save-board) and "
+                f"re-export the Gerbers", SOURCE, kind="dfm_stale_zone_fill",
+                clearance_mm=checklib.rnd(d), min_mm=z.clearance))
 
 
 def _castellated_at(cast, x: float, y: float, r: float = 0.0) -> bool:
@@ -836,6 +883,7 @@ def check_release(fab, expected_cu: list[str], vios: list,
 DFM_FAMILIES = {
     "copper": ("dfm_trace_width", "dfm_clearance"),
     "copper_to_edge": ("dfm_copper_to_edge",),
+    "zone_fill": ("dfm_stale_zone_fill",),
     "drill": ("dfm_hole_size", "dfm_hole_to_hole", "dfm_annular_ring"),
     "hole_to_edge": ("dfm_hole_to_edge",),
     "silk": ("dfm_silk_width", "dfm_silk_over_pad", "dfm_mask_dam",
@@ -920,6 +968,8 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
             check_trace_width(fab, rules, vios)
             check_clearance(fab, rules, vios)
             check_copper_to_edge(fab, rules, vios, cast)
+        if "zone_fill" not in skip:
+            check_zone_fill(bg, vios)
         if "drill" not in skip:
             check_holes(fab, rules, vios, cast)
             check_annular_ring(fab, rules, vios, cast)
@@ -978,7 +1028,7 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
 
         # U2 coverage (codex C7): record which families never ran and why.
         skipped_cov: dict[str, str] = {}
-        for fam in ("copper", "drill", "silk", "castellation"):
+        for fam in ("copper", "drill", "silk", "castellation", "zone_fill"):
             if fam in skip:
                 skipped_cov[fam] = "skipped via --skip"
         no_outline = fab.edge_file is None or fab.outline.is_empty
@@ -1053,7 +1103,7 @@ def main(argv: list[str] | None = None) -> int:
                     help="never fetch LCSC models (uncached = cpl_no_model)")
     ap.add_argument("--skip", default="",
                     help="comma list of groups to skip: "
-                         "copper,drill,silk,castellation,placement")
+                         "copper,drill,silk,castellation,zone_fill,placement")
     ap.add_argument("--strict", action="store_true",
                     help="release mode (codex C7): any sub-check family that "
                          "could not run (open outline, no netlist, no "

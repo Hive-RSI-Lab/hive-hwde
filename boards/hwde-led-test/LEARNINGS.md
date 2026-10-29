@@ -26,3 +26,11 @@ board_edit --outline fit measures copper and footprints, not reference text: at
 1.0 and 1.5 mm margin the J1/R1/D1 refdes were clipped by the edge; 2.0 mm was clean.
 Fixed in board_edit: fit now counts every silk item (check_silk's geometry),
 and any outline edit refuses one that newly clips silk (`silk_clipped`).
+
+## 2026-10-29 [P10][dfm] the saved zone fill was stale and the Gerbers carried it
+The B.Cu GND fill cleared J1.1 (+5V) by 0.1275 mm against the zone's own 0.5 mm:
+the board was saved after edits without a refill, DRC (netclass floor) and the
+gerber DFM passed, and fab/gerbers were exported from it (first-spin DFM-1).
+dfm_check now fails it (FAB-27, dfm_stale_zone_fill); the board was refilled
+(kicad-cli pcb drc --refill-zones --save-board, 0.5005 mm) and the Gerbers
+re-exported.
