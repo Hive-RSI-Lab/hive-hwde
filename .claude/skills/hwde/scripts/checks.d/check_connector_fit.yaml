@@ -1,0 +1,10 @@
+# check_connector_fit: each part's leads, locating posts and front edge
+# against its mechanical drawing (the extraction's `mechanical` block):
+# leads fit their holes, every post has a hole, the body's front stands
+# where the drawing's PCB-edge line puts it. Every mating connector's
+# overhang is reported either way (hifi-receiver-2 review DFM-1, DFM-12).
+name: check_connector_fit
+needs: []
+args: []
+optional:
+  parts: [--parts, "{parts}"]

@@ -255,6 +255,10 @@ fixtures:
       # bed445a: the shipped board's EasyEDA 0603 courtyards miss their pads
       - check: check_courtyard
         kind: courtyard_pads
+      # its ESSOP-10 (U1) and WSON-6 (D1) exposed pads are pasted whole,
+      # over their GND vias (the hifi-receiver-2 review's DFM-9 fault)
+      - check: check_ep_paste
+        kind: paste_on_via
   carrier_verify:
     stage: P8
     board: lumina-carrier

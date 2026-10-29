@@ -26,7 +26,13 @@ with the repo venv python. Keep output ASCII.
   standing in front of the mouth, a tall part crowding a header. check_mating
   covers the families in reference/connector_mating.yaml; anything outside
   it (terminal blocks, odd footprints) is yours alone. Also headers under a
-  module, SWD unreachable in the enclosure.
+  module, SWD unreachable in the enclosure. check_connector_fit holds each
+  part with a `mechanical` drawing in its extraction to it (leads in their
+  holes, a hole for every locating post, the front at the drawing's
+  PCB-edge line); its `unverified` list is every connector it could not -
+  read those drawings yourself, or have them extracted.
+- Paste: check_ep_paste reports each exposed pad's paste coverage and
+  every via under paste; look at the paste layer of any EP part it flags.
 - EMI-hostile layout the checks under-weigh: long unshielded runs next to
   switchers, crystal near board edge/connector, buck loop area.
 - Assembly reality: tall parts under/next to connectors, hand-solder access

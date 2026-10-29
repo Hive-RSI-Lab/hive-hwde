@@ -33,7 +33,10 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    Exit 1 = an assembly violation, not a crash. `source: fetch_failed`
    (violation `cpl_model_fetch_failed`, `easyeda_rate_limited` set on a
    403/429) means EasyEDA refused or the network failed, NOT that the part
-   has no model: wait a few minutes and rerun, which fetches into the cache.
+   has no model. A 403/429 is first waited out in the run itself
+   ($HWDE_EASYEDA_BACKOFF, default 60,120,240 s, spent once per run), so
+   it only fails once that is spent: then wait a few minutes and rerun,
+   which resumes from what the cache already holds.
    - Membership comes from `assembly_class` in canonical parts data
    (`smt_placed`, `hand_install`, `off_board`, `dnp`, `customer_supplied`,
    `select_on_test`, `board_feature`), per-ref via `refdes_class` /

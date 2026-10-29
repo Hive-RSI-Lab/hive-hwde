@@ -22,9 +22,17 @@ reason (HTTP status, or the network error) lands in `errors[lcsc]`; only a
 404 or an empty answer means "EasyEDA has no model for this part". An HTTP
 403 or 429 is EasyEDA's per-IP rate limit; the first one latches for the rest
 of the process (`rate_limited()`), says so once on stderr, and every later
-uncached part is skipped with that reason instead of asking again. There is
-no sleeping back-off here - a script stays bounded, and the remedy is a rerun
-once the limit clears (minutes), which finds the models already cached.
+uncached part is skipped with that reason instead of asking again.
+
+Before it latches, a 403/429 is waited out: the process sleeps through the
+back-off schedule, $HWDE_EASYEDA_BACKOFF (seconds, comma-separated, default
+60,120,240; "0" or empty turns it off), asking for the same part again after
+each wait. The schedule is spent once per process, not once per part, so a
+run's sleeping stays bounded by its sum (7 min by default) whatever the part
+count: EasyEDA's limit clears in minutes, so a board's whole model set
+(hifi-receiver-2's core, 128 parts) can fill in one run instead of four.
+What is fetched is cached at once, so a run that latches anyway resumes
+where it stopped when rerun.
 """
 from __future__ import annotations
 
@@ -166,14 +174,54 @@ RATE_LIMIT_CODES = (403, 429)
 _RATE_LIMITED: str | None = None
 
 
+# The back-off schedule's waits this process has not slept yet (None: not
+# read from the environment yet). Spent across parts, never refilled.
+_BACKOFF_LEFT: list[float] | None = None
+_sleep = time.sleep  # tests replace it
+
+
+def backoff_schedule() -> list[float]:
+    """$HWDE_EASYEDA_BACKOFF as seconds; [] when it is off."""
+    out = []
+    for tok in os.environ.get("HWDE_EASYEDA_BACKOFF", "60,120,240").split(","):
+        try:
+            v = float(tok)
+        except ValueError:
+            continue
+        if v > 0:
+            out.append(v)
+    return out
+
+
 def rate_limited() -> str | None:
     """Why EasyEDA fetches stopped in this process, or None if they did not."""
     return _RATE_LIMITED
 
 
 def reset_rate_limit() -> None:
-    global _RATE_LIMITED
+    global _RATE_LIMITED, _BACKOFF_LEFT
     _RATE_LIMITED = None
+    _BACKOFF_LEFT = None
+
+
+def _ask(lcsc: str, fetcher) -> dict:
+    """One part's raw answer, waiting out a 403/429 on what is left of the
+    back-off schedule; raises what the last attempt raised."""
+    global _BACKOFF_LEFT
+    if _BACKOFF_LEFT is None:
+        _BACKOFF_LEFT = backoff_schedule()
+    while True:
+        try:
+            return (fetcher or _fetch_raw)(lcsc)
+        except Exception as exc:  # noqa: BLE001 - the caller classifies it
+            code, why = classify(exc)
+            if code not in RATE_LIMIT_CODES or not _BACKOFF_LEFT:
+                raise
+            wait = _BACKOFF_LEFT.pop(0)
+            print(f"easyeda: {why} at {lcsc}; waiting {wait:g} s and asking "
+                  f"again ({len(_BACKOFF_LEFT)} more wait(s) left this run)",
+                  file=sys.stderr)
+            _sleep(wait)
 
 
 def classify(exc: BaseException) -> tuple[int | None, str]:
@@ -204,7 +252,8 @@ def get(lcsc: str, cache_dir: Path | None = None, fetch: bool = True,
     None, but when `errors` is given it records `errors[lcsc] = "<why>"`, so a
     caller can tell "could not ask" from "EasyEDA has nothing". Once a 403/429
     has latched the rate limit, an uncached part is not fetched at all: it
-    returns None with the skip recorded the same way."""
+    returns None with the skip recorded the same way. Before it latches, a
+    403/429 is waited out on what is left of the back-off schedule (_ask)."""
     global _RATE_LIMITED
     lcsc = (lcsc or "").strip().upper()
     if not lcsc:
@@ -221,7 +270,7 @@ def get(lcsc: str, cache_dir: Path | None = None, fetch: bool = True,
     if pace_s:
         time.sleep(pace_s)
     try:
-        raw = (fetcher or _fetch_raw)(lcsc)
+        raw = _ask(lcsc, fetcher)
     except Exception as exc:  # noqa: BLE001 - reported, never "no model"
         code, why = classify(exc)
         if code == 404:

@@ -1,0 +1,7 @@
+# check_ep_paste: paste coverage of every exposed pad (none is an error,
+# outside 35-90 % a warning) and no via hole under an exposed pad's paste unless
+# the via is filled or capped (hifi-receiver-2 review DFM-9: Lite U8's
+# paste windows sat on its thermal vias). Board only.
+name: check_ep_paste
+needs: []
+args: []
