@@ -15,7 +15,9 @@ parts.json, parts/<LCSC>.json - distributor_bom.lcsc_index); a passive with
 no MPN is matched by its value in JLC's description.
 
 With --workspace the report goes to <ws>/reports/stock_check.json unless
---out says otherwise.
+--out says otherwise, and the verdicts go into the board's fact ledger
+(ledger.json, lib/ledgerlib.py) as `stock`, `part_match` and `lifecycle`
+facts, each with its source and time.
 
 CLI:
   stock_check.py --bom fab/BOM.csv [--parts parts/] [--boards 5]
@@ -136,6 +138,10 @@ def main(argv: list[str] | None = None) -> int:
         res = check_rows(read_bom(bom), boards=args.boards,
                          mpns=mpn_index(parts), jobs=args.jobs)
         res = {"script": SCRIPT, "bom": str(bom), **res}
+        if ws is not None:
+            import ledgerlib
+            led = ledgerlib.record_stock(ws, res)
+            res["ledger"] = str(led) if led else None
         if ws is not None and not args.out:
             args.out = str(ws / "reports" / "stock_check.json")
             Path(args.out).parent.mkdir(parents=True, exist_ok=True)

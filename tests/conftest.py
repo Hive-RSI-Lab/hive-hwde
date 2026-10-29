@@ -95,6 +95,8 @@ def _easyeda_offline(monkeypatch, tmp_path_factory):
     monkeypatch.setenv("HWDE_EASYEDA_OFFLINE", "1")
     # nor asks JLC or LCSC for stock (test_stock_check fakes the sources)
     monkeypatch.setenv("HWDE_STOCK_OFFLINE", "1")
+    # and writes no board's ledger.json unless it says so (test_ledger)
+    monkeypatch.setenv("HWDE_LEDGER_WRITE", "0")
     monkeypatch.setenv("HWDE_EASYEDA_CACHE",
                        str(tmp_path_factory.mktemp("easyeda_empty")))
     # The rate-limit latch is process state: one test's mocked 403 must not

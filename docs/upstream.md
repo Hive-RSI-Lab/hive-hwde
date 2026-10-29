@@ -24,6 +24,13 @@ these ways:
   review would swap in, whether the model is the BOM's part), and `bom_cpl.py`
   fails a row JLC would not place as written (`dfm_check`'s scratch run and
   `--offline` skip it and say so).
+- A fact ledger per board ("know what we dont know", the person 10-28):
+  `scripts/lib/ledgerlib.py` and `scripts/ledger.py` keep `ledger.json`,
+  every fact the design relies on as verified (source, date), failed or
+  unknown; `stock_check`, `bom_cpl`, `check_ratings` (rating, and a new pinout
+  comparison against the extraction) and `cpl_verify` (footprint) write it,
+  and `lib/releaselib.py` refuses an attestation, and drops order-ready,
+  while any fact is not verified now.
 - The Hive's rules are judgment, not refusals (the person, 10-28): `state.py`
   `set-phase` warns instead of refusing an unrecorded gate, `budget
   --consume` and `cross-spawn` count past zero (`over: true`), `research.py

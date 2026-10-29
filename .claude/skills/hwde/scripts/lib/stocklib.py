@@ -169,7 +169,7 @@ _VALUE = re.compile(r"^(\d+(?:\.\d+)?)([pnumkKMG]?)(F|H|R|OHM|V|A|W|HZ)?$",
 
 
 def value_tokens(value: str) -> set[str]:
-    """How JLC spells a passive's value in `describe` ('100nf', '4.7kω'),
+    """How JLC spells a passive's value in `describe` ('100nf', '4.7k' + ohm),
     lowercased; empty when the value is not a plain quantity. '470uF/50V'
     reads its first quantity, '4K7' reads as 4.7k."""
     v = re.split(r"[/\s,]", str(value or "").strip())[0]

@@ -57,6 +57,20 @@ it: carry on with your recommendation, say so in the packet, and rework if the
 answer is no. Record answers with `hwde state human` (a rejected H4 blocks
 release until reworked).
 
+## Know what the board doesn't know
+
+Every board keeps `ledger.json`: each fact its design relies on (per BOM code:
+JLC stock, the part JLC will really place, whether JLC still sells it; per
+part: pin ratings, pinout, footprint), verified with its source and date,
+failed, or unknown. The checks fill it in as they run, and one that can't
+tell writes unknown. `bin/hwde ledger report --workspace <ws>` lists the gaps.
+`bin/hwde ledger set ... --source "..."` records a fact you checked yourself.
+A board isn't ready to order (attest refuses, order-ready drops) while any
+fact is failed or unknown. Stock is good for 72 hours, so run
+`bin/hwde stock_check --workspace <ws>` right before the order packet; the
+person's flow is "I order it, it arrives, I plug it in", with no surprise at
+JLC's BOM review.
+
 ## Every board gets its own docs
 
 A board's `README.md`, at the root of its workspace, says what the board is,

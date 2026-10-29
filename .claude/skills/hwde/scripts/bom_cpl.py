@@ -82,8 +82,9 @@ a row JLC would not place as written - short, not for sale (its review swaps
 in a substitute), unknown to JLC, a code whose model is not the BOM's part, or
 a source that did not answer - is a `bom_stock_<status>` violation, so the run
 exits 1 and the fab package says which part to change. `stock` in the report
-holds every row's verdict; --offline (or HWDE_STOCK_OFFLINE=1) skips it and
-says so.
+holds every row's verdict, and when --out-dir is a workspace's fab/ the
+verdicts go into its ledger.json (lib/ledgerlib.py); --offline (or
+HWDE_STOCK_OFFLINE=1) skips it and says so.
 
 bom_cpl GENERATES; polarity/rotation VALIDATION (catching a backwards part) is
 dfm_check.py's job (with cpl_verify.py), which also consumes these classes: a missing LCSC on an
@@ -799,6 +800,11 @@ def run(pcb: Path, out_dir: Path, pos: Path | None = None,
                                        / "parts"),
             fetch=stock_fetch)
         violations += stock_check.violations(stock_rep)
+        import ledgerlib
+        ws = out_dir.resolve().parent
+        if (ws / "state.json").is_file():
+            led = ledgerlib.record_stock(ws, stock_rep)
+            stock_rep["ledger"] = str(led) if led else None
     else:
         stock_rep = {"status": "skipped",
                      "why": "not checked: stock and part match are unknown "
