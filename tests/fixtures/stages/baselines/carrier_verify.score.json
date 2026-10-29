@@ -4,7 +4,7 @@
  "fixture": "carrier_verify",
  "board": "lumina-carrier",
  "metrics": {
-  "errors": 76,
+  "errors": 181,
   "warnings": 162,
   "by_check": {
    "check_return_path": 4,
@@ -19,11 +19,13 @@
    "check_pdn": 0,
    "check_ratings": 0,
    "check_bom_sync": 0,
+   "check_courtyard": 105,
    "check_mate_pins": 0,
    "check_model_paths": 23
   },
   "by_kind": {
    "corridor_void": 4,
+   "courtyard_pads": 105,
    "creepage": 26,
    "decoupler_loop": 1,
    "diffpair_skew": 1,
@@ -46,12 +48,12 @@
  },
  "metrics_live": null,
  "penalties": {
-  "errors": 76.0,
+  "errors": 181.0,
   "warnings": 162.0,
   "known_answer_missed": 0.0,
   "forbidden_errors": 0.0
  },
- "composite": 45.8,
+ "composite": 0.0,
  "composite_inputs": "full",
  "known_answer": {
   "status": "ok",
@@ -61,7 +63,7 @@
  },
  "e2e": null,
  "_baseline": {
-  "created": "2026-10-08",
+  "created": "2026-10-28",
   "kicad_version": null
  }
 }

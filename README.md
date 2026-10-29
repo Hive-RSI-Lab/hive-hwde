@@ -33,7 +33,13 @@ An agent designs a PCB from a written brief: research, architecture, parts, sche
   time grows with every board, so run it on a change to the gates, the
   shims in `bin/hwde` or a board, and before a release. Both need
   `/hive/tools`'s KiCad and the Hive's uv; on a fresh HOME they build the
-  venv first.
+  venv first. Inside a Hive turn both, and the scripts that run a whole
+  board, the router or a sim (`route_auto`, `route_critical`,
+  `place_anneal`, `gate`, `verify_all`, `bench`, `render`, `sim_run`,
+  `fab_export`), run under `hive agent heavy`: they wait (at most 10
+  minutes) while the machine is strained and other turns run one. A command
+  already inside one (check-all's gates, a test that runs `bin/hwde`), or a
+  Hive without that op yet, runs bare (`tests/test_heavy.py`).
 - **Score**, `bin/hwde score`, higher is better: the share of those gate
   steps, over all boards, that ran with no workaround, as a percentage. A
   step counts as worked around when a row of `docs/workarounds.md` names it
@@ -46,5 +52,10 @@ An agent designs a PCB from a written brief: research, architecture, parts, sche
   read a hand-added `refdes` per part. Its routed board had hand-widened
   courtyards and a hand-picked outline margin until `check_courtyard`, fpfix
   rule E and silk in `board_edit --outline fit` took those two off.
+  The boards built with hwde in other projects count too:
+  [docs/boards.md](docs/boards.md) records each one (the hi-fi receiver's
+  lite-main and core), with the steps it passed, and the rows of
+  `docs/workarounds.md` name their board-local scripts and hand edits like
+  any other board's. The score reads only this repo's files.
 
 MIT, like upstream; see NOTICE for what that doesn't cover.

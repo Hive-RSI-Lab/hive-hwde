@@ -3,7 +3,9 @@
     hwde score            (or: python3 bin/score.py)
 
 Each board under boards/ has up to five gate steps, the ones `hwde check-all`
-re-runs (erc, drc_routed, verify, fab, dfm). A step is charged when a row of
+re-runs (erc, drc_routed, verify, fab, dfm). So does each board docs/boards.md
+records, the product boards built with hwde in other projects (the steps that
+table gives it; the score never reads the other project's files). A step is charged when a row of
 docs/workarounds.md names it for that board: the step's input came through a
 shim in bin/hwde or an edit by hand. The score is 100 x clean steps / steps,
 higher is better. It reads files only; the test (check-all) is what holds the
@@ -37,7 +39,7 @@ class Workaround:
 @dataclass
 class Board:
     name: str
-    path: Path
+    path: Path | None              # None: a board in another project
     steps: list[str] = field(default_factory=list)
 
 
@@ -84,10 +86,46 @@ def read_boards(root: Path) -> list[Board]:
     return out
 
 
+def read_ledger(path: Path) -> list[Board]:
+    """The boards docs/boards.md records: `| board | project | commit | steps
+    | ... |`, steps as in workarounds.md."""
+    out: list[Board] = []
+    for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        m = _ROW.match(line)
+        if not m or m.group(1) == "board":
+            continue
+        cells = [c.strip() for c in m.group(2).split("|")]
+        if len(cells) < 3 or not cells[0] or not cells[1]:
+            raise ValueError(f"{path}:{n}: a row needs board, project, commit, steps")
+        st = [s.strip() for s in cells[2].split(",") if s.strip() not in ("", "-")]
+        for s in st:
+            if s not in STEPS:
+                raise ValueError(f"{path}:{n}: step {s!r} is not one of {', '.join(STEPS)}")
+        out.append(Board(m.group(1), None, [s for s in STEPS if s in st]))
+    return out
+
+
+def all_boards() -> list[Board]:
+    """This repo's boards, then the ledger's; a name is one board."""
+    boards = read_boards(ROOT / "boards") + read_ledger(ROOT / "docs" / "boards.md")
+    seen: set[str] = set()
+    for b in boards:
+        if b.name in seen:
+            raise ValueError(f"board {b.name} is both under boards/ and in docs/boards.md")
+        seen.add(b.name)
+    return boards
+
+
 def main() -> int:
     try:
         table = read_workarounds(ROOT / "docs" / "workarounds.md")
-        boards = read_boards(ROOT / "boards")
+        boards = all_boards()
+        names = {b.name for b in boards}
+        for w in table.values():
+            unknown = [b for b in w.boards if b != "*" and b not in names]
+            if unknown:
+                raise ValueError(f"workaround {w.id} names {', '.join(unknown)}, "
+                                 f"not a board under boards/ or in docs/boards.md")
     except (OSError, ValueError) as e:
         print(f"score: {e}", file=sys.stderr)
         return 1

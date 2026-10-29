@@ -109,10 +109,10 @@ def test_rule_b_narrows_stroke_and_never_moves_a_coordinate(lib):
     before = (lib / f"{C0603}.kicad_mod").read_text(encoding="utf-8")
     fpfix.fix_lib(lib, names=[C0603])
     after = (lib / f"{C0603}.kicad_mod").read_text(encoding="utf-8")
-    # silk only: rule E redraws a courtyard that misses its pads on purpose
+    # silk only: rule E rebuilds this courtyard (it misses the pads) on purpose
     coords = lambda t: [l.split("(layer")[0] for l in t.splitlines()
                         if "fp_line" in l and "SilkS" in l]
-    assert coords(before) == coords(after), "a coordinate moved"
+    assert coords(before) and coords(before) == coords(after), "a coordinate moved"
 
 
 def test_rule_c_converts_plated_pegs_keeping_position_and_drill(lib):

@@ -33,9 +33,15 @@ attestation confers order-ready, and ordering consumes ONLY that attestation.
    reports/dfm_release.json) are stamped, current against the pcb, and pass
    under DURABLE waivers (each waiver binds artifact hash + checker version +
    expiry); the fab package (zip, BOM, CPL, BOM-full) is present; and the
-   copper weight derives from architecture/stackup.md. Fix what it lists -
+   copper weight derives from architecture/stackup.md; and every fact in the
+   board's ledger (`ledger.json`: stock, part match and lifecycle per BOM
+   code, rating, pinout and footprint per part) reads verified now - run
+   `stock_check.py --workspace <ws>` first (stock is good for 72 h) and
+   `ledger.py report --workspace <ws>` for the gaps. Fix what it lists -
    never route around it. The attestation is immutable and self-sealed; ANY
-   bound-input change invalidates it (`attest.py verify` re-checks).
+   bound-input change invalidates it (`attest.py verify` re-checks, and
+   reads the ledger fresh: stock gone stale takes order-ready away until
+   `stock_check.py` asks again).
 4. `order_submit.py` - assembles the manifest, the fab package paths, and the
    `human_steps` list. A governed workspace (state.json present) whose
    attestation is missing/invalid gets `not_order_ready` and the API legs

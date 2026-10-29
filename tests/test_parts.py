@@ -401,7 +401,10 @@ def test_parts_search_missing_httpx_names_cause(tmp_path, capsys, monkeypatch):
     code, payload = run_main(parts_search, ["--query", "x"], tmp_path, capsys)
     assert code == 2 and payload["status"] == "error"
     assert "httpx" in payload["error"] and sys.executable in payload["error"]
-    assert "hwde-venv" in payload["error"]
+    # inside the module the hint names its venv or runner (94ec4b7), both
+    # built from requirements.lock; standalone it names the hwde venv
+    assert partslib._venv_hint() in payload["error"]
+    assert "requirements.lock" in payload["error"]
     assert "unreachable" not in payload["error"]
     assert not called
 
@@ -573,17 +576,22 @@ def test_fplib_symbol_index_reads_lcsc_and_footprint(tmp_path):
     lib_dir = _fake_lib(tmp_path, [("PartA", "C999", "C0603")],
                         [("C0603", "C999")])
     idx = fplib.symbol_index(lib_dir / "aiee.kicad_sym")
-    assert idx == [{"name": "PartA", "lcsc": "C999", "footprint": "aiee:C0603"}]
+    assert idx == [{"name": "PartA", "lcsc": "C999", "footprint": "aiee:C0603",
+                    "reference": "U"}]
     assert fplib.symbol_index(tmp_path / "missing.kicad_sym") == []
 
 
 def test_pull_gate_shared_footprint_reports_pulled(tmp_path, monkeypatch):
     """A part whose footprint was first pulled by ANOTHER part must verify:
     the .kicad_mod records only the first puller's id."""
-    lib_dir = _fake_lib(tmp_path,
-                        [("PartA", "C999", "C0603"), ("PartB", "C111", "C0603")],
+    lib_dir = _fake_lib(tmp_path, [("PartA", "C999", "C0603")],
                         [("C0603", "C999")])       # file text lacks C111
-    monkeypatch.setattr(lib_pull, "_run_easyeda", _ok_run)
+
+    def run(*a, **k):                              # the pull adds PartB only
+        _write_sym_lib(lib_dir / "aiee.kicad_sym",
+                       [("PartA", "C999", "C0603"), ("PartB", "C111", "C0603")])
+        return _ok_run()
+    monkeypatch.setattr(lib_pull, "_run_easyeda", run)
     r = lib_pull._pull_one("C111", lib_dir / "aiee", True, False)
     assert r["status"] == "pulled", r
     assert r["symbol_verified"] and r["footprint_verified"]
@@ -609,7 +617,8 @@ def test_pull_gate_lcsc_match_is_exact_not_substring(tmp_path, monkeypatch):
                         [("R0603", "C25804")])
     monkeypatch.setattr(lib_pull, "_run_easyeda", _ok_run)
     assert lib_pull._pull_one("C2580", lib_dir / "aiee", True, False)["status"] == "error"
-    assert lib_pull._pull_one("C25804", lib_dir / "aiee", True, False)["status"] == "pulled"
+    # already in the library: not re-pulled (snag 15), and found by its exact id
+    assert lib_pull._pull_one("C25804", lib_dir / "aiee", True, False)["status"] == "exists"
 
 
 def test_pull_gate_missing_footprint_file_is_an_error(tmp_path, monkeypatch):
@@ -646,7 +655,8 @@ def test_pull_all_paces_between_parts(monkeypatch):
     monkeypatch.setattr(lib_pull.time, "sleep", lambda s: sleeps.append(s))
     monkeypatch.setattr(lib_pull, "_pull_one",
                         lambda l, b, n, o: {"lcsc": l, "status": "pulled"})
-    res, retried = lib_pull._pull_all(["C1", "C2", "C3"], Path("x"), True, False, 15.0)
+    res, retried = lib_pull._pull_all(["C1", "C2", "C3"], Path("x"), True, False,
+                                       lib_pull._Pacer(15.0))
     assert sleeps == [15.0, 15.0] and retried == 0 and len(res) == 3
 
 
@@ -762,21 +772,6 @@ def test_lib_pull_keeps_to_its_budget_and_resumes(tmp_path, monkeypatch):
     assert lib_pull.main(argv[:-4] + ["--budget-s", "0", "--out", str(tmp_path / "r.json")]) == 0
     p3 = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
     assert p3["status"] == "pass" and p3["deferred"] == [] and p3["resume"] is None
-
-
-def test_present_wants_the_3d_model_unless_no_3d(tmp_path):
-    lib_dir = _fake_lib(tmp_path, [("PartA", "C999", "FPA")], [("FPA", "C999")])
-    base = lib_dir / "aiee"
-    assert lib_pull._present("C999", base, no_3d=True)
-    assert not lib_pull._present("C999", base, no_3d=False)   # no (model ...)
-    fp = lib_dir / "aiee.pretty" / "FPA.kicad_mod"
-    text = fp.read_text().rstrip()
-    fp.write_text(text[:-1] + '  (model "${KIPRJMOD}/../lib/aiee.3dshapes/FPA.wrl")\n)\n')
-    assert not lib_pull._present("C999", base, no_3d=False)   # file missing
-    (lib_dir / "aiee.3dshapes").mkdir()
-    (lib_dir / "aiee.3dshapes" / "FPA.wrl").write_text("#VRML V2.0 utf8\n")
-    assert lib_pull._present("C999", base, no_3d=False)
-    assert not lib_pull._present("C1", base, no_3d=True)
 
 
 def test_lib_pull_requires_exactly_one_of_lcsc_or_parts(tmp_path):

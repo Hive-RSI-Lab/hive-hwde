@@ -18,6 +18,14 @@ pre-routed critical nets (route_critical.py) survive without an explicit lock.
 Zones export as "(plane NET ...)"; Freerouting connects pads to planes itself
 (including dropping stitch vias to reach an inner/back plane).
 
+After the ladder, KRT's mop-up (its under-width tracks on power nets are
+stripped, not kept), then route_finish's maze pass: it rips the tracks and
+vias DRC names in a short/clearance/crossing error and routes them again,
+then whatever DRC still reports unconnected - grid A* at the board's own
+rules, pour pieces joined by a via, walled-in pads freed by ripping the
+fewest signal nets in the way - kept only if the board ends better
+(--no-maze-finish skips it).
+
 Freerouting's own success signal is NEVER trusted (LEARNINGS [freerouting]):
 completion comes from the log's unrouted counts and the gate is kicad-cli DRC.
 
@@ -25,7 +33,7 @@ Contract:
   route_auto.py --pcb B.kicad_pcb [--exclude-classes Power,...]
       [--power-layers auto|"In1.Cu,In2.Cu"|none] [--max-rungs N]
       [--timeout-s S] [--work-dir DIR] [--out-report r.json]
-      [--probe [--probe-passes N]]
+      [--probe [--probe-passes N]] [--no-krt-finish] [--no-maze-finish]
   exit 0 = 100% routed AND DRC clean; 1 = incomplete or violations
   (board still updated - the fix loop owns the remainder); 2 = error
   (original board untouched).
@@ -205,6 +213,11 @@ def _krt_finish(cli: Path, staged: Path, work: Path, drc: dict, *,
 
     backup = work / ("prefinish_" + staged.name)
     shutil.copy2(staged, backup)
+    dru_widths = rc.dru_net_floors(staged.with_suffix(".kicad_dru"),
+                                   "track_width")
+    before_uuids = {t.uuid for t in
+                    geom.BoardGeom.from_file(staged).tracks_of()}
+    narrow: list = []
     try:
         if rip:
             route_edit.apply_ops(staged, [
@@ -217,6 +230,14 @@ def _krt_finish(cli: Path, staged: Path, work: Path, drc: dict, *,
         rc.run_krt(krt, "route.py", staged, out, ["--nets", *nets],
                    floors, fab, 0.05, timeout_s)
         os.replace(out, staged)
+        # KRT lays every net at its own default width: a power net comes out
+        # under its .kicad_dru width rule (50-199 track_width errors on a
+        # dense board, and the whole pass discarded). Strip what it laid
+        # below the floor; the maze finish routes those at the rule width.
+        narrow = _narrow_new_tracks(staged, dru_widths, before_uuids)
+        if narrow:
+            route_edit.apply_ops(staged, [{"op": "remove", "uuid": u}
+                                          for u in narrow])
         # KRT can leave sub-grid crumbs (e.g. a 0.017 mm dangling stub) that
         # KiCad flags track_dangling but sit below route_cleanup's touch
         # tolerance. Removal is connectivity-safe: neighbouring round caps
@@ -238,13 +259,27 @@ def _krt_finish(cli: Path, staged: Path, work: Path, drc: dict, *,
         if not better:
             shutil.copy2(backup, staged)
             return {"kept": False, "nets": nets,
-                    "ripped_vias": len(rip),
+                    "ripped_vias": len(rip), "narrow_stripped": len(narrow),
                     "errors_before": b_err, "errors_after": a_err}
         return {"kept": True, "nets": nets, "ripped_vias": len(rip),
+                "narrow_stripped": len(narrow),
                 "errors_before": b_err, "errors_after": a_err, "drc": after}
     except CheckError as exc:
         shutil.copy2(backup, staged)
         return {"kept": False, "nets": nets, "error": str(exc)[:300]}
+
+
+def _narrow_new_tracks(staged: Path, widths: dict[str, float],
+                       before: set) -> list[str]:
+    """uuids of tracks not on the board before that sit under their net's
+    width rule."""
+    out = []
+    for t in geom.BoardGeom.from_file(staged).tracks_of():
+        if t.uuid in before or not t.uuid:
+            continue
+        if t.width < widths.get(t.net, 0.0) - 1e-4:
+            out.append(t.uuid)
+    return out
 
 
 def _seg_len(block: str) -> float:
@@ -318,6 +353,8 @@ def run(argv: list[str] | None = None):
     ap.add_argument("--probe-passes", type=int, default=4)
     ap.add_argument("--no-krt-finish", action="store_true",
                     help="skip the KRT mop-up pass after the ladder")
+    ap.add_argument("--no-maze-finish", action="store_true",
+                    help="skip route_finish's maze pass after KRT")
     args = ap.parse_args(argv)
 
     pcb = Path(args.pcb).resolve()
@@ -453,6 +490,20 @@ def run(argv: list[str] | None = None):
                          f"fallback did not improve the board; see {work} "
                          "(board untouched)")
 
+    # 5c. maze finish: what the ladder and KRT left unconnected (pads boxed
+    # in by neighbouring tracks, pour pieces with no via), routed one
+    # connection at a time at the board's rules; kept only if it helps.
+    maze_facts = None
+    if not args.no_maze_finish and (_drc_unrouted(drc) or _err_counts(drc)):
+        import route_finish
+        maze_facts = route_finish.finish_staged(
+            cli, staged, drc, parity=sch.is_file(), refill=has_zones,
+            rip_errors=True)
+        if maze_facts.get("kept"):
+            drc = maze_facts.pop("drc")
+        else:
+            maze_facts.pop("drc", None)
+
     # 6. sanity + swap the routed board in
     bg2 = geom.BoardGeom.from_file(staged)
     tracks_after = len(bg2.tracks_of())
@@ -489,6 +540,7 @@ def run(argv: list[str] | None = None):
             "dsn_net_rules": dsn_net_rules,
             "dsn_wires_merged": dsn_wires_merged,
             "krt_finish": finish_facts,
+            "maze_finish": maze_facts,
             "ses_echo_dups_removed": dedup_facts.get("removed", 0),
             "work_dir": str(work),
         },
