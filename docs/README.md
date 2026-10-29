@@ -21,8 +21,13 @@ an agent runs it inside the Hive.
   `/hive/tools/hwde/bin/hwde`. That's a published copy: `hwde publish <dir>`
   builds it at `<dir>/hwde` with its own Python 3.14 and the lock's packages
   installed, so it starts with no venv to build and no download, and writes
-  `<dir>/hwde.version`. A warden runs it into the Hive's tools folder after a
-  change to the module that a check needs. A board's dfm gate still fetches
+  `<dir>/hwde.version`. The copy runs the installed module's code
+  (`/hive/modules/hive-hwde`, which follows main at every merge) with its own
+  Python whenever it can see the module and both have the same
+  `requirements.lock`, so code changes reach checks with no new publish; a
+  warden re-publishes only when the lock changes. Agents see the module now;
+  checks see it once the Hive mounts modules in checks (hive task
+  261029-140256); until then a check runs the copy's own code. A board's dfm gate still fetches
   LCSC models from EasyEDA (rate-limited, HTTP 403) into a fresh HOME's
   cache, unless the board has an `easyeda/` folder beside its `parts.json`
   (`cpl_verify.default_cache`); commit that folder so a check needs no fetch.
