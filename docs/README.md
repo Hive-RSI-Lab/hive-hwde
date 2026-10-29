@@ -88,6 +88,30 @@ fact is failed or unknown. Stock is good for 72 hours, so run
 person's flow is "I order it, it arrives, I plug it in", with no surprise at
 JLC's BOM review.
 
+## Works first time, watches itself, brought up by the Hive
+
+The person, 10-28: they give the spec, order the board, plug it in, run one
+script and leave it; the Hive brings it up, updates its firmware, tests it
+and tells them when it is ready. "This should be the flow for all board
+designs." Take it as far as each board needs, and record how far:
+
+- Design the board to see itself (`reference/self-observation.md`): rail
+  dividers into spare ADC pins, status pins to GPIO, output loopback taps, a
+  USB console. `bin/hwde check_observability --workspace <ws>` lists each
+  rail as self / test_point / blind and each PG/FAULT/INT as watched or not.
+- Before the order, a first-spin review (`reference/first-spin.md`): one
+  `domain-reviewer` per domain, every margin a number, contingencies on the
+  board, every blocker and major answered. `bin/hwde first_spin --workspace
+  <ws>` says what is still open and merges the tools the reviewers wanted;
+  file those to hive-hwde.
+- Boards in hand: the `bring-up` verb and `reference/remote-bringup.md`.
+  `bin/hwde state bringup --workspace <ws> --results bringup/results.json`
+  closes it with the measurements (a project bench's session.json converts);
+  a bare `bringup_passed` is refused, and `bring-up-passed` cites the file.
+
+hifi-receiver-2 is the first instance (its `docs/review-2/`, `docs/remote.md`
+and `bench/`).
+
 ## Every board gets its own docs
 
 A board's `README.md`, at the root of its workspace, says what the board is,
