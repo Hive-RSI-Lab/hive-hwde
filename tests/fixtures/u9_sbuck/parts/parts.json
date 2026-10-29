@@ -1,0 +1,45 @@
+{
+ "_comment": "U9 fixture: 4 parts of PCB-0008-B sbuck-5v3a parts.json as P3 left it (roles trimmed)",
+ "parts": [
+  {
+   "ref_prefix_hint": "J",
+   "block": "input",
+   "mpn": "DB128L-5.08-2P-GN-S",
+   "lcsc": "C395868",
+   "value": "2-pin 5.08mm THT screw terminal",
+   "qty_per_board": 2,
+   "package": "Plugin,P=5.08mm",
+   "role": "J1 (LEFT edge, DC input) and J2 (RIGHT edge, DC output) - same part, x2. DNP for"
+  },
+  {
+   "ref_prefix_hint": "C",
+   "block": "input_cap",
+   "mpn": "1206B475K500NT",
+   "lcsc": "C29823",
+   "value": "4.7uF/50V X7R",
+   "qty_per_board": 4,
+   "package": "1206",
+   "role": "C5-C8, input ceramic bank (x4), 1.5A rms shared four ways. Basic tier, deep stoc"
+  },
+  {
+   "ref_prefix_hint": "U",
+   "block": "converter",
+   "mpn": "AP64350SP-13",
+   "lcsc": "C2071691",
+   "value": "AP64350SP-13, sync buck, 500kHz",
+   "qty_per_board": 1,
+   "package": "SO-8-EP",
+   "role": "U1 buck IC. VERIFY-LATER ITEM CLOSED: theta_JC(bottom-equivalent, the SO-8EP's e"
+  },
+  {
+   "ref_prefix_hint": "L",
+   "block": "output",
+   "mpn": "FAUL1050-6R8MT",
+   "lcsc": "C5298292",
+   "value": "6.8uH, 18.5mOhm max",
+   "qty_per_board": 1,
+   "package": "SMD,11.5x10mm",
+   "role": "L1, output inductor. STOCK RE-VERIFIED LIVE: 763 pcs, UNCHANGED from P2's resear"
+  }
+ ]
+}

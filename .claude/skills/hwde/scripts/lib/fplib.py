@@ -188,7 +188,8 @@ def symbol_names(kicad_sym_path: str | Path) -> list[str]:
 
 
 def symbol_index(kicad_sym_path: str | Path) -> list[dict]:
-    """Top-level symbols with their 'LCSC Part' + 'Footprint' properties.
+    """Top-level symbols with their 'LCSC Part', 'Footprint' and 'Reference'
+    properties.
 
     The per-part presence ground truth (LEARNINGS 2026-07-28 [easyeda2kicad]
     [parts]): a part is present iff the symbol lib holds a top-level
@@ -212,5 +213,6 @@ def symbol_index(kicad_sym_path: str | Path) -> list[dict]:
                 props[str(_tok(c[1]))] = str(_tok(c[2]))
         out.append({"name": str(_tok(child[1])),
                     "lcsc": props.get("LCSC Part", ""),
-                    "footprint": props.get("Footprint", "")})
+                    "footprint": props.get("Footprint", ""),
+                    "reference": props.get("Reference", "")})
     return out

@@ -1,0 +1,12 @@
+[
+ {"measure": "i_red_5v0", "min": 1.0e-3, "max": 4.0e-3, "severity": "error",
+  "msg": "red 5V-ONLY LED must be hard on at VIND=5.0 V (below the window)"},
+ {"measure": "i_grn_5v0", "max": 1.0e-6, "severity": "error",
+  "msg": "green PROFILE-OK LED must be dark at VIND=5.0 V (exactly-one-lit)"},
+ {"measure": "i_red_9v0", "max": 1.0e-6, "severity": "error",
+  "msg": "red LED must be dark at VIND=9.0 V (exactly-one-lit)"},
+ {"measure": "i_grn_9v0", "min": 5.0e-4, "max": 4.0e-3, "severity": "error",
+  "msg": "green LED must be hard on at VIND=9.0 V (above the window)"},
+ {"measure": "vtrip_grn", "min": 7.2, "max": 8.55, "severity": "error",
+  "msg": "window trip (green crosses 0.5 mA) must sit between 7.2 V (design point Vz+Vbe+R6*Vbe/R7 ~7.7 V minus tolerance; anything lower means the R6/R7 divider is wrong) and the 8.55 V hard-on promise"}
+]

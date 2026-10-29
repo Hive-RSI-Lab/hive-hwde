@@ -1,0 +1,105 @@
+{
+  "appointName": "JLC04161H-1080B",
+  "plateLayerNumber": 4,
+  "plateThickness": 1.6,
+  "impedanceDefaultTemplateAccessId": "e0e2d20f2ceb424f95e047fd17d9c414",
+  "innerCopperThickness_oz": 0.5,
+  "layers": [
+    {
+      "layerName": "L1",
+      "material": "铜箔",
+      "materialName": "1oz",
+      "dielectricConstant": 4.2,
+      "dielectricThick_mm": 0.0,
+      "topConductorThick_mm": 0.035,
+      "botConductorThick_mm": 0.0,
+      "innerCopperThickness_mm": 0.0
+    },
+    {
+      "layerName": null,
+      "material": "PP",
+      "materialName": "1080  RC67% 3.3mil",
+      "dielectricConstant": 3.91,
+      "dielectricThick_mm": 0.084,
+      "topConductorThick_mm": 0.0,
+      "botConductorThick_mm": 0.0,
+      "innerCopperThickness_mm": 0.0
+    },
+    {
+      "layerName": null,
+      "material": "PP",
+      "materialName": "1080  RC67% 3.3mil",
+      "dielectricConstant": 3.91,
+      "dielectricThick_mm": 0.084,
+      "topConductorThick_mm": 0.0,
+      "botConductorThick_mm": 0.0,
+      "innerCopperThickness_mm": 0.0
+    },
+    {
+      "layerName": null,
+      "material": "PP",
+      "materialName": "1080  RC67% 3.3mil",
+      "dielectricConstant": 3.91,
+      "dielectricThick_mm": 0.0764,
+      "topConductorThick_mm": 0.0,
+      "botConductorThick_mm": 0.0,
+      "innerCopperThickness_mm": 0.0
+    },
+    {
+      "layerName": "L2/L3",
+      "material": "芯板",
+      "materialName": "1.1mm H/HOZ 含铜",
+      "dielectricConstant": 4.38,
+      "dielectricThick_mm": 1.065,
+      "topConductorThick_mm": 0.0152,
+      "botConductorThick_mm": 0.0152,
+      "innerCopperThickness_mm": 0.0
+    },
+    {
+      "layerName": null,
+      "material": "PP",
+      "materialName": "1080  RC67% 3.3mil",
+      "dielectricConstant": 3.91,
+      "dielectricThick_mm": 0.0764,
+      "topConductorThick_mm": 0.0,
+      "botConductorThick_mm": 0.0,
+      "innerCopperThickness_mm": 0.0
+    },
+    {
+      "layerName": null,
+      "material": "PP",
+      "materialName": "1080  RC67% 3.3mil",
+      "dielectricConstant": 3.91,
+      "dielectricThick_mm": 0.084,
+      "topConductorThick_mm": 0.0,
+      "botConductorThick_mm": 0.0,
+      "innerCopperThickness_mm": 0.0
+    },
+    {
+      "layerName": null,
+      "material": "PP",
+      "materialName": "1080  RC67% 3.3mil",
+      "dielectricConstant": 3.91,
+      "dielectricThick_mm": 0.084,
+      "topConductorThick_mm": 0.0,
+      "botConductorThick_mm": 0.0,
+      "innerCopperThickness_mm": 0.0
+    },
+    {
+      "layerName": "L4",
+      "material": "铜箔",
+      "materialName": "1oz",
+      "dielectricConstant": 4.2,
+      "dielectricThick_mm": 0.0,
+      "topConductorThick_mm": 0.035,
+      "botConductorThick_mm": 0.0,
+      "innerCopperThickness_mm": 0.0
+    }
+  ],
+  "source_request": {
+    "url": "https://jlcpcb.com/api/jlcTools/impedance/selectPageImpedanceDefaultTemplate",
+    "body": {
+      "appointName": "JLC04161H-1080B"
+    }
+  }
+}

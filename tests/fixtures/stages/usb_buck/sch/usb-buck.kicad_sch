@@ -1,0 +1,266 @@
+(kicad_sch
+	(version 20250114)
+	(generator "eeschema")
+	(generator_version "9.0")
+	(uuid "9eb4d5bb-4adf-43e9-b767-a5d5a125b7db")
+	(paper "A3")
+	(title_block
+		(title "usb-buck: USB-powered STM32F103 bench board")
+		(date "2026-07-28")
+		(rev "1")
+		(company "ai-ee")
+	)
+	(lib_symbols)
+	(wire
+		(pts
+			(xy 152.4 66.04) (xy 144.78 66.04)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c0b02c6d-56c3-4630-bba2-df533375e84e")
+	)
+	(wire
+		(pts
+			(xy 152.4 68.58) (xy 144.78 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "08106ac0-5c18-4d9b-a00a-1b3e39ac73ab")
+	)
+	(wire
+		(pts
+			(xy 152.4 167.64) (xy 144.78 167.64)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "157f8567-9dfa-4d32-9f94-a73766e21954")
+	)
+	(wire
+		(pts
+			(xy 152.4 170.18) (xy 144.78 170.18)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "61b7479d-5fee-4cf8-ba92-38b7ace85309")
+	)
+	(label "USB_DP"
+		(at 144.78 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "4778576b-94ca-4ab7-a877-d6582cc13d26")
+	)
+	(label "USB_DM"
+		(at 144.78 68.58 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "e5d853d6-ce5d-46dd-82c9-7b70288e0cac")
+	)
+	(label "USB_DP"
+		(at 144.78 167.64 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "f40fc80a-cdba-449c-a320-5ef32a185064")
+	)
+	(label "USB_DM"
+		(at 144.78 170.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "c385bfe4-4520-47bb-8176-faa6f82c7815")
+	)
+	(sheet
+		(at 152.4 63.5)
+		(size 50.8 25.4)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "679e697f-da0c-468b-bb36-7de68b551e8b")
+		(property "Sheetname" "usb"
+			(at 152.4 62.7884 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "usb.kicad_sch"
+			(at 152.4 89.4846 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "USB_DP" bidirectional
+			(at 152.4 66.04 180)
+			(uuid "c13af8de-a0e2-46ee-8398-f1ffd3296692")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "USB_DM" bidirectional
+			(at 152.4 68.58 180)
+			(uuid "68c51043-a4f6-4893-a437-5542c44f391e")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(instances
+			(project None
+				(path "/9eb4d5bb-4adf-43e9-b767-a5d5a125b7db"
+					(page "2")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 152.4 114.3)
+		(size 50.8 25.4)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "7c4e69a7-1936-4741-9157-d2e4d5244ffb")
+		(property "Sheetname" "power"
+			(at 152.4 113.5884 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "power.kicad_sch"
+			(at 152.4 140.2846 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project None
+				(path "/9eb4d5bb-4adf-43e9-b767-a5d5a125b7db"
+					(page "2")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 152.4 165.1)
+		(size 50.8 25.4)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "9e4e1eba-a07e-4940-adbe-299f757044fa")
+		(property "Sheetname" "mcu"
+			(at 152.4 164.3884 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "mcu.kicad_sch"
+			(at 152.4 191.0846 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "USB_DP" bidirectional
+			(at 152.4 167.64 180)
+			(uuid "5691c369-dcef-41e4-a5d3-904949f602b0")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "USB_DM" bidirectional
+			(at 152.4 170.18 180)
+			(uuid "24cd7cc5-7067-44fc-93e3-55adaffc75fa")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(instances
+			(project None
+				(path "/9eb4d5bb-4adf-43e9-b767-a5d5a125b7db"
+					(page "2")
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+	(embedded_fonts no)
+)

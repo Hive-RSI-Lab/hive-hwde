@@ -1,0 +1,27 @@
+mutants:
+  mech-05-pinout-swap:
+    board: usbbuck4
+    script: mutations/mech_05_pinout_swap.py
+    check: check_mate_pins
+    modes: [MECH-05]
+    defect: >-
+      SIDECAR fault: the SWD header J2 is declared mated with a daughter
+      board's 1x04 socket (mate/swd-daughter.kicad_pcb, stacked) whose pin 1
+      is GND and pin 4 +3V3, so mating the boards shorts +3V3 to GND
+    expect:
+      kind: mate_pin_mismatch
+      ref: J2
+      pos: [156.5, 110.5]   # J2 pin 1 (+3V3), which meets the socket's GND
+
+  mech-06-unkeyed-rails:
+    board: blinky2
+    script: mutations/mech_06_unkeyed_rails.py
+    check: check_mate_pins
+    modes: [MECH-06]
+    defect: >-
+      PLACEMENT fault: a second 1x02 header J3, the same footprint as the +5V
+      input J1, carries /AUX on pin 1; a plug made for J3 fits J1 and meets +5V
+    expect:
+      kind: mate_unkeyed_rail_swap
+      ref: J1
+      pos: [102.8, 103.5]   # J1 pin 1 (+5V)

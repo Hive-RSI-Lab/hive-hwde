@@ -1,0 +1,20 @@
+{
+ "associations": [
+  {
+   "cap": "C1",
+   "ic": "U1",
+   "pin": "3",
+   "rail": "+5V",
+   "value": "10uF 16V solid tantalum",
+   "note": "AMS1117 input capacitor (AMS1117 p5 / LM1117 9.2.2.1.1): 10uF tantalum at the VIN pin, short lead. Linear regulator - no switch node, so NOT role=reg_input and no HF ceramic partner (block-only scope: not datasheet-required)."
+  },
+  {
+   "cap": "C2",
+   "ic": "U1",
+   "pin": "2",
+   "rail": "+3V3",
+   "value": "22uF 16V solid tantalum ESR 0.8ohm",
+   "note": "COMPENSATION element, NOT bypass: the AMS1117 output capacitor is part of the device frequency compensation and its ESR is the loop's stabilising zero (0.8 ohm @ 100 kHz, inside the 0.3-22 ohm window). Do not substitute a ceramic or a polymer tantalum, and do not change the value."
+  }
+ ]
+}

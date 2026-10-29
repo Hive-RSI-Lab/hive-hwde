@@ -1,0 +1,47 @@
+{
+ "version": 2,
+ "board": "bb-adc",
+ "workspace": ".",
+ "created": "2026-09-27T00:00:00",
+ "updated": "2026-09-27T00:00:00",
+ "phase": "P0",
+ "gates": {},
+ "human": {},
+ "artifacts": {},
+ "open_issues": [],
+ "next_issue_id": 1,
+ "budgets": {
+  "fix_loops": {
+   "erc": 3,
+   "place": 3,
+   "drc_routed": 3,
+   "verify": 3,
+   "dfm": 3
+  },
+  "freerouting_retries": 2,
+  "place_edit_iterations": 8,
+  "research": {
+   "per_run": 6,
+   "depth_per_gap": 4
+  },
+  "cross_stage_spawns": {
+   "P4": 2,
+   "P5": 2,
+   "P6": 2,
+   "P7": 2,
+   "P8": 2,
+   "P9": 2
+  }
+ },
+ "decisions": [],
+ "edits": [],
+ "spawns": [],
+ "history": [
+  {
+   "ts": "2026-09-27T00:00:00",
+   "event": "init",
+   "board": "bb-adc",
+   "phase": "P0"
+  }
+ ]
+}

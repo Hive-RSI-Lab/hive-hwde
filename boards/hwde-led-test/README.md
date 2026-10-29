@@ -24,8 +24,8 @@ A tiny test board that lights one green LED from 5 V. It was the first board the
 - **R1 is 470 Ω, not the 680 Ω the architecture first proposed.** The LED's listed forward voltage is 3.1 V at 5 mA, and at that voltage 680 Ω gives only 2.4–2.8 mA. 470 Ω gives 3.5–4.6 mA. The 3.1 V figure comes from the LCSC listing because the datasheet wouldn't download. If the real forward voltage is as high as 3.4 V, the current at 4.75 V input drops to about 2.8 mA, and the LED is still lit.
 - **D1 is a JLC Extended part.** There is no Basic 0603 green LED, and the brief asked for 0603.
 - **There is no reverse-polarity protection, as the brief asked.** A swapped lead puts up to 5.25 V reverse across D1. The silk marks + and − at J1 to make that less likely.
-- **The size was earned by placement.** After placement the outline was fitted with a 2 mm margin; smaller margins clipped the refdes silk. It was then grown to 10.5 mm tall because the skill's JLC capabilities file gives 10 mm as the assembly minimum.
-- **The 0603 courtyards were widened by hand to ±1.40 x ±0.70 mm.** The EasyEDA footprints came with the body outline as the courtyard.
+- **The size was earned by placement.** After placement the outline was fitted with a 2 mm margin, because at the time `board_edit --outline fit` didn't count reference text and smaller margins clipped it. It was then grown to 10.5 mm tall because the skill's JLC capabilities file gives 10 mm as the assembly minimum. `fit` now counts all silk: at its default 1 mm margin it gives 13.21 x 9.95 mm, which the 10 mm minimum would grow again, so the 13.4 x 10.5 mm outline stays. `board_edit --outline keep --report-only` finds no silk it clips.
+- **The 0603 courtyards are the pads plus 0.25 mm.** The EasyEDA footprints came with the body outline (±0.80 x ±0.40 mm) as the courtyard, inside the pads. They were first widened by hand; now `fpfix` rule E rebuilds them, on every `lib_pull` and on the placed copies with `fpfix.py --pcb`: C0603 ±1.35 x ±0.70, LED0603-RD ±1.40 x ±0.65, R0603 ±1.45 x ±0.70 mm. The verify suite's `check_courtyard` fails a board whose courtyards miss their pads.
 
 Every decision is also in `state.json` (`decisions`), stage by stage in `log/P*-digest.md`, and with what it taught in `LEARNINGS.md`.
 
@@ -54,8 +54,8 @@ From a checkout of hive-hwde, with the module's `bin/hwde` (see `docs/README.md`
 ```sh
 cd boards/hwde-led-test
 eval "$(../../bin/hwde env)"
-PYTHONPATH=$HWDE_SKILL/scripts:$HWDE_SKILL/scripts/lib $HWDE_PY kicad/gen/root.py   # schematic + decoupling.json (new UUIDs: keep the committed .kicad_sch for the board)
-../../bin/hwde lib_pull --parts parts/parts.json --out-dir /tmp/pull && mkdir -p lib/aiee.3dshapes && cp /tmp/pull/aiee.3dshapes/* lib/aiee.3dshapes/   # 3D models, not committed
+PYTHONPATH=$HWDE_SKILL/scripts:$HWDE_SKILL/scripts/lib $HWDE_PY kicad/gen/root.py   # schematic + decoupling.json, rebuilt in place (keeps its UUIDs)
+../../bin/hwde lib_pull --parts parts/parts.json --project kicad   # 3D models (not committed); the parts in lib/ stay as they are
 for g in erc place drc_routed verify dfm; do f=kicad/hwde-led-test.kicad_pcb; [ $g = erc ] && f=kicad/hwde-led-test.kicad_sch; ../../bin/hwde gate --gate $g $f --workspace .; done
 ../../bin/hwde fab_export --pcb kicad/hwde-led-test.kicad_pcb --out-dir fab
 ../../bin/hwde bom_cpl --pcb kicad/hwde-led-test.kicad_pcb --out-dir fab --parts parts/parts.json

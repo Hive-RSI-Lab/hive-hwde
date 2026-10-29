@@ -17,8 +17,9 @@ to fit what the placement actually needs.
   --outline WxH   resize to W x H mm, anchored at the current outline's
                   top-left corner (--anchor center keeps the centre instead)
   --outline fit   shrink (or grow) to the CONTENT bounding box + --margin:
-                  every footprint courtyard, every piece of copper and every
-                  keepout rule area, each clipped to the current outline so a
+                  every footprint courtyard, every piece of copper, every
+                  keepout rule area and all silkscreen (reference text
+                  included), each clipped to the current outline so a
                   connector that already overhangs does not enlarge the board
   --outline keep  keep the bbox, change only the radius / notches
 
@@ -28,8 +29,9 @@ board_swig.draw_outline() board_init uses - an edited outline and an
 initialized one are the same geometry by construction.
 
 REFUSALS (exit 1, nothing applied; --report-only reports without applying):
-a footprint courtyard, a copper item, a drill or a keepout rule area that the
-new boundary would push outside or bring closer than the fab profile's
+a footprint courtyard, a copper item, a drill, a keepout rule area or a piece
+of silkscreen (KiCad's silk_edge_clearance) that the new boundary would push
+outside or bring closer than the fab profile's
 min_copper_to_edge / min_hole_to_edge. The comparison is BEFORE vs AFTER - a
 part that already overhangs (a declared edge connector) is pre-existing and
 reported as such; only issues this edit creates or worsens block it. The
@@ -80,6 +82,7 @@ import env  # noqa: E402
 import fabfloors  # noqa: E402
 import geom  # noqa: E402
 import placelib  # noqa: E402
+import check_silk  # noqa: E402
 import statelib  # noqa: E402
 from checklib import CheckError  # noqa: E402
 
@@ -182,15 +185,18 @@ def _snap_out(lo: float, hi: float) -> tuple[float, float]:
 
 
 def content_bounds(model: "placelib.PlaceModel", bg: "geom.BoardGeom",
-                   clip) -> tuple[tuple[float, float, float, float], dict]:
+                   clip, silks=()) -> tuple[tuple[float, float, float, float], dict]:
     """Bounding box of everything that must stay ON the board, clipped to the
     current outline: footprint courtyards (movable AND board-only - a mounting
     hole hanging off the edge is a hole nobody drills), all copper, and every
-    keepout rule area. Clipping is what makes `fit` safe: the result contains
+    keepout rule area, and every piece of silkscreen: a fit that measured only
+    copper and courtyards put the edge through refdes text sitting outside
+    them (hwde-led-test, J1 and R1). Clipping is what makes `fit` safe: the result contains
     every part of every item that was inside, so `fit` cannot invent a new
     containment violation."""
     pieces = []
-    counts = {"footprints": 0, "copper_items": 0, "rule_areas": 0}
+    counts = {"footprints": 0, "copper_items": 0, "rule_areas": 0,
+              "silk_items": 0}
     for f in model.footprints.values():
         pieces.append(f.extents_abs())
         counts["footprints"] += 1
@@ -200,14 +206,26 @@ def content_bounds(model: "placelib.PlaceModel", bg: "geom.BoardGeom",
     for ra in bg.rule_areas:
         pieces.append(ra["outline"])
         counts["rule_areas"] += 1
+    for s in silks:
+        pieces.append(s.geom)
+        counts["silk_items"] += 1
     inside = shapely.intersection(shapely.union_all(pieces), clip)
     if inside.is_empty:
         raise CheckError("nothing inside the current outline to fit around")
     return inside.bounds, counts
 
 
+def load_silks(pcb: Path) -> list:
+    """Every visible silkscreen item on the board, as check_silk sees it
+    (text as its estimated box, graphics as stroked shapes)."""
+    import sexpdata
+    return check_silk.parse_silk(
+        sexpdata.loads(pcb.read_text(encoding="utf-8")))
+
+
 def target_rect(mode: str, spec: str, current: dict, model, bg,
-                margin: float, anchor: str) -> tuple[list[float], dict]:
+                margin: float, anchor: str,
+                silks=()) -> tuple[list[float], dict]:
     """-> ([x1, y1, x2, y2], extra report fields) for the requested outline."""
     cx1, cy1, cx2, cy2 = current["bbox"]
     if mode == "keep":
@@ -229,7 +247,7 @@ def target_rect(mode: str, spec: str, current: dict, model, bg,
     if margin < 0:
         raise CheckError("--margin must be >= 0")
     (bx1, by1, bx2, by2), counts = content_bounds(
-        model, bg, rounded_box(cx1, cy1, cx2, cy2, current["corner_radius"]))
+        model, bg, rounded_box(cx1, cy1, cx2, cy2, current["corner_radius"]), silks)
     x1, x2 = _snap_out(bx1 - margin, bx2 + margin)
     y1, y2 = _snap_out(by1 - margin, by2 + margin)
     return [round(v, 3) for v in (x1, y1, x2, y2)], {
@@ -274,8 +292,15 @@ def _issue(kind: str, key: str, msg: str, metric: float, worse_when: str,
                                         checklib.rnd(pos[1])] if pos else None}
 
 
+def silk_label(s: "check_silk.Silk", fp_ref: str | None) -> str:
+    if s.kind == "text":
+        return f"silk text '{s.text}'" + (f" of {fp_ref}" if fp_ref else "")
+    return f"silk {s.kind}" + (f" of {fp_ref}" if fp_ref else "")
+
+
 def outline_issues(model: "placelib.PlaceModel", bg: "geom.BoardGeom",
-                   poly, floors: dict, edges_decl: dict) -> list[dict]:
+                   poly, floors: dict, edges_decl: dict,
+                   silks=()) -> list[dict]:
     """Everything wrong with this board IF its outline were `poly`."""
     issues: list[dict] = []
     cu_floor = floors["min_copper_to_edge_mm"]
@@ -358,6 +383,28 @@ def outline_issues(model: "placelib.PlaceModel", bg: "geom.BoardGeom",
             "keepout_clipped", f"rulearea:{name}:{i}",
             f"keepout rule area '{name}' loses {clipped:.2f} mm2 outside the "
             f"outline", clipped, "higher", pos=(c.x, c.y)))
+
+    # Silkscreen the edge cuts through: KiCad's DRC flags it
+    # (silk_edge_clearance) and the fab clips it. A silk item is keyed by
+    # side, kind, text and centre, which an outline edit never moves.
+    for s in silks:
+        g = s.geom
+        if covers.covers(g):
+            continue
+        if s.ref in edges_decl:
+            continue  # a declared edge part's silk goes over its edge with it
+        clipped = g.difference(poly).area
+        if clipped <= EPS_AREA:
+            continue
+        c = g.centroid
+        ref = s.ref
+        what = silk_label(s, ref)
+        issues.append(_issue(
+            "silk_clipped",
+            f"silk:{s.side}:{s.kind}:{s.text or ''}:{c.x:.3f},{c.y:.3f}",
+            f"{what} on {s.side}.SilkS loses {clipped:.2f} mm2 outside the "
+            f"outline", clipped, "higher", refs=[ref] if ref else [],
+            pos=(c.x, c.y)))
     return issues
 
 
@@ -693,8 +740,9 @@ def run(argv: list[str] | None = None):
     spec = args.outline.strip()
     mode = "fit" if spec.lower() == "fit" else \
            "keep" if spec.lower() == "keep" else "fixed"
+    silks = load_silks(pcb)
     rect, extra = target_rect(mode, spec, current, model, bg,
-                              args.margin, args.anchor)
+                              args.margin, args.anchor, silks)
 
     # Clamp exactly where board_swig.draw_outline clamps, so the driver asks
     # for the shape the worker will actually draw (an unclamped request would
@@ -739,8 +787,8 @@ def run(argv: list[str] | None = None):
 
     old_poly = rounded_box(*current["bbox"], current["corner_radius"]) \
         if current["ideal"] else bg.outline
-    before = outline_issues(model, bg, old_poly, floors, edges_decl)
-    after = outline_issues(model, bg, new_poly, floors, edges_decl)
+    before = outline_issues(model, bg, old_poly, floors, edges_decl, silks)
+    after = outline_issues(model, bg, new_poly, floors, edges_decl, silks)
     blocking = new_or_worse(before, after)
     warnings: list[str] = []
     if clamp_note:

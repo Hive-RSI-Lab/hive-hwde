@@ -52,6 +52,13 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
    part, listing the pins. Never a silent pass.
 A pin on a net of unknown voltage is not a finding (counted in facts).
 
+The fact ledger (lib/ledgerlib.py): each refdes gets a `rating` fact
+(verified when a rating was compared with known volts and held, failed on an
+error finding, unknown when unrated or nothing could be compared) and a
+`pinout` fact (pinout_fact: the board's pad numbers and names against the
+extraction's pinout; no extraction is unknown). Written into <ws>/ledger.json
+when the board sits in a workspace; `ledger_counts` in the report.
+
 CLI: --pcb board.kicad_pcb [--parts DIR] [--constraints c.json]
      [--power-tree power_tree.md] [--out report.json]
 Exit 0 pass / 1 findings / 2 error (SPEC 6 contract).
@@ -125,19 +132,24 @@ def load_parts_on_board(pcb: Path) -> list[dict]:
         for p in _kids(fp, "property"):
             if len(p) >= 3 and isinstance(p[1], str):
                 props[p[1]] = str(p[2])
-        pads = {}
+        pads, fns, nums = {}, {}, set()
         for pad in _kids(fp, "pad"):
             num = str(pad[1]) if len(pad) > 1 else ""
+            if num:
+                nums.add(num)
             net = None
             for nn in _kids(pad, "net"):
                 strs = [x for x in nn[1:] if isinstance(x, str)]
                 net = strs[-1] if strs else table.get(nn[1])
+            for pf in _kids(pad, "pinfunction"):
+                if num and len(pf) > 1 and isinstance(pf[1], str):
+                    fns.setdefault(num, pf[1])
             if num and net and not net.startswith("unconnected-"):
                 pads.setdefault(num, net)
         out.append({"ref": props.get("Reference", "?"),
                     "lcsc": (props.get("LCSC") or props.get("LCSC Part")
                              or "").strip(),
-                    "pads": pads})
+                    "pads": pads, "fns": fns, "nums": sorted(nums)})
     return out
 
 
@@ -521,14 +533,16 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                              kind=kind, **extra))
 
     unrated_passives: list[str] = []
+    checked_by_ref: dict[str, int] = {}
     for b in sorted(board, key=lambda x: x["ref"]):
         ref, pads = b["ref"], b["pads"]
         if not pads:
             continue
         ext = exts.get(b["lcsc"])
         if ext is None:
-            _check_unextracted(b, bom_by_lcsc.get(b["lcsc"]), volts, emit,
-                               unrated_passives)
+            if _check_unextracted(b, bom_by_lcsc.get(b["lcsc"]), volts, emit,
+                                  unrated_passives):
+                checked_by_ref[ref] = checked_by_ref.get(ref, 0) + 1
             continue
         ratings = part_ratings(ext)
         name_of = {p["pin"]: p for p in ext.get("pinout") or []}
@@ -589,6 +603,7 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                 unknown_net_pins += 1
                 continue
             checked_pins += 1
+            checked_by_ref[ref] = checked_by_ref.get(ref, 0) + 1
             hit_abs = False
             for level, lst in (("abs", vabs), ("rec", vrec)):
                 for r in lst:
@@ -652,15 +667,18 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
              "net_volts": {n: {"v": volts[n], "src": vsrc[n]}
                            for n in sorted(volts)},
              "pins_checked": checked_pins,
-             "pins_on_unknown_nets": unknown_net_pins}
+             "pins_on_unknown_nets": unknown_net_pins,
+             "ledger_facts": ledger_facts(board, exts, out, checked_by_ref,
+                                          bom_by_lcsc)}
     return out, facts
 
 
 def _check_unextracted(b: dict, bom: dict | None, volts: dict, emit,
-                       unrated_passives: list[str]) -> None:
+                       unrated_passives: list[str]) -> bool:
     """A part with no extraction: a 2-net part's `Voltage Rated` attribute
     is checked across it; anything else is an explicit unrated finding
-    (two-terminal BOM parts are collected into one finding by the caller)."""
+    (two-terminal BOM parts are collected into one finding by the caller).
+    True when a rating was compared with known volts."""
     ref, pads = b["ref"], b["pads"]
     nets = sorted(set(pads.values()))
     rated = None
@@ -672,22 +690,102 @@ def _check_unextracted(b: dict, bom: dict | None, volts: dict, emit,
     if rated is not None and len(nets) == 2:
         va, vb = volts.get(nets[0]), volts.get(nets[1])
         if va is None or vb is None:
-            return
+            return False
         if abs(va - vb) > rated + EPS:
             emit("rating_over_voltage", "error", ref, nets[0],
                  f"{ref} is rated {_fmt(rated)} V but sits across "
                  f"{nets[0]} = {_fmt(va)} V and {nets[1]} = {_fmt(vb)} V",
                  limit_v=rated, net_v=abs(va - vb))
-        return
+        return True
     if len(nets) <= 1:
-        return  # a single-net part (test point, mounting hole) stresses nothing
+        return False  # a single-net part stresses nothing
     why = ("no datasheet extraction" if bom or b["lcsc"] else
            "no LCSC part on the footprint and no extraction")
     if bom is not None and len(nets) == 2:
         unrated_passives.append(ref)
-        return
+        return False
     emit("rating_unrated", "warning", ref, None,
          f"{ref} ({b['lcsc'] or 'no LCSC'}): {why}", pins=[why])
+    return False
+
+
+def _pin_name(s: str) -> str:
+    return re.sub(r"[^0-9A-Z]", "", str(s or "").upper())
+
+
+def pinout_fact(b: dict, ext: dict | None) -> tuple[str, str]:
+    """(status, value) for a part's pin map: the board's pad numbers must all
+    be pins of the datasheet extraction, and where the pad carries a pin
+    name, it must be that pin's name (or an alias of it). A name that
+    disagrees is unknown, not failed: the two may spell one pin differently,
+    and a reader has to look."""
+    if ext is None or not ext.get("pinout"):
+        return "unknown", "no datasheet extraction with a pinout"
+    pins = {str(p.get("pin")): p for p in ext["pinout"]}
+    nums = [n for n in b.get("nums") or [] if n]
+    missing = [n for n in nums if n not in pins and n.upper() != "EP"
+               and not (n == str(len(pins) + 1)
+                        and (ext.get("exposed_pad") or {}).get("present"))]
+    if missing:
+        return "failed", (f"board pad(s) {', '.join(missing[:8])} are not "
+                          f"pins of the {ext.get('mpn')} extraction")
+    differ = []
+    for n, fn in sorted((b.get("fns") or {}).items()):
+        p = pins.get(n)
+        if p is None or not fn:
+            continue
+        a, c = _pin_name(fn), _pin_name(p.get("name"))
+        if a and c and not (a in c or c in a or aliases(fn) & aliases(
+                str(p.get("name")))):
+            differ.append(f"{n}: board {fn} / datasheet {p.get('name')}")
+    if differ:
+        return "unknown", ("pin names differ, check by eye: "
+                           + "; ".join(differ[:6]))
+    named = sum(1 for n in nums if (b.get("fns") or {}).get(n))
+    return "verified", (f"{len(nums)} pads are pins of the extraction"
+                        + (f", {named} named alike" if named else ""))
+
+
+def ledger_facts(board: list[dict], exts: dict, vios: list[dict],
+                 checked: dict[str, int], bom_by_lcsc: dict) -> list[dict]:
+    """rating and pinout facts per refdes (lib/ledgerlib.py)."""
+    failed: dict[str, str] = {}
+    unrated: dict[str, str] = {}
+    for v in vios:
+        for ref in v.get("refs") or []:
+            if v.get("severity") == "error":
+                failed.setdefault(ref, v.get("msg") or v.get("message", ""))
+            elif v.get("kind") == "rating_unrated":
+                unrated.setdefault(ref, (
+                    v.get("msg") or "") if len(v.get("refs") or []) == 1
+                    else "no datasheet extraction and no voltage-rated "
+                         "attribute in parts.json")
+    out = []
+    for b in board:
+        ref = b["ref"]
+        ext = exts.get(b["lcsc"])
+        src = ((ext or {}).get("source_pdf")
+               or (f"parts/{b['lcsc']}.json (datasheet extraction)"
+                   if ext else f"parts.json attributes of {b['lcsc']}"))
+        if ref in failed:
+            st, val = "failed", failed[ref]
+        elif ref in unrated:
+            st, val = "unknown", unrated[ref]
+        elif checked.get(ref):
+            st, val = "verified", (f"{checked[ref]} connected pin(s) within "
+                                   "their datasheet rating at the board's "
+                                   "rail voltages")
+        else:
+            st, val = "unknown", ("no pin of it sits on a net of known "
+                                  "voltage" if b["pads"] else "no connected pad")
+        out.append({"subject": ref, "kind": "rating", "status": st,
+                    "value": val, "source": src if st != "unknown" else "",
+                    "lcsc": b["lcsc"]})
+        pst, pval = pinout_fact(b, ext)
+        out.append({"subject": ref, "kind": "pinout", "status": pst,
+                    "value": pval, "lcsc": b["lcsc"],
+                    "source": src if pst != "unknown" else ""})
+    return out
 
 
 def run(argv=None):
@@ -711,6 +809,16 @@ def run(argv=None):
     cons = checklib.load_json(args.constraints, "constraints") \
         if args.constraints else None
     viol, facts = run_check(pcb, parts, cons, tree)
+    import ledgerlib
+    lf = facts.pop("ledger_facts")
+    if ledgerlib.writable(ws):
+        exp = ledgerlib.expected(ws)
+        led = ledgerlib.put(ws, [f for f in lf if ledgerlib.key(
+            f["subject"], f["kind"]) in exp], SCRIPT)
+        facts["ledger"] = str(led) if led else None
+    facts["ledger_counts"] = {
+        k: {st: sum(1 for f in lf if f["kind"] == k and f["status"] == st)
+            for st in ledgerlib.STATUSES} for k in ("rating", "pinout")}
     return checklib.report(SCRIPT, pcb, viol, **facts), args.out
 
 

@@ -1,0 +1,14 @@
+# Seeded fault for check_model_paths (docs/failure-modes.md section 4).
+mutants:
+  model-path-absolute:
+    board: blinky2
+    script: mutations/model_path_absolute.py
+    check: check_model_paths
+    defect: >-
+      LIBRARY fault: D1's 3D model is named by absolute path into the track
+      worktree that pulled it, so the model is gone once that worktree is
+      removed (eleven boards in the boards repo)
+    expect:
+      kind: model_path_absolute
+      ref: D1
+      pos: [131.5, 129.5]   # D1's origin

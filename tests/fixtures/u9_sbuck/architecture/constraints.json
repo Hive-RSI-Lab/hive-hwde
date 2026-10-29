@@ -1,0 +1,29 @@
+{
+ "_comment": "U9 fixture: sbuck-5v3a P3 constraints, thermal + edges only",
+ "thermal": [
+  {
+   "ref": "U1",
+   "power_w": 1.06,
+   "net": "GND",
+   "dt_c": 55,
+   "min_vias": 16,
+   "_note": "P3 value (16) before the P6 correction to 12 - the known-answer this fixture pins"
+  }
+ ],
+ "placement": {
+  "edges": [
+   {
+    "ref": "J1",
+    "edge": "left",
+    "pos": 0.5,
+    "rot": 0
+   },
+   {
+    "ref": "J2",
+    "edge": "right",
+    "pos": 0.5,
+    "rot": 180
+   }
+  ]
+ }
+}
