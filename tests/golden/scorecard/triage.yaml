@@ -1,0 +1,710 @@
+# Recorded verdicts on findings the scorecard (score_checks.py) meets on the
+# golden boards (board: golden:<name>) and on finished boards in the boards
+# repo (board: <workspace dir>). A finding matching an entry takes its verdict:
+#   real - a true finding: counts toward the check's precision as a hit
+#   fp   - a false positive: counts against it
+# Match keys: check + kind always; net, refs (finding's refs a subset) and pos
+# (within 1 mm) when given. Every entry needs a reason a reviewer can check.
+entries:
+  - board: golden:rf4
+    check: check_silk
+    kind: silk_misattributed
+    refs: [C14]
+    verdict: real
+    reason: >-
+      C14's refdes sits 4.14 mm beyond its own pads and 0.50 mm from C1, so it
+      reads as C1's label (the EasyEDA blanket-offset class). The golden
+      predates the check; tests/test_checks_s5.py pins it as a true finding.
+
+  - board: PCB-0005-A_lumina-par
+    check: check_silk
+    kind: silk_over_pad
+    net: "+12V"
+    refs: [TP101]
+    verdict: fp
+    reason: "check_silk treats the unfilled (fill no) TestPoint_Pad_D1.5mm silk ring as a filled disc, so the reported area is the whole pad; the ring clears the pad by 0.14 mm and kicad-cli DRC reports zero silk violations. False positive (waiver: fix belongs in check_silk)."
+  - board: PCB-0005-A_lumina-par
+    check: check_silk
+    kind: silk_over_pad
+    net: "+3V3"
+    refs: [TP102]
+    verdict: fp
+    reason: "check_silk treats the unfilled (fill no) TestPoint_Pad_D1.5mm silk ring as a filled disc, so the reported area is the whole pad; the ring clears the pad by 0.14 mm and kicad-cli DRC reports zero silk violations. False positive (waiver: fix belongs in check_silk)."
+  - board: PCB-0005-A_lumina-par
+    check: check_silk
+    kind: silk_over_pad
+    net: "+48V_SW"
+    refs: [TP103]
+    verdict: fp
+    reason: "check_silk treats the unfilled (fill no) TestPoint_Pad_D1.5mm silk ring as a filled disc, so the reported area is the whole pad; the ring clears the pad by 0.14 mm and kicad-cli DRC reports zero silk violations. False positive (waiver: fix belongs in check_silk)."
+  - board: PCB-0007-A_rf-de-20m
+    check: check_creepage
+    kind: creepage
+    net: "/SW"
+    refs: [Q201, Q202]
+    verdict: fp
+    reason: "Every reported spacing is the EPC2019 die's own 0.35 mm solder-bar pitch inside its land pattern; IPC-2221 board-conductor creepage does not govern a qualified component's internal terminal geometry (waiver: 'category error'). fp."
+  - board: PCB-0007-A_rf-de-20m
+    check: check_current
+    kind: undersized_track
+    net: "/SW"
+    verdict: real
+    reason: "The EPC2019 drain escapes are 0.25-0.45 mm against an 11.9 mm floor, but the widest conductor a 0.6 mm-pitch drain bar allows is 2.63 mm, so no track or pour can meet it: the finding is physically true and unmeetable, mitigated by the pour fan-in. real (physical limit, approved waiver). Ambiguous: could be read as a check floor that cannot apply at a die."
+  - board: PCB-0007-A_rf-de-20m
+    check: check_current
+    kind: undersized_track
+    net: "/tank/RFOUT"
+    verdict: fp
+    reason: "L302's terminal land (7.65 mm) is below an 8.41 mm DC IPC-2152 floor that the board's own constraints call 'a floor, not a pass ... wrong above ~1 MHz'; at 20 MHz the skin depth, not cross-section, governs and the AC requirement is ~7.2 mm. fp (DC width model wrong at RF). Ambiguous: the waiver also says the floor cannot physically fit the corridor."
+  - board: PCB-0007-A_rf-de-20m
+    check: check_current
+    kind: pour_neckdown
+    net: "+40V"
+    verdict: fp
+    reason: "'+40V pour necks to 4.43 mm' is an artefact of the per-zone erosion test: the block is 10-15 mm of continuous copper and the erosion fails only on a 0.8 mm pocket holding 3 vias; a resistive-sheet solve on the real copper passes. fp (check mis-measures)."
+  - board: PCB-0007-A_rf-de-20m
+    check: check_return_path
+    kind: corridor_void
+    net: "/SW"
+    verdict: real
+    reason: "The 81 mm2 deficit is partly a k x width over-buffer of a 1.2 mm stub (27 % is off-board), but the rest is real: no inner plane under the air-core spiral by design (decisions.md D4, a plane would be a shorted turn). real (accepted design decision). Ambiguous: the waiver's title calls it a modelling artefact."
+  - board: PCB-0007-A_rf-de-20m
+    check: check_thermal
+    kind: thermal_area
+    net: "GND"
+    refs: [Q201, Q202]
+    verdict: fp
+    reason: "check_thermal is heatsink-blind: copper area is its only input, but the board uses a bolt-on heatsink with forced air (theta 5.95 C/W, Tj ~123-142 C vs 150 C max). fp (model limitation)."
+  - board: PCB-0007-A_rf-de-20m
+    check: check_thermal
+    kind: thermal_area
+    net: "/tank/TANK_A"
+    refs: [L301]
+    verdict: fp
+    reason: "L301 is an etched air-core spiral; the check measures the tank pour, not the winding, and is not the authoritative thermal case (spiral-design.md: 2.57 W over 860 mm2, 2.3x clear of SPIRAL-1's rule). fp (check measures the wrong thing)."
+  - board: PCB-0007-A_rf-de-20m
+    check: check_thermal
+    kind: thermal_area
+    net: "/tank/TANK_B"
+    refs: [L302]
+    verdict: fp
+    reason: "Same as L301: L302 is an etched spiral, the check sees ~1 mm2 of pour; spiral-design.md measures 2.48 mW/mm2 against a 7 mW/mm2 ceiling. fp (check measures the wrong thing)."
+  - board: PCB-0008-B_sbuck-5v3a
+    check: check_pdn
+    kind: pdn_undecoupled
+    net: "+5V"
+    verdict: real
+    reason: "Corrected waiver: check_pdn's finding is a TRUE statement (no decoupling.json association names this rail, so no PDN check examined it); accepted because the rail is covered elsewhere (bank C10-C15, load-step analysis, check_irdrop). real (true finding, accepted with compensating controls)."
+  - board: PCB-0008-B_sbuck-5v3a
+    check: check_pdn
+    kind: pdn_undecoupled
+    net: "GND"
+    verdict: real
+    reason: "Corrected waiver: check_pdn's finding is a TRUE statement (no decoupling.json association names this rail, so no PDN check examined it); accepted because the rail is covered elsewhere (bank C10-C15, load-step analysis, check_irdrop). real (true finding, accepted with compensating controls)."
+  - board: PCB-0009-A_rf-term-150w
+    check: check_silk
+    kind: silk_over_pad
+    net: "/RF"
+    refs: [J1]
+    verdict: fp
+    reason: "check_silk bug: it treats the (fill no) rect outline of J1's silk as solid ink, so reported areas equal whole pads; kicad-cli DRC reports zero silk findings. fp."
+  - board: PCB-0009-A_rf-term-150w
+    check: check_silk
+    kind: silk_over_pad
+    net: "GND"
+    refs: [J1]
+    verdict: fp
+    reason: "Same unfilled-rect check_silk bug as the /RF entry: each corner ground leg is reported at exactly pi*1.1^2. fp."
+  - board: PCB-0009-A_rf-term-150w
+    check: check_return_path
+    kind: corridor_void
+    net: "/RF"
+    verdict: real
+    reason: "Antipads of the /RF through-hole pads (J1 centre pin, C1 lead) in the B.Cu ground pour: a THT RF pin cannot exist without a void in the opposite plane, and at J1 the void is the coax launch. The void is real, structural and accepted. real (physical limit)."
+  - board: PCB-0010-A_bb-buck
+    check: check_pdn
+    kind: pdn_undecoupled
+    net: "GND"
+    verdict: fp
+    reason: "GND is a return net and cannot be decoupled to itself; the finding exists only because the board declares GND as a power entry to keep pour-neck severity high. Waiver: 'category error'. fp."
+  - board: PCB-0010-A_bb-buck
+    check: check_pdn
+    kind: pdn_undecoupled
+    net: "+5V"
+    verdict: fp
+    reason: "+5V is the regulator output; its decoupling is the output bank C4/C5/C8/C9, which check_pdn cannot see because associations are per IC power pin. Waiver: 'category error'. fp."
+  - board: PCB-0012-A_bb-ldo
+    check: check_thermal
+    kind: thermal_area
+    net: "+3V3"
+    refs: [U1]
+    verdict: fp
+    reason: "check_thermal clamps credited copper at 645 mm2 so its 2-layer floor (73.85 C/W) exceeds the 65 C/W target and no geometry can pass; the board delivers 1089 mm2 and vendor tables agree. Waiver: 'model limitation, not a board defect'. fp."
+  - board: PCB-0012-A_bb-ldo
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "GND"
+    verdict: fp
+    reason: "check_current charges every transition via the whole net's 0.5 A, but the load return flows through the through-hole terminal pins, not these vias, which carry only quiescent/ripple current. Waiver: 'heuristic mis-attribution'. fp."
+  - board: PCB-0012-A_bb-ldo
+    check: check_thermal
+    kind: thermal_vias
+    net: "+3V3"
+    refs: [U1]
+    verdict: fp
+    reason: "Audit-trail entry for a suppressed check: a stitching via in U1's +3V3 tab pour over a continuous GND plane would be a short, not a heat path, so the check's wish for thermal vias is wrong here (min_vias = 0 by design). fp."
+  - board: PCB-0013-A_bb-amp
+    check: check_silk
+    kind: silk_misattributed
+    refs: [C4]
+    verdict: real
+    reason: "C4's refdes cannot be placed legibly (no collision-free candidate; the band between U2 and J3 is 5.1 mm), so it does read as U2's label on a bare board; KiCad DRC reports 0 silk findings and the cost of fixing exceeds the defect. real (accepted trade-off)."
+  - board: PCB-0014-A_bb-adc
+    check: check_return_path
+    kind: corridor_void
+    net: "/CS"
+    verdict: fp
+    reason: "Residual 0.20 mm2 /CS deficit: on a 2-layer board the B.Cu return is the coplanar pour, which check_return_path's adjacent-layer model cannot express (out of model); the /CS crossing is also topologically forced. fp, ambiguous: the 0.03 mm residual gap is real geometry but the waiver leads with the model limit."
+  - board: PCB-0015-A_g0-sense
+    check: check_thermal
+    kind: thermal_area
+    net: "+3V3"
+    refs: [U1]
+    verdict: fp
+    reason: "check_thermal credits only same-net top copper and ignores the 813 mm2 B.Cu GND spreading pour under U1; against two vendor tables the board meets its limit, and no geometry on this outline can satisfy the model. Waiver: 'model pessimism'. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_creepage
+    kind: creepage
+    net: "/PHASE_A"
+    refs: [R421]
+    pos: [37.3642, 59.4798]
+    verdict: fp
+    reason: "Same half-bridge leg: gate/source-return nets sit within ~15 V of the phase node, so the 45 V creepage row does not apply; waiver also says owner-accepted. fp (wrong voltage class); ambiguous with 'accepted'."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_creepage
+    kind: creepage
+    net: "/PHASE_A"
+    refs: [Q401]
+    pos: [44.4683, 55.299]
+    verdict: fp
+    reason: "Same half-bridge leg: gate/source-return nets sit within ~15 V of the phase node, so the 45 V creepage row does not apply; waiver also says owner-accepted. fp (wrong voltage class); ambiguous with 'accepted'."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_creepage
+    kind: creepage
+    net: "/PHASE_A"
+    refs: [Q401]
+    pos: [44.3675, 56.31]
+    verdict: fp
+    reason: "Same half-bridge leg: gate/source-return nets sit within ~15 V of the phase node, so the 45 V creepage row does not apply; waiver also says owner-accepted. fp (wrong voltage class); ambiguous with 'accepted'."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_creepage
+    kind: creepage
+    net: "/PHASE_A"
+    refs: [U301]
+    pos: [60.3875, 42.775]
+    verdict: real
+    reason: "Spacing is the gate-driver/controller package's own lead pitch inside its courtyard, fixed by the package; waiver says IPC-2221B A6 component-lead creepage accepted by the owner (requirements.md). real (accepted)."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_creepage
+    kind: creepage
+    net: "/PHASE_B"
+    refs: [R423]
+    pos: [63.2182, 59.808]
+    verdict: fp
+    reason: "Same half-bridge leg: gate/source-return nets sit within ~15 V of the phase node, so the 45 V creepage row does not apply; waiver also says owner-accepted. fp (wrong voltage class); ambiguous with 'accepted'."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_creepage
+    kind: creepage
+    net: "/PHASE_B"
+    refs: [R423]
+    pos: [62.2818, 60.672]
+    verdict: fp
+    reason: "Same half-bridge leg: gate/source-return nets sit within ~15 V of the phase node, so the 45 V creepage row does not apply; waiver also says owner-accepted. fp (wrong voltage class); ambiguous with 'accepted'."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_creepage
+    kind: creepage
+    net: "/PHASE_B"
+    refs: [Q403]
+    pos: [60.3675, 56.31]
+    verdict: fp
+    reason: "Same half-bridge leg: gate/source-return nets sit within ~15 V of the phase node, so the 45 V creepage row does not apply; waiver also says owner-accepted. fp (wrong voltage class); ambiguous with 'accepted'."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_creepage
+    kind: creepage
+    net: "/PHASE_B"
+    refs: [R512]
+    pos: [65.7534, 61.8342]
+    verdict: fp
+    reason: "Same half-bridge leg: gate/source-return nets sit within ~15 V of the phase node, so the 45 V creepage row does not apply; waiver also says owner-accepted. fp (wrong voltage class); ambiguous with 'accepted'."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_creepage
+    kind: creepage
+    net: "/PHASE_B"
+    refs: [U301]
+    pos: [60.3875, 44.3873]
+    verdict: real
+    reason: "Spacing is the gate-driver/controller package's own lead pitch inside its courtyard, fixed by the package; waiver says IPC-2221B A6 component-lead creepage accepted by the owner (requirements.md). real (accepted)."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_creepage
+    kind: creepage
+    net: "/PHASE_C"
+    refs: [R425]
+    pos: [79.2182, 59.808]
+    verdict: fp
+    reason: "Same half-bridge leg: gate/source-return nets sit within ~15 V of the phase node, so the 45 V creepage row does not apply; waiver also says owner-accepted. fp (wrong voltage class); ambiguous with 'accepted'."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_creepage
+    kind: creepage
+    net: "/PHASE_C"
+    refs: [Q405]
+    pos: [76.3675, 56.31]
+    verdict: fp
+    reason: "Same half-bridge leg: gate/source-return nets sit within ~15 V of the phase node, so the 45 V creepage row does not apply; waiver also says owner-accepted. fp (wrong voltage class); ambiguous with 'accepted'."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_creepage
+    kind: creepage
+    net: "/PHASE_C"
+    refs: [U301]
+    pos: [60.225, 45.3625]
+    verdict: real
+    reason: "Spacing is the gate-driver/controller package's own lead pitch inside its courtyard, fixed by the package; waiver says IPC-2221B A6 component-lead creepage accepted by the owner (requirements.md). real (accepted)."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_creepage
+    kind: creepage
+    net: "/gate_driver/BSTA"
+    refs: [U301]
+    pos: [59.4875, 42.1]
+    verdict: real
+    reason: "Spacing is the gate-driver/controller package's own lead pitch inside its courtyard, fixed by the package; waiver says IPC-2221B A6 component-lead creepage accepted by the owner (requirements.md). real (accepted)."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_creepage
+    kind: creepage
+    net: "/power_in/VM_IN"
+    refs: [U101]
+    pos: [14.9612, 73.68]
+    verdict: real
+    reason: "Spacing is the gate-driver/controller package's own lead pitch inside its courtyard, fixed by the package; waiver says IPC-2221B A6 component-lead creepage accepted by the owner (requirements.md). real (accepted)."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_creepage
+    kind: creepage
+    net: "/power_in/VM_IN"
+    refs: [U101]
+    pos: [16.1112, 73.1948]
+    verdict: real
+    reason: "Spacing is the gate-driver/controller package's own lead pitch inside its courtyard, fixed by the package; waiver says IPC-2221B A6 component-lead creepage accepted by the owner (requirements.md). real (accepted)."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_creepage
+    kind: creepage
+    net: "/power_in/VM_IN"
+    refs: [U101]
+    pos: [16.222, 74.5688]
+    verdict: real
+    reason: "Spacing is the gate-driver/controller package's own lead pitch inside its courtyard, fixed by the package; waiver says IPC-2221B A6 component-lead creepage accepted by the owner (requirements.md). real (accepted)."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: pour_neckdown
+    net: "/power_in/VM_IN"
+    pos: [20.3, 81.0548]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: pour_neckdown
+    net: "/power_in/VM_IN"
+    pos: [17.906, 73.1918]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "/power_in/VM_IN"
+    pos: [17.86, 72.37]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: pour_neckdown
+    net: "VM"
+    pos: [24.3081, 47.9994]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "VM"
+    pos: [54.2, 58.77]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "VM"
+    pos: [15.513, 39.085]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "VM"
+    pos: [79.8, 53.57]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "VM"
+    pos: [21.0537, 26.9407]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "VM"
+    pos: [65.65, 79.5]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "VM"
+    pos: [54.2, 53.54]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "VM"
+    pos: [38.19, 58.74]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "VM"
+    pos: [28.772, 75.883]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "VM"
+    pos: [38.2, 53.54]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "VM"
+    pos: [70.2, 53.54]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "VM"
+    pos: [16.41, 22.29]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "VM"
+    pos: [70.2, 58.77]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "VM"
+    pos: [26.66, 75.0]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "VM"
+    pos: [63.8, 53.57]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "VM"
+    pos: [47.8, 53.57]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "VM"
+    pos: [48.1, 33.75]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "VM"
+    pos: [78.35, 79.5]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: pour_neckdown
+    net: "GND"
+    pos: [47.9815, 65.7104]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: pour_neckdown
+    net: "GND"
+    pos: [64.7601, 66.9279]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: pour_neckdown
+    net: "GND"
+    pos: [79.57, 65.8218]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: pour_neckdown
+    net: "GND"
+    pos: [71.7822, 47.9694]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: pour_neckdown
+    net: "GND"
+    pos: [75.4254, 48.0067]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "VM"
+    verdict: fp
+    reason: "check_current charges every transition via the whole net's current, but this cluster is a leaf/Kelvin/ripple tap; the motor current runs through pours or via fields elsewhere. fp (check over-attributes current)."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "GND"
+    verdict: fp
+    reason: "check_current charges every transition via the whole net's current, but this cluster is a leaf/Kelvin/ripple tap; the motor current runs through pours or via fields elsewhere. fp (check over-attributes current). (leaf GND tap into the In1 plane)"
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: undersized_track
+    net: "/PHASE_A"
+    verdict: fp
+    reason: "0.25 mm track is a Kelvin / gate-return / voltage-sense / snubber tap carrying signal current; the phase current runs in the pour, so check_current's full-net floor mis-applies. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: undersized_track
+    net: "/PHASE_B"
+    verdict: fp
+    reason: "0.25 mm track is a Kelvin / gate-return / voltage-sense / snubber tap carrying signal current; the phase current runs in the pour, so check_current's full-net floor mis-applies. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: undersized_track
+    net: "/PHASE_C"
+    verdict: fp
+    reason: "0.25 mm track is a Kelvin / gate-return / voltage-sense / snubber tap carrying signal current; the phase current runs in the pour, so check_current's full-net floor mis-applies. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: undersized_track
+    net: "/power_stage/LS_SRC_A"
+    verdict: fp
+    reason: "0.25 mm track is a Kelvin / gate-return / voltage-sense / snubber tap carrying signal current; the phase current runs in the pour, so check_current's full-net floor mis-applies. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: undersized_track
+    net: "/power_stage/LS_SRC_C"
+    verdict: fp
+    reason: "0.25 mm track is a Kelvin / gate-return / voltage-sense / snubber tap carrying signal current; the phase current runs in the pour, so check_current's full-net floor mis-applies. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: pour_neckdown
+    net: "/PHASE_A"
+    pos: [37.9362, 61.1975]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: pour_neckdown
+    net: "/PHASE_A"
+    pos: [43.0, 75.99]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: pour_neckdown
+    net: "/PHASE_A"
+    pos: [52.1155, 38.6046]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: pour_neckdown
+    net: "/PHASE_B"
+    pos: [64.0425, 60.0478]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: pour_neckdown
+    net: "/PHASE_B"
+    pos: [59.0, 66.7261]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: pour_neckdown
+    net: "/PHASE_B"
+    pos: [62.917, 61.1874]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: pour_neckdown
+    net: "/PHASE_B"
+    pos: [60.2819, 57.7217]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: pour_neckdown
+    net: "/PHASE_C"
+    pos: [73.07, 76.75]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: pour_neckdown
+    net: "/PHASE_C"
+    pos: [74.3073, 65.1758]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: pour_neckdown
+    net: "/PHASE_C"
+    pos: [66.5823, 51.1786]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: pour_neckdown
+    net: "/PHASE_C"
+    pos: [58.7953, 77.1121]
+    verdict: fp
+    reason: "Reported neck is a local sliver/web between via clearances; the current runs through the wider copper or is divided across a via field, so the check mis-measures the path width. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "/PHASE_A"
+    verdict: fp
+    reason: "check_current charges every transition via the whole net's current, but this cluster is a leaf/Kelvin/ripple tap; the motor current runs through pours or via fields elsewhere. fp (check over-attributes current)."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "/PHASE_B"
+    verdict: fp
+    reason: "check_current charges every transition via the whole net's current, but this cluster is a leaf/Kelvin/ripple tap; the motor current runs through pours or via fields elsewhere. fp (check over-attributes current)."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "/PHASE_C"
+    verdict: fp
+    reason: "check_current charges every transition via the whole net's current, but this cluster is a leaf/Kelvin/ripple tap; the motor current runs through pours or via fields elsewhere. fp (check over-attributes current)."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "/power_stage/LS_SRC_A"
+    verdict: fp
+    reason: "check_current charges every transition via the whole net's current, but this cluster is a leaf/Kelvin/ripple tap; the motor current runs through pours or via fields elsewhere. fp (check over-attributes current)."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "/power_stage/LS_SRC_C"
+    verdict: fp
+    reason: "check_current charges every transition via the whole net's current, but this cluster is a leaf/Kelvin/ripple tap; the motor current runs through pours or via fields elsewhere. fp (check over-attributes current)."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_pdn
+    kind: pdn_undecoupled
+    net: "GND"
+    verdict: fp
+    reason: "GND is the return reference, not a supply rail; 'GND has no decoupling' is a check artifact (waiver). fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_current
+    kind: insufficient_transition_vias
+    net: "/regulators/BUCK_SW"
+    pos: [37.0059, 22.0921]
+    verdict: fp
+    reason: "Bootstrap-branch via carrying ~4.4 mA average, not the inductor current (which uses its own 2-via transitions); check_current charges it the full net current. fp."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_diffpair
+    kind: diffpair_skew
+    net: "/ISNS_A_P"
+    pos: [42.6, 71.1113]
+    verdict: fp
+    reason: "INA240 sense pair: pin spacing and shunt Kelvin taps set ~9 mm of uncoupled run by the packages, and ISNS is a low-frequency signal so limits sized for high-speed pairs do not apply. fp (check model does not fit)."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_diffpair
+    kind: diffpair_uncoupled
+    net: "/ISNS_A_N"
+    pos: [42.6, 71.1113]
+    verdict: fp
+    reason: "INA240 sense pair: pin spacing and shunt Kelvin taps set ~9 mm of uncoupled run by the packages, and ISNS is a low-frequency signal so limits sized for high-speed pairs do not apply. fp (check model does not fit)."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_diffpair
+    kind: diffpair_skew
+    net: "/ISNS_B_P"
+    pos: [58.685, 69.285]
+    verdict: fp
+    reason: "INA240 sense pair: pin spacing and shunt Kelvin taps set ~9 mm of uncoupled run by the packages, and ISNS is a low-frequency signal so limits sized for high-speed pairs do not apply. fp (check model does not fit)."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_diffpair
+    kind: diffpair_uncoupled
+    net: "/ISNS_B_N"
+    pos: [58.685, 69.285]
+    verdict: fp
+    reason: "INA240 sense pair: pin spacing and shunt Kelvin taps set ~9 mm of uncoupled run by the packages, and ISNS is a low-frequency signal so limits sized for high-speed pairs do not apply. fp (check model does not fit)."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_diffpair
+    kind: diffpair_skew
+    net: "/ISNS_C_P"
+    pos: [74.685, 69.285]
+    verdict: fp
+    reason: "INA240 sense pair: pin spacing and shunt Kelvin taps set ~9 mm of uncoupled run by the packages, and ISNS is a low-frequency signal so limits sized for high-speed pairs do not apply. fp (check model does not fit)."
+  - board: PCB-0018-A_bldc-motor-driver
+    check: check_diffpair
+    kind: diffpair_uncoupled
+    net: "/ISNS_C_N"
+    pos: [74.685, 69.285]
+    verdict: fp
+    reason: "INA240 sense pair: pin spacing and shunt Kelvin taps set ~9 mm of uncoupled run by the packages, and ISNS is a low-frequency signal so limits sized for high-speed pairs do not apply. fp (check model does not fit)."
+  - board: PCB-0007-A_rf-de-20m
+    check: check_creepage
+    kind: creepage
+    net: "/SW"
+    verdict: fp
+    reason: "The ten /SW creepage errors with empty refs (pad-to-escape-track pairs, 0.350-0.389 mm) are the same intra-EPC2019 die pitch as the Q201/Q202 entry; gate-verify.json waived all 21 at the same positions and verify-waivers.md s3 confirms 21 of 21 lie inside the two land patterns. fp (board rule applied inside a qualified footprint)."
+  - board: PCB-0007-A_rf-de-20m
+    check: check_decoupling
+    kind: decoupler_distance
+    verdict: real
+    reason: "verify-waivers.md (decoupling rows): C201/C202 cannot sit closer to U201.A1 than the OUTL wrap allows, C106/C213 are bulk parts under a tighter 3.0 mm sidecar limit; placement-derived, inside the approved P6 floorplan and left to the named P6 backward edge (re-place U201). real (accepted, fix deferred)."
+  - board: PCB-0007-A_rf-de-20m
+    check: check_decoupling
+    kind: decoupler_loop
+    verdict: real
+    reason: "verify-waivers.md: C201 ~6.1 nH and C202 ~3.1 nH against the 0.3 nH VDD-loop budget share the distance root cause (estimator 0.7 nH/mm + 1 nH/via counts the In2 hop's vias); the real mitigation is the P6 re-place, not a P8 edit. real (fix deferred)."
+  - board: PCB-0013-A_bb-amp
+    check: check_diffpair
+    kind: diffpair_impedance
+    net: "/IN_P"
+    verdict: fp
+    reason: "bb-amp LEARNINGS.md 2026-08-17: /IN_P//IN_N is a low-frequency precision DC pair that needs equality, not coupling or a controlled impedance, and there is no controlled impedance anywhere on the board; the same entry records check_diffpair failing the verify gate on the same pair. gate-verify.json (P8) passes with check_diffpair 0. fp (impedance target does not apply)."

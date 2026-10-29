@@ -1,0 +1,94 @@
+{
+ "mpn": "AMS1117-3.3",
+ "lcsc": "C6186",
+ "package": "SOT-223",
+ "description": "Advanced Monolithic Systems AMS1117 series 1A low dropout regulator, fixed 3.3V, SOT-223. VOUT 3.300V (3.251-3.349V at 25C, 3.201-3.399V boldface full-range limits, VIN=4.8V). Dropout (VIN-VOUT) 1.1V typ / 1.3V max at IOUT=0.8A (Note 4: dropout higher above 0.8A). Current limit 900/1100/1500 mA min/typ/max at (VIN-VOUT)=1.5V. Quiescent current 5 typ / 11 max mA. Short-circuit protected; thermal shutdown at 165C junction. Ripple rejection (AMS1117-3.3) 60 min / 72 typ dB at 120Hz with COUT=22uF tantalum, IOUT=1A, VIN=4.75V.",
+ "pinout": [
+  {
+   "pin": "1",
+   "name": "GND",
+   "type": "ground",
+   "notes": "Datasheet 3-pin fixed/adjustable pinout labels pin 1 'Ground/Adjust'; on this fixed -3.3 version it is Ground (Adjust on adjustable AMS1117). Fixed versions are internally Kelvin-connected; the ground pin can be used for negative-side sensing."
+  },
+  {
+   "pin": "2",
+   "name": "VOUT",
+   "type": "power_out",
+   "notes": "3.3V regulated output. Package tab is also output (see pin 4)."
+  },
+  {
+   "pin": "3",
+   "name": "VIN",
+   "type": "power_in",
+   "notes": "Input supply. Abs max 15V. Regulation requires (VIN-VOUT) above dropout: 1.3V max at 0.8A load."
+  },
+  {
+   "pin": "4",
+   "name": "VOUT",
+   "type": "power_out",
+   "notes": "Package tab (thermal tab lead). Pin-connections page states 'TAB IS OUTPUT' (annotation drawn at the TO-252 front view; the SOT-223 drawing itself is unannotated, but the tab is the output-connected die attach - junction-to-tab 15 C/W, and the SO-8 variant brings the die pad out as VOUT on 4 pins). Tie to VOUT net, never to GND. Footprint numbering of the tab pad varies by library (sometimes numbered 2 or merged with pin 2)."
+  }
+ ],
+ "decoupling": [
+  {
+   "pins": [
+    "2"
+   ],
+   "value": "22uF solid tantalum",
+   "placement": "output (VOUT) to GND",
+   "notes": "Required for stability: the output capacitor is part of the device frequency compensation. 22uF solid tantalum on the output ensures stability for ALL operating conditions. Larger values further improve stability and transient response. Datasheet states smaller capacitors can be used 'with equally good results' when the adjustment terminal is not bypassed (this fixed 3.3V part has no ADJ bypass). No numeric ESR window is given - the stated stable case is specifically 22uF solid tantalum; ripple-rejection specs are conditioned on COUT=22uF tantalum."
+  }
+ ],
+ "land_pattern": {
+  "package": "SOT-223",
+  "pad_count": 4,
+  "pitch_mm": 2.29,
+  "pin1": "1",
+  "notes": "Datasheet provides the package outline only (3 LEAD SOT-223, AMS DRW# 042292) - NO recommended land pattern drawing. From the outline: lead pitch 0.090in (2.29mm) NOM; lead width 0.025-0.033in (0.64-0.84mm); tab width 0.116-0.124in (2.95-3.15mm); body 6.30-6.71 x 3.30-3.71mm; overall lead-tip to tab-tip span 6.71-7.29mm; height 1.80mm max; lead thickness 0.25-0.36mm. Pad sizes not vendor-specified - use a standard SOT-223 land pattern. pad_count 4 = 3 leads + tab pad."
+ },
+ "exposed_pad": {
+  "present": false
+ },
+ "layout_notes": [
+  "Output cap is part of the control-loop compensation: 22uF solid tantalum VOUT-to-GND guarantees stability for all operating conditions; larger values improve stability and transient response; smaller values stated acceptable only when ADJ is not bypassed (always true for this fixed version).",
+  "No input capacitor requirement is stated anywhere in this datasheet; application figures show only COUT (22uF) and CADJ (10uF, adjustable version only).",
+  "SOT-223 uses PCB copper as the heatsink: theta(junction-to-tab) 15 C/W; theta(tab-to-ambient) as low as 30 C/W; total theta(JA) as low as 45-46 C/W with copper area, ~90 C/W typical mounting (abs-max page). Table 1 guideline (1/16in FR-4, 1oz foil, tab on topside copper): 2500mm2 top + 2500mm2 back = 55 C/W; 1000+2500 = 55; 225+2500 = 65; 100+2500 = 80; 1000+1000 = 60; 1000 top only = 65 C/W.",
+  "Heat-spreading copper layer does NOT need to be electrically connected to the tab - board material couples heat effectively to an inner or backside ground plane under the pad.",
+  "PD = (VIN - VOUT) * IOUT; TJ = TA + PD * theta(JA) must not exceed 125C under continuous load (protection trips at 165C sense point). Guaranteed max power dissipation 1.2W for SOT-223 (Note 2).",
+  "Load regulation is measured at the bottom of the package ~1/8in from it: wire resistance between regulator and load limits regulation. Connect any output sense/divider top directly at the case, not at the load; negative-side sensing is a true Kelvin connection - on fixed devices use the ground pin for negative-side sensing (divider top is Kelvin-connected internally).",
+  "No protection diodes needed in normal use (internal paths limited; internal IN-OUT diode handles 50-100A microsecond surges). Add an OUT-to-IN diode only when a crowbar circuit can short the input instantaneously while large 1000-5000uF output capacitors are used.",
+  "Minimum load current to maintain regulation: 10mA max spec (adjustable-device row, Note 5, at 1.5V <= VIN-VOUT <= 12V); fixed versions draw 5-11mA quiescent current to ground."
+ ],
+ "abs_max": [
+  {
+   "param": "Input voltage",
+   "value": 15,
+   "unit": "V"
+  },
+  {
+   "param": "Power dissipation",
+   "value": "Internally limited"
+  },
+  {
+   "param": "Operating junction temperature (control section and power transistor)",
+   "value": "-40 to +125",
+   "unit": "C"
+  },
+  {
+   "param": "Storage temperature",
+   "value": "-65 to +150",
+   "unit": "C"
+  },
+  {
+   "param": "Lead temperature (soldering, 25 sec)",
+   "value": 265,
+   "unit": "C"
+  },
+  {
+   "param": "Thermal resistance theta(JA), SOT-223",
+   "value": "90 (46 to >90 depending on copper area/mounting)",
+   "unit": "C/W"
+  }
+ ],
+ "source_pdf": "parts/C6186.pdf"
+}

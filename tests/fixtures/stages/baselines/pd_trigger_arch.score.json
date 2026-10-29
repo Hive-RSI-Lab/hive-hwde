@@ -1,0 +1,30 @@
+{
+ "script": "bench",
+ "stage": "P2",
+ "fixture": "pd_trigger_arch",
+ "board": "pd-trigger",
+ "metrics": {
+  "nets": 29,
+  "components": 30,
+  "audit_errors": 0,
+  "audit_warnings": 0,
+  "by_kind": {},
+  "placement_refs_missing": [],
+  "stackup": "JLC2313_1.6_2oz",
+  "stackup_ok": true
+ },
+ "metrics_live": null,
+ "penalties": {
+  "audit_errors": 0.0,
+  "audit_warnings": 0.0,
+  "placement_refs_missing": 0.0,
+  "stackup_bad": 0.0
+ },
+ "composite": 100.0,
+ "composite_inputs": "full",
+ "known_answer": null,
+ "_baseline": {
+  "created": "2026-08-06",
+  "kicad_version": null
+ }
+}

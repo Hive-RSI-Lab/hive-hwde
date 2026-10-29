@@ -5,8 +5,10 @@
 #
 #   hwde env              print the exports (eval "$(hwde env)")
 #   hwde check            check_env: every tool the pipeline needs
+#   hwde test [args]      the scripts' unit tests and the workaround probes,
+#                         no KiCad runs of whole boards (the per-PR test)
 #   hwde check-all        re-run every board's gates from a scratch copy, and
-#                         check docs/workarounds.md against its probes (the test)
+#                         check docs/workarounds.md against its probes (slow)
 #   hwde score            the share of gate steps with no workaround (the score)
 #   hwde <script> [args]  run scripts/<script>.py with the venv python
 #
@@ -92,6 +94,8 @@ if wa symdir && [ -n "$appdir" ] && [ -z "${KICAD_SYMBOL_DIR:-}" ] && [ -d "$app
 	export KICAD_SYMBOL_DIR=$syms
 fi
 
+# HWDE_PY lets a script tell the runner's venv from another python (partslib's hint).
+export HWDE_PY="$venv/bin/python"
 export HWDE_KICAD_CLI HWDE_FREEROUTING_JAR HWDE_JAVA HWDE_KNOWLEDGE_SOURCES HWDE_BOARDS_ROOT
 [ -n "${HWDE_KICAD_CLI:-}" ] || unset HWDE_KICAD_CLI
 [ -n "${HWDE_FREEROUTING_JAR:-}" ] || unset HWDE_FREEROUTING_JAR
@@ -115,6 +119,17 @@ env)
 	# HWDE_SKILL is HWDE_MODULE's old name, which boards written before the move still read.
 	printf "export HWDE_MODULE='%s'\nexport HWDE_SKILL='%s'\nexport HWDE_PY='%s'\n" "$here" "$here" "$venv/bin/python"
 	;;
+test)
+	# tests/: upstream's unit tests (no smoke or net marks: those need a live
+	# KiCad run or the internet) and test_workarounds.py, the probes. Boards
+	# root is an empty scratch dir, so a test that wants a real board skips;
+	# whole boards are check-all's.
+	shift
+	export HWDE_BIN="$here/bin/hwde" HWDE_APPDIR="$appdir" HWDE_STATE="$state"
+	HWDE_BOARDS_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/hwde-noboards-XXXXXX")
+	cd "$here"
+	x "$venv/bin/python" -m pytest -m "not smoke and not net" "$@"
+	;;
 check-all)
 	shift
 	export HWDE_BIN="$here/bin/hwde" HWDE_APPDIR="$appdir" HWDE_STATE="$state"
@@ -125,7 +140,7 @@ check)
 	x "$venv/bin/python" "$here/scripts/check_env.py" "$@"
 	;;
 "" | -h | --help)
-	sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'
+	sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'
 	;;
 *)
 	s=$1

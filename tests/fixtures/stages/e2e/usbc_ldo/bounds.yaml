@@ -1,0 +1,13 @@
+# HIDDEN: never shown to the agent that designs the board (reference/e2e-scoring.md)
+brief: e2e_usbc_ldo
+nets:
+  - {id: vbus, pattern: "(?i)VBUS|^/?\\+?5V$"}
+  - {id: vout, pattern: "(?i)^/?\\+?(3V3|3\\.3V|VOUT)$"}
+  - {id: gnd, pattern: "^GND$"}
+  - {id: cc1, pattern: "(?i)CC1"}
+  - {id: cc2, pattern: "(?i)CC2"}
+parts:
+  - {id: cc_pulldowns, value_pattern: "(?i)^5\\.1\\s*k", min_count: 2}
+  - {id: led, value_pattern: "(?i)LED|red|green|blue", min_count: 1}
+layout: {area_mm2_max: 500, crossings_signal_max: 1, decap_worst_mm_max: 5}
+cost: {qty: 10, target_usd: 0.90}

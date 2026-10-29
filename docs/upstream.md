@@ -20,9 +20,26 @@ What moved where:
   redistributed under their owners' terms, not MIT.
   `scripts/lib/knowledgelib.py`'s `SOURCES_DIR` reads `HWDE_KNOWLEDGE_SOURCES`,
   and `bin/hwde` points it at the hwde project's clone when there is one.
+- Fixes the Hive made while building boards, worth offering upstream:
+  `scripts/check_courtyard.py` (+ `checks.d/check_courtyard.yaml`), a verify
+  check that fails a courtyard that misses its own pads; `scripts/lib/fpfix.py`
+  rule E, which `lib_pull` runs on every pull, and its `--pcb` mode for placed
+  copies; `scripts/board_edit.py`, whose `--outline fit` counts silk and whose
+  edits refuse to clip it; `scripts/check_silk.py`, whose silk items carry
+  their footprint's reference.
 
-`requirements.lock`, `LICENSE` and `NOTICE` came from upstream's repo root.
-Its tests, plans, docker setup and design notes stayed there.
+`requirements.lock`, `LICENSE` and `NOTICE` came from upstream's repo root,
+and so did `docs/failure-modes.yaml` (`bench --scorecard-corpus` maps
+findings to failure modes through it). `tests/` began as upstream's `tests/`,
+without `check.sh` and the tests of what stayed upstream: evals
+(`test_e2e_electrical`, `test_eval_sandbox`, `test_eval_writeset`), the
+showcase (`test_showcase_gallery`), `LEARNINGS.md` and its triage
+(`test_learnings`, `test_remediations`), the docker and CI pins
+(`test_kicad_pin`), `docs/check-scorecard.jsonl` (`test_check_scorecard`)
+and the vendored-copy check (`test_skill_copy_current`). `tests/conftest.py`
+adds `KNOWN_FAILING`; `tests/test_workarounds.py`, `tests/workarounds/` and
+`pytest.ini` (upstream's pytest settings from its `pyproject.toml`) are the
+module's own. The plans, docker setup and design notes stayed upstream.
 
 Everything else that's specific to the Hive is in `bin/` and `docs/`:
 

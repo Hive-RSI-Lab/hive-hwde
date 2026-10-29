@@ -1,0 +1,198 @@
+# Golden-board corpus manifest (S1).
+# Maps every mutant to the check that MUST catch it (S4/S5/S12 acceptance:
+# "every relevant mutant caught with correct net + coordinates; zero false
+# positives on the goldens"). Coordinates are mm, KiCad board space.
+#
+# Net-name convention: nets made by local labels are "/NAME" in the board
+# file; power-symbol nets (+3V3, GND, VBUS) have no prefix.
+
+version: 1
+
+golden_boards:
+  blinky2:
+    dir: blinky2
+    layers: 2
+    description: 2-layer STM32F103 blinky (LDO, crystal, LED, SWD)
+  usbbuck4:
+    dir: usbbuck4
+    layers: 4
+    description: 4-layer STM32F103 USB-FS device + AP63203 buck
+  rf4:
+    dir: rf4
+    layers: 4
+    description: 4-layer sub-GHz RF front end (RFM95W, pi match, SMA)
+
+# Regenerating: tests/golden/generators/gen.py --board <name> --parity
+# (schematic + board are built from the same design module; ERC, DRC and
+# schematic-parity must all report 0 violations).
+
+mutants:
+  plane-split-under-clock:
+    board: rf4
+    script: mutations/plane_split_under_clock.py
+    check: check_return_path
+    defect: In1 reference plane slotted under the RF feed
+    expect:
+      # S4 fix: the board net is "/RF_FEED" (local label -> leading slash per
+      # the convention above); the S1 entry missed the prefix
+      net: /RF_FEED
+      layer: In1.Cu
+      # violation polygon must intersect the slot
+      region: {x: [133.0, 134.4], y: [116.5, 127.5]}
+
+  missing-return-via:
+    board: usbbuck4
+    script: mutations/missing_return_via.py
+    check: check_return_path
+    defect: GND return via deleted at the MCO F.Cu->B.Cu transition
+    expect:
+      net: /MCO
+      pos: [141.0, 123.0]     # the layer transition needing a return via
+      radius_mm: 2.0          # no same-reference via within this radius
+
+  undersized-power-trace:
+    board: blinky2
+    script: mutations/undersized_power_trace.py
+    check: check_current
+    defect: 3V3 feed necked to 0.16 mm (budget 0.4 A, dT 10 C, 1 oz)
+    expect:
+      net: "+3V3"
+      segment: {start: [118.5, 106.95], end: [118.5, 110.5]}
+      width_mm: 0.16
+
+  decoupler-moved:
+    board: blinky2
+    script: mutations/decoupler_moved.py
+    check: check_decoupling
+    defect: C1 (VDD_3 100 nF) moved 15.7 mm from U1 pin 48
+    expect:
+      ref: C1
+      pin: U1.48
+      min_distance_mm: 15.0   # flag when pad-to-pin exceeds class threshold
+
+  diffpair-skew:
+    board: usbbuck4
+    script: mutations/diffpair_skew.py
+    check: check_diffpair
+    defect: 6.2 mm meander added to USB_DM only
+    expect:
+      pair: [/USB_DP, /USB_DM]
+      min_skew_mm: 5.0        # golden pair skew is ~2.5 mm; mutant ~8.7
+
+  silk-over-pad:
+    board: blinky2
+    script: mutations/silk_over_pad.py
+    check: check_silk
+    defect: silkscreen text printed across D1 pad 1
+    expect:
+      ref: D1
+      pos: [132.44, 129.5]
+
+  cpl-rotation:
+    board: blinky2
+    script: mutations/cpl_rotation.py
+    check: dfm_check
+    defect: polarized D1 rotated 180 deg with pad nets swapped (mounted
+      backwards; CPL rotation disagrees with schematic polarity)
+    expect:
+      ref: D1
+      rotation_delta_deg: 180
+    notes: >-
+      This mutant intentionally fails DRC --schematic-parity too (pad nets
+      no longer match the netlist); plain DRC stays quiet. dfm_check /
+      bom_cpl polarity validation is the designated catcher (S12).
+
+  hv-rail-spacing:
+    board: blinky2
+    script: mutations/hv_rail_spacing.py
+    check: check_creepage
+    defect: >-
+      SIDECAR fault (copper unchanged): constraints.json declares the +5V
+      input a 100 V net; the golden's 0.50 mm +5V-to-GND spacing at J1 pad 1
+      is under the IPC-2221 0.60 mm for 100 V
+    expect:
+      kind: creepage
+      net: "+5V"
+      ref: J1
+      pos: [103.9, 102.65]
+      layer: B.Cu
+
+  ldo-thermal-starved:
+    board: blinky2
+    script: mutations/ldo_thermal_starved.py
+    check: check_thermal
+    defect: >-
+      SIDECAR fault (copper unchanged): constraints.json adds a thermal entry
+      for U2 (AMS1117, 0.68 W at the 0.4 A budget, 40 C allowed); the
+      golden gives its +3V3 tab ~27 mm2 of copper and no vias (~112 C rise)
+    expect:
+      kind: thermal_area
+      net: "+3V3"
+      ref: U2
+      pos: [110.025, 106.0]
+      layer: F.Cu
+
+  swdio-off-grid:
+    board: blinky2
+    script: mutations/swdio_off_grid.py
+    check: check_route_style
+    defect: >-
+      GEOMETRY fault: the straight /SWDIO run is replaced by a two-leg dogleg
+      whose legs are ~15 deg off the 45-degree grid
+    expect:
+      kind: route_style
+      net: /SWDIO
+      pos: [136.04, 119.5]    # midpoint of the first off-grid leg
+      layer: F.Cu
+
+  rail-cap-missing:
+    board: blinky2
+    script: mutations/rail_cap_missing.py
+    check: check_pdn
+    defect: >-
+      GEOMETRY + SIDECAR fault: C6, the only cap on the +5V input rail, is
+      deleted from the board and from decoupling.json - the rail is left with
+      no decoupling
+    expect:
+      kind: pdn_undecoupled
+      net: "+5V"
+
+  cap-undervoltage:
+    board: blinky2
+    script: mutations/cap_undervoltage.py
+    check: check_ratings
+    defect: >-
+      SIDECAR fault (+ an LCSC property on C6 so the parts dir finds it):
+      parts/parts.json rates C6 (10 uF on +5V) at 4 V, below the 5 V rail
+    expect:
+      kind: rating_over_voltage
+      net: "+5V"
+      ref: C6
+
+  usb-faces-inward:
+    board: usbbuck4
+    script: mutations/usb_faces_inward.py
+    check: check_mating
+    defect: >-
+      PLACEMENT fault: the micro-USB receptacle J1 on the left edge is turned
+      180 degrees and slid 2.8 mm inward so its contacts stay on their tracks
+      (pad nets swapped to follow); its mouth now faces into the board (+x)
+      and no cable can reach it
+    expect:
+      kind: mating_faces_inward
+      ref: J1
+      pos: [106.885, 131.5]   # where check_mating reports J1
+
+# Checks referenced above and the step that builds them:
+#   check_return_path  S4    check_decoupling  S4    check_current  S4
+#   check_diffpair     S5    check_silk        S5    dfm_check      S12
+#   check_creepage     S5    check_thermal     S5    check_route_style
+#   check_pdn          S5    check_ratings     check_mating
+# Every check in verify_all.CHECKS has a mutant above (scorecard).
+#
+# Sidecar convention: a mutant dir tests/golden/mutants/<name>/ holds
+# <board>.kicad_pcb and MAY hold constraints.json, decoupling.json and a
+# parts/ dir (check_ratings' --parts input) that override the golden's for
+# that mutant only. A script emits them via detail["sidecars"] (mutlib).
+# expect.kind is the violation kind; net/ref/pos(+-1 mm)/layer, when given,
+# must all match ONE violation of the target check (a "catch").

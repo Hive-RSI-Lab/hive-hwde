@@ -24,6 +24,7 @@ import contextlib
 import io
 import json
 import logging
+import os
 import re
 import sqlite3
 import sys
@@ -43,8 +44,26 @@ def _missing_dep(module: str, exc: BaseException) -> PartsError:
     return PartsError(
         f"cannot search: python module '{module}' is not importable under "
         f"{sys.executable} ({type(exc).__name__}: {exc}). This is a missing "
-        "dependency, not a network outage. Fix: run with the hwde venv "
-        "(.venv/bin/python; on Linux hosts ~/.local/hwde-venv/bin/python).")
+        f"dependency, not a network outage. Fix: {_venv_hint()}")
+
+
+def _venv_hint() -> str:
+    """Where the deps live: the Hive module's runner (bin/hwde) when the scripts
+    sit inside the module, else the standalone hwde venv."""
+    runner = Path(__file__).resolve().parents[2] / "bin" / "hwde"
+    if not runner.is_file():
+        return ("run with the hwde venv (.venv/bin/python; on Linux hosts "
+                "~/.local/hwde-venv/bin/python).")
+    py = os.environ.get("HWDE_PY", "")
+    if py and Path(py) == Path(sys.executable):
+        return (f"the module's venv ({Path(py).parent.parent}) is missing it; "
+                f"remove that folder and run {runner} again: it rebuilds the "
+                "venv from requirements.lock.")
+    script = Path(sys.argv[0]).stem if sys.argv and sys.argv[0] else ""
+    script = script if script and script != "-c" else "parts_search"
+    return (f"run it through the module's runner, `{runner} {script} ...`, "
+            "which builds the venv from requirements.lock; or with the "
+            f"$HWDE_PY that `eval \"$({runner} env)\"` sets.")
 
 
 def require_httpx():

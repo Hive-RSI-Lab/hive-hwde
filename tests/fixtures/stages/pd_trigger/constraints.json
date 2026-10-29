@@ -1,0 +1,129 @@
+{
+ "_comment": "P2 merged constraints for pd-trigger, AMENDED A1 after the P3 datasheet extracts (parts/C970725.json, parts/C14170.json) - see decisions.md section A1. CANONICAL net names per architecture/sheets.md s1: one flat root sheet, so power symbols are global and bare (VBUS, GND) and local labels are /NAME. VOUT DOES NOT EXIST - with the main-path PPTC dropped (decisions.md D1) the receptacle, TVS, bulk, taps and screw terminal are one copper object named VBUS end to end. A1 DELTA: the 3.3 V LDO is REMOVED (CH224K VDD is an internal shunt-regulated node that an external regulator would fight - extract 8.2.3), so +3V3 no longer exists as a net; VDD is fed by the datasheet's own 1 kOhm dropper from VBUS onto local net /VDD, declared here at 0.02 A so check_pdn enforces the datasheet-mandated 1 uF; all indicators hang off /VIND, a width-only housekeeping stub behind a 0 ohm link so indicator traces are not held to the 5 A VBUS width rule. Stackup JLC2313_1.6_2oz (2 oz outer): 5 A needs 1.750 mm at 2 oz vs 3.500 mm at 1 oz - pass --stackup explicitly or the whole board sizes at 1 oz. diff_pairs is an EXPLICIT empty list, not an omission: omitting it lets check_diffpair auto-discover DP/DM by name, and this board deliberately shorts the CH224K's DP and DM together (net /BC12_DIS). Absent keys are deliberate no-ops: high_speed (no data pairs at all; CC is 300 kbit/s BMC with a ~7.5 m critical length, and a 2-layer stack has no reference plane), planes (the 2-layer default B.Cu GND pour is exactly what this board wants). GND is deliberately NOT a power entry - see decisions.md D7; its 5 A return is a structural requirement (unslotted B.Cu pour, >=10 vias at J1 and J2 GND pads) because check_current would otherwise demand 1.75 mm on every GND stub and 10 vias in every GND cluster.",
+ "power": [
+  {
+   "net": "VBUS",
+   "current_a": 5.0,
+   "dt_c": 10,
+   "via_amps": 0.5
+  },
+  {
+   "net": "/VAUX",
+   "current_a": 1.0,
+   "dt_c": 10,
+   "via_amps": 0.5,
+   "pdn": false
+  },
+  {
+   "net": "/VIND",
+   "current_a": 0.05,
+   "dt_c": 10,
+   "via_amps": 0.5,
+   "pdn": false
+  },
+  {
+   "net": "/VDD",
+   "current_a": 0.02,
+   "dt_c": 10,
+   "via_amps": 0.5
+  }
+ ],
+ "diff_pairs": [],
+ "voltages": [
+  {
+   "net": "VBUS",
+   "voltage": 20
+  },
+  {
+   "net": "/VAUX",
+   "voltage": 20
+  },
+  {
+   "net": "/VIND",
+   "voltage": 20
+  },
+  {
+   "net": "/VDD",
+   "voltage": 3.3
+  },
+  {
+   "net": "GND",
+   "voltage": 0
+  }
+ ],
+ "thermal": [
+  {
+   "ref": "J1",
+   "power_w": 0.25,
+   "net": "GND",
+   "dt_c": 40
+  }
+ ],
+ "placement": {
+  "edges": [
+   {
+    "ref": "J1",
+    "edge": "left",
+    "pos": 0.5
+   },
+   {
+    "ref": "J2",
+    "edge": "right",
+    "pos": 0.5
+   },
+   {
+    "ref": "J3",
+    "edge": "top",
+    "pos": 0.2
+   },
+   {
+    "ref": "SW1",
+    "edge": "top",
+    "pos": 0.62
+   }
+  ],
+  "groups": [
+   {
+    "name": "window",
+    "anchor": "Q1",
+    "members": [
+     "D2",
+     "R6",
+     "R7",
+     "R8",
+     "R9"
+    ]
+   },
+   {
+    "name": "status_leds",
+    "anchor": "D3",
+    "members": [
+     "D5",
+     "D6"
+    ]
+   }
+  ],
+  "separation": [
+   {
+    "a": [
+     "J2"
+    ],
+    "b": [
+     "J3"
+    ],
+    "min_mm": 15
+   },
+   {
+    "_comment": "P4 refdes tracking (sheets.md s2: constraints must be renumbered with any P4 refdes edit): the 1 kOhm dropper ships as the pre-approved 2x 510 Ohm 1206 series alternate (parts.json C25386, decisions.md A1.3), so the single refdes R2 became R2A + R2B. place_anneal silently SKIPS separation refs that are not on the board, so leaving 'R2' here would have dropped the constraint entirely.",
+    "a": [
+     "R2A",
+     "R2B"
+    ],
+    "b": [
+     "U1"
+    ],
+    "min_mm": 8
+   }
+  ]
+ }
+}

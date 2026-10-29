@@ -1,0 +1,55 @@
+{
+ "associations": [
+  {
+   "cap": "C1",
+   "ic": "J2",
+   "pin": "1",
+   "rail": "+3V3",
+   "value": "10uF 25V X5R"
+  },
+  {
+   "cap": "C6",
+   "ic": "U3",
+   "pin": "5",
+   "rail": "+3V3",
+   "value": "100nF 16V X7R"
+  },
+  {
+   "cap": "C2",
+   "ic": "U1",
+   "pin": "8",
+   "rail": "VDD_ADC",
+   "value": "100nF 16V X7R",
+   "max_dist_mm": 2.0
+  },
+  {
+   "cap": "C8",
+   "ic": "U1",
+   "pin": "8",
+   "rail": "VDD_ADC",
+   "value": "10uF 25V X5R"
+  },
+  {
+   "cap": "C3",
+   "ic": "U1",
+   "pin": "1",
+   "rail": "VREF",
+   "value": "47uF 16V X7R",
+   "max_dist_mm": 2.5
+  },
+  {
+   "cap": "C4",
+   "ic": "U2",
+   "pin": "2",
+   "rail": "+3V3",
+   "value": "100nF 16V X7R"
+  },
+  {
+   "cap": "C5",
+   "ic": "U2",
+   "pin": "6",
+   "rail": "VREF",
+   "value": "2.2uF 10V X7R"
+  }
+ ]
+}

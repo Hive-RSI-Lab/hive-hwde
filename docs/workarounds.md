@@ -3,7 +3,8 @@
 Every place where hwde gets a board through its gates only because something
 worked around a defect in the module's scripts, by a shim in `bin/hwde` or by an edit
 made by hand in a board's files. The score (`bin/hwde score`) reads this
-table, and the test (`bin/hwde check-all`) holds it to the truth:
+table, and the test (`bin/hwde test`, and `bin/hwde check-all` after its
+boards) holds it to the truth:
 
 - Each row's id has a probe, `tests/workarounds/<id>.py`, that exits 0 while
   the cause still stands and 10 once it is fixed. The test runs every probe. A
@@ -28,5 +29,3 @@ cause now is; a reviewer reads a probe change as a change to the score.
 | render-3d-loaders | shim | * | - | `bin/hwde` | `scripts/kc.py` `render_env` looks for the 3D loaders only at distro paths beside the kicad-cli it runs, and misses the AppImage's `shared/lib/kicad/plugins/3d` | 261028-141924 |
 | bulk-cap-pdn | hand | hwde-led-test | verify | `boards/hwde-led-test/kicad/gen/root.py` (`extra=` in `emit_decoupling`) | on a board with no IC nothing associates the bulk cap with its rail, and `check_pdn` errors on +5V; C1 was recorded against J1.1 by hand | 261028-141930 |
 | parts-refdes | hand | hwde-led-test | fab, dfm | `boards/hwde-led-test/parts/parts.json` (`refdes` per line) | `agents/part-sourcer.md` asks for one line per part with no `refdes`, and `bom_cpl` maps a ref to its LCSC number only through `refdes`, so the BOM ships with no LCSC numbers and dfm fails on them; `refdes` was added by hand | 261028-141930 |
-| courtyard-pads | hand | hwde-led-test | drc_routed | `boards/hwde-led-test/lib/aiee.pretty/*0603*.kicad_mod` and the board's copies | EasyEDA's 0603 courtyards (via `lib_pull`) are the body outline and don't cover the pads, and no gate catches it; widened by hand to ±1.40 x ±0.70 mm | 261028-141932 |
-| outline-silk | hand | hwde-led-test | drc_routed | `boards/hwde-led-test/kicad/hwde-led-test.kicad_pcb` (Edge.Cuts) | `board_edit --outline fit` measures copper and footprints but not reference text, so a fit at the usual margin clips refdes silk; the margin was raised to 2.0 mm by hand | 261028-141932 |

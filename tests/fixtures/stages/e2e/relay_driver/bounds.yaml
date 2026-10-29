@@ -1,0 +1,12 @@
+# HIDDEN: never shown to the agent that designs the board (reference/e2e-scoring.md)
+brief: e2e_relay_driver
+nets:
+  - {id: v5, pattern: "(?i)^/?\\+?(5V|5V0|VIN|VCC)$"}
+  - {id: gnd, pattern: "^GND$"}
+  - {id: ctrl, pattern: "(?i)(^|/)(IN|CTRL|GPIO|SIG|DRIVE)[0-9_]*$"}
+  - {id: coil, pattern: "(?i)(^|/)(COIL|RLY|RELAY)[0-9_+-]*$"}
+parts:
+  - {id: flyback, value_pattern: "(?i)1N4148|1N400[1-7]|LL4148|BAV|SS1[0-9]|M7|flyback", min_count: 1}
+# the drive network depends on the transistor chosen: no SPICE
+layout: {area_mm2_max: 900, crossings_signal_max: 0}
+cost: {qty: 10, target_usd: 1.20}

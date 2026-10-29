@@ -1,0 +1,49 @@
+{
+ "script": "bench",
+ "stage": "P1",
+ "fixture": "research_llc_seed",
+ "board": "synth-llc",
+ "metrics": {
+  "task": "block-llc-1",
+  "slot": "block:PWR",
+  "records": 2,
+  "verified": 2,
+  "refuted": 0,
+  "unruled": 0,
+  "checklists": 0,
+  "lint_problems": 0,
+  "citation_problems": 0,
+  "off_ledger_citations": 0,
+  "forum_sole": 0,
+  "sources": 2,
+  "source_tiers": {
+   "forum": 1,
+   "vendor-appnote": 1
+  },
+  "pages_cited": 3,
+  "depth": {
+   "cap": 4,
+   "used": 2,
+   "remaining": 2,
+   "attempts": 0,
+   "attempts_cap": 12
+  }
+ },
+ "metrics_live": null,
+ "penalties": {
+  "no_records": 0.0,
+  "lint_problems": 0.0,
+  "citation_problems": 0.0,
+  "off_ledger": 0.0,
+  "forum_sole": 0.0,
+  "unruled": 0.0,
+  "refuted": 0.0
+ },
+ "composite": 100.0,
+ "composite_inputs": "full",
+ "known_answer": null,
+ "_baseline": {
+  "created": "2026-08-15",
+  "kicad_version": null
+ }
+}

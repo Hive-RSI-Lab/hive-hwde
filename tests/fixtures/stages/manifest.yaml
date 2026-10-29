@@ -1,0 +1,654 @@
+# Frozen per-stage bench fixtures (T5).  DO NOT edit the pinned files: bench.py
+# refuses to score a fixture whose sha256 drifted.  method 'copy' = harvested
+# from a live board workspace on the captured date (workspaces keep evolving;
+# these copies do not); method 'reference' = points into the already-frozen
+# golden/s7 corpus in place (no duplication), pinned all the same.
+# Regenerating a golden board or mutant therefore requires re-pinning here.
+# known_answer shapes: see benchlib.match_known_answer.
+version: 1
+fixtures:
+  pd_trigger_arch:
+    stage: P2
+    board: pd-trigger
+    provenance:
+      source: boards/pd-trigger/architecture + kicad/pd-trigger.net
+      method: copy
+      captured: '2026-08-06'
+      note: shipped 2L USB-C PD trigger; P2 output vs final netlist
+    files:
+      constraints:
+        path: tests/fixtures/stages/pd_trigger/arch_constraints.json
+        sha256: e44d7987dddcd08ff0f2ba975abe5c09d4c8e597f72c9a85a892c9f7a7edeec5
+      netlist:
+        path: tests/fixtures/stages/pd_trigger/pd-trigger.net
+        sha256: 7100c1fad6d436c3696efabb0a8a31392854a4d74a3bfa57b403284560e2de2d
+    args:
+      stackup: JLC2313_1.6_2oz
+  pristine_lib:
+    stage: P3
+    board: pristine-pulls
+    provenance:
+      source: tests/fixtures/lib/pristine
+      method: reference
+      captured: '2026-08-06'
+      note: 'UNTOUCHED easyeda2kicad pulls (C14663 0603 cap, C2286 red LED, C7421520 DIP switch,
+        C5184243 GCT USB-C), the test_lib_hygiene corpus frozen 2026-08-06. Known answer: 16
+        real-DRC violations before fpfix (profile pinned in args.expect_before_by_check), 0
+        after fix_lib + refdes norm. A before-count drift means an fpfix behavior change that
+        must re-record this baseline in the same commit.'
+    files:
+      fp_c0603:
+        path: tests/fixtures/lib/pristine/C0603.kicad_mod
+        sha256: 8904dff7800b675ed2411e9be156ef116856c8f5ac480f5513591741c4ae15b6
+      fp_led:
+        path: tests/fixtures/lib/pristine/LED-SMD_L1.6-W0.8-R-RD.kicad_mod
+        sha256: 4ebb9084828c19f7afdaddfc594a5408c9fa9c59f292a24d631d8275fbc4b259
+      fp_switch:
+        path: tests/fixtures/lib/pristine/SW-SMD_6P-L7.6-W6.0-P2.54-LS9.3-BL.kicad_mod
+        sha256: abe96a502ab2d402cb563b812eed415a314e61926182a4a571b17469eb3bdc2d
+      fp_usbc:
+        path: tests/fixtures/lib/pristine/USB-C-SMD_MC-311D.kicad_mod
+        sha256: de7a22c2fd64a37a84cf432afcb6d057423344dd1693fac6c229916012cb10ab
+    dirs:
+      fp_lib:
+        path: tests/fixtures/lib/pristine
+        sha256: d166197d658ccc5593d6ea283377b1dad71ba1982278caebc896216cf7a80bc8
+    args:
+      expect_before_by_check:
+        annular_width: 2
+        clearance: 2
+        padstack: 2
+        silk_overlap: 8
+        silk_over_copper: 2
+  pd_trigger_sch:
+    stage: P4
+    board: pd-trigger
+    provenance:
+      source: boards/pd-trigger/kicad
+      method: copy
+      captured: '2026-08-06'
+      note: shipped single-sheet schematic; golden_net = its own exported netlist
+    files:
+      sch:
+        path: tests/fixtures/stages/pd_trigger/sch/pd-trigger.kicad_sch
+        sha256: f0a6892097db60a9c925fc67d0cb4057fee3980007fe798a837f7d56f77a7dde
+      pro:
+        path: tests/fixtures/stages/pd_trigger/sch/pd-trigger.kicad_pro
+        sha256: 3b9c6ea6b1ab97a7b2c27f29ba33ba8b775fee82b3beba08e241a84ae2b0b01f
+      golden_net:
+        path: tests/fixtures/stages/pd_trigger/pd-trigger.net
+        sha256: 7100c1fad6d436c3696efabb0a8a31392854a4d74a3bfa57b403284560e2de2d
+  blinky2_sch:
+    stage: P4
+    board: blinky2
+    provenance:
+      source: tests/s7_regen/blinky2
+      method: reference
+      captured: '2026-08-06'
+      note: S7 regen corpus, already frozen; golden.net is the S7 oracle
+    files:
+      sch:
+        path: tests/s7_regen/blinky2/kicad/blinky2.kicad_sch
+        sha256: 6d29c73dd8c0ee5fe2f927ec03961b44ec5926671cf0c211176e7c20454c0c62
+      pro:
+        path: tests/s7_regen/blinky2/kicad/blinky2.kicad_pro
+        sha256: bf312e1ba0b7777ffe29ce71be50afc2f05c31c241091d25ba8f88cf3b2ca96a
+      golden_net:
+        path: tests/s7_regen/blinky2/golden.net
+        sha256: 4c832fcb33249910d96e4c0d341bd82ae61cd1093953a449d95d87f1a72a80be
+  usbbuck_sch:
+    stage: P4
+    board: usb-buck
+    provenance:
+      source: boards/usb-buck/kicad
+      method: copy
+      captured: '2026-08-06'
+      note: 'shipped hierarchical schematic (root + usb/power/mcu children) - the first
+        multi-sheet P4 fixture (T6 P4-3); sheets copied verbatim from the committed
+        workspace (child Sheetfile refs resolve inside the fixture dir); golden_net
+        exported from the frozen root copy at capture (kicad-cli 10.0.3, LF-normalized)'
+    files:
+      sch:
+        path: tests/fixtures/stages/usb_buck/sch/usb-buck.kicad_sch
+        sha256: 31115c1204ce42380a5f6ece0449a2d7f09d434c5b5c2d4c08206ecd1423ff02
+      sch_mcu:
+        path: tests/fixtures/stages/usb_buck/sch/mcu.kicad_sch
+        sha256: 6e4e5d6fd665ef8c61d72f334bd927e8fb7f2f1ae5bebbdf91eece66b1c45d9a
+      sch_power:
+        path: tests/fixtures/stages/usb_buck/sch/power.kicad_sch
+        sha256: 161fb54a60ca8177b9f5f75515a223fa7c4d0ce6a786c5d1680c5ea2ceb16864
+      sch_usb:
+        path: tests/fixtures/stages/usb_buck/sch/usb.kicad_sch
+        sha256: a0def027e6b45eefd83ea316a97eedf4057ea7696816597ced05abdaa0b685c9
+      pro:
+        path: tests/fixtures/stages/usb_buck/sch/usb-buck.kicad_pro
+        sha256: c6ffbe93d5297bc9ed07be65b4022d8befb5e692287095d67ca65de7e50270b0
+      golden_net:
+        path: tests/fixtures/stages/usb_buck/sch/usb-buck.net
+        sha256: bb8920e789e8582d0e1bee53847b4bae506ab364f94c7f6fd01bd004680a9c33
+  pd_trigger_board_init:
+    stage: P5
+    board: pd-trigger
+    provenance:
+      source: boards/pd-trigger/kicad/pd-trigger.net
+      method: copy
+      captured: '2026-08-06'
+      note: board_init re-run on the shipped netlist (stackup per architecture/stackup.md);
+        rules_gen leg (T6 P5-2) generates DRU + netclasses from constraints.json into the
+        board_init pro - capability class / netclass split / IPC-2152 widths / pro floors
+        are baseline-tracked
+    files:
+      netlist:
+        path: tests/fixtures/stages/pd_trigger/pd-trigger.net
+        sha256: 7100c1fad6d436c3696efabb0a8a31392854a4d74a3bfa57b403284560e2de2d
+      constraints:
+        path: tests/fixtures/stages/pd_trigger/constraints.json
+        sha256: e44d7987dddcd08ff0f2ba975abe5c09d4c8e597f72c9a85a892c9f7a7edeec5
+    dirs:
+      fp_lib:
+        path: tests/fixtures/stages/pd_trigger/lib
+        sha256: a8578dcb4f8cbc5507522ab6e8e53b9238299249eb45cd197be5058fe3de3c07
+    args:
+      name: bench-pdtrigger
+      layers: 2
+      stackup: JLC2313_1.6_2oz
+  pd_trigger_place:
+    stage: P6
+    board: pd-trigger
+    provenance:
+      source: boards/pd-trigger/state_snapshots/pre-route-critical
+      method: copy
+      captured: '2026-08-06'
+      note: placed board immediately before critical routing (P7 entry)
+    files:
+      pcb:
+        path: tests/fixtures/stages/pd_trigger/place/pd-trigger.kicad_pcb
+        sha256: 8a91725f657a4f48c811f234e542d38a24e24afb7bf299b319907ed8e0ece838
+      pro:
+        path: tests/fixtures/stages/pd_trigger/place/pd-trigger.kicad_pro
+        sha256: 3b9c6ea6b1ab97a7b2c27f29ba33ba8b775fee82b3beba08e241a84ae2b0b01f
+      dru:
+        path: tests/fixtures/stages/pd_trigger/place/pd-trigger.kicad_dru
+        sha256: d8c96e0ddbb028bd451aadbde6060770ff612158f29562cce1e0405a3c56db68
+      constraints:
+        path: tests/fixtures/stages/pd_trigger/constraints.json
+        sha256: e44d7987dddcd08ff0f2ba975abe5c09d4c8e597f72c9a85a892c9f7a7edeec5
+      decoupling:
+        path: tests/fixtures/stages/pd_trigger/decoupling.json
+        sha256: 9b6bca4717a9c50f70c483f2a7d3e897973a6fbc2d69afcf838fadbd5b502df4
+  golden_blinky2_place:
+    stage: P6
+    board: blinky2
+    provenance:
+      source: tests/golden/blinky2
+      method: reference
+      captured: '2026-08-06'
+      note: S1 golden corpus (already frozen); routed board scored under place metrics
+    files:
+      pcb:
+        path: tests/golden/blinky2/blinky2.kicad_pcb
+        sha256: 08386dbb29ae3da044d5f13010bc8e105c5e550ac24d43559f070ad10300af5e
+      constraints:
+        path: tests/golden/blinky2/constraints.json
+        sha256: 0dbe43889997a249e90850fc8010d65069c97f95af278625a84c454a479fb33e
+      decoupling:
+        path: tests/golden/blinky2/decoupling.json
+        sha256: 930ee0e4a20cc5c62bd99800da194dee67398e740fa443306558a3466f74f3c9
+  pd_trigger_route:
+    stage: P7
+    board: pd-trigger
+    provenance:
+      source: boards/pd-trigger/kicad/pd-trigger.kicad_pcb
+      method: copy
+      captured: '2026-08-06'
+      note: shipped routed board (order W2026073002475378)
+    files:
+      pcb:
+        path: tests/fixtures/stages/pd_trigger/route/pd-trigger.kicad_pcb
+        sha256: 55104b0fe93d72deb9301fd6a35a1ebeecccf5b28b45c4e1f3cfdaa41a58cb8e
+      pro:
+        path: tests/fixtures/stages/pd_trigger/route/pd-trigger.kicad_pro
+        sha256: 3b9c6ea6b1ab97a7b2c27f29ba33ba8b775fee82b3beba08e241a84ae2b0b01f
+      dru:
+        path: tests/fixtures/stages/pd_trigger/route/pd-trigger.kicad_dru
+        sha256: d8c96e0ddbb028bd451aadbde6060770ff612158f29562cce1e0405a3c56db68
+  golden_usbbuck4_route:
+    stage: P7
+    board: usbbuck4
+    provenance:
+      source: tests/golden/usbbuck4
+      method: reference
+      captured: '2026-08-06'
+      note: S1 golden 4-layer corpus board
+    files:
+      pcb:
+        path: tests/golden/usbbuck4/usbbuck4.kicad_pcb
+        sha256: e6afcff4f3a8564e91c825cc6b79bf697424aa59e37e32e217e118e4a4d7d571
+      pro:
+        path: tests/golden/usbbuck4/usbbuck4.kicad_pro
+        sha256: bca06bc69879fb7b1739d2afc45664b9419c49417d2b546b99f7321748008ede
+  pd_trigger_verify:
+    stage: P8
+    board: pd-trigger
+    provenance:
+      source: boards/pd-trigger/kicad
+      method: copy
+      captured: '2026-08-06'
+      note: shipped board; verify gate passed at P8 (3 attempts)
+    files:
+      pcb:
+        path: tests/fixtures/stages/pd_trigger/route/pd-trigger.kicad_pcb
+        sha256: 55104b0fe93d72deb9301fd6a35a1ebeecccf5b28b45c4e1f3cfdaa41a58cb8e
+      constraints:
+        path: tests/fixtures/stages/pd_trigger/constraints.json
+        sha256: e44d7987dddcd08ff0f2ba975abe5c09d4c8e597f72c9a85a892c9f7a7edeec5
+      decoupling:
+        path: tests/fixtures/stages/pd_trigger/decoupling.json
+        sha256: 9b6bca4717a9c50f70c483f2a7d3e897973a6fbc2d69afcf838fadbd5b502df4
+    known_answer:
+      forbid_errors: true
+      expected:
+      - check: check_model_paths
+        kind: model_path_absolute
+      - check: check_route_style
+        kind: route_style
+  carrier_verify:
+    stage: P8
+    board: lumina-carrier
+    provenance:
+      source: boards/lumina-carrier/kicad
+      method: copy
+      captured: '2026-08-06'
+      note: shipped 4L board; verify gate FAILED (115/119 findings) and was waived at H4 - the hard known-profile
+        fixture. T6 calibration (P8A-1) adopted plane_fed(+3V3)+coating(soldermask) in the frozen
+        sidecar (sha re-pinned); known_answer (P8A-3) pins one signature per surviving TRUE-defect
+        cluster so future check edits cannot silently drop them (each must keep matching or
+        known_answer_missed fires at weight 40). No forbid_errors - the board legitimately carries
+        unlisted errors.
+    files:
+      pcb:
+        path: tests/fixtures/stages/lumina_carrier/routed.kicad_pcb
+        sha256: 89fab249993b093f9b9cee76e1ade62c4a82734025698b26976d6453d491c01e
+      constraints:
+        path: tests/fixtures/stages/lumina_carrier/constraints.json
+        sha256: 254544d89932544cb6fb721050b0ea6a2738a17f6a3a8ae5ad25394896b627a1
+      decoupling:
+        path: tests/fixtures/stages/lumina_carrier/decoupling.json
+        sha256: fc5e04094584947196a5728fc828bf1b367722a7b9348efdd3367a5c94222a0f
+    known_answer:
+      expected:
+      - check: check_current
+        kind: undersized_track
+        net: V48_RAW
+      - check: check_current
+        kind: undersized_track
+        net: +48V_SW
+      - check: check_current
+        kind: undersized_track
+        net: +12V
+      - check: check_current
+        kind: insufficient_transition_vias
+        net: +12V
+      - check: check_current
+        kind: insufficient_transition_vias
+        net: V48_RTN
+      - check: check_current
+        kind: pour_neckdown
+        net: +3V3
+      - check: check_creepage
+        kind: creepage
+        net: V48_RTN
+      - check: check_return_path
+        kind: corridor_void
+        net: /ETH_RXN
+  mutant_gndchoke_verify:
+    stage: P8
+    board: pd-trigger
+    provenance:
+      source: boards/pd-trigger/state_snapshots/pre-fix-review-p8 (CRLF normalized to LF)
+      method: copy
+      captured: '2026-08-06'
+      note: 'T6 (P8B-3): the board BEFORE the P8 fix loop - the 5A GND return still choked at J1
+        (0.2mm necks / 0.80A capacity, 1 via; verify passed 8/8, only the reviewer caught it).
+        Derived return-net coverage must see the class: pour_neckdown + insufficient_transition_vias
+        on GND (advisory warnings - the derived budget is a heuristic). NOTE the FIXED board also
+        fires these kinds at better numbers (neck 0.86mm vs 0.29mm) - this fixture pins visibility
+        of the class, not pre/post discrimination (known_answer cannot express positions).'
+    files:
+      pcb:
+        path: tests/fixtures/stages/pd_trigger/prefix_p8/pd-trigger.kicad_pcb
+        sha256: 964c86cdd3303c8d03b591103f7ece281e9a3839d02656a074a7216d7c06216a
+      constraints:
+        path: tests/fixtures/stages/pd_trigger/constraints.json
+        sha256: e44d7987dddcd08ff0f2ba975abe5c09d4c8e597f72c9a85a892c9f7a7edeec5
+      decoupling:
+        path: tests/fixtures/stages/pd_trigger/decoupling.json
+        sha256: 9b6bca4717a9c50f70c483f2a7d3e897973a6fbc2d69afcf838fadbd5b502df4
+    known_answer:
+      expected:
+      - check: check_current
+        kind: pour_neckdown
+        net: GND
+      - check: check_current
+        kind: insufficient_transition_vias
+        net: GND
+      - check: check_model_paths
+        kind: model_path_absolute
+  mutant_planesplit_verify:
+    stage: P8
+    board: rf4
+    provenance:
+      source: tests/golden/mutants/plane-split-under-clock
+      method: reference
+      captured: '2026-08-06'
+      note: S1 mutant corpus; expect from tests/golden/manifest.yaml
+    files:
+      pcb:
+        path: tests/golden/mutants/plane-split-under-clock/rf4.kicad_pcb
+        sha256: 3ac7ed8d3c261be03403a2d24f1e36a4d5bcfbc9860b06cfafdd415fa83316e8
+      constraints:
+        path: tests/golden/rf4/constraints.json
+        sha256: 34960e4e90b85fd466bf0aa5cdb86e70411d2556b0cdfdb5f2c572d1164a3d64
+      decoupling:
+        path: tests/golden/rf4/decoupling.json
+        sha256: 36ff8f8b71d898c27917a5dc4456600ce0d2aa278d2e0bb98bb3f74a777faa8b
+    known_answer:
+      expected:
+      - check: check_return_path
+        kind: corridor_void
+        net: /RF_FEED
+  mutant_returnvia_verify:
+    stage: P8
+    board: usbbuck4
+    provenance:
+      source: tests/golden/mutants/missing-return-via
+      method: reference
+      captured: '2026-08-06'
+      note: S1 mutant corpus; expect from tests/golden/manifest.yaml
+    files:
+      pcb:
+        path: tests/golden/mutants/missing-return-via/usbbuck4.kicad_pcb
+        sha256: 60d3bbee96811efa0d4e8ae1a41bd8e1c81187724c8adf1fafacc704c6e72532
+      constraints:
+        path: tests/golden/usbbuck4/constraints.json
+        sha256: 8576cdd920259e23419fd5866093a774d5e2c6a4af1cda300291905e5d990070
+      decoupling:
+        path: tests/golden/usbbuck4/decoupling.json
+        sha256: f824f8231eae404995bb8ff06747ea2510a6e8aa82b529eee6d006dce5a5232a
+    known_answer:
+      expected:
+      - check: check_return_path
+        kind: missing_return_via
+        net: /MCO
+  pd_trigger_dfm:
+    stage: P9
+    board: pd-trigger
+    provenance:
+      source: boards/pd-trigger/fab/gerbers
+      method: copy
+      captured: '2026-08-06'
+      note: the SHIPPED gerber set; netlist for polarity
+    files:
+      pcb:
+        path: tests/fixtures/stages/pd_trigger/route/pd-trigger.kicad_pcb
+        sha256: 55104b0fe93d72deb9301fd6a35a1ebeecccf5b28b45c4e1f3cfdaa41a58cb8e
+      netlist:
+        path: tests/fixtures/stages/pd_trigger/pd-trigger.net
+        sha256: 7100c1fad6d436c3696efabb0a8a31392854a4d74a3bfa57b403284560e2de2d
+    dirs:
+      gerbers:
+        path: tests/fixtures/stages/pd_trigger/fab/gerbers
+        sha256: 1c6b3a6e40bec353a8ac9e1a34772eacd31e36210d95253ad6e000ba9a01fe8e
+    args:
+      copper_oz: 2.0
+  mutant_cpl_dfm:
+    stage: P9
+    board: blinky2
+    provenance:
+      source: tests/golden/mutants/cpl-rotation (gerbers exported 2026-08-06 via fab_export, kicad-cli
+        10.0.3)
+      method: copy
+      captured: '2026-08-06'
+      note: 'V9 mutant: D1 mounted backwards; s7_regen golden.net is the polarity oracle'
+    files:
+      pcb:
+        path: tests/golden/mutants/cpl-rotation/blinky2.kicad_pcb
+        sha256: 5633ed87ee0ba796eed07d534996971020794da5c18f3b929a0d568a30371818
+      netlist:
+        path: tests/s7_regen/blinky2/golden.net
+        sha256: 4c832fcb33249910d96e4c0d341bd82ae61cd1093953a449d95d87f1a72a80be
+    dirs:
+      gerbers:
+        path: tests/fixtures/stages/mutant_cpl/gerbers
+        sha256: 3ab31f809136e93b41295304da02b42d3248833234bc13ec3322a84ddc3c03c4
+    args:
+      copper_oz: 1.0
+    known_answer:
+      expected:
+      - check: dfm
+        kind: cpl_polarity
+        ref: D1
+  pd_trigger_order:
+    stage: P10
+    board: pd-trigger
+    provenance:
+      source: boards/pd-trigger/fab
+      method: copy
+      captured: '2026-08-06'
+      note: shipped fab package (zip+BOM+CPL); submit runs on a scratch copy
+    files:
+      pcb:
+        path: tests/fixtures/stages/pd_trigger/route/pd-trigger.kicad_pcb
+        sha256: 55104b0fe93d72deb9301fd6a35a1ebeecccf5b28b45c4e1f3cfdaa41a58cb8e
+    dirs:
+      fab:
+        path: tests/fixtures/stages/pd_trigger/fab
+        sha256: 0173937a90fc94a3d530cf8e49848cd274608f23a0d3f9871ad8596575f0d5fc
+    args:
+      qty: 5
+      # copper weight is handled by the --api leg (never benched) - do not
+      # imply copper coverage here: score_p10 reads only qty/qty_matrix
+  research_llc_seed:
+    stage: P1
+    board: synth-llc
+    provenance:
+      source: scratch workspace built by the U15 acceptance flow (the tests/test_research.py
+        round trip - synthetic llc gap, synthetic 5-page PDF); no board workspace behind it
+      method: copy
+      captured: '2026-08-15'
+      grade: mechanism seed - test-authored records on a synthetic 5-page PDF, NOT owner-graded
+      note: 'U15 acceptance round trip frozen as the first P1 fixture: gap block:PWR (llc) -> open ->
+        2 allowlisted fetches (vendor-appnote pdf + forum html) -> 2 records -> second reader verified
+        -> closed. Owner-graded extraction fixtures accumulate from teaching sessions; re-grade by --baseline,
+        never re-freeze'
+    files:
+      task:
+        path: tests/fixtures/stages/research_llc_seed/block-llc-1.json
+        sha256: 079a1735ecd312e5ca9eb3519e4f2cbc1d41901829bb720383d07e7c090ba549
+    dirs:
+      research:
+        path: tests/fixtures/stages/research_llc_seed/research
+        sha256: ee55e31e831a3d2d76664c17c2c606ef9e4bd2afb0e489f30fd5ca8772515d43
+    args:
+      task: block-llc-1
+  # E2E (backlog item 1, reference/e2e-scoring.md): brief.md is what the design
+  # agent sees; bounds.yaml is HIDDEN from it.  Calibration briefs restate a
+  # shipped bb-* board's brief and score that board (args.calibration_board,
+  # from the boards repo); the rest are held out - no hwde run has seen them.
+  e2e_ldo_3v3:
+    stage: E2E
+    board: bb-ldo
+    provenance:
+      source: tests/fixtures/stages/e2e/ldo_3v3 (brief + hidden bounds) + ws copied from boards/PCB-0012-A_bb-ldo @73bf0471
+      method: copy
+      captured: '2026-09-27'
+      note: calibration twin of the shipped board; the check's cheap smoke case (frozen ws)
+    files:
+      brief:
+        path: tests/fixtures/stages/e2e/ldo_3v3/brief.md
+        sha256: 0b1f3a9cabecb0e436ebd765f0e5100dedc640480646a6309177b2b42917403a
+      bounds:
+        path: tests/fixtures/stages/e2e/ldo_3v3/bounds.yaml
+        sha256: 32f1068c650c46183419d1d0786b7ce809c48e5d6b5b7602d23f9153f4165568
+    dirs:
+      workspace:
+        path: tests/fixtures/stages/e2e/ldo_3v3/ws
+        sha256: 8726919a4c7b91adc0c57fd76354c424e49c99720af5a86940fb4220e2c2dbe6
+    args:
+      calibration_board: PCB-0012-A_bb-ldo
+  e2e_buck_5v:
+    stage: E2E
+    board: bb-buck
+    provenance:
+      source: tests/fixtures/stages/e2e/buck_5v (brief + hidden bounds)
+      method: copy
+      captured: '2026-09-27'
+      note: calibration twin of the shipped board
+    files:
+      brief:
+        path: tests/fixtures/stages/e2e/buck_5v/brief.md
+        sha256: bbdb5b462e7653f9bf42e62c50396c209987310c3532d7bc0116125cad2619c3
+      bounds:
+        path: tests/fixtures/stages/e2e/buck_5v/bounds.yaml
+        sha256: 90feafa1fe2a8896ce78edb928c479f89dda0ac7146d36debc9ece9036d90361
+    args:
+      calibration_board: PCB-0010-A_bb-buck
+  e2e_adc_12b:
+    stage: E2E
+    board: bb-adc
+    provenance:
+      source: tests/fixtures/stages/e2e/adc_12b (brief + hidden bounds)
+      method: copy
+      captured: '2026-09-27'
+      note: calibration twin of the shipped board
+    files:
+      brief:
+        path: tests/fixtures/stages/e2e/adc_12b/brief.md
+        sha256: 543ce521bea540fc3417f7e8d06f62882d2923afc0c6303fdad2b84ebdbc2baf
+      bounds:
+        path: tests/fixtures/stages/e2e/adc_12b/bounds.yaml
+        sha256: 086a610ae2b6a06f3c472d033eac9f6cd99b95a5b152dba0aff024e3753b2189
+    args:
+      calibration_board: PCB-0014-A_bb-adc
+  e2e_bridge_amp:
+    stage: E2E
+    board: bb-amp
+    provenance:
+      source: tests/fixtures/stages/e2e/bridge_amp (brief + hidden bounds)
+      method: copy
+      captured: '2026-09-27'
+      note: calibration twin of the shipped board
+    files:
+      brief:
+        path: tests/fixtures/stages/e2e/bridge_amp/brief.md
+        sha256: a904f2227c5d4d6e15c2327b9f87fd4d51ddb6f0a8f4250394785ff6eb195268
+      bounds:
+        path: tests/fixtures/stages/e2e/bridge_amp/bounds.yaml
+        sha256: 7fc0312725dc921cb0ace3d8321137e61edfc470e452fec4dc0e26fbcb5344f8
+    args:
+      calibration_board: PCB-0013-A_bb-amp
+  e2e_batt_monitor:
+    stage: E2E
+    board: held-out-batt-monitor
+    provenance:
+      source: tests/fixtures/stages/e2e/batt_monitor (brief + hidden bounds)
+      method: copy
+      captured: '2026-09-27'
+      note: held out; score a finished workspace with --artifact
+    files:
+      brief:
+        path: tests/fixtures/stages/e2e/batt_monitor/brief.md
+        sha256: 603186df3bcb08c06242359357a11ec058973ee2bf0667b2613cdd55ac220123
+      bounds:
+        path: tests/fixtures/stages/e2e/batt_monitor/bounds.yaml
+        sha256: f725cbf0070cc7732e97563b821dfb211ed4838926cb0c5b1e8e51e9132c6a4c
+  e2e_buck_3v3:
+    stage: E2E
+    board: held-out-buck-3v3
+    provenance:
+      source: tests/fixtures/stages/e2e/buck_3v3 (brief + hidden bounds)
+      method: copy
+      captured: '2026-09-27'
+      note: held out; score a finished workspace with --artifact
+    files:
+      brief:
+        path: tests/fixtures/stages/e2e/buck_3v3/brief.md
+        sha256: 001d783d2fd94a245fc993312fd84c93d60f12c5d69557eab1241cfc3611144a
+      bounds:
+        path: tests/fixtures/stages/e2e/buck_3v3/bounds.yaml
+        sha256: 97ef94ada2aede0272783c46c84f35218aca694341f9222212172842c843e466
+  e2e_usbc_ldo:
+    stage: E2E
+    board: held-out-usbc-ldo
+    provenance:
+      source: tests/fixtures/stages/e2e/usbc_ldo (brief + hidden bounds)
+      method: copy
+      captured: '2026-09-27'
+      note: held out; score a finished workspace with --artifact
+    files:
+      brief:
+        path: tests/fixtures/stages/e2e/usbc_ldo/brief.md
+        sha256: 81b2321259202b1709ffc83fab2cbfe7a3ab39e73b4abbcdd7ce9ee132c1a9ef
+      bounds:
+        path: tests/fixtures/stages/e2e/usbc_ldo/bounds.yaml
+        sha256: 48b4e4597d30cd8a624375bd49e752efe5c1bd3d62650e5635c20117e557a1ea
+  e2e_ntc_front:
+    stage: E2E
+    board: held-out-ntc-front
+    provenance:
+      source: tests/fixtures/stages/e2e/ntc_front (brief + hidden bounds)
+      method: copy
+      captured: '2026-09-27'
+      note: held out; score a finished workspace with --artifact
+    files:
+      brief:
+        path: tests/fixtures/stages/e2e/ntc_front/brief.md
+        sha256: d725c504b1b545847a457abd5d8605d9c55a1a6560fbbba5aa78a9e2b855e39d
+      bounds:
+        path: tests/fixtures/stages/e2e/ntc_front/bounds.yaml
+        sha256: ed820d02a1f1c6b88b6e14bcc50961391c357be3df54e03a2736f19420bbac2f
+  e2e_relay_driver:
+    stage: E2E
+    board: held-out-relay-driver
+    provenance:
+      source: tests/fixtures/stages/e2e/relay_driver (brief + hidden bounds)
+      method: copy
+      captured: '2026-09-27'
+      note: held out; score a finished workspace with --artifact
+    files:
+      brief:
+        path: tests/fixtures/stages/e2e/relay_driver/brief.md
+        sha256: 505c624a1dd175723a8553fa198dff29a28caba4872278dfeb7d7e36f6c49f14
+      bounds:
+        path: tests/fixtures/stages/e2e/relay_driver/bounds.yaml
+        sha256: bfe7a640f38e4dec84d709a3225beb3011e977712796d965ad55ad471cfdd91f
+  e2e_stereo_amp:
+    stage: E2E
+    board: held-out-stereo-amp
+    provenance:
+      source: tests/fixtures/stages/e2e/stereo_amp (PCB-0017-A's brief + minimal hidden bounds)
+      method: copy
+      captured: '2026-10-06'
+      note: held out; score a finished workspace with --artifact
+    files:
+      brief:
+        path: tests/fixtures/stages/e2e/stereo_amp/brief.md
+        sha256: e501039f6162ef02a2e3511001fd06dcf90f428b8df5d65de6023f82ff54d4b5
+      bounds:
+        path: tests/fixtures/stages/e2e/stereo_amp/bounds.yaml
+        sha256: f935d1d195ebd03d09c30c03cf39342ed6a306acaf9cd318df9417976a267f46
+  e2e_gan_rf_inverter:
+    stage: E2E
+    board: held-out-gan-rf-inverter
+    provenance:
+      source: tests/fixtures/stages/e2e/gan_rf_inverter (PCB-0023-A's brief + minimal hidden bounds)
+      method: copy
+      captured: '2026-10-07'
+      note: held out; score a finished workspace with --artifact
+    files:
+      brief:
+        path: tests/fixtures/stages/e2e/gan_rf_inverter/brief.md
+        sha256: fd886ced7a5406ee76da3d585bd1bbe87860dd4721f23c1d093b8d7f4b319c5c
+      bounds:
+        path: tests/fixtures/stages/e2e/gan_rf_inverter/bounds.yaml
+        sha256: 27ac848d294cfc4363bced572341e4dbab029f19cd4217fc475d5f152d28ff4d
