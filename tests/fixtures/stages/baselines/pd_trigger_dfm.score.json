@@ -4,27 +4,29 @@
  "fixture": "pd_trigger_dfm",
  "board": "pd-trigger",
  "metrics": {
-  "errors": 0,
+  "errors": 3,
   "warnings": 20,
   "by_kind": {
    "dfm_silk_over_pad": 19,
-   "dfm_silk_width": 1
+   "dfm_silk_width": 1,
+   "dfm_stale_zone_fill": 3
   },
   "polarity": "checked",
   "capability_key": "2layer_2oz"
  },
  "metrics_live": null,
  "penalties": {
-  "errors": 0.0,
+  "errors": 3.0,
   "warnings": 20.0,
   "known_answer_missed": 0.0,
   "forbidden_errors": 0.0
  },
- "composite": 98.0,
+ "composite": 96.5,
  "composite_inputs": "full",
  "known_answer": null,
+ "e2e": null,
  "_baseline": {
-  "created": "2026-08-06",
+  "created": "2026-10-29",
   "kicad_version": null
  }
 }
