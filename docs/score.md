@@ -84,8 +84,12 @@ stand-in scripts), then `charges: N`, then the number.
 
 ## Cost
 
-Every board, every measure: the four gates on lite-main took about 2.5 min
-on a machine at load 260, and the full run is about ten minutes. That is
-inside the 30 minutes a check gets. If the boards grow past that, measure
-only the boards whose pinned files, or the skill scripts their gates call,
-changed since the last kept measure.
+Every board, every measure. On 2026-10-29 the three boards took 1.5 min in
+all with the machine at load 120-250. At load 380, lite-main alone took
+11 min (drc_routed's zone refill 7.5 min of it). Both are inside the 30
+minutes a check gets. If the boards grow past that, measure only the boards
+whose pinned files, or the skill scripts their gates call, changed since the
+last kept measure. A gate that can't run is tried three times, 30 s apart.
+If KiCad itself didn't start (`EnvError`, such as kicad-cli's version probe
+timing out under load), the score gives no number rather than charge hwde
+for the machine.
