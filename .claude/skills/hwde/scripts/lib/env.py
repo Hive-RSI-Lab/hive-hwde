@@ -388,13 +388,19 @@ def find_krt() -> Path | None:
 
     Returns the newest tools_dir()/krt/KiCadRoutingTools-*/plugins dir (the
     scripts sys.path-insert relative dirs, so callers must run them with
-    cwd=plugins). Override with HWDE_KRT_DIR (points at the plugins dir).
+    cwd=plugins). Override with HWDE_KRT_DIR (the plugins dir; a release
+    root or its parent, with plugins/ under it, is followed down to it).
     """
     pin, var = skill_env("KRT_DIR")
     if pin:
         p = Path(pin)
         if not p.is_dir():
             raise EnvError(f"{var} does not exist: {pin}")
+        if not (p / "route_diff.py").exists():
+            down = sorted(p.glob("plugins")) + sorted(
+                p.glob("KiCadRoutingTools-*/plugins"))
+            if down:
+                return down[-1]
         return p
     dirs = sorted(tools_dir().glob("krt/KiCadRoutingTools-*/plugins"))
     return dirs[-1] if dirs else None

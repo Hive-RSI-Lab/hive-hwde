@@ -653,7 +653,10 @@ def run(argv: list[str] | None = None):
                     help="constraints.json (default: next to the board)")
     ap.add_argument("--decoupling", default=None,
                     help="decoupling.json (default: next to the board)")
-    ap.add_argument("--ops-out", required=True)
+    ap.add_argument("--ops-out", default=None,
+                    help="where the op list goes (default: anneal/"
+                         "seed.ops.json beside the board, with place_anneal's "
+                         "candidates)")
     ap.add_argument("--apply", action="store_true",
                     help="apply the ops to the board via place_edit")
     ap.add_argument("--grid-mm", type=float, default=1.0)
@@ -677,6 +680,10 @@ def run(argv: list[str] | None = None):
     ops, violations, facts, _model = seed(pcb, constraints, decoupling,
                                           args.grid_mm, args.edge_margin_mm)
     import json
+    if args.ops_out is None:
+        args.ops_out = str(pcb.resolve().parent / "anneal"
+                           / "seed.ops.json")
+        Path(args.ops_out).parent.mkdir(parents=True, exist_ok=True)
     Path(args.ops_out).write_text(
         json.dumps({"version": 1, "ops": ops}, indent=1), encoding="utf-8")
     facts["ops_out"] = args.ops_out

@@ -18,9 +18,16 @@ the pull is reported (both idempotent, both text surgery):
                   (EasyEDA's 0603s)          -> --no-autofix to skip
   lib_refdes_norm every reference text sits at a blanket (0,-4.0) mm whatever the
                   part size                  -> --no-refdes-norm to skip
+A newly pulled symbol's pins are then retyped passive (lib_pin_types' blanket
+rule): easyeda2kicad writes `unspecified` and stray `input` types, which KiCad
+ERC floods with pin_to_pin warnings (394 on the hi-fi core board). Symbols
+already in the library are left alone, so a lib_pin_types run from datasheet
+JSON (power_in/power_out pins) survives a later pull. -> --no-pin-retype
 Every footprint's (model ...) path is then rewritten from the absolute path
 easyeda2kicad writes to ${KIPRJMOD}/../lib/<lib>.3dshapes/<name> (relative to
---project, else <out_dir>/../kicad), so the board survives its checkout moving.
+--project, else <out_dir>/../kicad - for an out dir named lib/ even before
+that kicad/ exists, the usual order of a new board), so the board survives
+its checkout moving.
 `--verify-drc` measures the result the only way that counts: one instance of each
 pulled footprint alone on a scratch board, real DRC (LEARNINGS 2026-07-28
 [easyeda2kicad][drc] - geometry checkers and DRC disagree).
@@ -66,6 +73,7 @@ sys.path.insert(0, str(SCRIPTS / "lib"))
 import fplib  # noqa: E402
 import fpfix  # noqa: E402
 import kc  # noqa: E402
+import lib_pin_types  # noqa: E402
 import lib_refdes_norm  # noqa: E402
 from lib import env  # noqa: E402
 
@@ -359,6 +367,39 @@ def _portable_models(pretty: Path, models: Path, project: Path | None,
     return {"rewritten": len(changed), "footprints": changed}
 
 
+def _retype_pins(sym_lib: Path, names: set[str]) -> dict:
+    """Blanket-passive retype (lib_pin_types with no datasheet JSON) of the
+    top-level symbols named in `names` only; text surgery, nothing else
+    reformatted."""
+    if not names or not sym_lib.exists():
+        return {"changed": 0, "symbols": []}
+    try:
+        text = sym_lib.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        return {"changed": 0, "skipped": f"{type(exc).__name__}: {exc}"}
+    out: list[str] = []
+    pos = 0
+    changed = 0
+    touched: list[str] = []
+    for head, s, e in fpfix.top_level_nodes(text):
+        if head != "symbol":
+            continue
+        m = _SYM_NAME.match(text[s:e])
+        if not m or m.group(1) not in names:
+            continue
+        new, changes = lib_pin_types.retype(text[s:e], {})
+        out.append(text[pos:s])
+        out.append(new)
+        pos = e
+        if changes:
+            changed += len(changes)
+            touched.append(m.group(1))
+    out.append(text[pos:])
+    if changed:
+        sym_lib.write_text("".join(out), encoding="utf-8")
+    return {"changed": changed, "symbols": touched}
+
+
 # ---------------------------------------------------------- optional load check
 
 def _verify_load(pretty: Path) -> dict:
@@ -414,6 +455,10 @@ def main(argv: list[str] | None = None) -> int:
                          "every pull ships those defects)")
     ap.add_argument("--no-refdes-norm", action="store_true",
                     help="skip the refdes-offset normalisation")
+    ap.add_argument("--no-pin-retype", action="store_true",
+                    help="leave easyeda2kicad's pin types on newly pulled "
+                         "symbols (default: passive, as lib_pin_types does "
+                         "without datasheet JSON)")
     ap.add_argument("--out", help="write JSON here instead of stdout")
     args = ap.parse_args(argv)
     if bool(args.lcsc) == bool(args.parts):
@@ -466,6 +511,10 @@ def main(argv: list[str] | None = None) -> int:
         sym_lib = base.with_suffix(".kicad_sym")
         pretty = Path(str(base) + ".pretty")
         dedup = _dedupe_symbols(sym_lib)
+        pin_types = None
+        if not args.no_pin_retype:
+            pin_types = _retype_pins(sym_lib, {r["symbol"] for r in results
+                                               if r["status"] == "pulled"})
 
         pulled_fps = sorted({fp["name"] for r in results
                              for fp in r.get("footprints", [])})
@@ -480,8 +529,11 @@ def main(argv: list[str] | None = None) -> int:
         if pretty.is_dir():
             project = (Path(args.project) if args.project
                        else out_dir.parent / "kicad")
+            # boards/<b>/lib -> boards/<b>/kicad even before kicad/ is made:
+            # the library is often pulled before the project (hi-fi core)
             models = _portable_models(pretty, Path(str(base) + ".3dshapes"),
-                                      project, explicit=bool(args.project))
+                                      project, explicit=bool(args.project)
+                                      or out_dir.name == "lib")
 
         registered = None
         if args.project:
@@ -510,6 +562,7 @@ def main(argv: list[str] | None = None) -> int:
             "footprint_lib": str(pretty) if pretty.is_dir() else None,
             "results": results,
             "symbol_dedup": dedup,
+            "pin_retype": pin_types,
             "registered": registered,
             "autofix": autofix,
             "refdes_norm": refdes,
