@@ -1,0 +1,340 @@
+{
+ "associations": [
+  {
+   "cap": "C1",
+   "ic": "U1",
+   "pin": "1",
+   "rail": "/power_in/VBUS_PD",
+   "value": "1uF"
+  },
+  {
+   "cap": "C2",
+   "ic": "U3",
+   "pin": "3",
+   "rail": "+3V3",
+   "value": "100nF"
+  },
+  {
+   "cap": "C10",
+   "ic": "U4",
+   "pin": "5",
+   "rail": "VBUS",
+   "value": "10uF"
+  },
+  {
+   "cap": "C11",
+   "ic": "U4",
+   "pin": "5",
+   "rail": "VBUS",
+   "value": "100nF"
+  },
+  {
+   "cap": "C15",
+   "ic": "U5",
+   "pin": "4",
+   "rail": "+5V",
+   "value": "10uF"
+  },
+  {
+   "cap": "C18",
+   "ic": "U6",
+   "pin": "1",
+   "rail": "+5V",
+   "value": "1uF"
+  },
+  {
+   "cap": "C19",
+   "ic": "U6",
+   "pin": "5",
+   "rail": "+3V3A",
+   "value": "1uF"
+  },
+  {
+   "cap": "C30",
+   "ic": "U7",
+   "pin": "2",
+   "rail": "+3V3",
+   "value": "22uF"
+  },
+  {
+   "cap": "C31",
+   "ic": "U7",
+   "pin": "2",
+   "rail": "+3V3",
+   "value": "100nF"
+  },
+  {
+   "cap": "C33",
+   "ic": "U8",
+   "pin": "16",
+   "rail": "+3V3",
+   "value": "100nF"
+  },
+  {
+   "cap": "C34",
+   "ic": "U17",
+   "pin": "24",
+   "rail": "+3V3",
+   "value": "100nF"
+  },
+  {
+   "cap": "C46",
+   "ic": "Y2",
+   "pin": "4",
+   "rail": "+3V3",
+   "value": "100nF"
+  },
+  {
+   "cap": "C40",
+   "ic": "U9",
+   "pin": "6",
+   "rail": "/ethernet/PHY_VDDCR",
+   "value": "1uF"
+  },
+  {
+   "cap": "C42",
+   "ic": "U9",
+   "pin": "1",
+   "rail": "+3V3E",
+   "value": "100nF"
+  },
+  {
+   "cap": "C43",
+   "ic": "U9",
+   "pin": "19",
+   "rail": "+3V3E",
+   "value": "100nF"
+  },
+  {
+   "cap": "C44",
+   "ic": "U9",
+   "pin": "9",
+   "rail": "+3V3",
+   "value": "100nF"
+  },
+  {
+   "cap": "C50",
+   "ic": "U10",
+   "pin": "15",
+   "rail": "+3V3A",
+   "value": "1uF"
+  },
+  {
+   "cap": "C51",
+   "ic": "U10",
+   "pin": "15",
+   "rail": "+3V3A",
+   "value": "100nF"
+  },
+  {
+   "cap": "C52",
+   "ic": "U10",
+   "pin": "16",
+   "rail": "+3V3A",
+   "value": "1uF"
+  },
+  {
+   "cap": "C53",
+   "ic": "U10",
+   "pin": "16",
+   "rail": "+3V3A",
+   "value": "100nF"
+  },
+  {
+   "cap": "C54",
+   "ic": "U10",
+   "pin": "17",
+   "rail": "+3V3A",
+   "value": "100nF"
+  },
+  {
+   "cap": "C55",
+   "ic": "U10",
+   "pin": "18",
+   "rail": "+3V3",
+   "value": "100nF"
+  },
+  {
+   "cap": "C56",
+   "ic": "U10",
+   "pin": "21",
+   "rail": "/dac/DAC_DVDD",
+   "value": "4.7uF"
+  },
+  {
+   "cap": "C57",
+   "ic": "Y1",
+   "pin": "4",
+   "rail": "+3V3",
+   "value": "100nF"
+  },
+  {
+   "cap": "C58",
+   "ic": "U11",
+   "pin": "8",
+   "rail": "+5VA",
+   "value": "100nF"
+  },
+  {
+   "cap": "C68",
+   "ic": "U12",
+   "pin": "1",
+   "rail": "+3V3A",
+   "value": "1uF"
+  },
+  {
+   "cap": "C69",
+   "ic": "U12",
+   "pin": "8",
+   "rail": "+3V3A",
+   "value": "1uF"
+  },
+  {
+   "cap": "C70",
+   "ic": "U12",
+   "pin": "20",
+   "rail": "+3V3",
+   "value": "1uF"
+  },
+  {
+   "cap": "C120",
+   "ic": "U13",
+   "pin": "1",
+   "rail": "+3V3",
+   "value": "100nF"
+  },
+  {
+   "cap": "C121",
+   "ic": "U13",
+   "pin": "5",
+   "rail": "+3V3",
+   "value": "100nF"
+  },
+  {
+   "cap": "C122",
+   "ic": "U13",
+   "pin": "12",
+   "rail": "+3V3A",
+   "value": "1uF"
+  },
+  {
+   "cap": "C125",
+   "ic": "U14",
+   "pin": "8",
+   "rail": "+5VA",
+   "value": "100nF"
+  },
+  {
+   "cap": "C201",
+   "ic": "U15",
+   "pin": "1",
+   "rail": "+5V",
+   "value": "10uF"
+  },
+  {
+   "cap": "C202",
+   "ic": "U15",
+   "pin": "1",
+   "rail": "+5V",
+   "value": "100nF"
+  },
+  {
+   "cap": "C204",
+   "ic": "U15",
+   "pin": "21",
+   "rail": "/amp_a/A_AVDD",
+   "value": "1uF"
+  },
+  {
+   "cap": "C206",
+   "ic": "U15",
+   "pin": "22",
+   "rail": "/amp_a/A_GVDD",
+   "value": "1uF"
+  },
+  {
+   "cap": "C207",
+   "ic": "U15",
+   "pin": "29",
+   "rail": "PVDD",
+   "value": "1uF"
+  },
+  {
+   "cap": "C208",
+   "ic": "U15",
+   "pin": "29",
+   "rail": "PVDD",
+   "value": "100nF"
+  },
+  {
+   "cap": "C209",
+   "ic": "U15",
+   "pin": "36",
+   "rail": "PVDD",
+   "value": "1uF"
+  },
+  {
+   "cap": "C210",
+   "ic": "U15",
+   "pin": "36",
+   "rail": "PVDD",
+   "value": "100nF"
+  },
+  {
+   "cap": "C301",
+   "ic": "U16",
+   "pin": "1",
+   "rail": "+5V",
+   "value": "10uF"
+  },
+  {
+   "cap": "C302",
+   "ic": "U16",
+   "pin": "1",
+   "rail": "+5V",
+   "value": "100nF"
+  },
+  {
+   "cap": "C304",
+   "ic": "U16",
+   "pin": "21",
+   "rail": "/amp_b/B_AVDD",
+   "value": "1uF"
+  },
+  {
+   "cap": "C306",
+   "ic": "U16",
+   "pin": "22",
+   "rail": "/amp_b/B_GVDD",
+   "value": "1uF"
+  },
+  {
+   "cap": "C307",
+   "ic": "U16",
+   "pin": "29",
+   "rail": "PVDD",
+   "value": "1uF"
+  },
+  {
+   "cap": "C308",
+   "ic": "U16",
+   "pin": "29",
+   "rail": "PVDD",
+   "value": "100nF"
+  },
+  {
+   "cap": "C309",
+   "ic": "U16",
+   "pin": "36",
+   "rail": "PVDD",
+   "value": "1uF"
+  },
+  {
+   "cap": "C310",
+   "ic": "U16",
+   "pin": "36",
+   "rail": "PVDD",
+   "value": "100nF"
+  }
+ ]
+}

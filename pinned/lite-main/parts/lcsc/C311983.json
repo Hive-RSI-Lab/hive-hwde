@@ -1,0 +1,104 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C311983",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C311983",
+   "mpn": "TPS54302DDCR",
+   "brand": "Texas Instruments",
+   "description": "-40\u2103~+125\u2103@(TJ) 1 3A 4.5V~28V 400kHz 45uA Adjustable Buck Buck Built-in Yes TSOT-23-6 DC-DC Converters ROHS",
+   "package": "TSOT-23-6",
+   "category": "DC-DC Converters",
+   "type": "Extended",
+   "basic": false,
+   "stock": 59160,
+   "price": 0.2495,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.2495
+    },
+    {
+     "qty": 50,
+     "price": 0.2025
+    },
+    {
+     "qty": 150,
+     "price": 0.1823
+    },
+    {
+     "qty": 500,
+     "price": 0.1573
+    },
+    {
+     "qty": 3000,
+     "price": 0.146
+    },
+    {
+     "qty": 6000,
+     "price": 0.1393
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2411041759_Texas-Instruments-TPS54302DDCR_C311983.pdf",
+   "url": "https://www.lcsc.com/product-detail/dc-dc-converters_texas-instruments-tps54302ddcr_C311983.html",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+125\u2103@(TJ)"
+    },
+    {
+     "name": "Function",
+     "value": "Step-down type"
+    },
+    {
+     "name": "Synchronous Rectifier",
+     "value": "Yes"
+    },
+    {
+     "name": "Frequency - Switching",
+     "value": "400kHz"
+    },
+    {
+     "name": "Output Type",
+     "value": "Adjustable"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "4.5V~28V"
+    },
+    {
+     "name": "Output Current",
+     "value": "3A"
+    },
+    {
+     "name": "Quiescent Current",
+     "value": "45uA"
+    },
+    {
+     "name": "Features",
+     "value": "Overcurrent Protection\u3001Light load efficient mode\u3001Cycle-by-cycle current limiting\u3001Hiccup current limiting\u3001EMI optimization (spread spectrum)"
+    },
+    {
+     "name": "Switch tube (built-in/external)",
+     "value": "Built-in"
+    },
+    {
+     "name": "Topology",
+     "value": "Buck"
+    },
+    {
+     "name": "Number of Outputs",
+     "value": "1"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

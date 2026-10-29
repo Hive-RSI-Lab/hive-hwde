@@ -1,0 +1,31 @@
+{
+ "script": "check_mating",
+ "status": "pass",
+ "board": "lite-main.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "connectors": [
+  {
+   "ref": "J1",
+   "family": "usb_c",
+   "entry": "horizontal",
+   "mouth": "-y",
+   "gap_mm": -0.0,
+   "nearest_edge": "-y",
+   "model_span_mm": [
+    -2.69,
+    5.21
+   ],
+   "blocked_by": []
+  }
+ ],
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T20:14:31+00:00",
+ "input": "kicad/lite-main.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:ec2b7102a4b686e14c6c39d6cfee4fd1fe2da6c26d752b64af1c5680c5eb9ede"
+}

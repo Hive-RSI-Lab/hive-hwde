@@ -1,0 +1,811 @@
+{
+ "script": "planes_gen",
+ "status": "pass",
+ "board": "core.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "facts": {
+  "plan_source": "constraints",
+  "zones_added": 56,
+  "zones": [
+   {
+    "net": "/amp_a/A_OUT1P",
+    "layer": "F.Cu",
+    "region": [
+     38.187,
+     152.197,
+     42.037,
+     156.697
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 17.311,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_OUT1P",
+    "layer": "F.Cu",
+    "region": [
+     41.687,
+     156.297,
+     42.887,
+     158.697
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 2.868,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_OUT1M",
+    "layer": "F.Cu",
+    "region": [
+     44.487,
+     141.297,
+     46.087,
+     156.097
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 23.666,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_OUT1M",
+    "layer": "F.Cu",
+    "region": [
+     38.187,
+     141.297,
+     44.487,
+     144.697
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 21.412,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_OUT1M",
+    "layer": "F.Cu",
+    "region": [
+     44.787,
+     156.097,
+     45.487,
+     158.697
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 1.756,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_OUT2P",
+    "layer": "F.Cu",
+    "region": [
+     46.337,
+     141.297,
+     47.337,
+     156.097
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 14.789,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_OUT2P",
+    "layer": "F.Cu",
+    "region": [
+     47.337,
+     141.297,
+     54.087,
+     144.697
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 22.942,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_OUT2P",
+    "layer": "F.Cu",
+    "region": [
+     46.787,
+     156.097,
+     47.287,
+     158.697
+    ],
+    "priority": 7,
+    "status": "added",
+    "area_mm2": 1.292,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_OUT2M",
+    "layer": "F.Cu",
+    "region": [
+     50.287,
+     152.197,
+     54.087,
+     156.697
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 17.086,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_OUT2M",
+    "layer": "F.Cu",
+    "region": [
+     49.337,
+     156.297,
+     50.487,
+     158.697
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 2.748,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_SPK_L-",
+    "layer": "F.Cu",
+    "region": [
+     38.187,
+     134.097,
+     47.887,
+     135.297
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 11.628,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_SPK_L-",
+    "layer": "F.Cu",
+    "region": [
+     45.287,
+     124.897,
+     47.887,
+     134.097
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 23.912,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_SPK_R+",
+    "layer": "F.Cu",
+    "region": [
+     50.287,
+     134.097,
+     65.387,
+     135.297
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 18.108,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_SPK_R+",
+    "layer": "F.Cu",
+    "region": [
+     62.787,
+     124.897,
+     65.387,
+     134.097
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 23.79,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_SPK_L+",
+    "layer": "F.Cu",
+    "region": [
+     41.787,
+     145.297,
+     44.187,
+     148.597
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 7.902,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_SPK_L+",
+    "layer": "B.Cu",
+    "region": [
+     38.187,
+     145.097,
+     44.187,
+     148.697
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 21.588,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_SPK_L+",
+    "layer": "B.Cu",
+    "region": [
+     42.587,
+     127.697,
+     44.187,
+     148.697
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 33.592,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_SPK_L+",
+    "layer": "B.Cu",
+    "region": [
+     42.587,
+     127.697,
+     52.787,
+     129.297
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 16.312,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_SPK_L+",
+    "layer": "B.Cu",
+    "region": [
+     50.387,
+     124.897,
+     52.787,
+     129.297
+    ],
+    "priority": 7,
+    "status": "added",
+    "area_mm2": 10.548,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_SPK_R-",
+    "layer": "F.Cu",
+    "region": [
+     53.887,
+     145.297,
+     56.287,
+     148.597
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 7.902,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_SPK_R-",
+    "layer": "B.Cu",
+    "region": [
+     54.487,
+     127.897,
+     56.187,
+     148.697
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 35.348,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_SPK_R-",
+    "layer": "B.Cu",
+    "region": [
+     54.487,
+     127.897,
+     60.287,
+     129.497
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 9.272,
+    "islands": 1
+   },
+   {
+    "net": "/amp_a/A_SPK_R-",
+    "layer": "B.Cu",
+    "region": [
+     57.887,
+     124.897,
+     60.287,
+     129.497
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 11.028,
+    "islands": 1
+   },
+   {
+    "net": "PVDD",
+    "layer": "F.Cu",
+    "region": [
+     42.587,
+     153.697,
+     44.337,
+     156.897
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 5.311,
+    "islands": 1
+   },
+   {
+    "net": "PVDD",
+    "layer": "F.Cu",
+    "region": [
+     43.007,
+     156.897,
+     44.667,
+     158.697
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 2.974,
+    "islands": 1
+   },
+   {
+    "net": "PVDD",
+    "layer": "F.Cu",
+    "region": [
+     47.587,
+     153.697,
+     49.187,
+     156.897
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 5.109,
+    "islands": 1
+   },
+   {
+    "net": "PVDD",
+    "layer": "F.Cu",
+    "region": [
+     47.487,
+     156.897,
+     49.137,
+     158.697
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 2.957,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_OUT1P",
+    "layer": "F.Cu",
+    "region": [
+     71.087,
+     152.197,
+     74.937,
+     156.697
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 17.311,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_OUT1P",
+    "layer": "F.Cu",
+    "region": [
+     74.587,
+     156.297,
+     75.787,
+     158.697
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 2.868,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_OUT1M",
+    "layer": "F.Cu",
+    "region": [
+     77.387,
+     141.297,
+     78.987,
+     156.097
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 23.666,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_OUT1M",
+    "layer": "F.Cu",
+    "region": [
+     71.087,
+     141.297,
+     77.387,
+     144.697
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 21.412,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_OUT1M",
+    "layer": "F.Cu",
+    "region": [
+     77.687,
+     156.097,
+     78.387,
+     158.697
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 1.756,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_OUT2P",
+    "layer": "F.Cu",
+    "region": [
+     79.237,
+     141.297,
+     80.237,
+     156.097
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 14.789,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_OUT2P",
+    "layer": "F.Cu",
+    "region": [
+     80.237,
+     141.297,
+     86.987,
+     144.697
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 22.941,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_OUT2P",
+    "layer": "F.Cu",
+    "region": [
+     79.687,
+     156.097,
+     80.187,
+     158.697
+    ],
+    "priority": 7,
+    "status": "added",
+    "area_mm2": 1.292,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_OUT2M",
+    "layer": "F.Cu",
+    "region": [
+     83.187,
+     152.197,
+     86.987,
+     156.697
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 17.086,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_OUT2M",
+    "layer": "F.Cu",
+    "region": [
+     82.237,
+     156.297,
+     83.387,
+     158.697
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 2.746,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_SPK_L-",
+    "layer": "F.Cu",
+    "region": [
+     71.087,
+     134.097,
+     80.787,
+     135.297
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 11.628,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_SPK_L-",
+    "layer": "F.Cu",
+    "region": [
+     78.187,
+     124.897,
+     80.787,
+     134.097
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 23.912,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_SPK_R+",
+    "layer": "F.Cu",
+    "region": [
+     83.187,
+     134.097,
+     98.287,
+     135.297
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 17.628,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_SPK_R+",
+    "layer": "F.Cu",
+    "region": [
+     95.687,
+     124.897,
+     98.287,
+     134.097
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 23.912,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_SPK_L+",
+    "layer": "F.Cu",
+    "region": [
+     74.687,
+     145.297,
+     77.087,
+     148.597
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 7.902,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_SPK_L+",
+    "layer": "B.Cu",
+    "region": [
+     71.087,
+     145.097,
+     77.087,
+     148.697
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 21.588,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_SPK_L+",
+    "layer": "B.Cu",
+    "region": [
+     75.487,
+     127.697,
+     77.087,
+     148.697
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 33.592,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_SPK_L+",
+    "layer": "B.Cu",
+    "region": [
+     75.487,
+     127.697,
+     85.687,
+     129.297
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 16.312,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_SPK_L+",
+    "layer": "B.Cu",
+    "region": [
+     83.287,
+     124.897,
+     85.687,
+     129.297
+    ],
+    "priority": 7,
+    "status": "added",
+    "area_mm2": 10.548,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_SPK_R-",
+    "layer": "F.Cu",
+    "region": [
+     86.787,
+     145.297,
+     89.187,
+     148.597
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 7.905,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_SPK_R-",
+    "layer": "B.Cu",
+    "region": [
+     87.387,
+     127.897,
+     89.087,
+     148.697
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 35.348,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_SPK_R-",
+    "layer": "B.Cu",
+    "region": [
+     87.387,
+     127.897,
+     93.187,
+     129.497
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 9.272,
+    "islands": 1
+   },
+   {
+    "net": "/amp_b/B_SPK_R-",
+    "layer": "B.Cu",
+    "region": [
+     90.787,
+     124.897,
+     93.187,
+     129.497
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 11.028,
+    "islands": 1
+   },
+   {
+    "net": "PVDD",
+    "layer": "F.Cu",
+    "region": [
+     75.487,
+     153.697,
+     77.237,
+     156.897
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 5.311,
+    "islands": 1
+   },
+   {
+    "net": "PVDD",
+    "layer": "F.Cu",
+    "region": [
+     75.907,
+     156.897,
+     77.567,
+     158.697
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 2.974,
+    "islands": 1
+   },
+   {
+    "net": "PVDD",
+    "layer": "F.Cu",
+    "region": [
+     80.487,
+     153.697,
+     82.087,
+     156.897
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 5.109,
+    "islands": 1
+   },
+   {
+    "net": "PVDD",
+    "layer": "F.Cu",
+    "region": [
+     80.387,
+     156.897,
+     82.037,
+     158.697
+    ],
+    "priority": 6,
+    "status": "added",
+    "area_mm2": 2.957,
+    "islands": 1
+   },
+   {
+    "net": "/rails/BUCK5_LX",
+    "layer": "F.Cu",
+    "region": [
+     67.187,
+     170.647,
+     70.387,
+     171.397
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 2.376,
+    "islands": 1
+   },
+   {
+    "net": "/rails/BUCK5_LX",
+    "layer": "F.Cu",
+    "region": [
+     70.087,
+     172.297,
+     73.187,
+     174.297
+    ],
+    "priority": 5,
+    "status": "added",
+    "area_mm2": 5.435,
+    "islands": 1
+   }
+  ],
+  "thermal_vias": 0,
+  "thermal_pads": [],
+  "layer_types": {},
+  "added_for_reference": [],
+  "notes": []
+ },
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T20:23:39+00:00",
+ "input": "/work/boards/core/kicad/core.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:97c3ed0e9ee12ac8ff586e5779ca984de568bffaf115baa9e3c7f05862a2357a"
+}

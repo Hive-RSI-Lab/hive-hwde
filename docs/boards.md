@@ -1,35 +1,30 @@
 # Boards built with hwde in other projects
 
 hwde's real boards are built in the projects that need them, not in this
-repo: the hi-fi receiver's boards are in hifi-receiver-2's `boards/`. This
-table records each one the score (`bin/hwde score`) counts beside the boards
-under this repo's `boards/`. A row is the board as its project's main
-holds it: the commit whose board passed, and the gate steps it reached (the
-same five as `check-all`: `erc`, `drc_routed`, `verify`, `fab`, `dfm`).
+repo: the hi-fi receiver's boards are in hifi-receiver-2's `boards/`. The
+score ([score.md](score.md)) re-runs hwde's gates on a copy of each one,
+pinned in `pinned/<board>/` at one commit of its project, and charges the
+board-local scripts its pin, `pinned/<board>.json`, lists as `stand_in`.
 
-The score reads this file, never the other project's clone, so it stays the
-same for one commit of this repo. The rows of
-[workarounds.md](workarounds.md) name these boards like any other, so a
-shim or hand edit a product board needed costs the score its steps, and a
-fix in hwde that lets the board drop it raises the score.
+**Who refreshes a pin:** the worker who takes a board through hwde's gates
+in its own project, once its main holds the board: `bin/hwde pin <board>
+--from <the project's clone> --commit <sha>`, classifying each new script,
+in a commit that names the project's commit. Workarounds that have a probe
+also get a row in [workarounds.md](workarounds.md), or extend an existing
+row's `boards` when it's the same cause. `bin/hwde check-all` re-runs only
+this repo's boards; a board here is re-checked by its own project's test.
 
-**Who writes a row:** the worker who takes a board through hwde's gates in
-its own project. When the board passes, add or update its row here with
-the commit, and for every board-local script or hand edit that stands in
-for a defect in hwde (the "board-local" lines of a board's snags file), add
-a row to workarounds.md with a probe, or extend an existing row's `boards`
-when it's the same cause. `bin/hwde check-all` re-runs only this repo's
-boards; a board here is re-checked by its own project's test.
+| board | project | pinned at | where |
+|---|---|---|---|
+| lite-main | hifi-receiver-2 | fe17345 | `boards/lite-main`: 2 layers, 130 parts (USB-C PD, ESP32, codec, 2 x 43 W class-D); its snags are `HWDE-SNAGS.md` |
+| core | hifi-receiver-2 | fe17345 | `boards/core`: 4 layers, 278 parts (Plus/Ultra core); its board-local scripts are in `kicad/gen/`, listed in its README |
 
-| board | project | commit | steps | where |
-|---|---|---|---|---|
-| lite-main | hifi-receiver-2 | 87b6fce | erc, drc_routed, verify, fab, dfm | `boards/lite-main`: 2 layers, 130 parts (USB-C PD, ESP32, codec, 2 x 43 W class-D); its snags are `HWDE-SNAGS.md` |
-| core | hifi-receiver-2 | e8fef47 | erc, drc_routed, verify, fab, dfm | `boards/core`: 4 layers, 278 parts (Plus/Ultra core); its board-local scripts are in `kicad/gen/`, listed in its README |
+## Workarounds with no probe
 
-## Known and not yet counted
-
-Workarounds these boards needed that have no row yet, because there's no
-probe that could tell when their cause is fixed. A row needs one:
+Workarounds these boards needed that have no row in
+[workarounds.md](workarounds.md), because there's no probe that could tell
+when their cause is fixed. The score charges the board-local scripts among
+them as `stand_in` scripts of their pins:
 
 - **core: routing finished by hand.** route_auto left about 40 connections
   open; they were finished with a board-local maze router and rip-up,

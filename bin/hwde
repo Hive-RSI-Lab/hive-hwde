@@ -9,7 +9,10 @@
 #                         no KiCad runs of whole boards (the per-PR test)
 #   hwde check-all        re-run every board's gates from a scratch copy, and
 #                         check docs/workarounds.md against its probes (slow)
-#   hwde score            the share of gate steps with no workaround (the score)
+#   hwde score            re-run the gates on the pinned boards, shims off, and
+#                         count what they find (the score; docs/score.md)
+#   hwde pin BOARD --from CLONE --commit SHA
+#                         refresh a pinned board (bin/pin.py)
 #   hwde publish <dir>    put a self-contained copy at <dir>/hwde (a warden
 #                         runs it into the Hive's tools folder, so a check
 #                         sandbox, which mounts only /work and /hive/tools,
@@ -40,11 +43,14 @@ finduv() {
 	[ -n "$uv" ] || { echo "hwde: needs uv (hive agent install --tool uv)" >&2; exit 127; }
 }
 
-# The score reads files only: no KiCad, no venv.
-if [ "${1:-}" = score ]; then
+# pin copies files with git: no KiCad, no venv.
+if [ "${1:-}" = pin ]; then
 	shift
-	exec python3 "$here/bin/score.py" "$@"
+	exec python3 "$here/bin/pin.py" "$@"
 fi
+# The score measures hwde as it is, not as its shims patch it: every shim is
+# off for it and for the gates it runs.
+[ "${1:-}" = score ] && export HWDE_NO_SHIMS=1
 
 # publish builds the copy beside <dir>/hwde and swaps it in, so a check that
 # is running keeps the old one whole. Its python is a python-build-standalone
@@ -80,7 +86,7 @@ if [ "${1:-}" = publish ]; then
 	echo "hwde $ver published at $dest/hwde (run $dest/hwde/bin/hwde)"
 	exit 0
 fi
-wa() { grep -q "^| *$1 *|" "$here/docs/workarounds.md" 2>/dev/null; }
+wa() { [ -z "${HWDE_NO_SHIMS:-}" ] && grep -q "^| *$1 *|" "$here/docs/workarounds.md" 2>/dev/null; }
 
 # KiCad: an explicit pin wins; else the newest KiCad 10 AppDir in the tools
 # folder, through wrappers that put kicad-cli and KiCad's own python (it has
@@ -208,6 +214,12 @@ check-all)
 	export HWDE_BIN="$here/bin/hwde" HWDE_APPDIR="$appdir" HWDE_STATE="$state"
 	heavy="hwde check-all (every board's gates)"
 	x "$py" "$here/bin/check_all.py" "$@"
+	;;
+score)
+	shift
+	export HWDE_BIN="$here/bin/hwde"
+	heavy="hwde score (the gates on every pinned board)"
+	x "$py" "$here/bin/score.py" "$@"
 	;;
 check)
 	shift

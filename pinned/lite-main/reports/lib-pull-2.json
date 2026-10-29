@@ -1,0 +1,1070 @@
+{
+ "script": "lib_pull",
+ "status": "fail",
+ "lib_name": "aiee",
+ "parts_file": null,
+ "paced_s": 5.0,
+ "retried": 1,
+ "symbol_lib": "/work/boards/lite/lib/aiee.kicad_sym",
+ "footprint_lib": "/work/boards/lite/lib/aiee.pretty",
+ "results": [
+  {
+   "lcsc": "C318884",
+   "status": "pulled",
+   "symbol": "TS-1187A-B-A-B",
+   "symbol_verified": true,
+   "footprint_verified": true,
+   "symbol_lib": "/work/boards/lite/lib/aiee.kicad_sym",
+   "footprint_lib": "/work/boards/lite/lib/aiee.pretty",
+   "footprints": [
+    {
+     "name": "SW-SMD_4P-L5.1-W5.1-P3.70-LS6.5-TL_H1.5",
+     "file": "/work/boards/lite/lib/aiee.pretty/SW-SMD_4P-L5.1-W5.1-P3.70-LS6.5-TL_H1.5.kicad_mod",
+     "copper_pads": 4,
+     "courtyard": true,
+     "silk": true
+    }
+   ],
+   "warnings": []
+  },
+  {
+   "lcsc": "C99865",
+   "status": "error",
+   "symbol_verified": false,
+   "footprint_verified": false,
+   "detail": "no symbol carrying (property \"LCSC Part\" \"C99865\") in aiee.kicad_sym | log: -- easyeda2kicad.py v1.0.1 --\n[ERROR] Failed to fetch data from EasyEDA API for part C99865"
+  },
+  {
+   "lcsc": "C365736",
+   "status": "pulled",
+   "symbol": "ES8388",
+   "symbol_verified": true,
+   "footprint_verified": true,
+   "symbol_lib": "/work/boards/lite/lib/aiee.kicad_sym",
+   "footprint_lib": "/work/boards/lite/lib/aiee.pretty",
+   "footprints": [
+    {
+     "name": "QFN-28_L4.0-W4.0-P0.45-BL-EP",
+     "file": "/work/boards/lite/lib/aiee.pretty/QFN-28_L4.0-W4.0-P0.45-BL-EP.kicad_mod",
+     "copper_pads": 29,
+     "courtyard": true,
+     "silk": true
+    }
+   ],
+   "warnings": []
+  },
+  {
+   "lcsc": "C46497",
+   "status": "pulled",
+   "symbol": "TPA3118D2DAPR",
+   "symbol_verified": true,
+   "footprint_verified": true,
+   "symbol_lib": "/work/boards/lite/lib/aiee.kicad_sym",
+   "footprint_lib": "/work/boards/lite/lib/aiee.pretty",
+   "footprints": [
+    {
+     "name": "HTSSOP-32_L11.0-W6.1-P0.65-LS8.1-BL-EP",
+     "file": "/work/boards/lite/lib/aiee.pretty/HTSSOP-32_L11.0-W6.1-P0.65-LS8.1-BL-EP.kicad_mod",
+     "copper_pads": 42,
+     "courtyard": true,
+     "silk": true
+    }
+   ],
+   "warnings": []
+  },
+  {
+   "lcsc": "C48391614",
+   "status": "pulled",
+   "symbol": "XR0850-100M",
+   "symbol_verified": true,
+   "footprint_verified": true,
+   "symbol_lib": "/work/boards/lite/lib/aiee.kicad_sym",
+   "footprint_lib": "/work/boards/lite/lib/aiee.pretty",
+   "footprints": [
+    {
+     "name": "IND-SMD_L8.0-W8.0_XR0850",
+     "file": "/work/boards/lite/lib/aiee.pretty/IND-SMD_L8.0-W8.0_XR0850.kicad_mod",
+     "copper_pads": 2,
+     "courtyard": true,
+     "silk": true
+    }
+   ],
+   "warnings": []
+  },
+  {
+   "lcsc": "C2836441",
+   "status": "pulled",
+   "symbol": "RVT220UF35V67RV0024",
+   "symbol_verified": true,
+   "footprint_verified": true,
+   "symbol_lib": "/work/boards/lite/lib/aiee.kicad_sym",
+   "footprint_lib": "/work/boards/lite/lib/aiee.pretty",
+   "footprints": [
+    {
+     "name": "CAP-SMD_BD8.0-L8.3-W8.3-LS9.3-FD",
+     "file": "/work/boards/lite/lib/aiee.pretty/CAP-SMD_BD8.0-L8.3-W8.3-LS9.3-FD.kicad_mod",
+     "copper_pads": 2,
+     "courtyard": true,
+     "silk": true
+    }
+   ],
+   "warnings": [],
+   "retried": true
+  },
+  {
+   "lcsc": "C79272",
+   "status": "pulled",
+   "symbol": "SWPA6045S100MT",
+   "symbol_verified": true,
+   "footprint_verified": true,
+   "symbol_lib": "/work/boards/lite/lib/aiee.kicad_sym",
+   "footprint_lib": "/work/boards/lite/lib/aiee.pretty",
+   "footprints": [
+    {
+     "name": "IND-SMD_L6.0-W6.0_SWPA6045S",
+     "file": "/work/boards/lite/lib/aiee.pretty/IND-SMD_L6.0-W6.0_SWPA6045S.kicad_mod",
+     "copper_pads": 2,
+     "courtyard": true,
+     "silk": true
+    }
+   ],
+   "warnings": []
+  },
+  {
+   "lcsc": "C305171",
+   "status": "pulled",
+   "symbol": "SWPA4020S2R2NT",
+   "symbol_verified": true,
+   "footprint_verified": true,
+   "symbol_lib": "/work/boards/lite/lib/aiee.kicad_sym",
+   "footprint_lib": "/work/boards/lite/lib/aiee.pretty",
+   "footprints": [
+    {
+     "name": "IND-SMD_L4.0-W4.0_VLCF4020",
+     "file": "/work/boards/lite/lib/aiee.pretty/IND-SMD_L4.0-W4.0_VLCF4020.kicad_mod",
+     "copper_pads": 2,
+     "courtyard": true,
+     "silk": true
+    }
+   ],
+   "warnings": []
+  },
+  {
+   "lcsc": "C20526",
+   "status": "pulled",
+   "symbol": "MMBT3904-C20526",
+   "symbol_verified": true,
+   "footprint_verified": true,
+   "symbol_lib": "/work/boards/lite/lib/aiee.kicad_sym",
+   "footprint_lib": "/work/boards/lite/lib/aiee.pretty",
+   "footprints": [
+    {
+     "name": "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+     "file": "/work/boards/lite/lib/aiee.pretty/SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR.kicad_mod",
+     "copper_pads": 3,
+     "courtyard": true,
+     "silk": true
+    }
+   ],
+   "warnings": []
+  },
+  {
+   "lcsc": "C2290",
+   "status": "pulled",
+   "symbol": "0603Whitelight_C2290",
+   "symbol_verified": true,
+   "footprint_verified": true,
+   "symbol_lib": "/work/boards/lite/lib/aiee.kicad_sym",
+   "footprint_lib": "/work/boards/lite/lib/aiee.pretty",
+   "footprints": [
+    {
+     "name": "LED0603-R-RD_WHITE",
+     "file": "/work/boards/lite/lib/aiee.pretty/LED0603-R-RD_WHITE.kicad_mod",
+     "copper_pads": 2,
+     "courtyard": true,
+     "silk": true
+    }
+   ],
+   "warnings": []
+  }
+ ],
+ "symbol_dedup": {
+  "removed": 0,
+  "names": []
+ },
+ "registered": {
+  "fp": "created",
+  "sym": "created"
+ },
+ "autofix": {
+  "footprints": 9,
+  "changed": 9,
+  "actions": 36,
+  "residue": 22,
+  "results": [
+   {
+    "footprint": "CAP-SMD_BD8.0-L8.3-W8.3-LS9.3-FD",
+    "file": "/work/boards/lite/lib/aiee.pretty/CAP-SMD_BD8.0-L8.3-W8.3-LS9.3-FD.kicad_mod",
+    "changed": true,
+    "actions": [
+     {
+      "rule": "A",
+      "action": "promote_silk_width",
+      "kind": "fp_circle",
+      "from_mm": 0.06,
+      "to_mm": 0.15,
+      "gap_mm": 3.245
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": -0.075,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": -0.075,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": -0.075,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": -0.075,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     }
+    ],
+    "residue": 4,
+    "before": {
+     "worst_gap_mm": -0.075,
+     "unprintable_silk": 1,
+     "under_gap_silk": 4,
+     "plated_pegs": 0
+    },
+    "after": {
+     "worst_gap_mm": -0.075,
+     "unprintable_silk": 0,
+     "under_gap_silk": 4,
+     "plated_pegs": 0
+    }
+   },
+   {
+    "footprint": "HTSSOP-32_L11.0-W6.1-P0.65-LS8.1-BL-EP",
+    "file": "/work/boards/lite/lib/aiee.pretty/HTSSOP-32_L11.0-W6.1-P0.65-LS8.1-BL-EP.kicad_mod",
+    "changed": true,
+    "actions": [
+     {
+      "rule": "A",
+      "action": "promote_silk_width",
+      "kind": "fp_circle",
+      "from_mm": 0.06,
+      "to_mm": 0.15,
+      "gap_mm": 0.3435
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_circle",
+      "from_mm": 0.3,
+      "to_mm": 0.25,
+      "gap_mm": 0.1485,
+      "new_gap_mm": 0.1735
+     }
+    ],
+    "residue": 0,
+    "before": {
+     "worst_gap_mm": 0.1485,
+     "unprintable_silk": 1,
+     "under_gap_silk": 1,
+     "plated_pegs": 0
+    },
+    "after": {
+     "worst_gap_mm": 0.1595,
+     "unprintable_silk": 0,
+     "under_gap_silk": 0,
+     "plated_pegs": 0
+    }
+   },
+   {
+    "footprint": "IND-SMD_L4.0-W4.0_VLCF4020",
+    "file": "/work/boards/lite/lib/aiee.pretty/IND-SMD_L4.0-W4.0_VLCF4020.kicad_mod",
+    "changed": true,
+    "actions": [
+     {
+      "rule": "A",
+      "action": "delete_unprintable_silk",
+      "kind": "fp_circle",
+      "width_mm": 0.06,
+      "gap_mm": -0.03
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_circle",
+      "from_mm": 0.3,
+      "to_mm": 0.25,
+      "gap_mm": 0.13,
+      "new_gap_mm": 0.155
+     }
+    ],
+    "residue": 0,
+    "before": {
+     "worst_gap_mm": -0.03,
+     "unprintable_silk": 1,
+     "under_gap_silk": 2,
+     "plated_pegs": 0
+    },
+    "after": {
+     "worst_gap_mm": 0.155,
+     "unprintable_silk": 0,
+     "under_gap_silk": 0,
+     "plated_pegs": 0
+    }
+   },
+   {
+    "footprint": "IND-SMD_L6.0-W6.0_SWPA6045S",
+    "file": "/work/boards/lite/lib/aiee.pretty/IND-SMD_L6.0-W6.0_SWPA6045S.kicad_mod",
+    "changed": true,
+    "actions": [
+     {
+      "rule": "A",
+      "action": "promote_silk_width",
+      "kind": "fp_circle",
+      "from_mm": 0.06,
+      "to_mm": 0.15,
+      "gap_mm": 0.355
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": 0.075,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": 0.075,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": 0.075,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": 0.075,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     }
+    ],
+    "residue": 4,
+    "before": {
+     "worst_gap_mm": 0.075,
+     "unprintable_silk": 1,
+     "under_gap_silk": 4,
+     "plated_pegs": 0
+    },
+    "after": {
+     "worst_gap_mm": 0.075,
+     "unprintable_silk": 0,
+     "under_gap_silk": 4,
+     "plated_pegs": 0
+    }
+   },
+   {
+    "footprint": "IND-SMD_L8.0-W8.0_XR0850",
+    "file": "/work/boards/lite/lib/aiee.pretty/IND-SMD_L8.0-W8.0_XR0850.kicad_mod",
+    "changed": true,
+    "actions": [
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.105,
+      "new_gap_mm": 0.155
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.105,
+      "new_gap_mm": 0.155
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.105,
+      "new_gap_mm": 0.155
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.105,
+      "new_gap_mm": 0.155
+     }
+    ],
+    "residue": 0,
+    "before": {
+     "worst_gap_mm": 0.105,
+     "unprintable_silk": 0,
+     "under_gap_silk": 4,
+     "plated_pegs": 0
+    },
+    "after": {
+     "worst_gap_mm": 0.155,
+     "unprintable_silk": 0,
+     "under_gap_silk": 0,
+     "plated_pegs": 0
+    }
+   },
+   {
+    "footprint": "LED0603-R-RD_WHITE",
+    "file": "/work/boards/lite/lib/aiee.pretty/LED0603-R-RD_WHITE.kicad_mod",
+    "changed": true,
+    "actions": [
+     {
+      "rule": "A",
+      "action": "delete_unprintable_silk",
+      "kind": "fp_circle",
+      "width_mm": 0.06,
+      "gap_mm": -0.03
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": 0.115,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.2,
+      "gap_mm": 0.12,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     }
+    ],
+    "residue": 2,
+    "before": {
+     "worst_gap_mm": -0.03,
+     "unprintable_silk": 1,
+     "under_gap_silk": 3,
+     "plated_pegs": 0
+    },
+    "after": {
+     "worst_gap_mm": 0.115,
+     "unprintable_silk": 0,
+     "under_gap_silk": 2,
+     "plated_pegs": 0
+    }
+   },
+   {
+    "footprint": "QFN-28_L4.0-W4.0-P0.45-BL-EP",
+    "file": "/work/boards/lite/lib/aiee.pretty/QFN-28_L4.0-W4.0-P0.45-BL-EP.kicad_mod",
+    "changed": true,
+    "actions": [
+     {
+      "rule": "A",
+      "action": "promote_silk_width",
+      "kind": "fp_circle",
+      "from_mm": 0.06,
+      "to_mm": 0.15,
+      "gap_mm": 0.43
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": 0.13,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": 0.13,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": 0.13,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": 0.13,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": 0.13,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": 0.13,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": 0.13,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": 0.13,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_circle",
+      "width_mm": 0.15,
+      "gap_mm": 0.1325,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     }
+    ],
+    "residue": 9,
+    "before": {
+     "worst_gap_mm": 0.13,
+     "unprintable_silk": 1,
+     "under_gap_silk": 9,
+     "plated_pegs": 0
+    },
+    "after": {
+     "worst_gap_mm": 0.13,
+     "unprintable_silk": 0,
+     "under_gap_silk": 9,
+     "plated_pegs": 0
+    }
+   },
+   {
+    "footprint": "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+    "file": "/work/boards/lite/lib/aiee.pretty/SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR.kicad_mod",
+    "changed": true,
+    "actions": [
+     {
+      "rule": "A",
+      "action": "delete_unprintable_silk",
+      "kind": "fp_circle",
+      "width_mm": 0.06,
+      "gap_mm": 0.115
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": 0.09,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": 0.09,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": 0.09,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     }
+    ],
+    "residue": 3,
+    "before": {
+     "worst_gap_mm": 0.09,
+     "unprintable_silk": 1,
+     "under_gap_silk": 4,
+     "plated_pegs": 0
+    },
+    "after": {
+     "worst_gap_mm": 0.09,
+     "unprintable_silk": 0,
+     "under_gap_silk": 3,
+     "plated_pegs": 0
+    }
+   },
+   {
+    "footprint": "SW-SMD_4P-L5.1-W5.1-P3.70-LS6.5-TL_H1.5",
+    "file": "/work/boards/lite/lib/aiee.pretty/SW-SMD_4P-L5.1-W5.1-P3.70-LS6.5-TL_H1.5.kicad_mod",
+    "changed": true,
+    "actions": [
+     {
+      "rule": "A",
+      "action": "promote_silk_width",
+      "kind": "fp_circle",
+      "from_mm": 0.06,
+      "to_mm": 0.15,
+      "gap_mm": 0.22
+     }
+    ],
+    "residue": 0,
+    "before": {
+     "worst_gap_mm": 0.18,
+     "unprintable_silk": 1,
+     "under_gap_silk": 0,
+     "plated_pegs": 0
+    },
+    "after": {
+     "worst_gap_mm": 0.18,
+     "unprintable_silk": 0,
+     "under_gap_silk": 0,
+     "plated_pegs": 0
+    }
+   }
+  ]
+ },
+ "refdes_norm": {
+  "footprints": 20,
+  "changed": 20,
+  "unchanged": 0,
+  "skipped": 0,
+  "results": [
+   {
+    "footprint": "CAP-SMD_BD8.0-L8.3-W8.3-LS9.3-FD",
+    "status": "changed",
+    "from": [
+     0.0,
+     -4.0
+    ],
+    "to": [
+     0.0,
+     -5.055
+    ],
+    "pad_top": -0.8,
+    "silk_top": -4.23,
+    "clear_of": -4.23,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "CONN-TH_XDJK-0271-1650",
+    "status": "changed",
+    "from": [
+     0.0,
+     -5.95
+    ],
+    "to": [
+     0.0,
+     -4.775
+    ],
+    "pad_top": -3.2,
+    "silk_top": -3.95,
+    "clear_of": -3.95,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "DFN-10_L2.0-W2.0-P0.40-BL-EP",
+    "status": "changed",
+    "from": [
+     0.0,
+     -4.928
+    ],
+    "to": [
+     0.0,
+     -2.008
+    ],
+    "pad_top": -1.183,
+    "silk_top": -1.08,
+    "clear_of": -1.183,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "HTSSOP-32_L11.0-W6.1-P0.65-LS8.1-BL-EP",
+    "status": "changed",
+    "from": [
+     0.0,
+     -7.716
+    ],
+    "to": [
+     0.0,
+     -5.411
+    ],
+    "pad_top": -4.586,
+    "silk_top": -2.62,
+    "clear_of": -4.586,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "IND-SMD_L4.0-W4.0_VLCF4020",
+    "status": "changed",
+    "from": [
+     0.0,
+     -4.0
+    ],
+    "to": [
+     0.0,
+     -3.075
+    ],
+    "pad_top": -2.0,
+    "silk_top": -2.25,
+    "clear_of": -2.25,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "IND-SMD_L6.0-W6.0_SWPA6045S",
+    "status": "changed",
+    "from": [
+     0.0,
+     -4.0
+    ],
+    "to": [
+     0.0,
+     -3.905
+    ],
+    "pad_top": -2.51,
+    "silk_top": -3.08,
+    "clear_of": -3.08,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "IND-SMD_L8.0-W8.0_XR0850",
+    "status": "changed",
+    "from": [
+     0.0,
+     -4.0
+    ],
+    "to": [
+     0.0,
+     -4.825
+    ],
+    "pad_top": -1.9,
+    "silk_top": -4.0,
+    "clear_of": -4.0,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "LED0603-R-RD_WHITE",
+    "status": "changed",
+    "from": [
+     0.0,
+     -4.0
+    ],
+    "to": [
+     0.0,
+     -1.585
+    ],
+    "pad_top": -0.4,
+    "silk_top": -0.76,
+    "clear_of": -0.76,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "QFN-28_L4.0-W4.0-P0.45-BL-EP",
+    "status": "changed",
+    "from": [
+     0.0,
+     -5.932
+    ],
+    "to": [
+     0.0,
+     -3.088
+    ],
+    "pad_top": -2.263,
+    "silk_top": -2.08,
+    "clear_of": -2.263,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "SENSOR-SMD_IRM-H638T-TR2-TL",
+    "status": "changed",
+    "from": [
+     0.0,
+     -5.27
+    ],
+    "to": [
+     0.0,
+     -3.495
+    ],
+    "pad_top": -2.02,
+    "silk_top": -2.67,
+    "clear_of": -2.67,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "SMB_L4.4-W3.6-LS5.3-RD",
+    "status": "changed",
+    "from": [
+     0.0,
+     -4.0
+    ],
+    "to": [
+     0.0,
+     -2.605
+    ],
+    "pad_top": -1.2,
+    "silk_top": -1.78,
+    "clear_of": -1.78,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "SOP-16_L10.0-W3.9-P1.27-LS6.0-BL",
+    "status": "changed",
+    "from": [
+     0.0,
+     -6.872
+    ],
+    "to": [
+     0.0,
+     -4.567
+    ],
+    "pad_top": -3.743,
+    "silk_top": -1.77,
+    "clear_of": -3.743,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "SOP-8_L4.9-W3.9-P1.27-LS6.0-BL",
+    "status": "changed",
+    "from": [
+     0.0,
+     -6.682
+    ],
+    "to": [
+     0.0,
+     -4.438
+    ],
+    "pad_top": -3.613,
+    "silk_top": -1.52,
+    "clear_of": -3.613,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+    "status": "changed",
+    "from": [
+     0.0,
+     -4.95
+    ],
+    "to": [
+     0.0,
+     -2.355
+    ],
+    "pad_top": -1.275,
+    "silk_top": -1.53,
+    "clear_of": -1.53,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "SOT-23-5_L3.0-W1.7-P0.95-LS2.8-BR",
+    "status": "changed",
+    "from": [
+     0.0,
+     -4.95
+    ],
+    "to": [
+     0.0,
+     -2.375
+    ],
+    "pad_top": -1.25,
+    "silk_top": -1.55,
+    "clear_of": -1.55,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "SOT-23-6_L2.9-W1.6-P0.95-LS2.8-BL",
+    "status": "changed",
+    "from": [
+     0.0,
+     -5.149
+    ],
+    "to": [
+     0.0,
+     -2.511
+    ],
+    "pad_top": -1.686,
+    "silk_top": -0.89,
+    "clear_of": -1.686,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "SW-SMD_4P-L5.1-W5.1-P3.70-LS6.5-TL_H1.5",
+    "status": "changed",
+    "from": [
+     0.0,
+     -5.85
+    ],
+    "to": [
+     0.0,
+     -3.375
+    ],
+    "pad_top": -2.225,
+    "silk_top": -2.55,
+    "clear_of": -2.55,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "TSOT-23-5_L2.9-W1.6-P0.95-LS2.8-BR",
+    "status": "changed",
+    "from": [
+     0.0,
+     -4.951
+    ],
+    "to": [
+     0.0,
+     -2.435
+    ],
+    "pad_top": -1.25,
+    "silk_top": -1.61,
+    "clear_of": -1.61,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "USB-C-SMD_MC-311D",
+    "status": "changed",
+    "from": [
+     0.0,
+     -6.378
+    ],
+    "to": [
+     0.0,
+     -3.78
+    ],
+    "pad_top": -2.955,
+    "silk_top": -2.83,
+    "clear_of": -2.955,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "WIFI-SMD_ESP32-WROVER-IE8MB",
+    "status": "changed",
+    "from": [
+     0.0,
+     -15.43
+    ],
+    "to": [
+     0.0,
+     -19.695
+    ],
+    "pad_top": -11.88,
+    "silk_top": -18.87,
+    "clear_of": -18.87,
+    "inked_half_h": 0.575
+   }
+  ]
+ },
+ "model_paths": {
+  "rewritten": 19,
+  "footprints": {
+   "CAP-SMD_BD8.0-L8.3-W8.3-LS9.3-FD.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/CAP-SMD_BD8.0-L8.3-W8.3-LS9.3-FD.wrl"
+   ],
+   "CONN-TH_XDJK-0271-1650.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/CONN-TH_XDJK-0271-1650.wrl"
+   ],
+   "DFN-10_L2.0-W2.0-P0.40-BL-EP.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/DFN-10_L2.0-W2.0-H0.8-P0.40.wrl"
+   ],
+   "HTSSOP-32_L11.0-W6.1-P0.65-LS8.1-BL-EP.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/HTSSOP-32_L11.0-W6.1-H1.2-LS8.2-P0.65.wrl"
+   ],
+   "IND-SMD_L4.0-W4.0_VLCF4020.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/IND-SMD_L4.0-W4.0-H2.0-4020.wrl"
+   ],
+   "IND-SMD_L6.0-W6.0_SWPA6045S.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/IND-SMD_L6.0-W6.0-H4.5.wrl"
+   ],
+   "LED0603-R-RD_WHITE.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/LED0603-R-RD_WHITE.wrl"
+   ],
+   "QFN-28_L4.0-W4.0-P0.45-BL-EP.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/QFN-28_L4.0-W4.0-H0.8-P0.45.wrl"
+   ],
+   "SENSOR-SMD_IRM-H638T-TR2-TL.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/SENSOR-SMD_L5.0-W4.0-H4.0-LS7.0-P2.54.wrl"
+   ],
+   "SMB_L4.4-W3.6-LS5.3-RD.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/SMB_L4.4-W3.6-LS5.3-RD.wrl"
+   ],
+   "SOP-16_L10.0-W3.9-P1.27-LS6.0-BL.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/SOP-16_L9.9-W3.9-H1.5-LS6.0-P1.27.wrl"
+   ],
+   "SOP-8_L4.9-W3.9-P1.27-LS6.0-BL.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/SOP-8_L4.9-W3.9-P1.27-LS6.0-BL-1.wrl"
+   ],
+   "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/SOT-23-3P_L2.9-W1.3-H1.0-LS2.4-P0.95.wrl"
+   ],
+   "SOT-23-5_L3.0-W1.7-P0.95-LS2.8-BR.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/SOT-23-5_L2.9-W1.6-H1.1-LS2.8-P0.95.wrl"
+   ],
+   "SOT-23-6_L2.9-W1.6-P0.95-LS2.8-BL.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/SOT-23-6_L2.9-W1.6-H1.5-LS2.8-P0.95.wrl"
+   ],
+   "SW-SMD_4P-L5.1-W5.1-P3.70-LS6.5-TL_H1.5.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/SW-SMD_4P-L5.1-W5.1-P3.70-LS6.5-TL_H1.5.wrl"
+   ],
+   "TSOT-23-5_L2.9-W1.6-P0.95-LS2.8-BR.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/TSOT-23-5_L2.9-W1.6-H1.00-LS2.8-P0.95.wrl"
+   ],
+   "USB-C-SMD_MC-311D.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/USB-3.1-SMD_16P-L8.9-W7.3-H3.3-P0.5.wrl"
+   ],
+   "WIFI-SMD_ESP32-WROVER-IE8MB.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/WIFI-SMD_ESP32-WROVER-IE8MB.wrl"
+   ]
+  }
+ },
+ "load_check": null,
+ "drc_check": null
+}

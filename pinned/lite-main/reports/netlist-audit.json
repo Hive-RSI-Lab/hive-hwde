@@ -1,0 +1,282 @@
+{
+ "script": "netlist_audit",
+ "status": "pass",
+ "board": "lite-main.net",
+ "counts": {
+  "total": 1,
+  "by_severity": {
+   "warning": 1
+  },
+  "by_source": {
+   "audit.netlist": 1
+  }
+ },
+ "violations": [
+  {
+   "check": "netlist_audit",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": "+3V3A",
+   "refs": [
+    "C16",
+    "C32",
+    "C33",
+    "C34",
+    "U4",
+    "U7"
+   ],
+   "msg": "declared power net '+3V3A' feeds no power_in pin",
+   "source": "audit.netlist",
+   "items": [
+    {
+     "msg": "declared power net '+3V3A' feeds no power_in pin",
+     "pos": null
+    }
+   ],
+   "kind": "power_no_consumers"
+  }
+ ],
+ "mode": "audit",
+ "nets": 116,
+ "components": 134,
+ "unconnected_pins": 31,
+ "constraint_nets_checked": 16,
+ "constraint_refs_checked": 2,
+ "pins_expected": 430,
+ "pins_connected": 430,
+ "decoupling_associations": 25,
+ "power": [
+  {
+   "net": "VBUS",
+   "nodes": 15,
+   "power_in": 0,
+   "power_out": 0,
+   "passive_fed_via": [
+    "R13",
+    "R5"
+   ]
+  },
+  {
+   "net": "PVDD",
+   "nodes": 21,
+   "power_in": 0,
+   "power_out": 0,
+   "passive_fed_via": [
+    "C2",
+    "R17"
+   ]
+  },
+  {
+   "net": "GND",
+   "nodes": 103,
+   "power_in": 0,
+   "power_out": 0,
+   "passive_fed_via": [
+    "C1",
+    "C10",
+    "C11",
+    "C12",
+    "C13",
+    "C15",
+    "C16",
+    "C17",
+    "C18",
+    "C20",
+    "C21",
+    "C22",
+    "C23",
+    "C24",
+    "C3",
+    "C30",
+    "C31",
+    "C32",
+    "C33",
+    "C34",
+    "C35",
+    "C36",
+    "C37",
+    "C38",
+    "C39",
+    "C4",
+    "C40",
+    "C42",
+    "C45",
+    "C5",
+    "C50",
+    "C51",
+    "C52",
+    "C53",
+    "C54",
+    "C55",
+    "C56",
+    "C57",
+    "C58",
+    "C59",
+    "C61",
+    "C63",
+    "C68",
+    "C69",
+    "C7",
+    "C70",
+    "C71",
+    "C8",
+    "C80",
+    "D1",
+    "D2",
+    "R1",
+    "R10",
+    "R12",
+    "R14",
+    "R16",
+    "R18",
+    "R31",
+    "R34",
+    "R37",
+    "R39",
+    "R50",
+    "R52",
+    "R8"
+   ]
+  },
+  {
+   "net": "+5V",
+   "nodes": 12,
+   "power_in": 0,
+   "power_out": 0,
+   "passive_fed_via": [
+    "C9",
+    "L5",
+    "R9"
+   ]
+  },
+  {
+   "net": "+3V3",
+   "nodes": 27,
+   "power_in": 0,
+   "power_out": 0,
+   "passive_fed_via": [
+    "C14",
+    "L6",
+    "R11",
+    "R20",
+    "R21",
+    "R22",
+    "R23",
+    "R4",
+    "R53",
+    "R60",
+    "R61",
+    "R62",
+    "R63",
+    "R65"
+   ]
+  },
+  {
+   "net": "+3V3A",
+   "nodes": 7,
+   "power_in": 0,
+   "power_out": 0
+  },
+  {
+   "net": "/OUT_R_P",
+   "nodes": 3,
+   "power_in": 0,
+   "power_out": 0,
+   "passive_fed_via": [
+    "C66",
+    "L3"
+   ]
+  },
+  {
+   "net": "/OUT_R_N",
+   "nodes": 3,
+   "power_in": 0,
+   "power_out": 0,
+   "passive_fed_via": [
+    "C67",
+    "L4"
+   ]
+  },
+  {
+   "net": "/OUT_L_P",
+   "nodes": 3,
+   "power_in": 0,
+   "power_out": 0,
+   "passive_fed_via": [
+    "C64",
+    "L1"
+   ]
+  },
+  {
+   "net": "/OUT_L_N",
+   "nodes": 3,
+   "power_in": 0,
+   "power_out": 0,
+   "passive_fed_via": [
+    "C65",
+    "L2"
+   ]
+  },
+  {
+   "net": "/SPK_L_P",
+   "nodes": 3,
+   "power_in": 0,
+   "power_out": 0,
+   "passive_fed_via": [
+    "L1"
+   ]
+  },
+  {
+   "net": "/SPK_L_N",
+   "nodes": 3,
+   "power_in": 0,
+   "power_out": 0,
+   "passive_fed_via": [
+    "L2"
+   ]
+  },
+  {
+   "net": "/SPK_R_P",
+   "nodes": 3,
+   "power_in": 0,
+   "power_out": 0,
+   "passive_fed_via": [
+    "L3"
+   ]
+  },
+  {
+   "net": "/SPK_R_N",
+   "nodes": 3,
+   "power_in": 0,
+   "power_out": 0,
+   "passive_fed_via": [
+    "L4"
+   ]
+  },
+  {
+   "net": "/BUCK5_SW",
+   "nodes": 3,
+   "power_in": 0,
+   "power_out": 0,
+   "passive_fed_via": [
+    "C6",
+    "L5"
+   ]
+  },
+  {
+   "net": "/BUCK3_LX",
+   "nodes": 2,
+   "power_in": 0,
+   "power_out": 0,
+   "passive_fed_via": [
+    "L6"
+   ]
+  }
+ ],
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T19:02:24+00:00",
+ "input": "kicad/lite-main.net",
+ "input_digest": "netlist_canonical:5e70c9d9339252253db3c46bcdf20112446186ebafb903f61d351f7d3f37e295"
+}
