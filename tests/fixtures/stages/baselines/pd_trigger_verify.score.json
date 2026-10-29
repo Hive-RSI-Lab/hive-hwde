@@ -4,7 +4,7 @@
  "fixture": "pd_trigger_verify",
  "board": "pd-trigger",
  "metrics": {
-  "errors": 18,
+  "errors": 46,
   "warnings": 46,
   "by_check": {
    "check_return_path": 0,
@@ -19,10 +19,12 @@
    "check_pdn": 0,
    "check_ratings": 0,
    "check_bom_sync": 0,
+   "check_courtyard": 28,
    "check_mate_pins": 0,
    "check_model_paths": 16
   },
   "by_kind": {
+   "courtyard_pads": 28,
    "insufficient_transition_vias": 14,
    "model_path_absolute": 16,
    "pour_neckdown": 1,
@@ -40,22 +42,22 @@
  },
  "metrics_live": null,
  "penalties": {
-  "errors": 18.0,
+  "errors": 46.0,
   "warnings": 46.0,
   "known_answer_missed": 0.0,
   "forbidden_errors": 0.0
  },
- "composite": 86.4,
+ "composite": 72.4,
  "composite_inputs": "full",
  "known_answer": {
   "status": "ok",
-  "matched": 2,
+  "matched": 3,
   "missed": [],
   "forbidden_errors": 0
  },
  "e2e": null,
  "_baseline": {
-  "created": "2026-10-08",
+  "created": "2026-10-28",
   "kicad_version": null
  }
 }

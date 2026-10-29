@@ -41,16 +41,20 @@ in the wrong order.
 
 ## Budgets and escalation
 
-`fix_loops.<gate>` defaults to 3. Exit 2 from `state.py budget` means the budget
-is gone: stop looping. Escalate with a render, the remaining violations WITH
-coordinates, what was tried, and options (waive / manual guidance / abort).
-Record the verdict (`state.py human` or `decision`).
+`fix_loops.<gate>` defaults to 3, and it is a counter: `state.py budget
+--consume` past it reports `over: true` and goes on counting. Whether a fourth
+round is worth it is your call - it is when each round removes violations or
+finds a new cause, it is not when the same ones come back. Then change
+approach: a render, the remaining violations WITH coordinates, what was tried,
+and the next move you pick (another fixer tier, an upstream change, a
+cross-stage spawn). Record it (`state.py decision`). Only waiving an error on a
+board that will be built goes to the person.
 
 Two special cases:
 - `cleanup_regression` (route_cleanup exit 1): restore the snapshot and continue
   WITHOUT cleanup. It is optional by design.
 - `requires_pipeline_rewind` (the fix needs a schematic or library change after
-  P5): stop, present the tradeoff. A rewind re-enters at P4/P5 for the affected
+  P5): weigh the tradeoff and pick; a cost/feature trade goes to the person. A rewind re-enters at P4/P5 for the affected
   scope - which, since T8, is usually `add-part` / `swap-part` instead of a
   full re-place.
 
