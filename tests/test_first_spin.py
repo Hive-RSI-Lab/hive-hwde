@@ -287,6 +287,10 @@ def test_every_class_judged_against_the_registry(tmp_path):
     assert any(t == "hwde catches Op-amp common-mode past its limit"
                for t in titles)
     assert not any("Paste" in t or "Annular" in t for t in titles)
+    _, low = fs(tmp_path, "--modes", str(tmp_path / "modes.yaml"),
+                "--brief-severity", "minor")
+    assert len(low["briefs"]) == 5            # the minor new class too
+    assert any("Paste over vias" in b["title"] for b in low["briefs"])
     b = next(b for b in got if b["class"] == "PI-08")
     assert "POWER-1" in b["done"] and "5 A in 0.255 mm tracks" in b["known"]
 

@@ -51,7 +51,7 @@ the review found gets a verdict against that registry:
   no_check     the class is known and nothing checks it
   new_class    not in the registry yet (an id it doesn't have is new too)
 Every check_blind, no_check and new_class class with a blocker or major
-in it is a draft brief for hive-hwde (`briefs`: title, done, known), so
+in it (--brief-severity minor: or a minor) is a draft brief for hive-hwde (`briefs`: title, done, known), so
 the next board is checked by a machine for what this one needed a person
 for. The schematic and board reviewers' files (reports/review-*.json,
 violations with an optional fault_class) join the class count too.
@@ -143,7 +143,8 @@ def reviewer_findings(ws: Path) -> list[dict]:
     return out
 
 
-def classify(reviews: list[dict], extra: list[dict], modes: dict) -> dict:
+def classify(reviews: list[dict], extra: list[dict], modes: dict,
+             brief_from: str = "major") -> dict:
     """Group findings by fault class and judge each against the registry."""
     sev_rank = {s: i for i, s in enumerate(SEVERITIES)}
     groups: dict[str, dict] = {}
@@ -195,7 +196,7 @@ def classify(reviews: list[dict], extra: list[dict], modes: dict) -> dict:
     return {"classes": classes, "unclassed": unclassed,
             "briefs": [draft_brief(g) for g in classes
                        if g["verdict"] != "caught"
-                       and g["worst"] in MUST_ANSWER]}
+                       and sev_rank[g["worst"]] <= sev_rank[brief_from]]}
 
 
 def draft_brief(g: dict) -> dict:
@@ -259,7 +260,8 @@ def norm_disposition(v) -> dict:
 
 
 def analyze(reviews: list[dict], disp: dict, res: dict,
-            modes: dict | None = None, extra: list[dict] | None = None) -> dict:
+            modes: dict | None = None, extra: list[dict] | None = None,
+            brief_from: str = "major") -> dict:
     disp = {k: norm_disposition(v) for k, v in (disp or {}).items()}
     open_: list[dict] = []
     rows: list[dict] = []
@@ -314,7 +316,7 @@ def analyze(reviews: list[dict], disp: dict, res: dict,
     for fid in sorted(set(disp) - ids):
         open_.append({"kind": "dangling", "id": fid, "severity": "note",
                       "msg": "a disposition for a finding no review has"})
-    cl = classify(reviews, extra or [], modes or {})
+    cl = classify(reviews, extra or [], modes or {}, brief_from)
     open_ += [{"kind": "unclassed", **u} for u in cl["unclassed"]
               if u["severity"] in MUST_ANSWER]
     rank = {"undisposed": 0, "bad_disposition": 1, "no_how": 2,
@@ -378,7 +380,8 @@ def run(a) -> dict:
     res = checklib.load_json(rp, "resolutions") if rp.is_file() else {}
     extra = reviewer_findings(Path(a.workspace)) if a.workspace else []
     out = analyze(reviews, disp, res, load_modes(Path(a.modes) if a.modes
-                                                  else MODES), extra)
+                                                  else MODES), extra,
+                  getattr(a, "brief_severity", "major"))
     if a.briefs:
         Path(a.briefs).write_text(json.dumps(out["briefs"], indent=1) + "\n",
                                   encoding="utf-8")
@@ -397,6 +400,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--modes", help="failure-mode registry (default the "
                     "module's docs/failure-modes.yaml)")
     ap.add_argument("--briefs", help="write the draft hive-hwde briefs here")
+    ap.add_argument("--brief-severity", choices=SEVERITIES, default="major",
+                    help="draft briefs for classes this bad or worse "
+                    "(default major; minor files a check blind on a minor too)")
     ap.add_argument("--out")
     a = ap.parse_args(argv)
     checklib.utf8_stdout()

@@ -149,6 +149,14 @@ check, 7 of them classes the registry didn't have until then (RATE-26/27,
 PI-21, ANA-11/12, FW-17, THERM-14). That is 18 draft briefs where the
 review's worker wrote 4 by hand.
 
+`boards/hwde-led-test/reports/first-spin/` is the smallest case: one
+reviewer took power, parts and DFM on a four-part board (no blocker or
+major; 4 minors). With `--brief-severity minor` it drafted 4 briefs: two
+became hive-hwde tasks 261029-221632 (check_ratings blind to an LED's
+reverse rating, RATE-03) and 261029-221623 (a stale zone fill carried
+into the Gerbers, a new class); the extended-part cost and the LED's Vf
+read as typical were left as notes.
+
 ## Contingencies: cheap fallbacks the board carries
 
 Where a margin can't be closed on paper (a part's behaviour the datasheet
