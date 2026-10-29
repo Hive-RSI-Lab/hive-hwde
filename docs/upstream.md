@@ -17,6 +17,13 @@ these ways:
   copies; `scripts/board_edit.py`, whose `--outline fit` counts silk and whose
   edits refuse to clip it; `scripts/check_silk.py`, whose silk items carry
   their footprint's reference.
+- A live stock-and-match check on every BOM row (the person, 10-28: "didn't
+  the hive pull the JLC and LCSC?"): `scripts/stock_check.py` and
+  `scripts/lib/stocklib.py` read JLC's and LCSC's own record for each code
+  (what JLC can still sell, whether it sells the code at all and what its BOM
+  review would swap in, whether the model is the BOM's part), and `bom_cpl.py`
+  fails a row JLC would not place as written (`dfm_check`'s scratch run and
+  `--offline` skip it and say so).
 - The Hive's rules are judgment, not refusals (the person, 10-28): `state.py`
   `set-phase` warns instead of refusing an unrecorded gate, `budget
   --consume` and `cross-spawn` count past zero (`over: true`), `research.py

@@ -93,6 +93,8 @@ def _easyeda_offline(monkeypatch, tmp_path_factory):
     """No test fetches an LCSC footprint model or reads the user's cache: a
     test that needs models copies tests/fixtures/easyeda into its own dir."""
     monkeypatch.setenv("HWDE_EASYEDA_OFFLINE", "1")
+    # nor asks JLC or LCSC for stock (test_stock_check fakes the sources)
+    monkeypatch.setenv("HWDE_STOCK_OFFLINE", "1")
     monkeypatch.setenv("HWDE_EASYEDA_CACHE",
                        str(tmp_path_factory.mktemp("easyeda_empty")))
     # The rate-limit latch is process state: one test's mocked 403 must not
