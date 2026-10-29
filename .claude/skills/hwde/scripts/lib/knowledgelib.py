@@ -533,7 +533,12 @@ def _source_exists(file: str, roots=()) -> bool:
     missing. An empty root counts as not cloned: a check run without the
     boards repo points HWDE_BOARDS_ROOT at an empty dir. <ws> may be a
     board's bare name from before its workspace was renamed <PN>_<name>;
-    boardreg.resolve finds it through the register."""
+    boardreg.resolve finds it through the register.
+
+    A root with no register.yaml is a project's own boards/ (a Hive module
+    holding a board or two), not the boards repo: it answers only for the
+    workspaces it holds, and a citation of a board it doesn't hold (one of
+    the boards repo's) cannot be checked there either."""
     if not file or file != file.strip():
         return False
     if file.startswith("boards/"):
@@ -545,10 +550,21 @@ def _source_exists(file: str, roots=()) -> bool:
             from lib import boardreg  # noqa: PLC0415
         except ImportError:
             import boardreg  # type: ignore  # noqa: PLC0415
-        ws_dir = boardreg.resolve(ws, broot) or broot / ws
+        ws_dir = boardreg.resolve(ws, broot)
+        if ws_dir is None and not (broot / boardreg.REGISTER).is_file():
+            return True
+        ws_dir = ws_dir or broot / ws
         file_in_boards = ws_dir / rest
         if file_in_boards.is_file() or file_in_boards.with_name(
                 file_in_boards.name + NOT_REDISTRIBUTED_SUFFIX).is_file():
+            return True
+    # a library source, cited skill-relative, may live in SOURCES_DIR instead
+    # (HWDE_KNOWLEDGE_SOURCES: a copy of the skill that doesn't carry them)
+    lib_prefix = "reference/knowledge/sources/"
+    if file.startswith(lib_prefix):
+        file_in_sources = SOURCES_DIR / file[len(lib_prefix):]
+        if file_in_sources.is_file() or file_in_sources.with_name(
+                file_in_sources.name + NOT_REDISTRIBUTED_SUFFIX).is_file():
             return True
     for base in (SKILL, REPO, *(Path(r) for r in roots)):
         p = base / file

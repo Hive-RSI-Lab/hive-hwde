@@ -149,8 +149,9 @@ def test_state_budget(tmp_path):
     assert st.budget("fix_loops.verify") == 3
     assert st.budget("fix_loops.verify", consume=True) == 2
     st.data["budgets"]["fix_loops"]["verify"] = 0
-    with pytest.raises(CheckError):
-        st.budget("fix_loops.verify", consume=True)
+    # a counter, not a wall: past zero it counts below and says so
+    assert st.budget("fix_loops.verify", consume=True) == -1
+    assert st.data["history"][-1]["event"] == "budget_over"
     with pytest.raises(CheckError):
         st.budget("nope.nope")
 
@@ -241,6 +242,7 @@ PIPELINE_KINDS = [
     "keepout_violation", "courtyard_missing", "seed_unplaced",
     "mating_faces_inward", "mating_mouth_inset", "mating_zone_blocked",
     "mating_direction_unknown", "mating_model_reversed",
+    "mating_mate_misaligned", "mating_mate_invalid",
     # S11 routing
     "critical_route_failed", "critical_missing_net", "zone_unfilled",
     "stitch_impossible", "plane_split", "plane_split_unrepairable",
@@ -497,7 +499,7 @@ def test_dryrun_p4_p8_with_kill_and_resume(tmp_path):
         # golden ships no .kicad_dru) and still binds - it matches only while
         # the file stays absent
         assert inputs and any(v for v in inputs.values()), name
-    assert not events(st, "phase_forced")
+    assert not events(st, "phase_ungated")
     summary = state_mod.State.load(ws / "state.json").resume_summary()
     assert summary["gates_passed"] == ["erc", "place", "drc_routed", "verify"]
     # place ran before the injected mutations + their fixes, so its recorded

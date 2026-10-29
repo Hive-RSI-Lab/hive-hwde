@@ -44,8 +44,8 @@ SKILL = SCRIPTS.parent  # .claude/skills/hwde
 # agent may use, in order of preference) and the load-bearing guidance lines.
 DOMAINS: dict[str, dict] = {
     "router": {
-        "scripts": ["route_edit.py", "kc.py", "render.py", "stitch_vias.py",
-                    "route_cleanup.py"],
+        "scripts": ["route_finish.py", "route_edit.py", "kc.py", "render.py",
+                    "stitch_vias.py", "route_cleanup.py"],
         "guidance": [
             "Edit copper ONLY via route_edit.py ops "
             "(add_track/add_via/remove-by-uuid); never raw file edits.",

@@ -189,7 +189,9 @@ def test_map_has_the_ten_plan_edit_classes():
         "del_part", "reroute_net", "silk_edit", "plane_edit", "rule_change",
         "stackup_change",
         # U17: the board outline became editable (board_edit.py)
-        "outline_change"}
+        "outline_change",
+        # board_update's rewire_pad (issue #29): re-net unrouted pads
+        "rewire_pad"}
     for ec in IMAP["edit_classes"].values():
         assert ec["human_hold"] in (0, 1, 2, 3)
     # the plan's calibration anchors: a one-footprint move carries no

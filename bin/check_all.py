@@ -9,7 +9,10 @@ Steps per board, each through bin/hwde (STEPS below): erc, drc_routed, verify
 and dfm as `gate --gate <g>`, and fab as fab_export + bom_cpl (offline). A
 board runs each gate its state.json records as passed, and fab once it has a
 fab/ package: a board re-passes everything it once passed. Each probe in
-tests/workarounds/ exits 0 while its cause stands, 10 once it's fixed.
+tests/workarounds/ exits 0 while its cause stands, 10 once it's fixed. The
+knowledge library passes `knowledge --validate --strict` against these
+boards; it needs the source PDFs (HWDE_KNOWLEDGE_SOURCES, the hwde clone's),
+and is skipped, said so, without them.
 
 Exit 0 when every step passes and the table matches the probes, else 1.
 Run by bin/hwde (venv python, HWDE_* pins, HWDE_BIN set).
@@ -35,10 +38,10 @@ HWDE = os.environ.get("HWDE_BIN", str(HERE / "hwde"))
 SKILL = ROOT / ".claude" / "skills" / "hwde" / "scripts"
 
 
-def run(cmd: list[str], cwd: Path, log: Path) -> int:
+def run(cmd: list[str], cwd: Path, log: Path, env: dict | None = None) -> int:
     with log.open("w") as f:
         return subprocess.run(cmd, cwd=cwd, stdout=f, stderr=subprocess.STDOUT,
-                              stdin=subprocess.DEVNULL).returncode
+                              stdin=subprocess.DEVNULL, env=env).returncode
 
 
 def tail(log: Path, n: int = 8) -> str:
@@ -123,6 +126,26 @@ def probes(table: dict[str, score.Workaround]) -> list[str]:
     return bad
 
 
+def knowledge(logs: Path) -> list[str] | None:
+    """Problems `knowledge --validate --strict` reports, or None when the
+    source PDFs it checks citations against aren't here."""
+    src = os.environ.get("HWDE_KNOWLEDGE_SOURCES")
+    if not (src and Path(src).is_dir()) and not any(
+            (SKILL.parent / "reference" / "knowledge" / "sources").glob("*.pdf")):
+        return None
+    out = logs / "knowledge.json"
+    rc = run([HWDE, "knowledge", "--validate", "--strict", "--out", str(out)],
+             ROOT, logs / "knowledge.log",
+             env=dict(os.environ, HWDE_BOARDS_ROOT=str(ROOT / "boards")))
+    try:
+        problems = json.loads(out.read_text()).get("problems", [])
+    except (OSError, ValueError):
+        problems = []
+    if rc and not problems:
+        problems = [tail(logs / "knowledge.log").strip() or f"exit {rc}"]
+    return [f"knowledge: {p}" for p in problems]
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--board", action="append", default=[],
@@ -159,6 +182,15 @@ def main() -> int:
                 if not ok:
                     failed.append(f"{b.name} {s}")
                     print(why, flush=True)
+        bad = knowledge(logs)
+        if bad is None:
+            print("knowledge: skipped (no source PDFs; set HWDE_KNOWLEDGE_SOURCES)",
+                  flush=True)
+        else:
+            print(f"knowledge: {'FAIL' if bad else 'pass'}", flush=True)
+            for m in bad[:20]:
+                print(f"  {m}", flush=True)
+            failed += bad
         if not args.no_probes:
             print("workarounds:", flush=True)
             bad = probes(table)

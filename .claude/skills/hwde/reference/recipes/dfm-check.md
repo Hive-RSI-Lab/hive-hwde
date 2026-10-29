@@ -20,6 +20,19 @@ is blind to by construction. For a self-assembled build it also writes
 part numbers, stock, prices and `<ws>_BOM_cost.json` when the DigiKey/Mouser
 API keys are set. Without keys it says so on stderr and carries on.
 
+Every `BOM.csv` row is also checked live (`stock_check.py`, the same check
+run on its own): JLC's own record for the code (for sale? what can it still
+sell - `canPresaleNumber`, not the `stock` figure the parts search shows,
+which counts parts already promised - and what would its BOM review swap in?)
+and LCSC's, for `--build-qty` boards, and whether the code's model is the
+BOM's MPN (a passive: its value in JLC's description). A row JLC would not
+place as written fails the run (`bom_stock_short`, `_not_for_sale`,
+`_not_found`, `_mismatch`, and `_unknown` when a source did not answer or the
+row names no part to compare - put the real MPN in parts.json). The hi-fi
+core board went to the person's BOM review with J1 oversold and U8 swapped
+for an out-of-stock twin; this is what catches that. Re-run
+`stock_check.py --workspace <ws>` right before the order: stock moves daily.
+
 Who is in which file is decided by `assembly_class` in canonical parts data,
 never by what the position export happened to contain: `smt_placed` parts and
 `tht` parts (a footprint with KiCad's `through_hole` attr, fitted in JLC's THT

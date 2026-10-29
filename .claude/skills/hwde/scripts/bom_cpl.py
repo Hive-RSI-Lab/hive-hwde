@@ -82,6 +82,16 @@ Where a class comes from, highest priority first:
 Instructions text: `refdes_notes: {ref: text}` > line `assembly_notes` >
 a per-class default sentence.
 
+Stock and part match: every BOM.csv row is checked live against JLC's and
+LCSC's own records (stock_check.py, lib/stocklib.py) for --build-qty boards:
+a row JLC would not place as written - short, not for sale (its review swaps
+in a substitute), unknown to JLC, a code whose model is not the BOM's part, or
+a source that did not answer - is a `bom_stock_<status>` violation, so the run
+exits 1 and the fab package says which part to change. `stock` in the report
+holds every row's verdict, and when --out-dir is a workspace's fab/ the
+verdicts go into its ledger.json (lib/ledgerlib.py); --offline (or
+HWDE_STOCK_OFFLINE=1) skips it and says so.
+
 bom_cpl GENERATES; polarity/rotation VALIDATION (catching a backwards part) is
 dfm_check.py's job (with cpl_verify.py), which also consumes these classes: a missing LCSC on an
 `smt_placed`/`tht` part is a release ERROR, on any other class it is not a
@@ -669,7 +679,8 @@ def run(pcb: Path, out_dir: Path, pos: Path | None = None,
         build_qty: int = DEFAULT_BUILD_QTY, ws_name: str | None = None,
         boards: int = 1, lookup_prices: bool = False,
         transport=None, easyeda_cache: Path | None = None,
-        fetch_models: bool | None = None) -> dict:
+        fetch_models: bool | None = None, stock: bool | None = None,
+        stock_fetch=None) -> dict:
     if build_qty < 1:
         raise ValueError(f"build_qty must be >= 1, got {build_qty}")
     name = name or pcb.stem
@@ -789,6 +800,32 @@ def run(pcb: Path, out_dir: Path, pos: Path | None = None,
                        f"a model result - rerun once EasyEDA answers "
                        f"(a rate limit clears in minutes) to fill {cache}"})
 
+    # Can JLC place every row today (stock_check.py)? Live unless asked not
+    # to (--offline, HWDE_STOCK_OFFLINE, dfm_check's scratch run): a skipped
+    # check says so in the report, and the board's ledger keeps its stock
+    # facts unknown, so the order step still sees the gap.
+    import stock_check
+    import stocklib
+    if stock is None:
+        stock = not stocklib.offline()
+    if stock:
+        stock_rep = stock_check.check_rows(
+            bom_rows, boards=build_qty,
+            mpns=stock_check.mpn_index(Path(parts_json).parent if parts_json
+                                       else out_dir.resolve().parent
+                                       / "parts"),
+            fetch=stock_fetch)
+        violations += stock_check.violations(stock_rep)
+        import ledgerlib
+        ws = out_dir.resolve().parent
+        if (ws / "state.json").is_file():
+            led = ledgerlib.record_stock(ws, stock_rep)
+            stock_rep["ledger"] = str(led) if led else None
+    else:
+        stock_rep = {"status": "skipped",
+                     "why": "not checked: stock and part match are unknown "
+                            "until stock_check.py runs live"}
+
     corrected = [a for a in audit if a["correction"] != 0.0]
     import castellation
     # None = not known (no board file beside a supplied pos file)
@@ -805,6 +842,7 @@ def run(pcb: Path, out_dir: Path, pos: Path | None = None,
         "prebuy": str(prebuy_path),
         "build_qty": build_qty,
         "distributor_boms": dist,
+        "stock": stock_rep,
         "bom_rows": bom_rows,
         "prebuy_rows": prebuy_rows,
         "bom_full_rows": bom_full_rows,
@@ -858,7 +896,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--easyeda-cache", help="LCSC footprint model cache "
                     "(default: env.easyeda_cache)")
     ap.add_argument("--offline", action="store_true",
-                    help="never fetch LCSC models; uncached parts use the table")
+                    help="never fetch LCSC models (uncached parts use the "
+                         "table) and skip the live stock check")
     ap.add_argument("--out", help="write JSON report here instead of stdout")
     args = ap.parse_args(argv)
     if args.boards < 1:
@@ -874,7 +913,8 @@ def main(argv: list[str] | None = None) -> int:
                   lookup_prices=not args.no_price_lookup,
                   easyeda_cache=Path(args.easyeda_cache)
                   if args.easyeda_cache else None,
-                  fetch_models=False if args.offline else None)
+                  fetch_models=False if args.offline else None,
+                  stock=False if args.offline else None)
     except Exception as exc:  # noqa: BLE001 (SPEC: any error -> exit 2)
         err = {"script": "bom_cpl", "status": "error",
                "error": f"{type(exc).__name__}: {exc}"}
@@ -885,6 +925,10 @@ def main(argv: list[str] | None = None) -> int:
 
     for w in rep["distributor_boms"]["warnings"]:
         print(f"bom_cpl: {w}", file=sys.stderr)
+    for b in rep["stock"].get("blocking") or []:
+        print(f"bom_cpl: JLC cannot place {','.join(b['refs'])} "
+              f"{b['lcsc']} as ordered [{b['status']}]: {b['why']}",
+              file=sys.stderr)
     text = json.dumps(rep, indent=1)
     (Path(args.out).write_text(text, encoding="utf-8") if args.out
      else print(text))
