@@ -1,0 +1,144 @@
+{
+ "script": "bench",
+ "stage": "E2E",
+ "fixture": "e2e_ldo_3v3",
+ "board": "bb-ldo",
+ "metrics": {
+  "workspace": "ws",
+  "artifacts": [
+   "decoupling",
+   "netlist",
+   "parts",
+   "pcb",
+   "sch"
+  ],
+  "net_map": {
+   "vin": "+5V",
+   "vout": "+3V3",
+   "gnd": "GND"
+  },
+  "bom": {
+   "bom_usd": 1.0452,
+   "qty": 10,
+   "bom_lines": 4,
+   "unpriced": []
+  },
+  "checks": [
+   {
+    "id": "net:vin",
+    "category": "electrical",
+    "score": 1.0,
+    "value": "+5V",
+    "matches": [
+     "+5V"
+    ],
+    "bound": "(?i)^/?\\+?(5V|5V0|VIN|VBUS)$"
+   },
+   {
+    "id": "net:vout",
+    "category": "electrical",
+    "score": 1.0,
+    "value": "+3V3",
+    "matches": [
+     "+3V3"
+    ],
+    "bound": "(?i)^/?\\+?(3V3|3\\.3V|VOUT)$"
+   },
+   {
+    "id": "net:gnd",
+    "category": "electrical",
+    "score": 1.0,
+    "value": "GND",
+    "matches": [
+     "GND"
+    ],
+    "bound": "^GND$"
+   },
+   {
+    "id": "layout:area",
+    "category": "layout",
+    "score": 0.2843,
+    "value": 1201.0,
+    "bound": 700
+   },
+   {
+    "id": "layout:legality",
+    "category": "layout",
+    "score": 1.0,
+    "value": 0,
+    "bound": 0
+   },
+   {
+    "id": "layout:crossings",
+    "category": "layout",
+    "score": 1.0,
+    "value": 0,
+    "bound": 0
+   },
+   {
+    "id": "layout:decap",
+    "category": "layout",
+    "score": 1.0,
+    "value": 3.24,
+    "bound": 6
+   },
+   {
+    "id": "cost:bom",
+    "category": "cost",
+    "score": 0.258,
+    "value": 1.0452,
+    "bound": 0.6,
+    "qty": 10,
+    "priced_lines": 4,
+    "unpriced": []
+   }
+  ]
+ },
+ "metrics_live": {
+  "checks": [
+   {
+    "id": "erc:errors",
+    "category": "electrical",
+    "score": 1.0,
+    "value": 0,
+    "bound": 0
+   },
+   {
+    "id": "layout:drc",
+    "category": "layout",
+    "score": 1.0,
+    "value": 0,
+    "bound": 0
+   },
+   {
+    "id": "layout:completion",
+    "category": "layout",
+    "score": 1.0,
+    "value": [],
+    "bound": []
+   }
+  ],
+  "ngspice": true,
+  "kicad_version": "10.0.6"
+ },
+ "penalties": {
+  "electrical_shortfall": 0.0,
+  "layout_shortfall": 0.1193,
+  "cost_shortfall": 0.742
+ },
+ "composite": 71.64,
+ "composite_inputs": "full",
+ "known_answer": null,
+ "e2e": {
+  "categories": {
+   "electrical": 1.0,
+   "layout": 0.8807,
+   "cost": 0.258
+  },
+  "eebench_equiv": 74.03
+ },
+ "_baseline": {
+  "created": "2026-09-27",
+  "kicad_version": "10.0.6"
+ }
+}

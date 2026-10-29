@@ -1,0 +1,14 @@
+# DFA-07 seeded fault for check_bom_sync (docs/failure-modes.md section 4).
+mutants:
+  dfa-07-dnp-populated:
+    board: blinky2
+    script: mutations/dfa_07_dnp_populated.py
+    check: check_bom_sync
+    modes: [DFA-07]
+    defect: >-
+      DFA-07: R2 marked DNP in the schematic and on its footprint, but the
+      stale BOM.csv and CPL.csv sidecars still list it, so it would be placed
+    expect:
+      kind: bom_dnp_populated
+      ref: R2
+      pos: [127.1, 129.5]

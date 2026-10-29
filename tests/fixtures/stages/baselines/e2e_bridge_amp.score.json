@@ -1,0 +1,166 @@
+{
+ "script": "bench",
+ "stage": "E2E",
+ "fixture": "e2e_bridge_amp",
+ "board": "bb-amp",
+ "metrics": {
+  "workspace": "PCB-0013-A_bb-amp",
+  "artifacts": [
+   "decoupling",
+   "netlist",
+   "parts",
+   "pcb",
+   "sch"
+  ],
+  "net_map": {
+   "inp": "/IN_P",
+   "inn": "/IN_N",
+   "vout": "/VOUT",
+   "vdd": "+3V3",
+   "gnd": "GND"
+  },
+  "bom": {
+   "bom_usd": 5.0082,
+   "qty": 10,
+   "bom_lines": 10,
+   "unpriced": []
+  },
+  "checks": [
+   {
+    "id": "net:inp",
+    "category": "electrical",
+    "score": 1.0,
+    "value": "/IN_P",
+    "matches": [
+     "/IN_P"
+    ],
+    "bound": "(?i)IN_?P|INP|IN\\+"
+   },
+   {
+    "id": "net:inn",
+    "category": "electrical",
+    "score": 1.0,
+    "value": "/IN_N",
+    "matches": [
+     "/IN_N"
+    ],
+    "bound": "(?i)IN_?N|INN|IN-"
+   },
+   {
+    "id": "net:vout",
+    "category": "electrical",
+    "score": 1.0,
+    "value": "/VOUT",
+    "matches": [
+     "/VOUT"
+    ],
+    "bound": "(?i)(^|/)V?OUT$"
+   },
+   {
+    "id": "net:vdd",
+    "category": "electrical",
+    "score": 1.0,
+    "value": "+3V3",
+    "matches": [
+     "+3V3"
+    ],
+    "bound": "(?i)^/?\\+?3V3$"
+   },
+   {
+    "id": "net:gnd",
+    "category": "electrical",
+    "score": 1.0,
+    "value": "GND",
+    "matches": [
+     "GND"
+    ],
+    "bound": "^GND$"
+   },
+   {
+    "id": "layout:area",
+    "category": "layout",
+    "score": 0.8704,
+    "value": 1355.5,
+    "bound": 1200
+   },
+   {
+    "id": "layout:legality",
+    "category": "layout",
+    "score": 1.0,
+    "value": 0,
+    "bound": 0
+   },
+   {
+    "id": "layout:crossings",
+    "category": "layout",
+    "score": 0.0,
+    "value": 5,
+    "bound": 2
+   },
+   {
+    "id": "layout:decap",
+    "category": "layout",
+    "score": 0.0,
+    "value": 15.99,
+    "bound": 4
+   },
+   {
+    "id": "cost:bom",
+    "category": "cost",
+    "score": 1.0,
+    "value": 5.0082,
+    "bound": 6.0,
+    "qty": 10,
+    "priced_lines": 10,
+    "unpriced": []
+   }
+  ]
+ },
+ "metrics_live": {
+  "checks": [
+   {
+    "id": "erc:errors",
+    "category": "electrical",
+    "score": 1.0,
+    "value": 0,
+    "bound": 0
+   },
+   {
+    "id": "layout:drc",
+    "category": "layout",
+    "score": 1.0,
+    "value": 0,
+    "bound": 0
+   },
+   {
+    "id": "layout:completion",
+    "category": "layout",
+    "score": 1.0,
+    "value": [],
+    "bound": []
+   }
+  ],
+  "ngspice": true,
+  "kicad_version": "10.0.6"
+ },
+ "penalties": {
+  "electrical_shortfall": 0.0,
+  "layout_shortfall": 0.3549,
+  "cost_shortfall": 0.0
+ },
+ "composite": 92.9,
+ "composite_inputs": "full",
+ "known_answer": null,
+ "e2e": {
+  "categories": {
+   "electrical": 1.0,
+   "layout": 0.6451,
+   "cost": 1.0
+  },
+  "eebench_equiv": 100.0
+ },
+ "_baseline": {
+  "created": "2026-09-27",
+  "kicad_version": "10.0.6"
+ }
+}

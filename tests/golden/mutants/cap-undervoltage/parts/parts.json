@@ -1,0 +1,22 @@
+{
+  "parts": [
+    {
+      "ref_prefix_hint": "C",
+      "mpn": "CL10A106MQ8NNNC",
+      "lcsc": "C15850",
+      "value": "10uF",
+      "package": "0603",
+      "attributes": [
+        {
+          "name": "Capacitance",
+          "value": "10uF"
+        },
+        {
+          "name": "Voltage Rated",
+          "value": "4V"
+        }
+      ],
+      "role": "C6 5V input bulk"
+    }
+  ]
+}

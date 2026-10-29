@@ -1,0 +1,27 @@
+# HIDDEN: never shown to the agent that designs the board (reference/e2e-scoring.md)
+brief: e2e_batt_monitor
+nets:
+  - {id: vbat, pattern: "(?i)^/?\\+?(VBAT|VPACK|BAT\\+?|PACK\\+?|VIN)$"}
+  - {id: vsense, pattern: "(?i)SENSE|ADC|VMON|SCALED|DIV"}
+  - {id: gnd, pattern: "^GND$"}
+spice:
+  - id: full_pack
+    kind: divider
+    top: vbat
+    mid: vsense
+    bottom: gnd
+    scale: 16.8
+    tol_pct: 1
+    min: 2.97
+    max: 3.30
+  - id: anti_alias
+    kind: rc_lowpass
+    in: vbat
+    out: vsense
+    gnd: gnd
+    tol_r_pct: 1
+    tol_c_pct: 10
+    min: 5
+    max: 20
+layout: {area_mm2_max: 300, crossings_signal_max: 0}
+cost: {qty: 100, target_usd: 0.15}

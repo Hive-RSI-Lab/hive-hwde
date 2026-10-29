@@ -1,4 +1,4 @@
 {
-  "test": "bin/hwde check-all",
+  "test": "bin/hwde test",
   "score": {"command": "bin/hwde score", "direction": "higher", "tolerance": 0, "paths": ["bin/score.py", "bin/check_all.py", "tests/workarounds/"]}
 }

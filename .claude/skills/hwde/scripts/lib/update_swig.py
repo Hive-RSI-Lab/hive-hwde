@@ -15,13 +15,14 @@ One verb:
                  "adds": [{"ref": R, "value": V, "fpid": "Lib:Name",
                            "x": mm, "y": mm, "deg": d, "side": "front"|"back",
                            "fields": {n: v}, "pad_nets": {"1": "NET", ...}}],
+                 "pad_nets": [{"ref": R, "pad_nets": {"1": "NET" | ""}}],
                  "fp_paths": [dir, ...],
                  "remove_refs": [R, ...],
                  "remove_uuids": [uuid, ...]}      # tracks/vias
 
 Application order is fixed by the LEARNINGS [swig] bulk-Remove rule: all reads
 first (uuid index, silk-residue capture inside doomed footprints' bboxes),
-then field updates and footprint adds, then EVERY removal last, then Save as
+then field updates, footprint adds and pad re-netting, then EVERY removal last, then Save as
 the final pcbnew act. Nothing is saved on any failure (exit 3, result file
 carries the error) - the driver treats the staged copy as garbage.
 
@@ -199,6 +200,31 @@ def verb_apply_update(job):
                       "deg": round(fp.GetOrientationDegrees(), 4),
                       "side": side_of(fp), "pads_netted": netted})
 
+    # ---- mutation pass 3: pad re-netting on surviving parts -------------
+    # (rewire_pad: the driver only plans this for pads no copper touches;
+    # "" is the no-connect class -> netcode 0)
+    pads_renetted = []
+    for rw in job.get("pad_nets") or []:
+        fp = fps.get(rw["ref"])
+        if fp is None:
+            raise KeyError("pad_nets: footprint '%s' not on board" % rw["ref"])
+        want = rw.get("pad_nets") or {}
+        done = set()
+        for pad in fp.Pads():
+            num = pad.GetNumber()
+            if num not in want:
+                continue
+            if want[num]:
+                pad.SetNet(net_of(board, want[num], nets_cache))
+            else:
+                pad.SetNetCode(0)
+            done.add(num)
+            pads_renetted.append("%s.%s" % (rw["ref"], num))
+        absent = sorted(set(want) - done)
+        if absent:
+            raise KeyError("pad_nets: %s has no pad(s) %s"
+                           % (rw["ref"], absent))
+
     board.BuildListOfNets()
 
     # ---- removal pass LAST; Save immediately after ----------------------
@@ -213,6 +239,7 @@ def verb_apply_update(job):
     if not board.Save(job["out"]):
         raise RuntimeError("board.Save failed: %s" % job["out"])
     return {"fields_updated": fields_updated, "added": added,
+            "pads_renetted": pads_renetted,
             "removed_refs": remove_refs,
             "removed_items": len(doomed_items),
             "absent_uuids": absent_uuids,

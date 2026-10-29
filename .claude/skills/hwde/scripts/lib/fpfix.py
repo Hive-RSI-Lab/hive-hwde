@@ -24,6 +24,13 @@ them measured against real DRC on the shipped boards (LEARNINGS 2026-07-28
      collide with the footprint's own silk outline (the 3-position DIP switch
      ships 8 `silk_overlap` warnings this way). They are hidden under the part
      once assembled, so they are deleted.
+  E  courtyard inside the pads: EasyEDA's 0603 parts ship the body outline
+     (+-0.80 x +-0.40 mm) as the courtyard, inside pads reaching +-1.15 mm, and
+     KiCad's DRC never compares a courtyard with its own copper
+     (check_courtyard does). A courtyard layer that leaves pad copper outside
+     is redrawn as one rectangle: the old courtyard's bbox united with the pad
+     field grown by COURTYARD_EXCESS, rounded outward to COURTYARD_GRID. A
+     courtyard that covers its pads is never touched.
 
 Text surgery on the raw file: only the nodes that change are rewritten, so
 nothing else can be reformatted, and re-running is a no-op (idempotent).
@@ -35,7 +42,13 @@ Library API:
   analyze(text, **opts)  -> {"items": [...], "worst_gap_mm": float|None, ...}
   fix_file(path, **opts) -> report dict
 
+Board API (rule E only):
+  fix_board(pcb, dry_run=False) -> report dict: the courtyards of the
+  footprints PLACED on a board, which KiCad copies in and a library fix does
+  not reach. Run it after fixing the library the board was built from.
+
 CLI (SPEC section 6): fpfix.py --lib <dir>.pretty [--dry-run] [--out r.json]
+                      fpfix.py --pcb <board>.kicad_pcb [--dry-run] [--out r.json]
   exit 0 = clean or fixed, 1 = residue left (a defect no rule can repair), 2 = error
 """
 from __future__ import annotations
@@ -60,6 +73,12 @@ MIN_LINE_WIDTH = 0.15
 MIN_GAP = 0.15
 # Stroke widths are chosen on this grid so a narrowed outline stays a round number.
 WIDTH_GRID = 0.05
+# Courtyard excess over the pad field (IPC-7351 nominal density, KiCad KLC).
+COURTYARD_EXCESS = 0.25
+# A rebuilt courtyard's corners land on this grid, rounded outward.
+COURTYARD_GRID = 0.05
+# Copper outside a courtyard below this (mm2) is arc sampling, not a miss.
+COURTYARD_TOL_MM2 = 1e-3
 # Fraction of the nominal glyph height used as per-character advance (stroke font).
 TEXT_ADVANCE = 0.75
 
@@ -254,8 +273,10 @@ def graphic_shape(node):
     return None
 
 
-def _pad_poly(node):
-    """Copper polygon of a pad node in footprint-local coordinates."""
+def _pad_poly(node, rot_offset: float = 0.0):
+    """Copper polygon of a pad node in footprint-local coordinates. On a
+    board a pad's angle is absolute: rot_offset (minus the footprint's angle)
+    takes it back to the footprint's frame."""
     if len(node) < 4:
         return None
     ptype, shape = str(_tok(node[2])), str(_tok(node[3]))
@@ -272,7 +293,7 @@ def _pad_poly(node):
         return None
     rr = _kid(node, "roundrect_rratio")
     rratio = _nums(rr)[0] if rr is not None and _nums(rr) else 0.25
-    rot = a[2] if len(a) >= 3 else 0.0
+    rot = (a[2] if len(a) >= 3 else 0.0) + rot_offset
     return geom._pad_polygon(shape, s[0], s[1], rratio, (a[0], a[1]), rot)
 
 
@@ -390,8 +411,9 @@ _PAD_TYPE = re.compile(r"(\(pad\s+(?:\"[^\"]*\"|\S+)\s+)thru_hole\b")
 def sanitize(text: str, *, min_gap: float = MIN_GAP,
              min_line_width: float = MIN_LINE_WIDTH,
              promote_silk: bool = True, fix_pegs: bool = True,
-             fix_body_text: bool = True) -> tuple[str, list[dict]]:
-    """Apply rules A-D. Returns (new_text, actions); idempotent."""
+             fix_body_text: bool = True,
+             fix_courtyard: bool = True) -> tuple[str, list[dict]]:
+    """Apply rules A-E. Returns (new_text, actions); idempotent."""
     nodes, copper, silk = _collect(text)
     actions: list[dict] = []
     edits: list[tuple[int, int, str | None, str]] = []  # start, end, replacement|None
@@ -502,6 +524,13 @@ def sanitize(text: str, *, min_gap: float = MIN_GAP,
             actions.append({"rule": "D", "action": "delete_body_legend_text",
                             "text": txt, "at": [round(v, 3) for v in _nums(_kid(node, "at"))[:2]]})
 
+    # ---- E: a courtyard that leaves pad copper outside -> pads + excess
+    if fix_courtyard:
+        for start, end, repl, act in courtyard_edits(text, nodes, copper):
+            edits.append((start, end, repl, "courtyard"))
+            if act:
+                actions.append(act)
+
     if not edits:
         return text, actions
     out = text
@@ -519,6 +548,82 @@ def sanitize(text: str, *, min_gap: float = MIN_GAP,
         else:
             out = out[:start] + repl + out[end:]
     return out, actions
+
+
+def _crtyd_layer(node) -> str | None:
+    for ly in _layers(node):
+        if ly.endswith(".CrtYd"):
+            return ly
+    return None
+
+
+def _courtyard_area(shapes):
+    """The area a layer's courtyard graphics enclose (lines polygonized)."""
+    from shapely.ops import polygonize
+    areas = [g for g in shapes if g.geom_type == "Polygon"]
+    lines = [g if g.geom_type != "Polygon" else g.exterior for g in shapes
+             if g.geom_type in ("LineString", "LinearRing", "Polygon")]
+    if lines:
+        areas += list(polygonize(unary_union(lines)))
+    return unary_union(areas) if areas else None
+
+
+def _crtyd_line(legacy: bool, layer: str, a, b, indent: str) -> str:
+    f = lambda v: f"{v:.2f}"  # noqa: E731
+    if legacy:
+        return (f"{indent}(fp_line (start {f(a[0])} {f(a[1])}) (end {f(b[0])} "
+                f"{f(b[1])}) (layer {layer}) (width 0.05))")
+    return (f'{indent}(fp_line (start {f(a[0])} {f(a[1])}) (end {f(b[0])} '
+            f'{f(b[1])}) (stroke (width 0.05) (type solid)) (layer "{layer}"))')
+
+
+def courtyard_edits(text: str, nodes, copper):
+    """Rule E: (start, end, replacement|None, action|None) per courtyard
+    graphic to rewrite. The first graphic of a failing layer becomes the new
+    rectangle (four fp_lines), the layer's others are dropped."""
+    if copper is None or copper.is_empty:
+        return []
+    by_layer: dict[str, list] = {}
+    for head, s, e, node in nodes:
+        if head not in _GRAPHIC_HEADS:
+            continue
+        ly = _crtyd_layer(node)
+        if ly is None:
+            continue
+        sh = graphic_shape(node)
+        by_layer.setdefault(ly, []).append((s, e, sh))
+    legacy = text.lstrip().startswith("(module")
+    out = []
+    for ly, items in sorted(by_layer.items()):
+        area = _courtyard_area([sh for _, _, sh in items if sh is not None])
+        missed = copper.area if area is None else copper.difference(area).area
+        if missed <= COURTYARD_TOL_MM2:
+            continue
+        x1, y1, x2, y2 = copper.bounds
+        x1, y1 = x1 - COURTYARD_EXCESS, y1 - COURTYARD_EXCESS
+        x2, y2 = x2 + COURTYARD_EXCESS, y2 + COURTYARD_EXCESS
+        if area is not None:
+            a1, b1, a2, b2 = area.bounds
+            x1, y1, x2, y2 = min(x1, a1), min(y1, b1), max(x2, a2), max(y2, b2)
+        g = COURTYARD_GRID
+        # 1e-6 keeps a bound already on the grid from stepping out a cell
+        x1, y1 = (math.floor(v / g + 1e-6) * g for v in (x1, y1))
+        x2, y2 = (math.ceil(v / g - 1e-6) * g for v in (x2, y2))
+        x1, y1, x2, y2 = (round(v, 4) + 0.0 for v in (x1, y1, x2, y2))
+        s0, e0, _ = items[0]
+        ls = text.rfind("\n", 0, s0) + 1
+        indent = text[ls:s0] if not text[ls:s0].strip() else ""
+        corners = [(x1, y2), (x1, y1), (x2, y1), (x2, y2)]
+        lines = [_crtyd_line(legacy, ly, corners[i], corners[(i + 1) % 4],
+                             indent if i else "") for i in range(4)]
+        old = None if area is None else [round(v, 3) for v in area.bounds]
+        out.append((s0, e0, "\n".join(lines),
+                    {"rule": "E", "action": "rebuild_courtyard", "layer": ly,
+                     "from_bbox": old, "to_bbox": [x1, y1, x2, y2],
+                     "copper_outside_mm2": round(missed, 4)}))
+        for s, e, _ in items[1:]:
+            out.append((s, e, None, None))
+    return out
 
 
 def _fp_stem(name: str) -> str:
@@ -569,6 +674,56 @@ def fix_lib(pretty: str | Path, *, dry_run: bool = False,
             "residue": sum(r["residue"] for r in rows),
             "status": "residue" if any(r["residue"] for r in rows) else "pass",
             "results": rows}
+
+
+def _apply(text: str, edits) -> str:
+    """Splice (start, end, replacement|None) edits, last first."""
+    out = text
+    for start, end, repl in sorted(edits, key=lambda t: -t[0]):
+        if repl is None:
+            ls = out.rfind("\n", 0, start) + 1
+            le = end + (1 if out[end:end + 1] == "\n" else 0)
+            if out[ls:start].strip():
+                ls, le = start, end
+            out = out[:ls] + out[le:]
+        else:
+            out = out[:start] + repl + out[end:]
+    return out
+
+
+def fix_board(pcb: str | Path, *, dry_run: bool = False) -> dict:
+    """Rule E on every footprint placed on a board, in place."""
+    p = Path(pcb)
+    text = p.read_text(encoding="utf-8")
+    edits, rows = [], []
+    for head, s, e in top_level_nodes(text):
+        if head != "footprint":
+            continue
+        sub = text[s:e]
+        root = _parse(sub)
+        at = _nums(_kid(root, "at"))
+        fangle = at[2] if len(at) >= 3 else 0.0
+        ref = None
+        for c in root[1:]:
+            if isinstance(c, list) and len(c) >= 3 and _tok(c[0]) == "property" \
+                    and str(_tok(c[1])) == "Reference":
+                ref = str(_tok(c[2]))
+        nodes = [(h, a, b, _parse(sub[a:b])) for h, a, b in top_level_nodes(sub)
+                 if h in _GRAPHIC_HEADS + ("pad",)]
+        copper = unary_union([q for q in (_pad_poly(n, -fangle)
+                                          for h, _, _, n in nodes if h == "pad")
+                              if q is not None])
+        fe = courtyard_edits(sub, nodes, copper)
+        if not fe:
+            continue
+        edits.append((s, e, _apply(sub, [(a, b, r) for a, b, r, _ in fe])))
+        rows.append({"ref": ref, "footprint": str(_tok(root[1])),
+                     "actions": [act for *_, act in fe if act]})
+    new = _apply(text, edits) if edits else text
+    if new != text and not dry_run:
+        p.write_text(new, encoding="utf-8")
+    return {"script": "fpfix", "pcb": str(p), "dry_run": bool(dry_run),
+            "changed": len(rows), "status": "pass", "results": rows}
 
 
 # ------------------------------------------------------- real-DRC measurement
@@ -622,7 +777,9 @@ def scratch_drc(pretty: str | Path, names: list[str] | None = None,
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--lib", required=True, help="a .pretty directory")
+    src = ap.add_mutually_exclusive_group(required=True)
+    src.add_argument("--lib", help="a .pretty directory")
+    src.add_argument("--pcb", help="a board: rule E on its placed footprints")
     ap.add_argument("--only", nargs="+", help="limit to these footprint names")
     ap.add_argument("--min-gap", type=float, default=MIN_GAP,
                     help=f"silk-to-copper bar, mm (default {MIN_GAP})")
@@ -640,12 +797,16 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     try:
-        payload = fix_lib(args.lib, dry_run=args.dry_run, names=args.only,
-                          min_gap=args.min_gap, min_line_width=args.min_line_width,
-                          promote_silk=not args.no_promote,
-                          fix_pegs=not args.no_pegs,
-                          fix_body_text=not args.no_body_text)
-        if args.verify_drc:
+        if args.pcb:
+            payload = fix_board(args.pcb, dry_run=args.dry_run)
+        else:
+            payload = fix_lib(args.lib, dry_run=args.dry_run, names=args.only,
+                              min_gap=args.min_gap,
+                              min_line_width=args.min_line_width,
+                              promote_silk=not args.no_promote,
+                              fix_pegs=not args.no_pegs,
+                              fix_body_text=not args.no_body_text)
+        if args.verify_drc and args.lib:
             drc = scratch_drc(args.lib, args.only)
             payload["drc"] = {"status": drc["status"], "counts": drc["counts"],
                               "by_check": drc["by_check"],

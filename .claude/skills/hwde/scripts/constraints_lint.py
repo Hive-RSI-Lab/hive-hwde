@@ -121,6 +121,11 @@ PLACEMENT: dict[str, dict[str, dict[str, str]]] = {
     # annealer never flips a pinned cluster.
     "sides": {"required": {"ref": "str", "side": "side"},
               "optional": {"reason": "str"}},
+    # a connector whose mate lies on the board (a display's flex tail):
+    # check_mating holds it to this corridor instead of the edge rule
+    "mates": {"required": {"ref": "str", "mate": "str",
+                           "corridor": "rect_list"},
+              "optional": {"mate_refs": "str_list", "reason": "str"}},
 }
 OVERRIDE = {"required": {"near": "pair", "radius_mm": "num",
                          "current_a": "num"}, "optional": {}}
@@ -170,6 +175,9 @@ def _type_ok(spec: str, v) -> bool:
     if spec == "rect":
         return (isinstance(v, list) and len(v) == 4
                 and all(_is_num(x) for x in v))
+    if spec == "rect_list":
+        return isinstance(v, list) and bool(v) and all(
+            _type_ok("rect", r) for r in v)
     if spec == "pair":
         return (isinstance(v, list) and len(v) == 2
                 and all(_is_num(x) for x in v))

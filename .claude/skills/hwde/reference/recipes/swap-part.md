@@ -16,8 +16,10 @@ diff is what decides which of the two classes this really is.
 
 Always run `--dry-run` first and read `plan.*`: it tells you which class it
 found, and `plan.unsupported` (exit 1) means the diff contains something this
-tool will not do - pad-net rewires and net renames, which are a schematic/route
-job, not a surgery.
+tool will not do - pad-net rewires and net renames on pads copper already
+touches (`routed_pads`), which are a schematic/route job, not a surgery. Pads
+with no track or via on them (an unrouted board) are re-netted as
+`plan.rewire` (class `rewire_pad`); route the new nets with the fix loop.
 
 ## Sourcing the replacement
 

@@ -35,6 +35,11 @@ Conventions (S1-proven against kicad-cli 10.0.3 ERC, see LEARNINGS [python]):
   (SPEC section 5 grounding rule); `expect` pin-name checks are insurance.
 - save() finishes with an automatic schem_refdes field-placement pass
   (electrically inert; place_fields=False opts out; see Sheet.place_report).
+- save() also makes the sheet readable: stub labels read outward, away
+  from their pin numbers (apply_label_justify), two-pin parts hide their
+  pin names (hide_pin_names), and paper="auto" (the default) takes the
+  smallest A-size the drawing fits, the drawing centred (fit_sheet;
+  fit=False opts out). schem_refdes.audit_sheet flags a label on a part.
 - Label anchors are guarded: one landing on a FOREIGN wire run would merge
   two nets and raises ValueError at generation time.
 
@@ -53,7 +58,9 @@ import contextlib
 import io
 import json
 import math
+import re
 import sys
+import uuid
 from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -126,13 +133,16 @@ def _label_rotation(d: tuple[int, int]) -> float:
 class Sheet:
     """One schematic file under construction (root or hierarchical child)."""
 
-    def __init__(self, name: str, title: str | None = None, paper: str = "A3",
+    def __init__(self, name: str, title: str | None = None, paper: str = "auto",
                  rev: str = "1", date: str = "", company: str = "hwde",
                  pwr_base: int = 1):
         self.name = name
         with _quiet():
             self.sch = ksa.create_schematic(name)
-        self.sch.set_paper_size(paper)
+        # "auto": save() picks the smallest paper the drawing fits (fit_sheet)
+        self.paper = paper
+        self.sch.set_paper_size("A4" if paper == "auto" else paper)
+        self.fit_report: dict | None = None   # save-time paper fit
         self.sch.set_title_block(title=title or name, date=date, rev=rev,
                                  company=company)
         self.decoupling: list[dict] = []      # S4 association contract
@@ -148,6 +158,7 @@ class Sheet:
         self._pin_nets: dict[tuple[str, str], str] = {}  # (ref, pad) -> net
         self._pwr_i = pwr_base - 1
         self._flg_i = pwr_base - 1
+        self.uuid_map: dict[str, str] = {}    # save-time ksa uuid -> kept
 
     # ---------------------------------------------------------- components
     def add_component(self, lib_id: str, ref: str, value: str, at,
@@ -256,7 +267,8 @@ class Sheet:
         end = (round(p[0] + d[0] * STUB, 4), round(p[1] + d[1] * STUB, 4))
         seg = self._add_wire(p, end)
         self._assert_label_clear(end, net, own=seg)
-        self.sch.add_label(net, position=end)
+        # the text runs outward, away from the pin and its printed number
+        self.sch.add_label(net, position=end, rotation=_label_rotation(d))
         self._pin_nets[(ref, pad)] = net
 
     def wire_pins(self, ref: str, pins: dict) -> None:
@@ -285,7 +297,9 @@ class Sheet:
         else:
             label_at = (x, y)             # label terminates start, flag end
         self._assert_label_clear(label_at, net, own=seg)
-        self.sch.add_label(net, position=label_at)
+        # a label on the wire's start reads leftward, off the wire and flag
+        self.sch.add_label(net, position=label_at,
+                           rotation=180.0 if label_at == (x, y) else 0.0)
         if sym:
             self._pwr_i += 1
             # VALUE = the rail net: a power symbol's exported net name is
@@ -354,7 +368,7 @@ class Sheet:
             seg = self._add_wire((x, y), end)
             self._assert_label_clear((x, y), net, own=seg)
             self._assert_label_clear(end, net, own=seg)
-            self.sch.add_label(net, position=(x, y))
+            self.sch.add_label(net, position=(x, y), rotation=180.0)
             self.sch.add_hierarchical_label(net, position=end, shape=shape)
         else:
             raise ValueError(f"hier_pin {net}: give ref/pad or at")
@@ -443,21 +457,35 @@ class Sheet:
 
     # ---------------------------------------------------------- save
     def save(self, out_dir: Path | str, project: bool = True,
-             place_fields: bool = True) -> Path:
+             place_fields: bool = True, keep_uuids: bool = True,
+             fit: bool = True) -> Path:
         """Write the sheet. place_fields (default) runs schem_refdes on the
         saved file so Reference/Value land on the correct side and clear of
         wires/labels/bodies (ksa mirrors every field to the wrong side -
-        T6, ladder row 166 L3). Electrically inert; see self.place_report."""
+        T6, ladder row 166 L3). Electrically inert; see self.place_report.
+        keep_uuids (default): regenerating keeps the UUIDs of the file it
+        overwrites, and anything new gets one derived from what it is, so
+        the board's footprint paths keep matching (see stable_uuids).
+        fit (default) sizes the paper to the drawing and centres it
+        (fit_sheet), after labels are justified away from their pins and
+        two-pin symbols' pin names are hidden (hide_pin_names)."""
         out_dir = Path(out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         path = out_dir / f"{self.name}.kicad_sch"
+        previous = (path.read_text(encoding="utf-8")
+                    if keep_uuids and path.exists() else None)
         with _quiet():
             self.sch.save(str(path))
         import schem_refdes as sr  # sibling script; deferred (shapely)
         sr.strip_private_properties(path)   # KiCad-10 stock-lib notes ksa mangles (exit 3 at ERC)
         apply_pin_number_fixups(self._fixups, path)
+        apply_label_justify(path)
         if place_fields:
             self._place_fields(path)
+        # after field placement: its kicad-sch-api re-save drops pin_names
+        hide_pin_names(path)
+        if fit:
+            self.fit_report = fit_sheet(path, self.paper)
         # native dnp LAST: write_placements() may round-trip the file
         # through kicad-sch-api (schem_refdes.write_placements ->
         # ksa.Schematic.load().save() when any field actually moved), and
@@ -466,6 +494,8 @@ class Sheet:
         # silently wiped by that later whole-file re-save (measured: with
         # the call before place_fields, J3/J4 came back `(dnp no)`).
         apply_native_dnp(self._dnp, path)
+        if keep_uuids:
+            self.uuid_map = stable_uuids(path, previous, self.name)
         if project:
             write_project(self.name, out_dir)
         return path
@@ -527,7 +557,7 @@ class Project:
             end = (round(px - label_stub, 4), py)
             seg = self.root._add_wire((px, py), end)
             self.root._assert_label_clear(end, root_label, own=seg)
-            self.root.sch.add_label(root_label, position=end)
+            self.root.sch.add_label(root_label, position=end, rotation=180.0)
         if child not in self.children:
             self.children.append(child)
 
@@ -546,6 +576,13 @@ class Project:
             c.save(out_dir, project=False, place_fields=place_fields)
         path = self.root.save(out_dir, project=True,
                               place_fields=place_fields)
+        # A child's instance paths name the root's and its sheet's UUIDs,
+        # which the root's save just settled: carry them into every file.
+        moved = {}
+        for sh in (self.root, *self.children):
+            moved.update(sh.uuid_map)
+        for c in self.children:
+            _rewrite_uuids(out_dir / f"{c.name}.kicad_sch", moved)
         if decoupling is not None:
             payload = {"associations": self.decoupling}
             p = Path(decoupling)
@@ -553,6 +590,138 @@ class Project:
             p.write_text(json.dumps(payload, indent=1) + "\n",
                          encoding="utf-8")
         return path
+
+
+_UUID_NS = uuid.UUID("5b0c2a8e-6f3d-4f53-9a8e-6877646573c1")  # hwde schematics
+_UUID_RE = re.compile(
+    r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+_SEXP_TOK = re.compile(r'\(|\)|"(?:[^"\\]|\\.)*"|[^\s()"]+')
+
+
+def _sexp(text: str) -> list:
+    """The file's forms as nested lists; quoted strings keep their quotes
+    (so `"uuid"` the string and `uuid` the head stay apart)."""
+    stack: list[list] = [[]]
+    for tok in _SEXP_TOK.findall(text):
+        if tok == "(":
+            stack.append([])
+        elif tok == ")":
+            done = stack.pop()
+            stack[-1].append(done)
+        else:
+            stack[-1].append(tok)
+    return stack[0]
+
+
+def _unq(tok) -> str:
+    return tok[1:-1] if isinstance(tok, str) and tok[:1] == '"' else str(tok)
+
+
+def _child(form: list, head: str) -> list | None:
+    return next((c for c in form[1:] if isinstance(c, list) and c
+                 and c[0] == head), None)
+
+
+def _prop(form: list, name: str) -> str | None:
+    for c in form[1:]:
+        if isinstance(c, list) and len(c) > 2 and c[0] == "property" \
+                and _unq(c[1]) == name:
+            return _unq(c[2])
+    return None
+
+
+def _uuid_of(form: list) -> str | None:
+    u = _child(form, "uuid")
+    return _unq(u[1]) if u and len(u) > 1 else None
+
+
+def _at(form: list) -> tuple:
+    a = _child(form, "at")
+    return tuple(round(float(v), 4) for v in a[1:3]) if a else ()
+
+
+def uuid_keys(text: str) -> list[tuple[tuple, str]]:
+    """(key, uuid) for every UUID-bearing object of a .kicad_sch, the key
+    being what the object IS, not where ksa happened to number it: the
+    file; a symbol by Reference (+unit) and its pins by number; a wire/bus
+    by its end points; a label, junction, no-connect, text by name and
+    place; a sheet by Sheetname and its pins by name. Duplicate keys get an
+    occurrence index, in file order."""
+    top = next((f for f in _sexp(text) if isinstance(f, list) and f
+                and f[0] == "kicad_sch"), None)
+    if top is None:
+        raise ValueError("not a kicad_sch file")
+    out: list[tuple[tuple, str]] = []
+    for f in top[1:]:
+        if not (isinstance(f, list) and f):
+            continue
+        head = f[0]
+        if head == "uuid":
+            out.append((("file",), _unq(f[1])))
+            continue
+        u = _uuid_of(f)
+        if head == "symbol":
+            unit = _child(f, "unit")
+            base = (_prop(f, "Reference") or "?",
+                    _unq(unit[1]) if unit else "1")
+            key = ("symbol",) + base
+            pins = [(("pin",) + base + (_unq(p[1]),), _uuid_of(p))
+                    for p in f[1:] if isinstance(p, list) and p
+                    and p[0] == "pin"]
+        elif head == "sheet":
+            name = _prop(f, "Sheetname") or _prop(f, "Sheet name") or "?"
+            key = ("sheet", name)
+            pins = [(("sheet_pin", name, _unq(p[1])), _uuid_of(p))
+                    for p in f[1:] if isinstance(p, list) and p
+                    and p[0] == "pin"]
+        else:
+            pts = _child(f, "pts")
+            where = (tuple(sorted(tuple(round(float(v), 4) for v in xy[1:3])
+                                  for xy in pts[1:] if isinstance(xy, list)))
+                     if pts else _at(f))
+            name = _unq(f[1]) if len(f) > 1 and not isinstance(f[1], list) \
+                else ""
+            key = (head, name, where)
+            pins = []
+        if u:
+            out.append((key, u))
+        out.extend((k, pu) for k, pu in pins if pu)
+    seen: dict[tuple, int] = {}
+    numbered = []
+    for k, u in out:
+        n = seen.get(k, 0)
+        seen[k] = n + 1
+        numbered.append((k + (n,) if n else k, u))
+    return numbered
+
+
+def _rewrite_uuids(path: Path, mapping: dict[str, str]) -> None:
+    if not mapping:
+        return
+    text = path.read_text(encoding="utf-8")
+    new = _UUID_RE.sub(lambda m: mapping.get(m.group(0), m.group(0)), text)
+    if new != text:
+        path.write_text(new, encoding="utf-8")
+
+
+def stable_uuids(path: Path, previous: str | None, name: str) -> dict[str, str]:
+    """Give the just-saved schematic at `path` stable UUIDs, in place.
+    kicad-sch-api draws fresh random UUIDs on every run, which would cut the
+    board's footprints (path "/<sheet>/<symbol>") off the schematic each
+    time a generator is re-run. Each object keeps the UUID it had in
+    `previous` (the file this save overwrote) under the same key
+    (uuid_keys); anything new gets uuid5(key), so a fresh generation is
+    the same every time too. Returns {ksa uuid: kept uuid} (instance paths
+    in child sheets need it, see Project.save)."""
+    old = dict(uuid_keys(previous)) if previous else {}
+    mapping: dict[str, str] = {}
+    for key, u in uuid_keys(path.read_text(encoding="utf-8")):
+        want = old.get(key) or str(uuid.uuid5(
+            _UUID_NS, json.dumps([name, *key], default=str)))
+        if want != u:
+            mapping[u] = want
+    _rewrite_uuids(path, mapping)
+    return mapping
 
 
 def apply_pin_number_fixups(fixups: list[dict], sch_path: Path) -> None:
@@ -619,6 +788,201 @@ def apply_native_dnp(refs: list[str], sch_path: Path) -> None:
             raise ValueError(f"dnp fixup: no preceding '{old}' for {ref}")
         text = text[:dn] + "(dnp yes)" + text[dn + len(old):]
     sch_path.write_text(text, encoding="utf-8")
+
+
+def _forms(text: str, start: int = 0, end: int | None = None):
+    """(head, open, close) of each top-level form in text[start:end],
+    `close` one past its ")". Quoted strings are skipped."""
+    end = len(text) if end is None else end
+    depth, i, open_at = 0, start, -1
+    while i < end:
+        ch = text[i]
+        if ch == '"':
+            i += 1
+            while i < end and text[i] != '"':
+                i += 2 if text[i] == "\\" else 1
+        elif ch == "(":
+            if depth == 0:
+                open_at = i
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+            if depth == 0:
+                m = re.match(r"\((\S+)", text[open_at:open_at + 40])
+                yield (m.group(1) if m else "", open_at, i + 1)
+            if depth < 0:
+                return
+        i += 1
+
+
+def _body(text: str):
+    """(start, end) of the inside of the kicad_sch form."""
+    top = next(_forms(text))
+    return top[1] + 1, top[2] - 1
+
+
+def apply_label_justify(sch_path: Path) -> int:
+    """kicad-sch-api writes `(justify left bottom)` on every label whatever
+    its angle, while KiCad writes a 180/270-degree label right-justified:
+    left-justified, its text runs back over its own wire and pin. Repair
+    the saved file text; returns how many labels changed."""
+    text = sch_path.read_text(encoding="utf-8")
+    n = 0
+
+    def fix(m):
+        nonlocal n
+        n += 1
+        return m.group(1) + "(justify right"
+
+    new = re.sub(r'(\((?:label|hierarchical_label) "(?:[^"\\]|\\.)*"\s*'
+                 r'\(at \S+ \S+ (?:180|270)(?:\.0+)?\)[^()]*'
+                 r'\(effects[^()]*\(font[^()]*\([^()]*\)[^()]*\)\s*)'
+                 r'\(justify left', fix, text)
+    if n:
+        sch_path.write_text(new, encoding="utf-8")
+    return n
+
+
+def hide_pin_names(sch_path: Path) -> list[str]:
+    """Hide pin NAMES on embedded symbols where they only add clutter: a
+    two-pin part (R, C, LED, a 2-pin header: KiCad's own Device symbols
+    hide them too; the symbol's drawing and the pin numbers say all there
+    is) and any symbol whose every pin name is empty or its own number.
+    Left shown, an LED's "K" and "A" print over each other inside its
+    body. Pin numbers stay. Returns the lib_ids changed."""
+    text = sch_path.read_text(encoding="utf-8")
+    b0, b1 = _body(text)
+    lib = next((f for f in _forms(text, b0, b1) if f[0] == "lib_symbols"),
+               None)
+    if lib is None:
+        return []
+    edits, changed = [], []
+    for head, s0, s1 in _forms(text, lib[1] + 1, lib[2] - 1):
+        if head != "symbol":
+            continue
+        block = text[s0:s1]
+        pins = re.findall(r'\(pin \S+ \S+.*?\(name "((?:[^"\\]|\\.)*)"'
+                          r'.*?\(number "((?:[^"\\]|\\.)*)"', block, re.S)
+        if not pins:
+            continue
+        redundant = all(nm in ("", "~", num) for nm, num in pins)
+        if len(pins) > 2 and not redundant:
+            continue
+        lib_id = re.match(r'\(symbol "((?:[^"\\]|\\.)*)"', block).group(1)
+        inner = list(_forms(text, s0 + 1, s1 - 1))
+        pn = next((f for f in inner if f[0] == "pin_names"), None)
+        if pn is None:
+            at = inner[0][1] if inner else s1 - 1
+            ind = text[text.rfind("\n", 0, at) + 1:at]
+            new = (f"(pin_names\n{ind}\t(hide yes)\n{ind})\n{ind}"
+                   if ind.isspace() else "(pin_names (hide yes)) ")
+            edits.append((at, at, new))
+        else:
+            form = text[pn[1]:pn[2]]
+            if re.search(r"\(hide yes\)|\bhide\b", form):
+                continue
+            edits.append((pn[2] - 1, pn[2] - 1, " (hide yes)"))
+        changed.append(lib_id)
+    for a, z, s in sorted(edits, reverse=True):
+        text = text[:a] + s + text[z:]
+    if edits:
+        sch_path.write_text(text, encoding="utf-8")
+    return changed
+
+
+# Landscape paper, smallest first (mm), and KiCad's default page layout:
+# a 10 mm frame margin, the title block in the bottom-right corner.
+PAPERS = (("A5", 210.0, 148.0), ("A4", 297.0, 210.0), ("A3", 420.0, 297.0),
+          ("A2", 594.0, 420.0), ("A1", 841.0, 594.0), ("A0", 1189.0, 841.0))
+FRAME = 10.0
+TITLE_BLOCK = (110.0, 36.0)   # w, h of the default title block, mm
+FIT_MARGIN = 5.08             # clear space kept around the drawing, mm
+
+
+def drawn_bounds(sch_path: Path) -> tuple[float, float, float, float] | None:
+    """(x0, y0, x1, y1) of everything drawn on the sheet: symbol bodies and
+    their pin text, visible fields, wires, labels, junctions, sheets."""
+    import schem_refdes as sr  # sibling script; deferred (shapely)
+    from shapely.ops import unary_union
+    sheet = sr.Sheet(sch_path)
+    geoms = [g for _k, g, _n in sheet.statics]
+    for sym in sheet.symbols:
+        ob = sheet.body_obstacle(sym)
+        if ob is not None:
+            geoms.append(ob)
+        for p in sym["props"].values():
+            if p["hidden"] or p["at"] is None or not p["value"]:
+                continue
+            geoms.append(sr.text_box(p["value"], p["at"], p["size"],
+                                     p["thick"], p["justify"], p["angle"]))
+    geoms = [g for g in geoms if not g.is_empty]
+    return unary_union(geoms).bounds if geoms else None
+
+
+def _usable(w: float, h: float) -> tuple[float, float, float, float]:
+    """The page area a drawing may use: inside the frame, above the title
+    block (x0, y0, x1, y1)."""
+    return (FRAME, FRAME, w - FRAME, h - FRAME - TITLE_BLOCK[1])
+
+
+def fit_sheet(sch_path: Path, paper: str = "auto") -> dict:
+    """Size the sheet to its drawing and centre the drawing on it. With
+    paper "auto", the smallest landscape A-size whose area above the title
+    block holds the drawing (plus FIT_MARGIN all round); any other paper is
+    kept. Everything placed on the sheet moves by one grid-snapped offset,
+    so connectivity is unchanged; the embedded library is not touched."""
+    bb = drawn_bounds(sch_path)
+    if bb is None:
+        return {"paper": paper, "moved": [0.0, 0.0]}
+    dw = bb[2] - bb[0] + 2 * FIT_MARGIN
+    dh = bb[3] - bb[1] + 2 * FIT_MARGIN
+    sizes = {n: (w, h) for n, w, h in PAPERS}
+    if paper == "auto":
+        paper = next((n for n, w, h in PAPERS
+                      if dw <= w - 2 * FRAME
+                      and dh <= h - 2 * FRAME - TITLE_BLOCK[1]),
+                     PAPERS[-1][0])
+    out = {"paper": paper, "drawing": [round(dw, 2), round(dh, 2)]}
+    text = sch_path.read_text(encoding="utf-8")
+    text = re.sub(r'\(paper "[^"]*"\)', f'(paper "{paper}")', text, count=1)
+    dx = dy = 0.0
+    if paper in sizes:
+        ux0, uy0, ux1, uy1 = _usable(*sizes[paper])
+        if dw <= ux1 - ux0 and dh <= uy1 - uy0:
+            dx = snap((ux0 + ux1) / 2 - (bb[0] + bb[2]) / 2)
+            dy = snap((uy0 + uy1) / 2 - (bb[1] + bb[3]) / 2)
+    out["moved"] = [dx, dy]
+    if dx or dy:
+        text = _translate(text, dx, dy)
+    sch_path.write_text(text, encoding="utf-8")
+    return out
+
+
+def _num(v: float) -> str:
+    s = f"{v:.4f}".rstrip("0").rstrip(".")
+    return "0" if s in ("-0", "") else s
+
+
+def _translate(text: str, dx: float, dy: float) -> str:
+    """Move every placed item of a .kicad_sch by (dx, dy): each point form
+    outside lib_symbols (library coordinates are the symbol's own)."""
+    pt = re.compile(r"\((at|xy|start|end|center|mid) (-?[\d.]+) (-?[\d.]+)")
+
+    def mv(m):
+        return (f"({m.group(1)} {_num(float(m.group(2)) + dx)} "
+                f"{_num(float(m.group(3)) + dy)}")
+
+    b0, b1 = _body(text)
+    out, pos = [], 0
+    for head, f0, f1 in _forms(text, b0, b1):
+        if head in ("lib_symbols", "title_block", "paper", "uuid",
+                    "sheet_instances", "embedded_fonts"):
+            continue
+        out.append(text[pos:f0])
+        out.append(pt.sub(mv, text[f0:f1]))
+        pos = f1
+    out.append(text[pos:])
+    return "".join(out)
 
 
 def write_project(name: str, out_dir: Path | str) -> Path:

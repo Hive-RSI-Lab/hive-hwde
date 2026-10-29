@@ -1,0 +1,41 @@
+{
+ "script": "bench",
+ "stage": "P3",
+ "fixture": "pristine_lib",
+ "board": "pristine-pulls",
+ "metrics": {
+  "footprints": 4,
+  "fix_changed": 4,
+  "fix_actions": 21,
+  "fix_residue": 0,
+  "refdes_changed": 4,
+  "refdes_skipped": 0
+ },
+ "metrics_live": {
+  "before_total": 16,
+  "before_by_check": {
+   "annular_width": 2,
+   "clearance": 2,
+   "padstack": 2,
+   "silk_over_copper": 2,
+   "silk_overlap": 8
+  },
+  "after_total": 0,
+  "after_by_check": {},
+  "missing_footprints": [],
+  "kicad_version": "10.0.3"
+ },
+ "penalties": {
+  "after_violations": 0.0,
+  "residue": 0.0,
+  "missing_footprints": 0.0,
+  "before_drift": 0.0
+ },
+ "composite": 100.0,
+ "composite_inputs": "full",
+ "known_answer": null,
+ "_baseline": {
+  "created": "2026-08-06",
+  "kicad_version": "10.0.3"
+ }
+}
