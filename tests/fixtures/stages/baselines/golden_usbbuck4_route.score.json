@@ -1,0 +1,33 @@
+{
+ "script": "bench",
+ "stage": "P7",
+ "fixture": "golden_usbbuck4_route",
+ "board": "usbbuck4",
+ "metrics": {
+  "track_mm": 386.09,
+  "track_count": 105,
+  "via_count": 36
+ },
+ "metrics_live": {
+  "drc_errors": 0,
+  "drc_warnings": 0,
+  "completion": 1.0,
+  "routable_nets": 15,
+  "unrouted_nets": [],
+  "kicad_version": "10.0.3"
+ },
+ "penalties": {
+  "track_mm": 386.09,
+  "via_count": 36.0,
+  "incompletion_pct": 0.0,
+  "drc_errors": 0.0,
+  "drc_warnings": 0.0
+ },
+ "composite": 92.54,
+ "composite_inputs": "full",
+ "known_answer": null,
+ "_baseline": {
+  "created": "2026-08-06",
+  "kicad_version": "10.0.3"
+ }
+}

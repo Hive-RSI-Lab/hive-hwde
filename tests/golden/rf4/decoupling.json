@@ -1,0 +1,7 @@
+{
+  "_comment": "Cap<->pin associations for rf4 (S4 test fixture). U1 = RFM95W module, 3.3V supply pin 13; C1 is the 100 nF decoupler, C2 the 10 uF bulk. The pi-match caps (C14/C15) are matching parts, not decouplers.",
+  "associations": [
+    {"cap": "C1", "ic": "U1", "pin": "13", "rail": "+3V3", "value": "100nF"},
+    {"cap": "C2", "ic": "U1", "pin": "13", "rail": "+3V3", "value": "10uF"}
+  ]
+}

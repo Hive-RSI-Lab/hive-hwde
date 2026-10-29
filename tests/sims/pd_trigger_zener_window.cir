@@ -1,0 +1,41 @@
+* pd-trigger zener window: exactly-one-LED-lit invariant + trip voltage
+* Topology 1:1 from boards/pd-trigger/kicad/pd-trigger.net (indicator block):
+*   D2 BZX84C6V2 zener (cathode /VIND, anode /ZBIAS), R6 6.8k /ZBIAS->/HV_B,
+*   Q1 BC847BS dual NPN (unit A: B=pin2 E=pin1 C=pin6; unit B: B=pin5 E=pin4
+*   C=pin3), R7 4.7k /HV_B->GND, R8 10k /VIND->/HV_OK, R9 47k /HV_OK->/FB_B,
+*   R12 1.5k /VIND->/D5_A, D5 red /D5_A->/FB_K, R13 4.7k /VIND->/D6_A,
+*   D6 green /D6_A->/HV_OK.
+* Rename map: /VIND->N_VIND /ZBIAS->N_ZBIAS /HV_B->N_HV_B /HV_OK->N_HV_OK
+*   /FB_B->N_FB_B /FB_K->N_FB_K /D5_A->N_D5_A /D6_A->N_D6_A GND->0
+* Design intent: trip at Vz+Vbe ~6.7 V nominal; hard off at 5.25 V, hard on
+*   at 8.55 V; exactly one LED lit on either side of the window.
+* Models: agent-authored GENERIC cards, datasheet-derived (no vendored
+*   vendor model files):
+*   DZEN  BZX84C6V2 -> D + BV=6.2 (Vz nom at Izt=5 mA), IBV=5m
+*   QNPN  BC847BS   -> generic NPN, BF=200 (group B hFE min end)
+*   DLEDR/DLEDG     -> 0603 red/green LED: N,IS set for ~1.9/~2.1 V at 1 mA
+.options rshunt=1e9
+.options savecurrents
+VIND n_vind 0 DC 9
+D2 n_zbias n_vind DZEN     ; zener: anode /ZBIAS, cathode /VIND
+R6 n_zbias n_hv_b 6.8k
+R7 n_hv_b 0 4.7k
+Q1A n_hv_ok n_hv_b 0 QNPN  ; BC847BS unit A (C=6 B=2 E=1)
+R8 n_vind n_hv_ok 10k
+R9 n_hv_ok n_fb_b 47k
+Q1B n_fb_k n_fb_b 0 QNPN   ; BC847BS unit B (C=3 B=5 E=4)
+R12 n_vind n_d5_a 1.5k
+D5 n_d5_a n_fb_k DLEDR     ; red "5V ONLY" indicator
+R13 n_vind n_d6_a 4.7k
+D6 n_d6_a n_hv_ok DLEDG    ; green "PROFILE OK" indicator
+.model DZEN D(IS=1e-14 N=1 BV=6.2 IBV=5m)
+.model QNPN NPN(IS=1e-14 BF=200 VAF=100)
+.model DLEDR D(IS=1e-18 N=1.8)
+.model DLEDG D(IS=1e-22 N=2.4)
+.dc VIND 4.5 20 0.05
+.measure dc i_red_5v0 FIND @d5[id] AT=5.0
+.measure dc i_grn_5v0 FIND @d6[id] AT=5.0
+.measure dc i_red_9v0 FIND @d5[id] AT=9.0
+.measure dc i_grn_9v0 FIND @d6[id] AT=9.0
+.measure dc vtrip_grn WHEN @d6[id]=0.5m RISE=1
+.end

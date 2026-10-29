@@ -189,12 +189,13 @@ that sheet.
 \caption{Schematic (cropped from reports/schematic.pdf)}
 \end{figure}
 
-The circuit is right, but the sheet reads poorly. The generator puts
-each net label on top of its pin number, so ``+5V'' runs into ``1''. The
-circuit sits small in one corner of an A4 sheet, and the ``K''/``A''
-text overlaps inside D1's symbol. This doesn't change the netlist, but
-it makes the sheet harder to check by eye
-(\hyperref[snags-the-run-hit]{snag 14}).
+The generator first drew this sheet poorly: each net label sat on its
+pin number (``+5V'' ran into ``1''), the circuit was small in one corner
+of an A4 sheet, and D1's ``K'' and ``A'' pin names printed over each
+other (\hyperref[snags-the-run-hit]{snag 14}). \texttt{schlib} now turns
+every label away from its pin, hides the pin names of two-pin parts, and
+sizes the paper to the drawing (A5 here) with the drawing centred on it.
+The netlist and the symbols' UUIDs didn't change.
 
 \section{Layout}\label{layout}
 
@@ -458,9 +459,9 @@ are the only parts that change. \emph{To read:}
 netlist audit is clean, and the reviewer found 0 errors. The parts are
 J1 C492401, C1 C19666, R1 C23179 and D1 C12624. D1 and J1 are Extended.
 The reviewer's two warnings are the Vf margin (decision 3) and the BOM
-field name, which was fixed. \textbf{Recommended: yes.} If you want the
-sheet to read better first, redraw it (snag 14); the netlist and board
-wouldn't change. \emph{To read:} \texttt{reports/schematic.pdf},
+field name, which was fixed. \textbf{Recommended: yes.} The sheet has
+been redrawn for readability (snag 14); the netlist and board didn't
+change. \emph{To read:} \texttt{reports/schematic.pdf},
 \texttt{reports/review-schematic.md}, \texttt{reports/erc-waivers.md}.
 
 \textbf{H4: verified board.} \emph{Approve the board as verified?} All
@@ -602,8 +603,10 @@ pdf-material-builder house style, which isn't here, so this report was
 built with pandoc and lualatex instead & 261028-141935-42bdc24230 \\
 13 & \texttt{bom\_cpl.py} assembly class & J1 (THT) is classed
 \texttt{smt\_placed} and placed in the CPL & 261028-144247-0a37b2952e \\
-14 & \texttt{kicad/gen} schematic generator & Net labels sit on pin
-numbers, and the circuit is tiny in one corner of an A4 sheet &
+14 & \texttt{kicad/gen} schematic generator & Net labels sat on pin
+numbers, D1's pin names overlapped, and the circuit was tiny in one
+corner of an A4 sheet; fixed in \texttt{schlib} (labels turn outward,
+2-pin parts hide pin names, paper fits the drawing) &
 261028-144249-63ddfa029b \\
 15 & \texttt{lib\_pull.py} & Parts that already exist get no 3D models,
 so the README's ``re-pull with lib\_pull'' fetches none, and

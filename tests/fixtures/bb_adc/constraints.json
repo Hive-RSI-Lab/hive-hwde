@@ -1,0 +1,332 @@
+{
+  "_meta": {
+    "board": "bb-adc",
+    "phase": "P2",
+    "agent": "architect",
+    "date": "2026-08-16",
+    "update": "SCOPED UPDATE after the four research tasks closed (32 verified, page-cited records + 4 coverage checklists). Only machine-checkable layout consequences were folded in: the -IN remote sense, the guard-ring reservation, the reference charge loop and cap window, the reference's separation from the header and from the mounting holes, and the buffer's pin decoupling. ONE part-count change, ruled by the orchestrator on a verified record: R7 + C8, the converter's rail-entry RC (see the VDD_ADC power entry). Topology, part classes, stackup, ratio, error budget, blocks[] and every operating_point are UNCHANGED - the coverage report is keyed to them. Traces from each entry back to its record or recorded decision live in architecture/blocks.md s8, not here.",
+    "mode": "learning block-basics: -> scope block-only, binding canonical, geometry is an OUTPUT",
+    "net_names": "CANONICAL as of P2 - see architecture/sheets.md s2. Flat root sheet, so local labels export with ONE leading slash and power symbols export bare. Run netlist_audit.py --constraints at P4 before P5.",
+    "sources": "research/adc.json, research/afe-support.json, research/refdesign-afe.json, research/power.json, the 32 VERIFIED records under research/records/ and the 4 checklists under research/checklists/, plus P2's own datasheet reads (MCP3201 DS21290F, ADS8326 SBAS343C, ADS8320 SBAS108E) and live parts_search stock sweeps 2026-08-16",
+    "not_declared": "The analog signal nets (/ATT_A, /ATT_B, /AIN_DIV, /ATT_C, /AIN_BUF, /AIN_ADC) are deliberately absent from power and high_speed - see architecture/sheets.md s4. Their rules are placement rules and prose (D1-D5 in architecture/power_tree.md s6). thermal[] stays empty: 36 mW whole-board, largest single part ~3 mW, nothing near the 0.5 W flag - the reference's temperature sensitivity is a placement and a budget matter, not a cooling one.",
+    "refused": "Four things research produced that are deliberately NOT emitted here. (1) No trace-WIDTH rule on any analog net from the digital-coupling model: in that model w is the PCB copper THICKNESS (a stackup constant, ~0.003 mm), not trace width, so the routing levers are parallel LENGTH, SEPARATION and the aggressor's EDGE RATE - all three already carried by placement.separation, the D2 2.5 mm routing floor and high_speed[].t_rise_ns. (2) No 1 nF overshoot figure for the buffer: the published curve spans about 10-605 pF and does not extend there. (3) No 'no legal isolation resistor exists' rejection of any amplifier: the vendor's optimum-R equation is an OPTIMUM, not a maximum, and the vendor states phase margin must be settled by SPICE - the buffer's series-R/stability question belongs to the P8 sim leg (bench buffer-stability), not to constraints. (4) No 100 mohm-per-inch copper figure: it is ~40x a rho*L/(W*t) estimate of the same geometry and is carried in the library quoted-not-endorsed; the reference's IR budget here is set by proximity, not by that number."
+  },
+
+  "high_speed": [
+    {
+      "net": "/SCLK",
+      "reference": "GND",
+      "k": 3,
+      "t_rise_ns": 5.0,
+      "_why": "3.3 V CMOS edge into ~15 pF of trace + header + host input draws ~10 mA, and SCLK is correlated with the conversion instant by construction, so its return current aliases to DC if it wanders. Declared so check_return_path proves the B.Cu GND reference is continuous under it (constraint D1). No impedance_ohm: JLC sells no impedance-controlled 2-layer product and at 500 kHz there is no transmission line to control. t_rise_ns is a real lever here and not just a return-via sizing input: side-by-side coupling into a high-impedance node goes as I = C x dV/dt, so the aggressor's EDGE RATE sits beside parallel length and separation as one of the three things routing can change. Trace width is NOT one of them - see _meta.refused."
+    },
+    {
+      "net": "/CS",
+      "reference": "GND",
+      "k": 3,
+      "t_rise_ns": 5.0
+    },
+    {
+      "net": "/DOUT",
+      "reference": "GND",
+      "k": 3,
+      "t_rise_ns": 5.0
+    }
+  ],
+
+  "power": [
+    {
+      "net": "+3V3",
+      "current_a": 0.011,
+      "dt_c": 10,
+      "via_amps": 0.5,
+      "_why": "11 mA declared against a 2.7 mA peak estimate and the host's >=50 mA. IPC-2152 width at 11 mA is a hairline, so heating is NOT what binds this net - impedance to the decoupling caps is. Route >= 0.5 mm and keep the J2 -> C1 -> per-pin-cap path short."
+    },
+    {
+      "net": "VREF",
+      "current_a": 0.001,
+      "dt_c": 10,
+      "_why": "The converter's own reference current is 14 uA max at 10 kSa/s (CORRECTED at P4 from 7 uA, which misread the datasheet row - nothing moves, but the figure must not be reused anywhere tighter); 1 mA is declared headroom. The VREF trace-IR width rule research/power.json derived from an assumed 1 mA is RETIRED: at 14 uA, keeping I*R well under LSB/2 (15.6 uV) allows R_trace up to 1.1 ohm, which any track satisfies. The reference still sits at the converter's VREF pin, for the per-conversion charge-reservoir reason."
+    },
+    {
+      "net": "VDD_ADC",
+      "current_a": 0.003,
+      "dt_c": 10,
+      "_why": "NEW at the P2 research fold, and a part-count change ruled by the orchestrator: the converter's VDD is fed from +3V3 through R7 (5-10 ohm, 10 ohm class) with C2 (0.1 uF) and C8 (10 uF) at the pin, which is the ADS8326's OWN recommended application circuit. This is not 'filtering the datasheet does not require' - it is what the datasheet requires, and the P1 escape hatch named exactly this condition. It isolates the converter ALONE: U2 and U3 stay on +3V3 upstream of R7, because the same figures put the reference and the op amps on the analog rail and not behind the converter's RC. 3 mA is declared headroom against a ~60 uA typical draw at a 10 kSa/s data rate; the resulting DC drop is ~0.6 mV at 10 ohm, which costs the error budget NOTHING because the conversion is referenced to VREF and not to VDD, and which leaves VDD at 3.134 V on the 3.135 V worst-case rail - far inside the part's 2.7-3.6 V window. The transient the resistor cannot supply is exactly what C2 and C8 are there for. dt_c is nominal: 3 mA through any real track is a hairline by IPC-2152 and heating does not bind this net either."
+    },
+    {
+      "net": "GND",
+      "current_a": 0.011,
+      "dt_c": 10,
+      "via_amps": 0.5,
+      "plane_fed": true,
+      "pdn": false,
+      "_why": "ONE unbroken B.Cu pour, not split. Every return on this board - analog and digital - leaves through J2's GND pins, so a split would lengthen one path rather than separate two current systems. Single-sided assembly reserves the whole bottom side for it. pdn:false because the return net is not itself decoupled to anything. The real GND requirements are geometric and live in placement + D1-D5."
+    }
+  ],
+
+  "diff_pairs": [],
+
+  "voltages": [
+    {
+      "net": "/AIN_RAW",
+      "voltage": 5,
+      "_why": "Highest potential on any net on this board. Declared so check_creepage's IPC-2221 derivation is a visible no-op rather than an unexamined absence: 5 V against everything else is far under the 30 V threshold. Valid ONLY inside the recorded Q1 safety envelope (nothing anywhere in the source circuit above 30 V, no mains, no motor drive, shared ground) - re-confirmed at H1."
+    },
+    {
+      "net": "+3V3",
+      "voltage": 3.465
+    }
+  ],
+
+  "coating": "soldermask",
+
+  "thermal": [],
+
+  "placement": {
+    "edges": [
+      {
+        "ref": "J1",
+        "edge": "left",
+        "pos": 0.5,
+        "_why": "Screw terminal, opening outward. J1 and J2 on DIFFERENT edges (requirements s5 assumption, and constraint D4): the analog input wiring must not have to cross the digital header, and no SPI return may have a reason to flow under the attenuator. Which edge is left vs right is the layout engineer's call; that they are opposite is not."
+      },
+      {
+        "ref": "J2",
+        "edge": "right",
+        "pos": 0.5,
+        "_why": "Host header, opening outward, at the digital end. Pin order +3V3, GND, /CS, /SCLK, /DOUT, GND - ground adjacent to the digital group at both ends of it."
+      }
+    ],
+
+    "groups": [
+      {
+        "name": "attenuator",
+        "anchor": "U3",
+        "members": ["R1", "R2", "R3", "R4", "R5", "R6", "R8", "C6", "C7"],
+        "_why": "The five 200 kohm string elements in physical order R1->R5 with the R3/R4 junction (/AIN_DIV, 240 kohm Thevenin) adjacent to U3's + input pad. /AIN_DIV must be the SHORTEST high-impedance run on the board - short for leakage, and short because a high-Z node is microphonic (e_n = (dC/C) x V), so it also wants to be mechanically rigid. This cluster carries the GUARD RING: /AIN_BUF copper encircling the /AIN_DIV trace and U3's + input on F.Cu, with solder-mask relief; the area it needs is reserved by the R3->U3 and R4->U3 corridors. C6 is the buffer's own bypass and its placement is a specification, not a habit: 0.1 uF placed closely ACROSS U3's supply pins with its own via to the pour, because a precision amplifier's CMRR and PSRR run ~110-130 dB at DC and fall to roughly 20 dB by 100 kHz - above a few kilohertz the part rejects nothing and only the local cap and the pour do the rejecting. What gets through does not look like noise: on a precision follower it appears as a VARYING DC OFFSET. Same source, same figure: run the input traces as far from the supply routing as this cluster allows - the +3V3 run must not parallel /AIN_DIV. The follower's feedback is a wire, so there is no feedback network to keep at the inverting pin. Place by explicit place_edit and LOCK before place_anneal - an annealer optimising a cost function cannot discover a guard ring."
+      },
+      {
+        "name": "reference",
+        "anchor": "U2",
+        "members": ["C4", "C5"],
+        "_why": "Sits beside the converter's VREF pin, and 'beside' is the specification: everything between U2's output pad and U1's VREF pad is uncalibratable gain error, indistinguishable from the reference's own accuracy and not removable by buying a better reference. The part brings out no sense pin, so proximity and copper are the only remedies. C5 is NOT a DNP candidate - the ADR4520 specifies a LOAD CAPACITANCE WINDOW, 1 uF minimum to 100 uF maximum, and the output cap is a compensation element inside the control loop, so BOTH ends bind; the 2.048 V and 2.5 V members of that family need 1 uF where the >= 3.0 V members need only 0.1 uF, which is the opposite of the usual intuition. C4 is the input bypass at U2's IN pin. U2 also wants no hot neighbour and no mechanical stress - see the U2/H1-H2 separation."
+      },
+      {
+        "name": "converter",
+        "anchor": "U1",
+        "members": ["C2", "C3", "C8", "R7"],
+        "_why": "C3 within 2.5 mm of the VREF pin, SAME layer, no via between pad and cap - a SAR redistributes charge onto its reference at every bit trial, so C3 is not decoupling, it is the reservoir the conversion actually draws from and the reference then recharges between bit decisions. What binds is the LOOP, not the value: C3 -> REF pin -> the internal capacitor array -> the converter's GND pin -> back to C3. Minimise that loop's inductance - cap adjacent to the REF and GND pins, wide copper out AND back - because the loop, not the capacitance, decides how far the reference sags and rings before the comparator latches. ORDERING, recorded because the opposite reading is easy to make: a current-limiting resistor belongs between a high-impedance reference SOURCE and the capacitors, UPSTREAM of C3, never between C3 and the pin where it would sit in the pulse path. The 0.1 ohm resistor drawn in TI's reference-layout figure is a different element again - it is in series with a shunt cap as a DAMPING branch to ground, not an isolator in the feed - and neither element is fitted here: the ADR4520's 1-100 uF stability window contains the converter's required REF bypass, so the reference drives it directly (no reference buffer, no series isolation R). C2 within 2 mm of VDD with its ground via within 1 mm of its own pad: that loop IS the SPI drivers' 10 mA current loop and must stay under 20 mm^2 (D3). THE RAIL-ENTRY RC, new here and ordered: R7 (5-10 ohm) goes between the +3V3 rail and U1's VDD pin - UPSTREAM of both caps - and C2 + C8 sit on the VDD_ADC side, SMALLER CAP CLOSEST TO THE PIN with the shortest leads, C8 (10 uF) beside it. R7's job is to keep the converter's supply pin from seeing the host's digital rail directly; a SAR has no supply rejection at the instant that matters, because the spikes that hurt land just before the comparator latches. Do NOT confuse R7 with two other resistors this board discusses and does not fit: the reference current-limiting resistor (which would go between a high-impedance reference SOURCE and C3, and is not needed because the reference drives its bypass directly) and the buffer's isolation resistor R6 (a stability element on U3's output, sized by the P8 sim leg). Three different resistors, three different mechanisms, one board."
+      },
+      {
+        "name": "entry",
+        "anchor": "J2",
+        "members": ["C1"],
+        "_why": "Bulk 10 uF at the RAIL ENTRY, not at the converter. Earned by arithmetic: a 1 mA step in 100 ns across the host lead's ~1 uH is 10 mV on the rail; into a 10 uF local reservoir the same step is 10 uV."
+      }
+    ],
+
+    "separation": [
+      {
+        "a": ["R1", "R2", "R3", "R4", "R5", "U3"],
+        "b": ["J2"],
+        "min_mm": 10,
+        "_why": "D2/D4: the high-impedance attenuator and its buffer stay away from the digital connector and its return currents. 10 mm is the distance at which the estimated edge-coupled injection into the guarded 240 kohm node is negligible; 2.5 mm is the absolute floor for any SPI net near /AIN_DIV, /AIN_ADC or VREF, and that floor is a ROUTING rule (D2), not a placement one."
+      },
+      {
+        "a": ["R1", "R2", "R3", "R4", "R5"],
+        "b": ["U1"],
+        "min_mm": 5,
+        "_why": "D2: unavoidable analog/digital crossings must be perpendicular and >= 5 mm from the converter's analog pins. Keeping the string itself that far from U1 makes the requirement satisfiable by construction."
+      },
+      {
+        "a": ["U2", "C5"],
+        "b": ["J2"],
+        "min_mm": 5,
+        "_why": "The converter's REFERENCE input is its highest-impedance node and it is most sensitive exactly WHILE a conversion runs: a spike from digital logic that lands inside a comparator's decision window becomes a wrong bit, not noise that averages away. D2 already names VREF beside /AIN_DIV and /AIN_ADC in the 2.5 mm routing floor, but only the attenuator carried a PLACEMENT rule against the header; the reference and its output cap now carry one too. 5 mm rather than the string's 10 mm because U2 must simultaneously sit at U1's VREF pin, and that pin is at the digital end of the board - this is the looser of two constraints that pull in opposite directions, and the tighter one (proximity to the load pin) wins where they conflict."
+      },
+      {
+        "a": ["U2"],
+        "b": ["H1", "H2"],
+        "min_mm": 5,
+        "_why": "Mechanical stress moves a precision reference's output, permanently and by an amount comparable to its entire initial-accuracy spec. The documented path is package materials stressing the die - measured for reflow, where the shift is a spec row in its own right (+/-0.02 pct here, the same size as the B grade's whole initial error) and where the vendor warns the magnitude also depends on the board's size, thickness and material. A mounting screw torqued into a boss, and a board edge that flexes, drive that same die-stress path, and this board calibrates nothing out. So U2 is kept off the screw bosses; the same reasoning keeps it in from the outline edge, which no schema key can express and which the layout engineer owns. Only H1/H2 are named because the outline may earn only two mounting holes; if H3/H4 exist, this rule extends to them."
+      }
+    ],
+
+    "corridors": [
+      {
+        "a": "J1",
+        "b": "U3",
+        "width_mm": 5.0,
+        "net": "/AIN_RAW",
+        "_why": "Keep-clear swath from the screw terminal to the attenuator/buffer cluster. The analog input path and its return run straight from the board edge with minimal shared path with any digital return; nothing else may intrude on it."
+      },
+      {
+        "a": "U1",
+        "b": "J2",
+        "width_mm": 5.0,
+        "net": "/SCLK",
+        "_why": "D4: the SPI group goes straight from the converter to the header at the digital end, so its return current has no reason to detour through copper under the attenuator or the reference. Keeping this run SHORT is one of the three levers that actually reduce coupling into the high-impedance nodes (the others are separation and edge rate); trace width is not one - see _meta.refused."
+      },
+      {
+        "a": "R5",
+        "b": "U1",
+        "width_mm": 3.0,
+        "net": "/AGND_SENSE",
+        "_why": "THE -IN REMOTE SENSE, and the board's largest layout-controlled error term made to cancel. U1's -IN is not a ground pin: it is a dedicated sense line run to the attenuator string's BOTTOM NODE - R5's grounded pad - and NOT to whatever ground copper is convenient. Why it is worth a reserved swath: a divider passes a ground offset at UNITY while dividing the signal by K = 0.400, so an offset between the string bottom and the converter's negative reference is referred to the input multiplied by 1/K = 2.5, i.e. 1 mV of offset is 2.5 mV at the terminal - half the 25 degC budget, from copper alone. Wiring -IN to the bottom node cancels it exactly: +IN carries V_tap + (GND_A - GND_C), -IN carries (GND_A - GND_C), and the difference is V_tap. Two consequences for layout. (a) The bottom of the string is a REFERENCE tie, not a ground connection: it must not share copper with any return carrying other current, because that copper's IR drop adds to the signal at FULL weight. (b) The architecture is BOUNDED, not open-ended: the converter specifies -IN at -0.3 V to +0.5 V relative to its own ground, so the sense point has to be a node whose offset stays in the millivolts. R5's pad on this board is three orders inside that window; a distant or shared-return ground is what the bound exists to forbid. P4 wires this in the schematic (U1 -IN goes to the string bottom, not to a GND symbol dropped at the converter); P7 keeps it a dedicated run. CORRECTED AT P4 (adversarial review E1), and this entry's `net` changed with it: the sense is now its OWN NET, `/AGND_SENSE` (U1.3 + R5's bottom pad + R8 only), tied to GND at exactly one point by R8, a 0 ohm link at the string bottom. Carrying it on GND was wrong twice over - on the netlist U1.3 was just one of sixteen GND nodes, so planes_gen would thermal-connect pin 3 to the B.Cu pour exactly as it connects pin 4 and reference the measurement to the pour AT THE CONVERTER; and a corridor is a KEEP-CLEAR SWATH, not a connectivity rule, so nothing here could have prevented that. The split leaves the reading at K*(V_sig - V_S) + Vos: the only residual is the J1-return-to-string-bottom pour offset, input-referred at UNITY and carrying only the string's own 5 uA, i.e. sub-1 uV. R8 costs 5 uA x tens of milliohms = ~0.25 uV, so -IN stays six orders inside the -0.3/+0.5 V window. P7 MUST keep the GND pour off /AGND_SENSE - that is now automatic, because it is not GND."
+      },
+      {
+        "a": "R3",
+        "b": "U3",
+        "width_mm": 4.0,
+        "net": "/AIN_DIV",
+        "_why": "GUARD-RING AREA RESERVATION on the high-impedance tap. The R3/R4 junction is /AIN_DIV, a ~240 kohm Thevenin node, and any stray current reaching it develops I x Rthev of DC offset - board leakage IS an error term here. The guard is /AIN_BUF copper fully encircling the /AIN_DIV trace and U3's + input pad on F.Cu with solder-mask relief, and NOTHING else may occupy the area the closed ring needs. Two properties make it a guard rather than decoration: it must be at the SAME potential as the node AND driven from a LOW impedance able to absorb the leakage without adding offset. The follower's own output is both, which is why the guard is driven from /AIN_BUF - a ring driven from the node itself is not a guard. Ring WIDTH is not cosmetic: surface leakage is virtually eliminated by a guard, but BULK leakage falls only about an order of magnitude and by how much depends on board thickness and ring width. The source also asks for the ring on BOTH faces; here the back face is the unbroken B.Cu GND pour that D1 requires, so the ring is single-sided by a recorded trade - see the planes entry."
+      },
+      {
+        "a": "R4",
+        "b": "U3",
+        "width_mm": 4.0,
+        "net": "/AIN_DIV",
+        "_why": "The same reservation seen from the other half of the junction: /AIN_DIV touches R3's bottom pad AND R4's top pad, so the keep-clear has to hold on both sides of the tap or the ring cannot close around it."
+      }
+    ],
+
+    "sides": [
+      {"ref": "J1", "side": "front", "reason": "through-hole screw terminal, wires enter from the top"},
+      {"ref": "J2", "side": "front", "reason": "through-hole header, mates from the top"},
+      {"ref": "U1", "side": "front", "reason": "single-sided SMT assembly (requirements s7); a part on B.Cu would also cut the unbroken return pour D1 requires"},
+      {"ref": "U2", "side": "front", "reason": "single-sided SMT assembly"},
+      {"ref": "U3", "side": "front", "reason": "single-sided SMT assembly"},
+      {"ref": "R1", "side": "front", "reason": "single-sided SMT assembly; B.Cu under the analog section must stay unbroken (D1)"},
+      {"ref": "R2", "side": "front", "reason": "single-sided SMT assembly; B.Cu under the analog section must stay unbroken (D1)"},
+      {"ref": "R3", "side": "front", "reason": "single-sided SMT assembly; B.Cu under the analog section must stay unbroken (D1)"},
+      {"ref": "R4", "side": "front", "reason": "single-sided SMT assembly; B.Cu under the analog section must stay unbroken (D1)"},
+      {"ref": "R5", "side": "front", "reason": "single-sided SMT assembly; B.Cu under the analog section must stay unbroken (D1)"},
+      {"ref": "R6", "side": "front", "reason": "single-sided SMT assembly"},
+      {"ref": "R7", "side": "front", "reason": "single-sided SMT assembly"},
+      {"ref": "R8", "side": "front", "reason": "single-sided SMT assembly; the single-point tie between /AGND_SENSE and GND sits at the string bottom on F.Cu - a back-side part would put the tie on the far side of the pour it is meant to meet at ONE place, and would cut the B.Cu return pour D1 requires unbroken"},
+      {"ref": "C1", "side": "front", "reason": "single-sided SMT assembly"},
+      {"ref": "C2", "side": "front", "reason": "single-sided SMT assembly"},
+      {"ref": "C3", "side": "front", "reason": "single-sided SMT assembly"},
+      {"ref": "C4", "side": "front", "reason": "single-sided SMT assembly"},
+      {"ref": "C5", "side": "front", "reason": "single-sided SMT assembly"},
+      {"ref": "C6", "side": "front", "reason": "single-sided SMT assembly"},
+      {"ref": "C7", "side": "front", "reason": "single-sided SMT assembly"},
+      {"ref": "C8", "side": "front", "reason": "single-sided SMT assembly"}
+    ]
+  },
+
+  "planes": [
+    {
+      "layer": "B.Cu",
+      "net": "GND",
+      "_why": "This is also the 2-layer default, declared explicitly because it is load-bearing here rather than incidental: single-sided assembly reserves the whole bottom side, so B.Cu is a continuous unbroken reference under the entire analog section, which is exactly what D1 demands. NOT SPLIT, and the reason is now sourced from the part side as well as the return side: the whole converter sits on ANALOG ground - a SAR is the converter class that must NOT straddle an analog and a digital plane (that is the delta-sigma rule), and its GND pin belongs on a clean analog ground point away from where a host processor grounds. On this board that is satisfied by there being one pour and one exit, at J2. The pour is what does the work: on the same 2-layer test board, adding a bottom-side pour pulled a DC input from a 15-code spread down to two adjacent codes. Two consequences recorded here so they are not rediscovered as findings. (1) The guard ring around /AIN_DIV goes on F.Cu ONLY. Its source asks for a ring on both faces; a mirrored /AIN_BUF ring on B.Cu would be a cut in the return pour directly under the analog section, which D1 forbids, and the guard's job is the SURFACE path (virtually eliminated) rather than the bulk path (one order of magnitude, through 1.6 mm of FR4). D1 wins; the trade is recorded, not silent. (2) CORRECTED at the research fold: no FERRITE anywhere in the converter's supply path - a ferrite is the reflex addition nothing here requires, and an inserted impedance the datasheet does not ask for sits exactly where the part assumes a low one and can choke its own transient demand. But the SERIES RESISTOR is required and is fitted (R7, 5-10 ohm, with C2 + C8 at the pin): it appears in the ADS8326's own recommended application circuit, so it is what the datasheet requires rather than filtering it does not, which is the distinction the scope tier actually draws. The earlier blanket 'no series R' came from an AVDD-vs-DVDD partition argument that does not apply to a single-VDD MSOP-8 part. Re-run planes_gen if board_edit --outline fit GROWS the board at P6 close."
+    }
+  ],
+
+  "blocks": [
+    {
+      "topology": "resistive-attenuator",
+      "block": "B1",
+      "name": "R1-R5, 5 x 200k equal string tapped 3:2",
+      "operating_point": {
+        "vin_max_v": 5.0,
+        "vout_max_v": 2.048,
+        "ratio": 0.4,
+        "rtot_ohm": 1000000,
+        "rthev_ohm": 240000,
+        "source_z_max_ohm": 200,
+        "element_count": 5,
+        "tol_pct": 0.02,
+        "tcr_ppm_per_c": 10,
+        "pdiss_w": 0.000025,
+        "error_budget_mv": 5.0,
+        "ambient_max_c": 50,
+        "board_layers": 2,
+        "element_kind": "discrete-equal-string",
+        "guard_kind": "driven-guard",
+        "coupling_kind": "dc",
+        "source_kind": "dc-input"
+      }
+    },
+    {
+      "topology": "precision-buffer",
+      "block": "B2",
+      "name": "U3, unity-gain follower into a switched-cap SAR input",
+      "operating_point": {
+        "vdd_v": 3.3,
+        "vin_max_v": 2.048,
+        "vout_max_v": 2.048,
+        "vout_min_v": 0.0,
+        "rsource_ohm": 240000,
+        "cload_pf": 1000,
+        "gbw_khz": 350,
+        "vos_max_uv": 10,
+        "vos_drift_max_uv_per_c": 0.05,
+        "ib_max_pa": 400,
+        "settle_ppm": 8,
+        "settle_window_us": 9,
+        "pdiss_w": 0.0001,
+        "error_budget_mv": 5.0,
+        "ambient_max_c": 50,
+        "board_layers": 2,
+        "topology_kind": "unity-follower",
+        "input_kind": "cmos",
+        "swing_kind": "rrio",
+        "load_kind": "switched-cap",
+        "source_kind": "dc-input"
+      }
+    },
+    {
+      "topology": "sar-adc",
+      "block": "B3",
+      "name": "U1, 16-bit SPI SAR with external reference",
+      "operating_point": {
+        "vdd_v": 3.3,
+        "vref_v": 2.048,
+        "resolution_bits": 16,
+        "fsample_max_ksps": 10,
+        "fclk_khz": 500,
+        "csample_pf": 48,
+        "tacq_us": 9,
+        "iref_max_ua": 7,
+        "rsource_ohm": 240000,
+        "offset_max_uv": 1000,
+        "gain_err_max_pct": 0.0244,
+        "inl_max_lsb": 2.5,
+        "pdiss_w": 0.001,
+        "error_budget_mv": 5.0,
+        "ambient_max_c": 50,
+        "board_layers": 2,
+        "interface_kind": "spi",
+        "reference_kind": "external",
+        "input_kind": "pseudo-differential-unipolar",
+        "calibration_kind": "uncalibrated",
+        "source_kind": "dc-input"
+      }
+    },
+    {
+      "topology": "series-voltage-reference",
+      "block": "B4",
+      "name": "U2, 2.048 V series reference feeding the SAR VREF pin",
+      "operating_point": {
+        "vin_min_v": 3.135,
+        "vin_nom_v": 3.3,
+        "vout_v": 2.048,
+        "iout_max_ua": 50,
+        "initial_accuracy_max_pct": 0.02,
+        "tempco_max_ppm_per_c": 2,
+        "headroom_mv": 1087,
+        "pdiss_w": 0.001,
+        "error_budget_mv": 5.0,
+        "ambient_max_c": 50,
+        "board_layers": 2,
+        "topology_kind": "series",
+        "load_kind": "switched-cap",
+        "output_cap_kind": "datasheet-defined",
+        "ratiometric_kind": "non-ratiometric",
+        "source_kind": "dc-input"
+      }
+    }
+  ]
+}

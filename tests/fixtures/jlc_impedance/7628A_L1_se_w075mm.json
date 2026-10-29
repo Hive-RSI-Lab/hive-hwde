@@ -1,0 +1,40 @@
+{
+  "url": "https://jlcpcb.com/api/jlcTools/impedance/calc",
+  "request": {
+    "accessId": "2e44cd4338194696857c8ae23b56b923",
+    "impedance_calc_mark": "CoatedMicrostrip1B",
+    "paramMd5": "",
+    "impedance_calc_arg": {
+      "H1": 16.8661,
+      "Er1": 4.4,
+      "W1": 29.5276,
+      "W2": 29.5276,
+      "T1": 2.7559,
+      "C1": 1.2,
+      "C2": 0.6,
+      "CEr": 3.8,
+      "dCalculateMode": 3,
+      "isLinkComputingMode": false,
+      "W2LinkW1Incr": 0
+    },
+    "uuid": "7423954efc774f2a97e195b743030478"
+  },
+  "response": {
+    "accessId": "2e44cd4338194696857c8ae23b56b923",
+    "impedance_calc_error_msg": "",
+    "impedance_calc_mark": "CoatedMicrostrip1B",
+    "impedance_calc_result": {
+      "dCer": 123.639881855,
+      "dDelay": 6088.66370889,
+      "dErEff": 3.33185047226,
+      "dImpedance": 49.2451433756,
+      "dInductance": 299.83711731,
+      "dResultValid": 1
+    },
+    "impedance_calc_status": 0,
+    "impedance_calc_time": 31,
+    "paramMd5": "f168ec364a97736ce331d4ae38e22a3d",
+    "uuid": "7423954efc774f2a97e195b743030478"
+  },
+  "fetched_utc": "2026-09-27T05:52:17.129655Z"
+}

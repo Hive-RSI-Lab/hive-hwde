@@ -1,0 +1,131 @@
+{
+ "_comment": "bb-ldo P3 parts list. Build qty 5, JLC PCBA single-sided (all SMT top; J1/J2 THT, hand-soldered after PCBA). Every LCSC code/stock/price verified live via parts_search.py at selection time (2026-08-16). Knowledge records applied: linear-regulator-1117-output-cap-esr-window (C2 ESR window, C1/C2 dielectric+uF floor), linear-regulator-fixed-variant-min-load (confirms no R1). Five distinct parts, five refdes (J1=J2 part).",
+ "parts": [
+  {
+   "ref_prefix_hint": "U",
+   "refs": ["U1"],
+   "block": "linear-regulator",
+   "mpn": "AMS1117-3.3",
+   "lcsc": "C6186",
+   "value": "AMS1117-3.3, fixed 3.3V linear regulator, tab=VOUT",
+   "package": "SOT-223",
+   "basic": true,
+   "type": "Basic",
+   "stock": 1353014,
+   "price": 0.2012,
+   "price_breaks": [
+    {"qty": 1, "price": 0.2012},
+    {"qty": 50, "price": 0.1559},
+    {"qty": 150, "price": 0.1339},
+    {"qty": 500, "price": 0.1141},
+    {"qty": 2500, "price": 0.1086},
+    {"qty": 5000, "price": 0.1054}
+   ],
+   "brand": "Advanced Monolithic Systems",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2410121508_Advanced-Monolithic-Systems-AMS1117-3-3_C6186.pdf",
+   "alternates": [
+    {
+     "mpn": "AMS1117-3.3",
+     "lcsc": "C347222",
+     "brand": "UMW(Youtai Semiconductor Co., Ltd.)",
+     "note": "Same SOT-223 3-pin+tab AMS1117-3.3 pinout family (GND/ADJ-VOUT-VIN, tab=VOUT is the de-facto industry-standard footprint for this part number). Extended tier, stock 1.8M, ~4x cheaper. RISK: this is a different die (clone) - blocks.md's copper-area/theta_JA sizing table is C6186's vendor data specifically; if swapped in, P8's thermal waiver evidence would need re-checking against this alternate's own datasheet before relying on it for the same copper-area margin."
+    }
+   ],
+   "role": "The block under study. LCSC C6186 re-verified live (stock/price only; choice not re-opened - ruled at P1/P2 for its copper-area-to-theta_JA table on 1/16in FR-4 1oz, blocks.md s.3/s.9). Single-source risk at the Basic tier is real: it is the only JLC Basic fixed-3.3V part with a usable thermal-sizing curve for this 2-layer board (blocks.md s.3, rejecting MCP1825S-3302E/DB, AP7361C-33E-13, MIC29300-3.3WU-TR, HT7533-1)."
+  },
+  {
+   "ref_prefix_hint": "C",
+   "refs": ["C1"],
+   "block": "linear-regulator",
+   "mpn": "TAJA106K016RNJ",
+   "lcsc": "C7171",
+   "value": "10uF 16V solid tantalum, +/-10%",
+   "package": "CASE-A-3216-18(mm)",
+   "basic": true,
+   "type": "Basic",
+   "stock": 909933,
+   "price": 0.1884,
+   "price_breaks": [
+    {"qty": 1, "price": 0.1884},
+    {"qty": 20, "price": 0.1507},
+    {"qty": 60, "price": 0.1324},
+    {"qty": 200, "price": 0.1159},
+    {"qty": 1000, "price": 0.1115},
+    {"qty": 2000, "price": 0.1088}
+   ],
+   "brand": "Kyocera AVX",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Kyocera-AVX-TAJA106K016RNJ_C7171.pdf",
+   "attributes": [
+    {"name": "Capacitance", "value": "10uF"},
+    {"name": "Voltage Rating", "value": "16V"},
+    {"name": "Equivalent Series Resistance(ESR)", "value": "3Ω@100kHz"},
+    {"name": "Tolerance", "value": "±10%"},
+    {"name": "Operating Temperature", "value": "-55℃~+125℃"}
+   ],
+   "alternates": [],
+   "role": "Cin at VIN pin. AVX \"TAJ\" = solid MnO2 tantalum chip series (standard, not the T5x-prefixed polymer family). 10uF/tantalum per linear-regulator-1117-output-cap-esr-window (cin_uf=10, cin_dielectric=tantalum). 16V rating = 3x derating on the 5.25V worst-case rail (spec floor 2x). No ESR requirement applies to Cin (only Cout is the compensation element); 3ohm@100kHz reported here for completeness, from LCSC's own parametric attribute."
+  },
+  {
+   "ref_prefix_hint": "C",
+   "refs": ["C2"],
+   "block": "linear-regulator",
+   "mpn": "293D226X9016D2TE3",
+   "lcsc": "C215872",
+   "value": "22uF 16V solid tantalum, +/-10%, ESR 800mΩ@100kHz",
+   "package": "CASE-D-7343-31(mm)",
+   "basic": false,
+   "type": "Extended",
+   "stock": 9093,
+   "price": 0.3894,
+   "price_breaks": [
+    {"qty": 1, "price": 0.3894},
+    {"qty": 50, "price": 0.3101},
+    {"qty": 150, "price": 0.2761},
+    {"qty": 500, "price": 0.2337},
+    {"qty": 2500, "price": 0.2148},
+    {"qty": 5000, "price": 0.2034}
+   ],
+   "brand": "Vishay Intertech",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Vishay-Intertech-293D226X9016D2TE3_C215872.pdf",
+   "attributes": [
+    {"name": "Capacitance", "value": "22uF"},
+    {"name": "Voltage Rating", "value": "16V"},
+    {"name": "Equivalent Series Resistance(ESR)", "value": "800mΩ@100kHz"},
+    {"name": "Tolerance", "value": "±10%"},
+    {"name": "Operating Temperature", "value": "-55℃~+125℃"}
+   ],
+   "alternates": [],
+   "role": "Cout at VOUT pin - the compensation element (linear-regulator-1117-output-cap-esr-window / linear-regulator-esr-zero-compensation). ESR 0.8ohm@100kHz is LCSC's own parametric attribute for this exact part, taken as its datasheet ESR figure: inside the knowledge record's 0.3-22ohm acceptance window, and just above blocks.md s.6's tighter 0.3-0.5ohm merged target (AMS1117's own ceiling text) - no orderable 22uF part surveyed lands inside 0.3-0.5ohm (closest was this part and TAJD226K035RNJ/C7225 at 0.9ohm, 293D226X9035E2TE3/C1952732 at 0.6ohm but 4x pricier/3909 stock). Per blocks.md s.6.1's own fallback rule ('slightly ABOVE 0.5 ohm, never below 0.3'), this is the closest-ESR, cheapest, best-stocked candidate that clears it. Vishay \"293D\" = solid MnO2 molded chip series (Vishay's polymer tantalum lines are the T5x-prefixed series - T58MM226M6R3C0300/C215879 at 300mΩ/6.3V was surveyed and rejected on BOTH grounds: likely polymer-class ESR at the window's exact lower edge, and 6.3V under the >=10V floor). 16V rating = 4.8x derating on 3.3V (record wants 2x min; blocks.md wanted 3x, i.e. >=10V) - comfortably clears both."
+  },
+  {
+   "ref_prefix_hint": "J",
+   "refs": ["J1", "J2"],
+   "block": "interface",
+   "mpn": "WJ500V-5.08-2P",
+   "lcsc": "C8465",
+   "value": "2-position 5.08mm pitch THT screw terminal, 250V/18A, wire 14-30AWG (0.05-2.5mm2 per LCSC attribute)",
+   "package": "Plugin,P=5.08mm",
+   "basic": false,
+   "type": "Extended",
+   "stock": 274381,
+   "price": 0.1331,
+   "price_breaks": [
+    {"qty": 1, "price": 0.1331},
+    {"qty": 50, "price": 0.1072},
+    {"qty": 150, "price": 0.0939},
+    {"qty": 500, "price": 0.0835},
+    {"qty": 2500, "price": 0.0798},
+    {"qty": 5000, "price": 0.0772}
+   ],
+   "brand": "Ningbo Kangnex Elec",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1912251636_Ningbo-Kangnex-Elec-WJ500V-5-08-2P_C8465.pdf",
+   "alternates": [],
+   "role": "J1 (DC input, left edge) and J2 (3V3 output, right edge) - same part, two refdes per sheets.md. Exact orderable variant: category \"Screw Terminal Blocks\" (fixed block, not a 2-piece pluggable/socket system), 2 position, 5.08mm pitch, through-hole, M2.5 screw, 14-30AWG wire (matches the requirements.md s.8/owner-answer-8 0.2-2.5mm2 range at both ends - LCSC's own mm2 attribute states 2.5). 18A current rating clears the 515mA(J1)/500mA(J2) load by >30x. No SMT-mount equivalent exists in this pitch/wire class in the JLC catalog (parts_search returned zero rows for both \"SMD screw terminal block 5.08mm 2P\" and \"surface mount terminal block 5.08\") - THT is not a preference gap, it is the only orderable option, so J1/J2 are hand-soldered after PCBA per requirements.md s.7.",
+   "assembly_class": "hand_install",
+   "refdes_notes": {
+    "J1": "THT screw terminal, hand-solder after PCBA. GND pin lands in the B.Cu return pour.",
+    "J2": "THT screw terminal, hand-solder after PCBA. +3V3 pin lands in the large solid-connected F.Cu heatsink pour (connect: solid, no thermal relief per blocks.md s.9.10) - needs a hot iron with real thermal mass (blocks.md s.5)."
+   }
+  }
+ ]
+}

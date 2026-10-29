@@ -1,0 +1,85 @@
+{
+  "appointName": "JLC04162H-7628A",
+  "plateLayerNumber": 4,
+  "plateThickness": 1.6,
+  "impedanceDefaultTemplateAccessId": "f0452135daa24e67baba8eb541ce5185",
+  "innerCopperThickness_oz": 0.5,
+  "layers": [
+    {
+      "layerName": "L1",
+      "material": "铜箔",
+      "materialName": "2oz",
+      "dielectricConstant": 0.0,
+      "dielectricThick_mm": 0.0,
+      "topConductorThick_mm": 0.07,
+      "botConductorThick_mm": 0.0,
+      "innerCopperThickness_mm": 0.0
+    },
+    {
+      "layerName": null,
+      "material": "PP",
+      "materialName": "7628 RC49% 8.6mil",
+      "dielectricConstant": 4.4,
+      "dielectricThick_mm": 0.218,
+      "topConductorThick_mm": 0.0,
+      "botConductorThick_mm": 0.0,
+      "innerCopperThickness_mm": 0.0
+    },
+    {
+      "layerName": null,
+      "material": "PP",
+      "materialName": "7628 RC49% 8.6mil",
+      "dielectricConstant": 4.4,
+      "dielectricThick_mm": 0.2104,
+      "topConductorThick_mm": 0.0,
+      "botConductorThick_mm": 0.0,
+      "innerCopperThickness_mm": 0.0
+    },
+    {
+      "layerName": "L2/L3",
+      "material": "芯板",
+      "materialName": "0.55mm H/H不含铜",
+      "dielectricConstant": 4.41,
+      "dielectricThick_mm": 0.55,
+      "topConductorThick_mm": 0.0152,
+      "botConductorThick_mm": 0.0152,
+      "innerCopperThickness_mm": 0.0
+    },
+    {
+      "layerName": null,
+      "material": "PP",
+      "materialName": "7628 RC49% 8.6mil",
+      "dielectricConstant": 4.4,
+      "dielectricThick_mm": 0.2104,
+      "topConductorThick_mm": 0.0,
+      "botConductorThick_mm": 0.0,
+      "innerCopperThickness_mm": 0.0
+    },
+    {
+      "layerName": null,
+      "material": "PP",
+      "materialName": "7628 RC49% 8.6mil",
+      "dielectricConstant": 4.4,
+      "dielectricThick_mm": 0.218,
+      "topConductorThick_mm": 0.0,
+      "botConductorThick_mm": 0.0,
+      "innerCopperThickness_mm": 0.0
+    },
+    {
+      "layerName": "L4",
+      "material": "铜箔",
+      "materialName": "2oz",
+      "dielectricConstant": 0.0,
+      "dielectricThick_mm": 0.0,
+      "topConductorThick_mm": 0.07,
+      "botConductorThick_mm": 0.0,
+      "innerCopperThickness_mm": 0.0
+    }
+  ],
+  "source_request": {
+    "url": "https://jlcpcb.com/api/jlcTools/impedance/selectPageImpedanceDefaultTemplate",
+    "body": {
+      "appointName": "JLC04162H-7628A"
+    }
+  }
+}

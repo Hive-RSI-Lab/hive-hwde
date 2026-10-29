@@ -1,0 +1,12 @@
+Comment,Designator,Qty Per Board,Footprint,MPN,LCSC,Assembly Class,Instructions
+PWR_5V,J1,1,PinHeader_1x02_P2.54mm_Vertical,,,smt_placed,
+SWD,J2,1,PinHeader_1x04_P2.54mm_Vertical,,,smt_placed,
+22pF,"C8,C7",2,C_0603_1608Metric,,,smt_placed,
+10uF,"C5,C6",2,C_0805_2012Metric,,,smt_placed,
+8MHz,Y1,1,Crystal_SMD_3225-4Pin_3.2x2.5mm,,,smt_placed,
+100nF,"C9,C1,C2,C3,C4",5,C_0603_1608Metric,,,smt_placed,
+10k,R1,1,R_0603_1608Metric,,,smt_placed,
+STM32F103C8T6,U1,1,LQFP-48_7x7mm_P0.5mm,,,smt_placed,
+AMS1117-3.3,U2,1,SOT-223-3_TabPin2,,,smt_placed,
+470,R2,1,R_0603_1608Metric,,,smt_placed,
+LED_red,D1,1,LED_0805_2012Metric,,,smt_placed,

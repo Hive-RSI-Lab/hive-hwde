@@ -145,6 +145,15 @@ edit_classes:
     stale_artifacts: [netlist, gerbers, bom, bom_full, cpl]
     gates: [erc, place, drc, drc_routed, verify, sim, dfm]
     human_hold: 2
+  rewire_pad:
+    # board_update mode rewire_pad: a surviving part's pads change net with no
+    # copper on them (an unrouted board, or pads not yet routed). The
+    # schematic's connectivity changed: ERC/sim re-run, the new nets need
+    # routing (drc_routed), the pours refill. BOM/CPL are unchanged.
+    mutates: [sch, pcb]
+    stale_artifacts: [netlist, gerbers]
+    gates: [erc, drc, drc_routed, verify, sim, dfm]
+    human_hold: 2
   reroute_net:
     mutates: [pcb]
     stale_artifacts: [gerbers]

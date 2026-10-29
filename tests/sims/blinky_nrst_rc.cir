@@ -1,0 +1,19 @@
+* stm32-blinky NRST reset RC: release rise time
+* Topology from boards/stm32-blinky/kicad/stm32-blinky.net: C9 100n from
+* /NRST to GND; U1 pin 7 (NRST) carries a PERMANENT internal pull-up
+* RPU 30-50k, typ 40k (STM32F103C8T6 DS5319 Figure 31 / Table 38,
+* parts/C8734.json) - modeled as the explicit RPU below. No external
+* pull-up on this board, by design.
+* Rename map: +3V3->P3V3 /NRST->N_NRST GND->0
+* Expectation: tau = 40k * 100n = 4 ms; 10%->90% rise = tau*ln(9) ~ 8.8 ms.
+* A grossly wrong C9 (100p instead of 100n) would rise 1000x faster and
+* fail the minimum; a short/leak would never reach 90% and fail v_final.
+.options rshunt=1e9
+V3V3 p3v3 0 DC 3.3
+RPU p3v3 n_nrst 40k        ; U1 internal pull-up, typ (Tier-B boundary model)
+C9 n_nrst 0 100n
+.ic v(n_nrst)=0
+.tran 20u 30m uic
+.measure tran t_rise TRIG v(n_nrst) VAL=0.33 RISE=1 TARG v(n_nrst) VAL=2.97 RISE=1
+.measure tran v_final FIND v(n_nrst) AT=29m
+.end
