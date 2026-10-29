@@ -238,3 +238,94 @@ def test_engine_enables(report):
 def test_engine_linked_rails_do_not_fight(report):
     assert abs(report["rail_currents_a"]["+3V3"]) < 0.05
     assert "+3V3A" not in report["rail_currents_a"]
+
+
+# A PD-fed P-FET load switch: 33k VBUS->gate, 100k gate->GPIO. Driven on
+# (GPIO low) its Vsg is VBUS x 33/133: 5.2 V at the 21 V nominal, 2.2 V at
+# the 9 V lowest contract - under the 2.5 V Vgs(th) max.
+PD_BOARD = [
+    ("U1", "MCU", "QFN-32", {"1": ("+3V3", "VDD"), "2": ("GND", "GND"),
+                             "3": ("/PVDD_EN", "IO3")}),
+    ("Q1", "AO4485", "SOIC-8", {"1": ("/GATE", "G"), "2": ("VBUS", "S"),
+                                "3": ("PVDD", "D")}),
+    ("R1", "33k", "R_0402_1005Metric", {"1": ("VBUS", ""), "2": ("/GATE", "")}),
+    ("R2", "100k", "R_0402_1005Metric", {"1": ("/GATE", ""),
+                                         "2": ("/PVDD_EN", "")}),
+    ("R3", "1k", "R_0603_1608Metric", {"1": ("PVDD", ""), "2": ("GND", "")}),
+]
+
+
+def _pd_report(tmp_path, attrs, min_v=9.0):
+    (tmp_path / "kicad").mkdir()
+    write_net(tmp_path / "kicad" / "pd.net", PD_BOARD)
+    volts = {"net": "VBUS", "voltage": 21}
+    if min_v is not None:
+        volts["min"] = min_v
+    (tmp_path / "kicad" / "constraints.json").write_text(json.dumps(
+        {"voltages": [volts]}), encoding="utf-8")
+    (tmp_path / "parts").mkdir()
+    (tmp_path / "parts" / "parts.json").write_text(json.dumps({"parts": [
+        {"mpn": "AO4485", "refdes": ["Q1"], "attributes": [
+            {"name": k, "value": v} for k, v in attrs.items()]}]}),
+        encoding="utf-8")
+    out = tmp_path / "sim.json"
+    subprocess.run([sys.executable, str(SCRIPTS / "sim_board.py"),
+                    "--workspace", str(tmp_path), "--out", str(out)],
+                   capture_output=True, text=True, timeout=300)
+    return json.loads(out.read_text(encoding="utf-8"))
+
+
+RDSON = {"RDS(on)": "12.5mΩ@10V、16mΩ@4.5V"}
+
+
+def test_fet_drive_attrs():
+    part = {"attrs": {"Gate Threshold Voltage (Vgs(th))": "-1~-2.5V",
+                      **RDSON}}
+    assert sim_board.fet_vth_max(part)[0] == 2.5
+    assert sim_board.fet_rdson_vgs(part) == 4.5
+    part["attrs"]["Vgs(th) max"] = "3V"
+    assert sim_board.fet_vth_max(part) == (3.0, "parts.json max")
+    assert sim_board.fet_vth_max(None) == (None, "")
+
+
+def test_rail_mins():
+    rails = {"VBUS": (21.0, "constraints"), "+3V3": (3.3, "net name")}
+    cons = {"voltages": [{"net": "VBUS", "voltage": 21, "min": 9},
+                         {"net": "+3V3", "voltage": 3.3, "min": 3.3}]}
+    assert sim_board.rail_mins(rails, cons, {}) == {"VBUS": 9.0}
+    assert sim_board.rail_mins(rails, None, {"+3V3": 3.0}) == {"+3V3": 3.0}
+    with pytest.raises(sim_board.checklib.CheckError):
+        sim_board.rail_mins(rails, None, {"PVDD": 5.0})
+
+
+@pytest.fixture
+def need_engine():
+    if env.find_ngspice_dll() is None:
+        pytest.skip("no ngspice shared library (KiCad bundle or "
+                    "HWDE_NGSPICE_DLL)")
+
+
+def test_engine_underdriven_pvdd_switch(tmp_path, need_engine):
+    rep = _pd_report(tmp_path, {"Vgs(th) max": "-2.5V", **RDSON})
+    (q,) = rep["mosfets"]
+    assert q["on_vgs"]["io_low"] == pytest.approx(5.21, abs=0.05)
+    assert q["on_vgs"]["io_low@min"] == pytest.approx(2.23, abs=0.05)
+    (v,) = _kinds(rep, "mosfet_underdrive")
+    assert v["severity"] == "error" and v["scenario"] == "io_low@min"
+    assert v["refs"] == ["Q1"] and rep["status"] == "violations"
+    assert rep["rail_min_v"] == {"VBUS": 9.0}
+
+
+def test_engine_underdrive_rdson_and_nominal(tmp_path, need_engine):
+    # only LCSC's bare Threshold figure (1.5 V): 2.2 V clears it but not
+    # the 4.5 V RDS(on) point - a warning
+    rep = _pd_report(tmp_path, {"Gate Threshold Voltage (Vgs(th))": "1.5V",
+                                **RDSON})
+    (v,) = _kinds(rep, "mosfet_underdrive")
+    assert v["severity"] == "warning" and v["scenario"] == "io_low@min"
+
+
+def test_engine_no_underdrive_without_min(tmp_path, need_engine):
+    rep = _pd_report(tmp_path, {"Vgs(th) max": "2.5V", **RDSON}, min_v=None)
+    assert _kinds(rep, "mosfet_underdrive") == []
+    assert "rail_min_v" not in rep

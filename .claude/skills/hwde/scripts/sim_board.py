@@ -42,6 +42,12 @@ Findings (violation kind; severity):
                           (error), too weak for the bus speed (warning)
   mosfet_vgs              |Vgs| over the part's rating (error), or over
                           12 V with no rating known (warning)
+  mosfet_underdrive       the FET's on-state |Vgs| (the scenario that
+                          drives it hardest, at nominal rails and again at
+                          each rail's declared minimum) below its Vgs(th)
+                          max (error), or below the lowest Vgs its RDS(on)
+                          is specified at (warning): a switch that never
+                          turns on, or runs hot, at the low end of a rail
 
 Facts carry every number: node voltages per scenario, rail currents, LED
 currents, FB-set voltages with their tolerance spread, RC corners, EN
@@ -52,6 +58,12 @@ the review takes those to a datasheet. This is a screen with ideal ICs, not
 a sign-off: digital pin drive, regulator dynamics and switching are not in
 it (SKILL.md "Sim legs").
 
+Rail ranges: a constraints.json `voltages` entry may carry `min` (volts),
+the lowest the rail runs at - a USB-PD VBUS at its lowest allowed
+contract, a battery at cut-off. `--rail-min NET=V` adds one. Each such
+rail's minimum gets the four DC scenarios again ("<scenario>@min", every
+other rail nominal); mosfet_underdrive judges those too.
+
 Inputs: --net kicad/<board>.net, or --workspace <ws> (finds kicad/*.net,
 kicad/constraints.json, architecture/power_tree.md, parts/parts.json).
 Rail voltages: constraints.json `voltages`, the power tree's rail table, a
@@ -61,7 +73,7 @@ ladder check_ratings uses. `--rail NET=V` adds or overrides one.
 CLI:
   sim_board.py --workspace boards/<b> [--out reports/sim_board.json]
   sim_board.py --net x.net [--constraints c.json] [--parts parts/]
-               [--rail VBUS=20] [--vref U2=0.596] [--i2c-khz 400]
+               [--rail VBUS=20] [--rail-min VBUS=9] [--vref U2=0.596] [--i2c-khz 400]
                [--i2c-cb-pf 50] [--ramp-ms 1] [--timeout 120]
 Exit 0 pass / 1 violations / 2 error.
 """
@@ -108,6 +120,9 @@ GPIO_MAX_A = 0.020
 LED_MAX_A = 0.020
 LED_DARK_A = 0.5e-3
 VGS_UNKNOWN_V = 12.0
+# below this on-state |Vgs| a FET is taken as never driven on in the sim
+# (its gate left to an IC pin the sim holds open), not as under-driven
+VGS_ON_FLOOR_V = 0.5
 
 
 # ------------------------------------------------------------------ board
@@ -199,6 +214,22 @@ def resolve_rails(board: dict, parts: dict, constraints: dict | None,
     for net in nets:
         setv(net, check_ratings.volts_from_name(net), "net name")
     return out
+
+
+def rail_mins(rails: dict, constraints: dict | None,
+              overrides: dict[str, float]) -> dict[str, float]:
+    """{rail net: its declared minimum} - constraints `voltages[].min`,
+    then --rail-min. Only those below the rail's nominal volts."""
+    out: dict[str, float] = {}
+    for e in (constraints or {}).get("voltages") or []:
+        if e.get("net") in rails and e.get("min") is not None:
+            out[e["net"]] = float(e["min"])
+    for n, v in overrides.items():
+        if n not in rails:
+            raise checklib.CheckError(f"--rail-min {n}: not a rail (give "
+                                      "its voltage with --rail first)")
+        out[n] = v
+    return {n: v for n, v in out.items() if v < rails[n][0]}
 
 
 # ----------------------------------------------------------------- models
@@ -696,16 +727,29 @@ def analyze(board: dict, parts: dict, rails: dict, opts: dict) -> tuple:
         if rs:
             taus.append(min(rs) * en["c"])
     tstop = min(2.0, max(10e-3, 5 * ramp, 6 * max(taus or [0])))
-    decks = [circuit(model, rails, "op", d) for d in scen.values()]
+    # every rail with a declared minimum at that minimum, the IO drives
+    # re-derived from the lowered supplies: the "@min" scenarios
+    mins = opts.get("rail_min") or {}
+    runs = [(name, rails, d) for name, d in scen.items()]
+    if mins:
+        lo = {n: ((mins[n], src) if n in mins else (v, src))
+              for n, (v, src) in rails.items()}
+        io_lo, od_lo = io_nets(board, lo, model)
+        runs += [(f"{name}@min", lo, d) for name, d in
+                 (("default", {}), ("io_low", {n: 0.0 for n in io_lo}),
+                  ("io_high", io_lo),
+                  ("io_run", {n: (0.0 if n in od_lo else v)
+                              for n, v in io_lo.items()}))]
+    decks = [circuit(model, r, "op", d) for _, r, d in runs]
     if ens:
         decks.append(circuit(model, rails, "tran", ramp_s=ramp, tstop=tstop))
     plots, version = run_engine(decks, opts["dll"], opts["timeout"])
     ops = {}
-    for (name, drive), plot in zip(scen.items(), plots):
+    for (name, r, drive), plot in zip(runs, plots):
         view = op_view(plot, model)
-        view["driven"] = driven_nets(model, {**rails, **drive})
+        view["driven"] = driven_nets(model, {**r, **drive})
         ops[name] = view
-    tran = plots[len(scen)] if ens else None
+    tran = plots[len(runs)] if ens else None
 
     vios: list[dict] = []
     unknowns: list[dict] = [
@@ -713,7 +757,9 @@ def analyze(board: dict, parts: dict, rails: dict, opts: dict) -> tuple:
          "why": u["why"]} for u in model["unmodelled"]
         if not u["why"].startswith("IC/")]
     facts: dict = {"scenarios": {k: {"io_nets_driven": len(d)}
-                                 for k, d in scen.items()}}
+                                 for k, _, d in runs}}
+    if mins:
+        facts["rail_min_v"] = dict(sorted(mins.items()))
 
     def volts(sc, net):
         o = ops[sc]
@@ -995,7 +1041,84 @@ def device_findings(board, parts, rails, model, ops, scen, vios, unknowns,
                                  f"({sc}) and its rating is unknown: many "
                                  "FETs stop at 12 V or 20 V",
                                  vgs=vgs[sc], scenario=sc))
+        underdrive(e, part, vgs, fets[-1], vios, unknowns)
     facts["mosfets"] = fets
+
+
+def fet_vth_max(part: dict | None) -> tuple[float | None, str]:
+    """(|Vgs(th)| max, source): a max-labelled threshold attribute, else
+    the plain Threshold figure (LCSC seldom says min, typ or max), the
+    largest magnitude in a range ("1~2.5V")."""
+    for pat, src in ((r"(Threshold|Vgs\s*\(th\)).*max", "parts.json max"),
+                     (r"Threshold|Vgs\s*\(th\)", "parts.json Threshold "
+                      "figure (min/typ/max not stated)")):
+        txt = attr(part, pat)
+        vs = [abs(float(x)) for x in
+              re.findall(r"(-?\d+(?:\.\d+)?)\s*V(?![a-zA-Z])", txt or "")]
+        if vs:
+            return max(vs), src
+    return None, ""
+
+
+def fet_rdson_vgs(part: dict | None) -> float | None:
+    """The lowest |Vgs| the part's RDS(on) is specified at:
+    '12.5mΩ@10V、16mΩ@4.5V' -> 4.5."""
+    txt = attr(part, r"RDS\s*\(?on|On[- ]?Resistance")
+    vs = [abs(float(x)) for x in
+          re.findall(r"@\s*(-?\d+(?:\.\d+)?)\s*V(?![a-zA-Z])", txt or "")]
+    return min(vs) if vs else None
+
+
+def underdrive(e, part, vgs, row, vios, unknowns):
+    """mosfet_underdrive: in each rail set (nominal, and "@min" when rails
+    have a declared minimum) the scenario driving the FET hardest is its
+    on state; that |Vgs| against Vgs(th) max (error) and the RDS(on) Vgs
+    (warning). The worst rail set is the finding."""
+    sign = 1.0 if e["type"] == "nmos" else -1.0
+    on: dict[str, tuple[str, float]] = {}
+    for sc, v in vgs.items():
+        rset = sc.partition("@")[2] or "nominal"
+        if rset not in on or sign * v > on[rset][1]:
+            on[rset] = (sc, sign * v)
+    vth, vth_src = fet_vth_max(part)
+    rds_vgs = fet_rdson_vgs(part)
+    row.update({"on_vgs": {sc: checklib.rnd(v, 3) for sc, v in on.values()},
+                "vth_max": vth, "vth_source": vth_src or None,
+                "rdson_vgs": rds_vgs})
+    if max(v for _, v in on.values()) < VGS_ON_FLOOR_V:
+        unknowns.append({"ref": e["ref"], "what": "on-state drive",
+                         "why": "no scenario drives the gate past "
+                                f"{VGS_ON_FLOOR_V:g} V: its driver is "
+                                "something the sim leaves open"})
+        return
+    if vth is None:
+        unknowns.append({"ref": e["ref"], "what": "Vgs(th)",
+                         "why": "no threshold in parts.json: on-state drive "
+                                "not judged against it"})
+    if rds_vgs is None:
+        unknowns.append({"ref": e["ref"], "what": "RDS(on) test Vgs",
+                         "why": "no RDS(on)@Vgs in parts.json: on-state "
+                                "drive not judged against it"})
+    found = None
+    for sc, v in sorted(on.values(), key=lambda t: t[1]):
+        if v < VGS_ON_FLOOR_V:
+            continue    # off in this rail set: the nominal one judges it
+        if vth is not None and v < vth:
+            found = ("error", sc, v, f"under its {vth:g} V Vgs(th) "
+                     f"({vth_src}): it may never turn on")
+        elif rds_vgs is not None and v < rds_vgs:
+            found = ("warning", sc, v, f"under the {rds_vgs:g} V its "
+                     "RDS(on) is specified at: on-resistance and heat are "
+                     "past the datasheet's figures")
+        if found:
+            break
+    if found:
+        sev, sc, v, why = found
+        vios.append(_vio("mosfet_underdrive", sev, [e["ref"]],
+                         e["roles"]["G"],
+                         f"{e['ref']} is driven on with only |Vgs| "
+                         f"{v:.3g} V ({sc}), {why}", vgs=sign * v,
+                         scenario=sc, vth_max=vth, rdson_vgs=rds_vgs))
 
 
 def timing_findings(board, rails, model, ops, tran, ens, opts, vios, facts):
@@ -1012,7 +1135,8 @@ def timing_findings(board, rails, model, ops, tran, ens, opts, vios, facts):
         if not ys:
             continue
         moves = [abs(ops[sc]["v"].get(en["net"], 0.0)
-                     - ops["default"]["v"].get(en["net"], 0.0)) for sc in ops]
+                     - ops["default"]["v"].get(en["net"], 0.0)) for sc in ops
+                 if "@" not in sc]
         if en["net"] not in rail_driven or max(moves) > 0.1:
             out.append({"ref": en["ref"], "net": en["net"], "vdd": en["vdd"],
                         "c_f": en["c"], "judged": False,
@@ -1205,6 +1329,8 @@ def run(a) -> dict:
     rails = resolve_rails(board, parts, cons, inp["power_tree"],
                           _pairs(a.rail, "--rail"))
     opts = {"dll": dll, "timeout": a.timeout, "ramp_ms": a.ramp_ms,
+            "rail_min": rail_mins(rails, cons,
+                                  _pairs(a.rail_min, "--rail-min")),
             "vref": _pairs(a.vref, "--vref"), "i2c_khz": a.i2c_khz,
             "i2c_cb_pf": a.i2c_cb_pf}
     (model, ops, tran, scen, ens, vios, unknowns, facts,
@@ -1237,6 +1363,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--power-tree")
     ap.add_argument("--rail", action="append", default=[],
                     help="NET=volts, adds or overrides a rail")
+    ap.add_argument("--rail-min", action="append", default=[],
+                    help="NET=volts, the rail's lowest operating voltage")
     ap.add_argument("--vref", action="append", default=[],
                     help="REF=volts, a regulator's FB reference")
     ap.add_argument("--i2c-khz", type=int, default=400,

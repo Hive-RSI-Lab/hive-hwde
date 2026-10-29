@@ -72,7 +72,7 @@ SECTIONS: dict[str, dict[str, dict[str, str]]] = {
     },
     "voltages": {
         "required": {"net": "str", "voltage": "num"},
-        "optional": {},
+        "optional": {"min": "num"},
     },
     "voltage_pairs": {
         "required": {"a": "str", "b": "str", "voltage": "num"},
