@@ -655,6 +655,14 @@ def build(ws: Path,
         "solder_mask_color": quote_spec.get("solder_mask_color"),
     }
 
+    # ---- the fact ledger: nothing critical unknown -----------------------
+    # Every fact the board relies on (stock, part match, lifecycle, ratings,
+    # pinouts, footprints - lib/ledgerlib.py) must read verified now: a
+    # board with a part JLC cannot place or a pin map nobody checked is not
+    # ready to order, however green its gates.
+    import ledgerlib
+    problems += ledgerlib.blockers(ws)
+
     # ---- restrictions + approvals snapshot ------------------------------
     restrictions, r_problems = load_restrictions(ws)
     problems += r_problems
@@ -726,7 +734,9 @@ def verify(ws: Path, att: dict | None = None) -> dict:
     strict reports bound AND re-evaluated against the canonical gates.yaml
     under durable waivers, the fab package bound, checkpoint 4 not rejected,
     checker currency, restrictions unchanged with no hold, no artifact
-    stale marks, no live issues, no recorded rejection anywhere.
+    stale marks, no live issues, no recorded rejection anywhere, and every
+    fact in the board's ledger verified as it reads now (stale stock reads
+    unknown).
 
     NOT invalidated by: report age (bounded at build), history appends, or
     a gate re-run that still passes on identical inputs."""
@@ -1004,6 +1014,12 @@ def verify(ws: Path, att: dict | None = None) -> dict:
                     and (att.get("human_approvals") or {}).get(cp) != cur:
                 problems.append(f"human checkpoint {cp}: REJECTED after "
                                 "attestation - human veto")
+
+    # The ledger is read fresh, not bound: stock goes stale in days, so a
+    # board attested on Monday is not order-ready on Friday until
+    # stock_check.py has asked again (lib/ledgerlib.py).
+    import ledgerlib
+    problems += ledgerlib.blockers(ws)
 
     return {"valid": not problems, "attested": True,
             "board": board, "rev": att.get("rev"),

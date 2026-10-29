@@ -139,6 +139,17 @@ only the release attestation (`scripts/attest.py build|verify|disposition`,
 recorded at `fab/attestation.json`) and `state.py resume` reports the derived
 `release_disposition` beside the phase. The `order` recipe carries the rules.
 
+**Know what the board does not know.** Each workspace keeps `ledger.json`
+(`scripts/lib/ledgerlib.py`): every fact the design relies on - per BOM code
+its stock, part match and lifecycle at JLC; per part its pin ratings, pinout
+and footprint - as verified (source and date), failed, or unknown. The checks
+write it as they run (`stock_check.py` and `bom_cpl.py`'s live run,
+`check_ratings.py` in verify, `cpl_verify.py` in dfm); a check that cannot
+tell records unknown, never a pass. `ledger.py report --workspace <ws>` lists
+the gaps; `ledger.py set ... --source` records one you checked yourself.
+Release refuses while any fact is not verified, and stock older than 72 h
+reads unknown, so re-run `stock_check.py --workspace <ws>` before the order.
+
 ## Run start / resume
 
 **New workspace** (`full-run`, or `review` of an outside project): the recipe's
