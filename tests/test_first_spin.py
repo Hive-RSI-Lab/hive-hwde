@@ -141,9 +141,10 @@ def test_monitor_ic_counts(tmp_path):
 POWER = {"domain": "power",
          "findings": [
              {"id": "POWER-1", "board": "core", "severity": "blocker",
-              "finding": "5 A in 0.255 mm tracks", "fix": "patches + vias"},
+              "finding": "5 A in 0.255 mm tracks", "fix": "patches + vias",
+              "fault_class": "PI-08"},
              {"id": "POWER-2", "board": "core", "severity": "major",
-              "finding": "inrush past SOA"},
+              "finding": "inrush past SOA", "fault_class": "RATE-19"},
              {"id": "POWER-3", "board": "core", "severity": "minor",
               "finding": "TVS clamp | above abs-max"}],
          "known_unknowns": [
@@ -156,7 +157,8 @@ POWER = {"domain": "power",
          "tools_wanted": [{"tool": "soa_check", "checks": "Vds*Id vs SOA"}]}
 THERMAL = {"domain": "thermal",
            "findings": [{"id": "THERMAL-1", "board": "core",
-                         "severity": "blocker", "finding": "pad-up, no heatsink"}],
+                         "severity": "blocker", "finding": "pad-up, no heatsink",
+                         "fault_class": "THERM-02"}],
            "known_unknowns": [{"fact": "theta 8 C/W", "status": "wrong",
                                "could_stop_board": True}],
            "tools_wanted": [{"tool": "soa_check", "checks": "same"},
@@ -226,3 +228,123 @@ def test_first_spin_bad_disposition_and_errors(tmp_path):
     assert ("bad_disposition", "POWER-1") in [(o["kind"], o["id"])
                                               for o in rep["open"]]
     assert first_spin.main(["--dir", str(tmp_path / "nope")]) == 2
+
+
+# ------------------------------------------------------- fault classes -> checks
+
+MODES = """modes:
+- id: PI-08
+  mode: Pour neck or too few vias at layer transition
+  coverage: {script: check_current, rule: '-', level: L2}
+- id: RATE-19
+  mode: Inrush or hot-plug current
+  coverage: {script: '-', rule: '-', level: L0}
+- id: FAB-02
+  mode: Annular ring too small
+  coverage: {script: dfm_check, rule: '-', level: L2}
+- id: THERM-02
+  mode: Tj above abs max from optimistic theta
+  coverage: {script: no_such_check, rule: '-', level: L2}
+"""
+
+
+def classes_of(rep) -> dict:
+    return {g["class"] or "new:" + g["mode"]: g for g in rep["classes"]}
+
+
+def test_every_class_judged_against_the_registry(tmp_path):
+    d = review_dir(tmp_path)
+    extra = {"domain": "dfm", "findings": [
+        {"id": "DFM-6", "board": "core", "severity": "major",
+         "finding": "annulus 0.125", "fault_class": "FAB-02",
+         "caught_by": "dfm_check"},
+        {"id": "AUDIO-1", "board": "core", "severity": "major",
+         "finding": "op-amp CM past V+ - 2 V", "fault_class": "new",
+         "class_mode": "Op-amp common-mode past its limit"},
+        {"id": "DFM-9", "board": "core", "severity": "minor",
+         "finding": "paste on vias", "fault_class": "new",
+         "class_mode": "Paste over vias"}]}
+    (d / "dfm.json").write_text(json.dumps(extra), encoding="utf-8")
+    (tmp_path / "modes.yaml").write_text(MODES, encoding="utf-8")
+    briefs = tmp_path / "briefs.json"
+    code, rep = fs(tmp_path, "--modes", str(tmp_path / "modes.yaml"),
+                   "--briefs", str(briefs))
+    c = classes_of(rep)
+    assert c["PI-08"]["verdict"] == "check_blind"
+    assert c["PI-08"]["check"] == "check_current"
+    assert c["RATE-19"]["verdict"] == "no_check"
+    assert c["FAB-02"]["verdict"] == "caught"
+    # a registry check that isn't in scripts/ is no check
+    assert c["THERM-02"]["verdict"] == "no_check"
+    assert c["new:Op-amp common-mode past its limit"]["verdict"] == "new_class"
+    assert c["new:Paste over vias"]["worst"] == "minor"
+    got = json.loads(briefs.read_text(encoding="utf-8"))
+    assert got == rep["briefs"]
+    titles = [b["title"] for b in got]
+    # one per class with a blocker or major the checks didn't catch
+    assert len(titles) == 4, titles
+    assert titles[0].startswith("check_current misses Pour neck")
+    assert any(t == "hwde catches Op-amp common-mode past its limit"
+               for t in titles)
+    assert not any("Paste" in t or "Annular" in t for t in titles)
+    b = next(b for b in got if b["class"] == "PI-08")
+    assert "POWER-1" in b["done"] and "5 A in 0.255 mm tracks" in b["known"]
+
+
+def test_an_unclassed_blocker_is_open(tmp_path):
+    d = review_dir(tmp_path,
+                   disp={"POWER-1": ["fixed", "8 vias"],
+                         "POWER-2": ["fixed", "470k"],
+                         "THERMAL-1": ["fixed", "heatsink"]},
+                   res={"power:1": {"status": "verified", "how": "t.8.1.1"},
+                        "thermal:0": {"status": "resolved", "how": "44.8"}})
+    rev = json.loads((d / "thermal.json").read_text(encoding="utf-8"))
+    del rev["findings"][0]["fault_class"]
+    (d / "thermal.json").write_text(json.dumps(rev), encoding="utf-8")
+    code, rep = fs(tmp_path)
+    assert code == 1
+    assert [(o["kind"], o["id"]) for o in rep["open"]] == [
+        ("unclassed", "THERMAL-1")]
+
+
+def test_the_reviewers_files_join_the_classes(tmp_path):
+    review_dir(tmp_path)
+    rp = tmp_path / "ws" / "reports"
+    (rp / "review-board.json").write_text(json.dumps({"violations": [
+        {"check": "board-review", "severity": "error", "msg": "copper under "
+         "the antenna", "kind": "antenna", "fault_class": "PI-08"},
+        {"check": "board-review", "severity": "warning", "msg": "a jog"}]}),
+        encoding="utf-8")
+    (tmp_path / "modes.yaml").write_text(MODES, encoding="utf-8")
+    code, rep = fs(tmp_path, "--modes", str(tmp_path / "modes.yaml"))
+    ids = [x["id"] for x in classes_of(rep)["PI-08"]["findings"]]
+    assert ids == ["POWER-1", "review-board:0"]
+    # an unclassed reviewer warning is not open: only blockers and majors are
+    assert all(o["id"] != "review-board:1" for o in rep["open"])
+
+
+HIFI = REPO / "tests" / "fixtures" / "first-spin"
+
+
+def test_hifi_review_2_classed():
+    """hifi-receiver-2's first-spin review (task 261029-020622), its 27
+    blockers and majors classed, judged against the registry as it stood
+    when they were classed."""
+    rep = first_spin.run(type("A", (), {
+        "dir": str(HIFI / "hifi-review-2"), "workspace": None, "md": None,
+        "briefs": None, "modes": str(HIFI / "hifi-review-2.modes.yaml")})())
+    v = {g["class"]: g["verdict"] for g in rep["classes"]}
+    assert sum(len(g["findings"]) for g in rep["classes"]) == 27
+    assert v["PI-08"] == "check_blind"     # POWER-1: check_current, 5 A path
+    assert v["EMC-13"] == "check_blind"    # DIGITAL-19: antenna keep-out
+    assert v["MECH-13"] == "check_blind"   # DFM-1/12, PARTS-7: post holes
+    assert v["FW-01"] == "no_check"        # DIGITAL-1: oscillator on GPIO0
+    assert v["FAB-02"] == "caught"         # DFM-6: the dfm gate had it
+    assert sorted(set(v.values())) == ["caught", "check_blind", "no_check"]
+    assert len(rep["briefs"]) == 18
+
+
+def test_hifi_classes_are_in_the_registry():
+    modes = first_spin.load_modes(REPO / "docs" / "failure-modes.yaml")
+    pinned = first_spin.load_modes(HIFI / "hifi-review-2.modes.yaml")
+    assert set(pinned) <= set(modes)

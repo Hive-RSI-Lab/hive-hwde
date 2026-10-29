@@ -189,6 +189,10 @@ scaled by you to the board - not a gate; record how far you took it
   contingencies on the board where a margin can't be closed on paper, every
   blocker/major answered. `scripts/first_spin.py --workspace <ws>` lists
   what is still open and merges the tools wanted (file them to hive-hwde).
+  The same review, cold, on any board you hold (built, imported, after an
+  ECO) when you judge it worth it: every finding names its fault class in
+  `docs/failure-modes.yaml`, and `--briefs` drafts a hive-hwde brief for
+  each class no hwde check caught, so each review leaves a check behind.
 - **Bring it up** (boards in hand): the `bring-up` verb and
   `reference/remote-bringup.md`. `state.py bringup --results <file>`
   closes it with the measurements (`scripts/lib/bringuplib.py` schema);

@@ -42,7 +42,11 @@ Write `reports/review-schematic.md` (human prose) AND
 `{"violations": [{"check": "schematic-review", "severity":
 "error|warning", "pos": null, "layer": null, "net": "<net or null>",
 "refs": ["U1"], "msg": "<one-sentence defect + why it kills bring-up>",
-"source": "review.schematic", "kind": "<short-slug>"}]}`
+"source": "review.schematic", "kind": "<short-slug>", "fault_class":
+"<docs/failure-modes.yaml id, or new>", "class_mode": "<when new>"}]}`
+The fault class is the mistake any board could repeat (the registry's
+`mode`); `scripts/first_spin.py` turns each class no check caught into a
+brief for one (reference/first-spin.md).
 Severity: error = would prevent bring-up or damage hardware; warning =
 risk/quality. No style nits.
 

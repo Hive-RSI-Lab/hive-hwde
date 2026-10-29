@@ -1,0 +1,66 @@
+{
+ "domain": "parts",
+ "source": "hifi-receiver-2 docs/review-2/parts.json at e5896e6 (task 261029-020622), blockers and majors, text cut to 400 chars",
+ "findings": [
+  {
+   "id": "PARTS-4",
+   "board": "core",
+   "severity": "blocker",
+   "refs": [
+    "U17",
+    "Y2",
+    "R45",
+    "R43",
+    "R40",
+    "R41",
+    "R44",
+    "Q2",
+    "U7"
+   ],
+   "nets": [
+    "/PHY_RST",
+    "/ETH_CLK",
+    "/PVDD_EN",
+    "/AMP_A_RST",
+    "/AMP_B_RST",
+    "/DAC_EN"
+   ],
+   "finding": "U17 is a TCA9555, which has internal ~100k pull-ups on every P-port (as strong as 33k: IIL -100 uA). From power-on until firmware configures it, the 100k pull-downs (R40,R41,R43,R44,R45) only make a divider: 1.65 V typ, 2.48 V worst. PHY_RST is Y2 OE (enable >=70% VDD or floating, disable <=30%), so Y2 can run at reset and put 50 MHz on ESP32 IO0 (boot strap) through R60, making the boot mode rand",
+   "evidence": "TI SCPS200E sect 5 (TCA9555 = TCA9535 + internal I/O pull-up), p16 schematic 100 kOhm, p6 IIL -100 uA; YXC YSO110TR p1 Tri-State thresholds; core.net PHY_RST: R45 100k to GND, U17 P05, Y2 pin1; ETH_CLK: Y2 via R60, U7 pin 25 IO0, Q5 C; JSCJ 2N7002 VGS(th) 1.0-2.5 V",
+   "fault_class": "RATE-13"
+  },
+  {
+   "id": "PARTS-6",
+   "board": "core",
+   "severity": "major",
+   "refs": [
+    "J1"
+   ],
+   "nets": [
+    "VBUS_IN",
+    "/power_in/CC1",
+    "/power_in/CC2",
+    "/USB_DP",
+    "/USB_DM"
+   ],
+   "finding": "Proposed core J1 swap GCT USB4085-GF-A (C7095263) is a through-hole (DIP) receptacle with 16 separate pins in two 0.85 mm staggered rows; it does not fit the current SMD USB-C-SMD_MC-311D footprint or the merged-pad symbol (A4-B9, A1-B12...).",
+   "evidence": "GCT USB4085 drawing rev B sheet 1-2: Dip Type PCB Top Mount, 16x 0.40 holes in 0.65 pads, slots 0.6x2.1/0.6x1.4 at 8.65",
+   "fault_class": "DFA-06"
+  },
+  {
+   "id": "PARTS-7",
+   "board": "core",
+   "severity": "blocker",
+   "refs": [
+    "U19"
+   ],
+   "nets": [
+    "/linein/OPT_VCC",
+    "/OPT_SPDIF"
+   ],
+   "finding": "Ultra U19 is ordered as PLR237/T8BK (C17223620) but placed on an EasyEDA PLR237-T10BK footprint (C17427482). The T8 lead form needs two 1.70 mm locating-peg holes (5.60 mm apart, 2.61 mm forward of the 1.10 mm post holes) that the footprint lacks, so the part cannot seat. The symbol also numbers 1 VCC / 3 VOUT, reverse of Everlight (1 Vout, 2 GND, 3 Vcc); physical pad positions appear to compensat",
+   "evidence": "Everlight PLR237/T8BK DPL-0000263 Rev.1 p5 pin function + PCB layout (3x0.80, 2x1.10 at 5.08, 2x1.70 at 5.60); core/lib/aiee.pretty/OPTO-TH_PLR237-T10BK.kicad_mod (5 holes only, LCSC tag C17427482)",
+   "fault_class": "MECH-13"
+  }
+ ]
+}

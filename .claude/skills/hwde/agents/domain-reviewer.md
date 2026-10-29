@@ -53,13 +53,21 @@ venv python. Keep output ASCII.
   reads, a fault pin no GPIO watches, an output no tap sees) is a finding
   if it would hide a failure at bring-up: reference/self-observation.md.
 - A check hwde has no tool for goes under tools_wanted.
+- Every finding names its fault class: the id in `docs/failure-modes.yaml`
+  (the module's registry; search its `mode` and `catch` lines) whose mode
+  it is, or `"fault_class": "new"` with a one-line `class_mode` that would
+  fit any board, not this one ("op-amp common-mode past its limit on its
+  real supply", not "U12 clips"). `caught_by` names the hwde check that
+  flagged it, when you ran one and it did. A class is how this review
+  becomes a check for the next board (reference/first-spin.md).
 
 ## Output
 `reports/first-spin/<domain>.md`: the review, both boards if two, each
 block with its calculations and margins, findings first.
 `reports/first-spin/<domain>.json`, the schema in `scripts/first_spin.py`:
 `{"domain", "findings": [{id "<DOMAIN>-<n>", board, severity, refs, nets,
-finding, evidence, fix, margin}], "known_unknowns": [{fact, board, refs,
+finding, evidence, fix, margin, fault_class, class_mode?, caught_by?}],
+"known_unknowns": [{fact, board, refs,
 status, source, date, could_stop_board}], "tools_wanted": [{tool, checks,
 why}]}`.
 

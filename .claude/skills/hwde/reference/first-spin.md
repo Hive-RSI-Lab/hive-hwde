@@ -32,6 +32,12 @@ schematic at P4 (`schematic-reviewer`) and the routed board at P8
 is the domain-by-domain engineering pass that decides whether to spend the
 person's money.
 
+It is also the **cold design review** for any board hwde has, not only one
+about to be ordered: a board built before a check existed, a board from
+outside (`review` verb), a board after its ECO. Whoever holds the board
+judges when one is worth it (the person: light, no fixed pipeline; it is
+never a gate), and how many domains.
+
 ## The review: one reviewer per domain, fresh eyes
 
 Spawn `agents/domain-reviewer.md` once per domain the board has (tier
@@ -104,6 +110,45 @@ Re-run the gates after the fixes, then re-run the domain reviews whose
 blocks changed (a fresh reviewer reads the fix, as `fix-check.md` did on
 hifi-receiver-2).
 
+## Every fault class becomes a check
+
+A finding is one board's defect; its **class** is the mistake any board can
+repeat. The review is worth most when the next board doesn't need a person
+to find it. So every finding names its class, an id in the module's registry
+`docs/failure-modes.yaml` (each mode, the check that covers it and its level
+L0-L3), or `"fault_class": "new"` with a one-line `class_mode`; and
+`caught_by` names the hwde check that flagged it, when one did.
+
+`first_spin.py` groups the findings by class (the schematic and board
+reviewers' `reports/review-*.json` join in) and judges each against the
+registry:
+
+| Verdict | Means | What follows |
+|---|---|---|
+| caught | an hwde check flagged every finding in it | nothing: the check works |
+| check_blind | the registry names a check, and the reviewer still found it | that check misses this board: a fix brief, with this board as its test |
+| no_check | the class is known, nothing checks it | a brief for the check |
+| new_class | not in the registry | a brief for the check, and the class added to the registry |
+
+A blocker or major with no class is open, like one with no disposition.
+`--briefs <file>` writes a draft brief (title, done, known) for every
+check_blind, no_check and new_class class with a blocker or major in it.
+Read them, merge or drop what is one fix, and file them on hive-hwde (in the
+Hive: `hive agent brief --project hive-hwde --title ... --done ... --known
+...`). When a check lands, its worker sets the class's coverage in
+`docs/failure-modes.yaml`, so the next review of a board like this one
+reads `caught`, and the review moves on to what machines still can't see.
+
+`tests/fixtures/first-spin/hifi-review-2/` is hifi-receiver-2's review-2
+classed this way: its 27 blockers and majors fall in 19 classes. One was
+caught (dfm_check, the USB4085 annulus); for 5 the registry named a check
+that missed (check_current on core's 5 A path, place_metrics on the antenna
+keep-out, fp_verify on the RCA and TOSLINK locating posts, check_thermal on
+the pad-up TPA3221, dfm_check on a footprint/package mismatch); 13 had no
+check, 7 of them classes the registry didn't have until then (RATE-26/27,
+PI-21, ANA-11/12, FW-17, THERM-14). That is 18 draft briefs where the
+review's worker wrote 4 by hand.
+
 ## Contingencies: cheap fallbacks the board carries
 
 Where a margin can't be closed on paper (a part's behaviour the datasheet
@@ -130,7 +175,8 @@ bring-up to fit it.
 ## What first spins have caught (hifi-receiver-2, 2026-10-29)
 
 Classes, so the next reviewer looks: (a tool that catches the class is
-named; "none" is a tool wanted)
+named; "none" is a tool wanted). Their registry ids are in the fixture
+above; `first_spin.py` keeps this table current, this copy is the record.
 
 | Class | Example | Caught by |
 |---|---|---|
