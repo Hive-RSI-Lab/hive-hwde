@@ -4,8 +4,8 @@ The whole pipeline is one recipe. Its steps are the phases; its gates are the
 gate table in docs/playbook.md; the fix loop, the checkpoint format and the spawn
 template are shared with every other verb and stay there. Every gate step is
 ONE form - `gate.py --gate <g> <input> --workspace <ws> --out <report>` - run on
-every attempt, pass and fail: `--workspace` RECORDS the result, and `set-phase`
-refuses to advance past a gate phase with no recorded result.
+every attempt, pass and fail: `--workspace` RECORDS the result. `set-phase` past
+a gate with no recorded result warns; H1-H4 are reports - write, carry on.
 
 Phase digest: after each phase write 5-10 lines to `log/P<n>-digest.md` and
 `state.py set-phase`. Agent selection: spawn only what the design's domains need
@@ -39,13 +39,13 @@ boards may use ONE schematic agent (record it).
   slots = research launches AUTOMATICALLY (owner ruling; the `research` recipe
   carries the mechanics): `research.py open --workspace <ws> --gaps
   log/coverage-P2.json --all --phase P2` (one task per gap inside
-  `budgets.research`; `status: checkpoint` = cap spent - present the unopened
-  slots at H1), per task `researcher` -> FRESH `research-second-reader` ->
-  `research.py close`, then re-run coverage (verified records fold in as
-  `provisional`). A slot still `gap` is a `state.py decision` "designing under
-  coverage gap: ...", never silence. **H1** (blocking): blocks, stackup, cost
-  ballpark, key parts, riskiest decision, coverage (covered/provisional/gap per
-  slot), cap state, and every spec the mode relaxed (stated -> earned -> why).
+  `budgets.research`; cap spent = `--slot` opens one that matters past it),
+  per task `researcher` -> FRESH `research-second-reader` -> `research.py
+  close`, then re-run coverage (verified records fold in as `provisional`). A
+  slot still `gap` is a `state.py decision` "designing under coverage gap:
+  ...", never silence. **H1** (report): blocks, stackup, cost ballpark, key
+  parts, riskiest decision, coverage (covered/provisional/gap per slot), cap
+  state, every spec the mode relaxed (stated -> earned -> why).
 - **P3 Parts + Library**: spawn `part-sourcer`; `datasheet-extractor` per
   nontrivial IC (parallel) - reuse a prior board's `parts/<lcsc>.json` on LCSC
   match (re-run `--validate`); then `librarian`. Pad-geometry failures block P4.
@@ -58,16 +58,16 @@ boards may use ONE schematic agent (record it).
   `architecture/sheets.md` (parallel where independent; the root-sheet agent
   stitches, runs ERC and `netlist_audit`). Gate `erc`. Then `schematic-reviewer`
   (fresh context): errors -> fix loop, warnings -> `reports/erc-waivers.md`.
-  **H2** (blocking): schematic PDF + reviewer findings + waivers.
+  **H2** (report): schematic PDF + reviewer findings + waivers.
 - **P5 Board Setup**: inline (`board_init` then `rules_gen`, per
   `agents/board-setup.md`); spawn `board-setup` only for impedance or
   library-repair boards. Parity 0, setup 0; sidecars beside the board; generous
-  `--outline auto` at a geometry-OUTPUT binding (a fixed WxH is REFUSED there).
+  `--outline auto` at a geometry-OUTPUT binding (a fixed WxH is noted unearned).
 - **P6 Placement**: spawn `placement` (seed -> anneal -> select/repair, <= 8 edit
   iterations). Gate `place` (approved residuals: `reports/place-waivers.json`).
   At a geometry-OUTPUT binding placement targets the canonical layout, not the
   outline: after the gate, `board_edit --outline fit --margin M` (+ `planes_gen`
-  if it grew) earns the size. **H3** (optional, default ON): top/bottom render.
+  if it grew) earns the size. **H3** (report, optional): top/bottom render.
   Silk/refdes collisions are scripted fixes (`silk_place`, `move_text`); agents
   verify with a full kicad-cli DRC - never trust one checker.
 - **P7 Routing**: spawn `router` (chain order is board-class dependent - its
@@ -77,10 +77,10 @@ boards may use ONE schematic agent (record it).
   (`freerouting_retries` guards the loop). Dead end: `state.py cross-spawn`.
 - **P8 Verification**: run the `verify` gate (all 8 checks), then
   `verify-reviewer` (fresh context) with the summary + renders. Triage:
-  script-check errors -> fix loop; reviewer errors -> fix loop or human;
+  script-check errors -> fix loop; reviewer errors -> fix loop or a waiver;
   warnings -> `reports/verify-waivers.json` (re-gate with it). After ANY
-  copper/placement fix re-run `drc_routed` BEFORE `verify`. **H4** (blocking):
-  verification summary + annotated renders + waivers.
+  copper/placement fix re-run `drc_routed` BEFORE `verify`. **H4** (report;
+  a rejection vetoes release): verification summary + renders + waivers.
 - **P9 DFM**: the `dfm-check` recipe, inline (`dfm` agent only for narrative).
 - **P10 Ordering**: the `order` recipe, including H5 and the creation latch.
 

@@ -223,9 +223,13 @@ def load_waivers(ws: Path) -> list[dict]:
     if not p.exists():
         return []
     try:
-        return json.loads(p.read_text(encoding="utf-8")).get("waivers") or []
+        waivers = json.loads(p.read_text(encoding="utf-8")).get("waivers") \
+            or []
     except (OSError, json.JSONDecodeError, AttributeError):
         return []
+    # an unsigned waiver (approved: PENDING, TBD ...) waives nothing
+    return [w for w in waivers if isinstance(w, dict)
+            and checklib.approval_problem(w.get("approved")) is None]
 
 
 # ------------------------------------------------------------ corpora

@@ -54,7 +54,9 @@ straight and 45-degree traces, no needless arcs (owner, from the g0-sense render
 - Do not straighten copper a net needs. An RF feed's arc, or a length-matched or
   diff-pair net's meander, is waived per net in `reports/verify-waivers.json`:
   `{"check": "check_route_style", "kind": "route_style", "net": "<net>", "reason": "...",
-  "approved": "<who> <when>"}`. Say why the geometry is intent, not leftover.
+  "approved": "<who> <when>"}`. Say why the geometry is intent, not leftover. The
+  `approved` line is the person's sign-off: until they give it, ask; a placeholder
+  (PENDING, TBD, N/A, the `<who> <when>` template) makes the gate refuse the file.
 
 ## Verify
 ```

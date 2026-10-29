@@ -178,7 +178,7 @@ def test_part_sourcer_scoring_ranks_by_needs(tmp_path):
 
 # ---- backward spawns -----------------------------------------------------------
 
-def test_cross_spawn_budget_exhaustion_checkpoints(tmp_path):
+def test_cross_spawn_past_its_count_spawns_and_says_so(tmp_path):
     ws = tmp_path / "ws"
     state_mod.State.init(ws, "b", "P6")
     sp = str(ws / "state.json")
@@ -191,13 +191,13 @@ def test_cross_spawn_budget_exhaustion_checkpoints(tmp_path):
     code, out = _cli("state.py", "cross-spawn", "--state", sp,
                      "--stage", "P6", "--role", "part-sourcer",
                      "--model", "sonnet", "--brief", "third")
-    assert code == 1 and out["status"] == "checkpoint"
-    assert out["checkpoint"] == "cross_stage_cap"
+    assert code == 0 and out["status"] == "spawned"
+    assert out["over"] is True and out["remaining"] == -1
+    assert "upstream" in out["warning"]
     st = json.loads((ws / "state.json").read_text())
-    assert len([s for s in st["spawns"] if s.get("cross_stage")]) == 2
-    assert st["open_issues"][-1]["status"] == "escalated"
-    assert "cross-stage spawn budget spent" in st["decisions"][-1]["what"]
-    assert st["history"][-1]["event"] == "cross_spawn_checkpoint"
+    assert len([s for s in st["spawns"] if s.get("cross_stage")]) == 3
+    assert st["open_issues"][-1]["status"] == "fixing"
+    assert st["history"][-1]["event"] == "cross_spawn_over"
     # another stage's budget is its own
     code, out = _cli("state.py", "cross-spawn", "--state", sp,
                      "--stage", "P7", "--role", "research-component-scout",

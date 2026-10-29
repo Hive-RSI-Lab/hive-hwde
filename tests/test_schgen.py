@@ -21,6 +21,7 @@ libraries) and drive kicad-cli 10.0.3.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -510,6 +511,100 @@ def test_apply_pin_number_fixups(tmp_path):
               "right": "2"}], sch)
 
 
+_LABEL = ('(label "{t}" (at {x} {y} {a}) (effects (font (size 1.27 1.27))'
+          ' (justify left bottom)) (uuid "{u}"))')
+
+
+def test_apply_label_justify(tmp_path):
+    """ksa writes every label left-justified; KiCad's 180/270 labels are
+    right-justified, or their text runs back over their own pin."""
+    sch = tmp_path / "x.kicad_sch"
+    labels = [_LABEL.format(t=t, x=10.16, y=10.16, a=a, u=f"u{i}")
+              for i, (t, a) in enumerate([("A", 0), ("B", "180.0000"),
+                                          ("C", 90), ("D", 270)])]
+    sch.write_text("(kicad_sch " + " ".join(labels) + ")", encoding="utf-8")
+    assert schlib.apply_label_justify(sch) == 2
+    text = sch.read_text(encoding="utf-8")
+    just = dict(re.findall(r'\(label "(\w)".*?\(justify (\w+)', text))
+    assert just == {"A": "left", "B": "right", "C": "left", "D": "right"}
+    assert schlib.apply_label_justify(sch) == 0     # idempotent
+
+
+def _libsym(name: str, pins, extra: str = "") -> str:
+    ps = " ".join(f'(pin passive line (at 0 {i} 0) (length 2.54)'
+                  f' (name "{nm}" (effects (font (size 1.27 1.27))))'
+                  f' (number "{num}" (effects (font (size 1.27 1.27)))))'
+                  for i, (nm, num) in enumerate(pins))
+    return (f'(symbol "{name}" {extra}(in_bom yes)'
+            f' (symbol "{name.split(":")[1]}_1_1" {ps}))')
+
+
+def test_hide_pin_names(tmp_path):
+    """Two-pin parts and parts whose names only repeat their numbers get
+    pin names hidden in the embedded library; a named IC keeps them."""
+    sch = tmp_path / "x.kicad_sch"
+    libs = [_libsym("a:LED", [("K", "1"), ("A", "2")]),
+            _libsym("a:HDR3", [("1", "1"), ("~", "2"), ("", "3")]),
+            _libsym("a:REG", [("VIN", "1"), ("GND", "2"), ("VOUT", "3")]),
+            _libsym("a:R", [("~", "1"), ("~", "2")],
+                    extra="(pin_names (offset 0) (hide yes)) "),
+            _libsym("a:C", [("1", "1"), ("2", "2")],
+                    extra="(pin_names (offset 0.5)) ")]
+    sch.write_text("(kicad_sch (lib_symbols " + " ".join(libs) + ")"
+                   ' (symbol (lib_id "a:REG") (at 0 0 0)))', encoding="utf-8")
+    changed = schlib.hide_pin_names(sch)
+    assert changed == ["a:LED", "a:HDR3", "a:C"]
+    text = sch.read_text(encoding="utf-8")
+    blocks = {n: b for n, _h, b in (
+        (re.match(r'\(symbol "([^"]+)"', text[f0:f1]).group(1), h,
+         text[f0:f1])
+        for h, f0, f1 in schlib._forms(text, text.index("(lib_symbols") + 1,
+                                       len(text) - 1) if h == "symbol")}
+    for n in ("a:LED", "a:HDR3", "a:R", "a:C"):
+        assert re.search(r"\(pin_names[^()]*(\([^()]*\)\s*)*\(hide yes\)",
+                         blocks[n]), n
+    assert "pin_names" not in blocks["a:REG"]
+    assert '(offset 0.5) (hide yes))' in blocks["a:C"]
+    assert schlib.hide_pin_names(sch) == []          # idempotent
+    import sexpdata
+    sexpdata.loads(text)                             # still well-formed
+
+
+def test_fit_sheet_sizes_and_centres(tmp_path):
+    """A small drawing gets the smallest paper it fits and lands centred
+    above the title block; every placed item moves by one on-grid offset
+    and the embedded library stays as it was."""
+    sch = tmp_path / "b.kicad_sch"
+    sch.write_text(REGEN_SCH.read_text(encoding="utf-8"), encoding="utf-8")
+    before = sch.read_text(encoding="utf-8")
+    bb0 = schlib.drawn_bounds(sch)
+    rep = schlib.fit_sheet(sch)
+    w, h = next((w, h) for n, w, h in schlib.PAPERS if n == rep["paper"])
+    smaller = [p for p in schlib.PAPERS if p[1] < w]
+    for _n, sw, sh in smaller:                       # nothing smaller fits
+        assert (rep["drawing"][0] > sw - 2 * schlib.FRAME
+                or rep["drawing"][1] > sh - 2 * schlib.FRAME
+                - schlib.TITLE_BLOCK[1])
+    text = sch.read_text(encoding="utf-8")
+    assert f'(paper "{rep["paper"]}")' in text
+    dx, dy = rep["moved"]
+    for v in (dx, dy):
+        assert abs(v - schlib.snap(v)) < 1e-9
+    bb1 = schlib.drawn_bounds(sch)
+    assert bb1 == pytest.approx((bb0[0] + dx, bb0[1] + dy,
+                                 bb0[2] + dx, bb0[3] + dy), abs=1e-3)
+    ux0, uy0, ux1, uy1 = schlib._usable(w, h)
+    assert (bb1[0] + bb1[2]) / 2 == pytest.approx((ux0 + ux1) / 2, abs=1.3)
+    assert (bb1[1] + bb1[3]) / 2 == pytest.approx((uy0 + uy1) / 2, abs=1.3)
+    lib = lambda t: t[t.index("(lib_symbols"):t.index("(lib_symbols")
+                      + next(f for f in schlib._forms(t, *schlib._body(t))
+                             if f[0] == "lib_symbols")[2]
+                      - t.index("(lib_symbols")]
+    assert lib(text) == lib(before)
+    # a second fit is a no-op
+    assert schlib.fit_sheet(sch)["moved"] == [0.0, 0.0]
+
+
 def test_write_project_minimal(tmp_path):
     p = schlib.write_project("demo", tmp_path)
     pro = json.loads(p.read_text(encoding="utf-8"))
@@ -749,3 +844,23 @@ def test_smoke_schlib_validation_errors():
     with pytest.raises(ValueError, match="no hier_pin"):
         proj.add_sheet(child, at=(127.0, 63.5), size=(25.4, 12.7),
                        nets=["MISSING"])
+
+
+@pytest.mark.smoke
+def test_smoke_labels_clear_of_pins_and_sheet_fitted(tmp_path):
+    """Snag 14 (hwde-led-test): every stub label reads outward, clear of
+    its pin's number; a 2-pin part's pin names are hidden; the sheet is
+    the smallest paper the drawing fits, the drawing centred on it."""
+    sh = schlib.Sheet("fit")
+    sh.add_component("Device:R", "R1", "10k", at=(127.0, 63.5), rotation=90)
+    sh.wire_pins("R1", {"1": "NA", "2": "NB"})
+    sh.add_component("Device:R", "R2", "10k", at=(152.4, 63.5))
+    sh.wire_pins("R2", {"1": "NB", "2": "NA"})
+    sh.power_flag("NA", at=(127.0, 76.2), sym=None, flag=True)
+    sh.save(tmp_path)
+    sch = tmp_path / "fit.kicad_sch"
+    import schem_refdes as sr
+    assert sr.audit_sheet(sr.Sheet(sch)) == []
+    assert sh.fit_report["paper"] == "A5"
+    assert '(paper "A5")' in sch.read_text(encoding="utf-8")
+    assert _erc_total(sch) == 0

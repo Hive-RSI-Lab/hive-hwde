@@ -65,7 +65,7 @@ def test_the_plan_s_verb_list_is_the_registry_s():
 
 
 def test_skill_md_lists_exactly_the_registry_verbs():
-    """SKILL.md names the vocabulary; tasks.yaml owns the recipes. Names may
+    """docs/playbook.md names the vocabulary; tasks.yaml owns the recipes. Names may
     not drift apart - a verb the playbook never mentions is unreachable."""
     text = (SKILL / "docs" / "playbook.md").read_text(encoding="utf-8")
     named = {v for v in VERBS if f"`{v}`" in text}
@@ -186,6 +186,10 @@ def test_dynamically_registered_subcommands_are_known():
     ("keep going", "resume-phase"),
     ("design a USB-C PD trigger board", "full-run"),
     ("build me a blinky board from scratch", "full-run"),
+    ("full-run: build the ultra-front board from brief to JLC fab package",
+     "full-run"),
+    ("build the ultra-front board", "full-run"),
+    ("full-run the hifi preamp", "full-run"),
     ("promote the learnings from this run", "promote"),
     ("work the promotion queue", "promote"),
     ("teach the placement stage", "learn"),

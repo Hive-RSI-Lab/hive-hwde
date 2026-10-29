@@ -39,7 +39,7 @@ NAME = "hwde-led-test"
 
 def build() -> schlib.Sheet:
     sh = schlib.Sheet(NAME, title="hwde-led-test: 5 V LED indicator",
-                      paper="A4", pwr_base=100)
+                      pwr_base=100)
 
     # B1: input header, pin 1 = +5V, pin 2 = GND
     sh.add_component("aiee:PZ254V-11-02P", "J1", "PZ254V-11-02P",
@@ -70,8 +70,8 @@ def build() -> schlib.Sheet:
     sh.power_symbol_at_pin("D1", "1", "power:GND")
 
     # Rails enter on a passive header pin: PWR_FLAG marks them driven.
-    sh.power_flag("+5V", at=(50.8, 101.6), sym=None, flag=True)
-    sh.power_flag("GND", at=(50.8, 111.76), sym=None, flag=True)
+    sh.power_flag("+5V", at=(50.8, 91.44), sym=None, flag=True)
+    sh.power_flag("GND", at=(50.8, 99.06), sym=None, flag=True)
     return sh
 
 

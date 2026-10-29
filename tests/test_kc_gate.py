@@ -164,6 +164,32 @@ def test_gate_evaluate_clean_gate_counts_warnings():
     assert res["failing_count"] == 4          # warning now counts too
 
 
+def test_gate_result_carries_warnings_below_the_bar():
+    """A pass/fail result shows what it didn't fail on (issue #30): the
+    verify gate's merged report is gone by the time the caller reads it."""
+    report = _report(kc.parse_drc_data(RAW_DRC))
+    g = {"tool": "drc", "fail_severities": ["error"], "max_count": 5}
+    res = gate.evaluate("drc", g, report)
+    assert res["status"] == "pass"
+    assert res["warnings_count"] == 1
+    assert [v["severity"] for v in res["warnings"]] == ["warning"]
+    assert "warnings_truncated" not in res
+    res = gate.evaluate("clean", {"tool": "drc",
+                                  "fail_severities": ["error", "warning"]},
+                        report)
+    assert res["warnings_count"] == 0 and res["warnings"] == []
+
+
+def test_gate_result_caps_inline_warnings(monkeypatch):
+    monkeypatch.setattr(gate, "WARNINGS_CAP", 2)
+    viols = [{"severity": "warning", "source": "drc", "description": str(i)}
+             for i in range(5)]
+    res = gate.evaluate("drc", {"tool": "drc", "fail_severities": ["error"]},
+                        _report(viols))
+    assert res["warnings_count"] == 5
+    assert len(res["warnings"]) == 2 and res["warnings_truncated"] is True
+
+
 def test_gate_evaluate_passes_when_clean():
     res = gate.evaluate("drc", {"tool": "drc", "fail_severities": ["error"]},
                         _report([]))

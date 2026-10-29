@@ -12,6 +12,7 @@ below KiCad 10 is a stale-pin mistake (10-format boards are unreadable by
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -36,8 +37,23 @@ def run_check_env(extra_env=None, *args):
     )
 
 
+def _skip_if_only_java_is_missing(report: dict) -> None:
+    """A machine with no Java at all (a dispatch runner such as iiks1: the
+    Hive's tools folder carries no JRE, this machine's comes from the system)
+    cannot run freerouting, and that is the machine's, not the change's. Skip
+    only then: every other check must still pass, and a Java that is there
+    but too old still fails."""
+    failed = {c["name"] for c in report.get("checks", [])
+              if c.get("status") == "fail"}
+    if failed == {"java-for-freerouting"} and not os.environ.get("HWDE_JAVA") \
+            and shutil.which("java") is None:
+        pytest.skip("no Java on this machine: freerouting cannot run here")
+
+
 def test_passes_on_dev_machine():
     r = run_check_env()
+    if r.returncode == 1:
+        _skip_if_only_java_is_missing(json.loads(r.stdout))
     assert r.returncode == 0, f"stderr:\n{r.stderr}"
     report = json.loads(r.stdout)  # stdout must be pure JSON
     assert report["status"] == "pass"
@@ -118,6 +134,8 @@ def test_out_file_and_quiet():
     if out.exists():
         out.unlink()
     r = run_check_env(None, "--out", str(out), "--quiet")
+    if r.returncode == 1 and out.exists():
+        _skip_if_only_java_is_missing(json.loads(out.read_text(encoding="utf-8")))
     assert r.returncode == 0
     assert r.stdout.strip() == ""
     assert r.stderr.strip() == ""

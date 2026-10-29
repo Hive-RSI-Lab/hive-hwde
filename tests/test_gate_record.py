@@ -13,8 +13,9 @@ Two mechanical teeth, tested here:
   1. `gate.py` RECORDS the result itself when the input sits in a workspace
      (--workspace, or the first parent holding a state.json). Corpus inputs
      with no workspace are untouched, so the golden/mutant suite is unaffected.
-  2. `state.py set-phase` REFUSES to advance past a gate phase whose gate has
-     no recorded result (--force is the loud escape hatch).
+  2. `state.py set-phase` WARNS when it advances past a gate phase whose gate
+     has no recorded result, and writes `phase_ungated` into history (it once
+     refused; the person, 10-28: rules are judgment, not walls).
 
 Hermetic except test_bb_buck_*, which read the committed live workspace.
 """
@@ -255,16 +256,20 @@ def test_place_gate_applies_and_hashes_place_waivers(tmp_path, capsys):
     assert fresh["gates"]["place"]["changed_inputs"] == ["place_waivers"]
 
 
-# ------------------------------------------- 2. set-phase needs the evidence
+# ------------------------------------------ 2. set-phase names the gap
 
-def test_set_phase_refuses_to_leave_an_unrecorded_gate_phase(tmp_path):
-    """bb-buck's exact walk: P4 -> P5 with no erc result recorded."""
+def test_set_phase_warns_when_leaving_an_unrecorded_gate_phase(tmp_path):
+    """bb-buck's exact walk: P4 -> P5 with no erc result recorded. It goes,
+    and the gap is said and kept, never silent."""
     ws = make_ws(tmp_path, phase="P4")
     st = state_mod.State.load(ws / "state.json")
-    with pytest.raises(CheckError) as exc:
-        st.set_phase("P5")
-    assert "erc (P4)" in str(exc.value) and "gate.py --workspace" in str(exc.value)
-    assert st.data["phase"] == "P4"        # refused, not half-applied
+    warns = st.set_phase("P5")
+    cov = [w for w in warns if w["kind"] == "gate_coverage"]
+    assert cov and "erc (P4)" in cov[0]["msg"]
+    assert "gate.py --workspace" in cov[0]["msg"]
+    assert st.data["phase"] == "P5"
+    ungated = [e for e in st.data["history"] if e["event"] == "phase_ungated"]
+    assert ungated and ungated[0]["missing"] == ["erc (P4)"]
 
 
 def test_set_phase_allows_the_recorded_walk(tmp_path):
@@ -274,14 +279,15 @@ def test_set_phase_allows_the_recorded_walk(tmp_path):
     st.record_gate("erc", ok, "P4")
     assert [w["kind"] for w in st.set_phase("P5")] == ["digest_discipline"]
     assert st.set_phase("P6", require_gates=True) is not None
-    with pytest.raises(CheckError):
-        st.set_phase("P7")                 # place (P6) not recorded
     st.record_gate("place", ok, "P6")
-    st.set_phase("P7")
+    assert not [w for w in st.set_phase("P7")
+                if w["kind"] == "gate_coverage"]
     assert st.data["phase"] == "P7"
+    assert not [e for e in st.data["history"]
+                if e["event"] == "phase_ungated"]
 
 
-def test_force_advances_loudly(tmp_path, capsys):
+def test_force_is_accepted_and_changes_nothing(tmp_path, capsys):
     ws = make_ws(tmp_path, phase="P4")
     rc = state_mod.main(["set-phase", "--workspace", str(ws), "--phase", "P5",
                          "--force"])
@@ -289,16 +295,17 @@ def test_force_advances_loudly(tmp_path, capsys):
     out = json.loads(capsys.readouterr().out)
     kinds = [w["kind"] for w in out["warnings"]]
     assert "gate_coverage" in kinds
-    forced = [e for e in load(ws)["history"] if e["event"] == "phase_forced"]
-    assert forced and forced[0]["missing"] == ["erc (P4)"]
+    ungated = [e for e in load(ws)["history"]
+               if e["event"] == "phase_ungated"]
+    assert ungated and ungated[0]["missing"] == ["erc (P4)"]
 
 
-def test_cli_set_phase_refusal_is_exit_2(tmp_path, capsys):
+def test_cli_set_phase_past_a_missing_gate_is_exit_0(tmp_path, capsys):
     ws = make_ws(tmp_path, phase="P4")
     assert state_mod.main(["set-phase", "--workspace", str(ws),
-                           "--phase", "P5"]) == 2
-    assert "no recorded gate result" in capsys.readouterr().out
-    assert load(ws)["phase"] == "P4"
+                           "--phase", "P5"]) == 0
+    assert "no recorded result for erc" in capsys.readouterr().out
+    assert load(ws)["phase"] == "P5"
 
 
 def test_advancing_past_a_recorded_fail_warns(tmp_path):
@@ -335,9 +342,9 @@ def test_sim_joins_the_owed_set_when_the_board_ships_testbenches(tmp_path):
                   ("P8", "verify")):
         st.record_gate(g, ok, ph)
     assert st.resume_summary()["next_gate"] == {"phase": "P8", "gate": "sim"}
-    with pytest.raises(CheckError) as exc:
-        st.set_phase("P9")
-    assert "sim (P8)" in str(exc.value)
+    warns = st.set_phase("P9")
+    assert any("sim (P8)" in w["msg"] for w in warns
+               if w["kind"] == "gate_coverage")
 
 
 def test_releaselib_required_gates_uses_the_same_definition(tmp_path):

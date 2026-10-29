@@ -20,6 +20,12 @@ and the P8 `verify` gate (check_mating).
   footprint to the table rather than waiving.
 - `mating_faces_inward` with a long `blocked_by` is one fault, not many:
   turn the connector and the zone empties.
+- The mate lies on the board itself (an FPC socket taking the tail of a
+  display mounted on this board): the mouth rightly faces inward. Declare it
+  in constraints.json `placement.mates` with the tail's real outline as the
+  corridor (reference/constraints_schema.md); the check then holds the
+  socket to that corridor (`mating_mate_misaligned`, `mating_zone_blocked`
+  against the corridor) instead of the edge. Do not waive it.
 
 ## Fix ladder
 1. Faces inward: rotate the connector 180 degrees (or 90 to the edge it

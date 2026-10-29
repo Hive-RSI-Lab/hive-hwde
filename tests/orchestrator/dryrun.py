@@ -1,6 +1,6 @@
 """dryrun.py - scripted P4->P9 orchestrator dry-run on golden board 1 (S13).
 
-Enacts the SKILL.md phase machine + fix-loop protocol DETERMINISTICALLY (no
+Enacts the docs/playbook.md phase machine + fix-loop protocol DETERMINISTICALLY (no
 LLM): workspace from the blinky2 golden, machine gates in pipeline order with
 state.json recording every transition, two mutations injected mid-pipeline,
 fixer work orders produced by fix_dispatch.py and executed by a scripted

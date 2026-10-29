@@ -57,3 +57,23 @@ def gate(name: str, ws: Path, board: str) -> bool:
         raise SystemExit(f"gate {name} errored ({r.returncode}): "
                          f"{(r.stdout + r.stderr).strip().splitlines()[-1:]}")
     return r.returncode == 0
+
+
+def rules_gen(power: list[dict], layers: int = 2) -> tuple[dict, str]:
+    """rules_gen on a bare project with these power nets: the .kicad_pro it
+    writes (as a dict) and the .kicad_dru text."""
+    import json
+    d = scratch()
+    (d / "c.json").write_text(json.dumps({"power": power}))
+    (d / "p.kicad_pro").write_text(json.dumps({
+        "board": {"design_settings": {"rules": {}}},
+        "net_settings": {"classes": [{"name": "Default"}]},
+        "meta": {"filename": "p.kicad_pro", "version": 3}}))
+    r = hwde("rules_gen", "--constraints", "c.json", "--layers", str(layers),
+             "--out-dru", "p.kicad_dru", "--pro", "p.kicad_pro",
+             "--out", "r.json", cwd=d)
+    if r.returncode != 0:
+        raise SystemExit(f"rules_gen errored ({r.returncode}): "
+                         f"{(r.stdout + r.stderr).strip()[-300:]}")
+    return (json.loads((d / "p.kicad_pro").read_text()),
+            (d / "p.kicad_dru").read_text())

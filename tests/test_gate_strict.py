@@ -357,7 +357,7 @@ def test_verify_all_strict_with_declared_na_passes(tmp_path):
                                  "--reports-dir", str(tmp_path / "rep")])
     assert summary["status"] == "pass"
     cov = summary["coverage"]
-    board_only = ["check_diffpair", "check_silk", "check_route_style",
+    board_only = ["check_diffpair", "check_silk", "check_courtyard", "check_route_style",
                   "check_mating", "check_mate_pins", "check_bom_sync",
                   "check_model_paths"]
     assert sorted(cov["required"]) == sorted(board_only)
@@ -373,6 +373,44 @@ def test_verify_all_na_missing_approver_refused(tmp_path):
     cpath.write_text(json.dumps({"verification": {"not_applicable": {
         "check_thermal": {"reason": "r"}}}}), encoding="utf-8")
     with pytest.raises(checklib.CheckError, match="approved"):
+        verify_all.run(["--pcb", str(BLINKY), "--constraints", str(cpath),
+                        "--reports-dir", str(tmp_path / "rep")])
+
+
+@pytest.mark.parametrize("approved", [
+    "PENDING", "pending owner review", "TBD", "TODO", "N/A", "none",
+    "not approved", "Not yet", "awaiting H4", "<who> <when>", "---", True])
+def test_placeholder_approval_refused(approved):
+    """Issue #27: any non-empty `approved` used to pass, even PENDING."""
+    assert checklib.approval_problem(approved)
+
+
+@pytest.mark.parametrize("approved", [
+    "H4", "owner", "a", "Test Owner 2026-08-14", "Ihsan S. 2026-08-08",
+    "Nora 2026-10-28"])
+def test_real_approval_accepted(approved):
+    assert checklib.approval_problem(approved) is None
+
+
+def test_gate_waiver_pending_refused(tmp_path):
+    p = tmp_path / "verify-waivers.json"
+    p.write_text(json.dumps({"waivers": [
+        {"kind": "creepage", "net": "V48_RTN", "reason": "r",
+         "approved": "PENDING"}]}), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="placeholder"):
+        gate.load_waivers(p)
+    p.write_text(json.dumps({"waivers": [
+        {"kind": "creepage", "net": "V48_RTN", "reason": "r",
+         "approved": "H4 2026-10-28"}]}), encoding="utf-8")
+    assert len(gate.load_waivers(p)) == 1
+
+
+def test_verify_all_na_pending_approver_refused(tmp_path):
+    cpath = tmp_path / "constraints.json"
+    cpath.write_text(json.dumps({"verification": {"not_applicable": {
+        "check_thermal": {"reason": "r", "approved": "TBD"}}}}),
+        encoding="utf-8")
+    with pytest.raises(checklib.CheckError, match="placeholder"):
         verify_all.run(["--pcb", str(BLINKY), "--constraints", str(cpath),
                         "--reports-dir", str(tmp_path / "rep")])
 

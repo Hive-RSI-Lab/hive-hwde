@@ -121,6 +121,17 @@ def test_placement_edge_enum_and_keepout_shape(tmp_path):
     assert kinds == ["bad_type", "missing_key"]  # edge enum + rect-or-poly
 
 
+def test_placement_mates_shape(tmp_path):
+    ok = {"ref": "J2", "mate": "onboard_flex",
+          "corridor": [[0, 0, 5, 5], [5, 0, 9, 9]], "mate_refs": ["DS1"],
+          "reason": "LCD tail"}
+    vs, _ = lint_doc(tmp_path, {"placement": {"mates": [ok]}})
+    assert not errors(vs) and not warnings(vs)
+    vs, _ = lint_doc(tmp_path, {"placement": {"mates": [
+        {**ok, "corridor": [0, 0, 5, 5]}]}}, "bad.json")
+    assert [e["kind"] for e in errors(vs)] == ["bad_type"]
+
+
 def test_voltage_pairs_shape(tmp_path):
     vs, _ = lint_doc(tmp_path, {"voltage_pairs": [
         {"a": "/POE_TAP_A1", "b": "/POE_TAP_A2", "voltage": 114}]})
