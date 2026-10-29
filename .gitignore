@@ -7,3 +7,5 @@ boards/*/state_snapshots/
 # re-pull with `hwde lib_pull --parts parts/parts.json --project kicad`.
 boards/*/lib/*.3dshapes/
 .pytest_cache/
+# check_env.py --out from the tests
+_scratch/

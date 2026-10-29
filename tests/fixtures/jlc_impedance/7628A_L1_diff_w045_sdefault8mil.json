@@ -1,0 +1,42 @@
+{
+  "url": "https://jlcpcb.com/api/jlcTools/impedance/calc",
+  "request": {
+    "accessId": "27773f8d1e0a49a9aae2a8aac245e80e",
+    "impedance_calc_mark": "DiffEdgeCoupledCoatedMicrostrip1B",
+    "paramMd5": "",
+    "impedance_calc_arg": {
+      "H1": 16.8661,
+      "Er1": 4.4,
+      "W1": 17.7165,
+      "W2": 17.7165,
+      "S1": 8.0,
+      "T1": 2.7559,
+      "C1": 1.2,
+      "C2": 0.6,
+      "C3": 1.2,
+      "CEr": 3.8,
+      "dCalculateMode": 3,
+      "isLinkComputingMode": false,
+      "W2LinkW1Incr": 0
+    },
+    "uuid": "aa9ece6d933e4dadb541e0313e190e46"
+  },
+  "response": {
+    "accessId": "27773f8d1e0a49a9aae2a8aac245e80e",
+    "impedance_calc_error_msg": "",
+    "impedance_calc_mark": "DiffEdgeCoupledCoatedMicrostrip1B",
+    "impedance_calc_result": {
+      "dCer": 0,
+      "dDelay": 5575.51638111,
+      "dErEff": 2.79390554623,
+      "dImpedance": 85.0428210622,
+      "dInductance": 0,
+      "dResultValid": 1
+    },
+    "impedance_calc_status": 0,
+    "impedance_calc_time": 62,
+    "paramMd5": "3f8a5c2b732cc1a9388458b7d5bb64be",
+    "uuid": "aa9ece6d933e4dadb541e0313e190e46"
+  },
+  "fetched_utc": "2026-09-27T05:52:23.808209Z"
+}

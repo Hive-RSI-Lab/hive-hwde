@@ -1,0 +1,114 @@
+{
+ "script": "bench",
+ "stage": "E2E",
+ "fixture": "e2e_relay_driver",
+ "board": "held-out-relay-driver",
+ "metrics": {
+  "workspace": null,
+  "artifacts": [],
+  "net_map": {},
+  "bom": {},
+  "checks": [
+   {
+    "id": "net:v5",
+    "category": "electrical",
+    "score": 0.0,
+    "note": "no netlist in the workspace"
+   },
+   {
+    "id": "net:gnd",
+    "category": "electrical",
+    "score": 0.0,
+    "note": "no netlist in the workspace"
+   },
+   {
+    "id": "net:ctrl",
+    "category": "electrical",
+    "score": 0.0,
+    "note": "no netlist in the workspace"
+   },
+   {
+    "id": "net:coil",
+    "category": "electrical",
+    "score": 0.0,
+    "note": "no netlist in the workspace"
+   },
+   {
+    "id": "part:flyback",
+    "category": "electrical",
+    "score": 0.0,
+    "note": "no netlist in the workspace"
+   },
+   {
+    "id": "layout:area",
+    "category": "layout",
+    "score": 0.0,
+    "bound": 900,
+    "note": "no board in the workspace"
+   },
+   {
+    "id": "layout:legality",
+    "category": "layout",
+    "score": 0.0,
+    "note": "no board in the workspace"
+   },
+   {
+    "id": "layout:crossings",
+    "category": "layout",
+    "score": 0.0,
+    "note": "no board in the workspace"
+   },
+   {
+    "id": "cost:bom",
+    "category": "cost",
+    "score": 0.0,
+    "bound": 1.2,
+    "note": "no parts/parts.json in the workspace"
+   }
+  ]
+ },
+ "metrics_live": {
+  "checks": [
+   {
+    "id": "erc:errors",
+    "category": "electrical",
+    "score": 0.0,
+    "note": "no schematic in the workspace"
+   },
+   {
+    "id": "layout:drc",
+    "category": "layout",
+    "score": 0.0,
+    "note": "no board in the workspace"
+   },
+   {
+    "id": "layout:completion",
+    "category": "layout",
+    "score": 0.0,
+    "note": "no board in the workspace"
+   }
+  ],
+  "ngspice": true,
+  "kicad_version": "10.0.6"
+ },
+ "penalties": {
+  "electrical_shortfall": 1.0,
+  "layout_shortfall": 1.0,
+  "cost_shortfall": 1.0
+ },
+ "composite": 0.0,
+ "composite_inputs": "full",
+ "known_answer": null,
+ "e2e": {
+  "categories": {
+   "electrical": 0.0,
+   "layout": 0.0,
+   "cost": 0.0
+  },
+  "eebench_equiv": 0.0
+ },
+ "_baseline": {
+  "created": "2026-09-27",
+  "kicad_version": "10.0.6"
+ }
+}

@@ -1,0 +1,728 @@
+(kicad_sch
+	(version 20250114)
+	(generator "eeschema")
+	(generator_version "9.0")
+	(uuid "ad0bb53e-870f-464f-92d3-f12aa9427588")
+	(paper "A4")
+	(title_block
+		(title "V19 rotation/mirror oracle")
+		(rev "1")
+		(company "ai-ee")
+	)
+	(lib_symbols
+		(symbol "Device:R"
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 0)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "R"
+				(at 2.032 0 90)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "R"
+				(at 0 0 90)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at -1.778 0 90)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Resistor"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "R res resistor"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "R_*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "R_0_1"
+				(rectangle
+					(start -1.016 -2.54)
+					(end 1.016 2.54)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "R_1_1"
+				(pin passive line
+					(at 0 3.81 270)
+					(length 1.27)
+					(name "~"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 0 -3.81 90)
+					(length 1.27)
+					(name "~"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 127 63.5 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced no)
+		(uuid "bcbb5533-c811-48e1-9a07-6a00bf919ec4")
+		(property "Reference" "R1"
+			(at 129.286 62.23 0.0000)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10k"
+			(at 129.286 64.77 0.0000)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "1"
+			(uuid "2cfe9000-caf3-4350-88a1-509ad877c17c")
+		)
+		(pin "2"
+			(uuid "25f05e72-578f-4c4b-b2ee-9fab4682a2c9")
+		)
+		(instances
+			(project "rotmirror"
+				(path "/ad0bb53e-870f-464f-92d3-f12aa9427588"
+					(reference "R1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 152.4 63.5 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced no)
+		(uuid "5ce52773-7cea-4166-bff9-4cce0429b78a")
+		(property "Reference" "R2"
+			(at 151.4106 61.214 0.0000)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10k"
+			(at 150.9534 65.786 0.0000)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "1"
+			(uuid "954c320a-07c2-4a06-b7c6-3cb5fbac0211")
+		)
+		(pin "2"
+			(uuid "60675489-df20-4010-90d5-33ce1b2371d5")
+		)
+		(instances
+			(project "rotmirror"
+				(path "/ad0bb53e-870f-464f-92d3-f12aa9427588"
+					(reference "R2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 177.8 63.5 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced no)
+		(uuid "9d197e6f-f864-435a-bc5a-a285b0b29fe6")
+		(property "Reference" "R3"
+			(at 180.086 62.23 0.0000)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10k"
+			(at 180.086 64.77 0.0000)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "1"
+			(uuid "4bff0448-edc4-4fa3-ae4d-cc35fb6f051a")
+		)
+		(pin "2"
+			(uuid "2b97d248-e1b4-40c8-a5b5-062f1a0a2376")
+		)
+		(instances
+			(project "rotmirror"
+				(path "/ad0bb53e-870f-464f-92d3-f12aa9427588"
+					(reference "R3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 203.2 63.5 270)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced no)
+		(uuid "63ef988a-45bb-43f3-bc18-52dfcde704cc")
+		(property "Reference" "R4"
+			(at 202.2106 61.214 0.0000)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10k"
+			(at 201.7534 65.786 0.0000)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "1"
+			(uuid "df330ae5-ed1f-43a2-abee-c1e568732426")
+		)
+		(pin "2"
+			(uuid "86d3b9ef-7e09-4b4f-bb80-f4766871f4e7")
+		)
+		(instances
+			(project "rotmirror"
+				(path "/ad0bb53e-870f-464f-92d3-f12aa9427588"
+					(reference "R4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(wire
+		(pts
+			(xy 127 59.69) (xy 127 57.15)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e76248f7-217c-4370-b288-cb9c5b0129a7")
+	)
+	(wire
+		(pts
+			(xy 127 67.31) (xy 127 69.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "92b7de24-4dc8-4960-9da0-696a87427d29")
+	)
+	(wire
+		(pts
+			(xy 148.59 63.5) (xy 146.05 63.5)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "826454d9-b803-4b37-a365-c440991952ba")
+	)
+	(wire
+		(pts
+			(xy 156.21 63.5) (xy 158.75 63.5)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "031eafc5-8c09-4b68-ab65-3a73c129fce8")
+	)
+	(wire
+		(pts
+			(xy 177.8 67.31) (xy 177.8 69.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b67943dc-cb3a-49ca-a238-f519e3e731db")
+	)
+	(wire
+		(pts
+			(xy 177.8 59.69) (xy 177.8 57.15)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f45474e9-aba9-46f1-b892-332267772f76")
+	)
+	(wire
+		(pts
+			(xy 207.01 63.5) (xy 209.55 63.5)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "608cdcf5-f9e9-4bad-8926-d7bc510f534e")
+	)
+	(wire
+		(pts
+			(xy 199.39 63.5) (xy 196.85 63.5)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7eb90bbc-b34b-4b88-aa0f-457cfd8e366a")
+	)
+	(label "N1"
+		(at 127 57.15 0.0000)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "b93efef2-1a0b-4018-9b76-0d68466ca8c2")
+	)
+	(label "N7"
+		(at 127 69.85 0.0000)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "f937a878-fe56-4de0-94b3-b882f99d8bfb")
+	)
+	(label "N2"
+		(at 146.05 63.5 0.0000)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "4eb98608-e85e-4b63-b963-9d91a617ac45")
+	)
+	(label "N1"
+		(at 158.75 63.5 0.0000)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "46d2ed00-7a80-49d2-aa07-57592a4561c8")
+	)
+	(label "N3"
+		(at 177.8 69.85 0.0000)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "6ddbfba6-afa4-4dbc-bfb4-fdea49f1086a")
+	)
+	(label "N2"
+		(at 177.8 57.15 0.0000)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "2379223a-2159-4bf4-8418-aaea8b03e1f0")
+	)
+	(label "N4"
+		(at 209.55 63.5 0.0000)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "b008dfbc-4309-4ab7-99d2-b2733f2de5c9")
+	)
+	(label "N3"
+		(at 196.85 63.5 0.0000)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "9428fc06-0542-4ed1-ae4e-54caffeb97f8")
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+	(embedded_fonts no)
+	(symbol
+		(lib_id "Device:R")
+		(at 127 88.9 0)
+		(mirror x)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced no)
+		(uuid "b4dddf80-2811-47e6-b27e-bebfb97273c8")
+		(property "Reference" "R5"
+			(at 129.286 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10k"
+			(at 129.286 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "1"
+			(uuid "04774697-e24d-4e06-919c-0c6672d23a0a")
+		)
+		(pin "2"
+			(uuid "11bb66de-b8ef-44ca-9611-50d14f940b1a")
+		)
+		(instances
+			(project "rotmirror"
+				(path "/ad0bb53e-870f-464f-92d3-f12aa9427588"
+					(reference "R5")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(wire
+		(pts
+			(xy 127 92.71) (xy 127 95.25)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8f60801c-400b-440f-8461-d32a4b989ae8")
+	)
+	(label "N5"
+		(at 127 95.25 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "79ff0d50-9fcd-4929-9cd9-b0e56cfdfa8e")
+	)
+	(wire
+		(pts
+			(xy 127 85.09) (xy 127 82.55)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a3eec3fd-9b5a-48ab-b926-cd66a8e02324")
+	)
+	(label "N4"
+		(at 127 82.55 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "2aded7d1-9992-41a0-b3de-f14c698e5a33")
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 152.4 88.9 0)
+		(mirror y)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced no)
+		(uuid "b2b51040-4f57-449e-8d7e-1d250e063609")
+		(property "Reference" "R6"
+			(at 154.686 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10k"
+			(at 154.686 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "1"
+			(uuid "3c0f9287-18b3-4bb7-93cd-fc2314ed056d")
+		)
+		(pin "2"
+			(uuid "7db806ab-020e-4f4a-b06a-6ea1fc1e5fbc")
+		)
+		(instances
+			(project "rotmirror"
+				(path "/ad0bb53e-870f-464f-92d3-f12aa9427588"
+					(reference "R6")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(wire
+		(pts
+			(xy 152.4 85.09) (xy 152.4 82.55)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d93229b5-c48e-4070-b470-981fb49d245c")
+	)
+	(label "N6"
+		(at 152.4 82.55 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "d0098c18-4cb3-4b33-8bfd-070e0ca03f95")
+	)
+	(wire
+		(pts
+			(xy 152.4 92.71) (xy 152.4 95.25)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "349a6461-2190-4ad5-9843-80ebfb68aec3")
+	)
+	(label "N5"
+		(at 152.4 95.25 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "8677a11c-c5a7-4f2d-a08d-459f3e1bd9a8")
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 177.8 88.9 90)
+		(mirror x)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced no)
+		(uuid "5424034f-4b18-4710-8705-e8c40afb77b9")
+		(property "Reference" "R7"
+			(at 180.086 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10k"
+			(at 180.086 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "1"
+			(uuid "a4409eba-0d43-4c5a-9d11-19d1b7f724b7")
+		)
+		(pin "2"
+			(uuid "68e617cd-3073-4ebc-b0b2-56cc693ed6f5")
+		)
+		(instances
+			(project "rotmirror"
+				(path "/ad0bb53e-870f-464f-92d3-f12aa9427588"
+					(reference "R7")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(wire
+		(pts
+			(xy 173.99 88.9) (xy 171.45 88.9)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a13e4ef6-e6d3-46c2-b3ee-537c1d82e2a5")
+	)
+	(label "N7"
+		(at 171.45 88.9 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "f09ddbe1-7718-41e4-b3da-97b721c80cc5")
+	)
+	(wire
+		(pts
+			(xy 181.61 88.9) (xy 184.15 88.9)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d75158ac-f973-46b3-9b4c-b939d5aff475")
+	)
+	(label "N6"
+		(at 184.15 88.9 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "5562f303-3314-4428-ba17-4fad5fe959a6")
+	)
+)

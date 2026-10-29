@@ -1,0 +1,82 @@
+{
+ "mpn": "AP64350SP-13",
+ "lcsc": "C2071691",
+ "package": "SO-8EP",
+ "description": "Diodes Incorporated AP64350: 3.8V-40V input, 3.5A continuous output, fully-integrated synchronous buck converter (75mOhm HS / 45mOhm LS power MOSFETs). Peak-current-mode control, EXTERNALLY compensated via COMP pin (Type-II network). Programmable switching frequency 100kHz-2.2MHz via RT resistor or external clock sync, with Frequency Spread Spectrum (+/-6% jitter, resistor-timing mode only) and a proprietary ringing-free gate driver for EMI reduction. 0.8V +/-1% reference. Automatic PWM<->PFM light-load operation (not user-selectable, no MODE pin exists). Internal fixed 2ms soft-start. Protections: UVLO (default disable below ~3.1V VIN, or EN-pin-programmable via external R3/R4 divider), output OVP (110% trip / 105% exit), cycle-by-cycle HS peak current limit with hiccup mode (512 cycles at limit -> shutdown, 8192 cycles off -> restart), thermal shutdown (160C trip / 135C recovery). SO-8EP package, exposed pad = GND/thermal path. Source: Diodes Incorporated DS41976 Rev. 5-2, December 2024, 25 pages, LCSC C2071691.",
+ "pinout": [
+  {
+   "pin": "1",
+   "name": "BST",
+   "type": "passive",
+   "notes": "High-Side Gate Drive Boost Input. 100nF ceramic capacitor recommended from BST to SW to power the high-side gate driver [Pin Descriptions, p.3]. Bootstrap Capacitor / LDO section (Sec 15, p.15): if the BST-SW voltage falls below 2.3V, a boot-UVLO circuit turns on the low-side MOSFET (Q2) for 300ns to refresh the cap, raising it back above 2.55V; this can occur during long no-switching periods (PFM at light load) or when VIN approaches VOUT (device enters LDO mode: Q1 held on for multiple clock cycles, ~100% effective duty, with Q2 forced to refresh periodically so the BST cap doesn't discharge and HS gate drive is maintained). Abs max VBST = VSW-0.3 to VSW+6.0V [Absolute Maximum Ratings, p.4]."
+  },
+  {
+   "pin": "2",
+   "name": "VIN",
+   "type": "power_in",
+   "notes": "Power input, 3.8V-40V recommended operating range [Recommended Operating Conditions, p.4]; supplies the IC and both integrated power MOSFETs. Bypass VIN to GND with a suitably large, low-ESR capacitor to eliminate switching noise [Pin Descriptions p.3; Sec 13 Input Capacitor, p.15: ceramic >10uF sufficient for most applications; RMS ripple-current rating must exceed half the max load current (>=1.75A here); a tantalum must be surge-protected]. Table 1 (fsw=500kHz recommended components, p.13) lists C1=10uF for every listed VOUT row including 5.0V. Default UVLO (no external EN divider): VIN rising threshold typ 3.5V / max 3.7V, hysteresis typ 400mV (implies ~3.1V falling) [Electrical Characteristics, p.5]; prose confirms the device is disabled if VIN falls below 3.1V [Sec 5 Adjusting UVLO, p.11]. Abs max VIN = -0.3 to +42.0V DC, -0.3 to +45.0V for a 400ms transient [Absolute Maximum Ratings, p.4]."
+  },
+  {
+   "pin": "3",
+   "name": "EN",
+   "type": "input",
+   "notes": "Enable input, digital, high-voltage tolerant. Drive high to enable (initiates the internal 2ms soft-start), drive low to disable, or leave floating for automatic startup via an internal 1.5uA pull-up sourced from the LDO-regulated VCC rail [Sec 3 Enable, p.10]. Thresholds [Electrical Characteristics, p.5]: VEN_H (logic-high, rising) typ 1.18V / max 1.25V (no min given); VEN_L (logic-low, falling) min 1.03V / typ 1.09V (no max given). IEN: typ 5.5uA at VEN=1.5V; min 1uA / typ 1.5uA / max 2uA at VEN=1V. Custom VIN-UVLO programming: external R3 (VIN-to-EN) / R4 (EN-to-GND) divider plus an internal 4uA hysteresis pull-up that engages once EN trips high [Sec 5, p.11, Fig.23]: R3 = (0.924*VON - VOFF) / 4.114uA (Eq.2); R4 = 1.1*R3 / (VOFF - 1.09V + 5.5uA*R3) (Eq.3); constraint: VON (rising VIN enable point) must be > 3.7V, VOFF (falling VIN disable point) must be > 3.3V. This board's UVLO target (6.2V rising / 5.3V falling) is ABOVE both stated minimums, so the mapping is usable - P4 must solve Eq.2/3 for R3/R4 (not yet done here). Small EN-to-GND capacitor delays startup: Cd[nF] = 1.27*td[ms] (Eq.1, Sec 3, p.10). Abs max VEN = -0.3 to +42.0V [Absolute Maximum Ratings, p.4] - matches VIN's own abs max, confirming EN may be tied directly to VIN for auto-start."
+  },
+  {
+   "pin": "4",
+   "name": "RT/CLK",
+   "type": "analog",
+   "notes": "Resistor Timing and External Clock, dual-function. DEFAULT mode: a resistor from RT/CLK to GND sets the internal oscillator frequency; pin voltage is typically 0.5V and the pin CANNOT be left floating [Sec 11 Programming Switching Frequency, p.13]. RT[kOhm] = 100000 / fsw[kHz] (Eq.7); for fsw=500kHz this gives RT=200kOhm exactly, CONFIRMING this design's RT=200k -> 500kHz mapping. Frequency range via RT: 100kHz-2.2MHz [Electrical Characteristics p.5, fRANGE_RT]. Oscillator frequency at RT=200kOhm(+/-1%): min 450 / typ 500 / max 550 kHz [Electrical Characteristics, p.5, fsw row]. ALTERNATE mode: an external clock can instead drive this pin directly for PLL synchronization (100kHz-2.2MHz range; SW's rising edge syncs to the clock's falling edge with ~66ns typical delay; clock must have logic-high >3.5V, logic-low <0.4V, min pulse width 80ns). Device auto-transitions Resistor-Timing -> External-Clock-Sync within ~85us of a clock appearing, and reverts when the clock is removed; if both modes may be used, keep the external clock within +/-25% of the resistor-set frequency to avoid large internal frequency steps [Sec 11, p.13-14]. Frequency Spread Spectrum (FSS, +/-6% jitter) is enabled ONLY in Resistor-Timing mode, disabled in External-Clock-Sync mode. Abs max VRT/CLK = -0.3 to +6.0V [Absolute Maximum Ratings, p.4]."
+  },
+  {
+   "pin": "5",
+   "name": "FB",
+   "type": "analog",
+   "notes": "Feedback sense input for the output voltage; connect to the resistive divider (R1 top / R2 bottom) [Pin Descriptions, p.3]. Internal reference: 0.8V typ +/-1% (Feedback Voltage VFB, CCM: min 792mV / typ 800mV / max 808mV) [Features p.1; Electrical Characteristics p.5]. R1 = R2 * (VOUT/0.8V - 1) (Eq.6, Sec 10 Setting the Output Voltage, p.13). Vendor Table 1 (fsw=500kHz recommended components, p.13), VOUT=5.0V row: R1=115.8kOhm, R2=22.1kOhm - this design's R1=115k/R2=22.1k is a standard-value rounding of the table's 115.8k; P4 should re-check the resulting VOUT against the +/-2% requirement using the ACTUAL VFB min/max (792/808mV), not just the 800mV typical. FB INPUT BIAS CURRENT IS NOT STATED ANYWHERE IN THIS DATASHEET (checked Electrical Characteristics table p.5 and the full extracted text - zero hits for 'bias current', 'IFB', or 'leakage'); the only guidance given is qualitative: 'There is less current consumption in the feedback network for high resistor values, which improves efficiency at light loads. However, values too high cause the device to be more susceptible to noise affecting its output voltage accuracy' [Sec 10, p.13]. Output OVP trips when FB/output exceeds 110% of its regulation target and exits once it decreases back within 105% [Sec 6 Output Overvoltage Protection, p.11]. Optional feed-forward capacitor C4 (10-220pF) may be placed in parallel with R1 to improve transient response [Sec 10, p.13; also the AC zero in Sec 16 compensation, Eq.20]. Abs max VFB = -0.3 to +6.0V [Absolute Maximum Ratings, p.4]. Layout: place feedback components as close to FB as possible [Layout rule 5, p.22]."
+  },
+  {
+   "pin": "6",
+   "name": "COMP",
+   "type": "analog",
+   "notes": "Compensation pin - connect an external Type-II RC network (R5 in series with C5, optionally C6 in parallel across the R5-C5 branch) from COMP to GND to close the voltage loop [Pin Descriptions p.3; Sec 16 External Loop Compensation Design, p.16-18]. COMP is active for external compensation only when NOT tied to GND. ARCHITECTURE: constant-frequency peak-current-mode control - the inductor is not a state variable (its peak current is held constant), collapsing the system to single order, so a Type-II compensator suffices (a Type-III compensator would be needed for voltage-mode control instead); peak-current-mode also gives inherent input-voltage feedforward for good line regulation [p.16]. CONSTANTS: error-amplifier transconductance gm = 0.15mS [Eq.17, p.18]. Current-sense gain RT(sense) = 0.089V/A [Functional Block Diagram, p.3; reused in Eq.17, p.18 - this is NOT the same symbol as the RT/CLK timing-resistor pin, it is the datasheet's own notation collision]. VFB = 0.8V. TRANSFER FUNCTION: Av(S)*K(S) = [gm*R5 / (S*(C5+C6)*(R1+R2))] * (1+s/wz1)(1+s/wz2) / [(1+s/wp1)(1+s/wp2)] (Eq.12), where wz1=1/(R5*C5) (Eq.13), wz2=1/(R1*C4) (Eq.14, only if optional C4 used), wp1=(C5+C6)/(R5*C5*C6) (Eq.15), wp2=(R1+R2)/(R1*R2*C4) (Eq.16, only if C4 used). DESIGN TARGETS [p.17]: high DC gain; gain margin < -10dB; phase margin > 45deg; loop bandwidth crossover frequency fc < 10% of fsw. SIZING PROCEDURE [p.18]: R5 = 2*pi*fc*VOUT*COUT*RT(sense) / (gm*VFB) = 4.67e3 [Ohm/A] * fc * VOUT * COUT (Eq.17); C5 = VOUT*COUT / (IOUT*R5) (Eq.18); C6 (optional - increases gain margin but decreases phase margin, may be omitted in most cases) = max(Rc*COUT/R5, 1/(pi*fsw*R5)) (Eq.19), where Rc is the output-capacitor-bank ESR; C4 (optional feed-forward zero across R1, only if used, place at ~2-5x fc) range = [1/(10*pi*fc*R1), 1/(4*pi*fc*R1)] (Eq.20). VENDOR'S WORKED EXAMPLE (p.19-21): VIN=12V, VOUT=5V, IOUT=3.5A, fsw=500kHz, fc=20kHz, R1=115k, R2=22.1k, L=5.5uH, C2=2x22uF ceramic treated as 'effectively COUT ~= 30uF' (i.e. ~68% of the 44uF nameplate sum, after ceramic DC-bias/temperature derating - this derating RATIO is worth reusing when re-deriving for a different cap count), Rc~=2mOhm -> R5=14.01k(choose 14k), C5=3.1nF(choose 3.3nF), C6=45.5pF(choose 47pF, optional), C4 in [13.8,34.6]pF(choose 33pF, optional); resulting closed loop (2x22uF only): BW~=16.6kHz, phase margin~=81.6deg, gain margin~=-26.8dB [Figs 29-31, p.21]. THIS WORKED EXAMPLE ASSUMES A 2x22uF OUTPUT BANK ONLY. This board's design uses 5x22uF - P4 MUST re-run Eq.17-20 with the effective COUT for 5x22uF (apply the same style of ceramic-derating correction the vendor used - do not treat 5*22uF=110uF nameplate as the effective value verbatim) rather than reusing R5=14k/C5=3.3nF/C6=47pF/C4=33pF from this example. Abs max VCOMP = -0.3 to +6.0V [Absolute Maximum Ratings, p.4]."
+  },
+  {
+   "pin": "7",
+   "name": "GND",
+   "type": "ground",
+   "notes": "Power ground [Pin Descriptions, p.3]. Layout: add as many vias as possible around the GND pin and under the GND copper plane, connecting to every GND layer [Layout rule 7, p.22]; on 4+ layer boards, dedicate at least the 2nd and 3rd layers to GND to maximize thermal performance [Layout rule 6, p.22]."
+  },
+  {
+   "pin": "8",
+   "name": "SW",
+   "type": "power_out",
+   "notes": "Switching node output; connect the output LC filter (inductor, then output capacitor bank) from SW to the load [Pin Descriptions, p.3]. A proprietary multi-level gate driver gives a ringing-free SW node for EMI reduction without sacrificing rise/fall slew rate or converter efficiency [Sec 4 EMI Reduction, p.11]. Layout: place the inductor as close to SW as possible [Layout rule 3, p.22]. Abs max VSW = -0.3 to VIN+0.3V DC; -2.5 to VIN+2.0V for a 20ns transient [Absolute Maximum Ratings, p.4]."
+  },
+  {
+   "pin": "9",
+   "name": "EXPOSED PAD",
+   "type": "ground",
+   "notes": "Heat dissipation path of the die. MUST be electrically connected to GND and to the ground plane of the PCB for proper operation and optimized thermal performance [Pin Descriptions, p.3 - listed as its own row, 'EXPOSED PAD | 9']. Recommended land size, from the formal 'Suggested Pad Layout' engineering drawing (SO-8EP, p.24 of 25): X1 x Y1 = 3.502mm x 2.613mm (these two dimension labels annotate the center rectangle in that drawing directly - see land_pattern.notes). Thermal-via count/drill/pitch is NOT numerically specified anywhere in this datasheet's text - see OPEN and land_pattern.notes."
+  }
+ ],
+ "land_pattern": {
+  "package": "SO-8EP",
+  "pad_count": 9,
+  "pitch_mm": 1.27,
+  "pad_size_mm": [
+   0.802,
+   1.505
+  ],
+  "pin1": "1",
+  "notes": "Suggested Pad Layout (SO-8EP), datasheet p.24: X1 = 3.502, Y1 = 2.613 are the exposed-pad land (U9 fixture: copied into exposed_pad.size_mm, which the P3 extraction did not have a field for)."
+ },
+ "exposed_pad": {
+  "present": true,
+  "connect_to": "GND",
+  "size_mm": [
+   3.502,
+   2.613
+  ]
+ },
+ "source_pdf": "parts/C2071691.pdf"
+}

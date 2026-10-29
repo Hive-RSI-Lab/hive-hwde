@@ -1,0 +1,40 @@
+{
+ "placement": {
+  "edges": [
+   {
+    "ref": "J1",
+    "edge": "top",
+    "pos": 0.375,
+    "rot": 0
+   },
+   {
+    "ref": "R1",
+    "edge": "bottom",
+    "pos": 0.375,
+    "rot": 180
+   }
+  ],
+  "groups": [
+   {
+    "name": "port",
+    "anchor": "J1",
+    "members": [
+     "C1"
+    ]
+   }
+  ],
+  "separation": [
+   {
+    "a": [
+     "C1"
+    ],
+    "b": [
+     "R1"
+    ],
+    "min_mm": 10
+   }
+  ],
+  "_note_edges": "J1 rot 0 is REQUIRED, not cosmetic: this footprint draws its barrel and courtyard out to -12 mm in Y, so rot 0 on the top edge is what puts the 8.6 mm barrel off-board where a cable can mate. pos 0.375 = x 9.0 mm on the 24 mm width; R1 shares it so the tab, the trace and the SMA centre pin are collinear. R1 rot 180 points its lap pad at the bottom edge - flange, element and both flange screws are entirely OUTSIDE the outline (the resistor bolts to the user's heatsink, not to the PCB). The J1-pin-to-R1-pad distance is 4.7 mm and its FLOOR is 4.42 mm, set by the 0.80 mm clearance from the RF lap pad to J1's own ground pads - shrinking the board cannot shorten the launch, and rotating J1 45 deg makes it worse (5.5 mm).",
+  "_note_separation": "C1 >= 10 mm from R1 for two independent reasons: (a) I2/A6 require the tuning tool to reach the trimmer with the board bolted down and the cable mated, so it must clear the flange body; (b) C1 is rated -40 to +70 C and R1's flange runs at 120 C, 0.5 mm from the board edge - see blocks.md s8 OPEN-1, which is an open escalation, not a settled item."
+ }
+}

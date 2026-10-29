@@ -329,6 +329,12 @@ class Sheet:
                 ang = a[2] if len(a) >= 3 else 0.0
                 # an unjustified label hangs off its anchor along its own angle
                 j = just or ("left" if ang in (0.0, 90.0) else "right")
+                if kind != "text":
+                    # A label's angle is its spin, not a turn of the text:
+                    # it reads level at 0/180 and upright at 90/270, and the
+                    # justification says which side of the anchor it hangs
+                    # (right at 180 runs leftward, right at 270 downward).
+                    ang = 90.0 if ang % 180 else 0.0
                 items.append((kind, text_box(txt, (a[0], a[1]), size, thick, j, ang),
                               f"{kind} {txt}"))
         for sh in _kids(self.root, "sheet"):
@@ -592,6 +598,18 @@ def audit_sheet(sheet: Sheet, clearance: float = CLEARANCE) -> list[dict]:
                            text_box(p["value"], p["at"], p["size"], p["thick"],
                                     p["justify"], p["angle"])))
     out = []
+    # A net label must read clear of every part's body and pin numbers too:
+    # one left-justified on a leftward stub prints over its own pin's number.
+    # Power symbols are exempt: one hangs on the same stub end by design.
+    parts = [(sym["ref"], sheet.body_obstacle(sym)) for sym in sheet.symbols
+             if not sheet.libs.get(sym["lib_id"], {}).get("power")]
+    for kind, g, name in sheet.statics:
+        if kind not in ("label", "global_label", "hierarchical_label"):
+            continue
+        probe = g.buffer(-0.05)    # a label may touch its own wire's end
+        for ref, ob in parts:
+            if ob is not None and probe.intersects(ob):
+                out.append({"field": name, "collides_with": ref})
     for i, (name, tb) in enumerate(fields):
         probe = tb.buffer(clearance)
         for _k, g, other in items:
