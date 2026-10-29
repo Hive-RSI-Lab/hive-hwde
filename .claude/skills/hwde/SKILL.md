@@ -130,6 +130,24 @@ Machine gates (defined in `reference/gates.yaml`, run via
 | dfm | P9 | .kicad_pcb | exported-gerber DFM, error-severity = 0 |
 | verify_release / dfm_release | P10 | .kicad_pcb | strict: every applicable check must RUN; durable waivers only |
 
+Tools that are not gates, run from P4 on (every exported netlist) and
+weighed like any other report:
+- `scripts/sim_board.py --workspace <ws>`: ngspice on the board's own
+  netlist, no testbench to write. Rails are sources, ICs open, every R, C,
+  L, diode, LED, zener and recognised BJT/MOSFET in place, under four drive
+  scenarios (default, every IC I/O low, high, running) plus a rail-ramp
+  transient. Reports resistor overpower, cap overvoltage/DC bias, the Vout
+  each FB divider sets against the rail it feeds, LED and GPIO currents,
+  pins above their IC's supply, MOSFET Vgs, enable/reset RC timing, I2C
+  pull-up limits, RC corners, crystal loads - and `known_unknowns`, every
+  fact it could not decide (a Vref not verified, a Vgs rating not known).
+  Each known unknown gets a datasheet answer or a stated margin in the
+  review; pin what you learn with `--vref`/`--rail` or in
+  `reference/regulator_vref.yaml`.
+- `scripts/eng_calc.py <divider|fb|rc|led|i2c|crystal|ldo|holdup|rpower>`:
+  the same formulas (`lib/engcalc.py`) for a margin a review writes down,
+  so the number cites a command anyone can re-run.
+
 Sidecars (`constraints.json`, `decoupling.json`, `parts.json`, schematic)
 resolve from the board's own directory - keep them beside the board from P5
 onward.
@@ -325,6 +343,9 @@ substitution in the spawn ledger. Never silently drop to a weaker tier.
   mechanics are still unverified (fail safe, before money).
 - Sim legs: SPICE covers analog fragments only (digital pins = datasheet
   stimulus models; buck switching NOT simmed - no vendor models by
-  policy); check_irdrop injection is worst-case unless source_ref/sinks
+  policy); sim_board's ICs are open circuits and its I/O drive is an ideal
+  source behind 25 ohm, its discretes generic models (LED Vf from
+  parts.json or a colour table, BJT BF=100, MOSFET level 1 at the
+  part's threshold); check_irdrop injection is worst-case unless source_ref/sinks
   declared; check_pdn_z uses bounding-rect plane geometry, no VRM/package
   model (band edges are validity limits, not layout properties).

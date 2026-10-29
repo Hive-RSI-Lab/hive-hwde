@@ -40,6 +40,13 @@ an agent runs it inside the Hive.
 - `eval "$(hwde env)"` puts the same pins in your shell. Its `HWDE_PY` and
   `HWDE_SKILL` are what a board's own generator script (`kicad/gen/*.py`)
   runs with: `PYTHONPATH=$HWDE_SKILL/scripts:$HWDE_SKILL/scripts/lib $HWDE_PY kicad/gen/root.py`.
+- Every board with a netlist gets `hwde sim_board --workspace boards/<name>
+  --out boards/<name>/reports/sim_board.json`: ngspice over the board's own
+  passives and discretes (KiCad 10's bundled libngspice, found by this
+  wrapper), with the hand calcs a reviewer would do and a `known_unknowns`
+  list. A review answers each known unknown from a datasheet or states the
+  margin it rests on; `hwde eng_calc <calc> ...` gives the numbers a written
+  margin cites.
 - Start from `hwde task_router --task "<the ask>" --workspace boards/<name>`
   and follow its recipe (`reference/recipes/<verb>.md`). The whole pipeline
   is `full-run`.
