@@ -2,10 +2,11 @@
 # slot. Authored + approved at U14 (owner, 2026-08-15). Like 100base-tx, the
 # library holds no interface records yet, so most rows are honest gaps that
 # feed U15's research verb. One row is NOT a gap: buck-upstream-inrush-limit
-# already keys on interface `usb`, so the inrush row reports provisional
-# (its source_kind envelope dim is undeclared on today's boards) rather than
-# gap - the retrieval mechanism reaching across a topology record into an
-# interface slot, working as designed.
+# already keys on interface `usb` (and `usb-fs` since issue #44, so a slot
+# spelled either way finds it), so the inrush and selection rows report
+# provisional (its source_kind envelope dim is undeclared on today's boards)
+# rather than gap - the retrieval mechanism reaching across a topology record
+# into an interface slot, working as designed.
 #
 # applies.interfaces lists the canonical name plus the diff_pairs `base`
 # token boards declare (usb-buck: USB).
