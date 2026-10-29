@@ -126,6 +126,35 @@ Record each run's wall time per stage (the `phase` events in
 `state.json` history) and the gate attempts and fix loops per gate. That way
 a later board shows whether the module got faster or cleaner.
 
+## Straps, reset states and the antenna
+
+Two verify checks do what the first-spin review of hifi-receiver-2's boards
+did by hand (its `docs/review-2/digital.md`, DIGITAL-1/2 and 18/19), on
+every board:
+
+- `check_straps` resolves each strapping pin of an MCU (ESP32, -S3, -C3)
+  from the board's netlist at power-on and on an MCU-only reset: external
+  pulls, the internal pulls of attached parts, series resistors, an
+  oscillator's output while its enable reads high or floating, and an IO
+  expander whose outputs hold through the MCU's reset. It fails a strap that
+  can read the wrong level, a mid-band level or a clock, and an expander pin
+  whose pull fights an external one. What each part does at reset is in
+  `reference/reset_states.yaml`; a pin it doesn't know is a warning naming
+  the pin. Add the part (with its datasheet) rather than ignoring it.
+- `check_antenna` finds a module's PCB antenna end from its footprint (the
+  body beyond the pad field), and fails copper of any kind under it on any
+  layer. It warns when the end is more than 1 mm inside the board edge, or
+  copper starts less than 15 mm beside it. The modules are in
+  `reference/rf_modules.yaml`; a board can name its own in constraints.json
+  (`"antennas": {"U7": "pcb"}`).
+
+On hifi-receiver-2's main at 66891e8, `check_straps` fails core's GPIO0
+(the 50 MHz oscillator's OE at 1.65 V from the TCA9555, and held through an
+ESP32 reset) and six of its expander pins, and `check_antenna` fails core's
+U7 (GND or +3V3 fill under the antenna on all four layers). lite-main
+passes both, with warnings: 2.2 mm cleared beside the antenna, and ES8388
+MCLK on GPIO0 with no known reset state.
+
 ## Finishing a dense board's routing
 
 `route_auto` ends with `route_finish`, so a dense board needs no copper
