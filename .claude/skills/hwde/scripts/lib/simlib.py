@@ -529,3 +529,40 @@ def run_circuit(circuit: str) -> dict:
     return {"status": "ok", "ngspice_version": ng.ngspice_version,
             "measures": measures, "failed_measures": failed,
             "vectors": vectors, "log_tail": tail(stdout)}
+
+
+def run_vectors(circuits: list[str]) -> dict:
+    """Run prepared circuits one after another in the in-process engine and
+    return every vector of each one's last plot as plain lists:
+    {"status": "ok", ngspice_version, "plots": [{vector: [values]}]} or
+    {"status": "error", "error": ...}. Like run_circuit it never raises for
+    engine-side problems and wants setup_engine_env() first; sim_board.py
+    runs it in a killable worker. An op plot's vectors hold one value each;
+    a voltage source's branch current is "<name>#branch" (negative while
+    the source delivers current)."""
+    global _NG
+    try:
+        from InSpice.Spice.NgSpice.Shared import NgSpiceShared
+        if os.name != "nt" and _DLL is not None:
+            NgSpiceShared.find_library = classmethod(lambda cls, n: str(_DLL))
+        ng = NgSpiceShared.new_instance()
+        _NG = ng
+    except Exception as exc:  # DLL missing/unloadable
+        return {"status": "error",
+                "error": f"engine load failed: {type(exc).__name__}: {exc}"}
+    plots = []
+    for i, circuit in enumerate(circuits):
+        try:
+            ng.load_circuit(circuit)
+            ng.run()
+            vecs = ng.plot(None, ng.last_plot)
+            plots.append({k.lower(): [float(x) for x in
+                                      v.to_waveform().tolist()]
+                          for k, v in vecs.items()})
+        except Exception as exc:
+            tail = (ng.stderr or ng.stdout or "")[-800:]
+            return {"status": "error",
+                    "error": f"circuit {i}: {type(exc).__name__}: "
+                             f"{tail or exc}"}
+    return {"status": "ok", "ngspice_version": ng.ngspice_version,
+            "plots": plots}

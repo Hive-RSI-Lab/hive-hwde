@@ -40,6 +40,13 @@ an agent runs it inside the Hive.
 - `eval "$(hwde env)"` puts the same pins in your shell. Its `HWDE_PY` and
   `HWDE_SKILL` are what a board's own generator script (`kicad/gen/*.py`)
   runs with: `PYTHONPATH=$HWDE_SKILL/scripts:$HWDE_SKILL/scripts/lib $HWDE_PY kicad/gen/root.py`.
+- Every board with a netlist gets `hwde sim_board --workspace boards/<name>
+  --out boards/<name>/reports/sim_board.json`: ngspice over the board's own
+  passives and discretes (KiCad 10's bundled libngspice, found by this
+  wrapper), with the hand calcs a reviewer would do and a `known_unknowns`
+  list. A review answers each known unknown from a datasheet or states the
+  margin it rests on; `hwde eng_calc <calc> ...` gives the numbers a written
+  margin cites.
 - Start from `hwde task_router --task "<the ask>" --workspace boards/<name>`
   and follow its recipe (`reference/recipes/<verb>.md`). The whole pipeline
   is `full-run`.
@@ -66,6 +73,20 @@ puts it to the person. Don't use a warden request for it, and don't wait on
 it: carry on with your recommendation, say so in the packet, and rework if the
 answer is no. Record answers with `hwde state human` (a rejected H4 blocks
 release until reworked).
+
+## Know what the board doesn't know
+
+Every board keeps `ledger.json`: each fact its design relies on (per BOM code:
+JLC stock, the part JLC will really place, whether JLC still sells it; per
+part: pin ratings, pinout, footprint), verified with its source and date,
+failed, or unknown. The checks fill it in as they run, and one that can't
+tell writes unknown. `bin/hwde ledger report --workspace <ws>` lists the gaps.
+`bin/hwde ledger set ... --source "..."` records a fact you checked yourself.
+A board isn't ready to order (attest refuses, order-ready drops) while any
+fact is failed or unknown. Stock is good for 72 hours, so run
+`bin/hwde stock_check --workspace <ws>` right before the order packet; the
+person's flow is "I order it, it arrives, I plug it in", with no surprise at
+JLC's BOM review.
 
 ## Every board gets its own docs
 
