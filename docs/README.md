@@ -163,8 +163,12 @@ nothing in the Hive should ask for them.
   `--tex-only`, and the skill says that must never gate a run.
 - DigiKey/Mouser price lookups need API keys and stay off.
 - The knowledge records cite manufacturer PDFs that the module doesn't carry
-  (see NOTICE). `bin/hwde` points `HWDE_KNOWLEDGE_SOURCES` at the hwde
-  project's clone (`$HIVE_PROJECTS/hwde`) when there is one.
+  (see NOTICE). `docs/knowledge-sources.txt` pins them at upstream's commit;
+  `bin/hwde` fetches them into `$HOME/.cache/hwde/knowledge-sources` the first
+  time `knowledge`, `research`, `check-all` or `hwde sources` runs (37 MB,
+  each checked against its git blob sha) and points `HWDE_KNOWLEDGE_SOURCES`
+  there. A record `research promote` adds with a new PDF puts that PDF in the
+  same cache, so it isn't in the module or upstream's list.
 
 ## The first board
 

@@ -9,7 +9,9 @@ these ways:
   application notes) is left out. NOTICE says they're redistributed under
   their owners' terms, not MIT.
 - `scripts/lib/knowledgelib.py`: `SOURCES_DIR` reads `HWDE_KNOWLEDGE_SOURCES`
-  when it's set, so the records can still find those PDFs elsewhere.
+  when it's set, so the records can still find those PDFs elsewhere:
+  `docs/knowledge-sources.txt` lists them (git blob sha, size, name) and
+  `bin/sources.py` fetches them from upstream into HOME.
 - Fixes the Hive made while building boards, each worth sending upstream:
   `scripts/check_courtyard.py` (+ `checks.d/check_courtyard.yaml`), a verify
   check that fails a courtyard that misses its own pads; `scripts/lib/fpfix.py`
@@ -65,6 +67,8 @@ Everything specific to the Hive is in `bin/` and `docs/`:
   and `bin/hwde` points `KICAD_SYMBOL_DIR` at them.
 
 To update, copy upstream's skill folder over this one, drop the source PDFs
-again, re-apply the `SOURCES_DIR` line, and bump the commit above. Copy
+again, re-apply the `SOURCES_DIR` line, and bump the commit above and in
+`docs/knowledge-sources.txt` (its lines are the GitHub contents API's `sha`,
+`size` and `name` for the sources folder at that commit). Copy
 upstream's `tests/` over this one the same way, leaving out the files above
 and keeping `KNOWN_FAILING` and `test_workarounds.py`.
