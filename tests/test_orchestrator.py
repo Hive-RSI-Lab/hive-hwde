@@ -149,8 +149,9 @@ def test_state_budget(tmp_path):
     assert st.budget("fix_loops.verify") == 3
     assert st.budget("fix_loops.verify", consume=True) == 2
     st.data["budgets"]["fix_loops"]["verify"] = 0
-    with pytest.raises(CheckError):
-        st.budget("fix_loops.verify", consume=True)
+    # a counter, not a wall: past zero it counts below and says so
+    assert st.budget("fix_loops.verify", consume=True) == -1
+    assert st.data["history"][-1]["event"] == "budget_over"
     with pytest.raises(CheckError):
         st.budget("nope.nope")
 
@@ -498,7 +499,7 @@ def test_dryrun_p4_p8_with_kill_and_resume(tmp_path):
         # golden ships no .kicad_dru) and still binds - it matches only while
         # the file stays absent
         assert inputs and any(v for v in inputs.values()), name
-    assert not events(st, "phase_forced")
+    assert not events(st, "phase_ungated")
     summary = state_mod.State.load(ws / "state.json").resume_summary()
     assert summary["gates_passed"] == ["erc", "place", "drc_routed", "verify"]
     # place ran before the injected mutations + their fixes, so its recorded

@@ -337,7 +337,26 @@ def test_boards_sources_resolve_in_the_boards_repo(tmp_path, monkeypatch):
     (tmp_path / "empty").mkdir()
     monkeypatch.setenv("HWDE_BOARDS_ROOT", str(tmp_path / "empty"))
     assert knowledgelib._source_exists("boards/ws/parts/gone.pdf")
+    # a root with no register (a project's own boards/) answers only for
+    # the workspaces it holds; the boards repo (it has a register) for all
+    monkeypatch.setenv("HWDE_BOARDS_ROOT", str(root))
+    assert knowledgelib._source_exists("boards/other/parts/d.pdf")
+    (root / "register.yaml").write_text("{}\n")
+    assert not knowledgelib._source_exists("boards/other/parts/d.pdf")
+    assert not knowledgelib._source_exists("boards/ws/parts/gone.pdf")
 
+
+
+def test_library_sources_resolve_in_the_sources_dir(tmp_path, monkeypatch):
+    """A skill-relative `reference/knowledge/sources/<f>` resolves in
+    SOURCES_DIR too (HWDE_KNOWLEDGE_SOURCES: a copy of the skill without the
+    PDFs), as the file or its not-redistributed sidecar."""
+    (tmp_path / "a.pdf").write_bytes(b"%PDF")
+    (tmp_path / "b.pdf.not-redistributed.md").write_text("url\n")
+    monkeypatch.setattr(knowledgelib, "SOURCES_DIR", tmp_path)
+    assert knowledgelib._source_exists("reference/knowledge/sources/a.pdf")
+    assert knowledgelib._source_exists("reference/knowledge/sources/b.pdf")
+    assert not knowledgelib._source_exists("reference/knowledge/sources/c.pdf")
 
 # ---------------------------------------------------------------------------
 # STDC14 is the default STM32 debug header; TC2030 / 0.1 in are brief opt-outs

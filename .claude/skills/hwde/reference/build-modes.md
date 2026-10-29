@@ -134,9 +134,12 @@ placement, so P5 must not be given one:
    edge outward).
 4. Route (P7).
 
-Mechanically: `board_init` REFUSES a fixed `--outline WxH` when the workspace's
-recorded mode makes geometry an output. The `resize-board` recipe carries the
-flow; `--allow-fixed-outline` is the explicit, reported consent to override it.
+Mechanically: `board_init` builds a fixed `--outline WxH` when the workspace's
+recorded mode makes geometry an output, and its report says the size did not
+come from the placement (`build_mode.fixed_outline_override`). That is a
+judgment, not a wall: an enclosure, a mating board or a panel can fix the size
+for real - record why (`state.py decision`). The `resize-board` recipe carries
+the usual flow; `--allow-fixed-outline` words the note as deliberate.
 
 ## Relaxation is never silent
 
