@@ -179,6 +179,90 @@ def test_place_gate_and_verify_check_carry_it(tmp_path):
     assert all(v["source"] == "check_mating" for v in rep["violations"])
 
 
+# ------------------------------------------ a mate that lies on the board
+
+def fpc(ref, x, y, angle=0.0):
+    return _fp(ref, "FPC-SMD_TEST", x, y, angle, USBC_PADS, USBC_CY)
+
+
+def _mates(*entries):
+    return {"mates": [dict(e) for e in entries]}
+
+
+# J1 at (8, 10) turned 90: mouth +x, courtyard front at x = 12, 11 mm of
+# board ahead of it. The display's tail lies from x = 11 to 25.
+TAIL = {"ref": "J1", "mate": "onboard_flex", "corridor": [[11, 6, 25, 14]]}
+
+
+def test_onboard_flex_mate_replaces_the_edge_rule(tmp_path):
+    pcb = _board(tmp_path, fpc("J1", 8, 10, 90) + small("R2", 20, 17))
+    m = placelib.PlaceModel(pcb)
+    vs, _ = matinglib.violations(m, pcb)
+    assert {v["kind"] for v in vs} == {"mating_faces_inward"}
+    vs, facts = matinglib.violations(m, pcb, _mates(TAIL))
+    assert vs == []
+    assert facts[0]["mate"] == "onboard_flex" and facts[0]["mouth"] == "+x"
+
+
+def test_onboard_flex_corridor_blocked_except_by_the_mate(tmp_path):
+    # R1 under the tail blocks; DS1 is the display itself; R2 beside the
+    # tail and R3 under it on the back side do not
+    pcb = _board(tmp_path, fpc("J1", 8, 10, 90) + small("R1", 20, 10)
+                 + small("DS1", 24, 12) + small("R2", 20, 17)
+                 + small("R3", 16, 10, layer="B.Cu"))
+    vs, facts = _run_with(pcb, _mates({**TAIL, "mate_refs": ["DS1"]}))
+    assert [(v["kind"], v["blocked_by"]) for v in vs] == [
+        ("mating_zone_blocked", ["R1"])]
+    assert facts[0]["blocked_by"] == ["R1"]
+
+
+def test_onboard_flex_corridor_off_the_mouth_is_misaligned(tmp_path):
+    # the corridor runs above the socket, never crossing its mouth face
+    pcb = _board(tmp_path, fpc("J1", 8, 10, 90))
+    vs, _ = _run_with(pcb, _mates({**TAIL, "corridor": [[14, 0, 25, 4]]}))
+    assert [v["kind"] for v in vs] == ["mating_mate_misaligned"]
+    # facing the other way (mouth -x) with the tail at +x: misaligned too
+    pcb = _board(tmp_path, fpc("J1", 8, 10, 270))
+    vs, _ = _run_with(pcb, _mates(TAIL))
+    assert "mating_mate_misaligned" in [v["kind"] for v in vs]
+
+
+def test_bad_mates_entries_fail_loud(tmp_path):
+    pcb = _board(tmp_path, fpc("J1", 8, 10, 90))
+    vs, _ = _run_with(pcb, _mates(
+        {**TAIL, "ref": "J9"}, {**TAIL, "mate": "cable"},
+        {**TAIL, "corridor": []}))
+    bad = [v for v in vs if v["kind"] == "mating_mate_invalid"]
+    assert len(bad) == 3 and all(v["severity"] == "error" for v in bad)
+    # none of them applied: J1 still falls to the edge rule
+    assert "mating_faces_inward" in [v["kind"] for v in vs]
+
+
+def test_declared_mate_on_an_unlisted_footprint_is_checked(tmp_path):
+    pcb = _board(tmp_path, _fp("J1", "HIROSE_FH12_TEST", 8, 10, 90,
+                               USBC_PADS, USBC_CY) + small("R1", 20, 10))
+    vs, facts = _run_with(pcb, _mates(TAIL))
+    assert facts[0]["family"] == "declared"
+    assert [v["blocked_by"] for v in vs] == [["R1"]]
+
+
+def test_gate_and_verify_read_mates_from_constraints(tmp_path):
+    import json
+    pcb = _board(tmp_path, fpc("J1", 8, 10, 90))
+    rep, _ = check_mating.run(["--pcb", str(pcb)])
+    assert rep["status"] == "violations"
+    (tmp_path / "constraints.json").write_text(
+        json.dumps({"placement": _mates(TAIL)}), encoding="utf-8")
+    rep, _ = check_mating.run(["--pcb", str(pcb)])
+    assert rep["status"] == "pass", rep["violations"]
+    payload, _ = place_metrics.run(["--pcb", str(pcb)])
+    assert "mating" not in payload["coverage"]["failed"]
+
+
+def _run_with(pcb, placement):
+    return matinglib.violations(placelib.PlaceModel(pcb), pcb, placement)
+
+
 # ---------------------------------------------------- the owner's two boards
 
 def _frozen(name):

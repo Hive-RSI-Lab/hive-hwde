@@ -16,6 +16,16 @@ an agent runs it inside the Hive.
   `bin/hwde` finds them all, plus KiCad's own python with `pcbnew` and its
   ngspice. If `hwde check` can't find one, ask a warden; don't install KiCad
   yourself.
+- In another project's test or score check (a fresh HOME, only `/work` and
+  `/hive/tools` mounted, no `$HIVE_MODULES`), run hwde as
+  `/hive/tools/hwde/bin/hwde`. That's a published copy: `hwde publish <dir>`
+  builds it at `<dir>/hwde` with its own Python 3.14 and the lock's packages
+  installed, so it starts with no venv to build and no download, and writes
+  `<dir>/hwde.version`. A warden runs it into the Hive's tools folder after a
+  change to the module that a check needs. A board's dfm gate still fetches
+  LCSC models from EasyEDA (rate-limited, HTTP 403) into a fresh HOME's
+  cache, unless the board has an `easyeda/` folder beside its `parts.json`
+  (`cpl_verify.default_cache`); commit that folder so a check needs no fetch.
 - Boards go in the project you work in, under `boards/<name>/`
   (`HWDE_BOARDS_ROOT`, default `$PWD/boards`). Commit the workspace on your
   branch like any other change. Gate `--commit` isn't needed.

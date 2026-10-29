@@ -78,6 +78,9 @@ FIXER_HINTS = {
     "mating_faces_inward": "placement", "mating_mouth_inset": "placement",
     "mating_zone_blocked": "placement",
     "mating_direction_unknown": "placement",
+    "mating_mate_misaligned": "placement",
+    # a placement.mates entry in constraints.json that cannot be used
+    "mating_mate_invalid": "review",
     # the copper faces the edge but the 3D model is turned round: fix the
     # model's rotate in the footprint, not the placement
     "mating_model_reversed": "library",

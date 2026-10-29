@@ -242,6 +242,7 @@ PIPELINE_KINDS = [
     "keepout_violation", "courtyard_missing", "seed_unplaced",
     "mating_faces_inward", "mating_mouth_inset", "mating_zone_blocked",
     "mating_direction_unknown", "mating_model_reversed",
+    "mating_mate_misaligned", "mating_mate_invalid",
     # S11 routing
     "critical_route_failed", "critical_missing_net", "zone_unfilled",
     "stitch_impossible", "plane_split", "plane_split_unrepairable",
