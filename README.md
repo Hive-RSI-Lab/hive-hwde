@@ -52,10 +52,5 @@ An agent designs a PCB from a written brief: research, architecture, parts, sche
   read a hand-added `refdes` per part. Its routed board had hand-widened
   courtyards and a hand-picked outline margin until `check_courtyard`, fpfix
   rule E and silk in `board_edit --outline fit` took those two off.
-  The boards built with hwde in other projects count too:
-  [docs/boards.md](docs/boards.md) records each one (the hi-fi receiver's
-  lite-main and core), with the steps it passed, and the rows of
-  `docs/workarounds.md` name their board-local scripts and hand edits like
-  any other board's. The score reads only this repo's files.
 
 MIT, like upstream; see NOTICE for what that doesn't cover.
