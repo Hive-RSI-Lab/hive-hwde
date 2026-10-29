@@ -252,6 +252,9 @@ fixtures:
         kind: model_path_absolute
       - check: check_route_style
         kind: route_style
+      # bed445a: the shipped board's EasyEDA 0603 courtyards miss their pads
+      - check: check_courtyard
+        kind: courtyard_pads
   carrier_verify:
     stage: P8
     board: lumina-carrier

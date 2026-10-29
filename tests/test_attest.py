@@ -277,11 +277,25 @@ def test_build_green_workspace(tmp_path, capsys):
     assert releaselib.disposition(ws)["disposition"] == "order-ready"
 
 
+def test_release_does_not_wait_on_an_unanswered_h4(tmp_path):
+    """The person's sign-off is not a precondition (10-28): checkpoint 4
+    never answered still releases; only their rejection vetoes."""
+    ws = green_ws(tmp_path)
+    st = state_mod.State.load(ws / "state.json")
+    st.data["human"].pop("4")
+    st.save()
+    att, problems = releaselib.build(ws)
+    assert not problems, problems
+    releaselib.write_attestation(ws, att)
+    v = releaselib.verify(ws)
+    assert v["valid"], v["problems"]
+
+
 def test_build_lists_every_miss_and_writes_nothing(tmp_path, capsys):
     ws = green_ws(tmp_path)
     st = state_mod.State.load(ws / "state.json")
     st.data["gates"]["verify"]["status"] = "fail"
-    st.data["human"].pop("4")
+    st.data["human"]["4"]["status"] = "rejected"
     st.save()
     (ws / "reports" / "dfm_release.json").unlink()
     assert attest.main(["build", "--workspace", str(ws)]) == 1
@@ -727,7 +741,6 @@ def test_forged_minimal_attestation_refused(tmp_path):
     assert "gate erc: required but not bound" in text
     assert "report verify_release: not bound" in text
     assert "fab gerber_zip: not bound" in text
-    assert "checkpoint 4: not bound approved" in text
 
 
 def test_doctored_criteria_cannot_survive_verify(tmp_path):

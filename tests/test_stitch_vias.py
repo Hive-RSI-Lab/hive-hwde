@@ -620,3 +620,20 @@ def test_live_via_fence(pour_board, cli, tmp_path):
         assert abs(op["at"][1] - y) == pytest.approx(0.8, abs=0.005)
     bg2 = geom.BoardGeom.from_file(board)
     assert len(bg2.vias_of(net="GND")) >= r["placed"]
+
+
+def test_board_hole_to_hole_rule_is_edge_to_edge(tmp_path):
+    # JLC's 0.5 mm hole_to_hole (rules_gen's dru) is drill edge to edge:
+    # two 0.3 mm drills need 0.8 mm centre to centre, not 0.5
+    pcb = _board(tmp_path, "h2h", "")
+    pcb.with_suffix(".kicad_dru").write_text(
+        '(version 1)\n(rule "aiee_hole_to_hole_floor"\n'
+        '\t(constraint hole_to_hole (min 0.5000mm))\n)\n', encoding="utf-8")
+    assert stitch_vias.board_hole_to_hole(pcb) == 0.5
+    sc = stitch_vias.Scene(["F.Cu", "B.Cu"], lambda layer, net: Point(-9, -9),
+                           None, 0.2, hole_gap=0.5)
+    sc.holes = [Point(10, 10).buffer(0.15)]
+    assert not sc.hole_ok(10.6, 10)
+    assert sc.hole_ok(10.81, 10)
+    (tmp_path / "h2h.kicad_dru").unlink()
+    assert stitch_vias.board_hole_to_hole(pcb) == 0.25

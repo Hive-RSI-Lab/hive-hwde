@@ -107,7 +107,8 @@ BUILTIN_CHECKS = [
     {"name": "check_route_style", "needs": [],
      "args": lambda a: []},
     {"name": "check_mating", "needs": [],
-     "args": lambda a: []},
+     "args": lambda a: (["--constraints", a["constraints"]]
+                        if a.get("constraints") else [])},
     {"name": "check_pdn", "needs": ["constraints", "decoupling"],
      "args": lambda a: ["--constraints", a["constraints"],
                         "--decoupling", a["decoupling"]]},
