@@ -20,6 +20,10 @@
 # A shim here that works around a defect in the skill runs only while its id
 # is listed in docs/workarounds.md (wa <id>): delisting it turns it off.
 #
+# test, check-all and the scripts that run a whole board, the router or a sim
+# wait for `hive agent heavy`'s lease inside a Hive turn (at most 10 minutes,
+# then run anyway): give the shell command a timeout to match.
+#
 # Nothing here installs anything outside HOME but publish's <dir>: KiCad and
 # freerouting are the Hive's (in its shared tools folder, put there through a
 # warden); the venv is built from requirements.lock with the Hive's uv on
@@ -157,10 +161,27 @@ export HWDE_KICAD_CLI HWDE_FREEROUTING_JAR HWDE_JAVA HWDE_KNOWLEDGE_SOURCES HWDE
 # KiCad's SWIG paths need an X display: with none, a script runs under its own
 # Xvfb (xvfb-run), gone when the script ends. GLX stays off: H0's Xvfb crashes
 # loading it through the NVIDIA EGL libraries, and KiCad doesn't need it here.
-x() { exec "$@"; }
-if [ -z "${DISPLAY:-}" ] && command -v xvfb-run >/dev/null 2>&1; then
-	x() { exec xvfb-run -a -s "-extension GLX" "$@"; }
-fi
+xvfb=
+[ -z "${DISPLAY:-}" ] && command -v xvfb-run >/dev/null 2>&1 && xvfb=1
+# A heavy command (a pytest suite, the router, whole-board gates) runs under
+# `hive agent heavy`, which waits while the machine is strained and others
+# run one: on 10-28 ten hwde suites and freerouting at once took a 20-core
+# load to 137. Not when it is already inside one (check-all's gates, a test
+# that runs hwde) or the hive at hand has no heavy op yet: then it runs bare.
+heavy=
+lease() {
+	[ -n "$heavy" ] && [ -z "${HWDE_HEAVY_HELD:-}" ] && command -v hive >/dev/null 2>&1 &&
+		hive agent help 2>/dev/null | grep -q '^  heavy '
+}
+x() {
+	[ -n "$xvfb" ] && set -- xvfb-run -a -s "-extension GLX" "$@"
+	if lease; then
+		export HWDE_HEAVY_HELD=1
+		exec hive agent heavy --what "$heavy" -- "$@"
+	fi
+	[ -n "$heavy" ] && export HWDE_HEAVY_HELD=1
+	exec "$@"
+}
 
 case "${1:-}" in
 env)
@@ -179,11 +200,13 @@ test)
 	export HWDE_BIN="$here/bin/hwde" HWDE_APPDIR="$appdir" HWDE_STATE="$state"
 	HWDE_BOARDS_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/hwde-noboards-XXXXXX")
 	cd "$here"
+	heavy="hwde test (the module's pytest suite)"
 	x "$py" -m pytest -m "not smoke and not net" "$@"
 	;;
 check-all)
 	shift
 	export HWDE_BIN="$here/bin/hwde" HWDE_APPDIR="$appdir" HWDE_STATE="$state"
+	heavy="hwde check-all (every board's gates)"
 	x "$py" "$here/bin/check_all.py" "$@"
 	;;
 check)
@@ -191,11 +214,16 @@ check)
 	x "$py" "$here/.claude/skills/hwde/scripts/check_env.py" "$@"
 	;;
 "" | -h | --help)
-	sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'
+	sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'
 	;;
 *)
-	s=$1
+	s=${1%.py}
 	shift
-	x "$py" "$here/.claude/skills/hwde/scripts/${s%.py}.py" "$@"
+	# The scripts that run KiCad over a whole board, the router or a sim.
+	case $s in
+	route_auto | route_critical | place_anneal | gate | verify_all | bench | render | sim_run | fab_export)
+		heavy="hwde $s" ;;
+	esac
+	x "$py" "$here/.claude/skills/hwde/scripts/$s.py" "$@"
 	;;
 esac
