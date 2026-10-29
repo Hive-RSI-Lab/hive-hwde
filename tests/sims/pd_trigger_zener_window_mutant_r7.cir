@@ -1,0 +1,33 @@
+* ACCEPTANCE MUTANT of pd_trigger_zener_window.cir - MUST FAIL its bounds.
+* Seeded wrong-value defect: R7 4.7k -> 47k (the Q1A base pulldown). The
+* zener needs to source only Vbe/R7 before the transistor trips, so a 10x
+* pulldown drops the window trip by ~0.9 V (measured: 7.74 V -> 6.84 V),
+* violating the vtrip_grn >= 7.2 V bound. ERC, DRC, verify and DFM are all
+* structurally blind to a wrong resistor VALUE - this defect class is
+* exactly what the sim gate exists to catch. Bounds sidecar is identical
+* to the flagship's.
+.options rshunt=1e9
+.options savecurrents
+VIND n_vind 0 DC 9
+D2 n_zbias n_vind DZEN     ; zener: anode /ZBIAS, cathode /VIND
+R6 n_zbias n_hv_b 6.8k
+R7 n_hv_b 0 47k            ; << MUTANT: schematic says 4.7k
+Q1A n_hv_ok n_hv_b 0 QNPN  ; BC847BS unit A (C=6 B=2 E=1)
+R8 n_vind n_hv_ok 10k
+R9 n_hv_ok n_fb_b 47k
+Q1B n_fb_k n_fb_b 0 QNPN   ; BC847BS unit B (C=3 B=5 E=4)
+R12 n_vind n_d5_a 1.5k
+D5 n_d5_a n_fb_k DLEDR     ; red "5V ONLY" indicator
+R13 n_vind n_d6_a 4.7k
+D6 n_d6_a n_hv_ok DLEDG    ; green "PROFILE OK" indicator
+.model DZEN D(IS=1e-14 N=1 BV=6.2 IBV=5m)
+.model QNPN NPN(IS=1e-14 BF=200 VAF=100)
+.model DLEDR D(IS=1e-18 N=1.8)
+.model DLEDG D(IS=1e-22 N=2.4)
+.dc VIND 4.5 20 0.05
+.measure dc i_red_5v0 FIND @d5[id] AT=5.0
+.measure dc i_grn_5v0 FIND @d6[id] AT=5.0
+.measure dc i_red_9v0 FIND @d5[id] AT=9.0
+.measure dc i_grn_9v0 FIND @d6[id] AT=9.0
+.measure dc vtrip_grn WHEN @d6[id]=0.5m RISE=1
+.end

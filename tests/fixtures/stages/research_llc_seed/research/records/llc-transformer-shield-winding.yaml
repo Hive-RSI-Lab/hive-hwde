@@ -1,0 +1,28 @@
+id: llc-transformer-shield-winding
+classes:
+- emi
+applies:
+  topologies:
+  - llc
+rule: null
+prose: 'SEED RECORD (synthetic, mechanism fixture): a shield winding between primary and secondary
+  returned to primary ground cuts common-mode displacement current; fig 5 (p4) shows the winding
+  order.'
+sources:
+- file: research/sources/slua123.pdf
+  page: 4
+  note: 'fig 5: shield winding between primary and secondary'
+- file: research/sources/12345.html
+  page: 1
+  note: forum thread corroborates the winding order (tier forum)
+status: active
+origin: research:block-llc-1
+level: topology
+envelope:
+  switching_kind:
+    in:
+    - soft
+envelope_note: bounded by soft switching (the CM current mechanism it addresses)
+maturity: verified
+generalizes: []
+verification: {by: "second-reader", date: "2026-08-15", note: "re-read p4 fig 5: winding order as described (seed)"}

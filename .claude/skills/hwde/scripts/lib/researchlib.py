@@ -851,8 +851,9 @@ def _checkpoint(task: dict, which: str, detail: str) -> dict:
     """The visible cap-hit payload. The caller records it in state.json."""
     return {"status": "checkpoint", "checkpoint": which, "task": task["id"],
             "slot": task["slot"], "detail": detail, "depth": depth_state(task),
-            "action": ("present to the owner at the next checkpoint: raise "
-                       "budgets.research in state.json, or close the task "
+            "action": ("your call: if the slot still needs sources, raise "
+                       "budgets.research in state.json (record why with "
+                       "state.py decision), or close the task "
                        "with what was acquired (research.py close), or "
                        "abandon it (research.py close --abandon)")}
 

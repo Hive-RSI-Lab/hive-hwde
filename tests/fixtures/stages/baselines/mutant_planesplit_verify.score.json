@@ -1,0 +1,58 @@
+{
+ "script": "bench",
+ "stage": "P8",
+ "fixture": "mutant_planesplit_verify",
+ "board": "rf4",
+ "metrics": {
+  "errors": 1,
+  "warnings": 1,
+  "by_check": {
+   "check_return_path": 1,
+   "check_current": 0,
+   "check_decoupling": 0,
+   "check_diffpair": 0,
+   "check_creepage": 0,
+   "check_thermal": 0,
+   "check_silk": 1,
+   "check_route_style": 0,
+   "check_mating": 0,
+   "check_pdn": 0,
+   "check_ratings": 0,
+   "check_bom_sync": 0,
+   "check_courtyard": 0,
+   "check_mate_pins": 0,
+   "check_model_paths": 0
+  },
+  "by_kind": {
+   "corridor_void": 1,
+   "silk_misattributed": 1
+  },
+  "si": {
+   "decap_worst_loop_nh": 5.5675,
+   "decap_worst_manhattan_mm": 5.725,
+   "diffpair_worst_skew_ps": null,
+   "diffpair_worst_uncoupled_mm": null,
+   "return_corridor_voids": 1
+  }
+ },
+ "metrics_live": null,
+ "penalties": {
+  "errors": 1.0,
+  "warnings": 1.0,
+  "known_answer_missed": 0.0,
+  "forbidden_errors": 0.0
+ },
+ "composite": 99.4,
+ "composite_inputs": "full",
+ "known_answer": {
+  "status": "ok",
+  "matched": 1,
+  "missed": [],
+  "forbidden_errors": 0
+ },
+ "e2e": null,
+ "_baseline": {
+  "created": "2026-10-28",
+  "kicad_version": null
+ }
+}

@@ -1,0 +1,35 @@
+{
+ "script": "bench",
+ "stage": "P9",
+ "fixture": "mutant_cpl_dfm",
+ "board": "blinky2",
+ "metrics": {
+  "errors": 1,
+  "warnings": 1,
+  "by_kind": {
+   "cpl_polarity": 1,
+   "dfm_silk_width": 1
+  },
+  "polarity": "checked",
+  "capability_key": "2layer_1oz"
+ },
+ "metrics_live": null,
+ "penalties": {
+  "errors": 1.0,
+  "warnings": 1.0,
+  "known_answer_missed": 0.0,
+  "forbidden_errors": 0.0
+ },
+ "composite": 99.4,
+ "composite_inputs": "full",
+ "known_answer": {
+  "status": "ok",
+  "matched": 1,
+  "missed": [],
+  "forbidden_errors": 0
+ },
+ "_baseline": {
+  "created": "2026-08-06",
+  "kicad_version": null
+ }
+}

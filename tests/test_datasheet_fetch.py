@@ -2,8 +2,7 @@
 
 wmsc.lcsc.com answers a datasheet URL with 200 text/html and a 140-byte
 `<script>window.top.location.href='https://datasheet.lcsc.com/...'</script>`;
-the PDF is at that target. Run by `bin/hwde check-all` with the skill's
-scripts and lib on PYTHONPATH; exits non-zero on the first failure.
+the PDF is at that target. Part of `hwde test`.
 """
 from __future__ import annotations
 
@@ -15,8 +14,12 @@ from pathlib import Path
 
 import httpx
 
-import datasheet_extract
-import researchlib
+SCRIPTS = Path(__file__).resolve().parents[1] / ".claude/skills/hwde/scripts"
+sys.path.insert(0, str(SCRIPTS))
+sys.path.insert(0, str(SCRIPTS / "lib"))
+
+import datasheet_extract  # noqa: E402
+import researchlib  # noqa: E402
 
 WMSC = ("https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/"
         "1806151818_Hubei-KENTO-Elec-KT-0603G_C12624.pdf")
@@ -105,10 +108,3 @@ def test_html_is_never_written():
         assert r["status"] == "refused" and "not a PDF" in r["error"], r
         assert not dest.exists()
 
-
-if __name__ == "__main__":
-    for name, fn in list(globals().items()):
-        if name.startswith("test_") and callable(fn):
-            fn()
-            print(f"ok {name}")
-    sys.exit(0)

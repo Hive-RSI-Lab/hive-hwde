@@ -1,0 +1,814 @@
+{
+ "components": {
+  "C1": {
+   "footprint": "Capacitor_SMD:C_0603_1608Metric",
+   "value": "100nF"
+  },
+  "C10": {
+   "footprint": "Capacitor_SMD:C_0805_2012Metric",
+   "value": "10uF"
+  },
+  "C11": {
+   "footprint": "Capacitor_SMD:C_0805_2012Metric",
+   "value": "22uF"
+  },
+  "C12": {
+   "footprint": "Capacitor_SMD:C_0603_1608Metric",
+   "value": "100nF"
+  },
+  "C13": {
+   "footprint": "Capacitor_SMD:C_0805_2012Metric",
+   "value": "4.7uF"
+  },
+  "C2": {
+   "footprint": "Capacitor_SMD:C_0603_1608Metric",
+   "value": "100nF"
+  },
+  "C3": {
+   "footprint": "Capacitor_SMD:C_0603_1608Metric",
+   "value": "100nF"
+  },
+  "C4": {
+   "footprint": "Capacitor_SMD:C_0603_1608Metric",
+   "value": "100nF"
+  },
+  "C5": {
+   "footprint": "Capacitor_SMD:C_0805_2012Metric",
+   "value": "10uF"
+  },
+  "C7": {
+   "footprint": "Capacitor_SMD:C_0603_1608Metric",
+   "value": "22pF"
+  },
+  "C8": {
+   "footprint": "Capacitor_SMD:C_0603_1608Metric",
+   "value": "22pF"
+  },
+  "C9": {
+   "footprint": "Capacitor_SMD:C_0603_1608Metric",
+   "value": "100nF"
+  },
+  "D1": {
+   "footprint": "LED_SMD:LED_0805_2012Metric",
+   "value": "LED_pwr"
+  },
+  "J1": {
+   "footprint": "Connector_USB:USB_Micro-B_Amphenol_10118194_Horizontal",
+   "value": "USB_micro"
+  },
+  "J2": {
+   "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical",
+   "value": "SWD"
+  },
+  "J3": {
+   "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
+   "value": "MCO_OUT"
+  },
+  "L1": {
+   "footprint": "Inductor_SMD:L_1210_3225Metric",
+   "value": "4.7uH"
+  },
+  "R1": {
+   "footprint": "Resistor_SMD:R_0603_1608Metric",
+   "value": "10k"
+  },
+  "R3": {
+   "footprint": "Resistor_SMD:R_0603_1608Metric",
+   "value": "1k5"
+  },
+  "R4": {
+   "footprint": "Resistor_SMD:R_0603_1608Metric",
+   "value": "1k"
+  },
+  "U1": {
+   "footprint": "Package_QFP:LQFP-48_7x7mm_P0.5mm",
+   "value": "STM32F103C8T6"
+  },
+  "U2": {
+   "footprint": "Package_TO_SOT_SMD:TSOT-23-6",
+   "value": "AP63203WU"
+  },
+  "Y1": {
+   "footprint": "Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm",
+   "value": "8MHz"
+  }
+ },
+ "nets": {
+  "+3V3": [
+   {
+    "pin": "1",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C1"
+   },
+   {
+    "pin": "1",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C11"
+   },
+   {
+    "pin": "1",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C2"
+   },
+   {
+    "pin": "1",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C3"
+   },
+   {
+    "pin": "1",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C4"
+   },
+   {
+    "pin": "1",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C5"
+   },
+   {
+    "pin": "1",
+    "pinfunction": "Pin_1_1",
+    "pintype": "passive",
+    "ref": "J2"
+   },
+   {
+    "pin": "2",
+    "pinfunction": "2_2",
+    "pintype": "passive",
+    "ref": "L1"
+   },
+   {
+    "pin": "2",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "R3"
+   },
+   {
+    "pin": "1",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "R4"
+   },
+   {
+    "pin": "1",
+    "pinfunction": "VBAT_1",
+    "pintype": "power_in",
+    "ref": "U1"
+   },
+   {
+    "pin": "24",
+    "pinfunction": "VDD_24",
+    "pintype": "power_in",
+    "ref": "U1"
+   },
+   {
+    "pin": "36",
+    "pinfunction": "VDD_36",
+    "pintype": "power_in",
+    "ref": "U1"
+   },
+   {
+    "pin": "48",
+    "pinfunction": "VDD_48",
+    "pintype": "power_in",
+    "ref": "U1"
+   },
+   {
+    "pin": "9",
+    "pinfunction": "VDDA_9",
+    "pintype": "power_in",
+    "ref": "U1"
+   },
+   {
+    "pin": "1",
+    "pinfunction": "FB_1",
+    "pintype": "input",
+    "ref": "U2"
+   }
+  ],
+  "/BOOT0": [
+   {
+    "pin": "1",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "R1"
+   },
+   {
+    "pin": "44",
+    "pinfunction": "BOOT0_44",
+    "pintype": "input",
+    "ref": "U1"
+   }
+  ],
+  "/BST": [
+   {
+    "pin": "1",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C12"
+   },
+   {
+    "pin": "6",
+    "pinfunction": "BST_6",
+    "pintype": "passive",
+    "ref": "U2"
+   }
+  ],
+  "/LED_A": [
+   {
+    "pin": "2",
+    "pinfunction": "A_2",
+    "pintype": "passive",
+    "ref": "D1"
+   },
+   {
+    "pin": "2",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "R4"
+   }
+  ],
+  "/MCO": [
+   {
+    "pin": "1",
+    "pinfunction": "Pin_1_1",
+    "pintype": "passive",
+    "ref": "J3"
+   },
+   {
+    "pin": "29",
+    "pinfunction": "PA8_29",
+    "pintype": "bidirectional",
+    "ref": "U1"
+   }
+  ],
+  "/NRST": [
+   {
+    "pin": "1",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C9"
+   },
+   {
+    "pin": "7",
+    "pinfunction": "NRST_7",
+    "pintype": "input",
+    "ref": "U1"
+   }
+  ],
+  "/OSC_IN": [
+   {
+    "pin": "1",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C7"
+   },
+   {
+    "pin": "5",
+    "pinfunction": "PD0_5",
+    "pintype": "bidirectional",
+    "ref": "U1"
+   },
+   {
+    "pin": "1",
+    "pinfunction": "1_1",
+    "pintype": "passive",
+    "ref": "Y1"
+   }
+  ],
+  "/OSC_OUT": [
+   {
+    "pin": "1",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C8"
+   },
+   {
+    "pin": "6",
+    "pinfunction": "PD1_6",
+    "pintype": "bidirectional",
+    "ref": "U1"
+   },
+   {
+    "pin": "3",
+    "pinfunction": "3_3",
+    "pintype": "passive",
+    "ref": "Y1"
+   }
+  ],
+  "/SW": [
+   {
+    "pin": "2",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C12"
+   },
+   {
+    "pin": "1",
+    "pinfunction": "1_1",
+    "pintype": "passive",
+    "ref": "L1"
+   },
+   {
+    "pin": "5",
+    "pinfunction": "SW_5",
+    "pintype": "output",
+    "ref": "U2"
+   }
+  ],
+  "/SWCLK": [
+   {
+    "pin": "3",
+    "pinfunction": "Pin_3_3",
+    "pintype": "passive",
+    "ref": "J2"
+   },
+   {
+    "pin": "37",
+    "pinfunction": "PA14_37",
+    "pintype": "bidirectional",
+    "ref": "U1"
+   }
+  ],
+  "/SWDIO": [
+   {
+    "pin": "2",
+    "pinfunction": "Pin_2_2",
+    "pintype": "passive",
+    "ref": "J2"
+   },
+   {
+    "pin": "34",
+    "pinfunction": "PA13_34",
+    "pintype": "bidirectional",
+    "ref": "U1"
+   }
+  ],
+  "/USB_DM": [
+   {
+    "pin": "2",
+    "pinfunction": "D-_2",
+    "pintype": "bidirectional",
+    "ref": "J1"
+   },
+   {
+    "pin": "32",
+    "pinfunction": "PA11_32",
+    "pintype": "bidirectional",
+    "ref": "U1"
+   }
+  ],
+  "/USB_DP": [
+   {
+    "pin": "3",
+    "pinfunction": "D+_3",
+    "pintype": "bidirectional",
+    "ref": "J1"
+   },
+   {
+    "pin": "1",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "R3"
+   },
+   {
+    "pin": "33",
+    "pinfunction": "PA12_33",
+    "pintype": "bidirectional",
+    "ref": "U1"
+   }
+  ],
+  "GND": [
+   {
+    "pin": "2",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C1"
+   },
+   {
+    "pin": "2",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C10"
+   },
+   {
+    "pin": "2",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C11"
+   },
+   {
+    "pin": "2",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C13"
+   },
+   {
+    "pin": "2",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C2"
+   },
+   {
+    "pin": "2",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C3"
+   },
+   {
+    "pin": "2",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C4"
+   },
+   {
+    "pin": "2",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C5"
+   },
+   {
+    "pin": "2",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C7"
+   },
+   {
+    "pin": "2",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C8"
+   },
+   {
+    "pin": "2",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C9"
+   },
+   {
+    "pin": "1",
+    "pinfunction": "K_1",
+    "pintype": "passive",
+    "ref": "D1"
+   },
+   {
+    "pin": "5",
+    "pinfunction": "GND_5",
+    "pintype": "power_out",
+    "ref": "J1"
+   },
+   {
+    "pin": "SH",
+    "pinfunction": "Shield_SH",
+    "pintype": "passive",
+    "ref": "J1"
+   },
+   {
+    "pin": "4",
+    "pinfunction": "Pin_4_4",
+    "pintype": "passive",
+    "ref": "J2"
+   },
+   {
+    "pin": "2",
+    "pinfunction": "Pin_2_2",
+    "pintype": "passive",
+    "ref": "J3"
+   },
+   {
+    "pin": "2",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "R1"
+   },
+   {
+    "pin": "23",
+    "pinfunction": "VSS_23",
+    "pintype": "power_in",
+    "ref": "U1"
+   },
+   {
+    "pin": "35",
+    "pinfunction": "VSS_35",
+    "pintype": "passive",
+    "ref": "U1"
+   },
+   {
+    "pin": "47",
+    "pinfunction": "VSS_47",
+    "pintype": "passive",
+    "ref": "U1"
+   },
+   {
+    "pin": "8",
+    "pinfunction": "VSSA_8",
+    "pintype": "power_in",
+    "ref": "U1"
+   },
+   {
+    "pin": "4",
+    "pinfunction": "GND_4",
+    "pintype": "power_in",
+    "ref": "U2"
+   },
+   {
+    "pin": "2",
+    "pinfunction": "2_2",
+    "pintype": "passive",
+    "ref": "Y1"
+   },
+   {
+    "pin": "4",
+    "pinfunction": "4_4",
+    "pintype": "passive",
+    "ref": "Y1"
+   }
+  ],
+  "VBUS": [
+   {
+    "pin": "1",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C10"
+   },
+   {
+    "pin": "1",
+    "pinfunction": "",
+    "pintype": "passive",
+    "ref": "C13"
+   },
+   {
+    "pin": "1",
+    "pinfunction": "VBUS_1",
+    "pintype": "power_out",
+    "ref": "J1"
+   },
+   {
+    "pin": "2",
+    "pinfunction": "EN_2",
+    "pintype": "input",
+    "ref": "U2"
+   },
+   {
+    "pin": "3",
+    "pinfunction": "IN_3",
+    "pintype": "power_in",
+    "ref": "U2"
+   }
+  ],
+  "unconnected-(J1-ID-Pad4)": [
+   {
+    "pin": "4",
+    "pinfunction": "ID_4",
+    "pintype": "passive+no_connect",
+    "ref": "J1"
+   }
+  ],
+  "unconnected-(U1-PA0-Pad10)": [
+   {
+    "pin": "10",
+    "pinfunction": "PA0_10",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PA1-Pad11)": [
+   {
+    "pin": "11",
+    "pinfunction": "PA1_11",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PA10-Pad31)": [
+   {
+    "pin": "31",
+    "pinfunction": "PA10_31",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PA15-Pad38)": [
+   {
+    "pin": "38",
+    "pinfunction": "PA15_38",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PA2-Pad12)": [
+   {
+    "pin": "12",
+    "pinfunction": "PA2_12",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PA3-Pad13)": [
+   {
+    "pin": "13",
+    "pinfunction": "PA3_13",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PA4-Pad14)": [
+   {
+    "pin": "14",
+    "pinfunction": "PA4_14",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PA5-Pad15)": [
+   {
+    "pin": "15",
+    "pinfunction": "PA5_15",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PA6-Pad16)": [
+   {
+    "pin": "16",
+    "pinfunction": "PA6_16",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PA7-Pad17)": [
+   {
+    "pin": "17",
+    "pinfunction": "PA7_17",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PA9-Pad30)": [
+   {
+    "pin": "30",
+    "pinfunction": "PA9_30",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PB0-Pad18)": [
+   {
+    "pin": "18",
+    "pinfunction": "PB0_18",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PB1-Pad19)": [
+   {
+    "pin": "19",
+    "pinfunction": "PB1_19",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PB10-Pad21)": [
+   {
+    "pin": "21",
+    "pinfunction": "PB10_21",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PB11-Pad22)": [
+   {
+    "pin": "22",
+    "pinfunction": "PB11_22",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PB12-Pad25)": [
+   {
+    "pin": "25",
+    "pinfunction": "PB12_25",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PB13-Pad26)": [
+   {
+    "pin": "26",
+    "pinfunction": "PB13_26",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PB14-Pad27)": [
+   {
+    "pin": "27",
+    "pinfunction": "PB14_27",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PB15-Pad28)": [
+   {
+    "pin": "28",
+    "pinfunction": "PB15_28",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PB2-Pad20)": [
+   {
+    "pin": "20",
+    "pinfunction": "PB2_20",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PB3-Pad39)": [
+   {
+    "pin": "39",
+    "pinfunction": "PB3_39",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PB4-Pad40)": [
+   {
+    "pin": "40",
+    "pinfunction": "PB4_40",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PB5-Pad41)": [
+   {
+    "pin": "41",
+    "pinfunction": "PB5_41",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PB6-Pad42)": [
+   {
+    "pin": "42",
+    "pinfunction": "PB6_42",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PB7-Pad43)": [
+   {
+    "pin": "43",
+    "pinfunction": "PB7_43",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PB8-Pad45)": [
+   {
+    "pin": "45",
+    "pinfunction": "PB8_45",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PB9-Pad46)": [
+   {
+    "pin": "46",
+    "pinfunction": "PB9_46",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PC13-Pad2)": [
+   {
+    "pin": "2",
+    "pinfunction": "PC13_2",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PC14-Pad3)": [
+   {
+    "pin": "3",
+    "pinfunction": "PC14_3",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ],
+  "unconnected-(U1-PC15-Pad4)": [
+   {
+    "pin": "4",
+    "pinfunction": "PC15_4",
+    "pintype": "bidirectional+no_connect",
+    "ref": "U1"
+   }
+  ]
+ }
+}

@@ -9,3 +9,5 @@ boards/*/lib/*.3dshapes/
 # Part datasheets (manufacturers' material, NOTICE); index.json keeps each
 # one's URL and sha256. Re-fetch with `hwde datasheet_extract --fetch <board>`.
 boards/*/parts/datasheets/*.pdf
+# check_env.py --out from the tests
+_scratch/
