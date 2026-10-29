@@ -75,9 +75,8 @@ boards may use ONE schematic agent (record it).
   `placement_adjust_request` takes the SANCTIONED backward edge: snapshot,
   re-spawn `placement` scoped to the request's refs/region, re-run P7
   (`freerouting_retries` guards the loop). Dead end: `state.py cross-spawn`.
-- **P8 Verification**: run the `verify` gate (all 8 checks; verify_all's
-  summary lands in `reports/checks/summary.json`, which the design doc reads),
-  then `verify-reviewer` (fresh context) with the summary + renders. Triage:
+- **P8 Verification**: run the `verify` gate (all 8 checks), then
+  `verify-reviewer` (fresh context) with the summary (`reports/checks/summary.json`) + renders. Triage:
   script-check errors -> fix loop; reviewer errors -> fix loop or a waiver;
   warnings -> `reports/verify-waivers.json` (re-gate with it). After ANY
   copper/placement fix re-run `drc_routed` BEFORE `verify`. **H4** (report;
