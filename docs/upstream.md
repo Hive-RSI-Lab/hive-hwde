@@ -17,6 +17,16 @@ these ways:
   copies; `scripts/board_edit.py`, whose `--outline fit` counts silk and whose
   edits refuse to clip it; `scripts/check_silk.py`, whose silk items carry
   their footprint's reference.
+- Power-path checks from hifi-receiver-2's first-spin power review, which
+  did each by hand: `scripts/check_power_path.py` (+
+  `checks.d/check_power_path.yaml`, mutant `power-path-under-contract`), the
+  current each pad-track-via chain carries as a max-flow over the copper;
+  `scripts/sim_inrush.py` and `scripts/lib/pdsource.py`, a board's load
+  switches against a USB PD source; `scripts/soa_check.py` and
+  `scripts/lib/soa.py` with `reference/fet_power.yaml`, a FET's peak
+  junction temperature through a pulse; `scripts/mlcc_dcbias.py` and
+  `scripts/lib/mlcc.py` with `reference/mlcc_dcbias.yaml`, ceramics at DC
+  bias (sim_board's DC-bias warning reports the derated value).
 - A live stock-and-match check on every BOM row (the person, 10-28: "didn't
   the hive pull the JLC and LCSC?"): `scripts/stock_check.py` and
   `scripts/lib/stocklib.py` read JLC's and LCSC's own record for each code

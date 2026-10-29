@@ -1,0 +1,9 @@
+# check_power_path: the current each power path's copper carries, pad ->
+# track -> via -> pour -> pad, as a max-flow from the net's source part to
+# each power part, against the net's budget, constraints.json power_paths
+# and a USB PD input's contract (pd_source, or 3 A with a PD sink on the
+# board, derived: warning). check_current judges each piece against the
+# budget; this judges the chain (hifi-receiver-2 review-2 POWER-1).
+name: check_power_path
+needs: [constraints]
+args: [--constraints, "{constraints}"]
