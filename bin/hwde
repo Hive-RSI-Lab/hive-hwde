@@ -196,12 +196,31 @@ test)
 	# KiCad run or the internet) and test_workarounds.py, the probes. Boards
 	# root is an empty scratch dir, so a test that wants a real board skips;
 	# whole boards are check-all's.
+	#
+	# Its scratch files (pytest's tmp_path, the boards root) go on /dev/shm
+	# when it has room, and nothing fsyncs (HWDE_NO_FSYNC, safelib): the
+	# suite is file-heavy, not CPU-heavy, and on the Hive's loaded disk
+	# its plain writes and fsyncs took it from ~4 to over 30 minutes. The
+	# scratch dir goes when the run ends; the run prints its time and its
+	# slowest tests.
 	shift
 	export HWDE_BIN="$here/bin/hwde" HWDE_APPDIR="$appdir" HWDE_STATE="$state"
-	HWDE_BOARDS_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/hwde-noboards-XXXXXX")
+	export HWDE_NO_FSYNC=1
+	base=${TMPDIR:-/tmp}
+	shm=$(df -Pk /dev/shm 2>/dev/null | awk 'NR==2 {print $4}')
+	[ -w /dev/shm ] && [ "${shm:-0}" -ge 524288 ] && base=/dev/shm
+	scratch=$(mktemp -d "$base/hwde-test-XXXXXX")
+	HWDE_BOARDS_ROOT=$scratch/noboards
+	mkdir "$HWDE_BOARDS_ROOT"
 	cd "$here"
 	heavy="hwde test (the module's pytest suite)"
-	x "$py" -m pytest -m "not smoke and not net" "$@"
+	x sh -c 'scratch=$1; shift; t0=$(date +%s)
+		"$@"; rc=$?
+		rm -rf "$scratch"
+		echo "hwde test: $(($(date +%s) - t0))s (scratch on ${scratch%/*})"
+		exit $rc' sh "$scratch" \
+		"$py" -m pytest -m "not smoke and not net" --basetemp="$scratch/pytest" \
+		--durations=15 "$@"
 	;;
 check-all)
 	shift

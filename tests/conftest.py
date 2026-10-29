@@ -97,6 +97,9 @@ def _easyeda_offline(monkeypatch, tmp_path_factory):
     monkeypatch.setenv("HWDE_STOCK_OFFLINE", "1")
     # and writes no board's ledger.json unless it says so (test_ledger)
     monkeypatch.setenv("HWDE_LEDGER_WRITE", "0")
+    # and fsyncs nothing (safelib): every file here is scratch, and on a
+    # loaded disk each fsync costs seconds (test_attest spent 8 of 12 s in four)
+    monkeypatch.setenv("HWDE_NO_FSYNC", "1")
     monkeypatch.setenv("HWDE_EASYEDA_CACHE",
                        str(tmp_path_factory.mktemp("easyeda_empty")))
     # The rate-limit latch is process state: one test's mocked 403 must not
