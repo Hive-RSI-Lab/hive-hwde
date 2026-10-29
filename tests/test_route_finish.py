@@ -241,3 +241,36 @@ def test_krt_narrow_tracks_on_power_nets_are_found(tmp_path):
     assert narrow == ["u-narrow"]
     assert route_auto._narrow_new_tracks(
         pcb, {"SIG": 0.3}, {t.uuid for t in bg.tracks_of()}) == []
+
+
+def test_a_walled_in_pad_rips_the_signal_track_in_the_way(tmp_path):
+    body = _pad("U1", 5, 15, "SIG") + _pad("U2", 25, 15, "SIG")
+    body += _seg(15, 0.1, 15, 29.9, 0.25, "F.Cu", "+3V3", "u-wf")
+    body += _seg(15, 0.1, 15, 29.9, 0.25, "B.Cu", "+3V3", "u-wb")
+    pcb = _board(tmp_path, body)
+    pairs = [_pair("SIG", (5, 15), (25, 15))]
+    _, jobs = _plan(pcb, pairs)
+    assert jobs[0]["status"] == "failed"            # only with rip_board
+    rip: list = []
+    _, jobs = _plan(pcb, pairs, rip_board=True, ripped_out=rip)
+    job = jobs[0]
+    assert job["status"] == "routed"
+    assert job["ripped_nets"] == ["+3V3"]
+    assert rip and set(rip) <= {"u-wf", "u-wb"} and len(rip) == 1
+    assert job["vias"] == 0 or len(rip) == 1        # one layer crossed
+
+
+def test_power_and_pour_copper_is_never_ripped(tmp_path):
+    body = _pad("U1", 5, 15, "+3V3") + _pad("U2", 25, 15, "+3V3")
+    # SIG carries a .kicad_dru width rule: sized by rule, never ripped
+    body += _seg(15, 0.1, 15, 29.9, 0.35, "F.Cu", "SIG", "u-wf")
+    body += _seg(15, 0.1, 15, 29.9, 0.35, "B.Cu", "SIG", "u-wb")
+    pcb = _board(tmp_path, body)
+    rip: list = []
+    _, jobs = _plan(pcb, [_pair("+3V3", (5, 15), (25, 15),
+                                "Pad 1 [+3V3] of U1 on F.Cu",
+                                "Pad 1 [+3V3] of U2 on F.Cu")],
+                    rip_board=True, ripped_out=rip)
+    assert jobs[0]["status"] == "failed"         # SIG stays a wall
+    assert "ripped_nets" not in jobs[0]
+    assert rip == []

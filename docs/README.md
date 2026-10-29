@@ -92,6 +92,25 @@ Record each run's wall time per stage (the `phase` events in
 `state.json` history) and the gate attempts and fix loops per gate. That way
 a later board shows whether the module got faster or cleaner.
 
+## Finishing a dense board's routing
+
+`route_auto` ends with `route_finish`, so a dense board needs no copper
+scripts of its own. After the Freerouting ladder (and KRT, when it is
+found), `route_finish` rips what DRC names in a short or clearance error,
+then routes what is still unconnected. It is a grid maze router that works
+at the board's own rules: it joins pads, stubs and cut-off pour pieces (with
+a via into the plane), and frees a walled-in pad by ripping the fewest
+signal nets in the way. It never rips pour nets or nets with a width rule.
+Run it alone on any routed board (`hwde route_finish --pcb ... --dry-run`
+first). Its `failed` connections have no path at the rules, which makes
+them a placement or topology finding.
+
+On hifi-receiver-2's core (278 parts, 4 layers), with every signal track
+ripped, one Freerouting rung left 54 unconnected and 16 DRC errors.
+`route_auto` with `route_finish` then took it to a handful unconnected with
+no DRC errors. What remained was a 0.4 mm-pitch QFN pocket walled in by a
+VBUS_IN track and a 77 mm long haul.
+
 ## What it never does
 
 It never orders or pays. P10 (quote, order, payment) is the person's: stop

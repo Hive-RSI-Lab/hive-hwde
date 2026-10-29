@@ -19,9 +19,12 @@ Zones export as "(plane NET ...)"; Freerouting connects pads to planes itself
 (including dropping stitch vias to reach an inner/back plane).
 
 After the ladder, KRT's mop-up (its under-width tracks on power nets are
-stripped, not kept), then route_finish's maze pass for whatever DRC still
-reports unconnected: grid A* at the board's own rules, pour pieces joined by
-a via, each pass kept only if the DRC improves (--no-maze-finish skips it).
+stripped, not kept), then route_finish's maze pass: it rips the tracks and
+vias DRC names in a short/clearance/crossing error and routes them again,
+then whatever DRC still reports unconnected - grid A* at the board's own
+rules, pour pieces joined by a via, walled-in pads freed by ripping the
+fewest signal nets in the way - kept only if the board ends better
+(--no-maze-finish skips it).
 
 Freerouting's own success signal is NEVER trusted (LEARNINGS [freerouting]):
 completion comes from the log's unrouted counts and the gate is kicad-cli DRC.
@@ -491,10 +494,11 @@ def run(argv: list[str] | None = None):
     # in by neighbouring tracks, pour pieces with no via), routed one
     # connection at a time at the board's rules; kept only if it helps.
     maze_facts = None
-    if not args.no_maze_finish and _drc_unrouted(drc):
+    if not args.no_maze_finish and (_drc_unrouted(drc) or _err_counts(drc)):
         import route_finish
         maze_facts = route_finish.finish_staged(
-            cli, staged, drc, parity=sch.is_file(), refill=has_zones)
+            cli, staged, drc, parity=sch.is_file(), refill=has_zones,
+            rip_errors=True)
         if maze_facts.get("kept"):
             drc = maze_facts.pop("drc")
         else:
