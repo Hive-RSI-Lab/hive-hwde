@@ -117,10 +117,7 @@ exits 0 while its cause stands. That is what the project's score counts
 probe disagree. A shim in `bin/hwde` checks its row (`wa <id>`), so it runs only
 while it's listed. When you fix a cause, its probe starts exiting 10: take
 the workaround out, delete the row, keep the probe as a guard, and the score
-goes up. A board you build in another project (a product's `boards/`) counts
-the same way: when it passes, record it in [boards.md](boards.md) with the
-commit and the steps, and give each of its board-local workarounds a row
-here, or add the board to the row of the same cause.
+goes up.
 
 Record each run's wall time per stage (the `phase` events in
 `state.json` history) and the gate attempts and fix loops per gate. That way

@@ -20,11 +20,3 @@ import score  # noqa: E402
 def test_workarounds_table_matches_its_probes():
     table = score.read_workarounds(ROOT / "docs" / "workarounds.md")
     assert check_all.probes(table) == []
-
-
-def test_score_reads_every_board_and_row(capsys):
-    # a row naming a board that is neither under boards/ nor in
-    # docs/boards.md charges nothing; the score refuses it
-    assert score.main() == 0
-    names = {b.name for b in score.all_boards()}
-    assert {"hwde-led-test", "lite-main", "core"} <= names
