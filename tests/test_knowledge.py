@@ -219,6 +219,23 @@ def test_interface_keys_from_diff_pairs_base(tmp_path):
     assert payload["keys"]["interfaces"] == ["usb"]
 
 
+def test_usb_fs_slot_reads_the_same_records_as_usb(tmp_path):
+    """The usb-fs checklist claims [usb-fs, usb]: a slot spelled with either
+    token finds the same records per class (issue #44)."""
+    def per_class(base):
+        ws = make_ws(tmp_path / base, constraints={
+            "diff_pairs": [{"p": "/D_P", "n": "/D_N", "base": base}]})
+        payload, _ = run_knowledge(tmp_path, ["--coverage", "--workspace",
+                                              str(ws)])
+        (slot,) = payload["slots"]
+        return {c["class"]: (c["verdict"], [r["id"] for r in c["records"]])
+                for c in slot["classes"]}
+    usb, usb_fs = per_class("USB"), per_class("USB-FS")
+    assert usb_fs == usb
+    for cls in ("inrush", "selection"):
+        assert "buck-upstream-inrush-limit" in usb_fs[cls][1]
+
+
 def test_explicit_blocks_flag_without_workspace(tmp_path):
     payload, code = run_knowledge(tmp_path, ["--select", "--blocks", "Buck"])
     assert code == 0 and payload["count"] >= 8
@@ -337,7 +354,26 @@ def test_boards_sources_resolve_in_the_boards_repo(tmp_path, monkeypatch):
     (tmp_path / "empty").mkdir()
     monkeypatch.setenv("HWDE_BOARDS_ROOT", str(tmp_path / "empty"))
     assert knowledgelib._source_exists("boards/ws/parts/gone.pdf")
+    # a root with no register (a project's own boards/) answers only for
+    # the workspaces it holds; the boards repo (it has a register) for all
+    monkeypatch.setenv("HWDE_BOARDS_ROOT", str(root))
+    assert knowledgelib._source_exists("boards/other/parts/d.pdf")
+    (root / "register.yaml").write_text("{}\n")
+    assert not knowledgelib._source_exists("boards/other/parts/d.pdf")
+    assert not knowledgelib._source_exists("boards/ws/parts/gone.pdf")
 
+
+
+def test_library_sources_resolve_in_the_sources_dir(tmp_path, monkeypatch):
+    """A skill-relative `reference/knowledge/sources/<f>` resolves in
+    SOURCES_DIR too (HWDE_KNOWLEDGE_SOURCES: a copy of the skill without the
+    PDFs), as the file or its not-redistributed sidecar."""
+    (tmp_path / "a.pdf").write_bytes(b"%PDF")
+    (tmp_path / "b.pdf.not-redistributed.md").write_text("url\n")
+    monkeypatch.setattr(knowledgelib, "SOURCES_DIR", tmp_path)
+    assert knowledgelib._source_exists("reference/knowledge/sources/a.pdf")
+    assert knowledgelib._source_exists("reference/knowledge/sources/b.pdf")
+    assert not knowledgelib._source_exists("reference/knowledge/sources/c.pdf")
 
 # ---------------------------------------------------------------------------
 # STDC14 is the default STM32 debug header; TC2030 / 0.1 in are brief opt-outs

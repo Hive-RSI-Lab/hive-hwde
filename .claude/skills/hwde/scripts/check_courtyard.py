@@ -81,13 +81,13 @@ def check(pcb: Path) -> tuple[list[dict], dict]:
         px1, py1, px2, py2 = copper.bounds
         names = ", ".join(f"{n} ({a:.2f} mm2)" for n, a in missed)
         viols.append(checklib.violation(
-            "courtyard_pads", "error", f.pos, "F.CrtYd" if f.side == "front"
+            SCRIPT, "error", f.pos, "F.CrtYd" if f.side == "front"
             else "B.CrtYd", None, [ref],
             f"{ref} ({f.fpid}): the courtyard "
             f"({cx2 - cx1:.2f} x {cy2 - cy1:.2f} mm) leaves pad(s) {names} "
             f"outside it; the pads span {px2 - px1:.2f} x {py2 - py1:.2f} mm. "
             f"Fix the footprint (fpfix rule E) and update it from the library",
-            SOURCE, footprint=f.fpid,
+            SOURCE, kind="courtyard_pads", footprint=f.fpid,
             pads_outside=[n for n, _ in missed],
             courtyard_bbox=[checklib.rnd(v) for v in (cx1, cy1, cx2, cy2)],
             pads_bbox=[checklib.rnd(v) for v in (px1, py1, px2, py2)]))

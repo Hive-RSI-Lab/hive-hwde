@@ -33,9 +33,11 @@ The board lands in the positive quadrant (a wide fixed outline centred on
 the packed parts used to start at negative X, cutting PDF plots off) with
 the aux (drill/place) and grid origin at the outline's lower-left corner.
 
-The outline is PROVISIONAL, and under a build mode whose binding makes geometry
-an output (`state.py mode`, reference/build-modes.md) a fixed `--outline WxH` is
-REFUSED here: the size comes from the placement via `board_edit --outline fit`.
+The outline is PROVISIONAL. Under a build mode whose binding makes geometry an
+output (`state.py mode`, reference/build-modes.md) a fixed `--outline WxH` is
+built as asked and the report says the size did not come from the placement
+(`build_mode.fixed_outline_override`, a worker note): the usual route is
+`--outline auto`, place, then `board_edit --outline fit`.
 
 Self-check acceptance (SPEC S8): schematic parity == 0 (every part+net imported
 correctly) AND zero setup DRC violations, EXCLUDING unconnected_items (the board
@@ -362,20 +364,21 @@ def stackup_freshness(stackup: dict, today: _dt.date | None = None,
 def mode_outline_guard(out_dir: Path, outline: str,
                        workspace: str | None = None,
                        allow_fixed: bool = False) -> dict | None:
-    """U18: refuse a FIXED outline when the run's build mode makes geometry an
+    """U18: note a FIXED outline when the run's build mode makes geometry an
     output of the placement.
 
     bb-buck is the case this exists for. Its P2 derived 40 x 30 mm because the
     outline is the radiator; P5 was then handed 35 x 25 from the H1 checkpoint,
     and P6 optimized to FIT it - 0.05 mm of slack on all four edges. Nothing
-    refused, because `--outline WxH` had no idea a mode was in force. Now it
-    reads the recorded mode (`state.py mode`) and the size has to come from the
-    layout: `--outline auto` here, `board_edit --outline fit` after the place
-    gate (reference/recipes/resize-board.md).
+    said so, because `--outline WxH` had no idea a mode was in force. Now it
+    reads the recorded mode (`state.py mode`) and, when a fixed size is given
+    anyway, builds it and says plainly that the size did not come from the
+    layout (once a refusal; a refusal is a rule the agent cannot weigh, and an
+    enclosure or a mating board can make a fixed size the right call).
 
     Returns the mode record when one is in force (for the report), None when
-    there is no workspace or no mode. `--allow-fixed-outline` is the explicit,
-    reported consent - the same shape as board_edit's `--replace-shape`.
+    there is no workspace or no mode. `--allow-fixed-outline` (deliberate)
+    words the note as a choice rather than a warning.
     """
     ws = statelib.find_workspace(out_dir, workspace)
     if ws is None:
@@ -395,15 +398,16 @@ def mode_outline_guard(out_dir: Path, outline: str,
             f"--outline {outline} accepted under binding "
             f"{mode.get('binding')} because --allow-fixed-outline was passed; "
             "the size did NOT come from the placement")
-        return rec
-    raise RuntimeError(
-        f"--outline {outline} refused: build mode {mode.get('target')} binds "
-        f"{mode.get('binding')}, where the board size is an OUTPUT of the "
-        "placement, not an input to it. Use --outline auto (generous "
-        "provisional room), place, gate `place`, then board_edit.py --outline "
-        "fit --margin M (reference/recipes/resize-board.md). To override "
-        "anyway pass --allow-fixed-outline, or change the brief's target "
-        "(reference/build-modes.md).")
+    else:
+        rec["fixed_outline_override"] = (
+            f"--outline {outline} under build mode {mode.get('target')} "
+            f"(binding {mode.get('binding')}), where the board size is "
+            "usually an OUTPUT of the placement: the size did NOT come from "
+            "the placement. If nothing outside the board fixes it, re-run "
+            "with --outline auto and board_edit.py --outline fit after the "
+            "place gate (reference/recipes/resize-board.md); either way "
+            "record why (state.py decision)")
+    return rec
 
 
 # --------------------------------------------------------------- main
@@ -457,12 +461,12 @@ def main(argv: list[str] | None = None) -> int:
                          "worker_notes, or refused.")
     ap.add_argument("--workspace", help="workspace holding state.json "
                     "(default: the first parent of --out that has one) - the "
-                    "recorded build mode decides whether a fixed --outline is "
-                    "legal (reference/build-modes.md)")
+                    "recorded build mode says whether a fixed --outline is "
+                    "earned (reference/build-modes.md)")
     ap.add_argument("--allow-fixed-outline", action="store_true",
-                    help="accept --outline WxH even under a build mode whose "
-                         "binding makes the geometry an OUTPUT; the override "
-                         "is reported in mode.fixed_outline_override")
+                    help="a fixed --outline under a build mode whose binding "
+                         "makes the geometry an OUTPUT is deliberate: the "
+                         "note in build_mode.fixed_outline_override says so")
     ap.add_argument("--schematic", help="copy this .kicad_sch next to the board "
                     "so the self-check can run schematic parity")
     ap.add_argument("--fp-lib", action="append", default=[],
@@ -488,8 +492,8 @@ def main(argv: list[str] | None = None) -> int:
             if not m:
                 raise RuntimeError(f"bad --outline {args.outline!r} (use auto or WxH)")
             outline = {"mode": "fixed", "w": float(m.group(1)), "h": float(m.group(2))}
-        # U18: the recorded build mode may forbid a fixed outline outright.
-        # Checked BEFORE the netlist parse so the refusal is instant.
+        # U18: under a geometry-as-output build mode a fixed outline is
+        # built, and noted in the report (worker_notes) as not earned.
         build_mode = mode_outline_guard(out_dir, args.outline, args.workspace,
                                         args.allow_fixed_outline)
 
