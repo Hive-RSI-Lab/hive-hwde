@@ -135,6 +135,19 @@ Consumers per key (script -> phase):
     //        (it prices the second reflow side, so it will not do it
     //        gratuitously); a pinned ref is never flipped. Declare it for
     //        anything the enclosure, a mating direction or a heatsink fixes.
+    "mates": [{"ref": "J2", "mate": "onboard_flex",
+               "corridor": [[x1, y1, x2, y2], [x1, y1, x2, y2]],
+               "mate_refs": ["DS1"], "reason": "LCD tail lies into J2"}]
+    //        a connector whose mate lies on THIS board (an FPC socket taking
+    //        the flex tail of a display mounted on the board), so its mouth
+    //        rightly faces inward. check_mating and the place gate then drop
+    //        the board-edge rule for it and check instead that the corridor
+    //        (the rectangles the flex lies over, its real outline: the wide
+    //        part at the panel too) crosses the mouth face
+    //        (mating_mate_misaligned) and holds no part on the connector's
+    //        side but mate_refs, the footprints that are the mate itself
+    //        (mating_zone_blocked). mate: onboard_flex only. Declare the
+    //        same rectangles as keepouts so place_anneal keeps them clear.
   },
 
   // planes_gen (P7). Defaults when absent: 2-layer -> B.Cu GND pour;

@@ -937,7 +937,8 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
         parts_report = None
         if parts is not None:
             import bom_cpl
-            parts_report = bom_cpl.run(pcb, tmp / "bom", parts_json=parts)
+            parts_report = bom_cpl.run(pcb, tmp / "bom", parts_json=parts,
+                                       stock=False)
         facts.update(check_release(fab, expected_cu, vios, parts_report,
                                    fab_dir=Path(fab_dir) if fab_dir else None))
 

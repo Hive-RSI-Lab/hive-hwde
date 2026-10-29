@@ -43,8 +43,9 @@ the project DRC actually loaded. Says nothing about pad geometry.
    cluster"; add `requires_pipeline_rewind` if footprints under placed parts would change.
 
 ## Do not
-- Do not re-pull to silence it: that APPENDS duplicate symbols for any EasyEDA name with a
-  space or '/' (587), and a relative `--out-dir` bakes dead 3D paths into the repo root (701).
+- Do not re-pull to silence it: a part already in the library is left as it is (only its
+  missing 3D models are fetched), and `--overwrite` undoes the fpfix repairs and APPENDS
+  duplicate symbols for any EasyEDA name with a space or '/' (587).
 - Do not raw-edit .kicad_mod or fp-lib-table; library edits need approval + lib/EDITS.md.
 - Do not read this as a geometry verdict, nor a clean fp_verify as one: fp_verify has NO drill
   handling so a wrong THT annulus passes (1256); pulled courtyards enclose the body only (1167).

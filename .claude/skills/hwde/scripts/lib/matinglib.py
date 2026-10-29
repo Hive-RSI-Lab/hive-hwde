@@ -26,7 +26,28 @@ the blocking parts):
                        round (PCB-0023-A J101/J102/J501: an edge-launch SMA
                        whose model is turned 180 degrees).
 
-and one warning, mating_direction_unknown, for a horizontal connector whose
+A connector whose mate lies on the board itself (an FPC socket taking the
+tail of a display that sits on this board) does not mate from an edge, so
+the board's constraints.json declares it under placement.mates:
+
+  {"ref": "J2", "mate": "onboard_flex",
+   "corridor": [[x1, y1, x2, y2], ...], "mate_refs": ["DS1"],
+   "reason": "the LCD's tail lies on the top side into J2"}
+
+The corridor is the rectangles the flex lies over (its real outline, board
+mm). For a declared connector the edge rule (faces_inward, mouth_inset) and
+the plug-shaped insertion zone give way to two errors:
+
+  mating_mate_misaligned  the corridor does not cross the connector's mouth
+                       face, so the declared flex cannot reach the socket.
+  mating_zone_blocked  a part on the connector's side (other than
+                       mate_refs, the parts that are the mate) sits in the
+                       corridor.
+
+and mating_mate_invalid for an entry that names no part on the board, an
+unknown mate kind, or no corridor. model_reversed still applies.
+
+There is also one warning, mating_direction_unknown, for a horizontal connector whose
 pad layout is symmetric about its body: it asks for a `mouth` entry in the
 table rather than guessing.
 
@@ -72,7 +93,12 @@ TABLE = Path(__file__).resolve().parents[2] / "reference" / "connector_mating.ya
 EPS_AREA = 0.01
 AXES = {"+x": (1.0, 0.0), "-x": (-1.0, 0.0), "+y": (0.0, 1.0), "-y": (0.0, -1.0)}
 KINDS = ("mating_faces_inward", "mating_mouth_inset", "mating_zone_blocked",
-         "mating_model_reversed", "mating_direction_unknown")
+         "mating_model_reversed", "mating_mate_misaligned",
+         "mating_mate_invalid", "mating_direction_unknown")
+# what placement.mates[].mate may name: the mate lies on this board
+MATES = ("onboard_flex",)
+# a declared family for a mates entry whose footprint name matches none
+DECLARED_FAMILY = {"family": "declared", "entry": "horizontal"}
 # a horizontal connector's 3D model counts as reversed when it reaches less
 # than MODEL_AHEAD_MM ahead of the contact pads along the copper's mouth
 # while it is at least MODEL_MIN_LEN_MM long on that axis (model_reversed)
@@ -88,7 +114,7 @@ def load_table(path: str = str(TABLE)) -> dict:
     for fam in doc.get("families", []):
         fams.append({**d, **fam, "re": re.compile(fam["match"], re.I)})
     mouth = [(re.compile(k, re.I), v) for k, v in (doc.get("mouth") or {}).items()]
-    return {"families": fams, "mouth": mouth}
+    return {"families": fams, "mouth": mouth, "defaults": d}
 
 
 def _name(fpid: str) -> str:
@@ -384,18 +410,128 @@ def part_height(f, model: tuple[str, list[float]] | None,
     return None
 
 
+# ------------------------------------------------------------ declared mates
+
+def declared_mates(placement: dict | None, fps: dict) -> tuple[dict, list]:
+    """(ref -> its valid placement.mates entry, violations for the invalid
+    ones). A bad entry is an error: a typo must not quietly drop a socket
+    back onto the edge rule or out of the check."""
+    good, bad = {}, []
+    for i, m in enumerate((placement or {}).get("mates") or []):
+        m = m if isinstance(m, dict) else {}
+        ref = m.get("ref")
+        rects = m.get("corridor")
+        why = None
+        if ref not in fps:
+            why = f"names {ref!r}, which is not on the board"
+        elif m.get("mate") not in MATES:
+            why = (f"mate {m.get('mate')!r} is not one of "
+                   f"{', '.join(MATES)}")
+        elif not (isinstance(rects, list) and rects and all(
+                isinstance(r, list) and len(r) == 4
+                and all(isinstance(x, (int, float)) for x in r)
+                for r in rects)):
+            why = "needs a corridor: a list of [x1, y1, x2, y2] rectangles"
+        elif ref in good:
+            why = f"declares {ref} a second time"
+        if why:
+            bad.append(checklib.violation(
+                "place", "error", None, None, None,
+                [ref] if isinstance(ref, str) else [],
+                f"placement.mates[{i}] {why}", SOURCE,
+                kind="mating_mate_invalid",
+                connector=ref if isinstance(ref, str) else None))
+            continue
+        good[ref] = m
+    return good, bad
+
+
+def corridor_poly(mate: dict):
+    from shapely.ops import unary_union
+    return unary_union([box(min(x1, x2), min(y1, y2), max(x1, x2),
+                            max(y1, y2)) for x1, y1, x2, y2 in
+                        mate["corridor"]])
+
+
+def _mouth_strip(body, u, tol: float):
+    """The connector's mouth face, tol either side: a flex that reaches the
+    socket crosses it."""
+    v = (-u[1], u[0])
+    _, front = _span(body, u)
+    wlo, whi = _span(body, v)
+    pts = [(a * u[0] + b * v[0], a * u[1] + b * v[1])
+           for a, b in ((front - tol, wlo), (front + tol, whi))]
+    return box(min(pts[0][0], pts[1][0]), min(pts[0][1], pts[1][1]),
+               max(pts[0][0], pts[1][0]), max(pts[0][1], pts[1][1]))
+
+
+def _onboard(ref, fam, f, d, u, body, others, mate, fact, out):
+    """The declared-mate rules for one horizontal connector: the corridor
+    crosses its mouth face, and no part but the mate sits in it."""
+    corridor = corridor_poly(mate)
+    c = f.center_abs()
+    fact.update(mate=mate["mate"],
+                corridor_mm2=checklib.rnd(corridor.area, 1))
+    if d is not None:
+        facing = _snap(*u)
+        fact["mouth"] = facing
+        strip = _mouth_strip(body, u, fam["mouth_tol_mm"])
+        if corridor.intersection(strip).area <= EPS_AREA:
+            out.append(checklib.violation(
+                "place", "error", c, None, None, [ref],
+                f"{ref} ({fam['family']}): its declared {mate['mate']} "
+                f"corridor does not reach its mouth (facing {facing}), so "
+                "the flex cannot go in - turn the socket to face the "
+                "corridor or fix the corridor in placement.mates", SOURCE,
+                kind="mating_mate_misaligned", connector=ref, mouth=facing))
+    skip = set(mate.get("mate_refs") or [])
+    blockers = sorted(o.ref for o in others if o.ref not in skip
+                      and o.extents_abs().intersects(corridor)
+                      and o.precise_extents_abs().intersection(
+                          corridor).area > EPS_AREA)
+    fact["blocked_by"] = blockers
+    if blockers:
+        z = corridor.centroid
+        out.append(checklib.violation(
+            "place", "error", (z.x, z.y), None, None, [ref, *blockers],
+            f"{ref} ({fam['family']}): {', '.join(blockers)} sit in the "
+            f"declared corridor its {mate['mate']} mate lies over", SOURCE,
+            kind="mating_zone_blocked", connector=ref, blocked_by=blockers))
+
+
 # ------------------------------------------------------------ the check
 
-def violations(model, pcb: Path | None = None) -> tuple[list[dict], list[dict]]:
+def _reversed(ref, fam, c, u, span) -> dict:
+    facing, back = _snap(*u), _snap(-u[0], -u[1])
+    return checklib.violation(
+        "place", "error", c, None, None, [ref],
+        f"{ref} ({fam['family']}): its 3D model points the "
+        f"other way from its copper - the pads put the mouth "
+        f"at {facing} but the model lies behind them, "
+        f"{-span[0]:.1f} mm back to {-span[1]:.1f} mm, so every "
+        f"render shows it facing {back}. One of the two is "
+        "backwards: check the datasheet, then fix the model's "
+        "rotate in the footprint (or the footprint)", SOURCE,
+        kind="mating_model_reversed", connector=ref,
+        mouth=facing, model_mouth=back,
+        model_span_mm=[checklib.rnd(v, 2) for v in span])
+
+
+def violations(model, pcb: Path | None = None,
+               placement: dict | None = None) -> tuple[list[dict], list[dict]]:
     """(violations, facts) for every mating connector on `model`
-    (a placelib.PlaceModel)."""
+    (a placelib.PlaceModel); `placement` is constraints.json's placement
+    block, read for its declared mates."""
     table = load_table()
     pcb = Path(pcb or model.path)
     outline = model.outline
     fps = model.footprints
-    out: list[dict] = []
+    mates, out = declared_mates(placement, fps)
     facts: list[dict] = []
     fam_of = {r: family_of(f.fpid, table) for r, f in fps.items()}
+    for r in mates:
+        if fam_of[r] is None:
+            fam_of[r] = {**table["defaults"], **DECLARED_FAMILY}
     metas = board_meta(pcb) if pcb.is_file() and any(fam_of.values()) else {}
     models = {r: m["model"] for r, m in metas.items() if m["model"]}
 
@@ -417,6 +553,26 @@ def violations(model, pcb: Path | None = None) -> tuple[list[dict], list[dict]]:
         facts.append(fact)
         others = [o for r, o in fps.items() if r != ref and o.side == f.side]
 
+        mate = mates.get(ref)
+        if mate is not None and entry != "horizontal":
+            fact["entry_from"] = "declared mate"
+            entry = fact["entry"] = "horizontal"
+        if mate is not None:
+            d = mouth_local(f, table)
+            u = _to_abs_dir(f, d) if d is not None else None
+            if d is None:
+                out.append(checklib.violation(
+                    "place", "warning", f.center_abs(), None, None, [ref],
+                    f"{ref} ({fam['family']}): cannot read its mouth "
+                    "direction from the pad layout, so its declared "
+                    "corridor is checked for parts only - add a `mouth` "
+                    "entry to reference/connector_mating.yaml", SOURCE,
+                    kind="mating_direction_unknown", connector=ref))
+            _onboard(ref, fam, f, d, u, body, others, mate, fact, out)
+            span = model_span_mm(f, d, meta, pcb) if d else None
+            if model_reversed(span):
+                out.append(_reversed(ref, fam, f.center_abs(), u, span))
+            continue
         if entry == "horizontal":
             d = mouth_local(f, table)
             if d is None:
@@ -460,19 +616,7 @@ def violations(model, pcb: Path | None = None) -> tuple[list[dict], list[dict]]:
             fact["model_span_mm"] = None if span is None \
                 else [checklib.rnd(v, 2) for v in span]
             if model_reversed(span):
-                back = _snap(-u[0], -u[1])
-                out.append(checklib.violation(
-                    "place", "error", c, None, None, [ref],
-                    f"{ref} ({fam['family']}): its 3D model points the "
-                    f"other way from its copper - the pads put the mouth "
-                    f"at {facing} but the model lies behind them, "
-                    f"{-span[0]:.1f} mm back to {-span[1]:.1f} mm, so every "
-                    f"render shows it facing {back}. One of the two is "
-                    "backwards: check the datasheet, then fix the model's "
-                    "rotate in the footprint (or the footprint)", SOURCE,
-                    kind="mating_model_reversed", connector=ref,
-                    mouth=facing, model_mouth=back,
-                    model_span_mm=[checklib.rnd(v, 2) for v in span]))
+                out.append(_reversed(ref, fam, c, u, span))
             zone = _zone(body, u, gap, fam["plug_mm"], fam["grip_mm"])
             blockers = sorted(o.ref for o in others
                               if o.extents_abs().intersects(zone)

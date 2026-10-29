@@ -146,7 +146,8 @@ verbs:
       not: ['\bfootprint\b']
     steps:
       - do: "scripts/state.py budget --workspace {ws} --path fix_loops.{gate} --consume"
-        why: "exit 2 = budget exhausted -> ESCALATE, never loop again"
+        why: "a counter: over:true = past the default rounds - go on only if
+              the loop is converging, else change approach (record why)"
       - do: "scripts/state.py snapshot --workspace {ws} --label pre-fix-{gate} --files kicad/{project}.kicad_pcb"
         why: "the rollback point; add the .kicad_sch for P4-phase fixes"
       - do: "scripts/fix_dispatch.py --input {findings} --board {pcb} --state {state} --out {log}/dispatch.json"
@@ -514,7 +515,7 @@ verbs:
         why: "the release attestation (U5): refuses with the FULL problem list
               unless every applicable gate is pass+fresh, strict
               verify_release/dfm_release reports are current under DURABLE
-              waivers, H4 is approved and the fab package is bound. Ordering
+              waivers, H4 is not rejected and the fab package is bound. Ordering
               consumes ONLY this attestation - fix what it lists, never route
               around it."
       - do: "scripts/order_submit.py --pcb {pcb} --fab-dir {fab} --qty {qty} --out {ws}/fab/order.json"
@@ -828,7 +829,9 @@ verbs:
     human_hold: 3
     match:
       any: ['\bdesign (me )?an?\b', '\bbuild (me )?an?\b', '\bnew (board|design|project)\b',
-            '\bfrom scratch\b', '\bfull (run|pipeline)\b', '\bend[- ]to[- ]end\b',
+            '\bbuild (me )?(an?|the|this|my) ([\w-]+ ){0,3}(board|pcb)\b',
+            '\bbrief to\b.*\b(order|fab|gerbers?|package)\b',
+            '\bfrom scratch\b', '\bfull[- ](run|pipeline)\b', '\bend[- ]to[- ]end\b',
             '\bwhole pipeline\b', '\bmake me an?\b.*\bboard\b', '\bspin (up )?an?\b.*\bboard\b',
             '\bultra[- ]bare[- ]bones\b',
             '\blearning (?!mode|session|cycle|harness)[a-z][a-z0-9-]*:']

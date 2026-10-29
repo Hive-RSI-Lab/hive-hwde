@@ -27,6 +27,29 @@ these ways:
   (new, with route_swig's `set_rule_areas`) draws copper keep-outs;
   `route_critical` rips only the nets whose copper broke DRC; `lib/geom.py`
   lists NPTH holes (`npth`).
+- A live stock-and-match check on every BOM row (the person, 10-28: "didn't
+  the hive pull the JLC and LCSC?"): `scripts/stock_check.py` and
+  `scripts/lib/stocklib.py` read JLC's and LCSC's own record for each code
+  (what JLC can still sell, whether it sells the code at all and what its BOM
+  review would swap in, whether the model is the BOM's part), and `bom_cpl.py`
+  fails a row JLC would not place as written (`dfm_check`'s scratch run and
+  `--offline` skip it and say so).
+- A fact ledger per board ("know what we dont know", the person 10-28):
+  `scripts/lib/ledgerlib.py` and `scripts/ledger.py` keep `ledger.json`,
+  every fact the design relies on as verified (source, date), failed or
+  unknown; `stock_check`, `bom_cpl`, `check_ratings` (rating, and a new pinout
+  comparison against the extraction) and `cpl_verify` (footprint) write it,
+  and `lib/releaselib.py` refuses an attestation, and drops order-ready,
+  while any fact is not verified now.
+- The Hive's rules are judgment, not refusals (the person, 10-28): `state.py`
+  `set-phase` warns instead of refusing an unrecorded gate, `budget
+  --consume` and `cross-spawn` count past zero (`over: true`), `research.py
+  open --slot` opens past the per-run cap, `board_init` notes a fixed outline
+  under a geometry-as-output mode instead of refusing it, and the release
+  attestation no longer needs an approved H4 (a rejected one still vetoes).
+  `SKILL.md`, `full-run.md`, `fix-finding.md`, `build-modes.md` and
+  `tasks.yaml` say so: H1-H4 are reports, and only error waivers, cost/feature
+  trades and the order go to the person.
 
 `requirements.lock`, `LICENSE` and `NOTICE` are upstream's, from the repo
 root, and so is `docs/failure-modes.yaml` (`bench --scorecard-corpus` maps

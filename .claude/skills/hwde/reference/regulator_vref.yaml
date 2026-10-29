@@ -1,0 +1,86 @@
+# Feedback reference voltages of adjustable regulators, for sim_board.py's
+# FB-divider check (the Vout a board's divider actually sets).
+#
+# match: a regex tried against the part's value and MPN (case-insensitive).
+# vref: typical volts; tol: the datasheet's min/max spread as a fraction.
+# source: where the number came from. `verified: false` means typed from
+# memory of the datasheet, not re-read: sim_board reports such a Vref as
+# unverified, and the review that relies on it reads the datasheet once and
+# flips it (with the date) here. A board can always pin its own with
+# `sim_board.py --vref U2=0.596`.
+regulators:
+  - match: '^TPS5430[0-9]'      # TPS54302 / TPS54308
+    vref: 0.596
+    tol: 0.025
+    source: TI SLVSDN4 (TPS54302) 7.5 Electrical Characteristics, VFB 0.581-0.611
+    verified: false
+  - match: '^SY8089'
+    vref: 0.6
+    tol: 0.02
+    source: Silergy SY8089 datasheet, VFB
+    verified: false
+  - match: '^SY8113'
+    vref: 0.6
+    tol: 0.02
+    source: Silergy SY8113B datasheet, VFB
+    verified: false
+  - match: '^TPS56320[0-9]'     # TPS563200 / TPS563201
+    vref: 0.768
+    tol: 0.02
+    source: TI TPS563201 datasheet, VFB
+    verified: false
+  - match: '^TPS5433[01]'
+    vref: 0.8
+    tol: 0.02
+    source: TI TPS54331 datasheet, VFB
+    verified: false
+  - match: '^TPS5430($|[^0-9])'
+    vref: 1.221
+    tol: 0.015
+    source: TI TPS5430 datasheet, VSENSE
+    verified: false
+  - match: '^TPS6213[0-3]'
+    vref: 0.8
+    tol: 0.02
+    source: TI TPS62130 datasheet, VFB
+    verified: false
+  - match: '^TLV6256[89]'
+    vref: 0.6
+    tol: 0.02
+    source: TI TLV62569 datasheet, VFB
+    verified: false
+  - match: '^MP1584'
+    vref: 0.8
+    tol: 0.02
+    source: MPS MP1584 datasheet, VFB
+    verified: false
+  - match: '^MP2307'
+    vref: 0.925
+    tol: 0.02
+    source: MPS MP2307 datasheet, VFB
+    verified: false
+  - match: '^MT3608'
+    vref: 0.6
+    tol: 0.03
+    source: Aerosemi MT3608 datasheet, VFB
+    verified: false
+  - match: '^LM2596.*ADJ'
+    vref: 1.23
+    tol: 0.02
+    source: TI LM2596 datasheet, VFB (ADJ)
+    verified: false
+  - match: '^XL4015'
+    vref: 1.25
+    tol: 0.02
+    source: XLSEMI XL4015 datasheet, VFB
+    verified: false
+  - match: '^(AMS1117|LM1117).*ADJ'
+    vref: 1.25
+    tol: 0.02
+    source: AMS1117 datasheet, VREF (ADJ)
+    verified: false
+  - match: '^LM317'
+    vref: 1.25
+    tol: 0.04
+    source: TI LM317 datasheet, VREF 1.20-1.30
+    verified: false
