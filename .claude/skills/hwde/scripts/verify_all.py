@@ -224,6 +224,10 @@ def load_not_applicable(constraints_path: str | None) -> dict:
             raise checklib.CheckError(
                 f"verification.not_applicable[{name!r}] needs non-empty "
                 "'reason' and 'approved'")
+        bad = checklib.approval_problem(entry.get("approved"))
+        if bad:
+            raise checklib.CheckError(
+                f"verification.not_applicable[{name!r}]: {bad}")
     return na
 
 

@@ -15,6 +15,7 @@ Exit contract (SPEC.md section 6): 0 pass, 1 violations, 2 error.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -43,6 +44,37 @@ def _statelib():
         sys.path.insert(0, here)
     import statelib
     return statelib
+
+
+# Leading words that mark an approval as not given yet: a waiver or
+# not-applicable entry whose `approved` opens with one of these is a request,
+# not a human sign-off ("PENDING", "TBD - ask owner", "N/A", "not approved").
+_NOT_APPROVED = frozenset((
+    "pending", "tbd", "tba", "todo", "fixme", "xxx", "awaiting", "waiting",
+    "unapproved", "notapproved", "notyet", "needsapproval", "needsreview",
+    "requested", "none", "null", "nil", "na", "no", "false", "unknown",
+    "rejected", "denied", "who"))
+
+
+def approval_problem(value) -> str | None:
+    """Why an `approved` value (who/when) is not a real approval, or None.
+    Missing, empty, non-text, punctuation-only, template (`<who> <when>`) and
+    placeholder values (PENDING, TBD, TODO, awaiting..., N/A, none ...) are
+    not approvals - waivers are human artifacts and an unsigned one must not
+    pass a gate."""
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return "'approved' is missing or empty"
+    if not isinstance(value, str):
+        return f"'approved' {value!r} is not text naming who and when"
+    text = value.strip()
+    words = re.findall(r"[a-z0-9]+", text.lower())
+    if not words:
+        return f"'approved' {text!r} names no one"
+    if re.search(r"<[^>]*>", text) or words[0] in _NOT_APPROVED \
+            or "".join(words[:2]) in _NOT_APPROVED:
+        return (f"'approved' {text!r} is a placeholder, not a sign-off - "
+                "a human must approve it (who and when)")
+    return None
 
 
 def stamp(payload: dict, input_path) -> dict:
