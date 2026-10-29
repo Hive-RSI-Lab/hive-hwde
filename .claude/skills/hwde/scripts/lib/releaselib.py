@@ -497,11 +497,15 @@ def build(ws: Path,
         problems.append(
             "open issues: "
             + ", ".join(f"#{i.get('id')}({i.get('status')})" for i in live))
+    # The person's sign-offs are not a precondition (10-28: agents carry on
+    # and bring the person only what is truly theirs - waivers, trades, the
+    # order). An H4 they REJECTED is their word and vetoes release; one never
+    # answered is not. The order itself (H5, money) stays the person's.
     h4 = (data.get("human") or {}).get("4") or {}
-    if h4.get("status") != "approved":
+    if h4.get("status") == "rejected":
         problems.append(
-            f"human checkpoint 4 (P8 review) is {h4.get('status') or 'missing'!r}"
-            " - release needs an explicit approval, never a skip")
+            "human checkpoint 4 (P8 review) is 'rejected' - the person's "
+            "veto: rework against their note, then re-record it")
 
     # ---- strict release reports (U2's coverage matrices) ----------------
     gate_mod = _import_script("gate")
@@ -720,7 +724,7 @@ def verify(ws: Path, att: dict | None = None) -> dict:
     checks). verify() independently requires: full input coverage at the
     attested paths, every required gate bound + currently passing, both
     strict reports bound AND re-evaluated against the canonical gates.yaml
-    under durable waivers, the fab package bound, checkpoint 4 approved,
+    under durable waivers, the fab package bound, checkpoint 4 not rejected,
     checker currency, restrictions unchanged with no hold, no artifact
     stale marks, no live issues, no recorded rejection anywhere.
 
@@ -986,8 +990,8 @@ def verify(ws: Path, att: dict | None = None) -> dict:
                 + ", ".join(f"#{i.get('id')}({i.get('status')})"
                             for i in live))
         h4 = (att.get("human_approvals") or {}).get("4") or {}
-        if h4.get("status") != "approved":
-            problems.append("human checkpoint 4: not bound approved in the "
+        if h4.get("status") == "rejected":
+            problems.append("human checkpoint 4: bound REJECTED in the "
                             "attestation")
         for cp, rec in (att.get("human_approvals") or {}).items():
             cur = (data.get("human") or {}).get(cp)

@@ -401,7 +401,10 @@ def test_parts_search_missing_httpx_names_cause(tmp_path, capsys, monkeypatch):
     code, payload = run_main(parts_search, ["--query", "x"], tmp_path, capsys)
     assert code == 2 and payload["status"] == "error"
     assert "httpx" in payload["error"] and sys.executable in payload["error"]
-    assert "hwde-venv" in payload["error"]
+    # inside the module the hint names its venv or runner (94ec4b7), both
+    # built from requirements.lock; standalone it names the hwde venv
+    assert partslib._venv_hint() in payload["error"]
+    assert "requirements.lock" in payload["error"]
     assert "unreachable" not in payload["error"]
     assert not called
 
