@@ -1,4 +1,4 @@
-"""state.py - state.json read/write helpers for the /hwde orchestrator (SPEC 4, S13).
+"""state.py - state.json read/write helpers for the hwde orchestrator (SPEC 4, S13).
 
 state.json is the single source of truth for one design run. The orchestrator
 NEVER carries pipeline state in its context: it reads the resume summary, acts,

@@ -4,7 +4,7 @@ One job: take the placed board to fully-routed, gate-clean. You decide
 ordering/strategy per net class from constraints.json; every copper change
 goes through the pipeline scripts.
 
-You are a P7 subagent of the /hwde pipeline. Files are the interface. Run
+You are a P7 subagent of the hwde pipeline. Files are the interface. Run
 scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
 Route artifacts (DSN/SES/logs) land in `<board dir>/route/`. The spawn
 prompt may carry KNOWLEDGE RECORDS (knowledge.py --select): treat their

@@ -231,6 +231,61 @@ def test_lib_pull_leaves_paths_without_a_project(tmp_path):
     assert GONE in (lib / "aiee.pretty" / "R.kicad_mod").read_text("utf-8")
 
 
+def _fake_pull(lib: Path, name: str, lcsc: str, model: str):
+    """What easyeda2kicad leaves for one part: a symbol with junk pin types,
+    a footprint naming its model by absolute path, the model file."""
+    def pull(ids, base, no_3d, overwrite, pace_s):
+        sym = base.with_suffix(".kicad_sym")
+        old = sym.read_text("utf-8") if sym.exists() else "(kicad_symbol_lib\n"
+        sym.write_text(old[:old.rstrip().rfind(")")] + f"""
+  (symbol "{name}"
+    (property "LCSC Part" "{lcsc}")
+    (symbol "{name}_0_1"
+      (pin unspecified line (at 0 0 0) (length 2.54)
+        (name "A") (number "1"))
+      (pin input line (at 0 2.54 0) (length 2.54)
+        (name "B") (number "2"))))
+)
+""", encoding="utf-8")
+        pretty = Path(str(base) + ".pretty")
+        pretty.mkdir(exist_ok=True)
+        (pretty / f"{name}.kicad_mod").write_text(
+            f'(footprint "{name}"\n  (model "{model}"))\n', encoding="utf-8")
+        shapes = Path(str(base) + ".3dshapes")
+        shapes.mkdir(exist_ok=True)
+        (shapes / Path(model).name).write_text("x", encoding="utf-8")
+        return [{"lcsc": lcsc, "status": "pulled", "symbol": name,
+                 "footprints": []} for _ in ids], 0
+    return pull
+
+
+def test_lib_pull_main_before_the_project_exists(tmp_path, monkeypatch,
+                                                 capsys):
+    """hi-fi core board: the library is pulled before boards/<b>/kicad
+    exists. The models still get ${KIPRJMOD} paths and the new symbol's
+    pins come out passive; a symbol already in the lib keeps its types."""
+    lib = tmp_path / "boards" / "core" / "lib"
+    lib.mkdir(parents=True)
+    (lib / "aiee.kicad_sym").write_text(
+        '(kicad_symbol_lib\n  (symbol "OLD"\n    (property "LCSC Part" "C1")\n'
+        '    (symbol "OLD_0_1"\n      (pin power_in line (at 0 0 0)'
+        ' (length 2.54) (name "V") (number "1"))))\n)\n', encoding="utf-8")
+    monkeypatch.setattr(lib_pull, "_pull_all", _fake_pull(
+        lib, "NEW", "C2", str(lib / "aiee.3dshapes" / "NEW.wrl")))
+    assert lib_pull.main(["--lcsc", "C2", "--out-dir", str(lib),
+                          "--no-autofix", "--no-refdes-norm"]) == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["model_paths"]["rewritten"] == 1, out["model_paths"]
+    fp = (lib / "aiee.pretty" / "NEW.kicad_mod").read_text("utf-8")
+    assert "${KIPRJMOD}/../lib/aiee.3dshapes/NEW.wrl" in fp
+    assert not (tmp_path / "boards" / "core" / "kicad").exists()
+    sym = (lib / "aiee.kicad_sym").read_text("utf-8")
+    assert out["pin_types"]["changed"] == 2
+    assert out["pin_types"]["symbols"] == ["NEW"]
+    assert "pin unspecified" not in sym and "pin input" not in sym
+    assert "pin power_in" in sym
+
+
 # ------------------------------------------------------------ gate freshness
 
 PCB_GATES = ["place", "drc_routed", "verify", "dfm"]

@@ -10,7 +10,7 @@ engineering record (every gate, decision and digest). The guide is for a
 person holding the board: short, plain, and complete about the things they
 must do.
 
-You are a P9 subagent of the /hwde pipeline, spawned after the `dfm` gate
+You are a P9 subagent of the hwde pipeline, spawned after the `dfm` gate
 passed and the fab package exists. Files are the interface. Run hwde scripts
 with the repo venv python (`.venv/bin/python` on Linux,
 `.venv\Scripts\python.exe` on Windows); JSON out, exit 0/1/2.

@@ -4,7 +4,7 @@ One job: run the P5 scripts in order and verify their self-checks. This
 phase is entirely deterministic - your value is correct invocation and
 honest reporting, not creativity.
 
-You are a P5 subagent of the /hwde pipeline. Files are the interface. Run
+You are a P5 subagent of the hwde pipeline. Files are the interface. Run
 scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
 
 ## Inputs

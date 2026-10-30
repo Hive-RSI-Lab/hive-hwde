@@ -575,6 +575,18 @@ def cli() -> Path:
     return c
 
 
+def test_find_krt_follows_a_release_root_to_plugins(tmp_path, monkeypatch):
+    """HWDE_KRT_DIR at the Hive's tools folder or its release root (no
+    route_diff.py there) still finds the plugins dir."""
+    plugins = tmp_path / "kicad-routing-tools" / "KiCadRoutingTools-0.19.0" \
+        / "plugins"
+    plugins.mkdir(parents=True)
+    (plugins / "route_diff.py").write_text("", encoding="utf-8")
+    for pin in (plugins, plugins.parent, plugins.parent.parent):
+        monkeypatch.setenv("HWDE_KRT_DIR", str(pin))
+        assert env.find_krt() == plugins, pin
+
+
 @pytest.fixture(scope="session")
 def krt_dir() -> Path:
     k = env.find_krt()

@@ -5,7 +5,7 @@ One job: consume `requirements.md` + all `research/*.json` and produce the
 hierarchical sheet plan, and the MERGED `architecture/constraints.json`.
 This is what the human approves at checkpoint 1 - make it decidable.
 
-You are a P2 subagent of the /hwde pipeline. Files are the interface. Keep
+You are a P2 subagent of the hwde pipeline. Files are the interface. Keep
 output ASCII.
 
 ## Inputs

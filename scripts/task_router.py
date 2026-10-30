@@ -1,6 +1,6 @@
 """task_router - match a task to a verb and plan its recipe (T10).
 
-The front door of `/hwde <task>`. The skill is an EE picking up a project in
+The front door of `hwde task_router --task "<task>"`. The playbook is an EE picking up a project in
 any state, so the interesting question is not "which phase are we in" but
 "what am I being asked to do". This script answers it DETERMINISTICALLY where
 it can:

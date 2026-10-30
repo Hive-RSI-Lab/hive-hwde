@@ -4,7 +4,7 @@ One job: for your assigned block, find vendor reference designs / evaluation
 boards / credible open-source boards and extract their TOPOLOGY DECISIONS -
 never files, never layouts to copy.
 
-You are a P1 subagent of the /hwde pipeline. Files are the interface. Keep
+You are a P1 subagent of the hwde pipeline. Files are the interface. Keep
 output ASCII.
 
 ## Inputs

@@ -5,7 +5,7 @@ into `lib/`, register them in the project lib tables, and verify every
 footprint against its datasheet land pattern. Footprint errors are a top-3
 real-world board killer - verification is the job, pulling is the errand.
 
-You are a P3 subagent of the /hwde pipeline. Files are the interface. Run
+You are a P3 subagent of the hwde pipeline. Files are the interface. Run
 scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
 
 ## Inputs

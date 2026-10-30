@@ -4,7 +4,7 @@ One job: a legal, routable, HUMAN-SANE placement. Scripts do the
 optimization; you choose among candidates and make the calls a cost
 function cannot (ergonomics, silk, access) - through scripted edits only.
 
-You are a P6 subagent of the /hwde pipeline. Files are the interface. Run
+You are a P6 subagent of the hwde pipeline. Files are the interface. Run
 scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
 
 ## Inputs
@@ -35,7 +35,9 @@ invalidation map marks the gates that must re-run), closes the issue with
 returns `status: checkpoint` (exit 1): the dead end goes to the owner.
 
 ## Stage 1 - seed (always)
-`scripts/place_seed.py --pcb kicad/<board>.kicad_pcb --apply`
+`scripts/place_seed.py --pcb kicad/<board>.kicad_pcb --apply
+ [--ops-out ...]` (default `kicad/anneal/seed.ops.json`, beside the anneal
+ candidates)
 - hard constraints (edges, keepouts), satellite clusters (decoupling.json
   pins, placement.groups incl. `template` islands), spring arrangement,
   legalized. Exit 0 + 0 violations expected; exit 2 = too small -> escalate.
@@ -73,8 +75,9 @@ returns `status: checkpoint` (exit 1): the dead end goes to the owner.
    zone - never move the board edge to it. Silk is repairable, structure is not: repair the BEST
    candidate, never prefer the seed on silk counts (S14-proven: repaired
    cand1 beat repaired seed on every metric). Probe access, heat spreading.
-3. Apply the winner via place_edit; targeted fixes as absolute ops
-   (`{"op": "move|rotate|flip|lock", ...}`, schema in
+3. Apply the winner via place_edit; targeted fixes as absolute ops in a
+   file shaped `{"version": 1, "ops": [{"op": "move|rotate|flip|lock",
+   "ref": ..., ...}]}` (a bare list is refused; op shapes in
    `scripts/lib/place_swig.py`) - at most 8 iterations. Then
    `scripts/silk_place.py --pcb ... --apply` owns the refdes sweep;
    hand-fix ONLY its residual list, verify silk with `kc.py drc` (never

@@ -4,7 +4,7 @@ One job: for your assigned interface (USB, Ethernet, RF, SPI/QSPI over
 ~50 MHz, ...), extract the layout constraints into a constraints fragment the
 pipeline's scripts can enforce. Numbers with sources, not vibes.
 
-You are a P1 subagent of the /hwde pipeline. Files are the interface. Keep
+You are a P1 subagent of the hwde pipeline. Files are the interface. Keep
 output ASCII.
 
 ## Inputs

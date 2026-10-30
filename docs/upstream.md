@@ -20,6 +20,11 @@ What moved where:
   redistributed under their owners' terms, not MIT.
   `scripts/lib/knowledgelib.py`'s `SOURCES_DIR` reads `HWDE_KNOWLEDGE_SOURCES`,
   and `bin/hwde` points it at the hwde project's clone when there is one.
+- `scripts/parts_search.py --kind/--category` (with
+  `reference/part_kinds.yaml` and `category_search` in
+  `scripts/lib/partslib.py`): finding a part by what it is, by browsing its
+  JLC category, since the keyword search only matches part numbers. Tested
+  offline by `tests/test_parts_kind.py`.
 - Fixes from building boards here (issue #5, hwde-led-test), each tested in
   `tests/test_sourcer_records.py`:
   - `scripts/bom_cpl.py` reads a footprint's LCSC number from `LCSC Part`
@@ -39,6 +44,16 @@ What moved where:
   copies; `scripts/board_edit.py`, whose `--outline fit` counts silk and whose
   edits refuse to clip it; `scripts/check_silk.py`, whose silk items carry
   their footprint's reference.
+- Power-path checks from hifi-receiver-2's first-spin power review, which
+  did each by hand: `scripts/check_power_path.py` (+
+  `checks.d/check_power_path.yaml`, mutant `power-path-under-contract`), the
+  current each pad-track-via chain carries as a max-flow over the copper;
+  `scripts/sim_inrush.py` and `scripts/lib/pdsource.py`, a board's load
+  switches against a USB PD source; `scripts/soa_check.py` and
+  `scripts/lib/soa.py` with `reference/fet_power.yaml`, a FET's peak
+  junction temperature through a pulse; `scripts/mlcc_dcbias.py` and
+  `scripts/lib/mlcc.py` with `reference/mlcc_dcbias.yaml`, ceramics at DC
+  bias (sim_board's DC-bias warning reports the derated value).
 - A live stock-and-match check on every BOM row (the person, 10-28: "didn't
   the hive pull the JLC and LCSC?"): `scripts/stock_check.py` and
   `scripts/lib/stocklib.py` read JLC's and LCSC's own record for each code
@@ -73,7 +88,7 @@ showcase (`test_showcase_gallery`), `LEARNINGS.md` and its triage
 (`test_kicad_pin`), `docs/check-scorecard.jsonl` (`test_check_scorecard`)
 and the vendored-copy check (`test_skill_copy_current`). `tests/conftest.py`
 adds `KNOWN_FAILING`; `tests/test_workarounds.py`, `tests/workarounds/` and
-`pytest.ini` (upstream's pytest settings from its `pyproject.toml`) are the
+`tests/test_parts_kind.py` and `pytest.ini` (upstream's pytest settings from its `pyproject.toml`) are the
 module's own. The plans, docker setup and design notes stayed upstream.
 
 Everything else that's specific to the Hive is in `bin/` and `docs/`:

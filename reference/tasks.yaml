@@ -1,7 +1,7 @@
 # tasks.yaml - the task taxonomy: what an EE can be asked to do, and the recipe
 # that does it (T10).
 #
-# Consumed by scripts/task_router.py: `/hwde <task>` matches this table FIRST
+# Consumed by scripts/task_router.py: `hwde task_router --task "<task>"` matches this table FIRST
 # (deterministic regex), and only an ambiguous/unknown match falls through to
 # LLM classification (which lands back here via --verb). The full pipeline is
 # the `full-run` verb - a recipe like any other, not a separate code path.

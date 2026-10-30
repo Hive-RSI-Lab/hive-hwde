@@ -85,6 +85,7 @@ import yaml  # noqa: E402
 import check_ratings  # noqa: E402
 import checklib  # noqa: E402
 import engcalc  # noqa: E402
+import mlcc  # noqa: E402
 import simlib  # noqa: E402
 from lib import env  # noqa: E402
 
@@ -772,8 +773,16 @@ def analyze(board: dict, parts: dict, rails: dict, opts: dict) -> tuple:
         part = parts.get(e["ref"])
         rating, rsrc = cap_rating(board["comps"][e["ref"]], part)
         diel = attr(part, r"Temperature Coefficient|Dielectric") or ""
+        comp = board["comps"][e["ref"]]
+        eff = mlcc.c_eff(e["value"], vdc, footprint=comp["footprint"],
+                         value=comp["value"], text=diel,
+                         mpn=(part or {}).get("mpn", ""), rated_v=rating)
         cfacts.append({"ref": e["ref"], "vdc": checklib.rnd(vdc, 3),
-                       "rating_v": rating, "dielectric": diel or None})
+                       "rating_v": rating, "dielectric": diel or None,
+                       "c_nom": e["value"],
+                       "c_eff": checklib.rnd(eff["c_eff"], 12),
+                       "c_eff_low": checklib.rnd(eff["c_eff_low"], 12),
+                       "c_eff_curve": eff["curve"]})
         if rating is None:
             if vdc >= 6.0:
                 unknowns.append({"ref": e["ref"], "what": "voltage rating",
@@ -785,15 +794,19 @@ def analyze(board: dict, parts: dict, rails: dict, opts: dict) -> tuple:
                              e["nets"][0], f"{e['ref']} sees {vdc:.3g} V DC "
                              f"over its {rating:g} V rating ({rsrc})",
                              vdc=vdc, rating_v=rating))
-        elif vdc > 0.5 * rating and re.match(r"[XYZ]\d[A-Z]", diel.upper()):
+        elif re.match(r"[XYZ]\d[A-Z]", diel.upper()) and (
+                vdc > 0.5 * rating or eff["fraction"] < 0.5):
             vios.append(_vio("cap_dc_bias", "warning", [e["ref"]],
                              e["nets"][0],
                              f"{e['ref']} ({_f(e['value'], 'F')} {diel}) at "
                              f"{vdc:.3g} V DC is {vdc / rating:.0%} of its "
-                             f"{rating:g} V rating: class-II ceramics lose "
-                             "much of their capacitance there - check the "
-                             "maker's DC-bias curve", vdc=vdc,
-                             rating_v=rating))
+                             f"{rating:g} V rating: about "
+                             f"{_f(eff['c_eff'], 'F')} effective "
+                             f"({_f(eff['c_eff_low'], 'F')} low, "
+                             f"{eff['curve']} curve, mlcc_dcbias.py) - check "
+                             "the maker's DC-bias curve", vdc=vdc,
+                             rating_v=rating, c_eff=eff["c_eff"],
+                             c_eff_low=eff["c_eff_low"]))
     facts["capacitors_dc"] = sorted(cfacts, key=lambda r: -r["vdc"])[:25]
     facts["rail_currents_a"] = {
         net: checklib.rnd(-ops["default"]["src"].get(

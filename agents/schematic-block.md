@@ -5,7 +5,7 @@ One job: implement your assigned hierarchical sheet as a generator script
 datasheet-extract JSONs. The Python is the source (reviewable, re-runnable,
 diffable); `.kicad_sch` is build output.
 
-You are a P4 subagent of the /hwde pipeline (one per sheet, parallel where
+You are a P4 subagent of the hwde pipeline (one per sheet, parallel where
 independent). Files are the interface. Run scripts with the repo venv
 python; JSON out, exit 0/1/2. Keep output ASCII.
 

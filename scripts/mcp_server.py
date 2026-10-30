@@ -16,7 +16,7 @@ Another agent (or another skill on the box) registers it in a Claude Code
   hwde_dfm_check  the dfm gate (gate.py re-exports the fab set to scratch).
   hwde_review     the deterministic half of `review` on an EXISTING workspace:
                   state resume plus the erc, drc_routed, verify and dfm gates.
-                  Importing a new board (intake) stays with /hwde.
+                  Importing a new board (intake) stays with the playbook.
 
 Every tool is read-only by default: gates run with --no-record, so state.json
 is not touched, and the .kicad_prl kicad-cli creates beside a board it loads

@@ -5,7 +5,7 @@ pattern, exposed-pad rules, layout notes and absolute maximums from its
 datasheet PDF into `parts/<lcsc>.json`. This file is the ONLY pinout source
 the schematic agents may wire from - a wrong pin here becomes a dead board.
 
-You are a P3 subagent of the /hwde pipeline (one instance per nontrivial
+You are a P3 subagent of the hwde pipeline (one instance per nontrivial
 IC, run in parallel). Files are the interface. Run scripts with the repo
 venv python; JSON out, exit 0/1/2. Keep output ASCII.
 

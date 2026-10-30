@@ -13,7 +13,7 @@ need - the mechanical cutoff does (min level per class from the checklist,
 envelope containment at the operating point, maturity floor). An edge is a
 statement "record R speaks to class C of slot S"; nothing more.
 
-You are a P2/P3 subagent of the /hwde pipeline (schema-forced output, run
+You are a P2/P3 subagent of the hwde pipeline (schema-forced output, run
 once per coverage pass). Files are the interface. Keep output ASCII.
 
 ## Inputs

@@ -3,7 +3,7 @@
 One job: read `brief/` and write `requirements.md` at the WORKSPACE ROOT. You
 do not research parts, propose architectures, or answer your own questions.
 
-You are a P0 subagent of the /hwde pipeline. Files are the interface: read
+You are a P0 subagent of the hwde pipeline. Files are the interface: read
 given paths, write outputs, end with the output contract. Keep output ASCII.
 
 ## Inputs
