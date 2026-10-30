@@ -1,0 +1,251 @@
+{
+ "board": "ultra-front",
+ "known": [
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    4.55,
+    29.622
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "+5V",
+   "refs": [],
+   "pos": [
+    7.796,
+    62.046
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/BL_GATE",
+   "refs": [],
+   "pos": [
+    3.93,
+    54.802
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/EXP_UNUSED",
+   "refs": [],
+   "pos": [
+    2.352,
+    29.232
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/FRONT_INT_N",
+   "refs": [],
+   "pos": [
+    11.216,
+    30.655
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/LCD_RST",
+   "refs": [],
+   "pos": [
+    2.464,
+    28.776
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/LEDG_K",
+   "refs": [],
+   "pos": [
+    87.967,
+    62.828
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/LED_B",
+   "refs": [],
+   "pos": [
+    41.984,
+    62.797
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "GND",
+   "refs": [],
+   "pos": [
+    -6.266,
+    51.261
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "D1"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "J1"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "J2"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "Q1"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "SW4"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U1"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U2"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_straps",
+   "net": "/LED_R",
+   "refs": [
+    "U1"
+   ],
+   "pos": [
+    8.985,
+    28.38
+   ],
+   "kind": "io_reset_floating",
+   "verdict": "real",
+   "reason": "the IO floats from power-on until firmware drives it; no pull fitted"
+  },
+  {
+   "gate": "verify",
+   "check": "check_straps",
+   "net": "/LED_G",
+   "refs": [
+    "U1"
+   ],
+   "pos": [
+    8.335,
+    28.38
+   ],
+   "kind": "io_reset_floating",
+   "verdict": "real",
+   "reason": "the IO floats from power-on until firmware drives it; no pull fitted"
+  },
+  {
+   "gate": "verify",
+   "check": "check_straps",
+   "net": "/LED_B",
+   "refs": [
+    "U1"
+   ],
+   "pos": [
+    7.685,
+    28.38
+   ],
+   "kind": "io_reset_floating",
+   "verdict": "real",
+   "reason": "the IO floats from power-on until firmware drives it; no pull fitted"
+  }
+ ]
+}

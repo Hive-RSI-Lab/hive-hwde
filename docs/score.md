@@ -1,8 +1,12 @@
 # The score
 
-`bin/hwde score` measures what this checkout of hwde finds wrong with real
-boards held fixed. The boards stay the same between measures, and hwde is the
-one thing that changes, so a better hwde moves the number. The person's test
+`bin/hwde score` measures what this checkout of hwde gets wrong on real
+boards held fixed: the findings it raises that aren't defects of the board,
+and the known defects it no longer raises. The boards stay the same between
+measures, and hwde is the one thing that changes, so a better hwde moves the
+number. A true finding on a frozen board is the board's, not hwde's, and
+costs nothing: hwde can't move it, and charging it would read a check made
+sharp enough to find a new real defect as a loss. The person's test
 for the module is "build the hifi board, design new tools, work on them, see
 how that improves the board" (hive-hwde chat, 2026-10-28 10:18). This page
 is the definition. It is written once: a change to it is a change to what
@@ -31,17 +35,47 @@ the refresh as a gain or a loss. `bin/hwde pin --digests` re-stamps the
 digests alone, after a pin's scripts are classified or this repo's board
 changes.
 
+## The ledger
+
+Each pinned board has a ledger of its known findings,
+`pinned/known/<board>.json`: `{"known": [entry, ...]}`. An entry names one
+finding as the score sees it, by where it is rather than how it is worded
+(`gate`, `check`, `kind`, `net`, `refs`, `pos` within 0.05 mm; the `message` only for
+a finding with none of those), and carries a `verdict` and a `reason`:
+
+- **real**: a defect of the pinned board (a router's staircase, a track
+  really under its current, a real ERC conflict). The reason says why.
+- **false**: hwde's mistake (a check misreading a footprint, a screen
+  that charges a decoupling cap the rail's full current). The reason says
+  what hwde gets wrong, so the next agent knows what to fix.
+- **?**: not judged yet.
+
+An entry is one finding: two alike take two entries. `bin/hwde score
+--draft-known` adds every finding the ledger doesn't hold to it as `?`, for
+someone to judge. The ledger is part of the pin's digest, so a verdict
+changes `bin/score.py` (`bin/hwde pin --digests` re-stamps it) and starts a
+new baseline: judging a finding is a change to what is measured, not a gain.
+A re-pin keeps the ledger; entries for defects the new board fixed must go
+(they would read as missed), and its new findings are drafted and judged.
+
 ## What is charged
 
 For every pinned board, a scratch copy goes through `erc`, `drc_routed`,
 `verify` and `dfm`, the same `bin/hwde gate` runs `check-all` makes. Every
 shim in `bin/hwde` is off (`HWDE_NO_SHIMS`), so a gate gets no help hwde
-doesn't ship. One charge is:
+doesn't ship. The findings are each finding a gate fails on that no waiver
+covers (the board's own `reports/verify-waivers.json`, applied by the gate
+as always) and each warning no waiver in that file covers. One charge is:
 
-1. each finding a gate fails on that no waiver covers (the board's own
-   `reports/verify-waivers.json`, applied by the gate as always);
-2. each warning a gate reports that no waiver in that file covers;
-3. each board-local script listed in the pin under `stand_in`: a script in
+1. each finding the ledger holds **false**;
+2. each finding the ledger doesn't hold as judged (`?`, or not in it): an
+   unjudged finding may be hwde's mistake until someone says otherwise;
+3. each **real** entry no finding matches: a known defect hwde has stopped
+   seeing (not for a gate that couldn't run, which is charged as a crash);
+4. each warning past a gate's cap (`gate.WARNINGS_CAP`, which the score
+   lifts to 100000 through `HWDE_GATE_WARNINGS_CAP`), which would travel
+   only as a count and couldn't be judged;
+5. each board-local script listed in the pin under `stand_in`: a script in
    the board's files that does what an hwde script should (a router, a
    via fixer, a zone refill), with the gap it fills. A script under
    `design` is the board's own source (its schematic generator, placement
@@ -49,15 +83,20 @@ doesn't ship. One charge is:
    pin doesn't classify is listed under `unclassified` and charged until it
    is.
 
+A real finding reported costs nothing.
+
 A gate that can't run (exits other than pass or fail, or writes no result)
 charges 100 (`CRASH`), so breaking a gate never hides its findings.
 
 Each planted fault a gate or check lets through charges 100 too (next
 section).
 
-The score is minus the charges. Higher is better and 0 is a clean sweep. The
-output gives one line per board (the charges per gate, by check, and the
-stand-in scripts), then `charges: N`, then the number.
+The score is minus the charges. Higher is better and 0 is a clean sweep:
+every finding real, every known defect found, no stand-ins. The output gives
+one line per board (the findings per gate, the known defects found, the
+missed, false and unjudged ones by check, and the stand-in scripts), a line
+per charged finding as the ledger would name it, then `charges: N`, then the
+number.
 
 ## The planted faults
 
@@ -101,12 +140,18 @@ board's project, or a looser `rules_gen` floor, still gets through.
 
 ## What moves it
 
-- A fix in hwde that clears a finding on a pinned board (a check that stops
-  misreading a footprint, a gate that stops flagging a correct track) raises
-  it at once. Nothing has to be re-run or written by hand.
-- A new check that finds a real defect on a pinned board lowers it. That is
-  the board's defect, newly seen, and the account of the change should say
-  so for the judge.
+- A fix in hwde that clears a false or unjudged finding on a pinned board
+  (a check that stops misreading a footprint, a gate that stops flagging a
+  correct track) raises it at once. Nothing has to be re-run or written by
+  hand.
+- A change that stops reporting a known real defect lowers it, one per
+  defect, on top of what the planted faults charge.
+- A new check, or a sharper one, that finds a real defect on a pinned board
+  lowers it until the ledger holds the defect as real. Put the verdicts in
+  the same change (`--draft-known`, judge, `pin --digests`): that starts a
+  new baseline instead of reading as a loss. A new check's false findings
+  stay charged; that is its cost.
+- Judging an unjudged finding real starts a new baseline; it isn't a gain.
 - A board that drops a stand-in script, because hwde now does that job, is
   re-pinned at the commit that dropped it. The re-pin is a new baseline.
 - Removing a row from `docs/workarounds.md` changes nothing: the score
@@ -124,6 +169,11 @@ board's project, or a looser `rules_gen` floor, still gets through.
   in its own project and re-pinned.
 - Classifying a script as `design` or `stand_in` is a judgment the pin
   records. A reviewer reads a change to it as a change to the score.
+- A verdict in the ledger is a judgment too. A false finding judged real
+  stops costing (a new baseline, never a gain), so a reviewer reads a
+  `real` verdict's reason as closely as a waiver's. A real defect no check
+  has raised yet costs nothing either: the ledger holds only what some
+  check once found.
 
 ## Cost
 

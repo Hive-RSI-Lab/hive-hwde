@@ -166,7 +166,7 @@ def test_planted_drill_hole_sits_clear_of_the_others():
 def _quick(monkeypatch):
     """score.main with the boards stubbed: each measures 0 charges."""
     monkeypatch.setattr(sys, "argv", ["score"])
-    monkeypatch.setattr(score, "measure", lambda p, ws, logs: 0)
+    monkeypatch.setattr(score, "measure", lambda p, ws, logs, *a: 0)
 
 
 def test_score_charges_crash_per_let_through_fault(monkeypatch, capsys):
