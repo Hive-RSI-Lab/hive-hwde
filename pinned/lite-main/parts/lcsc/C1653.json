@@ -1,0 +1,228 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C1653",
+ "total": 123,
+ "count": 3,
+ "results": [
+  {
+   "lcsc": "C1653",
+   "mpn": "CL10C220JB8NNNC",
+   "brand": "Samsung Electro-Mechanics",
+   "description": "22pF 50V C0G \u00b15% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "package": "0603",
+   "category": "Multilayer Ceramic Capacitors MLCC - SMD/SMT",
+   "type": "Basic",
+   "basic": true,
+   "stock": 2054303,
+   "price": 0.0088,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0088
+    },
+    {
+     "qty": 500,
+     "price": 0.0068
+    },
+    {
+     "qty": 1500,
+     "price": 0.0059
+    },
+    {
+     "qty": 4000,
+     "price": 0.0052
+    },
+    {
+     "qty": 24000,
+     "price": 0.0049
+    },
+    {
+     "qty": 48000,
+     "price": 0.0047
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL10C220JB8NNNC_C1653.pdf",
+   "url": "https://www.lcsc.com/product-detail/multilayer-ceramic-capacitors-mlcc-smd-smt_samsung-electro-mechanics-cl10c220jb8nnnc_C1653.html",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b15%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "22pF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "C0G"
+    }
+   ],
+   "rank": 0
+  },
+  {
+   "lcsc": "C2902836",
+   "mpn": "AR06CTC1653",
+   "brand": "Viking Tech",
+   "description": "-55\u2103~+155\u2103 125mW 150V 165k\u03a9 Thin Film Resistor \u00b10.25% \u00b125ppm/\u2103 1206 Chip Resistor - Surface Mount ROHS",
+   "package": "1206",
+   "category": "Chip Resistor - Surface Mount",
+   "type": "Extended",
+   "basic": false,
+   "stock": 391,
+   "price": 0.0543,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0543
+    },
+    {
+     "qty": 100,
+     "price": 0.0436
+    },
+    {
+     "qty": 300,
+     "price": 0.0382
+    },
+    {
+     "qty": 1000,
+     "price": 0.0343
+    },
+    {
+     "qty": 5000,
+     "price": 0.031
+    },
+    {
+     "qty": 10000,
+     "price": 0.0294
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2109301330_Viking-Tech-AR06CTC1653_C2902836.pdf",
+   "url": "https://www.lcsc.com/product-detail/chip-resistor-surface-mount_viking-tech-ar06ctc1653_C2902836.html",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "165k\u03a9"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+155\u2103"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "125mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thin Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "150V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b10.25%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "\u00b125ppm/\u2103"
+    }
+   ],
+   "rank": 1
+  },
+  {
+   "lcsc": "C19077056",
+   "mpn": "CMSC1653B",
+   "brand": "Cmos",
+   "description": "-55\u2103~+150\u2103 1 N-channel 12m\u03a9@4.5V 1nF 2.5V 25W 30V 40A 8nC@4.5V N-Channel DFN-8(3.3x3.3) MOSFETs ROHS",
+   "package": "DFN-8(3.3x3.3)",
+   "category": "MOSFETs",
+   "type": "Extended",
+   "basic": false,
+   "stock": 21,
+   "price": 0.1222,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.1222
+    },
+    {
+     "qty": 50,
+     "price": 0.0968
+    },
+    {
+     "qty": 150,
+     "price": 0.0842
+    },
+    {
+     "qty": 500,
+     "price": 0.0746
+    },
+    {
+     "qty": 2500,
+     "price": 0.07
+    },
+    {
+     "qty": 5000,
+     "price": 0.0662
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "",
+   "url": "",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+150\u2103"
+    },
+    {
+     "name": "Type",
+     "value": "N-Channel"
+    },
+    {
+     "name": "Number",
+     "value": "1 N-channel"
+    },
+    {
+     "name": "Gate Threshold Voltage (Vgs(th))",
+     "value": "2.5V"
+    },
+    {
+     "name": "Gate Charge(Qg)",
+     "value": "8nC@4.5V"
+    },
+    {
+     "name": "Current - Continuous Drain(Id)",
+     "value": "40A"
+    },
+    {
+     "name": "Drain to Source Voltage",
+     "value": "30V"
+    },
+    {
+     "name": "Output Capacitance(Coss)",
+     "value": "1nF"
+    },
+    {
+     "name": "Pd - Power Dissipation",
+     "value": "25W"
+    },
+    {
+     "name": "RDS(on)",
+     "value": "12m\u03a9@4.5V"
+    }
+   ],
+   "rank": 2
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 1
+}

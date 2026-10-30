@@ -1,0 +1,100 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C5125949",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C5125949",
+   "mpn": "AO4485",
+   "brand": "UMW(Youtai Semiconductor Co., Ltd.)",
+   "description": "-55\u2103~+150\u2103 1 P-Channel 1.5V 12.5m\u03a9@10V\u300116m\u03a9@4.5V 12A 180pF 2.5nF 260pF 3.1W 40V 42nC@10V SOP-8 MOSFETs ROHS",
+   "package": "SOP-8",
+   "category": "MOSFETs",
+   "type": "Extended",
+   "basic": false,
+   "stock": 12895,
+   "price": 0.182,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.182
+    },
+    {
+     "qty": 50,
+     "price": 0.1422
+    },
+    {
+     "qty": 150,
+     "price": 0.1252
+    },
+    {
+     "qty": 500,
+     "price": 0.1039
+    },
+    {
+     "qty": 3000,
+     "price": 0.0883
+    },
+    {
+     "qty": 6000,
+     "price": 0.0826
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2311091742_UMW-Youtai-Semiconductor-Co---Ltd--AO4485_C5125949.pdf",
+   "url": "https://www.lcsc.com/product-detail/mosfets_umw-youtai-semiconductor-co-ltd-ao4485_C5125949.html",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+150\u2103"
+    },
+    {
+     "name": "Input Capacitance(Ciss)",
+     "value": "2.5nF"
+    },
+    {
+     "name": "Gate Threshold Voltage (Vgs(th))",
+     "value": "1.5V"
+    },
+    {
+     "name": "Number",
+     "value": "1 P-Channel"
+    },
+    {
+     "name": "Gate Charge(Qg)",
+     "value": "42nC@10V"
+    },
+    {
+     "name": "Reverse Transfer Capacitance (Crss@Vds)",
+     "value": "180pF"
+    },
+    {
+     "name": "Current - Continuous Drain(Id)",
+     "value": "12A"
+    },
+    {
+     "name": "Drain to Source Voltage",
+     "value": "40V"
+    },
+    {
+     "name": "Output Capacitance(Coss)",
+     "value": "260pF"
+    },
+    {
+     "name": "Pd - Power Dissipation",
+     "value": "3.1W"
+    },
+    {
+     "name": "RDS(on)",
+     "value": "12.5m\u03a9@10V\u300116m\u03a9@4.5V"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

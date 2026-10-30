@@ -1,0 +1,5 @@
+{"waivers": [
+ {"check": "check_decoupling", "kind": "decoupler_loop", "net": "+3V3", "refs": ["C31", "U7"],
+  "reason": "U7 is the ESP32-WROVER-E module, which carries its own 3V3 decoupling on its module PCB. C30 (22 uF) and C31 (100 nF) are bulk/backup at the module pin, and the loop the check measures includes the module's GND pad distance. Espressif's module reference design needs only a 10-22 uF + 0.1 uF pair near pin 2, with no loop limit.",
+  "approved": "core worker 261028-145641 (person delegated sign-offs: 'go on with best judgement and record the choice')"}
+]}

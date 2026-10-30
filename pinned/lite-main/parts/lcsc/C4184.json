@@ -1,0 +1,195 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C4184",
+ "total": 6,
+ "count": 3,
+ "results": [
+  {
+   "lcsc": "C4184",
+   "mpn": "0603WAF2002T5E",
+   "brand": "UNI-ROYAL(Uniroyal Elec)",
+   "description": "-55\u2103~+155\u2103 100mW 20k\u03a9 75V Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0603 Chip Resistor - Surface Mount ROHS",
+   "package": "0603",
+   "category": "Chip Resistor - Surface Mount",
+   "type": "Basic",
+   "basic": true,
+   "stock": 6647100,
+   "price": 0.0021,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0021
+    },
+    {
+     "qty": 1000,
+     "price": 0.0016
+    },
+    {
+     "qty": 5000,
+     "price": 0.0014
+    },
+    {
+     "qty": 10000,
+     "price": 0.0013
+    },
+    {
+     "qty": 50000,
+     "price": 0.0012
+    },
+    {
+     "qty": 50200,
+     "price": 0.0012
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010230_UNI-ROYAL-Uniroyal-Elec-0603WAF2002T5E_C4184.pdf",
+   "url": "https://www.lcsc.com/product-detail/chip-resistor-surface-mount_uni-royal-uniroyal-elec-0603waf2002t5e_C4184.html",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "20k\u03a9"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+155\u2103"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "100mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "75V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b11%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "\u00b1100ppm/\u2103"
+    }
+   ],
+   "rank": 0
+  },
+  {
+   "lcsc": "C2869981",
+   "mpn": "SRC4184IPAGR",
+   "brand": "Texas Instruments",
+   "description": "-40\u2103~+85\u2103 1.8V\u30013.3V 4kHz~212kHz On-chip digital gain\u3001Mute control\u3001Master-slave clock negotiation\u3001Asynchronous sample rate conversion SPI Sample Rate Converter TQFP-64(10x10) Audio Interface ICs ROHS",
+   "package": "TQFP-64(10x10)",
+   "category": "Audio Interface ICs",
+   "type": "Extended",
+   "basic": false,
+   "stock": 103,
+   "price": 18.7596,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 18.7596
+    },
+    {
+     "qty": 10,
+     "price": 17.1989
+    },
+    {
+     "qty": 30,
+     "price": 16.6339
+    },
+    {
+     "qty": 100,
+     "price": 15.5121
+    },
+    {
+     "qty": 102,
+     "price": 15.5121
+    },
+    {
+     "qty": 104,
+     "price": 15.5121
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2302220630_Texas-Instruments-SRC4184IPAGR_C2869981.pdf",
+   "url": "https://www.lcsc.com/product-detail/audio-interface-ics_texas-instruments-src4184ipagr_C2869981.html",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+85\u2103"
+    },
+    {
+     "name": "Type",
+     "value": "Sample Rate Converter"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "1.8V\u30013.3V"
+    },
+    {
+     "name": "Sampling Rate",
+     "value": "4kHz~212kHz"
+    },
+    {
+     "name": "Features",
+     "value": "On-chip digital gain\u3001Mute control\u3001Master-slave clock negotiation\u3001Asynchronous sample rate conversion"
+    },
+    {
+     "name": "Interface",
+     "value": "SPI"
+    }
+   ],
+   "rank": 1
+  },
+  {
+   "lcsc": "C3196531",
+   "mpn": "2SC4184-T1-A",
+   "brand": "RENESAS",
+   "description": "- Bipolar (BJT) ROHS",
+   "package": "-",
+   "category": "Bipolar (BJT)",
+   "type": "Extended",
+   "basic": false,
+   "stock": 0,
+   "price": 0.057,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.057
+    },
+    {
+     "qty": 100,
+     "price": 0.057
+    },
+    {
+     "qty": 120,
+     "price": 0.057
+    },
+    {
+     "qty": 2000,
+     "price": 0.0222
+    },
+    {
+     "qty": 5000,
+     "price": 0.0213
+    },
+    {
+     "qty": 10000,
+     "price": 0.021
+    }
+   ],
+   "min_qty": 159,
+   "datasheet": "",
+   "url": "https://www.lcsc.com/product-detail/bipolar-bjt_renesas-2sc4184-t1-a_C3196531.html",
+   "attributes": [],
+   "rank": 2
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

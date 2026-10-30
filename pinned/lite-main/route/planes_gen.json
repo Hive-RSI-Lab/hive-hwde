@@ -1,0 +1,191 @@
+{
+ "script": "planes_gen",
+ "status": "pass",
+ "board": "lite-main.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "facts": {
+  "plan_source": "constraints",
+  "zones_added": 9,
+  "zones": [
+   {
+    "net": "GND",
+    "layer": "B.Cu",
+    "region": [
+     23.365,
+     60.823,
+     122.365,
+     149.823
+    ],
+    "priority": 0,
+    "status": "added",
+    "area_mm2": 7919.082,
+    "islands": 1
+   },
+   {
+    "net": "VBUS",
+    "layer": "F.Cu",
+    "region": [
+     86.465,
+     62.823,
+     89.765,
+     73.723
+    ],
+    "priority": 1,
+    "status": "added",
+    "area_mm2": 34.166,
+    "islands": 1
+   },
+   {
+    "net": "PVDD",
+    "layer": "F.Cu",
+    "region": [
+     92.265,
+     62.823,
+     95.265,
+     69.923
+    ],
+    "priority": 1,
+    "status": "added",
+    "area_mm2": 21.285,
+    "islands": 1
+   },
+   {
+    "net": "PVDD",
+    "layer": "B.Cu",
+    "region": [
+     92.265,
+     63.323,
+     95.765,
+     80.123
+    ],
+    "priority": 2,
+    "status": "added",
+    "area_mm2": 58.792,
+    "islands": 1
+   },
+   {
+    "net": "PVDD",
+    "layer": "B.Cu",
+    "region": [
+     86.365,
+     80.123,
+     121.565,
+     95.323
+    ],
+    "priority": 1,
+    "status": "added",
+    "area_mm2": 535.025,
+    "islands": 1
+   },
+   {
+    "net": "PVDD",
+    "layer": "F.Cu",
+    "region": [
+     81.365,
+     93.323,
+     94.865,
+     98.323
+    ],
+    "priority": 2,
+    "status": "added",
+    "area_mm2": 62.901,
+    "islands": 1
+   },
+   {
+    "net": "PVDD",
+    "layer": "F.Cu",
+    "region": [
+     81.365,
+     98.323,
+     97.465,
+     103.823
+    ],
+    "priority": 1,
+    "status": "added",
+    "area_mm2": 84.819,
+    "islands": 1
+   },
+   {
+    "net": "PVDD",
+    "layer": "F.Cu",
+    "region": [
+     108.865,
+     93.323,
+     122.365,
+     98.323
+    ],
+    "priority": 2,
+    "status": "added",
+    "area_mm2": 67.492,
+    "islands": 1
+   },
+   {
+    "net": "PVDD",
+    "layer": "F.Cu",
+    "region": [
+     105.265,
+     98.323,
+     122.365,
+     103.823
+    ],
+    "priority": 1,
+    "status": "added",
+    "area_mm2": 90.693,
+    "islands": 1
+   }
+  ],
+  "thermal_vias": 11,
+  "thermal_pads": [
+   {
+    "ref": "C58",
+    "pad": "2",
+    "net": "GND",
+    "vias": 3
+   },
+   {
+    "ref": "C59",
+    "pad": "2",
+    "net": "GND",
+    "vias": 3
+   },
+   {
+    "ref": "D1",
+    "pad": "2",
+    "net": "GND",
+    "vias": 1
+   },
+   {
+    "ref": "U1",
+    "pad": "11",
+    "net": "GND",
+    "vias": 3
+   },
+   {
+    "ref": "U7",
+    "pad": "29",
+    "net": "GND",
+    "vias": 1
+   },
+   {
+    "ref": "U8",
+    "pad": "33",
+    "net": "GND",
+    "vias": 0,
+    "note": "footprint ships its own via array (16 thru-hole items in the land); grid skipped"
+   }
+  ],
+  "layer_types": {},
+  "added_for_reference": [],
+  "notes": []
+ },
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T21:02:08+00:00",
+ "input": "/work/boards/lite/kicad/lite-main.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:1912a176c804d56134de38480cc8fe4a31b8f8a7d959b0b7869406c36524bac5"
+}

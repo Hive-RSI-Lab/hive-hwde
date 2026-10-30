@@ -1,0 +1,1 @@
+{"script": "route_critical", "status": "error", "error": "CheckError: routing introduced new DRC errors (rolled back, original board untouched): {'shorting_items': 41, 'clearance': 7, 'solder_mask_bridge': 30, 'diff_pair_gap_out_of_range': 2}; work dir kept at /work/boards/lite/kicad/route_critical"}

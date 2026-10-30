@@ -1,0 +1,116 @@
+{
+ "script": "lib_pull",
+ "status": "pass",
+ "lib_name": "aiee",
+ "parts_file": null,
+ "paced_s": 0.0,
+ "retried": 0,
+ "symbol_lib": "/work/boards/lite/lib/aiee.kicad_sym",
+ "footprint_lib": "/work/boards/lite/lib/aiee.pretty",
+ "results": [
+  {
+   "lcsc": "C42459160",
+   "status": "pulled",
+   "symbol": "CH224A",
+   "symbol_verified": true,
+   "footprint_verified": true,
+   "symbol_lib": "/work/boards/lite/lib/aiee.kicad_sym",
+   "footprint_lib": "/work/boards/lite/lib/aiee.pretty",
+   "footprints": [
+    {
+     "name": "ESSOP-10_L4.9-W3.9-P1.0-LS6.0-TL-EP",
+     "file": "/work/boards/lite/lib/aiee.pretty/ESSOP-10_L4.9-W3.9-P1.0-LS6.0-TL-EP.kicad_mod",
+     "copper_pads": 11,
+     "courtyard": true,
+     "silk": true
+    }
+   ],
+   "warnings": []
+  }
+ ],
+ "symbol_dedup": {
+  "removed": 0,
+  "names": []
+ },
+ "registered": {
+  "fp": "present",
+  "sym": "present"
+ },
+ "autofix": {
+  "footprints": 1,
+  "changed": 1,
+  "actions": 2,
+  "residue": 1,
+  "results": [
+   {
+    "footprint": "ESSOP-10_L4.9-W3.9-P1.0-LS6.0-TL-EP",
+    "file": "/work/boards/lite/lib/aiee.pretty/ESSOP-10_L4.9-W3.9-P1.0-LS6.0-TL-EP.kicad_mod",
+    "changed": true,
+    "actions": [
+     {
+      "rule": "A",
+      "action": "delete_unprintable_silk",
+      "kind": "fp_circle",
+      "width_mm": 0.06,
+      "gap_mm": 0.09
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_circle",
+      "width_mm": 0.15,
+      "gap_mm": -0.0129,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     }
+    ],
+    "residue": 1,
+    "before": {
+     "worst_gap_mm": -0.0129,
+     "unprintable_silk": 1,
+     "under_gap_silk": 2,
+     "plated_pegs": 0
+    },
+    "after": {
+     "worst_gap_mm": -0.0129,
+     "unprintable_silk": 0,
+     "under_gap_silk": 1,
+     "plated_pegs": 0
+    }
+   }
+  ]
+ },
+ "refdes_norm": {
+  "footprints": 25,
+  "changed": 1,
+  "unchanged": 24,
+  "skipped": 0,
+  "results": [
+   {
+    "footprint": "ESSOP-10_L4.9-W3.9-P1.0-LS6.0-TL-EP",
+    "status": "changed",
+    "from": [
+     0.0,
+     -7.0
+    ],
+    "to": [
+     0.0,
+     -4.125
+    ],
+    "pad_top": -3.3,
+    "silk_top": -1.95,
+    "clear_of": -3.3,
+    "inked_half_h": 0.575
+   }
+  ]
+ },
+ "model_paths": {
+  "rewritten": 1,
+  "footprints": {
+   "ESSOP-10_L4.9-W3.9-P1.0-LS6.0-TL-EP.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/ESSOP-10_L4.9-W3.9-P1.0-LS6.0-TL-EP.wrl"
+   ]
+  }
+ },
+ "load_check": null,
+ "drc_check": null
+}
