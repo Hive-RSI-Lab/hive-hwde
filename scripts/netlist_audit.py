@@ -28,6 +28,14 @@ schematic-level structural problems BEFORE board work starts:
    declared (power[] / voltages[]) nor ground-named (GND*/;*GND/VSS*/0V).
  - dangling_net (warning): a single-pin net not named unconnected-* - the
    classic label-typo signature (label misspelled on one stub).
+ - ground_island (warning): a ground-named net (not chassis/earth/shield)
+   with no power pin on it and no R/L/bead/jumper/net tie to another
+   ground net - a local label where the ground symbol belonged.
+ - pin_net_swap (error): a net plainly named SDA/SCL, D+/D-, CANH/CANL on a
+   pin whose name is its partner - the pair crossed at one part.
+ - sot23_pinout (warning): a stock Package_TO_SOT_SMD SOT-23 transistor
+   whose symbol pins 1-2-3 are not G-S-D (FET) or B-E-C (BJT), the order
+   nearly every SOT-23 part has; the datasheet is the last word.
  - metadata_mismatch (error): a decoupling association that contradicts the
    netlist (cap/ic missing, IC pin not on the stated rail, cap not spanning
    rail+gnd); value drift cap-vs-netlist is a warning.
@@ -90,6 +98,13 @@ def _atom(node, key, default=None):
     return default
 
 
+def _pin_name(pin: str | None, func: str) -> str:
+    """The pin's own name: kicad-cli writes a hidden or doubled name as
+    '<name>_<number>' (S_3 for pin 3 named S)."""
+    suffix = f"_{pin}"
+    return func[:-len(suffix)] if pin and func.endswith(suffix) else func
+
+
 def parse_netlist(path: Path | str) -> dict:
     """kicadsexpr netlist -> {"components": {ref: {value, footprint,
     libsource?, unit_pins?}}, "nets": {name: [{ref, pin, pintype}]},
@@ -148,7 +163,9 @@ def parse_netlist(path: Path | str) -> dict:
             if name is None:
                 continue
             nets[name] = [{"ref": _atom(nd, "ref"), "pin": _atom(nd, "pin"),
-                           "pintype": _atom(nd, "pintype", "")}
+                           "pintype": _atom(nd, "pintype", ""),
+                           "pinfunction": _pin_name(_atom(nd, "pin"),
+                                                    _atom(nd, "pinfunction", ""))}
                           for nd in _kids(n, "node")]
     return {"components": comps, "nets": nets, "libparts": libparts}
 
@@ -164,6 +181,61 @@ def _base_type(pintype: str) -> str:
 
 def _is_ground_name(net: str) -> bool:
     return bool(_GROUND_RE.search(net.lstrip("/").upper()))
+
+
+# ground-named nets that are meant to sit apart (chassis, earth, shields)
+_GROUND_EXEMPT_RE = re.compile(r"CHASSIS|EARTH|SHIELD|SHLD|PE$|FG$")
+# two-terminal parts that join two grounds (net ties, 0R, beads, jumpers)
+_BRIDGE_REF_RE = re.compile(r"^(R|L|FB|NT|JP|SB|J?P)\d")
+
+
+def _ground_bridges(net: str, members: list[dict],
+                    comp_pins: dict[str, dict[str, str]]) -> list[str]:
+    """Members that tie this ground net to another ground net: a 2-pin
+    R/L/FB/NT/JP whose far pin is ground-named, or any part with a pin on
+    another ground net and a net-tie footprint."""
+    out = []
+    for m in members:
+        pins = comp_pins.get(m["ref"], {})
+        far = [n for p, n in pins.items() if p != m["pin"] and n != net]
+        if any(_is_ground_name(n) for n in far) and (
+                _BRIDGE_REF_RE.match(m["ref"] or "") or len(pins) == 2
+                and not (m["ref"] or "").startswith("C")):
+            out.append(m["ref"])
+    return out
+
+
+# bus signals that never cross: the net's name and the pin's name agree
+_BUS_PARTNER = {"SDA": "SCL", "SCL": "SDA", "DP": "DM", "DM": "DP",
+                "CANH": "CANL", "CANL": "CANH"}
+_BUS_ALIASES = {"D+": "DP", "D-": "DM", "USB_DP": "DP", "USB_DM": "DM",
+                "USB_D+": "DP", "USB_D-": "DM", "CAN_H": "CANH",
+                "CAN_L": "CANL", "I2C_SDA": "SDA", "I2C_SCL": "SCL"}
+
+
+def _bus_token(name: str) -> str | None:
+    """SDA/SCL/DP/DM/CANH/CANL when a net or pin name is plainly that
+    signal: the whole name or its last /._- separated part (CTL.SDA,
+    /Audio/I2C_SCL, USB_D+), else None."""
+    if not name:
+        return None
+    tail = re.split(r"[/.]", name.upper())[-1]
+    for cand in (tail, tail.rsplit("_", 1)[-1]):
+        cand = _BUS_ALIASES.get(cand, cand)
+        if cand in _BUS_PARTNER:
+            return cand
+    return None
+
+
+_STOCK_SOT23_RE = re.compile(r"^Package_TO_SOT_SMD:SOT-23(-3)?(_|$)")
+_SOT23_ORDERS = (("G", "S", "D"), ("B", "E", "C"))
+
+
+def _transistor_role(func: str | None) -> str | None:
+    f = (func or "").upper()
+    return {"G": "G", "GATE": "G", "S": "S", "SOURCE": "S", "D": "D",
+            "DRAIN": "D", "B": "B", "BASE": "B", "E": "E", "EMITTER": "E",
+            "C": "C", "COLLECTOR": "C"}.get(f)
 
 
 # ------------------------------------------------------------ compare mode
@@ -493,6 +565,64 @@ def audit(parsed: dict, constraints: dict,
                 v("warning", "metadata_mismatch", rail, [cap],
                   f"{ctx}: metadata value '{want}' != netlist value "
                   f"'{have}'")
+
+    # 7. a ground-named net that reaches no ground: no power pin on it and
+    # no resistor, inductor, bead, jumper or net tie across to another
+    # ground net (errata corpus: digits v1 MIC_GND, a local label where the
+    # GND symbol belonged, so the mic return floated)
+    for name in sorted(nets):
+        if not _is_ground_name(name) or _GROUND_EXEMPT_RE.search(name.upper()):
+            continue
+        members = nets[name]
+        if len(members) < 2 or any(_base_type(m["pintype"]) in
+                                   ("power_in", "power_out") for m in members):
+            continue
+        if _ground_bridges(name, members, comp_pins):
+            continue
+        others = [n for n in nets if n != name and _is_ground_name(n)]
+        if not others:
+            continue  # the board's only ground: nothing to be cut off from
+        v("warning", "ground_island", name, sorted({m["ref"] for m in members}),
+          f"ground net '{name}' carries no power pin and no part ties it to "
+          f"another ground ({', '.join(sorted(others)[:3])}): it floats. A "
+          f"local label where the ground symbol belonged?")
+
+    # 8. a bus net on its partner's pin: SDA landing on a pin named SCL
+    # (errata class: pandore rev A0 CS4272, SDA/SCL transposed at the codec)
+    for name in sorted(nets):
+        token = _bus_token(name)
+        if not token:
+            continue
+        partner = _BUS_PARTNER[token]
+        for m in nets[name]:
+            if _bus_token(m.get("pinfunction") or "") == partner:
+                v("error", "pin_net_swap", name, [m["ref"]],
+                  f"net '{name}' lands on {m['ref']}.{m['pin']}, a pin "
+                  f"named '{m['pinfunction']}': {token} and {partner} are "
+                  f"crossed at {m['ref']}", pin=m["pin"])
+
+    # 9. a stock SOT-23 transistor whose symbol pin order isn't the
+    # package's: nearly every SOT-23 MOSFET is 1=G 2=S 3=D and every BJT
+    # 1=B 2=E 3=C (errata corpus: oasis v0.2, Q_NMOS_GDS on SOT-23-3 put
+    # the SI2328DS's source where the drain goes)
+    for ref in sorted(comps):
+        fp = comps[ref].get("footprint") or ""
+        if not _STOCK_SOT23_RE.match(fp):
+            continue
+        funcs = {}
+        for name, members in nets.items():
+            for m in members:
+                if m["ref"] == ref:
+                    funcs[m["pin"]] = _transistor_role(m.get("pinfunction"))
+        roles = (funcs.get("1"), funcs.get("2"), funcs.get("3"))
+        for want in _SOT23_ORDERS:
+            if set(roles) == set(want) and roles != want:
+                v("warning", "sot23_pinout", None, [ref],
+                  f"{ref} ({comps[ref].get('value')}) on {fp}: symbol pins "
+                  f"1-2-3 are {'-'.join(roles)}, the SOT-23 standard is "
+                  f"{'-'.join(want)}; check the part's datasheet pinout "
+                  f"(or use the matching symbol variant)",
+                  pins=dict(zip("123", roles)))
 
     facts = {
         "nets": len(nets),
