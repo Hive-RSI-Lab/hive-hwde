@@ -16,7 +16,8 @@
 #                         (first use of knowledge, research or check-all
 #                         does it too) and print where they are
 #   hwde score            re-run the gates on the pinned boards, shims off, and
-#                         count what they find (the score; docs/score.md)
+#                         count what they find, and check the checks still catch
+#                         hwde's planted faults (the score; docs/score.md)
 #   hwde pin BOARD --from CLONE --commit SHA
 #                         refresh a pinned board (bin/pin.py)
 #   hwde publish <dir>    put a self-contained copy at <dir>/hwde (a warden
@@ -262,7 +263,7 @@ check)
 	x "$py" "$here/scripts/check_env.py" "$@"
 	;;
 "" | -h | --help)
-	sed -n '2,35p' "$0" | sed 's/^# \{0,1\}//'
+	sed -n '2,36p' "$0" | sed 's/^# \{0,1\}//'
 	;;
 *)
 	s=${1%.py}

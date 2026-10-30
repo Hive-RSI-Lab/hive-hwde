@@ -41,7 +41,7 @@ import geom  # noqa: E402
 import placelib  # noqa: E402
 
 SCRIPT = "check_courtyard"
-SOURCE = "check.courtyard"
+SOURCE = SCRIPT  # verify_all, gate and the scorecard match a finding to its check by source
 # copper outside the courtyard below this (mm2) is arc sampling, not a miss
 TOL_MM2 = 1e-3
 

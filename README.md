@@ -57,6 +57,9 @@ An agent designs a PCB from a written brief: research, architecture, parts, sche
   hwde that clears a finding on those boards raises it with nothing written
   by hand. A pinned board changes only through `bin/hwde pin`. The whole
   definition is [docs/score.md](docs/score.md). About ten minutes or more,
-  under `hive agent heavy`.
+  under `hive agent heavy`. A looser check finds less, so the score also
+  runs hwde's planted faults (`bin/strength.py`: the gate criteria, every
+  verify check's mutant in `tests/golden/`, dfm at JLC's floors), and each
+  one a check lets through charges 100.
 
 MIT, like upstream; see NOTICE for what that doesn't cover.

@@ -52,9 +52,38 @@ doesn't ship. One charge is:
 A gate that can't run (exits other than pass or fail, or writes no result)
 charges 100 (`CRASH`), so breaking a gate never hides its findings.
 
+Each planted fault a gate or check lets through charges 100 too (next
+section).
+
 The score is minus the charges. Higher is better and 0 is a clean sweep. The
 output gives one line per board (the charges per gate, by check, and the
 stand-in scripts), then `charges: N`, then the number.
+
+## The planted faults
+
+The charges come from hwde's own checks, so a check made looser finds less
+and the score would rise with nothing on the boards better. Before the
+boards, `bin/strength.py` runs faults planted where each gate's verdict comes
+from, through the same code the gates run, offline, in seconds:
+
+- **gate**: each gate's criteria in `reference/gates.yaml` (`gate.evaluate`)
+  must fail a report carrying one error, and erc and drc_routed one warning.
+- **verify**: each mutant in `tests/golden/` through the check that owns it.
+  Every check in the verify suite must own one, and a mutant whose check
+  left the suite is a miss, so dropping a check or its fault costs too.
+- **dfm**: the bench's known-answer fixture (`tests/fixtures/stages/`) and
+  holes planted at JLC's floors in a shipped drill file: a 0.45 mm gap
+  between holes (floor 0.5 mm) and a 0.25 mm drill (floor 0.3 mm).
+
+Each fault let through charges 100, as a gate that can't run does: a check
+that misses the fault it was built for isn't measuring the boards, and one
+loosened check costs more than the findings it could hide. If the faults
+can't run, the score stops instead of printing a number. A new check comes
+with its own mutant, which also lets the scorecard see it. The faults and the
+corpus are in the score's paths (`.hive/project.json`), so a change to them
+starts a new baseline rather than reading as a gain. ERC and DRC themselves
+are KiCad's and have no planted faults here: a rule set to "ignore" in a
+board's project, or a looser `rules_gen` floor, still gets through.
 
 ## What moves it
 
