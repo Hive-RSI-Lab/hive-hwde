@@ -1,0 +1,88 @@
+{
+ "domain": "audio",
+ "source": "hifi-receiver-2 docs/review-2/audio.json at e5896e6 (task 261029-020622), blockers and majors, text cut to 400 chars",
+ "findings": [
+  {
+   "id": "AUDIO-1",
+   "board": "core",
+   "severity": "major",
+   "refs": [
+    "U11",
+    "R72",
+    "R73",
+    "R74",
+    "R75",
+    "R80",
+    "R81",
+    "R82",
+    "R83",
+    "R90",
+    "R91"
+   ],
+   "nets": [
+    "/dac/OPL_P",
+    "/dac/OPL_N",
+    "/dac/MAIN_L",
+    "/dac/MAIN_R",
+    "/VREF",
+    "+5VA"
+   ],
+   "finding": "OPA1678 on single 5.1 V: at 0 dBFS the + input peaks at 3.05 V vs common-mode limit V+-2 = 3.10 V; output swings 0.92..4.18 V vs 0.8..4.3 V. Distortion near full scale; margin negative below 5.03 V supply.",
+   "evidence": "V+ = (1.65*1.5k + 2.55*2.806k)/4.306k = 2.236 V DC + 1.525*1.5/4.306 = 0.815 Vpk -> 3.05 V; SBOS855E 6.7 VCM (V-)+0.5..(V+)-2, VO (V-)+0.8..(V+)-0.8; ES9018K2M v3.7 p.31 3.05 Vpp/leg, 806 ohm",
+   "fault_class": "ANA-11"
+  },
+  {
+   "id": "AUDIO-2",
+   "board": "core",
+   "severity": "major",
+   "refs": [
+    "U14",
+    "C100",
+    "C101",
+    "C110",
+    "C111"
+   ],
+   "nets": [
+    "/linein/LDIV_L",
+    "/linein/LDIV_R",
+    "/linein/LSW_L",
+    "/linein/LSW_R"
+   ],
+   "finding": "Proposed loopback switch (second TS5A23157) on the RCA side would switch LDIV, which is ground-referenced (0 V DC, +/-0.92 Vpk with FLX4 2.1 Vrms): below the switch's 0..V+ signal range; body diodes conduct, distorting the ADC and DJ-direct paths.",
+   "evidence": "SCDS165F 6.5 analog range 0..V+, abs min -0.5 V; LDIV = 2.1*1.414*0.311 = 0.92 Vpk",
+   "fault_class": "ANA-12"
+  },
+  {
+   "id": "AUDIO-3",
+   "board": "core",
+   "severity": "major",
+   "refs": [
+    "U14"
+   ],
+   "nets": [
+    "DJ_SEL"
+   ],
+   "finding": "Proposed loopback switch select from a 3.3 V ESP32 GPIO or ES9018K2M GPIO2 cannot reach TS5A23157 VIH = 0.7*V+ = 3.57 V at 5.1 V; ES9018 GPIO is tri-stated during RESETB low (select floats).",
+   "evidence": "SCDS165F 6.5 VIH V+*0.7; ES9018K2M v3.7 p.9 standby tri-states GPIO",
+   "fault_class": "RATE-09"
+  },
+  {
+   "id": "AUDIO-4",
+   "board": "lite-main",
+   "severity": "major",
+   "refs": [
+    "U8",
+    "R54",
+    "R52",
+    "U5"
+   ],
+   "nets": [
+    "/AMP_SDZ",
+    "/AMP_SDZ_IO"
+   ],
+   "finding": "SDZ driven from GPIO21 (3.3 V) through R54 100k. SLOS708G allows IIH up to 50 uA; above 13 uA SDZ falls below VIH 2.0 V and the amp never leaves shutdown.",
+   "evidence": "SLOS708G 6.3: VIH 2 V, IIH 50 uA max; 3.3 V - 50 uA*100k = -1.7 V (worst case), needs I <= 13 uA",
+   "fault_class": "RATE-27"
+  }
+ ]
+}

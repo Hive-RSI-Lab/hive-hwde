@@ -509,6 +509,23 @@ modes:
   - lumina-par
   sources:
   - B:reviews
+- id: THERM-14
+  category: THERM
+  mode: Continuous rated output past what the thermal path holds
+  shows: full power trips the part's thermal shutdown; only a duty limit or a governor holds it
+  catch: Tj at the product's continuous rated output, not a fraction of it, from the datasheet's own theta and the box's air
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: found by a cold design review (first_spin.py), no check yet
+  hit_on:
+  - hifi-receiver-2 core
+  - hifi-receiver-2 lite-main
+  sources:
+  - review-2 THERMAL-2
+  - review-2 THERMAL-3
 - id: RATE-01
   category: RATE
   mode: Capacitor voltage rating below worst case
@@ -695,9 +712,9 @@ modes:
   shows: drivers latched ON when +12V arrives before +3V3
   catch: enable pull-downs, sequencing review
   coverage:
-    script: '-'
+    script: check_straps
     rule: '-'
-    level: L0
+    level: L1
   target_level: L2
   gap: T#194 open
   hit_on:
@@ -883,6 +900,37 @@ modes:
   - bb-buck
   sources:
   - B:PCB-0010-A
+- id: RATE-26
+  category: RATE
+  mode: P-FET load switch turned on through its gate-drain capacitance by an input voltage step
+  shows: the load sees the input's attach and every PD step with firmware off; inrush past the source's limit
+  catch: transient sim of the switch with the source's slew (5->20 V PD step) and the FET's Crss; gate hold-off RC
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: found by a cold design review (first_spin.py), no check yet
+  hit_on:
+  - hifi-receiver-2 lite-main
+  sources:
+  - review-2 POWER-3
+- id: RATE-27
+  category: RATE
+  mode: Series resistor drops an input below VIH at the datasheet's input current
+  shows: an enable or shutdown pin never reads high (amp stays in shutdown) on a worst-case part
+  catch: V_drive - IIH(max) x R_series vs VIH, from the datasheet's IIH, per driven input
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: found by a cold design review (first_spin.py), no check yet
+  hit_on:
+  - hifi-receiver-2 lite-main
+  sources:
+  - review-2 AUDIO-4
+  - review-2 DIGITAL-14
 - id: PI-01
   category: PI
   mode: Missing HF decoupling on an IC supply pin
@@ -1198,6 +1246,21 @@ modes:
   sources:
   - L3614
   - L4048
+- id: PI-21
+  category: PI
+  mode: Power path not interlocked with its source's status
+  shows: a lost or renegotiated PD contract leaves the load switch on; the source charges the bulk caps again on replug
+  catch: every load switch on a negotiated source gated in hardware by the source's PG/contract pin
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: found by a cold design review (first_spin.py), no check yet
+  hit_on:
+  - hifi-receiver-2 core
+  sources:
+  - review-2 POWER-6
 - id: PROT-01
   category: PROT
   mode: No ESD protection on a user-touch connector
@@ -1906,6 +1969,36 @@ modes:
   hit_on: []
   sources:
   - '[15]'
+- id: ANA-11
+  category: ANA
+  mode: Op-amp input common-mode or output swing past its limits on its real supply
+  shows: clipping or distortion near full scale on a single supply
+  catch: per stage, signal peak + bias vs the datasheet's VCM range and output swing at the load, on the supply it has
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: found by a cold design review (first_spin.py), no check yet
+  hit_on:
+  - hifi-receiver-2 core
+  sources:
+  - review-2 AUDIO-1
+- id: ANA-12
+  category: ANA
+  mode: Analog switch carries a signal outside its supply rails
+  shows: a ground-referenced audio signal through a single-supply switch clips or leaks
+  catch: signal min/max (with DC bias) vs the switch's V- .. V+ on each switched net
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: found by a cold design review (first_spin.py), no check yet
+  hit_on:
+  - hifi-receiver-2 core
+  sources:
+  - review-2 AUDIO-2
 - id: FAB-01
   category: FAB
   mode: Track width or spacing below fab minimum
@@ -2880,9 +2973,9 @@ modes:
   shows: wrong boot mode
   catch: BOOT0 pull-down; ESP32 strapping valid at reset
   coverage:
-    script: '-'
+    script: check_straps
     rule: '-'
-    level: L0
+    level: L1
   target_level: L2
   gap: none
   hit_on:
@@ -3104,6 +3197,21 @@ modes:
   hit_on: []
   sources:
   - '[21]'
+- id: FW-17
+  category: FW
+  mode: Firmware stack cannot drive the interface wiring the board has
+  shows: a DAC or peripheral wired as the target firmware doesn't support (two I2S data lines on one bus)
+  catch: each interface's wiring vs what the named firmware stack drives
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: found by a cold design review (first_spin.py), no check yet
+  hit_on:
+  - hifi-receiver-2 core
+  sources:
+  - review-2 DIGITAL-3
 - id: SAFE-01
   category: SAFE
   mode: Spacing too small for working voltage

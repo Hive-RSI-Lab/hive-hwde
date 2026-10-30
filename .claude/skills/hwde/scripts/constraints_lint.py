@@ -57,7 +57,8 @@ SECTIONS: dict[str, dict[str, dict[str, str]]] = {
     "power": {
         "required": {"net": "str", "current_a": "num"},
         "optional": {"dt_c": "num", "via_amps": "num", "pdn": "bool",
-                     "plane_fed": "bool", "overrides": "overrides"},
+                     "plane_fed": "bool", "tap_current_a": "num",
+                     "overrides": "overrides"},
     },
     "diff_pairs": {
         "required": {"p": "str", "n": "str"},
@@ -115,7 +116,9 @@ PLACEMENT: dict[str, dict[str, dict[str, str]]] = {
     # rect-or-poly requirement enforced separately
     "keepouts": {"required": {},
                  "optional": {"rect": "rect", "poly": "point_list",
-                              "side": "str", "reason": "str"}},
+                              "side": "str", "reason": "str",
+                              # keepout_gen: a copper rule area too
+                              "copper": "bool_or_map", "name": "str"}},
     "separation": {"required": {"a": "str_list", "b": "str_list",
                                 "min_mm": "num"},
                    "optional": {"reason": "str"}},
@@ -175,6 +178,9 @@ def _type_ok(spec: str, v) -> bool:
         return _is_num(v)
     if spec == "bool":
         return isinstance(v, bool)
+    if spec == "bool_or_map":
+        return isinstance(v, bool) or (
+            isinstance(v, dict) and all(isinstance(x, bool) for x in v.values()))
     if spec == "edge":
         return isinstance(v, str) and v in EDGES
     if spec == "side":

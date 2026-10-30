@@ -43,7 +43,7 @@ CRASH = 100
 # pins:begin
 PINS = {
     "core": "3b0d25faaf2150e3627a49175e50f6edfcb18be0b1547a47095549899147b149",
-    "hwde-led-test": "42ee7dcdcc8d3ce23b392808f5210ef12c7af0ebec5f2228096127588acf34e9",
+    "hwde-led-test": "610b1334b136a0c11f2bf74e52d7444feaf8f411eb842eb0875259129bf6911c",
     "lite-main": "7b5f6f4f3a1b3fc8fa9fbd98a7375c74adc2db34997f6efd52f6fbaaaf15a995",
 }
 # pins:end
@@ -125,12 +125,18 @@ def gate_charges(result: dict, waivers: list[dict] | None = None) -> Counter:
     waiver covers."""
     import gate  # the skill's: its waiver matching
     out: Counter = Counter()
-    for v in result.get("failing") or []:
-        out[v.get("check") or v.get("kind") or v.get("source") or "?"] += 1
+
+    def finding(v) -> dict:  # some gates report a finding as a plain string
+        return v if isinstance(v, dict) else {"message": str(v)}
+
+    def key(v: dict) -> str:
+        return v.get("check") or v.get("kind") or v.get("source") or "?"
+    for v in map(finding, result.get("failing") or []):
+        out[key(v)] += 1
     warns = result.get("warnings") or []
-    for v in warns:
+    for v in map(finding, warns):
         if not any(gate.waiver_matches(w, v) for w in waivers or []):
-            out[v.get("check") or v.get("kind") or v.get("source") or "?"] += 1
+            out[key(v)] += 1
     # warnings past the gate's cap travel only as a count
     out["(warnings past the cap)"] += max(0, int(result.get("warnings_count") or 0) - len(warns))
     return +out
