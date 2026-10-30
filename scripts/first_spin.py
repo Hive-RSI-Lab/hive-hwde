@@ -88,7 +88,7 @@ DISPOSITIONS = ("fixed", "contingency", "firmware", "justified", "order",
                 "enclosure")
 NOT_REVIEWS = ("dispositions.json", "resolutions.json")
 # the module's failure-mode registry, two levels above the skill
-MODES = SCRIPTS.parents[3] / "docs" / "failure-modes.yaml"
+MODES = SCRIPTS.parent / "docs" / "failure-modes.yaml"
 # the in-pipeline reviewers' files (agents/schematic-reviewer.md,
 # verify-reviewer.md): classes only, they are answered at H2/H4
 OTHER_REVIEWS = ("reports/review-schematic.json", "reports/review-board.json")
