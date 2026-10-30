@@ -1,0 +1,72 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C19666",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C19666",
+   "mpn": "CL10A475KO8NNNC",
+   "brand": "Samsung Electro-Mechanics",
+   "description": "16V 4.7uF X5R \u00b110% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "package": "0603",
+   "category": "Multilayer Ceramic Capacitors MLCC - SMD/SMT",
+   "type": "Basic",
+   "basic": true,
+   "stock": 3105979,
+   "price": 0.0169,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0169
+    },
+    {
+     "qty": 100,
+     "price": 0.0128
+    },
+    {
+     "qty": 300,
+     "price": 0.0109
+    },
+    {
+     "qty": 1000,
+     "price": 0.0095
+    },
+    {
+     "qty": 4000,
+     "price": 0.0089
+    },
+    {
+     "qty": 8000,
+     "price": 0.0086
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL10A475KO8NNNC_C19666.pdf",
+   "url": "https://www.lcsc.com/product-detail/multilayer-ceramic-capacitors-mlcc-smd-smt_samsung-electro-mechanics-cl10a475ko8nnnc_C19666.html",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "16V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b110%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "4.7uF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X5R"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

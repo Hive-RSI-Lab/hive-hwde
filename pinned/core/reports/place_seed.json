@@ -1,0 +1,2377 @@
+{
+ "script": "place_seed",
+ "status": "violations",
+ "board": "core.kicad_pcb",
+ "counts": {
+  "total": 56,
+  "by_severity": {
+   "error": 56
+  },
+  "by_source": {
+   "check.place": 56
+  }
+ },
+ "violations": [
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    67.3007,
+    120.9185
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C120",
+    "R72"
+   ],
+   "msg": "courtyard overlap C120/R72 (1.12 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap C120/R72 (1.12 mm2)",
+     "pos": [
+      67.3007,
+      120.9185
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 1.1249
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    75.535,
+    120.887
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C121",
+    "J10"
+   ],
+   "msg": "courtyard overlap C121/J10 (1.91 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap C121/J10 (1.91 mm2)",
+     "pos": [
+      75.535,
+      120.887
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    83.425,
+    120.887
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C122",
+    "J11"
+   ],
+   "msg": "courtyard overlap C122/J11 (1.91 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap C122/J11 (1.91 mm2)",
+     "pos": [
+      83.425,
+      120.887
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    107.095,
+    120.887
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C125",
+    "J4"
+   ],
+   "msg": "courtyard overlap C125/J4 (1.91 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap C125/J4 (1.91 mm2)",
+     "pos": [
+      107.095,
+      120.887
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    88.844,
+    181.5088
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C201",
+    "C219"
+   ],
+   "msg": "courtyard overlap C201/C219 (0.48 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap C201/C219 (0.48 mm2)",
+     "pos": [
+      88.844,
+      181.5088
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 0.4806
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    88.1846,
+    182.4075
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C201",
+    "C221"
+   ],
+   "msg": "courtyard overlap C201/C221 (0.36 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap C201/C221 (0.36 mm2)",
+     "pos": [
+      88.1846,
+      182.4075
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 0.3567
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    90.3629,
+    181.8394
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C201",
+    "Q6"
+   ],
+   "msg": "courtyard overlap C201/Q6 (0.52 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap C201/Q6 (0.52 mm2)",
+     "pos": [
+      90.3629,
+      181.8394
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 0.518
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    97.75,
+    181.837
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C202",
+    "U17"
+   ],
+   "msg": "courtyard overlap C202/U17 (1.91 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap C202/U17 (1.91 mm2)",
+     "pos": [
+      97.75,
+      181.837
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    123.7925,
+    183.1095
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C207",
+    "U7"
+   ],
+   "msg": "courtyard overlap C207/U7 (0.14 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap C207/U7 (0.14 mm2)",
+     "pos": [
+      123.7925,
+      183.1095
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 0.1412
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    139.7933,
+    181.7142
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C209",
+    "R314"
+   ],
+   "msg": "courtyard overlap C209/R314 (0.22 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap C209/R314 (0.22 mm2)",
+     "pos": [
+      139.7933,
+      181.7142
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 0.2225
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    141.61,
+    183.1095
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C209",
+    "U7"
+   ],
+   "msg": "courtyard overlap C209/U7 (0.40 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap C209/U7 (0.40 mm2)",
+     "pos": [
+      141.61,
+      183.1095
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 0.4011
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    107.9062,
+    152.7963
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C30",
+    "U11"
+   ],
+   "msg": "courtyard overlap C30/U11 (1.89 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap C30/U11 (1.89 mm2)",
+     "pos": [
+      107.9062,
+      152.7963
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 1.895
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    57.3948,
+    136.992
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C5",
+    "L3"
+   ],
+   "msg": "courtyard overlap C5/L3 (4.99 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap C5/L3 (4.99 mm2)",
+     "pos": [
+      57.3948,
+      136.992
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 4.9859
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    57.2257,
+    132.824
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C5",
+    "L4"
+   ],
+   "msg": "courtyard overlap C5/L4 (0.44 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap C5/L4 (0.44 mm2)",
+     "pos": [
+      57.2257,
+      132.824
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 0.437
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    65.6396,
+    132.4554
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C5",
+    "L5"
+   ],
+   "msg": "courtyard overlap C5/L5 (1.35 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap C5/L5 (1.35 mm2)",
+     "pos": [
+      65.6396,
+      132.4554
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 1.3489
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    65.6278,
+    137.0727
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C5",
+    "L6"
+   ],
+   "msg": "courtyard overlap C5/L6 (7.42 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap C5/L6 (7.42 mm2)",
+     "pos": [
+      65.6278,
+      137.0727
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 7.416
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    43.4225,
+    118.599
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "H1",
+    "J6"
+   ],
+   "msg": "courtyard overlap H1/J6 (10.48 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap H1/J6 (10.48 mm2)",
+     "pos": [
+      43.4225,
+      118.599
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 10.4813
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    53.0852,
+    189.779
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "J2",
+    "U8"
+   ],
+   "msg": "courtyard overlap J2/U8 (4.81 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap J2/U8 (4.81 mm2)",
+     "pos": [
+      53.0852,
+      189.779
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 4.8131
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    48.4,
+    129.307
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "L1",
+    "L4"
+   ],
+   "msg": "courtyard overlap L1/L4 (4.00 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap L1/L4 (4.00 mm2)",
+     "pos": [
+      48.4,
+      129.307
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 4.0
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    48.4,
+    138.807
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "L2",
+    "L3"
+   ],
+   "msg": "courtyard overlap L2/L3 (4.00 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap L2/L3 (4.00 mm2)",
+     "pos": [
+      48.4,
+      138.807
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 4.0
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    74.4,
+    129.307
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "L5",
+    "L8"
+   ],
+   "msg": "courtyard overlap L5/L8 (4.00 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap L5/L8 (4.00 mm2)",
+     "pos": [
+      74.4,
+      129.307
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 4.0
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    74.4,
+    138.807
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "L6",
+    "L7"
+   ],
+   "msg": "courtyard overlap L6/L7 (4.00 mm2)",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "courtyard overlap L6/L7 (4.00 mm2)",
+     "pos": [
+      74.4,
+      138.807
+     ]
+    }
+   ],
+   "kind": "courtyard_overlap",
+   "overlap_mm2": 4.0
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    17.035,
+    15.975
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C1"
+   ],
+   "msg": "C1 extends 7.23 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C1 extends 7.23 mm2 outside the board outline",
+     "pos": [
+      17.035,
+      15.975
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 7.2335
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    115.305,
+    88.347
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C10"
+   ],
+   "msg": "C10 extends 11.51 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C10 extends 11.51 mm2 outside the board outline",
+     "pos": [
+      115.305,
+      88.347
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 11.5076
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    125.455,
+    87.992
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C11"
+   ],
+   "msg": "C11 extends 3.78 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C11 extends 3.78 mm2 outside the board outline",
+     "pos": [
+      125.455,
+      87.992
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 3.78
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    162.515,
+    87.992
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C15"
+   ],
+   "msg": "C15 extends 3.78 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C15 extends 3.78 mm2 outside the board outline",
+     "pos": [
+      162.515,
+      87.992
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 3.78
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    26.015,
+    110.187
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C18"
+   ],
+   "msg": "C18 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C18 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      26.015,
+      110.187
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    33.905,
+    110.187
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C19"
+   ],
+   "msg": "C19 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C19 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      33.905,
+      110.187
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    26.015,
+    15.575
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C2"
+   ],
+   "msg": "C2 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C2 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      26.015,
+      15.575
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    61.6,
+    275.882
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C301"
+   ],
+   "msg": "C301 extends 3.78 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C301 extends 3.78 mm2 outside the board outline",
+     "pos": [
+      61.6,
+      275.882
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 3.78
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    70.06,
+    275.647
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C302"
+   ],
+   "msg": "C302 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C302 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      70.06,
+      275.647
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    77.95,
+    275.647
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C304"
+   ],
+   "msg": "C304 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C304 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      77.95,
+      275.647
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    85.84,
+    275.647
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C306"
+   ],
+   "msg": "C306 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C306 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      85.84,
+      275.647
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    94.82,
+    276.047
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C307"
+   ],
+   "msg": "C307 extends 7.23 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C307 extends 7.23 mm2 outside the board outline",
+     "pos": [
+      94.82,
+      276.047
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 7.2335
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    104.37,
+    275.882
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C308"
+   ],
+   "msg": "C308 extends 3.78 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C308 extends 3.78 mm2 outside the board outline",
+     "pos": [
+      104.37,
+      275.882
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 3.78
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    113.92,
+    276.047
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C309"
+   ],
+   "msg": "C309 extends 7.23 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C309 extends 7.23 mm2 outside the board outline",
+     "pos": [
+      113.92,
+      276.047
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 7.2335
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    123.47,
+    275.882
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C310"
+   ],
+   "msg": "C310 extends 3.78 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C310 extends 3.78 mm2 outside the board outline",
+     "pos": [
+      123.47,
+      275.882
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 3.78
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    54.93,
+    247.797
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C40"
+   ],
+   "msg": "C40 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C40 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      54.93,
+      247.797
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    70.71,
+    247.797
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C42"
+   ],
+   "msg": "C42 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C42 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      70.71,
+      247.797
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    78.6,
+    247.797
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C43"
+   ],
+   "msg": "C43 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C43 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      78.6,
+      247.797
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    86.49,
+    247.797
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C44"
+   ],
+   "msg": "C44 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C44 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      86.49,
+      247.797
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    120.655,
+    32.225
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C50"
+   ],
+   "msg": "C50 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C50 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      120.655,
+      32.225
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    128.545,
+    32.225
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C51"
+   ],
+   "msg": "C51 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C51 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      128.545,
+      32.225
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    136.435,
+    32.225
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C52"
+   ],
+   "msg": "C52 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C52 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      136.435,
+      32.225
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    144.325,
+    32.225
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C53"
+   ],
+   "msg": "C53 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C53 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      144.325,
+      32.225
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    152.215,
+    32.225
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C54"
+   ],
+   "msg": "C54 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C54 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      152.215,
+      32.225
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    160.105,
+    32.225
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C55"
+   ],
+   "msg": "C55 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C55 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      160.105,
+      32.225
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    168.565,
+    32.46
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C56"
+   ],
+   "msg": "C56 extends 3.78 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C56 extends 3.78 mm2 outside the board outline",
+     "pos": [
+      168.565,
+      32.46
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 3.78
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    177.025,
+    32.225
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C57"
+   ],
+   "msg": "C57 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C57 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      177.025,
+      32.225
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    15.945,
+    42.295
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C58"
+   ],
+   "msg": "C58 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C58 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      15.945,
+      42.295
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    68.985,
+    42.295
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C68"
+   ],
+   "msg": "C68 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C68 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      68.985,
+      42.295
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    76.875,
+    42.295
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C69"
+   ],
+   "msg": "C69 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C69 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      76.875,
+      42.295
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    84.765,
+    42.295
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C70"
+   ],
+   "msg": "C70 extends 1.91 mm2 outside the board outline",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "C70 extends 1.91 mm2 outside the board outline",
+     "pos": [
+      84.765,
+      42.295
+     ]
+    }
+   ],
+   "kind": "outside_outline",
+   "outside_mm2": 1.9136
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    67.65,
+    211.307
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "D3"
+   ],
+   "msg": "D3 declared on edge 'bottom' but is 3.0 mm away",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "D3 declared on edge 'bottom' but is 3.0 mm away",
+     "pos": [
+      67.65,
+      211.307
+     ]
+    }
+   ],
+   "kind": "edge_violation",
+   "edge": "bottom",
+   "dist_mm": 3.034
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    137.65,
+    120.757
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "U19"
+   ],
+   "msg": "U19 declared on edge 'left' but is 95.6 mm away",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "U19 declared on edge 'left' but is 95.6 mm away",
+     "pos": [
+      137.65,
+      120.757
+     ]
+    }
+   ],
+   "kind": "edge_violation",
+   "edge": "left",
+   "dist_mm": 95.605
+  },
+  {
+   "check": "place",
+   "severity": "error",
+   "pos": [
+    138.1038,
+    193.307
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "U7"
+   ],
+   "msg": "U7 declared on edge 'right' but is 3.1 mm away",
+   "source": "check.place",
+   "items": [
+    {
+     "msg": "U7 declared on edge 'right' but is 3.1 mm away",
+     "pos": [
+      138.1038,
+      193.307
+     ]
+    }
+   ],
+   "kind": "edge_violation",
+   "edge": "right",
+   "dist_mm": 3.085
+  }
+ ],
+ "clusters": [
+  {
+   "anchor": "C100",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C101",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C102",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C110",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C111",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C112",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C12",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C123",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C124",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C126",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C13",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C14",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C142",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C143",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C150",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C151",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C16",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C17",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C21",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C211",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C218",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C219",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C22",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C220",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C221",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C222",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C223",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C224",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C225",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C226",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C228",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C229",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C231",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C232",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C234",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C235",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C237",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C3",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C311",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C312",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C316",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C317",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C318",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C319",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C32",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C321",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C322",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C323",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C324",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C326",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C327",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C329",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C330",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C332",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C333",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C335",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C37",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C38",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C39",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C4",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C400",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C41",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C45",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C47",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C59",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C64",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C65",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C66",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C67",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C7",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C71",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C72",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "C8",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "D2",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "D4",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "FB1",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "FB2",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "FB3",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "Q4",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "Q5",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "Q6",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R10",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R100",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R101",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R102",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R11",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R110",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R111",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R112",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R12",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R120",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R121",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R122",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R13",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R14",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R15",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R16",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R2",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R203",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R205",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R212",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R213",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R214",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R215",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R216",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R217",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R227",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R230",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R233",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R236",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R3",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R30",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R303",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R305",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R31",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R313",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R314",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R315",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R32",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R325",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R328",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R33",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R331",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R334",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R34",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R35",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R36",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R4",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R40",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R400",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R401",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R41",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R42",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R43",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R44",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R45",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R5",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R50",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R51",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R52",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R53",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R54",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R55",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R56",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R57",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R58",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R6",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R60",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R61",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R62",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R63",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R64",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R65",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R66",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R67",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R7",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R70",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R71",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R72",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R73",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R74",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R75",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R8",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R80",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R81",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R82",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R83",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R9",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R90",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R91",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R92",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "R93",
+   "satellites": [],
+   "edge": null
+  },
+  {
+   "anchor": "Y2",
+   "satellites": [
+    "C46"
+   ],
+   "edge": null
+  }
+ ],
+ "warnings": [],
+ "hpwl_before_mm": 24356.003,
+ "hpwl_seed_mm": 15599.8587,
+ "ops_out": "anneal/seed.ops.json",
+ "applied": true,
+ "hpwl_applied_mm": 15599.8587,
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T16:19:44+00:00",
+ "input": "kicad/core.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:3741e3f02ec2fa7e8dbedb05dde815db6ffc869b9495115550b4e8bd9cff32aa"
+}

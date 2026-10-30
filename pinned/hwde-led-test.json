@@ -1,0 +1,12 @@
+{
+ "board": "hwde-led-test",
+ "project": "hive-hwde",
+ "commit": "",
+ "dir": "boards/hwde-led-test",
+ "design": [
+  "kicad/gen/root.py",
+  "report/build.sh"
+ ],
+ "stand_in": {},
+ "unclassified": []
+}

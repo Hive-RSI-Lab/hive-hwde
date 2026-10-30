@@ -1,0 +1,153 @@
+{
+  "script": "gate",
+  "gate": "verify",
+  "phase": "P8",
+  "tool": "verify",
+  "input": "kicad/lite-main.kicad_pcb",
+  "input_digest": "sexpr_no_uuid:5d4d3eefa08ac13660882ad6cc8c5ed1b8f0ccd651f3d521eb5411635ca9c576",
+  "status": "pass",
+  "criteria": {
+    "fail_severities": [
+      "error"
+    ],
+    "max_count": 0
+  },
+  "counts": {
+    "total": 35,
+    "by_severity": {
+      "warning": 34,
+      "error": 1
+    },
+    "by_source": {
+      "check_decoupling": 1,
+      "check_thermal": 1,
+      "check_route_style": 15,
+      "check_ratings": 18
+    },
+    "by_check": {
+      "check_return_path": 0,
+      "check_current": 0,
+      "check_decoupling": 1,
+      "check_diffpair": 0,
+      "check_creepage": 0,
+      "check_thermal": 1,
+      "check_silk": 0,
+      "check_route_style": 15,
+      "check_mating": 0,
+      "check_pdn": 0,
+      "check_ratings": 18,
+      "check_bom_sync": 0,
+      "check_courtyard": 0,
+      "check_mate_pins": 0,
+      "check_model_paths": 0
+    }
+  },
+  "failing_count": 0,
+  "failing": [],
+  "waived_count": 1,
+  "waived": [
+    {
+      "check": "check_thermal",
+      "severity": "error",
+      "pos": [
+        101.8654,
+        105.323
+      ],
+      "layer": "F.Cu",
+      "net": "GND",
+      "refs": [
+        "U8"
+      ],
+      "msg": "U8 dissipates 2.00 W through 306 mm2 top + 573 mm2 back GND copper and 26 thermal via(s): ~95 C rise (theta_JA ~48 C/W) > 80 C allowed; add thermal vias into a back-side GND pour",
+      "source": "check_thermal",
+      "items": [
+        {
+          "msg": "U8 dissipates 2.00 W through 306 mm2 top + 573 mm2 back GND copper and 26 thermal via(s): ~95 C rise (theta_JA ~48 C/W) > 80 C allowed; add thermal vias into a back-side GND pour",
+          "pos": [
+            101.8654,
+            105.323
+          ]
+        }
+      ],
+      "kind": "thermal_area",
+      "power_w": 2.0,
+      "area_mm2": 645.0,
+      "theta_ja": 47.548,
+      "rise_c": 95.0961,
+      "dt_allowed_c": 80.0
+    }
+  ],
+  "coverage": {
+    "strict": false,
+    "required": [
+      "check_return_path",
+      "check_current",
+      "check_decoupling",
+      "check_diffpair",
+      "check_creepage",
+      "check_thermal",
+      "check_silk",
+      "check_route_style",
+      "check_mating",
+      "check_pdn",
+      "check_ratings",
+      "check_bom_sync",
+      "check_courtyard",
+      "check_mate_pins",
+      "check_model_paths"
+    ],
+    "ran": [
+      "check_return_path",
+      "check_current",
+      "check_decoupling",
+      "check_diffpair",
+      "check_creepage",
+      "check_thermal",
+      "check_silk",
+      "check_route_style",
+      "check_mating",
+      "check_pdn",
+      "check_ratings",
+      "check_bom_sync",
+      "check_courtyard",
+      "check_mate_pins",
+      "check_model_paths"
+    ],
+    "passed": [
+      "check_return_path",
+      "check_current",
+      "check_decoupling",
+      "check_diffpair",
+      "check_creepage",
+      "check_silk",
+      "check_route_style",
+      "check_mating",
+      "check_pdn",
+      "check_ratings",
+      "check_bom_sync",
+      "check_courtyard",
+      "check_mate_pins",
+      "check_model_paths"
+    ],
+    "failed": [],
+    "waived": [
+      "check_thermal"
+    ],
+    "not_applicable": {},
+    "skipped_error": {}
+  },
+  "record_result": {
+    "ok": true,
+    "recorded": true,
+    "workspace": ".",
+    "gate": "verify",
+    "status": "pass",
+    "attempts": 5,
+    "inputs": {
+      "pcb": "sexpr_no_uuid:5d4d3eefa08ac13660882ad6cc8c5ed1b8f0ccd651f3d521eb5411635ca9c576",
+      "constraints": "json_canonical:bddbb1b84a07eaf0b52456568888c02226ad1317a93e8020e9b9e780b98c7ab5",
+      "decoupling": "json_canonical:83d4aa9fc41ad6fde56012fff8a8e86b567621103cd7a118d91157b10ede6600",
+      "waivers": "json_canonical:fd04b3c398f91596a08605fd91c32f9be2d338bcc3860a37e636c7fd5a133f39"
+    }
+  }
+}

@@ -1,0 +1,104 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C2973667",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C2973667",
+   "mpn": "ESP32-WROVER-E-N8R8",
+   "brand": "Espressif Systems",
+   "description": "-40\u2103~+85\u2103 -97dBm 108mA 2.4GHz 20.5dBm 350mA 3V~3.6V Bluetooth4.2 ESP32-DOWD-V3 On-board PCB Antenna UART\u3001SDIO\u3001SPI\u3001I2C SMD,31.4x18mm WiFi Modules ROHS",
+   "package": "SMD,31.4x18mm",
+   "category": "WiFi Modules",
+   "type": "Extended",
+   "basic": false,
+   "stock": 4306,
+   "price": 3.8273,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 3.8273
+    },
+    {
+     "qty": 10,
+     "price": 3.7339
+    },
+    {
+     "qty": 12,
+     "price": 3.7339
+    },
+    {
+     "qty": 14,
+     "price": 3.7339
+    },
+    {
+     "qty": 16,
+     "price": 3.7339
+    },
+    {
+     "qty": 18,
+     "price": 3.7339
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2207151200_Espressif-Systems-ESP32-WROVER-E-N8R8_C2973667.pdf",
+   "url": "https://www.lcsc.com/product-detail/wifi-modules_espressif-systems-esp32-wrover-e-n8r8_C2973667.html",
+   "attributes": [
+    {
+     "name": "Antenna Type",
+     "value": "On-board PCB Antenna"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+85\u2103"
+    },
+    {
+     "name": "Sensitivity",
+     "value": "-97dBm"
+    },
+    {
+     "name": "Output Power",
+     "value": "20.5dBm"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "3V~3.6V"
+    },
+    {
+     "name": "Frequency",
+     "value": "2.4GHz"
+    },
+    {
+     "name": "Features",
+     "value": "Integrated Bluetooth function\u3001Over-the-air (OTA) update"
+    },
+    {
+     "name": "Utilized IC / Part",
+     "value": "ESP32-DOWD-V3"
+    },
+    {
+     "name": "Interface Type",
+     "value": "UART\u3001SDIO\u3001SPI\u3001I2C"
+    },
+    {
+     "name": "Receive  Current",
+     "value": "108mA"
+    },
+    {
+     "name": "Wireless Standard",
+     "value": "Bluetooth4.2"
+    },
+    {
+     "name": "Send  Current",
+     "value": "350mA"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

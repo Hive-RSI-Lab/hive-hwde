@@ -1,0 +1,49 @@
+{
+ "script": "planes_gen",
+ "status": "pass",
+ "board": "lite-main.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "facts": {
+  "plan_source": "constraints",
+  "zones_added": 1,
+  "zones": [
+   {
+    "net": "GND",
+    "layer": "F.Cu",
+    "region": [
+     23.365,
+     60.823,
+     122.365,
+     149.823
+    ],
+    "priority": 0,
+    "status": "added",
+    "area_mm2": 6094.058,
+    "islands": 21
+   }
+  ],
+  "thermal_vias": 0,
+  "thermal_pads": [
+   {
+    "ref": "U8",
+    "pad": "33",
+    "net": "GND",
+    "vias": 0,
+    "note": "footprint ships its own via array (17 thru-hole items in the land); grid skipped"
+   }
+  ],
+  "layer_types": {},
+  "added_for_reference": [],
+  "notes": []
+ },
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T21:04:36+00:00",
+ "input": "/work/boards/lite/kicad/lite-main.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:727dde795392d2be41dec7623bd726f03cd8158821240f83e3679f9d1387bf0d"
+}

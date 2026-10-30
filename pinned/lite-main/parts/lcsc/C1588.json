@@ -1,0 +1,212 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C1588",
+ "total": 12,
+ "count": 3,
+ "results": [
+  {
+   "lcsc": "C1588",
+   "mpn": "CL10B102KB8NNNC",
+   "brand": "Samsung Electro-Mechanics",
+   "description": "1nF 50V X7R \u00b110% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "package": "0603",
+   "category": "Multilayer Ceramic Capacitors MLCC - SMD/SMT",
+   "type": "Basic",
+   "basic": true,
+   "stock": 5328834,
+   "price": 0.0098,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0098
+    },
+    {
+     "qty": 500,
+     "price": 0.0076
+    },
+    {
+     "qty": 1500,
+     "price": 0.0067
+    },
+    {
+     "qty": 4000,
+     "price": 0.006
+    },
+    {
+     "qty": 24000,
+     "price": 0.0057
+    },
+    {
+     "qty": 48000,
+     "price": 0.0055
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL10B102KB8NNNC_C1588.pdf",
+   "url": "https://www.lcsc.com/product-detail/multilayer-ceramic-capacitors-mlcc-smd-smt_samsung-electro-mechanics-cl10b102kb8nnnc_C1588.html",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+125\u2103"
+    },
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b110%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "1nF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X7R"
+    }
+   ],
+   "rank": 0
+  },
+  {
+   "lcsc": "C1384158",
+   "mpn": "MBB02070C1588FCT00",
+   "brand": "Vishay Intertech",
+   "description": "-55\u2103~+155\u2103 1.58\u03a9 600mW Metal Film Resistor \u00b11% \u00b150ppm/\u2103 \u63d2\u4ef6,D2.5xL6.5mm Through Hole Resistors ROHS",
+   "package": "Plugin,D2.5xL6.5mm",
+   "category": "Through Hole Resistors",
+   "type": "Extended",
+   "basic": false,
+   "stock": 0,
+   "price": 0.0426,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0426
+    },
+    {
+     "qty": 10,
+     "price": 0.0426
+    },
+    {
+     "qty": 12,
+     "price": 0.0426
+    },
+    {
+     "qty": 200,
+     "price": 0.0166
+    },
+    {
+     "qty": 500,
+     "price": 0.016
+    },
+    {
+     "qty": 1000,
+     "price": 0.0157
+    }
+   ],
+   "min_qty": 564,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Vishay-Intertech-MBB02070C1588FCT00_C1384158.pdf",
+   "url": "https://www.lcsc.com/product-detail/through-hole-resistors_vishay-intertech-mbb02070c1588fct00_C1384158.html",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "1.58\u03a9"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "600mW"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+155\u2103"
+    },
+    {
+     "name": "Type",
+     "value": "Metal Film Resistor"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b11%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "\u00b150ppm/\u2103"
+    }
+   ],
+   "rank": 1
+  },
+  {
+   "lcsc": "C1759140",
+   "mpn": "MBB02070C1588FRP00",
+   "brand": "Vishay Intertech",
+   "description": "-55\u2103~+155\u2103 1.58\u03a9 600mW Metal Film Resistor \u00b11% \u00b150ppm/\u2103 \u63d2\u4ef6,D2.5xL6.5mm Through Hole Resistors ROHS",
+   "package": "Plugin,D2.5xL6.5mm",
+   "category": "Through Hole Resistors",
+   "type": "Extended",
+   "basic": false,
+   "stock": 0,
+   "price": 0.0431,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0431
+    },
+    {
+     "qty": 10,
+     "price": 0.0431
+    },
+    {
+     "qty": 12,
+     "price": 0.0431
+    },
+    {
+     "qty": 200,
+     "price": 0.0168
+    },
+    {
+     "qty": 500,
+     "price": 0.0161
+    },
+    {
+     "qty": 1000,
+     "price": 0.0158
+    }
+   ],
+   "min_qty": 561,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Vishay-Intertech-MBB02070C1588FRP00_C1759140.pdf",
+   "url": "https://www.lcsc.com/product-detail/through-hole-resistors_vishay-intertech-mbb02070c1588frp00_C1759140.html",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "1.58\u03a9"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "600mW"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+155\u2103"
+    },
+    {
+     "name": "Type",
+     "value": "Metal Film Resistor"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b11%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "\u00b150ppm/\u2103"
+    }
+   ],
+   "rank": 2
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

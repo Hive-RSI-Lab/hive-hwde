@@ -1,0 +1,109 @@
+{
+ "script": "lib_pull",
+ "status": "pass",
+ "lib_name": "aiee",
+ "parts_file": null,
+ "paced_s": 0.0,
+ "retried": 0,
+ "symbol_lib": "/work/boards/lite/lib/aiee.kicad_sym",
+ "footprint_lib": "/work/boards/lite/lib/aiee.pretty",
+ "results": [
+  {
+   "lcsc": "C2915641",
+   "status": "pulled",
+   "symbol": "DB128V-5.08-4P-GN-S",
+   "symbol_verified": true,
+   "footprint_verified": true,
+   "symbol_lib": "/work/boards/lite/lib/aiee.kicad_sym",
+   "footprint_lib": "/work/boards/lite/lib/aiee.pretty",
+   "footprints": [
+    {
+     "name": "CONN-TH_4P-P5.08_DIBO_DB128V-5.08",
+     "file": "/work/boards/lite/lib/aiee.pretty/CONN-TH_4P-P5.08_DIBO_DB128V-5.08.kicad_mod",
+     "copper_pads": 4,
+     "courtyard": true,
+     "silk": true
+    }
+   ],
+   "warnings": []
+  }
+ ],
+ "symbol_dedup": {
+  "removed": 0,
+  "names": []
+ },
+ "registered": {
+  "fp": "present",
+  "sym": "present"
+ },
+ "autofix": {
+  "footprints": 1,
+  "changed": 1,
+  "actions": 1,
+  "residue": 0,
+  "results": [
+   {
+    "footprint": "CONN-TH_4P-P5.08_DIBO_DB128V-5.08",
+    "file": "/work/boards/lite/lib/aiee.pretty/CONN-TH_4P-P5.08_DIBO_DB128V-5.08.kicad_mod",
+    "changed": true,
+    "actions": [
+     {
+      "rule": "A",
+      "action": "promote_silk_width",
+      "kind": "fp_circle",
+      "from_mm": 0.06,
+      "to_mm": 0.15,
+      "gap_mm": 4.5322
+     }
+    ],
+    "residue": 0,
+    "before": {
+     "worst_gap_mm": 1.265,
+     "unprintable_silk": 1,
+     "under_gap_silk": 0,
+     "plated_pegs": 0
+    },
+    "after": {
+     "worst_gap_mm": 1.265,
+     "unprintable_silk": 0,
+     "under_gap_silk": 0,
+     "plated_pegs": 0
+    }
+   }
+  ]
+ },
+ "refdes_norm": {
+  "footprints": 21,
+  "changed": 1,
+  "unchanged": 20,
+  "skipped": 0,
+  "results": [
+   {
+    "footprint": "CONN-TH_4P-P5.08_DIBO_DB128V-5.08",
+    "status": "changed",
+    "from": [
+     0.0,
+     -4.0
+    ],
+    "to": [
+     0.0,
+     -5.825
+    ],
+    "pad_top": -1.15,
+    "silk_top": -5.0,
+    "clear_of": -5.0,
+    "inked_half_h": 0.575
+   }
+  ]
+ },
+ "model_paths": {
+  "rewritten": 1,
+  "footprints": {
+   "CONN-TH_4P-P5.08_DIBO_DB128V-5.08.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/CONN-TH_4P-P5.08_DIBO_DB128V-5.08.wrl"
+   ]
+  }
+ },
+ "load_check": null,
+ "drc_check": null
+}
