@@ -78,3 +78,12 @@ def test_gate_charges_count_failing_and_unwaived_warnings():
     c = score.gate_charges(result, [w])
     assert c == {"check_thermal": 1, "check_route_style": 1, "(warnings past the cap)": 2}
     assert sum(score.gate_charges({"failing": [], "warnings": [], "warnings_count": 0}).values()) == 0
+
+
+def test_a_gate_note_warning_is_one_charge():
+    """erc appends its pin-type coverage note to warnings as a plain string,
+    outside warnings_count (gate.py)."""
+    result = {"failing": [], "warnings_count": 1,
+              "warnings": [{"check": "erc", "kind": "pin_not_connected"},
+                           "all 370 pins of the 28 multi-pin symbols are typed passive"]}
+    assert score.gate_charges(result, [{"check": "x"}]) == {"erc": 1, "(gate note)": 1}

@@ -127,10 +127,14 @@ def gate_charges(result: dict, waivers: list[dict] | None = None) -> Counter:
         out[v.get("check") or v.get("kind") or v.get("source") or "?"] += 1
     warns = result.get("warnings") or []
     for v in warns:
-        if not any(gate.waiver_matches(w, v) for w in waivers or []):
+        if isinstance(v, str):
+            # a gate's own note (erc's pin-type coverage): no waiver matches one
+            out["(gate note)"] += 1
+        elif not any(gate.waiver_matches(w, v) for w in waivers or []):
             out[v.get("check") or v.get("kind") or v.get("source") or "?"] += 1
-    # warnings past the gate's cap travel only as a count
-    out["(warnings past the cap)"] += max(0, int(result.get("warnings_count") or 0) - len(warns))
+    # warnings past the gate's cap travel only as a count (a note isn't in it)
+    rows = sum(not isinstance(v, str) for v in warns)
+    out["(warnings past the cap)"] += max(0, int(result.get("warnings_count") or 0) - rows)
     return +out
 
 
