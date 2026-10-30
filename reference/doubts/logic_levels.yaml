@@ -1,0 +1,26 @@
+# Logic thresholds the cross_rail_logic doubt check reads (scripts/doubts/).
+# One row per part family: `match` is a regex on the MPN (parts.json) or the
+# netlist value; `vih` is the input-high threshold in volts at the supply the
+# board gives it, or a fraction of the part's own supply ("0.7*VDD");
+# `vin_max` is the highest voltage an input pin takes (abs max), when it is
+# above VDD + 0.3 (a 5 V tolerant input). Every row cites its datasheet:
+# document, revision, page or table. A part with no row is read as plain
+# CMOS (VIH 0.7 x its supply, inputs to VDD + 0.3) and the answer says so as
+# an unknown, so a doubt about it stays open until a row with a source closes
+# it. Add the row from the datasheet; never from memory.
+#
+# Optional per row: `inputs`, `outputs`, `open_drain`: pin names (as the
+# netlist names them) whose direction the datasheet's pin table gives, so a
+# crossing net knows which end drives. A pin in none of them is read as
+# either.
+parts:
+- match: '^TPA3221'
+  vih: 1.9
+  vin_max: 5.5
+  inputs: [RESET, CMUTE, HEAD]
+  open_drain: [FAULT, OTW_CLIP]
+  source: >-
+    TI SLASEE9C (rev. May 2025): pin functions p.4 (RESET input; FAULT and
+    OTW_CLIP open drain, internal 26 k pull-up to AVDD, VOH 3.3 V), abs max
+    6.1 p.5 (interface pins and FAULT/OTW_CLIP -0.3..5.5 V), static digital
+    specifications p.9 (VIH 1.9 V min for HEAD, OSCM, OSCP, CMUTE, RESET)
