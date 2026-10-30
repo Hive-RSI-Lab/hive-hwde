@@ -13,6 +13,22 @@ mutants:
       ref: J2
       pos: [156.5, 110.5]   # J2 pin 1 (+3V3), which meets the socket's GND
 
+  mech-05-pi-header-mirrored:
+    board: blinky2
+    script: mutations/mech_05_pi_header_mirrored.py
+    check: check_mate_pins
+    modes: [MECH-05]
+    defect: >-
+      PLACEMENT fault: a Raspberry Pi 40-pin header J9 (pin 1 +3V3, pin 2
+      +5V, pin 6 GND) on B.Cu, so the board sits on a Pi below, is the stock
+      PinHeader_2x20 numbered for F.Cu flipped to the back: seen from above
+      it is the mirror of the Pi's header, so the odd and even rows swap and
+      +5V lands on the Pi's 3V3 (digits v1 J1, real-errata corpus digits-2)
+    expect:
+      kind: mate_mirrored_pinout
+      ref: J9
+      pos: [100.95, 136.2]  # J9 pin 1
+
   mech-06-unkeyed-rails:
     board: blinky2
     script: mutations/mech_06_unkeyed_rails.py
