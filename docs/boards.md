@@ -26,6 +26,14 @@ boards; a board here is re-checked by its own project's test.
 | lite-main | hifi-receiver-2 | 87b6fce | erc, drc_routed, verify, fab, dfm | `boards/lite-main`: 2 layers, 130 parts (USB-C PD, ESP32, codec, 2 x 43 W class-D); its snags are `HWDE-SNAGS.md` |
 | core | hifi-receiver-2 | e8fef47 | erc, drc_routed, verify, fab, dfm | `boards/core`: 4 layers, 278 parts (Plus/Ultra core); its board-local scripts are in `kicad/gen/`, listed in its README |
 
+**core's verify under the new checks.** Its row records the verify gate as
+passed at e8fef47, under the checks hwde had then. `check_straps` and
+`check_antenna` (issue #130) now fail core with errors: the GPIO0 strap and
+six TCA9555 pins (review-2 DIGITAL-1/2), and fill under U7's antenna on all
+four layers (DIGITAL-19). Those are design findings for hifi-receiver-2 to
+fix, not workarounds. The row stays as the commit it names until that
+project re-runs verify on its next spin and updates it.
+
 ## Known and not yet counted
 
 Workarounds these boards needed that have no row yet, because there's no

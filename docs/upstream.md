@@ -18,8 +18,11 @@ What moved where:
 - `reference/knowledge/sources/*.pdf` (36 MB of manufacturers' datasheets
   and application notes) was never brought over. NOTICE says they're
   redistributed under their owners' terms, not MIT.
-  `scripts/lib/knowledgelib.py`'s `SOURCES_DIR` reads `HWDE_KNOWLEDGE_SOURCES`,
-  and `bin/hwde` points it at the hwde project's clone when there is one.
+  `scripts/lib/knowledgelib.py`'s `SOURCES_DIR` reads `HWDE_KNOWLEDGE_SOURCES`.
+  `docs/knowledge-sources.txt` pins them at upstream's commit above (git blob
+  sha, size, name, from the GitHub contents API for that folder), and
+  `bin/sources.py` fetches them from upstream into HOME; `bin/hwde` points
+  `HWDE_KNOWLEDGE_SOURCES` there.
 - `scripts/parts_search.py --kind/--category` (with
   `reference/part_kinds.yaml` and `category_search` in
   `scripts/lib/partslib.py`): finding a part by what it is, by browsing its
@@ -44,6 +47,12 @@ What moved where:
   copies; `scripts/board_edit.py`, whose `--outline fit` counts silk and whose
   edits refuse to clip it; `scripts/check_silk.py`, whose silk items carry
   their footprint's reference.
+- Two verify checks from hifi-receiver-2's first-spin review (issue #130):
+  `scripts/check_straps.py` (+ `reference/reset_states.yaml`), an MCU's
+  strapping pins and IO expander pins at power-on and on an MCU-only reset,
+  and `scripts/check_antenna.py` (+ `reference/rf_modules.yaml`), copper
+  under a module's PCB antenna and its place at the board edge, each with its
+  `checks.d` fragment.
 - Power-path checks from hifi-receiver-2's first-spin power review, which
   did each by hand: `scripts/check_power_path.py` (+
   `checks.d/check_power_path.yaml`, mutant `power-path-under-contract`), the

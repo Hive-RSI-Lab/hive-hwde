@@ -11,6 +11,9 @@
 #                         SLOW): live toolchain, whole fixture boards
 #   hwde check-all        re-run every board's gates from a scratch copy, and
 #                         check docs/workarounds.md against its probes (slow)
+#   hwde sources          fetch the knowledge records' source PDFs into HOME
+#                         (first use of knowledge, research or check-all
+#                         does it too) and print where they are
 #   hwde score            the share of gate steps with no workaround (the score)
 #   hwde publish <dir>    put a self-contained copy at <dir>/hwde (a warden
 #                         runs it into the Hive's tools folder, so a check
@@ -29,8 +32,9 @@
 # Nothing here installs anything outside HOME but publish's <dir>: KiCad and
 # freerouting are the Hive's (in its shared tools folder, put there through a
 # warden); the venv is built from requirements.lock with the Hive's uv on
-# first use. A published copy carries its own Python 3.14 with the packages
-# installed in it, and uses that instead.
+# first use, and the knowledge records' source PDFs are fetched from upstream
+# (bin/sources.py). A published copy carries its own Python 3.14 with the
+# packages installed in it, and its own PDFs, and uses those instead.
 set -e
 here=$(cd "$(dirname "$0")/.." && pwd)
 tools=${HIVE_TOOLS:-/hive/tools}
@@ -73,6 +77,8 @@ if [ "${1:-}" = publish ]; then
 	if [ -n "$appdir" ] && [ -d "$appdir/share/kicad/symbols/power.kicad_symdir" ]; then
 		"$py" "$here/bin/flatten-symdirs.py" "$appdir/share/kicad/symbols" "$new/symbols-$(basename "$appdir")"
 	fi
+	# A check sandbox has no network: the copy carries the source PDFs.
+	python3 "$here/bin/sources.py" fetch "$new/knowledge-sources"
 	echo "$ver" >"$new/VERSION"
 	rm -rf "$dest/.hwde-old"
 	[ -d "$dest/hwde" ] && mv "$dest/hwde" "$dest/.hwde-old"
@@ -125,10 +131,19 @@ if [ -z "${HWDE_KRT_DIR:-}" ]; then
 fi
 [ -z "${HWDE_JAVA:-}" ] && command -v java >/dev/null 2>&1 && HWDE_JAVA=$(command -v java)
 # The knowledge records cite manufacturers' PDFs the module doesn't carry
-# (NOTICE); the hwde project's clone has them.
+# (NOTICE): docs/knowledge-sources.txt pins them at upstream's commit, and
+# bin/sources.py fetches them into HOME (a published copy carries its own)
+# the first time a command that checks citations runs, or `hwde sources`.
 if [ -z "${HWDE_KNOWLEDGE_SOURCES:-}" ]; then
-	src=${HIVE_PROJECTS:-/hive/projects}/hwde/.claude/skills/hwde/reference/knowledge/sources
-	[ -d "$src" ] && HWDE_KNOWLEDGE_SOURCES=$src
+	srcdir=$here/knowledge-sources
+	[ -d "$srcdir" ] || srcdir=$state/knowledge-sources
+	if [ ! "$srcdir/.complete" -nt "$here/docs/knowledge-sources.txt" ]; then
+		case ${1:-} in
+		knowledge | knowledge.py | research | research.py | check-all | sources)
+			python3 "$here/bin/sources.py" fetch "$srcdir" || true ;;
+		esac
+	fi
+	[ "$srcdir/.complete" -nt "$here/docs/knowledge-sources.txt" ] && HWDE_KNOWLEDGE_SOURCES=$srcdir
 fi
 # Boards live in the project the agent works in, under boards/.
 HWDE_BOARDS_ROOT=${HWDE_BOARDS_ROOT:-$PWD/boards}
@@ -240,12 +255,16 @@ check-all)
 	heavy="hwde check-all (every board's gates)"
 	x "$py" "$here/bin/check_all.py" "$@"
 	;;
+sources)
+	[ -n "${HWDE_KNOWLEDGE_SOURCES:-}" ] || { echo "hwde: knowledge sources not fetched (see above)" >&2; exit 1; }
+	echo "$HWDE_KNOWLEDGE_SOURCES"
+	;;
 check)
 	shift
 	x "$py" "$here/scripts/check_env.py" "$@"
 	;;
 "" | -h | --help)
-	sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'
+	sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'
 	;;
 *)
 	s=${1%.py}

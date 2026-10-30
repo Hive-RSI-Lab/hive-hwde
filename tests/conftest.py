@@ -38,7 +38,9 @@ def _kicad_version() -> tuple[tuple[int, ...], str]:
 
 # Upstream tests that fail in hive-hwde for a cause a brief already owns:
 # each is an expected failure until that brief lands. An XPASS in the summary
-# means its cause is gone: take its line out. (nodeid -> why)
+# means its cause is gone: take its line out. (nodeid -> why) The _CITES lines
+# that only lacked the source PDFs XPASS where `hwde sources` has fetched them
+# (issue #97); they stay listed for a HOME that hasn't.
 _CITES = ("the records cite files the module doesn't carry: source PDFs, "
           "upstream's LEARNINGS.md and board workspaces (261028-141932, "
           "261028-154518)")
