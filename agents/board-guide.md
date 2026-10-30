@@ -38,8 +38,9 @@ with the repo venv python (`.venv/bin/python` on Linux,
   facts file and the prose do not say, you do not claim.
 
 ## Steps
-1. Read the pdf-material-builder skill (`~/.claude/skills/pdf-material-builder/
-   SKILL.md`) and follow it as a SMALL `technical-doc` build: short template
+1. Read the pdf-material-builder skill (`$HWDE_PDF_MATERIAL_BUILDER/SKILL.md`,
+   else `~/.claude/skills/pdf-material-builder/SKILL.md`; `hwde env` prints
+   where it is) and follow it as a SMALL `technical-doc` build: short template
    (`assets/short-template.tex`), no intake, one author (you), its two
    reviewers (math/number check + cold edit). Its house style, voice rules
    and style gate apply in full.
@@ -96,6 +97,11 @@ with the repo venv python (`.venv/bin/python` on Linux,
      no session found), say in one line that the cost was not recorded.
 3. Build with the skill's `scripts/build.sh`, run its `scripts/style-check.sh`,
    render the pages to PNG and look at them. Fix and rebuild until clean.
+   With no pdf-material-builder on the machine (`hwde env` names no
+   `HWDE_PDF_MATERIAL_BUILDER`), write the same sections in a plain
+   `article` with `\usepackage{housestyle}` and build it with lualatex, twice,
+   with `HWDE_HOUSE_STYLE` (the module's stand-in) first on `TEXINPUTS`; there
+   is no style-check, so say `style-check: n/a (no pdf-material-builder)`.
 4. Copy the final PDF to `fab/<board>-guide.pdf` (the `guide_pdf` field).
    Leave no `_tmp_*` files behind.
 

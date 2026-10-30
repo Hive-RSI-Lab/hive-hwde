@@ -44,6 +44,11 @@ post-filter or hand-edit the generated files** - a board-local filter script is
 the failure mode this replaced (rf-de-20m, codex C9: nine DNP sites, three of
 them the ZVS fix).
 
+Save each script's JSON report under the name the design doc reads
+(`report_gen.STAGE_REPORTS`): `fab_export.py ... --out reports/fab_export.json`,
+`bom_cpl.py ... --out reports/bom_cpl.json`, and the gate's result with
+`gate.py --gate dfm ... --out reports/gate-dfm.json`.
+
 Then the `dfm` gate. Note what it reads: `gate.py` re-exports gerbers to a
 SCRATCH directory from the BOARD, plus the sibling schematic (CPL polarity
 oracle) and `parts.json` (BOM leg). The shipped `fab/<board>_gerbers.zip` is an

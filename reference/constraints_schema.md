@@ -78,7 +78,11 @@ Consumers per key (script -> phase):
   // copper. T2: reports EVERY violating item pair (not just the worst per
   // net pair); violation pos = the actual gap midpoint. check_ratings reads
   // these as each rail's worst case, ahead of the power tree and net names.
-  "voltages": [{"net": "HV_BUS", "voltage": 48}],
+  // min (optional): the lowest the rail runs at (a USB-PD VBUS at its
+  // lowest allowed contract, a battery at cut-off); sim_board re-runs its
+  // DC scenarios there and judges MOSFET on-state drive (mosfet_underdrive).
+  "voltages": [{"net": "HV_BUS", "voltage": 48},
+               {"net": "VBUS", "voltage": 21, "min": 9}],
   // voltage_pairs (T2): explicit net-PAIR differential that node voltages
   // cannot express (bridge/AC inputs - two 57 V taps carry 114 V between
   // them). Overrides the derived difference for that pair; a pair declared

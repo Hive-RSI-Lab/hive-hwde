@@ -45,8 +45,10 @@ CLI:
                 [--parts parts.json] [--cache-dir DIR] [--offline]
                 [--visual fab/cpl_visual.json] [--out report.json]
 LCSC numbers come from the board's footprint fields, overridden by parts.json.
-The cache is $HWDE_EASYEDA_CACHE, else <parts.json dir>/easyeda when that
-dir exists, else ~/.cache/hwde/easyeda (env.easyeda_cache); --offline (or HWDE_EASYEDA_OFFLINE=1) never fetches.
+The cache is $HWDE_EASYEDA_CACHE, else <parts.json dir>/easyeda (made on the
+first fetch - commit it), else ~/.cache/hwde/easyeda (env.easyeda_cache), which
+is also read when the board's has no copy; --offline (or HWDE_EASYEDA_OFFLINE=1)
+never fetches.
 Exit 0 every part verified / 1 a part is wrong or unverified / 2 error.
 In a board workspace each part's `footprint` fact goes into its ledger.json
 (record_footprints, lib/ledgerlib.py) - from dfm's placement leg too.

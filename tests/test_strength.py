@@ -4,6 +4,7 @@ charges CRASH for each one let through.
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -30,7 +31,16 @@ def test_every_planted_fault_is_caught():
     assert sum(s == "dfm" for s, _, _ in fs) >= 1 + len(strength.DRILL_FAULTS)
 
 
-def test_a_gate_that_stops_failing_warnings_lets_one_through(monkeypatch):
+@pytest.fixture(scope="module")
+def found():
+    """The findings the verify and dfm legs' planted faults raise, once."""
+    got: dict = {}
+    strength.verify_faults(got)
+    strength.dfm_faults(got)
+    return got
+
+
+def test_a_gate_that_stops_failing_warnings_lets_one_through(monkeypatch, found):
     import gate
     real = gate.load_gates
 
@@ -40,8 +50,77 @@ def test_a_gate_that_stops_failing_warnings_lets_one_through(monkeypatch):
         g["dfm"]["max_count"] = 5
         return g
     monkeypatch.setattr(gate, "load_gates", loose)
-    assert set(_missed(strength.gate_faults())) == {
-        "gate erc: one warning", "gate dfm: one error"}
+    assert set(_missed(strength.gate_faults(found))) == {
+        "gate erc: erc unconnected_wire_endpoint (warning)",
+        "gate dfm: check.dfm dfm_hole_to_hole (error)",
+        "gate dfm: check.dfm dfm_hole_size (error)"}
+
+
+def _seen(monkeypatch):
+    """Every report gate.evaluate is handed, by gate."""
+    import gate
+    real, seen = gate.evaluate, []
+
+    def spy(name, g, report, *a, **k):
+        seen.append((name, report))
+        return real(name, g, report, *a, **k)
+    monkeypatch.setattr(gate, "evaluate", spy)
+    return seen
+
+
+def test_planted_findings_are_ones_real_runs_wrote(monkeypatch, found):
+    seen = _seen(monkeypatch)
+    fs = strength.gate_faults(found)
+    assert _missed(fs) == [] and len(seen) == len(fs)
+    assert {n for n, _ in seen} == set(strength.FAILS_ON)
+    assert len(seen) >= 25
+    real = {n: strength._corpus(c)["violations"] for n, c in strength.GATE_BASE.items()}
+    real.update(found)
+    for name, report in seen:
+        assert "planted" not in json.dumps(report).lower(), name
+        base = json.loads((strength.ROOT / strength.BASE_REPORT[name]).read_text()) \
+            if name in strength.BASE_REPORT else {"violations": []}
+        new = [v for v in report["violations"] if v not in base["violations"]]
+        assert len(new) == 1 and new[0] in real[name], name
+        assert report["counts"]["total"] == len(report["violations"])
+        assert set(report) >= set(base) - {"violations"}
+
+
+def test_a_gate_py_that_skips_the_old_marker_lets_nothing_through(monkeypatch, found):
+    """The planted findings used to carry kind and msg 'planted'; a gate.py
+    skipping those now skips nothing."""
+    import gate
+    real = gate.evaluate
+
+    def skip(name, g, report, *a, **k):
+        report = {**report, "violations": [
+            v for v in report["violations"]
+            if "planted" not in (str(v.get("kind")) + str(v.get("msg"))).lower()]}
+        return real(name, g, report, *a, **k)
+    monkeypatch.setattr(gate, "evaluate", skip)
+    assert _missed(strength.gate_faults(found)) == []
+
+
+def test_a_gate_py_that_skips_a_finding_drops_the_score(monkeypatch, capsys, found):
+    """To let a planted finding through, gate.py has to skip that finding
+    itself, as it would on a board: it costs CRASH."""
+    import gate
+    real = gate.evaluate
+
+    def skip(name, g, report, *a, **k):
+        report = {**report, "violations": [
+            v for v in report["violations"] if v.get("check") != "power_pin_not_driven"]}
+        return real(name, g, report, *a, **k)
+    _quick(monkeypatch)
+    monkeypatch.setattr(strength, "faults", lambda: strength.gate_faults(found))
+    assert score.main() == 0
+    assert capsys.readouterr().out.splitlines()[-1] == "0"
+    monkeypatch.setattr(gate, "evaluate", skip)
+    assert score.main() == 0
+    out = capsys.readouterr().out.splitlines()
+    assert "planted fault let through: gate erc: erc power_pin_not_driven (error) " \
+        f"(CRASH {score.CRASH})" in out
+    assert out[-1] == str(-score.CRASH)
 
 
 def test_a_lowered_jlc_floor_lets_the_drill_faults_through(tmp_path, monkeypatch):

@@ -227,9 +227,12 @@ def collect(ws: Path, do_render: bool = False) -> dict:
                            for ln in priced), 2) if priced else None
 
     rotations = []
-    bc = ws / "reports" / "bom_cpl.json"
-    if bc.is_file():
-        rep = _read_json(bc, "bom_cpl.json")
+    # bom_cpl's report by the recipes' name, else the hyphenated one
+    # (report_gen.STAGE_REPORTS).
+    bc = next((p for p in (ws / "reports" / "bom_cpl.json",
+                           ws / "reports" / "bom-cpl.json") if p.is_file()), None)
+    if bc is not None:
+        rep = _read_json(bc, bc.name)
         for a in rep.get("rotation_audit") or []:
             if isinstance(a, dict) and a.get("correction"):
                 rotations.append({k: a.get(k) for k in

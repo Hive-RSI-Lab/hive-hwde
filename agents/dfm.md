@@ -13,12 +13,14 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
   `parts/parts.json` (LCSC assignments).
 
 ## Steps
-1. `scripts/fab_export.py --pcb kicad/<board>.kicad_pcb --out fab/`
+1. `scripts/fab_export.py --pcb kicad/<board>.kicad_pcb --out-dir fab/
+   --out reports/fab_export.json`
    - curated JLC layer set (copper x N in PHYSICAL order + silk + mask +
    paste + Edge.Cuts) + Excellon drill + mm pos CSV + zip, sha256 per file
    and for the zip. It deliberately does NOT subtract soldermask from silk
    (silk-over-pad must stay visible for the check).
-2. `scripts/bom_cpl.py --pcb ... --out fab/ --parts-json parts/parts.json`
+2. `scripts/bom_cpl.py --pcb ... --out-dir fab/ --parts parts/parts.json
+   --out reports/bom_cpl.json`
    - `BOM-full.csv` (the BOM OF RECORD: every intended part with its
    `Assembly Class` + `Instructions`), `BOM.csv` (the UPLOAD: `smt_placed`
    and `tht` only, JLC's four columns, one row per LCSC part), `prebuy.csv` (placed
@@ -34,6 +36,10 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    (violation `cpl_model_fetch_failed`, `easyeda_rate_limited` set on a
    403/429) means EasyEDA refused or the network failed, NOT that the part
    has no model: wait a few minutes and rerun, which fetches into the cache.
+   Commit `parts/easyeda/` with the board: a checkout or scratch copy that
+   carries it never asks EasyEDA again. In `dfm_check` a fetch failure that
+   is the run's only error reads as UNVERIFIED (status error, exit 2,
+   `unverified` naming the parts), never as a failed board.
    - Membership comes from `assembly_class` in canonical parts data
    (`smt_placed`, `tht`, `hand_install`, `off_board`, `dnp`, `customer_supplied`,
    `select_on_test`, `board_feature`), per-ref via `refdes_class` /
