@@ -11,6 +11,15 @@ MECH-05, a declared mated pair (constraints.json "mating_pairs"):
    plug into each other, or their pad patterns do not overlay.
  - mate_pair_unresolved: a declared ref, or the mate board, is not there.
 
+MECH-05, on this board alone (reference/connector_pinmap.yaml
+standard_headers, a mate whose pinout is a standard):
+ - mate_mirrored_pinout: a standard header (the Raspberry Pi 40-pin GPIO,
+   known by the supplies on its pins) on B.Cu, facing down onto its mate
+   below, whose pad pattern seen from above is the mirror of the mate's: a
+   footprint numbered for F.Cu (PinHeader_2x20) flipped to the back. No
+   rotation mates it; the odd and even rows swap (digits v1 J1). A connector
+   in a declared pair is left to the pair rules.
+
 MECH-06, on this board alone:
  - mate_unkeyed_rail_swap: two connectors with the same footprint in an
    unkeyed family carry different nets on a pin where either carries a supply
@@ -59,8 +68,14 @@ def load_table(path=TABLE) -> dict:
     fams = []
     for f in doc.get("families") or []:
         fams.append({**f, "re": re.compile(f["match"], re.I)})
+    stds = []
+    for h in doc.get("standard_headers") or []:
+        stds.append({**h, "net_re": {k: re.compile(v, re.I)
+                                     for k, v in h["nets"].items()},
+                     "pin_class": {str(n): k for k, ns in
+                                   h["supply_pins"].items() for n in ns}})
     return {"tol": float((doc.get("defaults") or {}).get("overlay_tol_mm", 0.2)),
-            "families": fams}
+            "families": fams, "standards": stds}
 
 
 def family(fpid: str, table: dict) -> dict | None:
@@ -208,6 +223,81 @@ def pair_violations(model, pcb: Path, pairs: list, cons_dir: Path | None,
     return out, facts
 
 
+def handedness(pads, pitch: float, tol: float) -> int | None:
+    """+1/-1: the sign of (pin 2 - pin 1) x (pin 3 - pin 1) in top view (y
+    down), for a 2-row odd/even pattern; None when pins 1-3 are not one
+    pitch apart at a right angle (not that pattern)."""
+    at = {p[0]: (p[2], p[3]) for p in pads}
+    if not all(n in at for n in ("1", "2", "3")):
+        return None
+    ax, ay = at["2"][0] - at["1"][0], at["2"][1] - at["1"][1]
+    bx, by = at["3"][0] - at["1"][0], at["3"][1] - at["1"][1]
+    if abs(math.hypot(ax, ay) - pitch) > tol \
+            or abs(math.hypot(bx, by) - pitch) > tol \
+            or abs(ax * bx + ay * by) > tol * pitch:
+        return None
+    return 1 if ax * by - ay * bx > 0 else -1
+
+
+def standard_match(pads, std: dict) -> dict | None:
+    """{pin: supply} of the pads that make this connector the standard
+    header, or None when it is not (too few, or a supply on a wrong pin)."""
+    if len(pads) != std["pins"]:
+        return None
+    hits = {}
+    for num, net, _, _ in pads:
+        name = canon(net)
+        if name is None:
+            continue
+        cls = next((k for k, r in std["net_re"].items() if r.match(name)),
+                   None)
+        if cls is None:
+            continue
+        if std["pin_class"].get(num) != cls:
+            return None
+        hits[num] = cls
+    if len(hits) < 2 or set(hits.values()) <= {"GND"}:
+        return None
+    return hits
+
+
+def standard_violations(model, table: dict, declared: set) -> list[dict]:
+    out = []
+    for fp in sorted(model.footprints.values(), key=lambda f: f.ref):
+        if fp.side != "back" or fp.ref in declared:
+            continue
+        pads = _pads(fp)
+        for std in table["standards"]:
+            hits = standard_match(pads, std)
+            if hits is None:
+                continue
+            h = handedness(pads, float(std["pitch_mm"]), table["tol"])
+            if h is None or h == std["face_up_handedness"]:
+                break
+            # rows swap: pin 2k-1 meets the mate's pin 2k and back
+            nets = {p[0]: p[1] for p in pads}
+            meets = []
+            for num in sorted(hits, key=int):
+                other = str(int(num) + 1 if int(num) % 2 else int(num) - 1)
+                theirs = std["pin_class"].get(other, "a signal")
+                meets.append(f"pin {num} ({nets[num]}) meets the mate's "
+                             f"pin {other} ({theirs})")
+            p1 = next(p for p in pads if p[0] == "1")
+            out.append(checklib.violation(
+                "mate_pins", "error", (p1[2], p1[3]), None, p1[1], [fp.ref],
+                f"{fp.ref} ({fp.fpid.split(':')[-1]}) on B.Cu is a "
+                f"{std['title']} facing down onto its mate below, but seen "
+                "from above its pads are the mirror of the mate's header: "
+                "the odd and even rows swap whichever way it is turned ("
+                + "; ".join(meets) + "). Use a footprint numbered for the "
+                "back (the socket's own numbering, e.g. PinSocket on B.Cu) "
+                "or put it on F.Cu", SCRIPT, kind="mate_mirrored_pinout",
+                connector=fp.ref, mate=std["name"],
+                supply_pins=dict(sorted(hits.items(), key=lambda i: int(i[0])))))
+            break
+    return out
+
+
 def unkeyed_violations(model, table: dict) -> list[dict]:
     groups: dict[str, list] = {}
     for fp in sorted(model.footprints.values(), key=lambda f: f.ref):
@@ -260,6 +350,8 @@ def run(argv=None):
     model = placelib.PlaceModel(pcb)
     cons_dir = Path(args.constraints).parent if args.constraints else None
     violations, facts = pair_violations(model, pcb, pairs, cons_dir, table)
+    violations += standard_violations(
+        model, table, {p.get("ref") for p in pairs})
     violations += unkeyed_violations(model, table)
     for v in violations:
         v["check"] = "mate_pins"

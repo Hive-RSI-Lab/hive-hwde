@@ -193,6 +193,30 @@ DATASHEET_SCHEMA: dict = {
                 },
             },
         },
+        # netlist_audit pin_part_missing: a part the datasheet requires
+        # between two of the IC's pins (its external-components table:
+        # CBK from FB_BK to GND_BK). Copy the rows into
+        # reference/pin_requirements.yaml, whose header gives the fields.
+        "pin_requirements": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["id", "pin", "to", "kinds", "source"],
+                "additionalProperties": False,
+                "properties": {
+                    "id": {"type": "string", "minLength": 1},
+                    "pin": {"type": "string", "minLength": 1},
+                    "to": {"type": "string", "minLength": 1},
+                    "kinds": {"type": "array", "minItems": 1, "items": {
+                        "type": "string", "enum": ["C", "L", "R"]}},
+                    "value": {"type": "string"},
+                    "min": {"type": "number"},
+                    "max": {"type": "number"},
+                    "when": {"type": "string", "enum": ["connected"]},
+                    "source": {"type": "string", "minLength": 1},
+                },
+            },
+        },
         "source_pdf": {"type": "string"},
         # U9: computed by --screen/--implications, never hand-filled
         "layout_implications": {"type": "object"},
@@ -208,6 +232,7 @@ def blank_template() -> dict:
         "package": "",
         "pinout": [{"pin": "1", "name": "", "type": "unspecified"}],
         "decoupling": [],
+        "pin_requirements": [],
         "land_pattern": {"pad_count": 0},
         "layout_notes": [],
         "abs_max": [],

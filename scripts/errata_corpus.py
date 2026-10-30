@@ -13,11 +13,12 @@ fixed board isn't seeing the defect). The table goes to docs/errata-corpus.md.
     errata_corpus.py table           write docs/errata-corpus.md
 
 --cache DIR (default ~/.cache/hwde-errata-corpus, or HWDE_ERRATA_CACHE). Nothing
-is fetched into this repo. Checks run here (RUNNERS): netlist_audit (on the
-schematic, with an empty constraints file: what hwde reads before anyone has
-written one) and check_bom_sync (on the board, --live: the package of each
-LCSC part comes from JLC's record, as nothing else in the foreign tree holds
-it). A catch for another script is reported as not run.
+is fetched into this repo. Checks run here (RUNNERS), each with an empty
+constraints file, what hwde reads before anyone has written one:
+netlist_audit on the schematic, check_mate_pins on the board, check_bom_sync
+on the board with --live (the package of each LCSC part comes from JLC's
+record, as nothing in the foreign tree holds it). A catch for another script
+is reported as not run.
 """
 from __future__ import annotations
 
@@ -83,27 +84,33 @@ def matches(violation: dict, catch: dict) -> bool:
     return not refs or bool(refs & set(violation.get("refs") or ()))
 
 
-def netlist_audit_args(cache: Path, b: dict, rev: str, out: Path) -> list[str]:
-    empty = out.parent / "constraints.json"
-    empty.write_text("{}", encoding="utf-8")
-    return ["--sch", str(repo_dir(cache, b) / b[rev]["sch"]),
+def _netlist_audit(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
+    return ["netlist_audit.py", "--sch", str(repo / b[rev]["sch"]),
             "--constraints", str(empty)]
 
 
-def check_bom_sync_args(cache: Path, b: dict, rev: str, out: Path) -> list[str]:
-    return ["--pcb", str(repo_dir(cache, b) / b[rev]["pcb"]), "--live"]
+def _check_mate_pins(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
+    return ["check_mate_pins.py", "--pcb", str(repo / b[rev]["pcb"]),
+            "--constraints", str(empty)]
 
 
-RUNNERS = {"netlist_audit": netlist_audit_args,
-           "check_bom_sync": check_bom_sync_args}
+def _check_bom_sync(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
+    return ["check_bom_sync.py", "--pcb", str(repo / b[rev]["pcb"]), "--live"]
 
 
-def audit(cache: Path, b: dict, rev: str, script: str = "netlist_audit") -> list[dict]:
+# script -> its argv on one revision (empty constraints: what hwde reads
+# before anyone has written one)
+RUNNERS = {"netlist_audit": _netlist_audit, "check_mate_pins": _check_mate_pins,
+           "check_bom_sync": _check_bom_sync}
+
+
+def audit(cache: Path, b: dict, rev: str, script: str) -> list[dict]:
     out = cache / "runs" / b["id"] / f"{rev}-{script}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.unlink(missing_ok=True)
-    subprocess.run([sys.executable, str(SCRIPTS / f"{script}.py"),
-                    *RUNNERS[script](cache, b, rev, out), "--out", str(out)],
+    empty = out.parent / "constraints.json"
+    empty.write_text("{}", encoding="utf-8")
+    cmd, *args = RUNNERS[script](b, rev, repo_dir(cache, b), empty)
+    subprocess.run([sys.executable, str(SCRIPTS / cmd), *args, "--out", str(out)],
                    capture_output=True, text=True, timeout=900)
     if not out.is_file():
         raise SystemExit(f"{b['id']} {rev}: {script} wrote no report")
@@ -111,10 +118,7 @@ def audit(cache: Path, b: dict, rev: str, script: str = "netlist_audit") -> list
 
 
 def run(cache: Path, b: dict) -> dict:
-    scripts = {d["catch"]["script"] for d in b["defects"]
-               if d.get("catch") and d["catch"]["script"] in RUNNERS}
-    found = {(s, rev): audit(cache, b, rev, s)
-             for s in sorted(scripts) for rev in ("rev_a", "rev_b")}
+    found: dict[tuple[str, str], list[dict]] = {}
     res = {}
     for d in b["defects"]:
         c = d.get("catch")
@@ -123,9 +127,12 @@ def run(cache: Path, b: dict) -> dict:
         if c["script"] not in RUNNERS:
             res[d["id"]] = {"ran": False}
             continue
-        res[d["id"]] = {"ran": True, **{
-            rev: any(matches(v, c) for v in found[(c["script"], rev)])
-            for rev in ("rev_a", "rev_b")}}
+        for rev in ("rev_a", "rev_b"):
+            if (rev, c["script"]) not in found:
+                found[rev, c["script"]] = audit(cache, b, rev, c["script"])
+        res[d["id"]] = {"ran": True,
+                        "rev_a": any(matches(v, c) for v in found["rev_a", c["script"]]),
+                        "rev_b": any(matches(v, c) for v in found["rev_b", c["script"]])}
     (cache / "runs" / b["id"]).mkdir(parents=True, exist_ok=True)
     (cache / "runs" / b["id"] / "result.json").write_text(json.dumps(res, indent=1))
     return res
