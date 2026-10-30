@@ -14,11 +14,19 @@
 #   hwde sources          fetch the knowledge records' source PDFs into HOME
 #                         (first use of knowledge, research or check-all
 #                         does it too) and print where they are
-#   hwde score            the share of gate steps with no workaround (the score)
+#   hwde score            re-run the gates on the pinned boards, shims off, and
+#                         count what they find (the score; docs/score.md)
+#   hwde pin BOARD --from CLONE --commit SHA
+#                         refresh a pinned board (bin/pin.py)
 #   hwde publish <dir>    put a self-contained copy at <dir>/hwde (a warden
 #                         runs it into the Hive's tools folder, so a check
 #                         sandbox, which mounts only /work and /hive/tools,
 #                         has /hive/tools/hwde/bin/hwde with no venv to build)
+#                         A published copy hands each command to the
+#                         installed module (/hive/modules/hive-hwde, which
+#                         follows main at every merge) whenever it can see
+#                         it and both pin the same requirements.lock, so
+#                         only a lock change needs a new publish.
 #   hwde <script> [args]  run scripts/<script>.py with the venv python
 #                         (or the published copy's own)
 #
@@ -37,6 +45,17 @@
 # packages installed in it, and its own PDFs, and uses those instead.
 set -e
 here=$(cd "$(dirname "$0")/.." && pwd)
+
+# A published copy runs the installed module's code with its own python when
+# the module is in sight (agents see $HIVE_MODULES; a check sees it once the
+# Hive mounts it) and the two lock the same packages; else its own code.
+if [ -f "$here/VERSION" ] && [ -z "${HWDE_PUBLISHED:-}" ]; then
+	mod=${HIVE_MODULES:-/hive/modules}/hive-hwde
+	if [ -x "$mod/bin/hwde" ] && [ ! -f "$mod/VERSION" ] && cmp -s "$mod/requirements.lock" "$here/requirements.lock"; then
+		HWDE_PUBLISHED=$here exec "$mod/bin/hwde" "$@"
+	fi
+fi
+pub=${HWDE_PUBLISHED:-$here}
 tools=${HIVE_TOOLS:-/hive/tools}
 state=${HWDE_HOME:-$HOME/.cache/hwde}
 venv=${HWDE_VENV:-$state/venv}
@@ -46,11 +65,14 @@ finduv() {
 	[ -n "$uv" ] || { echo "hwde: needs uv (hive agent install --tool uv)" >&2; exit 127; }
 }
 
-# The score reads files only: no KiCad, no venv.
-if [ "${1:-}" = score ]; then
+# pin copies files with git: no KiCad, no venv.
+if [ "${1:-}" = pin ]; then
 	shift
-	exec python3 "$here/bin/score.py" "$@"
+	exec python3 "$here/bin/pin.py" "$@"
 fi
+# The score measures hwde as it is, not as its shims patch it: every shim is
+# off for it and for the gates it runs.
+[ "${1:-}" = score ] && export HWDE_NO_SHIMS=1
 
 # publish builds the copy beside <dir>/hwde and swaps it in, so a check that
 # is running keeps the old one whole. Its python is a python-build-standalone
@@ -88,7 +110,7 @@ if [ "${1:-}" = publish ]; then
 	echo "hwde $ver published at $dest/hwde (run $dest/hwde/bin/hwde)"
 	exit 0
 fi
-wa() { grep -q "^| *$1 *|" "$here/docs/workarounds.md" 2>/dev/null; }
+wa() { [ -z "${HWDE_NO_SHIMS:-}" ] && grep -q "^| *$1 *|" "$here/docs/workarounds.md" 2>/dev/null; }
 
 # KiCad: an explicit pin wins; else the newest KiCad 10 AppDir in the tools
 # folder, through wrappers that put kicad-cli and KiCad's own python (it has
@@ -135,7 +157,7 @@ fi
 # bin/sources.py fetches them into HOME (a published copy carries its own)
 # the first time a command that checks citations runs, or `hwde sources`.
 if [ -z "${HWDE_KNOWLEDGE_SOURCES:-}" ]; then
-	srcdir=$here/knowledge-sources
+	srcdir=$pub/knowledge-sources
 	[ -d "$srcdir" ] || srcdir=$state/knowledge-sources
 	if [ ! "$srcdir/.complete" -nt "$here/docs/knowledge-sources.txt" ]; then
 		case ${1:-} in
@@ -151,7 +173,7 @@ HWDE_BOARDS_ROOT=${HWDE_BOARDS_ROOT:-$PWD/boards}
 # A published copy's own python (an explicit HWDE_VENV still wins); else the
 # venv in HOME, built when missing or older than the lock.
 py=
-[ -z "${HWDE_VENV:-}" ] && py=$(ls -d "$here"/python/cpython-3.14.*/bin/python3.14 2>/dev/null | sort -V | tail -n 1)
+[ -z "${HWDE_VENV:-}" ] && py=$(ls -d "$pub"/python/cpython-3.14.*/bin/python3.14 2>/dev/null | sort -V | tail -n 1)
 own=$py
 [ -n "$py" ] || py=$venv/bin/python
 if [ -z "$own" ] && { [ ! -x "$py" ] || [ "$here/requirements.lock" -nt "$venv/.hwde-lock" ]; }; then
@@ -167,7 +189,7 @@ fi
 # folders, which kicad-sch-api (the schematic writer) can't read; it
 # gets flat copies of the libraries the scripts place by lib_id (power, Device).
 if wa symdir && [ -n "$appdir" ] && [ -z "${KICAD_SYMBOL_DIR:-}" ] && [ -d "$appdir/share/kicad/symbols/power.kicad_symdir" ]; then
-	syms=$here/symbols-$(basename "$appdir")
+	syms=$pub/symbols-$(basename "$appdir")
 	[ -f "$syms/power.kicad_sym" ] || syms=$state/symbols-$(basename "$appdir")
 	[ -f "$syms/power.kicad_sym" ] || "$py" "$here/bin/flatten-symdirs.py" "$appdir/share/kicad/symbols" "$syms"
 	export KICAD_SYMBOL_DIR=$syms
@@ -255,6 +277,12 @@ check-all)
 	heavy="hwde check-all (every board's gates)"
 	x "$py" "$here/bin/check_all.py" "$@"
 	;;
+score)
+	shift
+	export HWDE_BIN="$here/bin/hwde"
+	heavy="hwde score (the gates on every pinned board)"
+	x "$py" "$here/bin/score.py" "$@"
+	;;
 sources)
 	[ -n "${HWDE_KNOWLEDGE_SOURCES:-}" ] || { echo "hwde: knowledge sources not fetched (see above)" >&2; exit 1; }
 	echo "$HWDE_KNOWLEDGE_SOURCES"
@@ -264,7 +292,7 @@ check)
 	x "$py" "$here/scripts/check_env.py" "$@"
 	;;
 "" | -h | --help)
-	sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'
+	sed -n '2,35p' "$0" | sed 's/^# \{0,1\}//'
 	;;
 *)
 	s=${1%.py}

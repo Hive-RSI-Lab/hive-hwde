@@ -1,0 +1,211 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C80670",
+ "total": 3,
+ "count": 3,
+ "results": [
+  {
+   "lcsc": "C80670",
+   "mpn": "LP5907MFX-3.3/NOPB",
+   "brand": "Texas Instruments",
+   "description": "-40\u2103~+125\u2103@(Tj) 1 10uVrms 12uA 250mA 250mV@(250mA) 3.3V 5.5V 82dB@(1kHz) Fixed Positive Short Circuit Protection\u3001Thermal shutdown\u3001Enable control\u3001Input under-voltage protection\u3001Output discharge SOT-23-5 Voltage Regulators - Linear, Low Drop Out (LDO) Regulators ROHS",
+   "package": "SOT-23-5",
+   "category": "Voltage Regulators - Linear, Low Drop Out (LDO) Regulators",
+   "type": "Extended",
+   "basic": false,
+   "stock": 35116,
+   "price": 0.1651,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.1651
+    },
+    {
+     "qty": 50,
+     "price": 0.1273
+    },
+    {
+     "qty": 150,
+     "price": 0.109
+    },
+    {
+     "qty": 500,
+     "price": 0.0924
+    },
+    {
+     "qty": 3000,
+     "price": 0.088
+    },
+    {
+     "qty": 6000,
+     "price": 0.0852
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1810271029_Texas-Instruments-LP5907MFX-3-3-NOPB_C80670.pdf",
+   "url": "https://www.lcsc.com/product-detail/voltage-regulators-linear-low-drop-out-ldo-regulators_texas-instruments-lp5907mfx-3-3-nopb_C80670.html",
+   "attributes": [
+    {
+     "name": "Power Supply Rejection Ratio (PSRR)",
+     "value": "82dB@(1kHz)"
+    },
+    {
+     "name": "standby current",
+     "value": "12uA"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+125\u2103@(Tj)"
+    },
+    {
+     "name": "Noise",
+     "value": "10uVrms"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "5.5V"
+    },
+    {
+     "name": "Output Type",
+     "value": "Fixed"
+    },
+    {
+     "name": "Output Current",
+     "value": "250mA"
+    },
+    {
+     "name": "Features",
+     "value": "Short Circuit Protection\u3001Thermal shutdown\u3001Enable control\u3001Input under-voltage protection\u3001Output discharge"
+    },
+    {
+     "name": "Output Configuration",
+     "value": "Positive"
+    },
+    {
+     "name": "Output Voltage",
+     "value": "3.3V"
+    },
+    {
+     "name": "Voltage Dropout",
+     "value": "250mV@(250mA)"
+    },
+    {
+     "name": "Number of Outputs",
+     "value": "1"
+    }
+   ],
+   "rank": 0
+  },
+  {
+   "lcsc": "C55379828",
+   "mpn": "C8067-02",
+   "brand": "MUP",
+   "description": "SMD SIM Card Connectors ROHS",
+   "package": "SMD",
+   "category": "SIM Card Connectors",
+   "type": "Extended",
+   "basic": false,
+   "stock": 50,
+   "price": 1.6525,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 1.6525
+    },
+    {
+     "qty": 10,
+     "price": 1.4052
+    },
+    {
+     "qty": 30,
+     "price": 1.2512
+    },
+    {
+     "qty": 100,
+     "price": 1.0924
+    },
+    {
+     "qty": 360,
+     "price": 1.022
+    },
+    {
+     "qty": 1080,
+     "price": 0.9908
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "",
+   "url": "",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+85\u2103"
+    },
+    {
+     "name": "Length",
+     "value": "30mm"
+    },
+    {
+     "name": "Connector Type",
+     "value": "Connector and Ejector"
+    },
+    {
+     "name": "Supplementary Features",
+     "value": "With Locating Pins"
+    },
+    {
+     "name": "Card Connection Mode",
+     "value": "Tray"
+    },
+    {
+     "name": "Card Type",
+     "value": "Smart Card"
+    },
+    {
+     "name": "Height Above Board",
+     "value": "2.75mm"
+    },
+    {
+     "name": "Width",
+     "value": "56mm"
+    },
+    {
+     "name": "Card Detection",
+     "value": "With Card Detect"
+    }
+   ],
+   "rank": 1
+  },
+  {
+   "lcsc": "C42420088",
+   "mpn": "MUP-C8067-02",
+   "brand": "MUP",
+   "description": "SMD New Arrivals ROHS",
+   "package": "SMD",
+   "category": "New Arrivals",
+   "type": "Extended",
+   "basic": false,
+   "stock": 0,
+   "price": 0.0398,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0398
+    },
+    {
+     "qty": 100,
+     "price": 0.0205
+    }
+   ],
+   "min_qty": 441,
+   "datasheet": "",
+   "url": "",
+   "attributes": [],
+   "rank": 2
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

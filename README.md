@@ -48,22 +48,15 @@ An agent designs a PCB from a written brief: research, architecture, parts, sche
   minutes) while the machine is strained and other turns run one. A command
   already inside one (check-all's gates, a test that runs `bin/hwde`), or a
   Hive without that op yet, runs bare (`tests/test_heavy.py`).
-- **Score**, `bin/hwde score`, higher is better: the share of those gate
-  steps, over all boards, that ran with no workaround, as a percentage. A
-  step counts as worked around when a row of `docs/workarounds.md` names it
-  for that board, because its input came through a shim in `bin/hwde` or
-  an edit made by hand in the board's files. A fix in the scripts that lets a
-  board drop a workaround removes its row and raises the score. A new board
-  adds its steps; any workarounds it needs add rows, with a probe each.
-  hwde-led-test starts at 0/5: its ERC schematic was written through the
-  symdir shim, verify reads a hand-made decoupling entry, and fab and dfm
-  read a hand-added `refdes` per part. Its routed board had hand-widened
-  courtyards and a hand-picked outline margin until `check_courtyard`, fpfix
-  rule E and silk in `board_edit --outline fit` took those two off.
-  The boards built with hwde in other projects count too:
-  [docs/boards.md](docs/boards.md) records each one (the hi-fi receiver's
-  lite-main and core), with the steps it passed, and the rows of
-  `docs/workarounds.md` name their board-local scripts and hand edits like
-  any other board's. The score reads only this repo's files.
+- **Score**, `bin/hwde score`, higher is better: what this checkout's
+  gates find on boards held fixed. The hi-fi receiver's lite-main and core,
+  pinned in `pinned/` at one hifi-receiver-2 commit, and hwde-led-test go
+  through erc, drc_routed, verify and dfm with `bin/hwde`'s shims off. Each
+  unwaived finding, each warning and each board-local script that stands
+  in for hwde is a charge, and the score is minus the charges. A fix in
+  hwde that clears a finding on those boards raises it with nothing written
+  by hand. A pinned board changes only through `bin/hwde pin`. The whole
+  definition is [docs/score.md](docs/score.md). About ten minutes or more,
+  under `hive agent heavy`.
 
 MIT, like upstream; see NOTICE for what that doesn't cover.

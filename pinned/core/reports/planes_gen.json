@@ -1,0 +1,221 @@
+{
+ "script": "planes_gen",
+ "status": "pass",
+ "board": "core.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "facts": {
+  "plan_source": "constraints",
+  "zones_added": 11,
+  "zones": [
+   {
+    "net": "GND",
+    "layer": "In1.Cu",
+    "region": [
+     35.087,
+     121.197,
+     154.087,
+     220.197
+    ],
+    "priority": 0,
+    "status": "added",
+    "area_mm2": 11536.249,
+    "islands": 1
+   },
+   {
+    "net": "PVDD",
+    "layer": "In2.Cu",
+    "region": [
+     34.587,
+     120.697,
+     97.587,
+     168.197
+    ],
+    "priority": 0,
+    "status": "added",
+    "area_mm2": 2870.676,
+    "islands": 1
+   },
+   {
+    "net": "PVDD",
+    "layer": "In2.Cu",
+    "region": [
+     52.087,
+     168.197,
+     62.087,
+     171.697
+    ],
+    "priority": 1,
+    "status": "added",
+    "area_mm2": 34.992,
+    "islands": 1
+   },
+   {
+    "net": "VBUS_IN",
+    "layer": "In2.Cu",
+    "region": [
+     34.587,
+     168.697,
+     47.387,
+     190.697
+    ],
+    "priority": 0,
+    "status": "added",
+    "area_mm2": 263.367,
+    "islands": 1
+   },
+   {
+    "net": "VBUS",
+    "layer": "In2.Cu",
+    "region": [
+     47.887,
+     172.197,
+     71.587,
+     182.697
+    ],
+    "priority": 0,
+    "status": "added",
+    "area_mm2": 248.832,
+    "islands": 1
+   },
+   {
+    "net": "+3V3",
+    "layer": "In2.Cu",
+    "region": [
+     98.087,
+     120.697,
+     154.587,
+     220.697
+    ],
+    "priority": 0,
+    "status": "added",
+    "area_mm2": 5459.138,
+    "islands": 1
+   },
+   {
+    "net": "+3V3",
+    "layer": "In2.Cu",
+    "region": [
+     34.587,
+     191.197,
+     98.087,
+     220.697
+    ],
+    "priority": 1,
+    "status": "added",
+    "area_mm2": 1705.353,
+    "islands": 1
+   },
+   {
+    "net": "+3V3",
+    "layer": "In2.Cu",
+    "region": [
+     72.087,
+     168.697,
+     98.087,
+     191.197
+    ],
+    "priority": 2,
+    "status": "added",
+    "area_mm2": 584.996,
+    "islands": 1
+   },
+   {
+    "net": "+3V3",
+    "layer": "In2.Cu",
+    "region": [
+     47.887,
+     183.197,
+     72.087,
+     191.197
+    ],
+    "priority": 3,
+    "status": "added",
+    "area_mm2": 193.596,
+    "islands": 1
+   },
+   {
+    "net": "GND",
+    "layer": "B.Cu",
+    "region": [
+     35.087,
+     121.197,
+     154.087,
+     220.197
+    ],
+    "priority": 0,
+    "status": "added",
+    "area_mm2": 11536.249,
+    "islands": 1
+   },
+   {
+    "net": "GND",
+    "layer": "F.Cu",
+    "region": [
+     35.087,
+     121.197,
+     154.087,
+     220.197
+    ],
+    "priority": 0,
+    "status": "added",
+    "area_mm2": 10267.691,
+    "islands": 1
+   }
+  ],
+  "thermal_vias": 18,
+  "thermal_pads": [
+   {
+    "ref": "D1",
+    "pad": "2",
+    "net": "GND",
+    "vias": 1
+   },
+   {
+    "ref": "J3",
+    "pad": "22",
+    "net": "GND",
+    "vias": 1
+   },
+   {
+    "ref": "L10",
+    "pad": "2",
+    "net": "+3V3",
+    "vias": 3
+   },
+   {
+    "ref": "R1",
+    "pad": "2",
+    "net": "VBUS",
+    "vias": 3
+   },
+   {
+    "ref": "U10",
+    "pad": "29",
+    "net": "GND",
+    "vias": 9
+   },
+   {
+    "ref": "U9",
+    "pad": "25",
+    "net": "GND",
+    "vias": 1
+   }
+  ],
+  "layer_types": {
+   "In1.Cu": "power",
+   "In2.Cu": "power"
+  },
+  "added_for_reference": [],
+  "notes": []
+ },
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T20:23:35+00:00",
+ "input": "/work/boards/core/kicad/core.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:80fe5b847b7adc451faa47b7a0d39505151a9c7bc7a0fc58a04202fd5e23ec9e"
+}

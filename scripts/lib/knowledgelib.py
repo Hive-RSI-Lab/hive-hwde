@@ -91,6 +91,8 @@ from pathlib import Path
 
 import yaml
 
+import bringuplib
+
 LIB = Path(__file__).resolve().parent
 SCRIPTS = LIB.parent
 SKILL = SCRIPTS.parent
@@ -164,6 +166,7 @@ _EVIDENCE_ITEM = {
         "board": {"type": "string"},
         "event": {"type": "string", "minLength": 1},
         "date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+        "results": {"type": "string"},  # the bring-up results file it cites
         "note": {"type": "string"},
     },
 }
@@ -1599,7 +1602,8 @@ def coverage(ws: Path | str, records: list[dict] | None = None,
 # ---------------------------------------------------------------------------
 def bringup_evidence(ws: Path | str) -> list[dict]:
     """The workspace's bring-up events (state.json history `bringup_passed`),
-    oldest first; [] when the board has not passed bring-up."""
+    oldest first; [] when the board has not passed bring-up. prove() takes
+    only those whose results file still holds (bringuplib)."""
     ws = Path(ws)
     sp = ws / "state.json"
     if not sp.is_file():
@@ -1663,10 +1667,22 @@ def prove(ws: Path | str, records_dir: Path | str | None = None,
     if not events:
         result["problems"].append(
             f"no {BRINGUP_EVENT} event in {ws.as_posix()}/state.json history "
-            "- log it first (state.py log --event bringup_passed) once the "
-            "board has passed bring-up")
+            "- close bring-up with its measurements first (state.py bringup "
+            "--results <file>) once the board has passed")
+        return result
+    sp = ws / "state.json"
+    last = bringuplib.latest_event(
+        json.loads(sp.read_text(encoding="utf-8")).get("history"))
+    if last is not None and last.get("event") != BRINGUP_EVENT:
+        result["problems"].append(
+            f"the latest bring-up is {last.get('event')} ({last.get('ts')}): "
+            "a board that has since failed or derated proves nothing")
         return result
     latest = events[-1]
+    bad = bringuplib.evidence_problems(ws, latest)
+    if bad:
+        result["problems"].extend(bad)
+        return result
     date = str(latest.get("ts") or "")[:10]
     if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", date):
         result["problems"].append(f"{BRINGUP_EVENT} event carries no ISO ts")
@@ -1680,7 +1696,8 @@ def prove(ws: Path | str, records_dir: Path | str | None = None,
     except ValueError:
         ws_rel = ws.as_posix()
     item = {"workspace": ws_rel, "board": rep["board"],
-            "event": BRINGUP_EVENT, "date": date}
+            "event": BRINGUP_EVENT, "date": date,
+            "results": latest["results"]}
     applied: dict[str, dict] = {}
     for s in rep["slots"]:
         for c in s.get("classes") or []:

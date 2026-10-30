@@ -2,16 +2,17 @@
 
 Every place where hwde gets a board through its gates only because something
 worked around a defect in the module's scripts, by a shim in `bin/hwde` or by an edit
-made by hand in a board's files. The score (`bin/hwde score`) reads this
-table, and the test (`bin/hwde test`, and `bin/hwde check-all` after its
-boards) holds it to the truth:
+made by hand in a board's files. The test (`bin/hwde test`, and
+`bin/hwde check-all` after its boards) holds it to the truth. The score
+(`bin/hwde score`, [score.md](score.md)) doesn't read it: it runs the gates
+with every shim off and charges what they find.
 
 - Each row's id has a probe, `tests/workarounds/<id>.py`, that exits 0 while
   the cause still stands and 10 once it is fixed. The test runs every probe. A
   probe whose cause stands with no row here fails the test, so removing a row
   without fixing the cause fails it. A row whose probe says it's fixed fails
   the test too: take the workaround out (the shim, or redo the board's step
-  without the hand edit), remove the row, and the score goes up.
+  without the hand edit) and remove the row.
 - A shim in `bin/hwde` runs only while its row is here (`wa <id>`), so
   delisting it also turns it off for the gates.
 
@@ -20,10 +21,10 @@ the five `check-all` runs per board: `erc`, `drc_routed`, `verify`, `fab`
 (gerbers, drill, BOM and CPL) and `dfm`. `-` means none of them (the
 workaround serves a stage before the gates, or renders). `boards` is `*` for
 every board, or a comma-separated list: boards under `boards/`, or the
-product boards built in other projects that [boards.md](boards.md) records
+product boards built in other projects that [boards.md](boards.md) lists
 (their `where` paths are in that project's board). When a fix lands somewhere other
 than where its probe looks, the fix updates the probe to look where the
-cause now is; a reviewer reads a probe change as a change to the score.
+cause now is.
 
 | id | kind | boards | steps | where | cause | brief |
 |---|---|---|---|---|---|---|

@@ -47,8 +47,8 @@ scripts/task_router.py --task "<the user's words>" [--workspace ~/dev/boards/<na
 - **exit 2** - error; the payload says what.
 
 The verbs: `review` `fix-finding` `move` `swap-part` `add-part` `remove-part`
-`reroute-net` `make-footprint` `dfm-check` `order` `track` `resume-phase`
-`promote` `learn` `research` `full-run`. The whole pipeline is the `full-run`
+`reroute-net` `make-footprint` `dfm-check` `order` `track` `bring-up`
+`resume-phase` `promote` `learn` `research` `full-run`. The whole pipeline is the `full-run`
 recipe - a task like any other, not a separate code path. (`learn` is the
 owner-present teaching session; `research` fills a coverage gap and is also
 what full-run launches automatically on every gap - its recipe carries the
@@ -197,6 +197,32 @@ the gaps; `ledger.py set ... --source` records one you checked yourself.
 Release refuses while any fact is not verified, and stock older than 72 h
 reads unknown, so re-run `stock_check.py --workspace <ws>` before the order.
 
+## Works first time, watches itself, brought up unattended
+
+The person, 10-28: they give the spec; the Hive designs a product that
+"will def work with appropriate contingencies"; they order it, plug it in,
+run one script, leave it, and the Hive brings it up, revs the firmware,
+tests it and pings them when it is ready. "This should be the flow for all
+board designs." It is the default for every board that will be built,
+scaled by you to the board - not a gate; record how far you took it
+(`state.py decision`).
+
+- **Design for it** (P2-P4): `reference/self-observation.md` - what the
+  board can measure about itself for cents (rail dividers into spare ADC
+  pins, status pins to GPIO, output loopback taps, a console), and the
+  test API firmware offers. `scripts/check_observability.py --workspace
+  <ws>` lists each rail as self / test_point / blind and each PG/FAULT/INT
+  as watched or not; weigh it at P4 and P8.
+- **Review it before money** (P8-P9): `reference/first-spin.md` - one
+  `domain-reviewer` per domain with fresh eyes, every margin a number,
+  contingencies on the board where a margin can't be closed on paper, every
+  blocker/major answered. `scripts/first_spin.py --workspace <ws>` lists
+  what is still open and merges the tools wanted (file them to hive-hwde).
+- **Bring it up** (boards in hand): the `bring-up` verb and
+  `reference/remote-bringup.md`. `state.py bringup --results <file>`
+  closes it with the measurements (`scripts/lib/bringuplib.py` schema);
+  `bring-up-passed` and `proven` cite them.
+
 ## Run start / resume
 
 **New workspace** (`full-run`, or `review` of an outside project): the recipe's
@@ -329,7 +355,7 @@ never reuse a generator/router conversation for its own review.
 Spawn tiers (T6-measured; escalate one tier when a role must overrule its
 inputs, never silently downgrade):
 | fable/max | router (novel board; proven-chain re-run: sonnet/medium), learner (owner-present teaching) |
-| fable/high | architect, placement, schematic-reviewer, verify-reviewer, requirements-analyst, researcher (coverage-gap research; the ONLY role with web tools, allowlisted, acquisitions through research.py fetch) |
+| fable/high | architect, placement, schematic-reviewer, verify-reviewer, domain-reviewer (first spin, one per domain), requirements-analyst, researcher (coverage-gap research; the ONLY role with web tools, allowlisted, acquisitions through research.py fetch) |
 | fable/medium | schematic-block (thin root-stitch: sonnet/high) |
 | opus/high | research-interface-spec, research-power-architect, sim-analyst, fixer (copper/route), research-second-reader (fresh context; refutes or verifies a task's records) |
 | sonnet/high | research-component-scout, research-reference-design, part-sourcer, datasheet-extractor, coverage-mapper (schema-forced record->slot edges at P2/P3 exit), board-guide (owner PDF at P9 close) |

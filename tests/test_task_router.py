@@ -61,7 +61,9 @@ def test_the_plan_s_verb_list_is_the_registry_s():
         "remove-part", "reroute-net", "make-footprint", "dfm-check", "order",
         "track", "resume-phase", "promote", "learn", "research", "full-run",
         # U17: the outline became editable after P5
-        "resize-board"])
+        "resize-board",
+        # 261029-020701: boards in hand are brought up and closed with numbers
+        "bring-up"])
 
 
 def test_skill_md_lists_exactly_the_registry_verbs():
@@ -195,6 +197,8 @@ def test_dynamically_registered_subcommands_are_known():
     ("teach the placement stage", "learn"),
     ("run a learning cycle on P6", "learn"),
     ("research the ethernet coverage gap", "research"),
+    ("the boards arrived, bring them up", "bring-up"),
+    ("run the self-test on the board in hand", "bring-up"),
     ("fill the knowledge gap on interface:usb", "research"),
 ])
 def test_canonical_phrasings_route_to_one_verb(text: str, verb: str):

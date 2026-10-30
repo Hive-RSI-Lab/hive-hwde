@@ -1,0 +1,345 @@
+{
+ "version": 1,
+ "ops": [
+  {
+   "op": "add_via",
+   "at": [
+    43.437,
+    154.397
+   ],
+   "net": "PVDD",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    43.437,
+    155.497
+   ],
+   "net": "PVDD",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    48.387,
+    154.397
+   ],
+   "net": "PVDD",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    48.387,
+    155.497
+   ],
+   "net": "PVDD",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    46.087,
+    159.697
+   ],
+   "net": "GND",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    42.687,
+    145.897
+   ],
+   "net": "/amp_a/A_SPK_L+",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    42.687,
+    146.997
+   ],
+   "net": "/amp_a/A_SPK_L+",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    42.687,
+    148.097
+   ],
+   "net": "/amp_a/A_SPK_L+",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    43.687,
+    145.897
+   ],
+   "net": "/amp_a/A_SPK_L+",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    43.687,
+    146.997
+   ],
+   "net": "/amp_a/A_SPK_L+",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    43.687,
+    148.097
+   ],
+   "net": "/amp_a/A_SPK_L+",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    54.587,
+    145.897
+   ],
+   "net": "/amp_a/A_SPK_R-",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    54.587,
+    146.997
+   ],
+   "net": "/amp_a/A_SPK_R-",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    54.587,
+    148.097
+   ],
+   "net": "/amp_a/A_SPK_R-",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    55.587,
+    145.897
+   ],
+   "net": "/amp_a/A_SPK_R-",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    55.587,
+    146.997
+   ],
+   "net": "/amp_a/A_SPK_R-",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    55.587,
+    148.097
+   ],
+   "net": "/amp_a/A_SPK_R-",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    76.337,
+    154.397
+   ],
+   "net": "PVDD",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    76.337,
+    155.497
+   ],
+   "net": "PVDD",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    81.287,
+    154.397
+   ],
+   "net": "PVDD",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    81.287,
+    155.497
+   ],
+   "net": "PVDD",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    78.987,
+    159.697
+   ],
+   "net": "GND",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    75.587,
+    145.897
+   ],
+   "net": "/amp_b/B_SPK_L+",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    75.587,
+    146.997
+   ],
+   "net": "/amp_b/B_SPK_L+",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    75.587,
+    148.097
+   ],
+   "net": "/amp_b/B_SPK_L+",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    76.587,
+    145.897
+   ],
+   "net": "/amp_b/B_SPK_L+",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    76.587,
+    146.997
+   ],
+   "net": "/amp_b/B_SPK_L+",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    76.587,
+    148.097
+   ],
+   "net": "/amp_b/B_SPK_L+",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    87.487,
+    145.897
+   ],
+   "net": "/amp_b/B_SPK_R-",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    87.487,
+    146.997
+   ],
+   "net": "/amp_b/B_SPK_R-",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    87.487,
+    148.097
+   ],
+   "net": "/amp_b/B_SPK_R-",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    88.487,
+    145.897
+   ],
+   "net": "/amp_b/B_SPK_R-",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    88.487,
+    146.997
+   ],
+   "net": "/amp_b/B_SPK_R-",
+   "size": 0.6,
+   "drill": 0.3
+  },
+  {
+   "op": "add_via",
+   "at": [
+    88.487,
+    148.097
+   ],
+   "net": "/amp_b/B_SPK_R-",
+   "size": 0.6,
+   "drill": 0.3
+  }
+ ]
+}

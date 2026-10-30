@@ -8,13 +8,12 @@ every attempt, pass and fail: `--workspace` RECORDS the result. `set-phase` past
 a gate with no recorded result warns; H1-H4 are reports - write, carry on.
 
 Phase digest: after each phase write 5-10 lines to `log/P<n>-digest.md` and
-`state.py set-phase`. Agent selection: spawn only what the design's domains need
-- an RF board gets an RF-interface researcher and RF review emphasis; a USB-C
-dev board gets neither. Role prompts live in `agents/`. Lean amendment: purely
-script-driven phases run INLINE (P5 board setup, gates, P9 fab/dfm scripts, P10
-quote/submit) - rule 1 still holds (read script JSON, never design files).
-Judgment roles stay agents; reviewers stay FRESH-context agents always. Small
-boards may use ONE schematic agent (record it).
+`state.py set-phase`. Spawn only what the design's domains need (an RF board
+gets an RF researcher and RF review emphasis; a USB-C dev board neither). Purely
+script-driven phases run INLINE (P5 setup, gates, P9 fab/dfm, P10 quote/submit) -
+rule 1 still holds (read script JSON, never design files). Judgment roles stay
+agents; reviewers stay FRESH-context agents always. Small boards may use ONE
+schematic agent (record it).
 
 ## The phases
 
@@ -57,7 +56,8 @@ boards may use ONE schematic agent (record it).
 - **P4 Schematic**: one `schematic-block` per sheet from
   `architecture/sheets.md` (parallel where independent; the root-sheet agent
   stitches, runs ERC and `netlist_audit`). Gate `erc`. Then `schematic-reviewer`
-  (fresh context): errors -> fix loop, warnings -> `reports/erc-waivers.md`.
+  (fresh context): errors -> fix loop, warnings -> `reports/erc-waivers.md`;
+  `check_observability.py` (what the board can read of itself; weigh it).
   **H2** (report): schematic PDF + reviewer findings + waivers.
 - **P5 Board Setup**: inline (`board_init` then `rules_gen`, per
   `agents/board-setup.md`); spawn `board-setup` only for impedance or
@@ -79,8 +79,10 @@ boards may use ONE schematic agent (record it).
   `verify-reviewer` (fresh context) with the summary + renders. Triage:
   script-check errors -> fix loop; reviewer errors -> fix loop or a waiver;
   warnings -> `reports/verify-waivers.json` (re-gate with it). After ANY
-  copper/placement fix re-run `drc_routed` BEFORE `verify`. **H4** (report;
-  a rejection vetoes release): verification summary + renders + waivers.
+  copper/placement fix re-run `drc_routed` BEFORE `verify`. Then the
+  first-spin review, scaled to the board (reference/first-spin.md;
+  `first_spin.py`). **H4** (report; a rejection vetoes release): summary +
+  renders + waivers + what first_spin.py still lists open.
 - **P9 DFM**: the `dfm-check` recipe, inline (`dfm` agent only for narrative).
 - **P10 Ordering**: the `order` recipe, including H5 and the creation latch.
 
@@ -108,9 +110,7 @@ Before the run is finished: append what this board taught to
 often only clear two phases later. Compiling is not promoting: entries stay
 `pending` for the `promote` pass. `compile` also exits 1 naming research the
 second reader never cleared: drafts never inject, so the board shipped without
-it. Bring-up close (T11): `state.py log --event bringup_passed`, then
-`knowledge.py --prove --workspace ~/dev/boards/<b>` (`--dry-run` first) - every record
-that APPLIED becomes `proven` with its evidence entry.
+it. Bring-up is the `bring-up` verb (`state.py bringup`, then `knowledge.py --prove`).
 
 A killed run resumes through `resume-phase`. A change of mind after P5 is not a
 rewind: `add-part` / `swap-part` / `remove-part` preserve placement and routing;

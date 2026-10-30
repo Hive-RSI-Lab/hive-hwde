@@ -64,6 +64,7 @@ CLI (spec 6 contract: argparse, JSON to stdout, exit 0 ok / 2 error):
     state.py issue --id 3 --status fixed [--agent fixer-1] [--bump-attempts] ...
     state.py budget --path fix_loops.drc_routed [--consume] ...
     state.py log --event name [--data JSON] ...
+    state.py bringup [--results bringup/results.json] [--msg M] ...
     state.py snapshot --label L [--files F ...] / restore --label L ...
 
 `cross-spawn` (U9) is the backward-spawn step: a stage at a dead end opens a
@@ -89,6 +90,13 @@ why (`state.py decision`).
 
 CLI `log` event names are machine keys: ^[a-z][a-z0-9_-]{0,31}$ (XC-8: a live
 run stored paragraphs as event names; prose belongs in --data {"msg": ...}).
+`bringup` closes a bring-up with what was measured: it reads the results
+file (lib/bringuplib.py: items with measured value, limit and verdict; a
+bench session.json converts), refuses one that is malformed or leaves a
+required item unmeasured, and logs `bringup_passed`, `bringup_derated` or
+`bringup_failed` as the items say, with the file's path, sha256 and counts.
+`log --event bringup_*` takes the same file as `--data {"results": F}` and
+refuses without it: a bare bring-up event is not evidence.
 `log --event spawn --data {...}` additionally appends the data to the
 first-class `spawns` ledger (the docs/playbook.md step-5 form keeps working).
 
@@ -121,6 +129,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
 import checklib  # noqa: E402
 import modeslib  # noqa: E402
 import safelib  # noqa: E402
+import bringuplib  # noqa: E402
 import statelib  # noqa: E402
 from checklib import CheckError  # noqa: E402
 
@@ -1050,6 +1059,14 @@ def run(argv=None):
     p.add_argument("--event", required=True)
     p.add_argument("--data", help="extra JSON object merged into the event")
 
+    p = sub.add_parser("bringup")
+    common(p)
+    p.add_argument("--results", default=bringuplib.DEFAULT_REL,
+                   help="bring-up results file (workspace-relative; "
+                        f"default {bringuplib.DEFAULT_REL}) - lib/bringuplib.py "
+                        "has the schema; a bench session.json converts")
+    p.add_argument("--msg", help="one line for the history event")
+
     p = sub.add_parser("snapshot")
     common(p)
     p.add_argument("--label", required=True)
@@ -1191,13 +1208,38 @@ def _mutate(st: "State", args, result: dict):
         extra = json.loads(args.data) if args.data else {}
         if not isinstance(extra, dict):
             raise CheckError("--data must be a JSON object")
-        if args.event == "spawn":
+        if args.event in bringuplib.BRINGUP_EVENTS:
+            # a bring-up close carries its measurements (task 184258): the
+            # event must name a results file whose outcome is this event
+            if not extra.get("results"):
+                raise CheckError(
+                    f"{args.event} needs the measurements: state.py bringup "
+                    "--results <file> (or --data {\"results\": <file>}); "
+                    "lib/bringuplib.py has the results schema")
+            ev = bringup_event(st.path.parent, extra.pop("results"),
+                               st.data.get("board"))
+            supports = ev.pop("event")
+            if supports != args.event:
+                raise CheckError(
+                    f"{ev['results']} supports {supports}, not "
+                    f"{args.event} (failed: {ev['failed']}, derated: "
+                    f"{ev['derated']})")
+            extra = {**extra, **ev}
+            st._log(args.event, **extra)
+        elif args.event == "spawn":
             # SKILL step-5 form: the spawn ledger is first-class (XC-8);
             # record_spawn writes both the ledger entry and the history event
             result.update(spawn=st.record_spawn(extra))
         else:
             st._log(args.event, **extra)
         result.update(event=args.event)
+    elif args.cmd == "bringup":
+        ev = bringup_event(st.path.parent, args.results, st.data.get("board"))
+        name = ev.pop("event")
+        if args.msg:
+            ev["msg"] = args.msg
+        st._log(name, **ev)
+        result.update(event=name, bringup=ev)
     elif args.cmd == "snapshot":
         result.update(st.snapshot(args.label, args.files))
     elif args.cmd == "restore":
@@ -1207,6 +1249,28 @@ def _mutate(st: "State", args, result: dict):
     result["phase"] = st.data["phase"]
     result["digest"] = st.base_digest
     return result, args.out
+
+
+def bringup_event(ws: Path, results: str, board: str | None = None) -> dict:
+    """The history-event detail for a bring-up results file: which event it
+    supports, its path and sha256, and the item counts. Refuses a malformed
+    file and an incomplete one (a required item not measured)."""
+    try:
+        s = bringuplib.summary(results, ws)
+    except bringuplib.BringupError as e:
+        raise CheckError(str(e)) from e
+    if s["problems"]:
+        raise CheckError(f"{s['results']}: " + "; ".join(s["problems"]))
+    if board and s.get("board") and s["board"] != board:
+        raise CheckError(f"{s['results']} is board {s['board']!r}; this "
+                         f"workspace is {board!r}")
+    if s["event"] is None:
+        raise CheckError(
+            f"{s['results']} is incomplete: not measured {s['unmeasured']}"
+            + ("" if s["unmeasured"] else " (no item was measured)")
+            + " - measure them, or mark one optional: true with its reason")
+    return {k: s[k] for k in ("event", "results", "results_sha256", "date",
+                              "counts", "failed", "derated")}
 
 
 def main(argv=None) -> int:

@@ -11,7 +11,7 @@ association for it, and check_pdn counts it from the board (across +5V/GND).
 
 Rebuild:
   eval "$(/work/bin/hwde env)"
-  PYTHONPATH=$HWDE_MODULE/scripts:$HWDE_MODULE/scripts/lib $HWDE_PY kicad/gen/root.py
+  PYTHONPATH=$HWDE_SKILL/scripts:$HWDE_SKILL/scripts/lib $HWDE_PY kicad/gen/root.py
 Outputs: ../hwde-led-test.kicad_sch + .kicad_pro + ../decoupling.json
 """
 from __future__ import annotations

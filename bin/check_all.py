@@ -26,17 +26,83 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import re
 import time
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, field
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
-import score  # noqa: E402  (one reader of boards/ and docs/workarounds.md)
 
 HWDE = os.environ.get("HWDE_BIN", str(HERE / "hwde"))
 SKILL = ROOT / "scripts"
+STEPS = ("erc", "drc_routed", "verify", "fab", "dfm")
+_ROW = re.compile(r"^\|\s*([a-z0-9][a-z0-9-]*)\s*\|(.*)\|\s*$")
+
+
+@dataclass
+class Workaround:
+    id: str
+    kind: str
+    boards: list[str]
+    steps: list[str]
+
+    def charges(self, board: str) -> list[str]:
+        return self.steps if "*" in self.boards or board in self.boards else []
+
+
+@dataclass
+class Board:
+    name: str
+    path: Path | None              # None: a board in another project
+    steps: list[str] = field(default_factory=list)
+
+
+def read_workarounds(path: Path) -> dict[str, Workaround]:
+    """The table's rows by id. A row is `| id | kind | boards | steps | ...`."""
+    out: dict[str, Workaround] = {}
+    for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        m = _ROW.match(line)
+        if not m or m.group(1) == "id":
+            continue
+        cells = [c.strip() for c in m.group(2).split("|")]
+        if len(cells) < 3:
+            raise ValueError(f"{path}:{n}: a row needs id, kind, boards, steps")
+        kind, boards, steps = cells[0], cells[1], cells[2]
+        if kind not in ("shim", "hand"):
+            raise ValueError(f"{path}:{n}: kind {kind!r} is not shim or hand")
+        st = [] if steps in ("-", "") else [s.strip() for s in steps.split(",")]
+        for s in st:
+            if s not in STEPS:
+                raise ValueError(f"{path}:{n}: step {s!r} is not one of {', '.join(STEPS)}")
+        if m.group(1) in out:
+            raise ValueError(f"{path}:{n}: {m.group(1)} is listed twice")
+        out[m.group(1)] = Workaround(m.group(1), kind,
+                                     [b.strip() for b in boards.split(",")], st)
+    return out
+
+
+def read_boards(root: Path) -> list[Board]:
+    """Every workspace under boards/ (a dir with state.json), with the steps
+    it has reached: each gate its state.json records as passed, and fab once
+    fab/ holds a gerber zip."""
+    out = []
+    for st in sorted(root.glob("*/state.json")):
+        d = json.loads(st.read_text(encoding="utf-8"))
+        b = Board(d.get("board") or st.parent.name, st.parent)
+        gates = d.get("gates") or {}
+        for s in STEPS:
+            if s == "fab":
+                if list((st.parent / "fab").glob("*.zip")):
+                    b.steps.append(s)
+            elif (gates.get(s) or {}).get("status") == "pass":
+                b.steps.append(s)
+        out.append(b)
+    return out
+
+
 
 
 def run(cmd: list[str], cwd: Path, log: Path, env: dict | None = None) -> int:
@@ -50,7 +116,7 @@ def tail(log: Path, n: int = 8) -> str:
     return "\n".join("      " + l for l in lines[-n:])
 
 
-def step(name: str, board: score.Board, ws: Path, logs: Path) -> tuple[bool, str]:
+def step(name: str, board: Board, ws: Path, logs: Path) -> tuple[bool, str]:
     pcb = f"kicad/{board.name}.kicad_pcb"
     log = logs / f"{board.name}-{name}.log"
     if name == "fab":
@@ -92,7 +158,7 @@ def step(name: str, board: score.Board, ws: Path, logs: Path) -> tuple[bool, str
     return False, (f"      {why}" if why else tail(log))
 
 
-def probes(table: dict[str, score.Workaround]) -> list[str]:
+def probes(table: dict[str, Workaround]) -> list[str]:
     """Problems with docs/workarounds.md against tests/workarounds/*.py."""
     bad = []
     pdir = ROOT / "tests" / "workarounds"
@@ -165,8 +231,8 @@ def main() -> int:
     ap.add_argument("--keep", help="leave the scratch workspaces and logs here")
     args = ap.parse_args()
 
-    table = score.read_workarounds(ROOT / "docs" / "workarounds.md")
-    boards = score.read_boards(ROOT / "boards")
+    table = read_workarounds(ROOT / "docs" / "workarounds.md")
+    boards = read_boards(ROOT / "boards")
     if args.board:
         boards = [b for b in boards if b.name in args.board]
     if not boards:

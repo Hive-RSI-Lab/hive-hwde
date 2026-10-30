@@ -1,0 +1,2433 @@
+{
+ "script": "dfm_check",
+ "status": "pass",
+ "board": "lite-main.kicad_pcb",
+ "counts": {
+  "total": 3,
+  "by_severity": {
+   "warning": 3
+  },
+  "by_source": {
+   "check.dfm": 3
+  }
+ },
+ "violations": [
+  {
+   "check": "dfm",
+   "severity": "warning",
+   "pos": [
+    44.365,
+    85.913
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [],
+   "msg": "233 silk strokes below JLC minimum width 0.15 mm (narrowest 0.0600 mm) on F.Silkscreen",
+   "source": "check.dfm",
+   "items": [
+    {
+     "msg": "233 silk strokes below JLC minimum width 0.15 mm (narrowest 0.0600 mm) on F.Silkscreen",
+     "pos": [
+      44.365,
+      85.913
+     ]
+    }
+   ],
+   "kind": "dfm_silk_width",
+   "width_mm": 0.06,
+   "min_mm": 0.15,
+   "count": 233
+  },
+  {
+   "check": "dfm",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "J2"
+   ],
+   "msg": "J2: the LCSC model's pad centre sits 0.793 mm from the board's at the CPL position",
+   "source": "check.dfm",
+   "items": [
+    {
+     "msg": "J2: the LCSC model's pad centre sits 0.793 mm from the board's at the CPL position",
+     "pos": null
+    }
+   ],
+   "kind": "cpl_offset",
+   "offset_mm": 0.793
+  },
+  {
+   "check": "dfm",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "J3"
+   ],
+   "msg": "J3: the LCSC model's pad centre sits 0.793 mm from the board's at the CPL position",
+   "source": "check.dfm",
+   "items": [
+    {
+     "msg": "J3: the LCSC model's pad centre sits 0.793 mm from the board's at the CPL position",
+     "pos": null
+    }
+   ],
+   "kind": "cpl_offset",
+   "offset_mm": 0.793
+  }
+ ],
+ "castellated_pads": 0,
+ "castellated_refs": [],
+ "layers_present": [
+  "B.Cu",
+  "F.Cu",
+  "B.Mask",
+  "F.Mask",
+  "B.Silkscreen",
+  "F.Silkscreen"
+ ],
+ "n_holes": 267,
+ "missing_lcsc": [],
+ "unsourced": [],
+ "off_lcsc": [],
+ "missing_lcsc_unplaced": [
+  "H1",
+  "H2",
+  "H3",
+  "H4"
+ ],
+ "assembly_class_counts": {
+  "smt_placed": 134,
+  "board_feature": 4
+ },
+ "not_placed": [],
+ "placement": {
+  "cpl": "fab/CPL.csv",
+  "visual": null,
+  "n_checked": 134,
+  "failed": [],
+  "fetch_failed": [],
+  "rate_limited": null,
+  "parts": [
+   {
+    "ref": "C1",
+    "lcsc": "C15849",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C2",
+    "lcsc": "C14663",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C3",
+    "lcsc": "C13585",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C4",
+    "lcsc": "C29823",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C5",
+    "lcsc": "C14663",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C6",
+    "lcsc": "C14663",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C7",
+    "lcsc": "C45783",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C8",
+    "lcsc": "C45783",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C9",
+    "lcsc": "C14858",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C10",
+    "lcsc": "C19702",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C11",
+    "lcsc": "C14663",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C12",
+    "lcsc": "C45783",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C13",
+    "lcsc": "C19702",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C14",
+    "lcsc": "C1653",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C15",
+    "lcsc": "C15849",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C16",
+    "lcsc": "C15849",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C17",
+    "lcsc": "C14663",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C18",
+    "lcsc": "C14663",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C20",
+    "lcsc": "C19702",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C21",
+    "lcsc": "C14663",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C22",
+    "lcsc": "C15849",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C23",
+    "lcsc": "C14663",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C24",
+    "lcsc": "C14663",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C30",
+    "lcsc": "C14663",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C31",
+    "lcsc": "C14663",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C32",
+    "lcsc": "C19666",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C33",
+    "lcsc": "C14663",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C34",
+    "lcsc": "C14663",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C35",
+    "lcsc": "C19702",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C36",
+    "lcsc": "C14663",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C37",
+    "lcsc": "C19702",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C38",
+    "lcsc": "C14663",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C39",
+    "lcsc": "C19702",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C40",
+    "lcsc": "C14663",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C41",
+    "lcsc": "C15849",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C42",
+    "lcsc": "C14858",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C44",
+    "lcsc": "C15849",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C45",
+    "lcsc": "C14858",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C47",
+    "lcsc": "C19702",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C48",
+    "lcsc": "C19702",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C50",
+    "lcsc": "C15849",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C51",
+    "lcsc": "C28323",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C52",
+    "lcsc": "C28323",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C53",
+    "lcsc": "C14663",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C54",
+    "lcsc": "C1588",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C55",
+    "lcsc": "C28323",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C56",
+    "lcsc": "C14663",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C57",
+    "lcsc": "C1588",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C58",
+    "lcsc": "C46550472",
+    "verdict": "ok",
+    "basis": "pad number (no K/A or +/- names on both sides)",
+    "board_rot": 270.0,
+    "cpl_rot": 270.0,
+    "expected_rot": [
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C59",
+    "lcsc": "C2836441",
+    "verdict": "ok",
+    "basis": "pad number (no K/A or +/- names on both sides)",
+    "board_rot": 270.0,
+    "cpl_rot": 270.0,
+    "expected_rot": [
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C60",
+    "lcsc": "C15849",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C61",
+    "lcsc": "C15849",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C62",
+    "lcsc": "C15849",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C63",
+    "lcsc": "C15849",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C64",
+    "lcsc": "C21120",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C65",
+    "lcsc": "C21120",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C66",
+    "lcsc": "C21120",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C67",
+    "lcsc": "C21120",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C68",
+    "lcsc": "C1848",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C69",
+    "lcsc": "C1848",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C70",
+    "lcsc": "C1848",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C71",
+    "lcsc": "C1848",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "C80",
+    "lcsc": "C19666",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "D1",
+    "lcsc": "C364296",
+    "verdict": "ok",
+    "basis": "pin role (K/A, +/-)",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "D2",
+    "lcsc": "C2286",
+    "verdict": "ok",
+    "basis": "pin role (K/A, +/-)",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "J1",
+    "lcsc": "C5184243",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 180.0,
+    "cpl_rot": 180.0,
+    "expected_rot": [
+     180.0
+    ],
+    "offset_mm": 0.037,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "J2",
+    "lcsc": "C7527522",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 180.0,
+    "cpl_rot": 180.0,
+    "expected_rot": [
+     180.0
+    ],
+    "offset_mm": 0.793,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "J3",
+    "lcsc": "C7527522",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 180.0,
+    "cpl_rot": 180.0,
+    "expected_rot": [
+     180.0
+    ],
+    "offset_mm": 0.793,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "J4",
+    "lcsc": "C2915641",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "L1",
+    "lcsc": "C48391614",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "L2",
+    "lcsc": "C48391614",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "L3",
+    "lcsc": "C48391614",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "L4",
+    "lcsc": "C48391614",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "L5",
+    "lcsc": "C79272",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 270.0,
+    "cpl_rot": 270.0,
+    "expected_rot": [
+     270.0,
+     90.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "L6",
+    "lcsc": "C305171",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "Q1",
+    "lcsc": "C5125949",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 270.0,
+    "cpl_rot": 270.0,
+    "expected_rot": [
+     270.0
+    ],
+    "offset_mm": 0.002,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "Q2",
+    "lcsc": "C20526",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "Q3",
+    "lcsc": "C20526",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "Q4",
+    "lcsc": "C20526",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R1",
+    "lcsc": "C25808",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R2",
+    "lcsc": "C21189",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R3",
+    "lcsc": "C21189",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R4",
+    "lcsc": "C25804",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R5",
+    "lcsc": "C25803",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R6",
+    "lcsc": "C25819",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R7",
+    "lcsc": "C25804",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R8",
+    "lcsc": "C25803",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R9",
+    "lcsc": "C25803",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R10",
+    "lcsc": "C22797",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R11",
+    "lcsc": "C22807",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R12",
+    "lcsc": "C4216",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R13",
+    "lcsc": "C25803",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R14",
+    "lcsc": "C25804",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R15",
+    "lcsc": "C21190",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R16",
+    "lcsc": "C31850",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R17",
+    "lcsc": "C25803",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R18",
+    "lcsc": "C25804",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R20",
+    "lcsc": "C25804",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R21",
+    "lcsc": "C25804",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R22",
+    "lcsc": "C4190",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R23",
+    "lcsc": "C4190",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R24",
+    "lcsc": "C25804",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R25",
+    "lcsc": "C25804",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R30",
+    "lcsc": "C25804",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R31",
+    "lcsc": "C25804",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R33",
+    "lcsc": "C25804",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R34",
+    "lcsc": "C25804",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R36",
+    "lcsc": "C22775",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R37",
+    "lcsc": "C25819",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R38",
+    "lcsc": "C22775",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R39",
+    "lcsc": "C25819",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R50",
+    "lcsc": "C4184",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R51",
+    "lcsc": "C25803",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R52",
+    "lcsc": "C25803",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R53",
+    "lcsc": "C25804",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R54",
+    "lcsc": "C25803",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R60",
+    "lcsc": "C25804",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R61",
+    "lcsc": "C25804",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R62",
+    "lcsc": "C25804",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R63",
+    "lcsc": "C25804",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0,
+     270.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R64",
+    "lcsc": "C21190",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "R65",
+    "lcsc": "C22775",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0,
+     180.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "SW1",
+    "lcsc": "C318884",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "SW2",
+    "lcsc": "C318884",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "SW3",
+    "lcsc": "C318884",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "U1",
+    "lcsc": "C42459160",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "U2",
+    "lcsc": "C311983",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "U3",
+    "lcsc": "C479074",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "U4",
+    "lcsc": "C80670",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "U5",
+    "lcsc": "C2973667",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "U6",
+    "lcsc": "C84681",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 90.0,
+    "cpl_rot": 90.0,
+    "expected_rot": [
+     90.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "U7",
+    "lcsc": "C365736",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0
+    ],
+    "offset_mm": 0.001,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "U8",
+    "lcsc": "C46497",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   },
+   {
+    "ref": "U9",
+    "lcsc": "C42421366",
+    "verdict": "ok",
+    "basis": "pad number",
+    "board_rot": 0.0,
+    "cpl_rot": 0.0,
+    "expected_rot": [
+     0.0
+    ],
+    "offset_mm": 0.0,
+    "why": null,
+    "fetch_error": null,
+    "visual": null,
+    "agreement": "not_run"
+   }
+  ]
+ },
+ "polarity": {
+  "status": "checked",
+  "refs_checked": 134
+ },
+ "capability_key": "2layer_1oz",
+ "layer_count": 2,
+ "copper_oz": 1.0,
+ "copper_oz_source": "stackup",
+ "gerber_dir": "fab/gerbers",
+ "min_trace_width_mm": 0.2,
+ "min_hole_mm": 0.3,
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T20:24:06+00:00",
+ "input": "kicad/lite-main.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:dbca84dec38b9387a2e6bda270fb6819fb5c3647a1b0f29b7eb5546886578c4c",
+ "coverage": {
+  "strict": false,
+  "required": [
+   "copper",
+   "copper_to_edge",
+   "drill",
+   "hole_to_edge",
+   "silk",
+   "polarity",
+   "placement",
+   "placement_visual",
+   "bom",
+   "release",
+   "castellation"
+  ],
+  "ran": [
+   "copper",
+   "copper_to_edge",
+   "drill",
+   "hole_to_edge",
+   "silk",
+   "polarity",
+   "placement",
+   "bom",
+   "release",
+   "castellation"
+  ],
+  "passed": [
+   "copper",
+   "copper_to_edge",
+   "drill",
+   "hole_to_edge",
+   "silk",
+   "polarity",
+   "placement",
+   "bom",
+   "release",
+   "castellation"
+  ],
+  "failed": [],
+  "waived": [],
+  "not_applicable": {},
+  "skipped_error": {
+   "placement_visual": "no cpl_visual.json - the fab step's image pass has not run"
+  }
+ }
+}
