@@ -65,6 +65,8 @@ KICAD_PREFERENCE = ("10.", "9.")
 MIN_JAVA_FOR_FREEROUTING = 25
 
 _TIMEOUT = 30
+# `kicad-cli version` under load can take longer than 30 s (issue #252).
+_VERSION_TIMEOUT = 120
 
 # Linux headless: KiCad's SWIG Specctra export/import (route_swig) and other
 # wx-backed pcbnew paths refuse to run without an X display ("Unable to access
@@ -316,7 +318,7 @@ def kicad_cli_version_line(cli: Path) -> str | None:
             _VERSION_LINES[key] = line
             return line
     try:
-        cp = _run([str(cli), "version"])
+        cp = _run([str(cli), "version"], timeout=_VERSION_TIMEOUT)
     except (OSError, subprocess.TimeoutExpired):
         return None
     lines = (cp.stdout or "").strip().splitlines()
