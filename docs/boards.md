@@ -19,6 +19,13 @@ this repo's boards; a board here is re-checked by its own project's test.
 | lite-main | hifi-receiver-2 | fe17345 | `boards/lite-main`: 2 layers, 130 parts (USB-C PD, ESP32, codec, 2 x 43 W class-D); its snags are `HWDE-SNAGS.md` |
 | core | hifi-receiver-2 | fe17345 | `boards/core`: 4 layers, 278 parts (Plus/Ultra core); its board-local scripts are in `kicad/gen/`, listed in its README |
 
+**core under the newer checks.** `check_straps` and `check_antenna` (issue
+#130) fail core's verify with errors: the GPIO0 strap and six TCA9555 pins
+(review-2 DIGITAL-1/2), and fill under U7's antenna on all four layers
+(DIGITAL-19). Those are design findings for hifi-receiver-2 to fix, not
+workarounds. The score charges them on the pinned core until that project
+fixes them and core is re-pinned at the fixing commit.
+
 ## Workarounds with no probe
 
 Workarounds these boards needed that have no row in

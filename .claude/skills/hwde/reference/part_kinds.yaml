@@ -1,0 +1,74 @@
+# part_kinds.yaml - parts_search --kind: find a part by what it is, not its MPN.
+#
+# JLC's keyword search matches part numbers, so "RCA jack", "Toslink" or
+# "Type-C 48V" return zero rows. A kind names the JLC category the part sits
+# in and how to pick it out there; parts_search browses that category (in
+# stock only unless --any-stock) and filters it.
+#
+# Per kind:
+#   what      one line: what the kind is
+#   aliases   other names --kind accepts
+#   sources   one or more places to look; results from all are merged:
+#     category  JLC's category name (the "category" field of any result row)
+#     attrs     server-side, exact values: {attribute name: [values]}. A part
+#               that doesn't state the attribute is dropped, so use it only
+#               where the category fills it in reliably.
+#     mpn       regex the MPN must match (case-insensitive, from the start)
+#     text      regex the description + attribute values must match
+#     not_text  regex they must not match
+#     min       {attribute name: number}: the largest quantity stated in the
+#               attribute (SI prefixes applied: 200mA = 0.2) must reach it;
+#               --attr-min adds more
+#
+# When a kind misses parts a board needed, or lets wrong ones through, fix it
+# here: this file is meant to grow with the boards. Category names come from
+# a result row's "category"; `parts_search --category NAME` browses one.
+
+rca-jack:
+  what: RCA (phono, cinch) jack, board mount
+  aliases: [rca, rca-connector, phono-jack, cinch]
+  sources:
+    - category: RCA Connector
+      not_text: '\bplug\b'
+
+banana-socket:
+  what: 4 mm banana socket / binding post (speaker or bench terminal)
+  aliases: [binding-post, banana-jack, banana, 4mm-socket, speaker-binding-post]
+  sources:
+    - category: Banana Connectors / Alligator Clips
+      attrs: {Connector Type: [Terminal]}
+    # Gold-cup sockets (GC4010-F) sit here among XT60s that JLC also calls
+    # "Banana Connector": hold them to 4 mm and female.
+    - category: Power connector / plug connector
+      text: '(?=.*banana)(?=.*\b4\s*mm)(?=.*female)'
+
+toslink-receiver:
+  what: TOSLINK (JIS F05) optical receiver, S/PDIF optical in
+  aliases: [toslink, toslink-rx, optical-receiver, spdif-optical-in]
+  sources:
+    # The rows carry no description; the receiver families go by MPN:
+    # Everlight PLR, Toshiba TORX, DOCOM DLR, Sharp GP1FA/GP1FD/GP1FM.
+    - category: Fiber Optical Transceivers
+      mpn: 'PLR\d|TORX|DLR\d|GP1F[ADM]'
+
+toslink-transmitter:
+  what: TOSLINK (JIS F05) optical transmitter, S/PDIF optical out
+  aliases: [toslink-tx, optical-transmitter, spdif-optical-out]
+  sources:
+    - category: Fiber Optical Transceivers
+      mpn: 'PLT\d|TOTX|DLT\d'
+
+usb-c-receptacle:
+  what: USB Type-C receptacle (female), any rating
+  aliases: [usb-c, type-c]
+  sources:
+    - category: USB Connectors
+      attrs: {Connector Type: [Type-C], Gender: [Female]}
+
+usb-c-48v:
+  what: USB Type-C receptacle rated 48 V or more (USB PD EPR, up to 240 W)
+  aliases: [usb-c-epr, usb-c-pd-48v, type-c-48v]
+  sources:
+    - category: USB Connectors
+      attrs: {Connector Type: [Type-C], Gender: [Female]}
+      min: {Voltage Rating: 48}

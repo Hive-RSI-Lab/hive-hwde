@@ -1,0 +1,23 @@
+# Radio modules with an on-board PCB antenna, for check_antenna.py.
+#
+# match: a regex tried against the part's Value, then its footprint name
+# (case-insensitive, first hit wins). The Value decides when it names a
+# module: hifi-receiver-2's core carries an ESP32-WROVER-E (PCB antenna) on
+# EasyEDA's WIFI-SMD_ESP32-WROVER-IE8MB footprint, whose name says u.FL.
+# external: a regex for the variants of the same family with a connector
+#   (u.FL / IPEX) instead of the PCB antenna; those are skipped.
+# The antenna end is not typed here: check_antenna takes it from the
+# footprint, as the module body (courtyard) beyond the pad field on the end
+# with the longest pad-free run. source: the vendor document the keep-out
+# numbers in check_antenna (EDGE_MM, SIDE_MM) come from.
+# A board declares a part this file doesn't know, or overrides it, in
+# constraints.json: {"antennas": {"U3": "pcb" | "external"}}.
+modules:
+  - family: Espressif ESP32 / -S2 / -S3 / -C3 / -C5 / -C6 / -H2 modules
+    match: 'ESP32[-_]?(S2|S3|C2|C3|C5|C6|H2)?[-_]?(WROOM|WROVER|MINI|SOLO)'
+    external: '(WROOM-32U|WROOM-32UE|WROOM-32D?U|WROVER-I[BE]?|WROOM-(1|2|02)U|MINI-1U|SOLO-1U)(?![A-Z])'
+    source: Espressif ESP32 Hardware Design Guidelines §1.4.8 (antenna placement, Fig. 23-25); ESP32-WROVER-E datasheet v2.4 §10 keep-out zone
+  - family: Espressif ESP8266 modules (ESP-12E/F, ESP-07S is u.FL)
+    match: 'ESP-?(12[EFS]?|WROOM-02)'
+    external: 'ESP-?07'
+    source: Espressif ESP8266 Hardware Design Guidelines §1.6 (PCB antenna)
