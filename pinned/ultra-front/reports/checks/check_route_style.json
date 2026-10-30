@@ -1,0 +1,286 @@
+{
+ "script": "check_route_style",
+ "status": "violations",
+ "board": "ultra-front.kicad_pcb",
+ "counts": {
+  "total": 9,
+  "by_severity": {
+   "warning": 9
+  },
+  "by_source": {
+   "check_route_style": 9
+  }
+ },
+ "violations": [
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    4.5501,
+    29.6218
+   ],
+   "layer": "F.Cu",
+   "net": "+3V3",
+   "refs": [],
+   "msg": "3 needless jog(s): a sidestep smaller than the track clears nothing on +3V3 F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.230 mm",
+     "pos": [
+      4.5501,
+      29.6218
+     ],
+     "uuid": "0193fffc-07d9-45af-b260-2d4f4ceee93b"
+    },
+    {
+     "msg": "sidestep 0.151 mm",
+     "pos": [
+      6.7747,
+      31.3223
+     ],
+     "uuid": "ff348be3-77ba-4c97-a693-5ef5c4cf35d8"
+    },
+    {
+     "msg": "sidestep 0.098 mm",
+     "pos": [
+      11.3011,
+      31.2962
+     ],
+     "uuid": "996477fb-791d-439c-95e1-9f57772f9e92"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    7.7961,
+    62.0456
+   ],
+   "layer": "F.Cu",
+   "net": "+5V",
+   "refs": [],
+   "msg": "2 needless jog(s): a sidestep smaller than the track clears nothing on +5V F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.018 mm",
+     "pos": [
+      7.7961,
+      62.0456
+     ],
+     "uuid": "3846b292-d5e9-4e2d-85a8-e20717df0f53"
+    },
+    {
+     "msg": "sidestep 0.242 mm",
+     "pos": [
+      12.4004,
+      65.1208
+     ],
+     "uuid": "d797ea66-e249-494e-9c1e-0306bed7bde1"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    3.93,
+    54.8017
+   ],
+   "layer": "F.Cu",
+   "net": "/BL_GATE",
+   "refs": [],
+   "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /BL_GATE F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.250 mm",
+     "pos": [
+      3.93,
+      54.8017
+     ],
+     "uuid": "0cf462c0-a990-4a1e-b29c-6760107b739f"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    2.3517,
+    29.2317
+   ],
+   "layer": "B.Cu",
+   "net": "/EXP_UNUSED",
+   "refs": [],
+   "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /EXP_UNUSED B.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.101 mm",
+     "pos": [
+      2.3517,
+      29.2317
+     ],
+     "uuid": "d3c0157d-161b-48ba-910e-8b9f4db610a1"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    11.2162,
+    30.6551
+   ],
+   "layer": "F.Cu",
+   "net": "/FRONT_INT_N",
+   "refs": [],
+   "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /FRONT_INT_N F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.210 mm",
+     "pos": [
+      11.2162,
+      30.6551
+     ],
+     "uuid": "13b670d9-1ac1-4dca-8290-d893d771203a"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    2.4642,
+    28.7762
+   ],
+   "layer": "B.Cu",
+   "net": "/LCD_RST",
+   "refs": [],
+   "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /LCD_RST B.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.076 mm",
+     "pos": [
+      2.4642,
+      28.7762
+     ],
+     "uuid": "341e7ebb-b86b-44b6-814d-0d9da26f1e32"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    87.9666,
+    62.8279
+   ],
+   "layer": "F.Cu",
+   "net": "/LEDG_K",
+   "refs": [],
+   "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /LEDG_K F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.077 mm",
+     "pos": [
+      87.9666,
+      62.8279
+     ],
+     "uuid": "f50ddeef-9c1b-40de-95e1-1f088d09e9f9"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    41.984,
+    62.7969
+   ],
+   "layer": "B.Cu",
+   "net": "/LED_B",
+   "refs": [],
+   "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /LED_B B.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.050 mm",
+     "pos": [
+      41.984,
+      62.7969
+     ],
+     "uuid": "32435f05-28ee-4bb7-8dea-3175325225e8"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    -6.2661,
+    51.2606
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [],
+   "msg": "2 needless jog(s): a sidestep smaller than the track clears nothing on GND F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.079 mm",
+     "pos": [
+      -6.2661,
+      51.2606
+     ],
+     "uuid": "bdf8c5f1-edbf-4533-aee8-fd651442de95"
+    },
+    {
+     "msg": "sidestep 0.060 mm",
+     "pos": [
+      -3.7167,
+      63.72
+     ],
+     "uuid": "82873450-1b66-4b69-b72b-b27b2fc931dc"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  }
+ ],
+ "style": {
+  "segments": 586,
+  "arcs": 0,
+  "off_angle": 0,
+  "jogs": 13,
+  "flagged": 13,
+  "score": 0.978
+ },
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T16:12:33+00:00",
+ "input": "kicad/ultra-front.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:9dc35130bd1201644f1dba4e1d6dba4d5d758a4ef90a725aa5368dd26825d2d0"
+}

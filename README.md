@@ -49,7 +49,7 @@ An agent designs a PCB from a written brief: research, architecture, parts, sche
   already inside one (check-all's gates, a test that runs `bin/hwde`), or a
   Hive without that op yet, runs bare (`tests/test_heavy.py`).
 - **Score**, `bin/hwde score`, higher is better: what this checkout's
-  gates find on boards held fixed. The hi-fi receiver's lite-main and core,
+  gates find on boards held fixed. The hi-fi receiver's lite-main, core and ultra-front,
   pinned in `pinned/` at one hifi-receiver-2 commit, and hwde-led-test go
   through erc, drc_routed, verify and dfm with `bin/hwde`'s shims off. Each
   unwaived finding, each warning and each board-local script that stands

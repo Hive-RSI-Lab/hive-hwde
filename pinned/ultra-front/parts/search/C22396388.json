@@ -1,0 +1,108 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C22396388",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C22396388",
+   "mpn": "TCA9535PWR(UMW)",
+   "brand": "UMW(Youtai Semiconductor Co., Ltd.)",
+   "description": "-40\u2103~+85\u2103 1.4V~5.5V 10mA 16 2.4MHz 25mA 4.2V 500nA 8 Built-in LED driver I2C Interrupt Output Open-drain TSSOP-24 I/O Expanders ROHS",
+   "package": "TSSOP-24",
+   "category": "I/O Expanders",
+   "type": "Extended",
+   "basic": false,
+   "stock": 15850,
+   "price": 0.4946,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.4946
+    },
+    {
+     "qty": 10,
+     "price": 0.3718
+    },
+    {
+     "qty": 30,
+     "price": 0.3128
+    },
+    {
+     "qty": 100,
+     "price": 0.2588
+    },
+    {
+     "qty": 500,
+     "price": 0.2441
+    },
+    {
+     "qty": 1000,
+     "price": 0.2359
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2410010333_UMW-Youtai-Semiconductor-Co---Ltd--TCA9535PWR-UMW_C22396388.pdf",
+   "url": "https://www.lcsc.com/product-detail/i-o-expanders_umw-youtai-semiconductor-co-ltd-tca9535pwr-umw_C22396388.html",
+   "attributes": [
+    {
+     "name": "Number of Supporting Devices",
+     "value": "8"
+    },
+    {
+     "name": "Clock Frequency",
+     "value": "2.4MHz"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+85\u2103"
+    },
+    {
+     "name": "Interrupt Output",
+     "value": "Interrupt Output"
+    },
+    {
+     "name": "Output Logic Level - High",
+     "value": "4.2V"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "1.4V~5.5V"
+    },
+    {
+     "name": "Output Type",
+     "value": "Open-drain"
+    },
+    {
+     "name": "Current - Output High(IOH)",
+     "value": "10mA"
+    },
+    {
+     "name": "Number of I/O",
+     "value": "16"
+    },
+    {
+     "name": "Features",
+     "value": "Built-in LED driver"
+    },
+    {
+     "name": "Current - Output Low(IOL)",
+     "value": "25mA"
+    },
+    {
+     "name": "Quiescent Supply Current",
+     "value": "500nA"
+    },
+    {
+     "name": "Interface",
+     "value": "I2C"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

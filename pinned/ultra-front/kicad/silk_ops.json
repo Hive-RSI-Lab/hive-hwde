@@ -1,0 +1,13 @@
+{
+ "version": 1,
+ "ops": [
+  {
+   "op": "move_text",
+   "ref": "C3",
+   "field": "reference",
+   "x": -3.5,
+   "y": 53.9,
+   "deg": 90.0
+  }
+ ]
+}

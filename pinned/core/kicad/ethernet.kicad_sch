@@ -992,7 +992,7 @@
 			)
 			(pin_names
 				(offset 0.254)
-			)
+			 (hide yes))
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
@@ -1147,7 +1147,7 @@
 			)
 			(pin_names
 				(offset 0)
-			)
+			 (hide yes))
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
@@ -3976,7 +3976,7 @@
 			)
 		)
 		(property "Value" "+3V3"
-			(at 82.55 54.61 0.0000)
+			(at 80.518 60.96 0.0000)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4227,7 +4227,7 @@
 			)
 		)
 		(property "Value" "+3V3"
-			(at 224.1562 29.21 0.0000)
+			(at 227.33 29.21 0.0000)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4268,7 +4268,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 224.6134 49.53 0.0000)
+			(at 227.33 49.53 0.0000)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4429,7 +4429,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "100nF"
+		(property "Value" "1uF"
 			(at 282.702 40.64 0.0000)
 			(effects
 				(font
@@ -4447,7 +4447,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C1525"
+		(property "LCSC" "C52923"
 			(at 281.94 44.4499 0)
 			(effects
 				(font
@@ -4492,7 +4492,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 277.9534 49.53 0.0000)
+			(at 280.67 49.53 0.0000)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4594,7 +4594,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 295.7334 49.53 0.0000)
+			(at 298.45 49.53 0.0000)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4696,7 +4696,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 313.5134 49.53 0.0000)
+			(at 316.23 49.53 0.0000)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4798,7 +4798,7 @@
 			)
 		)
 		(property "Value" "+3V3E"
-			(at 330.379 29.21 0.0000)
+			(at 334.01 29.21 0.0000)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4839,7 +4839,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 331.2934 49.53 0.0000)
+			(at 334.01 49.53 0.0000)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4941,7 +4941,7 @@
 			)
 		)
 		(property "Value" "+3V3E"
-			(at 348.159 29.21 0.0000)
+			(at 351.79 29.21 0.0000)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4982,7 +4982,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 349.0734 49.53 0.0000)
+			(at 351.79 49.53 0.0000)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5084,7 +5084,7 @@
 			)
 		)
 		(property "Value" "+3V3"
-			(at 366.3962 29.21 0.0000)
+			(at 369.57 29.21 0.0000)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5125,7 +5125,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 366.8534 49.53 0.0000)
+			(at 369.57 49.53 0.0000)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5227,7 +5227,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 384.6334 49.53 0.0000)
+			(at 387.35 49.53 0.0000)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5329,7 +5329,7 @@
 			)
 		)
 		(property "Value" "+3V3"
-			(at 70.4862 80.01 0.0000)
+			(at 73.66 80.01 0.0000)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5875,12 +5875,12 @@
 			)
 		)
 		(property "Value" "+3V3E"
-			(at 166.37 95.25 0.0000)
+			(at 165.279 93.98 0.0000)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify right)
+				(justify left)
 			)
 		)
 		(pin "1"
@@ -5916,12 +5916,12 @@
 			)
 		)
 		(property "Value" "+3V3E"
-			(at 166.37 85.09 0.0000)
+			(at 165.279 83.82 0.0000)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify right)
+				(justify left)
 			)
 		)
 		(pin "1"
@@ -6141,7 +6141,7 @@
 			)
 		)
 		(property "Value" "+3V3E"
-			(at 245.289 80.01 0.0000)
+			(at 248.92 80.01 0.0000)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6182,7 +6182,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 246.2034 100.33 0.0000)
+			(at 248.92 100.33 0.0000)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6953,132 +6953,132 @@
 		(uuid "97c13b2a-bc13-4bf3-831d-069b8262797f")
 	)
 	(label "ETH_CLK"
-		(at 12.7 25.4 0.0000)
+		(at 12.7 25.4 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "59d8c0c1-8646-47f5-91c6-97b9eb5ca6ac")
 	)
 	(label "MDC"
-		(at 12.7 27.94 0.0000)
+		(at 12.7 27.94 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "0400e0da-43c2-438a-bc23-77fd1da25045")
 	)
 	(label "MDIO"
-		(at 12.7 30.48 0.0000)
+		(at 12.7 30.48 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "25f27945-ac59-415f-97e1-bc5ab9af5ecf")
 	)
 	(label "PHY_RST"
-		(at 12.7 33.02 0.0000)
+		(at 12.7 33.02 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "43248a23-f158-4ecc-a239-3a62d23ca983")
 	)
 	(label "RMII_CRS_DV"
-		(at 12.7 35.56 0.0000)
+		(at 12.7 35.56 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "e9178077-d27b-4c5a-bbf1-50b0e3c416b8")
 	)
 	(label "RMII_RXD0"
-		(at 12.7 38.1 0.0000)
+		(at 12.7 38.1 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "c0b791ec-e6ee-49b0-bc10-362567713e1a")
 	)
 	(label "RMII_RXD1"
-		(at 12.7 40.64 0.0000)
+		(at 12.7 40.64 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "5aceaed8-69b4-482a-81aa-b64781d4f25a")
 	)
 	(label "RMII_TXD0"
-		(at 12.7 43.18 0.0000)
+		(at 12.7 43.18 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "6a2c0894-5b6c-4256-9c23-1b5a613a0f1d")
 	)
 	(label "RMII_TXD1"
-		(at 12.7 45.72 0.0000)
+		(at 12.7 45.72 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "e77b843d-2c62-41dc-be0f-bdbefa741cd1")
 	)
 	(label "RMII_TX_EN"
-		(at 12.7 48.26 0.0000)
+		(at 12.7 48.26 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "6f85a82d-79b4-4e48-a442-2769d7c4a657")
 	)
 	(label "+3V3E"
-		(at 83.82 38.1 0.0000)
+		(at 83.82 38.1 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "aacb2f4f-0b40-4d0b-8da0-69af93620aeb")
 	)
 	(label "RMII_CRS_DV"
-		(at 83.82 63.5 0.0000)
+		(at 83.82 63.5 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "38cacc0a-a062-4eb6-905b-390874d125b3")
 	)
 	(label "MDIO"
-		(at 83.82 66.04 0.0000)
+		(at 83.82 66.04 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "55b73b9d-8f20-4ef3-8c98-e62df3dced53")
 	)
@@ -7203,72 +7203,72 @@
 		(uuid "38ec2fc2-8122-4b45-8a3b-1a872667b116")
 	)
 	(label "ETH_CLK"
-		(at 83.82 48.26 0.0000)
+		(at 83.82 48.26 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "44a01dab-76e2-4edf-9c8b-7edc7176a813")
 	)
 	(label "PHY_VDDCR"
-		(at 83.82 50.8 0.0000)
+		(at 83.82 50.8 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "4fc189da-8a6c-42fd-92bd-d0b922fe6e26")
 	)
 	(label "RMII_RXD1"
-		(at 83.82 53.34 0.0000)
+		(at 83.82 53.34 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "7e52b6d1-d20a-44c4-8b08-d3be884add64")
 	)
 	(label "RMII_RXD0"
-		(at 83.82 55.88 0.0000)
+		(at 83.82 55.88 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "dcada8c8-655f-4a59-acdb-69a05fcd9769")
 	)
 	(label "+3V3"
-		(at 83.82 58.42 0.0000)
+		(at 83.82 58.42 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "2285a717-337e-426e-aa34-bcaa184d818f")
 	)
 	(label "PHY_RST"
-		(at 173.99 35.56 0.0000)
+		(at 173.99 35.56 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "0aa53980-98f1-447d-8a9d-6fde24811146")
 	)
 	(label "GND"
-		(at 173.99 40.64 0.0000)
+		(at 173.99 40.64 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "737988fe-1915-4639-bc60-cab321436851")
 	)
@@ -7293,7 +7293,7 @@
 		(uuid "7fa259d0-2500-4605-8d0a-47d204ac81f0")
 	)
 	(label "+3V3"
-		(at 226.06 33.02 0.0000)
+		(at 226.06 33.02 90)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7303,17 +7303,17 @@
 		(uuid "fb06aa38-ffe4-4e74-97ae-a6b8758b1002")
 	)
 	(label "GND"
-		(at 226.06 45.72 0.0000)
+		(at 226.06 45.72 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "e0a8ada7-3bbc-44a3-a4dc-61ed1a8fcc50")
 	)
 	(label "ETH_OSC"
-		(at 243.84 33.02 0.0000)
+		(at 243.84 33.02 90)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7323,17 +7323,17 @@
 		(uuid "d5d1575c-0dc1-44c2-a7fc-d22bd3bebe04")
 	)
 	(label "ETH_CLK"
-		(at 243.84 45.72 0.0000)
+		(at 243.84 45.72 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "7320006a-ea44-44b2-a964-aac321a894e4")
 	)
 	(label "PHY_RST"
-		(at 261.62 33.02 0.0000)
+		(at 261.62 33.02 90)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7343,17 +7343,17 @@
 		(uuid "a0398d04-4112-4465-94d4-1f6a537697a8")
 	)
 	(label "PHY_NRST"
-		(at 261.62 45.72 0.0000)
+		(at 261.62 45.72 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "02c3ea7e-ab5d-4bf4-a1c7-4cb2f79b9936")
 	)
 	(label "PHY_NRST"
-		(at 279.4 33.02 0.0000)
+		(at 279.4 33.02 90)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7363,17 +7363,17 @@
 		(uuid "c4858f59-eedb-4098-9d17-67c624e52780")
 	)
 	(label "GND"
-		(at 279.4 45.72 0.0000)
+		(at 279.4 45.72 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "c3bd4452-3ca9-4f24-8cab-6e16cb9732f2")
 	)
 	(label "PHY_VDDCR"
-		(at 297.18 33.02 0.0000)
+		(at 297.18 33.02 90)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7383,17 +7383,17 @@
 		(uuid "728d3b42-6d22-42a9-a7f0-1c3fe473c2ed")
 	)
 	(label "GND"
-		(at 297.18 45.72 0.0000)
+		(at 297.18 45.72 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "bd10d6f9-c111-4ca6-b8de-08231b0dd037")
 	)
 	(label "PHY_VDDCR"
-		(at 314.96 33.02 0.0000)
+		(at 314.96 33.02 90)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7403,17 +7403,17 @@
 		(uuid "3b39002d-a466-48e3-bfbb-b89223ce29af")
 	)
 	(label "GND"
-		(at 314.96 45.72 0.0000)
+		(at 314.96 45.72 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "d4d73708-f889-4e10-817b-3593a7af4119")
 	)
 	(label "+3V3E"
-		(at 332.74 33.02 0.0000)
+		(at 332.74 33.02 90)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7423,17 +7423,17 @@
 		(uuid "7ce2bbd2-7923-4cfe-a73c-ed59b4f4f990")
 	)
 	(label "GND"
-		(at 332.74 45.72 0.0000)
+		(at 332.74 45.72 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "59da3887-4f39-4fa5-b0d4-54d997d4a859")
 	)
 	(label "+3V3E"
-		(at 350.52 33.02 0.0000)
+		(at 350.52 33.02 90)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7443,17 +7443,17 @@
 		(uuid "c108e92a-8c82-48c2-9afd-2a85aec1d479")
 	)
 	(label "GND"
-		(at 350.52 45.72 0.0000)
+		(at 350.52 45.72 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "5f3e34d9-d154-4985-9a6a-e45b651df7b0")
 	)
 	(label "+3V3"
-		(at 368.3 33.02 0.0000)
+		(at 368.3 33.02 90)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7463,17 +7463,17 @@
 		(uuid "41192451-55f9-494a-ad24-571762c7aa5d")
 	)
 	(label "GND"
-		(at 368.3 45.72 0.0000)
+		(at 368.3 45.72 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "a9125d4b-59ec-45c1-9d1f-1d73db038196")
 	)
 	(label "PHY_RBIAS"
-		(at 386.08 33.02 0.0000)
+		(at 386.08 33.02 90)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7483,17 +7483,17 @@
 		(uuid "98a03bcc-0377-4ff2-b5fa-73a5ebb95533")
 	)
 	(label "GND"
-		(at 386.08 45.72 0.0000)
+		(at 386.08 45.72 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "9892ebb2-6785-4ad1-9606-493c4479deca")
 	)
 	(label "+3V3"
-		(at 72.39 83.82 0.0000)
+		(at 72.39 83.82 90)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7503,17 +7503,17 @@
 		(uuid "89bc3c01-86be-49b8-bcb5-bb1e6a12a3ba")
 	)
 	(label "MDIO"
-		(at 72.39 96.52 0.0000)
+		(at 72.39 96.52 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "66d31817-f536-40a9-8860-9cecb137fadc")
 	)
 	(label "ETH_TXP"
-		(at 90.17 83.82 0.0000)
+		(at 90.17 83.82 90)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7523,17 +7523,17 @@
 		(uuid "43f45419-f73a-47f7-ae5b-9e2e9b3b92f1")
 	)
 	(label "+3V3E"
-		(at 90.17 96.52 0.0000)
+		(at 90.17 96.52 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "ea188e8e-2c9c-4aaf-893d-0037e640976e")
 	)
 	(label "ETH_TXN"
-		(at 107.95 83.82 0.0000)
+		(at 107.95 83.82 90)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7543,17 +7543,17 @@
 		(uuid "f172398a-44b4-4cda-b73c-7b370bf97df0")
 	)
 	(label "+3V3E"
-		(at 107.95 96.52 0.0000)
+		(at 107.95 96.52 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "9d7cb735-148e-4d74-8c98-fb1d2970e613")
 	)
 	(label "ETH_RXP"
-		(at 125.73 83.82 0.0000)
+		(at 125.73 83.82 90)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7563,17 +7563,17 @@
 		(uuid "22e8b840-a7b3-41b9-a96d-02b33ed6442c")
 	)
 	(label "+3V3E"
-		(at 125.73 96.52 0.0000)
+		(at 125.73 96.52 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "3c5d5abd-eda3-4df7-ad2c-51a6644307b4")
 	)
 	(label "ETH_RXN"
-		(at 143.51 83.82 0.0000)
+		(at 143.51 83.82 90)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7583,82 +7583,82 @@
 		(uuid "14d98481-bd97-41cb-93f8-be9b8e42d662")
 	)
 	(label "+3V3E"
-		(at 143.51 96.52 0.0000)
+		(at 143.51 96.52 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "9aa18623-07d2-4aa6-a24f-ff407fc01e8d")
 	)
 	(label "ETH_TXP"
-		(at 167.64 101.6 0.0000)
+		(at 167.64 101.6 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "924919ce-3a1f-4222-8d46-8142aa331b23")
 	)
 	(label "ETH_TXN"
-		(at 167.64 96.52 0.0000)
+		(at 167.64 96.52 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "ab14d8d2-12c0-4f53-9698-cda80d88387b")
 	)
 	(label "ETH_RXP"
-		(at 167.64 91.44 0.0000)
+		(at 167.64 91.44 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "d8d1eb4b-6c1e-479d-b06e-1c4e25769dea")
 	)
 	(label "+3V3E"
-		(at 167.64 99.06 0.0000)
+		(at 167.64 99.06 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "9f1a7be4-5434-4b8e-95c8-21f2c2a0f984")
 	)
 	(label "+3V3E"
-		(at 167.64 88.9 0.0000)
+		(at 167.64 88.9 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "410d6ecd-364a-4481-8e39-17fe58e80199")
 	)
 	(label "ETH_RXN"
-		(at 167.64 86.36 0.0000)
+		(at 167.64 86.36 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "0ce09a80-c378-4872-b32b-965a6286ef1d")
 	)
 	(label "GND"
-		(at 167.64 109.22 0.0000)
+		(at 167.64 109.22 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "e3ea3a42-3260-43af-b4a6-790a274b5f05")
 	)
@@ -7683,7 +7683,7 @@
 		(uuid "e5a92b28-3d0a-4066-9b27-d077d480a714")
 	)
 	(label "+3V3E"
-		(at 247.65 83.82 0.0000)
+		(at 247.65 83.82 90)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -7693,12 +7693,12 @@
 		(uuid "7328e31d-22c0-4577-9f4e-fdaeac819708")
 	)
 	(label "GND"
-		(at 247.65 96.52 0.0000)
+		(at 247.65 96.52 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "9ac53d94-a217-42d7-987c-6f55b965a17f")
 	)

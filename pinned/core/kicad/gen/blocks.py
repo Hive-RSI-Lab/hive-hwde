@@ -7,21 +7,28 @@ A = "aiee:"
 
 # ------------------------------------------------------------ B1-B3 power in
 sheet("power_in")
-P("J1", A + "USB4105-GF-A-120", "USB4105-GF-A-120", A + "USB-C-SMD_USB4105-GF-A-120",
-  {"n:VBUS": "VBUS_IN", "n:GND": "GND", "n:CC1": "CC1", "n:CC2": "CC2",
-   "n:Dp1": "USB_DP", "n:Dp2": "USB_DP", "n:Dn1": "USB_DM", "n:Dn2": "USB_DM",
-   "n:SBU1": "NC", "n:SBU2": "NC", "n:EH": "GND"},
-  lcsc="C5184243", role="USB-C receptacle, 48 V/5 A rated (EPR 28 V)")
+# GCT USB4085-GF-A (C7095263): through-hole, 48 V / 5 A / 240 W. The SMD
+# USB4105 had 0 free at JLC (docs/bom-stock.md, 2026-10-29); through-hole
+# pins also tie VBUS_IN into the pours on every layer (review-2 POWER-1).
+P("J1", A + "USB4085-GF-A_C7095263", "USB4085-GF-A", A + "USC-C-SMD_USB4085-GF-A",
+  {"A4": "VBUS_IN", "A9": "VBUS_IN", "B4": "VBUS_IN", "B9": "VBUS_IN",
+   "A1": "GND", "A12": "GND", "B1": "GND", "B12": "GND", "A5": "CC1",
+   "B5": "CC2", "A6": "USB_DP", "B6": "USB_DP", "A7": "USB_DM", "B7": "USB_DM",
+   "A8": "NC", "B8": "NC", "S1": "GND"},
+  lcsc="C7095263", mpn="USB4085-GF-A", role="USB-C receptacle, 48 V/5 A, 240 W (EPR 28 V)")
 P("D1", A + "SMBJ30A_C113998", "SMBJ30A", A + "SMB_L4.6-W3.6-LS5.3-RD",
   {"1": "VBUS_IN", "2": "GND"}, lcsc="C113998", role="VBUS TVS")
 P("U2", A + "USBLC6-2SC6_C2687116", "USBLC6-2SC6", A + "SOT-23-6_L2.9-W1.6-P0.95-LS2.8-BL",
   {"1": "USB_DP", "6": "USB_DP", "3": "USB_DM", "4": "USB_DM", "2": "GND",
    "5": "+5V"}, lcsc="C2687116", role="USB D+/D- ESD")
+# PG (pin 10, open drain, low = contract good) gates the PVDD switch like the
+# Lite's: review-2 POWER-6, PVDD drops in hardware when the contract is lost.
 P("U1", A + "CH224Q_C46061833", "CH224Q", A + "DFN-10_L2.0-W2.0-P0.40-BL-EP",
   {"1": "VBUS_PD", "8": "VBUS_PD", "2": "I2C_SCL", "3": "I2C_SDA", "4": "NC",
-   "5": "NC", "6": "CC2", "7": "CC1", "9": "PD_CFG1", "10": "GND", "11": "GND"},
+   "5": "NC", "6": "CC1", "7": "CC2", "9": "PD_CFG1", "10": "PD_PG", "11": "GND"},  # CC1/CC2 swapped at the chip (the CH224 treats them alike) to untangle the fan-out
   lcsc="C46061833", role="USB PD 3.2 EPR sink, asks for 28 V")
 R("R2", "210k", "PD_CFG1", "GND", role="CH224Q CFG1: 28 V request")
+R("R20", "10k", "+3V3", "PD_PG", role="CH224Q PG pull-up")
 R("R17", "10R", "VBUS", "VBUS_PD", role="CH224Q supply/sense feed (mA)")
 C("C1", "1uF/50V", "VBUS_PD", pkg="0805", ic="U1", pin="1")
 R("R1", "10m", "VBUS_IN", "VBUS", pkg="2512", role="input current shunt")
@@ -39,15 +46,19 @@ C("C3", "10nF", "ISENSE")
 P("Q1", A + "AO4485", "AO4485", A + "SOIC-8_L5.0-W4.0-P1.27-LS6.0-BL",
   {"n:S": "VBUS", "n:D": "PVDD", "n:G": "PVDD_G"}, lcsc="C51499",
   role="PVDD P-FET switch, 40 V")
-R("R4", "100k", "VBUS", "PVDD_G")
-R("R5", "100k", "PVDD_G", "PVDD_PD")
+# review-2 POWER-2: 100k/100k + 1 uF charged 940 uF in ~12 ms, 0.36 J in Q1
+# against ~0.2 J of SOA. 470k/470k + 2.2 uF: 0.47 A, 9.8 W peak, ~60 ms ramp
+# (docs/review-2/sims/power/tb_core_fw_on_28v_FIX.cir), 2.5x SOA margin.
+R("R4", "470k", "VBUS", "PVDD_G")
+R("R5", "470k", "PVDD_G", "PVDD_PD")
 C("C4", "100nF/50V", "PVDD_G", "PVDD", pkg="0603", role="soft-start gate-drain")
-C("C8", "1uF/50V", "VBUS", "PVDD_G", pkg="0805",
+C("C8", "2.2uF/50V", "VBUS", "PVDD_G", pkg="0805",
   role="gate-source: holds Q1 off while VBUS steps (attach, 5 V to 28 V)")
 P("D4", A + "BZT52C15", "BZT52C15", A + "x", {"n:K": "VBUS", "n:A": "PVDD_G"},
   lcsc="C173427", role="Q1 gate-source clamp, 15 V")
 P("Q2", A + "2N7002", "2N7002", A + "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
-  {"n:D": "PVDD_PD", "n:S": "GND", "n:G": "PVDD_ENG"}, lcsc="C8545", basic=True)
+  {"n:D": "PVDD_PD", "n:S": "PD_PG", "n:G": "PVDD_ENG"}, lcsc="C8545", basic=True,
+  role="PVDD enable: firmware (PVDD_EN) AND the PD contract (PG low)")
 R("R6", "1k", "PVDD_EN", "PVDD_ENG")
 R("R7", "100k", "PVDD_ENG", "GND")
 P("D2", A + "BZT52C33_C266574", "BZT52C33", A + "x",

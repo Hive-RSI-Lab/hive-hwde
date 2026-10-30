@@ -1,0 +1,47 @@
+{
+ "script": "check_silk",
+ "status": "pass",
+ "board": "ultra-front.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "checked": [
+  {
+   "silk_items": 339,
+   "texts": 35,
+   "graphics": 304,
+   "refdes_checked": 35,
+   "refdes_off_silk": 5
+  }
+ ],
+ "refdes_off_silk": [
+  {
+   "ref": "H1",
+   "why": "hidden"
+  },
+  {
+   "ref": "H2",
+   "why": "hidden"
+  },
+  {
+   "ref": "H3",
+   "why": "hidden"
+  },
+  {
+   "ref": "H4",
+   "why": "hidden"
+  },
+  {
+   "ref": "R10",
+   "why": "hidden"
+  }
+ ],
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T16:12:33+00:00",
+ "input": "kicad/ultra-front.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:9dc35130bd1201644f1dba4e1d6dba4d5d758a4ef90a725aa5368dd26825d2d0"
+}

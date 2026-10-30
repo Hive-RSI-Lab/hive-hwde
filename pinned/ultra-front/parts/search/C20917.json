@@ -1,0 +1,108 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C20917",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C20917",
+   "mpn": "AO3400A",
+   "brand": "Alpha & Omega Semicon",
+   "description": "-55\u2103~+150\u2103 1 N-channel 1.45V 1.4W 30V 48m\u03a9@2.5V 5.7A 50pF 630pF 75pF 7nC@10V N-Channel SOT-23 MOSFETs ROHS",
+   "package": "SOT-23",
+   "category": "MOSFETs",
+   "type": "Basic",
+   "basic": true,
+   "stock": 1120691,
+   "price": 0.089,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.089
+    },
+    {
+     "qty": 50,
+     "price": 0.0718
+    },
+    {
+     "qty": 150,
+     "price": 0.0629
+    },
+    {
+     "qty": 500,
+     "price": 0.0556
+    },
+    {
+     "qty": 3000,
+     "price": 0.0531
+    },
+    {
+     "qty": 6000,
+     "price": 0.0513
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1811081213_Alpha---Omega-Semicon-AO3400A_C20917.pdf",
+   "url": "https://www.lcsc.com/product-detail/mosfets_alpha-omega-semicon-ao3400a_C20917.html",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+150\u2103"
+    },
+    {
+     "name": "Vgs",
+     "value": "\u00b112V"
+    },
+    {
+     "name": "Gate Charge(Qg)",
+     "value": "7nC@10V"
+    },
+    {
+     "name": "Reverse Transfer Capacitance (Crss@Vds)",
+     "value": "50pF"
+    },
+    {
+     "name": "Current - Continuous Drain(Id)",
+     "value": "5.7A"
+    },
+    {
+     "name": "Drain to Source Voltage",
+     "value": "30V"
+    },
+    {
+     "name": "Output Capacitance(Coss)",
+     "value": "75pF"
+    },
+    {
+     "name": "RDS(on)",
+     "value": "48m\u03a9@2.5V"
+    },
+    {
+     "name": "Input Capacitance(Ciss)",
+     "value": "630pF"
+    },
+    {
+     "name": "Type",
+     "value": "N-Channel"
+    },
+    {
+     "name": "Gate Threshold Voltage (Vgs(th))",
+     "value": "1.45V"
+    },
+    {
+     "name": "Number",
+     "value": "1 N-channel"
+    },
+    {
+     "name": "Pd - Power Dissipation",
+     "value": "1.4W"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

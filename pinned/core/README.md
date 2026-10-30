@@ -19,9 +19,9 @@ been ordered. Ordering is the person's.**
 
 ![Top](reports/renders/core_top.png)
 
-## Status (2026-10-28)
+## Status (2026-10-29)
 
-All hwde gates pass on the routed board, with hive-hwde at 94ec4b7:
+All hwde gates pass on the routed board after the first-spin review ECO, with hive-hwde at c23e27e:
 
 | Gate | Result |
 |---|---|
@@ -57,17 +57,18 @@ pinout and the power tree are in
 
 | Block | Parts |
 |---|---|
-| Power in | USB4105 USB-C (48 V/5 A), CH224Q PD sink (asks for 28 V; ESP32 can read it or change it over I2C), SMBJ30A TVS, 10 mΩ shunt + INA186 current sense |
-| PVDD switch | AO4485 P-FET held off until firmware sets PVDD_EN; ~2 V/ms soft start (PD inrush rule); gross-overvoltage cut-off |
+| Power in | GCT USB4085-GF-A through-hole USB-C (48 V/5 A, 240 W), CH224Q PD sink (asks for 28 V; ESP32 can read it or change it over I2C), SMBJ30A TVS, 10 mΩ shunt + INA186 current sense |
+| PVDD switch | AO4485 P-FET, on only when firmware sets PVDD_EN **and** the CH224Q's PG says the contract is good; ~60 ms soft start (0.47 A, 9.8 W peak); gross-overvoltage cut-off |
 | Rails | SY8303 VBUS to 5.1 V; SY8089 5 V to 3.3 V; LP5907 3.3 V analog; ferrite-fed +5VA and +3V3E |
-| Processor | ESP32-WROVER-E-N8R8; CH340C USB-serial on the same USB-C (auto-reset, flashing from a laptop) |
+| Processor | ESP32-WROVER-E-N8R8; CH340B USB-serial on the same USB-C (auto-reset, flashing from a laptop) |
 | Ethernet | LAN8720A + HR911105A magjack, gated 50 MHz RMII clock |
-| Mains DAC | ES9018K2M at 50 MHz MCLK, OPA1678 differential-to-single-ended stage |
+| Mains DAC | ES9018K2M at 49.152 MHz MCLK, OPA1678 differential-to-single-ended stage |
 | Sub DAC | PCM5102A to a stacked dual RCA (SUB1, SUB2) |
 | Line in | stacked dual RCA, ES7243E ADC, TS5A23157 DAC/DJ-direct selector |
+| Self-measurement | zone A's A_SPK_L+/R+ through 150k/10k, 470 pF, 1 uF onto a 1.65 V bias; TS5A23157 U20 picks RCA input (default) or the taps for the ADC; select from expander P17 through Q7 |
 | Zone A amp | TPA3221 (24 dB, AD mode, 600 kHz), 10 µH / 10 A filters, 2 screw terminals |
 | Zone B amp [Ultra] | the same, synchronised to zone A as a peripheral |
-| Control | TCA9555 I/O expander; Plus front-edge knob, 2 buttons, IR receiver, status LED |
+| Control | TCA9539 I/O expander (0x74, reset with the ESP32's EN); Plus front-edge knob, 2 buttons, IR receiver, status LED |
 | Optical [Ultra] | PLR237 TOSLINK into the ES9018K2M's S/PDIF mux |
 | Front board [Ultra] | 20-pin 0.5 mm FFC to `ultra-front` |
 
@@ -83,6 +84,42 @@ pinout and the power tree are in
 `fab/BOM.csv`/`CPL.csv` are the **Plus** build. `fab/ultra/BOM.csv` and
 `CPL.csv` are the **Ultra** build of the same Gerbers.
 
+## First-spin review (review-2, 2026-10-29)
+
+Six independent reviewers (power, audio, digital/RF, thermal, DFM, parts
+pin-to-pad) read this board from its KiCad files and the vendor datasheets:
+[`docs/review-2/`](../../docs/review-2/). What changed on core because of it:
+
+| Finding | Was | Now |
+|---|---|---|
+| DIGITAL-1/2, PARTS-4 (blocker): the TCA9555's pull-ups left PHY_RST (the 50 MHz oscillator into GPIO0, a boot strap), PVDD_EN and the amp/DAC resets mid-rail at power-up, and its outputs held through ESP32 resets | TCA9555, R45 100k | TCA9539 (no pull-ups; RESET = ESP_EN), R45 10k |
+| POWER-1 (blocker): the 5 A path ran through 0.25 mm tracks and 1-3 vias | SMD USB4105, few vias | through-hole USB4085 (power pins solid into the In2 VBUS_IN plane), copper patches with 8 vias at R1's input, 10 from R1's output to Q1's source, 8 at Q1's drain; 3-4 per TPA3221 PVDD pin group |
+| THERMAL-1/DFM-3 (blocker): TPA3221 is pad-up with no heatsink | none | a heatsink pressed onto each TPA3221 from the lid (thermal pad under it), and a firmware power governor (`docs/review-2/firmware-requirements.md` C2/C3); no room for clip holes beside the chip without moving its PVDD decouplers |
+| DFM-1 (blocker): RCA J4/J5 had no holes for the jack's snap-in legs | none | Lite's footprint: 2.0 x 3.0 leg holes, signal pins as slots that fit either reading of the drawing |
+| PARTS-7/DFM-12 (blocker, Ultra): TOSLINK T8BK on a T10BK footprint | no post holes | the T8BK's two 1.70 mm post holes added |
+| DIGITAL-19 (major): copper under the Wi-Fi antenna on all 4 layers | GND/+3V3 pours, two tracks | `ANT_KEEPOUT` rule area x 148.9-154.64, y 189.6-213.5 on every layer; I2S_DIN and RMII_TXD1 rerouted |
+| POWER-2 (major): Q1 turn-on outside its SOA | R4/R5 100k, C8 1 uF | 470k/470k, 2.2 uF/50 V |
+| POWER-6 (major): no hardware PVDD cut when the PD contract is lost | Q2 source on GND | Q2 source on CH224Q PG (+ R20 10k pull-up), as on Lite |
+| AUDIO-1 (major): OPA1678 at 48 mV of input headroom | R73/75/81/83 1.5k | 1.3k |
+| AUDIO-2/3 (major): planned tap switch couldn't pass a node below 0 V or be driven from 3.3 V | (new) | biased tap nodes, Q7 level shift, default = RCA |
+| DFM-4 (major): IR receiver looking at the lid | IRM-H638T | front-facing IRM-3638T at the front edge |
+| PARTS-3/AUDIO-10, DIGITAL-5, AUDIO-5 (minor) | 50 MHz Y1, C47 100 nF, 1 uF ADC caps | 49.152 MHz, 1 uF, 4.7 uF |
+| Stock | CH340C | CH340B |
+
+Ultra's zone-B speaker taps (the bring-up ask) were left out: no control line
+is left to choose a zone, and the extra switch crowded the ADC; zone B is
+watched through FAULT/OTW and ISENSE. The ES9018K2M's GPIO2 was the first
+choice for the tap select, but its pin can't be fanned out between GPIO1 and
+DATA, so the select comes from expander P17 and the front board's LCD_CS is
+held asserted by R57 (DIGITAL-16; firmware cs = -1).
+
+The changes went in as an ECO on the routed board: `board_update`, the
+reviewers' fixes in `kicad/gen/blocks*.py`, then `via_array.py`,
+`ant_keepout.py`, `miniroute.py`, hwde's `route_auto` (its KRT fallback; Freerouting
+stalled), `stitch_vias`, `island_vias.py`/`gnd_via_drops.py` and hand tracks
+(`add_track.py`/`add_via.py`). IR_IN keeps a 25 mm hop on In1 (the GND plane)
+under the front UI area, where nothing fast crosses it.
+
 ## Design decisions and why
 
 These are the decisions that differ from, or add to, docs/product.md.
@@ -90,9 +127,10 @@ These are the decisions that differ from, or add to, docs/product.md.
 - **Current sense:** INA186 (40 V), not INA180. The INA180 stops at 26 V
   common mode, under the 28 V rail. The sense taps are Kelvin, through
   10 Ω + 100 nF.
-- **DAC clock:** 50 MHz, not 100 MHz. With its internal 1.2 V DVDD the
-  ES9018K2M is limited to 50 MHz, and 100 MHz would need an external
-  1.3 V regulator. 50 MHz covers 24/96 PCM and 96 kHz S/PDIF.
+- **DAC clock:** 49.152 MHz. With its internal 1.2 V DVDD the
+  ES9018K2M is limited to 50 MHz; a 50 MHz part met it only at 0 ppm, so
+  review-2 moved to 49.152 MHz (synchronous 1024 x 48 kHz). It covers
+  24/96 PCM and 96 kHz S/PDIF.
 - **Ethernet clock:** a 50 MHz oscillator drives both the PHY and ESP32
   GPIO0. ESP32 clock-out on GPIO0 is experimental in ESP-IDF. The
   oscillator's enable is the PHY reset line, so GPIO0 boots clean.
@@ -188,22 +226,21 @@ regions and the solid F.Cu/B.Cu pours, which the width rules don't see
 
 ## Open items
 
-- **5 V buck bootstrap loop:** C12 sits below L9, so its BS and LX links
-  are long routed tracks (U4 has the LX pin on the far side). Watch U4's
-  switch node for ringing at bring-up. If it misbehaves, the next layout
-  revision puts C12 between U4 and L9.
-- **Hidden reference texts:** about 90 were hidden to clear silk overlaps on
-  the dense passives. The assembly drawing and the CPL still carry every
-  designator.
+Every fact this board relies on, and whether it's verified, is in
+[`docs/known-unknowns.md`](../../docs/known-unknowns.md); run
+`python3 tools/known_unknowns.py --check` before ordering. The ones that are
+this board's to settle:
 
-- **Stacked RCA pinout (J4, J5):** read from the drawing as pin 2 = common
-  ground, pin 1 = top jack and pin 3 = bottom. Check it by continuity on
-  the first board.
-- **TOSLINK footprint (U19):** taken from PLR237/T10BK. The fitted part is
-  T8BK, the in-stock variant. Check the two land patterns match before an
-  Ultra order.
+- **Heatsink (each TPA3221):** the enclosure presses it on (19 x 12 mm base,
+  fins to the lid, at most 20 C/W in still air, 0.2 mm pad of 3 W/mK or
+  better). Its exact part is the person's to buy with the enclosure; bring-up
+  checks for no OTW at 1/8 power for 10 min (firmware C3).
+- **5 V buck bootstrap loop:** C12 sits below L9, so its BS and LX links
+  are long routed tracks. Watch U4's switch node for ringing at bring-up.
+- **Hidden reference texts:** about 210 hidden to clear silk overlaps on
+  the dense passives. The assembly drawing and the CPL carry every designator.
 - **HR911105A centre taps:** taken as pins 4/5, the common practice; the
   datasheet text could not be read.
 - **Extended parts:** most ICs are Extended, and JLC may hold them as idle
   stock (`fab/prebuy.csv`).
-- **Firmware notes:** see architecture/blocks.md.
+- **Firmware duties:** [`docs/review-2/firmware-requirements.md`](../../docs/review-2/firmware-requirements.md) (core section).

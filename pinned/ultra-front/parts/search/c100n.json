@@ -1,0 +1,73 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "100nF 0603 capacitor 50V",
+ "total": 350,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C14663",
+   "mpn": "CC0603KRX7R9BB104",
+   "brand": "YAGEO",
+   "description": "100nF 50V X7R \u00b110% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "package": "0603",
+   "category": "Multilayer Ceramic Capacitors MLCC - SMD/SMT",
+   "type": "Basic",
+   "basic": true,
+   "stock": 39990538,
+   "price": 0.0102,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0102
+    },
+    {
+     "qty": 500,
+     "price": 0.0079
+    },
+    {
+     "qty": 1500,
+     "price": 0.0067
+    },
+    {
+     "qty": 4000,
+     "price": 0.0059
+    },
+    {
+     "qty": 24000,
+     "price": 0.0053
+    },
+    {
+     "qty": 48000,
+     "price": 0.0049
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2211101700_YAGEO-CC0603KRX7R9BB104_C14663.pdf",
+   "url": "https://www.lcsc.com/product-detail/multilayer-ceramic-capacitors-mlcc-smd-smt_yageo-cc0603krx7r9bb104_C14663.html",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b110%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "100nF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X7R"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0,
+ "pick": "basic-passive"
+}

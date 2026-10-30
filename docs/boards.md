@@ -16,8 +16,9 @@ this repo's boards; a board here is re-checked by its own project's test.
 
 | board | project | pinned at | where |
 |---|---|---|---|
-| lite-main | hifi-receiver-2 | fe17345 | `boards/lite-main`: 2 layers, 130 parts (USB-C PD, ESP32, codec, 2 x 43 W class-D); its snags are `HWDE-SNAGS.md` |
-| core | hifi-receiver-2 | fe17345 | `boards/core`: 4 layers, 278 parts (Plus/Ultra core); its board-local scripts are in `kicad/gen/`, listed in its README |
+| lite-main | hifi-receiver-2 | 56e91aa | `boards/lite-main`: 2 layers, 130 parts (USB-C PD, ESP32, codec, 2 x 43 W class-D); its snags are `HWDE-SNAGS.md` |
+| core | hifi-receiver-2 | 56e91aa | `boards/core`: 4 layers, 278 parts (Plus/Ultra core); its board-local scripts are in `kicad/gen/`, listed in its README |
+| ultra-front | hifi-receiver-2 | 56e91aa | `boards/ultra-front`: 2 layers, the Ultra's front panel (LCD and FFC sockets, TCA9535, encoder, buttons, IR); manual routes in `route/manual/` |
 
 **core under the newer checks.** `check_straps` and `check_antenna` (issue
 #130) fail core's verify with errors: the GPIO0 strap and six TCA9555 pins
@@ -50,6 +51,13 @@ them as `stand_in` scripts of their pins:
   pegs); stitch_vias' hole-to-hole misses (`kicad/gen/fix_holes.py`).
 - **lite-main: footprints by hand.** The stacked RCA's courtyard and pegs
   (`lib/aiee.pretty`) and the USB4105's trimmed pads.
+- **core and lite-main: review-2 ECOs by hand.** hifi-receiver-2's
+  9da177ca (the first-spin reviews) added about 30 core and 10 lite-main
+  scripts: rip-ups (`rip_*`, `ripnet*`), `add_track`/`add_via`, `move_parts`
+  and `find_spots`, pad edits (`pad_*`, `eco_rca`), net edits
+  (`renet_items`, `rename_net`), `set_dnp`, silk tidies and `via_array`
+  power patches. Most do what route_edit, place_edit, board_update or
+  planes_gen should take as one op; each pin names the gap.
 - **both: EasyEDA's rate limit.** The CPL model cache in `parts/easyeda` was
   filled by retrying until it was complete (brief 261029-041444 makes dfm
   keep and reuse it).

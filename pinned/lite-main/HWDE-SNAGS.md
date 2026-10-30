@@ -47,3 +47,19 @@ fixes it. Each workaround names the snag it stands in for.
 | 26 | `route_edit` | Doesn't refill zones after its edits, so drc_routed then sees stale fills (zone-to-via clearance errors on a moved via). | Board-local `kicad/gen/refill.py` after each route_edit. Filed with #17. |
 | 27 | `board_init` + `dfm` | The outline is drawn at a non-round origin (x = 22.864999). KiCad's Gerber writer then leaves the 2 mm corner arcs up to 0.05 um off the straight edges, and dfm calls the outline "not closed" and skips every copper/hole-to-edge check. | Board-local `kicad/gen/snap_outline.py` snaps the outline to 1 um. Filed with #22. |
 | 28 | `bom_cpl` / `dfm` | EasyEDA answers HTTP 403 (rate limit) after ~20 model fetches, and the dfm gate fails until all CPL models are cached. | Retried every few minutes until `parts/easyeda/` was complete, then committed that cache so a check needs no fetch (hive-hwde worker 150527's advice). |
+
+## Review-2 ECO (2026-10-29, hive-hwde c23e27e)
+
+Since the first build, hwde fixed #1 (bin/hwde executable) and #4
+(task_router full-run) in e225475; `build.sh` still calls `sh .../bin/hwde`,
+which works either way. The schematic was regenerated on 27024a8's readable
+layout (netlist unchanged). New snags met in the ECO, filed with the review's
+tool briefs where they are hwde's:
+
+| # | Where | Snag | What was done |
+|---|---|---|---|
+| 30 | `build.sh sch` | Regenerating the schematic rewrites `kicad/lite-main.kicad_pro` without its board rules and net classes. | The committed `.kicad_pro` is restored after `sch`. |
+| 31 | `board_update --lib` | Takes the folder that holds `<lib>.pretty`, not the `.pretty` itself, and KiCad's stock libraries (`/hive/tools/kicad-10.0.6/share/kicad/footprints`) aren't on its path. | Passed both roots. |
+| 32 | `route_auto` on a routed board | Freerouting printed "job started" and nothing else for 25 min (machine load ~40), twice; the KRT fallback then made the board worse (243 violations). | New nets routed with `kicad/gen/miniroute.py` (from core) and short hand tracks; the KRT result was discarded. |
+| 33 | KiCad python | Iterating `GetTracks()`/`GraphicalItems()` after a `Remove()` raises `'SwigPyObject' object is not iterable`. | Collect first, remove after (`rip_at.py`, `silk_clear.py`). |
+| 34 | `find_spots.py` (board-local) | `GetCourtyard()` is empty until `BuildCourtyardCaches()`. | Called first. |

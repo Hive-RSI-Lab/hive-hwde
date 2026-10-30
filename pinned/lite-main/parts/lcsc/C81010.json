@@ -1,0 +1,80 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C81010",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C81010",
+   "mpn": "CH340B",
+   "brand": "WCH(Jiangsu Qin Heng)",
+   "description": "15mA 200uA 2Mbps 3.3V\u30015V Transceiver USB 2.0 SOP-16 USB Converters ROHS",
+   "package": "SOP-16",
+   "category": "USB Converters",
+   "type": "Extended",
+   "basic": false,
+   "stock": 5088,
+   "price": 0.9057,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.9057
+    },
+    {
+     "qty": 10,
+     "price": 0.7419
+    },
+    {
+     "qty": 50,
+     "price": 0.6617
+    },
+    {
+     "qty": 100,
+     "price": 0.5798
+    },
+    {
+     "qty": 500,
+     "price": 0.5323
+    },
+    {
+     "qty": 1000,
+     "price": 0.5077
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2403131142_WCH-Jiangsu-Qin-Heng-CH340B_C81010.pdf",
+   "url": "https://www.lcsc.com/product-detail/usb-converters_wch-jiangsu-qin-heng-ch340b_C81010.html",
+   "attributes": [
+    {
+     "name": "Data Rate",
+     "value": "2Mbps"
+    },
+    {
+     "name": "Applications Function",
+     "value": "Transceiver"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "3.3V\u30015V"
+    },
+    {
+     "name": "USB Protocol",
+     "value": "USB 2.0"
+    },
+    {
+     "name": "Current - Supply",
+     "value": "15mA"
+    },
+    {
+     "name": "Quiescent Supply Current",
+     "value": "200uA"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

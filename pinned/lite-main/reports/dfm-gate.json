@@ -4,7 +4,7 @@
   "phase": "P9",
   "tool": "dfm",
   "input": "kicad/lite-main.kicad_pcb",
-  "input_digest": "sexpr_no_uuid:5d4d3eefa08ac13660882ad6cc8c5ed1b8f0ccd651f3d521eb5411635ca9c576",
+  "input_digest": "sexpr_no_uuid:1e52fa6db57895dc45bd3638912caa67c3839903ccb0f552f024b203fbcfa61c",
   "status": "pass",
   "criteria": {
     "fail_severities": [
@@ -23,6 +23,75 @@
   },
   "failing_count": 0,
   "failing": [],
+  "warnings_count": 3,
+  "warnings": [
+    {
+      "check": "dfm",
+      "severity": "warning",
+      "pos": [
+        56.865,
+        89.313
+      ],
+      "layer": "F.Silkscreen",
+      "net": null,
+      "refs": [],
+      "msg": "255 silk strokes below JLC minimum width 0.15 mm (narrowest 0.0600 mm) on F.Silkscreen",
+      "source": "check.dfm",
+      "items": [
+        {
+          "msg": "255 silk strokes below JLC minimum width 0.15 mm (narrowest 0.0600 mm) on F.Silkscreen",
+          "pos": [
+            56.865,
+            89.313
+          ]
+        }
+      ],
+      "kind": "dfm_silk_width",
+      "width_mm": 0.06,
+      "min_mm": 0.15,
+      "count": 255
+    },
+    {
+      "check": "dfm",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "J2"
+      ],
+      "msg": "J2: the LCSC model's pad centre sits 0.793 mm from the board's at the CPL position",
+      "source": "check.dfm",
+      "items": [
+        {
+          "msg": "J2: the LCSC model's pad centre sits 0.793 mm from the board's at the CPL position",
+          "pos": null
+        }
+      ],
+      "kind": "cpl_offset",
+      "offset_mm": 0.793
+    },
+    {
+      "check": "dfm",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "J3"
+      ],
+      "msg": "J3: the LCSC model's pad centre sits 0.793 mm from the board's at the CPL position",
+      "source": "check.dfm",
+      "items": [
+        {
+          "msg": "J3: the LCSC model's pad centre sits 0.793 mm from the board's at the CPL position",
+          "pos": null
+        }
+      ],
+      "kind": "cpl_offset",
+      "offset_mm": 0.793
+    }
+  ],
   "coverage": {
     "strict": false,
     "required": [
@@ -75,10 +144,10 @@
     "workspace": ".",
     "gate": "dfm",
     "status": "pass",
-    "attempts": 4,
+    "attempts": 5,
     "inputs": {
-      "pcb": "sexpr_no_uuid:5d4d3eefa08ac13660882ad6cc8c5ed1b8f0ccd651f3d521eb5411635ca9c576",
-      "sch": "sexpr_no_uuid:f1b5dd006479a8d0a7482701391215952b44fd38f3717b65a787745f47cf3715",
+      "pcb": "sexpr_no_uuid:1e52fa6db57895dc45bd3638912caa67c3839903ccb0f552f024b203fbcfa61c",
+      "sch": "sexpr_no_uuid:d4eba34366f6cc6f8a0a5733603d4935ad63fd423df854aac0bce704d95048e2",
       "parts": null
     }
   }

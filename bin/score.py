@@ -42,9 +42,10 @@ CRASH = 100
 # bin/pin.py writes this block; don't edit it by hand.
 # pins:begin
 PINS = {
-    "core": "3b0d25faaf2150e3627a49175e50f6edfcb18be0b1547a47095549899147b149",
+    "core": "b10364d0c911a12f1fbe4a8d4d60b72c3672436031a152409dac43d204905e86",
     "hwde-led-test": "19e9d019f0f73784ddbc3d32fec3d2e3dccb70111ccb45250381a12db4c7af2c",
-    "lite-main": "7b5f6f4f3a1b3fc8fa9fbd98a7375c74adc2db34997f6efd52f6fbaaaf15a995",
+    "lite-main": "2ae6e0772c72a1f47829e1206fd38402908ed4b8d103c107dcda1b7014e3bd0c",
+    "ultra-front": "bdf9553856f3b242020968be82be3ca450853052f502dd10ddcd291b99409ed5",
 }
 # pins:end
 

@@ -1,0 +1,619 @@
+{
+  "script": "board_init",
+  "status": "violations",
+  "board": "kicad/ultra-front.kicad_pcb",
+  "stackup": "JLC2313_1.6",
+  "layers": 2,
+  "fab_profile": "2layer_1oz",
+  "copper_oz": 1.0,
+  "fab_floors": {
+    "min_clearance": 0.127,
+    "min_track_width": 0.127,
+    "min_via_diameter": 0.6,
+    "min_through_hole_diameter": 0.3,
+    "min_via_annular_width": 0.15,
+    "min_hole_to_hole": 0.5,
+    "min_copper_edge_clearance": 0.3
+  },
+  "components": 36,
+  "nets": 31,
+  "outline_bbox": [
+    -9.945,
+    26.8,
+    100.055,
+    66.8
+  ],
+  "mounting_holes": 4,
+  "mounting_hole_fp": "MountingHole:MountingHole_2.7mm_M2.5_Pad",
+  "mounting_hole_net": "GND",
+  "mounting_hole_inset": 3.05,
+  "corner_radius": 2.0,
+  "outline_origin": [
+    -9.945,
+    26.8
+  ],
+  "cutouts": [],
+  "self_check": {
+    "drc": {
+      "total": 132,
+      "by_severity": {
+        "error": 121,
+        "warning": 11
+      },
+      "by_source": {
+        "drc": 17,
+        "unconnected": 115
+      }
+    },
+    "setup_violations": [
+      {
+        "check": "copper_edge_clearance",
+        "severity": "error",
+        "pos": [
+          98.054999,
+          66.8
+        ],
+        "layer": "Edge.Cuts",
+        "net": "GND",
+        "refs": [
+          "SW3"
+        ],
+        "msg": "Board edge clearance violation (rule 'aiee_edge_clearance_floor' clearance 0.3000 mm; actual 0.1500 mm)",
+        "source": "drc",
+        "items": [
+          {
+            "msg": "Segment on Edge.Cuts",
+            "pos": [
+              98.054999,
+              66.8
+            ],
+            "uuid": "3dad93ef-ad72-4e71-8ce8-bcb5ee12d3bd"
+          },
+          {
+            "msg": "Pad 3 [GND] of SW3 on F.Cu",
+            "pos": [
+              15.775,
+              66.275
+            ],
+            "uuid": "148fb635-bb6e-4b8a-b083-657f5f2f54f3"
+          }
+        ]
+      },
+      {
+        "check": "copper_edge_clearance",
+        "severity": "error",
+        "pos": [
+          98.054999,
+          66.8
+        ],
+        "layer": "Edge.Cuts",
+        "net": "GND",
+        "refs": [
+          "SW3"
+        ],
+        "msg": "Board edge clearance violation (rule 'aiee_edge_clearance_floor' clearance 0.3000 mm; actual 0.1500 mm)",
+        "source": "drc",
+        "items": [
+          {
+            "msg": "Segment on Edge.Cuts",
+            "pos": [
+              98.054999,
+              66.8
+            ],
+            "uuid": "3dad93ef-ad72-4e71-8ce8-bcb5ee12d3bd"
+          },
+          {
+            "msg": "Pad 4 [GND] of SW3 on F.Cu",
+            "pos": [
+              21.775,
+              66.275
+            ],
+            "uuid": "077b4cc9-51d3-4d03-9e44-a49c7459b065"
+          }
+        ]
+      },
+      {
+        "check": "copper_edge_clearance",
+        "severity": "error",
+        "pos": [
+          -7.945,
+          26.799999
+        ],
+        "layer": "Edge.Cuts",
+        "net": "GND",
+        "refs": [
+          "J1"
+        ],
+        "msg": "Board edge clearance violation (rule 'aiee_edge_clearance_floor' clearance 0.3000 mm; actual 0.0000 mm)",
+        "source": "drc",
+        "items": [
+          {
+            "msg": "Segment on Edge.Cuts",
+            "pos": [
+              -7.945,
+              26.799999
+            ],
+            "uuid": "f37f514a-3eea-4b69-ab2d-5765d9cc4584"
+          },
+          {
+            "msg": "Pad 21 [GND] of J1 on F.Cu",
+            "pos": [
+              38.205,
+              26.435
+            ],
+            "uuid": "e71b982f-c5a2-467d-a2ec-d4165ab55194"
+          }
+        ]
+      },
+      {
+        "check": "copper_edge_clearance",
+        "severity": "error",
+        "pos": [
+          -7.945,
+          26.799999
+        ],
+        "layer": "Edge.Cuts",
+        "net": "GND",
+        "refs": [
+          "J1"
+        ],
+        "msg": "Board edge clearance violation (rule 'aiee_edge_clearance_floor' clearance 0.3000 mm; actual 0.0000 mm)",
+        "source": "drc",
+        "items": [
+          {
+            "msg": "Segment on Edge.Cuts",
+            "pos": [
+              -7.945,
+              26.799999
+            ],
+            "uuid": "f37f514a-3eea-4b69-ab2d-5765d9cc4584"
+          },
+          {
+            "msg": "Pad 22 [GND] of J1 on F.Cu",
+            "pos": [
+              25.325,
+              26.435
+            ],
+            "uuid": "657db0a0-1b20-47fc-b11d-271348ea0e18"
+          }
+        ]
+      },
+      {
+        "check": "copper_edge_clearance",
+        "severity": "error",
+        "pos": [
+          -7.945,
+          26.799999
+        ],
+        "layer": "Edge.Cuts",
+        "net": "GND",
+        "refs": [
+          "J2"
+        ],
+        "msg": "Board edge clearance violation (rule 'aiee_edge_clearance_floor' clearance 0.3000 mm; actual 0.0000 mm)",
+        "source": "drc",
+        "items": [
+          {
+            "msg": "Segment on Edge.Cuts",
+            "pos": [
+              -7.945,
+              26.799999
+            ],
+            "uuid": "f37f514a-3eea-4b69-ab2d-5765d9cc4584"
+          },
+          {
+            "msg": "Pad 13 [GND] of J2 on F.Cu",
+            "pos": [
+              46.755,
+              27.065
+            ],
+            "uuid": "2fd14a07-359b-4fe2-9191-85885e6d0b19"
+          }
+        ]
+      },
+      {
+        "check": "copper_edge_clearance",
+        "severity": "error",
+        "pos": [
+          -7.945,
+          26.799999
+        ],
+        "layer": "Edge.Cuts",
+        "net": "GND",
+        "refs": [
+          "J2"
+        ],
+        "msg": "Board edge clearance violation (rule 'aiee_edge_clearance_floor' clearance 0.3000 mm; actual 0.0000 mm)",
+        "source": "drc",
+        "items": [
+          {
+            "msg": "Segment on Edge.Cuts",
+            "pos": [
+              -7.945,
+              26.799999
+            ],
+            "uuid": "f37f514a-3eea-4b69-ab2d-5765d9cc4584"
+          },
+          {
+            "msg": "Pad 14 [GND] of J2 on F.Cu",
+            "pos": [
+              55.355,
+              27.065
+            ],
+            "uuid": "40a3bc28-c154-4171-ba82-74e5bb4d476d"
+          }
+        ]
+      }
+    ],
+    "transient_silk": [
+      {
+        "check": "silk_edge_clearance",
+        "severity": "warning",
+        "pos": [
+          98.054999,
+          66.8
+        ],
+        "layer": "Edge.Cuts",
+        "net": null,
+        "refs": [
+          "SW3"
+        ],
+        "msg": "Silkscreen clipped by board edge",
+        "source": "drc",
+        "items": [
+          {
+            "msg": "Segment on Edge.Cuts",
+            "pos": [
+              98.054999,
+              66.8
+            ],
+            "uuid": "3dad93ef-ad72-4e71-8ce8-bcb5ee12d3bd"
+          },
+          {
+            "msg": "Segment of SW3 on F.Silkscreen",
+            "pos": [
+              16.605,
+              66.085
+            ],
+            "uuid": "c817bae0-e83d-4f16-9bf9-2edea0bc9987"
+          }
+        ]
+      },
+      {
+        "check": "silk_edge_clearance",
+        "severity": "warning",
+        "pos": [
+          98.054999,
+          66.8
+        ],
+        "layer": "Edge.Cuts",
+        "net": null,
+        "refs": [
+          "SW3"
+        ],
+        "msg": "Silkscreen clipped by board edge",
+        "source": "drc",
+        "items": [
+          {
+            "msg": "Segment on Edge.Cuts",
+            "pos": [
+              98.054999,
+              66.8
+            ],
+            "uuid": "3dad93ef-ad72-4e71-8ce8-bcb5ee12d3bd"
+          },
+          {
+            "msg": "Segment of SW3 on F.Silkscreen",
+            "pos": [
+              20.945,
+              66.085
+            ],
+            "uuid": "231f1417-444a-4b69-a896-ec9c71ef7b38"
+          }
+        ]
+      },
+      {
+        "check": "silk_edge_clearance",
+        "severity": "warning",
+        "pos": [
+          98.054999,
+          66.8
+        ],
+        "layer": "Edge.Cuts",
+        "net": null,
+        "refs": [
+          "SW4"
+        ],
+        "msg": "Silkscreen clipped by board edge",
+        "source": "drc",
+        "items": [
+          {
+            "msg": "Segment on Edge.Cuts",
+            "pos": [
+              98.054999,
+              66.8
+            ],
+            "uuid": "3dad93ef-ad72-4e71-8ce8-bcb5ee12d3bd"
+          },
+          {
+            "msg": "Segment of SW4 on F.Silkscreen",
+            "pos": [
+              30.575,
+              63.925
+            ],
+            "uuid": "ff2cd094-92f7-4131-8336-23df007259a2"
+          }
+        ]
+      },
+      {
+        "check": "silk_edge_clearance",
+        "severity": "warning",
+        "pos": [
+          98.054999,
+          66.8
+        ],
+        "layer": "Edge.Cuts",
+        "net": null,
+        "refs": [
+          "SW4"
+        ],
+        "msg": "Silkscreen clipped by board edge",
+        "source": "drc",
+        "items": [
+          {
+            "msg": "Segment on Edge.Cuts",
+            "pos": [
+              98.054999,
+              66.8
+            ],
+            "uuid": "3dad93ef-ad72-4e71-8ce8-bcb5ee12d3bd"
+          },
+          {
+            "msg": "Segment of SW4 on F.Silkscreen",
+            "pos": [
+              42.275,
+              63.925
+            ],
+            "uuid": "7ef95862-3849-4c3d-a812-e9958d5827f3"
+          }
+        ]
+      },
+      {
+        "check": "silk_edge_clearance",
+        "severity": "warning",
+        "pos": [
+          98.054999,
+          66.8
+        ],
+        "layer": "Edge.Cuts",
+        "net": null,
+        "refs": [
+          "SW4"
+        ],
+        "msg": "Silkscreen clipped by board edge",
+        "source": "drc",
+        "items": [
+          {
+            "msg": "Segment on Edge.Cuts",
+            "pos": [
+              98.054999,
+              66.8
+            ],
+            "uuid": "3dad93ef-ad72-4e71-8ce8-bcb5ee12d3bd"
+          },
+          {
+            "msg": "Arc of SW4 on F.Silkscreen",
+            "pos": [
+              36.425,
+              69.925
+            ],
+            "uuid": "f4d66fad-7d76-41c3-842e-3d45c4c901d1"
+          }
+        ]
+      },
+      {
+        "check": "silk_edge_clearance",
+        "severity": "warning",
+        "pos": [
+          98.054999,
+          66.8
+        ],
+        "layer": "Edge.Cuts",
+        "net": null,
+        "refs": [
+          "SW4"
+        ],
+        "msg": "Silkscreen clipped by board edge",
+        "source": "drc",
+        "items": [
+          {
+            "msg": "Segment on Edge.Cuts",
+            "pos": [
+              98.054999,
+              66.8
+            ],
+            "uuid": "3dad93ef-ad72-4e71-8ce8-bcb5ee12d3bd"
+          },
+          {
+            "msg": "Circle of SW4 on F.Silkscreen",
+            "pos": [
+              36.425,
+              69.925
+            ],
+            "uuid": "f9eea7b3-b20d-4f64-9a73-2eb203cbcf4e"
+          }
+        ]
+      },
+      {
+        "check": "silk_edge_clearance",
+        "severity": "warning",
+        "pos": [
+          98.054999,
+          66.8
+        ],
+        "layer": "Edge.Cuts",
+        "net": null,
+        "refs": [
+          "SW4"
+        ],
+        "msg": "Silkscreen clipped by board edge",
+        "source": "drc",
+        "items": [
+          {
+            "msg": "Segment on Edge.Cuts",
+            "pos": [
+              98.054999,
+              66.8
+            ],
+            "uuid": "3dad93ef-ad72-4e71-8ce8-bcb5ee12d3bd"
+          },
+          {
+            "msg": "Circle of SW4 on F.Silkscreen",
+            "pos": [
+              36.425,
+              69.925
+            ],
+            "uuid": "2db33c92-bb32-441d-84a8-333bbef4d12e"
+          }
+        ]
+      },
+      {
+        "check": "silk_edge_clearance",
+        "severity": "warning",
+        "pos": [
+          98.054999,
+          66.8
+        ],
+        "layer": "Edge.Cuts",
+        "net": null,
+        "refs": [
+          "U1"
+        ],
+        "msg": "Silkscreen clipped by board edge",
+        "source": "drc",
+        "items": [
+          {
+            "msg": "Segment on Edge.Cuts",
+            "pos": [
+              98.054999,
+              66.8
+            ],
+            "uuid": "3dad93ef-ad72-4e71-8ce8-bcb5ee12d3bd"
+          },
+          {
+            "msg": "Segment of U1 on F.Silkscreen",
+            "pos": [
+              50.455,
+              67.614999
+            ],
+            "uuid": "e0f2bba4-5f23-417b-9b04-3af5ae26677f"
+          }
+        ]
+      },
+      {
+        "check": "silk_edge_clearance",
+        "severity": "warning",
+        "pos": [
+          98.054999,
+          66.8
+        ],
+        "layer": "Edge.Cuts",
+        "net": null,
+        "refs": [
+          "U1"
+        ],
+        "msg": "Silkscreen clipped by board edge",
+        "source": "drc",
+        "items": [
+          {
+            "msg": "Segment on Edge.Cuts",
+            "pos": [
+              98.054999,
+              66.8
+            ],
+            "uuid": "3dad93ef-ad72-4e71-8ce8-bcb5ee12d3bd"
+          },
+          {
+            "msg": "Segment of U1 on F.Silkscreen",
+            "pos": [
+              58.285,
+              63.964999
+            ],
+            "uuid": "99461e64-061e-42d9-ab2f-96709f79eacd"
+          }
+        ]
+      },
+      {
+        "check": "silk_edge_clearance",
+        "severity": "warning",
+        "pos": [
+          98.054999,
+          66.8
+        ],
+        "layer": "Edge.Cuts",
+        "net": null,
+        "refs": [
+          "U2"
+        ],
+        "msg": "Silkscreen clipped by board edge",
+        "source": "drc",
+        "items": [
+          {
+            "msg": "Segment on Edge.Cuts",
+            "pos": [
+              98.054999,
+              66.8
+            ],
+            "uuid": "3dad93ef-ad72-4e71-8ce8-bcb5ee12d3bd"
+          },
+          {
+            "msg": "Segment of U2 on F.Silkscreen",
+            "pos": [
+              66.384999,
+              67.12
+            ],
+            "uuid": "7648d687-31f6-4c19-a534-a931f5d8eda2"
+          }
+        ]
+      },
+      {
+        "check": "silk_edge_clearance",
+        "severity": "warning",
+        "pos": [
+          98.054999,
+          66.8
+        ],
+        "layer": "Edge.Cuts",
+        "net": null,
+        "refs": [
+          "U2"
+        ],
+        "msg": "Silkscreen clipped by board edge",
+        "source": "drc",
+        "items": [
+          {
+            "msg": "Segment on Edge.Cuts",
+            "pos": [
+              98.054999,
+              66.8
+            ],
+            "uuid": "3dad93ef-ad72-4e71-8ce8-bcb5ee12d3bd"
+          },
+          {
+            "msg": "Segment of U2 on F.Silkscreen",
+            "pos": [
+              70.384999,
+              62.12
+            ],
+            "uuid": "2ba864e5-ebef-4d55-8156-c672520b72f7"
+          }
+        ]
+      }
+    ],
+    "parity_count": 0,
+    "unconnected_count": 115,
+    "clean": false
+  },
+  "worker_notes": [],
+  "unconnected_nets_skipped": false
+}

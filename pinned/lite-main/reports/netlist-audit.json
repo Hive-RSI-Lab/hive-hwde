@@ -38,21 +38,22 @@
   }
  ],
  "mode": "audit",
- "nets": 116,
- "components": 134,
- "unconnected_pins": 31,
+ "nets": 118,
+ "components": 145,
+ "unconnected_pins": 29,
  "constraint_nets_checked": 16,
  "constraint_refs_checked": 2,
- "pins_expected": 430,
- "pins_connected": 430,
+ "pins_expected": 452,
+ "pins_connected": 452,
  "decoupling_associations": 25,
  "power": [
   {
    "net": "VBUS",
-   "nodes": 15,
+   "nodes": 16,
    "power_in": 0,
    "power_out": 0,
    "passive_fed_via": [
+    "C19",
     "R13",
     "R5"
    ]
@@ -69,7 +70,7 @@
   },
   {
    "net": "GND",
-   "nodes": 103,
+   "nodes": 109,
    "power_in": 0,
    "power_out": 0,
    "passive_fed_via": [
@@ -87,6 +88,8 @@
     "C22",
     "C23",
     "C24",
+    "C25",
+    "C26",
     "C3",
     "C30",
     "C31",
@@ -122,6 +125,8 @@
     "C71",
     "C8",
     "C80",
+    "C81",
+    "C83",
     "D1",
     "D2",
     "R1",
@@ -136,12 +141,14 @@
     "R39",
     "R50",
     "R52",
+    "R67",
+    "R69",
     "R8"
    ]
   },
   {
    "net": "+5V",
-   "nodes": 12,
+   "nodes": 13,
    "power_in": 0,
    "power_out": 0,
    "passive_fed_via": [
@@ -220,11 +227,12 @@
   },
   {
    "net": "/SPK_L_P",
-   "nodes": 3,
+   "nodes": 4,
    "power_in": 0,
    "power_out": 0,
    "passive_fed_via": [
-    "L1"
+    "L1",
+    "R66"
    ]
   },
   {
@@ -238,11 +246,12 @@
   },
   {
    "net": "/SPK_R_P",
-   "nodes": 3,
+   "nodes": 4,
    "power_in": 0,
    "power_out": 0,
    "passive_fed_via": [
-    "L3"
+    "L3",
+    "R68"
    ]
   },
   {
@@ -276,7 +285,7 @@
  ],
  "report_schema": 1,
  "checker_version": 1,
- "generated_at": "2026-10-28T19:02:24+00:00",
+ "generated_at": "2026-10-29T05:27:10+00:00",
  "input": "kicad/lite-main.net",
- "input_digest": "netlist_canonical:5e70c9d9339252253db3c46bcdf20112446186ebafb903f61d351f7d3f37e295"
+ "input_digest": "netlist_canonical:613a037a655af1782a40026eb6382962240e50bd995d011ab03c259e21223dc7"
 }

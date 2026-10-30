@@ -1,0 +1,65 @@
+{
+ "script": "route_cleanup",
+ "status": "pass",
+ "board": "ultra-front.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "dry_run": false,
+ "ops_applied": 5,
+ "refilled": true,
+ "drc_before": {
+  "unconnected": 0,
+  "errors": 0,
+  "warnings": 0,
+  "dangling_flagged": 0
+ },
+ "drc_after": {
+  "unconnected": 0,
+  "errors": 0,
+  "warnings": 0,
+  "dangling_flagged": 0
+ },
+ "ops": [
+  {
+   "op": "remove",
+   "uuid": "148b2689-d2b9-4690-9e95-d49bd606b167"
+  },
+  {
+   "op": "remove",
+   "uuid": "6e3098ea-8458-4f5d-a005-057651412220"
+  },
+  {
+   "op": "remove",
+   "uuid": "74deec57-5f31-464d-987e-1122bc009be4"
+  },
+  {
+   "op": "remove",
+   "uuid": "ba482cbd-e87f-4d67-ad7c-190092af1414"
+  },
+  {
+   "op": "remove",
+   "uuid": "f4fd5fce-5f68-44c2-931c-c6e65e0d8139"
+  }
+ ],
+ "dangling_removed": 0,
+ "dangling_segments": 0,
+ "dangling_vias": 0,
+ "loops_broken": 5,
+ "loop_bridge_vetoed": 0,
+ "orphaned_after_loops": 0,
+ "off_angle_snapped": 0,
+ "snaps": [],
+ "off_angle_left": [],
+ "jogs_merged": 0,
+ "corners_smoothed": 0,
+ "corners": [],
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T16:02:47+00:00",
+ "input": "/work/boards/ultra-front/kicad/ultra-front.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:0b9939eb5cf976964c6514c23a141516a8f69e6b24ccf0f926160d70c52524ef"
+}

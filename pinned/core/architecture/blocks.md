@@ -105,6 +105,19 @@ USB-C VBUS_IN (5-28 V) feeds three branches:
   a ferrite (OPA1678, TS5A23157, the 2.5 V reference) and the SY8089 3V3
   (ESP32, LAN8720 via ferrite, CH340C, expander, logic).
 
+**+3V3 budget (0.8 A, constraints.json power[]):** the ESP32-WROVER-E's radio
+transmit peak is 500 mA (Espressif's datasheet; fw constraints asks for it).
+The rest of the rail: LAN8720A with its +3V3E analog side ~50 mA, the two
+50 MHz oscillators ~30 mA, ES9018K2M DVCC ~25 mA, PCM5102A and ES7243E
+digital ~10 mA, CH340C ~12 mA, TOSLINK and expander ~10 mA, and up to
+~100 mA for the Ultra front board over J3, about 0.75 A in all. U5
+(SY8089, 2 A) and L10 (SWPA4030S2R2MT, ~2.2 A) give it with margin. The rail
+rides the In2 plane: hwde check_irdrop with L10 as the source and the loads
+above gives 3.3 mOhm and 2.4 mV at the module. At the module: C30 22 uF +
+C31 100 nF (Espressif's reference values), with 2 x 22 uF at the buck. The
++5V budget upstream (0.5 A) has not been raised to match: that is a separate
+task (the +5V tracks are 0.35 mm).
+
 ## Physical
 
 - **Board:** 4-layer, 1.6 mm, about 120 x 100 mm.

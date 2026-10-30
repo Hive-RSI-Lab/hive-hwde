@@ -1,9 +1,9 @@
 [
  {
   "ref": "J1",
-  "lcsc": "C5184243",
-  "value": "USB4105-GF-A-120",
-  "role": "USB-C 48 V/5 A, power + CH340C data"
+  "lcsc": "C165948",
+  "value": "TYPE-C-31-M-12",
+  "role": "USB-C 20 V/5 A, power + CH340B data"
  },
  {
   "ref": "U1",
@@ -73,9 +73,15 @@
  },
  {
   "ref": "R6",
-  "lcsc": "C25819",
-  "value": "47k",
-  "role": "Q1 gate divider: Vgs -13.6 V at 20 V"
+  "lcsc": "C22961",
+  "value": "220k",
+  "role": "Q1 gate divider: Vgs -6.3 V at 20 V"
+ },
+ {
+  "ref": "C19",
+  "lcsc": "C19666",
+  "value": "4.7uF",
+  "role": "Q1 gate-source hold-off (Vsg <= 6.6 V)"
  },
  {
   "ref": "Q4",
@@ -163,9 +169,15 @@
  },
  {
   "ref": "C9",
-  "lcsc": "C14858",
-  "value": "100pF",
-  "role": "feed-forward"
+  "lcsc": "C1671",
+  "value": "47pF",
+  "role": "feed-forward (review-2 POWER-10: 100 pF pushed fo past 40 kHz)"
+ },
+ {
+  "ref": "C25",
+  "lcsc": "C45783",
+  "value": "22uF/25V",
+  "role": "5 V output (review-2 POWER-10: 2 x 22 uF derate to ~22 uF)"
  },
  {
   "ref": "U3",
@@ -325,8 +337,8 @@
  },
  {
   "ref": "U6",
-  "lcsc": "C84681",
-  "value": "CH340C",
+  "lcsc": "C81010",
+  "value": "CH340B",
   "role": "USB-UART console + flashing"
  },
  {
@@ -439,8 +451,8 @@
  },
  {
   "ref": "R30",
-  "lcsc": "C25804",
-  "value": "10k",
+  "lcsc": "C22809",
+  "value": "15k",
   "role": "line-in attenuator"
  },
  {
@@ -463,8 +475,8 @@
  },
  {
   "ref": "R33",
-  "lcsc": "C25804",
-  "value": "10k",
+  "lcsc": "C22809",
+  "value": "15k",
   "role": "line-in attenuator"
  },
  {
@@ -484,6 +496,54 @@
   "lcsc": "C14858",
   "value": "100pF",
   "role": "line-in RF filter"
+ },
+ {
+  "ref": "R66",
+  "lcsc": "C25803",
+  "value": "100k",
+  "role": "speaker tap divider top"
+ },
+ {
+  "ref": "R67",
+  "lcsc": "C25804",
+  "value": "10k",
+  "role": "speaker tap divider bottom"
+ },
+ {
+  "ref": "C81",
+  "lcsc": "C1620",
+  "value": "470pF",
+  "role": "speaker tap carrier filter"
+ },
+ {
+  "ref": "C82",
+  "lcsc": "C15849",
+  "value": "1uF",
+  "role": "speaker tap coupling"
+ },
+ {
+  "ref": "R68",
+  "lcsc": "C25803",
+  "value": "100k",
+  "role": "speaker tap divider top"
+ },
+ {
+  "ref": "R69",
+  "lcsc": "C25804",
+  "value": "10k",
+  "role": "speaker tap divider bottom"
+ },
+ {
+  "ref": "C83",
+  "lcsc": "C1620",
+  "value": "470pF",
+  "role": "speaker tap carrier filter"
+ },
+ {
+  "ref": "C84",
+  "lcsc": "C15849",
+  "value": "1uF",
+  "role": "speaker tap coupling"
  },
  {
   "ref": "C47",
@@ -607,9 +667,15 @@
  },
  {
   "ref": "R54",
-  "lcsc": "C25803",
-  "value": "100k",
+  "lcsc": "C25804",
+  "value": "10k",
   "role": "SDZ series: TI 10 V/ms and PVCC+0.3 V limits"
+ },
+ {
+  "ref": "C26",
+  "lcsc": "C1622",
+  "value": "47nF",
+  "role": "SDZ slew limit (tau 0.47 ms)"
  },
  {
   "ref": "R53",

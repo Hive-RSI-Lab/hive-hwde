@@ -24,9 +24,12 @@ C("C54", "100nF", "+3V3A", ic="U10", pin="17")
 C("C55", "100nF", "+3V3", ic="U10", pin="18")
 C("C56", "4.7uF", "DAC_DVDD", pkg="0603", ic="U10", pin="21")
 R("R70", "10k", "OPT_SPDIF", "GND", role="defines GPIO1 when TOSLINK is not fitted")
-P("Y1", A + "OT322550MJBA4SL", "50MHz", A + "OSC-SMD_4P-L3.2-W2.5-BL",
+# 49.152 MHz, not 50: the internal 1.2 V DVDD allows MCLK up to 50 MHz, which
+# a 50 MHz oscillator meets only at 0 ppm (review-2 PARTS-3/AUDIO-10); 49.152
+# also gives synchronous 1024 x 48 kHz. Same 3225 pinout (1 OE, 2 GND, 3 OUT, 4 VDD).
+P("Y1", A + "SX3M49.152B10F20TNN", "49.152MHz", A + "OSC-SMD_4P-L3.2-W2.5-BL",
   {"1": "+3V3", "2": "GND", "3": "OSC_OUT", "4": "+3V3"},
-  lcsc="C717684", role="DAC master clock (internal DVDD allows 50 MHz max)")
+  lcsc="C7431354", role="DAC master clock, 1.7 % under the 50 MHz internal-DVDD limit")
 C("C57", "100nF", "+3V3", ic="Y1", pin="4")
 R("R71", "33R", "OSC_OUT", "DAC_MCLK")
 # OPA1678: differential to single-ended, gain 1.5k/(2k+806R) = 0.53
@@ -38,12 +41,13 @@ C("C58", "100nF", "+5VA", ic="U11", pin="8")
 C("C59", "10uF", "+5VA", pkg="0603")
 for ch, n in (("L", 72), ("R", 80)):
     # inverting: DAC P leg to the - input, so the TPA3221's own inversion
-    # nets out to absolute polarity at the speaker terminals
+    # nets out to absolute polarity at the speaker terminals. 1.3k, not
+    # 1.5k: review-2 AUDIO-1, 0.35 V of input and output headroom on 5 V.
     R(f"R{n}", "2k", f"DAC{ch}_N", f"OP{ch}_P")
-    R(f"R{n + 1}", "1.5k", f"OP{ch}_P", "VREF")
+    R(f"R{n + 1}", "1.3k", f"OP{ch}_P", "VREF")
     C(f"C{n + 70}", "1nF", f"OP{ch}_P", "VREF")
     R(f"R{n + 2}", "2k", f"DAC{ch}_P", f"OP{ch}_N")
-    R(f"R{n + 3}", "1.5k", f"OP{ch}_N", f"MAIN_{ch}")
+    R(f"R{n + 3}", "1.3k", f"OP{ch}_N", f"MAIN_{ch}")
     C(f"C{n + 71}", "1nF", f"OP{ch}_N", f"MAIN_{ch}")
 R("R90", "470R", "+5VA", "VREF", role="2.4 V reference, stiff against the 2x4.3k DAC legs")
 R("R91", "470R", "VREF", "GND")
@@ -69,19 +73,21 @@ R("R93", "470R", "SUB2_DAC", "SUB2_OUT")
 C("C71", "1nF", "SUB1_OUT")
 C("C72", "1nF", "SUB2_OUT")
 P("J4", A + "XDJK-0271-1650", "SUB OUT", A + "CONN-TH_XDJK-0271-1650",
-  {"1": "SUB1_OUT", "2": "GND", "3": "SUB2_OUT"}, lcsc="C7527522", role="stacked dual RCA: SUB1 (top) / SUB2")
+  {"1": "SUB1_OUT", "2": "GND", "3": "SUB2_OUT"}, lcsc="C7527522", mpn="XDJK-0271-1650", role="stacked dual RCA: SUB1 (top) / SUB2")
 
 # ------------------------------------------------------------ B9 line in
 sheet("linein")
 P("J5", A + "XDJK-0271-1650", "LINE IN", A + "CONN-TH_XDJK-0271-1650",
-  {"1": "LIN_L", "2": "GND", "3": "LIN_R"}, lcsc="C7527522", role="stacked dual RCA: line in L (top) / R")
+  {"1": "LIN_L", "2": "GND", "3": "LIN_R"}, lcsc="C7527522", mpn="XDJK-0271-1650", role="stacked dual RCA: line in L (top) / R")
 for ch, n in (("L", 100), ("R", 110)):
     R(f"R{n}", "4.7k", f"LIN_{ch}", f"LDIV_{ch}", role="halve 2 Vrms to 1 Vrms")
     R(f"R{n + 1}", "4.7k", f"LDIV_{ch}", "GND")
     C(f"C{n}", "4.7uF/25V", f"LDIV_{ch}", f"LSW_{ch}", pkg="0805")
     R(f"R{n + 2}", "100k", f"LSW_{ch}", "VREF", role="bias at 2.5 V")
-    C(f"C{n + 1}", "1uF", f"LDIV_{ch}", f"ADC_{ch}P")
-    C(f"C{n + 2}", "1uF", f"ADC_{ch}N")
+    # the ADC hears the RCA input or the speaker taps through U20 (below);
+    # 4.7 uF: 4 Hz corner, not 20 Hz, on the path that feeds the subs (AUDIO-5)
+    C(f"C{n + 1}", "4.7uF", f"ADC_SRC_{ch}", f"ADC_{ch}P", pkg="0603")
+    C(f"C{n + 2}", "4.7uF", f"ADC_{ch}N", pkg="0603")
 P("U13", A + "ES7243E", "ES7243E", A + "QFN-20_L3.0-W3.0-P0.40-BL-EP1.7",
   {"n:VDDP": "+3V3", "n:TDMIN": "GND", "n:SDOUT/AD2": "I2S_DIN",
    "n:GNDD": "GND", "n:VDDD": "+3V3", "n:SCLK": "I2S_BCK", "n:LRCK": "I2S_LRCK",
@@ -110,6 +116,40 @@ P("Q6", A + "S8050_C2146", "S8050", A + "x",
   role="DJ-direct level shift / inverter")
 R("R121", "10k", "DJ_DIRECT", "DJ_B")
 R("R122", "10k", "+5VA", "DJ_SEL")
+# Speaker loopback taps (docs/remote.md 'The board measures its own output'):
+# A_SPK_x+ / 16 (150k/10k), 470 pF carrier filter, then AC-coupled onto a
+# node biased at 1.65 V, so the switch passes it inside 0..5 V (review-2
+# AUDIO-2). U20 picks what the ADC hears: NO = the RCA input (LSW_x, biased
+# 2.55 V), NC = the taps. TAP_SEL is high by default (Q7 off), so the ADC
+# hears the RCA input until firmware drives expander P17 (TAP_SEL_IO) high;
+# the switch needs 3.5 V logic, so Q7 inverts it to 5 V. (ES9018K2M GPIO2 was
+# the first choice, but its pin can't be fanned out between GPIO1 and DATA.)
+for ch in ("L", "R"):
+    s = "A_SPK_" + ch + "+"
+    R(f"R{130 if ch == 'L' else 136}", "150k", s, f"TAPA_{ch}", pkg="0603", role="speaker tap divider top (28 V)")
+    R(f"R{131 if ch == 'L' else 137}", "10k", f"TAPA_{ch}", "GND", role="speaker tap divider bottom")
+    C(f"C{130 if ch == 'L' else 136}", "470pF", f"TAPA_{ch}", pkg="0603", role="tap carrier filter")
+    C(f"C{131 if ch == 'L' else 137}", "1uF", f"TAPA_{ch}", f"TAP_{ch}", role="tap coupling")
+    # bias the tap node at 1.65 V from the +3V3 plane (a via beside the part),
+    # inside the switch's 0..5 V range with the tap's +-0.4 V swing; VREF is
+    # 30 mm away across the DAC area
+    R(f"R{132 if ch == 'L' else 138}", "100k", f"TAP_{ch}", "+3V3", role="tap bias top")
+    R(f"R{149 if ch == 'L' else 150}", "100k", f"TAP_{ch}", "GND", role="tap bias bottom")
+# Zone B (Ultra) has no taps: no control line is left to pick a zone, and the
+# chain crowded the ADC. Zone B is watched through FAULT/OTW and ISENSE.
+P("U20", A + "TS5A23157DGSR", "TS5A23157", A + "MSOP-10_L3.0-W3.0-P0.50-LS5.0-BL",
+  {"n:IN1": "TAP_SEL", "n:IN2": "TAP_SEL", "n:NO1": "LSW_L",
+   "n:NC1": "TAP_L", "n:COM1": "ADC_SRC_L", "n:NO2": "LSW_R",
+   "n:NC2": "TAP_R", "n:COM2": "ADC_SRC_R", "n:V+": "+5VA", "n:GND": "GND"},
+  lcsc="C11133", role="ADC source: RCA input (default) or speaker taps")
+C("C132", "100nF", "+5VA", ic="U20", pin="8")
+P("Q7", A + "S8050_C2146", "S8050", A + "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+  {"n:B": "TAP_B", "n:E": "GND", "n:C": "TAP_SEL"}, lcsc="C2146", basic=True,
+  role="tap select level shift / inverter")
+R("R133", "47k", "TAP_SEL_IO", "TAP_B")
+R("R134", "100k", "TAP_B", "GND", role="tap select off while the DAC is in reset")
+R("R135", "10k", "+5VA", "TAP_SEL")
+
 # B13 TOSLINK [Ultra]
 P("U19", A + "PLR237_T10BK", "PLR237/T8BK", A + "x",
   {"n:VCC": "OPT_VCC", "n:GND": "GND", "n:VOUT": "OPT_SPDIF", "n:NC": "NC"},
