@@ -30,7 +30,9 @@ Verdicts per row (`status`):
                substitute its review would place, looked up the same way
   not_found    JLC has no record of the code: it cannot place it
   mismatch     the code's model is not the BOM's MPN, or (no MPN named) its
-               description does not carry the BOM's value
+               description does not carry the BOM's value, or its package is
+               a chip of another size than the row's footprint (an 0402 part
+               on an 0603 pad: oasis v0.2 Rfbb1, docs/errata-corpus.md)
   unknown      a source could not be asked (network, HTTP status, a page that
                is not JSON) - never a pass
 Every status but `ok` blocks the order. `notes` carries what does not block
@@ -226,8 +228,22 @@ def matches(bom_mpn: str, bom_value: str, rec: dict) -> tuple[bool | None, str]:
                   "quantity)")
 
 
+def package_clash(footprint: str, jlc: dict) -> str | None:
+    """Why the part's chip size isn't the footprint's, or None (same size,
+    or either side names no chip size: engcalc.package_code)."""
+    from engcalc import package_code
+    pad = package_code(footprint)
+    size = package_code(jlc.get("package"))
+    if pad is None or size is None or pad == size:
+        return None
+    return (f"JLC's {jlc.get('code')} ({jlc.get('model')}) is a {size} part "
+            f"but the row's footprint {footprint} is {pad}: it won't fit "
+            "the pads")
+
+
 def check_row(code: str, need: int, mpn: str = "", value: str = "",
-              fetch=http_fetch, ambiguity: bool = True) -> dict:
+              fetch=http_fetch, ambiguity: bool = True,
+              footprint: str = "") -> dict:
     """One BOM row's verdict (see the module docstring)."""
     out = {"lcsc": code, "need": need, "mpn": mpn, "value": value,
            "checked_at": now(), "notes": []}
@@ -299,6 +315,10 @@ def check_row(code: str, need: int, mpn: str = "", value: str = "",
         return out
     if match is False:
         out.update(status="mismatch", why=mwhy)
+        return out
+    clash = package_clash(footprint, jlc)
+    if clash:
+        out.update(status="mismatch", why=clash)
         return out
     if avail is None:
         out.update(status="unknown", why="JLC's record carries no stock")
