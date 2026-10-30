@@ -1,0 +1,55 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C42421366",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C42421366",
+   "mpn": "IRM-3638T",
+   "brand": "Everlight Elec",
+   "description": "SIP-3-2.54mm Infrared Remote Receiver (IRM) ROHS",
+   "package": "SIP-3-2.54mm",
+   "category": "Infrared Remote Receiver (IRM)",
+   "type": "Extended",
+   "basic": false,
+   "stock": 102387,
+   "price": 0.1859,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.1859
+    },
+    {
+     "qty": 50,
+     "price": 0.1424
+    },
+    {
+     "qty": 150,
+     "price": 0.1212
+    },
+    {
+     "qty": 500,
+     "price": 0.1022
+    },
+    {
+     "qty": 2500,
+     "price": 0.097
+    },
+    {
+     "qty": 5000,
+     "price": 0.0939
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "",
+   "url": "",
+   "attributes": [],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

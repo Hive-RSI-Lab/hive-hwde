@@ -22,7 +22,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
-SCRIPTS = REPO / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = REPO / "scripts"
 GOLDEN = REPO / "tests" / "golden"
 ORACLE = GOLDEN / "generators" / "area_oracle.py"
 sys.path.insert(0, str(SCRIPTS))

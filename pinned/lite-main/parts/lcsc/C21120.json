@@ -1,0 +1,212 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C21120",
+ "total": 6,
+ "count": 3,
+ "results": [
+  {
+   "lcsc": "C21120",
+   "mpn": "CL10B224KA8NNNC",
+   "brand": "Samsung Electro-Mechanics",
+   "description": "220nF 25V X7R \u00b110% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "package": "0603",
+   "category": "Multilayer Ceramic Capacitors MLCC - SMD/SMT",
+   "type": "Basic",
+   "basic": true,
+   "stock": 1034495,
+   "price": 0.0093,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0093
+    },
+    {
+     "qty": 500,
+     "price": 0.0074
+    },
+    {
+     "qty": 1500,
+     "price": 0.0064
+    },
+    {
+     "qty": 4000,
+     "price": 0.005
+    },
+    {
+     "qty": 24000,
+     "price": 0.0045
+    },
+    {
+     "qty": 48000,
+     "price": 0.0042
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL10B224KA8NNNC_C21120.pdf",
+   "url": "https://www.lcsc.com/product-detail/multilayer-ceramic-capacitors-mlcc-smd-smt_samsung-electro-mechanics-cl10b224ka8nnnc_C21120.html",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "25V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b110%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "220nF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X7R"
+    }
+   ],
+   "rank": 0
+  },
+  {
+   "lcsc": "C2857635",
+   "mpn": "TPC-21120LFS",
+   "brand": "ROCPU Switches",
+   "description": "White \u63d2\u4ef6 Tactile Switches ROHS",
+   "package": "Plugin",
+   "category": "Tactile Switches",
+   "type": "Extended",
+   "basic": false,
+   "stock": 0,
+   "price": 0.2369,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.2369
+    },
+    {
+     "qty": 50,
+     "price": 0.1872
+    },
+    {
+     "qty": 150,
+     "price": 0.1661
+    },
+    {
+     "qty": 1000,
+     "price": 0.126
+    },
+    {
+     "qty": 2000,
+     "price": 0.1142
+    },
+    {
+     "qty": 5000,
+     "price": 0.1072
+    }
+   ],
+   "min_qty": 39,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2201121200_ROCPU-Switches-TPC-21120LFS_C2857635.pdf",
+   "url": "https://www.lcsc.com/product-detail/tactile-switches_rocpu-switches-tpc-21120lfs_C2857635.html",
+   "attributes": [
+    {
+     "name": "Actuator/Cap Color",
+     "value": "White"
+    }
+   ],
+   "rank": 1
+  },
+  {
+   "lcsc": "C7434531",
+   "mpn": "CSCC211-2002A001C1AF",
+   "brand": "GREENCONN",
+   "description": "-40\u2103~+105\u2103 1A 1mm 1mm 2 2.1mm 2x20P 300V 40P Square Hole Surface Mount,Vertical Top SMD,P=1mm Female Headers ROHS",
+   "package": "SMD,P=1mm",
+   "category": "Female Headers",
+   "type": "Extended",
+   "basic": false,
+   "stock": 0,
+   "price": 1.2398,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 1.2398
+    },
+    {
+     "qty": 10,
+     "price": 1.0351
+    },
+    {
+     "qty": 30,
+     "price": 0.8697
+    },
+    {
+     "qty": 100,
+     "price": 0.7419
+    },
+    {
+     "qty": 500,
+     "price": 0.6862
+    },
+    {
+     "qty": 1000,
+     "price": 0.66
+    }
+   ],
+   "min_qty": 8,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2312291826_GREENCONN-CSCC211-2002A001C1AF_C7434531.pdf",
+   "url": "https://www.lcsc.com/product-detail/female-headers_greenconn-cscc211-2002a001c1af_C7434531.html",
+   "attributes": [
+    {
+     "name": "Circular Hole / Square Hole",
+     "value": "Square Hole"
+    },
+    {
+     "name": "Holes Structure",
+     "value": "2x20P"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+105\u2103"
+    },
+    {
+     "name": "Number of Rows",
+     "value": "2"
+    },
+    {
+     "name": "Voltage Rating (Max)",
+     "value": "300V"
+    },
+    {
+     "name": "Insulation Height",
+     "value": "2.1mm"
+    },
+    {
+     "name": "Number of Positions",
+     "value": "40P"
+    },
+    {
+     "name": "Pitch",
+     "value": "1mm"
+    },
+    {
+     "name": "Current Rating",
+     "value": "1A"
+    },
+    {
+     "name": "Row Spacing",
+     "value": "1mm"
+    },
+    {
+     "name": "Holes Direction",
+     "value": "Top"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Surface Mount,Vertical"
+    }
+   ],
+   "rank": 2
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 2
+}

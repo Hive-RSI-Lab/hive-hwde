@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-SERVER = ROOT / ".claude" / "skills" / "hwde" / "scripts" / "mcp_server.py"
+SERVER = ROOT / "scripts" / "mcp_server.py"
 FIX = ROOT / "tests" / "fixtures"
 
 

@@ -12,7 +12,6 @@ below KiCad 10 is a stale-pin mistake (10-format boards are unreadable by
 
 import json
 import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -20,7 +19,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
-SCRIPTS = REPO / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = REPO / "scripts"
 CHECK_ENV = SCRIPTS / "check_env.py"
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
@@ -37,23 +36,25 @@ def run_check_env(extra_env=None, *args):
     )
 
 
-def _skip_if_only_java_is_missing(report: dict) -> None:
-    """A machine with no Java at all (a dispatch runner such as iiks1: the
-    Hive's tools folder carries no JRE, this machine's comes from the system)
-    cannot run freerouting, and that is the machine's, not the change's. Skip
-    only then: every other check must still pass, and a Java that is there
-    but too old still fails."""
-    failed = {c["name"] for c in report.get("checks", [])
-              if c.get("status") == "fail"}
-    if failed == {"java-for-freerouting"} and not os.environ.get("HWDE_JAVA") \
-            and shutil.which("java") is None:
-        pytest.skip("no Java on this machine: freerouting cannot run here")
+@pytest.fixture
+def stub_java(tmp_path):
+    """A java that reports the major freerouting needs, pinned through
+    HWDE_JAVA, so the checks of a whole run don't depend on the host's Java
+    or Docker (a dispatch runner such as iiks1 has neither). The java check's own pass and fail
+    paths are covered by the pin and the missing-java test."""
+    line = f'openjdk version "{env.MIN_JAVA_FOR_FREEROUTING}.0.1" 2025-10-21'
+    if sys.platform == "win32":
+        p = tmp_path / "java.bat"
+        p.write_text(f"@echo {line} 1>&2\n", encoding="ascii")
+    else:
+        p = tmp_path / "java"
+        p.write_text(f"#!/bin/sh\necho '{line}' >&2\n", encoding="ascii")
+        p.chmod(0o755)
+    return {"HWDE_JAVA": str(p)}
 
 
-def test_passes_on_dev_machine():
-    r = run_check_env()
-    if r.returncode == 1:
-        _skip_if_only_java_is_missing(json.loads(r.stdout))
+def test_passes_on_dev_machine(stub_java):
+    r = run_check_env(stub_java)
     assert r.returncode == 0, f"stderr:\n{r.stderr}"
     report = json.loads(r.stdout)  # stdout must be pure JSON
     assert report["status"] == "pass"
@@ -106,10 +107,11 @@ def test_stale_9x_pin_fails_check_env(tmp_path):
     assert kc.get("remediation")
 
 
-def test_unpinned_discovery_still_resolves_10x():
+def test_unpinned_discovery_still_resolves_10x(stub_java):
     """The guard must not touch plain discovery: unset pins resolve 10.x."""
     e = {k: v for k, v in os.environ.items()
          if k not in ("HWDE_KICAD_CLI", "HWDE_KICAD_ROOT")}
+    e.update(stub_java)
     r = subprocess.run([sys.executable, str(CHECK_ENV)],
                        capture_output=True, text=True, env=e, timeout=300,
                        cwd=REPO)
@@ -129,14 +131,10 @@ def test_missing_java_fails_with_remediation():
     assert "adoptium" in rem or "temurin" in rem
 
 
-def test_out_file_and_quiet():
-    out = REPO / "_scratch" / "test_env_report.json"
-    if out.exists():
-        out.unlink()
-    r = run_check_env(None, "--out", str(out), "--quiet")
-    if r.returncode == 1 and out.exists():
-        _skip_if_only_java_is_missing(json.loads(out.read_text(encoding="utf-8")))
-    assert r.returncode == 0
+def test_out_file_and_quiet(stub_java, tmp_path):
+    out = tmp_path / "test_env_report.json"
+    r = run_check_env(stub_java, "--out", str(out), "--quiet")
+    assert r.returncode == 0, out.read_text(encoding="utf-8") if out.exists() else ""
     assert r.stdout.strip() == ""
     assert r.stderr.strip() == ""
     report = json.loads(out.read_text(encoding="utf-8"))

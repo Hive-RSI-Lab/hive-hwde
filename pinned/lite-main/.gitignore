@@ -1,0 +1,9 @@
+# rebuildable or bulky: 3D models (lib_pull re-fetches them), route work dirs,
+# per-step board snapshots, KiCad lock/local files
+lib/aiee.3dshapes/
+kicad/route/
+kicad/route_critical/
+kicad/*.lock
+kicad/*.kicad_prl
+routing/*.kicad_pcb
+anneal/

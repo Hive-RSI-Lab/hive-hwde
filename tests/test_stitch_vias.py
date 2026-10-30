@@ -20,7 +20,7 @@ import pytest
 from shapely.geometry import LineString, Point, Polygon, box
 
 REPO = Path(__file__).resolve().parents[1]
-SCRIPTS = REPO / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = REPO / "scripts"
 GOLDEN = REPO / "tests" / "golden"
 
 sys.path.insert(0, str(SCRIPTS))
@@ -296,6 +296,23 @@ def _basic_board(tmp_path: Path) -> Path:
 
 
 # ============================================================ pure: stitch CLI
+
+def test_npth_holes_are_drills_too(tmp_path):
+    """A copper-less NPTH hole (geom.npth) is a drill to keep clear of."""
+    body = _fp("J1", 15, 15,
+               '    (pad "" np_thru_hole circle (at 0 0) (size 1.0 1.0)'
+               ' (drill 1.0) (layers "*.Mask"))\n')
+    body += _zone(1, "GND", "B.Cu", 1, 1, 29, 29)
+    pcb = _board(tmp_path, "npth", body)
+    bg = geom.BoardGeom.from_file(pcb)
+    assert [p.drill for p in bg.npth] == [(1.0, 1.0)]
+    assert not bg.pads_of(ref="J1")
+    sc = stitch_vias.build_scene(bg, 0.2, hole_gap=0.5)
+    r = 0.3
+    # hole edge at 15.5; legal from 15.5 + 0.5 + 0.15
+    assert sc.via_check(16.14, 15.0, r, "GND", 0.5) == "hole_to_hole"
+    assert sc.via_check(16.16, 15.0, r, "GND", 0.5) is None
+
 
 def test_dry_run_pad_and_area_stitch(tmp_path):
     pcb = _basic_board(tmp_path)

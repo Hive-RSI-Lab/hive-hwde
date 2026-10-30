@@ -30,7 +30,7 @@ from shapely.geometry import MultiPolygon, Point, box
 from shapely.ops import unary_union
 
 REPO = Path(__file__).resolve().parents[1]
-SCRIPTS = REPO / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = REPO / "scripts"
 GOLDEN = REPO / "tests" / "golden"
 MUTANT = GOLDEN / "mutants" / "plane-split-under-clock"
 

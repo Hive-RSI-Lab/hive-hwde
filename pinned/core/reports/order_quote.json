@@ -1,0 +1,171 @@
+{
+ "script": "order_quote",
+ "status": "pass",
+ "board": "core.kicad_pcb",
+ "estimated": true,
+ "disclaimer": "Estimates from reference/jlc_pricing.yaml - NOT a quote. Confirm at the authoritative quote URL before ordering. Measured live API prices ran 1.9-3.1x HIGHER than this table - treat these figures as a LOWER BOUND.",
+ "authoritative_quote_url": "https://cart.jlcpcb.com/quote",
+ "pricing_verified": "2026-07-24",
+ "currency": "USD",
+ "spec": {
+  "layers": 4,
+  "width_mm": 120.0,
+  "height_mm": 100.0,
+  "area_dm2": 1.2,
+  "thickness_mm": 1.6,
+  "assembly": true,
+  "n_parts": 234,
+  "n_joints": 735,
+  "n_extended_parts": 36,
+  "n_extended_source": "per_distinct_entries"
+ },
+ "lead_time": {
+  "pcb_days": {
+   "standard": 3,
+   "expedited": 2
+  },
+  "assembly_additional_days": 4,
+  "note": "Build time only - shipping is separate and region-dependent."
+ },
+ "matrix": [
+  {
+   "qty": 10,
+   "surface_finish": "HASL",
+   "solder_mask_color": "green",
+   "pcb": {
+    "base": 9.9,
+    "base_at_qty": 10,
+    "oversize": 132.0,
+    "options": 0.0,
+    "total": 141.9
+   },
+   "total": 278.4,
+   "assembly": {
+    "setup": 8.0,
+    "feeders": 108.0,
+    "joints": 12.49,
+    "stencil": 8.0,
+    "n_parts": 234,
+    "n_joints": 735,
+    "n_extended_parts": 36,
+    "total": 136.5
+   },
+   "unit_cost": 27.84
+  },
+  {
+   "qty": 10,
+   "surface_finish": "ENIG",
+   "solder_mask_color": "green",
+   "pcb": {
+    "base": 9.9,
+    "base_at_qty": 10,
+    "oversize": 132.0,
+    "options": 0.0,
+    "total": 141.9
+   },
+   "total": 278.4,
+   "assembly": {
+    "setup": 8.0,
+    "feeders": 108.0,
+    "joints": 12.49,
+    "stencil": 8.0,
+    "n_parts": 234,
+    "n_joints": 735,
+    "n_extended_parts": 36,
+    "total": 136.5
+   },
+   "unit_cost": 27.84
+  },
+  {
+   "qty": 100,
+   "surface_finish": "HASL",
+   "solder_mask_color": "green",
+   "pcb": {
+    "base": 76.9,
+    "base_at_qty": 100,
+    "oversize": 1320.0,
+    "options": 0.0,
+    "total": 1396.9
+   },
+   "total": 1645.85,
+   "assembly": {
+    "setup": 8.0,
+    "feeders": 108.0,
+    "joints": 124.95,
+    "stencil": 8.0,
+    "n_parts": 234,
+    "n_joints": 735,
+    "n_extended_parts": 36,
+    "total": 248.95
+   },
+   "unit_cost": 16.46
+  },
+  {
+   "qty": 100,
+   "surface_finish": "ENIG",
+   "solder_mask_color": "green",
+   "pcb": {
+    "base": 76.9,
+    "base_at_qty": 100,
+    "oversize": 1320.0,
+    "options": 0.0,
+    "total": 1396.9
+   },
+   "total": 1645.85,
+   "assembly": {
+    "setup": 8.0,
+    "feeders": 108.0,
+    "joints": 124.95,
+    "stencil": 8.0,
+    "n_parts": 234,
+    "n_joints": 735,
+    "n_extended_parts": 36,
+    "total": 248.95
+   },
+   "unit_cost": 16.46
+  }
+ ],
+ "cheapest": {
+  "qty": 10,
+  "surface_finish": "HASL",
+  "solder_mask_color": "green",
+  "pcb": {
+   "base": 9.9,
+   "base_at_qty": 10,
+   "oversize": 132.0,
+   "options": 0.0,
+   "total": 141.9
+  },
+  "total": 278.4,
+  "assembly": {
+   "setup": 8.0,
+   "feeders": 108.0,
+   "joints": 12.49,
+   "stencil": 8.0,
+   "n_parts": 234,
+   "n_joints": 735,
+   "n_extended_parts": 36,
+   "total": 136.5
+  },
+  "unit_cost": 27.84
+ },
+ "calibration": {
+  "observed_underestimate": "1.9-3.1x low vs live API calculate (measured)",
+  "points": [
+   {
+    "board": "pd-trigger",
+    "layers": 2,
+    "date": "2026-07-29",
+    "estimate_pcb": 2.0,
+    "api_price": 6.2
+   },
+   {
+    "board": "lumina-carrier",
+    "layers": 4,
+    "date": "2026-07-30",
+    "estimate_pcb": 9.9,
+    "api_price": 18.4
+   }
+  ]
+ }
+}

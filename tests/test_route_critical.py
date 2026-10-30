@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
-SCRIPTS = REPO / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = REPO / "scripts"
 GOLDEN = REPO / "tests" / "golden"
 
 sys.path.insert(0, str(SCRIPTS))
@@ -575,6 +575,18 @@ def cli() -> Path:
     return c
 
 
+def test_find_krt_follows_a_release_root_to_plugins(tmp_path, monkeypatch):
+    """HWDE_KRT_DIR at the Hive's tools folder or its release root (no
+    route_diff.py there) still finds the plugins dir."""
+    plugins = tmp_path / "kicad-routing-tools" / "KiCadRoutingTools-0.19.0" \
+        / "plugins"
+    plugins.mkdir(parents=True)
+    (plugins / "route_diff.py").write_text("", encoding="utf-8")
+    for pin in (plugins, plugins.parent, plugins.parent.parent):
+        monkeypatch.setenv("HWDE_KRT_DIR", str(pin))
+        assert env.find_krt() == plugins, pin
+
+
 @pytest.fixture(scope="session")
 def krt_dir() -> Path:
     k = env.find_krt()
@@ -652,3 +664,49 @@ def test_critical_routing_acceptance_usbbuck4(placed_board, krt_dir, tmp_path):
             [tuple(x) for f in facts["routed"] if f["kind"] == "diff"
              for x in f["stub_pads_detached"]]] == [["R3", "/USB_DP"]]
     assert len(bg.pads_of(net="/USB_DP")) == 3
+
+
+def test_nets_in_new_errors_names_the_routed_nets_that_broke_drc():
+    """lite-main (hifi-receiver-2): KRT laid /OUT_L_N across the TPA3118's
+    pins; only the nets in errors whose type grew are named."""
+    def v(check, sev, *msgs):
+        return {"check": check, "severity": sev,
+                "items": [{"msg": m} for m in msgs]}
+    before = {"violations": [
+        v("clearance", "error", "Track [/OLD] on F.Cu, length 1 mm",
+          "Pad 1 [GND] of U1 on F.Cu")]}
+    after = {"violations": before["violations"] + [
+        v("shorting_items", "error", "Pad 28 [GND] of U8 on F.Cu",
+          "Track [/OUT_L_N] on F.Cu, length 0.5657 mm"),
+        v("shorting_items", "error", "Via [/OUT_R_P] on F.Cu - B.Cu",
+          "Pad 1 [/BS_R_P] of C66 on F.Cu"),
+        v("silk_overlap", "warning", "Track [+5V] on F.Cu, length 2 mm"),
+        v("clearance", "error", "Track [+3V3] on F.Cu, length 1 mm",
+          "Pad 2 [GND] of U2 on F.Cu")]}
+    nets = {"/OUT_L_N", "/OUT_R_P", "+5V", "+3V3"}
+    got = rc.nets_in_new_errors(before, after, nets)
+    # clearance grew too (1 -> 2), so +3V3 counts; the warning does not
+    assert got == {"/OUT_L_N", "/OUT_R_P", "+3V3"}
+    # a net not routed in this run is never named
+    assert rc.nets_in_new_errors(before, after, {"GND"}) == set()
+
+
+def test_rip_new_copper_keeps_old_and_other_nets(tmp_path, monkeypatch):
+    pcb = tmp_path / "b.kicad_pcb"
+    pcb.write_text("""(kicad_pcb (version 20260206) (generator "t")
+  (general (thickness 1.6))
+  (layers (0 "F.Cu" signal) (2 "B.Cu" signal) (25 "Edge.Cuts" user))
+  (net 0 "") (net 1 "A") (net 2 "B")
+  (segment (start 0 0) (end 1 0) (width 0.2) (layer "F.Cu") (net 1) (uuid "old-a"))
+  (segment (start 0 1) (end 1 1) (width 0.2) (layer "F.Cu") (net 1) (uuid "new-a"))
+  (segment (start 0 2) (end 1 2) (width 0.2) (layer "F.Cu") (net 2) (uuid "new-b"))
+  (via (at 2 1) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net 1) (uuid "new-va"))
+)
+""")
+    seen = []
+    monkeypatch.setattr(rc.route_edit, "apply_ops",
+                        lambda p, ops: seen.extend(ops))
+    n = rc.rip_new_copper(pcb, {"old-a"}, {"A"})
+    assert n == 2
+    assert sorted(o["uuid"] for o in seen) == ["new-a", "new-va"]
+    assert all(o["op"] == "remove" for o in seen)

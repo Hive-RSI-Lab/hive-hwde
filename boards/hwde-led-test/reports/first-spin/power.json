@@ -1,0 +1,212 @@
+{
+ "domain": "power",
+ "findings": [
+  {
+   "id": "POWER-1",
+   "board": "hwde-led-test",
+   "severity": "minor",
+   "refs": [
+    "R1",
+    "D1"
+   ],
+   "nets": [
+    "+5V",
+    "/LED_A"
+   ],
+   "finding": "LED current spans 3.46-5.77 mA over the input range (4.75-5.25 V), R1 +-1% and the KT-0603G VF spread; 6.28 mA at a 5.5 V USB source. The brief asks for about 3-5 mA; the high corner is 15% over. R1=470R was chosen on VF=3.1 V read as typical, but the datasheet gives 3.1 V as the MAX (min 2.6 V, no typ).",
+   "evidence": "SPICE reports/first-spin/sims/power/led_corners.cir (sim_run, ngspice 45): i_lo 3.461 mA (4.75 V, 474.7R, VF 3.15 V@5mA), i_hi 5.766 mA (5.25 V, 465.3R, VF 2.55 V@5mA), i_usb 6.278 mA (5.5 V). Hand: (5.25-2.57)/465.3 = 5.76 mA. KENTO KT-0603G spec for approval rev A.0 (2018-12-06) p.3 table 5 VF 2.6 min / 3.1 max @ IF 5 mA; p.4 table 6.2 VF bins VM-VQ, tol +-0.05 V.",
+   "fix": "Optional: R1 -> 510R 1% 0603 (0603WAF5100T5E, LCSC C23193, basic): 3.2-5.3 mA over the same corners. Or justify as is: 5.77 mA is 19% of IF 30 mA and lit is lit.",
+   "margin": "IF 30 mA abs max vs 5.77 mA worst case: 81% headroom; brief band: -0% low corner (3.46 >= 3.0, +15%), +15% over at the high corner",
+   "fault_class": "RATE-23"
+  },
+  {
+   "id": "POWER-2",
+   "board": "hwde-led-test",
+   "severity": "minor",
+   "refs": [
+    "D1",
+    "J1"
+   ],
+   "nets": [
+    "+5V",
+    "GND"
+   ],
+   "finding": "Reverse polarity on J1 (the brief's stated protection is 'the LED blocks reverse current') puts about 5.25 V reverse across D1; KT-0603G VR abs max is 5 V. J1 is an unkeyed 2-pin header, so a reversed Dupont lead is a plausible connection. check_ratings ran and did not flag it (D1/R1 have no extraction; rating_unrated warning only).",
+   "evidence": "Reverse: V_D1 = 5.25 V - IR*R1 = 5.25 - 5 uA*474.7R = 5.248 V vs VR 5 V (KENTO KT-0603G spec for approval rev A.0 (2018-12-06) p.3 table 4; IR <= 5 uA @ VR 5 V, table 5). check_ratings.py 2026-10-29: 1 warning rating_unrated D1,R1, no reverse check.",
+   "fix": "Contingency: add a 1N4148WS (LCSC C2128, basic, SOD-323) anti-parallel across D1 (anode to GND, cathode to /LED_A); reversed input then clamps D1 at ~0.75 V and R1 carries (5.25-0.75)/465.3 = 9.7 mA, 44 mW (<100 mW, 56% margin). Fit or DNP; or accept per the brief and note it in requirements.",
+   "margin": "-5% (5.25 V applied vs 5 V VR) at the top of the input range; +5% at 4.75 V",
+   "fault_class": "RATE-03"
+  },
+  {
+   "id": "POWER-3",
+   "board": "hwde-led-test",
+   "severity": "note",
+   "refs": [
+    "R1",
+    "C1",
+    "D1"
+   ],
+   "nets": [
+    "+5V"
+   ],
+   "finding": "No overvoltage protection (brief accepts). R1 is the first part to exceed its rating: 100 mW at Vin = 2.6 + sqrt(0.1*465.3) = 9.4 V continuous. A 12 V adapter gives R1 (12-2.6)^2/465.3 = 190 mW (1.9x) and D1 20 mA (<30 mA). C1 16 V.",
+   "evidence": "Uniroyal 0603WAF datasheet power rating table: 0603 1/10 W, 75 V; Samsung CL10A475KO8NNNC rated-voltage code O = 16 V (catalog Nov 2015, part numbering); KENTO KT-0603G spec for approval rev A.0 (2018-12-06) p.3 IF 30 mA.",
+   "fix": "None for a bench test board; state 'do not exceed 9 V' in the bring-up note.",
+   "margin": "5.25 V vs 9.4 V R1 limit: 79% headroom",
+   "fault_class": "PROT-04"
+  },
+  {
+   "id": "POWER-4",
+   "board": "hwde-led-test",
+   "severity": "note",
+   "refs": [
+    "C1",
+    "D1",
+    "J1"
+   ],
+   "nets": [
+    "+5V"
+   ],
+   "finding": "Hot-plug onto a live 5.25 V supply rings the 4.7 uF MLCC with the lead inductance: 8.9 V peak (4.7 uF), 9.3 V (2.6 uF after DC bias). Within C1 16 V and D1 IFP 60 mA; no action.",
+   "evidence": "SPICE reports/first-spin/sims/power/hotplug.cir: 1 uH + 0.1 R lead, 1 ns step: vpk_a 8.91 V, vpk_b 9.26 V, LED peak 13.3/14.1 mA (pass). KENTO KT-0603G spec for approval rev A.0 (2018-12-06) p.3 IFP 60 mA (1/10 duty, 0.1 ms).",
+   "fix": "None.",
+   "margin": "C1: 9.26 V vs 16 V = 42%; D1 peak 14.1 mA vs IFP 60 mA = 77%",
+   "fault_class": "PROT-07"
+  },
+  {
+   "id": "POWER-5",
+   "board": "hwde-led-test",
+   "severity": "note",
+   "refs": [
+    "J1"
+   ],
+   "nets": [
+    "+5V"
+   ],
+   "finding": "check_observability reports +5V blind (no test point). J1 pins 1/2 are bare 0.64 mm header posts on +5V/GND and serve as the probe point; D1 is the board's only status output. Bring-up reading: 3.4-5.8 mA into J1 at 5.0 V (nominal 4.6 mA) and D1 lit; >6 mA or 0 mA is a fault.",
+   "evidence": "check_observability.py 2026-10-29: rail_blind +5V (5.25 V). Board: J1 pad1 +5V at (10.9,18.93), pad2 GND (10.9,21.47), 2.0 mm pads.",
+   "fix": "None; the check should count connector posts as probe points (tools_wanted).",
+   "margin": "n/a (observability note)",
+   "fault_class": "TEST-01",
+   "caught_by": "check_observability"
+  }
+ ],
+ "known_unknowns": [
+  {
+   "fact": "KT-0603G VF 2.6-3.1 V at 5 mA, bins VM-VQ +-0.05 V",
+   "board": "hwde-led-test",
+   "refs": [
+    "D1"
+   ],
+   "status": "verified",
+   "source": "KENTO KT-0603G spec for approval rev A.0 (2018-12-06) p.3 t.5, p.4 t.6.2",
+   "date": "2026-10-29",
+   "could_stop_board": true
+  },
+  {
+   "fact": "KT-0603G IF 30 mA, IFP 60 mA, Pd 100 mW, VR 5 V, Topr -40..85 C",
+   "board": "hwde-led-test",
+   "refs": [
+    "D1"
+   ],
+   "status": "verified",
+   "source": "KENTO KT-0603G spec for approval rev A.0 (2018-12-06) p.3 t.4",
+   "date": "2026-10-29",
+   "could_stop_board": true
+  },
+  {
+   "fact": "KT-0603G reverse breakdown margin above the 5 V VR rating (behaviour at 5.25 V reverse)",
+   "board": "hwde-led-test",
+   "refs": [
+    "D1"
+   ],
+   "status": "unverified",
+   "source": "datasheet gives VR 5 V abs max only",
+   "date": "2026-10-29",
+   "could_stop_board": false
+  },
+  {
+   "fact": "CL10A475KO8NNNC: 16 V, X5R, +-10%, 0603 1.6x0.8x0.8 mm",
+   "board": "hwde-led-test",
+   "refs": [
+    "C1"
+   ],
+   "status": "verified",
+   "source": "Samsung MLCC catalog (Nov 2015) part numbering p.4 and dimension table",
+   "date": "2026-10-29",
+   "could_stop_board": false
+  },
+  {
+   "fact": "C1 effective capacitance at 5 V DC bias (assumed ~2.6 uF, >= 1 uF brief floor)",
+   "board": "hwde-led-test",
+   "refs": [
+    "C1"
+   ],
+   "status": "unverified",
+   "source": "catalog has no DC-bias curve for this part; estimate from typical 0603 X5R 16 V",
+   "date": "2026-10-29",
+   "could_stop_board": false
+  },
+  {
+   "fact": "0603WAF4700T5E: 100 mW, 75 V working, +-1%",
+   "board": "hwde-led-test",
+   "refs": [
+    "R1"
+   ],
+   "status": "verified",
+   "source": "UNI-ROYAL chip resistor datasheet (LCSC C23179) rating table",
+   "date": "2026-10-29",
+   "could_stop_board": false
+  },
+  {
+   "fact": "PZ254V-11-02P contact rating 3 A",
+   "board": "hwde-led-test",
+   "refs": [
+    "J1"
+   ],
+   "status": "verified",
+   "source": "XFCN PZ254V-11-XX drawing rev A1 (2024-06-11) spec 1",
+   "date": "2026-10-29",
+   "could_stop_board": false
+  },
+  {
+   "fact": "Source is 4.75-5.25 V; a USB lead may give up to 5.5 V (6.28 mA, still fine)",
+   "board": "hwde-led-test",
+   "refs": [
+    "J1"
+   ],
+   "status": "unverified",
+   "source": "requirements.md section 3",
+   "date": "2026-10-29",
+   "could_stop_board": false
+  },
+  {
+   "fact": "Hot-plug lead model 1 uH / 0.1 ohm",
+   "board": "hwde-led-test",
+   "refs": [
+    "C1"
+   ],
+   "status": "unverified",
+   "source": "assumption for ~1 m twin lead",
+   "date": "2026-10-29",
+   "could_stop_board": false
+  }
+ ],
+ "tools_wanted": [
+  {
+   "tool": "check_ratings (two-terminal reverse)",
+   "checks": "VR of LEDs/diodes against the reversed input when the input connector is unkeyed, from parts.json attributes or the datasheet when no extraction exists",
+   "why": "POWER-2: check_ratings saw D1 as unrated and said nothing about 5.25 V reverse vs VR 5 V"
+  },
+  {
+   "tool": "led-indicator corner calc (eng_calc or sim_board block)",
+   "checks": "LED current at Vin min/max x R tolerance x VF bin min/max, and flags a VF taken from a max column as typical",
+   "why": "POWER-1: R1 chosen on VF 3.1 V 'typ' which is the datasheet max"
+  },
+  {
+   "tool": "check_observability connector posts",
+   "checks": "count header/connector pins on a rail as probe points",
+   "why": "POWER-5: +5V reported blind though J1 posts are the probe"
+  }
+ ]
+}

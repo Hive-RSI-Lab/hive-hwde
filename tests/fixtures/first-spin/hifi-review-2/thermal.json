@@ -1,0 +1,57 @@
+{
+ "domain": "thermal",
+ "source": "hifi-receiver-2 docs/review-2/thermal.json at e5896e6 (task 261029-020622), blockers and majors, text cut to 400 chars",
+ "findings": [
+  {
+   "id": "THERMAL-1",
+   "board": "core",
+   "severity": "blocker",
+   "refs": [
+    "U15",
+    "U16"
+   ],
+   "nets": [
+    "GND",
+    "PVDD"
+   ],
+   "finding": "TPA3221DDVR is the pad-UP (top heat slug) DDV package; footprint has no EP and the board has no heatsink, no heatsink mounting provision and no keep-out. Without a heatsink Tj = 45 + 3.5 W x ~50 C/W = ~220 C at 1/8 power into 4 ohm (OTE 145-165 C, latched); even 8 ohm 1/8 power reaches ~120 C (OTW 115 C min). Max chip loss under OTW without heatsink ~1.4 W (~2 x 4 W into 4 ohm).",
+   "evidence": "SLASEE9C rev C: sec 5 'heat slug located on the top side', table 5-1 PowerPad 'placed on top side', DDV0044D note 5; 6.4 RthetaJA 44.8 C/W JEDEC 2s2p no heatsink; OTW/OTE 6.5; fig 6-9 system loss 4 ohm ~6.5 W @25 W out (30 V). core.kicad_pcb: U15 footprint 44 pads, no EP; only holes H1-H4. hwde chec",
+   "fault_class": "THERM-02"
+  },
+  {
+   "id": "THERMAL-2",
+   "board": "core",
+   "severity": "major",
+   "refs": [
+    "U15",
+    "U16",
+    "U3",
+    "R1",
+    "U17"
+   ],
+   "nets": [
+    "ISENSE",
+    "AMP_OTW",
+    "AMP_FAULT"
+   ],
+   "finding": "Continuous full power cannot be held by any passive heatsink in the available volume: chip ~19-22 W (4 ohm, supply-limited to ~113-154 W out) -> OTE in ~9 s with a clamped 19x12x25 heatsink (immediately with adhesive tape); 8 ohm full power (~9 W) -> OTE in ~30 s. Needs a firmware power governor.",
+   "evidence": "SLASEE9C fig 6-9 (26 W loss at 150 W out, 4 ohm); heatsink ~6.7 J/K; J-HS drop 22 W x 3.2 C/W = 70 K.",
+   "fault_class": "THERM-14"
+  },
+  {
+   "id": "THERMAL-3",
+   "board": "lite-main",
+   "severity": "major",
+   "refs": [
+    "U8"
+   ],
+   "nets": [
+    "AMP_FAULTZ",
+    "AMP_SDZ"
+   ],
+   "finding": "TPA3118D2 passes at 1/8 power (Tj 94 C, 106 C upper, at 45 C air) but continuous full power trips its latched 150 C OTP: chip ~9 W into 4 ohm (~300 C steady), ~4.2 W into 8 ohm (163 C). The Lite has no current sense, no OTW pin, no temperature sensor: only FAULTZ after the fact.",
+   "evidence": "SLOS708G fig 14/16 (P1% ~38 W/ch at 20 V, eta 82-88 %), 6.6 thermal trip 150+ C, protection table 'Over Temperature ... Latched'; thetaJA 28 C/W estimate (TI 22 C/W on 2-layer EVM SLOU342A).",
+   "fault_class": "THERM-14"
+  }
+ ]
+}

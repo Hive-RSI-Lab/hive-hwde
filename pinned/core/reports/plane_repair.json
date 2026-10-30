@@ -1,0 +1,3209 @@
+{
+ "script": "plane_repair",
+ "status": "violations",
+ "board": "core.kicad_pcb",
+ "counts": {
+  "total": 5,
+  "by_severity": {
+   "error": 5
+  },
+  "by_source": {
+   "check.plane_repair": 5
+  }
+ },
+ "violations": [
+  {
+   "check": "plane_repair",
+   "severity": "error",
+   "pos": [
+    49.7345,
+    155.8373
+   ],
+   "layer": "F.Cu",
+   "net": "/amp_a/A_OUT2M",
+   "refs": [],
+   "msg": "/amp_a/A_OUT2M plane on F.Cu is split into 2 electrically separate regions (2 anchored components); gap 0.41 mm; no legal same-layer bridge or via jumper",
+   "source": "check.plane_repair",
+   "items": [
+    {
+     "msg": "/amp_a/A_OUT2M plane on F.Cu is split into 2 electrically separate regions (2 anchored components); gap 0.41 mm; no legal same-layer bridge or via jumper",
+     "pos": [
+      49.7345,
+      155.8373
+     ]
+    }
+   ],
+   "kind": "plane_split_unrepairable",
+   "components": 2,
+   "anchored_components": 2,
+   "groups": 2,
+   "gap_mm": 0.412,
+   "gap_points": [
+    [
+     49.7638,
+     155.6334
+    ],
+    [
+     49.7052,
+     156.0412
+    ]
+   ],
+   "areas_mm2": [
+    16.1825,
+    2.4019
+   ]
+  },
+  {
+   "check": "plane_repair",
+   "severity": "error",
+   "pos": [
+    46.3073,
+    154.4322
+   ],
+   "layer": "F.Cu",
+   "net": "/amp_a/A_OUT2P",
+   "refs": [],
+   "msg": "/amp_a/A_OUT2P plane on F.Cu is split into 2 electrically separate regions (2 anchored components); gap 0.40 mm; no legal same-layer bridge or via jumper",
+   "source": "check.plane_repair",
+   "items": [
+    {
+     "msg": "/amp_a/A_OUT2P plane on F.Cu is split into 2 electrically separate regions (2 anchored components); gap 0.40 mm; no legal same-layer bridge or via jumper",
+     "pos": [
+      46.3073,
+      154.4322
+     ]
+    }
+   ],
+   "kind": "plane_split_unrepairable",
+   "components": 2,
+   "anchored_components": 2,
+   "groups": 2,
+   "gap_mm": 0.4042,
+   "gap_points": [
+    [
+     46.4502,
+     154.2892
+    ],
+    [
+     46.1643,
+     154.5751
+    ]
+   ],
+   "areas_mm2": [
+    32.0387,
+    2.2226
+   ]
+  },
+  {
+   "check": "plane_repair",
+   "severity": "error",
+   "pos": [
+    43.1338,
+    135.5528
+   ],
+   "layer": "B.Cu",
+   "net": "/amp_a/A_SPK_L+",
+   "refs": [],
+   "msg": "/amp_a/A_SPK_L+ plane on B.Cu is split into 2 electrically separate regions (2 anchored components); gap 0.50 mm; no legal same-layer bridge or via jumper",
+   "source": "check.plane_repair",
+   "items": [
+    {
+     "msg": "/amp_a/A_SPK_L+ plane on B.Cu is split into 2 electrically separate regions (2 anchored components); gap 0.50 mm; no legal same-layer bridge or via jumper",
+     "pos": [
+      43.1338,
+      135.5528
+     ]
+    }
+   ],
+   "kind": "plane_split_unrepairable",
+   "components": 2,
+   "anchored_components": 2,
+   "groups": 2,
+   "gap_mm": 0.4992,
+   "gap_points": [
+    [
+     42.9573,
+     135.7293
+    ],
+    [
+     43.3103,
+     135.3763
+    ]
+   ],
+   "areas_mm2": [
+    36.0247,
+    32.2585
+   ]
+  },
+  {
+   "check": "plane_repair",
+   "severity": "error",
+   "pos": [
+    68.7059,
+    171.292
+   ],
+   "layer": "F.Cu",
+   "net": "/rails/BUCK5_LX",
+   "refs": [],
+   "msg": "/rails/BUCK5_LX plane on F.Cu is split into 2 electrically separate regions (2 anchored components); gap 1.79 mm; no legal same-layer bridge or via jumper",
+   "source": "check.plane_repair",
+   "items": [
+    {
+     "msg": "/rails/BUCK5_LX plane on F.Cu is split into 2 electrically separate regions (2 anchored components); gap 1.79 mm; no legal same-layer bridge or via jumper",
+     "pos": [
+      68.7059,
+      171.292
+     ]
+    }
+   ],
+   "kind": "plane_split_unrepairable",
+   "components": 3,
+   "anchored_components": 2,
+   "groups": 2,
+   "gap_mm": 1.7871,
+   "gap_points": [
+    [
+     69.4417,
+     171.799
+    ],
+    [
+     67.9701,
+     170.785
+    ]
+   ],
+   "areas_mm2": [
+    4.0615,
+    1.0766,
+    0.9805
+   ]
+  },
+  {
+   "check": "plane_repair",
+   "severity": "error",
+   "pos": [
+    113.5878,
+    141.4287
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [],
+   "msg": "GND plane on F.Cu is split into 24 electrically separate regions (106 anchored components); gap 0.51 mm; no legal same-layer bridge or via jumper",
+   "source": "check.plane_repair",
+   "items": [
+    {
+     "msg": "GND plane on F.Cu is split into 24 electrically separate regions (106 anchored components); gap 0.51 mm; no legal same-layer bridge or via jumper",
+     "pos": [
+      113.5878,
+      141.4287
+     ]
+    }
+   ],
+   "kind": "plane_split_unrepairable",
+   "components": 106,
+   "anchored_components": 106,
+   "groups": 24,
+   "gap_mm": 0.5118,
+   "gap_points": [
+    [
+     113.3423,
+     141.3566
+    ],
+    [
+     113.8333,
+     141.5008
+    ]
+   ],
+   "areas_mm2": [
+    4567.1545,
+    938.8858,
+    137.4287,
+    131.1472,
+    113.4981,
+    102.739,
+    96.6639,
+    87.2922,
+    87.2762,
+    85.2242,
+    84.6145,
+    79.4371,
+    79.0859,
+    77.3329,
+    71.1515,
+    65.3404,
+    58.0011,
+    57.177,
+    53.7884,
+    53.3073,
+    53.2913,
+    47.6892,
+    43.8695,
+    43.7942,
+    34.0978,
+    32.3355,
+    28.7014,
+    28.402,
+    26.234,
+    25.9648,
+    25.9252,
+    24.1622,
+    23.6953,
+    23.523,
+    21.7332,
+    21.1267,
+    20.9793,
+    20.9605,
+    20.6558,
+    20.2405,
+    15.8243,
+    15.2907,
+    12.9366,
+    12.0172,
+    12.0052,
+    11.9526,
+    11.7427,
+    11.7185,
+    11.0828,
+    10.2984,
+    9.5046,
+    9.3722,
+    9.1142,
+    8.7332,
+    7.2953,
+    6.9745,
+    6.828,
+    6.7924,
+    6.5995,
+    6.3068,
+    6.2571,
+    5.9955,
+    5.9508,
+    5.5507,
+    5.3669,
+    5.2469,
+    5.209,
+    5.0633,
+    5.0044,
+    4.5807,
+    4.5241,
+    4.4848,
+    4.3089,
+    4.2226,
+    4.161,
+    3.9355,
+    3.8777,
+    3.654,
+    3.616,
+    3.3425,
+    3.2999,
+    3.2802,
+    3.1577,
+    2.952,
+    2.858,
+    2.4118,
+    2.2687,
+    2.2518,
+    2.2323,
+    1.5538,
+    1.3802,
+    1.2478,
+    1.2283,
+    1.178,
+    1.1751,
+    1.1437,
+    1.0079,
+    0.849,
+    0.8022,
+    0.8005,
+    0.7381,
+    0.4892,
+    0.4758,
+    0.4758,
+    0.4125,
+    0.2742
+   ]
+  }
+ ],
+ "mode": "repair",
+ "planes": [
+  {
+   "net": "+3V3",
+   "layer": "In2.Cu",
+   "components": 1,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 7692.7399,
+     "pos": [
+      87.9565,
+      170.1783
+     ],
+     "anchors": 50,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 1,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "/amp_a/A_OUT1M",
+   "layer": "F.Cu",
+   "components": 1,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 39.351,
+     "pos": [
+      44.622,
+      150.619
+     ],
+     "anchors": 2,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 1,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "/amp_a/A_OUT1P",
+   "layer": "F.Cu",
+   "components": 1,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 19.1921,
+     "pos": [
+      39.4683,
+      154.9045
+     ],
+     "anchors": 3,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 1,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "/amp_a/A_OUT2M",
+   "layer": "F.Cu",
+   "components": 2,
+   "anchored_components": 2,
+   "groups": 2,
+   "split": true,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 16.1825,
+     "pos": [
+      51.522,
+      153.6399
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 2.4019,
+     "pos": [
+      49.247,
+      157.0898
+     ],
+     "anchors": 2,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 2,
+   "groups_after": 2,
+   "repaired": false
+  },
+  {
+   "net": "/amp_a/A_OUT2P",
+   "layer": "F.Cu",
+   "components": 2,
+   "anchored_components": 2,
+   "groups": 2,
+   "split": true,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 32.0387,
+     "pos": [
+      46.3712,
+      148.9948
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 2.2226,
+     "pos": [
+      46.372,
+      156.78
+     ],
+     "anchors": 1,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 2,
+   "groups_after": 2,
+   "repaired": false
+  },
+  {
+   "net": "/amp_a/A_SPK_L+",
+   "layer": "B.Cu",
+   "components": 2,
+   "anchored_components": 2,
+   "groups": 2,
+   "split": true,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 36.0247,
+     "pos": [
+      42.722,
+      140.4437
+     ],
+     "anchors": 6,
+     "anchored": true
+    },
+    {
+     "area_mm2": 32.2585,
+     "pos": [
+      42.722,
+      131.3393
+     ],
+     "anchors": 1,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 2,
+   "groups_after": 2,
+   "repaired": false
+  },
+  {
+   "net": "/amp_a/A_SPK_L+",
+   "layer": "F.Cu",
+   "components": 1,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 7.9019,
+     "pos": [
+      42.322,
+      146.392
+     ],
+     "anchors": 6,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 1,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "/amp_a/A_SPK_L-",
+   "layer": "F.Cu",
+   "components": 2,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 23.6763,
+     "pos": [
+      45.922,
+      128.6321
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 6.2861,
+     "pos": [
+      40.1608,
+      134.2148
+     ],
+     "anchors": 0,
+     "anchored": false
+    }
+   ],
+   "dead_islands": [
+    {
+     "area_mm2": 6.2861,
+     "pos": [
+      40.1608,
+      134.2148
+     ],
+     "anchors": 0,
+     "anchored": false
+    }
+   ],
+   "components_after": 2,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "/amp_a/A_SPK_R+",
+   "layer": "F.Cu",
+   "components": 2,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 31.8924,
+     "pos": [
+      63.422,
+      128.6792
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 6.7987,
+     "pos": [
+      52.3936,
+      134.0865
+     ],
+     "anchors": 0,
+     "anchored": false
+    }
+   ],
+   "dead_islands": [
+    {
+     "area_mm2": 6.7987,
+     "pos": [
+      52.3936,
+      134.0865
+     ],
+     "anchors": 0,
+     "anchored": false
+    }
+   ],
+   "components_after": 2,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "/amp_a/A_SPK_R-",
+   "layer": "B.Cu",
+   "components": 1,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 48.6184,
+     "pos": [
+      54.672,
+      135.6315
+     ],
+     "anchors": 7,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 1,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "/amp_a/A_SPK_R-",
+   "layer": "F.Cu",
+   "components": 1,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 7.9019,
+     "pos": [
+      54.422,
+      146.392
+     ],
+     "anchors": 6,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 1,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "/amp_b/B_OUT1M",
+   "layer": "F.Cu",
+   "components": 1,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 46.6172,
+     "pos": [
+      77.522,
+      149.7711
+     ],
+     "anchors": 2,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 1,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "/amp_b/B_OUT1P",
+   "layer": "F.Cu",
+   "components": 1,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 19.2246,
+     "pos": [
+      72.3577,
+      154.8895
+     ],
+     "anchors": 3,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 1,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "/amp_b/B_OUT2M",
+   "layer": "F.Cu",
+   "components": 2,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 18.0321,
+     "pos": [
+      84.408,
+      154.8913
+     ],
+     "anchors": 3,
+     "anchored": true
+    },
+    {
+     "area_mm2": 0.7579,
+     "pos": [
+      85.7761,
+      155.723
+     ],
+     "anchors": 0,
+     "anchored": false
+    }
+   ],
+   "dead_islands": [
+    {
+     "area_mm2": 0.7579,
+     "pos": [
+      85.7761,
+      155.723
+     ],
+     "anchors": 0,
+     "anchored": false
+    }
+   ],
+   "components_after": 2,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "/amp_b/B_OUT2P",
+   "layer": "F.Cu",
+   "components": 1,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 37.7527,
+     "pos": [
+      79.072,
+      150.6193
+     ],
+     "anchors": 2,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 1,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "/amp_b/B_SPK_L+",
+   "layer": "B.Cu",
+   "components": 1,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 67.5365,
+     "pos": [
+      75.622,
+      137.773
+     ],
+     "anchors": 7,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 1,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "/amp_b/B_SPK_L+",
+   "layer": "F.Cu",
+   "components": 1,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 7.9019,
+     "pos": [
+      75.222,
+      146.392
+     ],
+     "anchors": 6,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 1,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "/amp_b/B_SPK_L-",
+   "layer": "F.Cu",
+   "components": 2,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 16.4618,
+     "pos": [
+      78.822,
+      128.979
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 14.5918,
+     "pos": [
+      78.822,
+      133.2181
+     ],
+     "anchors": 0,
+     "anchored": false
+    }
+   ],
+   "dead_islands": [
+    {
+     "area_mm2": 14.5918,
+     "pos": [
+      78.822,
+      133.2181
+     ],
+     "anchors": 0,
+     "anchored": false
+    }
+   ],
+   "components_after": 2,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "/amp_b/B_SPK_R+",
+   "layer": "F.Cu",
+   "components": 2,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 33.0545,
+     "pos": [
+      96.322,
+      127.1161
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 6.2488,
+     "pos": [
+      85.0644,
+      134.0865
+     ],
+     "anchors": 0,
+     "anchored": false
+    }
+   ],
+   "dead_islands": [
+    {
+     "area_mm2": 6.2488,
+     "pos": [
+      85.0644,
+      134.0865
+     ],
+     "anchors": 0,
+     "anchored": false
+    }
+   ],
+   "components_after": 2,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "/amp_b/B_SPK_R-",
+   "layer": "B.Cu",
+   "components": 1,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 46.2451,
+     "pos": [
+      87.572,
+      137.773
+     ],
+     "anchors": 8,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 1,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "/amp_b/B_SPK_R-",
+   "layer": "F.Cu",
+   "components": 1,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 7.9019,
+     "pos": [
+      87.322,
+      146.392
+     ],
+     "anchors": 6,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 1,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "/rails/BUCK5_LX",
+   "layer": "F.Cu",
+   "components": 3,
+   "anchored_components": 2,
+   "groups": 2,
+   "split": true,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 4.0615,
+     "pos": [
+      71.2395,
+      172.4923
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 1.0766,
+     "pos": [
+      67.2559,
+      170.467
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 0.9805,
+     "pos": [
+      69.058,
+      170.467
+     ],
+     "anchors": 0,
+     "anchored": false
+    }
+   ],
+   "dead_islands": [
+    {
+     "area_mm2": 0.9805,
+     "pos": [
+      69.058,
+      170.467
+     ],
+     "anchors": 0,
+     "anchored": false
+    }
+   ],
+   "components_after": 3,
+   "groups_after": 2,
+   "repaired": false
+  },
+  {
+   "net": "GND",
+   "layer": "B.Cu",
+   "components": 18,
+   "anchored_components": 18,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": true,
+   "component_facts": [
+    {
+     "area_mm2": 9701.9449,
+     "pos": [
+      144.4441,
+      170.146
+     ],
+     "anchors": 410,
+     "anchored": true
+    },
+    {
+     "area_mm2": 122.9378,
+     "pos": [
+      88.2184,
+      206.7274
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 54.6994,
+     "pos": [
+      90.5518,
+      179.8831
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 45.1224,
+     "pos": [
+      75.1999,
+      164.7989
+     ],
+     "anchors": 4,
+     "anchored": true
+    },
+    {
+     "area_mm2": 34.6635,
+     "pos": [
+      79.1488,
+      208.6635
+     ],
+     "anchors": 3,
+     "anchored": true
+    },
+    {
+     "area_mm2": 29.2017,
+     "pos": [
+      70.2988,
+      209.7128
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 29.0128,
+     "pos": [
+      114.9779,
+      139.5025
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 21.4195,
+     "pos": [
+      126.4182,
+      151.5549
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 12.6619,
+     "pos": [
+      45.0413,
+      181.1362
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 12.0955,
+     "pos": [
+      78.7407,
+      215.6367
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 11.189,
+     "pos": [
+      68.4036,
+      214.6874
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 10.8606,
+     "pos": [
+      77.3505,
+      198.7812
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 8.6334,
+     "pos": [
+      74.0872,
+      207.5736
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 7.7567,
+     "pos": [
+      79.9498,
+      170.4528
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 3.1697,
+     "pos": [
+      73.7827,
+      212.7194
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 2.8677,
+     "pos": [
+      43.8924,
+      190.4084
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 1.4862,
+     "pos": [
+      70.8674,
+      204.7565
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 0.9885,
+     "pos": [
+      71.0705,
+      212.9361
+     ],
+     "anchors": 1,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 18,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "GND",
+   "layer": "F.Cu",
+   "components": 106,
+   "anchored_components": 106,
+   "groups": 40,
+   "split": true,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 4567.1545,
+     "pos": [
+      145.363,
+      170.4769
+     ],
+     "anchors": 333,
+     "anchored": true
+    },
+    {
+     "area_mm2": 938.8858,
+     "pos": [
+      128.2116,
+      167.4622
+     ],
+     "anchors": 50,
+     "anchored": true
+    },
+    {
+     "area_mm2": 137.4287,
+     "pos": [
+      67.7257,
+      192.0774
+     ],
+     "anchors": 7,
+     "anchored": true
+    },
+    {
+     "area_mm2": 131.1472,
+     "pos": [
+      77.5063,
+      179.3221
+     ],
+     "anchors": 7,
+     "anchored": true
+    },
+    {
+     "area_mm2": 113.4981,
+     "pos": [
+      55.9309,
+      200.1135
+     ],
+     "anchors": 13,
+     "anchored": true
+    },
+    {
+     "area_mm2": 102.739,
+     "pos": [
+      84.3716,
+      185.4413
+     ],
+     "anchors": 5,
+     "anchored": true
+    },
+    {
+     "area_mm2": 96.6639,
+     "pos": [
+      116.832,
+      208.7736
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 87.2922,
+     "pos": [
+      81.3249,
+      214.0628
+     ],
+     "anchors": 9,
+     "anchored": true
+    },
+    {
+     "area_mm2": 87.2762,
+     "pos": [
+      132.3286,
+      140.5649
+     ],
+     "anchors": 7,
+     "anchored": true
+    },
+    {
+     "area_mm2": 85.2242,
+     "pos": [
+      109.3015,
+      175.2851
+     ],
+     "anchors": 3,
+     "anchored": true
+    },
+    {
+     "area_mm2": 84.6145,
+     "pos": [
+      125.7105,
+      135.7383
+     ],
+     "anchors": 5,
+     "anchored": true
+    },
+    {
+     "area_mm2": 79.4371,
+     "pos": [
+      100.2076,
+      180.3739
+     ],
+     "anchors": 3,
+     "anchored": true
+    },
+    {
+     "area_mm2": 79.0859,
+     "pos": [
+      118.2476,
+      194.7859
+     ],
+     "anchors": 4,
+     "anchored": true
+    },
+    {
+     "area_mm2": 77.3329,
+     "pos": [
+      133.9911,
+      195.5346
+     ],
+     "anchors": 5,
+     "anchored": true
+    },
+    {
+     "area_mm2": 71.1515,
+     "pos": [
+      105.2628,
+      170.3844
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 65.3404,
+     "pos": [
+      65.4388,
+      215.5349
+     ],
+     "anchors": 9,
+     "anchored": true
+    },
+    {
+     "area_mm2": 58.0011,
+     "pos": [
+      42.9977,
+      170.3571
+     ],
+     "anchors": 10,
+     "anchored": true
+    },
+    {
+     "area_mm2": 57.177,
+     "pos": [
+      127.4352,
+      151.8387
+     ],
+     "anchors": 5,
+     "anchored": true
+    },
+    {
+     "area_mm2": 53.7884,
+     "pos": [
+      96.8234,
+      170.8522
+     ],
+     "anchors": 3,
+     "anchored": true
+    },
+    {
+     "area_mm2": 53.3073,
+     "pos": [
+      67.535,
+      166.3756
+     ],
+     "anchors": 7,
+     "anchored": true
+    },
+    {
+     "area_mm2": 53.2913,
+     "pos": [
+      115.7142,
+      191.3917
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 47.6892,
+     "pos": [
+      106.0803,
+      210.8361
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 43.8695,
+     "pos": [
+      92.9121,
+      212.2213
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 43.7942,
+     "pos": [
+      67.8403,
+      183.79
+     ],
+     "anchors": 5,
+     "anchored": true
+    },
+    {
+     "area_mm2": 34.0978,
+     "pos": [
+      67.5892,
+      174.383
+     ],
+     "anchors": 5,
+     "anchored": true
+    },
+    {
+     "area_mm2": 32.3355,
+     "pos": [
+      97.1885,
+      161.3461
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 28.7014,
+     "pos": [
+      119.922,
+      148.8935
+     ],
+     "anchors": 16,
+     "anchored": true
+    },
+    {
+     "area_mm2": 28.402,
+     "pos": [
+      75.3924,
+      161.8529
+     ],
+     "anchors": 4,
+     "anchored": true
+    },
+    {
+     "area_mm2": 26.234,
+     "pos": [
+      82.8771,
+      202.5976
+     ],
+     "anchors": 3,
+     "anchored": true
+    },
+    {
+     "area_mm2": 25.9648,
+     "pos": [
+      75.497,
+      152.3483
+     ],
+     "anchors": 3,
+     "anchored": true
+    },
+    {
+     "area_mm2": 25.9252,
+     "pos": [
+      42.597,
+      152.3483
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 24.1622,
+     "pos": [
+      45.6129,
+      162.8861
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 23.6953,
+     "pos": [
+      74.3079,
+      208.8642
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 23.523,
+     "pos": [
+      89.9195,
+      170.3461
+     ],
+     "anchors": 3,
+     "anchored": true
+    },
+    {
+     "area_mm2": 21.7332,
+     "pos": [
+      103.3204,
+      191.92
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 21.1267,
+     "pos": [
+      77.832,
+      190.8204
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 20.9793,
+     "pos": [
+      40.1608,
+      137.965
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 20.9605,
+     "pos": [
+      122.0601,
+      143.1343
+     ],
+     "anchors": 4,
+     "anchored": true
+    },
+    {
+     "area_mm2": 20.6558,
+     "pos": [
+      71.5192,
+      207.2311
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 20.2405,
+     "pos": [
+      113.7789,
+      159.5814
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 15.8243,
+     "pos": [
+      74.8772,
+      167.8546
+     ],
+     "anchors": 6,
+     "anchored": true
+    },
+    {
+     "area_mm2": 15.2907,
+     "pos": [
+      67.7041,
+      204.2188
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 12.9366,
+     "pos": [
+      50.1826,
+      165.9298
+     ],
+     "anchors": 4,
+     "anchored": true
+    },
+    {
+     "area_mm2": 12.0172,
+     "pos": [
+      66.4093,
+      207.8114
+     ],
+     "anchors": 3,
+     "anchored": true
+    },
+    {
+     "area_mm2": 12.0052,
+     "pos": [
+      63.5419,
+      170.0748
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 11.9526,
+     "pos": [
+      83.2856,
+      171.5693
+     ],
+     "anchors": 3,
+     "anchored": true
+    },
+    {
+     "area_mm2": 11.7427,
+     "pos": [
+      86.2848,
+      170.7791
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 11.7185,
+     "pos": [
+      78.3182,
+      171.5559
+     ],
+     "anchors": 3,
+     "anchored": true
+    },
+    {
+     "area_mm2": 11.0828,
+     "pos": [
+      75.9777,
+      199.9259
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 10.2984,
+     "pos": [
+      88.7501,
+      218.6965
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 9.5046,
+     "pos": [
+      114.4506,
+      148.767
+     ],
+     "anchors": 4,
+     "anchored": true
+    },
+    {
+     "area_mm2": 9.3722,
+     "pos": [
+      89.9367,
+      165.5369
+     ],
+     "anchors": 3,
+     "anchored": true
+    },
+    {
+     "area_mm2": 9.1142,
+     "pos": [
+      79.0779,
+      208.12
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 8.7332,
+     "pos": [
+      62.922,
+      204.142
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 7.2953,
+     "pos": [
+      71.2368,
+      199.1095
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 6.9745,
+     "pos": [
+      44.7252,
+      160.9368
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 6.828,
+     "pos": [
+      70.0835,
+      213.1647
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 6.7924,
+     "pos": [
+      83.082,
+      164.942
+     ],
+     "anchors": 4,
+     "anchored": true
+    },
+    {
+     "area_mm2": 6.5995,
+     "pos": [
+      117.6893,
+      161.1131
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 6.3068,
+     "pos": [
+      41.932,
+      164.8806
+     ],
+     "anchors": 3,
+     "anchored": true
+    },
+    {
+     "area_mm2": 6.2571,
+     "pos": [
+      116.3545,
+      139.8237
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 5.9955,
+     "pos": [
+      41.3736,
+      167.19
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 5.9508,
+     "pos": [
+      41.4819,
+      131.4559
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 5.5507,
+     "pos": [
+      126.4117,
+      144.6408
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 5.3669,
+     "pos": [
+      75.008,
+      173.3544
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 5.2469,
+     "pos": [
+      51.7379,
+      212.3867
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 5.209,
+     "pos": [
+      78.007,
+      164.9128
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 5.0633,
+     "pos": [
+      59.102,
+      202.971
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 5.0044,
+     "pos": [
+      130.172,
+      191.2056
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 4.5807,
+     "pos": [
+      79.2671,
+      173.5326
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 4.5241,
+     "pos": [
+      101.5234,
+      166.0833
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 4.4848,
+     "pos": [
+      114.4943,
+      143.7489
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 4.3089,
+     "pos": [
+      107.4985,
+      150.432
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 4.2226,
+     "pos": [
+      72.0799,
+      174.3949
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 4.161,
+     "pos": [
+      59.1139,
+      206.133
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 3.9355,
+     "pos": [
+      49.4311,
+      187.1825
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 3.8777,
+     "pos": [
+      52.987,
+      165.362
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 3.654,
+     "pos": [
+      54.0409,
+      158.8204
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 3.616,
+     "pos": [
+      58.9997,
+      215.7229
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 3.3425,
+     "pos": [
+      56.8023,
+      203.7011
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 3.2999,
+     "pos": [
+      141.8692,
+      189.1043
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 3.2802,
+     "pos": [
+      43.4827,
+      187.142
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 3.1577,
+     "pos": [
+      42.922,
+      193.292
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 2.952,
+     "pos": [
+      73.5157,
+      144.3182
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 2.858,
+     "pos": [
+      116.3469,
+      141.7621
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 2.4118,
+     "pos": [
+      62.5896,
+      200.7862
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 2.2687,
+     "pos": [
+      95.327,
+      193.162
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 2.2518,
+     "pos": [
+      100.3413,
+      184.933
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 2.2323,
+     "pos": [
+      79.8009,
+      199.9068
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 1.5538,
+     "pos": [
+      128.8348,
+      143.2264
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 1.3802,
+     "pos": [
+      86.0311,
+      173.3578
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 1.2478,
+     "pos": [
+      51.672,
+      215.3274
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 1.2283,
+     "pos": [
+      103.922,
+      163.2393
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 1.178,
+     "pos": [
+      45.2691,
+      131.2476
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 1.1751,
+     "pos": [
+      78.8306,
+      131.1519
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 1.1437,
+     "pos": [
+      60.7881,
+      164.917
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 1.0079,
+     "pos": [
+      118.6438,
+      157.8966
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 0.849,
+     "pos": [
+      110.7011,
+      152.0671
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 0.8022,
+     "pos": [
+      85.919,
+      178.7499
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 0.8005,
+     "pos": [
+      133.9032,
+      144.0591
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 0.7381,
+     "pos": [
+      49.2064,
+      215.0284
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 0.4892,
+     "pos": [
+      40.8454,
+      178.4815
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 0.4758,
+     "pos": [
+      45.2501,
+      148.48
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 0.4758,
+     "pos": [
+      45.2501,
+      152.763
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 0.4125,
+     "pos": [
+      45.2166,
+      144.1925
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 0.2742,
+     "pos": [
+      79.391,
+      127.066
+     ],
+     "anchors": 1,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 106,
+   "groups_after": 24,
+   "repaired": false
+  },
+  {
+   "net": "GND",
+   "layer": "In1.Cu",
+   "components": 1,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 11432.122,
+     "pos": [
+      93.922,
+      170.1462
+     ],
+     "anchors": 435,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 1,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "PVDD",
+   "layer": "F.Cu",
+   "components": 5,
+   "anchored_components": 5,
+   "groups": 2,
+   "split": true,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 8.2888,
+     "pos": [
+      42.9049,
+      155.6426
+     ],
+     "anchors": 5,
+     "anchored": true
+    },
+    {
+     "area_mm2": 8.2842,
+     "pos": [
+      75.8049,
+      155.6426
+     ],
+     "anchors": 5,
+     "anchored": true
+    },
+    {
+     "area_mm2": 8.0654,
+     "pos": [
+      80.622,
+      154.7533
+     ],
+     "anchors": 5,
+     "anchored": true
+    },
+    {
+     "area_mm2": 3.6646,
+     "pos": [
+      47.647,
+      157.242
+     ],
+     "anchors": 3,
+     "anchored": true
+    },
+    {
+     "area_mm2": 3.5905,
+     "pos": [
+      47.722,
+      153.9915
+     ],
+     "anchors": 2,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 5,
+   "groups_after": 1,
+   "repaired": true
+  },
+  {
+   "net": "PVDD",
+   "layer": "In2.Cu",
+   "components": 1,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 2810.0641,
+     "pos": [
+      65.5725,
+      145.892
+     ],
+     "anchors": 13,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 1,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "VBUS",
+   "layer": "In2.Cu",
+   "components": 1,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 241.2644,
+     "pos": [
+      59.072,
+      176.1404
+     ],
+     "anchors": 10,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 1,
+   "groups_after": 1,
+   "repaired": false
+  },
+  {
+   "net": "VBUS_IN",
+   "layer": "In2.Cu",
+   "components": 1,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 250.8339,
+     "pos": [
+      40.4725,
+      179.0347
+     ],
+     "anchors": 5,
+     "anchored": true
+    }
+   ],
+   "dead_islands": [],
+   "components_after": 1,
+   "groups_after": 1,
+   "repaired": false
+  }
+ ],
+ "bridges": [
+  {
+   "method": "via_jumper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "via_layer": "In1.Cu",
+   "width": 0.5,
+   "length_mm": 6.7899,
+   "ops": [
+    {
+     "op": "add_via",
+     "at": [
+      94.0,
+      161.0
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      94.0,
+      161.0
+     ],
+     "end": [
+      93.0,
+      167.0
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      93.0,
+      167.0
+     ],
+     "end": [
+      92.5,
+      167.5
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_via",
+     "at": [
+      92.5,
+      167.5
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    }
+   ],
+   "merged": true
+  },
+  {
+   "method": "via_jumper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "via_layer": "In1.Cu",
+   "width": 0.5,
+   "length_mm": 28.7436,
+   "ops": [
+    {
+     "op": "add_via",
+     "at": [
+      102.0,
+      218.0
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      102.0,
+      218.0
+     ],
+     "end": [
+      102.0,
+      209.0
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      102.0,
+      209.0
+     ],
+     "end": [
+      104.5,
+      206.0
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      104.5,
+      206.0
+     ],
+     "end": [
+      103.5,
+      192.0
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      103.5,
+      192.0
+     ],
+     "end": [
+      102.0,
+      191.0
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_via",
+     "at": [
+      102.0,
+      191.0
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    }
+   ],
+   "merged": true
+  },
+  {
+   "method": "via_jumper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "via_layer": "In1.Cu",
+   "width": 0.5,
+   "length_mm": 4.6098,
+   "ops": [
+    {
+     "op": "add_via",
+     "at": [
+      109.0,
+      155.0
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      109.0,
+      155.0
+     ],
+     "end": [
+      112.0,
+      158.5
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_via",
+     "at": [
+      112.0,
+      158.5
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    }
+   ],
+   "merged": true
+  },
+  {
+   "method": "via_jumper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "via_layer": "In1.Cu",
+   "width": 0.5,
+   "length_mm": 7.0,
+   "ops": [
+    {
+     "op": "add_via",
+     "at": [
+      50.5,
+      158.5
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      50.5,
+      158.5
+     ],
+     "end": [
+      50.5,
+      165.5
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_via",
+     "at": [
+      50.5,
+      165.5
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    }
+   ],
+   "merged": true
+  },
+  {
+   "method": "via_jumper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "via_layer": "In1.Cu",
+   "width": 0.5,
+   "length_mm": 6.5264,
+   "ops": [
+    {
+     "op": "add_via",
+     "at": [
+      62.0,
+      177.5
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      62.0,
+      177.5
+     ],
+     "end": [
+      65.0,
+      173.0
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      65.0,
+      173.0
+     ],
+     "end": [
+      64.5,
+      172.0
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_via",
+     "at": [
+      64.5,
+      172.0
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    }
+   ],
+   "merged": true
+  },
+  {
+   "method": "via_jumper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "via_layer": "In1.Cu",
+   "width": 0.5,
+   "length_mm": 10.5,
+   "ops": [
+    {
+     "op": "add_via",
+     "at": [
+      87.0,
+      159.0
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      87.0,
+      159.0
+     ],
+     "end": [
+      87.0,
+      169.5
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_via",
+     "at": [
+      87.0,
+      169.5
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    }
+   ],
+   "merged": true
+  },
+  {
+   "method": "via_jumper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "via_layer": "In1.Cu",
+   "width": 0.5,
+   "length_mm": 8.2382,
+   "ops": [
+    {
+     "op": "add_via",
+     "at": [
+      110.0,
+      144.0
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      110.0,
+      144.0
+     ],
+     "end": [
+      110.25,
+      145.5
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      110.25,
+      145.5
+     ],
+     "end": [
+      115.0,
+      150.25
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_via",
+     "at": [
+      115.0,
+      150.25
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    }
+   ],
+   "merged": true
+  },
+  {
+   "method": "via_jumper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "via_layer": "In1.Cu",
+   "width": 0.5,
+   "length_mm": 5.9259,
+   "ops": [
+    {
+     "op": "add_via",
+     "at": [
+      87.5,
+      159.0
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      87.5,
+      159.0
+     ],
+     "end": [
+      86.5,
+      163.0
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      86.5,
+      163.0
+     ],
+     "end": [
+      87.5,
+      164.5
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_via",
+     "at": [
+      87.5,
+      164.5
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    }
+   ],
+   "merged": true
+  },
+  {
+   "method": "via_jumper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "via_layer": "In1.Cu",
+   "width": 0.5,
+   "length_mm": 1.8028,
+   "ops": [
+    {
+     "op": "add_via",
+     "at": [
+      41.0,
+      162.0
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      41.0,
+      162.0
+     ],
+     "end": [
+      42.5,
+      163.0
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_via",
+     "at": [
+      42.5,
+      163.0
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    }
+   ],
+   "merged": true
+  },
+  {
+   "method": "via_jumper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "via_layer": "In1.Cu",
+   "width": 0.5,
+   "length_mm": 2.5,
+   "ops": [
+    {
+     "op": "add_via",
+     "at": [
+      117.5,
+      137.5
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      117.5,
+      137.5
+     ],
+     "end": [
+      119.0,
+      139.5
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_via",
+     "at": [
+      119.0,
+      139.5
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    }
+   ],
+   "merged": true
+  },
+  {
+   "method": "via_jumper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "via_layer": "In1.Cu",
+   "width": 0.5,
+   "length_mm": 2.5495,
+   "ops": [
+    {
+     "op": "add_via",
+     "at": [
+      38.0,
+      167.0
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      38.0,
+      167.0
+     ],
+     "end": [
+      40.5,
+      167.5
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_via",
+     "at": [
+      40.5,
+      167.5
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    }
+   ],
+   "merged": true
+  },
+  {
+   "method": "via_jumper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "via_layer": "In1.Cu",
+   "width": 0.5,
+   "length_mm": 2.0,
+   "ops": [
+    {
+     "op": "add_via",
+     "at": [
+      50.5,
+      211.75
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      50.5,
+      211.75
+     ],
+     "end": [
+      50.5,
+      213.75
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_via",
+     "at": [
+      50.5,
+      213.75
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    }
+   ],
+   "merged": true
+  },
+  {
+   "method": "via_jumper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "via_layer": "In1.Cu",
+   "width": 0.5,
+   "length_mm": 4.5311,
+   "ops": [
+    {
+     "op": "add_via",
+     "at": [
+      77.5,
+      159.0
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      77.5,
+      159.0
+     ],
+     "end": [
+      78.0,
+      163.0
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      78.0,
+      163.0
+     ],
+     "end": [
+      78.0,
+      163.5
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_via",
+     "at": [
+      78.0,
+      163.5
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    }
+   ],
+   "merged": true
+  },
+  {
+   "method": "via_jumper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "via_layer": "In1.Cu",
+   "width": 0.5,
+   "length_mm": 5.4453,
+   "ops": [
+    {
+     "op": "add_via",
+     "at": [
+      57.5,
+      208.0
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      57.5,
+      208.0
+     ],
+     "end": [
+      58.0,
+      204.0
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      58.0,
+      204.0
+     ],
+     "end": [
+      59.0,
+      203.0
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_via",
+     "at": [
+      59.0,
+      203.0
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    }
+   ],
+   "merged": true
+  },
+  {
+   "method": "via_jumper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "via_layer": "In1.Cu",
+   "width": 0.5,
+   "length_mm": 9.5525,
+   "ops": [
+    {
+     "op": "add_via",
+     "at": [
+      136.5,
+      199.0
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      136.5,
+      199.0
+     ],
+     "end": [
+      130.0,
+      192.0
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_via",
+     "at": [
+      130.0,
+      192.0
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    }
+   ],
+   "merged": true
+  },
+  {
+   "method": "via_jumper",
+   "net": "GND",
+   "layer": "F.Cu",
+   "via_layer": "In1.Cu",
+   "width": 0.5,
+   "length_mm": 8.4853,
+   "ops": [
+    {
+     "op": "add_via",
+     "at": [
+      95.0,
+      160.0
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      95.0,
+      160.0
+     ],
+     "end": [
+      101.0,
+      166.0
+     ],
+     "width": 0.5,
+     "layer": "In1.Cu",
+     "net": "GND"
+    },
+    {
+     "op": "add_via",
+     "at": [
+      101.0,
+      166.0
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "GND"
+    }
+   ],
+   "merged": true
+  },
+  {
+   "method": "via_jumper",
+   "net": "PVDD",
+   "layer": "F.Cu",
+   "via_layer": "In2.Cu",
+   "width": 0.5,
+   "length_mm": 4.0,
+   "ops": [
+    {
+     "op": "add_via",
+     "at": [
+      43.5,
+      157.0
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "PVDD"
+    },
+    {
+     "op": "add_track",
+     "start": [
+      43.5,
+      157.0
+     ],
+     "end": [
+      47.5,
+      157.0
+     ],
+     "width": 0.5,
+     "layer": "In2.Cu",
+     "net": "PVDD"
+    },
+    {
+     "op": "add_via",
+     "at": [
+      47.5,
+      157.0
+     ],
+     "size": 0.6,
+     "drill": 0.3,
+     "net": "PVDD"
+    }
+   ],
+   "merged": true
+  }
+ ],
+ "splits_found": 6,
+ "splits_repaired": 17,
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T19:36:41+00:00",
+ "input": "/work/boards/core/kicad/core.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:b00691228e1efb461f11281b320029d499227d204cade3bedfcb1d967e6b9cd2"
+}
