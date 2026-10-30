@@ -23,8 +23,16 @@ An agent designs a PCB from a written brief: research, architecture, parts, sche
   XPASS, and its line comes out. `tests/test_workarounds.py` runs every
   probe in `tests/workarounds/` and fails when
   [docs/workarounds.md](docs/workarounds.md) doesn't match them: a cause
-  that stands with no row, or a row whose cause is fixed. About 3 minutes;
-  pytest arguments pass through (`bin/hwde test tests/test_fab.py -x`).
+  that stands with no row, or a row whose cause is fixed. It also leaves
+  out the tests listed as `slow` in `tests/conftest.py` (`SLOW`: the live
+  toolchain, whole fixture boards through bench or the gates, intake of a
+  whole project); `bin/hwde test-slow` runs those, so run it too on a change
+  to the checks, bench, intake or `check_env`. The test keeps its scratch
+  files on `/dev/shm` when it has room and nothing in it fsyncs
+  (`HWDE_NO_FSYNC`), because on a loaded disk the suite's file writes, not
+  its CPU, set its time; it prints its time and its slowest 15 tests at
+  the end. A few minutes; pytest arguments pass through
+  (`bin/hwde test tests/test_fab.py -x`).
 - **Boards**, `bin/hwde check-all`, not the per-change test: copies every
   board under `boards/` to a scratch dir and re-runs its gate steps there
   through `bin/hwde`: `erc`, `drc_routed`, `verify`, `fab` (gerbers, drill,
