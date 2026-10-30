@@ -134,8 +134,8 @@ named; "none" is a tool wanted)
 
 | Class | Example | Caught by |
 |---|---|---|
-| I/O expander internal pull-ups fighting external pull-downs until firmware runs | TCA9555 enables floating at 1.1-1.65 V, a low-Vth FET turning PVDD on | none (strap/reset-state checker wanted) |
-| strap pin seeing an oscillator at reset | GPIO0 fed a 50 MHz RMII clock whose OE floated | none |
+| I/O expander internal pull-ups fighting external pull-downs until firmware runs | TCA9555 enables floating at 1.1-1.65 V, a low-Vth FET turning PVDD on | check_straps (expander outputs through the MCU reset) |
+| strap pin seeing an oscillator at reset | GPIO0 fed a 50 MHz RMII clock whose OE floated | check_straps |
 | inrush past the pass FET's SOA | 940 uF charged in 12 ms | sim_run testbench by hand (soa_check wanted) |
 | Miller turn-on of a P-FET at every input step | PVDD following VBUS on a 5->20 V PD step, 20 A inrush | sim_run testbench by hand |
 | pad-up (top-slug) package with no heatsink path | TPA3221 DDV with no EP and no heatsink | none (check_thermal top-slug mode wanted) |
@@ -144,6 +144,6 @@ named; "none" is a tool wanted)
 | enable pin input current through a large resistor | SDZ through 100k below VIH at the datasheet's IIH | sim_board i2c/enable screens partly |
 | footprint missing the maker's locating posts | RCA jack, PLR237 T8 vs T10 lead form | none (drawing reader wanted) |
 | annulus below the fab minimum on a maker's pattern | USB4085 0.40 drill in 0.65 pad | dfm gate |
-| no antenna keep-out | ESP32 antenna over four copper layers | none (check_antenna wanted) |
+| no antenna keep-out | ESP32 antenna over four copper layers | check_antenna |
 | high-current path in thin tracks and single vias | 5 A in 0.255 mm and one via per layer change | check_current (series path walk wanted) |
 | HASL on 0.4-0.5 mm pitch | five QFNs and an FFC | none |

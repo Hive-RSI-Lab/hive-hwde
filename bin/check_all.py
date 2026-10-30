@@ -11,8 +11,8 @@ board runs each gate its state.json records as passed, and fab once it has a
 fab/ package: a board re-passes everything it once passed. Each probe in
 tests/workarounds/ exits 0 while its cause stands, 10 once it's fixed. The
 knowledge library passes `knowledge --validate --strict` against these
-boards; it needs the source PDFs (HWDE_KNOWLEDGE_SOURCES, the hwde clone's),
-and is skipped, said so, without them.
+boards; it needs the source PDFs (HWDE_KNOWLEDGE_SOURCES, which bin/hwde fetches
+into HOME first), and is skipped, said so, without them.
 
 Exit 0 when every step passes and the table matches the probes, else 1.
 Run by bin/hwde (venv python, HWDE_* pins, HWDE_BIN set).
@@ -27,6 +27,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -98,13 +99,22 @@ def probes(table: dict[str, score.Workaround]) -> list[str]:
     found = {p.stem: p for p in sorted(pdir.glob("*.py")) if not p.name.startswith("_")}
     env = dict(os.environ, PYTHONPATH=os.pathsep.join(
         [str(SKILL), str(SKILL / "lib"), str(pdir)]))
-    for wid, p in found.items():
+
+    def run(p: Path):
         t = time.monotonic()
         r = subprocess.run([sys.executable, str(p)], cwd=ROOT, env=env,
                            capture_output=True, text=True,
                            stdin=subprocess.DEVNULL)
+        return r, time.monotonic() - t
+
+    # The probes are independent (each reads its own fixture or a scratch
+    # copy): four at a time, reported in order. One after another they
+    # were the per-PR test's slowest item (73 s on a loaded machine).
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        runs = list(pool.map(run, found.values()))
+    for (wid, p), (r, took) in zip(found.items(), runs):
         said = (r.stdout.strip().splitlines() or [""])[-1]
-        took = f"{time.monotonic() - t:.0f}s"
+        took = f"{took:.0f}s"
         if r.returncode == 0:
             state = "stands"
             if wid not in table:

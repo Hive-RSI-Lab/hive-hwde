@@ -21,9 +21,9 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
 2. `scripts/bom_cpl.py --pcb ... --out fab/ --parts-json parts/parts.json`
    - `BOM-full.csv` (the BOM OF RECORD: every intended part with its
    `Assembly Class` + `Instructions`), `BOM.csv` (the UPLOAD: `smt_placed`
-   only, JLC's four columns, one row per LCSC part), `prebuy.csv` (placed
+   and `tht` only, JLC's four columns, one row per LCSC part), `prebuy.csv` (placed
    Extended parts x `--build-qty`, default 5: the parts JLC may show as idle
-   stock to buy first) and `CPL.csv` (`smt_placed` only). Each part's
+   stock to buy first) and `CPL.csv` (`smt_placed` and `tht` only). Each part's
    rotation comes from its OWN LCSC footprint model (EasyEDA data, cached in
    `parts/easyeda/`; the first run fetches, and EasyEDA rate-limits after
    ~10 quick requests, so let it finish); `reference/jlc_rotations.csv` is
@@ -35,9 +35,10 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    403/429) means EasyEDA refused or the network failed, NOT that the part
    has no model: wait a few minutes and rerun, which fetches into the cache.
    - Membership comes from `assembly_class` in canonical parts data
-   (`smt_placed`, `hand_install`, `off_board`, `dnp`, `customer_supplied`,
+   (`smt_placed`, `tht`, `hand_install`, `off_board`, `dnp`, `customer_supplied`,
    `select_on_test`, `board_feature`), per-ref via `refdes_class` /
-   `refdes_dnp`, with `refdes_notes` / `assembly_notes` as the instruction
+   `refdes_dnp` (a footprint with KiCad's `through_hole` attr and no other
+   class is `tht`: in the upload, fitted in JLC's THT step), with `refdes_notes` / `assembly_notes` as the instruction
    text. NEVER filter the generated files afterwards and never hand-edit
    them: if a site must ship empty, class it `dnp` in parts.json and say why
    in `refdes_notes`. Tell the human which file is the upload.

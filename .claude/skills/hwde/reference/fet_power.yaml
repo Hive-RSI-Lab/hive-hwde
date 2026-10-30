@@ -1,0 +1,72 @@
+# Power MOSFETs: the SPICE model and thermal data sim_inrush.py and
+# soa_check.py use to judge a load switch's turn-on (lib/soa.py).
+#
+# match: regex tried against the part's MPN and value (case-insensitive).
+# polarity: pmos | nmos.  vds_max, vgs_max: absolute ratings (V).
+# tj_max: C.  rth_ja: steady-state junction-ambient (C/W).
+# zth: single-pulse junction-ambient transient thermal impedance, [seconds,
+#      C/W] points (log-log interpolated). Where the datasheet gives only a
+#      single-pulse SOA power curve P(t) at 25 C, zth = (tj_max - 25) / P(t).
+# spice: a .model card (ngspice VDMOS) fitted to the datasheet curves; the
+#      model is named by sim_inrush.py, so write it without a name:
+#      "VDMOS pchan Vto=... ".
+# source, verified: as in regulator_vref.yaml - `verified: false` means
+#      the numbers are a reading that a review has not re-checked against
+#      the datasheet; reports say so.
+fets:
+  - match: '^AO4485'
+    polarity: pmos
+    vds_max: 40
+    vgs_max: 20
+    tj_max: 150
+    rth_ja: 75
+    zth: [[1.0e-3, 2.5], [1.0e-2, 6.25], [1.0e-1, 10.0], [1.0, 20.0],
+          [10.0, 40.0], [1000.0, 75.0]]
+    spice: >-
+      VDMOS pchan Vto=-1.9 Kp=33 Rs=2m Rd=6m Rg=4 lambda=0.01 Cgdmax=1.5n
+      Cgdmin=0.15n a=0.6 Cgs=2.3n Cjo=0.9n m=0.5 Is=2e-11 N=1.1 Rb=10m
+      ksubthres=0.12 mtriode=1.2
+    vth: [1.7, 1.9, 2.5]
+    source: >-
+      AOS AO4485 Rev1.1 (Mar 2024): VDMOS fit to fig. 1/2/8 and zth from
+      the fig. 9/10 single-pulse SOA (50 W at 1 ms, 20 W at 10 ms), as read
+      in hifi-receiver-2 docs/review-2/power.md and sims/power/models.inc;
+      rth_ja steady state 75 C/W
+    verified: false
+  - match: '^2N7002'
+    polarity: nmos
+    vds_max: 60
+    vgs_max: 20
+    tj_max: 150
+    rth_ja: 417
+    spice: >-
+      VDMOS nchan Vto=1.6 Kp=0.6 Rs=0.5 Rd=0.5 Cgdmax=30p Cgdmin=5p
+      Cgs=25p Cjo=20p Is=1e-12 ksubthres=0.1
+    vth: [1.0, 1.6, 2.5]
+    source: JSCJ 2N7002 Vth 1.0/1.6/2.5 V; VDMOS from hifi-receiver-2 docs/review-2/sims/power/models.inc
+    verified: false
+
+# Generic thermal data by package, used (as a warning only, never an error)
+# when a FET has no row above. Scaled from the SO-8 row by each package's
+# typical rth_ja; a review replaces it with the part's own row.
+generic:
+  - package: 'SOT-?23|SOT-?323|SC-?70'
+    rth_ja: 250
+    zth: [[1.0e-3, 8.0], [1.0e-2, 20.0], [1.0e-1, 35.0], [1.0, 70.0],
+          [10.0, 140.0], [1000.0, 250.0]]
+    tj_max: 150
+  - package: 'SOIC-?8|SO-?8|SOP-?8|ESOP-?8'
+    rth_ja: 75
+    zth: [[1.0e-3, 2.5], [1.0e-2, 6.25], [1.0e-1, 10.0], [1.0, 20.0],
+          [10.0, 40.0], [1000.0, 75.0]]
+    tj_max: 150
+  - package: 'DFN|QFN|PowerPAK|PDFN|TDSON|SON|8x8|5x6|3x3'
+    rth_ja: 50
+    zth: [[1.0e-3, 1.5], [1.0e-2, 4.0], [1.0e-1, 7.0], [1.0, 14.0],
+          [10.0, 28.0], [1000.0, 50.0]]
+    tj_max: 150
+  - package: 'DPAK|TO-?252|D2PAK|TO-?263|TO-?220'
+    rth_ja: 50
+    zth: [[1.0e-3, 0.8], [1.0e-2, 2.0], [1.0e-1, 4.5], [1.0, 10.0],
+          [10.0, 25.0], [1000.0, 50.0]]
+    tj_max: 150

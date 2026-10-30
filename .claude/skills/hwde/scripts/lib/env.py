@@ -65,6 +65,10 @@ KICAD_PREFERENCE = ("10.", "9.")
 MIN_JAVA_FOR_FREEROUTING = 25
 
 _TIMEOUT = 30
+# `kicad-cli version` starts KiCad (an AppImage unpacks itself first): on a
+# strained machine that alone has taken over 30 s, and a pin whose version
+# probe times out is refused as "not a working kicad-cli" (issue #252).
+_VERSION_TIMEOUT = 120
 
 # Linux headless: KiCad's SWIG Specctra export/import (route_swig) and other
 # wx-backed pcbnew paths refuse to run without an X display ("Unable to access
@@ -266,11 +270,79 @@ def find_kicad_cli() -> Path | None:
     return scored[-1][2]
 
 
-def kicad_cli_version(cli: Path) -> tuple[int, ...]:
+def _state_dir() -> Path:
+    """bin/hwde's state dir: HWDE_HOME, else ~/.cache/hwde (always in HOME:
+    a published copy of the skill is read-only)."""
+    return Path(os.environ.get("HWDE_HOME") or Path.home() / ".cache" / "hwde")
+
+
+def _binary_key(cli: Path) -> str | None:
+    """What identifies a kicad-cli binary for the version cache.
+
+    A small file (bin/hwde's wrapper, rewritten on every run, so its mtime
+    says nothing) is keyed by its contents, which name the AppDir and so its
+    version; a real binary by its size and mtime."""
     try:
-        return parse_version(_run([str(cli), "version"]).stdout)
+        real = Path(cli).resolve()
+        st = real.stat()
+        if st.st_size <= 64 * 1024:
+            import hashlib
+            tag = hashlib.sha256(real.read_bytes()).hexdigest()
+        else:
+            tag = f"{st.st_size}:{st.st_mtime_ns}"
+    except OSError:
+        return None
+    return f"{real}|{tag}"
+
+
+_VERSION_LINES: dict[str, str | None] = {}
+
+
+def kicad_cli_version_line(cli: Path) -> str | None:
+    """First line of `kicad-cli version` (None when it fails), asked once
+    per binary: kept in this process and in <state>/kicad-cli-version.json,
+    so a pipeline of scripts doesn't start KiCad again on every call."""
+    import json
+    key = _binary_key(cli)
+    if key is not None and key in _VERSION_LINES:
+        return _VERSION_LINES[key]
+    cache = _state_dir() / "kicad-cli-version.json"
+    known: dict = {}
+    if key is not None:
+        try:
+            known = json.loads(cache.read_text(encoding="utf-8"))
+            if not isinstance(known, dict):
+                known = {}
+        except (OSError, ValueError):
+            known = {}
+        line = known.get(key)
+        if isinstance(line, str):
+            _VERSION_LINES[key] = line
+            return line
+    try:
+        cp = _run([str(cli), "version"], timeout=_VERSION_TIMEOUT)
     except (OSError, subprocess.TimeoutExpired):
-        return ()
+        return None
+    lines = (cp.stdout or "").strip().splitlines()
+    line = lines[0] if lines and cp.returncode == 0 else None
+    # Only a version that parses is kept: a failed or odd run is asked again.
+    if key is None or line is None or not parse_version(line):
+        return line
+    _VERSION_LINES[key] = line
+    known[key] = line
+    try:
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        tmp = cache.with_name(f"{cache.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(known, indent=1, sort_keys=True),
+                       encoding="utf-8")
+        os.replace(tmp, cache)
+    except OSError:
+        pass
+    return line
+
+
+def kicad_cli_version(cli: Path) -> tuple[int, ...]:
+    return parse_version(kicad_cli_version_line(cli) or "")
 
 
 _SYM_ENV_RE = re.compile(r"^KICAD(\d*)_SYMBOL_DIR$")
@@ -388,13 +460,19 @@ def find_krt() -> Path | None:
 
     Returns the newest tools_dir()/krt/KiCadRoutingTools-*/plugins dir (the
     scripts sys.path-insert relative dirs, so callers must run them with
-    cwd=plugins). Override with HWDE_KRT_DIR (points at the plugins dir).
+    cwd=plugins). Override with HWDE_KRT_DIR (the plugins dir; a release
+    root or its parent, with plugins/ under it, is followed down to it).
     """
     pin, var = skill_env("KRT_DIR")
     if pin:
         p = Path(pin)
         if not p.is_dir():
             raise EnvError(f"{var} does not exist: {pin}")
+        if not (p / "route_diff.py").exists():
+            down = sorted(p.glob("plugins")) + sorted(
+                p.glob("KiCadRoutingTools-*/plugins"))
+            if down:
+                return down[-1]
         return p
     dirs = sorted(tools_dir().glob("krt/KiCadRoutingTools-*/plugins"))
     return dirs[-1] if dirs else None
