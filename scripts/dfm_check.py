@@ -41,9 +41,13 @@ Checks (all thresholds from reference/jlc_capabilities.yaml, keyed
            or no fit, is an ERROR (cpl_rotation / cpl_no_model); a model
            centre off the board's by > 0.5 mm is a warning (cpl_offset). A
            model fetch that FAILED (EasyEDA 403/429 rate limit, other HTTP
-           status, network) is one ERROR for the run, cpl_fetch_failed,
-           listing the parts and the reason - never cpl_no_model: rerun once
-           EasyEDA answers.
+           status, network) is one finding for the run, cpl_fetch_failed,
+           listing the parts and the reason - never cpl_no_model. When it is
+           the run's only error the run is UNVERIFIED, not failed: status
+           error, exit 2, `unverified` naming the parts; rerun once EasyEDA
+           answers. Models are cached in the board (<parts.json dir>/easyeda,
+           env.easyeda_cache) as they are fetched - commit that dir and the
+           board's dfm never asks EasyEDA again.
            Runs with --parts. The fab step's image pass (cpl_render.py + a
            vision agent -> cpl_visual.json beside the CPL, or --visual) sits
            beside it: a part the two disagree on, or one the image pass left
@@ -1005,8 +1009,7 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
     payload = checklib.report("dfm_check", pcb, vios, **facts)
     # Warnings alone do not fail the gate (netlist_audit / fp_verify precedent):
     # KiCad's stock 0.12 mm silk and tight mask dams are advisory, not defects.
-    has_error = any(v["severity"] == "error" for v in vios)
-    payload["status"] = "violations" if has_error else "pass"
+    payload.update(grade(vios))
     fam_of = {k: f for f, ks in DFM_FAMILIES.items() for k in ks}
     ran = [f for f in DFM_FAMILIES if f not in skipped_cov]
     failing = {fam_of.get(v.get("kind")) for v in vios
@@ -1029,6 +1032,24 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
                             + "; ".join(f"{k} ({v})"
                                         for k, v in skipped_cov.items()))
     return payload
+
+
+def grade(vios: list) -> dict:
+    """The run's status from its findings: pass, violations (an error), or
+    error with `unverified` when the only errors are CPL models EasyEDA did
+    not hand over (cpl_fetch_failed). Nothing failed then, some placements
+    are unknown: a run that could not finish (exit 2), never a fail verdict
+    on the board. Any real error alongside it is still `violations`."""
+    errors = [v for v in vios if v["severity"] == "error"]
+    if not errors:
+        return {"status": "pass"}
+    if any(v.get("kind") != "cpl_fetch_failed" for v in errors):
+        return {"status": "violations"}
+    v = errors[0]
+    return {"status": "error",
+            "unverified": {"family": "placement", "refs": v["refs"],
+                           "reason": v.get("reason")},
+            "error": f"placement unverified, not failed: {v['msg']}"}
 
 
 def main(argv: list[str] | None = None) -> int:
