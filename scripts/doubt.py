@@ -46,6 +46,7 @@ import datetime as dt
 import json
 import re
 import shutil
+import uuid
 import sys
 from pathlib import Path
 
@@ -153,7 +154,7 @@ def state(led: Ledger, q: dict, digest: dict | None = None) -> str:
         return "answered"
     d = q.get("disposition")
     if d and d.get("verdict") == a["verdict"] \
-            and d.get("answer_at") == a.get("at"):
+            and d.get("answer") == a.get("id"):
         return "disposed"
     return f"open-{a['verdict']}"
 
@@ -303,7 +304,8 @@ def cmd_run(led: Ledger, args) -> dict:
             ran[q["id"]] = "no check"
             continue
         ans = doubtlib.run_check(path, board)
-        ans.update(at=now(), board=digest, check=doubtlib.sha256(path)[:16])
+        ans.update(id=uuid.uuid4().hex[:12], at=now(), board=digest,
+                   check=doubtlib.sha256(path)[:16])
         q["answer"] = ans
         ran[q["id"]] = ans["verdict"]
     led.save()
@@ -326,7 +328,7 @@ def cmd_dispose(led: Ledger, args) -> dict:
     if not args.how.strip():
         raise checklib.CheckError("--how: what was done, with its number")
     q["disposition"] = {"kind": args.kind, "how": args.how,
-                        "verdict": a["verdict"], "answer_at": a.get("at"),
+                        "verdict": a["verdict"], "answer": a.get("id"),
                         "at": now()}
     led.save()
     return {"status": "pass", "id": args.id, "disposition": q["disposition"]}
