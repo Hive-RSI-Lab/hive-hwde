@@ -13,9 +13,11 @@ fixed board isn't seeing the defect). The table goes to docs/errata-corpus.md.
     errata_corpus.py table           write docs/errata-corpus.md
 
 --cache DIR (default ~/.cache/hwde-errata-corpus, or HWDE_ERRATA_CACHE). Nothing
-is fetched into this repo. Checks run here: netlist_audit (on the schematic,
-with an empty constraints file: what hwde reads before anyone has written
-one). A catch for another script is reported as not run.
+is fetched into this repo. Checks run here (RUNNERS): netlist_audit (on the
+schematic, with an empty constraints file: what hwde reads before anyone has
+written one) and check_straps (on the board, with the netlist kicad-cli
+exports from the schematic). A catch for another script is reported as not
+run.
 """
 from __future__ import annotations
 
@@ -93,19 +95,47 @@ def audit(cache: Path, b: dict, rev: str) -> list[dict]:
     return json.loads(out.read_text(encoding="utf-8")).get("violations", [])
 
 
+def straps(cache: Path, b: dict, rev: str) -> list[dict]:
+    """check_straps on rev's board, with the netlist kicad-cli exports from
+    its schematic (what the pipeline puts beside an hwde board)."""
+    sys.path.insert(0, str(SCRIPTS / "lib"))
+    import env
+    cli = env.find_kicad_cli()
+    if not cli:
+        raise SystemExit("check_straps catches need kicad-cli (bin/hwde env)")
+    base = repo_dir(cache, b)
+    run_dir = cache / "runs" / b["id"]
+    run_dir.mkdir(parents=True, exist_ok=True)
+    net = run_dir / f"{rev}.net"
+    subprocess.run([cli, "sch", "export", "netlist", "-o", str(net),
+                    str(base / b[rev]["sch"])], capture_output=True, text=True,
+                   timeout=900, check=True)
+    out = run_dir / f"{rev}-check_straps.json"
+    subprocess.run([sys.executable, str(SCRIPTS / "check_straps.py"), "--pcb",
+                    str(base / b[rev]["pcb"]), "--netlist", str(net), "--out", str(out)],
+                   capture_output=True, text=True, timeout=900)
+    return json.loads(out.read_text(encoding="utf-8")).get("violations", [])
+
+
+# the checks this script can run: script -> (cache, board, rev) -> violations
+RUNNERS = {"netlist_audit": audit, "check_straps": straps}
+
+
 def run(cache: Path, b: dict) -> dict:
-    found = {rev: audit(cache, b, rev) for rev in ("rev_a", "rev_b")}
+    scripts = {d["catch"]["script"] for d in b["defects"] if d.get("catch")} & set(RUNNERS)
+    found = {(s, rev): RUNNERS[s](cache, b, rev) for s in sorted(scripts)
+             for rev in ("rev_a", "rev_b")}
     res = {}
     for d in b["defects"]:
         c = d.get("catch")
         if not c:
             continue
-        if c["script"] != "netlist_audit":
+        if c["script"] not in RUNNERS:
             res[d["id"]] = {"ran": False}
             continue
         res[d["id"]] = {"ran": True,
-                        "rev_a": any(matches(v, c) for v in found["rev_a"]),
-                        "rev_b": any(matches(v, c) for v in found["rev_b"])}
+                        "rev_a": any(matches(v, c) for v in found[(c["script"], "rev_a")]),
+                        "rev_b": any(matches(v, c) for v in found[(c["script"], "rev_b")])}
     (cache / "runs" / b["id"] / "result.json").write_text(json.dumps(res, indent=1))
     return res
 

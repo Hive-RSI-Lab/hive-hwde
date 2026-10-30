@@ -105,3 +105,26 @@ def test_sot23_pinout_quiet_on_gsd_and_bec(tmp_path):
             "c": [("Q1", "3", "passive", "D"), ("Q2", "3", "passive", "C")]}
     comps = {"Q1": "Package_TO_SOT_SMD:SOT-23", "Q2": "Package_TO_SOT_SMD:SOT-23-3"}
     assert not [k for k in kinds(netlist(tmp_path, nets, comps)) if k[0] == "sot23_pinout"]
+
+
+def test_run_dispatches_each_catch_to_its_script(tmp_path, monkeypatch):
+    """A check_straps catch runs check_straps (minuet-4), not netlist_audit;
+    a script with no runner is reported as not run."""
+    calls = []
+
+    def fake(script, hits):
+        def runner(cache, b, rev):
+            calls.append((script, rev))
+            return [{"kind": "reset_pull_offboard", "net": "GPIO6"}] \
+                if rev in hits else []
+        return runner
+    monkeypatch.setattr(ec, "RUNNERS", {"check_straps": fake("check_straps", {"rev_a"})})
+    b = {"id": "m", "defects": [
+        {"id": "m-1", "catch": {"script": "check_straps", "kind": "reset_pull_offboard",
+                                "net": "GPIO6"}},
+        {"id": "m-2", "catch": {"script": "check_current", "kind": "x"}}]}
+    (tmp_path / "runs" / "m").mkdir(parents=True)
+    res = ec.run(tmp_path, b)
+    assert res["m-1"] == {"ran": True, "rev_a": True, "rev_b": False}
+    assert res["m-2"] == {"ran": False}
+    assert sorted(calls) == [("check_straps", "rev_a"), ("check_straps", "rev_b")]

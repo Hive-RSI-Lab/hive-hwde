@@ -1,4 +1,5 @@
-# What pins do at reset, for check_straps.py: an MCU's strapping pins and
+# What pins do at reset, for check_straps.py: an MCU's strapping pins, its
+# other pins the chip pulls at reset (reset_pulls), and
 # the reset behaviour of the parts that can pull or drive them, or that
 # hold a board's enables (IO expanders, oscillators).
 #
@@ -69,7 +70,34 @@ mcus:
             why: "download mode needs GPIO8 = 1 with GPIO9 = 0 (it also sets the ROM log)"}
       IO2: {pull: none, want: high, severity: warning,
             why: "Espressif asks for GPIO2 pulled high at boot"}
-    source: ESP32-C3 datasheet v1.x §2.4 Strapping Pins; ESP32-C3 Hardware Design Guidelines §2.6
+    # Not straps, but pulled by the chip from reset until firmware drives
+    # them: check_straps flags a load these switch on, or a connector they
+    # reach with no other pull (load_on_at_reset, reset_pull_offboard).
+    reset_pulls:
+      IO4: {pull: up, why: "MTMS: the JTAG pad's pull-up is on from reset"}
+      IO5: {pull: up, why: "MTDI: the JTAG pad's pull-up is on from reset"}
+      IO6: {pull: up, why: "MTCK: the JTAG pad's pull-up is on from reset (minuet v3: the LED strip came on early)"}
+    source: ESP32-C3 datasheet v1.x §2.4 Strapping Pins, Table 2-4 IO MUX reset column; ESP32-C3 Hardware Design Guidelines §2.6; minuet v3 design-and-errata.md (GPIO6 pull-up at reset)
+    verified: false
+
+  - family: ESP32-C6
+    match: '^ESP32-C6'
+    vdd: 3.3
+    vil: 0.25
+    vih: 0.75
+    pull_ohm: 45000
+    enable: [EN, CHIP_EN, CHIP_PU]
+    aliases: {BOOT: IO9}
+    straps:
+      IO9: {pull: up, want: high, severity: error,
+            why: "GPIO9 = 0 boots the download mode instead of the flash"}
+      IO8: {pull: none, want: high, severity: warning,
+            why: "download mode needs GPIO8 = 1 with GPIO9 = 0"}
+    reset_pulls:
+      IO4: {pull: up, why: "MTMS: the JTAG pad's pull-up is on from reset"}
+      IO5: {pull: up, why: "MTDI: the JTAG pad's pull-up is on from reset"}
+      IO6: {pull: up, why: "MTCK: the JTAG pad's pull-up is on from reset"}
+    source: ESP32-C6 datasheet v1.x §3 Boot Configurations and the IO MUX reset column
     verified: false
 
 # Parts whose pins pull or drive a net at reset.

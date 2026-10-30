@@ -1,6 +1,6 @@
 """check_straps.py - an MCU's strapping pins read the level they need at
-power-on and on an MCU-only reset, and an IO expander's pins come up at a
-defined level (P8 verify suite).
+power-on and on an MCU-only reset, the pins it pulls at reset leave no load
+on, and an IO expander's pins come up at a defined level (P8 verify suite).
 
 The hit: hifi-receiver-2's core passed every gate while its ESP32 GPIO0
 strap could latch a 50 MHz clock: the RMII oscillator's OE came from a
@@ -30,6 +30,14 @@ Findings:
   strap_unknown       warning: a strap with a wanted level also reaches pins
                       with no known reset state (confirm each is an input or
                       hi-Z at reset, or add the part to reset_states.yaml)
+  load_on_at_reset    warning: an MCU pin the chip pulls at reset (a
+                      strap's pull, or reset_pulls: the ESP32-C3's JTAG
+                      pins) holds a FET gate past its VGS(th) min or a
+                      part's enable asserted, so the load is on before
+                      firmware runs (minuet v3 GPIO6, the LED strip)
+  reset_pull_offboard warning: a reset_pulls pin's net leaves the board on
+                      a connector with no pull but the chip's own (a debug
+                      header excepted): whatever is plugged in sees it
   io_reset_undefined  error: an expander pin sits between VIL and VIH of its
                       supply at power-on (its pull fights an external one)
   fet_on_at_reset     error: a MOSFET gate on an expander pin (directly or
@@ -119,7 +127,8 @@ class Board:
             for nd in nodes:
                 self.pins.setdefault(nd["ref"], {})[nd["pin"]] = {
                     "net": net, "name": pin_name(nd.get("pinfunction"),
-                                                 nd["pin"])}
+                                                 nd["pin"]),
+                    "bar": "~{" in (nd.get("pinfunction") or "")}
         parent = {n: n for n in parsed["nets"]}
 
         def find(n):
@@ -172,8 +181,12 @@ class Board:
 
 
 class Resolver:
-    def __init__(self, board: Board, kb: dict, mcu: dict | None):
+    def __init__(self, board: Board, kb: dict, mcu: dict | None,
+                 mcu_pulls: dict | None = None):
         self.b, self.kb, self.mcu = board, kb, mcu
+        # {(mcu ref, pin): (volts, ohm, label)}: MCU pins whose own reset
+        # pull counts (check_reset_pulls); the strap check leaves it empty
+        self.mcu_pulls = mcu_pulls or {}
         self.osc = kb["oscillators"]
         self.parts = {}
         for ref in board.pins:
@@ -226,6 +239,10 @@ class Resolver:
             meta = self.b.pins[ref][pin]
             p = prefix(ref)
             where = f"{ref}.{pin} ({meta['name'] or self.b.value(ref)})"
+            if (ref, pin) in self.mcu_pulls:
+                pv, ohm, label = self.mcu_pulls[(ref, pin)]
+                out["pulls"].append((pv, series + ohm, label))
+                continue
             if self.mcu and ref == self.mcu["ref"]:
                 continue  # its other pins are inputs at reset
             if p == "R" and len(self.b.pins[ref]) == 2:
@@ -506,6 +523,166 @@ def check_expanders(board, kb, mcu, bg) -> tuple[list, list]:
     return viols, facts
 
 
+# An IC pin that switches its part (a load switch, regulator, LED driver)
+# on: asserted means on for an enable, off for a shutdown. An enable is
+# active high unless overbarred or n-named; a shutdown, sleep or standby
+# pin is active low (the convention even when the symbol drops the bar).
+ENABLE_NAMES = re.compile(r"^(N|N_)?(EN|ENA|ENABLE|EN[0-9]|CE|ON|PWR_?EN|"
+                          r"LED_?EN|LOAD_?EN)(_?N|B)?$")
+SHUTDOWN_NAMES = re.compile(r"^(N|N_)?(SHDN|SHUTDOWN|SLEEP|STBY|STANDBY)"
+                            r"(_?N|B)?$")
+DISABLE_NAMES = re.compile(r"^(N|N_)?(DIS|DISABLE|OFF|DRVOFF)(_?N|B)?$")
+# a connector pin whose net or pin is a debug port: its pull is the point
+DEBUG_NAMES = re.compile(r"JTAG|TMS|TCK|TDI|TDO|SWD|SWCLK|SWO", re.I)
+
+
+def part_on(name: str, bar: bool, level: str) -> bool | None:
+    """Whether a pin at `level` (high | low) leaves its part on; None if the
+    pin doesn't switch the part."""
+    low_named = bool(re.match(r"^N_?[A-Z]", name)
+                     and not name.startswith(("NC", "ON"))) \
+        or bool(re.search(r"(_N|[^A]B)$", name))
+    if ENABLE_NAMES.match(name):
+        active = "low" if bar or low_named else "high"
+        return level == active
+    if SHUTDOWN_NAMES.match(name):
+        return level == "high"
+    if DISABLE_NAMES.match(name):
+        active = "low" if bar or low_named else "high"
+        return level != active
+    return None
+
+
+def near_nodes(board, g) -> list[tuple]:
+    """(ref, pin, net group) of every pin on net group g or one resistor
+    away from it (the far side of that resistor)."""
+    out = [(ref, pin, g) for ref, pin in board.nodes.get(g, [])]
+    for ref, pin in board.nodes.get(g, []):
+        if prefix(ref) == "R" and len(board.pins[ref]) == 2:
+            other = [q for q in board.pins[ref] if q != pin][0]
+            og = board.net(ref, other)
+            if og != g and board.rail(og) is None:
+                out += [(r, p, og) for r, p in board.nodes.get(og, [])
+                        if r != ref]
+    return out
+
+
+def check_reset_pulls(board, kb, mcu, bg) -> tuple[list, list]:
+    """Every MCU pin the chip pulls at reset (a strap's pull, or a pin in
+    the row's reset_pulls: the ESP32-C3's JTAG pins) holds its net from
+    power-on until firmware drives it. Where that net switches a load (a
+    FET gate past VGS(th), a part's enable) the load comes up on before
+    firmware runs; where it leaves the board on a connector with nothing
+    but the MCU's own pull, whatever the connector feeds sees it."""
+    viols, facts = [], []
+    row = mcu["row"]
+    vdd = row.get("vdd", DEFAULT_VDD)
+    ohm = row.get("pull_ohm", 45000)
+    pins = mcu_pins(board, mcu)
+    unverified = "" if row.get("verified", False) else \
+        " (reset_states.yaml: unverified)"
+    pulled = {}
+    for name, spec in (row.get("straps") or {}).items():
+        if spec.get("pull") in ("up", "down"):
+            pulled[name] = {**spec, "strap": True}
+    for name, spec in (row.get("reset_pulls") or {}).items():
+        if spec.get("pull") in ("up", "down"):
+            pulled.setdefault(name, {**spec, "strap": False})
+    mpulls = {}
+    for name, spec in pulled.items():
+        pin = pins.get(name)
+        if pin is not None:
+            mpulls[(mcu["ref"], pin)] = (
+                vdd if spec["pull"] == "up" else 0.0, spec.get("ohm", ohm),
+                f"{mcu['ref']} {name} internal {spec['pull']}")
+    res = Resolver(board, kb, mcu, mcu_pulls=mpulls)
+    for name, spec in sorted(pulled.items()):
+        pin = pins.get(name)
+        if pin is None:
+            continue
+        g = board.net(mcu["ref"], pin)
+        if board.unconnected(g):
+            continue
+        st = res.state(g, "por", vdd=vdd, vil=row.get("vil", 0.25),
+                       vih=row.get("vih", 0.75))
+        facts.append({"mcu": mcu["ref"], "pin": pin, "name": name,
+                      "net": board.label(g), "pull": spec["pull"],
+                      "por": st["text"]})
+        if st["state"] in ("toggling", "may_toggle", "firmware"):
+            continue
+        pos = pad_pos(bg, mcu["ref"], pin)
+        head = (f"{mcu['ref']} {name} (pin {pin}, {board.label(g)}) is "
+                f"pulled {spec['pull']} by the chip from reset until "
+                "firmware drives it")
+        why = f" ({spec['why']})" if spec.get("why") else ""
+        seen = set()
+        for ref, rpin, gg in near_nodes(board, g):
+            if ref == mcu["ref"] or (ref, rpin) in seen:
+                continue
+            seen.add((ref, rpin))
+            meta = board.pins[ref][rpin]
+            gst = st if gg == g else res.state(gg, "por", vdd=vdd,
+                                               vil=IO_VIL, vih=IO_VIH)
+            if prefix(ref) == "Q" and meta["name"] in GATE_NAMES:
+                vth = fet_vth(kb, board.value(ref))
+                if vth is None or gst["volts"] is None \
+                        or gst["volts"] < vth:
+                    continue
+                viols.append(checklib.violation(
+                    SCRIPT, "warning", pad_pos(bg, ref, rpin), None,
+                    board.label(gg), [mcu["ref"], ref],
+                    f"{head}{why}, so {ref} ({board.value(ref)}) gate on "
+                    f"{board.label(gg)} sits at {gst['volts']:.2f} V, at or "
+                    f"above its minimum VGS(th) {vth:g} V: its load is on "
+                    "before firmware runs. Hold the gate off with a pull "
+                    "the chip's can't beat, or use a pin with no reset "
+                    f"pull{unverified}", SOURCE, kind="load_on_at_reset",
+                    pin=name, volts=checklib.rnd(gst["volts"], 3),
+                    vth_min=vth))
+                continue
+            if prefix(ref) in PASSIVE_PREFIXES + CONNECTOR_PREFIXES \
+                    or ref in board.shorts or prefix(ref) == "R":
+                continue
+            if gst["state"] not in ("high", "low"):
+                continue
+            on = part_on(meta["name"], meta.get("bar", False),
+                         gst["state"])
+            if not on:
+                continue
+            viols.append(checklib.violation(
+                SCRIPT, "warning", pad_pos(bg, ref, rpin), None,
+                board.label(gg), [mcu["ref"], ref],
+                f"{head}{why}, so {ref} {meta['name']} "
+                f"({board.value(ref)}) reads {gst['state']} and the part "
+                "is on before firmware runs. Hold it off with an external "
+                f"pull, or use a pin with no reset pull{unverified}",
+                SOURCE, kind="load_on_at_reset", pin=name,
+                part_pin=meta["name"]))
+        if spec["strap"]:
+            continue  # a boot pin on a programming header is meant to be
+        ext = [p for p in st["pulls"] if not p.startswith(f"{mcu['ref']} ")]
+        conns = [f"{ref}.{rpin}" for ref, rpin in board.nodes.get(g, [])
+                 if prefix(ref) in CONNECTOR_PREFIXES]
+        if not conns or ext or st["unknown"] and any(
+                not u.endswith("a connector") for u in st["unknown"]):
+            continue
+        names = " ".join(board.names.get(g, [])) + " " + " ".join(
+            board.pins[c.split(".")[0]][c.split(".")[1]]["name"]
+            for c in conns)
+        if DEBUG_NAMES.search(names):
+            continue
+        viols.append(checklib.violation(
+            SCRIPT, "warning", pos, None, board.label(g), [mcu["ref"]],
+            f"{head}{why}, and the net leaves the board on "
+            f"{', '.join(sorted(conns))} with nothing else holding it: "
+            f"whatever is plugged in sees it {st['state']} from power-on "
+            "and through every reset (an LED strip or a load switch "
+            "comes on early). Add an external pull to the idle level, or "
+            f"move the signal to a pin with no reset pull{unverified}",
+            SOURCE, kind="reset_pull_offboard", pin=name))
+    return viols, facts
+
+
 GATE_NAMES = ("G", "GATE")
 
 
@@ -561,16 +738,21 @@ def check(pcb: Path, netlist: Path | None = None, kb: dict | None = None):
     board = Board(simlib.parse_netlist(netlist))
     viols, straps, ios = [], [], []
     mcus = find_mcus(board, kb)
+    pulls = []
     for mcu in mcus:
         v, f = check_mcu(board, kb, mcu, bg)
         viols += v
         straps += f
+        v, f = check_reset_pulls(board, kb, mcu, bg)
+        viols += v
+        pulls += f
     v, f = check_expanders(board, kb, mcus[0] if mcus else None, bg)
     viols += v
     ios += f
     return viols, {"netlist": str(netlist),
                    "mcus": [m["ref"] for m in mcus],
-                   "straps": straps, "expander_pins": ios}
+                   "straps": straps, "reset_pulls": pulls,
+                   "expander_pins": ios}
 
 
 def run(argv=None):
