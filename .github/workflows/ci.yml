@@ -1,0 +1,103 @@
+name: ci
+# The project's test (.hive/project.json: bin/hwde test) on GitHub's standard hosted runner
+# of this public repo, so the Hive runs no test of hwde's on its own machine (forge_tests).
+# The runner gets what the Hive's tools folder gives a check there: KiCad 10.0.6's AppImage,
+# freerouting 2.2.4 and uv, at the same layout under $HIVE_TOOLS, so bin/hwde finds them
+# as it does /hive/tools. Bump a version here with the tools folder's.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  # A PR's superseded run is cancelled; every push to main keeps its own result.
+  group: ci-${{ github.event_name }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+permissions:
+  contents: read
+env:
+  KICAD_VERSION: 10.0.6
+  KICAD_SHA256: c05fa6760be64aaf55ff476911ce81272b4efb6241f4d7e2b9fdcdc7efbf5808
+  FREEROUTING_VERSION: 2.2.4
+  FREEROUTING_SHA256: f5ed374182900ccc78e473518bbb9f6b869f4a07159495f663a76f52bb10523b
+jobs:
+  # The Hive reads this job as "test (ubuntu-latest)" (forge_tests): keep it unnamed.
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    env:
+      HIVE_TOOLS: ${{ github.workspace }}/../tools
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.6"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      # KiCad's SWIG paths need an X display; bin/hwde runs them under xvfb-run.
+      - name: xvfb
+        run: sudo apt-get install -y xvfb
+      - name: cache KiCad's AppImage
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/kicad.tar
+          key: kicad-${{ env.KICAD_VERSION }}-${{ env.KICAD_SHA256 }}
+      - name: KiCad and freerouting, as the Hive's tools folder has them
+        shell: bash
+        run: |
+          mkdir -p "$HIVE_TOOLS/freerouting"
+          tar="$RUNNER_TEMP/kicad.tar"
+          [ -f "$tar" ] || curl -fsSL --retry 3 -o "$tar" "https://downloads.kicad.org/kicad/linux/explore/stable/download/kicad-$KICAD_VERSION-x86_64.AppImage.tar"
+          echo "$KICAD_SHA256  $tar" | sha256sum -c -
+          cd "$RUNNER_TEMP"
+          tar xf "$tar"
+          chmod +x "kicad-$KICAD_VERSION-x86_64.AppImage"
+          "./kicad-$KICAD_VERSION-x86_64.AppImage" --appimage-extract >/dev/null
+          rm "kicad-$KICAD_VERSION-x86_64.AppImage"
+          mv "$(readlink -f squashfs-root)" "$HIVE_TOOLS/kicad-$KICAD_VERSION"
+          rm -f squashfs-root
+          jar="$HIVE_TOOLS/freerouting/freerouting-$FREEROUTING_VERSION.jar"
+          curl -fsSL --retry 3 -o "$jar" "https://github.com/freerouting/freerouting/releases/download/v$FREEROUTING_VERSION/freerouting-$FREEROUTING_VERSION.jar"
+          echo "$FREEROUTING_SHA256  $jar" | sha256sum -c -
+      # Fails the job unless bin/hwde found KiCad and freerouting, so the suite can't go
+      # green by skipping what needs them.
+      - name: bin/hwde finds its tools
+        shell: bash
+        run: |
+          bin/hwde env | tee "$RUNNER_TEMP/env.sh"
+          grep -q "^export HWDE_KICAD_CLI=" "$RUNNER_TEMP/env.sh"
+          grep -q "^export HWDE_FREEROUTING_JAR=" "$RUNNER_TEMP/env.sh"
+          grep -q "^export KICAD_SYMBOL_DIR=" "$RUNNER_TEMP/env.sh"
+          . "$RUNNER_TEMP/env.sh"
+          "$HWDE_KICAD_CLI" version | grep -x "$KICAD_VERSION"
+      - name: the suite (bin/hwde test)
+        shell: bash
+        run: bin/hwde test 2>&1 | tee "$RUNNER_TEMP/suite.log"
+        env:
+          GIT_AUTHOR_NAME: ci
+          GIT_AUTHOR_EMAIL: ci@localhost
+          GIT_COMMITTER_NAME: ci
+          GIT_COMMITTER_EMAIL: ci@localhost
+      # Job logs need a login; annotations don't, so the Hive can read what failed: pytest's
+      # summary lines, then each failure's own section.
+      - name: name the failing tests
+        if: failure()
+        shell: bash
+        run: |
+          log="$RUNNER_TEMP/suite.log"
+          [ -f "$log" ] || exit 0
+          enc() { awk 'BEGIN { ORS = "%0A" } { gsub(/\r/, ""); gsub(/%/, "%25"); print substr($0, 1, 300) }'; }
+          sum=$(grep -E '^(FAILED|ERROR) ' "$log" | head -40 || true)
+          [ -n "$sum" ] && echo "::error title=failing tests::$(printf '%s\n' "$sum" | enc)"
+          { grep -n -E '^_{3,} .+ _{3,}$' "$log" || true; } | head -15 | while IFS=: read -r n _; do
+            echo "::error::$(sed -n "$n,$((n + 30))p" "$log" | enc)"
+          done
+          [ -n "$sum" ] || echo "::error title=suite::$(tail -n 30 "$log" | enc)"
