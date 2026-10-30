@@ -482,3 +482,30 @@ def test_render_records_fetch_error_apart_from_no_model(ws, tmp_path,
     assert "fetch_error" not in idx["parts"]["U1"]
     assert idx["fetch_failed"] == [] and "note" not in idx
     easyeda.reset_rate_limit()
+
+
+def test_rate_limit_is_waited_out_before_it_latches(tmp_path, monkeypatch):
+    """The back-off schedule is slept through once per process: a part that
+    clears after one wait is fetched; when the schedule runs out the limit
+    latches as before, and no later part sleeps again."""
+    monkeypatch.setenv("HWDE_EASYEDA_BACKOFF", "5,10")
+    easyeda.reset_rate_limit()
+    slept: list = []
+    monkeypatch.setattr(easyeda, "_sleep", slept.append)
+    answers = iter([_http(429), lambda _: {}])
+
+    def once_limited(lcsc):
+        return next(answers)(lcsc)
+    errs: dict = {}
+    # 429, wait 5 s, then EasyEDA answers (with nothing for this part)
+    assert easyeda.get("C1", tmp_path, fetcher=once_limited,
+                       errors=errs) is None
+    assert slept == [5.0] and errs == {} and easyeda.rate_limited() is None
+    calls = _Calls(_http(403))
+    assert easyeda.get("C2", tmp_path, fetcher=calls, errors=errs) is None
+    assert slept == [5.0, 10.0] and calls.asked == ["C2", "C2"]
+    assert easyeda.rate_limited() == errs["C2"]
+    assert easyeda.get("C3", tmp_path, fetcher=calls, errors=errs) is None
+    assert calls.asked == ["C2", "C2"] and slept == [5.0, 10.0]
+    monkeypatch.setenv("HWDE_EASYEDA_BACKOFF", "0, x,")
+    assert easyeda.backoff_schedule() == []

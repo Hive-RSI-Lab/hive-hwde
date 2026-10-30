@@ -17,6 +17,16 @@ these ways:
   copies; `scripts/board_edit.py`, whose `--outline fit` counts silk and whose
   edits refuse to clip it; `scripts/check_silk.py`, whose silk items carry
   their footprint's reference.
+- Checks a reviewer of hifi-receiver-2's first spin did by hand (10-29):
+  `scripts/check_connector_fit.py` holds each part's leads, locating posts
+  and front edge to its mechanical drawing (the extraction's new
+  `mechanical` block; `fp_verify` applies the lead and post rules to a
+  library footprint), and reports every mating connector's overhang;
+  `scripts/check_ep_paste.py` measures each exposed pad's paste coverage and
+  fails paste printed over its vias. `datasheet_extract.py --render` renders
+  scanned and drawing pages for the extractor (OCR'd with tesseract when
+  installed), and `lib/easyeda.py` waits out a 403/429 on a bounded back-off
+  before it gives up for the run.
 - A live stock-and-match check on every BOM row (the person, 10-28: "didn't
   the hive pull the JLC and LCSC?"): `scripts/stock_check.py` and
   `scripts/lib/stocklib.py` read JLC's and LCSC's own record for each code

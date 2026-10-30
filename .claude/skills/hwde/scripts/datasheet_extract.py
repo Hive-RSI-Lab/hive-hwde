@@ -15,6 +15,14 @@ reads the PDF pages); this script owns the deterministic half:
                     (--full-text restores them). Image-only datasheets yield
                     little/no text - the agent then reads the rendered pages
                     directly.
+  --render DIR      with --pdf: render the image-only pages (under
+                    IMAGE_ONLY_CHARS of text) and the mechanical-drawing
+                    pages to DIR/page-NNN.png with pdftoppm, OCR the
+                    image-only ones with tesseract when it is on PATH (their
+                    text then fills text_by_page, marked "ocr"), and list
+                    them under "rendered" for the agent to read - a
+                    connector drawing's pin and post sizes and its PCB-edge
+                    line go into the extraction's `mechanical` block.
   --validate FILE   validate a candidate extraction against the schema.
                     exit 0 = valid, 1 = schema violations, 2 = unreadable.
   --schema          print the JSON Schema (single source of truth).
@@ -53,6 +61,66 @@ import argparse
 import json
 import sys
 from pathlib import Path
+
+_POS = {"type": "number", "exclusiveMinimum": 0}
+_SRC = {"type": "string", "description": "page and figure it was read from"}
+# A pin or post cross-section: round (dia_mm) or rectangular (w_mm x t_mm),
+# its MAX size (with tolerance) as the drawing gives it.
+MECHANICAL_SCHEMA: dict = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "pins": {
+            "type": "array",
+            "description": "THT leads: which pads they go through and their "
+                           "cross-section",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "pads": {"type": "array", "items": {"type": "string"},
+                             "description": "pad numbers (default: every "
+                                            "numbered plated hole)"},
+                    "dia_mm": _POS, "w_mm": _POS, "t_mm": _POS,
+                    "hole_mm": {**_POS, "description": "the drawing's "
+                                "recommended finished hole"},
+                    "source": _SRC,
+                },
+            },
+        },
+        "posts": {
+            "type": "array",
+            "description": "locating posts / bosses / snap pegs that need "
+                           "their own (usually unplated) holes",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["count"],
+                "properties": {
+                    "count": {"type": "integer", "minimum": 1},
+                    "dia_mm": _POS, "w_mm": _POS, "t_mm": _POS,
+                    "hole_mm": _POS,
+                    "source": _SRC,
+                },
+            },
+        },
+        "edge": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["overhang_mm"],
+            "description": "where the drawing puts the PCB edge",
+            "properties": {
+                "overhang_mm": {"type": "number", "description":
+                                "how far the body's front stands past the "
+                                "PCB edge line (negative: set back behind "
+                                "it)"},
+                "tol_mm": {"type": "number", "minimum": 0},
+                "source": _SRC,
+            },
+        },
+        "source": _SRC,
+    },
+}
 
 # JSON Schema (Draft 2020-12) for a datasheet-extract JSON document.
 PIN_TYPES = ["power_in", "power_out", "ground", "input", "output",
@@ -147,6 +215,10 @@ DATASHEET_SCHEMA: dict = {
             },
             "required": ["present"],
         },
+        # check_connector_fit: the part's mechanical drawing, read off the
+        # vendor's dimensioned drawing / PCB layout (the land pattern above
+        # is the pads; this is what goes THROUGH them and past the edge).
+        "mechanical": MECHANICAL_SCHEMA,
         "layout_notes": {"type": "array", "items": {"type": "string"}},
         "abs_max": {
             "type": "array",
@@ -286,12 +358,70 @@ def _checked_pdf(path: str) -> tuple[Path | None, dict | None]:
     return pdf, None
 
 
+# A page with less text than this is a scan or a drawing: its numbers are in
+# the image, so it is rendered (and OCR'd when tesseract is on PATH).
+IMAGE_ONLY_CHARS = 200
+# Pages that hold the mechanical drawing (mechanical: pins, posts, edge) are
+# rendered too: a dimension read off a drawing needs the picture, not the
+# text layer's loose numbers.
+DRAWING_KEYWORDS = ("land pattern", "recommended pcb", "pcb layout",
+                    "pcb edge", "board edge", "panel", "hole", "dimension",
+                    "mounting", "footprint", "package outline", "drawing")
+
+
+def render_pages(pdf: Path, pages: list[dict], out_dir: Path,
+                 dpi: int = 200) -> dict:
+    """Render the image-only and drawing pages of `pdf` to PNGs in `out_dir`
+    with poppler's pdftoppm, OCR the image-only ones with tesseract when it
+    is installed, and put that text into their `pages` entry (`ocr`: true).
+    Neither tool is a hard dependency: without pdftoppm nothing is rendered
+    and `renderer` is null; the agent then reads the PDF pages itself."""
+    import shutil
+    import subprocess
+    renderer, ocr = shutil.which("pdftoppm"), shutil.which("tesseract")
+    out: dict = {"renderer": renderer, "ocr": ocr, "dir": str(out_dir),
+                 "rendered": []}
+    want = []
+    for p in pages:
+        text = p.get("text", "")
+        if len(text.strip()) < IMAGE_ONLY_CHARS:
+            want.append((p, "image_only"))
+        elif any(k in text.lower() for k in DRAWING_KEYWORDS):
+            want.append((p, "drawing"))
+    out["pages"] = [{"page": p["page"], "why": why} for p, why in want]
+    if renderer is None or not want:
+        return out
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for p, why in want:
+        n = p["page"]
+        stem = out_dir / f"page-{n + 1:03d}"
+        r = subprocess.run([renderer, "-f", str(n + 1), "-l", str(n + 1),
+                            "-r", str(dpi), "-png", "-singlefile", str(pdf),
+                            str(stem)], capture_output=True, text=True,
+                           timeout=120)
+        png = stem.with_suffix(".png")
+        row = {"page": n, "why": why, "png": str(png)}
+        if r.returncode or not png.is_file():
+            row = {"page": n, "why": why,
+                   "error": (r.stderr or "pdftoppm wrote nothing").strip()}
+        elif why == "image_only" and ocr:
+            t = subprocess.run([ocr, str(png), "-", "--psm", "3"],
+                               capture_output=True, text=True, timeout=300)
+            if t.returncode == 0 and t.stdout.strip():
+                p["text"], p["ocr"] = t.stdout, True
+                row["ocr_chars"] = len(t.stdout)
+        out["rendered"].append(row)
+    return out
+
+
 def do_pdf(args) -> tuple[dict, int]:
     pdf, err = _checked_pdf(args.pdf)
     if err:
         return err, 2
     pages = extract_pdf_text(pdf)
     total_chars = sum(len(p.get("text", "")) for p in pages)
+    rendered = render_pages(pdf, pages, Path(args.render)) \
+        if args.render else None
     trimmed = 0
     if not args.full_text:
         pages, trimmed = _trim_pages(pages)
@@ -311,8 +441,13 @@ def do_pdf(args) -> tuple[dict, int]:
                  "keywords are stubs {page, first_line, chars} - read those "
                  "PDF pages directly if needed, or re-run with --full-text. "
                  "If text_chars is ~0 the PDF is image-only; read the "
-                 "rendered pages directly."),
+                 "rendered pages directly (--render DIR writes them as PNGs, "
+                 "OCR'd when tesseract is installed). Read the mechanical "
+                 "drawing into `mechanical` (pin and post cross-sections, "
+                 "where the PCB edge falls) for check_connector_fit."),
     }
+    if rendered is not None:
+        payload["rendered"] = rendered
     return payload, 0
 
 
@@ -450,6 +585,10 @@ def main(argv: list[str] | None = None) -> int:
                     help="jlc_capabilities design_rules row")
     ap.add_argument("--needs", help="--implications: JSON needs object")
     ap.add_argument("--lcsc", help="tag the output with this LCSC id (--pdf)")
+    ap.add_argument("--render", metavar="DIR",
+                    help="--pdf: render image-only and drawing pages to "
+                         "PNGs in DIR (pdftoppm), OCR the image-only ones "
+                         "(tesseract, when installed)")
     ap.add_argument("--full-text", action="store_true",
                     help="--pdf: emit full text for EVERY page (no stubbing)")
     ap.add_argument("--out", help="write JSON here instead of stdout")

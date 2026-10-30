@@ -17,6 +17,9 @@ Checks (land_pattern fields drive which run):
   - annulus   : THT min over axes of (size-drill)/2 vs the 0.15 mm JLC floor,  (error)
                 and vs land_pattern drill_mm/annulus_mm when given
   - courtyard : a courtyard layer is present                       (warning)
+  - mechanical: with the extraction's `mechanical` block, every lead fits
+                its hole and every locating post has one
+                (check_connector_fit's tht_pin_tight, post_holes_missing ...)
 
 Exit (SPEC section 6): 0 = no error-severity findings (warnings allowed),
 1 = one or more errors, 2 = unreadable footprint/JSON.
@@ -33,6 +36,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
 import checklib  # noqa: E402
 import fplib  # noqa: E402
@@ -149,6 +153,17 @@ def verify(footprint: Path, ds: dict, pitch_tol: float, size_tol: float) -> tupl
               "annulus_mismatch", expected_mm=float(land["annulus_mm"]),
               measured_mm=round(ann, 4))
 
+    # --- mechanical drawing (the extraction's `mechanical` block): leads in
+    # their holes, a hole per locating post - check_connector_fit's rules,
+    # here on the library footprint before it reaches a board
+    mech = ds.get("mechanical") or {}
+    mech_fact: dict = {}
+    if mech.get("pins") or mech.get("posts"):
+        import check_connector_fit as ccf
+        local = ccf.LocalFrame(fp.name)
+        used = ccf.check_pins(fp.name, local, fp.pads, mech, viol, mech_fact)
+        ccf.check_posts(fp.name, local, fp.pads, mech, used, viol, mech_fact)
+
     # --- courtyard presence (warning; LEARNINGS: easyeda2kicad sometimes omits it)
     if not fp.has_courtyard:
         v("warning", None, "no courtyard layer (F/B.CrtYd) - courtyard-based "
@@ -164,6 +179,7 @@ def verify(footprint: Path, ds: dict, pitch_tol: float, size_tol: float) -> tupl
         "has_courtyard": fp.has_courtyard,
         "has_silk": fp.has_layer_kind("SilkS"),
         "land_pattern": land,
+        "mechanical": mech_fact or None,
     }
     return viol, facts, fp
 

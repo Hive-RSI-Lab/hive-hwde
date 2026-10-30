@@ -95,6 +95,8 @@ def _easyeda_offline(monkeypatch, tmp_path_factory):
     monkeypatch.setenv("HWDE_EASYEDA_OFFLINE", "1")
     # nor asks JLC or LCSC for stock (test_stock_check fakes the sources)
     monkeypatch.setenv("HWDE_STOCK_OFFLINE", "1")
+    # a mocked 403 latches at once instead of sleeping through the back-off
+    monkeypatch.setenv("HWDE_EASYEDA_BACKOFF", "0")
     # and writes no board's ledger.json unless it says so (test_ledger)
     monkeypatch.setenv("HWDE_LEDGER_WRITE", "0")
     monkeypatch.setenv("HWDE_EASYEDA_CACHE",
