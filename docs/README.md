@@ -52,11 +52,12 @@ an agent runs it inside the Hive.
   `fw constraints` (with `fw pins` inside it) for each firmware target whose
   board is this one in fw's `targets.json` (or `--target`), reading the
   firmware beside the board in your checkout. It reports fw's own problems
-  (module flash/PSRAM, a firmware pin on the wrong net) and the ones only
-  the board side can see: the ESP32's supply budgeted under the radio's
-  peak current in `constraints.json`, a strap pin pulled the wrong way at
-  reset (GPIO12/2 up, GPIO0 down), an input-only GPIO 34-39 nothing drives
-  or pulls, and an I2C line with no pull-up. Its `targets[].needs` are what
+  with fw's code (PIN-NET a firmware pin on the wrong net, STRAP-0/2/12 a
+  strap pulled the wrong way at reset, BOARD-* the module's flash or
+  PSRAM) and the ones only the board side can see: the ESP32's supply
+  budgeted under the radio's peak current in `constraints.json`, an
+  input-only GPIO 34-39 nothing drives or pulls, and an I2C line with no
+  pull-up. Its `targets[].needs` are what
   a netlist can't settle (antenna keep-out, address straps); weigh each.
   Exit 0 pass, 1 problems, 2 when fw (one with `constraints`) isn't found:
   it looks at `--fw`, `$HWDE_FW`, then hive-fw in `$HIVE_MODULES`. A check

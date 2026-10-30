@@ -6,13 +6,12 @@ the 3.3 V supply's peak current for the radio, the GPIOs it drives and the
 ESP32's rules for each, I2C addresses and bus speed. This check runs it on
 this board and adds what only the board side can check:
 
- - fw_problem (error): a problem fw itself found (the module's flash or
-   PSRAM, a firmware pin on the wrong net, a GPIO the board can't give).
+ - fw_problem (error): a problem fw itself found, with fw's code (PIN-NET a
+   firmware pin on the wrong net, STRAP-0/2/12 a resistor that sets a
+   strapping pin wrong at reset, BOARD-* the module's flash or PSRAM, ...).
  - fw_supply_budget (error): the ESP32's supply net is budgeted below the
    firmware's peak current in constraints.json power[] (warning: not
    budgeted at all).
- - fw_strap_pull (error): a pull that sets a strapping pin wrong at reset:
-   GPIO12 or GPIO2 pulled up, GPIO0 pulled down.
  - fw_input_floating (error): a GPIO 34-39 the firmware reads whose net
    reaches nothing but the ESP32 (no pull-ups inside those pins).
  - fw_i2c_pullup (error): an I2C line the firmware drives with no resistor
@@ -228,16 +227,6 @@ def board_checks(res: dict, parsed: dict, constraints: dict | None, tag: str) ->
         refs = [esp] if esp else []
         pulls = _resistors_to(parsed, net)
         ups = [ref for ref, far in pulls if _is_rail(far, declared)]
-        downs = [ref for ref, far in pulls if _is_ground_name(far.rsplit("/", 1)[-1])]
-        if gpio in (2, 12) and ups:
-            add("fw_strap_pull", "error", net, refs + ups,
-                f"GPIO{gpio} ({r.get('name')}, net {net}) is pulled up by {', '.join(ups)}; "
-                + ("it must be low at reset or a 3.3 V module selects 1.8 V flash"
-                   if gpio == 12 else "it must be low or floating at reset for serial download"))
-        if gpio == 0 and downs:
-            add("fw_strap_pull", "error", net, refs + downs,
-                f"GPIO0 ({r.get('name')}, net {net}) is pulled down by {', '.join(downs)}; "
-                "low at reset enters download mode")
         if gpio is not None and 34 <= gpio <= 39:
             others = {m["ref"] for m in parsed["nets"][net] if m["ref"] != esp}
             if not others:
@@ -289,7 +278,8 @@ def run(argv=None):
         for x in res.get("problems", []):
             violations.append(checklib.violation(
                 "fw_problem", "error", None, None, None, [],
-                f"[{t['name']}] {x.get('about')}: {x.get('problem')}", SOURCE, where=x.get("from")))
+                f"[{t['name']}] {x.get('code') or x.get('about')}: {x.get('problem')}", SOURCE,
+                where=x.get("from"), code=x.get("code")))
         violations += board_checks(res, parsed, constraints, t["name"])
         ran.append({"target": t["name"], "firmware": str(t["project"] or "the target's project"),
                     "needs": res.get("needs", []), "fw_ok": res.get("ok")})

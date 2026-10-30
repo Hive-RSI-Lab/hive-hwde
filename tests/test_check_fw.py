@@ -136,8 +136,6 @@ def test_unbudgeted_supply_is_a_warning(world):
 
 def test_pulls_and_floating_inputs(world):
     nets = {k: list(v) for k, v in NETS.items()}
-    nets["+3V3"] += [("R3", "1")]
-    nets["/I2S_DOUT"] += [("R3", "2")]        # GPIO12 pulled up: 1.8 V flash
     nets["+3V3"].remove(("R2", "1"))           # SCL's pull-up gone
     nets["/I2C_SCL"].remove(("R2", "2"))
     nets["+3V3"].remove(("R4", "1"))           # GPIO36 reaches nothing
@@ -145,19 +143,19 @@ def test_pulls_and_floating_inputs(world):
     netlist(world["kicad"] / "demo.net", nets)
     rc, rep = run(world)
     assert rc == 1
-    assert checks(rep) == ["fw_i2c_pullup", "fw_input_floating", "fw_strap_pull"]
-    strap = next(v for v in rep["violations"] if v["check"] == "fw_strap_pull")
-    assert "R3" in strap["refs"] and "GPIO12" in strap["msg"]
+    assert checks(rep) == ["fw_i2c_pullup", "fw_input_floating"]
 
 
 def test_fws_own_problems_come_through(world):
     (world["fw"] / "report.json").write_text(json.dumps(report(problems=[
-        {"about": "board", "problem": "U1 has 4 MB of flash; the firmware needs 8 MB", "from": "b.net"}])),
+        {"about": "board", "code": "STRAP-12", "from": "b.net",
+         "problem": "R3 pulls GPIO12 high at reset: a 3.3 V module selects 1.8 V flash"}])),
         encoding="utf-8")
     rc, rep = run(world)
     assert rc == 1
     assert checks(rep) == ["fw_problem"]
-    assert "8 MB" in rep["violations"][0]["msg"]
+    v, = rep["violations"]
+    assert v["code"] == "STRAP-12" and "STRAP-12: R3 pulls GPIO12" in v["msg"]
 
 
 def test_named_target_runs_even_unmatched(world):
