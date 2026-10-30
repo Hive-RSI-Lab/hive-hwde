@@ -1,0 +1,3217 @@
+{
+ "board": "core",
+ "known": [
+  {
+   "gate": "erc",
+   "check": "?",
+   "net": null,
+   "refs": [],
+   "pos": null,
+   "message": "all 374 pins of the 29 multi-pin symbols are typed passive, so ERC checked no pin conflicts (its 0/0 says nothing about drivers or outputs): run lib_pin_types with the parts' datasheet extracts (parts/<lcsc>.json), or review the netlist pin by pin",
+   "verdict": "real",
+   "reason": "every pin of the board's symbols is passive, so its ERC checked no pin conflicts: the board's library, not an hwde misreading"
+  },
+  {
+   "gate": "verify",
+   "check": "check_thermal",
+   "net": "GND",
+   "refs": [
+    "U15"
+   ],
+   "pos": [
+    46.087,
+    161.697
+   ],
+   "kind": "thermal_constraint",
+   "verdict": "real",
+   "reason": "TPA3221 is pad-up (DDV): 3.5 W with no declared heatsink rises far past the limit; the board declares an 18 C/W theta_JA that assumes one"
+  },
+  {
+   "gate": "verify",
+   "check": "check_thermal",
+   "net": "GND",
+   "refs": [
+    "U15"
+   ],
+   "pos": [
+    46.087,
+    161.697
+   ],
+   "kind": "thermal_area",
+   "verdict": "real",
+   "reason": "TPA3221 is pad-up (DDV): 3.5 W with no declared heatsink rises far past the limit; the board declares an 18 C/W theta_JA that assumes one"
+  },
+  {
+   "gate": "verify",
+   "check": "check_power_path",
+   "net": "+5V",
+   "refs": [
+    "J3",
+    "L9"
+   ],
+   "pos": [
+    72.187,
+    178.876
+   ],
+   "kind": "path_capacity",
+   "verdict": "real",
+   "reason": "the path's narrowest track carries less than the rail's budget"
+  },
+  {
+   "gate": "verify",
+   "check": "check_power_path",
+   "net": "+5V",
+   "refs": [
+    "L9",
+    "U6"
+   ],
+   "pos": [
+    80.914,
+    180.912
+   ],
+   "kind": "path_capacity",
+   "verdict": "real",
+   "reason": "the path's narrowest track carries less than the rail's budget"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    59.387,
+    214.507
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    50.237,
+    214.407
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    65.885,
+    202.947
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    59.487,
+    214.457
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    138.387,
+    153.852
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    78.098,
+    195.143
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    92.564,
+    180.695
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    123.742,
+    142.317
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    50.337,
+    215.207
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    60.237,
+    214.857
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    108.807,
+    179.467
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    99.88,
+    142.65
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    108.425,
+    142.6
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    67.0,
+    198.815
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    115.733,
+    152.469
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    58.837,
+    215.457
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    50.537,
+    185.792
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    106.673,
+    143.823
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    107.033,
+    180.673
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    59.687,
+    214.407
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    134.364,
+    155.229
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    78.541,
+    193.323
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    149.49,
+    188.97
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    59.087,
+    214.757
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    67.082,
+    202.947
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    48.721,
+    184.863
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    60.037,
+    214.607
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    146.109,
+    135.053
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    52.087,
+    212.407
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    69.9,
+    184.7
+   ],
+   "kind": "undersized_track",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    107.033,
+    180.998
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    108.193,
+    142.372
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    147.374,
+    191.048
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    149.49,
+    189.2
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    108.521,
+    179.257
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    115.733,
+    152.794
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    49.073,
+    184.68
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    145.784,
+    135.053
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    67.0,
+    199.14
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    91.425,
+    170.433
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    118.979,
+    144.483
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    50.137,
+    214.107
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    144.097,
+    188.584
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    120.587,
+    147.297
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    123.417,
+    142.317
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    85.092,
+    189.466
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    51.837,
+    212.307
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    60.437,
+    215.107
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    92.564,
+    181.02
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    50.537,
+    186.117
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    118.979,
+    141.911
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    106.673,
+    144.148
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    68.979,
+    197.411
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    138.387,
+    154.177
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    94.48,
+    171.789
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    135.708,
+    153.672
+   ],
+   "kind": "insufficient_transition_vias",
+   "verdict": "?",
+   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_decoupling",
+   "net": "+3V3",
+   "refs": [
+    "C55",
+    "U10"
+   ],
+   "pos": [
+    115.733,
+    152.144
+   ],
+   "kind": "decoupler_loop",
+   "verdict": "real",
+   "reason": "the decoupler is measured past its class's limit"
+  },
+  {
+   "gate": "verify",
+   "check": "check_decoupling",
+   "net": "PVDD",
+   "refs": [
+    "C210",
+    "U15"
+   ],
+   "pos": [
+    36.787,
+    158.297
+   ],
+   "kind": "decoupler_loop",
+   "verdict": "real",
+   "reason": "the decoupler is measured past its class's limit"
+  },
+  {
+   "gate": "verify",
+   "check": "check_decoupling",
+   "net": "PVDD",
+   "refs": [
+    "C308",
+    "U16"
+   ],
+   "pos": [
+    88.687,
+    158.297
+   ],
+   "kind": "decoupler_loop",
+   "verdict": "real",
+   "reason": "the decoupler is measured past its class's limit"
+  },
+  {
+   "gate": "verify",
+   "check": "check_thermal",
+   "net": null,
+   "refs": [
+    "U16"
+   ],
+   "pos": [
+    78.987,
+    161.697
+   ],
+   "kind": "thermal_unlisted",
+   "verdict": "real",
+   "reason": "TPA3221 is pad-up (DDV): 3.5 W with no declared heatsink rises far past the limit; the board declares an 18 C/W theta_JA that assumes one"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    59.387,
+    214.507
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    66.725,
+    185.075
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "+3V3A",
+   "refs": [],
+   "pos": [
+    124.625,
+    173.532
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "+5V",
+   "refs": [],
+   "pos": [
+    42.987,
+    196.557
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "+5V",
+   "refs": [],
+   "pos": [
+    49.587,
+    189.657
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "+5VA",
+   "refs": [],
+   "pos": [
+    127.7,
+    164.684
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "+5VA",
+   "refs": [],
+   "pos": [
+    100.62,
+    158.04
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "+5VA",
+   "refs": [],
+   "pos": [
+    104.65,
+    163.25
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/AMP_A_RST",
+   "refs": [],
+   "pos": [
+    60.234,
+    186.992
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/AMP_B_RST",
+   "refs": [],
+   "pos": [
+    85.039,
+    168.673
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/AMP_FAULT",
+   "refs": [],
+   "pos": [
+    79.019,
+    178.532
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/AMP_FAULT",
+   "refs": [],
+   "pos": [
+    50.276,
+    162.502
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/AMP_IN_R",
+   "refs": [],
+   "pos": [
+    83.753,
+    170.351
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/AMP_OSCM",
+   "refs": [],
+   "pos": [
+    66.821,
+    166.632
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/AMP_OSCM",
+   "refs": [],
+   "pos": [
+    67.221,
+    163.032
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/AMP_OSCP",
+   "refs": [],
+   "pos": [
+    49.867,
+    165.345
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/AMP_OSCP",
+   "refs": [],
+   "pos": [
+    79.737,
+    166.447
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/A_SPK_L+",
+   "refs": [],
+   "pos": [
+    49.687,
+    132.397
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/A_SPK_R+",
+   "refs": [],
+   "pos": [
+    64.587,
+    127.297
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/A_SPK_R+",
+   "refs": [],
+   "pos": [
+    68.3,
+    133.55
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/BTN_1",
+   "refs": [],
+   "pos": [
+    112.981,
+    180.803
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/BTN_2",
+   "refs": [],
+   "pos": [
+    111.632,
+    201.331
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/DAC_EN",
+   "refs": [],
+   "pos": [
+    110.714,
+    158.214
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/DAC_EN",
+   "refs": [],
+   "pos": [
+    106.188,
+    149.696
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/ENC_B",
+   "refs": [],
+   "pos": [
+    94.789,
+    195.544
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/ENC_B",
+   "refs": [],
+   "pos": [
+    114.257,
+    180.768
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/ENC_SW",
+   "refs": [],
+   "pos": [
+    112.255,
+    200.282
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/ENC_SW",
+   "refs": [],
+   "pos": [
+    113.635,
+    180.796
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/I2C_SCL",
+   "refs": [],
+   "pos": [
+    49.588,
+    195.684
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/I2C_SDA",
+   "refs": [],
+   "pos": [
+    48.891,
+    213.275
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/I2S_BCK",
+   "refs": [],
+   "pos": [
+    115.07,
+    148.465
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/I2S_DIN",
+   "refs": [],
+   "pos": [
+    144.757,
+    189.647
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/I2S_DIN",
+   "refs": [],
+   "pos": [
+    139.457,
+    175.447
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/I2S_DOUT_MAIN",
+   "refs": [],
+   "pos": [
+    135.961,
+    132.714
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/IR_IN",
+   "refs": [],
+   "pos": [
+    67.375,
+    218.225
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/IR_IN",
+   "refs": [],
+   "pos": [
+    84.625,
+    210.275
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/LCD_CS",
+   "refs": [],
+   "pos": [
+    67.48,
+    212.291
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/LED_STATUS",
+   "refs": [],
+   "pos": [
+    94.012,
+    194.898
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/MDC",
+   "refs": [],
+   "pos": [
+    84.302,
+    215.061
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/MDIO",
+   "refs": [],
+   "pos": [
+    98.997,
+    210.455
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/OPT_SPDIF",
+   "refs": [],
+   "pos": [
+    124.487,
+    142.247
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/PHY_RST",
+   "refs": [],
+   "pos": [
+    83.491,
+    195.068
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/PVDD_EN",
+   "refs": [],
+   "pos": [
+    97.866,
+    186.744
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/RMII_CRS_DV",
+   "refs": [],
+   "pos": [
+    98.928,
+    199.395
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/RMII_RXD0",
+   "refs": [],
+   "pos": [
+    66.099,
+    203.519
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/RMII_TXD1",
+   "refs": [],
+   "pos": [
+    84.111,
+    215.445
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/RMII_TXD1",
+   "refs": [],
+   "pos": [
+    85.011,
+    217.794
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/TAP_SEL_IO",
+   "refs": [],
+   "pos": [
+    102.767,
+    162.627
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/USB_DM",
+   "refs": [],
+   "pos": [
+    45.975,
+    178.325
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/USB_DP",
+   "refs": [],
+   "pos": [
+    38.175,
+    183.175
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/VREF",
+   "refs": [],
+   "pos": [
+    130.01,
+    148.7
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/VREF",
+   "refs": [],
+   "pos": [
+    119.329,
+    168.095
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_a/A_IN2M",
+   "refs": [],
+   "pos": [
+    50.044,
+    171.429
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_a/A_IN2P",
+   "refs": [],
+   "pos": [
+    59.436,
+    162.158
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_a/A_OUT1M",
+   "refs": [],
+   "pos": [
+    36.629,
+    135.934
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_a/A_OUT1P",
+   "refs": [],
+   "pos": [
+    37.817,
+    169.047
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_a/A_OUT1P",
+   "refs": [],
+   "pos": [
+    42.217,
+    159.347
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_a/A_OUT2M",
+   "refs": [],
+   "pos": [
+    49.927,
+    158.647
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_a/A_OUT2P",
+   "refs": [],
+   "pos": [
+    47.887,
+    158.056
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_a/A_SPK_R-",
+   "refs": [],
+   "pos": [
+    58.037,
+    128.947
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_b/B_AVDD",
+   "refs": [],
+   "pos": [
+    77.709,
+    173.784
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_b/B_GAIN",
+   "refs": [],
+   "pos": [
+    75.344,
+    168.56
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_b/B_GVDD",
+   "refs": [],
+   "pos": [
+    89.59,
+    165.696
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_b/B_IN1M",
+   "refs": [],
+   "pos": [
+    67.695,
+    163.902
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_b/B_OUT1M",
+   "refs": [],
+   "pos": [
+    77.489,
+    157.253
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_b/B_OUT1M",
+   "refs": [],
+   "pos": [
+    74.089,
+    130.703
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_b/B_OUT1P",
+   "refs": [],
+   "pos": [
+    73.203,
+    153.488
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_b/B_OUT1P",
+   "refs": [],
+   "pos": [
+    70.703,
+    151.988
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_b/B_OUT2M",
+   "refs": [],
+   "pos": [
+    84.427,
+    158.229
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_b/B_OUT2P",
+   "refs": [],
+   "pos": [
+    89.587,
+    144.847
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_b/B_SPK_L+",
+   "refs": [],
+   "pos": [
+    83.337,
+    128.747
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_b/B_SPK_R+",
+   "refs": [],
+   "pos": [
+    87.837,
+    137.047
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/amp_b/B_SPK_R-",
+   "refs": [],
+   "pos": [
+    90.937,
+    128.947
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/dac/DACR_P",
+   "refs": [],
+   "pos": [
+    123.927,
+    152.151
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/dac/OPL_P",
+   "refs": [],
+   "pos": [
+    123.296,
+    160.877
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/dac/SUB1_OUT",
+   "refs": [],
+   "pos": [
+    110.769,
+    140.192
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/dac/SUB_CAPM",
+   "refs": [],
+   "pos": [
+    110.695,
+    150.799
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/dac/SUB_CAPP",
+   "refs": [],
+   "pos": [
+    109.346,
+    150.849
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/dac/SUB_VNEG",
+   "refs": [],
+   "pos": [
+    111.352,
+    149.749
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/ADC_LP",
+   "refs": [],
+   "pos": [
+    135.86,
+    154.24
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/ADC_RN",
+   "refs": [],
+   "pos": [
+    131.987,
+    149.587
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/ADC_RN",
+   "refs": [],
+   "pos": [
+    132.037,
+    149.537
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/ADC_RP",
+   "refs": [],
+   "pos": [
+    130.525,
+    157.075
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/ADC_SRC_L",
+   "refs": [],
+   "pos": [
+    122.15,
+    158.69
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/ADC_SRC_L",
+   "refs": [],
+   "pos": [
+    111.85,
+    153.19
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/ADC_SRC_R",
+   "refs": [],
+   "pos": [
+    119.95,
+    159.79
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/DJ_SEL",
+   "refs": [],
+   "pos": [
+    103.287,
+    172.607
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/LDIV_L",
+   "refs": [],
+   "pos": [
+    114.071,
+    156.34
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/LDIV_R",
+   "refs": [],
+   "pos": [
+    106.264,
+    160.62
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/LIN_L",
+   "refs": [],
+   "pos": [
+    116.748,
+    156.582
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/LSW_R",
+   "refs": [],
+   "pos": [
+    104.4,
+    162.61
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/TAPA_L",
+   "refs": [],
+   "pos": [
+    96.02,
+    143.45
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/TAPA_R",
+   "refs": [],
+   "pos": [
+    99.43,
+    142.0
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/TAPA_R",
+   "refs": [],
+   "pos": [
+    101.8,
+    142.05
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/TAP_B",
+   "refs": [],
+   "pos": [
+    104.95,
+    150.32
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/TAP_L",
+   "refs": [],
+   "pos": [
+    94.52,
+    145.35
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/TAP_R",
+   "refs": [],
+   "pos": [
+    100.65,
+    146.06
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/TAP_R",
+   "refs": [],
+   "pos": [
+    99.37,
+    144.65
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/TAP_SEL",
+   "refs": [],
+   "pos": [
+    102.18,
+    154.87
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/linein/TAP_SEL",
+   "refs": [],
+   "pos": [
+    102.23,
+    151.72
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/mcu/ESP_EN",
+   "refs": [],
+   "pos": [
+    120.867,
+    186.317
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/mcu/ESP_EN",
+   "refs": [],
+   "pos": [
+    111.117,
+    186.217
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/mcu/U0TXD",
+   "refs": [],
+   "pos": [
+    112.722,
+    191.211
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/mcu/UART_DTR",
+   "refs": [],
+   "pos": [
+    91.198,
+    196.6
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/power_in/PD_CFG1",
+   "refs": [],
+   "pos": [
+    38.859,
+    186.118
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/power_in/PD_PG",
+   "refs": [],
+   "pos": [
+    48.437,
+    186.767
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/power_in/PD_PG",
+   "refs": [],
+   "pos": [
+    41.737,
+    187.517
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/rails/BUCK3_FB",
+   "refs": [],
+   "pos": [
+    65.921,
+    185.124
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/rails/BUCK5_BS",
+   "refs": [],
+   "pos": [
+    67.297,
+    172.417
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/rails/BUCK5_LX",
+   "refs": [],
+   "pos": [
+    71.307,
+    172.507
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/rails/BUCK5_LX",
+   "refs": [],
+   "pos": [
+    69.297,
+    170.917
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/ui/FFC_MOSI",
+   "refs": [],
+   "pos": [
+    90.14,
+    207.874
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/ui/FFC_SCK",
+   "refs": [],
+   "pos": [
+    90.687,
+    208.957
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/ui/FFC_SCK",
+   "refs": [],
+   "pos": [
+    83.587,
+    214.407
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "GND",
+   "refs": [],
+   "pos": [
+    49.137,
+    189.63
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "GND",
+   "refs": [],
+   "pos": [
+    69.35,
+    206.525
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "GND",
+   "refs": [],
+   "pos": [
+    50.15,
+    183.725
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "GND",
+   "refs": [],
+   "pos": [
+    51.85,
+    167.475
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "PVDD",
+   "refs": [],
+   "pos": [
+    55.11,
+    165.697
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "PVDD",
+   "refs": [],
+   "pos": [
+    54.36,
+    169.847
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "PVDD",
+   "refs": [],
+   "pos": [
+    52.41,
+    162.447
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_pdn",
+   "net": "+5VA",
+   "refs": [
+    "C125",
+    "C132",
+    "C58"
+   ],
+   "pos": null,
+   "kind": "pdn_no_bulk",
+   "verdict": "real",
+   "reason": "the rail has only ceramics, no bulk reservoir"
+  },
+  {
+   "gate": "verify",
+   "check": "check_pdn",
+   "net": "+3V3E",
+   "refs": [
+    "C42",
+    "C43"
+   ],
+   "pos": null,
+   "kind": "pdn_no_bulk",
+   "verdict": "real",
+   "reason": "the rail has only ceramics, no bulk reservoir"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "J1"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "J2"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "J3"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "J4"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "J5"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "Q1"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "Q2"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "Q3"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "Q4"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "Q5"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "Q6"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "Q7"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "SW1"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U1"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U10"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U11"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U12"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U13"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U14"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U15"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U16"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U17"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U18"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U19"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U2"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U20"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U3"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U4"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U5"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U6"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U7"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U8"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U9"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "Y1"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "Y2"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "C1",
+    "C10",
+    "C100",
+    "C101",
+    "C102",
+    "C11",
+    "C110",
+    "C111",
+    "C112",
+    "C12",
+    "C120",
+    "C121",
+    "C122",
+    "C123",
+    "C124",
+    "C125",
+    "C126",
+    "C13",
+    "C130",
+    "C131",
+    "C132",
+    "C136",
+    "C137",
+    "C14",
+    "C142",
+    "C143",
+    "C15",
+    "C150",
+    "C151",
+    "C16",
+    "C17",
+    "C18",
+    "C19",
+    "C2",
+    "C201",
+    "C202",
+    "C204",
+    "C206",
+    "C207",
+    "C208",
+    "C209",
+    "C21",
+    "C210",
+    "C211",
+    "C218",
+    "C219",
+    "C22",
+    "C220",
+    "C221",
+    "C222",
+    "C223",
+    "C224",
+    "C225",
+    "C226",
+    "C228",
+    "C229",
+    "C231",
+    "C232",
+    "C234",
+    "C235",
+    "C237",
+    "C3",
+    "C30",
+    "C301",
+    "C302",
+    "C304",
+    "C306",
+    "C307",
+    "C308",
+    "C309",
+    "C31",
+    "C310",
+    "C311",
+    "C312",
+    "C316",
+    "C317",
+    "C318",
+    "C319",
+    "C32",
+    "C320",
+    "C321",
+    "C322",
+    "C323",
+    "C324",
+    "C326",
+    "C327",
+    "C329",
+    "C33",
+    "C330",
+    "C332",
+    "C333",
+    "C335",
+    "C34",
+    "C37",
+    "C38",
+    "C39",
+    "C4",
+    "C40",
+    "C400",
+    "C41",
+    "C42",
+    "C43",
+    "C44",
+    "C45",
+    "C46",
+    "C47",
+    "C5",
+    "C50",
+    "C51",
+    "C52",
+    "C53",
+    "C54",
+    "C55",
+    "C56",
+    "C57",
+    "C58",
+    "C59",
+    "C6",
+    "C64",
+    "C65",
+    "C66",
+    "C67",
+    "C68",
+    "C69",
+    "C7",
+    "C70",
+    "C71",
+    "C72",
+    "C8",
+    "C9",
+    "D1",
+    "D2",
+    "D3",
+    "D4",
+    "FB1",
+    "FB2",
+    "FB3",
+    "J10",
+    "J11",
+    "J6",
+    "J7",
+    "L1",
+    "L10",
+    "L2",
+    "L3",
+    "L4",
+    "L5",
+    "L6",
+    "L7",
+    "L8",
+    "L9",
+    "R1",
+    "R10",
+    "R100",
+    "R101",
+    "R102",
+    "R11",
+    "R110",
+    "R111",
+    "R112",
+    "R12",
+    "R120",
+    "R121",
+    "R122",
+    "R13",
+    "R130",
+    "R131",
+    "R132",
+    "R133",
+    "R134",
+    "R135",
+    "R136",
+    "R137",
+    "R138",
+    "R14",
+    "R149",
+    "R15",
+    "R150",
+    "R16",
+    "R17",
+    "R18",
+    "R19",
+    "R2",
+    "R20",
+    "R203",
+    "R205",
+    "R212",
+    "R213",
+    "R214",
+    "R215",
+    "R216",
+    "R217",
+    "R227",
+    "R230",
+    "R233",
+    "R236",
+    "R3",
+    "R30",
+    "R303",
+    "R305",
+    "R31",
+    "R313",
+    "R314",
+    "R315",
+    "R32",
+    "R325",
+    "R328",
+    "R33",
+    "R331",
+    "R334",
+    "R34",
+    "R35",
+    "R36",
+    "R4",
+    "R40",
+    "R400",
+    "R401",
+    "R402",
+    "R403",
+    "R41",
+    "R42",
+    "R43",
+    "R44",
+    "R45",
+    "R5",
+    "R50",
+    "R51",
+    "R52",
+    "R53",
+    "R54",
+    "R55",
+    "R56",
+    "R57",
+    "R58",
+    "R6",
+    "R60",
+    "R61",
+    "R62",
+    "R63",
+    "R64",
+    "R65",
+    "R66",
+    "R67",
+    "R7",
+    "R70",
+    "R71",
+    "R72",
+    "R73",
+    "R74",
+    "R75",
+    "R8",
+    "R80",
+    "R81",
+    "R82",
+    "R83",
+    "R9",
+    "R90",
+    "R91",
+    "R92",
+    "R93",
+    "SW2",
+    "SW3"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_antenna",
+   "net": null,
+   "refs": [
+    "U7"
+   ],
+   "pos": [
+    153.077,
+    200.697
+   ],
+   "kind": "antenna_side_clearance",
+   "verdict": "real",
+   "reason": "copper sits inside Espressif's 15 mm clear zone beside the antenna"
+  },
+  {
+   "gate": "verify",
+   "check": "check_straps",
+   "net": "/I2S_BCK",
+   "refs": [
+    "U7"
+   ],
+   "pos": [
+    130.837,
+    209.697
+   ],
+   "kind": "strap_unknown",
+   "verdict": "?",
+   "reason": "hwde doesn't know the other part's reset state; real only if it drives the strap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_straps",
+   "net": "/LED_STATUS",
+   "refs": [
+    "U17"
+   ],
+   "pos": [
+    115.517,
+    185.717
+   ],
+   "kind": "io_reset_floating",
+   "verdict": "real",
+   "reason": "the IO floats from power-on until firmware drives it; no pull fitted"
+  },
+  {
+   "gate": "verify",
+   "check": "verify_all",
+   "net": null,
+   "refs": [],
+   "pos": null,
+   "kind": "constraints_drift",
+   "message": "architecture/constraints.json diverges from constraints.json in kicad/; checks ran against the latter - reconcile or delete the stale twin",
+   "verdict": "real",
+   "reason": "the board carries two constraints.json that disagree"
+  }
+ ]
+}

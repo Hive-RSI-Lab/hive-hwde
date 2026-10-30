@@ -48,10 +48,10 @@ CRASH = 100
 # bin/pin.py writes this block; don't edit it by hand.
 # pins:begin
 PINS = {
-    "core": "b10364d0c911a12f1fbe4a8d4d60b72c3672436031a152409dac43d204905e86",
-    "hwde-led-test": "227282bf4c0694274a7b1c7490efa9de252c61e69037434a39fe2994d09643e0",
-    "lite-main": "2ae6e0772c72a1f47829e1206fd38402908ed4b8d103c107dcda1b7014e3bd0c",
-    "ultra-front": "bdf9553856f3b242020968be82be3ca450853052f502dd10ddcd291b99409ed5",
+    "core": "ed6c6edb423efa6c98ff4539ea43c7d37be637c052c5dc9f3a05d94938f1be79",
+    "hwde-led-test": "2c797655e03e13bde1d83c23f5e23cb93d0e0e3a5f73d78064637f713c978cf6",
+    "lite-main": "0931c97526a8780b7876dbb0c6bf9fb05c2660becc614a5ec13d81a8e6e20d40",
+    "ultra-front": "a085b4cdd42f6ca9d342438add7e2355afed89d15f9fadc06d50541bf4065638",
 }
 # pins:end
 
@@ -151,8 +151,10 @@ def finding_of(gate_name: str, v) -> dict:
     f = {"gate": gate_name,
          "check": v.get("check") or v.get("kind") or v.get("source") or "?",
          "net": v.get("net"), "refs": sorted(map(str, v.get("refs") or [])), "pos": pos}
+    if v.get("kind") and v.get("kind") != f["check"]:
+        f["kind"] = v["kind"]
     if not (f["net"] or f["refs"] or pos):
-        f["message"] = str(v.get("message") or v.get("description") or "")
+        f["message"] = str(v.get("message") or v.get("msg") or v.get("description") or "")
     return f
 
 
@@ -201,10 +203,10 @@ def read_known(pin: Pin) -> list[dict]:
 
 
 def matches(e: dict, f: dict) -> bool:
-    """One ledger entry names this finding: same gate, check, net and refs,
+    """One ledger entry names this finding: same gate, check, kind, net and refs,
     within POS_TOL_MM of its pos, and the same message where that is all
     either has."""
-    if any(e.get(k) != f.get(k) for k in ("gate", "check", "net")):
+    if any(e.get(k) != f.get(k) for k in ("gate", "check", "kind", "net")):
         return False
     if sorted(e.get("refs") or []) != f["refs"]:
         return False
@@ -305,7 +307,8 @@ def run_gate(pin: Pin, ws: Path, g: str, logs: Path, tries: int = 3
         with log.open("w") as f:
             rc = subprocess.run([HWDE, "gate", "--gate", g, inp, "--workspace", ".",
                                  "--out", str(out)], cwd=ws, stdout=f,
-                                stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL).returncode
+                                stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                                env={**os.environ, "HWDE_GATE_WARNINGS_CAP": "100000"}).returncode
         try:
             result = json.loads(out.read_text())
         except (OSError, ValueError):

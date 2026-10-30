@@ -91,9 +91,16 @@ def test_gate_charges_take_a_plain_string_warning():
 
 def test_a_finding_is_named_by_where_it_is_not_its_wording():
     f = score.finding_of("verify", {"check": "check_current", "net": "+3V3", "refs": ["R2", "C1"],
-                                    "pos": [10.00004, 20.5], "message": "0.3 mm carries 0.8 A"})
-    assert f == {"gate": "verify", "check": "check_current", "net": "+3V3",
-                 "refs": ["C1", "R2"], "pos": [10.0, 20.5]}
+                                    "pos": [10.00004, 20.5], "msg": "0.3 mm carries 0.8 A",
+                                    "kind": "undersized_track"})
+    assert f == {"gate": "verify", "check": "check_current", "kind": "undersized_track",
+                 "net": "+3V3", "refs": ["C1", "R2"], "pos": [10.0, 20.5]}
+    # two findings at one place differ by kind
+    g = score.finding_of("verify", {"check": "check_current", "net": "+3V3", "refs": ["R2", "C1"],
+                                    "pos": [10.0, 20.5], "kind": "neck"})
+    assert not score.matches({**f, "verdict": "real"}, g)
+    assert score.finding_of("verify", {"check": "verify_all", "msg": "twin drift"})["message"] \
+        == "twin drift"
     # a plain string, or a finding with nowhere to be, goes by its message
     assert score.finding_of("erc", "pin types: 3 untyped")["message"] == "pin types: 3 untyped"
 

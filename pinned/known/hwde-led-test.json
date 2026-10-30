@@ -1,0 +1,30 @@
+{
+ "board": "hwde-led-test",
+ "known": [
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/LED_A",
+   "refs": [],
+   "pos": [
+    17.057,
+    18.975
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": "+5V",
+   "refs": [
+    "D1"
+   ],
+   "pos": null,
+   "kind": "rating_reverse_polarity",
+   "verdict": "?",
+   "reason": "only if J1 can be plugged in reversed"
+  }
+ ]
+}

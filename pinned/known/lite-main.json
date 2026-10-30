@@ -1,0 +1,673 @@
+{
+ "board": "lite-main",
+ "known": [
+  {
+   "gate": "erc",
+   "check": "?",
+   "net": null,
+   "refs": [],
+   "pos": null,
+   "message": "all 185 pins of the 15 multi-pin symbols are typed passive, so ERC checked no pin conflicts (its 0/0 says nothing about drivers or outputs): run lib_pin_types with the parts' datasheet extracts (parts/<lcsc>.json), or review the netlist pin by pin",
+   "verdict": "real",
+   "reason": "every pin of the board's symbols is passive, so its ERC checked no pin conflicts: the board's library, not an hwde misreading"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": "VBUS",
+   "refs": [
+    "D1"
+   ],
+   "pos": null,
+   "kind": "rating_reverse_polarity",
+   "verdict": "real",
+   "reason": "the part's rated voltage is below what the net reaches"
+  },
+  {
+   "gate": "verify",
+   "check": "check_decoupling",
+   "net": "PVDD",
+   "refs": [
+    "C57",
+    "U8"
+   ],
+   "pos": [
+    93.39,
+    100.523
+   ],
+   "kind": "decoupler_distance",
+   "verdict": "real",
+   "reason": "the decoupler is measured past its class's limit"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "+3V3",
+   "refs": [],
+   "pos": [
+    70.793,
+    125.99
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "+5V",
+   "refs": [],
+   "pos": [
+    84.05,
+    93.8
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "+5V",
+   "refs": [],
+   "pos": [
+    80.8,
+    96.1
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/AMP_IN_R",
+   "refs": [],
+   "pos": [
+    94.642,
+    117.943
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/AMP_SDZ",
+   "refs": [],
+   "pos": [
+    96.515,
+    115.18
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/BUCK5_SW",
+   "refs": [],
+   "pos": [
+    79.153,
+    86.873
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/DTR",
+   "refs": [],
+   "pos": [
+    63.348,
+    131.827
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/I2S_BCLK",
+   "refs": [],
+   "pos": [
+    52.521,
+    98.828
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/I2S_LRCK",
+   "refs": [],
+   "pos": [
+    54.105,
+    99.293
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/I2S_MCLK",
+   "refs": [],
+   "pos": [
+    61.116,
+    134.343
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/PD_PG",
+   "refs": [],
+   "pos": [
+    82.387,
+    75.921
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/PSW_G",
+   "refs": [],
+   "pos": [
+    89.791,
+    76.148
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/PVDD_EN",
+   "refs": [],
+   "pos": [
+    75.747,
+    76.53
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/RTS",
+   "refs": [],
+   "pos": [
+    66.533,
+    128.597
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/SPK_L_P",
+   "refs": [],
+   "pos": [
+    90.636,
+    76.906
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/SUB_R_RAW",
+   "refs": [],
+   "pos": [
+    55.436,
+    94.053
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/TAP_L",
+   "refs": [],
+   "pos": [
+    56.35,
+    81.95
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/TAP_L",
+   "refs": [],
+   "pos": [
+    82.55,
+    82.5
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/TAP_L_C",
+   "refs": [],
+   "pos": [
+    50.125,
+    92.15
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/TAP_L_C",
+   "refs": [],
+   "pos": [
+    49.875,
+    87.0
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/TAP_R",
+   "refs": [],
+   "pos": [
+    52.32,
+    82.545
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/TAP_R_C",
+   "refs": [],
+   "pos": [
+    51.665,
+    89.343
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "/USB_DM",
+   "refs": [],
+   "pos": [
+    73.776,
+    77.252
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "GND",
+   "refs": [],
+   "pos": [
+    51.8,
+    99.025
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "VBUS",
+   "refs": [],
+   "pos": [
+    81.925,
+    80.23
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "a grid router's staircase: middle segments 0.1-0.14 mm that clear nothing; route_cleanup --dejog removes most with DRC clean (PR #273)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "J1"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "J2"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "J3"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "J4"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "Q1"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "Q2"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "Q3"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "Q4"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U1"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U2"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U3"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U4"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U5"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U6"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U7"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U8"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "U9"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "D2",
+    "L1",
+    "L2",
+    "L3",
+    "L4",
+    "L5",
+    "L6"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "false",
+   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+  },
+  {
+   "gate": "verify",
+   "check": "check_antenna",
+   "net": null,
+   "refs": [
+    "U5"
+   ],
+   "pos": [
+    26.495,
+    128.323
+   ],
+   "kind": "antenna_side_clearance",
+   "verdict": "real",
+   "reason": "copper sits inside Espressif's 15 mm clear zone beside the antenna"
+  },
+  {
+   "gate": "verify",
+   "check": "check_power_path",
+   "net": "VBUS",
+   "refs": [
+    "J1",
+    "Q1"
+   ],
+   "pos": [
+    83.765,
+    68.523
+   ],
+   "kind": "path_capacity",
+   "verdict": "real",
+   "reason": "the path's narrowest track carries less than the rail's budget"
+  },
+  {
+   "gate": "verify",
+   "check": "check_straps",
+   "net": "/I2S_MCLK",
+   "refs": [
+    "U5"
+   ],
+   "pos": [
+    47.445,
+    119.323
+   ],
+   "kind": "strap_unknown",
+   "verdict": "?",
+   "reason": "hwde doesn't know the other part's reset state; real only if it drives the strap"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    56.865,
+    89.313
+   ],
+   "kind": "dfm_silk_width",
+   "verdict": "real",
+   "reason": "silk strokes under JLC's 0.15 mm minimum won't print"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [
+    "J2"
+   ],
+   "pos": null,
+   "kind": "cpl_offset",
+   "verdict": "?",
+   "reason": "the LCSC model's pad centre against the board's: a CPL offset or a model mismatch"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [
+    "J3"
+   ],
+   "pos": null,
+   "kind": "cpl_offset",
+   "verdict": "?",
+   "reason": "the LCSC model's pad centre against the board's: a CPL offset or a model mismatch"
+  }
+ ]
+}

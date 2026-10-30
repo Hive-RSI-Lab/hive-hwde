@@ -40,7 +40,7 @@ changes.
 Each pinned board has a ledger of its known findings,
 `pinned/known/<board>.json`: `{"known": [entry, ...]}`. An entry names one
 finding as the score sees it, by where it is rather than how it is worded
-(`gate`, `check`, `net`, `refs`, `pos` within 0.05 mm; the `message` only for
+(`gate`, `check`, `kind`, `net`, `refs`, `pos` within 0.05 mm; the `message` only for
 a finding with none of those), and carries a `verdict` and a `reason`:
 
 - **real**: a defect of the pinned board (a router's staircase, a track
@@ -72,8 +72,9 @@ as always) and each warning no waiver in that file covers. One charge is:
    unjudged finding may be hwde's mistake until someone says otherwise;
 3. each **real** entry no finding matches: a known defect hwde has stopped
    seeing (not for a gate that couldn't run, which is charged as a crash);
-4. each warning past a gate's cap (`gate.WARNINGS_CAP`), which travels only
-   as a count and can't be judged;
+4. each warning past a gate's cap (`gate.WARNINGS_CAP`, which the score
+   lifts to 100000 through `HWDE_GATE_WARNINGS_CAP`), which would travel
+   only as a count and couldn't be judged;
 5. each board-local script listed in the pin under `stand_in`: a script in
    the board's files that does what an hwde script should (a router, a
    via fixer, a zone refill), with the gap it fills. A script under

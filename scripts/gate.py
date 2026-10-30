@@ -99,6 +99,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -201,8 +202,9 @@ def validate_report(gate_name: str, gate: dict, report,
     return rec_p
 
 
-# most below-the-bar findings a gate result carries inline (see evaluate)
-WARNINGS_CAP = 200
+# most below-the-bar findings a gate result carries inline (see evaluate);
+# bin/score.py lifts it so every finding it judges has a name
+WARNINGS_CAP = int(os.environ.get("HWDE_GATE_WARNINGS_CAP") or 200)
 
 
 def load_gates(path: Path) -> dict:
