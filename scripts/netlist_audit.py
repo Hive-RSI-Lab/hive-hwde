@@ -36,6 +36,13 @@ schematic-level structural problems BEFORE board work starts:
  - sot23_pinout (warning): a stock Package_TO_SOT_SMD SOT-23 transistor
    whose symbol pins 1-2-3 are not G-S-D (FET) or B-E-C (BJT), the order
    nearly every SOT-23 part has; the datasheet is the last word.
+ - input_common_mode (warning): an op-amp or comparator in
+   reference/opamp_cm.yaml with an input whose DC level - a rail, or
+   solved from the resistors around it to rails of known volts (net name
+   or constraints `voltages`; caps open, connectors unplugged, any driven
+   pin on the way makes it unknown and skipped) - sits outside the part's
+   input common-mode range on its own supply pins. The output is undefined
+   there (errata corpus: minuet v3 LMV331, inputs at 3.1 V, range to 2.6 V).
  - pin_part_missing: a part reference/pin_requirements.yaml says the IC's
    datasheet requires between two of its pins (CBK from FB_BK to GND_BK)
    that no part of that kind and value spans (error), or, in a
@@ -340,6 +347,121 @@ def _pin_requirements(nets: dict, comps: dict,
 
 
 # ------------------------------------------------------------ compare mode
+
+# ------------------------------------------------------------ input common mode
+
+OPAMP_CM_YAML = HERE.parent / "reference" / "opamp_cm.yaml"
+# an amplifier input pin's name: + / -, IN+ / -IN, INA- / +IN2, NI / INV
+_AMP_IN_RE = re.compile(r"^(?:[+-]|[+-]IN[A-D1-4]?|IN[A-D1-4]?[+-]|"
+                        r"[+-]IN_?[A-D1-4]|IN_?[A-D1-4][+-]|NI|INV)$")
+# its supply pins, when the symbol types them passive (Amplifier_Operational
+# symbols with every pin passive): V+ / V-, VCC / VEE, VDD / VSS, GND
+_AMP_SUPPLY_RE = re.compile(r"^(?:V[+-]|VS[+-]|VCC|VDD|VEE|VSS|GND)$")
+_CONNECTOR_RE = re.compile(r"^(J|P|CN|X|CON)\d")
+_OPEN_DC_RE = re.compile(r"^(C|TP)\d")
+_DC_CLUSTER_MAX = 40
+
+
+def _cm_table(path: Path = OPAMP_CM_YAML) -> list[dict]:
+    import yaml  # noqa: PLC0415
+    rows = yaml.safe_load(path.read_text(encoding="utf-8"))["parts"]
+    for r in rows:
+        r["_re"] = re.compile(r["match"], re.I)
+    return rows
+
+
+def _cm_row(comp: dict, table: list[dict]) -> dict | None:
+    names = [comp.get("value") or "", (comp.get("libsource") or ("", ""))[1]]
+    for r in table:
+        if any(r["_re"].search(n.strip()) for n in names if n):
+            return r
+    return None
+
+
+def _rail_volts(constraints: dict, nets: dict) -> dict[str, float]:
+    """Volts of every net whose voltage hwde can name without a solve:
+    constraints `voltages`, then the net's name (GND = 0, +3.3V, 3V3)."""
+    from check_ratings import volts_from_name  # noqa: PLC0415
+    out = {}
+    for name in nets:
+        v = volts_from_name(name)
+        if v is not None:
+            out[name] = v
+    for ent in constraints.get("voltages", []) or []:
+        if ent.get("net") in nets and isinstance(ent.get("voltage"),
+                                                 (int, float)):
+            out[ent["net"]] = float(ent["voltage"])
+    return out
+
+
+def _dc_level(net: str, nets: dict, comps: dict,
+              comp_pins: dict[str, dict[str, str]],
+              rails: dict[str, float]) -> tuple[float | None, list[str], str]:
+    """The DC volts on `net` from the resistors around it: every net reached
+    through 2-pin resistors from `net` (stopping at nets of known volts) is
+    solved by nodal analysis. Capacitors and test points are open, connector
+    pins open (an external part unplugged: listed in the second return),
+    input pins high-Z. Any other pin on a reached net (an output, a diode,
+    a transistor) makes the level unknown: (None, [], why)."""
+    from engcalc import parse_value  # noqa: PLC0415
+    unknown: list[str] = []
+    edges: list[tuple[str, str, float]] = []
+    opened: set[str] = set()
+    todo, seen = [net], {net}
+    while todo:
+        n = todo.pop()
+        unknown.append(n)
+        if len(unknown) > _DC_CLUSTER_MAX:
+            return None, [], "resistor network too large"
+        for m in nets[n]:
+            ref = m["ref"] or ""
+            pins = comp_pins.get(ref, {})
+            if ref.startswith("R") and len(pins) == 2:
+                ohms = parse_value(comps.get(ref, {}).get("value"))
+                if ohms is None:
+                    return None, [], f"{ref} has no readable value"
+                far = next(nt for p, nt in pins.items() if p != m["pin"])
+                if far == n:
+                    continue
+                edges.append((n, far, max(ohms, 1e-3)))
+                if far not in rails and far not in seen:
+                    seen.add(far)
+                    todo.append(far)
+            elif _OPEN_DC_RE.match(ref):
+                continue
+            elif _CONNECTOR_RE.match(ref):
+                opened.add(ref)
+            elif _base_type(m["pintype"]) == "input" or _AMP_IN_RE.match(
+                    (m.get("pinfunction") or "").upper()):
+                continue
+            else:
+                return None, [], (f"{ref}.{m['pin']} "
+                                  f"({m['pintype'] or 'no type'}) on {n}")
+    idx = {n: i for i, n in enumerate(unknown)}
+    k = len(unknown)
+    g = [[0.0] * (k + 1) for _ in range(k)]
+    for a, b, ohms in edges:
+        y = 1.0 / ohms
+        for x, o in ((a, b), (b, a)):
+            if x not in idx:
+                continue
+            g[idx[x]][idx[x]] += y
+            if o in idx:
+                g[idx[x]][idx[o]] -= y
+            else:
+                g[idx[x]][k] += y * rails[o]
+    # Gauss-Jordan; a node with no path to a known rail is singular
+    for c in range(k):
+        piv = max(range(c, k), key=lambda r: abs(g[r][c]))
+        if abs(g[piv][c]) < 1e-15:
+            return None, [], f"{net} has no resistive path to a known rail"
+        g[c], g[piv] = g[piv], g[c]
+        for r in range(k):
+            if r != c and g[r][c]:
+                f = g[r][c] / g[c][c]
+                g[r] = [x - f * y for x, y in zip(g[r], g[c])]
+    return g[0][k] / g[0][0], sorted(opened), ""
+
 
 def compare_netlists(a: dict, b: dict) -> dict:
     """Strict electrical identity: same net names, same (ref, pin) members."""
@@ -727,7 +849,63 @@ def audit(parsed: dict, constraints: dict,
                   f"(or use the matching symbol variant)",
                   pins=dict(zip("123", roles)))
 
-    # 10. a part the IC's datasheet requires between two of its pins
+    # 10. an op-amp or comparator input whose DC level sits outside the
+    # part's input common-mode range (errata corpus: minuet v3, an LMV331
+    # whose inputs rest at 3.1-3.3 V on a 3.3 V supply, above its Vcc-0.7 V:
+    # the rain sensor never worked)
+    table = _cm_table()
+    rails = _rail_volts(constraints, nets)
+    cm_checked = 0
+    for ref in sorted(comps):
+        row = _cm_row(comps[ref], table)
+        if not row:
+            continue
+        pins = comp_pins.get(ref, {})
+        types = {m["pin"]: m for n in set(pins.values()) for m in nets[n]
+                 if m["ref"] == ref}
+        supply = [rails[pins[p]] for p, m in types.items()
+                  if (_base_type(m["pintype"]) == "power_in"
+                      or _AMP_SUPPLY_RE.match((m.get("pinfunction")
+                                               or "").upper()))
+                  and pins[p] in rails]
+        if len(supply) < 2:
+            continue
+        vneg, vpos = min(supply), max(supply)
+        lo, hi = vneg + row["vcm"][0], vpos + row["vcm"][1]
+        for p, m in sorted(types.items()):
+            if _base_type(m["pintype"]) not in ("input", "passive") or \
+                    not _AMP_IN_RE.match((m.get("pinfunction") or "").upper()):
+                continue
+            net = pins[p]
+            if net in rails:
+                level, opened = rails[net], []
+            else:
+                level, opened, _why = _dc_level(net, nets, comps,
+                                                comp_pins, rails)
+                if level is None:
+                    continue
+            cm_checked += 1
+            if lo - 0.005 <= level <= hi + 0.005:
+                continue
+            side = (f"above the top of its input common-mode range "
+                    f"(V+ {hi - vpos:+.2f} V = {hi:.2f} V" if level > hi else
+                    f"below the bottom of its input common-mode range "
+                    f"(V- {lo - vneg:+.2f} V = {lo:.2f} V")
+            v("warning", "input_common_mode", net, [ref],
+              f"{ref} ({comps[ref].get('value')}, {row['kind']}) input "
+              f"{m['pinfunction']} (pin {p}) rests at {level:.2f} V on "
+              f"'{net}'" + (f" with {', '.join(opened)} open" if opened
+                            else "") +
+              f", {side} on a {vneg:g}..{vpos:g} V supply): the output "
+              f"is undefined there. "
+              f"Move the bias inside the range or pick a part whose range "
+              f"covers it (range from {row['source'].split(';')[0]}"
+              + ("" if row.get("verified") else ", not yet re-read") + ")",
+              pin=p, level_v=round(level, 3), vcm_v=[round(lo, 3),
+                                                     round(hi, 3)],
+              opened=opened)
+
+    # 11. a part the IC's datasheet requires between two of its pins
     # (reference/pin_requirements.yaml; errata corpus: minuet v3 shipped the
     # MCF8316D with no CBK drawn from FB_BK to GND_BK - the +3.3V rail's
     # caps were all drawn on other sheets for other parts)
@@ -766,6 +944,7 @@ def audit(parsed: dict, constraints: dict,
         "pins_connected": pins_connected,
         "decoupling_associations": n_assoc,
         "power": power_facts,
+        "common_mode_inputs_checked": cm_checked,
     }
     return violations, facts
 
