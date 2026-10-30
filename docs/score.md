@@ -87,13 +87,15 @@ loosened check costs more than the findings it could hide. If the faults
 can't run, the score stops instead of printing a number. A new check comes
 with its own mutant, which also lets the scorecard see it. The faults and the
 corpus are in the score's paths (`.hive/project.json`), so a change to them
-starts a new baseline rather than reading as a gain. So are `gate.py` and
-`reference/gates.yaml`, where the gates' verdicts come from: a change to
-either is the person's to merge. The checks themselves (the rest of the
-skill's `scripts/`) are not: the Hive scores a merge that changes the
-score's paths against its parent with the merge's copy of those paths laid
-over it, so a loosened check there would cost both sides the same and read
-flat, and a better one could never read as a gain. ERC and DRC themselves
+starts a new baseline rather than reading as a gain. The gate code
+(`scripts/gate.py`, `reference/gates.yaml`) and the checks are not, on
+purpose: the Hive scores a merge that changes the score's paths against its
+parent with the merge's copy of those paths laid over it, so a loosened gate
+or check there would cost both sides the same and read flat, a better one
+could never read as a gain, and every change to them would wait on the
+person. Kept out, a loosened one costs its planted faults against its
+parent, and the planted findings being real ones keeps it from skipping
+them. ERC and DRC themselves
 are KiCad's and have no planted faults here: a rule set to "ignore" in a
 board's project, or a looser `rules_gen` floor, still gets through.
 
