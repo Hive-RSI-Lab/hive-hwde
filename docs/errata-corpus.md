@@ -32,7 +32,7 @@ what hwde's checks do with the first revision. Written by
 
 | defect | class | hwde on rev A | follow-up |
 |---|---|---|---|
-| minuet-1: no 1 uF capacitor FB_BK to GND_BK, which the MCF8316D datasheet asks for | PI (datasheet-required pin capacitor) | missed | brief - a datasheet pin-requirement table (per MPN, pin, required part to which net) that netlist_audit reads, filled by datasheet_extract |
+| minuet-1: no 1 uF capacitor FB_BK to GND_BK, which the MCF8316D datasheet asks for | PI (datasheet-required pin capacitor) | caught on rev A, gone on rev B (`netlist_audit` pin_part_missing) | reference/pin_requirements.yaml carries the MCF8316D's Table 10-1 (SLLSFX9A). v3's +3.3V rail has caps, all drawn on other sheets for other parts, so the finding is a warning that none was drawn for FB_BK; v4 draws C20 1u on /fan/ with the IC and the rule is quiet. |
 | minuet-2: LMV331IDCK comparator's input common mode (Vcc-0.7 = 2.6 V) below the 3.1 V rain-sensor signal | ANA (input common-mode range) | missed | brief - sim_board or check_ratings checks each op-amp/comparator input's DC level against the part's common-mode range |
 | minuet-3: board areas over 50 C at 4 A per motor phase | TH (copper area under a power IC) | caught_with_constraints | check_thermal estimates rise from the power and copper constraints.json gives; on the foreign board it has no input. v4's 4-layer pours are the fix. |
 | minuet-4: ESP32-C3 GPIO6 (MTCK) pulled up by the ROM at reset turns the LED strip on before firmware runs | FW-HW (reset-state pull on a load enable) | missed | brief - check_straps reads every MCU pin with a reset-state pull in reset_states.yaml (not only straps) that drives a load enable or a gate, and flags a load that comes up on before firmware |
@@ -40,4 +40,4 @@ what hwde's checks do with the first revision. Written by
 
 ## Count
 
-12 defects: 3 caught, 2 caught_with_constraints, 6 missed, 1 not_static.
+12 defects: 4 caught, 2 caught_with_constraints, 5 missed, 1 not_static.

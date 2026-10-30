@@ -97,8 +97,13 @@ boards:
     summary: no 1 uF capacitor FB_BK to GND_BK, which the MCF8316D datasheet asks for
     source_quote: "There should be a 1 uF capacitor from FB_BK to GND_BK according to the MCF8316D datasheet"
     fault_class: PI (datasheet-required pin capacitor)
-    verdict: missed
-    follow_up: brief - a datasheet pin-requirement table (per MPN, pin, required part to which net) that netlist_audit reads, filled by datasheet_extract
+    verdict: caught
+    catch: {script: netlist_audit, kind: pin_part_missing, net: +3.3V, refs: [U5]}
+    note: >-
+      reference/pin_requirements.yaml carries the MCF8316D's Table 10-1
+      (SLLSFX9A). v3's +3.3V rail has caps, all drawn on other sheets for
+      other parts, so the finding is a warning that none was drawn for
+      FB_BK; v4 draws C20 1u on /fan/ with the IC and the rule is quiet.
   - id: minuet-2
     summary: LMV331IDCK comparator's input common mode (Vcc-0.7 = 2.6 V) below the 3.1 V rain-sensor signal
     source_quote: "only allows a common mode input voltage up to Vcc - 0.7 V = 2.6 V whereas the actual signals are in the range of 3.1 V"
