@@ -8,9 +8,9 @@ scripts' reasoning, and that is deliberate. Do not ask for it. Files are the
 interface. Run scripts with the repo venv python. Keep output ASCII.
 
 ## Inputs
-- Schematic PDF: `scripts/kc.py sch-pdf --sch kicad/<top>.kicad_sch --out
+- Schematic PDF: `scripts/kc.py sch-pdf kicad/<top>.kicad_sch --out
   reports/schematic.pdf` (render it yourself, then READ the pages).
-- Netlist: `scripts/kc.py netlist --sch ... --out reports/top.net`.
+- Netlist: `scripts/kc.py netlist kicad/<top>.kicad_sch --out reports/top.net`.
 - `parts/<lcsc>.json` datasheet ground truth, `architecture/constraints.json`,
   `reference/checklists/` (per-domain review checklists - apply every
   checklist whose domain appears on this board).
@@ -42,7 +42,11 @@ Write `reports/review-schematic.md` (human prose) AND
 `{"violations": [{"check": "schematic-review", "severity":
 "error|warning", "pos": null, "layer": null, "net": "<net or null>",
 "refs": ["U1"], "msg": "<one-sentence defect + why it kills bring-up>",
-"source": "review.schematic", "kind": "<short-slug>"}]}`
+"source": "review.schematic", "kind": "<short-slug>", "fault_class":
+"<docs/failure-modes.yaml id, or new>", "class_mode": "<when new>"}]}`
+The fault class is the mistake any board could repeat (the registry's
+`mode`); `scripts/first_spin.py` turns each class no check caught into a
+brief for one (reference/first-spin.md).
 Severity: error = would prevent bring-up or damage hardware; warning =
 risk/quality. No style nits.
 

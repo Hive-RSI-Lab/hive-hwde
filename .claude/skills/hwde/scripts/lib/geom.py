@@ -541,7 +541,11 @@ class BoardGeom:
         self._pads: list[Pad] = []
         self._zones: list[Zone] = []
         self.rule_areas: list[dict] = []  # keepout areas: {name, layers, outline}
-        self.footprints: dict[str, dict] = {}  # ref -> {"lib", "value"}
+        # every np_thru_hole pad, with or without copper layers (a pad with
+        # none is not in _pads): route_auto keeps the router off them and
+        # stitch_vias keeps its drills hole-to-hole clear of them
+        self.npth: list[Pad] = []
+        self.footprints: dict[str, dict] = {}  # ref -> {"lib", "value", "props"}
         self._parse_tracks(root)
         self._parse_vias(root)
         self._parse_footprints(root)
@@ -668,17 +672,20 @@ class BoardGeom:
             fnums = _nums(at) if at is not None else [0, 0, 0]
             fx, fy = fnums[0], fnums[1]
             fangle = fnums[2] if len(fnums) > 2 else 0.0
-            ref, value = "?", None
+            ref, value, props = "?", None, {}
             for prop in _kids(fp, "property"):
                 pv = _strs(prop)
                 if len(pv) >= 2 and pv[0] == "Reference":
                     ref = pv[1]
                 elif len(pv) >= 2 and pv[0] == "Value":
                     value = pv[1]
+                elif len(pv) >= 2:
+                    props[pv[0]] = pv[1]
             lib = _strs(fp)[0] if _strs(fp) else ""
             # ref -> lib id + Value field (check_current bounds a resistor
-            # branch's current from these); the last duplicate ref wins
-            self.footprints[ref] = {"lib": lib, "value": value}
+            # branch's current from these; check_thermal knows a package by
+            # its LCSC/MPN props); the last duplicate ref wins
+            self.footprints[ref] = {"lib": lib, "value": value, "props": props}
             for pad in _kids(fp, "pad"):
                 self._add_pad(pad, fx, fy, fangle, ref)
 
@@ -707,8 +714,9 @@ class BoardGeom:
         rr = _kid(pad, "roundrect_rratio")
         rratio = _nums(rr)[0] if rr and _nums(rr) else 0.0
         layers = self._copper_of(_kid(pad, "layers"))
-        if not layers:
-            return  # no copper (e.g. NPTH mechanical or paste-only pad)
+        npth = len(pad) > 2 and _tok(pad[2]) == "np_thru_hole"
+        if not layers and not npth:
+            return  # no copper (e.g. paste-only pad)
         drill = None
         drill_off = (0.0, 0.0)
         dnode = _kid(pad, "drill")
@@ -725,14 +733,18 @@ class BoardGeom:
                 on = _nums(onode)
                 if len(on) >= 2:
                     drill_off = (on[0], on[1])
-        self._pads.append(Pad(
+        made = Pad(
             ref=ref, number=number, net=self._resolve_net(pad),
             shape=pshape, size=(w, h), center=center, angle=pad_angle,
             rratio=rratio, layers=layers, drill=drill,
             drill_offset=drill_off,
             castellated=any(_tok(x) == "pad_prop_castellated"
                             for prop in _kids(pad, "property")
-                            for x in prop[1:])))
+                            for x in prop[1:]))
+        if npth and drill:
+            self.npth.append(made)
+        if layers:
+            self._pads.append(made)
 
     def _parse_zones(self, root):
         zid = 0

@@ -1,0 +1,7 @@
+[
+ {"measure": "i_lo_ma", "min": 3.0, "severity": "warning", "msg": "brief: LED lit at about 3-5 mA, low corner"},
+ {"measure": "i_hi_ma", "max": 5.0, "severity": "warning", "msg": "brief: LED about 3-5 mA, high corner (low-VF bin, 5.25 V, R1 -1%)"},
+ {"measure": "i_hi_ma", "max": 30.0, "severity": "error", "msg": "KT-0603G IF 30 mA abs max"},
+ {"measure": "i_usb_ma", "max": 30.0, "severity": "error", "msg": "KT-0603G IF 30 mA abs max at 5.5 V"},
+ {"measure": "p_r1_hi_mw", "max": 100.0, "severity": "error", "msg": "0603WAF R1 100 mW rating"}
+]

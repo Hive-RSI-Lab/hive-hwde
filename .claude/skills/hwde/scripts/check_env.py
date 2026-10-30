@@ -95,6 +95,16 @@ NGSPICE_HELP = (
     "gate cannot run."
 )
 
+SYMBOLS_HELP = (
+    "Schematics place power: and Device: symbols from KiCad's stock "
+    "libraries (share/kicad/symbols beside kicad-cli, or KICAD_SYMBOL_DIR). "
+    "Install KiCad with its symbol libraries."
+)
+KRT_HELP = (
+    "route_critical and route_auto's KRT finishing pass need "
+    "KiCadRoutingTools 0.19.0 under HWDE_TOOLS_DIR (krt/ or "
+    "kicad-routing-tools/), or HWDE_KRT_DIR at its plugins dir."
+)
 SWIG_PROBE = """\
 import sys
 import pcbnew
@@ -268,9 +278,52 @@ def check_kicad(resolved: dict, full: bool) -> list[dict]:
         "SWIG pcbnew (Specctra DSN/SES, KiCad-9 zone refill) needs KiCad's own "
         "python. Reinstall KiCad with the Python component."))
 
+    out.append(check_symbols(resolved))
+    out.append(check_3d_loaders(cli))
+
     if full and kpy is not None:
         out.append(probe_swig(kpy))
     return out
+
+
+def check_symbols(resolved: dict) -> dict:
+    """The stock power/Device libraries every schematic places from, in the
+    flat form kicad-sch-api reads (KiCad 10's symdirs are flattened)."""
+    try:
+        libs = {lib: env.stock_symbol_lib(lib) for lib in env.SYMDIR_EAGER}
+    except OSError as e:
+        return check("kicad-symbols", False, f"flattening failed: {e}",
+                     SYMBOLS_HELP)
+    missing = [lib for lib, p in libs.items() if p is None]
+    resolved["kicad_symbols"] = {lib: str(p) if p else None
+                                 for lib, p in libs.items()}
+    return check("kicad-symbols", not missing,
+                 f"{', '.join(missing)} not found under "
+                 f"{env.kicad_symbol_dir()}" if missing else
+                 ", ".join(f"{lib}: {p}" for lib, p in libs.items()),
+                 SYMBOLS_HELP)
+
+
+def check_3d_loaders(cli: Path) -> dict:
+    """kicad-cli's 3D model loaders: without them a render is a bare board."""
+    import kc
+    renv, err = kc.render_env(cli)
+    return check("kicad-3d-loaders", not err,
+                 err or ("found beside " + (renv or {}).get("APPDIR", str(cli))),
+                 "Install KiCad's 3D plugins (libs3d_plugin_*) with kicad-cli.",
+                 warn=True)
+
+
+def check_krt(resolved: dict) -> dict:
+    """KiCadRoutingTools: route_critical and route_auto's finishing pass."""
+    try:
+        krt = env.find_krt()
+    except env.EnvError as e:
+        return check("krt", False, str(e), KRT_HELP)
+    resolved["krt"] = str(krt) if krt else None
+    return check("krt", krt is not None,
+                 str(krt) if krt else "KiCadRoutingTools not found",
+                 KRT_HELP, warn=True)
 
 
 def probe_swig(kpy: Path) -> dict:
@@ -502,6 +555,7 @@ def main(argv: list[str] | None = None) -> int:
             checks.append(lock)
         checks.extend(check_kicad(resolved, args.full))
         checks.extend(check_java(resolved))
+        checks.append(check_krt(resolved))
         checks.append(check_lualatex(resolved))
         checks.append(check_ngspice(resolved))
         checks.append(check_git())

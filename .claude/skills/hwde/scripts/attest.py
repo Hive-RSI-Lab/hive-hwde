@@ -23,7 +23,10 @@ Subcommands:
   disposition  Print the DERIVED release disposition (never hand-set):
                draft, engineering-validated, release-candidate, order-ready,
                ordered, built, bring-up-passed, derated, rework-required,
-               blocked. Read-only, always exit 0 unless an error.
+               blocked. bring-up-passed needs a bringup_passed event whose
+               measured results file still holds (state.py bringup); a
+               bringup_derated / bringup_failed gives derated /
+               rework-required. Read-only, always exit 0 unless an error.
 
 CLI (SPEC 6): JSON to stdout or --out; exit 0 ok / 1 refused-or-invalid /
 2 operational error. Toolchain-free: build validates recorded reports, it

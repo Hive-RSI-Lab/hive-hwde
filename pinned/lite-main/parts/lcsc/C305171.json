@@ -1,0 +1,76 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C305171",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C305171",
+   "mpn": "SWPA4020S2R2NT",
+   "brand": "Sunlord",
+   "description": "1.85A 2.2uH 3.7A 40m\u03a9 \u00b130% SMD,4x4mm Power Inductors ROHS",
+   "package": "SMD,4x4mm",
+   "category": "Power Inductors",
+   "type": "Extended",
+   "basic": false,
+   "stock": 4435,
+   "price": 0.0639,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0639
+    },
+    {
+     "qty": 100,
+     "price": 0.0515
+    },
+    {
+     "qty": 300,
+     "price": 0.0452
+    },
+    {
+     "qty": 3000,
+     "price": 0.0407
+    },
+    {
+     "qty": 6000,
+     "price": 0.0369
+    },
+    {
+     "qty": 9000,
+     "price": 0.0349
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2310251551_Sunlord-SWPA4020S2R2NT_C305171.pdf",
+   "url": "https://www.lcsc.com/product-detail/power-inductors_sunlord-swpa4020s2r2nt_C305171.html",
+   "attributes": [
+    {
+     "name": "Current - Saturation(Isat)",
+     "value": "3.7A"
+    },
+    {
+     "name": "Inductance",
+     "value": "2.2uH"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b130%"
+    },
+    {
+     "name": "Current Rating",
+     "value": "1.85A"
+    },
+    {
+     "name": "DC Resistance(DCR)",
+     "value": "40m\u03a9"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

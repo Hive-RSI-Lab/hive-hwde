@@ -107,9 +107,10 @@ fresh for this report:
   Extended-part fee for each one. They may also need buying into your JLC parts
   inventory first (`fab/prebuy.csv`). There is no Basic green LED in 0603, only
   in 0805.
-- **J1 in the CPL:** `fab/CPL.csv` lists J1 as a top-side SMT placement
-  (`smt_placed`), even though it is through-hole. At order time, either hand-solder
-  J1 or order it as THT assembly ([snag 13](#snags-the-run-hit)).
+- **J1 is through-hole:** the BOM of record classes J1 `tht` (it was
+  `smt_placed` until [snag 13](#snags-the-run-hit) was fixed). It stays in
+  `fab/BOM.csv` and `fab/CPL.csv` for JLC's THT assembly step; at order time,
+  either order it as THT assembly or hand-solder it.
 
 The fab package is in `fab/`: `hwde-led-test_gerbers.zip` (the JLC layer set
 plus drill, 11 files), `BOM.csv`, `CPL.csv` and `prebuy.csv`.
@@ -124,7 +125,7 @@ is recorded in `state.json`. The table shows the last result for each gate.
 | ERC (`erc`) | P4 | **pass**: 0 errors, 0 warnings | 4 | 0 | (re-runs after a decoupling.json change) |
 | Placement (`place`) | P6 | **pass** | 6 | 1 | A centred outline grow left J1 3.0 mm from its edge (limit 2.5); restored and redone |
 | Routed DRC (`drc_routed`) | P7 | **pass**: 0 errors, 0 warnings, 0 unconnected | 3 | 0 | |
-| Verify suite (`verify`) | P8 | **pass**: 14 of 14 checks ran, 0 errors, **2 warnings** | 5 | 1 | check_pdn: +5V had no cap tied to it until C1 was recorded against J1.1 |
+| Verify suite (`verify`) | P8 | **pass**: 14 of 14 checks ran, 0 errors, **2 warnings** | 5 | 1 | check_pdn: +5V had no cap tied to it until C1 was recorded against J1.1 (since snag 5's fix, check_pdn finds C1 on the board) |
 | JLC DFM (`dfm`) | P9 | **pass**: 0 findings | 1 | 0 | |
 
 The verify suite's checks are return path, current, decoupling, diff pairs,
@@ -207,15 +208,14 @@ and D1's anode (y 19.05) don't line up. It is cosmetic and changes nothing
 electrically. The fix is to move D1 up 0.15 mm and re-route that one net.
 **Recommended: waive.** Fix it if the board is touched again.
 
-**Waiver 2: `check_ratings`, D1 and R1 have no voltage rating.** *Waive it?*
-The ratings check found no voltage-rating attribute it recognises on D1 or R1.
-R1 is rated 75 V, but the check doesn't read LCSC's "Voltage-Supply(Max)" field
-(snag 4). D1's reverse rating is unknown without its datasheet. D1 only sees
+**Waiver 2: `check_ratings`, D1 has no voltage rating.** *Waive it?*
+The ratings check found no voltage-rating attribute on D1. (It also named R1
+until snag 4 was fixed: it now reads R1's "Voltage-Supply(Max)", 75 V.)
+D1's reverse rating is unknown without its datasheet. D1 only sees
 reverse voltage, up to 5.25 V, if the leads are swapped. Green InGaN LEDs are
 usually rated for 5 V reverse, and the **+**/**−** silk at J1 makes a swap less
 likely.
-**Recommended: waive** for a bench test board. The R1 half goes away on its own
-once snag 4 is fixed.
+**Recommended: waive** for a bench test board.
 
 The hive-hwde lead also asked whether to treat the board as a passed smoke test
 and move on. If all five answers are yes, it is one.
@@ -255,9 +255,9 @@ Snags 1–12 come from the run itself and are already filed as seven briefs. Sna
 |--:|----------|-------------------------|-------|
 | 1 | `scripts/lib/env.py`, `schlib.py` | kicad-sch-api can't read KiCad 10's `.kicad_symdir` libraries; `bin/hwde` flattens them instead | 261028-141924-4dae199a93 |
 | 2 | `scripts/kc.py` `render_env` | The 3D loaders are only looked for at distro paths and are missed in the AppImage; shimmed in `bin/hwde` | 261028-141924-4dae199a93 |
-| 3 | `agents/part-sourcer.md` | No `refdes` or `attributes` per parts line, so the BOM had no LCSC column and ratings went unread | 261028-141930-114d313009 |
-| 4 | `check_ratings.py` `V_ATTR_RE` | LCSC's "Voltage-Supply(Max)" isn't read, so R1's 75 V shows as unrated (waiver 2) | 261028-141930-114d313009 |
-| 5 | `check_pdn.py` / decoupling | A board with no IC gets no cap association for its bulk cap | 261028-141930-114d313009 |
+| 3 | `agents/part-sourcer.md` | No `refdes` or `attributes` per parts line, so the BOM had no LCSC column and ratings went unread | 261028-141930-114d313009 (fixed: the sourcer copies the row whole, and bom_cpl reads the board's `LCSC Part` field) |
+| 4 | `check_ratings.py` `V_ATTR_RE` | LCSC's "Voltage-Supply(Max)" isn't read, so R1's 75 V shows as unrated (waiver 2) | 261028-141930-114d313009 (fixed) |
+| 5 | `check_pdn.py` / decoupling | A board with no IC gets no cap association for its bulk cap | 261028-141930-114d313009 (fixed: check_pdn counts a cap straight across the rail and ground) |
 | 6 | `lib_pull.py` (EasyEDA) | 0603 courtyards are the body outline, and nothing caught it | 261028-141932-4f01e64893 |
 | 7 | `board_edit.py --outline fit` | The fit margin ignores reference text, and a centred resize can push an edge connector out of tolerance | 261028-141932-4f01e64893 |
 | 8 | `knowledge/checklists/` | There is no LED-indicator checklist, so every LED reads as a coverage gap | 261028-141932-9b95b3083b |
@@ -265,7 +265,7 @@ Snags 1–12 come from the run itself and are already filed as seven briefs. Sna
 | 10 | `kicad/gen/root.py` regeneration | New instance UUIDs break board parity | 261028-141934-60618887e0 |
 | 11 | KiCadRoutingTools | It wasn't in `/hive/tools`; it is now, and the skill still has to find it | 261028-141924-4dae199a93 |
 | 12 | `report_gen.py`, board guide | They need the pdf-material-builder house style, which isn't here, so this report was built with pandoc and lualatex instead | 261028-141935-42bdc24230 |
-| 13 | `bom_cpl.py` assembly class | J1 (THT) is classed `smt_placed` and placed in the CPL | 261028-144247-0a37b2952e |
+| 13 | `bom_cpl.py` assembly class | J1 (THT) is classed `smt_placed` and placed in the CPL (fixed: a `through_hole` footprint is now class `tht`) | 261028-144247-0a37b2952e |
 | 14 | `kicad/gen` schematic generator | Net labels sat on pin numbers, D1's pin names overlapped, and the circuit was tiny in one corner of an A4 sheet; fixed in `schlib` (labels turn outward, 2-pin parts hide pin names, paper fits the drawing) | 261028-144249-63ddfa029b |
 | 15 | `lib_pull.py` | Parts that already exist get no 3D models, so the README's "re-pull with lib_pull" fetches none, and `--overwrite` would undo the hand-widened courtyards | 261028-144250-cf7085cecf |
 | 16 | `report_gen.py` file names | It looks for `verify_all.json`, `fab_export.json` and `bom_cpl.json`, but the run saved `verify-summary.json`, `fab-export.json` and `bom-cpl.json` | 261028-144253-daf2ceb304 |

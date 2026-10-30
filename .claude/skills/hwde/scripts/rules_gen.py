@@ -25,7 +25,8 @@ expressible as a rule becomes a named DRC violation, so the standard DRC gate
      ONE POWER CLASS PER REQUIRED WIDTH (never one class at the widest - that put
      pd-trigger's 20 mA /VDD in the same 1.75 mm class as its 5 A VBUS and would
      have had Freerouting drive 1.75 mm traces into 0.6 mm pads; LEARNINGS
-     2026-07-28 [routing][rules_gen][freerouting]) and one class per differential
+     2026-07-28 [routing][rules_gen][freerouting]; a plane_fed rail's class is
+     sized for its taps, power_rules) and one class per differential
      impedance, assigned by netclass_patterns; plus board.design_settings.rules
      minimums and the fab-floor severities from lib/fabfloors.py - the same single
      source board_init writes, so the two files cannot disagree. These drive the
@@ -35,6 +36,10 @@ expressible as a rule becomes a named DRC violation, so the standard DRC gate
      and every class clearance is floored at the board's min_hole_clearance minus
      the class's via ring: the DSN export hands Freerouting netclasses only, so a
      DRU-only clearance cost PCB-0018 a 1 h route with 406 clearance errors.
+
+With the board (--pcb, default the .kicad_pcb beside --pro), its pads add
+neck-down rules where a power net meets pads narrower than its width
+(neck_rules).
 
 Conditions use `A.NetName == 'NET'` (NOT `A.Net`, which silently matches nothing -
 LEARNINGS [drc]). kicad-cli auto-loads the .kicad_dru sitting next to the board.
@@ -139,20 +144,89 @@ def baseline_rules(cap: dict) -> list[Rule]:
     return r
 
 
+def tap_current_a(entry: dict) -> float:
+    """What one track of a plane-fed rail carries: its declared
+    tap_current_a, else the entry's per-via ampacity (check_current's
+    default 0.5 A) - a tap feeds its pad through one via or the pour edge -
+    and never more than the rail."""
+    tap = entry.get("tap_current_a", entry.get("via_amps",
+                                               check_current.VIA_AMPS_DEFAULT))
+    return min(float(tap), float(entry["current_a"]))
+
+
 def power_rules(constraints: dict, cu_mm: float) -> tuple[list[Rule], list[dict]]:
-    """Per-power-net minimum track width from IPC-2152 (check_current)."""
+    """Per-power-net minimum track width from IPC-2152 (check_current).
+
+    A plane_fed rail's trunk is its pour (constraints "planes"), so its
+    tracks are taps: they are sized for tap_current_a, not the rail's
+    current. One width per net at the full 5 A (2.38 mm on 1 oz) would sit
+    on every stub into a 0.34 mm HTSSOP pin and is unmeetable; lite-main
+    (hifi-receiver-2) declared its 5 A rails at 0.4-0.8 A to get the taps
+    through, which hid the real current from every other check."""
     rules: list[Rule] = []
     facts: list[dict] = []
+    plane_nets = {pl.get("net") for pl in constraints.get("planes", []) or []}
     for entry in constraints.get("power", []):
         net = entry["net"]
         cur = float(entry["current_a"])
         dt = float(entry.get("dt_c", 10.0))
-        w = check_current.required_width_mm(cur, dt, cu_mm)
+        fact = {"net": net, "current_a": cur, "dt_c": dt}
+        sized = cur
+        if entry.get("plane_fed"):
+            sized = tap_current_a(entry)
+            fact.update({"plane_fed": True, "tap_current_a": sized,
+                         "trunk_width_mm": round(check_current.required_width_mm(
+                             cur, dt, cu_mm), 4),
+                         "plane_declared": net in plane_nets})
+        w = check_current.required_width_mm(sized, dt, cu_mm)
         safe = re.sub(r"[^A-Za-z0-9]", "_", net).strip("_")
         rules.append(Rule(f"aiee_pwr_width_{safe}", "track_width", round(w, 4),
                           condition=f"A.NetName == '{net}' && A.Type == 'track'"))
-        facts.append({"net": net, "current_a": cur, "dt_c": dt,
-                      "min_width_mm": round(w, 4)})
+        fact["min_width_mm"] = round(w, 4)
+        facts.append(fact)
+    return rules, facts
+
+
+# --------------------------------------------------------------- board pads
+
+def board_pads(pcb: Path | None):
+    """geom.BoardGeom of the board rules_gen sizes for, or None."""
+    if pcb is None or not Path(pcb).is_file():
+        return None
+    sys.path.insert(0, str(SCRIPTS / "lib"))
+    import geom
+    return geom.BoardGeom.from_file(pcb)
+
+
+def neck_rules(bg, power_facts: list[dict], cap: dict
+               ) -> tuple[list[Rule], list[dict]]:
+    """A neck-down allowance where a power net meets pads narrower than its
+    width rule: inside the courtyard of each footprint with such a pad, the
+    net's tracks may narrow to the narrowest such pad's short side (floored
+    at the fab's track width) - check_current's own pad-exit bound, a track
+    no narrower than the copper it leaves. Emitted after the per-net width
+    rules (the later rule wins). check_current still judges every neck: one
+    longer than its 1 mm pad exit must carry the full width. Returns
+    (rules, facts)."""
+    rules: list[Rule] = []
+    facts: list[dict] = []
+    floor = float(cap["min_trace_width_mm"])
+    for f in power_facts:
+        net, w = f["net"], float(f["min_width_mm"])
+        narrow: dict[str, float] = {}
+        for p in bg.pads_of(net=net):
+            short = min(p.size)
+            if short < w - 1e-6:
+                narrow[p.ref] = min(narrow.get(p.ref, short), short)
+        for ref in sorted(narrow):
+            neck = round(max(floor, min(narrow[ref], w)), 4)
+            name = f"aiee_pwr_neck_{_safe(net)}_{_safe(ref)}"
+            rules.append(Rule(name, "track_width", neck, condition=(
+                f"A.NetName == '{net}' && A.Type == 'track' "
+                f"&& A.intersectsCourtyard('{ref}')")))
+            facts.append({"net": net, "ref": ref, "pad_short_mm":
+                          round(narrow[ref], 4), "neck_mm": neck,
+                          "width_mm": w, "rule": name})
     return rules, facts
 
 
@@ -381,7 +455,11 @@ def net_classes(constraints: dict, power_facts: list[dict],
             cname = "Default"          # thin rails need no wider class
         else:
             cname = power_class_name(w)
-            classes.append(base_class(cname, w, max(cap["min_clearance_mm"], 0.2)))
+            # the fab floor, not a blanket 0.2: a power net that lands on a
+            # fine-pitch part (CH224Q VBUS, 0.176 mm between pads) cannot
+            # meet 0.2 at its own pads. Spacing a voltage needs comes from
+            # voltages/voltage_pairs (the _HV_ variants below).
+            classes.append(base_class(cname, w, cap["min_clearance_mm"]))
         for f in buckets[w]:
             f["netclass"] = cname       # traceability in the JSON report
             f["class_width_mm"] = w
@@ -501,23 +579,50 @@ DRU_HEADER = ("(version 1)\n"
               "# Baseline (fab floor) first, per-net design rules last (later rule wins).\n")
 
 
+def unique_rule_names(rules: list[Rule]) -> list[dict]:
+    """Give every rule its own name, in place. _safe folds every
+    non-alphanumeric to '_', so A_SPK_L+ and A_SPK_L- both become
+    aiee_pwr_width_A_SPK_L; the second and later of a name get _2, _3.
+    Returns [{from, to}] for the report."""
+    seen: set[str] = {r.name for r in rules}
+    count: dict[str, int] = {}
+    renamed: list[dict] = []
+    for r in rules:
+        n = count[r.name] = count.get(r.name, 0) + 1
+        if n == 1:
+            continue
+        k = n
+        while f"{r.name}_{k}" in seen:
+            k += 1
+        new = f"{r.name}_{k}"
+        seen.add(new)
+        renamed.append({"from": r.name, "to": new})
+        r.name = new
+    return renamed
+
+
 def render_dru(rules: list[Rule]) -> str:
     return DRU_HEADER + "\n".join(r.render() for r in rules) + "\n"
 
 
-def build(constraints: dict, cap: dict, stackup: dict, baseline_only: bool
-          ) -> tuple[list[Rule], dict]:
+def build(constraints: dict, cap: dict, stackup: dict, baseline_only: bool,
+          bg=None) -> tuple[list[Rule], dict]:
+    """bg: the board (geom.BoardGeom), when there is one: its pads give the
+    neck-down rules and the power classes' clearance."""
     outer_oz = cap.get("outer_copper_oz", 1.0)
     cu_mm = CU_OZ_MM.get(outer_oz, 0.035)
     rules = baseline_rules(cap)
     report: dict = {"power": [], "diff_pairs": [], "classes": [], "patterns": [],
-                    "hv_rules": []}
+                    "hv_rules": [], "necks": []}
     if not baseline_only:
         pr, pf = power_rules(constraints, cu_mm)
+        nr, nf = neck_rules(bg, pf, cap) if bg is not None else ([], [])
         pairs = detect_diff_pairs(constraints)
         dr, df = diff_pair_rules(pairs, stackup)
         hr, hf = voltage_rules(constraints, cap)
-        rules += pr + dr + hr
+        rules += pr + nr + dr + hr
+        report["necks"] = nf
+        report["renamed_rules"] = unique_rule_names(rules)
         classes, patterns = net_classes(constraints, pf, df, cap, hf)
         report["power"] = pf
         report["diff_pairs"] = df
@@ -544,6 +649,9 @@ def main(argv: list[str] | None = None) -> int:
                     "(default: defaults[<layers>])")
     ap.add_argument("--out-dru", help="write the .kicad_dru here")
     ap.add_argument("--pro", help="also update this .kicad_pro (net classes + minimums)")
+    ap.add_argument("--pcb", help="the board, for its pads: neck-down rules "
+                    "where a power net meets pads narrower than its width "
+                    "(default: the .kicad_pcb beside --pro, when there is one)")
     ap.add_argument("--baseline-only", action="store_true",
                     help="emit only the fab-floor baseline (for template generation)")
     ap.add_argument("--check-dru", metavar="PATH",
@@ -626,7 +734,13 @@ def main(argv: list[str] | None = None) -> int:
         if args.constraints:
             constraints = json.loads(Path(args.constraints).read_text(encoding="utf-8"))
 
-        rules, report = build(constraints, cap, stackup or {}, args.baseline_only)
+        pcb = Path(args.pcb) if args.pcb else (
+            Path(args.pro).with_suffix(".kicad_pcb") if args.pro else None)
+        if args.pcb and not pcb.is_file():
+            raise SystemExit(f"--pcb not found: {pcb}")
+        bg = None if args.baseline_only else board_pads(pcb)
+        rules, report = build(constraints, cap, stackup or {}, args.baseline_only,
+                              bg)
         dru_text = render_dru(rules)
 
         if args.out_dru:
@@ -640,9 +754,19 @@ def main(argv: list[str] | None = None) -> int:
             "copper_oz": outer_oz,
             "rule_count": len(rules),
             "rule_names": [r.name for r in rules],
+            "renamed_rules": report.get("renamed_rules", []),
             "power": report["power"], "diff_pairs": report["diff_pairs"],
             "hv_rules": report["hv_rules"],
+            "necks": report["necks"],
+            "warnings": [
+                f"{f['net']} is plane_fed but constraints planes has no pour "
+                "for it: its taps are sized for the plane that isn't there"
+                for f in report["power"]
+                if f.get("plane_fed") and not f.get("plane_declared")],
+            "pcb": str(pcb) if bg is not None else None,
             "classes": [c["name"] for c in report["classes"]],
+            "class_clearances": {c["name"]: c["clearance"]
+                                 for c in report["classes"]},
             "out_dru": args.out_dru, "pro": args.pro if not args.baseline_only else None,
         }
         if not args.out_dru:

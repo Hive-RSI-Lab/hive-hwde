@@ -1,0 +1,6 @@
+[
+ {"measure": "vpk_a", "max": 16.0, "severity": "error", "msg": "C1 16 V rating"},
+ {"measure": "vpk_b", "max": 16.0, "severity": "error", "msg": "C1 16 V rating"},
+ {"measure": "ipk_led_a_ma", "max": 60.0, "severity": "error", "msg": "KT-0603G IFP 60 mA (1/10 duty, 0.1 ms)"},
+ {"measure": "ipk_led_b_ma", "max": 60.0, "severity": "error", "msg": "KT-0603G IFP 60 mA"}
+]

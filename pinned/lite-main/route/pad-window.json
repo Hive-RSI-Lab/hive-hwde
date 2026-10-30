@@ -1,0 +1,2446 @@
+{
+ "script": "route_critical",
+ "status": "violations",
+ "board": "lite-main.kicad_pcb",
+ "counts": {
+  "total": 10,
+  "by_severity": {
+   "error": 10
+  },
+  "by_source": {
+   "route_critical": 10
+  }
+ },
+ "violations": [
+  {
+   "check": "route_critical",
+   "severity": "error",
+   "pos": [
+    87.955,
+    57.19
+   ],
+   "layer": "F.Cu",
+   "net": "VBUS",
+   "refs": [
+    "J1"
+   ],
+   "msg": "power pad J1.A4-B9 (VBUS): widest connectable track 1.845 mm < DRU floor 2.3828 mm - no legal rule-width track can reach this pad; pour fan-in instead (reference/remediations/track_width.md step 4)",
+   "source": "route_critical",
+   "items": [
+    {
+     "msg": "power pad J1.A4-B9 (VBUS): widest connectable track 1.845 mm < DRU floor 2.3828 mm - no legal rule-width track can reach this pad; pour fan-in instead (reference/remediations/track_width.md step 4)",
+     "pos": [
+      87.955,
+      57.19
+     ]
+    }
+   ],
+   "kind": "pad_window_unmeetable",
+   "widest_mm": 1.845,
+   "rule_min_mm": 2.3828
+  },
+  {
+   "check": "route_critical",
+   "severity": "error",
+   "pos": [
+    83.155,
+    57.19
+   ],
+   "layer": "F.Cu",
+   "net": "VBUS",
+   "refs": [
+    "J1"
+   ],
+   "msg": "power pad J1.B4-A9 (VBUS): widest connectable track 1.845 mm < DRU floor 2.3828 mm - no legal rule-width track can reach this pad; pour fan-in instead (reference/remediations/track_width.md step 4)",
+   "source": "route_critical",
+   "items": [
+    {
+     "msg": "power pad J1.B4-A9 (VBUS): widest connectable track 1.845 mm < DRU floor 2.3828 mm - no legal rule-width track can reach this pad; pour fan-in instead (reference/remediations/track_width.md step 4)",
+     "pos": [
+      83.155,
+      57.19
+     ]
+    }
+   ],
+   "kind": "pad_window_unmeetable",
+   "widest_mm": 1.845,
+   "rule_min_mm": 2.3828
+  },
+  {
+   "check": "route_critical",
+   "severity": "error",
+   "pos": [
+    84.055,
+    60.775
+   ],
+   "layer": "F.Cu",
+   "net": "VBUS",
+   "refs": [
+    "U1"
+   ],
+   "msg": "power pad U1.8 (VBUS): widest connectable track 0.529 mm < DRU floor 2.3828 mm - no legal rule-width track can reach this pad; pour fan-in instead (reference/remediations/track_width.md step 4)",
+   "source": "route_critical",
+   "items": [
+    {
+     "msg": "power pad U1.8 (VBUS): widest connectable track 0.529 mm < DRU floor 2.3828 mm - no legal rule-width track can reach this pad; pour fan-in instead (reference/remediations/track_width.md step 4)",
+     "pos": [
+      84.055,
+      60.775
+     ]
+    }
+   ],
+   "kind": "pad_window_unmeetable",
+   "widest_mm": 0.529,
+   "rule_min_mm": 2.3828
+  },
+  {
+   "check": "route_critical",
+   "severity": "error",
+   "pos": [
+    84.055,
+    61.705
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "U1"
+   ],
+   "msg": "power pad U1.11 (GND): widest connectable track 1.444 mm < DRU floor 2.3828 mm - no legal rule-width track can reach this pad; pour fan-in instead (reference/remediations/track_width.md step 4)",
+   "source": "route_critical",
+   "items": [
+    {
+     "msg": "power pad U1.11 (GND): widest connectable track 1.444 mm < DRU floor 2.3828 mm - no legal rule-width track can reach this pad; pour fan-in instead (reference/remediations/track_width.md step 4)",
+     "pos": [
+      84.055,
+      61.705
+     ]
+    }
+   ],
+   "kind": "pad_window_unmeetable",
+   "widest_mm": 1.444,
+   "rule_min_mm": 2.3828
+  },
+  {
+   "check": "route_critical",
+   "severity": "error",
+   "pos": [
+    80.255,
+    91.705
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "U3"
+   ],
+   "msg": "power pad U3.2 (GND): widest connectable track 1.658 mm < DRU floor 2.3828 mm - no legal rule-width track can reach this pad; pour fan-in instead (reference/remediations/track_width.md step 4)",
+   "source": "route_critical",
+   "items": [
+    {
+     "msg": "power pad U3.2 (GND): widest connectable track 1.658 mm < DRU floor 2.3828 mm - no legal rule-width track can reach this pad; pour fan-in instead (reference/remediations/track_width.md step 4)",
+     "pos": [
+      80.255,
+      91.705
+     ]
+    }
+   ],
+   "kind": "pad_window_unmeetable",
+   "widest_mm": 1.658,
+   "rule_min_mm": 2.3828
+  },
+  {
+   "check": "route_critical",
+   "severity": "error",
+   "pos": [
+    65.855,
+    90.705
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "U4"
+   ],
+   "msg": "power pad U4.2 (GND): widest connectable track 1.732 mm < DRU floor 2.3828 mm - no legal rule-width track can reach this pad; pour fan-in instead (reference/remediations/track_width.md step 4)",
+   "source": "route_critical",
+   "items": [
+    {
+     "msg": "power pad U4.2 (GND): widest connectable track 1.732 mm < DRU floor 2.3828 mm - no legal rule-width track can reach this pad; pour fan-in instead (reference/remediations/track_width.md step 4)",
+     "pos": [
+      65.855,
+      90.705
+     ]
+    }
+   ],
+   "kind": "pad_window_unmeetable",
+   "widest_mm": 1.732,
+   "rule_min_mm": 2.3828
+  },
+  {
+   "check": "route_critical",
+   "severity": "error",
+   "pos": [
+    58.985,
+    83.805
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "U7"
+   ],
+   "msg": "power pad U7.13 (GND): widest connectable track 1.174 mm < DRU floor 2.3828 mm - no legal rule-width track can reach this pad; pour fan-in instead (reference/remediations/track_width.md step 4)",
+   "source": "route_critical",
+   "items": [
+    {
+     "msg": "power pad U7.13 (GND): widest connectable track 1.174 mm < DRU floor 2.3828 mm - no legal rule-width track can reach this pad; pour fan-in instead (reference/remediations/track_width.md step 4)",
+     "pos": [
+      58.985,
+      83.805
+     ]
+    }
+   ],
+   "kind": "pad_window_unmeetable",
+   "widest_mm": 1.174,
+   "rule_min_mm": 2.3828
+  },
+  {
+   "check": "route_critical",
+   "severity": "error",
+   "pos": [
+    57.055,
+    82.775
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "U7"
+   ],
+   "msg": "power pad U7.18 (GND): widest connectable track 1.234 mm < DRU floor 2.3828 mm - no legal rule-width track can reach this pad; pour fan-in instead (reference/remediations/track_width.md step 4)",
+   "source": "route_critical",
+   "items": [
+    {
+     "msg": "power pad U7.18 (GND): widest connectable track 1.234 mm < DRU floor 2.3828 mm - no legal rule-width track can reach this pad; pour fan-in instead (reference/remediations/track_width.md step 4)",
+     "pos": [
+      57.055,
+      82.775
+     ]
+    }
+   ],
+   "kind": "pad_window_unmeetable",
+   "widest_mm": 1.234,
+   "rule_min_mm": 2.3828
+  },
+  {
+   "check": "route_critical",
+   "severity": "error",
+   "pos": [
+    55.125,
+    85.155
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "U7"
+   ],
+   "msg": "power pad U7.26 (GND): widest connectable track 1.234 mm < DRU floor 2.3828 mm - no legal rule-width track can reach this pad; pour fan-in instead (reference/remediations/track_width.md step 4)",
+   "source": "route_critical",
+   "items": [
+    {
+     "msg": "power pad U7.26 (GND): widest connectable track 1.234 mm < DRU floor 2.3828 mm - no legal rule-width track can reach this pad; pour fan-in instead (reference/remediations/track_width.md step 4)",
+     "pos": [
+      55.125,
+      85.155
+     ]
+    }
+   ],
+   "kind": "pad_window_unmeetable",
+   "widest_mm": 1.234,
+   "rule_min_mm": 2.3828
+  },
+  {
+   "check": "route_critical",
+   "severity": "error",
+   "pos": [
+    57.055,
+    86.635
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "U7"
+   ],
+   "msg": "power pad U7.4 (GND): widest connectable track 1.234 mm < DRU floor 2.3828 mm - no legal rule-width track can reach this pad; pour fan-in instead (reference/remediations/track_width.md step 4)",
+   "source": "route_critical",
+   "items": [
+    {
+     "msg": "power pad U7.4 (GND): widest connectable track 1.234 mm < DRU floor 2.3828 mm - no legal rule-width track can reach this pad; pour fan-in instead (reference/remediations/track_width.md step 4)",
+     "pos": [
+      57.055,
+      86.635
+     ]
+    }
+   ],
+   "kind": "pad_window_unmeetable",
+   "widest_mm": 1.234,
+   "rule_min_mm": 2.3828
+  }
+ ],
+ "facts": {
+  "probe": "pad_window",
+  "pad_window": [
+   {
+    "ref": "C1",
+    "pad": "1",
+    "net": "VBUS",
+    "widest_mm": 3.745,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C3",
+    "pad": "1",
+    "net": "VBUS",
+    "widest_mm": 4.18,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C4",
+    "pad": "1",
+    "net": "VBUS",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C5",
+    "pad": "1",
+    "net": "VBUS",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "D1",
+    "pad": "1",
+    "net": "VBUS",
+    "widest_mm": 7.144,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "J1",
+    "pad": "A4-B9",
+    "net": "VBUS",
+    "widest_mm": 1.845,
+    "rule_min_mm": 2.3828,
+    "ok": false
+   },
+   {
+    "ref": "J1",
+    "pad": "B4-A9",
+    "net": "VBUS",
+    "widest_mm": 1.845,
+    "rule_min_mm": 2.3828,
+    "ok": false
+   },
+   {
+    "ref": "Q1",
+    "pad": "1",
+    "net": "VBUS",
+    "widest_mm": 7.653,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "Q1",
+    "pad": "2",
+    "net": "VBUS",
+    "widest_mm": 6.567,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "Q1",
+    "pad": "3",
+    "net": "VBUS",
+    "widest_mm": 6.183,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "R13",
+    "pad": "1",
+    "net": "VBUS",
+    "widest_mm": 5.804,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "R5",
+    "pad": "1",
+    "net": "VBUS",
+    "widest_mm": 2.986,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U1",
+    "pad": "1",
+    "net": "VBUS",
+    "widest_mm": 3.171,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U1",
+    "pad": "8",
+    "net": "VBUS",
+    "widest_mm": 0.529,
+    "rule_min_mm": 2.3828,
+    "ok": false
+   },
+   {
+    "ref": "U2",
+    "pad": "3",
+    "net": "VBUS",
+    "widest_mm": 3.154,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C2",
+    "pad": "2",
+    "net": "PVDD",
+    "widest_mm": 4.666,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C51",
+    "pad": "1",
+    "net": "PVDD",
+    "widest_mm": 6.61,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C52",
+    "pad": "1",
+    "net": "PVDD",
+    "widest_mm": 6.61,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C53",
+    "pad": "1",
+    "net": "PVDD",
+    "widest_mm": 6.61,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C54",
+    "pad": "1",
+    "net": "PVDD",
+    "widest_mm": 5.825,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C55",
+    "pad": "1",
+    "net": "PVDD",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C56",
+    "pad": "1",
+    "net": "PVDD",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C57",
+    "pad": "1",
+    "net": "PVDD",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C58",
+    "pad": "1",
+    "net": "PVDD",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C59",
+    "pad": "1",
+    "net": "PVDD",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "Q1",
+    "pad": "5",
+    "net": "PVDD",
+    "widest_mm": 6.29,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "Q1",
+    "pad": "6",
+    "net": "PVDD",
+    "widest_mm": 6.29,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "Q1",
+    "pad": "7",
+    "net": "PVDD",
+    "widest_mm": 6.29,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "Q1",
+    "pad": "8",
+    "net": "PVDD",
+    "widest_mm": 6.29,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "R16",
+    "pad": "1",
+    "net": "PVDD",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "17",
+    "net": "PVDD",
+    "widest_mm": 6.61,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "18",
+    "net": "PVDD",
+    "widest_mm": 6.61,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "19",
+    "net": "PVDD",
+    "widest_mm": 6.61,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "31",
+    "net": "PVDD",
+    "widest_mm": 3.635,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "32",
+    "net": "PVDD",
+    "widest_mm": 3.406,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C1",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C10",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C11",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C12",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C13",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 7.556,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C15",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C16",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 5.456,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C17",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 7.799,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C20",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C21",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C22",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C23",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C24",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C3",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 7.25,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C30",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C31",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C32",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C33",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C34",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C35",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C36",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C37",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C38",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 3.077,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C39",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C4",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 6.741,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C40",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 2.613,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C42",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C45",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 6.488,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C5",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 4.306,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C50",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 3.767,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C51",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C52",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C53",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C54",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C55",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 5.815,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C56",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 5.055,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C57",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 2.914,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C58",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C59",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C61",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C63",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C68",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 6.736,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C69",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C7",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C70",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C71",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C8",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C80",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "D1",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "D2",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 5.365,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H1",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H1",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H1",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H1",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H1",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H1",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H1",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H1",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H1",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H2",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H2",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H2",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H2",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H2",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H2",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H2",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H2",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H2",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H3",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H3",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H3",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H3",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H3",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H3",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H3",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H3",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H3",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H4",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H4",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H4",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H4",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H4",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H4",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H4",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H4",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "H4",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "J1",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "J1",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "J1",
+    "pad": "3",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "J1",
+    "pad": "4",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "J1",
+    "pad": "A1-B12",
+    "net": "GND",
+    "widest_mm": 3.263,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "J1",
+    "pad": "B1-A12",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "J2",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "J3",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "R1",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 3.943,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "R10",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 2.633,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "R12",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 3.257,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "R14",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 7.251,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "R16",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "R31",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 3.891,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "R34",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "R37",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "R39",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "R50",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 3.767,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "R52",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "R8",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 4.606,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "SW1",
+    "pad": "3",
+    "net": "GND",
+    "widest_mm": 5.853,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "SW1",
+    "pad": "4",
+    "net": "GND",
+    "widest_mm": 5.853,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "SW2",
+    "pad": "3",
+    "net": "GND",
+    "widest_mm": 5.853,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "SW2",
+    "pad": "4",
+    "net": "GND",
+    "widest_mm": 5.853,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "SW3",
+    "pad": "3",
+    "net": "GND",
+    "widest_mm": 5.853,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "SW3",
+    "pad": "4",
+    "net": "GND",
+    "widest_mm": 6.131,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U1",
+    "pad": "11",
+    "net": "GND",
+    "widest_mm": 1.444,
+    "rule_min_mm": 2.3828,
+    "ok": false
+   },
+   {
+    "ref": "U2",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 3.528,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U3",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 1.658,
+    "rule_min_mm": 2.3828,
+    "ok": false
+   },
+   {
+    "ref": "U4",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 1.732,
+    "rule_min_mm": 2.3828,
+    "ok": false
+   },
+   {
+    "ref": "U5",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U5",
+    "pad": "15",
+    "net": "GND",
+    "widest_mm": 5.218,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U5",
+    "pad": "38",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U5",
+    "pad": "39",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U5",
+    "pad": "39",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U5",
+    "pad": "39",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U5",
+    "pad": "39",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U5",
+    "pad": "39",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U5",
+    "pad": "39",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U5",
+    "pad": "39",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U5",
+    "pad": "39",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U5",
+    "pad": "39",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U6",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U7",
+    "pad": "13",
+    "net": "GND",
+    "widest_mm": 1.174,
+    "rule_min_mm": 2.3828,
+    "ok": false
+   },
+   {
+    "ref": "U7",
+    "pad": "18",
+    "net": "GND",
+    "widest_mm": 1.234,
+    "rule_min_mm": 2.3828,
+    "ok": false
+   },
+   {
+    "ref": "U7",
+    "pad": "26",
+    "net": "GND",
+    "widest_mm": 1.234,
+    "rule_min_mm": 2.3828,
+    "ok": false
+   },
+   {
+    "ref": "U7",
+    "pad": "29",
+    "net": "GND",
+    "widest_mm": 2.943,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U7",
+    "pad": "4",
+    "net": "GND",
+    "widest_mm": 1.234,
+    "rule_min_mm": 2.3828,
+    "ok": false
+   },
+   {
+    "ref": "U8",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "12",
+    "net": "GND",
+    "widest_mm": 5.908,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "13",
+    "net": "GND",
+    "widest_mm": 5.908,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "14",
+    "net": "GND",
+    "widest_mm": 5.908,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "15",
+    "net": "GND",
+    "widest_mm": 5.908,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "22",
+    "net": "GND",
+    "widest_mm": 2.858,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "25",
+    "net": "GND",
+    "widest_mm": 2.909,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "28",
+    "net": "GND",
+    "widest_mm": 2.858,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "33",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "33",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "33",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "33",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "33",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "33",
+    "net": "GND",
+    "widest_mm": 5.908,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "33",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "33",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "33",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "33",
+    "net": "GND",
+    "widest_mm": 8.0,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "9",
+    "net": "GND",
+    "widest_mm": 2.858,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U9",
+    "pad": "1",
+    "net": "GND",
+    "widest_mm": 7.225,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "U9",
+    "pad": "2",
+    "net": "GND",
+    "widest_mm": 7.225,
+    "rule_min_mm": 2.3828,
+    "ok": true
+   },
+   {
+    "ref": "C10",
+    "pad": "1",
+    "net": "+5V",
+    "widest_mm": 6.043,
+    "rule_min_mm": 0.5,
+    "ok": true
+   },
+   {
+    "ref": "C11",
+    "pad": "1",
+    "net": "+5V",
+    "widest_mm": 6.527,
+    "rule_min_mm": 0.5,
+    "ok": true
+   },
+   {
+    "ref": "C15",
+    "pad": "1",
+    "net": "+5V",
+    "widest_mm": 6.508,
+    "rule_min_mm": 0.5,
+    "ok": true
+   },
+   {
+    "ref": "C7",
+    "pad": "1",
+    "net": "+5V",
+    "widest_mm": 5.19,
+    "rule_min_mm": 0.5,
+    "ok": true
+   },
+   {
+    "ref": "C8",
+    "pad": "1",
+    "net": "+5V",
+    "widest_mm": 5.19,
+    "rule_min_mm": 0.5,
+    "ok": true
+   },
+   {
+    "ref": "C9",
+    "pad": "1",
+    "net": "+5V",
+    "widest_mm": 6.38,
+    "rule_min_mm": 0.5,
+    "ok": true
+   },
+   {
+    "ref": "L5",
+    "pad": "2",
+    "net": "+5V",
+    "widest_mm": 8.0,
+    "rule_min_mm": 0.5,
+    "ok": true
+   },
+   {
+    "ref": "R9",
+    "pad": "1",
+    "net": "+5V",
+    "widest_mm": 2.845,
+    "rule_min_mm": 0.5,
+    "ok": true
+   },
+   {
+    "ref": "U3",
+    "pad": "1",
+    "net": "+5V",
+    "widest_mm": 2.021,
+    "rule_min_mm": 0.5,
+    "ok": true
+   },
+   {
+    "ref": "U3",
+    "pad": "4",
+    "net": "+5V",
+    "widest_mm": 6.38,
+    "rule_min_mm": 0.5,
+    "ok": true
+   },
+   {
+    "ref": "U4",
+    "pad": "1",
+    "net": "+5V",
+    "widest_mm": 6.297,
+    "rule_min_mm": 0.5,
+    "ok": true
+   },
+   {
+    "ref": "U4",
+    "pad": "3",
+    "net": "+5V",
+    "widest_mm": 5.045,
+    "rule_min_mm": 0.5,
+    "ok": true
+   },
+   {
+    "ref": "C12",
+    "pad": "1",
+    "net": "+3V3",
+    "widest_mm": 8.0,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "C13",
+    "pad": "1",
+    "net": "+3V3",
+    "widest_mm": 4.712,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "C14",
+    "pad": "1",
+    "net": "+3V3",
+    "widest_mm": 8.0,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "C20",
+    "pad": "1",
+    "net": "+3V3",
+    "widest_mm": 6.981,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "C21",
+    "pad": "1",
+    "net": "+3V3",
+    "widest_mm": 8.0,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "C23",
+    "pad": "1",
+    "net": "+3V3",
+    "widest_mm": 4.294,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "C24",
+    "pad": "1",
+    "net": "+3V3",
+    "widest_mm": 4.721,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "C30",
+    "pad": "1",
+    "net": "+3V3",
+    "widest_mm": 8.0,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "C31",
+    "pad": "1",
+    "net": "+3V3",
+    "widest_mm": 8.0,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "C80",
+    "pad": "1",
+    "net": "+3V3",
+    "widest_mm": 8.0,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "L6",
+    "pad": "2",
+    "net": "+3V3",
+    "widest_mm": 5.965,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "R11",
+    "pad": "1",
+    "net": "+3V3",
+    "widest_mm": 3.722,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "R20",
+    "pad": "1",
+    "net": "+3V3",
+    "widest_mm": 8.0,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "R21",
+    "pad": "1",
+    "net": "+3V3",
+    "widest_mm": 4.259,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "R22",
+    "pad": "1",
+    "net": "+3V3",
+    "widest_mm": 8.0,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "R23",
+    "pad": "1",
+    "net": "+3V3",
+    "widest_mm": 8.0,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "R4",
+    "pad": "2",
+    "net": "+3V3",
+    "widest_mm": 3.463,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "R53",
+    "pad": "1",
+    "net": "+3V3",
+    "widest_mm": 8.0,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "R60",
+    "pad": "1",
+    "net": "+3V3",
+    "widest_mm": 8.0,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "R61",
+    "pad": "1",
+    "net": "+3V3",
+    "widest_mm": 8.0,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "R62",
+    "pad": "1",
+    "net": "+3V3",
+    "widest_mm": 8.0,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "R63",
+    "pad": "1",
+    "net": "+3V3",
+    "widest_mm": 4.102,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "U5",
+    "pad": "2",
+    "net": "+3V3",
+    "widest_mm": 5.218,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "U6",
+    "pad": "16",
+    "net": "+3V3",
+    "widest_mm": 5.259,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "U6",
+    "pad": "4",
+    "net": "+3V3",
+    "widest_mm": 4.094,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "U7",
+    "pad": "2",
+    "net": "+3V3",
+    "widest_mm": 2.771,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "U7",
+    "pad": "3",
+    "net": "+3V3",
+    "widest_mm": 2.773,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "U9",
+    "pad": "4",
+    "net": "+3V3",
+    "widest_mm": 5.522,
+    "rule_min_mm": 0.3,
+    "ok": true
+   },
+   {
+    "ref": "C16",
+    "pad": "1",
+    "net": "+3V3A",
+    "widest_mm": 8.0,
+    "rule_min_mm": 0.025,
+    "ok": true
+   },
+   {
+    "ref": "C32",
+    "pad": "1",
+    "net": "+3V3A",
+    "widest_mm": 8.0,
+    "rule_min_mm": 0.025,
+    "ok": true
+   },
+   {
+    "ref": "C33",
+    "pad": "1",
+    "net": "+3V3A",
+    "widest_mm": 3.077,
+    "rule_min_mm": 0.025,
+    "ok": true
+   },
+   {
+    "ref": "C34",
+    "pad": "1",
+    "net": "+3V3A",
+    "widest_mm": 2.923,
+    "rule_min_mm": 0.025,
+    "ok": true
+   },
+   {
+    "ref": "U4",
+    "pad": "5",
+    "net": "+3V3A",
+    "widest_mm": 8.0,
+    "rule_min_mm": 0.025,
+    "ok": true
+   },
+   {
+    "ref": "U7",
+    "pad": "16",
+    "net": "+3V3A",
+    "widest_mm": 1.091,
+    "rule_min_mm": 0.025,
+    "ok": true
+   },
+   {
+    "ref": "U7",
+    "pad": "17",
+    "net": "+3V3A",
+    "widest_mm": 1.091,
+    "rule_min_mm": 0.025,
+    "ok": true
+   },
+   {
+    "ref": "C66",
+    "pad": "2",
+    "net": "/OUT_R_P",
+    "widest_mm": 8.0,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "L3",
+    "pad": "1",
+    "net": "/OUT_R_P",
+    "widest_mm": 8.0,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "23",
+    "net": "/OUT_R_P",
+    "widest_mm": 2.112,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "C67",
+    "pad": "2",
+    "net": "/OUT_R_N",
+    "widest_mm": 8.0,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "L4",
+    "pad": "1",
+    "net": "/OUT_R_N",
+    "widest_mm": 8.0,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "21",
+    "net": "/OUT_R_N",
+    "widest_mm": 2.236,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "C64",
+    "pad": "2",
+    "net": "/OUT_L_P",
+    "widest_mm": 8.0,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "L1",
+    "pad": "1",
+    "net": "/OUT_L_P",
+    "widest_mm": 8.0,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "29",
+    "net": "/OUT_L_P",
+    "widest_mm": 2.672,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "C65",
+    "pad": "2",
+    "net": "/OUT_L_N",
+    "widest_mm": 8.0,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "L2",
+    "pad": "1",
+    "net": "/OUT_L_N",
+    "widest_mm": 8.0,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "U8",
+    "pad": "27",
+    "net": "/OUT_L_N",
+    "widest_mm": 2.103,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "C68",
+    "pad": "1",
+    "net": "/SPK_L_P",
+    "widest_mm": 8.0,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "J4",
+    "pad": "1",
+    "net": "/SPK_L_P",
+    "widest_mm": 8.0,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "L1",
+    "pad": "2",
+    "net": "/SPK_L_P",
+    "widest_mm": 8.0,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "C69",
+    "pad": "1",
+    "net": "/SPK_L_N",
+    "widest_mm": 8.0,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "J4",
+    "pad": "2",
+    "net": "/SPK_L_N",
+    "widest_mm": 8.0,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "L2",
+    "pad": "2",
+    "net": "/SPK_L_N",
+    "widest_mm": 8.0,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "C70",
+    "pad": "1",
+    "net": "/SPK_R_P",
+    "widest_mm": 8.0,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "J4",
+    "pad": "3",
+    "net": "/SPK_R_P",
+    "widest_mm": 8.0,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "L3",
+    "pad": "2",
+    "net": "/SPK_R_P",
+    "widest_mm": 8.0,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "C71",
+    "pad": "1",
+    "net": "/SPK_R_N",
+    "widest_mm": 8.0,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "J4",
+    "pad": "4",
+    "net": "/SPK_R_N",
+    "widest_mm": 8.0,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "L4",
+    "pad": "2",
+    "net": "/SPK_R_N",
+    "widest_mm": 8.0,
+    "rule_min_mm": 1.506,
+    "ok": true
+   },
+   {
+    "ref": "C6",
+    "pad": "2",
+    "net": "/BUCK5_SW",
+    "widest_mm": 4.255,
+    "rule_min_mm": 0.8,
+    "ok": true
+   },
+   {
+    "ref": "L5",
+    "pad": "1",
+    "net": "/BUCK5_SW",
+    "widest_mm": 6.892,
+    "rule_min_mm": 0.8,
+    "ok": true
+   },
+   {
+    "ref": "U2",
+    "pad": "2",
+    "net": "/BUCK5_SW",
+    "widest_mm": 1.978,
+    "rule_min_mm": 0.8,
+    "ok": true
+   },
+   {
+    "ref": "L6",
+    "pad": "1",
+    "net": "/BUCK3_LX",
+    "widest_mm": 6.194,
+    "rule_min_mm": 0.5,
+    "ok": true
+   },
+   {
+    "ref": "U3",
+    "pad": "3",
+    "net": "/BUCK3_LX",
+    "widest_mm": 4.823,
+    "rule_min_mm": 0.5,
+    "ok": true
+   }
+  ],
+  "nets": [
+   "VBUS",
+   "PVDD",
+   "GND",
+   "+5V",
+   "+3V3",
+   "+3V3A",
+   "/OUT_R_P",
+   "/OUT_R_N",
+   "/OUT_L_P",
+   "/OUT_L_N",
+   "/SPK_L_P",
+   "/SPK_L_N",
+   "/SPK_R_P",
+   "/SPK_R_N",
+   "/BUCK5_SW",
+   "/BUCK3_LX"
+  ],
+  "missing_nets": [],
+  "clearance_mm": 0.127,
+  "edge_clearance_mm": 0.3,
+  "cap_mm": 8.0
+ },
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T15:47:50+00:00",
+ "input": "/work/boards/lite/kicad/lite-main.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:6fcdff96e751fb27bef91fea58e2b06fe1bc1731f986447805ec2c05bceedd4e"
+}

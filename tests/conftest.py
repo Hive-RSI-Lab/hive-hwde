@@ -16,17 +16,32 @@ RECORDED_KICAD = (10, 0, 3)
 
 
 @functools.cache
-def _kicad_version() -> tuple[int, ...]:
+def _kicad_version() -> tuple[tuple[int, ...], str]:
+    """(version, what it is) of the pipeline's kicad-cli, () when unknown.
+
+    Asked once, at collection: a pin whose version probe fails (a slow
+    kicad-cli on a strained machine times out) skips the recorded tests with
+    the reason, never aborts the whole run (issue #252)."""
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / ".claude"
                            / "skills" / "hwde" / "scripts" / "lib"))
     import env
-    cli = env.find_kicad_cli()
-    return env.kicad_cli_version(cli) if cli else ()
+    try:
+        cli = env.find_kicad_cli()
+    except env.EnvError as e:
+        return (), f"no usable kicad-cli ({e})"
+    if not cli:
+        return (), "no kicad-cli"
+    ver = env.kicad_cli_version(cli)
+    if not ver:
+        return (), f"kicad-cli {cli} of unknown version"
+    return ver, ".".join(map(str, ver))
 
 
 # Upstream tests that fail in hive-hwde for a cause a brief already owns:
 # each is an expected failure until that brief lands. An XPASS in the summary
-# means its cause is gone: take its line out. (nodeid -> why)
+# means its cause is gone: take its line out. (nodeid -> why) The _CITES lines
+# that only lacked the source PDFs XPASS where `hwde sources` has fetched them
+# (issue #97); they stay listed for a HOME that hasn't.
 _CITES = ("the records cite files the module doesn't carry: source PDFs, "
           "upstream's LEARNINGS.md and board workspaces (261028-141932, "
           "261028-154518)")
@@ -43,12 +58,6 @@ KNOWN_FAILING = {
     "tests/test_knowledge.py::test_lint_accepts_a_not_redistributed_sidecar": _CITES,
     "tests/test_knowledge.py::test_app_note_grounding_payload": _CITES,
     "tests/test_knowledge.py::test_app_note_records_committed_and_cite_the_pdf": _CITES,
-    "tests/test_lib_hygiene.py::test_write_preserves_lib_symbols": "kicad-sch-api "
-        "can't read KiCad 10's .kicad_symdir libraries; bin/hwde flattens only "
-        "power and Device (workaround symdir, 261028-141924)",
-    "tests/test_check_env.py::test_unpinned_discovery_still_resolves_10x": "the "
-        "Hive's KiCad is an AppImage in its tools folder, found only through "
-        "bin/hwde's HWDE_KICAD_CLI pin, not by env.py's own discovery",
 }
 
 
@@ -98,10 +107,9 @@ def pytest_collection_modifyitems(config, items):
     marked = [i for i in items if i.get_closest_marker("kicad_recorded")]
     if not marked:
         return
-    ver = _kicad_version()
+    ver, have = _kicad_version()
     if ver[:3] == RECORDED_KICAD:
         return
-    have = ".".join(map(str, ver)) or "no kicad-cli"
     skip = pytest.mark.skip(reason=(
         f"numbers recorded on KiCad {'.'.join(map(str, RECORDED_KICAD))}, "
         f"this is {have} (LEARNINGS 2026-08-27)"))

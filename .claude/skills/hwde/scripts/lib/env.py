@@ -24,7 +24,11 @@ never silently ignored - a wrong pin must fail loudly):
   HWDE_TOOLS_DIR        the tools/ dir holding jre/, freerouting/ and krt/
                         (default: this checkout's tools/ when it has one, else
                         ~/dev/ai-ee/tools - a vendored copy of the skill, as in
-                        the boards repo, has no tools/ of its own)
+                        the boards repo, has no tools/ of its own). A shared
+                        tools folder (the Hive's /hive/tools) may also hold
+                        KiCad AppImage AppDirs (kicad-<ver>/) and KRT under
+                        kicad-routing-tools/; both are discovered there.
+  HWDE_KRT_DIR          KiCadRoutingTools plugins dir (pins find_krt)
 
 The skill was ai-ee before it was hwde, so the pre-rename AIEE_* spelling of
 every one of these is still read (HWDE_ wins when both are set) - an existing
@@ -34,6 +38,7 @@ variable is actually set.
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import shutil
@@ -65,6 +70,10 @@ KICAD_PREFERENCE = ("10.", "9.")
 MIN_JAVA_FOR_FREEROUTING = 25
 
 _TIMEOUT = 30
+# `kicad-cli version` starts KiCad (an AppImage unpacks itself first): on a
+# strained machine that alone has taken over 30 s, and a pin whose version
+# probe times out is refused as "not a working kicad-cli" (issue #252).
+_VERSION_TIMEOUT = 120
 
 # Linux headless: KiCad's SWIG Specctra export/import (route_swig) and other
 # wx-backed pcbnew paths refuse to run without an X display ("Unable to access
@@ -179,7 +188,13 @@ def parse_version(text: str) -> tuple[int, ...]:
 # ---------------------------------------------------------------- KiCad
 
 def kicad_installs() -> list[Path]:
-    """Discover KiCad install roots (dirs containing bin/kicad-cli[.exe])."""
+    """Discover KiCad install roots (dirs containing bin/kicad-cli[.exe]).
+
+    On Linux this includes KiCad AppImage AppDirs (extracted, as in a shared
+    tools folder) at tools_dir()/kicad-*/: bin/kicad-cli there runs as is,
+    with bin/python3.<n> (pcbnew), lib/libngspice.so and the 3D loaders under
+    usr/lib/<triplet>/kicad/plugins/3d beside it.
+    """
     roots: list[Path] = []
     if sys.platform == "win32":
         for pf in (os.environ.get("PROGRAMFILES", r"C:\Program Files"),):
@@ -196,6 +211,8 @@ def kicad_installs() -> list[Path]:
         w = shutil.which("kicad-cli")
         if w:
             roots.append(Path(w).parent.parent)
+        roots += [d for d in sorted(tools_dir().glob("kicad-*"))
+                  if (d / "AppRun").exists() and (d / "bin" / "kicad-cli").exists()]
     return roots
 
 
@@ -266,11 +283,79 @@ def find_kicad_cli() -> Path | None:
     return scored[-1][2]
 
 
-def kicad_cli_version(cli: Path) -> tuple[int, ...]:
+def _state_dir() -> Path:
+    """bin/hwde's state dir: HWDE_HOME, else ~/.cache/hwde (always in HOME:
+    a published copy of the skill is read-only)."""
+    return Path(os.environ.get("HWDE_HOME") or Path.home() / ".cache" / "hwde")
+
+
+def _binary_key(cli: Path) -> str | None:
+    """What identifies a kicad-cli binary for the version cache.
+
+    A small file (bin/hwde's wrapper, rewritten on every run, so its mtime
+    says nothing) is keyed by its contents, which name the AppDir and so its
+    version; a real binary by its size and mtime."""
     try:
-        return parse_version(_run([str(cli), "version"]).stdout)
+        real = Path(cli).resolve()
+        st = real.stat()
+        if st.st_size <= 64 * 1024:
+            import hashlib
+            tag = hashlib.sha256(real.read_bytes()).hexdigest()
+        else:
+            tag = f"{st.st_size}:{st.st_mtime_ns}"
+    except OSError:
+        return None
+    return f"{real}|{tag}"
+
+
+_VERSION_LINES: dict[str, str | None] = {}
+
+
+def kicad_cli_version_line(cli: Path) -> str | None:
+    """First line of `kicad-cli version` (None when it fails), asked once
+    per binary: kept in this process and in <state>/kicad-cli-version.json,
+    so a pipeline of scripts doesn't start KiCad again on every call."""
+    import json
+    key = _binary_key(cli)
+    if key is not None and key in _VERSION_LINES:
+        return _VERSION_LINES[key]
+    cache = _state_dir() / "kicad-cli-version.json"
+    known: dict = {}
+    if key is not None:
+        try:
+            known = json.loads(cache.read_text(encoding="utf-8"))
+            if not isinstance(known, dict):
+                known = {}
+        except (OSError, ValueError):
+            known = {}
+        line = known.get(key)
+        if isinstance(line, str):
+            _VERSION_LINES[key] = line
+            return line
+    try:
+        cp = _run([str(cli), "version"], timeout=_VERSION_TIMEOUT)
     except (OSError, subprocess.TimeoutExpired):
-        return ()
+        return None
+    lines = (cp.stdout or "").strip().splitlines()
+    line = lines[0] if lines and cp.returncode == 0 else None
+    # Only a version that parses is kept: a failed or odd run is asked again.
+    if key is None or line is None or not parse_version(line):
+        return line
+    _VERSION_LINES[key] = line
+    known[key] = line
+    try:
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        tmp = cache.with_name(f"{cache.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(known, indent=1, sort_keys=True),
+                       encoding="utf-8")
+        os.replace(tmp, cache)
+    except OSError:
+        pass
+    return line
+
+
+def kicad_cli_version(cli: Path) -> tuple[int, ...]:
+    return parse_version(kicad_cli_version_line(cli) or "")
 
 
 _SYM_ENV_RE = re.compile(r"^KICAD(\d*)_SYMBOL_DIR$")
@@ -291,7 +376,9 @@ def kicad_symbol_dir() -> Path | None:
         if m and v:
             hits.append((int(m.group(1)) if m.group(1) else -1, v))
     for _, v in sorted(hits, key=lambda kv: -kv[0]):
-        if Path(v).is_dir():
+        # Not our own flat copies (export_kicad_symbol_dir points
+        # KICAD_SYMBOL_DIR there): the stock dir is what they are copied from.
+        if Path(v).is_dir() and _symbol_cache_root() not in Path(v).resolve().parents:
             return Path(v)
     try:
         cli = find_kicad_cli()
@@ -318,8 +405,96 @@ def export_kicad_symbol_dir() -> None:
     if os.environ.get("KICAD_SYMBOL_DIR"):
         return
     d = kicad_symbol_dir()
-    if d is not None:
-        os.environ["KICAD_SYMBOL_DIR"] = str(d)
+    if d is None:
+        return
+    if any(d.glob("*.kicad_symdir")):
+        # KiCad 10 form: point it at flat copies (its rglob would take each
+        # symbol file in a symdir for a library); schlib registers any other
+        # stock library on first use (register_stock_libs).
+        for lib in SYMDIR_EAGER:
+            stock_symbol_lib(lib, d)
+        d = symbol_cache_dir(d)
+        if not any(d.glob("*.kicad_sym")):
+            return
+    os.environ["KICAD_SYMBOL_DIR"] = str(d)
+
+
+# KiCad 10 ships its stock symbols as one-file-per-symbol <lib>.kicad_symdir
+# folders; kicad-sch-api 0.5.6 reads only flat <lib>.kicad_sym files (and its
+# rglob would take every symbol file in a symdir for a library of its own).
+# The libraries the skill places by lib_id on every board are flattened up
+# front; the rest on demand.
+SYMDIR_EAGER = ("power", "Device")
+
+
+def _symbol_cache_root() -> Path:
+    return (Path.home() / ".cache" / "hwde" / "symbols").resolve()
+
+
+def symbol_cache_dir(stock: Path) -> Path:
+    """Where flat copies of `stock`'s symdir libraries go: one folder per
+    stock symbols dir (so two KiCads never share copies), under
+    ~/.cache/hwde/symbols."""
+    key = hashlib.sha256(str(Path(stock).resolve()).encode()).hexdigest()[:12]
+    return _symbol_cache_root() / key
+
+
+def flatten_symdir(symdir: Path, out: Path) -> Path:
+    """Write the symbols of a <lib>.kicad_symdir folder as one flat
+    <lib>.kicad_sym at `out`, unchanged, so a schematic embeds the same
+    lib_symbols as one built against KiCad's own library. Written to a temp
+    file and renamed: concurrent runs never see half a library."""
+    bodies, version = [], "20251024"
+    for f in sorted(symdir.glob("*.kicad_sym")):
+        txt = f.read_text(encoding="utf-8")
+        m = re.search(r"\(version\s+(\d+)\)", txt)
+        if m:
+            version = max(version, m.group(1))
+        bodies.append(txt[txt.index("(symbol "):txt.rindex(")")].rstrip())
+    out.parent.mkdir(parents=True, exist_ok=True)
+    tmp = out.with_name(f".{out.name}.{os.getpid()}.tmp")
+    tmp.write_text(f'(kicad_symbol_lib\n\t(version {version})\n'
+                   '\t(generator "hwde")\n\t' + "\n\t".join(bodies) + "\n)\n",
+                   encoding="utf-8")
+    tmp.replace(out)
+    return out
+
+
+def stock_symbol_lib(lib: str, stock: Path | None = None) -> Path | None:
+    """The flat .kicad_sym file for stock library `lib` of the pipeline's
+    KiCad, or None when it has no such library. A KiCad-10 symdir library is
+    flattened into symbol_cache_dir() on first use and again whenever the
+    symdir is newer than the copy."""
+    stock = stock or kicad_symbol_dir()
+    if stock is None:
+        return None
+    flat = stock / f"{lib}.kicad_sym"
+    if flat.is_file():
+        return flat
+    symdir = stock / f"{lib}.kicad_symdir"
+    if not symdir.is_dir():
+        return None
+    out = symbol_cache_dir(stock) / f"{lib}.kicad_sym"
+    if not out.is_file() or out.stat().st_mtime < symdir.stat().st_mtime:
+        flatten_symdir(symdir, out)
+    return out
+
+
+def register_stock_libs(cache, lib_ids) -> list[Path]:
+    """Add the stock libraries `lib_ids` ("Lib:Symbol") name to a
+    kicad-sch-api symbol cache, flattening KiCad-10 symdirs as needed.
+
+    A library the cache already knows (a project library, or one found under
+    KICAD_SYMBOL_DIR) is left alone. Returns the files added."""
+    known = getattr(cache, "_library_index", {})
+    added = []
+    for lib in sorted({str(i).split(":", 1)[0] for i in lib_ids if ":" in str(i)}):
+        if lib in known:
+            continue
+        p = stock_symbol_lib(lib)
+        if p is not None and cache.add_library_path(str(p)):
+            added.append(p)
+    return added
 
 
 def find_kicad_python(cli: Path) -> Path | None:
@@ -331,6 +506,13 @@ def find_kicad_python(cli: Path) -> Path | None:
     for cand in (cli.parent / name, cli.parent.parent / "bin" / name):
         if cand.exists():
             return cand
+    # A KiCad AppImage ships only bin/python3.<n>, which finds its own
+    # dist-packages (pcbnew) when run from the AppDir.
+    if sys.platform.startswith("linux") and (cli.parent.parent / "AppRun").exists():
+        pys = sorted(cli.parent.glob("python3.*"),
+                     key=lambda p: parse_version(p.name))
+        if pys:
+            return pys[-1]
     return None
 
 
@@ -386,17 +568,26 @@ def find_freerouting_jar() -> Path | None:
 def find_krt() -> Path | None:
     """KiCadRoutingTools plugins dir (vendored under tools/krt, S11).
 
-    Returns the newest tools_dir()/krt/KiCadRoutingTools-*/plugins dir (the
+    Returns the newest KiCadRoutingTools-*/plugins dir under tools_dir()/krt
+    or, in a shared tools folder, tools_dir()/kicad-routing-tools (the
     scripts sys.path-insert relative dirs, so callers must run them with
-    cwd=plugins). Override with HWDE_KRT_DIR (points at the plugins dir).
+    cwd=plugins). Override with HWDE_KRT_DIR (the plugins dir; a release
+    root or its parent, with plugins/ under it, is followed down to it).
     """
     pin, var = skill_env("KRT_DIR")
     if pin:
         p = Path(pin)
         if not p.is_dir():
             raise EnvError(f"{var} does not exist: {pin}")
+        if not (p / "route_diff.py").exists():
+            down = sorted(p.glob("plugins")) + sorted(
+                p.glob("KiCadRoutingTools-*/plugins"))
+            if down:
+                return down[-1]
         return p
-    dirs = sorted(tools_dir().glob("krt/KiCadRoutingTools-*/plugins"))
+    dirs = [d for sub in ("krt", "kicad-routing-tools")
+            for d in tools_dir().glob(f"{sub}/KiCadRoutingTools-*/plugins")]
+    dirs.sort(key=lambda d: parse_version(d.parent.name))
     return dirs[-1] if dirs else None
 
 
@@ -426,8 +617,11 @@ def find_ngspice_dll() -> Path | None:
         name = "libngspice.dylib"
     else:
         name = "libngspice.so"
-    cand = cli.parent / name
-    return cand if cand.exists() else None
+    # Beside kicad-cli; an AppImage keeps it in lib/ (-> shared/lib).
+    for cand in (cli.parent / name, cli.parent.parent / "lib" / name):
+        if cand.exists():
+            return cand
+    return None
 
 
 # ---------------------------------------------------------------- pdflatex (optional)

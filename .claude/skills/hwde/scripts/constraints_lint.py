@@ -57,7 +57,8 @@ SECTIONS: dict[str, dict[str, dict[str, str]]] = {
     "power": {
         "required": {"net": "str", "current_a": "num"},
         "optional": {"dt_c": "num", "via_amps": "num", "pdn": "bool",
-                     "plane_fed": "bool", "overrides": "overrides"},
+                     "plane_fed": "bool", "tap_current_a": "num",
+                     "overrides": "overrides"},
     },
     "diff_pairs": {
         "required": {"p": "str", "n": "str"},
@@ -83,7 +84,15 @@ SECTIONS: dict[str, dict[str, dict[str, str]]] = {
         "optional": {"net": "str", "dt_c": "num", "min_vias": "num",
                      "airflow_lfm": "num", "airflow_m_s": "num",
                      "rating": "map", "theta_ja_c_w": "num",
-                     "theta_source": "str"},
+                     "theta_source": "str", "slug": "str",
+                     "heatsink": "map", "tj_max_c": "num",
+                     "power_max_w": "num", "governor": "str"},
+    },
+    "ripple": {
+        "required": {"ref": "str", "irms_a": "num"},
+        "optional": {"rated_irms_a": "num", "freq_multiplier": "num",
+                     "source": "str", "irms_max_a": "num", "life_h": "num",
+                     "rated_c": "num", "life_min_h": "num", "chem": "str"},
     },
     "planes": {
         "required": {"layer": "str", "net": "str"},
@@ -107,7 +116,9 @@ PLACEMENT: dict[str, dict[str, dict[str, str]]] = {
     # rect-or-poly requirement enforced separately
     "keepouts": {"required": {},
                  "optional": {"rect": "rect", "poly": "point_list",
-                              "side": "str", "reason": "str"}},
+                              "side": "str", "reason": "str",
+                              # keepout_gen: a copper rule area too
+                              "copper": "bool_or_map", "name": "str"}},
     "separation": {"required": {"a": "str_list", "b": "str_list",
                                 "min_mm": "num"},
                    "optional": {"reason": "str"}},
@@ -132,7 +143,13 @@ OVERRIDE = {"required": {"near": "pair", "radius_mm": "num",
 COATINGS = {"none", "soldermask", "conformal"}
 EDGES = {"left", "right", "top", "bottom"}
 SIDES = {"front", "back"}
-SCHEMA_TOP_KEYS = set(SECTIONS) | {"placement", "coating"}
+ENCLOSURE = {"box_mm": "num_list", "stl": "str_or_list", "wall_mm": "num",
+             "k_w_mk": "num", "material": "str", "tg_c": "num",
+             "room_c": "num", "other_w": "num", "inlet_mm2": "num",
+             "riser_mm2": "num", "outlet_mm2": "num", "stack_mm": "num",
+             "floor": "str"}
+SCHEMA_TOP_KEYS = set(SECTIONS) | {"placement", "coating", "antennas",
+                                   "enclosure", "ambient_c"}
 ENVELOPE_ALIASES = {"power_constraints": "power",
                     "thermal_constraints": "thermal",
                     "voltage_constraints": "voltages"}
@@ -161,6 +178,9 @@ def _type_ok(spec: str, v) -> bool:
         return _is_num(v)
     if spec == "bool":
         return isinstance(v, bool)
+    if spec == "bool_or_map":
+        return isinstance(v, bool) or (
+            isinstance(v, dict) and all(isinstance(x, bool) for x in v.values()))
     if spec == "edge":
         return isinstance(v, str) and v in EDGES
     if spec == "side":
@@ -185,6 +205,12 @@ def _type_ok(spec: str, v) -> bool:
         return isinstance(v, list) and all(
             isinstance(p, list) and len(p) == 2 and all(_is_num(x) for x in p)
             for p in v)
+    if spec == "num_list":
+        return isinstance(v, list) and bool(v) and all(_is_num(x) for x in v)
+    if spec == "str_or_list":
+        return isinstance(v, str) or (
+            isinstance(v, list) and bool(v)
+            and all(isinstance(x, str) for x in v))
     if spec == "overrides":
         return isinstance(v, list)
     if spec == "map":       # flat scalar map (operating points): str keys,
@@ -317,6 +343,17 @@ class _FileLint:
                              f"{path}: coating must be one of "
                              f"{sorted(COATINGS)}, got {json.dumps(val)[:40]}",
                              path)
+            elif key == "enclosure":
+                if not isinstance(val, dict):
+                    self.add("error", "bad_type",
+                             f"{path}: enclosure must be an object", path)
+                else:
+                    self.entry({"required": {}, "optional": ENCLOSURE},
+                               val, path)
+            elif key == "ambient_c":
+                if not _is_num(val):
+                    self.add("error", "bad_type",
+                             f"{path}: ambient_c must be a number", path)
             elif key == "notes":
                 if not isinstance(val, list):
                     self.add("error", "bad_type",

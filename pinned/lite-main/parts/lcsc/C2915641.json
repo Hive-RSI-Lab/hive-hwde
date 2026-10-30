@@ -1,0 +1,112 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C2915641",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C2915641",
+   "mpn": "DB128V-5.08-4P-GN-S",
+   "brand": "DORABO",
+   "description": "-40\u2103~+105\u2103 1 12~22 14mm 16A 1x4P 2.5 300V 4 4P 5.08mm Green M2.5 Through Hole Plugin,P=5.08mm Screw Terminal Blocks ROHS",
+   "package": "Plugin,P=5.08mm",
+   "category": "Screw Terminal Blocks",
+   "type": "Extended",
+   "basic": false,
+   "stock": 98061,
+   "price": 0.4213,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.4213
+    },
+    {
+     "qty": 50,
+     "price": 0.3392
+    },
+    {
+     "qty": 150,
+     "price": 0.2991
+    },
+    {
+     "qty": 500,
+     "price": 0.2143
+    },
+    {
+     "qty": 2500,
+     "price": 0.2044
+    },
+    {
+     "qty": 5000,
+     "price": 0.1985
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2301061509_DORABO-DB128V-5-08-4P-GN-S_C2915641.pdf",
+   "url": "https://www.lcsc.com/product-detail/screw-terminal-blocks_dorabo-db128v-5-08-4p-gn-s_C2915641.html",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+105\u2103"
+    },
+    {
+     "name": "Number of Positions or Pins",
+     "value": "1x4P"
+    },
+    {
+     "name": "Voltage Rating (Max)",
+     "value": "300V"
+    },
+    {
+     "name": "Number of Rows",
+     "value": "1"
+    },
+    {
+     "name": "Color",
+     "value": "Green"
+    },
+    {
+     "name": "Current Rating",
+     "value": "16A"
+    },
+    {
+     "name": "Wire Gauge - AWG",
+     "value": "12~22"
+    },
+    {
+     "name": "Wire Gauge - mm2",
+     "value": "2.5"
+    },
+    {
+     "name": "Height Above Board",
+     "value": "14mm"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Through Hole"
+    },
+    {
+     "name": "Screw Specification",
+     "value": "M2.5"
+    },
+    {
+     "name": "Number of Pins",
+     "value": "4P"
+    },
+    {
+     "name": "Pitch",
+     "value": "5.08mm"
+    },
+    {
+     "name": "Number of PINs Per Row",
+     "value": "4"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

@@ -1,0 +1,306 @@
+{
+ "script": "lib_pull",
+ "status": "pass",
+ "lib_name": "aiee",
+ "parts_file": null,
+ "paced_s": 3.0,
+ "retried": 0,
+ "symbol_lib": "/work/boards/lite/lib/aiee.kicad_sym",
+ "footprint_lib": "/work/boards/lite/lib/aiee.pretty",
+ "results": [
+  {
+   "lcsc": "C364296",
+   "status": "pulled",
+   "symbol": "SMBJ20A_C364296",
+   "symbol_verified": true,
+   "footprint_verified": true,
+   "symbol_lib": "/work/boards/lite/lib/aiee.kicad_sym",
+   "footprint_lib": "/work/boards/lite/lib/aiee.pretty",
+   "footprints": [
+    {
+     "name": "SMB_L4.6-W3.6-LS5.3-RD",
+     "file": "/work/boards/lite/lib/aiee.pretty/SMB_L4.6-W3.6-LS5.3-RD.kicad_mod",
+     "copper_pads": 2,
+     "courtyard": true,
+     "silk": true
+    }
+   ],
+   "warnings": []
+  },
+  {
+   "lcsc": "C46550472",
+   "status": "pulled",
+   "symbol": "MA35V470M10X13",
+   "symbol_verified": true,
+   "footprint_verified": true,
+   "symbol_lib": "/work/boards/lite/lib/aiee.kicad_sym",
+   "footprint_lib": "/work/boards/lite/lib/aiee.pretty",
+   "footprints": [
+    {
+     "name": "CAP-SMD_BD10.0-L10.3-W10.3-FD-LS11.0",
+     "file": "/work/boards/lite/lib/aiee.pretty/CAP-SMD_BD10.0-L10.3-W10.3-FD-LS11.0.kicad_mod",
+     "copper_pads": 2,
+     "courtyard": true,
+     "silk": true
+    }
+   ],
+   "warnings": []
+  },
+  {
+   "lcsc": "C2286",
+   "status": "pulled",
+   "symbol": "KT-0603R",
+   "symbol_verified": true,
+   "footprint_verified": true,
+   "symbol_lib": "/work/boards/lite/lib/aiee.kicad_sym",
+   "footprint_lib": "/work/boards/lite/lib/aiee.pretty",
+   "footprints": [
+    {
+     "name": "LED-SMD_L1.6-W0.8-R-RD",
+     "file": "/work/boards/lite/lib/aiee.pretty/LED-SMD_L1.6-W0.8-R-RD.kicad_mod",
+     "copper_pads": 2,
+     "courtyard": true,
+     "silk": true
+    }
+   ],
+   "warnings": []
+  }
+ ],
+ "symbol_dedup": {
+  "removed": 0,
+  "names": []
+ },
+ "registered": {
+  "fp": "present",
+  "sym": "present"
+ },
+ "autofix": {
+  "footprints": 3,
+  "changed": 3,
+  "actions": 11,
+  "residue": 6,
+  "results": [
+   {
+    "footprint": "CAP-SMD_BD10.0-L10.3-W10.3-FD-LS11.0",
+    "file": "/work/boards/lite/lib/aiee.pretty/CAP-SMD_BD10.0-L10.3-W10.3-FD-LS11.0.kicad_mod",
+    "changed": true,
+    "actions": [
+     {
+      "rule": "A",
+      "action": "promote_silk_width",
+      "kind": "fp_circle",
+      "from_mm": 0.06,
+      "to_mm": 0.15,
+      "gap_mm": 4.22
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": -0.05,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": -0.05,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": -0.05,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": -0.05,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     }
+    ],
+    "residue": 4,
+    "before": {
+     "worst_gap_mm": -0.05,
+     "unprintable_silk": 1,
+     "under_gap_silk": 4,
+     "plated_pegs": 0
+    },
+    "after": {
+     "worst_gap_mm": -0.05,
+     "unprintable_silk": 0,
+     "under_gap_silk": 4,
+     "plated_pegs": 0
+    }
+   },
+   {
+    "footprint": "LED-SMD_L1.6-W0.8-R-RD",
+    "file": "/work/boards/lite/lib/aiee.pretty/LED-SMD_L1.6-W0.8-R-RD.kicad_mod",
+    "changed": true,
+    "actions": [
+     {
+      "rule": "A",
+      "action": "delete_unprintable_silk",
+      "kind": "fp_circle",
+      "width_mm": 0.1,
+      "gap_mm": -0.05
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.105,
+      "new_gap_mm": 0.155
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.135,
+      "new_gap_mm": 0.185
+     }
+    ],
+    "residue": 0,
+    "before": {
+     "worst_gap_mm": -0.05,
+     "unprintable_silk": 1,
+     "under_gap_silk": 3,
+     "plated_pegs": 0
+    },
+    "after": {
+     "worst_gap_mm": 0.155,
+     "unprintable_silk": 0,
+     "under_gap_silk": 0,
+     "plated_pegs": 0
+    }
+   },
+   {
+    "footprint": "SMB_L4.6-W3.6-LS5.3-RD",
+    "file": "/work/boards/lite/lib/aiee.pretty/SMB_L4.6-W3.6-LS5.3-RD.kicad_mod",
+    "changed": true,
+    "actions": [
+     {
+      "rule": "A",
+      "action": "promote_silk_width",
+      "kind": "fp_circle",
+      "from_mm": 0.06,
+      "to_mm": 0.15,
+      "gap_mm": 0.599
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": 0.129,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     },
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": 0.129,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     }
+    ],
+    "residue": 2,
+    "before": {
+     "worst_gap_mm": 0.129,
+     "unprintable_silk": 1,
+     "under_gap_silk": 2,
+     "plated_pegs": 0
+    },
+    "after": {
+     "worst_gap_mm": 0.129,
+     "unprintable_silk": 0,
+     "under_gap_silk": 2,
+     "plated_pegs": 0
+    }
+   }
+  ]
+ },
+ "refdes_norm": {
+  "footprints": 24,
+  "changed": 3,
+  "unchanged": 21,
+  "skipped": 0,
+  "results": [
+   {
+    "footprint": "CAP-SMD_BD10.0-L10.3-W10.3-FD-LS11.0",
+    "status": "changed",
+    "from": [
+     0.0,
+     -4.0
+    ],
+    "to": [
+     0.0,
+     -6.055
+    ],
+    "pad_top": -0.825,
+    "silk_top": -5.23,
+    "clear_of": -5.23,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "LED-SMD_L1.6-W0.8-R-RD",
+    "status": "changed",
+    "from": [
+     0.0,
+     -4.0
+    ],
+    "to": [
+     0.0,
+     -1.525
+    ],
+    "pad_top": -0.4,
+    "silk_top": -0.7,
+    "clear_of": -0.7,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "SMB_L4.6-W3.6-LS5.3-RD",
+    "status": "changed",
+    "from": [
+     0.0,
+     -4.0
+    ],
+    "to": [
+     0.0,
+     -2.787
+    ],
+    "pad_top": -1.096,
+    "silk_top": -1.962,
+    "clear_of": -1.962,
+    "inked_half_h": 0.575
+   }
+  ]
+ },
+ "model_paths": {
+  "rewritten": 3,
+  "footprints": {
+   "CAP-SMD_BD10.0-L10.3-W10.3-FD-LS11.0.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/CAP-SMD_BD10.0-L10.3-W10.3-FD-LS11.0.wrl"
+   ],
+   "LED-SMD_L1.6-W0.8-R-RD.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/LED0603_L1.6-W0.8-H0.6.wrl"
+   ],
+   "SMB_L4.6-W3.6-LS5.3-RD.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/SMB_L4.6-W3.6-LS5.3-RD.wrl"
+   ]
+  }
+ },
+ "load_check": null,
+ "drc_check": null
+}

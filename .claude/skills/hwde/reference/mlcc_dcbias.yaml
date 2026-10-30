@@ -1,0 +1,13 @@
+# Maker DC-bias curves for MLCCs, used by lib/mlcc.py (mlcc_dcbias.py,
+# sim_board.py, sim_inrush.py) in place of its generic curve.
+#
+# match: a regex tried against the part's MPN (case-insensitive).
+# curve: [volts DC, remaining fraction of the nominal at 25 C] points,
+#        read from the maker's own curve (Murata SimSurfing, Samsung
+#        ComponentLibrary, TDK SEAT...), interpolated linearly, flat past
+#        the ends.
+# source: where the points came from, with the date read.
+#
+# Add a row when a review reads a part's real curve: the generic curve is a
+# +-25 % screen (lib/mlcc.py docstring), a row here is the part itself.
+parts: []

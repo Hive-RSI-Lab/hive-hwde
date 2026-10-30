@@ -315,3 +315,95 @@ def test_fixtures_extractions_validate():
     for f in sorted(FIX.glob("*/parts/C*.json")):
         data = json.loads(f.read_text(encoding="utf-8"))
         jsonschema.validate(data, datasheet_extract.DATASHEET_SCHEMA)
+
+
+# ------------------------------------------------------------ reversed input
+
+LED = {"mpn": "TESTLED", "pinout": [
+    {"pin": "1", "name": "K", "type": "passive"},
+    {"pin": "2", "name": "A", "type": "passive"}],
+    "abs_max": [{"param": "Reverse voltage VR", "value": 5, "unit": "V"}]}
+
+
+def _led_board(rail="+5V", conn_pads=None):
+    return [("J1", "", conn_pads or {"1": rail, "2": "GND"}),
+            ("R1", "", {"1": rail, "2": "/LED_A"}),
+            ("D1", "C7", {"1": "GND", "2": "/LED_A"})]
+
+
+def test_reversed_input_over_an_leds_reverse_rating_warns(tmp_path):
+    c = tmp_path / "c.json"
+    c.write_text(json.dumps({"voltages": [{"net": "+5V", "voltage": 5.25}]}))
+    p = _run(_ws(tmp_path, _led_board(), {"C7": LED}), c)
+    rp = [v for v in p["violations"] if v["kind"] == "rating_reverse_polarity"]
+    assert [(v["pin"], v["severity"], v["scenario"]) for v in rp] == \
+        [("D1.1", "warning", "J1 reversed")]
+    assert rp[0]["net_v"] == pytest.approx(5.25)
+    assert rp[0]["limit_v"] == pytest.approx(5.0)
+    # forward biased in normal use: no error, and the anode is rated as
+    # the other side of the K-A row, not unrated
+    assert _errors(p) == []
+    assert not any(v["kind"] == "rating_unrated" and "D1" in v["msg"]
+                   for v in p["violations"])
+    assert p["reversed_inputs"] == [{"connector": "J1", "rail": "+5V",
+                                     "rail_v": -5.25}]
+
+
+def test_reversed_input_within_rating_or_not_a_two_net_input(tmp_path):
+    p = _run(_ws(tmp_path, _led_board("+3V3"), {"C7": LED}))
+    assert not any(v["kind"] == "rating_reverse_polarity"
+                   for v in p["violations"])
+    # a connector carrying a signal too (USB, a bus) is not a bare power
+    # input that plugs in either way round
+    fps = _led_board(conn_pads={"1": "+5V", "2": "GND", "3": "/SDA"})
+    c = tmp_path / "c.json"
+    c.write_text(json.dumps({"voltages": [{"net": "+5V", "voltage": 5.25}]}))
+    p = _run(_ws(tmp_path / "b", fps, {"C7": LED}), c)
+    assert p["reversed_inputs"] == []
+    assert not any(v["kind"] == "rating_reverse_polarity"
+                   for v in p["violations"])
+
+
+def test_diode_reverse_attribute_and_netlist_pin_names(tmp_path):
+    # no extraction: parts.json's reverse-voltage attribute rates it, and
+    # the netlist beside the board says pad 2 is the cathode
+    bom = [{"lcsc": "C8", "mpn": "D", "attributes": [
+        {"name": "Reverse Voltage (Vr)", "value": "4V"}]}]
+    ws = _ws(tmp_path, [("D1", "C8", {"1": "GND", "2": "+5V"})], {}, bom)
+    (ws / "kicad" / "board.net").write_text(
+        '(export (nets (net (code "1") (name "+5V") (node (ref "D1") '
+        '(pin "2") (pinfunction "K"))) (net (code "2") (name "GND") '
+        '(node (ref "D1") (pin "1") (pinfunction "A")))))')
+    errs = _errors(_run(ws))
+    assert [(e["kind"], e["pin"]) for e in errs] == \
+        [("rating_reverse_polarity", "D1.2")]
+    assert "pad names" in errs[0]["msg"]
+    # with no netlist, pad 1 is the cathode (KiCad's convention): the same
+    # pads are then forward biased, checked clean and rated
+    ws2 = _ws(tmp_path / "b", [("D1", "C8", {"1": "GND", "2": "+5V"})],
+              {}, bom)
+    p = _run(ws2)
+    assert _errors(p) == []
+    assert not any(v["kind"] == "rating_unrated" for v in p["violations"])
+    ws3 = _ws(tmp_path / "c", [("D1", "C8", {"1": "+5V", "2": "GND"})],
+              {}, bom)
+    errs = _errors(_run(ws3))
+    assert [e["pin"] for e in errs] == ["D1.1"]
+    assert "pad 1 taken as the cathode" in errs[0]["msg"]
+
+
+def test_hwde_led_test_d1_reversed_input(tmp_path):
+    """Issue #242: the cold review's POWER-2 - J1 reversed puts 5.25 V
+    across D1 (KT-0603G, VR 5 V)."""
+    import shutil
+    ws = tmp_path / "hwde-led-test"
+    src = ROOT / "boards" / "hwde-led-test"
+    for d in ("kicad", "parts", "architecture"):
+        shutil.copytree(src / d, ws / d)
+    payload, _ = cr.run(["--pcb", str(ws / "kicad" / "hwde-led-test.kicad_pcb"),
+                         "--constraints",
+                         str(ws / "kicad" / "constraints.json")])
+    rp = [v for v in payload["violations"]
+          if v["kind"] == "rating_reverse_polarity"]
+    assert [(v["pin"], v["scenario"]) for v in rp] == [("D1.1", "J1 reversed")]
+    assert rp[0]["net_v"] == pytest.approx(5.25)

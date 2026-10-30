@@ -94,6 +94,14 @@ verbs:
           - agent: verify-reviewer
             tier: fable/high
             why: "fresh-context judgment over the digest + renders + verify_all.json"
+          - note: "A cold design review where the board earns one (your call,
+                   never a gate): one fresh domain-reviewer per domain it has,
+                   reference/first-spin.md. Each finding names its fault class."
+          - do: "scripts/first_spin.py --workspace {ws} --md {reports}/first-spin/dispositions.md --briefs {reports}/first-spin/briefs.json"
+            why: "what is still open, and each fault class no hwde check caught
+                  as a draft brief: file them on hive-hwde, so the next board
+                  gets a check where this one needed a reviewer"
+            when: "a first-spin review was run"
           - human: 2
             why: "present the digest + design doc; ask which findings to fix"
           - note: "Each accepted finding becomes a `fix-finding` run against its
@@ -117,6 +125,14 @@ verbs:
           - agent: verify-reviewer
             tier: fable/high
             why: "fresh context over verify_all.json + renders"
+          - note: "A cold design review where the board earns one (your call,
+                   never a gate): one fresh domain-reviewer per domain it has,
+                   reference/first-spin.md. Each finding names its fault class."
+          - do: "scripts/first_spin.py --workspace {ws} --md {reports}/first-spin/dispositions.md --briefs {reports}/first-spin/briefs.json"
+            why: "what is still open, and each fault class no hwde check caught
+                  as a draft brief: file them on hive-hwde, so the next board
+                  gets a check where this one needed a reviewer"
+            when: "a first-spin review was run"
           - do: "scripts/report_gen.py --workspace {ws}"
             why: "living design doc; non-blocking by contract"
           - human: 2
@@ -559,6 +575,44 @@ verbs:
       - do: "scripts/state.py log --workspace {ws} --event order_status --data {work}/status.json"
         why: "milestones belong in the audit trail; event names are [a-z0-9_-]{1,32}"
         optional: true
+
+  # -------------------------------------------------------------------------
+  bring-up:
+    summary: Bring up a board in hand - from its own self-measurements and a
+      bench, unattended where it can be - and close it with what was measured.
+    doc: reference/recipes/bring-up.md
+    workspace: required
+    edit_class: null
+    gates: []
+    human_hold: 1
+    preconditions: [workspace]
+    match:
+      any: ['\bbring[- ]?up\b', '\bbrought up\b', '\bboards? (arrived|in hand|came)\b',
+            '\bself[- ]test\b', '\bfirst power[- ]?on\b', '\bpower (it|the board) up\b']
+      not: ['\border\b.*\bstatus\b']
+    steps:
+      - do: "scripts/state.py resume --workspace {ws}"
+        why: "where the run is; an order and boards_received should be on record"
+      - do: "scripts/check_observability.py --workspace {ws} --out {reports}/observability.json"
+        why: "what the board can read about itself: the plan's self items come
+              from here, the rest are bench items"
+      - note: "Write the bring-up plan before power: one item per first-spin
+               finding, contingency and could_stop_board fact, each with what is
+               read and its limit (reference/first-spin.md, self-observation.md)."
+      - note: "Run it unattended where the board allows (reference/remote-bringup.md):
+               provision, firmware with rollback, self-test, rails, loopback; the
+               bench items the person's hands are needed for go to them in one batch."
+      - do: "scripts/state.py bringup --workspace {ws} --results {ws}/bringup/results.json"
+        why: "closes bring-up with the measurements: bringup_passed, _derated or
+              _failed as the items say; refuses a file with a required item unmeasured"
+      - do: "scripts/attest.py disposition --workspace {ws}"
+        why: "bring-up-passed, derated or rework-required, derived from the results"
+      - do: "scripts/knowledge.py --prove --workspace {ws} --dry-run"
+        why: "the records that applied become proven, citing the results file"
+        when: "the disposition is bring-up-passed"
+      - human: 1
+        why: "tell the person: ready for use with the results page, or what failed
+              and the contingency it calls for"
 
   # -------------------------------------------------------------------------
   resume-phase:

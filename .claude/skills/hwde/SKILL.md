@@ -46,8 +46,8 @@ scripts/task_router.py --task "<the user's words>" [--workspace ~/dev/boards/<na
 - **exit 2** - error; the payload says what.
 
 The verbs: `review` `fix-finding` `move` `swap-part` `add-part` `remove-part`
-`reroute-net` `make-footprint` `dfm-check` `order` `track` `resume-phase`
-`promote` `learn` `research` `full-run`. The whole pipeline is the `full-run`
+`reroute-net` `make-footprint` `dfm-check` `order` `track` `bring-up`
+`resume-phase` `promote` `learn` `research` `full-run`. The whole pipeline is the `full-run`
 recipe - a task like any other, not a separate code path. (`learn` is the
 owner-present teaching session; `research` fills a coverage gap and is also
 what full-run launches automatically on every gap - its recipe carries the
@@ -144,6 +144,36 @@ weighed like any other report:
   Each known unknown gets a datasheet answer or a stated margin in the
   review; pin what you learn with `--vref`/`--rail` or in
   `reference/regulator_vref.yaml`.
+- `scripts/sim_inrush.py --workspace <ws>`: the board's load switches
+  against a USB PD source (`lib/pdsource.py`: slewed steps behind a cable,
+  a source that cannot sink, a hard reset). Same netlist model as
+  sim_board, but the entry is the PD source and each switch's output is
+  free: attach, the 5 V -> contract step at 0.5/3/30 V/ms with firmware
+  off, firmware turning the switch on, and a hard reset with firmware
+  still on, plus the FET's Vth corners. Reports the source current against
+  the contract (an OCP trip and hard-reset loop), a switch that conducts
+  with firmware off, Vgs transients, and each switch's peak junction
+  temperature through its turn-on (`lib/soa.py`, the part's Zth from
+  `reference/fet_power.yaml`). Declare the contract in constraints.json
+  (`"pd_source": {"contract_v": 28, "contract_a": 5}`) or pass
+  `--contract-v/--contract-a`; `--load NET=ohms` adds a regulator's input.
+- `scripts/check_power_path.py --pcb <pcb> --constraints <c>` (also in the
+  verify suite): the current each pad -> track -> via -> pour chain carries,
+  as a max-flow over the net's copper, with the min cut (the tracks and via
+  barrels that limit it) named. Judged against `power_paths`
+  (`[{"net", "from", "to", "current_a"}]`), each net's budget, and a USB PD
+  input's contract (`pd_source`, or 3 A derived when a PD sink IC is on the
+  board). Write budgets at the real current - a 0.5 A budget on a 5 A VBUS
+  passes every piece check_current judges.
+- `scripts/soa_check.py --fet <mpn> --hotswap --c 940u --v 28 --t-ramp 10m`
+  (or `--csv` of a simulated t,vds,id; `--at 10m` for the SOA power):
+  a MOSFET's peak Tj through one pulse, for a written margin.
+- `scripts/mlcc_dcbias.py --workspace <ws> [--min-c NET=22u]` or `--c 22u
+  --package 0805 --rated 25 --vdc 5.2`: every ceramic's effective
+  capacitance at its DC (`lib/mlcc.py`: the part's curve from
+  `reference/mlcc_dcbias.yaml` by MPN, else a generic class-II curve,
+  typical and low) and each rail's total, against a regulator's Cout floor.
+  sim_board's DC-bias warning carries the same numbers.
 - `scripts/eng_calc.py <divider|fb|rc|led|i2c|crystal|ldo|holdup|rpower>`:
   the same formulas (`lib/engcalc.py`) for a margin a review writes down,
   so the number cites a command anyone can re-run.
@@ -167,6 +197,36 @@ tell records unknown, never a pass. `ledger.py report --workspace <ws>` lists
 the gaps; `ledger.py set ... --source` records one you checked yourself.
 Release refuses while any fact is not verified, and stock older than 72 h
 reads unknown, so re-run `stock_check.py --workspace <ws>` before the order.
+
+## Works first time, watches itself, brought up unattended
+
+The person, 10-28: they give the spec; the Hive designs a product that
+"will def work with appropriate contingencies"; they order it, plug it in,
+run one script, leave it, and the Hive brings it up, revs the firmware,
+tests it and pings them when it is ready. "This should be the flow for all
+board designs." It is the default for every board that will be built,
+scaled by you to the board - not a gate; record how far you took it
+(`state.py decision`).
+
+- **Design for it** (P2-P4): `reference/self-observation.md` - what the
+  board can measure about itself for cents (rail dividers into spare ADC
+  pins, status pins to GPIO, output loopback taps, a console), and the
+  test API firmware offers. `scripts/check_observability.py --workspace
+  <ws>` lists each rail as self / test_point / blind and each PG/FAULT/INT
+  as watched or not; weigh it at P4 and P8.
+- **Review it before money** (P8-P9): `reference/first-spin.md` - one
+  `domain-reviewer` per domain with fresh eyes, every margin a number,
+  contingencies on the board where a margin can't be closed on paper, every
+  blocker/major answered. `scripts/first_spin.py --workspace <ws>` lists
+  what is still open and merges the tools wanted (file them to hive-hwde).
+  The same review, cold, on any board you hold (built, imported, after an
+  ECO) when you judge it worth it: every finding names its fault class in
+  `docs/failure-modes.yaml`, and `--briefs` drafts a hive-hwde brief for
+  each class no hwde check caught, so each review leaves a check behind.
+- **Bring it up** (boards in hand): the `bring-up` verb and
+  `reference/remote-bringup.md`. `state.py bringup --results <file>`
+  closes it with the measurements (`scripts/lib/bringuplib.py` schema);
+  `bring-up-passed` and `proven` cite them.
 
 ## Run start / resume
 
@@ -296,7 +356,7 @@ never reuse a generator/router conversation for its own review.
 Spawn tiers (T6-measured; escalate one tier when a role must overrule its
 inputs, never silently downgrade):
 | fable/max | router (novel board; proven-chain re-run: sonnet/medium), learner (owner-present teaching) |
-| fable/high | architect, placement, schematic-reviewer, verify-reviewer, requirements-analyst, researcher (coverage-gap research; the ONLY role with web tools, allowlisted, acquisitions through research.py fetch) |
+| fable/high | architect, placement, schematic-reviewer, verify-reviewer, domain-reviewer (first spin, one per domain), requirements-analyst, researcher (coverage-gap research; the ONLY role with web tools, allowlisted, acquisitions through research.py fetch) |
 | fable/medium | schematic-block (thin root-stitch: sonnet/high) |
 | opus/high | research-interface-spec, research-power-architect, sim-analyst, fixer (copper/route), research-second-reader (fresh context; refutes or verifies a task's records) |
 | sonnet/high | research-component-scout, research-reference-design, part-sourcer, datasheet-extractor, coverage-mapper (schema-forced record->slot edges at P2/P3 exit), board-guide (owner PDF at P9 close) |

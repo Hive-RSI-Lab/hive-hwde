@@ -1,0 +1,889 @@
+{
+ "script": "verify_all",
+ "board": "lite-main.kicad_pcb",
+ "status": "violations",
+ "counts": {
+  "total": 20,
+  "by_severity": {
+   "warning": 20
+  },
+  "by_source": {
+   "check_diffpair": 12,
+   "check_route_style": 8
+  },
+  "by_check": {
+   "check_return_path": 0,
+   "check_current": 0,
+   "check_decoupling": 0,
+   "check_diffpair": 12,
+   "check_creepage": 0,
+   "check_thermal": 0,
+   "check_silk": 0,
+   "check_route_style": 8,
+   "check_mating": 0,
+   "check_pdn": 0,
+   "check_ratings": 0,
+   "check_bom_sync": 0,
+   "check_courtyard": 0,
+   "check_mate_pins": 0,
+   "check_model_paths": 0
+  }
+ },
+ "checks": {
+  "check_return_path": {
+   "status": "skipped",
+   "counts": {
+    "total": 0
+   },
+   "report": null,
+   "reason": "no constraints"
+  },
+  "check_current": {
+   "status": "skipped",
+   "counts": {
+    "total": 0
+   },
+   "report": null,
+   "reason": "no constraints"
+  },
+  "check_decoupling": {
+   "status": "skipped",
+   "counts": {
+    "total": 0
+   },
+   "report": null,
+   "reason": "no decoupling"
+  },
+  "check_diffpair": {
+   "status": "violations",
+   "counts": {
+    "total": 12,
+    "by_severity": {
+     "warning": 12
+    },
+    "by_source": {
+     "check_diffpair": 12
+    }
+   },
+   "report": "reports/checks/check_diffpair.json"
+  },
+  "check_creepage": {
+   "status": "skipped",
+   "counts": {
+    "total": 0
+   },
+   "report": null,
+   "reason": "no constraints"
+  },
+  "check_thermal": {
+   "status": "skipped",
+   "counts": {
+    "total": 0
+   },
+   "report": null,
+   "reason": "no constraints"
+  },
+  "check_silk": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_silk.json"
+  },
+  "check_route_style": {
+   "status": "violations",
+   "counts": {
+    "total": 8,
+    "by_severity": {
+     "warning": 8
+    },
+    "by_source": {
+     "check_route_style": 8
+    }
+   },
+   "report": "reports/checks/check_route_style.json"
+  },
+  "check_mating": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_mating.json"
+  },
+  "check_pdn": {
+   "status": "skipped",
+   "counts": {
+    "total": 0
+   },
+   "report": null,
+   "reason": "no constraints/decoupling"
+  },
+  "check_ratings": {
+   "status": "skipped",
+   "counts": {
+    "total": 0
+   },
+   "report": null,
+   "reason": "no parts"
+  },
+  "check_bom_sync": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_bom_sync.json"
+  },
+  "check_courtyard": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_courtyard.json"
+  },
+  "check_mate_pins": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_mate_pins.json"
+  },
+  "check_model_paths": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_model_paths.json"
+  }
+ },
+ "coverage": {
+  "strict": false,
+  "required": [
+   "check_return_path",
+   "check_current",
+   "check_decoupling",
+   "check_diffpair",
+   "check_creepage",
+   "check_thermal",
+   "check_silk",
+   "check_route_style",
+   "check_mating",
+   "check_pdn",
+   "check_ratings",
+   "check_bom_sync",
+   "check_courtyard",
+   "check_mate_pins",
+   "check_model_paths"
+  ],
+  "ran": [
+   "check_diffpair",
+   "check_silk",
+   "check_route_style",
+   "check_mating",
+   "check_bom_sync",
+   "check_courtyard",
+   "check_mate_pins",
+   "check_model_paths"
+  ],
+  "passed": [
+   "check_diffpair",
+   "check_silk",
+   "check_route_style",
+   "check_mating",
+   "check_bom_sync",
+   "check_courtyard",
+   "check_mate_pins",
+   "check_model_paths"
+  ],
+  "failed": [],
+  "waived": [],
+  "not_applicable": {},
+  "skipped_error": {
+   "check_return_path": "no constraints",
+   "check_current": "no constraints",
+   "check_decoupling": "no decoupling",
+   "check_creepage": "no constraints",
+   "check_thermal": "no constraints",
+   "check_pdn": "no constraints/decoupling",
+   "check_ratings": "no parts"
+  }
+ },
+ "violations": [
+  {
+   "check": "check_diffpair",
+   "severity": "warning",
+   "pos": [
+    97.0704,
+    99.3034
+   ],
+   "layer": null,
+   "net": "/BS_L_P",
+   "refs": [],
+   "msg": "diff pair /BS_L_P//BS_L_N: /BS_L_P trunk is open - cannot connect terminal(s) U8.30; its length 4.50 mm is total copper length, so the reported skew is not a trunk skew",
+   "source": "check_diffpair",
+   "items": [
+    {
+     "msg": "diff pair /BS_L_P//BS_L_N: /BS_L_P trunk is open - cannot connect terminal(s) U8.30; its length 4.50 mm is total copper length, so the reported skew is not a trunk skew",
+     "pos": [
+      97.0704,
+      99.3034
+     ]
+    }
+   ],
+   "kind": "diffpair_open_trunk",
+   "pair": [
+    "/BS_L_P",
+    "/BS_L_N"
+   ],
+   "length_p_mm": 4.5036,
+   "length_n_mm": 3.679,
+   "branch_free": false,
+   "fallback_length_mm": 4.5036
+  },
+  {
+   "check": "check_diffpair",
+   "severity": "warning",
+   "pos": [
+    100.675,
+    98.308
+   ],
+   "layer": null,
+   "net": "/BS_L_N",
+   "refs": [],
+   "msg": "diff pair /BS_L_P//BS_L_N: /BS_L_N trunk is open - cannot connect terminal(s) U8.26; its length 3.68 mm is total copper length, so the reported skew is not a trunk skew",
+   "source": "check_diffpair",
+   "items": [
+    {
+     "msg": "diff pair /BS_L_P//BS_L_N: /BS_L_N trunk is open - cannot connect terminal(s) U8.26; its length 3.68 mm is total copper length, so the reported skew is not a trunk skew",
+     "pos": [
+      100.675,
+      98.308
+     ]
+    }
+   ],
+   "kind": "diffpair_open_trunk",
+   "pair": [
+    "/BS_L_P",
+    "/BS_L_N"
+   ],
+   "length_p_mm": 4.5036,
+   "length_n_mm": 3.679,
+   "branch_free": false,
+   "fallback_length_mm": 3.679
+  },
+  {
+   "check": "check_diffpair",
+   "severity": "warning",
+   "pos": [
+    102.195,
+    100.3855
+   ],
+   "layer": null,
+   "net": "/BS_R_P",
+   "refs": [],
+   "msg": "diff pair /BS_R_P//BS_R_N: /BS_R_P trunk is open - cannot connect terminal(s) U8.24; its length 3.95 mm is total copper length, so the reported skew is not a trunk skew",
+   "source": "check_diffpair",
+   "items": [
+    {
+     "msg": "diff pair /BS_R_P//BS_R_N: /BS_R_P trunk is open - cannot connect terminal(s) U8.24; its length 3.95 mm is total copper length, so the reported skew is not a trunk skew",
+     "pos": [
+      102.195,
+      100.3855
+     ]
+    }
+   ],
+   "kind": "diffpair_open_trunk",
+   "pair": [
+    "/BS_R_P",
+    "/BS_R_N"
+   ],
+   "length_p_mm": 3.9482,
+   "length_n_mm": 5.1628,
+   "branch_free": false,
+   "fallback_length_mm": 3.9482
+  },
+  {
+   "check": "check_diffpair",
+   "severity": "warning",
+   "pos": [
+    106.0004,
+    99.3034
+   ],
+   "layer": null,
+   "net": "/BS_R_N",
+   "refs": [],
+   "msg": "diff pair /BS_R_P//BS_R_N: /BS_R_N trunk is open - cannot connect terminal(s) U8.20; its length 5.16 mm is total copper length, so the reported skew is not a trunk skew",
+   "source": "check_diffpair",
+   "items": [
+    {
+     "msg": "diff pair /BS_R_P//BS_R_N: /BS_R_N trunk is open - cannot connect terminal(s) U8.20; its length 5.16 mm is total copper length, so the reported skew is not a trunk skew",
+     "pos": [
+      106.0004,
+      99.3034
+     ]
+    }
+   ],
+   "kind": "diffpair_open_trunk",
+   "pair": [
+    "/BS_R_P",
+    "/BS_R_N"
+   ],
+   "length_p_mm": 3.9482,
+   "length_n_mm": 5.1628,
+   "branch_free": false,
+   "fallback_length_mm": 5.1628
+  },
+  {
+   "check": "check_diffpair",
+   "severity": "warning",
+   "pos": [
+    93.968,
+    94.6509
+   ],
+   "layer": null,
+   "net": "/OUT_L_P",
+   "refs": [],
+   "msg": "diff pair /OUT_L_P//OUT_L_N: /OUT_L_P trunk is open - cannot connect terminal(s) U8.29; its length 15.43 mm is total copper length, so the reported skew is not a trunk skew",
+   "source": "check_diffpair",
+   "items": [
+    {
+     "msg": "diff pair /OUT_L_P//OUT_L_N: /OUT_L_P trunk is open - cannot connect terminal(s) U8.29; its length 15.43 mm is total copper length, so the reported skew is not a trunk skew",
+     "pos": [
+      93.968,
+      94.6509
+     ]
+    }
+   ],
+   "kind": "diffpair_open_trunk",
+   "pair": [
+    "/OUT_L_P",
+    "/OUT_L_N"
+   ],
+   "length_p_mm": 15.4291,
+   "length_n_mm": 11.8129,
+   "branch_free": false,
+   "fallback_length_mm": 15.4291
+  },
+  {
+   "check": "check_diffpair",
+   "severity": "warning",
+   "pos": [
+    99.6703,
+    98.0558
+   ],
+   "layer": null,
+   "net": "/OUT_L_N",
+   "refs": [],
+   "msg": "diff pair /OUT_L_P//OUT_L_N: /OUT_L_N trunk is open - cannot connect terminal(s) U8.27; its length 11.81 mm is total copper length, so the reported skew is not a trunk skew",
+   "source": "check_diffpair",
+   "items": [
+    {
+     "msg": "diff pair /OUT_L_P//OUT_L_N: /OUT_L_N trunk is open - cannot connect terminal(s) U8.27; its length 11.81 mm is total copper length, so the reported skew is not a trunk skew",
+     "pos": [
+      99.6703,
+      98.0558
+     ]
+    }
+   ],
+   "kind": "diffpair_open_trunk",
+   "pair": [
+    "/OUT_L_P",
+    "/OUT_L_N"
+   ],
+   "length_p_mm": 15.4291,
+   "length_n_mm": 11.8129,
+   "branch_free": false,
+   "fallback_length_mm": 11.8129
+  },
+  {
+   "check": "check_diffpair",
+   "severity": "warning",
+   "pos": [
+    102.845,
+    101.0173
+   ],
+   "layer": null,
+   "net": "/OUT_R_P",
+   "refs": [],
+   "msg": "diff pair /OUT_R_P//OUT_R_N: /OUT_R_P trunk is open - cannot connect terminal(s) U8.23; its length 12.70 mm is total copper length, so the reported skew is not a trunk skew",
+   "source": "check_diffpair",
+   "items": [
+    {
+     "msg": "diff pair /OUT_R_P//OUT_R_N: /OUT_R_P trunk is open - cannot connect terminal(s) U8.23; its length 12.70 mm is total copper length, so the reported skew is not a trunk skew",
+     "pos": [
+      102.845,
+      101.0173
+     ]
+    }
+   ],
+   "kind": "diffpair_open_trunk",
+   "pair": [
+    "/OUT_R_P",
+    "/OUT_R_N"
+   ],
+   "length_p_mm": 12.7035,
+   "length_n_mm": 17.3827,
+   "branch_free": false,
+   "fallback_length_mm": 12.7035
+  },
+  {
+   "check": "check_diffpair",
+   "severity": "warning",
+   "pos": [
+    104.145,
+    100.9355
+   ],
+   "layer": null,
+   "net": "/OUT_R_N",
+   "refs": [],
+   "msg": "diff pair /OUT_R_P//OUT_R_N: /OUT_R_N trunk is open - cannot connect terminal(s) U8.21; its length 17.38 mm is total copper length, so the reported skew is not a trunk skew",
+   "source": "check_diffpair",
+   "items": [
+    {
+     "msg": "diff pair /OUT_R_P//OUT_R_N: /OUT_R_N trunk is open - cannot connect terminal(s) U8.21; its length 17.38 mm is total copper length, so the reported skew is not a trunk skew",
+     "pos": [
+      104.145,
+      100.9355
+     ]
+    }
+   ],
+   "kind": "diffpair_open_trunk",
+   "pair": [
+    "/OUT_R_P",
+    "/OUT_R_N"
+   ],
+   "length_p_mm": 12.7035,
+   "length_n_mm": 17.3827,
+   "branch_free": false,
+   "fallback_length_mm": 17.3827
+  },
+  {
+   "check": "check_diffpair",
+   "severity": "warning",
+   "pos": [
+    98.045,
+    67.8838
+   ],
+   "layer": null,
+   "net": "/SPK_L_P",
+   "refs": [],
+   "msg": "diff pair /SPK_L_P//SPK_L_N: /SPK_L_P trunk is open - cannot connect terminal(s) J4.1; its length 22.50 mm is total copper length, so the reported skew is not a trunk skew",
+   "source": "check_diffpair",
+   "items": [
+    {
+     "msg": "diff pair /SPK_L_P//SPK_L_N: /SPK_L_P trunk is open - cannot connect terminal(s) J4.1; its length 22.50 mm is total copper length, so the reported skew is not a trunk skew",
+     "pos": [
+      98.045,
+      67.8838
+     ]
+    }
+   ],
+   "kind": "diffpair_open_trunk",
+   "pair": [
+    "/SPK_L_P",
+    "/SPK_L_N"
+   ],
+   "length_p_mm": 22.5049,
+   "length_n_mm": 20.6936,
+   "branch_free": false,
+   "fallback_length_mm": 22.5049
+  },
+  {
+   "check": "check_diffpair",
+   "severity": "warning",
+   "pos": [
+    98.365,
+    82.4444
+   ],
+   "layer": null,
+   "net": "/SPK_L_N",
+   "refs": [],
+   "msg": "diff pair /SPK_L_P//SPK_L_N: /SPK_L_N trunk is open - cannot connect terminal(s) J4.2; its length 20.69 mm is total copper length, so the reported skew is not a trunk skew",
+   "source": "check_diffpair",
+   "items": [
+    {
+     "msg": "diff pair /SPK_L_P//SPK_L_N: /SPK_L_N trunk is open - cannot connect terminal(s) J4.2; its length 20.69 mm is total copper length, so the reported skew is not a trunk skew",
+     "pos": [
+      98.365,
+      82.4444
+     ]
+    }
+   ],
+   "kind": "diffpair_open_trunk",
+   "pair": [
+    "/SPK_L_P",
+    "/SPK_L_N"
+   ],
+   "length_p_mm": 22.5049,
+   "length_n_mm": 20.6936,
+   "branch_free": false,
+   "fallback_length_mm": 20.6936
+  },
+  {
+   "check": "check_diffpair",
+   "severity": "warning",
+   "pos": [
+    106.7975,
+    77.4155
+   ],
+   "layer": null,
+   "net": "/SPK_R_P",
+   "refs": [],
+   "msg": "diff pair /SPK_R_P//SPK_R_N: /SPK_R_P trunk is open - cannot connect terminal(s) J4.3; its length 19.28 mm is total copper length, so the reported skew is not a trunk skew",
+   "source": "check_diffpair",
+   "items": [
+    {
+     "msg": "diff pair /SPK_R_P//SPK_R_N: /SPK_R_P trunk is open - cannot connect terminal(s) J4.3; its length 19.28 mm is total copper length, so the reported skew is not a trunk skew",
+     "pos": [
+      106.7975,
+      77.4155
+     ]
+    }
+   ],
+   "kind": "diffpair_open_trunk",
+   "pair": [
+    "/SPK_R_P",
+    "/SPK_R_N"
+   ],
+   "length_p_mm": 19.277,
+   "length_n_mm": 18.3616,
+   "branch_free": false,
+   "fallback_length_mm": 19.277
+  },
+  {
+   "check": "check_diffpair",
+   "severity": "warning",
+   "pos": [
+    113.5875,
+    66.2255
+   ],
+   "layer": null,
+   "net": "/SPK_R_N",
+   "refs": [],
+   "msg": "diff pair /SPK_R_P//SPK_R_N: /SPK_R_N trunk is open - cannot connect terminal(s) J4.4; its length 18.36 mm is total copper length, so the reported skew is not a trunk skew",
+   "source": "check_diffpair",
+   "items": [
+    {
+     "msg": "diff pair /SPK_R_P//SPK_R_N: /SPK_R_N trunk is open - cannot connect terminal(s) J4.4; its length 18.36 mm is total copper length, so the reported skew is not a trunk skew",
+     "pos": [
+      113.5875,
+      66.2255
+     ]
+    }
+   ],
+   "kind": "diffpair_open_trunk",
+   "pair": [
+    "/SPK_R_P",
+    "/SPK_R_N"
+   ],
+   "length_p_mm": 19.277,
+   "length_n_mm": 18.3616,
+   "branch_free": false,
+   "fallback_length_mm": 18.3616
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    62.5917,
+    100.348
+   ],
+   "layer": "F.Cu",
+   "net": "+5V",
+   "refs": [],
+   "msg": "2 needless jog(s): a sidestep smaller than the track clears nothing on +5V F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.050 mm",
+     "pos": [
+      62.5917,
+      100.348
+     ],
+     "uuid": "3c2e81cd-d1be-4be1-bef1-adf68f7d2da3"
+    },
+    {
+     "msg": "sidestep 0.291 mm",
+     "pos": [
+      62.7124,
+      102.1273
+     ],
+     "uuid": "2701601d-35ca-4d24-ae61-42b366b5f20e"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    79.1533,
+    86.873
+   ],
+   "layer": "F.Cu",
+   "net": "/BUCK5_SW",
+   "refs": [],
+   "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /BUCK5_SW F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.100 mm",
+     "pos": [
+      79.1533,
+      86.873
+     ],
+     "uuid": "c86f5f4a-c8d1-4f2c-bc8c-fda0af8c966e"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    77.3484,
+    71.8439
+   ],
+   "layer": "F.Cu",
+   "net": "/PD_CFG1",
+   "refs": [],
+   "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /PD_CFG1 F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.116 mm",
+     "pos": [
+      77.3484,
+      71.8439
+     ],
+     "uuid": "6296690d-b174-4e7f-bc18-ce84b2177047"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    55.4141,
+    93.6677
+   ],
+   "layer": "B.Cu",
+   "net": "/PD_PG",
+   "refs": [],
+   "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /PD_PG B.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.107 mm",
+     "pos": [
+      55.4141,
+      93.6677
+     ],
+     "uuid": "49638c48-2057-47a7-bdf3-d9b7fecdf7fd"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    86.9639,
+    71.648
+   ],
+   "layer": "F.Cu",
+   "net": "/PSW_G",
+   "refs": [],
+   "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /PSW_G F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.157 mm",
+     "pos": [
+      86.9639,
+      71.648
+     ],
+     "uuid": "93748a6d-dfdf-4043-bf37-9d05579199bf"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    90.6461,
+    76.906
+   ],
+   "layer": "F.Cu",
+   "net": "/SPK_L_P",
+   "refs": [],
+   "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /SPK_L_P F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.477 mm",
+     "pos": [
+      90.6461,
+      76.906
+     ],
+     "uuid": "f52db498-75e5-48bf-ac92-9491e4d281f6"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    55.65,
+    89.1
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [],
+   "msg": "5 needless jog(s): a sidestep smaller than the track clears nothing on GND F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.071 mm",
+     "pos": [
+      55.65,
+      89.1
+     ],
+     "uuid": "a330c4ec-7f7c-4b12-8a5f-32b6a69a8c25"
+    },
+    {
+     "msg": "sidestep 0.050 mm",
+     "pos": [
+      55.725,
+      89.075
+     ],
+     "uuid": "4a938844-22e5-4329-960c-9662b8003767"
+    },
+    {
+     "msg": "sidestep 0.035 mm",
+     "pos": [
+      64.5,
+      100.125
+     ],
+     "uuid": "d62384df-e3c9-43e2-aff3-759a319711b7"
+    },
+    {
+     "msg": "sidestep 0.071 mm",
+     "pos": [
+      72.4,
+      90.25
+     ],
+     "uuid": "cee9882f-8cbd-44d3-8839-7d6880250104"
+    },
+    {
+     "msg": "sidestep 0.050 mm",
+     "pos": [
+      72.425,
+      90.175
+     ],
+     "uuid": "2afaa894-d8bb-4a93-9696-ccffad990f12"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    77.4,
+    75.65
+   ],
+   "layer": "F.Cu",
+   "net": "VBUS",
+   "refs": [],
+   "msg": "7 needless jog(s): a sidestep smaller than the track clears nothing on VBUS F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.071 mm",
+     "pos": [
+      77.4,
+      75.65
+     ],
+     "uuid": "a926dcae-1ae4-4bbf-9c7b-5bba6537ef07"
+    },
+    {
+     "msg": "sidestep 0.150 mm",
+     "pos": [
+      77.525,
+      75.575
+     ],
+     "uuid": "98a9139a-2fd5-4968-8563-35f49ea496a5"
+    },
+    {
+     "msg": "sidestep 0.035 mm",
+     "pos": [
+      77.625,
+      75.5
+     ],
+     "uuid": "0f3c3c50-b92c-4f82-a4db-3747e6111350"
+    },
+    {
+     "msg": "sidestep 0.100 mm",
+     "pos": [
+      77.7,
+      75.45
+     ],
+     "uuid": "7fd0e512-a38f-4609-a878-fe51bad1515b"
+    },
+    {
+     "msg": "sidestep 0.100 mm",
+     "pos": [
+      79.95,
+      75.35
+     ],
+     "uuid": "eda11306-756a-4ac4-8289-e9e0bdca158c"
+    },
+    {
+     "msg": "sidestep 0.247 mm",
+     "pos": [
+      80.175,
+      75.3
+     ],
+     "uuid": "4de5d32b-e8fe-4ff1-b3c8-fb30e910fb05"
+    },
+    {
+     "msg": "sidestep 0.200 mm",
+     "pos": [
+      86.75,
+      68.55
+     ],
+     "uuid": "27bd17d5-46e7-4738-b03f-734737305655"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  }
+ ],
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T20:14:32+00:00",
+ "input": "kicad/lite-main.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:ec2b7102a4b686e14c6c39d6cfee4fd1fe2da6c26d752b64af1c5680c5eb9ede"
+}

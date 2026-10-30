@@ -466,13 +466,16 @@ def test_run_freerouting_hard_cap_ends_a_chatty_run(tmp_path):
 
 
 def test_run_freerouting_silent_but_growing_ses_is_not_killed(tmp_path):
+    # Silent for 5 s in all, longer than the 3 s stall budget, but the .ses
+    # grows every 0.5 s: must finish. The 2.5 s of slack per gap absorbs a
+    # slow interpreter start on a loaded machine (a 1 s budget did not).
     cmd, dsn, ses = _fake_fr(tmp_path, (
         "import time\n"
-        "for i in range(1, 7):\n"
-        "    time.sleep(0.5)\n"
-        "    open('b.ses', 'a').write('x' * i)\n"))
+        "for i in range(1, 11):\n"
+        "    open('b.ses', 'a').write('x' * i)\n"
+        "    time.sleep(0.5)\n"))
     facts = routelib.run_freerouting(None, None, dsn, ses, cmd=cmd,
-                                     timeout=30, stall_s=1)
+                                     timeout=60, stall_s=3)
     assert not facts["timed_out"] and facts["rc"] == 0
 
 

@@ -271,6 +271,37 @@ def test_net_classes():
             if c["name"].startswith("Pwr_")} == {"Pwr_0p25mm": 0.25}
 
 
+def test_power_class_clearance_is_the_fab_floor():
+    """A power class carries the fab floor clearance, not a blanket 0.2 mm
+    that a power net on a fine-pitch part (CH224Q VBUS, 0.176 mm between
+    pads) can never meet at its own pads; HV nets still get theirs."""
+    cons = {"power": [{"net": "VBUS", "current_a": 3.0},
+                      {"net": "V48", "current_a": 3.0}],
+            "voltages": [{"net": "V48", "voltage": 48}]}
+    cap = _cap()
+    _, report = rules_gen.build(cons, cap, _stackup(), baseline_only=False)
+    by = {c["name"]: c["clearance"] for c in report["classes"]}
+    cls = {p["pattern"]: p["netclass"] for p in report["patterns"]}
+    assert by[cls["VBUS"]] == pytest.approx(cap["min_clearance_mm"])
+    assert by[cls["V48"]] > 0.2
+
+
+def test_rule_names_unique_when_nets_fold_together():
+    """_safe folds + and - to _, so A_SPK_L+ / A_SPK_L- shared one rule
+    name in the .kicad_dru (hi-fi core board)."""
+    cons = {"power": [{"net": "/amp_a/A_SPK_L+", "current_a": 3.0},
+                      {"net": "/amp_a/A_SPK_L-", "current_a": 3.0}]}
+    rules, report = rules_gen.build(cons, _cap(), _stackup(),
+                                    baseline_only=False)
+    names = [r.name for r in rules]
+    assert len(names) == len(set(names)), names
+    assert "aiee_pwr_width_amp_a_A_SPK_L" in names
+    assert "aiee_pwr_width_amp_a_A_SPK_L_2" in names
+    assert report["renamed_rules"] == [
+        {"from": "aiee_pwr_width_amp_a_A_SPK_L",
+         "to": "aiee_pwr_width_amp_a_A_SPK_L_2"}]
+
+
 def test_power_netclasses_split_by_current():
     """A 20 mA rail must NOT inherit a 5 A trunk's width: one class per
     required width, thin rails on Default. Flattening them into one wide
@@ -305,6 +336,22 @@ MINI_NET = """(export (version "E")
     (net (code "1") (name "+3V3") (node (ref "R1") (pin "1")) (node (ref "C1") (pin "1")))
     (net (code "2") (name "GND") (node (ref "R1") (pin "2")) (node (ref "C1") (pin "2")))))
 """
+
+
+def test_resolve_origin(tmp_path):
+    pcb = tmp_path / "b.kicad_pcb"
+    assert board_init.resolve_origin("auto", pcb) == (None, "auto")
+    assert board_init.resolve_origin("keep", pcb)[0] is None   # no board yet
+    assert board_init.resolve_origin("12.5, -3", pcb) == ([12.5, -3.0], "given")
+    pcb.write_text("""(kicad_pcb
+  (gr_line (start 23.5 41) (end 103.5 41) (layer "Edge.Cuts") (width 0.1))
+  (gr_arc (start 20.5 44) (mid 21.38 41.88) (end 23.5 41) (layer "Edge.Cuts"))
+  (gr_line (start 20.5 44) (end 20.5 120) (layer "Edge.Cuts") (width 0.1))
+  (gr_line (start 0 0) (end 5 5) (layer "F.SilkS") (width 0.1))
+)""", encoding="utf-8")
+    assert board_init.resolve_origin("keep", pcb) == ([20.5, 41.0], "kept from b.kicad_pcb")
+    with pytest.raises(RuntimeError, match="bad --origin"):
+        board_init.resolve_origin("left", pcb)
 
 
 def test_parse_netlist(tmp_path):
@@ -705,6 +752,28 @@ def _init_board(tmp_path, netlist, *extra):
 
 
 @pytest.mark.smoke
+def test_board_init_keeps_or_pins_the_origin(cli, usbbuck4_net, tmp_path):
+    """A re-run keeps the outline where the board has it (lite-main's planes
+    and pre-route ops were written in absolute coordinates); --origin X,Y
+    pins it and --origin auto is the packed position."""
+    rc, first = _init_board(tmp_path, usbbuck4_net)
+    assert rc == 0 and first["origin_source"].startswith("auto")
+    o1 = first["outline_origin"]
+    # a wider margin packs the parts differently: auto would move the origin
+    rc, auto = _init_board(tmp_path, usbbuck4_net, "--margin", "9", "--origin", "auto")
+    assert rc == 0 and auto["outline_origin"] != o1
+    rc, kept = _init_board(tmp_path, usbbuck4_net, "--margin", "9")
+    assert rc == 0 and kept["status"] == "pass", kept
+    assert kept["outline_origin"] == auto["outline_origin"]   # kept from the last run
+    assert kept["origin_source"] == "kept from usbbuck4.kicad_pcb"
+    rc, pinned = _init_board(tmp_path, usbbuck4_net, "--origin", "10,20")
+    assert rc == 0 and pinned["status"] == "pass", pinned
+    assert pinned["outline_origin"] == [10.0, 20.0]
+    assert pinned["outline_bbox"] == [10.0, 20.0, 110.0, 100.0]
+    assert pinned["self_check"]["setup_violations"] == []
+
+
+@pytest.mark.smoke
 def test_board_init_edge_notch(cli, usbbuck4_net, tmp_path):
     """MECH: a --cutout touching an outline edge reshapes the perimeter into a
     notch (the LUMINA daughter boards' RJ45 relief). geom must read the notched
@@ -870,6 +939,7 @@ def test_board_init_fixed_outline_too_tight_gets_no_default_holes(cli,
     r = json.loads(rep.read_text("utf-8"))
     assert r["status"] == "pass" and r["mounting_holes"] == 0, r
     assert any("the fixed outline leaves" in n for n in r["worker_notes"])
+    assert "--mounting-holes 4" in r["mounting_holes_skipped"], r
 
     # the kept case: the same parts in a roomier fixed outline get holes
     assert board_init.main([
@@ -878,6 +948,7 @@ def test_board_init_fixed_outline_too_tight_gets_no_default_holes(cli,
         "--outline", f"{w + 10}x{h + 10}", "--out-report", str(rep)]) == 0
     r = json.loads(rep.read_text("utf-8"))
     assert r["status"] == "pass" and r["mounting_holes"] == 4, r
+    assert r["mounting_holes_skipped"] is None, r
 
 
 @pytest.mark.smoke
