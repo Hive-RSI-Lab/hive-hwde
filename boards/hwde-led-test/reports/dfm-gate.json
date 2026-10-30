@@ -3,8 +3,8 @@
   "gate": "dfm",
   "phase": "P9",
   "tool": "dfm",
-  "input": "/work/boards/hwde-led-test/kicad/hwde-led-test.kicad_pcb",
-  "input_digest": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
+  "input": "kicad/hwde-led-test.kicad_pcb",
+  "input_digest": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55",
   "status": "pass",
   "criteria": {
     "fail_severities": [
@@ -19,6 +19,8 @@
   },
   "failing_count": 0,
   "failing": [],
+  "warnings_count": 0,
+  "warnings": [],
   "coverage": {
     "strict": false,
     "required": [
@@ -71,10 +73,10 @@
     "workspace": "/work/boards/hwde-led-test",
     "gate": "dfm",
     "status": "pass",
-    "attempts": 1,
+    "attempts": 3,
     "inputs": {
-      "pcb": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316",
-      "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+      "pcb": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55",
+      "sch": "sexpr_no_uuid:cc19139cf03581dc464e07f424bad251e06aa545876810a8041450c8d9c60610",
       "parts": null
     }
   }

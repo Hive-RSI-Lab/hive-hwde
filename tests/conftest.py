@@ -16,12 +16,25 @@ RECORDED_KICAD = (10, 0, 3)
 
 
 @functools.cache
-def _kicad_version() -> tuple[int, ...]:
+def _kicad_version() -> tuple[tuple[int, ...], str]:
+    """(version, what it is) of the pipeline's kicad-cli, () when unknown.
+
+    Asked once, at collection: a pin whose version probe fails (a slow
+    kicad-cli on a strained machine times out) skips the recorded tests with
+    the reason, never aborts the whole run (issue #252)."""
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / ".claude"
                            / "skills" / "hwde" / "scripts" / "lib"))
     import env
-    cli = env.find_kicad_cli()
-    return env.kicad_cli_version(cli) if cli else ()
+    try:
+        cli = env.find_kicad_cli()
+    except env.EnvError as e:
+        return (), f"no usable kicad-cli ({e})"
+    if not cli:
+        return (), "no kicad-cli"
+    ver = env.kicad_cli_version(cli)
+    if not ver:
+        return (), f"kicad-cli {cli} of unknown version"
+    return ver, ".".join(map(str, ver))
 
 
 # Upstream tests that fail in hive-hwde for a cause a brief already owns:
@@ -52,18 +65,55 @@ KNOWN_FAILING = {
 }
 
 
+# Tests too heavy for the per-PR test (bin/hwde test deselects `slow`; bin/hwde
+# test-slow runs them): each took 4 s or more on the Hive's loaded machine,
+# together about 500 of its 790 s (261029-175316). A parametrized test is
+# named without its ids, so every case of it is slow. (nodeid -> why)
+_TOOLS = "runs the live toolchain (kicad-cli, KiCad's python, java)"
+_BOARD = "runs a whole fixture board's checks or bench stage"
+_INTAKE = "materializes a whole KiCad project through intake"
+SLOW = {
+    "tests/test_check_env.py::test_passes_on_dev_machine": _TOOLS,
+    "tests/test_check_env.py::test_out_file_and_quiet": _TOOLS,
+    "tests/test_check_env.py::test_unpinned_discovery_still_resolves_10x": _TOOLS,
+    "tests/test_check_env.py::test_missing_kicad_fails_with_remediation": _TOOLS,
+    "tests/test_check_env.py::test_missing_java_fails_with_remediation": _TOOLS,
+    "tests/test_board_rename.py::test_kicad_cli_opens_the_renamed_project": _TOOLS,
+    "tests/test_board_setup.py::test_board_init_fixed_outline_too_tight_gets_no_default_holes": _TOOLS,
+    "tests/test_build_modes.py::test_board_init_cli_does_not_refuse_a_fixed_outline": _TOOLS,
+    "tests/test_bench.py::test_offline_fixture_matches_baseline": _BOARD,
+    "tests/test_bench.py::test_known_answers_fire_where_expected": _BOARD,
+    "tests/test_mcp_server.py::test_dfm_check_is_read_only": _BOARD,
+    "tests/test_mcp_server.py::test_review_runs_every_gate_read_only": _BOARD,
+    "tests/test_checks_s5.py::test_full_manifest_coverage": _BOARD,
+    "tests/test_research.py::test_bench_p1_freeze_score_baseline_and_compare": _BOARD,
+    "tests/test_research.py::test_validate_refuses_contract_breaches": _BOARD,
+    "tests/test_learn.py::test_freeze_baseline_then_seeded_regression_exits_1": _BOARD,
+    "tests/test_sim_board.py::test_engine_resistor_overpower": _BOARD,
+    "tests/test_layout_sim.py::test_mutant_current_density_max_at_neck": _BOARD,
+    "tests/test_intake.py::test_intake_refuses_an_existing_workspace_unless_forced": _INTAKE,
+    "tests/test_intake.py::test_schematic_only_project_lands_at_p4": _INTAKE,
+    "tests/test_intake.py::test_hermetic_intake_never_writes_to_the_source": _INTAKE,
+    "tests/test_intake.py::test_no_upgrade_mixed_versions_is_refused_before_materializing": _INTAKE,
+    "tests/test_intake.py::test_hermetic_intake_builds_a_valid_workspace": _INTAKE,
+    "tests/test_intake.py::test_board_only_project_imports_with_a_no_schematic_warning": _INTAKE,
+}
+
+
+@pytest.hookimpl(tryfirst=True)  # before -m deselects by mark
 def pytest_collection_modifyitems(config, items):
     for item in items:
         why = KNOWN_FAILING.get(item.nodeid)
         if why:
             item.add_marker(pytest.mark.xfail(reason=why, strict=False))
+        if item.nodeid.split("[")[0] in SLOW:
+            item.add_marker(pytest.mark.slow)
     marked = [i for i in items if i.get_closest_marker("kicad_recorded")]
     if not marked:
         return
-    ver = _kicad_version()
+    ver, have = _kicad_version()
     if ver[:3] == RECORDED_KICAD:
         return
-    have = ".".join(map(str, ver)) or "no kicad-cli"
     skip = pytest.mark.skip(reason=(
         f"numbers recorded on KiCad {'.'.join(map(str, RECORDED_KICAD))}, "
         f"this is {have} (LEARNINGS 2026-08-27)"))
@@ -97,6 +147,9 @@ def _easyeda_offline(monkeypatch, tmp_path_factory):
     monkeypatch.setenv("HWDE_STOCK_OFFLINE", "1")
     # and writes no board's ledger.json unless it says so (test_ledger)
     monkeypatch.setenv("HWDE_LEDGER_WRITE", "0")
+    # and fsyncs nothing (safelib): every file here is scratch, and on a
+    # loaded disk each fsync costs seconds (test_attest spent 8 of 12 s in four)
+    monkeypatch.setenv("HWDE_NO_FSYNC", "1")
     monkeypatch.setenv("HWDE_EASYEDA_CACHE",
                        str(tmp_path_factory.mktemp("easyeda_empty")))
     # The rate-limit latch is process state: one test's mocked 403 must not
