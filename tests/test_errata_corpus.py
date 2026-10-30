@@ -105,3 +105,10 @@ def test_sot23_pinout_quiet_on_gsd_and_bec(tmp_path):
             "c": [("Q1", "3", "passive", "D"), ("Q2", "3", "passive", "C")]}
     comps = {"Q1": "Package_TO_SOT_SMD:SOT-23", "Q2": "Package_TO_SOT_SMD:SOT-23-3"}
     assert not [k for k in kinds(netlist(tmp_path, nets, comps)) if k[0] == "sot23_pinout"]
+
+
+def test_check_current_catch_runs_on_the_board():
+    assert ec.RUNS["check_current"] == ("pcb", "--pcb")
+    caught = [d for b in ec.load() for d in b["defects"]
+              if (d.get("catch") or {}).get("script") == "check_current"]
+    assert any(d["id"] == "digits-1" for d in caught)

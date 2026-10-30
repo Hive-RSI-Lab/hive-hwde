@@ -13,9 +13,10 @@ fixed board isn't seeing the defect). The table goes to docs/errata-corpus.md.
     errata_corpus.py table           write docs/errata-corpus.md
 
 --cache DIR (default ~/.cache/hwde-errata-corpus, or HWDE_ERRATA_CACHE). Nothing
-is fetched into this repo. Checks run here: netlist_audit (on the schematic,
-with an empty constraints file: what hwde reads before anyone has written
-one). A catch for another script is reported as not run.
+is fetched into this repo. Checks run here, each with an empty constraints
+file (what hwde reads before anyone has written one): netlist_audit on the
+schematic, check_current on the board. A catch for another script is
+reported as not run.
 """
 from __future__ import annotations
 
@@ -32,6 +33,8 @@ ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
 MANIFEST = ROOT / "reference" / "errata_corpus.yaml"
 DOC = ROOT / "docs" / "errata-corpus.md"
+# script -> the rev file it reads and the flag it takes
+RUNS = {"netlist_audit": ("sch", "--sch"), "check_current": ("pcb", "--pcb")}
 VERDICTS = {"caught", "caught_with_constraints", "missed", "not_static"}
 
 
@@ -81,31 +84,36 @@ def matches(violation: dict, catch: dict) -> bool:
     return not refs or bool(refs & set(violation.get("refs") or ()))
 
 
-def audit(cache: Path, b: dict, rev: str) -> list[dict]:
-    sch = repo_dir(cache, b) / b[rev]["sch"]
-    out = cache / "runs" / b["id"] / f"{rev}-netlist_audit.json"
+def audit(cache: Path, b: dict, rev: str, script: str = "netlist_audit") -> list[dict]:
+    key, flag = RUNS[script]
+    src = repo_dir(cache, b) / b[rev][key]
+    out = cache / "runs" / b["id"] / f"{rev}-{script}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     empty = out.parent / "constraints.json"
     empty.write_text("{}", encoding="utf-8")
-    subprocess.run([sys.executable, str(SCRIPTS / "netlist_audit.py"), "--sch", str(sch),
+    out.unlink(missing_ok=True)
+    subprocess.run([sys.executable, str(SCRIPTS / f"{script}.py"), flag, str(src),
                     "--constraints", str(empty), "--out", str(out)],
                    capture_output=True, text=True, timeout=900)
     return json.loads(out.read_text(encoding="utf-8")).get("violations", [])
 
 
 def run(cache: Path, b: dict) -> dict:
-    found = {rev: audit(cache, b, rev) for rev in ("rev_a", "rev_b")}
+    found: dict[tuple[str, str], list[dict]] = {}
     res = {}
     for d in b["defects"]:
         c = d.get("catch")
         if not c:
             continue
-        if c["script"] != "netlist_audit":
+        if c["script"] not in RUNS:
             res[d["id"]] = {"ran": False}
             continue
-        res[d["id"]] = {"ran": True,
-                        "rev_a": any(matches(v, c) for v in found["rev_a"]),
-                        "rev_b": any(matches(v, c) for v in found["rev_b"])}
+        for rev in ("rev_a", "rev_b"):
+            if (c["script"], rev) not in found:
+                found[c["script"], rev] = audit(cache, b, rev, c["script"])
+        res[d["id"]] = {"ran": True, **{
+            rev: any(matches(v, c) for v in found[c["script"], rev])
+            for rev in ("rev_a", "rev_b")}}
     (cache / "runs" / b["id"] / "result.json").write_text(json.dumps(res, indent=1))
     return res
 

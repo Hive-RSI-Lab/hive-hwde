@@ -1043,3 +1043,76 @@ def test_leaf_track_still_too_thin_names_its_load(tmp_path_factory):
     assert v["leaf_loads"] == ["R1"]
     assert v["current_a"] == pytest.approx((0.5 / 4.7) ** 0.5, abs=1e-3)
     assert "leaf branch: R1" in v["msg"]
+
+
+# ---- inferred switch nodes (errata corpus digits-1) ------------------------
+# An LM2596 whose OUT pin (pinfunction "OUT_2") sits on an auto-named net no
+# constraints entry names, routed to the inductor at `width`.
+
+def _buck(width: float, value: str = "LM2596S-5", fn: str = "OUT_2") -> str:
+    return f"""  (footprint "t:TO-263-5" (at 4 5)
+    (layer "F.Cu")
+    (property "Reference" "U1" (at 0 0 0))
+    (property "Value" "{value}" (at 0 0 0))
+    (pad "1" smd rect (at -2 0) (size 1 1) (layers "F.Cu") (net "+12V")
+      (pinfunction "VIN_1"))
+    (pad "2" smd rect (at 0 0) (size 1 1) (layers "F.Cu") (net "Net-(D1-K)")
+      (pinfunction "{fn}")))
+  (footprint "t:L" (at 14 5)
+    (layer "F.Cu")
+    (property "Reference" "L1" (at 0 0 0))
+    (pad "1" smd rect (at 0 0) (size 1 1) (layers "F.Cu") (net "Net-(D1-K)")))
+  (segment (start 4 5) (end 14 5) (width {width}) (layer "F.Cu")
+    (net "Net-(D1-K)"))
+"""
+
+
+def test_switch_node_inferred_at_rated_current(tmp_path_factory):
+    bg = _board(tmp_path_factory, "buck", _buck(0.25))
+    inf, unrated = check_current.inferred_switch_entries(
+        [], bg, check_current.switch_rows())
+    assert unrated == []
+    assert [(e["net"], e["current_a"], e["from_part"]) for e in inf] == [
+        ("Net-(D1-K)", 3.0, "U1")]
+    vs, _ = check_current.check_net(bg, inf[0])
+    assert _kinds(vs, "undersized_track")
+
+
+def test_switch_node_designer_fix_passes_screen(tmp_path_factory):
+    # digits v2: the same node at 0.75 mm passes the dT=60C screen
+    bg = _board(tmp_path_factory, "buckfix", _buck(0.75))
+    inf, _ = check_current.inferred_switch_entries(
+        [], bg, check_current.switch_rows())
+    vs, _ = check_current.check_net(bg, inf[0])
+    assert _kinds(vs, "undersized_track") == []
+
+
+def test_switch_node_named_in_constraints_wins(tmp_path_factory):
+    bg = _board(tmp_path_factory, "bucknamed", _buck(0.25))
+    inf, _ = check_current.inferred_switch_entries(
+        [{"net": "Net-(D1-K)", "current_a": 0.2}], bg,
+        check_current.switch_rows())
+    assert inf == []
+
+
+def test_unrated_switch_pin_is_a_fact(tmp_path_factory):
+    bg = _board(tmp_path_factory, "buckunk", _buck(0.25, "XYZ123", "SW"))
+    inf, unrated = check_current.inferred_switch_entries(
+        [], bg, check_current.switch_rows())
+    assert inf == []
+    assert unrated == [{"ref": "U1", "value": "XYZ123", "pin": "SW",
+                        "net": "Net-(D1-K)"}]
+
+
+def test_switch_node_cli_warns_without_constraints(tmp_path_factory):
+    bg = _board(tmp_path_factory, "buckcli", _buck(0.25))
+    cons = bg.path.parent / "empty.json"
+    cons.write_text("{}", encoding="utf-8")
+    proc = subprocess.run(
+        [PYTHON, str(SCRIPTS / "check_current.py"), "--pcb", str(bg.path),
+         "--constraints", str(cons)], capture_output=True, text=True)
+    payload = json.loads(proc.stdout)
+    assert payload["counts"]["by_severity"] == {"warning": 1}
+    v = payload["violations"][0]
+    assert v["inferred"] is True and v["from_part"] == "U1"
+    assert "U1" in v["refs"] and "constraints.json" in v["msg"]
