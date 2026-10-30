@@ -32,7 +32,8 @@ exec "$@"
     (venv / ".hwde-lock").touch()
     env = {k: v for k, v in os.environ.items() if k != "HWDE_HEAVY_HELD"}
     env.update(PATH=f"{bin_}:{env['PATH']}", HWDE_VENV=str(venv), DISPLAY=":99",
-               HWDE_HOME=str(tmp_path / "state"), HWDE_KICAD_CLI="/nonexistent")
+               HWDE_HOME=str(tmp_path / "state"), HWDE_KICAD_CLI="/nonexistent",
+               HWDE_KNOWLEDGE_SOURCES=str(tmp_path))  # check-all would fetch them
     if held:
         env["HWDE_HEAVY_HELD"] = "1"
     out = subprocess.run([str(ROOT / "bin" / "hwde"), *args], env=env, cwd=tmp_path,

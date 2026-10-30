@@ -11,7 +11,8 @@ an agent runs it inside the Hive.
 - Run `hwde check` (`$HIVE_MODULES/hwde/bin/hwde check --quiet`). It must
   exit 0. On first use it builds the skill's Python venv in your HOME from
   `requirements.lock`, using the Hive's uv; that takes about 15 s.
-- KiCad 10.0.6 and freerouting 2.2.4 are the Hive's, read-only in
+- KiCad 10.0.6, freerouting 2.2.4 and KiCadRoutingTools 0.19.0 (for
+  `route_critical` and route_auto's KRT finish) are the Hive's, read-only in
   `/hive/tools` (put there through a warden). Java 25 is the system's.
   `bin/hwde` finds them all, plus KiCad's own python with `pcbnew` and its
   ngspice. If `hwde check` can't find one, ask a warden; don't install KiCad
@@ -52,6 +53,18 @@ an agent runs it inside the Hive.
   list. A review answers each known unknown from a datasheet or states the
   margin it rests on; `hwde eng_calc <calc> ...` gives the numbers a written
   margin cites.
+- Every board with a power input also gets its power paths checked:
+  `hwde sim_inrush --workspace boards/<name> --out boards/<name>/reports/sim_inrush.json`
+  (load switches against a USB PD source: inrush, a switch that conducts
+  with firmware off, turn-on SOA as a peak junction temperature, hard
+  reset), `hwde check_power_path` (in the verify suite: the current each
+  pad-track-via chain carries, against the budget, `power_paths` and the
+  PD contract) and `hwde mlcc_dcbias --workspace boards/<name>` (ceramics
+  at their DC bias). Put the PD contract in constraints.json as
+  `"pd_source": {"contract_v": .., "contract_a": ..}` and the real current
+  of each high-current run in `power_paths`; `hwde soa_check` gives a FET's
+  Tj for a written margin. These are what hifi-receiver-2's first-spin
+  power review did by hand (its docs/review-2/power.md).
 - A board that runs firmware gets `hwde check_fw --board boards/<name>`,
   run at every schematic change, not first at bring-up. It runs hive-fw's
   `fw constraints` (with `fw pins` inside it) for each firmware target whose
@@ -130,6 +143,10 @@ as its own change: `hive agent brief --project hive-hwde --title ...
 --done ...`. Board-local workarounds are the failure mode. List what you hit
 in your account.
 
+A fix to a script goes in with a test under `tests/` (run them with
+`eval "$(bin/hwde env)"; $HWDE_PY -m pytest -q tests`), and a line in
+[upstream.md](upstream.md) so an update from upstream keeps it.
+
 A workaround you can't avoid gets a row in [workarounds.md](workarounds.md)
 naming the gate steps it touched, and a probe in `tests/workarounds/` that
 exits 0 while its cause stands. That is what the project's score counts
@@ -145,6 +162,35 @@ here, or add the board to the row of the same cause.
 Record each run's wall time per stage (the `phase` events in
 `state.json` history) and the gate attempts and fix loops per gate. That way
 a later board shows whether the module got faster or cleaner.
+
+## Straps, reset states and the antenna
+
+Two verify checks do what the first-spin review of hifi-receiver-2's boards
+did by hand (its `docs/review-2/digital.md`, DIGITAL-1/2 and 18/19), on
+every board:
+
+- `check_straps` resolves each strapping pin of an MCU (ESP32, -S3, -C3)
+  from the board's netlist at power-on and on an MCU-only reset: external
+  pulls, the internal pulls of attached parts, series resistors, an
+  oscillator's output while its enable reads high or floating, and an IO
+  expander whose outputs hold through the MCU's reset. It fails a strap that
+  can read the wrong level, a mid-band level or a clock, and an expander pin
+  whose pull fights an external one. What each part does at reset is in
+  `reference/reset_states.yaml`; a pin it doesn't know is a warning naming
+  the pin. Add the part (with its datasheet) rather than ignoring it.
+- `check_antenna` finds a module's PCB antenna end from its footprint (the
+  body beyond the pad field), and fails copper of any kind under it on any
+  layer. It warns when the end is more than 1 mm inside the board edge, or
+  copper starts less than 15 mm beside it. The modules are in
+  `reference/rf_modules.yaml`; a board can name its own in constraints.json
+  (`"antennas": {"U7": "pcb"}`).
+
+On hifi-receiver-2's main at 66891e8, `check_straps` fails core's GPIO0
+(the 50 MHz oscillator's OE at 1.65 V from the TCA9555, and held through an
+ESP32 reset) and six of its expander pins, and `check_antenna` fails core's
+U7 (GND or +3V3 fill under the antenna on all four layers). lite-main
+passes both, with warnings: 2.2 mm cleared beside the antenna, and ES8388
+MCLK on GPIO0 with no known reset state.
 
 ## Finishing a dense board's routing
 
@@ -174,17 +220,17 @@ nothing in the Hive should ask for them.
 
 ## What doesn't work here yet
 
-- `route_critical` and KRT's finishing pass need KiCadRoutingTools 0.19.0.
-  It's now in `/hive/tools/kicad-routing-tools/KiCadRoutingTools-0.19.0`,
-  but nothing points the skill at it yet (brief 261028-141924). A board with
-  diff pairs, high-current power or RF needs it.
 - `report_gen` (the design-doc PDF) and the board guide need the
   pdf-material-builder house style, which isn't here. They fall back to
   `--tex-only`, and the skill says that must never gate a run.
 - DigiKey/Mouser price lookups need API keys and stay off.
 - The knowledge records cite manufacturer PDFs that the module doesn't carry
-  (see NOTICE). `bin/hwde` points `HWDE_KNOWLEDGE_SOURCES` at the hwde
-  project's clone (`$HIVE_PROJECTS/hwde`) when there is one.
+  (see NOTICE). `docs/knowledge-sources.txt` pins them at upstream's commit;
+  `bin/hwde` fetches them into `$HOME/.cache/hwde/knowledge-sources` the first
+  time `knowledge`, `research`, `check-all` or `hwde sources` runs (37 MB,
+  each checked against its git blob sha) and points `HWDE_KNOWLEDGE_SOURCES`
+  there. A record `research promote` adds with a new PDF puts that PDF in the
+  same cache, so it isn't in the module or upstream's list.
 
 ## The first board
 
