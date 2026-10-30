@@ -23,7 +23,7 @@ what hwde's checks do with the first revision. Written by
 | defect | class | hwde on rev A | follow-up |
 |---|---|---|---|
 | oasis-1: Q1/Q3 SI2328DS on Q_NMOS_GDS + stock SOT-23-3, so gate and source are swapped | LIB (symbol pin map vs package) | caught on rev A, gone on rev B (`netlist_audit` sot23_pinout) | v0.3 keeps the GDS symbol and moves to lib:SOT-23-3-pinswapped-mosfet, so the rule is quiet there. |
-| oasis-2: Rfbb1 BOM part an 0402 resistor (C844504) on an 0603 footprint | DFA (BOM part vs footprint package) | missed | brief - check_bom_sync compares the LCSC part's package (parts cache / stock_check) with the footprint's size code |
+| oasis-2: Rfbb1 BOM part an 0402 resistor (C844504) on an 0603 footprint | DFA (BOM part vs footprint package) | caught on rev A, gone on rev B (`check_bom_sync` bom_package_mismatch) | check_bom_sync --live reads each LCSC number off the board and JLC's package for it; on an hwde fab package stock_check makes the same comparison against BOM.csv's footprint. v0.3 buys C844759, an 0603. |
 | oasis-3: MISTER1 connector placed 180 deg off at JLC assembly | DFA (CPL rotation) | missed | none new - cpl_verify covers it on an hwde fab package |
 
 ## minuet: v3 -> v4
@@ -40,4 +40,4 @@ what hwde's checks do with the first revision. Written by
 
 ## Count
 
-12 defects: 6 caught, 2 caught_with_constraints, 3 missed, 1 not_static.
+12 defects: 8 caught, 2 caught_with_constraints, 1 missed, 1 not_static.

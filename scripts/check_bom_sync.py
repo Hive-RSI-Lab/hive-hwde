@@ -25,6 +25,15 @@ Rules, each a finding's `kind` (error unless marked):
    BOM-full.csv (the BOM of record).
  - bom_ref_unknown: BOM.csv, CPL.csv or BOM-full.csv names a designator that is
    no footprint on the board.
+ - bom_package_mismatch: the part a ref is bought as (its LCSC number, from
+   the board's footprint field, parts.json or BOM.csv - each is checked) is
+   a chip of another size than the footprint's (an 0402 resistor on an 0603
+   pad: oasis v0.2 Rfbb1, which JLC's BOM review caught and hwde did not,
+   docs/errata-corpus.md). The part's package comes from the workspace's part
+   data (parts.json's `package`, parts/<LCSC>.json) and, with --live, from
+   JLC's own record (lib/stocklib.py); a part with neither is named in
+   `skipped`, never passed. Only chip sizes compare (engcalc.package_code:
+   0201..2512 on both sides); a SOT or QFN part is not this rule's.
  - bom_pos_excluded (warning): an SMD footprint carries
    `exclude_from_pos_files` (and neither `exclude_from_bom` nor
    `board_only`) and parts.json gives it no class, so it became hand_install
@@ -42,13 +51,14 @@ Inputs, each found beside a pipeline workspace's board when not given:
   parts.json  --parts (a parts dir or the file), else <ws>/parts/parts.json
 
 CLI: --pcb board.kicad_pcb [--fab-dir DIR] [--parts DIR|parts.json]
-     [--out report.json]   exit 0/1/2 per SPEC section 6.
+     [--live] [--out report.json]   exit 0/1/2 per SPEC section 6.
 """
 from __future__ import annotations
 
 import argparse
 import csv
 import io
+import json
 import sys
 from pathlib import Path
 
@@ -59,12 +69,15 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE / "lib"))
 import bom_cpl  # noqa: E402
 import checklib  # noqa: E402
+import engcalc  # noqa: E402
+import stocklib  # noqa: E402
 from checklib import violation  # noqa: E402
 
 SCRIPT = "check_bom_sync"
 PLACED = bom_cpl.PLACED_CLASS
 ASSEMBLED = bom_cpl.ASSEMBLED_CLASSES
 FAB_FILES = ("BOM.csv", "CPL.csv", "BOM-full.csv")
+LCSC_COLS = ("LCSC Part #", "LCSC", "JLCPCB Part #", "LCSC Part")
 
 
 def _head(n):
@@ -91,6 +104,8 @@ def board_footprints(pcb: Path) -> dict[str, dict]:
         if _head(node) != "footprint":
             continue
         ref, pos, attrs = None, None, set()
+        fpid = _sval(node[1]) if len(node) > 1 \
+            and not isinstance(node[1], list) else ""
         for sub in node[1:]:
             h = _head(sub)
             if h == "property" and len(sub) >= 3 \
@@ -101,7 +116,8 @@ def board_footprints(pcb: Path) -> dict[str, dict]:
             elif h == "attr":
                 attrs |= {_sval(a) for a in sub[1:]}
         if ref and not ref.startswith("#"):
-            out[ref] = {"pos": pos, "attrs": attrs, "smd": "smd" in attrs}
+            out[ref] = {"pos": pos, "attrs": attrs, "smd": "smd" in attrs,
+                        "fpid": fpid}
     return out
 
 
@@ -158,6 +174,50 @@ def csv_designators(path: Path) -> set[str]:
     return refs
 
 
+def csv_lcsc(path: Path) -> dict[str, str]:
+    """ref -> the LCSC number a BOM csv buys it as (rows with one)."""
+    text = path.read_text(encoding="utf-8-sig")
+    out: dict[str, str] = {}
+    for row in csv.DictReader(io.StringIO(text)):
+        code = next((str(row[c]).strip() for c in LCSC_COLS
+                     if row.get(c)), "")
+        for r in str(row.get("Designator") or "").split(","):
+            if r.strip() and code:
+                out[r.strip()] = code
+    return out
+
+
+def part_packages(records: list[dict], parts: Path | None) -> dict:
+    """LCSC -> {package, source} from the workspace's own part data:
+    parts/<LCSC>.json, then parts.json lines over it."""
+    out: dict[str, dict] = {}
+    if parts is not None and parts.parent.is_dir():
+        for f in sorted(parts.parent.glob("C*.json")):
+            try:
+                ent = json.loads(f.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            if isinstance(ent, dict) and ent.get("package"):
+                code = str(ent.get("lcsc") or f.stem).strip()
+                out[code] = {"package": str(ent["package"]),
+                             "source": f"parts/{f.name}"}
+    for rec in records:
+        if rec["lcsc"] and rec["package"]:
+            out[rec["lcsc"]] = {"package": str(rec["package"]),
+                                "source": "parts.json"}
+    return out
+
+
+def jlc_package(code: str, fetch=None) -> dict | None:
+    """{package, model, source} from JLC's record, None if JLC has none.
+    stocklib.SourceError when JLC can't be asked."""
+    rec = stocklib.jlc_record(code, fetch or stocklib.http_fetch)
+    if rec is None:
+        return None
+    return {"package": rec.get("package") or "", "model": rec.get("model"),
+            "source": "JLC's record"}
+
+
 def find_fab_dir(pcb: Path, given: str | None) -> Path | None:
     if given:
         return Path(given)
@@ -178,7 +238,8 @@ def find_parts(pcb: Path, given: str | None) -> Path | None:
     return None
 
 
-def check(pcb: Path, fab_dir: Path | None, parts: Path | None) -> tuple:
+def check(pcb: Path, fab_dir: Path | None, parts: Path | None,
+          live: bool = False, fetch=None) -> tuple:
     fps = board_footprints(pcb)
     sch_path = pcb.with_suffix(".kicad_sch")
     sch = schematic_dnp(sch_path) if sch_path.is_file() else {}
@@ -234,12 +295,58 @@ def check(pcb: Path, fab_dir: Path | None, parts: Path | None) -> tuple:
             if (fab_dir / name).is_file():
                 files[name] = csv_designators(fab_dir / name)
     legs["fab"] = bool(files)
+
+    # The part each ref is bought as against its pad's chip size. Every
+    # source that names an LCSC number for a ref is a statement of its own.
+    bought: dict[tuple[str, str], list[str]] = {}
+    for ref, f in bom_cpl.board_part_fields(pcb).items():
+        if f.get("lcsc"):
+            bought.setdefault((ref, f["lcsc"]), []).append("the board")
+    for rec in records:
+        for ref in rec["refs"] if rec["lcsc"] else ():
+            bought.setdefault((ref, rec["lcsc"]), []).append("parts.json")
+    if fab_dir is not None and (fab_dir / "BOM.csv").is_file():
+        for ref, code in csv_lcsc(fab_dir / "BOM.csv").items():
+            bought.setdefault((ref, code), []).append("BOM.csv")
+    known = part_packages(records, parts if have_parts else None)
+    unknown: set[str] = set()
+    compared = 0
+    for (ref, code), where in sorted(bought.items(), key=lambda kv: (
+            bom_cpl._natural_key(kv[0][0]), kv[0][1])):
+        fp = fps.get(ref)
+        if fp is None or is_dnp(ref):
+            continue
+        pad = engcalc.package_code(fp["fpid"])
+        if pad is None:
+            continue
+        if code not in known and live:
+            try:
+                known[code] = jlc_package(code, fetch)
+            except stocklib.SourceError as exc:
+                known[code] = None
+                unknown.add(f"{code} ({exc})")
+        pkg = known.get(code)
+        size = engcalc.package_code(pkg["package"]) if pkg else None
+        if size is None:
+            if not pkg:
+                unknown.add(code)
+            continue
+        compared += 1
+        if size != pad:
+            what = f"{code} ({pkg['model']})" if pkg.get("model") else code
+            add("bom_package_mismatch", "error", ref,
+                f"{ref} is bought as {what}, a {size} part ({pkg['source']}), "
+                f"but its footprint {fp['fpid']} is {pad}: the part won't fit "
+                f"the pads (LCSC number from {', '.join(where)})")
+    legs["packages"] = compared
     legs["skipped"] = [m for m, missing in (
         ("fab: no BOM.csv, CPL.csv or BOM-full.csv found, so the BOM and "
          "CPL legs did not run", not files),
         ("parts: no parts.json found, so classes come from board attrs and "
          "the schematic only", not have_parts),
-        ("schematic: no schematic DNP marks read", not sch)) if missing]
+        ("schematic: no schematic DNP marks read", not sch),
+        (f"packages: no package on record for {', '.join(sorted(unknown))}"
+         + ("" if live else "; --live asks JLC"), unknown)) if missing]
 
     for name in ("BOM.csv", "CPL.csv"):
         listed = files.get(name)
@@ -278,6 +385,9 @@ def run(argv=None):
                     "BOM-full.csv (default: beside the board, else <ws>/fab)")
     ap.add_argument("--parts", help="parts dir or parts.json (default "
                     "<ws>/parts/parts.json)")
+    ap.add_argument("--live", action="store_true",
+                    help="ask JLC for the package of a part the workspace's "
+                    "part data gives none")
     ap.add_argument("--out")
     args = ap.parse_args(argv)
     pcb = Path(args.pcb)
@@ -285,7 +395,7 @@ def run(argv=None):
         raise checklib.CheckError(f"board not found: {pcb}")
     fab = find_fab_dir(pcb, args.fab_dir)
     parts = find_parts(pcb, args.parts)
-    viols, legs = check(pcb, fab, parts)
+    viols, legs = check(pcb, fab, parts, live=args.live)
     skipped = legs.pop("skipped")
     return checklib.report(
         SCRIPT, pcb, viols, legs=legs, skipped=skipped,

@@ -86,7 +86,8 @@ def test_golden_has_no_findings_and_says_which_legs_skipped():
     viols, legs = _run(GOLDEN / "blinky2" / "blinky2.kicad_pcb")
     assert viols == []
     skipped = legs.pop("skipped")
-    assert legs == {"schematic": True, "parts": False, "fab": False}
+    assert legs == {"schematic": True, "parts": False, "fab": False,
+                    "packages": 0}
     assert [s.split(":")[0] for s in skipped] == ["fab", "parts"]
 
 
@@ -205,3 +206,61 @@ def test_board_feature_with_pos_excluded_is_no_part(tmp_path):
     viols, _ = _run(pcb)
     assert _refs(viols, "bom_pos_excluded") == set()
     assert _errors(viols) == []
+
+
+def _parts(tmp_path, lines):
+    p = tmp_path / "parts" / "parts.json"
+    p.parent.mkdir(exist_ok=True)
+    p.write_text(json.dumps({"parts": lines}), encoding="utf-8")
+    return p
+
+
+def test_0402_part_on_an_0603_pad(tmp_path):
+    # oasis v0.2 Rfbb1 (docs/errata-corpus.md): JLC's review caught it
+    pcb = _workspace(tmp_path, fab=False)
+    parts = _parts(tmp_path, [
+        {"refdes": ["R1"], "lcsc": "C25744", "package": "0402"},
+        {"refdes": ["R2"], "lcsc": "C22775", "package": "0603"},
+        {"refdes": ["U1"], "lcsc": "C8734", "package": "LQFP-48"}])
+    viols, legs = _run(pcb, parts)
+    hits = _errors(viols, "bom_package_mismatch")
+    assert _refs(hits, "bom_package_mismatch") == {"R1"}
+    assert "0402" in hits[0]["msg"] and "R_0603_1608Metric" in hits[0]["msg"]
+    assert legs["packages"] == 2
+    assert not [s for s in legs["skipped"] if s.startswith("packages")]
+
+
+def test_package_from_parts_file_and_bom_csv(tmp_path):
+    # the BOM buys C3 as a part whose parts/<LCSC>.json says 0402
+    pcb = _workspace(tmp_path)
+    parts = _parts(tmp_path, [])
+    (parts.parent / "C1525.json").write_text(
+        json.dumps({"lcsc": "C1525", "package": "0402"}), encoding="utf-8")
+    bom = tmp_path / "BOM.csv"
+    lines = bom.read_text(encoding="utf-8").splitlines()
+    lines = [lines[0]] + [ln + "C1525" if ",C3" in ln or '"C3' in ln
+                          else ln for ln in lines[1:]]
+    bom.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    viols, _ = _run(pcb, parts)
+    hits = _errors(viols, "bom_package_mismatch")
+    assert "C3" in _refs(hits, "bom_package_mismatch")
+    assert all("BOM.csv" in v["msg"] for v in hits)
+
+
+def test_unknown_package_is_skipped_not_passed_and_live_asks_jlc(tmp_path):
+    pcb = _workspace(tmp_path, fab=False)
+    parts = _parts(tmp_path, [{"refdes": ["R1"], "lcsc": "C844504"}])
+    viols, legs = _run(pcb, parts)
+    assert _errors(viols, "bom_package_mismatch") == []
+    assert any(s.startswith("packages") and "C844504" in s
+               for s in legs["skipped"])
+
+    def fetch(method, url, body=None):
+        return {"code": 200, "data": {"componentPageInfo": {"list": [{
+            "componentCode": "C844504",
+            "componentModelEn": "CRCW040222K1FKED",
+            "componentSpecificationEn": "0402"}]}}}
+    viols, legs = check_bom_sync.check(pcb, None, parts, live=True,
+                                       fetch=fetch)
+    assert _refs(_errors(viols), "bom_package_mismatch") == {"R1"}
+    assert "CRCW040222K1FKED" in viols[0]["msg"]

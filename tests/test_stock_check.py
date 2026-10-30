@@ -43,7 +43,8 @@ JLC = {
                    componentLibraryType="base", stockCount=900000,
                    canPresaleNumber=800000, isBuyComponent="1",
                    describe="-55℃~+155℃ 10kΩ 50V 62.5mW Thick Film "
-                            "Resistor ±1% 0402"),
+                            "Resistor ±1% 0402",
+                   componentSpecificationEn="0402"),
     "C2765186": dict(componentModelEn="TYPE-C-31-M-12",
                      componentLibraryType="expand", stockCount=40000,
                      canPresaleNumber=39000, isBuyComponent="1",
@@ -102,6 +103,18 @@ def test_basic_passive_matches_by_value_in_jlc_description():
         v = stocklib.check_row(code, 100, mpn=value, value=value,
                                fetch=fake_fetch())
         assert v["status"] == "ok", v
+
+
+def test_0402_part_on_an_0603_footprint_is_a_mismatch():
+    # oasis v0.2 Rfbb1 (docs/errata-corpus.md): the right value, the wrong size
+    v = stocklib.check_row("C25744", 10, value="10k", fetch=fake_fetch(),
+                           footprint="R_0603_1608Metric")
+    assert v["status"] == "mismatch"
+    assert "0402" in v["why"] and "0603" in v["why"]
+    for fp in ("Resistor_SMD:R_0402_1005Metric", "", "SOT-23"):
+        v = stocklib.check_row("C25744", 10, value="10k", fetch=fake_fetch(),
+                               footprint=fp)
+        assert v["status"] == "ok", (fp, v)
 
 
 def test_wrong_value_is_a_mismatch():

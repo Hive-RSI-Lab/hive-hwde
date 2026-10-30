@@ -16,8 +16,10 @@ fixed board isn't seeing the defect). The table goes to docs/errata-corpus.md.
 is fetched into this repo. Checks run here (RUNNERS), each with an empty
 constraints file, what hwde reads before anyone has written one:
 netlist_audit on the schematic, check_mate_pins on the board, check_straps
-on the board with the netlist kicad-cli exports from the schematic. A catch
-for another script is reported as not run.
+on the board with the netlist kicad-cli exports from the schematic,
+check_bom_sync on the board with --live (the package of each LCSC part comes
+from JLC's record, as nothing in the foreign tree holds it). A catch for
+another script is reported as not run.
 """
 from __future__ import annotations
 
@@ -93,6 +95,10 @@ def _check_mate_pins(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
             "--constraints", str(empty)]
 
 
+def _check_bom_sync(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
+    return ["check_bom_sync.py", "--pcb", str(repo / b[rev]["pcb"]), "--live"]
+
+
 def _check_straps(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
     """On the board, with the netlist kicad-cli exports from its schematic
     (what the pipeline puts beside an hwde board)."""
@@ -112,7 +118,7 @@ def _check_straps(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
 # script -> its argv on one revision (empty constraints: what hwde reads
 # before anyone has written one)
 RUNNERS = {"netlist_audit": _netlist_audit, "check_mate_pins": _check_mate_pins,
-           "check_straps": _check_straps}
+           "check_straps": _check_straps, "check_bom_sync": _check_bom_sync}
 
 
 def audit(cache: Path, b: dict, rev: str, script: str) -> list[dict]:
@@ -123,6 +129,8 @@ def audit(cache: Path, b: dict, rev: str, script: str) -> list[dict]:
     cmd, *args = RUNNERS[script](b, rev, repo_dir(cache, b), empty)
     subprocess.run([sys.executable, str(SCRIPTS / cmd), *args, "--out", str(out)],
                    capture_output=True, text=True, timeout=900)
+    if not out.is_file():
+        raise SystemExit(f"{b['id']} {rev}: {script} wrote no report")
     return json.loads(out.read_text(encoding="utf-8")).get("violations", [])
 
 

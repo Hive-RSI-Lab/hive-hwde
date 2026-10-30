@@ -81,8 +81,12 @@ boards:
     summary: Rfbb1 BOM part an 0402 resistor (C844504) on an 0603 footprint
     source_quote: "I had accidentally selected an 0402 resistor, but the footprint on the board design was for an 0603"
     fault_class: DFA (BOM part vs footprint package)
-    verdict: missed
-    follow_up: brief - check_bom_sync compares the LCSC part's package (parts cache / stock_check) with the footprint's size code
+    verdict: caught
+    catch: {script: check_bom_sync, kind: bom_package_mismatch, refs: [Rfbb1]}
+    note: >-
+      check_bom_sync --live reads each LCSC number off the board and JLC's
+      package for it; on an hwde fab package stock_check makes the same
+      comparison against BOM.csv's footprint. v0.3 buys C844759, an 0603.
   - id: oasis-3
     summary: MISTER1 connector placed 180 deg off at JLC assembly
     source_quote: "the part on the jlcpcb order is rotated 180 from what I have in my pcb layout"
