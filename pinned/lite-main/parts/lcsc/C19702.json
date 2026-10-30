@@ -1,0 +1,72 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C19702",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C19702",
+   "mpn": "CL10A106KP8NNNC",
+   "brand": "Samsung Electro-Mechanics",
+   "description": "10V 10uF X5R \u00b110% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "package": "0603",
+   "category": "Multilayer Ceramic Capacitors MLCC - SMD/SMT",
+   "type": "Basic",
+   "basic": true,
+   "stock": 12398423,
+   "price": 0.0212,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0212
+    },
+    {
+     "qty": 200,
+     "price": 0.0163
+    },
+    {
+     "qty": 600,
+     "price": 0.0142
+    },
+    {
+     "qty": 4000,
+     "price": 0.0126
+    },
+    {
+     "qty": 8000,
+     "price": 0.012
+    },
+    {
+     "qty": 20000,
+     "price": 0.0115
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL10A106KP8NNNC_C19702.pdf",
+   "url": "https://www.lcsc.com/product-detail/multilayer-ceramic-capacitors-mlcc-smd-smt_samsung-electro-mechanics-cl10a106kp8nnnc_C19702.html",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "10V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b110%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "10uF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X5R"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

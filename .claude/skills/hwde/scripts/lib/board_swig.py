@@ -26,6 +26,9 @@ headless (LEARNINGS [swig]).
   fp_paths       [dir, ...] searched for "<Lib>.pretty/<Name>.kicad_mod"
   margin         gap between packed parts + border to outline (default 5.0)
   outline        {mode:"auto"} | {mode:"fixed", w, h}
+  origin         [x, y] mm | null: pin the outline's top-left corner there,
+                 the packed parts moving with it (board_init --origin keeps a
+                 re-run's coordinates where the last run put them)
   corner_radius  mm; 0 = square; null/absent = AUTO_CORNER_RADIUS, capped at
                  a tenth of the shorter side so a tiny board keeps its area
   mounting_holes {count: 0..4 | "auto", fp:"Lib:Name", inset, cu_edge} | null
@@ -430,6 +433,16 @@ def build(job: dict) -> dict:
     else:
         ex1, ey1 = cx1 - border, cy1 - border
         ex2, ey2 = cx2 + border, cy2 + border
+    origin = job.get("origin")
+    if origin:
+        # move the whole packed board so the outline starts at `origin`
+        dx, dy = float(origin[0]) - ex1, float(origin[1]) - ey1
+        if abs(dx) > 1e-9 or abs(dy) > 1e-9:
+            for fp, _, _ in boxes:
+                pos = fp.GetPosition()
+                fp.SetPosition(mm(pcbnew.ToMM(pos.x) + dx, pcbnew.ToMM(pos.y) + dy))
+            cx1, cy1, cx2, cy2 = cx1 + dx, cy1 + dy, cx2 + dx, cy2 + dy
+            ex1, ey1, ex2, ey2 = ex1 + dx, ey1 + dy, ex2 + dx, ey2 + dy
     short_side = min(ex2 - ex1, ey2 - ey1)
     if mh_count == "auto":
         mh_count = 4 if short_side >= AUTO_HOLES_MIN_SIDE else 0

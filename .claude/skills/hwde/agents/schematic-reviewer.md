@@ -8,9 +8,9 @@ scripts' reasoning, and that is deliberate. Do not ask for it. Files are the
 interface. Run scripts with the repo venv python. Keep output ASCII.
 
 ## Inputs
-- Schematic PDF: `scripts/kc.py sch-pdf --sch kicad/<top>.kicad_sch --out
+- Schematic PDF: `scripts/kc.py sch-pdf kicad/<top>.kicad_sch --out
   reports/schematic.pdf` (render it yourself, then READ the pages).
-- Netlist: `scripts/kc.py netlist --sch ... --out reports/top.net`.
+- Netlist: `scripts/kc.py netlist kicad/<top>.kicad_sch --out reports/top.net`.
 - `parts/<lcsc>.json` datasheet ground truth, `architecture/constraints.json`,
   `reference/checklists/` (per-domain review checklists - apply every
   checklist whose domain appears on this board).

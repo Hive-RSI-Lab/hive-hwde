@@ -712,9 +712,9 @@ modes:
   shows: drivers latched ON when +12V arrives before +3V3
   catch: enable pull-downs, sequencing review
   coverage:
-    script: '-'
+    script: check_straps
     rule: '-'
-    level: L0
+    level: L1
   target_level: L2
   gap: T#194 open
   hit_on:
@@ -2973,9 +2973,9 @@ modes:
   shows: wrong boot mode
   catch: BOOT0 pull-down; ESP32 strapping valid at reset
   coverage:
-    script: '-'
+    script: check_straps
     rule: '-'
-    level: L0
+    level: L1
   target_level: L2
   gap: none
   hit_on:

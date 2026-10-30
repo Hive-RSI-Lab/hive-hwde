@@ -1,0 +1,140 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C1848",
+ "total": 2,
+ "count": 2,
+ "results": [
+  {
+   "lcsc": "C1848",
+   "mpn": "CL31B105KBHNNNE",
+   "brand": "Samsung Electro-Mechanics",
+   "description": "1uF 50V X7R \u00b110% 1206 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "package": "1206",
+   "category": "Multilayer Ceramic Capacitors MLCC - SMD/SMT",
+   "type": "Basic",
+   "basic": true,
+   "stock": 796621,
+   "price": 0.0621,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0621
+    },
+    {
+     "qty": 100,
+     "price": 0.0502
+    },
+    {
+     "qty": 300,
+     "price": 0.0441
+    },
+    {
+     "qty": 2000,
+     "price": 0.039
+    },
+    {
+     "qty": 4000,
+     "price": 0.0372
+    },
+    {
+     "qty": 10000,
+     "price": 0.0361
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL31B105KBHNNNE_C1848.pdf",
+   "url": "https://www.lcsc.com/product-detail/multilayer-ceramic-capacitors-mlcc-smd-smt_samsung-electro-mechanics-cl31b105kbhnnne_C1848.html",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b110%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "1uF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X7R"
+    }
+   ],
+   "rank": 0
+  },
+  {
+   "lcsc": "C6275176",
+   "mpn": "RMC1/8-4874FTP",
+   "brand": "KAMAYA",
+   "description": "-55\u2103~+155\u2103 250mW 4.87M\u03a9 Thick Film Resistor \u00b11% \u00b1200ppm/\u2103 1206 Chip Resistor - Surface Mount ROHS",
+   "package": "1206",
+   "category": "Chip Resistor - Surface Mount",
+   "type": "Extended",
+   "basic": false,
+   "stock": 0,
+   "price": 0.0145,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0145
+    },
+    {
+     "qty": 10,
+     "price": 0.0145
+    },
+    {
+     "qty": 12,
+     "price": 0.0145
+    },
+    {
+     "qty": 200,
+     "price": 0.0058
+    },
+    {
+     "qty": 500,
+     "price": 0.0056
+    },
+    {
+     "qty": 1000,
+     "price": 0.0055
+    }
+   ],
+   "min_qty": 1641,
+   "datasheet": "",
+   "url": "https://www.lcsc.com/product-detail/chip-resistor-surface-mount_kamaya-rmc1-8-4874ftp_C6275176.html",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "4.87M\u03a9"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+155\u2103"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "250mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b11%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "\u00b1200ppm/\u2103"
+    }
+   ],
+   "rank": 1
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

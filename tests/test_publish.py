@@ -17,8 +17,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def run(hwde: Path, home: Path, *args: str) -> subprocess.CompletedProcess:
-    env = {"HOME": str(home), "PATH": "/usr/bin:/bin", "HIVE_TOOLS": str(home / "no-tools")}
+def run(hwde: Path, home: Path, *args: str, modules: Path | None = None) -> subprocess.CompletedProcess:
+    env = {"HOME": str(home), "PATH": "/usr/bin:/bin", "HIVE_TOOLS": str(home / "no-tools"),
+           "HIVE_MODULES": str(modules or home / "no-modules")}
     return subprocess.run([str(hwde), *args], env=env, cwd=home, capture_output=True, text=True)
 
 
@@ -36,6 +37,51 @@ def test_published_copy_uses_its_own_python(tmp_path):
     assert r.returncode == 0, r.stderr
     assert f"export HWDE_PY='{py}'" in r.stdout
     assert not (home / ".cache" / "hwde" / "venv").exists()
+
+
+def fake_copy(tmp_path: Path) -> tuple[Path, Path]:
+    """A published copy (VERSION, its own python) and that python."""
+    copy = tmp_path / "tools" / "hwde"
+    (copy / "bin").mkdir(parents=True)
+    shutil.copy2(ROOT / "bin" / "hwde", copy / "bin" / "hwde")
+    shutil.copy2(ROOT / "requirements.lock", copy / "requirements.lock")
+    (copy / "VERSION").write_text("old\n")
+    py = copy / "python" / "cpython-3.14.0-linux-x86_64-gnu" / "bin" / "python3.14"
+    py.parent.mkdir(parents=True)
+    os.symlink(sys.executable, py)
+    return copy, py
+
+
+def fake_module(tmp_path: Path, lock: str) -> Path:
+    """The installed module as the Hive keeps it: a hive-hwde folder at main."""
+    mod = tmp_path / "modules" / "hive-hwde"
+    (mod / "bin").mkdir(parents=True)
+    shutil.copy2(ROOT / "bin" / "hwde", mod / "bin" / "hwde")
+    (mod / "requirements.lock").write_text(lock)
+    return mod
+
+
+def test_published_copy_runs_the_module_at_main(tmp_path):
+    copy, py = fake_copy(tmp_path)
+    mod = fake_module(tmp_path, (ROOT / "requirements.lock").read_text())
+    home = tmp_path / "home"
+    home.mkdir()
+    r = run(copy / "bin" / "hwde", home, "env", modules=mod.parent)
+    assert r.returncode == 0, r.stderr
+    assert f"export HWDE_SKILL='{mod}/.claude/skills/hwde'" in r.stdout
+    assert f"export HWDE_PY='{py}'" in r.stdout  # the copy's python, no venv
+    assert not (home / ".cache" / "hwde" / "venv").exists()
+
+
+def test_published_copy_keeps_its_own_code_when_the_lock_moved(tmp_path):
+    copy, py = fake_copy(tmp_path)
+    mod = fake_module(tmp_path, (ROOT / "requirements.lock").read_text() + "newpkg==1.0\n")
+    home = tmp_path / "home"
+    home.mkdir()
+    r = run(copy / "bin" / "hwde", home, "env", modules=mod.parent)
+    assert r.returncode == 0, r.stderr
+    assert f"export HWDE_SKILL='{copy}/.claude/skills/hwde'" in r.stdout
+    assert f"export HWDE_PY='{py}'" in r.stdout
 
 
 def test_publish_needs_an_existing_dir(tmp_path):
