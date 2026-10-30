@@ -65,7 +65,9 @@ KICAD_PREFERENCE = ("10.", "9.")
 MIN_JAVA_FOR_FREEROUTING = 25
 
 _TIMEOUT = 30
-# `kicad-cli version` under load can take longer than 30 s (issue #252).
+# `kicad-cli version` starts KiCad (an AppImage unpacks itself first): on a
+# strained machine that alone has taken over 30 s, and a pin whose version
+# probe times out is refused as "not a working kicad-cli" (issue #252).
 _VERSION_TIMEOUT = 120
 
 # Linux headless: KiCad's SWIG Specctra export/import (route_swig) and other
