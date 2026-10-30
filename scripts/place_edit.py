@@ -74,7 +74,7 @@ OP_FIELDS = {  # op -> (required, optional)
     # footprint-INTERNAL silk graphics on an already-placed board: a library
     # edit cannot reach one without re-running board_init (and losing the
     # placement), so this is the only scripted route. Never touches text.
-    "silk_clear": ({"ref"}, {"layer", "only_offboard"}),
+    "silk_clear": ({"ref"}, {"layer", "only_offboard", "region"}),
     # pad and part-attribute ECOs (the hi-fi boards' pad_nets / pad_nonet /
     # pad_size / set_dnp scripts): re-net or clear a pad (an NC pin, a
     # rewire board_update refuses because copper touches the pad - rip it
@@ -174,6 +174,13 @@ def validate_ops(doc: dict) -> list[dict]:
             if "only_offboard" in op and not isinstance(op["only_offboard"],
                                                         bool):
                 raise CheckError(f"ops[{i}]: only_offboard must be a boolean")
+            r = op.get("region")
+            if r is not None and not (
+                    isinstance(r, list) and len(r) == 4
+                    and all(isinstance(x, (int, float)) for x in r)
+                    and r[0] < r[2] and r[1] < r[3]):
+                raise CheckError(f"ops[{i}]: region must be [x0, y0, x1, y1]"
+                                 " mm with x0 < x1, y0 < y1")
     return ops
 
 

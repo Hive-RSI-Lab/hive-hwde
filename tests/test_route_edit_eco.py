@@ -247,3 +247,135 @@ def test_place_edit_refuses_routed_pad_renet(kicad, pd):
                         '{"op": "set_pad", "ref": "R14", "pad": "2", '
                         '"net": "GND"}'])
     assert pd.read_bytes() == raw
+
+
+# ------------------------------------- PR #68's ECOs: widen, move_via, join,
+# copy_from (hifi-receiver-2 core scripted them as widen.py, move_via.py,
+# fix_dangle.py and set5v.py)
+
+CC1_VIA = (21.9386, 39.0807)    # a /CC1 via with two straight tracks on it
+CFG3_STUB = "8d4e7dc2"          # /CFG3, (33.2929, 30.6003)-(33.2071, 30.6861)
+
+
+@pytest.mark.parametrize("op, msg", [
+    ({"op": "set_width", "width": 0.3}, "needs at least one of"),
+    ({"op": "set_width", "net": "A", "width": 0.3, "kind": "via"},
+     "selects tracks only"),
+    ({"op": "set_width", "net": "A", "width": 0}, "positive number"),
+    ({"op": "move_via", "at": [1, 1], "to": "x"}, "to must be"),
+    ({"op": "move_via", "at": [1, 1], "to": [2, 2], "drag": 1},
+     "drag must be"),
+    ({"op": "join_end", "at": [1, 1], "radius": 0}, "radius must be > 0"),
+    ({"op": "copy_from", "pcb": "x.kicad_pcb"}, "needs at least one of"),
+])
+def test_validate_refuses_eco2(op, msg):
+    with pytest.raises(CheckError, match=msg):
+        _v(op)
+
+
+def test_resolve_set_width_and_move_via(bg):
+    flat, spans = route_edit.resolve_ops(bg, _v(
+        {"op": "set_width", "net": "/CC1", "width": 0.35},
+        {"op": "move_via", "at": list(CC1_VIA), "to": [22.0, 39.2]},
+        {"op": "move_via", "at": list(CC1_VIA), "to": [22.0, 39.2],
+         "drag": False},
+        {"op": "move_via", "at": [1.0, 1.0], "to": [2.0, 2.0]}))
+    widen = [flat[j] for j in spans[0]]
+    assert widen and {f["op"] for f in widen} == {"set_width"}
+    assert len(widen) == len([t for t in bg.tracks_of(net="/CC1")
+                              if abs(t.width - 0.35) > 1e-3])
+    move = [flat[j] for j in spans[1]]
+    assert [f["which"] for f in move][0] == "at"
+    assert sorted(f["which"] for f in move[1:]) in (
+        ["end", "end"], ["end", "start"], ["start", "start"])
+    assert len(spans[2]) == 1 and spans[3] == []
+
+
+def test_resolve_join_end_and_copy_from(bg):
+    stub = next(t for t in bg.tracks_of(net="/CFG3")
+                if t.uuid.startswith(CFG3_STUB))
+    a, b = list(stub.shape.coords)
+    # the stub's end already sits on an anchor: nothing to add
+    flat, _ = route_edit.resolve_ops(bg, _v({"op": "join_end",
+                                             "at": list(a)}))
+    assert flat == []
+    with pytest.raises(CheckError, match="no track ends"):
+        route_edit.resolve_ops(bg, _v({"op": "join_end", "at": [1, 1]}))
+    flat, _ = route_edit.resolve_ops(bg, _v(
+        {"op": "copy_from", "pcb": str(PD_PCB), "net": "/CFG1"}))
+    assert len(flat) == len(bg.tracks_of(net="/CFG1")) \
+        + len(bg.vias_of(net="/CFG1"))
+    assert {f["op"] for f in flat} <= {"add_track", "add_via"}
+
+
+def test_route_edit_eco2_apply(kicad, pd):
+    """widen + move_via (dragging its tracks) + a rip and join_end that put
+    a stub back + rip/copy_from that restore a net from the saved copy."""
+    before = geom.BoardGeom.from_file(PD_PCB)
+    stub = next(t for t in before.tracks_of(net="/CFG3")
+                if t.uuid.startswith(CFG3_STUB))
+    a, b = list(stub.shape.coords)
+    payload, _ = route_edit.run([
+        "--pcb", str(pd),
+        "--op", '{"op": "set_width", "net": "/CC1", "width": 0.35}',
+        "--op", json.dumps({"op": "move_via", "at": list(CC1_VIA),
+                            "to": [22.0, 39.2]}),
+        "--op", json.dumps({"op": "rip", "uuid_prefix": CFG3_STUB}),
+        "--op", '{"op": "rip", "net": "/CFG1"}'])
+    assert [r["status"] for r in payload["results"]] \
+        == ["changed", "moved", "removed", "removed"]
+    mid = geom.BoardGeom.from_file(pd)
+    assert {round(t.width, 3) for t in mid.tracks_of(net="/CC1")} == {0.35}
+    via = [v for v in mid.vias_of(net="/CC1")
+           if abs(v.at[0] - 22.0) < 1e-3 and abs(v.at[1] - 39.2) < 1e-3]
+    assert len(via) == 1
+    on_via = [t for t in mid.tracks_of(net="/CC1")
+              if any(abs(q[0] - 22.0) < 1e-3 and abs(q[1] - 39.2) < 1e-3
+                     for q in (t.shape.coords[0], t.shape.coords[-1]))]
+    assert len(on_via) == 2
+    assert not mid.tracks_of(net="/CFG1")
+
+    payload, _ = route_edit.run([
+        "--pcb", str(pd),
+        "--op", json.dumps({"op": "join_end", "at": list(b),
+                            "radius": 0.2}),
+        "--op", json.dumps({"op": "copy_from", "pcb": str(PD_PCB),
+                            "net": "/CFG1"})])
+    assert [r["status"] for r in payload["results"]] == ["added", "added"]
+    after = geom.BoardGeom.from_file(pd)
+    seg = lambda t: tuple(sorted(  # noqa: E731
+        tuple(round(c, 3) for c in q) for q in t.shape.coords))
+    assert seg(stub) in {seg(t) for t in after.tracks_of(net="/CFG3")}
+    assert sorted(seg(t) for t in after.tracks_of(net="/CFG1")) \
+        == sorted(seg(t) for t in before.tracks_of(net="/CFG1"))
+    assert len(after.vias_of(net="/CFG1")) == len(before.vias_of(net="/CFG1"))
+
+
+def test_place_edit_silk_clear_region(kicad, pd):
+    """silk_clear with a region takes only the silk lying inside it
+    (silk_rm.py: one end of U16's body outline)."""
+    import placelib
+    fp = placelib.PlaceModel(pd).footprints["U1"]
+    x, y = fp.pos
+
+    def silk(pcb):
+        """U1's own graphic silk items."""
+        import sexpdata
+        for node in sexpdata.loads(pcb.read_text())[1:]:
+            if isinstance(node, list) and str(node[0]) == "footprint" \
+                    and ["property", "Reference", "U1"] in [
+                        [str(x) for x in k[:3]] for k in node
+                        if isinstance(k, list)]:
+                return sum(1 for k in node if isinstance(k, list)
+                           and str(k[0]) in ("fp_line", "fp_arc",
+                                             "fp_circle", "fp_poly")
+                           and "SilkS" in sexpdata.dumps(k))
+        raise AssertionError("U1 not on board")
+    total = silk(pd)
+    assert total > 0
+    payload, _ = place_edit.run([
+        "--pcb", str(pd), "--op", json.dumps(
+            {"op": "silk_clear", "ref": "U1",
+             "region": [x, y - 10, x + 10, y + 10]})])
+    left = silk(pd)
+    assert 0 < left < total

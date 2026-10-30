@@ -13,6 +13,8 @@ Contract:
     add_via   {at:[x,y], size, drill, net}          # through via
     remove    {uuid}                                 # track or via; absent=noop
     set_net   {uuid, net}                            # worker-level (renet)
+    set_width {uuid, width} / set_point {uuid, which: start|end|at, to}
+                                     # the worker's, emitted by the driver only
 
 Selector ops - the ECOs boards used to hand-script with pcbnew (U-ECO; the
 hi-fi boards carried ~45 rip/renet/add scripts because route_edit only took
@@ -29,6 +31,26 @@ worker ops above, so they share the atomic apply + verify:
                                            zones of `from` go to `to` (created
                                            when absent) - the routed rename
                                            board_update refuses
+    set_width {width, SELECTOR}           the selected tracks (vias never)
+                                           get this width, in place (uuid
+                                           and arcs kept) - widen.py
+    move_via {at, to, [net], [drag]}      the via at `at` moves to `to`;
+                                           drag (default true) takes the
+                                           straight same-net track ends on
+                                           its centre along - move_via.py
+    join_end {at, [net], [layer], [radius]}   a track's free end at `at`
+                                           gets a track (same width) to the
+                                           nearest same-net anchor on its
+                                           layer - track end, via, pad
+                                           centre - within radius (0.6 mm)
+                                           - fix_dangle.py
+    copy_from {pcb, SELECTOR}             adds the tracks/vias the selector
+                                           picks on ANOTHER board (an older
+                                           revision); after a rip of the
+                                           same selector it puts a net's
+                                           routing back - set5v.py
+  Every op in one list is resolved against the board as it was before the
+  list ran, so an op can't select what an earlier op in it added or moved.
   SELECTOR (all given keys must match; at least one of net, pads, at,
   region, uuid_prefix):
     net: NAME | [NAME...]       only these nets
@@ -97,8 +119,14 @@ ECO_FIELDS = {  # selector ops, resolved by the driver into OP_FIELDS ops
     "renet": ({"to"}, SELECT_KEYS),
     "add_path": ({"points", "width", "layer", "net"}, set()),
     "rename_net": ({"from", "to"}, set()),
+    "set_width": ({"width"}, SELECT_KEYS),
+    "move_via": ({"at", "to"}, {"net", "drag"}),
+    "join_end": ({"at"}, {"net", "layer", "radius"}),
+    "copy_from": ({"pcb"}, SELECT_KEYS),
 }
+SELECTOR_OPS = ("rip", "renet", "set_width", "copy_from")
 AT_TOL = 0.02    # mm: default `at` radius (the hand scripts' 20000 nm)
+JOIN_RADIUS = 0.6  # mm: join_end's default reach (fix_dangle.py's)
 POS_TOL = 1e-3   # mm
 
 
@@ -128,7 +156,8 @@ def validate_ops(doc: dict) -> list[dict]:
         unknown = op.keys() - req - opt - {"op"}
         if unknown:
             raise CheckError(f"ops[{i}] ({kind}): unknown keys {sorted(unknown)}")
-        for k in ("start", "end", "at"):
+        for k in ("start", "end", "at") + (("to",) if kind == "move_via"
+                                           else ()):
             if k in op and not _pt(op[k]):
                 raise CheckError(f"ops[{i}]: {k} must be [x, y] mm")
         for k in ("width", "size", "drill"):
@@ -138,12 +167,20 @@ def validate_ops(doc: dict) -> list[dict]:
             raise CheckError(f"ops[{i}]: drill must be < size")
         if "uuid" in op and not (isinstance(op["uuid"], str) and op["uuid"]):
             raise CheckError(f"ops[{i}]: uuid must be a non-empty string")
-        for k in ("layer", "to", "from") + (("net",) if kind not in (
-                "rip", "renet") else ()):
+        for k in ("layer", "from", "pcb") + (("to",) if kind != "move_via"
+                                             else ()) \
+                + (("net",) if kind not in SELECTOR_OPS else ()):
             if k in op and not (isinstance(op[k], str) and op[k]):
                 raise CheckError(f"ops[{i}]: {k} must be a non-empty string")
-        if kind in ("rip", "renet"):
+        if kind in SELECTOR_OPS:
             _validate_selector(i, op)
+        if kind == "set_width" and op.get("kind", "track") != "track":
+            raise CheckError(f"ops[{i}]: set_width selects tracks only")
+        if "drag" in op and not isinstance(op["drag"], bool):
+            raise CheckError(f"ops[{i}]: drag must be true or false")
+        if kind == "join_end" and "radius" in op \
+                and not (_num(op["radius"]) and op["radius"] > 0):
+            raise CheckError(f"ops[{i}]: radius must be > 0")
         if kind == "add_path":
             pts = op["points"]
             if not (isinstance(pts, list) and len(pts) >= 2
@@ -264,6 +301,17 @@ def resolve_ops(bg, ops: list[dict]) -> tuple[list[dict], list[list[int]]]:
         elif kind == "renet":
             flat += [{"op": "set_net", "uuid": it.uuid, "net": op["to"]}
                      for it in select_items(bg, op) if it.net != op["to"]]
+        elif kind == "set_width":
+            flat += [{"op": "set_width", "uuid": it.uuid,
+                      "width": op["width"]}
+                     for it in select_items(bg, {**op, "kind": "track"})
+                     if abs(it.width - op["width"]) > POS_TOL]
+        elif kind == "move_via":
+            flat += _resolve_move_via(bg, op)
+        elif kind == "join_end":
+            flat += _resolve_join_end(bg, op)
+        elif kind == "copy_from":
+            flat += _resolve_copy_from(bg, op)
         elif kind == "add_path":
             pts = op["points"]
             flat += [{"op": "add_track", "start": list(a), "end": list(b),
@@ -274,6 +322,123 @@ def resolve_ops(bg, ops: list[dict]) -> tuple[list[dict], list[list[int]]]:
             flat.append(dict(op))
         spans.append(list(range(start, len(flat))))
     return flat, spans
+
+
+def _straight(t) -> bool:
+    return len(t.shape.coords) == 2
+
+
+def _resolve_move_via(bg, op: dict) -> list[dict]:
+    """The via at `at` goes to `to`; with drag (the default) every straight
+    same-net track end on its centre goes along, so the copper stays joined
+    (move_via.py removed the stub instead and left a gap to reroute)."""
+    from shapely.geometry import Point
+
+    at = Point(op["at"])
+    vias = [v for v in bg.vias_of(net=op.get("net"))
+            if at.distance(Point(v.at)) <= AT_TOL and v.uuid]
+    if not vias:
+        return []  # absent (or already moved): a re-run is a no-op
+    if len(vias) > 1:
+        raise CheckError(f"move_via: {len(vias)} vias at {op['at']} - "
+                         "give net to pick one")
+    v = vias[0]
+    out = [{"op": "set_point", "uuid": v.uuid, "which": "at",
+            "to": list(op["to"])}]
+    if not op.get("drag", True):
+        return out
+    for t in bg.tracks_of(net=v.net):
+        c = list(t.shape.coords)
+        for which, q in (("start", c[0]), ("end", c[-1])):
+            if Point(q).distance(Point(v.at)) > AT_TOL:
+                continue
+            if not _straight(t):
+                raise CheckError(
+                    f"move_via: arc {t.uuid} ends on the via - drag moves "
+                    "straight tracks only; rip the arc first or drag false")
+            out.append({"op": "set_point", "uuid": t.uuid, "which": which,
+                        "to": list(op["to"])})
+    return out
+
+
+def _resolve_join_end(bg, op: dict) -> list[dict]:
+    """A track's free end at `at` is joined to the nearest same-net anchor
+    on its layer within `radius` (a track end, a via centre or a pad's
+    copper centre) by a new track of the same width - fix_dangle.py, which
+    joined the DRC's dangling ends after a footprint swap."""
+    from shapely.geometry import Point
+
+    at = Point(op["at"])
+    rad = op.get("radius", JOIN_RADIUS)
+    ends = []
+    for t in bg.tracks_of(net=op.get("net"), layer=op.get("layer")):
+        c = list(t.shape.coords)
+        for q in (c[0], c[-1]):
+            if Point(q).distance(at) <= AT_TOL:
+                ends.append((t, q))
+    if not ends:
+        raise CheckError(f"join_end: no track ends at {op['at']}")
+    if len({(t.net, t.layer) for t, _ in ends}) > 1:
+        raise CheckError(f"join_end: track ends of several nets/layers at "
+                         f"{op['at']} - give net and layer")
+    if len(ends) > 1:
+        return []  # two track ends meet there: a joint, not a free end
+    t0, end = ends[0]
+    anchors = []
+    for t in bg.tracks_of(net=t0.net, layer=t0.layer):
+        if t.uuid == t0.uuid:
+            continue
+        c = list(t.shape.coords)
+        anchors += [c[0], c[-1]]
+    anchors += [v.at for v in bg.vias_of(net=t0.net) if v.spans(t0.layer)]
+    anchors += [p.copper_center for p in bg.pads_of(net=t0.net)
+                if p.on(t0.layer)]
+    pe = Point(end)
+    best = min(anchors, key=lambda q: pe.distance(Point(q)), default=None)
+    if best is None or pe.distance(Point(best)) > rad + 1e-9:
+        raise CheckError(f"join_end: no {t0.net} anchor on {t0.layer} "
+                         f"within {rad} mm of {op['at']}")
+    if _close(end, best):
+        return []  # already joined
+    return [{"op": "add_track", "start": [end[0], end[1]],
+             "end": [best[0], best[1]], "width": t0.width,
+             "layer": t0.layer, "net": t0.net}]
+
+
+def _resolve_copy_from(bg, op: dict) -> list[dict]:
+    """The tracks and vias the selector picks on ANOTHER board (an earlier
+    revision: `git show REV:board.kicad_pcb > old.kicad_pcb`) are added
+    here - set5v.py, which put +5V's routing back from a saved copy. Pair
+    it with a rip of the same selector to replace what is there now."""
+    src = Path(op["pcb"])
+    if not src.is_file():
+        raise CheckError(f"copy_from: board not found: {src}")
+    other = geom.BoardGeom.from_file(src)
+    sel = {k: v for k, v in op.items() if k not in ("op", "pcb")}
+    out = []
+    for it in select_items(other, sel):
+        if it.net not in bg.nets:
+            raise CheckError(f"copy_from: net '{it.net}' is not on this "
+                             "board")
+        if isinstance(it, geom.Via):
+            if tuple(it.layers) != tuple(bg.copper_layers):
+                raise CheckError(f"copy_from: via at {list(it.at)} is not a "
+                                 "through via - route_edit adds those only")
+            out.append({"op": "add_via", "at": list(it.at),
+                        "size": it.diameter, "drill": it.drill,
+                        "net": it.net})
+            continue
+        if it.layer not in bg.copper_layers:
+            raise CheckError(f"copy_from: layer {it.layer} is not on this "
+                             "board")
+        if not _straight(it):
+            raise CheckError(f"copy_from: arc {it.uuid} - route_edit adds "
+                             "straight tracks only")
+        c = list(it.shape.coords)
+        out.append({"op": "add_track", "start": list(c[0]),
+                    "end": list(c[-1]), "width": it.width,
+                    "layer": it.layer, "net": it.net})
+    return out
 
 
 def _close(a: tuple[float, float], b) -> bool:
@@ -323,6 +488,24 @@ def _verify(staged: Path, ops: list[dict]) -> list[str]:
                     "board (KiCad re-derives copper's net from the pads it "
                     "touches when it saves: renet the pads too - place_edit "
                     "set_pad - or use rename_net)")
+        elif kind == "set_width":
+            hit = [t for t in bg.tracks_of() if t.uuid == op["uuid"]]
+            if not hit or abs(hit[0].width - op["width"]) > POS_TOL:
+                problems.append(f"ops[{i}]: {op['uuid']} is not "
+                                f"{op['width']} mm wide in saved board")
+        elif kind == "set_point":
+            hit = [it for it in bg.tracks_of() + bg.vias_of()
+                   if it.uuid == op["uuid"]]
+            if not hit:
+                problems.append(f"ops[{i}]: {op['uuid']} not in saved board")
+            else:
+                it = hit[0]
+                got = it.at if isinstance(it, geom.Via) else \
+                    list(it.shape.coords)[0 if op["which"] == "start"
+                                           else -1]
+                if not _close(tuple(op["to"]), got):
+                    problems.append(f"ops[{i}]: {op['uuid']} {op['which']} "
+                                    f"at {got}, not {op['to']}")
         elif kind == "rename_net":
             left = (len(bg.tracks_of(net=op["from"]))
                     + len(bg.vias_of(net=op["from"]))
@@ -351,7 +534,7 @@ def apply_ops(pcb: Path, ops: list[dict], *, refill: bool = False) -> list:
     copper = set(bg.copper_layers)
     for i, op in enumerate(ops):
         want = []
-        if op["op"] in ("rip", "renet"):
+        if op["op"] in SELECTOR_OPS:
             want = _strs(op["net"]) if "net" in op else []
         elif "net" in op:
             want = [op["net"]]
@@ -365,7 +548,7 @@ def apply_ops(pcb: Path, ops: list[dict], *, refill: bool = False) -> list:
         if "layer" in op and op["layer"] not in copper:
             raise CheckError(f"ops[{i}]: layer '{op['layer']}' is not a "
                              f"copper layer of this board")
-        if "pads" in op:
+        if "pads" in op and op["op"] != "copy_from":
             refs = {p.ref for p in bg.pads_of()}
             gone = [x for x in _strs(op["pads"])
                     if x.split(".", 1)[0] not in refs]
@@ -407,9 +590,10 @@ def _fold(op: dict, results: list[dict], flat: list[dict]) -> dict:
         return results[0]
     out = {"op": op["op"], "count": len(results),
            "status": "absent" if not results else
-           {"rip": "removed", "renet": "renetted",
-            "add_path": "added"}[op["op"]]}
-    if op["op"] in ("rip", "renet"):
+           {"rip": "removed", "renet": "renetted", "add_path": "added",
+            "set_width": "changed", "move_via": "moved",
+            "join_end": "added", "copy_from": "added"}[op["op"]]}
+    if op["op"] in ("rip", "renet", "set_width", "move_via"):
         out["uuids"] = [f["uuid"] for f in flat]
     else:
         out["segments"] = [r["status"] for r in results]

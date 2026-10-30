@@ -11,10 +11,12 @@ a second worker on the same board waits, then refuses (LockBusy).
 One verb:
 
   apply_update: {"board": pcb, "out": out_pcb,
-                 "field_updates": [{"ref": R, "value": V?, "fields": {n: v}}],
+                 "field_updates": [{"ref": R, "value": V?, "fields": {n: v},
+                                    "dnp": bool?}],
                  "adds": [{"ref": R, "value": V, "fpid": "Lib:Name",
                            "x": mm, "y": mm, "deg": d, "side": "front"|"back",
-                           "fields": {n: v}, "pad_nets": {"1": "NET", ...}}],
+                           "fields": {n: v}, "pad_nets": {"1": "NET", ...},
+                           "dnp": bool, "inherit": {"texts": bool}?}],
                  "pad_nets": [{"ref": R, "pad_nets": {"1": "NET" | ""}}],
                  "fp_paths": [dir, ...],
                  "remove_refs": [R, ...],
@@ -99,6 +101,32 @@ def apply_fields(fp, value, fields):
             f.SetVisible(False)
 
 
+def inherit(fp, old, texts):
+    """A swapped-in footprint takes over what the board held on the one it
+    replaces: its schematic link (path, sheet), its BOM/position-file
+    exclusions and, when it sits where the old one sat, where its field
+    texts were and whether they showed (swap_fp.py did this by hand)."""
+    fp.SetPath(old.GetPath())
+    fp.SetSheetname(old.GetSheetname())
+    fp.SetSheetfile(old.GetSheetfile())
+    fp.SetExcludedFromBOM(old.IsExcludedFromBOM())
+    fp.SetExcludedFromPosFiles(old.IsExcludedFromPosFiles())
+    if not texts:
+        return
+    have = {f.GetName(): f for f in fp.GetFields()}
+    for of in old.GetFields():
+        nf = have.get(of.GetName())
+        if nf is None or of.GetName() == "Footprint":
+            continue
+        nf.SetVisible(of.IsVisible())
+        nf.SetLayer(of.GetLayer())
+        nf.SetPosition(of.GetPosition())
+        nf.SetTextAngle(of.GetTextAngle())
+        nf.SetTextSize(of.GetTextSize())
+        nf.SetTextThickness(of.GetTextThickness())
+        nf.SetMirrored(of.IsMirrored())
+
+
 def verb_apply_update(job):
     board = pcbnew.LoadBoard(job["board"])
 
@@ -120,7 +148,11 @@ def verb_apply_update(job):
     silk_doomed = []
     if remove_refs:
         boxes = []
+        # a swapped part is still there: its silk notes stay
+        readded = {a["ref"] for a in job.get("adds") or []}
         for ref, fp in zip(remove_refs, doomed_fps):
+            if ref in readded:
+                continue
             bb = fp.GetBoundingBox(False, False)  # copper+courtyard
             boxes.append((ref, bb))
         # Report the FILE-token layer name ("F.SilkS"), not GetLayerName's
@@ -159,6 +191,8 @@ def verb_apply_update(job):
             raise KeyError("field_updates: footprint '%s' not on board"
                            % upd["ref"])
         apply_fields(fp, upd.get("value"), upd.get("fields"))
+        if "dnp" in upd:
+            fp.SetDNP(bool(upd["dnp"]))
         fields_updated.append(upd["ref"])
 
     # ---- mutation pass 2: footprint adds --------------------------------
@@ -187,6 +221,9 @@ def verb_apply_update(job):
         if add.get("side"):
             set_side(fp, add["side"])
         fp.SetOrientationDegrees(float(add.get("deg") or 0.0))
+        fp.SetDNP(bool(add.get("dnp")))
+        if add.get("inherit") and ref in replaced:
+            inherit(fp, fps[ref], add["inherit"].get("texts"))
         pad_nets = add.get("pad_nets") or {}
         netted = 0
         for pad in fp.Pads():

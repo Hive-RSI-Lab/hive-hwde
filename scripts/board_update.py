@@ -20,9 +20,24 @@ invocation applies the whole diff atomically):
                      Board-frame silk text inside the removed part's bbox goes
                      with it. Pre-existing dangling copper is preserved and
                      reported (not this edit's to fix).
-  swap_part_new_fp   footprint CHANGED on a surviving ref -> composed as
-                     del_part + add_part (placement defaults to the old
-                     position; override via --placements).
+  swap_part_new_fp   footprint CHANGED on a surviving ref. At its old spot
+                     (the default; --placements moves it) a PIN-COMPATIBLE
+                     package keeps the part's routing: every old pad copper
+                     touches has a same-number new pad, on the same net,
+                     that the same copper still touches (an HTSSOP gaining
+                     an exposed pad, 0603 -> 0805). Copper of other nets the
+                     new pads would short or crowd under the clearance is
+                     ripped, with what it alone held up (the fix loop
+                     reroutes those nets). The new footprint inherits the
+                     old one's schematic link, BOM/pos exclusions and field
+                     texts. Otherwise (or --no-keep-copper) it is composed
+                     as del_part + add_part and the plan's notes say why.
+                     PR #68 (hifi-receiver-2 core: TPA3220 to its EP
+                     package) did this with swap_fp.py + rip_ep.py.
+  DNP                the netlist's `(property (name "dnp"))` is the truth:
+                     a surviving part whose board DNP differs gets it in
+                     the swap_part_same_fp field surgery; adds and swaps
+                     take it from the netlist (set_dnp.py did this by hand).
 
   rewire_pad         a surviving part (same footprint) whose pad nets changed,
                      where NO track or via touches any changed pad (an
@@ -56,9 +71,10 @@ after a successful apply a state problem degrades to a loud warning (the
 board IS updated - reporting failure would lie).
 
 Known limitations (adversarial-review verdicts, accepted with reasons):
- - swap_part_new_fp is del+add: the old package's stubs are ripped even when
-   the new package's pads would land on them, and board-only custom fields
-   are not carried over (the netlist is the truth; the fix loop reconnects).
+ - a swap_part_new_fp that is not pin-compatible is del+add: the old
+   package's stubs are ripped even where a new pad would land on one, and
+   board-only custom fields are not carried over (the netlist is the
+   truth; the fix loop reconnects).
  - The DRC dangling gate compares unrefilled-before vs refilled-after;
    assert_fresh screens stale fills at apply entry, so the delta is honest
    on pipeline-produced boards.
@@ -70,6 +86,7 @@ Known limitations (adversarial-review verdicts, accepted with reasons):
 CLI (SPEC section 6):
   board_update.py --pcb B.kicad_pcb --netlist NEW.net
                   [--placements p.json] [--lib DIR]... [--dry-run]
+                  [--no-keep-copper]
                   [--state state.json] [--out-report r.json]
   placements JSON: {"REF": {"x": mm, "y": mm, "deg": 0, "side": "front"}
                     | {"region": [x1, y1, x2, y2], "deg": 0}}
@@ -79,6 +96,8 @@ Exit 0 applied (or clean dry-run) / 1 dry-run with unsupported changes /
 from __future__ import annotations
 
 import argparse
+import copy
+import dataclasses
 import math
 import os
 import shutil
@@ -112,6 +131,8 @@ POS_TOL = 1e-3   # mm
 ANG_TOL = 0.05   # deg
 SCAN_STEP = 0.5  # mm, region candidate grid
 COURT_CLEAR = 0.2  # mm clearance demanded around a region-scan candidate
+# rounds of DRC-led follow-up a clash rip gets (_ripped_danglers)
+DANGLE_ROUNDS = 3
 # Pad-to-foreign-copper margin the region scan demands: covers every JLC
 # clearance floor (0.1016-0.1524 mm) so a "clear" candidate does not land
 # 0.05 mm from a pour (machine-hit on the pd-trigger add smoke). A stricter
@@ -210,7 +231,8 @@ def build_plan(model: placelib.PlaceModel, board_fields: dict,
                        f"footprint (mounting-hole class) - rename one side"})
             continue
         plan["add"].append({"ref": ref, "fp": c["fp"], "value": c["value"],
-                            "fields": c["fields"], "pads": pads_of_ref(ref)})
+                            "fields": c["fields"], "pads": pads_of_ref(ref),
+                            "dnp": bool(c.get("dnp"))})
 
     for ref in sorted(set(board_fps) & set(by_ref)):
         f, c = board_fps[ref], by_ref[ref]
@@ -226,7 +248,7 @@ def build_plan(model: placelib.PlaceModel, board_fields: dict,
             plan["swap_new_fp"].append({
                 "ref": ref, "fp_old": f.fpid, "fp_new": c["fp"],
                 "value": c["value"], "fields": c["fields"],
-                "pads": pads_of_ref(ref),
+                "pads": pads_of_ref(ref), "dnp": bool(c.get("dnp")),
                 "pos": [round(f.pos[0], 4), round(f.pos[1], 4)],
                 "deg": f.angle, "side": f.side,
                 "nets_old": sorted({p.net for p in f.pads if p.net})})
@@ -272,10 +294,17 @@ def build_plan(model: placelib.PlaceModel, board_fields: dict,
                 field_changes[name] = [old, c["fields"][name]]
         value_change = ([bf["value"], c["value"]]
                         if bf["value"] != c["value"] else None)
+        # the schematic's DNP is the netlist's `(property (name "dnp"))`;
+        # the board's is (attr ... dnp) - set_dnp.py synced them by hand
+        on_board = "dnp" in f.attrs
+        dnp_change = ([on_board, bool(c.get("dnp"))]
+                      if on_board != bool(c.get("dnp")) else None)
         extra = sorted(set(bf["fields"]) - set(c["fields"]))
-        if value_change or field_changes:
+        if value_change or field_changes or dnp_change:
             entry = {"ref": ref, "fp": f.fpid, "value": value_change,
                      "fields": field_changes}
+            if dnp_change:
+                entry["dnp"] = dnp_change
             if extra:
                 entry["board_extra_fields"] = extra
             plan["swap_same_fp"].append(entry)
@@ -315,6 +344,123 @@ def _routed_pads(bg, ref: str, numbers: set[str]) -> list[str]:
     return sorted(set(out))
 
 
+# ------------------------------------------------- copper-keeping fp swap
+
+def placed_pads(bg, mod_path: Path, ref: str, place: dict,
+                nets: dict[str, str]) -> list:
+    """The copper pads a library footprint gets once placed at `place`
+    ({x, y, deg, side}), as geom.Pad in board coordinates with the
+    netlist's nets - what the board will hold after the swap, known before
+    it is applied. A back-side part is the library part flipped TOP_BOTTOM
+    (update_swig's set_side): local y and pad angle negate, F.* <-> B.*,
+    then the same transform geom reads a saved board with (checked against
+    KiCad 10's own placement on front and back, 0/30/-90/180 deg, SMD, TH
+    and offset-drill pads: test_placed_pads_match_kicad)."""
+    root = sexpdata.loads(Path(mod_path).read_text(encoding="utf-8"))
+    sink = copy.copy(bg)
+    sink._pads, sink.npth = [], []
+    back = place.get("side") == "back"
+    deg = float(place.get("deg") or 0.0)
+
+    def name(t) -> str:
+        return str(t.value() if isinstance(t, sexpdata.Symbol) else t)
+
+    for pad in geom._kids(root, "pad"):
+        pad = copy.deepcopy(pad)
+        at = geom._kid(pad, "at")
+        if at is None:
+            continue
+        n = geom._nums(at)
+        lx, ly, a = n[0], n[1], (n[2] if len(n) > 2 else 0.0)
+        ln = geom._kid(pad, "layers")
+        if ln is not None:
+            ln[1:] = [name(t) for t in ln[1:]]
+        if back:
+            ly, a = -ly, -a
+            if ln is not None:
+                ln[1:] = [("B." + t[2:]) if t.startswith("F.") else
+                          ("F." + t[2:]) if t.startswith("B.") else t
+                          for t in ln[1:]]
+            d = geom._kid(pad, "drill")
+            o = geom._kid(d, "offset") if d is not None else None
+            if o is not None and len(o) > 2:
+                o[2] = -o[2]
+        at[1:] = [lx, ly, a + deg]
+        geom.BoardGeom._add_pad(sink, pad, float(place["x"]),
+                                float(place["y"]), deg, ref)
+    return [dataclasses.replace(p, net=nets.get(p.number) or None)
+            for p in sink._pads]
+
+
+def _touching(bg, pad) -> list:
+    """Tracks and vias whose copper touches `pad` on a layer they share."""
+    return [t for t in bg.tracks_of()
+            if t.layer in pad.layers and t.poly.intersects(pad.poly)] + \
+        [v for v in bg.vias_of()
+         if any(v.spans(ly) for ly in pad.layers)
+         and v.poly.intersects(pad.poly)]
+
+
+def swap_keeps_copper(bg, ref: str, new_pads: list,
+                      nets: dict[str, str]) -> str | None:
+    """None when a footprint swap can keep REF's routing: every old pad that
+    copper touches has a pad of the same number in the new footprint, on the
+    same net, that the same copper still touches (a pin-compatible package:
+    an HTSSOP gaining an exposed pad, a 0603 -> 0805 whose pad overlaps).
+    Otherwise the reason it can't, and the swap is del + add."""
+    for p in bg.pads_of(ref=ref):
+        items = _touching(bg, p)
+        if not items or not p.number:
+            continue
+        same = [n for n in new_pads if n.number == p.number]
+        if not same:
+            return (f"pad {p.number} is routed and the new footprint has "
+                    "no such pad")
+        if not _nets_equal(p.net, nets.get(p.number, "")):
+            return (f"pad {p.number} is routed and moves from net "
+                    f"{p.net!r} to {nets.get(p.number)!r}")
+        for it in items:
+            lays = [it.layer] if isinstance(it, geom.Track) else \
+                [ly for ly in bg.copper_layers if it.spans(ly)]
+            if not any(set(lays) & set(n.layers)
+                       and it.poly.intersects(n.poly) for n in same):
+                where = it.layer if isinstance(it, geom.Track) else \
+                    f"via at {list(it.at)}"
+                return (f"copper on pad {p.number} ({where}) misses the new "
+                        f"pad {p.number}")
+    return None
+
+
+def swap_clashes(bg, ref: str, new_pads: list, pcb: Path) -> list:
+    """Tracks and vias of another net that the new footprint's pads would
+    short or come closer to than the clearance - rip_ep.py, which cleared
+    the copper an HTSSOP's new exposed pad and its thermal vias landed on.
+    Clearance: the larger of the two nets' netclass/.kicad_dru clearance
+    and the board floor (route_cleanup's reading of the rules)."""
+    import route_cleanup  # noqa: PLC0415 - heavy, lazy
+
+    nets = sorted(set(bg.nets))
+    per_net, floor, *_ = route_cleanup._rules_clearance(pcb, nets)
+
+    def clr(a, b) -> float:
+        return max(floor, per_net.get(a or "", floor),
+                   per_net.get(b or "", floor))
+
+    hits: dict[int, object] = {}
+    for n in new_pads:
+        for t in bg.tracks_of():
+            if t.layer in n.layers and (not n.net or t.net != n.net) \
+                    and t.poly.distance(n.poly) < clr(n.net, t.net) - 1e-6:
+                hits[id(t)] = t
+        for v in bg.vias_of():
+            if (n.net and v.net == n.net) or not any(
+                    v.spans(ly) for ly in n.layers):
+                continue
+            if v.poly.distance(n.poly) < clr(n.net, v.net) - 1e-6:
+                hits[id(v)] = v
+    return list(hits.values())
+
+
 # ----------------------------------------------------------- orphan analysis
 
 def _item_key_track(t) -> tuple:
@@ -337,7 +483,8 @@ def _net_fills(bg, net: str) -> dict[str, list]:
     return fills
 
 
-def copper_analysis(bg, net: str, dead_refs: frozenset) -> dict:
+def copper_analysis(bg, net: str, dead_refs: frozenset,
+                    removed: frozenset = frozenset()) -> dict:
     """Which copper of `net` no longer serves anything once `dead_refs`'
     pads are gone?  Connectivity-judged (netconn), copper-touch only:
 
@@ -358,7 +505,9 @@ def copper_analysis(bg, net: str, dead_refs: frozenset) -> dict:
       judged directly by copper touch: orphaned iff it rests inside a dead
       ref's pad and touches no surviving same-net copper.
     Pruning runs to fixpoint (a removed via can strand a track and vice
-    versa). Returns {"tracks": [Track], "vias": [Via]}.
+    versa). `removed` (item keys) is copper ripped outright - a swap's
+    clashes: it is gone from the start, and what it alone held up goes
+    with it. Returns {"tracks": [Track], "vias": [Via]}.
     """
     g = netconn.build(bg, net, include_zones=True)
     all_tracks_list = bg.tracks_of(net)
@@ -379,8 +528,10 @@ def copper_analysis(bg, net: str, dead_refs: frozenset) -> dict:
                            ("join", f"vp{vp}"))
                 vp += 1
 
-    alive_seg = set(g.tracks.keys())
-    alive_via = set(range(len(vias)))
+    alive_seg = {eid for eid, t in g.tracks.items()
+                 if _item_key_track(t) not in removed}
+    alive_via = {vi for vi, v in enumerate(vias)
+                 if _item_key_via(v) not in removed}
 
     def node_alive(n) -> bool:
         if n[0] == "pad":
@@ -412,8 +563,9 @@ def copper_analysis(bg, net: str, dead_refs: frozenset) -> dict:
                 comp_vias.add(u[1])
             for v, _w, eid in g.adj[u]:
                 if eid in g.tracks:
-                    if eid in alive_seg:
-                        comp_segs.add(eid)
+                    if eid not in alive_seg:
+                        continue  # ripped: no longer joins anything
+                    comp_segs.add(eid)
                 elif not (node_alive(v) and node_alive(u)):
                     continue
                 if node_alive(v) and v not in comp_nodes:
@@ -508,7 +660,7 @@ def copper_analysis(bg, net: str, dead_refs: frozenset) -> dict:
     }
 
 
-def plan_orphans(bg, dead_refs: list[str]) -> dict:
+def plan_orphans(bg, dead_refs: list[str], removed: list = ()) -> dict:
     """Orphans caused by deleting `dead_refs`, NET-scoped and baseline-
     subtracted: copper the analysis cannot anchor on the PRE-EDIT board is
     preserved and reported, never silently 'fixed'. That baseline set is not
@@ -517,10 +669,15 @@ def plan_orphans(bg, dead_refs: list[str]) -> dict:
     (a T-junction) pass DRC 0/0, while netconn deliberately does not join
     endpoint-in-body (conflicting evidence in LEARNINGS [connectivity]).
     Strictness is the safe direction: it can only under-remove, and the
-    baseline subtraction keeps every pre-existing case untouched."""
+    baseline subtraction keeps every pre-existing case untouched.
+    `removed` (Tracks/Vias) is ripped outright with whatever it alone
+    connected: a copper-keeping swap's clashes."""
     dead = frozenset(dead_refs)
+    gone = frozenset(_item_key_track(t) if isinstance(t, geom.Track)
+                     else _item_key_via(t) for t in removed)
     affected = sorted({p.net for p in bg.pads_of()
-                       if p.ref in dead and p.net})
+                       if p.ref in dead and p.net}
+                      | {t.net for t in removed if t.net})
     tracks, vias, preexisting = [], [], []
     baselines: dict[str, dict] = {}
     for net in affected:
@@ -535,13 +692,22 @@ def plan_orphans(bg, dead_refs: list[str]) -> dict:
         for v in base["vias"]:
             preexisting.append({"net": net, "kind": "via",
                                 "at": [v.at[0], v.at[1]], "uuid": v.uuid})
-        full = copper_analysis(bg, net, dead)
+        full = copper_analysis(bg, net, dead, gone)
         for t in full["tracks"]:
-            if _item_key_track(t) not in baselines[net]["t"]:
+            if _item_key_track(t) not in baselines[net]["t"] \
+                    or _item_key_track(t) in gone:
                 tracks.append(t)
         for v in full["vias"]:
-            if _item_key_via(v) not in baselines[net]["v"]:
+            if _item_key_via(v) not in baselines[net]["v"] \
+                    or _item_key_via(v) in gone:
                 vias.append(v)
+    # every ripped item goes, analysed or not (an unnetted one, a crumb)
+    listed = {_item_key_track(t) for t in tracks} | \
+        {_item_key_via(v) for v in vias}
+    tracks += [t for t in removed if isinstance(t, geom.Track)
+               and _item_key_track(t) not in listed]
+    vias += [v for v in removed if isinstance(v, geom.Via)
+             and _item_key_via(v) not in listed]
     missing = [t for t in tracks if not t.uuid] + \
               [v for v in vias if not v.uuid]
     if missing:
@@ -549,7 +715,8 @@ def plan_orphans(bg, dead_refs: list[str]) -> dict:
             "orphan copper carries no uuid tokens (board predates KiCad "
             "uuids?) - cannot name items for removal")
     return {"tracks": tracks, "vias": vias, "affected_nets": affected,
-            "preexisting": preexisting, "baselines": baselines}
+            "preexisting": preexisting, "baselines": baselines,
+            "rip_nets": sorted({t.net for t in removed if t.net})}
 
 
 # ------------------------------------------------------------ add placement
@@ -742,6 +909,45 @@ def resolve_placement(ref: str, spec: dict, mod_path: Path,
     return finish(px, py, "front")
 
 
+def analyse_swaps(plan: dict, resolved: dict, bg, fp_paths: list[Path],
+                  pcb: Path, no_keep: bool) -> list:
+    """Decide per swap_new_fp entry whether it keeps the part's routing
+    (entry["keep_copper"], or a note saying why not) and return the other
+    nets' copper the kept swaps' new pads clash with, to rip."""
+    clashes: list = []
+    for entry in plan["swap_new_fp"]:
+        ref = entry["ref"]
+        want = resolved[ref]
+        entry["same_spot"] = (
+            abs(want["x"] - entry["pos"][0]) <= POS_TOL
+            and abs(want["y"] - entry["pos"][1]) <= POS_TOL
+            and min(abs(want["deg"] - entry["deg"]) % 360.0,
+                    360.0 - abs(want["deg"] - entry["deg"]) % 360.0)
+            <= ANG_TOL
+            and want["side"] == entry["side"])
+        why = "--no-keep-copper" if no_keep else \
+            None if entry["same_spot"] else "placed somewhere new"
+        new_pads = []
+        if why is None:
+            new_pads = placed_pads(
+                bg, find_mod(entry["fp_new"], fp_paths), ref, want,
+                entry["pads"])
+            why = swap_keeps_copper(bg, ref, new_pads, entry["pads"])
+        entry["keep_copper"] = why is None
+        if why is not None:
+            plan["notes"].append(f"{ref}: footprint swap rips its routing "
+                                 f"(del + add): {why}")
+            continue
+        hit = swap_clashes(bg, ref, new_pads, pcb)
+        entry["clashes"] = [
+            {"kind": "via", "net": it.net, "at": list(it.at)}
+            if isinstance(it, geom.Via) else
+            {"kind": "track", "net": it.net, "layer": it.layer,
+             "uuid": it.uuid} for it in hit]
+        clashes += hit
+    return clashes
+
+
 # ------------------------------------------------------------------- verify
 
 def _copper_inventory(bg) -> Counter:
@@ -801,6 +1007,18 @@ def verify_apply(staged: Path, before_bg, before_model, plan: dict,
             problems.append(f"add {ref}: angle {fp.angle} != {want['deg']}")
         if fp.side != want["side"]:
             problems.append(f"add {ref}: side {fp.side} != {want['side']}")
+
+    want_dnp = {e["ref"]: e["dnp"][1] for e in plan["swap_same_fp"]
+                if e.get("dnp")}
+    want_dnp.update({e["ref"]: bool(e.get("dnp"))
+                     for e in plan["add"] + plan["swap_new_fp"]})
+    if want_dnp:
+        import place_edit
+        dnp = place_edit._dnp_refs(staged)
+        for ref, want in sorted(want_dnp.items()):
+            if (ref in dnp) != want:
+                problems.append(f"dnp {ref}: board {ref in dnp} != "
+                                f"netlist {want}")
 
     # full pad->net parity: the board must now MATCH the netlist
     for ref, fp in smodel.footprints.items():
@@ -874,6 +1092,42 @@ def _dangling_count(report: dict) -> int:
                if "dangling" in (v.get("check") or ""))
 
 
+def _ripped_danglers(drc_before: dict, drc_after: dict, staged: Path,
+                     before_bg, orphans: dict) -> list:
+    """Copper DRC newly calls dangling on a net a swap's clash rip cut, as
+    the original board's items. netconn joins overlapping copper where
+    KiCad joins only an end inside the other copper, so a short stub off a
+    junction can survive the orphan analysis and still dangle in DRC
+    (fix_dangle.py chased these by hand). Empty when the new dangling is
+    anywhere else: that stays a rollback."""
+    nets = set(orphans.get("rip_nets") or ())
+    if not nets:
+        return []
+    def spots(rep):
+        return {(round(v["pos"][0], 3), round(v["pos"][1], 3))
+                for v in rep["violations"]
+                if "dangling" in (v.get("check") or "") and v.get("pos")}
+    new = spots(drc_after) - spots(drc_before)
+    sbg = geom.BoardGeom.from_file(staged)
+    gone = {_item_key_track(t) for t in orphans["tracks"]} | \
+        {_item_key_via(v) for v in orphans["vias"]}
+    keys = set()
+    for v in drc_after["violations"]:
+        if "dangling" not in (v.get("check") or "") or not v.get("pos") \
+                or (round(v["pos"][0], 3), round(v["pos"][1], 3)) not in new \
+                or v.get("net") not in nets:
+            continue
+        for it in v.get("items") or []:
+            u = it.get("uuid")
+            keys |= {_item_key_track(t) for t in sbg.tracks_of()
+                     if t.uuid == u}
+            keys |= {_item_key_via(x) for x in sbg.vias_of() if x.uuid == u}
+    return [t for t in before_bg.tracks_of() if _item_key_track(t) in keys
+            and _item_key_track(t) not in gone] + \
+        [x for x in before_bg.vias_of() if _item_key_via(x) in keys
+         and _item_key_via(x) not in gone]
+
+
 def _unconnected_count(report: dict) -> int:
     return sum(1 for v in report["violations"]
                if (v.get("source") or "") == "unconnected")
@@ -898,6 +1152,8 @@ def apply_update(pcb: Path, plan: dict, resolved: dict, orphans: dict,
             upd["value"] = entry["value"][1]
         if entry["fields"]:
             upd["fields"] = {k: v[1] for k, v in entry["fields"].items()}
+        if entry.get("dnp"):
+            upd["dnp"] = entry["dnp"][1]
         field_updates.append(upd)
     adds = []
     for entry in plan["add"] + plan["swap_new_fp"]:
@@ -908,51 +1164,71 @@ def apply_update(pcb: Path, plan: dict, resolved: dict, orphans: dict,
                      "fpid": entry.get("fp") or entry["fp_new"],
                      "x": want["x"], "y": want["y"], "deg": want["deg"],
                      "side": want["side"], "fields": entry["fields"],
-                     "pad_nets": entry["pads"]})
+                     "pad_nets": entry["pads"],
+                     "dnp": bool(entry.get("dnp")),
+                     # a swap keeps the old part's schematic link and,
+                     # at the same spot, its field texts (swap_fp.py)
+                     "inherit": ({"texts": bool(entry.get("same_spot"))}
+                                 if "fp_new" in entry else None)})
     pad_nets = [{"ref": e["ref"], "pad_nets": e["pads"]}
                 for e in plan["rewire"]]
     remove_refs = [e["ref"] for e in plan["del"] + plan["swap_new_fp"]]
-    remove_uuids = [t.uuid for t in orphans["tracks"]] + \
-                   [v.uuid for v in orphans["vias"]]
+    d_before = _dangling_count(drc_before)
+    for attempt in range(DANGLE_ROUNDS + 1):
+        remove_uuids = [t.uuid for t in orphans["tracks"]] + \
+                       [v.uuid for v in orphans["vias"]]
+        stage = Path(tempfile.mkdtemp(prefix=".aiee_update_",
+                                      dir=pcb.parent))
+        try:
+            staged = stage / pcb.name
+            shutil.copy2(pcb, staged)
+            for side in (".kicad_pro", ".kicad_dru", ".kicad_prl"):
+                sib = pcb.with_suffix(side)
+                if sib.is_file():
+                    shutil.copy2(sib, stage / sib.name)  # DRC rules
+            job = {"verb": "apply_update", "board": str(staged),
+                   "out": str(staged),
+                   "field_updates": field_updates, "adds": adds,
+                   "pad_nets": pad_nets,
+                   "fp_paths": [str(p) for p in fp_paths],
+                   "remove_refs": remove_refs, "remove_uuids": remove_uuids}
+            result = routelib.run_worker(bp, job, stage, worker=WORKER)
 
-    stage = Path(tempfile.mkdtemp(prefix=".aiee_update_", dir=pcb.parent))
-    try:
-        staged = stage / pcb.name
-        shutil.copy2(pcb, staged)
-        for side in (".kicad_pro", ".kicad_dru", ".kicad_prl"):
-            sib = pcb.with_suffix(side)
-            if sib.is_file():
-                shutil.copy2(sib, stage / sib.name)  # DRC severities/rules
-        job = {"verb": "apply_update", "board": str(staged),
-               "out": str(staged),
-               "field_updates": field_updates, "adds": adds,
-               "pad_nets": pad_nets,
-               "fp_paths": [str(p) for p in fp_paths],
-               "remove_refs": remove_refs, "remove_uuids": remove_uuids}
-        result = routelib.run_worker(bp, job, stage, worker=WORKER)
+            problems = verify_apply(staged, before_bg, before_model, plan,
+                                    resolved, orphans, netmap, result)
+            if problems:
+                raise CheckError("post-apply verify failed (rolled back): "
+                                 + "; ".join(problems[:10]))
 
-        problems = verify_apply(staged, before_bg, before_model, plan,
-                                resolved, orphans, netmap, result)
-        if problems:
-            raise CheckError("post-apply verify failed (rolled back): "
-                             + "; ".join(problems[:10]))
+            refilled = False
+            if list(before_bg.zones_of()):
+                drc_after = kc.run_drc(cli, staged, refill=True,
+                                       save_board=True)
+                refilled = True
+            else:
+                drc_after = kc.run_drc(cli, staged)
 
-        refilled = False
-        if list(before_bg.zones_of()):
-            drc_after = kc.run_drc(cli, staged, refill=True, save_board=True)
-            refilled = True
-        else:
-            drc_after = kc.run_drc(cli, staged)
+            d_after = _dangling_count(drc_after)
+            if d_after > d_before:
+                more = _ripped_danglers(drc_before, drc_after, staged,
+                                        before_bg, orphans)
+                if more and attempt < DANGLE_ROUNDS:
+                    orphans = {**orphans,
+                               "tracks": orphans["tracks"] + [
+                                   x for x in more
+                                   if isinstance(x, geom.Track)],
+                               "vias": orphans["vias"] + [
+                                   x for x in more
+                                   if isinstance(x, geom.Via)]}
+                    continue
+                raise CheckError(
+                    f"orphan surgery left NEW dangling copper (DRC dangling "
+                    f"{d_before} -> {d_after}) - rolled back")
 
-        d_before, d_after = _dangling_count(drc_before), _dangling_count(drc_after)
-        if d_after > d_before:
-            raise CheckError(
-                f"orphan surgery left NEW dangling copper (DRC dangling "
-                f"{d_before} -> {d_after}) - rolled back")
-
-        os.replace(staged, pcb)
-    finally:
-        shutil.rmtree(stage, ignore_errors=True)
+            os.replace(staged, pcb)
+            break
+        finally:
+            shutil.rmtree(stage, ignore_errors=True)
 
     u_before, u_after = _unconnected_count(drc_before), _unconnected_count(drc_after)
     err = lambda r: sum(  # noqa: E731
@@ -973,6 +1249,8 @@ def apply_update(pcb: Path, plan: dict, resolved: dict, orphans: dict,
                                           "removed_texts", "absent_uuids")
                    if k in result},
         "refilled": refilled,
+        "ripped": {"tracks": len(orphans["tracks"]),
+                   "vias": len(orphans["vias"]), "rounds": attempt + 1},
         "drc": {
             "before": drc_before["counts"], "after": drc_after["counts"],
             "dangling_before": d_before, "dangling_after": d_after,
@@ -1015,6 +1293,10 @@ def run(argv: list[str] | None = None):
                     help="footprint search root (holds <Lib>.pretty dirs); "
                          "repeatable. Board-adjacent lib/ dirs are searched "
                          "by default")
+    ap.add_argument("--no-keep-copper", action="store_true",
+                    help="a footprint swap always rips the part's routing "
+                         "(del + add), even when the new footprint's pads "
+                         "cover the old ones")
     ap.add_argument("--dry-run", action="store_true",
                     help="report the classified plan; mutate nothing")
     ap.add_argument("--state", default=None,
@@ -1045,8 +1327,25 @@ def run(argv: list[str] | None = None):
                "dry_run": bool(args.dry_run), "plan": plan,
                "warnings": warnings}
 
+    fp_paths = [Path(p) for p in args.lib]
+    for cand in (pcb.parent / "lib", pcb.parent.parent / "lib"):
+        if cand.is_dir():
+            fp_paths.append(cand)
+
     changes = sum(len(plan[k]) for k in MODE_CLASSES)
     if args.dry_run:
+        # what each footprint swap would do at its old spot (a --placements
+        # entry moves it, and a moved part never keeps its routing)
+        moved = set(checklib.load_json(args.placements, "placements file")
+                    ) if args.placements else set()
+        spots = {e["ref"]: {"x": e["pos"][0], "y": e["pos"][1],
+                            "deg": e["deg"], "side": e["side"]}
+                 for e in plan["swap_new_fp"]
+                 if e["ref"] not in moved and find_mod(e["fp_new"], fp_paths)}
+        if spots:
+            analyse_swaps({**plan, "swap_new_fp": [
+                e for e in plan["swap_new_fp"] if e["ref"] in spots]},
+                spots, bg, fp_paths, pcb, args.no_keep_copper)
         # classification never reads zone fills - a stale-fill board may
         # still be PLANNED against (apply below does demand freshness)
         if plan["unsupported"]:
@@ -1069,11 +1368,6 @@ def run(argv: list[str] | None = None):
         # successful apply a state problem only warns (board is updated)
         import state as state_mod
         state_mod.State.load(Path(args.state))
-
-    fp_paths = [Path(p) for p in args.lib]
-    for cand in (pcb.parent / "lib", pcb.parent.parent / "lib"):
-        if cand.is_dir():
-            fp_paths.append(cand)
 
     resolved: dict[str, dict] = {}
     placed_courts: list = []  # courtyards of adds resolved this update
@@ -1111,8 +1405,11 @@ def run(argv: list[str] | None = None):
                     e["ref"] for e in plan["del"] + plan["swap_new_fp"]),
                 extra_obstacles=placed_courts)
 
-    orphans = plan_orphans(bg, [e["ref"] for e in
-                                plan["del"] + plan["swap_new_fp"]])
+    clashes = analyse_swaps(plan, resolved, bg, fp_paths, pcb,
+                            args.no_keep_copper)
+    orphans = plan_orphans(
+        bg, [e["ref"] for e in plan["del"] + plan["swap_new_fp"]
+             if not e.get("keep_copper")], removed=clashes)
     payload["orphans"] = {
         "affected_nets": orphans["affected_nets"],
         "tracks": len(orphans["tracks"]), "vias": len(orphans["vias"]),

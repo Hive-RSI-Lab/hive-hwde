@@ -61,6 +61,15 @@ them as `stand_in` scripts of their pins:
   (`renet_items`, `rename_net`), `set_dnp`, silk tidies and `via_array`
   power patches. Most do what route_edit, place_edit, board_update or
   planes_gen should take as one op; each pin names the gap.
+- **core: the TPA3220 package swap (hifi-receiver-2 PR #68).** Task
+  261029-075354 swapped U15/U16 to the exposed-pad HTSSOP with throwaway
+  pcbnew scripts, none committed. Each is an hwde op now: `swap_fp` +
+  `rip_ep` are board_update's copper-keeping swap (clash rip included),
+  `set_dnp` its netlist DNP sync; `widen`, `move_via`, `fix_dangle`
+  (`join_end`) and `set5v` (`copy_from`) are route_edit ops; `silk_rm` is
+  place_edit `silk_clear` with a `region`; `hide_ref` is `set_text`;
+  `rm_uuid`, `rip_near`, `add_via` and `add_tr` are route_edit's
+  `remove`/`rip`/`add_via`/`add_path`; `fix45` is route_cleanup's snap.
 - **both: EasyEDA's rate limit.** The CPL model cache in `parts/easyeda` was
   filled by retrying until it was complete (brief 261029-041444 makes dfm
   keep and reuse it).
