@@ -163,7 +163,9 @@ KRT_REMEDIATION = (
     "https://github.com/drandyhaas/KiCadRoutingTools/releases/download/"
     "v0.19.0/KiCadRoutingTools-0.19.0.zip, unzip under tools/krt/, and copy "
     "grid_router-windows-x86_64.pyd to plugins/rust_router/grid_router.pyd "
-    "(see tools/krt/PROVENANCE.txt). HWDE_KRT_DIR overrides.")
+    "(see tools/krt/PROVENANCE.txt). A shared tools folder (HWDE_TOOLS_DIR) "
+    "may hold it under kicad-routing-tools/ instead, with the Linux core "
+    "grid_router-linux-x86_64.so as grid_router.so. HWDE_KRT_DIR overrides.")
 
 # KiCad stock board-setup floors, used when the .kicad_pro carries no value.
 KICAD_DEFAULTS = {

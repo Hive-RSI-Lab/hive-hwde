@@ -143,6 +143,13 @@ def _project_dirs(project) -> list[Path]:
     return out
 
 
+def _stock_lib(lib_id: str) -> None:
+    """Register lib_id's stock library with kicad-sch-api before placing it:
+    a KiCad-10 .kicad_symdir library is flattened on first use (env)."""
+    with _quiet():
+        env.register_stock_libs(ksa.get_symbol_cache(), [lib_id])
+
+
 @contextlib.contextmanager
 def _quiet():
     """kicad-sch-api also prints at CALL time (emoji 'LOAD' lines on
@@ -263,8 +270,9 @@ class Sheet:
 
     def _project_lib(self, lib_id: str) -> None:
         """Register the project's libraries the first time a lib_id names a
-        library kicad-sch-api doesn't know; say where it looked if none has
-        it, rather than ksa's bare 'not found'."""
+        library kicad-sch-api doesn't know, else the stock one of that name;
+        say where it looked if none has it, rather than ksa's bare 'not
+        found'."""
         nick = lib_id.split(":", 1)[0] if ":" in lib_id else ""
         if not nick or _known_lib(nick):
             return
@@ -275,6 +283,10 @@ class Sheet:
                 use_project_libs(d)
                 if _known_lib(nick):
                     return
+        # a stock library KiCad 10 ships as a .kicad_symdir (flattened here)
+        _stock_lib(lib_id)
+        if _known_lib(nick):
+            return
         raise ValueError(
             f"{lib_id}: no library '{nick}' - kicad-sch-api knows only the "
             f"stock libraries, and no sym-lib-table naming '{nick}' was found "
@@ -420,6 +432,7 @@ class Sheet:
         VALUE is enforced through the dedicated attribute too: on power
         symbols it names the exported global net, and set_property("Value")
         is a silent no-op on ksa 0.5.6 (LEARNINGS [kicad-sch-api])."""
+        _stock_lib(lib_id)
         with _quiet():
             c = self.sch.components.add(lib_id, reference=ref, value=value,
                                         position=at)
@@ -1120,7 +1133,8 @@ def pin_table(lib_id: str, lib_paths: list | None = None) -> dict:
             cache = ksa.get_symbol_cache()
             for p in lib_paths:
                 cache.add_library_path(str(p))
-        sch = ksa.create_schematic("_pins")
+        env.register_stock_libs(ksa.get_symbol_cache(), [lib_id])
+        sch =ksa.create_schematic("_pins")
         c = sch.components.add(lib_id, reference="X1", value="x",
                                position=(127.0, 63.5))
     pins = []

@@ -58,12 +58,6 @@ KNOWN_FAILING = {
     "tests/test_knowledge.py::test_lint_accepts_a_not_redistributed_sidecar": _CITES,
     "tests/test_knowledge.py::test_app_note_grounding_payload": _CITES,
     "tests/test_knowledge.py::test_app_note_records_committed_and_cite_the_pdf": _CITES,
-    "tests/test_lib_hygiene.py::test_write_preserves_lib_symbols": "kicad-sch-api "
-        "can't read KiCad 10's .kicad_symdir libraries; bin/hwde flattens only "
-        "power and Device (workaround symdir, 261028-141924)",
-    "tests/test_check_env.py::test_unpinned_discovery_still_resolves_10x": "the "
-        "Hive's KiCad is an AppImage in its tools folder, found only through "
-        "bin/hwde's HWDE_KICAD_CLI pin, not by env.py's own discovery",
 }
 
 

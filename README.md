@@ -7,6 +7,7 @@ An agent designs a PCB from a written brief: research, architecture, parts, sche
 - `.claude/skills/hwde/`: the skill (playbook `SKILL.md`, agent roles, scripts, reference), as upstream has it ([what differs](docs/upstream.md))
 - `tests/`: upstream's unit tests for the scripts, and `tests/workarounds/`, the probes
 - `bin/hwde`: runs the skill's scripts in a Hive sandbox with the Hive's KiCad 10 and freerouting (`hwde check` first)
+- `tests/`: the lookups the skill does for the Hive's shared tools folder (`$HWDE_PY -m pytest tests`)
 - How an agent uses it in the Hive: [docs/README.md](docs/README.md)
 - The first board made with it: [boards/hwde-led-test/](boards/hwde-led-test/)
 
