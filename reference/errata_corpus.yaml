@@ -112,8 +112,13 @@ boards:
     summary: LMV331IDCK comparator's input common mode (Vcc-0.7 = 2.6 V) below the 3.1 V rain-sensor signal
     source_quote: "only allows a common mode input voltage up to Vcc - 0.7 V = 2.6 V whereas the actual signals are in the range of 3.1 V"
     fault_class: ANA (input common-mode range)
-    verdict: missed
-    follow_up: brief - sim_board or check_ratings checks each op-amp/comparator input's DC level against the part's common-mode range
+    verdict: caught
+    catch: {script: netlist_audit, kind: input_common_mode, refs: [U2]}
+    note: >-
+      netlist_audit solves each input's DC level from the resistors to known
+      rails and compares it with reference/opamp_cm.yaml: U2's - input rests
+      at 3.09 V on the 68K/1M divider and + at 3.3 V (J3 open, dry), both
+      above 2.6 V. v4 drops the comparator, so the rule is quiet there.
   - id: minuet-3
     summary: board areas over 50 C at 4 A per motor phase
     source_quote: "Some areas of the PCB reach over 50 C when operating the motor at 4 A peak per phase"
@@ -124,8 +129,16 @@ boards:
     summary: ESP32-C3 GPIO6 (MTCK) pulled up by the ROM at reset turns the LED strip on before firmware runs
     source_quote: "The bootloader enables the GPIO6 pull-up on reset which interferes with its use for the Minuet light accessory"
     fault_class: FW-HW (reset-state pull on a load enable)
-    verdict: missed
-    follow_up: brief - check_straps reads every MCU pin with a reset-state pull in reset_states.yaml (not only straps) that drives a load enable or a gate, and flags a load that comes up on before firmware
+    verdict: caught
+    catch: {script: check_straps, kind: reset_pull_offboard, net: GPIO6}
+    note: >-
+      check_straps reads the C3's reset_pulls (MTMS/MTDI/MTCK pull-ups) from
+      reset_states.yaml: v3's GPIO6 leaves the board on the EXPANSION header
+      J4.5 with only the chip's pull-up, so the light accessory's strip sees it
+      high from reset. It also warns on GPIO5 (J4.6), bare the same way. v4
+      (ESP32-C6) puts R13 100 k to 3V3 on GPIO6, a pull the accessory is
+      designed for, and the finding is gone. On a board whose load is on the
+      board itself, load_on_at_reset names the gate or enable instead.
   - id: minuet-5
     summary: an access-point WiFi connect resets the ESP32-C3 at full TX power
     source_quote: "The microcontroller spontaneously resets ... Reducing the WiFi output power to 19 dB resolves the issue"

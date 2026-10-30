@@ -115,6 +115,26 @@ def test_sot23_pinout_quiet_on_gsd_and_bec(tmp_path):
     assert not [k for k in kinds(netlist(tmp_path, nets, comps)) if k[0] == "sot23_pinout"]
 
 
+def test_run_dispatches_check_straps_catches(tmp_path, monkeypatch):
+    """A check_straps catch (minuet-4) runs check_straps on both revisions;
+    a script with no runner is reported as not run."""
+    calls = []
+
+    def fake(cache, b, rev, script):
+        calls.append((script, rev))
+        return [{"kind": "reset_pull_offboard", "net": "GPIO6"}] if rev == "rev_a" else []
+    monkeypatch.setattr(ec, "audit", fake)
+    assert "check_straps" in ec.RUNNERS
+    b = {"id": "m", "defects": [
+        {"id": "m-1", "catch": {"script": "check_straps", "kind": "reset_pull_offboard",
+                                "net": "GPIO6"}},
+        {"id": "m-2", "catch": {"script": "no_such_check", "kind": "x"}}]}
+    res = ec.run(tmp_path, b)
+    assert res["m-1"] == {"ran": True, "rev_a": True, "rev_b": False}
+    assert res["m-2"] == {"ran": False}
+    assert sorted(calls) == [("check_straps", "rev_a"), ("check_straps", "rev_b")]
+
+
 def sheeted(tmp_path, nets, comps):
     """comps: {ref: (value, sheet)}; nets as netlist()'s."""
     cs = " ".join(f'(comp (ref "{r}") (value "{v}") (footprint "x") '
