@@ -84,7 +84,8 @@ def check_rows(rows: list[dict], boards: int = DEFAULT_BOARDS,
         code = str(r.get("LCSC") or "").strip()
         mpn = (mpns.get(code) or {}).get("mpn", "")
         v = stocklib.check_row(code, len(refs) * boards, mpn=mpn,
-                               value=r.get("Comment", ""), fetch=fetch)
+                               value=r.get("Comment", ""), fetch=fetch,
+                               footprint=r.get("Footprint", ""))
         v["refs"] = refs
         v["comment"] = r.get("Comment", "")
         return v

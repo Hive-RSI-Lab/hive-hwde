@@ -115,6 +115,14 @@ def test_sot23_pinout_quiet_on_gsd_and_bec(tmp_path):
     assert not [k for k in kinds(netlist(tmp_path, nets, comps)) if k[0] == "sot23_pinout"]
 
 
+def test_every_catch_names_a_check_the_corpus_runs():
+    # a catch for a script with no runner would read "not run here" forever
+    for b in ec.load():
+        for d in b["defects"]:
+            if d.get("catch"):
+                assert d["catch"]["script"] in ec.RUNNERS, d["id"]
+
+
 def test_run_dispatches_check_straps_catches(tmp_path, monkeypatch):
     """A check_straps catch (minuet-4) runs check_straps on both revisions;
     a script with no runner is reported as not run."""
