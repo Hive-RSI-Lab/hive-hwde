@@ -34,6 +34,12 @@ these ways:
   copies; `scripts/board_edit.py`, whose `--outline fit` counts silk and whose
   edits refuse to clip it; `scripts/check_silk.py`, whose silk items carry
   their footprint's reference.
+- Two verify checks from hifi-receiver-2's first-spin review (issue #130):
+  `scripts/check_straps.py` (+ `reference/reset_states.yaml`), an MCU's
+  strapping pins and IO expander pins at power-on and on an MCU-only reset,
+  and `scripts/check_antenna.py` (+ `reference/rf_modules.yaml`), copper
+  under a module's PCB antenna and its place at the board edge, each with its
+  `checks.d` fragment.
 - Power-path checks from hifi-receiver-2's first-spin power review, which
   did each by hand: `scripts/check_power_path.py` (+
   `checks.d/check_power_path.yaml`, mutant `power-path-under-contract`), the
