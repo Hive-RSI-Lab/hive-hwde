@@ -1025,10 +1025,12 @@ def _refill_copy(pcb: Path) -> Path:
     tmp = Path(tempfile.mkdtemp(prefix="geom_refill_"))
     dst = tmp / pcb.name
     shutil.copy2(pcb, dst)
-    # copy the sibling .kicad_pro if present (keeps DRC rules identical)
-    pro = pcb.with_suffix(".kicad_pro")
-    if pro.exists():
-        shutil.copy2(pro, dst.with_suffix(".kicad_pro"))
+    # copy the sibling .kicad_pro and .kicad_dru if present (keeps DRC rules
+    # identical: a custom rule can set a zone's clearance below its own)
+    for ext in (".kicad_pro", ".kicad_dru"):
+        side = pcb.with_suffix(ext)
+        if side.exists():
+            shutil.copy2(side, dst.with_suffix(ext))
     kc.run_drc(cli, dst, refill=True, save_board=True)
     return dst
 
