@@ -363,7 +363,7 @@ inputs, never silently downgrade):
 | fable/max | router (novel board; proven-chain re-run: sonnet/medium), learner (owner-present teaching) |
 | fable/high | architect, placement, schematic-reviewer, verify-reviewer, domain-reviewer (first spin, one per domain), requirements-analyst, researcher (coverage-gap research; the ONLY role with web tools, allowlisted, acquisitions through research.py fetch) |
 | fable/medium | schematic-block (thin root-stitch: sonnet/high) |
-| opus/high | research-interface-spec, research-power-architect, sim-analyst, fixer (copper/route), research-second-reader (fresh context; refutes or verifies a task's records) |
+| opus/high | research-interface-spec, research-power-architect, sim-analyst, fixer (copper/route), research-second-reader (fresh context; refutes or verifies a task's records), checklist-verifier (fresh context; rules a blinded checklist packet with planted faults, `checklist_verify.py`) |
 | sonnet/high | research-component-scout, research-reference-design, part-sourcer, datasheet-extractor, coverage-mapper (schema-forced record->slot edges at P2/P3 exit), board-guide (owner PDF at P9 close) |
 | sonnet/medium | librarian, fixer (silk/sch/parts/fab), placement (backward-edge re-spawn) |
 | inline-default | board-setup, ordering, dfm (spawn = exception path) |

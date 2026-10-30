@@ -22,7 +22,8 @@ Keep output ASCII.
   classes), the source ledger (file, tier, pages, sha), any earlier verdicts.
 - `research/records/*.yaml` with `origin: research:<task>` (and
   `research/checklists/<id>.yaml` when the task drafted one - read it, but
-  checklists are approved by the owner, not verified by you).
+  a checklist is ruled by agents/checklist-verifier.md on a blinded packet,
+  not by you).
 - `scripts/research.py validate --workspace <ws> --task <t>` output: read it
   first; a task that does not validate is not ready for you (report it in
   OPEN and stop).

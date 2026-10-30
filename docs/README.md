@@ -156,6 +156,39 @@ fact is failed or unknown. Stock is good for 72 hours, so run
 person's flow is "I order it, it arrives, I plug it in", with no surprise at
 JLC's BOM review.
 
+## Checklists count without the person's sign-off
+
+A coverage checklist (`reference/knowledge/checklists/<id>.yaml`, or one a
+research task drafts under `<ws>/research/checklists/`) says which knowledge
+classes a block needs before hwde claims it knows enough to design one.
+Upstream, a checklist counted only once the person approved it. Here a
+checklist also counts once an independent agent has ruled it:
+
+    bin/hwde checklist_verify packet --checklist <id> --packet <dir> --key <file>
+    # spawn agents/checklist-verifier.md (fresh context, not the checklist's
+    # author) on <dir> only; it writes a verdicts JSON
+    bin/hwde checklist_verify rule --checklist <id> --packet <dir> --key <file> \
+        --verdicts <its JSON> --write
+    bin/hwde checklist_verify status        # which checklists count, and why not
+
+The packet hides the checklist among at least three planted mutants of it: a
+required class dropped or swapped, an unrelated class added, a number in a
+note changed. The ruling counts only when the verifier names every planted
+fault for the reason it was planted and calls the real checklist sound. Each
+required class must also rest on an active record that holds the class and
+applies to the checklist's own blocks, or on a cited source file that exists.
+`rule` checks that itself rather than taking the verifier's word. A verifier
+that misses one planted fault proves nothing, so its whole ruling is refused.
+`--write` sets the checklist to `verified` with a `verification` block pinned
+to a digest of what it decides (applies, requires, sources). Coverage then
+counts it as it counts an approved one, at any floor up to `approved`. An
+edit to what it decides breaks the digest, and the checklist reads draft
+again until it is ruled again. The person's `approval` still works and still
+ranks above this.
+
+Planted faults don't catch a verifier that diffs the items and votes on the
+majority. The basis check does, because it is mechanical.
+
 ## Works first time, watches itself, brought up by the Hive
 
 The person, 10-28: they give the spec, order the board, plug it in, run one
@@ -296,10 +329,9 @@ nothing in the Hive should ask for them.
   there. A record `research promote` adds with a new PDF puts that PDF in the
   same cache, so it isn't in the module or upstream's list.
 - Knowledge records the Hive adds start at `verified`, which means a
-  fresh-context second reader has checked them against the cited pages. The
-  checklists start at `draft`. Coverage counts only `approved`, which is the
-  person's sign-off, so until then their slots read `provisional`, not `gap`.
-  The LED-indicator checklist is the first one.
+  fresh-context second reader has checked them against the cited pages.
+  Coverage still counts only `approved` records, which is the person's
+  sign-off, so their slots read `provisional`, not `gap`.
 
 ## The first board
 
