@@ -1,0 +1,463 @@
+{
+ "script": "lib_pull",
+ "status": "pass",
+ "lib_name": "aiee",
+ "parts_file": null,
+ "paced_s": 0.0,
+ "retried": 0,
+ "symbol_lib": "/work/boards/core/lib/aiee.kicad_sym",
+ "footprint_lib": "/work/boards/core/lib/aiee.pretty",
+ "results": [
+  {
+   "lcsc": "C131972",
+   "status": "pulled",
+   "symbol": "TCA9539PWR",
+   "symbol_verified": true,
+   "footprint_verified": true,
+   "symbol_lib": "/work/boards/core/lib/aiee.kicad_sym",
+   "footprint_lib": "/work/boards/core/lib/aiee.pretty",
+   "footprints": [
+    {
+     "name": "TSSOP-24_L7.8-W4.4-P0.65-LS6.4-BL",
+     "file": "/work/boards/core/lib/aiee.pretty/TSSOP-24_L7.8-W4.4-P0.65-LS6.4-BL.kicad_mod",
+     "copper_pads": 24,
+     "courtyard": true,
+     "silk": true
+    }
+   ],
+   "warnings": []
+  },
+  {
+   "lcsc": "C7431354",
+   "status": "pulled",
+   "symbol": "SX3M49.152B10F20TNN",
+   "symbol_verified": true,
+   "footprint_verified": true,
+   "symbol_lib": "/work/boards/core/lib/aiee.kicad_sym",
+   "footprint_lib": "/work/boards/core/lib/aiee.pretty",
+   "footprints": [
+    {
+     "name": "OSC-SMD_4P-L3.2-W2.5-BL",
+     "file": "/work/boards/core/lib/aiee.pretty/OSC-SMD_4P-L3.2-W2.5-BL.kicad_mod",
+     "copper_pads": 4,
+     "courtyard": true,
+     "silk": true
+    }
+   ],
+   "warnings": []
+  },
+  {
+   "lcsc": "C42421366",
+   "status": "pulled",
+   "symbol": "IRM-3638T_C42421366",
+   "symbol_verified": true,
+   "footprint_verified": true,
+   "symbol_lib": "/work/boards/core/lib/aiee.kicad_sym",
+   "footprint_lib": "/work/boards/core/lib/aiee.pretty",
+   "footprints": [
+    {
+     "name": "OPTO-TH_IRM-3638T",
+     "file": "/work/boards/core/lib/aiee.pretty/OPTO-TH_IRM-3638T.kicad_mod",
+     "copper_pads": 3,
+     "courtyard": true,
+     "silk": true
+    }
+   ],
+   "warnings": []
+  },
+  {
+   "lcsc": "C7095263",
+   "status": "pulled",
+   "symbol": "USB4085-GF-A_C7095263",
+   "symbol_verified": true,
+   "footprint_verified": true,
+   "symbol_lib": "/work/boards/core/lib/aiee.kicad_sym",
+   "footprint_lib": "/work/boards/core/lib/aiee.pretty",
+   "footprints": [
+    {
+     "name": "USC-C-SMD_USB4085-GF-A",
+     "file": "/work/boards/core/lib/aiee.pretty/USC-C-SMD_USB4085-GF-A.kicad_mod",
+     "copper_pads": 20,
+     "courtyard": true,
+     "silk": true
+    }
+   ],
+   "warnings": []
+  },
+  {
+   "lcsc": "C81010",
+   "status": "pulled",
+   "symbol": "CH340B",
+   "symbol_verified": true,
+   "footprint_verified": true,
+   "symbol_lib": "/work/boards/core/lib/aiee.kicad_sym",
+   "footprint_lib": "/work/boards/core/lib/aiee.pretty",
+   "footprints": [
+    {
+     "name": "SOIC-16_L9.9-W3.9-P1.27-LS6.0-BL",
+     "file": "/work/boards/core/lib/aiee.pretty/SOIC-16_L9.9-W3.9-P1.27-LS6.0-BL.kicad_mod",
+     "copper_pads": 16,
+     "courtyard": true,
+     "silk": true
+    }
+   ],
+   "warnings": []
+  }
+ ],
+ "symbol_dedup": {
+  "removed": 0,
+  "names": []
+ },
+ "registered": {
+  "fp": "present",
+  "sym": "present"
+ },
+ "autofix": {
+  "footprints": 5,
+  "changed": 3,
+  "actions": 18,
+  "residue": 1,
+  "results": [
+   {
+    "footprint": "OPTO-TH_IRM-3638T",
+    "file": "/work/boards/core/lib/aiee.pretty/OPTO-TH_IRM-3638T.kicad_mod",
+    "changed": true,
+    "actions": [
+     {
+      "rule": "A",
+      "action": "promote_silk_width",
+      "kind": "fp_circle",
+      "from_mm": 0.06,
+      "to_mm": 0.15,
+      "gap_mm": 3.095
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.1217,
+      "new_gap_mm": 0.1717
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.125,
+      "new_gap_mm": 0.175
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.1217,
+      "new_gap_mm": 0.1717
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.125,
+      "new_gap_mm": 0.175
+     },
+     {
+      "rule": "E",
+      "action": "rebuild_courtyard",
+      "layer": "F.CrtYd",
+      "from_bbox": [
+       -3.0,
+       -1.5,
+       3.0,
+       2.5
+      ],
+      "to_bbox": [
+       -3.7,
+       -1.5,
+       3.7,
+       2.5
+      ],
+      "copper_outside_mm2": 1.2734
+     }
+    ],
+    "residue": 0,
+    "before": {
+     "worst_gap_mm": 0.1217,
+     "unprintable_silk": 1,
+     "under_gap_silk": 4,
+     "plated_pegs": 0
+    },
+    "after": {
+     "worst_gap_mm": 0.1717,
+     "unprintable_silk": 0,
+     "under_gap_silk": 0,
+     "plated_pegs": 0
+    }
+   },
+   {
+    "footprint": "OSC-SMD_4P-L3.2-W2.5-BL",
+    "file": "/work/boards/core/lib/aiee.pretty/OSC-SMD_4P-L3.2-W2.5-BL.kicad_mod",
+    "changed": false,
+    "actions": [
+     {
+      "rule": "B",
+      "action": "residue_silk_gap",
+      "kind": "fp_line",
+      "width_mm": 0.15,
+      "gap_mm": 0.125,
+      "detail": "cannot reach the gap by narrowing to the 0.15 mm line-width floor"
+     }
+    ],
+    "residue": 1,
+    "before": {
+     "worst_gap_mm": 0.125,
+     "unprintable_silk": 0,
+     "under_gap_silk": 1,
+     "plated_pegs": 0
+    },
+    "after": {
+     "worst_gap_mm": 0.125,
+     "unprintable_silk": 0,
+     "under_gap_silk": 1,
+     "plated_pegs": 0
+    }
+   },
+   {
+    "footprint": "SOIC-16_L9.9-W3.9-P1.27-LS6.0-BL",
+    "file": "/work/boards/core/lib/aiee.pretty/SOIC-16_L9.9-W3.9-P1.27-LS6.0-BL.kicad_mod",
+    "changed": true,
+    "actions": [
+     {
+      "rule": "A",
+      "action": "delete_unprintable_silk",
+      "kind": "fp_circle",
+      "width_mm": 0.06,
+      "gap_mm": 0.139
+     },
+     {
+      "rule": "E",
+      "action": "rebuild_courtyard",
+      "layer": "F.CrtYd",
+      "from_bbox": [
+       -4.95,
+       -1.95,
+       4.95,
+       1.95
+      ],
+      "to_bbox": [
+       -5.05,
+       -4.0,
+       5.05,
+       4.0
+      ],
+      "copper_outside_mm2": 16.4562
+     }
+    ],
+    "residue": 0,
+    "before": {
+     "worst_gap_mm": 0.139,
+     "unprintable_silk": 1,
+     "under_gap_silk": 1,
+     "plated_pegs": 0
+    },
+    "after": {
+     "worst_gap_mm": 0.159,
+     "unprintable_silk": 0,
+     "under_gap_silk": 0,
+     "plated_pegs": 0
+    }
+   },
+   {
+    "footprint": "USC-C-SMD_USB4085-GF-A",
+    "file": "/work/boards/core/lib/aiee.pretty/USC-C-SMD_USB4085-GF-A.kicad_mod",
+    "changed": true,
+    "actions": [
+     {
+      "rule": "A",
+      "action": "promote_silk_width",
+      "kind": "fp_circle",
+      "from_mm": 0.06,
+      "to_mm": 0.15,
+      "gap_mm": 0.2492
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.1095,
+      "new_gap_mm": 0.1595
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.11,
+      "new_gap_mm": 0.16
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.1095,
+      "new_gap_mm": 0.1595
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.1095,
+      "new_gap_mm": 0.1595
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.1095,
+      "new_gap_mm": 0.1595
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.1095,
+      "new_gap_mm": 0.1595
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.1095,
+      "new_gap_mm": 0.1595
+     },
+     {
+      "rule": "E",
+      "action": "rebuild_courtyard",
+      "layer": "F.CrtYd",
+      "from_bbox": [
+       -4.47,
+       -2.74,
+       4.47,
+       6.43
+      ],
+      "to_bbox": [
+       -5.05,
+       -2.8,
+       5.05,
+       6.45
+      ],
+      "copper_outside_mm2": 2.2019
+     }
+    ],
+    "residue": 0,
+    "before": {
+     "worst_gap_mm": 0.1095,
+     "unprintable_silk": 1,
+     "under_gap_silk": 7,
+     "plated_pegs": 0
+    },
+    "after": {
+     "worst_gap_mm": 0.1595,
+     "unprintable_silk": 0,
+     "under_gap_silk": 0,
+     "plated_pegs": 0
+    }
+   }
+  ]
+ },
+ "refdes_norm": {
+  "footprints": 49,
+  "changed": 3,
+  "unchanged": 46,
+  "skipped": 0,
+  "results": [
+   {
+    "footprint": "OPTO-TH_IRM-3638T",
+    "status": "changed",
+    "from": [
+     0.0,
+     -4.0
+    ],
+    "to": [
+     0.0,
+     -2.325
+    ],
+    "pad_top": -0.9,
+    "silk_top": -1.5,
+    "clear_of": -1.5,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "SOIC-16_L9.9-W3.9-P1.27-LS6.0-BL",
+    "status": "changed",
+    "from": [
+     0.0,
+     -6.736
+    ],
+    "to": [
+     0.0,
+     -4.551
+    ],
+    "pad_top": -3.726,
+    "silk_top": -1.52,
+    "clear_of": -3.726,
+    "inked_half_h": 0.575
+   },
+   {
+    "footprint": "USC-C-SMD_USB4085-GF-A",
+    "status": "changed",
+    "from": [
+     0.0,
+     -6.18
+    ],
+    "to": [
+     0.0,
+     -4.495
+    ],
+    "pad_top": -2.505,
+    "silk_top": -3.67,
+    "clear_of": -3.67,
+    "inked_half_h": 0.575
+   }
+  ]
+ },
+ "model_paths": {
+  "rewritten": 3,
+  "footprints": {
+   "OPTO-TH_IRM-3638T.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/IRM-3638T-L6.0-W7.0-H4.6-P2.54.wrl"
+   ],
+   "SOIC-16_L9.9-W3.9-P1.27-LS6.0-BL.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/SOIC-16_L9.9-W3.9-H1.8-LS6.0-P1.27.wrl"
+   ],
+   "USC-C-SMD_USB4085-GF-A.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/USC-C-SMD_USB4085-GF-A.wrl"
+   ]
+  }
+ },
+ "load_check": {
+  "ok": true,
+  "svgs": 49,
+  "detail": "ok"
+ },
+ "drc_check": null
+}

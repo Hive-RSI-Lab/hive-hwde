@@ -27,8 +27,9 @@
   },
   {
    "net": "+3V3",
-   "current_a": 0.35,
-   "dt_c": 10
+   "current_a": 0.55,
+   "dt_c": 20,
+   "via_amps": 1.0
   },
   {
    "net": "+3V3A",

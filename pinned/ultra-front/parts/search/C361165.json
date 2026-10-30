@@ -1,0 +1,92 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C361165",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C361165",
+   "mpn": "EC11E1834403",
+   "brand": "ALPSALPINE",
+   "description": "-40\u2103~+85\u2103 10mA 5V Non-resettable Straight Support Two-phase output \u63d2\u4ef6 Rotary Encoders ROHS",
+   "package": "Plugin",
+   "category": "Rotary Encoders",
+   "type": "Extended",
+   "basic": false,
+   "stock": 3224,
+   "price": 1.6001,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 1.6001
+    },
+    {
+     "qty": 10,
+     "price": 1.474
+    },
+    {
+     "qty": 30,
+     "price": 1.3953
+    },
+    {
+     "qty": 120,
+     "price": 1.2103
+    },
+    {
+     "qty": 480,
+     "price": 1.1743
+    },
+    {
+     "qty": 960,
+     "price": 1.1595
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_ALPSALPINE-EC11E1834403_C361165.pdf",
+   "url": "https://www.lcsc.com/product-detail/rotary-encoders_alpsalpine-ec11e1834403_C361165.html",
+   "attributes": [
+    {
+     "name": "Number of Detents / Pulses (Incremental)",
+     "value": "0/18"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+85\u2103"
+    },
+    {
+     "name": "Rated Voltage (Max)",
+     "value": "5V"
+    },
+    {
+     "name": "Current Rating (Max)",
+     "value": "10mA"
+    },
+    {
+     "name": "Encoder Type",
+     "value": "Incremental"
+    },
+    {
+     "name": "Output Form",
+     "value": "Two-phase output"
+    },
+    {
+     "name": "Shaft Reset",
+     "value": "Non-self-resetting"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Straight"
+    },
+    {
+     "name": "Whether to Press Down",
+     "value": "Support"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

@@ -1,0 +1,207 @@
+{
+ "script": "route_auto",
+ "status": "violations",
+ "board": "/work/boards/ultra-front/kicad/ultra-front.kicad_pcb",
+ "counts": {
+  "total": 3,
+  "by_severity": {
+   "error": 3
+  },
+  "by_source": {
+   "unconnected": 3
+  }
+ },
+ "violations": [
+  {
+   "check": "unconnected_items",
+   "severity": "error",
+   "pos": [
+    4.305,
+    61.11
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "J1"
+   ],
+   "msg": "Missing connection between items",
+   "source": "unconnected",
+   "items": [
+    {
+     "msg": "Pad 11 [GND] of J1 on F.Cu",
+     "pos": [
+      4.305,
+      61.11
+     ],
+     "uuid": "43f33746-93b0-4e6d-abdb-8eca79428087"
+    },
+    {
+     "msg": "Track [GND] on F.Cu, length 0.9267 mm",
+     "pos": [
+      1.805,
+      61.11
+     ],
+     "uuid": "d0c12681-6da5-4f07-a185-ecd5677d7638"
+    }
+   ]
+  },
+  {
+   "check": "unconnected_items",
+   "severity": "error",
+   "pos": [
+    -7.3997,
+    53.853
+   ],
+   "layer": "F.Cu",
+   "net": "+3V3",
+   "refs": [],
+   "msg": "Missing connection between items",
+   "source": "unconnected",
+   "items": [
+    {
+     "msg": "Track [+3V3] on F.Cu, length 0.0750 mm",
+     "pos": [
+      -7.3997,
+      53.853
+     ],
+     "uuid": "40482a1f-d576-47fd-9e86-fba14206c852"
+    },
+    {
+     "msg": "Track [+3V3] on F.Cu, length 0.5000 mm",
+     "pos": [
+      -8.265,
+      48.25
+     ],
+     "uuid": "10a2767a-2e49-4b8d-8602-99d5eba50523"
+    }
+   ]
+  },
+  {
+   "check": "unconnected_items",
+   "severity": "error",
+   "pos": [
+    0.6833,
+    58.8982
+   ],
+   "layer": "B.Cu",
+   "net": "+3V3",
+   "refs": [
+    "J1"
+   ],
+   "msg": "Missing connection between items",
+   "source": "unconnected",
+   "items": [
+    {
+     "msg": "Track [+3V3] on B.Cu, length 5.0493 mm",
+     "pos": [
+      0.6833,
+      58.8982
+     ],
+     "uuid": "aa03bf2d-c76f-4666-9903-fca6123b0090"
+    },
+    {
+     "msg": "Pad 19 [+3V3] of J1 on F.Cu",
+     "pos": [
+      8.305,
+      61.11
+     ],
+     "uuid": "1b2f9124-85a3-447c-be79-a89f83948bc2"
+    }
+   ]
+  }
+ ],
+ "facts": {
+  "completion": 0.9333,
+  "routable_nets": 30,
+  "unrouted_nets": [
+   "+3V3",
+   "GND"
+  ],
+  "tracks_before": 0,
+  "tracks_after": 559,
+  "ses_items_added": 611,
+  "best_rung": 1,
+  "rungs": [
+   {
+    "rung": 1,
+    "options": {
+     "mp": 20
+    },
+    "unrouted": 0,
+    "started_unrouted": 115,
+    "final_score": 995.89,
+    "passes": 11,
+    "timed_out": false,
+    "kill_reason": null,
+    "ses_written": true
+   }
+  ],
+  "fr_completion": 1.0,
+  "power_layers": [],
+  "dsn_net_rules": [],
+  "dsn_wires_merged": 0,
+  "krt_finish": {
+   "kept": false,
+   "nets": [
+    "+3V3",
+    "GND"
+   ],
+   "note": "KRT not vendored; finish pass skipped"
+  },
+  "ses_echo_dups_removed": 0,
+  "work_dir": "/work/boards/ultra-front/kicad/route",
+  "placement_adjust_request": {
+   "request": "placement_adjust",
+   "nets": [
+    "+3V3",
+    "GND"
+   ],
+   "refs": [
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "C5",
+    "C6",
+    "C7",
+    "H1",
+    "H2",
+    "H3",
+    "H4",
+    "J1",
+    "J2",
+    "Q1",
+    "R1",
+    "R10",
+    "R11",
+    "R19",
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "R6",
+    "R7",
+    "R8",
+    "R9",
+    "SW1",
+    "SW2",
+    "SW3",
+    "SW4",
+    "U1",
+    "U2"
+   ],
+   "region": [
+    -8.265,
+    28.38,
+    97.005,
+    63.75
+   ],
+   "reason": "unrouted after 1 freerouting rungs",
+   "suggestions": [
+    "spread the named clusters apart / off the congested region",
+    "clear a ~3 mm escape ring around the anchor IC",
+    "consider more board area or more layers if congestion persists"
+   ]
+  }
+ }
+}

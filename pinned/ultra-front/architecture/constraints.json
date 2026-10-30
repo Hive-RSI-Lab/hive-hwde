@@ -1,0 +1,186 @@
+{
+ "power": [
+  {
+   "net": "+5V",
+   "current_a": 0.1,
+   "dt_c": 10
+  },
+  {
+   "net": "+3V3",
+   "current_a": 0.05,
+   "dt_c": 10
+  },
+  {
+   "net": "/BL_A",
+   "current_a": 0.08,
+   "dt_c": 10,
+   "pdn": false
+  },
+  {
+   "net": "/BL_K",
+   "current_a": 0.08,
+   "dt_c": 10,
+   "pdn": false
+  }
+ ],
+ "voltages": [
+  {
+   "net": "+5V",
+   "voltage": 5.25
+  },
+  {
+   "net": "+3V3",
+   "voltage": 3.4
+  }
+ ],
+ "diff_pairs": [],
+ "coating": "soldermask",
+ "placement": {
+  "sides": [
+   {
+    "ref": "J1",
+    "side": "front",
+    "reason": "single-sided SMT"
+   },
+   {
+    "ref": "J2",
+    "side": "front",
+    "reason": "LCD tail lies on the top side"
+   },
+   {
+    "ref": "SW1",
+    "side": "front",
+    "reason": "user-facing"
+   },
+   {
+    "ref": "SW2",
+    "side": "front",
+    "reason": "user-facing"
+   },
+   {
+    "ref": "SW3",
+    "side": "front",
+    "reason": "user-facing"
+   },
+   {
+    "ref": "SW4",
+    "side": "front",
+    "reason": "knob through the front panel"
+   },
+   {
+    "ref": "U2",
+    "side": "front",
+    "reason": "IR window in the front panel"
+   },
+   {
+    "ref": "D1",
+    "side": "front",
+    "reason": "light pipe in the front panel"
+   }
+  ],
+  "fixed": [
+   "J1",
+   "J2",
+   "SW1",
+   "SW2",
+   "SW3",
+   "SW4",
+   "U2",
+   "D1"
+  ],
+  "keepouts": [
+   {
+    "rect": [
+     14.555,
+     28.3,
+     67.555,
+     65.3
+    ],
+    "side": "front",
+    "reason": "2.0in LCD module (51.8 x 36.2 mm) sits on the top side here"
+   },
+   {
+    "rect": [
+     -3.045,
+     42.8,
+     4.955,
+     51.3
+    ],
+    "side": "front",
+    "reason": "the LCD's FPC tail, narrow end (6.5 mm wide), lies flat into J2"
+   },
+   {
+    "rect": [
+     4.855,
+     35.6,
+     15.555,
+     56.7
+    ],
+    "side": "front",
+    "reason": "the LCD's FPC tail near the panel is ~20.5 mm wide for ~10 mm (with the backlight sub-flex joints); no parts under it"
+   }
+  ],
+  "edges": [
+   {
+    "ref": "J1",
+    "edge": "bottom"
+   }
+  ],
+  "mates": [
+   {
+    "ref": "J2",
+    "mate": "onboard_flex",
+    "corridor": [
+     [
+      -3.045,
+      42.8,
+      4.955,
+      51.3
+     ],
+     [
+      4.855,
+      35.6,
+      15.555,
+      56.7
+     ]
+    ],
+    "mate_refs": [],
+    "reason": "the HS20HS072RX LCD's 12-pin tail lies flat from the panel (x 25.45 mm from the board's left edge) into J2: 6.5 mm wide at J2, about 20.5 mm wide for its last 10 mm at the panel"
+   }
+  ]
+ },
+ "blocks": [
+  {
+   "topology": "led-indicator",
+   "block": "B8",
+   "name": "D1 RGB status LED",
+   "operating_point": {
+    "vin_v": 5,
+    "iout_a": 0.009,
+    "pdiss_w": 0.03,
+    "board_layers": 2
+   }
+  },
+  {
+   "topology": "load-switch",
+   "block": "B3",
+   "name": "Q1 low-side backlight switch",
+   "operating_point": {
+    "vin_v": 5,
+    "iout_a": 0.07,
+    "pdiss_w": 0.15,
+    "board_layers": 2
+   }
+  }
+ ],
+ "planes": [
+  {
+   "layer": "B.Cu",
+   "net": "GND"
+  },
+  {
+   "layer": "F.Cu",
+   "net": "GND"
+  }
+ ]
+}

@@ -1,0 +1,154 @@
+{
+ "script": "plane_repair",
+ "status": "pass",
+ "board": "ultra-front.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "mode": "repair",
+ "planes": [
+  {
+   "net": "GND",
+   "layer": "B.Cu",
+   "components": 5,
+   "anchored_components": 5,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": true,
+   "component_facts": [
+    {
+     "area_mm2": 3297.3645,
+     "pos": [
+      53.4058,
+      46.8021
+     ],
+     "anchors": 15,
+     "anchored": true
+    },
+    {
+     "area_mm2": 178.7884,
+     "pos": [
+      13.5672,
+      47.2903
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 37.2581,
+     "pos": [
+      -2.3061,
+      52.9637
+     ],
+     "anchors": 3,
+     "anchored": true
+    },
+    {
+     "area_mm2": 4.6767,
+     "pos": [
+      3.8222,
+      51.0561
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 1.5227,
+     "pos": [
+      0.3751,
+      33.3082
+     ],
+     "anchors": 1,
+     "anchored": true
+    }
+   ],
+   "dead_islands": []
+  },
+  {
+   "net": "GND",
+   "layer": "F.Cu",
+   "components": 7,
+   "anchored_components": 7,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": true,
+   "component_facts": [
+    {
+     "area_mm2": 1523.8774,
+     "pos": [
+      90.2277,
+      46.827
+     ],
+     "anchors": 18,
+     "anchored": true
+    },
+    {
+     "area_mm2": 585.2822,
+     "pos": [
+      51.4337,
+      40.55
+     ],
+     "anchors": 3,
+     "anchored": true
+    },
+    {
+     "area_mm2": 464.8654,
+     "pos": [
+      7.4732,
+      42.8714
+     ],
+     "anchors": 7,
+     "anchored": true
+    },
+    {
+     "area_mm2": 43.7902,
+     "pos": [
+      -2.383,
+      53.0891
+     ],
+     "anchors": 12,
+     "anchored": true
+    },
+    {
+     "area_mm2": 32.0273,
+     "pos": [
+      10.397,
+      58.6178
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 4.2156,
+     "pos": [
+      93.0001,
+      39.1409
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 0.7889,
+     "pos": [
+      95.1558,
+      37.8791
+     ],
+     "anchors": 1,
+     "anchored": true
+    }
+   ],
+   "dead_islands": []
+  }
+ ],
+ "bridges": [],
+ "splits_found": 0,
+ "splits_repaired": 0,
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T16:12:02+00:00",
+ "input": "/work/boards/ultra-front/kicad/ultra-front.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:32b04a174bb1b48bdcf1540c11d8a780321111b634a4dee6fc645febd2b920f6"
+}

@@ -1,0 +1,73 @@
+{
+ "script": "check_current",
+ "status": "pass",
+ "board": "ultra-front.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "checked": [
+  {
+   "net": "+5V",
+   "current_a": 0.1,
+   "dt_c": 10.0,
+   "required_mm_by_layer": {
+    "F.Cu": 0.05,
+    "B.Cu": 0.05
+   },
+   "min_track_mm_by_layer": {
+    "F.Cu": 0.2,
+    "B.Cu": 0.2
+   },
+   "via_clusters": 2
+  },
+  {
+   "net": "+3V3",
+   "current_a": 0.05,
+   "dt_c": 10.0,
+   "required_mm_by_layer": {
+    "F.Cu": 0.025,
+    "B.Cu": 0.025
+   },
+   "min_track_mm_by_layer": {
+    "F.Cu": 0.15,
+    "B.Cu": 0.15
+   },
+   "via_clusters": 11
+  },
+  {
+   "net": "/BL_A",
+   "current_a": 0.08,
+   "dt_c": 10.0,
+   "required_mm_by_layer": {
+    "F.Cu": 0.04,
+    "B.Cu": 0.04
+   },
+   "min_track_mm_by_layer": {
+    "F.Cu": 0.2
+   },
+   "via_clusters": 0
+  },
+  {
+   "net": "/BL_K",
+   "current_a": 0.08,
+   "dt_c": 10.0,
+   "required_mm_by_layer": {
+    "F.Cu": 0.04,
+    "B.Cu": 0.04
+   },
+   "min_track_mm_by_layer": {
+    "F.Cu": 0.2
+   },
+   "via_clusters": 0
+  }
+ ],
+ "stackup_assumed": false,
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T16:12:33+00:00",
+ "input": "kicad/ultra-front.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:9dc35130bd1201644f1dba4e1d6dba4d5d758a4ef90a725aa5368dd26825d2d0"
+}

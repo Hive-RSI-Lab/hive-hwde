@@ -1,0 +1,557 @@
+{
+ "script": "verify_all",
+ "board": "ultra-front.kicad_pcb",
+ "status": "violations",
+ "counts": {
+  "total": 11,
+  "by_severity": {
+   "warning": 9,
+   "error": 2
+  },
+  "by_source": {
+   "check_route_style": 9,
+   "check_mating": 2
+  },
+  "by_check": {
+   "check_return_path": 0,
+   "check_current": 0,
+   "check_decoupling": 0,
+   "check_diffpair": 0,
+   "check_creepage": 0,
+   "check_thermal": 0,
+   "check_silk": 0,
+   "check_route_style": 9,
+   "check_mating": 2,
+   "check_pdn": 0,
+   "check_ratings": 0,
+   "check_bom_sync": 0,
+   "check_mate_pins": 0,
+   "check_model_paths": 0
+  }
+ },
+ "checks": {
+  "check_return_path": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_return_path.json"
+  },
+  "check_current": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_current.json"
+  },
+  "check_decoupling": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_decoupling.json"
+  },
+  "check_diffpair": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_diffpair.json"
+  },
+  "check_creepage": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_creepage.json"
+  },
+  "check_thermal": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_thermal.json"
+  },
+  "check_silk": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_silk.json"
+  },
+  "check_route_style": {
+   "status": "violations",
+   "counts": {
+    "total": 9,
+    "by_severity": {
+     "warning": 9
+    },
+    "by_source": {
+     "check_route_style": 9
+    }
+   },
+   "report": "reports/checks/check_route_style.json"
+  },
+  "check_mating": {
+   "status": "violations",
+   "counts": {
+    "total": 2,
+    "by_severity": {
+     "error": 2
+    },
+    "by_source": {
+     "check_mating": 2
+    }
+   },
+   "report": "reports/checks/check_mating.json"
+  },
+  "check_pdn": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_pdn.json"
+  },
+  "check_ratings": {
+   "status": "skipped",
+   "counts": {
+    "total": 0
+   },
+   "report": null,
+   "reason": "no parts"
+  },
+  "check_bom_sync": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_bom_sync.json"
+  },
+  "check_mate_pins": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_mate_pins.json"
+  },
+  "check_model_paths": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "reports/checks/check_model_paths.json"
+  }
+ },
+ "coverage": {
+  "strict": false,
+  "required": [
+   "check_return_path",
+   "check_current",
+   "check_decoupling",
+   "check_diffpair",
+   "check_creepage",
+   "check_thermal",
+   "check_silk",
+   "check_route_style",
+   "check_mating",
+   "check_pdn",
+   "check_ratings",
+   "check_bom_sync",
+   "check_mate_pins",
+   "check_model_paths"
+  ],
+  "ran": [
+   "check_return_path",
+   "check_current",
+   "check_decoupling",
+   "check_diffpair",
+   "check_creepage",
+   "check_thermal",
+   "check_silk",
+   "check_route_style",
+   "check_mating",
+   "check_pdn",
+   "check_bom_sync",
+   "check_mate_pins",
+   "check_model_paths"
+  ],
+  "passed": [
+   "check_return_path",
+   "check_current",
+   "check_decoupling",
+   "check_diffpair",
+   "check_creepage",
+   "check_thermal",
+   "check_silk",
+   "check_route_style",
+   "check_pdn",
+   "check_bom_sync",
+   "check_mate_pins",
+   "check_model_paths"
+  ],
+  "failed": [
+   "check_mating"
+  ],
+  "waived": [],
+  "not_applicable": {},
+  "skipped_error": {
+   "check_ratings": "no parts"
+  }
+ },
+ "violations": [
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    4.5501,
+    29.6218
+   ],
+   "layer": "F.Cu",
+   "net": "+3V3",
+   "refs": [],
+   "msg": "3 needless jog(s): a sidestep smaller than the track clears nothing on +3V3 F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.230 mm",
+     "pos": [
+      4.5501,
+      29.6218
+     ],
+     "uuid": "0193fffc-07d9-45af-b260-2d4f4ceee93b"
+    },
+    {
+     "msg": "sidestep 0.151 mm",
+     "pos": [
+      6.7747,
+      31.3223
+     ],
+     "uuid": "ff348be3-77ba-4c97-a693-5ef5c4cf35d8"
+    },
+    {
+     "msg": "sidestep 0.098 mm",
+     "pos": [
+      11.3011,
+      31.2962
+     ],
+     "uuid": "996477fb-791d-439c-95e1-9f57772f9e92"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    7.7961,
+    62.0456
+   ],
+   "layer": "F.Cu",
+   "net": "+5V",
+   "refs": [],
+   "msg": "2 needless jog(s): a sidestep smaller than the track clears nothing on +5V F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.018 mm",
+     "pos": [
+      7.7961,
+      62.0456
+     ],
+     "uuid": "3846b292-d5e9-4e2d-85a8-e20717df0f53"
+    },
+    {
+     "msg": "sidestep 0.242 mm",
+     "pos": [
+      12.4004,
+      65.1208
+     ],
+     "uuid": "d797ea66-e249-494e-9c1e-0306bed7bde1"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    3.93,
+    54.8017
+   ],
+   "layer": "F.Cu",
+   "net": "/BL_GATE",
+   "refs": [],
+   "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /BL_GATE F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.250 mm",
+     "pos": [
+      3.93,
+      54.8017
+     ],
+     "uuid": "0cf462c0-a990-4a1e-b29c-6760107b739f"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    2.3517,
+    29.2317
+   ],
+   "layer": "B.Cu",
+   "net": "/EXP_UNUSED",
+   "refs": [],
+   "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /EXP_UNUSED B.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.101 mm",
+     "pos": [
+      2.3517,
+      29.2317
+     ],
+     "uuid": "d3c0157d-161b-48ba-910e-8b9f4db610a1"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    11.2162,
+    30.6551
+   ],
+   "layer": "F.Cu",
+   "net": "/FRONT_INT_N",
+   "refs": [],
+   "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /FRONT_INT_N F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.210 mm",
+     "pos": [
+      11.2162,
+      30.6551
+     ],
+     "uuid": "13b670d9-1ac1-4dca-8290-d893d771203a"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    2.4642,
+    28.7762
+   ],
+   "layer": "B.Cu",
+   "net": "/LCD_RST",
+   "refs": [],
+   "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /LCD_RST B.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.076 mm",
+     "pos": [
+      2.4642,
+      28.7762
+     ],
+     "uuid": "341e7ebb-b86b-44b6-814d-0d9da26f1e32"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    87.9666,
+    62.8279
+   ],
+   "layer": "F.Cu",
+   "net": "/LEDG_K",
+   "refs": [],
+   "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /LEDG_K F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.077 mm",
+     "pos": [
+      87.9666,
+      62.8279
+     ],
+     "uuid": "f50ddeef-9c1b-40de-95e1-1f088d09e9f9"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    41.984,
+    62.7969
+   ],
+   "layer": "B.Cu",
+   "net": "/LED_B",
+   "refs": [],
+   "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /LED_B B.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.050 mm",
+     "pos": [
+      41.984,
+      62.7969
+     ],
+     "uuid": "32435f05-28ee-4bb7-8dea-3175325225e8"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "check_route_style",
+   "severity": "warning",
+   "pos": [
+    -6.2661,
+    51.2606
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [],
+   "msg": "2 needless jog(s): a sidestep smaller than the track clears nothing on GND F.Cu",
+   "source": "check_route_style",
+   "items": [
+    {
+     "msg": "sidestep 0.079 mm",
+     "pos": [
+      -6.2661,
+      51.2606
+     ],
+     "uuid": "bdf8c5f1-edbf-4533-aee8-fd651442de95"
+    },
+    {
+     "msg": "sidestep 0.060 mm",
+     "pos": [
+      -3.7167,
+      63.72
+     ],
+     "uuid": "82873450-1b66-4b69-b72b-b27b2fc931dc"
+    }
+   ],
+   "kind": "route_style",
+   "style": "jog"
+  },
+  {
+   "check": "mating",
+   "severity": "error",
+   "pos": [
+    -6.11,
+    47.0
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "J2"
+   ],
+   "msg": "J2 (fpc_ffc) cannot be mated: its nearest edge is -x (0.8 mm) but its mouth faces +x, into 103.2 mm of board",
+   "source": "check_mating",
+   "items": [
+    {
+     "msg": "J2 (fpc_ffc) cannot be mated: its nearest edge is -x (0.8 mm) but its mouth faces +x, into 103.2 mm of board",
+     "pos": [
+      -6.11,
+      47.0
+     ]
+    }
+   ],
+   "kind": "mating_faces_inward",
+   "connector": "J2",
+   "mouth": "+x",
+   "nearest_edge": "-x",
+   "gap_mm": 103.16
+  },
+  {
+   "check": "mating",
+   "severity": "error",
+   "pos": [
+    55.0669,
+    47.0
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C2",
+    "C3",
+    "J2",
+    "Q1",
+    "R5",
+    "SW2",
+    "SW4"
+   ],
+   "msg": "J2 (fpc_ffc): C2, C3, Q1, R5, SW2, SW4 sit in the plug's insertion zone in front of its mouth (8.0 mm plug + 2.0 mm grip)",
+   "source": "check_mating",
+   "items": [
+    {
+     "msg": "J2 (fpc_ffc): C2, C3, Q1, R5, SW2, SW4 sit in the plug's insertion zone in front of its mouth (8.0 mm plug + 2.0 mm grip)",
+     "pos": [
+      55.0669,
+      47.0
+     ]
+    }
+   ],
+   "kind": "mating_zone_blocked",
+   "connector": "J2",
+   "mouth": "+x",
+   "blocked_by": [
+    "C2",
+    "C3",
+    "Q1",
+    "R5",
+    "SW2",
+    "SW4"
+   ]
+  }
+ ],
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T16:12:33+00:00",
+ "input": "kicad/ultra-front.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:9dc35130bd1201644f1dba4e1d6dba4d5d758a4ef90a725aa5368dd26825d2d0"
+}

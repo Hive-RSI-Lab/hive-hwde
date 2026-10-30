@@ -80,7 +80,7 @@
 )
 (rule "aiee_pwr_width_amp_a_A_SPK_L"
 	(constraint track_width (min 0.1843mm))
-	(condition "A.NetName == '/amp_a/A_SPK_L+' && A.Type == 'track'")
+	(condition "A.NetName == '/A_SPK_L+' && A.Type == 'track'")
 )
 (rule "aiee_pwr_width_amp_a_A_SPK_L"
 	(constraint track_width (min 0.1843mm))
@@ -88,7 +88,7 @@
 )
 (rule "aiee_pwr_width_amp_a_A_SPK_R"
 	(constraint track_width (min 0.1843mm))
-	(condition "A.NetName == '/amp_a/A_SPK_R+' && A.Type == 'track'")
+	(condition "A.NetName == '/A_SPK_R+' && A.Type == 'track'")
 )
 (rule "aiee_pwr_width_amp_a_A_SPK_R"
 	(constraint track_width (min 0.1843mm))

@@ -1,0 +1,20 @@
+{
+ "board": "ultra-front",
+ "project": "hifi-receiver-2",
+ "commit": "56e91aa5738d47f61bf29e67394b2e1d2fdcc492",
+ "dir": "pinned/ultra-front",
+ "design": [
+  "kicad/gen/root.py"
+ ],
+ "stand_in": {
+  "kicad/gen/edge_keepout.py": "keepout_gen has no copper keep-out band along the board edge",
+  "kicad/gen/fix_courtyards.py": "lib_pull/fpfix leave EasyEDA courtyards short of the pads",
+  "kicad/gen/parts_build.py": "part-sourcer writes no refdes per line, and bom_cpl maps refs to LCSC numbers only through refdes",
+  "kicad/gen/pin_types.py": "lib_pin_types needs datasheet-extract JSON; pulled symbols' pins come in unspecified",
+  "kicad/gen/zone_solid.py": "planes_gen's pour came out thermal for the 0.5 mm FFC/FPC GND pins; a .kicad_dru zone_connection rule didn't take",
+  "route/manual/astar.py": "route_auto left nets unrouted; no hwde maze router finishes one net",
+  "route/manual/extract.py": "no hwde script dumps a net's obstacles and targets for a manual route",
+  "route/manual/rip.py": "route_edit has no rip-up of whole nets"
+ },
+ "unclassified": []
+}

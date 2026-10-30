@@ -1,0 +1,69 @@
+{
+  "script": "gate",
+  "gate": "place",
+  "phase": "P6",
+  "tool": "place",
+  "input": "kicad/ultra-front.kicad_pcb",
+  "input_digest": "sexpr_no_uuid:9dc35130bd1201644f1dba4e1d6dba4d5d758a4ef90a725aa5368dd26825d2d0",
+  "status": "pass",
+  "criteria": {
+    "fail_severities": [
+      "error"
+    ],
+    "max_count": 0
+  },
+  "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+  },
+  "failing_count": 0,
+  "failing": [],
+  "warnings_count": 0,
+  "warnings": [],
+  "coverage": {
+    "strict": false,
+    "required": [
+      "courtyard",
+      "outline",
+      "edges",
+      "keepouts",
+      "decoupler_distance",
+      "mating"
+    ],
+    "ran": [
+      "courtyard",
+      "outline",
+      "edges",
+      "keepouts",
+      "decoupler_distance",
+      "mating"
+    ],
+    "passed": [
+      "courtyard",
+      "outline",
+      "edges",
+      "keepouts",
+      "decoupler_distance",
+      "mating"
+    ],
+    "failed": [],
+    "waived": [],
+    "not_applicable": {},
+    "skipped_error": {}
+  },
+  "record_result": {
+    "ok": true,
+    "recorded": true,
+    "workspace": ".",
+    "gate": "place",
+    "status": "pass",
+    "attempts": 19,
+    "inputs": {
+      "pcb": "sexpr_no_uuid:9dc35130bd1201644f1dba4e1d6dba4d5d758a4ef90a725aa5368dd26825d2d0",
+      "constraints": "json_canonical:72b81c02f0a9526866137b79fb62cad988d99a4deff778af2a77f158ce7f4875",
+      "decoupling": "json_canonical:17d5d30327c8d20afa9e3d1fafea926c0c0ab5a65c8c5801cd9f0fc95d2c1a1e",
+      "place_waivers": null
+    }
+  }
+}

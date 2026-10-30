@@ -1,0 +1,35 @@
+{
+"version": 1,
+"ops": [
+{
+"op": "set_text",
+"ref": "H1",
+"field": "reference",
+"hide": true
+},
+{
+"op": "set_text",
+"ref": "H2",
+"field": "reference",
+"hide": true
+},
+{
+"op": "set_text",
+"ref": "H3",
+"field": "reference",
+"hide": true
+},
+{
+"op": "set_text",
+"ref": "H4",
+"field": "reference",
+"hide": true
+},
+{
+"op": "set_text",
+"ref": "R10",
+"field": "reference",
+"hide": true
+}
+]
+}

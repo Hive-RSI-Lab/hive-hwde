@@ -4,7 +4,7 @@
   "phase": "P7",
   "tool": "drc",
   "input": "kicad/core.kicad_pcb",
-  "input_digest": "sexpr_no_uuid:37b49d4e77c6bf41793e272f09ba94aad134b618d93774559c99ce88f4d1d008",
+  "input_digest": "sexpr_no_uuid:c0299371b762fefa69d56b34d9e9a08e05a67b743d611e6dc8ac15ee0ac8aa3b",
   "status": "pass",
   "criteria": {
     "fail_severities": [
@@ -20,18 +20,20 @@
   },
   "failing_count": 0,
   "failing": [],
+  "warnings_count": 0,
+  "warnings": [],
   "record_result": {
     "ok": true,
     "recorded": true,
-    "workspace": "/work/boards/core",
+    "workspace": ".",
     "gate": "drc_routed",
     "status": "pass",
-    "attempts": 162,
+    "attempts": 340,
     "inputs": {
-      "pcb": "sexpr_no_uuid:37b49d4e77c6bf41793e272f09ba94aad134b618d93774559c99ce88f4d1d008",
-      "sch": "sexpr_no_uuid:782374a26538c890bad897d975757ea14c45458e5a3cc35e4eab7a3f3ac09c69",
-      "pro": "json_canonical:ade210d648016346219e733a80aa291be83b7604227024277df89bb7b23acc28",
-      "dru": "text_eol:c0caff82cb495b7b633ab122d2e5cceeb5eaaf2e9bb69b2665bb83bb2bdee0ca"
+      "pcb": "sexpr_no_uuid:c0299371b762fefa69d56b34d9e9a08e05a67b743d611e6dc8ac15ee0ac8aa3b",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "pro": "json_canonical:42925dd8a0c1216e069ccc2ed2fa0cbfe77b2d528c605ebaf41900fd755f9b9e",
+      "dru": "text_eol:c177b210be31868735c5b9abbf69f708f5f9323ea51180f0c1f8f095ea824202"
     }
   }
 }

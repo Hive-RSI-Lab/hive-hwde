@@ -1,0 +1,918 @@
+{
+ "script": "stitch_vias",
+ "status": "pass",
+ "board": "ultra-front.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "requested": 0,
+ "placed": 86,
+ "skipped": [],
+ "via_size": 0.6,
+ "via_drill": 0.3,
+ "clearance_mm": 0.127,
+ "dry_run": false,
+ "applied": true,
+ "refilled": true,
+ "apply_by_status": {
+  "added": 86
+ },
+ "ops": [
+  {
+   "op": "add_via",
+   "at": [
+    -6.945,
+    34.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    -6.945,
+    39.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    -6.945,
+    54.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    -6.945,
+    59.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    -1.945,
+    29.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    -1.945,
+    34.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    -1.945,
+    44.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    -1.945,
+    59.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    8.055,
+    44.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    8.055,
+    49.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    8.055,
+    54.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    13.055,
+    39.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    13.055,
+    44.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    13.055,
+    49.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    13.055,
+    54.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    18.055,
+    34.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    18.055,
+    39.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    18.055,
+    49.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    18.055,
+    54.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    23.055,
+    34.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    23.055,
+    39.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    23.055,
+    49.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    23.055,
+    54.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    28.055,
+    34.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    28.055,
+    39.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    28.055,
+    49.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    28.055,
+    54.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    33.055,
+    39.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    33.055,
+    49.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    33.055,
+    54.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    38.055,
+    34.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    38.055,
+    39.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    38.055,
+    49.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    38.055,
+    54.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    43.055,
+    34.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    43.055,
+    39.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    43.055,
+    49.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    43.055,
+    54.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    48.055,
+    34.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    48.055,
+    39.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    48.055,
+    49.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    48.055,
+    54.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    53.055,
+    34.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    53.055,
+    39.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    53.055,
+    49.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    53.055,
+    54.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    58.055,
+    34.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    58.055,
+    39.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    58.055,
+    49.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    58.055,
+    54.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    63.055,
+    34.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    63.055,
+    39.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    63.055,
+    49.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    63.055,
+    54.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    68.055,
+    34.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    68.055,
+    39.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    68.055,
+    49.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    68.055,
+    54.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    73.055,
+    34.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    73.055,
+    39.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    73.055,
+    49.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    73.055,
+    54.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    78.055,
+    34.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    78.055,
+    39.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    78.055,
+    49.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    78.055,
+    54.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    83.055,
+    34.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    83.055,
+    39.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    83.055,
+    44.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    83.055,
+    54.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    88.055,
+    34.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    88.055,
+    44.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    88.055,
+    49.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    88.055,
+    64.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    93.055,
+    29.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    93.055,
+    44.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    93.055,
+    49.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    93.055,
+    54.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    93.055,
+    59.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    93.055,
+    64.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    98.055,
+    34.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    98.055,
+    39.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    98.055,
+    44.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    98.055,
+    49.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    98.055,
+    54.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    98.055,
+    59.8
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  }
+ ],
+ "mode": "stitch",
+ "pitch_mm": 5.0,
+ "t_rise_ns": null,
+ "nets": {
+  "GND": {
+   "plane_layers": [
+    "F.Cu",
+    "B.Cu"
+   ],
+   "pads": {
+    "requested": 0,
+    "placed": 0,
+    "skipped": 0
+   },
+   "area": {
+    "candidates": 170,
+    "placed": 86,
+    "rejected": {
+     "hole_to_hole": 4,
+     "foreign_copper": 64,
+     "near_same_net_via": 1,
+     "fill_edge": 6,
+     "single_layer_contact": 9
+    },
+    "capped": false
+   }
+  }
+ },
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T15:46:22+00:00",
+ "input": "/work/boards/ultra-front/kicad/ultra-front.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:dec2afa118ece539ffeda64f9c5e790cedad6b981e2af834c37da77c6015f835"
+}

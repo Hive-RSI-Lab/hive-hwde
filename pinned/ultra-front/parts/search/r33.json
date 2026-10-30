@@ -1,0 +1,372 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "1206 33ohm",
+ "total": 4629,
+ "count": 5,
+ "results": [
+  {
+   "lcsc": "C137308",
+   "mpn": "RC1206FR-0733RL",
+   "brand": "YAGEO",
+   "description": "-55\u2103~+155\u2103 200V 250mW 33\u03a9 Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 1206 Chip Resistor - Surface Mount ROHS",
+   "package": "1206",
+   "category": "Chip Resistor - Surface Mount",
+   "type": "Extended",
+   "basic": false,
+   "stock": 245759,
+   "price": 0.0087,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0087
+    },
+    {
+     "qty": 1000,
+     "price": 0.0071
+    },
+    {
+     "qty": 5000,
+     "price": 0.0063
+    },
+    {
+     "qty": 10000,
+     "price": 0.0058
+    },
+    {
+     "qty": 50000,
+     "price": 0.0053
+    },
+    {
+     "qty": 100000,
+     "price": 0.0051
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_YAGEO-RC1206FR-0733RL_C137308.pdf",
+   "url": "https://www.lcsc.com/product-detail/chip-resistor-surface-mount_yageo-rc1206fr-0733rl_C137308.html",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "33\u03a9"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+155\u2103"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "250mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "200V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b11%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "\u00b1100ppm/\u2103"
+    }
+   ],
+   "rank": 0
+  },
+  {
+   "lcsc": "C18005",
+   "mpn": "1206W4F330JT5E",
+   "brand": "UNI-ROYAL(Uniroyal Elec)",
+   "description": "-55\u2103~+155\u2103 200V 250mW 33\u03a9 Thick Film Resistor \u00b11% \u00b1200ppm/\u2103 1206 Chip Resistor - Surface Mount ROHS",
+   "package": "1206",
+   "category": "Chip Resistor - Surface Mount",
+   "type": "Extended",
+   "basic": false,
+   "stock": 107290,
+   "price": 0.0071,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0071
+    },
+    {
+     "qty": 1000,
+     "price": 0.0057
+    },
+    {
+     "qty": 5000,
+     "price": 0.0049
+    },
+    {
+     "qty": 10000,
+     "price": 0.0045
+    },
+    {
+     "qty": 50000,
+     "price": 0.0041
+    },
+    {
+     "qty": 100000,
+     "price": 0.0038
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010145_UNI-ROYAL-Uniroyal-Elec-1206W4F330JT5E_C18005.pdf",
+   "url": "https://www.lcsc.com/product-detail/chip-resistor-surface-mount_uni-royal-uniroyal-elec-1206w4f330jt5e_C18005.html",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "33\u03a9"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+155\u2103"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "250mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "200V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b11%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "\u00b1200ppm/\u2103"
+    }
+   ],
+   "rank": 1
+  },
+  {
+   "lcsc": "C25375",
+   "mpn": "1206W4J0330T5E",
+   "brand": "UNI-ROYAL(Uniroyal Elec)",
+   "description": "-55\u2103~+155\u2103 200V 250mW 33\u03a9 Thick Film Resistor \u00b1100ppm/\u2103 \u00b15% 1206 Chip Resistor - Surface Mount ROHS",
+   "package": "1206",
+   "category": "Chip Resistor - Surface Mount",
+   "type": "Extended",
+   "basic": false,
+   "stock": 43880,
+   "price": 0.0035,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0035
+    },
+    {
+     "qty": 1000,
+     "price": 0.0027
+    },
+    {
+     "qty": 5000,
+     "price": 0.0023
+    },
+    {
+     "qty": 10000,
+     "price": 0.0021
+    },
+    {
+     "qty": 50000,
+     "price": 0.0018
+    },
+    {
+     "qty": 50200,
+     "price": 0.0018
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2205311900_UNI-ROYAL-Uniroyal-Elec-1206W4J0330T5E_C25375.pdf",
+   "url": "https://www.lcsc.com/product-detail/chip-resistor-surface-mount_uni-royal-uniroyal-elec-1206w4j0330t5e_C25375.html",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "33\u03a9"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+155\u2103"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "250mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "200V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b15%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "\u00b1100ppm/\u2103"
+    }
+   ],
+   "rank": 2
+  },
+  {
+   "lcsc": "C310347",
+   "mpn": "RS-06K33R0FT",
+   "brand": "FH (Guangdong Fenghua Advanced Tech)",
+   "description": "-55\u2103~+155\u2103 200V 250mW 33\u03a9 Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 1206 Chip Resistor - Surface Mount ROHS",
+   "package": "1206",
+   "category": "Chip Resistor - Surface Mount",
+   "type": "Extended",
+   "basic": false,
+   "stock": 17470,
+   "price": 0.0055,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0055
+    },
+    {
+     "qty": 1000,
+     "price": 0.0043
+    },
+    {
+     "qty": 5000,
+     "price": 0.0036
+    },
+    {
+     "qty": 10000,
+     "price": 0.0032
+    },
+    {
+     "qty": 50000,
+     "price": 0.0028
+    },
+    {
+     "qty": 100000,
+     "price": 0.0027
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_FH--Guangdong-Fenghua-Advanced-Tech-RS-06K33R0FT_C310347.pdf",
+   "url": "https://www.lcsc.com/product-detail/chip-resistor-surface-mount_fh-guangdong-fenghua-advanced-tech-rs-06k33r0ft_C310347.html",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "33\u03a9"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+155\u2103"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "250mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "200V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b11%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "\u00b1100ppm/\u2103"
+    }
+   ],
+   "rank": 3
+  },
+  {
+   "lcsc": "C294147",
+   "mpn": "ARG06FTC0330",
+   "brand": "Viking Tech",
+   "description": "-55\u2103~+155\u2103 200V 250mW 33\u03a9 Thin Film Resistor \u00b11% \u00b125ppm/\u2103 1206 Chip Resistor - Surface Mount ROHS",
+   "package": "1206",
+   "category": "Chip Resistor - Surface Mount",
+   "type": "Extended",
+   "basic": false,
+   "stock": 14967,
+   "price": 0.0135,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0135
+    },
+    {
+     "qty": 500,
+     "price": 0.0109
+    },
+    {
+     "qty": 1500,
+     "price": 0.0095
+    },
+    {
+     "qty": 5000,
+     "price": 0.0081
+    },
+    {
+     "qty": 25000,
+     "price": 0.0074
+    },
+    {
+     "qty": 50000,
+     "price": 0.007
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Viking-Tech-ARG06FTC0330_C294147.pdf",
+   "url": "https://www.lcsc.com/product-detail/chip-resistor-surface-mount_viking-tech-arg06ftc0330_C294147.html",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "33\u03a9"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+155\u2103"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "250mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thin Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "200V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b11%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "\u00b125ppm/\u2103"
+    }
+   ],
+   "rank": 4
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

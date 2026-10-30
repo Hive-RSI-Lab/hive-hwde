@@ -1,0 +1,47 @@
+{
+"version": 1,
+"ops": [
+{
+"op": "add_track",
+"start": [
+4.305,
+61.11
+],
+"end": [
+4.305,
+62.51
+],
+"width": 0.15,
+"layer": "F.Cu",
+"net": "GND"
+},
+{
+"op": "add_track",
+"start": [
+4.305,
+62.51
+],
+"end": [
+4.705,
+62.91
+],
+"width": 0.15,
+"layer": "F.Cu",
+"net": "GND"
+},
+{
+"op": "add_track",
+"start": [
+4.705,
+62.91
+],
+"end": [
+4.705,
+63.71
+],
+"width": 0.15,
+"layer": "F.Cu",
+"net": "GND"
+}
+]
+}

@@ -54,6 +54,24 @@ USB-C VBUS (5 V at attach, 20 V after the PD contract)
   - -> U3 SY8089 -> +3V3 (ESP32 0.5 A peak, CH340C, ES8388 DVDD/PVDD, IR, LED, pull-ups)
   - -> U4 LP5907 -> +3V3A (ES8388 AVDD, HPVDD)
 
+**+3V3 budget (0.55 A, constraints.json power[]):** the ESP32-WROVER-E's radio
+transmit peak is 500 mA (Espressif's datasheet; fw constraints asks for it),
+plus CH340C ~12 mA, ES8388 DVDD/PVDD ~15 mA, the IR receiver ~1.5 mA and
+pull-ups and dividers ~3 mA: about 0.53 A. U3 (SY8089, 2 A) and L6
+(SWPA4020S2R2NT, 1.85 A rated, 3.7 A Isat) give it with margin. The heating
+budget is dT 20 C, as on Lite's other power rails: 500 mA comes in transmit
+bursts (about 240 mA averaged over a transmission), so it overstates the
+heating. The rail is tracks, not a plane: about 95 mm from L6 to the module's
+pin 2 through two layer changes, widened from 0.2 mm to 0.3 mm wherever clearance
+allows, and to 0.204-0.25 mm where USB_DP, U0RXD, AMP_IN_L, PVDD_SENSE or C20
+sit beside it. The vias are
+0.6/0.3 mm, rated 1 A like VBUS's (via_amps), and three of the four layer
+changes on that path have a second via. hwde check_irdrop from L6 at 0.55 A:
+about 85 mV to the module at the peak (114 mV before the widening), so the
+module sees about 3.2 V in a burst, against its 3.0 V minimum and the 2.43 V
+brown-out the firmware sets. At the module: C20 10 uF + C21 100 nF, with
+C12 22 uF and C13 10 uF at the buck.
+
 ## Ground
 
 One GND net and one bottom-layer GND pour. The amp's power-ground and the codec's

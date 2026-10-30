@@ -17,7 +17,7 @@ product.md's Boards row.
 ## What it is
 
 - **Board:** 2 layers, 1.6 mm FR-4, 1 oz, HASL, 100 x 90 mm, four M3 plated
-  holes, 2 mm corners. 134 parts, all on the top side. 130 are SMT; 4 are
+  holes, 2 mm corners. 145 parts, all on the top side. 141 are SMT; 4 are
   through-hole (J2, J3, J4 and U9). The 4 mounting holes are not BOM parts.
   JLC assembly with LCSC part numbers.
 - **Rear edge, left to right:**
@@ -34,13 +34,14 @@ product.md's Boards row.
 
 | Block | Parts | Notes |
 |---|---|---|
-| USB-C + PD | J1 USB4105 (48 V/5 A), U1 CH224A, D1 SMBJ20A | asks for 20 V (Rset 120k); I2C 0x22 on the codec's bus, so firmware reads the protocol status (0x09) and the PDO's max current (0x50). The CH224A has no SRCCAP registers (CH224Q only). |
-| PVDD switch | Q1 AO4485, Q4 MMBT3904 | on only when GPIO18 is high **and** the PD contract is good (Q4's emitter is CH224A PG); Miller soft start ~6 ms, ~1.6 A inrush; R16 bleeder |
+| USB-C + PD | J1 HRO TYPE-C-31-M-12 (20 V/5 A), U1 CH224A, D1 SMBJ20A | asks for 20 V (Rset 120k); I2C 0x22 on the codec's bus, so firmware reads the protocol status (0x09) and the PDO's max current (0x50). The CH224A has no SRCCAP registers (CH224Q only). |
+| PVDD switch | Q1 AO4485, Q4 MMBT3904 | on only when GPIO18 is high **and** the PD contract is good (Q4's emitter is CH224A PG); C19 holds the gate shut on VBUS steps; soft start ~28 ms, 0.41 A inrush; R16 bleeder |
 | 5 V | U2 TPS54302, L5 10 uH | TI design-example values |
 | 3.3 V | U3 SY8089 (digital), U4 LP5907 (codec analog) | |
-| MCU | U5 ESP32-WROVER-E-N8R8, U6 CH340C, Q2/Q3 | console + flashing over the same USB-C; auto-program on DTR/RTS |
+| MCU | U5 ESP32-WROVER-E-N8R8, U6 CH340B, Q2/Q3 | console + flashing over the same USB-C; auto-program on DTR/RTS |
 | Codec | U7 ES8388 | pinned like the ESP32-A1S AudioKit (I2S MCLK 0, BCLK 27, LRCK 25, DOUT 26, DIN 35; I2C 32/33): squeezelite-esp32's board profile applies |
-| Amp | U8 TPA3118D2, L1-L4 10 uH 8 A, C68-C71 1 uF | BTL, 26 dB, BD mode, no power limit; 2 x 43 W into 4 ohm at 20 V |
+| Amp | U8 TPA3118D2, L1-L4 10 uH 8 A, C68-C71 1 uF | BTL, 26 dB, BD mode, no power limit; 2 x 38.7 W into 4 ohm at 20 V, 1 % THD (review-2) |
+| Self-measurement | R66-R69, C81-C84 | SPK_L_P / SPK_R_P through 100k/10k, 470 pF, 1 uF into the codec's LIN2/RIN2: the board records its own speaker outputs (ratio 0.0625 with the ADC's input) |
 | Bulk | C58 470 uF polymer, C59 220 uF | |
 
 ESP32 pin map:
@@ -62,6 +63,36 @@ ESP32 pin map:
 | 1/3 | UART0 |
 
 The full table is in [`architecture/blocks.md`](architecture/blocks.md).
+
+## First-spin review (review-2, 2026-10-29)
+
+Six independent reviewers (power, audio, digital/RF, thermal, DFM, parts
+pin-to-pad) read this board from its KiCad files and the vendor datasheets:
+[`docs/review-2/`](../../docs/review-2/). No pinout errors. What changed on
+this board because of it:
+
+| Finding | Was | Now |
+|---|---|---|
+| AUDIO-4 / DIGITAL-14 (major): the amp could stay in shutdown, since SDZ's up-to-50 uA input current through 100k left it under 2 V | R54 100k | R54 10k (SDZ >= 2.7 V) + C26 47 nF slew limit |
+| POWER-3 (major): Q1 turned itself on at every VBUS step with the firmware off (C2 Miller coupling) | R6 47k | R6 220k + C19 4.7 uF gate-source (Vsg <= 6.6 V, so 16 V 0603) |
+| POWER-4 (major): firmware turn-on at the AO4485 SOA edge, 2.5 A inrush on a 3 A contract | 6 ms ramp | 28 ms ramp, 0.41 A, 5.8 W peak (simulated, >3x SOA margin) |
+| AUDIO-7: 1.5-2 dB line-in headroom at the FLX4's 2.1 Vrms | R30/R33 10k | 15k: -4.2 dBFS |
+| POWER-10: 5 V buck crossover above TI's 40 kHz | C9 100 pF, 2 x 22 uF | C9 47 pF, + C25 22 uF |
+| DFM-2: RCA pin rows ambiguous on the maker's drawing | round pin holes, 1.7 x 2.4 leg holes | pins 1/3 are 1.6 x 2.4 plated slots covering both readings; legs 2.0 x 3.0 as drawn |
+| Stock: USB4105 0 free at JLC; CH340C not buyable | USB4105, CH340C | HRO TYPE-C-31-M-12 (20 V, Lite asks 20 V), CH340B |
+
+THERMAL-3 (continuous full power trips the latched OTP) and AUDIO-6
+(0 dBFS overdrives the amp by 4.1 dB) are firmware's:
+[`docs/review-2/firmware-requirements.md`](../../docs/review-2/firmware-requirements.md).
+Every fact the board relies on is in [`docs/known-unknowns.md`](../../docs/known-unknowns.md)
+(`python3 tools/known_unknowns.py --check` before ordering).
+
+The changes went in as an ECO on the routed board, keeping all other
+copper: `kicad/gen/eco_swap.py` (J1/U6 swaps; J1's VBUS/GND pads made plain
+0.6 mm rectangles and its signal pads trimmed to the USB4105's inner edge),
+`eco_rca.py`, then `board_update` with `find_spots.py` placements, and the new
+nets routed with `miniroute.py`/`add_track.py`/`add_via.py`. Freerouting timed
+out twice on the routed board under the machine's load.
 
 ## Design decisions, and why
 
@@ -106,7 +137,7 @@ was done about each finding is in
   inductor-to-terminal runs are 1.21 mm (3.5 A, 30 C).
 - **USB is not impedance-controlled.** Full speed, 12 Mb/s; a 90 ohm pair on
   1.6 mm 2-layer would be 1.1 mm wide.
-- **No USB ESD array** on the cost-first tier: the CH340C and CH224A have
+- **No USB ESD array** on the cost-first tier: the CH340B and CH224A have
   their own. Plus/Ultra should add a USBLC6-2SC6.
 - **Board 100 x 90 mm**, not the ~100 x 80 product.md estimated: 80 left no
   room for the PVDD switch between USB-C and the amp.
@@ -127,10 +158,10 @@ was done about each finding is in
 | ERC (`erc`) | 0 errors, 0 warnings (every pulled pin is typed passive, so the schematic review checked pins by hand) |
 | Placement (`place`) | pass, 0 errors |
 | Routed DRC (`drc_routed`) | 0 errors, 0 warnings, 0 unconnected |
-| Verify suite (`verify`) | pass, with one signed waiver (U8 thermal, below) and 27 warnings (route-style jogs, part ratings with no voltage attribute) |
+| Verify suite (`verify`) | pass, with one signed waiver (U8 thermal, below) and 44 warnings, now shown by hwde e225475: 25 route-style (off-45 jogs in Freerouting and maze-router copper; DRC-clean, cosmetic), 18 part ratings with no datasheet extraction (each part's voltage and current margin is in `docs/review-2/` instead), 1 decoupler 5.3 mm from U8 pin 31 (C57, 1 nF HF cap, limit 5.0; 0.3 mm over, left) |
 | JLC DFM on the exported Gerbers (`dfm`) | pass, 0 errors. 3 warnings: thin silk strokes inside stock/EasyEDA footprints, and J2/J3's LCSC model pad centre 0.79 mm off because of the added locating pegs. Every CPL rotation was checked against the LCSC model. |
 
-All gates last passed on hive-hwde release 94ec4b7.
+All gates last passed on hive-hwde c23e27e (2026-10-29), after the review-2 ECO.
 
 **The one waiver: TPA3118 thermal**
 ([`reports/verify-waivers.json`](reports/verify-waivers.json)):
@@ -154,7 +185,7 @@ All gates last passed on hive-hwde release 94ec4b7.
 
 ## Cost
 
-**$13.05 per board at 100**: parts $10.40, JLC assembly $2.02, PCB $0.62.
+**$13.16 per board at 100**: parts $10.48, JLC assembly $2.06, PCB $0.62.
 This is the project score, `python3 tools/hwcheck.py score`, priced from the
 real `fab/BOM.csv`, the board's pad counts and its outline.
 
@@ -217,7 +248,7 @@ The fab package in `fab/`:
 2. **Power, from a 5 V USB port** (a laptop) with nothing connected:
    - +5V (C7) reads 4.7–5 V, +3V3 (C12) 3.3 V, +3V3A (C16) 3.3 V.
    - PVDD (C58+) reads 0 V: the amp switch must stay off on 5 V.
-   - The CH340C enumerates as a serial port, and the ESP32 boot log appears
+   - The CH340B enumerates as a serial port, and the ESP32 boot log appears
      at 115200.
 3. **Flash:** flash the firmware over the same port; auto-program needs no
    buttons.
