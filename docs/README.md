@@ -47,6 +47,20 @@ an agent runs it inside the Hive.
   list. A review answers each known unknown from a datasheet or states the
   margin it rests on; `hwde eng_calc <calc> ...` gives the numbers a written
   margin cites.
+- A board that runs firmware gets `hwde check_fw --board boards/<name>`,
+  run at every schematic change, not first at bring-up. It runs hive-fw's
+  `fw constraints` (with `fw pins` inside it) for each firmware target whose
+  board is this one in fw's `targets.json` (or `--target`), reading the
+  firmware beside the board in your checkout. It reports fw's own problems
+  (module flash/PSRAM, a firmware pin on the wrong net) and the ones only
+  the board side can see: the ESP32's supply budgeted under the radio's
+  peak current in `constraints.json`, a strap pin pulled the wrong way at
+  reset (GPIO12/2 up, GPIO0 down), an input-only GPIO 34-39 nothing drives
+  or pulls, and an I2C line with no pull-up. Its `targets[].needs` are what
+  a netlist can't settle (antenna keep-out, address straps); weigh each.
+  Exit 0 pass, 1 problems, 2 when fw (one with `constraints`) isn't found:
+  it looks at `--fw`, `$HWDE_FW`, then hive-fw in `$HIVE_MODULES`. A check
+  sandbox sees neither, so it is an agent's check, not a per-PR one.
 - Start from `hwde task_router --task "<the ask>" --workspace boards/<name>`
   and follow its recipe (`reference/recipes/<verb>.md`). The whole pipeline
   is `full-run`.
