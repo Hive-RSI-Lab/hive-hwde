@@ -1,0 +1,322 @@
+{
+ "script": "kc",
+ "tool": "drc",
+ "input": "blinky2.kicad_pcb",
+ "units": "mm",
+ "kicad_version": "10.0.6",
+ "options": {
+  "parity": true,
+  "all_track_errors": true,
+  "refill": false,
+  "save_board": false
+ },
+ "counts": {
+  "total": 10,
+  "by_severity": {
+   "warning": 6,
+   "error": 4
+  },
+  "by_source": {
+   "drc": 7,
+   "unconnected": 1,
+   "parity": 2
+  }
+ },
+ "status": "violations",
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-30T09:01:17+00:00",
+ "input_digest": "sexpr_no_uuid:fe95c4fd02e97ed7c7f8d0c36cba2775dbf56276ff8e5428a725dc2d6551f7b2",
+ "violations": [
+  {
+   "check": "track_dangling",
+   "severity": "warning",
+   "pos": [
+    142.7,
+    113.4
+   ],
+   "layer": "F.Cu",
+   "net": "+3V3",
+   "refs": [],
+   "msg": "Track has unconnected end",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Track [+3V3] on F.Cu, length 7.7750 mm",
+     "pos": [
+      142.7,
+      113.4
+     ],
+     "uuid": "7c494bf1-8119-4eb2-b571-2b35be9bd4a1"
+    }
+   ]
+  },
+  {
+   "check": "unconnected_items",
+   "severity": "error",
+   "pos": [
+    134.925,
+    115.25
+   ],
+   "layer": "F.Cu",
+   "net": "+3V3",
+   "refs": [],
+   "msg": "Missing connection between items",
+   "source": "unconnected",
+   "items": [
+    {
+     "msg": "Track [+3V3] on F.Cu, length 0.9500 mm",
+     "pos": [
+      134.925,
+      115.25
+     ],
+     "uuid": "6d693153-bc3c-4c59-93e1-df20b7e052ec"
+    },
+    {
+     "msg": "Track [+3V3] on F.Cu, length 7.7750 mm",
+     "pos": [
+      142.7,
+      113.4
+     ],
+     "uuid": "7c494bf1-8119-4eb2-b571-2b35be9bd4a1"
+    }
+   ]
+  },
+  {
+   "check": "missing_footprint",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [],
+   "msg": "Missing footprint R2 (470)",
+   "source": "parity",
+   "items": []
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    133.185,
+    130.46
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "D1",
+    "TP1"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of D1 on F.Silkscreen",
+     "pos": [
+      133.185,
+      130.46
+     ],
+     "uuid": "08687dee-2d53-4c09-8857-83536661c528"
+    },
+    {
+     "msg": "PCB text 'TP1' on F.Silkscreen",
+     "pos": [
+      132.44,
+      129.5
+     ],
+     "uuid": "aaaa0006-dead-beef-0006-000000000001"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    132.44,
+    129.5
+   ],
+   "layer": "F.Silkscreen",
+   "net": "GND",
+   "refs": [
+    "D1",
+    "TP1"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "PCB text 'TP1' on F.Silkscreen",
+     "pos": [
+      132.44,
+      129.5
+     ],
+     "uuid": "aaaa0006-dead-beef-0006-000000000001"
+    },
+    {
+     "msg": "Pad 1 [GND] of D1 on F.Cu",
+     "pos": [
+      132.4375,
+      129.5
+     ],
+     "uuid": "c7334dc4-594c-4c08-aa02-269f5b1c64de"
+    }
+   ]
+  },
+  {
+   "check": "hole_clearance",
+   "severity": "error",
+   "pos": [
+    40.467,
+    176.297
+   ],
+   "layer": "F.Cu",
+   "net": "VBUS_IN",
+   "refs": [
+    "A4",
+    "B9",
+    "J1"
+   ],
+   "msg": "Hole clearance violation (board setup constraints hole clearance 0.2500 mm; actual 0.2146 mm)",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Pad A4-B9 [VBUS_IN] of J1 on F.Cu",
+     "pos": [
+      40.467,
+      176.297
+     ],
+     "uuid": "55178b42-3f6f-4ad4-b8d0-6f9218ddf9f2"
+    },
+    {
+     "msg": "NPTH pad of J1",
+     "pos": [
+      39.387,
+      175.807
+     ],
+     "uuid": "770ed7c3-dc59-42aa-bdf5-5f0dda705a5a"
+    }
+   ]
+  },
+  {
+   "check": "copper_edge_clearance",
+   "severity": "error",
+   "pos": [
+    34.587499,
+    218.697499
+   ],
+   "layer": "Edge.Cuts",
+   "net": "GND",
+   "refs": [
+    "J1"
+   ],
+   "msg": "Board edge clearance violation (rule 'aiee_edge_clearance_floor' clearance 0.3000 mm; actual 0.2195 mm)",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment on Edge.Cuts",
+     "pos": [
+      34.587499,
+      218.697499
+     ],
+     "uuid": "7023cdfc-6579-46a4-b7fd-370597b7d051"
+    },
+    {
+     "msg": "PTH pad 2 [GND] of J1",
+     "pos": [
+      35.707,
+      174.377
+     ],
+     "uuid": "f5c1430c-0a66-451c-9689-7282c516d2d9"
+    }
+   ]
+  },
+  {
+   "check": "hole_to_hole",
+   "severity": "error",
+   "pos": [
+    66.389,
+    203.064
+   ],
+   "layer": "F.Cu",
+   "net": "+3V3",
+   "refs": [],
+   "msg": "Drilled hole too close to other hole (rule 'aiee_hole_to_hole_floor' min 0.5000 mm; actual 0.2506 mm)",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Via [+3V3] on F.Cu - B.Cu",
+     "pos": [
+      66.389,
+      203.064
+     ],
+     "uuid": "a7451c6a-7a08-4088-903a-27383f52d199"
+    },
+    {
+     "msg": "Via [+3V3] on F.Cu - B.Cu",
+     "pos": [
+      66.927,
+      202.947
+     ],
+     "uuid": "e981a886-e1f0-4e9e-9a77-c07054b41c1a"
+    }
+   ]
+  },
+  {
+   "check": "silk_edge_clearance",
+   "severity": "warning",
+   "pos": [
+    34.587499,
+    218.697499
+   ],
+   "layer": "Edge.Cuts",
+   "net": null,
+   "refs": [
+    "C222"
+   ],
+   "msg": "Silkscreen clipped by board edge",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment on Edge.Cuts",
+     "pos": [
+      34.587499,
+      218.697499
+     ],
+     "uuid": "7023cdfc-6579-46a4-b7fd-370597b7d051"
+    },
+    {
+     "msg": "Reference field of C222",
+     "pos": [
+      34.844,
+      131.584
+     ],
+     "uuid": "258c3546-972e-472a-b090-b1f3a9a6adc1"
+    }
+   ]
+  },
+  {
+   "check": "extra_footprint",
+   "severity": "warning",
+   "pos": [
+    107.012,
+    183.314
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "R42"
+   ],
+   "msg": "Extra footprint",
+   "source": "parity",
+   "items": [
+    {
+     "msg": "Footprint R42",
+     "pos": [
+      107.012,
+      183.314
+     ],
+     "uuid": "000d71c4-4850-4fd0-b9ab-37c3323aea24"
+    }
+   ]
+  }
+ ]
+}
