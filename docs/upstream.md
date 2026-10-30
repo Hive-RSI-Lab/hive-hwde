@@ -9,7 +9,9 @@ these ways:
   application notes) is left out. NOTICE says they're redistributed under
   their owners' terms, not MIT.
 - `scripts/lib/knowledgelib.py`: `SOURCES_DIR` reads `HWDE_KNOWLEDGE_SOURCES`
-  when it's set, so the records can still find those PDFs elsewhere.
+  when it's set, so the records can still find those PDFs elsewhere:
+  `docs/knowledge-sources.txt` lists them (git blob sha, size, name) and
+  `bin/sources.py` fetches them from upstream into HOME.
 - `scripts/parts_search.py --kind/--category` (with
   `reference/part_kinds.yaml` and `category_search` in
   `scripts/lib/partslib.py`): finding a part by what it is, by browsing its
@@ -99,6 +101,8 @@ Everything specific to the Hive is in `bin/` and `docs/`:
 
 To update, copy upstream's skill folder over this one, drop the source PDFs
 again, re-apply the `SOURCES_DIR` line and the fixes above (or check upstream
-has them), and bump the commit above. Copy upstream's `tests/` over this one
+has them), and bump the commit above and in `docs/knowledge-sources.txt`
+(its lines are the GitHub contents API's `sha`, `size` and `name` for the
+sources folder at that commit). Copy upstream's `tests/` over this one
 the same way, leaving out the files above and keeping `KNOWN_FAILING`,
 `test_workarounds.py` and `test_sourcer_records.py`.
