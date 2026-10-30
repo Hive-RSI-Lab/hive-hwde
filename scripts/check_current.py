@@ -156,6 +156,21 @@ SHIPPED pd-trigger board necks 0.86 mm vs the 1.75 mm 5 A requirement on a
 plane fed from multiple directions). Below the threshold the screen is noise:
 the rf4 golden fires a 0.07 mm sliver neck at a 0.15 A budget.
 
+Switch nodes (errata corpus digits-1: an LM2596's OUT net, auto-named
+Net-(D1-K), escaped the Power net class and shipped at 0.25 mm for 3 A). A
+regulator in reference/switch_nodes.yaml (matched on Value / MPN) whose
+switch pin (pad pinfunction SW, LX, OUT ... per row) sits on a net no power
+entry names gets one entry at the part's rated current, judged at dT =
+INFERRED_DT_C (60 C: what takes a board at 50 C ambient to ~110 C, near
+FR-4's Tg). The rating is the most the node carries, not what this board
+draws, so this is a gross-error screen: a node left at signal width fails
+it (digits v1, 0.25 mm), the designer's own fix passes it (digits v2, 0.75
+mm needs 0.71 at 60 C). Its findings are warnings with extras inferred=true
+and from_part; a constraints.json entry for the net (the playbook writes one
+per switching node at P2) replaces it, at the board's real current and dT. A part
+with a pin named SW/LX/PH that no row matches is listed in the report's
+"unrated_switch_nodes" (facts only).
+
 CLI: --pcb board.kicad_pcb --constraints constraints.json [--out report.json]
      exit 0/1/2 per SPEC section 6.
 
@@ -178,6 +193,8 @@ import math
 import re
 import sys
 from pathlib import Path
+
+import yaml
 
 from shapely import STRtree
 from shapely.geometry import Point
@@ -204,6 +221,12 @@ PAD_EXIT_MAX_MM = 1.0          # longest accepted pad-exit neck (docstring)
 TOUCH_MM = 1e-3                # end-to-end / end-on-pad contact tolerance
 THT_JOIN_MM = 1.0              # plated pad joins fill this far out (relief)
 PAD_IN_POUR_FRAC = 0.9         # fill covers this much of a pad "in the pour"
+SWITCH_NODES_YAML = (Path(__file__).resolve().parent.parent / "reference"
+                     / "switch_nodes.yaml")
+INFERRED_DT_C = 60.0           # switch-node screen without constraints
+SWITCH_PIN_NAMES = {"SW", "LX", "PH"}  # unrated-part facts (switch_nodes.yaml)
+MPN_PROPS = ("MPN", "Manufacturer Part Number", "Manufacturer_Part_Number",
+             "Part Number", "PN")
 
 
 def width_1oz_10c(current_a: float) -> float:
@@ -1130,6 +1153,54 @@ def derived_return_entry(entries: list[dict], bg: geom.BoardGeom) -> dict | None
             "plane_fed": True, "derived": True}
 
 
+def switch_rows(path: Path = SWITCH_NODES_YAML) -> list[dict]:
+    rows = yaml.safe_load(path.read_text(encoding="utf-8"))["regulators"]
+    return [dict(r, rx=re.compile(r["match"], re.I),
+                 pins={p.upper() for p in r["pins"]}) for r in rows]
+
+
+def pin_name(pad: geom.Pad) -> str:
+    """'OUT_2' on pad 2 -> 'OUT'; '~{SW}' -> 'SW'."""
+    name = pad.pinfunction.strip()
+    if name.endswith(f"_{pad.number}"):
+        name = name[: -len(pad.number) - 1]
+    return re.sub(r"~\{([^}]*)\}", r"\1", name).upper()
+
+
+def inferred_switch_entries(entries: list[dict], bg: geom.BoardGeom,
+                            rows: list[dict]) -> tuple[list[dict], list[dict]]:
+    """(entries, unrated): one entry per switch net no power entry names, at
+    the matched regulator's rated current (module docstring)."""
+    named = {e.get("net") for e in entries}
+    found: dict[str, dict] = {}
+    unrated: list[dict] = []
+    for ref, fp in sorted(bg.footprints.items()):
+        texts = [fp.get("value") or ""] + [fp["props"].get(k, "")
+                                           for k in MPN_PROPS]
+        row = next((r for r in rows
+                    if any(t and r["rx"].search(t.strip()) for t in texts)),
+                   None)
+        for pad in bg.pads_of(ref=ref):
+            name = pin_name(pad)
+            net = pad.net
+            if not net or net.startswith("unconnected-") or net in named:
+                continue
+            if row is None:
+                if name in SWITCH_PIN_NAMES:
+                    unrated.append({"ref": ref, "value": fp.get("value"),
+                                    "pin": name, "net": net})
+                continue
+            if name not in row["pins"]:
+                continue
+            cur = found.get(net)
+            if cur is None or row["current_a"] > cur["current_a"]:
+                found[net] = {"net": net, "current_a": float(row["current_a"]),
+                              "dt_c": INFERRED_DT_C, "inferred": True, "from_part": ref,
+                              "part": fp.get("value")}
+    uniq = {(u["ref"], u["net"]): u for u in unrated}
+    return list(found.values()), list(uniq.values())
+
+
 def run(argv=None):
     ap = argparse.ArgumentParser(
         description="Trace width / pour neck / via count vs current (IPC-2152).")
@@ -1150,14 +1221,32 @@ def run(argv=None):
         vs, facts = check_net(bg, entry)
         violations.extend(vs)
         checked.append(facts)
+    inferred, unrated = inferred_switch_entries(entries, bg, switch_rows())
+    for entry in inferred:
+        vs, facts = check_net(bg, entry)
+        for v in vs:
+            v["severity"] = "warning"
+            v["msg"] = v["items"][0]["msg"] = (
+                f"{v['msg']}; inferred: {entry['net']} is "
+                f"{entry['from_part']} ({entry['part']})'s switch node, at its "
+                f"rated {entry['current_a']:g} A, screened at dT="
+                f"{INFERRED_DT_C:.0f}C - name the net in "
+                f"constraints.json power with this board's current")
+            v.update(inferred=True, from_part=entry["from_part"])
+            if entry["from_part"] not in v["refs"]:
+                v["refs"] = sorted(v["refs"] + [entry["from_part"]])
+        violations.extend(vs)
+        checked.append(dict(facts, inferred=True,
+                            from_part=entry["from_part"]))
     ret_entry = derived_return_entry(entries, bg)
     if ret_entry is not None:
         vs, facts = check_net(bg, ret_entry)
         violations.extend(vs)
         checked.append(facts)
 
+    extra = {"unrated_switch_nodes": unrated} if unrated else {}
     payload = checklib.report(SCRIPT, args.pcb, violations, checked=checked,
-                              stackup_assumed=bg.stackup.assumed)
+                              stackup_assumed=bg.stackup.assumed, **extra)
     return payload, args.out
 
 

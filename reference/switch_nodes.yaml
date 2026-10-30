@@ -1,0 +1,95 @@
+# Switching regulators whose switch node check_current judges when
+# constraints.json names no current for it (the digits v1 miss: an LM2596's
+# OUT net, auto-named Net-(D1-K), escaped the Power net class and was routed
+# at 0.25 mm for 3 A).
+#
+# match: a regex tried against the part's Value and MPN fields
+# (case-insensitive). pins: the switch pin's names on the symbol (the board's
+# pad pinfunction, its "_<pin number>" suffix dropped). current_a: the part's
+# rated output current, which a buck's switch node carries (a boost's: its
+# rated switch current). source / verified as in regulator_vref.yaml: `false`
+# means typed from memory of the datasheet, not re-read.
+#
+# A part with a pin named SW, LX or PH that no row matches is listed in the
+# report's checked facts as unrated; add its row here to judge it.
+regulators:
+  - match: '^LM2596'
+    pins: [OUT]
+    current_a: 3.0
+    source: TI LM2596 datasheet (SNVS124), 3-A step-down
+    verified: false
+  - match: '^LM2576'
+    pins: [OUT]
+    current_a: 3.0
+    source: TI LM2576 datasheet, 3-A step-down
+    verified: false
+  - match: '^LM2575'
+    pins: [OUT]
+    current_a: 1.0
+    source: TI LM2575 datasheet, 1-A step-down
+    verified: false
+  - match: '^XL4015'
+    pins: [SW]
+    current_a: 5.0
+    source: XLSEMI XL4015 datasheet, 5A output
+    verified: false
+  - match: '^XL4016'
+    pins: [SW]
+    current_a: 8.0
+    source: XLSEMI XL4016 datasheet, 8A output
+    verified: false
+  - match: '^MP1584'
+    pins: [SW]
+    current_a: 3.0
+    source: MPS MP1584 datasheet, 3A step-down
+    verified: false
+  - match: '^MP2307'
+    pins: [SW]
+    current_a: 3.0
+    source: MPS MP2307 datasheet, 3A step-down
+    verified: false
+  - match: '^MP2315'
+    pins: [SW]
+    current_a: 3.0
+    source: MPS MP2315 datasheet, 3A step-down
+    verified: false
+  - match: '^TPS5430($|[^0-9])'
+    pins: [PH]
+    current_a: 3.0
+    source: TI TPS5430 datasheet, 3-A step-down
+    verified: false
+  - match: '^TPS5433[01]'
+    pins: [PH]
+    current_a: 3.0
+    source: TI TPS54331 datasheet, 3-A step-down
+    verified: false
+  - match: '^TPS5430[0-9]'
+    pins: [SW]
+    current_a: 3.0
+    source: TI TPS54302 datasheet, 3-A step-down
+    verified: false
+  - match: '^TPS56320[0-9]'
+    pins: [SW]
+    current_a: 3.0
+    source: TI TPS563201 datasheet, 3-A step-down
+    verified: false
+  - match: '^SY8089'
+    pins: [LX]
+    current_a: 2.0
+    source: Silergy SY8089 datasheet, 2A step-down
+    verified: false
+  - match: '^SY8113'
+    pins: [LX]
+    current_a: 3.0
+    source: Silergy SY8113B datasheet, 3A step-down
+    verified: false
+  - match: '^AP6320[0-9]'
+    pins: [SW]
+    current_a: 2.0
+    source: Diodes AP63203/AP63205 datasheet, 2A step-down
+    verified: false
+  - match: '^MT3608'
+    pins: [SW]
+    current_a: 4.0
+    source: Aerosemi MT3608 datasheet, 4A switch current limit (boost)
+    verified: false

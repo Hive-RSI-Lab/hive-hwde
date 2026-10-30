@@ -222,3 +222,10 @@ def test_pin_requirements_table_rows_are_well_formed():
             assert r["pin"] and r["to"] and r["source"]
             assert set(r["kinds"]) <= {"C", "L", "R"}
             assert r.get("when") in (None, "connected")
+
+
+def test_check_current_catch_runs_on_the_board():
+    assert ec.RUNNERS["check_current"]
+    caught = [d for b in ec.load() for d in b["defects"]
+              if (d.get("catch") or {}).get("script") == "check_current"]
+    assert any(d["id"] == "digits-1" for d in caught)

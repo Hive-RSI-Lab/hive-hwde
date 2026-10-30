@@ -26,15 +26,12 @@ boards:
     summary: LM2596 switching node Net-(D1-K) routed at 0.25 mm (default class) for 3 A
     source_quote: "The trace connecting U1 OUT (pin 2), D1 cathode, and L1 is routed at 0.25mm"
     fault_class: PI (track width vs current)
-    verdict: caught_with_constraints
+    verdict: caught
+    catch: {script: check_current, kind: undersized_track, net: Net-(D1-K)}
     note: >-
-      check_current flags a track under the IPC-2152 width for the current
-      constraints.json gives the net; hwde's own playbook writes a current for
-      every switching node at P2, so on an hwde board it fires. On the foreign
-      board there is no constraints.json, so it can't; the miss is the
-      auto-named net escaping the net class, which a constraints-free read of
-      a buck's SW pin would see.
-    follow_up: brief - check_current infers a current for a regulator's switch node (pin named SW/OUT/LX of a part in fet_power/regulator tables) when constraints.json names none
+      With no constraints.json, check_current finds U1's OUT pin (an LM2596,
+      reference/switch_nodes.yaml) and screens its net at the part's rated
+      3 A at dT=60C: 0.25 mm fails (needs 0.72 mm); v2's 0.75 mm passes.
   - id: digits-2
     summary: J1 2x20 Pi header on B.Cu rotated 180 deg, so odd/even columns swap against the Pi below
     source_quote: "The combination of KiCad's automatic B.Cu mirror and the 180-degree rotation causes the odd/even pin columns to swap"

@@ -215,6 +215,10 @@ class Pad:
     castellated: bool = False
     # The pad's type token: smd | thru_hole | np_thru_hole | connect.
     kind: str = ""
+    # The symbol pin's name as the board stores it, `(pinfunction "SW")`
+    # ("" when the board has none); check_current finds a regulator's
+    # switch node by it.
+    pinfunction: str = ""
 
     @cached_property
     def copper_center(self) -> tuple[float, float]:
@@ -745,6 +749,8 @@ class BoardGeom:
             rratio=rratio, layers=layers, drill=drill,
             drill_offset=drill_off,
             kind=str(_tok(pad[2])) if len(pad) > 2 else "",
+            pinfunction=next((str(pf[1]) for pf in _kids(pad, "pinfunction")
+                              if len(pf) > 1 and isinstance(pf[1], str)), ""),
             castellated=any(_tok(x) == "pad_prop_castellated"
                             for prop in _kids(pad, "property")
                             for x in prop[1:]))
