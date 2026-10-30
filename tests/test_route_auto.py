@@ -471,8 +471,10 @@ def test_run_freerouting_silent_but_growing_ses_is_not_killed(tmp_path):
         "for i in range(1, 7):\n"
         "    time.sleep(0.5)\n"
         "    open('b.ses', 'a').write('x' * i)\n"))
+    # stall_s well over the 0.5 s growth step: on a loaded machine the
+    # child's own start-up took over 1 s and the run was killed as stalled
     facts = routelib.run_freerouting(None, None, dsn, ses, cmd=cmd,
-                                     timeout=30, stall_s=1)
+                                     timeout=30, stall_s=3)
     assert not facts["timed_out"] and facts["rc"] == 0
 
 
