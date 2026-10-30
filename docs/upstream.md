@@ -20,6 +20,18 @@ What moved where:
   redistributed under their owners' terms, not MIT.
   `scripts/lib/knowledgelib.py`'s `SOURCES_DIR` reads `HWDE_KNOWLEDGE_SOURCES`,
   and `bin/hwde` points it at the hwde project's clone when there is one.
+- Fixes from building boards here (issue #5, hwde-led-test), each tested in
+  `tests/test_sourcer_records.py`:
+  - `scripts/bom_cpl.py` reads a footprint's LCSC number from `LCSC Part`
+    (what lib_pull's easyeda2kicad writes) as well as `LCSC`, and gives a
+    refdes-less parts.json line the board refs with its LCSC number.
+  - `scripts/check_ratings.py` reads LCSC's resistor rating names
+    ("Voltage-Supply(Max)", "Working Voltage") and says which parts.json
+    lines carry no attributes.
+  - `scripts/check_pdn.py` counts a cap the board puts straight across a rail
+    and ground when decoupling.json records none for that rail.
+  - `agents/part-sourcer.md` copies the parts_search row whole (attributes
+    included) and writes no refdes.
 - Fixes the Hive made while building boards, worth offering upstream:
   `scripts/check_courtyard.py` (+ `checks.d/check_courtyard.yaml`), a verify
   check that fails a courtyard that misses its own pads; `scripts/lib/fpfix.py`

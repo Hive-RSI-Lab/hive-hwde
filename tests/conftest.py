@@ -16,11 +16,24 @@ RECORDED_KICAD = (10, 0, 3)
 
 
 @functools.cache
-def _kicad_version() -> tuple[int, ...]:
+def _kicad_version() -> tuple[tuple[int, ...], str]:
+    """(version, what it is) of the pipeline's kicad-cli, () when unknown.
+
+    Asked once, at collection: a pin whose version probe fails (a slow
+    kicad-cli on a strained machine times out) skips the recorded tests with
+    the reason, never aborts the whole run (issue #252)."""
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts" / "lib"))
     import env
-    cli = env.find_kicad_cli()
-    return env.kicad_cli_version(cli) if cli else ()
+    try:
+        cli = env.find_kicad_cli()
+    except env.EnvError as e:
+        return (), f"no usable kicad-cli ({e})"
+    if not cli:
+        return (), "no kicad-cli"
+    ver = env.kicad_cli_version(cli)
+    if not ver:
+        return (), f"kicad-cli {cli} of unknown version"
+    return ver, ".".join(map(str, ver))
 
 
 # Upstream tests that fail in hive-hwde for a cause a brief already owns:
@@ -97,10 +110,9 @@ def pytest_collection_modifyitems(config, items):
     marked = [i for i in items if i.get_closest_marker("kicad_recorded")]
     if not marked:
         return
-    ver = _kicad_version()
+    ver, have = _kicad_version()
     if ver[:3] == RECORDED_KICAD:
         return
-    have = ".".join(map(str, ver)) or "no kicad-cli"
     skip = pytest.mark.skip(reason=(
         f"numbers recorded on KiCad {'.'.join(map(str, RECORDED_KICAD))}, "
         f"this is {have} (LEARNINGS 2026-08-27)"))
