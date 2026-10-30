@@ -971,3 +971,75 @@ def test_leaf_reaching_no_pad_keeps_budget(tmp_path_factory):
     ("0R", 0.0), ("R100", None), ("", None), ("DNP", None)])
 def test_parse_ohms(value, ohms):
     assert check_current.parse_ohms(value) == ohms
+
+
+# ---- leaf tracks (hifi-receiver-2 core +3V3: one 0.3 mm track off a plane
+# via to a single pull-up, judged at the rail's 0.8 A) ---------------------
+# B.Cu PWR plane; a via at (3, 5) up to F.Cu and a 0.2 mm track to pad 1 of
+# a two-pad part at (8, 5). At 2 A the track fails; R1 (10k 0402) draws at
+# most sqrt(0.2/10k) = 4.5 mA.
+
+_TAP = """  (zone (net "PWR") (layer "B.Cu")
+    (polygon (pts (xy 0 0) (xy 20 0) (xy 20 10) (xy 0 10)))
+    (filled_polygon (layer "B.Cu")
+      (pts (xy 0 0) (xy 20 0) (xy 20 10) (xy 0 10))))
+  (via (at 3 5) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net "PWR"))
+  (segment (start 3 5) (end 7.6 5) (width 0.2) (layer "F.Cu") (net "PWR"))
+"""
+
+
+def _tap_part(ref="R1", value="10k", lib="t:R0402"):
+    return f"""  (footprint "{lib}" (at 8 5)
+    (layer "F.Cu")
+    (property "Reference" "{ref}" (at 0 0 0))
+    (property "Value" "{value}" (at 0 0 0))
+    (pad "1" smd rect (at -0.4 0) (size 0.5 0.6) (layers "F.Cu") (net "PWR"))
+    (pad "2" smd rect (at 0.4 0) (size 0.5 0.6) (layers "F.Cu") (net "SIG")))
+"""
+
+
+def test_leaf_track_judged_at_its_load(tmp_path_factory):
+    """The tap only feeds R1: no undersized_track, listed in
+    facts["leaf_branches"] at R1's bound."""
+    bg = _board(tmp_path_factory, "tap", _TAP + _tap_part())
+    vs, facts = check_current.check_net(bg, ENTRY_PWR)
+    assert _kinds(vs, "undersized_track") == []
+    [leaf] = [b for b in facts["leaf_branches"]
+              if b["kind"] == "undersized_track"]
+    assert leaf["loads"] == ["R1"] and leaf["layer"] == "F.Cu"
+    assert leaf["current_a"] == pytest.approx(0.00447, abs=1e-4)
+
+
+def test_leaf_track_to_unbounded_part_keeps_budget(tmp_path_factory):
+    """A capacitor or an IC past the tap has no bound: judged at 2 A."""
+    bg = _board(tmp_path_factory, "tapcap",
+                _TAP + _tap_part("C1", "100nF", "t:C0402"))
+    vs, facts = check_current.check_net(bg, ENTRY_PWR)
+    [v] = _kinds(vs, "undersized_track")
+    assert v["current_a"] == 2.0 and v["severity"] == "error"
+    assert "leaf_loads" not in v
+
+
+def test_leaf_track_with_second_feed_keeps_budget(tmp_path_factory):
+    """R1's pad also reaches the plane through its own via: the track is
+    not the only path, so R1 does not bound it."""
+    via = ('  (via (at 7.6 5.5) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu")'
+           ' (net "PWR"))\n')
+    bg = _board(tmp_path_factory, "tap2", _TAP + _tap_part() + via)
+    vs, facts = check_current.check_net(bg, ENTRY_PWR)
+    [v] = _kinds(vs, "undersized_track")
+    assert v["current_a"] == 2.0
+    assert not [b for b in facts.get("leaf_branches", [])
+                if b["kind"] == "undersized_track"]
+
+
+def test_leaf_track_still_too_thin_names_its_load(tmp_path_factory):
+    """A 4R7 1206 can pass 0.33 A, more than a 0.2 mm track carries at a
+    tight 1 C rise: the finding stays, re-judged at that bound."""
+    bg = _board(tmp_path_factory, "tapbig",
+                _TAP + _tap_part("R1", "4R7", "t:R1206"))
+    vs, _ = check_current.check_net(bg, {**ENTRY_PWR, "dt_c": 1})
+    [v] = _kinds(vs, "undersized_track")
+    assert v["leaf_loads"] == ["R1"]
+    assert v["current_a"] == pytest.approx((0.5 / 4.7) ** 0.5, abs=1e-3)
+    assert "leaf branch: R1" in v["msg"]
