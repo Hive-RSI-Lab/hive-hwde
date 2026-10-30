@@ -1,152 +1,265 @@
-"""hwde score: the share of gate steps, over all boards, with no workaround.
+"""hwde score: what this checkout's gates find on boards held fixed.
 
-    hwde score            (or: python3 bin/score.py)
+    hwde score [--board NAME ...] [--keep DIR]
 
-Each board under boards/ has up to five gate steps, the ones `hwde check-all`
-re-runs (erc, drc_routed, verify, fab, dfm). So does each board docs/boards.md
-records, the product boards built with hwde in other projects (the steps that
-table gives it; the score never reads the other project's files). A step is charged when a row of
-docs/workarounds.md names it for that board: the step's input came through a
-shim in bin/hwde or an edit by hand. The score is 100 x clean steps / steps,
-higher is better. It reads files only; the test (check-all) is what holds the
-table to the truth. Prints one line per board, then the number alone.
+docs/score.md is the definition. Each pinned board (pinned/*.json: the hi-fi
+receiver's boards as one commit of hifi-receiver-2 had them, and this repo's
+hwde-led-test) is copied to a scratch dir, and erc, drc_routed, verify and
+dfm run on it through bin/hwde, with bin/hwde's shims off. A charge is each
+finding a gate fails on that no waiver covers, each warning, and each
+board-local script that stands in for hwde. A gate that can't run charges
+CRASH. Each of hwde's planted faults (bin/strength.py) that a gate or check
+lets through charges CRASH too, so loosening a check can't raise the score.
+The score is minus the charges: higher is better, 0 is a clean sweep.
+Prints one line per board, the planted faults' line, then the number alone.
+
+The boards change only through bin/pin.py, which writes their digests into
+PINS below, so a refresh is a change to this file; a pin whose files don't
+match its digest stops the score.
 """
 from __future__ import annotations
 
+import argparse
+import hashlib
 import json
-import re
+import os
+import shutil
+import subprocess
 import sys
+import tempfile
+import time
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-STEPS = ("erc", "drc_routed", "verify", "fab", "dfm")
+HWDE = os.environ.get("HWDE_BIN", str(ROOT / "bin" / "hwde"))
+SKILL = ROOT / "scripts"
 GATES = ("erc", "drc_routed", "verify", "dfm")
-_ROW = re.compile(r"^\|\s*([a-z0-9][a-z0-9-]*)\s*\|(.*)\|\s*$")
+CRASH = 100
+
+# The pinned boards and the sha256 of each one's pin and files (digest()).
+# bin/pin.py writes this block; don't edit it by hand.
+# pins:begin
+PINS = {
+    "core": "3b0d25faaf2150e3627a49175e50f6edfcb18be0b1547a47095549899147b149",
+    "hwde-led-test": "610b1334b136a0c11f2bf74e52d7444feaf8f411eb842eb0875259129bf6911c",
+    "lite-main": "7b5f6f4f3a1b3fc8fa9fbd98a7375c74adc2db34997f6efd52f6fbaaaf15a995",
+}
+# pins:end
 
 
 @dataclass
-class Workaround:
-    id: str
-    kind: str
-    boards: list[str]
-    steps: list[str]
-
-    def charges(self, board: str) -> list[str]:
-        return self.steps if "*" in self.boards or board in self.boards else []
-
-
-@dataclass
-class Board:
+class Pin:
     name: str
-    path: Path | None              # None: a board in another project
-    steps: list[str] = field(default_factory=list)
+    dir: Path
+    project: str
+    commit: str
+    design: list[str] = field(default_factory=list)
+    stand_in: dict[str, str] = field(default_factory=dict)
+    unclassified: list[str] = field(default_factory=list)
+    path: Path | None = None
 
 
-def read_workarounds(path: Path) -> dict[str, Workaround]:
-    """The table's rows by id. A row is `| id | kind | boards | steps | ...`."""
-    out: dict[str, Workaround] = {}
-    for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-        m = _ROW.match(line)
-        if not m or m.group(1) == "id":
-            continue
-        cells = [c.strip() for c in m.group(2).split("|")]
-        if len(cells) < 3:
-            raise ValueError(f"{path}:{n}: a row needs id, kind, boards, steps")
-        kind, boards, steps = cells[0], cells[1], cells[2]
-        if kind not in ("shim", "hand"):
-            raise ValueError(f"{path}:{n}: kind {kind!r} is not shim or hand")
-        st = [] if steps in ("-", "") else [s.strip() for s in steps.split(",")]
-        for s in st:
-            if s not in STEPS:
-                raise ValueError(f"{path}:{n}: step {s!r} is not one of {', '.join(STEPS)}")
-        if m.group(1) in out:
-            raise ValueError(f"{path}:{n}: {m.group(1)} is listed twice")
-        out[m.group(1)] = Workaround(m.group(1), kind,
-                                     [b.strip() for b in boards.split(",")], st)
-    return out
+def read_pin(path: Path) -> Pin:
+    d = json.loads(path.read_text(encoding="utf-8"))
+    return Pin(d.get("board") or path.stem, ROOT / d["dir"], d.get("project", ""),
+               d.get("commit", ""), list(d.get("design", [])),
+               dict(d.get("stand_in", {})), list(d.get("unclassified", [])), path)
 
 
-def read_boards(root: Path) -> list[Board]:
-    """Every workspace under boards/ (a dir with state.json), with the steps
-    it has reached: each gate its state.json records as passed, and fab once
-    fab/ holds a gerber zip."""
+def files(d: Path) -> list[str]:
+    return sorted(str(p.relative_to(d)) for p in d.rglob("*")
+                  if p.is_file() and "__pycache__" not in p.parts)
+
+
+def scripts(d: Path) -> list[str]:
+    """The board-local scripts: every .py and .sh in the board's files."""
+    return [f for f in files(d) if f.endswith((".py", ".sh"))]
+
+
+def digest(pin: Pin) -> str:
+    h = hashlib.sha256()
+    h.update(pin.path.read_bytes() if pin.path else b"")
+    for f in files(pin.dir):
+        h.update(f.encode() + b"\0" + hashlib.sha256((pin.dir / f).read_bytes()).digest())
+    return h.hexdigest()
+
+
+def problems(pin: Pin) -> list[str]:
+    """What makes a pin unfit to score: files changed since bin/pin.py stamped
+    it, or a script list that doesn't match the board's scripts."""
     out = []
-    for st in sorted(root.glob("*/state.json")):
-        d = json.loads(st.read_text(encoding="utf-8"))
-        b = Board(d.get("board") or st.parent.name, st.parent)
-        gates = d.get("gates") or {}
-        for s in STEPS:
-            if s == "fab":
-                if list((st.parent / "fab").glob("*.zip")):
-                    b.steps.append(s)
-            elif (gates.get(s) or {}).get("status") == "pass":
-                b.steps.append(s)
-        out.append(b)
+    if not (pin.dir / "state.json").is_file():
+        return [f"{pin.name}: {pin.dir.relative_to(ROOT)} has no state.json"]
+    if PINS.get(pin.name) != digest(pin):
+        out.append(f"{pin.name}: its files or pin differ from the digest in bin/score.py "
+                   f"(re-pin with bin/hwde pin, or put them back)")
+    have = set(scripts(pin.dir))
+    listed = pin.design + list(pin.stand_in) + pin.unclassified
+    for s, n in Counter(listed).items():
+        if n > 1:
+            out.append(f"{pin.name}: {s} is classified twice")
+    for s in sorted(set(listed) - have):
+        out.append(f"{pin.name}: {s} is classified but not in the board")
+    for s in sorted(have - set(listed)):
+        out.append(f"{pin.name}: {s} is in the board but not classified")
     return out
 
 
-def read_ledger(path: Path) -> list[Board]:
-    """The boards docs/boards.md records: `| board | project | commit | steps
-    | ... |`, steps as in workarounds.md."""
-    out: list[Board] = []
-    for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-        m = _ROW.match(line)
-        if not m or m.group(1) == "board":
-            continue
-        cells = [c.strip() for c in m.group(2).split("|")]
-        if len(cells) < 3 or not cells[0] or not cells[1]:
-            raise ValueError(f"{path}:{n}: a row needs board, project, commit, steps")
-        st = [s.strip() for s in cells[2].split(",") if s.strip() not in ("", "-")]
-        for s in st:
-            if s not in STEPS:
-                raise ValueError(f"{path}:{n}: step {s!r} is not one of {', '.join(STEPS)}")
-        out.append(Board(m.group(1), None, [s for s in STEPS if s in st]))
+def pins() -> list[Pin]:
+    out = [read_pin(p) for p in sorted((ROOT / "pinned").glob("*.json"))]
+    for name in sorted(set(PINS) - {p.name for p in out}):
+        raise ValueError(f"bin/score.py pins {name}, but pinned/{name}.json is gone")
     return out
 
 
-def all_boards() -> list[Board]:
-    """This repo's boards, then the ledger's; a name is one board."""
-    boards = read_boards(ROOT / "boards") + read_ledger(ROOT / "docs" / "boards.md")
-    seen: set[str] = set()
-    for b in boards:
-        if b.name in seen:
-            raise ValueError(f"board {b.name} is both under boards/ and in docs/boards.md")
-        seen.add(b.name)
-    return boards
+def script_charges(pin: Pin) -> list[str]:
+    """Every stand-in, and every script not yet classified."""
+    return sorted(pin.stand_in) + sorted(pin.unclassified)
+
+
+def gate_charges(result: dict, waivers: list[dict] | None = None) -> Counter:
+    """The findings one gate result charges, by check: those it fails on that
+    no waiver covered (the gate already took those out), and every warning no
+    waiver covers."""
+    import gate  # the skill's: its waiver matching
+    out: Counter = Counter()
+
+    def finding(v) -> dict:  # some gates report a finding as a plain string
+        return v if isinstance(v, dict) else {"message": str(v)}
+
+    def key(v: dict) -> str:
+        return v.get("check") or v.get("kind") or v.get("source") or "?"
+    for v in map(finding, result.get("failing") or []):
+        out[key(v)] += 1
+    warns = result.get("warnings") or []
+    for v in map(finding, warns):
+        if not any(gate.waiver_matches(w, v) for w in waivers or []):
+            out[key(v)] += 1
+    # warnings past the gate's cap travel only as a count
+    out["(warnings past the cap)"] += max(0, int(result.get("warnings_count") or 0) - len(warns))
+    return +out
+
+
+def waivers_of(ws: Path) -> list[dict]:
+    import gate
+    side = ws / "reports" / "verify-waivers.json"
+    try:
+        return gate.load_waivers(side) if side.is_file() else []
+    except Exception:  # an unreadable sidecar waives nothing
+        return []
+
+
+def board_file(ws: Path, name: str, suffix: str) -> str:
+    """kicad/<name><suffix>, or the one such file when the board is named
+    otherwise."""
+    p = ws / "kicad" / f"{name}{suffix}"
+    if p.is_file():
+        return str(p.relative_to(ws))
+    found = sorted((ws / "kicad").glob(f"*{suffix}"))
+    return str(found[0].relative_to(ws)) if len(found) == 1 else str(p.relative_to(ws))
+
+
+class NoToolchain(Exception):
+    """KiCad couldn't be found or started: says nothing about hwde."""
+
+
+def run_gate(pin: Pin, ws: Path, g: str, logs: Path, tries: int = 3) -> tuple[int, str]:
+    """One gate's charges. A gate that can't run is tried again (on a loaded
+    machine kicad-cli's version probe can time out); one that still can't
+    charges CRASH, unless it is the toolchain, which raises NoToolchain."""
+    inp = board_file(ws, pin.name, ".kicad_sch" if g == "erc" else ".kicad_pcb")
+    out = logs / f"{pin.name}-{g}.json"
+    log = logs / f"{pin.name}-{g}.log"
+    for n in range(tries):
+        if n:
+            time.sleep(30)
+        out.unlink(missing_ok=True)
+        with log.open("w") as f:
+            rc = subprocess.run([HWDE, "gate", "--gate", g, inp, "--workspace", ".",
+                                 "--out", str(out)], cwd=ws, stdout=f,
+                                stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL).returncode
+        try:
+            result = json.loads(out.read_text())
+        except (OSError, ValueError):
+            result = None
+        if rc in (0, 1) and result:
+            c = gate_charges(result, waivers_of(ws) if g == "verify" else None)
+            k = sum(c.values())
+            return k, f"{k}" + (f" ({', '.join(f'{a} {b}' for a, b in c.most_common())})" if c else "")
+    said = log.read_text(errors="replace")
+    if "EnvError" in said:
+        raise NoToolchain(f"{pin.name} {g}: {said.strip().splitlines()[-1][-300:]}")
+    return CRASH, f"could not run (exit {rc}, CRASH {CRASH}; {log.name})"
+
+
+def measure(p: Pin, ws: Path, logs: Path) -> int:
+    """One board's charges, printed as its line."""
+    shutil.rmtree(ws, ignore_errors=True)
+    shutil.copytree(p.dir, ws, ignore=shutil.ignore_patterns("__pycache__"))
+    parts, n = [], 0
+    for g in GATES:
+        t = time.monotonic()
+        c, said = run_gate(p, ws, g, logs)
+        n += c
+        parts.append(f"{g} {said} [{time.monotonic() - t:.0f}s]")
+    sc = script_charges(p)
+    n += len(sc)
+    parts.append(f"scripts {len(sc)}" + (f" ({', '.join(sc)})" if sc else ""))
+    print(f"{p.name} ({p.project} {p.commit[:7]}): {n} charged: {'; '.join(parts)}", flush=True)
+    return n
+
+
+def planted() -> list[str]:
+    """The planted faults let through, each printed; then the line that
+    counts them. Each one charges CRASH."""
+    import strength
+    fs = strength.faults()
+    missed = [name for _, name, ok in fs if not ok]
+    for name in missed:
+        print(f"planted fault let through: {name} (CRASH {CRASH})", flush=True)
+    print(f"planted faults caught: {len(fs) - len(missed)}/{len(fs)}", flush=True)
+    return missed
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--board", action="append", default=[], help="only this board (repeatable)")
+    ap.add_argument("--keep", help="leave the scratch copies and gate logs here")
+    args = ap.parse_args()
+    sys.path.insert(0, str(SKILL))
     try:
-        table = read_workarounds(ROOT / "docs" / "workarounds.md")
-        boards = all_boards()
-        names = {b.name for b in boards}
-        for w in table.values():
-            unknown = [b for b in w.boards if b != "*" and b not in names]
-            if unknown:
-                raise ValueError(f"workaround {w.id} names {', '.join(unknown)}, "
-                                 f"not a board under boards/ or in docs/boards.md")
-    except (OSError, ValueError) as e:
-        print(f"score: {e}", file=sys.stderr)
+        todo = pins()
+        bad = [m for p in todo for m in problems(p)]
+    except (OSError, ValueError, KeyError) as e:
+        bad = [str(e)]
+    if bad or not todo:
+        for m in bad or ["no pinned boards"]:
+            print(f"score: {m}", file=sys.stderr)
         return 1
-    total = clean = 0
-    for b in boards:
-        charged = {}
-        for w in table.values():
-            for s in w.charges(b.name):
-                charged.setdefault(s, []).append(w.id)
-        ok = [s for s in b.steps if s not in charged]
-        total += len(b.steps)
-        clean += len(ok)
-        parts = [f"{s}" if s in ok else f"{s} ({', '.join(charged[s])})" for s in b.steps]
-        print(f"{b.name}: {len(ok)}/{len(b.steps)} clean: {'; '.join(parts)}")
-    if not total:
-        print("score: no board has a gate step yet", file=sys.stderr)
+    try:
+        missed = planted()
+    except Exception as e:  # noqa: BLE001 - a guard that can't run is not passed
+        print(f"score: the planted faults could not run: {type(e).__name__}: {e}",
+              file=sys.stderr)
         return 1
-    print(f"workarounds listed: {len(table)} "
-          f"({sum(w.kind == 'shim' for w in table.values())} shim, "
-          f"{sum(w.kind == 'hand' for w in table.values())} by hand)")
-    print(f"{100 * clean / total:.2f}")
+    if args.board:
+        todo = [p for p in todo if p.name in args.board]
+    scratch = Path(args.keep) if args.keep else Path(tempfile.mkdtemp(prefix="hwde-score-"))
+    logs = scratch / "logs"
+    logs.mkdir(parents=True, exist_ok=True)
+    try:
+        total = sum(measure(p, scratch / p.name, logs) for p in todo)
+    except NoToolchain as e:
+        print(f"score: can't measure, the toolchain didn't run: {e}", file=sys.stderr)
+        return 1
+    finally:
+        if not args.keep:
+            shutil.rmtree(scratch, ignore_errors=True)
+    total += CRASH * len(missed)
+    print(f"charges: {total} over {len(todo)} board(s)")
+    print(f"{-total}")
     return 0
 
 

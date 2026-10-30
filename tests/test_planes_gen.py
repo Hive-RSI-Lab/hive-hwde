@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
-SCRIPTS = REPO / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = REPO / "scripts"
 GOLDEN = REPO / "tests" / "golden"
 
 sys.path.insert(0, str(SCRIPTS))
@@ -178,33 +178,81 @@ def test_explicit_priority_honored_and_bumped(tmp_path):
     assert plan2[1]["priority"] == 4
 
 
-def test_same_net_overlap_gets_distinct_priorities(tmp_path):
-    # KiCad 10 DRC flags same-priority overlapping zones (zones_intersect)
-    # even for the SAME net - overlapping entries must never tie.
+def test_same_net_overlap_is_one_zone(tmp_path):
+    # KiCad 10 flags same-priority overlapping zones (zones_intersect) even
+    # for the SAME net, and fills two of different priority apart - so
+    # overlapping same-net entries become one zone over their union.
     bg = _bg(tmp_path)
     con = {"planes": [{"net": "GND", "layer": "B.Cu"},
                       {"net": "GND", "layer": "B.Cu",
                        "region": [10, 10, 30, 30]}]}
+    plan, meta = planes_gen.build_plan(bg, con)
+    assert len(plan) == 1
+    assert plan[0]["_rect"] == (0.5, 0.5, 59.5, 39.5)
+    assert any("merged 2" in n for n in meta["notes"])
+
+
+def test_touching_same_net_rects_merge(tmp_path):
+    """lite-main (hifi-receiver-2): PVDD strips sharing an edge were filled
+    apart by KiCad (distinct priorities) and had to be joined by tracks
+    across each seam. Touching same-net rects are one polygon zone now."""
+    bg = _bg(tmp_path)
+    con = {"planes": [
+        {"net": "VCC", "layer": "F.Cu", "region": [1, 1, 10, 5],
+         "connect": "solid"},
+        {"net": "VCC", "layer": "F.Cu", "region": [1, 5, 14, 9],
+         "connect": "solid", "priority": 2},
+        {"net": "VCC", "layer": "F.Cu", "region": [40, 1, 50, 9],
+         "connect": "solid"}]}
     plan, _ = planes_gen.build_plan(bg, con)
-    assert plan[0]["priority"] != plan[1]["priority"]
+    assert len(plan) == 2
+    merged = next(z for z in plan if z.get("_merged_from"))
+    assert merged["_rect"] == (1.0, 1.0, 14.0, 9.0)
+    assert merged["_geom"].area == pytest.approx(9 * 4 + 13 * 4)
+    assert merged["priority"] == 2            # the explicit one carried
+    zones = planes_gen.worker_zones(plan)
+    zm = next(z for z in zones if "poly" in z)
+    assert "rect" not in zm and len(zm["poly"]) == 6   # an L, not a box
+    assert zm["connect"] == "solid"
+    # the disjoint one keeps its rect
+    assert [z["rect"] for z in zones if "rect" in z] == [[40.0, 1.0, 50.0, 9.0]]
 
 
-def test_touching_rects_get_distinct_priorities(tmp_path):
-    """T6 (P7A-5b / LEARNINGS 1327b): rects sharing a mere EDGE are still
-    zones_intersect errors in KiCad 10 at equal priority - the keepout-band
-    pattern of adjacent positive rectangles must never tie."""
+def test_touching_rects_differing_settings_stay_apart(tmp_path):
+    """Rects sharing a mere EDGE are zones_intersect errors at equal
+    priority (LEARNINGS 1327b): when they can't merge (other settings),
+    they still never tie, and the plan says they fill apart."""
     bg = _bg(tmp_path)
     con = {"planes": [
         {"net": "GND", "layer": "B.Cu", "region": [1, 1, 30, 39]},
-        {"net": "GND", "layer": "B.Cu", "region": [30, 1, 59, 39]}]}
-    plan, _ = planes_gen.build_plan(bg, con)
+        {"net": "GND", "layer": "B.Cu", "region": [30, 1, 59, 39],
+         "connect": "solid"}]}
+    plan, meta = planes_gen.build_plan(bg, con)
+    assert len(plan) == 2
     assert plan[0]["priority"] != plan[1]["priority"]
-    # disjoint rects (a real gap) still tie at 0 - no needless stacking
+    assert any("differ in settings" in n for n in meta["notes"])
+    # other nets touching: distinct priorities, never merged
     con2 = {"planes": [
+        {"net": "GND", "layer": "B.Cu", "region": [1, 1, 30, 39]},
+        {"net": "VCC", "layer": "B.Cu", "region": [30, 1, 59, 39]}]}
+    plan2, _ = planes_gen.build_plan(bg, con2)
+    assert len(plan2) == 2 and plan2[0]["priority"] != plan2[1]["priority"]
+    # disjoint rects (a real gap) still tie at 0 - no needless stacking
+    con3 = {"planes": [
         {"net": "GND", "layer": "B.Cu", "region": [1, 1, 29, 39]},
         {"net": "GND", "layer": "B.Cu", "region": [31, 1, 59, 39]}]}
-    plan2, _ = planes_gen.build_plan(bg, con2)
-    assert plan2[0]["priority"] == plan2[1]["priority"] == 0
+    plan3, _ = planes_gen.build_plan(bg, con3)
+    assert plan3[0]["priority"] == plan3[1]["priority"] == 0
+
+
+def test_corner_touch_stays_separate(tmp_path):
+    bg = _bg(tmp_path)
+    con = {"planes": [
+        {"net": "GND", "layer": "B.Cu", "region": [1, 1, 10, 10]},
+        {"net": "GND", "layer": "B.Cu", "region": [10, 10, 20, 20]}]}
+    plan, meta = planes_gen.build_plan(bg, con)
+    assert len(plan) == 2
+    assert any("corner" in n for n in meta["notes"])
 
 
 def test_connect_solid_key_validated_and_forwarded(tmp_path):

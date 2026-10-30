@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
-SCRIPTS = REPO / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = REPO / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 import stock_check  # noqa: E402
@@ -44,12 +44,16 @@ JLC = {
                    canPresaleNumber=800000, isBuyComponent="1",
                    describe="-55℃~+155℃ 10kΩ 50V 62.5mW Thick Film "
                             "Resistor ±1% 0402"),
+    "C2765186": dict(componentModelEn="TYPE-C-31-M-12",
+                     componentLibraryType="expand", stockCount=40000,
+                     canPresaleNumber=39000, isBuyComponent="1",
+                     describe="16P Female Type-C SMD USB Connectors"),
     "C474881": dict(componentModelEn="KF301-5.0-2P",
                     componentLibraryType="expand", stockCount=5000,
                     canPresaleNumber=5000, isBuyComponent="1"),
 }
 LCSC = {"C5184243": 0, "C84681": 109248, "C7464026": 0, "C1525": 10 ** 7,
-        "C25744": 10 ** 6, "C474881": 4000}
+        "C25744": 10 ** 6, "C474881": 4000, "C2765186": 39000}
 
 
 def fake_fetch(down=()):
@@ -116,6 +120,15 @@ def test_a_label_for_a_value_cannot_be_matched_and_is_unknown():
     v = stocklib.check_row("C474881", 2, mpn="SPK A L", value="SPK A L",
                            fetch=fake_fetch())
     assert v["status"] == "unknown"
+
+
+def test_value_that_is_the_mpn_matches_without_a_digit_word():
+    # TYPE-C-31-M-12: no 3-char word with a digit, but the whole value is
+    # JLC's model; issue #180.
+    for mpn in ("TYPE-C-31-M-12", ""):
+        v = stocklib.check_row("C2765186", 5, mpn=mpn,
+                               value="TYPE-C-31-M-12", fetch=fake_fetch())
+        assert v["status"] == "ok", v
 
 
 def test_code_jlc_does_not_know_is_not_found():

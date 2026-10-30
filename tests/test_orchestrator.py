@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
-SCRIPTS = REPO / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = REPO / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 
@@ -49,7 +49,7 @@ def test_state_init_show_and_force(tmp_path):
 
 
 def test_state_init_creates_standard_subdirs(tmp_path):
-    """T6 state-scaffold: init owns the workspace scaffold (the SKILL.md
+    """T6 state-scaffold: init owns the workspace scaffold (the docs/playbook.md
     run-start dir list moves down-ladder); pre-existing content survives."""
     ws = tmp_path / "ws"
     (ws / "brief").mkdir(parents=True)

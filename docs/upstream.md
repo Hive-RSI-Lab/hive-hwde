@@ -1,22 +1,87 @@
-# What differs from ihsan-sa/hwde
+# Where it came from
 
-`.claude/skills/hwde/` is ihsan-sa/hwde's `.claude/skills/hwde/` at
-`5d7bbe52483ca0bc6bf28a56e4c1e0d24b5ca4b7`, at the same path, because its
-scripts locate each other and the repo root by that depth. It differs in
-these ways:
+hwde began as ihsan-sa/hwde's Claude Code skill, `.claude/skills/hwde/` at
+`5d7bbe52483ca0bc6bf28a56e4c1e0d24b5ca4b7`. That skill is frozen: this module
+doesn't follow it, copy it over itself, or keep its layout. Change, slim or
+rename anything here when it earns it.
 
-- `reference/knowledge/sources/*.pdf` (36 MB of manufacturers' datasheets and
-  application notes) is left out. NOTICE says they're redistributed under
-  their owners' terms, not MIT.
-- `scripts/lib/knowledgelib.py`: `SOURCES_DIR` reads `HWDE_KNOWLEDGE_SOURCES`
-  when it's set, so the records can still find those PDFs elsewhere.
-- Fixes the Hive made while building boards, each worth sending upstream:
+What moved where:
+
+- `SKILL.md` (the orchestrator playbook) is [playbook.md](playbook.md), with
+  the skill's frontmatter gone.
+- `scripts/`, `agents/` and `reference/` are at the module root. The scripts
+  find the module root one level above `scripts/` (`env.repo_root()`, and
+  each lib's `SKILL`/`REPO`, which are now the same folder).
+- Upstream's `/hwde` command, the skill's README, the empty `templates/` and
+  check_env's vendored-copy check (whether a copy was behind an ai-ee
+  checkout) are gone.
+- `reference/knowledge/sources/*.pdf` (36 MB of manufacturers' datasheets
+  and application notes) was never brought over. NOTICE says they're
+  redistributed under their owners' terms, not MIT.
+  `scripts/lib/knowledgelib.py`'s `SOURCES_DIR` reads `HWDE_KNOWLEDGE_SOURCES`.
+  `docs/knowledge-sources.txt` pins them at upstream's commit above (git blob
+  sha, size, name, from the GitHub contents API for that folder), and
+  `bin/sources.py` fetches them from upstream into HOME; `bin/hwde` points
+  `HWDE_KNOWLEDGE_SOURCES` there.
+- `scripts/parts_search.py --kind/--category` (with
+  `reference/part_kinds.yaml` and `category_search` in
+  `scripts/lib/partslib.py`): finding a part by what it is, by browsing its
+  JLC category, since the keyword search only matches part numbers. Tested
+  offline by `tests/test_parts_kind.py`.
+- Fixes from building boards here (issue #5, hwde-led-test), each tested in
+  `tests/test_sourcer_records.py`:
+  - `scripts/bom_cpl.py` reads a footprint's LCSC number from `LCSC Part`
+    (what lib_pull's easyeda2kicad writes) as well as `LCSC`, and gives a
+    refdes-less parts.json line the board refs with its LCSC number.
+  - `scripts/check_ratings.py` reads LCSC's resistor rating names
+    ("Voltage-Supply(Max)", "Working Voltage") and says which parts.json
+    lines carry no attributes.
+  - `scripts/check_pdn.py` counts a cap the board puts straight across a rail
+    and ground when decoupling.json records none for that rail.
+  - `agents/part-sourcer.md` copies the parts_search row whole (attributes
+    included) and writes no refdes.
+- Fixes the Hive made while building boards, worth offering upstream:
   `scripts/check_courtyard.py` (+ `checks.d/check_courtyard.yaml`), a verify
   check that fails a courtyard that misses its own pads; `scripts/lib/fpfix.py`
   rule E, which `lib_pull` runs on every pull, and its `--pcb` mode for placed
   copies; `scripts/board_edit.py`, whose `--outline fit` counts silk and whose
   edits refuse to clip it; `scripts/check_silk.py`, whose silk items carry
-  their footprint's reference.
+  their footprint's reference. From the first product board
+  (hifi-receiver-2 lite-main): `fpfix` rule F numbers an exposed pad's
+  unnumbered thermal vias and drops their paste, and `fpfix.body_flags`
+  reads each part's 3D model for a peg with no hole, a body outside the
+  courtyard or a model off its footprint (`lib_pull` lists them in
+  `autofix.flags`); `lib_pull --budget-s` stops before a 10-minute call
+  runs out, and a re-run skips parts already whole in the library;
+  `schlib.Sheet` registers the project's own symbol libraries from its
+  `sym-lib-table`; the ERC gate reports `pin_types` and warns when every pin
+  is passive; `board_init --origin` keeps a re-run's outline where the board
+  had it; the schematic role prompts give `kc.py`'s positional input. From routing lite-main (hifi-receiver-2), a
+  dense 2-layer power board: `stitch_vias` and `planes_gen` read KiCad's
+  hole_to_hole as drill edge to drill edge; `route_auto` carries the hole
+  rules into the DSN (`routelib.dsn_hole_floor`, `ses_restore_vias`,
+  `dsn_npth_keepouts`) and keeps the best of `--tries` shuffled-order routes
+  (`routelib.dsn_shuffle`); `rules_gen` sizes plane_fed taps, writes
+  neck-down rules; `planes_gen` merges touching same-net pours; `scripts/keepout_gen.py`
+  (new, with route_swig's `set_rule_areas`) draws copper keep-outs;
+  `route_critical` rips only the nets whose copper broke DRC; `lib/geom.py`
+  lists NPTH holes (`npth`).
+- Two verify checks from hifi-receiver-2's first-spin review (issue #130):
+  `scripts/check_straps.py` (+ `reference/reset_states.yaml`), an MCU's
+  strapping pins and IO expander pins at power-on and on an MCU-only reset,
+  and `scripts/check_antenna.py` (+ `reference/rf_modules.yaml`), copper
+  under a module's PCB antenna and its place at the board edge, each with its
+  `checks.d` fragment.
+- Power-path checks from hifi-receiver-2's first-spin power review, which
+  did each by hand: `scripts/check_power_path.py` (+
+  `checks.d/check_power_path.yaml`, mutant `power-path-under-contract`), the
+  current each pad-track-via chain carries as a max-flow over the copper;
+  `scripts/sim_inrush.py` and `scripts/lib/pdsource.py`, a board's load
+  switches against a USB PD source; `scripts/soa_check.py` and
+  `scripts/lib/soa.py` with `reference/fet_power.yaml`, a FET's peak
+  junction temperature through a pulse; `scripts/mlcc_dcbias.py` and
+  `scripts/lib/mlcc.py` with `reference/mlcc_dcbias.yaml`, ceramics at DC
+  bias (sim_board's DC-bias warning reports the derated value).
 - A live stock-and-match check on every BOM row (the person, 10-28: "didn't
   the hive pull the JLC and LCSC?"): `scripts/stock_check.py` and
   `scripts/lib/stocklib.py` read JLC's and LCSC's own record for each code
@@ -37,9 +102,34 @@ these ways:
   open --slot` opens past the per-run cap, `board_init` notes a fixed outline
   under a geometry-as-output mode instead of refusing it, and the release
   attestation no longer needs an approved H4 (a rejected one still vetoes).
-  `SKILL.md`, `full-run.md`, `fix-finding.md`, `build-modes.md` and
+  `playbook.md`, `full-run.md`, `fix-finding.md`, `build-modes.md` and
   `tasks.yaml` say so: H1-H4 are reports, and only error waivers, cost/feature
   trades and the order go to the person.
+- A shared tools folder (`HWDE_TOOLS_DIR`, the Hive's `/hive/tools`) is
+  searched the way upstream searches its own `tools/`, so the scripts find
+  the Hive's tools themselves and `bin/hwde` needs no wrappers:
+  - `scripts/lib/env.py`: `kicad_installs` takes KiCad AppImage AppDirs at
+    `<tools>/kicad-*/` (`bin/kicad-cli` runs as is); `find_kicad_python`
+    takes the AppDir's `bin/python3.<n>`; `find_ngspice_dll` its
+    `lib/libngspice.so`; `find_krt` also looks under
+    `<tools>/kicad-routing-tools/KiCadRoutingTools-*/plugins` and picks the
+    newest by version, not by string.
+  - KiCad 10 ships its stock symbols as one-file-per-symbol `.kicad_symdir`
+    folders, which kicad-sch-api 0.5.6 can't read. `env.py` flattens a
+    library into `~/.cache/hwde/symbols/<key>/` the first time it's needed
+    (`stock_symbol_lib`, again when the symdir is newer):
+    `export_kicad_symbol_dir` does `power` and `Device` and points
+    `KICAD_SYMBOL_DIR` there; `register_stock_libs` adds any other.
+    `schlib.py` calls it before each placement and `--pins`, and
+    `schem_refdes.py` before its round trip (whose save drops symbols the
+    cache can't resolve).
+  - `scripts/kc.py`: a comment only. The AppDir's 3D loaders match
+    `render_env`'s `usr/lib/*/kicad/plugins/3d` through the AppImage's own
+    link once kicad-cli is the AppDir's, not a wrapper.
+  - `scripts/check_env.py` checks the stock `power`/`Device` symbols
+    (fail), the 3D loaders (warn) and KiCadRoutingTools (warn).
+  - `scripts/route_critical.py`: the missing-KRT message names the shared
+    layout.
 - `agents/board-guide.md` finds pdf-material-builder through
   `HWDE_PDF_MATERIAL_BUILDER` before `~/.claude/skills/`, and says how to
   build the guide on a machine without it.
@@ -49,20 +139,23 @@ these ways:
   `recipes/full-run.md` give each report's name (dfm.md's command lines also
   had `--out` for `--out-dir` and `--parts-json` for `--parts`).
 
-`requirements.lock`, `LICENSE` and `NOTICE` are upstream's, from the repo
-root, and so is `docs/failure-modes.yaml` (`bench --scorecard-corpus` maps
-findings to failure modes through it). `tests/` is upstream's `tests/`
-except `check.sh` and the tests of what stays upstream: evals
+  `tests/test_env_lookups.py` covers these lookups (`$HWDE_PY -m pytest
+  tests`). They're meant to go upstream.
+
+`requirements.lock`, `LICENSE` and `NOTICE` came from upstream's repo root,
+and so did `docs/failure-modes.yaml` (`bench --scorecard-corpus` maps
+findings to failure modes through it). `tests/` began as upstream's `tests/`,
+without `check.sh` and the tests of what stayed upstream: evals
 (`test_e2e_electrical`, `test_eval_sandbox`, `test_eval_writeset`), the
 showcase (`test_showcase_gallery`), `LEARNINGS.md` and its triage
 (`test_learnings`, `test_remediations`), the docker and CI pins
-(`test_kicad_pin`) and `docs/check-scorecard.jsonl`
-(`test_check_scorecard`). `tests/conftest.py` adds `KNOWN_FAILING`, and
-`tests/test_workarounds.py` and `tests/workarounds/` are the module's own,
-as is `pytest.ini` (upstream's pytest settings from its `pyproject.toml`).
-The plans, docker setup and design notes stay upstream.
+(`test_kicad_pin`), `docs/check-scorecard.jsonl` (`test_check_scorecard`)
+and the vendored-copy check (`test_skill_copy_current`). `tests/conftest.py`
+adds `KNOWN_FAILING`; `tests/test_workarounds.py`, `tests/workarounds/` and
+`tests/test_parts_kind.py`, `tests/test_env_lookups.py` and `pytest.ini` (upstream's pytest settings from its `pyproject.toml`) are the
+module's own. The plans, docker setup and design notes stayed upstream.
 
-Everything specific to the Hive is in `bin/` and `docs/`:
+Everything else that's specific to the Hive is in `bin/` and `docs/`:
 
 - `bin/hwde` wraps the Hive's KiCad AppImage (kicad-cli, KiCad's python with
   pcbnew, ngspice, the 3D model loaders the render preflight looks for).
@@ -75,7 +168,3 @@ Everything specific to the Hive is in `bin/` and `docs/`:
   commands report_gen writes, on stock LaTeX, for machines without the
   pdf-material-builder skill.
 
-To update, copy upstream's skill folder over this one, drop the source PDFs
-again, re-apply the `SOURCES_DIR` line, and bump the commit above. Copy
-upstream's `tests/` over this one the same way, leaving out the files above
-and keeping `KNOWN_FAILING` and `test_workarounds.py`.

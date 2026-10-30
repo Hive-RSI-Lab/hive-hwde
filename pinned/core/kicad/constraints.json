@@ -1,0 +1,481 @@
+{
+ "power": [
+  {
+   "net": "VBUS_IN",
+   "current_a": 0.5,
+   "dt_c": 10,
+   "plane_fed": true,
+   "pdn": false
+  },
+  {
+   "net": "VBUS",
+   "current_a": 0.5,
+   "dt_c": 10,
+   "plane_fed": true
+  },
+  {
+   "net": "PVDD",
+   "current_a": 0.5,
+   "dt_c": 10,
+   "plane_fed": true
+  },
+  {
+   "net": "+5V",
+   "current_a": 0.5,
+   "dt_c": 10
+  },
+  {
+   "net": "+3V3",
+   "current_a": 0.3,
+   "dt_c": 10,
+   "plane_fed": true
+  },
+  {
+   "net": "+3V3A",
+   "current_a": 0.1,
+   "dt_c": 10
+  },
+  {
+   "net": "+5VA",
+   "current_a": 0.05,
+   "dt_c": 10
+  },
+  {
+   "net": "+3V3E",
+   "current_a": 0.1,
+   "dt_c": 10
+  },
+  {
+   "net": "/amp_a/A_OUT1M",
+   "current_a": 0.5,
+   "dt_c": 20,
+   "pdn": false
+  },
+  {
+   "net": "/amp_a/A_OUT1P",
+   "current_a": 0.5,
+   "dt_c": 20,
+   "pdn": false
+  },
+  {
+   "net": "/amp_a/A_OUT2M",
+   "current_a": 0.5,
+   "dt_c": 20,
+   "pdn": false
+  },
+  {
+   "net": "/amp_a/A_OUT2P",
+   "current_a": 0.5,
+   "dt_c": 20,
+   "pdn": false
+  },
+  {
+   "net": "/amp_a/A_SPK_L+",
+   "current_a": 0.5,
+   "dt_c": 20,
+   "pdn": false
+  },
+  {
+   "net": "/amp_a/A_SPK_L-",
+   "current_a": 0.5,
+   "dt_c": 20,
+   "pdn": false
+  },
+  {
+   "net": "/amp_a/A_SPK_R+",
+   "current_a": 0.5,
+   "dt_c": 20,
+   "pdn": false
+  },
+  {
+   "net": "/amp_a/A_SPK_R-",
+   "current_a": 0.5,
+   "dt_c": 20,
+   "pdn": false
+  },
+  {
+   "net": "/amp_b/B_OUT1M",
+   "current_a": 0.5,
+   "dt_c": 20,
+   "pdn": false
+  },
+  {
+   "net": "/amp_b/B_OUT1P",
+   "current_a": 0.5,
+   "dt_c": 20,
+   "pdn": false
+  },
+  {
+   "net": "/amp_b/B_OUT2M",
+   "current_a": 0.5,
+   "dt_c": 20,
+   "pdn": false
+  },
+  {
+   "net": "/amp_b/B_OUT2P",
+   "current_a": 0.5,
+   "dt_c": 20,
+   "pdn": false
+  },
+  {
+   "net": "/amp_b/B_SPK_L+",
+   "current_a": 0.5,
+   "dt_c": 20,
+   "pdn": false
+  },
+  {
+   "net": "/amp_b/B_SPK_L-",
+   "current_a": 0.5,
+   "dt_c": 20,
+   "pdn": false
+  },
+  {
+   "net": "/amp_b/B_SPK_R+",
+   "current_a": 0.5,
+   "dt_c": 20,
+   "pdn": false
+  },
+  {
+   "net": "/amp_b/B_SPK_R-",
+   "current_a": 0.5,
+   "dt_c": 20,
+   "pdn": false
+  },
+  {
+   "net": "/rails/BUCK5_LX",
+   "current_a": 1.0,
+   "dt_c": 10,
+   "pdn": false,
+   "overrides": [
+    {
+     "near": [
+      75.487,
+      174.397
+     ],
+     "radius_mm": 6,
+     "current_a": 0.05
+    }
+   ]
+  },
+  {
+   "net": "/rails/BUCK3_LX",
+   "current_a": 1.0,
+   "dt_c": 10,
+   "pdn": false
+  }
+ ],
+ "voltages": [
+  {
+   "net": "VBUS_IN",
+   "voltage": 30
+  },
+  {
+   "net": "VBUS",
+   "voltage": 30
+  },
+  {
+   "net": "PVDD",
+   "voltage": 30
+  },
+  {
+   "net": "+5V",
+   "voltage": 5.2
+  },
+  {
+   "net": "+3V3",
+   "voltage": 3.4
+  }
+ ],
+ "diff_pairs": [],
+ "coating": "soldermask",
+ "thermal": [
+  {
+   "ref": "U4",
+   "power_w": 0.4,
+   "net": "GND",
+   "dt_c": 40
+  },
+  {
+   "ref": "U15",
+   "power_w": 3.0,
+   "net": "GND",
+   "dt_c": 60,
+   "theta_ja_c_w": 8.0,
+   "theta_source": "TPA3221 SLASEE9C 6.4: RthJC(top) 1.1 C/W into a bolted 40x40x20 mm heatsink (~4 C/W) + ~2.9 C/W interface/pad; the slug is on top, so PCB copper is not the heat path"
+  }
+ ],
+ "placement": {
+  "edges": [
+   {
+    "ref": "J1",
+    "edge": "left",
+    "pos": 0.25
+   },
+   {
+    "ref": "J2",
+    "edge": "left",
+    "pos": 0.6
+   },
+   {
+    "ref": "U19",
+    "edge": "top",
+    "pos": 0.86
+   },
+   {
+    "ref": "J6",
+    "edge": "top",
+    "pos": 0.08
+   },
+   {
+    "ref": "J7",
+    "edge": "top",
+    "pos": 0.2
+   },
+   {
+    "ref": "J4",
+    "edge": "top",
+    "pos": 0.38
+   },
+   {
+    "ref": "J5",
+    "edge": "top",
+    "pos": 0.55
+   },
+   {
+    "ref": "J10",
+    "edge": "top",
+    "pos": 0.75
+   },
+   {
+    "ref": "J11",
+    "edge": "top",
+    "pos": 0.9
+   },
+   {
+    "ref": "SW1",
+    "edge": "bottom",
+    "pos": 0.5
+   },
+   {
+    "ref": "SW2",
+    "edge": "bottom",
+    "pos": 0.62
+   },
+   {
+    "ref": "SW3",
+    "edge": "bottom",
+    "pos": 0.7
+   },
+   {
+    "ref": "U18",
+    "edge": "bottom",
+    "pos": 0.38
+   },
+   {
+    "ref": "D3",
+    "edge": "bottom",
+    "pos": 0.3
+   },
+   {
+    "ref": "J3",
+    "edge": "bottom",
+    "pos": 0.15
+   },
+   {
+    "ref": "U7",
+    "edge": "right",
+    "pos": 0.75
+   }
+  ],
+  "groups": [],
+  "separation": [
+   {
+    "a": [
+     "U15",
+     "U16",
+     "L1",
+     "L2",
+     "L3",
+     "L4",
+     "L5",
+     "L6",
+     "L7",
+     "L8"
+    ],
+    "b": [
+     "U10",
+     "U11",
+     "U12",
+     "U13",
+     "Y1"
+    ],
+    "min_mm": 12
+   }
+  ],
+  "sides": [
+   {
+    "ref": "U15",
+    "side": "front",
+    "reason": "heatsink on top slug"
+   },
+   {
+    "ref": "U16",
+    "side": "front",
+    "reason": "heatsink on top slug"
+   }
+  ],
+  "fixed": [
+   "J6",
+   "J7",
+   "J10",
+   "J11",
+   "J4",
+   "J5",
+   "U19",
+   "L1",
+   "L2",
+   "L3",
+   "L4",
+   "L5",
+   "L6",
+   "L7",
+   "L8",
+   "U15",
+   "U16",
+   "C5",
+   "C6",
+   "C320",
+   "J1",
+   "D1",
+   "R1",
+   "U3",
+   "U1",
+   "U2",
+   "Q1",
+   "Q2",
+   "Q3",
+   "U4",
+   "L9",
+   "U5",
+   "L10",
+   "U6",
+   "J2",
+   "U9",
+   "U8",
+   "U12",
+   "U10",
+   "Y1",
+   "U11",
+   "U13",
+   "U14",
+   "U7",
+   "U17",
+   "J3",
+   "D3",
+   "U18",
+   "SW1",
+   "SW2",
+   "SW3",
+   "H1",
+   "H2",
+   "H3",
+   "H4"
+  ]
+ },
+ "planes": [
+  {
+   "layer": "In1.Cu",
+   "net": "GND"
+  },
+  {
+   "layer": "In2.Cu",
+   "net": "PVDD",
+   "region": [
+    34.587,
+    120.697,
+    97.587,
+    168.197
+   ]
+  },
+  {
+   "layer": "In2.Cu",
+   "net": "PVDD",
+   "region": [
+    52.087,
+    168.197,
+    62.087,
+    171.697
+   ]
+  },
+  {
+   "layer": "In2.Cu",
+   "net": "VBUS_IN",
+   "region": [
+    34.587,
+    168.697,
+    47.387,
+    190.697
+   ]
+  },
+  {
+   "layer": "In2.Cu",
+   "net": "VBUS",
+   "region": [
+    47.887,
+    172.197,
+    71.587,
+    182.697
+   ]
+  },
+  {
+   "layer": "In2.Cu",
+   "net": "+3V3",
+   "region": [
+    98.087,
+    120.697,
+    154.587,
+    220.697
+   ]
+  },
+  {
+   "layer": "In2.Cu",
+   "net": "+3V3",
+   "region": [
+    34.587,
+    191.197,
+    98.087,
+    220.697
+   ]
+  },
+  {
+   "layer": "In2.Cu",
+   "net": "+3V3",
+   "region": [
+    72.087,
+    168.697,
+    98.087,
+    191.197
+   ]
+  },
+  {
+   "layer": "In2.Cu",
+   "net": "+3V3",
+   "region": [
+    47.887,
+    183.197,
+    72.087,
+    191.197
+   ]
+  },
+  {
+   "layer": "B.Cu",
+   "net": "GND"
+  },
+  {
+   "layer": "F.Cu",
+   "net": "GND"
+  }
+ ],
+ "power_notes": "Track widths here are sized for the tracks that remain: plane taps and short stubs. The main currents ride on copper the width rules can't see: VBUS_IN/VBUS/PVDD/+3V3 on In2 plane regions plus F.Cu pours, and the amp OUT/SPK nets (3.7 A rms continuous sine, 2 x 56 W governor-capped) on the solid fan-in pours from kicad/gen/power_zones.py. check_irdrop covers those paths at P8.",
+ "diff_pairs_note": "Explicitly empty. The USB full-speed pair (12 Mb/s) and the two 100BASE-TX pairs run about 10 mm, so coupling them adds nothing measurable, and the router doesn't couple pairs (route_critical's KRT diff pass shorted). They are routed as ordinary nets at the Default width."
+}

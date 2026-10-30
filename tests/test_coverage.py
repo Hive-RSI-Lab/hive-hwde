@@ -34,7 +34,7 @@ import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILL = ROOT / ".claude" / "skills" / "hwde"
+SKILL = ROOT
 SCRIPTS = SKILL / "scripts"
 
 sys.path.insert(0, str(SCRIPTS))
@@ -133,6 +133,11 @@ def make_ws(tmp_path, constraints=None, parts=None, extractions=None,
     (ws / "log").mkdir()
     (ws / "state.json").write_text(json.dumps(
         {"board": "synth", "history": history or []}), encoding="utf-8")
+    for h in history or []:
+        if h.get("results"):
+            (ws / h["results"]).parent.mkdir(parents=True, exist_ok=True)
+            (ws / h["results"]).write_text(json.dumps(BRINGUP_RESULTS),
+                                           encoding="utf-8")
     if constraints is not None:
         (ws / "kicad" / "constraints.json").write_text(
             json.dumps(constraints), encoding="utf-8")
@@ -679,7 +684,11 @@ def test_part_level_record_covers_a_part_without_extraction(tmp_path, lib):
 # 5. --prove: bring-up evidence -> proven
 # ---------------------------------------------------------------------------
 BRINGUP = [{"ts": "2026-09-01T10:00:00", "event": "bringup_passed",
-            "msg": "rails in bounds"}]
+            "msg": "rails in bounds", "results": "bringup/results.json"}]
+BRINGUP_RESULTS = {"schema": "hwde-bringup/1", "board": "synth",
+                   "date": "2026-09-01", "items": [
+                       {"name": "+5V", "measured": 5.02, "unit": "V",
+                        "limit": {"min": 4.9, "max": 5.1}, "verdict": "pass"}]}
 
 
 def test_prove_refuses_without_bringup_evidence(tmp_path, lib):
@@ -689,6 +698,24 @@ def test_prove_refuses_without_bringup_evidence(tmp_path, lib):
         "--prove", "--workspace", str(ws), "--records-dir", str(recs),
         "--checklists-dir", str(cls)])
     assert code == 1 and "bringup_passed" in payload["problems"][0]
+    assert all(knowledgelib.record_maturity(r) == "approved"
+               for r in knowledgelib.load_records(recs))
+
+
+def test_prove_refuses_a_bare_or_superseded_bringup(tmp_path, lib):
+    """A bringup_passed with no results file is not evidence, and neither is
+    one a later bringup_failed superseded."""
+    recs, cls = lib
+    args = ["--records-dir", str(recs), "--checklists-dir", str(cls)]
+    bare = [{"ts": "2026-09-01T10:00:00", "event": "bringup_passed"}]
+    ws = buck_ws(tmp_path, vin=12, history=bare)
+    payload, code = run_knowledge(tmp_path, ["--prove", "--workspace", str(ws)] + args)
+    assert code == 1 and "names no results file" in payload["problems"][0]
+    later = BRINGUP + [{"ts": "2026-09-02T10:00:00", "event": "bringup_failed",
+                        "results": "bringup/results.json"}]
+    ws = buck_ws(tmp_path, vin=12, history=later, name="ws2")
+    payload, code = run_knowledge(tmp_path, ["--prove", "--workspace", str(ws)] + args)
+    assert code == 1 and "bringup_failed" in payload["problems"][0]
     assert all(knowledgelib.record_maturity(r) == "approved"
                for r in knowledgelib.load_records(recs))
 
@@ -712,6 +739,7 @@ def test_prove_upgrades_applied_records_only_and_is_idempotent(tmp_path, lib):
     assert by_id["r-hot-loop"]["maturity"] == "proven"
     ev = by_id["r-hot-loop"]["evidence"]
     assert len(ev) == 1 and ev[0]["event"] == "bringup_passed"
+    assert ev[0]["results"] == "bringup/results.json"
     assert ev[0]["date"] == "2026-09-01" and ev[0]["board"] == "synth"
     assert by_id["r-emi"]["maturity"] == "approved" and "evidence" not in by_id["r-emi"]
     # the prose survived the targeted edit, and the library still lints

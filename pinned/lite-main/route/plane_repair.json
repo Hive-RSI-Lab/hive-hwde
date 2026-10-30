@@ -1,0 +1,316 @@
+{
+ "script": "plane_repair",
+ "status": "pass",
+ "board": "lite-main.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "mode": "repair",
+ "planes": [
+  {
+   "net": "GND",
+   "layer": "B.Cu",
+   "components": 3,
+   "anchored_components": 3,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": true,
+   "component_facts": [
+    {
+     "area_mm2": 7174.4857,
+     "pos": [
+      107.6412,
+      105.4384
+     ],
+     "anchors": 159,
+     "anchored": true
+    },
+    {
+     "area_mm2": 192.1907,
+     "pos": [
+      44.2381,
+      122.5527
+     ],
+     "anchors": 4,
+     "anchored": true
+    },
+    {
+     "area_mm2": 80.7598,
+     "pos": [
+      81.1056,
+      90.4576
+     ],
+     "anchors": 4,
+     "anchored": true
+    }
+   ],
+   "dead_islands": []
+  },
+  {
+   "net": "GND",
+   "layer": "F.Cu",
+   "components": 17,
+   "anchored_components": 17,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": true,
+   "component_facts": [
+    {
+     "area_mm2": 5995.1127,
+     "pos": [
+      35.0281,
+      105.3267
+     ],
+     "anchors": 240,
+     "anchored": true
+    },
+    {
+     "area_mm2": 70.3866,
+     "pos": [
+      69.0816,
+      115.8305
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 58.2656,
+     "pos": [
+      72.1938,
+      141.4496
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 31.3383,
+     "pos": [
+      101.7162,
+      115.2049
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 18.5441,
+     "pos": [
+      95.0628,
+      112.2424
+     ],
+     "anchors": 4,
+     "anchored": true
+    },
+    {
+     "area_mm2": 17.6802,
+     "pos": [
+      83.5601,
+      71.0958
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 10.0694,
+     "pos": [
+      101.8819,
+      111.5208
+     ],
+     "anchors": 4,
+     "anchored": true
+    },
+    {
+     "area_mm2": 9.3206,
+     "pos": [
+      72.8686,
+      108.31
+     ],
+     "anchors": 3,
+     "anchored": true
+    },
+    {
+     "area_mm2": 6.9571,
+     "pos": [
+      75.1476,
+      101.014
+     ],
+     "anchors": 4,
+     "anchored": true
+    },
+    {
+     "area_mm2": 4.6633,
+     "pos": [
+      82.4442,
+      95.1675
+     ],
+     "anchors": 3,
+     "anchored": true
+    },
+    {
+     "area_mm2": 2.2099,
+     "pos": [
+      82.2096,
+      96.9263
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 1.1909,
+     "pos": [
+      95.3523,
+      102.3365
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 1.1908,
+     "pos": [
+      95.3534,
+      100.5026
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 1.1708,
+     "pos": [
+      111.379,
+      100.41
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 1.0895,
+     "pos": [
+      111.4485,
+      102.3082
+     ],
+     "anchors": 2,
+     "anchored": true
+    },
+    {
+     "area_mm2": 0.3009,
+     "pos": [
+      112.8001,
+      99.501
+     ],
+     "anchors": 1,
+     "anchored": true
+    },
+    {
+     "area_mm2": 0.3009,
+     "pos": [
+      112.8001,
+      102.2753
+     ],
+     "anchors": 1,
+     "anchored": true
+    }
+   ],
+   "dead_islands": []
+  },
+  {
+   "net": "PVDD",
+   "layer": "B.Cu",
+   "components": 1,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 593.4425,
+     "pos": [
+      94.2456,
+      79.3491
+     ],
+     "anchors": 16,
+     "anchored": true
+    }
+   ],
+   "dead_islands": []
+  },
+  {
+   "net": "PVDD",
+   "layer": "F.Cu",
+   "components": 4,
+   "anchored_components": 4,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": true,
+   "component_facts": [
+    {
+     "area_mm2": 144.8947,
+     "pos": [
+      115.3646,
+      98.5723
+     ],
+     "anchors": 9,
+     "anchored": true
+    },
+    {
+     "area_mm2": 130.2304,
+     "pos": [
+      88.3654,
+      98.5723
+     ],
+     "anchors": 8,
+     "anchored": true
+    },
+    {
+     "area_mm2": 21.2845,
+     "pos": [
+      93.765,
+      66.373
+     ],
+     "anchors": 9,
+     "anchored": true
+    },
+    {
+     "area_mm2": 5.9472,
+     "pos": [
+      109.741,
+      95.2123
+     ],
+     "anchors": 1,
+     "anchored": true
+    }
+   ],
+   "dead_islands": []
+  },
+  {
+   "net": "VBUS",
+   "layer": "F.Cu",
+   "components": 1,
+   "anchored_components": 1,
+   "groups": 1,
+   "split": false,
+   "stitched_elsewhere": false,
+   "component_facts": [
+    {
+     "area_mm2": 30.5367,
+     "pos": [
+      89.5092,
+      68.1085
+     ],
+     "anchors": 5,
+     "anchored": true
+    }
+   ],
+   "dead_islands": []
+  }
+ ],
+ "bridges": [],
+ "splits_found": 0,
+ "splits_repaired": 0,
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T21:05:26+00:00",
+ "input": "/work/boards/lite/kicad/lite-main.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:93657ed3b90a97425f81847c9d09511cc48a33b5a3b624955376a7e7a40204f3"
+}

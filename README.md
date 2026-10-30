@@ -1,13 +1,13 @@
 # hive-hwde
 
-The hwde module: KiCad hardware design, from ihsan-sa/hwde's skill, as a Hive module in the Hive org like the other modules.
+The hwde module: KiCad hardware design for the Hive, in the Hive org like the other modules. It began as ihsan-sa/hwde's Claude Code skill and is its own now ([where it came from](docs/upstream.md)).
 
 An agent designs a PCB from a written brief: research, architecture, parts, schematic, placement, routing, then the checks (ERC, DRC, the verify suite, JLCPCB DFM on the exported Gerbers), ending in a fab package. The person signs off between stages. Ordering and paying are always the person's.
 
-- `.claude/skills/hwde/`: the skill (playbook `SKILL.md`, agent roles, scripts, reference), as upstream has it ([what differs](docs/upstream.md))
-- `tests/`: upstream's unit tests for the scripts, and `tests/workarounds/`, the probes
-- `bin/hwde`: runs the skill's scripts in a Hive sandbox with the Hive's KiCad 10 and freerouting (`hwde check` first)
-- How an agent uses it in the Hive: [docs/README.md](docs/README.md)
+- [`docs/README.md`](docs/README.md): how an agent uses it in the Hive; [`docs/playbook.md`](docs/playbook.md): the phases, gates and fix loop
+- `agents/`: the role prompts the playbook spawns; `scripts/`: the checks and tools; `reference/`: their tables, recipes, checklists and knowledge records
+- `tests/`: unit tests for the scripts (`test_env_lookups.py`: the lookups for the Hive's shared tools folder), and `tests/workarounds/`, the probes
+- `bin/hwde`: runs the scripts in a Hive sandbox with the Hive's KiCad 10 and freerouting (`hwde check` first)
 - The first board made with it: [boards/hwde-led-test/](boards/hwde-led-test/)
 
 ## Test and score
@@ -48,22 +48,18 @@ An agent designs a PCB from a written brief: research, architecture, parts, sche
   minutes) while the machine is strained and other turns run one. A command
   already inside one (check-all's gates, a test that runs `bin/hwde`), or a
   Hive without that op yet, runs bare (`tests/test_heavy.py`).
-- **Score**, `bin/hwde score`, higher is better: the share of those gate
-  steps, over all boards, that ran with no workaround, as a percentage. A
-  step counts as worked around when a row of `docs/workarounds.md` names it
-  for that board, because its input came through a shim in `bin/hwde` or
-  an edit made by hand in the board's files. A fix in the skill that lets a
-  board drop a workaround removes its row and raises the score. A new board
-  adds its steps; any workarounds it needs add rows, with a probe each.
-  hwde-led-test starts at 0/5: its ERC schematic was written through the
-  symdir shim, verify reads a hand-made decoupling entry, and fab and dfm
-  read a hand-added `refdes` per part. Its routed board had hand-widened
-  courtyards and a hand-picked outline margin until `check_courtyard`, fpfix
-  rule E and silk in `board_edit --outline fit` took those two off.
-  The boards built with hwde in other projects count too:
-  [docs/boards.md](docs/boards.md) records each one (the hi-fi receiver's
-  lite-main and core), with the steps it passed, and the rows of
-  `docs/workarounds.md` name their board-local scripts and hand edits like
-  any other board's. The score reads only this repo's files.
+- **Score**, `bin/hwde score`, higher is better: what this checkout's
+  gates find on boards held fixed. The hi-fi receiver's lite-main and core,
+  pinned in `pinned/` at one hifi-receiver-2 commit, and hwde-led-test go
+  through erc, drc_routed, verify and dfm with `bin/hwde`'s shims off. Each
+  unwaived finding, each warning and each board-local script that stands
+  in for hwde is a charge, and the score is minus the charges. A fix in
+  hwde that clears a finding on those boards raises it with nothing written
+  by hand. A pinned board changes only through `bin/hwde pin`. The whole
+  definition is [docs/score.md](docs/score.md). About ten minutes or more,
+  under `hive agent heavy`. A looser check finds less, so the score also
+  runs hwde's planted faults (`bin/strength.py`: the gate criteria, every
+  verify check's mutant in `tests/golden/`, dfm at JLC's floors), and each
+  one a check lets through charges 100.
 
 MIT, like upstream; see NOTICE for what that doesn't cover.

@@ -12,7 +12,7 @@ import pcbnew
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
-GEN = ROOT / ".claude/skills/hwde/scripts/castellated_fp.py"
+GEN = ROOT / "scripts/castellated_fp.py"
 VENV_PY = ROOT / ".venv/bin/python"   # the generator needs the venv (shapely)
 NAME = "Castellated_1x06_P2.54"
 

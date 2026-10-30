@@ -1,0 +1,76 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C79272",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C79272",
+   "mpn": "SWPA6045S100MT",
+   "brand": "Sunlord",
+   "description": "10uH 2.45A 3.5A 48m\u03a9 \u00b120% SMD,6x6mm Power Inductors ROHS",
+   "package": "SMD,6x6mm",
+   "category": "Power Inductors",
+   "type": "Extended",
+   "basic": false,
+   "stock": 8408,
+   "price": 0.0839,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0839
+    },
+    {
+     "qty": 100,
+     "price": 0.0688
+    },
+    {
+     "qty": 300,
+     "price": 0.0613
+    },
+    {
+     "qty": 1500,
+     "price": 0.0539
+    },
+    {
+     "qty": 4500,
+     "price": 0.0495
+    },
+    {
+     "qty": 10500,
+     "price": 0.0472
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2310251551_Sunlord-SWPA6045S100MT_C79272.pdf",
+   "url": "https://www.lcsc.com/product-detail/power-inductors_sunlord-swpa6045s100mt_C79272.html",
+   "attributes": [
+    {
+     "name": "Current - Saturation(Isat)",
+     "value": "3.5A"
+    },
+    {
+     "name": "Inductance",
+     "value": "10uH"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b120%"
+    },
+    {
+     "name": "Current Rating",
+     "value": "2.45A"
+    },
+    {
+     "name": "DC Resistance(DCR)",
+     "value": "48m\u03a9"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

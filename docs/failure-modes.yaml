@@ -509,6 +509,23 @@ modes:
   - lumina-par
   sources:
   - B:reviews
+- id: THERM-14
+  category: THERM
+  mode: Continuous rated output past what the thermal path holds
+  shows: full power trips the part's thermal shutdown; only a duty limit or a governor holds it
+  catch: Tj at the product's continuous rated output, not a fraction of it, from the datasheet's own theta and the box's air
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: found by a cold design review (first_spin.py), no check yet
+  hit_on:
+  - hifi-receiver-2 core
+  - hifi-receiver-2 lite-main
+  sources:
+  - review-2 THERMAL-2
+  - review-2 THERMAL-3
 - id: RATE-01
   category: RATE
   mode: Capacitor voltage rating below worst case
@@ -695,9 +712,9 @@ modes:
   shows: drivers latched ON when +12V arrives before +3V3
   catch: enable pull-downs, sequencing review
   coverage:
-    script: '-'
+    script: check_straps
     rule: '-'
-    level: L0
+    level: L1
   target_level: L2
   gap: T#194 open
   hit_on:
@@ -883,6 +900,37 @@ modes:
   - bb-buck
   sources:
   - B:PCB-0010-A
+- id: RATE-26
+  category: RATE
+  mode: P-FET load switch turned on through its gate-drain capacitance by an input voltage step
+  shows: the load sees the input's attach and every PD step with firmware off; inrush past the source's limit
+  catch: transient sim of the switch with the source's slew (5->20 V PD step) and the FET's Crss; gate hold-off RC
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: found by a cold design review (first_spin.py), no check yet
+  hit_on:
+  - hifi-receiver-2 lite-main
+  sources:
+  - review-2 POWER-3
+- id: RATE-27
+  category: RATE
+  mode: Series resistor drops an input below VIH at the datasheet's input current
+  shows: an enable or shutdown pin never reads high (amp stays in shutdown) on a worst-case part
+  catch: V_drive - IIH(max) x R_series vs VIH, from the datasheet's IIH, per driven input
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: found by a cold design review (first_spin.py), no check yet
+  hit_on:
+  - hifi-receiver-2 lite-main
+  sources:
+  - review-2 AUDIO-4
+  - review-2 DIGITAL-14
 - id: PI-01
   category: PI
   mode: Missing HF decoupling on an IC supply pin
@@ -1198,6 +1246,21 @@ modes:
   sources:
   - L3614
   - L4048
+- id: PI-21
+  category: PI
+  mode: Power path not interlocked with its source's status
+  shows: a lost or renegotiated PD contract leaves the load switch on; the source charges the bulk caps again on replug
+  catch: every load switch on a negotiated source gated in hardware by the source's PG/contract pin
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: found by a cold design review (first_spin.py), no check yet
+  hit_on:
+  - hifi-receiver-2 core
+  sources:
+  - review-2 POWER-6
 - id: PROT-01
   category: PROT
   mode: No ESD protection on a user-touch connector
@@ -1906,6 +1969,36 @@ modes:
   hit_on: []
   sources:
   - '[15]'
+- id: ANA-11
+  category: ANA
+  mode: Op-amp input common-mode or output swing past its limits on its real supply
+  shows: clipping or distortion near full scale on a single supply
+  catch: per stage, signal peak + bias vs the datasheet's VCM range and output swing at the load, on the supply it has
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: found by a cold design review (first_spin.py), no check yet
+  hit_on:
+  - hifi-receiver-2 core
+  sources:
+  - review-2 AUDIO-1
+- id: ANA-12
+  category: ANA
+  mode: Analog switch carries a signal outside its supply rails
+  shows: a ground-referenced audio signal through a single-supply switch clips or leaks
+  catch: signal min/max (with DC bias) vs the switch's V- .. V+ on each switched net
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: found by a cold design review (first_spin.py), no check yet
+  hit_on:
+  - hifi-receiver-2 core
+  sources:
+  - review-2 AUDIO-2
 - id: FAB-01
   category: FAB
   mode: Track width or spacing below fab minimum
@@ -2880,9 +2973,9 @@ modes:
   shows: wrong boot mode
   catch: BOOT0 pull-down; ESP32 strapping valid at reset
   coverage:
-    script: '-'
+    script: check_straps
     rule: '-'
-    level: L0
+    level: L1
   target_level: L2
   gap: none
   hit_on:
@@ -3104,6 +3197,21 @@ modes:
   hit_on: []
   sources:
   - '[21]'
+- id: FW-17
+  category: FW
+  mode: Firmware stack cannot drive the interface wiring the board has
+  shows: a DAC or peripheral wired as the target firmware doesn't support (two I2S data lines on one bus)
+  catch: each interface's wiring vs what the named firmware stack drives
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+  target_level: L2
+  gap: found by a cold design review (first_spin.py), no check yet
+  hit_on:
+  - hifi-receiver-2 core
+  sources:
+  - review-2 DIGITAL-3
 - id: SAFE-01
   category: SAFE
   mode: Spacing too small for working voltage
@@ -3515,12 +3623,12 @@ backlog:
   modes:
   - TEST-12
   files:
-  - .claude/skills/hwde/scripts/verify_all.py
-  - .claude/skills/hwde/scripts/score_checks.py
+  - scripts/verify_all.py
+  - scripts/score_checks.py
   - tests/test_golden.py
   - tests/test_check_scorecard.py
-  - .claude/skills/hwde/reference/gates.yaml
-  - .claude/skills/hwde/scripts/checks.d/README.md
+  - reference/gates.yaml
+  - scripts/checks.d/README.md
   eval:
     board: blinky2
     mutation: add a dummy fragment under checks.d and manifest.d
@@ -3535,13 +3643,13 @@ backlog:
   - MECH-05
   - MECH-06
   files:
-  - .claude/skills/hwde/scripts/check_mate_pins.py
+  - scripts/check_mate_pins.py
   - tests/test_check_mate_pins.py
   - tests/golden/mutations/mate_pins.py
   - tests/golden/mutants/mate_pins/**
-  - .claude/skills/hwde/scripts/checks.d/mate_pins.yaml
+  - scripts/checks.d/mate_pins.yaml
   - tests/golden/manifest.d/mate_pins.yaml
-  - .claude/skills/hwde/reference/connector_pinmap.yaml
+  - reference/connector_pinmap.yaml
   eval:
     board: usbbuck4
     mutation: add a second same-family connector and swap two pad nets across the pair
@@ -3558,11 +3666,11 @@ backlog:
   - DFA-04
   - DFA-08
   files:
-  - .claude/skills/hwde/scripts/check_bom_sync.py
+  - scripts/check_bom_sync.py
   - tests/test_check_bom_sync.py
   - tests/golden/mutations/bom_sync.py
   - tests/golden/mutants/bom_sync/**
-  - .claude/skills/hwde/scripts/checks.d/bom_sync.yaml
+  - scripts/checks.d/bom_sync.yaml
   - tests/golden/manifest.d/bom_sync.yaml
   eval:
     board: blinky2
@@ -3579,11 +3687,11 @@ backlog:
   - RATE-06
   - DFA-19
   files:
-  - .claude/skills/hwde/scripts/check_polarity.py
+  - scripts/check_polarity.py
   - tests/test_check_polarity.py
   - tests/golden/mutations/polarity.py
   - tests/golden/mutants/polarity/**
-  - .claude/skills/hwde/scripts/checks.d/polarity.yaml
+  - scripts/checks.d/polarity.yaml
   - tests/golden/manifest.d/polarity.yaml
   eval:
     board: usbbuck4
@@ -3603,13 +3711,13 @@ backlog:
   - SAFE-04
   - SAFE-05
   files:
-  - .claude/skills/hwde/scripts/check_creepage.py
-  - .claude/skills/hwde/scripts/check_hv_coverage.py
+  - scripts/check_creepage.py
+  - scripts/check_hv_coverage.py
   - tests/test_check_hv_coverage.py
   - tests/test_creepage_v2.py
   - tests/golden/mutations/hv_undeclared.py
   - tests/golden/mutants/hv_undeclared/**
-  - .claude/skills/hwde/scripts/checks.d/hv_coverage.yaml
+  - scripts/checks.d/hv_coverage.yaml
   - tests/golden/manifest.d/hv_coverage.yaml
   eval:
     board: blinky2
@@ -3628,7 +3736,7 @@ backlog:
   - THERM-03
   - THERM-12
   files:
-  - .claude/skills/hwde/scripts/check_thermal.py
+  - scripts/check_thermal.py
   - tests/test_thermal_v2.py
   - tests/golden/mutations/ep_vias_removed.py
   - tests/golden/mutants/ep_vias_removed/**
@@ -3652,10 +3760,10 @@ backlog:
   - EMC-12
   - THERM-06
   files:
-  - .claude/skills/hwde/scripts/check_current.py
-  - .claude/skills/hwde/scripts/check_ratings.py
-  - .claude/skills/hwde/scripts/check_route_style.py
-  - .claude/skills/hwde/scripts/check_silk.py
+  - scripts/check_current.py
+  - scripts/check_ratings.py
+  - scripts/check_route_style.py
+  - scripts/check_silk.py
   - tests/test_check_noise.py
   - tests/golden/scorecard/triage.yaml
   eval:
@@ -3675,8 +3783,8 @@ backlog:
   - PI-04
   - PI-02
   files:
-  - .claude/skills/hwde/scripts/check_decoupling.py
-  - .claude/skills/hwde/scripts/check_pdn.py
+  - scripts/check_decoupling.py
+  - scripts/check_pdn.py
   - tests/test_decoupling_absence.py
   - tests/golden/mutations/pin_cap_removed.py
   - tests/golden/mutants/pin_cap_removed/**
@@ -3699,12 +3807,12 @@ backlog:
   - PI-20
   - MECH-17
   files:
-  - .claude/skills/hwde/scripts/constraints_lint.py
-  - .claude/skills/hwde/scripts/check_board_rules.py
+  - scripts/constraints_lint.py
+  - scripts/check_board_rules.py
   - tests/test_check_board_rules.py
   - tests/golden/mutations/board_rules.py
   - tests/golden/mutants/board_rules/**
-  - .claude/skills/hwde/scripts/checks.d/board_rules.yaml
+  - scripts/checks.d/board_rules.yaml
   - tests/golden/manifest.d/board_rules.yaml
   eval:
     board: blinky2
@@ -3723,11 +3831,11 @@ backlog:
   - PI-13
   - FAB-22
   files:
-  - .claude/skills/hwde/scripts/check_route_integrity.py
+  - scripts/check_route_integrity.py
   - tests/test_check_route_integrity.py
   - tests/golden/mutations/route_integrity.py
   - tests/golden/mutants/route_integrity/**
-  - .claude/skills/hwde/scripts/checks.d/route_integrity.yaml
+  - scripts/checks.d/route_integrity.yaml
   - tests/golden/manifest.d/route_integrity.yaml
   eval:
     board: rf4
@@ -3747,11 +3855,11 @@ backlog:
   - RATE-17
   - RATE-18
   files:
-  - .claude/skills/hwde/scripts/check_driver.py
+  - scripts/check_driver.py
   - tests/test_check_driver.py
   - tests/golden/mutations/driver.py
   - tests/golden/mutants/driver/**
-  - .claude/skills/hwde/scripts/checks.d/driver.yaml
+  - scripts/checks.d/driver.yaml
   - tests/golden/manifest.d/driver.yaml
   eval:
     board: rf4
@@ -3772,11 +3880,11 @@ backlog:
   - RATE-21
   - RATE-22
   files:
-  - .claude/skills/hwde/scripts/check_regulators.py
+  - scripts/check_regulators.py
   - tests/test_check_regulators.py
   - tests/golden/mutations/regulators.py
   - tests/golden/mutants/regulators/**
-  - .claude/skills/hwde/scripts/checks.d/regulators.yaml
+  - scripts/checks.d/regulators.yaml
   - tests/golden/manifest.d/regulators.yaml
   eval:
     board: usbbuck4
@@ -3796,11 +3904,11 @@ backlog:
   - MECH-14
   - MECH-15
   files:
-  - .claude/skills/hwde/scripts/check_mechanical.py
+  - scripts/check_mechanical.py
   - tests/test_check_mechanical.py
   - tests/golden/mutations/mechanical.py
   - tests/golden/mutants/mechanical/**
-  - .claude/skills/hwde/scripts/checks.d/mechanical.yaml
+  - scripts/checks.d/mechanical.yaml
   - tests/golden/manifest.d/mechanical.yaml
   eval:
     board: blinky2
@@ -3823,11 +3931,11 @@ backlog:
   - PROT-09
   - PROT-10
   files:
-  - .claude/skills/hwde/scripts/check_protection.py
+  - scripts/check_protection.py
   - tests/test_check_protection.py
   - tests/golden/mutations/protection.py
   - tests/golden/mutants/protection/**
-  - .claude/skills/hwde/scripts/checks.d/protection.yaml
+  - scripts/checks.d/protection.yaml
   - tests/golden/manifest.d/protection.yaml
   eval:
     board: usbbuck4
@@ -3852,11 +3960,11 @@ backlog:
   - TEST-03
   - TEST-07
   files:
-  - .claude/skills/hwde/scripts/check_mcu_hw.py
+  - scripts/check_mcu_hw.py
   - tests/test_check_mcu_hw.py
   - tests/golden/mutations/mcu_hw.py
   - tests/golden/mutants/mcu_hw/**
-  - .claude/skills/hwde/scripts/checks.d/mcu_hw.yaml
+  - scripts/checks.d/mcu_hw.yaml
   - tests/golden/manifest.d/mcu_hw.yaml
   eval:
     board: blinky2
@@ -3878,11 +3986,11 @@ backlog:
   - FW-14
   - FW-16
   files:
-  - .claude/skills/hwde/scripts/check_pinmux.py
+  - scripts/check_pinmux.py
   - tests/test_check_pinmux.py
   - tests/golden/mutations/pinmux.py
   - tests/golden/mutants/pinmux/**
-  - .claude/skills/hwde/scripts/checks.d/pinmux.yaml
+  - scripts/checks.d/pinmux.yaml
   - tests/golden/manifest.d/pinmux.yaml
   eval:
     board: blinky2
@@ -3902,11 +4010,11 @@ backlog:
   - TEST-06
   - TEST-08
   files:
-  - .claude/skills/hwde/scripts/check_testpoints.py
+  - scripts/check_testpoints.py
   - tests/test_check_testpoints.py
   - tests/golden/mutations/testpoints.py
   - tests/golden/mutants/testpoints/**
-  - .claude/skills/hwde/scripts/checks.d/testpoints.yaml
+  - scripts/checks.d/testpoints.yaml
   - tests/golden/manifest.d/testpoints.yaml
   eval:
     board: blinky2
@@ -3928,11 +4036,11 @@ backlog:
   - MECH-09
   - MECH-16
   files:
-  - .claude/skills/hwde/scripts/check_brief_trace.py
+  - scripts/check_brief_trace.py
   - tests/test_check_brief_trace.py
   - tests/golden/mutations/brief_trace.py
   - tests/golden/mutants/brief_trace/**
-  - .claude/skills/hwde/scripts/checks.d/brief_trace.yaml
+  - scripts/checks.d/brief_trace.yaml
   - tests/golden/manifest.d/brief_trace.yaml
   - tests/golden/brief/**
   eval:
@@ -3955,7 +4063,7 @@ backlog:
   - DFA-13
   - DFA-24
   files:
-  - .claude/skills/hwde/scripts/fp_verify.py
+  - scripts/fp_verify.py
   - tests/test_fp_trust.py
   - tests/golden/mutations/fp_drill_short.py
   - tests/golden/mutants/fp_drill_short/**
@@ -3982,11 +4090,11 @@ backlog:
   - SI-10
   - SI-12
   files:
-  - .claude/skills/hwde/scripts/check_emc.py
+  - scripts/check_emc.py
   - tests/test_check_emc.py
   - tests/golden/mutations/emc.py
   - tests/golden/mutants/emc/**
-  - .claude/skills/hwde/scripts/checks.d/emc.yaml
+  - scripts/checks.d/emc.yaml
   - tests/golden/manifest.d/emc.yaml
   eval:
     board: usbbuck4
@@ -4010,11 +4118,11 @@ backlog:
   - FAB-16
   - FAB-26
   files:
-  - .claude/skills/hwde/scripts/check_dfa.py
+  - scripts/check_dfa.py
   - tests/test_check_dfa.py
   - tests/golden/mutations/dfa.py
   - tests/golden/mutants/dfa/**
-  - .claude/skills/hwde/scripts/checks.d/dfa.yaml
+  - scripts/checks.d/dfa.yaml
   - tests/golden/manifest.d/dfa.yaml
   eval:
     board: blinky2
@@ -4032,7 +4140,7 @@ backlog:
   - ANA-08
   - EMC-13
   files:
-  - .claude/skills/hwde/scripts/place_metrics.py
+  - scripts/place_metrics.py
   - tests/test_place_metrics_fixes.py
   - tests/golden/mutations/decoupler_locked.py
   - tests/golden/mutants/decoupler_locked/**
@@ -4052,8 +4160,8 @@ backlog:
   - PI-09
   - PI-10
   files:
-  - .claude/skills/hwde/scripts/check_irdrop.py
-  - .claude/skills/hwde/scripts/check_pdn_z.py
+  - scripts/check_irdrop.py
+  - scripts/check_pdn_z.py
   - tests/test_irdrop_pdnz.py
   - tests/golden/mutations/narrow_neck_irdrop.py
   - tests/golden/mutants/narrow_neck_irdrop/**
@@ -4074,7 +4182,7 @@ backlog:
   - RATE-25
   - ANA-06
   files:
-  - .claude/skills/hwde/scripts/sim_run.py
+  - scripts/sim_run.py
   - tests/test_sim_trust.py
   - tests/fixtures/sim_trust/**
   eval:
@@ -4094,8 +4202,8 @@ backlog:
   - SI-09
   - DFA-09
   files:
-  - .claude/skills/hwde/scripts/order_submit.py
-  - .claude/skills/hwde/scripts/order_quote.py
+  - scripts/order_submit.py
+  - scripts/order_quote.py
   - tests/test_order_safety.py
   - tests/fixtures/order_safety/**
   eval:
@@ -4174,7 +4282,7 @@ backlog:
   - FAB-14
   - DFA-08
   files:
-  - .claude/skills/hwde/scripts/dfm_check.py
+  - scripts/dfm_check.py
   - tests/test_dfm_extended.py
   - tests/golden/mutations/via_in_pad_open.py
   - tests/golden/mutants/via_in_pad_open/**
@@ -4193,9 +4301,9 @@ backlog:
   - DFA-01
   - DFA-02
   files:
-  - .claude/skills/hwde/scripts/bom_cpl.py
-  - .claude/skills/hwde/scripts/cpl_verify.py
-  - .claude/skills/hwde/scripts/cpl_render.py
+  - scripts/bom_cpl.py
+  - scripts/cpl_verify.py
+  - scripts/cpl_render.py
   - tests/test_cpl_origin.py
   eval:
     board: blinky2 (cpl-rotation mutant plus a QFN rotation)
@@ -4212,7 +4320,7 @@ backlog:
   - TEST-10
   - DFA-08
   files:
-  - .claude/skills/hwde/scripts/gate.py
+  - scripts/gate.py
   - tests/test_gate_hardening.py
   eval:
     board: blinky2
@@ -4231,7 +4339,7 @@ backlog:
   - MECH-08
   - DFA-24
   files:
-  - .claude/skills/hwde/scripts/lib/easyeda.py
+  - scripts/lib/easyeda.py
   - tests/test_import_checks.py
   - tests/fixtures/import_checks/**
   eval:

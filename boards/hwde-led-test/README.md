@@ -42,7 +42,7 @@ hwde's own design document, [`reports/design_doc/hwde-led-test-design-doc.pdf`](
 | ERC (`erc`) | 0 errors, 0 warnings |
 | Placement (`place`) | pass |
 | Routed DRC (`drc_routed`) | 0 errors, 0 warnings, 0 unconnected |
-| Verify suite (`verify`, 14 checks) | pass, with 2 warnings: a 0.15 mm jog on /LED_A, and D1/R1 with no recognised voltage-rating attribute |
+| Verify suite (`verify`, 14 checks) | pass, with 2 warnings: a 0.15 mm jog on /LED_A, and D1 (an LED) with no voltage-rating attribute |
 | JLC DFM on the exported Gerbers (`dfm`) | 0 findings |
 
 A fresh-context reviewer read the schematic and the board (`reports/review-schematic.md`, `reports/review-board.md`) and found 0 errors.

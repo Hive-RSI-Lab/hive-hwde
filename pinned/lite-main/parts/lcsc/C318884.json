@@ -1,0 +1,112 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C318884",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C318884",
+   "mpn": "TS-1187A-B-A-B",
+   "brand": "XKB Connection",
+   "description": "-30\u2103~+85\u2103 1.5mm 1.6N 100,000 cycles 12V 5.1mm 5.1mm 50mA Gold No Round Button SPST Surface Mount,Vertical Without Bracket SMD-4P,5.1x5.1mm Tactile Switches ROHS",
+   "package": "SMD-4P,5.1x5.1mm",
+   "category": "Tactile Switches",
+   "type": "Basic",
+   "basic": true,
+   "stock": 1151265,
+   "price": 0.0207,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0207
+    },
+    {
+     "qty": 200,
+     "price": 0.016
+    },
+    {
+     "qty": 600,
+     "price": 0.0139
+    },
+    {
+     "qty": 4000,
+     "price": 0.0121
+    },
+    {
+     "qty": 8000,
+     "price": 0.0115
+    },
+    {
+     "qty": 20000,
+     "price": 0.0111
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_XKB-Connection-TS-1187A-B-A-B_C318884.pdf",
+   "url": "https://www.lcsc.com/product-detail/tactile-switches_xkb-connection-ts-1187a-b-a-b_C318884.html",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-30\u2103~+85\u2103"
+    },
+    {
+     "name": "Contact Current",
+     "value": "50mA"
+    },
+    {
+     "name": "Voltage Rating",
+     "value": "12V"
+    },
+    {
+     "name": "Actuator Style",
+     "value": "Round Button"
+    },
+    {
+     "name": "with Bracket",
+     "value": "Without Bracket"
+    },
+    {
+     "name": "Switch Height",
+     "value": "1.5mm"
+    },
+    {
+     "name": "Circuit",
+     "value": "SPST"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Surface Mount,Vertical"
+    },
+    {
+     "name": "Actuator/Cap Color",
+     "value": "Gold"
+    },
+    {
+     "name": "Operating Force",
+     "value": "1.6N"
+    },
+    {
+     "name": "Length",
+     "value": "5.1mm"
+    },
+    {
+     "name": "Life",
+     "value": "100,000 cycles"
+    },
+    {
+     "name": "With Lamp",
+     "value": "No"
+    },
+    {
+     "name": "Width",
+     "value": "5.1mm"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

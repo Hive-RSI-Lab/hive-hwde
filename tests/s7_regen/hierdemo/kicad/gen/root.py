@@ -18,7 +18,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve()
 REPO = HERE.parents[5]
-sys.path.insert(0, str(REPO / ".claude" / "skills" / "hwde" / "scripts"))
+sys.path.insert(0, str(REPO / "scripts"))
 sys.path.insert(0, str(HERE.parent))  # sibling sheet generators
 
 import schlib  # noqa: E402
