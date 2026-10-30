@@ -2408,6 +2408,25 @@ modes:
   hit_on: []
   sources:
   - '[1]'
+- id: FAB-27
+  category: FAB
+  mode: Zone fill stale - board saved without a refill
+  shows: fill clears another net's pad by less than the zone's own clearance
+    (0.1275 mm vs 0.5 mm); DRC and gerber DFM pass, the Gerbers carry it
+  catch: gaps under the zone's connect_pads clearance, confirmed on a refilled
+    copy (a .kicad_dru rule can set a smaller one); refill before export
+  coverage:
+    script: dfm_check
+    rule: dfm_stale_zone_fill
+    level: L2
+  target_level: L3
+  gap: fab_export does not refill before it exports
+  hit_on:
+  - hwde-led-test
+  - bb-adc
+  sources:
+  - T#261029-221623
+  - B:hwde-led-test DFM-1 (first-spin review, task 261029-175013)
 - id: DFA-01
   category: DFA
   mode: Polarized part rotated or marker on wrong pad

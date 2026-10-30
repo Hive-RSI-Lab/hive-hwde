@@ -213,6 +213,8 @@ class Pad:
     # pad_prop_castellated)` - a plated half-hole on the board edge
     # (lib/castellation.py).
     castellated: bool = False
+    # The pad's type token: smd | thru_hole | np_thru_hole | connect.
+    kind: str = ""
 
     @cached_property
     def copper_center(self) -> tuple[float, float]:
@@ -266,6 +268,10 @@ class Zone:
     layers: tuple[str, ...]           # declared layers
     fills: dict[str, list[Polygon]]   # layer -> filled polygons (may be empty)
     zone_id: int
+    # The zone's own `(connect_pads (clearance x))`: the least gap a fill
+    # leaves to other nets' copper (netclass or DRU rules can only widen
+    # it). None when the zone does not say.
+    clearance: Optional[float] = None
 
     @property
     def filled(self) -> bool:
@@ -738,6 +744,7 @@ class BoardGeom:
             shape=pshape, size=(w, h), center=center, angle=pad_angle,
             rratio=rratio, layers=layers, drill=drill,
             drill_offset=drill_off,
+            kind=str(_tok(pad[2])) if len(pad) > 2 else "",
             castellated=any(_tok(x) == "pad_prop_castellated"
                             for prop in _kids(pad, "property")
                             for x in prop[1:]))
@@ -785,8 +792,12 @@ class BoardGeom:
                         poly = poly.buffer(0)
                     if not poly.is_empty:
                         fills.setdefault(fln, []).append(poly)
+            cp = _kid(zone, "connect_pads")
+            cl = _kid(cp, "clearance") if cp is not None else None
             self._zones.append(Zone(net=net, layers=declared or tuple(fills.keys()),
-                                    fills=fills, zone_id=zid))
+                                    fills=fills, zone_id=zid,
+                                    clearance=_nums(cl)[0] if cl and _nums(cl)
+                                    else None))
             zid += 1
 
     def _parse_outline(self, root) -> Polygon:
@@ -1014,10 +1025,12 @@ def _refill_copy(pcb: Path) -> Path:
     tmp = Path(tempfile.mkdtemp(prefix="geom_refill_"))
     dst = tmp / pcb.name
     shutil.copy2(pcb, dst)
-    # copy the sibling .kicad_pro if present (keeps DRC rules identical)
-    pro = pcb.with_suffix(".kicad_pro")
-    if pro.exists():
-        shutil.copy2(pro, dst.with_suffix(".kicad_pro"))
+    # copy the sibling .kicad_pro and .kicad_dru if present (keeps DRC rules
+    # identical: a custom rule can set a zone's clearance below its own)
+    for ext in (".kicad_pro", ".kicad_dru"):
+        side = pcb.with_suffix(ext)
+        if side.exists():
+            shutil.copy2(side, dst.with_suffix(ext))
     kc.run_drc(cli, dst, refill=True, save_board=True)
     return dst
 

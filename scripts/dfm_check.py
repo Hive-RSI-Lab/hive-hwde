@@ -53,6 +53,17 @@ Checks (all thresholds from reference/jlc_capabilities.yaml, keyed
            beside it: a part the two disagree on, or one the image pass left
            out, is an ERROR (cpl_visual_disagree); no image pass at all is a
            coverage hole (family placement_visual) that --strict refuses.
+  zone_fill  the BOARD's saved zone fills against a fresh refill: a board
+           saved without a refill passes DRC (it checks the netclass floor,
+           not the zone's rule) and the Gerbers carry the stale copper
+           (FAB-27, hwde-led-test DFM-1: 0.1275 mm vs 0.5 mm).
+           A gap under the zone's clearance is only a candidate (a project
+           rule can set a smaller one): it is confirmed on a refilled copy
+           (kicad-cli, ~10 s, only when there are candidates), stale where
+           the fresh fill sits further from the item. NPTH holes are left
+           out (KiCad clears them by hole clearance). ERROR
+           (dfm_stale_zone_fill); refill before export. No refill possible
+           = a coverage hole (zone_fill skipped), never a pass
   release  gerber layer completeness (against the BOARD's declared layer set,
            never the files being audited - a package that dropped a layer must
            read as incomplete, not as a smaller board), drill validity,
@@ -276,6 +287,102 @@ def check_clearance(fab, rules, vios: list) -> None:
                 f"copper clearance {d:.4f} mm below JLC minimum {lo} mm "
                 f"on {name}", SOURCE, kind="dfm_clearance",
                 clearance_mm=checklib.rnd(d), min_mm=lo))
+
+
+# A refill that moves a fill this much further from an item (mm) means the
+# saved fill was stale; a fill KiCad would leave where it is, is not.
+ZONE_FILL_MOVE_MM = 0.01
+
+
+_FRESH: dict = {}
+
+
+def _refilled(pcb: Path):
+    """A refilled copy's geometry, kept per process by the board's and its
+    rules' content (a refill is a kicad-cli run, ~5-15 s)."""
+    import hashlib
+    h = hashlib.sha256()
+    for ext in (".kicad_pcb", ".kicad_pro", ".kicad_dru"):
+        side = pcb.with_suffix(ext)
+        h.update(ext.encode() + (side.read_bytes() if side.exists() else b""))
+    key = h.hexdigest()
+    if key not in _FRESH:
+        tmp = geom._refill_copy(pcb)
+        try:
+            _FRESH[key] = geom.BoardGeom.from_file(tmp)
+        finally:
+            geom._cleanup(tmp)
+    return _FRESH[key]
+
+
+def _zone_fill_candidates(bg) -> list:
+    """Every other-net pad, track or via nearer a zone's saved fill than the
+    zone's own clearance: (zone, layer, gap, what, refs, net, poly). Only a
+    candidate: a project rule (.kicad_dru, netclass) can set a smaller one,
+    and then a refill leaves the same gap (the hi-fi boards' 0.10 mm)."""
+    out = []
+    for z in bg.zones_of():
+        if not z.clearance:
+            continue
+        for layer, polys in z.fills.items():
+            if not polys:
+                continue
+            fill = geom._union(polys)
+            items = [(f"{q.ref}.{q.number}", [q.ref], q.net, q.poly)
+                     for q in bg.pads_of(layer=layer)
+                     if q.kind != "np_thru_hole"]
+            items += [("track", [], t.net, t.poly)
+                      for t in bg.tracks_of(layer=layer)]
+            items += [("via", [], v.net, v.poly)
+                      for v in bg.vias_of(layer=layer)]
+            for what, refs, net, poly in items:
+                if z.net and net == z.net:
+                    continue
+                d = fill.distance(poly)
+                if _below(d, z.clearance):
+                    out.append((z, layer, d, what, refs, net, poly))
+    return out
+
+
+def check_zone_fill(bg, vios: list, fresh=None) -> str | None:
+    """FAB-27: a saved zone fill that a refill would move. Candidates come
+    from the zone's own clearance (cheap, no KiCad); each is confirmed
+    against a refilled copy (kicad-cli, the board's .kicad_pro/.kicad_dru
+    beside it) - stale where the fresh fill sits further from the item.
+    `fresh`: the refilled board's BoardGeom (tests); else one is made.
+    Returns why the check could not run, or None."""
+    cands = _zone_fill_candidates(bg)
+    if not cands:
+        return None
+    if fresh is None:
+        try:
+            fresh = _refilled(bg.path)
+        except Exception as e:  # no kicad-cli, a refill that fails
+            return f"could not refill a copy to confirm {len(cands)} " \
+                   f"candidate(s): {e}"
+    worst: dict = {}
+    fills: dict = {}
+    for z, layer, d, what, refs, net, poly in cands:
+        if (z.net, layer) not in fills:
+            fills[z.net, layer] = fresh.zone_fill(z.net, layer)
+        f = fills[z.net, layer].distance(poly)
+        if f - d < ZONE_FILL_MOVE_MM:
+            continue
+        key = (z.zone_id, layer)
+        if key not in worst or d < worst[key][1]:
+            worst[key] = (z, d, f, what, refs, net, poly, layer)
+    for z, d, f, what, refs, net, poly, layer in worst.values():
+        c = poly.centroid
+        vios.append(checklib.violation(
+            CHECK, "error", (c.x, c.y), layer, z.net, refs,
+            f"{z.net or 'no-net'} zone fill on {layer} is {d:.4f} mm "
+            f"from {what} ({net or 'no net'}) where a refill leaves "
+            f"{f:.4f} mm (zone clearance {z.clearance} mm): the saved "
+            f"fill is stale - refill zones (kicad-cli pcb drc "
+            f"--refill-zones --save-board) and re-export the Gerbers",
+            SOURCE, kind="dfm_stale_zone_fill",
+            clearance_mm=checklib.rnd(d), min_mm=checklib.rnd(f)))
+    return None
 
 
 def _castellated_at(cast, x: float, y: float, r: float = 0.0) -> bool:
@@ -841,6 +948,7 @@ def check_release(fab, expected_cu: list[str], vios: list,
 DFM_FAMILIES = {
     "copper": ("dfm_trace_width", "dfm_clearance"),
     "copper_to_edge": ("dfm_copper_to_edge",),
+    "zone_fill": ("dfm_stale_zone_fill",),
     "drill": ("dfm_hole_size", "dfm_hole_to_hole", "dfm_annular_ring"),
     "hole_to_edge": ("dfm_hole_to_edge",),
     "silk": ("dfm_silk_width", "dfm_silk_over_pad", "dfm_mask_dam",
@@ -925,6 +1033,9 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
             check_trace_width(fab, rules, vios)
             check_clearance(fab, rules, vios)
             check_copper_to_edge(fab, rules, vios, cast)
+        zone_fill_skipped = None
+        if "zone_fill" not in skip:
+            zone_fill_skipped = check_zone_fill(bg, vios)
         if "drill" not in skip:
             check_holes(fab, rules, vios, cast)
             check_annular_ring(fab, rules, vios, cast)
@@ -983,9 +1094,11 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
 
         # U2 coverage (codex C7): record which families never ran and why.
         skipped_cov: dict[str, str] = {}
-        for fam in ("copper", "drill", "silk", "castellation"):
+        for fam in ("copper", "drill", "silk", "castellation", "zone_fill"):
             if fam in skip:
                 skipped_cov[fam] = "skipped via --skip"
+        if zone_fill_skipped:
+            skipped_cov["zone_fill"] = zone_fill_skipped
         no_outline = fab.edge_file is None or fab.outline.is_empty
         edge_reason = "Edge.Cuts missing or does not form a closed outline"
         if no_outline or "copper" in skip:
@@ -1075,7 +1188,7 @@ def main(argv: list[str] | None = None) -> int:
                     help="never fetch LCSC models (uncached = cpl_no_model)")
     ap.add_argument("--skip", default="",
                     help="comma list of groups to skip: "
-                         "copper,drill,silk,castellation,placement")
+                         "copper,drill,silk,castellation,zone_fill,placement")
     ap.add_argument("--strict", action="store_true",
                     help="release mode (codex C7): any sub-check family that "
                          "could not run (open outline, no netlist, no "
