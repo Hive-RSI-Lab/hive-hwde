@@ -18,10 +18,15 @@ finding (the empty-ref subset poison, rf-de-20m LEARNINGS).
 The release DISPOSITION is DERIVED, never hand-set (first match wins):
 
     blocked            escalated issue or a fab/restrictions.json hold entry
-    rework-required    any recorded gate fail, or open/fixing issues
-    derated            a derate restriction or an order carrying a
-                       manufacturing-option waiver (the pd-trigger 1 oz case)
-    bring-up-passed    state history event `bringup_passed` (U10/T11 writes it)
+    rework-required    any recorded gate fail, open/fixing issues, or the
+                       latest bring-up event is `bringup_failed`
+    derated            a derate restriction, an order carrying a
+                       manufacturing-option waiver (the pd-trigger 1 oz
+                       case), or the latest bring-up is `bringup_derated`
+    bring-up-passed    the latest bring-up event is `bringup_passed` AND its
+                       results file (lib/bringuplib.py) is in the workspace
+                       with the bytes it was recorded with (`state.py
+                       bringup` writes it); a bare event reads `built`
     built              state history event `boards_received` (T11 writes it)
     ordered            fab/order.json records an order (web or API)
     order-ready        fab/attestation.json exists and verifies VALID
@@ -53,6 +58,7 @@ from pathlib import Path
 _HERE = str(Path(__file__).resolve().parent)
 if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
+import bringuplib  # noqa: E402
 import checklib  # noqa: E402
 import env  # noqa: E402
 import statelib  # noqa: E402
@@ -1184,11 +1190,19 @@ def disposition(ws: Path) -> dict:
     failing = sorted(g for g, e in (data.get("gates") or {}).items()
                      if e.get("status") == "fail")
     live = [i for i in issues if i.get("status") in ("open", "fixing")]
+    bu = bringuplib.latest_event(data.get("history"))
+    bu_event = (bu or {}).get("event")
     if failing or live:
         return out("rework-required",
                    f"failing gates: {', '.join(failing) or 'none'}; "
                    f"open issues: {len(live)}",
                    failing_gates=failing)
+    # a failed bring-up counts whatever its evidence (fail closed)
+    if bu_event == "bringup_failed":
+        return out("rework-required",
+                   f"bring-up failed: {', '.join(bu.get('failed') or []) or '?'}"
+                   f" ({bu.get('results') or 'no results file'})",
+                   bringup=bu)
 
     derates = [r for r in restrictions if r.get("kind") == "derate"]
     if derates or _order_derated(ws, order):
@@ -1196,11 +1210,24 @@ def disposition(ws: Path) -> dict:
                    "derate restriction recorded" if derates else
                    "order carries a manufacturing-option waiver "
                    "(COPPER WAIVER)")
+    if bu_event == "bringup_derated":
+        return out("derated",
+                   f"bring-up derated: {', '.join(bu.get('derated') or [])}"
+                   f" ({bu.get('results') or 'no results file'})",
+                   bringup=bu)
 
-    if _history_has(data, "bringup_passed"):
-        return out("bring-up-passed", "state history event bringup_passed")
-    if _history_has(data, "boards_received"):
-        return out("built", "state history event boards_received")
+    bu_problems = (bringuplib.evidence_problems(ws, bu)
+                   if bu_event == "bringup_passed" else [])
+    if bu_event == "bringup_passed" and not bu_problems:
+        return out("bring-up-passed",
+                   f"bringup_passed with measured results {bu['results']} "
+                   f"({(bu.get('counts') or {}).get('pass', '?')} items pass)",
+                   bringup=bu)
+    extra = {"bringup_problems": bu_problems} if bu_problems else {}
+    if _history_has(data, "boards_received") or bu_problems:
+        return out("built", "state history event boards_received"
+                   + ("; " + "; ".join(bu_problems) if bu_problems else ""),
+                   **extra)
     if _has_order(order):
         return out("ordered",
                    f"order recorded ({order.get('order_number') or 'api'})")

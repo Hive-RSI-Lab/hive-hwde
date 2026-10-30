@@ -53,8 +53,10 @@ coverage are TRIGGERED / structural, never self-assessed:
                         (MAPPING_SCHEMA); validated against this run's
                         records + slots + record classes, refused whole on
                         any problem (exit 2). Its sha256 lands in the report.
-  --prove               T11 wiring: after `state.py log --event
-                        bringup_passed`, upgrade every record that APPLIED to
+  --prove               T11 wiring: after `state.py bringup --results F`
+                        logs bringup_passed (the results file must still
+                        hold, and no later bring-up failed or derated),
+                        upgrade every record that APPLIED to
                         the workspace (deterministic keys + envelope) to
                         maturity `proven` and append the bring-up evidence
                         entry - reality outranks review. --dry-run reports
