@@ -1,0 +1,49 @@
+# Parts a datasheet requires at a pin, for netlist_audit.py's pin_part_missing
+# rule: per IC, which part (capacitor, inductor, resistor) must sit between
+# one of its pins and another of its pins, and of what value.
+#
+# match: a regex tried against the part's Value, then its symbol name
+# (case-insensitive).
+# Pins are named as the netlist's pinfunction gives them, upper-cased, with
+# KiCad's ~{...} overbar dropped; `aliases` maps other names a symbol may use
+# onto those.
+# Each requirement:
+#   id      the datasheet's own name for the part (CBK, CVM1, ...)
+#   pin     the pin the part serves
+#   to      the other pin of the same IC the part's far end goes to (its net
+#           is whatever net that pin is on)
+#   kinds   the part kinds that do: C, L, R (from the refdes letter)
+#   value   nominal; a part qualifies within one E3 step either side (/2.2,
+#           x2.2) unless min/max (base units, F/H/ohm) say otherwise.
+#           No value and no min/max: any part of the kind does.
+#   when    connected: only when `pin` is on a real net (an unused buck's
+#           SW_BK left open needs no inductor)
+#   source  where the datasheet says it (document, revision, table/section)
+# verified: false means typed from memory of the datasheet, not re-read.
+#
+# Errata corpus: minuet v3 shipped the MCF8316D with no capacitor drawn for
+# FB_BK; the +3.3V rail it sits on had caps, all drawn for other sheets'
+# parts. Fill this table from datasheet_extract's `pin_requirements` field
+# when a part's extraction gives one.
+
+parts:
+  - mpn: MCF8316D
+    match: '^MCF8316D'
+    verified: true   # SLLSFX9A (Dec 2024, rev. May 2025) Table 10-1 read 2026-10-30
+    requires:
+      - {id: CVM1, pin: VM, to: PGND, kinds: [C], value: 100n,
+         source: "SLLSFX9A Table 10-1: X7R 0.1 uF, rated 2x VM"}
+      - {id: CVM2, pin: VM, to: PGND, kinds: [C], min: 10.0e-6,
+         source: "SLLSFX9A Table 10-1: >= 10 uF, rated 2x VM"}
+      - {id: CCP, pin: CP, to: VM, kinds: [C], value: 1u,
+         source: "SLLSFX9A Table 10-1 and pin table: X7R 1 uF 16 V, CP to VM"}
+      - {id: CFLY, pin: CPH, to: CPL, kinds: [C], value: 47n,
+         source: "SLLSFX9A Table 10-1: X7R 47 nF, rated 2x VM"}
+      - {id: CAVDD, pin: AVDD, to: AGND, kinds: [C], value: 1u,
+         source: "SLLSFX9A Table 10-1: X7R 1 uF >= 10 V, 0.7-1.3 uF effective at 3.3 V"}
+      - {id: CDVDD, pin: DVDD, to: DGND, kinds: [C], value: 1u,
+         source: "SLLSFX9A Table 10-1: X7R 1 uF >= 6.3 V, 0.7-2.5 uF effective at 1.5 V"}
+      - {id: CBK, pin: FB_BK, to: GND_BK, kinds: [C],
+         source: "SLLSFX9A Table 10-1: X7R, buck-output rated (characterised at 22 uF; minuet's errata fits 1 uF with the buck unused)"}
+      - {id: LBK, pin: SW_BK, to: FB_BK, kinds: [L, R], when: connected,
+         source: "SLLSFX9A Table 10-1 and 7.3.3.2: buck inductor, or a resistor in resistor mode (< 10 mA)"}
