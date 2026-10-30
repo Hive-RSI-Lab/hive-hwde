@@ -1,0 +1,264 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C2290",
+ "total": 16,
+ "count": 3,
+ "results": [
+  {
+   "lcsc": "C2290",
+   "mpn": "KT-0603W",
+   "brand": "Hubei KENTO Elec",
+   "description": "-40\u2103~+85\u2103 100mW 120\u00b0 2.6V~3.1V 360mcd 5mA Discrete Diode Top-mount White Yellow Lens 0603 LED Indication - Discrete ROHS",
+   "package": "0603",
+   "category": "LED Indication - Discrete",
+   "type": "Basic",
+   "basic": true,
+   "stock": 1477511,
+   "price": 0.0123,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0123
+    },
+    {
+     "qty": 500,
+     "price": 0.0095
+    },
+    {
+     "qty": 1500,
+     "price": 0.0082
+    },
+    {
+     "qty": 4000,
+     "price": 0.0066
+    },
+    {
+     "qty": 24000,
+     "price": 0.0062
+    },
+    {
+     "qty": 48000,
+     "price": 0.0059
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2305091500_Hubei-KENTO-Elec-KT-0603W_C2290.pdf",
+   "url": "https://www.lcsc.com/product-detail/led-indication-discrete_hubei-kento-elec-kt-0603w_C2290.html",
+   "attributes": [
+    {
+     "name": "Mounting Style",
+     "value": "Top-mount"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+85\u2103"
+    },
+    {
+     "name": "Color Temperature",
+     "value": "40000K~100000K"
+    },
+    {
+     "name": "Test Current",
+     "value": "5mA"
+    },
+    {
+     "name": "Viewing Angle",
+     "value": "120\u00b0"
+    },
+    {
+     "name": "Lamp Holder Type",
+     "value": "1.6mm x 0.8mm square LED"
+    },
+    {
+     "name": "Luminous Intensity",
+     "value": "360mcd"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "100mW"
+    },
+    {
+     "name": "Diode Configuration",
+     "value": "Discrete Diode"
+    },
+    {
+     "name": "Illumination Color",
+     "value": "White"
+    },
+    {
+     "name": "Lens Color",
+     "value": "Yellow Lens"
+    },
+    {
+     "name": "Voltage - Forward(Vf)",
+     "value": "2.6V~3.1V"
+    }
+   ],
+   "rank": 0
+  },
+  {
+   "lcsc": "C144214",
+   "mpn": "MIC2290YML-TR",
+   "brand": "Microchip Tech",
+   "description": "-40\u2103~+125\u2103 1 1.24V~34V 1.2MHz 2.5V~10V 2.5mA 500mA Adjustable Boost Boost Built-in No Overcurrent Protection\u3001Built-in current sense resistor MLF-8(2x2) DC-DC Converters ROHS",
+   "package": "MLF-8(2x2)",
+   "category": "DC-DC Converters",
+   "type": "Extended",
+   "basic": false,
+   "stock": 27,
+   "price": 1.6934,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 1.6934
+    },
+    {
+     "qty": 10,
+     "price": 1.4003
+    },
+    {
+     "qty": 30,
+     "price": 1.2381
+    },
+    {
+     "qty": 100,
+     "price": 1.0563
+    },
+    {
+     "qty": 500,
+     "price": 0.9761
+    },
+    {
+     "qty": 1000,
+     "price": 0.9384
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1809271514_Microchip-Tech-MIC2290YML-TR_C144214.pdf",
+   "url": "https://www.lcsc.com/product-detail/dc-dc-converters_microchip-tech-mic2290yml-tr_C144214.html",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+125\u2103"
+    },
+    {
+     "name": "Function",
+     "value": "Boost"
+    },
+    {
+     "name": "Synchronous Rectifier",
+     "value": "No"
+    },
+    {
+     "name": "Frequency - Switching",
+     "value": "1.2MHz"
+    },
+    {
+     "name": "Output Type",
+     "value": "Adjustable"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "2.5V~10V"
+    },
+    {
+     "name": "Output Current",
+     "value": "500mA"
+    },
+    {
+     "name": "Quiescent Current",
+     "value": "2.5mA"
+    },
+    {
+     "name": "Features",
+     "value": "Overcurrent Protection\u3001Built-in current sense resistor"
+    },
+    {
+     "name": "Switch tube (built-in/external)",
+     "value": "Built-in"
+    },
+    {
+     "name": "Topology",
+     "value": "Boost"
+    },
+    {
+     "name": "Output Voltage",
+     "value": "1.24V~34V"
+    },
+    {
+     "name": "Number of Outputs",
+     "value": "1"
+    }
+   ],
+   "rank": 1
+  },
+  {
+   "lcsc": "C594939",
+   "mpn": "RF-SC2290",
+   "brand": "JST",
+   "description": "0.05~0.22 0.9mm~1.5mm 24~30 RF Tin - Housing Contact ROHS",
+   "package": "-",
+   "category": "Housing Contact",
+   "type": "Extended",
+   "basic": false,
+   "stock": 0,
+   "price": 0.0205,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0205
+    },
+    {
+     "qty": 100,
+     "price": 0.02
+    },
+    {
+     "qty": 300,
+     "price": 0.0197
+    },
+    {
+     "qty": 1000,
+     "price": 0.0195
+    },
+    {
+     "qty": 1020,
+     "price": 0.0195
+    },
+    {
+     "qty": 1040,
+     "price": 0.0195
+    }
+   ],
+   "min_qty": 458,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2008261906_JST-RF-SC2290_C594939.pdf",
+   "url": "https://www.lcsc.com/product-detail/housing-contact_jst-rf-sc2290_C594939.html",
+   "attributes": [
+    {
+     "name": "Reference Series",
+     "value": "RF"
+    },
+    {
+     "name": "Contact Plating",
+     "value": "Tin"
+    },
+    {
+     "name": "Wire Gauge - mm2",
+     "value": "0.05~0.22"
+    },
+    {
+     "name": "Wire Gauge - AWG",
+     "value": "24~30"
+    },
+    {
+     "name": "Insulation OD",
+     "value": "0.9mm~1.5mm"
+    }
+   ],
+   "rank": 2
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 1
+}

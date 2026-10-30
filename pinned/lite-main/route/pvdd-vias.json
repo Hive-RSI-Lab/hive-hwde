@@ -1,0 +1,97 @@
+{
+ "script": "route_edit",
+ "status": "pass",
+ "board": "kicad/lite-main.kicad_pcb",
+ "applied": 17,
+ "verified": true,
+ "by_status": {
+  "added": 17
+ },
+ "results": [
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "7cce5d41-b47b-45c3-bb45-105ce2e3f664"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "f357bc10-17d6-4fb9-956c-53395ae80774"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "848703a5-e6cb-484c-9bfc-590fdbc33978"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "afe75b61-3335-4019-945a-076cefa37986"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "676d8623-c955-471c-a2d2-66100020be73"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "e168c534-2aa2-486a-b340-7b4cd6153c47"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "ffdfd6e2-95ee-4eeb-a913-6f2885d394b8"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "7fe68077-9d4f-4966-8504-0b498e67e882"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "d8d95322-6038-4d86-89e7-bedc49fe0eb9"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "8967b364-320a-477e-9701-0828fba6e1c9"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "9a75d788-27ce-420c-95f5-c2a965067218"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "fb69ff3d-d7f1-48a3-9f31-c782a8032f4b"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "b76d2377-c79c-4c37-8331-65e0160daf60"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "b1e8aa23-81d4-4064-a89d-a651ba1a869b"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "2a529e89-ce2a-4a89-b14e-1cce537bcd5f"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "a163f755-70a6-4193-9d6f-7c6feb91bf21"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "6e25566e-16ce-41b4-aa6f-4ffb2f423fbb"
+  }
+ ]
+}

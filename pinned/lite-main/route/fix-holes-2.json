@@ -1,0 +1,33 @@
+{
+ "version": 1,
+ "ops": [
+  {
+   "op": "remove",
+   "uuid": "8d375bdf-cb99-430f-8019-17e9d9dbce0c"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    64.6752,
+    87.429
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    64.6462,
+    87.4366
+   ],
+   "end": [
+    64.6752,
+    87.429
+   ],
+   "width": 0.2,
+   "layer": "F.Cu",
+   "net": "GND"
+  }
+ ]
+}

@@ -1,0 +1,5 @@
+# Freerouting/KRT scratch copies
+kicad/route/
+*.kicad_pcb.lock
+# EasyEDA STEP models (~90 MB); lib_pull re-fetches them, the .wrl models stay for renders
+lib/aiee.3dshapes/*.step

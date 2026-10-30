@@ -21,7 +21,7 @@ import pytest
 import yaml
 
 REPO = Path(__file__).resolve().parents[1]
-SCRIPTS = REPO / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = REPO / "scripts"
 GOLDEN = REPO / "tests" / "golden"
 GATES_YAML = SCRIPTS.parent / "reference" / "gates.yaml"
 sys.path.insert(0, str(SCRIPTS))

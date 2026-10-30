@@ -1,0 +1,11 @@
+{
+ "waivers": [
+  {
+   "check": "check_thermal",
+   "net": "GND",
+   "refs": ["U8"],
+   "reason": "hwde's copper-area model gives the TPA3118D2 ~47 C/W on this 2-layer board (2.0 W at 1/8 power into 4 ohm -> ~94 C rise). TI's datasheet (SLOS708G 6.4, note 3) gives 22 C/W for the TPA3118D2 DAP package on the TPA3118D2EVM, a 2-layer board: ~44 C rise. Both board sides are ground poured around the chip, with 16 solid-connected EP vias and B.Cu ground unbroken under it. The chip has its own over-temperature shutdown and FAULTZ, which the firmware governor reads. Bring-up MUST measure the case temperature at 1/8 power into 4 ohm (product.md, plan item 10) before Lite is called done; if it exceeds 100 C, add a stick-on heatsink to the package top (psi_JT 0.3 C/W) or lower the governor's limit.",
+   "approved": "lite-main worker, as the person's delegate ('take care of everything yourself', 2026-10-14), 2026-10-28; open item for bring-up"
+  }
+ ]
+}

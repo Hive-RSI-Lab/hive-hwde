@@ -1,0 +1,104 @@
+{
+ "script": "route_critical",
+ "status": "violations",
+ "board": "lite-main.kicad_pcb",
+ "counts": {
+  "total": 1,
+  "by_severity": {
+   "error": 1
+  },
+  "by_source": {
+   "route_critical": 1
+  }
+ },
+ "violations": [
+  {
+   "check": "route_critical",
+   "severity": "error",
+   "pos": null,
+   "layer": null,
+   "net": "/USB_DP",
+   "refs": [],
+   "msg": "critical diff pair /USB_DP//USB_DM failed to route as a coupled pair (partial); tried widths [1.0899, 0.2]",
+   "source": "route_critical",
+   "items": [
+    {
+     "msg": "critical diff pair /USB_DP//USB_DM failed to route as a coupled pair (partial); tried widths [1.0899, 0.2]",
+     "pos": null
+    }
+   ],
+   "kind": "critical_route_failed",
+   "pair": [
+    "/USB_DP",
+    "/USB_DM"
+   ],
+   "reason": "partial"
+  }
+ ],
+ "facts": {
+  "routed": [],
+  "skipped": [
+   {
+    "kind": "power",
+    "count": 16,
+    "why": "not in --only/plan"
+   }
+  ],
+  "drc_delta": {
+   "before": {
+    "starved_thermal": 1,
+    "via_dangling": 2,
+    "silk_edge_clearance": 16,
+    "silk_overlap": 49,
+    "silk_over_copper": 110,
+    "unconnected_items": 276
+   },
+   "after": {
+    "starved_thermal": 1,
+    "via_dangling": 2,
+    "silk_edge_clearance": 16,
+    "silk_overlap": 49,
+    "silk_over_copper": 110,
+    "unconnected_items": 276
+   },
+   "new": {},
+   "new_warnings": {}
+  },
+  "diffpair_check": "pass",
+  "diffpair_facts": [],
+  "floors": {
+   "clearance": 0.2,
+   "track_width": 0.127,
+   "via_diameter": 0.6,
+   "via_drill": 0.3,
+   "edge_clearance": 0.3
+  },
+  "net_clearances": {
+   "+3V3": 0.2,
+   "+3V3A": 0.127,
+   "+5V": 0.2,
+   "/BUCK3_LX": 0.2,
+   "/BUCK5_SW": 0.2,
+   "/OUT_L_N": 0.2,
+   "/OUT_L_P": 0.2,
+   "/OUT_R_N": 0.2,
+   "/OUT_R_P": 0.2,
+   "/SPK_L_N": 0.2,
+   "/SPK_L_P": 0.2,
+   "/SPK_R_N": 0.2,
+   "/SPK_R_P": 0.2,
+   "/USB_DM": 0.127,
+   "/USB_DP": 0.127,
+   "GND": 0.2,
+   "PVDD": 0.2,
+   "VBUS": 0.2
+  },
+  "board_updated": false,
+  "work_dir": "/work/boards/lite/kicad/route_critical"
+ },
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T15:58:38+00:00",
+ "input": "/work/boards/lite/kicad/lite-main.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:8a79ddb10fb707e6f91455ea900a156fcdc6341ee3d7d4c736a32dcb25b148fd"
+}

@@ -23,7 +23,7 @@ from types import SimpleNamespace
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
-SCRIPTS = REPO / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = REPO / "scripts"
 FIXTURES = REPO / "tests" / "fixtures" / "parts"
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
@@ -717,6 +717,61 @@ def test_lib_pull_parts_batch_reports_hard_failure(tmp_path, monkeypatch):
     assert code == 1 and payload["status"] == "fail"
     st = {r["lcsc"]: r["status"] for r in payload["results"]}
     assert st == {"C1": "pulled", "C2": "error"}
+
+
+class _Clock:
+    """time.monotonic/sleep stand-ins: each easyeda call costs `pull_s`."""
+
+    def __init__(self, pull_s: float):
+        self.t, self.pull_s = 0.0, pull_s
+
+    def monotonic(self):
+        return self.t
+
+    def sleep(self, s):
+        self.t += s
+
+
+def test_lib_pull_keeps_to_its_budget_and_resumes(tmp_path, monkeypatch):
+    """21 parts at the 15 s pace overran a 10-minute call (lite-main snag 5):
+    the batch stops starting pulls at its budget, says what is left, and a
+    re-run skips what is already in the library."""
+    fake, calls = _batch_fake_run(tmp_path)
+    clock = _Clock(pull_s=10.0)
+
+    def timed(*a, **k):
+        clock.t += clock.pull_s
+        return fake(*a, **k)
+
+    monkeypatch.setattr(lib_pull, "_run_easyeda", timed)
+    monkeypatch.setattr(lib_pull.time, "monotonic", clock.monotonic)
+    monkeypatch.setattr(lib_pull.time, "sleep", clock.sleep)
+    ids = [f"C{i}" for i in range(1, 21)]
+    parts = tmp_path / "parts.json"
+    parts.write_text(json.dumps({"parts": [{"lcsc": l} for l in ids]}), encoding="utf-8")
+    argv = ["--parts", str(parts), "--out-dir", str(tmp_path / "lib"), "--no-3d",
+            "--no-autofix", "--no-refdes-norm", "--budget-s", "200",
+            "--out", str(tmp_path / "r.json")]
+    code = lib_pull.main(argv)
+    p1 = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
+    # 15 s pace + 10 s pull: 8 parts fit in 200 s (the 8th ends at 185 s)
+    assert code == 1 and p1["status"] == "partial"
+    assert [r["lcsc"] for r in p1["results"] if r["status"] == "pulled"] == ids[:8]
+    assert p1["deferred"] == ids[8:] and "re-run" in p1["resume"]
+    assert clock.t <= 200
+
+    clock.t = 0.0
+    lib_pull.main(argv)
+    p2 = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
+    st = {r["lcsc"]: r["status"] for r in p2["results"]}
+    assert all(st[l] == "exists" for l in ids[:8])          # no network for these
+    assert all(calls[l] == 1 for l in ids[:8])
+    assert [l for l in ids if st[l] == "pulled"] == ids[8:16]
+
+    clock.t = 0.0
+    assert lib_pull.main(argv[:-4] + ["--budget-s", "0", "--out", str(tmp_path / "r.json")]) == 0
+    p3 = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
+    assert p3["status"] == "pass" and p3["deferred"] == [] and p3["resume"] is None
 
 
 def test_lib_pull_requires_exactly_one_of_lcsc_or_parts(tmp_path):

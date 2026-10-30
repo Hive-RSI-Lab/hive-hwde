@@ -1,0 +1,72 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C15849",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C15849",
+   "mpn": "CL10A105KB8NNNC",
+   "brand": "Samsung Electro-Mechanics",
+   "description": "1uF 50V X5R \u00b110% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "package": "0603",
+   "category": "Multilayer Ceramic Capacitors MLCC - SMD/SMT",
+   "type": "Basic",
+   "basic": true,
+   "stock": 12838667,
+   "price": 0.0146,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0146
+    },
+    {
+     "qty": 500,
+     "price": 0.0113
+    },
+    {
+     "qty": 1500,
+     "price": 0.0098
+    },
+    {
+     "qty": 4000,
+     "price": 0.0086
+    },
+    {
+     "qty": 24000,
+     "price": 0.0082
+    },
+    {
+     "qty": 48000,
+     "price": 0.0079
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL10A105KB8NNNC_C15849.pdf",
+   "url": "https://www.lcsc.com/product-detail/multilayer-ceramic-capacitors-mlcc-smd-smt_samsung-electro-mechanics-cl10a105kb8nnnc_C15849.html",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b110%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "1uF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X5R"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

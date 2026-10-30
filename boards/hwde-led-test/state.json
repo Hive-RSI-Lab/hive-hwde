@@ -4,7 +4,7 @@
  "workspace_schema": 2,
  "workspace": "/work/boards/hwde-led-test",
  "created": "2026-10-28T09:25:11",
- "updated": "2026-10-28T11:31:23",
+ "updated": "2026-10-29T09:24:13",
  "phase": "P9",
  "gates": {
   "erc": {
@@ -237,16 +237,16 @@
   "verify": {
    "phase": "P8",
    "status": "pass",
-   "attempts": 6,
+   "attempts": 7,
    "last": {
-    "ts": "2026-10-28T11:31:08",
+    "ts": "2026-10-29T09:23:20",
     "status": "pass",
     "failing_count": 0,
     "total": 2,
     "inputs": {
      "pcb": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55",
      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
-     "decoupling": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
+     "decoupling": "json_canonical:c156461ca8fe5b4e410206e593718e19ebf76532923b2a38b2b926bc970c87b7",
      "waivers": null
     }
    },
@@ -322,21 +322,33 @@
       "decoupling": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
       "waivers": null
      }
+    },
+    {
+     "ts": "2026-10-29T09:23:20",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 2,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55",
+      "constraints": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
+      "decoupling": "json_canonical:c156461ca8fe5b4e410206e593718e19ebf76532923b2a38b2b926bc970c87b7",
+      "waivers": null
+     }
     }
    ]
   },
   "dfm": {
    "phase": "P9",
    "status": "pass",
-   "attempts": 2,
+   "attempts": 3,
    "last": {
-    "ts": "2026-10-28T11:31:23",
+    "ts": "2026-10-29T09:24:13",
     "status": "pass",
     "failing_count": 0,
     "total": 0,
     "inputs": {
      "pcb": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55",
-     "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
+     "sch": "sexpr_no_uuid:cc19139cf03581dc464e07f424bad251e06aa545876810a8041450c8d9c60610",
      "parts": null
     }
    },
@@ -362,6 +374,17 @@
       "sch": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
       "parts": null
      }
+    },
+    {
+     "ts": "2026-10-29T09:24:13",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55",
+      "sch": "sexpr_no_uuid:cc19139cf03581dc464e07f424bad251e06aa545876810a8041450c8d9c60610",
+      "parts": null
+     }
     }
    ]
   }
@@ -371,8 +394,8 @@
   "sch": {
    "path": "kicad/hwde-led-test.kicad_sch",
    "kind": "sch",
-   "sha256": "sexpr_no_uuid:da9f643229a5c58243697d85be8e76f367a3fe30a8fd57091b29691439f2654d",
-   "hashed": "2026-10-28T11:31:23"
+   "sha256": "sexpr_no_uuid:cc19139cf03581dc464e07f424bad251e06aa545876810a8041450c8d9c60610",
+   "hashed": "2026-10-29T09:24:13"
   },
   "pro": {
    "path": "kicad/hwde-led-test.kicad_pro",
@@ -384,19 +407,19 @@
    "path": "kicad/hwde-led-test.kicad_pcb",
    "kind": "pcb",
    "sha256": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55",
-   "hashed": "2026-10-28T11:31:23"
+   "hashed": "2026-10-29T09:24:13"
   },
   "constraints": {
    "path": "kicad/constraints.json",
    "kind": "constraints",
    "sha256": "json_canonical:73e8b0368ced8fe49bc907c7f30f56bb9db5d47c2a3cd22117cc152d754596de",
-   "hashed": "2026-10-28T11:31:08"
+   "hashed": "2026-10-29T09:23:20"
   },
   "decoupling": {
    "path": "kicad/decoupling.json",
    "kind": "decoupling",
-   "sha256": "json_canonical:5fe949831506aebd54908fede31bb86e0b8aa421dfeeae0837baf39664f990f5",
-   "hashed": "2026-10-28T11:31:08"
+   "sha256": "json_canonical:c156461ca8fe5b4e410206e593718e19ebf76532923b2a38b2b926bc970c87b7",
+   "hashed": "2026-10-29T09:23:20"
   },
   "place_waivers": {
    "path": "reports/place-waivers.json",
@@ -467,13 +490,13 @@
    "path": "reports/verify-waivers.json",
    "kind": "waivers",
    "sha256": null,
-   "hashed": "2026-10-28T11:31:08"
+   "hashed": "2026-10-29T09:23:20"
   },
   "parts": {
    "path": "kicad/parts.json",
    "kind": "parts",
    "sha256": null,
-   "hashed": "2026-10-28T11:31:23"
+   "hashed": "2026-10-29T09:24:13"
   }
  },
  "open_issues": [],
@@ -549,6 +572,12 @@
    "why": "in the Hive ordering at JLCPCB or any purchase is the person's; this is a pipeline test board, not for ordering",
    "phase": "P10",
    "ts": "2026-10-28T10:07:23"
+  },
+  {
+   "what": "parts.json re-sourced by the part-sourcer with no hand edits: no refdes, attributes kept; decoupling.json has no associations",
+   "why": "issue #5: bom_cpl maps refs from the board's LCSC Part field, check_ratings reads Voltage-Supply(Max), check_pdn counts C1 from the board",
+   "phase": "P3",
+   "ts": "2026-10-28T10:57:28"
   }
  ],
  "edits": [
@@ -774,6 +803,14 @@
    "phase": "P8",
    "tokens": 53088,
    "note": "tier fable/high; opus, fresh context"
+  },
+  {
+   "ts": "2026-10-28T10:57:26",
+   "role": "part-sourcer",
+   "model": "sonnet",
+   "phase": "P3",
+   "tokens": 22994,
+   "note": "issue #5 re-run with the fixed role prompt; parts.json taken as written"
   }
  ],
  "history": [
@@ -1195,6 +1232,33 @@
    "gate": "dfm",
    "status": "pass",
    "attempt": 2,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-28T10:57:26",
+   "event": "spawn",
+   "role": "part-sourcer",
+   "model": "sonnet"
+  },
+  {
+   "ts": "2026-10-28T10:57:28",
+   "event": "decision",
+   "what": "parts.json re-sourced by the part-sourcer with no hand edits: no refdes, attributes kept; decoupling.json has no associations"
+  },
+  {
+   "ts": "2026-10-29T09:23:20",
+   "event": "gate",
+   "gate": "verify",
+   "status": "pass",
+   "attempt": 7,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-29T09:24:13",
+   "event": "gate",
+   "gate": "dfm",
+   "status": "pass",
+   "attempt": 3,
    "failing_count": 0
   }
  ]

@@ -1,0 +1,138 @@
+{
+ "version": 1,
+ "ops": [
+  {
+   "op": "silk_clear",
+   "ref": "J1",
+   "only_offboard": true
+  },
+  {
+   "op": "silk_clear",
+   "ref": "J2",
+   "only_offboard": true
+  },
+  {
+   "op": "silk_clear",
+   "ref": "J3",
+   "only_offboard": true
+  },
+  {
+   "op": "silk_clear",
+   "ref": "C58",
+   "layer": "F.SilkS"
+  },
+  {
+   "op": "silk_clear",
+   "ref": "C59",
+   "layer": "F.SilkS"
+  },
+  {
+   "op": "silk_clear",
+   "ref": "L1",
+   "layer": "F.SilkS"
+  },
+  {
+   "op": "silk_clear",
+   "ref": "L2",
+   "layer": "F.SilkS"
+  },
+  {
+   "op": "silk_clear",
+   "ref": "L3",
+   "layer": "F.SilkS"
+  },
+  {
+   "op": "silk_clear",
+   "ref": "L4",
+   "layer": "F.SilkS"
+  },
+  {
+   "op": "silk_clear",
+   "ref": "J1",
+   "layer": "F.SilkS"
+  },
+  {
+   "op": "silk_clear",
+   "ref": "U9",
+   "layer": "F.SilkS"
+  },
+  {
+   "op": "set_text",
+   "ref": "U2",
+   "field": "reference",
+   "hide": true
+  },
+  {
+   "op": "set_text",
+   "ref": "R4",
+   "field": "reference",
+   "hide": true
+  },
+  {
+   "op": "set_text",
+   "ref": "C38",
+   "field": "reference",
+   "hide": true
+  },
+  {
+   "op": "set_text",
+   "ref": "R15",
+   "field": "reference",
+   "hide": true
+  },
+  {
+   "op": "add_text",
+   "text": "+",
+   "x": 83.865,
+   "y": 104.123,
+   "layer": "F.SilkS",
+   "size": 1.2,
+   "thickness": 0.2
+  },
+  {
+   "op": "add_text",
+   "text": "+",
+   "x": 120.465,
+   "y": 104.123,
+   "layer": "F.SilkS",
+   "size": 1.2,
+   "thickness": 0.2
+  },
+  {
+   "op": "add_text",
+   "text": "L+",
+   "x": 98.045,
+   "y": 72.623,
+   "layer": "F.SilkS",
+   "size": 1.2,
+   "thickness": 0.2
+  },
+  {
+   "op": "add_text",
+   "text": "L-",
+   "x": 103.125,
+   "y": 72.623,
+   "layer": "F.SilkS",
+   "size": 1.2,
+   "thickness": 0.2
+  },
+  {
+   "op": "add_text",
+   "text": "R+",
+   "x": 108.205,
+   "y": 72.623,
+   "layer": "F.SilkS",
+   "size": 1.2,
+   "thickness": 0.2
+  },
+  {
+   "op": "add_text",
+   "text": "R-",
+   "x": 113.285,
+   "y": 72.623,
+   "layer": "F.SilkS",
+   "size": 1.2,
+   "thickness": 0.2
+  }
+ ]
+}

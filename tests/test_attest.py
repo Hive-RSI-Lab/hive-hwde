@@ -26,7 +26,7 @@ import sys
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
-SCRIPTS = REPO / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = REPO / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 import attest  # noqa: E402
@@ -508,6 +508,14 @@ def test_disposition_release_candidate_then_order_ready(tmp_path):
     assert releaselib.disposition(ws)["disposition"] == "order-ready"
 
 
+BRINGUP_DOC = {"schema": "hwde-bringup/1", "board": BOARD,
+               "date": "2026-11-05", "items": [
+                   {"name": "+3V3 at idle", "measured": 3.31, "unit": "V",
+                    "limit": {"min": 3.2, "max": 3.4}, "verdict": "pass"},
+                   {"name": "power into 4 ohm at 1% THD+N", "measured": 47,
+                    "unit": "W", "limit": {"min": 45}, "verdict": "pass"}]}
+
+
 def test_disposition_ordered_built_bringup(tmp_path):
     ws = green_ws(tmp_path)
     att, _ = releaselib.build(ws)
@@ -520,9 +528,39 @@ def test_disposition_ordered_built_bringup(tmp_path):
     st._log("boards_received", note="arrived")
     st.save()
     assert releaselib.disposition(ws)["disposition"] == "built"
+    # a bare event is not evidence: the board reads built, with the reason
     st._log("bringup_passed", note="bench ok")
     st.save()
-    assert releaselib.disposition(ws)["disposition"] == "bring-up-passed"
+    d = releaselib.disposition(ws)
+    assert d["disposition"] == "built" and "names no results file" in d["basis"]
+    assert state_mod.main(["log", "--workspace", str(ws), "--event",
+                           "bringup_passed"]) == 2      # refused bare
+    results = ws / "bringup" / "results.json"
+    results.parent.mkdir()
+    results.write_text(json.dumps(BRINGUP_DOC), encoding="utf-8")
+    assert state_mod.main(["bringup", "--workspace", str(ws)]) == 0
+    d = releaselib.disposition(ws)
+    assert d["disposition"] == "bring-up-passed", d
+    assert d["bringup"]["results"] == "bringup/results.json"
+    # the file changed after it was recorded: not evidence any more
+    results.write_text(json.dumps(dict(BRINGUP_DOC, unit="other")),
+                       encoding="utf-8")
+    assert releaselib.disposition(ws)["disposition"] == "built"
+    # a derated item gives derated, a failed one rework-required
+    doc = json.loads(json.dumps(BRINGUP_DOC))
+    doc["items"][1].update(verdict="derated", measured=38,
+                           note="governed to 38 W by the charger")
+    results.write_text(json.dumps(doc), encoding="utf-8")
+    assert state_mod.main(["bringup", "--workspace", str(ws)]) == 0
+    assert releaselib.disposition(ws)["disposition"] == "derated"
+    doc["items"][0].update(verdict="fail", measured=2.9)
+    results.write_text(json.dumps(doc), encoding="utf-8")
+    assert state_mod.main(["log", "--workspace", str(ws), "--event",
+                           "bringup_passed", "--data",
+                           '{"results": "bringup/results.json"}']) == 2
+    assert state_mod.main(["bringup", "--workspace", str(ws)]) == 0
+    d = releaselib.disposition(ws)
+    assert d["disposition"] == "rework-required" and "+3V3" in d["basis"]
 
 
 def test_disposition_derated_blocked_rework(tmp_path):

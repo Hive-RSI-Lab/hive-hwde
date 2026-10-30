@@ -352,7 +352,8 @@ Routed DRC (\texttt{drc\_routed}) & P7 & \textbf{pass}: 0 errors, 0
 warnings, 0 unconnected & 3 & 0 & \\
 Verify suite (\texttt{verify}) & P8 & \textbf{pass}: 14 of 14 checks
 ran, 0 errors, \textbf{2 warnings} & 5 & 1 & check\_pdn: +5V had no cap
-tied to it until C1 was recorded against J1.1 \\
+tied to it until C1 was recorded against J1.1 (since snag 5's fix,
+check\_pdn finds C1 on the board) \\
 JLC DFM (\texttt{dfm}) & P9 & \textbf{pass}: 0 findings & 1 & 0 & \\
 \end{longtable}
 }
@@ -480,15 +481,14 @@ cosmetic and changes nothing electrically. The fix is to move D1 up 0.15
 mm and re-route that one net. \textbf{Recommended: waive.} Fix it if the
 board is touched again.
 
-\textbf{Waiver 2: \texttt{check\_ratings}, D1 and R1 have no voltage
-rating.} \emph{Waive it?} The ratings check found no voltage-rating
-attribute it recognises on D1 or R1. R1 is rated 75 V, but the check
-doesn't read LCSC's ``Voltage-Supply(Max)'' field (snag 4). D1's reverse
-rating is unknown without its datasheet. D1 only sees reverse voltage,
-up to 5.25 V, if the leads are swapped. Green InGaN LEDs are usually
-rated for 5 V reverse, and the \textbf{+}/\textbf{−} silk at J1 makes a
-swap less likely. \textbf{Recommended: waive} for a bench test board.
-The R1 half goes away on its own once snag 4 is fixed.
+\textbf{Waiver 2: \texttt{check\_ratings}, D1 has no voltage rating.}
+\emph{Waive it?} The ratings check found no voltage-rating attribute on
+D1. (It also named R1 until snag 4 was fixed: it now reads R1's
+``Voltage-Supply(Max)'', 75 V.) D1's reverse rating is unknown without
+its datasheet. D1 only sees reverse voltage, up to 5.25 V, if the leads
+are swapped. Green InGaN LEDs are usually rated for 5 V reverse, and the
+\textbf{+}/\textbf{−} silk at J1 makes a swap less likely.
+\textbf{Recommended: waive} for a bench test board.
 
 The hive-hwde lead also asked whether to treat the board as a passed
 smoke test and move on. If all five answers are yes, it is one.
@@ -576,12 +576,15 @@ only looked for at distro paths and are missed in the AppImage; shimmed
 in \texttt{bin/hwde} & 261028-141924-4dae199a93 \\
 3 & \texttt{agents/part-sourcer.md} & No \texttt{refdes} or
 \texttt{attributes} per parts line, so the BOM had no LCSC column and
-ratings went unread & 261028-141930-114d313009 \\
+ratings went unread & 261028-141930-114d313009 (fixed: the sourcer
+copies the row whole, and bom\_cpl reads the board's \texttt{LCSC\ Part}
+field) \\
 4 & \texttt{check\_ratings.py} \texttt{V\_ATTR\_RE} & LCSC's
 ``Voltage-Supply(Max)'' isn't read, so R1's 75 V shows as unrated
-(waiver 2) & 261028-141930-114d313009 \\
+(waiver 2) & 261028-141930-114d313009 (fixed) \\
 5 & \texttt{check\_pdn.py} / decoupling & A board with no IC gets no cap
-association for its bulk cap & 261028-141930-114d313009 \\
+association for its bulk cap & 261028-141930-114d313009 (fixed:
+check\_pdn counts a cap straight across the rail and ground) \\
 6 & \texttt{lib\_pull.py} (EasyEDA) & 0603 courtyards are the body
 outline, and nothing caught it & 261028-141932-4f01e64893 \\
 7 & \texttt{board\_edit.py\ -\/-outline\ fit} & The fit margin ignores
