@@ -1,0 +1,27 @@
+* hwde-led-test first-spin power: R1 + D1 current at the input and part corners
+* D1 KT-0603G (KENTO spec A.0 2018-12-06, p.3-4): VF 2.6-3.1 V @ 5 mA, bin tol +-0.05 V
+* lo corner: Vin 4.75 V, R1 470R +1%, VF 3.15 V @ 5 mA
+* hi corner: Vin 5.25 V, R1 470R -1%, VF 2.55 V @ 5 mA
+* hiusb: Vin 5.50 V (USB 3.x/BC VBUS ceiling), R1 -1%, VF 2.55 V
+.model DLO D(IS=2.2e-20 N=3 RS=10)
+.model DHI D(IS=5.2e-17 N=3 RS=10)
+VLO inlo 0 DC 4.75
+RLO inlo alo 474.7
+VSLO alo alo2 DC 0
+DLO1 alo2 0 DLO
+VHI inhi 0 DC 5.25
+RHI inhi ahi 465.3
+VSHI ahi ahi2 DC 0
+DHI1 ahi2 0 DHI
+VUS inus 0 DC 5.50
+RUS inus aus 465.3
+VSUS aus aus2 DC 0
+DUS1 aus2 0 DHI
+.tran 1u 20u
+.meas tran i_lo_ma AVG par('i(VSLO)*1000') from=10u to=20u
+.meas tran i_hi_ma AVG par('i(VSHI)*1000') from=10u to=20u
+.meas tran i_usb_ma AVG par('i(VSUS)*1000') from=10u to=20u
+.meas tran vf_lo AVG v(alo2) from=10u to=20u
+.meas tran vf_hi AVG v(ahi2) from=10u to=20u
+.meas tran p_r1_hi_mw AVG par('(v(inhi)-v(ahi))*i(VSHI)*1000') from=10u to=20u
+.end

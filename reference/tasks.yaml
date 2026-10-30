@@ -94,6 +94,14 @@ verbs:
           - agent: verify-reviewer
             tier: fable/high
             why: "fresh-context judgment over the digest + renders + verify_all.json"
+          - note: "A cold design review where the board earns one (your call,
+                   never a gate): one fresh domain-reviewer per domain it has,
+                   reference/first-spin.md. Each finding names its fault class."
+          - do: "scripts/first_spin.py --workspace {ws} --md {reports}/first-spin/dispositions.md --briefs {reports}/first-spin/briefs.json"
+            why: "what is still open, and each fault class no hwde check caught
+                  as a draft brief: file them on hive-hwde, so the next board
+                  gets a check where this one needed a reviewer"
+            when: "a first-spin review was run"
           - human: 2
             why: "present the digest + design doc; ask which findings to fix"
           - note: "Each accepted finding becomes a `fix-finding` run against its
@@ -117,6 +125,14 @@ verbs:
           - agent: verify-reviewer
             tier: fable/high
             why: "fresh context over verify_all.json + renders"
+          - note: "A cold design review where the board earns one (your call,
+                   never a gate): one fresh domain-reviewer per domain it has,
+                   reference/first-spin.md. Each finding names its fault class."
+          - do: "scripts/first_spin.py --workspace {ws} --md {reports}/first-spin/dispositions.md --briefs {reports}/first-spin/briefs.json"
+            why: "what is still open, and each fault class no hwde check caught
+                  as a draft brief: file them on hive-hwde, so the next board
+                  gets a check where this one needed a reviewer"
+            when: "a first-spin review was run"
           - do: "scripts/report_gen.py --workspace {ws}"
             why: "living design doc; non-blocking by contract"
           - human: 2
