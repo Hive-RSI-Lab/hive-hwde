@@ -37,6 +37,10 @@ job JSON: {"verb": ..., "result": out.json, ...} with verbs:
          "layer": "F.Cu", "net": "NAME"}
         {"op": "add_via", "at": [x,y], "size": mm, "drill": mm, "net": "NAME"}
         {"op": "remove", "uuid": "..."}        # track or via; absent = no-op
+        {"op": "set_net", "uuid": "...", "net": "NAME"}   # renet one item
+        {"op": "rename_net", "from": "OLD", "to": "NEW"}
+            # every pad, track, via and zone of OLD goes to NEW (created
+            # when absent); OLD stays in the net list, empty
       All coordinates mm; mm->IU via pcbIUScale.mmToIU (FromMM truncates).
 
   set_rule_areas: {"board": pcb, "out": out_pcb, "prefix": "aiee_keepout",
@@ -214,6 +218,30 @@ def verb_apply_ops(job):
             via_index[(at.x, at.y, op["net"])] = v
             results.append({"op": kind, "status": "added",
                             "uuid": v.m_Uuid.AsString()})
+        elif kind == "set_net":
+            item = by_uuid.get(op["uuid"])
+            if item is None:
+                raise ValueError("ops[%d]: uuid %s not on board"
+                                 % (i, op["uuid"]))
+            if item.GetNetname() == op["net"]:
+                results.append({"op": kind, "status": "exists"})
+            else:
+                item.SetNet(_net(board, op["net"]))
+                results.append({"op": kind, "status": "renetted"})
+        elif kind == "rename_net":
+            new = board.FindNet(str(op["to"]))
+            if new is None:
+                new = pcbnew.NETINFO_ITEM(board, str(op["to"]))
+                board.Add(new)
+            items = [p for fp in board.GetFootprints() for p in fp.Pads()]
+            items += list(board.GetTracks()) + list(board.Zones())
+            n = 0
+            for it in items:
+                if it.GetNetname() == op["from"]:
+                    it.SetNet(new)
+                    n += 1
+            results.append({"op": kind, "status": "renamed" if n else
+                            "absent", "count": n})
         elif kind == "remove":
             item = by_uuid.get(op["uuid"])
             if item is None:

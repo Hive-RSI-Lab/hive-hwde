@@ -99,9 +99,17 @@ rules as routing constraints; cite the record id when you apply one.
   evidence, brief}: the same backward-spawn protocol as placement.md
   (`state.py cross-spawn --stage P7 ...`, applied via board_update). Never
   edit parts/, the schematic or the netlist yourself.
-- Point fixes (a missed pin, a sliver): `scripts/route_edit.py --pcb ...
-  --ops ops.json` (add_track/add_via/remove-by-uuid, atomic, verified).
-  Refill after any edit that crosses a zone fill.
+- Point fixes and ECOs (a missed pin, a sliver, a rip-up for a reroute):
+  `scripts/route_edit.py --pcb ... --op '{...}'` (repeatable) or `--ops
+  ops.json`, atomic and verified. Besides add_track/add_via/remove-by-uuid
+  it takes `rip` by selector (net, layer, region box, a point `at` with a
+  radius, the pads of `REF`/`REF.PAD`, uuid prefixes; all ANDed, e.g.
+  `{"op": "rip", "net": "VBUS", "pads": ["J1"]}`), `add_path` (a polyline),
+  `renet` (copper that touches no pad) and `rename_net` (board-wide, routed
+  copper included). `--refill` refills zones on the staged copy before the
+  swap; use it after any edit that crosses a zone fill. Pad nets and sizes
+  and DNP are place_edit's `set_pad` / `set_dnp`. Don't write a pcbnew script
+  for an edit these cover; if one is missing, add the op to hwde.
 
 ## Rules
 - Never hand-edit the file; never import a SES into a board that already
