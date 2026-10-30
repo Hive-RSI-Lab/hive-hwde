@@ -105,6 +105,34 @@ What moved where:
   `playbook.md`, `full-run.md`, `fix-finding.md`, `build-modes.md` and
   `tasks.yaml` say so: H1-H4 are reports, and only error waivers, cost/feature
   trades and the order go to the person.
+- A shared tools folder (`HWDE_TOOLS_DIR`, the Hive's `/hive/tools`) is
+  searched the way upstream searches its own `tools/`, so the scripts find
+  the Hive's tools themselves and `bin/hwde` needs no wrappers:
+  - `scripts/lib/env.py`: `kicad_installs` takes KiCad AppImage AppDirs at
+    `<tools>/kicad-*/` (`bin/kicad-cli` runs as is); `find_kicad_python`
+    takes the AppDir's `bin/python3.<n>`; `find_ngspice_dll` its
+    `lib/libngspice.so`; `find_krt` also looks under
+    `<tools>/kicad-routing-tools/KiCadRoutingTools-*/plugins` and picks the
+    newest by version, not by string.
+  - KiCad 10 ships its stock symbols as one-file-per-symbol `.kicad_symdir`
+    folders, which kicad-sch-api 0.5.6 can't read. `env.py` flattens a
+    library into `~/.cache/hwde/symbols/<key>/` the first time it's needed
+    (`stock_symbol_lib`, again when the symdir is newer):
+    `export_kicad_symbol_dir` does `power` and `Device` and points
+    `KICAD_SYMBOL_DIR` there; `register_stock_libs` adds any other.
+    `schlib.py` calls it before each placement and `--pins`, and
+    `schem_refdes.py` before its round trip (whose save drops symbols the
+    cache can't resolve).
+  - `scripts/kc.py`: a comment only. The AppDir's 3D loaders match
+    `render_env`'s `usr/lib/*/kicad/plugins/3d` through the AppImage's own
+    link once kicad-cli is the AppDir's, not a wrapper.
+  - `scripts/check_env.py` checks the stock `power`/`Device` symbols
+    (fail), the 3D loaders (warn) and KiCadRoutingTools (warn).
+  - `scripts/route_critical.py`: the missing-KRT message names the shared
+    layout.
+
+  `tests/test_env_lookups.py` covers these lookups (`$HWDE_PY -m pytest
+  tests`). They're meant to go upstream.
 
 `requirements.lock`, `LICENSE` and `NOTICE` came from upstream's repo root,
 and so did `docs/failure-modes.yaml` (`bench --scorecard-corpus` maps
@@ -116,7 +144,7 @@ showcase (`test_showcase_gallery`), `LEARNINGS.md` and its triage
 (`test_kicad_pin`), `docs/check-scorecard.jsonl` (`test_check_scorecard`)
 and the vendored-copy check (`test_skill_copy_current`). `tests/conftest.py`
 adds `KNOWN_FAILING`; `tests/test_workarounds.py`, `tests/workarounds/` and
-`tests/test_parts_kind.py` and `pytest.ini` (upstream's pytest settings from its `pyproject.toml`) are the
+`tests/test_parts_kind.py`, `tests/test_env_lookups.py` and `pytest.ini` (upstream's pytest settings from its `pyproject.toml`) are the
 module's own. The plans, docker setup and design notes stayed upstream.
 
 Everything else that's specific to the Hive is in `bin/` and `docs/`:

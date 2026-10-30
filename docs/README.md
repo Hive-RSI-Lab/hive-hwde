@@ -15,11 +15,14 @@ page covers how an agent runs it inside the Hive.
   exit 0. On first use it builds the module's Python venv in your HOME from
   `requirements.lock`, using the Hive's uv; that takes about 15 s.
 - KiCad 10.0.6, freerouting 2.2.4 and KiCadRoutingTools 0.19.0 (for
-  `route_critical` and route_auto's KRT finish) are the Hive's, read-only in
-  `/hive/tools` (put there through a warden). Java 25 is the system's.
-  `bin/hwde` finds them all, plus KiCad's own python with `pcbnew` and its
-  ngspice. If `hwde check` can't find one, ask a warden; don't install KiCad
-  yourself.
+  `route_critical` and route_auto's KRT finish) are the Hive's, read-only
+  in `/hive/tools` (put there through a warden). Java 25 is the system's.
+  `bin/hwde` points the skill at that folder
+  (`HWDE_TOOLS_DIR`) and the skill's `env.py` finds them all, plus KiCad's
+  own python with `pcbnew`, its ngspice, its 3D model loaders and its stock
+  symbols (KiCad 10's `.kicad_symdir` libraries, flattened into
+  `~/.cache/hwde/symbols` on first use). If `hwde check` can't find one, ask
+  a warden; don't install KiCad yourself.
 - In another project's test or score check (a fresh HOME, only `/work` and
   `/hive/tools` mounted, no `$HIVE_MODULES`), run hwde as
   `/hive/tools/hwde/bin/hwde`. That's a published copy: `hwde publish <dir>`

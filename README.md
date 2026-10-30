@@ -6,7 +6,7 @@ An agent designs a PCB from a written brief: research, architecture, parts, sche
 
 - [`docs/README.md`](docs/README.md): how an agent uses it in the Hive; [`docs/playbook.md`](docs/playbook.md): the phases, gates and fix loop
 - `agents/`: the role prompts the playbook spawns; `scripts/`: the checks and tools; `reference/`: their tables, recipes, checklists and knowledge records
-- `tests/`: unit tests for the scripts, and `tests/workarounds/`, the probes
+- `tests/`: unit tests for the scripts (`test_env_lookups.py`: the lookups for the Hive's shared tools folder), and `tests/workarounds/`, the probes
 - `bin/hwde`: runs the scripts in a Hive sandbox with the Hive's KiCad 10 and freerouting (`hwde check` first)
 - The first board made with it: [boards/hwde-led-test/](boards/hwde-led-test/)
 
