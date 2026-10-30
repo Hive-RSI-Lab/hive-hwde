@@ -1,0 +1,88 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C42459160",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C42459160",
+   "mpn": "CH224A",
+   "brand": "WCH(Jiangsu Qin Heng)",
+   "description": "-40\u2103~+105\u2103 140W 1C 4V~30V 5V\u30019V\u300112V\u300115V\u300120V\u300128V PD 3.2\u3001BC 1.2\u3001AVS\u3001PPS\u3001SPR Power Receiver Controller ESSOP-10 USB PD ROHS",
+   "package": "ESSOP-10",
+   "category": "USB PD",
+   "type": "Extended",
+   "basic": false,
+   "stock": 9547,
+   "price": 0.4324,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.4324
+    },
+    {
+     "qty": 10,
+     "price": 0.339
+    },
+    {
+     "qty": 30,
+     "price": 0.2997
+    },
+    {
+     "qty": 100,
+     "price": 0.249
+    },
+    {
+     "qty": 500,
+     "price": 0.2277
+    },
+    {
+     "qty": 1000,
+     "price": 0.2146
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "",
+   "url": "",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+105\u2103"
+    },
+    {
+     "name": "Type",
+     "value": "Power Receiver Controller"
+    },
+    {
+     "name": "Number of Channels",
+     "value": "1C"
+    },
+    {
+     "name": "Output Power",
+     "value": "140W"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "4V~30V"
+    },
+    {
+     "name": "Features",
+     "value": "Overvoltage Protection\u3001Automatic protocol detection"
+    },
+    {
+     "name": "Protocol",
+     "value": "PD 3.2\u3001BC 1.2\u3001AVS\u3001PPS\u3001SPR"
+    },
+    {
+     "name": "Output Voltage",
+     "value": "5V\u30019V\u300112V\u300115V\u300120V\u300128V"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

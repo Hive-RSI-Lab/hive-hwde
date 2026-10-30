@@ -1,0 +1,88 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C46061833",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C46061833",
+   "mpn": "CH224Q",
+   "brand": "WCH(Jiangsu Qin Heng)",
+   "description": "-40\u2103~+105\u2103 140W 1C 4V~30V 5V\u30019V\u300112V\u300115V\u300120V\u300128V PD 3.2\u3001BC 1.2\u3001AVS\u3001PPS\u3001SPR Power Receiver Controller DFN-10-EP(2x2) USB PD ROHS",
+   "package": "DFN-10-EP(2x2)",
+   "category": "USB PD",
+   "type": "Extended",
+   "basic": false,
+   "stock": 10999,
+   "price": 0.452,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.452
+    },
+    {
+     "qty": 10,
+     "price": 0.3587
+    },
+    {
+     "qty": 30,
+     "price": 0.3178
+    },
+    {
+     "qty": 100,
+     "price": 0.267
+    },
+    {
+     "qty": 500,
+     "price": 0.2441
+    },
+    {
+     "qty": 1000,
+     "price": 0.231
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "",
+   "url": "https://www.lcsc.com/product-detail/usb-pd_wch-jiangsu-qin-heng-ch224q_C46061833.html",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+105\u2103"
+    },
+    {
+     "name": "Type",
+     "value": "Power Receiver Controller"
+    },
+    {
+     "name": "Number of Channels",
+     "value": "1C"
+    },
+    {
+     "name": "Output Power",
+     "value": "140W"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "4V~30V"
+    },
+    {
+     "name": "Features",
+     "value": "Overvoltage Protection\u3001Automatic protocol detection"
+    },
+    {
+     "name": "Protocol",
+     "value": "PD 3.2\u3001BC 1.2\u3001AVS\u3001PPS\u3001SPR"
+    },
+    {
+     "name": "Output Voltage",
+     "value": "5V\u30019V\u300112V\u300115V\u300120V\u300128V"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

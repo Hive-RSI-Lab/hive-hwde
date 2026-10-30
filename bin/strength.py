@@ -2,14 +2,14 @@
 
     python bin/strength.py        (the venv's python; bin/score.py calls it)
 
-The score (bin/score.py) counts the gate steps the boards pass with no
-workaround. A check made looser passes more and needs fewer workarounds, so
-on its own that number could rise by loosening hwde's checks. This is the
-other half: faults planted where each gate step's verdict comes from, run
-through the same code the gates run, offline and in seconds. A fault that
-gets through charges its gate step on every board, as a workaround row
-does (`planted` in the score's lines), so a check loosened to pass one
-board costs that step on all of them.
+The score (bin/score.py) charges what hwde's gates find on pinned boards.
+A check made looser finds less, so on its own that number could rise by
+loosening hwde's checks. This is the other half: faults planted where each
+gate's verdict comes from, run through the same code the gates run, offline
+and in seconds. Each fault that gets through charges CRASH, as a gate that
+can't run does: a check that misses a fault it was built to catch isn't
+measuring the boards, so loosening one costs more than the findings it
+could hide (docs/score.md, "The planted faults").
 
   gate    reference/gates.yaml through gate.evaluate: each of the gates the
           boards pass fails a report carrying one finding of each severity

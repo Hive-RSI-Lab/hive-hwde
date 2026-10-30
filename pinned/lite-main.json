@@ -1,0 +1,27 @@
+{
+ "board": "lite-main",
+ "project": "hifi-receiver-2",
+ "commit": "fe1734549c85ec82a431cedd0fe5dcda2f571663",
+ "dir": "pinned/lite-main",
+ "design": [
+  "build.sh",
+  "kicad/gen/place.py",
+  "kicad/gen/power.py",
+  "kicad/gen/root.py"
+ ],
+ "stand_in": {
+  "kicad/gen/fix_holes.py": "stitch_vias keeps copper clearance but not JLC's 0.5 mm hole-to-hole floor, nor other nets' tracks",
+  "kicad/gen/keepout.py": "no hwde script draws a copper keep-out rule area (the ESP32 antenna)",
+  "kicad/gen/nudge_vias.py": "route_auto (Freerouting) leaves vias under the 0.5 mm hole-to-hole floor",
+  "kicad/gen/parts_json.py": "part-sourcer writes no refdes per line, and bom_cpl maps refs to LCSC numbers only through refdes",
+  "kicad/gen/pro_clearance.py": "rules_gen gives every power class 0.2 mm clearance whatever its voltage",
+  "kicad/gen/refill.py": "route_edit doesn't refill zones after its ops",
+  "kicad/gen/silk.py": "silk_place leaves silk over pads, edges and neighbours",
+  "kicad/gen/snap_outline.py": "board_init's outline at a non-round origin reads as open to dfm's gerblib",
+  "lib/fix_courtyards.py": "lib_pull/fpfix leave EasyEDA courtyards short of the pads",
+  "lib/fix_footprints.py": "lib_pull/fpfix leave EasyEDA's plated pegs and unnumbered exposed-pad vias",
+  "tools/drc.sh": "the drc_routed gate gives no short summary of its findings",
+  "tools/tryroute.sh": "route_auto routes differently each run and keeps no best of several"
+ },
+ "unclassified": []
+}

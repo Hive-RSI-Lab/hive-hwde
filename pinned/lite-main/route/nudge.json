@@ -1,0 +1,47 @@
+{
+ "version": 1,
+ "ops": [
+  {
+   "op": "remove",
+   "uuid": "14a7b2bc-9271-4923-967d-0d80399bedbb"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    79.6367,
+    118.245
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "/PVDD_SENSE"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    79.6603,
+    118.2183
+   ],
+   "end": [
+    79.6367,
+    118.245
+   ],
+   "width": 0.2,
+   "layer": "F.Cu",
+   "net": "/PVDD_SENSE"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    79.6603,
+    118.2183
+   ],
+   "end": [
+    79.6367,
+    118.245
+   ],
+   "width": 0.2,
+   "layer": "B.Cu",
+   "net": "/PVDD_SENSE"
+  }
+ ]
+}

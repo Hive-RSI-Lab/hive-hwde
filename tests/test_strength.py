@@ -1,6 +1,6 @@
 """bin/strength.py and the score's use of it: hwde's planted faults are all
 caught on this tree, a check loosened lets one through, and the score
-charges the step that fault's gate decides on every board.
+charges CRASH for each one let through.
 """
 from __future__ import annotations
 
@@ -84,20 +84,29 @@ def test_planted_drill_hole_sits_clear_of_the_others():
     assert out[-3:] == ["T2", "X0.750Y0.000", "M30"]
 
 
-def test_score_charges_a_let_through_fault_on_every_board(monkeypatch, capsys):
-    assert score.main() == 0
-    base = float(capsys.readouterr().out.splitlines()[-1])
-    monkeypatch.setattr(strength, "faults",
-                        lambda: [("verify", "verify x (check_x)", False)])
+def _quick(monkeypatch):
+    """score.main with the boards stubbed: each measures 0 charges."""
+    monkeypatch.setattr(sys, "argv", ["score"])
+    monkeypatch.setattr(score, "measure", lambda p, ws, logs: 0)
+
+
+def test_score_charges_crash_per_let_through_fault(monkeypatch, capsys):
+    _quick(monkeypatch)
     assert score.main() == 0
     out = capsys.readouterr().out.splitlines()
-    assert "planted fault let through: verify x (check_x)" in out
-    boards = [ln for ln in out if " clean: " in ln]
-    assert boards and all("verify (planted" in ln for ln in boards)
-    assert float(out[-1]) < base
+    assert out[-1] == "0" and out[0].startswith("planted faults caught: ")
+    monkeypatch.setattr(strength, "faults", lambda: [
+        ("verify", "verify x (check_x)", False), ("dfm", "dfm y", True)])
+    assert score.main() == 0
+    out = capsys.readouterr().out.splitlines()
+    assert f"planted fault let through: verify x (check_x) (CRASH {score.CRASH})" in out
+    assert "planted faults caught: 1/2" in out
+    assert out[-1] == str(-score.CRASH)
 
 
 def test_score_cannot_be_read_when_the_faults_cannot_run(monkeypatch, capsys):
+    _quick(monkeypatch)
+
     def boom():
         raise FileNotFoundError("manifest.yaml")
     monkeypatch.setattr(strength, "faults", boom)

@@ -14,8 +14,11 @@
 #   hwde sources          fetch the knowledge records' source PDFs into HOME
 #                         (first use of knowledge, research or check-all
 #                         does it too) and print where they are
-#   hwde score            the share of gate steps with no workaround and whose
-#                         gate still catches hwde's planted faults (the score)
+#   hwde score            re-run the gates on the pinned boards, shims off, and
+#                         count what they find, and check the checks still catch
+#                         hwde's planted faults (the score; docs/score.md)
+#   hwde pin BOARD --from CLONE --commit SHA
+#                         refresh a pinned board (bin/pin.py)
 #   hwde publish <dir>    put a self-contained copy at <dir>/hwde (a warden
 #                         runs it into the Hive's tools folder, so a check
 #                         sandbox, which mounts only /work and /hive/tools,
@@ -63,19 +66,14 @@ finduv() {
 	[ -n "$uv" ] || { echo "hwde: needs uv (hive agent install --tool uv)" >&2; exit 127; }
 }
 
-# The score needs no KiCad, but its planted faults run the skill's checks:
-# a published copy's own python, else the venv in HOME when it is current,
-# else the Hive's published copy's (a check sandbox has /hive/tools, not the
-# venv); with none of them it falls through to build the venv below.
-if [ "${1:-}" = score ]; then
+# pin copies files with git: no KiCad, no venv.
+if [ "${1:-}" = pin ]; then
 	shift
-	spy=
-	[ -z "${HWDE_VENV:-}" ] && spy=$(ls -d "$here"/python/cpython-3.14.*/bin/python3.14 2>/dev/null | sort -V | tail -n 1)
-	[ -z "$spy" ] && [ -x "$venv/bin/python" ] && [ ! "$here/requirements.lock" -nt "$venv/.hwde-lock" ] && spy=$venv/bin/python
-	[ -z "$spy" ] && [ -z "${HWDE_VENV:-}" ] && spy=$(ls -d "$tools"/hwde/python/cpython-3.14.*/bin/python3.14 2>/dev/null | sort -V | tail -n 1)
-	[ -n "$spy" ] && exec "$spy" "$here/bin/score.py" "$@"
-	set -- score "$@"
+	exec python3 "$here/bin/pin.py" "$@"
 fi
+# The score measures hwde as it is, not as its shims patch it: every shim is
+# off for it and for the gates it runs.
+[ "${1:-}" = score ] && export HWDE_NO_SHIMS=1
 
 # publish builds the copy beside <dir>/hwde and swaps it in, so a check that
 # is running keeps the old one whole. Its python is a python-build-standalone
@@ -113,7 +111,7 @@ if [ "${1:-}" = publish ]; then
 	echo "hwde $ver published at $dest/hwde (run $dest/hwde/bin/hwde)"
 	exit 0
 fi
-wa() { grep -q "^| *$1 *|" "$here/docs/workarounds.md" 2>/dev/null; }
+wa() { [ -z "${HWDE_NO_SHIMS:-}" ] && grep -q "^| *$1 *|" "$here/docs/workarounds.md" 2>/dev/null; }
 
 # KiCad: an explicit pin wins; else the newest KiCad 10 AppDir in the tools
 # folder, through wrappers that put kicad-cli and KiCad's own python (it has
@@ -279,6 +277,12 @@ check-all)
 	heavy="hwde check-all (every board's gates)"
 	x "$py" "$here/bin/check_all.py" "$@"
 	;;
+score)
+	shift
+	export HWDE_BIN="$here/bin/hwde"
+	heavy="hwde score (the gates on every pinned board)"
+	x "$py" "$here/bin/score.py" "$@"
+	;;
 sources)
 	[ -n "${HWDE_KNOWLEDGE_SOURCES:-}" ] || { echo "hwde: knowledge sources not fetched (see above)" >&2; exit 1; }
 	echo "$HWDE_KNOWLEDGE_SOURCES"
@@ -286,10 +290,6 @@ sources)
 check)
 	shift
 	x "$py" "$here/.claude/skills/hwde/scripts/check_env.py" "$@"
-	;;
-score)
-	shift
-	exec "$py" "$here/bin/score.py" "$@"
 	;;
 "" | -h | --help)
 	sed -n '2,36p' "$0" | sed 's/^# \{0,1\}//'

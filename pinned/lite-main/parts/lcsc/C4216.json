@@ -1,0 +1,256 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C4216",
+ "total": 12,
+ "count": 3,
+ "results": [
+  {
+   "lcsc": "C4216",
+   "mpn": "0603WAF3302T5E",
+   "brand": "UNI-ROYAL(Uniroyal Elec)",
+   "description": "-55\u2103~+155\u2103 100mW 33k\u03a9 75V Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0603 Chip Resistor - Surface Mount ROHS",
+   "package": "0603",
+   "category": "Chip Resistor - Surface Mount",
+   "type": "Basic",
+   "basic": true,
+   "stock": 3352023,
+   "price": 0.0021,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0021
+    },
+    {
+     "qty": 1000,
+     "price": 0.0016
+    },
+    {
+     "qty": 5000,
+     "price": 0.0013
+    },
+    {
+     "qty": 10000,
+     "price": 0.0012
+    },
+    {
+     "qty": 50000,
+     "price": 0.001
+    },
+    {
+     "qty": 50200,
+     "price": 0.001
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010230_UNI-ROYAL-Uniroyal-Elec-0603WAF3302T5E_C4216.pdf",
+   "url": "https://www.lcsc.com/product-detail/chip-resistor-surface-mount_uni-royal-uniroyal-elec-0603waf3302t5e_C4216.html",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "33k\u03a9"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+155\u2103"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "100mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "75V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b11%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "\u00b1100ppm/\u2103"
+    }
+   ],
+   "rank": 0
+  },
+  {
+   "lcsc": "C252974",
+   "mpn": "GPC4216L100-12V",
+   "brand": "INGHAi",
+   "description": "-20\u2103~+60\u2103 12V 16.5mm 3V~30V 3kHz 42mm 5mA 95dB Lead Passive (Externally Driven) Piezoelectric - Buzzers ROHS",
+   "package": "-",
+   "category": "Buzzers",
+   "type": "Extended",
+   "basic": false,
+   "stock": 437,
+   "price": 0.7468,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.7468
+    },
+    {
+     "qty": 10,
+     "price": 0.6044
+    },
+    {
+     "qty": 30,
+     "price": 0.5339
+    },
+    {
+     "qty": 100,
+     "price": 0.4635
+    },
+    {
+     "qty": 500,
+     "price": 0.4226
+    },
+    {
+     "qty": 1000,
+     "price": 0.3996
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1810191428_INGHAi-GPC4216L100-12V_C252974.pdf",
+   "url": "https://www.lcsc.com/product-detail/buzzers_inghai-gpc4216l100-12v_C252974.html",
+   "attributes": [
+    {
+     "name": "Sound Pressure Level(SPL)",
+     "value": "95dB"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-20\u2103~+60\u2103"
+    },
+    {
+     "name": "Driver Circuitry",
+     "value": "Passive (Externally Driven)"
+    },
+    {
+     "name": "Technology",
+     "value": "Piezoelectric"
+    },
+    {
+     "name": "Voltage Rating",
+     "value": "12V"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "3V~30V"
+    },
+    {
+     "name": "Frequency",
+     "value": "3kHz"
+    },
+    {
+     "name": "Height",
+     "value": "16.5mm"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Lead"
+    },
+    {
+     "name": "Current Consumption",
+     "value": "5mA"
+    },
+    {
+     "name": "Diameter(\u03c6D)",
+     "value": "42mm"
+    }
+   ],
+   "rank": 1
+  },
+  {
+   "lcsc": "C687458",
+   "mpn": "LTC4216IDE#TRPBF",
+   "brand": "Analog Devices",
+   "description": "-40\u2103~+85\u2103 1 2.3V~6V 25mV External FET Surface Mount DFN-12(3x4) Surge Protection Devices (SPDs) ROHS",
+   "package": "DFN-12(3x4)",
+   "category": "Surge Protection Devices (SPDs)",
+   "type": "Extended",
+   "basic": false,
+   "stock": 20,
+   "price": 11.3933,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 11.3933
+    },
+    {
+     "qty": 10,
+     "price": 11.0216
+    },
+    {
+     "qty": 12,
+     "price": 11.0216
+    },
+    {
+     "qty": 14,
+     "price": 11.0216
+    },
+    {
+     "qty": 16,
+     "price": 11.0216
+    },
+    {
+     "qty": 18,
+     "price": 11.0216
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Analog-Devices-LTC4216IDE-TRPBF_C687458.pdf",
+   "url": "https://www.lcsc.com/product-detail/surge-protection-devices-spds_analog-devices-ltc4216ide-trpbf_C687458.html",
+   "attributes": [
+    {
+     "name": "Threshold Voltage",
+     "value": "25mV"
+    },
+    {
+     "name": "Voltage Rating",
+     "value": "2.3V~6V"
+    },
+    {
+     "name": "FET Type",
+     "value": "External FET"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Surface Mount"
+    },
+    {
+     "name": "Length",
+     "value": "4mm"
+    },
+    {
+     "name": "Number of Lines",
+     "value": "1"
+    },
+    {
+     "name": "Features",
+     "value": "Overcurrent Protection\u3001Short-Circuit  Protection\u3001Under-voltage lockout\u3001Soft-start"
+    },
+    {
+     "name": "Height",
+     "value": "0.75mm"
+    },
+    {
+     "name": "Width",
+     "value": "3mm"
+    },
+    {
+     "name": "Operating temperature",
+     "value": "-40\u2103~+85\u2103"
+    }
+   ],
+   "rank": 2
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}
