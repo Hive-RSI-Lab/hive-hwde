@@ -79,6 +79,10 @@ The rules every reviewer keeps:
 - A check hwde has no tool for goes under **tools wanted**: what it would
   check and why. Those become hive-hwde briefs (`hive agent queue`): this is
   how the module learns from every board.
+  A check the reviewer can write from the board's files, it writes as a
+  doubt check (`reference/doubt.md`, `agents/doubter.md`) and runs: the
+  question then re-runs on every change, and a general one joins the
+  library every board is asked.
 
 Each writes `reports/first-spin/<domain>.md` (the review, findings first)
 and `reports/first-spin/<domain>.json` in the schema `first_spin.py`
@@ -194,7 +198,7 @@ above; `first_spin.py` keeps this table current, this copy is the record.
 | Miller turn-on of a P-FET at every input step | PVDD following VBUS on a 5->20 V PD step, 20 A inrush | sim_run testbench by hand |
 | pad-up (top-slug) package with no heatsink path | TPA3221 DDV with no EP and no heatsink | none (check_thermal top-slug mode wanted) |
 | op-amp common-mode / swing on a single supply | OPA1678 at 0 dBFS past V+ - 2 V | none |
-| analog switch VIH at 5 V from 3.3 V logic | TS5A23157 select | none |
+| analog switch VIH at 5 V from 3.3 V logic | TS5A23157 select | doubt library cross_rail_logic (reference/doubt.md) |
 | enable pin input current through a large resistor | SDZ through 100k below VIH at the datasheet's IIH | sim_board i2c/enable screens partly |
 | footprint missing the maker's locating posts | RCA jack, PLR237 T8 vs T10 lead form | none (drawing reader wanted) |
 | annulus below the fab minimum on a maker's pattern | USB4085 0.40 drill in 0.65 pad | dfm gate |

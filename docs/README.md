@@ -172,6 +172,12 @@ designs." Take it as far as each board needs, and record how far:
   board, every blocker and major answered. `bin/hwde first_spin --workspace
   <ws>` says what is still open and merges the tools the reviewers wanted;
   file those to hive-hwde.
+- Doubt the board (`reference/doubt.md`, `agents/doubter.md`): `bin/hwde
+  doubt ask|add|fact|run|dispose|status|promote --workspace <ws>`. The
+  agent forms its own questions about how this board could fail, writes a
+  check for each under `<ws>/doubts/checks/`, and closes every unknown with
+  a cited fact; general checks are promoted into `scripts/doubts/`, which
+  every board is asked.
 - Boards in hand: the `bring-up` verb and `reference/remote-bringup.md`.
   `bin/hwde state bringup --workspace <ws> --results bringup/results.json`
   closes it with the measurements (a project bench's session.json converts);
