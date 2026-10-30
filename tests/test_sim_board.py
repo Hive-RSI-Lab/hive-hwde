@@ -152,6 +152,55 @@ def test_board_model(tmp_path):
     assert "RIO_N_LED IO_N_LED N_LED 25" in deck and deck.endswith(".end\n")
 
 
+# A dual NPN (SOT-363, E1 B1 C2 E2 B2 C1): unit A switches /LOAD_A from
+# /DRV_A, unit B /LOAD_B from /DRV_B. Each unit's role spans two nets.
+DUAL_PINS = {"1": "GND", "2": "/DRV_A", "6": "/LOAD_A",
+             "4": "GND", "5": "/DRV_B", "3": "/LOAD_B"}
+DUAL_FN = {"1": "E", "2": "B", "6": "C", "4": "E", "5": "B", "3": "C"}
+
+
+@pytest.mark.parametrize("value,fn", [
+    ("MMDT3904", DUAL_FN),                                  # E/B/C repeated
+    ("BC847BS", {"1": "E1", "2": "B1", "6": "C1",           # numbered units
+                 "4": "E2", "5": "B2", "3": "C2"}),
+    ("MBT3904DW", {k: "" for k in DUAL_PINS}),               # blank: by MPN
+])
+def test_dual_bjt_is_two_units(tmp_path, value, fn):
+    board = [("Q1", value, "SOT-363",
+              {pin: (net, fn[pin]) for pin, net in DUAL_PINS.items()}),
+             ("R1", "1k", "R_0402", {"1": ("+5V", ""), "2": ("/LOAD_A", "")}),
+             ("R2", "1k", "R_0402", {"1": ("+5V", ""), "2": ("/LOAD_B", "")})]
+    b = sim_board.load_board(write_net(tmp_path / "d.net", board))
+    model = sim_board.build_model(b, {}, {})
+    assert model["unmodelled"] == []
+    q = {e["ref"]: e for e in model["elems"] if e["kind"] == "Q"}
+    assert set(q) == {"Q1A", "Q1B"}
+    assert q["Q1A"]["roles"] == {"E": "GND", "B": "/DRV_A", "C": "/LOAD_A"}
+    assert q["Q1B"]["roles"] == {"E": "GND", "B": "/DRV_B", "C": "/LOAD_B"}
+    assert all(e["type"] == "npn" and e["comp"] == "Q1" for e in q.values())
+    assert q["Q1A"]["dc"].startswith("QQ1A N_LOAD_A N_DRV_A 0 Q_Q1A")
+
+
+def test_dual_unknown_or_complementary_stays_open(tmp_path):
+    for value, fn in (("XYZ123", {k: "" for k in DUAL_PINS}),
+                      ("BC847BPN", DUAL_FN)):
+        board = [("Q1", value, "SOT-363",
+                  {pin: (net, fn[pin]) for pin, net in DUAL_PINS.items()})]
+        b = sim_board.load_board(write_net(tmp_path / "d.net", board))
+        model = sim_board.build_model(b, {}, {})
+        assert [u["ref"] for u in model["unmodelled"]] == ["Q1"]
+
+
+def test_dual_nfet_units(tmp_path):
+    pins = {"1": ("GND", "S"), "2": ("/G1", "G"), "6": ("/D1", "D"),
+            "4": ("GND", "S"), "5": ("/G2", "G"), "3": ("/D2", "D")}
+    b = sim_board.load_board(write_net(tmp_path / "f.net", [
+        ("Q2", "2N7002DW", "SOT-363", pins)]))
+    q = {e["ref"]: e for e in sim_board.build_model(b, {}, {})["elems"]}
+    assert q["Q2A"]["roles"] == {"S": "GND", "G": "/G1", "D": "/D1"}
+    assert q["Q2B"]["type"] == "nmos" and q["Q2B"]["roles"]["D"] == "/D2"
+
+
 def test_norm_fn():
     assert sim_board.norm_fn("EN_3", "3") == ["EN"]
     assert sim_board.norm_fn("~{RESET}", "1") == ["RESET"]

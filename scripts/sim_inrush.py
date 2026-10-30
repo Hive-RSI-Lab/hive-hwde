@@ -146,7 +146,8 @@ def find_switches(board, parts, rails, model, table) -> list[dict]:
             continue
         out.append({"ref": e["ref"], "type": e["type"], "in": vin,
                     "out": vout, "gate": r["G"], "bulk_f": bulk,
-                    "row": fet_row(board, parts, e["ref"], table)})
+                    "row": fet_row(board, parts, e.get("comp", e["ref"]),
+                                   table)})
     return out
 
 
@@ -209,7 +210,7 @@ def build(board, parts, rails, model, switches, entry, vc, table, loads):
                 lines.append(f"C{e['ref']} {a} {b} {c:.6g}")
             continue
         if e["kind"] == "Q" and e["type"] in ("pmos", "nmos"):
-            row = fet_row(board, parts, e["ref"], table)
+            row = fet_row(board, parts, e.get("comp", e["ref"]), table)
             r = e["roles"]
             d, g, s = node[r["D"]], node[r["G"]], node[r["S"]]
             if e["ref"] in sw:

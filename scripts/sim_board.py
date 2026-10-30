@@ -243,9 +243,31 @@ SCHOTTKY_RE = re.compile(r"SS1\d|SS2\d|SS3\d|SS5\d|B5819|B530|B540|BAT\d|"
 LED_RE = re.compile(r"LED", re.I)
 # Small discretes by MPN prefix when parts.json says nothing.
 NPN_RE = re.compile(r"^(MMBT3904|2N3904|BC8[45]7|BC547|S8050|SS8050|MMBT2222|"
-                    r"2N2222|PMBT3904|MMBT4401|BC817)", re.I)
+                    r"2N2222|PMBT3904|MMBT4401|BC817|MMDT3904|MBT3904|"
+                    r"MMDT2222|MBT2222|MMDT4401)", re.I)
 PNP_RE = re.compile(r"^(MMBT3906|2N3906|BC8[56]7|BC557|S8550|SS8550|MMBT2907|"
-                    r"2N2907|PMBT3906|MMBT4403|BC807)", re.I)
+                    r"2N2907|PMBT3906|MMBT4403|BC807|MMDT3906|MBT3906|"
+                    r"MMDT2907|MBT2907|MMDT4403)", re.I)
+# One NPN and one PNP (or N and P FET) in a package: one polarity read off
+# the MPN would be wrong for a unit, so these stay open.
+COMPLEMENTARY_RE = re.compile(r"BC84[67]BPN|MMDT3946|MBT3946|NPN\s*[+/&]\s*PNP|"
+                              r"PNP\s*[+/&]\s*NPN|N\s*[+/&]\s*P-?Channel|"
+                              r"Complementary", re.I)
+# Dual-transistor pinouts by pin number when the pin functions don't say
+# which unit a pin is in: {unit: {role: pin}}. SOT-363 duals (MMDT3904,
+# BC847BS, MBT3904DW; 2N7002DW, BSS138DW) are E1 B1 C2 E2 B2 C1 / S1 G1
+# D2 S2 G2 D1; SOIC-8 dual FETs are S1 G1 S2 G2 D2 D2 D1 D1.
+DUAL_PINOUTS = (
+    {"A": {"E": ("1",), "B": ("2",), "C": ("6",)},
+     "B": {"E": ("4",), "B": ("5",), "C": ("3",)}},
+    {"A": {"S": ("1",), "G": ("2",), "D": ("6",)},
+     "B": {"S": ("4",), "G": ("5",), "D": ("3",)}},
+    {"A": {"S": ("1",), "G": ("2",), "D": ("7", "8")},
+     "B": {"S": ("3",), "G": ("4",), "D": ("5", "6")}},
+)
+DUAL_RE = re.compile(r"^(MMDT\d|MBT\d+DW|BC8[45]7BS|BC8[56]7BS|BC846BS|"
+                     r"2N7002DW|BSS138DW|BSS84DW|DMN\d+DW|DMG\d+DW|"
+                     r"AO48\d\d|SI49\d\d)", re.I)
 NMOS_RE = re.compile(r"^(AO340[02]|AO3416|2N7002|BSS138|SI230[24]|IRLML2502|"
                      r"IRLML6344|DMN|AO4406|AO4410|NCE\d+N)", re.I)
 PMOS_RE = re.compile(r"^(AO3401|AO3407|AO3415|AO4485|AO440[79]|SI230[15]|"
@@ -263,6 +285,58 @@ def _role_net(c: dict, letters: tuple[str, ...]) -> dict[str, str] | None:
                     return None
                 out[f] = p["net"]
     return out if set(out) == set(letters) else None
+
+
+def transistor_units(c: dict, letters: tuple[str, ...],
+                     mpn: str = "") -> list[tuple[str, dict[str, str]]]:
+    """[(unit, {letter: net})] for a transistor: [("", roles)] for a single
+    part; [("A", ...), ("B", ...)] for a dual, read from numbered pin
+    functions (E1/B1/C1) or, where the functions repeat a role across two
+    nets or are blank on a known dual, from DUAL_PINOUTS. [] when the pins
+    can't be read."""
+    one = _role_net(c, letters)
+    if one:
+        return [("", one)]
+    num: dict[str, dict[str, set]] = {}
+    for p in c["pins"].values():
+        for f in p["fn"]:
+            m = re.fullmatch(r"([A-Z])(\d)", f)
+            if m and m.group(1) in letters:
+                num.setdefault(m.group(2), {}).setdefault(
+                    m.group(1), set()).add(p["net"])
+    if len(num) == 2 and all(set(r) == set(letters) and
+                             all(len(n) == 1 for n in r.values())
+                             for r in num.values()):
+        return [(chr(ord("A") + i), {k: next(iter(n)) for k, n in r.items()})
+                for i, (_, r) in enumerate(sorted(num.items()))]
+    pins = c["pins"]
+    labelled = any(f in letters for p in pins.values() for f in p["fn"])
+    if not labelled and not DUAL_RE.match(mpn or ""):
+        return []
+    for pinout in DUAL_PINOUTS:
+        if set(pinout["A"]) != set(letters):
+            continue
+        want = {pin: role for u in pinout.values()
+                for role, ps in u.items() for pin in ps}
+        if set(pins) != set(want):
+            continue
+        if labelled and any(set(pins[pin]["fn"]) & set(letters)
+                            and role not in pins[pin]["fn"]
+                            for pin, role in want.items()):
+            continue
+        units = []
+        for u, roles in pinout.items():
+            r = {}
+            for role, ps in roles.items():
+                nets = {pins[x]["net"] for x in ps}
+                if len(nets) != 1:
+                    break
+                r[role] = nets.pop()
+            else:
+                units.append((u, r))
+        if len(units) == 2:
+            return units
+    return []
 
 
 def classify_diode(c: dict, part: dict | None) -> dict:
@@ -307,20 +381,25 @@ def classify_diode(c: dict, part: dict | None) -> dict:
     return {"type": "diode", "card": "D(IS=1e-14 N=1 RS=0.05)"}
 
 
-def classify_transistor(c: dict, part: dict | None) -> dict | None:
+def classify_transistor(c: dict, part: dict | None) -> list[dict]:
+    """One element description per transistor unit (two for a dual), [] when
+    its type or pins can't be read."""
     text = " ".join([c["value"], (part or {}).get("mpn", ""),
                      (part or {}).get("description", ""),
                      attr(part, r"^type$|^Number$|Transistor Type") or ""])
     mpn = (part or {}).get("mpn") or c["value"]
-    bjt = _role_net(c, ("B", "C", "E"))
-    fet = _role_net(c, ("G", "D", "S"))
+    bjt = transistor_units(c, ("B", "C", "E"), mpn)
+    fet = transistor_units(c, ("G", "D", "S"), mpn)
+    if len(bjt) + len(fet) > 1 and COMPLEMENTARY_RE.search(text):
+        return []
     if bjt:
         pol = ("pnp" if re.search(r"\bPNP\b", text, re.I) or PNP_RE.match(mpn)
                else "npn" if re.search(r"\bNPN\b", text, re.I)
                or NPN_RE.match(mpn) else None)
         if pol:
-            return {"type": pol, "roles": bjt,
-                    "card": f"{pol.upper()}(BF=100 IS=1e-14 VAF=100)"}
+            return [{"type": pol, "unit": u, "roles": r,
+                     "card": f"{pol.upper()}(BF=100 IS=1e-14 VAF=100)"}
+                    for u, r in bjt]
     if fet:
         pol = ("pmos" if re.search(r"P-?Channel|PMOS", text, re.I)
                or PMOS_RE.match(mpn) else
@@ -329,9 +408,10 @@ def classify_transistor(c: dict, part: dict | None) -> dict | None:
         if pol:
             vth = engcalc.parse_volts(attr(part, r"Threshold")) or 1.5
             vto = -vth if pol == "pmos" else vth
-            return {"type": pol, "roles": fet, "vth": vth,
-                    "card": f"{pol.upper()}(LEVEL=1 VTO={vto:g} KP=5)"}
-    return None
+            return [{"type": pol, "unit": u, "roles": r, "vth": vth,
+                     "card": f"{pol.upper()}(LEVEL=1 VTO={vto:g} KP=5)"}
+                    for u, r in fet]
+    return []
 
 
 # ---------------------------------------------------------------- network
@@ -391,21 +471,26 @@ def build_model(board: dict, parts: dict, rails: dict) -> dict:
                           "tran": line,
                           "model": f".model {model} {d['card']}"})
         elif k == "Q":
-            t = classify_transistor(c, part)
-            if t is None:
+            ts = classify_transistor(c, part)
+            if not ts:
                 unmodelled.append({"ref": ref, "value": c["value"],
                                    "why": "transistor type or pins unknown"})
                 continue
-            model = f"Q_{ref}".upper()
-            n = t["roles"]
-            if t["type"] in ("npn", "pnp"):
-                line = f"Q{ref} {node[n['C']]} {node[n['B']]} {node[n['E']]} {model}"
-            else:
-                line = (f"M{ref} {node[n['D']]} {node[n['G']]} {node[n['S']]} "
-                        f"{node[n['S']]} {model}")
-            elems.append({"ref": ref, "kind": "Q", "nets": nets, **t,
-                          "dc": line, "tran": line,
-                          "model": f".model {model} {t['card']}"})
+            for t in ts:
+                # a dual's units are elements Q1A and Q1B of part Q1
+                name = ref + t.pop("unit")
+                model = f"Q_{name}".upper()
+                n = t["roles"]
+                if t["type"] in ("npn", "pnp"):
+                    line = (f"Q{name} {node[n['C']]} {node[n['B']]} "
+                            f"{node[n['E']]} {model}")
+                else:
+                    line = (f"M{name} {node[n['D']]} {node[n['G']]} "
+                            f"{node[n['S']]} {node[n['S']]} {model}")
+                elems.append({"ref": name, "comp": ref, "kind": "Q",
+                              "nets": sorted(set(n.values())) if len(ts) > 1
+                              else nets, **t, "dc": line, "tran": line,
+                              "model": f".model {model} {t['card']}"})
         else:
             unmodelled.append({"ref": ref, "value": c["value"],
                                "why": "IC/connector/switch: left open"})
@@ -1032,7 +1117,7 @@ def device_findings(board, parts, rails, model, ops, scen, vios, unknowns,
                              "why": "gate has no DC path in any scenario"})
             continue
         sc = max(vgs, key=lambda k: abs(vgs[k]))
-        part = parts.get(e["ref"])
+        part = parts.get(e.get("comp", e["ref"]))
         rating = engcalc.parse_volts(
             attr(part, r"Gate[- ]?Source Voltage|^V\s*GS\b|Vgs\s*\(max"))
         fets.append({"ref": e["ref"], "type": e["type"],
