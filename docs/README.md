@@ -48,6 +48,18 @@ an agent runs it inside the Hive.
   list. A review answers each known unknown from a datasheet or states the
   margin it rests on; `hwde eng_calc <calc> ...` gives the numbers a written
   margin cites.
+- Every board with a power input also gets its power paths checked:
+  `hwde sim_inrush --workspace boards/<name> --out boards/<name>/reports/sim_inrush.json`
+  (load switches against a USB PD source: inrush, a switch that conducts
+  with firmware off, turn-on SOA as a peak junction temperature, hard
+  reset), `hwde check_power_path` (in the verify suite: the current each
+  pad-track-via chain carries, against the budget, `power_paths` and the
+  PD contract) and `hwde mlcc_dcbias --workspace boards/<name>` (ceramics
+  at their DC bias). Put the PD contract in constraints.json as
+  `"pd_source": {"contract_v": .., "contract_a": ..}` and the real current
+  of each high-current run in `power_paths`; `hwde soa_check` gives a FET's
+  Tj for a written margin. These are what hifi-receiver-2's first-spin
+  power review did by hand (its docs/review-2/power.md).
 - A board that runs firmware gets `hwde check_fw --board boards/<name>`,
   run at every schematic change, not first at bring-up. It runs hive-fw's
   `fw constraints` (with `fw pins` inside it) for each firmware target whose
