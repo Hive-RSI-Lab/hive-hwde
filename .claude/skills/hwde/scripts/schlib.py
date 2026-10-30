@@ -35,6 +35,12 @@ Conventions (S1-proven against kicad-cli 10.0.3 ERC, see LEARNINGS [python]):
   (SPEC section 5 grounding rule); `expect` pin-name checks are insurance.
 - save() finishes with an automatic schem_refdes field-placement pass
   (electrically inert; place_fields=False opts out; see Sheet.place_report).
+- A project library (lib_pull's `aiee:` parts) is found through the
+  project's sym-lib-table: kicad-sch-api reads only the stock libraries, so
+  Sheet registers the table's libraries with it on the first lib_id it
+  doesn't know. The table is looked for in Sheet(project=...), then the
+  generator's own kicad/ (kicad/gen/<sheet>.py's parent), then the CWD and
+  CWD/kicad; use_project_libs(dir) does the same by hand.
 - save() also makes the sheet readable: stub labels read outward, away
   from their pin numbers (apply_label_justify), two-pin parts hide their
   pin names (hide_pin_names), and paper="auto" (the default) takes the
@@ -79,6 +85,62 @@ GRID = 1.27          # KiCad schematic grid (50 mil)
 STUB = 2.54          # pin stub wire length, two grid steps
 
 _SCRIPT = "schlib"
+
+
+_LIB_TABLE = re.compile(r'\(lib\s+\(name\s+"?([^")\s]+)"?\)(?:.*?)\(uri\s+"([^"]+)"\)', re.S)
+
+
+def lib_table(project: Path | str) -> dict[str, Path]:
+    """nickname -> .kicad_sym path from <project>/sym-lib-table, with
+    ${KIPRJMOD} read as the project dir. Missing table -> {}."""
+    project = Path(project)
+    table = project / "sym-lib-table"
+    if not table.is_file():
+        return {}
+    out = {}
+    for nick, uri in _LIB_TABLE.findall(table.read_text(encoding="utf-8",
+                                                        errors="replace")):
+        uri = uri.replace("${KIPRJMOD}", str(project.resolve()))
+        out[nick] = Path(uri)
+    return out
+
+
+def use_project_libs(project: Path | str) -> list[str]:
+    """Register every library in <project>/sym-lib-table with kicad-sch-api's
+    symbol cache, so lib_ids like "aiee:CH224Q" resolve (ksa never reads a
+    project's table). Returns the nicknames registered."""
+    cache = ksa.get_symbol_cache()
+    done = []
+    for nick, path in lib_table(project).items():
+        if not path.is_file():
+            continue
+        with _quiet():
+            cache.add_library_path(str(path))
+        if nick != path.stem:
+            # ksa names a library by its file stem; the table's nickname wins
+            cache._library_index[nick] = path
+        done.append(nick)
+    return done
+
+
+def _known_lib(nick: str) -> bool:
+    cache = ksa.get_symbol_cache()
+    try:
+        return nick in cache._library_index
+    except AttributeError:
+        return True     # a ksa without the index: let add() say what it finds
+
+
+def _project_dirs(project) -> list[Path]:
+    """Where a sheet's sym-lib-table may be, most specific first."""
+    out = []
+    if project is not None:
+        out.append(Path(project))
+    gen = Path(sys.argv[0]).resolve() if sys.argv and sys.argv[0] else None
+    if gen is not None and gen.parent.name == "gen":
+        out.append(gen.parent.parent)
+    out += [Path.cwd(), Path.cwd() / "kicad"]
+    return out
 
 
 def _stock_lib(lib_id: str) -> None:
@@ -142,8 +204,11 @@ class Sheet:
 
     def __init__(self, name: str, title: str | None = None, paper: str = "auto",
                  rev: str = "1", date: str = "", company: str = "hwde",
-                 pwr_base: int = 1):
+                 pwr_base: int = 1, project: Path | str | None = None):
+        """project: the KiCad project dir whose sym-lib-table names this
+        sheet's project libraries (default: found, see the module doc)."""
         self.name = name
+        self.project = project
         with _quiet():
             self.sch = ksa.create_schematic(name)
         # "auto": save() picks the smallest paper the drawing fits (fit_sheet)
@@ -178,7 +243,7 @@ class Sheet:
         pin numbers on save: [{"pin_name": "Shield", "wrong": "6",
         "right": "SH"}] (LEARNINGS [python])."""
         assert_on_grid(at[:2], f"{ref} anchor")
-        _stock_lib(lib_id)
+        self._project_lib(lib_id)
         with _quiet():
             c = self.sch.components.add(lib_id, reference=ref, value=value,
                                         position=tuple(at[:2]),
@@ -202,6 +267,31 @@ class Sheet:
                     raise ValueError(
                         f"{ref} pin {pad}: expected name ~'{want}', got '{got}'")
         return c
+
+    def _project_lib(self, lib_id: str) -> None:
+        """Register the project's libraries the first time a lib_id names a
+        library kicad-sch-api doesn't know, else the stock one of that name;
+        say where it looked if none has it, rather than ksa's bare 'not
+        found'."""
+        nick = lib_id.split(":", 1)[0] if ":" in lib_id else ""
+        if not nick or _known_lib(nick):
+            return
+        looked = []
+        for d in _project_dirs(self.project):
+            looked.append(str(d / "sym-lib-table"))
+            if nick in lib_table(d):
+                use_project_libs(d)
+                if _known_lib(nick):
+                    return
+        # a stock library KiCad 10 ships as a .kicad_symdir (flattened here)
+        _stock_lib(lib_id)
+        if _known_lib(nick):
+            return
+        raise ValueError(
+            f"{lib_id}: no library '{nick}' - kicad-sch-api knows only the "
+            f"stock libraries, and no sym-lib-table naming '{nick}' was found "
+            f"(looked in {', '.join(looked)}). Run lib_pull with --project, "
+            f"or pass Sheet(project=<kicad dir>).")
 
     def mark_dnp(self, ref: str) -> None:
         """Set KiCad's NATIVE do-not-populate flag on `ref`'s placed

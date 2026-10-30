@@ -43,7 +43,7 @@ python; JSON out, exit 0/1/2. Keep output ASCII.
 
 ## Verify before returning (all three)
 1. Rebuild: run your generator (venv python) - it must write the sheet.
-2. `scripts/kc.py erc --sch kicad/<top>.kicad_sch` (via the root build) or
+2. `scripts/kc.py erc kicad/<top>.kicad_sch` (via the root build) or
    ask the orchestrator's top-sheet agent to run the full ERC if the root
    is not yours - your own sheet must at least build clean.
 3. `scripts/netlist_audit.py --sch kicad/<top>.kicad_sch --constraints

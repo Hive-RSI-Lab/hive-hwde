@@ -580,3 +580,97 @@ def test_placement_is_electrically_inert(sheets):
                           capture_output=True, text=True,
                           encoding="utf-8", errors="replace")
     assert cmp_.returncode == 0, cmp_.stdout[-400:]
+
+
+# ------------------------------------- rule F and the 3D-model flags (lite-main)
+
+FLAGS = ROOT / "tests" / "fixtures" / "lib" / "flags"
+HTSSOP = "HTSSOP-32_L11.0-W6.1-P0.65-LS8.1-BL-EP"   # TPA3118D2, C46497
+RCA = "CONN-TH_XDJK-0271-1650"                     # stacked RCA, C7527522
+
+
+def _box(x1, y1, x2, y2, z1, z2) -> str:
+    """One VRML box, from footprint mm (y down) to KiCad's 0.1 in, y up."""
+    u = 2.54
+    pts = [(x, -y, z) for z in (z1, z2) for y in (y1, y2) for x in (x1, x2)]
+    faces = [(0, 1, 3, 2), (4, 5, 7, 6), (0, 1, 5, 4), (2, 3, 7, 6),
+             (0, 2, 6, 4), (1, 3, 7, 5)]
+    return ("Shape { geometry IndexedFaceSet { coord Coordinate { point [ "
+            + ", ".join(f"{x / u:.4f} {y / u:.4f} {z / u:.4f}" for x, y, z in pts)
+            + " ] } coordIndex [ "
+            + ", ".join(", ".join(map(str, f)) + ", -1" for f in faces)
+            + " ] } }\n")
+
+
+def _rca_model(lib: Path, dy: float = 0.0) -> None:
+    """The RCA jack's model, as easyeda2kicad's has it: a body, three pins
+    into the board at the pads, two locating pegs where the footprint has
+    no hole. dy shifts the whole model (a model off its footprint)."""
+    shapes = _box(-8.85, -2.25 + dy, 11.97, 16.85 + dy, 0, 10)
+    for x, y in ((-4.0, -1.95), (0.0, 1.95), (4.0, -1.15)):
+        shapes += _box(x - 0.5, y - 0.15 + dy, x + 0.5, y + 0.15 + dy, -4.5, 0)
+    for x in (-7.66, 7.64):
+        shapes += _box(x - 0.65, 0.3 + dy, x + 0.65, 2.3 + dy, -2.0, 0)
+    d = lib.parent / "aiee.3dshapes"
+    d.mkdir(exist_ok=True)
+    (d / f"{RCA}.wrl").write_text("#VRML V2.0 utf8\n" + shapes)
+
+
+@pytest.fixture
+def flagged(tmp_path) -> Path:
+    d = tmp_path / "lib" / "aiee.pretty"
+    shutil.copytree(FLAGS, d)
+    return d
+
+
+def test_rule_f_numbers_ep_vias_and_drops_their_paste(flagged):
+    rep = fpfix.fix_lib(flagged, names=[HTSSOP])
+    vias = [a for a in _actions(rep, HTSSOP) if a["action"] == "number_ep_via"]
+    assert len(vias) == 9 and {a["pad"] for a in vias} == {"33"}
+    assert all(a["paste_dropped"] for a in vias)
+    text = (flagged / f"{HTSSOP}.kicad_mod").read_text(encoding="utf-8")
+    assert '(pad ""' not in text
+    vias = [l for l in text.splitlines() if "thru_hole" in l]
+    assert len(vias) == 9
+    assert all(l.lstrip().startswith("(pad 33 thru_hole") and "Paste" not in l
+               and "(zone_connect 2)" in l for l in vias)
+    # the EP itself keeps its paste; a re-run changes nothing
+    assert "(pad 33 smd rect (at 0.00 0.00 0.00) (size 3.810 3.710) (layers F.Cu F.Paste F.Mask))" in text
+    assert fpfix.fix_lib(flagged, names=[HTSSOP])["changed"] == 0
+
+
+def test_rule_f_leaves_pegs_and_free_holes_alone(lib):
+    """The USB-C's unnamed holes are zero-ring pegs outside any SMD pad:
+    rule C's, not F's."""
+    rep = fpfix.fix_lib(lib, dry_run=True, names=[USBC])
+    assert not [a for a in _actions(rep, USBC) if a["rule"] == "F"]
+
+
+def test_flags_a_peg_with_no_hole_and_a_body_outside_the_courtyard(flagged):
+    _rca_model(flagged)
+    rep = fpfix.fix_lib(flagged, names=[RCA])
+    flags = _report(rep, RCA)["flags"]
+    pegs = [f for f in flags if f["flag"] == "peg_without_hole"]
+    assert sorted(round(f["at"][0]) for f in pegs) == [-8, 8]
+    assert all(abs(f["at"][1] - 1.3) < 0.01 for f in pegs)
+    body = [f for f in flags if f["flag"] == "body_outside_courtyard"]
+    assert len(body) == 1 and body[0]["overhang_mm"]["right"] > 3.5
+    assert rep["flags"] == 3 and rep["status"] == "pass"     # flags never fail
+
+
+def test_flags_a_model_off_its_footprint_and_nothing_else(flagged):
+    _rca_model(flagged, dy=2.15)
+    flags = _report(fpfix.fix_lib(flagged, dry_run=True, names=[RCA]), RCA)["flags"]
+    assert [f["flag"] for f in flags] == ["model_off_footprint"]
+    assert flags[0]["pins_met"] == 0 and flags[0]["pins"] == 3
+
+
+def test_no_model_no_flags(flagged):
+    assert _report(fpfix.fix_lib(flagged, dry_run=True, names=[RCA]), RCA)["flags"] == []
+
+
+def test_lib_pull_autofix_reports_the_flags(flagged):
+    _rca_model(flagged)
+    out = lib_pull._autofix(flagged, [RCA, HTSSOP], dry_run=True)
+    assert {f["flag"] for f in out["flags"]} == {"peg_without_hole", "body_outside_courtyard"}
+    assert {f["footprint"] for f in out["flags"]} == {RCA}
