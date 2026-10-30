@@ -13,10 +13,11 @@ fixed board isn't seeing the defect). The table goes to docs/errata-corpus.md.
     errata_corpus.py table           write docs/errata-corpus.md
 
 --cache DIR (default ~/.cache/hwde-errata-corpus, or HWDE_ERRATA_CACHE). Nothing
-is fetched into this repo. Checks run here, each with an empty constraints
-file (what hwde reads before anyone has written one): netlist_audit on the
-schematic, check_current on the board. A catch for another script is
-reported as not run.
+is fetched into this repo. Checks run here (RUNNERS), each with an empty
+constraints file, what hwde reads before anyone has written one:
+netlist_audit on the schematic, check_mate_pins and check_current on the
+board. A catch for
+another script is reported as not run.
 """
 from __future__ import annotations
 
@@ -33,8 +34,6 @@ ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
 MANIFEST = ROOT / "reference" / "errata_corpus.yaml"
 DOC = ROOT / "docs" / "errata-corpus.md"
-# script -> the rev file it reads and the flag it takes
-RUNS = {"netlist_audit": ("sch", "--sch"), "check_current": ("pcb", "--pcb")}
 VERDICTS = {"caught", "caught_with_constraints", "missed", "not_static"}
 
 
@@ -84,16 +83,34 @@ def matches(violation: dict, catch: dict) -> bool:
     return not refs or bool(refs & set(violation.get("refs") or ()))
 
 
-def audit(cache: Path, b: dict, rev: str, script: str = "netlist_audit") -> list[dict]:
-    key, flag = RUNS[script]
-    src = repo_dir(cache, b) / b[rev][key]
+def _netlist_audit(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
+    return ["netlist_audit.py", "--sch", str(repo / b[rev]["sch"]),
+            "--constraints", str(empty)]
+
+
+def _check_mate_pins(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
+    return ["check_mate_pins.py", "--pcb", str(repo / b[rev]["pcb"]),
+            "--constraints", str(empty)]
+
+
+def _check_current(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
+    return ["check_current.py", "--pcb", str(repo / b[rev]["pcb"]),
+            "--constraints", str(empty)]
+
+
+# script -> its argv on one revision (empty constraints: what hwde reads
+# before anyone has written one)
+RUNNERS = {"netlist_audit": _netlist_audit, "check_mate_pins": _check_mate_pins,
+           "check_current": _check_current}
+
+
+def audit(cache: Path, b: dict, rev: str, script: str) -> list[dict]:
     out = cache / "runs" / b["id"] / f"{rev}-{script}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     empty = out.parent / "constraints.json"
     empty.write_text("{}", encoding="utf-8")
-    out.unlink(missing_ok=True)
-    subprocess.run([sys.executable, str(SCRIPTS / f"{script}.py"), flag, str(src),
-                    "--constraints", str(empty), "--out", str(out)],
+    cmd, *args = RUNNERS[script](b, rev, repo_dir(cache, b), empty)
+    subprocess.run([sys.executable, str(SCRIPTS / cmd), *args, "--out", str(out)],
                    capture_output=True, text=True, timeout=900)
     return json.loads(out.read_text(encoding="utf-8")).get("violations", [])
 
@@ -105,15 +122,16 @@ def run(cache: Path, b: dict) -> dict:
         c = d.get("catch")
         if not c:
             continue
-        if c["script"] not in RUNS:
+        if c["script"] not in RUNNERS:
             res[d["id"]] = {"ran": False}
             continue
         for rev in ("rev_a", "rev_b"):
-            if (c["script"], rev) not in found:
-                found[c["script"], rev] = audit(cache, b, rev, c["script"])
-        res[d["id"]] = {"ran": True, **{
-            rev: any(matches(v, c) for v in found[c["script"], rev])
-            for rev in ("rev_a", "rev_b")}}
+            if (rev, c["script"]) not in found:
+                found[rev, c["script"]] = audit(cache, b, rev, c["script"])
+        res[d["id"]] = {"ran": True,
+                        "rev_a": any(matches(v, c) for v in found["rev_a", c["script"]]),
+                        "rev_b": any(matches(v, c) for v in found["rev_b", c["script"]])}
+    (cache / "runs" / b["id"]).mkdir(parents=True, exist_ok=True)
     (cache / "runs" / b["id"] / "result.json").write_text(json.dumps(res, indent=1))
     return res
 

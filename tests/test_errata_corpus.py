@@ -49,6 +49,14 @@ def test_matcher_needs_kind_and_net_or_ref():
     assert not ec.matches({"kind": "ground_island", "net": "/AGND"}, n)
 
 
+def test_every_catch_has_a_runner():
+    """A catch with no runner shows "not run here" and is never verified."""
+    for b in ec.load():
+        for d in b["defects"]:
+            if d.get("catch"):
+                assert d["catch"]["script"] in ec.RUNNERS, d["id"]
+
+
 def test_outcome_reads_fixed_and_regressed():
     d = {"verdict": "caught", "catch": {"script": "netlist_audit", "kind": "x"}}
     assert ec.outcome(d, {"ran": True, "rev_a": True, "rev_b": False}).startswith("caught")
@@ -107,8 +115,89 @@ def test_sot23_pinout_quiet_on_gsd_and_bec(tmp_path):
     assert not [k for k in kinds(netlist(tmp_path, nets, comps)) if k[0] == "sot23_pinout"]
 
 
+def sheeted(tmp_path, nets, comps):
+    """comps: {ref: (value, sheet)}; nets as netlist()'s."""
+    cs = " ".join(f'(comp (ref "{r}") (value "{v}") (footprint "x") '
+                  f'(sheetpath (names "{s}") (tstamps "{s}")))'
+                  for r, (v, s) in comps.items())
+    ns = " ".join(
+        f'(net (code "{i}") (name "{n}") ' + " ".join(
+            f'(node (ref "{r}") (pin "{p}") (pinfunction "{f}") (pintype "{t}"))'
+            for r, p, t, f in nodes) + ")"
+        for i, (n, nodes) in enumerate(nets.items(), 1))
+    path = tmp_path / "b.net"
+    path.write_text(f'(export (version "E") (components {cs}) (nets {ns}))')
+    return na.parse_netlist(path)
+
+
+def pin_parts(parsed, specs=None):
+    return [v for v in na.audit(parsed, {}, None, specs)[0]
+            if v["kind"] == "pin_part_missing"]
+
+
+def mcf(fb_caps, sw_bk="unconnected-(U5-SW_BK-Pad5)"):
+    """minuet's fan sheet, cut to the MCF8316D's buck pins: fb_caps
+    {ref: (value, sheet)} across +3.3V/GND."""
+    nets = {"+3.3V": [("U5", "3", "power_in", "FB_BK")]
+            + [(c, "1", "passive", "") for c in fb_caps],
+            "GND": [("U5", "4", "power_in", "GND_BK"), ("U1", "1", "power_in", "GND")]
+            + [(c, "2", "passive", "") for c in fb_caps],
+            sw_bk: [("U5", "5", "power_out", "SW_BK")]}
+    return nets, {"U5": ("MCF8316D", "/fan/"), "U1": ("AMS1117", "/"), **fb_caps}
+
+
+def test_pin_part_missing_on_minuet_v3_caps_drawn_elsewhere(tmp_path):
+    # v3: +3.3V carries C5 47u, C10 100n, all on other sheets than U5's
+    nets, comps = mcf({"C5": ("47u", "/"), "C10": ("100n", "/core/")})
+    vs = pin_parts(sheeted(tmp_path, nets, comps))
+    assert [(v["severity"], v["part"], v["net"], v["refs"]) for v in vs] == [
+        ("warning", "CBK", "+3.3V", ["U5"])]
+    assert vs[0]["drawn_elsewhere"] == ["C10", "C5"]
+
+
+def test_pin_part_quiet_on_minuet_v4_c20_with_the_ic(tmp_path):
+    nets, comps = mcf({"C5": ("47u", "/"), "C20": ("1u", "/fan/")})
+    assert not pin_parts(sheeted(tmp_path, nets, comps))
+
+
+def test_pin_part_missing_is_an_error_when_nothing_spans(tmp_path):
+    nets, comps = mcf({})
+    vs = pin_parts(sheeted(tmp_path, nets, comps))
+    assert [(v["severity"], v["part"]) for v in vs] == [("error", "CBK")]
+
+
+def test_pin_part_buck_inductor_only_when_sw_bk_is_used(tmp_path):
+    # SW_BK on a real net and no inductor/resistor to FB_BK: LBK missing
+    nets, comps = mcf({"C20": ("1u", "/fan/")}, sw_bk="/fan/SW")
+    nets["/fan/SW"].append(("TP1", "1", "passive", ""))
+    comps["TP1"] = ("TestPoint", "/fan/")
+    assert [v["part"] for v in pin_parts(sheeted(tmp_path, nets, comps))] == ["LBK"]
+
+
+def test_pin_part_value_window(tmp_path):
+    # CDVDD 1u: a 100n across DVDD/DGND is off-value, a 2.2u is in
+    spec = [{"mpn": "X", "match": "^X1$", "requires": [
+        {"id": "CDVDD", "pin": "DVDD", "to": "DGND", "kinds": ["C"], "value": "1u"}]}]
+    def board(val):
+        nets = {"DV": [("U1", "1", "power_out", "DVDD"), ("C1", "1", "passive", "")],
+                "GND": [("U1", "2", "power_in", "DGND"), ("C1", "2", "passive", "")]}
+        return sheeted(tmp_path, nets, {"U1": ("X1", "/"), "C1": (val, "/")})
+    vs = pin_parts(board("100n"), spec)
+    assert [(v["severity"], v["off_value"]) for v in vs] == [("error", ["C1"])]
+    assert not pin_parts(board("2.2u"), spec)
+
+
+def test_pin_requirements_table_rows_are_well_formed():
+    for part in na.load_pin_requirements():
+        assert part["mpn"] and part["match"] and part["requires"]
+        for r in part["requires"]:
+            assert r["pin"] and r["to"] and r["source"]
+            assert set(r["kinds"]) <= {"C", "L", "R"}
+            assert r.get("when") in (None, "connected")
+
+
 def test_check_current_catch_runs_on_the_board():
-    assert ec.RUNS["check_current"] == ("pcb", "--pcb")
+    assert ec.RUNNERS["check_current"]
     caught = [d for b in ec.load() for d in b["defects"]
               if (d.get("catch") or {}).get("script") == "check_current"]
     assert any(d["id"] == "digits-1" for d in caught)
