@@ -511,3 +511,33 @@ def test_constraints_unreadable_is_an_error(tmp_path):
     p = _cons_board(tmp_path)
     assert rcl.main(["--pcb", str(p), "--dry-run", "--snap-only",
                      "--constraints", str(tmp_path / "none.json")]) == 2
+
+
+def test_dejog_merges_a_router_jog_with_no_snap():
+    """A grid router's jog (all three on the 45 grid, no snapped leg) is
+    left by plain pass 3 and merged by dejog; a kept net's is left."""
+    segs = [S("s1", (0, 0), (5, 0)), S("s2", (5, 0), (5.1, 0.1)),
+            S("s3", (5.1, 0.1), (12, 0.1))]
+    pads = [PD((0, 0), half=0.3), PD((12, 0.1), half=0.3)]
+    assert _snap(segs, _env(), pads=pads)[3] == 0
+    ops, snaps, left, merged = rcl.find_snaps(segs, [], pads, [], _env(),
+                                              dejog=True)
+    assert merged == 1 and not snaps and not left
+    assert {o["uuid"] for o in ops if o["op"] == "remove"} == {"s1", "s2",
+                                                               "s3"}
+    final = [(tuple(o["start"]), tuple(o["end"]), 0.25, str(i))
+             for i, o in enumerate(_tracks(ops))]
+    assert final[0][0] == (0.0, 0.0) and final[-1][1] == (12.0, 0.1)
+    assert crs.find_jogs(final, [p.poly for p in pads]) == []
+    net = segs[0].net
+    assert rcl.find_snaps(segs, [], pads, [], _env(), frozenset({net}),
+                          dejog=True)[3] == 0
+
+
+def test_dejog_leaves_a_jog_round_an_obstacle():
+    """Foreign copper where the straight route would run: no merge."""
+    segs = [S("s1", (0, 0), (5, 0)), S("s2", (5, 0), (5.1, 0.1)),
+            S("s3", (5.1, 0.1), (12, 0.1))]
+    pads = [PD((0, 0), half=0.3), PD((12, 0.1), half=0.3)]
+    env = _env(_blob(8, -0.35, r=0.1))
+    assert rcl.find_snaps(segs, [], pads, [], env, dejog=True)[3] == 0
