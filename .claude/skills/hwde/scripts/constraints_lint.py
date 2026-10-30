@@ -135,7 +135,7 @@ OVERRIDE = {"required": {"near": "pair", "radius_mm": "num",
 COATINGS = {"none", "soldermask", "conformal"}
 EDGES = {"left", "right", "top", "bottom"}
 SIDES = {"front", "back"}
-SCHEMA_TOP_KEYS = set(SECTIONS) | {"placement", "coating"}
+SCHEMA_TOP_KEYS = set(SECTIONS) | {"placement", "coating", "antennas"}
 ENVELOPE_ALIASES = {"power_constraints": "power",
                     "thermal_constraints": "thermal",
                     "voltage_constraints": "voltages"}

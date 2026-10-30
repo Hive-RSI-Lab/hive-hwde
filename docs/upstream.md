@@ -9,7 +9,9 @@ these ways:
   application notes) is left out. NOTICE says they're redistributed under
   their owners' terms, not MIT.
 - `scripts/lib/knowledgelib.py`: `SOURCES_DIR` reads `HWDE_KNOWLEDGE_SOURCES`
-  when it's set, so the records can still find those PDFs elsewhere.
+  when it's set, so the records can still find those PDFs elsewhere:
+  `docs/knowledge-sources.txt` lists them (git blob sha, size, name) and
+  `bin/sources.py` fetches them from upstream into HOME.
 - `scripts/parts_search.py --kind/--category` (with
   `reference/part_kinds.yaml` and `category_search` in
   `scripts/lib/partslib.py`): finding a part by what it is, by browsing its
@@ -39,11 +41,16 @@ these ways:
   rules into the DSN (`routelib.dsn_hole_floor`, `ses_restore_vias`,
   `dsn_npth_keepouts`) and keeps the best of `--tries` shuffled-order routes
   (`routelib.dsn_shuffle`); `rules_gen` sizes plane_fed taps, writes
-  neck-down rules;
-  `planes_gen` merges touching same-net pours; `scripts/keepout_gen.py`
+  neck-down rules; `planes_gen` merges touching same-net pours; `scripts/keepout_gen.py`
   (new, with route_swig's `set_rule_areas`) draws copper keep-outs;
   `route_critical` rips only the nets whose copper broke DRC; `lib/geom.py`
   lists NPTH holes (`npth`).
+- Two verify checks from hifi-receiver-2's first-spin review (issue #130):
+  `scripts/check_straps.py` (+ `reference/reset_states.yaml`), an MCU's
+  strapping pins and IO expander pins at power-on and on an MCU-only reset,
+  and `scripts/check_antenna.py` (+ `reference/rf_modules.yaml`), copper
+  under a module's PCB antenna and its place at the board edge, each with its
+  `checks.d` fragment.
 - Power-path checks from hifi-receiver-2's first-spin power review, which
   did each by hand: `scripts/check_power_path.py` (+
   `checks.d/check_power_path.yaml`, mutant `power-path-under-contract`), the
@@ -103,6 +110,8 @@ Everything specific to the Hive is in `bin/` and `docs/`:
 
 To update, copy upstream's skill folder over this one, drop the source PDFs
 again, re-apply the `SOURCES_DIR` line and the fixes above (or check upstream
-has them), and bump the commit above. Copy upstream's `tests/` over this one
+has them), and bump the commit above and in `docs/knowledge-sources.txt`
+(its lines are the GitHub contents API's `sha`, `size` and `name` for the
+sources folder at that commit). Copy upstream's `tests/` over this one
 the same way, leaving out the files above and keeping `KNOWN_FAILING`,
 `test_workarounds.py` and `test_sourcer_records.py`.

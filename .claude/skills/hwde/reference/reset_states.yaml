@@ -1,0 +1,158 @@
+# What pins do at reset, for check_straps.py: an MCU's strapping pins and
+# the reset behaviour of the parts that can pull or drive them, or that
+# hold a board's enables (IO expanders, oscillators).
+#
+# match: a regex tried against the part's Value (case-insensitive).
+# Pins are named as the netlist's pinfunction gives them, upper-cased, with
+# an EasyEDA "_<pin number>" suffix and KiCad's ~{...} overbar dropped
+# ("IO0_25" -> IO0, "~{INT}_1" -> INT); `aliases` maps other names a
+# symbol may use onto those.
+# verified: false means typed from memory of the datasheet, not re-read:
+# check_straps says so in its finding, and the review that relies on it
+# reads the datasheet once and flips it (with the date) here.
+
+mcus:
+  - family: ESP32
+    match: '^ESP32(-D0WD|-D2WD|-S0WD|-U4WDH|-PICO|-WROOM-32|-WROVER|-SOLO|-MINI-1|-WROOM-DA)'
+    vdd: 3.3
+    vil: 0.25        # x VDD (ESP32 datasheet v4.x Table 5-3 DC characteristics)
+    vih: 0.75
+    pull_ohm: 45000  # internal weak pull-up/down, nominal
+    enable: [EN, CHIP_PU, CHIP_EN]
+    aliases: {MTDI: IO12, MTDO: IO15, MTMS: IO14, MTCK: IO13, BOOT: IO0}
+    straps:
+      IO0: {pull: up, want: high, severity: error,
+            why: "GPIO0 = 0 boots the UART download mode instead of the flash"}
+      IO2: {pull: down, want: low, severity: warning,
+            why: "download mode needs GPIO2 = 0 (or floating) with GPIO0 = 0; esptool can't flash the board otherwise"}
+      IO12: {pull: down, want: low, severity: error,
+             why: "MTDI = 1 sets VDD_SDIO to 1.8 V; the WROOM-32/WROVER(-E) flash and PSRAM are 3.3 V and the module won't boot"}
+      IO15: {pull: up, want: any, severity: warning,
+             why: "MTDO = 0 silences the ROM boot log on U0TXD (and sets SDIO slave timing)"}
+      IO5: {pull: up, want: any, severity: warning,
+            why: "GPIO5 sets the SDIO slave timing at boot"}
+    source: ESP32 datasheet v4.x §2.4 Strapping Pins; ESP32-WROVER-E datasheet v2.4 §4 Table 5 (strap hold >= 1 ms after CHIP_PU)
+    verified: true
+
+  - family: ESP32-S3
+    match: '^ESP32-S3'
+    vdd: 3.3
+    vil: 0.25
+    vih: 0.75
+    pull_ohm: 45000
+    enable: [EN, CHIP_PU, CHIP_EN]
+    aliases: {BOOT: IO0}
+    straps:
+      IO0: {pull: up, want: high, severity: error,
+            why: "GPIO0 = 0 boots the download mode instead of the flash"}
+      IO46: {pull: down, want: low, severity: warning,
+             why: "GPIO46 = 1 with GPIO0 = 0 is an invalid boot combination; download needs it low"}
+      IO45: {pull: down, want: low, severity: error,
+             why: "GPIO45 = 1 sets VDD_SPI to 1.8 V; 3.3 V flash then fails (unless the eFuse overrides it)"}
+      IO3: {pull: none, want: any, severity: warning,
+            why: "GPIO3 picks the JTAG source when the eFuses leave it to the strap"}
+    source: ESP32-S3 datasheet v1.x §3 Boot Configurations (strapping pins)
+    verified: false
+
+  - family: ESP32-C3
+    match: '^(ESP32-C3|ESP8685)'
+    vdd: 3.3
+    vil: 0.25
+    vih: 0.75
+    pull_ohm: 45000
+    enable: [EN, CHIP_EN, CHIP_PU]
+    aliases: {BOOT: IO9}
+    straps:
+      IO9: {pull: up, want: high, severity: error,
+            why: "GPIO9 = 0 boots the download mode instead of the flash"}
+      IO8: {pull: none, want: high, severity: warning,
+            why: "download mode needs GPIO8 = 1 with GPIO9 = 0 (it also sets the ROM log)"}
+      IO2: {pull: none, want: high, severity: warning,
+            why: "Espressif asks for GPIO2 pulled high at boot"}
+    source: ESP32-C3 datasheet v1.x §2.4 Strapping Pins; ESP32-C3 Hardware Design Guidelines §2.6
+    verified: false
+
+# Parts whose pins pull or drive a net at reset.
+#   kind: expander  - every IO pin (pins: regex on the pin name) is an input
+#                     at power-on with the internal `pull`; registers are
+#                     reset only at POR, or by the part's `reset` pin
+#                     (active low), so through an MCU-only reset its outputs
+#                     keep whatever firmware set unless that pin follows the
+#                     MCU's enable.
+#   kind: input     - the named pins are inputs at reset (loads, not drivers)
+parts:
+  - match: '^(TCA9555|PCA9555)'
+    kind: expander
+    pins: '^P[01][0-7]$'
+    pull: {dir: up, ohm: 100000}
+    reset: null
+    source: TI TCA9555 SCPS200E §5 and Fig. 23 (100 k internal pull-ups; POR only); NXP PCA9555 rev. 9 §8.1
+    verified: true
+  - match: '^(TCA9535|PCA9535|TCA9554|PCA9554|TCA9534|PCA9534|TCA9538|PCA9538)'
+    kind: expander
+    pins: '^P[01]?[0-7]$'
+    pull: null
+    reset: [RESET]     # TCA9538/PCA9538 only; the others have none
+    source: TI TCA9535 SCPS201 (no pull-ups, POR only); TI TCA9534/TCA9538 datasheets
+    verified: false
+  - match: '^(TCA9539|PCA9539|TCA6416|TCA6408|PCAL6416|PCAL9555)'
+    kind: expander
+    pins: '^P[01]?[0-7]$'
+    pull: null
+    reset: [RESET]
+    source: TI TCA9539 SCPS202C §8.3.2 (RESET pin, no pull-ups); TI TCA6416A SCPS194
+    verified: false
+  - match: '^MCP23(0|S)(08|17|18)'
+    kind: expander
+    pins: '^GP[AB]?[0-7]$'
+    pull: null
+    reset: [RESET]
+    source: Microchip MCP23017 DS20001952 §1.6 (GPPU = 0 at reset, RESET pin)
+    verified: false
+  - match: '^PCF857[45]'
+    kind: expander
+    pins: '^P[01]?[0-7]$'
+    pull: {dir: up, ohm: 33000}   # quasi-bidirectional: ~100 uA weak high at POR
+    reset: null
+    source: NXP PCF8574 §8.2 (outputs high with a weak current source at power-on)
+    verified: false
+  - match: '^LAN8720'
+    kind: input
+    pins: '^(NRST|RST|XTAL1/CLKIN|XTAL1|CLKIN|MDC|TXD[01]|TXEN)$'
+    source: Microchip LAN8720A DS00002165B pin table
+    verified: false
+  - match: '^PCM510[0-9]'
+    kind: input
+    pins: '^(BCK|DIN|LRCK|SCK|XSMT|FMT|FLT|DEMP)$'
+    source: TI PCM5102A SLAS859 pin functions (digital inputs)
+    verified: false
+
+# Oscillators are found by their pins, not their Value: a part whose
+# reference starts with Y, X or OSC and which has an output pin (`output`)
+# drives a clock whenever its enable pin (`enable`) is high or floating
+# (the YSO110TR, SiT8008 and most XOs read a floating OE as enabled); a
+# part with an output and no enable pin always runs.
+oscillators:
+  refs: '^(Y|X|OSC)[0-9]'
+  output: '^(OUT|OUTPUT|CLK|CLKOUT|FOUT)$'
+  enable: '^(OE|EN|ST|STBY|TRI-STATE|TRISTATE|E/D|OE/ST)$'
+  enable_active: high
+  float_enabled: true
+  source: YXC YSO110TR datasheet p1 (enable "high voltage or floating"); SiTime SiT8008 OE/ST
+
+# MOSFETs whose gate an enable line drives: the minimum VGS(th), so a gate
+# that comes up mid-band at power-on can be told to conduct (review-2
+# POWER-5: core's Q2 at 1.10 V).
+fets:
+  - match: '^2N7002'
+    vth_min: 1.0
+    source: JSCJ 2N7002 datasheet, VGS(th) 1.0-2.5 V at ID 250 uA
+    verified: true
+  - match: '^(BSS138|BSS138K)'
+    vth_min: 0.8
+    source: onsemi BSS138 datasheet, VGS(th) 0.8-1.5 V
+    verified: false
+  - match: '^(AO3400|AO3400A)'
+    vth_min: 0.65
+    source: AOS AO3400A datasheet, VGS(th) 0.65-1.45 V
+    verified: false

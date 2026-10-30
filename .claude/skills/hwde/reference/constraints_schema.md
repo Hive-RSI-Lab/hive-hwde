@@ -91,6 +91,12 @@ Consumers per key (script -> phase):
   // A5/A7. Inner layers are always B1. CLI --coating overrides.
   "coating": "soldermask",
 
+  // check_antenna (P8): which modules have a PCB antenna, for a part
+  // reference/rf_modules.yaml does not know or names wrongly. "pcb" checks
+  // the copper under its antenna end and its place at the board edge;
+  // "external" (u.FL / IPEX) skips it.
+  "antennas": {"U7": "pcb"},
+
   // check_thermal (P8), place_anneal spreading term (P6)
   "thermal": [{"ref": "U2", "power_w": 0.8, "net": "GND", "dt_c": 40,
                "min_vias": 4},
