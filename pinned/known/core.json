@@ -3212,6 +3212,21 @@
    "message": "architecture/constraints.json diverges from constraints.json in kicad/; checks ran against the latter - reconcile or delete the stale twin",
    "verdict": "real",
    "reason": "the board carries two constraints.json that disagree"
+  },
+  {
+   "gate": "verify",
+   "check": "check_model_fit",
+   "net": null,
+   "refs": [
+    "J3"
+   ],
+   "pos": [
+    54.587,
+    217.197
+   ],
+   "kind": "model_offset",
+   "verdict": "real",
+   "reason": "EasyEDA's FPC-05F-20PH20 model ends its contact tails at y -1.26 mm while the pads run -1.92..-0.67: the tails cover under half of each pad and a 0.45 mm slide centres them, so render/STEP show the connector 0.45 mm off; the board's library model, not an hwde misreading"
   }
  ]
 }

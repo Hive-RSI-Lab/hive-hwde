@@ -294,6 +294,34 @@ U7 (GND or +3V3 fill under the antenna on all four layers). lite-main
 passes both, with warnings: 2.2 mm cleared beside the antenna, and ES8388
 MCLK on GPIO0 with no known reset state.
 
+## 3D models on their pads
+
+`check_model_fit` (verify suite) reads every footprint's 3D model, VRML or
+STEP, with no CAD kernel (`scripts/lib/modelgeom.py`). It places the model
+the way KiCad's 3D viewer does, by the board's own `(model (offset) (scale)
+(rotate))`, front or back, and lays the model's contact features against
+the footprint's pads. Leads are flat geometry at the seating plane that
+isn't the body's underside. Pins, shell legs and pegs are geometry below the
+board, scored at each hole's centre. The fit is a pad-coverage score,
+worked out at once for every slide within ±5 mm on a 0.05 mm grid by
+cross-correlating rasters, at the model's own turn and at +90/180/270°.
+A slide or turn that covers clearly more pads, and meets no fewer, is a
+`model_offset` or `model_rotation` error. The finding gives the
+`(offset)`/`(rotate)` to write in the footprint library. `model_scale`
+(not 1 1 1), `model_floats` (lowest point above the board) and
+`model_in_board` (geometry inside the board's material, within the outline,
+where the footprint has no hole) are errors too. `model_unmatched` (no
+placement meets half the pads: a wrong model) is a warning. A missing or
+hidden model is skipped.
+
+The hit: EasyEDA's TYPE-C-31-M-12 model, as `lib_pull` fetches it for
+lite-main J1, sits 2.2 mm off its footprint. Its shell legs and pegs miss
+every hole, so renders, the STEP and an enclosure fitted to it put the
+connector in the wrong place. The check reports `model_offset` with a fit of
+`(offset (xyz 0 -2.2 0)) (rotate (xyz 0 0 180))`. `fpfix.body_flags`
+still flags a pulled library footprint at pull time (THT pins only). This
+check runs on the board, every time.
+
 ## Finishing a dense board's routing
 
 `route_auto` ends with `route_finish`, so a dense board needs no copper
