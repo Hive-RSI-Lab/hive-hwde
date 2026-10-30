@@ -181,7 +181,9 @@ env)
 	done
 	# The tools as the skill's env.py resolves them (a pin set here wins
 	# there too), so a shell or CI sees what every script will use; a tool
-	# it can't find is left out. KICAD_SYMBOL_DIR is the flat copies.
+	# it can't find is left out. KICAD_SYMBOL_DIR is the flat copies. A tree
+	# without the skill (a test's stand-in) resolves nothing.
+	[ ! -f "$here/.claude/skills/hwde/scripts/lib/env.py" ] ||
 	"$py" - "$here/.claude/skills/hwde/scripts/lib" <<-'EOF'
 		import os, sys
 		sys.path.insert(0, sys.argv[1])
