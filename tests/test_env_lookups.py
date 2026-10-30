@@ -218,3 +218,20 @@ def test_hive_schlib_reads_a_symdir_library_on_demand():
     r = run_skill("schlib.py", "--pins", "Regulator_Linear:AMS1117-3.3")
     assert r.returncode == 0, r.stdout + r.stderr
     assert '"pin_count": 3' in r.stdout
+
+
+@hive
+def test_hive_sheet_places_from_a_symdir_library_on_demand():
+    # schlib's project-library lookup runs first and raises for a library it
+    # can't find; a stock symdir library must be flattened before that.
+    code = ("import schlib; sh = schlib.Sheet('t', paper='A4'); "
+            "c = sh.add_component('Connector_Generic:Conn_01x03', 'J1', 'x', "
+            "at=(50.8, 50.8)); print(len(c.pins))")
+    e = {k: v for k, v in os.environ.items()
+         if not k.startswith(("HWDE_", "KICAD")) and k != "APPDIR"}
+    e["HWDE_TOOLS_DIR"] = "/hive/tools"
+    e["PYTHONPATH"] = f"{SKILL / 'scripts'}:{SKILL / 'scripts' / 'lib'}"
+    r = subprocess.run([sys.executable, "-c", code], capture_output=True,
+                       text=True, env=e, timeout=300)
+    assert r.returncode == 0, r.stderr[-500:]
+    assert r.stdout.split()[-1] == "3"
