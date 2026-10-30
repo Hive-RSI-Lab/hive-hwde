@@ -13,13 +13,12 @@ import pytest
 import yaml
 
 REPO = Path(__file__).resolve().parents[1]
-SKILL = REPO / ".claude" / "skills" / "hwde"
-sys.path.insert(0, str(SKILL / "scripts"))
-sys.path.insert(0, str(SKILL / "scripts" / "lib"))
+sys.path.insert(0, str(REPO / "scripts"))
+sys.path.insert(0, str(REPO / "scripts" / "lib"))
 
 from order_quote import pcb_cost  # noqa: E402
 
-PRICING = yaml.safe_load((SKILL / "reference" / "jlc_pricing.yaml").read_text())
+PRICING = yaml.safe_load((REPO / "reference" / "jlc_pricing.yaml").read_text())
 BASE = PRICING["pcb"]["base"]
 
 
