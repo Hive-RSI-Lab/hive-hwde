@@ -42,6 +42,17 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
    Either is a warning, not an error, when the net's volts came through a
    pull-up: that resistor may be a deliberate series limit into a clamped
    pin. A supply pin fed through a resistor is not given the rail's volts.
+   A 2-terminal diode (D*/LED*) with no extraction is rated by a parts.json
+   reverse-voltage attribute ("Reverse Voltage (Vr)"), its cathode found by
+   pad name (the board's pinfunction, else the netlist <board>.net beside
+   it) or else pad 1, KiCad's convention.
+   Reversed input (warning, field `scenario`): each 2-net power input - a
+   J/P/CN/X/BT part on one ground and one positive rail, a header, jack or
+   battery that plugs in either way - is plugged in reversed: its rail goes
+   to minus its volts, carried through lone series R/L/FB parts (a blocking
+   diode draws no current), and every diode it then reverse-biases past its
+   reverse rating is named. "The LED blocks reverse current" is checked
+   against the LED's VR, not taken on trust.
  - rating_outside_recommended (warning): above a recommended max, or a
    supply pin below its recommended min.
  - rating_over_current (warning): a power_out pin whose net's
@@ -102,8 +113,13 @@ IO_TYPES = {"input", "analog", "clock", "bidirectional", "unspecified",
 IN_TYPES = {"input", "analog", "clock", "bidirectional", "unspecified"}
 OUT_TYPES = {"output", "tristate", "open_collector", "bidirectional"}
 REG_OUT_NAMES = {"VOUT", "OUT", "VO", "OUTPUT"}
+# A 2-pad part's working-voltage attribute as LCSC lists it: "Voltage Rated"
+# and "Voltage Rating" (caps, connectors), "Voltage - DC", and the chip
+# resistors' "Voltage-Supply(Max)" / "Working Voltage". Not "Voltage -
+# Forward(Vf)" or "Overload Voltage": neither is a rating across the part.
 V_ATTR_RE = re.compile(r"voltage.*rated|rated.*voltage|voltage rating|"
-                       r"voltage - dc", re.I)
+                       r"voltage - dc|voltage\s*-\s*supply\s*\(max\)|"
+                       r"working voltage", re.I)
 
 
 # --- board ------------------------------------------------------------------
@@ -534,11 +550,30 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
 
     unrated_passives: list[str] = []
     checked_by_ref: dict[str, int] = {}
+    netfns = net_pinfunctions(pcb)
+    diodes = {b["ref"]: d for b in board
+              if (d := diode_reverse(b, exts.get(b["lcsc"]),
+                                     bom_by_lcsc.get(b["lcsc"]), netfns))}
     for b in sorted(board, key=lambda x: x["ref"]):
         ref, pads = b["ref"], b["pads"]
         if not pads:
             continue
         ext = exts.get(b["lcsc"])
+        dio = diodes.get(ref)
+        if ext is None and dio:
+            vk, va = volts.get(pads[dio["k"]]), volts.get(pads[dio["a"]])
+            if vk is not None and va is not None:
+                checked_by_ref[ref] = checked_by_ref.get(ref, 0) + 1
+                if vk - va > dio["vr"] + EPS:
+                    emit("rating_reverse_polarity", "error", ref,
+                         pads[dio["k"]],
+                         f"{ref} is reversed by {_fmt(vk - va)} V (cathode "
+                         f"{pads[dio['k']]}, anode {pads[dio['a']]}), over "
+                         f"its {_fmt(dio['vr'])} V reverse rating "
+                         f"[{dio['src']}; {dio['how']}]",
+                         pin=f"{ref}.{dio['k']}", net_v=vk - va,
+                         limit_v=dio["vr"], rating=dio["src"])
+            continue
         if ext is None:
             if _check_unextracted(b, bom_by_lcsc.get(b["lcsc"]), volts, emit,
                                   unrated_passives):
@@ -546,6 +581,8 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
             continue
         ratings = part_ratings(ext)
         name_of = {p["pin"]: p for p in ext.get("pinout") or []}
+        pair_refs = {r["ref"] for rows in ratings.values()
+                     for lst in rows.values() for r in lst if r["ref"]}
         idx = pin_index(ext.get("pinout") or [])
 
         def ref_volts(name):
@@ -593,6 +630,8 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                              pin=f"{ref}.{pin}", limit_a=abs(hi))
             vabs = rows.get(("voltage", "abs"), [])
             vrec = rows.get(("voltage", "rec"), [])
+            if not vabs and not vrec and p["name"] in pair_refs:
+                continue  # the other side of a pair rating (a diode's A)
             if not vabs and not vrec:
                 unrated.append(f"{pin} {p['name']}: no rating names it")
                 continue
@@ -657,16 +696,45 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                  f"could not be checked - {'; '.join(unrated[:6])}"
                  + (" ..." if len(unrated) > 6 else ""),
                  pins=unrated)
+    # a 2-net power input plugged in the wrong way round: what each diode
+    # it reaches is asked to block (a design that says "the LED blocks
+    # reverse current" is claiming exactly this). A fault case, so a warning.
+    reversed_inputs = []
+    for conn, rail in input_connectors(board, volts):
+        rev = reversed_input_volts(board, volts, vsrc, rail)
+        reversed_inputs.append({"connector": conn["ref"], "rail": rail,
+                                "rail_v": -volts[rail]})
+        for ref, dio in sorted(diodes.items()):
+            pads = next(b["pads"] for b in board if b["ref"] == ref)
+            vk, va = rev.get(pads[dio["k"]]), rev.get(pads[dio["a"]])
+            if vk is None or va is None or vk - va <= dio["vr"] + EPS:
+                continue
+            emit("rating_reverse_polarity", "warning", ref, rail,
+                 f"{conn['ref']} plugged in reversed puts {_fmt(vk - va)} V "
+                 f"across {ref} the wrong way (cathode {pads[dio['k']]}, "
+                 f"anode {pads[dio['a']]}; {rail} = {_fmt(volts[rail])} V, "
+                 "no drop in the series parts while it blocks), over its "
+                 f"{_fmt(dio['vr'])} V reverse rating [{dio['src']}; "
+                 f"{dio['how']}]", pin=f"{ref}.{dio['k']}", net_v=vk - va,
+                 limit_v=dio["vr"], rating=dio["src"],
+                 scenario=f"{conn['ref']} reversed")
+    lcsc_of = {b["ref"]: b["lcsc"] for b in board}
+    bare = [r for r in unrated_passives
+            if not (bom_by_lcsc.get(lcsc_of.get(r)) or {}).get("attributes")]
     if unrated_passives:
         emit("rating_unrated", "warning", None, None,
              f"{len(unrated_passives)} two-terminal part(s) have no extraction "
              "and no voltage-rated attribute in parts.json: "
-             + ", ".join(unrated_passives), pins=unrated_passives)
+             + ", ".join(unrated_passives)
+             + (f" ({', '.join(bare)}: the parts.json line carries no "
+                "attributes - keep parts_search's row whole)" if bare else ""),
+             pins=unrated_passives)
         out[-1]["refs"] = sorted(unrated_passives)
     facts = {"parts_on_board": len(board), "extractions": sorted(exts),
              "net_volts": {n: {"v": volts[n], "src": vsrc[n]}
                            for n in sorted(volts)},
              "pins_checked": checked_pins,
+             "reversed_inputs": reversed_inputs,
              "pins_on_unknown_nets": unknown_net_pins,
              "ledger_facts": ledger_facts(board, exts, out, checked_by_ref,
                                           bom_by_lcsc)}
@@ -707,6 +775,128 @@ def _check_unextracted(b: dict, bom: dict | None, volts: dict, emit,
     emit("rating_unrated", "warning", ref, None,
          f"{ref} ({b['lcsc'] or 'no LCSC'}): {why}", pins=[why])
     return False
+
+
+VR_ATTR_RE = re.compile(r"reverse.*volt|\(vr\)|\bvrrm\b", re.I)
+INPUT_CONN_RE = re.compile(r"^(?:J|P|CN|CON|X|BT)\d")
+SERIES_RE = re.compile(r"^(?:R|L|FB)\d")
+
+
+def net_pinfunctions(pcb: Path) -> dict[str, dict[str, str]]:
+    """{ref: {pad: pinfunction}} from the schematic netlist beside the board
+    (<board>.net, else the only *.net there): a board written without
+    pinfunctions still says which diode pad is the cathode."""
+    cands = [pcb.with_suffix(".net")]
+    if not cands[0].is_file():
+        cands = sorted(pcb.parent.glob("*.net"))
+        if len(cands) != 1:
+            return {}
+    try:
+        root = sexpdata.loads(cands[0].read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return {}
+    out: dict[str, dict[str, str]] = {}
+    for nets in _kids(root, "nets"):
+        for n in _kids(nets, "net"):
+            for node in _kids(n, "node"):
+                f = {_t(k[0]): k[1] for k in node[1:]
+                     if isinstance(k, list) and len(k) > 1}
+                if f.get("ref") and f.get("pin") and f.get("pinfunction"):
+                    out.setdefault(str(f["ref"]), {})[str(f["pin"])] = \
+                        str(f["pinfunction"])
+    return out
+
+
+def diode_reverse(b: dict, ext: dict | None, bom: dict | None,
+                  netfns: dict) -> dict | None:
+    """A 2-terminal diode's reverse-voltage rating and its pads:
+    {k, a, vr, src, how}. The rating is the extraction's reverse row (rated
+    K against A) or a parts.json reverse-voltage attribute; the cathode is
+    the extraction's K pin, else the pad named K/cathode, else pad 1 (the
+    KiCad diode and LED convention, said in `how`). None for anything else."""
+    if not re.match(r"^(?:D|LED)\d", b["ref"]) or len(b["pads"]) != 2:
+        return None
+    vr = src = None
+    k = a = None
+    how = "pinout"
+    if ext:
+        idx = pin_index(ext.get("pinout") or [])
+        ks, as_ = idx.get("K") or [], idx.get("A") or []
+        if ks and as_:
+            k, a = ks[0]["pin"], as_[0]["pin"]
+            for r in part_ratings(ext).get(k, {}).get(("voltage", "abs"), []):
+                if r["ref"] == as_[0]["name"] and isinstance(r["hi"], float):
+                    if vr is None or r["hi"] < vr:
+                        vr, src = r["hi"], r["src"]
+    if vr is None:
+        for att in (bom or {}).get("attributes") or []:
+            if VR_ATTR_RE.search(str(att.get("name") or "")):
+                m = re.search(r"(\d+(?:\.\d+)?)\s*(k?)V",
+                              str(att.get("value") or ""))
+                if m:
+                    vr = float(m.group(1)) * (1000 if m.group(2) else 1)
+                    src = f"parts.json {att.get('name')} = {att.get('value')}"
+    if vr is None:
+        return None
+    if k is None:
+        fns = dict(netfns.get(b["ref"]) or {}, **b.get("fns") or {})
+        for pad, fn in fns.items():
+            name = re.sub(r"_\d+$", "", fn.upper())
+            if name in ("K", "CATHODE"):
+                k = pad
+            elif name in ("A", "ANODE"):
+                a = pad
+        how = "pad names"
+        if k is None or a is None:
+            k, a, how = "1", "2", "pad 1 taken as the cathode (KiCad's " \
+                "diode convention)"
+    if k not in b["pads"] or a not in b["pads"]:
+        return None
+    return {"k": k, "a": a, "vr": vr, "src": src, "how": how}
+
+
+def reversed_input_volts(board: list[dict], volts: dict, vsrc: dict,
+                         rail: str) -> dict[str, float]:
+    """Net volts with a power input plugged in reversed: its `rail` pin sits
+    at minus the rail's volts against the board's ground. A net reached from
+    it through one series part (R, L, FB) and touched by no other series
+    part takes its volts (a reverse-biased diode passes no current, so the
+    resistor drops nothing); every other net is unknown."""
+    rev = {n: 0.0 for n in volts if is_ground(n)}
+    rev[rail] = -volts[rail]
+    series: dict[str, list[str]] = {}
+    for b in board:
+        nets = sorted(set(b["pads"].values()))
+        if SERIES_RE.match(b["ref"]) and len(nets) == 2:
+            for x, y in ((nets[0], nets[1]), (nets[1], nets[0])):
+                series.setdefault(x, []).append(y)
+    grew = True
+    while grew:
+        grew = False
+        for x, ys in series.items():
+            if x in rev or len(ys) != 1 or ys[0] not in rev or \
+                    vsrc.get(x, "pull-up") != "pull-up":
+                continue
+            rev[x] = rev[ys[0]]
+            grew = True
+    return rev
+
+
+def input_connectors(board: list[dict], volts: dict) -> list[tuple]:
+    """(connector, rail net) for each 2-net power input: a J/P/CN/X/BT part
+    whose pads sit on one ground net and one positive rail and nothing else -
+    a header, jack or battery that can be plugged in the wrong way round."""
+    out = []
+    for b in board:
+        nets = set(b["pads"].values())
+        if not INPUT_CONN_RE.match(b["ref"]) or len(nets) != 2:
+            continue
+        gnd = [n for n in nets if is_ground(n)]
+        rails = [n for n in nets if not is_ground(n)
+                 and (volts.get(n) or 0) > 0]
+        if len(gnd) == 1 and len(rails) == 1:
+            out.append((b, rails[0]))
+    return out
 
 
 def _pin_name(s: str) -> str:

@@ -381,7 +381,11 @@ def net_classes(constraints: dict, power_facts: list[dict],
             cname = "Default"          # thin rails need no wider class
         else:
             cname = power_class_name(w)
-            classes.append(base_class(cname, w, max(cap["min_clearance_mm"], 0.2)))
+            # the fab floor, not a blanket 0.2: a power net that lands on a
+            # fine-pitch part (CH224Q VBUS, 0.176 mm between pads) cannot
+            # meet 0.2 at its own pads. Spacing a voltage needs comes from
+            # voltages/voltage_pairs (the _HV_ variants below).
+            classes.append(base_class(cname, w, cap["min_clearance_mm"]))
         for f in buckets[w]:
             f["netclass"] = cname       # traceability in the JSON report
             f["class_width_mm"] = w
@@ -501,6 +505,28 @@ DRU_HEADER = ("(version 1)\n"
               "# Baseline (fab floor) first, per-net design rules last (later rule wins).\n")
 
 
+def unique_rule_names(rules: list[Rule]) -> list[dict]:
+    """Give every rule its own name, in place. _safe folds every
+    non-alphanumeric to '_', so A_SPK_L+ and A_SPK_L- both become
+    aiee_pwr_width_A_SPK_L; the second and later of a name get _2, _3.
+    Returns [{from, to}] for the report."""
+    seen: set[str] = {r.name for r in rules}
+    count: dict[str, int] = {}
+    renamed: list[dict] = []
+    for r in rules:
+        n = count[r.name] = count.get(r.name, 0) + 1
+        if n == 1:
+            continue
+        k = n
+        while f"{r.name}_{k}" in seen:
+            k += 1
+        new = f"{r.name}_{k}"
+        seen.add(new)
+        renamed.append({"from": r.name, "to": new})
+        r.name = new
+    return renamed
+
+
 def render_dru(rules: list[Rule]) -> str:
     return DRU_HEADER + "\n".join(r.render() for r in rules) + "\n"
 
@@ -518,6 +544,7 @@ def build(constraints: dict, cap: dict, stackup: dict, baseline_only: bool
         dr, df = diff_pair_rules(pairs, stackup)
         hr, hf = voltage_rules(constraints, cap)
         rules += pr + dr + hr
+        report["renamed_rules"] = unique_rule_names(rules)
         classes, patterns = net_classes(constraints, pf, df, cap, hf)
         report["power"] = pf
         report["diff_pairs"] = df
@@ -640,6 +667,7 @@ def main(argv: list[str] | None = None) -> int:
             "copper_oz": outer_oz,
             "rule_count": len(rules),
             "rule_names": [r.name for r in rules],
+            "renamed_rules": report.get("renamed_rules", []),
             "power": report["power"], "diff_pairs": report["diff_pairs"],
             "hv_rules": report["hv_rules"],
             "classes": [c["name"] for c in report["classes"]],

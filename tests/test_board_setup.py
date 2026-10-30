@@ -271,6 +271,37 @@ def test_net_classes():
             if c["name"].startswith("Pwr_")} == {"Pwr_0p25mm": 0.25}
 
 
+def test_power_class_clearance_is_the_fab_floor():
+    """A power class carries the fab floor clearance, not a blanket 0.2 mm
+    that a power net on a fine-pitch part (CH224Q VBUS, 0.176 mm between
+    pads) can never meet at its own pads; HV nets still get theirs."""
+    cons = {"power": [{"net": "VBUS", "current_a": 3.0},
+                      {"net": "V48", "current_a": 3.0}],
+            "voltages": [{"net": "V48", "voltage": 48}]}
+    cap = _cap()
+    _, report = rules_gen.build(cons, cap, _stackup(), baseline_only=False)
+    by = {c["name"]: c["clearance"] for c in report["classes"]}
+    cls = {p["pattern"]: p["netclass"] for p in report["patterns"]}
+    assert by[cls["VBUS"]] == pytest.approx(cap["min_clearance_mm"])
+    assert by[cls["V48"]] > 0.2
+
+
+def test_rule_names_unique_when_nets_fold_together():
+    """_safe folds + and - to _, so A_SPK_L+ / A_SPK_L- shared one rule
+    name in the .kicad_dru (hi-fi core board)."""
+    cons = {"power": [{"net": "/amp_a/A_SPK_L+", "current_a": 3.0},
+                      {"net": "/amp_a/A_SPK_L-", "current_a": 3.0}]}
+    rules, report = rules_gen.build(cons, _cap(), _stackup(),
+                                    baseline_only=False)
+    names = [r.name for r in rules]
+    assert len(names) == len(set(names)), names
+    assert "aiee_pwr_width_amp_a_A_SPK_L" in names
+    assert "aiee_pwr_width_amp_a_A_SPK_L_2" in names
+    assert report["renamed_rules"] == [
+        {"from": "aiee_pwr_width_amp_a_A_SPK_L",
+         "to": "aiee_pwr_width_amp_a_A_SPK_L_2"}]
+
+
 def test_power_netclasses_split_by_current():
     """A 20 mA rail must NOT inherit a 5 A trunk's width: one class per
     required width, thin rails on Default. Flattening them into one wide
@@ -908,6 +939,7 @@ def test_board_init_fixed_outline_too_tight_gets_no_default_holes(cli,
     r = json.loads(rep.read_text("utf-8"))
     assert r["status"] == "pass" and r["mounting_holes"] == 0, r
     assert any("the fixed outline leaves" in n for n in r["worker_notes"])
+    assert "--mounting-holes 4" in r["mounting_holes_skipped"], r
 
     # the kept case: the same parts in a roomier fixed outline get holes
     assert board_init.main([
@@ -916,6 +948,7 @@ def test_board_init_fixed_outline_too_tight_gets_no_default_holes(cli,
         "--outline", f"{w + 10}x{h + 10}", "--out-report", str(rep)]) == 0
     r = json.loads(rep.read_text("utf-8"))
     assert r["status"] == "pass" and r["mounting_holes"] == 4, r
+    assert r["mounting_holes_skipped"] is None, r
 
 
 @pytest.mark.smoke

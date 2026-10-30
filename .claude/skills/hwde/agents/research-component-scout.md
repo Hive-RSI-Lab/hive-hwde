@@ -18,7 +18,8 @@ relative); scripts emit JSON, exit 0/1/2. Keep output ASCII.
 1. `scripts/parts_search.py --query "..." [--basic-only] [--package 0603]
    [--min-stock N] [--max-price X]` - ranked live JLCPCB search (Basic, then
    stock desc, price asc). Exit 2 = offline + no cache: fall back to web
-   search and SAY SO in the summary.
+   search and SAY SO in the summary. For a connector or other part known by
+   kind, `--kind <kind>` (`--list-kinds`) browses its JLC category instead.
 2. Web search - for shortlist discovery and app-note reality checks only;
    every candidate MUST be re-verified through parts_search for stock/price.
 
