@@ -138,10 +138,34 @@ x() {
 
 case "${1:-}" in
 env)
-	for v in HWDE_TOOLS_DIR HWDE_KICAD_CLI HWDE_FREEROUTING_JAR HWDE_JAVA HWDE_KRT_DIR HWDE_KNOWLEDGE_SOURCES HWDE_BOARDS_ROOT HWDE_NGSPICE_DLL KICAD_SYMBOL_DIR; do
+	for v in HWDE_TOOLS_DIR HWDE_KNOWLEDGE_SOURCES HWDE_BOARDS_ROOT; do
 		eval "val=\${$v:-}"
 		[ -n "$val" ] && printf "export %s='%s'\n" "$v" "$val"
 	done
+	# The tools as the skill's env.py resolves them (a pin set here wins
+	# there too), so a shell or CI sees what every script will use; a tool
+	# it can't find is left out. KICAD_SYMBOL_DIR is the flat copies.
+	"$py" - "$here/.claude/skills/hwde/scripts/lib" <<-'EOF'
+		import os, sys
+		sys.path.insert(0, sys.argv[1])
+		import env
+		def out(name, get):
+		    try:
+		        val = get()
+		    except (env.EnvError, OSError):
+		        return
+		    if val:
+		        print(f"export {name}='{val}'")
+		out("HWDE_KICAD_CLI", env.find_kicad_cli)
+		out("HWDE_FREEROUTING_JAR", env.find_freerouting_jar)
+		out("HWDE_JAVA", lambda: (env.find_java() or (None,))[0])
+		out("HWDE_KRT_DIR", env.find_krt)
+		out("HWDE_NGSPICE_DLL", env.find_ngspice_dll)
+		def symbols():
+		    env.export_kicad_symbol_dir()
+		    return os.environ.get("KICAD_SYMBOL_DIR")
+		out("KICAD_SYMBOL_DIR", symbols)
+	EOF
 	printf "export HWDE_SKILL='%s'\nexport HWDE_PY='%s'\n" "$here/.claude/skills/hwde" "$py"
 	;;
 test | test-slow)
