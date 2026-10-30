@@ -45,7 +45,16 @@ these ways:
   `schlib.Sheet` registers the project's own symbol libraries from its
   `sym-lib-table`; the ERC gate reports `pin_types` and warns when every pin
   is passive; `board_init --origin` keeps a re-run's outline where the board
-  had it; the schematic role prompts give `kc.py`'s positional input.
+  had it; the schematic role prompts give `kc.py`'s positional input. From routing lite-main (hifi-receiver-2), a
+  dense 2-layer power board: `stitch_vias` and `planes_gen` read KiCad's
+  hole_to_hole as drill edge to drill edge; `route_auto` carries the hole
+  rules into the DSN (`routelib.dsn_hole_floor`, `ses_restore_vias`,
+  `dsn_npth_keepouts`) and keeps the best of `--tries` shuffled-order routes
+  (`routelib.dsn_shuffle`); `rules_gen` sizes plane_fed taps, writes
+  neck-down rules; `planes_gen` merges touching same-net pours; `scripts/keepout_gen.py`
+  (new, with route_swig's `set_rule_areas`) draws copper keep-outs;
+  `route_critical` rips only the nets whose copper broke DRC; `lib/geom.py`
+  lists NPTH holes (`npth`).
 - Two verify checks from hifi-receiver-2's first-spin review (issue #130):
   `scripts/check_straps.py` (+ `reference/reset_states.yaml`), an MCU's
   strapping pins and IO expander pins at power-on and on an MCU-only reset,
