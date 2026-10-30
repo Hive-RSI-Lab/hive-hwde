@@ -22,7 +22,7 @@ import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILL = ROOT / ".claude" / "skills" / "hwde"
+SKILL = ROOT
 SCRIPTS = SKILL / "scripts"
 RECORDS = SKILL / "reference" / "knowledge" / "records"
 SOURCES = SKILL / "reference" / "knowledge" / "sources"

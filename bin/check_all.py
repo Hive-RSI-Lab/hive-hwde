@@ -37,7 +37,7 @@ ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
 
 HWDE = os.environ.get("HWDE_BIN", str(HERE / "hwde"))
-SKILL = ROOT / ".claude" / "skills" / "hwde" / "scripts"
+SKILL = ROOT / "scripts"
 STEPS = ("erc", "drc_routed", "verify", "fab", "dfm")
 _ROW = re.compile(r"^\|\s*([a-z0-9][a-z0-9-]*)\s*\|(.*)\|\s*$")
 

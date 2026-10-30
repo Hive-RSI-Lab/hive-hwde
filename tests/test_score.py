@@ -10,7 +10,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "bin"))
-sys.path.insert(0, str(ROOT / ".claude" / "skills" / "hwde" / "scripts"))
+sys.path.insert(0, str(ROOT / "scripts"))
 
 import score  # noqa: E402
 

@@ -27,7 +27,7 @@ import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILL = ROOT / ".claude" / "skills" / "hwde"
+SKILL = ROOT
 SCRIPTS = SKILL / "scripts"
 RECIPES = SKILL / "reference" / "recipes"
 FIXTURES = ROOT / "tests" / "fixtures" / "stages" / "pd_trigger"
@@ -67,11 +67,11 @@ def test_the_plan_s_verb_list_is_the_registry_s():
 
 
 def test_skill_md_lists_exactly_the_registry_verbs():
-    """SKILL.md names the vocabulary; tasks.yaml owns the recipes. Names may
+    """docs/playbook.md names the vocabulary; tasks.yaml owns the recipes. Names may
     not drift apart - a verb the playbook never mentions is unreachable."""
-    text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+    text = (SKILL / "docs" / "playbook.md").read_text(encoding="utf-8")
     named = {v for v in VERBS if f"`{v}`" in text}
-    assert named == set(VERBS), f"SKILL.md is missing {set(VERBS) - named}"
+    assert named == set(VERBS), f"docs/playbook.md is missing {set(VERBS) - named}"
 
 
 @pytest.mark.parametrize("verb", VERBS)

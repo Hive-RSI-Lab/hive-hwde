@@ -1,12 +1,12 @@
 #!/bin/sh
-# hwde inside the Hive: points the skill at the Hive's shared tools folder
-# (HWDE_TOOLS_DIR; skill/scripts/lib/env.py finds KiCad, freerouting and
-# KiCadRoutingTools there), keeps the skill's Python venv in the agent's own
-# HOME, and runs the skill's scripts.
+# hwde inside the Hive: points the scripts at the Hive's shared tools folder
+# (HWDE_TOOLS_DIR; scripts/lib/env.py finds KiCad, freerouting and
+# KiCadRoutingTools there), keeps the module's Python venv in the agent's
+# own HOME, and runs its scripts.
 #
 #   hwde env              print the exports (eval "$(hwde env)")
-#   hwde check            the skill's check_env: every tool the pipeline needs
-#   hwde test [args]      the skill's unit tests and the workaround probes,
+#   hwde check            check_env: every tool the pipeline needs
+#   hwde test [args]      the scripts' unit tests and the workaround probes,
 #                         no KiCad runs of whole boards (the per-PR test)
 #   hwde test-slow [args] the tests test leaves out as slow (tests/conftest.py
 #                         SLOW): live toolchain, whole fixture boards
@@ -29,10 +29,10 @@
 #                         follows main at every merge) whenever it can see
 #                         it and both pin the same requirements.lock, so
 #                         only a lock change needs a new publish.
-#   hwde <script> [args]  run skill/scripts/<script>.py with the venv python
+#   hwde <script> [args]  run scripts/<script>.py with the venv python
 #                         (or the published copy's own)
 #
-# A shim here that works around a defect in the skill runs only while its id
+# A shim here that works around a defect in the scripts runs only while its id
 # is listed in docs/workarounds.md (wa <id>): delisting it turns it off.
 #
 # test, check-all and the scripts that run a whole board, the router or a sim
@@ -89,7 +89,7 @@ if [ "${1:-}" = publish ]; then
 	rm -rf "$new"
 	trap 'rm -rf "$new"' EXIT
 	mkdir -p "$new"
-	(cd "$here" && tar cf - bin docs .claude/skills/hwde requirements.lock module.json LICENSE NOTICE README.md) | (cd "$new" && tar xf -)
+	(cd "$here" && tar cf - bin docs agents scripts reference requirements.lock module.json LICENSE NOTICE README.md) | (cd "$new" && tar xf -)
 	"$uv" python install -q --install-dir "$new/python" --no-bin 3.14 >&2
 	find "$new/python" -maxdepth 1 -type l -exec rm {} + # absolute links to $new
 	py=$(ls -d "$new"/python/cpython-3.14.*/bin/python3.14 | sort -V | tail -n 1)
@@ -110,7 +110,7 @@ fi
 wa() { [ -z "${HWDE_NO_SHIMS:-}" ] && grep -q "^| *$1 *|" "$here/docs/workarounds.md" 2>/dev/null; }
 
 # KiCad (the newest kicad-*/ AppDir), freerouting and KiCadRoutingTools are
-# in the shared tools folder; the skill's env.py finds each there itself.
+# in the shared tools folder; scripts/lib/env.py finds each there itself.
 export HWDE_TOOLS_DIR=${HWDE_TOOLS_DIR:-$tools}
 # The knowledge records cite manufacturers' PDFs the module doesn't carry
 # (NOTICE): docs/knowledge-sources.txt pins them at upstream's commit, and
@@ -180,12 +180,12 @@ env)
 		eval "val=\${$v:-}"
 		[ -n "$val" ] && printf "export %s='%s'\n" "$v" "$val"
 	done
-	# The tools as the skill's env.py resolves them (a pin set here wins
+	# The tools as the scripts' env.py resolves them (a pin set here wins
 	# there too), so a shell or CI sees what every script will use; a tool
 	# it can't find is left out. KICAD_SYMBOL_DIR is the flat copies. A tree
-	# without the skill (a test's stand-in) resolves nothing.
-	[ ! -f "$here/.claude/skills/hwde/scripts/lib/env.py" ] ||
-	"$py" - "$here/.claude/skills/hwde/scripts/lib" <<-'EOF'
+	# without the scripts (a test's stand-in) resolves nothing.
+	[ ! -f "$here/scripts/lib/env.py" ] ||
+	"$py" - "$here/scripts/lib" <<-'EOF'
 		import os, sys
 		sys.path.insert(0, sys.argv[1])
 		import env
@@ -206,7 +206,8 @@ env)
 		    return os.environ.get("KICAD_SYMBOL_DIR")
 		out("KICAD_SYMBOL_DIR", symbols)
 	EOF
-	printf "export HWDE_SKILL='%s'\nexport HWDE_PY='%s'\n" "$here/.claude/skills/hwde" "$py"
+	# HWDE_SKILL is HWDE_MODULE's old name, which boards written before the move still read.
+	printf "export HWDE_MODULE='%s'\nexport HWDE_SKILL='%s'\nexport HWDE_PY='%s'\n" "$here" "$here" "$py"
 	;;
 test | test-slow)
 	# tests/: upstream's unit tests (no smoke or net marks: those need a live
@@ -259,7 +260,7 @@ sources)
 	;;
 check)
 	shift
-	x "$py" "$here/.claude/skills/hwde/scripts/check_env.py" "$@"
+	x "$py" "$here/scripts/check_env.py" "$@"
 	;;
 "" | -h | --help)
 	sed -n '2,36p' "$0" | sed 's/^# \{0,1\}//'
@@ -272,6 +273,6 @@ check)
 	route_auto | route_critical | place_anneal | gate | verify_all | bench | render | sim_run | fab_export)
 		heavy="hwde $s" ;;
 	esac
-	x "$py" "$here/.claude/skills/hwde/scripts/$s.py" "$@"
+	x "$py" "$here/scripts/$s.py" "$@"
 	;;
 esac
