@@ -67,7 +67,7 @@ import simlib  # noqa: E402
 from check_ratings import volts_from_name  # noqa: E402
 
 SCRIPT = "check_straps"
-SOURCE = "check.straps"
+SOURCE = SCRIPT  # verify_all, gate and the scorecard match a finding to its check by source
 RESET_YAML = HERE.parent / "reference" / "reset_states.yaml"
 EVENTS = ("por", "mcu_reset")
 EVENT_TEXT = {"por": "at power-on", "mcu_reset": "on an MCU-only reset"}
