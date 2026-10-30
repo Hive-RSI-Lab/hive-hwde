@@ -301,7 +301,9 @@ def _ratio(num: int, den: int):
 
 
 def score(jobs: list[dict], triage: list[dict], n_jobs: int,
-          checks: list[dict] | None = None) -> dict:
+          checks: list[dict] | None = None, hits: list | None = None) -> dict:
+    """The scorecard over jobs. `hits`, when given, gets (check, item,
+    finding) for each mutant caught: the finding that caught it."""
     checks = verify_all.CHECKS if checks is None else checks
     by = {c["name"]: {k: _blank() for k in CORPORA} for c in checks}
     script = {c["name"]: str(verify_all.check_script(c)) for c in checks}
@@ -337,7 +339,10 @@ def score(jobs: list[dict], triage: list[dict], n_jobs: int,
         vs = [v for v in res["violations"]
               if (v.get("source") or v.get("check")) == name]
         if job["corpus"] == "mutants":
-            if any(catches(job["expect"], v) for v in vs):
+            hit = next((v for v in vs if catches(job["expect"], v)), None)
+            if hit is not None:
+                if hits is not None:
+                    hits.append((name, job["item"], hit))
                 cell["caught"] += 1
                 cell["tp"] += 1
             else:

@@ -67,7 +67,13 @@ boards, `bin/strength.py` runs faults planted where each gate's verdict comes
 from, through the same code the gates run, offline, in seconds:
 
 - **gate**: each gate's criteria in `reference/gates.yaml` (`gate.evaluate`)
-  must fail a report carrying one error, and erc and drc_routed one warning.
+  must fail each real finding of a kind it fails on (errors, and for erc and
+  drc_routed warnings too), put alone among a real report's own. erc's and
+  drc_routed's are KiCad's, kept in `tests/golden/gates/` with the runs they
+  came from; verify's and dfm's are the findings their checks raise on the
+  verify and dfm faults below, as they raise them today. Nothing in a planted
+  report says it is planted, so `gate.py` can let one through only by
+  skipping that finding on every board too.
 - **verify**: each mutant in `tests/golden/` through the check that owns it.
   Every check in the verify suite must own one, and a mutant whose check
   left the suite is a miss, so dropping a check or its fault costs too.
@@ -81,7 +87,13 @@ loosened check costs more than the findings it could hide. If the faults
 can't run, the score stops instead of printing a number. A new check comes
 with its own mutant, which also lets the scorecard see it. The faults and the
 corpus are in the score's paths (`.hive/project.json`), so a change to them
-starts a new baseline rather than reading as a gain. ERC and DRC themselves
+starts a new baseline rather than reading as a gain. So are `gate.py` and
+`reference/gates.yaml`, where the gates' verdicts come from: a change to
+either is the person's to merge. The checks themselves (the rest of the
+skill's `scripts/`) are not: the Hive scores a merge that changes the
+score's paths against its parent with the merge's copy of those paths laid
+over it, so a loosened check there would cost both sides the same and read
+flat, and a better one could never read as a gain. ERC and DRC themselves
 are KiCad's and have no planted faults here: a rule set to "ignore" in a
 board's project, or a looser `rules_gen` floor, still gets through.
 

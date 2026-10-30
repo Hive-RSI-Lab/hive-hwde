@@ -12,10 +12,15 @@ measuring the boards, so loosening one costs more than the findings it
 could hide (docs/score.md, "The planted faults").
 
   gate    reference/gates.yaml through gate.evaluate: each of the gates the
-          boards pass fails a report carrying one finding of each severity
-          that gate fails on. FAILS_ON pins those severities: a gate that
-          lets a planted error (or, for erc and drc_routed, a warning)
-          through is a miss.
+          boards pass fails a report carrying one real finding of each
+          kind it fails on. FAILS_ON pins those severities. Each finding is
+          one a real run wrote, put among the findings of a report a real
+          run wrote: erc and drc_routed's are KiCad's own, kept in
+          tests/golden/gates/; verify's and dfm's are what their checks
+          raise on the verify and dfm legs' planted faults, as they raise
+          them now. Nothing in them says they were planted, so gate.py
+          can't let them through without letting the same finding through
+          on a board.
   verify  tests/golden's mutants, through tests/golden's scorecard
           (score_checks: each mutant run through the one check that owns
           it). Every check in the verify suite (verify_all.load_checks)
@@ -36,6 +41,7 @@ line per fault and exits 1 when one got through.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import shutil
@@ -60,28 +66,99 @@ DRILL_FAULTS = (
     ("drill-0.25", "dfm_hole_size", {"lone": 0.25}),
 )
 DRILL_BOARD = "pd_trigger_dfm"
+# Real findings for the gates whose tool is KiCad's (no kicad-cli offline):
+# tests/golden/gates/<name>.json, a report kc.py wrote, holding the findings
+# picked from it (README.md there says from which runs).
+GATE_CORPUS = ROOT / "tests" / "golden" / "gates"
+GATE_BASE = {"erc": "erc", "drc_routed": "drc"}
+# The report a real run of verify and dfm wrote on a pinned board: the
+# planted finding goes in among its own.
+BASE_REPORT = {"verify": "pinned/lite-main/reports/checks/summary.json",
+               "dfm": "pinned/lite-main/reports/dfm-check.json"}
 _HIT = re.compile(r"^X(-?[\d.]+)Y(-?[\d.]+)$")
 _TOOL = re.compile(r"^T(\d+)C([\d.]+)$")
 
 
-def gate_faults() -> list[tuple[str, str, bool]]:
+def _plant_in(base: dict, v: dict) -> dict:
+    """base, a report a real run of the gate's tool wrote, with v put among
+    its findings and its counts (and verify's per-check status and coverage)
+    as that run would have written them."""
+    r = json.loads(json.dumps(base))
+    vs = r.get("violations") or []
+    at = int(hashlib.sha256(json.dumps(v, sort_keys=True).encode()).hexdigest(), 16) % (len(vs) + 1)
+    vs.insert(at, v)
+    r["violations"] = vs
+    r["status"] = "violations"
+    by_sev: dict[str, int] = {}
+    by_src: dict[str, int] = {}
+    for f in vs:
+        by_sev[f.get("severity")] = by_sev.get(f.get("severity"), 0) + 1
+        by_src[f.get("source")] = by_src.get(f.get("source"), 0) + 1
+    counts = r.setdefault("counts", {})
+    counts.update(total=len(vs), by_severity=by_sev, by_source=by_src)
+    src = v.get("source")
+    if "by_check" in counts:
+        counts["by_check"][src] = by_src[src]
+    if isinstance(r.get("checks"), dict) and src in r["checks"]:
+        c = r["checks"][src]
+        c["status"] = "violations"
+        mine = [f for f in vs if f.get("source") == src]
+        c["counts"] = {"total": len(mine),
+                       "by_severity": {s: sum(f.get("severity") == s for f in mine)
+                                       for s in {f.get("severity") for f in mine}},
+                       "by_source": {src: len(mine)}}
+    cov = r.get("coverage")
+    if isinstance(cov, dict) and v.get("severity") == "error":
+        cov["passed"] = [n for n in cov.get("passed") or [] if n != src]
+        cov["failed"] = sorted(set(cov.get("failed") or []) | {src})
+        cov["ran"] = sorted(set(cov.get("ran") or []) | {src})
+    return r
+
+
+def _corpus(name: str) -> dict:
+    return json.loads((GATE_CORPUS / f"{name}.json").read_text(encoding="utf-8"))
+
+
+def gate_faults(found: dict[str, list[dict]] | None = None) -> list[tuple[str, str, bool]]:
+    """Each gate the score counts, given a real finding of each kind it
+    fails on, put in a report a real run wrote, must fail. erc and
+    drc_routed take theirs from tests/golden/gates/ (kicad-cli's own
+    findings, kept with where each came from); verify and dfm take the
+    findings their checks raise on the planted faults of the other legs
+    (`found`, by gate), so each is what the check writes today. Nothing in
+    a planted report says it was planted: gate.py can't skip them without
+    skipping the same finding on a real board."""
     import gate
     gates = gate.load_gates(gate.DEFAULT_GATES)
+    found = found or {}
     out = []
     for name, sevs in FAILS_ON.items():
         g = gates.get(name)
+        if name in GATE_BASE:
+            base = _corpus(GATE_BASE[name])
+            pool = base.pop("violations")
+            base["violations"] = []
+        else:
+            base = json.loads((ROOT / BASE_REPORT[name]).read_text(encoding="utf-8"))
+            pool = found.get(name) or []
+        seen = set()
+        for v in pool:
+            sev = v.get("severity")
+            key = (v.get("source"), v.get("check"), v.get("kind"), sev)
+            if sev not in sevs or key in seen:
+                continue
+            seen.add(key)
+            caught = g is not None and \
+                gate.evaluate(name, g, _plant_in(base, v))["status"] == "fail"
+            what = v.get("kind") or v.get("check")
+            out.append((name, f"gate {name}: {v.get('source')} {what} ({sev})", caught))
         for sev in sevs:
-            caught = False
-            if g is not None:
-                v = {"check": g.get("tool"), "severity": sev, "pos": [0, 0],
-                     "layer": None, "net": None, "refs": [], "msg": "planted",
-                     "source": g.get("tool"), "kind": "planted"}
-                caught = gate.evaluate(name, g, {"violations": [v]})["status"] == "fail"
-            out.append((name, f"gate {name}: one {sev}", caught))
+            if not any(v.get("severity") == sev for v in pool):
+                out.append((name, f"gate {name}: no {sev} to plant", False))
     return out
 
 
-def verify_faults() -> list[tuple[str, str, bool]]:
+def verify_faults(found: dict | None = None) -> list[tuple[str, str, bool]]:
     import score_checks
     import verify_all
     checks = verify_all.load_checks()
@@ -92,7 +169,10 @@ def verify_faults() -> list[tuple[str, str, bool]]:
         if rec["check"] not in names and rec["check"] != "dfm_check":
             out.append(("verify", f"verify {m}: its check {rec['check']} is not in the suite", False))
     jobs = score_checks.mutant_jobs(manifest, names)
-    res = score_checks.score(jobs, [], 4, checks)
+    hits: list = []
+    res = score_checks.score(jobs, [], 4, checks, hits=hits)
+    if found is not None:
+        found.setdefault("verify", []).extend(v for _, _, v in hits)
     missed = {(f["check"], f["item"]) for f in res["findings"]
               if f.get("verdict") in ("miss", "error")}
     for j in jobs:
@@ -166,7 +246,7 @@ def _plant(drl: str, fault: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
-def dfm_faults() -> list[tuple[str, str, bool]]:
+def dfm_faults(found: dict | None = None) -> list[tuple[str, str, bool]]:
     import benchlib
     import yaml
     stages = ROOT / "tests" / "fixtures" / "stages"
@@ -181,8 +261,8 @@ def dfm_faults() -> list[tuple[str, str, bool]]:
     fx = fixtures[DRILL_BOARD]
     src = ROOT / fx["dirs"]["gerbers"]["path"]
 
-    def count(vs, kind):
-        return sum(v.get("kind") == kind and v.get("severity") == "error" for v in vs)
+    def mine(vs, kind):
+        return [v for v in vs if v.get("kind") == kind and v.get("severity") == "error"]
     clean = _dfm(fx, src)
     with tempfile.TemporaryDirectory(prefix="hwde-strength-") as tmp:
         for name, kind, fault in DRILL_FAULTS:
@@ -190,14 +270,19 @@ def dfm_faults() -> list[tuple[str, str, bool]]:
             shutil.copytree(src, work)
             drl = next(work.glob("*.drl"))
             drl.write_text(_plant(drl.read_text(encoding="utf-8"), fault), encoding="utf-8")
-            out.append(("dfm", f"dfm {name} ({kind})", count(_dfm(fx, work), kind) > count(clean, kind)))
+            new = [v for v in mine(_dfm(fx, work), kind) if v not in mine(clean, kind)]
+            if found is not None:
+                found.setdefault("dfm", []).extend(new)
+            out.append(("dfm", f"dfm {name} ({kind})", bool(new)))
     return out
 
 
 def faults() -> list[tuple[str, str, bool]]:
     """(gate step, fault, caught) for every planted fault. A leg that can't
     run raises: the score then can't be read, rather than read as caught."""
-    return gate_faults() + verify_faults() + dfm_faults()
+    found: dict[str, list[dict]] = {}
+    v, d = verify_faults(found), dfm_faults(found)
+    return gate_faults(found) + v + d
 
 
 if __name__ == "__main__":
