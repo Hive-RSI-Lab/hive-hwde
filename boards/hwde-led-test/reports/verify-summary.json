@@ -24,6 +24,7 @@
    "check_pdn": 0,
    "check_ratings": 1,
    "check_bom_sync": 0,
+   "check_courtyard": 0,
    "check_mate_pins": 0,
    "check_model_paths": 0
   }
@@ -36,7 +37,7 @@
     "by_severity": {},
     "by_source": {}
    },
-   "report": "reports/checks/check_return_path.json"
+   "report": "/work/boards/hwde-led-test/reports/checks/check_return_path.json"
   },
   "check_current": {
    "status": "pass",
@@ -45,7 +46,7 @@
     "by_severity": {},
     "by_source": {}
    },
-   "report": "reports/checks/check_current.json"
+   "report": "/work/boards/hwde-led-test/reports/checks/check_current.json"
   },
   "check_decoupling": {
    "status": "pass",
@@ -54,7 +55,7 @@
     "by_severity": {},
     "by_source": {}
    },
-   "report": "reports/checks/check_decoupling.json"
+   "report": "/work/boards/hwde-led-test/reports/checks/check_decoupling.json"
   },
   "check_diffpair": {
    "status": "pass",
@@ -63,7 +64,7 @@
     "by_severity": {},
     "by_source": {}
    },
-   "report": "reports/checks/check_diffpair.json"
+   "report": "/work/boards/hwde-led-test/reports/checks/check_diffpair.json"
   },
   "check_creepage": {
    "status": "pass",
@@ -72,7 +73,7 @@
     "by_severity": {},
     "by_source": {}
    },
-   "report": "reports/checks/check_creepage.json"
+   "report": "/work/boards/hwde-led-test/reports/checks/check_creepage.json"
   },
   "check_thermal": {
    "status": "pass",
@@ -81,7 +82,7 @@
     "by_severity": {},
     "by_source": {}
    },
-   "report": "reports/checks/check_thermal.json"
+   "report": "/work/boards/hwde-led-test/reports/checks/check_thermal.json"
   },
   "check_silk": {
    "status": "pass",
@@ -90,7 +91,7 @@
     "by_severity": {},
     "by_source": {}
    },
-   "report": "reports/checks/check_silk.json"
+   "report": "/work/boards/hwde-led-test/reports/checks/check_silk.json"
   },
   "check_route_style": {
    "status": "violations",
@@ -103,7 +104,7 @@
      "check_route_style": 1
     }
    },
-   "report": "reports/checks/check_route_style.json"
+   "report": "/work/boards/hwde-led-test/reports/checks/check_route_style.json"
   },
   "check_mating": {
    "status": "pass",
@@ -112,7 +113,7 @@
     "by_severity": {},
     "by_source": {}
    },
-   "report": "reports/checks/check_mating.json"
+   "report": "/work/boards/hwde-led-test/reports/checks/check_mating.json"
   },
   "check_pdn": {
    "status": "pass",
@@ -121,7 +122,7 @@
     "by_severity": {},
     "by_source": {}
    },
-   "report": "reports/checks/check_pdn.json"
+   "report": "/work/boards/hwde-led-test/reports/checks/check_pdn.json"
   },
   "check_ratings": {
    "status": "violations",
@@ -134,7 +135,7 @@
      "check_ratings": 1
     }
    },
-   "report": "reports/checks/check_ratings.json"
+   "report": "/work/boards/hwde-led-test/reports/checks/check_ratings.json"
   },
   "check_bom_sync": {
    "status": "pass",
@@ -143,7 +144,16 @@
     "by_severity": {},
     "by_source": {}
    },
-   "report": "reports/checks/check_bom_sync.json"
+   "report": "/work/boards/hwde-led-test/reports/checks/check_bom_sync.json"
+  },
+  "check_courtyard": {
+   "status": "pass",
+   "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "report": "/work/boards/hwde-led-test/reports/checks/check_courtyard.json"
   },
   "check_mate_pins": {
    "status": "pass",
@@ -152,7 +162,7 @@
     "by_severity": {},
     "by_source": {}
    },
-   "report": "reports/checks/check_mate_pins.json"
+   "report": "/work/boards/hwde-led-test/reports/checks/check_mate_pins.json"
   },
   "check_model_paths": {
    "status": "pass",
@@ -161,7 +171,7 @@
     "by_severity": {},
     "by_source": {}
    },
-   "report": "reports/checks/check_model_paths.json"
+   "report": "/work/boards/hwde-led-test/reports/checks/check_model_paths.json"
   }
  },
  "coverage": {
@@ -179,6 +189,7 @@
    "check_pdn",
    "check_ratings",
    "check_bom_sync",
+   "check_courtyard",
    "check_mate_pins",
    "check_model_paths"
   ],
@@ -195,6 +206,7 @@
    "check_pdn",
    "check_ratings",
    "check_bom_sync",
+   "check_courtyard",
    "check_mate_pins",
    "check_model_paths"
   ],
@@ -211,6 +223,7 @@
    "check_pdn",
    "check_ratings",
    "check_bom_sync",
+   "check_courtyard",
    "check_mate_pins",
    "check_model_paths"
   ],
@@ -252,27 +265,25 @@
    "layer": null,
    "net": null,
    "refs": [
-    "D1",
-    "R1"
+    "D1"
    ],
-   "msg": "2 two-terminal part(s) have no extraction and no voltage-rated attribute in parts.json: D1, R1",
+   "msg": "1 two-terminal part(s) have no extraction and no voltage-rated attribute in parts.json: D1",
    "source": "check_ratings",
    "items": [
     {
-     "msg": "2 two-terminal part(s) have no extraction and no voltage-rated attribute in parts.json: D1, R1",
+     "msg": "1 two-terminal part(s) have no extraction and no voltage-rated attribute in parts.json: D1",
      "pos": null
     }
    ],
    "kind": "rating_unrated",
    "pins": [
-    "D1",
-    "R1"
+    "D1"
    ]
   }
  ],
  "report_schema": 1,
  "checker_version": 1,
- "generated_at": "2026-10-28T14:05:43+00:00",
+ "generated_at": "2026-10-29T13:22:53+00:00",
  "input": "kicad/hwde-led-test.kicad_pcb",
- "input_digest": "sexpr_no_uuid:55589e390edc01aa8e211e8b31afa0ca5f022765defe50c035616b9b6a2c8316"
+ "input_digest": "sexpr_no_uuid:59701912fac4c00817e3cc96f3f53991d498476b375e8a7d555c321c13922f55"
 }

@@ -214,6 +214,13 @@ def matches(bom_mpn: str, bom_value: str, rec: dict) -> tuple[bool | None, str]:
              if len(w) >= 3 and re.search(r"\d", w)]
     if words and all(w.upper() in str(model).upper() for w in words):
         return True, f"BOM value {bom_value} in JLC model {model}"
+    # A value that is the MPN itself, in words too short for the rule above
+    # ('TYPE-C-31-M-12'): the whole of it against JLC's model, as an MPN.
+    whole, nmodel = norm(bom_value or bom_mpn), norm(model)
+    if whole and nmodel and (whole == nmodel or (
+            min(len(whole), len(nmodel)) >= 5
+            and (whole in nmodel or nmodel in whole))):
+        return True, f"BOM value {bom_value or bom_mpn} is JLC model {model}"
     return None, (f"nothing on the BOM row to compare with JLC's model "
                   f"{model} (no MPN, value '{bom_value}' is not a plain "
                   "quantity)")
