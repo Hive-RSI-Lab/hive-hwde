@@ -173,15 +173,19 @@ A fix to a script goes in with a test under `tests/` (run them with
 
 A workaround you can't avoid gets a row in [workarounds.md](workarounds.md)
 naming the gate steps it touched, and a probe in `tests/workarounds/` that
-exits 0 while its cause stands. That is what the project's score counts
-(`bin/hwde score`), and the test (`bin/hwde test`) fails while a row and its
-probe disagree. A shim in `bin/hwde` checks its row (`wa <id>`), so it runs only
-while it's listed. When you fix a cause, its probe starts exiting 10: take
-the workaround out, delete the row, keep the probe as a guard, and the score
-goes up. A board you build in another project (a product's `boards/`) counts
-the same way: when it passes, record it in [boards.md](boards.md) with the
-commit and the steps, and give each of its board-local workarounds a row
-here, or add the board to the row of the same cause.
+exits 0 while its cause stands. The test (`bin/hwde test`) fails while a row
+and its probe disagree. A shim in `bin/hwde` checks its row (`wa <id>`), so
+it runs only while it's listed. When you fix a cause, its probe starts exiting
+10: take the workaround out, delete the row, and keep the probe as a guard.
+
+The score (`bin/hwde score`, [score.md](score.md)) doesn't read that table:
+it re-runs the gates on the boards pinned in `pinned/`, with every shim off,
+and counts what they find plus each board-local stand-in script. A fix in
+hwde that clears a finding on those boards raises it at once. When a product
+board you build in another project drops a stand-in script or changes in
+another way worth measuring, re-pin it: `bin/hwde pin <board> --from <clone>
+--commit <sha>`, classify any new script in `pinned/<board>.json`, run
+`bin/hwde pin --digests`, and name the commit in the commit message.
 
 Record each run's wall time per stage (the `phase` events in
 `state.json` history) and the gate attempts and fix loops per gate. That way

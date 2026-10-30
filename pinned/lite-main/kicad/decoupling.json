@@ -1,0 +1,179 @@
+{
+ "associations": [
+  {
+   "cap": "C1",
+   "ic": "U1",
+   "pin": "1",
+   "rail": "VBUS",
+   "value": "1uF"
+  },
+  {
+   "cap": "C3",
+   "ic": "U2",
+   "pin": "3",
+   "rail": "VBUS",
+   "value": "10uF"
+  },
+  {
+   "cap": "C4",
+   "ic": "U2",
+   "pin": "3",
+   "rail": "VBUS",
+   "value": "4.7uF"
+  },
+  {
+   "cap": "C5",
+   "ic": "U2",
+   "pin": "3",
+   "rail": "VBUS",
+   "value": "100nF"
+  },
+  {
+   "cap": "C10",
+   "ic": "U3",
+   "pin": "4",
+   "rail": "+5V",
+   "value": "10uF"
+  },
+  {
+   "cap": "C11",
+   "ic": "U3",
+   "pin": "4",
+   "rail": "+5V",
+   "value": "100nF"
+  },
+  {
+   "cap": "C15",
+   "ic": "U4",
+   "pin": "1",
+   "rail": "+5V",
+   "value": "1uF"
+  },
+  {
+   "cap": "C20",
+   "ic": "U5",
+   "pin": "2",
+   "rail": "+3V3",
+   "value": "10uF"
+  },
+  {
+   "cap": "C21",
+   "ic": "U5",
+   "pin": "2",
+   "rail": "+3V3",
+   "value": "100nF"
+  },
+  {
+   "cap": "C23",
+   "ic": "U6",
+   "pin": "16",
+   "rail": "+3V3",
+   "value": "100nF"
+  },
+  {
+   "cap": "C24",
+   "ic": "U6",
+   "pin": "4",
+   "rail": "+3V3",
+   "value": "100nF"
+  },
+  {
+   "cap": "C30",
+   "ic": "U7",
+   "pin": "2",
+   "rail": "+3V3",
+   "value": "100nF"
+  },
+  {
+   "cap": "C31",
+   "ic": "U7",
+   "pin": "3",
+   "rail": "+3V3",
+   "value": "100nF"
+  },
+  {
+   "cap": "C32",
+   "ic": "U7",
+   "pin": "17",
+   "rail": "+3V3A",
+   "value": "4.7uF"
+  },
+  {
+   "cap": "C33",
+   "ic": "U7",
+   "pin": "17",
+   "rail": "+3V3A",
+   "value": "100nF"
+  },
+  {
+   "cap": "C34",
+   "ic": "U7",
+   "pin": "16",
+   "rail": "+3V3A",
+   "value": "100nF"
+  },
+  {
+   "cap": "C50",
+   "ic": "U8",
+   "pin": "7",
+   "rail": "/AMP_GVDD",
+   "value": "1uF"
+  },
+  {
+   "cap": "C51",
+   "ic": "U8",
+   "pin": "17",
+   "rail": "PVDD",
+   "value": "1uF"
+  },
+  {
+   "cap": "C52",
+   "ic": "U8",
+   "pin": "18",
+   "rail": "PVDD",
+   "value": "1uF"
+  },
+  {
+   "cap": "C53",
+   "ic": "U8",
+   "pin": "18",
+   "rail": "PVDD",
+   "value": "100nF"
+  },
+  {
+   "cap": "C54",
+   "ic": "U8",
+   "pin": "18",
+   "rail": "PVDD",
+   "value": "1nF"
+  },
+  {
+   "cap": "C55",
+   "ic": "U8",
+   "pin": "31",
+   "rail": "PVDD",
+   "value": "1uF"
+  },
+  {
+   "cap": "C56",
+   "ic": "U8",
+   "pin": "31",
+   "rail": "PVDD",
+   "value": "100nF"
+  },
+  {
+   "cap": "C57",
+   "ic": "U8",
+   "pin": "31",
+   "rail": "PVDD",
+   "value": "1nF"
+  },
+  {
+   "cap": "C80",
+   "ic": "U9",
+   "pin": "3",
+   "rail": "/IR_VCC",
+   "value": "4.7uF"
+  }
+ ]
+}

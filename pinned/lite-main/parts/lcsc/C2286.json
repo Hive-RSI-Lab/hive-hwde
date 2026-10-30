@@ -1,0 +1,195 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C2286",
+ "total": 15,
+ "count": 3,
+ "results": [
+  {
+   "lcsc": "C2286",
+   "mpn": "KT-0603R",
+   "brand": "Hubei KENTO Elec",
+   "description": "-40\u2103~+85\u2103 1.6mm x 0.8mm square LED 1.8V~2.4V 120\u00b0 20mA 300mcd 40mW 615nm~630nm 645nm Discrete Diode Red Water Clear 0603 LED Indication - Discrete ROHS",
+   "package": "0603",
+   "category": "LED Indication - Discrete",
+   "type": "Basic",
+   "basic": true,
+   "stock": 7487708,
+   "price": 0.0077,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0077
+    },
+    {
+     "qty": 1000,
+     "price": 0.0059
+    },
+    {
+     "qty": 4000,
+     "price": 0.0046
+    },
+    {
+     "qty": 8000,
+     "price": 0.004
+    },
+    {
+     "qty": 48000,
+     "price": 0.0038
+    },
+    {
+     "qty": 100000,
+     "price": 0.0036
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1810231112_Hubei-KENTO-Elec-KT-0603R_C2286.pdf",
+   "url": "https://www.lcsc.com/product-detail/led-indication-discrete_hubei-kento-elec-kt-0603r_C2286.html",
+   "attributes": [
+    {
+     "name": "Wavelength - Dominant",
+     "value": "615nm~630nm"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+85\u2103"
+    },
+    {
+     "name": "Test Current",
+     "value": "20mA"
+    },
+    {
+     "name": "Viewing Angle",
+     "value": "120\u00b0"
+    },
+    {
+     "name": "Lamp Holder Type",
+     "value": "1.6mm x 0.8mm square LED"
+    },
+    {
+     "name": "Luminous Intensity",
+     "value": "300mcd"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "40mW"
+    },
+    {
+     "name": "Diode Configuration",
+     "value": "Discrete Diode"
+    },
+    {
+     "name": "Illumination Color",
+     "value": "Red"
+    },
+    {
+     "name": "Lens Color",
+     "value": "Water Clear"
+    },
+    {
+     "name": "Peak Wavelength",
+     "value": "645nm"
+    },
+    {
+     "name": "Voltage - Forward(Vf)",
+     "value": "1.8V~2.4V"
+    }
+   ],
+   "rank": 0
+  },
+  {
+   "lcsc": "C47283796",
+   "mpn": "SN9C2286AJG",
+   "brand": "SONIX",
+   "description": "QFN-52_6x6mm SMT ROHS",
+   "package": "QFN-52_6x6mm",
+   "category": "SMT",
+   "type": "Extended",
+   "basic": false,
+   "stock": 0,
+   "price": 0.0398,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0398
+    },
+    {
+     "qty": 100,
+     "price": 0.0205
+    }
+   ],
+   "min_qty": 441,
+   "datasheet": "",
+   "url": "",
+   "attributes": [],
+   "rank": 1
+  },
+  {
+   "lcsc": "C3232208",
+   "mpn": "XC2286M72F66LABHXUMA1",
+   "brand": "Infineon Technologies",
+   "description": "10bit 118 3V~5.5V 576KB 66MHz LQFP-144-EP(20x20) Microcontrollers (MCU/MPU/SOC) ROHS",
+   "package": "LQFP-144-EP(20x20)",
+   "category": "Microcontrollers (MCU/MPU/SOC)",
+   "type": "Extended",
+   "basic": false,
+   "stock": 0,
+   "price": 2.45,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 2.45
+    },
+    {
+     "qty": 10,
+     "price": 2.45
+    },
+    {
+     "qty": 30,
+     "price": 2.45
+    },
+    {
+     "qty": 200,
+     "price": 0.9483
+    },
+    {
+     "qty": 500,
+     "price": 0.9155
+    },
+    {
+     "qty": 1000,
+     "price": 0.8991
+    }
+   ],
+   "min_qty": 4,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2404021349_Infineon-Technologies-XC2286M72F66LABHXUMA1_C3232208.pdf",
+   "url": "https://www.lcsc.com/product-detail/microcontrollers-mcu-mpu-soc_infineon-technologies-xc2286m72f66labhxuma1_C3232208.html",
+   "attributes": [
+    {
+     "name": "CPU Maximum Speed",
+     "value": "66MHz"
+    },
+    {
+     "name": "Program Storage Size",
+     "value": "576KB"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "3V~5.5V"
+    },
+    {
+     "name": "Number of I/O",
+     "value": "118"
+    },
+    {
+     "name": "ADC (Bit)",
+     "value": "10bit"
+    }
+   ],
+   "rank": 2
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 2
+}

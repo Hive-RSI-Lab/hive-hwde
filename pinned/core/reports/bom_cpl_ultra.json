@@ -1,0 +1,6607 @@
+{
+ "script": "bom_cpl",
+ "status": "pass",
+ "board": "core.kicad_pcb",
+ "n_parts": 278,
+ "n_placed": 272,
+ "bom": "fab/ultra/BOM.csv",
+ "bom_full": "fab/ultra/BOM-full.csv",
+ "cpl": "fab/ultra/CPL.csv",
+ "prebuy": "fab/ultra/prebuy.csv",
+ "build_qty": 10,
+ "distributor_boms": {
+  "digikey": "fab/ultra/core-ultra_BOM_digikey.csv",
+  "mouser": "fab/ultra/core-ultra_BOM_mouser.csv",
+  "cost": null,
+  "boards": 1,
+  "lines": 65,
+  "priced": {
+   "digikey": false,
+   "mouser": false
+  },
+  "missing_mpn": [],
+  "warnings": [
+   "digikey: prices not looked up (no HWDE_DIGIKEY_CLIENT_ID, HWDE_DIGIKEY_CLIENT_SECRET)",
+   "mouser: prices not looked up (no HWDE_MOUSER_API_KEY)"
+  ]
+ },
+ "bom_rows": [
+  {
+   "Comment": "1uF",
+   "Designator": "C1,C8,C207,C209,C226,C229,C232,C235,C307,C309,C324,C327,C330,C333",
+   "Footprint": "C0805",
+   "LCSC": "C28323"
+  },
+  {
+   "Comment": "100nF",
+   "Designator": "C2,C31,C33,C34,C41,C42,C43,C44,C45,C46,C47,C51,C53,C54,C55,C57,C58,C120,C121,C125,C126,C202,C302",
+   "Footprint": "C0402",
+   "LCSC": "C1525"
+  },
+  {
+   "Comment": "10nF",
+   "Designator": "C3,C12,C37,C38,C39",
+   "Footprint": "C0402",
+   "LCSC": "C15195"
+  },
+  {
+   "Comment": "100nF",
+   "Designator": "C4,C11,C208,C210,C308,C310",
+   "Footprint": "C0603",
+   "LCSC": "C14663"
+  },
+  {
+   "Comment": "470uF/50V",
+   "Designator": "C5,C6,C311",
+   "Footprint": "CAP-TH_BD10.0-P5.00-D1.0-FD",
+   "LCSC": "C88733"
+  },
+  {
+   "Comment": "10uF",
+   "Designator": "C7,C10",
+   "Footprint": "C1206",
+   "LCSC": "C13585"
+  },
+  {
+   "Comment": "100nF",
+   "Designator": "C9",
+   "Footprint": "C0402",
+   "LCSC": "C307331"
+  },
+  {
+   "Comment": "22uF",
+   "Designator": "C13,C14,C16,C17,C30",
+   "Footprint": "C0805",
+   "LCSC": "C45783"
+  },
+  {
+   "Comment": "10uF",
+   "Designator": "C15,C21,C22,C59,C64,C201,C301",
+   "Footprint": "C0603",
+   "LCSC": "C19702"
+  },
+  {
+   "Comment": "1uF",
+   "Designator": "C18,C19,C32,C40,C50,C52,C68,C69,C70,C101,C102,C111,C112,C122,C123,C124,C204,C206,C304,C306",
+   "Footprint": "C0402",
+   "LCSC": "C52923"
+  },
+  {
+   "Comment": "4.7uF",
+   "Designator": "C56",
+   "Footprint": "C0603",
+   "LCSC": "C19666"
+  },
+  {
+   "Comment": "2.2uF",
+   "Designator": "C65,C66,C67",
+   "Footprint": "C0603",
+   "LCSC": "C23630"
+  },
+  {
+   "Comment": "1nF",
+   "Designator": "C71,C72,C142,C143,C150,C151",
+   "Footprint": "C0402",
+   "LCSC": "C1523"
+  },
+  {
+   "Comment": "4.7uF",
+   "Designator": "C100,C110",
+   "Footprint": "C0805",
+   "LCSC": "C1779"
+  },
+  {
+   "Comment": "33nF",
+   "Designator": "C211,C222,C223,C224,C225,C312,C320,C321,C322,C323",
+   "Footprint": "C0603",
+   "LCSC": "C21117"
+  },
+  {
+   "Comment": "10uF",
+   "Designator": "C218,C219,C220,C221,C316,C317,C318,C319",
+   "Footprint": "C0805",
+   "LCSC": "C15850"
+  },
+  {
+   "Comment": "1nF",
+   "Designator": "C228,C231,C234,C237,C326,C329,C332,C335",
+   "Footprint": "C0603",
+   "LCSC": "C1588"
+  },
+  {
+   "Comment": "SMBJ30A",
+   "Designator": "D1",
+   "Footprint": "SMB_L4.6-W3.6-LS5.3-RD",
+   "LCSC": "C113998"
+  },
+  {
+   "Comment": "BZT52C33",
+   "Designator": "D2",
+   "Footprint": "SOD-123_L2.7-W1.6-LS3.7-RD",
+   "LCSC": "C266574"
+  },
+  {
+   "Comment": "KT-0603R",
+   "Designator": "D3",
+   "Footprint": "LED-SMD_L1.6-W0.8-R-RD",
+   "LCSC": "C2286"
+  },
+  {
+   "Comment": "BZT52C15",
+   "Designator": "D4",
+   "Footprint": "SOD-123_L2.7-W1.6-LS3.7-RD",
+   "LCSC": "C173427"
+  },
+  {
+   "Comment": "120R",
+   "Designator": "FB1,FB2,FB3",
+   "Footprint": "L0603",
+   "LCSC": "C14709"
+  },
+  {
+   "Comment": "USB4105-GF-A-120",
+   "Designator": "J1",
+   "Footprint": "USB-C-SMD_MC-311D",
+   "LCSC": "C5184243"
+  },
+  {
+   "Comment": "HR911105A",
+   "Designator": "J2",
+   "Footprint": "RJ45-TH_HR911105A",
+   "LCSC": "C12074"
+  },
+  {
+   "Comment": "FFC 20P",
+   "Designator": "J3",
+   "Footprint": "FPC-SMD_20P-P0.50_XUNPU_FPC-05F-20PH20",
+   "LCSC": "C2856803"
+  },
+  {
+   "Comment": "SUB OUT",
+   "Designator": "J4,J5",
+   "Footprint": "CONN-TH_XDJK-0271-1650",
+   "LCSC": "C7527522"
+  },
+  {
+   "Comment": "SPK A L",
+   "Designator": "J6,J7,J10,J11",
+   "Footprint": "CONN-TH_P5.00_KF301-5.0-2P",
+   "LCSC": "C474881"
+  },
+  {
+   "Comment": "10uH",
+   "Designator": "L1,L2,L3,L4,L5,L6,L7,L8",
+   "Footprint": "IND-SMD_L8.5-W8.0_PCC-M0854M",
+   "LCSC": "C2962885"
+  },
+  {
+   "Comment": "4.7uH",
+   "Designator": "L9",
+   "Footprint": "IND-SMD_L4.0-W4.0",
+   "LCSC": "C57269"
+  },
+  {
+   "Comment": "2.2uH",
+   "Designator": "L10",
+   "Footprint": "IND-SMD_L4.0-W4.0_LQH44PN2R2MP0L",
+   "LCSC": "C36409"
+  },
+  {
+   "Comment": "AO4485",
+   "Designator": "Q1",
+   "Footprint": "SOIC-8_L5.0-W4.0-P1.27-LS6.0-BL",
+   "LCSC": "C51499"
+  },
+  {
+   "Comment": "2N7002",
+   "Designator": "Q2",
+   "Footprint": "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+   "LCSC": "C8545"
+  },
+  {
+   "Comment": "S8050",
+   "Designator": "Q3,Q4,Q5,Q6",
+   "Footprint": "SOT-23-3_L3.0-W1.7-P0.95-LS2.9-BR",
+   "LCSC": "C2146"
+  },
+  {
+   "Comment": "10m",
+   "Designator": "R1",
+   "Footprint": "R2512",
+   "LCSC": "C393070"
+  },
+  {
+   "Comment": "210k",
+   "Designator": "R2",
+   "Footprint": "R0402",
+   "LCSC": "C2998176"
+  },
+  {
+   "Comment": "1k",
+   "Designator": "R3,R6",
+   "Footprint": "R0402",
+   "LCSC": "C11702"
+  },
+  {
+   "Comment": "100k",
+   "Designator": "R4,R5,R7,R10,R11,R12,R15,R40,R41,R42,R43,R44,R45,R102,R112,R120,R213,R214,R215",
+   "Footprint": "R0402",
+   "LCSC": "C25741"
+  },
+  {
+   "Comment": "10k",
+   "Designator": "R8,R9,R30,R31,R32,R33,R36,R50,R51,R52,R53,R54,R55,R56,R57,R58,R67,R70,R121,R122",
+   "Footprint": "R0402",
+   "LCSC": "C25744"
+  },
+  {
+   "Comment": "15k",
+   "Designator": "R13",
+   "Footprint": "R0402",
+   "LCSC": "C25756"
+  },
+  {
+   "Comment": "2k",
+   "Designator": "R14,R72,R74,R80,R82",
+   "Footprint": "R0402",
+   "LCSC": "C4109"
+  },
+  {
+   "Comment": "22k",
+   "Designator": "R16",
+   "Footprint": "R0402",
+   "LCSC": "C25768"
+  },
+  {
+   "Comment": "10R",
+   "Designator": "R17,R18,R19",
+   "Footprint": "R0402",
+   "LCSC": "C25077"
+  },
+  {
+   "Comment": "2.2k",
+   "Designator": "R34,R35",
+   "Footprint": "R0402",
+   "LCSC": "C25879"
+  },
+  {
+   "Comment": "33R",
+   "Designator": "R60,R71,R402,R403",
+   "Footprint": "R0402",
+   "LCSC": "C25105"
+  },
+  {
+   "Comment": "12k",
+   "Designator": "R61",
+   "Footprint": "R0402",
+   "LCSC": "C25752"
+  },
+  {
+   "Comment": "1.5k",
+   "Designator": "R62,R73,R75,R81,R83",
+   "Footprint": "R0402",
+   "LCSC": "C25867"
+  },
+  {
+   "Comment": "49.9R",
+   "Designator": "R63,R64,R65,R66",
+   "Footprint": "R0402",
+   "LCSC": "C25120"
+  },
+  {
+   "Comment": "470R",
+   "Designator": "R90,R91,R92,R93,R401",
+   "Footprint": "R0402",
+   "LCSC": "C25117"
+  },
+  {
+   "Comment": "4.7k",
+   "Designator": "R100,R101,R110,R111",
+   "Footprint": "R0402",
+   "LCSC": "C25900"
+  },
+  {
+   "Comment": "4.7R",
+   "Designator": "R203,R205,R227,R230,R233,R236,R303,R305,R325,R328,R331,R334",
+   "Footprint": "R0603",
+   "LCSC": "C23164"
+  },
+  {
+   "Comment": "20k",
+   "Designator": "R212",
+   "Footprint": "R0402",
+   "LCSC": "C25765"
+  },
+  {
+   "Comment": "47k",
+   "Designator": "R216,R217,R314",
+   "Footprint": "R0402",
+   "LCSC": "C25792"
+  },
+  {
+   "Comment": "75k",
+   "Designator": "R313",
+   "Footprint": "R0402",
+   "LCSC": "C25798"
+  },
+  {
+   "Comment": "0R",
+   "Designator": "R315",
+   "Footprint": "R0402",
+   "LCSC": "C17168"
+  },
+  {
+   "Comment": "CH224Q",
+   "Designator": "U1",
+   "Footprint": "DFN-10_L2.0-W2.0-P0.40-BL-EP",
+   "LCSC": "C46061833"
+  },
+  {
+   "Comment": "USBLC6-2SC6",
+   "Designator": "U2",
+   "Footprint": "SOT-23-6_L2.9-W1.6-P0.95-LS2.8-BL",
+   "LCSC": "C2687116"
+  },
+  {
+   "Comment": "INA186A1",
+   "Designator": "U3",
+   "Footprint": "SC-70-6_L2.2-W1.3-P0.65-LS2.1-BR",
+   "LCSC": "C2058311"
+  },
+  {
+   "Comment": "SY8303AIC",
+   "Designator": "U4",
+   "Footprint": "TSOT-23-8_L2.9-W1.6-P0.65-LS2.8-BR",
+   "LCSC": "C97054"
+  },
+  {
+   "Comment": "SY8089A1AAC",
+   "Designator": "U5",
+   "Footprint": "TSOT-23-5_L2.9-W1.6-P0.95-LS2.8-BR",
+   "LCSC": "C479074"
+  },
+  {
+   "Comment": "LP5907-3.3",
+   "Designator": "U6",
+   "Footprint": "SOT-23-5_L3.0-W1.7-P0.95-LS2.8-BR",
+   "LCSC": "C80670"
+  },
+  {
+   "Comment": "ESP32-WROVER-E-N8R8",
+   "Designator": "U7",
+   "Footprint": "WIFI-SMD_ESP32-WROVER-IE8MB",
+   "LCSC": "C2973667"
+  },
+  {
+   "Comment": "CH340C",
+   "Designator": "U8",
+   "Footprint": "SOP-16_L10.0-W3.9-P1.27-LS6.0-BL",
+   "LCSC": "C84681"
+  },
+  {
+   "Comment": "LAN8720A",
+   "Designator": "U9",
+   "Footprint": "QFN-24_L4.0-W4.0-P0.50-BL-EP2.6",
+   "LCSC": "C45223"
+  },
+  {
+   "Comment": "ES9018K2M",
+   "Designator": "U10",
+   "Footprint": "QFN-28_L5.0-W5.0-P0.50-BL-EP3.3",
+   "LCSC": "C2688377"
+  },
+  {
+   "Comment": "OPA1678",
+   "Designator": "U11",
+   "Footprint": "SOIC-8_L5.0-W4.0-P1.27-LS6.0-BL",
+   "LCSC": "C192421"
+  },
+  {
+   "Comment": "PCM5102A",
+   "Designator": "U12",
+   "Footprint": "TSSOP-20_L6.5-W4.4-P0.65-LS6.4-BL",
+   "LCSC": "C107671"
+  },
+  {
+   "Comment": "ES7243E",
+   "Designator": "U13",
+   "Footprint": "QFN-20_L3.0-W3.0-P0.40-BL-EP1.7",
+   "LCSC": "C2929446"
+  },
+  {
+   "Comment": "TS5A23157",
+   "Designator": "U14",
+   "Footprint": "MSOP-10_L3.0-W3.0-P0.50-LS5.0-BL",
+   "LCSC": "C11133"
+  },
+  {
+   "Comment": "TPA3221",
+   "Designator": "U15,U16",
+   "Footprint": "HTSSOP-44_L14.0-W6.1-P0.64-LS8.1-BL",
+   "LCSC": "C475500"
+  },
+  {
+   "Comment": "TCA9555",
+   "Designator": "U17",
+   "Footprint": "TSSOP-24_L7.8-W4.4-P0.65-LS6.4-BL",
+   "LCSC": "C465732"
+  },
+  {
+   "Comment": "PLR237/T8BK",
+   "Designator": "U19",
+   "Footprint": "OPTO-TH_PLR237-T10BK",
+   "LCSC": "C17223620"
+  },
+  {
+   "Comment": "50MHz",
+   "Designator": "Y1,Y2",
+   "Footprint": "OSC-SMD_4P-L3.2-W2.5-BL",
+   "LCSC": "C717684"
+  }
+ ],
+ "prebuy_rows": [
+  {
+   "LCSC": "C88733",
+   "MPN": "470uF/50V",
+   "Comment": "470uF/50V",
+   "Designator": "C5,C6,C311",
+   "Qty Per Board": "3",
+   "Boards": "10",
+   "Qty To Buy": "30",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C113998",
+   "MPN": "SMBJ30A",
+   "Comment": "SMBJ30A",
+   "Designator": "D1",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C266574",
+   "MPN": "BZT52C33",
+   "Comment": "BZT52C33",
+   "Designator": "D2",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C173427",
+   "MPN": "BZT52C15",
+   "Comment": "BZT52C15",
+   "Designator": "D4",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C5184243",
+   "MPN": "USB4105-GF-A-120",
+   "Comment": "USB4105-GF-A-120",
+   "Designator": "J1",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C12074",
+   "MPN": "HR911105A",
+   "Comment": "HR911105A",
+   "Designator": "J2",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C2856803",
+   "MPN": "FFC 20P",
+   "Comment": "FFC 20P",
+   "Designator": "J3",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C7527522",
+   "MPN": "SUB OUT",
+   "Comment": "SUB OUT",
+   "Designator": "J4,J5",
+   "Qty Per Board": "2",
+   "Boards": "10",
+   "Qty To Buy": "20",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C474881",
+   "MPN": "SPK A L",
+   "Comment": "SPK A L",
+   "Designator": "J6,J7,J10,J11",
+   "Qty Per Board": "4",
+   "Boards": "10",
+   "Qty To Buy": "40",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C2962885",
+   "MPN": "10uH",
+   "Comment": "10uH",
+   "Designator": "L1,L2,L3,L4,L5,L6,L7,L8",
+   "Qty Per Board": "8",
+   "Boards": "10",
+   "Qty To Buy": "80",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C57269",
+   "MPN": "4.7uH",
+   "Comment": "4.7uH",
+   "Designator": "L9",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C36409",
+   "MPN": "2.2uH",
+   "Comment": "2.2uH",
+   "Designator": "L10",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C51499",
+   "MPN": "AO4485",
+   "Comment": "AO4485",
+   "Designator": "Q1",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C393070",
+   "MPN": "10m",
+   "Comment": "10m",
+   "Designator": "R1",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C2998176",
+   "MPN": "210k",
+   "Comment": "210k",
+   "Designator": "R2",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C25798",
+   "MPN": "75k",
+   "Comment": "75k",
+   "Designator": "R313",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C46061833",
+   "MPN": "CH224Q",
+   "Comment": "CH224Q",
+   "Designator": "U1",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C2687116",
+   "MPN": "USBLC6-2SC6",
+   "Comment": "USBLC6-2SC6",
+   "Designator": "U2",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C2058311",
+   "MPN": "INA186A1",
+   "Comment": "INA186A1",
+   "Designator": "U3",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C97054",
+   "MPN": "SY8303AIC",
+   "Comment": "SY8303AIC",
+   "Designator": "U4",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C479074",
+   "MPN": "SY8089A1AAC",
+   "Comment": "SY8089A1AAC",
+   "Designator": "U5",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C80670",
+   "MPN": "LP5907-3.3",
+   "Comment": "LP5907-3.3",
+   "Designator": "U6",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C2973667",
+   "MPN": "ESP32-WROVER-E-N8R8",
+   "Comment": "ESP32-WROVER-E-N8R8",
+   "Designator": "U7",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C84681",
+   "MPN": "CH340C",
+   "Comment": "CH340C",
+   "Designator": "U8",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C45223",
+   "MPN": "LAN8720A",
+   "Comment": "LAN8720A",
+   "Designator": "U9",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C2688377",
+   "MPN": "ES9018K2M",
+   "Comment": "ES9018K2M",
+   "Designator": "U10",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C192421",
+   "MPN": "OPA1678",
+   "Comment": "OPA1678",
+   "Designator": "U11",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C107671",
+   "MPN": "PCM5102A",
+   "Comment": "PCM5102A",
+   "Designator": "U12",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C2929446",
+   "MPN": "ES7243E",
+   "Comment": "ES7243E",
+   "Designator": "U13",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C11133",
+   "MPN": "TS5A23157",
+   "Comment": "TS5A23157",
+   "Designator": "U14",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C475500",
+   "MPN": "TPA3221",
+   "Comment": "TPA3221",
+   "Designator": "U15,U16",
+   "Qty Per Board": "2",
+   "Boards": "10",
+   "Qty To Buy": "20",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C465732",
+   "MPN": "TCA9555",
+   "Comment": "TCA9555",
+   "Designator": "U17",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C17223620",
+   "MPN": "PLR237/T8BK",
+   "Comment": "PLR237/T8BK",
+   "Designator": "U19",
+   "Qty Per Board": "1",
+   "Boards": "10",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C717684",
+   "MPN": "50MHz",
+   "Comment": "50MHz",
+   "Designator": "Y1,Y2",
+   "Qty Per Board": "2",
+   "Boards": "10",
+   "Qty To Buy": "20",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  }
+ ],
+ "bom_full_rows": [
+  {
+   "Comment": "1uF",
+   "Designator": "C1,C8,C207,C209,C226,C229,C232,C235,C307,C309,C324,C327,C330,C333",
+   "Qty Per Board": "14",
+   "Footprint": "C0805",
+   "MPN": "1uF",
+   "LCSC": "C28323",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "100nF",
+   "Designator": "C2,C31,C33,C34,C41,C42,C43,C44,C45,C46,C47,C51,C53,C54,C55,C57,C58,C120,C121,C125,C126,C202,C302",
+   "Qty Per Board": "23",
+   "Footprint": "C0402",
+   "MPN": "100nF",
+   "LCSC": "C1525",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "10nF",
+   "Designator": "C3,C12,C37,C38,C39",
+   "Qty Per Board": "5",
+   "Footprint": "C0402",
+   "MPN": "10nF",
+   "LCSC": "C15195",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "100nF",
+   "Designator": "C4,C11,C208,C210,C308,C310",
+   "Qty Per Board": "6",
+   "Footprint": "C0603",
+   "MPN": "100nF",
+   "LCSC": "C14663",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "470uF/50V",
+   "Designator": "C5,C6,C311",
+   "Qty Per Board": "3",
+   "Footprint": "CAP-TH_BD10.0-P5.00-D1.0-FD",
+   "MPN": "470uF/50V",
+   "LCSC": "C88733",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "10uF",
+   "Designator": "C7,C10",
+   "Qty Per Board": "2",
+   "Footprint": "C1206",
+   "MPN": "10uF",
+   "LCSC": "C13585",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "100nF",
+   "Designator": "C9",
+   "Qty Per Board": "1",
+   "Footprint": "C0402",
+   "MPN": "100nF",
+   "LCSC": "C307331",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "22uF",
+   "Designator": "C13,C14,C16,C17,C30",
+   "Qty Per Board": "5",
+   "Footprint": "C0805",
+   "MPN": "22uF",
+   "LCSC": "C45783",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "10uF",
+   "Designator": "C15,C21,C22,C59,C64,C201,C301",
+   "Qty Per Board": "7",
+   "Footprint": "C0603",
+   "MPN": "10uF",
+   "LCSC": "C19702",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "1uF",
+   "Designator": "C18,C19,C32,C40,C50,C52,C68,C69,C70,C101,C102,C111,C112,C122,C123,C124,C204,C206,C304,C306",
+   "Qty Per Board": "20",
+   "Footprint": "C0402",
+   "MPN": "1uF",
+   "LCSC": "C52923",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "4.7uF",
+   "Designator": "C56",
+   "Qty Per Board": "1",
+   "Footprint": "C0603",
+   "MPN": "4.7uF",
+   "LCSC": "C19666",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "2.2uF",
+   "Designator": "C65,C66,C67",
+   "Qty Per Board": "3",
+   "Footprint": "C0603",
+   "MPN": "2.2uF",
+   "LCSC": "C23630",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "1nF",
+   "Designator": "C71,C72,C142,C143,C150,C151",
+   "Qty Per Board": "6",
+   "Footprint": "C0402",
+   "MPN": "1nF",
+   "LCSC": "C1523",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "4.7uF",
+   "Designator": "C100,C110",
+   "Qty Per Board": "2",
+   "Footprint": "C0805",
+   "MPN": "4.7uF",
+   "LCSC": "C1779",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "33nF",
+   "Designator": "C211,C222,C223,C224,C225,C312,C320,C321,C322,C323",
+   "Qty Per Board": "10",
+   "Footprint": "C0603",
+   "MPN": "33nF",
+   "LCSC": "C21117",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "10uF",
+   "Designator": "C218,C219,C220,C221,C316,C317,C318,C319",
+   "Qty Per Board": "8",
+   "Footprint": "C0805",
+   "MPN": "10uF",
+   "LCSC": "C15850",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "1nF",
+   "Designator": "C228,C231,C234,C237,C326,C329,C332,C335",
+   "Qty Per Board": "8",
+   "Footprint": "C0603",
+   "MPN": "1nF",
+   "LCSC": "C1588",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "SMBJ30A",
+   "Designator": "D1",
+   "Qty Per Board": "1",
+   "Footprint": "SMB_L4.6-W3.6-LS5.3-RD",
+   "MPN": "SMBJ30A",
+   "LCSC": "C113998",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "BZT52C33",
+   "Designator": "D2",
+   "Qty Per Board": "1",
+   "Footprint": "SOD-123_L2.7-W1.6-LS3.7-RD",
+   "MPN": "BZT52C33",
+   "LCSC": "C266574",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "KT-0603R",
+   "Designator": "D3",
+   "Qty Per Board": "1",
+   "Footprint": "LED-SMD_L1.6-W0.8-R-RD",
+   "MPN": "KT-0603R",
+   "LCSC": "C2286",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "BZT52C15",
+   "Designator": "D4",
+   "Qty Per Board": "1",
+   "Footprint": "SOD-123_L2.7-W1.6-LS3.7-RD",
+   "MPN": "BZT52C15",
+   "LCSC": "C173427",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "120R",
+   "Designator": "FB1,FB2,FB3",
+   "Qty Per Board": "3",
+   "Footprint": "L0603",
+   "MPN": "120R",
+   "LCSC": "C14709",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "USB4105-GF-A-120",
+   "Designator": "J1",
+   "Qty Per Board": "1",
+   "Footprint": "USB-C-SMD_MC-311D",
+   "MPN": "USB4105-GF-A-120",
+   "LCSC": "C5184243",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "HR911105A",
+   "Designator": "J2",
+   "Qty Per Board": "1",
+   "Footprint": "RJ45-TH_HR911105A",
+   "MPN": "HR911105A",
+   "LCSC": "C12074",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "FFC 20P",
+   "Designator": "J3",
+   "Qty Per Board": "1",
+   "Footprint": "FPC-SMD_20P-P0.50_XUNPU_FPC-05F-20PH20",
+   "MPN": "FFC 20P",
+   "LCSC": "C2856803",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "SUB OUT",
+   "Designator": "J4",
+   "Qty Per Board": "1",
+   "Footprint": "CONN-TH_XDJK-0271-1650",
+   "MPN": "SUB OUT",
+   "LCSC": "C7527522",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "LINE IN",
+   "Designator": "J5",
+   "Qty Per Board": "1",
+   "Footprint": "CONN-TH_XDJK-0271-1650",
+   "MPN": "SUB OUT",
+   "LCSC": "C7527522",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "SPK A L",
+   "Designator": "J6",
+   "Qty Per Board": "1",
+   "Footprint": "CONN-TH_P5.00_KF301-5.0-2P",
+   "MPN": "SPK A L",
+   "LCSC": "C474881",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "SPK A R",
+   "Designator": "J7",
+   "Qty Per Board": "1",
+   "Footprint": "CONN-TH_P5.00_KF301-5.0-2P",
+   "MPN": "SPK A L",
+   "LCSC": "C474881",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "SPK B L",
+   "Designator": "J10",
+   "Qty Per Board": "1",
+   "Footprint": "CONN-TH_P5.00_KF301-5.0-2P",
+   "MPN": "SPK A L",
+   "LCSC": "C474881",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "SPK B R",
+   "Designator": "J11",
+   "Qty Per Board": "1",
+   "Footprint": "CONN-TH_P5.00_KF301-5.0-2P",
+   "MPN": "SPK A L",
+   "LCSC": "C474881",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "10uH",
+   "Designator": "L1,L2,L3,L4,L5,L6,L7,L8",
+   "Qty Per Board": "8",
+   "Footprint": "IND-SMD_L8.5-W8.0_PCC-M0854M",
+   "MPN": "10uH",
+   "LCSC": "C2962885",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "4.7uH",
+   "Designator": "L9",
+   "Qty Per Board": "1",
+   "Footprint": "IND-SMD_L4.0-W4.0",
+   "MPN": "4.7uH",
+   "LCSC": "C57269",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "2.2uH",
+   "Designator": "L10",
+   "Qty Per Board": "1",
+   "Footprint": "IND-SMD_L4.0-W4.0_LQH44PN2R2MP0L",
+   "MPN": "2.2uH",
+   "LCSC": "C36409",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "AO4485",
+   "Designator": "Q1",
+   "Qty Per Board": "1",
+   "Footprint": "SOIC-8_L5.0-W4.0-P1.27-LS6.0-BL",
+   "MPN": "AO4485",
+   "LCSC": "C51499",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "2N7002",
+   "Designator": "Q2",
+   "Qty Per Board": "1",
+   "Footprint": "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+   "MPN": "2N7002",
+   "LCSC": "C8545",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "S8050",
+   "Designator": "Q3,Q4,Q5,Q6",
+   "Qty Per Board": "4",
+   "Footprint": "SOT-23-3_L3.0-W1.7-P0.95-LS2.9-BR",
+   "MPN": "S8050",
+   "LCSC": "C2146",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "10m",
+   "Designator": "R1",
+   "Qty Per Board": "1",
+   "Footprint": "R2512",
+   "MPN": "10m",
+   "LCSC": "C393070",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "210k",
+   "Designator": "R2",
+   "Qty Per Board": "1",
+   "Footprint": "R0402",
+   "MPN": "210k",
+   "LCSC": "C2998176",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "1k",
+   "Designator": "R3,R6",
+   "Qty Per Board": "2",
+   "Footprint": "R0402",
+   "MPN": "1k",
+   "LCSC": "C11702",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "100k",
+   "Designator": "R4,R5,R7,R10,R11,R12,R15,R40,R41,R42,R43,R44,R45,R102,R112,R120,R213,R214,R215",
+   "Qty Per Board": "19",
+   "Footprint": "R0402",
+   "MPN": "100k",
+   "LCSC": "C25741",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "10k",
+   "Designator": "R8,R9,R30,R31,R32,R33,R36,R50,R51,R52,R53,R54,R55,R56,R57,R58,R67,R70,R121,R122",
+   "Qty Per Board": "20",
+   "Footprint": "R0402",
+   "MPN": "10k",
+   "LCSC": "C25744",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "15k",
+   "Designator": "R13",
+   "Qty Per Board": "1",
+   "Footprint": "R0402",
+   "MPN": "15k",
+   "LCSC": "C25756",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "2k",
+   "Designator": "R14,R72,R74,R80,R82",
+   "Qty Per Board": "5",
+   "Footprint": "R0402",
+   "MPN": "2k",
+   "LCSC": "C4109",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "22k",
+   "Designator": "R16",
+   "Qty Per Board": "1",
+   "Footprint": "R0402",
+   "MPN": "22k",
+   "LCSC": "C25768",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "10R",
+   "Designator": "R17,R18,R19",
+   "Qty Per Board": "3",
+   "Footprint": "R0402",
+   "MPN": "10R",
+   "LCSC": "C25077",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "2.2k",
+   "Designator": "R34,R35",
+   "Qty Per Board": "2",
+   "Footprint": "R0402",
+   "MPN": "2.2k",
+   "LCSC": "C25879",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "33R",
+   "Designator": "R60,R71,R402,R403",
+   "Qty Per Board": "4",
+   "Footprint": "R0402",
+   "MPN": "33R",
+   "LCSC": "C25105",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "12k",
+   "Designator": "R61",
+   "Qty Per Board": "1",
+   "Footprint": "R0402",
+   "MPN": "12k",
+   "LCSC": "C25752",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "1.5k",
+   "Designator": "R62,R73,R75,R81,R83",
+   "Qty Per Board": "5",
+   "Footprint": "R0402",
+   "MPN": "1.5k",
+   "LCSC": "C25867",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "49.9R",
+   "Designator": "R63,R64,R65,R66",
+   "Qty Per Board": "4",
+   "Footprint": "R0402",
+   "MPN": "49.9R",
+   "LCSC": "C25120",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "470R",
+   "Designator": "R90,R91,R92,R93,R401",
+   "Qty Per Board": "5",
+   "Footprint": "R0402",
+   "MPN": "470R",
+   "LCSC": "C25117",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "4.7k",
+   "Designator": "R100,R101,R110,R111",
+   "Qty Per Board": "4",
+   "Footprint": "R0402",
+   "MPN": "4.7k",
+   "LCSC": "C25900",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "4.7R",
+   "Designator": "R203,R205,R227,R230,R233,R236,R303,R305,R325,R328,R331,R334",
+   "Qty Per Board": "12",
+   "Footprint": "R0603",
+   "MPN": "4.7R",
+   "LCSC": "C23164",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "20k",
+   "Designator": "R212",
+   "Qty Per Board": "1",
+   "Footprint": "R0402",
+   "MPN": "20k",
+   "LCSC": "C25765",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "47k",
+   "Designator": "R216,R217,R314",
+   "Qty Per Board": "3",
+   "Footprint": "R0402",
+   "MPN": "47k",
+   "LCSC": "C25792",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "75k",
+   "Designator": "R313",
+   "Qty Per Board": "1",
+   "Footprint": "R0402",
+   "MPN": "75k",
+   "LCSC": "C25798",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "0R",
+   "Designator": "R315",
+   "Qty Per Board": "1",
+   "Footprint": "R0402",
+   "MPN": "0R",
+   "LCSC": "C17168",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "CH224Q",
+   "Designator": "U1",
+   "Qty Per Board": "1",
+   "Footprint": "DFN-10_L2.0-W2.0-P0.40-BL-EP",
+   "MPN": "CH224Q",
+   "LCSC": "C46061833",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "USBLC6-2SC6",
+   "Designator": "U2",
+   "Qty Per Board": "1",
+   "Footprint": "SOT-23-6_L2.9-W1.6-P0.95-LS2.8-BL",
+   "MPN": "USBLC6-2SC6",
+   "LCSC": "C2687116",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "INA186A1",
+   "Designator": "U3",
+   "Qty Per Board": "1",
+   "Footprint": "SC-70-6_L2.2-W1.3-P0.65-LS2.1-BR",
+   "MPN": "INA186A1",
+   "LCSC": "C2058311",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "SY8303AIC",
+   "Designator": "U4",
+   "Qty Per Board": "1",
+   "Footprint": "TSOT-23-8_L2.9-W1.6-P0.65-LS2.8-BR",
+   "MPN": "SY8303AIC",
+   "LCSC": "C97054",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "SY8089A1AAC",
+   "Designator": "U5",
+   "Qty Per Board": "1",
+   "Footprint": "TSOT-23-5_L2.9-W1.6-P0.95-LS2.8-BR",
+   "MPN": "SY8089A1AAC",
+   "LCSC": "C479074",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "LP5907-3.3",
+   "Designator": "U6",
+   "Qty Per Board": "1",
+   "Footprint": "SOT-23-5_L3.0-W1.7-P0.95-LS2.8-BR",
+   "MPN": "LP5907-3.3",
+   "LCSC": "C80670",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "ESP32-WROVER-E-N8R8",
+   "Designator": "U7",
+   "Qty Per Board": "1",
+   "Footprint": "WIFI-SMD_ESP32-WROVER-IE8MB",
+   "MPN": "ESP32-WROVER-E-N8R8",
+   "LCSC": "C2973667",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "CH340C",
+   "Designator": "U8",
+   "Qty Per Board": "1",
+   "Footprint": "SOP-16_L10.0-W3.9-P1.27-LS6.0-BL",
+   "MPN": "CH340C",
+   "LCSC": "C84681",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "LAN8720A",
+   "Designator": "U9",
+   "Qty Per Board": "1",
+   "Footprint": "QFN-24_L4.0-W4.0-P0.50-BL-EP2.6",
+   "MPN": "LAN8720A",
+   "LCSC": "C45223",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "ES9018K2M",
+   "Designator": "U10",
+   "Qty Per Board": "1",
+   "Footprint": "QFN-28_L5.0-W5.0-P0.50-BL-EP3.3",
+   "MPN": "ES9018K2M",
+   "LCSC": "C2688377",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "OPA1678",
+   "Designator": "U11",
+   "Qty Per Board": "1",
+   "Footprint": "SOIC-8_L5.0-W4.0-P1.27-LS6.0-BL",
+   "MPN": "OPA1678",
+   "LCSC": "C192421",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "PCM5102A",
+   "Designator": "U12",
+   "Qty Per Board": "1",
+   "Footprint": "TSSOP-20_L6.5-W4.4-P0.65-LS6.4-BL",
+   "MPN": "PCM5102A",
+   "LCSC": "C107671",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "ES7243E",
+   "Designator": "U13",
+   "Qty Per Board": "1",
+   "Footprint": "QFN-20_L3.0-W3.0-P0.40-BL-EP1.7",
+   "MPN": "ES7243E",
+   "LCSC": "C2929446",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "TS5A23157",
+   "Designator": "U14",
+   "Qty Per Board": "1",
+   "Footprint": "MSOP-10_L3.0-W3.0-P0.50-LS5.0-BL",
+   "MPN": "TS5A23157",
+   "LCSC": "C11133",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "TPA3221",
+   "Designator": "U15,U16",
+   "Qty Per Board": "2",
+   "Footprint": "HTSSOP-44_L14.0-W6.1-P0.64-LS8.1-BL",
+   "MPN": "TPA3221",
+   "LCSC": "C475500",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "TCA9555",
+   "Designator": "U17",
+   "Qty Per Board": "1",
+   "Footprint": "TSSOP-24_L7.8-W4.4-P0.65-LS6.4-BL",
+   "MPN": "TCA9555",
+   "LCSC": "C465732",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "PLR237/T8BK",
+   "Designator": "U19",
+   "Qty Per Board": "1",
+   "Footprint": "OPTO-TH_PLR237-T10BK",
+   "MPN": "PLR237/T8BK",
+   "LCSC": "C17223620",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "50MHz",
+   "Designator": "Y1,Y2",
+   "Qty Per Board": "2",
+   "Footprint": "OSC-SMD_4P-L3.2-W2.5-BL",
+   "MPN": "50MHz",
+   "LCSC": "C717684",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "4.7uF",
+   "Designator": "C400",
+   "Qty Per Board": "1",
+   "Footprint": "C0603",
+   "MPN": "4.7uF",
+   "LCSC": "C19666",
+   "Assembly Class": "dnp",
+   "Instructions": "DO NOT POPULATE - this land ships empty."
+  },
+  {
+   "Comment": "100R",
+   "Designator": "R400",
+   "Qty Per Board": "1",
+   "Footprint": "R0402",
+   "MPN": "100R",
+   "LCSC": "C25076",
+   "Assembly Class": "dnp",
+   "Instructions": "DO NOT POPULATE - this land ships empty."
+  },
+  {
+   "Comment": "EC11",
+   "Designator": "SW1",
+   "Qty Per Board": "1",
+   "Footprint": "SW-TH_EC11E1820402",
+   "MPN": "EC11",
+   "LCSC": "C361165",
+   "Assembly Class": "dnp",
+   "Instructions": "DO NOT POPULATE - this land ships empty."
+  },
+  {
+   "Comment": "BTN1",
+   "Designator": "SW2",
+   "Qty Per Board": "1",
+   "Footprint": "SW-SMD_4P-L5.1-W5.1-P3.70-LS6.5-TL_H1.5",
+   "MPN": "BTN1",
+   "LCSC": "C318884",
+   "Assembly Class": "dnp",
+   "Instructions": "DO NOT POPULATE - this land ships empty."
+  },
+  {
+   "Comment": "BTN2",
+   "Designator": "SW3",
+   "Qty Per Board": "1",
+   "Footprint": "SW-SMD_4P-L5.1-W5.1-P3.70-LS6.5-TL_H1.5",
+   "MPN": "BTN1",
+   "LCSC": "C318884",
+   "Assembly Class": "dnp",
+   "Instructions": "DO NOT POPULATE - this land ships empty."
+  },
+  {
+   "Comment": "IRM-H638T",
+   "Designator": "U18",
+   "Qty Per Board": "1",
+   "Footprint": "SENSOR-SMD_IRM-H638T-TR2-TL",
+   "MPN": "IRM-H638T",
+   "LCSC": "C91447",
+   "Assembly Class": "dnp",
+   "Instructions": "DO NOT POPULATE - this land ships empty."
+  },
+  {
+   "Comment": "",
+   "Designator": "H1,H2,H3,H4",
+   "Qty Per Board": "4",
+   "Footprint": "",
+   "MPN": "",
+   "LCSC": "",
+   "Assembly Class": "board_feature",
+   "Instructions": "Realised in copper - nothing to buy or place."
+  }
+ ],
+ "cpl_rows": [
+  {
+   "Designator": "C1",
+   "Mid X": "43.1660",
+   "Mid Y": "-191.0980",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C2",
+   "Mid X": "50.5370",
+   "Mid Y": "-185.0470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C3",
+   "Mid X": "141.3890",
+   "Mid Y": "-188.8280",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C4",
+   "Mid X": "60.9870",
+   "Mid Y": "-175.4070",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C5",
+   "Mid X": "62.6870",
+   "Mid Y": "-140.4970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C6",
+   "Mid X": "62.6870",
+   "Mid Y": "-151.4970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C7",
+   "Mid X": "89.1920",
+   "Mid Y": "-177.7520",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C8",
+   "Mid X": "60.9900",
+   "Mid Y": "-170.9170",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C9",
+   "Mid X": "43.7340",
+   "Mid Y": "-184.6160",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C10",
+   "Mid X": "66.4460",
+   "Mid Y": "-174.3560",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C11",
+   "Mid X": "71.3150",
+   "Mid Y": "-174.4830",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C12",
+   "Mid X": "75.0910",
+   "Mid Y": "-174.3590",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C13",
+   "Mid X": "87.3200",
+   "Mid Y": "-170.4180",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C14",
+   "Mid X": "88.4420",
+   "Mid Y": "-173.2110",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C15",
+   "Mid X": "65.7660",
+   "Mid Y": "-179.2760",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C16",
+   "Mid X": "91.4250",
+   "Mid Y": "-168.7830",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C17",
+   "Mid X": "94.4800",
+   "Mid Y": "-170.1390",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C18",
+   "Mid X": "128.0130",
+   "Mid Y": "-173.6430",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C19",
+   "Mid X": "125.1600",
+   "Mid Y": "-174.1440",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C21",
+   "Mid X": "90.8890",
+   "Mid Y": "-165.1250",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C22",
+   "Mid X": "83.6550",
+   "Mid Y": "-172.2350",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C30",
+   "Mid X": "145.7470",
+   "Mid Y": "-188.5840",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C31",
+   "Mid X": "149.4900",
+   "Mid Y": "-188.3200",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C32",
+   "Mid X": "143.9860",
+   "Mid Y": "-186.0730",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C33",
+   "Mid X": "78.8430",
+   "Mid Y": "-195.1430",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C34",
+   "Mid X": "107.0330",
+   "Mid Y": "-179.9280",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C37",
+   "Mid X": "88.4440",
+   "Mid Y": "-200.1770",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C38",
+   "Mid X": "85.8340",
+   "Mid Y": "-200.6770",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C39",
+   "Mid X": "103.3470",
+   "Mid Y": "-199.5620",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C40",
+   "Mid X": "66.1590",
+   "Mid Y": "-206.7290",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C41",
+   "Mid X": "68.7880",
+   "Mid Y": "-205.6680",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C42",
+   "Mid X": "63.2050",
+   "Mid Y": "-206.9510",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C43",
+   "Mid X": "59.4910",
+   "Mid Y": "-202.6600",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C44",
+   "Mid X": "67.9970",
+   "Mid Y": "-202.9470",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C45",
+   "Mid X": "88.2030",
+   "Mid Y": "-167.8990",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C46",
+   "Mid X": "67.0000",
+   "Mid Y": "-198.0700",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C47",
+   "Mid X": "62.7360",
+   "Mid Y": "-198.5420",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C50",
+   "Mid X": "125.5870",
+   "Mid Y": "-148.1970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C51",
+   "Mid X": "124.2300",
+   "Mid Y": "-144.8200",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C52",
+   "Mid X": "125.9590",
+   "Mid Y": "-150.6240",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C53",
+   "Mid X": "116.7620",
+   "Mid Y": "-145.5560",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C54",
+   "Mid X": "126.3450",
+   "Mid Y": "-145.3060",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C55",
+   "Mid X": "115.7330",
+   "Mid Y": "-151.7240",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C56",
+   "Mid X": "116.7460",
+   "Mid Y": "-142.1330",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C57",
+   "Mid X": "124.4870",
+   "Mid Y": "-142.3170",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C58",
+   "Mid X": "112.5010",
+   "Mid Y": "-161.2000",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C59",
+   "Mid X": "93.1990",
+   "Mid Y": "-174.0330",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C64",
+   "Mid X": "121.1460",
+   "Mid Y": "-167.2990",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C65",
+   "Mid X": "110.0840",
+   "Mid Y": "-151.5640",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C66",
+   "Mid X": "110.3940",
+   "Mid Y": "-153.9970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C67",
+   "Mid X": "105.8530",
+   "Mid Y": "-145.6830",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C68",
+   "Mid X": "106.6730",
+   "Mid Y": "-148.8180",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C69",
+   "Mid X": "113.3440",
+   "Mid Y": "-151.5640",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C70",
+   "Mid X": "106.6730",
+   "Mid Y": "-143.0780",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C71",
+   "Mid X": "111.7140",
+   "Mid Y": "-140.1440",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C72",
+   "Mid X": "104.8230",
+   "Mid Y": "-140.1510",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C100",
+   "Mid X": "103.1840",
+   "Mid Y": "-167.3430",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C101",
+   "Mid X": "120.5900",
+   "Mid Y": "-159.8200",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C102",
+   "Mid X": "138.0490",
+   "Mid Y": "-149.4690",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C110",
+   "Mid X": "107.2140",
+   "Mid Y": "-163.5900",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C111",
+   "Mid X": "119.6960",
+   "Mid Y": "-157.2430",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C112",
+   "Mid X": "131.0530",
+   "Mid Y": "-151.5230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C120",
+   "Mid X": "135.1090",
+   "Mid Y": "-155.2290",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C121",
+   "Mid X": "138.3870",
+   "Mid Y": "-153.1070",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C122",
+   "Mid X": "133.8860",
+   "Mid Y": "-148.0420",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C123",
+   "Mid X": "136.7560",
+   "Mid Y": "-147.0660",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C124",
+   "Mid X": "131.1350",
+   "Mid Y": "-148.5740",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C125",
+   "Mid X": "109.5870",
+   "Mid Y": "-166.5870",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C126",
+   "Mid X": "146.5270",
+   "Mid Y": "-132.5070",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C142",
+   "Mid X": "118.3360",
+   "Mid Y": "-168.1910",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C143",
+   "Mid X": "112.2440",
+   "Mid Y": "-167.2070",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C150",
+   "Mid X": "120.6210",
+   "Mid Y": "-164.0890",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C151",
+   "Mid X": "112.5540",
+   "Mid Y": "-164.0940",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C201",
+   "Mid X": "37.2310",
+   "Mid Y": "-166.7100",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C202",
+   "Mid X": "40.9900",
+   "Mid Y": "-168.0520",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C204",
+   "Mid X": "51.9900",
+   "Mid Y": "-167.9940",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C206",
+   "Mid X": "54.7570",
+   "Mid Y": "-165.4970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C207",
+   "Mid X": "55.7870",
+   "Mid Y": "-161.1970",
+   "Layer": "Top",
+   "Rotation": "270.0000"
+  },
+  {
+   "Designator": "C208",
+   "Mid X": "55.7870",
+   "Mid Y": "-157.5970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C209",
+   "Mid X": "36.7870",
+   "Mid Y": "-161.1970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C210",
+   "Mid X": "36.7870",
+   "Mid Y": "-157.5970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C211",
+   "Mid X": "49.4490",
+   "Mid Y": "-168.9950",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C218",
+   "Mid X": "78.5370",
+   "Mid Y": "-168.4360",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C219",
+   "Mid X": "40.8210",
+   "Mid Y": "-170.8570",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C220",
+   "Mid X": "79.5510",
+   "Mid Y": "-171.3030",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C221",
+   "Mid X": "52.2260",
+   "Mid Y": "-171.6820",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C222",
+   "Mid X": "36.3790",
+   "Mid Y": "-131.5840",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C223",
+   "Mid X": "37.2170",
+   "Mid Y": "-170.6530",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C224",
+   "Mid X": "59.2370",
+   "Mid Y": "-158.6450",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C225",
+   "Mid X": "63.2330",
+   "Mid Y": "-158.4560",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C226",
+   "Mid X": "39.0870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C228",
+   "Mid X": "42.7870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C229",
+   "Mid X": "49.1870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C231",
+   "Mid X": "52.8870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C232",
+   "Mid X": "55.9870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C234",
+   "Mid X": "59.6870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C235",
+   "Mid X": "66.0870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C237",
+   "Mid X": "69.7870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C301",
+   "Mid X": "69.9320",
+   "Mid Y": "-166.2450",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C302",
+   "Mid X": "67.5460",
+   "Mid Y": "-166.9940",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C304",
+   "Mid X": "84.8900",
+   "Mid Y": "-167.9940",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C306",
+   "Mid X": "87.6570",
+   "Mid Y": "-165.4970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C307",
+   "Mid X": "88.6870",
+   "Mid Y": "-161.1970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C308",
+   "Mid X": "88.6870",
+   "Mid Y": "-157.5970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C309",
+   "Mid X": "69.6870",
+   "Mid Y": "-161.1970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C310",
+   "Mid X": "69.6870",
+   "Mid Y": "-157.5970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C311",
+   "Mid X": "95.5870",
+   "Mid Y": "-151.4970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C312",
+   "Mid X": "80.6140",
+   "Mid Y": "-174.3020",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C316",
+   "Mid X": "91.8440",
+   "Mid Y": "-161.4490",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C317",
+   "Mid X": "66.6810",
+   "Mid Y": "-163.0140",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C318",
+   "Mid X": "94.6800",
+   "Mid Y": "-164.4370",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C319",
+   "Mid X": "85.0550",
+   "Mid Y": "-176.0190",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C320",
+   "Mid X": "71.2390",
+   "Mid Y": "-128.6030",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C321",
+   "Mid X": "63.9030",
+   "Mid Y": "-161.7380",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C322",
+   "Mid X": "94.7360",
+   "Mid Y": "-159.1790",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C323",
+   "Mid X": "91.0870",
+   "Mid Y": "-142.9970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C324",
+   "Mid X": "71.9870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C326",
+   "Mid X": "75.6870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C327",
+   "Mid X": "82.0870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C329",
+   "Mid X": "85.7870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C330",
+   "Mid X": "88.8870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C332",
+   "Mid X": "92.5870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C333",
+   "Mid X": "91.0870",
+   "Mid Y": "-136.7970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C335",
+   "Mid X": "94.7870",
+   "Mid Y": "-136.7970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "D1",
+   "Mid X": "45.5870",
+   "Mid Y": "-172.6970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "D2",
+   "Mid X": "59.8450",
+   "Mid Y": "-166.9350",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "D3",
+   "Mid X": "67.5870",
+   "Mid Y": "-219.4970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "D4",
+   "Mid X": "61.0310",
+   "Mid Y": "-183.2700",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "FB1",
+   "Mid X": "80.7640",
+   "Mid Y": "-177.0830",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "FB2",
+   "Mid X": "92.5640",
+   "Mid Y": "-179.6700",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "FB3",
+   "Mid X": "147.1340",
+   "Mid Y": "-135.0530",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "J1",
+   "Mid X": "38.5870",
+   "Mid Y": "-178.6970",
+   "Layer": "Top",
+   "Rotation": "270.0000"
+  },
+  {
+   "Designator": "J2",
+   "Mid X": "47.0870",
+   "Mid Y": "-202.6970",
+   "Layer": "Top",
+   "Rotation": "270.0000"
+  },
+  {
+   "Designator": "J3",
+   "Mid X": "54.5870",
+   "Mid Y": "-217.1970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "J4",
+   "Mid X": "107.5870",
+   "Mid Y": "-135.1970",
+   "Layer": "Top",
+   "Rotation": "180.0000"
+  },
+  {
+   "Designator": "J5",
+   "Mid X": "125.5870",
+   "Mid Y": "-135.1970",
+   "Layer": "Top",
+   "Rotation": "180.0000"
+  },
+  {
+   "Designator": "J6",
+   "Mid X": "49.0870",
+   "Mid Y": "-126.1970",
+   "Layer": "Top",
+   "Rotation": "180.0000"
+  },
+  {
+   "Designator": "J7",
+   "Mid X": "61.5870",
+   "Mid Y": "-126.1970",
+   "Layer": "Top",
+   "Rotation": "180.0000"
+  },
+  {
+   "Designator": "J10",
+   "Mid X": "81.9870",
+   "Mid Y": "-126.1970",
+   "Layer": "Top",
+   "Rotation": "180.0000"
+  },
+  {
+   "Designator": "J11",
+   "Mid X": "94.4870",
+   "Mid Y": "-126.1970",
+   "Layer": "Top",
+   "Rotation": "180.0000"
+  },
+  {
+   "Designator": "L1",
+   "Mid X": "40.0870",
+   "Mid Y": "-139.4970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "L2",
+   "Mid X": "40.0870",
+   "Mid Y": "-150.3970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "L3",
+   "Mid X": "52.1870",
+   "Mid Y": "-150.3970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "L4",
+   "Mid X": "52.1870",
+   "Mid Y": "-139.4970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "L5",
+   "Mid X": "72.9870",
+   "Mid Y": "-139.4970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "L6",
+   "Mid X": "72.9870",
+   "Mid Y": "-150.3970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "L7",
+   "Mid X": "85.0870",
+   "Mid Y": "-150.3970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "L8",
+   "Mid X": "85.0870",
+   "Mid Y": "-139.4970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "L9",
+   "Mid X": "72.5870",
+   "Mid Y": "-170.6970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "L10",
+   "Mid X": "72.5870",
+   "Mid Y": "-182.6970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "Q1",
+   "Mid X": "56.5870",
+   "Mid Y": "-172.6970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "Q2",
+   "Mid X": "56.5870",
+   "Mid Y": "-179.6970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "Q3",
+   "Mid X": "61.5870",
+   "Mid Y": "-179.6970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "Q4",
+   "Mid X": "121.9200",
+   "Mid Y": "-189.9560",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "Q5",
+   "Mid X": "92.2200",
+   "Mid Y": "-201.2100",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "Q6",
+   "Mid X": "106.4590",
+   "Mid Y": "-174.3050",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R1",
+   "Mid X": "47.5870",
+   "Mid Y": "-180.6970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R2",
+   "Mid X": "38.2890",
+   "Mid Y": "-185.7610",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R3",
+   "Mid X": "109.9580",
+   "Mid Y": "-188.9570",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R4",
+   "Mid X": "61.6600",
+   "Mid Y": "-185.6350",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R5",
+   "Mid X": "58.3970",
+   "Mid Y": "-185.6340",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R6",
+   "Mid X": "87.2580",
+   "Mid Y": "-183.5830",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R7",
+   "Mid X": "71.0510",
+   "Mid Y": "-178.8300",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R8",
+   "Mid X": "55.9240",
+   "Mid Y": "-185.8020",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R9",
+   "Mid X": "61.0420",
+   "Mid Y": "-187.6980",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R10",
+   "Mid X": "65.0270",
+   "Mid Y": "-167.5780",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R11",
+   "Mid X": "63.8210",
+   "Mid Y": "-165.1290",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R12",
+   "Mid X": "67.7320",
+   "Mid Y": "-176.9590",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R13",
+   "Mid X": "60.6560",
+   "Mid Y": "-164.5490",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R14",
+   "Mid X": "60.4810",
+   "Mid Y": "-162.3700",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R15",
+   "Mid X": "65.5130",
+   "Mid Y": "-185.6430",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R16",
+   "Mid X": "68.2840",
+   "Mid Y": "-186.1080",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R17",
+   "Mid X": "40.3590",
+   "Mid Y": "-188.5780",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R18",
+   "Mid X": "40.5880",
+   "Mid Y": "-185.8330",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R19",
+   "Mid X": "46.6310",
+   "Mid Y": "-188.9610",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R30",
+   "Mid X": "136.6880",
+   "Mid Y": "-188.7430",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R31",
+   "Mid X": "96.4870",
+   "Mid Y": "-202.2390",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R32",
+   "Mid X": "98.3030",
+   "Mid Y": "-192.8140",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R33",
+   "Mid X": "97.6690",
+   "Mid Y": "-194.8710",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R34",
+   "Mid X": "98.7370",
+   "Mid Y": "-180.1340",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R35",
+   "Mid X": "101.2470",
+   "Mid Y": "-180.2000",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R36",
+   "Mid X": "102.7140",
+   "Mid Y": "-197.3410",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R40",
+   "Mid X": "77.2000",
+   "Mid Y": "-177.4170",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R41",
+   "Mid X": "95.3270",
+   "Mid Y": "-176.4730",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R42",
+   "Mid X": "107.0120",
+   "Mid Y": "-183.3140",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R43",
+   "Mid X": "114.4800",
+   "Mid Y": "-188.2720",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R44",
+   "Mid X": "110.5690",
+   "Mid Y": "-157.4410",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R45",
+   "Mid X": "91.8520",
+   "Mid Y": "-192.6470",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R50",
+   "Mid X": "74.5410",
+   "Mid Y": "-177.2230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R51",
+   "Mid X": "78.9550",
+   "Mid Y": "-179.4260",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R52",
+   "Mid X": "88.4640",
+   "Mid Y": "-198.1810",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R53",
+   "Mid X": "85.3830",
+   "Mid Y": "-198.1620",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R54",
+   "Mid X": "103.3330",
+   "Mid Y": "-201.5580",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R55",
+   "Mid X": "107.3600",
+   "Mid Y": "-203.7900",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R56",
+   "Mid X": "112.4800",
+   "Mid Y": "-203.7900",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R57",
+   "Mid X": "82.4770",
+   "Mid Y": "-197.7920",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R58",
+   "Mid X": "99.9570",
+   "Mid Y": "-208.8570",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R60",
+   "Mid X": "88.3300",
+   "Mid Y": "-202.3580",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R61",
+   "Mid X": "59.5110",
+   "Mid Y": "-206.0230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R62",
+   "Mid X": "101.9770",
+   "Mid Y": "-205.5720",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R63",
+   "Mid X": "57.0570",
+   "Mid Y": "-200.3470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R64",
+   "Mid X": "59.2850",
+   "Mid Y": "-199.3630",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R65",
+   "Mid X": "57.3070",
+   "Mid Y": "-203.4160",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R66",
+   "Mid X": "57.4460",
+   "Mid Y": "-206.7480",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R67",
+   "Mid X": "81.7560",
+   "Mid Y": "-195.4540",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R70",
+   "Mid X": "127.7670",
+   "Mid Y": "-141.3520",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R71",
+   "Mid X": "128.3870",
+   "Mid Y": "-147.7570",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R72",
+   "Mid X": "122.9070",
+   "Mid Y": "-160.9320",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R73",
+   "Mid X": "120.6340",
+   "Mid Y": "-170.2860",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R74",
+   "Mid X": "115.0030",
+   "Mid Y": "-156.7160",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R75",
+   "Mid X": "111.9540",
+   "Mid Y": "-169.3160",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R80",
+   "Mid X": "122.4540",
+   "Mid Y": "-156.7520",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R81",
+   "Mid X": "123.5590",
+   "Mid Y": "-165.5940",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R82",
+   "Mid X": "124.4560",
+   "Mid Y": "-157.2280",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R83",
+   "Mid X": "107.6210",
+   "Mid Y": "-161.1340",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R90",
+   "Mid X": "120.2220",
+   "Mid Y": "-172.2840",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R91",
+   "Mid X": "117.5300",
+   "Mid Y": "-173.3650",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R92",
+   "Mid X": "108.5470",
+   "Mid Y": "-140.2400",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R93",
+   "Mid X": "104.6660",
+   "Mid Y": "-142.9020",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R100",
+   "Mid X": "117.2870",
+   "Mid Y": "-156.1090",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R101",
+   "Mid X": "110.2710",
+   "Mid Y": "-160.6600",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R102",
+   "Mid X": "115.2810",
+   "Mid Y": "-168.6790",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R110",
+   "Mid X": "114.8410",
+   "Mid Y": "-154.2030",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R111",
+   "Mid X": "112.5870",
+   "Mid Y": "-158.3450",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R112",
+   "Mid X": "116.7420",
+   "Mid Y": "-170.7000",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R120",
+   "Mid X": "139.6970",
+   "Mid Y": "-172.4020",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R121",
+   "Mid X": "110.2960",
+   "Mid Y": "-177.0070",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R122",
+   "Mid X": "102.9090",
+   "Mid Y": "-173.2230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R203",
+   "Mid X": "49.5030",
+   "Mid Y": "-172.8090",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R205",
+   "Mid X": "52.1270",
+   "Mid Y": "-176.0800",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R212",
+   "Mid X": "49.8580",
+   "Mid Y": "-176.1830",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R213",
+   "Mid X": "53.2320",
+   "Mid Y": "-179.5190",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R214",
+   "Mid X": "53.3340",
+   "Mid Y": "-182.5850",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R215",
+   "Mid X": "55.8640",
+   "Mid Y": "-182.6990",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R216",
+   "Mid X": "66.1380",
+   "Mid Y": "-158.8440",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R217",
+   "Mid X": "71.8170",
+   "Mid Y": "-176.7490",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R227",
+   "Mid X": "41.0870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R230",
+   "Mid X": "51.1870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R233",
+   "Mid X": "57.9870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R236",
+   "Mid X": "68.0870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R303",
+   "Mid X": "85.4970",
+   "Mid Y": "-178.7220",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R305",
+   "Mid X": "97.6570",
+   "Mid Y": "-165.7070",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R313",
+   "Mid X": "81.9840",
+   "Mid Y": "-168.4570",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R314",
+   "Mid X": "77.7990",
+   "Mid Y": "-174.8140",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R315",
+   "Mid X": "81.9480",
+   "Mid Y": "-179.3760",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R325",
+   "Mid X": "73.9870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R328",
+   "Mid X": "84.0870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R331",
+   "Mid X": "90.8870",
+   "Mid Y": "-132.2470",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R334",
+   "Mid X": "93.0870",
+   "Mid Y": "-136.7970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R401",
+   "Mid X": "91.4230",
+   "Mid Y": "-198.1350",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R402",
+   "Mid X": "96.0330",
+   "Mid Y": "-199.8100",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R403",
+   "Mid X": "99.1520",
+   "Mid Y": "-201.8750",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "U1",
+   "Mid X": "43.5870",
+   "Mid Y": "-187.6970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "U2",
+   "Mid X": "49.5870",
+   "Mid Y": "-190.1970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "U3",
+   "Mid X": "47.5870",
+   "Mid Y": "-185.6970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "U4",
+   "Mid X": "66.5870",
+   "Mid Y": "-170.6970",
+   "Layer": "Top",
+   "Rotation": "180.0000"
+  },
+  {
+   "Designator": "U5",
+   "Mid X": "66.5870",
+   "Mid Y": "-182.6970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "U6",
+   "Mid X": "126.5870",
+   "Mid Y": "-170.6970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "U7",
+   "Mid X": "137.1870",
+   "Mid Y": "-200.6970",
+   "Layer": "Top",
+   "Rotation": "270.0000"
+  },
+  {
+   "Designator": "U8",
+   "Mid X": "81.5870",
+   "Mid Y": "-188.6970",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "U9",
+   "Mid X": "63.5870",
+   "Mid Y": "-202.6970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "U10",
+   "Mid X": "120.5870",
+   "Mid Y": "-150.6970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "U11",
+   "Mid X": "116.5870",
+   "Mid Y": "-162.6970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "U12",
+   "Mid X": "111.5870",
+   "Mid Y": "-145.6970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "U13",
+   "Mid X": "134.5870",
+   "Mid Y": "-151.6970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "U14",
+   "Mid X": "106.5870",
+   "Mid Y": "-168.6970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "U15",
+   "Mid X": "46.0870",
+   "Mid Y": "-161.6970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "U16",
+   "Mid X": "78.9870",
+   "Mid Y": "-161.6970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "U17",
+   "Mid X": "112.5870",
+   "Mid Y": "-182.6970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "U19",
+   "Mid X": "139.9870",
+   "Mid Y": "-131.1970",
+   "Layer": "Top",
+   "Rotation": "180.0000"
+  },
+  {
+   "Designator": "Y1",
+   "Mid X": "120.5870",
+   "Mid Y": "-143.1970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "Y2",
+   "Mid X": "70.5870",
+   "Mid Y": "-198.6970",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  }
+ ],
+ "assembly_classes": {
+  "C1": "smt_placed",
+  "C2": "smt_placed",
+  "C3": "smt_placed",
+  "C4": "smt_placed",
+  "C5": "smt_placed",
+  "C6": "smt_placed",
+  "C7": "smt_placed",
+  "C8": "smt_placed",
+  "C9": "smt_placed",
+  "C10": "smt_placed",
+  "C11": "smt_placed",
+  "C12": "smt_placed",
+  "C13": "smt_placed",
+  "C14": "smt_placed",
+  "C15": "smt_placed",
+  "C16": "smt_placed",
+  "C17": "smt_placed",
+  "C18": "smt_placed",
+  "C19": "smt_placed",
+  "C21": "smt_placed",
+  "C22": "smt_placed",
+  "C30": "smt_placed",
+  "C31": "smt_placed",
+  "C32": "smt_placed",
+  "C33": "smt_placed",
+  "C34": "smt_placed",
+  "C37": "smt_placed",
+  "C38": "smt_placed",
+  "C39": "smt_placed",
+  "C40": "smt_placed",
+  "C41": "smt_placed",
+  "C42": "smt_placed",
+  "C43": "smt_placed",
+  "C44": "smt_placed",
+  "C45": "smt_placed",
+  "C46": "smt_placed",
+  "C47": "smt_placed",
+  "C50": "smt_placed",
+  "C51": "smt_placed",
+  "C52": "smt_placed",
+  "C53": "smt_placed",
+  "C54": "smt_placed",
+  "C55": "smt_placed",
+  "C56": "smt_placed",
+  "C57": "smt_placed",
+  "C58": "smt_placed",
+  "C59": "smt_placed",
+  "C64": "smt_placed",
+  "C65": "smt_placed",
+  "C66": "smt_placed",
+  "C67": "smt_placed",
+  "C68": "smt_placed",
+  "C69": "smt_placed",
+  "C70": "smt_placed",
+  "C71": "smt_placed",
+  "C72": "smt_placed",
+  "C100": "smt_placed",
+  "C101": "smt_placed",
+  "C102": "smt_placed",
+  "C110": "smt_placed",
+  "C111": "smt_placed",
+  "C112": "smt_placed",
+  "C120": "smt_placed",
+  "C121": "smt_placed",
+  "C122": "smt_placed",
+  "C123": "smt_placed",
+  "C124": "smt_placed",
+  "C125": "smt_placed",
+  "C126": "smt_placed",
+  "C142": "smt_placed",
+  "C143": "smt_placed",
+  "C150": "smt_placed",
+  "C151": "smt_placed",
+  "C201": "smt_placed",
+  "C202": "smt_placed",
+  "C204": "smt_placed",
+  "C206": "smt_placed",
+  "C207": "smt_placed",
+  "C208": "smt_placed",
+  "C209": "smt_placed",
+  "C210": "smt_placed",
+  "C211": "smt_placed",
+  "C218": "smt_placed",
+  "C219": "smt_placed",
+  "C220": "smt_placed",
+  "C221": "smt_placed",
+  "C222": "smt_placed",
+  "C223": "smt_placed",
+  "C224": "smt_placed",
+  "C225": "smt_placed",
+  "C226": "smt_placed",
+  "C228": "smt_placed",
+  "C229": "smt_placed",
+  "C231": "smt_placed",
+  "C232": "smt_placed",
+  "C234": "smt_placed",
+  "C235": "smt_placed",
+  "C237": "smt_placed",
+  "C301": "smt_placed",
+  "C302": "smt_placed",
+  "C304": "smt_placed",
+  "C306": "smt_placed",
+  "C307": "smt_placed",
+  "C308": "smt_placed",
+  "C309": "smt_placed",
+  "C310": "smt_placed",
+  "C311": "smt_placed",
+  "C312": "smt_placed",
+  "C316": "smt_placed",
+  "C317": "smt_placed",
+  "C318": "smt_placed",
+  "C319": "smt_placed",
+  "C320": "smt_placed",
+  "C321": "smt_placed",
+  "C322": "smt_placed",
+  "C323": "smt_placed",
+  "C324": "smt_placed",
+  "C326": "smt_placed",
+  "C327": "smt_placed",
+  "C329": "smt_placed",
+  "C330": "smt_placed",
+  "C332": "smt_placed",
+  "C333": "smt_placed",
+  "C335": "smt_placed",
+  "C400": "dnp",
+  "D1": "smt_placed",
+  "D2": "smt_placed",
+  "D3": "smt_placed",
+  "D4": "smt_placed",
+  "FB1": "smt_placed",
+  "FB2": "smt_placed",
+  "FB3": "smt_placed",
+  "H1": "board_feature",
+  "H2": "board_feature",
+  "H3": "board_feature",
+  "H4": "board_feature",
+  "J1": "smt_placed",
+  "J2": "smt_placed",
+  "J3": "smt_placed",
+  "J4": "smt_placed",
+  "J5": "smt_placed",
+  "J6": "smt_placed",
+  "J7": "smt_placed",
+  "J10": "smt_placed",
+  "J11": "smt_placed",
+  "L1": "smt_placed",
+  "L2": "smt_placed",
+  "L3": "smt_placed",
+  "L4": "smt_placed",
+  "L5": "smt_placed",
+  "L6": "smt_placed",
+  "L7": "smt_placed",
+  "L8": "smt_placed",
+  "L9": "smt_placed",
+  "L10": "smt_placed",
+  "Q1": "smt_placed",
+  "Q2": "smt_placed",
+  "Q3": "smt_placed",
+  "Q4": "smt_placed",
+  "Q5": "smt_placed",
+  "Q6": "smt_placed",
+  "R1": "smt_placed",
+  "R2": "smt_placed",
+  "R3": "smt_placed",
+  "R4": "smt_placed",
+  "R5": "smt_placed",
+  "R6": "smt_placed",
+  "R7": "smt_placed",
+  "R8": "smt_placed",
+  "R9": "smt_placed",
+  "R10": "smt_placed",
+  "R11": "smt_placed",
+  "R12": "smt_placed",
+  "R13": "smt_placed",
+  "R14": "smt_placed",
+  "R15": "smt_placed",
+  "R16": "smt_placed",
+  "R17": "smt_placed",
+  "R18": "smt_placed",
+  "R19": "smt_placed",
+  "R30": "smt_placed",
+  "R31": "smt_placed",
+  "R32": "smt_placed",
+  "R33": "smt_placed",
+  "R34": "smt_placed",
+  "R35": "smt_placed",
+  "R36": "smt_placed",
+  "R40": "smt_placed",
+  "R41": "smt_placed",
+  "R42": "smt_placed",
+  "R43": "smt_placed",
+  "R44": "smt_placed",
+  "R45": "smt_placed",
+  "R50": "smt_placed",
+  "R51": "smt_placed",
+  "R52": "smt_placed",
+  "R53": "smt_placed",
+  "R54": "smt_placed",
+  "R55": "smt_placed",
+  "R56": "smt_placed",
+  "R57": "smt_placed",
+  "R58": "smt_placed",
+  "R60": "smt_placed",
+  "R61": "smt_placed",
+  "R62": "smt_placed",
+  "R63": "smt_placed",
+  "R64": "smt_placed",
+  "R65": "smt_placed",
+  "R66": "smt_placed",
+  "R67": "smt_placed",
+  "R70": "smt_placed",
+  "R71": "smt_placed",
+  "R72": "smt_placed",
+  "R73": "smt_placed",
+  "R74": "smt_placed",
+  "R75": "smt_placed",
+  "R80": "smt_placed",
+  "R81": "smt_placed",
+  "R82": "smt_placed",
+  "R83": "smt_placed",
+  "R90": "smt_placed",
+  "R91": "smt_placed",
+  "R92": "smt_placed",
+  "R93": "smt_placed",
+  "R100": "smt_placed",
+  "R101": "smt_placed",
+  "R102": "smt_placed",
+  "R110": "smt_placed",
+  "R111": "smt_placed",
+  "R112": "smt_placed",
+  "R120": "smt_placed",
+  "R121": "smt_placed",
+  "R122": "smt_placed",
+  "R203": "smt_placed",
+  "R205": "smt_placed",
+  "R212": "smt_placed",
+  "R213": "smt_placed",
+  "R214": "smt_placed",
+  "R215": "smt_placed",
+  "R216": "smt_placed",
+  "R217": "smt_placed",
+  "R227": "smt_placed",
+  "R230": "smt_placed",
+  "R233": "smt_placed",
+  "R236": "smt_placed",
+  "R303": "smt_placed",
+  "R305": "smt_placed",
+  "R313": "smt_placed",
+  "R314": "smt_placed",
+  "R315": "smt_placed",
+  "R325": "smt_placed",
+  "R328": "smt_placed",
+  "R331": "smt_placed",
+  "R334": "smt_placed",
+  "R400": "dnp",
+  "R401": "smt_placed",
+  "R402": "smt_placed",
+  "R403": "smt_placed",
+  "SW1": "dnp",
+  "SW2": "dnp",
+  "SW3": "dnp",
+  "U1": "smt_placed",
+  "U2": "smt_placed",
+  "U3": "smt_placed",
+  "U4": "smt_placed",
+  "U5": "smt_placed",
+  "U6": "smt_placed",
+  "U7": "smt_placed",
+  "U8": "smt_placed",
+  "U9": "smt_placed",
+  "U10": "smt_placed",
+  "U11": "smt_placed",
+  "U12": "smt_placed",
+  "U13": "smt_placed",
+  "U14": "smt_placed",
+  "U15": "smt_placed",
+  "U16": "smt_placed",
+  "U17": "smt_placed",
+  "U18": "dnp",
+  "U19": "smt_placed",
+  "Y1": "smt_placed",
+  "Y2": "smt_placed"
+ },
+ "class_counts": {
+  "smt_placed": 272,
+  "dnp": 6,
+  "board_feature": 4
+ },
+ "not_placed": [
+  {
+   "ref": "C400",
+   "class": "dnp",
+   "source": "parts_ref"
+  },
+  {
+   "ref": "R400",
+   "class": "dnp",
+   "source": "parts_ref"
+  },
+  {
+   "ref": "SW1",
+   "class": "dnp",
+   "source": "parts_ref"
+  },
+  {
+   "ref": "SW2",
+   "class": "dnp",
+   "source": "parts_ref"
+  },
+  {
+   "ref": "SW3",
+   "class": "dnp",
+   "source": "parts_ref"
+  },
+  {
+   "ref": "U18",
+   "class": "dnp",
+   "source": "parts_ref"
+  }
+ ],
+ "rotation_audit": [
+  {
+   "ref": "C1",
+   "package": "C0805",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C2",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C3",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C4",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C5",
+   "package": "CAP-TH_BD10.0-P5.00-D1.0-FD",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C6",
+   "package": "CAP-TH_BD10.0-P5.00-D1.0-FD",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C7",
+   "package": "C1206",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C8",
+   "package": "C0805",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C9",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C10",
+   "package": "C1206",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C11",
+   "package": "C0603",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C12",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C13",
+   "package": "C0805",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C14",
+   "package": "C0805",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C15",
+   "package": "C0603",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C16",
+   "package": "C0805",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C17",
+   "package": "C0805",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C18",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C19",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C21",
+   "package": "C0603",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C22",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C30",
+   "package": "C0805",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C31",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C32",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C33",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C34",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C37",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C38",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C39",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C40",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C41",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C42",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C43",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C44",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C45",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C46",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C47",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C50",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C51",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C52",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C53",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C54",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C55",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C56",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C57",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C58",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C59",
+   "package": "C0603",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C64",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C65",
+   "package": "C0603",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C66",
+   "package": "C0603",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C67",
+   "package": "C0603",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C68",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C69",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C70",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C71",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C72",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C100",
+   "package": "C0805",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C101",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C102",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C110",
+   "package": "C0805",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C111",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C112",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C120",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C121",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C122",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C123",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C124",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C125",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C126",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C142",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C143",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C150",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C151",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C201",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C202",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C204",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C206",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C207",
+   "package": "C0805",
+   "base_rot": -90.0,
+   "correction": 0.0,
+   "final_rot": 270.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C208",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C209",
+   "package": "C0805",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C210",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C211",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C218",
+   "package": "C0805",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C219",
+   "package": "C0805",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C220",
+   "package": "C0805",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C221",
+   "package": "C0805",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C222",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C223",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C224",
+   "package": "C0603",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C225",
+   "package": "C0603",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C226",
+   "package": "C0805",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C228",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C229",
+   "package": "C0805",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C231",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C232",
+   "package": "C0805",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C234",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C235",
+   "package": "C0805",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C237",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C301",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C302",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C304",
+   "package": "C0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C306",
+   "package": "C0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C307",
+   "package": "C0805",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C308",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C309",
+   "package": "C0805",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C310",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C311",
+   "package": "CAP-TH_BD10.0-P5.00-D1.0-FD",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C312",
+   "package": "C0603",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C316",
+   "package": "C0805",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C317",
+   "package": "C0805",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C318",
+   "package": "C0805",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C319",
+   "package": "C0805",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C320",
+   "package": "C0603",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C321",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C322",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C323",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C324",
+   "package": "C0805",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C326",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C327",
+   "package": "C0805",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C329",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C330",
+   "package": "C0805",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C332",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C333",
+   "package": "C0805",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C335",
+   "package": "C0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "D1",
+   "package": "SMB_L4.6-W3.6-LS5.3-RD",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "D2",
+   "package": "SOD-123_L2.7-W1.6-LS3.7-RD",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "D3",
+   "package": "LED-SMD_L1.6-W0.8-R-RD",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "D4",
+   "package": "SOD-123_L2.7-W1.6-LS3.7-RD",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "FB1",
+   "package": "L0603",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "FB2",
+   "package": "L0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "FB3",
+   "package": "L0603",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "J1",
+   "package": "USB-C-SMD_MC-311D",
+   "base_rot": -90.0,
+   "correction": 0.0,
+   "final_rot": 270.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "J2",
+   "package": "RJ45-TH_HR911105A",
+   "base_rot": -90.0,
+   "correction": 0.0,
+   "final_rot": 270.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "J3",
+   "package": "FPC-SMD_20P-P0.50_XUNPU_FPC-05F-20PH20",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "J4",
+   "package": "CONN-TH_XDJK-0271-1650",
+   "base_rot": 180.0,
+   "correction": 0.0,
+   "final_rot": 180.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "J5",
+   "package": "CONN-TH_XDJK-0271-1650",
+   "base_rot": 180.0,
+   "correction": 0.0,
+   "final_rot": 180.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "J6",
+   "package": "CONN-TH_P5.00_KF301-5.0-2P",
+   "base_rot": 180.0,
+   "correction": 0.0,
+   "final_rot": 180.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "J7",
+   "package": "CONN-TH_P5.00_KF301-5.0-2P",
+   "base_rot": 180.0,
+   "correction": 0.0,
+   "final_rot": 180.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "J10",
+   "package": "CONN-TH_P5.00_KF301-5.0-2P",
+   "base_rot": 180.0,
+   "correction": 0.0,
+   "final_rot": 180.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "J11",
+   "package": "CONN-TH_P5.00_KF301-5.0-2P",
+   "base_rot": 180.0,
+   "correction": 0.0,
+   "final_rot": 180.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "L1",
+   "package": "IND-SMD_L8.5-W8.0_PCC-M0854M",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "L2",
+   "package": "IND-SMD_L8.5-W8.0_PCC-M0854M",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "L3",
+   "package": "IND-SMD_L8.5-W8.0_PCC-M0854M",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "L4",
+   "package": "IND-SMD_L8.5-W8.0_PCC-M0854M",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "L5",
+   "package": "IND-SMD_L8.5-W8.0_PCC-M0854M",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "L6",
+   "package": "IND-SMD_L8.5-W8.0_PCC-M0854M",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "L7",
+   "package": "IND-SMD_L8.5-W8.0_PCC-M0854M",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "L8",
+   "package": "IND-SMD_L8.5-W8.0_PCC-M0854M",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "L9",
+   "package": "IND-SMD_L4.0-W4.0",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "L10",
+   "package": "IND-SMD_L4.0-W4.0_LQH44PN2R2MP0L",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "Q1",
+   "package": "SOIC-8_L5.0-W4.0-P1.27-LS6.0-BL",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "Q2",
+   "package": "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "Q3",
+   "package": "SOT-23-3_L3.0-W1.7-P0.95-LS2.9-BR",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "Q4",
+   "package": "SOT-23-3_L3.0-W1.7-P0.95-LS2.9-BR",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "Q5",
+   "package": "SOT-23-3_L3.0-W1.7-P0.95-LS2.9-BR",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "Q6",
+   "package": "SOT-23-3_L3.0-W1.7-P0.95-LS2.9-BR",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R1",
+   "package": "R2512",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R2",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R3",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R4",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R5",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R6",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R7",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R8",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R9",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R10",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R11",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R12",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R13",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R14",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R15",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R16",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R17",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R18",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R19",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R30",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R31",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R32",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R33",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R34",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R35",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R36",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R40",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R41",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R42",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R43",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R44",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R45",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R50",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R51",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R52",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R53",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R54",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R55",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R56",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R57",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R58",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R60",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R61",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R62",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R63",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R64",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R65",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R66",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R67",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R70",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R71",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R72",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R73",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R74",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R75",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R80",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R81",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R82",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R83",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R90",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R91",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R92",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R93",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R100",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R101",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R102",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R110",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R111",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R112",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R120",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R121",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R122",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R203",
+   "package": "R0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R205",
+   "package": "R0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R212",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R213",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R214",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R215",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R216",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R217",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R227",
+   "package": "R0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R230",
+   "package": "R0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R233",
+   "package": "R0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R236",
+   "package": "R0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R303",
+   "package": "R0603",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R305",
+   "package": "R0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R313",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R314",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R315",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R325",
+   "package": "R0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R328",
+   "package": "R0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R331",
+   "package": "R0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R334",
+   "package": "R0603",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R401",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R402",
+   "package": "R0402",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R403",
+   "package": "R0402",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U1",
+   "package": "DFN-10_L2.0-W2.0-P0.40-BL-EP",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U2",
+   "package": "SOT-23-6_L2.9-W1.6-P0.95-LS2.8-BL",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U3",
+   "package": "SC-70-6_L2.2-W1.3-P0.65-LS2.1-BR",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U4",
+   "package": "TSOT-23-8_L2.9-W1.6-P0.65-LS2.8-BR",
+   "base_rot": 180.0,
+   "correction": 0.0,
+   "final_rot": 180.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U5",
+   "package": "TSOT-23-5_L2.9-W1.6-P0.95-LS2.8-BR",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U6",
+   "package": "SOT-23-5_L3.0-W1.7-P0.95-LS2.8-BR",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U7",
+   "package": "WIFI-SMD_ESP32-WROVER-IE8MB",
+   "base_rot": -90.0,
+   "correction": 0.0,
+   "final_rot": 270.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U8",
+   "package": "SOP-16_L10.0-W3.9-P1.27-LS6.0-BL",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U9",
+   "package": "QFN-24_L4.0-W4.0-P0.50-BL-EP2.6",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U10",
+   "package": "QFN-28_L5.0-W5.0-P0.50-BL-EP3.3",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U11",
+   "package": "SOIC-8_L5.0-W4.0-P1.27-LS6.0-BL",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U12",
+   "package": "TSSOP-20_L6.5-W4.4-P0.65-LS6.4-BL",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U13",
+   "package": "QFN-20_L3.0-W3.0-P0.40-BL-EP1.7",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U14",
+   "package": "MSOP-10_L3.0-W3.0-P0.50-LS5.0-BL",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U15",
+   "package": "HTSSOP-44_L14.0-W6.1-P0.64-LS8.1-BL",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U16",
+   "package": "HTSSOP-44_L14.0-W6.1-P0.64-LS8.1-BL",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U17",
+   "package": "TSSOP-24_L7.8-W4.4-P0.65-LS6.4-BL",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U19",
+   "package": "OPTO-TH_PLR237-T10BK",
+   "base_rot": 180.0,
+   "correction": 0.0,
+   "final_rot": 180.0,
+   "matched": null,
+   "source": "none",
+   "layer": "Top"
+  },
+  {
+   "ref": "Y1",
+   "package": "OSC-SMD_4P-L3.2-W2.5-BL",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "Y2",
+   "package": "OSC-SMD_4P-L3.2-W2.5-BL",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  }
+ ],
+ "n_rotation_corrections": 0,
+ "rotation_from_table": [
+  "U19"
+ ],
+ "easyeda_cache": "/hive/home/.cache/hwde/easyeda",
+ "model_fetch_failed": [],
+ "easyeda_rate_limited": null,
+ "missing_lcsc": [],
+ "missing_lcsc_unplaced": [
+  "H1",
+  "H2",
+  "H3",
+  "H4"
+ ],
+ "unsourced": [],
+ "off_lcsc": [],
+ "unplaced_smt": [],
+ "qty_mismatch": [],
+ "violations": [],
+ "bom_complete": true,
+ "castellated_pads": 0,
+ "castellated_refs": []
+}

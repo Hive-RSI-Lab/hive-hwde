@@ -1,0 +1,76 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C91447",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C91447",
+   "mpn": "IRM-H638T/TR2",
+   "brand": "Everlight Elec",
+   "description": "-25\u2103~+85\u2103 1.2mA 2.7V~5.5V 38kHz 45\u00b0\u300145\u00b0 SMD-4P,5x4mm Infrared Remote Receiver (IRM) ROHS",
+   "package": "SMD-4P,5x4mm",
+   "category": "Infrared Remote Receiver (IRM)",
+   "type": "Extended",
+   "basic": false,
+   "stock": 138216,
+   "price": 0.2599,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.2599
+    },
+    {
+     "qty": 50,
+     "price": 0.1989
+    },
+    {
+     "qty": 150,
+     "price": 0.1691
+    },
+    {
+     "qty": 1500,
+     "price": 0.1435
+    },
+    {
+     "qty": 3000,
+     "price": 0.1361
+    },
+    {
+     "qty": 4500,
+     "price": 0.1317
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1810121714_Everlight-Elec-IRM-H638T-TR2_C91447.pdf",
+   "url": "https://www.lcsc.com/product-detail/infrared-remote-receiver-irm_everlight-elec-irm-h638t-tr2_C91447.html",
+   "attributes": [
+    {
+     "name": "Frequency - Center",
+     "value": "38kHz"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-25\u2103~+85\u2103"
+    },
+    {
+     "name": "Viewing Angle",
+     "value": "45\u00b0"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "2.7V~5.5V"
+    },
+    {
+     "name": "Current - Supply",
+     "value": "1.2mA"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}
