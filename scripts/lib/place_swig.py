@@ -41,6 +41,13 @@ unscriptable):
        footprint-INTERNAL silk on an already-placed board (a library edit
        cannot reach one without re-running board_init and losing placement).
 
+Pad and part-attribute ops (U-ECO: the hi-fi boards scripted these by hand):
+  {"op": "set_pad", "ref": R, "pad": N | [N...], ["net": NAME | ""],
+   ["size": mm | [w, h]]}
+     - re-nets (a net not on the board is created; "" clears it, for an NC
+       pin) and/or resizes the named pads. Absolute, so idempotent.
+  {"op": "set_dnp", "ref": R, "dnp": bool}
+
 The board is saved ONLY if every op applied; any failure exits 3 with a JSON
 error and writes nothing (the driver treats the staged copy as garbage).
 Save() may drop a default .kicad_pro next to `out` - the driver stages in a
@@ -242,8 +249,46 @@ def apply_silk_clear(board, op: dict) -> dict:
             "only_offboard": keep_inside}
 
 
+def apply_set_pad(board, op: dict) -> dict:
+    fp = board.FindFootprintByReference(op["ref"])
+    if fp is None:
+        raise KeyError(f"footprint '{op['ref']}' not on board")
+    nums = [op["pad"]] if isinstance(op["pad"], str) else list(op["pad"])
+    pads = [p for p in fp.Pads() if p.GetNumber() in nums]
+    missing = set(nums) - {p.GetNumber() for p in pads}
+    if missing:
+        raise KeyError(f"{op['ref']}: no pad {sorted(missing)}")
+    net = None
+    if op.get("net"):
+        net = board.FindNet(op["net"])
+        if net is None:
+            net = pcbnew.NETINFO_ITEM(board, op["net"])
+            board.Add(net)
+    size = op.get("size")
+    if size is not None and not isinstance(size, list):
+        size = [size, size]
+    for p in pads:
+        if "net" in op:
+            if net is None:
+                p.SetNetCode(0)
+            else:
+                p.SetNet(net)
+        if size is not None:
+            p.SetSize(pcbnew.VECTOR2I(iu(size[0]), iu(size[1])))
+    return {"ref": op["ref"], "pads": sorted(p.GetNumber() for p in pads),
+            "net": op.get("net"), "size": size}
+
+
 def apply_op(board, op: dict) -> dict:
     kind = op["op"]
+    if kind == "set_pad":
+        return apply_set_pad(board, op)
+    if kind == "set_dnp":
+        fp = board.FindFootprintByReference(op["ref"])
+        if fp is None:
+            raise KeyError(f"footprint '{op['ref']}' not on board")
+        fp.SetDNP(bool(op["dnp"]))
+        return {"ref": op["ref"], "dnp": fp.IsDNP()}
     if kind in ("add_text", "remove_text", "move_text", "set_text"):
         return apply_text_op(board, op)
     if kind == "silk_clear":
