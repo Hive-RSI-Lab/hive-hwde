@@ -18,11 +18,13 @@
    "check_mating": 0,
    "check_pdn": 0,
    "check_ratings": 0,
+   "check_antenna": 0,
    "check_bom_sync": 0,
    "check_courtyard": 0,
    "check_mate_pins": 0,
    "check_model_paths": 0,
-   "check_power_path": 0
+   "check_power_path": 0,
+   "check_straps": 0
   },
   "by_kind": {
    "missing_return_via": 1
@@ -52,7 +54,7 @@
  },
  "e2e": null,
  "_baseline": {
-  "created": "2026-10-29",
+  "created": "2026-10-30",
   "kicad_version": null
  }
 }
