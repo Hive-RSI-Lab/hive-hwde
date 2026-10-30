@@ -1,0 +1,15 @@
+# Seeded fault for check_model_fit (docs/failure-modes.md section 4).
+mutants:
+  model-off-pads:
+    board: blinky2
+    script: mutations/model_off_pads.py
+    check: check_model_fit
+    defect: >-
+      LIBRARY fault: J2's 3D model is offset half a pitch along the header,
+      so its pins stand between the holes and the render and STEP show the
+      part where it isn't (EasyEDA's TYPE-C-31-M-12 model, 2.2 mm off on
+      lite-main J1)
+    expect:
+      kind: model_offset
+      ref: J2
+      pos: [146.5, 110.5]   # J2's origin

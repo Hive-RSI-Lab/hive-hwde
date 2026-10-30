@@ -1,0 +1,6 @@
+# check_model_fit: every footprint's 3D model sits on its own pads - offset,
+# rotation, scale and Z against the pads and holes (EasyEDA's TYPE-C-31-M-12
+# model sits 2.2 mm off lite-main J1's footprint). Board only.
+name: check_model_fit
+needs: []
+args: []
