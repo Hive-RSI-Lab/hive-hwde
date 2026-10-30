@@ -23,6 +23,7 @@
    "check_courtyard": 0,
    "check_mate_pins": 0,
    "check_model_paths": 0,
+   "check_power_path": 0,
    "check_straps": 0
   },
   "by_kind": {
@@ -54,7 +55,7 @@
  },
  "e2e": null,
  "_baseline": {
-  "created": "2026-10-29",
+  "created": "2026-10-30",
   "kicad_version": null
  }
 }

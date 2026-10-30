@@ -28,7 +28,9 @@ the pull is reported (all idempotent, all text surgery):
                   there are any)            -> --no-pin-types to skip
 Every footprint's (model ...) path is then rewritten from the absolute path
 easyeda2kicad writes to ${KIPRJMOD}/../lib/<lib>.3dshapes/<name> (relative to
---project, else <out_dir>/../kicad), so the board survives its checkout moving.
+--project, else <out_dir>/../kicad - for an out dir named lib/ even before
+that kicad/ exists, the usual order of a new board), so the board survives
+its checkout moving.
 `--verify-drc` measures the result the only way that counts: one instance of each
 pulled footprint alone on a scratch board, real DRC (LEARNINGS 2026-07-28
 [easyeda2kicad][drc] - geometry checkers and DRC disagree).
@@ -616,8 +618,11 @@ def main(argv: list[str] | None = None) -> int:
         if pretty.is_dir():
             project = (Path(args.project) if args.project
                        else out_dir.parent / "kicad")
+            # boards/<b>/lib -> boards/<b>/kicad even before kicad/ is made:
+            # the library is often pulled before the project (hi-fi core)
             models = _portable_models(pretty, Path(str(base) + ".3dshapes"),
-                                      project, explicit=bool(args.project))
+                                      project, explicit=bool(args.project)
+                                      or out_dir.name == "lib")
 
         registered = None
         if args.project:

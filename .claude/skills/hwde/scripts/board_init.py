@@ -24,7 +24,9 @@ A new board looks finished by default: corners rounded (AUTO_CORNER_RADIUS,
 capped at a tenth of the shorter side) and, once the shorter side reaches
 AUTO_HOLES_MIN_SIDE, four M3 mounting holes that are plated with an exposed
 copper ring and a ring of vias (MountingHole_3.2mm_M3_Pad_Via), joined to the
-ground net. A brief that wants none, a bare NPTH hole or another size says so
+ground net. A fixed --outline is not widened for them, so there "auto" gives
+none when the packed parts reach closer to an edge than a corner hole needs,
+and the report's mounting_holes_skipped says so. A brief that wants none, a bare NPTH hole or another size says so
 with --mounting-holes 0 / --mounting-hole-fp / --corner-radius 0, and wins.
 
 The outline is PROVISIONAL. Under a build mode whose binding makes geometry an
@@ -439,7 +441,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--mounting-holes", default="auto",
                     help="corner mounting holes: 0..4, or 'auto' (default) = "
                          "4 when the board's shorter side is at least %s mm, "
-                         "else none. A brief that asks for none passes 0"
+                         "else none. On a fixed --outline, 'auto' also gives "
+                         "none when the packed parts reach closer to an edge "
+                         "than a corner hole needs (the report's "
+                         "mounting_holes_skipped says so); pass 4 to have "
+                         "them anyway and let placement clear the corners. "
+                         "A brief that asks for none passes 0"
                          % board_swig_defaults()[1])
     ap.add_argument("--mounting-hole-fp", default=DEFAULT_HOLE_FP,
                     help="footprint for --mounting-holes (LIB:NAME). Default is "
@@ -610,6 +617,12 @@ def main(argv: list[str] | None = None) -> int:
                                  if worker.get("mounting_holes") else None),
             "mounting_hole_net": worker.get("mounting_hole_net"),
             "mounting_hole_inset": worker.get("mounting_hole_inset"),
+            # "auto" dropping the holes on a fixed outline is easy to miss
+            # in worker_notes; a board that wants them passes 4.
+            "mounting_holes_skipped": next(
+                (n + " - pass --mounting-holes 4 to place them anyway"
+                 for n in worker_notes if "the fixed outline leaves" in n),
+                None),
             "corner_radius": worker.get("corner_radius", 0.0),
             "outline_origin": worker.get("outline_origin"),
             "cutouts": worker.get("cutouts", []),
