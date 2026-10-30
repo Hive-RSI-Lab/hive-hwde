@@ -78,3 +78,12 @@ def test_gate_charges_count_failing_and_unwaived_warnings():
     c = score.gate_charges(result, [w])
     assert c == {"check_thermal": 1, "check_route_style": 1, "(warnings past the cap)": 2}
     assert sum(score.gate_charges({"failing": [], "warnings": [], "warnings_count": 0}).values()) == 0
+
+
+def test_gate_charges_take_a_plain_string_warning():
+    # a gate may report a warning (or a failing finding) as a plain string
+    result = {"failing": ["board has no outline"],
+              "warnings": ["3 3D model(s) missing", {"check": "check_thermal"}],
+              "warnings_count": 3}
+    w = {"check": "check_thermal", "net": None, "reason": "r", "approved": "x 2026-10-29"}
+    assert score.gate_charges(result, [w]) == {"?": 2, "(warnings past the cap)": 1}
