@@ -133,6 +133,12 @@ What moved where:
 
   `tests/test_env_lookups.py` covers these lookups (`$HWDE_PY -m pytest
   tests`). They're meant to go upstream.
+- Part datasheets: `scripts/lib/researchlib.py` `http_transport` follows a short HTML
+  redirect stub (`stub_redirect`) like an HTTP redirect, because
+  wmsc.lcsc.com now answers with one. `scripts/datasheet_extract.py`
+  gains `--fetch` to download a workspace's part datasheets through it.
+  `agents/datasheet-extractor.md` and `reference/recipes/research.md` say so.
+  Offer these upstream.
 
 `requirements.lock`, `LICENSE` and `NOTICE` came from upstream's repo root,
 and so did `docs/failure-modes.yaml` (`bench --scorecard-corpus` maps

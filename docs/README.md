@@ -55,6 +55,11 @@ page covers how an agent runs it inside the Hive.
   `PYTHONPATH=$HWDE_MODULE/scripts:$HWDE_MODULE/scripts/lib $HWDE_PY kicad/gen/root.py`.
   `HWDE_SKILL`, its old name, is still set to the same path for boards that
   use it.
+- Part datasheets: `hwde datasheet_extract --fetch boards/<name>` puts
+  each parts.json line's PDF in `parts/datasheets/<lcsc>.pdf` (not
+  committed; `index.json` beside them keeps URL and sha256). LCSC's
+  wmsc.lcsc.com answers with a 140-byte script redirect, not the PDF;
+  the fetch follows it, so don't curl datasheets yourself.
 - Every board with a netlist gets `hwde sim_board --workspace boards/<name>
   --out boards/<name>/reports/sim_board.json`: ngspice over the board's own
   passives and discretes (KiCad 10's bundled libngspice, found by this

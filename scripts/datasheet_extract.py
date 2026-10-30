@@ -15,6 +15,14 @@ reads the PDF pages); this script owns the deterministic half:
                     (--full-text restores them). Image-only datasheets yield
                     little/no text - the agent then reads the rendered pages
                     directly.
+  --fetch WS        download each WS/parts/parts.json line's datasheet to
+                    WS/parts/datasheets/<lcsc>.pdf (or only --lcsc's) and
+                    index them in WS/parts/datasheets/index.json. Every hop
+                    must be on the research allowlist; LCSC's HTML redirect
+                    stubs (wmsc.lcsc.com answers one) are followed, and
+                    anything that isn't a PDF in the end is refused, never
+                    written. exit 0 = every datasheet fetched, 1 = some
+                    refused or missing, 2 = bad workspace.
   --validate FILE   validate a candidate extraction against the schema.
                     exit 0 = valid, 1 = schema violations, 2 = unreadable.
   --schema          print the JSON Schema (single source of truth).
@@ -280,9 +288,10 @@ def _checked_pdf(path: str) -> tuple[Path | None, dict | None]:
         return None, {"script": "datasheet_extract", "status": "error",
                       "error": (f"{pdf} is not a PDF (starts {head!r}); "
                                 "www.lcsc.com/datasheet URLs serve an HTML "
-                                "viewer shell - re-download from the "
-                                "wmsc.lcsc.com mirror (parts_search emits the "
-                                "wmsc form) with a browser User-Agent")}
+                                "viewer shell and wmsc.lcsc.com a redirect "
+                                "stub - download it with "
+                                "`datasheet_extract.py --fetch <ws>`, which "
+                                "follows the stub")}
     return pdf, None
 
 
@@ -350,6 +359,101 @@ def do_app_note(args) -> tuple[dict, int]:
                  "those PDF pages directly if needed, or --full-text."),
     }
     return payload, 0
+
+
+def _lib(name: str):
+    sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
+    return __import__(name)
+
+
+def fetch_datasheet(url: str, dest: Path, transport=None,
+                    domains: dict | None = None) -> dict:
+    """GET one datasheet into dest: {status: fetched|refused|error, ...}.
+    transport is researchlib.http_transport unless injected (tests)."""
+    researchlib = _lib("researchlib")
+    partslib = _lib("partslib")
+    url = partslib.fix_datasheet_url(url)
+    out = {"url": url, "file": None}
+    ck = researchlib.check_url(url, domains)
+    if not ck["ok"]:
+        return {**out, "status": "refused", "error": ck["reason"]}
+    try:
+        resp = (transport or researchlib.http_transport)(url)
+    except Exception as exc:  # noqa: BLE001 - transport failure is a result
+        return {**out, "status": "error",
+                "error": f"transport failure: {type(exc).__name__}: {exc}"}
+    out["hops"] = resp.get("hops") or [resp.get("final_url") or url]
+    for hop in out["hops"]:
+        hk = researchlib.check_url(hop, domains)
+        if not hk["ok"]:
+            return {**out, "status": "refused",
+                    "error": f"redirect to {hop} refused: {hk['reason']}"}
+    blk = researchlib.host_block(resp, url)
+    if blk:
+        return {**out, "status": "refused", "blocked_by_host": blk,
+                "error": f"blocked by host: {blk['host']} answered HTTP "
+                         f"{blk['http_status']}"}
+    if int(resp.get("status") or 0) >= 400:
+        return {**out, "status": "error",
+                "error": f"HTTP {resp.get('status')}"}
+    data = resp.get("body") or b""
+    if not data.startswith(b"%PDF"):
+        return {**out, "status": "refused",
+                "error": (f"not a PDF after {len(out['hops'])} hop(s): "
+                          f"{len(data)} bytes starting {data[:60]!r}")}
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_bytes(data)
+    import hashlib
+    return {**out, "status": "fetched", "file": str(dest),
+            "final_url": resp.get("final_url") or url, "bytes": len(data),
+            "sha256": hashlib.sha256(data).hexdigest()}
+
+
+def do_fetch(args, transport=None) -> tuple[dict, int]:
+    ws = Path(args.fetch)
+    pj = ws / "parts" / "parts.json"
+    if not pj.is_file():
+        return {"script": "datasheet_extract", "status": "error",
+                "error": f"{pj} not found"}, 2
+    lines = json.loads(pj.read_text(encoding="utf-8")).get("parts") or []
+    ddir = ws / "parts" / "datasheets"
+    results = []
+    for line in lines:
+        lcsc = str(line.get("lcsc") or "").strip()
+        if args.lcsc and lcsc != args.lcsc:
+            continue
+        if not lcsc or not line.get("datasheet"):
+            results.append({"lcsc": lcsc, "mpn": line.get("mpn"),
+                            "status": "missing",
+                            "error": "no lcsc or no datasheet URL"})
+            continue
+        r = fetch_datasheet(line["datasheet"], ddir / f"{lcsc}.pdf",
+                            transport=transport)
+        if r.get("file"):
+            r["file"] = Path(r["file"]).relative_to(ws).as_posix()
+        results.append({"lcsc": lcsc, "mpn": line.get("mpn"), **r})
+    if args.lcsc and not results:
+        return {"script": "datasheet_extract", "status": "error",
+                "error": f"{args.lcsc} is not in {pj}"}, 2
+    ok = all(r["status"] == "fetched" for r in results)
+    if any(r["status"] == "fetched" for r in results):
+        idx = ddir / "index.json"
+        old = (json.loads(idx.read_text(encoding="utf-8"))
+               if idx.is_file() else {})
+        for r in results:
+            if r["status"] == "fetched":
+                old[r["lcsc"]] = {k: r.get(k) for k in
+                                  ("mpn", "file", "url", "final_url",
+                                   "bytes", "sha256")}
+        idx.write_text(json.dumps(old, indent=1, ensure_ascii=True,
+                                  sort_keys=True) + "\n", encoding="utf-8")
+    return {"script": "datasheet_extract",
+            "status": "pass" if ok else "violations",
+            "fetched": sum(r["status"] == "fetched" for r in results),
+            "of": len(results), "datasheets": results,
+            "next": ("datasheet_extract.py --pdf parts/datasheets/<lcsc>.pdf "
+                     "--lcsc <lcsc> --out parts/<lcsc>.grounding.json")}, \
+        (0 if ok else 1)
 
 
 def _layoutimpl():
@@ -435,6 +539,9 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     mode = ap.add_mutually_exclusive_group(required=True)
     mode.add_argument("--pdf", help="extract text + emit grounding payload")
+    mode.add_argument("--fetch", metavar="WS",
+                      help="download parts.json datasheets into "
+                           "WS/parts/datasheets/")
     mode.add_argument("--validate", help="validate a candidate extraction JSON")
     mode.add_argument("--schema", action="store_true", help="print the JSON schema")
     mode.add_argument("--app-note", help="extract text + emit a KNOWLEDGE "
@@ -449,7 +556,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--cap-class", default="2layer_1oz",
                     help="jlc_capabilities design_rules row")
     ap.add_argument("--needs", help="--implications: JSON needs object")
-    ap.add_argument("--lcsc", help="tag the output with this LCSC id (--pdf)")
+    ap.add_argument("--lcsc", help="tag the output with this LCSC id (--pdf); "
+                                   "fetch only this part (--fetch)")
     ap.add_argument("--full-text", action="store_true",
                     help="--pdf: emit full text for EVERY page (no stubbing)")
     ap.add_argument("--out", help="write JSON here instead of stdout")
@@ -461,6 +569,8 @@ def main(argv: list[str] | None = None) -> int:
                              "schema": DATASHEET_SCHEMA}, 0
         elif args.pdf:
             payload, code = do_pdf(args)
+        elif args.fetch:
+            payload, code = do_fetch(args)
         elif args.app_note:
             payload, code = do_app_note(args)
         elif args.screen:

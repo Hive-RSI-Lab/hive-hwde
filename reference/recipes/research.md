@@ -42,7 +42,8 @@ ruling); the caps are what bound it, and a cap hit is a VISIBLE checkpoint.
    ledgered). Files land in `research/sources/`, sha-pinned with tier
    (`vendor-layout > vendor-appnote > cross-vendor > forum`; vendor community
    hosts force `forum`). Depth cap = acquisitions per task -> exit 1
-   checkpoint. `--expect pdf` refuses HTML shells (LCSC: use the wmsc form).
+   checkpoint. `--expect pdf` refuses HTML shells (LCSC: use the wmsc form; its
+   script-redirect stub to datasheet.lcsc.com is followed as a hop).
 4. Records: `research/records/<id>.yaml`, schema v2 strict, `status: draft`,
    `maturity: draft`, `origin: research:<task>`, sources ONLY from the ledger
    with `page` + `note` (what was READ), `envelope` + `envelope_note` (what
