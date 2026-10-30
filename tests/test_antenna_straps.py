@@ -218,6 +218,9 @@ def test_core_gpio0_latches_the_oscillator(tmp_path):
     # 100 k up against 100 k || (1 k + 100 k) down: 1.10 V on PVDD_EN
     assert abs(undef["/PVDD_EN"] - 1.10) < 0.01
     assert [v["refs"] for v in k["io_reset_holds"]] == [["U17", "U7"]]
+    # POWER-5: Q2's gate (through R6 1 k) at 1.10 V against 2N7002's 1.0 V
+    (fet,) = k["fet_on_at_reset"]
+    assert fet["refs"] == ["Q2", "U17"] and abs(fet["volts"] - 1.10) < 0.01
 
 
 def test_core_fixed_with_tca9539_on_esp_en(tmp_path):

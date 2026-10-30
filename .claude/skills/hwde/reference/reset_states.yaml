@@ -139,3 +139,20 @@ oscillators:
   enable_active: high
   float_enabled: true
   source: YXC YSO110TR datasheet p1 (enable "high voltage or floating"); SiTime SiT8008 OE/ST
+
+# MOSFETs whose gate an enable line drives: the minimum VGS(th), so a gate
+# that comes up mid-band at power-on can be told to conduct (review-2
+# POWER-5: core's Q2 at 1.10 V).
+fets:
+  - match: '^2N7002'
+    vth_min: 1.0
+    source: JSCJ 2N7002 datasheet, VGS(th) 1.0-2.5 V at ID 250 uA
+    verified: true
+  - match: '^(BSS138|BSS138K)'
+    vth_min: 0.8
+    source: onsemi BSS138 datasheet, VGS(th) 0.8-1.5 V
+    verified: false
+  - match: '^(AO3400|AO3400A)'
+    vth_min: 0.65
+    source: AOS AO3400A datasheet, VGS(th) 0.65-1.45 V
+    verified: false

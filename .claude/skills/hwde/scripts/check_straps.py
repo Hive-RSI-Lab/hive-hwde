@@ -32,6 +32,9 @@ Findings:
                       hi-Z at reset, or add the part to reset_states.yaml)
   io_reset_undefined  error: an expander pin sits between VIL and VIH of its
                       supply at power-on (its pull fights an external one)
+  fet_on_at_reset     error: a MOSFET gate on an expander pin (directly or
+                      through one resistor) sits at or above the FET's
+                      minimum VGS(th) at power-on (reset_states.yaml fets)
   io_reset_floating   warning: an expander pin with no pull at all, and
                       nothing else on its net that could hold it
   io_reset_holds      warning: an expander whose outputs survive an MCU
@@ -465,7 +468,25 @@ def check_expanders(board, kb, mcu, bg) -> tuple[list, list]:
                     "make the pulls agree (one pull, or a part with no "
                     "internal pull-up)", SOURCE, kind="io_reset_undefined",
                     volts=checklib.rnd(st["volts"], 3)))
-            elif st["state"] == "floating" and not st["unknown"]:
+            for gate in gates_on(board, g):
+                gref, gpin, gg = gate
+                vth = fet_vth(kb, board.value(gref))
+                if vth is None:
+                    continue
+                gst = res.state(gg, "por", vdd=vdd, vil=IO_VIL, vih=IO_VIH)
+                if gst["volts"] is not None and gst["volts"] >= vth:
+                    viols.append(checklib.violation(
+                        SCRIPT, "error", pad_pos(bg, gref, gpin), None,
+                        board.label(gg), [ref, gref],
+                        f"{gref} ({board.value(gref)}) gate on "
+                        f"{board.label(gg)} sits at {gst['volts']:.2f} V at "
+                        f"power-on, from {ref} {meta['name']}, at or above "
+                        f"its minimum VGS(th) {vth:g} V: a low-threshold "
+                        "part conducts before firmware runs. Hold the gate "
+                        "well below VGS(th) min until firmware drives it",
+                        SOURCE, kind="fet_on_at_reset",
+                        volts=checklib.rnd(gst["volts"], 3), vth_min=vth))
+            if st["state"] == "floating" and not st["unknown"]:
                 viols.append(checklib.violation(
                     SCRIPT, "warning", pos, None, board.label(g), [ref],
                     f"{ref} {meta['name']} ({board.label(g)}) floats from "
@@ -483,6 +504,33 @@ def check_expanders(board, kb, mcu, bg) -> tuple[list, list]:
                 "(watchdog, panic, EN): anything they enable stays on while "
                 "the straps latch", SOURCE, kind="io_reset_holds"))
     return viols, facts
+
+
+GATE_NAMES = ("G", "GATE")
+
+
+def gates_on(board, g) -> list[tuple]:
+    """(ref, pin, gate net group) of every FET gate on net group g or one
+    resistor away from it."""
+    groups = [g]
+    for ref, pin in board.nodes.get(g, []):
+        if prefix(ref) == "R" and len(board.pins[ref]) == 2:
+            other = [q for q in board.pins[ref] if q != pin][0]
+            groups.append(board.net(ref, other))
+    out = []
+    for gg in groups:
+        for ref, pin in board.nodes.get(gg, []):
+            if prefix(ref) == "Q" and \
+                    board.pins[ref][pin]["name"] in GATE_NAMES:
+                out.append((ref, pin, gg))
+    return out
+
+
+def fet_vth(kb: dict, value: str) -> float | None:
+    for row in kb.get("fets") or []:
+        if re.search(row["match"], value or "", re.I):
+            return row["vth_min"]
+    return None
 
 
 def find_netlist(pcb: Path) -> Path | None:
