@@ -133,7 +133,8 @@ Tools that are not gates, run from P4 on (every exported netlist) and
 weighed like any other report:
 - `scripts/sim_board.py --workspace <ws>`: ngspice on the board's own
   netlist, no testbench to write. Rails are sources, ICs open, every R, C,
-  L, diode, LED, zener and recognised BJT/MOSFET in place, under four drive
+  L, diode, LED, zener and recognised BJT/MOSFET in place (a dual, e.g.
+  MMDT3904 or 2N7002DW, as its two units Q1A/Q1B), under four drive
   scenarios (default, every IC I/O low, high, running) plus a rail-ramp
   transient. Reports resistor overpower, cap overvoltage/DC bias, the Vout
   each FB divider sets against the rail it feeds, LED and GPIO currents,
