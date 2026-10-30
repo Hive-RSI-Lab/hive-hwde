@@ -65,6 +65,10 @@ KICAD_PREFERENCE = ("10.", "9.")
 MIN_JAVA_FOR_FREEROUTING = 25
 
 _TIMEOUT = 30
+# `kicad-cli version` starts KiCad (an AppImage unpacks itself first): on a
+# strained machine that alone has taken over 30 s, and a pin whose version
+# probe times out is refused as "not a working kicad-cli" (issue #252).
+_VERSION_TIMEOUT = 120
 
 # Linux headless: KiCad's SWIG Specctra export/import (route_swig) and other
 # wx-backed pcbnew paths refuse to run without an X display ("Unable to access
@@ -268,7 +272,8 @@ def find_kicad_cli() -> Path | None:
 
 def kicad_cli_version(cli: Path) -> tuple[int, ...]:
     try:
-        return parse_version(_run([str(cli), "version"]).stdout)
+        return parse_version(
+            _run([str(cli), "version"], timeout=_VERSION_TIMEOUT).stdout)
     except (OSError, subprocess.TimeoutExpired):
         return ()
 

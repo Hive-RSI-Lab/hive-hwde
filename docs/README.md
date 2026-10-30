@@ -126,6 +126,10 @@ as its own change: `hive agent brief --project hive-hwde --title ...
 --done ...`. Board-local workarounds are the failure mode. List what you hit
 in your account.
 
+A fix to a script goes in with a test under `tests/` (run them with
+`eval "$(bin/hwde env)"; $HWDE_PY -m pytest -q tests`), and a line in
+[upstream.md](upstream.md) so an update from upstream keeps it.
+
 A workaround you can't avoid gets a row in [workarounds.md](workarounds.md)
 naming the gate steps it touched, and a probe in `tests/workarounds/` that
 exits 0 while its cause stands. That is what the project's score counts

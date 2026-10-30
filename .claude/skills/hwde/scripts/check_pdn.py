@@ -3,6 +3,9 @@
 One concern: does each power rail have the reservoir it needs? For every rail in
 constraints.json["power"], gather the caps associated with it (the same
 decoupling.json metadata check_decoupling uses) and sanity-check the inventory:
+ - a rail with no recorded association falls back to the caps the board
+   puts straight across it and ground (a rail with no IC on it has no IC pin
+   to record its bulk cap against); those are listed as `caps_from_board`;
  - a rail with NO decoupling at all is an error (nothing holds the rail up
    during a transient);
  - a rail with caps but NO bulk reservoir (nothing >= 1 uF) is a warning (only
@@ -24,6 +27,7 @@ CLI: --pcb board.kicad_pcb --constraints constraints.json --decoupling dec.json
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -43,8 +47,31 @@ def rail_caps(rail: str, assocs: list[dict]) -> list[dict]:
     return [a for a in assocs if a.get("rail") == rail]
 
 
+def board_caps(bg: geom.BoardGeom, rail: str) -> list[dict]:
+    """Caps the board itself puts straight across `rail` and a ground net, in
+    the association shape. decoupling.json only records caps placed against an
+    IC pin, so a rail with no IC on it (a header feeding an LED, its bulk cap
+    beside the header) has none recorded although the cap is there."""
+    out = []
+    # a geometry without footprints (a test stub of nets only) has none
+    for ref, fp in sorted((getattr(bg, "footprints", None) or {}).items()):
+        if not re.match(r"^C\d+$", ref):
+            continue
+        nets = {p.net for p in bg.pads_of(ref=ref) if p.net}
+        if len(nets) != 2 or rail not in nets:
+            continue
+        other = (nets - {rail}).pop()
+        if not is_ground(other):
+            continue
+        out.append({"cap": ref, "rail": rail, "value": fp.get("value"),
+                    "source": "board"})
+    return out
+
+
 def check_rail(bg: geom.BoardGeom, rail: str, current_a, assocs: list[dict]):
     caps = rail_caps(rail, assocs)
+    from_board = [] if caps else board_caps(bg, rail)
+    caps = caps or from_board
     parsed = [(a.get("cap"), check_decoupling.parse_farads(a.get("value")))
               for a in caps]
     refs = sorted({c for c, _ in parsed if c})
@@ -69,7 +96,8 @@ def check_rail(bg: geom.BoardGeom, rail: str, current_a, assocs: list[dict]):
             rail=rail, cap_count=len(caps), bulk_count=0))
 
     facts = {"rail": rail, "current_a": current_a, "on_board": on_board,
-             "caps": refs, "cap_count": len(caps), "bulk_count": len(bulk),
+             "caps": refs, "caps_from_board": sorted(c["cap"] for c in from_board),
+             "cap_count": len(caps), "bulk_count": len(bulk),
              "ceramic_count": len(ceramic),
              "total_uf": checklib.rnd(total_f * 1e6)}
     return violations, facts
