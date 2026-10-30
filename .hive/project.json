@@ -1,4 +1,5 @@
 {
   "test": "bin/hwde test",
+  "forge_tests": ["test (ubuntu-latest)"],
   "score": {"command": "bin/hwde score", "direction": "higher", "tolerance": 0, "paths": ["bin/score.py", "bin/check_all.py", "tests/workarounds/"]}
 }

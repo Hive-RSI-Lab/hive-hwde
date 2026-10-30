@@ -1,7 +1,7 @@
 """rules_gen on a dense 2-layer power board (lite-main, hifi-receiver-2):
 plane_fed rails sized for their taps, neck-down rules where a power net meets
 pads narrower than its width, and power-class clearance no wider than the
-pins' own gaps. Pure tests on a synthetic board file; no KiCad needed."""
+pins. Pure tests on a synthetic board file; no KiCad needed."""
 from __future__ import annotations
 
 import json
@@ -93,33 +93,12 @@ def test_rules_gen_warns_plane_fed_without_a_plane(tmp_path, capsys):
     assert len(out["warnings"]) == 1 and "VBUS" in out["warnings"][0]
 
 
-def test_pad_gaps_are_per_footprint(bg):
-    gaps = rules_gen.pad_gaps(bg, {"VBUS", "+5V", "GND"})
-    assert gaps["VBUS"] == {"gap_mm": 0.15, "ref": "U1"}
-    assert gaps["+5V"]["gap_mm"] == 0.15
-    # GND's nearest foreign pad is +5V in U1 (1.6 - 0.8 - 0.3 - 0.125);
-    # J1's VBUS pad, 1 mm away in the same footprint, is further
-    assert gaps["GND"]["gap_mm"] == pytest.approx(0.375)
-
-
-def test_power_class_clearance_follows_the_pins(bg):
+def test_power_class_clearance_is_the_fab_floor(bg):
     cons = {"power": [{"net": "VBUS", "current_a": 1.0},
-                      {"net": "GND", "current_a": 1.0},
                       {"net": "+5V", "current_a": 2.0}]}
     _, report = rules_gen.build(cons, CAP, STACKUP, False, bg)
-    clr = {c["name"]: c["clearance"] for c in report["classes"]}
-    one, two = rules_gen.power_class_name(_w(1.0)), \
-        rules_gen.power_class_name(_w(2.0))
-    # VBUS's pins sit 0.15 apart: its class may not demand 0.2
-    assert clr[one] == 0.15 and clr[two] == 0.15
-    # without the board the power default stands
-    _, plain = rules_gen.build(cons, CAP, STACKUP, False)
-    assert {c["clearance"] for c in plain["classes"]} == {0.2}
-    # and never below the fab floor
-    tight = {"VBUS": {"gap_mm": 0.05, "ref": "U1"}}
-    pf = rules_gen.power_rules(cons, 0.035)[1]
-    classes, _ = rules_gen.net_classes(cons, pf, [], CAP, [], tight)
-    assert min(c["clearance"] for c in classes) == CAP["min_clearance_mm"]
+    assert {c["clearance"] for c in report["classes"]} == \
+        {CAP["min_clearance_mm"]}
 
 
 def test_neck_rules_at_narrow_pads(bg):

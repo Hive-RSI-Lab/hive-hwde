@@ -67,9 +67,8 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    traces at class width, so a flattened class is a routing defect.
    - It reads the board beside `--pro` (or `--pcb`): where a power net
    meets pads narrower than its width it adds `aiee_pwr_neck_<net>_<ref>`
-   (the net may narrow to that pad's width inside the part's courtyard),
-   and a power class's clearance drops from 0.2 mm to its pins' own gap
-   (report `necks`, `class_clearances`). A 5 A rail into fine-pitch parts
+   (the net may narrow to that pad's width inside the part's courtyard;
+   report `necks`, `class_clearances`). A 5 A rail into fine-pitch parts
    is a pour: declare it `plane_fed` with its real current and its
    `planes` entry, and its tracks are sized as taps (`tap_current_a`).
    - If board_init is ever re-run, re-run rules_gen after it.

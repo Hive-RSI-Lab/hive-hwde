@@ -181,13 +181,8 @@ def _find_cli():
 
 
 def _cli_version(cli) -> str | None:
-    try:
-        r = subprocess.run([str(cli), "version"], capture_output=True,
-                           text=True, timeout=30)
-        return (r.stdout or "").strip().splitlines()[0] if r.returncode == 0 \
-            else None
-    except OSError:
-        return None
+    import env
+    return env.kicad_cli_version_line(cli)
 
 
 def _require_pinned_siblings(ctx, artifact: Path):

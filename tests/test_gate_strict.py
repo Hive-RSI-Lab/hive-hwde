@@ -316,7 +316,8 @@ ALL_CHECKS = [c["name"] for c in verify_all.CHECKS]
 # check_ratings needs the workspace parts dir, which the golden boards lack
 CONSTRAINT_NEEDING = ["check_return_path", "check_current",
                       "check_decoupling", "check_creepage",
-                      "check_thermal", "check_pdn", "check_ratings"]
+                      "check_thermal", "check_pdn", "check_ratings",
+                      "check_power_path"]
 
 
 def test_verify_all_nonstrict_skips_are_visible(tmp_path):

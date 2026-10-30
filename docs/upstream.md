@@ -10,6 +10,23 @@ these ways:
   their owners' terms, not MIT.
 - `scripts/lib/knowledgelib.py`: `SOURCES_DIR` reads `HWDE_KNOWLEDGE_SOURCES`
   when it's set, so the records can still find those PDFs elsewhere.
+- `scripts/parts_search.py --kind/--category` (with
+  `reference/part_kinds.yaml` and `category_search` in
+  `scripts/lib/partslib.py`): finding a part by what it is, by browsing its
+  JLC category, since the keyword search only matches part numbers. Tested
+  offline by `tests/test_parts_kind.py`.
+- Fixes from building boards here (issue #5, hwde-led-test), each tested in
+  `tests/test_sourcer_records.py`:
+  - `scripts/bom_cpl.py` reads a footprint's LCSC number from `LCSC Part`
+    (what lib_pull's easyeda2kicad writes) as well as `LCSC`, and gives a
+    refdes-less parts.json line the board refs with its LCSC number.
+  - `scripts/check_ratings.py` reads LCSC's resistor rating names
+    ("Voltage-Supply(Max)", "Working Voltage") and says which parts.json
+    lines carry no attributes.
+  - `scripts/check_pdn.py` counts a cap the board puts straight across a rail
+    and ground when decoupling.json records none for that rail.
+  - `agents/part-sourcer.md` copies the parts_search row whole (attributes
+    included) and writes no refdes.
 - Fixes the Hive made while building boards, each worth sending upstream:
   `scripts/check_courtyard.py` (+ `checks.d/check_courtyard.yaml`), a verify
   check that fails a courtyard that misses its own pads; `scripts/lib/fpfix.py`
@@ -22,11 +39,21 @@ these ways:
   rules into the DSN (`routelib.dsn_hole_floor`, `ses_restore_vias`,
   `dsn_npth_keepouts`) and keeps the best of `--tries` shuffled-order routes
   (`routelib.dsn_shuffle`); `rules_gen` sizes plane_fed taps, writes
-  neck-down rules and caps power-class clearance from the board's pads;
+  neck-down rules;
   `planes_gen` merges touching same-net pours; `scripts/keepout_gen.py`
   (new, with route_swig's `set_rule_areas`) draws copper keep-outs;
   `route_critical` rips only the nets whose copper broke DRC; `lib/geom.py`
   lists NPTH holes (`npth`).
+- Power-path checks from hifi-receiver-2's first-spin power review, which
+  did each by hand: `scripts/check_power_path.py` (+
+  `checks.d/check_power_path.yaml`, mutant `power-path-under-contract`), the
+  current each pad-track-via chain carries as a max-flow over the copper;
+  `scripts/sim_inrush.py` and `scripts/lib/pdsource.py`, a board's load
+  switches against a USB PD source; `scripts/soa_check.py` and
+  `scripts/lib/soa.py` with `reference/fet_power.yaml`, a FET's peak
+  junction temperature through a pulse; `scripts/mlcc_dcbias.py` and
+  `scripts/lib/mlcc.py` with `reference/mlcc_dcbias.yaml`, ceramics at DC
+  bias (sim_board's DC-bias warning reports the derated value).
 - A live stock-and-match check on every BOM row (the person, 10-28: "didn't
   the hive pull the JLC and LCSC?"): `scripts/stock_check.py` and
   `scripts/lib/stocklib.py` read JLC's and LCSC's own record for each code
@@ -60,8 +87,8 @@ showcase (`test_showcase_gallery`), `LEARNINGS.md` and its triage
 (`test_learnings`, `test_remediations`), the docker and CI pins
 (`test_kicad_pin`) and `docs/check-scorecard.jsonl`
 (`test_check_scorecard`). `tests/conftest.py` adds `KNOWN_FAILING`, and
-`tests/test_workarounds.py` and `tests/workarounds/` are the module's own,
-as is `pytest.ini` (upstream's pytest settings from its `pyproject.toml`).
+`tests/test_workarounds.py`, `tests/workarounds/` and
+`tests/test_parts_kind.py` are the module's own, as is `pytest.ini` (upstream's pytest settings from its `pyproject.toml`).
 The plans, docker setup and design notes stay upstream.
 
 Everything specific to the Hive is in `bin/` and `docs/`:
@@ -75,6 +102,7 @@ Everything specific to the Hive is in `bin/` and `docs/`:
   and `bin/hwde` points `KICAD_SYMBOL_DIR` at them.
 
 To update, copy upstream's skill folder over this one, drop the source PDFs
-again, re-apply the `SOURCES_DIR` line, and bump the commit above. Copy
-upstream's `tests/` over this one the same way, leaving out the files above
-and keeping `KNOWN_FAILING` and `test_workarounds.py`.
+again, re-apply the `SOURCES_DIR` line and the fixes above (or check upstream
+has them), and bump the commit above. Copy upstream's `tests/` over this one
+the same way, leaving out the files above and keeping `KNOWN_FAILING`,
+`test_workarounds.py` and `test_sourcer_records.py`.

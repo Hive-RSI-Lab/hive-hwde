@@ -39,8 +39,7 @@ expressible as a rule becomes a named DRC violation, so the standard DRC gate
 
 With the board (--pcb, default the .kicad_pcb beside --pro), its pads add
 neck-down rules where a power net meets pads narrower than its width
-(neck_rules) and cap each power class's clearance at its pins' own gaps
-(pad_gaps).
+(neck_rules).
 
 Conditions use `A.NetName == 'NET'` (NOT `A.Net`, which silently matches nothing -
 LEARNINGS [drc]). kicad-cli auto-loads the .kicad_dru sitting next to the board.
@@ -197,31 +196,6 @@ def board_pads(pcb: Path | None):
     sys.path.insert(0, str(SCRIPTS / "lib"))
     import geom
     return geom.BoardGeom.from_file(pcb)
-
-
-def pad_gaps(bg, nets: set[str]) -> dict[str, dict]:
-    """For each net in `nets`: the least copper gap from one of its pads to
-    a pad of another net (or no net) in the same footprint, on a shared
-    layer - {net: {"gap_mm", "ref"}}. The board's own footprints say how
-    close a power pin sits to its neighbours; a class clearance above that
-    keeps the router out of the neighbour pin (Freerouting left a CH224's
-    CC1/CC2/CFG1 unrouted beside its VBUS pin) and is a DRC error on the
-    footprint itself."""
-    out: dict[str, dict] = {}
-    by_ref: dict[str, list] = {}
-    for p in bg.pads_of():
-        by_ref.setdefault(p.ref, []).append(p)
-    for ref, pads in by_ref.items():
-        for a in pads:
-            if a.net not in nets:
-                continue
-            for b in pads:
-                if b is a or b.net == a.net or not set(a.layers) & set(b.layers):
-                    continue
-                g = a.poly.distance(b.poly)
-                if a.net not in out or g < out[a.net]["gap_mm"]:
-                    out[a.net] = {"gap_mm": round(g, 4), "ref": ref}
-    return out
 
 
 def neck_rules(bg, power_facts: list[dict], cap: dict
@@ -435,13 +409,9 @@ def power_class_name(width_mm: float) -> str:
     return f"Pwr_{_mm_tag(width_mm)}mm"
 
 
-POWER_CLEARANCE_MM = 0.2   # a power class's clearance unless its pads say less
-
-
 def net_classes(constraints: dict, power_facts: list[dict],
                 diff_facts: list[dict], cap: dict,
-                hv_facts: list[dict] | None = None,
-                gaps: dict[str, dict] | None = None
+                hv_facts: list[dict] | None = None
                 ) -> tuple[list[dict], list[dict]]:
     """Build net_settings classes + netclass_patterns for the .kicad_pro.
 
@@ -458,12 +428,6 @@ def net_classes(constraints: dict, power_facts: list[dict],
     nets against everything - stricter than the DRU, never looser - and a
     waiver lowers nothing (a netclass cannot hold a per-pair value). The two
     nets of a diff pair take the same value so they stay in one class.
-
-    A power class's clearance is POWER_CLEARANCE_MM, lowered (never under
-    the fab floor) to the least pad gap its nets have inside a footprint
-    when the board is known (`gaps`, pad_gaps): a class clearance wider than
-    the part's own pin gap keeps the router out of the neighbouring pins
-    and fails DRC on the footprint itself. HV classes raise it again.
     """
     classes: list[dict] = []
     patterns: list[dict] = []
@@ -491,14 +455,11 @@ def net_classes(constraints: dict, power_facts: list[dict],
             cname = "Default"          # thin rails need no wider class
         else:
             cname = power_class_name(w)
-            clr = POWER_CLEARANCE_MM
-            for f in buckets[w]:
-                g = (gaps or {}).get(f["net"])
-                if g is not None and g["gap_mm"] < clr:
-                    clr = g["gap_mm"]
-                    f["clearance_from_pads"] = g
-            classes.append(base_class(cname, w, max(cap["min_clearance_mm"],
-                                                    round(clr, 4))))
+            # the fab floor, not a blanket 0.2: a power net that lands on a
+            # fine-pitch part (CH224Q VBUS, 0.176 mm between pads) cannot
+            # meet 0.2 at its own pads. Spacing a voltage needs comes from
+            # voltages/voltage_pairs (the _HV_ variants below).
+            classes.append(base_class(cname, w, cap["min_clearance_mm"]))
         for f in buckets[w]:
             f["netclass"] = cname       # traceability in the JSON report
             f["class_width_mm"] = w
@@ -618,6 +579,28 @@ DRU_HEADER = ("(version 1)\n"
               "# Baseline (fab floor) first, per-net design rules last (later rule wins).\n")
 
 
+def unique_rule_names(rules: list[Rule]) -> list[dict]:
+    """Give every rule its own name, in place. _safe folds every
+    non-alphanumeric to '_', so A_SPK_L+ and A_SPK_L- both become
+    aiee_pwr_width_A_SPK_L; the second and later of a name get _2, _3.
+    Returns [{from, to}] for the report."""
+    seen: set[str] = {r.name for r in rules}
+    count: dict[str, int] = {}
+    renamed: list[dict] = []
+    for r in rules:
+        n = count[r.name] = count.get(r.name, 0) + 1
+        if n == 1:
+            continue
+        k = n
+        while f"{r.name}_{k}" in seen:
+            k += 1
+        new = f"{r.name}_{k}"
+        seen.add(new)
+        renamed.append({"from": r.name, "to": new})
+        r.name = new
+    return renamed
+
+
 def render_dru(rules: list[Rule]) -> str:
     return DRU_HEADER + "\n".join(r.render() for r in rules) + "\n"
 
@@ -633,16 +616,14 @@ def build(constraints: dict, cap: dict, stackup: dict, baseline_only: bool,
                     "hv_rules": [], "necks": []}
     if not baseline_only:
         pr, pf = power_rules(constraints, cu_mm)
-        nr, nf, gaps = [], [], None
-        if bg is not None:
-            nr, nf = neck_rules(bg, pf, cap)
-            gaps = pad_gaps(bg, {f["net"] for f in pf})
+        nr, nf = neck_rules(bg, pf, cap) if bg is not None else ([], [])
         pairs = detect_diff_pairs(constraints)
         dr, df = diff_pair_rules(pairs, stackup)
         hr, hf = voltage_rules(constraints, cap)
         rules += pr + nr + dr + hr
         report["necks"] = nf
-        classes, patterns = net_classes(constraints, pf, df, cap, hf, gaps)
+        report["renamed_rules"] = unique_rule_names(rules)
+        classes, patterns = net_classes(constraints, pf, df, cap, hf)
         report["power"] = pf
         report["diff_pairs"] = df
         report["classes"] = classes
@@ -669,8 +650,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out-dru", help="write the .kicad_dru here")
     ap.add_argument("--pro", help="also update this .kicad_pro (net classes + minimums)")
     ap.add_argument("--pcb", help="the board, for its pads: neck-down rules "
-                    "where a power net meets pads narrower than its width, and "
-                    "power-class clearance no wider than the pads' own gaps "
+                    "where a power net meets pads narrower than its width "
                     "(default: the .kicad_pcb beside --pro, when there is one)")
     ap.add_argument("--baseline-only", action="store_true",
                     help="emit only the fab-floor baseline (for template generation)")
@@ -774,6 +754,7 @@ def main(argv: list[str] | None = None) -> int:
             "copper_oz": outer_oz,
             "rule_count": len(rules),
             "rule_names": [r.name for r in rules],
+            "renamed_rules": report.get("renamed_rules", []),
             "power": report["power"], "diff_pairs": report["diff_pairs"],
             "hv_rules": report["hv_rules"],
             "necks": report["necks"],
