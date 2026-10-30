@@ -235,6 +235,38 @@ RECORD_SCHEMA: dict = {
     },
 }
 
+# A checklist's `verification` (checklist_verify.py rule writes it): a
+# fresh-context agent, not the checklist's author, ruled a blinded packet of
+# the checklist and planted mutants of it, caught every mutant and grounded
+# every required row in a cited page or a library record. `digest` pins the
+# content it ruled, so an edit after the ruling drops the checklist back to
+# draft. `basis` is per required class: the record ids / file#page it rests on.
+_CHECKLIST_VERIFICATION_SHAPE = {
+    "type": "object",
+    "required": ["by", "date", "digest", "planted", "basis"],
+    "additionalProperties": False,
+    "properties": {
+        "by": {"type": "string", "minLength": 1},
+        "date": {"type": "string", "pattern": r"^\d{4}-\d{2}-\d{2}$"},
+        "note": {"type": "string"},
+        "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "key_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "planted": {
+            "type": "object", "required": ["total", "caught"],
+            "additionalProperties": False,
+            "properties": {"total": {"type": "integer", "minimum": 0},
+                           "caught": {"type": "integer", "minimum": 0},
+                           "kinds": {"type": "array",
+                                     "items": {"type": "string"}}}},
+        "basis": {"type": "object",
+                  "additionalProperties": {
+                      "type": "array", "minItems": 1,
+                      "items": {"type": "string", "minLength": 1}}},
+    },
+}
+# The fewest planted mutants a ruling must have caught to count.
+CHECKLIST_MIN_PLANTED = 3
+
 CHECKLIST_SCHEMA: dict = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "hwde coverage checklist",
@@ -267,6 +299,9 @@ CHECKLIST_SCHEMA: dict = {
         },
         "maturity": {"type": "string", "enum": list(MATURITIES)},
         "approval": _APPROVAL_SHAPE,
+        # The independent verifier's ruling (checklist_verify.py rule): what
+        # lets a checklist count without the person's sign-off.
+        "verification": _CHECKLIST_VERIFICATION_SHAPE,
         "sources": {"type": "array", "items": RECORD_SCHEMA["properties"]
                     ["sources"]["items"]},
         "prose": {"type": "string", "maxLength": PROSE_MAX},
@@ -655,6 +690,71 @@ def _governance_problems(where: str, data: dict) -> list[str]:
     return problems
 
 
+def checklist_digest(cl: dict) -> str:
+    """sha256 over what a checklist DECIDES (applies, requires, sources) -
+    the content an independent verification is pinned to. Prose, origin and
+    the maturity fields are left out, so writing the ruling doesn't move it."""
+    body = {k: cl.get(k) for k in ("id", "applies", "requires", "sources")}
+    blob = json.dumps(body, sort_keys=True, separators=(",", ":"),
+                      default=str)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+_RUN_ID = re.compile(r"\d{6}-\d{6}-[0-9a-f]{10}")
+
+
+def same_author(by: str, origin: str) -> bool:
+    """Whether a verifier is the checklist's author: the same name, or a
+    Hive task/run id they share (w-<task>, hive:<task>, research:<task>)."""
+    by, origin = str(by or "").strip(), str(origin or "").strip()
+    if not by or by == origin:
+        return True
+    return bool(set(_RUN_ID.findall(by)) & set(_RUN_ID.findall(origin)))
+
+
+def checklist_verification_problem(cl: dict) -> str | None:
+    """Why a checklist's `verification` doesn't let it count, or None when it
+    does: present, not by its author or the owner standing in for a
+    verifier, every planted mutant caught (at least CHECKLIST_MIN_PLANTED),
+    a basis for every required class, and pinned to the current content."""
+    v = cl.get("verification")
+    if not isinstance(v, dict):
+        return "no verification block"
+    if same_author(v.get("by"), cl.get("origin")):
+        return (f"verified by {v.get('by')!r}, the checklist's own author "
+                f"({cl.get('origin')!r}) - a verifier must be independent")
+    pl = v.get("planted") or {}
+    total, caught = pl.get("total"), pl.get("caught")
+    if not isinstance(total, int) or not isinstance(caught, int) \
+            or total < CHECKLIST_MIN_PLANTED or caught != total:
+        return (f"planted faults caught {caught}/{total} - a ruling counts "
+                f"only when it caught all of at least "
+                f"{CHECKLIST_MIN_PLANTED}")
+    basis = v.get("basis") or {}
+    for req in cl.get("requires") or []:
+        c = norm_token(req.get("class", "")) if isinstance(req, dict) else ""
+        if not basis.get(c):
+            return f"no basis for required class {c!r}"
+    if v.get("digest") != checklist_digest(cl):
+        return ("stale: the checklist changed after it was verified "
+                "(digest mismatch) - re-run checklist_verify.py")
+    return None
+
+
+def checklist_meets_floor(cl: dict, floor: str) -> bool:
+    """A checklist counts at the floor by the person's approval (approved)
+    or bring-up (proven), or - up to `approved` - by an intact independent
+    verification: the Hive runs without the person in the loop, so a
+    checklist an independent agent verified against its sources and planted
+    faults counts the way an approved one does."""
+    mat = record_maturity(cl)
+    if MATURITY_RANK[mat] >= MATURITY_RANK[floor] and mat != "verified":
+        return True
+    return (mat == "verified"
+            and MATURITY_RANK[floor] <= MATURITY_RANK["approved"]
+            and checklist_verification_problem(cl) is None)
+
+
 def validate(records_dir: Path | str | None = None,
              checklists_dir: Path | str | None = None,
              strict: bool = False, source_roots=(),
@@ -831,6 +931,15 @@ def validate(records_dir: Path | str | None = None,
                                 f"{src.get('file')!r} not found")
         problems += _script_flag_problems(where, data.get("prose") or "")
         problems += _governance_problems(where, data)
+        if record_maturity(data) == "verified":
+            why = checklist_verification_problem(data)
+            if why:
+                problems.append(f"{where}: maturity verified but {why}")
+        elif data.get("verification") is not None:
+            problems.append(f"{where}: a verification block on a "
+                            f"{record_maturity(data)} checklist (only "
+                            "checklist_verify.py rule writes one, with "
+                            "maturity verified)")
     return problems
 
 
@@ -1387,7 +1496,7 @@ def coverage(ws: Path | str, records: list[dict] | None = None,
                 cmat = record_maturity(cl)
                 entry["checklist"] = {
                     "id": cl.get("id"), "maturity": cmat,
-                    "floor_met": MATURITY_RANK[cmat] >= MATURITY_RANK[floor]}
+                    "floor_met": checklist_meets_floor(cl, floor)}
                 required = [(norm_token(q["class"]), q["min_level"])
                             for q in cl.get("requires") or []]
             else:
@@ -1450,9 +1559,13 @@ def coverage(ws: Path | str, records: list[dict] | None = None,
             elif entry["checklist"] and not entry["checklist"]["floor_met"] \
                     and verdict == "covered":
                 verdict = "provisional"
+                why = ""
+                if entry["checklist"]["maturity"] == "verified":
+                    why = f" ({checklist_verification_problem(cl) or 'floor above approved'})"
                 entry["gap_reasons"].append(
                     f"checklist {cl.get('id')} maturity "
-                    f"{entry['checklist']['maturity']} < floor {floor}")
+                    f"{entry['checklist']['maturity']} < floor {floor}"
+                    f"{why}")
             entry["verdict"] = verdict
             missing = [{"class": c["class"], "min_level": c["min_level"]}
                        for c in entry["classes"] if c["verdict"] == "gap"]

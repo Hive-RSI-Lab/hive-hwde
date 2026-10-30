@@ -1453,9 +1453,15 @@ def validate_task(root: Path, task: dict,
         if cid in library_ids:
             problems.append(f"{where}: id {cid!r} already exists in the "
                             "library")
-        if knowledgelib.record_maturity(data) != "draft":
+        cmat = knowledgelib.record_maturity(data)
+        if cmat == "verified":
+            why = knowledgelib.checklist_verification_problem(data)
+            if why:
+                problems.append(f"{where}: maturity verified but {why}")
+        elif cmat != "draft":
             problems.append(f"{where}: a research checklist is maturity draft "
-                            "(the owner approves it)")
+                            "until an independent verifier rules it "
+                            "(checklist_verify.py)")
         ap = data.get("applies") or {}
         field = "topologies" if task["kind"] == "block" else "interfaces"
         if knowledgelib.norm_token(task["token"]) not in {
@@ -1539,7 +1545,8 @@ def learnings_entry(task: dict, ws: Path, report: dict) -> str:
             v = (task.get("verdicts") or {}).get(r["id"], {})
             lines.append(f"- {r['id']}: {v.get('note', '')}")
     if report["checklists"]:
-        lines.append("Draft coverage checklist(s) for the owner to approve:")
+        lines.append("Coverage checklist(s) for an independent verifier "
+                     "(checklist_verify.py packet / rule):")
         for c in report["checklists"]:
             lines.append(f"- {c['id']} {prefix}{knowledgelib.WS_CHECKLISTS}/"
                          f"{c['id']}.yaml ({c['requires']} classes)")
