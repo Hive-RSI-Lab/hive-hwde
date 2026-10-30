@@ -1,0 +1,34 @@
+id: led-indicator
+kind: coverage-checklist
+applies:
+  topologies: [led-indicator, led, status-led, indicator-led]
+requires:
+  - class: selection
+    min_level: topology
+    note: >
+      the series resistor against the worst corners - VIN(min) with VF(max)
+      for the lowest current, VIN(max) with VF(min) for the highest - and the
+      LED's DC forward-current, power and reverse-voltage ratings, plus the
+      resistor's own dissipation. This is the class that decides whether the
+      LED lights over the input range and stays inside its ratings
+maturity: draft
+sources:
+  - file: reference/knowledge/sources/APT1608SGC.pdf
+    page: 2
+    section: ELECTRICAL / OPTICAL CHARACTERISTICS + ABSOLUTE MAXIMUM RATINGS
+    note: >
+      VF 2.2 typ / 2.5 max V at 20 mA with +/-0.1 V tolerance, 25 mA DC
+      forward current, 62.5 mW, VR 5 V - the numbers the selection row is
+      checked against on a real part
+prose: >
+  An LED indicator - one LED and its series resistor off a rail, the most
+  common block on any board - had no checklist, so every LED read as a
+  coverage gap and asked for a research pass on a textbook circuit
+  (hwde-led-test, 2026-10-28). Selection is the one class it fails on: wrong
+  resistor for the VIN and VF spread, or a part run past its ratings.
+  Placement and routing carry no layout risk at indicator currents, so no
+  layout class is listed. Polarity, the other common LED failure, is enforced
+  by cpl_verify.py (diodes by role) at dfm, not by coverage. An LED driven as
+  a lighting load (tens of mA and up, a constant-current driver, a heat path)
+  is not this topology; give it its own checklist when a board needs one.
+origin: hive:261028-141932-9b95b3083b

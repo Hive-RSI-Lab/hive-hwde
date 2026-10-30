@@ -40,6 +40,12 @@ What moved where:
     and ground when decoupling.json records none for that rail.
   - `agents/part-sourcer.md` copies the parts_search row whole (attributes
     included) and writes no refdes.
+- Knowledge the Hive added (offer upstream once approved):
+  `reference/knowledge/checklists/led-indicator.yaml`, its covering record
+  `reference/knowledge/records/led-indicator-series-resistor-sizing.yaml`, and
+  `reference/knowledge/sources/APT1608SGC.pdf.not-redistributed.md`, the
+  sidecar (url + sha256) for the Kingbright datasheet they cite, which may
+  not be copied and so isn't in `docs/knowledge-sources.txt`.
 - Fixes the Hive made while building boards, worth offering upstream:
   `scripts/check_courtyard.py` (+ `checks.d/check_courtyard.yaml`), a verify
   check that fails a courtyard that misses its own pads; `scripts/lib/fpfix.py`

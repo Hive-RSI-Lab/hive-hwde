@@ -295,6 +295,11 @@ nothing in the Hive should ask for them.
   each checked against its git blob sha) and points `HWDE_KNOWLEDGE_SOURCES`
   there. A record `research promote` adds with a new PDF puts that PDF in the
   same cache, so it isn't in the module or upstream's list.
+- Knowledge records the Hive adds start at `verified`, which means a
+  fresh-context second reader has checked them against the cited pages. The
+  checklists start at `draft`. Coverage counts only `approved`, which is the
+  person's sign-off, so until then their slots read `provisional`, not `gap`.
+  The LED-indicator checklist is the first one.
 
 ## The first board
 

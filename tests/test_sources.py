@@ -27,7 +27,10 @@ def test_the_list_covers_every_pdf_a_record_cites():
     cited = set()
     for p in (SKILL / "reference" / "knowledge").rglob("*.yaml"):
         cited |= set(re.findall(r"reference/knowledge/sources/([\w.-]+\.pdf)", p.read_text()))
-    assert cited and cited <= listed, cited - listed
+    # A source that may not be copied ships as a sidecar (url + sha) instead.
+    sidecar = {n for n in cited if (SKILL / "reference" / "knowledge" / "sources"
+                                    / f"{n}.not-redistributed.md").is_file()}
+    assert cited and cited - sidecar <= listed, cited - sidecar - listed
 
 
 def test_blob_sha_is_gits(tmp_path):
