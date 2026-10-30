@@ -349,6 +349,24 @@ def test_cli_keep_net(tmp_path):
         (x["uuid"], x["reason"]) for x in pay["off_angle_left"]}
 
 
+def test_cli_declared_diff_pairs_replace_name_pairing(tmp_path):
+    """A constraints diff_pairs list, even [], is the whole set: USB_DP/DM
+    named like a pair are snapped like any net (speaker A_SPK_L+/- on the
+    hi-fi core board were left off-angle and failed route_style)."""
+    p = _cli_board(tmp_path)
+    cons = tmp_path / "constraints.json"
+    cons.write_text('{"diff_pairs": []}', encoding="utf-8")
+    pay, _ = rcl.run(["--pcb", str(p), "--dry-run", "--snap-only",
+                      "--constraints", str(cons)])
+    assert {s["uuid"] for s in pay["snaps"]} == {
+        "vcc00001", "dp000001", "dm000001", "sig00001"}
+    # no diff_pairs key: name pairing still keeps them
+    cons.write_text('{}', encoding="utf-8")
+    pay, _ = rcl.run(["--pcb", str(p), "--dry-run", "--snap-only",
+                      "--constraints", str(cons)])
+    assert {s["uuid"] for s in pay["snaps"]} == {"vcc00001", "sig00001"}
+
+
 def test_cli_no_snap_and_snap_only_exclusive(tmp_path):
     p = _cli_board(tmp_path)
     pay, _ = rcl.run(["--pcb", str(p), "--dry-run", "--no-snap"])

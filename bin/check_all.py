@@ -11,8 +11,8 @@ board runs each gate its state.json records as passed, and fab once it has a
 fab/ package: a board re-passes everything it once passed. Each probe in
 tests/workarounds/ exits 0 while its cause stands, 10 once it's fixed. The
 knowledge library passes `knowledge --validate --strict` against these
-boards; it needs the source PDFs (HWDE_KNOWLEDGE_SOURCES, the hwde clone's),
-and is skipped, said so, without them.
+boards; it needs the source PDFs (HWDE_KNOWLEDGE_SOURCES, which bin/hwde fetches
+into HOME first), and is skipped, said so, without them.
 
 Exit 0 when every step passes and the table matches the probes, else 1.
 Run by bin/hwde (venv python, HWDE_* pins, HWDE_BIN set).

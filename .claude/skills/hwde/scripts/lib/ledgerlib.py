@@ -55,6 +55,8 @@ REF_KINDS = ("rating", "pinout", "footprint")       # subject: refdes
 STATUSES = ("verified", "failed", "unknown")
 STOCK_MAX_AGE_H = 72.0
 UNBOUGHT = ("dnp", "board_feature", "customer_supplied")
+# the classes the assembler fits from the upload (bom_cpl.ASSEMBLED_CLASSES)
+ASSEMBLED = ("smt_placed", "tht")
 # refdes prefixes of parts with a pin map worth checking (two-terminal
 # passives, LEDs and diodes have no pinout beyond polarity, which
 # cpl_verify and dfm's polarity check cover)
@@ -157,7 +159,7 @@ def expected(ws: Path) -> dict[str, dict]:
     if codes is None:
         codes = {}
         for ln in lines:
-            placed = [r for r in _refs(ln) if _class(ln, r) == "smt_placed"]
+            placed = [r for r in _refs(ln) if _class(ln, r) in ASSEMBLED]
             code = str(ln.get("lcsc") or "").strip()
             if placed:
                 codes.setdefault(code or f"(no LCSC: {placed[0]})",
@@ -176,7 +178,7 @@ def expected(ws: Path) -> dict[str, dict]:
             kinds = ["rating"]
             if not TWO_PIN.match(ref):
                 kinds.append("pinout")
-            if cls == "smt_placed":
+            if cls in ASSEMBLED:
                 kinds.append("footprint")
             for kind in kinds:
                 out[key(ref, kind)] = {"subject": ref, "kind": kind,

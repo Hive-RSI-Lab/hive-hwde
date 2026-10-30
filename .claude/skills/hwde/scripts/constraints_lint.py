@@ -145,8 +145,8 @@ ENCLOSURE = {"box_mm": "num_list", "stl": "str_or_list", "wall_mm": "num",
              "room_c": "num", "other_w": "num", "inlet_mm2": "num",
              "riser_mm2": "num", "outlet_mm2": "num", "stack_mm": "num",
              "floor": "str"}
-SCHEMA_TOP_KEYS = set(SECTIONS) | {"placement", "coating", "enclosure",
-                                   "ambient_c"}
+SCHEMA_TOP_KEYS = set(SECTIONS) | {"placement", "coating", "antennas",
+                                   "enclosure", "ambient_c"}
 ENVELOPE_ALIASES = {"power_constraints": "power",
                     "thermal_constraints": "thermal",
                     "voltage_constraints": "voltages"}
