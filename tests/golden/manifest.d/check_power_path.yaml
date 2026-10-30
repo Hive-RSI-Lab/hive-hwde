@@ -1,0 +1,15 @@
+# Seeded fault for check_power_path (docs/failure-modes.md section 4).
+mutants:
+  power-path-under-contract:
+    board: usbbuck4
+    script: mutations/power_path_under_contract.py
+    check: check_power_path
+    defect: >-
+      SIDECAR fault: the micro-USB input J1 -> U2 VIN is declared a 1.8 A
+      charger path (power_paths) while its copper is sized for the 0.5 A
+      budget (0.5 mm F.Cu, about 1 A), which check_current passes
+    expect:
+      kind: path_capacity
+      net: VBUS
+      ref: J1
+      pos: [105.5, 130.2]   # the neck track's midpoint, by J1
