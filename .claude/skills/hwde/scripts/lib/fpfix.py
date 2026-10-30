@@ -592,14 +592,16 @@ def ep_via_edits(text: str, nodes) -> list[tuple[int, int, str, dict]]:
     via (copper ring around its drill) whose centre is inside a numbered SMD
     pad, the exposed pad it cools."""
     eps = []
-    for head, _s, _e, node in nodes:
+    for head, ps, pe, node in nodes:
         if head != "pad" or len(node) < 4 or _unnamed(node):
             continue
         if str(_tok(node[2])) != "smd":
             continue
         poly = _pad_poly(node)
         if poly is not None:
-            eps.append((_pad_number(node), poly))
+            # write the number as the EP's own text has it (KiCad 10 quotes)
+            quoted = text[ps:pe].lstrip().startswith('(pad "')
+            eps.append((_pad_number(node), poly, quoted))
     out = []
     if not eps:
         return out
@@ -611,11 +613,12 @@ def ep_via_edits(text: str, nodes) -> list[tuple[int, int, str, dict]]:
         at = _nums(_kid(node, "at"))
         if len(at) < 2:
             continue
-        num = next((n for n, poly in eps if poly.contains(Point(at[0], at[1]))), None)
-        if num is None:
+        hit = next(((n, q) for n, poly, q in eps if poly.contains(Point(at[0], at[1]))), None)
+        if hit is None:
             continue
+        num, quoted = hit
         sub = text[s:e]
-        name = num if _BARE_NUM.match(num) else '"' + num.replace('"', '\\"') + '"'
+        name = num if _BARE_NUM.match(num) and not quoted else '"' + num.replace('"', '\\"') + '"'
         new = re.sub(r'^\(pad\s+(?:""|\S+)', "(pad " + name, sub, count=1)
         # drop the paste layers: open holes must not print paste
         new = re.sub(r'\s+"?(?:\*|[FB])\.Paste"?(?=[\s)])', "", new)
