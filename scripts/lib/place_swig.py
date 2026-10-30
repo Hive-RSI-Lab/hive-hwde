@@ -34,10 +34,12 @@ unscriptable):
        Reference/Value field in place; a B.* layer mirrors the text, an F.*
        layer un-mirrors it (same rule as add_text). The driver enforces the
        silk size/stroke floor. Absolute, so idempotent.
-  {"op": "silk_clear", "ref": R, ["layer": "F.SilkS"], ["only_offboard": true]}
+  {"op": "silk_clear", "ref": R, ["layer": "F.SilkS"], ["only_offboard": true],
+   ["region": [x0, y0, x1, y1]]}
      - deletes a footprint's own GRAPHIC silk (lines/arcs/circles/polys) on
        that layer, never its Reference/Value text. `only_offboard` keeps the
-       items fully inside the board outline. The only scripted way to fix
+       items fully inside the board outline; `region` (board mm) deletes
+       only the items lying wholly inside that box. The only scripted way to fix
        footprint-INTERNAL silk on an already-placed board (a library edit
        cannot reach one without re-running board_init and losing placement).
 
@@ -229,6 +231,9 @@ def apply_silk_clear(board, op: dict) -> dict:
     lname = op.get("layer", "F.SilkS")
     lid = _layer_id(board, lname)
     keep_inside = bool(op.get("only_offboard"))
+    region = op.get("region")
+    if region is not None:
+        region = (iu(region[0]), iu(region[1]), iu(region[2]), iu(region[3]))
     if keep_inside and EDGE_BOX is None:
         raise RuntimeError("only_offboard needs the board-edge box cached "
                            "before the first removal - see main()")
@@ -240,13 +245,46 @@ def apply_silk_clear(board, op: dict) -> dict:
             continue          # ${REFERENCE}-style fields are move_text's job
         if keep_inside and _inside(_box(item.GetBoundingBox()), EDGE_BOX):
             continue
+        if region is not None \
+                and not _inside(_box(item.GetBoundingBox()), region):
+            continue          # silk_rm.py: one end of a body outline only
         victims.append(item)
     _KEEPALIVE.append(fp)
     _KEEPALIVE.extend(victims)
     for item in victims:
         fp.Remove(item)
     return {"ref": ref, "layer": lname, "removed": len(victims),
-            "only_offboard": keep_inside}
+            "only_offboard": keep_inside, "region": op.get("region")}
+
+
+def apply_set_pad(board, op: dict) -> dict:
+    fp = board.FindFootprintByReference(op["ref"])
+    if fp is None:
+        raise KeyError(f"footprint '{op['ref']}' not on board")
+    nums = [op["pad"]] if isinstance(op["pad"], str) else list(op["pad"])
+    pads = [p for p in fp.Pads() if p.GetNumber() in nums]
+    missing = set(nums) - {p.GetNumber() for p in pads}
+    if missing:
+        raise KeyError(f"{op['ref']}: no pad {sorted(missing)}")
+    net = None
+    if op.get("net"):
+        net = board.FindNet(op["net"])
+        if net is None:
+            net = pcbnew.NETINFO_ITEM(board, op["net"])
+            board.Add(net)
+    size = op.get("size")
+    if size is not None and not isinstance(size, list):
+        size = [size, size]
+    for p in pads:
+        if "net" in op:
+            if net is None:
+                p.SetNetCode(0)
+            else:
+                p.SetNet(net)
+        if size is not None:
+            p.SetSize(pcbnew.VECTOR2I(iu(size[0]), iu(size[1])))
+    return {"ref": op["ref"], "pads": sorted(p.GetNumber() for p in pads),
+            "net": op.get("net"), "size": size}
 
 
 def apply_set_pad(board, op: dict) -> dict:

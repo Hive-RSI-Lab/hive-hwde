@@ -887,3 +887,230 @@ def test_noop_apply_short_circuits(tmp_path):
     assert payload["status"] == "pass"
     assert "nothing to do" in payload["note"]
     assert _sha(pcb) == before
+
+
+# ---------------------------------------------------------------------------
+# copper-keeping footprint swap (U-ECO: swap_fp.py + rip_ep.py on PR #68)
+# ---------------------------------------------------------------------------
+
+def _variant_lib(tmp_path: Path, name: str, base: str, extra: str = "",
+                 move: dict | None = None) -> Path:
+    """PD_LIB copied, plus aiee:<name> = aiee:<base> with `extra` pad text
+    and `move` {pad number: "(at ...)" replacement}."""
+    lib = tmp_path / "lib"
+    if not lib.exists():
+        shutil.copytree(PD_LIB, lib)
+    text = (lib / "aiee.pretty" / f"{base}.kicad_mod").read_text()
+    for num, at in (move or {}).items():
+        head = f"(pad {num} "
+        i = text.index(head)
+        j = text.index("(at ", i)
+        k = text.index(")", j)
+        text = text[:j] + at + text[k + 1:]
+    text = text.rstrip()[:-1] + extra + "\n)\n"
+    (lib / "aiee.pretty" / f"{name}.kicad_mod").write_text(text)
+    return lib
+
+
+def _add_node(tree, ref: str, pin: str, net_name: str) -> None:
+    for net in _nets_sec(tree)[1:]:
+        if _head(net) == "net" and _kidval(net, "name") == net_name:
+            net.append([S("node"), [S("ref"), ref], [S("pin"), pin],
+                        [S("pintype"), "passive"]])
+            return
+    raise AssertionError(f"net {net_name} not in netlist")
+
+
+def _clash_pad_local(bg, ref: str, net: str) -> tuple[float, float]:
+    """Footprint-local spot (front part) of the nearest point of a `net`
+    track to REF's origin: a new pad there lands on that track."""
+    from shapely.geometry import Point
+    from shapely.ops import nearest_points
+    fp = placelib.PlaceModel(PD_PCB).footprints[ref]
+    c = Point(fp.pos)
+    t = min(bg.tracks_of(net=net), key=lambda t: t.shape.distance(c))
+    q = nearest_points(t.shape, c)[0]
+    return geom._rot(q.x - fp.pos[0], q.y - fp.pos[1], fp.angle)
+
+
+def test_placed_pads_match_the_board():
+    """placed_pads reproduces every pd-trigger part's pads from its library
+    footprint at the board's own spot - what a swap is judged against."""
+    bg = geom.BoardGeom.from_file(PD_PCB)
+    model = placelib.PlaceModel(PD_PCB)
+    for ref, fp in model.footprints.items():
+        mod = bu.find_mod(fp.fpid, [PD_LIB])
+        got = bu.placed_pads(bg, mod, ref, {"x": fp.pos[0], "y": fp.pos[1],
+                                            "deg": fp.angle,
+                                            "side": fp.side}, {})
+        real = bg.pads_of(ref=ref)
+        assert len(got) == len(real), ref
+        for p in got:
+            assert any(r.number == p.number and r.layers == p.layers
+                       and p.poly.symmetric_difference(r.poly).area < 1e-5
+                       for r in real), (ref, p.number)
+
+
+@pytest.mark.smoke
+def test_placed_pads_match_kicad_back_side(tmp_path):
+    """The back-side flip convention against KiCad itself: pcbnew places
+    library parts flipped TOP_BOTTOM at several angles (update_swig's
+    set_side), and placed_pads must land on the same copper."""
+    import env
+    cli = env.find_kicad_cli()
+    bp = env.find_kicad_python(cli) if cli else None
+    if bp is None:
+        pytest.skip("KiCad bundled python not installed")
+    pcb = _stage(tmp_path, PD_PCB)
+    mods = ["SOT-363-6_L2.2-W1.3-P0.65-LS2.1-BL", "USB-C-SMD_MC-311D",
+            "HDR-TH_2P-P2.54-V-M-3", "ESSOP-10_L4.9-W3.9-P1.0-LS6.0-TL-EP"]
+    cases = [{"ref": f"ZZ{i}", "mod": m, "x": 100.0 + 12 * i, "y": 100.0,
+              "deg": d, "side": s}
+             for i, (m, d, s) in enumerate(
+                 (m, d, s) for m in mods
+                 for d, s in ((30, "front"), (0, "back"), (30, "back"),
+                              (-90, "back")))]
+    script = tmp_path / "place.py"
+    script.write_text(
+        "import json, sys, pcbnew\n"
+        "b = pcbnew.LoadBoard(sys.argv[1])\n"
+        "flip = getattr(pcbnew, 'FLIP_DIRECTION_TOP_BOTTOM', True)\n"
+        "for c in json.loads(sys.argv[3]):\n"
+        "    fp = pcbnew.FootprintLoad(sys.argv[2], c['mod'])\n"
+        "    fp.SetReference(c['ref']); b.Add(fp)\n"
+        "    fp.SetPosition(pcbnew.VECTOR2I(pcbnew.FromMM(c['x']),"
+        " pcbnew.FromMM(c['y'])))\n"
+        "    if c['side'] == 'back': fp.Flip(fp.GetPosition(), flip)\n"
+        "    fp.SetOrientationDegrees(c['deg'])\n"
+        "b.Save(sys.argv[1])\n")
+    subprocess.run([str(bp), str(script), str(pcb),
+                    str(PD_LIB / "aiee.pretty"), json.dumps(cases)],
+                   check=True, capture_output=True, timeout=300)
+    bg = geom.BoardGeom.from_file(pcb)
+    for c in cases:
+        got = bu.placed_pads(bg, PD_LIB / "aiee.pretty" / f"{c['mod']}"
+                             ".kicad_mod", c["ref"], c, {})
+        real = bg.pads_of(ref=c["ref"])
+        assert len(got) == len(real), c
+        for p in got:
+            assert any(r.number == p.number and r.layers == p.layers
+                       and p.poly.symmetric_difference(r.poly).area < 1e-5
+                       for r in real), (c, p.number)
+
+
+def _swap_c5(tmp_path, extra="", move=None, pin3=None):
+    lib = _variant_lib(tmp_path, "C0603_X", "C0603", extra, move)
+    tree = _load_net(PD_NET)
+    _set_footprint(tree, "C5", "aiee:C0603_X")
+    if pin3:
+        _add_node(tree, "C5", "3", pin3)
+    return lib, _dump_net(tree, tmp_path / "m.net")
+
+
+def test_swap_keeps_copper_decisions(tmp_path):
+    bg = geom.BoardGeom.from_file(PD_PCB)
+    spot = {"x": 28.3, "y": 31.2, "deg": 0.0, "side": "front"}
+    nets = {"1": "/VDD", "2": "GND"}
+    lib, _ = _swap_c5(tmp_path)
+    same = bu.placed_pads(bg, lib / "aiee.pretty" / "C0603_X.kicad_mod",
+                          "C5", spot, nets)
+    assert bu.swap_keeps_copper(bg, "C5", same, nets) is None
+    assert "moves from net" in bu.swap_keeps_copper(
+        bg, "C5", same, {"1": "/VDD", "2": "/CFG2"})
+    lib, _ = _swap_c5(tmp_path, move={"2": "(at 3.70 0.00 0.00)"})
+    moved = bu.placed_pads(bg, lib / "aiee.pretty" / "C0603_X.kicad_mod",
+                           "C5", spot, nets)
+    assert "misses the new pad 2" in bu.swap_keeps_copper(
+        bg, "C5", moved, nets)
+    assert "has no such pad" in bu.swap_keeps_copper(
+        bg, "C5", [p for p in same if p.number != "1"], nets)
+
+
+def test_swap_dry_run_names_the_clash(tmp_path):
+    """A new pad landing on another net's track: the swap keeps C5's
+    routing and plans to rip that track (rip_ep.py's job)."""
+    bg = geom.BoardGeom.from_file(PD_PCB)
+    lx, ly = _clash_pad_local(bg, "C5", "/CFG2")
+    lib, net = _swap_c5(tmp_path, extra=(
+        f"\n\t(pad 3 smd rect (at {lx:.3f} {ly:.3f}) (size 0.3 0.3) "
+        "(layers F.Cu F.Paste F.Mask))"), pin3="GND")
+    pcb = _stage(tmp_path, PD_PCB)
+    payload = _run(pcb, net, "--lib", str(lib), "--dry-run")
+    entry = payload["plan"]["swap_new_fp"][0]
+    assert entry["ref"] == "C5" and entry["keep_copper"] is True
+    # the track it lands on, and any other net within its clearance
+    assert "/CFG2" in {c["net"] for c in entry["clashes"]}
+    assert not {c["net"] for c in entry["clashes"]} & {"GND", "/VDD"}
+    payload = _run(pcb, net, "--lib", str(lib), "--dry-run",
+                   "--no-keep-copper")
+    assert payload["plan"]["swap_new_fp"][0]["keep_copper"] is False
+    assert any("--no-keep-copper" in n for n in payload["plan"]["notes"])
+
+
+@pytest.mark.smoke
+def test_pin_compatible_swap_keeps_routing_and_rips_clash(tmp_path):
+    """C5 C0603 -> a C0603 with a third (GND) pad on top of a /CFG2 track:
+    C5's own copper is kept to the byte, the /CFG2 track and the stub it
+    alone held up go, no new dangling copper, and the swapped footprint
+    keeps C5's schematic link and reference text."""
+    bg = geom.BoardGeom.from_file(PD_PCB)
+    lx, ly = _clash_pad_local(bg, "C5", "/CFG2")
+    lib, net = _swap_c5(tmp_path, extra=(
+        f"\n\t(pad 3 smd rect (at {lx:.3f} {ly:.3f}) (size 0.3 0.3) "
+        "(layers F.Cu F.Paste F.Mask))"), pin3="GND")
+    pcb = _stage(tmp_path, PD_PCB)
+    payload = _run(pcb, net, "--lib", str(lib))
+    assert payload["status"] == "pass"
+    entry = payload["plan"]["swap_new_fp"][0]
+    assert entry["keep_copper"] is True
+    drc = payload["applied"]["drc"]
+    assert drc["dangling_after"] <= drc["dangling_before"]
+    after = geom.BoardGeom.from_file(pcb)
+    keep = lambda b, n: sorted(bu._item_key_track(t)  # noqa: E731
+                               for t in b.tracks_of(net=n))
+    for n in ("/VDD", "GND"):  # C5's own nets: every track kept
+        assert keep(after, n) == keep(bg, n)
+    assert len(after.tracks_of(net="/CFG2")) < len(bg.tracks_of(net="/CFG2"))
+    assert not [t for t in after.tracks_of(net="/CFG2")
+                for p in after.pads_of(ref="C5") if p.number == "3"
+                if t.poly.intersects(p.poly)]
+    fp = placelib.PlaceModel(pcb).footprints["C5"]
+    assert fp.fpid == "aiee:C0603_X"
+    assert {p.number: p.net for p in fp.pads if p.number} \
+        == {"1": "/VDD", "2": "GND", "3": "GND"}
+    assert _ref_text(pcb, "C5") == _ref_text(PD_PCB, "C5")
+
+
+def _ref_text(pcb: Path, ref: str):
+    """(at ...) and hide flag of REF's Reference field."""
+    for fp in sexpdata.loads(pcb.read_text())[1:]:
+        if _head(fp) != "footprint":
+            continue
+        for k in fp[1:]:
+            if _head(k) == "property" and k[1] == "Reference" \
+                    and k[2] == ref:
+                at = next(x for x in k[3:] if _head(x) == "at")
+                return ([round(float(v), 3) for v in at[1:]],
+                        "hide" in sexpdata.dumps(k))
+    raise AssertionError(f"{ref} not on {pcb}")
+
+
+@pytest.mark.smoke
+def test_netlist_dnp_reaches_the_board(tmp_path):
+    """A DNP set in the schematic (the netlist's dnp property) lands on the
+    board's footprint, and clearing it there clears it again."""
+    import place_edit
+    pcb = _stage(tmp_path, PD_PCB)
+    tree = _load_net(PD_NET)
+    for c in _comps_sec(tree)[1:]:
+        if _head(c) == "comp" and _kidval(c, "ref") == "R9":
+            c.append([S("property"), [S("name"), "dnp"]])
+    net = _dump_net(tree, tmp_path / "dnp.net")
+    plan = _run(pcb, net, "--dry-run")["plan"]
+    assert [(e["ref"], e["dnp"]) for e in plan["swap_same_fp"]] \
+        == [("R9", [False, True])]
+    assert _run(pcb, net)["status"] == "pass"
+    assert "R9" in place_edit._dnp_refs(pcb)
+    assert _run(pcb, net, "--dry-run")["changes"] == 0
+    _run(pcb, PD_NET)
+    assert "R9" not in place_edit._dnp_refs(pcb)

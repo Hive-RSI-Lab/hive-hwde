@@ -38,6 +38,9 @@ job JSON: {"verb": ..., "result": out.json, ...} with verbs:
         {"op": "add_via", "at": [x,y], "size": mm, "drill": mm, "net": "NAME"}
         {"op": "remove", "uuid": "..."}        # track or via; absent = no-op
         {"op": "set_net", "uuid": "...", "net": "NAME"}   # renet one item
+        {"op": "set_width", "uuid": "...", "width": mm}   # a track or arc
+        {"op": "set_point", "uuid": "...", "which": "start"|"end"|"at",
+         "to": [x,y]}      # move a track's end or a via's centre in place
         {"op": "rename_net", "from": "OLD", "to": "NEW"}
             # every pad, track, via and zone of OLD goes to NEW (created
             # when absent); OLD stays in the net list, empty
@@ -228,6 +231,32 @@ def verb_apply_ops(job):
             else:
                 item.SetNet(_net(board, op["net"]))
                 results.append({"op": kind, "status": "renetted"})
+        elif kind in ("set_width", "set_point"):
+            item = by_uuid.get(op["uuid"])
+            if item is None:
+                raise ValueError("ops[%d]: uuid %s not on board"
+                                 % (i, op["uuid"]))
+            is_via = item.GetClass() == "PCB_VIA"
+            if kind == "set_width":
+                if is_via:
+                    raise ValueError("ops[%d]: set_width on a via" % i)
+                same = abs(item.GetWidth() - iu(op["width"])) <= 1
+                if not same:
+                    item.SetWidth(iu(op["width"]))
+            else:
+                to = pcbnew.VECTOR2I(iu(op["to"][0]), iu(op["to"][1]))
+                if (op["which"] == "at") != is_via:
+                    raise ValueError("ops[%d]: set_point %s on a %s"
+                                     % (i, op["which"], item.GetClass()))
+                get, put = {"at": ("GetPosition", "SetPosition"),
+                            "start": ("GetStart", "SetStart"),
+                            "end": ("GetEnd", "SetEnd")}[op["which"]]
+                cur = getattr(item, get)()
+                same = abs(cur.x - to.x) <= tol and abs(cur.y - to.y) <= tol
+                if not same:
+                    getattr(item, put)(to)
+            results.append({"op": kind, "status": "exists" if same
+                            else "changed"})
         elif kind == "rename_net":
             new = board.FindNet(str(op["to"]))
             if new is None:

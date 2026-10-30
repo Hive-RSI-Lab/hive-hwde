@@ -106,10 +106,17 @@ rules as routing constraints; cite the record id when you apply one.
   radius, the pads of `REF`/`REF.PAD`, uuid prefixes; all ANDed, e.g.
   `{"op": "rip", "net": "VBUS", "pads": ["J1"]}`), `add_path` (a polyline),
   `renet` (copper that touches no pad) and `rename_net` (board-wide, routed
-  copper included). `--refill` refills zones on the staged copy before the
-  swap; use it after any edit that crosses a zone fill. Pad nets and sizes
-  and DNP are place_edit's `set_pad` / `set_dnp`. Don't write a pcbnew script
-  for an edit these cover; if one is missing, add the op to hwde.
+  copper included), `set_width` (the selected tracks, in place),
+  `move_via` (drags its tracks along), `join_end` (a free track end to the
+  nearest same-net anchor) and `copy_from` (a selector's copper from an
+  older copy of the board: rip it, then copy it back). `--refill` refills
+  zones on the staged copy before the swap; use it after any edit that
+  crosses a zone fill. Pad nets and sizes and DNP are place_edit's
+  `set_pad` / `set_dnp`; a part's own silk in a box is `silk_clear` with a
+  `region`. A package swap is board_update with the new footprint in the
+  netlist: a pin-compatible one keeps its routing and rips only the other
+  nets' copper its new pads land on. Don't write a pcbnew script for an
+  edit these cover; if one is missing, add the op to hwde.
 
 ## Rules
 - Never hand-edit the file; never import a SES into a board that already
