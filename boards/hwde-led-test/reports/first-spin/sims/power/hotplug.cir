@@ -1,0 +1,25 @@
+* hwde-led-test first-spin power: hot-plug of J1 onto a live 5.25 V bench supply / USB lead
+* lead: 1 uH, 0.1 ohm (about 1 m of twin lead); C1 CL10A475KO8NNNC ESR 5 mOhm
+* a: C1 at nominal 4.7 uF; b: C1 at an assumed 2.6 uF after DC bias at 5 V (higher Q)
+.model DHI D(IS=5.2e-17 N=3 RS=10)
+VS src 0 PWL(0 0 1u 0 1.01u 5.25)
+LA src la 1u
+RLA la ina 0.1
+CA ina ca 4.7u
+RCA ca 0 5m
+RA ina aa 465.3
+VSA aa aa2 DC 0
+DA aa2 0 DHI
+LB src lb 1u
+RLB lb inb 0.1
+CB inb cb 2.6u
+RCB cb 0 5m
+RB inb ab 465.3
+VSB ab ab2 DC 0
+DB ab2 0 DHI
+.tran 10n 60u
+.meas tran vpk_a MAX v(ina)
+.meas tran vpk_b MAX v(inb)
+.meas tran ipk_led_a_ma MAX par('i(VSA)*1000')
+.meas tran ipk_led_b_ma MAX par('i(VSB)*1000')
+.end

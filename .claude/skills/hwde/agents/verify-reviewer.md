@@ -59,7 +59,10 @@ AND `reports/review-board.json`: `{"violations": [{"check": "board-review",
 "severity": "error|warning", "pos": [x, y]|null, "layer": "<or null>",
 "net": "<or null>", "refs": [...], "msg": "<defect + consequence>",
 "source": "review.board", "kind": "<short-slug>", "domain":
-"router|placement|plane|silk|schematic|library|fab|parts|review"}]}`
+"router|placement|plane|silk|schematic|library|fab|parts|review",
+"fault_class": "<docs/failure-modes.yaml id, or new>", "class_mode":
+"<when new>"}]}` (the class: reference/first-spin.md, "Every fault class
+becomes a check").
 `domain` = the fixer that owns it (copper->router, part position->placement,
 zone->plane, silk text->silk, value/net->schematic, footprint->library,
 export->fab, sourcing->parts, unsure->review); it routes the work order.

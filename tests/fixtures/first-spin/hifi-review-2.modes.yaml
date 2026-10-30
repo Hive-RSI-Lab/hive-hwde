@@ -1,0 +1,117 @@
+# The registry entries review-2's classes name, pinned at this commit so the
+# test's verdicts don't move when a check lands (docs/failure-modes.yaml does).
+modes:
+- id: MECH-13
+  mode: Hole size or plating wrong (PTH vs NPTH, under-drilled library part, plated pegs)
+  coverage:
+    script: fp_verify
+    rule: drill_mismatch; dfm_check:dfm_hole_size
+    level: L1
+- id: MECH-14
+  mode: Part height or protrusion vs enclosure, shim or heatsink
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+- id: MECH-15
+  mode: Heatsink land, clamp or mask opening missing
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+- id: THERM-02
+  mode: Tj above abs max from optimistic theta
+  coverage:
+    script: check_thermal (partial)
+    rule: '-'
+    level: L1
+- id: THERM-14
+  mode: Continuous rated output past what the thermal path holds
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+- id: RATE-09
+  mode: Logic level or 5 V tolerance mismatch
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+- id: RATE-13
+  mode: Power sequencing or enable pin undefined at power-up
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+- id: RATE-19
+  mode: Inrush or hot-plug current
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+- id: RATE-26
+  mode: P-FET load switch turned on through its gate-drain capacitance by an input voltage step
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+- id: RATE-27
+  mode: Series resistor drops an input below VIH at the datasheet's input current
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+- id: PI-08
+  mode: Pour neck or too few vias at layer transition
+  coverage:
+    script: check_current
+    rule: pour_neckdown,insufficient_transition_vias
+    level: L2
+- id: PI-21
+  mode: Power path not interlocked with its source's status
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+- id: EMC-13
+  mode: Antenna keepout wrong or module pads inside it
+  coverage:
+    script: place_metrics
+    rule: keepout_violation
+    level: L2
+- id: ANA-11
+  mode: Op-amp input common-mode or output swing past its limits on its real supply
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+- id: ANA-12
+  mode: Analog switch carries a signal outside its supply rails
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+- id: FAB-02
+  mode: Annular ring too small
+  coverage:
+    script: dfm_check
+    rule: dfm_annular_ring
+    level: L2
+- id: DFA-06
+  mode: Footprint does not match the package
+  coverage:
+    script: dfm_check
+    rule: dfm_unplaced_in_package
+    level: L2
+- id: FW-01
+  mode: Boot strap pins floating or wrong
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
+- id: FW-17
+  mode: Firmware stack cannot drive the interface wiring the board has
+  coverage:
+    script: '-'
+    rule: '-'
+    level: L0
