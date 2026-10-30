@@ -1,0 +1,113 @@
+{
+ "domain": "digital",
+ "source": "hifi-receiver-2 docs/review-2/digital.json at e5896e6 (task 261029-020622), blockers and majors, text cut to 400 chars",
+ "findings": [
+  {
+   "id": "DIGITAL-1",
+   "board": "core",
+   "severity": "blocker",
+   "refs": [
+    "U17",
+    "Y2",
+    "R45",
+    "U7",
+    "U9",
+    "R67",
+    "C47"
+   ],
+   "nets": [
+    "/PHY_RST",
+    "/ETH_CLK"
+   ],
+   "finding": "GPIO0 strap sees the 50 MHz RMII oscillator at reset. Y2 OE = TCA9555 P05: at POR it sits at about 1.65 V (100k internal pull-up vs R45 100k), inside the oscillator's undefined OE band (0.99-2.31 V; floating = enable). Once firmware enables Ethernet, P05 stays high across every ESP32 EN/WDT/panic/software reset because the TCA9555 has no reset pin, so the strap latches a random GPIO0 and the board",
+   "evidence": "TI SCPS200E s5 + Fig 23 (100k pull-up, inputs at POR, POR-only reset); YXC YSO110TR datasheet p1 (OE enable >=70% VDD or floating, disable <=30% VDD, start-up 3 ms max); ESP32-WROVER-E datasheet v2.4 s4 Table 5/6 (straps latched at system reset, tH >= 1 ms). EN RC 10k/1uF crosses 2.475 V at 13.9 ms,",
+   "fault_class": "FW-01"
+  },
+  {
+   "id": "DIGITAL-2",
+   "board": "core",
+   "severity": "major",
+   "refs": [
+    "U17",
+    "R40",
+    "R41",
+    "R42",
+    "R43",
+    "R44",
+    "R6",
+    "R7",
+    "Q2",
+    "Q6",
+    "U15",
+    "U16",
+    "U10",
+    "U12"
+   ],
+   "nets": [
+    "/PVDD_EN",
+    "/AMP_A_RST",
+    "/AMP_B_RST",
+    "/DAC_EN",
+    "/DJ_DIRECT"
+   ],
+   "finding": "TCA9555 internal 100k pull-ups fight the 100k pull-downs, so the outputs are undefined from power-up until firmware writes them (and stay at their last value through an ESP32 reset). PVDD_EN reaches 1.10 V on the 2N7002 gate (Vth min 1.0 V), which can switch PVDD on. AMP RST and DAC_EN sit at 1.65 V (ES9018K2M VIL 0.4 / VIH 2.05 V). DJ_DIRECT saturates Q6 (Ib 17 uA, Ic capability 3.4-6 mA > 0.5 mA",
+   "evidence": "Divider calc: 3.3*50.2k/150.2k = 1.10 V; 3.3*100/200 = 1.65 V. TI SCPS200E Fig 23; JSCJ 2N7002 VGS(th) 1.0-2.5 V @250uA; ES9018K2M datasheet v3.7 DC char VIH = DVCC/2+0.4, VIL = 0.4 V.",
+   "fault_class": "RATE-13"
+  },
+  {
+   "id": "DIGITAL-3",
+   "board": "core",
+   "severity": "major",
+   "refs": [
+    "U7",
+    "U10",
+    "U12"
+   ],
+   "nets": [
+    "/I2S_DOUT_MAIN",
+    "/I2S_DOUT_SUB",
+    "/I2S_BCK",
+    "/I2S_LRCK"
+   ],
+   "finding": "Main DAC ES9018K2M (GPIO5) and sub DAC PCM5102A (GPIO12) take separate I2S data lines with shared BCK/LRCK. squeezelite-esp32 drives one I2S data output only, so a second I2S peripheral (I2S1 as TX slave on the same BCK/WS pads) must be written, started sample-aligned with I2S0, and fed a separate sub mix.",
+   "evidence": "core.net; squeezelite-esp32@ee1720c components/squeezelite/output_i2s.c uses a single CONFIG_I2S_NUM for DAC and SPDIF (l.238, 335-336, 385-386)",
+   "fault_class": "FW-17"
+  },
+  {
+   "id": "DIGITAL-14",
+   "board": "lite-main",
+   "severity": "major",
+   "refs": [
+    "R54",
+    "R52",
+    "U8",
+    "U5"
+   ],
+   "nets": [
+    "/AMP_SDZ",
+    "/AMP_SDZ_IO"
+   ],
+   "finding": "TPA3118 SDZ is driven from GPIO21 through R54 = 100k. The datasheet allows IIH up to 50 uA at 2 V, but reaching VIH = 2 V through 100k from 3.2 V allows only 12 uA, so a high-leakage part never leaves shutdown. The 100k also doesn't meet the SDZ 10 V/ms slew limit (tau about 0.5 us).",
+   "evidence": "TI SLOS708G s6.3 (VIH 2 V, VIL 0.8 V, IIH <= 50 uA @2 V), s6.1 (SDZ slew 10 V/ms); (3.2-2.0)/100k = 12 uA",
+   "fault_class": "RATE-27"
+  },
+  {
+   "id": "DIGITAL-19",
+   "board": "core",
+   "severity": "major",
+   "refs": [
+    "U7",
+    "H3"
+   ],
+   "nets": [
+    "GND",
+    "+3V3",
+    "/I2S_DIN",
+    "/RMII_TXD1"
+   ],
+   "finding": "No antenna keepout on core. About 5.4 mm of the about 7 mm antenna end sits over the board, with GND fill on F.Cu/In1.Cu/B.Cu and +3V3 on In2.Cu under it (all four layers), plus the I2S_DIN and RMII_TXD1 tracks. Expect a 10-20 dB efficiency loss and a detuned antenna.",
+   "evidence": "pcbnew: board edge x 154.637, module end x 156.16 (1.5 mm overhang); fills cover x 149.2-153.7/154.2 at y 200.7 on all four layers; tracks I2S_DIN x 149.29 y 190.17-192.92, RMII_TXD1 x 149.29 y 208.6-210.84; ESP HW Design Guidelines s1.4.8",
+   "fault_class": "EMC-13"
+  }
+ ]
+}

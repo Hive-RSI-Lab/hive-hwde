@@ -29,7 +29,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
-SCRIPTS = REPO / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = REPO / "scripts"
 GOLDEN = REPO / "tests" / "golden"
 REGEN = REPO / "tests" / "s7_regen" / "blinky2"
 HIER = REPO / "tests" / "s7_regen" / "hierdemo"

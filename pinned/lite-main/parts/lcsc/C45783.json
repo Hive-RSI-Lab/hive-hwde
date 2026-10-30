@@ -1,0 +1,72 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C45783",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C45783",
+   "mpn": "CL21A226MAQNNNE",
+   "brand": "Samsung Electro-Mechanics",
+   "description": "22uF 25V X5R \u00b120% 0805 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "package": "0805",
+   "category": "Multilayer Ceramic Capacitors MLCC - SMD/SMT",
+   "type": "Basic",
+   "basic": true,
+   "stock": 3970855,
+   "price": 0.1918,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.1918
+    },
+    {
+     "qty": 200,
+     "price": 0.1509
+    },
+    {
+     "qty": 600,
+     "price": 0.1311
+    },
+    {
+     "qty": 2000,
+     "price": 0.1132
+    },
+    {
+     "qty": 10000,
+     "price": 0.1083
+    },
+    {
+     "qty": 20000,
+     "price": 0.1055
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL21A226MAQNNNE_C45783.pdf",
+   "url": "https://www.lcsc.com/product-detail/multilayer-ceramic-capacitors-mlcc-smd-smt_samsung-electro-mechanics-cl21a226maqnnne_C45783.html",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "25V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b120%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "22uF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X5R"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

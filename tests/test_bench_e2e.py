@@ -13,7 +13,7 @@ import pytest
 import yaml
 
 REPO = Path(__file__).resolve().parents[1]
-SCRIPTS = REPO / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = REPO / "scripts"
 for _p in (SCRIPTS, SCRIPTS / "lib"):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))

@@ -1,0 +1,41 @@
+{
+ "board": "core",
+ "project": "hifi-receiver-2",
+ "commit": "fe1734549c85ec82a431cedd0fe5dcda2f571663",
+ "dir": "pinned/core",
+ "design": [
+  "kicad/gen/anchors.py",
+  "kicad/gen/blocks.py",
+  "kicad/gen/blocks_amp.py",
+  "kicad/gen/blocks_audio.py",
+  "kicad/gen/blocks_mcu.py",
+  "kicad/gen/build.py",
+  "kicad/gen/design.py",
+  "kicad/gen/planes.py",
+  "kicad/gen/power_zones.py",
+  "kicad/gen/rebuild_board.sh",
+  "kicad/gen/route.sh"
+ ],
+ "stand_in": {
+  "kicad/gen/bst_links.py": "route_auto leaves the bootstrap caps' OUTx links unrouted",
+  "kicad/gen/fix_j1.py": "the pulled USB-C footprint sits in the edge floor and its pads too near its pegs",
+  "kicad/gen/gnd_island_vias.py": "no hwde script ties isolated GND pour fragments to the plane",
+  "kicad/gen/gnd_islands.py": "planes_gen/plane_repair leave unconnected GND fill islands",
+  "kicad/gen/gnd_maze_taps.py": "no hwde script connects GND pads stranded in pour fragments",
+  "kicad/gen/gnd_pad_taps.py": "no hwde script connects GND pads stranded in pour fragments",
+  "kicad/gen/gnd_via_drops.py": "no hwde script connects GND pads stranded in pour fragments",
+  "kicad/gen/miniroute.py": "route_auto left about 40 connections open on a dense 4-layer board",
+  "kicad/gen/post_route.py": "route_auto's KRT finish pass lays power nets under their width rule",
+  "kicad/gen/pre_route.py": "no hwde script places pre-route vias and solid-connect pours",
+  "kicad/gen/pro_vias.py": "rules_gen's via classes put drill edges under JLC's 0.5 mm hole-to-hole",
+  "kicad/gen/rip.py": "route_edit has no rip-up by UUID",
+  "kicad/gen/rip_near.py": "route_edit has no rip-up near a part",
+  "kicad/gen/ripnet.py": "route_edit has no rip-up of whole nets",
+  "kicad/gen/satellites.py": "place_anneal placed nothing in 22 min on 278 parts",
+  "kicad/gen/silk_clean.py": "silk_place leaves silk findings it can't clear",
+  "kicad/gen/turn.py": "place_edit can't rotate a part on a routed board and rip its copper",
+  "kicad/gen/unbox_gnd.py": "no hwde script frees a GND pad boxed in by other nets",
+  "kicad/gen/via_taps.py": "no hwde script maze-routes an unconnected pad to its net's vias"
+ },
+ "unclassified": []
+}

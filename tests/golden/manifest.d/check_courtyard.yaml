@@ -1,0 +1,13 @@
+# Seeded fault for check_courtyard: the verify check had none, so a change
+# that loosened it went unseen by the scorecard and the score.
+mutants:
+  courtyard-inside-pads:
+    board: blinky2
+    script: mutations/courtyard_inside_pads.py
+    check: check_courtyard
+    defect: >-
+      LIBRARY fault: R1's courtyard is its body outline, inside its own pads,
+      so DRC lets a neighbour sit on them (EasyEDA's 0603s, hwde-led-test)
+    expect:
+      kind: courtyard_pads
+      ref: R1

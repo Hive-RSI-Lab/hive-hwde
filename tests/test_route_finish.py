@@ -9,7 +9,7 @@ from pathlib import Path
 from shapely.geometry import LineString, Point
 
 REPO = Path(__file__).resolve().parents[1]
-SCRIPTS = REPO / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = REPO / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 import geom  # noqa: E402

@@ -18,7 +18,7 @@ regenerate both files on purpose and tell fwe to copy them again:
     kicad-cli sch export netlist --format kicadsexpr \
       -o tests/golden/netlist/usbbuck4.net tests/golden/usbbuck4/usbbuck4.kicad_sch
     # make the (source ...) path repo-relative, then rewrite the JSON:
-    python -c "import json,sys; sys.path[:0]=['.claude/skills/hwde/scripts/lib']; \
+    python -c "import json,sys; sys.path[:0]=['scripts/lib']; \
       import simlib; print(json.dumps(simlib.parse_netlist( \
       'tests/golden/netlist/usbbuck4.net'), indent=1, sort_keys=True))" \
       > tests/golden/netlist/usbbuck4.parsed.json

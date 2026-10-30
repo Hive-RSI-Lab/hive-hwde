@@ -1,0 +1,1001 @@
+# tasks.yaml - the task taxonomy: what an EE can be asked to do, and the recipe
+# that does it (T10).
+#
+# Consumed by scripts/task_router.py: `hwde task_router --task "<task>"` matches this table FIRST
+# (deterministic regex), and only an ambiguous/unknown match falls through to
+# LLM classification (which lands back here via --verb). The full pipeline is
+# the `full-run` verb - a recipe like any other, not a separate code path.
+#
+# A recipe is: steps (scripts / agents / gates / human holds) + the edit class
+# the work belongs to. Gates and ceremony are NOT restated here: a verb names
+# its `edit_class` and the router reads reference/invalidation.yaml for the
+# gates to re-run and the human_hold weight (T7). Restating them is how the two
+# files drift apart, so the schema forbids it (a verb with an edit_class may not
+# carry a `gates:` key; test_task_router pins that).
+#
+# Step forms (exactly one key per step, plus the shared `why`):
+#   do:     "scripts/x.py --flag {slot}"  a concrete command; {slots} bind from
+#           the workspace + extracted args (see PLACEHOLDERS below). Unbound
+#           required slots become plan `needs` and block the plan (exit 1).
+#   gate:   <name from gates.yaml>        run it via gate.py; the router appends
+#           every remaining mapped gate after the last step, so a recipe only
+#           lists a gate when its ORDER inside the recipe matters.
+#   agent:  <role in agents/>             spawn it; `tier` is the docs/playbook.md
+#           spawn tier for this role in this recipe.
+#   human:  <0-3>                         a hold; see invalidation.yaml weights.
+#   recipe: <verb>                        run that recipe here (composition).
+#   note:   "..."                         judgment the orchestrator must apply;
+#           the long form lives in the verb's doc.
+# Optional per step: `when` (free text condition - the orchestrator judges),
+# `optional: true`.
+#
+# PLACEHOLDERS bound by the router:
+#   workspace slots  {ws} {board} {pcb} {sch} {netlist} {pro} {dru}
+#                    {constraints} {decoupling} {parts} {sims} {fab} {reports}
+#                    {log} {state}
+#                    {checks} = the verify check-report dir (reports/checks;
+#                    kicad/reports/checks on a workspace resume has not yet
+#                    moved - statelib.check_reports_dir)
+#     - every kicad/ path resolves through statelib.kind_path (invalidation.yaml
+#       artifact_kinds + the workspace's own registry overrides), never by
+#       string-building a layout this repo happens to use.
+#   arg slots        declared per verb under `args`; extracted from the task
+#                    text (refdes / net / path / lcsc / int) or passed
+#                    --arg name=value.
+#   {work}           a scratch path the orchestrator picks for op lists etc.
+#
+# preconditions (checked against the workspace when one is given; a failed
+# precondition marks the plan `blocked` with the reason, exit 1):
+#   workspace          a state.json must exist
+#   board_exists       the .kicad_pcb must exist
+#   sch_exists         the .kicad_sch must exist
+#   netlist_exists     the exported netlist must exist
+#   gates_fresh:<g>    gate <g> must be pass AND hash-fresh AND unmarked (T7)
+#   no_open_issues     no open/fixing issues in state.json
+#
+# Adding a verb: add it here + reference/recipes/<verb>.md. The tests enforce
+# that every script/flag/agent/gate/edit_class named here exists.
+
+version: 1
+
+verbs:
+
+  # -------------------------------------------------------------------------
+  review:
+    summary: Review an existing board - import it into a workspace and run every
+      gate as a baseline, or re-review a workspace already here.
+    doc: reference/recipes/review.md
+    workspace: created
+    edit_class: null
+    gates: []          # intake RECORDS baselines; it does not re-run gates
+    human_hold: 2
+    args:
+      source: {kind: path, required: false,
+               question: "Path to the KiCad project directory or .kicad_pro to review?"}
+    match:
+      any: ['\breview\b', '\baudit\b', '\bintake\b', '\bimport (this|a|the|my)\b',
+            '\btake over\b', '\bsecond opinion\b', '\bsanity[- ]check\b',
+            '\b(look|take a look) at (this|my|the) (board|design|project)\b',
+            '\bcritique\b', '\bassess\b', '\bwhat.s wrong with\b']
+      not: ['\bdfm\b', '\bmanufactur', '\bfabricab']
+    variants:
+      external:
+        when: has_arg:source
+        steps:
+          - do: "scripts/intake.py --source {source} --workspace {ws} --board {board} --out {reports}/intake.json"
+            why: "copy-in (source never mutated, sha256-verified), format-pin
+                  upgrade, state v2 init at the design's real phase, baseline
+                  erc/drc_routed/verify/dfm, netlist audit, renders, digest"
+          - note: "Read {reports}/intake-digest.md - the gate table and
+                   `next_actions` ARE the review. A failing gate is the board's
+                   finding, not an intake failure (intake exits 0 for it)."
+          - note: "verify checks reported `skipped` were not run (no constraints
+                   sidecar) - say so; do not report them as passes."
+          - agent: verify-reviewer
+            tier: fable/high
+            why: "fresh-context judgment over the digest + renders + verify_all.json"
+          - note: "A cold design review where the board earns one (your call,
+                   never a gate): one fresh domain-reviewer per domain it has,
+                   reference/first-spin.md. Each finding names its fault class."
+          - do: "scripts/first_spin.py --workspace {ws} --md {reports}/first-spin/dispositions.md --briefs {reports}/first-spin/briefs.json"
+            why: "what is still open, and each fault class no hwde check caught
+                  as a draft brief: file them on hive-hwde, so the next board
+                  gets a check where this one needed a reviewer"
+            when: "a first-spin review was run"
+          - human: 2
+            why: "present the digest + design doc; ask which findings to fix"
+          - note: "Each accepted finding becomes a `fix-finding` run against its
+                   gate report; parts/footprint findings become `make-footprint`."
+      workspace:
+        when: has_workspace
+        gates: [erc, drc_routed, verify, dfm]   # re-established, not assumed
+        steps:
+          - do: "scripts/state.py resume --workspace {ws}"
+            why: "phase, gates, freshness (gates_stale / gates_freshness_unknown)"
+          - gate: erc
+            why: "re-establish every gate against the CURRENT files BEFORE the
+                  reviewer reads them - a stale pass is not evidence"
+          - gate: drc_routed
+          - gate: verify
+          - gate: dfm
+          - do: "scripts/render.py {pcb} --views top,bottom --out-dir {reports}"
+            why: "the reviewer needs pictures, not s-expressions"
+          - note: "the verify check reports are {checks}/summary.json and
+                   {checks}/<check>.json - give the reviewer that directory"
+          - agent: verify-reviewer
+            tier: fable/high
+            why: "fresh context over verify_all.json + renders"
+          - note: "A cold design review where the board earns one (your call,
+                   never a gate): one fresh domain-reviewer per domain it has,
+                   reference/first-spin.md. Each finding names its fault class."
+          - do: "scripts/first_spin.py --workspace {ws} --md {reports}/first-spin/dispositions.md --briefs {reports}/first-spin/briefs.json"
+            why: "what is still open, and each fault class no hwde check caught
+                  as a draft brief: file them on hive-hwde, so the next board
+                  gets a check where this one needed a reviewer"
+            when: "a first-spin review was run"
+          - do: "scripts/report_gen.py --workspace {ws}"
+            why: "living design doc; non-blocking by contract"
+          - human: 2
+            why: "present findings; ask which to fix"
+
+  # -------------------------------------------------------------------------
+  fix-finding:
+    summary: Fix violations from a gate result or check report through the
+      standard dispatch -> fixer -> re-gate loop.
+    doc: reference/recipes/fix-finding.md
+    workspace: required
+    edit_class: null      # the fix's own class depends on the domain - see doc
+    gates: []             # the failing gate re-runs; the doc's table adds the rest
+    human_hold: 0
+    args:
+      findings: {kind: path, required: true,
+                 question: "Which report holds the findings? (a gate result or a
+                            check report JSON, e.g. reports/gate-verify.json)"}
+      gate: {kind: text, required: false, extract: none,
+             question: "Which gate failed?"}
+    preconditions: [workspace, board_exists]
+    match:
+      any: ['\bfix\b', '\brepair\b', '\bclear\b', '\bviolations?\b', '\bfindings?\b',
+            '\b(drc|erc|verify|dfm) (errors?|warnings?|failures?)\b',
+            '\bfailing gate\b', '\bwork ?order\b', '\bmake .* (pass|clean)\b',
+            '\bgate .* (fails?|failed|failing)\b']
+      not: ['\bfootprint\b']
+    steps:
+      - do: "scripts/state.py budget --workspace {ws} --path fix_loops.{gate} --consume"
+        why: "a counter: over:true = past the default rounds - go on only if
+              the loop is converging, else change approach (record why)"
+      - do: "scripts/state.py snapshot --workspace {ws} --label pre-fix-{gate} --files kicad/{project}.kicad_pcb"
+        why: "the rollback point; add the .kicad_sch for P4-phase fixes"
+      - do: "scripts/fix_dispatch.py --input {findings} --board {pcb} --state {state} --out {log}/dispatch.json"
+        why: "clusters by (net, kind, region), writes one work order per cluster
+              WITH its reference/remediations/<kind>.md paths, registers open issues"
+      - agent: fixer
+        tier: opus/high
+        why: "one per work order; orders inside one `parallel_groups` entry may
+              run concurrently, groups run in sequence. Copper/route fixers are
+              opus/high; silk/sch/parts/fab fixers are sonnet/medium."
+      - do: "scripts/state.py edit --workspace {ws} --class {edit_class} --what {ref} --why \"fix {gate}\""
+        why: "declare what the fix actually changed - the doc's domain->class
+              table; this is what stamps the derived artifacts stale"
+      - gate: "{gate}"
+        why: "re-run the gate that failed; record EVERY attempt (record-gate)"
+      - note: "A fixer that introduced NEW violations: restore its snapshot, mark
+               the issue escalated, continue with the rest."
+      - note: "After any copper/placement fix re-run drc_routed BEFORE verify -
+               fixes must not regress an earlier gate."
+
+  # -------------------------------------------------------------------------
+  move:
+    summary: Move / rotate / flip a placed footprint (or a refdes label) on the board.
+    doc: reference/recipes/move.md
+    workspace: required
+    edit_class: move_fp
+    args:
+      ref: {kind: refdes, required: true, extract: first,
+            question: "Which refdes should move (e.g. C12)?"}
+    preconditions: [workspace, board_exists]
+    match:
+      any: ['\bmove\b', '\bnudge\b', '\bshift\b', '\brelocate\b', '\breposition\b',
+            '\brotate\b', '\bflip\b', '\bcloser to\b', '\bfurther from\b',
+            '\bto the (other|back|top) side\b']
+      not: ['\bmove (on|to) (the )?next (phase|step)\b']
+    variants:
+      silk:
+        when: 'matches:\b(refdes|silkscreen|silk|label|designator|value text|text)\b'
+        edit_class: silk_edit
+        steps:
+          - do: "scripts/silk_place.py --pcb {pcb} --refs {ref} --apply --verify-drc --out-report {reports}/silk_place.json"
+            why: "the solver places pin-locked labels legally; --apply writes via
+                  place_edit move_text. Hand-written ops only when it refuses."
+          - do: "scripts/state.py edit --workspace {ws} --class silk_edit --what {ref} --why \"label move\""
+            why: "hold 0 - cosmetics; the gates are the whole story"
+      footprint:
+        when: always
+        steps:
+          - do: "scripts/state.py snapshot --workspace {ws} --label pre-move-{ref} --files kicad/{project}.kicad_pcb"
+            why: "atomic rollback point (place_edit is atomic per invocation, the
+                  re-route that follows is not)"
+          - do: "scripts/place_edit.py --pcb {pcb} --ops {work}/ops.json --allow-routed --out-report {reports}/place_edit.json"
+            why: 'ops = {"version":1,"ops":[{"op":"move","ref":"{ref}","x":X,"y":Y}]}
+                  (also rotate/flip/lock); absolute coordinates, idempotent'
+          - note: "--allow-routed leaves the OLD copper where it was: the moved
+                   pads keep their tracks only by accident. Rip and re-route the
+                   affected nets (`reroute-net`) before believing drc_routed."
+          - do: "scripts/state.py edit --workspace {ws} --class move_fp --what {ref} --why \"placement change\""
+            why: "stamps place/drc/drc_routed/verify/dfm + the gerber zip stale"
+          - note: "Zones: any copper edit stales the pours - refill before gating
+                   (kc.py drc --refill --save-board is the only headless
+                   filler at this pin - kicad-cli's own flag is --refill-zones)."
+          - note: "Neighbour silk does NOT move with the footprint - check_silk
+                   fires in verify, not DRC."
+
+  # -------------------------------------------------------------------------
+  swap-part:
+    summary: Swap a part's value/MPN (same footprint) or replace it with a
+      different package.
+    doc: reference/recipes/swap-part.md
+    workspace: required
+    edit_class: swap_part_same_fp
+    args:
+      ref: {kind: refdes, required: true, extract: first,
+            question: "Which refdes is being swapped (e.g. R5)?"}
+      lcsc: {kind: lcsc, required: false,
+             question: "Which LCSC part number replaces it (e.g. C25804)?"}
+    preconditions: [workspace, sch_exists, board_exists]
+    match:
+      any: ['\bswap\b', '\breplace\b', '\bsubstitute\b', '\bchange\b.*\b(value|part|mpn|component|to a)\b',
+            '\bdifferent (part|value|mpn)\b', '\bsecond source\b', '\bre-?spec\b']
+      not: ['\bfootprint\b']
+    steps:
+      - do: "scripts/parts_search.py --query {lcsc} --basic-only --min-stock 1000 --out {ws}/parts/candidates.json"
+        why: "Basic-first, in-stock: an Extended part costs a feeder"
+        optional: true
+        when: "the replacement part is not already sourced"
+      - agent: schematic-block
+        tier: fable/medium
+        why: "edit the symbol's Value/MPN/LCSC fields (schlib.py); footprint field
+              too if the package changes - that makes it swap_part_new_fp"
+      - gate: erc
+        why: "the schematic changed; ERC is errors AND warnings = 0"
+      - do: "scripts/kc.py netlist {sch} --out {netlist}"
+        why: "board_update diffs THIS netlist against the board"
+      - do: "scripts/board_update.py --pcb {pcb} --netlist {netlist} --dry-run --out-report {reports}/board_update-dry.json"
+        why: "classification first: plan.swap_same_fp vs plan.swap_new_fp vs
+              plan.unsupported (exit 1 = unsupported changes present)"
+      - do: "scripts/board_update.py --pcb {pcb} --netlist {netlist} --state {state} --out-report {reports}/board_update.json"
+        why: "same-fp = fields only (geometry byte-stable); new-fp = del+add at the
+              old spot, its stubs ripped - re-route them"
+      - do: "scripts/bom_cpl.py --pcb {pcb} --parts {parts} --out-dir {fab}"
+        why: "BOM/CPL are stale by the map the moment a value changes"
+      - do: "scripts/state.py rehash --workspace {ws} --names bom bom_full cpl"
+        why: "clear the stale marks you just regenerated - bare rehash keeps them"
+      - note: "A new footprint changes the edit class to swap_part_new_fp: more
+               gates (place/drc/drc_routed) and re-routing. board_update's report
+               tells you which class it actually applied."
+
+  # -------------------------------------------------------------------------
+  add-part:
+    summary: Add a part (decoupler, clamp, pull-up) to the schematic and the
+      placed board without discarding placement or routing.
+    doc: reference/recipes/add-part.md
+    workspace: required
+    edit_class: add_part
+    args:
+      lcsc: {kind: lcsc, required: false,
+             question: "Which LCSC part number (e.g. C14663)?"}
+      # extract: none - this names the NEW part; the refdes in "add a cap on
+      # U1" is the IC being decoupled, and binding that would be worse than
+      # leaving the slot open.
+      ref: {kind: refdes, required: false, extract: none,
+            question: "Which refdes should the new part get?"}
+    preconditions: [workspace, sch_exists]
+    match:
+      any: ['\badd\b', '\bfit\b', '\bpopulate\b', '\binsert\b', '\bstuff\b',
+            '\bput an?\b', '\bneeds? an?\b.*\b(cap|capacitor|resistor|diode|clamp|pull-?up|pull-?down|ferrite|tvs)\b']
+      # "\bfit\b" is for "fit a decoupler"; "shrink to fit"/"resize to fit"
+      # is the board outline (resize-board), not a new part.
+      not: ['\badd (a )?(text|label|silk|note|comment)\b', '\bfootprint\b',
+            '\b(shrink|resize|grow|enlarge)\w*\b']
+    steps:
+      - recipe: make-footprint
+        why: "only when the part is not already in the project library"
+        optional: true
+      - agent: schematic-block
+        tier: fable/medium
+        why: "add the symbol + wiring on the right sheet; keep the refdes free"
+      - gate: erc
+        why: "a floating pin or missing PWR_FLAG fails here, not later"
+      - do: "scripts/kc.py netlist {sch} --out {netlist}"
+        why: "the diff board_update applies"
+      - do: "scripts/board_update.py --pcb {pcb} --netlist {netlist} --dry-run --out-report {reports}/board_update-dry.json"
+        why: "confirms the diff is exactly the add (plan.add) and nothing else"
+      - do: "scripts/board_update.py --pcb {pcb} --netlist {netlist} --placements {work}/placements.json --state {state} --out-report {reports}/board_update.json"
+        why: 'placements = {"{ref}": {"region":[x1,y1,x2,y2]}} or {"x":..,"y":..};
+              the region scan lands it courtyard-legal and clearance-clear, front
+              side only. Existing copper is preserved.'
+      - note: "The new pads arrive NETTED but unrouted - DRC unconnected items ARE
+               the ratsnest. Route them with `reroute-net` / the fix loop."
+      - do: "scripts/bom_cpl.py --pcb {pcb} --parts {parts} --out-dir {fab}"
+        why: "a new line item in both files"
+      - do: "scripts/state.py rehash --workspace {ws} --names bom bom_full cpl"
+        why: "the regenerated pair is current again"
+
+  # -------------------------------------------------------------------------
+  remove-part:
+    summary: Remove a part from schematic + board, taking its now-orphaned copper
+      and silk with it.
+    doc: reference/recipes/remove-part.md
+    workspace: required
+    edit_class: del_part
+    args:
+      ref: {kind: refdes, required: true, extract: first,
+            question: "Which refdes should be removed (e.g. C2)?"}
+    preconditions: [workspace, sch_exists, board_exists]
+    match:
+      any: ['\bremove\b', '\bdelete\b', '\bdepopulate\b', '\brip out\b', '\bdrop\b',
+            '\bdnp\b', '\bunpopulate\b', '\btake off\b', '\bget rid of\b']
+      not: ['\bremove\b.*\b(track|trace|copper|via|stub|silk|label)\b']
+    steps:
+      - agent: schematic-block
+        tier: fable/medium
+        why: "delete the symbol and heal the wiring (a dangling wire is an ERC error)"
+      - gate: erc
+      - do: "scripts/kc.py netlist {sch} --out {netlist}"
+      - do: "scripts/board_update.py --pcb {pcb} --netlist {netlist} --dry-run --out-report {reports}/board_update-dry.json"
+        why: "read orphans.* BEFORE applying: what copper the delete will take
+              (netconn-proven, not proximity) and what pre-existing unanchored
+              copper it deliberately KEEPS (baseline-subtracted)"
+      - do: "scripts/board_update.py --pcb {pcb} --netlist {netlist} --state {state} --out-report {reports}/board_update.json"
+        why: "footprint + orphan stubs + silk inside its bbox go; a DRC dangling
+              delta rolls the whole thing back byte-identically"
+      - do: "scripts/bom_cpl.py --pcb {pcb} --parts {parts} --out-dir {fab}"
+      - do: "scripts/state.py rehash --workspace {ws} --names bom bom_full cpl"
+      - note: "Removing a decoupler or a clamp changes the electrical design -
+               check_pdn/check_decoupling in verify is the arbiter, not DRC."
+
+  # -------------------------------------------------------------------------
+  reroute-net:
+    summary: Rip up and re-route a net (or widen/re-path part of one) on a routed
+      board.
+    doc: reference/recipes/reroute-net.md
+    workspace: required
+    edit_class: reroute_net
+    args:
+      net: {kind: net, required: true,
+            question: "Which net (e.g. +3V3, /USB_DP)?"}
+    preconditions: [workspace, board_exists]
+    match:
+      any: ['\bre-?route\b', '\broute\b', '\brip ?up\b', '\bre-?wire\b', '\bwiden\b',
+            '\bre-?path\b', '\bshorten\b', '\bthicken\b', '\bre-?do the (routing|tracks)\b']
+      not: ['\broute (the )?(order|shipment)\b']
+    steps:
+      - do: "scripts/state.py snapshot --workspace {ws} --label pre-reroute --files kicad/{project}.kicad_pcb"
+        why: "route surgery has no undo of its own beyond this"
+      - do: "scripts/route_edit.py --pcb {pcb} --ops {work}/ops.json --out-report {reports}/route_edit.json"
+        why: 'the ONLY writer for track/via changes outside route_auto: ops =
+              remove {uuid} / add_track {start,end,width,layer,net} / add_via
+              {at,size,drill,net}. Atomic: any failure leaves the board identical.'
+      - do: "scripts/route_critical.py --pcb {pcb} --pad-window --nets {net} --out-report {reports}/pad_window.json"
+        why: "diagnostic BEFORE widening: widest connectable track per pad of
+              the net vs its DRU floor (exit 1 = geometrically unmeetable, which
+              is a placement or pour answer, never a wider track)"
+        optional: true
+      - do: "scripts/route_critical.py --pcb {pcb} --only power --work-dir {work} --out-report {reports}/route_critical.json"
+        why: "re-lay a whole critical CLASS (diff | rf | power, taken from
+              constraints.json). NOTE: no script re-routes one NAMED net end to
+              end - route_critical's --nets feeds the pad-window probe only, and
+              route_auto is the whole-board Freerouting pass."
+        optional: true
+        when: "the net is a critical-class net and its whole class should be re-laid"
+      - note: "Zones stale on every copper edit - refill (kc.py drc --refill
+               --save-board) BEFORE drc_routed, which refuses stale fills."
+      - do: "scripts/state.py edit --workspace {ws} --class reroute_net --what {net} --why \"re-route\""
+        why: "hold 1: gates + a decision line, no checkpoint ceremony"
+      - note: "A plane-carried power net is NOT trunk-routed on outer layers - the
+               plane IS the trunk (route_critical skips them by design)."
+
+  # -------------------------------------------------------------------------
+  resize-board:
+    summary: Change the board outline - resize, shrink to fit the placement,
+      corner radius, edge notches.
+    doc: reference/recipes/resize-board.md
+    workspace: required
+    edit_class: outline_change
+    args:
+      size: {kind: text, required: true, extract: none,
+             question: "What outline: 'WxH' in mm (e.g. 40x30), 'fit' (the
+               content bbox + margin) or 'keep' (same size, new radius/notch)?"}
+    preconditions: [workspace, board_exists]
+    match:
+      any: ['\bresiz\w*\b', '\bshrink[- ]?(to[- ]?fit|the board)\b',
+            '\bboard (size|outline|dimensions)\b', '\bedge\.?cuts\b',
+            '\bcorner radius\b', '\b(edge )?(notch|cutout)\b',
+            '\bmake the board (smaller|bigger|larger|narrower|shorter)\b',
+            '\b(grow|enlarge) the board\b']
+      not: ['\b(footprint|silk|courtyard|pad|zone) outline\b']
+    steps:
+      - do: "scripts/state.py snapshot --workspace {ws} --label pre-outline --files kicad/{project}.kicad_pcb"
+        why: "the edit is atomic, the re-pour and re-route that follow are not"
+      - do: "scripts/board_edit.py --pcb {pcb} --outline {size} --report-only --out-report {reports}/board_edit-preview.json"
+        why: "exit 1 lists what the new outline would push outside the board or
+              bring under the fab edge clearance - move those first (the parts
+              are in blocking_summary.refs); nothing is ever silently clipped"
+      - do: "scripts/board_edit.py --pcb {pcb} --outline {size} --workspace {ws} --out-report {reports}/board_edit.json"
+        why: "stages, rewrites Edge.Cuts via SWIG, re-parses to verify the new
+              outline with every track/via/pad/footprint unmoved, refills the
+              zones, refuses a DRC regression, then swaps atomically. It
+              RECORDS the outline_change class itself - no state.py edit step"
+      - note: "If the board GREW: zone outlines do not follow the edge - re-run
+               planes_gen (then stitch_vias) or the pour stops at the old
+               boundary. The report says so."
+      - note: "Shrink BEFORE routing where you can: after routing, every track
+               inside the fab's edge clearance is a refusal you must re-route."
+
+  # -------------------------------------------------------------------------
+  make-footprint:
+    summary: Get a part into the project library - pull it, fix its silk/refdes,
+      and verify the land pattern against the datasheet.
+    doc: reference/recipes/make-footprint.md
+    workspace: optional
+    edit_class: null
+    gates: []
+    human_hold: 1
+    args:
+      lcsc: {kind: lcsc, required: true,
+             question: "Which LCSC part number (e.g. C5184243)?"}
+    match:
+      any: ['\bfootprint\b', '\bland pattern\b', '\bsymbol\b', '\blibrary\b',
+            '\bkicad_mod\b', '\bpull\b.*\b(part|lcsc|c\d{4,})\b', '\bmake a part\b']
+      not: ['\bfootprint\b.*\b(too (big|small)|wrong)\b.*\bfix\b']
+    steps:
+      - do: "scripts/parts_search.py --query {lcsc} --out {ws}/parts/search.json"
+        why: "confirm stock/Basic status before committing the design to it"
+        optional: true
+      - do: "scripts/lib_pull.py --lcsc {lcsc} --project {ws}/kicad --out {ws}/parts/pull-{lcsc}.json --verify-load --verify-drc"
+        why: "easyeda2kicad pull + silk autofix + refdes norm + lib-table
+              registration; --verify-drc measures the silk fix with a REAL DRC"
+      - do: "scripts/datasheet_extract.py --pdf {ws}/parts/{lcsc}.pdf --out {ws}/parts/{lcsc}-grounding.json"
+        why: "per-page text + schema + template for the extractor agent - the
+              land pattern must come from the datasheet, never from memory"
+        optional: true
+      - agent: datasheet-extractor
+        tier: sonnet/high
+        why: "fills the schema; --validate rejects a bad extraction with paths"
+      - do: "scripts/fp_verify.py --footprint {ws}/lib/aiee.pretty/{lcsc}.kicad_mod --datasheet-json {ws}/parts/{lcsc}.json --svg {reports}/{lcsc}-fp.svg"
+        why: "pad count / pin 1 / pitch are errors; pad size + missing courtyard
+              are warnings. The SVG overlay is for the human, not the gate."
+      - agent: librarian
+        tier: sonnet/medium
+        why: "only for residue the scripts flag (plated pegs, DIP switches,
+              exposed pads) - a pad-geometry failure blocks P4"
+      - note: "This verb produces a LIBRARY artifact. Putting the part on a board
+               is `add-part` / `swap-part`."
+
+  # -------------------------------------------------------------------------
+  dfm-check:
+    summary: Check manufacturability at JLCPCB - export the fab package and gate
+      it locally.
+    doc: reference/recipes/dfm-check.md
+    workspace: required
+    edit_class: null
+    gates: [dfm]
+    human_hold: 0
+    preconditions: [workspace, board_exists]
+    match:
+      any: ['\bdfm\b', '\bmanufactur', '\bfabricab', '\bfab check\b', '\bgerbers?\b',
+            '\bjlc(pcb)?\b.*\b(check|rules?|capab)', '\bcan (this|it) be (made|built|fabbed)\b',
+            '\bproduction[- ]ready\b']
+    steps:
+      - do: "scripts/fab_export.py --pcb {pcb} --out-dir {fab} --out {reports}/fab_export.json"
+        why: "Protel extensions + X2, JLC layer set, drill files, zipped"
+      - do: "scripts/bom_cpl.py --pcb {pcb} --parts {parts} --out-dir {fab} --out {reports}/bom_cpl.json"
+        why: "CPL rotations come from reference/jlc_rotations.csv - the polarized-
+              part-mounted-backwards class"
+      - gate: dfm
+        why: "gate.py re-exports to scratch from the BOARD - the shipped zip is an
+              ordering artifact, not a gate input"
+      - agent: dfm
+        tier: inline-default
+        why: "spawn only when a failure needs narrative; the script IS the check"
+      - note: "JLCDFM (the fab's own 30+ checks) has no public API - it stays a
+               human browser step before ordering."
+
+  # -------------------------------------------------------------------------
+  order:
+    summary: Quote and order the board at JLCPCB. Real money; always human-gated.
+    doc: reference/recipes/order.md
+    workspace: required
+    edit_class: null
+    gates: []
+    human_hold: 3
+    args:
+      qty: {kind: int, required: false, question: "How many boards?"}
+    preconditions: [workspace, board_exists, gates_fresh:dfm, no_open_issues]
+    match:
+      any: ['\border\b', '\bbuy\b', '\bpurchase\b', '\bquote\b', '\bcheckout\b',
+            '\bsend .* to (jlc|the fab)\b', '\bget .* made\b', '\bplace the order\b']
+      # "where's my order" is tracking, not ordering - \bwhere (no trailing
+      # boundary) covers where / where's / wheres.
+      not: ['\border (status|number|tracking)\b', '\btrack(ing)?\b', '\bwhere',
+            '\beta\b', '\bshipp(ed|ing)\b', '\bstatus\b']
+    steps:
+      - do: "scripts/state.py resume --workspace {ws}"
+        why: "STOP if any gate is stale or freshness-unknown, or if
+              release_disposition is not order-ready-shaped: phase P10 is
+              workflow position, never a release certificate (codex C1)"
+      - do: "scripts/report_gen.py --workspace {ws}"
+        why: "the design doc is what the human approves against"
+      - do: "scripts/order_quote.py --pcb {pcb} --parts {parts} --qty {qty} --out {ws}/fab/quote.json"
+        why: "estimated:true always - transcribed headline prices, never a quote"
+      - do: "scripts/attest.py build --workspace {ws} --out {reports}/attest.json"
+        why: "the release attestation (U5): refuses with the FULL problem list
+              unless every applicable gate is pass+fresh, strict
+              verify_release/dfm_release reports are current under DURABLE
+              waivers, H4 is not rejected and the fab package is bound. Ordering
+              consumes ONLY this attestation - fix what it lists, never route
+              around it."
+      - do: "scripts/order_submit.py --pcb {pcb} --fab-dir {fab} --qty {qty} --out {ws}/fab/order.json"
+        why: "assembles the manifest + human_steps; refuses a governed
+              workspace whose attestation is missing/invalid; with
+              HWDE_JLCPCB_* creds --api adds upload + API DFM audit + real
+              calculate at the ATTESTED manufacturing options"
+      - human: 3
+        why: "H5: quote row, API audit findings, order.json, human_steps (upload
+              zip, JLCDFM second opinion, CPL polarity eyeball, pay)"
+      - note: "Only AFTER approval, and only the orchestrator (never an agent):
+               order_submit.py --api-create --confirm \"<board> <N>pcs <grand>\".
+               One latched order per workspace, bound to the design hash AND the
+               attestation (a --copper-oz contradicting the attested value
+               refuses - the pd-trigger case). 4-layer boards are the WEB path -
+               the API refuses them."
+      - recipe: track
+        why: "poll status at checkpoints once an order exists"
+
+  # -------------------------------------------------------------------------
+  track:
+    summary: Check the status of an order already placed.
+    doc: reference/recipes/track.md
+    workspace: required
+    edit_class: null
+    gates: []
+    human_hold: 0
+    preconditions: [workspace]
+    match:
+      any: ['\border (status|number|tracking|progress)\b',
+            '\b(status|where|eta|when)\b.*\border\b', '\btracking\b',
+            '\btrack\b.*\b(order|board|shipment|pcb)\b',
+            '\bshipp(ed|ing)\b', '\bhas (it|my board) shipped\b', '\bfab status\b']
+      not: ['\bcopper\b', '\btrace\b', '\bnet\b']
+    steps:
+      - do: "scripts/order_track.py --workspace {ws} --out {ws}/fab/tracking.json"
+        why: "reads the latched order number from fab/order.json; exit 0 even when
+              the status is unchanged"
+      - note: "Web-created orders (every 4-layer board) may not be visible to the
+               API at all - report what the file says and point at the JLC page."
+      - do: "scripts/state.py log --workspace {ws} --event order_status --data {work}/status.json"
+        why: "milestones belong in the audit trail; event names are [a-z0-9_-]{1,32}"
+        optional: true
+
+  # -------------------------------------------------------------------------
+  bring-up:
+    summary: Bring up a board in hand - from its own self-measurements and a
+      bench, unattended where it can be - and close it with what was measured.
+    doc: reference/recipes/bring-up.md
+    workspace: required
+    edit_class: null
+    gates: []
+    human_hold: 1
+    preconditions: [workspace]
+    match:
+      any: ['\bbring[- ]?up\b', '\bbrought up\b', '\bboards? (arrived|in hand|came)\b',
+            '\bself[- ]test\b', '\bfirst power[- ]?on\b', '\bpower (it|the board) up\b']
+      not: ['\border\b.*\bstatus\b']
+    steps:
+      - do: "scripts/state.py resume --workspace {ws}"
+        why: "where the run is; an order and boards_received should be on record"
+      - do: "scripts/check_observability.py --workspace {ws} --out {reports}/observability.json"
+        why: "what the board can read about itself: the plan's self items come
+              from here, the rest are bench items"
+      - note: "Write the bring-up plan before power: one item per first-spin
+               finding, contingency and could_stop_board fact, each with what is
+               read and its limit (reference/first-spin.md, self-observation.md)."
+      - note: "Run it unattended where the board allows (reference/remote-bringup.md):
+               provision, firmware with rollback, self-test, rails, loopback; the
+               bench items the person's hands are needed for go to them in one batch."
+      - do: "scripts/state.py bringup --workspace {ws} --results {ws}/bringup/results.json"
+        why: "closes bring-up with the measurements: bringup_passed, _derated or
+              _failed as the items say; refuses a file with a required item unmeasured"
+      - do: "scripts/attest.py disposition --workspace {ws}"
+        why: "bring-up-passed, derated or rework-required, derived from the results"
+      - do: "scripts/knowledge.py --prove --workspace {ws} --dry-run"
+        why: "the records that applied become proven, citing the results file"
+        when: "the disposition is bring-up-passed"
+      - human: 1
+        why: "tell the person: ready for use with the results page, or what failed
+              and the contingency it calls for"
+
+  # -------------------------------------------------------------------------
+  resume-phase:
+    summary: Pick a run back up where it stopped - the state file decides, not
+      memory.
+    doc: reference/recipes/resume-phase.md
+    workspace: required
+    edit_class: null
+    gates: []
+    human_hold: 0
+    preconditions: [workspace]
+    match:
+      any: ['\bresume\b', '\bcontinue\b', '\bpick (it|this|the run) up\b',
+            '\bcarry on\b', '\bwhere (did|were) (we|you|i)\b', '\bnext (step|phase|gate)\b',
+            '\bkeep going\b', '\bfinish (the|this) (run|board|design)\b']
+    steps:
+      - do: "scripts/state.py resume --workspace {ws}"
+        why: "phase, gates_passed, gates_passed_fresh, gates_stale,
+              gates_freshness_unknown, human_hold_pending, next_gate, open issues"
+      - do: "scripts/state.py log --workspace {ws} --event resumed"
+        why: "the audit trail must show the seam"
+      - note: "Never redo a gate that is passed AND fresh - its artifacts are
+               committed. Re-run exactly the stale/unknown ones."
+      - note: "Open issues in status `fixing` have work orders on disk - re-dispatch
+               those rather than re-clustering from scratch."
+      - recipe: full-run
+        why: "re-enter the pipeline at the phase state.json reports"
+
+  # -------------------------------------------------------------------------
+  promote:
+    summary: Move a workspace's captured learnings to their level on the
+      knowledge ladder - script check, cost term, template, prompt line,
+      knowledge record, remediation, bench item or root LEARNINGS.
+    doc: reference/recipes/promote.md
+    workspace: optional
+    edit_class: null
+    gates: []          # nothing on the board changes; the artifacts are the work
+    human_hold: 1
+    args:
+      entry: {kind: text, required: false, extract: none,
+              question: "Which queue entry id (learnings.py queue lists them)?"}
+    match:
+      # \blearnings\b is deliberately PLURAL: "learnings" is the promotion
+      # queue's domain word; singular "learning (mode|session|cycle)" is the
+      # `learn` verb's teaching session.
+      any: ['\bpromote\b', '\bpromotion\b', '\blearnings\b', '\bpromotion queue\b',
+            '\bharvest\b', '\bwhat did (we|this run) learn\b',
+            '\b(roll|write) up\b.*\b(learnings?|lessons?)\b',
+            '\blessons? learned\b', '\bknowledge ladder\b', '\btriage\b']
+      not: ['\btriage\b.*\b(violations?|findings?|drc|erc)\b']
+    variants:
+      workspace:
+        when: has_workspace
+        steps:
+          - do: "scripts/learnings.py compile --workspace {ws}"
+            why: "the run-close step: LEARNINGS.md entries -> learnings/queue.yaml,
+                  idempotent, rulings preserved. Exit 1 = a heading did not parse
+                  or a queue id lost its entry - fix the source, not the queue"
+          - do: "scripts/learnings.py queue --workspace {ws} --status pending"
+            why: "the backlog to rule on, with each entry's stage and the
+                  artifacts it already names"
+          - note: "One ruling per entry, and a promotion WRITES SOMEWHERE first -
+                   the kind table in the recipe maps level to artifact. Declining
+                   is a first-class outcome (board_local / duplicate / superseded
+                   / not_actionable) and needs its own reason."
+          - do: "scripts/learnings.py resolve --workspace {ws} --entry {entry} --status promoted --kind script_check --level L2 --targets <paths> --reason <why>"
+            why: "records the ruling; --kind root_learnings additionally appends
+                  the entry verbatim to LEARNINGS.md and writes its triage row
+                  (the suite checks those two files against each other). A whole
+                  pass at once: --batch <rulings>.yaml"
+          - do: "scripts/knowledge.py --validate"
+            why: "only when the promotion wrote a knowledge record; re-render any
+                  topology view that has one in the same commit"
+            optional: true
+            when: "a record was added or edited"
+          - do: "scripts/learnings.py validate --workspace {ws}"
+            why: "every promoted entry names artifacts that exist, every ruling
+                  carries a kind and a reason, no orphaned ids"
+          - human: 1
+            why: "present promoted/declined with reasons; the owner rules on
+                  anything contested before the commit"
+          - note: "Commit the artifact edits, the queue and the LEARNINGS/triage
+                   rows TOGETHER - an uncommitted LEARNINGS append is reverted by
+                   the next scoped gate commit."
+      sweep:
+        when: always
+        steps:
+          - do: "scripts/learnings.py sweep --boards-dir boards"
+            why: "every workspace that captures learnings, with uncompiled and
+                  pending counts - the general-agent operator mode"
+          - do: "scripts/learnings.py validate --boards-dir boards"
+            why: "lint every existing queue before working any of them"
+          - note: "Pick a board and re-run this verb with --workspace boards/<b>;
+                   the workspace variant is the actual promotion pass."
+
+  # -------------------------------------------------------------------------
+  research:
+    summary: Fill a coverage gap - one research task per gap slot, allowlisted
+      acquisition into quarantine, visual page reads, page-cited draft records
+      with justified envelopes, an independent second reader, a
+      promotion-queue entry. Knowledge is the work; nothing on a board changes.
+    doc: reference/recipes/research.md
+    workspace: required
+    edit_class: null
+    gates: []          # no board changes; records + sources are the artifacts
+    human_hold: 1
+    args:
+      slot: {kind: text, required: false, extract: none,
+             question: "Which gap slot (knowledge.py --coverage gaps[].slot,
+                        e.g. interface:usb / block:B3 / part:C123)? Leave
+                        unset to research every gap in the report."}
+    match:
+      any: ['\bresearch\b', '\bknowledge gap', '\bcoverage gap',
+            '\bfill (the|a|this) gap\b', '\bapp[- ]?notes?\b',
+            '\b(look|read) up\b.*\b(layout|app note|datasheet|vendor)\b',
+            '\bwhat do we know about\b', '\bunder[- ]?researched\b']
+      not: ['\bpromot', '\blearnings\b', '\bresearch-(component|interface|power|reference)\b']
+    variants:
+      slot:
+        when: has_arg:slot
+        steps:
+          - do: "scripts/knowledge.py --coverage --workspace {ws} --out {log}/coverage-research.json"
+            why: "the gap specs (exit 1 = gaps present); a slot that is not a
+                  gap has nothing to research and open refuses it"
+          - do: "scripts/research.py open --workspace {ws} --gaps {log}/coverage-research.json --slot {slot}"
+            why: "one task under research/tasks/ - consumes budgets.research.
+                  per_run, snapshots depth_per_gap, emits the researcher's
+                  BRIEF (gap + what the library already holds + policies +
+                  templates + commands). status checkpoint = the per-run cap
+                  is spent: present it, never silently skip the gap"
+          - agent: researcher
+            tier: fable/high
+            why: "web tools ONLY here, allowlisted (domains.yaml) and only
+                  through research.py fetch (quarantine + ledger); reads
+                  cited pages VISUALLY; writes draft records + envelope_note;
+                  research.py validate green"
+          - agent: research-second-reader
+            tier: opus/high
+            why: "FRESH context: re-reads every cited page and refutes or
+                  verifies (research.py verify) - maturity never rises on the
+                  author's word"
+          - do: "scripts/research.py close --workspace {ws} --task <task>"
+            why: "validate clean + every record ruled -> workspace LEARNINGS
+                  entry + learnings.py compile (the U6 queue row); a cap-hit
+                  task with nothing usable closes with --abandon --reason"
+          - do: "scripts/knowledge.py --coverage --workspace {ws} --out {log}/coverage-research.json"
+            why: "re-run: the workspace's verified records fold in - the slot
+                  reads provisional (researched, unapproved) until the owner
+                  approves the promoted copy"
+          - human: 1
+            why: "record the outcome; promotion (research.py promote per
+                  verified record, then learnings.py resolve --kind
+                  knowledge_record and the owner's approval block) is the
+                  promote verb's pass, not this one's"
+      all:
+        when: always
+        steps:
+          - do: "scripts/knowledge.py --coverage --workspace {ws} --out {log}/coverage-research.json"
+            why: "the gap specs (exit 1 = gaps present)"
+          - do: "scripts/research.py open --workspace {ws} --gaps {log}/coverage-research.json --all"
+            why: "one task per gap slot inside budgets.research.per_run; the
+                  payload lists opened tasks + briefs, and `checkpoint` names
+                  the slots the cap left unopened - present those, never
+                  silently drop them"
+          - agent: researcher
+            tier: fable/high
+            why: "one instance per opened task (parallel is fine - tasks own
+                  disjoint records; the ledger is per task)"
+          - agent: research-second-reader
+            tier: opus/high
+            why: "one FRESH instance per task, after its researcher returns"
+          - do: "scripts/research.py close --workspace {ws} --task <task>"
+            why: "per task; then re-run coverage and present the honest
+                  covered / provisional / gap summary"
+          - do: "scripts/knowledge.py --coverage --workspace {ws} --out {log}/coverage-research.json"
+            why: "the post-research state of every slot"
+          - human: 1
+            why: "record the outcome and the cap state"
+
+  # -------------------------------------------------------------------------
+  learn:
+    summary: Teaching session (owner present) - a learner agent iterates ONE
+      stage's artifact set (agent contract, templates, cost terms, scorer)
+      against owner grading on frozen inputs; approved output freezes into the
+      bench as a graded fixture.
+    doc: reference/recipes/learn.md
+    workspace: optional
+    edit_class: null
+    gates: []          # no board changes; artifacts + fixtures are the work
+    human_hold: 3
+    args:
+      stage: {kind: text, required: true, extract: none,
+              question: "Which stage is being taught (P1-P10, e.g. P6 placement,
+                         P1 research)?"}
+      fixture: {kind: text, required: false, extract: none,
+                question: "Which frozen fixture is the loop's input (bench.py
+                           --list; leave unset to capture a new one with
+                           --freeze mid-session)?"}
+    match:
+      any: ['\bteach(ing)?\b', '\blearn\b', '\blearning (mode|session|cycle|harness)\b',
+            '\btrain(ing)?\b.*\b(stage|placement|rout(er|ing)|scorer|agent)\b',
+            '\btuning (loop|session)\b', '\bgraded fixtures?\b',
+            '\bcalibrate\b.*\bscorer\b', '\bscorer terms?\b']
+      not: ['\bpromot', '\blearnings\b', '\bwhat did\b']
+    steps:
+      - do: "scripts/bench.py --list"
+        why: "the stage's frozen fixtures + baselines: the loop's inputs and
+              the regression set the exit checklist re-runs"
+      - do: "scripts/learnings.py queue --workspace {ws} --status pending --stage {stage}"
+        why: "pre-load - the stage's pending promotion-queue entries are the
+              session's candidate artifact edits (their kinds ARE the classed
+              edit vocabulary the learner uses)"
+        optional: true
+        when: "a workspace with a compiled learnings queue is bound"
+      - do: "scripts/knowledge.py --select --workspace {ws}"
+        why: "pre-load - the class records the stage's spawns already receive;
+              a critique that names missing knowledge becomes a new record"
+        optional: true
+        when: "a workspace is bound"
+      - agent: learner
+        tier: fable/max
+        why: "owns ONE stage's artifact set; loop = isolated stage agent on
+              frozen input -> render -> owner grades -> classed artifact edit
+              -> fresh re-run"
+      - human: 3
+        why: "the OWNER is the scorer: grades every cycle's render, rules on
+              scorer terms; no owner present = no learning session"
+      - note: "Scorer divergence is session work: when the owner's verdict and
+               the bench composite disagree the scorer is missing a term - the
+               recorded scorer replays the owner's judgment on production runs
+               where the owner is absent."
+      - do: "scripts/bench.py --freeze --stage {stage} --fixture {fixture} --board {board} --from <name=path> --grade <owner verdict>"
+        why: "exit checklist: freeze the owner-approved output as a graded
+              fixture (sha-pinned copies + manifest entry; KiCad artifacts
+              bring stem-matched project-file siblings along) - skip when the
+              session only re-graded an existing fixture"
+      - do: "scripts/bench.py --stage {stage} --fixture {fixture} --baseline"
+        why: "exit checklist: record the graded baseline the fixture is
+              compared against from now on; a scorer-term change re-records
+              every touched baseline in the SAME commit"
+      - do: "scripts/bench.py --stage {stage} --fixture <other_fixture> --compare"
+        why: "exit checklist: re-run the stage's OTHER frozen fixtures - a
+              taught improvement may not regress what was already graded
+              (exit 1 = regression; fix before closing)"
+      - do: "scripts/knowledge.py --validate"
+        why: "exit checklist: new records lint green; re-render any topology
+              view that has one in the same commit"
+        optional: true
+        when: "the session wrote knowledge records"
+      - do: "scripts/learnings.py validate --workspace {ws}"
+        why: "exit checklist: queue entries the session consumed carry their
+              rulings (resolve --kind knowledge_record is how new records are
+              indexed from a queue entry)"
+        optional: true
+        when: "a workspace queue fed the session"
+      - note: "Close = commit artifact edits + scorer terms + manifest/
+               baselines + root learnings.d/ lessons together; the recipe doc
+               carries the full exit checklist."
+
+  # -------------------------------------------------------------------------
+  full-run:
+    summary: The whole pipeline, brief to order-ready package. A recipe like any
+      other - the phases are its steps.
+    doc: reference/recipes/full-run.md
+    workspace: created
+    edit_class: null
+    gates: [erc, place, drc_routed, verify, dfm]
+    human_hold: 3
+    match:
+      any: ['\bdesign (me )?an?\b', '\bbuild (me )?an?\b', '\bnew (board|design|project)\b',
+            '\bbuild (me )?(an?|the|this|my) ([\w-]+ ){0,3}(board|pcb)\b',
+            '\bbrief to\b.*\b(order|fab|gerbers?|package)\b',
+            '\bfrom scratch\b', '\bfull[- ](run|pipeline)\b', '\bend[- ]to[- ]end\b',
+            '\bwhole pipeline\b', '\bmake me an?\b.*\bboard\b', '\bspin (up )?an?\b.*\bboard\b',
+            '\bultra[- ]bare[- ]bones\b',
+            '\blearning (?!mode|session|cycle|harness)[a-z][a-z0-9-]*:']
+      not: ['\bfootprint\b', '\bsymbol\b']
+      weight: 1
+    steps:
+      - do: "scripts/check_env.py"
+        why: "exit 0 required; on failure present its remediation strings and stop"
+      - do: "scripts/state.py init --workspace {ws} --board {board}"
+        why: "workspace + subdirs, in-repo so gate commits work; copy the brief in"
+      - do: "scripts/state.py mode --workspace {ws} --token \"<the brief's token>\""
+        why: "P0 (U18): the token names a TARGET that derives the scope tier and
+              the BINDING (reference/build-modes.md). Recording it is what makes
+              the binding machine-readable - board_init refuses a fixed
+              --outline WxH where geometry is an OUTPUT, and a relaxed size is
+              logged as a decision here, not left to prose"
+        when: the brief opens with a mode token
+      - note: "P0-P10 are the recipe body: reference/recipes/full-run.md carries the
+               per-phase agent roster, the checkpoints and the sim legs."
+      - do: "scripts/knowledge.py --coverage --workspace {ws} --phase P2 --out {log}/coverage-P2.json"
+        why: "P2 exit (U13 coverage contract): every declared block/interface
+              slot -> covered | provisional | gap at its operating_point and the
+              maturity floor; exit 1 = gap slots = the research trigger (the
+              research steps below launch AUTOMATICALLY on every gap - owner
+              ruling; a slot still gap after them is a state.py decision,
+              never silence)"
+      - agent: coverage-mapper
+        tier: sonnet/high
+        why: "the fuzzy record->slot remainder: schema-forced record/slot/class
+              edges only (it classifies, it may NOT declare sufficiency); then
+              re-run knowledge.py --coverage --mapping <file> so the mechanical
+              cutoff folds the edges in and the report logs the mapping sha"
+        optional: true
+        when: "the P2 report carries a mapping_request"
+      - do: "scripts/research.py open --workspace {ws} --gaps {log}/coverage-P2.json --all --phase P2"
+        why: "U15 auto-trigger: one research task per gap slot inside
+              budgets.research (per_run consumed here; depth_per_gap per task).
+              status checkpoint (exit 1) = the per-run cap is spent - present
+              the unopened slots at H1, never silently truncate"
+        when: "the P2 coverage report exited 1 (gap slots)"
+      - agent: researcher
+        tier: fable/high
+        why: "one per opened task: allowlisted acquisition (research.py fetch
+              -> research/sources quarantine + ledger), VISUAL page reads,
+              page-cited draft records with envelope_note; research.py
+              validate green. The only agent with web tools"
+        when: "research tasks were opened"
+      - agent: research-second-reader
+        tier: opus/high
+        why: "FRESH context per task: re-reads every cited page, refutes or
+              verifies (research.py verify)"
+        when: "research tasks were opened"
+      - do: "scripts/research.py close --workspace {ws} --task <task>"
+        why: "per task: validate clean + every record ruled -> workspace
+              LEARNINGS entry + promotion queue (U6); --abandon --reason for
+              a cap-hit task with nothing usable"
+        when: "research tasks were opened"
+      - do: "scripts/knowledge.py --coverage --workspace {ws} --phase P2 --out {log}/coverage-P2.json"
+        why: "re-run after research: verified workspace records fold in
+              (provisional at the approved floor); the H1 coverage summary is
+              this report's covered / provisional / gap per slot"
+        when: "research ran"
+      - do: "scripts/knowledge.py --coverage --workspace {ws} --phase P3 --out {log}/coverage-P3.json"
+        why: "P3 exit: part slots join (each IC's datasheet extraction - a thin
+              or empty layout_notes section is a detectable gap) with the
+              blocks' operating points; same exit/mapping protocol as P2"
+      - do: "scripts/research.py open --workspace {ws} --gaps {log}/coverage-P3.json --all --phase P3"
+        why: "same auto-trigger on P3 gaps (part slots: vendor layout section
+              / app note -> part-level records); same caps, same checkpoint"
+        when: "the P3 coverage report exited 1 (gap slots)"
+      - agent: researcher
+        tier: fable/high
+        why: "per opened P3 task"
+        when: "research tasks were opened at P3"
+      - agent: research-second-reader
+        tier: opus/high
+        why: "per opened P3 task, fresh context"
+        when: "research tasks were opened at P3"
+      - do: "scripts/research.py close --workspace {ws} --task <task>"
+        why: "per P3 task; then re-run coverage --phase P3 and record any slot
+              still gap as a state.py decision (designing under a coverage
+              gap is a decision, not an omission)"
+        when: "research tasks were opened at P3"
+      - gate: erc
+      - gate: place
+      - do: "scripts/board_edit.py --pcb {pcb} --outline fit --margin 0.5 --workspace {ws} --out-report {reports}/board_edit-fit.json"
+        why: "P6 close at a geometry-OUTPUT binding (U18 canonical / bounded):
+              the placement earned the size, so shrink the provisional outline
+              to it now, BEFORE copper exists inside the fab's edge clearance.
+              Re-run planes_gen (then stitch_vias) if the board GREW - a zone
+              outline does not follow the edge. resize-board.md has the flow"
+        when: the run's recorded mode makes geometry an output
+      - gate: drc_routed
+      - gate: verify
+      - gate: dfm
+      - do: "scripts/kc.py sch-pdf {sch} --out {reports}/schematic.pdf"
+        why: "P9 board guide: the schematic the guide shows (also a report_gen
+              core artifact)"
+      - do: "scripts/order_quote.py --pcb {pcb} --parts {parts} --assembly --out {fab}/quote.json"
+        why: "P9 board guide: the cost estimate with PCBA (estimated:true);
+              the order recipe re-quotes at the chosen qty"
+      - do: "scripts/guide_facts.py --workspace {ws} --render --out {reports}/guide_facts.json"
+        why: "P9 board guide: every fact the guide needs in one JSON (BOM with
+              LCSC + Basic/Extended, cost, rotation corrections, paths), after
+              a fresh top/bottom render that shows the parts. Exit 1 = the fab
+              package is incomplete (run dfm-check first) or the render failed"
+      - agent: board-guide
+        tier: sonnet/high
+        why: "P9 board guide: the owner-facing PDF at fab/<board>-guide.pdf via
+              the pdf-material-builder skill. Non-blocking to gates, but a full
+              run is not done without it"
+      - recipe: order
+        why: "P10 is the `order` recipe - same steps, same H5, same latch"

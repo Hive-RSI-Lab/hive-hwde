@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / ".claude" / "skills" / "hwde" / "scripts" / "lib"))
+sys.path.insert(0, str(ROOT / "scripts" / "lib"))
 import impedance as imp  # noqa: E402
 
 JLC = ROOT / "tests" / "fixtures" / "jlc_impedance"

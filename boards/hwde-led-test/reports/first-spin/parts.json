@@ -1,0 +1,178 @@
+{
+ "domain": "parts",
+ "findings": [
+  {
+   "id": "PARTS-1",
+   "board": "hwde-led-test",
+   "severity": "minor",
+   "refs": [
+    "J1",
+    "D1"
+   ],
+   "nets": [],
+   "finding": "Two extended JLC parts (J1 C492401, D1 C12624): an extended-part loading fee each on a 5-board order. No basic 0603 green LED was found: live parts_search for C72043 (Everlight 19-217/GHC-YR1S2/3T) returns basic=False, stock 0; basic-only 0603 green search returns 0 rows.",
+   "evidence": "parts/parts.json basic=false for C492401 and C12624; parts_search.py live 2026-10-29.",
+   "fix": "Accept (brief says basic 'wherever one fits'); or hand-solder J1 and drop it from the PCBA BOM.",
+   "margin": "cost only; 2 of 4 lines extended",
+   "fault_class": "DFA-09"
+  },
+  {
+   "id": "PARTS-2",
+   "board": "hwde-led-test",
+   "severity": "note",
+   "refs": [
+    "D1"
+   ],
+   "nets": [
+    "GND",
+    "/LED_A"
+   ],
+   "finding": "KENTO numbers the LED pins 1 = anode (+), 2 = cathode (green corner mark at the pin-2 end); the EasyEDA C12624 symbol/footprint and this board number pad 1 = K. The board is right by role (pad 1 K on GND, pad 2 A on /LED_A, silk triangle and chamfer at pad 1), but any pin-number compare against the KENTO drawing reads reversed.",
+   "evidence": "KENTO KT-0603G spec for approval rev A.0 (2018-12-06) p.2 package drawing (symbol: pin 1 '+', bar at pin 2; green mark at pin-2 end). EasyEDA C12624 (cpl_verify cache 2026-10-29): symbol pin 1 'K' -> footprint pad 1. Netlist: D1 pin1 K on GND, pin2 A on /LED_A. Board: D1 at (18,19.8) rot 90, pad1 (18,20.55) GND, pad2 (18,19.05) /LED_A.",
+   "fix": "None; check the cathode mark in JLC's DFM placement preview at order (known unknown).",
+   "margin": "n/a (polarity correct by role)",
+   "fault_class": "CONC-12"
+  },
+  {
+   "id": "PARTS-3",
+   "board": "hwde-led-test",
+   "severity": "note",
+   "refs": [
+    "C1",
+    "R1",
+    "D1"
+   ],
+   "nets": [],
+   "finding": "The three 0603 lands are the generic LCSC/EasyEDA patterns, slightly larger than the makers' recommendations: C1 pad width 0.90 mm vs Samsung 2/3W < b < W (0.53-0.80 mm); R1 0.806x0.864 at 1.5 pitch (outer 2.31 mm) vs UNI-ROYAL 0603 land D = 2.1 mm, C = 0.8 mm; D1 0.8x0.8 at 1.5 pitch (outer 2.3 mm, gap 0.7) vs KENTO 0.70 pad / 0.70 gap (outer 2.1 mm). All overlap the terminations fully; no assembly risk at 0603.",
+   "evidence": "Board pads (kicad_pcb): C1 0.8x0.9 @ +-0.7; R1 0.806x0.864 @ +-0.75; D1 0.8x0.8 @ +-0.75. Samsung MLCC catalog land guidance; UNI-ROYAL ds sec.8 0603 A0.9/B0.65/C0.8/D2.1; KENTO KT-0603G spec for approval rev A.0 (2018-12-06) p.2 suggested pad.",
+   "fix": "None.",
+   "margin": "outer length +0.2 mm (+10%) over maker lands; D1 gap 0.70 = 0.70 recommended",
+   "fault_class": "DFA-13"
+  },
+  {
+   "id": "PARTS-4",
+   "board": "hwde-led-test",
+   "severity": "note",
+   "refs": [
+    "D1"
+   ],
+   "nets": [],
+   "finding": "D1's library symbol is named/valued '0603 Green 509-620mcd' while the placed part is KT-0603G (IV 210-430 mcd typ range, bins P24-P28 up to 520 mcd). Instance fields (MPN, LCSC C12624, value KT-0603G) are right; the lib metadata is stale.",
+   "evidence": "Netlist libpart 0603Green509-620mcd, value field '0603 Green 509-620mcd'; KENTO KT-0603G spec for approval rev A.0 (2018-12-06) p.3 IV 210-430 mcd @5 mA, p.4 bins.",
+   "fix": "Rename the lib symbol value when next touched.",
+   "margin": "n/a",
+   "fault_class": "DFA-10"
+  }
+ ],
+ "known_unknowns": [
+  {
+   "fact": "J1 PZ254V-11-02P: pitch 2.54 +-0.05, pin 0.64 x 0.64 sq (diag 0.905), PCB hole \u00d81.02; footprint drill 1.20 in 2.0 pad (0.15 mm radial clearance to pin diagonal, annulus 0.40)",
+   "board": "hwde-led-test",
+   "refs": [
+    "J1"
+   ],
+   "status": "verified",
+   "source": "XFCN PZ254V-11-XX drawing rev A1 (2024-06-11), PCB hole layout",
+   "date": "2026-10-29",
+   "could_stop_board": true
+  },
+  {
+   "fact": "J1 pin 1 = +5V (square pad, silk '+'), pin 2 = GND (silk '-'), per brief",
+   "board": "hwde-led-test",
+   "refs": [
+    "J1"
+   ],
+   "status": "verified",
+   "source": "netlist + board pads (10.9,18.93)/(10.9,21.47) + silk text positions",
+   "date": "2026-10-29",
+   "could_stop_board": true
+  },
+  {
+   "fact": "D1 polarity: footprint pad 1 = K on GND (EasyEDA C12624 symbol pin 1 'K' maps to pad 1)",
+   "board": "hwde-led-test",
+   "refs": [
+    "D1"
+   ],
+   "status": "verified",
+   "source": "cpl_verify.py EasyEDA model, basis pin role K/A, verdict ok",
+   "date": "2026-10-29",
+   "could_stop_board": true
+  },
+  {
+   "fact": "D1 as JLC actually loads it: reel orientation and JLC's model registration put the cathode mark on pad 1 (DFM placement preview)",
+   "board": "hwde-led-test",
+   "refs": [
+    "D1"
+   ],
+   "status": "unverified",
+   "source": "dfm_check placement_visual skipped (no cpl_visual.json); JLC preview only at order",
+   "date": "2026-10-29",
+   "could_stop_board": true
+  },
+  {
+   "fact": "D1 package 1.6 x 0.8 x 0.6 mm, terminals 0.30 each end",
+   "board": "hwde-led-test",
+   "refs": [
+    "D1"
+   ],
+   "status": "verified",
+   "source": "KENTO KT-0603G spec for approval rev A.0 (2018-12-06) p.2",
+   "date": "2026-10-29",
+   "could_stop_board": false
+  },
+  {
+   "fact": "C1 0603 1.6x0.8x0.8 mm, terminations BW 0.3 +-0.2",
+   "board": "hwde-led-test",
+   "refs": [
+    "C1"
+   ],
+   "status": "verified",
+   "source": "Samsung MLCC catalog dimension table (size 10, thickness code 8)",
+   "date": "2026-10-29",
+   "could_stop_board": false
+  },
+  {
+   "fact": "R1 0603 1.6x0.8x0.45 mm",
+   "board": "hwde-led-test",
+   "refs": [
+    "R1"
+   ],
+   "status": "verified",
+   "source": "UNI-ROYAL datasheet sec.5 dimension table",
+   "date": "2026-10-29",
+   "could_stop_board": false
+  },
+  {
+   "fact": "Stock and lifecycle of C492401, C19666, C23179, C12624 (parts.json counts 0.4-4.8 M, undated)",
+   "board": "hwde-led-test",
+   "refs": [
+    "J1",
+    "C1",
+    "R1",
+    "D1"
+   ],
+   "status": "unverified",
+   "source": "parts/parts.json; D1 has alternates C84267, C2986059",
+   "date": "2026-10-29",
+   "could_stop_board": false
+  },
+  {
+   "fact": "No JLC basic 0603 green LED exists",
+   "board": "hwde-led-test",
+   "refs": [
+    "D1"
+   ],
+   "status": "verified",
+   "source": "parts_search.py live: C72043 basic=False stock 0; basic-only search 0 rows",
+   "date": "2026-10-29",
+   "could_stop_board": false
+  }
+ ],
+ "tools_wanted": [
+  {
+   "tool": "pin-numbering cross-check",
+   "checks": "datasheet pin numbering vs EasyEDA/footprint numbering for polarized 2-terminal parts, by role (K/A), reported when they disagree",
+   "why": "PARTS-2: KENTO pin 1 = anode, footprint pad 1 = cathode; a number-based reader would flip it"
+  }
+ ]
+}
