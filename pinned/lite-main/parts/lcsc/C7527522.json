@@ -1,0 +1,84 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C7527522",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C7527522",
+   "mpn": "XDJK-0271-1650",
+   "brand": "Lian Xin Technology",
+   "description": "-40\u2103~+70\u2103 2 200mA 50V Black RCA Jack Right Angle \u63d2\u4ef6 RCA Connector ROHS",
+   "package": "Plugin",
+   "category": "RCA Connector",
+   "type": "Extended",
+   "basic": false,
+   "stock": 3828,
+   "price": 0.2583,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.2583
+    },
+    {
+     "qty": 50,
+     "price": 0.2023
+    },
+    {
+     "qty": 200,
+     "price": 0.1782
+    },
+    {
+     "qty": 400,
+     "price": 0.1483
+    },
+    {
+     "qty": 2000,
+     "price": 0.1348
+    },
+    {
+     "qty": 4000,
+     "price": 0.1268
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2309181810_Lian-Xin-Technology-XDJK-0271-1650_C7527522.pdf",
+   "url": "https://www.lcsc.com/product-detail/rca-connector_lian-xin-technology-xdjk-0271-1650_C7527522.html",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+70\u2103"
+    },
+    {
+     "name": "Voltage Rating (Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Number of Ports",
+     "value": "2"
+    },
+    {
+     "name": "Color",
+     "value": "Black"
+    },
+    {
+     "name": "Current Rating",
+     "value": "200mA"
+    },
+    {
+     "name": "Connector Type",
+     "value": "RCA Jack"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Right Angle"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

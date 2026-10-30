@@ -20,7 +20,7 @@ import pytest
 import yaml
 
 REPO = Path(__file__).resolve().parents[1]
-SCRIPTS = REPO / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = REPO / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 
@@ -31,7 +31,7 @@ from checklib import CheckError  # noqa: E402
 from _boards import BOARDS, need_shipped_checks  # noqa: E402
 
 FIXTURES = REPO / "tests" / "fixtures" / "stages" / "pd_trigger"
-GATES_YAML = REPO / ".claude" / "skills" / "hwde" / "reference" / "gates.yaml"
+GATES_YAML = REPO / "reference" / "gates.yaml"
 IMAP = statelib.load_map()
 
 

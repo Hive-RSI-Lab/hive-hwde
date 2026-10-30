@@ -1,0 +1,100 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C46497",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C46497",
+   "mpn": "TPA3118D2DAPR",
+   "brand": "Texas Instruments",
+   "description": "-40\u2103~+85\u2103 -70dB 0.1% 102dB 2-Channel 30Wx2@8\u03a9 4.5V~26V 50mA 90% Class D Enable/shutdown function\u3001Filterless architecture\u3001ESD protection\u3001Overvoltage protection\u3001Analog voltage gain\u3001Integrated PLL HTSSOP-32-EP-6.1mm Audio Amplifiers ROHS",
+   "package": "HTSSOP-32-EP-6.1mm",
+   "category": "Audio Amplifiers",
+   "type": "Extended",
+   "basic": false,
+   "stock": 33537,
+   "price": 1.2037,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 1.2037
+    },
+    {
+     "qty": 10,
+     "price": 1.022
+    },
+    {
+     "qty": 30,
+     "price": 0.9221
+    },
+    {
+     "qty": 100,
+     "price": 0.8074
+    },
+    {
+     "qty": 500,
+     "price": 0.7075
+    },
+    {
+     "qty": 1000,
+     "price": 0.6846
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1810271112_Texas-Instruments-TPA3118D2DAPR_C46497.pdf",
+   "url": "https://www.lcsc.com/product-detail/audio-amplifiers_texas-instruments-tpa3118d2dapr_C46497.html",
+   "attributes": [
+    {
+     "name": "Power Supply Rejection Ratio (PSRR)",
+     "value": "-70dB"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+85\u2103"
+    },
+    {
+     "name": "Total Harmonic Distortion + Noise (THD+N)",
+     "value": "0.1%"
+    },
+    {
+     "name": "Output Power",
+     "value": "30Wx2@8\u03a9"
+    },
+    {
+     "name": "Efficiency",
+     "value": "90%"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "4.5V~26V"
+    },
+    {
+     "name": "Quiescent Current",
+     "value": "50mA"
+    },
+    {
+     "name": "Features",
+     "value": "Enable/shutdown function\u3001Filterless architecture\u3001ESD Protection\u3001Overvoltage Protection\u3001Analog voltage gain\u3001Integrated PLL"
+    },
+    {
+     "name": "Class",
+     "value": "Class D"
+    },
+    {
+     "name": "Speaker Channels",
+     "value": "2-Channel"
+    },
+    {
+     "name": "Signal-to-Noise Ratio",
+     "value": "102dB"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

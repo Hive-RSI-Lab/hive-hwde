@@ -1,0 +1,157 @@
+{
+  "script": "gate",
+  "gate": "verify",
+  "phase": "P8",
+  "tool": "verify",
+  "input": "kicad/core.kicad_pcb",
+  "input_digest": "sexpr_no_uuid:37b49d4e77c6bf41793e272f09ba94aad134b618d93774559c99ce88f4d1d008",
+  "status": "pass",
+  "criteria": {
+    "fail_severities": [
+      "error"
+    ],
+    "max_count": 0
+  },
+  "counts": {
+    "total": 145,
+    "by_severity": {
+      "warning": 144,
+      "error": 1
+    },
+    "by_source": {
+      "check_decoupling": 17,
+      "check_thermal": 1,
+      "check_route_style": 91,
+      "check_pdn": 2,
+      "check_ratings": 34
+    },
+    "by_check": {
+      "check_return_path": 0,
+      "check_current": 0,
+      "check_decoupling": 17,
+      "check_diffpair": 0,
+      "check_creepage": 0,
+      "check_thermal": 1,
+      "check_silk": 0,
+      "check_route_style": 91,
+      "check_mating": 0,
+      "check_pdn": 2,
+      "check_ratings": 34,
+      "check_bom_sync": 0,
+      "check_courtyard": 0,
+      "check_mate_pins": 0,
+      "check_model_paths": 0
+    }
+  },
+  "failing_count": 0,
+  "failing": [],
+  "waived_count": 1,
+  "waived": [
+    {
+      "check": "check_decoupling",
+      "severity": "error",
+      "pos": [
+        149.49,
+        188.74
+      ],
+      "layer": "F.Cu",
+      "net": "+3V3",
+      "refs": [
+        "C31",
+        "U7"
+      ],
+      "msg": "C31 decoupling loop ~20.2 nH for U7 pin 2 (mid class limit 10.0 nH: 5.1 mm rail + 19.5 mm gnd + 3 via)",
+      "source": "check_decoupling",
+      "items": [
+        {
+          "msg": "C31 decoupling loop ~20.2 nH for U7 pin 2 (mid class limit 10.0 nH: 5.1 mm rail + 19.5 mm gnd + 3 via)",
+          "pos": [
+            149.49,
+            188.74
+          ]
+        }
+      ],
+      "kind": "decoupler_loop",
+      "cap_class": "mid",
+      "manhattan_mm": 5.1,
+      "euclid_mm": 3.6519,
+      "loop_nh": 20.2391,
+      "vias_in_loop": 3,
+      "pin": "U7.2",
+      "limit_nh": 10.0
+    }
+  ],
+  "coverage": {
+    "strict": false,
+    "required": [
+      "check_return_path",
+      "check_current",
+      "check_decoupling",
+      "check_diffpair",
+      "check_creepage",
+      "check_thermal",
+      "check_silk",
+      "check_route_style",
+      "check_mating",
+      "check_pdn",
+      "check_ratings",
+      "check_bom_sync",
+      "check_courtyard",
+      "check_mate_pins",
+      "check_model_paths"
+    ],
+    "ran": [
+      "check_return_path",
+      "check_current",
+      "check_decoupling",
+      "check_diffpair",
+      "check_creepage",
+      "check_thermal",
+      "check_silk",
+      "check_route_style",
+      "check_mating",
+      "check_pdn",
+      "check_ratings",
+      "check_bom_sync",
+      "check_courtyard",
+      "check_mate_pins",
+      "check_model_paths"
+    ],
+    "passed": [
+      "check_return_path",
+      "check_current",
+      "check_diffpair",
+      "check_creepage",
+      "check_thermal",
+      "check_silk",
+      "check_route_style",
+      "check_mating",
+      "check_pdn",
+      "check_ratings",
+      "check_bom_sync",
+      "check_courtyard",
+      "check_mate_pins",
+      "check_model_paths"
+    ],
+    "failed": [],
+    "waived": [
+      "check_decoupling"
+    ],
+    "not_applicable": {},
+    "skipped_error": {}
+  },
+  "record_result": {
+    "ok": true,
+    "recorded": true,
+    "workspace": "/work/boards/core",
+    "gate": "verify",
+    "status": "pass",
+    "attempts": 5,
+    "inputs": {
+      "pcb": "sexpr_no_uuid:37b49d4e77c6bf41793e272f09ba94aad134b618d93774559c99ce88f4d1d008",
+      "constraints": "json_canonical:86a692eb98f076e2208c84bd8c3f111b08e0807cb918415222ca783cc6d1a5b6",
+      "decoupling": "json_canonical:61e6d2ea5e21e586b74d0c912b9cced6f4039606aaa12d21baa7d2b305c5ba89",
+      "waivers": "json_canonical:b617b01d130b74a9c5e33240470e7ef866d297c5b8d1032d7b06f0753517010a"
+    }
+  }
+}

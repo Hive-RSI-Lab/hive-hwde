@@ -1,0 +1,201 @@
+{
+ "script": "route_cleanup",
+ "status": "pass",
+ "board": "core.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "dry_run": false,
+ "ops_applied": 6,
+ "refilled": true,
+ "drc_before": {
+  "unconnected": 0,
+  "errors": 0,
+  "warnings": 0,
+  "dangling_flagged": 0
+ },
+ "drc_after": {
+  "unconnected": 0,
+  "errors": 0,
+  "warnings": 0,
+  "dangling_flagged": 0
+ },
+ "ops": [
+  {
+   "op": "remove",
+   "uuid": "00ee67fe-474e-4f67-9204-e786f5a9a9fb"
+  },
+  {
+   "op": "remove",
+   "uuid": "22a19359-cd49-4480-a524-e5523bcb32db"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    70.897,
+    170.717
+   ],
+   "end": [
+    70.917,
+    170.697
+   ],
+   "width": 0.505,
+   "layer": "F.Cu",
+   "net": "/rails/BUCK5_LX"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    70.917,
+    170.697
+   ],
+   "end": [
+    70.987,
+    170.697
+   ],
+   "width": 0.505,
+   "layer": "F.Cu",
+   "net": "/rails/BUCK5_LX"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    71.007,
+    171.957
+   ],
+   "end": [
+    70.987,
+    171.937
+   ],
+   "width": 0.505,
+   "layer": "F.Cu",
+   "net": "/rails/BUCK5_LX"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    70.987,
+    171.937
+   ],
+   "end": [
+    70.987,
+    171.897
+   ],
+   "width": 0.505,
+   "layer": "F.Cu",
+   "net": "/rails/BUCK5_LX"
+  }
+ ],
+ "dangling_removed": 0,
+ "dangling_segments": 0,
+ "dangling_vias": 0,
+ "loops_broken": 0,
+ "loop_bridge_vetoed": 0,
+ "orphaned_after_loops": 0,
+ "off_angle_snapped": 2,
+ "snaps": [
+  {
+   "uuid": "00ee67fe-474e-4f67-9204-e786f5a9a9fb",
+   "net": "/rails/BUCK5_LX",
+   "layer": "F.Cu",
+   "pos": [
+    70.942,
+    170.707
+   ],
+   "bend": "diagonal_first",
+   "path": [
+    [
+     70.897,
+     170.717
+    ],
+    [
+     70.917,
+     170.697
+    ],
+    [
+     70.987,
+     170.697
+    ]
+   ],
+   "spare_mm": 35.752
+  },
+  {
+   "uuid": "22a19359-cd49-4480-a524-e5523bcb32db",
+   "net": "/rails/BUCK5_LX",
+   "layer": "F.Cu",
+   "pos": [
+    70.997,
+    171.927
+   ],
+   "bend": "diagonal_first",
+   "path": [
+    [
+     71.007,
+     171.957
+    ],
+    [
+     70.987,
+     171.937
+    ],
+    [
+     70.987,
+     171.897
+    ]
+   ],
+   "spare_mm": 35.842
+  }
+ ],
+ "off_angle_left": [
+  {
+   "uuid": "ab3b6183-451a-4b5b-b818-b1b4ca8a3958",
+   "net": "/amp_b/B_SPK_L-",
+   "layer": "F.Cu",
+   "pos": [
+    72.937,
+    136.022
+   ],
+   "reason": "kept_net"
+  },
+  {
+   "uuid": "c023b96f-2115-41cf-a23a-e38482da04fb",
+   "net": "/amp_b/B_SPK_L-",
+   "layer": "F.Cu",
+   "pos": [
+    72.9491,
+    133.297
+   ],
+   "reason": "kept_net"
+  },
+  {
+   "uuid": "db4b7000-9b4b-49ad-9733-95f1fc8cb578",
+   "net": "/amp_a/A_SPK_L-",
+   "layer": "F.Cu",
+   "pos": [
+    40.037,
+    136.022
+   ],
+   "reason": "kept_net"
+  },
+  {
+   "uuid": "e6f17b36-9b95-4171-97ec-0e2e37cd2e4b",
+   "net": "/USB_DM",
+   "layer": "F.Cu",
+   "pos": [
+    47.2374,
+    179.6933
+   ],
+   "reason": "kept_net"
+  }
+ ],
+ "jogs_merged": 0,
+ "corners_smoothed": 0,
+ "corners": [],
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T21:41:19+00:00",
+ "input": "/work/boards/core/kicad/core.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:12d63423a5f1619026073cff44dc81dcfc667b679c7a7548a9a1c758c5b70fdf"
+}

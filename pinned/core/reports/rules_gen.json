@@ -1,0 +1,262 @@
+{
+  "script": "rules_gen",
+  "status": "pass",
+  "capability_class": "4layer_1oz",
+  "stackup": "JLC04161H-1080B",
+  "copper_oz": 1.0,
+  "rule_count": 34,
+  "rule_names": [
+    "aiee_track_width_floor",
+    "aiee_clearance_floor",
+    "aiee_via_drill_floor",
+    "aiee_via_diameter_floor",
+    "aiee_annular_floor",
+    "aiee_edge_clearance_floor",
+    "aiee_hole_to_hole_floor",
+    "aiee_silk_width_floor",
+    "aiee_pwr_width_VBUS_IN",
+    "aiee_pwr_width_VBUS",
+    "aiee_pwr_width_PVDD",
+    "aiee_pwr_width_5V",
+    "aiee_pwr_width_3V3",
+    "aiee_pwr_width_3V3A",
+    "aiee_pwr_width_5VA",
+    "aiee_pwr_width_3V3E",
+    "aiee_pwr_width_amp_a_A_OUT1M",
+    "aiee_pwr_width_amp_a_A_OUT1P",
+    "aiee_pwr_width_amp_a_A_OUT2M",
+    "aiee_pwr_width_amp_a_A_OUT2P",
+    "aiee_pwr_width_amp_a_A_SPK_L",
+    "aiee_pwr_width_amp_a_A_SPK_L",
+    "aiee_pwr_width_amp_a_A_SPK_R",
+    "aiee_pwr_width_amp_a_A_SPK_R",
+    "aiee_pwr_width_amp_b_B_OUT1M",
+    "aiee_pwr_width_amp_b_B_OUT1P",
+    "aiee_pwr_width_amp_b_B_OUT2M",
+    "aiee_pwr_width_amp_b_B_OUT2P",
+    "aiee_pwr_width_amp_b_B_SPK_L",
+    "aiee_pwr_width_amp_b_B_SPK_L",
+    "aiee_pwr_width_amp_b_B_SPK_R",
+    "aiee_pwr_width_amp_b_B_SPK_R",
+    "aiee_pwr_width_rails_BUCK5_LX",
+    "aiee_pwr_width_rails_BUCK3_LX"
+  ],
+  "power": [
+    {
+      "net": "VBUS_IN",
+      "current_a": 0.5,
+      "dt_c": 10.0,
+      "min_width_mm": 0.25,
+      "netclass": "Pwr_0p25mm",
+      "class_width_mm": 0.25
+    },
+    {
+      "net": "VBUS",
+      "current_a": 0.5,
+      "dt_c": 10.0,
+      "min_width_mm": 0.25,
+      "netclass": "Pwr_0p25mm",
+      "class_width_mm": 0.25
+    },
+    {
+      "net": "PVDD",
+      "current_a": 0.5,
+      "dt_c": 10.0,
+      "min_width_mm": 0.25,
+      "netclass": "Pwr_0p25mm",
+      "class_width_mm": 0.25
+    },
+    {
+      "net": "+5V",
+      "current_a": 0.5,
+      "dt_c": 10.0,
+      "min_width_mm": 0.25,
+      "netclass": "Pwr_0p25mm",
+      "class_width_mm": 0.25
+    },
+    {
+      "net": "+3V3",
+      "current_a": 0.3,
+      "dt_c": 10.0,
+      "min_width_mm": 0.15,
+      "netclass": "Default",
+      "class_width_mm": 0.2
+    },
+    {
+      "net": "+3V3A",
+      "current_a": 0.1,
+      "dt_c": 10.0,
+      "min_width_mm": 0.05,
+      "netclass": "Default",
+      "class_width_mm": 0.2
+    },
+    {
+      "net": "+5VA",
+      "current_a": 0.05,
+      "dt_c": 10.0,
+      "min_width_mm": 0.025,
+      "netclass": "Default",
+      "class_width_mm": 0.2
+    },
+    {
+      "net": "+3V3E",
+      "current_a": 0.1,
+      "dt_c": 10.0,
+      "min_width_mm": 0.05,
+      "netclass": "Default",
+      "class_width_mm": 0.2
+    },
+    {
+      "net": "/amp_a/A_OUT1M",
+      "current_a": 0.5,
+      "dt_c": 20.0,
+      "min_width_mm": 0.1843,
+      "netclass": "Default",
+      "class_width_mm": 0.2
+    },
+    {
+      "net": "/amp_a/A_OUT1P",
+      "current_a": 0.5,
+      "dt_c": 20.0,
+      "min_width_mm": 0.1843,
+      "netclass": "Default",
+      "class_width_mm": 0.2
+    },
+    {
+      "net": "/amp_a/A_OUT2M",
+      "current_a": 0.5,
+      "dt_c": 20.0,
+      "min_width_mm": 0.1843,
+      "netclass": "Default",
+      "class_width_mm": 0.2
+    },
+    {
+      "net": "/amp_a/A_OUT2P",
+      "current_a": 0.5,
+      "dt_c": 20.0,
+      "min_width_mm": 0.1843,
+      "netclass": "Default",
+      "class_width_mm": 0.2
+    },
+    {
+      "net": "/amp_a/A_SPK_L+",
+      "current_a": 0.5,
+      "dt_c": 20.0,
+      "min_width_mm": 0.1843,
+      "netclass": "Default",
+      "class_width_mm": 0.2
+    },
+    {
+      "net": "/amp_a/A_SPK_L-",
+      "current_a": 0.5,
+      "dt_c": 20.0,
+      "min_width_mm": 0.1843,
+      "netclass": "Default",
+      "class_width_mm": 0.2
+    },
+    {
+      "net": "/amp_a/A_SPK_R+",
+      "current_a": 0.5,
+      "dt_c": 20.0,
+      "min_width_mm": 0.1843,
+      "netclass": "Default",
+      "class_width_mm": 0.2
+    },
+    {
+      "net": "/amp_a/A_SPK_R-",
+      "current_a": 0.5,
+      "dt_c": 20.0,
+      "min_width_mm": 0.1843,
+      "netclass": "Default",
+      "class_width_mm": 0.2
+    },
+    {
+      "net": "/amp_b/B_OUT1M",
+      "current_a": 0.5,
+      "dt_c": 20.0,
+      "min_width_mm": 0.1843,
+      "netclass": "Default",
+      "class_width_mm": 0.2
+    },
+    {
+      "net": "/amp_b/B_OUT1P",
+      "current_a": 0.5,
+      "dt_c": 20.0,
+      "min_width_mm": 0.1843,
+      "netclass": "Default",
+      "class_width_mm": 0.2
+    },
+    {
+      "net": "/amp_b/B_OUT2M",
+      "current_a": 0.5,
+      "dt_c": 20.0,
+      "min_width_mm": 0.1843,
+      "netclass": "Default",
+      "class_width_mm": 0.2
+    },
+    {
+      "net": "/amp_b/B_OUT2P",
+      "current_a": 0.5,
+      "dt_c": 20.0,
+      "min_width_mm": 0.1843,
+      "netclass": "Default",
+      "class_width_mm": 0.2
+    },
+    {
+      "net": "/amp_b/B_SPK_L+",
+      "current_a": 0.5,
+      "dt_c": 20.0,
+      "min_width_mm": 0.1843,
+      "netclass": "Default",
+      "class_width_mm": 0.2
+    },
+    {
+      "net": "/amp_b/B_SPK_L-",
+      "current_a": 0.5,
+      "dt_c": 20.0,
+      "min_width_mm": 0.1843,
+      "netclass": "Default",
+      "class_width_mm": 0.2
+    },
+    {
+      "net": "/amp_b/B_SPK_R+",
+      "current_a": 0.5,
+      "dt_c": 20.0,
+      "min_width_mm": 0.1843,
+      "netclass": "Default",
+      "class_width_mm": 0.2
+    },
+    {
+      "net": "/amp_b/B_SPK_R-",
+      "current_a": 0.5,
+      "dt_c": 20.0,
+      "min_width_mm": 0.1843,
+      "netclass": "Default",
+      "class_width_mm": 0.2
+    },
+    {
+      "net": "/rails/BUCK5_LX",
+      "current_a": 1.0,
+      "dt_c": 10.0,
+      "min_width_mm": 0.5,
+      "netclass": "Pwr_0p5mm",
+      "class_width_mm": 0.5
+    },
+    {
+      "net": "/rails/BUCK3_LX",
+      "current_a": 1.0,
+      "dt_c": 10.0,
+      "min_width_mm": 0.5,
+      "netclass": "Pwr_0p5mm",
+      "class_width_mm": 0.5
+    }
+  ],
+  "diff_pairs": [],
+  "hv_rules": [],
+  "classes": [
+    "Pwr_0p25mm",
+    "Pwr_0p5mm"
+  ],
+  "out_dru": "kicad/core.kicad_dru",
+  "pro": "kicad/core.kicad_pro"
+}

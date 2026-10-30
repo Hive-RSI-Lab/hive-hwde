@@ -1,0 +1,806 @@
+[
+ {
+  "ref": "J1",
+  "lcsc": "C5184243",
+  "value": "USB4105-GF-A-120",
+  "role": "USB-C 48 V/5 A, power + CH340C data"
+ },
+ {
+  "ref": "U1",
+  "lcsc": "C42459160",
+  "value": "CH224A",
+  "role": "USB PD sink, asks for 20 V"
+ },
+ {
+  "ref": "C1",
+  "lcsc": "C15849",
+  "value": "1uF",
+  "role": "CH224Q VHV"
+ },
+ {
+  "ref": "R1",
+  "lcsc": "C25808",
+  "value": "120k",
+  "role": "CH224Q Rset: 20 V (table 5-1)"
+ },
+ {
+  "ref": "R2",
+  "lcsc": "C21189",
+  "value": "0R",
+  "role": "link: CH224Q I2C onto the codec bus (depopulate if its pull-up exceeds 3.6 V)"
+ },
+ {
+  "ref": "R3",
+  "lcsc": "C21189",
+  "value": "0R",
+  "role": "link: CH224Q I2C onto the codec bus"
+ },
+ {
+  "ref": "R4",
+  "lcsc": "C25804",
+  "value": "10k",
+  "role": "PG pull-up"
+ },
+ {
+  "ref": "D1",
+  "lcsc": "C364296",
+  "value": "SMBJ20A",
+  "role": "VBUS TVS 20 V standoff"
+ },
+ {
+  "ref": "Q1",
+  "lcsc": "C5125949",
+  "value": "AO4485",
+  "role": "PVDD high-side switch"
+ },
+ {
+  "ref": "R5",
+  "lcsc": "C25803",
+  "value": "100k",
+  "role": "Q1 gate-source"
+ },
+ {
+  "ref": "R15",
+  "lcsc": "C21190",
+  "value": "1k",
+  "role": "Q1 Miller cap series"
+ },
+ {
+  "ref": "C2",
+  "lcsc": "C14663",
+  "value": "100nF",
+  "role": "Q1 soft-start (gate-drain)"
+ },
+ {
+  "ref": "R6",
+  "lcsc": "C25819",
+  "value": "47k",
+  "role": "Q1 gate divider: Vgs -13.6 V at 20 V"
+ },
+ {
+  "ref": "Q4",
+  "lcsc": "C20526",
+  "value": "MMBT3904",
+  "role": "PVDD switch driver (GPIO18 AND PG)"
+ },
+ {
+  "ref": "R7",
+  "lcsc": "C25804",
+  "value": "10k",
+  "role": "Q4 base"
+ },
+ {
+  "ref": "R8",
+  "lcsc": "C25803",
+  "value": "100k",
+  "role": "PVDD off until firmware enables it"
+ },
+ {
+  "ref": "R16",
+  "lcsc": "C31850",
+  "value": "22k",
+  "role": "PVDD bleeder (Q1 body diode back-feeds VBUS)"
+ },
+ {
+  "ref": "U2",
+  "lcsc": "C311983",
+  "value": "TPS54302",
+  "role": "VBUS -> 5 V buck"
+ },
+ {
+  "ref": "C3",
+  "lcsc": "C13585",
+  "value": "10uF/50V",
+  "role": "reg_input"
+ },
+ {
+  "ref": "C4",
+  "lcsc": "C29823",
+  "value": "4.7uF/50V",
+  "role": "reg_input"
+ },
+ {
+  "ref": "C5",
+  "lcsc": "C14663",
+  "value": "100nF",
+  "role": "reg_input"
+ },
+ {
+  "ref": "C6",
+  "lcsc": "C14663",
+  "value": "100nF",
+  "role": "bootstrap"
+ },
+ {
+  "ref": "L5",
+  "lcsc": "C79272",
+  "value": "10uH",
+  "role": "buck inductor"
+ },
+ {
+  "ref": "C7",
+  "lcsc": "C45783",
+  "value": "22uF/25V",
+  "role": "5 V output"
+ },
+ {
+  "ref": "C8",
+  "lcsc": "C45783",
+  "value": "22uF/25V",
+  "role": "5 V output"
+ },
+ {
+  "ref": "R9",
+  "lcsc": "C25803",
+  "value": "100k",
+  "role": "FB top: 5.18 V"
+ },
+ {
+  "ref": "R10",
+  "lcsc": "C22797",
+  "value": "13k",
+  "role": "FB bottom"
+ },
+ {
+  "ref": "C9",
+  "lcsc": "C14858",
+  "value": "100pF",
+  "role": "feed-forward"
+ },
+ {
+  "ref": "U3",
+  "lcsc": "C479074",
+  "value": "SY8089A1AAC",
+  "role": "5 V -> 3.3 V buck"
+ },
+ {
+  "ref": "C10",
+  "lcsc": "C19702",
+  "value": "10uF",
+  "role": "reg_input"
+ },
+ {
+  "ref": "C11",
+  "lcsc": "C14663",
+  "value": "100nF",
+  "role": "reg_input"
+ },
+ {
+  "ref": "L6",
+  "lcsc": "C305171",
+  "value": "2.2uH",
+  "role": "buck inductor"
+ },
+ {
+  "ref": "C12",
+  "lcsc": "C45783",
+  "value": "22uF/25V",
+  "role": "3.3 V output"
+ },
+ {
+  "ref": "C13",
+  "lcsc": "C19702",
+  "value": "10uF",
+  "role": "3.3 V output"
+ },
+ {
+  "ref": "R11",
+  "lcsc": "C22807",
+  "value": "150k",
+  "role": "FB top: 3.33 V"
+ },
+ {
+  "ref": "R12",
+  "lcsc": "C4216",
+  "value": "33k",
+  "role": "FB bottom"
+ },
+ {
+  "ref": "C14",
+  "lcsc": "C1653",
+  "value": "22pF",
+  "role": "feed-forward"
+ },
+ {
+  "ref": "U4",
+  "lcsc": "C80670",
+  "value": "LP5907-3.3",
+  "role": "analog 3.3 V for the codec"
+ },
+ {
+  "ref": "C15",
+  "lcsc": "C15849",
+  "value": "1uF",
+  "role": ""
+ },
+ {
+  "ref": "C16",
+  "lcsc": "C15849",
+  "value": "1uF",
+  "role": "LDO output"
+ },
+ {
+  "ref": "R13",
+  "lcsc": "C25803",
+  "value": "100k",
+  "role": "VBUS divider top"
+ },
+ {
+  "ref": "R14",
+  "lcsc": "C25804",
+  "value": "10k",
+  "role": "VBUS divider bottom (21 V -> 1.9 V)"
+ },
+ {
+  "ref": "C17",
+  "lcsc": "C14663",
+  "value": "100nF",
+  "role": "ADC filter"
+ },
+ {
+  "ref": "R17",
+  "lcsc": "C25803",
+  "value": "100k",
+  "role": "PVDD divider top"
+ },
+ {
+  "ref": "R18",
+  "lcsc": "C25804",
+  "value": "10k",
+  "role": "PVDD divider bottom (21 V -> 1.9 V)"
+ },
+ {
+  "ref": "C18",
+  "lcsc": "C14663",
+  "value": "100nF",
+  "role": "ADC filter"
+ },
+ {
+  "ref": "U5",
+  "lcsc": "C2973667",
+  "value": "ESP32-WROVER-E-N8R8",
+  "role": "Wi-Fi/BT module"
+ },
+ {
+  "ref": "C20",
+  "lcsc": "C19702",
+  "value": "10uF",
+  "role": ""
+ },
+ {
+  "ref": "C21",
+  "lcsc": "C14663",
+  "value": "100nF",
+  "role": ""
+ },
+ {
+  "ref": "R20",
+  "lcsc": "C25804",
+  "value": "10k",
+  "role": "EN pull-up"
+ },
+ {
+  "ref": "C22",
+  "lcsc": "C15849",
+  "value": "1uF",
+  "role": "EN delay"
+ },
+ {
+  "ref": "R21",
+  "lcsc": "C25804",
+  "value": "10k",
+  "role": "GPIO0 pull-up (boot)"
+ },
+ {
+  "ref": "R22",
+  "lcsc": "C4190",
+  "value": "2.2k",
+  "role": "I2C pull-up"
+ },
+ {
+  "ref": "R23",
+  "lcsc": "C4190",
+  "value": "2.2k",
+  "role": "I2C pull-up"
+ },
+ {
+  "ref": "U6",
+  "lcsc": "C84681",
+  "value": "CH340C",
+  "role": "USB-UART console + flashing"
+ },
+ {
+  "ref": "C23",
+  "lcsc": "C14663",
+  "value": "100nF",
+  "role": ""
+ },
+ {
+  "ref": "C24",
+  "lcsc": "C14663",
+  "value": "100nF",
+  "role": ""
+ },
+ {
+  "ref": "Q2",
+  "lcsc": "C20526",
+  "value": "MMBT3904",
+  "role": "auto-program: EN"
+ },
+ {
+  "ref": "Q3",
+  "lcsc": "C20526",
+  "value": "MMBT3904",
+  "role": "auto-program: GPIO0"
+ },
+ {
+  "ref": "R24",
+  "lcsc": "C25804",
+  "value": "10k",
+  "role": "Q2 base"
+ },
+ {
+  "ref": "R25",
+  "lcsc": "C25804",
+  "value": "10k",
+  "role": "Q3 base"
+ },
+ {
+  "ref": "U7",
+  "lcsc": "C365736",
+  "value": "ES8388",
+  "role": "codec: DAC, ADC, analog bypass"
+ },
+ {
+  "ref": "C30",
+  "lcsc": "C14663",
+  "value": "100nF",
+  "role": ""
+ },
+ {
+  "ref": "C31",
+  "lcsc": "C14663",
+  "value": "100nF",
+  "role": ""
+ },
+ {
+  "ref": "C32",
+  "lcsc": "C19666",
+  "value": "4.7uF",
+  "role": ""
+ },
+ {
+  "ref": "C33",
+  "lcsc": "C14663",
+  "value": "100nF",
+  "role": ""
+ },
+ {
+  "ref": "C34",
+  "lcsc": "C14663",
+  "value": "100nF",
+  "role": ""
+ },
+ {
+  "ref": "C35",
+  "lcsc": "C19702",
+  "value": "10uF",
+  "role": "VREF decoupling"
+ },
+ {
+  "ref": "C36",
+  "lcsc": "C14663",
+  "value": "100nF",
+  "role": "VREF decoupling"
+ },
+ {
+  "ref": "C37",
+  "lcsc": "C19702",
+  "value": "10uF",
+  "role": "DACVREF decoupling"
+ },
+ {
+  "ref": "C38",
+  "lcsc": "C14663",
+  "value": "100nF",
+  "role": "DACVREF decoupling"
+ },
+ {
+  "ref": "C39",
+  "lcsc": "C19702",
+  "value": "10uF",
+  "role": "VMID decoupling"
+ },
+ {
+  "ref": "C40",
+  "lcsc": "C14663",
+  "value": "100nF",
+  "role": "VMID decoupling"
+ },
+ {
+  "ref": "R30",
+  "lcsc": "C25804",
+  "value": "10k",
+  "role": "line-in attenuator"
+ },
+ {
+  "ref": "R31",
+  "lcsc": "C25804",
+  "value": "10k",
+  "role": "line-in attenuator"
+ },
+ {
+  "ref": "C41",
+  "lcsc": "C15849",
+  "value": "1uF",
+  "role": "line-in coupling"
+ },
+ {
+  "ref": "C42",
+  "lcsc": "C14858",
+  "value": "100pF",
+  "role": "line-in RF filter"
+ },
+ {
+  "ref": "R33",
+  "lcsc": "C25804",
+  "value": "10k",
+  "role": "line-in attenuator"
+ },
+ {
+  "ref": "R34",
+  "lcsc": "C25804",
+  "value": "10k",
+  "role": "line-in attenuator"
+ },
+ {
+  "ref": "C44",
+  "lcsc": "C15849",
+  "value": "1uF",
+  "role": "line-in coupling"
+ },
+ {
+  "ref": "C45",
+  "lcsc": "C14858",
+  "value": "100pF",
+  "role": "line-in RF filter"
+ },
+ {
+  "ref": "C47",
+  "lcsc": "C19702",
+  "value": "10uF",
+  "role": "sub out coupling"
+ },
+ {
+  "ref": "R36",
+  "lcsc": "C22775",
+  "value": "100R",
+  "role": "sub out build-out"
+ },
+ {
+  "ref": "R37",
+  "lcsc": "C25819",
+  "value": "47k",
+  "role": "sub out bleeder"
+ },
+ {
+  "ref": "C48",
+  "lcsc": "C19702",
+  "value": "10uF",
+  "role": "sub out coupling"
+ },
+ {
+  "ref": "R38",
+  "lcsc": "C22775",
+  "value": "100R",
+  "role": "sub out build-out"
+ },
+ {
+  "ref": "R39",
+  "lcsc": "C25819",
+  "value": "47k",
+  "role": "sub out bleeder"
+ },
+ {
+  "ref": "U8",
+  "lcsc": "C46497",
+  "value": "TPA3118D2",
+  "role": "2 x BTL class-D, 26 dB"
+ },
+ {
+  "ref": "C50",
+  "lcsc": "C15849",
+  "value": "1uF",
+  "role": ""
+ },
+ {
+  "ref": "C51",
+  "lcsc": "C28323",
+  "value": "1uF/0805",
+  "role": ""
+ },
+ {
+  "ref": "C52",
+  "lcsc": "C28323",
+  "value": "1uF/0805",
+  "role": ""
+ },
+ {
+  "ref": "C53",
+  "lcsc": "C14663",
+  "value": "100nF",
+  "role": ""
+ },
+ {
+  "ref": "C54",
+  "lcsc": "C1588",
+  "value": "1nF",
+  "role": ""
+ },
+ {
+  "ref": "C55",
+  "lcsc": "C28323",
+  "value": "1uF/0805",
+  "role": ""
+ },
+ {
+  "ref": "C56",
+  "lcsc": "C14663",
+  "value": "100nF",
+  "role": ""
+ },
+ {
+  "ref": "C57",
+  "lcsc": "C1588",
+  "value": "1nF",
+  "role": ""
+ },
+ {
+  "ref": "C58",
+  "lcsc": "C46550472",
+  "value": "470uF 35V polymer",
+  "role": "PVDD bulk, left side: polymer, 3.8 A ripple"
+ },
+ {
+  "ref": "C59",
+  "lcsc": "C2836441",
+  "value": "220uF 35V",
+  "role": "PVDD bulk, right side"
+ },
+ {
+  "ref": "R50",
+  "lcsc": "C4184",
+  "value": "20k",
+  "role": "gain 26 dB master (table 1)"
+ },
+ {
+  "ref": "R51",
+  "lcsc": "C25803",
+  "value": "100k",
+  "role": "gain 26 dB master (table 1)"
+ },
+ {
+  "ref": "R52",
+  "lcsc": "C25803",
+  "value": "100k",
+  "role": "amp off until firmware enables it"
+ },
+ {
+  "ref": "R54",
+  "lcsc": "C25803",
+  "value": "100k",
+  "role": "SDZ series: TI 10 V/ms and PVCC+0.3 V limits"
+ },
+ {
+  "ref": "R53",
+  "lcsc": "C25804",
+  "value": "10k",
+  "role": "FAULTZ pull-up"
+ },
+ {
+  "ref": "C60",
+  "lcsc": "C15849",
+  "value": "1uF",
+  "role": "amp input coupling"
+ },
+ {
+  "ref": "C61",
+  "lcsc": "C15849",
+  "value": "1uF",
+  "role": "amp input AC ground"
+ },
+ {
+  "ref": "C62",
+  "lcsc": "C15849",
+  "value": "1uF",
+  "role": "amp input coupling"
+ },
+ {
+  "ref": "C63",
+  "lcsc": "C15849",
+  "value": "1uF",
+  "role": "amp input AC ground"
+ },
+ {
+  "ref": "C64",
+  "lcsc": "C21120",
+  "value": "220nF",
+  "role": "bootstrap"
+ },
+ {
+  "ref": "C65",
+  "lcsc": "C21120",
+  "value": "220nF",
+  "role": "bootstrap"
+ },
+ {
+  "ref": "C66",
+  "lcsc": "C21120",
+  "value": "220nF",
+  "role": "bootstrap"
+ },
+ {
+  "ref": "C67",
+  "lcsc": "C21120",
+  "value": "220nF",
+  "role": "bootstrap"
+ },
+ {
+  "ref": "L1",
+  "lcsc": "C48391614",
+  "value": "10uH 8A",
+  "role": "output filter"
+ },
+ {
+  "ref": "C68",
+  "lcsc": "C1848",
+  "value": "1uF/1206",
+  "role": "output filter"
+ },
+ {
+  "ref": "L2",
+  "lcsc": "C48391614",
+  "value": "10uH 8A",
+  "role": "output filter"
+ },
+ {
+  "ref": "C69",
+  "lcsc": "C1848",
+  "value": "1uF/1206",
+  "role": "output filter"
+ },
+ {
+  "ref": "L3",
+  "lcsc": "C48391614",
+  "value": "10uH 8A",
+  "role": "output filter"
+ },
+ {
+  "ref": "C70",
+  "lcsc": "C1848",
+  "value": "1uF/1206",
+  "role": "output filter"
+ },
+ {
+  "ref": "L4",
+  "lcsc": "C48391614",
+  "value": "10uH 8A",
+  "role": "output filter"
+ },
+ {
+  "ref": "C71",
+  "lcsc": "C1848",
+  "value": "1uF/1206",
+  "role": "output filter"
+ },
+ {
+  "ref": "J2",
+  "lcsc": "C7527522",
+  "value": "RCA line in",
+  "role": "line in L/R (FLX4)"
+ },
+ {
+  "ref": "J3",
+  "lcsc": "C7527522",
+  "value": "RCA sub out",
+  "role": "sub out L/R"
+ },
+ {
+  "ref": "J4",
+  "lcsc": "C2915641",
+  "value": "DB128V-5.08-4P",
+  "role": "speaker terminal L+ L- R+ R-"
+ },
+ {
+  "ref": "SW1",
+  "lcsc": "C318884",
+  "value": "TS-1187A",
+  "role": "button"
+ },
+ {
+  "ref": "R60",
+  "lcsc": "C25804",
+  "value": "10k",
+  "role": "button pull-up"
+ },
+ {
+  "ref": "SW2",
+  "lcsc": "C318884",
+  "value": "TS-1187A",
+  "role": "button"
+ },
+ {
+  "ref": "R61",
+  "lcsc": "C25804",
+  "value": "10k",
+  "role": "button pull-up"
+ },
+ {
+  "ref": "SW3",
+  "lcsc": "C318884",
+  "value": "TS-1187A",
+  "role": "button"
+ },
+ {
+  "ref": "R62",
+  "lcsc": "C25804",
+  "value": "10k",
+  "role": "button pull-up"
+ },
+ {
+  "ref": "U9",
+  "lcsc": "C42421366",
+  "value": "IRM-3638T",
+  "role": "IR receiver 38 kHz, front-facing"
+ },
+ {
+  "ref": "R65",
+  "lcsc": "C22775",
+  "value": "100R",
+  "role": "IR supply filter"
+ },
+ {
+  "ref": "C80",
+  "lcsc": "C19666",
+  "value": "4.7uF",
+  "role": ""
+ },
+ {
+  "ref": "R63",
+  "lcsc": "C25804",
+  "value": "10k",
+  "role": "IR pull-up"
+ },
+ {
+  "ref": "R64",
+  "lcsc": "C21190",
+  "value": "1k",
+  "role": "LED current 1.3 mA"
+ },
+ {
+  "ref": "D2",
+  "lcsc": "C2286",
+  "value": "red",
+  "role": "status LED"
+ }
+]

@@ -1,0 +1,95 @@
+{
+ "domain": "dfm",
+ "source": "hifi-receiver-2 docs/review-2/dfm.json at e5896e6 (task 261029-020622), blockers and majors, text cut to 400 chars",
+ "findings": [
+  {
+   "id": "DFM-1",
+   "board": "core",
+   "severity": "blocker",
+   "refs": [
+    "J4",
+    "J5"
+   ],
+   "nets": [],
+   "finding": "Core's CONN-TH_XDJK-0271-1650 footprint has only the 3 pin holes and no holes for the jack's 2 locating posts. Lite's copy has NPTH 1.7x2.4 ovals at (+-7.65,+1.60). The courtyards differ too (core x+-8,y-3.45..21.8; Lite x-8.75..12.3,y-4.3..15.2).",
+   "evidence": "Board dump of J4/J5 vs lite J2/J3. Lian Xin drawing A-AV2-7A1 (LCSC C7527522): 3-dia1.6 pin holes plus 2-2X3 post holes; pins 4.5 mm below the base, snap-in side legs 3.5 mm. With the legs standing on the board the pins enter only 1.0 mm of the 1.6 mm board.",
+   "fault_class": "MECH-13"
+  },
+  {
+   "id": "DFM-2",
+   "board": "both",
+   "severity": "major",
+   "refs": [
+    "J2",
+    "J3",
+    "J4",
+    "J5"
+   ],
+   "nets": [],
+   "finding": "RCA post holes are 1.7x2.4, smaller than the drawing's 2.0x3.0. The footprint's signal pins sit on rows 0.8 mm apart (y -1.95/-1.15); the drawing shows both on one row 8 mm apart.",
+   "evidence": "Drawing A-AV2-7A1. Pin 1.0x0.3 brass (diagonal 1.04) in 1.6 hole = 0.28 mm radial slack against a possible 0.8 mm position error.",
+   "fault_class": "MECH-13"
+  },
+  {
+   "id": "DFM-3",
+   "board": "core",
+   "severity": "major",
+   "refs": [
+    "U15",
+    "U16"
+   ],
+   "nets": [
+    "GND"
+   ],
+   "finding": "No heatsink mounting holes for the TPA3221. The DDV package's thermal slug is on TOP and needs a grounded heatsink; core has only the 4 corner M3 holes.",
+   "evidence": "TI SLASEE9C sec 5 + pin table (PowerPAD on top, connect to grounded heatsink); RthJA 44.8 C/W no heatsink vs 5.5 C/W with heatsink -> Tj 150 C at 2.5 W from 40 C ambient (~22 W total out at 90% eff).",
+   "fault_class": "MECH-15"
+  },
+  {
+   "id": "DFM-4",
+   "board": "core",
+   "severity": "major",
+   "refs": [
+    "U18"
+   ],
+   "nets": [
+    "/IR_IN"
+   ],
+   "finding": "U18 IRM-H638T is a top-looking SMD IR receiver (lens on top) 3 mm from the bottom edge. Under a Plus lid it needs a window or light pipe at least ~21.6 mm tall; Lite uses a front-facing THT IRM-3638T.",
+   "evidence": "Everlight DMO-0000008 rev3 p6 top view shows the lens; tallest core part is C5/C6 at 20 mm (C88733). Land pattern: Everlight wants pads at +-3.15, the footprint has +-2.95 (toe 0.2 mm vs 0.4).",
+   "fault_class": "MECH-14"
+  },
+  {
+   "id": "DFM-6",
+   "board": "core",
+   "severity": "major",
+   "refs": [
+    "J1"
+   ],
+   "nets": [
+    "VBUS_IN",
+    "/power_in/CC1",
+    "/power_in/CC2"
+   ],
+   "finding": "New USB4085-GF-A (THT, C7095263): GCT's and EasyEDA's pattern is a 0.40 drill in a 0.65 pad, annulus 0.125 mm, below JLC's multilayer PTH absolute minimum of 0.15. At 0.85 pitch, a 0.70 pad (KiCad lib) gives a 0.15 annulus and a 0.15 pad gap. THT at JLC is hand/selective solder; 16 joints at 0.85 pitch risk VBUS-CC bridges under the shell.",
+   "evidence": "GCT USB4085 rev B sheet 2; EasyEDA C7095263 pad hole r=0.787 units (0.40 mm), pad 0.65; JLC capabilities (fetched 2026-10-28): multilayer PTH annulus min 0.15, recommended 0.20; hole tol +0.13/-0.08 -> 0.32 worst finished vs 0.32 max contact diagonal.",
+   "fault_class": "FAB-02",
+   "caught_by": "dfm_check"
+  },
+  {
+   "id": "DFM-12",
+   "board": "core",
+   "severity": "major",
+   "refs": [
+    "U19"
+   ],
+   "nets": [
+    "/linein/OPT_VCC",
+    "/OPT_SPDIF"
+   ],
+   "finding": "Ultra U19 is ordered as PLR237/T8BK (C17223620) on a PLR237/T10BK footprint. The T8BK has two 1.70 mm locating posts (5.60 apart) with no holes, so the part sits about 1.7 mm high and tilted. Pin numbering is mirrored between T8 (1=Vout,3=Vcc) and T10 (1=VCC,3=VOUT) but physically the same, so the present nets are right; any renumbering must keep the physical Vcc pin on OPT_VCC.",
+   "evidence": "Everlight DPL-0000262/263 rev1 p5 (T8BK) vs DPL-0000261 rev1 p5 (T10BK); board dump of U19 (0.914 x3, 1.1 x2, no 1.7 holes); T10BK C17427482 stock 0.",
+   "fault_class": "MECH-13"
+  }
+ ]
+}

@@ -1,0 +1,92 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C5184243",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C5184243",
+   "mpn": "USB4105-GF-A-120",
+   "brand": "Global Connector Technology",
+   "description": "-40\u2103~+85\u2103 1 16P 48V 5A Black Female Type-C USB 2.0 SMD USB Connectors ROHS",
+   "package": "SMD",
+   "category": "USB Connectors",
+   "type": "Extended",
+   "basic": false,
+   "stock": 2416,
+   "price": 0.9171,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.9171
+    },
+    {
+     "qty": 10,
+     "price": 0.7206
+    },
+    {
+     "qty": 30,
+     "price": 0.624
+    },
+    {
+     "qty": 100,
+     "price": 0.5257
+    },
+    {
+     "qty": 500,
+     "price": 0.5257
+    },
+    {
+     "qty": 1000,
+     "price": 0.5257
+    }
+   ],
+   "min_qty": 13,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304251414_Global-Connector-Technology-USB4105-GF-A-120_C5184243.pdf",
+   "url": "https://www.lcsc.com/product-detail/usb-connectors_global-connector-technology-usb4105-gf-a-120_C5184243.html",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+85\u2103"
+    },
+    {
+     "name": "Current Rating-Power",
+     "value": "5A"
+    },
+    {
+     "name": "Voltage Rating",
+     "value": "48V"
+    },
+    {
+     "name": "Gender",
+     "value": "Female"
+    },
+    {
+     "name": "Detection color",
+     "value": "Black"
+    },
+    {
+     "name": "Number of Ports",
+     "value": "1"
+    },
+    {
+     "name": "Connector Type",
+     "value": "Type-C"
+    },
+    {
+     "name": "Number of Contacts",
+     "value": "16P"
+    },
+    {
+     "name": "Protocol Standard",
+     "value": "USB 2.0"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

@@ -1,0 +1,4807 @@
+{
+ "script": "silk_place",
+ "status": "violations",
+ "board": "core.kicad_pcb",
+ "counts": {
+  "total": 63,
+  "by_severity": {
+   "warning": 63
+  },
+  "by_source": {
+   "silk_place": 63
+  }
+ },
+ "violations": [
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "U11"
+   ],
+   "msg": "U11: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "U11: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "U11",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "U11",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "U12"
+   ],
+   "msg": "U12: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "U12: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "U12",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "U12",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C13"
+   ],
+   "msg": "C13: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C13: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C13",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C13",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "U9"
+   ],
+   "msg": "U9: unplaceable - none of 38 collision-free spots passes check_silk; the closest is 2.31 mm beyond its own pads and 0.03 mm from C42 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "U9: unplaceable - none of 38 collision-free spots passes check_silk; the closest is 2.31 mm beyond its own pads and 0.03 mm from C42 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "U9",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "U9",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "R110"
+   ],
+   "msg": "R110: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "R110: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R110",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R110",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C151"
+   ],
+   "msg": "C151: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C151: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C151",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C151",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C220"
+   ],
+   "msg": "C220: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C220: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C220",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C220",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C321"
+   ],
+   "msg": "C321: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C321: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C321",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C321",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C12"
+   ],
+   "msg": "C12: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C12: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C12",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C12",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C14"
+   ],
+   "msg": "C14: unplaceable - none of 3 collision-free spots passes check_silk; the closest is 2.82 mm beyond its own pads and 0.00 mm from C7 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C14: unplaceable - none of 3 collision-free spots passes check_silk; the closest is 2.82 mm beyond its own pads and 0.00 mm from C7 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C14",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C14",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C16"
+   ],
+   "msg": "C16: unplaceable - none of 4 collision-free spots passes check_silk; the closest is 3.08 mm beyond its own pads and 0.02 mm from C17 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C16: unplaceable - none of 4 collision-free spots passes check_silk; the closest is 3.08 mm beyond its own pads and 0.02 mm from C17 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C16",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C16",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C22"
+   ],
+   "msg": "C22: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C22: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C22",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C22",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C312"
+   ],
+   "msg": "C312: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C312: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C312",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C312",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C317"
+   ],
+   "msg": "C317: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C317: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C317",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C317",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C6"
+   ],
+   "msg": "C6: unplaceable - none of 99 collision-free spots passes check_silk; the closest is 3.01 mm beyond its own pads and 0.45 mm from L6 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C6: unplaceable - none of 99 collision-free spots passes check_silk; the closest is 3.01 mm beyond its own pads and 0.45 mm from L6 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C6",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C6",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "R10"
+   ],
+   "msg": "R10: unplaceable - none of 2 collision-free spots passes check_silk; the closest is 2.59 mm beyond its own pads and 0.00 mm from U4 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "R10: unplaceable - none of 2 collision-free spots passes check_silk; the closest is 2.59 mm beyond its own pads and 0.00 mm from U4 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R10",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R10",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "R111"
+   ],
+   "msg": "R111: unplaceable - none of 1 collision-free spots passes check_silk; the closest is 1.34 mm beyond its own pads and 0.10 mm from C66 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "R111: unplaceable - none of 1 collision-free spots passes check_silk; the closest is 1.34 mm beyond its own pads and 0.10 mm from C66 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R111",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R111",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C11"
+   ],
+   "msg": "C11: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C11: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C11",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C11",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C111"
+   ],
+   "msg": "C111: unplaceable - none of 8 collision-free spots passes check_silk; the closest is 1.33 mm beyond its own pads and 0.06 mm from R100 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C111: unplaceable - none of 8 collision-free spots passes check_silk; the closest is 1.33 mm beyond its own pads and 0.06 mm from R100 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C111",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C111",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C125"
+   ],
+   "msg": "C125: unplaceable - none of 15 collision-free spots passes check_silk; the closest is 2.58 mm beyond its own pads and 0.25 mm from R75 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C125: unplaceable - none of 15 collision-free spots passes check_silk; the closest is 2.58 mm beyond its own pads and 0.25 mm from R75 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C125",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C125",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C142"
+   ],
+   "msg": "C142: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C142: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C142",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C142",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C21"
+   ],
+   "msg": "C21: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C21: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C21",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C21",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C221"
+   ],
+   "msg": "C221: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C221: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C221",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C221",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C302"
+   ],
+   "msg": "C302: unplaceable - none of 1 collision-free spots passes check_silk; the closest is 1.58 mm beyond its own pads and 0.09 mm from C309 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C302: unplaceable - none of 1 collision-free spots passes check_silk; the closest is 1.58 mm beyond its own pads and 0.09 mm from C309 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C302",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C302",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C58"
+   ],
+   "msg": "C58: unplaceable - none of 5 collision-free spots passes check_silk; the closest is 2.08 mm beyond its own pads and 0.00 mm from U11 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C58: unplaceable - none of 5 collision-free spots passes check_silk; the closest is 2.08 mm beyond its own pads and 0.00 mm from U11 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C58",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C58",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "R100"
+   ],
+   "msg": "R100: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "R100: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R100",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R100",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "R112"
+   ],
+   "msg": "R112: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "R112: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R112",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R112",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "R215"
+   ],
+   "msg": "R215: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "R215: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R215",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R215",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "R314"
+   ],
+   "msg": "R314: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "R314: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R314",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R314",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "R7"
+   ],
+   "msg": "R7: unplaceable - none of 8 collision-free spots passes check_silk; the closest is 1.33 mm beyond its own pads and 0.00 mm from L10 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "R7: unplaceable - none of 8 collision-free spots passes check_silk; the closest is 1.33 mm beyond its own pads and 0.00 mm from L10 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R7",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R7",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C143"
+   ],
+   "msg": "C143: unplaceable - none of 20 collision-free spots passes check_silk; the closest is 2.33 mm beyond its own pads and 0.21 mm from R112 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C143: unplaceable - none of 20 collision-free spots passes check_silk; the closest is 2.33 mm beyond its own pads and 0.21 mm from R112 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C143",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C143",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C306"
+   ],
+   "msg": "C306: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C306: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C306",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C306",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C316"
+   ],
+   "msg": "C316: unplaceable - none of 9 collision-free spots passes check_silk; the closest is 2.83 mm beyond its own pads and 0.16 mm from C322 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C316: unplaceable - none of 9 collision-free spots passes check_silk; the closest is 2.83 mm beyond its own pads and 0.16 mm from C322 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C316",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C316",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C45"
+   ],
+   "msg": "C45: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C45: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C45",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C45",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C64"
+   ],
+   "msg": "C64: unplaceable - none of 29 collision-free spots passes check_silk; the closest is 1.30 mm beyond its own pads and 0.09 mm from U6 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C64: unplaceable - none of 29 collision-free spots passes check_silk; the closest is 1.30 mm beyond its own pads and 0.09 mm from U6 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C64",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C64",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C69"
+   ],
+   "msg": "C69: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C69: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C69",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C69",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "R101"
+   ],
+   "msg": "R101: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "R101: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R101",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R101",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C101"
+   ],
+   "msg": "C101: unplaceable - none of 12 collision-free spots passes check_silk; the closest is 2.58 mm beyond its own pads and 0.26 mm from R72 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C101: unplaceable - none of 12 collision-free spots passes check_silk; the closest is 2.58 mm beyond its own pads and 0.26 mm from R72 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C101",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C101",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C204"
+   ],
+   "msg": "C204: unplaceable - none of 6 collision-free spots passes check_silk; the closest is 2.83 mm beyond its own pads and 0.00 mm from U15 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C204: unplaceable - none of 6 collision-free spots passes check_silk; the closest is 2.83 mm beyond its own pads and 0.00 mm from U15 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C204",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C204",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C224"
+   ],
+   "msg": "C224: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C224: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C224",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C224",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C237"
+   ],
+   "msg": "C237: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C237: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C237",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C237",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C309"
+   ],
+   "msg": "C309: unplaceable - none of 25 collision-free spots passes check_silk; the closest is 2.08 mm beyond its own pads and 0.00 mm from U16 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C309: unplaceable - none of 25 collision-free spots passes check_silk; the closest is 2.08 mm beyond its own pads and 0.00 mm from U16 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C309",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C309",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C324"
+   ],
+   "msg": "C324: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C324: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C324",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C324",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C37"
+   ],
+   "msg": "C37: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C37: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C37",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C37",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "R18"
+   ],
+   "msg": "R18: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "R18: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R18",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R18",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "R19"
+   ],
+   "msg": "R19: unplaceable - none of 20 collision-free spots passes check_silk; the closest is 2.09 mm beyond its own pads and 0.16 mm from U2 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "R19: unplaceable - none of 20 collision-free spots passes check_silk; the closest is 2.09 mm beyond its own pads and 0.16 mm from U2 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R19",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R19",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "R203"
+   ],
+   "msg": "R203: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "R203: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R203",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R203",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "R205"
+   ],
+   "msg": "R205: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "R205: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R205",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R205",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "R216"
+   ],
+   "msg": "R216: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "R216: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R216",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R216",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "R303"
+   ],
+   "msg": "R303: unplaceable - none of 4 collision-free spots passes check_silk; the closest is 2.07 mm beyond its own pads and 1.00 mm from U8 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "R303: unplaceable - none of 4 collision-free spots passes check_silk; the closest is 2.07 mm beyond its own pads and 1.00 mm from U8 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R303",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R303",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "R65"
+   ],
+   "msg": "R65: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "R65: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R65",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R65",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C150"
+   ],
+   "msg": "C150: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C150: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C150",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C150",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C211"
+   ],
+   "msg": "C211: unplaceable - none of 8 collision-free spots passes check_silk; the closest is 3.05 mm beyond its own pads and 0.00 mm from U15 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C211: unplaceable - none of 8 collision-free spots passes check_silk; the closest is 3.05 mm beyond its own pads and 0.00 mm from U15 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C211",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C211",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C218"
+   ],
+   "msg": "C218: unplaceable - none of 18 collision-free spots passes check_silk; the closest is 2.82 mm beyond its own pads and 0.00 mm from U16 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C218: unplaceable - none of 18 collision-free spots passes check_silk; the closest is 2.82 mm beyond its own pads and 0.00 mm from U16 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C218",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C218",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C225"
+   ],
+   "msg": "C225: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C225: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C225",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C225",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "R313"
+   ],
+   "msg": "R313: unplaceable - none of 16 collision-free spots passes check_silk; the closest is 2.84 mm beyond its own pads and 0.00 mm from U16 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "R313: unplaceable - none of 16 collision-free spots passes check_silk; the closest is 2.84 mm beyond its own pads and 0.00 mm from U16 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R313",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R313",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C202"
+   ],
+   "msg": "C202: unplaceable - none of 10 collision-free spots passes check_silk; the closest is 2.83 mm beyond its own pads and 0.00 mm from U15 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C202: unplaceable - none of 10 collision-free spots passes check_silk; the closest is 2.83 mm beyond its own pads and 0.00 mm from U15 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C202",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C202",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C228"
+   ],
+   "msg": "C228: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C228: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C228",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C228",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C326"
+   ],
+   "msg": "C326: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C326: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C326",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C326",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "R230"
+   ],
+   "msg": "R230: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "R230: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R230",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R230",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "R328"
+   ],
+   "msg": "R328: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "R328: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R328",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R328",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C222"
+   ],
+   "msg": "C222: unplaceable - none of 5 collision-free spots passes check_silk; the closest is 1.55 mm beyond its own pads and 0.00 mm from H1 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C222: unplaceable - none of 5 collision-free spots passes check_silk; the closest is 1.55 mm beyond its own pads and 0.00 mm from H1 (silk_misattributed); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C222",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C222",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "check": "silk_place",
+   "severity": "warning",
+   "pos": null,
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C210"
+   ],
+   "msg": "C210: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "source": "silk_place",
+   "items": [
+    {
+     "msg": "C210: unplaceable - no collision-free candidate within +3.0 mm push (channel narrower than the label); label left where it is. Fix: hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+     "pos": null
+    }
+   ],
+   "kind": "silk_residual",
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C210",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C210",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  }
+ ],
+ "targets": 278,
+ "moved": 214,
+ "residual": [
+  {
+   "ref": "U11",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "U11",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "U11",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "U12",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "U12",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "U12",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C13",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C13",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C13",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "U9",
+   "reason": "none of 38 collision-free spots passes check_silk; the closest is 2.31 mm beyond its own pads and 0.03 mm from C42 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "U9",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "U9",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "R110",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R110",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R110",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C151",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C151",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C151",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C220",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C220",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C220",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C321",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C321",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C321",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C12",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C12",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C12",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C14",
+   "reason": "none of 3 collision-free spots passes check_silk; the closest is 2.82 mm beyond its own pads and 0.00 mm from C7 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C14",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C14",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C16",
+   "reason": "none of 4 collision-free spots passes check_silk; the closest is 3.08 mm beyond its own pads and 0.02 mm from C17 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C16",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C16",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C22",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C22",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C22",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C312",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C312",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C312",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C317",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C317",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C317",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C6",
+   "reason": "none of 99 collision-free spots passes check_silk; the closest is 3.01 mm beyond its own pads and 0.45 mm from L6 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C6",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C6",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "R10",
+   "reason": "none of 2 collision-free spots passes check_silk; the closest is 2.59 mm beyond its own pads and 0.00 mm from U4 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R10",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R10",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "R111",
+   "reason": "none of 1 collision-free spots passes check_silk; the closest is 1.34 mm beyond its own pads and 0.10 mm from C66 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R111",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R111",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C11",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C11",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C11",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C111",
+   "reason": "none of 8 collision-free spots passes check_silk; the closest is 1.33 mm beyond its own pads and 0.06 mm from R100 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C111",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C111",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C125",
+   "reason": "none of 15 collision-free spots passes check_silk; the closest is 2.58 mm beyond its own pads and 0.25 mm from R75 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C125",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C125",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C142",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C142",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C142",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C21",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C21",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C21",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C221",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C221",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C221",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C302",
+   "reason": "none of 1 collision-free spots passes check_silk; the closest is 1.58 mm beyond its own pads and 0.09 mm from C309 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C302",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C302",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C58",
+   "reason": "none of 5 collision-free spots passes check_silk; the closest is 2.08 mm beyond its own pads and 0.00 mm from U11 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C58",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C58",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "R100",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R100",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R100",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "R112",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R112",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R112",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "R215",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R215",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R215",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "R314",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R314",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R314",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "R7",
+   "reason": "none of 8 collision-free spots passes check_silk; the closest is 1.33 mm beyond its own pads and 0.00 mm from L10 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R7",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R7",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C143",
+   "reason": "none of 20 collision-free spots passes check_silk; the closest is 2.33 mm beyond its own pads and 0.21 mm from R112 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C143",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C143",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C306",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C306",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C306",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C316",
+   "reason": "none of 9 collision-free spots passes check_silk; the closest is 2.83 mm beyond its own pads and 0.16 mm from C322 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C316",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C316",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C45",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C45",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C45",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C64",
+   "reason": "none of 29 collision-free spots passes check_silk; the closest is 1.30 mm beyond its own pads and 0.09 mm from U6 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C64",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C64",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C69",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C69",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C69",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "R101",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R101",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R101",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C101",
+   "reason": "none of 12 collision-free spots passes check_silk; the closest is 2.58 mm beyond its own pads and 0.26 mm from R72 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C101",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C101",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C204",
+   "reason": "none of 6 collision-free spots passes check_silk; the closest is 2.83 mm beyond its own pads and 0.00 mm from U15 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C204",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C204",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C224",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C224",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C224",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C237",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C237",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C237",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C309",
+   "reason": "none of 25 collision-free spots passes check_silk; the closest is 2.08 mm beyond its own pads and 0.00 mm from U16 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C309",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C309",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C324",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C324",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C324",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C37",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C37",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C37",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "R18",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R18",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R18",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "R19",
+   "reason": "none of 20 collision-free spots passes check_silk; the closest is 2.09 mm beyond its own pads and 0.16 mm from U2 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R19",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R19",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "R203",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R203",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R203",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "R205",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R205",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R205",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "R216",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R216",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R216",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "R303",
+   "reason": "none of 4 collision-free spots passes check_silk; the closest is 2.07 mm beyond its own pads and 1.00 mm from U8 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R303",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R303",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "R65",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R65",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R65",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C150",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C150",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C150",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C211",
+   "reason": "none of 8 collision-free spots passes check_silk; the closest is 3.05 mm beyond its own pads and 0.00 mm from U15 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C211",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C211",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C218",
+   "reason": "none of 18 collision-free spots passes check_silk; the closest is 2.82 mm beyond its own pads and 0.00 mm from U16 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C218",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C218",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C225",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C225",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C225",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "R313",
+   "reason": "none of 16 collision-free spots passes check_silk; the closest is 2.84 mm beyond its own pads and 0.00 mm from U16 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R313",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R313",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C202",
+   "reason": "none of 10 collision-free spots passes check_silk; the closest is 2.83 mm beyond its own pads and 0.00 mm from U15 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C202",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C202",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C228",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C228",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C228",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C326",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C326",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C326",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "R230",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R230",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R230",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "R328",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "R328",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "R328",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C222",
+   "reason": "none of 5 collision-free spots passes check_silk; the closest is 1.55 mm beyond its own pads and 0.00 mm from H1 (silk_misattributed)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C222",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C222",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  },
+  {
+   "ref": "C210",
+   "reason": "no collision-free candidate within +3.0 mm push (channel narrower than the label)",
+   "unplaceable": true,
+   "suggest": "hide this reference on silk and keep it on the fab layer for assembly, or shrink the refdes text to 0.8 mm (check_silk's legibility floor) and re-run - fix_ops holds both as place_edit set_text ops",
+   "fix_ops": {
+    "shrink": {
+     "op": "set_text",
+     "ref": "C210",
+     "field": "reference",
+     "size": 0.8
+    },
+    "hide": {
+     "op": "set_text",
+     "ref": "C210",
+     "field": "reference",
+     "hide": true
+    }
+   }
+  }
+ ],
+ "unplaceable": [
+  "U11",
+  "U12",
+  "C13",
+  "U9",
+  "R110",
+  "C151",
+  "C220",
+  "C321",
+  "C12",
+  "C14",
+  "C16",
+  "C22",
+  "C312",
+  "C317",
+  "C6",
+  "R10",
+  "R111",
+  "C11",
+  "C111",
+  "C125",
+  "C142",
+  "C21",
+  "C221",
+  "C302",
+  "C58",
+  "R100",
+  "R112",
+  "R215",
+  "R314",
+  "R7",
+  "C143",
+  "C306",
+  "C316",
+  "C45",
+  "C64",
+  "C69",
+  "R101",
+  "C101",
+  "C204",
+  "C224",
+  "C237",
+  "C309",
+  "C324",
+  "C37",
+  "R18",
+  "R19",
+  "R203",
+  "R205",
+  "R216",
+  "R303",
+  "R65",
+  "C150",
+  "C211",
+  "C218",
+  "C225",
+  "R313",
+  "C202",
+  "C228",
+  "C326",
+  "R230",
+  "R328",
+  "C222",
+  "C210"
+ ],
+ "skipped": [
+  {
+   "ref": "H1",
+   "reason": "board_only"
+  },
+  {
+   "ref": "H2",
+   "reason": "board_only"
+  },
+  {
+   "ref": "H3",
+   "reason": "board_only"
+  },
+  {
+   "ref": "H4",
+   "reason": "board_only"
+  }
+ ],
+ "min_silk_clearance": 0.0,
+ "median_beyond_extent_mm_before": 0.48,
+ "median_beyond_extent_mm": 0.63,
+ "ops_out": "kicad/silk_ops.json",
+ "results": [
+  {
+   "ref": "U10",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.35
+  },
+  {
+   "ref": "U16",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.35
+  },
+  {
+   "ref": "Q1",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.365
+  },
+  {
+   "ref": "U15",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.35
+  },
+  {
+   "ref": "L9",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.35
+  },
+  {
+   "ref": "R1",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "SW1",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.35
+  },
+  {
+   "ref": "D2",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.355
+  },
+  {
+   "ref": "J2",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 1.186
+  },
+  {
+   "ref": "L10",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.35
+  },
+  {
+   "ref": "Q2",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.35
+  },
+  {
+   "ref": "Q3",
+   "moved": true,
+   "clearance_mm": 0.245,
+   "beyond_extent_mm": 0.634
+  },
+  {
+   "ref": "R74",
+   "moved": true,
+   "clearance_mm": 0.223,
+   "beyond_extent_mm": 1.13
+  },
+  {
+   "ref": "C10",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.6175
+  },
+  {
+   "ref": "C319",
+   "moved": true,
+   "clearance_mm": 0.069,
+   "beyond_extent_mm": 0.375
+  },
+  {
+   "ref": "C5",
+   "moved": true,
+   "clearance_mm": 0.275,
+   "beyond_extent_mm": 4.6111
+  },
+  {
+   "ref": "D1",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.3665
+  },
+  {
+   "ref": "D4",
+   "moved": true,
+   "clearance_mm": 0.256,
+   "beyond_extent_mm": 0.355
+  },
+  {
+   "ref": "L8",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 1.425
+  },
+  {
+   "ref": "R217",
+   "moved": true,
+   "clearance_mm": 0.069,
+   "beyond_extent_mm": 1.137
+  },
+  {
+   "ref": "R40",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.88
+  },
+  {
+   "ref": "R73",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.637
+  },
+  {
+   "ref": "U1",
+   "moved": true,
+   "clearance_mm": 0.145,
+   "beyond_extent_mm": 0.388
+  },
+  {
+   "ref": "U4",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.379
+  },
+  {
+   "ref": "U5",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 3.35
+  },
+  {
+   "ref": "C15",
+   "moved": true,
+   "clearance_mm": 0.185,
+   "beyond_extent_mm": 0.6
+  },
+  {
+   "ref": "C304",
+   "moved": true,
+   "clearance_mm": 0.105,
+   "beyond_extent_mm": 0.38
+  },
+  {
+   "ref": "C330",
+   "moved": true,
+   "clearance_mm": 0.075,
+   "beyond_extent_mm": 0.375
+  },
+  {
+   "ref": "C43",
+   "moved": true,
+   "clearance_mm": 0.054,
+   "beyond_extent_mm": 0.38
+  },
+  {
+   "ref": "C54",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C66",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.85
+  },
+  {
+   "ref": "FB1",
+   "moved": true,
+   "clearance_mm": 0.021,
+   "beyond_extent_mm": 0.368
+  },
+  {
+   "ref": "J4",
+   "moved": true,
+   "clearance_mm": 0.225,
+   "beyond_extent_mm": 7.6146
+  },
+  {
+   "ref": "J6",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 2.0
+  },
+  {
+   "ref": "J7",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 2.0
+  },
+  {
+   "ref": "L5",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 1.425
+  },
+  {
+   "ref": "R102",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 3.13
+  },
+  {
+   "ref": "R11",
+   "moved": true,
+   "clearance_mm": 0.043,
+   "beyond_extent_mm": 0.38
+  },
+  {
+   "ref": "R12",
+   "moved": true,
+   "clearance_mm": 0.085,
+   "beyond_extent_mm": 0.387
+  },
+  {
+   "ref": "R331",
+   "moved": true,
+   "clearance_mm": 0.125,
+   "beyond_extent_mm": 1.147
+  },
+  {
+   "ref": "R50",
+   "moved": true,
+   "clearance_mm": 0.057,
+   "beyond_extent_mm": 0.38
+  },
+  {
+   "ref": "R51",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R71",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 1.13
+  },
+  {
+   "ref": "U14",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.96
+  },
+  {
+   "ref": "Y1",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.62
+  },
+  {
+   "ref": "C110",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.645
+  },
+  {
+   "ref": "C207",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.625
+  },
+  {
+   "ref": "C232",
+   "moved": true,
+   "clearance_mm": 0.075,
+   "beyond_extent_mm": 0.375
+  },
+  {
+   "ref": "C329",
+   "moved": true,
+   "clearance_mm": 0.025,
+   "beyond_extent_mm": 1.1
+  },
+  {
+   "ref": "C333",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.645
+  },
+  {
+   "ref": "C55",
+   "moved": true,
+   "clearance_mm": 0.086,
+   "beyond_extent_mm": 0.38
+  },
+  {
+   "ref": "C7",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.6175
+  },
+  {
+   "ref": "C70",
+   "moved": true,
+   "clearance_mm": 0.063,
+   "beyond_extent_mm": 0.38
+  },
+  {
+   "ref": "C8",
+   "moved": true,
+   "clearance_mm": 0.047,
+   "beyond_extent_mm": 0.375
+  },
+  {
+   "ref": "C9",
+   "moved": true,
+   "clearance_mm": 0.105,
+   "beyond_extent_mm": 0.38
+  },
+  {
+   "ref": "J1",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.38
+  },
+  {
+   "ref": "J10",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 2.0
+  },
+  {
+   "ref": "L4",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 1.425
+  },
+  {
+   "ref": "Q5",
+   "moved": true,
+   "clearance_mm": 0.102,
+   "beyond_extent_mm": 0.3815
+  },
+  {
+   "ref": "R13",
+   "moved": true,
+   "clearance_mm": 0.038,
+   "beyond_extent_mm": 0.387
+  },
+  {
+   "ref": "R213",
+   "moved": true,
+   "clearance_mm": 0.173,
+   "beyond_extent_mm": 0.887
+  },
+  {
+   "ref": "R214",
+   "moved": true,
+   "clearance_mm": 0.075,
+   "beyond_extent_mm": 0.38
+  },
+  {
+   "ref": "R315",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R44",
+   "moved": false,
+   "clearance_mm": 0.111,
+   "beyond_extent_mm": 0.48
+  },
+  {
+   "ref": "R5",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R75",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R83",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R90",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "U13",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 3.3575
+  },
+  {
+   "ref": "U3",
+   "moved": true,
+   "clearance_mm": 0.158,
+   "beyond_extent_mm": 0.35
+  },
+  {
+   "ref": "U8",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.3575
+  },
+  {
+   "ref": "C1",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.645
+  },
+  {
+   "ref": "C17",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.625
+  },
+  {
+   "ref": "C2",
+   "moved": true,
+   "clearance_mm": 0.105,
+   "beyond_extent_mm": 0.38
+  },
+  {
+   "ref": "C231",
+   "moved": true,
+   "clearance_mm": 0.025,
+   "beyond_extent_mm": 1.1
+  },
+  {
+   "ref": "C235",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.625
+  },
+  {
+   "ref": "C301",
+   "moved": true,
+   "clearance_mm": 0.115,
+   "beyond_extent_mm": 0.6
+  },
+  {
+   "ref": "C307",
+   "moved": true,
+   "clearance_mm": 0.075,
+   "beyond_extent_mm": 0.375
+  },
+  {
+   "ref": "C320",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.85
+  },
+  {
+   "ref": "C332",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 3.1
+  },
+  {
+   "ref": "C38",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C4",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.7207
+  },
+  {
+   "ref": "C51",
+   "moved": true,
+   "clearance_mm": 0.025,
+   "beyond_extent_mm": 0.38
+  },
+  {
+   "ref": "C56",
+   "moved": true,
+   "clearance_mm": 0.041,
+   "beyond_extent_mm": 0.4069
+  },
+  {
+   "ref": "C59",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.85
+  },
+  {
+   "ref": "L3",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 1.425
+  },
+  {
+   "ref": "L6",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 1.425
+  },
+  {
+   "ref": "Q6",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.3815
+  },
+  {
+   "ref": "R14",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R212",
+   "moved": true,
+   "clearance_mm": 0.075,
+   "beyond_extent_mm": 0.38
+  },
+  {
+   "ref": "R233",
+   "moved": true,
+   "clearance_mm": 0.125,
+   "beyond_extent_mm": 1.147
+  },
+  {
+   "ref": "R236",
+   "moved": true,
+   "clearance_mm": 0.049,
+   "beyond_extent_mm": 1.147
+  },
+  {
+   "ref": "R334",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 2.647
+  },
+  {
+   "ref": "R403",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R52",
+   "moved": true,
+   "clearance_mm": 0.204,
+   "beyond_extent_mm": 1.88
+  },
+  {
+   "ref": "R53",
+   "moved": true,
+   "clearance_mm": 0.221,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R60",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.887
+  },
+  {
+   "ref": "R61",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R72",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R81",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "U17",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.355
+  },
+  {
+   "ref": "U7",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.35
+  },
+  {
+   "ref": "C112",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C122",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C124",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 3.13
+  },
+  {
+   "ref": "C206",
+   "moved": true,
+   "clearance_mm": 0.235,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C219",
+   "moved": true,
+   "clearance_mm": 0.03,
+   "beyond_extent_mm": 0.375
+  },
+  {
+   "ref": "C310",
+   "moved": true,
+   "clearance_mm": 0.24,
+   "beyond_extent_mm": 0.6
+  },
+  {
+   "ref": "C318",
+   "moved": true,
+   "clearance_mm": 0.243,
+   "beyond_extent_mm": 0.645
+  },
+  {
+   "ref": "C50",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 3.38
+  },
+  {
+   "ref": "C52",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C65",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 2.1
+  },
+  {
+   "ref": "J11",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 2.0
+  },
+  {
+   "ref": "J5",
+   "moved": true,
+   "clearance_mm": 0.225,
+   "beyond_extent_mm": 9.0149
+  },
+  {
+   "ref": "L7",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 1.425
+  },
+  {
+   "ref": "R15",
+   "moved": true,
+   "clearance_mm": 0.085,
+   "beyond_extent_mm": 0.387
+  },
+  {
+   "ref": "R227",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 3.118
+  },
+  {
+   "ref": "R325",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 3.118
+  },
+  {
+   "ref": "R4",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 3.1514
+  },
+  {
+   "ref": "R402",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R57",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R63",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 2.387
+  },
+  {
+   "ref": "R64",
+   "moved": true,
+   "clearance_mm": 0.084,
+   "beyond_extent_mm": 2.637
+  },
+  {
+   "ref": "R8",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R80",
+   "moved": true,
+   "clearance_mm": 0.15,
+   "beyond_extent_mm": 0.5477
+  },
+  {
+   "ref": "R9",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R92",
+   "moved": true,
+   "clearance_mm": 0.182,
+   "beyond_extent_mm": 1.13
+  },
+  {
+   "ref": "R93",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "U2",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.364
+  },
+  {
+   "ref": "U6",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.35
+  },
+  {
+   "ref": "C100",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.625
+  },
+  {
+   "ref": "C201",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.85
+  },
+  {
+   "ref": "C208",
+   "moved": true,
+   "clearance_mm": 0.076,
+   "beyond_extent_mm": 0.6
+  },
+  {
+   "ref": "C223",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.85
+  },
+  {
+   "ref": "C226",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.645
+  },
+  {
+   "ref": "C234",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.85
+  },
+  {
+   "ref": "C308",
+   "moved": true,
+   "clearance_mm": 0.076,
+   "beyond_extent_mm": 0.6
+  },
+  {
+   "ref": "C311",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 2.31
+  },
+  {
+   "ref": "C323",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.85
+  },
+  {
+   "ref": "C44",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C57",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C68",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C71",
+   "moved": true,
+   "clearance_mm": 0.047,
+   "beyond_extent_mm": 3.4021
+  },
+  {
+   "ref": "C72",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 1.88
+  },
+  {
+   "ref": "L1",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 1.425
+  },
+  {
+   "ref": "R17",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.637
+  },
+  {
+   "ref": "R2",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R401",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R41",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R54",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 1.137
+  },
+  {
+   "ref": "R62",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R66",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R82",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R91",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C102",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C19",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C209",
+   "moved": true,
+   "clearance_mm": 0.248,
+   "beyond_extent_mm": 0.645
+  },
+  {
+   "ref": "C229",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.625
+  },
+  {
+   "ref": "C3",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C30",
+   "moved": true,
+   "clearance_mm": 0.065,
+   "beyond_extent_mm": 0.395
+  },
+  {
+   "ref": "C327",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.625
+  },
+  {
+   "ref": "C335",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.85
+  },
+  {
+   "ref": "C34",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C39",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 2.63
+  },
+  {
+   "ref": "C40",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C42",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 1.63
+  },
+  {
+   "ref": "C46",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C47",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C53",
+   "moved": true,
+   "clearance_mm": 0.105,
+   "beyond_extent_mm": 0.38
+  },
+  {
+   "ref": "C67",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.85
+  },
+  {
+   "ref": "L2",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 1.425
+  },
+  {
+   "ref": "R31",
+   "moved": true,
+   "clearance_mm": 0.054,
+   "beyond_extent_mm": 0.38
+  },
+  {
+   "ref": "R33",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R36",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R55",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R67",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R70",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.637
+  },
+  {
+   "ref": "U18",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.35
+  },
+  {
+   "ref": "U19",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 2.228
+  },
+  {
+   "ref": "C120",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C121",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C123",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C126",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C32",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C322",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.85
+  },
+  {
+   "ref": "C33",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C400",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.85
+  },
+  {
+   "ref": "C41",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "FB2",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.618
+  },
+  {
+   "ref": "R121",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R122",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R16",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R305",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.618
+  },
+  {
+   "ref": "R6",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "Y2",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.62
+  },
+  {
+   "ref": "C18",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "C31",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "D3",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.85
+  },
+  {
+   "ref": "FB3",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.618
+  },
+  {
+   "ref": "J3",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.36
+  },
+  {
+   "ref": "Q4",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.3815
+  },
+  {
+   "ref": "R3",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R30",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R34",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R400",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R42",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R43",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R58",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "SW2",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.3742
+  },
+  {
+   "ref": "R32",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R35",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R45",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "R56",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  },
+  {
+   "ref": "SW3",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.3742
+  },
+  {
+   "ref": "R120",
+   "moved": true,
+   "clearance_mm": 0.3,
+   "beyond_extent_mm": 0.63
+  }
+ ],
+ "applied": true,
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T21:36:47+00:00",
+ "input": "kicad/core.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:fd87c85b8957b77394970a59b58c552d808ba820f3c35a3db69b78ca3d41941e"
+}

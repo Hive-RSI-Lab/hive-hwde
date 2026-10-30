@@ -1,0 +1,144 @@
+{
+ "domain": "dfm",
+ "findings": [
+  {
+   "id": "DFM-1",
+   "board": "hwde-led-test",
+   "severity": "minor",
+   "refs": [
+    "J1"
+   ],
+   "nets": [
+    "+5V",
+    "GND"
+   ],
+   "finding": "The saved B.Cu GND zone fill is stale: it clears J1 pad 1 (+5V, THT, solder side) by only 0.1275 mm, while the zone's own clearance is 0.5 mm. A refill gives 0.5005 mm. The fab Gerbers carry the stale fill (fresh export from the saved board diffs 0 lines against fab/gerbers). DRC and dfm_check pass it because 0.1275 >= the 0.127 floor.",
+   "evidence": "kicad_pcb filled_polygon cutout x 9.7725-12.0275, y 17.8025-20.0575 around pad (10.9,18.93) 2.0x2.0 -> 0.1275 mm; zone connect_pads clearance 0.5; kicad-cli pcb drc --refill-zones on a copy: cutout edge x 9.3995 (0.5005 mm). B_Cu.gbl contains X9772500Y-17917441. jlc_capabilities.yaml 2layer_1oz min_clearance_mm 0.127.",
+   "fix": "Refill zones (kicad-cli pcb drc --refill-zones --save-board, or pcbnew B) and re-export fab/gerbers; re-run dfm_check.",
+   "margin": "0.1275 mm vs 0.127 JLC floor: +0.4%; vs the zone's 0.5 mm: -75%",
+   "fault_class": "new",
+   "class_mode": "Zone fill saved stale (not refilled after an edit), so the copper and Gerbers carry clearances the zone's own rule forbids while DRC and DFM pass at the fab floor"
+  },
+  {
+   "id": "DFM-2",
+   "board": "hwde-led-test",
+   "severity": "note",
+   "refs": [],
+   "nets": [],
+   "finding": "Board is 13.40 x 10.50 mm with no fiducials; the short side is 0.5 mm over the commonly quoted JLC PCBA 10 mm minimum. JLC may add edge rails/panelize for assembly (cost, not function).",
+   "evidence": "Edge.Cuts x 7.475-20.875, y 14.95-25.45, r1.0 corners; no fiducial footprints. JLC PCBA minimum size not in jlc_capabilities.yaml (unverified).",
+   "fix": "None; accept JLC's rails if quoted.",
+   "margin": "10.5 mm vs 10 mm: +5%",
+   "fault_class": "DFA-15"
+  },
+  {
+   "id": "DFM-3",
+   "board": "hwde-led-test",
+   "severity": "note",
+   "refs": [
+    "C1",
+    "D1"
+   ],
+   "nets": [
+    "GND"
+   ],
+   "finding": "Both GND vias are JLC-standard 0.6/0.3 (annulus 0.15 = floor) and sit 0.13-0.14 mm from SMD pad edges (D1 pad 1, C1 pad 2). They are tented (no F/B mask openings), same net, so wicking risk is low.",
+   "evidence": "Vias (18.8312,20.7525) and (13.2,21.74), 0.6/0.3; D1 pad1 edge x 18.40 vs via edge 18.53; C1 pad2 edge y 21.30 vs via edge 21.44. F_Mask/B_Mask gerbers: no flashes at via coordinates.",
+   "fix": "None.",
+   "margin": "annulus 0.15 vs 0.15: 0%; via-to-pad copper 0.13 mm (same net, tented)",
+   "fault_class": "FAB-07"
+  },
+  {
+   "id": "DFM-4",
+   "board": "hwde-led-test",
+   "severity": "note",
+   "refs": [],
+   "nets": [],
+   "finding": "No board name, revision or date on silk; only refdes and the J1 '+'/'-' marks.",
+   "evidence": "gr_text items: '+' at (8.5,18.93), '-' at (8.5,21.47) only.",
+   "fix": "Optional: 'LED-TEST r1' on B.SilkS (whole back is free).",
+   "margin": "n/a",
+   "fault_class": "TEST-08"
+  }
+ ],
+ "known_unknowns": [
+  {
+   "fact": "JLC 2L 1 oz floors: clearance 0.127, trace 0.127, via 0.3/0.6, annulus 0.15, copper-edge 0.3, hole-edge 0.5, silk 0.15",
+   "board": "hwde-led-test",
+   "refs": [],
+   "status": "verified",
+   "source": ".claude/skills/hwde/reference/jlc_capabilities.yaml design_rules.2layer_1oz",
+   "date": "2026-10-29",
+   "could_stop_board": false
+  },
+  {
+   "fact": "Fab Gerbers and drill match the saved board",
+   "board": "hwde-led-test",
+   "refs": [],
+   "status": "verified",
+   "source": "kicad-cli 10.0.6 re-export of F/B Cu, F mask/paste, Edge.Cuts, drill: 0 diff lines",
+   "date": "2026-10-29",
+   "could_stop_board": true
+  },
+  {
+   "fact": "CPL rotations/positions vs JLC models for C1 270, D1 90, J1 270, R1 0",
+   "board": "hwde-led-test",
+   "refs": [
+    "C1",
+    "D1",
+    "J1",
+    "R1"
+   ],
+   "status": "verified",
+   "source": "cpl_verify.py (EasyEDA models) all ok, offset 0.0 mm",
+   "date": "2026-10-29",
+   "could_stop_board": true
+  },
+  {
+   "fact": "BOM/CPL/board agree (4 refs, LCSC codes)",
+   "board": "hwde-led-test",
+   "refs": [
+    "C1",
+    "D1",
+    "J1",
+    "R1"
+   ],
+   "status": "verified",
+   "source": "check_bom_sync.py pass; dfm_check bom pass",
+   "date": "2026-10-29",
+   "could_stop_board": true
+  },
+  {
+   "fact": "JLC PCBA accepts 13.4 x 10.5 mm single boards without rails",
+   "board": "hwde-led-test",
+   "refs": [],
+   "status": "unverified",
+   "source": "not in jlc_capabilities.yaml",
+   "date": "2026-10-29",
+   "could_stop_board": false
+  },
+  {
+   "fact": "J1 assembled by JLC THT (or hand-soldered) on the top side",
+   "board": "hwde-led-test",
+   "refs": [
+    "J1"
+   ],
+   "status": "unverified",
+   "source": "requirements.md section 7 allows THT",
+   "date": "2026-10-29",
+   "could_stop_board": false
+  }
+ ],
+ "tools_wanted": [
+  {
+   "tool": "zone fill freshness (dfm_check or gate)",
+   "checks": "refill a copy of the board and compare filled polygons with the saved fill; flag any change, and any fill closer than the zone's own clearance",
+   "why": "DFM-1: stale fill at 0.1275 mm vs a 0.5 mm zone clearance passed DRC and dfm_check"
+  },
+  {
+   "tool": "dfm_check margin-to-floor report",
+   "checks": "list features within 5% of a fab floor (clearance, annulus, silk)",
+   "why": "DFM-1/DFM-3: items exactly at the floor read as plain passes"
+  }
+ ]
+}
