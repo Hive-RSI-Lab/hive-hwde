@@ -314,6 +314,13 @@ where the footprint has no hole) are errors too. `model_unmatched` (no
 placement meets half the pads: a wrong model) is a warning. A missing or
 hidden model is skipped.
 
+`lib_pull` runs the same fit on every footprint it pulls
+(`check_model_fit.fit_footprint`) and writes the fitted `(offset)`,
+`(rotate)` and `(scale)` into the library's `(model ...)`, so a model
+EasyEDA misplaced is fixed before any board takes the footprint (the
+pull's `model_fit` report; `--no-model-fit` skips it). A model no
+placement fits is left as it was and listed in `model_fit.left`.
+
 The hit: EasyEDA's TYPE-C-31-M-12 model, as `lib_pull` fetches it for
 lite-main J1, sits 2.2 mm off its footprint. Its shell legs and pegs miss
 every hole, so renders, the STEP and an enclosure fitted to it put the

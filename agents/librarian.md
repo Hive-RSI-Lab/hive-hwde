@@ -18,6 +18,10 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    retry on 403) + lib-table registration + per-part on-disk verification.
    Review the per-part report; re-pull only reported failures individually
    (`--lcsc Cxxxx`). LEGACY `(module ...)` footprints are NORMAL (KiCad 10).
+   It fits each pulled footprint's 3D model to its pads (`model_fit`:
+   EasyEDA ships some models off their footprint, the TYPE-C-31-M-12 2.15 mm
+   off and turned); a model in `model_fit.left` fits no slide or turn: check
+   it against the part's drawing, it is likely the wrong model.
 2. `scripts/lib_pin_types.py --lib <lib>/aiee.kicad_sym --datasheet-json
    parts/*.json` - once extracts exist: retype pulled pin electrical types
    (idempotent). lib_pull already gave each symbol it pulled a default
