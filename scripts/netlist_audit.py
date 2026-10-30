@@ -36,6 +36,12 @@ schematic-level structural problems BEFORE board work starts:
  - sot23_pinout (warning): a stock Package_TO_SOT_SMD SOT-23 transistor
    whose symbol pins 1-2-3 are not G-S-D (FET) or B-E-C (BJT), the order
    nearly every SOT-23 part has; the datasheet is the last word.
+ - pin_part_missing: a part reference/pin_requirements.yaml says the IC's
+   datasheet requires between two of its pins (CBK from FB_BK to GND_BK)
+   that no part of that kind and value spans (error), or, in a
+   hierarchical design, that only parts drawn on other sheets span - the
+   rail's caps belong to other parts and none was drawn for this pin
+   (warning: confirm one sits at the pin on the board).
  - metadata_mismatch (error): a decoupling association that contradicts the
    netlist (cap/ic missing, IC pin not on the stated rail, cap not spanning
    rail+gnd); value drift cap-vs-netlist is a warning.
@@ -73,9 +79,11 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE / "lib"))
 
 import checklib  # noqa: E402
+import engcalc  # noqa: E402
 
 SCRIPT = "netlist_audit"
 SOURCE = "audit.netlist"
+PIN_REQUIREMENTS = HERE.parent / "reference" / "pin_requirements.yaml"
 
 # Strong differential suffix families (subset of check_diffpair.SUFFIX_PAIRS:
 # the bare +/- and P/N tokens are too ambiguous for unpaired-net warnings).
@@ -141,6 +149,9 @@ def parse_netlist(path: Path | str) -> dict:
                 continue
             comps[ref] = {"value": _atom(c, "value"),
                           "footprint": _atom(c, "footprint")}
+            sp = _kids(c, "sheetpath")
+            if sp and _atom(sp[0], "names"):
+                comps[ref]["sheet"] = _atom(sp[0], "names")
             src = _kids(c, "libsource")
             if src:
                 comps[ref]["libsource"] = (_atom(src[0], "lib") or "",
@@ -236,6 +247,96 @@ def _transistor_role(func: str | None) -> str | None:
     return {"G": "G", "GATE": "G", "S": "S", "SOURCE": "S", "D": "D",
             "DRAIN": "D", "B": "B", "BASE": "B", "E": "E", "EMITTER": "E",
             "C": "C", "COLLECTOR": "C"}.get(f)
+
+
+def load_pin_requirements(path: Path = PIN_REQUIREMENTS) -> list[dict]:
+    """reference/pin_requirements.yaml's parts (its header says the form)."""
+    import yaml  # noqa: PLC0415
+    try:
+        doc = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    except (OSError, yaml.YAMLError) as exc:
+        raise checklib.CheckError(f"pin requirements {path}: {exc}") from exc
+    return doc.get("parts") or []
+
+
+def _norm_pin(name: str | None) -> str:
+    return re.sub(r"~\{([^}]*)\}", r"\1", name or "").strip().upper()
+
+
+_KIND_PREFIX = {"C": "C", "L": "L", "FB": "L", "R": "R"}
+
+
+def _part_kind(ref: str) -> str | None:
+    m = re.match(r"^([A-Z]+)\d", ref or "")
+    return _KIND_PREFIX.get(m.group(1)) if m else None
+
+
+def _req_window(req: dict) -> tuple[float | None, float | None]:
+    """(min, max) a part's value must sit in: min/max as given, else one
+    E3 step either side of the nominal value, else no bound."""
+    lo, hi = req.get("min"), req.get("max")
+    nom = engcalc.parse_value(req.get("value"))
+    if nom and lo is None and hi is None:
+        lo, hi = nom / 2.2, nom * 2.2
+    return (float(lo) if lo is not None else None,
+            float(hi) if hi is not None else None)
+
+
+def _pin_requirements(nets: dict, comps: dict,
+                      comp_pins: dict[str, dict[str, str]],
+                      specs: list[dict]):
+    """Yield (severity, net, ic, req, found, elsewhere, off_value) per
+    datasheet-required pin part that is missing or not drawn with its IC."""
+    hierarchical = len({c.get("sheet") for c in comps.values()} - {None}) > 1
+    for spec in specs:
+        rx = re.compile(spec["match"], re.I)
+        aliases = {k.upper(): v.upper()
+                   for k, v in (spec.get("aliases") or {}).items()}
+        for ref in sorted(comps):
+            comp = comps[ref]
+            if not (rx.search(comp.get("value") or "")
+                    or rx.search((comp.get("libsource") or ("", ""))[1])):
+                continue
+            by_pin: dict[str, set[str]] = {}
+            for name, members in nets.items():
+                for m in members:
+                    if m["ref"] == ref:
+                        pn = _norm_pin(m.get("pinfunction"))
+                        by_pin.setdefault(aliases.get(pn, pn), set()).add(name)
+            for req in spec.get("requires") or []:
+                a = by_pin.get(req["pin"].upper())
+                b = by_pin.get(req["to"].upper())
+                if a is None or b is None:
+                    continue  # this symbol has no such pin
+                a = {n for n in a if not n.startswith("unconnected-")}
+                b = {n for n in b if not n.startswith("unconnected-")}
+                if not a and req.get("when") == "connected":
+                    continue
+                if a & b:
+                    continue  # the two pins are one net: nothing to span
+                lo, hi = _req_window(req)
+                found, off = [], []
+                for other, pins in sorted(comp_pins.items()):
+                    if other == ref or _part_kind(other) not in req["kinds"]:
+                        continue
+                    if not (any(n in a for n in pins.values())
+                            and any(n in b for n in pins.values())):
+                        continue
+                    val = engcalc.parse_value(comps.get(other, {}).get("value"))
+                    if (lo is not None or hi is not None) and (
+                            val is None or (lo is not None and val < lo * 0.999)
+                            or (hi is not None and val > hi * 1.001)):
+                        off.append(other)
+                        continue
+                    found.append(other)
+                net = sorted(a)[0] if a else None
+                if not found:
+                    yield "error", net, ref, req, [], [], off
+                    continue
+                sheet = comp.get("sheet")
+                if hierarchical and sheet and not any(
+                        comps.get(f, {}).get("sheet") == sheet for f in found):
+                    yield "warning", net, ref, req, [], found, off
 
 
 # ------------------------------------------------------------ compare mode
@@ -391,7 +492,9 @@ def _series_escapes(rail: str, members: list[dict],
 
 
 def audit(parsed: dict, constraints: dict,
-          decoupling: dict | None) -> tuple[list[dict], dict]:
+          decoupling: dict | None,
+          pin_requirements: list[dict] | None = None
+          ) -> tuple[list[dict], dict]:
     nets = parsed["nets"]
     comps = parsed["components"]
     violations: list[dict] = []
@@ -623,6 +726,34 @@ def audit(parsed: dict, constraints: dict,
                   f"{'-'.join(want)}; check the part's datasheet pinout "
                   f"(or use the matching symbol variant)",
                   pins=dict(zip("123", roles)))
+
+    # 10. a part the IC's datasheet requires between two of its pins
+    # (reference/pin_requirements.yaml; errata corpus: minuet v3 shipped the
+    # MCF8316D with no CBK drawn from FB_BK to GND_BK - the +3.3V rail's
+    # caps were all drawn on other sheets for other parts)
+    specs = (load_pin_requirements() if pin_requirements is None
+             else pin_requirements)
+    for sev, net, ic, req, found, elsewhere, off in _pin_requirements(
+            nets, comps, comp_pins, specs):
+        want = req.get("value") or "/".join(req["kinds"])
+        what = (f"{ic} ({comps[ic].get('value')}) needs {req['id']} "
+                f"({want}) from {req['pin']} to {req['to']} "
+                f"[{req.get('source', 'datasheet')}]")
+        if sev == "error":
+            extra = (f"; off-value parts across it: {', '.join(off)}"
+                     if off else "")
+            v("error", "pin_part_missing", net, [ic],
+              f"{what}: no part spans those pins{extra}",
+              part=req["id"], pin=req["pin"], to=req["to"],
+              off_value=off)
+        else:
+            v("warning", "pin_part_missing", net, [ic],
+              f"{what}: only {', '.join(elsewhere)} span them, drawn on "
+              f"other sheets than {ic}'s {comps[ic].get('sheet')} - the "
+              f"rail's parts serve other ICs and none was drawn for this "
+              f"pin; draw it with {ic} or confirm one sits at the pin on "
+              f"the board", part=req["id"], pin=req["pin"], to=req["to"],
+              drawn_elsewhere=elsewhere)
 
     facts = {
         "nets": len(nets),

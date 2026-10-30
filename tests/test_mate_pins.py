@@ -24,6 +24,7 @@ sys.path.insert(0, str(SCRIPTS / "lib"))
 sys.path.insert(0, str(GOLDEN / "mutations"))
 import check_mate_pins  # noqa: E402
 import checklib  # noqa: E402
+import mech_05_pi_header_mirrored  # noqa: E402
 import mech_05_pinout_swap  # noqa: E402
 
 from _boards import real_board  # noqa: E402
@@ -254,6 +255,62 @@ def test_mech05_daughter_wired_straight_is_clean(tmp_path):
     (tmp_path / mech_05_pinout_swap.MATE).write_text(
         mech_05_pinout_swap.daughter(swap=True), encoding="utf-8")
     assert {v["pin"] for v in _run(pcb, [pair], tmp=tmp_path)} == {"1", "4"}
+
+
+# ------------------------------------------- MECH-05 standard headers
+
+def _pi_board(tmp_path, mirrored, at=(20, 10, -90), nets=None, layer="B.Cu"):
+    fp = mech_05_pi_header_mirrored.header(
+        mirrored=mirrored, ref="J1", at=at,
+        nets=nets or mech_05_pi_header_mirrored.NETS)
+    if layer == "F.Cu":
+        fp = fp.replace('(layer "B.Cu")', '(layer "F.Cu")')
+    return _board(tmp_path / "pi.kicad_pcb", fp)
+
+
+@pytest.mark.parametrize("angle", [0, 90, 180, -90])
+def test_back_side_pi_header_mirrored_in_any_rotation(tmp_path, angle):
+    """A mirror can't be turned away: digits v1 J1 was rotated 180 deg."""
+    vs = _run(_pi_board(tmp_path, True, at=(20, 10, angle)))
+    assert [(v["kind"], v["refs"]) for v in vs] == [
+        ("mate_mirrored_pinout", ["J1"])]
+    assert "pin 2 (+5V) meets the mate's pin 1 (3V3)" in vs[0]["msg"]
+    assert vs[0]["supply_pins"] == {"1": "3V3", "2": "5V", "6": "GND"}
+
+
+@pytest.mark.parametrize("angle", [0, 90, 180, -90])
+def test_back_side_pi_header_numbered_for_the_back_passes(tmp_path, angle):
+    assert _run(_pi_board(tmp_path, False, at=(20, 10, angle))) == []
+
+
+def test_front_side_pi_header_is_not_judged(tmp_path):
+    """On F.Cu both patterns are right somewhere (a HAT's socket soldered
+    from below; a host face down above, digits v2)."""
+    assert _run(_pi_board(tmp_path, True, layer="F.Cu")) == []
+    assert _run(_pi_board(tmp_path, False, layer="F.Cu")) == []
+
+
+def test_a_40_pin_header_that_is_not_a_pi_is_not_judged(tmp_path):
+    # GND alone is not enough, and a supply on a pin the Pi gives another
+    # (+5V on pin 1) says it is some other 2x20
+    assert _run(_pi_board(tmp_path, True, nets={"6": "GND", "9": "GND"})) == []
+    assert _run(_pi_board(tmp_path, True, nets={
+        "1": "+5V", "2": "+5V", "6": "GND"})) == []
+
+
+def test_declared_pair_is_left_to_the_pair_rules(tmp_path):
+    pcb = _pi_board(tmp_path, True)
+    vs = _run(pcb, [{"ref": "J1", "mate_ref": "J1"}])
+    assert "mate_mirrored_pinout" not in {v["kind"] for v in vs}
+
+
+def test_handedness_reads_the_pattern():
+    hdr = [("1", None, 0, 0), ("2", None, 2.54, 0), ("3", None, 0, 2.54)]
+    mir = [("1", None, 0, 0), ("2", None, 2.54, 0), ("3", None, 0, -2.54)]
+    one_row = [("1", None, 0, 0), ("2", None, 2.54, 0), ("3", None, 5.08, 0)]
+    assert check_mate_pins.handedness(hdr, 2.54, 0.2) == 1
+    assert check_mate_pins.handedness(mir, 2.54, 0.2) == -1
+    assert check_mate_pins.handedness(one_row, 2.54, 0.2) is None
 
 
 # ------------------------------------------------- real boards
