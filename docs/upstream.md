@@ -35,7 +35,17 @@ these ways:
   rule E, which `lib_pull` runs on every pull, and its `--pcb` mode for placed
   copies; `scripts/board_edit.py`, whose `--outline fit` counts silk and whose
   edits refuse to clip it; `scripts/check_silk.py`, whose silk items carry
-  their footprint's reference. From routing lite-main (hifi-receiver-2), a
+  their footprint's reference. From the first product board
+  (hifi-receiver-2 lite-main): `fpfix` rule F numbers an exposed pad's
+  unnumbered thermal vias and drops their paste, and `fpfix.body_flags`
+  reads each part's 3D model for a peg with no hole, a body outside the
+  courtyard or a model off its footprint (`lib_pull` lists them in
+  `autofix.flags`); `lib_pull --budget-s` stops before a 10-minute call
+  runs out, and a re-run skips parts already whole in the library;
+  `schlib.Sheet` registers the project's own symbol libraries from its
+  `sym-lib-table`; the ERC gate reports `pin_types` and warns when every pin
+  is passive; `board_init --origin` keeps a re-run's outline where the board
+  had it; the schematic role prompts give `kc.py`'s positional input. From routing lite-main (hifi-receiver-2), a
   dense 2-layer power board: `stitch_vias` and `planes_gen` read KiCad's
   hole_to_hole as drill edge to drill edge; `route_auto` carries the hole
   rules into the DSN (`routelib.dsn_hole_floor`, `ses_restore_vias`,
