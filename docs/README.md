@@ -55,6 +55,11 @@ page covers how an agent runs it inside the Hive.
   `PYTHONPATH=$HWDE_MODULE/scripts:$HWDE_MODULE/scripts/lib $HWDE_PY kicad/gen/root.py`.
   `HWDE_SKILL`, its old name, is still set to the same path for boards that
   use it.
+- Part datasheets: `hwde datasheet_extract --fetch boards/<name>` puts
+  each parts.json line's PDF in `parts/datasheets/<lcsc>.pdf` (not
+  committed; `index.json` beside them keeps URL and sha256). LCSC's
+  wmsc.lcsc.com answers with a 140-byte script redirect, not the PDF;
+  the fetch follows it, so don't curl datasheets yourself.
 - Every board with a netlist gets `hwde sim_board --workspace boards/<name>
   --out boards/<name>/reports/sim_board.json`: ngspice over the board's own
   passives and discretes (KiCad 10's bundled libngspice, found by this
@@ -98,6 +103,25 @@ page covers how an agent runs it inside the Hive.
   Give each one its role prompt (`agents/<role>.md`), the workspace paths, and
   the `hwde` command line in place of the venv python. Record each spawn with
   `hwde state spawn`. Reviewers always get fresh context.
+
+## Documents: the design doc and the board guide
+
+`hwde report_gen --workspace boards/<name>` builds the board's design doc
+(`--kind highlight` and `--kind full` the shorter and longer ones), and the
+`board-guide` agent writes the owner's guide. Both are set in the
+pdf-material-builder skill's house style. `bin/hwde` finds that skill in
+`~/.claude/skills/`, then `/opt/pdf-material-builder` (where this machine has
+it), then `$HIVE_PROJECTS/pdf-material-builder`, and `hwde env` prints it as
+`HWDE_PDF_MATERIAL_BUILDER`. Where none is installed, `HWDE_HOUSE_STYLE` points
+at the module's plainer stand-in (`bin/house-style-fallback/`), so report_gen
+still builds the PDF rather than stopping at `--tex-only`, and the guide is
+built with lualatex directly and skips the skill's style check.
+
+report_gen reads each stage's report from the name the recipes give it
+(`reports/verify_all.json`, `reports/fab_export.json`, `reports/bom_cpl.json`,
+`reports/gate-dfm.json`). It also takes the names earlier runs used:
+verify_all's own `reports/checks/summary.json`, `verify-summary.json`,
+`fab-export.json`, `bom-cpl.json` and `dfm-gate.json`.
 
 ## Checkpoints are reports, not stops
 
@@ -259,9 +283,10 @@ nothing in the Hive should ask for them.
 
 ## What doesn't work here yet
 
-- `report_gen` (the design-doc PDF) and the board guide need the
-  pdf-material-builder house style, which isn't here. They fall back to
-  `--tex-only`, and the playbook says that must never gate a run.
+- `route_critical` and KRT's finishing pass need KiCadRoutingTools 0.19.0.
+  It's now in `/hive/tools/kicad-routing-tools/KiCadRoutingTools-0.19.0`,
+  but nothing points the skill at it yet (brief 261028-141924). A board with
+  diff pairs, high-current power or RF needs it.
 - DigiKey/Mouser price lookups need API keys and stay off.
 - The knowledge records cite manufacturer PDFs that the module doesn't carry
   (see NOTICE). `docs/knowledge-sources.txt` pins them at upstream's commit;
@@ -270,6 +295,11 @@ nothing in the Hive should ask for them.
   each checked against its git blob sha) and points `HWDE_KNOWLEDGE_SOURCES`
   there. A record `research promote` adds with a new PDF puts that PDF in the
   same cache, so it isn't in the module or upstream's list.
+- Knowledge records the Hive adds start at `verified`, which means a
+  fresh-context second reader has checked them against the cited pages. The
+  checklists start at `draft`. Coverage counts only `approved`, which is the
+  person's sign-off, so until then their slots read `provisional`, not `gap`.
+  The LED-indicator checklist is the first one.
 
 ## The first board
 

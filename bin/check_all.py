@@ -13,6 +13,9 @@ tests/workarounds/ exits 0 while its cause stands, 10 once it's fixed. The
 knowledge library passes `knowledge --validate --strict` against these
 boards; it needs the source PDFs (HWDE_KNOWLEDGE_SOURCES, which bin/hwde fetches
 into HOME first), and is skipped, said so, without them.
+Then each board's design doc is assembled (`report_gen --tex-only`, not
+scored): it must miss no core artifact for its phase and find every stage
+report it reads (report_gen.STAGE_REPORTS) that the board has passed.
 
 Exit 0 when every step passes and the table matches the probes, else 1.
 Run by bin/hwde (venv python, HWDE_* pins, HWDE_BIN set).
@@ -158,6 +161,30 @@ def step(name: str, board: Board, ws: Path, logs: Path) -> tuple[bool, str]:
     return False, (f"      {why}" if why else tail(log))
 
 
+def doc(board: Board, ws: Path, logs: Path) -> tuple[bool, str]:
+    """report_gen --tex-only on the scratch copy: exit 0, and no warning
+    that a stage report the board's passed steps wrote can't be found."""
+    log = logs / f"{board.name}-doc.log"
+    out = logs / f"{board.name}-doc.json"
+    rc = run([HWDE, "report_gen", "--workspace", str(ws), "--tex-only",
+              "--out", str(out)], ws, log)
+    try:
+        r = json.loads(out.read_text())
+    except (OSError, ValueError):
+        return False, tail(log)
+    sys.path.insert(0, str(SKILL))
+    from report_gen import STAGE_REPORTS  # noqa: E402
+    due = {"verify": "verify", "fab_export": "fab", "bom_cpl": "fab",
+           "gate_dfm": "dfm"}
+    names = [n for k, step_ in due.items() if step_ in board.steps
+             for n in STAGE_REPORTS[k]]
+    lost = [w for w in r.get("warnings", []) if any(w.startswith(n) for n in names)]
+    why = [f"missing {m}" for m in r.get("missing", [])] + lost
+    if rc or why:
+        return False, "      " + ("; ".join(why) or f"report_gen exit {rc}")
+    return True, ""
+
+
 def probes(table: dict[str, Workaround]) -> list[str]:
     """Problems with docs/workarounds.md against tests/workarounds/*.py."""
     bad = []
@@ -258,6 +285,13 @@ def main() -> int:
                 if not ok:
                     failed.append(f"{b.name} {s}")
                     print(why, flush=True)
+            t = time.monotonic()
+            ok, why = doc(b, ws, logs)
+            print(f"  doc: {'pass' if ok else 'FAIL'} ({time.monotonic() - t:.0f}s)",
+                  flush=True)
+            if not ok:
+                failed.append(f"{b.name} doc")
+                print(why, flush=True)
         bad = knowledge(logs)
         if bad is None:
             print("knowledge: skipped (no source PDFs; set HWDE_KNOWLEDGE_SOURCES)",

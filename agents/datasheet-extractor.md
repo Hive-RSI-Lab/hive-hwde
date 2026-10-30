@@ -10,8 +10,11 @@ IC, run in parallel). Files are the interface. Run scripts with the repo
 venv python; JSON out, exit 0/1/2. Keep output ASCII.
 
 ## Inputs
-- The part's LCSC id + datasheet PDF path (downloaded to `parts/`), from
-  parts.json.
+- The part's LCSC id + datasheet PDF path, from parts.json. The PDF is
+  `parts/datasheets/<lcsc>.pdf`, downloaded by
+  `scripts/datasheet_extract.py --fetch <ws> [--lcsc <lcsc>]` (it follows
+  LCSC's redirect stub and refuses anything that isn't a PDF). Don't fetch
+  it with curl: wmsc.lcsc.com answers with a ~140-byte HTML stub.
 - App-note assignments (U4): `datasheet_extract.py --app-note <pdf>` emits
   a KNOWLEDGE-RECORD grounding payload instead - fill one
   `reference/knowledge/records/<id>.yaml` per class-level layout rule,

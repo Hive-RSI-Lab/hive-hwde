@@ -103,8 +103,8 @@ CLI:
              [--name NAME] [--build-qty N] [--ws-name WS] [--boards N]
              [--no-price-lookup] [--easyeda-cache DIR] [--offline]
              [--out report.json]
-The model cache is $HWDE_EASYEDA_CACHE, else <parts.json dir>/easyeda if it
-exists, else ~/.cache/hwde/easyeda; --offline (or
+The model cache is $HWDE_EASYEDA_CACHE, else <parts.json dir>/easyeda (made
+on the first fetch), else ~/.cache/hwde/easyeda; --offline (or
 HWDE_EASYEDA_OFFLINE=1) never fetches, so an uncached part uses the table.
 Exit 0 ok / 1 assembly violations (incomplete BOM, unplaced smt_placed/tht part,
 declared-quantity mismatch, a model fetch that failed) / 2 error.

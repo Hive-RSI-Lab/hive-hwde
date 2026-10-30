@@ -1,0 +1,124 @@
+{
+ "script": "kc",
+ "tool": "erc",
+ "input": "blinky2.kicad_sch",
+ "units": "mm",
+ "kicad_version": "10.0.6",
+ "counts": {
+  "total": 4,
+  "by_severity": {
+   "error": 3,
+   "warning": 1
+  },
+  "by_source": {
+   "erc": 4
+  }
+ },
+ "status": "violations",
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-30T09:00:53+00:00",
+ "input_digest": "sexpr_no_uuid:7755130db8c9e1ed2e8330c57602fe0b8b8701ad647f24cf750bd059b4217515",
+ "violations": [
+  {
+   "check": "pin_not_connected",
+   "severity": "error",
+   "pos": [
+    0.889,
+    0.6096
+   ],
+   "layer": null,
+   "net": "VO, Power output, Line",
+   "refs": [
+    "U2"
+   ],
+   "msg": "Pin not connected",
+   "source": "erc",
+   "items": [
+    {
+     "msg": "Symbol U2 Pin 2 [VO, Power output, Line]",
+     "pos": [
+      0.889,
+      0.6096
+     ],
+     "uuid": "d321e533-ce4a-4dc5-a306-c6510557ee0d"
+    }
+   ],
+   "sheet": "/ff5db6aa-306b-4a8a-bcee-eb4f95323ece"
+  },
+  {
+   "check": "power_pin_not_driven",
+   "severity": "error",
+   "pos": [
+    0.9906,
+    0.6477
+   ],
+   "layer": null,
+   "net": "Power input, Line",
+   "refs": [
+    "PWR02"
+   ],
+   "msg": "Input Power pin not driven by any Output Power pins",
+   "source": "erc",
+   "items": [
+    {
+     "msg": "Symbol #PWR02 Pin 1 [Power input, Line]",
+     "pos": [
+      0.9906,
+      0.6477
+     ],
+     "uuid": "ee613805-ebdc-44b8-8aad-b883557067bb"
+    }
+   ],
+   "sheet": "/ff5db6aa-306b-4a8a-bcee-eb4f95323ece"
+  },
+  {
+   "check": "label_dangling",
+   "severity": "error",
+   "pos": [
+    1.524,
+    2.4638
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [],
+   "msg": "Label not connected",
+   "source": "erc",
+   "items": [
+    {
+     "msg": "Label 'GND'",
+     "pos": [
+      1.524,
+      2.4638
+     ],
+     "uuid": "ba0795d4-ba18-4540-a605-6b5af3faa853"
+    }
+   ],
+   "sheet": "/ff5db6aa-306b-4a8a-bcee-eb4f95323ece"
+  },
+  {
+   "check": "unconnected_wire_endpoint",
+   "severity": "warning",
+   "pos": [
+    0.4064,
+    2.54
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [],
+   "msg": "Unconnected wire endpoint",
+   "source": "erc",
+   "items": [
+    {
+     "msg": "Horizontal Wire, length 0.0508 mm",
+     "pos": [
+      0.4064,
+      2.54
+     ],
+     "uuid": "a79ad7e8-0816-4980-a55d-f5d91bf99679"
+    }
+   ],
+   "sheet": "/ff5db6aa-306b-4a8a-bcee-eb4f95323ece"
+  }
+ ]
+}

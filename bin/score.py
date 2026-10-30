@@ -43,7 +43,7 @@ CRASH = 100
 # pins:begin
 PINS = {
     "core": "3b0d25faaf2150e3627a49175e50f6edfcb18be0b1547a47095549899147b149",
-    "hwde-led-test": "799561ce31294c79555a73066ff9b33286fe5b94ebfd5fd893a384e10fb1c8e0",
+    "hwde-led-test": "2ef82c086271d243d5fa1dc6ab3f541c742cf11f7aa81f80a63a9f282ac3d62b",
     "lite-main": "7b5f6f4f3a1b3fc8fa9fbd98a7375c74adc2db34997f6efd52f6fbaaaf15a995",
 }
 # pins:end

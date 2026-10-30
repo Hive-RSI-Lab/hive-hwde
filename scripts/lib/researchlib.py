@@ -57,7 +57,7 @@ import re
 import time
 from datetime import date as _date
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
 
 import yaml
 
@@ -96,6 +96,8 @@ _WEAK_CHALLENGE_MARKERS = (
     (b"bm-verify", "akamai"),
 )
 WEAK_MARKER_MAX_BODY = 4096       # bytes: an interstitial, not a real page
+STUB_MAX_BODY = 4096              # bytes: an HTML redirect stub, not a page
+STUB_MAX_HOPS = 3                 # stub redirects followed per fetch
 _LCSC_PN = re.compile(r"^C\d{2,}$", re.I)
 FALLBACK_TRIES = 3          # distributor copies tried per block (attempts cap)
 # Mirror of state.DEFAULT_BUDGETS["research"] (a lib must not import the
@@ -585,20 +587,55 @@ def brief(task: dict, ws: Path, library_records: list[dict] | None = None,
 # ---------------------------------------------------------------------------
 # fetch: allowlisted acquisition into quarantine
 # ---------------------------------------------------------------------------
-def http_transport(url: str, timeout: float = 60.0) -> dict:
+def http_transport(url: str, timeout: float = 60.0, _mock=None) -> dict:
     """Default transport: GET with redirects, browser-ish UA. Returns
     {status, final_url, hops[], content_type, body}. Raises on transport
-    failure (DNS/TLS/timeout) - the caller maps that to exit 2."""
+    failure (DNS/TLS/timeout) - the caller maps that to exit 2. `_mock` is
+    an httpx transport for tests."""
     import httpx
     with httpx.Client(follow_redirects=True, timeout=timeout,
-                      headers={"User-Agent": USER_AGENT}) as client:
+                      headers={"User-Agent": USER_AGENT},
+                      transport=_mock) as client:
         r = client.get(url)
-    hops = [str(h.url) for h in r.history] + [str(r.url)]
+        hops = [str(h.url) for h in r.history] + [str(r.url)]
+        # a short HTML page whose only job is to send the browser on (LCSC's
+        # wmsc mirror answers 200 with one) is followed like an HTTP redirect;
+        # its target is a hop, so the caller's allowlist check covers it
+        for _ in range(STUB_MAX_HOPS):
+            nxt = stub_redirect(r.content)
+            if not nxt:
+                break
+            r = client.get(urljoin(str(r.url), nxt))
+            hops += [str(h.url) for h in r.history] + [str(r.url)]
     return {"status": r.status_code, "final_url": str(r.url), "hops": hops,
             "content_type": r.headers.get("content-type", ""),
             "server": r.headers.get("server", ""),
             "cf_mitigated": r.headers.get("cf-mitigated", ""),
             "body": r.content}
+
+
+_STUB_TARGET = re.compile(
+    rb"""(?:location(?:\.href)?\s*=\s*|location\.(?:replace|assign)\(\s*"""
+    rb"""|http-equiv\s*=\s*["']?refresh["']?[^>]*?url\s*=\s*)"""
+    rb"""["']?([^"'\s<>)]+)""", re.I)
+
+
+def stub_redirect(body: bytes) -> str | None:
+    """The URL a short HTML redirect stub sends the browser to (a script
+    setting `location`, or a meta refresh), else None. A PDF or a body over
+    STUB_MAX_BODY is never a stub. wmsc.lcsc.com/wmsc/upload/file/pdf/v2/...
+    answers 200 text/html with `<script>window.top.location.href='https://
+    datasheet.lcsc.com/datasheet/pdf/<hash>.pdf?productCode=C...'</script>`
+    (140 bytes), and that target is the PDF."""
+    body = body or b""
+    if body.startswith(b"%PDF") or len(body) > STUB_MAX_BODY:
+        return None
+    m = _STUB_TARGET.search(body)
+    if not m:
+        return None
+    target = m.group(1).decode("ascii", "replace")
+    return target if target.lower().startswith(("https://", "http://", "/")) \
+        else None
 
 
 def host_block(resp: dict, url: str) -> dict | None:
@@ -947,6 +984,10 @@ def fetch_source(root: Path, task: dict, url: str, tier: str,
             hint = (" - www.lcsc.com/datasheet URLs serve an HTML viewer "
                     "shell; use the wmsc.lcsc.com/wmsc/upload/file/pdf/v2/"
                     "lcsc/<stem>.pdf form (partslib.fix_datasheet_url)")
+        elif data[:1] == b"<" and len(data) <= STUB_MAX_BODY:
+            hint = (" - a short HTML page with no redirect this fetch "
+                    "recognises (stub_redirect); read its body and add the "
+                    "form it uses")
         _attempt("not-pdf", f"starts {head!r}")
         return {"status": "violations", "refused": "not_pdf", "url": url,
                 "error": f"expected a PDF, got bytes starting {head!r}{hint}",

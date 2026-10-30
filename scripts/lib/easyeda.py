@@ -212,6 +212,11 @@ def get(lcsc: str, cache_dir: Path | None = None, fetch: bool = True,
     path = cache_path(lcsc, cache_dir or DEFAULT_CACHE)
     if path.is_file():
         return parse(json.loads(path.read_text(encoding="utf-8")))
+    shared = cache_path(lcsc, shared_cache())
+    if shared != path and shared.is_file():
+        cached = json.loads(shared.read_text(encoding="utf-8"))
+        _keep(path, cached)  # into the board's cache, to be committed
+        return parse(cached)
     if not fetch:
         return None
     if _RATE_LIMITED:
@@ -239,6 +244,26 @@ def get(lcsc: str, cache_dir: Path | None = None, fetch: bool = True,
     cached = trim(raw, lcsc)
     if not cached["pads"]:
         return None
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(cached, indent=1), encoding="utf-8")
+    _keep(path, cached)
+    if shared != path:
+        _keep(shared, cached)
     return parse(cached)
+
+
+def shared_cache() -> Path:
+    """The cache every board shares (env.easyeda_cache with no board):
+    HWDE_EASYEDA_CACHE, else ~/.cache/hwde/easyeda. Read when a board's own
+    cache lacks a part, and filled beside it on every fetch."""
+    import env
+    return env.easyeda_cache()
+
+
+def _keep(path: Path, cached: dict) -> None:
+    """Write one model to a cache; a cache that cannot be written (a
+    read-only checkout) only costs the next run a fetch."""
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(cached, indent=1), encoding="utf-8")
+    except OSError as exc:
+        print(f"easyeda: could not cache {path.name} in {path.parent}: {exc}",
+              file=sys.stderr)

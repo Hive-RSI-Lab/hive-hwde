@@ -9,7 +9,7 @@ A tiny test board that lights one green LED from 5 V. It was the first board the
 - 2 layers, 1.6 mm FR-4, HASL, 13.4 x 10.5 mm, no mounting holes.
 - **J1**: a 2-pin 2.54 mm header. Pin 1 (square, marked +) is +5V and pin 2 (marked −) is GND. Use 4.75–5.25 V from a bench supply or a USB 5 V lead.
 - **C1**: 4.7 µF 16 V X5R 0603 across the input, next to J1.
-- **R1 + D1**: a 470 Ω resistor feeds a green 0603 LED (KT-0603G). The LED runs at 3.5–4.6 mA over the input range.
+- **R1 + D1**: a 470 Ω resistor feeds a green 0603 LED (KT-0603G). The LED runs at 3.5–5.6 mA over the input range and its forward-voltage spread, well under its 30 mA rating.
 - The bottom layer is a GND pour, and all parts are SMD on the top except J1.
 
 | Ref | Part | LCSC | JLC |
@@ -21,9 +21,10 @@ A tiny test board that lights one green LED from 5 V. It was the first board the
 
 ## Design decisions, and why
 
-- **R1 is 470 Ω, not the 680 Ω the architecture first proposed.** The LED's listed forward voltage is 3.1 V at 5 mA, and at that voltage 680 Ω gives only 2.4–2.8 mA. 470 Ω gives 3.5–4.6 mA. The 3.1 V figure comes from the LCSC listing because the datasheet wouldn't download. If the real forward voltage is as high as 3.4 V, the current at 4.75 V input drops to about 2.8 mA, and the LED is still lit.
+- **R1 is 470 Ω, not the 680 Ω the architecture first proposed.** The LED's forward voltage is 2.6–3.1 V at 5 mA (datasheet p. 3; the LCSC listing gives only the 3.1 V maximum, which the design used). At 3.1 V, 680 Ω gives only 2.4–2.8 mA. 470 Ω gives 3.5 mA at the worst corner (3.1 V LED, 4.75 V in) and 5.6 mA at the other (2.6 V, 5.25 V), against a 30 mA DC rating.
+- **D1's polarity was checked against its datasheet.** The datasheet (p. 2) numbers the LED's ends the other way round from the footprint. Its pin 1 is + (anode), and its pin 2 is − (cathode), the end with the green corner mark. The EasyEDA footprint and symbol call the cathode pad 1 (K), with the silk arrow and chamfer at that end. The board puts GND on pad 1 and R1 on pad 2, so the cathode goes to GND as it should. Check the JLC placement preview: the green mark should sit on the GND end.
 - **D1 is a JLC Extended part.** There is no Basic 0603 green LED, and the brief asked for 0603.
-- **There is no reverse-polarity protection, as the brief asked.** A swapped lead puts up to 5.25 V reverse across D1. The silk marks + and − at J1 to make that less likely.
+- **There is no reverse-polarity protection, as the brief asked.** A swapped lead puts up to 5.25 V reverse across D1, a little over its 5 V reverse rating (datasheet p. 3); R1 limits the current. The silk marks + and − at J1 to make that less likely.
 - **The size was earned by placement.** After placement the outline was fitted with a 2 mm margin, because at the time `board_edit --outline fit` didn't count reference text and smaller margins clipped it. It was then grown to 10.5 mm tall because the skill's JLC capabilities file gives 10 mm as the assembly minimum. `fit` now counts all silk: at its default 1 mm margin it gives 13.21 x 9.95 mm, which the 10 mm minimum would grow again, so the 13.4 x 10.5 mm outline stays. `board_edit --outline keep --report-only` finds no silk it clips.
 - **The 0603 courtyards are the pads plus 0.25 mm.** The EasyEDA footprints came with the body outline (±0.80 x ±0.40 mm) as the courtyard, inside the pads. They were first widened by hand; now `fpfix` rule E rebuilds them, on every `lib_pull` and on the placed copies with `fpfix.py --pcb`: C0603 ±1.35 x ±0.70, LED0603-RD ±1.40 x ±0.65, R0603 ±1.45 x ±0.70 mm. The verify suite's `check_courtyard` fails a board whose courtyards miss their pads.
 
@@ -53,6 +54,7 @@ From a checkout of hive-hwde, with the module's `bin/hwde` (see `docs/README.md`
 cd boards/hwde-led-test
 eval "$(../../bin/hwde env)"
 PYTHONPATH=$HWDE_SKILL/scripts:$HWDE_SKILL/scripts/lib $HWDE_PY kicad/gen/root.py   # schematic + decoupling.json, rebuilt in place (keeps its UUIDs)
+../../bin/hwde datasheet_extract --fetch .   # datasheets into parts/datasheets/, not committed; delete the PDFs before `hwde score`, whose pin digest counts every file here
 ../../bin/hwde lib_pull --parts parts/parts.json --project kicad   # 3D models (not committed); the parts in lib/ stay as they are
 for g in erc place drc_routed verify dfm; do f=kicad/hwde-led-test.kicad_pcb; [ $g = erc ] && f=kicad/hwde-led-test.kicad_sch; ../../bin/hwde gate --gate $g $f --workspace .; done
 ../../bin/hwde fab_export --pcb kicad/hwde-led-test.kicad_pcb --out-dir fab

@@ -7,5 +7,8 @@ boards/*/state_snapshots/
 # re-pull with `hwde lib_pull --parts parts/parts.json --project kicad`.
 boards/*/lib/*.3dshapes/
 .pytest_cache/
+# Part datasheets (manufacturers' material, NOTICE); index.json keeps each
+# one's URL and sha256. Re-fetch with `hwde datasheet_extract --fetch <board>`.
+boards/*/parts/datasheets/*.pdf
 # check_env.py --out from the tests
 _scratch/

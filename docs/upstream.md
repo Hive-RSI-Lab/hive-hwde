@@ -40,6 +40,12 @@ What moved where:
     and ground when decoupling.json records none for that rail.
   - `agents/part-sourcer.md` copies the parts_search row whole (attributes
     included) and writes no refdes.
+- Knowledge the Hive added (offer upstream once approved):
+  `reference/knowledge/checklists/led-indicator.yaml`, its covering record
+  `reference/knowledge/records/led-indicator-series-resistor-sizing.yaml`, and
+  `reference/knowledge/sources/APT1608SGC.pdf.not-redistributed.md`, the
+  sidecar (url + sha256) for the Kingbright datasheet they cite, which may
+  not be copied and so isn't in `docs/knowledge-sources.txt`.
 - Fixes the Hive made while building boards, worth offering upstream:
   `scripts/check_courtyard.py` (+ `checks.d/check_courtyard.yaml`), a verify
   check that fails a courtyard that misses its own pads; `scripts/lib/fpfix.py`
@@ -130,9 +136,23 @@ What moved where:
     (fail), the 3D loaders (warn) and KiCadRoutingTools (warn).
   - `scripts/route_critical.py`: the missing-KRT message names the shared
     layout.
+- `agents/board-guide.md` finds pdf-material-builder through
+  `HWDE_PDF_MATERIAL_BUILDER` before `~/.claude/skills/`, and says how to
+  build the guide on a machine without it.
+- `scripts/report_gen.py` (`STAGE_REPORTS`) and `scripts/guide_facts.py`
+  read a stage's report under the names runs have used as well as the
+  recipes' one, and `agents/dfm.md`, `recipes/dfm-check.md` and
+  `recipes/full-run.md` give each report's name (dfm.md's command lines also
+  had `--out` for `--out-dir` and `--parts-json` for `--parts`).
 
   `tests/test_env_lookups.py` covers these lookups (`$HWDE_PY -m pytest
   tests`). They're meant to go upstream.
+- Part datasheets: `scripts/lib/researchlib.py` `http_transport` follows a short HTML
+  redirect stub (`stub_redirect`) like an HTTP redirect, because
+  wmsc.lcsc.com now answers with one. `scripts/datasheet_extract.py`
+  gains `--fetch` to download a workspace's part datasheets through it.
+  `agents/datasheet-extractor.md` and `reference/recipes/research.md` say so.
+  Offer these upstream.
 
 `requirements.lock`, `LICENSE` and `NOTICE` came from upstream's repo root,
 and so did `docs/failure-modes.yaml` (`bench --scorecard-corpus` maps
@@ -156,3 +176,7 @@ Everything else that's specific to the Hive is in `bin/` and `docs/`:
   as one-file-per-symbol `.kicad_symdir` folders, and kicad-sch-api 0.5.6
   can't read those. It writes flat `power` and `Device` libraries into HOME,
   and `bin/hwde` points `KICAD_SYMBOL_DIR` at them.
+- `bin/house-style-fallback/housestyle.sty` defines the few house-style
+  commands report_gen writes, on stock LaTeX, for machines without the
+  pdf-material-builder skill.
+
