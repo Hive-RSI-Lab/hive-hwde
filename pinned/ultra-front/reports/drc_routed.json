@@ -1,0 +1,39 @@
+{
+  "script": "gate",
+  "gate": "drc_routed",
+  "phase": "P7",
+  "tool": "drc",
+  "input": "kicad/ultra-front.kicad_pcb",
+  "input_digest": "sexpr_no_uuid:9dc35130bd1201644f1dba4e1d6dba4d5d758a4ef90a725aa5368dd26825d2d0",
+  "status": "pass",
+  "criteria": {
+    "fail_severities": [
+      "error",
+      "warning"
+    ],
+    "max_count": 0
+  },
+  "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+  },
+  "failing_count": 0,
+  "failing": [],
+  "warnings_count": 0,
+  "warnings": [],
+  "record_result": {
+    "ok": true,
+    "recorded": true,
+    "workspace": ".",
+    "gate": "drc_routed",
+    "status": "pass",
+    "attempts": 8,
+    "inputs": {
+      "pcb": "sexpr_no_uuid:9dc35130bd1201644f1dba4e1d6dba4d5d758a4ef90a725aa5368dd26825d2d0",
+      "sch": "sexpr_no_uuid:69318992777b82dc5dd23661a4dd16426ba599fb23319c3c592fe4c361f3070e",
+      "pro": "json_canonical:6ec3460c19d0afad44f5ee8f381b2106e8306a7472ecb16ba7cde0f00a6b960a",
+      "dru": "text_eol:d18f79ca0214f0cdf238b7ed722efe8107bfba58ef12c2d95832240367064201"
+    }
+  }
+}

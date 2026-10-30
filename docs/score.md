@@ -12,12 +12,12 @@ the Hive measures, and needs to be argued for as one.
 
 Each board is a pin, `pinned/<board>.json`:
 
-- **lite-main** and **core**: the hi-fi receiver's boards, copied from
+- **lite-main**, **core** and **ultra-front**: the hi-fi receiver's boards, copied from
   hifi-receiver-2's `boards/<board>` at the commit the pin names, into
   `pinned/<board>/`. The copy leaves out what no gate reads: the fab
   package (except `fab/CPL.csv` and `fab/cpl_visual.json`, which dfm checks
-  against), renders and logs. Further boards (ultra-front) are added the
-  same way once they land.
+  against), renders and logs. Further boards are added the same way once
+  they land.
 - **hwde-led-test**: this repo's own board, `boards/hwde-led-test`, where it
   is.
 

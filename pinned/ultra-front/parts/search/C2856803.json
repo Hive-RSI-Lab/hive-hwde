@@ -1,0 +1,104 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C2856803",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C2856803",
+   "mpn": "FPC-05F-20PH20",
+   "brand": "XUNPU",
+   "description": "-25\u2103~+85\u2103 0.3mm 0.5mm 20P 2mm 500mA 50V Bottom Contact Hinged Lid Phosphor bronze Surface Mount, Right Angle Tin SMD,P=0.5mm,\u5367\u8d34 FFC, FPC (Flat Flexible) Connector Assemblies ROHS",
+   "package": "SMD,P=0.5mm,Surface Mount\uff0cRight Angle",
+   "category": "FFC, FPC (Flat Flexible) Connector Assemblies",
+   "type": "Extended",
+   "basic": false,
+   "stock": 106580,
+   "price": 0.1054,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.1054
+    },
+    {
+     "qty": 50,
+     "price": 0.0857
+    },
+    {
+     "qty": 150,
+     "price": 0.0757
+    },
+    {
+     "qty": 500,
+     "price": 0.0674
+    },
+    {
+     "qty": 2000,
+     "price": 0.0593
+    },
+    {
+     "qty": 4000,
+     "price": 0.0574
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2109221030_XUNPU-FPC-05F-20PH20_C2856803.pdf",
+   "url": "https://www.lcsc.com/product-detail/ffc-fpc-flat-flexible-connector-assemblies_xunpu-fpc-05f-20ph20_C2856803.html",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-25\u2103~+85\u2103"
+    },
+    {
+     "name": "Locking Feature",
+     "value": "Flip-Top"
+    },
+    {
+     "name": "Rated Voltage (Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Current Rating (Max)",
+     "value": "500mA"
+    },
+    {
+     "name": "Contact Plating",
+     "value": "Tin"
+    },
+    {
+     "name": "Contact Material",
+     "value": "Phosphor Bronze"
+    },
+    {
+     "name": "Pitch",
+     "value": "0.5mm"
+    },
+    {
+     "name": "Number of Contacts",
+     "value": "20P"
+    },
+    {
+     "name": "Contact Type",
+     "value": "Bottom Contact"
+    },
+    {
+     "name": "Height Above Board",
+     "value": "2mm"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Surface Mount, Right Angle"
+    },
+    {
+     "name": "FFC, FCB Thickness",
+     "value": "0.3mm"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

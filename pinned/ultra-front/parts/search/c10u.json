@@ -1,0 +1,73 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "10uF 0805 capacitor 25V",
+ "total": 142,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C15850",
+   "mpn": "CL21A106KAYNNNE",
+   "brand": "Samsung Electro-Mechanics",
+   "description": "10uF 25V X5R \u00b110% 0805 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "package": "0805",
+   "category": "Multilayer Ceramic Capacitors MLCC - SMD/SMT",
+   "type": "Basic",
+   "basic": true,
+   "stock": 8606297,
+   "price": 0.0438,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0438
+    },
+    {
+     "qty": 200,
+     "price": 0.0353
+    },
+    {
+     "qty": 600,
+     "price": 0.031
+    },
+    {
+     "qty": 2000,
+     "price": 0.0274
+    },
+    {
+     "qty": 10000,
+     "price": 0.0261
+    },
+    {
+     "qty": 20000,
+     "price": 0.0253
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL21A106KAYNNNE_C15850.pdf",
+   "url": "https://www.lcsc.com/product-detail/multilayer-ceramic-capacitors-mlcc-smd-smt_samsung-electro-mechanics-cl21a106kaynnne_C15850.html",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "25V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b110%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "10uF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X5R"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0,
+ "pick": "basic-passive"
+}

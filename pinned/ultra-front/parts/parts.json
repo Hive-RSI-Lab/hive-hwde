@@ -1,0 +1,1531 @@
+{
+ "parts": [
+  {
+   "ref_prefix_hint": "J",
+   "block": "B1 core link",
+   "mpn": "FPC-05F-20PH20",
+   "lcsc": "C2856803",
+   "value": "FPC-05F-20PH20",
+   "package": "SMD,P=0.5mm,Surface Mount，Right Angle",
+   "basic": false,
+   "stock": 106580,
+   "price": 0.1054,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2109221030_XUNPU-FPC-05F-20PH20_C2856803.pdf",
+   "brand": "XUNPU",
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.1054
+    },
+    {
+     "qty": 50,
+     "price": 0.0857
+    },
+    {
+     "qty": 150,
+     "price": 0.0757
+    },
+    {
+     "qty": 500,
+     "price": 0.0674
+    },
+    {
+     "qty": 2000,
+     "price": 0.0593
+    },
+    {
+     "qty": 4000,
+     "price": 0.0574
+    }
+   ],
+   "alternates": [],
+   "role": "20-pin 0.5 mm FFC connector to the core board, bottom contact, hinged lid",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-25℃~+85℃"
+    },
+    {
+     "name": "Locking Feature",
+     "value": "Flip-Top"
+    },
+    {
+     "name": "Rated Voltage (Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Current Rating (Max)",
+     "value": "500mA"
+    },
+    {
+     "name": "Contact Plating",
+     "value": "Tin"
+    },
+    {
+     "name": "Contact Material",
+     "value": "Phosphor Bronze"
+    },
+    {
+     "name": "Pitch",
+     "value": "0.5mm"
+    },
+    {
+     "name": "Number of Contacts",
+     "value": "20P"
+    },
+    {
+     "name": "Contact Type",
+     "value": "Bottom Contact"
+    },
+    {
+     "name": "Height Above Board",
+     "value": "2mm"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Surface Mount, Right Angle"
+    },
+    {
+     "name": "FFC, FCB Thickness",
+     "value": "0.3mm"
+    }
+   ],
+   "description": "-25℃~+85℃ 0.3mm 0.5mm 20P 2mm 500mA 50V Bottom Contact Hinged Lid Phosphor bronze Surface Mount, Right Angle Tin SMD,P=0.5mm,卧贴 FFC, FPC (Flat Flexible) Connector Assemblies ROHS",
+   "refdes": [
+    "J1"
+   ]
+  },
+  {
+   "ref_prefix_hint": "J",
+   "block": "B2 LCD",
+   "mpn": "FPC-05FB-12PH20",
+   "lcsc": "C2856829",
+   "value": "FPC-05FB-12PH20",
+   "package": "SMD,P=0.5mm,Surface Mount，Right Angle",
+   "basic": false,
+   "stock": 18682,
+   "price": 0.1619,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2109221030_XUNPU-FPC-05FB-12PH20_C2856829.pdf",
+   "brand": "XUNPU",
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.1619
+    },
+    {
+     "qty": 50,
+     "price": 0.1311
+    },
+    {
+     "qty": 150,
+     "price": 0.1157
+    },
+    {
+     "qty": 1500,
+     "price": 0.0965
+    },
+    {
+     "qty": 3000,
+     "price": 0.0872
+    },
+    {
+     "qty": 4500,
+     "price": 0.0826
+    }
+   ],
+   "alternates": [
+    {
+     "mpn": "0.5K-HX-12PWB",
+     "lcsc": "C2919494"
+    }
+   ],
+   "role": "12-pin 0.5 mm FPC connector for the HS20HS072RX LCD tail, double-sided contact",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-25℃~+85℃"
+    },
+    {
+     "name": "Locking Feature",
+     "value": "Flip-Top"
+    },
+    {
+     "name": "Rated Voltage (Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Current Rating (Max)",
+     "value": "500mA"
+    },
+    {
+     "name": "Contact Plating",
+     "value": "Tin"
+    },
+    {
+     "name": "Contact Material",
+     "value": "Phosphor Bronze"
+    },
+    {
+     "name": "Pitch",
+     "value": "0.5mm"
+    },
+    {
+     "name": "Number of Contacts",
+     "value": "12P"
+    },
+    {
+     "name": "Contact Type",
+     "value": "Double-Sided Contacts, Top and Bottom Entry"
+    },
+    {
+     "name": "Height Above Board",
+     "value": "2mm"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Surface Mount, Right Angle"
+    },
+    {
+     "name": "FFC, FCB Thickness",
+     "value": "0.3mm"
+    }
+   ],
+   "description": "-25℃~+85℃ 0.3mm 0.5mm 12P 2mm 500mA 50V Double-Sided Contacts, Top and Bottom Entry Hinged Lid Phosphor bronze Surface Mount, Right Angle Tin SMD,P=0.5mm,卧贴 FFC, FPC (Flat Flexible) Connector Assemblies ROHS",
+   "refdes": [
+    "J2"
+   ]
+  },
+  {
+   "ref_prefix_hint": "U",
+   "block": "B4 expander",
+   "mpn": "TCA9535PWR(UMW)",
+   "lcsc": "C22396388",
+   "value": "TCA9535PWR(UMW)",
+   "package": "TSSOP-24",
+   "basic": false,
+   "stock": 15850,
+   "price": 0.4946,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2410010333_UMW-Youtai-Semiconductor-Co---Ltd--TCA9535PWR-UMW_C22396388.pdf",
+   "brand": "UMW(Youtai Semiconductor Co., Ltd.)",
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.4946
+    },
+    {
+     "qty": 10,
+     "price": 0.3718
+    },
+    {
+     "qty": 30,
+     "price": 0.3128
+    },
+    {
+     "qty": 100,
+     "price": 0.2588
+    },
+    {
+     "qty": 500,
+     "price": 0.2441
+    },
+    {
+     "qty": 1000,
+     "price": 0.2359
+    }
+   ],
+   "alternates": [
+    {
+     "mpn": "TCA9535PWR (TI)",
+     "lcsc": "C130204"
+    }
+   ],
+   "role": "TCA9535 16-bit I2C GPIO expander, 0x27, open-drain INT",
+   "attributes": [
+    {
+     "name": "Number of Supporting Devices",
+     "value": "8"
+    },
+    {
+     "name": "Clock Frequency",
+     "value": "2.4MHz"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-40℃~+85℃"
+    },
+    {
+     "name": "Interrupt Output",
+     "value": "Interrupt Output"
+    },
+    {
+     "name": "Output Logic Level - High",
+     "value": "4.2V"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "1.4V~5.5V"
+    },
+    {
+     "name": "Output Type",
+     "value": "Open-drain"
+    },
+    {
+     "name": "Current - Output High(IOH)",
+     "value": "10mA"
+    },
+    {
+     "name": "Number of I/O",
+     "value": "16"
+    },
+    {
+     "name": "Features",
+     "value": "Built-in LED driver"
+    },
+    {
+     "name": "Current - Output Low(IOL)",
+     "value": "25mA"
+    },
+    {
+     "name": "Quiescent Supply Current",
+     "value": "500nA"
+    },
+    {
+     "name": "Interface",
+     "value": "I2C"
+    }
+   ],
+   "description": "-40℃~+85℃ 1.4V~5.5V 10mA 16 2.4MHz 25mA 4.2V 500nA 8 Built-in LED driver I2C Interrupt Output Open-drain TSSOP-24 I/O Expanders ROHS",
+   "refdes": [
+    "U1"
+   ]
+  },
+  {
+   "ref_prefix_hint": "U",
+   "block": "B7 IR",
+   "mpn": "IRM-H638T/TR2",
+   "lcsc": "C91447",
+   "value": "IRM-H638T/TR2",
+   "package": "SMD-4P,5x4mm",
+   "basic": false,
+   "stock": 138216,
+   "price": 0.2599,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1810121714_Everlight-Elec-IRM-H638T-TR2_C91447.pdf",
+   "brand": "Everlight Elec",
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.2599
+    },
+    {
+     "qty": 50,
+     "price": 0.1989
+    },
+    {
+     "qty": 150,
+     "price": 0.1691
+    },
+    {
+     "qty": 1500,
+     "price": 0.1435
+    },
+    {
+     "qty": 3000,
+     "price": 0.1361
+    },
+    {
+     "qty": 4500,
+     "price": 0.1317
+    }
+   ],
+   "alternates": [],
+   "role": "38 kHz IR remote receiver",
+   "attributes": [
+    {
+     "name": "Frequency - Center",
+     "value": "38kHz"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-25℃~+85℃"
+    },
+    {
+     "name": "Viewing Angle",
+     "value": "45°"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "2.7V~5.5V"
+    },
+    {
+     "name": "Current - Supply",
+     "value": "1.2mA"
+    }
+   ],
+   "description": "-25℃~+85℃ 1.2mA 2.7V~5.5V 38kHz 45°、45° SMD-4P,5x4mm Infrared Remote Receiver (IRM) ROHS",
+   "refdes": [
+    "U2"
+   ]
+  },
+  {
+   "ref_prefix_hint": "SW",
+   "block": "B5 encoder",
+   "mpn": "EC11E1834403",
+   "lcsc": "C361165",
+   "value": "EC11E1834403",
+   "package": "Plugin",
+   "basic": false,
+   "stock": 3224,
+   "price": 1.6001,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_ALPSALPINE-EC11E1834403_C361165.pdf",
+   "brand": "ALPSALPINE",
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 1.6001
+    },
+    {
+     "qty": 10,
+     "price": 1.474
+    },
+    {
+     "qty": 30,
+     "price": 1.3953
+    },
+    {
+     "qty": 120,
+     "price": 1.2103
+    },
+    {
+     "qty": 480,
+     "price": 1.1743
+    },
+    {
+     "qty": 960,
+     "price": 1.1595
+    }
+   ],
+   "alternates": [
+    {
+     "mpn": "EC11E15244B2",
+     "lcsc": "C470754"
+    }
+   ],
+   "role": "EC11 rotary encoder with push switch, THT",
+   "attributes": [
+    {
+     "name": "Number of Detents / Pulses (Incremental)",
+     "value": "0/18"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-40℃~+85℃"
+    },
+    {
+     "name": "Rated Voltage (Max)",
+     "value": "5V"
+    },
+    {
+     "name": "Current Rating (Max)",
+     "value": "10mA"
+    },
+    {
+     "name": "Encoder Type",
+     "value": "Incremental"
+    },
+    {
+     "name": "Output Form",
+     "value": "Two-phase output"
+    },
+    {
+     "name": "Shaft Reset",
+     "value": "Non-self-resetting"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Straight"
+    },
+    {
+     "name": "Whether to Press Down",
+     "value": "Support"
+    }
+   ],
+   "description": "-40℃~+85℃ 10mA 5V Non-resettable Straight Support Two-phase output 插件 Rotary Encoders ROHS",
+   "refdes": [
+    "SW4"
+   ]
+  },
+  {
+   "ref_prefix_hint": "SW",
+   "block": "B6 buttons",
+   "mpn": "TS-1187A-B-A-B",
+   "lcsc": "C318884",
+   "value": "TS-1187A-B-A-B",
+   "package": "SMD-4P,5.1x5.1mm",
+   "basic": true,
+   "stock": 1151147,
+   "price": 0.0207,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_XKB-Connection-TS-1187A-B-A-B_C318884.pdf",
+   "brand": "XKB Connection",
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0207
+    },
+    {
+     "qty": 200,
+     "price": 0.016
+    },
+    {
+     "qty": 600,
+     "price": 0.0139
+    },
+    {
+     "qty": 4000,
+     "price": 0.0121
+    },
+    {
+     "qty": 8000,
+     "price": 0.0115
+    },
+    {
+     "qty": 20000,
+     "price": 0.0111
+    }
+   ],
+   "alternates": [],
+   "role": "5.1 mm SMD tact switch, 1.5 mm, JLC basic",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-30℃~+85℃"
+    },
+    {
+     "name": "Contact Current",
+     "value": "50mA"
+    },
+    {
+     "name": "Voltage Rating",
+     "value": "12V"
+    },
+    {
+     "name": "Actuator Style",
+     "value": "Round Button"
+    },
+    {
+     "name": "with Bracket",
+     "value": "Without Bracket"
+    },
+    {
+     "name": "Switch Height",
+     "value": "1.5mm"
+    },
+    {
+     "name": "Circuit",
+     "value": "SPST"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Surface Mount,Vertical"
+    },
+    {
+     "name": "Actuator/Cap Color",
+     "value": "Gold"
+    },
+    {
+     "name": "Operating Force",
+     "value": "1.6N"
+    },
+    {
+     "name": "Length",
+     "value": "5.1mm"
+    },
+    {
+     "name": "Life",
+     "value": "100,000 cycles"
+    },
+    {
+     "name": "With Lamp",
+     "value": "No"
+    },
+    {
+     "name": "Width",
+     "value": "5.1mm"
+    }
+   ],
+   "description": "-30℃~+85℃ 1.5mm 1.6N 100,000 cycles 12V 5.1mm 5.1mm 50mA Gold No Round Button SPST Surface Mount,Vertical Without Bracket SMD-4P,5.1x5.1mm Tactile Switches ROHS",
+   "refdes": [
+    "SW1",
+    "SW2",
+    "SW3"
+   ]
+  },
+  {
+   "ref_prefix_hint": "D",
+   "block": "B8 status LED",
+   "mpn": "TJ-S1615SW6TGLCCYRGB-A5",
+   "lcsc": "C273610",
+   "value": "TJ-S1615SW6TGLCCYRGB-A5",
+   "package": "SMD-4P,1.6x1.5mm",
+   "basic": false,
+   "stock": 27311,
+   "price": 0.0993,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1810231225_TOGIALED-TJ-S1615SW6TGLCCYRGB-A5_C273610.pdf",
+   "brand": "TOGIALED",
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0993
+    },
+    {
+     "qty": 50,
+     "price": 0.0811
+    },
+    {
+     "qty": 150,
+     "price": 0.0721
+    },
+    {
+     "qty": 500,
+     "price": 0.0654
+    },
+    {
+     "qty": 2500,
+     "price": 0.0518
+    },
+    {
+     "qty": 4000,
+     "price": 0.049
+    }
+   ],
+   "alternates": [],
+   "role": "RGB LED 1615, common anode",
+   "attributes": [
+    {
+     "name": "Power(Watts) - R",
+     "value": "72mW"
+    },
+    {
+     "name": "Viewing Angle",
+     "value": "120°"
+    },
+    {
+     "name": "Installation Method",
+     "value": "Top-mount"
+    },
+    {
+     "name": "Height",
+     "value": "0.6mm"
+    },
+    {
+     "name": "Width",
+     "value": "1.5mm"
+    },
+    {
+     "name": "Forward Current - R",
+     "value": "20mA"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-40℃~+80℃"
+    },
+    {
+     "name": "Luminous Intensity - B",
+     "value": "120mcd"
+    },
+    {
+     "name": "Forward Voltage(Vf) - B",
+     "value": "2.8V~3.6V"
+    },
+    {
+     "name": "Peak Wavelength - B",
+     "value": "460nm"
+    },
+    {
+     "name": "Forward Voltage(Vf) - G",
+     "value": "2.8V~3.6V"
+    },
+    {
+     "name": "Dominant Wavelength - B",
+     "value": "460nm~470nm"
+    },
+    {
+     "name": "Forward Current - G",
+     "value": "20mA"
+    },
+    {
+     "name": "Luminous Intensity - G",
+     "value": "500mcd"
+    },
+    {
+     "name": "Power(Watts) - G",
+     "value": "111mW"
+    },
+    {
+     "name": "Forward Current - B",
+     "value": "20mA"
+    },
+    {
+     "name": "Luminous Intensity - R",
+     "value": "120mcd"
+    },
+    {
+     "name": "Forward Voltage(Vf) - R",
+     "value": "1.8V~2.4V"
+    },
+    {
+     "name": "Power(Watts) - B",
+     "value": "111mW"
+    },
+    {
+     "name": "Peak Wavelength - R",
+     "value": "635nm"
+    },
+    {
+     "name": "Length",
+     "value": "1.6mm"
+    },
+    {
+     "name": "Dominant Wavelength - G",
+     "value": "520nm~530nm"
+    },
+    {
+     "name": "Diode Configuration",
+     "value": "Common Anode"
+    },
+    {
+     "name": "Dominant Wavelength - R",
+     "value": "620nm~630nm"
+    },
+    {
+     "name": "Lens Color",
+     "value": "Water Clear"
+    },
+    {
+     "name": "Peak Wavelength - G",
+     "value": "520nm"
+    }
+   ],
+   "description": "-40℃~+80℃ 0.6mm 1.5mm 1.6mm 120° B:120mcd、G:500mcd、R:120mcd Common Anode G:520nm~530nm、B:460nm~470nm、R:620nm~630nm G:520nm、B:460nm、R:635nm R:1.8V~2.4V、B:2.8V~3.6V、G:2.8V~3.6V R:20mA、G:20mA、B:20mA R:72mW、G:111mW、B:111mW Top-mount Water Clear SMD-4P,1.6x1.5mm RGB LEDs ROHS",
+   "refdes": [
+    "D1"
+   ]
+  },
+  {
+   "ref_prefix_hint": "Q",
+   "block": "B3 backlight",
+   "mpn": "AO3400A",
+   "lcsc": "C20917",
+   "value": "AO3400A",
+   "package": "SOT-23",
+   "basic": true,
+   "stock": 1120691,
+   "price": 0.089,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1811081213_Alpha---Omega-Semicon-AO3400A_C20917.pdf",
+   "brand": "Alpha & Omega Semicon",
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.089
+    },
+    {
+     "qty": 50,
+     "price": 0.0718
+    },
+    {
+     "qty": 150,
+     "price": 0.0629
+    },
+    {
+     "qty": 500,
+     "price": 0.0556
+    },
+    {
+     "qty": 3000,
+     "price": 0.0531
+    },
+    {
+     "qty": 6000,
+     "price": 0.0513
+    }
+   ],
+   "alternates": [],
+   "role": "N-MOSFET low-side backlight switch",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+150℃"
+    },
+    {
+     "name": "Vgs",
+     "value": "±12V"
+    },
+    {
+     "name": "Gate Charge(Qg)",
+     "value": "7nC@10V"
+    },
+    {
+     "name": "Reverse Transfer Capacitance (Crss@Vds)",
+     "value": "50pF"
+    },
+    {
+     "name": "Current - Continuous Drain(Id)",
+     "value": "5.7A"
+    },
+    {
+     "name": "Drain to Source Voltage",
+     "value": "30V"
+    },
+    {
+     "name": "Output Capacitance(Coss)",
+     "value": "75pF"
+    },
+    {
+     "name": "RDS(on)",
+     "value": "48mΩ@2.5V"
+    },
+    {
+     "name": "Input Capacitance(Ciss)",
+     "value": "630pF"
+    },
+    {
+     "name": "Type",
+     "value": "N-Channel"
+    },
+    {
+     "name": "Gate Threshold Voltage (Vgs(th))",
+     "value": "1.45V"
+    },
+    {
+     "name": "Number",
+     "value": "1 N-channel"
+    },
+    {
+     "name": "Pd - Power Dissipation",
+     "value": "1.4W"
+    }
+   ],
+   "description": "-55℃~+150℃ 1 N-channel 1.45V 1.4W 30V 48mΩ@2.5V 5.7A 50pF 630pF 75pF 7nC@10V N-Channel SOT-23 MOSFETs ROHS",
+   "refdes": [
+    "Q1"
+   ]
+  },
+  {
+   "ref_prefix_hint": "R",
+   "block": "pull-ups",
+   "mpn": "0603WAF1002T5E",
+   "lcsc": "C25804",
+   "value": "0603WAF1002T5E",
+   "package": "0603",
+   "basic": true,
+   "stock": 38093769,
+   "price": 0.0018,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010045_UNI-ROYAL-Uniroyal-Elec-0603WAF1002T5E_C25804.pdf",
+   "brand": "UNI-ROYAL(Uniroyal Elec)",
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0018
+    },
+    {
+     "qty": 1000,
+     "price": 0.0015
+    },
+    {
+     "qty": 5000,
+     "price": 0.0013
+    },
+    {
+     "qty": 10000,
+     "price": 0.0012
+    },
+    {
+     "qty": 50000,
+     "price": 0.0011
+    },
+    {
+     "qty": 50200,
+     "price": 0.0011
+    }
+   ],
+   "alternates": [],
+   "role": "10 k pull-ups (inputs, INT, LCD_RST, IR out); R19 pulls the unused expander pins down",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "10kΩ"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "100mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "75V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 100mW 10kΩ 75V Thick Film Resistor ±1% ±100ppm/℃ 0603 Chip Resistor - Surface Mount ROHS",
+   "refdes": [
+    "R1",
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "R6",
+    "R7",
+    "R8",
+    "R9",
+    "R19"
+   ]
+  },
+  {
+   "ref_prefix_hint": "R",
+   "block": "B3 backlight",
+   "mpn": "0603WAF1003T5E",
+   "lcsc": "C25803",
+   "value": "0603WAF1003T5E",
+   "package": "0603",
+   "basic": true,
+   "stock": 17338199,
+   "price": 0.0031,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010045_UNI-ROYAL-Uniroyal-Elec-0603WAF1003T5E_C25803.pdf",
+   "brand": "UNI-ROYAL(Uniroyal Elec)",
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0031
+    },
+    {
+     "qty": 1000,
+     "price": 0.0024
+    },
+    {
+     "qty": 5000,
+     "price": 0.0021
+    },
+    {
+     "qty": 10000,
+     "price": 0.0017
+    },
+    {
+     "qty": 50000,
+     "price": 0.0016
+    },
+    {
+     "qty": 50200,
+     "price": 0.0016
+    }
+   ],
+   "alternates": [],
+   "role": "Q1 gate pull-down",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "100kΩ"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "100mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "75V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 100kΩ 100mW 75V Thick Film Resistor ±1% ±100ppm/℃ 0603 Chip Resistor - Surface Mount ROHS",
+   "refdes": [
+    "R11"
+   ]
+  },
+  {
+   "ref_prefix_hint": "R",
+   "block": "B7/B3",
+   "mpn": "0603WAF1000T5E",
+   "lcsc": "C22775",
+   "value": "0603WAF1000T5E",
+   "package": "0603",
+   "basic": true,
+   "stock": 10118017,
+   "price": 0.0023,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2411221126_UNI-ROYAL-Uniroyal-Elec-0603WAF1000T5E_C22775.pdf",
+   "brand": "UNI-ROYAL(Uniroyal Elec)",
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0023
+    },
+    {
+     "qty": 1000,
+     "price": 0.0019
+    },
+    {
+     "qty": 5000,
+     "price": 0.0016
+    },
+    {
+     "qty": 10000,
+     "price": 0.0013
+    },
+    {
+     "qty": 50000,
+     "price": 0.0012
+    },
+    {
+     "qty": 50200,
+     "price": 0.0012
+    }
+   ],
+   "alternates": [],
+   "role": "IR supply filter; Q1 gate series",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "100Ω"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "100mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "75V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 100mW 100Ω 75V Thick Film Resistor ±1% ±100ppm/℃ 0603 Chip Resistor - Surface Mount ROHS",
+   "refdes": [
+    "R10",
+    "R12"
+   ]
+  },
+  {
+   "ref_prefix_hint": "R",
+   "block": "B8 status LED",
+   "mpn": "0603WAF1001T5E",
+   "lcsc": "C21190",
+   "value": "0603WAF1001T5E",
+   "package": "0603",
+   "basic": true,
+   "stock": 32908011,
+   "price": 0.0017,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010130_UNI-ROYAL-Uniroyal-Elec-0603WAF1001T5E_C21190.pdf",
+   "brand": "UNI-ROYAL(Uniroyal Elec)",
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0017
+    },
+    {
+     "qty": 1000,
+     "price": 0.0014
+    },
+    {
+     "qty": 5000,
+     "price": 0.0012
+    },
+    {
+     "qty": 10000,
+     "price": 0.001
+    },
+    {
+     "qty": 50000,
+     "price": 0.0009
+    },
+    {
+     "qty": 50200,
+     "price": 0.0009
+    }
+   ],
+   "alternates": [],
+   "role": "red cathode resistor",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "1kΩ"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "100mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "75V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 100mW 1kΩ 75V Thick Film Resistor ±1% ±100ppm/℃ 0603 Chip Resistor - Surface Mount ROHS",
+   "refdes": [
+    "R14"
+   ]
+  },
+  {
+   "ref_prefix_hint": "R",
+   "block": "B8 status LED",
+   "mpn": "0603WAF6800T5E",
+   "lcsc": "C23228",
+   "value": "0603WAF6800T5E",
+   "package": "0603",
+   "basic": true,
+   "stock": 1941993,
+   "price": 0.0021,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010100_UNI-ROYAL-Uniroyal-Elec-0603WAF6800T5E_C23228.pdf",
+   "brand": "UNI-ROYAL(Uniroyal Elec)",
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0021
+    },
+    {
+     "qty": 1000,
+     "price": 0.0017
+    },
+    {
+     "qty": 5000,
+     "price": 0.0014
+    },
+    {
+     "qty": 10000,
+     "price": 0.0013
+    },
+    {
+     "qty": 50000,
+     "price": 0.0011
+    },
+    {
+     "qty": 50200,
+     "price": 0.0011
+    }
+   ],
+   "alternates": [],
+   "role": "green/blue cathode resistors",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "680Ω"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "100mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "75V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 100mW 680Ω 75V Thick Film Resistor ±1% ±100ppm/℃ 0603 Chip Resistor - Surface Mount ROHS",
+   "refdes": [
+    "R15",
+    "R16"
+   ]
+  },
+  {
+   "ref_prefix_hint": "R",
+   "block": "B3 backlight",
+   "mpn": "0603WAF1200T5E",
+   "lcsc": "C22787",
+   "value": "0603WAF1200T5E",
+   "package": "0603",
+   "basic": true,
+   "stock": 2247635,
+   "price": 0.0019,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010130_UNI-ROYAL-Uniroyal-Elec-0603WAF1200T5E_C22787.pdf",
+   "brand": "UNI-ROYAL(Uniroyal Elec)",
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0019
+    },
+    {
+     "qty": 1000,
+     "price": 0.0015
+    },
+    {
+     "qty": 5000,
+     "price": 0.0013
+    },
+    {
+     "qty": 10000,
+     "price": 0.001
+    },
+    {
+     "qty": 50000,
+     "price": 0.0009
+    },
+    {
+     "qty": 50200,
+     "price": 0.0009
+    }
+   ],
+   "alternates": [],
+   "role": "backlight series resistors, three 120 R in parallel (40 R)",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "120Ω"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "100mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "75V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 100mW 120Ω 75V Thick Film Resistor ±1% ±100ppm/℃ 0603 Chip Resistor - Surface Mount ROHS",
+   "refdes": [
+    "R13",
+    "R17",
+    "R18"
+   ]
+  },
+  {
+   "ref_prefix_hint": "C",
+   "block": "decoupling",
+   "mpn": "CC0603KRX7R9BB104",
+   "lcsc": "C14663",
+   "value": "CC0603KRX7R9BB104",
+   "package": "0603",
+   "basic": true,
+   "stock": 39990538,
+   "price": 0.0102,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2211101700_YAGEO-CC0603KRX7R9BB104_C14663.pdf",
+   "brand": "YAGEO",
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0102
+    },
+    {
+     "qty": 500,
+     "price": 0.0079
+    },
+    {
+     "qty": 1500,
+     "price": 0.0067
+    },
+    {
+     "qty": 4000,
+     "price": 0.0059
+    },
+    {
+     "qty": 24000,
+     "price": 0.0053
+    },
+    {
+     "qty": 48000,
+     "price": 0.0049
+    }
+   ],
+   "alternates": [],
+   "role": "100 nF at U1 VCC and LCD VCC",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±10%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "100nF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X7R"
+    }
+   ],
+   "description": "100nF 50V X7R ±10% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "refdes": [
+    "C1",
+    "C4"
+   ]
+  },
+  {
+   "ref_prefix_hint": "C",
+   "block": "B1 core link",
+   "mpn": "CL21A106KAYNNNE",
+   "lcsc": "C15850",
+   "value": "CL21A106KAYNNNE",
+   "package": "0805",
+   "basic": true,
+   "stock": 8606297,
+   "price": 0.0438,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL21A106KAYNNNE_C15850.pdf",
+   "brand": "Samsung Electro-Mechanics",
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0438
+    },
+    {
+     "qty": 200,
+     "price": 0.0353
+    },
+    {
+     "qty": 600,
+     "price": 0.031
+    },
+    {
+     "qty": 2000,
+     "price": 0.0274
+    },
+    {
+     "qty": 10000,
+     "price": 0.0261
+    },
+    {
+     "qty": 20000,
+     "price": 0.0253
+    }
+   ],
+   "alternates": [],
+   "role": "10 uF 25 V bulk on +3V3 and +5V at J1",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "25V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±10%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "10uF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X5R"
+    }
+   ],
+   "description": "10uF 25V X5R ±10% 0805 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "refdes": [
+    "C2",
+    "C3"
+   ]
+  },
+  {
+   "ref_prefix_hint": "C",
+   "block": "B7 IR",
+   "mpn": "CL10A475KO8NNNC",
+   "lcsc": "C19666",
+   "value": "CL10A475KO8NNNC",
+   "package": "0603",
+   "basic": true,
+   "stock": 3106081,
+   "price": 0.0169,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL10A475KO8NNNC_C19666.pdf",
+   "brand": "Samsung Electro-Mechanics",
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0169
+    },
+    {
+     "qty": 100,
+     "price": 0.0128
+    },
+    {
+     "qty": 300,
+     "price": 0.0109
+    },
+    {
+     "qty": 1000,
+     "price": 0.0095
+    },
+    {
+     "qty": 4000,
+     "price": 0.0089
+    },
+    {
+     "qty": 8000,
+     "price": 0.0086
+    }
+   ],
+   "alternates": [],
+   "role": "IR supply filter cap (datasheet >= 2.2 uF)",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "16V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±10%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "4.7uF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X5R"
+    }
+   ],
+   "description": "16V 4.7uF X5R ±10% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "refdes": [
+    "C5"
+   ]
+  },
+  {
+   "ref_prefix_hint": "C",
+   "block": "B5 encoder",
+   "mpn": "0603B103K500NT",
+   "lcsc": "C57112",
+   "value": "0603B103K500NT",
+   "package": "0603",
+   "basic": true,
+   "stock": 5754222,
+   "price": 0.0074,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_FH--Guangdong-Fenghua-Advanced-Tech-0603B103K500NT_C57112.pdf",
+   "brand": "FH (Guangdong Fenghua Advanced Tech)",
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0074
+    },
+    {
+     "qty": 1000,
+     "price": 0.0057
+    },
+    {
+     "qty": 4000,
+     "price": 0.005
+    },
+    {
+     "qty": 8000,
+     "price": 0.0045
+    },
+    {
+     "qty": 48000,
+     "price": 0.0042
+    },
+    {
+     "qty": 100000,
+     "price": 0.0041
+    }
+   ],
+   "alternates": [],
+   "role": "encoder A/B debounce",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±10%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "10nF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X7R"
+    }
+   ],
+   "description": "10nF 50V X7R ±10% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "refdes": [
+    "C6",
+    "C7"
+   ]
+  }
+ ]
+}

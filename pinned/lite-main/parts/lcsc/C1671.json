@@ -1,0 +1,212 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C1671",
+ "total": 13,
+ "count": 3,
+ "results": [
+  {
+   "lcsc": "C1671",
+   "mpn": "CL10C470JB8NNNC",
+   "brand": "Samsung Electro-Mechanics",
+   "description": "47pF 50V C0G \u00b15% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "package": "0603",
+   "category": "Multilayer Ceramic Capacitors MLCC - SMD/SMT",
+   "type": "Basic",
+   "basic": true,
+   "stock": 840548,
+   "price": 0.0074,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0074
+    },
+    {
+     "qty": 1000,
+     "price": 0.006
+    },
+    {
+     "qty": 4000,
+     "price": 0.005
+    },
+    {
+     "qty": 8000,
+     "price": 0.0046
+    },
+    {
+     "qty": 48000,
+     "price": 0.0041
+    },
+    {
+     "qty": 100000,
+     "price": 0.0039
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL10C470JB8NNNC_C1671.pdf",
+   "url": "https://www.lcsc.com/product-detail/multilayer-ceramic-capacitors-mlcc-smd-smt_samsung-electro-mechanics-cl10c470jb8nnnc_C1671.html",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b15%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "47pF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "C0G"
+    }
+   ],
+   "rank": 0
+  },
+  {
+   "lcsc": "C2129052",
+   "mpn": "MCS04020C1671DE000",
+   "brand": "Vishay Intertech",
+   "description": "-55\u2103~+155\u2103 1.67k\u03a9 100mW 50V Thin Film Resistor \u00b10.5% \u00b150ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+   "package": "0402",
+   "category": "Chip Resistor - Surface Mount",
+   "type": "Extended",
+   "basic": false,
+   "stock": 0,
+   "price": 0.0233,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0233
+    },
+    {
+     "qty": 10,
+     "price": 0.0233
+    },
+    {
+     "qty": 12,
+     "price": 0.0233
+    },
+    {
+     "qty": 200,
+     "price": 0.009
+    },
+    {
+     "qty": 500,
+     "price": 0.0087
+    },
+    {
+     "qty": 1000,
+     "price": 0.0086
+    }
+   ],
+   "min_qty": 1050,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Vishay-Intertech-MCS04020C1671DE000_C2129052.pdf",
+   "url": "https://www.lcsc.com/product-detail/chip-resistor-surface-mount_vishay-intertech-mcs04020c1671de000_C2129052.html",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "1.67k\u03a9"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+155\u2103"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "100mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thin Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b10.5%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "\u00b150ppm/\u2103"
+    }
+   ],
+   "rank": 1
+  },
+  {
+   "lcsc": "C1397625",
+   "mpn": "RN55C1671FB14",
+   "brand": "Vishay Intertech",
+   "description": "-65\u2103~+175\u2103 1.67k\u03a9 125mW Metal Film Resistor \u00b11% \u00b150ppm/\u2103 \u63d2\u4ef6,D2.3xL6.1mm Through Hole Resistors",
+   "package": "Plugin,D2.3xL6.1mm",
+   "category": "Through Hole Resistors",
+   "type": "Extended",
+   "basic": false,
+   "stock": 0,
+   "price": 0.1826,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.1826
+    },
+    {
+     "qty": 10,
+     "price": 0.1826
+    },
+    {
+     "qty": 30,
+     "price": 0.1826
+    },
+    {
+     "qty": 200,
+     "price": 0.0706
+    },
+    {
+     "qty": 500,
+     "price": 0.0682
+    },
+    {
+     "qty": 1000,
+     "price": 0.067
+    }
+   ],
+   "min_qty": 50,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Vishay-Intertech-RN55C1671FB14_C1397625.pdf",
+   "url": "https://www.lcsc.com/product-detail/through-hole-resistors_vishay-intertech-rn55c1671fb14_C1397625.html",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "1.67k\u03a9"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-65\u2103~+175\u2103"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "125mW"
+    },
+    {
+     "name": "Type",
+     "value": "Metal Film Resistor"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b11%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "\u00b150ppm/\u2103"
+    }
+   ],
+   "rank": 2
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 1
+}

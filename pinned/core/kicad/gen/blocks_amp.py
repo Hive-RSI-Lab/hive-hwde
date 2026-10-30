@@ -84,7 +84,7 @@ def zone(z: str, base: int, ultra: bool):
     # enclosure's banana sockets / binding posts wire to these
     for k, ch in enumerate(("L", "R")):
         P(f"J{jbase + k}", A + "KF301-5.0-2P", f"SPK {z} {ch}", A + "x",
-          {"1": f"{z}_SPK_{ch}+", "2": f"{z}_SPK_{ch}-"}, lcsc="C474881",
+          {"1": f"{z}_SPK_{ch}+", "2": f"{z}_SPK_{ch}-"}, lcsc="C474881", mpn="KF301-5.0-2P",
           role=f"zone {z} {ch} speaker terminal, 17 A", nc_rest=True)
 
 
@@ -99,13 +99,15 @@ P("SW1", A + "EC11E1834403", "EC11", A + "SW-TH_EC11E1834403",
   nc_rest=True)
 P("SW2", A + "TS-1187A-B-A-B", "BTN1", A + "KEY-SMD_4P-L5.1-W5.1-P3.70-LS6.5",
   {"1": "BTN_1", "2": "BTN_1", "3": "GND", "4": "GND"}, lcsc="C318884",
-  basic=True, plus_only=True, role="source button [Plus]")
+  basic=True, mpn="TS-1187A-B-A-B", plus_only=True, role="source button [Plus]")
 P("SW3", A + "TS-1187A-B-A-B", "BTN2", A + "KEY-SMD_4P-L5.1-W5.1-P3.70-LS6.5",
   {"1": "BTN_2", "2": "BTN_2", "3": "GND", "4": "GND"}, lcsc="C318884",
-  basic=True, plus_only=True, role="preset button [Plus]")
-P("U18", A + "IRM-H638T_TR2", "IRM-H638T", A + "IR-TH_IRM-H638T",
-  {"n:VOUT": "IR_IN", "n:GND": "GND", "n:VCC": "IR_VCC"}, lcsc="C91447",
-  plus_only=True, role="38 kHz IR receiver [Plus]", nc_rest=True)
+  basic=True, mpn="TS-1187A-B-A-B", plus_only=True, role="preset button [Plus]")
+# Front-facing IRM-3638T at the front edge, lens through the front wall (the
+# top-looking IRM-H638T sat >21 mm under the lid; review-2 DFM-4, as on Lite)
+P("U18", A + "IRM-3638T_C42421366", "IRM-3638T", A + "OPTO-TH_IRM-3638T",
+  {"1": "IR_IN", "2": "GND", "3": "IR_VCC"}, lcsc="C42421366",
+  plus_only=True, role="38 kHz IR receiver, front-facing [Plus]")
 R("R400", "100R", "+3V3", "IR_VCC", plus_only=True)
 C("C400", "4.7uF", "IR_VCC", pkg="0603", plus_only=True)
 P("D3", A + "KT-0603R", "KT-0603R", A + "x",

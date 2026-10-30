@@ -1,0 +1,73 @@
+{
+ "script": "check_decoupling",
+ "status": "pass",
+ "board": "ultra-front.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "checked": [
+  {
+   "cap": "C1",
+   "pin": "U1.24",
+   "rail": "+3V3",
+   "class": "mid",
+   "manhattan_mm": 4.95,
+   "euclid_mm": 3.6171,
+   "gnd_leg_mm": 1.0259,
+   "vias_in_loop": 1,
+   "loop_nh": 5.1831
+  },
+  {
+   "cap": "C2",
+   "pin": "J1.2",
+   "rail": "+3V3",
+   "class": "bulk",
+   "manhattan_mm": 7.26,
+   "euclid_mm": 6.7325,
+   "gnd_leg_mm": 1.8901,
+   "vias_in_loop": 3,
+   "loop_nh": 9.4051
+  },
+  {
+   "cap": "C3",
+   "pin": "J1.3",
+   "rail": "+5V",
+   "class": "bulk",
+   "manhattan_mm": 8.66,
+   "euclid_mm": 6.9876,
+   "gnd_leg_mm": 1.254,
+   "vias_in_loop": 3,
+   "loop_nh": 9.9398
+  },
+  {
+   "cap": "C4",
+   "pin": "J2.9",
+   "rail": "+3V3",
+   "class": "mid",
+   "manhattan_mm": 7.17,
+   "euclid_mm": 5.7816,
+   "gnd_leg_mm": 0.9925,
+   "vias_in_loop": 1,
+   "loop_nh": 6.7137
+  },
+  {
+   "cap": "C5",
+   "pin": "U2.4",
+   "rail": "/IR_VCC",
+   "class": "bulk",
+   "manhattan_mm": 10.39,
+   "euclid_mm": 10.3202,
+   "gnd_leg_mm": 0.9925,
+   "vias_in_loop": 1,
+   "loop_nh": 8.9677
+  }
+ ],
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T16:12:33+00:00",
+ "input": "kicad/ultra-front.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:9dc35130bd1201644f1dba4e1d6dba4d5d758a4ef90a725aa5368dd26825d2d0"
+}

@@ -1,0 +1,103 @@
+{
+ "violations": [
+  {
+   "check": "board-review",
+   "severity": "error",
+   "pos": [
+    -3.945,
+    47.0
+   ],
+   "layer": "F.Cu",
+   "net": null,
+   "refs": [
+    "J2",
+    "C4"
+   ],
+   "msg": "LCD tail (20.7 mm from panel edge, p.10) ends at x=-5.5 but J2's insertion stop (mouth x=-0.4, 2.10 mm insertion per C2856829) is at x=-2.5: 3.0 mm of excess tail, J2 must move ~3.1 mm -x (relocate C4) or the LCD keepout +3.1 mm; orientation and pin 1 are correct",
+   "source": "review.board",
+   "kind": "fpc-tail-length-mismatch",
+   "domain": "placement"
+  },
+  {
+   "check": "board-review",
+   "severity": "error",
+   "pos": [
+    10.1,
+    46.2
+   ],
+   "layer": "F.Cu",
+   "net": null,
+   "refs": [
+    "R19",
+    "R11",
+    "R13",
+    "R17",
+    "U1",
+    "R7",
+    "Q1",
+    "R12"
+   ],
+   "msg": "LCD tail is ~20.5 mm wide for its first 10.1 mm (p.10), region x 5.05..15.16 y 35.9..56.4; keepout covers only the 6.5 mm end; parts under the tail stop it lying flat and the backlight sub-flex K/A joints land over R13/R17 +5V terminals",
+   "source": "review.board",
+   "kind": "fpc-tail-over-parts",
+   "domain": "placement"
+  },
+  {
+   "check": "board-review",
+   "severity": "warning",
+   "pos": [
+    89.055,
+    47.8
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "SW1",
+    "SW2",
+    "SW3",
+    "SW4",
+    "H1",
+    "H2",
+    "H3",
+    "H4"
+   ],
+   "msg": "front-panel height stack undefined: LCD 2.05 mm, tacts 1.5 mm, EC11 frame several mm, all facing the panel the board screws to; needs stepped panel, plungers or deep LCD window",
+   "source": "review.board",
+   "kind": "enclosure-height-stack",
+   "domain": "review"
+  },
+  {
+   "check": "board-review",
+   "severity": "warning",
+   "pos": [
+    -6.89,
+    26.2
+   ],
+   "layer": "F.SilkS",
+   "net": null,
+   "refs": [
+    "H1",
+    "H2"
+   ],
+   "msg": "H1/H2 refdes at y=26.2 sit 0.6 mm outside the board edge (y=26.8); fab clips/rejects off-board silk",
+   "source": "review.board",
+   "kind": "silk-off-board",
+   "domain": "silk"
+  },
+  {
+   "check": "board-review",
+   "severity": "warning",
+   "pos": [
+    45.0,
+    46.0
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [],
+   "msg": "three 55-65 mm F.Cu GND strips under the LCD stitched only at their ends and a 20 mm B.Cu sliver (x 2.5..5.8) on one via: resonant stubs under the PWM backlight; add stitching every ~10 mm or remove slivers",
+   "source": "review.board",
+   "kind": "pour-strip-unstitched",
+   "domain": "plane"
+  }
+ ]
+}

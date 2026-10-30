@@ -1,0 +1,21 @@
+{
+ "script": "check_creepage",
+ "status": "pass",
+ "board": "ultra-front.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "checked": [],
+ "skipped_absent_nets": [],
+ "skipped_low_voltage_pairs": [],
+ "coating": "soldermask",
+ "dru_footprint_scopes": [],
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T16:12:33+00:00",
+ "input": "kicad/ultra-front.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:9dc35130bd1201644f1dba4e1d6dba4d5d758a4ef90a725aa5368dd26825d2d0"
+}

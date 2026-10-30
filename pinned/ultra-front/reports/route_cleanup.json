@@ -1,0 +1,44 @@
+{
+ "script": "route_cleanup",
+ "status": "pass",
+ "board": "ultra-front.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "dry_run": false,
+ "ops_applied": 0,
+ "refilled": false,
+ "drc_before": {
+  "unconnected": 0,
+  "errors": 0,
+  "warnings": 0,
+  "dangling_flagged": 0
+ },
+ "drc_after": {
+  "unconnected": 0,
+  "errors": 0,
+  "warnings": 0,
+  "dangling_flagged": 0
+ },
+ "ops": [],
+ "dangling_removed": 0,
+ "dangling_segments": 0,
+ "dangling_vias": 0,
+ "loops_broken": 0,
+ "loop_bridge_vetoed": 0,
+ "orphaned_after_loops": 0,
+ "off_angle_snapped": 0,
+ "snaps": [],
+ "off_angle_left": [],
+ "jogs_merged": 0,
+ "corners_smoothed": 0,
+ "corners": [],
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T16:12:24+00:00",
+ "input": "/work/boards/ultra-front/kicad/ultra-front.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:9dc35130bd1201644f1dba4e1d6dba4d5d758a4ef90a725aa5368dd26825d2d0"
+}

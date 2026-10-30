@@ -1,0 +1,96 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C165948",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C165948",
+   "mpn": "TYPE-C-31-M-12",
+   "brand": "Korean Hroparts Elec",
+   "description": "-30\u2103~+80\u2103 1 10,000 cycles 16P 20V 5A 7.35mm Female Surface Mount, Right Angle Type-C SMD USB Connectors ROHS",
+   "package": "SMD",
+   "category": "USB Connectors",
+   "type": "Extended",
+   "basic": false,
+   "stock": 292461,
+   "price": 0.1871,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.1871
+    },
+    {
+     "qty": 50,
+     "price": 0.1478
+    },
+    {
+     "qty": 150,
+     "price": 0.1284
+    },
+    {
+     "qty": 1000,
+     "price": 0.1042
+    },
+    {
+     "qty": 2000,
+     "price": 0.0995
+    },
+    {
+     "qty": 5000,
+     "price": 0.0967
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2205251630_Korean-Hroparts-Elec-TYPE-C-31-M-12_C165948.pdf",
+   "url": "https://www.lcsc.com/product-detail/usb-connectors_korean-hroparts-elec-type-c-31-m-12_C165948.html",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-30\u2103~+80\u2103"
+    },
+    {
+     "name": "Number of Ports",
+     "value": "1"
+    },
+    {
+     "name": "Length",
+     "value": "7.35mm"
+    },
+    {
+     "name": "Current Rating-Power",
+     "value": "5A"
+    },
+    {
+     "name": "Voltage Rating",
+     "value": "20V"
+    },
+    {
+     "name": "Connector Type",
+     "value": "Type-C"
+    },
+    {
+     "name": "Number of Contacts",
+     "value": "16P"
+    },
+    {
+     "name": "Gender",
+     "value": "Female"
+    },
+    {
+     "name": "Connect-Disconnect Life",
+     "value": "10,000 cycles"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Surface Mount, Right Angle"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

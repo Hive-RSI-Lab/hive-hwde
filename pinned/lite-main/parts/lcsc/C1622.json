@@ -1,0 +1,216 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C1622",
+ "total": 246,
+ "count": 3,
+ "results": [
+  {
+   "lcsc": "C1622",
+   "mpn": "CL10B473KB8NNNC",
+   "brand": "Samsung Electro-Mechanics",
+   "description": "47nF 50V X7R \u00b110% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "package": "0603",
+   "category": "Multilayer Ceramic Capacitors MLCC - SMD/SMT",
+   "type": "Basic",
+   "basic": true,
+   "stock": 952541,
+   "price": 0.0059,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0059
+    },
+    {
+     "qty": 1000,
+     "price": 0.0044
+    },
+    {
+     "qty": 4000,
+     "price": 0.0038
+    },
+    {
+     "qty": 8000,
+     "price": 0.0033
+    },
+    {
+     "qty": 48000,
+     "price": 0.0031
+    },
+    {
+     "qty": 100000,
+     "price": 0.0029
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL10B473KB8NNNC_C1622.pdf",
+   "url": "https://www.lcsc.com/product-detail/multilayer-ceramic-capacitors-mlcc-smd-smt_samsung-electro-mechanics-cl10b473kb8nnnc_C1622.html",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b110%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "47nF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X7R"
+    }
+   ],
+   "rank": 0
+  },
+  {
+   "lcsc": "C284363",
+   "mpn": "ARG02FTC1622",
+   "brand": "Viking Tech",
+   "description": "-55\u2103~+155\u2103 16.2k\u03a9 50V 62.5mW Thin Film Resistor \u00b11% \u00b125ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+   "package": "0402",
+   "category": "Chip Resistor - Surface Mount",
+   "type": "Extended",
+   "basic": false,
+   "stock": 8842,
+   "price": 0.0044,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0044
+    },
+    {
+     "qty": 1000,
+     "price": 0.0034
+    },
+    {
+     "qty": 3000,
+     "price": 0.0029
+    },
+    {
+     "qty": 10000,
+     "price": 0.0024
+    },
+    {
+     "qty": 50000,
+     "price": 0.0021
+    },
+    {
+     "qty": 100000,
+     "price": 0.002
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Viking-Tech-ARG02FTC1622_C284363.pdf",
+   "url": "https://www.lcsc.com/product-detail/chip-resistor-surface-mount_viking-tech-arg02ftc1622_C284363.html",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "16.2k\u03a9"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+155\u2103"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thin Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b11%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "\u00b125ppm/\u2103"
+    }
+   ],
+   "rank": 1
+  },
+  {
+   "lcsc": "C2441157",
+   "mpn": "ARG02BTC1622",
+   "brand": "Viking Tech",
+   "description": "-55\u2103~+155\u2103 16.2k\u03a9 50V 62.5mW Thin Film Resistor \u00b10.1% \u00b125ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+   "package": "0402",
+   "category": "Chip Resistor - Surface Mount",
+   "type": "Extended",
+   "basic": false,
+   "stock": 3305,
+   "price": 0.0208,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0208
+    },
+    {
+     "qty": 200,
+     "price": 0.0164
+    },
+    {
+     "qty": 600,
+     "price": 0.0139
+    },
+    {
+     "qty": 2000,
+     "price": 0.0124
+    },
+    {
+     "qty": 10000,
+     "price": 0.0107
+    },
+    {
+     "qty": 20000,
+     "price": 0.01
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Viking-Tech-ARG02BTC1622_C2441157.pdf",
+   "url": "https://www.lcsc.com/product-detail/chip-resistor-surface-mount_viking-tech-arg02btc1622_C2441157.html",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "16.2k\u03a9"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+155\u2103"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thin Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b10.1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "\u00b125ppm/\u2103"
+    }
+   ],
+   "rank": 2
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

@@ -1,0 +1,160 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C273610",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C273610",
+   "mpn": "TJ-S1615SW6TGLCCYRGB-A5",
+   "brand": "TOGIALED",
+   "description": "-40\u2103~+80\u2103 0.6mm 1.5mm 1.6mm 120\u00b0 B:120mcd\u3001G:500mcd\u3001R:120mcd Common Anode G:520nm~530nm\u3001B:460nm~470nm\u3001R:620nm~630nm G:520nm\u3001B:460nm\u3001R:635nm R:1.8V~2.4V\u3001B:2.8V~3.6V\u3001G:2.8V~3.6V R:20mA\u3001G:20mA\u3001B:20mA R:72mW\u3001G:111mW\u3001B:111mW Top-mount Water Clear SMD-4P,1.6x1.5mm RGB LEDs ROHS",
+   "package": "SMD-4P,1.6x1.5mm",
+   "category": "RGB LEDs",
+   "type": "Extended",
+   "basic": false,
+   "stock": 27311,
+   "price": 0.0993,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0993
+    },
+    {
+     "qty": 50,
+     "price": 0.0811
+    },
+    {
+     "qty": 150,
+     "price": 0.0721
+    },
+    {
+     "qty": 500,
+     "price": 0.0654
+    },
+    {
+     "qty": 2500,
+     "price": 0.0518
+    },
+    {
+     "qty": 4000,
+     "price": 0.049
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1810231225_TOGIALED-TJ-S1615SW6TGLCCYRGB-A5_C273610.pdf",
+   "url": "https://www.lcsc.com/product-detail/rgb-leds_togialed-tj-s1615sw6tglccyrgb-a5_C273610.html",
+   "attributes": [
+    {
+     "name": "Power(Watts) - R",
+     "value": "72mW"
+    },
+    {
+     "name": "Viewing Angle",
+     "value": "120\u00b0"
+    },
+    {
+     "name": "Installation Method",
+     "value": "Top-mount"
+    },
+    {
+     "name": "Height",
+     "value": "0.6mm"
+    },
+    {
+     "name": "Width",
+     "value": "1.5mm"
+    },
+    {
+     "name": "Forward Current - R",
+     "value": "20mA"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+80\u2103"
+    },
+    {
+     "name": "Luminous Intensity - B",
+     "value": "120mcd"
+    },
+    {
+     "name": "Forward Voltage(Vf) - B",
+     "value": "2.8V~3.6V"
+    },
+    {
+     "name": "Peak Wavelength - B",
+     "value": "460nm"
+    },
+    {
+     "name": "Forward Voltage(Vf) - G",
+     "value": "2.8V~3.6V"
+    },
+    {
+     "name": "Dominant Wavelength - B",
+     "value": "460nm~470nm"
+    },
+    {
+     "name": "Forward Current - G",
+     "value": "20mA"
+    },
+    {
+     "name": "Luminous Intensity - G",
+     "value": "500mcd"
+    },
+    {
+     "name": "Power(Watts) - G",
+     "value": "111mW"
+    },
+    {
+     "name": "Forward Current - B",
+     "value": "20mA"
+    },
+    {
+     "name": "Luminous Intensity - R",
+     "value": "120mcd"
+    },
+    {
+     "name": "Forward Voltage(Vf) - R",
+     "value": "1.8V~2.4V"
+    },
+    {
+     "name": "Power(Watts) - B",
+     "value": "111mW"
+    },
+    {
+     "name": "Peak Wavelength - R",
+     "value": "635nm"
+    },
+    {
+     "name": "Length",
+     "value": "1.6mm"
+    },
+    {
+     "name": "Dominant Wavelength - G",
+     "value": "520nm~530nm"
+    },
+    {
+     "name": "Diode Configuration",
+     "value": "Common Anode"
+    },
+    {
+     "name": "Dominant Wavelength - R",
+     "value": "620nm~630nm"
+    },
+    {
+     "name": "Lens Color",
+     "value": "Water Clear"
+    },
+    {
+     "name": "Peak Wavelength - G",
+     "value": "520nm"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

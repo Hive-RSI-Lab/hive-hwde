@@ -1,0 +1,137 @@
+version: 1
+board: ''
+source: LEARNINGS.md
+compiled: '2026-10-28'
+entries:
+- entry: 2026-10-28-easyeda-courtyards-are-still-the-body-outline
+  line: 3
+  date: '2026-10-28'
+  title: EasyEDA courtyards are still the body outline, on every pulled footprint
+  tags:
+  - P3
+  - library
+  stage: P3
+  proposed_level: null
+  targets: []
+  status: pending
+- entry: 2026-10-28-pulled-symbols-have-every-pin-unspecified
+  line: 8
+  date: '2026-10-28'
+  title: pulled symbols have every pin `unspecified`
+  tags:
+  - P4
+  - erc
+  stage: P4
+  proposed_level: null
+  targets: []
+  status: pending
+- entry: 2026-10-28-a-bidirectional-pin-on-a-pwr-flag
+  line: 14
+  date: '2026-10-28'
+  title: a bidirectional pin on a PWR_FLAG'd GND net warns
+  tags:
+  - P4
+  - erc
+  stage: P4
+  proposed_level: null
+  targets: []
+  status: pending
+- entry: 2026-10-28-mountinghole-pad-via-fails-jlc-s-hole
+  line: 18
+  date: '2026-10-28'
+  title: MountingHole_*_Pad_Via fails JLC's hole-to-hole floor
+  tags:
+  - P5
+  - holes
+  stage: P5
+  proposed_level: null
+  targets: []
+  status: pending
+- entry: 2026-10-28-an-fpc-socket-mated-by-an-on
+  line: 22
+  date: '2026-10-28'
+  title: an FPC socket mated by an on-board display tail fails check_mating
+  tags:
+  - P6
+  - mating
+  stage: P6
+  proposed_level: null
+  targets: []
+  status: pending
+- entry: 2026-10-28-pad-net-changes-are-refused-even-before
+  line: 27
+  date: '2026-10-28'
+  title: pad-net changes are refused even before routing
+  tags:
+  - P6
+  - board_update
+  stage: P6
+  proposed_level: null
+  targets: []
+  status: pending
+- entry: 2026-10-28-a-0-5-mm-ffc-pin-can
+  line: 32
+  date: '2026-10-28'
+  title: a 0.5 mm FFC pin can be boxed in by its neighbours' fan-out
+  tags:
+  - P7
+  - routing
+  stage: P7
+  proposed_level: null
+  targets: []
+  status: pending
+- entry: 2026-10-28-the-place-verify-gate-takes-any-non
+  line: 38
+  date: '2026-10-28'
+  title: the place/verify gate takes any non-empty `approved`
+  tags:
+  - P6
+  - gate
+  stage: P6
+  proposed_level: null
+  targets: []
+  status: pending
+- entry: 2026-10-28-model-a-display-tail-s-real-outline
+  line: 42
+  date: '2026-10-28'
+  title: model a display tail's real outline, and line its END up with the socket's insertion stop
+  tags:
+  - P6
+  - mechanical
+  stage: P6
+  proposed_level: null
+  targets: []
+  status: pending
+- entry: 2026-10-28-freerouting-ignores-copper-to-edge-and-hole
+  line: 48
+  date: '2026-10-28'
+  title: Freerouting ignores copper-to-edge and hole-to-hole
+  tags:
+  - P7
+  - routing
+  stage: P7
+  proposed_level: null
+  targets: []
+  status: pending
+- entry: 2026-10-28-route-gnd-as-a-net-before-pouring
+  line: 53
+  date: '2026-10-28'
+  title: route GND as a net before pouring on a dense 2-layer board
+  tags:
+  - P7
+  - routing
+  stage: P7
+  proposed_level: null
+  targets: []
+  status: pending
+- entry: 2026-10-28-ses-import-can-drop-connections-freerouting-reported
+  line: 60
+  date: '2026-10-28'
+  title: SES import can drop connections Freerouting reported done
+  tags:
+  - P7
+  - routing
+  stage: P7
+  proposed_level: null
+  targets: []
+  status: pending

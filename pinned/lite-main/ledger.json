@@ -1,0 +1,6379 @@
+{
+ "facts": {
+  "C1/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C15849",
+   "refs": [
+    "C1"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C1",
+   "value": ""
+  },
+  "C1/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C15849",
+   "refs": [
+    "C1"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C1",
+   "value": ""
+  },
+  "C10/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C19702",
+   "refs": [
+    "C10"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C10",
+   "value": ""
+  },
+  "C10/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C19702",
+   "refs": [
+    "C10"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C10",
+   "value": ""
+  },
+  "C11/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C14663",
+   "refs": [
+    "C11"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C11",
+   "value": ""
+  },
+  "C11/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C14663",
+   "refs": [
+    "C11"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C11",
+   "value": ""
+  },
+  "C12/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C45783",
+   "refs": [
+    "C12"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C12",
+   "value": ""
+  },
+  "C12/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C45783",
+   "refs": [
+    "C12"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C12",
+   "value": ""
+  },
+  "C13/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C19702",
+   "refs": [
+    "C13"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C13",
+   "value": ""
+  },
+  "C13/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C19702",
+   "refs": [
+    "C13"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C13",
+   "value": ""
+  },
+  "C13585/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:08+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C13585",
+   "refs": [
+    "C3"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C13585",
+   "value": "JLC sells it"
+  },
+  "C13585/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:08+00:00",
+   "kind": "part_match",
+   "lcsc": "C13585",
+   "refs": [
+    "C3"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C13585",
+   "value": "BOM MPN CL31A106KBHNNNE vs JLC model CL31A106KBHNNNE"
+  },
+  "C13585/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:08+00:00",
+   "kind": "stock",
+   "lcsc": "C13585",
+   "refs": [
+    "C3"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C13585",
+   "value": "JLC can sell 2316222, build needs 5 (JLC lists 3131082, LCSC 0)"
+  },
+  "C14/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C1653",
+   "refs": [
+    "C14"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C14",
+   "value": ""
+  },
+  "C14/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C1653",
+   "refs": [
+    "C14"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C14",
+   "value": ""
+  },
+  "C14663/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:08+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C14663",
+   "refs": [
+    "C2",
+    "C5",
+    "C6",
+    "C11",
+    "C17",
+    "C18",
+    "C21",
+    "C23",
+    "C24",
+    "C30",
+    "C31",
+    "C33",
+    "C34",
+    "C36",
+    "C38",
+    "C40",
+    "C53",
+    "C56"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C14663",
+   "value": "JLC sells it"
+  },
+  "C14663/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:08+00:00",
+   "kind": "part_match",
+   "lcsc": "C14663",
+   "refs": [
+    "C2",
+    "C5",
+    "C6",
+    "C11",
+    "C17",
+    "C18",
+    "C21",
+    "C23",
+    "C24",
+    "C30",
+    "C31",
+    "C33",
+    "C34",
+    "C36",
+    "C38",
+    "C40",
+    "C53",
+    "C56"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C14663",
+   "value": "BOM MPN CC0603KRX7R9BB104 vs JLC model CC0603KRX7R9BB104"
+  },
+  "C14663/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:08+00:00",
+   "kind": "stock",
+   "lcsc": "C14663",
+   "refs": [
+    "C2",
+    "C5",
+    "C6",
+    "C11",
+    "C17",
+    "C18",
+    "C21",
+    "C23",
+    "C24",
+    "C30",
+    "C31",
+    "C33",
+    "C34",
+    "C36",
+    "C38",
+    "C40",
+    "C53",
+    "C56"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C14663",
+   "value": "JLC can sell 26389973, build needs 90 (JLC lists 37548512, LCSC 4000)"
+  },
+  "C14858/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:09+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C14858",
+   "refs": [
+    "C42",
+    "C45"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C14858",
+   "value": "JLC sells it"
+  },
+  "C14858/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:09+00:00",
+   "kind": "part_match",
+   "lcsc": "C14858",
+   "refs": [
+    "C42",
+    "C45"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C14858",
+   "value": "BOM MPN CL10C101JB8NNNC vs JLC model CL10C101JB8NNNC"
+  },
+  "C14858/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:09+00:00",
+   "kind": "stock",
+   "lcsc": "C14858",
+   "refs": [
+    "C42",
+    "C45"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C14858",
+   "value": "JLC can sell 3609989, build needs 10 (JLC lists 4485674, LCSC 1150000)"
+  },
+  "C15/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C15849",
+   "refs": [
+    "C15"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C15",
+   "value": ""
+  },
+  "C15/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C15849",
+   "refs": [
+    "C15"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C15",
+   "value": ""
+  },
+  "C15849/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:08+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C15849",
+   "refs": [
+    "C1",
+    "C15",
+    "C16",
+    "C22",
+    "C41",
+    "C44",
+    "C50",
+    "C60",
+    "C61",
+    "C62",
+    "C63",
+    "C82",
+    "C84"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C15849",
+   "value": "JLC sells it"
+  },
+  "C15849/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:08+00:00",
+   "kind": "part_match",
+   "lcsc": "C15849",
+   "refs": [
+    "C1",
+    "C15",
+    "C16",
+    "C22",
+    "C41",
+    "C44",
+    "C50",
+    "C60",
+    "C61",
+    "C62",
+    "C63",
+    "C82",
+    "C84"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C15849",
+   "value": "BOM MPN CL10A105KB8NNNC vs JLC model CL10A105KB8NNNC"
+  },
+  "C15849/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:08+00:00",
+   "kind": "stock",
+   "lcsc": "C15849",
+   "refs": [
+    "C1",
+    "C15",
+    "C16",
+    "C22",
+    "C41",
+    "C44",
+    "C50",
+    "C60",
+    "C61",
+    "C62",
+    "C63",
+    "C82",
+    "C84"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C15849",
+   "value": "JLC can sell 9126709, build needs 65 (JLC lists 12372000, LCSC 103400)"
+  },
+  "C1588/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:10+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C1588",
+   "refs": [
+    "C54",
+    "C57"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C1588",
+   "value": "JLC sells it"
+  },
+  "C1588/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:10+00:00",
+   "kind": "part_match",
+   "lcsc": "C1588",
+   "refs": [
+    "C54",
+    "C57"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C1588",
+   "value": "BOM MPN CL10B102KB8NNNC vs JLC model CL10B102KB8NNNC"
+  },
+  "C1588/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:10+00:00",
+   "kind": "stock",
+   "lcsc": "C1588",
+   "refs": [
+    "C54",
+    "C57"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C1588",
+   "value": "JLC can sell 4784742, build needs 10 (JLC lists 6054227, LCSC 1261900)"
+  },
+  "C16/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C15849",
+   "refs": [
+    "C16"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C16",
+   "value": ""
+  },
+  "C16/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C15849",
+   "refs": [
+    "C16"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C16",
+   "value": ""
+  },
+  "C1620/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:10+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C1620",
+   "refs": [
+    "C81",
+    "C83"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C1620",
+   "value": "JLC sells it"
+  },
+  "C1620/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:10+00:00",
+   "kind": "part_match",
+   "lcsc": "C1620",
+   "refs": [
+    "C81",
+    "C83"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C1620",
+   "value": "BOM MPN 0603B471K500NT vs JLC model 0603B471K500NT"
+  },
+  "C1620/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:10+00:00",
+   "kind": "stock",
+   "lcsc": "C1620",
+   "refs": [
+    "C81",
+    "C83"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C1620",
+   "value": "JLC can sell 621591, build needs 10 (JLC lists 776534, LCSC 179700)"
+  },
+  "C1622/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:09+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C1622",
+   "refs": [
+    "C26"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C1622",
+   "value": "JLC sells it"
+  },
+  "C1622/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:09+00:00",
+   "kind": "part_match",
+   "lcsc": "C1622",
+   "refs": [
+    "C26"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C1622",
+   "value": "BOM MPN CL10B473KB8NNNC vs JLC model CL10B473KB8NNNC"
+  },
+  "C1622/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:09+00:00",
+   "kind": "stock",
+   "lcsc": "C1622",
+   "refs": [
+    "C26"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C1622",
+   "value": "JLC can sell 610233, build needs 5 (JLC lists 940988, LCSC 33300)"
+  },
+  "C1653/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:09+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C1653",
+   "refs": [
+    "C14"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C1653",
+   "value": "JLC sells it"
+  },
+  "C1653/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:09+00:00",
+   "kind": "part_match",
+   "lcsc": "C1653",
+   "refs": [
+    "C14"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C1653",
+   "value": "BOM MPN CL10C220JB8NNNC vs JLC model CL10C220JB8NNNC"
+  },
+  "C1653/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:09+00:00",
+   "kind": "stock",
+   "lcsc": "C1653",
+   "refs": [
+    "C14"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C1653",
+   "value": "JLC can sell 2366865, build needs 5 (JLC lists 2854968, LCSC 1050250)"
+  },
+  "C165948/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C165948",
+   "refs": [
+    "J1"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C165948",
+   "value": "JLC sells it"
+  },
+  "C165948/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "part_match",
+   "lcsc": "C165948",
+   "refs": [
+    "J1"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C165948",
+   "value": "BOM value TYPE-C-31-M-12 is JLC model TYPE-C-31-M-12"
+  },
+  "C165948/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "stock",
+   "lcsc": "C165948",
+   "refs": [
+    "J1"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C165948",
+   "value": "JLC can sell 272946, build needs 5 (JLC lists 285432, LCSC 273245)"
+  },
+  "C1671/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:08+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C1671",
+   "refs": [
+    "C9"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C1671",
+   "value": "JLC sells it"
+  },
+  "C1671/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:08+00:00",
+   "kind": "part_match",
+   "lcsc": "C1671",
+   "refs": [
+    "C9"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C1671",
+   "value": "BOM MPN CL10C470JB8NNNC vs JLC model CL10C470JB8NNNC"
+  },
+  "C1671/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:08+00:00",
+   "kind": "stock",
+   "lcsc": "C1671",
+   "refs": [
+    "C9"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C1671",
+   "value": "JLC can sell 663695, build needs 5 (JLC lists 816342, LCSC 241900)"
+  },
+  "C17/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C14663",
+   "refs": [
+    "C17"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C17",
+   "value": ""
+  },
+  "C17/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C14663",
+   "refs": [
+    "C17"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C17",
+   "value": ""
+  },
+  "C18/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C14663",
+   "refs": [
+    "C18"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C18",
+   "value": ""
+  },
+  "C18/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C14663",
+   "refs": [
+    "C18"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C18",
+   "value": ""
+  },
+  "C1848/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:10+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C1848",
+   "refs": [
+    "C68",
+    "C69",
+    "C70",
+    "C71"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C1848",
+   "value": "JLC sells it"
+  },
+  "C1848/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:10+00:00",
+   "kind": "part_match",
+   "lcsc": "C1848",
+   "refs": [
+    "C68",
+    "C69",
+    "C70",
+    "C71"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C1848",
+   "value": "BOM MPN CL31B105KBHNNNE vs JLC model CL31B105KBHNNNE"
+  },
+  "C1848/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:10+00:00",
+   "kind": "stock",
+   "lcsc": "C1848",
+   "refs": [
+    "C68",
+    "C69",
+    "C70",
+    "C71"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C1848",
+   "value": "JLC can sell 612214, build needs 20 (JLC lists 773835, LCSC 134670)"
+  },
+  "C19/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C19666",
+   "refs": [
+    "C19"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C19",
+   "value": ""
+  },
+  "C19/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C19666",
+   "refs": [
+    "C19"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C19",
+   "value": ""
+  },
+  "C19666/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:09+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C19666",
+   "refs": [
+    "C19",
+    "C32",
+    "C80"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C19666",
+   "value": "JLC sells it"
+  },
+  "C19666/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:09+00:00",
+   "kind": "part_match",
+   "lcsc": "C19666",
+   "refs": [
+    "C19",
+    "C32",
+    "C80"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C19666",
+   "value": "BOM MPN CL10A475KO8NNNC vs JLC model CL10A475KO8NNNC"
+  },
+  "C19666/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:09+00:00",
+   "kind": "stock",
+   "lcsc": "C19666",
+   "refs": [
+    "C19",
+    "C32",
+    "C80"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C19666",
+   "value": "JLC can sell 3473436, build needs 15 (JLC lists 4252745, LCSC 1511590)"
+  },
+  "C19702/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:09+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C19702",
+   "refs": [
+    "C10",
+    "C13",
+    "C20",
+    "C35",
+    "C37",
+    "C39",
+    "C47",
+    "C48"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C19702",
+   "value": "JLC sells it"
+  },
+  "C19702/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:09+00:00",
+   "kind": "part_match",
+   "lcsc": "C19702",
+   "refs": [
+    "C10",
+    "C13",
+    "C20",
+    "C35",
+    "C37",
+    "C39",
+    "C47",
+    "C48"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C19702",
+   "value": "BOM MPN CL10A106KP8NNNC vs JLC model CL10A106KP8NNNC"
+  },
+  "C19702/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:09+00:00",
+   "kind": "stock",
+   "lcsc": "C19702",
+   "refs": [
+    "C10",
+    "C13",
+    "C20",
+    "C35",
+    "C37",
+    "C39",
+    "C47",
+    "C48"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C19702",
+   "value": "JLC can sell 9507555, build needs 40 (JLC lists 11932743, LCSC 2994520)"
+  },
+  "C2/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C14663",
+   "refs": [
+    "C2"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C2",
+   "value": ""
+  },
+  "C2/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C14663",
+   "refs": [
+    "C2"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C2",
+   "value": ""
+  },
+  "C20/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C19702",
+   "refs": [
+    "C20"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C20",
+   "value": ""
+  },
+  "C20/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C19702",
+   "refs": [
+    "C20"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C20",
+   "value": ""
+  },
+  "C20526/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C20526",
+   "refs": [
+    "Q2",
+    "Q3",
+    "Q4"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C20526",
+   "value": "JLC sells it"
+  },
+  "C20526/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "part_match",
+   "lcsc": "C20526",
+   "refs": [
+    "Q2",
+    "Q3",
+    "Q4"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C20526",
+   "value": "BOM MPN MMBT3904(RANGE:100-300) vs JLC model MMBT3904(RANGE:100-300)"
+  },
+  "C20526/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "stock",
+   "lcsc": "C20526",
+   "refs": [
+    "Q2",
+    "Q3",
+    "Q4"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C20526",
+   "value": "JLC can sell 2283808, build needs 15 (JLC lists 2406050, LCSC 1973600)"
+  },
+  "C21/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C14663",
+   "refs": [
+    "C21"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C21",
+   "value": ""
+  },
+  "C21/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C14663",
+   "refs": [
+    "C21"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C21",
+   "value": ""
+  },
+  "C21120/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:10+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C21120",
+   "refs": [
+    "C64",
+    "C65",
+    "C66",
+    "C67"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C21120",
+   "value": "JLC sells it"
+  },
+  "C21120/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:10+00:00",
+   "kind": "part_match",
+   "lcsc": "C21120",
+   "refs": [
+    "C64",
+    "C65",
+    "C66",
+    "C67"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C21120",
+   "value": "BOM MPN CL10B224KA8NNNC vs JLC model CL10B224KA8NNNC"
+  },
+  "C21120/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:10+00:00",
+   "kind": "stock",
+   "lcsc": "C21120",
+   "refs": [
+    "C64",
+    "C65",
+    "C66",
+    "C67"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C21120",
+   "value": "JLC can sell 851626, build needs 20 (JLC lists 1014159, LCSC 394650)"
+  },
+  "C21189/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C21189",
+   "refs": [
+    "R2",
+    "R3"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C21189",
+   "value": "JLC sells it"
+  },
+  "C21189/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "part_match",
+   "lcsc": "C21189",
+   "refs": [
+    "R2",
+    "R3"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C21189",
+   "value": "BOM MPN 0603WAF0000T5E vs JLC model 0603WAF0000T5E"
+  },
+  "C21189/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "stock",
+   "lcsc": "C21189",
+   "refs": [
+    "R2",
+    "R3"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C21189",
+   "value": "JLC can sell 18501364, build needs 10 (JLC lists 20920011, LCSC 11822300)"
+  },
+  "C21190/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C21190",
+   "refs": [
+    "R15",
+    "R64"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C21190",
+   "value": "JLC sells it"
+  },
+  "C21190/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "part_match",
+   "lcsc": "C21190",
+   "refs": [
+    "R15",
+    "R64"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C21190",
+   "value": "BOM MPN 0603WAF1001T5E vs JLC model 0603WAF1001T5E"
+  },
+  "C21190/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "stock",
+   "lcsc": "C21190",
+   "refs": [
+    "R15",
+    "R64"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C21190",
+   "value": "JLC can sell 24936675, build needs 10 (JLC lists 31607929, LCSC 6315000)"
+  },
+  "C22/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C15849",
+   "refs": [
+    "C22"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C22",
+   "value": ""
+  },
+  "C22/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C15849",
+   "refs": [
+    "C22"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C22",
+   "value": ""
+  },
+  "C22775/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C22775",
+   "refs": [
+    "R36",
+    "R38",
+    "R65"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C22775",
+   "value": "JLC sells it"
+  },
+  "C22775/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "part_match",
+   "lcsc": "C22775",
+   "refs": [
+    "R36",
+    "R38",
+    "R65"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C22775",
+   "value": "BOM MPN 0603WAF1000T5E vs JLC model 0603WAF1000T5E"
+  },
+  "C22775/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "stock",
+   "lcsc": "C22775",
+   "refs": [
+    "R36",
+    "R38",
+    "R65"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C22775",
+   "value": "JLC can sell 7439527, build needs 15 (JLC lists 9648646, LCSC 1194600)"
+  },
+  "C22797/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C22797",
+   "refs": [
+    "R10"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C22797",
+   "value": "JLC sells it"
+  },
+  "C22797/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "part_match",
+   "lcsc": "C22797",
+   "refs": [
+    "R10"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C22797",
+   "value": "BOM MPN 0603WAF1302T5E vs JLC model 0603WAF1302T5E"
+  },
+  "C22797/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "stock",
+   "lcsc": "C22797",
+   "refs": [
+    "R10"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C22797",
+   "value": "JLC can sell 378031, build needs 5 (JLC lists 442782, LCSC 201600)"
+  },
+  "C22807/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C22807",
+   "refs": [
+    "R11"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C22807",
+   "value": "JLC sells it"
+  },
+  "C22807/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "part_match",
+   "lcsc": "C22807",
+   "refs": [
+    "R11"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C22807",
+   "value": "BOM MPN 0603WAF1503T5E vs JLC model 0603WAF1503T5E"
+  },
+  "C22807/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "stock",
+   "lcsc": "C22807",
+   "refs": [
+    "R11"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C22807",
+   "value": "JLC can sell 722136, build needs 5 (JLC lists 863103, LCSC 330100)"
+  },
+  "C22809/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C22809",
+   "refs": [
+    "R30",
+    "R33"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C22809",
+   "value": "JLC sells it"
+  },
+  "C22809/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "part_match",
+   "lcsc": "C22809",
+   "refs": [
+    "R30",
+    "R33"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C22809",
+   "value": "BOM MPN 0603WAF1502T5E vs JLC model 0603WAF1502T5E"
+  },
+  "C22809/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "stock",
+   "lcsc": "C22809",
+   "refs": [
+    "R30",
+    "R33"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C22809",
+   "value": "JLC can sell 3195379, build needs 10 (JLC lists 3606002, LCSC 2044100)"
+  },
+  "C2286/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C2286",
+   "refs": [
+    "D2"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C2286",
+   "value": "JLC sells it"
+  },
+  "C2286/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "part_match",
+   "lcsc": "C2286",
+   "refs": [
+    "D2"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C2286",
+   "value": "BOM MPN KT-0603R vs JLC model KT-0603R"
+  },
+  "C2286/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "stock",
+   "lcsc": "C2286",
+   "refs": [
+    "D2"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C2286",
+   "value": "JLC can sell 6634304, build needs 5 (JLC lists 7320274, LCSC 4770000)"
+  },
+  "C22961/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C22961",
+   "refs": [
+    "R6"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C22961",
+   "value": "JLC sells it"
+  },
+  "C22961/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "part_match",
+   "lcsc": "C22961",
+   "refs": [
+    "R6"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C22961",
+   "value": "BOM MPN 0603WAF2203T5E vs JLC model 0603WAF2203T5E"
+  },
+  "C22961/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "stock",
+   "lcsc": "C22961",
+   "refs": [
+    "R6"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C22961",
+   "value": "JLC can sell 1059688, build needs 5 (JLC lists 1146391, LCSC 815900)"
+  },
+  "C23/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C14663",
+   "refs": [
+    "C23"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C23",
+   "value": ""
+  },
+  "C23/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C14663",
+   "refs": [
+    "C23"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C23",
+   "value": ""
+  },
+  "C24/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C14663",
+   "refs": [
+    "C24"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C24",
+   "value": ""
+  },
+  "C24/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C14663",
+   "refs": [
+    "C24"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C24",
+   "value": ""
+  },
+  "C25/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C45783",
+   "refs": [
+    "C25"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C25",
+   "value": ""
+  },
+  "C25/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C45783",
+   "refs": [
+    "C25"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C25",
+   "value": ""
+  },
+  "C25803/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C25803",
+   "refs": [
+    "R5",
+    "R8",
+    "R9",
+    "R13",
+    "R17",
+    "R51",
+    "R52",
+    "R66",
+    "R68"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C25803",
+   "value": "JLC sells it"
+  },
+  "C25803/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "part_match",
+   "lcsc": "C25803",
+   "refs": [
+    "R5",
+    "R8",
+    "R9",
+    "R13",
+    "R17",
+    "R51",
+    "R52",
+    "R66",
+    "R68"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C25803",
+   "value": "BOM MPN 0603WAF1003T5E vs JLC model 0603WAF1003T5E"
+  },
+  "C25803/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "stock",
+   "lcsc": "C25803",
+   "refs": [
+    "R5",
+    "R8",
+    "R9",
+    "R13",
+    "R17",
+    "R51",
+    "R52",
+    "R66",
+    "R68"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C25803",
+   "value": "JLC can sell 15481909, build needs 45 (JLC lists 17826908, LCSC 8947900)"
+  },
+  "C25804/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C25804",
+   "refs": [
+    "R4",
+    "R7",
+    "R14",
+    "R18",
+    "R20",
+    "R21",
+    "R24",
+    "R25",
+    "R31",
+    "R34",
+    "R53",
+    "R54",
+    "R60",
+    "R61",
+    "R62",
+    "R63",
+    "R67",
+    "R69"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C25804",
+   "value": "JLC sells it"
+  },
+  "C25804/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "part_match",
+   "lcsc": "C25804",
+   "refs": [
+    "R4",
+    "R7",
+    "R14",
+    "R18",
+    "R20",
+    "R21",
+    "R24",
+    "R25",
+    "R31",
+    "R34",
+    "R53",
+    "R54",
+    "R60",
+    "R61",
+    "R62",
+    "R63",
+    "R67",
+    "R69"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C25804",
+   "value": "BOM MPN 0603WAF1002T5E vs JLC model 0603WAF1002T5E"
+  },
+  "C25804/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "stock",
+   "lcsc": "C25804",
+   "refs": [
+    "R4",
+    "R7",
+    "R14",
+    "R18",
+    "R20",
+    "R21",
+    "R24",
+    "R25",
+    "R31",
+    "R34",
+    "R53",
+    "R54",
+    "R60",
+    "R61",
+    "R62",
+    "R63",
+    "R67",
+    "R69"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C25804",
+   "value": "JLC can sell 30310373, build needs 90 (JLC lists 40579573, LCSC 1519100)"
+  },
+  "C25808/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C25808",
+   "refs": [
+    "R1"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C25808",
+   "value": "JLC sells it"
+  },
+  "C25808/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "part_match",
+   "lcsc": "C25808",
+   "refs": [
+    "R1"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C25808",
+   "value": "BOM MPN 0603WAF1203T5E vs JLC model 0603WAF1203T5E"
+  },
+  "C25808/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "stock",
+   "lcsc": "C25808",
+   "refs": [
+    "R1"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C25808",
+   "value": "JLC can sell 708172, build needs 5 (JLC lists 812088, LCSC 411700)"
+  },
+  "C25819/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C25819",
+   "refs": [
+    "R37",
+    "R39"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C25819",
+   "value": "JLC sells it"
+  },
+  "C25819/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "part_match",
+   "lcsc": "C25819",
+   "refs": [
+    "R37",
+    "R39"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C25819",
+   "value": "BOM MPN 0603WAF4702T5E vs JLC model 0603WAF4702T5E"
+  },
+  "C25819/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "stock",
+   "lcsc": "C25819",
+   "refs": [
+    "R37",
+    "R39"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C25819",
+   "value": "JLC can sell 2443500, build needs 10 (JLC lists 3137489, LCSC 447500)"
+  },
+  "C26/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C1622",
+   "refs": [
+    "C26"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C26",
+   "value": ""
+  },
+  "C26/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C1622",
+   "refs": [
+    "C26"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C26",
+   "value": ""
+  },
+  "C28323/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:09+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C28323",
+   "refs": [
+    "C51",
+    "C52",
+    "C55"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C28323",
+   "value": "JLC sells it"
+  },
+  "C28323/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:09+00:00",
+   "kind": "part_match",
+   "lcsc": "C28323",
+   "refs": [
+    "C51",
+    "C52",
+    "C55"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C28323",
+   "value": "BOM MPN CL21B105KBFNNNE vs JLC model CL21B105KBFNNNE"
+  },
+  "C28323/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:09+00:00",
+   "kind": "stock",
+   "lcsc": "C28323",
+   "refs": [
+    "C51",
+    "C52",
+    "C55"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C28323",
+   "value": "JLC can sell 1375909, build needs 15 (JLC lists 2321794, LCSC 0)"
+  },
+  "C2836441/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:10+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C2836441",
+   "refs": [
+    "C59"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C2836441",
+   "value": "JLC sells it"
+  },
+  "C2836441/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:10+00:00",
+   "kind": "part_match",
+   "lcsc": "C2836441",
+   "refs": [
+    "C59"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C2836441",
+   "value": "BOM MPN RVT220UF35V67RV0024 vs JLC model RVT220UF35V67RV0024"
+  },
+  "C2836441/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:10+00:00",
+   "kind": "stock",
+   "lcsc": "C2836441",
+   "refs": [
+    "C59"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C2836441",
+   "value": "JLC can sell 101104, build needs 5 (JLC lists 112997, LCSC 90230)"
+  },
+  "C2915641/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C2915641",
+   "refs": [
+    "J4"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C2915641",
+   "value": "JLC sells it"
+  },
+  "C2915641/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "part_match",
+   "lcsc": "C2915641",
+   "refs": [
+    "J4"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C2915641",
+   "value": "BOM MPN DB128V-5.08-4P-GN-S vs JLC model DB128V-5.08-4P-GN-S"
+  },
+  "C2915641/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "stock",
+   "lcsc": "C2915641",
+   "refs": [
+    "J4"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C2915641",
+   "value": "JLC can sell 96185, build needs 5 (JLC lists 97473, LCSC 95470)"
+  },
+  "C2973667/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:14+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C2973667",
+   "refs": [
+    "U5"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C2973667",
+   "value": "JLC sells it"
+  },
+  "C2973667/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:14+00:00",
+   "kind": "part_match",
+   "lcsc": "C2973667",
+   "refs": [
+    "U5"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C2973667",
+   "value": "BOM value ESP32-WROVER-E-N8R8 in JLC model ESP32-WROVER-E-N8R8"
+  },
+  "C2973667/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:14+00:00",
+   "kind": "stock",
+   "lcsc": "C2973667",
+   "refs": [
+    "U5"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C2973667",
+   "value": "JLC can sell 2933, build needs 5 (JLC lists 4294, LCSC 1548)"
+  },
+  "C29823/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:08+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C29823",
+   "refs": [
+    "C4"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C29823",
+   "value": "JLC sells it"
+  },
+  "C29823/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:08+00:00",
+   "kind": "part_match",
+   "lcsc": "C29823",
+   "refs": [
+    "C4"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C29823",
+   "value": "BOM MPN 1206B475K500NT vs JLC model 1206B475K500NT"
+  },
+  "C29823/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:08+00:00",
+   "kind": "stock",
+   "lcsc": "C29823",
+   "refs": [
+    "C4"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C29823",
+   "value": "JLC can sell 659697, build needs 5 (JLC lists 807667, LCSC 239880)"
+  },
+  "C3/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C13585",
+   "refs": [
+    "C3"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C3",
+   "value": ""
+  },
+  "C3/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C13585",
+   "refs": [
+    "C3"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C3",
+   "value": ""
+  },
+  "C30/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C14663",
+   "refs": [
+    "C30"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C30",
+   "value": ""
+  },
+  "C30/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C14663",
+   "refs": [
+    "C30"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C30",
+   "value": ""
+  },
+  "C305171/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C305171",
+   "refs": [
+    "L6"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C305171",
+   "value": "JLC sells it"
+  },
+  "C305171/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "part_match",
+   "lcsc": "C305171",
+   "refs": [
+    "L6"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C305171",
+   "value": "BOM MPN SWPA4020S2R2NT vs JLC model SWPA4020S2R2NT"
+  },
+  "C305171/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "stock",
+   "lcsc": "C305171",
+   "refs": [
+    "L6"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C305171",
+   "value": "JLC can sell 4352, build needs 5 (JLC lists 4390, LCSC None)"
+  },
+  "C31/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C14663",
+   "refs": [
+    "C31"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C31",
+   "value": ""
+  },
+  "C31/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C14663",
+   "refs": [
+    "C31"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C31",
+   "value": ""
+  },
+  "C311983/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C311983",
+   "refs": [
+    "U2"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C311983",
+   "value": "JLC sells it"
+  },
+  "C311983/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "part_match",
+   "lcsc": "C311983",
+   "refs": [
+    "U2"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C311983",
+   "value": "BOM MPN TPS54302DDCR vs JLC model TPS54302DDCR"
+  },
+  "C311983/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "stock",
+   "lcsc": "C311983",
+   "refs": [
+    "U2"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C311983",
+   "value": "JLC can sell 54933, build needs 5 (JLC lists 61014, LCSC 57600)"
+  },
+  "C31850/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C31850",
+   "refs": [
+    "R16"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C31850",
+   "value": "JLC sells it"
+  },
+  "C31850/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "part_match",
+   "lcsc": "C31850",
+   "refs": [
+    "R16"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C31850",
+   "value": "BOM MPN 0603WAF2202T5E vs JLC model 0603WAF2202T5E"
+  },
+  "C31850/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "stock",
+   "lcsc": "C31850",
+   "refs": [
+    "R16"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C31850",
+   "value": "JLC can sell 2621375, build needs 5 (JLC lists 2931141, LCSC 1780700)"
+  },
+  "C318884/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C318884",
+   "refs": [
+    "SW1",
+    "SW2",
+    "SW3"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C318884",
+   "value": "JLC sells it"
+  },
+  "C318884/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "part_match",
+   "lcsc": "C318884",
+   "refs": [
+    "SW1",
+    "SW2",
+    "SW3"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C318884",
+   "value": "BOM MPN TS-1187A-B-A-B vs JLC model TS-1187A-B-A-B"
+  },
+  "C318884/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "stock",
+   "lcsc": "C318884",
+   "refs": [
+    "SW1",
+    "SW2",
+    "SW3"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C318884",
+   "value": "JLC can sell 1046056, build needs 15 (JLC lists 1118947, LCSC 849120)"
+  },
+  "C32/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C19666",
+   "refs": [
+    "C32"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C32",
+   "value": ""
+  },
+  "C32/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C19666",
+   "refs": [
+    "C32"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C32",
+   "value": ""
+  },
+  "C33/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C14663",
+   "refs": [
+    "C33"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C33",
+   "value": ""
+  },
+  "C33/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C14663",
+   "refs": [
+    "C33"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C33",
+   "value": ""
+  },
+  "C34/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C14663",
+   "refs": [
+    "C34"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C34",
+   "value": ""
+  },
+  "C34/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C14663",
+   "refs": [
+    "C34"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C34",
+   "value": ""
+  },
+  "C35/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C19702",
+   "refs": [
+    "C35"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C35",
+   "value": ""
+  },
+  "C35/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C19702",
+   "refs": [
+    "C35"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C35",
+   "value": ""
+  },
+  "C36/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C14663",
+   "refs": [
+    "C36"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C36",
+   "value": ""
+  },
+  "C36/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C14663",
+   "refs": [
+    "C36"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C36",
+   "value": ""
+  },
+  "C364296/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C364296",
+   "refs": [
+    "D1"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C364296",
+   "value": "JLC sells it"
+  },
+  "C364296/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "part_match",
+   "lcsc": "C364296",
+   "refs": [
+    "D1"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C364296",
+   "value": "BOM value SMBJ20A in JLC model SMBJ20A"
+  },
+  "C364296/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "stock",
+   "lcsc": "C364296",
+   "refs": [
+    "D1"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C364296",
+   "value": "JLC can sell 184392, build needs 5 (JLC lists 184529, LCSC 184520)"
+  },
+  "C365736/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:14+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C365736",
+   "refs": [
+    "U7"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C365736",
+   "value": "JLC sells it"
+  },
+  "C365736/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:14+00:00",
+   "kind": "part_match",
+   "lcsc": "C365736",
+   "refs": [
+    "U7"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C365736",
+   "value": "BOM value ES8388 in JLC model ES8388"
+  },
+  "C365736/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:14+00:00",
+   "kind": "stock",
+   "lcsc": "C365736",
+   "refs": [
+    "U7"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C365736",
+   "value": "JLC can sell 38474, build needs 5 (JLC lists 38960, LCSC 38960)"
+  },
+  "C37/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C19702",
+   "refs": [
+    "C37"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C37",
+   "value": ""
+  },
+  "C37/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C19702",
+   "refs": [
+    "C37"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C37",
+   "value": ""
+  },
+  "C38/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C14663",
+   "refs": [
+    "C38"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C38",
+   "value": ""
+  },
+  "C38/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C14663",
+   "refs": [
+    "C38"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C38",
+   "value": ""
+  },
+  "C39/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C19702",
+   "refs": [
+    "C39"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C39",
+   "value": ""
+  },
+  "C39/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C19702",
+   "refs": [
+    "C39"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C39",
+   "value": ""
+  },
+  "C4/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C29823",
+   "refs": [
+    "C4"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C4",
+   "value": ""
+  },
+  "C4/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C29823",
+   "refs": [
+    "C4"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C4",
+   "value": ""
+  },
+  "C40/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C14663",
+   "refs": [
+    "C40"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C40",
+   "value": ""
+  },
+  "C40/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C14663",
+   "refs": [
+    "C40"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C40",
+   "value": ""
+  },
+  "C41/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C15849",
+   "refs": [
+    "C41"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C41",
+   "value": ""
+  },
+  "C41/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C15849",
+   "refs": [
+    "C41"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C41",
+   "value": ""
+  },
+  "C4184/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C4184",
+   "refs": [
+    "R50"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C4184",
+   "value": "JLC sells it"
+  },
+  "C4184/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "part_match",
+   "lcsc": "C4184",
+   "refs": [
+    "R50"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C4184",
+   "value": "BOM MPN 0603WAF2002T5E vs JLC model 0603WAF2002T5E"
+  },
+  "C4184/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "stock",
+   "lcsc": "C4184",
+   "refs": [
+    "R50"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C4184",
+   "value": "JLC can sell 5309580, build needs 5 (JLC lists 6299103, LCSC 2492400)"
+  },
+  "C4190/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C4190",
+   "refs": [
+    "R22",
+    "R23"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C4190",
+   "value": "JLC sells it"
+  },
+  "C4190/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "part_match",
+   "lcsc": "C4190",
+   "refs": [
+    "R22",
+    "R23"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C4190",
+   "value": "BOM MPN 0603WAF2201T5E vs JLC model 0603WAF2201T5E"
+  },
+  "C4190/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "stock",
+   "lcsc": "C4190",
+   "refs": [
+    "R22",
+    "R23"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C4190",
+   "value": "JLC can sell 4824377, build needs 10 (JLC lists 5537231, LCSC 2955200)"
+  },
+  "C42/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C14858",
+   "refs": [
+    "C42"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C42",
+   "value": ""
+  },
+  "C42/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C14858",
+   "refs": [
+    "C42"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C42",
+   "value": ""
+  },
+  "C4216/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C4216",
+   "refs": [
+    "R12"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C4216",
+   "value": "JLC sells it"
+  },
+  "C4216/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "part_match",
+   "lcsc": "C4216",
+   "refs": [
+    "R12"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C4216",
+   "value": "BOM MPN 0603WAF3302T5E vs JLC model 0603WAF3302T5E"
+  },
+  "C4216/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:12+00:00",
+   "kind": "stock",
+   "lcsc": "C4216",
+   "refs": [
+    "R12"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C4216",
+   "value": "JLC can sell 3024742, build needs 5 (JLC lists 3237444, LCSC 2446200)"
+  },
+  "C42421366/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:14+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C42421366",
+   "refs": [
+    "U9"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C42421366",
+   "value": "JLC sells it"
+  },
+  "C42421366/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:14+00:00",
+   "kind": "part_match",
+   "lcsc": "C42421366",
+   "refs": [
+    "U9"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C42421366",
+   "value": "BOM value IRM-3638T in JLC model IRM-3638T"
+  },
+  "C42421366/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:14+00:00",
+   "kind": "stock",
+   "lcsc": "C42421366",
+   "refs": [
+    "U9"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C42421366",
+   "value": "JLC can sell 100718, build needs 5 (JLC lists 101017, LCSC 101015)"
+  },
+  "C42459160/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C42459160",
+   "refs": [
+    "U1"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C42459160",
+   "value": "JLC sells it"
+  },
+  "C42459160/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "part_match",
+   "lcsc": "C42459160",
+   "refs": [
+    "U1"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C42459160",
+   "value": "BOM value CH224A in JLC model CH224A"
+  },
+  "C42459160/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "stock",
+   "lcsc": "C42459160",
+   "refs": [
+    "U1"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C42459160",
+   "value": "JLC can sell 9178, build needs 5 (JLC lists 9394, LCSC 9394)"
+  },
+  "C44/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C15849",
+   "refs": [
+    "C44"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C44",
+   "value": ""
+  },
+  "C44/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C15849",
+   "refs": [
+    "C44"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C44",
+   "value": ""
+  },
+  "C45/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C14858",
+   "refs": [
+    "C45"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C45",
+   "value": ""
+  },
+  "C45/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C14858",
+   "refs": [
+    "C45"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C45",
+   "value": ""
+  },
+  "C45783/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:08+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C45783",
+   "refs": [
+    "C7",
+    "C8",
+    "C12",
+    "C25"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C45783",
+   "value": "JLC sells it"
+  },
+  "C45783/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:08+00:00",
+   "kind": "part_match",
+   "lcsc": "C45783",
+   "refs": [
+    "C7",
+    "C8",
+    "C12",
+    "C25"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C45783",
+   "value": "BOM MPN CL21A226MAQNNNE vs JLC model CL21A226MAQNNNE"
+  },
+  "C45783/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:08+00:00",
+   "kind": "stock",
+   "lcsc": "C45783",
+   "refs": [
+    "C7",
+    "C8",
+    "C12",
+    "C25"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C45783",
+   "value": "JLC can sell 2835166, build needs 20 (JLC lists 3779186, LCSC 263180)"
+  },
+  "C46497/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:14+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C46497",
+   "refs": [
+    "U8"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C46497",
+   "value": "JLC sells it"
+  },
+  "C46497/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:14+00:00",
+   "kind": "part_match",
+   "lcsc": "C46497",
+   "refs": [
+    "U8"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C46497",
+   "value": "BOM MPN TPA3118D2DAPR vs JLC model TPA3118D2DAPR"
+  },
+  "C46497/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:14+00:00",
+   "kind": "stock",
+   "lcsc": "C46497",
+   "refs": [
+    "U8"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C46497",
+   "value": "JLC can sell 32988, build needs 5 (JLC lists 33486, LCSC 32525)"
+  },
+  "C46550472/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:10+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C46550472",
+   "refs": [
+    "C58"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C46550472",
+   "value": "JLC sells it"
+  },
+  "C46550472/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:10+00:00",
+   "kind": "part_match",
+   "lcsc": "C46550472",
+   "refs": [
+    "C58"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C46550472",
+   "value": "BOM MPN MA35V470M10X13 vs JLC model MA35V470M10X13"
+  },
+  "C46550472/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:10+00:00",
+   "kind": "stock",
+   "lcsc": "C46550472",
+   "refs": [
+    "C58"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C46550472",
+   "value": "JLC can sell 72488, build needs 5 (JLC lists 72699, LCSC 72699)"
+  },
+  "C47/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C19702",
+   "refs": [
+    "C47"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C47",
+   "value": ""
+  },
+  "C47/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C19702",
+   "refs": [
+    "C47"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C47",
+   "value": ""
+  },
+  "C479074/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C479074",
+   "refs": [
+    "U3"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C479074",
+   "value": "JLC sells it"
+  },
+  "C479074/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "part_match",
+   "lcsc": "C479074",
+   "refs": [
+    "U3"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C479074",
+   "value": "BOM value SY8089A1AAC in JLC model SY8089A1AAC"
+  },
+  "C479074/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "stock",
+   "lcsc": "C479074",
+   "refs": [
+    "U3"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C479074",
+   "value": "JLC can sell 67588, build needs 5 (JLC lists 70100, LCSC 68905)"
+  },
+  "C48/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C19702",
+   "refs": [
+    "C48"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C48",
+   "value": ""
+  },
+  "C48/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C19702",
+   "refs": [
+    "C48"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C48",
+   "value": ""
+  },
+  "C48391614/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C48391614",
+   "refs": [
+    "L1",
+    "L2",
+    "L3",
+    "L4"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C48391614",
+   "value": "JLC sells it"
+  },
+  "C48391614/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "part_match",
+   "lcsc": "C48391614",
+   "refs": [
+    "L1",
+    "L2",
+    "L3",
+    "L4"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C48391614",
+   "value": "BOM MPN XR0850-100M vs JLC model XR0850-100M"
+  },
+  "C48391614/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "stock",
+   "lcsc": "C48391614",
+   "refs": [
+    "L1",
+    "L2",
+    "L3",
+    "L4"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C48391614",
+   "value": "JLC can sell 1587, build needs 20 (JLC lists 1676, LCSC 1675)"
+  },
+  "C5/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C14663",
+   "refs": [
+    "C5"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C5",
+   "value": ""
+  },
+  "C5/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C14663",
+   "refs": [
+    "C5"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C5",
+   "value": ""
+  },
+  "C50/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C15849",
+   "refs": [
+    "C50"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C50",
+   "value": ""
+  },
+  "C50/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C15849",
+   "refs": [
+    "C50"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C50",
+   "value": ""
+  },
+  "C51/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C28323",
+   "refs": [
+    "C51"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C51",
+   "value": ""
+  },
+  "C51/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C28323",
+   "refs": [
+    "C51"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C51",
+   "value": ""
+  },
+  "C5125949/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C5125949",
+   "refs": [
+    "Q1"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C5125949",
+   "value": "JLC sells it"
+  },
+  "C5125949/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "part_match",
+   "lcsc": "C5125949",
+   "refs": [
+    "Q1"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C5125949",
+   "value": "BOM value AO4485 in JLC model AO4485"
+  },
+  "C5125949/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "stock",
+   "lcsc": "C5125949",
+   "refs": [
+    "Q1"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C5125949",
+   "value": "JLC can sell 11603, build needs 5 (JLC lists 11795, LCSC 11795)"
+  },
+  "C52/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C28323",
+   "refs": [
+    "C52"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C52",
+   "value": ""
+  },
+  "C52/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C28323",
+   "refs": [
+    "C52"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C52",
+   "value": ""
+  },
+  "C53/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C14663",
+   "refs": [
+    "C53"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C53",
+   "value": ""
+  },
+  "C53/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C14663",
+   "refs": [
+    "C53"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C53",
+   "value": ""
+  },
+  "C54/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C1588",
+   "refs": [
+    "C54"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C54",
+   "value": ""
+  },
+  "C54/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C1588",
+   "refs": [
+    "C54"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C54",
+   "value": ""
+  },
+  "C55/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C28323",
+   "refs": [
+    "C55"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C55",
+   "value": ""
+  },
+  "C55/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C28323",
+   "refs": [
+    "C55"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C55",
+   "value": ""
+  },
+  "C56/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C14663",
+   "refs": [
+    "C56"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C56",
+   "value": ""
+  },
+  "C56/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C14663",
+   "refs": [
+    "C56"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C56",
+   "value": ""
+  },
+  "C57/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C1588",
+   "refs": [
+    "C57"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C57",
+   "value": ""
+  },
+  "C57/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C1588",
+   "refs": [
+    "C57"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C57",
+   "value": ""
+  },
+  "C58/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C46550472",
+   "refs": [
+    "C58"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C58",
+   "value": ""
+  },
+  "C58/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C46550472",
+   "refs": [
+    "C58"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C58",
+   "value": ""
+  },
+  "C59/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C2836441",
+   "refs": [
+    "C59"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C59",
+   "value": ""
+  },
+  "C59/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C2836441",
+   "refs": [
+    "C59"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C59",
+   "value": ""
+  },
+  "C6/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C14663",
+   "refs": [
+    "C6"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C6",
+   "value": ""
+  },
+  "C6/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C14663",
+   "refs": [
+    "C6"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C6",
+   "value": ""
+  },
+  "C60/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C15849",
+   "refs": [
+    "C60"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C60",
+   "value": ""
+  },
+  "C60/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C15849",
+   "refs": [
+    "C60"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C60",
+   "value": ""
+  },
+  "C61/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C15849",
+   "refs": [
+    "C61"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C61",
+   "value": ""
+  },
+  "C61/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C15849",
+   "refs": [
+    "C61"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C61",
+   "value": ""
+  },
+  "C62/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C15849",
+   "refs": [
+    "C62"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C62",
+   "value": ""
+  },
+  "C62/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C15849",
+   "refs": [
+    "C62"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C62",
+   "value": ""
+  },
+  "C63/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C15849",
+   "refs": [
+    "C63"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C63",
+   "value": ""
+  },
+  "C63/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C15849",
+   "refs": [
+    "C63"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C63",
+   "value": ""
+  },
+  "C64/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C21120",
+   "refs": [
+    "C64"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C64",
+   "value": ""
+  },
+  "C64/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C21120",
+   "refs": [
+    "C64"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C64",
+   "value": ""
+  },
+  "C65/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C21120",
+   "refs": [
+    "C65"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C65",
+   "value": ""
+  },
+  "C65/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C21120",
+   "refs": [
+    "C65"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C65",
+   "value": ""
+  },
+  "C66/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C21120",
+   "refs": [
+    "C66"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C66",
+   "value": ""
+  },
+  "C66/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C21120",
+   "refs": [
+    "C66"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C66",
+   "value": ""
+  },
+  "C67/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C21120",
+   "refs": [
+    "C67"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C67",
+   "value": ""
+  },
+  "C67/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C21120",
+   "refs": [
+    "C67"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C67",
+   "value": ""
+  },
+  "C68/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C1848",
+   "refs": [
+    "C68"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C68",
+   "value": ""
+  },
+  "C68/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C1848",
+   "refs": [
+    "C68"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C68",
+   "value": ""
+  },
+  "C69/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C1848",
+   "refs": [
+    "C69"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C69",
+   "value": ""
+  },
+  "C69/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C1848",
+   "refs": [
+    "C69"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C69",
+   "value": ""
+  },
+  "C7/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C45783",
+   "refs": [
+    "C7"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C7",
+   "value": ""
+  },
+  "C7/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C45783",
+   "refs": [
+    "C7"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C7",
+   "value": ""
+  },
+  "C70/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C1848",
+   "refs": [
+    "C70"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C70",
+   "value": ""
+  },
+  "C70/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C1848",
+   "refs": [
+    "C70"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C70",
+   "value": ""
+  },
+  "C71/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C1848",
+   "refs": [
+    "C71"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C71",
+   "value": ""
+  },
+  "C71/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C1848",
+   "refs": [
+    "C71"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C71",
+   "value": ""
+  },
+  "C7527522/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C7527522",
+   "refs": [
+    "J2",
+    "J3"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C7527522",
+   "value": "JLC sells it"
+  },
+  "C7527522/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "part_match",
+   "lcsc": "C7527522",
+   "refs": [
+    "J2",
+    "J3"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C7527522",
+   "value": "BOM MPN XDJK-0271-1650 vs JLC model XDJK-0271-1650"
+  },
+  "C7527522/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "stock",
+   "lcsc": "C7527522",
+   "refs": [
+    "J2",
+    "J3"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C7527522",
+   "value": "JLC can sell 4228, build needs 10 (JLC lists 4328, LCSC 4325)"
+  },
+  "C79272/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C79272",
+   "refs": [
+    "L5"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C79272",
+   "value": "JLC sells it"
+  },
+  "C79272/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "part_match",
+   "lcsc": "C79272",
+   "refs": [
+    "L5"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C79272",
+   "value": "BOM MPN SWPA6045S100MT vs JLC model SWPA6045S100MT"
+  },
+  "C79272/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:11+00:00",
+   "kind": "stock",
+   "lcsc": "C79272",
+   "refs": [
+    "L5"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C79272",
+   "value": "JLC can sell 5126, build needs 5 (JLC lists 5751, LCSC None)"
+  },
+  "C8/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C45783",
+   "refs": [
+    "C8"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C8",
+   "value": ""
+  },
+  "C8/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C45783",
+   "refs": [
+    "C8"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C8",
+   "value": ""
+  },
+  "C80/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C19666",
+   "refs": [
+    "C80"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C80",
+   "value": ""
+  },
+  "C80/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C19666",
+   "refs": [
+    "C80"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C80",
+   "value": ""
+  },
+  "C80670/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C80670",
+   "refs": [
+    "U4"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C80670",
+   "value": "JLC sells it"
+  },
+  "C80670/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "part_match",
+   "lcsc": "C80670",
+   "refs": [
+    "U4"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C80670",
+   "value": "BOM MPN LP5907MFX-3.3/NOPB vs JLC model LP5907MFX-3.3/NOPB"
+  },
+  "C80670/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:13+00:00",
+   "kind": "stock",
+   "lcsc": "C80670",
+   "refs": [
+    "U4"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C80670",
+   "value": "JLC can sell 31303, build needs 5 (JLC lists 32994, LCSC 30000)"
+  },
+  "C81/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C1620",
+   "refs": [
+    "C81"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C81",
+   "value": ""
+  },
+  "C81/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C1620",
+   "refs": [
+    "C81"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C81",
+   "value": ""
+  },
+  "C81010/lifecycle": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:14+00:00",
+   "kind": "lifecycle",
+   "lcsc": "C81010",
+   "refs": [
+    "U6"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C81010",
+   "value": "JLC sells it"
+  },
+  "C81010/part_match": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:14+00:00",
+   "kind": "part_match",
+   "lcsc": "C81010",
+   "refs": [
+    "U6"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C81010",
+   "value": "BOM value CH340B in JLC model CH340B"
+  },
+  "C81010/stock": {
+   "by": "stock_check",
+   "checked_at": "2026-10-30T08:12:14+00:00",
+   "kind": "stock",
+   "lcsc": "C81010",
+   "refs": [
+    "U6"
+   ],
+   "source": "JLC parts library record (jlcpcb.com smtGood search) and LCSC product detail (wmsc.lcsc.com)",
+   "status": "verified",
+   "subject": "C81010",
+   "value": "JLC can sell 4745, build needs 5 (JLC lists 5010, LCSC 4560)"
+  },
+  "C82/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C15849",
+   "refs": [
+    "C82"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C82",
+   "value": ""
+  },
+  "C82/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C15849",
+   "refs": [
+    "C82"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C82",
+   "value": ""
+  },
+  "C83/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C1620",
+   "refs": [
+    "C83"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C83",
+   "value": ""
+  },
+  "C83/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C1620",
+   "refs": [
+    "C83"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C83",
+   "value": ""
+  },
+  "C84/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C15849",
+   "refs": [
+    "C84"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C84",
+   "value": ""
+  },
+  "C84/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C15849",
+   "refs": [
+    "C84"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C84",
+   "value": ""
+  },
+  "C9/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C1671",
+   "refs": [
+    "C9"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C9",
+   "value": ""
+  },
+  "C9/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C1671",
+   "refs": [
+    "C9"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "C9",
+   "value": ""
+  },
+  "D1/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C364296",
+   "refs": [
+    "D1"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "D1",
+   "value": ""
+  },
+  "D1/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C364296",
+   "refs": [
+    "D1"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "D1",
+   "value": ""
+  },
+  "D2/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C2286",
+   "refs": [
+    "D2"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "D2",
+   "value": ""
+  },
+  "D2/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C2286",
+   "refs": [
+    "D2"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "D2",
+   "value": ""
+  },
+  "J1/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C165948",
+   "refs": [
+    "J1"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "J1",
+   "value": ""
+  },
+  "J1/pinout": {
+   "by": null,
+   "checked_at": null,
+   "kind": "pinout",
+   "lcsc": "C165948",
+   "refs": [
+    "J1"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "J1",
+   "value": ""
+  },
+  "J1/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C165948",
+   "refs": [
+    "J1"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "J1",
+   "value": ""
+  },
+  "J2/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C7527522",
+   "refs": [
+    "J2"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "J2",
+   "value": ""
+  },
+  "J2/pinout": {
+   "by": null,
+   "checked_at": null,
+   "kind": "pinout",
+   "lcsc": "C7527522",
+   "refs": [
+    "J2"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "J2",
+   "value": ""
+  },
+  "J2/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C7527522",
+   "refs": [
+    "J2"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "J2",
+   "value": ""
+  },
+  "J3/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C7527522",
+   "refs": [
+    "J3"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "J3",
+   "value": ""
+  },
+  "J3/pinout": {
+   "by": null,
+   "checked_at": null,
+   "kind": "pinout",
+   "lcsc": "C7527522",
+   "refs": [
+    "J3"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "J3",
+   "value": ""
+  },
+  "J3/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C7527522",
+   "refs": [
+    "J3"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "J3",
+   "value": ""
+  },
+  "J4/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C2915641",
+   "refs": [
+    "J4"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "J4",
+   "value": ""
+  },
+  "J4/pinout": {
+   "by": null,
+   "checked_at": null,
+   "kind": "pinout",
+   "lcsc": "C2915641",
+   "refs": [
+    "J4"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "J4",
+   "value": ""
+  },
+  "J4/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C2915641",
+   "refs": [
+    "J4"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "J4",
+   "value": ""
+  },
+  "L1/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C48391614",
+   "refs": [
+    "L1"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "L1",
+   "value": ""
+  },
+  "L1/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C48391614",
+   "refs": [
+    "L1"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "L1",
+   "value": ""
+  },
+  "L2/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C48391614",
+   "refs": [
+    "L2"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "L2",
+   "value": ""
+  },
+  "L2/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C48391614",
+   "refs": [
+    "L2"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "L2",
+   "value": ""
+  },
+  "L3/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C48391614",
+   "refs": [
+    "L3"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "L3",
+   "value": ""
+  },
+  "L3/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C48391614",
+   "refs": [
+    "L3"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "L3",
+   "value": ""
+  },
+  "L4/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C48391614",
+   "refs": [
+    "L4"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "L4",
+   "value": ""
+  },
+  "L4/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C48391614",
+   "refs": [
+    "L4"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "L4",
+   "value": ""
+  },
+  "L5/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C79272",
+   "refs": [
+    "L5"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "L5",
+   "value": ""
+  },
+  "L5/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C79272",
+   "refs": [
+    "L5"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "L5",
+   "value": ""
+  },
+  "L6/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C305171",
+   "refs": [
+    "L6"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "L6",
+   "value": ""
+  },
+  "L6/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C305171",
+   "refs": [
+    "L6"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "L6",
+   "value": ""
+  },
+  "Q1/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C5125949",
+   "refs": [
+    "Q1"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "Q1",
+   "value": ""
+  },
+  "Q1/pinout": {
+   "by": null,
+   "checked_at": null,
+   "kind": "pinout",
+   "lcsc": "C5125949",
+   "refs": [
+    "Q1"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "Q1",
+   "value": ""
+  },
+  "Q1/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C5125949",
+   "refs": [
+    "Q1"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "Q1",
+   "value": ""
+  },
+  "Q2/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C20526",
+   "refs": [
+    "Q2"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "Q2",
+   "value": ""
+  },
+  "Q2/pinout": {
+   "by": null,
+   "checked_at": null,
+   "kind": "pinout",
+   "lcsc": "C20526",
+   "refs": [
+    "Q2"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "Q2",
+   "value": ""
+  },
+  "Q2/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C20526",
+   "refs": [
+    "Q2"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "Q2",
+   "value": ""
+  },
+  "Q3/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C20526",
+   "refs": [
+    "Q3"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "Q3",
+   "value": ""
+  },
+  "Q3/pinout": {
+   "by": null,
+   "checked_at": null,
+   "kind": "pinout",
+   "lcsc": "C20526",
+   "refs": [
+    "Q3"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "Q3",
+   "value": ""
+  },
+  "Q3/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C20526",
+   "refs": [
+    "Q3"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "Q3",
+   "value": ""
+  },
+  "Q4/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C20526",
+   "refs": [
+    "Q4"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "Q4",
+   "value": ""
+  },
+  "Q4/pinout": {
+   "by": null,
+   "checked_at": null,
+   "kind": "pinout",
+   "lcsc": "C20526",
+   "refs": [
+    "Q4"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "Q4",
+   "value": ""
+  },
+  "Q4/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C20526",
+   "refs": [
+    "Q4"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "Q4",
+   "value": ""
+  },
+  "R1/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25808",
+   "refs": [
+    "R1"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R1",
+   "value": ""
+  },
+  "R1/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25808",
+   "refs": [
+    "R1"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R1",
+   "value": ""
+  },
+  "R10/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C22797",
+   "refs": [
+    "R10"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R10",
+   "value": ""
+  },
+  "R10/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C22797",
+   "refs": [
+    "R10"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R10",
+   "value": ""
+  },
+  "R11/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C22807",
+   "refs": [
+    "R11"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R11",
+   "value": ""
+  },
+  "R11/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C22807",
+   "refs": [
+    "R11"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R11",
+   "value": ""
+  },
+  "R12/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C4216",
+   "refs": [
+    "R12"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R12",
+   "value": ""
+  },
+  "R12/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C4216",
+   "refs": [
+    "R12"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R12",
+   "value": ""
+  },
+  "R13/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25803",
+   "refs": [
+    "R13"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R13",
+   "value": ""
+  },
+  "R13/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25803",
+   "refs": [
+    "R13"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R13",
+   "value": ""
+  },
+  "R14/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25804",
+   "refs": [
+    "R14"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R14",
+   "value": ""
+  },
+  "R14/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25804",
+   "refs": [
+    "R14"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R14",
+   "value": ""
+  },
+  "R15/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C21190",
+   "refs": [
+    "R15"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R15",
+   "value": ""
+  },
+  "R15/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C21190",
+   "refs": [
+    "R15"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R15",
+   "value": ""
+  },
+  "R16/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C31850",
+   "refs": [
+    "R16"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R16",
+   "value": ""
+  },
+  "R16/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C31850",
+   "refs": [
+    "R16"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R16",
+   "value": ""
+  },
+  "R17/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25803",
+   "refs": [
+    "R17"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R17",
+   "value": ""
+  },
+  "R17/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25803",
+   "refs": [
+    "R17"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R17",
+   "value": ""
+  },
+  "R18/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25804",
+   "refs": [
+    "R18"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R18",
+   "value": ""
+  },
+  "R18/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25804",
+   "refs": [
+    "R18"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R18",
+   "value": ""
+  },
+  "R2/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C21189",
+   "refs": [
+    "R2"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R2",
+   "value": ""
+  },
+  "R2/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C21189",
+   "refs": [
+    "R2"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R2",
+   "value": ""
+  },
+  "R20/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25804",
+   "refs": [
+    "R20"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R20",
+   "value": ""
+  },
+  "R20/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25804",
+   "refs": [
+    "R20"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R20",
+   "value": ""
+  },
+  "R21/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25804",
+   "refs": [
+    "R21"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R21",
+   "value": ""
+  },
+  "R21/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25804",
+   "refs": [
+    "R21"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R21",
+   "value": ""
+  },
+  "R22/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C4190",
+   "refs": [
+    "R22"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R22",
+   "value": ""
+  },
+  "R22/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C4190",
+   "refs": [
+    "R22"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R22",
+   "value": ""
+  },
+  "R23/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C4190",
+   "refs": [
+    "R23"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R23",
+   "value": ""
+  },
+  "R23/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C4190",
+   "refs": [
+    "R23"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R23",
+   "value": ""
+  },
+  "R24/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25804",
+   "refs": [
+    "R24"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R24",
+   "value": ""
+  },
+  "R24/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25804",
+   "refs": [
+    "R24"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R24",
+   "value": ""
+  },
+  "R25/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25804",
+   "refs": [
+    "R25"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R25",
+   "value": ""
+  },
+  "R25/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25804",
+   "refs": [
+    "R25"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R25",
+   "value": ""
+  },
+  "R3/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C21189",
+   "refs": [
+    "R3"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R3",
+   "value": ""
+  },
+  "R3/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C21189",
+   "refs": [
+    "R3"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R3",
+   "value": ""
+  },
+  "R30/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C22809",
+   "refs": [
+    "R30"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R30",
+   "value": ""
+  },
+  "R30/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C22809",
+   "refs": [
+    "R30"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R30",
+   "value": ""
+  },
+  "R31/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25804",
+   "refs": [
+    "R31"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R31",
+   "value": ""
+  },
+  "R31/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25804",
+   "refs": [
+    "R31"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R31",
+   "value": ""
+  },
+  "R33/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C22809",
+   "refs": [
+    "R33"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R33",
+   "value": ""
+  },
+  "R33/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C22809",
+   "refs": [
+    "R33"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R33",
+   "value": ""
+  },
+  "R34/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25804",
+   "refs": [
+    "R34"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R34",
+   "value": ""
+  },
+  "R34/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25804",
+   "refs": [
+    "R34"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R34",
+   "value": ""
+  },
+  "R36/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C22775",
+   "refs": [
+    "R36"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R36",
+   "value": ""
+  },
+  "R36/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C22775",
+   "refs": [
+    "R36"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R36",
+   "value": ""
+  },
+  "R37/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25819",
+   "refs": [
+    "R37"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R37",
+   "value": ""
+  },
+  "R37/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25819",
+   "refs": [
+    "R37"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R37",
+   "value": ""
+  },
+  "R38/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C22775",
+   "refs": [
+    "R38"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R38",
+   "value": ""
+  },
+  "R38/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C22775",
+   "refs": [
+    "R38"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R38",
+   "value": ""
+  },
+  "R39/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25819",
+   "refs": [
+    "R39"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R39",
+   "value": ""
+  },
+  "R39/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25819",
+   "refs": [
+    "R39"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R39",
+   "value": ""
+  },
+  "R4/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25804",
+   "refs": [
+    "R4"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R4",
+   "value": ""
+  },
+  "R4/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25804",
+   "refs": [
+    "R4"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R4",
+   "value": ""
+  },
+  "R5/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25803",
+   "refs": [
+    "R5"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R5",
+   "value": ""
+  },
+  "R5/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25803",
+   "refs": [
+    "R5"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R5",
+   "value": ""
+  },
+  "R50/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C4184",
+   "refs": [
+    "R50"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R50",
+   "value": ""
+  },
+  "R50/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C4184",
+   "refs": [
+    "R50"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R50",
+   "value": ""
+  },
+  "R51/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25803",
+   "refs": [
+    "R51"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R51",
+   "value": ""
+  },
+  "R51/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25803",
+   "refs": [
+    "R51"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R51",
+   "value": ""
+  },
+  "R52/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25803",
+   "refs": [
+    "R52"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R52",
+   "value": ""
+  },
+  "R52/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25803",
+   "refs": [
+    "R52"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R52",
+   "value": ""
+  },
+  "R53/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25804",
+   "refs": [
+    "R53"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R53",
+   "value": ""
+  },
+  "R53/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25804",
+   "refs": [
+    "R53"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R53",
+   "value": ""
+  },
+  "R54/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25804",
+   "refs": [
+    "R54"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R54",
+   "value": ""
+  },
+  "R54/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25804",
+   "refs": [
+    "R54"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R54",
+   "value": ""
+  },
+  "R6/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C22961",
+   "refs": [
+    "R6"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R6",
+   "value": ""
+  },
+  "R6/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C22961",
+   "refs": [
+    "R6"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R6",
+   "value": ""
+  },
+  "R60/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25804",
+   "refs": [
+    "R60"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R60",
+   "value": ""
+  },
+  "R60/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25804",
+   "refs": [
+    "R60"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R60",
+   "value": ""
+  },
+  "R61/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25804",
+   "refs": [
+    "R61"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R61",
+   "value": ""
+  },
+  "R61/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25804",
+   "refs": [
+    "R61"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R61",
+   "value": ""
+  },
+  "R62/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25804",
+   "refs": [
+    "R62"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R62",
+   "value": ""
+  },
+  "R62/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25804",
+   "refs": [
+    "R62"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R62",
+   "value": ""
+  },
+  "R63/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25804",
+   "refs": [
+    "R63"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R63",
+   "value": ""
+  },
+  "R63/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25804",
+   "refs": [
+    "R63"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R63",
+   "value": ""
+  },
+  "R64/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C21190",
+   "refs": [
+    "R64"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R64",
+   "value": ""
+  },
+  "R64/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C21190",
+   "refs": [
+    "R64"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R64",
+   "value": ""
+  },
+  "R65/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C22775",
+   "refs": [
+    "R65"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R65",
+   "value": ""
+  },
+  "R65/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C22775",
+   "refs": [
+    "R65"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R65",
+   "value": ""
+  },
+  "R66/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25803",
+   "refs": [
+    "R66"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R66",
+   "value": ""
+  },
+  "R66/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25803",
+   "refs": [
+    "R66"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R66",
+   "value": ""
+  },
+  "R67/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25804",
+   "refs": [
+    "R67"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R67",
+   "value": ""
+  },
+  "R67/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25804",
+   "refs": [
+    "R67"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R67",
+   "value": ""
+  },
+  "R68/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25803",
+   "refs": [
+    "R68"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R68",
+   "value": ""
+  },
+  "R68/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25803",
+   "refs": [
+    "R68"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R68",
+   "value": ""
+  },
+  "R69/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25804",
+   "refs": [
+    "R69"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R69",
+   "value": ""
+  },
+  "R69/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25804",
+   "refs": [
+    "R69"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R69",
+   "value": ""
+  },
+  "R7/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25804",
+   "refs": [
+    "R7"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R7",
+   "value": ""
+  },
+  "R7/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25804",
+   "refs": [
+    "R7"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R7",
+   "value": ""
+  },
+  "R8/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25803",
+   "refs": [
+    "R8"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R8",
+   "value": ""
+  },
+  "R8/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25803",
+   "refs": [
+    "R8"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R8",
+   "value": ""
+  },
+  "R9/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C25803",
+   "refs": [
+    "R9"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R9",
+   "value": ""
+  },
+  "R9/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C25803",
+   "refs": [
+    "R9"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "R9",
+   "value": ""
+  },
+  "SW1/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C318884",
+   "refs": [
+    "SW1"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "SW1",
+   "value": ""
+  },
+  "SW1/pinout": {
+   "by": null,
+   "checked_at": null,
+   "kind": "pinout",
+   "lcsc": "C318884",
+   "refs": [
+    "SW1"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "SW1",
+   "value": ""
+  },
+  "SW1/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C318884",
+   "refs": [
+    "SW1"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "SW1",
+   "value": ""
+  },
+  "SW2/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C318884",
+   "refs": [
+    "SW2"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "SW2",
+   "value": ""
+  },
+  "SW2/pinout": {
+   "by": null,
+   "checked_at": null,
+   "kind": "pinout",
+   "lcsc": "C318884",
+   "refs": [
+    "SW2"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "SW2",
+   "value": ""
+  },
+  "SW2/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C318884",
+   "refs": [
+    "SW2"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "SW2",
+   "value": ""
+  },
+  "SW3/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C318884",
+   "refs": [
+    "SW3"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "SW3",
+   "value": ""
+  },
+  "SW3/pinout": {
+   "by": null,
+   "checked_at": null,
+   "kind": "pinout",
+   "lcsc": "C318884",
+   "refs": [
+    "SW3"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "SW3",
+   "value": ""
+  },
+  "SW3/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C318884",
+   "refs": [
+    "SW3"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "SW3",
+   "value": ""
+  },
+  "U1/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C42459160",
+   "refs": [
+    "U1"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U1",
+   "value": ""
+  },
+  "U1/pinout": {
+   "by": null,
+   "checked_at": null,
+   "kind": "pinout",
+   "lcsc": "C42459160",
+   "refs": [
+    "U1"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U1",
+   "value": ""
+  },
+  "U1/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C42459160",
+   "refs": [
+    "U1"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U1",
+   "value": ""
+  },
+  "U2/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C311983",
+   "refs": [
+    "U2"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U2",
+   "value": ""
+  },
+  "U2/pinout": {
+   "by": null,
+   "checked_at": null,
+   "kind": "pinout",
+   "lcsc": "C311983",
+   "refs": [
+    "U2"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U2",
+   "value": ""
+  },
+  "U2/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C311983",
+   "refs": [
+    "U2"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U2",
+   "value": ""
+  },
+  "U3/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C479074",
+   "refs": [
+    "U3"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U3",
+   "value": ""
+  },
+  "U3/pinout": {
+   "by": null,
+   "checked_at": null,
+   "kind": "pinout",
+   "lcsc": "C479074",
+   "refs": [
+    "U3"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U3",
+   "value": ""
+  },
+  "U3/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C479074",
+   "refs": [
+    "U3"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U3",
+   "value": ""
+  },
+  "U4/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C80670",
+   "refs": [
+    "U4"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U4",
+   "value": ""
+  },
+  "U4/pinout": {
+   "by": null,
+   "checked_at": null,
+   "kind": "pinout",
+   "lcsc": "C80670",
+   "refs": [
+    "U4"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U4",
+   "value": ""
+  },
+  "U4/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C80670",
+   "refs": [
+    "U4"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U4",
+   "value": ""
+  },
+  "U5/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C2973667",
+   "refs": [
+    "U5"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U5",
+   "value": ""
+  },
+  "U5/pinout": {
+   "by": null,
+   "checked_at": null,
+   "kind": "pinout",
+   "lcsc": "C2973667",
+   "refs": [
+    "U5"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U5",
+   "value": ""
+  },
+  "U5/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C2973667",
+   "refs": [
+    "U5"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U5",
+   "value": ""
+  },
+  "U6/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C81010",
+   "refs": [
+    "U6"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U6",
+   "value": ""
+  },
+  "U6/pinout": {
+   "by": null,
+   "checked_at": null,
+   "kind": "pinout",
+   "lcsc": "C81010",
+   "refs": [
+    "U6"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U6",
+   "value": ""
+  },
+  "U6/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C81010",
+   "refs": [
+    "U6"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U6",
+   "value": ""
+  },
+  "U7/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C365736",
+   "refs": [
+    "U7"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U7",
+   "value": ""
+  },
+  "U7/pinout": {
+   "by": null,
+   "checked_at": null,
+   "kind": "pinout",
+   "lcsc": "C365736",
+   "refs": [
+    "U7"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U7",
+   "value": ""
+  },
+  "U7/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C365736",
+   "refs": [
+    "U7"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U7",
+   "value": ""
+  },
+  "U8/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C46497",
+   "refs": [
+    "U8"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U8",
+   "value": ""
+  },
+  "U8/pinout": {
+   "by": null,
+   "checked_at": null,
+   "kind": "pinout",
+   "lcsc": "C46497",
+   "refs": [
+    "U8"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U8",
+   "value": ""
+  },
+  "U8/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C46497",
+   "refs": [
+    "U8"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U8",
+   "value": ""
+  },
+  "U9/footprint": {
+   "by": null,
+   "checked_at": null,
+   "kind": "footprint",
+   "lcsc": "C42421366",
+   "refs": [
+    "U9"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U9",
+   "value": ""
+  },
+  "U9/pinout": {
+   "by": null,
+   "checked_at": null,
+   "kind": "pinout",
+   "lcsc": "C42421366",
+   "refs": [
+    "U9"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U9",
+   "value": ""
+  },
+  "U9/rating": {
+   "by": null,
+   "checked_at": null,
+   "kind": "rating",
+   "lcsc": "C42421366",
+   "refs": [
+    "U9"
+   ],
+   "source": "",
+   "status": "unknown",
+   "subject": "U9",
+   "value": ""
+  }
+ },
+ "schema": 1,
+ "updated": "2026-10-30T08:12:16+00:00"
+}

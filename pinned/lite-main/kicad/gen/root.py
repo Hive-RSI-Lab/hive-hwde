@@ -55,13 +55,15 @@ FP = {"0603R": "Resistor_SMD:R_0603_1608Metric",
 R = {"0R": "C21189", "10R": "C22859", "100R": "C22775", "1k": "C21190",
      "2.2k": "C4190", "10k": "C25804", "13k": "C22797", "20k": "C4184", "22k": "C31850",
      "33k": "C4216", "47k": "C25819", "100k": "C25803", "120k": "C25808",
-     "150k": "C22807"}
+     "150k": "C22807", "15k": "C22809", "220k": "C22961"}
 C = {"4.7uF/50V": ("C29823", "1206"), "10uF/50V": ("C13585", "1206"), "22pF": ("C1653", "0603"), "100pF": ("C14858", "0603"),
      "1nF": ("C1588", "0603"), "100nF": ("C14663", "0603"),
      "220nF": ("C21120", "0603"), "1uF": ("C15849", "0603"),
      "1uF/0805": ("C28323", "0805"), "1uF/1206": ("C1848", "1206"),
      "4.7uF": ("C19666", "0603"), "10uF": ("C19702", "0603"),
-     "10uF/25V": ("C15850", "0805"), "22uF/25V": ("C45783", "0805")}
+     "10uF/25V": ("C15850", "0805"), "22uF/25V": ("C45783", "0805"),
+     "47pF": ("C1671", "0603"), "470pF": ("C1620", "0603"), "47nF": ("C1622", "0603"),
+     "2.2uF/50V": ("C377773", "0805")}
 
 BOM: list[dict] = []          # ref -> LCSC lines for parts.json
 sheet = schlib.Sheet(BOARD, title="lite-main: hifi-receiver-2 Lite", paper="A0",
@@ -103,8 +105,9 @@ def _bbox(lib_id: str):
     return min(xs), max(xs), min(ys), max(ys)
 
 
-def ic(region, ref, lcsc, value, pins, expect=None, role="", decoupling=None):
-    name, fp = LIBMAP[lcsc]
+def ic(region, ref, lcsc, value, pins, expect=None, role="", decoupling=None, fp=None):
+    name, lib_fp = LIBMAP[lcsc]
+    fp = fp or lib_fp
     lib_id = f"aiee:{name}"
     x0, x1, y0, y1 = _bbox(lib_id)
     w, h = (x1 - x0) + 30, (y1 - y0) + 20
@@ -163,13 +166,15 @@ B_IO = Region(20, 640, 1140)
 # rails: driven by the connector / regulators; power symbols make them global
 rails(B_PWR, ["VBUS", "PVDD", "+5V", "+3V3", "+3V3A", "GND"])
 
-# USB4105-GF-A-120 (C5184243): pad names from the GCT drawing
-ic(B_PWR, "J1", "C5184243", "USB4105-GF-A-120",
-   {"A4-B9": "VBUS", "B4-A9": "VBUS", "A1-B12": "GND", "B1-A12": "GND",
+# HRO TYPE-C-31-M-12 (C165948), 20 V / 5 A: the USB4105-GF-A-120 had 0 free at
+# JLC on 2026-10-29 (docs/bom-stock.md). Same pad positions as the USB4105
+# (pads within 0.09 mm, pegs within 0.09 mm); Lite asks for 20 V only.
+ic(B_PWR, "J1", "C165948", "TYPE-C-31-M-12",
+   {"A4B9": "VBUS", "B4A9": "VBUS", "A1B12": "GND", "B1A12": "GND",
     "A5": "CC1", "B5": "CC2", "A6": "USB_DP", "B6": "USB_DP", "A7": "USB_DM",
     "B7": "USB_DM", "A8": "NC", "B8": "NC", "1": "GND", "2": "GND", "3": "GND",
     "4": "GND"},
-   expect={"A5": "CC1", "B7": "Dn2", "A4-B9": "VBUS"}, role="USB-C 48 V/5 A, power + CH340C data")
+   expect={"A5": "CC1", "B7": "DN2", "A4B9": "VBUS"}, role="USB-C 20 V/5 A, power + CH340B data")
 # CH224A ESSOP-10 (datasheet V2.0 table 4-1: same pins as the CH224Q). The
 # CH224Q's 2 x 2 mm DFN at 0.4 mm pitch could not be routed on 2 layers under
 # the USB-C (its VBUS pin 8 sits between CC1 and CFG1); the CH224A is the same
@@ -201,7 +206,15 @@ r(B_PWR, "R5", "100k", "VBUS", "PSW_G", role="Q1 gate-source")
 # 100 nF gives ~3.6 V/ms on PVDD, ~1.6 A into the 690 uF bulk, 6 ms ramp.
 r(B_PWR, "R15", "1k", "PSW_G", "PSW_MILLER", role="Q1 Miller cap series")
 c(B_PWR, "C2", "100nF", "PSW_MILLER", "PVDD", role="Q1 soft-start (gate-drain)")
-r(B_PWR, "R6", "47k", "PSW_G", "PSW_PULL", role="Q1 gate divider: Vgs -13.6 V at 20 V")
+# review-2 POWER-3/4: 47k let C2 (gate-drain) turn Q1 on at every VBUS edge
+# with firmware off, and the firmware turn-on sat at the SOA edge. 220k + C19
+# (gate-source) hold the gate at VBUS through a 30 V/ms step (Vsg 0.77 V vs Vth
+# 1.7 V) and slow the turn-on to 0.41 A inrush, 5.8 W peak, 28 ms ramp
+# (docs/review-2/sims/power/tb_lite_*_FIX.cir, 2.2 uF). C19 only ever sees Vsg,
+# at most 21 V x 100k/320k = 6.6 V, so a 4.7 uF/16 V 0603 X5R (Basic) does:
+# ~2.5-3 uF left at 6 V bias, 2.4x voltage margin, and it fits beside R5.
+r(B_PWR, "R6", "220k", "PSW_G", "PSW_PULL", role="Q1 gate divider: Vgs -6.3 V at 20 V")
+c(B_PWR, "C19", "4.7uF", "VBUS", "PSW_G", role="Q1 gate-source hold-off (Vsg <= 6.6 V)")
 # Q4's emitter goes to CH224Q PG (open drain, low = contract good), not GND:
 # PVDD switches on only when firmware asks AND the PD contract is good.
 ic(B_PWR, "Q4", "C20526", "MMBT3904", {"3": "PSW_PULL", "1": "PSW_B", "2": "PD_PG"},
@@ -224,7 +237,8 @@ c(B_PWR, "C7", "22uF/25V", "+5V", role="5 V output")
 c(B_PWR, "C8", "22uF/25V", "+5V", role="5 V output")
 r(B_PWR, "R9", "100k", "+5V", "BUCK5_FB", role="FB top: 5.18 V")
 r(B_PWR, "R10", "13k", "BUCK5_FB", "GND", role="FB bottom")
-c(B_PWR, "C9", "100pF", "+5V", "BUCK5_FB", role="feed-forward")
+c(B_PWR, "C9", "47pF", "+5V", "BUCK5_FB", role="feed-forward (review-2 POWER-10: 100 pF pushed fo past 40 kHz)")
+c(B_PWR, "C25", "22uF/25V", "+5V", role="5 V output (review-2 POWER-10: 2 x 22 uF derate to ~22 uF)")
 
 # ---- B4 3.3 V buck SY8089 ---------------------------------------------------
 ic(B_PWR, "U3", "C479074", "SY8089A1AAC",
@@ -298,11 +312,16 @@ r(B_MCU, "R22", "2.2k", "+3V3", "I2C_SCL", role="I2C pull-up")
 r(B_MCU, "R23", "2.2k", "+3V3", "I2C_SDA", role="I2C pull-up")
 
 # ---- B7 CH340C + auto-program -----------------------------------------------
-ic(B_MCU, "U6", "C84681", "CH340C",
+# CH340B (C81010): the CH340C is not buyable at JLC (EOL, 2026-10-29); the B
+# differs only on pins 7 (RST#, internal pull-up), 8 (NC), 15 (TNOW), all open.
+# Its EasyEDA land (SOIC-16, 1.97 mm pads) crowds the routed tracks; the CH340C's
+# SOP-16 land is the same JEDEC MS-012 package, so U6 keeps it.
+ic(B_MCU, "U6", "C81010", "CH340B",
    {"1": "GND", "2": "U0RXD", "3": "U0TXD", "4": "+3V3", "5": "USB_DP",
     "6": "USB_DM", "7": "NC", "8": "NC", "9": "NC", "10": "NC", "11": "NC",
     "12": "NC", "13": "DTR", "14": "RTS", "15": "NC", "16": "+3V3"},
-   role="USB-UART console + flashing")
+   expect={"13": "~{DTR}", "14": "~{RTS}", "16": "VCC"}, role="USB-UART console + flashing",
+   fp="aiee:SOP-16_L10.0-W3.9-P1.27-LS6.0-BL")
 c(B_MCU, "C23", "100nF", "+3V3", ic_ref="U6", pin=16)
 c(B_MCU, "C24", "100nF", "+3V3", ic_ref="U6", pin=4)
 ic(B_MCU, "Q2", "C20526", "MMBT3904", {"1": "Q2_B", "2": "RTS", "3": "ESP_EN"},
@@ -318,10 +337,10 @@ ic(B_AUD, "U7", "C365736", "ES8388",
     "6": "I2S_DOUT", "7": "I2S_LRCK", "8": "I2S_DIN", "9": "NC",
     "10": "CODEC_VREF", "11": "AMP_IN_R", "12": "AMP_IN_L", "13": "GND",
     "14": "SUB_R_RAW", "15": "SUB_L_RAW", "16": "+3V3A", "17": "+3V3A",
-    "18": "GND", "19": "CODEC_DACVREF", "20": "CODEC_VMID", "21": "NC",
-    "22": "NC", "23": "LINEIN_R_C", "24": "LINEIN_L_C", "25": "NC",
+    "18": "GND", "19": "CODEC_DACVREF", "20": "CODEC_VMID", "21": "TAP_R_C",
+    "22": "TAP_L_C", "23": "LINEIN_R_C", "24": "LINEIN_L_C", "25": "NC",
     "26": "GND", "27": "I2C_SDA", "28": "I2C_SCL", "29": "GND"},
-   expect={"1": "MCLK", "12": "LOUT1", "20": "VMID", "28": "CCLK"},
+   expect={"1": "MCLK", "12": "LOUT1", "20": "VMID", "28": "CCLK", "21": "RIN2", "22": "LIN2"},
    role="codec: DAC, ADC, analog bypass")
 c(B_AUD, "C30", "100nF", "+3V3", ic_ref="U7", pin=2)
 c(B_AUD, "C31", "100nF", "+3V3", ic_ref="U7", pin=3)
@@ -335,12 +354,22 @@ c(B_AUD, "C38", "100nF", "CODEC_DACVREF", role="DACVREF decoupling")
 c(B_AUD, "C39", "10uF", "CODEC_VMID", role="VMID decoupling")
 c(B_AUD, "C40", "100nF", "CODEC_VMID", role="VMID decoupling")
 
-# line in (FLX4): 10k/10k divider (-6 dB, 20k load), AC-coupled into LIN1/RIN1
+# line in (FLX4): 15k/10k divider (-8 dB, 25k load), AC-coupled into LIN1/RIN1.
+# review-2 AUDIO-7: 10k/10k left 1.5-2 dB headroom at the FLX4's 2.1 Vrms.
 for side, n in (("L", 0), ("R", 1)):
-    r(B_AUD, f"R{30 + 3 * n}", "10k", f"LINEIN_{side}", f"LINEIN_{side}_D", role="line-in attenuator")
+    r(B_AUD, f"R{30 + 3 * n}", "15k", f"LINEIN_{side}", f"LINEIN_{side}_D", role="line-in attenuator")
     r(B_AUD, f"R{31 + 3 * n}", "10k", f"LINEIN_{side}_D", "GND", role="line-in attenuator")
     c(B_AUD, f"C{41 + 3 * n}", "1uF", f"LINEIN_{side}_D", f"LINEIN_{side}_C", role="line-in coupling")
     c(B_AUD, f"C{42 + 3 * n}", "100pF", f"LINEIN_{side}", role="line-in RF filter")
+# speaker loopback taps (docs/remote.md 'The board measures its own output'):
+# SPK_x_P / 11 (100k/10k), 470 pF carrier filter, AC-coupled into LIN2/RIN2.
+# At full power the ADC sees +-0.55 Vpk (-7.6 dBFS), carrier ~1.7 mVpk
+# (docs/review-2/audio.md). Ratio with the ADC input: 0.0625.
+for side, n in (("L", 0), ("R", 1)):
+    r(B_AUD, f"R{66 + 2 * n}", "100k", f"SPK_{side}_P", f"TAP_{side}", role="speaker tap divider top")
+    r(B_AUD, f"R{67 + 2 * n}", "10k", f"TAP_{side}", "GND", role="speaker tap divider bottom")
+    c(B_AUD, f"C{81 + 2 * n}", "470pF", f"TAP_{side}", role="speaker tap carrier filter")
+    c(B_AUD, f"C{82 + 2 * n}", "1uF", f"TAP_{side}", f"TAP_{side}_C", role="speaker tap coupling")
 # sub outs: 10 uF coupling, 100R build-out, 47k bleeder
 for side, n in (("L", 0), ("R", 1)):
     c(B_AUD, f"C{47 + n}", "10uF", f"SUB_{side}_RAW", f"SUB_{side}_AC", role="sub out coupling")
@@ -375,7 +404,10 @@ ic(B_AMP, "C59", "C2836441", "220uF 35V", {"1": "PVDD", "2": "GND"}, role="PVDD 
 r(B_AMP, "R50", "20k", "AMP_GAIN", "GND", role="gain 26 dB master (table 1)")
 r(B_AMP, "R51", "100k", "AMP_GVDD", "AMP_GAIN", role="gain 26 dB master (table 1)")
 r(B_AMP, "R52", "100k", "AMP_SDZ_IO", "GND", role="amp off until firmware enables it")
-r(B_AMP, "R54", "100k", "AMP_SDZ_IO", "AMP_SDZ", role="SDZ series: TI 10 V/ms and PVCC+0.3 V limits")
+# review-2 AUDIO-4/DIGITAL-14: through 100k the SDZ input current (up to 50 uA)
+# kept SDZ under VIH 2 V. 10k gives >= 2.7 V; C26 keeps the edge under 10 V/ms.
+r(B_AMP, "R54", "10k", "AMP_SDZ_IO", "AMP_SDZ", role="SDZ series: TI 10 V/ms and PVCC+0.3 V limits")
+c(B_AMP, "C26", "47nF", "AMP_SDZ", role="SDZ slew limit (tau 0.47 ms)")
 r(B_AMP, "R53", "10k", "+3V3", "AMP_FAULTZ", role="FAULTZ pull-up")
 # inputs: single-ended drive, INN AC-grounded
 for side, n in (("L", 0), ("R", 1)):

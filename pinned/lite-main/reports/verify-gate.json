@@ -4,7 +4,7 @@
   "phase": "P8",
   "tool": "verify",
   "input": "kicad/lite-main.kicad_pcb",
-  "input_digest": "sexpr_no_uuid:5d4d3eefa08ac13660882ad6cc8c5ed1b8f0ccd651f3d521eb5411635ca9c576",
+  "input_digest": "sexpr_no_uuid:1e52fa6db57895dc45bd3638912caa67c3839903ccb0f552f024b203fbcfa61c",
   "status": "pass",
   "criteria": {
     "fail_severities": [
@@ -13,15 +13,15 @@
     "max_count": 0
   },
   "counts": {
-    "total": 35,
+    "total": 45,
     "by_severity": {
-      "warning": 34,
+      "warning": 44,
       "error": 1
     },
     "by_source": {
       "check_decoupling": 1,
       "check_thermal": 1,
-      "check_route_style": 15,
+      "check_route_style": 25,
       "check_ratings": 18
     },
     "by_check": {
@@ -32,7 +32,7 @@
       "check_creepage": 0,
       "check_thermal": 1,
       "check_silk": 0,
-      "check_route_style": 15,
+      "check_route_style": 25,
       "check_mating": 0,
       "check_pdn": 0,
       "check_ratings": 18,
@@ -44,6 +44,2051 @@
   },
   "failing_count": 0,
   "failing": [],
+  "warnings_count": 44,
+  "warnings": [
+    {
+      "check": "check_decoupling",
+      "severity": "warning",
+      "pos": [
+        93.39,
+        100.523
+      ],
+      "layer": "F.Cu",
+      "net": "PVDD",
+      "refs": [
+        "C57",
+        "U8"
+      ],
+      "msg": "C57 (1nF) rail pad is 5.3 mm Manhattan (4.4 mm direct) from U8 pin 31 (hf class limit 5.0 mm)",
+      "source": "check_decoupling",
+      "items": [
+        {
+          "msg": "C57 (1nF) rail pad is 5.3 mm Manhattan (4.4 mm direct) from U8 pin 31 (hf class limit 5.0 mm)",
+          "pos": [
+            93.39,
+            100.523
+          ]
+        }
+      ],
+      "kind": "decoupler_distance",
+      "cap_class": "hf",
+      "manhattan_mm": 5.325,
+      "euclid_mm": 4.3802,
+      "loop_nh": 5.4113,
+      "vias_in_loop": 1,
+      "pin": "U8.31",
+      "limit_mm": 5.0
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        70.7931,
+        125.9896
+      ],
+      "layer": "F.Cu",
+      "net": "+3V3",
+      "refs": [],
+      "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on +3V3 F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.139 mm",
+          "pos": [
+            70.7931,
+            125.9896
+          ],
+          "uuid": "3340323d-3edf-47a4-8588-fec66990f7ce"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        84.05,
+        93.8
+      ],
+      "layer": "B.Cu",
+      "net": "+5V",
+      "refs": [],
+      "msg": "6 needless jog(s): a sidestep smaller than the track clears nothing on +5V B.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            84.05,
+            93.8
+          ],
+          "uuid": "3682cad1-0d1c-4805-8411-f73f29cce4a1"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            84.15,
+            93.85
+          ],
+          "uuid": "c46c0795-c174-40ba-b201-57a6b4488499"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            84.3,
+            94.0
+          ],
+          "uuid": "23cce2ee-c044-40dc-94b5-ff8c454c64d6"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            84.35,
+            94.1
+          ],
+          "uuid": "607aea7a-30ff-4dbf-b73b-6d19277f4ea9"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            84.4,
+            94.2
+          ],
+          "uuid": "382842af-dc63-4af2-b6f1-11eaf0f42041"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            84.45,
+            94.3
+          ],
+          "uuid": "623f96e2-6aa6-4742-a0e7-548b404ff0e0"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        80.8,
+        96.1
+      ],
+      "layer": "F.Cu",
+      "net": "+5V",
+      "refs": [],
+      "msg": "16 needless jog(s): a sidestep smaller than the track clears nothing on +5V F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            80.8,
+            96.1
+          ],
+          "uuid": "439a37b9-79c3-45fc-9781-5e0d1e14b6ae"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            80.85,
+            96.0
+          ],
+          "uuid": "d5e53bc5-f6ba-4240-8841-b8fda88e0553"
+        },
+        {
+          "msg": "sidestep 0.141 mm",
+          "pos": [
+            80.9,
+            95.85
+          ],
+          "uuid": "e0354f8c-fae3-495c-b0c8-e947517d08c3"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            80.95,
+            95.7
+          ],
+          "uuid": "a2b47cd6-dc60-4c28-b8fd-7acb9fd6bd3b"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            81.0,
+            95.6
+          ],
+          "uuid": "23942327-4212-4184-bed0-2bf49e954153"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            81.05,
+            95.5
+          ],
+          "uuid": "6442a26c-577a-420d-9829-b59e531ef6a9"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            81.1,
+            95.4
+          ],
+          "uuid": "8d10973c-22a2-4871-8cfe-053bc7e05b9f"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            81.15,
+            95.3
+          ],
+          "uuid": "477fc96f-ee46-4912-977a-ad7221cf3f53"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            81.2,
+            95.2
+          ],
+          "uuid": "4ad5e310-9829-4e37-9e00-311488cf11b7"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            81.25,
+            95.1
+          ],
+          "uuid": "6bb2d4a1-e63f-46f8-b023-8584dc4a8394"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            81.3,
+            95.0
+          ],
+          "uuid": "59e3676c-a66d-4c46-811d-409ef1e709dc"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            81.35,
+            94.9
+          ],
+          "uuid": "45005bf4-42bc-4061-b148-b1ecfb8cd05e"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            81.45,
+            94.1
+          ],
+          "uuid": "91f09afa-8ebc-4d25-9770-cf918cef8b57"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            81.5,
+            94.0
+          ],
+          "uuid": "7aac4a4d-e339-4804-9548-06b4a852223b"
+        },
+        {
+          "msg": "sidestep 0.141 mm",
+          "pos": [
+            81.8,
+            93.75
+          ],
+          "uuid": "d2a811dc-d3f8-44fb-8aff-6b7a5427beab"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            81.95,
+            93.7
+          ],
+          "uuid": "d1f3e4c8-a813-4afc-8427-baec16660cbf"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        94.6423,
+        117.9433
+      ],
+      "layer": "F.Cu",
+      "net": "/AMP_IN_R",
+      "refs": [],
+      "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /AMP_IN_R F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.157 mm",
+          "pos": [
+            94.6423,
+            117.9433
+          ],
+          "uuid": "fd314675-e4fc-4921-895e-6e171b85f71c"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        96.515,
+        115.18
+      ],
+      "layer": "F.Cu",
+      "net": "/AMP_SDZ",
+      "refs": [],
+      "msg": "8 needless jog(s): a sidestep smaller than the track clears nothing on /AMP_SDZ F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            96.515,
+            115.18
+          ],
+          "uuid": "1ebaadad-0591-489a-b2f0-c375c9e97bb7"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            96.565,
+            115.28
+          ],
+          "uuid": "d8cea65e-ff31-49d5-a068-4cdba71dc23b"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            96.615,
+            115.38
+          ],
+          "uuid": "7c540c0b-5ebd-4732-97e2-924bd828133a"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            96.665,
+            115.48
+          ],
+          "uuid": "9f2119bf-2c09-4153-9658-0f214320c9ec"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            96.715,
+            115.58
+          ],
+          "uuid": "6aa6152e-9c6c-4cd5-97b6-2532fdf0f2a1"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            96.765,
+            115.68
+          ],
+          "uuid": "7a806c42-728e-4da4-ad47-fb80759846fc"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            96.815,
+            115.78
+          ],
+          "uuid": "fad332c2-7565-431f-8b9c-a7fc6b300eb4"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            96.865,
+            115.88
+          ],
+          "uuid": "b44abd54-3a8c-4132-a56d-d58f02e23dd4"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        79.1533,
+        86.873
+      ],
+      "layer": "F.Cu",
+      "net": "/BUCK5_SW",
+      "refs": [],
+      "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /BUCK5_SW F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            79.1533,
+            86.873
+          ],
+          "uuid": "a12c54e6-14e1-40cb-81ee-11e5e6d4cadc"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        63.3479,
+        131.8267
+      ],
+      "layer": "F.Cu",
+      "net": "/DTR",
+      "refs": [],
+      "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /DTR F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.217 mm",
+          "pos": [
+            63.3479,
+            131.8267
+          ],
+          "uuid": "2d3a6d74-c695-4a59-bedc-a38d6c14e973"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        52.5206,
+        98.828
+      ],
+      "layer": "F.Cu",
+      "net": "/I2S_BCLK",
+      "refs": [],
+      "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /I2S_BCLK F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.091 mm",
+          "pos": [
+            52.5206,
+            98.828
+          ],
+          "uuid": "357c42f1-b6f3-473b-8054-511a0da97899"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        54.1051,
+        99.2932
+      ],
+      "layer": "F.Cu",
+      "net": "/I2S_LRCK",
+      "refs": [],
+      "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /I2S_LRCK F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.220 mm",
+          "pos": [
+            54.1051,
+            99.2932
+          ],
+          "uuid": "599042c9-cd3e-4011-a2c7-b47c0b373388"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        61.1159,
+        134.3434
+      ],
+      "layer": "F.Cu",
+      "net": "/I2S_MCLK",
+      "refs": [],
+      "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /I2S_MCLK F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.041 mm",
+          "pos": [
+            61.1159,
+            134.3434
+          ],
+          "uuid": "764eda82-70e8-490b-a90c-a97afda111f3"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        82.387,
+        75.921
+      ],
+      "layer": "F.Cu",
+      "net": "/PD_PG",
+      "refs": [],
+      "msg": "2 needless jog(s): a sidestep smaller than the track clears nothing on /PD_PG F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.209 mm",
+          "pos": [
+            82.387,
+            75.921
+          ],
+          "uuid": "c54bb7bf-5ff9-4920-9fd6-8c9677a20edd"
+        },
+        {
+          "msg": "sidestep 0.170 mm",
+          "pos": [
+            87.6714,
+            77.6543
+          ],
+          "uuid": "515e0077-0bd1-49b9-a339-6a5c04c367de"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        89.7912,
+        76.148
+      ],
+      "layer": "F.Cu",
+      "net": "/PSW_G",
+      "refs": [],
+      "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /PSW_G F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            89.7912,
+            76.148
+          ],
+          "uuid": "16c033ea-5068-405c-b1d8-3a8774b1c83f"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        75.7469,
+        76.5298
+      ],
+      "layer": "F.Cu",
+      "net": "/PVDD_EN",
+      "refs": [],
+      "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /PVDD_EN F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.160 mm",
+          "pos": [
+            75.7469,
+            76.5298
+          ],
+          "uuid": "9917b941-c173-46ed-8c30-ae003c21d6d8"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        66.5327,
+        128.5968
+      ],
+      "layer": "F.Cu",
+      "net": "/RTS",
+      "refs": [],
+      "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /RTS F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.092 mm",
+          "pos": [
+            66.5327,
+            128.5968
+          ],
+          "uuid": "38b66969-0c3e-4921-8bfe-74a35667c144"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        90.6359,
+        76.906
+      ],
+      "layer": "F.Cu",
+      "net": "/SPK_L_P",
+      "refs": [],
+      "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /SPK_L_P F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.465 mm",
+          "pos": [
+            90.6359,
+            76.906
+          ],
+          "uuid": "f0a1b365-82e3-4849-a52e-ff2af3be73f5"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        55.4363,
+        94.0531
+      ],
+      "layer": "F.Cu",
+      "net": "/SUB_R_RAW",
+      "refs": [],
+      "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /SUB_R_RAW F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.160 mm",
+          "pos": [
+            55.4363,
+            94.0531
+          ],
+          "uuid": "91ca4230-2a65-4716-b4ab-065cc78ea013"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        56.35,
+        81.95
+      ],
+      "layer": "B.Cu",
+      "net": "/TAP_L",
+      "refs": [],
+      "msg": "3 needless jog(s): a sidestep smaller than the track clears nothing on /TAP_L B.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            56.35,
+            81.95
+          ],
+          "uuid": "d41ebf01-16f7-4883-abca-20597bb11ffd"
+        },
+        {
+          "msg": "sidestep 0.141 mm",
+          "pos": [
+            56.5,
+            81.9
+          ],
+          "uuid": "d628cdcc-d34c-4b42-81d1-cdfb420bfca0"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            56.65,
+            81.85
+          ],
+          "uuid": "b4f869fb-c3ba-4ee3-b6be-a5ad62b05461"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        82.55,
+        82.5
+      ],
+      "layer": "F.Cu",
+      "net": "/TAP_L",
+      "refs": [],
+      "msg": "15 needless jog(s): a sidestep smaller than the track clears nothing on /TAP_L F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            82.55,
+            82.5
+          ],
+          "uuid": "34fd220d-7b35-45f9-b4e8-eb03b69de839"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            82.65,
+            82.45
+          ],
+          "uuid": "71aa6974-69fd-49ca-adc6-f0daf4f81c0f"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            82.75,
+            82.4
+          ],
+          "uuid": "d1d0f7ba-0bdf-4533-9313-23716260fb2c"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            82.85,
+            82.35
+          ],
+          "uuid": "c7bb08d6-4dc5-4235-8931-c8f14323be4c"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            82.95,
+            82.3
+          ],
+          "uuid": "553da3db-448e-46fc-a197-5bf831e6bce5"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            83.05,
+            82.25
+          ],
+          "uuid": "c8bc9c3e-7be2-4d36-b9a5-e34afef39511"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            83.15,
+            82.2
+          ],
+          "uuid": "3e50f21a-d662-4f0c-ba07-139ffea55b3a"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            83.25,
+            82.15
+          ],
+          "uuid": "3f5c0f54-2843-4a71-9d13-5c578940d333"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            83.35,
+            82.1
+          ],
+          "uuid": "62637df7-453c-483f-9d16-00556fc6b61f"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            83.45,
+            82.05
+          ],
+          "uuid": "80528bd3-d4fe-4222-886e-59b0671c1cd4"
+        },
+        {
+          "msg": "sidestep 0.141 mm",
+          "pos": [
+            83.6,
+            82.0
+          ],
+          "uuid": "b4dba6d6-2968-412d-864e-7dcafe657a24"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            83.75,
+            81.95
+          ],
+          "uuid": "8fdbd9ba-5db9-4fda-909a-e4dc247486d0"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            83.85,
+            81.9
+          ],
+          "uuid": "465338e4-31ef-44dd-885e-97d09f5956c5"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            83.95,
+            81.85
+          ],
+          "uuid": "8bb7ef01-a344-4228-b3ac-d314d020b3a2"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            84.05,
+            81.8
+          ],
+          "uuid": "823fdff4-3b1b-403b-a683-deb5cd2959c2"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        50.125,
+        92.15
+      ],
+      "layer": "B.Cu",
+      "net": "/TAP_L_C",
+      "refs": [],
+      "msg": "7 needless jog(s): a sidestep smaller than the track clears nothing on /TAP_L_C B.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            50.125,
+            92.15
+          ],
+          "uuid": "b2ff1ba1-d551-4a3e-8d1a-9084365c9660"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            50.175,
+            92.25
+          ],
+          "uuid": "b311e11c-e908-4711-9f0a-e3ab3ded7d4e"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            50.225,
+            92.35
+          ],
+          "uuid": "4e38b2a9-f55e-494f-9586-c8a19e1376d3"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            50.275,
+            92.45
+          ],
+          "uuid": "d030a090-821d-4b15-9411-c602498f0a63"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            50.325,
+            92.55
+          ],
+          "uuid": "7fdec08c-0a2c-447f-967f-4e7dd446b7b8"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            50.375,
+            92.65
+          ],
+          "uuid": "7840d1ed-0238-4b3e-8b6d-d057c71f0ccb"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            50.425,
+            92.75
+          ],
+          "uuid": "7ed18379-8684-4657-86d6-81ecb043e985"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        49.875,
+        87.0
+      ],
+      "layer": "F.Cu",
+      "net": "/TAP_L_C",
+      "refs": [],
+      "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /TAP_L_C F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.200 mm",
+          "pos": [
+            49.875,
+            87.0
+          ],
+          "uuid": "8ef892eb-c245-4621-a380-c992737f4d82"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        52.32,
+        82.545
+      ],
+      "layer": "F.Cu",
+      "net": "/TAP_R",
+      "refs": [],
+      "msg": "36 needless jog(s): a sidestep smaller than the track clears nothing on /TAP_R F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            52.32,
+            82.545
+          ],
+          "uuid": "2fca306c-8d09-41cb-87ea-c7ffdd4308a9"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            52.42,
+            82.595
+          ],
+          "uuid": "bf0a9183-68ee-42eb-943f-2b4466878689"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            52.52,
+            82.645
+          ],
+          "uuid": "3d65306b-7f80-4d02-8cb6-e45653ee8b0e"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            52.62,
+            82.695
+          ],
+          "uuid": "90054c25-254c-4674-b9dd-5ad49e95600d"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            53.02,
+            82.995
+          ],
+          "uuid": "f7c2e1b4-2442-4eee-805b-b1d75a698faf"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            53.12,
+            83.045
+          ],
+          "uuid": "11d14cc6-4d0e-4244-bbff-d65b65463234"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            53.72,
+            83.145
+          ],
+          "uuid": "80e1ce62-4d68-4691-9e20-155bc326bb1a"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            53.82,
+            83.195
+          ],
+          "uuid": "98e549dd-0ee9-4dd5-a018-64a078727b64"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            53.92,
+            83.245
+          ],
+          "uuid": "bb57e0eb-fa07-458a-935d-3c8c17435ff7"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            54.02,
+            83.295
+          ],
+          "uuid": "1bc9b4cb-613b-46b8-9bf5-8b50cf98f4a9"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            54.12,
+            83.345
+          ],
+          "uuid": "3aa3b497-c80c-42e2-a637-36a192d8f2fa"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            54.22,
+            83.395
+          ],
+          "uuid": "559b020b-66b6-44f8-9cd7-438e4e4f4bac"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            54.32,
+            83.445
+          ],
+          "uuid": "7d751680-be61-4ac9-96fb-beebfa041ddb"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            54.42,
+            83.495
+          ],
+          "uuid": "3617cec0-91d1-48e8-b606-16aca12a55a8"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            54.52,
+            83.545
+          ],
+          "uuid": "1bc299f2-4f42-4bf4-8c8d-1d85a84207d8"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            54.62,
+            83.595
+          ],
+          "uuid": "8a3cfe9e-1b17-4562-bfb3-1e28e5290f1a"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            54.72,
+            83.645
+          ],
+          "uuid": "09af45e9-6f09-4d74-96f3-3d3ee7355f8f"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            54.82,
+            83.695
+          ],
+          "uuid": "a30ffc4b-d867-41ef-95a4-08d4aa0e5a50"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            54.92,
+            83.745
+          ],
+          "uuid": "56f5c74f-c41b-4d56-814f-efe01fc8b09c"
+        },
+        {
+          "msg": "sidestep 0.141 mm",
+          "pos": [
+            55.07,
+            83.795
+          ],
+          "uuid": "866cfe76-e6cf-4e58-9194-76b8fee7ab99"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            55.22,
+            83.845
+          ],
+          "uuid": "dbbbd449-27f6-4bd1-9074-4bb177ea8a36"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            55.32,
+            83.895
+          ],
+          "uuid": "6d8d2672-9049-46a6-8831-0a751e9b2e53"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            55.42,
+            83.945
+          ],
+          "uuid": "cc9217c4-940a-4f4e-98c1-0f5a8e4e554f"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            55.52,
+            83.995
+          ],
+          "uuid": "6658dd56-f8f8-4838-8902-af73cdcd9087"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            55.62,
+            84.045
+          ],
+          "uuid": "5c0211eb-f9ef-4959-911e-b20ff8da0541"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            55.72,
+            84.095
+          ],
+          "uuid": "d346662e-03ac-4c6b-b943-33171951b35a"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            55.82,
+            84.145
+          ],
+          "uuid": "6d173987-4966-4cd0-baf5-10c6788613bc"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            55.92,
+            84.195
+          ],
+          "uuid": "28e70466-45dc-4f70-9ef4-6d64b48ed1c3"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            56.02,
+            84.245
+          ],
+          "uuid": "4e08bc85-17fa-4d00-a1e2-1bf39c5a4d48"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            80.42,
+            85.345
+          ],
+          "uuid": "17d69960-f926-47ec-a28a-0237070b1702"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            80.52,
+            85.295
+          ],
+          "uuid": "2a7fd34d-6caf-415b-a7f9-98f6d1ea644b"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            80.62,
+            85.245
+          ],
+          "uuid": "7792236d-be99-432d-be47-ab90a18c48d0"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            81.12,
+            85.145
+          ],
+          "uuid": "1ef31cb4-6792-472d-aea1-eccb8d4ce4b3"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            81.22,
+            85.095
+          ],
+          "uuid": "0164cb0b-fca3-4e63-beec-e7b71c5e4462"
+        },
+        {
+          "msg": "sidestep 0.200 mm",
+          "pos": [
+            81.37,
+            84.995
+          ],
+          "uuid": "355072d2-a2f2-4d66-9024-328ffb693917"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            100.62,
+            83.345
+          ],
+          "uuid": "8035a3ae-d043-4c6e-98e6-b31344e8fe75"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        51.665,
+        89.343
+      ],
+      "layer": "B.Cu",
+      "net": "/TAP_R_C",
+      "refs": [],
+      "msg": "21 needless jog(s): a sidestep smaller than the track clears nothing on /TAP_R_C B.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            51.665,
+            89.343
+          ],
+          "uuid": "62ff7c2d-5d61-4396-9204-efeebb3f9068"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            51.715,
+            89.243
+          ],
+          "uuid": "16939098-47c1-49e6-9bd2-e9d9aac33b72"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            51.765,
+            89.143
+          ],
+          "uuid": "82e65570-a1e6-4891-bfab-b61cd6fbc9a2"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            51.815,
+            89.043
+          ],
+          "uuid": "ddfe5704-adbe-425c-af77-ebd3469ee1ee"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            51.865,
+            88.943
+          ],
+          "uuid": "0c539413-a9b6-4592-964f-9445af514905"
+        },
+        {
+          "msg": "sidestep 0.141 mm",
+          "pos": [
+            51.915,
+            88.793
+          ],
+          "uuid": "8a19fcd9-7440-4e61-b9b0-55c622c7fee9"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            51.965,
+            88.643
+          ],
+          "uuid": "1fc80f6c-1f0b-4f42-be7e-97a35e51a949"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            52.015,
+            88.543
+          ],
+          "uuid": "b55c7fe0-b509-48aa-b62c-d899c88531d8"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            52.065,
+            88.443
+          ],
+          "uuid": "5b1242a4-e454-4e05-87b1-1a8c515e6417"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            52.115,
+            88.343
+          ],
+          "uuid": "c03a6cd7-9f02-4aa4-8739-f44d4c3ca9df"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            52.165,
+            88.243
+          ],
+          "uuid": "6dfb69c2-4e06-4e3b-b462-2266cc14a7e5"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            52.215,
+            88.143
+          ],
+          "uuid": "5d22b2fa-0b60-4381-a659-cb0176574826"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            52.265,
+            88.043
+          ],
+          "uuid": "ee08d310-afec-486a-a3ef-1aea614f8b56"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            52.315,
+            87.943
+          ],
+          "uuid": "a31846a6-7e5c-4e8a-9b03-3c00898cbae7"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            52.365,
+            87.843
+          ],
+          "uuid": "01180825-9fde-4ce0-886e-59923612b9ea"
+        },
+        {
+          "msg": "sidestep 0.141 mm",
+          "pos": [
+            52.415,
+            87.693
+          ],
+          "uuid": "5a5cfefd-54b2-428a-ad81-9b97a30807bb"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            52.465,
+            87.543
+          ],
+          "uuid": "f1105646-8529-41ba-ae48-c47ce3fc997b"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            52.515,
+            87.443
+          ],
+          "uuid": "26957aac-2447-48bc-bc4e-e64138106728"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            52.565,
+            87.343
+          ],
+          "uuid": "06ebb3a8-ea9b-4385-8c80-d6925d55c3bb"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            52.615,
+            87.243
+          ],
+          "uuid": "bed7ad76-02e0-44fd-9e9a-62406328ed8d"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            52.665,
+            87.143
+          ],
+          "uuid": "1a751a20-1839-45d7-80ff-db7a8459fc84"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        73.7763,
+        77.2525
+      ],
+      "layer": "B.Cu",
+      "net": "/USB_DM",
+      "refs": [],
+      "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /USB_DM B.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.157 mm",
+          "pos": [
+            73.7763,
+            77.2525
+          ],
+          "uuid": "b822bb4d-79cb-49e8-a118-6fba400bd2b0"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        51.8,
+        99.025
+      ],
+      "layer": "F.Cu",
+      "net": "GND",
+      "refs": [],
+      "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on GND F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.177 mm",
+          "pos": [
+            51.8,
+            99.025
+          ],
+          "uuid": "a0fed88c-d17c-47c2-9054-8939e3071043"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_route_style",
+      "severity": "warning",
+      "pos": [
+        81.925,
+        80.23
+      ],
+      "layer": "F.Cu",
+      "net": "VBUS",
+      "refs": [],
+      "msg": "6 needless jog(s): a sidestep smaller than the track clears nothing on VBUS F.Cu",
+      "source": "check_route_style",
+      "items": [
+        {
+          "msg": "sidestep 0.141 mm",
+          "pos": [
+            81.925,
+            80.23
+          ],
+          "uuid": "a6d93dfb-683e-4302-9f7b-7c3730252c56"
+        },
+        {
+          "msg": "sidestep 0.100 mm",
+          "pos": [
+            82.075,
+            80.18
+          ],
+          "uuid": "2cec035a-5f31-43a0-b9d5-49b7257c25e8"
+        },
+        {
+          "msg": "sidestep 0.050 mm",
+          "pos": [
+            87.875,
+            67.325
+          ],
+          "uuid": "0facaff5-ddc5-4177-bb64-7ddcf5e8037b"
+        },
+        {
+          "msg": "sidestep 0.141 mm",
+          "pos": [
+            89.1,
+            67.85
+          ],
+          "uuid": "bbc31113-bb8b-4904-b334-86d442f2d632"
+        },
+        {
+          "msg": "sidestep 0.071 mm",
+          "pos": [
+            91.0,
+            70.1
+          ],
+          "uuid": "641cf073-e975-4ac8-85d3-60cc6443a052"
+        },
+        {
+          "msg": "sidestep 0.050 mm",
+          "pos": [
+            91.025,
+            70.175
+          ],
+          "uuid": "50177e0a-4602-4ed1-9f2a-37f5e5057e7e"
+        }
+      ],
+      "kind": "route_style",
+      "style": "jog"
+    },
+    {
+      "check": "check_ratings",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "J1"
+      ],
+      "msg": "J1 (C165948): no datasheet extraction",
+      "source": "check_ratings",
+      "items": [
+        {
+          "msg": "J1 (C165948): no datasheet extraction",
+          "pos": null
+        }
+      ],
+      "kind": "rating_unrated",
+      "pins": [
+        "no datasheet extraction"
+      ]
+    },
+    {
+      "check": "check_ratings",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "J2"
+      ],
+      "msg": "J2 (C7527522): no datasheet extraction",
+      "source": "check_ratings",
+      "items": [
+        {
+          "msg": "J2 (C7527522): no datasheet extraction",
+          "pos": null
+        }
+      ],
+      "kind": "rating_unrated",
+      "pins": [
+        "no datasheet extraction"
+      ]
+    },
+    {
+      "check": "check_ratings",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "J3"
+      ],
+      "msg": "J3 (C7527522): no datasheet extraction",
+      "source": "check_ratings",
+      "items": [
+        {
+          "msg": "J3 (C7527522): no datasheet extraction",
+          "pos": null
+        }
+      ],
+      "kind": "rating_unrated",
+      "pins": [
+        "no datasheet extraction"
+      ]
+    },
+    {
+      "check": "check_ratings",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "J4"
+      ],
+      "msg": "J4 (C2915641): no datasheet extraction",
+      "source": "check_ratings",
+      "items": [
+        {
+          "msg": "J4 (C2915641): no datasheet extraction",
+          "pos": null
+        }
+      ],
+      "kind": "rating_unrated",
+      "pins": [
+        "no datasheet extraction"
+      ]
+    },
+    {
+      "check": "check_ratings",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "Q1"
+      ],
+      "msg": "Q1 (C5125949): no datasheet extraction",
+      "source": "check_ratings",
+      "items": [
+        {
+          "msg": "Q1 (C5125949): no datasheet extraction",
+          "pos": null
+        }
+      ],
+      "kind": "rating_unrated",
+      "pins": [
+        "no datasheet extraction"
+      ]
+    },
+    {
+      "check": "check_ratings",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "Q2"
+      ],
+      "msg": "Q2 (C20526): no datasheet extraction",
+      "source": "check_ratings",
+      "items": [
+        {
+          "msg": "Q2 (C20526): no datasheet extraction",
+          "pos": null
+        }
+      ],
+      "kind": "rating_unrated",
+      "pins": [
+        "no datasheet extraction"
+      ]
+    },
+    {
+      "check": "check_ratings",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "Q3"
+      ],
+      "msg": "Q3 (C20526): no datasheet extraction",
+      "source": "check_ratings",
+      "items": [
+        {
+          "msg": "Q3 (C20526): no datasheet extraction",
+          "pos": null
+        }
+      ],
+      "kind": "rating_unrated",
+      "pins": [
+        "no datasheet extraction"
+      ]
+    },
+    {
+      "check": "check_ratings",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "Q4"
+      ],
+      "msg": "Q4 (C20526): no datasheet extraction",
+      "source": "check_ratings",
+      "items": [
+        {
+          "msg": "Q4 (C20526): no datasheet extraction",
+          "pos": null
+        }
+      ],
+      "kind": "rating_unrated",
+      "pins": [
+        "no datasheet extraction"
+      ]
+    },
+    {
+      "check": "check_ratings",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "U1"
+      ],
+      "msg": "U1 (C42459160): no datasheet extraction",
+      "source": "check_ratings",
+      "items": [
+        {
+          "msg": "U1 (C42459160): no datasheet extraction",
+          "pos": null
+        }
+      ],
+      "kind": "rating_unrated",
+      "pins": [
+        "no datasheet extraction"
+      ]
+    },
+    {
+      "check": "check_ratings",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "U2"
+      ],
+      "msg": "U2 (C311983): no datasheet extraction",
+      "source": "check_ratings",
+      "items": [
+        {
+          "msg": "U2 (C311983): no datasheet extraction",
+          "pos": null
+        }
+      ],
+      "kind": "rating_unrated",
+      "pins": [
+        "no datasheet extraction"
+      ]
+    },
+    {
+      "check": "check_ratings",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "U3"
+      ],
+      "msg": "U3 (C479074): no datasheet extraction",
+      "source": "check_ratings",
+      "items": [
+        {
+          "msg": "U3 (C479074): no datasheet extraction",
+          "pos": null
+        }
+      ],
+      "kind": "rating_unrated",
+      "pins": [
+        "no datasheet extraction"
+      ]
+    },
+    {
+      "check": "check_ratings",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "U4"
+      ],
+      "msg": "U4 (C80670): no datasheet extraction",
+      "source": "check_ratings",
+      "items": [
+        {
+          "msg": "U4 (C80670): no datasheet extraction",
+          "pos": null
+        }
+      ],
+      "kind": "rating_unrated",
+      "pins": [
+        "no datasheet extraction"
+      ]
+    },
+    {
+      "check": "check_ratings",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "U5"
+      ],
+      "msg": "U5 (C2973667): no datasheet extraction",
+      "source": "check_ratings",
+      "items": [
+        {
+          "msg": "U5 (C2973667): no datasheet extraction",
+          "pos": null
+        }
+      ],
+      "kind": "rating_unrated",
+      "pins": [
+        "no datasheet extraction"
+      ]
+    },
+    {
+      "check": "check_ratings",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "U6"
+      ],
+      "msg": "U6 (C81010): no datasheet extraction",
+      "source": "check_ratings",
+      "items": [
+        {
+          "msg": "U6 (C81010): no datasheet extraction",
+          "pos": null
+        }
+      ],
+      "kind": "rating_unrated",
+      "pins": [
+        "no datasheet extraction"
+      ]
+    },
+    {
+      "check": "check_ratings",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "U7"
+      ],
+      "msg": "U7 (C365736): no datasheet extraction",
+      "source": "check_ratings",
+      "items": [
+        {
+          "msg": "U7 (C365736): no datasheet extraction",
+          "pos": null
+        }
+      ],
+      "kind": "rating_unrated",
+      "pins": [
+        "no datasheet extraction"
+      ]
+    },
+    {
+      "check": "check_ratings",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "U8"
+      ],
+      "msg": "U8 (C46497): no datasheet extraction",
+      "source": "check_ratings",
+      "items": [
+        {
+          "msg": "U8 (C46497): no datasheet extraction",
+          "pos": null
+        }
+      ],
+      "kind": "rating_unrated",
+      "pins": [
+        "no datasheet extraction"
+      ]
+    },
+    {
+      "check": "check_ratings",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "U9"
+      ],
+      "msg": "U9 (C42421366): no datasheet extraction",
+      "source": "check_ratings",
+      "items": [
+        {
+          "msg": "U9 (C42421366): no datasheet extraction",
+          "pos": null
+        }
+      ],
+      "kind": "rating_unrated",
+      "pins": [
+        "no datasheet extraction"
+      ]
+    },
+    {
+      "check": "check_ratings",
+      "severity": "warning",
+      "pos": null,
+      "layer": null,
+      "net": null,
+      "refs": [
+        "D1",
+        "D2",
+        "L1",
+        "L2",
+        "L3",
+        "L4",
+        "L5",
+        "L6",
+        "R1",
+        "R10",
+        "R11",
+        "R12",
+        "R13",
+        "R14",
+        "R15",
+        "R16",
+        "R17",
+        "R18",
+        "R2",
+        "R20",
+        "R21",
+        "R22",
+        "R23",
+        "R24",
+        "R25",
+        "R3",
+        "R30",
+        "R31",
+        "R33",
+        "R34",
+        "R36",
+        "R37",
+        "R38",
+        "R39",
+        "R4",
+        "R5",
+        "R50",
+        "R51",
+        "R52",
+        "R53",
+        "R54",
+        "R6",
+        "R60",
+        "R61",
+        "R62",
+        "R63",
+        "R64",
+        "R65",
+        "R66",
+        "R67",
+        "R68",
+        "R69",
+        "R7",
+        "R8",
+        "R9"
+      ],
+      "msg": "55 two-terminal part(s) have no extraction and no voltage-rated attribute in parts.json: D1, D2, L1, L2, L3, L4, L5, L6, R1, R10, R11, R12, R13, R14, R15, R16, R17, R18, R2, R20, R21, R22, R23, R24, R25, R3, R30, R31, R33, R34, R36, R37, R38, R39, R4, R5, R50, R51, R52, R53, R54, R6, R60, R61, R62, R63, R64, R65, R66, R67, R68, R69, R7, R8, R9",
+      "source": "check_ratings",
+      "items": [
+        {
+          "msg": "55 two-terminal part(s) have no extraction and no voltage-rated attribute in parts.json: D1, D2, L1, L2, L3, L4, L5, L6, R1, R10, R11, R12, R13, R14, R15, R16, R17, R18, R2, R20, R21, R22, R23, R24, R25, R3, R30, R31, R33, R34, R36, R37, R38, R39, R4, R5, R50, R51, R52, R53, R54, R6, R60, R61, R62, R63, R64, R65, R66, R67, R68, R69, R7, R8, R9",
+          "pos": null
+        }
+      ],
+      "kind": "rating_unrated",
+      "pins": [
+        "D1",
+        "D2",
+        "L1",
+        "L2",
+        "L3",
+        "L4",
+        "L5",
+        "L6",
+        "R1",
+        "R10",
+        "R11",
+        "R12",
+        "R13",
+        "R14",
+        "R15",
+        "R16",
+        "R17",
+        "R18",
+        "R2",
+        "R20",
+        "R21",
+        "R22",
+        "R23",
+        "R24",
+        "R25",
+        "R3",
+        "R30",
+        "R31",
+        "R33",
+        "R34",
+        "R36",
+        "R37",
+        "R38",
+        "R39",
+        "R4",
+        "R5",
+        "R50",
+        "R51",
+        "R52",
+        "R53",
+        "R54",
+        "R6",
+        "R60",
+        "R61",
+        "R62",
+        "R63",
+        "R64",
+        "R65",
+        "R66",
+        "R67",
+        "R68",
+        "R69",
+        "R7",
+        "R8",
+        "R9"
+      ]
+    }
+  ],
   "waived_count": 1,
   "waived": [
     {
@@ -142,9 +2187,9 @@
     "workspace": ".",
     "gate": "verify",
     "status": "pass",
-    "attempts": 5,
+    "attempts": 7,
     "inputs": {
-      "pcb": "sexpr_no_uuid:5d4d3eefa08ac13660882ad6cc8c5ed1b8f0ccd651f3d521eb5411635ca9c576",
+      "pcb": "sexpr_no_uuid:1e52fa6db57895dc45bd3638912caa67c3839903ccb0f552f024b203fbcfa61c",
       "constraints": "json_canonical:bddbb1b84a07eaf0b52456568888c02226ad1317a93e8020e9b9e780b98c7ab5",
       "decoupling": "json_canonical:83d4aa9fc41ad6fde56012fff8a8e86b567621103cd7a118d91157b10ede6600",
       "waivers": "json_canonical:fd04b3c398f91596a08605fd91c32f9be2d338bcc3860a37e636c7fd5a133f39"

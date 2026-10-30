@@ -25,12 +25,13 @@ C("C31", "100nF", "+3V3", ic="U7", pin="2")
 R("R30", "10k", "+3V3", "ESP_EN")
 C("C32", "1uF", "ESP_EN")
 R("R31", "10k", "+3V3", "ETH_CLK", role="GPIO0 boot strap pull-up")
-# CH340C serial + auto-reset
-P("U8", A + "CH340C", "CH340C", A + "SOP-16_L10.0-W3.9-P1.27-LS6.0-BL",
+# CH340B serial + auto-reset (CH340C not buyable at JLC, 2026-10-29; the B
+# differs only on pins 7/8/15, all open here; same SOP-16 land)
+P("U8", A + "CH340B", "CH340B", A + "SOP-16_L10.0-W3.9-P1.27-LS6.0-BL",
   {"n:GND": "GND", "n:TXD": "U0RXD", "n:RXD": "U0TXD", "n:V3": "+3V3",
-   "n:D+": "USB_DP", "n:D-": "USB_DM", "n:VCC": "+3V3",
+   "n:UD+": "USB_DP", "n:UD-": "USB_DM", "n:VCC": "+3V3",
    "n:~{DTR}": "UART_DTR", "n:~{RTS}": "UART_RTS"},
-  lcsc="C84681", role="USB-UART for console and flashing", nc_rest=True)
+  lcsc="C81010", role="USB-UART for console and flashing", nc_rest=True)
 C("C33", "100nF", "+3V3", ic="U8", pin="16")
 P("Q4", A + "S8050_C2146", "S8050", A + "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
   {"n:B": "AR_B1", "n:E": "UART_RTS", "n:C": "ESP_EN"}, lcsc="C2146",
@@ -42,23 +43,39 @@ P("Q5", A + "S8050_C2146", "S8050", A + "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
 R("R33", "10k", "UART_RTS", "AR_B2")
 R("R34", "2.2k", "+3V3", "I2C_SDA")
 R("R35", "2.2k", "+3V3", "I2C_SCL")
-# TCA9555 expander (architecture/blocks.md map)
-P("U17", A + "TCA9555PWR", "TCA9555", A + "TSSOP-24_L7.8-W4.4-P0.65-LS6.4-BL",
-  {"n:~{INT}": "EXP_INT", "n:A0": "GND", "n:A1": "GND", "n:A2": "GND",
+# TCA9539 expander (architecture/blocks.md map). review-2 DIGITAL-1/2,
+# PARTS-4: the TCA9555's internal ~100k pull-ups fought R40-R45 and left PHY_RST
+# (the 50 MHz oscillator's enable, which drives the GPIO0 strap), PVDD_EN and
+# the resets mid-rail at power-up, and its outputs held through an ESP32
+# reset. The TCA9539 has the same pinout without pull-ups, and pin 3 is
+# RESET: tied to ESP_EN, every EN reset (power-on, auto-program, button) puts
+# all its pins back to inputs, so R40-R45 hold them off. I2C address 0x74.
+P("U17", A + "TCA9539PWR", "TCA9539", A + "TSSOP-24_L7.8-W4.4-P0.65-LS6.4-BL",
+  {"n:~{INT}": "EXP_INT", "n:A0": "GND", "n:A1": "GND", "n:~{RESET}": "ESP_EN",
    "n:GND": "GND", "n:VCC": "+3V3", "n:SCL": "I2C_SCL", "n:SDA": "I2C_SDA",
    "n:P00": "AMP_A_RST", "n:P01": "AMP_B_RST", "n:P02": "DJ_DIRECT",
    "n:P03": "PVDD_EN", "n:P04": "DAC_EN", "n:P05": "PHY_RST",
    "n:P06": "LCD_BL", "n:P07": "LED_STATUS", "n:P10": "AMP_FAULT",
    "n:P11": "AMP_OTW", "n:P12": "ENC_A", "n:P13": "ENC_B",
-   "n:P14": "ENC_SW", "n:P15": "BTN_1", "n:P16": "BTN_2", "n:P17": "LCD_CS"},
-  lcsc="C465732", role="I2C I/O expander, 0x20")
+   "n:P14": "ENC_SW", "n:P15": "BTN_1", "n:P16": "BTN_2", "n:P17": "TAP_SEL_IO"},
+  lcsc="C131972", role="I2C I/O expander, 0x74, reset with the ESP32")
 C("C34", "100nF", "+3V3", ic="U17", pin="24")
 R("R36", "10k", "+3V3", "EXP_INT")
 for i, net in enumerate(["AMP_A_RST", "AMP_B_RST", "DJ_DIRECT", "PVDD_EN",
                          "DAC_EN", "PHY_RST"]):
-    R(f"R{40 + i}", "100k", net, "GND", role="safe default: off")
+    # R45 (PHY_RST = Y2 OE) is 2.2k: the oscillator's own OE pull-up is
+    # undocumented; 2.2k holds OE under 30 % VDD (0.99 V) against any pull-up
+    # of 5.1k or more (review-2 DIGITAL-1, PARTS-4)
+    R(f"R{40 + i}", "2.2k" if net == "PHY_RST" else "100k", net, "GND",
+      role="safe default: off")
 for i, net in enumerate(["AMP_FAULT", "AMP_OTW", "ENC_A", "ENC_B", "ENC_SW",
                          "BTN_1", "BTN_2", "LCD_CS", "IR_IN"]):
+    # LCD_CS (R57) is held low: the front board's display is the only SPI
+    # device, so its chip select stays asserted (firmware: cs = -1), which
+    # frees expander P17 for the speaker-tap select (review-2 DIGITAL-16)
+    if net == "LCD_CS":
+        R(f"R{50 + i}", "10k", net, "GND", role="display CS held asserted")
+        continue
     R(f"R{50 + i}", "10k", "+3V3", net)
 for i, net in enumerate(["ENC_A", "ENC_B", "ENC_SW"]):
     C(f"C{37 + i}", "10nF", net, role="encoder debounce")
@@ -83,7 +100,7 @@ P("Y2", A + "OT322550MJBA4SL", "50MHz", A + "x",
 C("C46", "100nF", "+3V3", ic="Y2", pin="4")
 R("R60", "33R", "ETH_OSC", "ETH_CLK", role="50 MHz clock series term")
 R("R67", "10k", "PHY_RST", "PHY_NRST", role="nRST lags the clock enable ~1 ms")
-C("C47", "100nF", "PHY_NRST")
+C("C47", "1uF", "PHY_NRST", role="nRST 10 ms after OE (oscillator starts in 3 ms; review-2 DIGITAL-5)")
 C("C40", "1uF", "PHY_VDDCR", ic="U9", pin="6")
 C("C41", "100nF", "PHY_VDDCR")
 C("C42", "100nF", "+3V3E", ic="U9", pin="1")

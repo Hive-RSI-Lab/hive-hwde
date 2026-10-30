@@ -1,0 +1,224 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C1620",
+ "total": 164,
+ "count": 3,
+ "results": [
+  {
+   "lcsc": "C1620",
+   "mpn": "0603B471K500NT",
+   "brand": "FH (Guangdong Fenghua Advanced Tech)",
+   "description": "470pF 50V X7R \u00b110% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "package": "0603",
+   "category": "Multilayer Ceramic Capacitors MLCC - SMD/SMT",
+   "type": "Basic",
+   "basic": true,
+   "stock": 791988,
+   "price": 0.0058,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0058
+    },
+    {
+     "qty": 1000,
+     "price": 0.0046
+    },
+    {
+     "qty": 4000,
+     "price": 0.0037
+    },
+    {
+     "qty": 8000,
+     "price": 0.0033
+    },
+    {
+     "qty": 48000,
+     "price": 0.0029
+    },
+    {
+     "qty": 100000,
+     "price": 0.0027
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_FH--Guangdong-Fenghua-Advanced-Tech-0603B471K500NT_C1620.pdf",
+   "url": "https://www.lcsc.com/product-detail/multilayer-ceramic-capacitors-mlcc-smd-smt_fh-guangdong-fenghua-advanced-tech-0603b471k500nt_C1620.html",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b110%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "470pF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X7R"
+    }
+   ],
+   "rank": 0
+  },
+  {
+   "lcsc": "C5266099",
+   "mpn": "ARG02BTC1620",
+   "brand": "Viking Tech",
+   "description": "-55\u2103~+155\u2103 162\u03a9 50V 62.5mW Thin Film Resistor \u00b10.1% \u00b125ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+   "package": "0402",
+   "category": "Chip Resistor - Surface Mount",
+   "type": "Extended",
+   "basic": false,
+   "stock": 4078,
+   "price": 0.0123,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0123
+    },
+    {
+     "qty": 500,
+     "price": 0.0096
+    },
+    {
+     "qty": 1500,
+     "price": 0.008
+    },
+    {
+     "qty": 10000,
+     "price": 0.0068
+    },
+    {
+     "qty": 20000,
+     "price": 0.006
+    },
+    {
+     "qty": 50000,
+     "price": 0.0056
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2211151030_Viking-Tech-ARG02BTC1620_C5266099.pdf",
+   "url": "https://www.lcsc.com/product-detail/chip-resistor-surface-mount_viking-tech-arg02btc1620_C5266099.html",
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "162\u03a9"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+155\u2103"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thin Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b10.1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "\u00b125ppm/\u2103"
+    }
+   ],
+   "rank": 1
+  },
+  {
+   "lcsc": "C54565477",
+   "mpn": "HTC1620",
+   "brand": "HITENX",
+   "description": "-40\u2103~+80\u2103 -500mV~7V 200mA 3-Wire Serial Interface 50mA 8 Segment x 6 Digit\u300110 Segment x 4 Digit Built-in display RAM\u3001PWM dimming SOP-20 Digital Tube Drivers ROHS",
+   "package": "SOP-20",
+   "category": "Digital Tube Drivers",
+   "type": "Extended",
+   "basic": false,
+   "stock": 2844,
+   "price": 0.1481,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.1481
+    },
+    {
+     "qty": 60,
+     "price": 0.1178
+    },
+    {
+     "qty": 180,
+     "price": 0.1026
+    },
+    {
+     "qty": 612,
+     "price": 0.0913
+    },
+    {
+     "qty": 2880,
+     "price": 0.0823
+    },
+    {
+     "qty": 5760,
+     "price": 0.0777
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "",
+   "url": "",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+80\u2103"
+    },
+    {
+     "name": "Clock Frequency",
+     "value": "1MHz"
+    },
+    {
+     "name": "Digit Drive Current",
+     "value": "200mA"
+    },
+    {
+     "name": "Configuration",
+     "value": "8 Segment x 6 Digit\u300110 Segment x 4 Digit"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "-500mV~7V"
+    },
+    {
+     "name": "Features",
+     "value": "Built-in display RAM\u3001PWM dimming"
+    },
+    {
+     "name": "Segment Drive Current",
+     "value": "50mA"
+    },
+    {
+     "name": "Pd - Power Dissipation",
+     "value": "400mW"
+    },
+    {
+     "name": "Interface",
+     "value": "3-Wire Serial Interface"
+    }
+   ],
+   "rank": 2
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

@@ -4,7 +4,7 @@
   "phase": "P4",
   "tool": "erc",
   "input": "kicad/lite-main.kicad_sch",
-  "input_digest": "sexpr_no_uuid:f1b5dd006479a8d0a7482701391215952b44fd38f3717b65a787745f47cf3715",
+  "input_digest": "sexpr_no_uuid:d4eba34366f6cc6f8a0a5733603d4935ad63fd423df854aac0bce704d95048e2",
   "status": "pass",
   "criteria": {
     "fail_severities": [
@@ -20,16 +20,18 @@
   },
   "failing_count": 0,
   "failing": [],
+  "warnings_count": 0,
+  "warnings": [],
   "record_result": {
     "ok": true,
     "recorded": true,
     "workspace": ".",
     "gate": "erc",
     "status": "pass",
-    "attempts": 9,
+    "attempts": 12,
     "inputs": {
-      "sch": "sexpr_no_uuid:f1b5dd006479a8d0a7482701391215952b44fd38f3717b65a787745f47cf3715",
-      "pro": "json_canonical:68c7fa5e93e710c46aadc42519fee152f529f73d7ac3eeaf38dd8f4bb9a3b72d"
+      "sch": "sexpr_no_uuid:d4eba34366f6cc6f8a0a5733603d4935ad63fd423df854aac0bce704d95048e2",
+      "pro": "json_canonical:6d0de1152d76259e8cf3cd06513cbd1e922a675949c20612c642e5014f5a0329"
     }
   }
 }

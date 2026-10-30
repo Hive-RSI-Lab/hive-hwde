@@ -1,0 +1,126 @@
+{
+ "script": "check_mating",
+ "status": "violations",
+ "board": "ultra-front.kicad_pcb",
+ "counts": {
+  "total": 2,
+  "by_severity": {
+   "error": 2
+  },
+  "by_source": {
+   "check_mating": 2
+  }
+ },
+ "violations": [
+  {
+   "check": "mating",
+   "severity": "error",
+   "pos": [
+    -6.11,
+    47.0
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "J2"
+   ],
+   "msg": "J2 (fpc_ffc) cannot be mated: its nearest edge is -x (0.8 mm) but its mouth faces +x, into 103.2 mm of board",
+   "source": "check_mating",
+   "items": [
+    {
+     "msg": "J2 (fpc_ffc) cannot be mated: its nearest edge is -x (0.8 mm) but its mouth faces +x, into 103.2 mm of board",
+     "pos": [
+      -6.11,
+      47.0
+     ]
+    }
+   ],
+   "kind": "mating_faces_inward",
+   "connector": "J2",
+   "mouth": "+x",
+   "nearest_edge": "-x",
+   "gap_mm": 103.16
+  },
+  {
+   "check": "mating",
+   "severity": "error",
+   "pos": [
+    55.0669,
+    47.0
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C2",
+    "C3",
+    "J2",
+    "Q1",
+    "R5",
+    "SW2",
+    "SW4"
+   ],
+   "msg": "J2 (fpc_ffc): C2, C3, Q1, R5, SW2, SW4 sit in the plug's insertion zone in front of its mouth (8.0 mm plug + 2.0 mm grip)",
+   "source": "check_mating",
+   "items": [
+    {
+     "msg": "J2 (fpc_ffc): C2, C3, Q1, R5, SW2, SW4 sit in the plug's insertion zone in front of its mouth (8.0 mm plug + 2.0 mm grip)",
+     "pos": [
+      55.0669,
+      47.0
+     ]
+    }
+   ],
+   "kind": "mating_zone_blocked",
+   "connector": "J2",
+   "mouth": "+x",
+   "blocked_by": [
+    "C2",
+    "C3",
+    "Q1",
+    "R5",
+    "SW2",
+    "SW4"
+   ]
+  }
+ ],
+ "connectors": [
+  {
+   "ref": "J1",
+   "family": "fpc_ffc",
+   "entry": "horizontal",
+   "mouth": "+y",
+   "gap_mm": 0.24,
+   "nearest_edge": "+y",
+   "model_span_mm": [
+    0.03,
+    5.15
+   ],
+   "blocked_by": []
+  },
+  {
+   "ref": "J2",
+   "family": "fpc_ffc",
+   "entry": "horizontal",
+   "mouth": "+x",
+   "gap_mm": 103.16,
+   "nearest_edge": "-x",
+   "model_span_mm": [
+    -0.37,
+    5.14
+   ],
+   "blocked_by": [
+    "C2",
+    "C3",
+    "Q1",
+    "R5",
+    "SW2",
+    "SW4"
+   ]
+  }
+ ],
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T16:12:33+00:00",
+ "input": "kicad/ultra-front.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:9dc35130bd1201644f1dba4e1d6dba4d5d758a4ef90a725aa5368dd26825d2d0"
+}

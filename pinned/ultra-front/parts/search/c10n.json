@@ -1,0 +1,73 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "10nF 0603 capacitor 50V",
+ "total": 410,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C57112",
+   "mpn": "0603B103K500NT",
+   "brand": "FH (Guangdong Fenghua Advanced Tech)",
+   "description": "10nF 50V X7R \u00b110% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "package": "0603",
+   "category": "Multilayer Ceramic Capacitors MLCC - SMD/SMT",
+   "type": "Basic",
+   "basic": true,
+   "stock": 5754222,
+   "price": 0.0074,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0074
+    },
+    {
+     "qty": 1000,
+     "price": 0.0057
+    },
+    {
+     "qty": 4000,
+     "price": 0.005
+    },
+    {
+     "qty": 8000,
+     "price": 0.0045
+    },
+    {
+     "qty": 48000,
+     "price": 0.0042
+    },
+    {
+     "qty": 100000,
+     "price": 0.0041
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_FH--Guangdong-Fenghua-Advanced-Tech-0603B103K500NT_C57112.pdf",
+   "url": "https://www.lcsc.com/product-detail/multilayer-ceramic-capacitors-mlcc-smd-smt_fh-guangdong-fenghua-advanced-tech-0603b103k500nt_C57112.html",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b110%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "10nF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X7R"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0,
+ "pick": "basic-passive"
+}

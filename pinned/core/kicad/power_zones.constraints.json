@@ -146,7 +146,7 @@
   },
   {
    "layer": "F.Cu",
-   "net": "/amp_a/A_SPK_R+",
+   "net": "/A_SPK_R+",
    "connect": "solid",
    "priority": 5,
    "region": [
@@ -158,7 +158,7 @@
   },
   {
    "layer": "F.Cu",
-   "net": "/amp_a/A_SPK_R+",
+   "net": "/A_SPK_R+",
    "connect": "solid",
    "priority": 5,
    "region": [
@@ -170,7 +170,7 @@
   },
   {
    "layer": "F.Cu",
-   "net": "/amp_a/A_SPK_L+",
+   "net": "/A_SPK_L+",
    "connect": "solid",
    "priority": 5,
    "region": [
@@ -182,7 +182,7 @@
   },
   {
    "layer": "B.Cu",
-   "net": "/amp_a/A_SPK_L+",
+   "net": "/A_SPK_L+",
    "connect": "solid",
    "priority": 5,
    "region": [
@@ -194,7 +194,7 @@
   },
   {
    "layer": "B.Cu",
-   "net": "/amp_a/A_SPK_L+",
+   "net": "/A_SPK_L+",
    "connect": "solid",
    "priority": 5,
    "region": [
@@ -206,7 +206,7 @@
   },
   {
    "layer": "B.Cu",
-   "net": "/amp_a/A_SPK_L+",
+   "net": "/A_SPK_L+",
    "connect": "solid",
    "priority": 5,
    "region": [
@@ -218,7 +218,7 @@
   },
   {
    "layer": "B.Cu",
-   "net": "/amp_a/A_SPK_L+",
+   "net": "/A_SPK_L+",
    "connect": "solid",
    "priority": 5,
    "region": [

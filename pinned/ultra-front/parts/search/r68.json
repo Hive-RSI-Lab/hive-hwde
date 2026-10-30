@@ -1,0 +1,13 @@
+{
+ "script": "parts_search",
+ "status": "no_candidate",
+ "source": "live",
+ "query": "68R 0805 resistor",
+ "total": 3571,
+ "count": 0,
+ "results": [],
+ "filters": {},
+ "placeholders_filtered": 0,
+ "pick": "basic-passive",
+ "hint": "no conforming Basic passive (Basic + 0402/0603/0805 + stock >= 5x qty 200): a stock-out of the standard form, not a bad query - pick by judgment"
+}

@@ -2,7 +2,7 @@
  "script": "place_edit",
  "status": "pass",
  "board": "kicad/lite-main.kicad_pcb",
- "applied": 20,
+ "applied": 21,
  "verified": true,
  "results": [
   {
@@ -14,61 +14,61 @@
   {
    "ref": "J2",
    "layer": "F.SilkS",
-   "removed": 6,
+   "removed": 0,
    "only_offboard": true
   },
   {
    "ref": "J3",
    "layer": "F.SilkS",
-   "removed": 6,
+   "removed": 0,
    "only_offboard": true
   },
   {
    "ref": "C58",
    "layer": "F.SilkS",
-   "removed": 12,
+   "removed": 0,
    "only_offboard": false
   },
   {
    "ref": "C59",
    "layer": "F.SilkS",
-   "removed": 12,
+   "removed": 0,
    "only_offboard": false
   },
   {
    "ref": "L1",
    "layer": "F.SilkS",
-   "removed": 6,
+   "removed": 0,
    "only_offboard": false
   },
   {
    "ref": "L2",
    "layer": "F.SilkS",
-   "removed": 6,
+   "removed": 0,
    "only_offboard": false
   },
   {
    "ref": "L3",
    "layer": "F.SilkS",
-   "removed": 6,
+   "removed": 0,
    "only_offboard": false
   },
   {
    "ref": "L4",
    "layer": "F.SilkS",
-   "removed": 6,
+   "removed": 0,
    "only_offboard": false
   },
   {
    "ref": "J1",
    "layer": "F.SilkS",
-   "removed": 11,
+   "removed": 2,
    "only_offboard": false
   },
   {
    "ref": "U9",
    "layer": "F.SilkS",
-   "removed": 8,
+   "removed": 0,
    "only_offboard": false
   },
   {
@@ -89,6 +89,14 @@
   },
   {
    "ref": "C38",
+   "field": "reference",
+   "layer": "F.SilkS",
+   "hidden": true,
+   "size": 1.0,
+   "thickness": 0.15
+  },
+  {
+   "ref": "R15",
    "field": "reference",
    "layer": "F.SilkS",
    "hidden": true,

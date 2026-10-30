@@ -21,12 +21,166 @@
   },
   {
    "net": "+5V",
-   "current_a": 0.5,
-   "dt_c": 10
+   "current_a": 1.1,
+   "dt_c": 10,
+   "overrides": [
+    {
+     "near": [
+      49.337,
+      189.107
+     ],
+     "radius_mm": 12.0,
+     "current_a": 0.4
+    },
+    {
+     "near": [
+      38.426,
+      167.042
+     ],
+     "radius_mm": 12.0,
+     "current_a": 0.4
+    },
+    {
+     "near": [
+      50.087,
+      212.207
+     ],
+     "radius_mm": 12.0,
+     "current_a": 0.4
+    },
+    {
+     "near": [
+      72.187,
+      178.876
+     ],
+     "radius_mm": 0.5,
+     "current_a": 0.4
+    },
+    {
+     "near": [
+      71.939,
+      178.155
+     ],
+     "radius_mm": 1.17,
+     "current_a": 0.4
+    },
+    {
+     "near": [
+      62.92,
+      177.908
+     ],
+     "radius_mm": 4.51,
+     "current_a": 0.4
+    },
+    {
+     "near": [
+      51.722,
+      176.425
+     ],
+     "radius_mm": 12.0,
+     "current_a": 0.4
+    },
+    {
+     "near": [
+      45.237,
+      200.757
+     ],
+     "radius_mm": 12.0,
+     "current_a": 0.4
+    },
+    {
+     "near": [
+      91.666,
+      173.577
+     ],
+     "radius_mm": 11.21,
+     "current_a": 0.4
+    },
+    {
+     "near": [
+      112.709,
+      177.708
+     ],
+     "radius_mm": 12.0,
+     "current_a": 0.4
+    },
+    {
+     "near": [
+      127.423,
+      169.747
+     ],
+     "radius_mm": 12.0,
+     "current_a": 0.4
+    },
+    {
+     "near": [
+      80.914,
+      180.912
+     ],
+     "radius_mm": 0.79,
+     "current_a": 0.4
+    },
+    {
+     "near": [
+      72.112,
+      164.32
+     ],
+     "radius_mm": 7.87,
+     "current_a": 0.4
+    },
+    {
+     "near": [
+      63.529,
+      164.039
+     ],
+     "radius_mm": 12.0,
+     "current_a": 0.4
+    },
+    {
+     "near": [
+      67.349,
+      183.647
+     ],
+     "radius_mm": 2.14,
+     "current_a": 0.4
+    },
+    {
+     "near": [
+      65.066,
+      180.032
+     ],
+     "radius_mm": 1.58,
+     "current_a": 0.4
+    },
+    {
+     "near": [
+      64.948,
+      181.747
+     ],
+     "radius_mm": 0.58,
+     "current_a": 0.4
+    },
+    {
+     "near": [
+      84.357,
+      178.722
+     ],
+     "radius_mm": 2.88,
+     "current_a": 0.4
+    },
+    {
+     "near": [
+      81.314,
+      178.608
+     ],
+     "radius_mm": 0.14,
+     "current_a": 0.4
+    }
+   ]
   },
   {
    "net": "+3V3",
-   "current_a": 0.3,
+   "current_a": 0.8,
    "dt_c": 10,
    "plane_fed": true
   },
@@ -70,7 +224,7 @@
    "pdn": false
   },
   {
-   "net": "/amp_a/A_SPK_L+",
+   "net": "/A_SPK_L+",
    "current_a": 0.5,
    "dt_c": 20,
    "pdn": false
@@ -82,7 +236,7 @@
    "pdn": false
   },
   {
-   "net": "/amp_a/A_SPK_R+",
+   "net": "/A_SPK_R+",
    "current_a": 0.5,
    "dt_c": 20,
    "pdn": false
@@ -143,7 +297,7 @@
   },
   {
    "net": "/rails/BUCK5_LX",
-   "current_a": 1.0,
+   "current_a": 1.1,
    "dt_c": 10,
    "pdn": false,
    "overrides": [
@@ -197,11 +351,11 @@
   },
   {
    "ref": "U15",
-   "power_w": 3.0,
+   "power_w": 3.5,
    "net": "GND",
-   "dt_c": 60,
-   "theta_ja_c_w": 8.0,
-   "theta_source": "TPA3221 SLASEE9C 6.4: RthJC(top) 1.1 C/W into a bolted 40x40x20 mm heatsink (~4 C/W) + ~2.9 C/W interface/pad; the slug is on top, so PCB copper is not the heat path"
+   "dt_c": 65,
+   "theta_ja_c_w": 18.0,
+   "theta_source": "review-2 THERMAL-1/9 (2026-10-29): 3.5 W at 1/8 power into 4 ohm (SLASEE9C fig 6-9). RthJC(top) 1.1 C/W + 0.2 mm 3 W/mK pad ~0.9 C/W + a lid-pressed 19x12 mm finned heatsink <= 20 C/W in still air, in parallel with the board (44.8 C/W no-heatsink RthJA): ~18 C/W, Tj ~45 + 63 = 108 C. Not the 8 C/W of a bolted 40x40 heatsink, which the board has no room for."
   }
  ],
  "placement": {
@@ -476,6 +630,6 @@
    "net": "GND"
   }
  ],
- "power_notes": "Track widths here are sized for the tracks that remain: plane taps and short stubs. The main currents ride on copper the width rules can't see: VBUS_IN/VBUS/PVDD/+3V3 on In2 plane regions plus F.Cu pours, and the amp OUT/SPK nets (3.7 A rms continuous sine, 2 x 56 W governor-capped) on the solid fan-in pours from kicad/gen/power_zones.py. check_irdrop covers those paths at P8.",
+ "power_notes": "Track widths here are sized for the tracks that remain: plane taps and short stubs. The main currents ride on copper the width rules can't see: VBUS_IN/VBUS/PVDD/+3V3 on In2 plane regions plus F.Cu pours, and the amp OUT/SPK nets (3.7 A rms continuous sine, 2 x 56 W governor-capped) on the solid fan-in pours from kicad/gen/power_zones.py. check_irdrop covers those paths at P8. +5V is budgeted at 1.1 A, what the SY8303 delivers at the worst case of its loads: the SY8089 3V3 buck's input at the +3V3 budget of 0.8 A (ESP32 radio peaks; 3.3 x 0.8 / (0.88 x 5.0) = 0.60 A), LP5907 3V3A 0.10 A, +5VA 0.05 A, two TPA3221 VDD/GVDD/AVDD 0.10 A, the ultra-front board over J3 0.15 A and the CH340C 0.02 A (1.02 A). The trunk from L9 to U5's VIN is 0.58-0.60 mm, past the 0.56 mm that 1.1 A needs at dT=10, and BUCK5_LX carries the same 1.1 A. Every other +5V track is a branch off that trunk and sits in an override at 0.4 A: by a DC solve of the routed copper the most any branch carries is 0.29 A (amp A, CH340C and the front board, west), and the buck output caps' (C13/C14) and the 3V3 buck's input cap's (C15) ripple stays under 0.4 A rms; 0.35 mm tracks carry 0.7 A, so the branches have margin. No override circle reaches a trunk segment's midpoint.",
  "diff_pairs_note": "Explicitly empty. The USB full-speed pair (12 Mb/s) and the two 100BASE-TX pairs run about 10 mm, so coupling them adds nothing measurable, and the router doesn't couple pairs (route_critical's KRT diff pass shorted). They are routed as ordinary nets at the Default width."
 }

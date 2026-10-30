@@ -1,0 +1,297 @@
+{
+ "script": "place_edit",
+ "status": "pass",
+ "board": "kicad/ultra-front.kicad_pcb",
+ "applied": 36,
+ "verified": true,
+ "results": [
+  {
+   "ref": "J2",
+   "x": -7.045,
+   "y": 47.0,
+   "deg": 90.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "J1",
+   "x": 4.055,
+   "y": 62.4,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "U1",
+   "x": 6.055,
+   "y": 31.7,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "C1",
+   "x": 0.655,
+   "y": 30.8,
+   "deg": 90.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "R7",
+   "x": 12.055,
+   "y": 31.3,
+   "deg": 90.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "R8",
+   "x": 1.055,
+   "y": 40.8,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "C4",
+   "x": -5.945,
+   "y": 53.8,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "Q1",
+   "x": 2.555,
+   "y": 54.0,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "R13",
+   "x": 6.555,
+   "y": 58.3,
+   "deg": 90.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "R17",
+   "x": 8.555,
+   "y": 58.3,
+   "deg": 90.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "R11",
+   "x": 12.655,
+   "y": 58.3,
+   "deg": 90.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "R12",
+   "x": 2.555,
+   "y": 57.7,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "C2",
+   "x": -1.945,
+   "y": 55.4,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "C3",
+   "x": -1.945,
+   "y": 52.8,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "SW1",
+   "x": 74.055,
+   "y": 34.8,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "SW2",
+   "x": 74.055,
+   "y": 46.8,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "SW3",
+   "x": 74.055,
+   "y": 58.8,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "R4",
+   "x": 79.555,
+   "y": 34.8,
+   "deg": 90.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "R5",
+   "x": 79.555,
+   "y": 46.8,
+   "deg": 90.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "R6",
+   "x": 79.555,
+   "y": 58.8,
+   "deg": 90.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "SW4",
+   "x": 89.055,
+   "y": 47.8,
+   "deg": 180.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "R1",
+   "x": 81.855,
+   "y": 37.9,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "R2",
+   "x": 85.055,
+   "y": 37.9,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "R3",
+   "x": 88.255,
+   "y": 37.9,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "C6",
+   "x": 91.455,
+   "y": 37.9,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "C7",
+   "x": 94.655,
+   "y": 37.9,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "U2",
+   "x": 89.055,
+   "y": 32.8,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "R10",
+   "x": 82.355,
+   "y": 29.4,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "C5",
+   "x": 82.355,
+   "y": 31.6,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "R9",
+   "x": 82.355,
+   "y": 33.8,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "D1",
+   "x": 88.055,
+   "y": 60.4,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "R14",
+   "x": 91.255,
+   "y": 63.6,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "R15",
+   "x": 87.255,
+   "y": 63.6,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "R16",
+   "x": 84.055,
+   "y": 63.6,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "R18",
+   "x": 10.555,
+   "y": 58.3,
+   "deg": 90.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "R19",
+   "x": 0.655,
+   "y": 34.2,
+   "deg": 90.0,
+   "side": "front",
+   "locked": false
+  }
+ ]
+}
