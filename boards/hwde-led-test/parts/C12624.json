@@ -1,0 +1,13 @@
+{
+  "mpn": "KT-0603G",
+  "lcsc": "C12624",
+  "package": "0603",
+  "description": "Hubei KENTO KT-0603G emerald-green 0603 LED. Ratings from KENTO's spec for approval rev A.0 (2018-12-06): p.3 table 4 (absolute maximum) and table 5 (IR <= 5 uA at VR = 5 V), as read by the cold design review of task 261029-175013.",
+  "pinout": [
+    {"pin": "1", "name": "K", "type": "passive", "notes": "cathode (KiCad LED pad 1; the schematic's K_1)"},
+    {"pin": "2", "name": "A", "type": "passive", "notes": "anode"}
+  ],
+  "abs_max": [
+    {"param": "Reverse voltage VR", "value": 5, "unit": "V"}
+  ]
+}
