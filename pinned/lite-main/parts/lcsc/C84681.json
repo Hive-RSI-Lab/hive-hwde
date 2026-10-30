@@ -1,0 +1,84 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C84681",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C84681",
+   "mpn": "CH340C",
+   "brand": "WCH(Jiangsu Qin Heng)",
+   "description": "-20\u2103~+70\u2103 2Mbps 3.3V\u30015V 50uA 7mA Transceiver USB 2.0 SOP-16 USB Converters ROHS",
+   "package": "SOP-16",
+   "category": "USB Converters",
+   "type": "Extended",
+   "basic": false,
+   "stock": 110560,
+   "price": 0.5454,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.5454
+    },
+    {
+     "qty": 10,
+     "price": 0.4553
+    },
+    {
+     "qty": 50,
+     "price": 0.3882
+    },
+    {
+     "qty": 100,
+     "price": 0.3341
+    },
+    {
+     "qty": 500,
+     "price": 0.3178
+    },
+    {
+     "qty": 1000,
+     "price": 0.3079
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2406191656_WCH-Jiangsu-Qin-Heng-CH340C_C84681.pdf",
+   "url": "https://www.lcsc.com/product-detail/usb-converters_wch-jiangsu-qin-heng-ch340c_C84681.html",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-20\u2103~+70\u2103"
+    },
+    {
+     "name": "Data Rate",
+     "value": "2Mbps"
+    },
+    {
+     "name": "Applications Function",
+     "value": "Transceiver"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "3.3V\u30015V"
+    },
+    {
+     "name": "USB Protocol",
+     "value": "USB 2.0"
+    },
+    {
+     "name": "Current - Supply",
+     "value": "7mA"
+    },
+    {
+     "name": "Quiescent Supply Current",
+     "value": "50uA"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

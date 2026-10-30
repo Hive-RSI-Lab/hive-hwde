@@ -1,0 +1,85 @@
+{
+  "script": "gate",
+  "gate": "dfm",
+  "phase": "P9",
+  "tool": "dfm",
+  "input": "kicad/lite-main.kicad_pcb",
+  "input_digest": "sexpr_no_uuid:5d4d3eefa08ac13660882ad6cc8c5ed1b8f0ccd651f3d521eb5411635ca9c576",
+  "status": "pass",
+  "criteria": {
+    "fail_severities": [
+      "error"
+    ],
+    "max_count": 0
+  },
+  "counts": {
+    "total": 3,
+    "by_severity": {
+      "warning": 3
+    },
+    "by_source": {
+      "check.dfm": 3
+    }
+  },
+  "failing_count": 0,
+  "failing": [],
+  "coverage": {
+    "strict": false,
+    "required": [
+      "copper",
+      "copper_to_edge",
+      "drill",
+      "hole_to_edge",
+      "silk",
+      "polarity",
+      "placement",
+      "placement_visual",
+      "bom",
+      "release",
+      "castellation"
+    ],
+    "ran": [
+      "copper",
+      "copper_to_edge",
+      "drill",
+      "hole_to_edge",
+      "silk",
+      "polarity",
+      "placement",
+      "bom",
+      "release",
+      "castellation"
+    ],
+    "passed": [
+      "copper",
+      "copper_to_edge",
+      "drill",
+      "hole_to_edge",
+      "silk",
+      "polarity",
+      "placement",
+      "bom",
+      "release",
+      "castellation"
+    ],
+    "failed": [],
+    "waived": [],
+    "not_applicable": {},
+    "skipped_error": {
+      "placement_visual": "no cpl_visual.json - the fab step's image pass has not run"
+    }
+  },
+  "record_result": {
+    "ok": true,
+    "recorded": true,
+    "workspace": ".",
+    "gate": "dfm",
+    "status": "pass",
+    "attempts": 4,
+    "inputs": {
+      "pcb": "sexpr_no_uuid:5d4d3eefa08ac13660882ad6cc8c5ed1b8f0ccd651f3d521eb5411635ca9c576",
+      "sch": "sexpr_no_uuid:f1b5dd006479a8d0a7482701391215952b44fd38f3717b65a787745f47cf3715",
+      "parts": null
+    }
+  }
+}

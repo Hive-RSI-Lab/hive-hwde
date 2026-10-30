@@ -1,0 +1,26 @@
+{
+ "script": "check_bom_sync",
+ "status": "pass",
+ "board": "lite-main.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "legs": {
+  "schematic": true,
+  "parts": true,
+  "fab": false
+ },
+ "skipped": [
+  "fab: no BOM.csv, CPL.csv or BOM-full.csv found, so the BOM and CPL legs did not run"
+ ],
+ "fab_dir": "fab",
+ "parts": "parts/parts.json",
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T20:14:32+00:00",
+ "input": "kicad/lite-main.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:ec2b7102a4b686e14c6c39d6cfee4fd1fe2da6c26d752b64af1c5680c5eb9ede"
+}

@@ -1,7 +1,7 @@
 # NOTICE - third-party material in this repository
 
-The MIT License in `LICENSE` covers the hwde skill: everything under
-`.claude/skills/hwde/`, the tests, the documentation and plans, and the design outputs
+The MIT License in `LICENSE` covers the hwde module: its `agents/`, `scripts/`,
+`reference/`, `bin/` and `docs/`, the tests, the documentation and plans, and the design outputs
 this project produced itself (schematics, board files, fab packages, reports, and the
 knowledge records and learnings it wrote).
 
@@ -13,7 +13,7 @@ reproducible, and redistributed under their owners' own terms, not under MIT:
 
 - Manufacturer datasheets and application notes (PDF) under `<board>/parts/`,
   `<board>/research/sources/`, `<board>/work/` in the boards repo, and
-  `.claude/skills/hwde/reference/knowledge/sources/` here - copyright of the respective
+  `reference/knowledge/sources/` (upstream's; this module leaves them out) - copyright of the respective
   manufacturers (Texas Instruments, STMicroelectronics, Analog Devices, Diodes
   Incorporated, Wurth Elektronik, Sensirion, Espressif, ROHM and others named in the
   files).

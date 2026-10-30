@@ -1,0 +1,92 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C365736",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C365736",
+   "mpn": "ES8388",
+   "brand": "Everest-semi(Everest Semiconductor)",
+   "description": "-40\u2103~+85\u2103 1.7V~3.6V 10MHz 2 24 96000Hz Audio Analog-to-Digital Converter\u3001Audio Decoder SPI\u3001I2C QFN-28-EP(4x4) ADCs/DACs - Special Purpose ROHS",
+   "package": "QFN-28-EP(4x4)",
+   "category": "ADCs/DACs - Special Purpose",
+   "type": "Extended",
+   "basic": false,
+   "stock": 39436,
+   "price": 1.1104,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 1.1104
+    },
+    {
+     "qty": 10,
+     "price": 0.9368
+    },
+    {
+     "qty": 30,
+     "price": 0.8156
+    },
+    {
+     "qty": 100,
+     "price": 0.7141
+    },
+    {
+     "qty": 500,
+     "price": 0.5749
+    },
+    {
+     "qty": 1000,
+     "price": 0.5569
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1912111437_Everest-semi-Everest-Semiconductor-ES8388_C365736.pdf",
+   "url": "https://www.lcsc.com/product-detail/adcs-dacs-special-purpose_everest-semi-everest-semiconductor-es8388_C365736.html",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+85\u2103"
+    },
+    {
+     "name": "The Chip Type",
+     "value": "Audio Analog-to-Digital Converter\u3001Audio Decoder"
+    },
+    {
+     "name": "Architecture",
+     "value": "Sigma-Delta"
+    },
+    {
+     "name": "Number of Channels",
+     "value": "2"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "1.7V~3.6V"
+    },
+    {
+     "name": "Sampling Rate",
+     "value": "96000Hz"
+    },
+    {
+     "name": "Features",
+     "value": "Programmable gain"
+    },
+    {
+     "name": "Resolution (Bits)",
+     "value": "24"
+    },
+    {
+     "name": "Interface Type",
+     "value": "SPI\u3001I2C"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

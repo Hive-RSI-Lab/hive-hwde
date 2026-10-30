@@ -1,0 +1,104 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C479074",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C479074",
+   "mpn": "SY8089A1AAC",
+   "brand": "Silergy Corp",
+   "description": "-40\u2103~+125\u2103@(TA/TJ) 1 1.5MHz 2.5V~5.5V 2A 50uA Adjustable Buck Buck Built-in Yes SOT-23-5 DC-DC Converters ROHS",
+   "package": "SOT-23-5",
+   "category": "DC-DC Converters",
+   "type": "Extended",
+   "basic": false,
+   "stock": 82872,
+   "price": 0.0865,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0865
+    },
+    {
+     "qty": 50,
+     "price": 0.069
+    },
+    {
+     "qty": 150,
+     "price": 0.06
+    },
+    {
+     "qty": 500,
+     "price": 0.0525
+    },
+    {
+     "qty": 3000,
+     "price": 0.0498
+    },
+    {
+     "qty": 6000,
+     "price": 0.0482
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2001171834_Silergy-Corp-SY8089A1AAC_C479074.pdf",
+   "url": "https://www.lcsc.com/product-detail/dc-dc-converters_silergy-corp-sy8089a1aac_C479074.html",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+125\u2103@(TA/TJ)"
+    },
+    {
+     "name": "Function",
+     "value": "Step-down type"
+    },
+    {
+     "name": "Synchronous Rectifier",
+     "value": "Yes"
+    },
+    {
+     "name": "Frequency - Switching",
+     "value": "1.5MHz"
+    },
+    {
+     "name": "Output Type",
+     "value": "Adjustable"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "2.5V~5.5V"
+    },
+    {
+     "name": "Output Current",
+     "value": "2A"
+    },
+    {
+     "name": "Quiescent Current",
+     "value": "50uA"
+    },
+    {
+     "name": "Features",
+     "value": "Output discharge\u3001Hiccup current limiting"
+    },
+    {
+     "name": "Switch tube (built-in/external)",
+     "value": "Built-in"
+    },
+    {
+     "name": "Topology",
+     "value": "Buck"
+    },
+    {
+     "name": "Number of Outputs",
+     "value": "1"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

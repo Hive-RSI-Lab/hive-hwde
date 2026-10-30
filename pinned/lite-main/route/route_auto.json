@@ -1,0 +1,6824 @@
+{
+ "script": "route_auto",
+ "status": "violations",
+ "board": "/work/boards/lite/kicad/lite-main.kicad_pcb",
+ "counts": {
+  "total": 199,
+  "by_severity": {
+   "error": 1,
+   "warning": 198
+  },
+  "by_source": {
+   "drc": 199
+  }
+ },
+ "violations": [
+  {
+   "check": "hole_to_hole",
+   "severity": "error",
+   "pos": [
+    79.6603,
+    118.2183
+   ],
+   "layer": "F.Cu",
+   "net": "/PVDD_SENSE",
+   "refs": [],
+   "msg": "Drilled hole too close to other hole (rule 'aiee_hole_to_hole_floor' min 0.5000 mm; actual 0.4944 mm)",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Via [/PVDD_SENSE] on F.Cu - B.Cu",
+     "pos": [
+      79.6603,
+      118.2183
+     ],
+     "uuid": "14a7b2bc-9271-4923-967d-0d80399bedbb"
+    },
+    {
+     "msg": "Via [+3V3] on F.Cu - B.Cu",
+     "pos": [
+      80.1864,
+      117.6231
+     ],
+     "uuid": "d021e20c-3fc8-4a28-9bab-6f9964f20331"
+    }
+   ]
+  },
+  {
+   "check": "silk_edge_clearance",
+   "severity": "warning",
+   "pos": [
+    24.864999,
+    60.323053
+   ],
+   "layer": "Edge.Cuts",
+   "net": null,
+   "refs": [
+    "J3"
+   ],
+   "msg": "Silkscreen clipped by board edge",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment on Edge.Cuts",
+     "pos": [
+      24.864999,
+      60.323053
+     ],
+     "uuid": "b97584cc-1da7-477e-9884-e48dbec81f60"
+    },
+    {
+     "msg": "Segment of J3 on F.Silkscreen",
+     "pos": [
+      56.665,
+      53.743
+     ],
+     "uuid": "7df47c11-d75c-4ade-9b0d-de4d5298fff9"
+    }
+   ]
+  },
+  {
+   "check": "silk_edge_clearance",
+   "severity": "warning",
+   "pos": [
+    24.864999,
+    60.323053
+   ],
+   "layer": "Edge.Cuts",
+   "net": null,
+   "refs": [
+    "J3"
+   ],
+   "msg": "Silkscreen clipped by board edge",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment on Edge.Cuts",
+     "pos": [
+      24.864999,
+      60.323053
+     ],
+     "uuid": "b97584cc-1da7-477e-9884-e48dbec81f60"
+    },
+    {
+     "msg": "Segment of J3 on F.Silkscreen",
+     "pos": [
+      56.665,
+      60.343
+     ],
+     "uuid": "24d1e95d-4473-4b69-8e83-691b34aea2b9"
+    }
+   ]
+  },
+  {
+   "check": "silk_edge_clearance",
+   "severity": "warning",
+   "pos": [
+    24.864999,
+    60.323053
+   ],
+   "layer": "Edge.Cuts",
+   "net": null,
+   "refs": [
+    "J3"
+   ],
+   "msg": "Silkscreen clipped by board edge",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment on Edge.Cuts",
+     "pos": [
+      24.864999,
+      60.323053
+     ],
+     "uuid": "b97584cc-1da7-477e-9884-e48dbec81f60"
+    },
+    {
+     "msg": "Segment of J3 on F.Silkscreen",
+     "pos": [
+      72.665,
+      53.743
+     ],
+     "uuid": "aee982d2-15bf-4143-b592-5f9c391ad46b"
+    }
+   ]
+  },
+  {
+   "check": "silk_edge_clearance",
+   "severity": "warning",
+   "pos": [
+    24.864999,
+    60.323053
+   ],
+   "layer": "Edge.Cuts",
+   "net": null,
+   "refs": [
+    "J3"
+   ],
+   "msg": "Silkscreen clipped by board edge",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment on Edge.Cuts",
+     "pos": [
+      24.864999,
+      60.323053
+     ],
+     "uuid": "b97584cc-1da7-477e-9884-e48dbec81f60"
+    },
+    {
+     "msg": "Segment of J3 on F.Silkscreen",
+     "pos": [
+      72.665,
+      60.343
+     ],
+     "uuid": "f304a03c-e38f-4242-967f-87b6d5f379af"
+    }
+   ]
+  },
+  {
+   "check": "silk_edge_clearance",
+   "severity": "warning",
+   "pos": [
+    24.864999,
+    60.323053
+   ],
+   "layer": "Edge.Cuts",
+   "net": null,
+   "refs": [
+    "J3"
+   ],
+   "msg": "Silkscreen clipped by board edge",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment on Edge.Cuts",
+     "pos": [
+      24.864999,
+      60.323053
+     ],
+     "uuid": "b97584cc-1da7-477e-9884-e48dbec81f60"
+    },
+    {
+     "msg": "Segment of J3 on F.Silkscreen",
+     "pos": [
+      72.665,
+      72.063
+     ],
+     "uuid": "3f08e42f-c414-42e2-864b-e557d2ea2f1c"
+    }
+   ]
+  },
+  {
+   "check": "silk_edge_clearance",
+   "severity": "warning",
+   "pos": [
+    120.864999,
+    150.323053
+   ],
+   "layer": "Edge.Cuts",
+   "net": null,
+   "refs": [
+    "U9"
+   ],
+   "msg": "Silkscreen clipped by board edge",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment on Edge.Cuts",
+     "pos": [
+      120.864999,
+      150.323053
+     ],
+     "uuid": "78fa64f5-b9fb-492a-8b4a-54bf84889077"
+    },
+    {
+     "msg": "Arc of U9 on F.Silkscreen",
+     "pos": [
+      111.865,
+      149.173
+     ],
+     "uuid": "1f1fd731-5ac6-40b5-a586-8aa5da28b718"
+    }
+   ]
+  },
+  {
+   "check": "silk_edge_clearance",
+   "severity": "warning",
+   "pos": [
+    24.864999,
+    60.323053
+   ],
+   "layer": "Edge.Cuts",
+   "net": null,
+   "refs": [
+    "J2"
+   ],
+   "msg": "Silkscreen clipped by board edge",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment on Edge.Cuts",
+     "pos": [
+      24.864999,
+      60.323053
+     ],
+     "uuid": "b97584cc-1da7-477e-9884-e48dbec81f60"
+    },
+    {
+     "msg": "Segment of J2 on F.Silkscreen",
+     "pos": [
+      34.465,
+      53.743
+     ],
+     "uuid": "0a48a391-31ba-4ed8-89e1-cb9dd2736c49"
+    }
+   ]
+  },
+  {
+   "check": "silk_edge_clearance",
+   "severity": "warning",
+   "pos": [
+    24.864999,
+    60.323053
+   ],
+   "layer": "Edge.Cuts",
+   "net": null,
+   "refs": [
+    "J2"
+   ],
+   "msg": "Silkscreen clipped by board edge",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment on Edge.Cuts",
+     "pos": [
+      24.864999,
+      60.323053
+     ],
+     "uuid": "b97584cc-1da7-477e-9884-e48dbec81f60"
+    },
+    {
+     "msg": "Segment of J2 on F.Silkscreen",
+     "pos": [
+      34.465,
+      60.343
+     ],
+     "uuid": "7628b504-7205-4cda-a378-1412b83d2bfa"
+    }
+   ]
+  },
+  {
+   "check": "silk_edge_clearance",
+   "severity": "warning",
+   "pos": [
+    24.864999,
+    60.323053
+   ],
+   "layer": "Edge.Cuts",
+   "net": null,
+   "refs": [
+    "J2"
+   ],
+   "msg": "Silkscreen clipped by board edge",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment on Edge.Cuts",
+     "pos": [
+      24.864999,
+      60.323053
+     ],
+     "uuid": "b97584cc-1da7-477e-9884-e48dbec81f60"
+    },
+    {
+     "msg": "Segment of J2 on F.Silkscreen",
+     "pos": [
+      50.465,
+      53.743
+     ],
+     "uuid": "f61c5f64-a44b-4576-b1fb-fe183e64ecc5"
+    }
+   ]
+  },
+  {
+   "check": "silk_edge_clearance",
+   "severity": "warning",
+   "pos": [
+    24.864999,
+    60.323053
+   ],
+   "layer": "Edge.Cuts",
+   "net": null,
+   "refs": [
+    "J2"
+   ],
+   "msg": "Silkscreen clipped by board edge",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment on Edge.Cuts",
+     "pos": [
+      24.864999,
+      60.323053
+     ],
+     "uuid": "b97584cc-1da7-477e-9884-e48dbec81f60"
+    },
+    {
+     "msg": "Segment of J2 on F.Silkscreen",
+     "pos": [
+      50.465,
+      60.343
+     ],
+     "uuid": "4f91cd59-4847-4688-a78d-aa86fb9f4296"
+    }
+   ]
+  },
+  {
+   "check": "silk_edge_clearance",
+   "severity": "warning",
+   "pos": [
+    24.864999,
+    60.323053
+   ],
+   "layer": "Edge.Cuts",
+   "net": null,
+   "refs": [
+    "J2"
+   ],
+   "msg": "Silkscreen clipped by board edge",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment on Edge.Cuts",
+     "pos": [
+      24.864999,
+      60.323053
+     ],
+     "uuid": "b97584cc-1da7-477e-9884-e48dbec81f60"
+    },
+    {
+     "msg": "Segment of J2 on F.Silkscreen",
+     "pos": [
+      50.465,
+      72.063
+     ],
+     "uuid": "2176760b-edf6-4de9-9312-c1912d268229"
+    }
+   ]
+  },
+  {
+   "check": "silk_edge_clearance",
+   "severity": "warning",
+   "pos": [
+    24.864999,
+    60.323053
+   ],
+   "layer": "Edge.Cuts",
+   "net": null,
+   "refs": [
+    "J1"
+   ],
+   "msg": "Silkscreen clipped by board edge",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment on Edge.Cuts",
+     "pos": [
+      24.864999,
+      60.323053
+     ],
+     "uuid": "b97584cc-1da7-477e-9884-e48dbec81f60"
+    },
+    {
+     "msg": "Segment of J1 on F.Silkscreen",
+     "pos": [
+      76.795,
+      60.323
+     ],
+     "uuid": "19935d25-8f7e-41dc-86c0-1dbe7f0c82d3"
+    }
+   ]
+  },
+  {
+   "check": "silk_edge_clearance",
+   "severity": "warning",
+   "pos": [
+    24.864999,
+    60.323053
+   ],
+   "layer": "Edge.Cuts",
+   "net": null,
+   "refs": [
+    "J1"
+   ],
+   "msg": "Silkscreen clipped by board edge",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment on Edge.Cuts",
+     "pos": [
+      24.864999,
+      60.323053
+     ],
+     "uuid": "b97584cc-1da7-477e-9884-e48dbec81f60"
+    },
+    {
+     "msg": "Segment of J1 on F.Silkscreen",
+     "pos": [
+      85.935,
+      60.323
+     ],
+     "uuid": "e9ab9b19-c6dd-40f0-8e39-c69ac0be1e89"
+    }
+   ]
+  },
+  {
+   "check": "silk_edge_clearance",
+   "severity": "warning",
+   "pos": [
+    24.864999,
+    60.323053
+   ],
+   "layer": "Edge.Cuts",
+   "net": null,
+   "refs": [
+    "J1"
+   ],
+   "msg": "Silkscreen clipped by board edge",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment on Edge.Cuts",
+     "pos": [
+      24.864999,
+      60.323053
+     ],
+     "uuid": "b97584cc-1da7-477e-9884-e48dbec81f60"
+    },
+    {
+     "msg": "Segment of J1 on F.Silkscreen",
+     "pos": [
+      85.935,
+      61.843
+     ],
+     "uuid": "e2c0cbdb-8db4-4caa-9a85-c2ee1d67c5d6"
+    }
+   ]
+  },
+  {
+   "check": "silk_edge_clearance",
+   "severity": "warning",
+   "pos": [
+    22.864999,
+    148.323053
+   ],
+   "layer": "Edge.Cuts",
+   "net": null,
+   "refs": [
+    "U5"
+   ],
+   "msg": "Silkscreen clipped by board edge",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment on Edge.Cuts",
+     "pos": [
+      22.864999,
+      148.323053
+     ],
+     "uuid": "d7f28d1f-586a-4fc0-937f-9f39a230c4e6"
+    },
+    {
+     "msg": "Reference field of U5",
+     "pos": [
+      22.67,
+      128.323
+     ],
+     "uuid": "15051e47-63e7-4c2c-b857-2319f988d6cb"
+    }
+   ]
+  },
+  {
+   "check": "silk_edge_clearance",
+   "severity": "warning",
+   "pos": [
+    72.315,
+    73.923
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "J3",
+    "R4"
+   ],
+   "msg": "Silkscreen clipped by board edge",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "NPTH pad of J3",
+     "pos": [
+      72.315,
+      73.923
+     ],
+     "uuid": "857e196b-bb67-41c0-8d09-02b6fd596ee6"
+    },
+    {
+     "msg": "Reference field of R4",
+     "pos": [
+      73.235,
+      74.123
+     ],
+     "uuid": "22bf550b-d16a-459d-920e-9dad693e3513"
+    }
+   ]
+  },
+  {
+   "check": "silk_edge_clearance",
+   "severity": "warning",
+   "pos": [
+    122.864999,
+    62.323053
+   ],
+   "layer": "Edge.Cuts",
+   "net": null,
+   "refs": [
+    "C59"
+   ],
+   "msg": "Silkscreen clipped by board edge",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment on Edge.Cuts",
+     "pos": [
+      122.864999,
+      62.323053
+     ],
+     "uuid": "7c8516ae-0687-418b-9405-0609b1ce3eb2"
+    },
+    {
+     "msg": "Reference field of C59",
+     "pos": [
+      122.42,
+      108.323
+     ],
+     "uuid": "b86f3804-1be3-4466-a173-6d45979033e9"
+    }
+   ]
+  },
+  {
+   "check": "silk_edge_clearance",
+   "severity": "warning",
+   "pos": [
+    24.864999,
+    60.323053
+   ],
+   "layer": "Edge.Cuts",
+   "net": null,
+   "refs": [
+    "J4"
+   ],
+   "msg": "Silkscreen clipped by board edge",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment on Edge.Cuts",
+     "pos": [
+      24.864999,
+      60.323053
+     ],
+     "uuid": "b97584cc-1da7-477e-9884-e48dbec81f60"
+    },
+    {
+     "msg": "Reference field of J4",
+     "pos": [
+      105.665,
+      60.098
+     ],
+     "uuid": "efebf7c9-8a41-42f1-a696-ee1e483b2800"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    94.165,
+    99.093
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C57",
+    "C64"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C57",
+     "pos": [
+      94.165,
+      99.093
+     ],
+     "uuid": "86bd8761-f439-4b2d-b76a-990ba6a1570f"
+    },
+    {
+     "msg": "Reference field of C64",
+     "pos": [
+      94.435,
+      97.323
+     ],
+     "uuid": "b2089d32-5188-46aa-ab66-186f0f0c12c2"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    103.635,
+    113.323
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "R50",
+    "R51"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R51",
+     "pos": [
+      103.635,
+      113.323
+     ],
+     "uuid": "08dd3dae-571f-40fa-b1cc-761ac95a87e6"
+    },
+    {
+     "msg": "Segment of R50 on F.Silkscreen",
+     "pos": [
+      103.5875,
+      113.560258
+     ],
+     "uuid": "160d9c4c-689a-4d60-8f31-c9e0a14f6ac4"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    101.575,
+    113.46358
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C50",
+    "R50"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of C50 on F.Silkscreen",
+     "pos": [
+      101.575,
+      113.46358
+     ],
+     "uuid": "19a20a40-be94-4117-ad51-1c9b4f77a510"
+    },
+    {
+     "msg": "Reference field of R50",
+     "pos": [
+      101.635,
+      113.323
+     ],
+     "uuid": "76b46ee3-6711-481a-b60f-4b66ae744a50"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    98.365,
+    113.293
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "C50",
+    "C61"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C61",
+     "pos": [
+      98.365,
+      113.293
+     ],
+     "uuid": "16eb0715-3a60-4a4b-91e5-813cc1b38ec8"
+    },
+    {
+     "msg": "Reference field of C50",
+     "pos": [
+      99.635,
+      113.323
+     ],
+     "uuid": "243fd537-b886-46af-8a6f-5a4be4ffc8d0"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    98.365,
+    113.293
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C60",
+    "C61"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C61",
+     "pos": [
+      98.365,
+      113.293
+     ],
+     "uuid": "16eb0715-3a60-4a4b-91e5-813cc1b38ec8"
+    },
+    {
+     "msg": "Segment of C60 on F.Silkscreen",
+     "pos": [
+      98.22442,
+      113.333
+     ],
+     "uuid": "293a1a0f-7740-421e-b5a1-27a00863e1fd"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    110.365,
+    104.843
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C51",
+    "C52"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C51",
+     "pos": [
+      110.365,
+      104.843
+     ],
+     "uuid": "5d1d8c2c-a746-4668-b02e-07b1ed4fd0e2"
+    },
+    {
+     "msg": "Segment of C52 on F.Silkscreen",
+     "pos": [
+      110.103748,
+      105.058
+     ],
+     "uuid": "6789ec79-79ca-4401-9401-4b2dfe7760bf"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    61.365,
+    84.493
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "R36",
+    "R37"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R37",
+     "pos": [
+      61.365,
+      84.493
+     ],
+     "uuid": "8aae50aa-51b4-4ea1-834b-f2ac47639712"
+    },
+    {
+     "msg": "Segment of R36 on F.Silkscreen",
+     "pos": [
+      61.127742,
+      84.6455
+     ],
+     "uuid": "b252e8e6-5f20-4a50-b0e9-81991176d4f5"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    63.627742,
+    108.3455
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "R13",
+    "R14"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of R13 on F.Silkscreen",
+     "pos": [
+      63.627742,
+      108.3455
+     ],
+     "uuid": "1ff108ea-0212-4075-9785-c603a6248dfc"
+    },
+    {
+     "msg": "Reference field of R14",
+     "pos": [
+      63.865,
+      108.193
+     ],
+     "uuid": "8a021c20-b5e9-4022-94cf-9126a9792739"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    49.22442,
+    90.333
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C39",
+    "C40"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of C39 on F.Silkscreen",
+     "pos": [
+      49.22442,
+      90.333
+     ],
+     "uuid": "5a6e240d-85e4-4ff7-a8b9-30e1cda7d637"
+    },
+    {
+     "msg": "Reference field of C40",
+     "pos": [
+      49.365,
+      90.193
+     ],
+     "uuid": "a0ae0377-d1eb-4a69-86e0-c9161d19d098"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    72.665,
+    72.063
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "J3",
+    "R1"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of J3 on F.Silkscreen",
+     "pos": [
+      72.665,
+      72.063
+     ],
+     "uuid": "3f08e42f-c414-42e2-864b-e557d2ea2f1c"
+    },
+    {
+     "msg": "Reference field of R1",
+     "pos": [
+      73.235,
+      70.923
+     ],
+     "uuid": "f6fd8cd4-a04f-4f00-8512-135088cbf406"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    73.235,
+    77.323
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C1",
+    "J3"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C1",
+     "pos": [
+      73.235,
+      77.323
+     ],
+     "uuid": "4a2fbc33-e733-4717-af74-5fe0a4c4b41b"
+    },
+    {
+     "msg": "Segment of J3 on F.Silkscreen",
+     "pos": [
+      72.665,
+      79.473
+     ],
+     "uuid": "d8f24c9e-f0ff-43a4-a6bd-801ad703f0ba"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    73.235,
+    77.323
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C1",
+    "J3"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C1",
+     "pos": [
+      73.235,
+      77.323
+     ],
+     "uuid": "4a2fbc33-e733-4717-af74-5fe0a4c4b41b"
+    },
+    {
+     "msg": "Segment of J3 on F.Silkscreen",
+     "pos": [
+      72.665,
+      77.473
+     ],
+     "uuid": "5c92d149-3732-446e-a044-cf2c39058919"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    73.235,
+    77.323
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C1",
+    "J3"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C1",
+     "pos": [
+      73.235,
+      77.323
+     ],
+     "uuid": "4a2fbc33-e733-4717-af74-5fe0a4c4b41b"
+    },
+    {
+     "msg": "Segment of J3 on F.Silkscreen",
+     "pos": [
+      72.665,
+      77.473
+     ],
+     "uuid": "98bf947b-ce50-4cce-879a-f3dc97762e55"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    73.235,
+    77.323
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C1",
+    "J3"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C1",
+     "pos": [
+      73.235,
+      77.323
+     ],
+     "uuid": "4a2fbc33-e733-4717-af74-5fe0a4c4b41b"
+    },
+    {
+     "msg": "Circle of J3 on F.Silkscreen",
+     "pos": [
+      72.665,
+      77.673
+     ],
+     "uuid": "d0274c55-d886-474d-b307-11d3a13d40c9"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    44.365,
+    81.393
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "J2",
+    "R33"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R33",
+     "pos": [
+      44.365,
+      81.393
+     ],
+     "uuid": "59e0e276-534d-44a6-bb35-3a9a2116fe95"
+    },
+    {
+     "msg": "Reference field of J2",
+     "pos": [
+      42.465,
+      80.298
+     ],
+     "uuid": "9041e4c0-3d63-4652-9ee6-ef0008f6b8d0"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    44.127742,
+    83.3455
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "R33",
+    "R34"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of R33 on F.Silkscreen",
+     "pos": [
+      44.127742,
+      83.3455
+     ],
+     "uuid": "064b79fa-94dc-4eb1-97f5-a07de5a88f78"
+    },
+    {
+     "msg": "Reference field of R34",
+     "pos": [
+      44.365,
+      83.193
+     ],
+     "uuid": "e0fa96a6-e954-48e4-a942-3234f75bf9cc"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    44.22442,
+    86.933
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C44",
+    "C45"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of C44 on F.Silkscreen",
+     "pos": [
+      44.22442,
+      86.933
+     ],
+     "uuid": "04ca6dea-3471-4852-87b0-6739d13a1005"
+    },
+    {
+     "msg": "Reference field of C45",
+     "pos": [
+      44.365,
+      86.793
+     ],
+     "uuid": "12a71eeb-6ee3-42e8-bccd-628e1b84261e"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    44.127742,
+    85.1455
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C44",
+    "R34"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of R34 on F.Silkscreen",
+     "pos": [
+      44.127742,
+      85.1455
+     ],
+     "uuid": "031fb6d0-f106-41be-a84b-8eb351ccd63d"
+    },
+    {
+     "msg": "Reference field of C44",
+     "pos": [
+      44.365,
+      84.993
+     ],
+     "uuid": "227a46c4-efdc-4f35-88fb-b2ff0c8af4e4"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    38.365,
+    83.193
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "R30",
+    "R31"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R31",
+     "pos": [
+      38.365,
+      83.193
+     ],
+     "uuid": "7a8468cf-b0bc-4d37-aec8-9d1045d33be0"
+    },
+    {
+     "msg": "Segment of R30 on F.Silkscreen",
+     "pos": [
+      38.127742,
+      83.3455
+     ],
+     "uuid": "c57d73b1-441a-4d12-b166-1816fac29095"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    38.127742,
+    85.1455
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C41",
+    "R31"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of R31 on F.Silkscreen",
+     "pos": [
+      38.127742,
+      85.1455
+     ],
+     "uuid": "0e11ad13-fa22-4a92-b474-b2f13ee27a1c"
+    },
+    {
+     "msg": "Reference field of C41",
+     "pos": [
+      38.365,
+      84.993
+     ],
+     "uuid": "d2709803-80b0-41eb-9f39-6b7523c8afca"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    38.22442,
+    86.933
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C41",
+    "C42"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of C41 on F.Silkscreen",
+     "pos": [
+      38.22442,
+      86.933
+     ],
+     "uuid": "7ffdf09c-9069-4514-991f-0a5b7c33afd1"
+    },
+    {
+     "msg": "Reference field of C42",
+     "pos": [
+      38.365,
+      86.793
+     ],
+     "uuid": "fc483bed-74ed-4654-bc75-f5ef61a968b0"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    66.865,
+    84.493
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "R38",
+    "R39"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R39",
+     "pos": [
+      66.865,
+      84.493
+     ],
+     "uuid": "b183e99a-2719-418b-b476-57451ea950f7"
+    },
+    {
+     "msg": "Segment of R38 on F.Silkscreen",
+     "pos": [
+      66.627742,
+      84.6455
+     ],
+     "uuid": "d6daa6b5-c6a9-482b-99d9-4079b955d639"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    85.865,
+    91.323
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "L1",
+    "L5"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of L1 on F.Silkscreen",
+     "pos": [
+      85.865,
+      91.323
+     ],
+     "uuid": "0171b774-6970-4ae9-9dc6-734035c0567b"
+    },
+    {
+     "msg": "Reference field of L5",
+     "pos": [
+      85.97,
+      89.523
+     ],
+     "uuid": "b42db368-6e88-4bc0-9f16-9efaeb2b36f4"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    85.145,
+    86.443
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "L1",
+    "L5"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of L5 on F.Silkscreen",
+     "pos": [
+      85.145,
+      86.443
+     ],
+     "uuid": "5e82e065-6bb7-407a-a0ec-145b2ff03788"
+    },
+    {
+     "msg": "Reference field of L1",
+     "pos": [
+      85.04,
+      87.323
+     ],
+     "uuid": "6ac1dbcf-9408-4b3c-b775-b43094542bf3"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    75.865,
+    88.293
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C6",
+    "U2"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C6",
+     "pos": [
+      75.865,
+      88.293
+     ],
+     "uuid": "4349aba2-9274-4f5c-8d31-3c9d9ad82d43"
+    },
+    {
+     "msg": "Segment of U2 on F.Silkscreen",
+     "pos": [
+      76.755,
+      88.363
+     ],
+     "uuid": "499ea87c-f4d7-4c55-82e8-d8512a4e44d6"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    81.103748,
+    95.558
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C7",
+    "C8"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of C7 on F.Silkscreen",
+     "pos": [
+      81.103748,
+      95.558
+     ],
+     "uuid": "e65a16ca-08e9-42ea-8e97-862ad0eadbc7"
+    },
+    {
+     "msg": "Reference field of C8",
+     "pos": [
+      81.365,
+      95.243
+     ],
+     "uuid": "f9fb3a8c-17ac-4416-b81b-ea9d0e2efdd6"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    74.865,
+    103.893
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "R11",
+    "U3"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R11",
+     "pos": [
+      74.865,
+      103.893
+     ],
+     "uuid": "5f671262-a3b4-4d43-9843-1d0ccb47f139"
+    },
+    {
+     "msg": "Segment of U3 on F.Silkscreen",
+     "pos": [
+      74.095,
+      103.933
+     ],
+     "uuid": "d70c1561-1572-47f4-a02c-dd6f9e199804"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    74.72442,
+    98.433
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C10",
+    "C11"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of C10 on F.Silkscreen",
+     "pos": [
+      74.72442,
+      98.433
+     ],
+     "uuid": "003b3644-1566-4744-94b8-b943216b8875"
+    },
+    {
+     "msg": "Reference field of C11",
+     "pos": [
+      74.865,
+      98.293
+     ],
+     "uuid": "a6f02bc4-5be6-48ab-87dc-ccef5eb17f64"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    59.465,
+    102.873
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C16",
+    "U4"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of U4 on F.Silkscreen",
+     "pos": [
+      59.465,
+      102.873
+     ],
+     "uuid": "53c4b2f1-5eba-4ba4-b955-9fc13bb33290"
+    },
+    {
+     "msg": "Reference field of C16",
+     "pos": [
+      60.365,
+      102.893
+     ],
+     "uuid": "ffd56d4e-42f4-469a-8843-0372517b331f"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    61.265,
+    102.723
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C16",
+    "U4"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of U4 on F.Silkscreen",
+     "pos": [
+      61.265,
+      102.723
+     ],
+     "uuid": "f11594f7-f800-403f-857a-f178d0c00b67"
+    },
+    {
+     "msg": "Reference field of C16",
+     "pos": [
+      60.365,
+      102.893
+     ],
+     "uuid": "ffd56d4e-42f4-469a-8843-0372517b331f"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    74.72442,
+    100.233
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C11",
+    "U3"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of C11 on F.Silkscreen",
+     "pos": [
+      74.72442,
+      100.233
+     ],
+     "uuid": "91d1d6e9-2f64-47ea-9420-6cca47177eff"
+    },
+    {
+     "msg": "Reference field of U3",
+     "pos": [
+      74.865,
+      99.888
+     ],
+     "uuid": "f49eacd5-52ba-49ca-ab54-a32098884f6e"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    58.627742,
+    111.8455
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "R22",
+    "R23"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of R22 on F.Silkscreen",
+     "pos": [
+      58.627742,
+      111.8455
+     ],
+     "uuid": "5bc3d80e-98fd-4b05-87b8-c7a9102a9f23"
+    },
+    {
+     "msg": "Reference field of R23",
+     "pos": [
+      58.865,
+      111.693
+     ],
+     "uuid": "e6daaee2-677f-4ba6-b568-48d21dbebc29"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    79.365,
+    105.643
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C12",
+    "L6"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C12",
+     "pos": [
+      79.365,
+      105.643
+     ],
+     "uuid": "b1ea89be-8b44-45c8-b288-3f0d4fe53a79"
+    },
+    {
+     "msg": "Circle of L6 on F.Silkscreen",
+     "pos": [
+      79.365,
+      105.253
+     ],
+     "uuid": "de9adfaf-7ea4-4067-85a4-d42732bdacc0"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    71.127742,
+    109.3455
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C14",
+    "R12"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of R12 on F.Silkscreen",
+     "pos": [
+      71.127742,
+      109.3455
+     ],
+     "uuid": "0ba17dbd-92f5-4518-a4d5-159a562ac8e7"
+    },
+    {
+     "msg": "Reference field of C14",
+     "pos": [
+      71.365,
+      109.193
+     ],
+     "uuid": "8784cbec-d6b0-4cd9-9fc2-d00bdbf39498"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    52.865,
+    92.235
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C38",
+    "U7"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of U7",
+     "pos": [
+      52.865,
+      92.235
+     ],
+     "uuid": "00d69b4c-018b-43e7-9def-a07b9bdb13a3"
+    },
+    {
+     "msg": "Segment of C38 on F.Silkscreen",
+     "pos": [
+      52.72442,
+      92.133
+     ],
+     "uuid": "8cabfc10-524d-489b-8207-46bc03b02d85"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    87.605,
+    74.113
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "D1",
+    "R15"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of D1 on F.Silkscreen",
+     "pos": [
+      87.605,
+      74.113
+     ],
+     "uuid": "677394b5-4187-4db3-b514-5212dad4cda4"
+    },
+    {
+     "msg": "Reference field of R15",
+     "pos": [
+      83.365,
+      73.693
+     ],
+     "uuid": "c1c608dc-fbd0-4198-baa9-b5a31661777b"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    87.605,
+    74.113
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "D1",
+    "Q4"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of D1 on F.Silkscreen",
+     "pos": [
+      87.605,
+      74.113
+     ],
+     "uuid": "677394b5-4187-4db3-b514-5212dad4cda4"
+    },
+    {
+     "msg": "Reference field of Q4",
+     "pos": [
+      86.865,
+      73.568
+     ],
+     "uuid": "d093eedd-bba9-4ec3-b169-5ada91ad2386"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    95.003,
+    66.323
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "J4",
+    "Q1"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of Q1",
+     "pos": [
+      95.003,
+      66.323
+     ],
+     "uuid": "3ebb0b07-2ba2-474c-a907-bfc3d62cebbf"
+    },
+    {
+     "msg": "Segment of J4 on F.Silkscreen",
+     "pos": [
+      95.505,
+      60.923
+     ],
+     "uuid": "edff0fb2-a36b-4878-ac6a-3a6fcfc12c7c"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    87.532508,
+    74.185404
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "D1",
+    "Q4"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Polygon of D1 on F.Silkscreen",
+     "pos": [
+      87.532508,
+      74.185404
+     ],
+     "uuid": "19358583-7c8f-4049-bda6-684c48a312d0"
+    },
+    {
+     "msg": "Reference field of Q4",
+     "pos": [
+      86.865,
+      73.568
+     ],
+     "uuid": "d093eedd-bba9-4ec3-b169-5ada91ad2386"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    77.653748,
+    83.233
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C3",
+    "C5"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of C3 on F.Silkscreen",
+     "pos": [
+      77.653748,
+      83.233
+     ],
+     "uuid": "d93d550e-947f-4a5b-926a-fb1f10d95877"
+    },
+    {
+     "msg": "Reference field of C5",
+     "pos": [
+      79.265,
+      83.193
+     ],
+     "uuid": "edc54527-7c96-429f-9801-c58b4a6e94d3"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    93.865,
+    91.323
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "L1",
+    "L2"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of L1 on F.Silkscreen",
+     "pos": [
+      93.865,
+      91.323
+     ],
+     "uuid": "46ee3bc0-7ad0-48a4-9d56-2ce66367b882"
+    },
+    {
+     "msg": "Reference field of L2",
+     "pos": [
+      93.54,
+      87.323
+     ],
+     "uuid": "8b224103-7778-4f54-9956-c129861fcd18"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    110.865,
+    91.323
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "L3",
+    "L4"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of L3 on F.Silkscreen",
+     "pos": [
+      110.865,
+      91.323
+     ],
+     "uuid": "5bc938f5-f1ef-48be-a432-85b3801fa0d9"
+    },
+    {
+     "msg": "Reference field of L4",
+     "pos": [
+      110.54,
+      87.323
+     ],
+     "uuid": "9c8dec64-7693-4454-8a6e-e7848edb29c3"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    102.04,
+    87.323
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "L2",
+    "L3"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of L3",
+     "pos": [
+      102.04,
+      87.323
+     ],
+     "uuid": "1e897b91-f13a-45dd-bc00-f966dc265737"
+    },
+    {
+     "msg": "Segment of L2 on F.Silkscreen",
+     "pos": [
+      102.365,
+      91.323
+     ],
+     "uuid": "981cd19b-0c9b-46d9-8923-2c4f7091ed9a"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    84.865,
+    75.01
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "D1",
+    "R7"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of D1",
+     "pos": [
+      84.865,
+      75.01
+     ],
+     "uuid": "bb892ba9-4692-4d10-a82c-de2ea9e8b697"
+    },
+    {
+     "msg": "Reference field of R7",
+     "pos": [
+      83.365,
+      75.593
+     ],
+     "uuid": "f1ecd4ac-9204-4b3c-9fd6-6cbfe1f06a3e"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    83.127742,
+    75.6455
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "R15",
+    "R7"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of R15 on F.Silkscreen",
+     "pos": [
+      83.127742,
+      75.6455
+     ],
+     "uuid": "363c0b05-cf44-48be-b77a-c5b8bda1c5e2"
+    },
+    {
+     "msg": "Reference field of R7",
+     "pos": [
+      83.365,
+      75.593
+     ],
+     "uuid": "f1ecd4ac-9204-4b3c-9fd6-6cbfe1f06a3e"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    82.125,
+    74.113
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "D1",
+    "R15"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of D1 on F.Silkscreen",
+     "pos": [
+      82.125,
+      74.113
+     ],
+     "uuid": "274bb63d-d89d-4a99-aad8-8942a92c2b43"
+    },
+    {
+     "msg": "Reference field of R15",
+     "pos": [
+      83.365,
+      73.693
+     ],
+     "uuid": "c1c608dc-fbd0-4198-baa9-b5a31661777b"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    70.635,
+    117.243
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C23",
+    "U6"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of U6 on F.Silkscreen",
+     "pos": [
+      70.635,
+      117.243
+     ],
+     "uuid": "239196cb-af1b-4cb0-813d-56e9791982f1"
+    },
+    {
+     "msg": "Reference field of C23",
+     "pos": [
+      69.365,
+      127.693
+     ],
+     "uuid": "f4ca08d8-6486-41ab-8e8d-5abeea34b0dc"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    82.865,
+    119.293
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "R16",
+    "R17"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R16",
+     "pos": [
+      82.865,
+      119.293
+     ],
+     "uuid": "3d30824f-7a79-4f15-8db3-4987bad9e113"
+    },
+    {
+     "msg": "Segment of R17 on F.Silkscreen",
+     "pos": [
+      82.627742,
+      119.4455
+     ],
+     "uuid": "9bc694e8-e5ae-4c2b-850a-d04863957dfa"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    62.135,
+    131.853
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "Q2",
+    "Q3"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of Q2 on F.Silkscreen",
+     "pos": [
+      62.135,
+      131.853
+     ],
+     "uuid": "297379a1-1b5c-471d-80f2-a44eef6f71b6"
+    },
+    {
+     "msg": "Reference field of Q3",
+     "pos": [
+      62.865,
+      131.968
+     ],
+     "uuid": "8bca2f85-266c-45a7-8d32-3342e612aa06"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    63.595,
+    131.853
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "Q2",
+    "Q3"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of Q2 on F.Silkscreen",
+     "pos": [
+      63.595,
+      131.853
+     ],
+     "uuid": "5433dfc5-1e33-4f95-b597-574d52c16548"
+    },
+    {
+     "msg": "Reference field of Q3",
+     "pos": [
+      62.865,
+      131.968
+     ],
+     "uuid": "8bca2f85-266c-45a7-8d32-3342e612aa06"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    63.865,
+    109.993
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C17",
+    "R14"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C17",
+     "pos": [
+      63.865,
+      109.993
+     ],
+     "uuid": "1f3d5d82-acca-4d0f-8758-93d89bb42dc5"
+    },
+    {
+     "msg": "Segment of R14 on F.Silkscreen",
+     "pos": [
+      63.627742,
+      110.1455
+     ],
+     "uuid": "f87d45fc-a093-4520-8022-c579d3fc9c0b"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    70.627742,
+    146.3455
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "D2",
+    "R64"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of R64 on F.Silkscreen",
+     "pos": [
+      70.627742,
+      146.3455
+     ],
+     "uuid": "1097da48-2115-4ccc-8f0a-62391c9a819a"
+    },
+    {
+     "msg": "Reference field of D2",
+     "pos": [
+      70.865,
+      146.798
+     ],
+     "uuid": "58fa0ebd-bfae-4035-9d5e-9611cb1e19c3"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    70.635,
+    127.403
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C23",
+    "U6"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of U6 on F.Silkscreen",
+     "pos": [
+      70.635,
+      127.403
+     ],
+     "uuid": "40bf0946-0885-4076-9164-5746b94cb345"
+    },
+    {
+     "msg": "Reference field of C23",
+     "pos": [
+      69.365,
+      127.693
+     ],
+     "uuid": "f4ca08d8-6486-41ab-8e8d-5abeea34b0dc"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    108.22442,
+    113.833
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "C62",
+    "C63"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of C62 on F.Silkscreen",
+     "pos": [
+      108.22442,
+      113.833
+     ],
+     "uuid": "68f8bf2d-63f6-4047-aaf7-cf4db03b4b12"
+    },
+    {
+     "msg": "Reference field of C63",
+     "pos": [
+      108.365,
+      113.793
+     ],
+     "uuid": "f887f82c-f8c5-4474-832b-b84e51d9bc9b"
+    }
+   ]
+  },
+  {
+   "check": "silk_overlap",
+   "severity": "warning",
+   "pos": [
+    93.935,
+    116.823
+   ],
+   "layer": "F.Silkscreen",
+   "net": null,
+   "refs": [
+    "R53",
+    "R54"
+   ],
+   "msg": "Silkscreen clearance",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R54",
+     "pos": [
+      93.935,
+      116.823
+     ],
+     "uuid": "3308e25e-7848-4b4c-9238-8342ffdb5ccd"
+    },
+    {
+     "msg": "Segment of R53 on F.Silkscreen",
+     "pos": [
+      93.8875,
+      117.060258
+     ],
+     "uuid": "347082a0-ad1d-4a01-93cb-393e91b705a5"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    94.165,
+    102.643
+   ],
+   "layer": "F.Cu",
+   "net": "PVDD",
+   "refs": [
+    "C55",
+    "C56"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C55",
+     "pos": [
+      94.165,
+      102.643
+     ],
+     "uuid": "9eedc3cd-9766-4c26-8c08-31261ec8aefd"
+    },
+    {
+     "msg": "Pad 1 [PVDD] of C56 on F.Cu",
+     "pos": [
+      93.39,
+      102.323
+     ],
+     "uuid": "ee710387-0185-4a10-89f8-14129f2db46c"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    94.165,
+    100.893
+   ],
+   "layer": "F.Cu",
+   "net": "PVDD",
+   "refs": [
+    "C56",
+    "C57"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C56",
+     "pos": [
+      94.165,
+      100.893
+     ],
+     "uuid": "af626aef-c4e5-4dca-98db-2ed6da9ac130"
+    },
+    {
+     "msg": "Pad 1 [PVDD] of C57 on F.Cu",
+     "pos": [
+      93.39,
+      100.523
+     ],
+     "uuid": "0ef005b7-b4a0-47a5-af29-79440f043df6"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    94.165,
+    100.893
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C56",
+    "C57"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C56",
+     "pos": [
+      94.165,
+      100.893
+     ],
+     "uuid": "af626aef-c4e5-4dca-98db-2ed6da9ac130"
+    },
+    {
+     "msg": "Pad 2 [GND] of C57 on F.Cu",
+     "pos": [
+      94.94,
+      100.523
+     ],
+     "uuid": "82d8ac94-a602-4ba3-9c25-46797fcbfd85"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    110.365,
+    100.893
+   ],
+   "layer": "F.Cu",
+   "net": "PVDD",
+   "refs": [
+    "C53",
+    "C54"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C53",
+     "pos": [
+      110.365,
+      100.893
+     ],
+     "uuid": "73d7f148-0efe-463b-bee8-dec463afb546"
+    },
+    {
+     "msg": "Pad 1 [PVDD] of C54 on F.Cu",
+     "pos": [
+      109.59,
+      100.523
+     ],
+     "uuid": "21639292-4cee-46a5-8424-2ca0885fde32"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    94.165,
+    102.643
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C55",
+    "C56"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C55",
+     "pos": [
+      94.165,
+      102.643
+     ],
+     "uuid": "9eedc3cd-9766-4c26-8c08-31261ec8aefd"
+    },
+    {
+     "msg": "Pad 2 [GND] of C56 on F.Cu",
+     "pos": [
+      94.94,
+      102.323
+     ],
+     "uuid": "79ff4e9a-2cd2-4ff9-b4a7-0ccc5c389ec2"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    108.365,
+    113.793
+   ],
+   "layer": "F.Cu",
+   "net": "/AMP_IN_R",
+   "refs": [
+    "C62",
+    "C63"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C63",
+     "pos": [
+      108.365,
+      113.793
+     ],
+     "uuid": "f887f82c-f8c5-4474-832b-b84e51d9bc9b"
+    },
+    {
+     "msg": "Pad 1 [/AMP_IN_R] of C62 on F.Cu",
+     "pos": [
+      107.59,
+      113.323
+     ],
+     "uuid": "a448fa04-62ba-447b-b79a-c6a6575e56cf"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    103.635,
+    113.323
+   ],
+   "layer": "F.Cu",
+   "net": "/AMP_GAIN",
+   "refs": [
+    "R50",
+    "R51"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R51",
+     "pos": [
+      103.635,
+      113.323
+     ],
+     "uuid": "08dd3dae-571f-40fa-b1cc-761ac95a87e6"
+    },
+    {
+     "msg": "Pad 1 [/AMP_GAIN] of R50 on F.Cu",
+     "pos": [
+      103.065,
+      114.148
+     ],
+     "uuid": "7ffa09cf-d570-47f9-909e-4cb3c78336c5"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    101.635,
+    113.323
+   ],
+   "layer": "F.Cu",
+   "net": "/AMP_GVDD",
+   "refs": [
+    "C50",
+    "R50"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R50",
+     "pos": [
+      101.635,
+      113.323
+     ],
+     "uuid": "76b46ee3-6711-481a-b60f-4b66ae744a50"
+    },
+    {
+     "msg": "Pad 1 [/AMP_GVDD] of C50 on F.Cu",
+     "pos": [
+      101.065,
+      114.098
+     ],
+     "uuid": "3f289555-35ef-4d3d-99be-97a2c6b6133d"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    101.635,
+    113.323
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C50",
+    "R50"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R50",
+     "pos": [
+      101.635,
+      113.323
+     ],
+     "uuid": "76b46ee3-6711-481a-b60f-4b66ae744a50"
+    },
+    {
+     "msg": "Pad 2 [GND] of C50 on F.Cu",
+     "pos": [
+      101.065,
+      112.548
+     ],
+     "uuid": "283007f1-2a1b-43b2-925f-2e11ff4db1b4"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    103.635,
+    113.323
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "R50",
+    "R51"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R51",
+     "pos": [
+      103.635,
+      113.323
+     ],
+     "uuid": "08dd3dae-571f-40fa-b1cc-761ac95a87e6"
+    },
+    {
+     "msg": "Pad 2 [GND] of R50 on F.Cu",
+     "pos": [
+      103.065,
+      112.498
+     ],
+     "uuid": "6f6159ca-6eac-4ba7-8911-f28757a71cf2"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    90.155,
+    103.093
+   ],
+   "layer": "F.Silkscreen",
+   "net": "PVDD",
+   "refs": [
+    "C58"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of C58 on F.Silkscreen",
+     "pos": [
+      90.155,
+      103.093
+     ],
+     "uuid": "1ad7f711-4217-469a-abd2-61f44884f42f"
+    },
+    {
+     "msg": "Pad 1 [PVDD] of C58 on F.Cu",
+     "pos": [
+      87.065,
+      104.123
+     ],
+     "uuid": "9cd7a78e-c381-41e9-9bdd-e8f2c08dfb55"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    99.635,
+    113.323
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C50",
+    "C61"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C50",
+     "pos": [
+      99.635,
+      113.323
+     ],
+     "uuid": "243fd537-b886-46af-8a6f-5a4be4ffc8d0"
+    },
+    {
+     "msg": "Pad 2 [GND] of C61 on F.Cu",
+     "pos": [
+      99.14,
+      114.723
+     ],
+     "uuid": "c43dc864-a1ce-4f41-8779-ab3b672c370e"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    87.915,
+    113.553
+   ],
+   "layer": "F.Silkscreen",
+   "net": "GND",
+   "refs": [
+    "C58"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of C58 on F.Silkscreen",
+     "pos": [
+      87.915,
+      113.553
+     ],
+     "uuid": "f127df7b-f976-4c5b-8fff-16731473f84e"
+    },
+    {
+     "msg": "Pad 2 [GND] of C58 on F.Cu",
+     "pos": [
+      87.065,
+      112.523
+     ],
+     "uuid": "b8cebb67-1d2b-4143-aba7-555d8071e0e5"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    99.635,
+    113.323
+   ],
+   "layer": "F.Cu",
+   "net": "/AMP_L_INP",
+   "refs": [
+    "C50",
+    "C60"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C50",
+     "pos": [
+      99.635,
+      113.323
+     ],
+     "uuid": "243fd537-b886-46af-8a6f-5a4be4ffc8d0"
+    },
+    {
+     "msg": "Pad 2 [/AMP_L_INP] of C60 on F.Cu",
+     "pos": [
+      99.14,
+      112.823
+     ],
+     "uuid": "2c69cd76-52d8-41f9-a48f-4e5284666387"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    98.365,
+    113.293
+   ],
+   "layer": "F.Cu",
+   "net": "/AMP_L_INP",
+   "refs": [
+    "C60",
+    "C61"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C61",
+     "pos": [
+      98.365,
+      113.293
+     ],
+     "uuid": "16eb0715-3a60-4a4b-91e5-813cc1b38ec8"
+    },
+    {
+     "msg": "Pad 2 [/AMP_L_INP] of C60 on F.Cu",
+     "pos": [
+      99.14,
+      112.823
+     ],
+     "uuid": "2c69cd76-52d8-41f9-a48f-4e5284666387"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    98.365,
+    113.293
+   ],
+   "layer": "F.Cu",
+   "net": "/AMP_IN_L",
+   "refs": [
+    "C60",
+    "C61"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C61",
+     "pos": [
+      98.365,
+      113.293
+     ],
+     "uuid": "16eb0715-3a60-4a4b-91e5-813cc1b38ec8"
+    },
+    {
+     "msg": "Pad 1 [/AMP_IN_L] of C60 on F.Cu",
+     "pos": [
+      97.59,
+      112.823
+     ],
+     "uuid": "abd28b62-acb4-4b01-aef7-8bd9daf8294a"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    110.365,
+    100.893
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C53",
+    "C54"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C53",
+     "pos": [
+      110.365,
+      100.893
+     ],
+     "uuid": "73d7f148-0efe-463b-bee8-dec463afb546"
+    },
+    {
+     "msg": "Pad 2 [GND] of C54 on F.Cu",
+     "pos": [
+      111.14,
+      100.523
+     ],
+     "uuid": "f8bade5f-56a3-461c-9a2f-e3ce182f2db9"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    110.365,
+    102.643
+   ],
+   "layer": "F.Cu",
+   "net": "PVDD",
+   "refs": [
+    "C52",
+    "C53"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C52",
+     "pos": [
+      110.365,
+      102.643
+     ],
+     "uuid": "b7cd394d-9071-4eee-aeba-7f111a0dfcd5"
+    },
+    {
+     "msg": "Pad 1 [PVDD] of C53 on F.Cu",
+     "pos": [
+      109.59,
+      102.323
+     ],
+     "uuid": "2364a9a9-60c2-4e7f-8444-afa3f554d974"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    110.365,
+    102.643
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C52",
+    "C53"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C52",
+     "pos": [
+      110.365,
+      102.643
+     ],
+     "uuid": "b7cd394d-9071-4eee-aeba-7f111a0dfcd5"
+    },
+    {
+     "msg": "Pad 2 [GND] of C53 on F.Cu",
+     "pos": [
+      111.14,
+      102.323
+     ],
+     "uuid": "237da92d-913f-495b-a6e7-ab18215def21"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    110.365,
+    104.843
+   ],
+   "layer": "F.Cu",
+   "net": "PVDD",
+   "refs": [
+    "C51",
+    "C52"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C51",
+     "pos": [
+      110.365,
+      104.843
+     ],
+     "uuid": "5d1d8c2c-a746-4668-b02e-07b1ed4fd0e2"
+    },
+    {
+     "msg": "Pad 1 [PVDD] of C52 on F.Cu",
+     "pos": [
+      109.415,
+      104.323
+     ],
+     "uuid": "93cdce7d-dbc7-4f66-8ac4-9dc9dc420b9c"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    49.365,
+    90.193
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C39",
+    "C40"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C40",
+     "pos": [
+      49.365,
+      90.193
+     ],
+     "uuid": "a0ae0377-d1eb-4a69-86e0-c9161d19d098"
+    },
+    {
+     "msg": "Pad 2 [GND] of C39 on F.Cu",
+     "pos": [
+      50.14,
+      89.823
+     ],
+     "uuid": "7089218e-3bad-4d9c-a366-cadb2164d534"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    61.365,
+    82.693
+   ],
+   "layer": "F.Cu",
+   "net": "/SUB_L_AC",
+   "refs": [
+    "C47",
+    "R36"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R36",
+     "pos": [
+      61.365,
+      82.693
+     ],
+     "uuid": "6fbf9959-1002-4dc6-b3a0-caceb60e5789"
+    },
+    {
+     "msg": "Pad 2 [/SUB_L_AC] of C47 on F.Cu",
+     "pos": [
+      62.14,
+      82.323
+     ],
+     "uuid": "a35d82d0-7431-4a1f-af13-7f186c5d4442"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    61.365,
+    82.693
+   ],
+   "layer": "F.Cu",
+   "net": "/SUB_L_RAW",
+   "refs": [
+    "C47",
+    "R36"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R36",
+     "pos": [
+      61.365,
+      82.693
+     ],
+     "uuid": "6fbf9959-1002-4dc6-b3a0-caceb60e5789"
+    },
+    {
+     "msg": "Pad 1 [/SUB_L_RAW] of C47 on F.Cu",
+     "pos": [
+      60.59,
+      82.323
+     ],
+     "uuid": "c623ae9a-20ff-4e1a-be24-497a1590b084"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    61.365,
+    84.493
+   ],
+   "layer": "F.Cu",
+   "net": "/SUB_L_AC",
+   "refs": [
+    "R36",
+    "R37"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R37",
+     "pos": [
+      61.365,
+      84.493
+     ],
+     "uuid": "8aae50aa-51b4-4ea1-834b-f2ac47639712"
+    },
+    {
+     "msg": "Pad 1 [/SUB_L_AC] of R36 on F.Cu",
+     "pos": [
+      60.54,
+      84.123
+     ],
+     "uuid": "e045d628-dcf4-402c-9ea8-a7cd4c105fef"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    61.365,
+    84.493
+   ],
+   "layer": "F.Cu",
+   "net": "/SUB_L",
+   "refs": [
+    "R36",
+    "R37"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R37",
+     "pos": [
+      61.365,
+      84.493
+     ],
+     "uuid": "8aae50aa-51b4-4ea1-834b-f2ac47639712"
+    },
+    {
+     "msg": "Pad 2 [/SUB_L] of R36 on F.Cu",
+     "pos": [
+      62.19,
+      84.123
+     ],
+     "uuid": "b6704d87-c9d4-4425-bdfd-3f444b5dce63"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    44.365,
+    86.793
+   ],
+   "layer": "F.Cu",
+   "net": "/LINEIN_R_C",
+   "refs": [
+    "C44",
+    "C45"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C45",
+     "pos": [
+      44.365,
+      86.793
+     ],
+     "uuid": "12a71eeb-6ee3-42e8-bccd-628e1b84261e"
+    },
+    {
+     "msg": "Pad 2 [/LINEIN_R_C] of C44 on F.Cu",
+     "pos": [
+      45.14,
+      86.423
+     ],
+     "uuid": "081ce112-e132-419c-8818-686faf79f2e1"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    56.865,
+    90.193
+   ],
+   "layer": "F.Cu",
+   "net": "+3V3A",
+   "refs": [
+    "C32",
+    "C33"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C33",
+     "pos": [
+      56.865,
+      90.193
+     ],
+     "uuid": "f8b77e8c-f002-428c-bab1-bd809a88e26d"
+    },
+    {
+     "msg": "Pad 1 [+3V3A] of C32 on F.Cu",
+     "pos": [
+      56.09,
+      89.823
+     ],
+     "uuid": "0937e746-3a76-4294-8907-7a85d6f9fc75"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    56.865,
+    90.193
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C32",
+    "C33"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C33",
+     "pos": [
+      56.865,
+      90.193
+     ],
+     "uuid": "f8b77e8c-f002-428c-bab1-bd809a88e26d"
+    },
+    {
+     "msg": "Pad 2 [GND] of C32 on F.Cu",
+     "pos": [
+      57.64,
+      89.823
+     ],
+     "uuid": "900d789a-d5a4-4dcd-bc39-8e461146164e"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    63.865,
+    108.193
+   ],
+   "layer": "F.Cu",
+   "net": "VBUS",
+   "refs": [
+    "R13",
+    "R14"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R14",
+     "pos": [
+      63.865,
+      108.193
+     ],
+     "uuid": "8a021c20-b5e9-4022-94cf-9126a9792739"
+    },
+    {
+     "msg": "Pad 1 [VBUS] of R13 on F.Cu",
+     "pos": [
+      63.04,
+      107.823
+     ],
+     "uuid": "813dc3d7-139b-4070-a53b-9499bfabc464"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    63.865,
+    108.193
+   ],
+   "layer": "F.Cu",
+   "net": "/VBUS_SENSE",
+   "refs": [
+    "R13",
+    "R14"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R14",
+     "pos": [
+      63.865,
+      108.193
+     ],
+     "uuid": "8a021c20-b5e9-4022-94cf-9126a9792739"
+    },
+    {
+     "msg": "Pad 2 [/VBUS_SENSE] of R13 on F.Cu",
+     "pos": [
+      64.69,
+      107.823
+     ],
+     "uuid": "f819a0bd-3d21-4277-8083-9b4eccb714b2"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    49.865,
+    100.693
+   ],
+   "layer": "F.Cu",
+   "net": "+3V3",
+   "refs": [
+    "C30",
+    "C31"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C31",
+     "pos": [
+      49.865,
+      100.693
+     ],
+     "uuid": "2ef1620a-392e-4b55-a3a6-d5e54aacacfb"
+    },
+    {
+     "msg": "Pad 1 [+3V3] of C30 on F.Cu",
+     "pos": [
+      49.09,
+      100.323
+     ],
+     "uuid": "d33f89bd-f58b-499b-9173-3bd46d43b01b"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    49.865,
+    100.693
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C30",
+    "C31"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C31",
+     "pos": [
+      49.865,
+      100.693
+     ],
+     "uuid": "2ef1620a-392e-4b55-a3a6-d5e54aacacfb"
+    },
+    {
+     "msg": "Pad 2 [GND] of C30 on F.Cu",
+     "pos": [
+      50.64,
+      100.323
+     ],
+     "uuid": "04941cae-5ec5-4f5a-b71d-6988c646d181"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    49.365,
+    90.193
+   ],
+   "layer": "F.Cu",
+   "net": "/CODEC_VMID",
+   "refs": [
+    "C39",
+    "C40"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C40",
+     "pos": [
+      49.365,
+      90.193
+     ],
+     "uuid": "a0ae0377-d1eb-4a69-86e0-c9161d19d098"
+    },
+    {
+     "msg": "Pad 1 [/CODEC_VMID] of C39 on F.Cu",
+     "pos": [
+      48.59,
+      89.823
+     ],
+     "uuid": "ba7f42c3-aba5-40b9-8428-ee9401b307f7"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    73.235,
+    74.123
+   ],
+   "layer": null,
+   "net": null,
+   "refs": [
+    "J3",
+    "R4"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R4",
+     "pos": [
+      73.235,
+      74.123
+     ],
+     "uuid": "22bf550b-d16a-459d-920e-9dad693e3513"
+    },
+    {
+     "msg": "NPTH pad of J3",
+     "pos": [
+      72.315,
+      73.923
+     ],
+     "uuid": "857e196b-bb67-41c0-8d09-02b6fd596ee6"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    44.365,
+    86.793
+   ],
+   "layer": "F.Cu",
+   "net": "/LINEIN_R_D",
+   "refs": [
+    "C44",
+    "C45"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C45",
+     "pos": [
+      44.365,
+      86.793
+     ],
+     "uuid": "12a71eeb-6ee3-42e8-bccd-628e1b84261e"
+    },
+    {
+     "msg": "Pad 1 [/LINEIN_R_D] of C44 on F.Cu",
+     "pos": [
+      43.59,
+      86.423
+     ],
+     "uuid": "4499b8a9-e119-46d2-bf22-27b2504c76fa"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    44.365,
+    84.993
+   ],
+   "layer": "F.Cu",
+   "net": "/LINEIN_R_D",
+   "refs": [
+    "C44",
+    "R34"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C44",
+     "pos": [
+      44.365,
+      84.993
+     ],
+     "uuid": "227a46c4-efdc-4f35-88fb-b2ff0c8af4e4"
+    },
+    {
+     "msg": "Pad 1 [/LINEIN_R_D] of R34 on F.Cu",
+     "pos": [
+      43.54,
+      84.623
+     ],
+     "uuid": "0c31d291-82c7-49c2-aeae-63d399f97ba4"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    44.365,
+    84.993
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C44",
+    "R34"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C44",
+     "pos": [
+      44.365,
+      84.993
+     ],
+     "uuid": "227a46c4-efdc-4f35-88fb-b2ff0c8af4e4"
+    },
+    {
+     "msg": "Pad 2 [GND] of R34 on F.Cu",
+     "pos": [
+      45.19,
+      84.623
+     ],
+     "uuid": "0a85eb7c-2118-46fb-8298-4605932928fd"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    38.365,
+    83.193
+   ],
+   "layer": "F.Cu",
+   "net": "/LINEIN_L",
+   "refs": [
+    "R30",
+    "R31"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R31",
+     "pos": [
+      38.365,
+      83.193
+     ],
+     "uuid": "7a8468cf-b0bc-4d37-aec8-9d1045d33be0"
+    },
+    {
+     "msg": "Pad 1 [/LINEIN_L] of R30 on F.Cu",
+     "pos": [
+      37.54,
+      82.823
+     ],
+     "uuid": "b6d61cd4-25e8-4d9f-810a-48bab7bed188"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    38.365,
+    83.193
+   ],
+   "layer": "F.Cu",
+   "net": "/LINEIN_L_D",
+   "refs": [
+    "R30",
+    "R31"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R31",
+     "pos": [
+      38.365,
+      83.193
+     ],
+     "uuid": "7a8468cf-b0bc-4d37-aec8-9d1045d33be0"
+    },
+    {
+     "msg": "Pad 2 [/LINEIN_L_D] of R30 on F.Cu",
+     "pos": [
+      39.19,
+      82.823
+     ],
+     "uuid": "4d8a25b7-bfb5-4028-85c7-7e590153d5d2"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    38.365,
+    86.793
+   ],
+   "layer": "F.Cu",
+   "net": "/LINEIN_L_D",
+   "refs": [
+    "C41",
+    "C42"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C42",
+     "pos": [
+      38.365,
+      86.793
+     ],
+     "uuid": "fc483bed-74ed-4654-bc75-f5ef61a968b0"
+    },
+    {
+     "msg": "Pad 1 [/LINEIN_L_D] of C41 on F.Cu",
+     "pos": [
+      37.59,
+      86.423
+     ],
+     "uuid": "dea23e88-e337-4f4b-8935-f6dacf523f2c"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    38.365,
+    86.793
+   ],
+   "layer": "F.Cu",
+   "net": "/LINEIN_L_C",
+   "refs": [
+    "C41",
+    "C42"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C42",
+     "pos": [
+      38.365,
+      86.793
+     ],
+     "uuid": "fc483bed-74ed-4654-bc75-f5ef61a968b0"
+    },
+    {
+     "msg": "Pad 2 [/LINEIN_L_C] of C41 on F.Cu",
+     "pos": [
+      39.14,
+      86.423
+     ],
+     "uuid": "d905b9fe-e552-41c4-8594-b1f9efdab8b5"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    38.365,
+    84.993
+   ],
+   "layer": "F.Cu",
+   "net": "/LINEIN_L_D",
+   "refs": [
+    "C41",
+    "R31"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C41",
+     "pos": [
+      38.365,
+      84.993
+     ],
+     "uuid": "d2709803-80b0-41eb-9f39-6b7523c8afca"
+    },
+    {
+     "msg": "Pad 1 [/LINEIN_L_D] of R31 on F.Cu",
+     "pos": [
+      37.54,
+      84.623
+     ],
+     "uuid": "c6183884-11e4-4e5e-aece-01cce9b993ad"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    38.365,
+    84.993
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C41",
+    "R31"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C41",
+     "pos": [
+      38.365,
+      84.993
+     ],
+     "uuid": "d2709803-80b0-41eb-9f39-6b7523c8afca"
+    },
+    {
+     "msg": "Pad 2 [GND] of R31 on F.Cu",
+     "pos": [
+      39.19,
+      84.623
+     ],
+     "uuid": "9288d0ab-891d-4e63-ba0f-dbe486cbdff7"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    44.365,
+    83.193
+   ],
+   "layer": "F.Cu",
+   "net": "/LINEIN_R",
+   "refs": [
+    "R33",
+    "R34"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R34",
+     "pos": [
+      44.365,
+      83.193
+     ],
+     "uuid": "e0fa96a6-e954-48e4-a942-3234f75bf9cc"
+    },
+    {
+     "msg": "Pad 1 [/LINEIN_R] of R33 on F.Cu",
+     "pos": [
+      43.54,
+      82.823
+     ],
+     "uuid": "4676af2b-445d-4936-b7af-5fab587e4c59"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    44.365,
+    83.193
+   ],
+   "layer": "F.Cu",
+   "net": "/LINEIN_R_D",
+   "refs": [
+    "R33",
+    "R34"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R34",
+     "pos": [
+      44.365,
+      83.193
+     ],
+     "uuid": "e0fa96a6-e954-48e4-a942-3234f75bf9cc"
+    },
+    {
+     "msg": "Pad 2 [/LINEIN_R_D] of R33 on F.Cu",
+     "pos": [
+      45.19,
+      82.823
+     ],
+     "uuid": "c0b7897d-ea77-47c2-8961-39efa1b0ba8b"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    66.865,
+    84.493
+   ],
+   "layer": "F.Cu",
+   "net": "/SUB_R_AC",
+   "refs": [
+    "R38",
+    "R39"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R39",
+     "pos": [
+      66.865,
+      84.493
+     ],
+     "uuid": "b183e99a-2719-418b-b476-57451ea950f7"
+    },
+    {
+     "msg": "Pad 1 [/SUB_R_AC] of R38 on F.Cu",
+     "pos": [
+      66.04,
+      84.123
+     ],
+     "uuid": "b3b76366-37a9-41e4-ba1a-85a56450c897"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    66.865,
+    84.493
+   ],
+   "layer": "F.Cu",
+   "net": "/SUB_R",
+   "refs": [
+    "R38",
+    "R39"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R39",
+     "pos": [
+      66.865,
+      84.493
+     ],
+     "uuid": "b183e99a-2719-418b-b476-57451ea950f7"
+    },
+    {
+     "msg": "Pad 2 [/SUB_R] of R38 on F.Cu",
+     "pos": [
+      67.69,
+      84.123
+     ],
+     "uuid": "92b2ffd6-cb05-4b83-9042-e360a722425a"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    66.865,
+    82.693
+   ],
+   "layer": "F.Cu",
+   "net": "/SUB_R_RAW",
+   "refs": [
+    "C48",
+    "R38"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R38",
+     "pos": [
+      66.865,
+      82.693
+     ],
+     "uuid": "7ae1d8cd-7c91-4de5-93da-ea0d465003d1"
+    },
+    {
+     "msg": "Pad 1 [/SUB_R_RAW] of C48 on F.Cu",
+     "pos": [
+      66.09,
+      82.323
+     ],
+     "uuid": "51091c3c-ece6-45a0-ad4d-db9b8ed19490"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    66.865,
+    82.693
+   ],
+   "layer": "F.Cu",
+   "net": "/SUB_R_AC",
+   "refs": [
+    "C48",
+    "R38"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R38",
+     "pos": [
+      66.865,
+      82.693
+     ],
+     "uuid": "7ae1d8cd-7c91-4de5-93da-ea0d465003d1"
+    },
+    {
+     "msg": "Pad 2 [/SUB_R_AC] of C48 on F.Cu",
+     "pos": [
+      67.64,
+      82.323
+     ],
+     "uuid": "b6d2d4dc-b476-4944-957f-ff4d7faf617e"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    70.235,
+    85.823
+   ],
+   "layer": "F.Cu",
+   "net": "+5V",
+   "refs": [
+    "C9",
+    "R9"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R9",
+     "pos": [
+      70.235,
+      85.823
+     ],
+     "uuid": "b27a3b11-645e-4d07-b7c3-df03066e4fa6"
+    },
+    {
+     "msg": "Pad 1 [+5V] of C9 on F.Cu",
+     "pos": [
+      69.865,
+      86.598
+     ],
+     "uuid": "4ed1a70f-8152-4207-97af-607ae1943903"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    70.235,
+    85.823
+   ],
+   "layer": "F.Cu",
+   "net": "/BUCK5_FB",
+   "refs": [
+    "C9",
+    "R9"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R9",
+     "pos": [
+      70.235,
+      85.823
+     ],
+     "uuid": "b27a3b11-645e-4d07-b7c3-df03066e4fa6"
+    },
+    {
+     "msg": "Pad 2 [/BUCK5_FB] of C9 on F.Cu",
+     "pos": [
+      69.865,
+      85.048
+     ],
+     "uuid": "6a9a0e50-1f63-4a1c-b46b-40fb0bf52958"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    68.435,
+    85.823
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C9",
+    "R39"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C9",
+     "pos": [
+      68.435,
+      85.823
+     ],
+     "uuid": "1f4f2ccc-be5b-4855-849d-a029ce76a6f1"
+    },
+    {
+     "msg": "Pad 2 [GND] of R39 on F.Cu",
+     "pos": [
+      67.69,
+      85.923
+     ],
+     "uuid": "b0cafa1b-5b1e-42ef-9388-577919bd2ee8"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    81.365,
+    93.143
+   ],
+   "layer": "F.Cu",
+   "net": "+5V",
+   "refs": [
+    "C7",
+    "L5"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C7",
+     "pos": [
+      81.365,
+      93.143
+     ],
+     "uuid": "717a49f1-4a39-4882-a6ea-d1e2b80b1b7d"
+    },
+    {
+     "msg": "Pad 2 [+5V] of L5 on F.Cu",
+     "pos": [
+      82.065,
+      92.123
+     ],
+     "uuid": "a14aa24d-c5df-4453-a063-91819f7e2444"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    75.865,
+    88.293
+   ],
+   "layer": "F.Cu",
+   "net": "/BUCK5_BST",
+   "refs": [
+    "C6",
+    "U2"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C6",
+     "pos": [
+      75.865,
+      88.293
+     ],
+     "uuid": "4349aba2-9274-4f5c-8d31-3c9d9ad82d43"
+    },
+    {
+     "msg": "Pad 6 [/BUCK5_BST] of U2 on F.Cu",
+     "pos": [
+      74.715,
+      87.773
+     ],
+     "uuid": "7a9b709b-8153-4f20-8b62-def7a992c3cc"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    75.865,
+    88.293
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C6",
+    "U2"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C6",
+     "pos": [
+      75.865,
+      88.293
+     ],
+     "uuid": "4349aba2-9274-4f5c-8d31-3c9d9ad82d43"
+    },
+    {
+     "msg": "Pad 1 [GND] of U2 on F.Cu",
+     "pos": [
+      77.015,
+      87.773
+     ],
+     "uuid": "ded529b6-cdc6-42fe-90b7-d0e9ff57c0f7"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    81.365,
+    95.243
+   ],
+   "layer": "F.Cu",
+   "net": "+5V",
+   "refs": [
+    "C7",
+    "C8"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C8",
+     "pos": [
+      81.365,
+      95.243
+     ],
+     "uuid": "f9fb3a8c-17ac-4416-b81b-ea9d0e2efdd6"
+    },
+    {
+     "msg": "Pad 1 [+5V] of C7 on F.Cu",
+     "pos": [
+      80.415,
+      94.823
+     ],
+     "uuid": "1ee99a69-377d-499f-9b9a-6a85518afbe0"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    81.365,
+    95.243
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C7",
+    "C8"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C8",
+     "pos": [
+      81.365,
+      95.243
+     ],
+     "uuid": "f9fb3a8c-17ac-4416-b81b-ea9d0e2efdd6"
+    },
+    {
+     "msg": "Pad 2 [GND] of C7 on F.Cu",
+     "pos": [
+      82.315,
+      94.823
+     ],
+     "uuid": "31688712-a16c-45f4-8e3e-510dea54371b"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    83.975,
+    103.093
+   ],
+   "layer": "F.Silkscreen",
+   "net": "PVDD",
+   "refs": [
+    "C58"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of C58 on F.Silkscreen",
+     "pos": [
+      83.975,
+      103.093
+     ],
+     "uuid": "affd1c0a-a9d9-45c4-9d44-34a494da4800"
+    },
+    {
+     "msg": "Pad 1 [PVDD] of C58 on F.Cu",
+     "pos": [
+      87.065,
+      104.123
+     ],
+     "uuid": "9cd7a78e-c381-41e9-9bdd-e8f2c08dfb55"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    76.29,
+    102.323
+   ],
+   "layer": "F.Cu",
+   "net": "+5V",
+   "refs": [
+    "L6",
+    "U3"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of L6",
+     "pos": [
+      76.29,
+      102.323
+     ],
+     "uuid": "380e315f-91b7-4d8f-be86-ca877f42e68c"
+    },
+    {
+     "msg": "Pad 1 [+5V] of U3 on F.Cu",
+     "pos": [
+      76.065,
+      103.273
+     ],
+     "uuid": "e6257c78-5eb0-4b18-97e3-12441b94841f"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    76.29,
+    102.323
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "L6",
+    "U3"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of L6",
+     "pos": [
+      76.29,
+      102.323
+     ],
+     "uuid": "380e315f-91b7-4d8f-be86-ca877f42e68c"
+    },
+    {
+     "msg": "Pad 2 [GND] of U3 on F.Cu",
+     "pos": [
+      76.065,
+      102.323
+     ],
+     "uuid": "8af670f3-dfb8-4281-b373-4c16bf24240f"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    76.29,
+    102.323
+   ],
+   "layer": "F.Cu",
+   "net": "/BUCK3_LX",
+   "refs": [
+    "L6",
+    "U3"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of L6",
+     "pos": [
+      76.29,
+      102.323
+     ],
+     "uuid": "380e315f-91b7-4d8f-be86-ca877f42e68c"
+    },
+    {
+     "msg": "Pad 3 [/BUCK3_LX] of U3 on F.Cu",
+     "pos": [
+      76.065,
+      101.373
+     ],
+     "uuid": "c2d7d940-bd01-4b22-8c37-c8206db1e98b"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    74.865,
+    103.893
+   ],
+   "layer": "F.Cu",
+   "net": "/BUCK3_FB",
+   "refs": [
+    "R11",
+    "U3"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R11",
+     "pos": [
+      74.865,
+      103.893
+     ],
+     "uuid": "5f671262-a3b4-4d43-9843-1d0ccb47f139"
+    },
+    {
+     "msg": "Pad 5 [/BUCK3_FB] of U3 on F.Cu",
+     "pos": [
+      73.665,
+      103.273
+     ],
+     "uuid": "6ae4e06a-ff46-4ab1-ada9-86f24afa57b6"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    74.865,
+    103.893
+   ],
+   "layer": "F.Cu",
+   "net": "+5V",
+   "refs": [
+    "R11",
+    "U3"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R11",
+     "pos": [
+      74.865,
+      103.893
+     ],
+     "uuid": "5f671262-a3b4-4d43-9843-1d0ccb47f139"
+    },
+    {
+     "msg": "Pad 1 [+5V] of U3 on F.Cu",
+     "pos": [
+      76.065,
+      103.273
+     ],
+     "uuid": "e6257c78-5eb0-4b18-97e3-12441b94841f"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    75.365,
+    105.893
+   ],
+   "layer": "F.Cu",
+   "net": "+3V3",
+   "refs": [
+    "C13",
+    "R11"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C13",
+     "pos": [
+      75.365,
+      105.893
+     ],
+     "uuid": "7a38e1bb-4466-45f8-b2f7-3ac882b4538f"
+    },
+    {
+     "msg": "Pad 1 [+3V3] of R11 on F.Cu",
+     "pos": [
+      74.04,
+      105.323
+     ],
+     "uuid": "99e142ff-ce19-4225-b438-bca16f494169"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    75.365,
+    105.893
+   ],
+   "layer": "F.Cu",
+   "net": "/BUCK3_FB",
+   "refs": [
+    "C13",
+    "R11"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C13",
+     "pos": [
+      75.365,
+      105.893
+     ],
+     "uuid": "7a38e1bb-4466-45f8-b2f7-3ac882b4538f"
+    },
+    {
+     "msg": "Pad 2 [/BUCK3_FB] of R11 on F.Cu",
+     "pos": [
+      75.69,
+      105.323
+     ],
+     "uuid": "340fde59-f3e0-4ea8-aae1-a9ae150955db"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    74.865,
+    98.293
+   ],
+   "layer": "F.Cu",
+   "net": "+5V",
+   "refs": [
+    "C10",
+    "C11"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C11",
+     "pos": [
+      74.865,
+      98.293
+     ],
+     "uuid": "a6f02bc4-5be6-48ab-87dc-ccef5eb17f64"
+    },
+    {
+     "msg": "Pad 1 [+5V] of C10 on F.Cu",
+     "pos": [
+      74.09,
+      97.923
+     ],
+     "uuid": "a3d08735-5987-4ea6-b33c-71df2585edc9"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    74.865,
+    98.293
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C10",
+    "C11"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C11",
+     "pos": [
+      74.865,
+      98.293
+     ],
+     "uuid": "a6f02bc4-5be6-48ab-87dc-ccef5eb17f64"
+    },
+    {
+     "msg": "Pad 2 [GND] of C10 on F.Cu",
+     "pos": [
+      75.64,
+      97.923
+     ],
+     "uuid": "1222b946-3041-4eed-9aa9-965081cab691"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    60.365,
+    102.893
+   ],
+   "layer": "F.Cu",
+   "net": "+3V3A",
+   "refs": [
+    "C16",
+    "U4"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C16",
+     "pos": [
+      60.365,
+      102.893
+     ],
+     "uuid": "ffd56d4e-42f4-469a-8843-0372517b331f"
+    },
+    {
+     "msg": "Pad 5 [+3V3A] of U4 on F.Cu",
+     "pos": [
+      59.065,
+      102.273
+     ],
+     "uuid": "4cfb2734-f765-4c42-8cda-74f20493c933"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    74.865,
+    99.888
+   ],
+   "layer": "F.Cu",
+   "net": "+5V",
+   "refs": [
+    "C11",
+    "U3"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of U3",
+     "pos": [
+      74.865,
+      99.888
+     ],
+     "uuid": "f49eacd5-52ba-49ca-ab54-a32098884f6e"
+    },
+    {
+     "msg": "Pad 1 [+5V] of C11 on F.Cu",
+     "pos": [
+      74.09,
+      99.723
+     ],
+     "uuid": "e8e12d29-081f-4b74-9c6b-bf8e0120a8e8"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    74.865,
+    99.888
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C11",
+    "U3"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of U3",
+     "pos": [
+      74.865,
+      99.888
+     ],
+     "uuid": "f49eacd5-52ba-49ca-ab54-a32098884f6e"
+    },
+    {
+     "msg": "Pad 2 [GND] of C11 on F.Cu",
+     "pos": [
+      75.64,
+      99.723
+     ],
+     "uuid": "fa4d891f-3fa1-4834-b4d9-776bbdc56d29"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    58.865,
+    111.693
+   ],
+   "layer": "F.Cu",
+   "net": "+3V3",
+   "refs": [
+    "R22",
+    "R23"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R23",
+     "pos": [
+      58.865,
+      111.693
+     ],
+     "uuid": "e6daaee2-677f-4ba6-b568-48d21dbebc29"
+    },
+    {
+     "msg": "Pad 1 [+3V3] of R22 on F.Cu",
+     "pos": [
+      58.04,
+      111.323
+     ],
+     "uuid": "73230582-bd9e-4106-805b-87ff93ad6cd5"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    58.865,
+    111.693
+   ],
+   "layer": "F.Cu",
+   "net": "/I2C_SCL",
+   "refs": [
+    "R22",
+    "R23"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R23",
+     "pos": [
+      58.865,
+      111.693
+     ],
+     "uuid": "e6daaee2-677f-4ba6-b568-48d21dbebc29"
+    },
+    {
+     "msg": "Pad 2 [/I2C_SCL] of R22 on F.Cu",
+     "pos": [
+      59.69,
+      111.323
+     ],
+     "uuid": "7a928373-06bb-4bf0-bc2c-630042c49d57"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    60.365,
+    102.893
+   ],
+   "layer": "F.Cu",
+   "net": "+5V",
+   "refs": [
+    "C16",
+    "U4"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C16",
+     "pos": [
+      60.365,
+      102.893
+     ],
+     "uuid": "ffd56d4e-42f4-469a-8843-0372517b331f"
+    },
+    {
+     "msg": "Pad 1 [+5V] of U4 on F.Cu",
+     "pos": [
+      61.665,
+      102.273
+     ],
+     "uuid": "2fe9a76b-3533-46fc-b157-a0c850e5ceee"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    59.365,
+    95.693
+   ],
+   "layer": "F.Cu",
+   "net": "/CODEC_VREF",
+   "refs": [
+    "C35",
+    "C36"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C36",
+     "pos": [
+      59.365,
+      95.693
+     ],
+     "uuid": "7c4e8f6c-d971-47ae-9f3f-15863ab2475d"
+    },
+    {
+     "msg": "Pad 1 [/CODEC_VREF] of C35 on F.Cu",
+     "pos": [
+      58.59,
+      95.323
+     ],
+     "uuid": "66386e31-a45f-4e28-916b-a90542e9ec22"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    59.365,
+    95.693
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C35",
+    "C36"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C36",
+     "pos": [
+      59.365,
+      95.693
+     ],
+     "uuid": "7c4e8f6c-d971-47ae-9f3f-15863ab2475d"
+    },
+    {
+     "msg": "Pad 2 [GND] of C35 on F.Cu",
+     "pos": [
+      60.14,
+      95.323
+     ],
+     "uuid": "8a2e7202-0d43-4a34-a91f-966bdb00d484"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    86.215,
+    113.553
+   ],
+   "layer": "F.Silkscreen",
+   "net": "GND",
+   "refs": [
+    "C58"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of C58 on F.Silkscreen",
+     "pos": [
+      86.215,
+      113.553
+     ],
+     "uuid": "5cc23dd4-3803-4a95-8991-88fefd03e245"
+    },
+    {
+     "msg": "Pad 2 [GND] of C58 on F.Cu",
+     "pos": [
+      87.065,
+      112.523
+     ],
+     "uuid": "b8cebb67-1d2b-4143-aba7-555d8071e0e5"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    71.365,
+    109.193
+   ],
+   "layer": "F.Cu",
+   "net": "/BUCK3_FB",
+   "refs": [
+    "C14",
+    "R12"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C14",
+     "pos": [
+      71.365,
+      109.193
+     ],
+     "uuid": "8784cbec-d6b0-4cd9-9fc2-d00bdbf39498"
+    },
+    {
+     "msg": "Pad 1 [/BUCK3_FB] of R12 on F.Cu",
+     "pos": [
+      70.54,
+      108.823
+     ],
+     "uuid": "c3d8588f-1356-402c-a31e-52f7fe020179"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    71.365,
+    109.193
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C14",
+    "R12"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C14",
+     "pos": [
+      71.365,
+      109.193
+     ],
+     "uuid": "8784cbec-d6b0-4cd9-9fc2-d00bdbf39498"
+    },
+    {
+     "msg": "Pad 2 [GND] of R12 on F.Cu",
+     "pos": [
+      72.19,
+      108.823
+     ],
+     "uuid": "a72013dc-d63b-43c8-b5af-5a772952f0d7"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    52.865,
+    92.235
+   ],
+   "layer": "F.Cu",
+   "net": "/CODEC_DACVREF",
+   "refs": [
+    "C38",
+    "U7"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of U7",
+     "pos": [
+      52.865,
+      92.235
+     ],
+     "uuid": "00d69b4c-018b-43e7-9def-a07b9bdb13a3"
+    },
+    {
+     "msg": "Pad 1 [/CODEC_DACVREF] of C38 on F.Cu",
+     "pos": [
+      52.09,
+      91.623
+     ],
+     "uuid": "f06fab0d-245c-4351-9f2d-ce798995402e"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    52.865,
+    92.235
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C38",
+    "U7"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of U7",
+     "pos": [
+      52.865,
+      92.235
+     ],
+     "uuid": "00d69b4c-018b-43e7-9def-a07b9bdb13a3"
+    },
+    {
+     "msg": "Pad 2 [GND] of C38 on F.Cu",
+     "pos": [
+      53.64,
+      91.623
+     ],
+     "uuid": "f570f789-3d04-47cc-b56c-2573ee3ebc8a"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    52.865,
+    90.193
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C37",
+    "C38"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C38",
+     "pos": [
+      52.865,
+      90.193
+     ],
+     "uuid": "26f492b6-f5b3-4f31-bb54-9568199c393d"
+    },
+    {
+     "msg": "Pad 2 [GND] of C37 on F.Cu",
+     "pos": [
+      53.64,
+      89.823
+     ],
+     "uuid": "2881148d-ccb4-40ca-997b-f2e3b1b54f25"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    59.365,
+    93.893
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C34",
+    "C35"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C35",
+     "pos": [
+      59.365,
+      93.893
+     ],
+     "uuid": "58def8ae-d936-4c5c-9df8-08813e2bc627"
+    },
+    {
+     "msg": "Pad 2 [GND] of C34 on F.Cu",
+     "pos": [
+      57.64,
+      93.423
+     ],
+     "uuid": "1f2a526b-459d-4f45-90c5-e02d2ad074ea"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    56.865,
+    91.993
+   ],
+   "layer": "F.Cu",
+   "net": "+3V3A",
+   "refs": [
+    "C33",
+    "C34"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C34",
+     "pos": [
+      56.865,
+      91.993
+     ],
+     "uuid": "cf7fdad2-3003-4be2-b405-3f58e9804fc9"
+    },
+    {
+     "msg": "Pad 1 [+3V3A] of C33 on F.Cu",
+     "pos": [
+      56.09,
+      91.623
+     ],
+     "uuid": "b1d3a2f6-4beb-4340-8088-cdb1cee98aa8"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    56.865,
+    91.993
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C33",
+    "C34"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C34",
+     "pos": [
+      56.865,
+      91.993
+     ],
+     "uuid": "cf7fdad2-3003-4be2-b405-3f58e9804fc9"
+    },
+    {
+     "msg": "Pad 2 [GND] of C33 on F.Cu",
+     "pos": [
+      57.64,
+      91.623
+     ],
+     "uuid": "f89ac0cf-a3a6-420a-8a58-5bc78ac72861"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    52.865,
+    90.193
+   ],
+   "layer": "F.Cu",
+   "net": "/CODEC_DACVREF",
+   "refs": [
+    "C37",
+    "C38"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C38",
+     "pos": [
+      52.865,
+      90.193
+     ],
+     "uuid": "26f492b6-f5b3-4f31-bb54-9568199c393d"
+    },
+    {
+     "msg": "Pad 1 [/CODEC_DACVREF] of C37 on F.Cu",
+     "pos": [
+      52.09,
+      89.823
+     ],
+     "uuid": "fba58539-280b-4d0f-9b2c-dcba7c5b7660"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    85.835,
+    68.223
+   ],
+   "layer": "F.Silkscreen",
+   "net": "GND",
+   "refs": [
+    "J1"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Circle of J1 on F.Silkscreen",
+     "pos": [
+      85.835,
+      68.223
+     ],
+     "uuid": "bb33abab-716b-4c89-a3f9-8eda67c6bdcf"
+    },
+    {
+     "msg": "PTH pad 1 [GND] of J1",
+     "pos": [
+      85.685,
+      67.193
+     ],
+     "uuid": "f7d56afa-df29-4150-a8a2-d810a469ff98"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    86.865,
+    73.568
+   ],
+   "layer": "F.Cu",
+   "net": "VBUS",
+   "refs": [
+    "D1",
+    "Q4"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of Q4",
+     "pos": [
+      86.865,
+      73.568
+     ],
+     "uuid": "d093eedd-bba9-4ec3-b169-5ada91ad2386"
+    },
+    {
+     "msg": "Pad 1 [VBUS] of D1 on F.Cu",
+     "pos": [
+      87.225,
+      72.223
+     ],
+     "uuid": "a7fb0350-cf41-4f9c-b65d-d7917f66ee4e"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    88.835,
+    71.323
+   ],
+   "layer": "F.Cu",
+   "net": "VBUS",
+   "refs": [
+    "D1",
+    "R5"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R5",
+     "pos": [
+      88.835,
+      71.323
+     ],
+     "uuid": "cb82d4eb-fc12-4e8b-a371-0507c2f36ef7"
+    },
+    {
+     "msg": "Pad 1 [VBUS] of D1 on F.Cu",
+     "pos": [
+      87.225,
+      72.223
+     ],
+     "uuid": "a7fb0350-cf41-4f9c-b65d-d7917f66ee4e"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    88.835,
+    74.923
+   ],
+   "layer": "F.Cu",
+   "net": "/PD_PG",
+   "refs": [
+    "Q4",
+    "R6"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R6",
+     "pos": [
+      88.835,
+      74.923
+     ],
+     "uuid": "81552f28-145a-4d16-97f2-4033502ad1f4"
+    },
+    {
+     "msg": "Pad 2 [/PD_PG] of Q4 on F.Cu",
+     "pos": [
+      87.865,
+      74.973
+     ],
+     "uuid": "dc067ed6-2656-4bfd-a4b9-23361a2423e6"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    90.335,
+    72.823
+   ],
+   "layer": "F.Cu",
+   "net": "VBUS",
+   "refs": [
+    "C2",
+    "R5"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C2",
+     "pos": [
+      90.335,
+      72.823
+     ],
+     "uuid": "d2b955dd-34ba-4775-86d1-3ab4de97600e"
+    },
+    {
+     "msg": "Pad 1 [VBUS] of R5 on F.Cu",
+     "pos": [
+      90.265,
+      72.148
+     ],
+     "uuid": "d242d2cf-8f7d-4665-8f71-7031b9854321"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    94.165,
+    99.093
+   ],
+   "layer": "F.Cu",
+   "net": "/BS_L_P",
+   "refs": [
+    "C57",
+    "C64"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C57",
+     "pos": [
+      94.165,
+      99.093
+     ],
+     "uuid": "86bd8761-f439-4b2d-b76a-990ba6a1570f"
+    },
+    {
+     "msg": "Pad 1 [/BS_L_P] of C64 on F.Cu",
+     "pos": [
+      95.865,
+      98.098
+     ],
+     "uuid": "33ff87ab-5199-4a9c-aa29-6c86312dbb3a"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    77.065,
+    78.293
+   ],
+   "layer": "F.Cu",
+   "net": "VBUS",
+   "refs": [
+    "R2",
+    "U1"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R2",
+     "pos": [
+      77.065,
+      78.293
+     ],
+     "uuid": "4d210e34-6976-454a-8512-58b30a17320d"
+    },
+    {
+     "msg": "Pad 1 [VBUS] of U1 on F.Cu",
+     "pos": [
+      76.615,
+      76.923
+     ],
+     "uuid": "b2783de6-a12d-4c50-adef-cbaf0a84b2b8"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    77.065,
+    78.293
+   ],
+   "layer": "F.Cu",
+   "net": "/PD_SCL",
+   "refs": [
+    "R2",
+    "U1"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R2",
+     "pos": [
+      77.065,
+      78.293
+     ],
+     "uuid": "4d210e34-6976-454a-8512-58b30a17320d"
+    },
+    {
+     "msg": "Pad 2 [/PD_SCL] of U1 on F.Cu",
+     "pos": [
+      77.615,
+      76.923
+     ],
+     "uuid": "7d3f0878-32fb-4b43-8687-8110c721e558"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    78.365,
+    80.473
+   ],
+   "layer": "F.Cu",
+   "net": "/I2C_SCL",
+   "refs": [
+    "C3",
+    "R2"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C3",
+     "pos": [
+      78.365,
+      80.473
+     ],
+     "uuid": "45ae79d1-0796-46a0-900b-367b41ab76d2"
+    },
+    {
+     "msg": "Pad 2 [/I2C_SCL] of R2 on F.Cu",
+     "pos": [
+      77.89,
+      79.723
+     ],
+     "uuid": "8e9f0719-23e7-459a-8a64-eda3ed57cd9a"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    78.365,
+    80.473
+   ],
+   "layer": "F.Cu",
+   "net": "/PD_SDA",
+   "refs": [
+    "C3",
+    "R3"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C3",
+     "pos": [
+      78.365,
+      80.473
+     ],
+     "uuid": "45ae79d1-0796-46a0-900b-367b41ab76d2"
+    },
+    {
+     "msg": "Pad 1 [/PD_SDA] of R3 on F.Cu",
+     "pos": [
+      79.54,
+      79.723
+     ],
+     "uuid": "2a3b7270-9118-45e1-82d6-d8e7fc3bf887"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    79.265,
+    83.193
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C3",
+    "C5"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C5",
+     "pos": [
+      79.265,
+      83.193
+     ],
+     "uuid": "edc54527-7c96-429f-9801-c58b4a6e94d3"
+    },
+    {
+     "msg": "Pad 2 [GND] of C3 on F.Cu",
+     "pos": [
+      79.84,
+      82.323
+     ],
+     "uuid": "acb5c09d-890a-421f-a31f-a874d953707b"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    85.04,
+    87.323
+   ],
+   "layer": "F.Cu",
+   "net": "/BUCK5_SW",
+   "refs": [
+    "L1",
+    "L5"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of L1",
+     "pos": [
+      85.04,
+      87.323
+     ],
+     "uuid": "6ac1dbcf-9408-4b3c-b775-b43094542bf3"
+    },
+    {
+     "msg": "Pad 1 [/BUCK5_SW] of L5 on F.Cu",
+     "pos": [
+      82.065,
+      86.923
+     ],
+     "uuid": "817f92a5-f118-4d8b-ab6a-76da20a8bb4f"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    78.615,
+    69.798
+   ],
+   "layer": "F.Cu",
+   "net": "VBUS",
+   "refs": [
+    "U1"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of U1",
+     "pos": [
+      78.615,
+      69.798
+     ],
+     "uuid": "c05bb9b1-f216-4c23-91a1-94d37e8c9aaf"
+    },
+    {
+     "msg": "Pad 8 [VBUS] of U1 on F.Cu",
+     "pos": [
+      78.615,
+      70.923
+     ],
+     "uuid": "11ac1d42-a8f6-4f76-9374-85f9f0426aa5"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    78.615,
+    69.798
+   ],
+   "layer": "F.Cu",
+   "net": "/CC2",
+   "refs": [
+    "U1"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of U1",
+     "pos": [
+      78.615,
+      69.798
+     ],
+     "uuid": "c05bb9b1-f216-4c23-91a1-94d37e8c9aaf"
+    },
+    {
+     "msg": "Pad 7 [/CC2] of U1 on F.Cu",
+     "pos": [
+      79.615,
+      70.923
+     ],
+     "uuid": "c168ae78-48ec-4f1b-9241-921c27a3f3b4"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    83.365,
+    75.593
+   ],
+   "layer": "F.Cu",
+   "net": "/PSW_G",
+   "refs": [
+    "R15",
+    "R7"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R7",
+     "pos": [
+      83.365,
+      75.593
+     ],
+     "uuid": "f1ecd4ac-9204-4b3c-9fd6-6cbfe1f06a3e"
+    },
+    {
+     "msg": "Pad 1 [/PSW_G] of R15 on F.Cu",
+     "pos": [
+      82.54,
+      75.123
+     ],
+     "uuid": "3235c88f-2805-4a60-8531-bbf8d172ad5e"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    83.365,
+    75.593
+   ],
+   "layer": "F.Cu",
+   "net": "/PSW_MILLER",
+   "refs": [
+    "R15",
+    "R7"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R7",
+     "pos": [
+      83.365,
+      75.593
+     ],
+     "uuid": "f1ecd4ac-9204-4b3c-9fd6-6cbfe1f06a3e"
+    },
+    {
+     "msg": "Pad 2 [/PSW_MILLER] of R15 on F.Cu",
+     "pos": [
+      84.19,
+      75.123
+     ],
+     "uuid": "171fdd30-a9ea-4b73-9abf-e95c13be51a9"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    84.865,
+    75.01
+   ],
+   "layer": "F.Cu",
+   "net": "/PSW_MILLER",
+   "refs": [
+    "D1",
+    "R15"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of D1",
+     "pos": [
+      84.865,
+      75.01
+     ],
+     "uuid": "bb892ba9-4692-4d10-a82c-de2ea9e8b697"
+    },
+    {
+     "msg": "Pad 2 [/PSW_MILLER] of R15 on F.Cu",
+     "pos": [
+      84.19,
+      75.123
+     ],
+     "uuid": "171fdd30-a9ea-4b73-9abf-e95c13be51a9"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    83.365,
+    73.693
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "D1",
+    "R15"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R15",
+     "pos": [
+      83.365,
+      73.693
+     ],
+     "uuid": "c1c608dc-fbd0-4198-baa9-b5a31661777b"
+    },
+    {
+     "msg": "Pad 2 [GND] of D1 on F.Cu",
+     "pos": [
+      82.505,
+      72.223
+     ],
+     "uuid": "02162ff4-c43f-4987-b463-9032f2b88c75"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    80.365,
+    78.293
+   ],
+   "layer": "F.Cu",
+   "net": "unconnected-(U1-DP-Pad4)",
+   "refs": [
+    "R3",
+    "U1"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R3",
+     "pos": [
+      80.365,
+      78.293
+     ],
+     "uuid": "f9d316c7-ace3-4f3b-a9d9-7e0113423a58"
+    },
+    {
+     "msg": "Pad 4 [unconnected-(U1-DP-Pad4)] of U1 on F.Cu",
+     "pos": [
+      79.615,
+      76.923
+     ],
+     "uuid": "1b34c16f-74bd-4103-9cfc-e542d338b15a"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    80.365,
+    78.293
+   ],
+   "layer": "F.Cu",
+   "net": "unconnected-(U1-DM-Pad5)",
+   "refs": [
+    "R3",
+    "U1"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R3",
+     "pos": [
+      80.365,
+      78.293
+     ],
+     "uuid": "f9d316c7-ace3-4f3b-a9d9-7e0113423a58"
+    },
+    {
+     "msg": "Pad 5 [unconnected-(U1-DM-Pad5)] of U1 on F.Cu",
+     "pos": [
+      80.615,
+      76.923
+     ],
+     "uuid": "b2e7cd04-4bfa-424d-a643-963af47818a3"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    78.615,
+    69.798
+   ],
+   "layer": "F.Cu",
+   "net": "/PD_CFG1",
+   "refs": [
+    "U1"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of U1",
+     "pos": [
+      78.615,
+      69.798
+     ],
+     "uuid": "c05bb9b1-f216-4c23-91a1-94d37e8c9aaf"
+    },
+    {
+     "msg": "Pad 9 [/PD_CFG1] of U1 on F.Cu",
+     "pos": [
+      77.615,
+      70.923
+     ],
+     "uuid": "32ace9f9-c8a4-421d-8aec-6e53f9f5c52e"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    82.865,
+    119.293
+   ],
+   "layer": "F.Cu",
+   "net": "PVDD",
+   "refs": [
+    "R16",
+    "R17"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R16",
+     "pos": [
+      82.865,
+      119.293
+     ],
+     "uuid": "3d30824f-7a79-4f15-8db3-4987bad9e113"
+    },
+    {
+     "msg": "Pad 1 [PVDD] of R17 on F.Cu",
+     "pos": [
+      82.04,
+      118.923
+     ],
+     "uuid": "6a7c1973-d7e8-41ed-a904-740a35d64b1f"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    82.865,
+    119.293
+   ],
+   "layer": "F.Cu",
+   "net": "/PVDD_SENSE",
+   "refs": [
+    "R16",
+    "R17"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R16",
+     "pos": [
+      82.865,
+      119.293
+     ],
+     "uuid": "3d30824f-7a79-4f15-8db3-4987bad9e113"
+    },
+    {
+     "msg": "Pad 2 [/PVDD_SENSE] of R17 on F.Cu",
+     "pos": [
+      83.69,
+      118.923
+     ],
+     "uuid": "4ac2be76-4996-4709-b0af-059b48bb8a4e"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    62.865,
+    131.968
+   ],
+   "layer": "F.Cu",
+   "net": "/Q2_B",
+   "refs": [
+    "Q2",
+    "Q3"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of Q3",
+     "pos": [
+      62.865,
+      131.968
+     ],
+     "uuid": "8bca2f85-266c-45a7-8d32-3342e612aa06"
+    },
+    {
+     "msg": "Pad 1 [/Q2_B] of Q2 on F.Cu",
+     "pos": [
+      63.865,
+      131.273
+     ],
+     "uuid": "3fd61ef6-70cb-4085-9fa0-1248470f0479"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    63.865,
+    109.993
+   ],
+   "layer": "F.Cu",
+   "net": "/VBUS_SENSE",
+   "refs": [
+    "C17",
+    "R14"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C17",
+     "pos": [
+      63.865,
+      109.993
+     ],
+     "uuid": "1f3d5d82-acca-4d0f-8758-93d89bb42dc5"
+    },
+    {
+     "msg": "Pad 1 [/VBUS_SENSE] of R14 on F.Cu",
+     "pos": [
+      63.04,
+      109.623
+     ],
+     "uuid": "b8ba12fc-88ae-49f6-bb45-3901919e22a9"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    63.865,
+    109.993
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C17",
+    "R14"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C17",
+     "pos": [
+      63.865,
+      109.993
+     ],
+     "uuid": "1f3d5d82-acca-4d0f-8758-93d89bb42dc5"
+    },
+    {
+     "msg": "Pad 2 [GND] of R14 on F.Cu",
+     "pos": [
+      64.69,
+      109.623
+     ],
+     "uuid": "2d5ea56f-b1ca-43b4-a5f3-d3d5c1ccb991"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    70.865,
+    146.798
+   ],
+   "layer": "F.Cu",
+   "net": "/LED_DRV",
+   "refs": [
+    "D2",
+    "R64"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of D2",
+     "pos": [
+      70.865,
+      146.798
+     ],
+     "uuid": "58fa0ebd-bfae-4035-9d5e-9611cb1e19c3"
+    },
+    {
+     "msg": "Pad 1 [/LED_DRV] of R64 on F.Cu",
+     "pos": [
+      70.04,
+      145.823
+     ],
+     "uuid": "6b198e30-679e-442f-a712-02d3d1062170"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    70.865,
+    146.798
+   ],
+   "layer": "F.Cu",
+   "net": "/LED_A",
+   "refs": [
+    "D2",
+    "R64"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of D2",
+     "pos": [
+      70.865,
+      146.798
+     ],
+     "uuid": "58fa0ebd-bfae-4035-9d5e-9611cb1e19c3"
+    },
+    {
+     "msg": "Pad 2 [/LED_A] of R64 on F.Cu",
+     "pos": [
+      71.69,
+      145.823
+     ],
+     "uuid": "37d7796b-3e17-4cd2-b3b8-0f713022b6e1"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    64.935,
+    130.323
+   ],
+   "layer": "F.Cu",
+   "net": "/RTS",
+   "refs": [
+    "Q2",
+    "R24"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R24",
+     "pos": [
+      64.935,
+      130.323
+     ],
+     "uuid": "e1e4f9a0-be40-4953-8e15-648af82f1adc"
+    },
+    {
+     "msg": "Pad 2 [/RTS] of Q2 on F.Cu",
+     "pos": [
+      63.865,
+      129.373
+     ],
+     "uuid": "d7f1f272-3343-4abe-9a05-a6914e43152e"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    64.935,
+    130.323
+   ],
+   "layer": "F.Cu",
+   "net": "/Q2_B",
+   "refs": [
+    "Q2",
+    "R24"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R24",
+     "pos": [
+      64.935,
+      130.323
+     ],
+     "uuid": "e1e4f9a0-be40-4953-8e15-648af82f1adc"
+    },
+    {
+     "msg": "Pad 1 [/Q2_B] of Q2 on F.Cu",
+     "pos": [
+      63.865,
+      131.273
+     ],
+     "uuid": "3fd61ef6-70cb-4085-9fa0-1248470f0479"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    64.935,
+    134.323
+   ],
+   "layer": "F.Cu",
+   "net": "/DTR",
+   "refs": [
+    "Q3",
+    "R25"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R25",
+     "pos": [
+      64.935,
+      134.323
+     ],
+     "uuid": "f593880b-ac01-4d64-ad4a-f89e3fd433a9"
+    },
+    {
+     "msg": "Pad 2 [/DTR] of Q3 on F.Cu",
+     "pos": [
+      63.865,
+      133.373
+     ],
+     "uuid": "4751fe42-5626-470c-95df-93a97c8ef7d7"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    64.935,
+    134.323
+   ],
+   "layer": "F.Cu",
+   "net": "/Q3_B",
+   "refs": [
+    "Q3",
+    "R25"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R25",
+     "pos": [
+      64.935,
+      134.323
+     ],
+     "uuid": "f593880b-ac01-4d64-ad4a-f89e3fd433a9"
+    },
+    {
+     "msg": "Pad 1 [/Q3_B] of Q3 on F.Cu",
+     "pos": [
+      63.865,
+      135.273
+     ],
+     "uuid": "9aff160b-f27f-4da8-b3cf-6329c84cb749"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    108.365,
+    113.793
+   ],
+   "layer": "F.Cu",
+   "net": "/AMP_R_INP",
+   "refs": [
+    "C62",
+    "C63"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C63",
+     "pos": [
+      108.365,
+      113.793
+     ],
+     "uuid": "f887f82c-f8c5-4474-832b-b84e51d9bc9b"
+    },
+    {
+     "msg": "Pad 2 [/AMP_R_INP] of C62 on F.Cu",
+     "pos": [
+      109.14,
+      113.323
+     ],
+     "uuid": "cda6bcbc-fb4b-41b6-992f-02f64367e15e"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    110.365,
+    104.843
+   ],
+   "layer": "F.Cu",
+   "net": "GND",
+   "refs": [
+    "C51",
+    "C52"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of C51",
+     "pos": [
+      110.365,
+      104.843
+     ],
+     "uuid": "5d1d8c2c-a746-4668-b02e-07b1ed4fd0e2"
+    },
+    {
+     "msg": "Pad 2 [GND] of C52 on F.Cu",
+     "pos": [
+      111.315,
+      104.323
+     ],
+     "uuid": "1ac3492e-493f-4d9f-adca-eb9ca9cb9133"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    118.145,
+    112.503
+   ],
+   "layer": "F.Silkscreen",
+   "net": "GND",
+   "refs": [
+    "C59"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of C59 on F.Silkscreen",
+     "pos": [
+      118.145,
+      112.503
+     ],
+     "uuid": "7c7de814-a1cf-43bc-8b7c-7ac2776a8a54"
+    },
+    {
+     "msg": "Pad 2 [GND] of C59 on F.Cu",
+     "pos": [
+      117.365,
+      112.043
+     ],
+     "uuid": "a1be54da-bc30-4190-8bca-98fa37d2da97"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    119.855,
+    104.093
+   ],
+   "layer": "F.Silkscreen",
+   "net": "PVDD",
+   "refs": [
+    "C59"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of C59 on F.Silkscreen",
+     "pos": [
+      119.855,
+      104.093
+     ],
+     "uuid": "86ee6221-4367-4917-a750-4ebc324d9756"
+    },
+    {
+     "msg": "Pad 1 [PVDD] of C59 on F.Cu",
+     "pos": [
+      117.365,
+      104.603
+     ],
+     "uuid": "efe07cd2-0a44-4181-829f-4dcd14f221c3"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    114.875,
+    104.093
+   ],
+   "layer": "F.Silkscreen",
+   "net": "PVDD",
+   "refs": [
+    "C59"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of C59 on F.Silkscreen",
+     "pos": [
+      114.875,
+      104.093
+     ],
+     "uuid": "5ddf6d7d-7a2d-4774-8146-28442d32cd91"
+    },
+    {
+     "msg": "Pad 1 [PVDD] of C59 on F.Cu",
+     "pos": [
+      117.365,
+      104.603
+     ],
+     "uuid": "efe07cd2-0a44-4181-829f-4dcd14f221c3"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    116.585,
+    112.503
+   ],
+   "layer": "F.Silkscreen",
+   "net": "GND",
+   "refs": [
+    "C59"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Segment of C59 on F.Silkscreen",
+     "pos": [
+      116.585,
+      112.503
+     ],
+     "uuid": "d1dbaf4e-9e24-4859-a12b-7423115b0013"
+    },
+    {
+     "msg": "Pad 2 [GND] of C59 on F.Cu",
+     "pos": [
+      117.365,
+      112.043
+     ],
+     "uuid": "a1be54da-bc30-4190-8bca-98fa37d2da97"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    93.935,
+    116.823
+   ],
+   "layer": "F.Cu",
+   "net": "+3V3",
+   "refs": [
+    "R53",
+    "R54"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R54",
+     "pos": [
+      93.935,
+      116.823
+     ],
+     "uuid": "3308e25e-7848-4b4c-9238-8342ffdb5ccd"
+    },
+    {
+     "msg": "Pad 1 [+3V3] of R53 on F.Cu",
+     "pos": [
+      93.365,
+      117.648
+     ],
+     "uuid": "c4e99600-5dbc-4c34-8a3d-3670e84ee77c"
+    }
+   ]
+  },
+  {
+   "check": "silk_over_copper",
+   "severity": "warning",
+   "pos": [
+    93.935,
+    116.823
+   ],
+   "layer": "F.Cu",
+   "net": "/AMP_FAULTZ",
+   "refs": [
+    "R53",
+    "R54"
+   ],
+   "msg": "Silkscreen clipped by solder mask",
+   "source": "drc",
+   "items": [
+    {
+     "msg": "Reference field of R54",
+     "pos": [
+      93.935,
+      116.823
+     ],
+     "uuid": "3308e25e-7848-4b4c-9238-8342ffdb5ccd"
+    },
+    {
+     "msg": "Pad 2 [/AMP_FAULTZ] of R53 on F.Cu",
+     "pos": [
+      93.365,
+      115.998
+     ],
+     "uuid": "9a03d238-d31a-4174-b3ea-21685d7d029e"
+    }
+   ]
+  }
+ ],
+ "facts": {
+  "completion": 1.0,
+  "routable_nets": 85,
+  "unrouted_nets": [],
+  "tracks_before": 12,
+  "tracks_after": 1072,
+  "ses_items_added": 1170,
+  "best_rung": 1,
+  "rungs": [
+   {
+    "rung": 1,
+    "options": {
+     "mp": 20
+    },
+    "unrouted": 1,
+    "started_unrouted": 297,
+    "final_score": 995.08,
+    "passes": 8,
+    "timed_out": false,
+    "kill_reason": null,
+    "ses_written": true
+   },
+   {
+    "rung": 2,
+    "options": {
+     "mp": 60,
+     "oit": 0.05
+    },
+    "unrouted": 1,
+    "started_unrouted": 297,
+    "final_score": 995.08,
+    "passes": 8,
+    "timed_out": false,
+    "kill_reason": null,
+    "ses_written": true
+   },
+   {
+    "rung": 3,
+    "options": {
+     "mp": 100,
+     "us": "global"
+    },
+    "unrouted": 1,
+    "started_unrouted": 297,
+    "final_score": 995.08,
+    "passes": 8,
+    "timed_out": false,
+    "kill_reason": null,
+    "ses_written": true
+   }
+  ],
+  "fr_completion": 0.9966329966329966,
+  "power_layers": [],
+  "dsn_net_rules": [],
+  "dsn_wires_merged": 2,
+  "krt_finish": {
+   "kept": true,
+   "nets": [
+    "GND",
+    "VBUS"
+   ],
+   "ripped_vias": 0,
+   "errors_before": {
+    "drc:hole_to_hole": 1,
+    "unconnected:unconnected_items": 3
+   },
+   "errors_after": {
+    "drc:hole_to_hole": 1
+   }
+  },
+  "ses_echo_dups_removed": 0,
+  "work_dir": "/work/boards/lite/kicad/route"
+ }
+}

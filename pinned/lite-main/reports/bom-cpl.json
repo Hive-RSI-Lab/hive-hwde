@@ -1,0 +1,3459 @@
+{
+ "script": "bom_cpl",
+ "status": "pass",
+ "board": "lite-main.kicad_pcb",
+ "n_parts": 134,
+ "n_placed": 134,
+ "bom": "fab/BOM.csv",
+ "bom_full": "fab/BOM-full.csv",
+ "cpl": "fab/CPL.csv",
+ "prebuy": "fab/prebuy.csv",
+ "build_qty": 5,
+ "distributor_boms": {
+  "digikey": "fab/lite_BOM_digikey.csv",
+  "mouser": "fab/lite_BOM_mouser.csv",
+  "cost": null,
+  "boards": 1,
+  "lines": 48,
+  "priced": {
+   "digikey": false,
+   "mouser": false
+  },
+  "missing_mpn": [],
+  "warnings": [
+   "digikey: prices not looked up (no HWDE_DIGIKEY_CLIENT_ID, HWDE_DIGIKEY_CLIENT_SECRET)",
+   "mouser: prices not looked up (no HWDE_MOUSER_API_KEY)"
+  ]
+ },
+ "bom_rows": [
+  {
+   "Comment": "1uF",
+   "Designator": "C1,C15,C16,C22,C41,C44,C50,C60,C61,C62,C63",
+   "Footprint": "C_0603_1608Metric",
+   "LCSC": "C15849"
+  },
+  {
+   "Comment": "100nF",
+   "Designator": "C2,C5,C6,C11,C17,C18,C21,C23,C24,C30,C31,C33,C34,C36,C38,C40,C53,C56",
+   "Footprint": "C_0603_1608Metric",
+   "LCSC": "C14663"
+  },
+  {
+   "Comment": "10uF",
+   "Designator": "C3",
+   "Footprint": "C_1206_3216Metric",
+   "LCSC": "C13585"
+  },
+  {
+   "Comment": "4.7uF",
+   "Designator": "C4",
+   "Footprint": "C_1206_3216Metric",
+   "LCSC": "C29823"
+  },
+  {
+   "Comment": "22uF",
+   "Designator": "C7,C8,C12",
+   "Footprint": "C_0805_2012Metric",
+   "LCSC": "C45783"
+  },
+  {
+   "Comment": "100pF",
+   "Designator": "C9,C42,C45",
+   "Footprint": "C_0603_1608Metric",
+   "LCSC": "C14858"
+  },
+  {
+   "Comment": "10uF",
+   "Designator": "C10,C13,C20,C35,C37,C39,C47,C48",
+   "Footprint": "C_0603_1608Metric",
+   "LCSC": "C19702"
+  },
+  {
+   "Comment": "22pF",
+   "Designator": "C14",
+   "Footprint": "C_0603_1608Metric",
+   "LCSC": "C1653"
+  },
+  {
+   "Comment": "4.7uF",
+   "Designator": "C32,C80",
+   "Footprint": "C_0603_1608Metric",
+   "LCSC": "C19666"
+  },
+  {
+   "Comment": "1uF",
+   "Designator": "C51,C52,C55",
+   "Footprint": "C_0805_2012Metric",
+   "LCSC": "C28323"
+  },
+  {
+   "Comment": "1nF",
+   "Designator": "C54,C57",
+   "Footprint": "C_0603_1608Metric",
+   "LCSC": "C1588"
+  },
+  {
+   "Comment": "470uF 35V polymer",
+   "Designator": "C58",
+   "Footprint": "CAP-SMD_BD10.0-L10.3-W10.3-FD-LS11.0",
+   "LCSC": "C46550472"
+  },
+  {
+   "Comment": "220uF 35V",
+   "Designator": "C59",
+   "Footprint": "CAP-SMD_BD8.0-L8.3-W8.3-LS9.3-FD",
+   "LCSC": "C2836441"
+  },
+  {
+   "Comment": "220nF",
+   "Designator": "C64,C65,C66,C67",
+   "Footprint": "C_0603_1608Metric",
+   "LCSC": "C21120"
+  },
+  {
+   "Comment": "1uF",
+   "Designator": "C68,C69,C70,C71",
+   "Footprint": "C_1206_3216Metric",
+   "LCSC": "C1848"
+  },
+  {
+   "Comment": "SMBJ20A",
+   "Designator": "D1",
+   "Footprint": "SMB_L4.6-W3.6-LS5.3-RD",
+   "LCSC": "C364296"
+  },
+  {
+   "Comment": "red",
+   "Designator": "D2",
+   "Footprint": "LED-SMD_L1.6-W0.8-R-RD",
+   "LCSC": "C2286"
+  },
+  {
+   "Comment": "USB4105-GF-A-120",
+   "Designator": "J1",
+   "Footprint": "USB-C-SMD_MC-311D",
+   "LCSC": "C5184243"
+  },
+  {
+   "Comment": "RCA line in",
+   "Designator": "J2,J3",
+   "Footprint": "CONN-TH_XDJK-0271-1650",
+   "LCSC": "C7527522"
+  },
+  {
+   "Comment": "DB128V-5.08-4P",
+   "Designator": "J4",
+   "Footprint": "CONN-TH_4P-P5.08_DIBO_DB128V-5.08",
+   "LCSC": "C2915641"
+  },
+  {
+   "Comment": "10uH 8A",
+   "Designator": "L1,L2,L3,L4",
+   "Footprint": "IND-SMD_L8.0-W8.0_XR0850",
+   "LCSC": "C48391614"
+  },
+  {
+   "Comment": "10uH",
+   "Designator": "L5",
+   "Footprint": "IND-SMD_L6.0-W6.0_SWPA6045S",
+   "LCSC": "C79272"
+  },
+  {
+   "Comment": "2.2uH",
+   "Designator": "L6",
+   "Footprint": "IND-SMD_L4.0-W4.0_VLCF4020",
+   "LCSC": "C305171"
+  },
+  {
+   "Comment": "AO4485",
+   "Designator": "Q1",
+   "Footprint": "SOP-8_L4.9-W3.9-P1.27-LS6.0-BL",
+   "LCSC": "C5125949"
+  },
+  {
+   "Comment": "MMBT3904",
+   "Designator": "Q2,Q3,Q4",
+   "Footprint": "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+   "LCSC": "C20526"
+  },
+  {
+   "Comment": "120k",
+   "Designator": "R1",
+   "Footprint": "R_0603_1608Metric",
+   "LCSC": "C25808"
+  },
+  {
+   "Comment": "0R",
+   "Designator": "R2,R3",
+   "Footprint": "R_0603_1608Metric",
+   "LCSC": "C21189"
+  },
+  {
+   "Comment": "10k",
+   "Designator": "R4,R7,R14,R18,R20,R21,R24,R25,R30,R31,R33,R34,R53,R60,R61,R62,R63",
+   "Footprint": "R_0603_1608Metric",
+   "LCSC": "C25804"
+  },
+  {
+   "Comment": "100k",
+   "Designator": "R5,R8,R9,R13,R17,R51,R52,R54",
+   "Footprint": "R_0603_1608Metric",
+   "LCSC": "C25803"
+  },
+  {
+   "Comment": "47k",
+   "Designator": "R6,R37,R39",
+   "Footprint": "R_0603_1608Metric",
+   "LCSC": "C25819"
+  },
+  {
+   "Comment": "13k",
+   "Designator": "R10",
+   "Footprint": "R_0603_1608Metric",
+   "LCSC": "C22797"
+  },
+  {
+   "Comment": "150k",
+   "Designator": "R11",
+   "Footprint": "R_0603_1608Metric",
+   "LCSC": "C22807"
+  },
+  {
+   "Comment": "33k",
+   "Designator": "R12",
+   "Footprint": "R_0603_1608Metric",
+   "LCSC": "C4216"
+  },
+  {
+   "Comment": "1k",
+   "Designator": "R15,R64",
+   "Footprint": "R_0603_1608Metric",
+   "LCSC": "C21190"
+  },
+  {
+   "Comment": "22k",
+   "Designator": "R16",
+   "Footprint": "R_0603_1608Metric",
+   "LCSC": "C31850"
+  },
+  {
+   "Comment": "2.2k",
+   "Designator": "R22,R23",
+   "Footprint": "R_0603_1608Metric",
+   "LCSC": "C4190"
+  },
+  {
+   "Comment": "100R",
+   "Designator": "R36,R38,R65",
+   "Footprint": "R_0603_1608Metric",
+   "LCSC": "C22775"
+  },
+  {
+   "Comment": "20k",
+   "Designator": "R50",
+   "Footprint": "R_0603_1608Metric",
+   "LCSC": "C4184"
+  },
+  {
+   "Comment": "TS-1187A",
+   "Designator": "SW1,SW2,SW3",
+   "Footprint": "SW-SMD_4P-L5.1-W5.1-P3.70-LS6.5-TL_H1.5",
+   "LCSC": "C318884"
+  },
+  {
+   "Comment": "CH224A",
+   "Designator": "U1",
+   "Footprint": "ESSOP-10_L4.9-W3.9-P1.0-LS6.0-TL-EP",
+   "LCSC": "C42459160"
+  },
+  {
+   "Comment": "TPS54302",
+   "Designator": "U2",
+   "Footprint": "SOT-23-6_L2.9-W1.6-P0.95-LS2.8-BL",
+   "LCSC": "C311983"
+  },
+  {
+   "Comment": "SY8089A1AAC",
+   "Designator": "U3",
+   "Footprint": "TSOT-23-5_L2.9-W1.6-P0.95-LS2.8-BR",
+   "LCSC": "C479074"
+  },
+  {
+   "Comment": "LP5907-3.3",
+   "Designator": "U4",
+   "Footprint": "SOT-23-5_L3.0-W1.7-P0.95-LS2.8-BR",
+   "LCSC": "C80670"
+  },
+  {
+   "Comment": "ESP32-WROVER-E-N8R8",
+   "Designator": "U5",
+   "Footprint": "WIFI-SMD_ESP32-WROVER-IE8MB",
+   "LCSC": "C2973667"
+  },
+  {
+   "Comment": "CH340C",
+   "Designator": "U6",
+   "Footprint": "SOP-16_L10.0-W3.9-P1.27-LS6.0-BL",
+   "LCSC": "C84681"
+  },
+  {
+   "Comment": "ES8388",
+   "Designator": "U7",
+   "Footprint": "QFN-28_L4.0-W4.0-P0.45-BL-EP",
+   "LCSC": "C365736"
+  },
+  {
+   "Comment": "TPA3118D2",
+   "Designator": "U8",
+   "Footprint": "HTSSOP-32_L11.0-W6.1-P0.65-LS8.1-BL-EP",
+   "LCSC": "C46497"
+  },
+  {
+   "Comment": "IRM-3638T",
+   "Designator": "U9",
+   "Footprint": "OPTO-TH_IRM-3638T",
+   "LCSC": "C42421366"
+  }
+ ],
+ "prebuy_rows": [
+  {
+   "LCSC": "C46550472",
+   "MPN": "MA35V470M10X13",
+   "Comment": "470uF 35V polymer",
+   "Designator": "C58",
+   "Qty Per Board": "1",
+   "Boards": "5",
+   "Qty To Buy": "5",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C2836441",
+   "MPN": "RVT220UF35V67RV0024",
+   "Comment": "220uF 35V",
+   "Designator": "C59",
+   "Qty Per Board": "1",
+   "Boards": "5",
+   "Qty To Buy": "5",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C364296",
+   "MPN": "SMBJ20A",
+   "Comment": "SMBJ20A",
+   "Designator": "D1",
+   "Qty Per Board": "1",
+   "Boards": "5",
+   "Qty To Buy": "5",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C5184243",
+   "MPN": "USB4105-GF-A-120",
+   "Comment": "USB4105-GF-A-120",
+   "Designator": "J1",
+   "Qty Per Board": "1",
+   "Boards": "5",
+   "Qty To Buy": "5",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C7527522",
+   "MPN": "XDJK-0271-1650",
+   "Comment": "RCA line in",
+   "Designator": "J2,J3",
+   "Qty Per Board": "2",
+   "Boards": "5",
+   "Qty To Buy": "10",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C2915641",
+   "MPN": "DB128V-5.08-4P-GN-S",
+   "Comment": "DB128V-5.08-4P",
+   "Designator": "J4",
+   "Qty Per Board": "1",
+   "Boards": "5",
+   "Qty To Buy": "5",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C48391614",
+   "MPN": "XR0850-100M",
+   "Comment": "10uH 8A",
+   "Designator": "L1,L2,L3,L4",
+   "Qty Per Board": "4",
+   "Boards": "5",
+   "Qty To Buy": "20",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C79272",
+   "MPN": "SWPA6045S100MT",
+   "Comment": "10uH",
+   "Designator": "L5",
+   "Qty Per Board": "1",
+   "Boards": "5",
+   "Qty To Buy": "5",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C305171",
+   "MPN": "SWPA4020S2R2NT",
+   "Comment": "2.2uH",
+   "Designator": "L6",
+   "Qty Per Board": "1",
+   "Boards": "5",
+   "Qty To Buy": "5",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C5125949",
+   "MPN": "AO4485",
+   "Comment": "AO4485",
+   "Designator": "Q1",
+   "Qty Per Board": "1",
+   "Boards": "5",
+   "Qty To Buy": "5",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C42459160",
+   "MPN": "CH224A",
+   "Comment": "CH224A",
+   "Designator": "U1",
+   "Qty Per Board": "1",
+   "Boards": "5",
+   "Qty To Buy": "5",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C311983",
+   "MPN": "TPS54302DDCR",
+   "Comment": "TPS54302",
+   "Designator": "U2",
+   "Qty Per Board": "1",
+   "Boards": "5",
+   "Qty To Buy": "5",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C479074",
+   "MPN": "SY8089A1AAC",
+   "Comment": "SY8089A1AAC",
+   "Designator": "U3",
+   "Qty Per Board": "1",
+   "Boards": "5",
+   "Qty To Buy": "5",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C80670",
+   "MPN": "LP5907MFX-3.3/NOPB",
+   "Comment": "LP5907-3.3",
+   "Designator": "U4",
+   "Qty Per Board": "1",
+   "Boards": "5",
+   "Qty To Buy": "5",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C2973667",
+   "MPN": "ESP32-WROVER-E-N8R8",
+   "Comment": "ESP32-WROVER-E-N8R8",
+   "Designator": "U5",
+   "Qty Per Board": "1",
+   "Boards": "5",
+   "Qty To Buy": "5",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C84681",
+   "MPN": "CH340C",
+   "Comment": "CH340C",
+   "Designator": "U6",
+   "Qty Per Board": "1",
+   "Boards": "5",
+   "Qty To Buy": "5",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C365736",
+   "MPN": "ES8388",
+   "Comment": "ES8388",
+   "Designator": "U7",
+   "Qty Per Board": "1",
+   "Boards": "5",
+   "Qty To Buy": "5",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C46497",
+   "MPN": "TPA3118D2DAPR",
+   "Comment": "TPA3118D2",
+   "Designator": "U8",
+   "Qty Per Board": "1",
+   "Boards": "5",
+   "Qty To Buy": "5",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  },
+  {
+   "LCSC": "C42421366",
+   "MPN": "IRM-3638T",
+   "Comment": "IRM-3638T",
+   "Designator": "U9",
+   "Qty Per Board": "1",
+   "Boards": "5",
+   "Qty To Buy": "5",
+   "Note": "Extended part: JLC's BOM review may show it as idle stock (unselected, qty 0) that has to be bought into your parts inventory before assembly."
+  }
+ ],
+ "bom_full_rows": [
+  {
+   "Comment": "1uF",
+   "Designator": "C1,C15,C16,C22,C41,C44,C50,C60,C61,C62,C63",
+   "Qty Per Board": "11",
+   "Footprint": "C_0603_1608Metric",
+   "MPN": "CL10A105KB8NNNC",
+   "LCSC": "C15849",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "100nF",
+   "Designator": "C2,C5,C6,C11,C17,C18,C21,C23,C24,C30,C31,C33,C34,C36,C38,C40,C53,C56",
+   "Qty Per Board": "18",
+   "Footprint": "C_0603_1608Metric",
+   "MPN": "CC0603KRX7R9BB104",
+   "LCSC": "C14663",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "10uF",
+   "Designator": "C3",
+   "Qty Per Board": "1",
+   "Footprint": "C_1206_3216Metric",
+   "MPN": "CL31A106KBHNNNE",
+   "LCSC": "C13585",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "4.7uF",
+   "Designator": "C4",
+   "Qty Per Board": "1",
+   "Footprint": "C_1206_3216Metric",
+   "MPN": "1206B475K500NT",
+   "LCSC": "C29823",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "22uF",
+   "Designator": "C7,C8,C12",
+   "Qty Per Board": "3",
+   "Footprint": "C_0805_2012Metric",
+   "MPN": "CL21A226MAQNNNE",
+   "LCSC": "C45783",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "100pF",
+   "Designator": "C9,C42,C45",
+   "Qty Per Board": "3",
+   "Footprint": "C_0603_1608Metric",
+   "MPN": "CL10C101JB8NNNC",
+   "LCSC": "C14858",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "10uF",
+   "Designator": "C10,C13,C20,C35,C37,C39,C47,C48",
+   "Qty Per Board": "8",
+   "Footprint": "C_0603_1608Metric",
+   "MPN": "CL10A106KP8NNNC",
+   "LCSC": "C19702",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "22pF",
+   "Designator": "C14",
+   "Qty Per Board": "1",
+   "Footprint": "C_0603_1608Metric",
+   "MPN": "CL10C220JB8NNNC",
+   "LCSC": "C1653",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "4.7uF",
+   "Designator": "C32,C80",
+   "Qty Per Board": "2",
+   "Footprint": "C_0603_1608Metric",
+   "MPN": "CL10A475KO8NNNC",
+   "LCSC": "C19666",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "1uF",
+   "Designator": "C51,C52,C55",
+   "Qty Per Board": "3",
+   "Footprint": "C_0805_2012Metric",
+   "MPN": "CL21B105KBFNNNE",
+   "LCSC": "C28323",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "1nF",
+   "Designator": "C54,C57",
+   "Qty Per Board": "2",
+   "Footprint": "C_0603_1608Metric",
+   "MPN": "CL10B102KB8NNNC",
+   "LCSC": "C1588",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "470uF 35V polymer",
+   "Designator": "C58",
+   "Qty Per Board": "1",
+   "Footprint": "CAP-SMD_BD10.0-L10.3-W10.3-FD-LS11.0",
+   "MPN": "MA35V470M10X13",
+   "LCSC": "C46550472",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "220uF 35V",
+   "Designator": "C59",
+   "Qty Per Board": "1",
+   "Footprint": "CAP-SMD_BD8.0-L8.3-W8.3-LS9.3-FD",
+   "MPN": "RVT220UF35V67RV0024",
+   "LCSC": "C2836441",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "220nF",
+   "Designator": "C64,C65,C66,C67",
+   "Qty Per Board": "4",
+   "Footprint": "C_0603_1608Metric",
+   "MPN": "CL10B224KA8NNNC",
+   "LCSC": "C21120",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "1uF",
+   "Designator": "C68,C69,C70,C71",
+   "Qty Per Board": "4",
+   "Footprint": "C_1206_3216Metric",
+   "MPN": "CL31B105KBHNNNE",
+   "LCSC": "C1848",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "SMBJ20A",
+   "Designator": "D1",
+   "Qty Per Board": "1",
+   "Footprint": "SMB_L4.6-W3.6-LS5.3-RD",
+   "MPN": "SMBJ20A",
+   "LCSC": "C364296",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "red",
+   "Designator": "D2",
+   "Qty Per Board": "1",
+   "Footprint": "LED-SMD_L1.6-W0.8-R-RD",
+   "MPN": "KT-0603R",
+   "LCSC": "C2286",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "USB4105-GF-A-120",
+   "Designator": "J1",
+   "Qty Per Board": "1",
+   "Footprint": "USB-C-SMD_MC-311D",
+   "MPN": "USB4105-GF-A-120",
+   "LCSC": "C5184243",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "RCA line in",
+   "Designator": "J2",
+   "Qty Per Board": "1",
+   "Footprint": "CONN-TH_XDJK-0271-1650",
+   "MPN": "XDJK-0271-1650",
+   "LCSC": "C7527522",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "RCA sub out",
+   "Designator": "J3",
+   "Qty Per Board": "1",
+   "Footprint": "CONN-TH_XDJK-0271-1650",
+   "MPN": "XDJK-0271-1650",
+   "LCSC": "C7527522",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "DB128V-5.08-4P",
+   "Designator": "J4",
+   "Qty Per Board": "1",
+   "Footprint": "CONN-TH_4P-P5.08_DIBO_DB128V-5.08",
+   "MPN": "DB128V-5.08-4P-GN-S",
+   "LCSC": "C2915641",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "10uH 8A",
+   "Designator": "L1,L2,L3,L4",
+   "Qty Per Board": "4",
+   "Footprint": "IND-SMD_L8.0-W8.0_XR0850",
+   "MPN": "XR0850-100M",
+   "LCSC": "C48391614",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "10uH",
+   "Designator": "L5",
+   "Qty Per Board": "1",
+   "Footprint": "IND-SMD_L6.0-W6.0_SWPA6045S",
+   "MPN": "SWPA6045S100MT",
+   "LCSC": "C79272",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "2.2uH",
+   "Designator": "L6",
+   "Qty Per Board": "1",
+   "Footprint": "IND-SMD_L4.0-W4.0_VLCF4020",
+   "MPN": "SWPA4020S2R2NT",
+   "LCSC": "C305171",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "AO4485",
+   "Designator": "Q1",
+   "Qty Per Board": "1",
+   "Footprint": "SOP-8_L4.9-W3.9-P1.27-LS6.0-BL",
+   "MPN": "AO4485",
+   "LCSC": "C5125949",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "MMBT3904",
+   "Designator": "Q2,Q3,Q4",
+   "Qty Per Board": "3",
+   "Footprint": "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+   "MPN": "MMBT3904(RANGE:100-300)",
+   "LCSC": "C20526",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "120k",
+   "Designator": "R1",
+   "Qty Per Board": "1",
+   "Footprint": "R_0603_1608Metric",
+   "MPN": "0603WAF1203T5E",
+   "LCSC": "C25808",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "0R",
+   "Designator": "R2,R3",
+   "Qty Per Board": "2",
+   "Footprint": "R_0603_1608Metric",
+   "MPN": "0603WAF0000T5E",
+   "LCSC": "C21189",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "10k",
+   "Designator": "R4,R7,R14,R18,R20,R21,R24,R25,R30,R31,R33,R34,R53,R60,R61,R62,R63",
+   "Qty Per Board": "17",
+   "Footprint": "R_0603_1608Metric",
+   "MPN": "0603WAF1002T5E",
+   "LCSC": "C25804",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "100k",
+   "Designator": "R5,R8,R9,R13,R17,R51,R52,R54",
+   "Qty Per Board": "8",
+   "Footprint": "R_0603_1608Metric",
+   "MPN": "0603WAF1003T5E",
+   "LCSC": "C25803",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "47k",
+   "Designator": "R6,R37,R39",
+   "Qty Per Board": "3",
+   "Footprint": "R_0603_1608Metric",
+   "MPN": "0603WAF4702T5E",
+   "LCSC": "C25819",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "13k",
+   "Designator": "R10",
+   "Qty Per Board": "1",
+   "Footprint": "R_0603_1608Metric",
+   "MPN": "0603WAF1302T5E",
+   "LCSC": "C22797",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "150k",
+   "Designator": "R11",
+   "Qty Per Board": "1",
+   "Footprint": "R_0603_1608Metric",
+   "MPN": "0603WAF1503T5E",
+   "LCSC": "C22807",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "33k",
+   "Designator": "R12",
+   "Qty Per Board": "1",
+   "Footprint": "R_0603_1608Metric",
+   "MPN": "0603WAF3302T5E",
+   "LCSC": "C4216",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "1k",
+   "Designator": "R15,R64",
+   "Qty Per Board": "2",
+   "Footprint": "R_0603_1608Metric",
+   "MPN": "0603WAF1001T5E",
+   "LCSC": "C21190",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "22k",
+   "Designator": "R16",
+   "Qty Per Board": "1",
+   "Footprint": "R_0603_1608Metric",
+   "MPN": "0603WAF2202T5E",
+   "LCSC": "C31850",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "2.2k",
+   "Designator": "R22,R23",
+   "Qty Per Board": "2",
+   "Footprint": "R_0603_1608Metric",
+   "MPN": "0603WAF2201T5E",
+   "LCSC": "C4190",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "100R",
+   "Designator": "R36,R38,R65",
+   "Qty Per Board": "3",
+   "Footprint": "R_0603_1608Metric",
+   "MPN": "0603WAF1000T5E",
+   "LCSC": "C22775",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "20k",
+   "Designator": "R50",
+   "Qty Per Board": "1",
+   "Footprint": "R_0603_1608Metric",
+   "MPN": "0603WAF2002T5E",
+   "LCSC": "C4184",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "TS-1187A",
+   "Designator": "SW1,SW2,SW3",
+   "Qty Per Board": "3",
+   "Footprint": "SW-SMD_4P-L5.1-W5.1-P3.70-LS6.5-TL_H1.5",
+   "MPN": "TS-1187A-B-A-B",
+   "LCSC": "C318884",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "CH224A",
+   "Designator": "U1",
+   "Qty Per Board": "1",
+   "Footprint": "ESSOP-10_L4.9-W3.9-P1.0-LS6.0-TL-EP",
+   "MPN": "CH224A",
+   "LCSC": "C42459160",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "TPS54302",
+   "Designator": "U2",
+   "Qty Per Board": "1",
+   "Footprint": "SOT-23-6_L2.9-W1.6-P0.95-LS2.8-BL",
+   "MPN": "TPS54302DDCR",
+   "LCSC": "C311983",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "SY8089A1AAC",
+   "Designator": "U3",
+   "Qty Per Board": "1",
+   "Footprint": "TSOT-23-5_L2.9-W1.6-P0.95-LS2.8-BR",
+   "MPN": "SY8089A1AAC",
+   "LCSC": "C479074",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "LP5907-3.3",
+   "Designator": "U4",
+   "Qty Per Board": "1",
+   "Footprint": "SOT-23-5_L3.0-W1.7-P0.95-LS2.8-BR",
+   "MPN": "LP5907MFX-3.3/NOPB",
+   "LCSC": "C80670",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "ESP32-WROVER-E-N8R8",
+   "Designator": "U5",
+   "Qty Per Board": "1",
+   "Footprint": "WIFI-SMD_ESP32-WROVER-IE8MB",
+   "MPN": "ESP32-WROVER-E-N8R8",
+   "LCSC": "C2973667",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "CH340C",
+   "Designator": "U6",
+   "Qty Per Board": "1",
+   "Footprint": "SOP-16_L10.0-W3.9-P1.27-LS6.0-BL",
+   "MPN": "CH340C",
+   "LCSC": "C84681",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "ES8388",
+   "Designator": "U7",
+   "Qty Per Board": "1",
+   "Footprint": "QFN-28_L4.0-W4.0-P0.45-BL-EP",
+   "MPN": "ES8388",
+   "LCSC": "C365736",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "TPA3118D2",
+   "Designator": "U8",
+   "Qty Per Board": "1",
+   "Footprint": "HTSSOP-32_L11.0-W6.1-P0.65-LS8.1-BL-EP",
+   "MPN": "TPA3118D2DAPR",
+   "LCSC": "C46497",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "IRM-3638T",
+   "Designator": "U9",
+   "Qty Per Board": "1",
+   "Footprint": "OPTO-TH_IRM-3638T",
+   "MPN": "IRM-3638T",
+   "LCSC": "C42421366",
+   "Assembly Class": "smt_placed",
+   "Instructions": ""
+  },
+  {
+   "Comment": "",
+   "Designator": "H1,H2,H3,H4",
+   "Qty Per Board": "4",
+   "Footprint": "",
+   "MPN": "",
+   "LCSC": "",
+   "Assembly Class": "board_feature",
+   "Instructions": "Realised in copper - nothing to buy or place."
+  }
+ ],
+ "cpl_rows": [
+  {
+   "Designator": "C1",
+   "Mid X": "74.6650",
+   "Mid Y": "-77.3230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C2",
+   "Mid X": "91.7650",
+   "Mid Y": "-72.8230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C3",
+   "Mid X": "78.3650",
+   "Mid Y": "-82.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C4",
+   "Mid X": "73.1650",
+   "Mid Y": "-82.9230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C5",
+   "Mid X": "79.2650",
+   "Mid Y": "-84.6230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C6",
+   "Mid X": "75.8650",
+   "Mid Y": "-89.7230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C7",
+   "Mid X": "81.3650",
+   "Mid Y": "-94.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C8",
+   "Mid X": "81.3650",
+   "Mid Y": "-96.9230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C9",
+   "Mid X": "69.8650",
+   "Mid Y": "-85.8230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C10",
+   "Mid X": "74.8650",
+   "Mid Y": "-97.9230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C11",
+   "Mid X": "74.8650",
+   "Mid Y": "-99.7230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C12",
+   "Mid X": "79.3650",
+   "Mid Y": "-107.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C13",
+   "Mid X": "75.3650",
+   "Mid Y": "-107.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C14",
+   "Mid X": "71.3650",
+   "Mid Y": "-110.6230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C15",
+   "Mid X": "64.3650",
+   "Mid Y": "-100.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C16",
+   "Mid X": "60.3650",
+   "Mid Y": "-104.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C17",
+   "Mid X": "63.8650",
+   "Mid Y": "-111.4230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C18",
+   "Mid X": "89.2650",
+   "Mid Y": "-118.9230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C20",
+   "Mid X": "33.3650",
+   "Mid Y": "-140.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C21",
+   "Mid X": "36.3650",
+   "Mid Y": "-140.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C22",
+   "Mid X": "42.3650",
+   "Mid Y": "-140.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C23",
+   "Mid X": "69.3650",
+   "Mid Y": "-129.1230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C24",
+   "Mid X": "75.3650",
+   "Mid Y": "-122.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C30",
+   "Mid X": "49.8650",
+   "Mid Y": "-100.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C31",
+   "Mid X": "49.8650",
+   "Mid Y": "-102.1230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C32",
+   "Mid X": "56.8650",
+   "Mid Y": "-89.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C33",
+   "Mid X": "56.8650",
+   "Mid Y": "-91.6230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C34",
+   "Mid X": "56.8650",
+   "Mid Y": "-93.4230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C35",
+   "Mid X": "59.3650",
+   "Mid Y": "-95.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C36",
+   "Mid X": "59.3650",
+   "Mid Y": "-97.1230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C37",
+   "Mid X": "52.8650",
+   "Mid Y": "-89.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C38",
+   "Mid X": "52.8650",
+   "Mid Y": "-91.6230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C39",
+   "Mid X": "49.3650",
+   "Mid Y": "-89.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C40",
+   "Mid X": "49.3650",
+   "Mid Y": "-91.6230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C41",
+   "Mid X": "38.3650",
+   "Mid Y": "-86.4230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C42",
+   "Mid X": "38.3650",
+   "Mid Y": "-88.2230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C44",
+   "Mid X": "44.3650",
+   "Mid Y": "-86.4230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C45",
+   "Mid X": "44.3650",
+   "Mid Y": "-88.2230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C47",
+   "Mid X": "61.3650",
+   "Mid Y": "-82.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C48",
+   "Mid X": "66.8650",
+   "Mid Y": "-82.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C50",
+   "Mid X": "101.0650",
+   "Mid Y": "-113.3230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C51",
+   "Mid X": "110.3650",
+   "Mid Y": "-106.5230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C52",
+   "Mid X": "110.3650",
+   "Mid Y": "-104.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C53",
+   "Mid X": "110.3650",
+   "Mid Y": "-102.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C54",
+   "Mid X": "110.3650",
+   "Mid Y": "-100.5230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C55",
+   "Mid X": "94.1650",
+   "Mid Y": "-104.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C56",
+   "Mid X": "94.1650",
+   "Mid Y": "-102.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C57",
+   "Mid X": "94.1650",
+   "Mid Y": "-100.5230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C58",
+   "Mid X": "87.0650",
+   "Mid Y": "-108.3230",
+   "Layer": "Top",
+   "Rotation": "270.0000"
+  },
+  {
+   "Designator": "C59",
+   "Mid X": "117.3650",
+   "Mid Y": "-108.3230",
+   "Layer": "Top",
+   "Rotation": "270.0000"
+  },
+  {
+   "Designator": "C60",
+   "Mid X": "98.3650",
+   "Mid Y": "-112.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C61",
+   "Mid X": "98.3650",
+   "Mid Y": "-114.7230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C62",
+   "Mid X": "108.3650",
+   "Mid Y": "-113.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C63",
+   "Mid X": "108.3650",
+   "Mid Y": "-115.2230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C64",
+   "Mid X": "95.8650",
+   "Mid Y": "-97.3230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C65",
+   "Mid X": "100.4650",
+   "Mid Y": "-97.3230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C66",
+   "Mid X": "103.2650",
+   "Mid Y": "-97.3230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C67",
+   "Mid X": "107.8650",
+   "Mid Y": "-97.3230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "C68",
+   "Mid X": "89.8650",
+   "Mid Y": "-78.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C69",
+   "Mid X": "98.3650",
+   "Mid Y": "-78.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C70",
+   "Mid X": "106.8650",
+   "Mid Y": "-78.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C71",
+   "Mid X": "115.3650",
+   "Mid Y": "-78.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "C80",
+   "Mid X": "111.8650",
+   "Mid Y": "-142.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "D1",
+   "Mid X": "84.8650",
+   "Mid Y": "-72.2230",
+   "Layer": "Top",
+   "Rotation": "180.0000"
+  },
+  {
+   "Designator": "D2",
+   "Mid X": "70.8650",
+   "Mid Y": "-148.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "J1",
+   "Mid X": "81.3650",
+   "Mid Y": "-65.3930",
+   "Layer": "Top",
+   "Rotation": "180.0000"
+  },
+  {
+   "Designator": "J2",
+   "Mid X": "42.4650",
+   "Mid Y": "-75.5230",
+   "Layer": "Top",
+   "Rotation": "180.0000"
+  },
+  {
+   "Designator": "J3",
+   "Mid X": "64.6650",
+   "Mid Y": "-75.5230",
+   "Layer": "Top",
+   "Rotation": "180.0000"
+  },
+  {
+   "Designator": "J4",
+   "Mid X": "105.6650",
+   "Mid Y": "-65.9230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "L1",
+   "Mid X": "89.8650",
+   "Mid Y": "-87.3230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "L2",
+   "Mid X": "98.3650",
+   "Mid Y": "-87.3230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "L3",
+   "Mid X": "106.8650",
+   "Mid Y": "-87.3230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "L4",
+   "Mid X": "115.3650",
+   "Mid Y": "-87.3230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "L5",
+   "Mid X": "82.0650",
+   "Mid Y": "-89.5230",
+   "Layer": "Top",
+   "Rotation": "270.0000"
+  },
+  {
+   "Designator": "L6",
+   "Mid X": "79.3650",
+   "Mid Y": "-102.3230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "Q1",
+   "Mid X": "90.5650",
+   "Mid Y": "-66.3230",
+   "Layer": "Top",
+   "Rotation": "270.0000"
+  },
+  {
+   "Designator": "Q2",
+   "Mid X": "62.8650",
+   "Mid Y": "-130.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "Q3",
+   "Mid X": "62.8650",
+   "Mid Y": "-134.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "Q4",
+   "Mid X": "86.8650",
+   "Mid Y": "-75.9230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R1",
+   "Mid X": "74.6650",
+   "Mid Y": "-70.9230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R2",
+   "Mid X": "77.0650",
+   "Mid Y": "-79.7230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R3",
+   "Mid X": "80.3650",
+   "Mid Y": "-79.7230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R4",
+   "Mid X": "74.6650",
+   "Mid Y": "-74.1230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R5",
+   "Mid X": "90.2650",
+   "Mid Y": "-71.3230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R6",
+   "Mid X": "90.2650",
+   "Mid Y": "-74.9230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R7",
+   "Mid X": "83.3650",
+   "Mid Y": "-77.0230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R8",
+   "Mid X": "43.8650",
+   "Mid Y": "-115.8230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R9",
+   "Mid X": "71.6650",
+   "Mid Y": "-85.8230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R10",
+   "Mid X": "71.6650",
+   "Mid Y": "-89.0230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R11",
+   "Mid X": "74.8650",
+   "Mid Y": "-105.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R12",
+   "Mid X": "71.3650",
+   "Mid Y": "-108.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R13",
+   "Mid X": "63.8650",
+   "Mid Y": "-107.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R14",
+   "Mid X": "63.8650",
+   "Mid Y": "-109.6230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R15",
+   "Mid X": "83.3650",
+   "Mid Y": "-75.1230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R16",
+   "Mid X": "82.8650",
+   "Mid Y": "-120.7230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R17",
+   "Mid X": "82.8650",
+   "Mid Y": "-118.9230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R18",
+   "Mid X": "86.0650",
+   "Mid Y": "-118.9230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R20",
+   "Mid X": "39.3650",
+   "Mid Y": "-140.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R21",
+   "Mid X": "47.3650",
+   "Mid Y": "-115.8230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R22",
+   "Mid X": "58.8650",
+   "Mid Y": "-111.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R23",
+   "Mid X": "58.8650",
+   "Mid Y": "-113.1230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R24",
+   "Mid X": "66.3650",
+   "Mid Y": "-130.3230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R25",
+   "Mid X": "66.3650",
+   "Mid Y": "-134.3230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R30",
+   "Mid X": "38.3650",
+   "Mid Y": "-82.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R31",
+   "Mid X": "38.3650",
+   "Mid Y": "-84.6230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R33",
+   "Mid X": "44.3650",
+   "Mid Y": "-82.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R34",
+   "Mid X": "44.3650",
+   "Mid Y": "-84.6230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R36",
+   "Mid X": "61.3650",
+   "Mid Y": "-84.1230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R37",
+   "Mid X": "61.3650",
+   "Mid Y": "-85.9230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R38",
+   "Mid X": "66.8650",
+   "Mid Y": "-84.1230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R39",
+   "Mid X": "66.8650",
+   "Mid Y": "-85.9230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R50",
+   "Mid X": "103.0650",
+   "Mid Y": "-113.3230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R51",
+   "Mid X": "105.0650",
+   "Mid Y": "-113.3230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R52",
+   "Mid X": "95.3650",
+   "Mid Y": "-112.8230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R53",
+   "Mid X": "93.3650",
+   "Mid Y": "-116.8230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R54",
+   "Mid X": "95.3650",
+   "Mid Y": "-116.8230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R60",
+   "Mid X": "80.8650",
+   "Mid Y": "-141.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R61",
+   "Mid X": "91.8650",
+   "Mid Y": "-141.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R62",
+   "Mid X": "102.8650",
+   "Mid Y": "-141.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R63",
+   "Mid X": "108.3650",
+   "Mid Y": "-141.8230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "R64",
+   "Mid X": "70.8650",
+   "Mid Y": "-145.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "R65",
+   "Mid X": "114.8650",
+   "Mid Y": "-140.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "SW1",
+   "Mid X": "80.8650",
+   "Mid Y": "-146.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "SW2",
+   "Mid X": "91.8650",
+   "Mid Y": "-146.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "SW3",
+   "Mid X": "102.8650",
+   "Mid Y": "-146.8230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "U1",
+   "Mid X": "78.6150",
+   "Mid Y": "-73.9230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "U2",
+   "Mid X": "75.8650",
+   "Mid Y": "-86.8230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "U3",
+   "Mid X": "74.8650",
+   "Mid Y": "-102.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "U4",
+   "Mid X": "60.3650",
+   "Mid Y": "-101.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "U5",
+   "Mid X": "42.3650",
+   "Mid Y": "-128.3230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "U6",
+   "Mid X": "68.8650",
+   "Mid Y": "-122.3230",
+   "Layer": "Top",
+   "Rotation": "90.0000"
+  },
+  {
+   "Designator": "U7",
+   "Mid X": "52.8650",
+   "Mid Y": "-95.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "U8",
+   "Mid X": "101.8650",
+   "Mid Y": "-105.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  },
+  {
+   "Designator": "U9",
+   "Mid X": "111.8650",
+   "Mid Y": "-147.3230",
+   "Layer": "Top",
+   "Rotation": "0.0000"
+  }
+ ],
+ "assembly_classes": {
+  "C1": "smt_placed",
+  "C2": "smt_placed",
+  "C3": "smt_placed",
+  "C4": "smt_placed",
+  "C5": "smt_placed",
+  "C6": "smt_placed",
+  "C7": "smt_placed",
+  "C8": "smt_placed",
+  "C9": "smt_placed",
+  "C10": "smt_placed",
+  "C11": "smt_placed",
+  "C12": "smt_placed",
+  "C13": "smt_placed",
+  "C14": "smt_placed",
+  "C15": "smt_placed",
+  "C16": "smt_placed",
+  "C17": "smt_placed",
+  "C18": "smt_placed",
+  "C20": "smt_placed",
+  "C21": "smt_placed",
+  "C22": "smt_placed",
+  "C23": "smt_placed",
+  "C24": "smt_placed",
+  "C30": "smt_placed",
+  "C31": "smt_placed",
+  "C32": "smt_placed",
+  "C33": "smt_placed",
+  "C34": "smt_placed",
+  "C35": "smt_placed",
+  "C36": "smt_placed",
+  "C37": "smt_placed",
+  "C38": "smt_placed",
+  "C39": "smt_placed",
+  "C40": "smt_placed",
+  "C41": "smt_placed",
+  "C42": "smt_placed",
+  "C44": "smt_placed",
+  "C45": "smt_placed",
+  "C47": "smt_placed",
+  "C48": "smt_placed",
+  "C50": "smt_placed",
+  "C51": "smt_placed",
+  "C52": "smt_placed",
+  "C53": "smt_placed",
+  "C54": "smt_placed",
+  "C55": "smt_placed",
+  "C56": "smt_placed",
+  "C57": "smt_placed",
+  "C58": "smt_placed",
+  "C59": "smt_placed",
+  "C60": "smt_placed",
+  "C61": "smt_placed",
+  "C62": "smt_placed",
+  "C63": "smt_placed",
+  "C64": "smt_placed",
+  "C65": "smt_placed",
+  "C66": "smt_placed",
+  "C67": "smt_placed",
+  "C68": "smt_placed",
+  "C69": "smt_placed",
+  "C70": "smt_placed",
+  "C71": "smt_placed",
+  "C80": "smt_placed",
+  "D1": "smt_placed",
+  "D2": "smt_placed",
+  "H1": "board_feature",
+  "H2": "board_feature",
+  "H3": "board_feature",
+  "H4": "board_feature",
+  "J1": "smt_placed",
+  "J2": "smt_placed",
+  "J3": "smt_placed",
+  "J4": "smt_placed",
+  "L1": "smt_placed",
+  "L2": "smt_placed",
+  "L3": "smt_placed",
+  "L4": "smt_placed",
+  "L5": "smt_placed",
+  "L6": "smt_placed",
+  "Q1": "smt_placed",
+  "Q2": "smt_placed",
+  "Q3": "smt_placed",
+  "Q4": "smt_placed",
+  "R1": "smt_placed",
+  "R2": "smt_placed",
+  "R3": "smt_placed",
+  "R4": "smt_placed",
+  "R5": "smt_placed",
+  "R6": "smt_placed",
+  "R7": "smt_placed",
+  "R8": "smt_placed",
+  "R9": "smt_placed",
+  "R10": "smt_placed",
+  "R11": "smt_placed",
+  "R12": "smt_placed",
+  "R13": "smt_placed",
+  "R14": "smt_placed",
+  "R15": "smt_placed",
+  "R16": "smt_placed",
+  "R17": "smt_placed",
+  "R18": "smt_placed",
+  "R20": "smt_placed",
+  "R21": "smt_placed",
+  "R22": "smt_placed",
+  "R23": "smt_placed",
+  "R24": "smt_placed",
+  "R25": "smt_placed",
+  "R30": "smt_placed",
+  "R31": "smt_placed",
+  "R33": "smt_placed",
+  "R34": "smt_placed",
+  "R36": "smt_placed",
+  "R37": "smt_placed",
+  "R38": "smt_placed",
+  "R39": "smt_placed",
+  "R50": "smt_placed",
+  "R51": "smt_placed",
+  "R52": "smt_placed",
+  "R53": "smt_placed",
+  "R54": "smt_placed",
+  "R60": "smt_placed",
+  "R61": "smt_placed",
+  "R62": "smt_placed",
+  "R63": "smt_placed",
+  "R64": "smt_placed",
+  "R65": "smt_placed",
+  "SW1": "smt_placed",
+  "SW2": "smt_placed",
+  "SW3": "smt_placed",
+  "U1": "smt_placed",
+  "U2": "smt_placed",
+  "U3": "smt_placed",
+  "U4": "smt_placed",
+  "U5": "smt_placed",
+  "U6": "smt_placed",
+  "U7": "smt_placed",
+  "U8": "smt_placed",
+  "U9": "smt_placed"
+ },
+ "class_counts": {
+  "smt_placed": 134,
+  "board_feature": 4
+ },
+ "not_placed": [],
+ "rotation_audit": [
+  {
+   "ref": "C1",
+   "package": "C_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C2",
+   "package": "C_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C3",
+   "package": "C_1206_3216Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C4",
+   "package": "C_1206_3216Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C5",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C6",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C7",
+   "package": "C_0805_2012Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C8",
+   "package": "C_0805_2012Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C9",
+   "package": "C_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C10",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C11",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C12",
+   "package": "C_0805_2012Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C13",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C14",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C15",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C16",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C17",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C18",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C20",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C21",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C22",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C23",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C24",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C30",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C31",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C32",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C33",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C34",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C35",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C36",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C37",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C38",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C39",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C40",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C41",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C42",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C44",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C45",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C47",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C48",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C50",
+   "package": "C_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C51",
+   "package": "C_0805_2012Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C52",
+   "package": "C_0805_2012Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C53",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C54",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C55",
+   "package": "C_0805_2012Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C56",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C57",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C58",
+   "package": "CAP-SMD_BD10.0-L10.3-W10.3-FD-LS11.0",
+   "base_rot": -90.0,
+   "correction": 0.0,
+   "final_rot": 270.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C59",
+   "package": "CAP-SMD_BD8.0-L8.3-W8.3-LS9.3-FD",
+   "base_rot": -90.0,
+   "correction": 0.0,
+   "final_rot": 270.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C60",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C61",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C62",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C63",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C64",
+   "package": "C_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C65",
+   "package": "C_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C66",
+   "package": "C_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C67",
+   "package": "C_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C68",
+   "package": "C_1206_3216Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C69",
+   "package": "C_1206_3216Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C70",
+   "package": "C_1206_3216Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C71",
+   "package": "C_1206_3216Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "C80",
+   "package": "C_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "D1",
+   "package": "SMB_L4.6-W3.6-LS5.3-RD",
+   "base_rot": 180.0,
+   "correction": 0.0,
+   "final_rot": 180.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "D2",
+   "package": "LED-SMD_L1.6-W0.8-R-RD",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "J1",
+   "package": "USB-C-SMD_MC-311D",
+   "base_rot": 180.0,
+   "correction": 0.0,
+   "final_rot": 180.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "J2",
+   "package": "CONN-TH_XDJK-0271-1650",
+   "base_rot": 180.0,
+   "correction": 0.0,
+   "final_rot": 180.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "J3",
+   "package": "CONN-TH_XDJK-0271-1650",
+   "base_rot": 180.0,
+   "correction": 0.0,
+   "final_rot": 180.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "J4",
+   "package": "CONN-TH_4P-P5.08_DIBO_DB128V-5.08",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "L1",
+   "package": "IND-SMD_L8.0-W8.0_XR0850",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "L2",
+   "package": "IND-SMD_L8.0-W8.0_XR0850",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "L3",
+   "package": "IND-SMD_L8.0-W8.0_XR0850",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "L4",
+   "package": "IND-SMD_L8.0-W8.0_XR0850",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "L5",
+   "package": "IND-SMD_L6.0-W6.0_SWPA6045S",
+   "base_rot": -90.0,
+   "correction": 0.0,
+   "final_rot": 270.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "L6",
+   "package": "IND-SMD_L4.0-W4.0_VLCF4020",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "Q1",
+   "package": "SOP-8_L4.9-W3.9-P1.27-LS6.0-BL",
+   "base_rot": -90.0,
+   "correction": 0.0,
+   "final_rot": 270.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "Q2",
+   "package": "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "Q3",
+   "package": "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "Q4",
+   "package": "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R1",
+   "package": "R_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R2",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R3",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R4",
+   "package": "R_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R5",
+   "package": "R_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R6",
+   "package": "R_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R7",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R8",
+   "package": "R_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R9",
+   "package": "R_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R10",
+   "package": "R_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R11",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R12",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R13",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R14",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R15",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R16",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R17",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R18",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R20",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R21",
+   "package": "R_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R22",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R23",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R24",
+   "package": "R_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R25",
+   "package": "R_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R30",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R31",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R33",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R34",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R36",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R37",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R38",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R39",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R50",
+   "package": "R_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R51",
+   "package": "R_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R52",
+   "package": "R_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R53",
+   "package": "R_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R54",
+   "package": "R_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R60",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R61",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R62",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R63",
+   "package": "R_0603_1608Metric",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R64",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "R65",
+   "package": "R_0603_1608Metric",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "SW1",
+   "package": "SW-SMD_4P-L5.1-W5.1-P3.70-LS6.5-TL_H1.5",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "SW2",
+   "package": "SW-SMD_4P-L5.1-W5.1-P3.70-LS6.5-TL_H1.5",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "SW3",
+   "package": "SW-SMD_4P-L5.1-W5.1-P3.70-LS6.5-TL_H1.5",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U1",
+   "package": "ESSOP-10_L4.9-W3.9-P1.0-LS6.0-TL-EP",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U2",
+   "package": "SOT-23-6_L2.9-W1.6-P0.95-LS2.8-BL",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U3",
+   "package": "TSOT-23-5_L2.9-W1.6-P0.95-LS2.8-BR",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U4",
+   "package": "SOT-23-5_L3.0-W1.7-P0.95-LS2.8-BR",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U5",
+   "package": "WIFI-SMD_ESP32-WROVER-IE8MB",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U6",
+   "package": "SOP-16_L10.0-W3.9-P1.27-LS6.0-BL",
+   "base_rot": 90.0,
+   "correction": 0.0,
+   "final_rot": 90.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U7",
+   "package": "QFN-28_L4.0-W4.0-P0.45-BL-EP",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U8",
+   "package": "HTSSOP-32_L11.0-W6.1-P0.65-LS8.1-BL-EP",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  },
+  {
+   "ref": "U9",
+   "package": "OPTO-TH_IRM-3638T",
+   "base_rot": 0.0,
+   "correction": 0.0,
+   "final_rot": 0.0,
+   "matched": null,
+   "source": "lcsc_model",
+   "layer": "Top"
+  }
+ ],
+ "n_rotation_corrections": 0,
+ "rotation_from_table": [],
+ "easyeda_cache": "parts/easyeda",
+ "model_fetch_failed": [],
+ "easyeda_rate_limited": null,
+ "missing_lcsc": [],
+ "missing_lcsc_unplaced": [
+  "H1",
+  "H2",
+  "H3",
+  "H4"
+ ],
+ "unsourced": [],
+ "off_lcsc": [],
+ "unplaced_smt": [],
+ "qty_mismatch": [],
+ "violations": [],
+ "bom_complete": true,
+ "castellated_pads": 0,
+ "castellated_refs": []
+}

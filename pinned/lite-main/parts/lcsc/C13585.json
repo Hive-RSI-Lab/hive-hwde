@@ -1,0 +1,72 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C13585",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C13585",
+   "mpn": "CL31A106KBHNNNE",
+   "brand": "Samsung Electro-Mechanics",
+   "description": "10uF 50V X5R \u00b110% 1206 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "package": "1206",
+   "category": "Multilayer Ceramic Capacitors MLCC - SMD/SMT",
+   "type": "Basic",
+   "basic": true,
+   "stock": 3262564,
+   "price": 0.238,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.238
+    },
+    {
+     "qty": 100,
+     "price": 0.1921
+    },
+    {
+     "qty": 300,
+     "price": 0.1697
+    },
+    {
+     "qty": 2000,
+     "price": 0.1497
+    },
+    {
+     "qty": 4000,
+     "price": 0.1442
+    },
+    {
+     "qty": 10000,
+     "price": 0.1409
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL31A106KBHNNNE_C13585.pdf",
+   "url": "https://www.lcsc.com/product-detail/multilayer-ceramic-capacitors-mlcc-smd-smt_samsung-electro-mechanics-cl31a106kbhnnne_C13585.html",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b110%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "10uF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X5R"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

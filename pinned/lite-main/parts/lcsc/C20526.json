@@ -1,0 +1,100 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C20526",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C20526",
+   "mpn": "MMBT3904(RANGE:100-300)",
+   "brand": "Jiangsu Changjing Electronics Technology Co., Ltd.",
+   "description": "-55\u2103~+150\u2103 1 NPN 100 100nA 200mA 200mW 300MHz 300mV 40V 6V NPN SOT-23 Bipolar (BJT) ROHS",
+   "package": "SOT-23",
+   "category": "Bipolar (BJT)",
+   "type": "Basic",
+   "basic": true,
+   "stock": 2485782,
+   "price": 0.0116,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0116
+    },
+    {
+     "qty": 500,
+     "price": 0.0093
+    },
+    {
+     "qty": 3000,
+     "price": 0.0082
+    },
+    {
+     "qty": 6000,
+     "price": 0.0074
+    },
+    {
+     "qty": 24000,
+     "price": 0.0071
+    },
+    {
+     "qty": 51000,
+     "price": 0.0069
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2207041900_Jiangsu-Changjing-Electronics-Technology-Co---Ltd--MMBT3904-RANGE-100-300_C20526.pdf",
+   "url": "https://www.lcsc.com/product-detail/bipolar-bjt_jiangsu-changjing-electronics-technology-co-ltd-mmbt3904-range-100-300_C20526.html",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+150\u2103"
+    },
+    {
+     "name": "Transition frequency(fT)",
+     "value": "300MHz"
+    },
+    {
+     "name": "Collector - Emitter Voltage VCEO",
+     "value": "40V"
+    },
+    {
+     "name": "Number",
+     "value": "1 NPN"
+    },
+    {
+     "name": "DC Current Gain",
+     "value": "100"
+    },
+    {
+     "name": "Current - Collector(Ic)",
+     "value": "200mA"
+    },
+    {
+     "name": "Vce Saturation(VCE(sat))",
+     "value": "300mV"
+    },
+    {
+     "name": "Emitter-Base Voltage(Vebo)",
+     "value": "6V"
+    },
+    {
+     "name": "Pd - Power Dissipation",
+     "value": "200mW"
+    },
+    {
+     "name": "type",
+     "value": "NPN"
+    },
+    {
+     "name": "Current - Collector Cutoff",
+     "value": "100nA"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

@@ -1,0 +1,12 @@
+# Seeded fault for check_antenna (hifi-receiver-2 core, review-2 DIGITAL-19).
+mutants:
+  antenna-over-plane:
+    board: rf4
+    script: mutations/antenna_over_plane.py
+    check: check_antenna
+    defect: >-
+      PLACEMENT fault: an ESP32-WROOM-32E's PCB antenna end sits mid-board
+      over rf4's GND planes on every layer, which ERC and DRC pass
+    expect:
+      kind: antenna_copper
+      ref: U9

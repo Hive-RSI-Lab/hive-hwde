@@ -28,7 +28,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
-SCRIPTS = REPO / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = REPO / "scripts"
 SKILL = SCRIPTS.parent
 GOLDEN = REPO / "tests" / "golden" / "blinky2"
 sys.path.insert(0, str(SCRIPTS))
@@ -372,8 +372,8 @@ def test_every_planned_gate_step_carries_the_workspace(verb):
 def test_full_run_recipe_and_skill_state_the_gate_form():
     recipe = (SKILL / "reference" / "recipes"
               / "full-run.md").read_text(encoding="utf-8")
-    skill = (SKILL / "SKILL.md").read_text(encoding="utf-8")
-    for name, text in (("full-run.md", recipe), ("SKILL.md", skill)):
+    skill = (SKILL / "docs" / "playbook.md").read_text(encoding="utf-8")
+    for name, text in (("full-run.md", recipe), ("playbook.md", skill)):
         for line in text.splitlines():
             if "gate.py --gate" in line:
                 assert "--workspace" in line, f"{name}: {line}"

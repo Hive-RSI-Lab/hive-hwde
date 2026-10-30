@@ -1,21 +1,18 @@
 """render-3d-loaders: does kc.render_env find KiCad's 3D loaders for the
-kicad-cli bin/hwde runs, without bin/hwde's usr/lib symlink beside it?"""
+kicad-cli the skill resolves itself (env.find_kicad_cli: the AppDir's own
+bin/kicad-cli in the shared tools folder), with no symlink from bin/hwde?"""
 import os
-import shutil
-from pathlib import Path
 
 import _probe
 
 os.environ.pop("APPDIR", None)
-cli = os.environ.get("HWDE_KICAD_CLI")
-if not cli:
-    raise SystemExit("no HWDE_KICAD_CLI")
-d = _probe.scratch() / "bin"
-d.mkdir()
-shutil.copy2(cli, d / "kicad-cli")
+import env  # noqa: E402
 import kc  # noqa: E402
 
-_, err = kc.render_env(d / "kicad-cli")
+cli = env.find_kicad_cli()
+if cli is None:
+    raise SystemExit("env.find_kicad_cli found no kicad-cli")
+_, err = kc.render_env(cli)
 if err:
     _probe.stands(err[:160])
-_probe.fixed("render_env finds the loaders for the wrapped kicad-cli")
+_probe.fixed(f"render_env finds the loaders for {cli}")

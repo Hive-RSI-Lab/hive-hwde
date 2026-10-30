@@ -27,7 +27,7 @@ import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILL = ROOT / ".claude" / "skills" / "hwde"
+SKILL = ROOT
 SCRIPTS = SKILL / "scripts"
 RECIPES = SKILL / "reference" / "recipes"
 FIXTURES = ROOT / "tests" / "fixtures" / "stages" / "pd_trigger"
@@ -61,15 +61,17 @@ def test_the_plan_s_verb_list_is_the_registry_s():
         "remove-part", "reroute-net", "make-footprint", "dfm-check", "order",
         "track", "resume-phase", "promote", "learn", "research", "full-run",
         # U17: the outline became editable after P5
-        "resize-board"])
+        "resize-board",
+        # 261029-020701: boards in hand are brought up and closed with numbers
+        "bring-up"])
 
 
 def test_skill_md_lists_exactly_the_registry_verbs():
-    """SKILL.md names the vocabulary; tasks.yaml owns the recipes. Names may
+    """docs/playbook.md names the vocabulary; tasks.yaml owns the recipes. Names may
     not drift apart - a verb the playbook never mentions is unreachable."""
-    text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+    text = (SKILL / "docs" / "playbook.md").read_text(encoding="utf-8")
     named = {v for v in VERBS if f"`{v}`" in text}
-    assert named == set(VERBS), f"SKILL.md is missing {set(VERBS) - named}"
+    assert named == set(VERBS), f"docs/playbook.md is missing {set(VERBS) - named}"
 
 
 @pytest.mark.parametrize("verb", VERBS)
@@ -195,6 +197,8 @@ def test_dynamically_registered_subcommands_are_known():
     ("teach the placement stage", "learn"),
     ("run a learning cycle on P6", "learn"),
     ("research the ethernet coverage gap", "research"),
+    ("the boards arrived, bring them up", "bring-up"),
+    ("run the self-test on the board in hand", "bring-up"),
     ("fill the knowledge gap on interface:usb", "research"),
 ])
 def test_canonical_phrasings_route_to_one_verb(text: str, verb: str):

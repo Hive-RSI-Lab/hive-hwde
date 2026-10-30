@@ -22,7 +22,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve()
 REPO = HERE.parents[5]  # tests/s7_regen/blinky2/kicad/gen/root.py -> repo root
-sys.path.insert(0, str(REPO / ".claude" / "skills" / "hwde" / "scripts"))
+sys.path.insert(0, str(REPO / "scripts"))
 
 import schlib  # noqa: E402
 
