@@ -56,7 +56,9 @@ emits route_edit ops:
      snapped leg is merged: its three segments become one straight or
      dogleg between the outer ends, when legal and the net ends with fewer
      jogs (fact `jogs_merged`). Left alone: a piece with no legal route,
-     every diff-pair member (check_diffpair.discover_pairs), every net
+     every diff-pair member (check_diffpair.discover_pairs by name, unless
+     --constraints declares diff_pairs - then that list, even [], is the
+     whole set, so speaker A+/A- nets get snapped), every net
      named with --keep-net and, with --constraints, every net that
      constraints.json gives intended geometry (diff_pairs members,
      length_match groups, rf entries, high_speed entries with an
@@ -1080,9 +1082,11 @@ def find_corners(segs, vias, pads, foreign_fn, tol=TOL) -> tuple[list[dict],
 
 def build_plan(bg: geom.BoardGeom, segs, vias, smooth: bool = True,
                snap: bool = True, hygiene: bool = True,
-               keep_nets=()) -> dict:
+               keep_nets=(), discover: bool = True) -> dict:
     """All four passes over one parse -> {ops, op_layers, facts...}.
-    hygiene=False (--snap-only) skips dangling, loops and corners."""
+    hygiene=False (--snap-only) skips dangling, loops and corners.
+    discover=False leaves name-paired nets (X_P/X_N, A+/A-) to the snap
+    too: constraints that declare diff_pairs, even as [], name them all."""
     pads = [PadItem(p.net, tuple(p.layers), p.center, p.poly)
             for p in bg.pads_of()]
     arcs = tuple((t.net, t.layer, t.shape, t.width) for t in bg.tracks_of()
@@ -1126,8 +1130,8 @@ def build_plan(bg: geom.BoardGeom, segs, vias, smooth: bool = True,
     env = None
     if snap:
         import check_diffpair  # noqa: PLC0415 - lazy
-        skip = {n for pair in check_diffpair.discover_pairs(bg.nets)
-                for n in pair} | set(keep_nets)
+        found = check_diffpair.discover_pairs(bg.nets) if discover else []
+        skip = {n for pair in found for n in pair} | set(keep_nets)
         env = snap_env(bg)
         snap_ops, snaps, left, merged = find_snaps(
             alive_s, alive_v, pads, arcs, env, frozenset(skip))
@@ -1242,16 +1246,20 @@ def run(argv: list[str] | None = None):
     # (S11 review finding; plane_repair has the same guard).
     bg.assert_fresh()
     keep = set(args.keep_net)
+    discover = True
     if args.constraints:
         cons = checklib.load_json(args.constraints, "constraints")
         if not isinstance(cons, dict):
             raise CheckError(f"constraints {args.constraints} is not an "
                              "object")
         keep |= constraint_keep_nets(cons)
+        # a declared diff_pairs list is the whole set: speaker A_SPK_L+/-
+        # are not a pair just because their names end in +/-
+        discover = not isinstance(cons.get("diff_pairs"), list)
     segs, vias = parse_items(pcb, bg.copper_layers)
     plan = build_plan(bg, segs, vias, smooth=not args.no_smooth,
                       snap=not args.no_snap, hygiene=not args.snap_only,
-                      keep_nets=sorted(keep))
+                      keep_nets=sorted(keep), discover=discover)
     facts = {k: plan[k] for k in (
         "dangling_removed", "dangling_segments", "dangling_vias",
         "loops_broken", "loop_bridge_vetoed", "orphaned_after_loops",

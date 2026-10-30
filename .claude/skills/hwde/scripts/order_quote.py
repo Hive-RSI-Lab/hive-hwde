@@ -120,12 +120,13 @@ def assembly_cost(pricing: dict, qty: int, n_parts: int, n_joints: int,
 
 
 PLACED = "smt_placed"
+ASSEMBLED = (PLACED, "tht")   # bom_cpl.ASSEMBLED_CLASSES: in the upload
 
 
 def _unplaced_refs(parts_json: Path | None) -> set[str]:
     """Refs parts.json declares as NOT machine-placed (bom_cpl's assembly
     classes: line `assembly_class`, per-ref `refdes_class`). JLC places,
-    and charges joints for, only smt_placed parts."""
+    and charges joints for, only smt_placed and tht parts."""
     if parts_json is None or not Path(parts_json).exists():
         return set()
     data = json.loads(Path(parts_json).read_text(encoding="utf-8"))
@@ -136,7 +137,8 @@ def _unplaced_refs(parts_json: Path | None) -> set[str]:
             continue
         per_ref = ent.get("refdes_class") or {}
         for ref in ent.get("refdes") or []:
-            if per_ref.get(ref, ent.get("assembly_class", PLACED)) != PLACED:
+            if per_ref.get(ref, ent.get("assembly_class", PLACED)) \
+                    not in ASSEMBLED:
                 out.add(str(ref))
     return out
 
@@ -182,7 +184,7 @@ def _assembly_counts(pcb: Path,
                 if key in seen:
                     continue
                 seen.add(key)
-                if ent.get("assembly_class", PLACED) != PLACED:
+                if ent.get("assembly_class", PLACED) not in ASSEMBLED:
                     continue    # dnp / board_feature / hand_install: no feeder
                 if not ent.get("basic", ent.get("type", "") == "Basic"):
                     n_extended += 1

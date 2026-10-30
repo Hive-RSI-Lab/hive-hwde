@@ -144,6 +144,36 @@ weighed like any other report:
   Each known unknown gets a datasheet answer or a stated margin in the
   review; pin what you learn with `--vref`/`--rail` or in
   `reference/regulator_vref.yaml`.
+- `scripts/sim_inrush.py --workspace <ws>`: the board's load switches
+  against a USB PD source (`lib/pdsource.py`: slewed steps behind a cable,
+  a source that cannot sink, a hard reset). Same netlist model as
+  sim_board, but the entry is the PD source and each switch's output is
+  free: attach, the 5 V -> contract step at 0.5/3/30 V/ms with firmware
+  off, firmware turning the switch on, and a hard reset with firmware
+  still on, plus the FET's Vth corners. Reports the source current against
+  the contract (an OCP trip and hard-reset loop), a switch that conducts
+  with firmware off, Vgs transients, and each switch's peak junction
+  temperature through its turn-on (`lib/soa.py`, the part's Zth from
+  `reference/fet_power.yaml`). Declare the contract in constraints.json
+  (`"pd_source": {"contract_v": 28, "contract_a": 5}`) or pass
+  `--contract-v/--contract-a`; `--load NET=ohms` adds a regulator's input.
+- `scripts/check_power_path.py --pcb <pcb> --constraints <c>` (also in the
+  verify suite): the current each pad -> track -> via -> pour chain carries,
+  as a max-flow over the net's copper, with the min cut (the tracks and via
+  barrels that limit it) named. Judged against `power_paths`
+  (`[{"net", "from", "to", "current_a"}]`), each net's budget, and a USB PD
+  input's contract (`pd_source`, or 3 A derived when a PD sink IC is on the
+  board). Write budgets at the real current - a 0.5 A budget on a 5 A VBUS
+  passes every piece check_current judges.
+- `scripts/soa_check.py --fet <mpn> --hotswap --c 940u --v 28 --t-ramp 10m`
+  (or `--csv` of a simulated t,vds,id; `--at 10m` for the SOA power):
+  a MOSFET's peak Tj through one pulse, for a written margin.
+- `scripts/mlcc_dcbias.py --workspace <ws> [--min-c NET=22u]` or `--c 22u
+  --package 0805 --rated 25 --vdc 5.2`: every ceramic's effective
+  capacitance at its DC (`lib/mlcc.py`: the part's curve from
+  `reference/mlcc_dcbias.yaml` by MPN, else a generic class-II curve,
+  typical and low) and each rail's total, against a regulator's Cout floor.
+  sim_board's DC-bias warning carries the same numbers.
 - `scripts/eng_calc.py <divider|fb|rc|led|i2c|crystal|ldo|holdup|rpower>`:
   the same formulas (`lib/engcalc.py`) for a margin a review writes down,
   so the number cites a command anyone can re-run.

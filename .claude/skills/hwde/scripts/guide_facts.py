@@ -217,7 +217,8 @@ def collect(ws: Path, do_render: bool = False) -> dict:
     parts = load_parts_index(kind("parts"))
     lines = bom_lines(bom_full_p, bom_p, parts) if (
         bom_full_p.is_file() or bom_p.is_file()) else []
-    placed = [ln for ln in lines if ln["assembly_class"] == "smt_placed"]
+    placed = [ln for ln in lines
+              if ln["assembly_class"] in ("smt_placed", "tht")]
     counts = {s: len({ln["lcsc"] for ln in placed if ln["jlc_status"] == s})
               for s in ("basic", "extended", "unknown")}
     counts["not_lcsc"] = sum(1 for ln in placed if ln["jlc_status"] == "not_lcsc")

@@ -316,7 +316,8 @@ ALL_CHECKS = [c["name"] for c in verify_all.CHECKS]
 # check_ratings needs the workspace parts dir, which the golden boards lack
 CONSTRAINT_NEEDING = ["check_return_path", "check_current",
                       "check_decoupling", "check_creepage",
-                      "check_thermal", "check_pdn", "check_ratings"]
+                      "check_thermal", "check_pdn", "check_ratings",
+                      "check_power_path"]
 
 
 def test_verify_all_nonstrict_skips_are_visible(tmp_path):
@@ -359,7 +360,7 @@ def test_verify_all_strict_with_declared_na_passes(tmp_path):
     cov = summary["coverage"]
     board_only = ["check_diffpair", "check_silk", "check_courtyard", "check_route_style",
                   "check_mating", "check_mate_pins", "check_bom_sync",
-                  "check_model_paths"]
+                  "check_model_paths", "check_antenna", "check_straps"]
     assert sorted(cov["required"]) == sorted(board_only)
     assert sorted(cov["ran"]) == sorted(board_only)
     assert cov["skipped_error"] == {}
