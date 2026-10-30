@@ -55,6 +55,14 @@ An agent designs a PCB from a written brief: research, architecture, parts, sche
   an edit made by hand in the board's files. A fix in the skill that lets a
   board drop a workaround removes its row and raises the score. A new board
   adds its steps; any workarounds it needs add rows, with a probe each.
+  The score can't rise by loosening the checks that decide those steps:
+  `bin/strength.py` runs planted faults through the same code (each gate's
+  criteria in `gates.yaml`, every verify check's mutant in `tests/golden/`,
+  dfm on the bench's mutant and on holes planted at JLC's 0.5 mm
+  hole-to-hole and 0.3 mm drill floors), and a fault let through charges
+  its gate's step on every board (`planted` in the score's lines). A verify
+  check with no mutant counts as one let through. ERC and DRC themselves are
+  KiCad's and not planted here.
   hwde-led-test starts at 0/5: its ERC schematic was written through the
   symdir shim, verify reads a hand-made decoupling entry, and fab and dfm
   read a hand-added `refdes` per part. Its routed board had hand-widened

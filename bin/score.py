@@ -7,9 +7,15 @@ re-runs (erc, drc_routed, verify, fab, dfm). So does each board docs/boards.md
 records, the product boards built with hwde in other projects (the steps that
 table gives it; the score never reads the other project's files). A step is charged when a row of
 docs/workarounds.md names it for that board: the step's input came through a
-shim in bin/hwde or an edit by hand. The score is 100 x clean steps / steps,
-higher is better. It reads files only; the test (check-all) is what holds the
-table to the truth. Prints one line per board, then the number alone.
+shim in bin/hwde or an edit by hand. A step is charged too when its gate
+lets one of hwde's planted faults through (bin/strength.py: the gate
+criteria, the verify suite's mutants, dfm's faults at JLC's floors), so the
+score can't rise by loosening the checks that decide the steps: a looser
+check costs its step on every board. The score is 100 x clean steps /
+steps, higher is better. The table part reads files only, and the test
+(check-all) holds the table to the truth; the planted faults run offline
+through the skill's own code in seconds, with the hwde python (bin/hwde
+score). Prints one line per board, then the number alone.
 """
 from __future__ import annotations
 
@@ -129,9 +135,21 @@ def main() -> int:
     except (OSError, ValueError) as e:
         print(f"score: {e}", file=sys.stderr)
         return 1
+    try:
+        import strength
+        planted = strength.faults()
+    except Exception as e:  # noqa: BLE001 - unread is not caught
+        print(f"score: the planted faults could not run: {type(e).__name__}: {e}",
+              file=sys.stderr)
+        return 1
+    missed: dict[str, list[str]] = {}
+    for step, name, ok in planted:
+        if not ok:
+            missed.setdefault(step, []).append(name)
+            print(f"planted fault let through: {name}")
     total = clean = 0
     for b in boards:
-        charged = {}
+        charged = {s: ["planted"] for s in missed}
         for w in table.values():
             for s in w.charges(b.name):
                 charged.setdefault(s, []).append(w.id)
@@ -143,6 +161,7 @@ def main() -> int:
     if not total:
         print("score: no board has a gate step yet", file=sys.stderr)
         return 1
+    print(f"planted faults caught: {sum(ok for *_, ok in planted)}/{len(planted)}")
     print(f"workarounds listed: {len(table)} "
           f"({sum(w.kind == 'shim' for w in table.values())} shim, "
           f"{sum(w.kind == 'hand' for w in table.values())} by hand)")

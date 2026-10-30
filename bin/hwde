@@ -11,7 +11,8 @@
 #                         SLOW): live toolchain, whole fixture boards
 #   hwde check-all        re-run every board's gates from a scratch copy, and
 #                         check docs/workarounds.md against its probes (slow)
-#   hwde score            the share of gate steps with no workaround (the score)
+#   hwde score            the share of gate steps with no workaround and whose
+#                         gate still catches hwde's planted faults (the score)
 #   hwde publish <dir>    put a self-contained copy at <dir>/hwde (a warden
 #                         runs it into the Hive's tools folder, so a check
 #                         sandbox, which mounts only /work and /hive/tools,
@@ -42,10 +43,18 @@ finduv() {
 	[ -n "$uv" ] || { echo "hwde: needs uv (hive agent install --tool uv)" >&2; exit 127; }
 }
 
-# The score reads files only: no KiCad, no venv.
+# The score needs no KiCad, but its planted faults run the skill's checks:
+# a published copy's own python, else the venv in HOME when it is current,
+# else the Hive's published copy's (a check sandbox has /hive/tools, not the
+# venv); with none of them it falls through to build the venv below.
 if [ "${1:-}" = score ]; then
 	shift
-	exec python3 "$here/bin/score.py" "$@"
+	spy=
+	[ -z "${HWDE_VENV:-}" ] && spy=$(ls -d "$here"/python/cpython-3.14.*/bin/python3.14 2>/dev/null | sort -V | tail -n 1)
+	[ -z "$spy" ] && [ -x "$venv/bin/python" ] && [ ! "$here/requirements.lock" -nt "$venv/.hwde-lock" ] && spy=$venv/bin/python
+	[ -z "$spy" ] && [ -z "${HWDE_VENV:-}" ] && spy=$(ls -d "$tools"/hwde/python/cpython-3.14.*/bin/python3.14 2>/dev/null | sort -V | tail -n 1)
+	[ -n "$spy" ] && exec "$spy" "$here/bin/score.py" "$@"
+	set -- score "$@"
 fi
 
 # publish builds the copy beside <dir>/hwde and swaps it in, so a check that
@@ -236,8 +245,12 @@ check)
 	shift
 	x "$py" "$here/.claude/skills/hwde/scripts/check_env.py" "$@"
 	;;
+score)
+	shift
+	exec "$py" "$here/bin/score.py" "$@"
+	;;
 "" | -h | --help)
-	sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'
+	sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'
 	;;
 *)
 	s=${1%.py}
