@@ -1,0 +1,13 @@
+# Seeded fault for check_straps (hifi-receiver-2 core, review-2 DIGITAL-1/2).
+mutants:
+  strap-mtdi-high:
+    board: usbbuck4
+    script: mutations/strap_mtdi_high.py
+    check: check_straps
+    defect: >-
+      NETLIST fault: an ESP32-WROVER-E's MTDI/IO12 strap is pulled to +3V3
+      through 10 k, so it boots with a 1.8 V flash supply against the
+      module's 3.3 V flash; ERC sees a resistor to a rail
+    expect:
+      kind: strap_level
+      ref: U9

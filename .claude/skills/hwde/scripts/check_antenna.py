@@ -51,7 +51,7 @@ import geom  # noqa: E402
 import placelib  # noqa: E402
 
 SCRIPT = "check_antenna"
-SOURCE = "check.antenna"
+SOURCE = SCRIPT  # verify_all, gate and the scorecard match a finding to its check by source
 MODULES_YAML = HERE.parent / "reference" / "rf_modules.yaml"
 EDGE_MM = 1.0       # antenna end at most this far inside the board edge
 SIDE_MM = 15.0      # copper-free beside the antenna along the board
