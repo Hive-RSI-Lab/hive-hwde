@@ -1,4 +1,5 @@
-# check_straps: an MCU's strapping pins and an IO expander's pins at power-on
+# check_straps: an MCU's strapping pins, the pins it pulls at reset (a load
+# on before firmware), and an IO expander's pins at power-on
 # and on an MCU-only reset, internal pulls included (hifi-receiver-2 core,
 # review-2 DIGITAL-1/2). Reads the board's own <board>.net beside it.
 name: check_straps

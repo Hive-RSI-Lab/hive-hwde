@@ -1,0 +1,65 @@
+# Input common-mode range of op-amps and comparators, for netlist_audit's
+# input_common_mode rule (each input's DC level against the part's range).
+#
+# match: a regex tried against the part's value and its symbol's lib part
+# (case-insensitive). vcm: [lo, hi], the range as offsets from the part's own
+# supply pins: an input must sit at or above V- + lo and at or below V+ + hi
+# (lo 0 includes the negative rail, hi -1.5 stops 1.5 V under the positive
+# one). The datasheet's guaranteed (min) range at 25 C, not its typical.
+# source: where the number came from. `verified: false` means typed from
+# memory of the datasheet, not re-read: the finding says so, and the review
+# that relies on it reads the datasheet once and flips it (with the date).
+parts:
+  - match: '^LMV(331|393|339)'
+    kind: comparator
+    vcm: [0.0, -0.7]
+    source: >-
+      TI SLCS136V (LMV331/LMV393/LMV339, rev May 2025) 8.2.2.1 "the VICR can
+      range from 0V to VCC- 0.7V"; minuet v3 errata "only allows a common
+      mode input voltage up to Vcc - 0.7 V"
+    verified: 2026-10-30
+  - match: '^OPA167[789]'
+    kind: opamp
+    vcm: [0.5, -2.0]
+    source: TI SBOS855E (OPA1677/OPA1678/OPA1679, rev Dec 2022) 6.5 VCM (V-)+0.5 to (V+)-2
+    verified: 2026-10-30
+  - match: '^(LM|LMC|KA|TL)?(393|339|2903|2901|139|239|293)'
+    kind: comparator
+    vcm: [0.0, -1.5]
+    source: TI SLCS005 (LM393/LM2903) VICR 0 to VCC-1.5 at 25 C (VCC-2 over temperature)
+    verified: false
+  - match: '^(LM|KA|HA17)?(358|324|2904|2902|321|158|258|124)([^0-9]|$)'
+    kind: opamp
+    vcm: [0.0, -1.5]
+    source: TI SLOS068 (LM358/LM2904) VICR 0 to VCC-1.5 at 25 C (VCC-2 over temperature)
+    verified: false
+  - match: '^TL0[78][1-4]'
+    kind: opamp
+    vcm: [4.0, -4.0]
+    source: TI SLOS080 (TL07x) VICR min +-11 V at +-15 V
+    verified: false
+  - match: '^(NE|SA|SE)?553[24]'
+    kind: opamp
+    vcm: [3.0, -3.0]
+    source: TI SLOS075 (NE5532) VICR min +-12 V at +-15 V
+    verified: false
+  - match: '^OPA[0-9]?134'
+    kind: opamp
+    vcm: [2.5, -2.5]
+    source: TI SBOS057 (OPA134/2134/4134) VCM (V-)+2.5 to (V+)-2.5
+    verified: false
+  - match: '^OPA161[12]'
+    kind: opamp
+    vcm: [1.5, -1.5]
+    source: TI SBOS450 (OPA1611/OPA1612) VCM (V-)+1.5 to (V+)-1.5
+    verified: false
+  - match: '^MCP600[1-4]'
+    kind: opamp
+    vcm: [-0.3, 0.3]
+    source: Microchip DS20001733 (MCP6001/2/4) VCMR VSS-0.3 to VDD+0.3
+    verified: false
+  - match: '^TLV900[1-4]'
+    kind: opamp
+    vcm: [-0.1, 0.1]
+    source: TI SBOS833 (TLV900x) VCM (V-)-0.1 to (V+)+0.1
+    verified: false
