@@ -23,6 +23,10 @@ attempt journal, fsync'd atomic writes), order_track.py / order_quote.py
                            components, empty/NUL names, backslash traversal,
                            and any symlink component under root; the target
                            must resolve inside root.
+  HWDE_NO_FSYNC=1          skips every fsync here (the writes stay atomic, not
+                           durable): set by the test suite, whose files are
+                           scratch and whose fsyncs cost seconds each on a
+                           loaded disk. Production never sets it.
   FAULT_HOOK               fault-injection point for the U12 test suite: a
                            callable(point: str, **ctx) or None. Production
                            never sets it.
@@ -226,6 +230,11 @@ def board_locks(job: dict, timeout: float | None = None):
 
 # ----------------------------------------------------------- atomic writes
 
+def _fsync(fd: int) -> None:
+    if os.environ.get("HWDE_NO_FSYNC") != "1":
+        os.fsync(fd)
+
+
 def _fsync_dir(path: Path) -> None:
     if os.name != "posix":
         return
@@ -234,7 +243,7 @@ def _fsync_dir(path: Path) -> None:
     except OSError:
         return
     try:
-        os.fsync(fd)
+        _fsync(fd)
     except OSError:
         pass
     finally:
@@ -262,7 +271,7 @@ def atomic_write_bytes(path: Path | str, data: bytes) -> None:
         with os.fdopen(fd, "wb") as fh:
             fh.write(data)
             fh.flush()
-            os.fsync(fh.fileno())
+            _fsync(fh.fileno())
         try:
             os.chmod(tmp, mode)
         except OSError:
@@ -301,7 +310,7 @@ def append_journal(path: Path | str, record: dict) -> dict:
     fd = os.open(str(path), os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
     try:
         os.write(fd, line.encode("utf-8"))
-        os.fsync(fd)
+        _fsync(fd)
     finally:
         os.close(fd)
     return rec
@@ -386,7 +395,7 @@ def stage_copy(src: Path, target: Path) -> Path:
             for chunk in iter(lambda: sf.read(1 << 20), b""):
                 df.write(chunk)
             df.flush()
-            os.fsync(df.fileno())
+            _fsync(df.fileno())
         try:
             os.chmod(tmp, _target_mode(src))
         except OSError:
