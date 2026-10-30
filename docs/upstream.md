@@ -10,6 +10,11 @@ these ways:
   their owners' terms, not MIT.
 - `scripts/lib/knowledgelib.py`: `SOURCES_DIR` reads `HWDE_KNOWLEDGE_SOURCES`
   when it's set, so the records can still find those PDFs elsewhere.
+- `scripts/parts_search.py --kind/--category` (with
+  `reference/part_kinds.yaml` and `category_search` in
+  `scripts/lib/partslib.py`): finding a part by what it is, by browsing its
+  JLC category, since the keyword search only matches part numbers. Tested
+  offline by `tests/test_parts_kind.py`.
 - Fixes from building boards here (issue #5, hwde-led-test), each tested in
   `tests/test_sourcer_records.py`:
   - `scripts/bom_cpl.py` reads a footprint's LCSC number from `LCSC Part`
@@ -62,8 +67,8 @@ showcase (`test_showcase_gallery`), `LEARNINGS.md` and its triage
 (`test_learnings`, `test_remediations`), the docker and CI pins
 (`test_kicad_pin`) and `docs/check-scorecard.jsonl`
 (`test_check_scorecard`). `tests/conftest.py` adds `KNOWN_FAILING`, and
-`tests/test_workarounds.py` and `tests/workarounds/` are the module's own,
-as is `pytest.ini` (upstream's pytest settings from its `pyproject.toml`).
+`tests/test_workarounds.py`, `tests/workarounds/` and
+`tests/test_parts_kind.py` are the module's own, as is `pytest.ini` (upstream's pytest settings from its `pyproject.toml`).
 The plans, docker setup and design notes stay upstream.
 
 Everything specific to the Hive is in `bin/` and `docs/`:
