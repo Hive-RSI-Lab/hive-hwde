@@ -494,3 +494,14 @@ def test_rf_term_hand_authored_bom_semantics_are_covered(tmp_path):
         got = full[r["Designator"]]
         assert got["MPN"] == r["MPN"]
         assert got["Comment"] == r["Value"]
+
+
+def test_a_refdes_less_tht_line_binds_its_board_refs():
+    """A refdes-less parts line classed tht is fitted from the upload like
+    smt_placed, so it binds the board refs carrying its LCSC number (a line
+    with any other class of its own is a separate off-board item)."""
+    recs = [{"refs": [], "lcsc": "C492401", "cls": "tht"},
+            {"refs": [], "lcsc": "C9", "cls": "customer_supplied"}]
+    board = {"J1": {"lcsc": "C492401"}, "H1": {"lcsc": "C9"}}
+    bom_cpl.bind_refs_by_lcsc(recs, board)
+    assert recs[0]["refs"] == ["J1"] and recs[1]["refs"] == []

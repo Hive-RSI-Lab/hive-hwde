@@ -1,17 +1,16 @@
 {
  "parts": [
   {
-   "ref_prefix_hint": "J",
-   "block": "input",
-   "mpn": "PZ254V-11-02P",
    "lcsc": "C492401",
-   "value": "PZ254V-11-02P",
-   "package": "PinHeader_1x02_P2.54mm_Vertical (THT)",
-   "basic": false,
-   "stock": 932045,
-   "price": 0.0187,
-   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2409302300_XFCN-PZ254V-11-02P_C492401.pdf",
+   "mpn": "PZ254V-11-02P",
    "brand": "XFCN",
+   "description": "-40\u2103~+105\u2103 1 1x2P 2.54mm 2.5mm 250V 2P 3A 3mm 6.1mm Black Brass Gold Square pin Through Hole Plugin,P=2.54mm Pin Headers ROHS",
+   "package": "Plugin,P=2.54mm",
+   "category": "Pin Headers",
+   "type": "Extended",
+   "basic": false,
+   "stock": 931760,
+   "price": 0.0187,
    "price_breaks": [
     {
      "qty": 1,
@@ -20,15 +19,27 @@
     {
      "qty": 500,
      "price": 0.015
-    }
-   ],
-   "alternates": [
+    },
     {
-     "mpn": "B-2100S02P-A110",
-     "lcsc": "C124375"
+     "qty": 2000,
+     "price": 0.0131
+    },
+    {
+     "qty": 4000,
+     "price": 0.0118
+    },
+    {
+     "qty": 24000,
+     "price": 0.0113
+    },
+    {
+     "qty": 50000,
+     "price": 0.011
     }
    ],
-   "role": "1x2 2.54 mm vertical male pin header: +5V / GND input (THT hand-placed or JLC THT assembly)",
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2409302300_XFCN-PZ254V-11-02P_C492401.pdf",
+   "url": "https://www.lcsc.com/product-detail/pin-headers_xfcn-pz254v-11-02p_C492401.html",
    "attributes": [
     {
      "name": "Operating Temperature",
@@ -91,23 +102,28 @@
      "value": "Square pin"
     }
    ],
-   "description": "-40\u2103~+105\u2103 1 1x2P 2.54mm 2.5mm 250V 2P 3A 3mm 6.1mm Black Brass Gold Square pin Through Hole Plugin,P=2.54mm Pin Headers ROHS",
-   "refdes": [
-    "J1"
-   ]
+   "ref_prefix_hint": "J",
+   "block": "input",
+   "value": "PZ254V-11-02P",
+   "alternates": [
+    {
+     "mpn": "HX PZ2.54-1x2P ZZ",
+     "lcsc": "C32713268"
+    }
+   ],
+   "role": "2-pin 2.54 mm vertical TH header: +5V in / GND"
   },
   {
-   "ref_prefix_hint": "C",
-   "block": "input",
-   "mpn": "CL10A475KO8NNNC",
    "lcsc": "C19666",
-   "value": "4.7uF",
-   "package": "0603",
-   "basic": true,
-   "stock": 3116931,
-   "price": 0.0169,
-   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL10A475KO8NNNC_C19666.pdf",
+   "mpn": "CL10A475KO8NNNC",
    "brand": "Samsung Electro-Mechanics",
+   "description": "16V 4.7uF X5R \u00b110% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "package": "0603",
+   "category": "Multilayer Ceramic Capacitors MLCC - SMD/SMT",
+   "type": "Basic",
+   "basic": true,
+   "stock": 3106261,
+   "price": 0.0169,
    "price_breaks": [
     {
      "qty": 1,
@@ -116,10 +132,27 @@
     {
      "qty": 100,
      "price": 0.0128
+    },
+    {
+     "qty": 300,
+     "price": 0.0109
+    },
+    {
+     "qty": 1000,
+     "price": 0.0095
+    },
+    {
+     "qty": 4000,
+     "price": 0.0089
+    },
+    {
+     "qty": 8000,
+     "price": 0.0086
     }
    ],
-   "alternates": [],
-   "role": "C1 input bulk cap, 16 V X5R +-10%",
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL10A475KO8NNNC_C19666.pdf",
+   "url": "https://www.lcsc.com/product-detail/multilayer-ceramic-capacitors-mlcc-smd-smt_samsung-electro-mechanics-cl10a475ko8nnnc_C19666.html",
    "attributes": [
     {
      "name": "Voltage Rating",
@@ -138,23 +171,23 @@
      "value": "X5R"
     }
    ],
-   "description": "16V 4.7uF X5R \u00b110% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
-   "refdes": [
-    "C1"
-   ]
+   "ref_prefix_hint": "C",
+   "block": "input",
+   "value": "CL10A475KO8NNNC",
+   "alternates": [],
+   "role": "input bulk cap 4.7uF 16V X5R across J1"
   },
   {
-   "ref_prefix_hint": "R",
-   "block": "led",
-   "mpn": "0603WAF4700T5E",
    "lcsc": "C23179",
-   "value": "470R",
+   "mpn": "0603WAF4700T5E",
+   "brand": "UNI-ROYAL(Uniroyal Elec)",
+   "description": "-55\u2103~+155\u2103 100mW 470\u03a9 75V Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0603 Chip Resistor - Surface Mount ROHS",
    "package": "0603",
+   "category": "Chip Resistor - Surface Mount",
+   "type": "Basic",
    "basic": true,
-   "stock": 4766666,
+   "stock": 4765561,
    "price": 0.0023,
-   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010116_UNI-ROYAL-Uniroyal-Elec-0603WAF4700T5E_C23179.pdf",
-   "brand": "UNI-ROYAL",
    "price_breaks": [
     {
      "qty": 1,
@@ -163,10 +196,27 @@
     {
      "qty": 1000,
      "price": 0.0018
+    },
+    {
+     "qty": 5000,
+     "price": 0.0015
+    },
+    {
+     "qty": 10000,
+     "price": 0.0012
+    },
+    {
+     "qty": 50000,
+     "price": 0.0011
+    },
+    {
+     "qty": 50200,
+     "price": 0.0011
     }
    ],
-   "alternates": [],
-   "role": "R1 LED current limit, 1% 100 mW. Changed from 680R lead value: with the real green Vf of 3.1 V, 680R gives only 2.8 mA nominal / 2.4 mA at 4.75 V (below 3 mA). 470R gives 3.5 mA at 4.75 V, 4.0 mA at 5.0 V, 4.6 mA at 5.25 V (Vf 3.1 V).",
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010116_UNI-ROYAL-Uniroyal-Elec-0603WAF4700T5E_C23179.pdf",
+   "url": "https://www.lcsc.com/product-detail/chip-resistor-surface-mount_uni-royal-uniroyal-elec-0603waf4700t5e_C23179.html",
    "attributes": [
     {
      "name": "Resistance",
@@ -197,25 +247,23 @@
      "value": "\u00b1100ppm/\u2103"
     }
    ],
-   "description": "-55\u2103~+155\u2103 100mW 470\u03a9 75V Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0603 Chip Resistor - Surface Mount ROHS",
-   "refdes": [
-    "R1"
-   ]
+   "ref_prefix_hint": "R",
+   "block": "led",
+   "value": "0603WAF4700T5E",
+   "alternates": [],
+   "role": "LED current limit 470R 1%: (5-3.1)/470 = ~4 mA"
   },
   {
-   "ref_prefix_hint": "D",
-   "block": "led",
-   "mpn": "KT-0603G",
    "lcsc": "C12624",
-   "value": "Green",
-   "package": "0603",
-   "basic": false,
-   "stock": 417448,
-   "price": 0.0117,
-   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1806151818_Hubei-KENTO-Elec-KT-0603G_C12624.pdf",
+   "mpn": "KT-0603G",
    "brand": "Hubei KENTO Elec",
-   "vf_typ_v": 3.1,
-   "vf_test_current_ma": 5,
+   "description": "-40\u2103~+85\u2103 1.6mm x 0.8mm square LED 100mW 120\u00b0 3.1V 430mcd 513nm~528nm 525nm 5mA Discrete Diode Emerald Green Water Clear 0603 LED Indication - Discrete ROHS",
+   "package": "0603",
+   "category": "LED Indication - Discrete",
+   "type": "Extended",
+   "basic": false,
+   "stock": 417271,
+   "price": 0.0117,
    "price_breaks": [
     {
      "qty": 1,
@@ -224,19 +272,27 @@
     {
      "qty": 500,
      "price": 0.0092
-    }
-   ],
-   "alternates": [
-    {
-     "mpn": "NCD0603G1",
-     "lcsc": "C84267"
     },
     {
-     "mpn": "19-217/GHC-YR1S2/6T",
-     "lcsc": "C2986059"
+     "qty": 1500,
+     "price": 0.0077
+    },
+    {
+     "qty": 4000,
+     "price": 0.0069
+    },
+    {
+     "qty": 24000,
+     "price": 0.0062
+    },
+    {
+     "qty": 48000,
+     "price": 0.0058
     }
    ],
-   "role": "D1 emerald-green (InGaN, 525 nm) 0603 LED, Vf 3.1 V @5 mA per LCSC listing. No Basic 0603 green exists; Basic green is only 0805 KT-0805G (C2297).",
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1806151818_Hubei-KENTO-Elec-KT-0603G_C12624.pdf",
+   "url": "https://www.lcsc.com/product-detail/led-indication-discrete_hubei-kento-elec-kt-0603g_C12624.html",
    "attributes": [
     {
      "name": "Wavelength - Dominant",
@@ -287,10 +343,16 @@
      "value": "3.1V"
     }
    ],
-   "description": "-40\u2103~+85\u2103 1.6mm x 0.8mm square LED 100mW 120\u00b0 3.1V 430mcd 513nm~528nm 525nm 5mA Discrete Diode Emerald Green Water Clear 0603 LED Indication - Discrete ROHS",
-   "refdes": [
-    "D1"
-   ]
+   "ref_prefix_hint": "D",
+   "block": "led",
+   "value": "KT-0603G",
+   "alternates": [
+    {
+     "mpn": "NCD0603G1",
+     "lcsc": "C84267"
+    }
+   ],
+   "role": "green 0603 indicator LED, Vf 3.1V @5mA"
   }
  ]
 }

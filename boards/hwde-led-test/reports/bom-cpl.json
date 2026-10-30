@@ -25,6 +25,176 @@
    "mouser: prices not looked up (no HWDE_MOUSER_API_KEY)"
   ]
  },
+ "stock": {
+  "status": "pass",
+  "boards": 5,
+  "checked_at": "2026-10-29T13:22:32+00:00",
+  "counts": {
+   "ok": 4
+  },
+  "rows": [
+   {
+    "lcsc": "C19666",
+    "need": 5,
+    "mpn": "CL10A475KO8NNNC",
+    "value": "4.7uF",
+    "checked_at": "2026-10-29T13:22:30+00:00",
+    "notes": [],
+    "jlc": {
+     "code": "C19666",
+     "model": "CL10A475KO8NNNC",
+     "brand": "Samsung Electro-Mechanics",
+     "library": "basic",
+     "stock": 3041047,
+     "can_sell": 2269822,
+     "for_sale": true,
+     "no_buy_reason": null,
+     "alternative": null,
+     "min_purchase": 1,
+     "description": "16V 4.7uF X5R \u00b110% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+     "package": "0603"
+    },
+    "lcsc_record": {
+     "code": "C19666",
+     "model": "CL10A475KO8NNNC",
+     "brand": "Samsung Electro-Mechanics",
+     "stock": 519690
+    },
+    "match": {
+     "ok": true,
+     "why": "BOM MPN CL10A475KO8NNNC vs JLC model CL10A475KO8NNNC"
+    },
+    "available": 2269822,
+    "status": "ok",
+    "why": "2269822 available at JLC, need 5; BOM MPN CL10A475KO8NNNC vs JLC model CL10A475KO8NNNC",
+    "refs": [
+     "C1"
+    ],
+    "comment": "4.7uF"
+   },
+   {
+    "lcsc": "C12624",
+    "need": 5,
+    "mpn": "KT-0603G",
+    "value": "KT-0603G",
+    "checked_at": "2026-10-29T13:22:30+00:00",
+    "notes": [],
+    "jlc": {
+     "code": "C12624",
+     "model": "KT-0603G",
+     "brand": "Hubei KENTO Elec",
+     "library": "extended",
+     "stock": 401117,
+     "can_sell": 388266,
+     "for_sale": true,
+     "no_buy_reason": null,
+     "alternative": null,
+     "min_purchase": 1,
+     "description": "-40\u2103~+85\u2103 1.6mm x 0.8mm square LED 100mW 120\u00b0 3.1V 430mcd 513nm~528nm 525nm 5mA Discrete Diode Emerald Green Water Clear 0603 LED Indication - Discrete ROHS",
+     "package": "0603"
+    },
+    "lcsc_record": {
+     "code": "C12624",
+     "model": "KT-0603G",
+     "brand": "Hubei KENTO Elec",
+     "stock": 400950
+    },
+    "match": {
+     "ok": true,
+     "why": "BOM value KT-0603G in JLC model KT-0603G"
+    },
+    "available": 388266,
+    "status": "ok",
+    "why": "388266 available at JLC, need 5; BOM value KT-0603G in JLC model KT-0603G",
+    "refs": [
+     "D1"
+    ],
+    "comment": "KT-0603G"
+   },
+   {
+    "lcsc": "C492401",
+    "need": 5,
+    "mpn": "PZ254V-11-02P",
+    "value": "PZ254V-11-02P",
+    "checked_at": "2026-10-29T13:22:30+00:00",
+    "notes": [
+     "JLC also lists C9900094741, C9900145179, C9900170556 as PZ254V-11-02P: its BOM review may match by MPN, so check it shows C492401"
+    ],
+    "jlc": {
+     "code": "C492401",
+     "model": "PZ254V-11-02P",
+     "brand": "XFCN",
+     "library": "extended",
+     "stock": 921695,
+     "can_sell": 894241,
+     "for_sale": true,
+     "no_buy_reason": null,
+     "alternative": null,
+     "min_purchase": 1,
+     "description": "-40\u2103~+105\u2103 1 1x2P 2.54mm 2.5mm 250V 2P 3A 3mm 6.1mm Black Brass Gold Square pin Through Hole Plugin,P=2.54mm Pin Headers ROHS",
+     "package": "Plugin,P=2.54mm"
+    },
+    "lcsc_record": {
+     "code": "C492401",
+     "model": "PZ254V-11-02P",
+     "brand": "XFCN",
+     "stock": 887950
+    },
+    "match": {
+     "ok": true,
+     "why": "BOM value PZ254V-11-02P in JLC model PZ254V-11-02P"
+    },
+    "available": 894241,
+    "status": "ok",
+    "why": "894241 available at JLC, need 5; BOM value PZ254V-11-02P in JLC model PZ254V-11-02P",
+    "refs": [
+     "J1"
+    ],
+    "comment": "PZ254V-11-02P"
+   },
+   {
+    "lcsc": "C23179",
+    "need": 5,
+    "mpn": "0603WAF4700T5E",
+    "value": "470R",
+    "checked_at": "2026-10-29T13:22:30+00:00",
+    "notes": [],
+    "jlc": {
+     "code": "C23179",
+     "model": "0603WAF4700T5E",
+     "brand": "UNI-ROYAL(Uniroyal Elec)",
+     "library": "basic",
+     "stock": 4678558,
+     "can_sell": 3982612,
+     "for_sale": true,
+     "no_buy_reason": null,
+     "alternative": null,
+     "min_purchase": 1,
+     "description": "-55\u2103~+155\u2103 100mW 470\u03a9 75V Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0603 Chip Resistor - Surface Mount ROHS",
+     "package": "0603"
+    },
+    "lcsc_record": {
+     "code": "C23179",
+     "model": "0603WAF4700T5E",
+     "brand": "UNI-ROYAL",
+     "stock": 2080800
+    },
+    "match": {
+     "ok": true,
+     "why": "BOM MPN 0603WAF4700T5E vs JLC model 0603WAF4700T5E"
+    },
+    "available": 3982612,
+    "status": "ok",
+    "why": "3982612 available at JLC, need 5; BOM MPN 0603WAF4700T5E vs JLC model 0603WAF4700T5E",
+    "refs": [
+     "R1"
+    ],
+    "comment": "470R"
+   }
+  ],
+  "blocking": [],
+  "ledger": "/work/boards/hwde-led-test/ledger.json"
+ },
  "bom_rows": [
   {
    "Comment": "4.7uF",
