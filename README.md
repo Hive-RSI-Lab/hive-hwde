@@ -10,6 +10,7 @@ An agent designs a PCB from a written brief: research, architecture, parts, sche
 - `bin/hwde`: runs the scripts in a Hive sandbox with the Hive's KiCad 10 and freerouting (`hwde check` first)
 - The first board made with it: [boards/hwde-led-test/](boards/hwde-led-test/)
 - [docs/errata-corpus.md](docs/errata-corpus.md): public boards whose rev B fixed a rev A defect, and which of those defects hwde's checks catch on rev A (`bin/hwde errata_corpus fetch|run|table`)
+- [docs/route-quality.md](docs/route-quality.md): a layout judged as good, not only legal: `route_quality` scores each net class against its shortest 45-degree routes, `route_improve` re-routes the worst nets in rounds and stops when a round stops gaining
 
 ## Test and score
 

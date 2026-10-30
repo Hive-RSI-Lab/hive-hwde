@@ -12,10 +12,10 @@ rules as routing constraints; cite the record id when you apply one.
 
 ## The chain (board-class dependent - this order is live-verified)
 - **2-layer:** route_critical -> route_auto -> stitch_vias -> plane_repair
-  -> snap45 -> [route_cleanup] -> gate. (Pre-route stitch vias would be Freerouting
+  -> route_improve -> snap45 -> [route_cleanup] -> gate. (Pre-route stitch vias would be Freerouting
   obstacles.)
 - **4-layer:** route_critical -> stitch_vias -> route_auto -> plane_repair
-  -> snap45 -> [route_cleanup] -> gate. (Stitching first pre-connects SMD pads to the
+  -> route_improve -> snap45 -> [route_cleanup] -> gate. (Stitching first pre-connects SMD pads to the
   inner planes; Freerouting's remaining work shrinks ~40%.)
 
 ## Steps
@@ -59,6 +59,19 @@ rules as routing constraints; cite the record id when you apply one.
 4. `scripts/plane_repair.py --pcb <board>` - detects electrically-split
    pours and repairs (bridge/jumper ladder). Mutates in place; on exit 1
    restore the pre-step snapshot (orchestrator has one) and report.
+4a. Legal is not good: `scripts/route_quality.py --pcb <board>` scores
+   every routed net against its shortest 45-degree route (length, excess
+   vias, excess bends; a length_match group or pair against its longest
+   member's) and rolls it up per net class (`quality.classes`, each with
+   its worst nets). Then `scripts/route_improve.py --pcb <board>
+   --out-report <dir>/route_improve.json`: rounds of rip-and-reroute on
+   the nets that waste the most, each round kept only if nothing comes
+   unconnected, no DRC type grows and the board score rises; nets a round
+   made worse get their old copper back; it stops by itself when rounds
+   stop gaining (`stopped`). It leaves diff_pair, matched and rf nets alone
+   unless `--classes` names them. Report score_before -> score_after per
+   class in SUMMARY. A net still low after it is a placement question (a
+   detour around a part), not a reason to hand-route.
 5. Mandatory snap45: `scripts/route_cleanup.py --pcb <board> --snap-only
    --constraints <board dir>/constraints.json` (drop `--constraints` only
    when the board has none) rewrites each off-angle segment (cut at any mid-length joint) as 0/90
