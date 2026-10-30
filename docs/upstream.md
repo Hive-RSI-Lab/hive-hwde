@@ -111,6 +111,15 @@ What moved where:
   `playbook.md`, `full-run.md`, `fix-finding.md`, `build-modes.md` and
   `tasks.yaml` say so: H1-H4 are reports, and only error waivers, cost/feature
   trades and the order go to the person.
+- A coverage checklist counts on an independent ruling, not only on the
+  person's approval (the person, 10-30: "the hive must be fully
+  autonomous"). `scripts/checklist_verify.py` and `lib/checklistverify.py`
+  build a blinded packet of the checklist and planted mutants of it, and
+  grade a fresh-context `agents/checklist-verifier.md` ruling against the
+  key. `knowledgelib.checklist_meets_floor` counts a `verified` checklist
+  whose `verification` block is intact (by someone other than the author,
+  every planted fault caught, a basis per class, digest current) at floors
+  up to `approved`. `researchlib` takes a verified research checklist too.
 - A shared tools folder (`HWDE_TOOLS_DIR`, the Hive's `/hive/tools`) is
   searched the way upstream searches its own `tools/`, so the scripts find
   the Hive's tools themselves and `bin/hwde` needs no wrappers:

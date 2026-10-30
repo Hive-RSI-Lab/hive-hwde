@@ -215,6 +215,10 @@ scaled by you to the board - not a gate; record how far you took it
   test API firmware offers. `scripts/check_observability.py --workspace
   <ws>` lists each rail as self / test_point / blind and each PG/FAULT/INT
   as watched or not; weigh it at P4 and P8.
+- **Doubt it** (from P4 on, again after every change): `reference/doubt.md`
+  - `scripts/doubt.py ask` puts the library's questions to the board, the
+  agent (`agents/doubter.md`) adds its own, each with a check script, and
+  `run` answers them all; `status` lists the fails and unknowns still open.
 - **Review it before money** (P8-P9): `reference/first-spin.md` - one
   `domain-reviewer` per domain with fresh eyes, every margin a number,
   contingencies on the board where a margin can't be closed on paper, every
@@ -361,9 +365,9 @@ never reuse a generator/router conversation for its own review.
 Spawn tiers (T6-measured; escalate one tier when a role must overrule its
 inputs, never silently downgrade):
 | fable/max | router (novel board; proven-chain re-run: sonnet/medium), learner (owner-present teaching) |
-| fable/high | architect, placement, schematic-reviewer, verify-reviewer, domain-reviewer (first spin, one per domain), requirements-analyst, researcher (coverage-gap research; the ONLY role with web tools, allowlisted, acquisitions through research.py fetch) |
+| fable/high | architect, placement, schematic-reviewer, verify-reviewer, domain-reviewer (first spin, one per domain), doubter (a board's own questions, a check for each), requirements-analyst, researcher (coverage-gap research; the ONLY role with web tools, allowlisted, acquisitions through research.py fetch) |
 | fable/medium | schematic-block (thin root-stitch: sonnet/high) |
-| opus/high | research-interface-spec, research-power-architect, sim-analyst, fixer (copper/route), research-second-reader (fresh context; refutes or verifies a task's records) |
+| opus/high | research-interface-spec, research-power-architect, sim-analyst, fixer (copper/route), research-second-reader (fresh context; refutes or verifies a task's records), checklist-verifier (fresh context; rules a blinded checklist packet with planted faults, `checklist_verify.py`) |
 | sonnet/high | research-component-scout, research-reference-design, part-sourcer, datasheet-extractor, coverage-mapper (schema-forced record->slot edges at P2/P3 exit), board-guide (owner PDF at P9 close) |
 | sonnet/medium | librarian, fixer (silk/sch/parts/fab), placement (backward-edge re-spawn) |
 | inline-default | board-setup, ordering, dfm (spawn = exception path) |

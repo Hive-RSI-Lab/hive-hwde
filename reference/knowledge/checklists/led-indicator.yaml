@@ -11,7 +11,7 @@ requires:
       LED's DC forward-current, power and reverse-voltage ratings, plus the
       resistor's own dissipation. This is the class that decides whether the
       LED lights over the input range and stays inside its ratings
-maturity: draft
+maturity: verified
 sources:
   - file: reference/knowledge/sources/APT1608SGC.pdf
     page: 2
@@ -32,3 +32,26 @@ prose: >
   a lighting load (tens of mA and up, a constant-current driver, a heat path)
   is not this topology; give it its own checklist when a board needs one.
 origin: hive:261028-141932-9b95b3083b
+verification:
+  by: checklist-verifier:w-261030-140119-f63d0240de
+  date: '2026-10-30'
+  note: 'Read the 4 items, record led-indicator-series-resistor-sizing (active,
+    verified, classes [selection], applies to led-indicator/led/status-led/indicator-led)
+    with its second-reader note on APT1608SGC p2/p3, and CLASSES in knowledgelib.py.
+    The APT1608SGC.pdf itself is not redistributed (sources/ holds only a .not-redistributed.md
+    stub, absent from the knowledge-sources cache), so p2 figures are taken from
+    the record''s verified second read: VF 2.2 typ / 2.5 max V at 20 mA, +/-0.1
+    V, DC IF 25 mA, PD 62.5 mW, VR 5 V.'
+  digest: cc88232e1d92e0544364461b29f136fff330ee94f0ed14a45e28a5bb0a95f233
+  key_sha256: bedba02fc49a6d70b665de63c5b66c91d546a817f17ad44564b1e21ead76ce77
+  planted:
+    total: 3
+    caught: 3
+    kinds:
+    - add_foreign
+    - corrupt_number
+    - swap_class
+  basis:
+    selection:
+    - led-indicator-series-resistor-sizing
+    - reference/knowledge/sources/APT1608SGC.pdf#2

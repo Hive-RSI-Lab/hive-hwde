@@ -53,7 +53,9 @@ venv python. Keep output ASCII.
 - What the board cannot tell about itself in your domain (a rail no ADC
   reads, a fault pin no GPIO watches, an output no tap sees) is a finding
   if it would hide a failure at bring-up: reference/self-observation.md.
-- A check hwde has no tool for goes under tools_wanted.
+- A check hwde has no tool for goes under tools_wanted. One you can answer
+  from the board's files, write as a doubt check instead and run it
+  (`hwde doubt add`, reference/doubt.md): it re-runs on every change.
 - Every finding names its fault class: the id in `docs/failure-modes.yaml`
   (the module's registry; search its `mode` and `catch` lines) whose mode
   it is, or `"fault_class": "new"` with a one-line `class_mode` that would

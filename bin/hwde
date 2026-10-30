@@ -121,7 +121,7 @@ if [ -z "${HWDE_KNOWLEDGE_SOURCES:-}" ]; then
 	[ -d "$srcdir" ] || srcdir=$state/knowledge-sources
 	if [ ! "$srcdir/.complete" -nt "$here/docs/knowledge-sources.txt" ]; then
 		case ${1:-} in
-		knowledge | knowledge.py | research | research.py | check-all | sources)
+		knowledge | knowledge.py | research | research.py | checklist_verify | checklist_verify.py | check-all | sources)
 			python3 "$here/bin/sources.py" fetch "$srcdir" || true ;;
 		esac
 	fi
