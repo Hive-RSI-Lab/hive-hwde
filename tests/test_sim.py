@@ -21,7 +21,7 @@ import pytest
 import yaml
 
 REPO = Path(__file__).resolve().parents[1]
-SCRIPTS = REPO / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = REPO / "scripts"
 SIMS = REPO / "tests" / "sims"
 # the shipped boards' netlists, frozen under tests/fixtures
 PD_NET = REPO / "tests" / "fixtures" / "stages" / "pd_trigger" / "pd-trigger.net"

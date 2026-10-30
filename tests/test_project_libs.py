@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
-SCRIPTS = REPO / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = REPO / "scripts"
 
 SYM = textwrap.dedent("""\
     (kicad_symbol_lib (version 20211014) (generator test)

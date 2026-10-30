@@ -22,7 +22,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 GOLDEN = HERE.parent
 REPO = GOLDEN.parents[1]
-sys.path.insert(0, str(REPO / ".claude" / "skills" / "hwde" / "scripts" / "lib"))
+sys.path.insert(0, str(REPO / "scripts" / "lib"))
 sys.path.insert(0, str(HERE))
 
 import env  # noqa: E402

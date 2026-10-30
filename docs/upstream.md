@@ -1,17 +1,28 @@
-# What differs from ihsan-sa/hwde
+# Where it came from
 
-`.claude/skills/hwde/` is ihsan-sa/hwde's `.claude/skills/hwde/` at
-`5d7bbe52483ca0bc6bf28a56e4c1e0d24b5ca4b7`, at the same path, because its
-scripts locate each other and the repo root by that depth. It differs in
-these ways:
+hwde began as ihsan-sa/hwde's Claude Code skill, `.claude/skills/hwde/` at
+`5d7bbe52483ca0bc6bf28a56e4c1e0d24b5ca4b7`. That skill is frozen: this module
+doesn't follow it, copy it over itself, or keep its layout. Change, slim or
+rename anything here when it earns it.
 
-- `reference/knowledge/sources/*.pdf` (36 MB of manufacturers' datasheets and
-  application notes) is left out. NOTICE says they're redistributed under
-  their owners' terms, not MIT.
-- `scripts/lib/knowledgelib.py`: `SOURCES_DIR` reads `HWDE_KNOWLEDGE_SOURCES`
-  when it's set, so the records can still find those PDFs elsewhere:
-  `docs/knowledge-sources.txt` lists them (git blob sha, size, name) and
-  `bin/sources.py` fetches them from upstream into HOME.
+What moved where:
+
+- `SKILL.md` (the orchestrator playbook) is [playbook.md](playbook.md), with
+  the skill's frontmatter gone.
+- `scripts/`, `agents/` and `reference/` are at the module root. The scripts
+  find the module root one level above `scripts/` (`env.repo_root()`, and
+  each lib's `SKILL`/`REPO`, which are now the same folder).
+- Upstream's `/hwde` command, the skill's README, the empty `templates/` and
+  check_env's vendored-copy check (whether a copy was behind an ai-ee
+  checkout) are gone.
+- `reference/knowledge/sources/*.pdf` (36 MB of manufacturers' datasheets
+  and application notes) was never brought over. NOTICE says they're
+  redistributed under their owners' terms, not MIT.
+  `scripts/lib/knowledgelib.py`'s `SOURCES_DIR` reads `HWDE_KNOWLEDGE_SOURCES`.
+  `docs/knowledge-sources.txt` pins them at upstream's commit above (git blob
+  sha, size, name, from the GitHub contents API for that folder), and
+  `bin/sources.py` fetches them from upstream into HOME; `bin/hwde` points
+  `HWDE_KNOWLEDGE_SOURCES` there.
 - `scripts/parts_search.py --kind/--category` (with
   `reference/part_kinds.yaml` and `category_search` in
   `scripts/lib/partslib.py`): finding a part by what it is, by browsing its
@@ -29,7 +40,7 @@ these ways:
     and ground when decoupling.json records none for that rail.
   - `agents/part-sourcer.md` copies the parts_search row whole (attributes
     included) and writes no refdes.
-- Fixes the Hive made while building boards, each worth sending upstream:
+- Fixes the Hive made while building boards, worth offering upstream:
   `scripts/check_courtyard.py` (+ `checks.d/check_courtyard.yaml`), a verify
   check that fails a courtyard that misses its own pads; `scripts/lib/fpfix.py`
   rule E, which `lib_pull` runs on every pull, and its `--pcb` mode for placed
@@ -91,12 +102,12 @@ these ways:
   open --slot` opens past the per-run cap, `board_init` notes a fixed outline
   under a geometry-as-output mode instead of refusing it, and the release
   attestation no longer needs an approved H4 (a rejected one still vetoes).
-  `SKILL.md`, `full-run.md`, `fix-finding.md`, `build-modes.md` and
+  `playbook.md`, `full-run.md`, `fix-finding.md`, `build-modes.md` and
   `tasks.yaml` say so: H1-H4 are reports, and only error waivers, cost/feature
   trades and the order go to the person.
 - A shared tools folder (`HWDE_TOOLS_DIR`, the Hive's `/hive/tools`) is
-  searched the way upstream searches its own `tools/`, so the skill finds
-  the Hive's tools itself and `bin/hwde` needs no wrappers:
+  searched the way upstream searches its own `tools/`, so the scripts find
+  the Hive's tools themselves and `bin/hwde` needs no wrappers:
   - `scripts/lib/env.py`: `kicad_installs` takes KiCad AppImage AppDirs at
     `<tools>/kicad-*/` (`bin/kicad-cli` runs as is); `find_kicad_python`
     takes the AppDir's `bin/python3.<n>`; `find_ngspice_dll` its
@@ -123,28 +134,25 @@ these ways:
   `tests/test_env_lookups.py` covers these lookups (`$HWDE_PY -m pytest
   tests`). They're meant to go upstream.
 
-`requirements.lock`, `LICENSE` and `NOTICE` are upstream's, from the repo
-root, and so is `docs/failure-modes.yaml` (`bench --scorecard-corpus` maps
-findings to failure modes through it). `tests/` is upstream's `tests/`
-except `check.sh` and the tests of what stays upstream: evals
+`requirements.lock`, `LICENSE` and `NOTICE` came from upstream's repo root,
+and so did `docs/failure-modes.yaml` (`bench --scorecard-corpus` maps
+findings to failure modes through it). `tests/` began as upstream's `tests/`,
+without `check.sh` and the tests of what stayed upstream: evals
 (`test_e2e_electrical`, `test_eval_sandbox`, `test_eval_writeset`), the
 showcase (`test_showcase_gallery`), `LEARNINGS.md` and its triage
 (`test_learnings`, `test_remediations`), the docker and CI pins
-(`test_kicad_pin`) and `docs/check-scorecard.jsonl`
-(`test_check_scorecard`). `tests/conftest.py` adds `KNOWN_FAILING`, and
-`tests/test_workarounds.py`, `tests/workarounds/`, `tests/test_parts_kind.py`
-and `tests/test_env_lookups.py` are the module's own, as is `pytest.ini`
-(upstream's pytest settings from its `pyproject.toml`).
-The plans, docker setup and design notes stay upstream.
+(`test_kicad_pin`), `docs/check-scorecard.jsonl` (`test_check_scorecard`)
+and the vendored-copy check (`test_skill_copy_current`). `tests/conftest.py`
+adds `KNOWN_FAILING`; `tests/test_workarounds.py`, `tests/workarounds/` and
+`tests/test_parts_kind.py`, `tests/test_env_lookups.py` and `pytest.ini` (upstream's pytest settings from its `pyproject.toml`) are the
+module's own. The plans, docker setup and design notes stayed upstream.
 
-Everything else specific to the Hive is in `bin/` and `docs/`: `bin/hwde`
-sets `HWDE_TOOLS_DIR` to the Hive's tools folder, builds the venv, and runs
-scripts under Xvfb with GLX off.
+Everything else that's specific to the Hive is in `bin/` and `docs/`:
 
-To update, copy upstream's skill folder over this one, drop the source PDFs
-again, re-apply the `SOURCES_DIR` line and the changes above (or check upstream
-has them), and bump the commit above and in `docs/knowledge-sources.txt`
-(its lines are the GitHub contents API's `sha`, `size` and `name` for the
-sources folder at that commit). Copy upstream's `tests/` over this one
-the same way, leaving out the files above and keeping `KNOWN_FAILING`,
-`test_workarounds.py`, `test_sourcer_records.py` and `test_env_lookups.py`.
+- `bin/hwde` wraps the Hive's KiCad AppImage (kicad-cli, KiCad's python with
+  pcbnew, ngspice, the 3D model loaders the render preflight looks for).
+  It also builds the venv and runs scripts under Xvfb with GLX off.
+- `bin/flatten-symdirs.py` exists because KiCad 10 ships its stock symbols
+  as one-file-per-symbol `.kicad_symdir` folders, and kicad-sch-api 0.5.6
+  can't read those. It writes flat `power` and `Device` libraries into HOME,
+  and `bin/hwde` points `KICAD_SYMBOL_DIR` at them.

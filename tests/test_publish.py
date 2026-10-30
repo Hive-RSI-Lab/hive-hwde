@@ -28,9 +28,9 @@ def test_published_copy_uses_its_own_python(tmp_path):
     (copy / "bin").mkdir(parents=True)
     shutil.copy2(ROOT / "bin" / "hwde", copy / "bin" / "hwde")
     shutil.copy2(ROOT / "requirements.lock", copy / "requirements.lock")
-    # env prints the tools as the skill's lib/env.py resolves them; a
-    # published copy carries the skill (publish tars .claude/skills/hwde)
-    lib = Path(".claude") / "skills" / "hwde" / "scripts" / "lib"
+    # env prints the tools as scripts/lib/env.py resolves them; a
+    # published copy carries the scripts (publish tars scripts/)
+    lib = Path("scripts") / "lib"
     shutil.copytree(ROOT / lib, copy / lib, ignore=shutil.ignore_patterns("__pycache__"))
     py = copy / "python" / "cpython-3.14.0-linux-x86_64-gnu" / "bin" / "python3.14"
     py.parent.mkdir(parents=True)
@@ -72,7 +72,7 @@ def test_published_copy_runs_the_module_at_main(tmp_path):
     home.mkdir()
     r = run(copy / "bin" / "hwde", home, "env", modules=mod.parent)
     assert r.returncode == 0, r.stderr
-    assert f"export HWDE_SKILL='{mod}/.claude/skills/hwde'" in r.stdout
+    assert f"export HWDE_MODULE='{mod}'" in r.stdout
     assert f"export HWDE_PY='{py}'" in r.stdout  # the copy's python, no venv
     assert not (home / ".cache" / "hwde" / "venv").exists()
 
@@ -84,7 +84,7 @@ def test_published_copy_keeps_its_own_code_when_the_lock_moved(tmp_path):
     home.mkdir()
     r = run(copy / "bin" / "hwde", home, "env", modules=mod.parent)
     assert r.returncode == 0, r.stderr
-    assert f"export HWDE_SKILL='{copy}/.claude/skills/hwde'" in r.stdout
+    assert f"export HWDE_MODULE='{copy}'" in r.stdout
     assert f"export HWDE_PY='{py}'" in r.stdout
 
 

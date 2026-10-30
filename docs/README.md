@@ -1,15 +1,18 @@
 # Designing a board with hwde in the Hive
 
-hwde is ihsan-sa/hwde's KiCad design skill. It takes a board from a written
-brief to checked KiCad files and a JLCPCB fab package. The skill itself is in
-[`.claude/skills/hwde/`](../.claude/skills/hwde/SKILL.md), kept as upstream
-has it ([what differs](upstream.md)). This page covers what's different when
-an agent runs it inside the Hive.
+hwde is the Hive's KiCad design module. It takes a board from a written
+brief to checked KiCad files and a JLCPCB fab package. The way through is
+[playbook.md](playbook.md); the agent roles are in [`agents/`](../agents/),
+the scripts in [`scripts/`](../scripts/) and their tables, recipes and
+knowledge in [`reference/`](../reference/). It began as ihsan-sa/hwde's Claude
+Code skill ([where it came from](upstream.md)), but it isn't a skill: nothing
+here is loaded by `/hwde`, and nothing needs to stay as upstream has it. This
+page covers how an agent runs it inside the Hive.
 
 ## Before you start
 
-- Run `hwde check` (`$HIVE_MODULES/hwde/bin/hwde check --quiet`). It must
-  exit 0. On first use it builds the skill's Python venv in your HOME from
+- Run `hwde check` (`$HIVE_MODULES/hive-hwde/bin/hwde check --quiet`). It must
+  exit 0. On first use it builds the module's Python venv in your HOME from
   `requirements.lock`, using the Hive's uv; that takes about 15 s.
 - KiCad 10.0.6, freerouting 2.2.4 and KiCadRoutingTools 0.19.0 (for
   `route_critical` and route_auto's KRT finish) are the Hive's, read-only
@@ -41,14 +44,17 @@ an agent runs it inside the Hive.
 
 ## Running it
 
-- `hwde <script> [args]` runs `.claude/skills/hwde/scripts/<script>.py` with
-  the venv python and the `HWDE_*` pins set. The skill's prose says
-  `.venv/bin/python scripts/<x>.py`; this is the same thing. With no X
+- `hwde <script> [args]` runs `scripts/<script>.py` with the venv python
+  and the `HWDE_*` pins set. Where the playbook, a recipe or a role prompt
+  says `scripts/<x>.py`, run `hwde <x>`. With no X
   display it runs the script under its own Xvfb, with GLX off because H0's
   NVIDIA libraries crash Xvfb.
 - `eval "$(hwde env)"` puts the same pins in your shell. Its `HWDE_PY` and
-  `HWDE_SKILL` are what a board's own generator script (`kicad/gen/*.py`)
-  runs with: `PYTHONPATH=$HWDE_SKILL/scripts:$HWDE_SKILL/scripts/lib $HWDE_PY kicad/gen/root.py`.
+  `HWDE_MODULE` (the module's root) are what a board's own generator script
+  (`kicad/gen/*.py`) runs with:
+  `PYTHONPATH=$HWDE_MODULE/scripts:$HWDE_MODULE/scripts/lib $HWDE_PY kicad/gen/root.py`.
+  `HWDE_SKILL`, its old name, is still set to the same path for boards that
+  use it.
 - Every board with a netlist gets `hwde sim_board --workspace boards/<name>
   --out boards/<name>/reports/sim_board.json`: ngspice over the board's own
   passives and discretes (KiCad 10's bundled libngspice, found by this
@@ -86,10 +92,12 @@ an agent runs it inside the Hive.
 - Start from `hwde task_router --task "<the ask>" --workspace boards/<name>`
   and follow its recipe (`reference/recipes/<verb>.md`). The whole pipeline
   is `full-run`.
-- The skill's subagents are the Agent tool: give each one its role prompt
-  (`agents/<role>.md`), the workspace paths, and the `hwde` command line in
-  place of the venv python. Record each spawn with `hwde state spawn`.
-  Reviewers always get fresh context.
+- The playbook's roles run as helper agents: `hive agent spawn --role worker
+  --brief @<file>`, or your harness's own subagent tool for a short
+  read-and-report role ([playbook.md](playbook.md), "Agent spawn template").
+  Give each one its role prompt (`agents/<role>.md`), the workspace paths, and
+  the `hwde` command line in place of the venv python. Record each spawn with
+  `hwde state spawn`. Reviewers always get fresh context.
 
 ## Checkpoints are reports, not stops
 
@@ -161,7 +169,7 @@ the shape.
 
 ## Be critical of the tools
 
-The skill improves the way the rest of the Hive does: by changing it, not by
+The module improves the way the rest of the Hive does: by changing it, not by
 working around it. When a script, check, prompt or recipe gets in the way or
 gets something wrong (a false finding, a missing case, an agent role that left
 out a field, a path that only works upstream), note it with the file it lives
@@ -253,7 +261,7 @@ nothing in the Hive should ask for them.
 
 - `report_gen` (the design-doc PDF) and the board guide need the
   pdf-material-builder house style, which isn't here. They fall back to
-  `--tex-only`, and the skill says that must never gate a run.
+  `--tex-only`, and the playbook says that must never gate a run.
 - DigiKey/Mouser price lookups need API keys and stay off.
 - The knowledge records cite manufacturer PDFs that the module doesn't carry
   (see NOTICE). `docs/knowledge-sources.txt` pins them at upstream's commit;

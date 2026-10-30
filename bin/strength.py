@@ -50,7 +50,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SCRIPTS = ROOT / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = ROOT / "scripts"
 sys.path[:0] = [str(SCRIPTS), str(SCRIPTS / "lib")]
 
 # The severities each gate the score counts must fail on (SPEC P4: ERC

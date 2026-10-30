@@ -34,7 +34,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 HWDE = os.environ.get("HWDE_BIN", str(ROOT / "bin" / "hwde"))
-SKILL = ROOT / ".claude" / "skills" / "hwde" / "scripts"
+SKILL = ROOT / "scripts"
 GATES = ("erc", "drc_routed", "verify", "dfm")
 CRASH = 100
 

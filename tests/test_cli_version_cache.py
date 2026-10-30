@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-SCRIPTS = Path(__file__).resolve().parents[1] / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS / "lib"))
 
 import env  # noqa: E402

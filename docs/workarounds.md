@@ -1,7 +1,7 @@
 # Workarounds
 
 Every place where hwde gets a board through its gates only because something
-worked around a defect in the skill, by a shim in `bin/hwde` or by an edit
+worked around a defect in the module's scripts, by a shim in `bin/hwde` or by an edit
 made by hand in a board's files. The test (`bin/hwde test`, and
 `bin/hwde check-all` after its boards) holds it to the truth. The score
 (`bin/hwde score`, [score.md](score.md)) doesn't read it: it runs the gates

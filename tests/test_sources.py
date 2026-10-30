@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "bin"))
 import sources  # noqa: E402
 
-SKILL = ROOT / ".claude" / "skills" / "hwde"
+SKILL = ROOT
 
 
 def test_the_list_covers_every_pdf_a_record_cites():

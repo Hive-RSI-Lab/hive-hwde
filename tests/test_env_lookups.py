@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-SKILL = Path(__file__).resolve().parents[1] / ".claude" / "skills" / "hwde"
+SKILL = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SKILL / "scripts"))
 sys.path.insert(0, str(SKILL / "scripts" / "lib"))
 import env  # noqa: E402
