@@ -12,15 +12,16 @@ contain" (codex H1). These files come out of one run:
                 Assembly Class, Instructions. This is the engineering
                 deliverable and the thing a human reads.
 
-  BOM.csv       the ASSEMBLER UPLOAD: `smt_placed` parts only, in JLC's own
-                four columns (Comment, Designator, Footprint, LCSC Part #), ONE
+  BOM.csv       the ASSEMBLER UPLOAD: `smt_placed` and `tht` parts only, in
+                JLC's own four columns (Comment, Designator, Footprint, LCSC Part #), ONE
                 ROW PER LCSC PART with the comma-joined designator list (a part
                 with no LCSC number groups by value + footprint). Two rows with
                 the same LCSC number split one part's stock in JLC's BOM
                 review. Its designator set is identical to CPL.csv's
                 by construction - a DNP site cannot leak into a quote.
 
-  CPL.csv       Designator, Mid X, Mid Y, Layer, Rotation - `smt_placed` only.
+  CPL.csv       Designator, Mid X, Mid Y, Layer, Rotation - `smt_placed` and
+                `tht` only.
                 Mid X/Y in mm from the pos file; Layer Top/Bottom; Rotation =
                 (kicad rotation + JLC correction) mod 360. The correction comes
                 from the part's OWN LCSC footprint model (cpl_verify.py fits it
@@ -37,7 +38,7 @@ contain" (codex H1). These files come out of one run:
                 to rerun once EasyEDA answers. After a 403/429 the rest of
                 the run fetches nothing (`easyeda_rate_limited`).
 
-  prebuy.csv    the PRE-BUY LIST: every `smt_placed` part parts.json marks
+  prebuy.csv    the PRE-BUY LIST: every `smt_placed`/`tht` part parts.json marks
                 Extended (`basic: false` or `type: extended`), with its LCSC
                 number, qty per board and the build quantity (--build-qty
                 boards, default 5). JLC can hold an Extended part as idle stock
@@ -60,6 +61,10 @@ Assembly classes (`assembly_class`, canonical parts.json - NOT a board-local
 filter script, which is how rf-de-20m's nine DNP sites used to be handled):
 
   smt_placed        the assembler places it. In BOM.csv AND CPL.csv.
+  tht               through-hole: the assembler fits it in its THT step
+                    (wave/selective/hand), not the SMT line. In BOM.csv AND
+                    CPL.csv, so it stays in the PCBA order, but never counted
+                    as an SMT placement.
   hand_install      bought, fitted by hand after reflow. BOM-full only.
   off_board         bought, mounted off the PCB (heatsink-flanged loads, ...).
   dnp               a real land that must ship EMPTY.
@@ -71,7 +76,8 @@ filter script, which is how rf-de-20m's nine DNP sites used to be handled):
 Where a class comes from, highest priority first:
   1. parts.json line `refdes_class: {"C203": "dnp"}` (or legacy `refdes_dnp`)
   2. parts.json line `assembly_class` (applies to every ref in `refdes`)
-  3. the board file's own footprint `dnp` attribute
+  3. the board file's own footprint attributes (`dnp`, `exclude_from_bom`/
+     `board_only`, `exclude_from_pos_files`, then `through_hole` -> tht)
   4. default `smt_placed`
 Instructions text: `refdes_notes: {ref: text}` > line `assembly_notes` >
 a per-class default sentence.
@@ -88,7 +94,8 @@ HWDE_STOCK_OFFLINE=1) skips it and says so.
 
 bom_cpl GENERATES; polarity/rotation VALIDATION (catching a backwards part) is
 dfm_check.py's job (with cpl_verify.py), which also consumes these classes: a missing LCSC on an
-`smt_placed` part is a release ERROR, on any other class it is not a finding.
+`smt_placed`/`tht` part is a release ERROR, on any other class it is not a
+finding.
 
 CLI:
   bom_cpl.py --pcb board.kicad_pcb --out-dir fab/ [--pos pos.csv]
@@ -99,7 +106,7 @@ CLI:
 The model cache is $HWDE_EASYEDA_CACHE, else <parts.json dir>/easyeda if it
 exists, else ~/.cache/hwde/easyeda; --offline (or
 HWDE_EASYEDA_OFFLINE=1) never fetches, so an uncached part uses the table.
-Exit 0 ok / 1 assembly violations (incomplete BOM, unplaced smt_placed part,
+Exit 0 ok / 1 assembly violations (incomplete BOM, unplaced smt_placed/tht part,
 declared-quantity mismatch, a model fetch that failed) / 2 error.
 """
 from __future__ import annotations
@@ -123,15 +130,20 @@ REF_ROTATIONS = SCRIPTS.parent / "reference" / "jlc_rotations.csv"
 # --------------------------------------------------------- assembly classes
 
 PLACED_CLASS = "smt_placed"
+THT_CLASS = "tht"
 ASSEMBLY_CLASSES = (
-    PLACED_CLASS, "hand_install", "off_board", "dnp",
+    PLACED_CLASS, THT_CLASS, "hand_install", "off_board", "dnp",
     "customer_supplied", "select_on_test", "board_feature",
 )
+# The classes the assembler fits from the upload: in BOM.csv and CPL.csv.
+ASSEMBLED_CLASSES = (PLACED_CLASS, THT_CLASS)
 # Stable presentation order for BOM-full.csv (placed parts first).
 CLASS_ORDER = {c: i for i, c in enumerate(ASSEMBLY_CLASSES)}
 
 CLASS_INSTRUCTION = {
     PLACED_CLASS: "",
+    THT_CLASS: "Through-hole - JLC THT assembly (or hand-solder after "
+               "reflow); not on the SMT line.",
     "hand_install": "Hand-install after reflow - not machine-placed.",
     "off_board": "Mounted OFF the PCB - not machine-placed.",
     "dnp": "DO NOT POPULATE - this land ships empty.",
@@ -244,7 +256,8 @@ def board_part_fields(pcb: Path) -> dict[str, dict]:
     read as one: `dnp` -> class dnp, `exclude_from_bom`/`board_only` -> class
     board_feature (mounting holes, fiducials, heatsink lands - board_init marks
     them so, LEARNINGS/S8), `exclude_from_pos_files` alone -> hand_install (in
-    the BOM, not machine-placed). parts.json outranks all of them; see
+    the BOM, not machine-placed), and `through_hole` with none of those ->
+    tht (in the upload, fitted in the THT step). parts.json outranks all of them; see
     resolve_assembly.
     """
     import sexpdata
@@ -281,6 +294,8 @@ def board_part_fields(pcb: Path) -> dict[str, dict]:
             attr_class = "board_feature"
         elif "exclude_from_pos_files" in attrs:
             attr_class = "hand_install"
+        elif "through_hole" in attrs:
+            attr_class = THT_CLASS
         else:
             attr_class = None
         if ref and (lcsc or attr_class):
@@ -416,7 +431,7 @@ def bind_refs_by_lcsc(records: list[dict], board_fields: dict[str, dict]
     named = {r for rec in records for r in rec["refs"]}
     for rec in records:
         if rec["refs"] or not rec["lcsc"] or \
-                (rec["cls"] and rec["cls"] != PLACED_CLASS):
+                (rec["cls"] and rec["cls"] not in ASSEMBLED_CLASSES):
             continue
         rec["refs"] = sorted((r for r, f in board_fields.items()
                               if f.get("lcsc") == rec["lcsc"]
@@ -542,7 +557,7 @@ def build_bom_full(parts: list[dict], records: list[dict],
     # a non-placed class - otherwise they are the S6 per-distinct-part shape,
     # already covered through the position export.
     for rec in records:
-        if rec["refs"] or not rec["cls"] or rec["cls"] == PLACED_CLASS:
+        if rec["refs"] or not rec["cls"] or rec["cls"] in ASSEMBLED_CLASSES:
             continue
         rows.append({
             "Comment": rec["value"],
@@ -670,7 +685,7 @@ def check_declared_quantities(records: list[dict],
         if not rec["refs"]:
             continue
         placed = [r for r in rec["refs"]
-                  if classes.get(r, PLACED_CLASS) == PLACED_CLASS]
+                  if classes.get(r, PLACED_CLASS) in ASSEMBLED_CLASSES]
         want = rec["qty_populated"]
         if want is None and rec["qty_per_board"] is not None \
                 and len(placed) == len(rec["refs"]):
@@ -708,12 +723,12 @@ def run(pcb: Path, out_dir: Path, pos: Path | None = None,
     pos_refs = {p["ref"] for p in parts}
     classes, notes, sources = resolve_assembly(pos_refs, records, board_fields)
 
-    placed = [p for p in parts if classes[p["ref"]] == PLACED_CLASS]
-    # Classed `smt_placed` but never exported a position: either the part is
-    # missing from the board or its class is wrong. Both are release defects,
-    # so this is a violation rather than a silently shorter BOM.
+    placed = [p for p in parts if classes[p["ref"]] in ASSEMBLED_CLASSES]
+    # Classed `smt_placed` or `tht` but never exported a position: either the
+    # part is missing from the board or its class is wrong. Both are release
+    # defects, so this is a violation rather than a silently shorter BOM.
     unplaced_smt = sorted((r for r, c in classes.items()
-                           if c == PLACED_CLASS and r not in pos_refs),
+                           if c in ASSEMBLED_CLASSES and r not in pos_refs),
                           key=_natural_key)
     not_placed = [{"ref": r, "class": classes[r], "source": sources[r]}
                   for r in sorted(pos_refs - {p["ref"] for p in placed},
@@ -773,7 +788,7 @@ def run(pcb: Path, out_dir: Path, pos: Path | None = None,
     unsourced = [r for r in missing if r not in alt_sourced]
     off_lcsc = [r for r in missing if r in alt_sourced]
     missing_unplaced = _no_lcsc(r for r, c in classes.items()
-                                if c != PLACED_CLASS)
+                                if c not in ASSEMBLED_CLASSES)
 
     class_counts: dict[str, int] = {}
     for c in classes.values():
@@ -789,7 +804,8 @@ def run(pcb: Path, out_dir: Path, pos: Path | None = None,
         violations.append({
             "kind": "assembly_unplaced_smt", "refs": unplaced_smt,
             "message": f"{len(unplaced_smt)} part(s) are classed "
-                       f"{PLACED_CLASS} but have no placement"})
+                       f"{' or '.join(ASSEMBLED_CLASSES)} but have no "
+                       f"placement"})
     for m in qty_mismatch:
         violations.append({
             "kind": "assembly_qty_mismatch", "refs": m["refs"],
