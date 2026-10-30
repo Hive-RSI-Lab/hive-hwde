@@ -27,6 +27,10 @@ def test_published_copy_uses_its_own_python(tmp_path):
     (copy / "bin").mkdir(parents=True)
     shutil.copy2(ROOT / "bin" / "hwde", copy / "bin" / "hwde")
     shutil.copy2(ROOT / "requirements.lock", copy / "requirements.lock")
+    # env prints the tools as the skill's lib/env.py resolves them; a
+    # published copy carries the skill (publish tars .claude/skills/hwde)
+    lib = Path(".claude") / "skills" / "hwde" / "scripts" / "lib"
+    shutil.copytree(ROOT / lib, copy / lib, ignore=shutil.ignore_patterns("__pycache__"))
     py = copy / "python" / "cpython-3.14.0-linux-x86_64-gnu" / "bin" / "python3.14"
     py.parent.mkdir(parents=True)
     os.symlink(sys.executable, py)
