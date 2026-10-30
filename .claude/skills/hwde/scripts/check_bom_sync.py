@@ -17,10 +17,10 @@ Rules, each a finding's `kind` (error unless marked):
  - bom_dnp_populated: a ref the schematic, the board's `dnp` attr or parts.json
    marks DNP is listed in BOM.csv or CPL.csv - it would be placed.
  - bom_dnp_mismatch: the schematic says DNP but the class bom_cpl resolves is
-   still smt_placed (board attr and parts.json both silent), or the board's
+   still smt_placed or tht (board attr and parts.json both silent), or the board's
    `dnp` attr is set while the schematic says `(dnp no)`. The next bom_cpl run
    would place a part the schematic leaves empty, or the reverse.
- - bom_ref_missing: a board footprint whose class is smt_placed is absent from
+ - bom_ref_missing: a board footprint whose class is smt_placed or tht is absent from
    BOM.csv or CPL.csv, or a ref of any class but board_feature is absent from
    BOM-full.csv (the BOM of record).
  - bom_ref_unknown: BOM.csv, CPL.csv or BOM-full.csv names a designator that is
@@ -63,6 +63,7 @@ from checklib import violation  # noqa: E402
 
 SCRIPT = "check_bom_sync"
 PLACED = bom_cpl.PLACED_CLASS
+ASSEMBLED = bom_cpl.ASSEMBLED_CLASSES
 FAB_FILES = ("BOM.csv", "CPL.csv", "BOM-full.csv")
 
 
@@ -205,10 +206,10 @@ def check(pcb: Path, fab_dir: Path | None, parts: Path | None) -> tuple:
         if ref not in sch:
             continue
         cls = classes.get(ref, PLACED)
-        if sch[ref] and cls == PLACED:
+        if sch[ref] and cls in ASSEMBLED:
             add("bom_dnp_mismatch", "error", ref,
                 f"{ref} is DNP in the schematic but bom_cpl resolves it "
-                f"smt_placed ({src.get(ref, 'default')}); set the footprint's "
+                f"{cls} ({src.get(ref, 'default')}); set the footprint's "
                 "dnp attr or a parts.json refdes_class")
         elif not sch[ref] and "dnp" in fps[ref]["attrs"] \
                 and src.get(ref) == "board_attr":
@@ -252,10 +253,10 @@ def check(pcb: Path, fab_dir: Path | None, parts: Path | None) -> tuple:
                 add("bom_dnp_populated", "error", ref,
                     f"{ref} is DNP but {name} lists it, so it would be placed")
         for ref in sorted(fps, key=bom_cpl._natural_key):
-            if classes.get(ref) == PLACED and not is_dnp(ref) \
+            if classes.get(ref) in ASSEMBLED and not is_dnp(ref) \
                     and ref not in listed:
                 add("bom_ref_missing", "error", ref,
-                    f"{ref} is smt_placed but missing from {name}")
+                    f"{ref} is {classes[ref]} but missing from {name}")
     full = files.get("BOM-full.csv")
     if full is not None:
         for ref in sorted(full - set(fps), key=bom_cpl._natural_key):
