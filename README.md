@@ -49,13 +49,16 @@ An agent designs a PCB from a written brief: research, architecture, parts, sche
   already inside one (check-all's gates, a test that runs `bin/hwde`), or a
   Hive without that op yet, runs bare (`tests/test_heavy.py`).
 - **Score**, `bin/hwde score`, higher is better: what this checkout's
-  gates find on boards held fixed. The hi-fi receiver's lite-main, core and ultra-front,
+  gates get wrong on boards held fixed. The hi-fi receiver's lite-main, core and ultra-front,
   pinned in `pinned/` at one hifi-receiver-2 commit, and hwde-led-test go
-  through erc, drc_routed, verify and dfm with `bin/hwde`'s shims off. Each
-  unwaived finding, each warning and each board-local script that stands
-  in for hwde is a charge, and the score is minus the charges. A fix in
-  hwde that clears a finding on those boards raises it with nothing written
-  by hand. A pinned board changes only through `bin/hwde pin`. The whole
+  through erc, drc_routed, verify and dfm with `bin/hwde`'s shims off. Each board's
+  ledger (`pinned/known/<board>.json`) judges its findings: one held real
+  is the board's defect and costs nothing; one held false, one not judged
+  yet, a known real one no gate reports any more, and each board-local
+  script that stands in for hwde is a charge, and the score is minus the
+  charges. A fix in hwde that clears a false finding on those boards raises
+  it with nothing written by hand; a sharper check's new real findings go
+  into the ledger in the same change. A pinned board changes only through `bin/hwde pin`. The whole
   definition is [docs/score.md](docs/score.md). About ten minutes or more,
   under `hive agent heavy`. A looser check finds less, so the score also
   runs hwde's planted faults (`bin/strength.py`: the gate criteria, every

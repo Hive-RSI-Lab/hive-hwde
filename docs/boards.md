@@ -9,7 +9,10 @@ board-local scripts its pin, `pinned/<board>.json`, lists as `stand_in`.
 **Who refreshes a pin:** the worker who takes a board through hwde's gates
 in its own project, once its main holds the board: `bin/hwde pin <board>
 --from <the project's clone> --commit <sha>`, classifying each new script,
-in a commit that names the project's commit. Workarounds that have a probe
+in a commit that names the project's commit. The board's ledger,
+`pinned/known/<board>.json`, stays: drop the entries for defects the new
+board fixed, add its new findings with `bin/hwde score --board <board>
+--draft-known`, judge them, and `bin/hwde pin --digests`. Workarounds that have a probe
 also get a row in [workarounds.md](workarounds.md), or extend an existing
 row's `boards` when it's the same cause. `bin/hwde check-all` re-runs only
 this repo's boards; a board here is re-checked by its own project's test.

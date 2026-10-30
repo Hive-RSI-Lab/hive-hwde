@@ -87,3 +87,59 @@ def test_gate_charges_take_a_plain_string_warning():
               "warnings_count": 3}
     w = {"check": "check_thermal", "net": None, "reason": "r", "approved": "x 2026-10-29"}
     assert score.gate_charges(result, [w]) == {"?": 2, "(warnings past the cap)": 1}
+
+
+def test_a_finding_is_named_by_where_it_is_not_its_wording():
+    f = score.finding_of("verify", {"check": "check_current", "net": "+3V3", "refs": ["R2", "C1"],
+                                    "pos": [10.00004, 20.5], "message": "0.3 mm carries 0.8 A"})
+    assert f == {"gate": "verify", "check": "check_current", "net": "+3V3",
+                 "refs": ["C1", "R2"], "pos": [10.0, 20.5]}
+    # a plain string, or a finding with nowhere to be, goes by its message
+    assert score.finding_of("erc", "pin types: 3 untyped")["message"] == "pin types: 3 untyped"
+
+
+def _f(**kw):
+    return score.finding_of(kw.pop("gate", "verify"), {"check": "check_route_style", **kw})
+
+
+def test_real_findings_cost_nothing_false_and_unjudged_cost_one_missed_real_costs_one():
+    real = {**_f(net="SDA", pos=[1, 2]), "verdict": "real", "reason": "a staircase"}
+    gone = {**_f(net="SCL", pos=[3, 4]), "verdict": "real", "reason": "a staircase"}
+    false = {**_f(net="GND", pos=[5, 6]), "verdict": "false", "reason": "a pour neck"}
+    found = [_f(net="SDA", pos=[1.01, 2]), _f(net="GND", pos=[5, 6]), _f(net="X", pos=[0, 0])]
+    j = score.judge(found, [real, gone, false])
+    assert (len(j.real), len(j.missed), len(j.false), len(j.unjudged)) == (1, 1, 1, 1)
+    assert j.charges == 3
+    # a sharper check that finds a new real defect, once it is in the ledger, costs nothing
+    new = {**found[2], "verdict": "real", "reason": "r"}
+    assert score.judge(found, [real, gone, false, new]).charges == 2
+    # a looser check that stops reporting known defects is charged for each
+    assert score.judge([], [real, gone, false]).charges == 2
+
+
+def test_one_entry_is_one_finding_and_a_crashed_gate_misses_nothing():
+    e = {**_f(net="SDA"), "verdict": "real", "reason": "r"}
+    assert score.judge([_f(net="SDA"), _f(net="SDA")], [e]).charges == 1
+    erc = {**score.finding_of("erc", "x"), "verdict": "real", "reason": "r"}
+    assert score.judge([], [erc], ran={"verify"}).charges == 0
+    assert score.judge([], [erc], ran={"erc"}).charges == 1
+
+
+def test_the_ledger_is_in_the_digest_and_a_verdict_needs_a_reason(pin):
+    k = score.known_path(pin)
+    k.parent.mkdir(parents=True)
+    k.write_text(json.dumps({"known": [{**_f(net="A"), "verdict": "real", "reason": ""}]}))
+    msgs = score.problems(pin)
+    assert any("digest" in m for m in msgs) and any("no reason" in m for m in msgs)
+    k.write_text(json.dumps({"known": [{**_f(net="A"), "verdict": "maybe"}]}))
+    assert any("verdict of" in m for m in score.problems(pin))
+
+
+def test_draft_known_adds_only_what_the_ledger_lacks(pin):
+    assert score.draft_known(pin, [_f(net="A"), _f(net="B")]) == 2
+    known = score.read_known(pin)
+    assert [e["verdict"] for e in known] == ["?", "?"]
+    known[0].update(verdict="real", reason="r")
+    score.known_path(pin).write_text(json.dumps({"known": known}))
+    assert score.draft_known(pin, [_f(net="A"), _f(net="B"), _f(net="C")]) == 1
+    assert [e["verdict"] for e in score.read_known(pin)] == ["real", "?", "?"]

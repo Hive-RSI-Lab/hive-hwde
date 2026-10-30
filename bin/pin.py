@@ -10,7 +10,8 @@ directory (pinned/BOARD, or boards/BOARD for this repo's own board) and each
 board-local script in it, as `design` (the board's own source) or `stand_in`
 (does what an hwde script should, with why). A script the pin doesn't classify
 is listed under `unclassified` and charged like a stand-in until someone
-classifies it. Every pin's digest goes into bin/score.py's PINS, so a refresh
+classifies it. A pin's ledger, pinned/known/BOARD.json (the findings judged
+real or false), is part of its digest and survives a refresh. Every pin's digest goes into bin/score.py's PINS, so a refresh
 is a change to the score's own file: the commit that makes it names the
 CLONE commit, and the score starts a new baseline from it.
 """
