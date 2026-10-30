@@ -1,0 +1,124 @@
+# The real-errata corpus (scripts/errata_corpus.py, docs/errata-corpus.md).
+#
+# Public open-hardware boards whose next revision fixed a defect the earlier
+# one shipped with, each defect sourced from the designer's own errata at a
+# pinned commit. For each defect: what hwde does with rev A. `catch` names a
+# check hwde runs and the finding that is the defect; errata_corpus.py runs it
+# on rev A (the finding must be there) and on rev B (it must be gone, so the
+# check sees the fix and doesn't just fire on everything). A defect with no
+# catch is a miss: `follow_up` is the check to build or the brief filed for it.
+#
+# verdict: caught (an hwde check finds it on rev A, unprompted by any
+# constraint a designer would only write after knowing the bug) | missed |
+# not_static (a fact no file holds: a firmware choice, a vendor's chip bug).
+boards:
+- id: digits
+  url: https://github.com/justinlindh/digits
+  commit: 9807030c8411bf854910b6e2bf4707fa4b47f7bf
+  licence: AGPL-3.0
+  rev_a: {name: v1, sch: hardware/pcb/v1/kicad/digits-pcb.kicad_sch,
+          pcb: hardware/pcb/v1/kicad/digits-pcb.kicad_pcb}
+  rev_b: {name: v2, sch: hardware/pcb/v2/kicad/digits-pcb.kicad_sch,
+          pcb: hardware/pcb/v2/kicad/digits-pcb.kicad_pcb}
+  source: hardware/pcb/v1/ERRATA.md
+  defects:
+  - id: digits-1
+    summary: LM2596 switching node Net-(D1-K) routed at 0.25 mm (default class) for 3 A
+    source_quote: "The trace connecting U1 OUT (pin 2), D1 cathode, and L1 is routed at 0.25mm"
+    fault_class: PI (track width vs current)
+    verdict: caught_with_constraints
+    note: >-
+      check_current flags a track under the IPC-2152 width for the current
+      constraints.json gives the net; hwde's own playbook writes a current for
+      every switching node at P2, so on an hwde board it fires. On the foreign
+      board there is no constraints.json, so it can't; the miss is the
+      auto-named net escaping the net class, which a constraints-free read of
+      a buck's SW pin would see.
+    follow_up: brief - check_current infers a current for a regulator's switch node (pin named SW/OUT/LX of a part in fet_power/regulator tables) when constraints.json names none
+  - id: digits-2
+    summary: J1 2x20 Pi header on B.Cu rotated 180 deg, so odd/even columns swap against the Pi below
+    source_quote: "The combination of KiCad's automatic B.Cu mirror and the 180-degree rotation causes the odd/even pin columns to swap"
+    fault_class: MECH (mating orientation)
+    verdict: missed
+    follow_up: brief - check_mate_pins checks a bottom-side stacking header's pin 1 corner against its mate's footprint as seen from the mating side
+  - id: digits-3
+    summary: MIC_GND is a local label, not the GND symbol; the mic return floats
+    source_quote: "MIC_GND is a floating net -- no connection to board GND"
+    fault_class: SCH (net connectivity)
+    verdict: caught
+    catch: {script: netlist_audit, kind: ground_island, net: /MIC_GND}
+  - id: digits-4
+    summary: J7 bell terminal on single-pin nets BELL_1/BELL_2, wired to nothing
+    source_quote: "J7 ... has no trace to anything else on the board. Its two pins drop onto single-pin nets"
+    fault_class: SCH (net connectivity)
+    verdict: caught
+    catch: {script: netlist_audit, kind: dangling_net, net: /BELL_1}
+- id: oasis
+  url: https://github.com/justbuchanan/oasis
+  commit: 3462f162f80e11c78705218441af37639d87bfdc
+  licence: Apache-2.0
+  rev_a: {name: v0.2, sch: pcb/fabricated-boards/v0.2/kicad/pcb.kicad_sch,
+          pcb: pcb/fabricated-boards/v0.2/kicad/pcb.kicad_pcb}
+  rev_b: {name: mainboard-v0.3, sch: pcb/fabricated-boards/mainboard-v0.3/kicad/pcb.kicad_sch,
+          pcb: pcb/fabricated-boards/mainboard-v0.3/kicad/pcb.kicad_pcb}
+  source: pcb/fabricated-boards/v0.2/errata.md
+  defects:
+  - id: oasis-1
+    summary: Q1/Q3 SI2328DS on Q_NMOS_GDS + stock SOT-23-3, so gate and source are swapped
+    source_quote: "Gate and source are swapped on the footprint for the fan and mister mosfets"
+    fault_class: LIB (symbol pin map vs package)
+    verdict: caught
+    catch: {script: netlist_audit, kind: sot23_pinout, refs: [Q1, Q3]}
+    note: v0.3 keeps the GDS symbol and moves to lib:SOT-23-3-pinswapped-mosfet, so the rule is quiet there.
+  - id: oasis-2
+    summary: Rfbb1 BOM part an 0402 resistor (C844504) on an 0603 footprint
+    source_quote: "I had accidentally selected an 0402 resistor, but the footprint on the board design was for an 0603"
+    fault_class: DFA (BOM part vs footprint package)
+    verdict: missed
+    follow_up: brief - check_bom_sync compares the LCSC part's package (parts cache / stock_check) with the footprint's size code
+  - id: oasis-3
+    summary: MISTER1 connector placed 180 deg off at JLC assembly
+    source_quote: "the part on the jlcpcb order is rotated 180 from what I have in my pcb layout"
+    fault_class: DFA (CPL rotation)
+    verdict: missed
+    note: cpl_verify renders the CPL against the footprint for hwde's own fab package; the foreign board has no CPL in the tree, so nothing was there to read.
+    follow_up: none new - cpl_verify covers it on an hwde fab package
+- id: minuet
+  url: https://github.com/brown-studios/minuet
+  commit: 1e43aa3df01b33522db23f4b2139f89b5689da99
+  licence: MIT
+  rev_a: {name: v3, sch: hardware/minuet/v3/minuet.kicad_sch,
+          pcb: hardware/minuet/v3/minuet.kicad_pcb}
+  rev_b: {name: v4, sch: hardware/minuet/v4/minuet.kicad_sch,
+          pcb: hardware/minuet/v4/minuet.kicad_pcb}
+  source: hardware/minuet/v3/design-and-errata.md
+  defects:
+  - id: minuet-1
+    summary: no 1 uF capacitor FB_BK to GND_BK, which the MCF8316D datasheet asks for
+    source_quote: "There should be a 1 uF capacitor from FB_BK to GND_BK according to the MCF8316D datasheet"
+    fault_class: PI (datasheet-required pin capacitor)
+    verdict: missed
+    follow_up: brief - a datasheet pin-requirement table (per MPN, pin, required part to which net) that netlist_audit reads, filled by datasheet_extract
+  - id: minuet-2
+    summary: LMV331IDCK comparator's input common mode (Vcc-0.7 = 2.6 V) below the 3.1 V rain-sensor signal
+    source_quote: "only allows a common mode input voltage up to Vcc - 0.7 V = 2.6 V whereas the actual signals are in the range of 3.1 V"
+    fault_class: ANA (input common-mode range)
+    verdict: missed
+    follow_up: brief - sim_board or check_ratings checks each op-amp/comparator input's DC level against the part's common-mode range
+  - id: minuet-3
+    summary: board areas over 50 C at 4 A per motor phase
+    source_quote: "Some areas of the PCB reach over 50 C when operating the motor at 4 A peak per phase"
+    fault_class: TH (copper area under a power IC)
+    verdict: caught_with_constraints
+    note: check_thermal estimates rise from the power and copper constraints.json gives; on the foreign board it has no input. v4's 4-layer pours are the fix.
+  - id: minuet-4
+    summary: ESP32-C3 GPIO6 (MTCK) pulled up by the ROM at reset turns the LED strip on before firmware runs
+    source_quote: "The bootloader enables the GPIO6 pull-up on reset which interferes with its use for the Minuet light accessory"
+    fault_class: FW-HW (reset-state pull on a load enable)
+    verdict: missed
+    follow_up: brief - check_straps reads every MCU pin with a reset-state pull in reset_states.yaml (not only straps) that drives a load enable or a gate, and flags a load that comes up on before firmware
+  - id: minuet-5
+    summary: an access-point WiFi connect resets the ESP32-C3 at full TX power
+    source_quote: "The microcontroller spontaneously resets ... Reducing the WiFi output power to 19 dB resolves the issue"
+    fault_class: FW (radio power)
+    verdict: not_static
