@@ -19,6 +19,11 @@
 #                         runs it into the Hive's tools folder, so a check
 #                         sandbox, which mounts only /work and /hive/tools,
 #                         has /hive/tools/hwde/bin/hwde with no venv to build)
+#                         A published copy hands each command to the
+#                         installed module (/hive/modules/hive-hwde, which
+#                         follows main at every merge) whenever it can see
+#                         it and both pin the same requirements.lock, so
+#                         only a lock change needs a new publish.
 #   hwde <script> [args]  run skill/scripts/<script>.py with the venv python
 #                         (or the published copy's own)
 #
@@ -37,6 +42,17 @@
 # packages installed in it, and its own PDFs, and uses those instead.
 set -e
 here=$(cd "$(dirname "$0")/.." && pwd)
+
+# A published copy runs the installed module's code with its own python when
+# the module is in sight (agents see $HIVE_MODULES; a check sees it once the
+# Hive mounts it) and the two lock the same packages; else its own code.
+if [ -f "$here/VERSION" ] && [ -z "${HWDE_PUBLISHED:-}" ]; then
+	mod=${HIVE_MODULES:-/hive/modules}/hive-hwde
+	if [ -x "$mod/bin/hwde" ] && [ ! -f "$mod/VERSION" ] && cmp -s "$mod/requirements.lock" "$here/requirements.lock"; then
+		HWDE_PUBLISHED=$here exec "$mod/bin/hwde" "$@"
+	fi
+fi
+pub=${HWDE_PUBLISHED:-$here}
 tools=${HIVE_TOOLS:-/hive/tools}
 state=${HWDE_HOME:-$HOME/.cache/hwde}
 venv=${HWDE_VENV:-$state/venv}
@@ -135,7 +151,7 @@ fi
 # bin/sources.py fetches them into HOME (a published copy carries its own)
 # the first time a command that checks citations runs, or `hwde sources`.
 if [ -z "${HWDE_KNOWLEDGE_SOURCES:-}" ]; then
-	srcdir=$here/knowledge-sources
+	srcdir=$pub/knowledge-sources
 	[ -d "$srcdir" ] || srcdir=$state/knowledge-sources
 	if [ ! "$srcdir/.complete" -nt "$here/docs/knowledge-sources.txt" ]; then
 		case ${1:-} in
@@ -151,7 +167,7 @@ HWDE_BOARDS_ROOT=${HWDE_BOARDS_ROOT:-$PWD/boards}
 # A published copy's own python (an explicit HWDE_VENV still wins); else the
 # venv in HOME, built when missing or older than the lock.
 py=
-[ -z "${HWDE_VENV:-}" ] && py=$(ls -d "$here"/python/cpython-3.14.*/bin/python3.14 2>/dev/null | sort -V | tail -n 1)
+[ -z "${HWDE_VENV:-}" ] && py=$(ls -d "$pub"/python/cpython-3.14.*/bin/python3.14 2>/dev/null | sort -V | tail -n 1)
 own=$py
 [ -n "$py" ] || py=$venv/bin/python
 if [ -z "$own" ] && { [ ! -x "$py" ] || [ "$here/requirements.lock" -nt "$venv/.hwde-lock" ]; }; then
@@ -167,7 +183,7 @@ fi
 # folders, which kicad-sch-api (the skill's schematic writer) can't read; it
 # gets flat copies of the libraries the skill places by lib_id (power, Device).
 if wa symdir && [ -n "$appdir" ] && [ -z "${KICAD_SYMBOL_DIR:-}" ] && [ -d "$appdir/share/kicad/symbols/power.kicad_symdir" ]; then
-	syms=$here/symbols-$(basename "$appdir")
+	syms=$pub/symbols-$(basename "$appdir")
 	[ -f "$syms/power.kicad_sym" ] || syms=$state/symbols-$(basename "$appdir")
 	[ -f "$syms/power.kicad_sym" ] || "$py" "$here/bin/flatten-symdirs.py" "$appdir/share/kicad/symbols" "$syms"
 	export KICAD_SYMBOL_DIR=$syms
@@ -263,7 +279,7 @@ check)
 	x "$py" "$here/.claude/skills/hwde/scripts/check_env.py" "$@"
 	;;
 "" | -h | --help)
-	sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'
+	sed -n '2,35p' "$0" | sed 's/^# \{0,1\}//'
 	;;
 *)
 	s=${1%.py}
