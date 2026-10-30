@@ -35,7 +35,17 @@ these ways:
   rule E, which `lib_pull` runs on every pull, and its `--pcb` mode for placed
   copies; `scripts/board_edit.py`, whose `--outline fit` counts silk and whose
   edits refuse to clip it; `scripts/check_silk.py`, whose silk items carry
-  their footprint's reference.
+  their footprint's reference. From the first product board
+  (hifi-receiver-2 lite-main): `fpfix` rule F numbers an exposed pad's
+  unnumbered thermal vias and drops their paste, and `fpfix.body_flags`
+  reads each part's 3D model for a peg with no hole, a body outside the
+  courtyard or a model off its footprint (`lib_pull` lists them in
+  `autofix.flags`); `lib_pull --budget-s` stops before a 10-minute call
+  runs out, and a re-run skips parts already whole in the library;
+  `schlib.Sheet` registers the project's own symbol libraries from its
+  `sym-lib-table`; the ERC gate reports `pin_types` and warns when every pin
+  is passive; `board_init --origin` keeps a re-run's outline where the board
+  had it; the schematic role prompts give `kc.py`'s positional input.
 - Two verify checks from hifi-receiver-2's first-spin review (issue #130):
   `scripts/check_straps.py` (+ `reference/reset_states.yaml`), an MCU's
   strapping pins and IO expander pins at power-on and on an MCU-only reset,
