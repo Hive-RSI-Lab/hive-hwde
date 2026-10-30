@@ -76,3 +76,36 @@ families:
     match: '^(Hirose_DF\d+|Samtec_|Panasonic_AXK|Hirose_BM\d+)'
     keyed: true
     mates: [board-to-board]
+
+# Standard headers whose mate is known without a mate board (MECH-05, one
+# board): a connector on this board's B.Cu faces down onto a mate lying below
+# it face up, so seen from above its pads must make the same pattern as the
+# mate's own header. A 2-row odd/even pattern's handedness is the sign of
+# (pin 2 - pin 1) x (pin 3 - pin 1) in KiCad's top view (y down); a turn keeps
+# it, a mirror (the B.Cu flip of a footprint numbered for F.Cu) flips it, so a
+# mirrored back-side header cannot meet its mate in any rotation: the odd and
+# even rows swap (mate_mirrored_pinout). F.Cu is not judged: a HAT's socket
+# soldered from below (same handedness) and a host face down above (mirrored)
+# are both right there.
+#   face_up_handedness - the mate's header seen from above, mate face up
+#   pins               - numbered pads; the pattern must be 2 rows at pitch_mm
+#   supply_pins        - the mate's supply pins; a connector is this header
+#                        when at least 2 of its pads carry the matching supply
+#                        (one a rail, not only GND) and none carries a supply
+#                        on a pin the mate gives another
+#   nets               - how a net name is read as each supply (last path
+#                        segment, case-insensitive)
+standard_headers:
+  - name: raspberry-pi-40
+    title: Raspberry Pi 40-pin GPIO header
+    pins: 40
+    pitch_mm: 2.54
+    face_up_handedness: 1   # the Pi's PinHeader_2x20 on its F.Cu
+    supply_pins:
+      3V3: [1, 17]
+      5V: [2, 4]
+      GND: [6, 9, 14, 20, 25, 30, 34, 39]
+    nets:
+      3V3: '^\+?(3V3|3\.3V)$'
+      5V: '^\+?(5V|5V0|5\.0V)$'
+      GND: '^(D|P)?GND$'

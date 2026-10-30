@@ -49,6 +49,14 @@ def test_matcher_needs_kind_and_net_or_ref():
     assert not ec.matches({"kind": "ground_island", "net": "/AGND"}, n)
 
 
+def test_every_catch_has_a_runner():
+    """A catch with no runner shows "not run here" and is never verified."""
+    for b in ec.load():
+        for d in b["defects"]:
+            if d.get("catch"):
+                assert d["catch"]["script"] in ec.RUNNERS, d["id"]
+
+
 def test_outcome_reads_fixed_and_regressed():
     d = {"verdict": "caught", "catch": {"script": "netlist_audit", "kind": "x"}}
     assert ec.outcome(d, {"ran": True, "rev_a": True, "rev_b": False}).startswith("caught")

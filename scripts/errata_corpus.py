@@ -13,9 +13,10 @@ fixed board isn't seeing the defect). The table goes to docs/errata-corpus.md.
     errata_corpus.py table           write docs/errata-corpus.md
 
 --cache DIR (default ~/.cache/hwde-errata-corpus, or HWDE_ERRATA_CACHE). Nothing
-is fetched into this repo. Checks run here: netlist_audit (on the schematic,
-with an empty constraints file: what hwde reads before anyone has written
-one). A catch for another script is reported as not run.
+is fetched into this repo. Checks run here (RUNNERS), each with an empty
+constraints file, what hwde reads before anyone has written one:
+netlist_audit on the schematic, check_mate_pins on the board. A catch for
+another script is reported as not run.
 """
 from __future__ import annotations
 
@@ -81,31 +82,49 @@ def matches(violation: dict, catch: dict) -> bool:
     return not refs or bool(refs & set(violation.get("refs") or ()))
 
 
-def audit(cache: Path, b: dict, rev: str) -> list[dict]:
-    sch = repo_dir(cache, b) / b[rev]["sch"]
-    out = cache / "runs" / b["id"] / f"{rev}-netlist_audit.json"
+def _netlist_audit(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
+    return ["netlist_audit.py", "--sch", str(repo / b[rev]["sch"]),
+            "--constraints", str(empty)]
+
+
+def _check_mate_pins(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
+    return ["check_mate_pins.py", "--pcb", str(repo / b[rev]["pcb"]),
+            "--constraints", str(empty)]
+
+
+# script -> its argv on one revision (empty constraints: what hwde reads
+# before anyone has written one)
+RUNNERS = {"netlist_audit": _netlist_audit, "check_mate_pins": _check_mate_pins}
+
+
+def audit(cache: Path, b: dict, rev: str, script: str) -> list[dict]:
+    out = cache / "runs" / b["id"] / f"{rev}-{script}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     empty = out.parent / "constraints.json"
     empty.write_text("{}", encoding="utf-8")
-    subprocess.run([sys.executable, str(SCRIPTS / "netlist_audit.py"), "--sch", str(sch),
-                    "--constraints", str(empty), "--out", str(out)],
+    cmd, *args = RUNNERS[script](b, rev, repo_dir(cache, b), empty)
+    subprocess.run([sys.executable, str(SCRIPTS / cmd), *args, "--out", str(out)],
                    capture_output=True, text=True, timeout=900)
     return json.loads(out.read_text(encoding="utf-8")).get("violations", [])
 
 
 def run(cache: Path, b: dict) -> dict:
-    found = {rev: audit(cache, b, rev) for rev in ("rev_a", "rev_b")}
+    found: dict[tuple[str, str], list[dict]] = {}
     res = {}
     for d in b["defects"]:
         c = d.get("catch")
         if not c:
             continue
-        if c["script"] != "netlist_audit":
+        if c["script"] not in RUNNERS:
             res[d["id"]] = {"ran": False}
             continue
+        for rev in ("rev_a", "rev_b"):
+            if (rev, c["script"]) not in found:
+                found[rev, c["script"]] = audit(cache, b, rev, c["script"])
         res[d["id"]] = {"ran": True,
-                        "rev_a": any(matches(v, c) for v in found["rev_a"]),
-                        "rev_b": any(matches(v, c) for v in found["rev_b"])}
+                        "rev_a": any(matches(v, c) for v in found["rev_a", c["script"]]),
+                        "rev_b": any(matches(v, c) for v in found["rev_b", c["script"]])}
+    (cache / "runs" / b["id"]).mkdir(parents=True, exist_ok=True)
     (cache / "runs" / b["id"] / "result.json").write_text(json.dumps(res, indent=1))
     return res
 
