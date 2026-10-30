@@ -260,3 +260,99 @@ def test_no_netlist_without_an_mcu_passes(tmp_path):
 def test_both_checks_join_verify_all():
     names = {c["name"] for c in verify_all.CHECKS}
     assert {"check_antenna", "check_straps"} <= names
+
+
+# ------------------------------------------- pins the chip pulls at reset
+
+def _c3(tmp_path, gpio6: list, comps: dict | None = None, net="GPIO6"):
+    """minuet v3 cut down: an ESP32-C3 whose GPIO6 (MTCK, pulled up by the
+    chip from reset) reaches `gpio6`."""
+    c = {"U4": "ESP32-C3-WROOM-02-N4", "R9": "10k", **(comps or {})}
+    nets = {
+        "+3.3V": [("U4", "1", "3V3_1"), ("R9", "2", "")],
+        "GND": [("U4", "19", "GND_19")],
+        "BOOT": [("U4", "8", "GPIO9_8"), ("R9", "1", "")],
+        net: [("U4", "5", "GPIO6_5")] + gpio6,
+    }
+    pcb = _netlist(tmp_path, c, nets)
+    payload, _ = check_straps.run(["--pcb", str(pcb), "--netlist",
+                                   str(tmp_path / "s.net")])
+    return _by_kind(payload), payload
+
+
+def test_c3_gpio6_bare_on_a_connector_warns(tmp_path):
+    """minuet-4: GPIO6 to the EXPANSION header with nothing but the
+    chip's own pull-up; the accessory's LED strip comes on at reset."""
+    k, _ = _c3(tmp_path, [("J4", "5", "Pin_5_5")], {"J4": "Conn_02x08"})
+    (v,) = k["reset_pull_offboard"]
+    assert v["net"] == "GPIO6" and v["pin"] == "IO6"
+    assert "J4.5" in v["msg"] and "high" in v["msg"]
+    assert "strap_level" not in k
+
+
+def test_c3_gpio6_with_its_own_pull_is_quiet(tmp_path):
+    """minuet v4's fix shape: a board pull on the line (here a pull-down
+    that beats the chip's 45 k) says the idle level was chosen."""
+    k, payload = _c3(tmp_path, [("J4", "5", "Pin_5_5"), ("R13", "1", "")],
+                     {"J4": "Conn_02x08", "R13": "10k"})
+    assert "reset_pull_offboard" not in k
+    pulls = payload["checked"][0]["reset_pulls"]
+    assert [p for p in pulls if p["name"] == "IO6"]
+
+
+def test_c3_gpio6_on_a_jtag_header_is_quiet(tmp_path):
+    k, _ = _c3(tmp_path, [("J9", "3", "TCK_3")], {"J9": "JTAG"},
+               net="/MTCK")
+    assert "reset_pull_offboard" not in k
+
+
+def test_c3_gpio6_drives_a_fet_gate_on(tmp_path):
+    """The on-board shape: GPIO6 through 1 k to a 2N7002's gate, no
+    pull-down, so the chip's pull-up turns the strip's low side on."""
+    c = {"R1": "1k", "Q1": "2N7002"}
+    pcb_nodes = [("R1", "1", "")]
+    k, _ = _c3(tmp_path, pcb_nodes, c)
+    assert not k  # the gate isn't wired yet: R1's far side is open
+    tmp2 = tmp_path / "b"
+    tmp2.mkdir()
+    comps = {"U4": "ESP32-C3-WROOM-02-N4", "R1": "1k", "Q1": "2N7002"}
+    nets = {"+3.3V": [("U4", "1", "3V3_1")], "GND": [("Q1", "2", "S")],
+            "GPIO6": [("U4", "5", "GPIO6_5"), ("R1", "1", "")],
+            "/LED_GATE": [("R1", "2", ""), ("Q1", "1", "G")]}
+    pcb = _netlist(tmp2, comps, nets)
+    payload, _ = check_straps.run(["--pcb", str(pcb), "--netlist",
+                                   str(tmp2 / "s.net")])
+    (v,) = _by_kind(payload)["load_on_at_reset"]
+    assert v["refs"] == ["Q1", "U4"] and v["volts"] > 3.0
+    # a 10 k pull-down on the gate holds it at 0.6 V, under VGS(th)
+    tmp3 = tmp_path / "c"
+    tmp3.mkdir()
+    comps["R2"] = "10k"
+    nets["/LED_GATE"].append(("R2", "1", ""))
+    nets["GND"].append(("R2", "2", ""))
+    pcb = _netlist(tmp3, comps, nets)
+    payload, _ = check_straps.run(["--pcb", str(pcb), "--netlist",
+                                   str(tmp3 / "s.net")])
+    assert "load_on_at_reset" not in _by_kind(payload)
+
+
+def test_c3_gpio6_on_a_load_switch_enable(tmp_path):
+    k, _ = _c3(tmp_path, [("U8", "3", "EN_3")], {"U8": "TPS22918"})
+    (v,) = k["load_on_at_reset"]
+    assert v["part_pin"] == "EN"
+    # an active-low enable pulled high leaves its part off
+    tmp2 = tmp_path / "b"
+    tmp2.mkdir()
+    k, _ = _c3(tmp2, [("U8", "3", "~{EN}_3")], {"U8": "AP2553"})
+    assert "load_on_at_reset" not in k
+
+
+def test_part_on_polarity():
+    assert check_straps.part_on("EN", False, "high") is True
+    assert check_straps.part_on("EN", True, "high") is False
+    assert check_straps.part_on("NEN", False, "low") is True
+    assert check_straps.part_on("SHDN", False, "high") is True
+    assert check_straps.part_on("SHDN", False, "low") is False
+    assert check_straps.part_on("DRVOFF", False, "low") is True
+    assert check_straps.part_on("SDA", False, "high") is None
+    assert check_straps.part_on("ONE", False, "high") is None

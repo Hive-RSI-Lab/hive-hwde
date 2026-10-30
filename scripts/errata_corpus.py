@@ -15,8 +15,9 @@ fixed board isn't seeing the defect). The table goes to docs/errata-corpus.md.
 --cache DIR (default ~/.cache/hwde-errata-corpus, or HWDE_ERRATA_CACHE). Nothing
 is fetched into this repo. Checks run here (RUNNERS), each with an empty
 constraints file, what hwde reads before anyone has written one:
-netlist_audit on the schematic, check_mate_pins on the board. A catch for
-another script is reported as not run.
+netlist_audit on the schematic, check_mate_pins on the board, check_straps
+on the board with the netlist kicad-cli exports from the schematic. A catch
+for another script is reported as not run.
 """
 from __future__ import annotations
 
@@ -92,9 +93,26 @@ def _check_mate_pins(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
             "--constraints", str(empty)]
 
 
+def _check_straps(b: dict, rev: str, repo: Path, empty: Path) -> list[str]:
+    """On the board, with the netlist kicad-cli exports from its schematic
+    (what the pipeline puts beside an hwde board)."""
+    sys.path.insert(0, str(SCRIPTS / "lib"))
+    import env
+    cli = env.find_kicad_cli()
+    if not cli:
+        raise SystemExit("check_straps catches need kicad-cli (bin/hwde env)")
+    net = empty.parent / f"{rev}.net"
+    subprocess.run([str(cli), "sch", "export", "netlist", "-o", str(net),
+                    str(repo / b[rev]["sch"])], capture_output=True, text=True,
+                   timeout=900, check=True)
+    return ["check_straps.py", "--pcb", str(repo / b[rev]["pcb"]),
+            "--netlist", str(net)]
+
+
 # script -> its argv on one revision (empty constraints: what hwde reads
 # before anyone has written one)
-RUNNERS = {"netlist_audit": _netlist_audit, "check_mate_pins": _check_mate_pins}
+RUNNERS = {"netlist_audit": _netlist_audit, "check_mate_pins": _check_mate_pins,
+           "check_straps": _check_straps}
 
 
 def audit(cache: Path, b: dict, rev: str, script: str) -> list[dict]:

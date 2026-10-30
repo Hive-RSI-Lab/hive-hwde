@@ -127,8 +127,16 @@ boards:
     summary: ESP32-C3 GPIO6 (MTCK) pulled up by the ROM at reset turns the LED strip on before firmware runs
     source_quote: "The bootloader enables the GPIO6 pull-up on reset which interferes with its use for the Minuet light accessory"
     fault_class: FW-HW (reset-state pull on a load enable)
-    verdict: missed
-    follow_up: brief - check_straps reads every MCU pin with a reset-state pull in reset_states.yaml (not only straps) that drives a load enable or a gate, and flags a load that comes up on before firmware
+    verdict: caught
+    catch: {script: check_straps, kind: reset_pull_offboard, net: GPIO6}
+    note: >-
+      check_straps reads the C3's reset_pulls (MTMS/MTDI/MTCK pull-ups) from
+      reset_states.yaml: v3's GPIO6 leaves the board on the EXPANSION header
+      J4.5 with only the chip's pull-up, so the light accessory's strip sees it
+      high from reset. It also warns on GPIO5 (J4.6), bare the same way. v4
+      (ESP32-C6) puts R13 100 k to 3V3 on GPIO6, a pull the accessory is
+      designed for, and the finding is gone. On a board whose load is on the
+      board itself, load_on_at_reset names the gate or enable instead.
   - id: minuet-5
     summary: an access-point WiFi connect resets the ESP32-C3 at full TX power
     source_quote: "The microcontroller spontaneously resets ... Reducing the WiFi output power to 19 dB resolves the issue"
