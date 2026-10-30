@@ -102,6 +102,75 @@ def live_search(keyword: str, page: int = 1, page_size: int = 25,
     return list(raw.get("results", [])), int(raw.get("total", 0) or 0)
 
 
+# The endpoint easyeda2kicad wraps. Its keyword match is on part numbers and
+# a few description tokens, so a kind ('RCA jack', 'Toslink') returns zero
+# rows; the same endpoint browses a JLC category (secondSortName), filters
+# attributes server-side (componentAttributeList: [{name: [exact values]}])
+# and drops out-of-stock rows (stockFlag) - none of which the wrapper passes.
+JLC_SEARCH_URL = ("https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/"
+                  "smtGood/selectSmtComponentList")
+
+
+def _jlc_item(item: dict) -> dict:
+    """A raw JLC list row -> the result shape search_jlcpcb_components gives."""
+    prices = item.get("componentPrices") or []
+    return {
+        "lcsc": item.get("componentCode", ""),
+        "model": item.get("componentModelEn", ""),
+        "brand": item.get("componentBrandEn", ""),
+        "package": item.get("componentSpecificationEn", ""),
+        "category": item.get("componentTypeEn", ""),
+        "stock": item.get("stockCount", 0),
+        "type": "Basic" if item.get("componentLibraryType") == "base" else "Extended",
+        "price": prices[0].get("productPrice") if prices else None,
+        "price_breaks": [{"qty": p.get("startNumber"), "price": p.get("productPrice")}
+                         for p in prices],
+        "min_qty": item.get("minPurchaseNum", 1),
+        "description": item.get("describe", ""),
+        "url": item.get("lcscGoodsUrl", ""),
+        "datasheet": item.get("dataManualUrl", ""),
+        "attributes": [{"name": a.get("attribute_name_en", ""),
+                        "value": a["attribute_value_name"]}
+                       for a in (item.get("attributes") or [])
+                       if a.get("attribute_value_name")
+                       and a["attribute_value_name"] != "-"],
+    }
+
+
+def category_search(category: str, *, attrs: dict[str, list[str]] | None = None,
+                    keyword: str = "", in_stock: bool = True,
+                    part_type: str | None = None, page: int = 1,
+                    page_size: int = 1000, timeout: float = 30.0
+                    ) -> tuple[list[dict], int]:
+    """One page of a JLC category browse -> (results, total).
+
+    Unlike live_search, a network or API failure raises (httpx error or
+    PartsError) rather than looking like an empty category.
+    """
+    httpx = require_httpx()
+    payload: dict[str, Any] = {"currentPage": page, "pageSize": page_size,
+                               "secondSortName": category}
+    if keyword:
+        payload["keyword"] = keyword
+    if in_stock:
+        payload["stockFlag"] = True
+    if part_type:
+        payload["componentLibraryType"] = part_type
+    if attrs:
+        payload["componentAttributeList"] = [{k: list(v)} for k, v in attrs.items()]
+    r = httpx.post(JLC_SEARCH_URL, json=payload, timeout=timeout, headers={
+        "User-Agent": "Mozilla/5.0", "Origin": "https://jlcpcb.com",
+        "Referer": "https://jlcpcb.com/parts"})
+    r.raise_for_status()
+    body = r.json()
+    if body.get("code") != 200:
+        raise PartsError(f"JLC category search failed: code {body.get('code')} "
+                         f"{body.get('message') or ''}".strip())
+    info = (body.get("data") or {}).get("componentPageInfo") or {}
+    return ([_jlc_item(i) for i in info.get("list") or []],
+            int(info.get("total") or 0))
+
+
 def endpoint_reachable(timeout: float = 8.0) -> bool:
     """True if jlcpcb.com answers - distinguishes 'no matches' from 'offline'."""
     httpx = require_httpx()
@@ -167,6 +236,24 @@ def normalize(item: dict) -> dict:
         "url": item.get("url", "") or "",
         "attributes": item.get("attributes", []) or [],
     }
+
+
+_SI = {"p": 1e-12, "n": 1e-9, "u": 1e-6, "µ": 1e-6, "μ": 1e-6, "m": 1e-3,
+       "": 1.0, "k": 1e3, "K": 1e3, "M": 1e6, "G": 1e9}
+_QTY = re.compile(r"(\d+(?:\.\d+)?)\s*([pnuµμmkKMG]?)")
+
+
+def attr_max(p: dict, name: str) -> float | None:
+    """The largest quantity in attribute `name` ('250mA、1.25A、5A' -> 5.0),
+    SI prefixes applied; None when the part doesn't state it."""
+    best = None
+    for a in p.get("attributes") or []:
+        if a.get("name", "").lower() != name.lower():
+            continue
+        for num, pre in _QTY.findall(str(a.get("value", ""))):
+            v = float(num) * _SI[pre]
+            best = v if best is None else max(best, v)
+    return best
 
 
 def rank_key(p: dict) -> tuple:

@@ -11,9 +11,10 @@ an agent runs it inside the Hive.
 - Run `hwde check` (`$HIVE_MODULES/hwde/bin/hwde check --quiet`). It must
   exit 0. On first use it builds the skill's Python venv in your HOME from
   `requirements.lock`, using the Hive's uv; that takes about 15 s.
-- KiCad 10.0.6, freerouting 2.2.4 and KiCadRoutingTools 0.19.0 are the
-  Hive's, read-only in `/hive/tools` (put there through a warden). Java 25
-  is the system's. `bin/hwde` points the skill at that folder
+- KiCad 10.0.6, freerouting 2.2.4 and KiCadRoutingTools 0.19.0 (for
+  `route_critical` and route_auto's KRT finish) are the Hive's, read-only
+  in `/hive/tools` (put there through a warden). Java 25 is the system's.
+  `bin/hwde` points the skill at that folder
   (`HWDE_TOOLS_DIR`) and the skill's `env.py` finds them all, plus KiCad's
   own python with `pcbnew`, its ngspice, its 3D model loaders and its stock
   symbols (KiCad 10's `.kicad_symdir` libraries, flattened into
@@ -50,6 +51,18 @@ an agent runs it inside the Hive.
   list. A review answers each known unknown from a datasheet or states the
   margin it rests on; `hwde eng_calc <calc> ...` gives the numbers a written
   margin cites.
+- Every board with a power input also gets its power paths checked:
+  `hwde sim_inrush --workspace boards/<name> --out boards/<name>/reports/sim_inrush.json`
+  (load switches against a USB PD source: inrush, a switch that conducts
+  with firmware off, turn-on SOA as a peak junction temperature, hard
+  reset), `hwde check_power_path` (in the verify suite: the current each
+  pad-track-via chain carries, against the budget, `power_paths` and the
+  PD contract) and `hwde mlcc_dcbias --workspace boards/<name>` (ceramics
+  at their DC bias). Put the PD contract in constraints.json as
+  `"pd_source": {"contract_v": .., "contract_a": ..}` and the real current
+  of each high-current run in `power_paths`; `hwde soa_check` gives a FET's
+  Tj for a written margin. These are what hifi-receiver-2's first-spin
+  power review did by hand (its docs/review-2/power.md).
 - A board that runs firmware gets `hwde check_fw --board boards/<name>`,
   run at every schematic change, not first at bring-up. It runs hive-fw's
   `fw constraints` (with `fw pins` inside it) for each firmware target whose

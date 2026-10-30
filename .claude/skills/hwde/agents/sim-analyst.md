@@ -31,6 +31,12 @@ first: its findings are your leads, and your benches go where it is blind -
 a block whose behaviour depends on an IC pin's real model, a window that
 needs a sweep, a node it reports as IC-driven and leaves unjudged. Close
 every known unknown it raises in your OPEN line or with a bench.
+A board with a load switch or a USB PD input also gets
+`scripts/sim_inrush.py --workspace <ws> --out reports/sim_inrush.json`
+(the switch against a PD source: attach, steps, turn-on SOA as a junction
+temperature, hard reset); its fitted FET models and thermal data live in
+`reference/fet_power.yaml` - a part missing there runs on a generic model,
+and adding its row (with the datasheet it came from) is part of the job.
 
 ## What to sim (and what not)
 Simmable, in scope: zener/comparator windows and indicator logic, divider
