@@ -83,7 +83,12 @@ re-judged at the current its far side can draw, when that is less:
  - via cluster: the cluster's vias are cut and the net's raw copper falls
    into components. At most one holds an unbounded part, no cluster via
    lies wholly inside it, and every other side reaches it through exactly
-   one cluster via. The cluster needs ceil(bound / via_amps) vias.
+   one cluster via. The cluster needs ceil(bound / via_amps) vias;
+ - track (a bridge, hifi-receiver-2 core +3V3: 0.3 mm taps off plane vias
+   to single pull-ups, judged at the rail's 0.8 A): the track is taken out
+   and the net's raw copper must fall into exactly two parts, one at each
+   end, with nothing else touching it. When one part reaches only bounded
+   parts, the track is re-judged at their sum.
 Re-judged findings that pass are listed in facts["leaf_branches"]; ones that
 still fail carry extras leaf_loads.
 
@@ -611,14 +616,21 @@ def _loads(bg: geom.BoardGeom, refs) -> float | None:
 
 
 def _copper_graph(bg: geom.BoardGeom, net: str, walls: dict | None = None,
-                  skip: frozenset = frozenset()):
-    """The net's raw copper as parts per layer (minus `walls[layer]`),
-    joined through every via and plated pad whose id() is not in `skip`.
-    Returns (nodes [(layer, part)], root(i), hits(item) -> indices of the
-    nodes its copper touches on its own layers)."""
+                  skip: frozenset = frozenset(), drop=None):
+    """The net's raw copper as parts per layer (minus `walls[layer]`, and
+    without the track `drop`), joined through every via and plated pad
+    whose id() is not in `skip`. Returns (nodes [(layer, part)], root(i),
+    hits(item) -> indices of the nodes its copper touches on its own
+    layers)."""
     nodes = []
     for l in bg.copper_layers:
         cop = bg.net_copper(net, l)
+        if drop is not None and l == drop.layer:
+            cop = geom._union(
+                [t.poly for t in bg.tracks_of(net, l) if t is not drop]
+                + [p.poly for p in bg.pads_of(net, l)]
+                + [v.poly for v in bg.vias_of(net, l)]
+                + [z.fill_on(l) for z in bg.zones_of(net, l)])
         if walls and l in walls and not cop.is_empty:
             cop = cop.difference(walls[l])
         if cop.is_empty:
@@ -778,6 +790,31 @@ def cluster_leaf_bound(bg: geom.BoardGeom, net: str, group: list):
     return _loads(bg, refs), sorted(refs)
 
 
+def track_leaf_bound(bg: geom.BoardGeom, net: str, track):
+    """(amps, refs) a track can carry at most, when taking it out leaves the
+    net's raw copper in two parts, one at each end, and one of them reaches
+    only bounded loads; else None (module docstring, leaf branches)."""
+    nodes, find, hits = _copper_graph(bg, net, drop=track)
+    on = [i for i, (l, _p) in enumerate(nodes) if l == track.layer]
+    coords = track.shape.coords
+    ends = []
+    for p in (coords[0], coords[-1]):
+        cap = Point(p).buffer(track.width / 2.0)
+        ends.append({find(i) for i in on if nodes[i][1].intersects(cap)})
+    sides = {find(i) for i in on if nodes[i][1].intersects(track.poly)}
+    if (len(sides) != 2 or any(len(e) != 1 for e in ends)
+            or ends[0] == ends[1]):
+        return None                      # a parallel path, or a mid-track tap
+    best = None
+    for side in sides:
+        refs = {p.ref for p in bg.pads_of(net)
+                if any(find(i) == side for i in hits(p))}
+        amps = _loads(bg, refs)
+        if amps is not None and (best is None or amps < best[0]):
+            best = (amps, sorted(refs))
+    return best
+
+
 def check_net(bg: geom.BoardGeom, entry: dict):
     net = entry.get("net")
     if not net:
@@ -808,6 +845,8 @@ def check_net(bg: geom.BoardGeom, entry: dict):
             f"{net} is declared plane_fed but has no zone fill on any layer",
             SCRIPT, kind="plane_missing"))
         plane_fed = False       # rest of the check runs at full semantics
+
+    leaf_branches: list[dict] = []           # dropped: bounded leaf loads
 
     # ---- track segments
     min_seen: dict[str, float] = {}
@@ -870,9 +909,30 @@ def check_net(bg: geom.BoardGeom, entry: dict):
             violations = [v for v in violations if id(v) not in drop]
             undersized = [(v, t) for v, t in undersized if id(v) not in drop]
             pour_taps = [v["pos"] for v, _ in shunted]
+        # a bridge whose far side feeds only bounded loads: their sum
+        for v, t in list(undersized):
+            leaf = track_leaf_bound(bg, net, t) if v["bridge"] else None
+            if leaf is None or leaf[0] >= v["current_a"]:
+                continue
+            amps, refs = leaf
+            req = required_width_mm(amps, dt_c, cu[t.layer])
+            if t.width + WIDTH_TOL_MM >= req:
+                violations = [x for x in violations if x is not v]
+                undersized.remove((v, t))
+                leaf_branches.append({
+                    "kind": "undersized_track", "layer": t.layer,
+                    "pos": v["pos"], "current_a": checklib.rnd(amps),
+                    "loads": refs})
+                continue
+            msg = (f"{net} track {t.width:.3f} mm wide on {t.layer}; "
+                   f"IPC-2152 needs {req:.3f} mm for {amps:.3f} A at "
+                   f"dT={dt_c:.0f}C; leaf branch: {', '.join(refs)} draw "
+                   f"at most {amps:.3f} A")
+            v["msg"] = v["items"][0]["msg"] = msg
+            v.update(required_mm=checklib.rnd(req), current_a=amps,
+                     leaf_loads=refs)
 
     # ---- pour neckdowns (always at the full budget; plane_fed keeps error)
-    leaf_branches: list[dict] = []           # dropped: bounded leaf loads
     zone_layers = bg.layers_with_zone(net)
 
     def others_at(amps, layer):

@@ -55,7 +55,10 @@ emits route_edit ops:
      (diagonal-first on a tie). Then each needless jog that contains a
      snapped leg is merged: its three segments become one straight or
      dogleg between the outer ends, when legal and the net ends with fewer
-     jogs (fact `jogs_merged`). Left alone: a piece with no legal route,
+     jogs (fact `jogs_merged`). --dejog merges every needless jog on the
+     board the same way, snapped leg or not (a grid router's 0.1 mm
+     staircases: 1392 on hifi-receiver-2 core, a third of them legal to
+     merge), on every net the snap would touch. Left alone: a piece with no legal route,
      every diff-pair member (check_diffpair.discover_pairs by name, unless
      --constraints declares diff_pairs - then that list, even [], is the
      whole set, so speaker A+/A- nets get snapped), every net
@@ -674,7 +677,7 @@ def _chain(a, pts, b) -> list:
 
 
 def find_snaps(segs, vias, pads, arcs, env: SnapEnv,
-               skip_nets=frozenset(), cap: int = 5
+               skip_nets=frozenset(), cap: int = 5, dejog: bool = False
                ) -> tuple[list[dict], list[dict], list[dict], int]:
     """Plans for off-angle segments -> (ops, snaps, left, jogs_merged).
 
@@ -685,7 +688,8 @@ def find_snaps(segs, vias, pads, arcs, env: SnapEnv,
     blocks in the next), cap sweeps. Then every needless jog that has a
     snapped leg in it is merged: its three segments become one dogleg (or
     one straight) between the outer ends when that is legal and leaves the
-    net with fewer jogs. The ops are the difference between the board and
+    net with fewer jogs; with `dejog`, every needless jog on a net not in
+    `skip_nets` is, snapped leg or not. The ops are the difference between the board and
     the final copper: removes for replaced segments, add_track for legs."""
     from shapely.strtree import STRtree  # noqa: PLC0415
     trees = {}
@@ -800,8 +804,10 @@ def find_snaps(segs, vias, pads, arcs, env: SnapEnv,
                 else None})
         if not progress:
             break
+    every = (sorted((k for k in live if k[0] not in skip_nets), key=str)
+             if dejog else None)
     merged = _merge_jogs(live, legs, board, gone, anchors, env, trees,
-                         added, vias, pads, arcs, put)
+                         added, vias, pads, arcs, put, keys=every)
     ops = [{"op": "remove", "uuid": u} for u in sorted(gone & board)]
     for (net, layer), cur in sorted(live.items(), key=lambda kv: kv[0]):
         for lid in sorted(k for k in cur if k in legs):
@@ -812,18 +818,24 @@ def find_snaps(segs, vias, pads, arcs, env: SnapEnv,
 
 
 def _merge_jogs(live, legs, board, gone, anchors, env, trees, added,
-                vias, pads, arcs, put, cap: int = 50) -> int:
+                vias, pads, arcs, put, cap: int = 50, keys=None) -> int:
     """Merge the needless jogs (check_route_style.find_jogs) that have a
-    snapped leg in them: s1-s2-s3 through two bare joints becomes one route
+    snapped leg in them, or every one on the (net, layer) `keys` when
+    given (--dejog): s1-s2-s3 through two bare joints becomes one route
     from s1's far end to s3's far end - straight when that is on the grid,
     else the dogleg with the most spare clearance - when all three are the
     same width, none has another track joining mid-length, the route is
     legal, and the net ends with fewer jogs. Returns how many merged."""
     merged = 0
-    for key in sorted({k for k in legs.values()}):
+    every = keys is not None
+    if keys is None:
+        keys = sorted({k for k in legs.values()}, key=str)
+    for key in keys:
         net, layer = key
         anch = anchors.get(key, [])
-        for _ in range(cap):
+        # a merge takes out at least one segment, so a net's own length
+        # bounds the merges --dejog can make on it
+        for _ in range(max(cap, len(live[key])) if every else cap):
             cur = live[key]
             vals = list(cur.values())
             jogs = crs.find_jogs(vals, anch)
@@ -836,7 +848,7 @@ def _merge_jogs(live, legs, board, gone, anchors, env, trees, added,
                 i3 = next(k for k, t in cur.items() if k != mid
                           and kb in (crs._key(t[0]), crs._key(t[1])))
                 trio = (i1, mid, i3)
-                if not any(k in legs for k in trio) or any(
+                if not (every or any(k in legs for k in trio)) or any(
                         k not in legs and k not in board for k in trio):
                     continue
                 if len({round(cur[k][2], 4) for k in trio}) != 1:
@@ -875,8 +887,8 @@ def _merge_jogs(live, legs, board, gone, anchors, env, trees, added,
                     del cur[k]
                     if k in board:
                         gone.add(k)
-                base = next(str(k).split(":")[0] for k in trio
-                            if k in legs)
+                base = next((str(k).split(":")[0] for k in trio
+                             if k in legs), str(mid))
                 put(key, base, best[1], w)
                 merged += 1
                 done = True
@@ -1082,11 +1094,13 @@ def find_corners(segs, vias, pads, foreign_fn, tol=TOL) -> tuple[list[dict],
 
 def build_plan(bg: geom.BoardGeom, segs, vias, smooth: bool = True,
                snap: bool = True, hygiene: bool = True,
-               keep_nets=(), discover: bool = True) -> dict:
+               keep_nets=(), discover: bool = True,
+               dejog: bool = False) -> dict:
     """All four passes over one parse -> {ops, op_layers, facts...}.
     hygiene=False (--snap-only) skips dangling, loops and corners.
     discover=False leaves name-paired nets (X_P/X_N, A+/A-) to the snap
-    too: constraints that declare diff_pairs, even as [], name them all."""
+    too: constraints that declare diff_pairs, even as [], name them all.
+    dejog=True has pass 3 merge every needless jog, not only snapped ones."""
     pads = [PadItem(p.net, tuple(p.layers), p.center, p.poly)
             for p in bg.pads_of()]
     arcs = tuple((t.net, t.layer, t.shape, t.width) for t in bg.tracks_of()
@@ -1134,7 +1148,8 @@ def build_plan(bg: geom.BoardGeom, segs, vias, smooth: bool = True,
         skip = {n for pair in found for n in pair} | set(keep_nets)
         env = snap_env(bg)
         snap_ops, snaps, left, merged = find_snaps(
-            alive_s, alive_v, pads, arcs, env, frozenset(skip))
+            alive_s, alive_v, pads, arcs, env, frozenset(skip),
+            dejog=dejog)
     corner_ops: list[dict] = []
     corners: list[dict] = []
     if smooth and hygiene:
@@ -1224,6 +1239,10 @@ def run(argv: list[str] | None = None):
                     help="skip pass 3 (off-angle segments to 0/90 + 45)")
     ap.add_argument("--snap-only", action="store_true",
                     help="run pass 3 alone (no dangling/loop/corner edits)")
+    ap.add_argument("--dejog", action="store_true",
+                    help="pass 3 also merges every needless jog on the "
+                         "board (check_route_style), not only the ones a "
+                         "snap made")
     ap.add_argument("--keep-net", action="append", default=[],
                     metavar="NET",
                     help="leave this net's off-angle segments (an RF or "
@@ -1236,6 +1255,8 @@ def run(argv: list[str] | None = None):
     args = ap.parse_args(argv)
     if args.snap_only and args.no_snap:
         raise CheckError("--snap-only and --no-snap exclude each other")
+    if args.dejog and args.no_snap:
+        raise CheckError("--dejog is part of pass 3: drop --no-snap")
 
     pcb = Path(args.pcb).resolve()
     if not pcb.is_file():
@@ -1259,6 +1280,7 @@ def run(argv: list[str] | None = None):
     segs, vias = parse_items(pcb, bg.copper_layers)
     plan = build_plan(bg, segs, vias, smooth=not args.no_smooth,
                       snap=not args.no_snap, hygiene=not args.snap_only,
+                      dejog=args.dejog,
                       keep_nets=sorted(keep), discover=discover)
     facts = {k: plan[k] for k in (
         "dangling_removed", "dangling_segments", "dangling_vias",
