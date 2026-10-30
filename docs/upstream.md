@@ -130,6 +130,14 @@ What moved where:
     (fail), the 3D loaders (warn) and KiCadRoutingTools (warn).
   - `scripts/route_critical.py`: the missing-KRT message names the shared
     layout.
+- `agents/board-guide.md` finds pdf-material-builder through
+  `HWDE_PDF_MATERIAL_BUILDER` before `~/.claude/skills/`, and says how to
+  build the guide on a machine without it.
+- `scripts/report_gen.py` (`STAGE_REPORTS`) and `scripts/guide_facts.py`
+  read a stage's report under the names runs have used as well as the
+  recipes' one, and `agents/dfm.md`, `recipes/dfm-check.md` and
+  `recipes/full-run.md` give each report's name (dfm.md's command lines also
+  had `--out` for `--out-dir` and `--parts-json` for `--parts`).
 
   `tests/test_env_lookups.py` covers these lookups (`$HWDE_PY -m pytest
   tests`). They're meant to go upstream.
@@ -162,3 +170,7 @@ Everything else that's specific to the Hive is in `bin/` and `docs/`:
   as one-file-per-symbol `.kicad_symdir` folders, and kicad-sch-api 0.5.6
   can't read those. It writes flat `power` and `Device` libraries into HOME,
   and `bin/hwde` points `KICAD_SYMBOL_DIR` at them.
+- `bin/house-style-fallback/housestyle.sty` defines the few house-style
+  commands report_gen writes, on stock LaTeX, for machines without the
+  pdf-material-builder skill.
+

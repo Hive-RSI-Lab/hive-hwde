@@ -1,0 +1,51 @@
+% housestyle.sty, the hwde module's stand-in for pdf-material-builder's house
+% style. bin/hwde points HWDE_HOUSE_STYLE here only when the real one
+% (references/house-style/ of the pdf-material-builder skill) isn't on this
+% machine, so report_gen still builds its PDF instead of degrading to
+% --tex-only. It defines just the commands report_gen.py writes, on stock
+% LaTeX packages and fonts; it is plainer than the house style, not a copy.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{housestyle}[2026/10/28 hwde fallback]
+\DeclareOption{nodiagramkit}{}
+\DeclareOption*{}
+\ProcessOptions\relax
+\providecommand\hspaper{a4paper}
+\RequirePackage[\hspaper,margin=2.5cm]{geometry}
+\RequirePackage{iftex}
+\ifLuaTeX\RequirePackage{fontspec}\fi
+\RequirePackage{xcolor}
+\RequirePackage{fancyhdr}
+\RequirePackage{booktabs}
+\RequirePackage{array}
+\RequirePackage{colortbl}
+\RequirePackage{graphicx}
+\RequirePackage{caption}
+\RequirePackage{enumitem}
+\RequirePackage{amsmath}
+\RequirePackage{needspace}
+\RequirePackage{etoolbox}
+\RequirePackage[hidelinks]{hyperref}
+\RequirePackage{xurl}
+\definecolor{ink}{gray}{0.1}
+\definecolor{rulegrey}{gray}{0.75}
+\definecolor{accent}{HTML}{1F5A96}
+\newcommand{\hsslug}[1]{\def\hs@slug{#1}}\hsslug{}
+\newcommand{\hssection}[1]{\def\hs@section{#1}}\hssection{}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\hs@slug}
+\fancyhead[R]{\small\hs@section}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\newcommand{\hslabel}[1]{{\small\bfseries\MakeUppercase{#1}}}
+\newcommand{\hshead}[1]{\hslabel{#1}}
+\newcommand{\hstoprule}{\arrayrulecolor{ink}\hline\arrayrulecolor{rulegrey}}
+\setlength{\arrayrulewidth}{0.6pt}
+\arrayrulecolor{rulegrey}
+\renewcommand{\arraystretch}{1.3}
+% \hstitleblock{eyebrow}{title}{lead}
+\newcommand{\hstitleblock}[3]{%
+  {\color{accent}\hslabel{#1}}\par\vspace{8pt}
+  {\raggedright\fontsize{26pt}{30pt}\selectfont #2\par}\vspace{10pt}
+  {\large #3\par}\vspace{16pt}}
+\endinput

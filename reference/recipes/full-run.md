@@ -3,7 +3,7 @@
 The whole pipeline is one recipe. Its steps are the phases; its gates are the
 gate table in docs/playbook.md; the fix loop, the checkpoint format and the spawn
 template are shared with every other verb and stay there. Every gate step is
-ONE form - `gate.py --gate <g> <input> --workspace <ws> --out <report>` - run on
+ONE form - `gate.py --gate <g> <input> --workspace <ws> --out reports/gate-<g>.json` - run on
 every attempt, pass and fail: `--workspace` RECORDS the result. `set-phase` past
 a gate with no recorded result warns; H1-H4 are reports - write, carry on.
 
@@ -76,7 +76,7 @@ schematic agent (record it).
   re-spawn `placement` scoped to the request's refs/region, re-run P7
   (`freerouting_retries` guards the loop). Dead end: `state.py cross-spawn`.
 - **P8 Verification**: run the `verify` gate (all 8 checks), then
-  `verify-reviewer` (fresh context) with the summary + renders. Triage:
+  `verify-reviewer` (fresh context) with the summary (`reports/checks/summary.json`) + renders. Triage:
   script-check errors -> fix loop; reviewer errors -> fix loop or a waiver;
   warnings -> `reports/verify-waivers.json` (re-gate with it). After ANY
   copper/placement fix re-run `drc_routed` BEFORE `verify`. Then the

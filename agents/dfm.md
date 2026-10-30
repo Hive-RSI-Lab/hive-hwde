@@ -13,12 +13,14 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
   `parts/parts.json` (LCSC assignments).
 
 ## Steps
-1. `scripts/fab_export.py --pcb kicad/<board>.kicad_pcb --out fab/`
+1. `scripts/fab_export.py --pcb kicad/<board>.kicad_pcb --out-dir fab/
+   --out reports/fab_export.json`
    - curated JLC layer set (copper x N in PHYSICAL order + silk + mask +
    paste + Edge.Cuts) + Excellon drill + mm pos CSV + zip, sha256 per file
    and for the zip. It deliberately does NOT subtract soldermask from silk
    (silk-over-pad must stay visible for the check).
-2. `scripts/bom_cpl.py --pcb ... --out fab/ --parts-json parts/parts.json`
+2. `scripts/bom_cpl.py --pcb ... --out-dir fab/ --parts parts/parts.json
+   --out reports/bom_cpl.json`
    - `BOM-full.csv` (the BOM OF RECORD: every intended part with its
    `Assembly Class` + `Instructions`), `BOM.csv` (the UPLOAD: `smt_placed`
    and `tht` only, JLC's four columns, one row per LCSC part), `prebuy.csv` (placed
