@@ -33,8 +33,6 @@ Every decision is also in `state.json` (`decisions`), stage by stage in `log/P*-
 
 [`report/hwde-led-test-report.pdf`](report/hwde-led-test-report.pdf) (source: [`report/hwde-led-test-report.md`](report/hwde-led-test-report.md)) has the whole board in one place: schematic, copper layers, 3D renders, BOM and cost, every gate, the sign-offs and waivers still waiting for the person, and the run's time per stage and snags. `report/build.sh` rebuilds it.
 
-hwde's own design document, [`reports/design_doc/hwde-led-test-design-doc.pdf`](reports/design_doc/hwde-led-test-design-doc.pdf), is the engineering record in the house style: every gate, decision and stage digest. `hwde report_gen --workspace boards/hwde-led-test` rebuilds it.
-
 ## The checks it passed
 
 | Gate | Result |
