@@ -27,7 +27,8 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
      file TEXT (read-only grounding; segments/vias each carry a `(uuid ...)`
      you can then act on).
 3. Fix via your domain's scripts ONLY (listed in the work order; e.g.
-   router: route_edit remove-by-uuid + add_track at corrected geometry;
+   router: route_edit `rip` by selector (net/at/region/pads/layer) or
+   remove-by-uuid, then add_track/add_path at corrected geometry;
    placement: place_edit absolute ops). Domain guidance in the work order
    is load-bearing - follow it (refill after plane-crossing edits, repair
    width from abutting same-net copper, etc.).

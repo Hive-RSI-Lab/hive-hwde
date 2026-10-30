@@ -45,8 +45,11 @@ them as `stand_in` scripts of their pins:
 - **core: J1 and silk.** `kicad/gen/fix_j1.py` moves the USB-C in from the
   edge and trims its pads; `kicad/gen/silk_clean.py` clears what silk_place
   left.
-- **lite-main: route_edit and the antenna.** route_edit neither checks
-  clearance nor refills zones (`kicad/gen/refill.py`); no hwde script draws
+- **lite-main: route_edit and the antenna.** route_edit didn't check
+  clearance or refill zones (`kicad/gen/refill.py`); it refills with
+  `--refill` now, and takes the rip/renet/add-path/rename ECOs and
+  place_edit the pad/DNP ones that `kicad/gen/rip*.py`, `add_*.py`,
+  `rename_net.py`, `pad_*.py` and `set_dnp.py` did by hand; no hwde script draws
   a copper keep-out (`kicad/gen/keepout.py`, the ESP32 antenna and the NPTH
   pegs); stitch_vias' hole-to-hole misses (`kicad/gen/fix_holes.py`).
 - **lite-main: footprints by hand.** The stacked RCA's courtyard and pegs

@@ -19,6 +19,10 @@ only then does os.replace() swap it in (same volume -> atomic). Any failure
 leaves the original board byte-identical. Re-applying the same op list is
 idempotent (ops are absolute). exit 0 applied+verified / 2 error (rolled back).
 
+set_pad re-nets ("" clears), and/or resizes a footprint's pads; set_dnp sets
+its do-not-populate flag. --op JSON (repeatable) takes ops inline instead of
+--ops FILE.
+
 set_text (hide / resize / re-layer a Reference or Value field) is the fix
 for a refdes with no legal spot near its own pads (dense 0603 rows): on a
 silk layer it refuses a size below check_silk's legibility floor or a stroke
@@ -71,6 +75,13 @@ OP_FIELDS = {  # op -> (required, optional)
     # edit cannot reach one without re-running board_init (and losing the
     # placement), so this is the only scripted route. Never touches text.
     "silk_clear": ({"ref"}, {"layer", "only_offboard"}),
+    # pad and part-attribute ECOs (the hi-fi boards' pad_nets / pad_nonet /
+    # pad_size / set_dnp scripts): re-net or clear a pad (an NC pin, a
+    # rewire board_update refuses because copper touches the pad - rip it
+    # with route_edit first), resize pads (an annular-ring DFM fix), mark a
+    # part do-not-populate
+    "set_pad": ({"ref", "pad"}, {"net", "size"}),
+    "set_dnp": ({"ref", "dnp"}, set()),
 }
 TEXT_LAYERS = {"F.SilkS", "B.SilkS", "F.Fab", "B.Fab"}
 POS_TOL = 1e-3   # mm
@@ -153,6 +164,10 @@ def validate_ops(doc: dict) -> list[dict]:
             raise CheckError(f"ops[{i}]: field must be reference|value")
         if kind == "set_text":
             _validate_set_text(i, op)
+        if kind == "set_pad":
+            _validate_set_pad(i, op)
+        if kind == "set_dnp" and not isinstance(op["dnp"], bool):
+            raise CheckError(f"ops[{i}]: dnp must be a boolean")
         if kind == "silk_clear":
             if op.get("layer", "F.SilkS") not in ("F.SilkS", "B.SilkS"):
                 raise CheckError(f"ops[{i}]: layer must be F.SilkS|B.SilkS")
@@ -160,6 +175,26 @@ def validate_ops(doc: dict) -> list[dict]:
                                                         bool):
                 raise CheckError(f"ops[{i}]: only_offboard must be a boolean")
     return ops
+
+
+def _validate_set_pad(i: int, op: dict) -> None:
+    pad = op["pad"]
+    pads = [pad] if isinstance(pad, str) else pad
+    if not (isinstance(pads, list) and pads
+            and all(isinstance(p, str) and p for p in pads)):
+        raise CheckError(f"ops[{i}]: pad must be a pad number or a list")
+    if not op.keys() & {"net", "size"}:
+        raise CheckError(f"ops[{i}] (set_pad): needs net and/or size")
+    if "net" in op and not isinstance(op["net"], str):
+        raise CheckError(f"ops[{i}]: net must be a string (\"\" = no net)")
+    if "size" in op:
+        sz = op["size"]
+        sz = [sz, sz] if not isinstance(sz, list) else sz
+        if not (len(sz) == 2 and all(isinstance(v, (int, float))
+                                     and not isinstance(v, bool)
+                                     and 0 < v < 50 for v in sz)):
+            raise CheckError(f"ops[{i}]: size must be mm or [w, h] mm, "
+                             "0 < size < 50")
 
 
 def _validate_set_text(i: int, op: dict) -> None:
@@ -200,8 +235,8 @@ def _expected_state(ops: list[dict]) -> dict[str, dict]:
     for op in ops:
         if op["op"] in TEXT_OPS:
             continue  # verified independently by _verify_texts
-        if op["op"] == "silk_clear":
-            continue  # moves nothing; the worker reports what it removed
+        if op["op"] in ("silk_clear", "set_pad", "set_dnp"):
+            continue  # moves nothing; _verify_parts checks pads/dnp
         w = want.setdefault(op["ref"], {})
         if op["op"] in ("place", "move"):
             w["x"], w["y"] = op["x"], op["y"]
@@ -408,6 +443,88 @@ def _verify_texts(pcb: Path, ops: list[dict]) -> list[str]:
     return problems
 
 
+def _dnp_refs(pcb: Path) -> set[str]:
+    """Refs whose footprint carries (attr ... dnp) in the saved file."""
+    import sexpdata
+    data = sexpdata.loads(pcb.read_text(encoding="utf-8"))
+    out = set()
+    for node in data[1:]:
+        if _sx_head(node) != "footprint":
+            continue
+        ref = dnp = None
+        for sub in node[1:]:
+            h = _sx_head(sub)
+            if h == "property" and len(sub) >= 3 \
+                    and _sx_str(sub[1]).lower() == "reference":
+                ref = _sx_str(sub[2])
+            elif h == "attr":
+                dnp = any(_sx_str(a) == "dnp" for a in sub[1:])
+        if ref and dnp:
+            out.add(ref)
+    return out
+
+
+def _verify_parts(pcb: Path, ops: list[dict]) -> list[str]:
+    """set_pad / set_dnp landed, read back independently of the worker."""
+    part_ops = [op for op in ops if op["op"] in ("set_pad", "set_dnp")]
+    if not part_ops:
+        return []
+    import geom
+    bg = geom.BoardGeom.from_file(pcb)
+    dnp = _dnp_refs(pcb) if any(o["op"] == "set_dnp" for o in part_ops) \
+        else set()
+    problems = []
+    for op in part_ops:
+        if op["op"] == "set_dnp":
+            if (op["ref"] in dnp) != op["dnp"]:
+                problems.append(f"set_dnp {op['ref']}: dnp is "
+                                f"{op['ref'] in dnp}")
+            continue
+        nums = [op["pad"]] if isinstance(op["pad"], str) else op["pad"]
+        got = {p.number: p for p in bg.pads_of(ref=op["ref"])}
+        for n in nums:
+            p = got.get(n)
+            if p is None:
+                problems.append(f"set_pad {op['ref']}.{n}: pad not found")
+                continue
+            if "net" in op and (p.net or "") != op["net"]:
+                problems.append(f"set_pad {op['ref']}.{n}: net {p.net!r} "
+                                f"!= {op['net']!r}")
+            if "size" in op:
+                sz = op["size"] if isinstance(op["size"], list) \
+                    else [op["size"]] * 2
+                if abs(p.size[0] - sz[0]) > SIZE_TOL \
+                        or abs(p.size[1] - sz[1]) > SIZE_TOL:
+                    problems.append(f"set_pad {op['ref']}.{n}: size "
+                                    f"{p.size} != {tuple(sz)}")
+    return problems
+
+
+def _refuse_routed_renet(pcb: Path, ops: list[dict]) -> None:
+    """set_pad net on a pad copper touches is refused: KiCad re-derives that
+    copper's net from the pad when it saves, so the track would follow the
+    pad onto the new net and short whatever else it reaches."""
+    renet = [op for op in ops if op["op"] == "set_pad" and "net" in op]
+    if not renet:
+        return
+    if str(SCRIPTS) not in sys.path:
+        sys.path.insert(0, str(SCRIPTS))
+    import geom
+    import route_edit
+    bg = geom.BoardGeom.from_file(pcb)
+    for op in renet:
+        nums = [op["pad"]] if isinstance(op["pad"], str) else op["pad"]
+        hit = route_edit.select_items(
+            bg, {"pads": [f"{op['ref']}.{n}" for n in nums]})
+        if hit:
+            raise CheckError(
+                f"set_pad {op['ref']} {nums}: {len(hit)} tracks/vias touch "
+                "these pads and would follow them onto the new net - rip "
+                "them first (route_edit --op '{\"op\": \"rip\", "
+                f"\"pads\": [\"{op['ref']}.{nums[0]}\"]}}'), or rename the "
+                "whole net with route_edit rename_net")
+
+
 def apply_ops(pcb: Path, ops: list[dict]) -> dict:
     """Validate refs, stage, run the SWIG worker, verify, atomically swap in.
 
@@ -422,6 +539,7 @@ def apply_ops(pcb: Path, ops: list[dict]) -> dict:
                      - model.footprints.keys())
     if missing:
         raise CheckError(f"refs not on board: {', '.join(missing)}")
+    _refuse_routed_renet(pcb, ops)
 
     cli = env.find_kicad_cli()
     bp = env.find_kicad_python(cli) if cli else None
@@ -461,7 +579,8 @@ def apply_ops(pcb: Path, ops: list[dict]) -> dict:
             idx = result.get("index")
             at = f" at ops[{idx}]" if idx is not None else ""
             raise CheckError(f"worker failed{at}: {detail} (rolled back)")
-        problems = _verify(staged, ops) + _verify_texts(staged, ops)
+        problems = _verify(staged, ops) + _verify_texts(staged, ops) \
+            + _verify_parts(staged, ops)
         if problems:
             raise CheckError("post-apply verify failed (rolled back): "
                              + "; ".join(problems))
@@ -471,10 +590,32 @@ def apply_ops(pcb: Path, ops: list[dict]) -> dict:
         shutil.rmtree(stage, ignore_errors=True)
 
 
+def load_ops(ops_file: str | None, inline: list[str]) -> list[dict]:
+    """--ops FILE and/or --op JSON (repeatable) -> validated op list."""
+    ops: list = []
+    if ops_file:
+        doc = checklib.load_json(ops_file, "ops file")
+        if not isinstance(doc, dict) or doc.get("version") != 1 \
+                or not isinstance(doc.get("ops"), list):
+            raise CheckError("ops file must be {'version': 1, 'ops': [...]}")
+        ops += doc["ops"]
+    for raw in inline:
+        try:
+            op = json.loads(raw)
+        except json.JSONDecodeError as e:
+            raise CheckError(f"--op is not JSON: {e}") from e
+        ops += op if isinstance(op, list) else [op]
+    if not ops_file and not inline:
+        raise CheckError("give --ops FILE or one or more --op JSON")
+    return validate_ops({"version": 1, "ops": ops})
+
+
 def run(argv: list[str] | None = None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--pcb", required=True)
-    ap.add_argument("--ops", required=True)
+    ap.add_argument("--ops", default=None, help="ops file {version: 1, ops}")
+    ap.add_argument("--op", action="append", default=[],
+                    help="one op (or a list) as JSON; repeatable")
     ap.add_argument("--allow-routed", action="store_true",
                     help="permit footprint ops on a board that already has "
                          "tracks/vias (they invalidate the gate place / "
@@ -483,7 +624,7 @@ def run(argv: list[str] | None = None):
     ap.add_argument("--out-report", default=None)
     args = ap.parse_args(argv)
 
-    ops = validate_ops(checklib.load_json(args.ops, "ops file"))
+    ops = load_ops(args.ops, args.op)
     pcb = Path(args.pcb)
     if not pcb.is_file():
         raise CheckError(f"board not found: {pcb}")
