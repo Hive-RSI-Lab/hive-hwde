@@ -66,7 +66,8 @@ rules as routing constraints; cite the record id when you apply one.
    that clears foreign copper, merges the jogs it makes, and refills. Re-
    clean an already routed board the same way: `route_cleanup.py --pcb
    <board> --snap-only --constraints <board dir>/constraints.json
-   --out-report <dir>/route_cleanup.json`. The owner's rule is straight and
+   --out-report <dir>/route_cleanup.json`; add `--dejog` to also merge the
+   needless jogs the router left (a grid router's 0.1 mm staircases). The owner's rule is straight and
    45-degree copper: verify FAILS on every off-angle segment left. Pass
    `--keep-net <net>` for an RF or length-matched net whose geometry is
    intent and constraints.json does not declare (its diff_pairs,

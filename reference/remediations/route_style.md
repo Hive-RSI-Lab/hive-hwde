@@ -33,9 +33,14 @@ straight and 45-degree traces, no needless arcs (owner, from the g0-sense render
   not clear anything, but look for a foreign pad or via next to it before you flatten it.
 
 ## Fix ladder (cheapest first)
-1. Jog: remove s2 (its `uuid`) and the two legs, then add_track one straight segment from
-   s1's far end to s3's far end when that line stays clear of other nets. Two route_edit
-   invocations: removes first, adds second.
+1. Jog: run `route_cleanup.py --pcb <board> --snap-only --dejog --constraints
+   <board dir>/constraints.json`. It merges every needless jog whose straight (or
+   dogleg) replacement keeps clearance, and leaves diff pairs and kept nets alone
+   (`jogs_merged`; on hifi-receiver-2 core it cleared 1392 jogs to 165, DRC clean
+   before and after). By hand, for one it left: remove s2 (its `uuid`) and the two
+   legs, then add_track one straight segment from s1's far end to s3's far end when
+   that line stays clear of other nets. Two route_edit invocations: removes first,
+   adds second.
 2. Off-angle segment: run `route_cleanup.py --pcb <board> --snap-only --constraints
    <board dir>/constraints.json` first; it picks the
    clear route for you. For what it leaves: a `blocked` one - reroute that span on a 45
