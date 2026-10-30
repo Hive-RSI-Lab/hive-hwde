@@ -19,11 +19,12 @@ round no longer helps. This is those rounds without the person:
      unless that old copper now runs into the new routes (DRC grows), when
      the round is judged as routed.
   4. Keep the round only if nothing is left unconnected that was connected,
-     no DRC error or warning type grows, and the board's quality score rises
-     by at least --min-gain. Else restore the board as it was before the
-     round; its nets stay tried.
-  5. Stop when --patience rounds in a row did not gain --min-gain (it stops
-     improving), when no candidate is left, or at --rounds.
+     no DRC error or warning type grows, and the board's quality score
+     rises. Else restore the board as it was before the round; its nets
+     stay tried.
+  5. Stop when --patience rounds in a row gained less than --min-gain (kept
+     or not: it stops improving), when no candidate is left, or at
+     --rounds.
 
 Classes it touches by default: signal, power, high_speed. diff_pair,
 matched and rf nets are left alone (--classes adds them): their geometry is
@@ -87,7 +88,7 @@ def unconnected(drc: dict) -> int:
 
 
 def judge_round(before_drc: dict, after_drc: dict, q_before: float,
-                q_after: float, min_gain: float) -> str | None:
+                q_after: float) -> str | None:
     """None when the round is kept, else why not."""
     if unconnected(after_drc) > unconnected(before_drc):
         return (f"unconnected {unconnected(before_drc)} -> "
@@ -96,8 +97,8 @@ def judge_round(before_drc: dict, after_drc: dict, q_before: float,
     grew = sorted(k for k in a if a[k] > b.get(k, 0))
     if grew:
         return "DRC grew: " + ", ".join(f"{k} {b.get(k, 0)}->{a[k]}" for k in grew)
-    if q_after < q_before + min_gain:
-        return f"quality {q_before:.4f} -> {q_after:.4f} (gain under {min_gain})"
+    if q_after <= q_before:
+        return f"quality {q_before:.4f} -> {q_after:.4f} (no gain)"
     return None
 
 
@@ -201,7 +202,7 @@ def improve_staged(cli: Path, staged: Path, cons, pro, *, classes,
                 shutil.copy2(staged, routed)
                 try:
                     back = restore(staged, backup, worse)
-                    clash = judge_round(drc, back, 0.0, 1.0, 0.0)
+                    clash = judge_round(drc, back, 0.0, 1.0)
                 except CheckError as exc:
                     back, clash = None, str(exc)[:200]
                 if clash is None:
@@ -211,7 +212,7 @@ def improve_staged(cli: Path, staged: Path, cons, pro, *, classes,
                     shutil.copy2(routed, staged)
                     row["restore_skipped"] = f"{worse}: {clash}"
             why = judge_round(drc, after, q["score"] or 0.0,
-                              q2["score"] or 0.0, min_gain)
+                              q2["score"] or 0.0)
         except CheckError as exc:
             after, q2, why = None, None, f"reroute failed: {str(exc)[:200]}"
         row["score_after"] = q2["score"] if q2 else None
@@ -219,7 +220,7 @@ def improve_staged(cli: Path, staged: Path, cons, pro, *, classes,
             gain = (q2["score"] or 0.0) - (q["score"] or 0.0)
             row.update(kept=True, gain=checklib.rnd(gain, 4))
             drc, q = after, q2
-            flat = 0
+            flat = 0 if gain >= min_gain else flat + 1
         else:
             shutil.copy2(backup, staged)
             row.update(kept=False, reason=why)

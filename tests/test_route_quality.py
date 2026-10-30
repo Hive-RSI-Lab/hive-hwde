@@ -255,13 +255,23 @@ def test_improve_rejects_a_round_that_grows_drc():
     before = _clean()
     after = {"violations": [{"source": "drc", "check": "clearance",
                              "severity": "error"}]}
-    why = route_improve.judge_round(before, after, 0.7, 0.9, 0.002)
+    why = route_improve.judge_round(before, after, 0.7, 0.9)
     assert why and "clearance" in why
     un = {"violations": [{"source": "unconnected", "net": "A",
                           "severity": "error"}]}
-    assert "unconnected" in route_improve.judge_round(before, un, 0.7, 0.9, 0.002)
-    assert route_improve.judge_round(before, before, 0.7, 0.701, 0.002)
-    assert route_improve.judge_round(before, before, 0.7, 0.71, 0.002) is None
+    assert "unconnected" in route_improve.judge_round(before, un, 0.7, 0.9)
+    assert route_improve.judge_round(before, before, 0.7, 0.7)
+    assert route_improve.judge_round(before, before, 0.7, 0.7001) is None
+
+
+def test_improve_keeps_a_small_gain_but_counts_it_toward_stopping(
+        tmp_path, monkeypatch):
+    pcb, _ = _improve_fixture(tmp_path)
+    reroute, restore, _calls = _fake_router()
+    f = _run(monkeypatch, pcb, batch=1, rounds=10, patience=2, min_gain=0.5,
+             reroute=reroute, restore=restore)
+    assert [r["kept"] for r in f["rounds"]] == [True, True]
+    assert f["stopped"].startswith("stopped improving")
 
 
 def test_improve_leaves_intent_classes_and_kept_nets_alone(tmp_path):
