@@ -50,6 +50,21 @@ an agent runs it inside the Hive.
   list. A review answers each known unknown from a datasheet or states the
   margin it rests on; `hwde eng_calc <calc> ...` gives the numbers a written
   margin cites.
+- A board that runs firmware gets `hwde check_fw --board boards/<name>`,
+  run at every schematic change, not first at bring-up. It runs hive-fw's
+  `fw constraints` (with `fw pins` inside it) for each firmware target whose
+  board is this one in fw's `targets.json` (or `--target`), reading the
+  firmware beside the board in your checkout. It reports fw's own problems
+  with fw's code (PIN-NET a firmware pin on the wrong net, STRAP-0/2/12 a
+  strap pulled the wrong way at reset, BOARD-* the module's flash or
+  PSRAM) and the ones only the board side can see: the ESP32's supply
+  budgeted under the radio's peak current in `constraints.json`, an
+  input-only GPIO 34-39 nothing drives or pulls, and an I2C line with no
+  pull-up. Its `targets[].needs` are what
+  a netlist can't settle (antenna keep-out, address straps); weigh each.
+  Exit 0 pass, 1 problems, 2 when fw (one with `constraints`) isn't found:
+  it looks at `--fw`, `$HWDE_FW`, then hive-fw in `$HIVE_MODULES`. A check
+  sandbox sees neither, so it is an agent's check, not a per-PR one.
 - Start from `hwde task_router --task "<the ask>" --workspace boards/<name>`
   and follow its recipe (`reference/recipes/<verb>.md`). The whole pipeline
   is `full-run`.
@@ -112,6 +127,10 @@ in. Fix it in this module if it's small and yours to make. Otherwise file it
 as its own change: `hive agent brief --project hive-hwde --title ...
 --done ...`. Board-local workarounds are the failure mode. List what you hit
 in your account.
+
+A fix to a script goes in with a test under `tests/` (run them with
+`eval "$(bin/hwde env)"; $HWDE_PY -m pytest -q tests`), and a line in
+[upstream.md](upstream.md) so an update from upstream keeps it.
 
 A workaround you can't avoid gets a row in [workarounds.md](workarounds.md)
 naming the gate steps it touched, and a probe in `tests/workarounds/` that
