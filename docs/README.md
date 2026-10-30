@@ -11,7 +11,8 @@ an agent runs it inside the Hive.
 - Run `hwde check` (`$HIVE_MODULES/hwde/bin/hwde check --quiet`). It must
   exit 0. On first use it builds the skill's Python venv in your HOME from
   `requirements.lock`, using the Hive's uv; that takes about 15 s.
-- KiCad 10.0.6 and freerouting 2.2.4 are the Hive's, read-only in
+- KiCad 10.0.6, freerouting 2.2.4 and KiCadRoutingTools 0.19.0 (for
+  `route_critical` and route_auto's KRT finish) are the Hive's, read-only in
   `/hive/tools` (put there through a warden). Java 25 is the system's.
   `bin/hwde` finds them all, plus KiCad's own python with `pcbnew` and its
   ngspice. If `hwde check` can't find one, ask a warden; don't install KiCad
@@ -173,10 +174,6 @@ nothing in the Hive should ask for them.
 
 ## What doesn't work here yet
 
-- `route_critical` and KRT's finishing pass need KiCadRoutingTools 0.19.0.
-  It's now in `/hive/tools/kicad-routing-tools/KiCadRoutingTools-0.19.0`,
-  but nothing points the skill at it yet (brief 261028-141924). A board with
-  diff pairs, high-current power or RF needs it.
 - `report_gen` (the design-doc PDF) and the board guide need the
   pdf-material-builder house style, which isn't here. They fall back to
   `--tex-only`, and the skill says that must never gate a run.
