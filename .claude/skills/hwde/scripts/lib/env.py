@@ -270,12 +270,79 @@ def find_kicad_cli() -> Path | None:
     return scored[-1][2]
 
 
-def kicad_cli_version(cli: Path) -> tuple[int, ...]:
+def _state_dir() -> Path:
+    """bin/hwde's state dir: HWDE_HOME, else ~/.cache/hwde (always in HOME:
+    a published copy of the skill is read-only)."""
+    return Path(os.environ.get("HWDE_HOME") or Path.home() / ".cache" / "hwde")
+
+
+def _binary_key(cli: Path) -> str | None:
+    """What identifies a kicad-cli binary for the version cache.
+
+    A small file (bin/hwde's wrapper, rewritten on every run, so its mtime
+    says nothing) is keyed by its contents, which name the AppDir and so its
+    version; a real binary by its size and mtime."""
     try:
-        return parse_version(
-            _run([str(cli), "version"], timeout=_VERSION_TIMEOUT).stdout)
+        real = Path(cli).resolve()
+        st = real.stat()
+        if st.st_size <= 64 * 1024:
+            import hashlib
+            tag = hashlib.sha256(real.read_bytes()).hexdigest()
+        else:
+            tag = f"{st.st_size}:{st.st_mtime_ns}"
+    except OSError:
+        return None
+    return f"{real}|{tag}"
+
+
+_VERSION_LINES: dict[str, str | None] = {}
+
+
+def kicad_cli_version_line(cli: Path) -> str | None:
+    """First line of `kicad-cli version` (None when it fails), asked once
+    per binary: kept in this process and in <state>/kicad-cli-version.json,
+    so a pipeline of scripts doesn't start KiCad again on every call."""
+    import json
+    key = _binary_key(cli)
+    if key is not None and key in _VERSION_LINES:
+        return _VERSION_LINES[key]
+    cache = _state_dir() / "kicad-cli-version.json"
+    known: dict = {}
+    if key is not None:
+        try:
+            known = json.loads(cache.read_text(encoding="utf-8"))
+            if not isinstance(known, dict):
+                known = {}
+        except (OSError, ValueError):
+            known = {}
+        line = known.get(key)
+        if isinstance(line, str):
+            _VERSION_LINES[key] = line
+            return line
+    try:
+        cp = _run([str(cli), "version"], timeout=_VERSION_TIMEOUT)
     except (OSError, subprocess.TimeoutExpired):
-        return ()
+        return None
+    lines = (cp.stdout or "").strip().splitlines()
+    line = lines[0] if lines and cp.returncode == 0 else None
+    # Only a version that parses is kept: a failed or odd run is asked again.
+    if key is None or line is None or not parse_version(line):
+        return line
+    _VERSION_LINES[key] = line
+    known[key] = line
+    try:
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        tmp = cache.with_name(f"{cache.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(known, indent=1, sort_keys=True),
+                       encoding="utf-8")
+        os.replace(tmp, cache)
+    except OSError:
+        pass
+    return line
+
+
+def kicad_cli_version(cli: Path) -> tuple[int, ...]:
+    return parse_version(kicad_cli_version_line(cli) or "")
 
 
 _SYM_ENV_RE = re.compile(r"^KICAD(\d*)_SYMBOL_DIR$")
