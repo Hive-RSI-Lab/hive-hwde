@@ -39,6 +39,11 @@ job JSON: {"verb": ..., "result": out.json, ...} with verbs:
         {"op": "remove", "uuid": "..."}        # track or via; absent = no-op
       All coordinates mm; mm->IU via pcbIUScale.mmToIU (FromMM truncates).
 
+  set_rule_areas: {"board": pcb, "out": out_pcb, "prefix": "aiee_keepout",
+              "areas": [...]}
+      Replaces the rule areas named prefix* (keepout_gen.py); see
+      verb_set_rule_areas for an area's shape.
+
   add_zones: {"board": pcb, "out": out_pcb, "zones": [...],
               "layer_types": {"In1.Cu": "power"}}
       Zone creation for planes_gen.py. Zones are saved UNFILLED - the caller
@@ -267,6 +272,51 @@ def verb_add_zones(job):
     return {"zones": made, "out": job["out"]}
 
 
+def verb_set_rule_areas(job):
+    """Replace every rule area whose name starts with job["prefix"] by
+    job["areas"]: [{"name", "layers": [...], "poly": [[x, y], ...] |
+    "rect": [x1, y1, x2, y2], "tracks"/"vias"/"pours"/"pads"/"footprints":
+    bool (True = not allowed)}]. New areas are added first and the old ones
+    removed last, then one Save (LEARNINGS [swig]: Remove before other
+    pcbnew calls corrupts them)."""
+    import pcbnew
+
+    board = pcbnew.LoadBoard(job["board"])
+    prefix = job["prefix"]
+    old = [z for z in board.Zones()
+           if z.GetIsRuleArea() and z.GetZoneName().startswith(prefix)]
+    made = []
+    for a in job["areas"]:
+        z = pcbnew.ZONE(board)
+        z.SetIsRuleArea(True)
+        z.SetZoneName(str(a["name"]))
+        ls = pcbnew.LSET()
+        for name in a["layers"]:
+            ls.AddLayer(_layer_id(board, name))
+        z.SetLayerSet(ls)
+        z.SetDoNotAllowTracks(bool(a.get("tracks", True)))
+        z.SetDoNotAllowVias(bool(a.get("vias", True)))
+        z.SetDoNotAllowZoneFills(bool(a.get("pours", True)))
+        z.SetDoNotAllowPads(bool(a.get("pads", False)))
+        z.SetDoNotAllowFootprints(bool(a.get("footprints", False)))
+        pts = a.get("poly")
+        if pts is None:
+            x1, y1, x2, y2 = a["rect"]
+            pts = [[x1, y1], [x2, y1], [x2, y2], [x1, y2]]
+        o = z.Outline()
+        o.NewOutline()
+        for x, y in pts:
+            o.Append(iu(x), iu(y))
+        board.Add(z)
+        made.append({"name": a["name"], "layers": list(a["layers"]),
+                     "points": len(pts)})
+    for z in old:
+        board.Remove(z)
+    if not board.Save(job["out"]):
+        raise RuntimeError("board.Save failed: %s" % job["out"])
+    return {"areas": made, "removed": len(old), "out": job["out"]}
+
+
 def verb_dedup_copper(job):
     """Remove EXACT-duplicate segments/vias (same geometry+net+layer+width).
 
@@ -312,6 +362,7 @@ VERBS = {
     "apply_ops": verb_apply_ops,
     "add_zones": verb_add_zones,
     "dedup_copper": verb_dedup_copper,
+    "set_rule_areas": verb_set_rule_areas,
 }
 
 

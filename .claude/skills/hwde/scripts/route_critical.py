@@ -77,9 +77,12 @@ marks them as forbidden obstacles for via spans. Actual layers used are
 re-read from the output (geom) and reported as facts.
 
 Verification before the board is touched: kicad-cli DRC (kc.run_drc,
---all-track-errors) runs on the staged board BEFORE and AFTER; any violation
-type whose count increased -> exit 2, original board untouched
-(unconnected_items legitimately DROPS). The S5 diff-pair check
+--all-track-errors) runs on the staged board BEFORE and AFTER. When an error
+type grew, the routed nets whose new tracks/vias are items of those errors
+have their new copper removed (nets_in_new_errors / rip_new_copper; each a
+critical_route_rolled_back violation) and DRC runs once more; an error type
+still grown -> exit 2, original board untouched (unconnected_items
+legitimately DROPS). The S5 diff-pair check
 (check_diffpair.check_pair) then runs in-process on the routed pairs; its
 violations gate status like the router's own.
 
@@ -1133,6 +1136,45 @@ def drc_delta(before: dict, after: dict) -> dict:
     return {"before": b, "after": a, "new": new, "new_warnings": new_w}
 
 
+_ITEM_NET_RE = re.compile(r"^(?:Track|Via|Arc) \[([^\]]+)\]")
+
+
+def nets_in_new_errors(before: dict, after: dict, nets: set[str]) -> set[str]:
+    """The routed nets whose tracks or vias are items of an ERROR whose
+    check type grew between the two DRC reports - the nets whose new copper
+    broke the board (lite-main, hifi-receiver-2: KRT laid /OUT_L_N and
+    /OUT_R_* at their 1.5x width across the TPA3118's 0.65 mm-pitch pins,
+    41 shorting_items, and the whole run rolled back)."""
+    grown = set(drc_delta(before, after)["new"])
+    out: set[str] = set()
+    for v in after["violations"]:
+        if v.get("severity") != "error" or v.get("check") not in grown:
+            continue
+        for item in v.get("items", []):
+            m = _ITEM_NET_RE.match(item.get("msg", ""))
+            if m and m.group(1) in nets:
+                out.add(m.group(1))
+    return out
+
+
+def rip_new_copper(staged: Path, old_uuids: set[str], nets: set[str]) -> int:
+    """Remove every track/via of `nets` that was not on the board before
+    this run (uuid not in old_uuids). Returns the items removed."""
+    bg = geom.BoardGeom.from_file(staged)
+    ops = [{"op": "remove", "uuid": x.uuid}
+           for x in list(bg.tracks_of()) + list(bg.vias_of())
+           if x.net in nets and x.uuid and x.uuid not in old_uuids]
+    if ops:
+        route_edit.apply_ops(staged, ops)
+    return len(ops)
+
+
+def _copper_uuids(pcb: Path) -> set[str]:
+    bg = geom.BoardGeom.from_file(pcb)
+    return {x.uuid for x in list(bg.tracks_of()) + list(bg.vias_of())
+            if x.uuid}
+
+
 def diffpair_postcheck(staged: Path, routed_pairs: list[dict]) -> tuple[list, list]:
     """S5 check_diffpair on the routed pairs only. Returns (violations, facts)."""
     if not routed_pairs:
@@ -1244,6 +1286,7 @@ def run(argv: list[str] | None = None):
     if bg0.zones_of():
         kc.run_drc(cli, staged, refill=True, save_board=True)
     before = kc.run_drc(cli, staged, all_track_errors=True)
+    old_uuids = _copper_uuids(staged)
 
     routed, violations = [], []
     for kind, specs in todo:
@@ -1271,6 +1314,30 @@ def run(argv: list[str] | None = None):
         kc.run_drc(cli, staged, refill=True, save_board=True)
     after = kc.run_drc(cli, staged, all_track_errors=True)
     delta = drc_delta(before, after)
+    ripped = None
+    if delta["new"]:
+        # keep what routed clean: rip only the nets whose new copper is in a
+        # new error, and re-check once
+        bad = nets_in_new_errors(before, after,
+                                 {n for f in routed
+                                  if not f.get("plane_carried")
+                                  for n in f["nets"]})
+        if bad:
+            ripped = {"nets": sorted(bad), "new_errors": delta["new"],
+                      "items_removed": rip_new_copper(staged, old_uuids, bad)}
+            if bg0.zones_of():
+                kc.run_drc(cli, staged, refill=True, save_board=True)
+            after = kc.run_drc(cli, staged, all_track_errors=True)
+            delta = drc_delta(before, after)
+            delta["ripped"] = ripped
+            routed = [f for f in routed if not set(f["nets"]) & bad]
+            for net in sorted(bad):
+                violations.append(violation(
+                    SCRIPT, "error", None, None, net, [],
+                    f"critical net {net} routed into new DRC errors "
+                    f"({', '.join(sorted(ripped['new_errors']))}); its new "
+                    "copper was removed and the rest kept", SCRIPT,
+                    kind="critical_route_rolled_back"))
     if delta["new"]:
         raise CheckError(
             "routing introduced new DRC errors (rolled back, original board "

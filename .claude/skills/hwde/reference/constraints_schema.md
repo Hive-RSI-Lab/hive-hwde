@@ -35,7 +35,11 @@ Consumers per key (script -> phase):
     // advisory WARNINGS (extras advisory:true); override regions stay ERROR
     // at their declared current (regulator feed taps). Pour necks stay ERROR
     // at the full budget. No zone fill on the net -> error plane_missing.
-    "plane_fed": true
+    // rules_gen sizes a plane_fed rail's tracks (DRU width + net class) for
+    // one tap, not current_a: tap_current_a, else via_amps, else 0.5 A. So
+    // declare the rail's REAL current and its pour in "planes"; rules_gen
+    // warns when a plane_fed net has no plane there.
+    "plane_fed": true, "tap_current_a": 0.5
   }, {
     // width-only entry: "pdn": false opts a net OUT of check_pdn's
     // decoupling inventory. Use for nets declared solely so rules_gen sizes
