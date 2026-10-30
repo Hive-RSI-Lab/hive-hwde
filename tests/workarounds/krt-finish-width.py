@@ -31,7 +31,9 @@ def run_krt(krt, script, staged, out, extra, floors, fab, grid, timeout, **kw):
 
 work = _probe.scratch()
 staged = work / "b.kicad_pcb"
-staged.write_text("(kicad_pcb)\n")
+# _krt_finish parses the board (its tracks, to tell KRT's new ones apart)
+# before it calls KRT, so the board needs its copper layers
+staged.write_text('(kicad_pcb\n  (layers (0 "F.Cu" signal) (31 "B.Cu" signal))\n)\n')
 route_auto.env.find_krt = lambda: work
 rc.grading_floors = lambda pro: {"clearance": 0.127, "via_diameter": 0.6,
                                  "via_drill": 0.3, "edge_clearance": 0.3}
