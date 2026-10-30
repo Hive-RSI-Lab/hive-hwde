@@ -40,7 +40,7 @@ import pytest
 import yaml
 
 REPO = Path(__file__).resolve().parents[1]
-SKILL = REPO / ".claude" / "skills" / "hwde"
+SKILL = REPO
 SCRIPTS = SKILL / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
@@ -556,7 +556,7 @@ def test_reviewer_contracts_carry_the_tier_rule():
 
 
 def test_skill_md_describes_the_two_dials():
-    text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+    text = (SKILL / "docs" / "playbook.md").read_text(encoding="utf-8")
     assert "learning <target>:" in text
     assert "state.py mode --token" in text
     for bit in ("SCOPE TIER", "BINDING LEVEL", "build-modes.md"):

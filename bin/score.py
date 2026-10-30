@@ -8,8 +8,10 @@ hwde-led-test) is copied to a scratch dir, and erc, drc_routed, verify and
 dfm run on it through bin/hwde, with bin/hwde's shims off. A charge is each
 finding a gate fails on that no waiver covers, each warning, and each
 board-local script that stands in for hwde. A gate that can't run charges
-CRASH. The score is minus the charges: higher is better, 0 is a clean sweep.
-Prints one line per board, then the number alone.
+CRASH. Each of hwde's planted faults (bin/strength.py) that a gate or check
+lets through charges CRASH too, so loosening a check can't raise the score.
+The score is minus the charges: higher is better, 0 is a clean sweep.
+Prints one line per board, the planted faults' line, then the number alone.
 
 The boards change only through bin/pin.py, which writes their digests into
 PINS below, so a refresh is a change to this file; a pin whose files don't
@@ -32,7 +34,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 HWDE = os.environ.get("HWDE_BIN", str(ROOT / "bin" / "hwde"))
-SKILL = ROOT / ".claude" / "skills" / "hwde" / "scripts"
+SKILL = ROOT / "scripts"
 GATES = ("erc", "drc_routed", "verify", "dfm")
 CRASH = 100
 
@@ -209,6 +211,18 @@ def measure(p: Pin, ws: Path, logs: Path) -> int:
     return n
 
 
+def planted() -> list[str]:
+    """The planted faults let through, each printed; then the line that
+    counts them. Each one charges CRASH."""
+    import strength
+    fs = strength.faults()
+    missed = [name for _, name, ok in fs if not ok]
+    for name in missed:
+        print(f"planted fault let through: {name} (CRASH {CRASH})", flush=True)
+    print(f"planted faults caught: {len(fs) - len(missed)}/{len(fs)}", flush=True)
+    return missed
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--board", action="append", default=[], help="only this board (repeatable)")
@@ -224,6 +238,12 @@ def main() -> int:
         for m in bad or ["no pinned boards"]:
             print(f"score: {m}", file=sys.stderr)
         return 1
+    try:
+        missed = planted()
+    except Exception as e:  # noqa: BLE001 - a guard that can't run is not passed
+        print(f"score: the planted faults could not run: {type(e).__name__}: {e}",
+              file=sys.stderr)
+        return 1
     if args.board:
         todo = [p for p in todo if p.name in args.board]
     scratch = Path(args.keep) if args.keep else Path(tempfile.mkdtemp(prefix="hwde-score-"))
@@ -237,6 +257,7 @@ def main() -> int:
     finally:
         if not args.keep:
             shutil.rmtree(scratch, ignore_errors=True)
+    total += CRASH * len(missed)
     print(f"charges: {total} over {len(todo)} board(s)")
     print(f"{-total}")
     return 0

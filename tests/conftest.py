@@ -22,8 +22,7 @@ def _kicad_version() -> tuple[tuple[int, ...], str]:
     Asked once, at collection: a pin whose version probe fails (a slow
     kicad-cli on a strained machine times out) skips the recorded tests with
     the reason, never aborts the whole run (issue #252)."""
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / ".claude"
-                           / "skills" / "hwde" / "scripts" / "lib"))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts" / "lib"))
     import env
     try:
         cli = env.find_kicad_cli()

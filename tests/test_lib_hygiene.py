@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPTS = ROOT / ".claude" / "skills" / "hwde" / "scripts"
+SCRIPTS = ROOT / "scripts"
 PRISTINE = ROOT / "tests" / "fixtures" / "lib" / "pristine"
 S7 = ROOT / "tests" / "s7_regen"
 
