@@ -1,0 +1,252 @@
+{
+ "power": [
+  {
+   "net": "VBUS",
+   "current_a": 0.4,
+   "dt_c": 20,
+   "via_amps": 1.0,
+   "plane_fed": true
+  },
+  {
+   "net": "PVDD",
+   "current_a": 0.8,
+   "dt_c": 20,
+   "via_amps": 1.0,
+   "plane_fed": true
+  },
+  {
+   "net": "GND",
+   "current_a": 0.5,
+   "dt_c": 20,
+   "plane_fed": true
+  },
+  {
+   "net": "+5V",
+   "current_a": 0.8,
+   "dt_c": 10
+  },
+  {
+   "net": "+3V3",
+   "current_a": 0.35,
+   "dt_c": 10
+  },
+  {
+   "net": "+3V3A",
+   "current_a": 0.05,
+   "dt_c": 10
+  },
+  {
+   "net": "/OUT_R_P",
+   "current_a": 1.0,
+   "dt_c": 30,
+   "pdn": false
+  },
+  {
+   "net": "/OUT_R_N",
+   "current_a": 1.0,
+   "dt_c": 30,
+   "pdn": false
+  },
+  {
+   "net": "/OUT_L_P",
+   "current_a": 1.0,
+   "dt_c": 30,
+   "pdn": false
+  },
+  {
+   "net": "/OUT_L_N",
+   "current_a": 1.0,
+   "dt_c": 30,
+   "pdn": false
+  },
+  {
+   "net": "/SPK_L_P",
+   "current_a": 3.5,
+   "dt_c": 30,
+   "pdn": false
+  },
+  {
+   "net": "/SPK_L_N",
+   "current_a": 3.5,
+   "dt_c": 30,
+   "pdn": false
+  },
+  {
+   "net": "/SPK_R_P",
+   "current_a": 3.5,
+   "dt_c": 30,
+   "pdn": false
+  },
+  {
+   "net": "/SPK_R_N",
+   "current_a": 3.5,
+   "dt_c": 30,
+   "pdn": false
+  },
+  {
+   "net": "/BUCK5_SW",
+   "current_a": 0.8,
+   "dt_c": 10,
+   "pdn": false
+  },
+  {
+   "net": "/BUCK3_LX",
+   "current_a": 1.0,
+   "dt_c": 10,
+   "pdn": false
+  }
+ ],
+ "voltages": [
+  {
+   "net": "VBUS",
+   "voltage": 21.0
+  },
+  {
+   "net": "PVDD",
+   "voltage": 21.0
+  },
+  {
+   "net": "+5V",
+   "voltage": 5.2
+  },
+  {
+   "net": "+3V3",
+   "voltage": 3.4
+  },
+  {
+   "net": "+3V3A",
+   "voltage": 3.4
+  }
+ ],
+ "diff_pairs": [],
+ "coating": "soldermask",
+ "thermal": [
+  {
+   "ref": "U8",
+   "power_w": 2.0,
+   "net": "GND",
+   "dt_c": 80,
+   "min_vias": 16
+  },
+  {
+   "ref": "U2",
+   "power_w": 0.4,
+   "net": "GND",
+   "dt_c": 40
+  }
+ ],
+ "blocks": [
+  {
+   "topology": "usb-pd-sink",
+   "block": "B1",
+   "name": "J1 + U1 CH224Q",
+   "operating_point": {
+    "vin_v": 20,
+    "iout_a": 5,
+    "board_layers": 2,
+    "source_kind": "usb-pd"
+   }
+  },
+  {
+   "topology": "load-switch",
+   "block": "B2",
+   "name": "Q1 AO4485 PVDD switch",
+   "operating_point": {
+    "vin_v": 20,
+    "iout_a": 5,
+    "board_layers": 2
+   }
+  },
+  {
+   "topology": "buck",
+   "block": "B3",
+   "name": "U2 TPS54302 5 V",
+   "operating_point": {
+    "vin_v": 20,
+    "vout_v": 5,
+    "iout_a": 1,
+    "pdiss_w": 0.4,
+    "board_layers": 2,
+    "switching_kind": "hard",
+    "rectifier_kind": "sync",
+    "integration_kind": "integrated-fet",
+    "source_kind": "usb-pd"
+   }
+  },
+  {
+   "topology": "buck",
+   "block": "B4",
+   "name": "U3 SY8089 3.3 V",
+   "operating_point": {
+    "vin_v": 5,
+    "vout_v": 3.3,
+    "iout_a": 0.6,
+    "pdiss_w": 0.2,
+    "board_layers": 2,
+    "switching_kind": "hard",
+    "rectifier_kind": "sync",
+    "integration_kind": "integrated-fet",
+    "source_kind": "rail"
+   }
+  },
+  {
+   "topology": "ldo",
+   "block": "B5",
+   "name": "U4 LP5907 3.3 V analog",
+   "operating_point": {
+    "vin_v": 5,
+    "vout_v": 3.3,
+    "iout_a": 0.05,
+    "pdiss_w": 0.09,
+    "board_layers": 2
+   }
+  },
+  {
+   "topology": "mcu-module",
+   "block": "B6",
+   "name": "U5 ESP32-WROVER-E",
+   "operating_point": {
+    "vin_v": 3.3,
+    "iout_a": 0.5,
+    "board_layers": 2
+   }
+  },
+  {
+   "topology": "usb-uart",
+   "block": "B7",
+   "name": "U6 CH340C + auto-program",
+   "operating_point": {
+    "vin_v": 3.3,
+    "board_layers": 2
+   }
+  },
+  {
+   "topology": "audio-codec",
+   "block": "B8",
+   "name": "U7 ES8388",
+   "operating_point": {
+    "vin_v": 3.3,
+    "board_layers": 2
+   }
+  },
+  {
+   "topology": "class-d-amp",
+   "block": "B9",
+   "name": "U8 TPA3118D2 BTL 2 x 43 W / 4 ohm",
+   "operating_point": {
+    "vin_v": 20,
+    "iout_a": 4.6,
+    "pdiss_w": 3.0,
+    "board_layers": 2
+   }
+  }
+ ],
+ "planes": [
+  {
+   "net": "GND",
+   "layer": "F.Cu",
+   "priority": 0,
+   "connect": "solid"
+  }
+ ]
+}

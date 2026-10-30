@@ -80,6 +80,7 @@ import route_edit  # noqa: E402
 import routelib  # noqa: E402
 from checklib import CheckError  # noqa: E402
 from shapely.geometry import MultiPolygon, Point, Polygon, box  # noqa: E402
+from shapely.ops import unary_union  # noqa: E402
 
 INSET_MM = 0.5          # default pour inset from the outline bbox
 MIN_WIDTH_MM = 0.25     # zone min fill width (golden corpus min_thickness)
@@ -95,7 +96,7 @@ _INNER_RE = re.compile(r"^In\d+\.Cu$")
 _PLANE_KEYS = {"net", "layer", "region", "priority", "min_island_mm2",
                "clearance", "min_width", "connect"}
 _CONNECT_VALUES = {"solid", "thermal"}
-HOLE_EDGE_GAP = 0.2     # mm drill edge-to-edge floor (0.5 centre for 0.3s)
+HOLE_EDGE_GAP = 0.5     # mm drill edge-to-edge floor (KiCad hole_to_hole)
 EP_OWN_ARRAY = 4        # existing thru-hole items in the land -> skip grid
 
 
@@ -183,8 +184,83 @@ def _region_rect(entry: dict, bg: geom.BoardGeom, inset: float,
 
 
 def _rect_area(z: dict) -> float:
+    if z.get("_geom") is not None:
+        return z["_geom"].area
     x1, y1, x2, y2 = z["_rect"]
     return (x2 - x1) * (y2 - y1)
+
+
+def _shape(z: dict):
+    """The entry's region as a shapely polygon (a merged entry's union)."""
+    return z["_geom"] if z.get("_geom") is not None else box(*z["_rect"])
+
+
+_MERGE_KEYS = ("net", "layer", "connect", "clearance", "min_width",
+               "min_island_mm2")
+
+
+def merge_same_net(plan: list[dict]) -> tuple[list[dict], list[str]]:
+    """Fold same-net, same-layer entries whose regions overlap or touch, and
+    whose settings match, into ONE zone over their union. Two such zones
+    can't both stay: at one priority KiCad 10 flags them zones_intersect,
+    and at two (what assign_priorities would give them) it fills them apart,
+    so the net is split at the seam (lite-main, hifi-receiver-2: its PVDD
+    strips were joined by hand-drawn tracks across every seam). A union with
+    a hole, or one that only meets at a corner, stays as separate entries.
+    Same-net entries that touch but differ in settings are left apart with
+    a note. Returns (plan, notes)."""
+    notes: list[str] = []
+    n = len(plan)
+    parent = list(range(n))
+
+    def find(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+    for i in range(n):
+        for j in range(i + 1, n):
+            a, b = plan[i], plan[j]
+            if a["net"] != b["net"] or a["layer"] != b["layer"] \
+                    or a.get("_existing") or b.get("_existing") \
+                    or not _rects_overlap(a["_rect"], b["_rect"]):
+                continue
+            if all(a.get(k) == b.get(k) for k in _MERGE_KEYS):
+                parent[find(i)] = find(j)
+            else:
+                notes.append(
+                    f"{a['net']} pours on {a['layer']} at {list(a['_rect'])} "
+                    f"and {list(b['_rect'])} meet but differ in settings, so "
+                    "they stay two zones that KiCad fills apart: give them "
+                    "the same settings or join them with a track")
+    groups: dict[int, list[int]] = {}
+    for i in range(n):
+        groups.setdefault(find(i), []).append(i)
+    out: list[dict] = []
+    for root in sorted(groups, key=lambda r: min(groups[r])):
+        idx = groups[root]
+        if len(idx) == 1:
+            out.append(plan[idx[0]])
+            continue
+        u = unary_union([box(*plan[i]["_rect"]) for i in idx])
+        if not isinstance(u, Polygon) or u.interiors:
+            out.extend(plan[i] for i in idx)
+            notes.append(f"{plan[idx[0]]['net']} pours on "
+                         f"{plan[idx[0]]['layer']} meet only at a corner or "
+                         "around a hole; left as separate zones")
+            continue
+        u = u.simplify(0)
+        z = dict(plan[idx[0]])
+        given = [plan[i]["priority"] for i in idx
+                 if plan[i].get("priority") is not None]
+        z["priority"] = max(given) if given else None
+        z["_geom"] = u
+        z["_rect"] = tuple(round(v, 3) for v in u.bounds)
+        z["_merged_from"] = [list(plan[i]["_rect"]) for i in idx]
+        out.append(z)
+        notes.append(f"merged {len(idx)} touching {z['net']} pours on "
+                     f"{z['layer']} into one zone")
+    return out, notes
 
 
 def _rects_overlap(a, b) -> bool:
@@ -211,7 +287,8 @@ def assign_priorities(plan: list[dict]) -> None:
         for j in done:  # every done entry has area >= z's (sort order)
             o = plan[j]
             if o["layer"] == z["layer"] and _rects_overlap(o["_rect"],
-                                                           z["_rect"]):
+                                                           z["_rect"]) \
+                    and _shape(o).intersects(_shape(z)):
                 floor = max(floor, o["priority"] + 1)
         given = z.get("priority")
         z["priority"] = max(int(given) if given is not None else 0, floor)
@@ -278,7 +355,10 @@ def build_plan(bg: geom.BoardGeom, constraints: dict | None,
 
     for i, z in enumerate(plan):
         z["_rect"] = _region_rect(z, bg, inset, i)
-        cov = _existing_cover(bg, z["net"], z["layer"], z["_rect"])
+    plan, merge_notes = merge_same_net(plan)
+    notes += merge_notes
+    for z in plan:
+        cov = _existing_cover(bg, z["net"], z["layer"], _shape(z))
         if cov >= EXISTING_COVER:
             z["_existing"] = round(cov, 3)
             notes.append(f"existing {z['net']} fill covers "
@@ -289,12 +369,14 @@ def build_plan(bg: geom.BoardGeom, constraints: dict | None,
                   "notes": notes}
 
 
-def _existing_cover(bg: geom.BoardGeom, net: str, layer: str, rect) -> float:
-    """Fraction of the (region ^ outline) already covered by `net`'s fill."""
+def _existing_cover(bg: geom.BoardGeom, net: str, layer: str, region) -> float:
+    """Fraction of the (region ^ outline) already covered by `net`'s fill;
+    region is a shapely polygon or an [x1, y1, x2, y2] rect."""
     fill = bg.zone_fill(net, layer)
     if fill.is_empty:
         return 0.0
-    region = box(*rect)
+    if not hasattr(region, "area"):
+        region = box(*region)
     if not bg.outline.is_empty:
         region = region.intersection(bg.outline)
     if region.area <= FILL_EPS_MM2:
@@ -309,7 +391,10 @@ def worker_zones(plan: list[dict]) -> list[dict]:
     the scripted form of the pd-trigger pour fan-in hand patch (LEARNINGS
     791: thermal spokes would starve a 5 A pad), which router.md's
     never-hand-edit rule used to contradict."""
-    return [{"net": z["net"], "layer": z["layer"], "rect": list(z["_rect"]),
+    return [{"net": z["net"], "layer": z["layer"],
+             **({"poly": [[round(x, 4), round(y, 4)] for x, y in
+                          list(z["_geom"].exterior.coords)[:-1]]}
+                if z.get("_geom") is not None else {"rect": list(z["_rect"])}),
              "priority": z["priority"],
              "min_island_mm2": z.get("min_island_mm2"),
              "clearance": z.get("clearance"),
@@ -431,12 +516,14 @@ def thermal_via_ops(bg: geom.BoardGeom, plane_nets: set[str], *,
 # ------------------------------------------------------------- verification
 
 def _fill_in_region(bg: geom.BoardGeom, net: str, layer: str,
-                    rect) -> tuple[float, int]:
-    """(area mm2, island count) of `net`'s zone fill inside the region."""
+                    region) -> tuple[float, int]:
+    """(area mm2, island count) of `net`'s zone fill inside the region (a
+    shapely polygon or an [x1, y1, x2, y2] rect)."""
     fill = bg.zone_fill(net, layer)
     if fill.is_empty:
         return 0.0, 0
-    clipped = fill.intersection(box(*rect))
+    clipped = fill.intersection(region if hasattr(region, "area")
+                                else box(*region))
     if clipped.is_empty:
         return 0.0, 0
     if isinstance(clipped, Polygon):
@@ -470,7 +557,7 @@ def verify_zones(after: geom.BoardGeom, plan: list[dict],
     zone_facts: list[dict] = []
     violations: list[dict] = []
     for z in plan:
-        area, islands = _fill_in_region(after, z["net"], z["layer"], z["_rect"])
+        area, islands = _fill_in_region(after, z["net"], z["layer"], _shape(z))
         zone_facts.append({"net": z["net"], "layer": z["layer"],
                            "region": list(z["_rect"]),
                            "priority": z["priority"],

@@ -1,0 +1,35 @@
+{
+  "script": "gate",
+  "gate": "erc",
+  "phase": "P4",
+  "tool": "erc",
+  "input": "kicad/core.kicad_sch",
+  "input_digest": "sexpr_no_uuid:782374a26538c890bad897d975757ea14c45458e5a3cc35e4eab7a3f3ac09c69",
+  "status": "pass",
+  "criteria": {
+    "fail_severities": [
+      "error",
+      "warning"
+    ],
+    "max_count": 0
+  },
+  "counts": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+  },
+  "failing_count": 0,
+  "failing": [],
+  "record_result": {
+    "ok": true,
+    "recorded": true,
+    "workspace": "/work/boards/core",
+    "gate": "erc",
+    "status": "pass",
+    "attempts": 8,
+    "inputs": {
+      "sch": "sexpr_no_uuid:782374a26538c890bad897d975757ea14c45458e5a3cc35e4eab7a3f3ac09c69",
+      "pro": "json_canonical:ade210d648016346219e733a80aa291be83b7604227024277df89bb7b23acc28"
+    }
+  }
+}

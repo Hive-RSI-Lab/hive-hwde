@@ -16,7 +16,7 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
 ## Steps
 1. `scripts/board_init.py --netlist kicad/<top>.net --name <project>
    --out kicad --layers <2|4> [--copper-oz 1|2] [--stackup <NAME>]
-   [--outline auto|WxH] [--mounting-holes auto|N]
+   [--outline auto|WxH] [--origin keep|auto|X,Y] [--mounting-holes auto|N]
    [--mounting-hole-fp LIB:NAME] [--corner-radius auto|R]
    [--schematic kicad/<top>.kicad_sch] [--fp-lib <workspace>/lib]`
    (`<project>` is the workspace directory name - `<PN>_<name>` on a
@@ -34,6 +34,11 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    non-plated holes -> the name without `_Pad_Via`; square corners ->
    `--corner-radius 0`. Report `mounting_holes`, `mounting_hole_net` and
    `corner_radius` from the JSON.
+   - A re-run keeps the existing board's outline origin (`--origin keep`,
+   the default; the JSON's `outline_origin` and `origin_source`), so
+   coordinates written against the last run (constraints `planes` regions,
+   pre-route ops) still land. Write them relative to `outline_origin` anyway,
+   and pin it with `--origin X,Y` when a mechanical drawing fixes it.
    Its SELF-CHECK is the phase gate: schematic parity == 0 AND zero
    non-unconnected violations (unrouted boards always have
    unconnected_items - those are P7's).
@@ -65,6 +70,12 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    (`Pwr_<width>mm`; rails at or under the Default width stay Default) and
    re-asserts the fab floors. Check the class list before P7: the router
    traces at class width, so a flattened class is a routing defect.
+   - It reads the board beside `--pro` (or `--pcb`): where a power net
+   meets pads narrower than its width it adds `aiee_pwr_neck_<net>_<ref>`
+   (the net may narrow to that pad's width inside the part's courtyard;
+   report `necks`, `class_clearances`). A 5 A rail into fine-pitch parts
+   is a pour: declare it `plane_fed` with its real current and its
+   `planes` entry, and its tracks are sized as taps (`tap_current_a`).
    - If board_init is ever re-run, re-run rules_gen after it.
 
 ## Rules

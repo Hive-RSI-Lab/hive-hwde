@@ -1,0 +1,72 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C14858",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C14858",
+   "mpn": "CL10C101JB8NNNC",
+   "brand": "Samsung Electro-Mechanics",
+   "description": "100pF 50V C0G \u00b15% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "package": "0603",
+   "category": "Multilayer Ceramic Capacitors MLCC - SMD/SMT",
+   "type": "Basic",
+   "basic": true,
+   "stock": 4594438,
+   "price": 0.0087,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0087
+    },
+    {
+     "qty": 500,
+     "price": 0.0065
+    },
+    {
+     "qty": 1500,
+     "price": 0.0055
+    },
+    {
+     "qty": 4000,
+     "price": 0.0048
+    },
+    {
+     "qty": 24000,
+     "price": 0.0045
+    },
+    {
+     "qty": 48000,
+     "price": 0.0043
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL10C101JB8NNNC_C14858.pdf",
+   "url": "https://www.lcsc.com/product-detail/multilayer-ceramic-capacitors-mlcc-smd-smt_samsung-electro-mechanics-cl10c101jb8nnnc_C14858.html",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "\u00b15%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "100pF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "C0G"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

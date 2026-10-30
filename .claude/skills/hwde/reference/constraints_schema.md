@@ -35,7 +35,11 @@ Consumers per key (script -> phase):
     // advisory WARNINGS (extras advisory:true); override regions stay ERROR
     // at their declared current (regulator feed taps). Pour necks stay ERROR
     // at the full budget. No zone fill on the net -> error plane_missing.
-    "plane_fed": true
+    // rules_gen sizes a plane_fed rail's tracks (DRU width + net class) for
+    // one tap, not current_a: tap_current_a, else via_amps, else 0.5 A. So
+    // declare the rail's REAL current and its pour in "planes"; rules_gen
+    // warns when a plane_fed net has no plane there.
+    "plane_fed": true, "tap_current_a": 0.5
   }, {
     // width-only entry: "pdn": false opts a net OUT of check_pdn's
     // decoupling inventory. Use for nets declared solely so rules_gen sizes
@@ -87,6 +91,12 @@ Consumers per key (script -> phase):
   // A5/A7. Inner layers are always B1. CLI --coating overrides.
   "coating": "soldermask",
 
+  // check_antenna (P8): which modules have a PCB antenna, for a part
+  // reference/rf_modules.yaml does not know or names wrongly. "pcb" checks
+  // the copper under its antenna end and its place at the board edge;
+  // "external" (u.FL / IPEX) skips it.
+  "antennas": {"U7": "pcb"},
+
   // check_thermal (P8), place_anneal spreading term (P6)
   "thermal": [{"ref": "U2", "power_w": 0.8, "net": "GND", "dt_c": 40,
                "min_vias": 4},
@@ -109,7 +119,50 @@ Consumers per key (script -> phase):
   //        the datasheet's JEDEC 2s2p theta_JA, used as-is in place of the
   //        copper model (no area or via credit on top; optimistic on a
   //        crowded board). A part takes rating or theta_ja_c_w, not both;
-  //        airflow multiplies either.
+  //        airflow multiplies either. theta_ja_c_w is the NO-heatsink
+  //        figure: under 90 % of a known part's, under 10 C/W, or a
+  //        theta_source that speaks of a heatsink, with no heatsink
+  //        declared, is an error.
+  //        slug: "top" | "bottom" - a pad-up package (exposed pad on top,
+  //        for a heatsink). Known pad-up parts (TPA3221 by Value or LCSC
+  //        C475500, TPA3116D2, TPA3255, a TI TPA/TAS MPN ending DDV/DAD/
+  //        DKD/DKQ) need no slug key; their board path is the no-heatsink
+  //        theta_JA, no via array is asked of them, and a pad-up part with
+  //        no thermal entry is a warning.
+  //        heatsink: {"theta_sa_c_w": 20, "source": "...", "part": "...",
+  //        "hold": "clip|screw|pushpin|adhesive|lid", "mount_refs": "H5,H6",
+  //        "theta_jc_c_w": 1.1, "interface_c_w": 1.1 | "interface_mm": 0.1
+  //        + "interface_k_w_mk": 3 [+ "contact_mm2": 29],
+  //        "spreading_c_w": 1, "ref": "HS1"} - in parallel with the board
+  //        path; theta_jc and contact_mm2 default to a known pad-up part's
+  //        RthetaJC(top) and slug area; clip/screw/pushpin need mount_refs
+  //        on the board.
+  //        tj_max_c: absolute junction limit, against the box air
+  //        (enclosure) or ambient_c. power_max_w: continuous worst case;
+  //        over budget without "governor" (the firmware limit) warns.
+
+  // check_thermal (P8): the box the board sits in. Air = room_c (30) +
+  // heat / (walls + stack-effect vents); heat = the thermal entries'
+  // power_w + other_w. box_mm or "stl" (assembled box, bounding box).
+  // Vent areas in series: inlet low, riser (edge gap past the board),
+  // outlet high. material sets Tg (PLA PETG PCTG ABS ASA PC) or tg_c.
+  // floor: feet (default, half the floor convects) | flat | open.
+  "enclosure": {"box_mm": [106, 96, 46.8], "wall_mm": 2.4,
+                "material": "PETG", "room_c": 30, "other_w": 1.4,
+                "inlet_mm2": 3300, "riser_mm2": 228, "outlet_mm2": 3300,
+                "stack_mm": 40, "floor": "feet"},
+  // the air when there is no enclosure (C); tj_max_c and ripple life use it
+  "ambient_c": 45,
+
+  // check_thermal (P8): bulk-capacitor ripple current and life
+  "ripple": [{"ref": "C5", "irms_a": 0.55, "rated_irms_a": 0.6,
+              "freq_multiplier": 1.2, "source": "Rubycon PX ripple table",
+              "irms_max_a": 1.25, "life_h": 2000, "rated_c": 105,
+              "life_min_h": 30000, "chem": "electrolytic"}],
+  //        irms_a over rated_irms_a x freq_multiplier: > 100 % error,
+  //        > 75 % warning; irms_max_a over the rating warns; life_h at
+  //        rated_c scaled 2x per 10 K (polymer 10x per 20 K) to the air +
+  //        5 K x share^2, under life_min_h warns.
 
   // placelib/place_seed/place_metrics/place_anneal (P6)
   "placement": {

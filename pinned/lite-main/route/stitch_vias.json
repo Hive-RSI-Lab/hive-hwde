@@ -1,0 +1,793 @@
+{
+ "script": "stitch_vias",
+ "status": "pass",
+ "board": "lite-main.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "requested": 24,
+ "placed": 27,
+ "skipped": [
+  {
+   "ref": "C1.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C10.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C11.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C12.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C13.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C15.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C16.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C17.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C18.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C20.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C21.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C22.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C23.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C24.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C3.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C30.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C31.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C32.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C34.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C35.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C36.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C37.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C38.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C39.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C4.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C40.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C42.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C45.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C5.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C50.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C52.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C58.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C59.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C61.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C63.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C68.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C69.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C70.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C71.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "C80.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "D1.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "D2.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "J1.A1-B12",
+   "reason": "track_connected_no_local_spot",
+   "net": "GND"
+  },
+  {
+   "ref": "R1.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "R10.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "R12.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "R14.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "R16.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "R18.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "R31.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "R34.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "R37.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "R39.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "R52.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "R8.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "SW1.3",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "SW1.4",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "SW2.3",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "SW2.4",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "SW3.3",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "SW3.4",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "U1.11",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "U2.1",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "U3.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "U4.2",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "U5.1",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "U5.15",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "U5.38",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "U5.39",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "U5.39",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "U5.39",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "U6.1",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "U7.13",
+   "reason": "track_connected_no_local_spot",
+   "net": "GND"
+  },
+  {
+   "ref": "U7.26",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "U7.29",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "U8.1",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "U8.12",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "U8.14",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "U8.22",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "U8.25",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "U8.28",
+   "reason": "already_stitched",
+   "net": "GND"
+  },
+  {
+   "ref": "U8.9",
+   "reason": "already_stitched",
+   "net": "GND"
+  }
+ ],
+ "via_size": 0.6,
+ "via_drill": 0.3,
+ "clearance_mm": 0.127,
+ "dry_run": false,
+ "applied": true,
+ "refilled": true,
+ "apply_by_status": {
+  "added": 31
+ },
+ "ops": [
+  {
+   "op": "add_via",
+   "at": [
+    58.1,
+    91.163
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    111.965,
+    106.523
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    111.79,
+    102.323
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    111.79,
+    100.523
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    95.765,
+    104.323
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    95.4,
+    102.783
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    95.4,
+    100.983
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    82.965,
+    94.823
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    82.315,
+    96.273
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    77.556,
+    68.784
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    78.165,
+    67.808
+   ],
+   "end": [
+    77.556,
+    68.784
+   ],
+   "width": 0.3,
+   "layer": "F.Cu",
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    102.605,
+    112.038
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    38.096,
+    131.175
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    39.506,
+    131.375
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    36.788,
+    129.505
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    38.145,
+    130.072
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    38.096,
+    128.394
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    39.489,
+    128.359
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    52.865,
+    94.043
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    52.865,
+    93.393
+   ],
+   "end": [
+    52.865,
+    94.043
+   ],
+   "width": 0.23,
+   "layer": "F.Cu",
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    52.865,
+    96.103
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    52.865,
+    97.253
+   ],
+   "end": [
+    52.865,
+    96.103
+   ],
+   "width": 0.23,
+   "layer": "F.Cu",
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    105.197,
+    109.554
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    105.446,
+    109.085
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    106.095,
+    109.043
+   ],
+   "end": [
+    105.446,
+    109.085
+   ],
+   "width": 0.3,
+   "layer": "F.Cu",
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    100.965,
+    105.323
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    25.506,
+    67.247
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    25.506,
+    144.337
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    25.506,
+    148.619
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    29.789,
+    62.964
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    119.727,
+    67.247
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  }
+ ],
+ "mode": "stitch",
+ "pitch_mm": 4.283,
+ "t_rise_ns": 1.0,
+ "nets": {
+  "GND": {
+   "plane_layers": [
+    "B.Cu"
+   ],
+   "pads": {
+    "requested": 24,
+    "placed": 22,
+    "skipped": 2
+   },
+   "area": {
+    "candidates": 422,
+    "placed": 5,
+    "rejected": {
+     "hole_to_hole": 4,
+     "single_layer_contact": 319,
+     "fill_edge": 32,
+     "near_same_net_via": 62
+    },
+    "capped": false
+   }
+  }
+ },
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-28T21:04:31+00:00",
+ "input": "/work/boards/lite/kicad/lite-main.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:b2a39385611d9daab5a346d106894fc770164563ed6b1834665069b99d0aa274"
+}

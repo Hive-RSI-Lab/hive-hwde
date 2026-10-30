@@ -1,5 +1,10 @@
 """bench - run ONE pipeline stage in isolation on a frozen fixture (T5).
 
+Not a hardware bench: this scores hwde's own stages, never a board in hand.
+Bringing up a built board is the `bring-up` verb (reference/recipes/
+bring-up.md): the board's project runs its own bench, and `state.py bringup
+--results F` closes it with the measurements (lib/bringuplib.py).
+
 The per-stage tuning loop's judge (v2 plan appendix): edit a stage's
 script/prompt/template, re-run `bench.py --stage PN --fixture F`, keep the
 change iff the composite improves.  Fixtures are frozen under
@@ -181,13 +186,8 @@ def _find_cli():
 
 
 def _cli_version(cli) -> str | None:
-    try:
-        r = subprocess.run([str(cli), "version"], capture_output=True,
-                           text=True, timeout=30)
-        return (r.stdout or "").strip().splitlines()[0] if r.returncode == 0 \
-            else None
-    except OSError:
-        return None
+    import env
+    return env.kicad_cli_version_line(cli)
 
 
 def _require_pinned_siblings(ctx, artifact: Path):

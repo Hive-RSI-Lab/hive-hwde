@@ -1,0 +1,8 @@
+# check_antenna: no copper under a radio module's PCB antenna, and the antenna
+# at the board edge (hifi-receiver-2 core, review-2 DIGITAL-19/18). Board
+# only; constraints.json may declare a module's antenna (antennas).
+name: check_antenna
+needs: []
+args: []
+optional:
+  constraints: [--constraints, "{constraints}"]

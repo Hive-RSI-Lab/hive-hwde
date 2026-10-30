@@ -404,15 +404,14 @@ def build_scene(bg: geom.BoardGeom, clearance: float,
                 for v in bg.vias_of()]
     # THT barrels (pads spanning >1 copper layer) are drills too - at their
     # REAL extents incl. slot stadiums (geom.Pad.drill_poly carries the
-    # -frot/-prot transform; LEARNINGS 819/827). NPTH pads without copper
-    # are invisible to geom; area vias stay drill-safe there because their
-    # disc must sit fully inside the plane fill, which the filler has
-    # already cut back around every hole.
-    for p in bg.pads_of():
-        if len(p.layers) > 1:
-            dp = p.drill_poly
-            sc.holes.append(dp if not dp.is_empty
-                            else Point(p.center).buffer(0.15, quad_segs=_QS))
+    # -frot/-prot transform; LEARNINGS 819/827). NPTH holes count too: one
+    # with copper on every layer is a barrel above, the rest are in geom's
+    # npth list only.
+    barrels = [p for p in bg.pads_of() if len(p.layers) > 1]
+    for p in barrels + [p for p in bg.npth if len(p.layers) <= 1]:
+        dp = p.drill_poly
+        sc.holes.append(dp if not dp.is_empty
+                        else Point(p.center).buffer(0.15, quad_segs=_QS))
     return sc
 
 

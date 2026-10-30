@@ -7,13 +7,26 @@
 #   hwde check            the skill's check_env: every tool the pipeline needs
 #   hwde test [args]      the skill's unit tests and the workaround probes,
 #                         no KiCad runs of whole boards (the per-PR test)
+#   hwde test-slow [args] the tests test leaves out as slow (tests/conftest.py
+#                         SLOW): live toolchain, whole fixture boards
 #   hwde check-all        re-run every board's gates from a scratch copy, and
 #                         check docs/workarounds.md against its probes (slow)
-#   hwde score            the share of gate steps with no workaround (the score)
+#   hwde sources          fetch the knowledge records' source PDFs into HOME
+#                         (first use of knowledge, research or check-all
+#                         does it too) and print where they are
+#   hwde score            re-run the gates on the pinned boards, shims off, and
+#                         count what they find (the score; docs/score.md)
+#   hwde pin BOARD --from CLONE --commit SHA
+#                         refresh a pinned board (bin/pin.py)
 #   hwde publish <dir>    put a self-contained copy at <dir>/hwde (a warden
 #                         runs it into the Hive's tools folder, so a check
 #                         sandbox, which mounts only /work and /hive/tools,
 #                         has /hive/tools/hwde/bin/hwde with no venv to build)
+#                         A published copy hands each command to the
+#                         installed module (/hive/modules/hive-hwde, which
+#                         follows main at every merge) whenever it can see
+#                         it and both pin the same requirements.lock, so
+#                         only a lock change needs a new publish.
 #   hwde <script> [args]  run skill/scripts/<script>.py with the venv python
 #                         (or the published copy's own)
 #
@@ -27,10 +40,22 @@
 # Nothing here installs anything outside HOME but publish's <dir>: KiCad and
 # freerouting are the Hive's (in its shared tools folder, put there through a
 # warden); the venv is built from requirements.lock with the Hive's uv on
-# first use. A published copy carries its own Python 3.14 with the packages
-# installed in it, and uses that instead.
+# first use, and the knowledge records' source PDFs are fetched from upstream
+# (bin/sources.py). A published copy carries its own Python 3.14 with the
+# packages installed in it, and its own PDFs, and uses those instead.
 set -e
 here=$(cd "$(dirname "$0")/.." && pwd)
+
+# A published copy runs the installed module's code with its own python when
+# the module is in sight (agents see $HIVE_MODULES; a check sees it once the
+# Hive mounts it) and the two lock the same packages; else its own code.
+if [ -f "$here/VERSION" ] && [ -z "${HWDE_PUBLISHED:-}" ]; then
+	mod=${HIVE_MODULES:-/hive/modules}/hive-hwde
+	if [ -x "$mod/bin/hwde" ] && [ ! -f "$mod/VERSION" ] && cmp -s "$mod/requirements.lock" "$here/requirements.lock"; then
+		HWDE_PUBLISHED=$here exec "$mod/bin/hwde" "$@"
+	fi
+fi
+pub=${HWDE_PUBLISHED:-$here}
 tools=${HIVE_TOOLS:-/hive/tools}
 state=${HWDE_HOME:-$HOME/.cache/hwde}
 venv=${HWDE_VENV:-$state/venv}
@@ -40,11 +65,14 @@ finduv() {
 	[ -n "$uv" ] || { echo "hwde: needs uv (hive agent install --tool uv)" >&2; exit 127; }
 }
 
-# The score reads files only: no KiCad, no venv.
-if [ "${1:-}" = score ]; then
+# pin copies files with git: no KiCad, no venv.
+if [ "${1:-}" = pin ]; then
 	shift
-	exec python3 "$here/bin/score.py" "$@"
+	exec python3 "$here/bin/pin.py" "$@"
 fi
+# The score measures hwde as it is, not as its shims patch it: every shim is
+# off for it and for the gates it runs.
+[ "${1:-}" = score ] && export HWDE_NO_SHIMS=1
 
 # publish builds the copy beside <dir>/hwde and swaps it in, so a check that
 # is running keeps the old one whole. Its python is a python-build-standalone
@@ -71,6 +99,8 @@ if [ "${1:-}" = publish ]; then
 	if [ -n "$appdir" ] && [ -d "$appdir/share/kicad/symbols/power.kicad_symdir" ]; then
 		"$py" "$here/bin/flatten-symdirs.py" "$appdir/share/kicad/symbols" "$new/symbols-$(basename "$appdir")"
 	fi
+	# A check sandbox has no network: the copy carries the source PDFs.
+	python3 "$here/bin/sources.py" fetch "$new/knowledge-sources"
 	echo "$ver" >"$new/VERSION"
 	rm -rf "$dest/.hwde-old"
 	[ -d "$dest/hwde" ] && mv "$dest/hwde" "$dest/.hwde-old"
@@ -80,7 +110,7 @@ if [ "${1:-}" = publish ]; then
 	echo "hwde $ver published at $dest/hwde (run $dest/hwde/bin/hwde)"
 	exit 0
 fi
-wa() { grep -q "^| *$1 *|" "$here/docs/workarounds.md" 2>/dev/null; }
+wa() { [ -z "${HWDE_NO_SHIMS:-}" ] && grep -q "^| *$1 *|" "$here/docs/workarounds.md" 2>/dev/null; }
 
 # KiCad: an explicit pin wins; else the newest KiCad 10 AppDir in the tools
 # folder, through wrappers that put kicad-cli and KiCad's own python (it has
@@ -115,12 +145,27 @@ if [ -z "${HWDE_FREEROUTING_JAR:-}" ]; then
 	jar=$(ls "$tools"/freerouting/freerouting-*.jar 2>/dev/null | sort -V | tail -n 1)
 	[ -n "$jar" ] && HWDE_FREEROUTING_JAR=$jar
 fi
+# KiCadRoutingTools: env.find_krt wants the plugins dir holding route_diff.py,
+# which in the tools folder sits under the release root.
+if [ -z "${HWDE_KRT_DIR:-}" ]; then
+	krt=$(ls -d "$tools"/kicad-routing-tools/KiCadRoutingTools-*/plugins 2>/dev/null | sort -V | tail -n 1)
+	[ -n "$krt" ] && HWDE_KRT_DIR=$krt
+fi
 [ -z "${HWDE_JAVA:-}" ] && command -v java >/dev/null 2>&1 && HWDE_JAVA=$(command -v java)
 # The knowledge records cite manufacturers' PDFs the module doesn't carry
-# (NOTICE); the hwde project's clone has them.
+# (NOTICE): docs/knowledge-sources.txt pins them at upstream's commit, and
+# bin/sources.py fetches them into HOME (a published copy carries its own)
+# the first time a command that checks citations runs, or `hwde sources`.
 if [ -z "${HWDE_KNOWLEDGE_SOURCES:-}" ]; then
-	src=${HIVE_PROJECTS:-/hive/projects}/hwde/.claude/skills/hwde/reference/knowledge/sources
-	[ -d "$src" ] && HWDE_KNOWLEDGE_SOURCES=$src
+	srcdir=$pub/knowledge-sources
+	[ -d "$srcdir" ] || srcdir=$state/knowledge-sources
+	if [ ! "$srcdir/.complete" -nt "$here/docs/knowledge-sources.txt" ]; then
+		case ${1:-} in
+		knowledge | knowledge.py | research | research.py | check-all | sources)
+			python3 "$here/bin/sources.py" fetch "$srcdir" || true ;;
+		esac
+	fi
+	[ "$srcdir/.complete" -nt "$here/docs/knowledge-sources.txt" ] && HWDE_KNOWLEDGE_SOURCES=$srcdir
 fi
 # Boards live in the project the agent works in, under boards/.
 HWDE_BOARDS_ROOT=${HWDE_BOARDS_ROOT:-$PWD/boards}
@@ -128,7 +173,7 @@ HWDE_BOARDS_ROOT=${HWDE_BOARDS_ROOT:-$PWD/boards}
 # A published copy's own python (an explicit HWDE_VENV still wins); else the
 # venv in HOME, built when missing or older than the lock.
 py=
-[ -z "${HWDE_VENV:-}" ] && py=$(ls -d "$here"/python/cpython-3.14.*/bin/python3.14 2>/dev/null | sort -V | tail -n 1)
+[ -z "${HWDE_VENV:-}" ] && py=$(ls -d "$pub"/python/cpython-3.14.*/bin/python3.14 2>/dev/null | sort -V | tail -n 1)
 own=$py
 [ -n "$py" ] || py=$venv/bin/python
 if [ -z "$own" ] && { [ ! -x "$py" ] || [ "$here/requirements.lock" -nt "$venv/.hwde-lock" ]; }; then
@@ -144,7 +189,7 @@ fi
 # folders, which kicad-sch-api (the skill's schematic writer) can't read; it
 # gets flat copies of the libraries the skill places by lib_id (power, Device).
 if wa symdir && [ -n "$appdir" ] && [ -z "${KICAD_SYMBOL_DIR:-}" ] && [ -d "$appdir/share/kicad/symbols/power.kicad_symdir" ]; then
-	syms=$here/symbols-$(basename "$appdir")
+	syms=$pub/symbols-$(basename "$appdir")
 	[ -f "$syms/power.kicad_sym" ] || syms=$state/symbols-$(basename "$appdir")
 	[ -f "$syms/power.kicad_sym" ] || "$py" "$here/bin/flatten-symdirs.py" "$appdir/share/kicad/symbols" "$syms"
 	export KICAD_SYMBOL_DIR=$syms
@@ -152,10 +197,11 @@ fi
 
 # HWDE_PY lets a script tell the runner's venv from another python (partslib's hint).
 export HWDE_PY="$py"
-export HWDE_KICAD_CLI HWDE_FREEROUTING_JAR HWDE_JAVA HWDE_KNOWLEDGE_SOURCES HWDE_BOARDS_ROOT
+export HWDE_KICAD_CLI HWDE_FREEROUTING_JAR HWDE_JAVA HWDE_KRT_DIR HWDE_KNOWLEDGE_SOURCES HWDE_BOARDS_ROOT
 [ -n "${HWDE_KICAD_CLI:-}" ] || unset HWDE_KICAD_CLI
 [ -n "${HWDE_FREEROUTING_JAR:-}" ] || unset HWDE_FREEROUTING_JAR
 [ -n "${HWDE_JAVA:-}" ] || unset HWDE_JAVA
+[ -n "${HWDE_KRT_DIR:-}" ] || unset HWDE_KRT_DIR
 [ -n "${HWDE_KNOWLEDGE_SOURCES:-}" ] || unset HWDE_KNOWLEDGE_SOURCES
 [ -f "$state/bin/libngspice.so" ] && export HWDE_NGSPICE_DLL="$state/bin/libngspice.so"
 # KiCad's SWIG paths need an X display: with none, a script runs under its own
@@ -185,23 +231,44 @@ x() {
 
 case "${1:-}" in
 env)
-	for v in HWDE_KICAD_CLI HWDE_FREEROUTING_JAR HWDE_JAVA HWDE_KNOWLEDGE_SOURCES HWDE_BOARDS_ROOT HWDE_NGSPICE_DLL KICAD_SYMBOL_DIR; do
+	for v in HWDE_KICAD_CLI HWDE_FREEROUTING_JAR HWDE_JAVA HWDE_KRT_DIR HWDE_KNOWLEDGE_SOURCES HWDE_BOARDS_ROOT HWDE_NGSPICE_DLL KICAD_SYMBOL_DIR; do
 		eval "val=\${$v:-}"
 		[ -n "$val" ] && printf "export %s='%s'\n" "$v" "$val"
 	done
 	printf "export HWDE_SKILL='%s'\nexport HWDE_PY='%s'\n" "$here/.claude/skills/hwde" "$py"
 	;;
-test)
+test | test-slow)
 	# tests/: upstream's unit tests (no smoke or net marks: those need a live
 	# KiCad run or the internet) and test_workarounds.py, the probes. Boards
 	# root is an empty scratch dir, so a test that wants a real board skips;
 	# whole boards are check-all's.
+	#
+	# Its scratch files (pytest's tmp_path, the boards root, TMPDIR) go on /dev/shm
+	# when it has room, and nothing fsyncs (HWDE_NO_FSYNC, safelib): the
+	# suite is file-heavy, not CPU-heavy, and on the Hive's loaded disk
+	# its plain writes and fsyncs took it from ~4 to over 30 minutes. The
+	# scratch dir goes when the run ends; the run prints its time and its
+	# slowest tests. test-slow runs the `slow` ones it leaves out.
+	marks="not smoke and not net and not slow"
+	[ "$1" = test-slow ] && marks="slow and not smoke and not net"
 	shift
 	export HWDE_BIN="$here/bin/hwde" HWDE_APPDIR="$appdir" HWDE_STATE="$state"
-	HWDE_BOARDS_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/hwde-noboards-XXXXXX")
+	export HWDE_NO_FSYNC=1
+	base=${TMPDIR:-/tmp}
+	shm=$(df -Pk /dev/shm 2>/dev/null | awk 'NR==2 {print $4}')
+	[ -w /dev/shm ] && [ "${shm:-0}" -ge 524288 ] && base=/dev/shm
+	scratch=$(mktemp -d "$base/hwde-test-XXXXXX")
+	HWDE_BOARDS_ROOT=$scratch/noboards
+	mkdir "$HWDE_BOARDS_ROOT" "$scratch/tmp"
 	cd "$here"
 	heavy="hwde test (the module's pytest suite)"
-	x "$py" -m pytest -m "not smoke and not net" "$@"
+	x sh -c 'scratch=$1; shift; t0=$(date +%s)
+		TMPDIR=$scratch/tmp "$@"; rc=$? # the probes and scripts temp files too
+		rm -rf "$scratch"
+		echo "hwde test: $(($(date +%s) - t0))s (scratch on ${scratch%/*})"
+		exit $rc' sh "$scratch" \
+		"$py" -m pytest -m "$marks" --basetemp="$scratch/pytest" \
+		--durations=15 "$@"
 	;;
 check-all)
 	shift
@@ -209,12 +276,22 @@ check-all)
 	heavy="hwde check-all (every board's gates)"
 	x "$py" "$here/bin/check_all.py" "$@"
 	;;
+score)
+	shift
+	export HWDE_BIN="$here/bin/hwde"
+	heavy="hwde score (the gates on every pinned board)"
+	x "$py" "$here/bin/score.py" "$@"
+	;;
+sources)
+	[ -n "${HWDE_KNOWLEDGE_SOURCES:-}" ] || { echo "hwde: knowledge sources not fetched (see above)" >&2; exit 1; }
+	echo "$HWDE_KNOWLEDGE_SOURCES"
+	;;
 check)
 	shift
 	x "$py" "$here/.claude/skills/hwde/scripts/check_env.py" "$@"
 	;;
 "" | -h | --help)
-	sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'
+	sed -n '2,35p' "$0" | sed 's/^# \{0,1\}//'
 	;;
 *)
 	s=${1%.py}

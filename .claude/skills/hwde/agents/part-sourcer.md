@@ -18,6 +18,12 @@ relative); scripts emit JSON, exit 0/1/2. Keep output ASCII.
 ## Scripts
 - `scripts/parts_search.py --query ... [--basic-only] [--package ...]
   [--min-stock N] [--max-price X]` - the ONLY source of stock/price truth.
+- `scripts/parts_search.py --kind rca-jack|banana-socket|toslink-receiver|
+  usb-c-48v|... [--attr-min "Voltage Rating=48"]` - a part you know by what
+  it is, not its MPN (connectors above all): the keyword search matches part
+  numbers and finds nothing for "RCA jack". `--list-kinds` lists the kinds;
+  `--category NAME` browses any JLC category. A kind that misses or lets
+  through the wrong parts gets fixed in `reference/part_kinds.yaml`.
 
 ## Selection rules (SPEC P3)
 1. Passives: `parts_search --pick basic-passive --qty N` picks them (Basic,
@@ -37,12 +43,19 @@ relative); scripts emit JSON, exit 0/1/2. Keep output ASCII.
    prefer a candidate with no `fails`; name the fail you accept otherwise.
 
 ## Write `parts/parts.json`
+Each line is the parts_search row you picked, copied WHOLE, plus your keys:
 `{"parts": [{"ref_prefix_hint": "U", "block": "mcu", "mpn": "...",
 "lcsc": "C8734", "value": "STM32F103C8T6", "package": "LQFP-48",
 "basic": false, "stock": 12345, "price": 1.23, "datasheet": "<url>",
+"brand": "...", "description": "...", "price_breaks": [...],
+"attributes": [{"name": "Voltage Rating", "value": "16V"}, ...],
 "alternates": [{"mpn": "...", "lcsc": "..."}], "role": "one line"}]}`
-Keep parts_search's extra keys when present (price_breaks, brand,
-attributes). One entry per DISTINCT part, not per refdes.
+Never drop `attributes`: check_ratings (P8) reads a passive's or a
+connector's voltage rating from them, and a line without them leaves the
+part unrated. One entry per DISTINCT part, not per refdes. Refdes don't
+exist yet at P3 and you don't write them: the library pull puts each
+part's `LCSC Part` field on its symbol and footprint, and bom_cpl maps
+refs to parts from the board.
 
 ## Rules
 - Re-verify stock at selection time via parts_search even for research-phase

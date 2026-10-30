@@ -1,0 +1,163 @@
+{
+ "script": "lib_pull",
+ "status": "pass",
+ "lib_name": "aiee",
+ "parts_file": null,
+ "paced_s": 0.0,
+ "retried": 0,
+ "symbol_lib": "/work/boards/lite/lib/aiee.kicad_sym",
+ "footprint_lib": "/work/boards/lite/lib/aiee.pretty",
+ "results": [
+  {
+   "lcsc": "C42421366",
+   "status": "pulled",
+   "symbol": "IRM-3638T_C42421366",
+   "symbol_verified": true,
+   "footprint_verified": true,
+   "symbol_lib": "/work/boards/lite/lib/aiee.kicad_sym",
+   "footprint_lib": "/work/boards/lite/lib/aiee.pretty",
+   "footprints": [
+    {
+     "name": "OPTO-TH_IRM-3638T",
+     "file": "/work/boards/lite/lib/aiee.pretty/OPTO-TH_IRM-3638T.kicad_mod",
+     "copper_pads": 3,
+     "courtyard": true,
+     "silk": true
+    }
+   ],
+   "warnings": []
+  }
+ ],
+ "symbol_dedup": {
+  "removed": 0,
+  "names": []
+ },
+ "registered": {
+  "fp": "present",
+  "sym": "present"
+ },
+ "autofix": {
+  "footprints": 1,
+  "changed": 1,
+  "actions": 6,
+  "residue": 0,
+  "results": [
+   {
+    "footprint": "OPTO-TH_IRM-3638T",
+    "file": "/work/boards/lite/lib/aiee.pretty/OPTO-TH_IRM-3638T.kicad_mod",
+    "changed": true,
+    "actions": [
+     {
+      "rule": "A",
+      "action": "promote_silk_width",
+      "kind": "fp_circle",
+      "from_mm": 0.06,
+      "to_mm": 0.15,
+      "gap_mm": 3.095
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.1217,
+      "new_gap_mm": 0.1717
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.125,
+      "new_gap_mm": 0.175
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.1217,
+      "new_gap_mm": 0.1717
+     },
+     {
+      "rule": "B",
+      "action": "narrow_silk_stroke",
+      "kind": "fp_line",
+      "from_mm": 0.25,
+      "to_mm": 0.15,
+      "gap_mm": 0.125,
+      "new_gap_mm": 0.175
+     },
+     {
+      "rule": "E",
+      "action": "rebuild_courtyard",
+      "layer": "F.CrtYd",
+      "from_bbox": [
+       -3.0,
+       -1.5,
+       3.0,
+       2.5
+      ],
+      "to_bbox": [
+       -3.7,
+       -1.5,
+       3.7,
+       2.5
+      ],
+      "copper_outside_mm2": 1.2734
+     }
+    ],
+    "residue": 0,
+    "before": {
+     "worst_gap_mm": 0.1217,
+     "unprintable_silk": 1,
+     "under_gap_silk": 4,
+     "plated_pegs": 0
+    },
+    "after": {
+     "worst_gap_mm": 0.1717,
+     "unprintable_silk": 0,
+     "under_gap_silk": 0,
+     "plated_pegs": 0
+    }
+   }
+  ]
+ },
+ "refdes_norm": {
+  "footprints": 26,
+  "changed": 1,
+  "unchanged": 25,
+  "skipped": 0,
+  "results": [
+   {
+    "footprint": "OPTO-TH_IRM-3638T",
+    "status": "changed",
+    "from": [
+     0.0,
+     -4.0
+    ],
+    "to": [
+     0.0,
+     -2.325
+    ],
+    "pad_top": -0.9,
+    "silk_top": -1.5,
+    "clear_of": -1.5,
+    "inked_half_h": 0.575
+   }
+  ]
+ },
+ "model_paths": {
+  "rewritten": 1,
+  "footprints": {
+   "OPTO-TH_IRM-3638T.kicad_mod": [
+    "${KIPRJMOD}/../lib/aiee.3dshapes/IRM-3638T-L6.0-W7.0-H4.6-P2.54.wrl"
+   ]
+  }
+ },
+ "load_check": null,
+ "drc_check": null
+}

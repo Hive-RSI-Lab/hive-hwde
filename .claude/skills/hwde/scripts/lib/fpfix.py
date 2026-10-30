@@ -32,6 +32,25 @@ them measured against real DRC on the shipped boards (LEARNINGS 2026-07-28
      field grown by COURTYARD_EXCESS, rounded outward to COURTYARD_GRID. A
      courtyard that covers its pads is never touched.
 
+  F  exposed-pad thermal vias with no number: EasyEDA draws an EP's via grid
+     as `(pad "" thru_hole circle ...)` with paste on them (the TPA3118's
+     HTSSOP-32), so they join no net and print paste into open holes. An
+     unnumbered plated hole with copper ring whose centre lies inside a
+     numbered SMD pad takes that pad's number, loses its paste layers and
+     connects solid to a pour (zone_connect 2: spokes starve a thermal via).
+
+Flags (reported, never fixed: only the part's drawing can settle them), from
+the footprint's own 3D model when lib_pull fetched one (body_flags):
+  model_off_footprint  the model's pins below the board miss the footprint's
+                       plated holes: it doesn't line up (EasyEDA's USB4105
+                       model sits 2.15 mm off), so render/STEP lie and the
+                       two checks below are skipped
+  peg_without_hole     the model reaches into the board where the footprint
+                       has no hole: a locating peg or pin with nowhere to go
+                       (the stacked RCA XDJK-0271-1650's two pegs)
+  body_outside_courtyard  the model's body overhangs the courtyard, so
+                       placement packs parts into it (the same RCA's body)
+
 Text surgery on the raw file: only the nodes that change are rewritten, so
 nothing else can be reformatted, and re-running is a no-op (idempotent).
 Handles BOTH the legacy `(module ...)`/`(width W)` form easyeda2kicad emits and
@@ -412,8 +431,9 @@ def sanitize(text: str, *, min_gap: float = MIN_GAP,
              min_line_width: float = MIN_LINE_WIDTH,
              promote_silk: bool = True, fix_pegs: bool = True,
              fix_body_text: bool = True,
-             fix_courtyard: bool = True) -> tuple[str, list[dict]]:
-    """Apply rules A-E. Returns (new_text, actions); idempotent."""
+             fix_courtyard: bool = True,
+             fix_ep_vias: bool = True) -> tuple[str, list[dict]]:
+    """Apply rules A-F. Returns (new_text, actions); idempotent."""
     nodes, copper, silk = _collect(text)
     actions: list[dict] = []
     edits: list[tuple[int, int, str | None, str]] = []  # start, end, replacement|None
@@ -501,6 +521,12 @@ def sanitize(text: str, *, min_gap: float = MIN_GAP,
                             "at": [round(v, 3) for v in at[:2]],
                             "drill_mm": round(max(_nums(_kid(node, "drill"))), 3)})
 
+    # ---- F: an exposed pad's unnumbered thermal vias -> the EP's number
+    if fix_ep_vias:
+        for s, e, new, act in ep_via_edits(text, nodes):
+            edits.append((s, e, new, "ep_via"))
+            actions.append(act)
+
     # ---- D: legend text hidden under the body that collides with own silk
     if fix_body_text:
         silk_geoms = [it["shape"].buffer(max(it["width"], 0.01) / 2.0)
@@ -548,6 +574,61 @@ def sanitize(text: str, *, min_gap: float = MIN_GAP,
         else:
             out = out[:start] + repl + out[end:]
     return out, actions
+
+
+def _unnamed(node) -> bool:
+    return str(_tok(node[1])) in ("", '""')
+
+
+def _pad_number(node) -> str:
+    return str(_tok(node[1]))
+
+
+_BARE_NUM = re.compile(r"^[A-Za-z0-9_.+-]+$")
+
+
+def ep_via_edits(text: str, nodes) -> list[tuple[int, int, str, dict]]:
+    """Rule F: (start, end, replacement, action) for every unnumbered plated
+    via (copper ring around its drill) whose centre is inside a numbered SMD
+    pad, the exposed pad it cools."""
+    eps = []
+    for head, ps, pe, node in nodes:
+        if head != "pad" or len(node) < 4 or _unnamed(node):
+            continue
+        if str(_tok(node[2])) != "smd":
+            continue
+        poly = _pad_poly(node)
+        if poly is not None:
+            # write the number as the EP's own text has it (KiCad 10 quotes)
+            quoted = text[ps:pe].lstrip().startswith('(pad "')
+            eps.append((_pad_number(node), poly, quoted))
+    out = []
+    if not eps:
+        return out
+    for head, s, e, node in nodes:
+        if head != "pad" or len(node) < 4 or not _unnamed(node):
+            continue
+        if str(_tok(node[2])) != "thru_hole" or _peg(node):
+            continue
+        at = _nums(_kid(node, "at"))
+        if len(at) < 2:
+            continue
+        hit = next(((n, q) for n, poly, q in eps if poly.contains(Point(at[0], at[1]))), None)
+        if hit is None:
+            continue
+        num, quoted = hit
+        sub = text[s:e]
+        name = num if _BARE_NUM.match(num) and not quoted else '"' + num.replace('"', '\\"') + '"'
+        new = re.sub(r'^\(pad\s+(?:""|\S+)', "(pad " + name, sub, count=1)
+        # drop the paste layers: open holes must not print paste
+        new = re.sub(r'\s+"?(?:\*|[FB])\.Paste"?(?=[\s)])', "", new)
+        if "zone_connect" not in new:
+            new = new[:-1].rstrip() + " (zone_connect 2))"
+        out.append((s, e, new, {"rule": "F", "action": "number_ep_via",
+                                "at": [round(v, 3) for v in at[:2]],
+                                "pad": num,
+                                "paste_dropped": new.count("Paste") < sub.count("Paste")}))
+    return out
 
 
 def _crtyd_layer(node) -> str | None:
@@ -632,7 +713,225 @@ def _fp_stem(name: str) -> str:
     return n[:-len(".kicad_mod")] if n.endswith(".kicad_mod") else n
 
 
-def fix_file(path: str | Path, *, dry_run: bool = False, **opts) -> dict:
+# ------------------------------------------------- the part's 3D model (flags)
+
+# KiCad reads VRML in tenths of an inch.
+WRL_UNIT_MM = 2.54
+# Model geometry this far under the board top is a pin or peg, not a lead
+# resting on the copper.
+BELOW_BOARD_MM = 0.5
+# Below-board points closer than this belong to one pin or peg.
+FEATURE_LINK_MM = 1.0
+# The body may overhang the courtyard by this much before it is flagged.
+BODY_TOL_MM = 0.25
+
+_MODEL = re.compile(r'\(model\s+(?:"([^"]+)"|(\S+))')
+_XYZ = r"\(\s*{0}\s*\(xyz\s+(-?[\d.eE+-]+)\s+(-?[\d.eE+-]+)\s+(-?[\d.eE+-]+)\s*\)"
+
+
+def _model_file(text: str, where: Path | None) -> tuple[Path | None, dict]:
+    """The footprint's first VRML model on disk and its (offset, scale,
+    rotate) xyz triples. A ${...} or moved path is looked up by name in the
+    *.3dshapes beside the footprint's .pretty (where: the .kicad_mod)."""
+    m = _MODEL.search(text)
+    if not m:
+        return None, {}
+    tail = text[m.end():m.end() + 400]
+    xf = {}
+    for key, dflt in (("offset", (0.0, 0.0, 0.0)), ("scale", (1.0, 1.0, 1.0)),
+                      ("rotate", (0.0, 0.0, 0.0))):
+        k = re.search(_XYZ.format(key), tail)
+        xf[key] = tuple(float(v) for v in k.groups()) if k else dflt
+    raw = Path(m.group(1) or m.group(2))
+    cands = [raw.with_suffix(".wrl"), raw] if "$" not in str(raw) else []
+    if where is not None:
+        lib = where.parent.parent if where.suffix == ".kicad_mod" else where.parent
+        for d in sorted(lib.glob("*.3dshapes")):
+            cands += [d / (raw.stem + ".wrl")]
+    for c in cands:
+        if c.suffix.lower() == ".wrl" and c.is_file():
+            return c, xf
+    return None, xf
+
+
+def model_points(wrl: Path, xf: dict) -> list[tuple[float, float, float]]:
+    """The model's vertices in footprint mm (y down, z up from the board)."""
+    return [p for face in model_faces(wrl, xf) for p in face]
+
+
+def model_faces(wrl: Path, xf: dict) -> list[list[tuple[float, float, float]]]:
+    """The model's faces, each a vertex list in footprint mm (y down, z up
+    from the board). None of a model rotated about x or y (it is no longer
+    upright)."""
+    ox, oy, oz = xf.get("offset", (0.0, 0.0, 0.0))
+    sx, sy, sz = xf.get("scale", (1.0, 1.0, 1.0))
+    rx, ry, rz = xf.get("rotate", (0.0, 0.0, 0.0))
+    if abs(rx) % 360 > 1e-6 or abs(ry) % 360 > 1e-6:
+        return []
+    # KiCad turns a model by -rotate.z in its y-up frame
+    a = math.radians(-rz)
+    ca, sa = math.cos(a), math.sin(a)
+    text = wrl.read_text(encoding="utf-8", errors="replace")
+    faces = []
+    num = re.compile(r"-?\d+(?:\.\d*)?(?:[eE][-+]?\d+)?|-?\.\d+(?:[eE][-+]?\d+)?")
+    # each point [...] list is indexed by the coordIndex [...] after it
+    for blk, idx in re.findall(r"\bpoint\s*\[([^\]]*)\](?:.*?\bcoordIndex\s*\[([^\]]*)\])?",
+                               text, re.S):
+        v = [float(t) for t in num.findall(blk)]
+        pts = []
+        for i in range(0, len(v) - 2, 3):
+            x, y, z = (v[i] * WRL_UNIT_MM * sx, v[i + 1] * WRL_UNIT_MM * sy,
+                       v[i + 2] * WRL_UNIT_MM * sz)
+            x, y = x * ca - y * sa, x * sa + y * ca
+            pts.append((x + ox, -(y + oy), z + oz))
+        if not idx:
+            faces += [[p] for p in pts]
+            continue
+        face: list = []
+        for t in idx.replace(",", " ").split():
+            k = int(t)
+            if k < 0:
+                if face:
+                    faces.append(face)
+                face = []
+            elif k < len(pts):
+                face.append(pts[k])
+        if face:
+            faces.append(face)
+    return faces
+
+
+def _features(faces) -> list:
+    """Group the xy extents of faces into pins/pegs: boxes linked within
+    FEATURE_LINK_MM."""
+    boxes: list[list[float]] = []
+    for face in faces:
+        xs, ys = [p[0] for p in face], [p[1] for p in face]
+        boxes.append([min(xs), min(ys), max(xs), max(ys)])
+    seeds, boxes = sorted(boxes), []
+    for x, y, x2, y2 in seeds:
+        for b in boxes:
+            if (b[0] - FEATURE_LINK_MM <= x2 and x <= b[2] + FEATURE_LINK_MM
+                    and b[1] - FEATURE_LINK_MM <= y2 and y <= b[3] + FEATURE_LINK_MM):
+                b[0], b[1] = min(b[0], x), min(b[1], y)
+                b[2], b[3] = max(b[2], x2), max(b[3], y2)
+                break
+        else:
+            boxes.append([x, y, x2, y2])
+    # boxes grown from sorted points can come to overlap: merge until stable
+    merged = True
+    while merged:
+        merged = False
+        for i in range(len(boxes)):
+            for j in range(i + 1, len(boxes)):
+                a, b = boxes[i], boxes[j]
+                if (a[0] - FEATURE_LINK_MM <= b[2] and b[0] - FEATURE_LINK_MM <= a[2]
+                        and a[1] - FEATURE_LINK_MM <= b[3] and b[1] - FEATURE_LINK_MM <= a[3]):
+                    boxes[i] = [min(a[0], b[0]), min(a[1], b[1]),
+                                max(a[2], b[2]), max(a[3], b[3])]
+                    del boxes[j]
+                    merged = True
+                    break
+            if merged:
+                break
+    from shapely.geometry import box as _box
+    return [_box(*b).buffer(0.05) for b in boxes]
+
+
+def _hole_poly(node):
+    """Footprint-local outline of a pad's hole (any plated or NPTH pad)."""
+    at, drill = _kid(node, "at"), _kid(node, "drill")
+    if at is None or drill is None:
+        return None
+    a = _nums(at)
+    d = _nums(drill)
+    if len(a) < 2 or not d:
+        return None
+    w, h = (d[0], d[1]) if len(d) >= 2 else (d[0], d[0])
+    rot = a[2] if len(a) >= 3 else 0.0
+    return geom._pad_polygon("oval" if w != h else "circle", w, h, 0.25,
+                             (a[0], a[1]), rot)
+
+
+def body_flags(text: str, path: Path | None = None) -> list[dict]:
+    """The model-against-footprint flags (see the module doc); [] when the
+    footprint has no VRML model on disk."""
+    wrl, xf = _model_file(text, path)
+    if wrl is None:
+        return []
+    faces = model_faces(wrl, xf)
+    if not faces:
+        return []
+    pts = [p for face in faces for p in face]
+    nodes, copper, _silk = _collect(text)
+    pads = [n for h, _, _, n in nodes if h == "pad" and len(n) >= 4]
+    holes = [(n, _hole_poly(n)) for n in pads
+             if str(_tok(n[2])) in ("thru_hole", "np_thru_hole")]
+    # a face wholly under the board is part of a pin or peg
+    below = _features([f for f in faces if all(z < -BELOW_BOARD_MM for _, _, z in f)])
+    smd = unary_union([q for q in (_pad_poly(n) for n in pads
+                                   if str(_tok(n[2])) == "smd") if q is not None])
+    # the pins: numbered plated holes, not the vias in an exposed pad
+    pins = [(n, h) for n, h in holes
+            if h is not None and str(_tok(n[2])) == "thru_hole" and not _unnamed(n)
+            and (smd.is_empty or not smd.contains(h.centroid))]
+    flags: list[dict] = []
+    if pins:
+        hit = [n for n, h in pins if any(f.intersects(h) for f in below)]
+        if len(hit) * 2 < len(pins):
+            flags.append({"flag": "model_off_footprint", "model": wrl.name,
+                          "pins_met": len(hit), "pins": len(pins),
+                          "detail": "the model's pins below the board miss the "
+                                    "footprint's holes; check its offset/rotate "
+                                    "against the drawing"})
+            return flags
+    land = unary_union([g for g in [copper] + [h for _, h in holes]
+                        if g is not None and not g.is_empty])
+    for f in below:
+        if land.is_empty or not f.intersects(land):
+            c = f.centroid
+            x1, y1, x2, y2 = f.bounds
+            flags.append({"flag": "peg_without_hole",
+                          "at": [round(c.x, 2), round(c.y, 2)],
+                          "size_mm": [round(x2 - x1 - 0.1, 2), round(y2 - y1 - 0.1, 2)],
+                          "detail": "the model reaches into the board here and "
+                                    "the footprint has no hole: a locating peg? "
+                                    "add an NPTH per the part's drawing"})
+    above = [(x, y) for x, y, z in pts if z >= -1e-6]
+    crt = {}
+    for head, _s, _e, node in nodes:
+        ly = _crtyd_layer(node) if head in _GRAPHIC_HEADS else None
+        if ly and ly.startswith("F."):
+            sh = graphic_shape(node)
+            if sh is not None:
+                crt.setdefault(ly, []).append(sh)
+    area = _courtyard_area(crt.get("F.CrtYd", []))
+    if above:
+        from shapely.geometry import MultiPoint
+        body = MultiPoint(above).convex_hull
+        if area is None:
+            flags.append({"flag": "body_outside_courtyard", "detail": "no F.CrtYd courtyard"})
+        else:
+            out = body.difference(area.buffer(BODY_TOL_MM))
+            if out.area > 0.01:
+                bx1, by1, bx2, by2 = body.bounds
+                cx1, cy1, cx2, cy2 = area.bounds
+                over = {k: round(v, 2) for k, v in (("left", cx1 - bx1), ("top", cy1 - by1),
+                                                    ("right", bx2 - cx2), ("bottom", by2 - cy2))
+                        if v > BODY_TOL_MM}
+                flags.append({"flag": "body_outside_courtyard",
+                              "body_bbox": [round(v, 2) for v in body.bounds],
+                              "courtyard_bbox": [round(v, 2) for v in area.bounds],
+                              "overhang_mm": over, "area_mm2": round(out.area, 2),
+                              "detail": "the model's body overhangs the courtyard; "
+                                        "grow the courtyard over the body unless "
+                                        "the overhang is meant to hang off the "
+                                        "board edge"})
+    return flags
+
+
+def fix_file(path: str | Path, *, dry_run: bool = False,
+             check_body: bool = True, **opts) -> dict:
     p = Path(path)
     text = p.read_text(encoding="utf-8")
     before = analyze(text, opts.get("min_gap", MIN_GAP),
@@ -643,8 +942,12 @@ def fix_file(path: str | Path, *, dry_run: bool = False, **opts) -> dict:
     if new != text and not dry_run:
         p.write_text(new, encoding="utf-8")
     residue = [a for a in actions if a["action"].startswith("residue")]
+    try:
+        flags = body_flags(new, p) if check_body else []
+    except Exception as exc:  # noqa: BLE001  (a flag check never fails a fix)
+        flags = [{"flag": "model_unreadable", "detail": f"{type(exc).__name__}: {exc}"}]
     return {"footprint": p.stem, "file": str(p), "changed": new != text,
-            "actions": actions, "residue": len(residue),
+            "actions": actions, "residue": len(residue), "flags": flags,
             "before": {"worst_gap_mm": before["worst_gap_mm"],
                        "unprintable_silk": before["unprintable_silk"],
                        "under_gap_silk": before["under_gap_silk"],
@@ -672,6 +975,7 @@ def fix_lib(pretty: str | Path, *, dry_run: bool = False,
             "changed": sum(1 for r in rows if r["changed"]),
             "actions": sum(len(r["actions"]) for r in rows),
             "residue": sum(r["residue"] for r in rows),
+            "flags": sum(len(r["flags"]) for r in rows),
             "status": "residue" if any(r["residue"] for r in rows) else "pass",
             "results": rows}
 
@@ -790,6 +1094,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--no-pegs", action="store_true", help="leave plated peg holes alone")
     ap.add_argument("--no-body-text", action="store_true",
                     help="leave hidden legend text alone")
+    ap.add_argument("--no-ep-vias", action="store_true",
+                    help="leave an exposed pad's unnumbered vias alone")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--verify-drc", action="store_true",
                     help="measure the result with real DRC on a scratch board")
@@ -805,7 +1111,8 @@ def main(argv: list[str] | None = None) -> int:
                               min_line_width=args.min_line_width,
                               promote_silk=not args.no_promote,
                               fix_pegs=not args.no_pegs,
-                              fix_body_text=not args.no_body_text)
+                              fix_body_text=not args.no_body_text,
+                              fix_ep_vias=not args.no_ep_vias)
         if args.verify_drc and args.lib:
             drc = scratch_drc(args.lib, args.only)
             payload["drc"] = {"status": drc["status"], "counts": drc["counts"],
