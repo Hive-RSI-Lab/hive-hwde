@@ -10,6 +10,17 @@
 #   cross-checked vs https://github.com/ayberkozgur/jlcpcb-design-rules-stackups
 # All lengths mm. Keys are "<layers>layer_<outer-copper-weight>oz".
 #
+# Annular rings (#443, #326; JLC page fetched 2026-10-31): JLC sets a VIA's
+# ring by "via diameter >= hole + 0.1 mm (0.15 preferred)", i.e. 0.05 abs /
+# 0.075 preferred, and a PTH component pad's ring apart: 2L 1 oz 0.18 min
+# (0.25 rec), multilayer 1 oz 0.15 min (0.20 rec), 2 oz 0.254. So
+# min_annular_ring_mm is the via ring (KiCad min_via_annular_width and the
+# aiee_annular_floor DRU rule, A.Type == 'via'); it is kept at the old
+# conservative 0.15 (2L) / 0.1 (ML) - the 6L row's 0.15 broke its own
+# 0.45/0.2 floor via (0.125 ring). min_pth_annular_ring_mm is the
+# component-hole ring dfm_check holds every non-via plated hole to.
+# Invariant (tests): min_via_diameter_mm >= min_via_drill_mm + 2 x via ring.
+#
 # Values are JLCPCB's *manufacturing minimums*. rules_gen may set a design to a
 # more conservative value; dfm_check flags anything BELOW these.
 #
@@ -17,7 +28,8 @@
 # it. Verified consumption (T6):
 #   dfm_check-enforced (gerber-level): min_trace_width_mm, min_clearance_mm,
 #     min_copper_to_edge_mm, min_hole_diameter_mm, min_hole_to_hole_mm,
-#     min_hole_to_edge_mm, min_annular_ring_mm, min_silk_width_mm,
+#     min_hole_to_edge_mm, min_annular_ring_mm (VIAS), min_pth_annular_ring_mm
+#     (component PTH holes; falls back to min_annular_ring_mm), min_silk_width_mm,
 #     min_solder_mask_dam_mm. (Its paste/outline/release checks are threshold-
 #     free: dfm_pad_tented, dfm_open_outline, dfm_missing_layer.)
 #   rules_gen/fabfloors seeds ONLY (design-rule generation, never gerber-
@@ -87,7 +99,8 @@ design_rules:
     min_clearance_mm: 0.127          # 5 mil
     min_via_drill_mm: 0.3
     min_via_diameter_mm: 0.6
-    min_annular_ring_mm: 0.15
+    min_annular_ring_mm: 0.15            # VIA ring; via dia >= hole + 0.1 (JLC; 0.15 preferred)
+    min_pth_annular_ring_mm: 0.18        # PTH component ring, JLC 2026-10-31 (#326)
     min_hole_diameter_mm: 0.3
     min_copper_to_edge_mm: 0.3
     min_hole_to_hole_mm: 0.5
@@ -105,7 +118,8 @@ design_rules:
     min_clearance_mm: 0.1524         # 6 mil (2 oz)
     min_via_drill_mm: 0.3
     min_via_diameter_mm: 0.6
-    min_annular_ring_mm: 0.15
+    min_annular_ring_mm: 0.15            # VIA ring; via dia >= hole + 0.1 (JLC; 0.15 preferred)
+    min_pth_annular_ring_mm: 0.254       # PTH component ring, JLC 2026-10-31 (#326)
     min_hole_diameter_mm: 0.3
     min_copper_to_edge_mm: 0.3
     min_hole_to_hole_mm: 0.5
@@ -123,7 +137,8 @@ design_rules:
     min_clearance_mm: 0.1016         # 4 mil
     min_via_drill_mm: 0.2
     min_via_diameter_mm: 0.45
-    min_annular_ring_mm: 0.1
+    min_annular_ring_mm: 0.1             # VIA ring; via dia >= hole + 0.1 (JLC; 0.15 preferred)
+    min_pth_annular_ring_mm: 0.15        # PTH component ring, JLC 2026-10-31 (#326)
     min_hole_diameter_mm: 0.2
     min_copper_to_edge_mm: 0.3
     min_hole_to_hole_mm: 0.5
@@ -141,7 +156,8 @@ design_rules:
     min_clearance_mm: 0.1016         # 4 mil
     min_via_drill_mm: 0.2
     min_via_diameter_mm: 0.45
-    min_annular_ring_mm: 0.1
+    min_annular_ring_mm: 0.1             # VIA ring; via dia >= hole + 0.1 (JLC; 0.15 preferred)
+    min_pth_annular_ring_mm: 0.254       # PTH component ring, JLC 2026-10-31 (#326)
     min_hole_diameter_mm: 0.2
     min_copper_to_edge_mm: 0.3
     min_hole_to_hole_mm: 0.5
@@ -159,7 +175,8 @@ design_rules:
     min_clearance_mm: 0.0889         # 3.5 mil
     min_via_drill_mm: 0.2
     min_via_diameter_mm: 0.45
-    min_annular_ring_mm: 0.15
+    min_annular_ring_mm: 0.1             # VIA ring; via dia >= hole + 0.1 (JLC; 0.15 preferred)
+    min_pth_annular_ring_mm: 0.15        # PTH component ring, JLC 2026-10-31 (#326)
     min_hole_diameter_mm: 0.2
     min_copper_to_edge_mm: 0.3
     min_hole_to_hole_mm: 0.5

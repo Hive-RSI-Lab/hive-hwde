@@ -461,12 +461,36 @@ def check_holes(fab, rules, vios: list, cast=()) -> None:
                     distance_mm=checklib.rnd(d), min_mm=lo_he))
 
 
-def check_annular_ring(fab, rules, vios: list, cast=()) -> None:
+def _via_holes(bg) -> list[tuple[float, float, float]]:
+    """(x, y, drill) of every via on the board: the drill file has no
+    via/component split gerbonara reads, the board does."""
+    if bg is None:
+        return []
+    return [(v.at[0], v.at[1], v.drill) for v in bg.vias_of()]
+
+
+def check_annular_ring(fab, rules, vios: list, cast=(), bg=None) -> None:
     """Radial copper around each plated hole, measured on the OUTER layers
-    (where the ring is thinnest after registration)."""
-    lo = rules.get("min_annular_ring_mm")
-    if lo is None:
+    (where the ring is thinnest after registration). A via is held to the
+    via ring (min_annular_ring_mm), every other plated hole to the PTH
+    component ring (min_pth_annular_ring_mm; the via value when the vendor
+    publishes only one) - JLC: 0.18 2-layer / 0.15 multilayer (#326)."""
+    lo_via = rules.get("min_annular_ring_mm")
+    lo_pth = rules.get("min_pth_annular_ring_mm", lo_via)
+    if lo_via is None and lo_pth is None:
         return
+    vias = _via_holes(bg)
+    vtree = STRtree([Point(x, y) for x, y, _ in vias]) if vias else None
+
+    def is_via(h) -> bool:
+        if vtree is None:
+            return False
+        for idx in vtree.query(Point(h.x, h.y).buffer(0.01)):
+            x, y, d = vias[int(idx)]
+            if abs(x - h.x) < 0.01 and abs(y - h.y) < 0.01 \
+                    and abs(d - h.diameter) < 0.02:
+                return True
+        return False
     outer = [n for n in ("F.Cu", "B.Cu") if n in fab.copper_files]
     pads_by_layer = {}
     for name in outer:
@@ -505,12 +529,15 @@ def check_annular_ring(fab, rules, vios: list, cast=()) -> None:
         if best is None:
             continue  # no pad around it on an outer layer (NPTH / inner-only)
         ring, name = best
-        if _below(ring, lo):
+        via = is_via(h)
+        lo = lo_via if via else lo_pth
+        if lo is not None and _below(ring, lo):
+            what = "via" if via else "PTH pad"
             vios.append(checklib.violation(
                 CHECK, "error", (h.x, h.y), name, None, [],
-                f"annular ring {ring:.4f} mm below JLC minimum {lo} mm",
-                SOURCE, kind="dfm_annular_ring",
-                ring_mm=checklib.rnd(ring), min_mm=lo,
+                f"{what} annular ring {ring:.4f} mm below JLC minimum "
+                f"{lo} mm", SOURCE, kind="dfm_annular_ring",
+                ring_mm=checklib.rnd(ring), min_mm=lo, hole=what,
                 drill_mm=checklib.rnd(h.diameter)))
 
 
@@ -1051,7 +1078,7 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
             zone_fill_skipped = check_zone_fill(bg, vios)
         if "drill" not in skip:
             check_holes(fab, rules, vios, cast)
-            check_annular_ring(fab, rules, vios, cast)
+            check_annular_ring(fab, rules, vios, cast, bg=bg)
         if "castellation" not in skip and "castellated" not in caps:
             # a vendor that publishes no castellation rules: nothing to
             # measure against, so a castellated board can't pass there

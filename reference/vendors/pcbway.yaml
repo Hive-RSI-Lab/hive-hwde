@@ -26,12 +26,11 @@
 # "<layers>layer_<outer-copper-oz>oz", as in jlc_capabilities.yaml.
 #
 # CAVEATS
-# - min_annular_ring_mm is ONE number but PCBWay publishes two: vias 0.15
-#   ([caps] standard) / 5 mil ([caps] advanced, normal, 1 oz), and component
-#   (PTH) holes 10 mil = 0.254 at 1 oz, 12 mil = 0.3048 at 2 oz ([caps]
-#   advanced "Minimum weld ring (outer layer)"). dfm_check applies the key to
-#   every plated hole, so the row carries the VIA value; PTH component pads
-#   below the component figure are NOT caught locally.
+# - PCBWay publishes two rings: vias 0.15 ([caps] standard) / 5 mil ([caps]
+#   advanced, normal, 1 oz), and component (PTH) holes 10 mil = 0.254 at
+#   1 oz, 12 mil = 0.3048 at 2 oz ([caps] advanced "Minimum weld ring (outer
+#   layer)"). min_annular_ring_mm carries the VIA value; dfm_check holds
+#   every other plated hole to min_pth_annular_ring_mm (#326).
 # - min_hole_to_hole_mm: [caps] advanced gives component holes >= 16 mil and
 #   vias (<= 0.45 mm) >= 11 mil. The row takes the stricter (component) value,
 #   so via pairs between 11 and 16 mil apart are flagged though PCBWay builds
@@ -74,6 +73,7 @@ design_rules:
     min_via_drill_mm: 0.2            # [caps] adv. drill normal >= 0.20 (standard: 0.15, surcharge < 0.2)
     min_via_diameter_mm: 0.5         # DERIVED: 0.2 drill + 2 x 0.15 ring
     min_annular_ring_mm: 0.15        # [caps] standard: vias 0.15 (6 mil); PTH 0.254, see CAVEATS
+    min_pth_annular_ring_mm: 0.254          # [caps] adv. component hole 10 mil (1 oz)
     min_hole_diameter_mm: 0.2        # [caps] adv. drill normal (standard: 0.15 with extra charge)
     min_copper_to_edge_mm: 0.25      # [caps] adv. "Line to board edge" CNC milling, normal
     min_hole_to_hole_mm: 0.4064      # [caps] adv. component holes >= 16 mil (vias >= 11 mil)
@@ -90,6 +90,7 @@ design_rules:
     min_via_drill_mm: 0.2
     min_via_diameter_mm: 0.5556      # DERIVED: 0.2 + 2 x 0.1778
     min_annular_ring_mm: 0.1778      # [caps] adv. 70 um via ring normal 7 mil (PTH 12 mil)
+    min_pth_annular_ring_mm: 0.3048         # [caps] adv. component hole 12 mil (2 oz)
     min_hole_diameter_mm: 0.2
     min_copper_to_edge_mm: 0.25
     min_hole_to_hole_mm: 0.4064
@@ -105,6 +106,7 @@ design_rules:
     min_via_drill_mm: 0.2
     min_via_diameter_mm: 0.5
     min_annular_ring_mm: 0.15
+    min_pth_annular_ring_mm: 0.254          # [caps] adv. component hole 10 mil (1 oz)
     min_hole_diameter_mm: 0.2
     min_copper_to_edge_mm: 0.25
     min_hole_to_hole_mm: 0.4064
@@ -121,6 +123,7 @@ design_rules:
     min_via_drill_mm: 0.2
     min_via_diameter_mm: 0.5556
     min_annular_ring_mm: 0.1778
+    min_pth_annular_ring_mm: 0.3048         # [caps] adv. component hole 12 mil (2 oz)
     min_hole_diameter_mm: 0.2
     min_copper_to_edge_mm: 0.25
     min_hole_to_hole_mm: 0.4064
@@ -136,6 +139,7 @@ design_rules:
     min_via_drill_mm: 0.2
     min_via_diameter_mm: 0.5
     min_annular_ring_mm: 0.15
+    min_pth_annular_ring_mm: 0.254          # [caps] adv. component hole 10 mil (1 oz)
     min_hole_diameter_mm: 0.2
     min_copper_to_edge_mm: 0.25
     min_hole_to_hole_mm: 0.4064
