@@ -261,6 +261,16 @@ another way worth measuring, re-pin it: `bin/hwde pin <board> --from <clone>
 --commit <sha>`, classify any new script in `pinned/<board>.json`, run
 `bin/hwde pin --digests`, and name the commit in the commit message.
 
+Research is held to the same standard: a paper is a lead to check, not a
+fact. `hwde papers` ([research/README.md](research/README.md)) follows the
+topics in `reference/research/watch.yaml`. It keeps every paper it has seen
+in `reference/research/papers.yaml`, reads only legitimate open copies (the
+rest go on the person's list, [research/paywalled.md](research/paywalled.md)),
+and gives each claim hwde's own verdict, with the test that reached it. Only
+claims hwde reproduced become [guidelines](research/guidelines.md). When
+`hwde papers due` lists topics, scan them; when a design leans on a rule of
+thumb nobody has checked, add a topic.
+
 Record each run's wall time per stage (the `phase` events in
 `state.json` history) and the gate attempts and fix loops per gate. That way
 a later board shows whether the module got faster or cleaner.

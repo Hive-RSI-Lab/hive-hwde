@@ -1,0 +1,3163 @@
+# The research ledger (scripts/papers.py, docs/research/README.md).
+#
+# One entry per work hwde has seen, so a scan never brings it back:
+#   status   candidate (found, not triaged) | kept (hwde wants something from
+#            it: say what under `why`) | dropped (why not, under `why`)
+#   access   open (copies: legitimate open copies, best first) | paywalled
+#            (on the person's list, docs/research/paywalled.md) |
+#            person_supplied (the person gave hwde a copy) | unknown
+#   trust    retracted, peer_reviewed, source_type, cited_by: how far to lean
+#            on the paper BEFORE hwde checks it. No claim is trusted on them.
+#   claims   <paper id>/<n>: the claim, `where` (page/section/figure/eq read
+#            from), `read_from` (full_text | abstract), and hwde's verdict:
+#              untested       `plan`: the test, script or sim that would check it
+#              reproduced / partial / refuted
+#                             `evidence`: tests/<file>.py::<test> (its source
+#                             names the claim id) or a script/sim file that
+#                             does; `finding`: what the check showed
+#              not_checkable  `why`
+#            `guideline` only on reproduced or partial: what a designer
+#            should do, in the scope hwde checked. docs/research/guidelines.md
+#            is built from these.
+# papers.py lint holds every one of these; tests/test_papers.py runs it.
+papers:
+- id: impedance-analysis-optimization-research-power-2025
+  title: Impedance analysis and optimization research of power distribution network
+  year: 2025
+  doi: 10.1007/s42452-025-07224-6
+  openalex: W4411306296
+  venue: Discover Applied Sciences
+  status: kept
+  access:
+    state: open
+    copies:
+    - url: https://link.springer.com/content/pdf/10.1007/s42452-025-07224-6.pdf
+      pdf: true
+      host: Discover Applied Sciences
+      version: publishedVersion
+      license: cc-by-nc-nd
+    - url: https://www.researchsquare.com/article/rs-6030854/latest.pdf
+      pdf: true
+      host: Research Square
+      version: acceptedVersion
+      license: cc-by
+    - url: https://doaj.org/article/418a7e77541a47afacfdbaf85feef1ff
+      pdf: false
+      host: 'DOAJ (DOAJ: Directory of Open Access Journals)'
+      version: submittedVersion
+      license: cc-by-sa
+    read:
+      url: https://link.springer.com/content/pdf/10.1007/s42452-025-07224-6.pdf
+      sha256: 82dcc239c68f6869988a71f1fd7b4d2a313e77bd21376c0ac86edc46aeac115a
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 2
+    note: Read from the Research Square preprint (v1, CC BY 4.0); the published SN Applied
+      Sciences version is the same DOI family.
+  abstract: Abstract The impedance characteristics of Power Distribution Networks (PDN) at
+    the circuit level have always been critical in high-speed circuit design. However, to
+    address power integrity issues caused by the reduction in chip feature sizes and the rapid
+    increase in integrated circuit transistors counts, it is necessary to suppress power noise
+    and meet the PDN impedance requirements of target device. This paper first analyzes the
+    impedance characteristics of key device units, such as decoupling capacitors, and their
+    PDN circuit models through modeling and simulation. It investigates optimization methods
+    for anti-resonance spike and implements a multi-layer decoupling optimization strategy
+    based on circuit parameters. Building on this, an impedance optimization strategy is proposed,
+    combining coarse-grained computation based on target impedance parameters with fine-tuning
+    to suppress anti-resonance spike. By leveraging the multi-stage cascading characteristics
+    of decoupling capacitors and their typical parasitic parameters, circuit parameters and
+    affected frequency ranges that meet the target impedance requirements are calculated.
+    This allows for rapid determination of matching com
+  topics:
+  - decoupling-pdn
+  found: '2026-10-30'
+  why: Decap anti-resonance rules of thumb (frequency, peak height, damping by ESR) that check_decoupling
+    and check_pdn_z's branch model should agree with.
+  claims:
+  - id: impedance-analysis-optimization-research-power-2025/1
+    read_from: full_text
+    where: Section 2.2, Fig. 3
+    claim: A 47 uF capacitor with 0.2 nH ESL and 0.1 mOhm ESR resonates at 1.64 MHz, where
+      |Z| is its ESR.
+    verdict: reproduced
+    evidence: tests/test_research_claims.py::test_pdn_single_capacitor_series_resonance
+    finding: check_pdn_z's branch model puts the minimum at 1.64 MHz (within 1 %) and |Z|
+      = ESR there.
+  - id: impedance-analysis-optimization-research-power-2025/2
+    read_from: full_text
+    where: Section 2.4, eq. 5 and the text after it
+    claim: Two parallel capacitors anti-resonate at f1 = 1/(2 pi sqrt(Lb Cp)) with |Z| = sqrt(Lb/Cp)
+      there.
+    verdict: partial
+    evidence: tests/test_research_claims.py::test_pdn_antiresonance_frequency_holds_magnitude_does_not
+    finding: 'The peak sits at 1/(2 pi sqrt((Lb+Lp) Cp)): f1 holds only while Lp << Lb (19
+      % off at Lp = Lb/2). Its height is X^2/(Rb+Rp), here 2.7x sqrt(Lb/Cp), not sqrt(Lb/Cp).'
+    guideline: Place a bulk/MLCC anti-resonance at 1/(2 pi sqrt((L_bulk + L_mlcc) C_mlcc))
+      and size its peak as X^2/(ESR_bulk + ESR_mlcc), X the bulk branch's reactance there;
+      sqrt(L/C) underestimates the peak by the circuit's Q.
+  - id: impedance-analysis-optimization-research-power-2025/3
+    read_from: full_text
+    where: Section 2.4 (3), Fig. 9
+    claim: A higher-ESR (lower-Q) decoupling capacitor lowers the anti-resonance spike.
+    verdict: partial
+    evidence: tests/test_research_claims.py::test_pdn_lower_q_lowers_antiresonance
+    finding: True until the two branches' ESR add up to about sqrt((Lb+Lp)/Cp); past that
+      the spike is gone and more ESR raises |Z| over the whole band.
+    guideline: 'Damp an anti-resonance with ESR up to about sqrt((L_bulk + L_mlcc)/C_mlcc)
+      in total, not more: past it the ESR itself sets |Z|.'
+  - id: impedance-analysis-optimization-research-power-2025/4
+    read_from: full_text
+    where: Section 2.4 (1), Fig. 8
+    claim: n identical capacitors in parallel keep the resonance frequency and lower |Z| by
+      n.
+    verdict: reproduced
+    evidence: tests/test_research_claims.py::test_pdn_n_identical_caps_divide_impedance
+    finding: Exactly, in the lumped model (mounting inductance shared between them would break
+      it; check_pdn_z gives each its own).
+- id: effective-pcb-decoupling-optimization-combining-2020
+  title: Effective PCB Decoupling Optimization by Combining an Iterative Genetic Algorithm
+    and Machine Learning
+  year: 2020
+  doi: 10.3390/electronics9081243
+  openalex: W3046348089
+  venue: Electronics
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://www.mdpi.com/2079-9292/9/8/1243/pdf
+      pdf: true
+      host: Electronics
+      version: publishedVersion
+      license: cc-by
+    - url: https://ricerca.univaq.it/bitstream/11697/152399/2/electronics-09-01243.pdf
+      pdf: true
+      host: "Archivio Istituzionale della Ricerca - Universit\xE0 degli Studi dell Aquila"
+      version: submittedVersion
+      license: cc-by
+    - url: https://doaj.org/article/a0f080086b56421d9e2eb424bb7e002b
+      pdf: false
+      host: 'DOAJ (DOAJ: Directory of Open Access Journals)'
+      version: submittedVersion
+      license: cc-by-sa
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 34
+  abstract: "An iterative optimization for decoupling capacitor placement on a power delivery\
+    \ network (PDN) is presented based on Genetic Algorithm (GA) and Artificial Neural Network\
+    \ (ANN). The ANN is first trained by an appropriate set of results obtained by a commercial\
+    \ simulator. Once the ANN is ready, it is used within an iterative GA process to place\
+    \ a minimum number of decoupling capacitors for minimizing the differences between the\
+    \ input impedance at one or more location, and the required target impedance. The combined\
+    \ GA\u2013ANN process is shown to effectively provide results consistent with those obtained\
+    \ by a longer optimization based on commercial simulators. With the new approach the accuracy\
+    \ of the results remains at the same level, but the computational time is reduced by at\
+    \ least 30 times. Two test cases have been considered for validating the proposed approach,\
+    \ with the second one also being compared by experimental measurements."
+  topics:
+  - decoupling-pdn
+  found: '2026-10-30'
+- id: capacitor-optimization-power-distribution-networks-2023
+  title: Capacitor Optimization in Power Distribution Networks Using Numerical Computation
+    Techniques
+  year: 2023
+  doi: 10.48550/arxiv.2305.01540
+  openalex: W4368303339
+  arxiv: '2305.01540'
+  venue: arXiv (Cornell University)
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://arxiv.org/pdf/2305.01540
+      pdf: true
+      host: arXiv (Cornell University)
+      version: submittedVersion
+      license: cc-by
+    - url: https://doi.org/10.48550/arxiv.2305.01540
+      pdf: false
+      host: arXiv (Cornell University)
+      version: null
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: false
+    source_type: repository
+    cited_by: 2
+  abstract: 'This paper presents a power distribution network (PDN) decoupling capacitor optimization
+    application with three primary goals: reduction of solution times for large networks,
+    development of flexible network scoring routines, and a concentration strictly on achieving
+    the best network performance. Example optimizations are performed using broadband models
+    of a printed circuit board (PCB), a chip-package, on-die networks, and candidate capacitors.
+    A novel worst-case time-domain optimization technique is presented as an alternative to
+    the traditional frequency-domain approach. The trade-offs and criteria for scoring the
+    computed network are presented. The output is a recommended set of capacitors which can
+    then be applied to the product design.'
+  topics:
+  - decoupling-pdn
+  found: '2026-10-30'
+- id: efficient-selection-placement-package-decoupling-2021
+  title: Efficient Selection and Placement of In-Package Decoupling Capacitors Using Matrix-Based
+    Evolutionary Computation
+  year: 2021
+  doi: 10.1109/ojnano.2021.3133213
+  openalex: W4206254511
+  venue: IEEE Open Journal of Nanotechnology
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://ieeexplore.ieee.org/ielx7/8782713/9036065/09640572.pdf
+      pdf: true
+      host: IEEE Open Journal of Nanotechnology
+      version: publishedVersion
+      license: cc-by-nc-nd
+    - url: https://doaj.org/article/8df5c25e15994a10b7eb92682bf4bc3c
+      pdf: false
+      host: 'DOAJ (DOAJ: Directory of Open Access Journals)'
+      version: submittedVersion
+      license: cc-by-sa
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 17
+  topics:
+  - decoupling-pdn
+  found: '2026-10-30'
+  why: chip- or package-level, not board design hwde does
+- id: power-integrity-analysis-embedded-decoupling-2026
+  title: Power integrity analysis of embedded decoupling capacitor arrays in high-density
+    interconnect PCB substrates for FPGA-based digital signal processing modules
+  year: 2026
+  doi: 10.22271/27084493.2026.v6.i2a.93
+  openalex: W7212009415
+  venue: International Journal of Electronics and Microcircuits
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://www.microcircuitsjournal.com/article/93/6-2-9-626.pdf
+      pdf: true
+      host: International Journal of Electronics and Microcircuits
+      version: publishedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 0
+  abstract: "Power delivery to a modern FPGA can demand 50 A at 0.85 V with transient di/dt\
+    \ exceeding 100 A/\xB5s numbers that make every picohenry of loop inductance a voltage-droop\
+    \ source. This research analysed the power integrity of embedded thin-film decoupling\
+    \ capacitor arrays fabricated within the HDI substrate of an FPGA-based digital signal\
+    \ processing module, comparing them against conventional surface-mount ceramic capacitors.\
+    \ Twelve four-layer HDI test boards were fabricated: six with a 4 \xD7 4 array of embedded\
+    \ 10 nF barium-titanate capacitors and six with an equivalent capacitance of surface-mount\
+    \ 0201 MLCCs. Power distribution network impedance was measured from 100 kHz to 3 GHz\
+    \ using a two-port shunt-through method on a VNA. The embedded array reduced PDN impedance\
+    \ below the 0.50 m\u03A9 target from 80 MHz to 1.2 GHz, while the MLCC-only design exceeded\
+    \ the target above 620 MHz due to mounting inductance. Transient voltage droop under a\
+    \ 50 A step load was 38 mV for the embedded design versus 67 mV for the MLCC design, a\
+    \ 43% improvement."
+  topics:
+  - decoupling-pdn
+  found: '2026-10-30'
+- id: decoupling-optimization-complex-pdn-structures-2023
+  title: Decoupling Optimization for Complex PDN Structures Using Deep Reinforcement Learning
+  year: 2023
+  doi: 10.1109/tmtt.2023.3248237
+  openalex: W4323065166
+  venue: IEEE Transactions on Microwave Theory and Techniques
+  status: kept
+  access:
+    state: paywalled
+    copies: []
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 45
+  abstract: This article presents a new optimization method for complex power distribution
+    networks (PDNs) with irregular shapes and multilayer structures using deep reinforcement
+    learning (DRL), which has not been considered before. A fast boundary integration method
+    is applied to compute the impedance matrix of a PDN structure. Subsequently, a new DRL
+    algorithm based on proximal policy optimization (PPO) is proposed to optimize the decoupling
+    capacitor (decap) placement by minimizing the number of decaps while satisfying the desired
+    target impedance. In the proposed approach, the PDN structure information is encoded into
+    matrices and serves as the input of the DRL algorithm, which increases the flexibility
+    of the method to be extended and generalized to different PDN configurations. Also, the
+    output of the algorithm determines the selection of decap types and locations collaboratively,
+    making it easier to find the optimal solution in a huge search space. The proposed method
+    is compared with the state-of-the-art approaches and shows consistent advantages in reducing
+    the number of decaps in different testing cases.
+  topics:
+  - decoupling-pdn
+  found: '2026-10-30'
+  why: 'Decap selection and placement by optimisation (45 citations): a baseline for check_decoupling
+    and a candidate PDN tool.'
+- id: knowledge-based-method-optimization-decoupling-2022
+  title: A Knowledge Based Method for Optimization of Decoupling Capacitors in Power Delivery
+    Networks
+  year: 2022
+  doi: 10.1109/tcpmt.2022.3170306
+  openalex: W4226127665
+  venue: IEEE Transactions on Components Packaging and Manufacturing Technology
+  status: candidate
+  access:
+    state: paywalled
+    copies: []
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 22
+  abstract: For power delivery applications, a method for reducing impedance is through the
+    addition of decoupling capacitors (decaps). In this article, we propose a knowledge-based
+    optimization method to determine decap design in power delivery networks (PDNs). The proposed
+    method provides the optimized PDN with the minimum number of decaps by iteratively assigning
+    the decaps that maximize the frequency range where the target impedance is satisfied.
+    In addition, by integrating the time-domain analysis into the proposed method, a voltage
+    response arising from any arbitrary load current sources is guaranteed within the threshold
+    level while preventing the over-design problem. Unlike the recent random search-based
+    methods (genetic algorithm and machine learning (ML) etc.) requiring a large number of
+    PDN simulations for learning and selection, the proposed method determines effective decaps
+    through multiple steps based only on domain knowledge, significantly reducing the number
+    of PDN simulations and computational cost to obtain the optimized decap solution. We apply
+    the proposed method to three different PDN models. The results show that only 1.3% of
+    the computing time is required to achieve the
+  topics:
+  - decoupling-pdn
+  found: '2026-10-30'
+- id: multiport-pdn-optimization-newton-hessian-2021
+  title: "Multiport PDN Optimization With the Newton\u2013Hessian Minimization Method"
+  year: 2021
+  doi: 10.1109/tmtt.2021.3057236
+  openalex: W3133472676
+  venue: IEEE Transactions on Microwave Theory and Techniques
+  status: candidate
+  access:
+    state: paywalled
+    copies: []
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 16
+  abstract: This article proposes an optimization algorithm using the Hessian minimization
+    method, based on the Newton iteration, to evaluate the effectiveness of the placement
+    of multiple decoupling capacitors on a power/ground plane pair. The exact effective decoupling
+    regions are obtained using the Newton iteration method for each decoupling capacitor.
+    The impedance of the IC port is lower than the target impedance no matter where the decoupling
+    capacitor is placed in this region. To optimize specific capacitor placements in this
+    region, the Newton iteration, based on the Hessian matrix, is used to determine the location
+    where the impedance of the IC port is minimized at the antiresonant frequency of the plane
+    pair. This placement optimization algorithm allows for a decoupling design method that
+    can also be applied to a PDN with multiple decoupling capacitors for multiple IC ports.
+    Compared with the method of random selection from within the effective decoupling area,
+    the method proposed here requires fewer decoupling capacitors and less computational time.
+  topics:
+  - decoupling-pdn
+  found: '2026-10-30'
+- id: machine-learning-modeling-power-delivery-2022
+  title: Machine learning modeling of power delivery networks with varying decoupling capacitors
+  year: 2022
+  doi: 10.11591/ijai.v11.i3.pp1049-1056
+  openalex: W4283761315
+  venue: IAES International Journal of Artificial Intelligence
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://ijai.iaescore.com/index.php/IJAI/article/download/21358/13431
+      pdf: true
+      host: IAES International Journal of Artificial Intelligence
+      version: publishedVersion
+      license: cc-by-sa
+    - url: https://zenodo.org/record/6961290
+      pdf: true
+      host: Zenodo (CERN European Organization for Nuclear Research)
+      version: submittedVersion
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 4
+  abstract: "This paper presents modeling of power delivery network (PDN) impedance with varying\
+    \ decoupling capacitor placements using machine learning techniques. The use of multilayer\
+    \ perceptron artificial neural networks (ANN) and gaussian process regression (GPR) techniques\
+    \ are explored, and the effects of the hyperparameters such as the number of hidden neurons\
+    \ in the ANN, and the choice of kernel functions in the GPR are investigated. The best\
+    \ performing networks in each case are selected and compared in terms of accuracy using\
+    \ test data consisting of PDN impedance responses that were never encountered during training.\
+    \ Results show that the GPR models were significantly more accurate than the ANN models,\
+    \ with an average mean absolute error of 5.23 m\u2126 compared to 11.33 m\u2126 for the\
+    \ ANN."
+  topics:
+  - decoupling-pdn
+  found: '2026-10-30'
+- id: loss-characterization-modeling-class-ii-2023
+  title: 'Loss Characterization and Modeling of Class II Multilayer Ceramic Capacitors: A
+    Synergistic Material-Microstructure-Device Approach'
+  year: 2023
+  doi: 10.1109/tpel.2023.3286818
+  openalex: W4380854477
+  venue: IEEE Transactions on Power Electronics
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://ieeexplore.ieee.org/ielx7/63/4359240/10153936.pdf
+      pdf: true
+      host: IEEE Transactions on Power Electronics
+      version: publishedVersion
+      license: cc-by
+    - url: https://www.repository.cam.ac.uk/handle/1810/365269
+      pdf: false
+      host: Apollo (University of Cambridge)
+      version: submittedVersion
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 8
+  abstract: This paper motivates the loss characterization and modeling of Class II multi-layer
+    ceramic capacitors (MLCCs), which have been widely utilized owing to high energy density,
+    in high-frequency resonant converters. In a resonant tank, MLCCs experience complex electrical
+    operating conditions (e.g., large-signal, high-frequency, DC bias), but the incurred power
+    loss has not been clearly characterized and modeled. This paper first proposes a novel
+    resonant-Sawyer-Tower (Res-ST) circuit which can experimentally extracts the loss of a
+    MLCC in real operation in a resonant tank. A general loss modeling approach named Steinmetz's
+    Pre-electrified Graph (SPeG) is then proposed to correlate capacitor's loss to the peak
+    value of excitation, frequency, and DC bias voltage. The SpeG model provides the material-specific
+    volume loss density of common Class II dielectric materials and can be easily extrapolated
+    to evaluate the loss of the MLCCs with different rated voltage$&$capacitance but employing
+    the same dielectric material. To generalize the material-specific SPeG model to device-level
+    application, this paper also proposes an easy-to-follow tool, dielectric thickness observer
+    (DTO), to estimate
+  topics:
+  - mlcc-derating
+  found: '2026-10-30'
+- id: loss-characterization-modeling-ferroelectric-class-2022
+  title: Loss Characterization and Modeling of Ferroelectric Class II Multi-Layer Ceramic
+    Capacitors in Resonant Converters
+  year: 2022
+  doi: 10.36227/techrxiv.21741359
+  openalex: W4312047252
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://www.techrxiv.org/articles/preprint/Loss_Characterization_and_Modeling_of_Ferroelectric_Class_II_Multi-Layer_Ceramic_Capacitors_in_Resonant_Converters/21741359/1/files/38573555.pdf
+      pdf: true
+      host: www.techrxiv.org
+      version: acceptedVersion
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: false
+    source_type: unknown
+    cited_by: 0
+  abstract: "Class II multi-layer ceramic capacitors (MLCCs) employing ferroelectric materials\
+    \ have been widely utilized as the primary energy storage and transfer element in high-frequency\
+    \ resonant converters due to their ultra-high energy density. In these applications, MLCCs\
+    \ experience large-signal and high-frequency electrical excitations superimposed on biased\
+    \ voltages, burdening converters' efficiency due to their significant power loss. However,\
+    \ little has been published to reveal the large-signal loss characteristics of Class II\
+    \ MLCCs under such realistic operating conditions. This paper develops a novel characterization\
+    \ method to experimentally extract MLCC power loss using a resonant-Sawyer-Tower (Res-ST)\
+    \ circuit under large-signal and wide-frequency-range excitation with DC bias voltage.\
+    \ A general loss modeling approach based on Steinmetz\u2019s Pre-electricized Graph (SPeG)\
+    \ is also proposed to accurately correlate the large excitation amplitude, wide-range\
+    \ frequency, and DC bias voltage. In this paper, the SpeG model first provides the material-specific\
+    \ volume loss density of four common dielectric materials and then can be easily extrapolated\
+    \ to evaluate the loss of the MLCCs with diffe"
+  topics:
+  - mlcc-derating
+  found: '2026-10-30'
+- id: loss-characterization-modeling-ferroelectric-class-2022-2
+  title: Loss Characterization and Modeling of Ferroelectric Class II Multi-Layer Ceramic
+    Capacitors in Resonant Converters
+  year: 2022
+  doi: 10.36227/techrxiv.21741359.v1
+  openalex: W4312047604
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://doi.org/10.36227/techrxiv.21741359.v1
+      pdf: false
+      host: doi.org
+      version: acceptedVersion
+      license: cc-by
+    - url: https://figshare.com/articles/preprint/Loss_Characterization_and_Modeling_of_Ferroelectric_Class_II_Multi-Layer_Ceramic_Capacitors_in_Resonant_Converters/21741359
+      pdf: false
+      host: Figshare
+      version: submittedVersion
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: false
+    source_type: unknown
+    cited_by: 1
+  abstract: "Class II multi-layer ceramic capacitors (MLCCs) employing ferroelectric materials\
+    \ have been widely utilized as the primary energy storage and transfer element in high-frequency\
+    \ resonant converters due to their ultra-high energy density. In these applications, MLCCs\
+    \ experience large-signal and high-frequency electrical excitations superimposed on biased\
+    \ voltages, burdening converters\u2019 efficiency due to their significant power loss.\
+    \ However, little has been published to reveal the large-signal loss characteristics of\
+    \ Class II MLCCs under such realistic operating conditions. This paper develops a novel\
+    \ characterization method to experimentally extract MLCC power loss using a resonant-Sawyer-Tower\
+    \ (Res-ST) circuit under large-signal and wide-frequency-range excitation with DC bias\
+    \ voltage. A general loss modeling approach based on Steinmetz\u2019s Pre-electricized\
+    \ Graph (SPeG) is also proposed to accurately correlate the large excitation amplitude,\
+    \ wide-range frequency, and DC bias voltage. In this paper, the SpeG model first provides\
+    \ the material-specific volume loss density of four common dielectric materials and then\
+    \ can be easily extrapolated to evaluate the loss of the MLCCs with diffe"
+  topics:
+  - mlcc-derating
+  found: '2026-10-30'
+- id: insight-into-effects-gamma-radiation-2025
+  title: 'Insight into the effects of gamma radiation on MLCCs: from in situ capacitance experiments
+    to physical mechanisms'
+  year: 2025
+  doi: 10.1038/s41467-025-64388-w
+  openalex: W4415518065
+  venue: Nature Communications
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://www.nature.com/articles/s41467-025-64388-w.pdf
+      pdf: true
+      host: Nature Communications
+      version: publishedVersion
+      license: cc-by-nc-nd
+    - url: https://pmc.ncbi.nlm.nih.gov/articles/PMC12552484/pdf/41467_2025_Article_64388.pdf
+      pdf: false
+      host: Europe PMC (PubMed Central)
+      version: publishedVersion
+      license: cc-by-nc-nd
+    - url: https://doaj.org/article/2f2ca6ca9f744e4997ff635c90c178f0
+      pdf: false
+      host: 'DOAJ (DOAJ: Directory of Open Access Journals)'
+      version: submittedVersion
+      license: cc-by-sa
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 7
+  topics:
+  - mlcc-derating
+  found: '2026-10-30'
+  why: chip- or package-level, not board design hwde does
+- id: dielectric-properties-high-capacity-bme-2025
+  title: "Dielectric Properties of High-capacity BME MLCCs via (Na\u2080.\u2085Bi\u2080.\u2085\
+    )TiO\u2083 as a Rare-Earth-Free Dopant"
+  year: 2025
+  doi: 10.4313/jeem.2025.38.5.10
+  openalex: W7168417900
+  venue: Journal of the Korean Institute of Electrical and Electronic Material Engineers
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://e-jeem.org/upload/pdf/jeem-38-5-546.pdf
+      pdf: true
+      host: Journal of the Korean Institute of Electrical and Electronic Material Engineers
+      version: publishedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 2
+  topics:
+  - mlcc-derating
+  found: '2026-10-30'
+  why: chip- or package-level, not board design hwde does
+- id: multilayer-ceramic-capacitors-overview-failure-2023
+  title: 'Multilayer Ceramic Capacitors: An Overview of Failure Mechanisms, Perspectives,
+    and Challenges'
+  year: 2023
+  doi: 10.3390/electronics12061297
+  openalex: W4323664353
+  venue: Electronics
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://www.mdpi.com/2079-9292/12/6/1297/pdf?version=1678277129
+      pdf: true
+      host: Electronics
+      version: publishedVersion
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 72
+  abstract: Along with the growing of population and social and technological improvements,
+    the use of energy and natural resources has risen over the past few decades. The sustainability
+    of using coal, oil, and natural gas as the main energy sources faces, however, substantial
+    obstacles. Fuel cells, batteries, and super-capacitors have the highest energy densities,
+    but due to their high-power density and rapid charge-discharge speed, regular dielectric
+    capacitors are becoming more popular for pulsed power applications. High electric breakdown
+    strength and high maximum but low-remnant (zero in the case of linear dielectrics) polarization
+    are necessary for high energy density in dielectric capacitors. The high performance,
+    multi-functionality, and high integration of electronic devices are made possible in large
+    part by the multilayer ceramic capacitors (MLCCs). Due to their low cost, compact size,
+    wide capacitance range, low ESL and ESR, and excellent frequency response, MLCCs play
+    a significant role in contemporary electronic devices. From the standpoint of the underlying
+    theories of energy storage in dielectrics, this paper emphasizes the significant problems
+    and recent advancements in build
+  topics:
+  - mlcc-derating
+  found: '2026-10-30'
+- id: experimental-characterization-ferroelectric-capacitor-circuits-2021
+  title: Experimental Characterization of Ferroelectric Capacitor Circuits for the Realization
+    of Simply Designed Electroceuticals
+  year: 2021
+  doi: 10.3390/electronicmat2030021
+  openalex: W3182499115
+  venue: Electronic Materials
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://www.mdpi.com/2673-3978/2/3/21/pdf?version=1626143966
+      pdf: true
+      host: Electronic Materials
+      version: publishedVersion
+      license: cc-by
+    - url: https://doaj.org/article/582f31931fe24666b36e256cc694ee7f
+      pdf: false
+      host: 'DOAJ (DOAJ: Directory of Open Access Journals)'
+      version: submittedVersion
+      license: cc-by-sa
+    - url: http://publica.fraunhofer.de/documents/N-639012.html
+      pdf: false
+      host: Fraunhofer-Publica (Fraunhofer-Gesellschaft)
+      version: submittedVersion
+      license: other-oa
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 2
+  topics:
+  - mlcc-derating
+  found: '2026-10-30'
+  why: chip- or package-level, not board design hwde does
+- id: practical-considerations-designing-reliable-dc-2020
+  title: Practical Considerations for Designing Reliable DC/DC Converters, Applied to a BIPV
+    Case
+  year: 2020
+  doi: 10.3390/en13040834
+  openalex: W3005542095
+  venue: Energies
+  status: kept
+  access:
+    state: open
+    copies:
+    - url: https://www.mdpi.com/1996-1073/13/4/834/pdf?version=1582557892
+      pdf: true
+      host: Energies
+      version: publishedVersion
+      license: cc-by
+    - url: https://lirias.kuleuven.be/retrieve/643dfcc5-83a2-48f3-8e89-22c21d43dfa4
+      pdf: true
+      host: Lirias
+      version: submittedVersion
+      license: cc-by
+    - url: https://doaj.org/article/ce094f3c3c8143928c5450d0768e448d
+      pdf: false
+      host: 'DOAJ (DOAJ: Directory of Open Access Journals)'
+      version: submittedVersion
+      license: cc-by-sa
+    read:
+      url: https://www.mdpi.com/1996-1073/13/4/834/pdf?version=1582557892
+      sha256: ba10de83d4fa8c8f4047d8197f20c8aa74e1d99603b371737a62fc7bd4412bfb
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 13
+  abstract: State-of-the-art reliability assessment typically starts from a given circuit
+    topology, for which the most suitable components are selected using a Physics of Failure
+    analysis. This paper, however, addresses the topology selection stage, which is the foundation
+    in designing reliable converters. Based on an overview of the reliability performance
+    of different components, a methodology is presented as a guideline for comparing topologies
+    to one another. The focus is directed at practical consequences associated with certain
+    designs. Furthermore, an overview is provided on the latest developments in component
+    technology reliability improvements. The developed methodology is mainly intended for
+    demanding applications, where long lifetimes are required or elevated ambient temperatures
+    are present. After the topology selection, an overview of possibilities is given that
+    allows further increasing converter availability. Finally, the methodology is applied
+    to the design of module level converters for building integrated photovoltaics, which
+    is a high temperature application with a high desired lifetime. A prototype and experimental
+    results are presented.
+  topics:
+  - mlcc-derating
+  found: '2026-10-30'
+  why: A reliability review with an MLCC DC-bias derating figure, checked against lib/mlcc.py's
+    generic curve.
+  claims:
+  - id: practical-considerations-designing-reliable-dc-2020/1
+    read_from: full_text
+    where: Section 2.2 p. 6, repeating its ref. [52] (Xu, Gu, Hernandez, Rivas-Davila)
+    claim: X7R MLCCs lose 80 % of their capacitance at 80 % of rated voltage.
+    verdict: partial
+    evidence: tests/test_research_claims.py::test_mlcc_80pct_bias_loss_holds_for_dense_parts_only
+    finding: 'Secondhand (the review repeats [52]). lib/mlcc.py''s generic curve, fitted to
+      makers'' curves, agrees for a 10 uF/10 V 0603 at 8 V (79 % lost) but gives 29 % for
+      a 100 nF/50 V 0603 at 40 V: the loss follows capacitance per volume.'
+    guideline: 'Derate a class-II MLCC from its own bias curve (or lib/mlcc.py''s density
+      model), not a fixed share of its rated voltage: at 80 % of rating the loss runs from
+      about 30 % on sparse parts to 80 % on dense ones.'
+- id: size-weight-passive-components-scaling-2024
+  title: 'On the Size and Weight of Passive Components: Scaling Trends for High-Density Power
+    Converter Designs'
+  year: 2024
+  doi: 10.1109/tpel.2024.3365658
+  openalex: W4391768356
+  venue: IEEE Transactions on Power Electronics
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://escholarship.org/content/qt406540pw/qt406540pw.pdf
+      pdf: true
+      host: eScholarship (California Digital Library)
+      version: submittedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 61
+  abstract: "High performance power electronics design requires a firm characterization of\
+    \ active and passive components. This work presents a framework for quantifying passive\
+    \ component performance by reviewing both existing methods and robust device figures-of-merit.\
+    \ A comprehensive survey yields aggregated data for nearly 700,000 commercial capacitors\
+    \ and inductors of all types. To supplement deficiencies in this data, this work proposes\
+    \ and validates several empirical expressions to estimate passive component energy storage\
+    \ and mass. Estimation of volumetric mass density per component type allows the approximation\
+    \ of component mass from accessible box volume. Estimation of energy-equivalent capacitance\
+    \ in nonlinear Class II ceramic capacitors facilitates the evaluation of stored energy\
+    \ and related energy density figures-of-merit. A phenomenological analysis of the comprehensive\
+    \ component data produces several conclusory determinations about peak energy density\
+    \ capabilities\u2014with respect to volume, mass, and cost\u2014across capacitor and inductor\
+    \ technologies."
+  topics:
+  - mlcc-derating
+  found: '2026-10-30'
+- id: electrical-degradation-dielectric-piezoelectric-oxides-2025
+  title: 'Electrical degradation in dielectric and piezoelectric oxides: Review of defect
+    chemistry and characterization methods'
+  year: 2025
+  doi: 10.1016/j.pmatsci.2025.101473
+  openalex: W4408080183
+  arxiv: '2403.06359'
+  venue: Progress in Materials Science
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://arxiv.org/pdf/2403.06359
+      pdf: true
+      host: arXiv (Cornell University)
+      version: submittedVersion
+      license: cc-by
+    - url: https://doi.org/10.48550/arxiv.2403.06359
+      pdf: false
+      host: arXiv (Cornell University)
+      version: null
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 18
+  topics:
+  - mlcc-derating
+  found: '2026-10-30'
+  why: chip- or package-level, not board design hwde does
+- id: design-thermal-characterization-printed-circuit-2026
+  title: Design and thermal characterization of printed circuit board trace fuse elements
+    for overcurrent protection in miniaturized wireless IoT sensor node circuits
+  year: 2026
+  doi: 10.22271/27084477.2026.v7.i2a.113
+  openalex: W7212087417
+  venue: International Journal of Electronic Devices and Networking
+  status: kept
+  access:
+    state: open
+    copies:
+    - url: https://www.electronicnetjournal.com/article/113/7-2-3-879.pdf
+      pdf: true
+      host: International Journal of Electronic Devices and Networking
+      version: publishedVersion
+      license: null
+    read:
+      url: https://www.electronicnetjournal.com/article/113/7-2-3-879.pdf
+      sha256: 8aa576688eb747ab2ed8b738cf9cd6c9cd3464c43fa4f57a99ebf87e567f0231
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 0
+    note: Published by a journal that advertises an 'RJIF' impact factor (a paid-index sign);
+      80 coupons of data in a 5-page paper; its text contradicts its own Table 1. peer_reviewed
+      is what OpenAlex says of the venue, not a judgement of the review.
+  abstract: "Roughly 34% of field failures in battery-powered wireless sensor nodes trace\
+    \ back to overcurrent events that bypass or overwhelm conventional discrete fuse elements,\
+    \ according to a 2023 reliability survey of 14 commercial IoT deployments. Printed circuit\
+    \ board (PCB) trace fuses offer a zero-component-count alternative by engineering a deliberate\
+    \ weak link directly into the copper routing, but their thermal behaviour in miniaturised\
+    \ form factors is not yet well characterised. This research presents the design, fabrication,\
+    \ and thermal testing of narrow-trace copper fuse elements etched into 1.6 mm, two-layer\
+    \ FR4 boards for overcurrent protection of sub-watt IoT sensor nodes. Four trace widths\
+    \ (0.10, 0.15, 0.20, and 0.25 mm) were patterned with a standard 35 \xB5m copper foil\
+    \ process, giving rated currents of 0.3, 0.5, 0.7, and 1.0 A respectively as predicted\
+    \ by the IPC-2152 derating model. Eighty fuse coupons 20 per width were subjected to controlled\
+    \ overcurrent pulses at 1.5\xD7, 2.0\xD7, 2.5\xD7, 3.0\xD7, and 4.0\xD7 their rated value\
+    \ while a thermal imaging camera recorded the surface temperature profile at 60 frames\
+    \ per second. Blow time decreased sharply with both overcurrent ratio and trace nar"
+  topics:
+  - trace-current-thermal
+  found: '2026-10-30'
+  why: 'The only recent paper on PCB trace fuses; read to check its ratings against check_current''s
+    IPC-2152 table. Its claims don''t hold up (see its claims): kept as a worked example of
+    a source not to trust.'
+  claims:
+  - id: design-thermal-characterization-printed-circuit-2026/1
+    read_from: full_text
+    where: Methods, p. 48
+    claim: IPC-2152 (external, 1 oz, dT 10 C) rates 0.10/0.15/0.20/0.25 mm tracks at 0.30/0.50/0.72/1.02
+      A.
+    verdict: refuted
+    evidence: tests/test_research_claims.py::test_trace_fuse_ratings_disagree_with_ipc2152
+    finding: 'check_current''s IPC-2152 table gives 0.20/0.30/0.40/0.50 A: the paper''s ratings
+      are 1.5-2x higher, and grow 3.4x for 2.5x the width where any IPC model grows slower
+      than the cross-section (IPC-2221: 1.94x).'
+  - id: design-thermal-characterization-printed-circuit-2026/2
+    read_from: full_text
+    where: Discussion p. 50 vs Table 1 p. 49
+    claim: Blow time scales as (I/I_rated)^-1.7 at 1.5-2x overload and ^-2.3 at 3-4x.
+    verdict: refuted
+    evidence: tests/test_research_claims.py::test_trace_fuse_blow_time_exponent_contradicts_its_table
+    finding: The paper's own Table 1 gives exponents of 3.1-3.4 at 1.5-2x and 3.8-4.0 at 3-4x,
+      on every width.
+  - id: design-thermal-characterization-printed-circuit-2026/3
+    read_from: full_text
+    where: Methods p. 48, Results p. 49
+    claim: A 35 um trace fuse opens at an average of 284 C (peak 219-327 C), far below copper's
+      melting point.
+    verdict: untested
+    plan: 'A trace-fuse coupon board (designed, not ordered: the EE map''s test boards) with
+      0.10-0.25 mm necks, blown on a bench supply; until then hwde treats a trace as a fuse
+      only by the adiabatic Onderdonk melt estimate, never this paper''s numbers.'
+- id: study-thermal-property-at-line-2016
+  title: The Study of Thermal Property at a Line and Vias in Embedded Device Package
+  year: 2016
+  doi: 10.7791/jspmee.5.315
+  openalex: W2907704509
+  venue: Journal of Smart Processing
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://www.jstage.jst.go.jp/article/jspmee/5/5/5_315/_pdf
+      pdf: true
+      host: Journal of Smart Processing
+      version: publishedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 0
+  topics:
+  - trace-current-thermal
+  found: '2026-10-30'
+  why: 'off-topic: the search matched words, not the subject'
+- id: optimum-phase-count-5-4-2022
+  title: Optimum Phase Count in a 5.4-W Multiphase Buck Converter Based on Output Filter Component
+    Energies
+  year: 2022
+  doi: 10.1109/tpel.2022.3226708
+  openalex: W4312409891
+  venue: IEEE Transactions on Power Electronics
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://ieeexplore.ieee.org/ielx7/63/10046180/09969915.pdf
+      pdf: true
+      host: IEEE Transactions on Power Electronics
+      version: publishedVersion
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 6
+  abstract: "This article presents an analysis of low-power, multiphase interleaved buck converters\
+    \ to illustrate the extent to which adding more phases is beneficial for reducing the\
+    \ passive components\u2019 sizes. The analysis focuses on a typical converter application\
+    \ with a wide operating duty cycle range and requires good load transient. It is shown\
+    \ that by restricting the phase current ripple, the theoretical reduction in total inductor\
+    \ peak energy predicted for increased phase numbers is limited. The article assesses the\
+    \ benefit of inductor coupling and presents guidelines for coupling factor selection to\
+    \ avoid steady-state inductance roll-off over the wide input voltage range. Standard printed\
+    \ circuit board (PCB) manufacturing design rules are shown to place a practical phase\
+    \ count limit considering the reduction in total inductor size. PCB integrated, air-core\
+    \ solenoid and spiral inductors are implemented in both single- and two-phase 5.4 W, 20\
+    \ MHz buck converter prototypes. When compared with single-phase designs, two-phase spiral\
+    \ inductors are 44% smaller, and the two-phase solenoid has a 54% lower loss. The two-phase\
+    \ prototype converter achieves better overall efficiency and peaks at alm"
+  topics:
+  - trace-current-thermal
+  found: '2026-10-30'
+- id: design-procedure-reduced-filter-size-2022
+  title: Design Procedure for Reduced Filter Size in a Buck Converter Using a Fourth-Order
+    Resonance Filter
+  year: 2022
+  doi: 10.1109/tpel.2022.3206050
+  openalex: W4296079571
+  venue: IEEE Transactions on Power Electronics
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://ieeexplore.ieee.org/ielx7/63/9952160/09894042.pdf
+      pdf: true
+      host: IEEE Transactions on Power Electronics
+      version: publishedVersion
+      license: cc-by
+    - url: http://hdl.handle.net/10468/13632
+      pdf: false
+      host: Cork Open Research Archive (University College Cork, Ireland)
+      version: submittedVersion
+      license: cc-by
+    - url: https://hdl.handle.net/10468/13632
+      pdf: false
+      host: hdl.handle.net
+      version: submittedVersion
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 7
+  abstract: This article presents a novel design procedure for fourth order and fourth-order
+    resonance (4thRes) output filters, for given buck converter specifications, making components
+    selection a straightforward process. An accurate filter analysis is provided to predict
+    the filter component currents and voltages in both frequency and time domains. Application
+    of the analysis in a design study of a 20 MHz, 5.4 W buck converter shows that the 4thRes
+    filter has the potential to reduce the output passive components for a wide duty cycle
+    range. As compared with a second-order filter atVIN= 6.6 V toVOUT= 1.8 V, total inductance,
+    inductor energy, capacitance, and capacitor energy are 58%, 35%, 45%, and 31% lower, respectively.
+    Air-core printed circuit board (PCB) integrated solenoid inductors are considered for
+    implementation and testing within a prototype converter to show the impact of these filters
+    on the converter performance. The 4thRes filter achieved 3.7% and 3.6% higher full-load
+    efficiency than the second- and fourth-order filters, respectively, and a better load
+    transient performance.
+  topics:
+  - trace-current-thermal
+  found: '2026-10-30'
+- id: high-power-printed-circuit-board-2017
+  title: High power printed circuit board design for automotive fuse block usage
+  year: 2017
+  doi: 10.15446/dyna.v84n203.56448
+  openalex: W2774580045
+  venue: DYNA
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://doi.org/10.15446/dyna.v84n203.56448
+      pdf: false
+      host: DYNA
+      version: publishedVersion
+      license: cc-by-nc-nd
+    - url: https://revistas.unal.edu.co/index.php/dyna/article/download/56448/63133
+      pdf: true
+      host: DYNA
+      version: publishedVersion
+      license: cc-by-nc-nd
+    - url: https://scienti.colciencias.gov.co/publindex/download.file?tpoArchivo=ART&amp;cod_fasciculo=58&amp;cod_articulo=1652&amp;cod_revista=103
+      pdf: false
+      host: "LA Referencia (Red Federada de Repositorios Institucionales de Publicaciones\
+        \ Cient\xEDficas)"
+      version: publishedVersion
+      license: other-oa
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 2
+  abstract: "El c\xE1lculo del tama\xF1o m\xEDnimo de un conductor el\xE9ctrico es siempre\
+    \ el primer punto de inter\xE9s al momento de dise\xF1ar una tablilla el\xE9ctrica de\
+    \ alta potencia; en este art\xEDculo se presentan los factores considerados para calcular\
+    \ el tama\xF1o del conductor, las f\xF3rmulas matem\xE1ticas utilizadas, la revisi\xF3\
+    n del estado del arte y las reglas de conservaci\xF3n definidas para proteger los circuitos\
+    \ de una sobrecarga el\xE9ctrica; asimismo se presentan dos m\xE9todos para definir el\
+    \ tama\xF1o del conductor, uno basado en est\xE1ndares internacionales (m\xE9todo actual)\
+    \ y otro basado en supuestos de dise\xF1o que reducen las reglas de conservaci\xF3n para\
+    \ calcular el tama\xF1o del conductor (m\xE9todo propuesto), adem\xE1s se presentan los\
+    \ resultados de las pruebas de validaci\xF3n y los an\xE1lisis estad\xEDsticos que respaldan\
+    \ la implementaci\xF3n del m\xE9todo propuesto en el dise\xF1o de las tablillas el\xE9\
+    ctricas de alta potencia utilizadas en centrales el\xE9ctricas destinadas a la industria\
+    \ automotriz y que ofrece una reducci\xF3n del 33% del contenido de cobre de las tablillas\
+    \ el\xE9ctricas de alta potencia en comparaci\xF3n con el m\xE9todo de dise\xF1o actual."
+  topics:
+  - trace-current-thermal
+  found: '2026-10-30'
+- id: printed-circuit-board-pcb-technology-2020
+  title: Printed Circuit Board (PCB) Technology for Electrochemical Sensors and Sensing Platforms
+  year: 2020
+  doi: 10.3390/bios10110159
+  openalex: W3094947613
+  venue: Biosensors
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://www.mdpi.com/2079-6374/10/11/159/pdf?version=1604050749
+      pdf: true
+      host: Biosensors
+      version: publishedVersion
+      license: cc-by
+    - url: https://www.ncbi.nlm.nih.gov/pmc/articles/7693744
+      pdf: false
+      host: PubMed Central
+      version: publishedVersion
+      license: cc-by
+    - url: https://digitalcommons.lsu.edu/eecs_pubs/23
+      pdf: false
+      host: Civil War Book Review
+      version: submittedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 142
+  topics:
+  - trace-current-thermal
+  found: '2026-10-30'
+  why: 'off-topic: the search matched words, not the subject'
+- id: fused-deposition-modeling-based-3d-2021
+  title: "Fused Deposition Modeling\u2010Based 3D\u2010Printed Electrical Interconnects and\
+    \ Circuits"
+  year: 2021
+  doi: 10.1002/aisy.202100102
+  openalex: W3194669281
+  venue: Advanced Intelligent Systems
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/aisy.202100102
+      pdf: true
+      host: Advanced Intelligent Systems
+      version: publishedVersion
+      license: cc-by
+    - url: http://eprints.gla.ac.uk/249533/1/249533.pdf
+      pdf: true
+      host: ENLIGHTEN (Jurnal Bimbingan dan Konseling Islam)
+      version: acceptedVersion
+      license: cc-by-sa
+    - url: https://doaj.org/article/1626072029fa4e8693ad6e5115d346aa
+      pdf: false
+      host: 'DOAJ (DOAJ: Directory of Open Access Journals)'
+      version: submittedVersion
+      license: cc-by-sa
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 63
+  topics:
+  - trace-current-thermal
+  found: '2026-10-30'
+  why: 'off-topic: the search matched words, not the subject'
+- id: automatic-printed-circuit-board-inspection-2024
+  title: 'Automatic printed circuit board inspection: a comprehensible survey'
+  year: 2024
+  doi: 10.1007/s44163-023-00081-5
+  openalex: W4391532004
+  venue: Discover Artificial Intelligence
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://link.springer.com/content/pdf/10.1007/s44163-023-00081-5.pdf
+      pdf: true
+      host: Discover Artificial Intelligence
+      version: publishedVersion
+      license: cc-by
+    - url: https://doaj.org/article/bce2cfc99e9a449da37be2a558236671
+      pdf: false
+      host: 'DOAJ (DOAJ: Directory of Open Access Journals)'
+      version: submittedVersion
+      license: cc-by-sa
+    - url: https://doi.org/10.60692/13gpq-mkm17
+      pdf: false
+      host: Greater South Information System
+      version: null
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 33
+  topics:
+  - trace-current-thermal
+  found: '2026-10-30'
+  why: 'off-topic: the search matched words, not the subject'
+- id: influence-mitigation-long-differential-stub-2015
+  title: Influence and mitigation of long differential via stub on signal integrity
+  year: 2015
+  doi: 10.1049/el.2015.0823
+  openalex: W2297020675
+  venue: Electronics Letters
+  status: kept
+  access:
+    state: open
+    copies:
+    - url: https://onlinelibrary.wiley.com/doi/pdfdirect/10.1049/el.2015.0823
+      pdf: true
+      host: Electronics Letters
+      version: publishedVersion
+      license: null
+    blocked:
+    - HTTP 403
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 3
+  abstract: "How the long differential via stub influences the time\u2010domain response and\
+    \ the eye diagram of the signal trace in a thick multilayer printed circuit board is investigated.\
+    \ Then, it is proved that RL termination has the same efficiency as R and RC terminations\
+    \ on improving signal integrity and the eye diagram. Finally, a method is proposed to\
+    \ mitigate the influence of the via stub by combining mismatched R termination and reflection\
+    \ gain at the receiving end."
+  topics:
+  - via-si
+  found: '2026-10-30'
+  why: 'Via stub effect on a differential link and its mitigation: a check for check_diffpair
+    on stubbed vias.'
+- id: energy-aware-signal-integrity-analysis-2015
+  title: Energy-Aware Signal Integrity Analysis for High-Speed PCB Links
+  year: 2015
+  doi: 10.1109/temc.2015.2427362
+  openalex: W1948459235
+  venue: IEEE Transactions on Electromagnetic Compatibility
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7111305
+      pdf: false
+      host: Americanae (AECID Library)
+      version: publishedVersion
+      license: cc-by-nc
+    - url: https://repositoriotec.tec.ac.cr/bitstreams/470252d6-f52a-4e73-b53b-0d8ec73e8cb7/download
+      pdf: true
+      host: TEC repository (Technological Institute of Costa Rica)
+      version: submittedVersion
+      license: cc-by-nc
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 19
+  abstract: This paper proposes a novel approach to evaluate design alternatives for high-speed
+    links on printed circuit boards. The approach combines evaluations of signal integrity
+    and link input power. For a comprehensive analysis, different link designs are made comparable
+    through the application of identical constraints, with the link input power as the single
+    figure of merit for a systematic, quantitative comparison of design alternatives. The
+    analysis relies upon a combination of efficient physics-based via and trace models, statistical
+    time-domain simulation, and an analytical input power evaluation, which allows it to handle
+    links consisting of a large number of channels while fully taking into account interchannel
+    crosstalk. The proposed approach is applied to study two fundamental design decisions
+    at the PCB level-single-ended versus differential signaling and signal-to-ground via ratios
+    of 1:1 versus 2:1-for a link consisting of 2048 vias and up to 175 striplines with an
+    aggregate data rate of 1 Tb/s. It is found that both design decisions have a considerable
+    impact on the required input power of the link.
+  topics:
+  - via-si
+  found: '2026-10-30'
+- id: optimization-framework-design-high-speed-2022
+  title: An Optimization Framework for the Design of High-Speed PCB VIAs
+  year: 2022
+  doi: 10.3390/electronics11030475
+  openalex: W4210779234
+  venue: Electronics
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://www.mdpi.com/2079-9292/11/3/475/pdf?version=1644391437
+      pdf: true
+      host: Electronics
+      version: publishedVersion
+      license: cc-by
+    - url: https://doaj.org/article/7bc48d81fc8e4530bea11c618d8b002b
+      pdf: false
+      host: 'DOAJ (DOAJ: Directory of Open Access Journals)'
+      version: submittedVersion
+      license: cc-by-sa
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 15
+  abstract: 'Signal integrity represents a key issue in all modern electronic systems, which
+    are strongly dominated by the extreme component density usually employed on PCBs and the
+    associated increase in the interconnection density. The use of multi-layer structures
+    with microstrips connected by various types of Vertical Interconnect Accesses (VIAs) calls
+    for design strategies that reduce the impedance mismatch and signal attenuation. The paper
+    proposes a thorough analysis of the effects associated with the VIA geometry and presents
+    a parametric evaluation of them. The obtained results represent the starting point for
+    a possible design procedure that manages the geometric aspects of differential VIAs, aiming
+    to optimize their electrical performance while reducing their occupation of PCB area.
+    The optimization technique considers a differential VIA as a four-port circuit whose characteristics
+    are evaluated with suitable Figures of Merit (FoMs), thus striving for an optimal design
+    obtained with closed-loop iterations. The analysis is performed in both the time (TDR:
+    Time-Domain Reflectometry) and frequency domains (S and Z parameters), thus allowing a
+    dramatic reduction in the number of cases to'
+  topics:
+  - via-si
+  found: '2026-10-30'
+- id: high-speed-signal-optimization-at-2024
+  title: High-Speed Signal Optimization at Differential VIAs in Multilayer Printed Circuit
+    Boards
+  year: 2024
+  doi: 10.3390/electronics13173377
+  openalex: W4401892582
+  venue: Electronics
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://www.mdpi.com/2079-9292/13/17/3377/pdf?version=1724657611
+      pdf: true
+      host: Electronics
+      version: publishedVersion
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 6
+  abstract: The number of Printed Circuit Board (PCB) layers is continually increasing with
+    the increase in data transmission rates, and the Signal Integrity (SI) of high-speed digital
+    systems cannot be ignored. Introducing Vertical Interconnect Accesses (VIAs) in PCBs can
+    realize the electrical connection between the top layer and the inner layers, however,
+    VIAs represent one of the most important reasons for discontinuity between the PCBs and
+    package. In this paper, a new optimization scheme for a differential VIA stub is proposed,
+    with 3D full-wave numerical simulation used for modeling and simulation. Results show
+    that this scheme optimizes the return loss and insertion loss while making the signal
+    eye diagram more ideal, which can improve the transmission effect of high-speed signals.
+  topics:
+  - via-si
+  found: '2026-10-30'
+- id: end-end-design-simulation-methodology-2026
+  title: An End-to-End Design and Simulation Methodology for Evaluating Package-Induced Signal
+    Integrity Degradation in PCIe Channels
+  year: 2026
+  doi: 10.3390/mi17020218
+  openalex: W7127887080
+  venue: Micromachines
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://www.mdpi.com/2072-666X/17/2/218/pdf?version=1770363059
+      pdf: true
+      host: Micromachines
+      version: publishedVersion
+      license: cc-by
+    - url: https://pmc.ncbi.nlm.nih.gov/articles/PMC12943540/
+      pdf: false
+      host: PubMed Central
+      version: publishedVersion
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 0
+  abstract: This paper presents an end-to-end simulation methodology for evaluating package-induced
+    signal integrity (SI) degradation in a peripheral component interconnect express (PCIe)
+    5.0 channel. By integrating package, printed circuit board (PCB), and add-in card (AIC)
+    structures into a unified simulation flow, the proposed approach enables accurate assessment
+    of system-level eye diagram degradation. Various package-level degradation factors, such
+    as impedance mismatch, meander routing, and via stubs, are assumed and designed to analyze
+    their individual and combined effects on insertion loss, intra-pair skew, and eye diagrams.
+    Results show that even localized discontinuities inside the package propagate and compound
+    through the end-to-end channel, causing a significant reduction in the eye diagram at
+    the system level. These findings demonstrate that package-induced impairments cannot be
+    evaluated solely at the package level but must instead be analyzed within a complete end-to-end
+    channel environment. The proposed methodology provides a practical framework for predicting
+    system-level SI degradation caused by package design choices, offering valuable insights
+    for next-generation high-spee
+  topics:
+  - via-si
+  found: '2026-10-30'
+- id: large-scale-stitching-hyperspectral-remote-2025
+  title: Large-Scale Stitching of Hyperspectral Remote Sensing Images Obtained from Spectral
+    Scanning Spectrometers Mounted on Unmanned Aerial Vehicles
+  year: 2025
+  doi: 10.3390/electronics14030454
+  openalex: W4406780419
+  venue: Electronics
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://www.mdpi.com/2079-9292/14/3/454/pdf?version=1737633133
+      pdf: true
+      host: Electronics
+      version: publishedVersion
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 2
+  topics:
+  - via-si
+  found: '2026-10-30'
+  why: 'off-topic: the search matched words, not the subject'
+- id: characterising-shear-stretch-plane-bending-2026
+  title: Characterising the shear, stretch and in-plane bending response of a pure-unidirectional
+    non-crimp fabric
+  year: 2026
+  doi: 10.1007/s12289-026-01978-z
+  openalex: W7128505855
+  venue: International Journal of Material Forming
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://link.springer.com/content/pdf/10.1007/s12289-026-01978-z.pdf
+      pdf: true
+      host: International Journal of Material Forming
+      version: publishedVersion
+      license: cc-by
+    - url: https://eprints.gla.ac.uk/378938/1/378938.pdf
+      pdf: true
+      host: ENLIGHTEN (Jurnal Bimbingan dan Konseling Islam)
+      version: acceptedVersion
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 1
+  topics:
+  - via-si
+  found: '2026-10-30'
+  why: 'off-topic: the search matched words, not the subject'
+- id: decoding-angular-light-paths-solving-2025
+  title: Decoding angular light paths for solving the inverse scattering problem
+  year: 2025
+  doi: 10.48550/arxiv.2509.11491
+  openalex: W4415088457
+  arxiv: '2509.11491'
+  venue: arXiv (Cornell University)
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://arxiv.org/pdf/2509.11491
+      pdf: true
+      host: arXiv (Cornell University)
+      version: submittedVersion
+      license: null
+    - url: https://figshare.com/articles/preprint/Imaging_through_volumetric_scattering_media_by_decoding_angular_light_paths/30150019
+      pdf: false
+      host: Figshare
+      version: submittedVersion
+      license: public-domain
+    - url: https://doi.org/10.48550/arxiv.2509.11491
+      pdf: false
+      host: arXiv (Cornell University)
+      version: null
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: false
+    source_type: repository
+    cited_by: 2
+  topics:
+  - via-si
+  found: '2026-10-30'
+  why: 'off-topic: the search matched words, not the subject'
+- id: comprehensive-review-path-planning-algorithms-2025
+  title: A Comprehensive Review of Path-Planning Algorithms for Multi-UAV Swarms
+  year: 2025
+  doi: 10.3390/drones10010011
+  openalex: W7117491041
+  venue: Drones
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://www.mdpi.com/2504-446X/10/1/11/pdf?version=1766756861
+      pdf: true
+      host: Drones
+      version: publishedVersion
+      license: cc-by
+    - url: https://doaj.org/article/e65503d1764f4abab3638302c665f784
+      pdf: false
+      host: 'DOAJ (DOAJ: Directory of Open Access Journals)'
+      version: submittedVersion
+      license: cc-by-sa
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 18
+  topics:
+  - via-si
+  found: '2026-10-30'
+  why: 'off-topic: the search matched words, not the subject'
+- id: crack-growth-mechanisms-under-anti-2016
+  title: Crack Growth Mechanisms under Anti-Plane Shear in Composite Laminates
+  year: 2016
+  openalex: W2522241757
+  venue: Syracuse University Libraries (Syracuse University)
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://surface.syr.edu/etd/435
+      pdf: true
+      host: Syracuse University Libraries (Syracuse University)
+      version: submittedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: false
+    source_type: repository
+    cited_by: 1
+  topics:
+  - via-si
+  found: '2026-10-30'
+  why: 'off-topic: the search matched words, not the subject'
+- id: wearable-rectenna-integrated-miniaturized-feeding-2023
+  title: Wearable Rectenna With Integrated Miniaturized Feeding Slot and Rectifier Structure
+  year: 2023
+  doi: 10.1109/tap.2023.3249827
+  openalex: W4323065919
+  venue: IEEE Transactions on Antennas and Propagation
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://kclpure.kcl.ac.uk/ws/files/219937275/Wearable_Rectenna_with_Integrated_Miniaturized_Feeding_Slot_and_Rectifier_Structure_002_.pdf
+      pdf: true
+      host: Research Portal (King's College London)
+      version: submittedVersion
+      license: other-oa
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 22
+  topics:
+  - emc-layout
+  found: '2026-10-30'
+  why: 'off-topic: the search matched words, not the subject'
+- id: bi-directional-300-ghz-band-2022
+  title: A Bi-Directional 300-GHz-Band Phased-Array Transceiver in 65-nm CMOS With Outphasing
+    Transmitting Mode and LO Emission Cancellation
+  year: 2022
+  doi: 10.1109/jssc.2022.3179166
+  openalex: W4285211460
+  venue: IEEE Journal of Solid-State Circuits
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://ieeexplore.ieee.org/ielx7/4/9837319/09792166.pdf
+      pdf: true
+      host: IEEE Journal of Solid-State Circuits
+      version: publishedVersion
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 102
+  topics:
+  - emc-layout
+  found: '2026-10-30'
+  why: 'off-topic: the search matched words, not the subject'
+- id: packaging-aware-emc-2-5d-2025
+  title: Packaging-Aware EMC for 2.5D/3D Semiconductor Devices with Key-Point Radiated Checks
+  year: 2025
+  doi: 10.3390/electronics15010104
+  openalex: W7117309535
+  venue: Electronics
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://www.mdpi.com/2079-9292/15/1/104/pdf
+      pdf: true
+      host: Electronics
+      version: publishedVersion
+      license: cc-by
+    - url: https://www.preprints.org/frontend/manuscript/2470f746fc09c2ad055e00ffd24f19a9/download_pub
+      pdf: true
+      host: Preprints.org
+      version: acceptedVersion
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 0
+  topics:
+  - emc-layout
+  found: '2026-10-30'
+  why: chip- or package-level, not board design hwde does
+- id: broadband-low-cost-normal-magnetic-2025
+  title: Broadband Low-Cost Normal Magnetic Field Probe for PCB Near-Field Measurement
+  year: 2025
+  doi: 10.3390/s25133874
+  openalex: W4411568659
+  venue: Sensors
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://www.mdpi.com/1424-8220/25/13/3874/pdf?version=1750500010
+      pdf: true
+      host: Sensors
+      version: publishedVersion
+      license: cc-by
+    - url: https://www.ncbi.nlm.nih.gov/pmc/articles/12251827
+      pdf: false
+      host: PubMed Central
+      version: publishedVersion
+      license: cc-by
+    - url: https://doaj.org/article/a7be20604afc4f6fb63cb0839169b148
+      pdf: false
+      host: 'DOAJ (DOAJ: Directory of Open Access Journals)'
+      version: submittedVersion
+      license: cc-by-sa
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 2
+  abstract: This paper presents a broadband near-field probe designed for measuring the normal
+    magnetic field (Hz) in radio frequency (RF) circuits operating within a frequency range
+    of 2-8 GHz. The proposed probe uses a cost-effective 4-layer printed circuit board (PCB)
+    structure made with an FR-4 substrate. The probe primarily consists of an Hz detection
+    unit, a broadband microstrip balun, and a coaxial-like output. The broadband balun facilitates
+    the conversion from differential to single-ended signals, thereby enhancing the probe's
+    common-mode rejection capability. This design ensures that the probe achieves both cost
+    efficiency and high broadband measurement performance. Additionally, this work investigates
+    the feasibility of employing microstrip lines as calibration standards for the Hz probe.
+    The probe's structural parameters and magnetic field response were initially determined
+    through simulations, and the calibration factor was subsequently verified by calibration
+    experiments. In practical measurements, the field distributions above a microstrip line
+    and a low-noise amplifier (LNA) were captured. The measured field distribution of the
+    microstrip line was compared with simulation resul
+  topics:
+  - emc-layout
+  found: '2026-10-30'
+- id: pcb-based-three-level-active-2026
+  title: A PCB-based Three-level Active-Neutral-Point-Clamp Converter With GaN Devices
+  year: 2026
+  openalex: W7224054704
+  venue: Scholar Commons (University of South Carolina)
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://scholarcommons.sc.edu/context/etd/article/9641/viewcontent/Adeli_sc_0202A_20534_1_.pdf
+      pdf: true
+      host: Scholar Commons (University of South Carolina)
+      version: submittedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: false
+    source_type: repository
+    cited_by: 0
+  abstract: "Modern microgrids, EV chargers, and renewable energy systems require power converters\
+    \ that are efficient, compact, and capable of high-frequency, high-power operation. However,\
+    \ in tightly packaged high-power designs, parasitic inductances and capacitances become\
+    \ significant, leading to voltage overshoot and elevated electromagnetic interference\
+    \ (EMI) under rapid dv/dt transitions. To address these challenges, this work presents\
+    \ a PCB-based 25kW, 480V, 200kHz grid-connected three-level active neutral-point-clamped\
+    \ (3L-ANPC) converter employing GaN devices. The PCB design emphasizes the optimization\
+    \ of parasitic inductances and capacitances to enhance high-voltage safety and reliability.\
+    \ A multilayer PCB busbar structure is implemented to minimize parasitic loops, enabling\
+    \ fast switching with minimal voltage overshoot. This approach achieves a compact, high-power-density\
+    \ converter that operates reliably without bulky snubbers and with reduced filtering and\
+    \ cooling requirements. Simulations and experimental results validate the converter\u2019\
+    s performance and modeling accuracy for applications in EV charging, microgrids, and renewable\
+    \ energy systems. EMI performance is analyzed using a co"
+  topics:
+  - emc-layout
+  found: '2026-10-30'
+- id: ultra-fast-gan-power-modules-2026
+  title: 'Ultra-Fast GaN Power Modules for High-Density Electric-Vehicle Converters: A Simulated
+    Switching, EMI, and Thermal Reliability Assessment'
+  year: 2026
+  openalex: W7220086671
+  venue: Innovative Journal of Integrated Research and Technological Innovations
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://ijirti.com/index.php/ijirti/article/download/79/122
+      pdf: true
+      host: Innovative Journal of Integrated Research and Technological Innovations
+      version: publishedVersion
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 0
+  abstract: This empirical-style article presents a clearly labeled simulated study in Electronics
+    and Communication Engineering. A simulated 800-V traction-inverter leg was modeled using
+    silicon IGBT, silicon-carbide MOSFET, and gallium-nitride power-module scenarios. Switching
+    frequency, gate resistance, parasitic inductance, junction temperature, voltage overshoot,
+    common-mode current, and switching-energy loss were varied. The purpose was to quantify
+    the efficiency-reliability trade-off of ultra-fast switching rather than reproduce a specific
+    commercial module. The GaN scenario achieved the lowest simulated switching-energy loss
+    and highest power-density index, but its advantage narrowed when package inductance exceeded
+    6 nH because overshoot and EMI increased sharply. A moderated gate-slew strategy reduced
+    the modeled EMI index by 31% with only a 7% increase in switching loss. The numerical
+    observations, assignments, and measured outcomes are synthetic and intended for methodological
+    illustration only. No real industrial facility, enterprise network, laboratory, construction
+    project, or manufactured component was used. The study demonstrates a realistic research
+    framework aligned with cur
+  topics:
+  - emc-layout
+  found: '2026-10-30'
+- id: advances-modeling-suppression-methods-emi-2023
+  title: Advances in Modeling and Suppression Methods of EMI in Power Electronic Converters
+    of Third-Generation Semiconductor Devices
+  year: 2023
+  doi: 10.3390/electronics12112348
+  openalex: W4378085075
+  venue: Electronics
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://www.mdpi.com/2079-9292/12/11/2348/pdf?version=1684829890
+      pdf: true
+      host: Electronics
+      version: publishedVersion
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 34
+  abstract: With the development of high-frequency, miniaturized, and lightweight power electronic
+    devices, third-generation semiconductor devices are more and more used in the main circuits
+    of power electronic converters. The electromagnetic interference (EMI) generated by their
+    fast switching can affect the performance of power electronic converters. Therefore, it
+    is necessary to investigate the modeling and suppression methods of conducted noise in
+    power electronic converters of third-generation semiconductor devices. This paper describes
+    the EMI sources and coupling paths of EMI in third-generation semiconductor devices used
+    in power electronic converters. The modeling methods of EMI are summarized from the perspectives
+    of power devices and coupling paths. The suppression methods of conducted noise are summarized
+    by suppressing EMI sources and improving coupling path characteristics. This paper provides
+    a reference for the electromagnetic compatibility design of power electronic converters
+    for third-generation semiconductor devices.
+  topics:
+  - emc-layout
+  found: '2026-10-30'
+- id: effect-heat-dissipation-system-hard-2021
+  title: Effect of the Heat Dissipation System on Hard-Switching GaN-Based Power Converters
+    for Energy Conversion
+  year: 2021
+  doi: 10.3390/en14196287
+  openalex: W3204699968
+  venue: Energies
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://www.mdpi.com/1996-1073/14/19/6287/pdf?version=1633760146
+      pdf: true
+      host: Energies
+      version: publishedVersion
+      license: cc-by
+    - url: https://upcommons.upc.edu/bitstream/2117/359556/1/energies-14-06287-v2.pdf
+      pdf: true
+      host: "UPCommons institutional repository (Universitat Polit\xE8cnica de Catalunya)"
+      version: submittedVersion
+      license: cc-by
+    - url: https://doaj.org/article/87429e399abd4b8788ff2aa959950a2f
+      pdf: false
+      host: 'DOAJ (DOAJ: Directory of Open Access Journals)'
+      version: submittedVersion
+      license: cc-by-sa
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 18
+  abstract: 'The design of a cooling system is critical in power converters based on wide-bandgap
+    (WBG) semiconductors. The use of gallium nitride enhancement-mode high-electron-mobility
+    transistors (GaN e-HEMTs) is particularly challenging due to their small size and high
+    power capability. In this paper, we model, study and compare the different heat dissipation
+    systems proposed for high power density GaN-based power converters. Two dissipation systems
+    are analysed in detail: bottom-side dissipation using thermal vias and top-side dissipation
+    using different thermal interface materials. The effectiveness of both dissipation techniques
+    is analysed using MATLAB/Simulink and PLECS. Furthermore, the impact of the dissipation
+    system on the parasitic elements of the converter is studied using advanced design systems
+    (ADS). The experimental results of the GaN-based converters show the effectiveness of
+    the analysed heat dissipation systems and how top-side cooled converters have the lowest
+    parasitic inductance among the studied power converters.'
+  topics:
+  - emc-layout
+  found: '2026-10-30'
+- id: influence-system-layout-cm-emi-2021
+  title: Influence of System Layout on CM EMI Noise of SiC Electric Vehicle Powertrains
+  year: 2021
+  doi: 10.24295/cpsstpea.2021.00028
+  openalex: W4206679091
+  venue: CPSS Transactions on Power Electronics and Applications
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://doi.org/10.24295/cpsstpea.2021.00028
+      pdf: true
+      host: CPSS Transactions on Power Electronics and Applications
+      version: publishedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 26
+  abstract: This paper investigates the influences of system layout on common mode (CM) EMI
+    noise of an electric vehicle (EV) powertrain with a traction inverter using silicon carbide
+    (SiC) MOSFETs. First, a system level conducted EMI model for the whole SiC EV powertrain
+    is presented, which includes a battery pack, DC cables, a SiC inverter, AC cables, and
+    a PMSM. Then, the impacts of system layout, such as the AC cable length, the AC cable
+    type, and the DC cable type (shielded cable and unshielded cable) on CM EMI noise are
+    analyzed through time domain simulations of the system level conducted EMI model. Next,
+    a conducted EMI emission test-bed for a SiC EV powertrain is built. Finally, experiments
+    on the test-bed are carried out to verify the influences of system layout on CM EMI noise
+    in the SiC EV powertrain.
+  topics:
+  - emc-layout
+  found: '2026-10-30'
+- id: modeling-prediction-common-mode-electromagnetic-2023
+  title: Modeling and Prediction of Common Mode Electromagnetic Interference in GaN-Based
+    Switching Power Converters
+  year: 2023
+  doi: 10.26866/jees.2023.3.r.163
+  openalex: W4379741082
+  venue: Journal of electromagnetic engineering and science
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://www.jees.kr/upload/pdf/jees-2023-3-r-163.pdf
+      pdf: true
+      host: Journal of electromagnetic engineering and science
+      version: publishedVersion
+      license: cc-by-nc
+    - url: https://doaj.org/article/597ff60bfb5449f1953a6a7d3fc6f6dd
+      pdf: false
+      host: 'DOAJ (DOAJ: Directory of Open Access Journals)'
+      version: submittedVersion
+      license: cc-by-sa
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 3
+  abstract: "Behavioral models of common mode (CM) electromagnetic interference (EMI) are\
+    \ proposed herein for a GaN high-electron-mobility transistor (HEMT) synchronous buck\
+    \ converter. First, a CM noise model is developed using a linear equivalent circuit that\
+    \ consists of a voltage source, current source, and two noise impedances. The behavioral\
+    \ parameters of the CM model are then extracted by changing the input-side shunt impedances.\
+    \ A GaN HEMT buck converter setup is then built using switching frequencies of 100 kHz,\
+    \ 200 kHz, and 500 kHz to verify the validity of the CM EMI behavioral model. A comparison\
+    \ between the experimental and predicted results indicated that the proposed CM EMI model\
+    \ of GaN-based power converters was able to predict well the CM EMI current in the 150\
+    \ kHz\u201330 MHz frequency range."
+  topics:
+  - emc-layout
+  found: '2026-10-30'
+- id: self-tuned-class-d-audio-2019
+  title: Self-Tuned Class-D Audio Amplifier With Post-Filter Digital Feedback Implemented
+    on Digital Signal Controller
+  year: 2019
+  doi: 10.1109/tcsi.2019.2955064
+  openalex: W2996070856
+  venue: IEEE Transactions on Circuits and Systems I Regular Papers
+  status: candidate
+  access:
+    state: paywalled
+    copies: []
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 13
+  abstract: This article describes the designing process of a low-cost class-D audio amplifier
+    with digitized global feedback after the output filter, using a signal microcontroller.
+    Various approaches to the feedback-based distortions elimination of class-D amplifiers
+    are discussed. Hardware architecture of the author's designed class-D amplifier with digital
+    audio input interface, output voltage feedback path relays on SAR-ADC, and output power
+    stage in multiphase bridge tide load configuration is shown. The selection method of the
+    output low-pass filter parameters and power stage phase count was explained. A model of
+    class-D amplifier with PID digital compensator and control loop interfaces is presented.
+    Efficient high-speed digital PID compensator implementation on fixed-point 16-bit DSP
+    core is exhibited. Procedure for control loop gain and phase plots measurements and self-tuning
+    of PID feeding under damped second-order plants is presented along with simulations of
+    loop properties influences on tuning effects. The results of the prototype device measurements
+    such as Bode plots or output voltage frequency spectrum are presented. A big effort has
+    been put on a useful, complete and transpar
+  topics:
+  - class-d-audio
+  found: '2026-10-30'
+- id: model-based-design-output-lc-2025
+  title: Model-Based Design of Output LC Filter and Harmonic Distortion Reduction for a Wideband
+    SONAR Amplifier
+  year: 2025
+  doi: 10.3390/electronics15010047
+  openalex: W7116904371
+  venue: Electronics
+  status: kept
+  access:
+    state: open
+    copies:
+    - url: https://www.mdpi.com/2079-9292/15/1/47/pdf
+      pdf: true
+      host: Electronics
+      version: publishedVersion
+      license: cc-by
+    read:
+      url: https://www.mdpi.com/2079-9292/15/1/47/pdf
+      sha256: 153271e5e256b7dd8532ce3d5045023eb711b6e951ed5209418c3e07c3beb931
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 0
+  abstract: This study presents the design of a high-efficiency pulse width modulation (PWM)
+    power amplifier for marine biological sound reproduction. Due to the capacitive nature
+    of underwater transducers and step-up transformers, output LC filter design is constrained,
+    making it difficult to achieve a flat frequency response and low total harmonic distortion
+    (THD). To address this, the electrical characteristics of these components were measured
+    and modeled to construct equivalent circuits for the PSPICE simulator. Based on these
+    models, an optimized LC filter was designed, and its performance was validated through
+    simulation and experiments. The cause of THD occurring in specific frequency bands was
+    analyzed, and two types of notch filters were applied to improve THD and switching signal
+    attenuation. The proposed methodology offers a practical approach to improving PWM amplifier
+    performance in underwater acoustic systems, supporting the development of compact, efficient,
+    and reliable SONAR transmitters.
+  topics:
+  - class-d-audio
+  found: '2026-10-30'
+  why: 'Class-D output LC filter design and its harmonic distortion: a second source for the
+    same LC filter check.'
+- id: design-novel-low-power-high-2017
+  title: Design of Novel Low-Power and High-Efficiency Class-d Audio Amplifier
+  year: 2017
+  doi: 10.14257/ijca.2017.10.3.05
+  openalex: W2609463553
+  venue: International Journal of Control and Automation
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://doi.org/10.14257/ijca.2017.10.3.05
+      pdf: true
+      host: International Journal of Control and Automation
+      version: publishedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 1
+  topics:
+  - class-d-audio
+  found: '2026-10-30'
+  why: chip- or package-level, not board design hwde does
+- id: class-d-audio-amplifier-sigma-2022
+  title: "Class-D Audio Amplifier using Sigma-Delta (\u03A3\u0394) Modulator"
+  year: 2022
+  doi: 10.52549/ijeei.v10i3.3872
+  openalex: W4306382430
+  venue: Indonesian Journal of Electrical Engineering and Informatics (IJEEI)
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: http://section.iaesonline.com/index.php/IJEEI/article/download/3872/764
+      pdf: true
+      host: Indonesian Journal of Electrical Engineering and Informatics (IJEEI)
+      version: publishedVersion
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 5
+  topics:
+  - class-d-audio
+  found: '2026-10-30'
+  why: chip- or package-level, not board design hwde does
+- id: design-novel-low-power-high-2017-2
+  title: Design of Novel Low-power and High-efficiency Class-D Audio Amplifier
+  year: 2017
+  doi: 10.14257/ijca.2017.10.4.23
+  openalex: W4253952633
+  venue: International Journal of Control and Automation
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://doi.org/10.14257/ijca.2017.10.4.23
+      pdf: true
+      host: International Journal of Control and Automation
+      version: publishedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 0
+  topics:
+  - class-d-audio
+  found: '2026-10-30'
+  why: chip- or package-level, not board design hwde does
+- id: 120-9-db-dr-digital-2023
+  title: A 120.9-dB DR Digital-Input Capacitively Coupled Chopper Class-D Audio Amplifier
+  year: 2023
+  doi: 10.1109/jssc.2023.3318731
+  openalex: W4387568947
+  venue: IEEE Journal of Solid-State Circuits
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://repository.tudelft.nl/file/File_92bd211a-173f-4c48-83f1-d17456dbf532
+      pdf: true
+      host: Research Repository (Delft University of Technology)
+      version: submittedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 7
+  topics:
+  - class-d-audio
+  found: '2026-10-30'
+  why: chip- or package-level, not board design hwde does
+- id: distortion-minimization-ultra-low-thd-2018
+  title: Distortion Minimization for Ultra-Low THD Class-D Power Amplifiers
+  year: 2018
+  doi: 10.24295/cpsstpea.2018.00032
+  openalex: W2914389946
+  venue: CPSS Transactions on Power Electronics and Applications
+  status: kept
+  access:
+    state: open
+    copies:
+    - url: https://doi.org/10.24295/cpsstpea.2018.00032
+      pdf: true
+      host: CPSS Transactions on Power Electronics and Applications
+      version: publishedVersion
+      license: null
+    read:
+      url: https://doi.org/10.24295/cpsstpea.2018.00032
+      sha256: 1162322427eb8e7d8d4975f7bc63244a2663ca689d6ada7c4b5c49d37d7ec374
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 29
+  topics:
+  - class-d-audio
+  found: '2026-10-30'
+  why: 'Class-D THD sources and their minimisation: the hi-fi receiver''s amplifiers (TPA3220)
+    and sim_board''s audio checks.'
+- id: noise-minimization-ultra-high-snr-2018
+  title: Noise Minimization for Ultra-High SNR Class-D Power Amplifiers
+  year: 2018
+  doi: 10.24295/cpsstpea.2018.00033
+  openalex: W2913731228
+  venue: CPSS Transactions on Power Electronics and Applications
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://doi.org/10.24295/cpsstpea.2018.00033
+      pdf: true
+      host: CPSS Transactions on Power Electronics and Applications
+      version: publishedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 2
+  topics:
+  - class-d-audio
+  found: '2026-10-30'
+- id: predictive-thermal-management-dual-pwm-2026
+  title: Predictive Thermal Management for Dual PWM Fans in High-Power Audio Amplifiers
+  year: 2026
+  doi: 10.3390/asi9030050
+  openalex: W7131629033
+  venue: Applied System Innovation
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://www.mdpi.com/2571-5577/9/3/50/pdf
+      pdf: true
+      host: Applied System Innovation
+      version: publishedVersion
+      license: cc-by
+    - url: https://doaj.org/article/f58b2b7eb22c46efaa72c75105658721
+      pdf: false
+      host: 'DOAJ (DOAJ: Directory of Open Access Journals)'
+      version: submittedVersion
+      license: cc-by-sa
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 1
+  abstract: This paper presents the design and implementation of a low-cost microcontroller-based
+    dual-channel fan controller optimized for high-power audio amplifiers, yet adaptable to
+    power supplies, electronic loads, and other thermally intensive systems. Unlike conventional
+    designs that drive all fans uniformly, the proposed solution provides fully independent
+    cooling via dual I2C temperature sensors, predictive trend analysis, and multi-stage hysteresis.
+    The controller incorporates advanced features including an anti-dust startup sequence,
+    predictive boost with latching, active cross-cooling, anti-heat-soak protection, and stall
+    detection via tachometer monitoring, complemented by LED-based fault signaling and automatic
+    channel muting during overheating or fan failure. Hardware support for 12 V and 24 V fans,
+    dual power-input options, and a compact PCB layout enhance integration flexibility. The
+    firmware employs temperature-driven PWM mapping with EMA filtering and multi-level hysteresis.
+    The experimental results confirm that all implemented features operate as intended, with
+    each function demonstrating clear practical relevance, whether in improving responsiveness,
+    preventing heat accumu
+  topics:
+  - class-d-audio
+  found: '2026-10-30'
+- id: power-efficiency-emi-attenuation-optimization-2017
+  title: Power Efficiency and EMI Attenuation Optimization in Filter Design
+  year: 2017
+  doi: 10.1109/temc.2017.2765921
+  openalex: W2768057438
+  venue: IEEE Transactions on Electromagnetic Compatibility
+  status: kept
+  access:
+    state: open
+    copies:
+    - url: https://hal.science/hal-01887159v1/file/2017_FERBER_MRAD_IEEE_EMC_04.pdf
+      pdf: true
+      host: HAL
+      version: submittedVersion
+      license: other-oa
+    read:
+      url: https://hal.science/hal-01887159v1/file/2017_FERBER_MRAD_IEEE_EMC_04.pdf
+      sha256: 0450e2dcc1dfc8d8c7b3b8ba04dce48b5bcc448c1376fb0bbffd9df866657f42
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 20
+  abstract: This paper presents a discrete conducted electromagnetic (EM) interference filter
+    optimization procedure, based on a genetic algorithms. A macromodeling technique taking
+    into account the load impedance, the source emissions and the filter parasitic components,
+    including the filter layout, is used to obtain an accurate solution for the optimization
+    process. The latter searches among supplier passive component databases and provides,
+    for a given filter topology, an optimal set of components available on the market. This
+    approach has been applied to a differential Class-D audio amplifier for validation. By
+    considering the electromagnetic interference (EMI), the additional power losses introduced
+    by the filter and the audio gain, two different optimization formulations have been tested.
+    The first corresponds to maximizing the power efficiency of the system while respecting
+    a determined level of EM emissions. The second corresponds to minimizing the EMI without
+    exceeding a determined level of power loss. The optimized filters are built and measurements
+    are carried out. The results show a remarkable power efficiency improvement and a significant
+    EM emission reduction when compared to a r
+  topics:
+  - class-d-audio
+  found: '2026-10-30'
+  why: 'Class-D output filter design trade (efficiency vs EMI attenuation): a check on the
+    hi-fi boards'' LC filters.'
+- id: chip-tvs-design-meet-system-2021
+  title: An on-chip TVS design to meet system level ESD protection for RS485 transceiver
+  year: 2021
+  doi: 10.36909/jer.9715
+  openalex: W3200508000
+  venue: Journal of Engineering Research
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://kuwaitjournals.org/jer/index.php/JER/article/download/9715/2183
+      pdf: true
+      host: Journal of Engineering Research
+      version: publishedVersion
+      license: cc-by-nc-nd
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 1
+  topics:
+  - esd-protection
+  found: '2026-10-30'
+  why: chip- or package-level, not board design hwde does
+- id: evaluation-practicality-system-efficient-esd-2017
+  title: Evaluation of the practicality of system efficient ESD design
+  year: 2017
+  openalex: W2799788714
+  venue: Illinois Digital Environment for Access to Learning and Scholarship (University of
+    Illinois at Urbana-Champaign)
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://www.ideals.illinois.edu/items/105253/bitstreams/333245/data.pdf
+      pdf: true
+      host: Illinois Digital Environment for Access to Learning and Scholarship (University
+        of Illinois at Urbana-Champaign)
+      version: submittedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: false
+    source_type: repository
+    cited_by: 0
+  abstract: A custom test board facilitates transmission line pulse (TLP) characterization
+    of the external pins of an integrated circuit. Models extracted from the data are used
+    to simulate the pin level response of the integrated circuit (IC) to an IEC 61000-4-2
+    discharge. Electrostatic discharge (ESD) gun zaps are applied to the test board; simulated
+    and measured waveforms are compared.
+  topics:
+  - esd-protection
+  found: '2026-10-30'
+- id: impact-holding-voltage-transient-voltage-2021
+  title: The Impact of Holding Voltage of Transient Voltage Suppressor (TVS) on Signal Integrity
+    of Microelectronics System With CMOS ICs Under System-Level ESD and EFT/Burst Tests
+  year: 2021
+  doi: 10.1109/ted.2021.3063208
+  openalex: W3136413608
+  venue: IEEE Transactions on Electron Devices
+  status: kept
+  access:
+    state: open
+    copies:
+    - url: https://ieeexplore.ieee.org/ielx7/16/9410657/09380502.pdf
+      pdf: true
+      host: IEEE Transactions on Electron Devices
+      version: publishedVersion
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 17
+  abstract: Transient voltage suppressor (TVS) has been widely used on the printed circuit
+    board (PCB) to protect the microelectronics system against the system-level electrostatic
+    discharge (ESD) and electrical fast transient/burst (EFT/B) events. However, the signal
+    integrity of the system operations may be destroyed after the system-level ESD and EFT/B
+    immunity test, if the TVS were designed with a holding voltage of lower than the operating
+    voltage of the CMOS ICs equipped in the system. In this work, the signal integrity of
+    microelectronics system protected by the TVS with different holding voltages was studied
+    under the system-level ESD and EFT/B immunity test. By monitoring the transient voltage
+    waveforms in the time domain during system-level ESD and EFT/B immunity test, the system
+    malfunction has been found when the TVS is with a lower holding voltage. Therefore, the
+    holding voltage of the TVS must be greater than the system operating voltage to maintain
+    the signal integrity in the field applications.
+  topics:
+  - esd-protection
+  found: '2026-10-30'
+  why: 'TVS holding voltage vs signal integrity: a rating rule check_ratings could enforce
+    on protected lines.'
+- id: investigation-system-level-esd-induced-2017
+  title: Investigation of system-level ESD induced soft failures
+  year: 2017
+  openalex: W2773466800
+  venue: Illinois Digital Environment for Access to Learning and Scholarship (University of
+    Illinois at Urbana-Champaign)
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: http://hdl.handle.net/2142/97379
+      pdf: true
+      host: Illinois Digital Environment for Access to Learning and Scholarship (University
+        of Illinois at Urbana-Champaign)
+      version: submittedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: false
+    source_type: repository
+    cited_by: 1
+  abstract: Electrostatic discharge (ESD) is a common phenomenon that can have negative implications
+    for the performance of systems during operation. ESD is a brief, high-current stress that
+    when applied to a functional system, can cause a variety of problems ranging from temporary
+    system malfunction to permanent failure of components within the system and/or the system
+    itself. Permanent failure of components, also known as hard failure, is a well-studied
+    area among the ESD community with established practices in place for mitigating the stress
+    and improving the reliability of the system. While further improvements with regard to
+    hard-failure protection can always be made, this work will focus on the aspects of soft
+    failures. Soft failures encompass any type of disruption to the system that, in general,
+    can be recovered from, for example by powercycling the system. An example of a soft failure
+    could be the erasure of data within some memory elements of an embedded computer that
+    cause programmed routines to fail. By restarting the system, the data will be regenerated
+    and written into the memory elements and proper functionality is returned. While seemingly
+    innocuous, the temporary failure of cr
+  topics:
+  - esd-protection
+  found: '2026-10-30'
+- id: failures-caused-supply-fluctuations-during-2018
+  title: Failures caused by supply fluctuations during system-level ESD
+  year: 2018
+  openalex: W2902549053
+  venue: Illinois Digital Environment for Access to Learning and Scholarship (University of
+    Illinois at Urbana-Champaign)
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://www.ideals.illinois.edu/items/106971/bitstreams/348868/data.pdf
+      pdf: true
+      host: Illinois Digital Environment for Access to Learning and Scholarship (University
+        of Illinois at Urbana-Champaign)
+      version: submittedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: false
+    source_type: repository
+    cited_by: 1
+  abstract: It is necessary to design robust electronic systems against system-level electrostatic
+    discharge (ESD). In additional to withstanding ESD without hard failures (permanent damage),
+    it is important that the system is robust against soft failures (recoverable loss of function
+    or data), which can be caused by ESD-induced noise on signal inputs and power nets. Besides
+    radiation, the current injection into the circuit alone can cause these disturbances,
+    especially the sharp current spike of a high amplitude in system-level ESD. The waveform
+    of this current is similar in various ESD test setups. Circuit models with distributed
+    elements enable accurate modeling of the system-level ESD current in contact discharge.
+    Experiments have shown that ESD-induced noise on signal traces starts to disturb the IO
+    input at very low ESD levels, and the effectiveness of the transient voltage suppressor
+    (TVS) on board is limited. The noise on supply is global to integrated circuit (IC), as
+    it travels across all the power domains. The waveform of the noise depends on the polarity
+    of the ESD current and the type of ESD protection. The experiments have shown that the
+    supply fluctuation can be quite severe, as
+  topics:
+  - esd-protection
+  found: '2026-10-30'
+- id: optimizing-solder-voids-performance-at-2014
+  title: Optimizing Solder Voids Performance at Thermal Pad and Printability of its Peripheral
+    Pads for Dual Row QFN Assembly
+  year: 2014
+  doi: 10.37665/rebxwdt31814
+  openalex: W4416879226
+  venue: Regional Events
+  status: candidate
+  access:
+    state: paywalled
+    copies: []
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 0
+  abstract: ABSTRACT Thermal pad voiding control at QFN assembly is a major challenge due
+    to larger coverage area, number of via and standoff height. In order to effectively remove
+    the heat from the package and to enhance electrical performance, the die paddle needs
+    to be soldered to the PCB thermal pad with minimum voids. Therefore, a good ground pattern
+    helps in the outgassing process during the reflow process to prevent defects such as splatter,
+    solder balling, and solder shorts. Voids within solder joint under the exposed thermal
+    pad can have adverse effect on high speed and RF application as well as thermal performance.
+    Voids within this ground plane can increase the current path of the circuit and also produce
+    spot overheating. Therefore, both design and process were examined to minimize and control
+    the voiding as well as printability of its peripheral pads. A simple DOE with a test board
+    was design to investigate the effect of QFN peripheral pad land pattern, stencil thickness,
+    thermal via density, partitioning of large thermal pad by a number of solder mask segments,
+    and thermal pad paste pattern on the solder voiding performance. For subdivided thermal
+    pad by solderrmask (SMD) segment
+  topics:
+  - solder-assembly
+  found: '2026-10-30'
+- id: low-voiding-solder-pastes-led-2020
+  title: Low-voiding solder pastes in LED assembly
+  year: 2020
+  doi: 10.1108/ssmt-11-2019-0041
+  openalex: W3025960828
+  venue: Soldering and Surface Mount Technology
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://www.emerald.com/insight/content/doi/10.1108/SSMT-11-2019-0041/full/pdf?title=low-voiding-solder-pastes-in-led-assembly
+      pdf: true
+      host: Soldering and Surface Mount Technology
+      version: publishedVersion
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 11
+  abstract: "Purpose This paper aims to investigate voiding phenomena in solder joints under\
+    \ thermal pads of light-emitting diodes (LEDs) assembled in mass production environment\
+    \ by reflow soldering by using seven low-voiding lead-free solder pastes. Design/methodology/approach\
+    \ The solder pastes investigated are of SAC305 type, Innolot type or they are especially\
+    \ formulated by the manufacturers on the base of (SnAgCu) alloys with addition of some\
+    \ alloying elements such as Bi, In, Sb and Ti to provide low-void contents. The SnPb solder\
+    \ paste \u2013 OM5100 \u2013 was used as a benchmark. The solder paste coverage of LED\
+    \ solder pads was chosen as a measure of void contents in solder joints because of common\
+    \ usage of this parameter in industry practice. Findings It was found that the highest\
+    \ coverage and, related to it, the least void contents are in solder joints formed with\
+    \ the pastes LMPA-Q and REL61, which are characterized by the coverage of mean value 93.13%\
+    \ [standard deviation (SD) = 2.72%] and 92.93% (SD = 2.77%), respectively. The void diameters\
+    \ reach the mean value equal to 0.061 mm (SD = 0.044 mm) for LMPA-Q and 0.074 mm (SD =\
+    \ 0.052 mm) for REL61. The results are presented in the form of histogram"
+  topics:
+  - solder-assembly
+  found: '2026-10-30'
+- id: morphology-evolution-voiding-solder-joints-2012
+  title: The Morphology Evolution and Voiding of Solder Joints on QFN Central Pads with a
+    Ni/Au Finish
+  year: 2012
+  openalex: W1135076
+  venue: DigitalCommons - CalPoly (California State Polytechnic University)
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://digitalcommons.calpoly.edu/ime_fac/83
+      pdf: true
+      host: DigitalCommons - CalPoly (California State Polytechnic University)
+      version: submittedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: false
+    source_type: repository
+    cited_by: 0
+  abstract: "In this paper, we report on a comprehensive study regarding the morphology evolution\
+    \ and voiding of SnAgCu solder joints on the central pad of two different packages \u2013\
+    \ QFN and an Agilent package called TOPS \u2013 on PCBs with a Ni/Au surface finish. Samples\
+    \ were isothermally aged at the equivalent of 0, 2, 7 and 14 years service life. Representative\
+    \ solder joints were cross-sectioned and analyzed using scanning electron microscopy (SEM)\
+    \ and energy dispersive X-ray spectroscopy (EDX) in order to investigate the evolution\
+    \ of the solder joint morphology as a function of Au content and isothermal aging. IMC\
+    \ thickness was measured. The effect of Au content on the void percentage was studied\
+    \ as well. The results show that if copper is available to dissolve into the solder joint,\
+    \ the AuSn4 IMC from the bulk does not migrate to the interface as a result of thermal\
+    \ aging. The IMC thickness grew with aging as expected, however with Cu base metallization\
+    \ the IMC was dominated by Cu6Sn5, and with Ni base metallization on both sides of the\
+    \ joint the IMC was dominated by AuSn4. Voiding analysis showed that thick Au metallization\
+    \ on thermal pads leads to more voiding and larger standoff height."
+  topics:
+  - solder-assembly
+  found: '2026-10-30'
+- id: practical-verification-void-reduction-method-2018
+  title: Practical Verification of Void Reduction Method for BTC Using Exposed Via in Pad
+  year: 2018
+  doi: 10.37665/smbkqzr10508
+  openalex: W4416878062
+  venue: SMTA International
+  status: kept
+  access:
+    state: paywalled
+    copies: []
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 0
+  abstract: ABSTRACT Void reduction strategies used with different levels of success throughout
+    the industry include managing reflow profile parameters, solder paste deposit volume and
+    solder paste type, stencil aperture cut to different geometries, thermal pad geometries
+    with and without solder mask webs, vacuum assisted reflow, sweep stimulation of PCB substrate,
+    use of solder preforms, tinning of the components pads prior to placement and reflow,
+    I/O aperture design to overprint at the toe of the pad, and exposed via in pad [1-8].
+    Translation of these methods and their combinations for void control on the thermal pad
+    of bottom terminated components (BTC) has met with different levels of success in volume
+    production. The method explored in this paper regards the use of exposed via in pad. A
+    dedicated test vehicle was designed for two types of QFN components. The main variables
+    taken into account were the component size, number of exposed via in the thermal pad,
+    via pitch, via size, and solder paste coverage. The responses sought in this experiment
+    include thermal pad void level and solder wicking down the via barrel with resulting solder
+    protrusion on the opposite side of the PCB. The result
+  topics:
+  - solder-assembly
+  found: '2026-10-30'
+  why: 'Void reduction under bottom-terminated parts with via-in-pad: a rule dfm_check''s
+    thermal-pad paste check lacks.'
+- id: quad-flat-no-lead-package-2022
+  title: QUAD FLAT NO-LEAD PACKAGE WITH DIFFERENT THERMAL PROFILES AND SOLDER PAD FINISHING
+    FOR VOID MINIMIZATION
+  year: 2022
+  doi: 10.11113/jurnalteknologi.v84.19344
+  openalex: W4308190770
+  venue: Jurnal Teknologi
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://journals.utm.my/jurnalteknologi/article/download/19344/8044
+      pdf: true
+      host: Jurnal Teknologi
+      version: publishedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 0
+  abstract: Voiding in solder joints is a common problem that occur in electronic packaging,
+    specifically for bottom terminated component (BTC). Quad Flat No-Lead (QFN) is a good
+    example of BTC component that susceptible to void. Thus, QFN component thermal pads were
+    used as the test vehicle in this voiding assessment. The objectives of this study are
+    to analyze the influence of the variables from every parameter evaluated in the experiment
+    on voiding area in QFN thermal pad solder joint and obtain the best combination of variables
+    that can minimize the total void area percentage inside QFN thermal pad solder joint down
+    to below 5%. In this study, several variables and their impacts on voiding based on the
+    literature review were studied. No clean lead-free solder paste of SAC305 composition
+    was employed in this experiment. Various stencil patterns were tested, including Window-Pane,
+    Round, and Triangle/Polygon. The influence of pad surface finishing of the test board
+    on the voiding reduction was analyzed in this study. The effects of convection reflow
+    of various profiles and atmospheres were also considered. All the variables were setup
+    for the experiment execution which begins by solder paste
+  topics:
+  - solder-assembly
+  found: '2026-10-30'
+- id: what-do-you-want-your-2021
+  title: What Do You Want on Your Tombstone?
+  year: 2021
+  doi: 10.37665/smznbyh86682
+  openalex: W4416880634
+  venue: SMTA International
+  status: candidate
+  access:
+    state: paywalled
+    copies: []
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 0
+  abstract: ABSTRACT Tombstoning, draw-bridging, bill-boarding, and skewing are all common
+    defects that are caused by movement of components out of their intended position. This
+    is reminiscent of pepperoni lifting up while baking a Tombstone pizza. These defects typically
+    occur with passive components (e.g. 1206, 0805, 0603 Imperial components) and are a common
+    issue for electronics manufacturers. Tombstoning, draw-bridging, bill-boarding and skewing
+    can be caused by the circuit board design, pick and place errors, stencil design, reflow
+    profile, and other potential sources. These potential causes of tombstoning and related
+    defects were studied in order to create solutions for this issue. This paper summarizes
+    the results of this work. Circuit board design can create the potential for tombstoning.
+    One example of this is when the PCB design utilizes one pad set for multiple component
+    sizes such as 0805 and 0603 Imperial components. These pad sets may be too close together
+    for the larger passive components, but also too far apart for the smaller components.
+    Another example is when the pad at one end of the component sits on a ground plane which
+    acts as a heat sink during reflow. The other end of
+  topics:
+  - solder-assembly
+  found: '2026-10-30'
+- id: influence-pad-design-assembly-reliability-2022
+  title: Influence of Pad Design on Assembly Reliability of Surface Mounted Devices
+  year: 2022
+  doi: 10.1007/s40684-022-00466-4
+  openalex: W4307648813
+  venue: International Journal of Precision Engineering and Manufacturing-Green Technology
+  status: kept
+  access:
+    state: paywalled
+    copies: []
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 4
+  topics:
+  - solder-assembly
+  found: '2026-10-30'
+  why: 'Pad geometry vs assembly reliability: what fp_verify''s land-pattern checks should
+    hold.'
+- id: data-driven-prediction-model-components-2019
+  title: Data-Driven Prediction Model of Components Shift during Reflow Process in Surface
+    Mount Technology
+  year: 2019
+  doi: 10.1016/j.promfg.2020.01.014
+  openalex: W3005357521
+  arxiv: '2001.09619'
+  venue: Procedia Manufacturing
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://www.sciencedirect.com/science/article/pii/S2351978920300147/pdf
+      pdf: true
+      host: Procedia Manufacturing
+      version: publishedVersion
+      license: cc-by-nc-nd
+    - url: https://arxiv.org/pdf/2001.09619
+      pdf: true
+      host: arXiv (Cornell University)
+      version: submittedVersion
+      license: null
+    - url: https://doi.org/10.48550/arxiv.2001.09619
+      pdf: false
+      host: arXiv (Cornell University)
+      version: null
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 24
+  abstract: "In surface mount technology (SMT), mounted components on soldered pads are subject\
+    \ to move during reflow process. This capability is known as self-alignment and is the\
+    \ result of fluid dynamic behavior of molten solder paste. This capability is critical\
+    \ in SMT because inaccurate self-alignment causes defects such as overhanging, tombstoning,\
+    \ etc. while on the other side, it can enable components to be perfectly self-assembled\
+    \ on or near the desire position. The aim of this study is to develop a machine learning\
+    \ model that predicts the components movement during reflow in x and y-directions as well\
+    \ as rotation. Our study is composed of two steps: (1) experimental data are studied to\
+    \ reveal the relationships between self-alignment and various factors including component\
+    \ geometry, pad geometry, etc. (2) advanced machine learning prediction models are applied\
+    \ to predict the distance and the direction of components shift using support vector regression\
+    \ (SVR), neural network (NN), and random forest regression (RFR). As a result, RFR can\
+    \ predict components shift with the average fitness of %99, %99, and %96 and with average\
+    \ prediction error of 13.47 (\xB5m), 12.02 (\xB5m), and 1.52 (deg.) for co"
+  topics:
+  - solder-assembly
+  found: '2026-10-30'
+- id: tlps-pastes-anywhere-embedded-passive-2024
+  title: TLPS Pastes for Anywhere Embedded Passive Components in Substrates and PCBs
+  year: 2024
+  doi: 10.4071/001c.116536
+  openalex: W4406170884
+  venue: IMAPSource Proceedings
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://imapsource.org/article/116536.pdf
+      pdf: true
+      host: IMAPSource Proceedings
+      version: publishedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 0
+  topics:
+  - solder-assembly
+  found: '2026-10-30'
+  why: 'off-topic: the search matched words, not the subject'
+- id: effect-solder-paste-volume-surface-2019
+  title: The effect of solder paste volume on surface mount assembly self-alignment
+  year: 2019
+  doi: 10.1016/j.promfg.2020.01.150
+  openalex: W3005063867
+  venue: Procedia Manufacturing
+  status: kept
+  access:
+    state: open
+    copies:
+    - url: https://doi.org/10.1016/j.promfg.2020.01.150
+      pdf: false
+      host: Procedia Manufacturing
+      version: publishedVersion
+      license: cc-by-nc-nd
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 22
+  abstract: In surface mount assembly, the consistency of solder paste volumes and the placement
+    of the components play a vital role in the movement of the chip components when they go
+    through the reflow soldering process. These movements may lead to common assembly defects
+    such as overhanging, tilting, nonwetting, and tombstoning. Components to be assembled
+    in surface mount assembly have self-alignment nature, which is driven by the total internal
+    energy including gravitational energy, surface tension energy, etc. in the molten solder
+    attributed to various factors. The factors include 1) solder paste composition, surface
+    energy, gravity; 2) process variations such as solder paste volume, solder paste location,
+    the inequality of solder paste volumes at the two terminals of the passive component,
+    and components location and orientation; 3) design parameters such as pad dimension, pad-to-pad
+    spacing, and pad surface finish. In this research, energy-based three-dimensional model
+    is created to predict solder joint profile (shape). Three types of passive chip component
+    are chosen to be the modelling examples to investigate the component self-alignment performance
+    during the reflow soldering process
+  topics:
+  - solder-assembly
+  found: '2026-10-30'
+  why: 'Paste volume vs self-alignment: numbers behind dfm_check''s paste and pad rules.'
+- id: security-oriented-printed-circuit-board-2025
+  title: Security-oriented printed-circuit-board routing with deep reinforcement learning
+  year: 2025
+  doi: 10.1016/j.vlsi.2025.102602
+  openalex: W4416442103
+  venue: Integration
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://doi.org/10.2139/ssrn.5403030
+      pdf: false
+      host: SSRN Electronic Journal
+      version: acceptedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 1
+  topics:
+  - ml-placement-routing
+  found: '2026-10-30'
+- id: deep-reinforcement-learning-based-ground-2022
+  title: Deep Reinforcement Learning-Based Ground-Via Placement Optimization for EMI Mitigation
+  year: 2022
+  doi: 10.1109/temc.2022.3222034
+  openalex: W4312715879
+  venue: IEEE Transactions on Electromagnetic Compatibility
+  status: kept
+  access:
+    state: paywalled
+    copies: []
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 31
+  abstract: "Placing ground vias plays a crucial role in mitigating electromagnetic radiation\
+    \ from printed circuit board (PCB) edges. Stitching dense ground vias along PCB edges\
+    \ is not always feasible due to limited layout areas. Finding a ground-via placement strategy\
+    \ to achieve the best electromagnetic interference (EMI) mitigation using a specified\
+    \ number of ground vias is desired in the industry. However, this process is usually tedious\
+    \ and labor-intensive because of the enormous search space. This article proposes an optimization\
+    \ algorithm based on deep reinforcement learning to adaptively seek the optimal ground-via\
+    \ placement strategy in complex packages. First, an evaluation module based on convolutional\
+    \ neural networks (CNNs) is trained to predict the EMI mitigation for any possible ground-via\
+    \ placement. Then, relying on the well-trained CNN, an optimization module based on dueling\
+    \ double deep Q network is developed to find the best ground-via placement strategy through\
+    \ exploration and training without prior electromagnetic knowledge. The final optimization\
+    \ strategy obtained by our proposed algorithm has more effective EMI mitigation than the\
+    \ commonly used \u201Cedge-wrapping\u201D solution in in"
+  topics:
+  - ml-placement-routing
+  found: '2026-10-30'
+  why: 'Ground-via placement for EMI by deep RL (31 citations): a baseline for stitch_vias''
+    placement rules.'
+- id: component-centric-placement-deep-reinforcement-2026
+  title: Component Centric Placement Using Deep Reinforcement Learning
+  year: 2026
+  doi: 10.48550/arxiv.2602.23540
+  openalex: W7133205863
+  arxiv: '2602.23540'
+  venue: arXiv (Cornell University)
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://arxiv.org/pdf/2602.23540
+      pdf: true
+      host: arXiv (Cornell University)
+      version: submittedVersion
+      license: null
+    - url: https://doi.org/10.48550/arxiv.2602.23540
+      pdf: false
+      host: arXiv (Cornell University)
+      version: null
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: false
+    source_type: repository
+    cited_by: 0
+  abstract: 'Automated placement of components on printed circuit boards (PCBs) is a critical
+    stage in placement layout design. While reinforcement learning (RL) has been successfully
+    applied to system-on-chip IP block placement and chiplet arrangement in complex packages,
+    PCB component placement presents unique challenges due to several factors: variation in
+    component sizes, single- and double-sided boards, wirelength constraints, board constraints,
+    and non-overlapping placement requirements. In this work, we adopt a component-centric
+    layout for automating PCB component placement using RL: first, the main component is fixed
+    at the center, while passive components are placed in proximity to the pins of the main
+    component. Free space around the main component is discretized, drastically reducing the
+    search space while still covering all feasible placement; second, we leverage prior knowledge
+    that each passive''s position has to be near to its corresponding voltage source. This
+    allows us to design the reward function which avoids wasted exploration of infeasible
+    or irrelevant search space. Using the component centric layout, we implemented different
+    methods including Deep Q-Network, Actor-Critic a'
+  topics:
+  - ml-placement-routing
+  found: '2026-10-30'
+- id: two-stage-optimization-pcba-placement-2025
+  title: Two-Stage Optimization of PCBA Placement Route Schedule Based on Deep Reinforcement
+    Learning
+  year: 2025
+  doi: 10.1109/tii.2025.3609187
+  openalex: W4414788004
+  venue: IEEE Transactions on Industrial Informatics
+  status: dropped
+  access:
+    state: paywalled
+    copies: []
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 7
+  topics:
+  - ml-placement-routing
+  found: '2026-10-30'
+  why: 'off-topic: the search matched words, not the subject'
+- id: deep-reinforcement-learning-framework-optimized-2025
+  title: A deep reinforcement learning framework for optimized dummy pad placement in PCB
+    electroplating
+  year: 2025
+  doi: 10.1016/j.eswa.2025.128639
+  openalex: W4411387410
+  venue: Expert Systems with Applications
+  status: dropped
+  access:
+    state: paywalled
+    copies: []
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 0
+  topics:
+  - ml-placement-routing
+  found: '2026-10-30'
+  why: chip- or package-level, not board design hwde does
+- id: pcbroutenet-dynamic-quadrilateral-flow-dataset-2025
+  title: 'PCBRouteNet: Dynamic Quadrilateral-Flow Dataset and Benchmarks for Machine-Learning
+    PCB Routing'
+  year: 2025
+  doi: 10.1109/tvlsi.2025.3600764
+  openalex: W4413754790
+  venue: IEEE Transactions on Very Large Scale Integration (VLSI) Systems
+  status: candidate
+  access:
+    state: paywalled
+    copies: []
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 0
+  abstract: As the complexity and density of electronic components continue to increase, manual
+    printed circuit board (PCB) routing has become an increasingly labor-intensive and costly
+    task. However, the lack of large, publicly available datasets for training machine-learning
+    (ML) models has hindered potential advancements in this field. To address this gap, we
+    introduce PCBRouteNet, a comprehensive, large-scale dataset specifically designed to accelerate
+    ML innovations in automated PCB routing. To handle the high complexity of PCB data and
+    enhance extraction efficiency, we propose a dynamic, adjustable, quadrilateral network
+    flow model. This model constructs a network flow graph composed of quadrilateral tiles,
+    efficiently transforming the original design data into a network flow-based format. This
+    format facilitates feature extraction for both global and detailed routing tasks. Additionally,
+    we introduce and analyze various flow-encoding methods to explore the generalization and
+    relationships between data size and network parameters, leveraging scaling laws. Our dataset
+    features a diverse array of layouts with varying complexities, such as multilayer boards
+    and high-density interconnects. F
+  topics:
+  - ml-placement-routing
+  found: '2026-10-30'
+- id: ai-assisted-high-speed-pcb-2026
+  title: AI-Assisted High-Speed PCB Design
+  year: 2026
+  doi: 10.15680/ijctece.2026.0901004
+  openalex: W7128389909
+  venue: International Journal of Computer Technology and Electronics Communication
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://ijctece.com/index.php/IJCTEC/article/download/393/351/705
+      pdf: true
+      host: International Journal of Computer Technology and Electronics Communication
+      version: publishedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 1
+  abstract: 'ABSTRACT: High-speed printed circuit board (PCB) design has become increasingly
+    complex due to rising data rates, dense component integration, and stringent signal and
+    power integrity requirements. Traditional PCB design approaches rely heavily on manual
+    expertise and iterative trial-and-error methods, which often lead to prolonged design
+    cycles and suboptimal performance. Recent advances in Artificial Intelligence (AI) and
+    machine learning provide new opportunities to automate and optimize high-speed PCB design
+    processes. This paper presents an AI-assisted framework for high-speed PCB design that
+    integrates machine learning techniques into the conventional design flow to address signal
+    integrity, electromagnetic interference, and routing optimization challenges. The proposed
+    methodology leverages design data and electrical constraints to train intelligent models
+    capable of predicting optimal routing strategies and layout parameters. Experimental evaluation
+    demonstrates that the AI-assisted approach significantly improves signal integrity performance
+    while reducing design iterations and development time when compared with conventional
+    design techniques. The results highlight the po'
+  topics:
+  - ml-placement-routing
+  found: '2026-10-30'
+- id: research-automatic-pcb-routing-strategy-2024
+  title: Research on Automatic PCB Routing Strategy based on Ant Colony Algorithm
+  year: 2024
+  doi: 10.62227/as/74s119
+  openalex: W4401984020
+  venue: Archive des Sciences
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://unige.org/articles/s1/2024s119.pdf
+      pdf: true
+      host: Archive des Sciences
+      version: publishedVersion
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 1
+  abstract: In the design of printed circuit boards (PCBs), routing is a critical step that
+    affects their performance and quality. Traditional manual wiring methods are not only
+    time-consuming and error-prone, but also difficult to meet the design requirements of
+    modern high-density and high-performance circuit boards. In this paper, an automatic PCB
+    routing strategy based on ant colony algorithm is investigated, aiming to improve the
+    routing efficiency and quality. Ant colony algorithm, as a swarm intelligent optimisation
+    algorithm, has better robustness and constraints and is suitable for solving complex wiring
+    problems. In this paper, we focus on two common wiring requirements, equal-length wiring
+    and differential pair wiring. For equal length cabling, each line is optimised to meet
+    the length matching requirement by setting the maximum length value and minimum length
+    value using the ant colony algorithm. For differential pair wiring, firstly, the equidistance
+    of signal lines is ensured by the method of two ants walking at the same time, and then
+    the length of the line is fine-tuned to ensure that the length of the two signal lines
+    is the same. The experimental results show that the improve
+  topics:
+  - ml-placement-routing
+  found: '2026-10-30'
+- id: meta-learning-enhanced-adaptive-robot-2024
+  title: Meta-learning enhanced adaptive robot control strategy for automated PCB assembly
+  year: 2024
+  doi: 10.1016/j.jmsy.2024.11.009
+  openalex: W4404666591
+  arxiv: '2506.20445'
+  venue: Journal of Manufacturing Systems
+  status: dropped
+  access:
+    state: open
+    copies:
+    - url: https://arxiv.org/pdf/2506.20445
+      pdf: true
+      host: arXiv (Cornell University)
+      version: submittedVersion
+      license: null
+    - url: https://doi.org/10.48550/arxiv.2506.20445
+      pdf: false
+      host: arXiv (Cornell University)
+      version: null
+      license: null
+    - url: https://doi.org/10.5281/zenodo.23016182
+      pdf: false
+      host: Zenodo (CERN European Organization for Nuclear Research)
+      version: null
+      license: cc-by
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 12
+  topics:
+  - ml-placement-routing
+  found: '2026-10-30'
+  why: 'off-topic: the search matched words, not the subject'
+- id: pad-focused-pcb-routing-algorithm-2024
+  title: A Pad-Focused PCB Routing Algorithm Using Polygon-Based Dynamic Partitioning
+  year: 2024
+  doi: 10.1109/access.2024.3386921
+  openalex: W4394676726
+  venue: IEEE Access
+  status: kept
+  access:
+    state: open
+    copies:
+    - url: https://ieeexplore.ieee.org/ielx7/6287639/6514899/10496097.pdf
+      pdf: true
+      host: IEEE Access
+      version: publishedVersion
+      license: cc-by-nc-nd
+    - url: https://doaj.org/article/00bd268bd38b4d28976bdafd8c175713
+      pdf: false
+      host: 'DOAJ (DOAJ: Directory of Open Access Journals)'
+      version: submittedVersion
+      license: cc-by-sa
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 2
+  abstract: 'Routing plays a pivotal role in the design of printed circuit boards (PCBs).
+    Existing automated routers typically tackle the routing problem by dividing it into two
+    separate phases: escape routing and area routing. However, this approach often leads to
+    suboptimal solutions or even the absence of solutions when transitioning from escape routing
+    to area routing. In this paper, we propose a novel pad-focused, net-by-net, two-stage
+    PCB routing approach comprising of a Monte Carlo tree search (MCTS)-based global routing
+    stage, followed by an A*-based detailed routing stage. To bridge the gap between the global
+    and detailed routing stages, we introduce a polygon-based dynamic routable region partitioning
+    mechanism, ensuring that a detailed routing solution exists when a global routing solution
+    is present. Experimental results demonstrate that our approach outperforms state-of-the-art
+    routers in terms of the success rate and total wirelength on the test set.'
+  topics:
+  - ml-placement-routing
+  found: '2026-10-30'
+  why: 'A recent pad-first routing algorithm: an idea for route_auto''s escape routing.'
+- id: parasitic-loop-inductances-reduction-pcb-2021
+  title: Parasitic Loop Inductances Reduction in the PCB Layout in GaN-Based Power Converters
+    Using S-Parameters and EM Simulations
+  year: 2021
+  doi: 10.3390/en14051495
+  openalex: W3134812905
+  venue: Energies
+  status: kept
+  access:
+    state: open
+    copies:
+    - url: https://www.mdpi.com/1996-1073/14/5/1495/pdf?version=1615284425
+      pdf: true
+      host: Energies
+      version: publishedVersion
+      license: cc-by
+    - url: https://hal.science/hal-03168976
+      pdf: false
+      host: HAL
+      version: submittedVersion
+      license: cc-by
+    - url: https://doaj.org/article/d968d7e3f59e402c9f3311bf1d000a6a
+      pdf: false
+      host: 'DOAJ (DOAJ: Directory of Open Access Journals)'
+      version: submittedVersion
+      license: cc-by-sa
+    read:
+      url: https://www.mdpi.com/1996-1073/14/5/1495/pdf?version=1615284425
+      sha256: 36de343ed5107211c584b138dd417de1e9d8d07dfe64bd35123b040f5486afe1
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 27
+  abstract: "Due to the high switching speed of Gallium Nitride (GaN) transistors, parasitic\
+    \ inductances have significant impacts on power losses and electromagnetic interferences\
+    \ (EMI) in GaN-based power converters. Thus, the proper design of high-frequency converters\
+    \ in a simulation tool requires accurate electromagnetic (EM) modeling of the commutation\
+    \ loops. This work proposes an EM modeling of the parasitic inductance of a GaN-based\
+    \ commutation cell on a printed circuit board (PCB) using Advanced Design System (ADS\xAE\
+    ) software. Two different PCB designs of the commutation loop, lateral (single-sided)\
+    \ and vertical (double-sided) are characterized in terms of parasitic inductance contribution.\
+    \ An experimental approach based on S-parameters, the Cold FET technique and a specific\
+    \ calibration procedure is developed to obtain reference values for comparison with the\
+    \ proposed models. First, lateral and vertical PCB loop inductances are extracted. Then,\
+    \ the whole commutation loop inductances including the packaging of the GaN transistors\
+    \ are determined by developing an EM model of the device\u2019s internal parasitic. The\
+    \ switching waveforms of the GaN transistors in a 1 MHz DC/DC converter are given fo"
+  topics:
+  - gan-power-layout
+  found: '2026-10-30'
+  why: 'Measured lateral vs vertical GaN commutation-loop inductance: a known answer for a
+    loop-inductance extraction (check_power_path, the simulation wrappers).'
+  claims:
+  - id: parasitic-loop-inductances-reduction-pcb-2021/1
+    read_from: full_text
+    where: Section 4, Table 2
+    claim: 'A vertical (double-sided) GaN commutation loop has about 3x less inductance than
+      a lateral one: 4.85 vs 12.35 nH measured at 10 MHz.'
+    verdict: untested
+    plan: Rebuild both loops from the paper's Fig. 2 dimensions and extract them with a quasi-static
+      inductance solver (task 261031-012434-e34f3046f2's extraction wrappers); hwde should
+      land within 20 % of the measured values, and the ratio within 15 %.
+- id: multiloop-method-minimization-parasitic-inductance-2016
+  title: "A Multiloop Method for Minimization of Parasitic Inductance in GaN-Based High-Frequency\
+    \ DC\u2013DC Converter"
+  year: 2016
+  doi: 10.1109/tpel.2016.2597183
+  openalex: W2476875333
+  venue: IEEE Transactions on Power Electronics
+  status: kept
+  access:
+    state: paywalled
+    copies: []
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 167
+  abstract: "Gallium nitride high electron mobility transistors (GaN HEMTs) are promising\
+    \ switching devices in high-efficiency and high-density dc\u2013dc converters due to their\
+    \ fast switching speed and small conduction resistance. However, GaN HEMTs are very sensitive\
+    \ to parasitic inductance because of their high switching speed, low-threshold voltage,\
+    \ and small driving safety margin. Parasitic inductance can cause severe voltage overshoot\
+    \ and ringing, which may result in electromagnetic interference issues, false turn-on,\
+    \ or even device breakdown. This paper aims at reducing the parasitic inductance (including\
+    \ power loop inductance and driver loop inductance) by optimizing the layout. First, a\
+    \ multiloop method is proposed to reduce the parasitic inductance. Optimization of both\
+    \ the conventional single-loop structure and the proposed multiloop structure are presented.\
+    \ Second, three kinds of power loop layouts based on the proposed multiloop structure\
+    \ are realized on PCB substrate and one of them is realized on aluminum nitride (AlN)\
+    \ substrate, which has higher thermal conductivity but less copper layers. The power loop\
+    \ inductance on PCB substrate is reduced to 0.1 nH, which is only 25% of the stat"
+  topics:
+  - gan-power-layout
+  found: '2026-10-30'
+  why: 'The most-cited GaN power-loop layout method (167 citations): what check_power_path''s
+    loop rules should hold a switching cell to.'
+- id: design-method-vertical-lattice-loop-2022
+  title: Design Method of Vertical Lattice Loop Structure for Parasitic Inductance Reduction
+    in a GaN HEMTs-Based Converter
+  year: 2022
+  doi: 10.1109/access.2022.3220325
+  openalex: W4312591610
+  venue: IEEE Access
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://ieeexplore.ieee.org/ielx7/6287639/6514899/09940951.pdf
+      pdf: true
+      host: IEEE Access
+      version: publishedVersion
+      license: cc-by
+    - url: https://doaj.org/article/2c62074775f548b8a92478ad81b9a168
+      pdf: false
+      host: 'DOAJ (DOAJ: Directory of Open Access Journals)'
+      version: submittedVersion
+      license: cc-by-sa
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 6
+  abstract: Among the wide-bandgap devices, gallium nitride high electron mobility transistors
+    (GaN HEMTs) are contributing to the high power density technology of power conversion
+    systems due to their excellent physical properties. In contrast, the driving voltage and
+    threshold voltage are relatively low compared to conventional power semiconductor devices,
+    so a reliable circuit design is required. In this paper, a parasitic inductance reduction
+    design method for the stable driving of GaN HEMTs is proposed. To reduce parasitic inductance,
+    we propose a vertical lattice loop structure having multiple loops, and this method can
+    be applied regardless of the package type and shape of GaN HEMT. For the design of the
+    proposed vertical lattice loop structure, the reference loop is defined to minimize leakage
+    inductance and the identical loop is vertically stacked. The proposed structure is applied
+    6-layer PCB design example and verified by experimental results. Furthermore, the proposed
+    design method is applied at the buck converter, and improved efficiency is verified from
+    600 kHz to 1MHz switching frequency.
+  topics:
+  - gan-power-layout
+  found: '2026-10-30'
+- id: gan-power-transistors-converter-design-2025
+  title: GaN Power Transistors in Converter Design Techniques
+  year: 2025
+  doi: 10.3390/en18112890
+  openalex: W4410960639
+  venue: Energies
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://www.mdpi.com/1996-1073/18/11/2890/pdf?version=1748615754
+      pdf: true
+      host: Energies
+      version: publishedVersion
+      license: cc-by
+    - url: https://doaj.org/article/6d9642f182ba40a5b5c0c455fa7d1aad
+      pdf: false
+      host: 'DOAJ (DOAJ: Directory of Open Access Journals)'
+      version: submittedVersion
+      license: cc-by-sa
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 4
+  abstract: The expected outstanding performance of GaN-based transistors in power applications,
+    characterized by high switching frequency, efficiency, and compactness, requires that
+    the design rules of converter layout optimization, filtering, and shielding need to be
+    reexamined. Addressing the above topics, this paper reviews commercial GaN power transistors
+    and specifies their integration techniques, including printed circuit board (PCB) embedded
+    solutions. Then, referring to the optimization results of a half-bridge inverter leg,
+    design techniques are presented that reduce the harmful effect of inductive and capacitive
+    internal converter couplings, thus mitigating the electromagnetic interference (EMI) conducted
+    emissions.
+  topics:
+  - gan-power-layout
+  found: '2026-10-30'
+- id: investigation-parasitics-power-circuits-switched-2016
+  title: INVESTIGATION OF PARASITICS IN POWER CIRCUITS SWITCHED WITH CASCODE GAN HEMTS
+  year: 2016
+  doi: 10.15623/ijret.2016.0534001
+  openalex: W2581443645
+  venue: International Journal of Research in Engineering and Technology
+  status: candidate
+  access:
+    state: open
+    copies:
+    - url: https://doi.org/10.15623/ijret.2016.0534001
+      pdf: true
+      host: International Journal of Research in Engineering and Technology
+      version: publishedVersion
+      license: null
+  trust:
+    retracted: false
+    peer_reviewed: true
+    source_type: journal
+    cited_by: 0
+  abstract: 'Gallium Nitride (GaN) devices due to its superior material properties over Si
+    has the potential to provide better system level performance when integrated into power
+    electronic applications.These fast switching devices are continuously evolving in the
+    market with 600 V devices getting commercialized and manufacturers coming up with different
+    variants of normally-off devices to completely exploit the wondrous properties of this
+    novel material.The growing acceptability of these devices has seen a strong interest in
+    cascode structures.However, there is a lack of understanding of the issues caused by these
+    nearly ideal devices when used in real circuits.Therefore, this paper is aimed at investigating
+    the influence of parasitic inductances and capacitances that causes unexpected behavior
+    in cascode GaN based half-bridges.This problem is addressed by performing detailed theoretical
+    analysis and Pspice simulations to formulate design rules.These predictions are then experimentally
+    validated by designing and demonstrating 1 kW, 500 KHz GaN half bridge prototypes using
+    different gate drives.The novelty of this paper lies in providing a holistic approach
+    to the instability issues in cascode '
+  topics:
+  - gan-power-layout
+  found: '2026-10-30'
