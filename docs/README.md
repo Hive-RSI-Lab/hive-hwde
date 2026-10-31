@@ -381,3 +381,11 @@ made in the Hive: a 2-layer, 13.4 x 10.5 mm board with a 5 V header, a bulk
 cap and a green LED with its resistor. It went through every stage up to P9,
 and ERC, place, drc_routed, verify and dfm all pass. Read its `log/P*-digest.md`
 for what each stage did and `LEARNINGS.md` for what it taught.
+
+## Ingestion notes
+
+- [reference/ingest/tools-ecosystem.md](../reference/ingest/tools-ecosystem.md):
+  open-source EDA and EE tools against hwde. The Hive already has openEMS,
+  FasterCap, FastHenry, Palace and ngspice-47 in its IIC-OSIC-TOOLS tree;
+  hwde's impedance solver checked against two independent methods; KLC and
+  kicad-happy run on lite-main; a ranked gap list.
