@@ -77,7 +77,7 @@ def test_ac_coupled_follower_without_bias_resistor_is_an_error(tmp_path):
     vs, facts = found(netlist(tmp_path, *follower()))
     (v,) = vs
     assert v["kind"] == "opamp_input_no_dc_path" and v["severity"] == "error"
-    assert v["net"] == "/IN_P" and v["refs"] == ["U1", "C1"]
+    assert v["net"] == "/IN_P" and sorted(v["refs"]) == ["C1", "U1"]
     assert "C1" in v["msg"] and "resistor" in v["msg"]
     # + and - both checked; - sits on the output and has its path
     assert facts["amp_inputs_dc_checked"] == 2

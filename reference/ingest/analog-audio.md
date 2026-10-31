@@ -153,3 +153,19 @@ bead + cap resonance (D7). endolith/waveform_analysis is a THD+N reference
 with a flattop window. JYKlabs Audio-Measurement-Tools covers AES17's
 22 kHz band. SKiDL ERC and kicad-happy are prior art for topology checks
 like A1. KiCad custom DRC rules could express G1.
+
+## What needs hardware to trust (hw-lab coverage)
+
+The calcs agree with ngspice, but ngspice only checks the formula, not the
+part models or the board. These need measurements (hw-lab docs/coverage.md):
+
+- Class-D filter Q into a real speaker, open-load peaking, pop/click and
+  THD+N at 1 W/10 W: **hifi-receiver-2's core** (coverage row 30), measured
+  with a sound card and dummy load once it is built. `classd_lc` and
+  `classd_power` are compared against that.
+- Op-amp input noise, bias-return drift, cap-load ringing (Riso sweep) and
+  SAR charge-bucket settling (C1): **precision-daq** (row 13). Its
+  split-ground study also settles G2 for that board.
+- Line-out build-out against a 10 m cable (A6) and balanced-input CMRR
+  against source imbalance (L3): no lab board has a row for these yet. They
+  fit on precision-daq as a spare op-amp channel with a jack.

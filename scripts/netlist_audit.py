@@ -484,7 +484,7 @@ _AMP_LIB_RE = re.compile(r"^(Amplifier_Operational|Amplifier_Instrumentation|"
                          r"Comparator)$")
 _AMP_VALUE_RE = re.compile(
     r"^(NE55[3-4]\d|OPA\d|TL0[678]\d|LM(358|324|833|4562|6171|6172|2904|"
-    r"2902|393|339|311)|MCP6\d|TLV[234689]\d|LMV\d|ADA4\d|AD8[0-6]\d\d|RC4558|"
+    r"2902|393|339|311)|MCP6\d|TLV[23469]\d|TLV8[5-9]\d|LMV\d|ADA4\d|AD8[0-6]\d\d|RC4558|"
     r"NJM\d|LT1\d\d\d|LTC6\d|INA\d)", re.I)
 # two-terminal parts that carry DC from one net to the other
 _DC_PASS_RE = re.compile(r"^(R|L|FB|NT|JP|SB|F|RV)\d")
