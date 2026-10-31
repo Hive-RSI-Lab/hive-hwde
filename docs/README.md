@@ -1,7 +1,9 @@
 # Designing a board with hwde in the Hive
 
 hwde is the Hive's KiCad design module. It takes a board from a written
-brief to checked KiCad files and a JLCPCB fab package. The way through is
+brief to checked KiCad files and a JLCPCB fab package, or another
+vendor's ([vendors.md](vendors.md): PCBWay, OSH Park, Aisler, Eurocircuits,
+Seeed Fusion; their rules, files, sourcing and prices). The way through is
 [playbook.md](playbook.md); the agent roles are in [`agents/`](../agents/),
 the scripts in [`scripts/`](../scripts/) and their tables, recipes and
 knowledge in [`reference/`](../reference/). It began as ihsan-sa/hwde's Claude
@@ -79,6 +81,20 @@ page covers how an agent runs it inside the Hive.
   of each high-current run in `power_paths`; `hwde soa_check` gives a FET's
   Tj for a written margin. These are what hifi-receiver-2's first-spin
   power review did by hand (its docs/review-2/power.md).
+- A board with analog or audio stages gets its hand numbers from
+  `hwde analog_calc <calc>`: stage noise (`noise`), line levels and
+  bridging (`level`, `bridge`, `damping`), coupling corners (`hpf`),
+  slew (`fpbw`), op-amp phase margin into a cap load and the Riso that
+  fixes it (`riso`), class-D LC filters and output power (`lc`,
+  `classd`), and a SAR ADC's charge-bucket settling (`sar`).
+  `hwde analog_verify` re-proves each one against ngspice.
+  netlist_audit errors on an op-amp/comparator/in-amp input with no DC
+  path for its bias current (`opamp_input_no_dc_path`), and warns on one
+  held only by a connector and on a reverse-biased electrolytic
+  (`polarized_cap_reverse`). Which rules of thumb held up, which are
+  folklore, and the ngspice traps (`x^3` drops the sign; THD needs a
+  max timestep) are in
+  [reference/ingest/analog-audio.md](../reference/ingest/analog-audio.md).
 - A board that runs firmware gets `hwde check_fw --board boards/<name>`,
   run at every schematic change, not first at bring-up. It runs hive-fw's
   `fw constraints` (with `fw pins` inside it) for each firmware target whose
@@ -371,6 +387,51 @@ ripped, one Freerouting rung left 54 unconnected and 16 DRC errors.
 no DRC errors. What remained was a 0.4 mm-pitch QFN pocket walled in by a
 VBUS_IN track and a 77 mm long haul.
 
+## Boards from other EDA tools, and back
+
+`hwde eda_io import <file> --out <dir>` brings in a board from Altium
+(.PcbDoc), Allegro/OrCAD PCB Editor (a Fabmaster extract .txt), Eagle and
+Fusion's EAGLE export (.brd), EasyEDA Std (.json) and PADS (.asc) through
+KiCad's own importer. KiCad says "Successfully saved" even when it skips a
+layer, and its JSON report keeps `warnings: []`. So eda_io reads the source
+file itself (`scripts/lib/edasrc.py`; the Altium reader is a small
+compound-file reader, `lib/cfb.py`) and compares it with the import: copper
+objects per layer, parts by reference, nets by name, vias, the outline. It
+also refills the zones, runs DRC at the imported rules, and writes
+`losses.md`: **Lost** (copper, parts or the outline, exit 1), **Check**
+(renames, unrouted, netless pads, layers with drawings that were dropped)
+and **Note**, then what the path never carries. Then `hwde intake --source
+<dir>` makes it a workspace. It lands at P6/P8 with no schematic:
+kicad-cli has no schematic importer, so the schematic comes in through
+Eeschema's GUI importer or is redrawn.
+
+On KiCad's own QA boards with KiCad 10.0.6:
+
+- Altium 4 and 6 layers, Eagle, Allegro 4 layers, EasyEDA Std 4 layers and
+  PADS all import. The 14 to 16 Altium "Internal Plane N" and Allegro
+  subclasses KiCad skips are empty in the source, so they're a note.
+  Allegro's 16 drawing layers (fab notes, dimensions, DXF imports) are gone
+  and named.
+- Eagle: KiCad writes the parts' name texts on a layer called `UNDEFINED`,
+  then refuses to load its own board. eda_io moves them to Cmts.User and
+  says so. It renames a part with no number (`PWR` -> `PWR0`).
+- EasyEDA Pro (.epro) crashes kicad-cli (`bad_function_call`). Export
+  Altium from EasyEDA Pro instead. Allegro's binary .brd and OrCAD Capture
+  have no importer at all. eda_io says so and exits 2.
+
+`hwde eda_io export <board>.kicad_pcb --to altium,allegro,orcad,pads,eagle,fusion,easyeda,neutral`
+writes what each tool reads: the KiCad project (Altium's Import Wizard,
+EasyEDA), IPC-2581 and ODB++ (Allegro/OrCAD, PADS, CAM), Allegro Telesis,
+OrCAD and PADS netlists, GenCAD, IPC-D-356 and STEP (`--step`). It reads the
+IPC-2581 and ODB++ back and checks every part, net and copper layer is in
+them. The netlists are checked against the board's nets. Per target,
+`losses.md` says how to bring it in and what doesn't carry. Rules never
+carry. Allegro/PADS need their own footprints by name. Eagle and Fusion
+Electronics have no editable path from anything KiCad writes, so only
+IPC-2581 and STEP go. None of those other tools runs here, so the steps on
+their side are their makers' documented imports, not tested. `hwde eda_io
+formats` prints the table.
+
 ## What it never does
 
 It never orders or pays. P10 (quote, order, payment) is the person's: stop
@@ -408,7 +469,8 @@ for what each stage did and `LEARNINGS.md` for what it taught.
 ## Ingestion notes
 
 What each EE ingestion run found, with every rule marked verified, disputed
-or folklore, and its ranked gap list: [dfm-assembly](../reference/ingest/dfm-assembly.md).
+or folklore, and its ranked gap list: [dfm-assembly](../reference/ingest/dfm-assembly.md),
+[analog-audio](../reference/ingest/analog-audio.md).
 `hwde check_paste --pcb <board> [--stencil-mm 0.10]` (stencil area ratio,
 exposed-pad paste) came from it; run it in the DFM/assembly review. It is
 not in the verify suite yet (task 261031-013753-d3238414d5).

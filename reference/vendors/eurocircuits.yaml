@@ -1,0 +1,155 @@
+# eurocircuits.yaml - Eurocircuits (BE/HU/DE): boards and assembly, the
+# STANDARD pool service.
+#
+# Copied 2026-10-31 from Eurocircuits' design guidelines and service pages
+# (meta.source_urls). All lengths mm. Eurocircuits grades a board by
+# "pattern class" (track, gap, annular ring) and "drill class" (smallest
+# tool); the classification table (eC-classification Table, 07/05/2024) and
+# the base-copper table set the floors. A finer class is pooled at a higher
+# price, so these rows take the finest class STANDARD pool builds for each
+# copper weight, and the stricter figure where two pages differ:
+# - track/gap: the base-copper table gives 0.125 for 35 um and 0.200 for
+#   70 um foil; the STANDARD pool page's "0.100 pooling" applies only to
+#   thinner foil (12/18 um).
+# - finished hole: drill class D (0.15 PTH, service S) is taken; the pool
+#   page also lists 0.10 (class E) at a higher price.
+# - annular ring: the pool page's pad rule "PTH finished hole + 0.300"
+#   (0.15 ring) is stricter than class 7's 0.125.
+# - copper to edge 0.25 routed outer layers (0.40 inner, 0.45 V-cut).
+# - mask dam: LDI green 0.075 (MSM); other colours / white mask more.
+# - silk line width 0.10.
+# - Hole-to-hole and hole-to-edge are not published; left out.
+# - No price table (the calculator prices live): quote_only.
+# Rotation: Eurocircuits uses the IEC 61188-7 zero (pin 1 bottom-left),
+# not KiCad's IPC-7351 (pin 1 top-left), so KiCad rotations of multi-pin
+# parts can be 90 degrees off their convention; its CPL editor shows each
+# placement for review before the order. Uploading the .kicad_pcb lets it
+# extract the CPL itself; the BOM must be a spreadsheet.
+
+meta:
+  id: eurocircuits
+  name: Eurocircuits
+  country: BE
+  services: {pcb: true, pcba: true, stencil: true}
+  quote_url: "https://www.eurocircuits.com/pcb-calculator/"
+  source_urls:
+    - https://www.eurocircuits.com/services/standard-pool/
+    - https://www.eurocircuits.com/technical-guidelines/pcb-design-guidelines/classification/
+    - https://www.eurocircuits.com/technical-guidelines/pcb-design-guidelines/copper-layers/
+    - https://www.eurocircuits.com/copper-and-the-board-edge/
+    - https://www.eurocircuits.com/technical-guidelines/pcb-design-guidelines/soldermask/
+    - https://www.eurocircuits.com/technical-guidelines/pcb-design-guidelines/legend-print/
+    - https://www.eurocircuits.com/services/pcb-assembly-capabilities/
+    - https://www.eurocircuits.com/user-guides/visualizer-user-guides/upload-bom-data-user-guide/
+    - https://www.eurocircuits.com/user-guides/visualizer-user-guides/upload-cpl-data-user-guide/
+    - https://www.eurocircuits.com/technical-guidelines/pcb-assembly-guidelines/defining-pin-1-zero-point-rotation/
+  verified: "2026-10-31"
+  order: {method: web_upload, api: false,
+          notes: "Upload in the PCB calculator; BOM (xlsx/csv) and CPL in the Visualizer."}
+
+board:
+  layers: [1, 2, 4, 6, 8, 10, 12, 14, 16]   # pooled to 8, non-pooled 10-16
+  max_size_mm: [500, 425]                   # multilayer (0-2L: 580 x 425)
+  min_size_mm: [5, 5]
+  copper_oz_outer: [0.5, 1, 2]
+  thickness_options_mm: [1.0, 1.55, 2.4]    # pooled; others non-pooled
+  surface_finish: [ENIG, "LeadFree HASL", "Immersion Silver"]
+  solder_mask_colors: [green, black, red, blue, white]
+  castellated: true                         # "Plated Holes on Edge" option
+  blind_buried_vias: true                   # non-pooled specials
+
+design_rules:
+  2layer_1oz:
+    min_trace_width_mm: 0.125
+    min_clearance_mm: 0.125
+    min_via_drill_mm: 0.15
+    min_hole_diameter_mm: 0.15
+    min_annular_ring_mm: 0.15
+    min_via_diameter_mm: 0.45
+    min_copper_to_edge_mm: 0.25
+    min_silk_width_mm: 0.10
+    min_solder_mask_dam_mm: 0.075
+    outer_copper_oz: 1.0
+    inner_copper_oz: 0.0
+  2layer_2oz:
+    min_trace_width_mm: 0.2
+    min_clearance_mm: 0.2
+    min_via_drill_mm: 0.15
+    min_hole_diameter_mm: 0.15
+    min_annular_ring_mm: 0.15
+    min_via_diameter_mm: 0.45
+    min_copper_to_edge_mm: 0.25
+    min_silk_width_mm: 0.10
+    min_solder_mask_dam_mm: 0.075
+    outer_copper_oz: 2.0
+    inner_copper_oz: 0.0
+  4layer_1oz:
+    min_trace_width_mm: 0.125
+    min_clearance_mm: 0.125
+    min_via_drill_mm: 0.15
+    min_hole_diameter_mm: 0.15
+    min_annular_ring_mm: 0.15       # inner pads need finished hole + 0.350 (0.175 ring)
+    min_via_diameter_mm: 0.45
+    min_copper_to_edge_mm: 0.25     # inner layers 0.40 (pulled back by eC anyway)
+    min_silk_width_mm: 0.10
+    min_solder_mask_dam_mm: 0.075
+    outer_copper_oz: 1.0
+    inner_copper_oz: 1.0
+  6layer_1oz:
+    min_trace_width_mm: 0.125
+    min_clearance_mm: 0.125
+    min_via_drill_mm: 0.15
+    min_hole_diameter_mm: 0.15
+    min_annular_ring_mm: 0.15
+    min_via_diameter_mm: 0.45
+    min_copper_to_edge_mm: 0.25
+    min_silk_width_mm: 0.10
+    min_solder_mask_dam_mm: 0.075
+    outer_copper_oz: 1.0
+    inner_copper_oz: 1.0
+  8layer_1oz:
+    min_trace_width_mm: 0.125
+    min_clearance_mm: 0.125
+    min_via_drill_mm: 0.15
+    min_hole_diameter_mm: 0.15
+    min_annular_ring_mm: 0.15
+    min_via_diameter_mm: 0.45
+    min_copper_to_edge_mm: 0.25
+    min_silk_width_mm: 0.10
+    min_solder_mask_dam_mm: 0.075
+    outer_copper_oz: 1.0
+    inner_copper_oz: 1.0
+
+assembly:
+  sides: [top, bottom]
+  min_board_mm: [5, 5]
+  max_board_mm: [340, 440]
+  min_pitch_mm: 0.35             # QFP; BGA 0.35 (<= 9 pins) / 0.40
+  smallest_passive: "0201"
+  bga: true
+  sourcing: turnkey              # "All components sourced by Eurocircuits"
+  part_number: mpn
+  distributors: [farnell, rs, mouser, digikey]
+  consigned: true                # only parts eC can't source
+  rotation: kicad
+  zero_orientation: "IEC 61188-7 (pin 1 bottom-left), not KiCad's IPC-7351"
+  bom:
+    columns: [Qty, Value, Designator, Manufacturer, MPN, Package, Description]
+  cpl:
+    columns: [Designator, Comment, Layer, Footprint, "Center-X(mm)", "Center-Y(mm)", Rotation, Description]
+    side_labels: {top: TopLayer, bottom: BottomLayer}
+
+files:
+  gerber: RS-274X
+  drill: excellon
+  archive: zip
+  accepts_native: [kicad_pcb]    # CPL extracted from it; the BOM never is
+  notes: "Only boards Eurocircuits makes are assembled there."
+
+pricing:
+  model: quote_only
+  currency: EUR
+
+lead_time_days:                  # working days, standard delivery
+  pcb: {2: 5, 4: 5, 6: 5, 8: 5}
+  assembly_additional: 5

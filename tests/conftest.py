@@ -93,6 +93,8 @@ SLOW = {
     "tests/test_intake.py::test_no_upgrade_mixed_versions_is_refused_before_materializing": _INTAKE,
     "tests/test_intake.py::test_hermetic_intake_builds_a_valid_workspace": _INTAKE,
     "tests/test_intake.py::test_board_only_project_imports_with_a_no_schematic_warning": _INTAKE,
+    "tests/test_eda_io.py::test_import_eagle_end_to_end": _TOOLS,
+    "tests/test_eda_io.py::test_export_round_trips_parts_and_nets": _TOOLS,
 }
 
 
