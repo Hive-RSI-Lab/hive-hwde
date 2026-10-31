@@ -93,6 +93,48 @@ def jlc_layer_list(pcb: Path) -> list[str]:
     return copper_layers(pcb) + _NONCOPPER
 
 
+def board_stackup_entry(pcb: Path) -> tuple[str, dict | None]:
+    """(material family, the stackups.yaml entry the board was built from).
+    The entry is the available one of that family whose dielectric
+    thicknesses match the board's stackup block; None when none does."""
+    import yaml
+    import fabmaterial
+    fam = fabmaterial.board_family(pcb)
+    diel = [d["thickness_mm"] or 0.0 for d in fabmaterial.board_dielectrics(pcb)]
+    stacks = yaml.safe_load((SCRIPTS.parent / "reference" / "stackups.yaml")
+                            .read_text(encoding="utf-8"))
+    for name, st in (stacks.get("stackups") or {}).items():
+        if st.get("available") is False \
+                or st.get("material_family", fabmaterial.FR4) != fam:
+            continue
+        mine = [float(ly["thickness_mm"]) for ly in st["stack"]
+                if ly["type"] != "copper"]
+        if len(mine) == len(diel) and all(
+                abs(a - b) < 1e-4 for a, b in zip(mine, diel)):
+            return fam, {"name": name, **st}
+    return fam, None
+
+
+def write_order_notes(pcb: Path, out_dir: Path) -> Path | None:
+    """fab/ORDER-NOTES.md for a board off FR-4: the material, thickness,
+    finish and solved lines to select on JLC's quote page, so the board
+    built is the board designed (SI-09). None on FR-4 (nothing to choose
+    beyond the defaults order_submit already lists)."""
+    import fabmaterial
+    fam, entry = board_stackup_entry(pcb)
+    if fam == fabmaterial.FR4 or fabmaterial.not_offered(fam):
+        return None
+    text = fabmaterial.order_notes(
+        fam, entry, pcb.stem,
+        impedance=(entry or {}).get("controlled_impedance"))
+    if entry is None:
+        text += ("\n> The board's stackup block matches no stackups.yaml "
+                 "entry: check the thickness by hand.\n")
+    path = out_dir / "ORDER-NOTES.md"
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
 def sha256(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as fh:
@@ -126,6 +168,8 @@ def run(pcb: Path, out_dir: Path, name: str | None = None,
 
     # Files that belong in the fab zip: everything in gerber_dir (gerbers +
     # job + drill) - NOT the pos file (CPL is a separate JLC upload).
+    notes = write_order_notes(pcb, out_dir)
+
     fab_files = sorted(f for f in gerber_dir.iterdir() if f.is_file())
     files_meta = [{"name": f.name, "sha256": sha256(f), "bytes": f.stat().st_size}
                   for f in fab_files]
@@ -153,6 +197,7 @@ def run(pcb: Path, out_dir: Path, name: str | None = None,
         "files": files_meta,
         "gerber_zip": str(zip_path) if zip_path else None,
         "gerber_zip_sha256": zip_sha,
+        **({"order_notes": str(notes)} if notes else {}),
     }
 
 

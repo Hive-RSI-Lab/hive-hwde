@@ -70,6 +70,12 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
   and now REFUSES rather than defaulting to 1 oz. If it refuses, fix the doc
   (name a stackup from `reference/stackups.yaml`) - do not paper over it
   with `--copper-oz` unless the human decided the weight.
+- The laminate comes from the BOARD's stackup block (lib/fabmaterial.py).
+  A RO4350B board is JLC's high-frequency product: order_quote prices it on
+  that line (ENIG/green only), order_submit sends plateType 5 and refuses
+  options JLC doesn't sell on it, and fab_export writes `fab/ORDER-NOTES.md`
+  with what to pick on the quote page. A quote priced on another laminate
+  makes the package `not_order_ready` (MATERIAL MISMATCH) - re-quote.
 - Any discrepancy (stale gerbers vs a re-run, BOM drift) = stop and report.
 
 ## Output contract (end your final message with exactly this block)
