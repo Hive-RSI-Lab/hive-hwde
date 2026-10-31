@@ -128,6 +128,10 @@ def command(tool: str, args: list[str], root: Path | None = None) -> tuple[list[
         "OMPI_MCA_pml": "ob1",
         "OMPI_MCA_plm": "isolated",
         "OMP_NUM_THREADS": env.get("OMP_NUM_THREADS", "4"),
+        # openblas-pthread's pool busy-waits; on a loaded machine Xyce's
+        # 4 s RC deck ran past 300 s with it (load 244, 10-30). hwde's decks
+        # are small, so one BLAS thread costs nothing.
+        "OPENBLAS_NUM_THREADS": env.get("OPENBLAS_NUM_THREADS", "1"),
         # ngspice looks for its code models and init file under its prefix.
         "SPICE_LIB_DIR": str(t / "foss/tools/ngspice/share/ngspice"),
         "SPICE_SCRIPTS": str(t / "foss/tools/ngspice/share/ngspice/scripts"),

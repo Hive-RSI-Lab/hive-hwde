@@ -68,6 +68,7 @@ _TOOLS = "runs the live toolchain (kicad-cli, KiCad's python, java)"
 _BOARD = "runs a whole fixture board's checks or bench stage"
 _INTAKE = "materializes a whole KiCad project through intake"
 SLOW = {
+    "tests/test_solvers.py::test_live_solver_validates": "runs ngspice, Xyce, FastHenry, FasterCap from the IIC-OSIC-TOOLS tree; machine-load sensitive",
     "tests/test_solvers.py::test_live_palace_validates": "runs Palace (FEM eigenmode) on the IIC-OSIC-TOOLS tree",
     "tests/test_solvers.py::test_live_openems_validates": "runs an openEMS full-wave solve (minutes)",
     "tests/test_check_env.py::test_passes_on_dev_machine": _TOOLS,

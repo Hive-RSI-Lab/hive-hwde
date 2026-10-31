@@ -67,6 +67,10 @@ machine.
 - **Heavy.** `bin/hwde` runs `sim_solve` under `hive heavy`, one heavy
   job on the machine at a time. Palace and the thermal cases take seconds;
   openEMS takes minutes.
+- **Load.** Xyce loads Trilinos's large shared libraries. With the disk
+  saturated (load 244, 10-30) its 4 s RC deck took 290 s, almost all of it
+  spent waiting, not computing. Each case allows 20 minutes, and OpenBLAS runs one
+  thread (its pool busy-waits). The live-solver tests are in test-slow.
 - ngspice warns that its code models (`tlines.cm` ...) are not loaded:
   the tree's `spinit` names `/foss/tools/...`. Plain SPICE decks don't need
   them. A deck that does (XSPICE, OSDI/Verilog-A) needs them loaded first.

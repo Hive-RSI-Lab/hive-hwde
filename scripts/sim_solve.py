@@ -105,7 +105,7 @@ def case_circuit_ngspice(work: Path) -> dict:
             ".control\ntran 1u 2m\nwrdata tran.txt v(out)\n"
             "ac lin 3 500 1500\nwrdata ac.txt vm(out)\n.endc\n.end\n")
     (work / "rc.cir").write_text(deck)
-    r = solvers.run("ngspice", ["-b", "rc.cir"], cwd=work, timeout=300)
+    r = solvers.run("ngspice", ["-b", "rc.cir"], cwd=work, timeout=1200)
     if not (work / "ac.txt").exists():
         raise solvers.SolverError(f"ngspice wrote nothing: {r.stderr[-300:]}")
 
@@ -134,7 +134,7 @@ def case_circuit_xyce(work: Path) -> dict:
     (work / "ac.cir").write_text("* hwde rc ac\n" + _rc_body() +
                                  ".ac lin 3 500 1500\n.print ac format=csv file=ac.csv vm(out)\n.end\n")
     for deck in ("tran.cir", "ac.cir"):
-        r = solvers.run("xyce", [deck], cwd=work, timeout=300)
+        r = solvers.run("xyce", [deck], cwd=work, timeout=1200)
         if not r.ok:
             raise solvers.SolverError(f"Xyce {deck}: {(r.stdout + r.stderr)[-300:]}")
     fa, ha = _xyce_csv(work / "ac.csv")
@@ -202,7 +202,7 @@ def case_palace_cavity(work: Path) -> dict:
     a, b, d = CAV
     ref = em.cavity_modes(a, b, d, 4)
     (work / "box.geo").write_text(em.box_mesh_geo(a, b, d, size=6.0))
-    r = solvers.run("gmsh", ["box.geo", "-3", "-o", "box.msh"], cwd=work, timeout=300)
+    r = solvers.run("gmsh", ["box.geo", "-3", "-o", "box.msh"], cwd=work, timeout=1200)
     if not (work / "box.msh").exists():
         raise solvers.SolverError(f"gmsh: {(r.stdout + r.stderr)[-300:]}")
     (work / "cavity.json").write_text(json.dumps(
@@ -226,7 +226,7 @@ BAR = (10.0, 1.0, 0.035)
 def case_fasthenry_bar(work: Path) -> dict:
     l, w, t = BAR
     (work / "bar.inp").write_text(em.fasthenry_bar(l, w, t, f=1e3, nw=3))
-    r = solvers.run("fasthenry", ["bar.inp"], cwd=work, timeout=300)
+    r = solvers.run("fasthenry", ["bar.inp"], cwd=work, timeout=1200)
     if not (work / "Zc.mat").exists():
         raise solvers.SolverError(f"FastHenry: {(r.stdout + r.stderr)[-300:]}")
     f, z = em.read_zc(work / "Zc.mat")
@@ -241,7 +241,7 @@ def case_fasthenry_bar(work: Path) -> dict:
 def case_fastercap_cube(work: Path) -> dict:
     a = 1.0
     (work / "cube.txt").write_text(em.fastercap_cube(a, 4))
-    r = solvers.run("fastercap", ["-b", "cube.txt", "-a0.001"], cwd=work, timeout=600)
+    r = solvers.run("fastercap", ["-b", "cube.txt", "-a0.001"], cwd=work, timeout=1200)
     got = em.read_fastercap(r.stdout)
     ref = em.CUBE_C * 4 * math.pi * em.EPS0 * a * 1e-3
     return _case("fastercap_cube", "fastercap", "C (F)", got, ref, 1.5,
