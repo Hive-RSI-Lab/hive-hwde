@@ -876,11 +876,11 @@ modes:
   shows: 1206 PPTC cannot hold 1 A at 30 V
   catch: derating tables in parts check
   coverage:
-    script: '-'
-    rule: '-'
-    level: L0
-  target_level: L1
-  gap: none
+    script: check_ratings,sim_board
+    rule: rating_over_current,rating_over_voltage,rating_over_temperature,resistor_overpower,resistor_overvoltage
+    level: L2
+  target_level: L2
+  gap: PPTC and fuse rerating use typical tables (Bourns/Littelfuse), not the part's own; DC-bias and tolerance derating live in mlcc_dcbias and sim_board
   hit_on:
   - CH224 boards
   sources:

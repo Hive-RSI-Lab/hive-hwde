@@ -73,9 +73,42 @@ def _nearest_qty_price(table: dict, qty: int) -> tuple[float, int]:
     return float(table[top]) * qty / top, top
 
 
+AREA_UNIT_MM2 = {"mm2": 1.0, "cm2": 100.0, "dm2": 10000.0, "in2": 645.16}
+
+
+def area_cost(pricing: dict, layers: int, qty: int, w: float,
+              h: float) -> dict:
+    """A per-area price (pricing.model per_area, docs/vendors.md): rate per
+    unit of board area for one set of `copies` boards (or per board with
+    per: board), plus a per-order setup, never under min_price."""
+    rate = pricing.get("rate") or {}
+    r = rate.get(layers, rate.get(str(layers)))
+    if r is None:
+        raise ValueError(f"no per-area rate for {layers}-layer boards")
+    unit = pricing.get("unit", "in2")
+    if unit not in AREA_UNIT_MM2:
+        raise ValueError(f"unknown area unit {unit!r}")
+    area = w * h / AREA_UNIT_MM2[unit]
+    copies = max(1, int(pricing.get("copies", 1)))
+    multiples = -(-qty // copies)
+    # per: set (default) - the rate buys one set of `copies` boards (OSH
+    # Park); per: board - each board pays it, sold in sets of `copies`
+    # (Aisler)
+    per_board = pricing.get("per", "set") == "board"
+    boards = float(r) * area * multiples * (copies if per_board else 1)
+    setup = float(pricing.get("setup", 0.0))
+    total = max(boards + setup, float(pricing.get("min_price", 0.0)))
+    return {"base": round(boards, 2), "base_at_qty": multiples * copies,
+            "setup": round(setup, 2), "area": round(area, 3),
+            "area_unit": unit, "oversize": 0.0, "options": 0.0,
+            "total": round(total, 2)}
+
+
 def pcb_cost(pricing: dict, layers: int, qty: int, w: float, h: float,
              finish: str, color: str, thickness: float = 1.6,
              castellated: bool = False) -> dict:
+    if pricing.get("model") == "per_area":
+        return area_cost(pricing, layers, qty, w, h)
     pcb = pricing["pcb"]
     base_table = pcb["base"].get(layers) or pcb["base"].get(str(layers))
     if base_table is None:
@@ -203,8 +236,30 @@ def _assembly_counts(pcb: Path,
 
 def run(pcb: Path, qtys: list[int], finishes: list[str], colors: list[str],
         assembly: bool = False, parts_json: Path | None = None,
-        pricing_path: Path | None = None, thickness: float = 1.6) -> dict:
-    pricing = load_pricing(pricing_path or PRICING)
+        pricing_path: Path | None = None, thickness: float = 1.6,
+        vendor: str | None = None) -> dict:
+    meta_v: dict = {}
+    lead_v: dict = {}
+    if vendor and not pricing_path:
+        import vendors
+        prof = vendors.load(vendor)
+        meta_v = prof["meta"]
+        lead_v = prof.get("lead_time_days") or {}
+        src_v = ("reference/" + Path(prof["pricing_file"]).name
+                 if prof.get("pricing_file")
+                 else f"reference/vendors/{vendor}.yaml")
+        pricing = prof["pricing"]
+        if pricing.get("model") == "quote_only":
+            return quote_only(pcb, prof)
+        if pricing.get("model") == "per_area":
+            # one area rate covers every finish/colour the vendor offers
+            finishes, colors = finishes[:1], colors[:1]
+            if assembly and not pricing.get("assembly"):
+                raise ValueError(f"{meta_v.get('name', vendor)} publishes no "
+                                 "assembly prices: quote it at "
+                                 f"{meta_v.get('quote_url')}")
+    else:
+        pricing = load_pricing(pricing_path or PRICING)
     w, h, area_dm2 = board_size(pcb)
     bg = geom.load_board(pcb)
     layers = len(bg.stackup.copper_layers)
@@ -234,7 +289,7 @@ def run(pcb: Path, qtys: list[int], finishes: list[str], colors: list[str],
                 matrix.append(row)
     matrix.sort(key=lambda r: (r["qty"], r["total"]))
 
-    lt = pricing.get("lead_time_days", {})
+    lt = pricing.get("lead_time_days") or lead_v
     pcb_lt = (lt.get("pcb", {}).get(layers)
               or lt.get("pcb", {}).get(str(layers)) or {})
     lead = {"pcb_days": pcb_lt,
@@ -245,7 +300,8 @@ def run(pcb: Path, qtys: list[int], finishes: list[str], colors: list[str],
     # measured estimate-vs-API bias (jlc_pricing.yaml meta.measured_vs_api):
     # surfaces the KNOWN underestimate magnitude in the artifact the human
     # reads at H5, instead of leaving it as prose in SKILL/LEARNINGS
-    disclaimer = ("Estimates from reference/jlc_pricing.yaml - NOT a quote. "
+    src = src_v if meta_v else "reference/jlc_pricing.yaml"
+    disclaimer = (f"Estimates from {src} - NOT a quote. "
                   "Confirm at the authoritative quote URL before ordering.")
     calibration = None
     mva = pricing.get("meta", {}).get("measured_vs_api")
@@ -287,9 +343,12 @@ def run(pcb: Path, qtys: list[int], finishes: list[str], colors: list[str],
         "estimated": True,
         "disclaimer": disclaimer,
         "authoritative_quote_url":
-            pricing.get("meta", {}).get("authoritative_quote_url"),
-        "pricing_verified": pricing.get("meta", {}).get("verified"),
-        "currency": pricing.get("meta", {}).get("currency", "USD"),
+            pricing.get("meta", {}).get("authoritative_quote_url")
+            or meta_v.get("quote_url"),
+        "pricing_verified": pricing.get("meta", {}).get("verified")
+        or pricing.get("verified") or meta_v.get("verified"),
+        "currency": pricing.get("meta", {}).get("currency")
+        or pricing.get("currency", "USD"),
         "spec": spec,
         "lead_time": lead,
         "matrix": matrix,
@@ -297,7 +356,26 @@ def run(pcb: Path, qtys: list[int], finishes: list[str], colors: list[str],
     }
     if calibration is not None:
         payload["calibration"] = calibration
+    if meta_v:
+        payload["vendor"] = meta_v.get("id")
     return payload
+
+
+def quote_only(pcb: Path, prof: dict) -> dict:
+    """A vendor that publishes no prices: the board's spec and where to get
+    the real number, no estimate at all."""
+    w, h, area_dm2 = board_size(pcb)
+    layers = len(geom.load_board(pcb).stackup.copper_layers)
+    meta = prof["meta"]
+    return {"script": "order_quote", "status": "quote_only",
+            "board": pcb.name, "vendor": meta["id"], "estimated": False,
+            "disclaimer": f"{meta.get('name')} publishes no price table: get "
+                          "the price from its quote page.",
+            "authoritative_quote_url": meta.get("quote_url"),
+            "spec": {"layers": layers, "width_mm": round(w, 2),
+                     "height_mm": round(h, 2),
+                     "area_dm2": round(area_dm2, 4)},
+            "matrix": [], "cheapest": None}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -314,6 +392,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="include SMT assembly in the matrix")
     ap.add_argument("--parts", help="parts.json (Basic/Extended feeder fees)")
     ap.add_argument("--pricing", help="override reference/jlc_pricing.yaml")
+    ap.add_argument("--vendor", help="price at this vendor "
+                    "(reference/vendors/<id>.yaml; default JLC)")
     ap.add_argument("--out", help="write JSON here instead of stdout")
     args = ap.parse_args(argv)
 
@@ -325,7 +405,7 @@ def main(argv: list[str] | None = None) -> int:
                   assembly=args.assembly,
                   parts_json=Path(args.parts) if args.parts else None,
                   pricing_path=Path(args.pricing) if args.pricing else None,
-                  thickness=args.thickness)
+                  thickness=args.thickness, vendor=args.vendor)
     except Exception as exc:  # noqa: BLE001
         err = {"script": "order_quote", "status": "error",
                "error": f"{type(exc).__name__}: {exc}"}

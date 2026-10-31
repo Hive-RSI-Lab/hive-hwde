@@ -167,8 +167,16 @@ Consumers per key (script -> phase):
                 "material": "PETG", "room_c": 30, "other_w": 1.4,
                 "inlet_mm2": 3300, "riser_mm2": 228, "outlet_mm2": 3300,
                 "stack_mm": 40, "floor": "feet"},
-  // the air when there is no enclosure (C); tj_max_c and ripple life use it
+  // the air when there is no enclosure (C); tj_max_c and ripple life use it,
+  // and check_ratings holds every part's operating range, resistor power
+  // (derated from 70 C to 0 at 155 C, also in sim_board), fuse rerating
+  // and PPTC hold current against it. With an enclosure and no ambient_c,
+  // check_ratings takes the box air check_thermal works out; with neither,
+  // 25 C, said so in its report's `ambient`.
   "ambient_c": 45,
+  // check_ratings: the coldest the board starts in (C); a part whose
+  // operating range starts above it is an error. Absent: not checked.
+  "ambient_min_c": -20,
 
   // check_thermal (P8): bulk-capacitor ripple current and life
   "ripple": [{"ref": "C5", "irms_a": 0.55, "rated_irms_a": 0.6,

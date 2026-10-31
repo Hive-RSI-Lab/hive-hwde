@@ -50,7 +50,7 @@ is unrouted by design), AND the written project's floors >= the fab profile.
 Emits the normalized DRC report alongside.
 
 Usage:
-  board_init.py --netlist n.net --name board --out dir --layers 4
+  board_init.py --netlist n.net --name board --out dir --layers 4|6|8|..32
                 [--copper-oz 1] [--stackup NAME]
                 [--outline auto|WxH] [--origin keep|auto|X,Y]
                 [--mounting-holes auto|N]
@@ -345,7 +345,7 @@ def stackup_freshness(stackup: dict, today: _dt.date | None = None,
     ordering owner. NOT a bench metric: age is today-dependent, and score_p5
     cherry-picks its metric fields (test-pinned)."""
     prov = (stackup or {}).get("provenance") or {}
-    if prov.get("method") != "jlc_open_api":
+    if prov.get("method") not in ("jlc_open_api", "jlc_calculator_template"):
         return None
     if not (stackup or {}).get("controlled_impedance"):
         return None
@@ -355,6 +355,17 @@ def stackup_freshness(stackup: dict, today: _dt.date | None = None,
     warning = ("JLC template list churns (7628G vanished in <7 days) - "
                "re-probe getImpedanceTemplateSettingList before routing "
                "controlled impedance; recipe in stackups.yaml header")
+    if prov.get("method") == "jlc_calculator_template":
+        # Read from JLC's public calculator, never from the order API: say
+        # so every time, not only once the date is old.
+        warning = (f"read from JLC's impedance calculator, not the order "
+                   f"API (order_api_verified: false) - re-run `hwde "
+                   f"stackup_fetch entry --name {prov.get('template_name')}` "
+                   f"and confirm the build in JLC's order form before "
+                   f"routing controlled impedance")
+        if not prov.get("order_api_verified"):
+            return {"verified": str(verified), "age_days": None,
+                    "warning": warning}
     try:
         age = (today or _dt.date.today()
                ) - _dt.date.fromisoformat(str(verified))
@@ -464,7 +475,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--netlist", required=True)
     ap.add_argument("--name", required=True, help="board basename")
     ap.add_argument("--out", required=True, help="output directory (workspace/kicad)")
-    ap.add_argument("--layers", type=int, default=4, choices=[2, 4])
+    ap.add_argument("--layers", type=int, default=4,
+                    choices=list(range(2, 34, 2)),
+                    help="copper layers, 2 to 32 (even); 6+ default to JLC's "
+                         "free/general lamination for that count "
+                         "(stackups.yaml defaults); an HDI build is "
+                         "--stackup JLCH...")
     ap.add_argument("--copper-oz", type=float,
                     help="outer copper weight, selects the jlc_capabilities "
                          "profile whose minimums are written into the "
@@ -551,6 +567,11 @@ def main(argv: list[str] | None = None) -> int:
 
         stacks = yaml.safe_load(STACKUP_FILE.read_text(encoding="utf-8"))
         stk_name = args.stackup or stacks["defaults"].get(args.layers)
+        if stk_name is None:
+            raise RuntimeError(
+                f"no default {args.layers}-layer stackup in stackups.yaml: "
+                f"add JLC's with `hwde stackup_fetch list --prefix "
+                f"JLC{args.layers:02d}` / `entry --name ...` and pass --stackup")
         stackup = stacks["stackups"].get(stk_name)
         if stackup is None:
             raise RuntimeError(f"stackup {stk_name!r} not in stackups.yaml")

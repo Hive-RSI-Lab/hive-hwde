@@ -11,3 +11,13 @@ The person, hive-hwde chat 2026-10-28 10:18: "Also yes you need to test how well
 The person, 2026-10-28 22:09 (relayed verbatim by lead:hifi-receiver-2, via task 261028-184258-7c20a7aa63): "But like it needs to like definitely work. Like i cant have no like maybe maybe not. The hive needs to produce boards that WILL work, with as many thorough engineering checks/reviews and writeups as needed. Like not to the point of diminishing returns cuz everything has certain margin. But thats the point of the RSI on project/module level. Through the design process,deficiencies and gaps are identified, new tools built, ideas are had by agents, new stuff gets devised and checked. All dynamic"
 
 The person, hive-hwde chat 2026-10-29 17:53Z (13:53 local): "ok cool. There is no "done" really. It always needs to keep getting better. New tools, more accurate tools, more types of simulation, cheaper boarrd design, faster board design, more accurate design. RSI in this case has no bound. We can add new techniology support, more layers, more advanced routing, etc. Everything is on the table."
+
+The person, hive-hwde chat 2026-10-30 21:16 local: "search for a bunch of good EE resources... separate fact from fiction... Dont blindly trust everything u find out there"
+
+The person, hive-hwde chat 2026-10-30 21:19 local: "this needs to span EVERYTHING... a recursive search of all of hardware/ee engineering to develop tools for everything -- even beyond this project"
+
+The person, hive-hwde chat 2026-10-30 21:24 local: "ALl needs to be developped recursively in parallel"
+
+The person, hive-hwde chat 2026-10-30 21:31 local: double-sided boards, more layers, other EDAs, and vendors beyond JLC.
+
+The person, hive-hwde chat 2026-10-30 21:34 local: "The goal is building the literal oracle of hardware engineering. A modules that knows everything, self improves, can learn abything, and that swarms of agents can interact with to collaborate on a ton of boards and do rlly complicated work super fast"
