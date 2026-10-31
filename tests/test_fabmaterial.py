@@ -276,6 +276,14 @@ def test_rogers_quote_prices_the_hf_line_and_its_options(tmp_path):
     assert p["plateType"] == 5 and p["surfaceFinish"] == 2
 
 
+def test_rogers_quote_at_another_vendor_is_refused(tmp_path):
+    # the HF line is JLC's; a per-area vendor table must not price it as FR-4
+    pcb = _board(tmp_path, RO)
+    with pytest.raises(ValueError, match="high-frequency"):
+        order_quote.run(pcb, [5], ["ENIG"], ["green"], vendor="aisler")
+    q = order_quote.run(pcb, [5], ["ENIG"], ["green"], vendor="jlcpcb")
+    assert q["spec"]["material"] == "ro4350b"
+
 def test_order_notes_name_the_material_and_the_solved_lines(tmp_path):
     pcb = _board(tmp_path, RO)
     path = fab_export.write_order_notes(pcb, tmp_path)

@@ -281,6 +281,13 @@ def run(pcb: Path, qtys: list[int], finishes: list[str], colors: list[str],
     why = fabmaterial.not_offered(material)
     if why:
         raise ValueError(f"board laminate {material}: {why}")
+    if material != fabmaterial.FR4 and meta_v \
+            and meta_v.get("id") not in (None, "jlcpcb"):
+        # the HF rows, options and price line are JLC's; another vendor's
+        # FR-4 table would quietly price a Rogers board as FR-4
+        raise ValueError(f"board laminate {material}: only JLC's "
+                         "high-frequency line is encoded; quote it at "
+                         f"{meta_v.get('quote_url') or meta_v.get('id')}")
     if material != fabmaterial.FR4:
         mrow = fabmaterial.row(material)
         allowed_f = [str(f) for f in mrow.get("surface_finish") or []]
