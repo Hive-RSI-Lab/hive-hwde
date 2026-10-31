@@ -2,7 +2,9 @@
 
 A pin sits on a net whose voltage is above the pin's absolute-maximum rating in the part's
 datasheet extraction - a 3.6 V-max MCU input on a 5 V rail, an EN pin wired straight to a
-24 V input, a 6.3 V capacitor across 12 V. When the bound is relative (VDD+0.3), the message
+24 V input, a 6.3 V capacitor across 12 V, a chip resistor with more across it than its
+limiting element voltage (an 0402 bleeder on 60 V: Umax 50 V, D/CRCW e3), a fuse or PPTC
+whose voltage rating is under the rail it must hold off once it opens. When the bound is relative (VDD+0.3), the message
 says "input above supply": the pin sees more than its own supply allows. No DRC sees this;
 it is a respin.
 
@@ -32,9 +34,11 @@ it is a respin.
 2. The signal must come from the higher rail: a resistor divider for slow inputs, a series
    resistor plus the datasheet's allowed clamp current, or a level shifter for fast or
    bidirectional lines (I2C: pull up to the lower rail instead).
-3. A capacitor or other passive under-rated: pick the next voltage rating up (derate
+3. A resistor over its Umax: a bigger chip (0805 150 V, 1206 200 V, 2512 500 V) or a
+   string of resistors in series sharing the volts.
+4. A capacitor or other passive under-rated: pick the next voltage rating up (derate
    ceramics by at least 2x at DC bias) through the part-sourcer.
-4. The part cannot take the rail at all: re-source a part rated for it.
+5. The part cannot take the rail at all: re-source a part rated for it.
 After P5 any added part is board surgery - see reference/recipes/add-part.md.
 
 ## Do not
