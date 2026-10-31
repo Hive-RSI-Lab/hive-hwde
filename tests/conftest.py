@@ -71,6 +71,7 @@ SLOW = {
     "tests/test_solvers.py::test_live_solver_validates": "runs ngspice, Xyce, FastHenry, FasterCap from the IIC-OSIC-TOOLS tree; machine-load sensitive",
     "tests/test_solvers.py::test_live_palace_validates": "runs Palace (FEM eigenmode) on the IIC-OSIC-TOOLS tree",
     "tests/test_solvers.py::test_live_openems_validates": "runs an openEMS full-wave solve (minutes)",
+    "tests/test_solvers.py::test_live_planar_thru_line_is_transparent": "runs an openEMS planar S-parameter solve (~1.5 min)",
     "tests/test_check_env.py::test_passes_on_dev_machine": _TOOLS,
     "tests/test_check_env.py::test_out_file_and_quiet": _TOOLS,
     "tests/test_check_env.py::test_unpinned_discovery_still_resolves_10x": _TOOLS,
