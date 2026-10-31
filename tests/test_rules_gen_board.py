@@ -134,3 +134,30 @@ def test_rules_gen_reads_the_board_beside_the_pro(tmp_path, capsys):
     assert [n["ref"] for n in out["necks"]] == ["U1"]
     assert rules_gen.main(["--constraints", str(c), "--layers", "2",
                            "--pcb", str(tmp_path / "nope.kicad_pcb")]) == 2
+
+
+def test_package_ratings_emit_a_footprint_scoped_clearance_after_hv():
+    """constraints package_ratings -> one courtyard-scoped clearance rule
+    per part, after the HV rules (later wins in KiCad), in the shape
+    check_creepage honours as a dru_footprint_scope waiver."""
+    import check_creepage as cc
+    cons = {"voltages": [{"net": "VIN", "voltage": 54}],
+            "package_ratings": [{"ref": "U2", "clearance_mm": 0.1,
+                                 "why": "LM5069 VIN pin at 0.5 mm pitch"}]}
+    rules, report = rules_gen.build(cons, CAP, STACKUP, False)
+    names = [r.name for r in rules]
+    pkg = names.index("aiee_pkg_rating_U2")
+    assert pkg > max(i for i, n in enumerate(names) if n.startswith("aiee_hv_"))
+    r = rules[pkg]
+    assert r.constraint == "clearance" and r.minv == 0.1
+    assert r.condition == ("A.intersectsCourtyard('U2') && "
+                           "B.intersectsCourtyard('U2')")
+    assert report["package_rules"][0]["why"].startswith("LM5069")
+    # check_creepage can read the scope back
+    for term in r.condition.split(" && "):
+        assert cc._SCOPE_TERM_RE.match(term)
+
+
+def test_package_ratings_reject_a_wildcard_ref():
+    with pytest.raises(ValueError):
+        rules_gen.package_rules({"package_ratings": [{"ref": "U*", "clearance_mm": 0.1}]})

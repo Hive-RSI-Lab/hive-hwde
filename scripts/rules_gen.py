@@ -382,6 +382,32 @@ def voltage_rules(constraints: dict, cap: dict) -> tuple[list[Rule], list[dict]]
     return rules, facts
 
 
+def package_rules(constraints: dict) -> tuple[list[Rule], list[dict]]:
+    """Footprint-scoped clearance from constraints["package_ratings"]:
+    [{"ref": "U2", "clearance_mm": 0.1, "why": "..."}].
+
+    The owner's statement that a part is rated for its nets at its own pin
+    pitch (an LM5069's 48 V pin 0.2 mm from its neighbour, a 100 V 0402's
+    0.4 mm pad gap). Emitted after the HV rules, so inside that one
+    courtyard it wins over the net-wide IPC value; the condition has
+    exactly the shape check_creepage honours as waiver_class
+    "dru_footprint_scope" (pairs stay visible as warnings at P8)."""
+    rules: list[Rule] = []
+    facts: list[dict] = []
+    for e in constraints.get("package_ratings", []) or []:
+        ref = str(e["ref"])
+        if not re.fullmatch(r"[A-Za-z_]+[0-9]+", ref):
+            raise ValueError(f"package_ratings: bad ref {ref!r}")
+        clr = float(e["clearance_mm"])
+        name = f"aiee_pkg_rating_{_safe(ref)}"
+        rules.append(Rule(name, "clearance", round(clr, 4),
+                          condition=f"A.intersectsCourtyard('{ref}') && "
+                                    f"B.intersectsCourtyard('{ref}')"))
+        facts.append({"ref": ref, "clearance_mm": round(clr, 4),
+                      "why": e.get("why", ""), "rule": name})
+    return rules, facts
+
+
 def outer_microstrip_params(stackup: dict) -> tuple[float, float, float]:
     """(h, epsilon_r, outer_copper_oz) for outer-layer microstrip from a stackup.
 
@@ -620,7 +646,9 @@ def build(constraints: dict, cap: dict, stackup: dict, baseline_only: bool,
         pairs = detect_diff_pairs(constraints)
         dr, df = diff_pair_rules(pairs, stackup)
         hr, hf = voltage_rules(constraints, cap)
-        rules += pr + nr + dr + hr
+        kr, kf = package_rules(constraints)
+        rules += pr + nr + dr + hr + kr
+        report["package_rules"] = kf
         report["necks"] = nf
         report["renamed_rules"] = unique_rule_names(rules)
         classes, patterns = net_classes(constraints, pf, df, cap, hf)
