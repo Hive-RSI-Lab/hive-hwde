@@ -91,7 +91,8 @@ def test_stackups_carry_verification_provenance():
         assert "available" in s, f"{name}: no availability flag"
         prov = s.get("provenance")
         assert isinstance(prov, dict), f"{name}: no provenance block"
-        assert prov.get("method") in {"jlc_open_api", "vendor_page", "none"}, \
+        assert prov.get("method") in {"jlc_open_api", "jlc_calculator_template",
+                                      "vendor_page", "none"}, \
             f"{name}: unknown provenance method {prov.get('method')!r}"
         assert prov.get("verified"), f"{name}: provenance has no date"
         if prov["method"] == "jlc_open_api":

@@ -728,6 +728,19 @@
    "kind": "fp_attr_mismatch",
    "verdict": "real",
    "reason": "EasyEDA's IND-SMD_L8.0-W8.0_XR0850 footprint is (attr through_hole) on its two SMD pads, so the board's bom-cpl.json sent this reflowed inductor to JLC's THT step and kicad-cli's stats count it THT (KLC F6.1/F7.1 agree): the board's library, not an hwde misreading"
+  },
+  {
+   "gate": "verify",
+   "check": "check_si",
+   "net": "/I2S_BCLK",
+   "refs": [],
+   "pos": [
+    52.189,
+    131.839
+   ],
+   "kind": "si_crosstalk",
+   "verdict": "real",
+   "reason": "I2S_DOUT runs 0.13 mm from I2S_BCLK for 47 mm on B.Cu of a 2-layer board (the plane is 1.5 mm away), so their coupling saturates near 5% of a 3.3 V edge on the bit clock"
   }
  ]
 }

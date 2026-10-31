@@ -131,6 +131,11 @@ Machine gates (defined in `reference/gates.yaml`, run via
 
 Tools that are not gates, run from P4 on (every exported netlist) and
 weighed like any other report:
+- `scripts/sim_solve.py`: the open field and circuit solvers beyond
+  KiCad's ngspice (Xyce, openEMS, Palace, FastHenry, FasterCap, hwde's own
+  thermal/electro-thermal plane solver), each held to a closed-form case by
+  `sim_solve validate`; `sim_solve line` checks a microstrip's Z0 full-wave
+  against impedance.py. docs/solvers.md.
 - `scripts/sim_board.py --workspace <ws>`: ngspice on the board's own
   netlist, no testbench to write. Rails are sources, ICs open, every R, C,
   L, diode, LED, zener and recognised BJT/MOSFET in place (a dual, e.g.
@@ -178,6 +183,17 @@ weighed like any other report:
 - `scripts/eng_calc.py <divider|fb|rc|led|i2c|crystal|ldo|holdup|rpower>`:
   the same formulas (`lib/engcalc.py`) for a margin a review writes down,
   so the number cites a command anyone can re-run.
+- RF boards' link budget goes through the same command:
+  `eng_calc cascade --stage name:gain_db:nf_db[:oip3_dbm] ... [--bw --snr]`
+  (Friis NF, gain, Te, IIP3, each stage's share of the noise, and the
+  sensitivity), `rxsens` (kTB + NF), `detector` (a square-law diode
+  detector's NEP, MDS and TSS from datasheet responsivity and Rv, or the
+  ideal limit from Is), `pll` (a charge-pump passive 2nd-order loop
+  filter: design from fc + phase margin, or the fc, phase margin, -3 dB
+  bandwidth and peaking of the parts on the board) and `line` (free-space
+  and guided wavelength, quarter wave, lambda/10, a length's phase and
+  delay; microstrip eps_eff from the field solver with Getsinger
+  dispersion at f).
 
 Sidecars (`constraints.json`, `decoupling.json`, `parts.json`, schematic)
 resolve from the board's own directory - keep them beside the board from P5

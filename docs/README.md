@@ -1,7 +1,9 @@
 # Designing a board with hwde in the Hive
 
 hwde is the Hive's KiCad design module. It takes a board from a written
-brief to checked KiCad files and a JLCPCB fab package. The way through is
+brief to checked KiCad files and a JLCPCB fab package, or another
+vendor's ([vendors.md](vendors.md): PCBWay, OSH Park, Aisler, Eurocircuits,
+Seeed Fusion; their rules, files, sourcing and prices). The way through is
 [playbook.md](playbook.md); the agent roles are in [`agents/`](../agents/),
 the scripts in [`scripts/`](../scripts/) and their tables, recipes and
 knowledge in [`reference/`](../reference/). It began as ihsan-sa/hwde's Claude
@@ -79,6 +81,20 @@ page covers how an agent runs it inside the Hive.
   of each high-current run in `power_paths`; `hwde soa_check` gives a FET's
   Tj for a written margin. These are what hifi-receiver-2's first-spin
   power review did by hand (its docs/review-2/power.md).
+- A board with analog or audio stages gets its hand numbers from
+  `hwde analog_calc <calc>`: stage noise (`noise`), line levels and
+  bridging (`level`, `bridge`, `damping`), coupling corners (`hpf`),
+  slew (`fpbw`), op-amp phase margin into a cap load and the Riso that
+  fixes it (`riso`), class-D LC filters and output power (`lc`,
+  `classd`), and a SAR ADC's charge-bucket settling (`sar`).
+  `hwde analog_verify` re-proves each one against ngspice.
+  netlist_audit errors on an op-amp/comparator/in-amp input with no DC
+  path for its bias current (`opamp_input_no_dc_path`), and warns on one
+  held only by a connector and on a reverse-biased electrolytic
+  (`polarized_cap_reverse`). Which rules of thumb held up, which are
+  folklore, and the ngspice traps (`x^3` drops the sign; THD needs a
+  max timestep) are in
+  [reference/ingest/analog-audio.md](../reference/ingest/analog-audio.md).
 - A board that runs firmware gets `hwde check_fw --board boards/<name>`,
   run at every schematic change, not first at bring-up. It runs hive-fw's
   `fw constraints` (with `fw pins` inside it) for each firmware target whose
@@ -261,6 +277,16 @@ another way worth measuring, re-pin it: `bin/hwde pin <board> --from <clone>
 --commit <sha>`, classify any new script in `pinned/<board>.json`, run
 `bin/hwde pin --digests`, and name the commit in the commit message.
 
+Research is held to the same standard: a paper is a lead to check, not a
+fact. `hwde papers` ([research/README.md](research/README.md)) follows the
+topics in `reference/research/watch.yaml`. It keeps every paper it has seen
+in `reference/research/papers.yaml`, reads only legitimate open copies (the
+rest go on the person's list, [research/paywalled.md](research/paywalled.md)),
+and gives each claim hwde's own verdict, with the test that reached it. Only
+claims hwde reproduced become [guidelines](research/guidelines.md). When
+`hwde papers due` lists topics, scan them; when a design leans on a rule of
+thumb nobody has checked, add a topic.
+
 Record each run's wall time per stage (the `phase` events in
 `state.json` history) and the gate attempts and fix loops per gate. That way
 a later board shows whether the module got faster or cleaner.
@@ -280,6 +306,15 @@ every board:
   whose pull fights an external one. What each part does at reset is in
   `reference/reset_states.yaml`; a pin it doesn't know is a warning naming
   the pin. Add the part (with its datasheet) rather than ignoring it.
+- `check_reset_drive` builds beside it with the same resolver: every FET
+  gate, BJT base and part enable (EN, ON, SHDN, SDZ...) an MCU pin reaches,
+  directly or through one resistor, must sit at its off level at power-on
+  with the pin undriven. A floating FET gate or a mid-band enable fails, a
+  floating enable or base warns (the part may pull it), and a load on a pin
+  the chip itself drives during power-up (`glitch` in reset_states.yaml:
+  the ESP32-S3's GPIO1-17 low for ~60 us, its USB_D+ high for up to
+  ~170 ms, U0TXD's boot log) fails whatever pull it has. Pins the chip
+  pulls at reset stay check_straps' `load_on_at_reset`.
 - `check_antenna` finds a module's PCB antenna end from its footprint (the
   body beyond the pad field), and fails copper of any kind under it on any
   layer. It warns when the end is more than 1 mm inside the board edge, or
@@ -293,6 +328,41 @@ ESP32 reset) and six of its expander pins, and `check_antenna` fails core's
 U7 (GND or +3V3 fill under the antenna on all four layers). lite-main
 passes both, with warnings: 2.2 mm cleared beside the antenna, and ES8388
 MCLK on GPIO0 with no known reset state.
+
+## Signal integrity
+
+`check_si` (verify suite) finds the nets that need signal-integrity care by
+interface rather than by declaration: oscillator and MCU clocks, RMII, I2S,
+SPI, USB, Ethernet MDI and crystal nets, by name and by what drives them (an
+oscillator part on the net or behind its series resistor makes a 1 ns edge,
+an MCU pin 2 ns). For each it solves the board's own stackup (the field
+solver in `lib/impedance.py`) for Z0 and delay, and holds the net's longest
+pad-to-pad path against its critical length, t_rise / 6 (Johnson). Past it
+the net is a transmission line, and:
+
+- a clock with no series resistor is `si_unterminated_clock`, and one whose
+  resistor plus a ~20 ohm driver misses Z0 is `si_series_mismatch`;
+- two long parts of the net more than 0.10 apart in reflection coefficient
+  are `si_impedance_step`; a declared `z0_ohm`, or a pair's standard Zdiff
+  (USB 90, 100BASE-TX 100), missed is `si_impedance_target`;
+- the net goes through `check_return_path`'s corridor and return-via tests
+  with its own rise time (findings keep that check's kinds).
+
+Every fast net is also an aggressor: each near-parallel neighbour on its layer
+is solved as a coupled pair (`impedance.coupling`: Bogatin's kb and kf from
+the even and odd modes), and NEXT and FEXT over the coupled run are held to
+5% of the swing for a digital victim and 1% for an analog one or a crystal
+(`si_crosstalk`). RMII's halves are held to 10% of their 20 ns interval in
+flight-time spread (`si_skew`). The report lists every SI net's length,
+delay, Z0, critical length, termination and worst neighbours, pass or fail.
+`constraints.json` `si` declares, corrects or ignores nets
+(`reference/constraints_schema.md`).
+
+On the pinned boards it finds core's I2S_BCK (98 mm from the ESP32 to three
+converters with no series resistor), three core B.Cu runs over In2's +3V3
+plane where tracks on In2 cut it right under them, and lite-main's I2S_DOUT
+0.13 mm from BCLK for 47 mm on a 2-layer board. The planted fault
+`si-unterminated-clock` stretches usbbuck4's MCO past its critical length.
 
 ## ESD at the connectors, and what the ingest runs found
 
@@ -367,6 +437,34 @@ HTSSOP-32 stays `smd`. Parts marked `board_only`, `exclude_from_bom` or
   type (`fp_attr_unspecified`, which the position export drops). Planted
   fault `attr-tht-on-smd`: blinky2's SOT-223 U2 marked through_hole.
 
+## A USB device's PHY
+
+`check_usb_phy` (verify suite) reads the board's netlist from each connector
+pin named D+/D-/DP/DM/DP1... to the first IC, through 0 R and ferrites. A
+resistor of 100 ohm or less on the way is a series element, and a larger one
+is a pull. It holds the IC to what its own vendor's document says, row by
+row in `reference/usb_phys.yaml` (WCH CH340, the STM32 lines of AN4879
+Rev 5, NXP LPC per AN11392, RP2040, ESP32-S3):
+
+- series resistors only where the PHY wants them: an error for a series R
+  on ST's or WCH's PHYs, which embed USB 2.0's 28-44 ohm driver impedance,
+  and an error for none on an LPC (33 ohm) or RP2040 (27 ohm). The
+  "22-27 ohm always" rule is folklore.
+- the D+ pull-up where the PHY has none: 1.5 k +/-5% to 3.0-3.6 V (USB 2.0
+  pull-up ECN, 7.1.5.1). A Blue Pill's 10 k fails, and so does a pull-up to
+  VBUS. An extra pull-up beside a PHY's own is a warning, and a pull-up on
+  D- is an error.
+- on USB-C, both D+ pins (and both D-) joined, and on a sink each CC pin's
+  total Rd 5.1 k +/-20%, internal Rd included (Type-C R2.5 Table 4-28). That
+  catches a bare receptacle with none, and a CH224K/A/Q (Rd inside) with an
+  external 5.1 k beside it. Outside +/-10% is a warning: the sink attaches
+  but can't read the source's current. A CC with an Rp is a source port and
+  isn't judged.
+
+An IC the file doesn't know is a warning naming it. Add its row with the
+datasheet's section rather than copying another vendor's habit. lite-main
+and core (CH340B, CH224A/Q) pass clean.
+
 ## Finishing a dense board's routing
 
 `route_auto` ends with `route_finish`, so a dense board needs no copper
@@ -385,6 +483,51 @@ ripped, one Freerouting rung left 54 unconnected and 16 DRC errors.
 `route_auto` with `route_finish` then took it to a handful unconnected with
 no DRC errors. What remained was a 0.4 mm-pitch QFN pocket walled in by a
 VBUS_IN track and a 77 mm long haul.
+
+## Boards from other EDA tools, and back
+
+`hwde eda_io import <file> --out <dir>` brings in a board from Altium
+(.PcbDoc), Allegro/OrCAD PCB Editor (a Fabmaster extract .txt), Eagle and
+Fusion's EAGLE export (.brd), EasyEDA Std (.json) and PADS (.asc) through
+KiCad's own importer. KiCad says "Successfully saved" even when it skips a
+layer, and its JSON report keeps `warnings: []`. So eda_io reads the source
+file itself (`scripts/lib/edasrc.py`; the Altium reader is a small
+compound-file reader, `lib/cfb.py`) and compares it with the import: copper
+objects per layer, parts by reference, nets by name, vias, the outline. It
+also refills the zones, runs DRC at the imported rules, and writes
+`losses.md`: **Lost** (copper, parts or the outline, exit 1), **Check**
+(renames, unrouted, netless pads, layers with drawings that were dropped)
+and **Note**, then what the path never carries. Then `hwde intake --source
+<dir>` makes it a workspace. It lands at P6/P8 with no schematic:
+kicad-cli has no schematic importer, so the schematic comes in through
+Eeschema's GUI importer or is redrawn.
+
+On KiCad's own QA boards with KiCad 10.0.6:
+
+- Altium 4 and 6 layers, Eagle, Allegro 4 layers, EasyEDA Std 4 layers and
+  PADS all import. The 14 to 16 Altium "Internal Plane N" and Allegro
+  subclasses KiCad skips are empty in the source, so they're a note.
+  Allegro's 16 drawing layers (fab notes, dimensions, DXF imports) are gone
+  and named.
+- Eagle: KiCad writes the parts' name texts on a layer called `UNDEFINED`,
+  then refuses to load its own board. eda_io moves them to Cmts.User and
+  says so. It renames a part with no number (`PWR` -> `PWR0`).
+- EasyEDA Pro (.epro) crashes kicad-cli (`bad_function_call`). Export
+  Altium from EasyEDA Pro instead. Allegro's binary .brd and OrCAD Capture
+  have no importer at all. eda_io says so and exits 2.
+
+`hwde eda_io export <board>.kicad_pcb --to altium,allegro,orcad,pads,eagle,fusion,easyeda,neutral`
+writes what each tool reads: the KiCad project (Altium's Import Wizard,
+EasyEDA), IPC-2581 and ODB++ (Allegro/OrCAD, PADS, CAM), Allegro Telesis,
+OrCAD and PADS netlists, GenCAD, IPC-D-356 and STEP (`--step`). It reads the
+IPC-2581 and ODB++ back and checks every part, net and copper layer is in
+them. The netlists are checked against the board's nets. Per target,
+`losses.md` says how to bring it in and what doesn't carry. Rules never
+carry. Allegro/PADS need their own footprints by name. Eagle and Fusion
+Electronics have no editable path from anything KiCad writes, so only
+IPC-2581 and STEP go. None of those other tools runs here, so the steps on
+their side are their makers' documented imports, not tested. `hwde eda_io
+formats` prints the table.
 
 ## What it never does
 
@@ -423,7 +566,14 @@ for what each stage did and `LEARNINGS.md` for what it taught.
 ## Ingestion notes
 
 What each EE ingestion run found, with every rule marked verified, disputed
-or folklore, and its ranked gap list: [dfm-assembly](../reference/ingest/dfm-assembly.md).
+or folklore, and its ranked gap list: [dfm-assembly](../reference/ingest/dfm-assembly.md),
+[analog-audio](../reference/ingest/analog-audio.md).
 `hwde check_paste --pcb <board> [--stencil-mm 0.10]` (stencil area ratio,
 exposed-pad paste) came from it; run it in the DFM/assembly review. It is
 not in the verify suite yet (task 261031-013753-d3238414d5).
+
+- [reference/ingest/tools-ecosystem.md](../reference/ingest/tools-ecosystem.md):
+  open-source EDA and EE tools against hwde. The Hive already has openEMS,
+  FasterCap, FastHenry, Palace and ngspice-47 in its IIC-OSIC-TOOLS tree;
+  hwde's impedance solver checked against two independent methods; KLC and
+  kicad-happy run on lite-main; a ranked gap list.

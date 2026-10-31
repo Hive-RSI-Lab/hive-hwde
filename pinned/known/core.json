@@ -3227,6 +3227,58 @@
    "kind": "model_offset",
    "verdict": "real",
    "reason": "EasyEDA's FPC-05F-20PH20 model ends its contact tails at y -1.26 mm while the pads run -1.92..-0.67: the tails cover under half of each pad and a 0.45 mm slide centres them, so render/STEP show the connector 0.45 mm off; the board's library model, not an hwde misreading"
+  },
+  {
+   "gate": "verify",
+   "check": "check_si",
+   "net": "/I2S_BCK",
+   "refs": [],
+   "pos": [
+    130.809,
+    185.609
+   ],
+   "kind": "si_unterminated_clock",
+   "verdict": "real",
+   "reason": "the ESP32 drives BCK 98 mm to three loads (U10 ES9018K2M, U12 PCM5102A, U13 ES7243E) with no series resistor; at a ~2 ns GPIO edge the line is past its ~58 mm critical length, so the edge rings at each receiver and can double-clock the I2S bit clock. The usual fix is 22-33 ohm in series at U7"
+  },
+  {
+   "gate": "verify",
+   "check": "check_si",
+   "net": "/I2S_BCK",
+   "refs": [],
+   "pos": [
+    132.881,
+    149.382
+   ],
+   "kind": "corridor_void",
+   "verdict": "real",
+   "reason": "In2's +3V3 plane, the reference under this B.Cu run, is cut by /linein/ADC_RN routed on In2 right under BCK; the return current detours round the cut, and the clock also crosses an analog input there"
+  },
+  {
+   "gate": "verify",
+   "check": "check_si",
+   "net": "/I2S_LRCK",
+   "refs": [],
+   "pos": [
+    123.786,
+    144.814
+   ],
+   "kind": "corridor_void",
+   "verdict": "real",
+   "reason": "GND tracks routed on In2 slice the +3V3 plane under LRCK's B.Cu run for 2.9 mm of the trace; the return path detours round the cut"
+  },
+  {
+   "gate": "verify",
+   "check": "check_si",
+   "net": "/RMII_RXD1",
+   "refs": [],
+   "pos": [
+    79.22,
+    194.985
+   ],
+   "kind": "corridor_void",
+   "verdict": "real",
+   "reason": "GND tracks routed on In2 cut the +3V3 plane under RXD1's B.Cu run; the return path detours round the cut"
   }
  ]
 }

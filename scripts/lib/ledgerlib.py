@@ -20,6 +20,10 @@ Facts and who writes them:
               (check_ratings.py)
   footprint   per placed refdes: the board footprint's pads land on the
               LCSC part's own model, by number (cpl_verify.py, run by dfm)
+  vendor      per chosen vendor (state.json "vendor", set by vendor.py
+              choose): the board as it is now fits that fab's rules and
+              limits (vendor.py fit, docs/vendors.md). Expected only once a
+              vendor is chosen; a fit of an older board file reads unknown.
   Any fact can also be recorded by hand, with its source:
     ledger.py set --workspace WS --subject U8 --kind pinout --status verified
                   --source "CH340 datasheet v3B p.4, pin table vs symbol"
@@ -49,9 +53,11 @@ from pathlib import Path
 
 LEDGER = "ledger.json"
 SCHEMA = 1
-KINDS = ("stock", "part_match", "lifecycle", "rating", "pinout", "footprint")
+KINDS = ("stock", "part_match", "lifecycle", "rating", "pinout", "footprint",
+         "vendor")
 PART_KINDS = ("stock", "part_match", "lifecycle")   # subject: LCSC code
 REF_KINDS = ("rating", "pinout", "footprint")       # subject: refdes
+VENDOR_KINDS = ("vendor",)                          # subject: vendor id
 STATUSES = ("verified", "failed", "unknown")
 STOCK_MAX_AGE_H = 72.0
 UNBOUGHT = ("dnp", "board_feature", "customer_supplied")
@@ -183,7 +189,37 @@ def expected(ws: Path) -> dict[str, dict]:
             for kind in kinds:
                 out[key(ref, kind)] = {"subject": ref, "kind": kind,
                                        "refs": [ref], "lcsc": code}
+    vendor = chosen_vendor(ws)
+    if vendor:
+        out[key(vendor, "vendor")] = {"subject": vendor, "kind": "vendor",
+                                      "refs": [], "basis": board_basis(ws)}
     return out
+
+
+def chosen_vendor(ws: Path) -> str | None:
+    """state.json's "vendor" (vendor.py choose), else None: no vendor fact
+    is expected of a board that never chose one."""
+    try:
+        data = json.loads((Path(ws) / "state.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    v = data.get("vendor") if isinstance(data, dict) else None
+    return str(v) if v else None
+
+
+def board_pcb(ws: Path) -> Path | None:
+    kdir = Path(ws) / "kicad"
+    pcbs = sorted(kdir.glob("*.kicad_pcb")) if kdir.is_dir() else []
+    return pcbs[0] if len(pcbs) == 1 else None
+
+
+def board_basis(ws: Path) -> str | None:
+    """The board file a vendor fit was judged on (sha256, uuids aside)."""
+    pcb = board_pcb(ws)
+    if pcb is None:
+        return None
+    import statelib
+    return statelib.hash_artifact(pcb, statelib.norm_for_path(pcb))
 
 
 # ----------------------------------------------------------------- writing
@@ -201,7 +237,8 @@ def put(ws: Path, facts: list[dict], by: str) -> Path | None:
             raise ValueError(f"bad fact {f!r}: kind one of {KINDS}, status "
                              f"one of {STATUSES}")
         ent = {k: f[k] for k in ("subject", "kind", "status", "value",
-                                 "source", "lcsc", "refs") if k in f}
+                                 "source", "lcsc", "refs", "basis")
+               if k in f}
         ent.setdefault("value", "")
         ent.setdefault("source", "")
         ent["checked_at"] = f.get("checked_at") or ts
@@ -279,6 +316,9 @@ def effective(fact: dict | None, exp: dict | None, at=None) -> dict:
         out.update(status="unknown",
                    why=f"checked for {fact['lcsc']}; the board now has "
                        f"{exp['lcsc']}")
+    elif exp and exp.get("basis") and fact.get("basis") != exp["basis"]:
+        out.update(status="unknown",
+                   why="fitted to an older board file - rerun vendor.py fit")
     elif fact.get("kind") == "stock":
         t = _parse(fact.get("checked_at"))
         age = (at - t).total_seconds() / 3600 if t else None

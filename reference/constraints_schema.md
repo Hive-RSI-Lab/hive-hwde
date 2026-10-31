@@ -95,6 +95,18 @@ Consumers per key (script -> phase):
   // A5/A7. Inner layers are always B1. CLI --coating overrides.
   "coating": "soldermask",
 
+  // check_si (P8): signal integrity of the nets that need it. Nets are
+  // found by name and driver (clocks, RMII, I2S, SPI, USB, Ethernet MDI,
+  // crystals); this block only declares a net the names miss, corrects a
+  // class or edge, or sets a target. Every key is optional.
+  "si": {"nets": {"/ETH_CLK": {"class": "osc_clock", "t_rise_ns": 1.0,
+                               "z0_ohm": 50, "z0_tol_pct": 20,
+                               "driver_ohm": 20, "swing_v": 3.3}},
+         "ignore": ["/SLOW_CLK"],
+         "victims": {"/VREF": "analog"},
+         "groups": [{"name": "rmii_tx", "ui_ns": 20,
+                     "nets": ["/RMII_TXD0", "/RMII_TXD1", "/RMII_TX_EN"]}]},
+
   // check_antenna (P8): which modules have a PCB antenna, for a part
   // reference/rf_modules.yaml does not know or names wrongly. "pcb" checks
   // the copper under its antenna end and its place at the board edge;
@@ -155,8 +167,16 @@ Consumers per key (script -> phase):
                 "material": "PETG", "room_c": 30, "other_w": 1.4,
                 "inlet_mm2": 3300, "riser_mm2": 228, "outlet_mm2": 3300,
                 "stack_mm": 40, "floor": "feet"},
-  // the air when there is no enclosure (C); tj_max_c and ripple life use it
+  // the air when there is no enclosure (C); tj_max_c and ripple life use it,
+  // and check_ratings holds every part's operating range, resistor power
+  // (derated from 70 C to 0 at 155 C, also in sim_board), fuse rerating
+  // and PPTC hold current against it. With an enclosure and no ambient_c,
+  // check_ratings takes the box air check_thermal works out; with neither,
+  // 25 C, said so in its report's `ambient`.
   "ambient_c": 45,
+  // check_ratings: the coldest the board starts in (C); a part whose
+  // operating range starts above it is an error. Absent: not checked.
+  "ambient_min_c": -20,
 
   // check_thermal (P8): bulk-capacitor ripple current and life
   "ripple": [{"ref": "C5", "irms_a": 0.55, "rated_irms_a": 0.6,
