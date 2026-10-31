@@ -797,6 +797,42 @@ def test_board_init_edge_notch(cli, usbbuck4_net, tmp_path):
 
 
 @pytest.mark.smoke
+def test_board_init_swaps_a_hole_fp_whose_vias_break_the_fab_floor(
+        cli, usbbuck4_net, tmp_path):
+    """Issue #28: KiCad's M2.5 _Pad_Via ring has its own drills 0.425 mm
+    apart, under JLC's 0.5 mm hole-to-hole floor - 36 DRC errors on
+    ultra-front. board_init takes the same-size _Pad sibling instead and says
+    so; the board it builds is clean."""
+    rc, r = _init_board(tmp_path, usbbuck4_net, "--mounting-hole-fp",
+                        "MountingHole:MountingHole_2.7mm_M2.5_Pad_Via")
+    assert rc == 0 and r["status"] == "pass", r
+    assert r["mounting_holes"] == 4
+    assert r["mounting_hole_fp"] == "MountingHole:MountingHole_2.7mm_M2.5_Pad"
+    assert any("swapped for MountingHole:MountingHole_2.7mm_M2.5_Pad" in n
+               for n in r["worker_notes"])
+    assert r["self_check"]["setup_violations"] == []
+
+
+@pytest.mark.smoke
+def test_board_init_wide_fixed_outline_stays_on_the_page(
+        cli, usbbuck4_net, tmp_path):
+    """Issue #28: a fixed outline wider than the packed parts was centred on
+    them and started at negative X (ultra-front 110x40 at x -9.945), cutting
+    PDF plots off. It now starts in the positive quadrant, the aux and grid
+    origin at its lower-left corner."""
+    rc, r = _init_board(tmp_path, usbbuck4_net, "--outline", "160x80")
+    assert rc == 0 and r["status"] == "pass", r
+    x1, y1, x2, y2 = r["outline_bbox"]
+    assert x1 >= 5.0 and y1 >= 5.0
+    assert (x2 - x1, y2 - y1) == pytest.approx((160, 80), abs=1e-3)
+    assert r["aux_origin"] == [x1, y2]
+    txt = (tmp_path / "kicad" / "usbbuck4.kicad_pcb").read_text("utf-8")
+    m = re.search(r"\(aux_axis_origin ([\d.-]+) ([\d.-]+)\)", txt)
+    assert m and (float(m.group(1)), float(m.group(2))) == pytest.approx((x1, y2))
+    assert r["self_check"]["setup_violations"] == []
+
+
+@pytest.mark.smoke
 def test_board_init_cutout_over_corner_is_rejected(cli, usbbuck4_net, tmp_path):
     """A notch running into a rounded corner would self-intersect the outline
     and fail polygonize downstream. It must be skipped loudly at the source."""
