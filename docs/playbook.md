@@ -131,6 +131,11 @@ Machine gates (defined in `reference/gates.yaml`, run via
 
 Tools that are not gates, run from P4 on (every exported netlist) and
 weighed like any other report:
+- `scripts/sim_solve.py`: the open field and circuit solvers beyond
+  KiCad's ngspice (Xyce, openEMS, Palace, FastHenry, FasterCap, hwde's own
+  thermal/electro-thermal plane solver), each held to a closed-form case by
+  `sim_solve validate`; `sim_solve line` checks a microstrip's Z0 full-wave
+  against impedance.py. docs/solvers.md.
 - `scripts/sim_board.py --workspace <ws>`: ngspice on the board's own
   netlist, no testbench to write. Rails are sources, ICs open, every R, C,
   L, diode, LED, zener and recognised BJT/MOSFET in place (a dual, e.g.
