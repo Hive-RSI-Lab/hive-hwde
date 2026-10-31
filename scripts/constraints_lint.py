@@ -71,6 +71,16 @@ SECTIONS: dict[str, dict[str, dict[str, str]]] = {
         "required": {"nets": "str_list"},
         "optional": {"tol_mm": "num", "reason": "str"},
     },
+    # check_length_groups (P8) + route_tune (P7, #324): nets (globs) held
+    # to a reference net's length - DDR byte lanes, address/command
+    "length_groups": {
+        "required": {"nets": "str_list"},
+        "optional": {"name": "str", "ref_net": "str", "ref_nets": "str_list",
+                     "ref_stat": "str", "tol_mm": "num", "window_mm": "pair",
+                     "max_mm": "num", "min_mm": "num",
+                     "not_longer_than": "str_list", "terminals": "str_list",
+                     "severity": "str", "note": "str"},
+    },
     "voltages": {
         "required": {"net": "str", "voltage": "num"},
         "optional": {"min": "num"},
@@ -165,6 +175,7 @@ KNOWN_ENVELOPE = {
     "subblocks",
 }
 SCOUT_MAX_CANDIDATES = 6
+ANNOTATION_SUFFIXES = {"note", "notes", "reason", "comment", "source"}
 
 
 def _is_num(v) -> bool:
@@ -237,6 +248,11 @@ class _FileLint:
         """Misspelled (close match to a documented key) = error; else warn."""
         close = difflib.get_close_matches(
             key, sorted(known), n=1, cutoff=CLOSE_MATCH_CUTOFF)
+        # "<key>_note" beside a documented key is prose about it (linux-
+        # computer's length_groups_note), not a misspelling of it
+        stem, _, tail = key.rpartition("_")
+        if close and stem in known and tail in ANNOTATION_SUFFIXES:
+            close = []
         if close:
             self.add("error", "misspelled_key",
                      f"{json_path}: unknown key '{key}' - did you mean "

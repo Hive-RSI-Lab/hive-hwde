@@ -364,6 +364,23 @@ plane where tracks on In2 cut it right under them, and lite-main's I2S_DOUT
 0.13 mm from BCLK for 47 mm on a 2-layer board. The planted fault
 `si-unterminated-clock` stretches usbbuck4's MCO past its critical length.
 
+## Length-matched groups (DDR)
+
+`check_length_groups` (verify suite) holds groups of nets to a reference
+length, the way DDR layout rules are written: a byte lane's data and mask
+within +/-0.635 mm of its DQS, address/command within a window of the clock.
+Each net's length is its copper path between its two farthest terminal pads
+(a stub or test-point branch doesn't count) plus the via barrel wherever the
+path changes layer, from the board's stackup: the barrel below the exit
+layer is a stub and isn't counted. `constraints.json` `length_groups`
+declares the groups: `nets` (globs), `ref_net`/`ref_nets` (else the group's
+longest member), `tol_mm` or `window_mm`, and `max_mm`, `min_mm`,
+`not_longer_than` bounds (`reference/constraints_schema.md`). Each mismatch
+(`length_group_mismatch`, `length_group_bound`) says how much the net needs;
+an unrouted or open member is a warning, and a board with DDR-named nets but
+no groups warns that nothing was matched. route_cleanup's snap leaves every
+net a group names as routed.
+
 ## ESD at the connectors, and what the ingest runs found
 
 `bin/hwde check_esd --pcb <board> [--constraints c.json]` (run by hand for
