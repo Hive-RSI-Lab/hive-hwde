@@ -44,7 +44,10 @@ the footprint's own 3D model when lib_pull fetched one (body_flags):
   model_off_footprint  the model's pins below the board miss the footprint's
                        plated holes: it doesn't line up (EasyEDA's USB4105
                        model sits 2.15 mm off), so render/STEP lie and the
-                       two checks below are skipped
+                       two checks below are skipped. lib_pull fits the
+                       model to its pads before fpfix runs
+                       (check_model_fit.fit_footprint), so this is left
+                       for a model no slide or turn fits
   peg_without_hole     the model reaches into the board where the footprint
                        has no hole: a locating peg or pin with nowhere to go
                        (the stacked RCA XDJK-0271-1650's two pegs)

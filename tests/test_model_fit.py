@@ -233,3 +233,110 @@ def test_hidden_and_missing_models_are_skipped(tmp_path):
     assert payload["status"] == "pass" and payload["hidden"] == 1
     payload, _ = cmf.run(["--pcb", str(_board(tmp_path, tmp_path / "gone.wrl"))])
     assert payload["status"] == "pass" and payload["missing"]
+
+
+# ------------------------------------------- lib_pull's fit on import
+
+# a SOT-23 footprint as easyeda2kicad writes it (legacy form), file frame
+SOT_MOD = '''(module easyeda2kicad:SOT-23 (layer F.Cu) (tedit 5DC5F6A4)
+\t(pad 1 smd rect (at -0.95 1.1 0) (size 0.6 0.7) (layers F.Cu F.Paste F.Mask))
+\t(pad 2 smd rect (at 0.95 1.1 0) (size 0.6 0.7) (layers F.Cu F.Paste F.Mask))
+\t(pad 3 smd rect (at 0 -1.1 0) (size 0.6 0.7) (layers F.Cu F.Paste F.Mask))
+\t(model "{path}"
+\t\t(offset (xyz {off}))
+\t\t(scale (xyz {scale}))
+\t\t(rotate (xyz {rot}))
+\t)
+)
+'''
+
+
+def _lib(tmp_path, off="0.000 0.000 0.000", rot="0 0 0", scale="1 1 1",
+         path=None):
+    """A library like lib_pull's: aiee.pretty with one footprint whose model
+    is in aiee.3dshapes beside it."""
+    pretty, shapes = tmp_path / "aiee.pretty", tmp_path / "aiee.3dshapes"
+    pretty.mkdir()
+    shapes.mkdir()
+    wrl = _wrl(shapes / "SOT-23.wrl", SOT)
+    fp = pretty / "SOT-23.kicad_mod"
+    fp.write_text(SOT_MOD.format(path=path or wrl, off=off, rot=rot,
+                                 scale=scale), encoding="utf-8")
+    return fp, wrl
+
+
+def _xf(fp):
+    """(offset, scale, rotate) of the footprint's model as written."""
+    import sexpdata
+    (m,) = cmf._models(sexpdata.loads(fp.read_text(encoding="utf-8")))
+    return m[1:4]
+
+
+@pytest.mark.parametrize("off,rot", [("1.0 0.0 0.0", "0 0 0"),
+                                     ("0 -0.8 0", "0 0 0"),
+                                     ("0 0 0", "0 0 90"),
+                                     ("0.6 0 0", "0 0 180")])
+def test_an_imported_footprints_model_is_moved_onto_its_pads(tmp_path, off, rot):
+    fp, wrl = _lib(tmp_path, off, rot)
+    rep = cmf.fit_footprint(fp)
+    assert rep["changed"]
+    (row,) = rep["models"]
+    assert row["fixed"] and not row.get("left")
+    offset, scale, rotate = _xf(fp)
+    assert offset[:2] == pytest.approx((0, 0), abs=0.13)
+    assert rotate[2] % 360 == 0
+    assert cmf.fit_model(modelgeom.load(wrl), offset, scale, rotate, False,
+                         SOT_PADS) == []
+    # the rest of the file is as it was, and a second run changes nothing
+    text = fp.read_text(encoding="utf-8")
+    assert text.count("(pad ") == 3 and "(tedit 5DC5F6A4)" in text
+    assert not cmf.fit_footprint(fp)["changed"]
+    assert fp.read_text(encoding="utf-8") == text
+
+
+def test_a_model_on_its_pads_is_left_byte_for_byte(tmp_path):
+    fp, _ = _lib(tmp_path)
+    text = fp.read_text(encoding="utf-8")
+    assert not cmf.fit_footprint(fp)["changed"]
+    assert fp.read_text(encoding="utf-8") == text
+
+
+def test_scale_and_float_are_fitted_too(tmp_path):
+    fp, _ = _lib(tmp_path, off="0 0 0.5", scale="1 1 1.5")
+    assert sorted(cmf.fit_footprint(fp)["models"][0]["fixed"]) == [
+        "model_floats", "model_scale"]
+    offset, scale, _ = _xf(fp)
+    assert scale == (1, 1, 1) and offset[2] == pytest.approx(0, abs=0.01)
+
+
+def test_a_portable_path_finds_the_model_beside_the_library(tmp_path):
+    fp, _ = _lib(tmp_path, "1.0 0 0",
+                 path="${KIPRJMOD}/../lib/aiee.3dshapes/SOT-23.wrl")
+    assert cmf.fit_footprint(fp)["changed"]
+    fp.write_text(fp.read_text(encoding="utf-8").replace("SOT-23.wrl",
+                                                         "gone.wrl"))
+    assert cmf.fit_footprint(fp)["models"][0]["skipped"] == "no model file"
+
+
+def test_a_wrong_model_is_left_and_listed(tmp_path):
+    fp, _ = _lib(tmp_path)
+    # test_a_wrong_model_is_unmatched's big three-pad part
+    text = fp.read_text(encoding="utf-8").replace("(size 0.6 0.7)", "(size 1 1.2)")
+    for a, b in (("-0.95 1.1", "-4 0"), ("0.95 1.1", "4 0"), ("0 -1.1", "0 5")):
+        text = text.replace(f"(at {a} 0)", f"(at {b} 0)")
+    fp.write_text(text, encoding="utf-8")
+    rep = cmf.fit_lib(fp.parent)
+    assert rep["changed"] == 0
+    assert [h["kind"] for h in rep["left"]] == ["model_unmatched"]
+    assert fp.read_text(encoding="utf-8") == text
+
+
+def test_lib_pull_fits_the_pulled_footprints_only(tmp_path):
+    import lib_pull
+    fp, _ = _lib(tmp_path, "1.0 0 0")
+    other = fp.with_name("OTHER.kicad_mod")
+    other.write_text(fp.read_text(encoding="utf-8"), encoding="utf-8")
+    rep = lib_pull._model_fit(fp.parent, ["SOT-23"], dry_run=False)
+    assert rep["changed"] == 1
+    assert [f["footprint"] for f in rep["fixed"]] == ["SOT-23"]
+    assert _xf(other)[0] == (1.0, 0.0, 0.0)

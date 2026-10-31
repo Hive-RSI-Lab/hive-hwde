@@ -59,6 +59,7 @@ from __future__ import annotations
 import argparse
 import math
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -174,6 +175,19 @@ def _pads(fp, angle: float) -> list[tuple[str, bool, object]]:
     return out
 
 
+def _models(fp) -> list[tuple]:
+    """(path, offset, scale, rotate, hidden) of each of a footprint's
+    (model ...) nodes, in order."""
+    models = []
+    for m in _kids(fp, "model"):
+        if len(m) < 2:
+            continue
+        models.append((_sval(m[1]), _xyz(m, "offset", (0.0, 0.0, 0.0)),
+                       _xyz(m, "scale", (1.0, 1.0, 1.0)),
+                       _xyz(m, "rotate", (0.0, 0.0, 0.0)), _hidden(m)))
+    return models
+
+
 def footprints(pcb: Path):
     """(ref, (x, y), angle, back, pads, [(path, offset, scale, rotate)])
     for every footprint with a shown model."""
@@ -186,15 +200,7 @@ def footprints(pcb: Path):
         layer = _kid(fp, "layer")
         back = bool(layer is not None and _strs(layer)
                     and _strs(layer)[0].startswith("B."))
-        models = []
-        for m in _kids(fp, "model"):
-            if len(m) < 2:
-                continue
-            path = _sval(m[1])
-            hidden = _hidden(m)
-            models.append((path, _xyz(m, "offset", (0.0, 0.0, 0.0)),
-                           _xyz(m, "scale", (1.0, 1.0, 1.0)),
-                           _xyz(m, "rotate", (0.0, 0.0, 0.0)), hidden))
+        models = _models(fp)
         if models:
             yield ref, (at[0], at[1]), angle, back, _pads(fp, angle), models
 
@@ -521,6 +527,152 @@ class _Board:
         outline = self._load()[0]
         return affinity.rotate(affinity.translate(outline, -pos[0], -pos[1]),
                                angle, origin=(0, 0))
+
+
+# ------------------------------------------------------------ the library fit
+
+# the findings a library footprint's (model ...) is refitted for; the rest
+# (model_unmatched: a wrong model) are the part's drawing's to settle
+REFIT = ("model_offset", "model_rotation", "model_scale", "model_floats")
+REFIT_PASSES = 3        # a scale or turn moves the floor: fit again after it
+_XYZ_KEY = r"\(\s*{0}\s*\(\s*xyz\s+[^()]*\)\s*\)"
+
+
+def lib_model_file(path: str, fp_file: Path) -> Path | None:
+    """The file a library footprint's model path names: the path itself
+    when it is one (easyeda2kicad writes absolute paths), else the file of
+    that name in a *.3dshapes beside the footprint's .pretty (a
+    ${KIPRJMOD}/.. path, or a checkout that moved)."""
+    q = Path(path)
+    if "$" not in path and q.is_absolute() and q.is_file():
+        return q
+    return kc.model_lib_file(path, sorted(Path(fp_file).resolve().parent
+                                          .parent.glob("*.3dshapes")))
+
+
+def refit(mesh, offset, scale, rotate, pads):
+    """(offset, scale, rotate, kinds fixed, findings left) for a library
+    footprint's model: the fits fit_model gives for REFIT findings applied
+    until none is left (or REFIT_PASSES), and given up (the model as it
+    was) when a slide or turn is still found after them."""
+    xf, kinds = (tuple(offset), tuple(scale), tuple(rotate)), []
+    for _ in range(REFIT_PASSES):
+        found = fit_model(mesh, *xf, False, pads)
+        fix = [h for h in found if h["kind"] in REFIT and h.get("fit")]
+        if not fix:
+            return (*xf, kinds, found)
+        off, sc, rot = map(list, xf)
+        for h in fix:
+            kinds.append(h["kind"])
+            f = h["fit"]
+            if h["kind"] == "model_floats":
+                off[2] = f["offset"][2]
+            if "scale" in f:
+                sc = list(f["scale"])
+            if h["kind"] in ("model_offset", "model_rotation"):
+                off[:2], rot = f["offset"][:2], list(f["rotate"])
+        xf = tuple(tuple(float(v) for v in t) for t in (off, sc, rot))
+    found = fit_model(mesh, *xf, False, pads)
+    if any(h["kind"] in REFIT for h in found):
+        return (tuple(offset), tuple(scale), tuple(rotate), [],
+                found + [{"kind": "model_unsettled", "severity": "warning",
+                          "msg": "the fit kept moving; the model is left as "
+                                 "it was"}])
+    return (*xf, kinds, found)
+
+
+def _xyz_text(node: str, key: str, v) -> str:
+    """The (model ...) node text with its (key (xyz ...)) set to v."""
+    put = f"({key} (xyz {' '.join(f'{_r(c, 4):g}' for c in v)}))"
+    pat = re.compile(_XYZ_KEY.format(key))
+    if pat.search(node):
+        return pat.sub(lambda _m: put, node, count=1)
+    end = node.rstrip().rfind(")")
+    return node[:end].rstrip() + " " + put + node[end:]
+
+
+def fit_footprint(fp_file: Path, dry_run: bool = False) -> dict:
+    """Fit each shown 3D model of a library footprint (.kicad_mod, either
+    form) to the footprint's own pads, rewriting its (offset) (scale)
+    (rotate) in place: lib_pull runs this on every part it imports, so a
+    model EasyEDA misplaced never reaches a board. Text surgery on the
+    (model ...) nodes only; a second run changes nothing."""
+    import fpfix
+    fp_file = Path(fp_file)
+    text = fp_file.read_text(encoding="utf-8")
+    fp = sexpdata.loads(text)
+    pads = _pads(fp, 0.0)
+    spans = [(s, e) for h, s, e in fpfix.top_level_nodes(text) if h == "model"]
+    rows, edits = [], []
+    for (path, offset, scale, rotate, hidden), span in zip(_models(fp), spans):
+        name = path.replace("\\", "/").rsplit("/", 1)[-1]
+        row = {"model": name}
+        rows.append(row)
+        node = text[span[0]:span[1]]
+        if hidden:
+            row["skipped"] = "hidden"
+            continue
+        if re.search(r"\(\s*at\s*\(\s*xyz", node):
+            row["skipped"] = "(at) offset in inches: KiCad 5 form"
+            continue
+        f = lib_model_file(path, fp_file)
+        if f is None:
+            row["skipped"] = "no model file"
+            continue
+        try:
+            mesh = modelgeom.load(f)
+        except (OSError, ValueError) as exc:
+            row["skipped"] = f"unreadable: {type(exc).__name__}: {exc}"
+            continue
+        if mesh is None:
+            row["skipped"] = "no geometry"
+            continue
+        off, sc, rot, kinds, left = refit(mesh, offset, scale, rotate, pads)
+        if left:
+            row["left"] = [{"kind": h["kind"], "severity": h["severity"],
+                            "msg": h["msg"]} for h in left]
+        if not kinds:
+            continue
+        row["fixed"] = sorted(set(kinds))
+        row["from"] = {"offset": list(offset), "scale": list(scale),
+                       "rotate": list(rotate)}
+        row["to"] = {"offset": list(off), "scale": list(sc),
+                     "rotate": list(rot)}
+        for key, v in (("offset", off), ("scale", sc), ("rotate", rot)):
+            node = _xyz_text(node, key, v)
+        edits.append((span, node))
+    if edits and not dry_run:
+        for (s, e), node in sorted(edits, reverse=True):
+            text = text[:s] + node + text[e:]
+        fp_file.write_text(text, encoding="utf-8")
+    return {"footprint": fp_file.stem, "file": str(fp_file),
+            "changed": bool(edits), "models": rows}
+
+
+def fit_lib(pretty: Path, names: list[str] | None = None,
+            dry_run: bool = False) -> dict:
+    """fit_footprint over a .pretty (only `names` when given)."""
+    import fpfix
+    files = sorted(Path(pretty).glob("*.kicad_mod"))
+    if names is not None:
+        want = {fpfix._fp_stem(n) for n in names}
+        files = [f for f in files if fpfix._fp_stem(f.name) in want]
+    rows = []
+    for f in files:
+        try:
+            rows.append(fit_footprint(f, dry_run=dry_run))
+        except Exception as exc:  # noqa: BLE001 - one bad file fits nothing
+            rows.append({"footprint": f.stem, "file": str(f), "changed": False,
+                         "error": f"{type(exc).__name__}: {exc}"})
+    return {"footprints": len(rows),
+            "changed": sum(1 for r in rows if r["changed"]),
+            "fixed": [{"footprint": r["footprint"], **m} for r in rows
+                      for m in r.get("models", []) if m.get("fixed")],
+            "left": [{"footprint": r["footprint"], "model": m["model"],
+                      "kind": h["kind"], "msg": h["msg"]} for r in rows
+                     for m in r.get("models", []) for h in m.get("left", [])],
+            "errors": {r["footprint"]: r["error"] for r in rows
+                       if r.get("error")}}
 
 
 # ------------------------------------------------------------ the check

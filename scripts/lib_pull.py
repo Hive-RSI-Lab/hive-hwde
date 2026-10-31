@@ -14,8 +14,18 @@ gitignored 3dshapes are gone, gets them back.
 Footprints load in KiCad 10 despite the legacy format (LEARNINGS 2026-07-22
 [easyeda2kicad]); --verify-load confirms it with `kicad-cli fp export svg`.
 
-A raw pull is NOT fabricable as delivered, so three repairs run by default before
+A raw pull is NOT fabricable as delivered, so four repairs run by default before
 the pull is reported (all idempotent, all text surgery):
+  model fit       EasyEDA's 3D model off its own footprint (the TYPE-C-31-M-12
+                  USB-C 2.15 mm off and turned, the FPC-05F-20PH20 0.45 mm
+                  off): each footprint's model is laid against its pads
+                  (check_model_fit's fit: leads on the SMD pads, pins in the
+                  holes, every slide within 5 mm at each quarter turn) and its
+                  (offset)/(rotate) - and a (scale) not 1 1 1, or a model
+                  floating off the board - rewritten to the fit, so render,
+                  STEP and the enclosure fitted to it show the part where it
+                  is. A model no slide or turn fits is left and listed in
+                  model_fit.left                        -> --no-model-fit to skip
   fpfix           silk artifacts on pad copper, outlines under the silk-to-copper
                   bar, plated locating pegs (zero annular ring), legend text
                   hidden under the body, courtyards drawn inside their own pads
@@ -83,6 +93,7 @@ from pathlib import Path
 SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
+import check_model_fit  # noqa: E402
 import fplib  # noqa: E402
 import fpfix  # noqa: E402
 import kc  # noqa: E402
@@ -485,6 +496,21 @@ def _autofix(pretty: Path, names: list[str], dry_run: bool) -> dict:
                         if r["changed"] or r["residue"] or r.get("flags")]}
 
 
+def _model_fit(pretty: Path, names: list[str], dry_run: bool) -> dict:
+    """Fit each pulled footprint's 3D model to its pads (check_model_fit).
+
+    EasyEDA draws a part's model in its own frame, and for some parts that
+    frame is not the footprint's: the TYPE-C-31-M-12 USB-C model sat 2.15 mm
+    off and turned on lite-main, the FPC-05F-20PH20's 0.45 mm off on the
+    core board, and each was found on a board and repaired by hand. Runs
+    after the models are restored (a fresh clone's are fetched first) and
+    before fpfix, whose model flags then read the fitted model."""
+    rep = check_model_fit.fit_lib(pretty, names, dry_run=dry_run)
+    rep["fixed"] = [{k: m[k] for k in ("footprint", "model", "fixed", "from",
+                                         "to")} for m in rep["fixed"]]
+    return rep
+
+
 def _refdes_norm(pretty: Path, dry_run: bool) -> dict:
     """Re-derive every refdes offset from the footprint's own geometry.
 
@@ -613,6 +639,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--no-autofix", action="store_true",
                     help="skip the fpfix silk/peg/legend sanitiser (NOT advised: "
                          "every pull ships those defects)")
+    ap.add_argument("--no-model-fit", action="store_true",
+                    help="leave each footprint's 3D model where EasyEDA put "
+                         "it, even off its pads (NOT advised)")
     ap.add_argument("--no-refdes-norm", action="store_true",
                     help="skip the refdes-offset normalisation")
     ap.add_argument("--no-pin-types", action="store_true",
@@ -678,8 +707,10 @@ def main(argv: list[str] | None = None) -> int:
 
         pulled_fps = sorted({fp["name"] for r in results
                              for fp in r.get("footprints", [])})
-        autofix = refdes = None
+        autofix = refdes = model_fit = None
         if pulled_fps and pretty.is_dir():
+            if not args.no_model_fit:
+                model_fit = _model_fit(pretty, pulled_fps, dry_run=False)
             if not args.no_autofix:
                 autofix = _autofix(pretty, pulled_fps, dry_run=False)
             if not args.no_refdes_norm:
@@ -727,6 +758,7 @@ def main(argv: list[str] | None = None) -> int:
             "results": results,
             "symbol_dedup": dedup,
             "registered": registered,
+            "model_fit": model_fit,
             "autofix": autofix,
             "refdes_norm": refdes,
             "pin_types": pin_types,
