@@ -1,8 +1,0 @@
-# check_rf: RF layout on declared RF nets, blocks, shield cans and reference
-# cutouts (open and via stubs, electrical length and phase, band isolation,
-# can ring and fence, plane cutouts), each at the net's own frequency
-# (hive-hwde #335, from hw-lab's radar-detector survey). A board that
-# declares none of rf, rf_phase, rf_blocks, shields or rf_cutouts passes.
-name: check_rf
-needs: [constraints]
-args: [--constraints, "{constraints}"]

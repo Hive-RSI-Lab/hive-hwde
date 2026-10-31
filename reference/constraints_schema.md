@@ -185,8 +185,6 @@ Consumers per key (script -> phase):
     "groups": [{"name": "xtal", "anchor": "Y1", "members": ["C8", "C9"]}],
     "keepouts": [{"rect": [x1, y1, x2, y2], "side": "front",
                   "reason": "antenna"}],   // or "poly": [[x,y], ...]
-                  // "layers": ["In1.Cu"] puts a copper keepout on just
-                  // those layers (keepout_gen), in place of "side"
     "fixed": ["H1", "H2"],
     "separation": [{"a": ["U3"], "b": ["U5"], "min_mm": 10}],
     "corridors": [{"a": "J1", "b": "U1", "width_mm": 5.5, "net": "VBUS"}],
@@ -239,40 +237,7 @@ Consumers per key (script -> phase):
                                   "switching_kind": "hard",
                                   "rectifier_kind": "sync",
                                   "integration_kind": "integrated-fet",
-                                  "source_kind": "usb-pd"}}],
-
-  // RF nets (route_critical sizes the width from impedance_ohm; check_rf,
-  // hive-hwde #335). f_ghz turns on check_rf's stub and length checks: an
-  // open branch or a via's unused barrel past max_stub_deg (default 18 =
-  // lambda/20) is an error unless allow_stubs; max_deg / length_deg +
-  // tol_deg (default 5) bound the electrical length from path[0] to
-  // path[1] (pads "REF.PAD"; a two-pad net needs no path).
-  "rf": [{"net": "/RF_FEED", "impedance_ohm": 50, "f_ghz": 0.915,
-          "path": ["L2.2", "J1.1"], "max_deg": 40}],
-  // nets whose paths must match in phase, within tol_deg at f_ghz
-  "rf_phase": [{"nets": ["/LO_A", "/LO_B"], "tol_deg": 5, "f_ghz": 10.5}],
-  // RF blocks (a band's chain, an LO): copper of refs (non-ground pads) and
-  // nets. rf_isolation pairs them (default: every pair): same-layer edge
-  // spacing >= min_mm (default 5 x the layer's dielectric height) unless a
-  // ground-via wall at lambda_g/10 of the higher f sits between; wall: true
-  // demands the wall regardless of spacing.
-  "rf_blocks": [{"name": "ka", "f_ghz": 34.7, "refs": ["U4"],
-                 "nets": ["/KA_IN"], "ground": "GND"}],
-  "rf_isolation": [{"a": "ka", "b": "lo", "min_mm": 2, "wall": true}],
-  // shield cans: outline from the can's footprint pads (ref) or rect/poly.
-  // check_rf wants refs' pads inside it, exposed `net` land (default GND,
-  // ring_mm wide, default 0.5) all round with gaps no longer than the fence
-  // pitch, GND vias along it at fence_pitch_mm (default lambda_g/10 at
-  // f_ghz, else the highest rf f inside, else 3 mm), and with
-  // max_height_mm every part inside under it (heights overrides 3D models).
-  "shields": [{"name": "lna", "ref": "SH1", "refs": ["U4", "C20"],
-               "f_ghz": 24.15, "max_height_mm": 1.8,
-               "heights": {"U4": 0.9}}],
-  // reference-plane cutouts: a footprint's pads (all, or `pads`) grown by
-  // margin_mm, or rect/poly, cleared on `layers` (inner layers allowed).
-  // keepout_gen draws each as a rule area; check_rf fails copper inside.
-  "rf_cutouts": [{"ref": "J1", "pads": ["1"], "margin_mm": 0.3,
-                  "layers": ["In1.Cu"], "reason": "SMA launch"}]
+                                  "source_kind": "usb-pd"}}]
 }
 ```
 

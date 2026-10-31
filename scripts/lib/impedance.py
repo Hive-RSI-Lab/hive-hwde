@@ -64,35 +64,6 @@ def microstrip_z0_closed_form(w: float, h: float, t: float, er: float) -> float:
     return (87.0 / math.sqrt(er + 1.41)) * math.log(5.98 * h / (0.8 * w + t))
 
 
-def microstrip_eeff_closed_form(w: float, h: float, t: float, er: float) -> float:
-    """Quasi-static effective permittivity of a surface microstrip,
-    Hammerstad-Jensen (1980) with its finite-thickness width correction;
-    within ~0.2% of the field solver for 0.1 <= w/h <= 10. No dispersion:
-    eeff rises toward er with frequency (Kirschning-Jansen), so a phase from
-    this is a slight under-estimate above a few GHz. w,h,t in mm."""
-    if w <= 0 or h <= 0 or er < 1:
-        raise ValueError("w, h must be positive and er >= 1")
-    def e0(u):
-        a = (1 + math.log((u ** 4 + (u / 52) ** 2) / (u ** 4 + 0.432)) / 49
-             + math.log(1 + (u / 18.1) ** 3) / 18.7)
-        b = 0.564 * ((er - 0.9) / (er + 3)) ** 0.053
-        return (er + 1) / 2 + (er - 1) / 2 * (1 + 10 / u) ** (-a * b)
-
-    def z_air(u):
-        f = 6 + (2 * math.pi - 6) * math.exp(-(30.666 / u) ** 0.7528)
-        return 60 * math.log(f / u + math.sqrt(1 + 4 / u ** 2))
-
-    u = w / h
-    if t <= 0:
-        return e0(u)
-    tn = t / h
-    du1 = tn / math.pi * math.log(
-        1 + 4 * math.e / (tn / math.tanh(math.sqrt(6.517 * u)) ** 2))
-    u1 = u + du1
-    ur = u + 0.5 * (1 + 1 / math.cosh(math.sqrt(er - 1))) * du1
-    return e0(ur) * (z_air(u1) / z_air(ur)) ** 2
-
-
 def _zdiff(w: float, s: float, h: float, t: float, er: float) -> float:
     """Closed-form edge-coupled differential microstrip Zdiff (ohms)."""
     return 2.0 * microstrip_z0_closed_form(w, h, t, er) * (1.0 - 0.48 * math.exp(-0.96 * s / h))

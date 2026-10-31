@@ -9,13 +9,6 @@ own module can sit at its edge. Freerouting gets rule areas as DSN keepouts,
 stitch_vias and planes_gen keep out of them, and DRC grades them.
 "copper" may instead be a dict naming what is kept out, e.g. {"tracks": true,
 "vias": true, "pours": false}. An optional "name" labels the area.
-"layers": [...] names the copper layers outright (an inner layer alone, for
-a reference-plane cutout under a launch or antenna) in place of "side".
-
-constraints["rf_cutouts"] (check_rf) become rule areas too, keeping tracks,
-vias and pours off their layers: a rect / poly, or a footprint's pads (all,
-or the listed "pads") grown by "margin_mm", one area per separate piece, so
-the cutout follows the part's copper.
 
 Run it after placement and before planes_gen/route_auto (the ESP32 antenna on
 lite-main, hifi-receiver-2, was drawn by a board-local script). Idempotent:
@@ -62,13 +55,7 @@ def plan_areas(constraints: dict, copper_layers: list[str]) -> list[dict]:
         if not cu:
             continue
         side = k.get("side", "both")
-        if k.get("layers"):
-            layers = list(k["layers"])
-            bad = [l for l in layers if l not in copper_layers]
-            if bad:
-                raise CheckError(f"placement.keepouts[{i}]: layers {bad} "
-                                 "are not copper layers of the board")
-        elif side == "front":
+        if side == "front":
             layers = [copper_layers[0]]
         elif side == "back":
             layers = [copper_layers[-1]]
@@ -100,35 +87,6 @@ def plan_areas(constraints: dict, copper_layers: list[str]) -> list[dict]:
     return out
 
 
-def plan_cutouts(constraints: dict, bg) -> list[dict]:
-    """constraints rf_cutouts -> set_rule_areas entries (check_rf's own
-    geometry, so the area drawn is the one the check holds the board to)."""
-    import check_rf  # noqa: PLC0415
-    from shapely.geometry import Polygon  # noqa: PLC0415
-    out = []
-    for i, c in enumerate(constraints.get("rf_cutouts") or []):
-        layers = list(c.get("layers") or [])
-        bad = [l for l in layers if l not in bg.copper_layers]
-        if not layers or bad:
-            raise CheckError(f"rf_cutouts[{i}]: layers must name copper "
-                             f"layers of the board (got {layers})")
-        region = check_rf._region(bg, c, f"rf_cutouts[{i}]")
-        label = re.sub(r"[^A-Za-z0-9_]+", "_", str(
-            c.get("name") or c.get("ref") or i)).strip("_")
-        pieces = [g for g in getattr(region, "geoms", [region])
-                  if isinstance(g, Polygon) and g.area > 1e-6]
-        for j, g in enumerate(pieces):
-            g = g.simplify(0.01)
-            area = {"name": f"{PREFIX}_cut_{label}"
-                    + (f"_{j}" if len(pieces) > 1 else ""),
-                    "layers": layers, "reason": c.get("reason", ""),
-                    **{w: True for w in KEPT},
-                    "poly": [[checklib.rnd(x, 4), checklib.rnd(y, 4)]
-                             for x, y in list(g.exterior.coords)[:-1]]}
-            out.append(area)
-    return out
-
-
 def run(argv: list[str] | None = None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--pcb", required=True)
@@ -146,8 +104,7 @@ def run(argv: list[str] | None = None):
     constraints = checklib.load_json(cons, "constraints") \
         if cons.is_file() else {}
     bg = geom.BoardGeom.from_file(pcb)
-    areas = plan_areas(constraints, bg.copper_layers) + \
-        plan_cutouts(constraints, bg)
+    areas = plan_areas(constraints, bg.copper_layers)
     old = [ra.get("name") for ra in bg.rule_areas
            if str(ra.get("name") or "").startswith(PREFIX)]
     facts = {"areas": areas, "removed": len(old), "constraints": str(cons),
