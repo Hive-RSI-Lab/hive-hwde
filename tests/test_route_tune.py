@@ -102,7 +102,8 @@ def apply_text(pcb: Path, ops: list[dict]) -> None:
 def plan(pcb, cons, **kw):
     payload, _ = rt.run(["--pcb", str(pcb), "--constraints", str(cons),
                          "--dry-run", "--ops-out", str(pcb.with_suffix(".ops.json"))]
-                        + [x for k, v in kw.items() for x in (f"--{k}", str(v))])
+                        + [x for k, v in kw.items()
+                           for x in ((f"--{k}",) if v == "" else (f"--{k}", str(v)))])
     ops = json.loads(pcb.with_suffix(".ops.json").read_text())["ops"]
     return payload, ops
 
@@ -172,6 +173,26 @@ def test_no_room_and_too_long_are_reported(tmp_path):
     kinds = sorted(v["kind"] for v in payload["violations"])
     assert kinds == ["tune_no_room", "tune_too_long"]
     assert ops == []
+
+
+def _pour(net, x0, y0, x1, y1, layer="F.Cu"):
+    pts = f"(xy {x0} {y0}) (xy {x1} {y0}) (xy {x1} {y1}) (xy {x0} {y1})"
+    return (f'  (zone (net "{net}") (layer "{layer}")\n'
+            f'    (polygon (pts {pts}))\n'
+            f'    (filled_polygon (layer "{layer}") (pts {pts})))\n')
+
+
+def test_other_nets_pours_are_obstacles(tmp_path):
+    # GND poured 0.45 mm either side of /D0 (y=5): a bump would cut into
+    # it, so no room; --through-pours lets the plan go in (DRC guards it)
+    other = _pour("GND", 5, 0.5, 45, 4.55) + _pour("GND", 5, 5.45, 45, 9.5)
+    pcb = board(tmp_path, {"/DQS": 2.0}, other=other, pitch=12)
+    cons = cons_file(tmp_path, [{"name": "B", "nets": ["/D0"], "ref_net": "/DQS",
+                                 "tol_mm": 0.3}])
+    payload, ops = plan(pcb, cons)
+    assert ops == [] and [v["kind"] for v in payload["violations"]] == ["tune_no_room"]
+    payload, ops = plan(pcb, cons, **{"through-pours": ""})
+    assert ops and payload["tuned"][0]["added_mm"] == pytest.approx(2.0, abs=0.011)
 
 
 def test_pair_members_are_not_tuned(tmp_path):

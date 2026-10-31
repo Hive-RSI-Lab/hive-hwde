@@ -26,8 +26,9 @@ check_diffpair's and are reported, not tuned):
     a need under 2 w), then k and h are picked to add exactly what is left;
   * clearance: the new centreline buffered by w/2 must keep the board's
     clearance (the loosest netclass in .kicad_pro, KiCad's 0.2 mm default)
-    plus --margin from every other net's tracks, vias and pads on that
-    layer, from same-net copper that is not the run's own neighbour, from
+    plus --margin from every other net's tracks, vias, pads and zone fills
+    on that layer (a bump into a pour can cut it apart; --through-pours
+    allows it, DRC still guards), from same-net copper that is not the run's own neighbour, from
     copper and track keepouts, and stay min_copper_edge_clearance inside the
     outline; bumps already placed this run are obstacles for the next;
   * a net that is too LONG cannot be fixed by lengthening it and is reported
@@ -60,8 +61,8 @@ SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 
-from shapely.geometry import LineString, Point  # noqa: E402
-from shapely.ops import unary_union  # noqa: E402
+from shapely.geometry import LineString  # noqa: E402
+from shapely.strtree import STRtree  # noqa: E402
 
 import check_diffpair  # noqa: E402
 import check_length_groups as clg  # noqa: E402
@@ -115,28 +116,41 @@ def max_bumps(length: float, spacing: float, lead: float) -> int:
 class Obstacles:
     """Copper and keepouts a meander on one layer must clear, per layer."""
 
-    def __init__(self, bg, clearance: float, edge: float, margin: float):
+    def __init__(self, bg, clearance: float, edge: float, margin: float,
+                 through_pours: bool = False):
         self.bg = bg
+        self.through_pours = through_pours
         self.clear = clearance + margin
         self.edge = edge + margin
         self.inside = bg.outline.buffer(-self.edge) if not bg.outline.is_empty \
             else None
         self.extra: dict[str, list] = {}     # layer -> [(net, poly)] placed
-        self._cache: dict[str, list] = {}
+        self._cache: dict[str, tuple] = {}
+        self.dropped: set[int] = set()
 
     def _layer_items(self, layer):
+        """(items, STRtree) for a layer; items are (net, poly, track|None)."""
         if layer not in self._cache:
             bg = self.bg
             items = [(t.net, t.poly, t) for t in bg.tracks_of(layer=layer)]
             items += [(v.net, v.poly, None) for v in bg.vias_of()
                       if v.spans(layer)]
             items += [(p.net, p.poly, None) for p in bg.pads_of(layer=layer)]
+            if not self.through_pours:
+                # another net's pour: a bump into it can cut it apart (core:
+                # GND and VBUS_IN islands, 16 unconnected) - stay out
+                for z in bg.zones_of(layer=layer):
+                    if z.net:
+                        fill = z.fill_on(layer)
+                        if not fill.is_empty:
+                            items.append((z.net, fill, None))
             for ra in bg.rule_areas:
                 fl = ra.get("flags") or {}
                 if (layer in ra["layers"] and not ra["outline"].is_empty
                         and fl.get("tracks") == "not_allowed"):
                     items.append((None, ra["outline"], None))
-            self._cache[layer] = items
+            tree = STRtree([it[1] for it in items]) if items else None
+            self._cache[layer] = (items, tree)
         return self._cache[layer]
 
     def clears(self, poly, layer: str, net: str, own) -> bool:
@@ -145,13 +159,15 @@ class Obstacles:
         if self.inside is not None and not self.inside.contains(poly):
             return False
         reach = poly.buffer(self.clear)
-        for onet, opoly, trk in self._layer_items(layer):
-            if trk is not None and trk in own:
+        items, tree = self._layer_items(layer)
+        hits = tree.query(reach, predicate="intersects") if tree is not None else []
+        for i in hits:
+            onet, _, trk = items[int(i)]
+            if trk is not None and (trk in own or id(trk) in self.dropped):
                 continue
             if onet == net and trk is None:
                 continue          # own pads and vias: touching is a joint
-            if reach.intersects(opoly):
-                return False
+            return False
         for onet, opoly in self.extra.get(layer, []):
             if reach.intersects(opoly):
                 return False
@@ -162,8 +178,7 @@ class Obstacles:
 
     def drop(self, track) -> None:
         """A run replaced by its meander stops being an obstacle."""
-        for items in self._cache.values():
-            items[:] = [it for it in items if it[2] is not track]
+        self.dropped.add(id(track))
 
 
 def _neighbours(bg, track) -> set:
@@ -289,7 +304,7 @@ def plan_pass(bg, groups, cons, opts, sel) -> tuple[list, list, list]:
     board `bg` (measured once; later groups see earlier ops as obstacles)."""
     floors = _floors(bg)
     obs = Obstacles(bg, floors["clearance"], floors["edge_clearance"],
-                    opts.margin)
+                    opts.margin, through_pours=opts.through_pours)
     pairs = pair_nets(bg, cons)
     cache: dict = {}
     ops, tuned, findings = [], [], []
@@ -382,6 +397,9 @@ def run(argv=None):
     ap.add_argument("--resolution", type=float, default=0.01,
                     help="stop adding below this much, mm")
     ap.add_argument("--passes", type=int, default=3)
+    ap.add_argument("--through-pours", action="store_true",
+                    help="let meanders push into other nets' zone fills "
+                         "(default: a fill is an obstacle; DRC still guards)")
     ap.add_argument("--dry-run", action="store_true",
                     help="plan only: write no board (see --ops-out)")
     ap.add_argument("--ops-out", help="write the planned ops here")
@@ -405,7 +423,11 @@ def run(argv=None):
     backup = None
     drc_before = None
     if not args.dry_run and not args.no_drc:
-        drc_before = _drc(pcb)
+        # route_edit refills the zones after the ops, so the baseline is
+        # the board refilled too (not saved): a board whose stored fills
+        # are stale would otherwise read as damage (pinned core: 16
+        # unconnected from the refill alone)
+        drc_before = _drc(pcb, refill=bool(geom.load_board(pcb).zones_of()))
     try:
         for passes in range(1, max(1, args.passes) + 1):
             bg = geom.load_board(pcb)
@@ -453,13 +475,13 @@ def run(argv=None):
     return payload, args.out_report
 
 
-def _drc(pcb: Path) -> dict:
+def _drc(pcb: Path, refill: bool = False) -> dict:
     import env  # noqa: PLC0415
     import kc  # noqa: PLC0415
     cli = env.find_kicad_cli()
     if cli is None:
         raise CheckError("kicad-cli not found (env.py); pass --no-drc to skip")
-    return kc.run_drc(cli, pcb, all_track_errors=True)
+    return kc.run_drc(cli, pcb, all_track_errors=True, refill=refill)
 
 
 def main(argv=None) -> int:
