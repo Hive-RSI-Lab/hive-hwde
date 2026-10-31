@@ -537,3 +537,53 @@ def test_lamp_holder_led_is_not_a_pptc(tmp_path):
         {"name": "Lamp Holder Type", "value": "1.6mm x 0.8mm square LED"}]}]
     ws = _ws(tmp_path, [("D2", "C2286", {"1": "/LED", "2": "GND"})], {}, bom)
     assert _run(ws)["fuses"] == []
+
+
+# ------------------------------------------------- not parts / held facts
+
+def test_board_features_and_bom_excluded_footprints_are_not_rated(tmp_path):
+    """#429: printed RF structures (exclude_from_bom custom copper) and
+    parts.json board_feature lines are copper, not parts: no 'no LCSC'."""
+    fps = [("RFS1", "", {"1": "/RF", "2": "GND", "3": "/X"}),
+           ("RFS2", "", {"1": "/RF", "2": "GND", "3": "/X"}),
+           ("U9", "", {"1": "/RF", "2": "GND", "3": "/X"})]
+    bom = [{"refdes": ["RFS2"], "assembly_class": "board_feature"}]
+    ws = _ws(tmp_path, fps, {}, bom)
+    pcb = ws / "kicad" / "board.kicad_pcb"
+    pcb.write_text(pcb.read_text().replace(
+        '(property "Reference" "RFS1")',
+        '(property "Reference" "RFS1") (attr smd exclude_from_pos_files '
+        'exclude_from_bom)'))
+    refs = {r for v in _run(ws)["violations"] for r in v["refs"]}
+    assert refs == {"U9"}       # a real part with no LCSC still warns
+
+
+def test_hand_verified_rating_is_kept_and_not_rewarned(tmp_path, monkeypatch):
+    """#429: a rating someone recorded verified (ledger.py set) clears the
+    unrated warning and is not rewritten to unknown by the next verify."""
+    bom = [{"lcsc": "C77", "refdes": ["J1", "J2"], "mpn": "SMA"}]
+    fps = [("J1", "C77", {"1": "/RF", "2": "GND"}),
+           ("J2", "C77", {"1": "/RF", "2": "GND"})]
+    monkeypatch.setenv("HWDE_LEDGER_WRITE", "1")
+    ws = _ws(tmp_path, fps, {}, bom)
+    (ws / "state.json").write_text("{}")
+    import ledgerlib
+    hand = {"subject": "J1", "kind": "rating", "status": "verified",
+            "value": "50 V rated, checked by hand", "source": "datasheet p2"}
+    ledgerlib.put(ws, [hand], "hand")
+    p = _run(ws)
+    un = [v for v in p["violations"] if v["kind"] == "rating_unrated"]
+    assert [v["refs"] for v in un] == [["J2"]]
+    assert "J1/rating" in p["held_verified"]
+    led = ledgerlib.load(ws)["facts"]
+    assert led["J1/rating"]["status"] == "verified"
+    assert led["J1/rating"]["by"] == "hand"
+    assert led["J2/rating"]["status"] == "unknown"
+    # a real finding still overrides a held fact: J1 over its 'rated' volts
+    bom[0]["attributes"] = [{"name": "Voltage Rated", "value": "6V"}]
+    (ws / "parts" / "parts.json").write_text(json.dumps({"parts": bom}))
+    pcb = ws / "kicad" / "board.kicad_pcb"
+    pcb.write_text(pcb.read_text().replace('"/RF"', '"+12V"'))
+    p = _run(ws)
+    assert {e["refs"][0] for e in _errors(p)} == {"J1", "J2"}
+    assert ledgerlib.load(ws)["facts"]["J1/rating"]["status"] == "failed"
