@@ -412,7 +412,8 @@ for what each stage did and `LEARNINGS.md` for what it taught.
 ## Ingestion notes
 
 What each EE ingestion run found, with every rule marked verified, disputed
-or folklore, and its ranked gap list: [dfm-assembly](../reference/ingest/dfm-assembly.md).
+or folklore, and its ranked gap list: [dfm-assembly](../reference/ingest/dfm-assembly.md),
+[analog-audio](../reference/ingest/analog-audio.md).
 `hwde check_paste --pcb <board> [--stencil-mm 0.10]` (stencil area ratio,
 exposed-pad paste) came from it; run it in the DFM/assembly review. It is
 not in the verify suite yet (task 261031-013753-d3238414d5).
