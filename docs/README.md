@@ -394,3 +394,11 @@ made in the Hive: a 2-layer, 13.4 x 10.5 mm board with a 5 V header, a bulk
 cap and a green LED with its resistor. It went through every stage up to P9,
 and ERC, place, drc_routed, verify and dfm all pass. Read its `log/P*-digest.md`
 for what each stage did and `LEARNINGS.md` for what it taught.
+
+## Ingestion notes
+
+What each EE ingestion run found, with every rule marked verified, disputed
+or folklore, and its ranked gap list: [dfm-assembly](../reference/ingest/dfm-assembly.md).
+`hwde check_paste --pcb <board> [--stencil-mm 0.10]` (stencil area ratio,
+exposed-pad paste) came from it; run it in the DFM/assembly review. It is
+not in the verify suite yet (task 261031-013753-d3238414d5).
