@@ -449,3 +449,32 @@ def test_engine_no_underdrive_without_min(tmp_path, need_engine):
     rep = _pd_report(tmp_path, {"Vgs(th) max": "2.5V", **RDSON}, min_v=None)
     assert _kinds(rep, "mosfet_underdrive") == []
     assert "rail_min_v" not in rep
+
+
+def test_fb_divider_series_bottom_chain(tmp_path):
+    """A bottom of two resistors in series (FB -> R2 -> mid -> R3 -> GND)
+    reads as one bottom of R2 + R3, not '1 top / 0 bottom'."""
+    board = [
+        ("U4", "TPS54302", "SOT-23-6", {"1": ("GND", "GND"),
+                                        "3": ("+12V", "VIN"),
+                                        "4": ("/B1V375_FB", "FB")}),
+        ("R1", "100k", "R_0402_1005Metric", {"1": ("+5V", ""),
+                                             "2": ("/B1V375_FB", "")}),
+        ("R2", "10k", "R_0402_1005Metric", {"1": ("/B1V375_FB", ""),
+                                            "2": ("/MID", "")}),
+        ("R3", "5k", "R_0402_1005Metric", {"1": ("/MID", ""),
+                                           "2": ("GND", "")}),
+    ]
+    b = sim_board.load_board(write_net(tmp_path / "b.net", board))
+    rails = sim_board.resolve_rails(b, {}, None, None, {})
+    model = sim_board.build_model(b, {}, rails)
+    vios, unknowns, facts = [], [], {}
+    sim_board.regulator_findings(b, {}, rails, model, {"vref": {}}, vios,
+                                 unknowns, facts)
+    assert not any("plain divider" in u["why"] for u in unknowns)
+    (row,) = facts["regulators_fb"]
+    assert row["r_top"] == "R1" and row["r_bot"] == "R2+R3"
+    assert row["out_net"] == "+5V"
+    assert row["ratio"] == pytest.approx(1 + 100 / 15)
+    (v,) = vios
+    assert v["refs"] == ["R1", "R2", "R3", "U4"]

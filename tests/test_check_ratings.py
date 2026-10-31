@@ -101,7 +101,9 @@ def test_parse_bounds(value, param, rec, want):
 @pytest.mark.parametrize("net,v", [
     ("+3V3", 3.3), ("3V3", 3.3), ("+12V", 12.0), ("-5V", -5.0),
     ("/VCC_5V", 5.0), ("VBUS", 5.0), ("GND", 0.0), ("/pwr/V48_RTN", 0.0),
-    ("/I2C_SDA", None), ("/SW", None)])
+    ("/I2C_SDA", None), ("/SW", None), ("/power/1V35", 1.35),
+    ("/power/PG_1V35", None), ("/ADC_1V35", None), ("/VBUS_J1", 5.0),
+    ("/usb/VBUS_J2", 5.0), ("/VBUS_SENSE", None), ("/3V3_EN", None)])
 def test_volts_from_name(net, v):
     assert cr.volts_from_name(net) == v
 
