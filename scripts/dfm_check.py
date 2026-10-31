@@ -960,7 +960,7 @@ DFM_FAMILIES = {
     "bom": ("dfm_bom_incomplete", "dfm_assembly_unplaced_smt",
             "dfm_assembly_qty_mismatch", "dfm_unplaced_in_package"),
     "release": ("dfm_open_outline", "dfm_missing_layer", "dfm_no_drill"),
-    "castellation": castellation.KINDS,
+    "castellation": castellation.KINDS + ("castellated_rules_unknown",),
 }
 
 
@@ -990,9 +990,22 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
         parts: Path | None = None, skip: tuple[str, ...] = (),
         strict: bool = False, cpl: Path | None = None,
         visual: Path | None = None, easyeda_cache: Path | None = None,
-        fetch_models: bool | None = None) -> dict:
+        fetch_models: bool | None = None,
+        vendor: str | None = None) -> dict:
     if not pcb.exists():
         raise CheckError(f"board not found: {pcb}")
+    fab_name = "JLC"
+    if vendor:
+        # a vendor profile (reference/vendors/<id>.yaml, docs/vendors.md):
+        # its minimums replace JLC's; --capabilities still wins if both given
+        import vendors
+        try:
+            prof = vendors.load(vendor)
+        except vendors.VendorError as exc:
+            raise CheckError(str(exc)) from exc
+        capabilities = capabilities or Path(prof["capabilities_file"])
+        if vendor != vendors.DEFAULT:
+            fab_name = prof["meta"].get("name") or vendor
     caps = load_capabilities(capabilities or CAPABILITIES)
     if copper_oz is None:
         oz, oz_source = derive_copper_oz(pcb)
@@ -1039,7 +1052,18 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
         if "drill" not in skip:
             check_holes(fab, rules, vios, cast)
             check_annular_ring(fab, rules, vios, cast)
-        if "castellation" not in skip:
+        if "castellation" not in skip and "castellated" not in caps:
+            # a vendor that publishes no castellation rules: nothing to
+            # measure against, so a castellated board can't pass there
+            if cast:
+                vios.append(checklib.violation(
+                    CHECK, "error", None, None, None,
+                    sorted(castellation.refs(pcb)),
+                    f"the board has castellated pads and {fab_name} "
+                    "publishes no castellation rules: ask them, or pick a "
+                    "fab that does", SOURCE,
+                    kind="castellated_rules_unknown"))
+        elif "castellation" not in skip:
             cvios, cfacts = castellation.check(
                 bg, castellation.load_rules(capabilities or CAPABILITIES),
                 bg.stackup.total_thickness or None)
@@ -1119,6 +1143,13 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
             skipped_cov["placement_visual"] = (
                 "no cpl_visual.json - the fab step's image pass has not run")
 
+    if fab_name != "JLC":
+        for v in vios:
+            msg = str(v.get("msg", ""))
+            if "JLC minimum" in msg or "JLC's" in msg:
+                v["msg"] = msg.replace("JLC minimum", f"{fab_name} minimum") \
+                    .replace("JLC's", f"{fab_name}'s")
+        facts["vendor"] = vendor
     payload = checklib.report("dfm_check", pcb, vios, **facts)
     # Warnings alone do not fail the gate (netlist_audit / fp_verify precedent):
     # KiCad's stock 0.12 mm silk and tight mask dams are advisory, not defects.
@@ -1174,6 +1205,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="outer copper weight (capability table key); default: "
                          "auto from the board's stackup block, 1 oz if absent")
     ap.add_argument("--capabilities", help="override jlc_capabilities.yaml")
+    ap.add_argument("--vendor", help="check against this vendor's minimums "
+                    "(reference/vendors/<id>.yaml; default JLC's)")
     ap.add_argument("--schematic", help="schematic for the polarity oracle")
     ap.add_argument("--netlist", help="netlist for the polarity oracle")
     ap.add_argument("--no-polarity", action="store_true",
@@ -1216,7 +1249,8 @@ def main(argv: list[str] | None = None) -> int:
                       visual=Path(args.visual) if args.visual else None,
                       easyeda_cache=Path(args.easyeda_cache)
                       if args.easyeda_cache else None,
-                      fetch_models=False if args.offline else None)
+                      fetch_models=False if args.offline else None,
+                      vendor=args.vendor)
         return rep, args.out
 
     return checklib.cli_wrap("dfm_check", _go)

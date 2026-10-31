@@ -1,0 +1,118 @@
+{
+ "appointName": "JLCH06161HN1-1078",
+ "plateLayerNumber": 6,
+ "plateThickness": 1.6,
+ "cuprumThickness": 1.0,
+ "innerCopperThickness": 0.5,
+ "receptionDisplayName": "JLCH06161HN1-1078(通用/成品板厚1.59mm±10%)",
+ "impedanceDefaultTemplateAccessId": "0b26052fb4e0468e804416ac8030b115",
+ "laminationType": 1,
+ "basicDataList": [
+  {
+   "materialType": 1,
+   "material": "铜箔",
+   "materialName": "1oz",
+   "dielectricConstant": 4.2,
+   "dielectricThick": 0.0,
+   "topConductorThick": 0.035,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 0,
+   "material": "PP",
+   "materialName": "1078RC69%3.39mil",
+   "dielectricConstant": 3.99,
+   "dielectricThick": 0.0784,
+   "topConductorThick": 0.0,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 2,
+   "material": "芯板",
+   "materialName": "0.55mm H/HOZ 不含铜",
+   "dielectricConstant": 4.59,
+   "dielectricThick": 0.55,
+   "topConductorThick": 0.0152,
+   "botConductorThick": 0.0152,
+   "copperThickness": "H/H"
+  },
+  {
+   "materialType": 0,
+   "material": "PP",
+   "materialName": "7628RC50%8.5mil",
+   "dielectricConstant": 4.46,
+   "dielectricThick": 0.2008,
+   "topConductorThick": 0.0,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 2,
+   "material": "芯板",
+   "materialName": "0.55mm H/HOZ 不含铜",
+   "dielectricConstant": 4.59,
+   "dielectricThick": 0.55,
+   "topConductorThick": 0.0152,
+   "botConductorThick": 0.0152,
+   "copperThickness": "H/H"
+  },
+  {
+   "materialType": 0,
+   "material": "PP",
+   "materialName": "1078RC69%3.39mil",
+   "dielectricConstant": 3.99,
+   "dielectricThick": 0.0784,
+   "topConductorThick": 0.0,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 1,
+   "material": "铜箔",
+   "materialName": "1oz",
+   "dielectricConstant": 4.2,
+   "dielectricThick": 0.0,
+   "topConductorThick": 0.035,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  }
+ ],
+ "impedanceComponentStructResVO": {
+  "viaHoleInfoList": [
+   {
+    "viaHoleType": 1,
+    "startPosition": 1,
+    "endPosition": 2,
+    "viaStages": 1,
+    "viaHoleRadius": 0.0,
+    "adornBestrow": ""
+   },
+   {
+    "viaHoleType": 3,
+    "startPosition": 1,
+    "endPosition": 6,
+    "viaStages": 0,
+    "viaHoleRadius": 0.0,
+    "adornBestrow": ""
+   },
+   {
+    "viaHoleType": 1,
+    "startPosition": 5,
+    "endPosition": 6,
+    "viaStages": 1,
+    "viaHoleRadius": 0.0,
+    "adornBestrow": ""
+   }
+  ],
+  "massLaminationList": [
+   {
+    "massLaminationNo": 1,
+    "startPosition": 1,
+    "endPosition": 6,
+    "massLaminationThickness": 1.59
+   }
+  ]
+ }
+}

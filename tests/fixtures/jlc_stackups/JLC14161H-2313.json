@@ -1,0 +1,166 @@
+{
+ "appointName": "JLC14161H-2313",
+ "plateLayerNumber": 14,
+ "plateThickness": 1.6,
+ "cuprumThickness": 1.0,
+ "innerCopperThickness": 0.5,
+ "receptionDisplayName": "JLC14161H-2313(通用免费/成品板厚1.6mm±10%)",
+ "impedanceDefaultTemplateAccessId": "d00d11f9965e44e5a1859817becc133e",
+ "laminationType": 1,
+ "basicDataList": [
+  {
+   "materialType": 1,
+   "material": "铜箔",
+   "materialName": "1oz",
+   "dielectricConstant": 4.2,
+   "dielectricThick": 0.0,
+   "topConductorThick": 0.035,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 0,
+   "material": "PP",
+   "materialName": "2313 RC58% 4.09mil",
+   "dielectricConstant": 4.27,
+   "dielectricThick": 0.0964,
+   "topConductorThick": 0.0,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 2,
+   "material": "芯板",
+   "materialName": "0.10mm H/HOZ 不含铜",
+   "dielectricConstant": 4.11,
+   "dielectricThick": 0.1,
+   "topConductorThick": 0.0152,
+   "botConductorThick": 0.0152,
+   "copperThickness": "H/H"
+  },
+  {
+   "materialType": 0,
+   "material": "PP",
+   "materialName": "2116 RC57% 5mil",
+   "dielectricConstant": 4.29,
+   "dielectricThick": 0.1118,
+   "topConductorThick": 0.0,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 2,
+   "material": "芯板",
+   "materialName": "0.10mm H/HOZ 不含铜",
+   "dielectricConstant": 4.11,
+   "dielectricThick": 0.1,
+   "topConductorThick": 0.0152,
+   "botConductorThick": 0.0152,
+   "copperThickness": "H/H"
+  },
+  {
+   "materialType": 0,
+   "material": "PP",
+   "materialName": "2116 RC57% 5mil",
+   "dielectricConstant": 4.29,
+   "dielectricThick": 0.1118,
+   "topConductorThick": 0.0,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 2,
+   "material": "芯板",
+   "materialName": "0.10mm H/HOZ 不含铜",
+   "dielectricConstant": 4.11,
+   "dielectricThick": 0.1,
+   "topConductorThick": 0.0152,
+   "botConductorThick": 0.0152,
+   "copperThickness": "H/H"
+  },
+  {
+   "materialType": 0,
+   "material": "PP",
+   "materialName": "2116 RC57% 5mil",
+   "dielectricConstant": 4.29,
+   "dielectricThick": 0.1118,
+   "topConductorThick": 0.0,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 2,
+   "material": "芯板",
+   "materialName": "0.10mm H/HOZ 不含铜",
+   "dielectricConstant": 4.11,
+   "dielectricThick": 0.1,
+   "topConductorThick": 0.0152,
+   "botConductorThick": 0.0152,
+   "copperThickness": "H/H"
+  },
+  {
+   "materialType": 0,
+   "material": "PP",
+   "materialName": "2116 RC57% 5mil",
+   "dielectricConstant": 4.29,
+   "dielectricThick": 0.1118,
+   "topConductorThick": 0.0,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 2,
+   "material": "芯板",
+   "materialName": "0.10mm H/HOZ 不含铜",
+   "dielectricConstant": 4.11,
+   "dielectricThick": 0.1,
+   "topConductorThick": 0.0152,
+   "botConductorThick": 0.0152,
+   "copperThickness": "H/H"
+  },
+  {
+   "materialType": 0,
+   "material": "PP",
+   "materialName": "2116 RC57% 5mil",
+   "dielectricConstant": 4.29,
+   "dielectricThick": 0.1118,
+   "topConductorThick": 0.0,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 2,
+   "material": "芯板",
+   "materialName": "0.10mm H/HOZ 不含铜",
+   "dielectricConstant": 4.11,
+   "dielectricThick": 0.1,
+   "topConductorThick": 0.0152,
+   "botConductorThick": 0.0152,
+   "copperThickness": "H/H"
+  },
+  {
+   "materialType": 0,
+   "material": "PP",
+   "materialName": "2313 RC58% 4.09mil",
+   "dielectricConstant": 4.27,
+   "dielectricThick": 0.0964,
+   "topConductorThick": 0.0,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 1,
+   "material": "铜箔",
+   "materialName": "1oz",
+   "dielectricConstant": 4.2,
+   "dielectricThick": 0.0,
+   "topConductorThick": 0.035,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  }
+ ],
+ "impedanceComponentStructResVO": {
+  "viaHoleInfoList": [],
+  "massLaminationList": []
+ }
+}

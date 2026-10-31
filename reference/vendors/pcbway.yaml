@@ -1,0 +1,217 @@
+# pcbway.yaml - PCBWay (Hangzhou, CN) as a vendor profile. docs/vendors.md is
+# the schema; scripts/lib/vendors.py loads it.
+#
+# Sources (transcribed + verified 2026-10-31, every number below is from one
+# of these pages; meta.source_urls lists them all):
+#   [caps]     https://www.pcbway.com/capabilities.html
+#              two tables: "PCB Capabilities - Standard PCB" (the headline
+#              limits) and "Advanced PCB Capabilities" (each item split into
+#              Normal process / Medium difficulty / High difficulty /
+#              Non-standard review). Where the two disagree we take the
+#              STRICTER value - in practice the advanced table's "Normal
+#              process" column, since medium/high difficulty are priced and
+#              reviewed as non-standard (same rule as jlc_capabilities.yaml).
+#   [castell]  https://www.pcbway.com/pcb_prototype/What_are_Plated_Half_Holes_Castellated_Holes_.html
+#   [quote]    https://www.pcbway.com/orderonline.aspx  (form options only:
+#              layer counts, copper, default inner copper "1 oz" pre-selected)
+#   [turn]     https://www.pcbway.com/quickturn-pcb-fabrication.html
+#   [asm]      https://www.pcbway.com/assembly-capabilities.html
+#   [asmfiles] https://www.pcbway.com/assembly-file-requirements.html
+#              + its sample files Sample_BOM_PCBWay.xlsx and
+#              a-sample-of-PCBWay-Centroid-File.txt
+#   [smt]      https://www.pcbway.com/smt_ordering_guide.html
+#   [pcba]     https://www.pcbway.com/pcb-assembly.html
+#
+# All lengths mm (mil values converted at 0.0254 mm/mil). Keys are
+# "<layers>layer_<outer-copper-oz>oz", as in jlc_capabilities.yaml.
+#
+# CAVEATS
+# - min_annular_ring_mm is ONE number but PCBWay publishes two: vias 0.15
+#   ([caps] standard) / 5 mil ([caps] advanced, normal, 1 oz), and component
+#   (PTH) holes 10 mil = 0.254 at 1 oz, 12 mil = 0.3048 at 2 oz ([caps]
+#   advanced "Minimum weld ring (outer layer)"). dfm_check applies the key to
+#   every plated hole, so the row carries the VIA value; PTH component pads
+#   below the component figure are NOT caught locally.
+# - min_hole_to_hole_mm: [caps] advanced gives component holes >= 16 mil and
+#   vias (<= 0.45 mm) >= 11 mil. The row takes the stricter (component) value,
+#   so via pairs between 11 and 16 mil apart are flagged though PCBWay builds
+#   them.
+# - Hole-to-board-edge is not published (only copper-to-edge) - the key is
+#   omitted, so fit/dfm report it as unknown.
+# - min_via_diameter_mm is DERIVED, not published: min via drill + 2 x the
+#   via annular ring.
+# - No price table is published (the quote page computes prices live), so
+#   pricing is quote_only. The headline figures seen on [pcba] ("$5/10pcs"
+#   1-14 layer fab, "$29/20 pcs" PCBA, "$15/pcs" stencil) state no board
+#   size or spec and are NOT transcribed as prices.
+
+meta:
+  id: pcbway
+  name: PCBWay
+  country: CN
+  services: {pcb: true, pcba: true, stencil: true}
+  quote_url: "https://www.pcbway.com/orderonline.aspx"
+  source_urls:
+    - https://www.pcbway.com/capabilities.html
+    - https://www.pcbway.com/pcb_prototype/What_are_Plated_Half_Holes_Castellated_Holes_.html
+    - https://www.pcbway.com/orderonline.aspx
+    - https://www.pcbway.com/quickturn-pcb-fabrication.html
+    - https://www.pcbway.com/assembly-capabilities.html
+    - https://www.pcbway.com/assembly-file-requirements.html
+    - https://www.pcbway.com/img/images/pcbway/Sample_BOM_PCBWay.xlsx
+    - https://www.pcbway.com/img/images/pcbway/a-sample-of-PCBWay-Centroid-File.txt
+    - https://www.pcbway.com/smt_ordering_guide.html
+    - https://www.pcbway.com/pcb-assembly.html
+  verified: "2026-10-31"
+  order: {method: web_upload, api: false,
+          notes: "Upload gerbers on the quote page; BOM and centroid upload with the PCBA order (or email them quoting the order number)."}
+
+design_rules:
+
+  2layer_1oz:
+    min_trace_width_mm: 0.127        # [caps] adv. outer 35 um normal: 5 mil (standard table: 4 mil)
+    min_clearance_mm: 0.1524         # [caps] adv. outer 35 um normal: 6 mil (standard table: 4 mil)
+    min_via_drill_mm: 0.2            # [caps] adv. drill normal >= 0.20 (standard: 0.15, surcharge < 0.2)
+    min_via_diameter_mm: 0.5         # DERIVED: 0.2 drill + 2 x 0.15 ring
+    min_annular_ring_mm: 0.15        # [caps] standard: vias 0.15 (6 mil); PTH 0.254, see CAVEATS
+    min_hole_diameter_mm: 0.2        # [caps] adv. drill normal (standard: 0.15 with extra charge)
+    min_copper_to_edge_mm: 0.25      # [caps] adv. "Line to board edge" CNC milling, normal
+    min_hole_to_hole_mm: 0.4064      # [caps] adv. component holes >= 16 mil (vias >= 11 mil)
+    # min_hole_to_edge_mm: unknown - not published on any page read
+    min_silk_width_mm: 0.15          # [caps] standard "Minimum Character Width"
+    min_silk_height_mm: 0.8          # [caps] standard "Minimum Character Height"
+    min_solder_mask_dam_mm: 0.1143   # [caps] adv. < 2 oz: green 4 mil, other colours >= 4.5 mil (stricter)
+    outer_copper_oz: 1.0
+    inner_copper_oz: 0.0
+
+  2layer_2oz:
+    min_trace_width_mm: 0.1778       # [caps] adv. outer 70 um normal: 7 mil
+    min_clearance_mm: 0.2032         # [caps] adv. outer 70 um normal: 8 mil
+    min_via_drill_mm: 0.2
+    min_via_diameter_mm: 0.5556      # DERIVED: 0.2 + 2 x 0.1778
+    min_annular_ring_mm: 0.1778      # [caps] adv. 70 um via ring normal 7 mil (PTH 12 mil)
+    min_hole_diameter_mm: 0.2
+    min_copper_to_edge_mm: 0.25
+    min_hole_to_hole_mm: 0.4064
+    min_silk_width_mm: 0.15
+    min_silk_height_mm: 0.8
+    min_solder_mask_dam_mm: 0.127    # [caps] adv. copper >= 2 oz: 5 mil
+    outer_copper_oz: 2.0
+    inner_copper_oz: 0.0
+
+  4layer_1oz:
+    min_trace_width_mm: 0.127        # outer 5 mil governs (inner 35 um normal: 4/5 mil)
+    min_clearance_mm: 0.1524         # outer 6 mil governs (inner 5 mil)
+    min_via_drill_mm: 0.2
+    min_via_diameter_mm: 0.5
+    min_annular_ring_mm: 0.15
+    min_hole_diameter_mm: 0.2
+    min_copper_to_edge_mm: 0.25
+    min_hole_to_hole_mm: 0.4064
+    min_silk_width_mm: 0.15
+    min_silk_height_mm: 0.8
+    min_solder_mask_dam_mm: 0.1143
+    outer_copper_oz: 1.0
+    inner_copper_oz: 1.0             # [quote] "Inner Copper: 1 oz" is the pre-selected default
+    # inner hole-to-copper isolation ring, 4L: >= 7 mil normal ([caps] adv. 13) - no key for it
+
+  4layer_2oz:
+    min_trace_width_mm: 0.1778       # outer 70 um governs
+    min_clearance_mm: 0.2032
+    min_via_drill_mm: 0.2
+    min_via_diameter_mm: 0.5556
+    min_annular_ring_mm: 0.1778
+    min_hole_diameter_mm: 0.2
+    min_copper_to_edge_mm: 0.25
+    min_hole_to_hole_mm: 0.4064
+    min_silk_width_mm: 0.15
+    min_silk_height_mm: 0.8
+    min_solder_mask_dam_mm: 0.127
+    outer_copper_oz: 2.0
+    inner_copper_oz: 1.0
+
+  6layer_1oz:
+    min_trace_width_mm: 0.127
+    min_clearance_mm: 0.1524
+    min_via_drill_mm: 0.2
+    min_via_diameter_mm: 0.5
+    min_annular_ring_mm: 0.15
+    min_hole_diameter_mm: 0.2
+    min_copper_to_edge_mm: 0.25
+    min_hole_to_hole_mm: 0.4064
+    min_silk_width_mm: 0.15
+    min_silk_height_mm: 0.8
+    min_solder_mask_dam_mm: 0.1143
+    outer_copper_oz: 1.0
+    inner_copper_oz: 1.0
+    # inner isolation ring, 6L: >= 8 mil normal ([caps] adv. 13) - no key for it
+
+# Plated half-holes. [caps] standard: min diameter 0.4. [caps] advanced:
+# diameter >= 0.5 normal (0.4-0.5 medium), spacing edge-to-edge >= 0.3
+# normal. [castell]: "typically 0.6, accepts 0.4"; hole spacing 0.55
+# (0.47-0.55 costs more and takes longer); mask bridge 0.1. Stricter of each.
+# NOT published, so omitted: pad extension, distance to other edges / board
+# corners, minimum board size or thickness for castellation.
+castellated:
+  min_drill_mm: 0.5                 # [caps] adv. normal (standard/[castell] allow 0.4)
+  rec_drill_mm: 0.6                 # [castell] "typically 0.6"
+  min_hole_to_hole_mm: 0.55         # [castell] edge-to-edge ([caps] adv. says 0.3)
+  min_annular_ring_mm: 0.254        # [castell] "same as for regular through-holes": [caps] adv. 1 oz component hole 10 mil
+  on_outline_tol_mm: 0.05           # ours: hole centre must sit on Edge.Cuts
+
+board:
+  layers: [1, 2, 4, 6, 8, 10, 12, 14]     # [caps] standard 1-14; [quote] layer menu
+  max_size_mm: [508, 600]        # [caps] adv. multilayer 508x600, 1-2L 508x610 (standard table: 600x1200 / 560x1150)
+  min_size_mm: [20, 20]          # [caps] adv. normal >= 20 mm (10-20 medium, <10 high; standard table says 3x3)
+  copper_oz_outer: [1, 2, 3, 4, 5, 6, 7, 8]   # [caps] standard outer copper
+  thickness_options_mm: [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.6, 2.0, 2.4, 2.6, 2.8, 3.0, 3.2]  # [caps] standard
+  surface_finish: [HASL, "LeadFree HASL", ENIG, OSP, "Hard Gold", "Immersion Silver", "Immersion Tin", ENEPIG]
+  solder_mask_colors: [green, red, yellow, blue, white, black, "matte green", "matte black", purple]
+  silkscreen_colors: [white, black, yellow]
+  castellated: true
+  blind_buried_vias: true        # [caps] adv. HDI / [quote] "HDI(Buried/blind vias) >= 4 Layers"
+  via_in_pad: true               # [quote] advanced option "Via in pad"
+  impedance_control: true        # [quote] advanced option; [caps] adv. 35 tolerance +/-10%
+
+assembly:
+  sides: [top, bottom]           # [asm] "single or double-sided placement"
+  min_board_mm: [10, 10]         # [asm] smaller boards must be panelised; max 250 x 500
+  min_pitch_mm: 0.25             # [asm] "0.25mm fine pitch parts" (SMT page says 0.2 - stricter kept)
+  smallest_passive: "01005"      # [asm] 01005, 0201, 0402
+  bga: true                      # [asm] BGA 0.3 mm pitch rigid, X-ray
+  sourcing: both                 # [asm] turn-key, consigned/kitted, partial turn-key
+  part_number: mpn
+  distributors: [digikey, mouser, arrow, avnet]   # [pcba] "Digi-Key, Mouser Electronics, Arrow Electronics, Avnet, etc."
+  consigned: true
+  rotation: kicad
+  bom:
+    # exactly the header row of PCBWay's Sample_BOM_PCBWay.xlsx
+    columns: ["Item #", Designator, Qty, Manufacturer, "Mfg Part #", "Description / Value", "Package/Footprint", Type, "Your Instructions / Notes"]
+  cpl:
+    # PCBWay's sample centroid is an Altium export in mil:
+    #   Designator Footprint Mid X Mid Y Ref X Ref Y Pad X Pad Y TB Rotation Comment
+    # with side "T"/"B" in a "TB" column. [asmfiles] asks only for "reference
+    # designator, X and Y position, rotation and side of Board (Top or
+    # Bottom)" and accepts the CAD tool's own export, so the side column is
+    # written as "Layer" (a name vendor.py fills) with Top/Bottom, coordinates
+    # in mm, and the Ref/Pad X/Y columns are dropped.
+    columns: [Designator, Footprint, Mid X, Mid Y, Layer, Rotation, Comment]
+    side_labels: {top: Top, bottom: Bottom}
+
+files:
+  gerber: RS-274X                # [asmfiles] "gerbers in RS274X format"
+  drill: excellon
+  archive: zip
+  accepts_native: []             # [caps] also takes Altium .pcb/.pcbdoc (converted in AD), not KiCad
+  notes: "BOM as .xls/.xlsx/.csv (no PDF); centroid lists SMD parts only, designators matching the BOM and silkscreen ([smt])."
+
+pricing:
+  model: quote_only
+  currency: USD
+
+lead_time_days:
+  # [turn] "Advanced PCB orders" build time, < 1 m2: 2L 5, 4L 5, 6/8L 7 days.
+  # The same page lists "Standard PCB orders" (0-50 pcs, < 1 m2) at 24 hours
+  # but without a layer split; the longer per-layer figure is kept.
+  pcb: {2: 5, 4: 5, 6: 7}
+  assembly_additional: 5         # [pcba] "PCBA lead time 3-5 days"

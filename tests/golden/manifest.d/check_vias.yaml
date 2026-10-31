@@ -1,0 +1,13 @@
+# Seeded fault for check_vias (many-layer / HDI support, issue #317).
+mutants:
+  blind-via-no-lamination:
+    board: rf4
+    script: mutations/blind_via_no_lamination.py
+    check: check_vias
+    defect: >-
+      STACKUP fault: a GND via on rf4 is a blind via F.Cu-In1.Cu on a
+      standard 4-layer board with no HDI build named, which KiCad's DRC
+      passes and no fab can laminate
+    expect:
+      kind: via_no_lamination
+      pos: [143.6, 110.4]
