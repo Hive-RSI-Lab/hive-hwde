@@ -1,0 +1,63 @@
+# jlcpcb.yaml - JLCPCB as a vendor profile (the schema every vendor follows).
+#
+# JLC's rules and prices stay where the pipeline has always read them
+# (reference/jlc_capabilities.yaml, reference/jlc_pricing.yaml,
+# reference/jlc_rotations.csv); this profile points at them and adds what
+# vendor.py needs to compare JLC with the others. docs/vendors.md is the
+# schema; lib/vendors.py loads it.
+
+meta:
+  id: jlcpcb
+  name: JLCPCB
+  country: CN
+  services: {pcb: true, pcba: true, stencil: true}
+  quote_url: "https://cart.jlcpcb.com/quote"
+  source_urls:
+    - https://jlcpcb.com/capabilities/pcb-capabilities
+    - https://jlcpcb.com/help/article/how-to-generate-the-bom-and-centroid-file-from-kicad
+    - https://jlcpcb.com/capabilities/pcb-assembly-capabilities
+  verified: "2026-07-24"           # assembly: block 2026-10-31
+  order: {method: web_upload, api: true,
+          notes: "order_submit.py drives JLC's credentialed API; every other vendor is a web upload by the person."}
+
+capabilities_file: ../jlc_capabilities.yaml   # board:, castellated:, design_rules:
+pricing_file: ../jlc_pricing.yaml             # pricing model "table"
+
+board:
+  layers: [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+  max_size_mm: [500, 400]        # 2-layer; multilayer is smaller, see source
+  min_size_mm: [3, 3]            # PCBA needs 10 x 10 (assembly.min_board_mm)
+  copper_oz_outer: [1, 2]
+  castellated: true
+  blind_buried_vias: false
+  via_in_pad: true               # POFV on 6+ layers, free
+  impedance_control: true
+
+assembly:                        # Standard PCBA column (Economic: top only,
+  sides: [top, bottom]           # 0.4 mm pitch, 0402, 2-6 layers)
+  min_board_mm: [10, 10]
+  max_board_mm: [470, 500]
+  min_pitch_mm: 0.35             # "Minimum IC Pin Spacing"
+  smallest_passive: "01005"
+  bga: true                      # 0.3 mm centre to centre
+  sourcing: turnkey_library      # parts from JLC/LCSC's own library, by LCSC code
+  part_number: lcsc
+  distributors: [lcsc]
+  consigned: true                # parts you ship in, or bought into "My Parts"
+  rotation: jlc                  # JLC's own 0-degree, corrected per part (bom_cpl.py)
+  bom:
+    columns: [Comment, Designator, Footprint, "LCSC Part #"]
+  cpl:
+    columns: [Designator, "Mid X", "Mid Y", Layer, Rotation]
+    side_labels: {top: Top, bottom: Bottom}
+
+files:
+  gerber: RS-274X
+  drill: excellon
+  archive: zip
+  accepts_native: []             # gerbers only
+  notes: "fab_export.py writes JLC's layer set and names; bom_cpl.py the BOM/CPL pair."
+
+lead_time_days:
+  pcb: {2: 2, 4: 3, 6: 5}
+  assembly_additional: 4

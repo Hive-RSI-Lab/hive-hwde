@@ -1,0 +1,143 @@
+# seeed.yaml - Seeed Fusion (Shenzhen, CN): boards and assembly, parts from
+# Seeed's Open Parts Library (OPL) or the big distributors.
+#
+# Copied 2026-10-31 from Seeed's knowledge base ("Fusion PCB Specification",
+# "Fusion PCBA Specification", lead-time and file-export articles) and the
+# order page (meta.source_urls). All lengths mm.
+#
+# CAVEATS
+# - Track/gap are ordered as an option (1 oz: 4/4, 5/5, 6/6 mil; 2 oz 10/10;
+#   3 oz 15/15). The rows take the finest option, 4/4 mil, which must then
+#   be SELECTED on the order form; 4+ layer rows take the inner-layer 0.15.
+# - Solder mask dam: 0.32 green / 0.35 other colours as standard, 0.10 /
+#   0.13 only with the "0.1mm" option: the row takes the standard 0.32
+#   (dfm reports a thinner dam as a warning, not a failure).
+# - Hole spacing: vias 0.3, plated through-holes 0.45; the single key takes
+#   0.45. Annular ring: vias 0.1 (the key), PTH 0.152.
+# - Hole-to-edge not published; circuit to edge 0.3.
+# - No price table (the order page prices live): quote_only.
+# - PCBA: the BOM keys parts on MPN or Seeed SKU; the pick-and-place may be
+#   KiCad's own .pos (Seeed's export guide shows one). No minimum lead pitch
+#   is published for QFP/QFN; BGA down to 0.25.
+
+meta:
+  id: seeed
+  name: Seeed Fusion
+  country: CN
+  services: {pcb: true, pcba: true, stencil: true}
+  quote_url: "https://www.seeedstudio.com/fusion_pcb.html"
+  source_urls:
+    - https://www.seeedstudio.com/fusion_pcb.html
+    - https://support.seeedstudio.com/knowledgebase/articles/630254000039346378
+    - https://support.seeedstudio.com/knowledgebase/articles/630254000039346379
+    - https://support.seeedstudio.com/knowledgebase/articles/630254000039346085
+    - https://support.seeedstudio.com/knowledgebase/articles/630254000039346820
+    - https://support.seeedstudio.com/knowledgebase/articles/630254000039346822
+    - https://support.seeedstudio.com/knowledgebase/articles/630254000039282811
+  verified: "2026-10-31"
+  order: {method: web_upload, api: false,
+          notes: "Upload the gerber zip on the Fusion order page; BOM and pick-and-place with the PCBA order."}
+
+board:
+  layers: [1, 2, 4, 6]           # standard service; up to 16 via Advanced PCB
+  max_size_mm: [500, 500]
+  min_size_mm: [10, 10]
+  copper_oz_outer: [1, 2, 3]
+  thickness_options_mm: [0.6, 0.8, 1.0, 1.2, 1.6, 2.0, 2.5, 3.0]   # 1-2L; 4L from 0.8, 6L from 1.0
+  max_hole_diameter_mm: 6.3
+  surface_finish: [HASL, "LeadFree HASL", ENIG, OSP, "Hard Gold"]
+  solder_mask_colors: [green, red, yellow, blue, black, white]
+  castellated: true
+
+design_rules:
+  2layer_1oz:
+    min_trace_width_mm: 0.1016
+    min_clearance_mm: 0.1016
+    min_via_drill_mm: 0.2
+    min_hole_diameter_mm: 0.2
+    min_annular_ring_mm: 0.1
+    min_via_diameter_mm: 0.4
+    min_copper_to_edge_mm: 0.3
+    min_hole_to_hole_mm: 0.45
+    min_silk_width_mm: 0.1016
+    min_silk_height_mm: 0.5842
+    min_solder_mask_dam_mm: 0.32
+    outer_copper_oz: 1.0
+    inner_copper_oz: 0.0
+  2layer_2oz:
+    min_trace_width_mm: 0.254
+    min_clearance_mm: 0.254
+    min_via_drill_mm: 0.2
+    min_hole_diameter_mm: 0.2
+    min_annular_ring_mm: 0.1
+    min_via_diameter_mm: 0.4
+    min_copper_to_edge_mm: 0.3
+    min_hole_to_hole_mm: 0.45
+    min_silk_width_mm: 0.1016
+    min_silk_height_mm: 0.5842
+    min_solder_mask_dam_mm: 0.32
+    outer_copper_oz: 2.0
+    inner_copper_oz: 0.0
+  4layer_1oz:
+    min_trace_width_mm: 0.15       # inner layers; outer 4/4 mil
+    min_clearance_mm: 0.15
+    min_via_drill_mm: 0.2
+    min_hole_diameter_mm: 0.2
+    min_annular_ring_mm: 0.1
+    min_via_diameter_mm: 0.4
+    min_copper_to_edge_mm: 0.3
+    min_hole_to_hole_mm: 0.45
+    min_silk_width_mm: 0.1016
+    min_silk_height_mm: 0.5842
+    min_solder_mask_dam_mm: 0.32
+    outer_copper_oz: 1.0
+    inner_copper_oz: 0.5
+  6layer_1oz:
+    min_trace_width_mm: 0.15
+    min_clearance_mm: 0.15
+    min_via_drill_mm: 0.2
+    min_hole_diameter_mm: 0.2
+    min_annular_ring_mm: 0.1
+    min_via_diameter_mm: 0.4
+    min_copper_to_edge_mm: 0.3
+    min_hole_to_hole_mm: 0.45
+    min_silk_width_mm: 0.1016
+    min_silk_height_mm: 0.5842
+    min_solder_mask_dam_mm: 0.32
+    outer_copper_oz: 1.0
+    inner_copper_oz: 0.5
+
+castellated:
+  min_drill_mm: 0.5
+  on_outline_tol_mm: 0.05        # ours: hole centre on Edge.Cuts
+
+assembly:
+  sides: [top, bottom]
+  min_board_mm: [1, 1]
+  max_board_mm: [500, 500]
+  bga: true                      # down to 0.25
+  sourcing: both                 # OPL / distributors, or consigned
+  part_number: mpn               # "MPN/Seeed SKU"
+  distributors: [seeed_opl, digikey, mouser, arrow, element14]
+  consigned: true
+  rotation: kicad
+  bom:
+    columns: [Designator, "MPN/Seeed SKU", Qty]   # Seeed's BOM template
+  cpl:
+    columns: [Ref, Val, Package, PosX, PosY, Rot, Side]   # KiCad's own .pos
+    side_labels: {top: top, bottom: bottom}
+
+files:
+  gerber: RS-274X
+  drill: excellon
+  archive: zip
+  accepts_native: []
+  notes: "Gerbers zip or rar, 20 MB max; KiCad's extensions are fine (the page lists Protel ones as the standard)."
+
+pricing:
+  model: quote_only
+  currency: USD
+
+lead_time_days:                  # business days
+  pcb: {2: 14, 4: 14, 6: 14}     # 3-14 build, by order parameters
+  assembly_additional: 15        # 7-15 with OPL parts, 20-25 otherwise
