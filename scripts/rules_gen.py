@@ -230,6 +230,33 @@ def neck_rules(bg, power_facts: list[dict], cap: dict
     return rules, facts
 
 
+def bga_rules(bg, cap: dict) -> tuple[list[Rule], list[dict]]:
+    """The escape clearance inside each ball grid's courtyard (#325): the
+    netclass clearance (hole clearance less the class via's ring) is wider
+    than a 0.8 mm field's streets allow. Same geometry and rule text as
+    route_escape (lib/bgalib) - one writer's rule is the other's."""
+    sys.path.insert(0, str(SCRIPTS / "lib"))
+    import bgalib
+    floors = {"track_width": cap["min_trace_width_mm"],
+              "clearance": cap["min_clearance_mm"],
+              "via_diameter": cap["min_via_diameter_mm"],
+              "via_drill": cap["min_via_drill_mm"],
+              "annular": cap.get("min_annular_ring_mm", 0.0),
+              "hole_clearance": KICAD_HOLE_CLEARANCE_MM}
+    rules: list[Rule] = []
+    facts: list[dict] = []
+    for b in bgalib.find_bgas(bg):
+        ep = bgalib.escape_params(b, floors)
+        name = bgalib.rule_name(b.ref)
+        rules.append(Rule(name, "clearance", ep["clearance"],
+                          condition=bgalib.rule_condition(b.ref)))
+        facts.append({"ref": b.ref, "pitch_mm": b.pitch,
+                      "clearance_mm": ep["clearance"],
+                      "via_mm": [ep["via_size"], ep["via_drill"]],
+                      "method": ep["method"], "rule": name})
+    return rules, facts
+
+
 DIFF_SUFFIXES = [("_P", "_N"), ("_DP", "_DM"), ("+", "-"), ("_H", "_L")]
 
 
@@ -647,9 +674,13 @@ def build(constraints: dict, cap: dict, stackup: dict, baseline_only: bool,
         dr, df = diff_pair_rules(pairs, stackup)
         hr, hf = voltage_rules(constraints, cap)
         kr, kf = package_rules(constraints)
-        rules += pr + nr + dr + hr + kr
+        br, bf = bga_rules(bg, cap) if bg is not None else ([], [])
+        # HV and package-rating clearances stay last: KiCad's later rule
+        # wins, and a courtyard's escape clearance must never undercut them
+        rules += pr + nr + dr + br + hr + kr
         report["package_rules"] = kf
         report["necks"] = nf
+        report["bga_escape"] = bf
         report["renamed_rules"] = unique_rule_names(rules)
         classes, patterns = net_classes(constraints, pf, df, cap, hf)
         report["power"] = pf

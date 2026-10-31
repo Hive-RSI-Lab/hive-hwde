@@ -781,7 +781,8 @@ class BoardGeom:
             # ref -> lib id + Value field (check_current bounds a resistor
             # branch's current from these; check_thermal knows a package by
             # its LCSC/MPN props); the last duplicate ref wins
-            self.footprints[ref] = {"lib": lib, "value": value, "props": props}
+            self.footprints[ref] = {"lib": lib, "value": value, "props": props,
+                                    "at": (fx, fy), "angle": fangle}
             for pad in _kids(fp, "pad"):
                 self._add_pad(pad, fx, fy, fangle, ref)
 
