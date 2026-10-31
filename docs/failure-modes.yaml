@@ -3095,9 +3095,9 @@ modes:
   shows: shoot-through, motor spin
   catch: external pull-down; tri-state at reset
   coverage:
-    script: '-'
+    script: check_reset_drive
     rule: '-'
-    level: L0
+    level: L1
   target_level: L2
   gap: none
   hit_on:
@@ -3110,9 +3110,9 @@ modes:
   shows: outputs live at reset; arming only via TIM1 MOE
   catch: pull-down on EN
   coverage:
-    script: '-'
+    script: check_reset_drive
     rule: '-'
-    level: L0
+    level: L1
   target_level: L1
   gap: design constraint
   hit_on:
