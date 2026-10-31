@@ -716,6 +716,114 @@ def test_seed_synthetic_legal_and_deterministic(tmp_path_factory):
     assert {o["ref"] for o in ops1} == {"U1", "C1", "J1", "R1"}
 
 
+
+# ---- #431: satellites of a fixed anchor, and of a group member
+
+def _cap(ref, x, y, net):
+    return _fp(ref, x, y, pads=_pad("1", -0.5, 0, net)
+               + _pad("2", 0.5, 0, "GND"), cy=(-0.9, -0.5, 0.9, 0.5))
+
+
+def _fixed_anchor_board(tmp_path_factory, locked):
+    # U1 hand-placed; its caps sit on board_init's shelf, off the board.
+    # X1 (fixed) sits exactly where C1's natural slot is.
+    body = _fp("U1", 20, 15, locked=locked, pads=_pad("1", -2.5, 0, "VCC")
+               + _pad("2", 2.5, 0, "VDD"), cy=(-3, -3, 3, 3))
+    body += _cap("C1", 45, 3, "VCC") + _cap("C2", 45, 6, "VDD")
+    body += _fp("X1", 15.2, 15, locked=True, cy=(-1.5, -1.5, 1.5, 1.5))
+    body += _fp("R1", 4, 3, pads=_pad("1", -0.5, 0, "VCC")
+                + _pad("2", 0.5, 0, "GND"))
+    return _pcb(tmp_path_factory, f"fixa{int(locked)}", body, w=40.0, h=30.0)
+
+
+DEC_U1 = {"associations": [
+    {"cap": "C1", "ic": "U1", "pin": "1", "rail": "VCC"},
+    {"cap": "C2", "ic": "U1", "pin": "2", "rail": "VDD"}]}
+
+
+@pytest.mark.parametrize("locked", [True, False])
+def test_seed_places_satellites_of_a_fixed_anchor(tmp_path_factory, locked):
+    p = _fixed_anchor_board(tmp_path_factory, locked)
+    con = {"placement": {} if locked else {"fixed": ["U1"]}}
+    ops, viol, facts, model = place_seed.seed(p, con, DEC_U1, 1.0, 0.8)
+    assert not viol, viol
+    assert placelib.legality_violations(model, con["placement"]) == []
+    u1 = model.footprints["U1"]
+    assert u1.pos == (20.0, 15.0)
+    for cap, pin in (("C1", (-2.5, 0.0)), ("C2", (2.5, 0.0))):
+        c = model.footprints[cap]
+        assert model.outline.contains(c.extents_abs())
+        assert math.dist(c.center_abs(), u1.to_abs(pin)) < 5.0, cap
+    refs = {o["ref"] for o in ops}
+    assert {"C1", "C2", "R1"} <= refs and "U1" not in refs
+    assert any(c.get("fixed") and c["anchor"] == "U1"
+               for c in facts["clusters"])
+    # deterministic
+    assert place_seed.seed(p, con, DEC_U1, 1.0, 0.8)[0] == ops
+
+
+def test_fixed_clusters_only_on_request(tmp_path_factory):
+    m = placelib.PlaceModel(_fixed_anchor_board(tmp_path_factory, True))
+    plain, _w = placelib.build_clusters(m, DEC_U1, {})
+    assert {c.anchor for c in plain} == {"R1"}
+    full, _w = placelib.build_clusters(m, DEC_U1, {}, with_fixed=True)
+    u1 = next(c for c in full if c.anchor == "U1")
+    assert u1.fixed and [s.ref for s in u1.satellites] == ["C1", "C2"]
+
+
+def test_fixed_part_is_never_a_satellite(tmp_path_factory):
+    m = placelib.PlaceModel(_fixed_anchor_board(tmp_path_factory, False))
+    clusters, _w = placelib.build_clusters(m, DEC_U1, {"fixed": ["C1"]})
+    u1 = next(c for c in clusters if c.anchor == "U1")
+    assert [s.ref for s in u1.satellites] == ["C2"]
+
+
+def _nested_board(tmp_path_factory):
+    body = _fp("U1", 10, 10, pads=_pad("1", -2.5, 0, "A"), cy=(-3, -3, 3, 3))
+    body += _fp("U2", 30, 20, pads=_pad("1", -1.5, 0, "VCC")
+                + _pad("2", 1.5, 0, "A"), cy=(-2, -2, 2, 2))
+    body += _cap("C3", 45, 3, "VCC") + _cap("C5", 45, 6, "A")
+    return _pcb(tmp_path_factory, "nest", body, w=40.0, h=30.0)
+
+
+NEST_DEC = {"associations": [{"cap": "C3", "ic": "U2", "pin": "1",
+                              "rail": "VCC"}]}
+NEST_PL = {"groups": [{"name": "core", "anchor": "U1", "members": ["U2"]},
+                      {"name": "u2", "anchor": "U2", "members": ["C5"]}]}
+
+
+def test_nested_satellites_fold_into_the_top_cluster(tmp_path_factory):
+    m = placelib.PlaceModel(_nested_board(tmp_path_factory))
+    clusters, warnings = placelib.build_clusters(m, NEST_DEC, NEST_PL)
+    assert [c.anchor for c in clusters] == ["U1"]
+    sats = {s.ref: s for s in clusters[0].satellites}
+    assert list(sats) == ["U2", "C3", "C5"]       # parents first
+    assert sats["U2"].parent is None
+    assert sats["C3"].parent == "U2" and sats["C3"].target_pin == ("U2", "1")
+    assert sats["C5"].parent == "U2"
+    assert not any("itself a satellite" in w for w in warnings)
+
+
+def test_seed_slots_a_nested_decoupler_at_its_parents_pin(tmp_path_factory):
+    p = _nested_board(tmp_path_factory)
+    con = {"placement": NEST_PL}
+    _ops, viol, _f, model = place_seed.seed(p, con, NEST_DEC, 1.0, 0.8)
+    assert not viol, viol
+    assert placelib.legality_violations(model, NEST_PL) == []
+    u2, c3 = model.footprints["U2"], model.footprints["C3"]
+    assert math.dist(c3.center_abs(), u2.to_abs((-1.5, 0.0))) < 6.0
+    assert math.dist(u2.center_abs(), model.footprints["U1"].center_abs()) < 9
+
+
+def test_satellite_loop_is_refused(tmp_path_factory):
+    m = placelib.PlaceModel(_nested_board(tmp_path_factory))
+    pl = {"groups": [{"name": "a", "anchor": "U1", "members": ["U2"]},
+                     {"name": "b", "anchor": "U2", "members": ["U1"]}]}
+    clusters, warnings = placelib.build_clusters(m, {}, pl)
+    assert "U1" in {c.anchor for c in clusters}
+    assert any("loop" in w for w in warnings)
+
+
 def test_seed_hpwl_improves_on_spread_board(tmp_path_factory):
     p = _seed_board(tmp_path_factory)
     _ops, _viol, facts, _model = place_seed.seed(p, SEED_CON, SEED_DEC,
