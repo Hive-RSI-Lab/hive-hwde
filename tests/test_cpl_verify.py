@@ -61,6 +61,13 @@ BOARD = "(kicad_pcb (version 20240108) " + " ".join([
         IMPORTED_SOT236),
     _fp("U3", "aiee:SOT-23-6_L2.9-W1.6-P0.95-LS2.8-BR", 70, 10, 0,
         IMPORTED_SOT236, layer="B.Cu"),
+    _fp("C3", "aiee:C0603", 80, 10, 90, [("1", -0.7, 0), ("2", 0.7, 0)],
+        size=(0.8, 0.9), layer="B.Cu"),
+    _fp("C4", "aiee:C0603", 90, 10, 45, [("1", -0.7, 0), ("2", 0.7, 0)],
+        size=(0.8, 0.9), layer="B.Cu"),
+    _fp("D2", "LED_SMD:LED_0603_1608Metric", 100, 10, 0,
+        [("1", -0.7875, 0), ("2", 0.7875, 0)], size=(0.875, 0.95),
+        layer="B.Cu"),
 ]) + ")"
 
 # A synthetic LED whose pad 1 is the ANODE (KiCad's LED pad 1 is the cathode).
@@ -75,7 +82,8 @@ LED_MODEL = {"lcsc": "C900001", "title": "TEST-LED", "package": "LED0603",
                       "^^0~17~3~0~K~end~~~#0000FF^^0~21~-1~0~2~start"]}
 
 LCSC = {"U1": "C116592", "U2": "C116592", "D1": "C900001", "C1": "C106245",
-        "C2": "C106675", "U3": "C116592"}
+        "C2": "C106675", "U3": "C116592", "C3": "C106245", "C4": "C106245",
+        "D2": "C900001"}
 
 
 @pytest.fixture
@@ -91,7 +99,7 @@ def ws(tmp_path):
 def _cpl(**rots):
     """CPL rows at each footprint's own position (board y down -> CPL y up)."""
     pos = {"U1": 10, "U2": 20, "D1": 30, "C1": 40, "C2": 50, "X1": 60,
-           "U3": 70}
+           "U3": 70, "C3": 80, "C4": 90, "D2": 100}
     return {r: {"x": pos[r], "y": 10.0, "rot": float(v), "layer": "Top"}
             for r, v in rots.items()}
 
@@ -158,6 +166,29 @@ def test_no_data_fails_loudly(ws):
     assert v["U3"]["verdict"] == "bottom_unverified"
     assert v["U1"]["verdict"] == "ok"
     assert sorted(rep["failed"]) == ["U3", "X1"]
+
+
+def test_bottom_two_pad_part_checks_its_axis(ws):
+    """JLC's bottom mirror is not modelled, but a non-polar two-pad part at
+    0/90 deg has an axis no mirror changes: that axis is checked."""
+    pcb, cache = ws
+    for r in (90, 270):
+        v, _ = _verdicts(pcb, cache, _cpl(C3=r))
+        assert v["C3"]["verdict"] == "ok", r
+        assert v["C3"]["basis"].startswith("pad axis")
+    v, _ = _verdicts(pcb, cache, _cpl(C3=0))
+    assert v["C3"]["verdict"] == "wrong_rotation"
+    assert sorted(v["C3"]["expected_rot"]) == [90.0, 270.0]
+
+
+def test_bottom_part_the_mirror_decides_stays_unverified(ws):
+    """Polarity, more than two pads or an axis off 0/90 deg depend on the
+    mirror: never passed."""
+    pcb, cache = ws
+    for rot in (0, 45, 90, 180):
+        v, _ = _verdicts(pcb, cache, _cpl(D2=rot, C4=rot, U3=rot))
+        for ref in ("D2", "C4", "U3"):
+            assert v[ref]["verdict"] == "bottom_unverified", (ref, rot)
 
 
 def test_cache_is_read_without_network(ws, monkeypatch):
