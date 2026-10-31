@@ -295,17 +295,24 @@ def _inherit_slots(model: PlaceModel, cluster, decoupling, warnings,
     declared = [a for a in (decoupling or {}).get("associations", [])
                 if a.get("max_dist_mm") is not None
                 and {a.get("cap"), a.get("ic")} <= set(cluster.refs)]
-    kept_shapes = [anchor.precise_extents_abs()]
+    # per side: a decoupler under an area-array anchor (place_seed's
+    # back-side slot) sits on the other side and may overlap its courtyard
+    kept_shapes = {anchor.side: [anchor.precise_extents_abs()]}
+    under_ok = place_seed.is_area_array(anchor)
+    room = anchor.extents_abs().buffer(place_seed.BACKSIDE_REACH_MM + 1e-6,
+                                       join_style=2)
     slots: dict[str, tuple] = {}
     invalid: list[str] = []
     for s in sorted(cluster.satellites, key=lambda s: s.ref):
         fp = model.footprints[s.ref]
         why = None
         shape = fp.precise_extents_abs()
-        if fp.side != anchor.side:
+        if fp.side != anchor.side and not (under_ok
+                                           and room.contains(shape)):
             why = f"sits on the {fp.side} side of its {anchor.side} anchor"
         elif any(shape.intersection(k).area > placelib.EPS_AREA
-                 for k in kept_shapes if shape.intersects(k)):
+                 for k in kept_shapes.get(fp.side, [])
+                 if shape.intersects(k)):
             why = "collides inside its own cluster"
         else:
             for a in declared:
@@ -326,7 +333,7 @@ def _inherit_slots(model: PlaceModel, cluster, decoupling, warnings,
         dy = fp.center_abs()[1] - anchor.pos[1]
         slots[s.ref] = (_rot(dx, dy, anchor.angle),
                         (fp.angle - anchor.angle) % 360.0)
-        kept_shapes.append(shape)
+        kept_shapes.setdefault(fp.side, []).append(shape)
     if not invalid:
         return slots
     reslotted.extend(invalid)
