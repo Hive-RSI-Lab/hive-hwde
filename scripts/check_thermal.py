@@ -9,10 +9,38 @@ off exponentially with copper pour area toward a floor:
     theta_JA(A) = theta_floor + (theta_0 - theta_floor) * exp(-A / tau)
     1 oz / 2-layer : theta_0=174, theta_floor=55, tau=350 mm^2
     2 oz / 4-layer : theta_0=140, theta_floor=45, tau=235 mm^2   (planes spread)
-Rise ~= power_w * theta_JA(effective_area); a copper pour saturates near
-~1 in^2 (645 mm^2), so past A_sat more copper barely helps - the fix there is
-thermal vias to an inner/back plane, which the check flags separately. Every
-number is +/-30%; this is a screen, not a sign-off (JEDEC JESD51 / TI SLOA122).
+Rise ~= power_w * theta_JA(effective_area), with the area credited only up
+to A_SAT = 1 in^2 (645 mm^2): the vendor curves the model is fitted to stop
+there. Every number is +/-30%; this is a screen, not a sign-off (JEDEC
+JESD51 / TI SLOA122).
+
+Copper does NOT saturate at 1 in^2; the vendor curves flatten because their
+test boards are small. An annular copper fin (the exact Bessel solution:
+the part's pad hull as a disc of radius r0, the copper weight from the
+stackup, h = 10 W/m2K on both faces, ~5 still-air convection + ~5
+radiation) heats a sheet over a length 1/m = sqrt(k t / 2h) ~ 26 mm for 1 oz,
+and for a 2 mm source falls 92 -> 32 K/W from 645 mm^2 to an infinite sheet,
+reaching within 10 % of the sheet only at ~4900 mm^2. The bare fin is steeper
+than the calibrated curve (it has no package, FR4 or other surfaces in
+series), so it is not used raw: past A_SAT the curve is extended as
+    theta_ext(A) = theta_JA(A_SAT) + c * (fin(A) - fin(A_SAT)),
+    c = (theta_JA(tau) - theta_JA(A_SAT)) / (fin(tau) - fin(A_SAT)),
+the fin scaled to the curve's own slope between tau and A_SAT. For 1 oz
+2-layer that gives ~64 C/W at 1000 mm^2, ~55 at 2000 and ~50 for an unbounded
+pour (vs the screen's 74 everywhere past 645), and a "saturation area"
+(within 10 % of the sheet) of ~2100 mm^2 (a 26 mm radius), nearly the same
+for any pad size. theta_ext is ADVICE only: pass/fail still uses the clamped screen,
+which errs high, since nothing past 645 mm^2 has been checked against a
+measurement. What it changes is the remedy: a part that fails on saturated
+copper is told to grow the pour (to the saturation area, within its radius)
+when theta_ext there would meet the budget, instead of "more copper won't
+help". The facts carry copper_sat_mm2, area_far_mm2 (the net's copper within
+the saturation radius), theta_spread_cw (theta_ext of that copper) and
+theta_sheet_cw (theta_ext of an unbounded pour); area_far is the footprint
+of the net's copper on all layers (not their sum: the copper weight carries
+the layers). 4-layer boards use the same
+extension on MODEL_ML, with the copper thickness summed over the layers (the
+planes tied together under the part); that is rougher still.
 
 2-layer boards: the area curve alone floors at theta(A_SAT) ~74 C/W however
 the layout is built, so a part with a thermal-via array into a back pour
@@ -232,6 +260,10 @@ VIA_PITCH_MM = 1.1           # recommended thermal-via pitch
 VIA_BENEFIT_CAP = 36         # array benefit flattens past ~36 vias
 REACH_MM = (A_SAT_MM2 / math.pi) ** 0.5   # ~14.3 mm: heat spreads only so far
 K_CU_W_MK = 380.0            # copper thermal conductivity
+H_SPREAD_W_M2K = 10.0        # per face, still air: ~5 convection + ~5 radiation
+SPREAD_WITHIN = 0.10         # "saturated": within 10 % of an unbounded sheet
+SHEET_R_MM = 2000.0          # an unbounded sheet, for the fin model
+DEFAULT_CU_MM = 0.035        # 1 oz, when the stackup names no copper
 PLATING_MM = 0.018           # via barrel plating (IPC-6012 cl.2 avg is 0.020)
 DEFAULT_BOARD_MM = 1.6
 BEST_VIA_DRILL_MM = 0.3      # SLMA002's recommended thermal-via drill
@@ -648,6 +680,53 @@ def theta_ja(area_mm2: float, multilayer: bool) -> float:
     return tfloor + (t0 - tfloor) * math.exp(-a / tau)
 
 
+def fin_theta(r0_mm: float, area_mm2: float, cu_mm: float,
+              h_w_m2k: float = H_SPREAD_W_M2K, sides: int = 2) -> float:
+    """Annular copper fin heated at r0, insulated at the radius holding
+    area_mm2, cooled by h on `sides` faces: the exact Bessel solution plus
+    the heated disc's own faces (K/W). The raw spreading model (module doc)."""
+    from scipy.special import i0, i1, k0, k1  # noqa: PLC0415
+    k_t = K_CU_W_MK * cu_mm * 1e-3
+    m = math.sqrt(sides * h_w_m2k / k_t)
+    r0 = r0_mm * 1e-3
+    ro = max(r0_mm, math.sqrt(area_mm2 / math.pi)) * 1e-3
+    a, b = m * r0, m * ro
+    g_fin = (2 * math.pi * k_t * a * (k1(a) * i1(b) - i1(a) * k1(b))
+             / (k0(a) * i1(b) + i0(a) * k1(b)))
+    return float(1.0 / (g_fin + sides * h_w_m2k * math.pi * r0 ** 2))
+
+
+def spread_model(fp_area_mm2: float, cu_mm: float, multilayer: bool) -> dict:
+    """The calibrated curve extended past A_SAT by the fin (module doc):
+    theta(area) for any area, the unbounded-sheet theta, and the area
+    within SPREAD_WITHIN of it."""
+    tau = (MODEL_ML if multilayer else MODEL_2L)[2]
+    r0 = max(1.0, math.sqrt(fp_area_mm2 / math.pi))
+    f_sat = fin_theta(r0, A_SAT_MM2, cu_mm)
+    th_sat = theta_ja(A_SAT_MM2, multilayer)
+    c = ((theta_ja(tau, multilayer) - th_sat)
+         / (fin_theta(r0, tau, cu_mm) - f_sat))
+
+    def theta(area_mm2: float) -> float:
+        if area_mm2 <= A_SAT_MM2:
+            return theta_ja(area_mm2, multilayer)
+        return th_sat + c * (fin_theta(r0, area_mm2, cu_mm) - f_sat)
+
+    sheet = theta(math.pi * SHEET_R_MM ** 2)
+    lo, hi = A_SAT_MM2, math.pi * SHEET_R_MM ** 2
+    if theta(lo) <= sheet * (1 + SPREAD_WITHIN):
+        hi = lo
+    for _ in range(60):
+        if hi - lo < 1.0:
+            break
+        mid = (lo + hi) / 2
+        if theta(mid) > sheet * (1 + SPREAD_WITHIN):
+            lo = mid
+        else:
+            hi = mid
+    return {"theta": theta, "sheet_cw": sheet, "sat_mm2": hi}
+
+
 def via_r_cw(drill_mm: float, board_mm: float = DEFAULT_BOARD_MM) -> float:
     """Barrel conduction of one plated, unfilled via (C/W); inf if no drill."""
     if drill_mm <= 0:
@@ -724,6 +803,23 @@ def check_part(bg: geom.BoardGeom, entry: dict, air_c: float | None = None):
                                for layer in bg.copper_layers))
     theta = theta_ja(a_eff, multilayer)
 
+    # past A_SAT copper still helps (module doc): the spreading model's area
+    # and theta, advice only - pass/fail keeps the clamped screen above
+    cu = bg.stackup.copper_thickness
+    cu_mm = (sum(cu.get(lyr) or DEFAULT_CU_MM for lyr in bg.copper_layers)
+             if multilayer else cu.get(side) or DEFAULT_CU_MM)
+    spread = spread_model(fp_area, cu_mm, multilayer)
+    r_sat = math.sqrt(spread["sat_mm2"] / math.pi)
+    # the footprint the heat spreads over (the layers' copper thickness is
+    # already in cu_mm, so the layers are not summed again here)
+    a_far = geom._union([bg.net_copper(net, layer) for layer in
+                         bg.copper_layers]).intersection(
+        Point(cx, cy).buffer(r_sat)).area
+    spread_facts = {"copper_sat_mm2": checklib.rnd(spread["sat_mm2"]),
+                    "area_far_mm2": checklib.rnd(a_far),
+                    "theta_spread_cw": checklib.rnd(spread["theta"](a_far)),
+                    "theta_sheet_cw": checklib.rnd(spread["sheet_cw"])}
+
     # thermal vias of the net under the part (needed once copper saturates):
     # board vias plus the plated drills of the net's own pads there (a
     # footprint's thermal-via pads, a THT tab) - both tie the layers together
@@ -748,9 +844,10 @@ def check_part(bg: geom.BoardGeom, entry: dict, air_c: float | None = None):
         theta_net = theta_2l_network(a_top, a_bot, r_vias, min_bot=fp_area)
         best_drill = max([BEST_VIA_DRILL_MM] + [v.drill for v in vias]
                          + [min(p.drill) for p in drilled])
-        theta_best = theta_2l_network(
-            A_SAT_MM2, A_SAT_MM2,
-            via_array_r_cw([best_drill] * VIA_BENEFIT_CAP, board_mm))
+        r_best = via_array_r_cw([best_drill] * VIA_BENEFIT_CAP, board_mm)
+        theta_best = theta_2l_network(A_SAT_MM2, A_SAT_MM2, r_best)
+        t_big = spread["theta"](spread["sat_mm2"])
+        theta_best_big = 1.0 / (1.0 / t_big + 1.0 / (r_best + t_big))
         network = {"area_top_mm2": checklib.rnd(a_top),
                    "area_bottom_mm2": checklib.rnd(a_bot),
                    "via_array_r_cw": (None if math.isinf(r_vias)
@@ -758,7 +855,8 @@ def check_part(bg: geom.BoardGeom, entry: dict, air_c: float | None = None):
                    "back_pour_reached": bool(seeds) and a_bot >= fp_area,
                    "theta_area_cw": checklib.rnd(theta),
                    "theta_network_cw": checklib.rnd(theta_net),
-                   "theta_best_2l_cw": checklib.rnd(theta_best)}
+                   "theta_best_2l_cw": checklib.rnd(theta_best),
+                   "theta_best_2l_spread_cw": checklib.rnd(theta_best_big)}
         theta = min(theta, theta_net)
 
     # a datasheet self-heating rating replaces the copper model; declared
@@ -833,10 +931,25 @@ def check_part(bg: geom.BoardGeom, entry: dict, air_c: float | None = None):
                              min(VIA_BENEFIT_CAP,
                                  max(4, math.ceil(fp_area / VIA_PITCH_MM ** 2)))))
 
+    copper_model = not (rated or slug or has_hs or datasheet)
+
+    def grow_hint(theta_big: float, what: str) -> str:
+        """', or grow ...' when copper past the screen's 1 in^2 would meet
+        the budget by the spreading model (module doc); else ''."""
+        # 0.98: the buffered circle is a polygon, ~0.6 % short of pi r^2
+        if (not copper_model or a_far >= 0.98 * spread["sat_mm2"]
+                or power * theta_big * af > dt + 1e-6):
+            return ""
+        return (f", or grow {what} to ~{spread['sat_mm2']:.0f} mm2 within "
+                f"{r_sat:.0f} mm of {ref} (a spreading model gives "
+                f"~{theta_big * af:.0f} C/W there, ~{power * theta_big * af:.0f}"
+                f" C; the screen credits copper only to {A_SAT_MM2:.0f} mm2)")
+
     if rise > dt + 1e-6:
         saturated = a_eff >= A_SAT_MM2 - 1e-6
-        remedy = ("add thermal vias to an inner/back plane" if saturated or
-                  need_vias else f"grow the {net} pour")
+        remedy = ("add thermal vias to an inner/back plane" + grow_hint(
+            spread["theta"](spread["sat_mm2"]), f"the {net} pour")
+            if saturated or need_vias else f"grow the {net} pour")
         where = f"into {a_eff:.0f} mm2 of {net} copper"
         if rated:
             r = entry["rating"]
@@ -869,7 +982,8 @@ def check_part(bg: geom.BoardGeom, entry: dict, air_c: float | None = None):
                 remedy = (f"even the best 2-layer case ({VIA_BENEFIT_CAP} vias "
                           f"into full pours, ~{best:.0f} C/W) gives "
                           f"~{power * best:.0f} C: cut the dissipation, add a "
-                          "heatsink, or move to 4 layers")
+                          "heatsink, or move to 4 layers") + grow_hint(
+                    theta_best_big, f"both {net} pours (with the vias)")
             elif not network["back_pour_reached"] or n_vias < VIA_BENEFIT_CAP:
                 remedy = f"add thermal vias into a back-side {net} pour"
             else:
@@ -888,7 +1002,8 @@ def check_part(bg: geom.BoardGeom, entry: dict, air_c: float | None = None):
         violations.append(violation(
             SCRIPT, "warning", (cx, cy), side, net, [ref],
             f"{ref} ({power:.2f} W) needs a thermal-via array to {net} "
-            f"(copper alone tops out ~{floor_cw:.0f} C/W); found {n_vias} "
+            f"(the screen credits copper only to {A_SAT_MM2:.0f} mm2, "
+            f"~{floor_cw:.0f} C/W); found {n_vias} "
             f"via(s), want >= {min_vias}", SCRIPT, kind="thermal_vias",
             vias=n_vias, required=min_vias, power_w=power))
 
@@ -915,7 +1030,7 @@ def check_part(bg: geom.BoardGeom, entry: dict, air_c: float | None = None):
              "area_mm2": checklib.rnd(a_eff), "theta_ja": checklib.rnd(theta),
              "rise_c": checklib.rnd(rise), "dt_allowed_c": dt,
              "vias_near_part": n_vias, "multilayer": multilayer, **network,
-             **extra}
+             **(spread_facts if copper_model else {}), **extra}
     return violations, facts
 
 
