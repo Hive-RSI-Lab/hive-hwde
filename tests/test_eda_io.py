@@ -170,6 +170,25 @@ def test_eagle_reader():
     assert src.vias == 1
 
 
+def test_eagle_inner_layers_pack_in_order(tmp_path):
+    """KiCad numbers Eagle's active inner layers In1, In2, ... in order: a
+    4-layer Eagle board on layers 2 and 15 (SparkFun's) has In2.Cu, not In14."""
+    brd = (FIX / "mini.brd").read_text().replace(
+        '<wire x1="4.2" y1="5" x2="4.2" y2="2" width="0.25" layer="2"/>',
+        '<wire x1="4.2" y1="5" x2="4.2" y2="2" width="0.25" layer="2"/>'
+        '<wire x1="4.2" y1="2" x2="6" y2="2" width="0.25" layer="15"/>')
+    p = tmp_path / "m.brd"
+    p.write_text(brd)
+    src = edasrc.read_source(p)
+    assert src.kicad_names["Route2"] == "In1.Cu" and src.kicad_names["Route15"] == "In2.Cu"
+
+
+def test_eagle_overbar_names():
+    ob = edasrc.eagle_overbar
+    assert ob("!RESET!") == "~{RESET}" and ob("21/SPI_!CS!") == "21/SPI_~{CS}"
+    assert ob("!WR") == "~{WR}" and ob("A!") == "A" and ob("GND") == "GND"
+
+
 def test_easyeda_reader(tmp_path):
     doc = {"head": {"docType": "3"},
            "layers": ["1~TopLayer~#f~true~true~true~", "2~BottomLayer~#f~true~false~true~",
