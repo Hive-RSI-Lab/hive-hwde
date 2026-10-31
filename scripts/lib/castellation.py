@@ -272,11 +272,13 @@ def check(bg, rules: dict, thickness_mm: float | None = None) -> tuple[list, dic
         return vios, facts
 
     runs, corners, arcs = _runs(face)
-    lo_d = float(rules["min_drill_mm"])
-    lo_ring = float(rules["min_annular_ring_mm"])
-    lo_ext = float(rules["min_pad_extension_mm"])
-    lo_edge = float(rules["min_to_other_edge_mm"])
-    lo_corner = float(rules["min_to_corner_mm"])
+    # a rule the fab doesn't publish (a vendor profile without the key,
+    # docs/vendors.md) reads 0: nothing to hold the board to
+    lo_d = float(rules.get("min_drill_mm", 0.0))
+    lo_ring = float(rules.get("min_annular_ring_mm", 0.0))
+    lo_ext = float(rules.get("min_pad_extension_mm", 0.0))
+    lo_edge = float(rules.get("min_to_other_edge_mm", 0.0))
+    lo_corner = float(rules.get("min_to_corner_mm", 0.0))
     on_edge = []
     for p in cps:
         x, y, d = _hole(p)
@@ -341,7 +343,7 @@ def check(bg, rules: dict, thickness_mm: float | None = None) -> tuple[list, dic
                 f"half-hole, JLC minimum {lo_ring} mm",
                 ring_mm=checklib.rnd(ring), min_mm=lo_ring)
 
-    lo_hh = float(rules["min_hole_to_hole_mm"])
+    lo_hh = float(rules.get("min_hole_to_hole_mm", 0.0))
     hs = [(p, *_hole(p)) for p in on_edge]
     for i in range(len(hs)):
         for j in range(i + 1, len(hs)):
@@ -356,12 +358,12 @@ def check(bg, rules: dict, thickness_mm: float | None = None) -> tuple[list, dic
                     min_mm=lo_hh)
 
     x0, y0, x1, y1 = face.bounds
-    lo_b = float(rules["min_board_mm"])
+    lo_b = float(rules.get("min_board_mm", 0.0))
     if min(x1 - x0, y1 - y0) < lo_b - 1e-6:
         add("castellated_board_size", cps[0],
             f"board {x1 - x0:.1f} x {y1 - y0:.1f} mm is below JLC's "
             f"{lo_b} x {lo_b} mm minimum for castellated holes")
-    lo_t = float(rules["min_thickness_mm"])
+    lo_t = float(rules.get("min_thickness_mm", 0.0))
     if thickness_mm is not None and thickness_mm < lo_t - 1e-6:
         add("castellated_thickness", cps[0],
             f"board {thickness_mm} mm thick is below JLC's {lo_t} mm minimum "

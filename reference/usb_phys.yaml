@@ -1,0 +1,134 @@
+# What a USB device's PHY wants on its D+/D- lines, and what a USB-C sink
+# controller does with its CC pins. check_usb_phy reads it.
+#
+# Every row comes from the vendor's own document, read for this file
+# (2026-10-31, task 261031-013152-62102f19cb). The section is given so the next
+# reader can check it. A part not listed here gets a usb_phy_unknown or
+# usb_cc_unknown warning. Add it, with its datasheet, rather than copying
+# another vendor's habit. The "22-27 ohm always" folk rule is wrong both ways:
+# USB 2.0 Table 7-9's 28-44 ohm driver impedance includes any series R. A PHY
+# that embeds it (ST, WCH) is pushed out of the window by one. A PHY that
+# doesn't (NXP LPC FS, RP2040) needs one of its own vendor's value.
+#
+# The bus side (USB 2.0, read from usb.org's usb_20_20250603.zip):
+#   - Pull-up/pull-down resistors ECN, section 7.1.5.1: a device with a
+#     detachable cable may use 1.5 kohm +/-5% to a 3.0-3.6 V source. Any
+#     other termination is no less than 900 ohm Thevenin, its open-circuit
+#     voltage no more than VBUS, and its idle D+ is 2.7-3.6 V. Full speed
+#     is the pull-up on D+, low speed on D-.
+# The CC side (USB Type-C Cable and Connector Specification R2.5, March 2026,
+# Table 4-28, read from usb.org's "USB Type-C 2.5 Release 202603.zip"):
+#   - Rd is 5.1 kohm +/-20% to GND to attach at all. It must be +/-10% for
+#     the sink to read the source's current advertisement. It is "the total
+#     equivalent resistance into the Sink CC pin including all internal
+#     resistances", so an external 5.1 k beside an internal one (2.55 k)
+#     fails as surely as none.
+
+usb_bus:
+  dp_pullup_ohm: [1425, 1575]     # 1.5 kohm +/-5% (ECN 7.1.5.1)
+  dp_pullup_rail_v: [3.0, 3.6]    # VTERM
+  thevenin_min_ohm: 900
+  series_max_ohm: 100             # a resistor this small is in series, not a pull
+  series_tol: 0.10                # a required series R within 10% of its value
+  cc_rd_ohm: 5100
+  cc_rd_tol_attach: 0.20          # Type-C R2.5 Table 4-28
+  cc_rd_tol_current: 0.10
+
+# Device PHYs. match: a regex on the part's value. series_r: none | required
+# | optional, with ohm for required/optional. dp_pullup: internal | external.
+# pins (optional): the PHY's own pin names this row covers (a part with a
+# second port of another kind).
+phys:
+  - name: WCH CH340 (all variants)
+    match: '^CH340'
+    series_r: none
+    dp_pullup: internal
+    source: >-
+      WCH CH340 datasheet V3D (wch-ic.com CH340DS1.PDF), section 1: "CH340's
+      USB transceiver is designed to be fully internalized according to
+      USB2.0, and it is recommended that the UD+ and UD- pins are not
+      connected with additional resistors". The pin table says UD+/UD-
+      "connect directly to the D+/D- data line of the USB bus without a
+      series resistor". Section 5: "The CH340 chip has a built-in USB
+      pull-up resistor".
+  - name: STM32F102/F103, F302/F303, F373 (USB FS device, no embedded pull-up)
+    match: '^STM32F(10[23]|30[23]|373)'
+    series_r: none
+    dp_pullup: external
+    source: >-
+      ST AN4879 Rev 5 (May 2022), Table 3: embedded pull-up on USB_DP "-"
+      with note 2 ("the USB_DP (D+) pin must be pulled up to a voltage in
+      the 3.0 to 3.6 V range with a 1.5 kohm resistor"). Table 4: "1.5 kohm
+      resistor must be added". Figures 5 and 7 show 1.5 kohm +/-1%, switched
+      by a GPIO after VBUS detection when self-powered. FAQ: "On the internal
+      USB PHYs, the matching output impedance is already embedded in the
+      pad transceiver ... No external resistors are needed."
+  - name: STM32 with embedded D+ pull-up (F0 USB lines, F105/107, F2, F4, F7, L0, L1, L4, L4+, H743/753/750)
+    match: '^STM32(F0[47]|F10[57]|F2|F4|F7|L0|L1|L4|H7(43|53|50))'
+    series_r: none
+    dp_pullup: internal
+    source: >-
+      ST AN4879 Rev 5 (May 2022), Table 3: "Embedded pull-up resistor on
+      USB_DP line: Yes" for these lines. The FAQ says no external series
+      resistors are needed on the internal PHYs. Newer series (G0, G4, U5,
+      H5, C0) aren't in Rev 5's table: add them from their own reference
+      manual.
+  - name: NXP LPC full-speed USB (USB0 / USB port)
+    match: '^LPC'
+    pins: '^USB0?_D[PM+-]'
+    series_r: required
+    ohm: 33
+    dp_pullup: external
+    source: >-
+      NXP AN11392 Rev. 1 (20 August 2013), "Guidelines for full-speed USB on
+      NXP's LPC microcontrollers", section 2.1: the two 33 ohm resistors
+      "are required for proper USB operation ... all NXP microcontrollers
+      with a full-speed USB peripheral use 33 ohm resistors, but please
+      check the device data sheet". Section 2.2: "A full-speed USB device
+      requires a 1.5 kohm resistor between the USB_DP pin and 3.3 V"
+      (directly, or switched by USB_CONNECT). The pins rule leaves out a
+      high-speed USB1 port with its own PHY (LPC55S69, LPC546xx).
+  - name: Raspberry Pi RP2040
+    match: '^RP2040'
+    series_r: required
+    ohm: 27
+    dp_pullup: internal
+    source: >-
+      Raspberry Pi "Hardware design with RP2040" (build 0444806419d7,
+      2026-08-20), USB section: "The USB_DP and USB_DM pins on RP2040 do not
+      require any additional pull-ups or pull-downs ... these I/Os do require
+      27 ohm series termination resistors (R3 and R4 in Figure 9), placed
+      close to the chip".
+  - name: Espressif ESP32-S3 (chip and modules)
+    match: 'ESP32-S3'
+    series_r: optional
+    ohm: 22
+    dp_pullup: internal
+    source: >-
+      Espressif ESP Hardware Design Guidelines, ESP32-S3 schematic checklist
+      (docs.espressif.com, latest): GPIO19/GPIO20 are USB D-/D+; "It is
+      recommended to reserve series resistors (initial value can be 22/33
+      ohm) and capacitors to ground ... close to the chip". The USB pull-up
+      is the chip's own (USB_SERIAL_JTAG_DP_PULLUP).
+
+# Parts that sit on D+/D- without being the device's PHY: ESD arrays, and
+# charger/PD sinks that only watch DP/DM for BC1.2 or QC.
+not_phy: '^(USBLC6|TPD\dE|TPD\dS|PESD|ESD|SRV05|IP42\d\d|RCLAMP|SP05\d\d|ULC|CH22[14]|ECMF)'
+
+# USB-C sink controllers on CC1/CC2. rd: internal (rd_ohm inside the part) |
+# external (the board fits Rd).
+cc_sinks:
+  - name: WCH CH224Q / CH224A / CH224K
+    match: '^CH224[QAK]'
+    rd: internal
+    rd_ohm: 5100
+    source: >-
+      WCH CH224 datasheet V2.0, section 6.1 (CH224Q/CH224A) and 6.2 (CH224K)
+      reference schematics: CC1/CC2 go straight to the receptacle with
+      nothing to GND. The chip is the sink's Rd.
+  - name: WCH CH224D / CH221K
+    match: '^CH22(4D|1K)'
+    rd: external
+    source: >-
+      WCH CH224 datasheet V2.0, section 6.3 (CH224D) and 6.4 (CH221K)
+      reference schematics: a 5.1 kohm from each of CC1 and CC2 to GND.

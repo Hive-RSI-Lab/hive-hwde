@@ -1,0 +1,113 @@
+# oshpark.yaml - OSH Park (US): bare boards only, purple ENIG, priced per
+# square inch for 3 copies.
+#
+# Copied 2026-10-31 from OSH Park's own docs (the spec tables of each
+# service page). Values are OSH Park's published minimums; a value the pages
+# don't publish is left out (dfm_check skips a rule with no key):
+#   min_hole_to_hole_mm, min_hole_to_edge_mm - not published.
+# Castellations: "we don't offer full support for castellations, they can
+# be fabricated if you don't mind a few minutes of rework" (castellations
+# page) - so board.castellated is false and no castellated: block exists.
+# 2 oz copper is only the "2oz-0.8mm" service: 2 layers, 0.8 mm thick.
+# OSH Park takes the .kicad_pcb as-is (they don't refill zones and don't
+# have the .kicad_pro's rules); hwde uploads the gerbers it checked.
+
+meta:
+  id: oshpark
+  name: OSH Park
+  country: US
+  services: {pcb: true, pcba: false, stencil: false}
+  quote_url: "https://oshpark.com/"
+  source_urls:
+    - https://docs.oshpark.com/services/two-layer/
+    - https://docs.oshpark.com/services/four-layer/
+    - https://docs.oshpark.com/services/six-layer/
+    - https://docs.oshpark.com/services/two-layer-hhdc/
+    - https://docs.oshpark.com/design-tools/kicad/
+    - https://docs.oshpark.com/tips+tricks/castellations/
+  verified: "2026-10-31"
+  order: {method: web_upload, api: false,
+          notes: "Upload at oshpark.com; boards ship in multiples of 3."}
+
+board:
+  layers: [2, 4, 6]
+  max_size_mm: [406.4, 558.8]
+  min_size_mm: [6.35, 6.35]
+  copper_oz_outer: [1, 2]
+  thickness_options_mm: [1.6, 0.8]   # 0.8 only with the 2 oz service
+  max_hole_diameter_mm: 6.604        # larger holes are milled
+  surface_finish: [ENIG]
+  solder_mask_colors: [purple]
+  castellated: false
+  blind_buried_vias: false
+  via_in_pad: false
+
+design_rules:
+  2layer_1oz:
+    min_trace_width_mm: 0.1524       # 6 mil
+    min_clearance_mm: 0.1524
+    min_via_drill_mm: 0.254
+    min_hole_diameter_mm: 0.254      # 10 mil
+    min_annular_ring_mm: 0.127       # 5 mil
+    min_via_diameter_mm: 0.508       # drill + 2 x ring
+    min_copper_to_edge_mm: 0.381     # 15 mil edge keepout
+    min_silk_width_mm: 0.127         # recommended minimum (3 mil short runs)
+    min_solder_mask_dam_mm: 0.1016   # 4 mil web
+    outer_copper_oz: 1.0
+    inner_copper_oz: 0.0
+  2layer_2oz:                        # 2oz-0.8mm service
+    min_trace_width_mm: 0.1524
+    min_clearance_mm: 0.1524
+    min_via_drill_mm: 0.254
+    min_hole_diameter_mm: 0.254
+    min_annular_ring_mm: 0.127
+    min_via_diameter_mm: 0.508
+    min_copper_to_edge_mm: 0.381
+    min_silk_width_mm: 0.127
+    min_solder_mask_dam_mm: 0.1016
+    outer_copper_oz: 2.0
+    inner_copper_oz: 0.0
+  4layer_1oz:
+    min_trace_width_mm: 0.127        # 5 mil
+    min_clearance_mm: 0.127
+    min_via_drill_mm: 0.254
+    min_hole_diameter_mm: 0.254
+    min_annular_ring_mm: 0.1016      # 4 mil
+    min_via_diameter_mm: 0.4572
+    min_copper_to_edge_mm: 0.381
+    min_silk_width_mm: 0.127
+    min_solder_mask_dam_mm: 0.1016
+    outer_copper_oz: 1.0
+    inner_copper_oz: 0.5
+  6layer_1oz:
+    min_trace_width_mm: 0.127
+    min_clearance_mm: 0.127
+    min_via_drill_mm: 0.2032         # 8 mil
+    min_hole_diameter_mm: 0.2032
+    min_annular_ring_mm: 0.1016
+    min_via_diameter_mm: 0.4064
+    min_copper_to_edge_mm: 0.381
+    min_silk_width_mm: 0.127
+    min_solder_mask_dam_mm: 0.1016
+    outer_copper_oz: 1.0
+    inner_copper_oz: 0.5
+
+files:
+  gerber: RS-274X
+  drill: excellon
+  archive: zip
+  accepts_native: [kicad_pcb]
+  notes: "KiCad's own gerber names are detected; no renaming."
+
+pricing:
+  model: per_area
+  currency: USD
+  unit: in2
+  copies: 3
+  rate: {2: 5.0, 4: 10.0, 6: 15.0}   # per square inch, per set of 3
+  verified: "2026-10-31"
+  # Medium run (2L $1/in2, multiples of 10; 4L $2/in2, multiples of 3; both
+  # 100 in2 minimum) is cheaper for big orders and is not modelled here.
+
+lead_time_days:
+  pcb: {2: 12, 4: 14, 6: 21}         # "ship within" upper bounds, calendar days
