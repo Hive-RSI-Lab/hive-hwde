@@ -53,8 +53,8 @@
 # JLC's own calculator on these stackups (tests/test_impedance.py). The
 # `closed_form` sub-entry is the IPC-2141A fallback for the same stack, kept
 # for a venv without scipy. OUTER-layer microstrip here; impedance.py also
-# solves inner stripline (check_diffpair uses it), but rules_gen still keeps
-# solved pairs off inner layers.
+# solves inner stripline (check_diffpair uses it), and rules_gen writes
+# layer-scoped widths for an inner layer with pours above and below (#323).
 #
 # Units: mm. `stack` is ordered top->bottom and lists copper + dielectric
 # layers using KiCad stackup layer names, so board_init can emit the block
