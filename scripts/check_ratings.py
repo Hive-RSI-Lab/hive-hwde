@@ -178,7 +178,9 @@ def load_parts_on_board(pcb: Path) -> list[dict]:
                     fns.setdefault(num, pf[1])
             if num and net and not net.startswith("unconnected-"):
                 pads.setdefault(num, net)
+        attrs = {str(_t(x)) for a in _kids(fp, "attr") for x in a[1:]}
         out.append({"ref": props.get("Reference", "?"),
+                    "in_bom": not (attrs & {"exclude_from_bom", "board_only"}),
                     "lcsc": (props.get("LCSC") or props.get("LCSC Part")
                              or "").strip(),
                     "value": props.get("Value", ""),
@@ -514,13 +516,36 @@ def _fmt(v: float) -> str:
     return f"{v:.3g}"
 
 
+def _board_features(bom: list[dict]) -> set[str]:
+    """refdes parts.json classes as board_feature (printed copper, logos)."""
+    out = set()
+    for ln in bom:
+        refs = ln.get("refdes") or []
+        refs = [refs] if isinstance(refs, str) else refs
+        rc = ln.get("refdes_class") or {}
+        for r in refs:
+            if rc.get(r, ln.get("assembly_class")) == "board_feature":
+                out.add(str(r))
+    return out
+
+
 def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
               power_tree: Path | None,
-              cons_dir: Path | None = None) -> tuple[list[dict], dict]:
-    board = load_parts_on_board(pcb)
+              cons_dir: Path | None = None,
+              trusted: set[str] | None = None) -> tuple[list[dict], dict]:
+    """trusted: refdes whose rating a person checked and recorded verified in
+    the ledger (#429) - their 'unrated' warnings are dropped (a real
+    over-rating error still fires)."""
     pj = parts_dir / "parts.json"
     bom = checklib.load_json(pj, "parts.json").get("parts", []) \
         if pj.is_file() else []
+    # footprints that are not parts - excluded from the BOM (printed RF
+    # structures, logos, test coupons) or classed board_feature - have no
+    # rating to check (#429)
+    feats = _board_features(bom)
+    board = [b for b in load_parts_on_board(pcb)
+             if b["in_bom"] and b["ref"] not in feats]
+    trusted = set(trusted or ())
     bom_by_lcsc = {str(p.get("lcsc") or "").strip(): p for p in bom
                    if p.get("lcsc")}
     exts: dict[str, dict] = {}
@@ -758,6 +783,10 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
     fuse_facts = fuse_findings(board, bom_by_lcsc, volts, vsrc, currents,
                                amb, emit, checked_by_ref, unrated_passives)
     temp_facts = temperature_findings(board, bom_by_lcsc, exts, amb, emit)
+    unrated_passives = [r for r in unrated_passives if r not in trusted]
+    out = [v for v in out if not (v.get("kind") == "rating_unrated"
+                                  and set(v.get("refs") or []) <= trusted
+                                  and v.get("refs"))]
     lcsc_of = {b["ref"]: b["lcsc"] for b in board}
     bare = [r for r in unrated_passives
             if not (bom_by_lcsc.get(lcsc_of.get(r)) or {}).get("attributes")]
@@ -1244,15 +1273,29 @@ def run(argv=None):
         ws / "architecture" / "power_tree.md"
     cons = checklib.load_json(args.constraints, "constraints") \
         if args.constraints else None
+    import ledgerlib
+    # a fact someone else (a person, `ledger.py set`) recorded verified is
+    # evidence this check lacks: it is not re-warned and not overwritten
+    # unless the check finds it actually failed (#429)
+    held = {k: f for k, f in ledgerlib.load(ws)["facts"].items()
+            if f.get("kind") in ("rating", "pinout")
+            and f.get("status") == "verified" and f.get("by") != SCRIPT} \
+        if ledgerlib.workspace_of(pcb) else {}
+    trusted = {f["subject"] for f in held.values() if f["kind"] == "rating"}
     viol, facts = run_check(pcb, parts, cons, tree,
                             Path(args.constraints).resolve().parent
-                            if args.constraints else None)
-    import ledgerlib
+                            if args.constraints else None, trusted=trusted)
     lf = facts.pop("ledger_facts")
+    for f in lf:
+        h = held.get(ledgerlib.key(f["subject"], f["kind"]))
+        if h is not None and f["status"] != "failed":
+            f.update(status="verified", value=h.get("value", ""),
+                     source=h.get("source", ""), held_by=h.get("by"))
+    facts["held_verified"] = sorted(held)
     if ledgerlib.writable(ws):
         exp = ledgerlib.expected(ws)
         led = ledgerlib.put(ws, [f for f in lf if ledgerlib.key(
-            f["subject"], f["kind"]) in exp], SCRIPT)
+            f["subject"], f["kind"]) in exp and "held_by" not in f], SCRIPT)
         facts["ledger"] = str(led) if led else None
     facts["ledger_counts"] = {
         k: {st: sum(1 for f in lf if f["kind"] == k and f["status"] == st)
