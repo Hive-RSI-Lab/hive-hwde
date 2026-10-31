@@ -54,6 +54,12 @@ schematic-level structural problems BEFORE board work starts:
  - polarized_cap_reverse (warning): an electrolytic or tantalum (C_Polarized
    / CP symbol or footprint, + on pin 1 or the pin named +) whose + side
    rests more than 0.5 V below its - side, by the input_common_mode solve.
+ - below_min_stable_gain (warning): a decompensated op-amp in
+   reference/opamp_min_gain.yaml (OPA637, OPA228, an uncompensated NE5534)
+   whose noise gain - 1/beta, the share of the output its resistors and
+   capacitors feed back to the inverting input, read at GBW / min gain
+   with every source zeroed - is under the part's minimum stable gain: a
+   follower (1) or an inverting -1 stage (2) around a gain-5 part rings.
  - pin_part_missing: a part reference/pin_requirements.yaml says the IC's
    datasheet requires between two of its pins (CBK from FB_BK to GND_BK)
    that no part of that kind and value spans (error), or, in a
@@ -418,6 +424,7 @@ def _dc_level(net: str, nets: dict, comps: dict,
     unknown: list[str] = []
     edges: list[tuple[str, str, float]] = []
     opened: set[str] = set()
+    stamped: set[str] = set()
     todo, seen = [net], {net}
     while todo:
         n = todo.pop()
@@ -428,6 +435,9 @@ def _dc_level(net: str, nets: dict, comps: dict,
             ref = m["ref"] or ""
             pins = comp_pins.get(ref, {})
             if ref.startswith("R") and len(pins) == 2:
+                if ref in stamped:
+                    continue  # met from its other end: stamped once
+                stamped.add(ref)
                 ohms = parse_value(comps.get(ref, {}).get("value"))
                 if ohms is None:
                     return None, [], f"{ref} has no readable value"
@@ -472,6 +482,146 @@ def _dc_level(net: str, nets: dict, comps: dict,
                 f = g[r][c] / g[c][c]
                 g[r] = [x - f * y for x, y in zip(g[r], g[c])]
     return g[0][k] / g[0][0], sorted(opened), ""
+
+
+# ------------------------------------------------------------ min stable gain
+
+OPAMP_MIN_GAIN_YAML = HERE.parent / "reference" / "opamp_min_gain.yaml"
+# an op-amp's inverting input and its output, with the unit's tag (A, 2)
+_AMP_INV_RE = re.compile(r"^(?:-|-IN_?([A-D1-4])?|IN_?([A-D1-4])?-|INV)$")
+_AMP_OUT_RE = re.compile(r"^(?:~|V?OUT_?([A-D1-4])?|VO_?([A-D1-4])?|"
+                         r"([A-D1-4])OUT)$")
+# -in pin -> output pin of the standard single / dual / quad pinouts
+_STD_LOOPS = ({"2": "6"}, {"2": "1", "6": "7"},
+              {"2": "1", "6": "7", "9": "8", "13": "14"})
+_DRIVEN_TYPES = ("output", "power_out", "power_in", "tri_state")
+
+
+def _min_gain_table(path: Path = OPAMP_MIN_GAIN_YAML) -> list[dict]:
+    import yaml  # noqa: PLC0415
+    rows = yaml.safe_load(path.read_text(encoding="utf-8"))["parts"]
+    for r in rows:
+        r["_re"] = re.compile(r["match"], re.I)
+        # YAML 1.1 reads 80.0e6 (no exponent sign) as a string
+        r["min_gain"], r["gbw_hz"] = float(r["min_gain"]), float(r["gbw_hz"])
+    return rows
+
+
+def _amp_loops(types: dict[str, dict]) -> list[tuple[str, str]]:
+    """(inverting input pin, output pin) of each amplifier in one part:
+    the only pair, else paired by unit tag (INA-/OUTA), else by the
+    standard single, dual or quad op-amp pinout."""
+    def tag(rx, m):
+        hit = rx.match((m.get("pinfunction") or "").upper())
+        return next((g for g in hit.groups() if g), "") if hit else None
+    invs = {p: tag(_AMP_INV_RE, m) for p, m in types.items()
+            if tag(_AMP_INV_RE, m) is not None}
+    outs = {p: tag(_AMP_OUT_RE, m) for p, m in types.items()
+            if tag(_AMP_OUT_RE, m) is not None
+            or (_base_type(m["pintype"]) == "output"
+                and not _AMP_SUPPLY_RE.match((m.get("pinfunction")
+                                              or "").upper()))}
+    if len(invs) == 1 and len(outs) == 1:
+        return [(next(iter(invs)), next(iter(outs)))]
+    pairs = [(i, o) for i, ti in invs.items() for o, to in outs.items()
+             if ti and ti == to]
+    if len(pairs) == len(invs):
+        return sorted(pairs)
+    for std in _STD_LOOPS:
+        if set(std) == set(invs) and set(std.values()) <= set(outs):
+            return sorted(std.items())
+    return []
+
+
+def _noise_gain(inv: str, out: str, own: str, f_hz: float, nets: dict,
+                comps: dict, comp_pins: dict[str, dict[str, str]],
+                rails: dict[str, float]) -> tuple[float | None, str]:
+    """|1/beta| at f_hz: the output net driven with 1 V and every source
+    zeroed, the inverse of the share that comes back to the inverting input
+    through the resistors and capacitors around it. Rails, nets with a
+    driven pin (an output, a supply pin) and connector pins (a source
+    plugged in) are AC ground; inputs and test points are open. Any other
+    pin on the way (a diode, a transistor, a bead) makes it unknown:
+    (None, why). No passive path back from the output is no feedback here
+    (open loop, a comparator, or a loop through another stage): (None, why)."""
+    import cmath  # noqa: PLC0415
+    from engcalc import parse_value  # noqa: PLC0415
+    if inv == out:
+        return 1.0, ""
+    jw = 2j * cmath.pi * f_hz
+    fixed: dict[str, complex] = {out: 1.0}
+    unknown: list[str] = []
+    edges: list[tuple[str, str, complex]] = []
+    stamped: set[str] = set()
+    todo, seen = [inv], {inv, out}
+    while todo:
+        n = todo.pop()
+        members = nets[n]
+        if n != inv and (n in rails or any(
+                _CONNECTOR_RE.match(m["ref"] or "")
+                or _base_type(m["pintype"]) in _DRIVEN_TYPES
+                or (m["ref"] == own and _AMP_OUT_RE.match(
+                    (m.get("pinfunction") or "").upper()))
+                for m in members)):
+            fixed[n] = 0.0
+            continue
+        unknown.append(n)
+        if len(unknown) > _DC_CLUSTER_MAX:
+            return None, "feedback network too large"
+        for m in members:
+            ref = m["ref"] or ""
+            pins = comp_pins.get(ref, {})
+            kind = _part_kind(ref) if len(pins) == 2 else None
+            if kind in ("R", "C"):
+                if ref in stamped:
+                    continue
+                stamped.add(ref)
+                val = parse_value(comps.get(ref, {}).get("value"))
+                if val is None:
+                    return None, f"{ref} has no readable value"
+                far = next(nt for p, nt in pins.items() if p != m["pin"])
+                if far == n:
+                    continue
+                y = (1.0 / max(val, 1e-3) if kind == "R" else jw * val)
+                edges.append((n, far, y))
+                if far not in seen:
+                    seen.add(far)
+                    todo.append(far)
+            elif _OPEN_DC_RE.match(ref) or ref == own:
+                continue
+            elif _base_type(m["pintype"]) == "input" or _AMP_IN_RE.match(
+                    (m.get("pinfunction") or "").upper()):
+                continue
+            else:
+                return None, (f"{ref}.{m['pin']} "
+                              f"({m['pintype'] or 'no type'}) on {n}")
+    if not any(out in (a, b) for a, b, _ in edges):
+        return None, "no passive feedback from the output"
+    idx = {n: i for i, n in enumerate(unknown)}
+    k = len(unknown)
+    g = [[0j] * (k + 1) for _ in range(k)]
+    for a, b, y in edges:
+        for x, o in ((a, b), (b, a)):
+            if x not in idx:
+                continue
+            g[idx[x]][idx[x]] += y
+            if o in idx:
+                g[idx[x]][idx[o]] -= y
+            else:
+                g[idx[x]][k] += y * fixed[o]
+    for c in range(k):
+        piv = max(range(c, k), key=lambda r: abs(g[r][c]))
+        if abs(g[piv][c]) < 1e-15:
+            return None, f"{inv} has no path to a fixed node"
+        g[c], g[piv] = g[piv], g[c]
+        for r in range(k):
+            if r != c and g[r][c]:
+                f = g[r][c] / g[c][c]
+                g[r] = [x - f * y for x, y in zip(g[r], g[c])]
+    beta = abs(g[0][k] / g[0][0])
+    if beta < 1e-9:
+        return None, "no signal fed back"
+    return 1.0 / beta, ""
 
 
 # ------------------------------------------------------------ amplifier DC path
@@ -1119,6 +1269,51 @@ def audit(parsed: dict, constraints: dict,
               f"part if the bias can go either way",
               plus_v=round(levels[0], 3), minus_v=round(levels[1], 3))
 
+    # 14. a decompensated op-amp run below its minimum stable noise gain
+    # (reference/opamp_min_gain.yaml): a follower or a G = -1 stage around
+    # an OPA637 or an uncompensated NE5534 oscillates. Noise gain, 1/beta,
+    # read where the loop crosses over at the minimum gain, so a feedback
+    # cap that drops it there counts (ADI MT-033, AN148)
+    gain_table = _min_gain_table()
+    loops_checked = 0
+    for ref in sorted(comps):
+        row = _cm_row(comps[ref], gain_table)
+        if not row:
+            continue
+        pins = comp_pins.get(ref, {})
+        types = {m["pin"]: m for n in set(pins.values()) for m in nets[n]
+                 if m["ref"] == ref}
+        if row.get("comp_pins"):
+            comp_re = re.compile(row["comp_pins"], re.I)
+            comp_nets = {pins[p] for p, m in types.items()
+                         if comp_re.search(m.get("pinfunction") or "")}
+            if any((m["ref"] or "").startswith("C") for n in comp_nets
+                   for m in nets[n]):
+                continue  # compensated by hand
+        f_hz = row["gbw_hz"] / row["min_gain"]
+        for inv_p, out_p in _amp_loops(types):
+            ng, _why = _noise_gain(pins[inv_p], pins[out_p], ref, f_hz,
+                                   nets, comps, comp_pins, rails)
+            if ng is None:
+                continue
+            loops_checked += 1
+            if ng >= row["min_gain"] * 0.98:
+                continue
+            sib = (f", or the unity-stable {row['unity_stable']}"
+                   if row.get("unity_stable") else "")
+            v("warning", "below_min_stable_gain", pins[inv_p], [ref],
+              f"{ref} ({comps[ref].get('value')}) is decompensated, stable "
+              f"only at a noise gain of {row['min_gain']:g} or more, but "
+              f"its loop from {pins[out_p]} (pin {out_p}) back to "
+              f"{pins[inv_p]} (pin {inv_p}) gives a noise gain of {ng:.2f} "
+              f"at {f_hz / 1e6:.3g} MHz (a follower is 1, an inverting -1 "
+              f"stage 2): it will ring or oscillate. Raise the noise gain "
+              f"(a smaller gain resistor, or an R-C from the inverting "
+              f"input to ground){sib} (from {row['source'].split(';')[0]}"
+              + ("" if row.get("verified") else ", not yet re-read") + ")",
+              pin=inv_p, out_pin=out_p, noise_gain=round(ng, 3),
+              min_gain=row["min_gain"], at_hz=f_hz)
+
     facts = {
         "nets": len(nets),
         "components": len(comps),
@@ -1133,6 +1328,7 @@ def audit(parsed: dict, constraints: dict,
         "common_mode_inputs_checked": cm_checked,
         "amp_inputs_dc_checked": dc_checked,
         "polarized_caps_checked": pol_checked,
+        "min_gain_loops_checked": loops_checked,
     }
     return violations, facts
 

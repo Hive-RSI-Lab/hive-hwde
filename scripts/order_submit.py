@@ -127,6 +127,7 @@ sys.path.insert(0, str(SCRIPTS / "lib"))
 
 import castellation  # noqa: E402
 import fabhash  # noqa: E402
+import fabmaterial  # noqa: E402
 import jlcapi  # noqa: E402
 import releaselib  # noqa: E402
 import safelib  # noqa: E402
@@ -388,8 +389,21 @@ def build_pcb_param(spec: dict) -> dict:
             "required by calculate/create; pass --quote (order_quote.py "
             "output measures the outline)")
     oz = spec.get("copper_weight_oz") or 1
-    finish = str(spec.get("surface_finish") or "HASL").upper()
-    color = str(spec.get("solder_mask_color") or "green").lower()
+    # The laminate (spec_snapshot.material, read from the BOARD's stackup
+    # block) picks the product line: a Rogers board goes out as JLC's
+    # high-frequency product or not at all - never as the FR-4 default
+    # (SI-09: order stackup differs from design).
+    material = spec.get("material") or fabmaterial.FR4
+    problems = fabmaterial.order_problems(material, spec)
+    if problems:
+        raise ApiRefused("the order can't be built on the board's laminate: "
+                         + "; ".join(problems))
+    mrow = fabmaterial.row(material)
+    defaults = fabmaterial.order_defaults(material)
+    finish = str(spec.get("surface_finish") or defaults.get("surface_finish")
+                 or "HASL").upper()
+    color = str(spec.get("solder_mask_color")
+                or defaults.get("solder_mask_color") or "green").lower()
     surface = SURFACE_FINISH_CODE.get(finish, 1)
     param = {
         "layer": int(layers),                 # table: "layer - PCB Layer"
@@ -438,6 +452,21 @@ def build_pcb_param(spec: dict) -> dict:
              "configOptionShow": "No"},
         ],
     }
+    if material != fabmaterial.FR4:
+        # JLC's high-frequency line. plateType 5 is what JLC's own HF quote
+        # link sends (jlc_capabilities.yaml materials.<family>.plate_type_
+        # source); no credentialed calculate has run it yet, so run() adds a
+        # human step to confirm the material on the quote page. The FR-4
+        # grade enum (materialDetails 0 = Tg140) does not describe a Rogers
+        # board, so it is not sent; impedance control is not sold on this
+        # line (materials.<family>.impedance_control: false).
+        param["plateType"] = int(mrow["plate_type"])
+        param.pop("materialDetails", None)
+        if mrow.get("impedance_control") is False:
+            param["impedanceFlag"] = "no"
+        param["orderDetailsRemark"] = (
+            f"Material: {mrow.get('label', material)}; "
+            f"thickness {param['thickness']} mm; {finish}")
     if surface == 2:
         # required when surfaceFinish is 2; create-example ENIG thickness
         param["goldThickness"] = 2
@@ -485,6 +514,9 @@ def _api_quote(session, man: dict, fab_dir: Path, prior_steps=None,
                copper_oz: float | None = None) -> str:
     """uploadGerber -> audit -> calculate -> fab/api_quote.json. NEVER calls
     create. Returns the verdict recorded in man['api']."""
+    if man.get("material_problems"):
+        # never price (let alone create) an order on another laminate
+        raise ApiRefused("; ".join(man["material_problems"]))
     zip_info = man["artifacts"].get("gerber_zip")
     if not zip_info:
         man["api"].update({"verdict": "skipped",
@@ -525,7 +557,8 @@ def _api_quote(session, man: dict, fab_dir: Path, prior_steps=None,
         # one (U5 review: 'None-attested disables guard' - and its dual,
         # None-spec dodges the check)
         for key in ("layers", "thickness_mm", "surface_finish",
-                    "solder_mask_color", "inner_copper_weight_oz"):
+                    "solder_mask_color", "inner_copper_weight_oz",
+                    "material"):
             av, sv = attested.get(key), spec.get(key)
             if av is None:
                 continue
@@ -1203,6 +1236,23 @@ def run(pcb: Path, fab_dir: Path, quote: Path | None = None,
     # file is not at hand
     n_cast = (castellation.count(pcb) if Path(pcb).is_file()
               else int(quote_spec.get("castellated_pads") or 0))
+    # Same rule for the laminate: the board's stackup block decides, and a
+    # quote priced on another material (an FR-4 quote for a Rogers board)
+    # makes the package not order-ready (SI-09).
+    quote_mat = quote_spec.get("material") or fabmaterial.FR4
+    board_mat = (fabmaterial.board_family(pcb) if Path(pcb).is_file()
+                 else quote_mat)
+    material_problems = []
+    if quote_data is not None and quote_mat != board_mat:
+        material_problems.append(
+            f"MATERIAL MISMATCH: the board is built on {board_mat} (its "
+            f"stackup block) but {Path(quote).name} was quoted as "
+            f"{quote_mat} - re-run order_quote on this board")
+    refusal = fabmaterial.not_offered(board_mat)
+    if refusal:
+        material_problems.append(f"MATERIAL NOT OFFERED: {refusal}")
+    if material_problems:
+        status = "not_order_ready"
 
     manifest = {
         "script": "order_submit",
@@ -1231,6 +1281,7 @@ def run(pcb: Path, fab_dir: Path, quote: Path | None = None,
             "solder_mask_color": (quote_row or {}).get("solder_mask_color"),
             "assembly": quote_spec.get("assembly"),
             "castellated_pads": n_cast,
+            "material": board_mat,
         },
         "release": release,
         "api": {"attempted": bool(use_api), "available": api_ok,
@@ -1251,6 +1302,22 @@ def run(pcb: Path, fab_dir: Path, quote: Path | None = None,
             f"CASTELLATED: the board has {n_cast} castellated pad(s) - set "
             "'Castellated Holes: Yes' on the quote page (the API leg sends "
             "castellatedHoles 1) and confirm the surcharge."))
+    if board_mat != fabmaterial.FR4 and not refusal:
+        mrow = fabmaterial.row(board_mat)
+        manifest["human_steps"].insert(-1, (
+            f"HIGH-FREQUENCY MATERIAL: the board is {mrow.get('label')} - "
+            "JLC's high-frequency product, not the FR-4 line. On the quote "
+            f"page pick that material (JLC's own link sends plateType "
+            f"{mrow.get('plate_type')}), thickness "
+            f"{manifest['spec_snapshot'].get('thickness_mm') or '?'} mm, "
+            f"{'/'.join(mrow.get('surface_finish') or [])}, "
+            f"{'/'.join(mrow.get('solder_mask_colors') or [])} mask, and "
+            "check the summary names it before paying. No impedance control "
+            "is sold on it: leave that option off. See fab/ORDER-NOTES.md."))
+    if material_problems:
+        manifest["material_problems"] = material_problems
+        for msg in reversed(material_problems):
+            manifest["human_steps"].insert(0, msg)
     if not release["governed"]:
         manifest["human_steps"].insert(0, (
             "UNGOVERNED package (no state.json beside the fab dir): no "

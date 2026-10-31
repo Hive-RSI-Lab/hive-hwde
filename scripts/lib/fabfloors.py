@@ -40,6 +40,8 @@ from pathlib import Path
 
 import yaml
 
+import fabmaterial
+
 REFERENCE = Path(__file__).resolve().parents[2] / "reference"
 CAP_FILE = REFERENCE / "jlc_capabilities.yaml"
 
@@ -107,19 +109,28 @@ def load_capabilities(cap_file: Path | None = None) -> dict:
     return rows
 
 
-def capability_class(layers: int, outer_oz: float) -> str:
-    """capabilities key, e.g. (4, 1.0) -> '4layer_1oz'."""
+def capability_class(layers: int, outer_oz: float,
+                     material: str | None = None) -> str:
+    """capabilities key, e.g. (4, 1.0) -> '4layer_1oz'; a non-FR-4 material
+    family adds its suffix: (2, 1.0, 'ro4350b') -> '2layer_1oz_ro4350b'.
+    A material JLC doesn't build (RO4003C, a hybrid) raises FabFloorError."""
     oz = int(outer_oz) if float(outer_oz).is_integer() else outer_oz
-    return f"{int(layers)}layer_{oz}oz"
+    try:
+        suffix = fabmaterial.capability_suffix(material)
+    except fabmaterial.MaterialError as exc:
+        raise FabFloorError(str(exc)) from exc
+    return f"{int(layers)}layer_{oz}oz{suffix}"
 
 
 def profile(layers: int, outer_oz: float,
-            cap_file: Path | None = None) -> tuple[str, dict]:
+            cap_file: Path | None = None,
+            material: str | None = None) -> tuple[str, dict]:
     """-> (class name, capability row). Raises FabFloorError naming the
     available rows rather than silently falling back to a default profile -
-    an unknown profile must never quietly become 1 oz."""
+    an unknown profile must never quietly become 1 oz, and a Rogers board
+    must never quietly get FR-4 floors (`material`, lib/fabmaterial.py)."""
     rows = load_capabilities(cap_file)
-    cls = capability_class(layers, outer_oz)
+    cls = capability_class(layers, outer_oz, material)
     if cls not in rows:
         raise FabFloorError(
             f"no capability row {cls!r} in {(cap_file or CAP_FILE).name} "

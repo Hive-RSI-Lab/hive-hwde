@@ -31,7 +31,8 @@ headless (LEARNINGS [swig]).
                  re-run's coordinates where the last run put them)
   corner_radius  mm; 0 = square; null/absent = AUTO_CORNER_RADIUS, capped at
                  a tenth of the shorter side so a tiny board keeps its area
-  mounting_holes {count: 0..4 | "auto", fp:"Lib:Name", inset, cu_edge} | null
+  mounting_holes {count: 0..4 | "auto", fp:"Lib:Name", inset, cu_edge,
+                  hole_to_hole} | null
                  "auto" = 4 when the shorter side >= AUTO_HOLES_MIN_SIDE, else
                  none. A hole with plated copper (the *_Pad_Via default) sits
                  at least its copper radius + cu_edge in from each edge, the
@@ -40,6 +41,15 @@ headless (LEARNINGS [swig]).
                  "auto" gives none unless the parts already sit that border
                  in from every edge), and its pads join the ground net
                  (GND_NET_RE) so the ring is stitched, not floating.
+                 A footprint whose OWN drills sit closer than hole_to_hole
+                 (the fab floor, edge to edge) is swapped for its plain
+                 *_Pad sibling (same hole, no via ring) or refused - KiCad's
+                 small *_Pad_Via rings (M2, M2.5) are 0.35-0.425 mm apart,
+                 below every JLC profile's 0.5 mm.
+
+The board lands in the positive quadrant (outline top-left at least
+OUTLINE_MIN_XY from the page origin), with the aux (drill/place) and grid
+origins at the outline's lower-left corner.
 
 verb "set_outline" (board_edit, U17): REPLACES the Edge.Cuts graphics of an
 EXISTING board with a new rectangle (optionally rounded / notched), touching
@@ -48,7 +58,7 @@ initialized one are the same geometry by construction.
 
   board          input .kicad_pcb (the driver stages a copy)
   out            output .kicad_pcb path
-  rect           [x1, y1, x2, y2] absolute mm
+  rect           [x1, y1, x2, y2] absolute mm (aux/grid origin -> x1, y2)
   corner_radius  mm (0 = square)
   cutouts        [{x, y, w, h}, ...] relative to rect's top-left, edge notches
 
@@ -111,6 +121,10 @@ EDGE_W = 0.1  # mm, Edge.Cuts line width
 AUTO_CORNER_RADIUS = 2.0    # mm, a new board's corners unless the caller says
 AUTO_HOLES_MIN_SIDE = 30.0  # mm, shorter side from which "auto" gives 4 holes
 HOLE_COURTYARD_GAP = 0.25   # mm, corner part courtyard to hole courtyard
+# A fixed outline is centred on the packed parts, so a wide one used to start
+# at negative X (ultra-front: 110x40 at x -9.945): kicad-cli's PDF plot cut it
+# off. The whole board is shifted until its top-left sits at least this far in.
+OUTLINE_MIN_XY = 5.0        # mm
 GND_NET_RE = re.compile(r"(^|/)(GND|DGND|GNDD|PGND)$", re.IGNORECASE)
 _SQRT_HALF = 0.7071067811865476
 
@@ -286,6 +300,57 @@ def hole_geometry(fp) -> tuple[float, float]:
     return cu, cr
 
 
+def drill_gap(fp) -> float | None:
+    """Smallest edge-to-edge gap in mm between the footprint's own drills
+    (plated or not), None when it has fewer than two."""
+    holes = []
+    for pad in fp.Pads():
+        ds = pad.GetDrillSize()
+        if ds.x > 0 and ds.y > 0:
+            pos = pad.GetPosition()
+            holes.append((pcbnew.ToMM(pos.x), pcbnew.ToMM(pos.y),
+                          pcbnew.ToMM(min(ds.x, ds.y)) / 2.0))
+    gaps = [math.hypot(a[0] - b[0], a[1] - b[1]) - a[2] - b[2]
+            for i, a in enumerate(holes) for b in holes[i + 1:]]
+    return min(gaps) if gaps else None
+
+
+def fab_safe_hole_fp(fpid: str, fp_paths: list[Path], floor: float,
+                     notes: list[str]):
+    """(fpid, footprint) for the mounting hole, its own drills >= `floor`
+    apart. A *_Pad_Via whose via ring breaks the floor becomes its *_Pad
+    sibling (the hole size is the mechanical requirement; the stitching vias
+    are not); with no such sibling the footprint is refused."""
+    fp = load_fp(fpid, fp_paths)
+    gap = drill_gap(fp) if fp is not None else None
+    if gap is None or gap >= floor - 1e-6:
+        return fpid, fp
+    alt = re.sub(r"_Pad_Via$", "_Pad", fpid)
+    alt_fp = load_fp(alt, fp_paths) if alt != fpid else None
+    alt_gap = drill_gap(alt_fp) if alt_fp is not None else None
+    if alt_fp is not None and (alt_gap is None or alt_gap >= floor - 1e-6):
+        notes.append(f"mounting-hole fp {fpid} swapped for {alt}: its own "
+                     f"drills are {round(gap, 3)} mm apart, below the fab's "
+                     f"{floor} mm hole-to-hole floor (the via ring would be "
+                     f"a hole_to_hole DRC error at every hole)")
+        return alt, alt_fp
+    raise RuntimeError(
+        f"mounting-hole fp {fpid}: its own drills are {round(gap, 3)} mm "
+        f"apart, below the fab's {floor} mm hole-to-hole floor"
+        + (f", and {alt} is not available" if alt != fpid else "")
+        + " - pass a --mounting-hole-fp without a via ring "
+        "(e.g. the *_Pad or bare variant of the same hole size)")
+
+
+def set_origins(board, x1: float, y2: float) -> None:
+    """Aux (drill/place file) and grid origin at the outline's lower-left
+    corner, so plots and placement files exported against it are in the
+    positive quadrant."""
+    ds = board.GetDesignSettings()
+    ds.SetAuxOrigin(mm(x1, y2))
+    ds.SetGridOrigin(mm(x1, y2))
+
+
 def ground_net(nets: dict):
     """The board's ground net for mounting-hole copper: GND itself, else the
     first name GND_NET_RE matches, else None (the ring stays netless)."""
@@ -342,14 +407,16 @@ def build(job: dict) -> dict:
         for field in fp.GetFields():
             if field.GetName() in (comp.get("fields") or {}):
                 field.SetVisible(False)  # metadata, not board art
-        # KiCad's native do-not-populate flag is a SYMBOL attribute that must be
-        # mirrored on the footprint, else `drc --schematic-parity` reports
-        # footprint_symbol_mismatch "'Do not populate' settings differ". Only
-        # FP_DNP is set: in_bom / on_board stay whatever the symbol said, and
-        # flipping exclude_from_bom here would just trade one mismatch for
-        # another.
+        # KiCad's native do-not-populate flag and the symbol's in_bom are
+        # SYMBOL attributes that must be mirrored on the footprint, else
+        # `drc --schematic-parity` reports footprint_symbol_mismatch ("'Do not
+        # populate' / 'Exclude from bill of materials' settings differ"). A
+        # stock footprint can carry (attr exclude_from_bom) of its own
+        # (Tag-Connect, solder jumpers); the symbol wins, both ways (#439).
         if comp.get("dnp"):
             fp.SetAttributes(fp.GetAttributes() | getattr(pcbnew, "FP_DNP", 0))
+        if "exclude_from_bom" in comp:
+            fp.SetExcludedFromBOM(bool(comp["exclude_from_bom"]))
         board.Add(fp)
         for pad in fp.Pads():
             want = netmap.get(f"{comp['ref']}.{pad.GetNumber()}")
@@ -410,6 +477,9 @@ def build(job: dict) -> dict:
     border = margin
     if mh_count:
         probe = load_fp(hole_fpid, fp_paths)
+        if mh.get("hole_to_hole"):
+            hole_fpid, probe = fab_safe_hole_fp(
+                hole_fpid, fp_paths, float(mh["hole_to_hole"]), notes)
         if probe is not None:
             hole_cu, hole_crt = hole_geometry(probe)
         if hole_cu > 0:
@@ -443,6 +513,19 @@ def build(job: dict) -> dict:
                 fp.SetPosition(mm(pcbnew.ToMM(pos.x) + dx, pcbnew.ToMM(pos.y) + dy))
             cx1, cy1, cx2, cy2 = cx1 + dx, cy1 + dy, cx2 + dx, cy2 + dy
             ex1, ey1, ex2, ey2 = ex1 + dx, ey1 + dy, ex2 + dx, ey2 + dy
+    else:
+        # ---- no pinned origin: keep the board in the positive quadrant ------
+        dx = max(0.0, OUTLINE_MIN_XY - ex1)
+        dy = max(0.0, OUTLINE_MIN_XY - ey1)
+        if dx or dy:
+            for fp, _, _ in boxes:
+                p = fp.GetPosition()
+                fp.SetPosition(mm(pcbnew.ToMM(p.x) + dx, pcbnew.ToMM(p.y) + dy))
+            cx1, cx2, ex1, ex2 = cx1 + dx, cx2 + dx, ex1 + dx, ex2 + dx
+            cy1, cy2, ey1, ey2 = cy1 + dy, cy2 + dy, ey1 + dy, ey2 + dy
+            notes.append(f"board shifted by ({round(dx, 3)}, {round(dy, 3)}) mm "
+                         f"so the outline starts at ({round(ex1, 3)}, "
+                         f"{round(ey1, 3)}), not off the page")
     short_side = min(ex2 - ex1, ey2 - ey1)
     if mh_count == "auto":
         mh_count = 4 if short_side >= AUTO_HOLES_MIN_SIDE else 0
@@ -476,6 +559,7 @@ def build(job: dict) -> dict:
     cutouts = job.get("cutouts") or []
     corner_r = draw_outline(board, ex1, ey1, ex2, ey2, req_r, notes,
                             cutouts=cutouts)
+    set_origins(board, ex1, ey2)
     # absolute cutout rects, for callers translating keepouts into board space
     cut_abs = [[round(ex1 + float(c["x"]), 3), round(ey1 + float(c["y"]), 3),
                 round(ex1 + float(c["x"]) + float(c["w"]), 3),
@@ -537,8 +621,10 @@ def build(job: dict) -> dict:
                                     round(ex2, 3), round(ey2, 3)],
         "corner_radius": round(corner_r, 3),
         "outline_origin": [round(ex1, 3), round(ey1, 3)],
+        "aux_origin": [round(ex1, 3), round(ey2, 3)],
         "cutouts": cut_abs,
         "mounting_holes": holes,
+        "mounting_hole_fp": hole_fpid if holes else None,
         "mounting_hole_inset": round(mh_inset, 3) if holes else None,
         "mounting_hole_net": (hole_net.GetNetname()
                               if hole_net is not None and holes else None),
@@ -566,6 +652,7 @@ def set_outline(job: dict) -> dict:
     r = draw_outline(board, x1, y1, x2, y2,
                      float(job.get("corner_radius") or 0.0), notes,
                      cutouts=cutouts)
+    set_origins(board, x1, y2)
     out = Path(job["out"])
     out.parent.mkdir(parents=True, exist_ok=True)
     if not board.Save(str(out)):
@@ -574,6 +661,7 @@ def set_outline(job: dict) -> dict:
         "status": "pass", "out": str(out), "removed_edge_items": removed,
         "bbox": [round(x1, 3), round(y1, 3), round(x2, 3), round(y2, 3)],
         "corner_radius": round(r, 3),
+        "aux_origin": [round(x1, 3), round(y2, 3)],
         "cutouts": [[round(x1 + float(c["x"]), 3), round(y1 + float(c["y"]), 3),
                      round(x1 + float(c["x"]) + float(c["w"]), 3),
                      round(y1 + float(c["y"]) + float(c["h"]), 3)]

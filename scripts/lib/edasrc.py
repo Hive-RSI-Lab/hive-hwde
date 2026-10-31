@@ -234,16 +234,46 @@ def read_eagle(path: Path) -> Source:
     for lay, n in sorted(counts.items()):
         src.copper[names.get(lay, f"layer {lay}")] = n
     # KiCad's Eagle importer reports KiCad's names: Top/Bottom are F.Cu/B.Cu,
-    # Route2..15 the inner layers in order
+    # and the active inner layers (Route2..15) become In1, In2, ... in number
+    # order, packed: a 4-layer board on Eagle layers 2 and 15 gets In1/In2
+    active = {int(l.get("number")) for l in root.iter("layer")
+              if l.get("active", "yes") != "no"}
+    inner = 0
     for lay in range(1, 17):
         name = names.get(lay)
-        if name:
-            src.kicad_names[name] = ("F.Cu" if lay == 1 else "B.Cu" if lay == 16
-                                     else f"In{lay - 1}.Cu")
+        if not name or not (lay in active or counts.get(lay)):
+            continue
+        if 1 < lay < 16:
+            inner += 1
+        src.kicad_names[name] = "F.Cu" if lay == 1 else "B.Cu" if lay == 16 else f"In{inner}.Cu"
     src.vias = sum(1 for _ in board.iter("via"))
     src.refs = {e.get("name") for e in board.iter("element") if e.get("name")}
-    src.nets = {s.get("name") for s in board.iter("signal") if s.get("name")}
+    src.nets = {eagle_overbar(s.get("name")) for s in board.iter("signal") if s.get("name")}
     return src
+
+
+def eagle_overbar(name: str) -> str:
+    """An Eagle name as KiCad's importer writes it: Eagle's '!' toggles an
+    overbar ('!RESET!', 'SPI_!CS!'; an unclosed '!WR' runs to the end) and
+    KiCad writes it '~{..}'. A '!' with nothing after it is dropped."""
+    out, i, bar = [], 0, False
+    while i < len(name):
+        c = name[i]
+        if c == "!":
+            if bar:
+                out.append("}")
+            elif i + 1 < len(name):
+                out.append("~{")
+            else:
+                i += 1
+                continue
+            bar = not bar
+        else:
+            out.append(c)
+        i += 1
+    if bar:
+        out.append("}")
+    return "".join(out)
 
 
 # ----------------------------------------------------------------- easyeda

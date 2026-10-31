@@ -637,6 +637,18 @@ def build(ws: Path,
             and int(quote_spec["layers"]) != int(layers):
         problems.append(f"quote spec says {quote_spec['layers']} layers but "
                         f"the board has {layers}")
+    # the laminate: the board's stackup block, which the quote must have
+    # been priced on (SI-09 - an FR-4 quote for a Rogers board)
+    import fabmaterial
+    material = fabmaterial.board_family(pcb_path) if pcb_path.is_file() \
+        else fabmaterial.FR4
+    quote_mat = quote_spec.get("material") or fabmaterial.FR4
+    if quote_spec and quote_mat != material:
+        problems.append(f"fab/quote.json was priced on {quote_mat} but the "
+                        f"board is built on {material} - re-run order_quote")
+    why = fabmaterial.not_offered(material)
+    if why:
+        problems.append(f"board laminate {material}: {why}")
     thickness = quote_spec.get("thickness_mm")
     if thickness is None:
         problems.append("fab/quote.json spec.thickness_mm missing - board "
@@ -664,6 +676,9 @@ def build(ws: Path,
         "surface_finish": quote_spec.get("surface_finish"),
         "solder_mask_color": quote_spec.get("solder_mask_color"),
     }
+    if material != fabmaterial.FR4:
+        # bound only off FR-4, so every FR-4 attestation stays as it was
+        manufacturing["material"] = material
 
     # ---- the fact ledger: nothing critical unknown -----------------------
     # Every fact the board relies on (stock, part match, lifecycle, ratings,

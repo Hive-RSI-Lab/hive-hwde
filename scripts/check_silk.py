@@ -144,10 +144,17 @@ class Silk:
         self.pos, self.ref = pos, ref
 
 
-def _text_box(cx, cy, angle, text, size_x, size_y, thickness) -> Polygon:
+def _text_box(cx, cy, angle, text, size_x, size_y, thickness,
+              hjust=0, vjust=0) -> Polygon:
+    """Box of a text, anchored per KiCad justification (#427): hjust -1 =
+    left (box starts at the anchor), +1 = right (box ends there), 0 = centre;
+    vjust -1 = top, +1 = bottom (KiCad y points down). Offsets are applied in
+    the text's own frame, before rotation."""
     w = max(len(text), 1) * CHAR_W * size_x + thickness
     h = TEXT_H * size_y + thickness
-    b = box(-w / 2.0, -h / 2.0, w / 2.0, h / 2.0)
+    ox = -hjust * w / 2.0
+    oy = -vjust * h / 2.0
+    b = box(ox - w / 2.0, oy - h / 2.0, ox + w / 2.0, oy + h / 2.0)
     b = affinity.rotate(b, -angle, origin=(0, 0), use_radians=False)
     return affinity.translate(b, cx, cy)
 
@@ -226,6 +233,21 @@ def _hidden(node) -> bool:
     return False
 
 
+def _justify(eff) -> tuple[int, int]:
+    """(hjust, vjust) from an (effects (justify ...)) node: -1/0/+1 each.
+    `mirror` (bottom-side text) draws the glyphs flipped, so a left-justified
+    mirrored text runs to the LEFT of its anchor in board coordinates."""
+    j = _kid(eff, "justify") if eff is not None else None
+    if j is None:
+        return 0, 0
+    toks = {str(_tok(t)).lower() for t in j[1:]}
+    hj = -1 if "left" in toks else (1 if "right" in toks else 0)
+    vj = -1 if "top" in toks else (1 if "bottom" in toks else 0)
+    if "mirror" in toks:
+        hj = -hj
+    return hj, vj
+
+
 def _text_item(node, fx, fy, fangle, side, text) -> Silk | None:
     if _hidden(node) or not (text or "").strip():
         return None
@@ -248,7 +270,8 @@ def _text_item(node, fx, fy, fangle, side, text) -> Silk | None:
     sx, sy = (sz[0], sz[1]) if len(sz) >= 2 else (1.0, 1.0)
     th_node = _kid(font, "thickness") if font is not None else None
     th = _nums(th_node)[0] if th_node is not None and _nums(th_node) else 0.15
-    g = _text_box(cx, cy, angle, text, sx, sy, th)
+    hj, vj = _justify(eff)
+    g = _text_box(cx, cy, angle, text, sx, sy, th, hj, vj)
     return Silk(side, "text", g, text=text, height=sy, thickness=th, pos=(cx, cy))
 
 

@@ -114,6 +114,7 @@ from shapely.ops import unary_union  # noqa: E402
 from shapely.strtree import STRtree  # noqa: E402
 
 import castellation  # noqa: E402
+import fabmaterial  # noqa: E402
 import checklib  # noqa: E402
 import gerblib  # noqa: E402
 import geom  # noqa: E402
@@ -159,13 +160,16 @@ def load_capabilities(path: Path) -> dict:
     return data
 
 
-def rule_key(layers: int, copper_oz: float) -> str:
+def rule_key(layers: int, copper_oz: float, material: str | None = None) -> str:
     oz = f"{copper_oz:g}"
-    return f"{layers}layer_{oz}oz"
+    suffix = ("" if not material or material == fabmaterial.FR4
+              else f"_{material}")
+    return f"{layers}layer_{oz}oz{suffix}"
 
 
-def pick_rules(caps: dict, layers: int, copper_oz: float) -> tuple[str, dict]:
-    key = rule_key(layers, copper_oz)
+def pick_rules(caps: dict, layers: int, copper_oz: float,
+               material: str | None = None) -> tuple[str, dict]:
+    key = rule_key(layers, copper_oz, material)
     rules = caps["design_rules"].get(key)
     if rules is None:
         avail = ", ".join(sorted(caps["design_rules"]))
@@ -1031,14 +1035,39 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
         fab = gerblib.open_fab(gdir)
         if not fab.copper_files:
             raise CheckError(f"no copper gerbers found in {gdir}")
-        if oz_source == "stackup" \
-                and rule_key(n_layers, oz) not in caps["design_rules"]:
+        # The laminate, from the board's own stackup block: a Rogers board
+        # is checked against JLC's high-frequency floors, and a material
+        # JLC doesn't build (RO4003C, a Rogers + FR-4 hybrid) is an error
+        # here, at the package, not at the quote page.
+        vios: list = []
+        material = fabmaterial.board_family(pcb)
+        mat_refusal = fabmaterial.not_offered(material)
+        if mat_refusal:
+            vios.append(checklib.violation(
+                CHECK, "error", None, None, None, [],
+                f"board laminate {material}: {mat_refusal}", SOURCE,
+                kind="dfm_material_not_offered", material=material))
+            rules_material = fabmaterial.FR4
+        else:
+            rules_material = material
+        if oz_source == "stackup" and rule_key(
+                n_layers, oz, rules_material) not in caps["design_rules"]:
             oz, oz_source = 1.0, "default"  # unknown key: today's behavior
-        key, rules = pick_rules(caps, n_layers, oz)
+        key, rules = pick_rules(caps, n_layers, oz, rules_material)
 
         bg = geom.load_board(pcb)
-        vios: list = []
         facts: dict = {}
+        if not mat_refusal and material != fabmaterial.FR4:
+            # what the material's product allows, from the board alone
+            # (finish/colour/thickness are order options: order_submit)
+            spec = {"layers": n_layers, "copper_weight_oz": oz}
+            if bg.outline is not None and not bg.outline.is_empty:
+                x0, y0, x1, y1 = bg.outline.bounds
+                spec.update(width_mm=x1 - x0, height_mm=y1 - y0)
+            for msg in fabmaterial.order_problems(material, spec):
+                vios.append(checklib.violation(
+                    CHECK, "error", None, None, None, [], msg, SOURCE,
+                    kind="dfm_material_option", material=material))
         cast = castellation.holes(bg)
 
         check_outline(fab, vios)
@@ -1105,6 +1134,7 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
 
         facts.update({
             "capability_key": key,
+            "material": material,
             "layer_count": n_layers,
             "copper_oz": oz,
             "copper_oz_source": oz_source,

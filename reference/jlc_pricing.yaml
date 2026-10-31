@@ -60,6 +60,18 @@ pcb:
   # this with transcribed instant-quote points at the board size when one is
   # measured (see refresh_recipe).
 
+  # JLC's high-frequency line (jlc_capabilities.yaml materials:) is priced
+  # on its own table, keyed by material family then layers. ONE published
+  # point: "Prices start at $47" for the default 2-layer 100 x 100 mm x 5
+  # quote (jlcpcb.com/pcb-fabrication/high-frequency-pcb, read 2026-10-31).
+  # Every other quantity scales from it (_nearest_qty_price), so treat those
+  # as a rough figure until a credentialed calculate adds a point.
+  high_frequency:
+    ro4350b:
+      2: {5: 47.00}
+    ptfe_zyf:
+      2: {5: 47.00}
+
 options:
   surface_finish:
     "HASL": 0.00
@@ -105,5 +117,7 @@ lead_time_days:
     2: {standard: 2, expedited: 1}
     4: {standard: 3, expedited: 2}
     6: {standard: 5, expedited: 3}
+  # high-frequency line: "fast 4-5 day turnaround" (HF product page)
+  high_frequency: {standard: 5, expedited: 4}
   assembly_additional: 4
   note: "Build time only - shipping is separate and region-dependent."

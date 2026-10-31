@@ -70,7 +70,11 @@ def test_stackups_yaml_valid():
         # real 1.6 mm laminations sum to 1.58-1.66 mm.
         total = sum(ly["thickness_mm"] for ly in s["stack"])
         assert abs(total - s["stack_total_mm"]) < 1e-6, f"{name}: sums to {total}"
-        assert abs(total - s["thickness_mm"]) / s["thickness_mm"] < 0.05, \
+        # JLC's high-frequency line states FINISHED thickness (mask and
+        # plating included), so those entries carry the allowance explicitly
+        slack = float(s.get("finished_allowance_mm", 0.0))
+        assert abs(total - s["thickness_mm"]) / s["thickness_mm"] < 0.05 \
+            or 0 <= s["thickness_mm"] - total <= slack, \
             f"{name}: nominal {s['thickness_mm']} vs lamination {total}"
         for ci in s.get("controlled_impedance", []):
             assert ci["width_mm"] > 0
@@ -393,6 +397,21 @@ def test_parse_netlist_custom_fields(tmp_path):
     by_ref = {c["ref"]: c for c in comps}
     assert by_ref["R1"]["fields"] == {"LCSC": "C25804"}  # natives excluded
     assert by_ref["C1"]["fields"] == {}
+
+
+def test_parse_netlist_dnp_and_exclude_from_bom(tmp_path):
+    """#439: (in_bom no) reaches the netlist as a valueless
+    `(property (name "exclude_from_bom"))`, like dnp; parse_netlist surfaces
+    both so the worker can mirror them onto the footprint."""
+    txt = MINI_NET.replace(
+        '(footprint "Resistor_SMD:R_0603_1608Metric"))',
+        '(footprint "Resistor_SMD:R_0603_1608Metric")\n'
+        '      (property (name "exclude_from_bom")) (property (name "dnp")))')
+    n = tmp_path / "x.net"
+    n.write_text(txt, encoding="utf-8")
+    by_ref = {c["ref"]: c for c in board_init.parse_netlist(n)[0]}
+    assert by_ref["R1"]["dnp"] and by_ref["R1"]["exclude_from_bom"]
+    assert not by_ref["C1"]["dnp"] and not by_ref["C1"]["exclude_from_bom"]
 
 
 def test_transient_silk_partition():
@@ -797,6 +816,42 @@ def test_board_init_edge_notch(cli, usbbuck4_net, tmp_path):
 
 
 @pytest.mark.smoke
+def test_board_init_swaps_a_hole_fp_whose_vias_break_the_fab_floor(
+        cli, usbbuck4_net, tmp_path):
+    """Issue #28: KiCad's M2.5 _Pad_Via ring has its own drills 0.425 mm
+    apart, under JLC's 0.5 mm hole-to-hole floor - 36 DRC errors on
+    ultra-front. board_init takes the same-size _Pad sibling instead and says
+    so; the board it builds is clean."""
+    rc, r = _init_board(tmp_path, usbbuck4_net, "--mounting-hole-fp",
+                        "MountingHole:MountingHole_2.7mm_M2.5_Pad_Via")
+    assert rc == 0 and r["status"] == "pass", r
+    assert r["mounting_holes"] == 4
+    assert r["mounting_hole_fp"] == "MountingHole:MountingHole_2.7mm_M2.5_Pad"
+    assert any("swapped for MountingHole:MountingHole_2.7mm_M2.5_Pad" in n
+               for n in r["worker_notes"])
+    assert r["self_check"]["setup_violations"] == []
+
+
+@pytest.mark.smoke
+def test_board_init_wide_fixed_outline_stays_on_the_page(
+        cli, usbbuck4_net, tmp_path):
+    """Issue #28: a fixed outline wider than the packed parts was centred on
+    them and started at negative X (ultra-front 110x40 at x -9.945), cutting
+    PDF plots off. It now starts in the positive quadrant, the aux and grid
+    origin at its lower-left corner."""
+    rc, r = _init_board(tmp_path, usbbuck4_net, "--outline", "160x80")
+    assert rc == 0 and r["status"] == "pass", r
+    x1, y1, x2, y2 = r["outline_bbox"]
+    assert x1 >= 5.0 and y1 >= 5.0
+    assert (x2 - x1, y2 - y1) == pytest.approx((160, 80), abs=1e-3)
+    assert r["aux_origin"] == [x1, y2]
+    txt = (tmp_path / "kicad" / "usbbuck4.kicad_pcb").read_text("utf-8")
+    m = re.search(r"\(aux_axis_origin ([\d.-]+) ([\d.-]+)\)", txt)
+    assert m and (float(m.group(1)), float(m.group(2))) == pytest.approx((x1, y2))
+    assert r["self_check"]["setup_violations"] == []
+
+
+@pytest.mark.smoke
 def test_board_init_cutout_over_corner_is_rejected(cli, usbbuck4_net, tmp_path):
     """A notch running into a rounded corner would self-intersect the outline
     and fail polygonize downstream. It must be skipped loudly at the source."""
@@ -989,6 +1044,30 @@ def test_board_init_lcsc_fields_and_inplace_schematic(cli, usbbuck4_net, tmp_pat
         break
     else:
         pytest.fail("LCSC footprint fields are not hidden")
+
+
+@pytest.mark.smoke
+def test_board_init_mirrors_in_bom(cli, tmp_path):
+    """#439: a symbol with (in_bom no) must give a footprint with
+    exclude_from_bom, else parity reports footprint_symbol_mismatch and the
+    unconnected-net retry is blocked."""
+    sch = tmp_path / "usbbuck4.kicad_sch"
+    txt = (GOLDEN / "usbbuck4" / "usbbuck4.kicad_sch").read_text("utf-8")
+    sch.write_text(txt.replace("(in_bom yes)", "(in_bom no)"), "utf-8")
+    net = tmp_path / "u.net"
+    assert kc.export_netlist(cli, sch, net)["status"] == "pass"
+    assert "exclude_from_bom" in net.read_text("utf-8")
+    rep = tmp_path / "report.json"
+    rc = board_init.main([
+        "--netlist", str(net), "--name", "usbbuck4",
+        "--out", str(tmp_path / "kicad"), "--layers", "2",
+        "--mounting-holes", "0", "--schematic", str(sch),
+        "--out-report", str(rep)])
+    r = json.loads(rep.read_text("utf-8"))
+    assert rc == 0 and r["status"] == "pass", r
+    assert r["self_check"]["parity_count"] == 0
+    board = (tmp_path / "kicad" / "usbbuck4.kicad_pcb").read_text("utf-8")
+    assert board.count("exclude_from_bom") >= r["components"]
 
 
 def _prep_golden(tmp_path, board="usbbuck4"):

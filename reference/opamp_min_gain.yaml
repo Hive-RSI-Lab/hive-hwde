@@ -1,0 +1,82 @@
+# Decompensated op-amps: parts stable only above a minimum closed-loop gain,
+# for netlist_audit's below_min_stable_gain rule.
+#
+# The gain that counts is the NOISE gain, 1/beta, not the signal gain: a
+# follower has noise gain 1, an inverting G = -1 stage has noise gain 2
+# (ADI MT-033; EDN, Trump, "op-amps: G=1 stable vs decompensated"; ADI AN148).
+#
+# match: a regex tried against the part's value and its symbol's lib part
+# (case-insensitive). min_gain: the minimum stable noise gain, V/V.
+# gbw_hz: the gain-bandwidth product; the rule reads the feedback network's
+# noise gain at gbw_hz / min_gain, where the loop crosses over at the minimum
+# gain, so a feedback cap that drops the noise gain there counts.
+# comp_pins (optional): a regex for the part's external compensation pins;
+# a capacitor on one of them means the part is compensated by hand and the
+# rule leaves it alone (NE5534: 22 pF across COMP and COMP/BAL is unity
+# stable). unity_stable: the sibling to suggest. `verified: false` means
+# typed from memory of the datasheet, not re-read: the finding says so.
+parts:
+  - match: '^OPA637'
+    min_gain: 5
+    gbw_hz: 80.0e6
+    unity_stable: OPA627
+    source: TI SBOS165 (OPA627/OPA637) OPA637 stable in gains >= 5, GBW 80 MHz
+    verified: false
+  - match: '^OPA[24]?228'
+    min_gain: 5
+    gbw_hz: 33.0e6
+    unity_stable: OPA227
+    source: TI SBOS110 (OPA227/OPA228) OPA228 stable in gains >= 5, GBW 33 MHz
+    verified: false
+  - match: '^OP-?37([^0-9]|$)'
+    min_gain: 5
+    gbw_hz: 63.0e6
+    unity_stable: OP27
+    source: ADI OP37 datasheet, stable at gains >= 5, GBW 63 MHz; ADI MT-033
+    verified: false
+  - match: '^LT1037'
+    min_gain: 5
+    gbw_hz: 60.0e6
+    unity_stable: LT1007
+    source: ADI LT1007/LT1037 datasheet, LT1037 stable at gains >= 5, GBW 60 MHz
+    verified: false
+  - match: '^(NE|SA|SE)?5534'
+    min_gain: 3
+    gbw_hz: 10.0e6
+    comp_pins: 'COMP'
+    unity_stable: NE5534 with 22 pF from COMP to COMP/BAL, or NE5532
+    source: TI SLOS070 (NE5534) uncompensated stable at closed-loop gain >= 3
+    verified: false
+  - match: '^OPA846'
+    min_gain: 7
+    gbw_hz: 1.75e9
+    source: TI SBOS250 (OPA846) stable at gains >= +7, GBW 1.75 GHz
+    verified: false
+  - match: '^OPA847'
+    min_gain: 12
+    gbw_hz: 3.9e9
+    source: TI SBOS251 (OPA847) stable at gains >= +12, GBW 3.9 GHz
+    verified: false
+  - match: '^ADA4895'
+    min_gain: 10
+    gbw_hz: 1.5e9
+    source: ADI ADA4895-1/-2 datasheet, stable at gains >= 10, GBW 1.5 GHz
+    verified: false
+  - match: '^LT620[0-3][A-Z0-9#]*-10'
+    min_gain: 10
+    gbw_hz: 1.6e9
+    unity_stable: LT6200
+    source: ADI LT6200/LT6200-5/LT6200-10 datasheet, -10 stable at AV >= 10
+    verified: false
+  - match: '^LT620[0-3][A-Z0-9#]*-5'
+    min_gain: 5
+    gbw_hz: 800.0e6
+    unity_stable: LT6200
+    source: ADI LT6200/LT6200-5/LT6200-10 datasheet, -5 stable at AV >= 5
+    verified: false
+  - match: '^THS4021'
+    min_gain: 10
+    gbw_hz: 1.6e9
+    unity_stable: THS4031
+    source: TI SLOS263 (THS4021/THS4022) stable at gains >= 10, GBW 1.6 GHz
+    verified: false
