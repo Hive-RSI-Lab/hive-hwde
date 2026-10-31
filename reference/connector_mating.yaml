@@ -63,9 +63,11 @@ families:
      mouth_tol_mm: 1.5,
      match: 'FPC|FFC'}
   # BAT Wireless: KWE = right-angle edge, KE = "PCB-end" edge-launch that
-  # straddles the board (BWSMA-KE-P001, C496550); KHD and the rest are vertical
+  # straddles the board (BWSMA-KE-P001, C496550); KHD and the rest are vertical.
+  # The suffix decides KE: -P001 is the edge launch, -Z001 (C496549) is a
+  # vertical 5-pin THT jack (#428), so KE needs -P (or nothing) after it.
   - {family: sma_edge, entry: horizontal, plug_mm: 15.0,
-     match: '(CON|BW)?SMA.*(EDGE|KWE|[-_]KE([-_]|$))'}
+     match: '(CON|BW)?SMA.*(EDGE|KWE|[-_]KE([-_]P|$))'}
   # JST/Molex wire-to-board, side entry: JST S<n>B-/SM<n>B- (SH-SM08B-GHS-TB
   # too), and KiCad's *_Horizontal library names
   - {family: wire_to_board_side, entry: horizontal, plug_mm: 12.0,
@@ -81,9 +83,10 @@ families:
   - {family: pin_header, entry: vertical,
      match: 'HDR-|PIN(HEADER|SOCKET)_|DS1021'}
   # SMA alone is also the DO-214AC diode package (SMA_L4.3-W2.6...), so the
-  # connector has to be named as one
+  # connector has to be named as one. Any BAT Wireless BWSMA the edge rule
+  # did not take is vertical.
   - {family: sma_vertical, entry: vertical,
-     match: 'CONSMA|SMA-SMD|SMA[-_](JACK|CONN|VERT)|COAXIAL'}
+     match: 'CONSMA|SMA-SMD|SMA-TH_|BWSMA|SMA[-_](JACK|CONN|VERT)|COAXIAL'}
 
 # footprint-name regex -> mouth direction in the footprint's local frame
 mouth: {}
