@@ -94,6 +94,12 @@ Consumers per key (script -> phase):
   // traces/tented vias, A6 lands (mask relief exposes them); conformal ->
   // A5/A7. Inner layers are always B1. CLI --coating overrides.
   "coating": "soldermask",
+  // package_ratings: a part rated for its nets at its own pin pitch (a
+  // 48 V controller's 0.5 mm pins, a 100 V 0402). rules_gen emits one
+  // clearance rule scoped to that courtyard after the HV rules;
+  // check_creepage keeps the pairs as dru_footprint_scope warnings.
+  "package_ratings": [{"ref": "U2", "clearance_mm": 0.1,
+                       "why": "LM5069 VIN pin, 0.5 mm pitch"}],
 
   // check_si (P8): signal integrity of the nets that need it. Nets are
   // found by name and driver (clocks, RMII, I2S, SPI, USB, Ethernet MDI,
