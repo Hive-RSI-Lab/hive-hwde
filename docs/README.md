@@ -368,6 +368,34 @@ connector in the wrong place. The check reports `model_offset` with a fit of
 still flags a pulled library footprint at pull time (THT pins only). This
 check runs on the board, every time.
 
+## A USB device's PHY
+
+`check_usb_phy` (verify suite) reads the board's netlist from each connector
+pin named D+/D-/DP/DM/DP1... to the first IC, through 0 R and ferrites. A
+resistor of 100 ohm or less on the way is a series element, and a larger one
+is a pull. It holds the IC to what its own vendor's document says, row by
+row in `reference/usb_phys.yaml` (WCH CH340, the STM32 lines of AN4879
+Rev 5, NXP LPC per AN11392, RP2040, ESP32-S3):
+
+- series resistors only where the PHY wants them: an error for a series R
+  on ST's or WCH's PHYs, which embed USB 2.0's 28-44 ohm driver impedance,
+  and an error for none on an LPC (33 ohm) or RP2040 (27 ohm). The
+  "22-27 ohm always" rule is folklore.
+- the D+ pull-up where the PHY has none: 1.5 k +/-5% to 3.0-3.6 V (USB 2.0
+  pull-up ECN, 7.1.5.1). A Blue Pill's 10 k fails, and so does a pull-up to
+  VBUS. An extra pull-up beside a PHY's own is a warning, and a pull-up on
+  D- is an error.
+- on USB-C, both D+ pins (and both D-) joined, and on a sink each CC pin's
+  total Rd 5.1 k +/-20%, internal Rd included (Type-C R2.5 Table 4-28). That
+  catches a bare receptacle with none, and a CH224K/A/Q (Rd inside) with an
+  external 5.1 k beside it. Outside +/-10% is a warning: the sink attaches
+  but can't read the source's current. A CC with an Rp is a source port and
+  isn't judged.
+
+An IC the file doesn't know is a warning naming it. Add its row with the
+datasheet's section rather than copying another vendor's habit. lite-main
+and core (CH340B, CH224A/Q) pass clean.
+
 ## Finishing a dense board's routing
 
 `route_auto` ends with `route_finish`, so a dense board needs no copper
