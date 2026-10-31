@@ -1,0 +1,57 @@
+# Seeded faults for check_rf (hive-hwde #335): one per RF layout check, on
+# rf4 (RFM95W at 915 MHz). Each carries mutations/rf4_rf.py's RF
+# declarations as its constraints.json sidecar; the unmutated golden passes
+# under them, and the shield and cutout passes run on synthetic boards
+# (tests/test_check_rf.py).
+mutants:
+  rf-open-stub:
+    board: rf4
+    script: mutations/rf_open_stub.py
+    check: check_rf
+    defect: >-
+      LAYOUT fault: a 14 mm branch left dangling on /RF_FEED, ~25 deg at
+      915 MHz (past lambda/20), ends on no pad
+    expect:
+      kind: rf_stub
+      net: /RF_FEED
+      pos: [134.2, 108.0]
+  rf-feed-detour:
+    board: rf4
+    script: mutations/rf_feed_detour.py
+    check: check_rf
+    defect: >-
+      LAYOUT fault: /RF_FEED L2 to J1 takes a 16 mm detour, ~59 deg where
+      the match was laid for ~31 (max_deg 40)
+    expect:
+      kind: rf_length
+      net: /RF_FEED
+  rf-host-hugs-rf:
+    board: rf4
+    script: mutations/rf_host_hugs_rf.py
+    check: check_rf
+    defect: >-
+      LAYOUT fault: the host line /DIO5 runs 0.54 mm under the radio's RF
+      pin U1.9 with no ground wall (5 h is 1.24 mm)
+    expect:
+      kind: rf_isolation
+      layer: F.Cu
+  rf-can-no-ring:
+    board: rf4
+    script: mutations/rf_can_no_ring.py
+    check: check_rf
+    defect: >-
+      SIDECAR fault: a shield can is declared over the pi match, but no
+      exposed GND land runs round its outline to solder it to
+    expect:
+      kind: shield_ring_gap
+  rf-launch-plane-solid:
+    board: rf4
+    script: mutations/rf_launch_plane_solid.py
+    check: check_rf
+    defect: >-
+      SIDECAR fault: In1's GND plane is solid under the SMA's signal pad
+      where a reference cutout is declared
+    expect:
+      kind: rf_cutout_copper
+      layer: In1.Cu
+      ref: J1
