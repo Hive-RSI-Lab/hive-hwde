@@ -234,7 +234,7 @@ def test_lib_pull_leaves_paths_without_a_project(tmp_path):
 def _fake_pull(lib: Path, name: str, lcsc: str, model: str):
     """What easyeda2kicad leaves for one part: a symbol with junk pin types,
     a footprint naming its model by absolute path, the model file."""
-    def pull(ids, base, no_3d, overwrite, pace_s):
+    def pull(ids, base, no_3d, overwrite, pace_s, on_result=None):
         sym = base.with_suffix(".kicad_sym")
         old = sym.read_text("utf-8") if sym.exists() else "(kicad_symbol_lib\n"
         sym.write_text(old[:old.rstrip().rfind(")")] + f"""
