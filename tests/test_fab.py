@@ -261,7 +261,7 @@ def test_rule_key_and_pick():
 def test_pick_rules_unknown_raises():
     caps = dfm_check.load_capabilities(REFERENCE / "jlc_capabilities.yaml")
     with pytest.raises(checklib.CheckError):
-        dfm_check.pick_rules(caps, 8, 1.0)
+        dfm_check.pick_rules(caps, 34, 1.0)  # past JLC's 32
 
 
 def test_below_tolerance_absorbs_tessellation_but_not_defects():
