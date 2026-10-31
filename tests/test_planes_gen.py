@@ -381,6 +381,55 @@ def test_thermal_grid_counts_same_footprint_tht_pads(tmp_path):
     assert pads and pads[0]["vias"] == 0 and "own via array" in pads[0]["note"]
 
 
+def test_thermal_grid_respects_via_keepouts(tmp_path):
+    """#435 (hc-power): a rule area that forbids vias (a top-only heater
+    coupon) gets no thermal vias; a rule area that allows them does."""
+    body = _fp("U1", 20, 20, _pad("9", 0, 0, "GND", 4, 4))
+    body += _fp("U2", 45, 20, _pad("9", 0, 0, "GND", 4, 4))
+    ra = ('  (zone (net 0) (net_name "") (layers "In1.Cu" "B.Cu") (name "{n}")'
+          ' (hatch edge 0.5) (keepout (tracks allowed) (vias {v}) (pads allowed)'
+          ' (copperpour allowed) (footprints allowed))'
+          ' (polygon (pts (xy {x0} 15) (xy {x1} 15) (xy {x1} 25) (xy {x0} 25))))\n')
+    body += ra.format(n="coupon", v="not_allowed", x0=15, x1=25)
+    body += ra.format(n="scope", v="allowed", x0=40, x1=50)
+    bg = _bg(tmp_path, body=body)
+    assert len(planes_gen.via_keepouts(bg)) == 1
+    ops, pads = planes_gen.thermal_via_ops(bg, {"GND"})
+    by = {p["ref"]: p for p in pads}
+    assert by["U1"]["vias"] == 0 and "forbids vias" in by["U1"]["note"]
+    assert by["U2"]["vias"] == 9
+    assert all(o["at"][0] > 40 for o in ops)
+
+
+def test_thermal_grid_measures_custom_pads_by_their_copper(tmp_path):
+    """#435: a custom pad with a 0.005 mm anchor and ~7 mm2 of primitives
+    (LMG2100R044 PGND) is an exposed pad by its polygon, not its anchor."""
+    custom = ('    (pad "9" smd custom (at 0 0) (size 0.005 0.005) (layers "F.Cu")'
+              ' (net "GND") (options (clearance outline) (anchor rect))'
+              ' (primitives (gr_poly (pts (xy -1.5 -1.25) (xy 1.5 -1.25)'
+              ' (xy 1.5 1.25) (xy -1.5 1.25)) (width 0) (fill yes))))\n')
+    bg = _bg(tmp_path, body=_fp("U1", 20, 20, custom))
+    eps = planes_gen.ep_pads(bg, {"GND"})
+    assert [(p.ref, p.number) for p in eps] == [("U1", "9")]
+    ops, _ = planes_gen.thermal_via_ops(bg, {"GND"})
+    assert ops
+
+
+def test_thermal_grid_needs_a_pour_on_another_layer(tmp_path):
+    """#435: vias from an F.Cu pad to a net poured only on F.Cu connect
+    nothing (hc-power load bank LDk)."""
+    bg = _bg(tmp_path, body=_fp("U1", 20, 20, _pad("9", 0, 0, "LDK", 4, 4)))
+    ops, pads = planes_gen.thermal_via_ops(
+        bg, {"LDK"}, pour_layers={"LDK": {"F.Cu"}})
+    assert ops == [] and "no pour on another" in pads[0]["note"]
+    ops, _ = planes_gen.thermal_via_ops(
+        bg, {"LDK"}, pour_layers={"LDK": {"F.Cu", "B.Cu"}})
+    assert len(ops) == 9
+    assert planes_gen.pour_layers(bg, [{"net": "GND", "layer": "In1.Cu"},
+                                       {"net": "GND", "layer": "B.Cu"}]) \
+        == {"GND": {"In1.Cu", "B.Cu"}}
+
+
 # ============================================================ pure: validation
 
 def test_plan_validation_errors(tmp_path):
