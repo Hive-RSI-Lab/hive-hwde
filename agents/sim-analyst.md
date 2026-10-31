@@ -72,6 +72,13 @@ Write `kicad/sims/<name>.cir` + `kicad/sims/<name>.bounds.json`:
   set windows that pass with real margin AND fail the defect you seeded to
   check (mutate one value, confirm the bound trips, revert).
 
+## Beyond SPICE
+- `scripts/sim_solve.py validate` before trusting Xyce, openEMS, Palace,
+  FastHenry, FasterCap or thermalfv on a board (docs/solvers.md); cite
+  the case's error beside any number one of them gives.
+- `scripts/sim_solve.py line --w --h --er` for a controlled-impedance
+  line full-wave, against impedance.py's quasi-static answer.
+
 ## Gate
 - `scripts/sim_run.py --dir kicad/sims [--out reports/sim.json]` - exit 0
   clean / 1 violations / 2 cannot-run.

@@ -1,0 +1,8 @@
+# check_vias: every via can be built in the board's stackup: blind, buried
+# and micro spans against the lamination (stackups.yaml `vias`), laser and
+# mechanical drills, aspect ratios, rings and spacing (JLC's HDI FAQ), and
+# the stack's balance. KiCad's DRC draws any span between any two layers.
+# Board only.
+name: check_vias
+needs: []
+args: []

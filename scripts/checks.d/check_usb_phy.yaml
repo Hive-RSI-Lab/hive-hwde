@@ -1,0 +1,7 @@
+# check_usb_phy: a USB device's D+/D- carry what its own PHY wants (series
+# resistors only where the vendor says, the D+ pull-up where the PHY has none)
+# and a USB-C sink's CC pins see one 5.1 k Rd each (issue #315). Reads the
+# board's own <board>.net beside it and reference/usb_phys.yaml.
+name: check_usb_phy
+needs: []
+args: []

@@ -12,9 +12,21 @@ notation (4k7, 2.2u, 100n, 1M). Output is one JSON object.
   led       --vsupply 3.3 --r 1k [--vf 2.0 | --color red]
   i2c       --vdd 3.3 --rp 2.2k --cb 50p [--khz 400]
   crystal   --c1 18p --c2 18p [--stray 4p]           load capacitance
+            (capacitances here and i2c --cb: a bare number is pF)
   ldo       --vin 5 --vout 3.3 --iout 0.3 --theta 180 [--ta 40] [--iq 50u]
   holdup    --c 470u --vstart 20 --vmin 12 --iload 0.5
   rpower    --r 100 --v 3.3 [--footprint R_0603_1608Metric]
+  cascade   --stage LNA:15:1.2[:oip3] --stage mixer:-7:7:15 ...
+            [--bw 10M --snr 10]                      Friis NF/gain/IIP3
+            (a passive loss of L dB is --stage name:-L:L)
+  rxsens    --nf 4 --bw 1M [--snr 10] [--t 290]      kTB + NF floor
+  detector  --bw 1M (--responsivity 5000 --rv 5k | --is 3u [--n 1.05]
+            [--ib 0]) [--en 4n] [--rl 100k] [--t 300] square-law NEP/TSS
+  pll       --icp 5m --kvco 100M --n 2400 (--fc 100k --pm 50 |
+            --r 1k --cser 10n --cshunt 1n) [--fref 10M]
+                                                     loop filter, fc, PM
+  line      --f 24G (--eeff 3.3 | --er 4.4 [--w 0.3 --h 0.2 [--t 0.035]
+            [--bare]]) [--length 12.5]               wavelength, phase
 
 Exit 0 with the result; 2 with {"status": "error"} on bad input.
 """
@@ -41,6 +53,22 @@ def num(text: str) -> float:
         if v is not None:
             return v
     raise argparse.ArgumentTypeError(f"not a value: {text!r}")
+
+
+def pf(text: str) -> float:
+    """A small capacitance in farads: '18p', '18pF' or a bare '18' (pF, as
+    load and bus capacitances are written; 18 F is never meant). A bare
+    number under 1e-6 is already farads ('18e-12')."""
+    s = str(text).strip()
+    try:
+        v = float(s)
+        return v if abs(v) < 1e-6 else v * 1e-12
+    except ValueError:
+        pass
+    v = engcalc.parse_value(s)
+    if v is None:
+        raise argparse.ArgumentTypeError(f"not a capacitance: {text!r}")
+    return v
 
 
 def calc(a) -> dict:
@@ -75,7 +103,78 @@ def calc(a) -> dict:
             else None
         return {"p_w": p, "rating_w": rating,
                 "load": p / rating if rating else None}
+    if c == "cascade":
+        res = engcalc.friis_cascade([stage(t) for t in a.stage])
+        if a.bw is not None:
+            res["rx"] = engcalc.rx_sensitivity(res["nf_db"], a.bw, a.snr)
+        return res
+    if c == "rxsens":
+        return engcalc.rx_sensitivity(a.nf, a.bw, a.snr, a.t)
+    if c == "detector":
+        return engcalc.diode_detector(a.bw, a.responsivity, a.rv, a.i_s, a.n,
+                                      a.ib, a.en, a.rl, a.t)
+    if c == "pll":
+        parts = (a.r, a.cser, a.cshunt)
+        if all(v is not None for v in parts):
+            return engcalc.pll_loop_analyse(a.icp, a.kvco, a.n, *parts,
+                                            f_ref=a.fref)
+        if a.fc is None or a.pm is None:
+            raise ValueError("give --fc and --pm, or --r --cser --cshunt")
+        d = engcalc.pll_loop_design(a.icp, a.kvco, a.n, a.fc, a.pm)
+        d["check"] = engcalc.pll_loop_analyse(
+            a.icp, a.kvco, a.n, d["r_ohm"], d["c_series_f"], d["c_shunt_f"],
+            f_ref=a.fref)
+        return d
+    if c == "line":
+        return line(a)
     raise ValueError(c)
+
+
+def stage(text: str) -> dict:
+    """'LNA:15:1.2' or 'mixer:-7:7:15' -> a friis_cascade stage."""
+    f = text.split(":")
+    if len(f) not in (3, 4):
+        raise ValueError(f"stage {text!r}: want name:gain_db:nf_db[:oip3_dbm]")
+    st = {"name": f[0], "gain_db": float(f[1]), "nf_db": float(f[2])}
+    if len(f) == 4:
+        st["oip3_dbm"] = float(f[3])
+    return st
+
+
+def line(a) -> dict:
+    """eps_eff given, a stripline/coax er, or a microstrip from w/h/er (the
+    field solver's quasi-static eps_eff, JLC mask unless --bare, then
+    Getsinger dispersion at f)."""
+    extra = {}
+    if a.eeff is not None:
+        eeff, how = a.eeff, "given"
+    elif a.er is None:
+        raise ValueError("give --eeff, or --er (stripline) with --w --h "
+                         "for microstrip")
+    elif a.w is None and a.h is None:
+        eeff, how = a.er, "stripline (eps_eff = er)"
+    elif a.w is None or a.h is None:
+        raise ValueError("microstrip needs both --w and --h (mm)")
+    else:
+        import impedance
+        if impedance.SOLVER_OK:
+            ms = impedance.field_microstrip(
+                a.w, a.h, a.t, a.er, None,
+                None if a.bare else impedance.JLC_MASK)
+            how = "microstrip, field solver + Getsinger dispersion"
+        else:
+            ms = {"eps_eff": engcalc.microstrip_eeff_static(a.w, a.h, a.er),
+                  "z0": impedance.microstrip_z0_closed_form(a.w, a.h, a.t,
+                                                            a.er)}
+            how = "microstrip, Hammerstad (bare, no solver) + Getsinger"
+        eeff = engcalc.microstrip_dispersion(a.er, ms["eps_eff"], ms["z0"],
+                                             a.h, a.f)
+        extra = {"z0": ms["z0"], "eps_eff_static": ms["eps_eff"],
+                 "masked": not a.bare and impedance.SOLVER_OK}
+    res = engcalc.line_wavelength(a.f, eeff, a.length)
+    res["eps_eff_from"] = how
+    res.update(extra)
+    return res
 
 
 def main(argv=None) -> int:
@@ -85,7 +184,9 @@ def main(argv=None) -> int:
     def cmd(name, *specs):
         p = sub.add_parser(name)
         for flag, kw in specs:
-            p.add_argument(flag, type=kw.pop("type", num), **kw)
+            if kw.get("action") != "store_true":
+                kw.setdefault("type", num)
+            p.add_argument(flag, **kw)
         return p
 
     req = {"required": True}
@@ -99,10 +200,11 @@ def main(argv=None) -> int:
     cmd("led", ("--vsupply", dict(req)), ("--r", dict(req)),
         ("--vf", {"default": None}), ("--color", {"type": str,
                                                   "default": None}))
-    cmd("i2c", ("--vdd", dict(req)), ("--rp", dict(req)), ("--cb", dict(req)),
+    cmd("i2c", ("--vdd", dict(req)), ("--rp", dict(req)), ("--cb", dict(req, type=pf)),
         ("--khz", {"type": int, "default": 400}))
-    cmd("crystal", ("--c1", dict(req)), ("--c2", dict(req)),
-        ("--stray", {"default": engcalc.CRYSTAL_STRAY_PF * 1e-12}))
+    cmd("crystal", ("--c1", dict(req, type=pf)), ("--c2", dict(req, type=pf)),
+        ("--stray", {"type": pf,
+                     "default": engcalc.CRYSTAL_STRAY_PF * 1e-12}))
     cmd("ldo", ("--vin", dict(req)), ("--vout", dict(req)),
         ("--iout", dict(req)), ("--theta", dict(req)),
         ("--ta", {"default": 25.0}), ("--iq", {"default": 0.0}))
@@ -110,10 +212,29 @@ def main(argv=None) -> int:
         ("--vmin", dict(req)), ("--iload", dict(req)))
     cmd("rpower", ("--r", dict(req)), ("--v", dict(req)),
         ("--footprint", {"type": str, "default": None}))
+    opt = {"default": None}
+    cmd("cascade", ("--stage", {"type": str, "action": "append",
+                                "required": True}),
+        ("--bw", dict(opt)), ("--snr", {"type": float, "default": 0.0}))
+    cmd("rxsens", ("--nf", {"type": float, "required": True}),
+        ("--bw", dict(req)), ("--snr", {"type": float, "default": 0.0}),
+        ("--t", {"default": engcalc.T0_K}))
+    cmd("detector", ("--bw", dict(req)), ("--responsivity", dict(opt)),
+        ("--rv", dict(opt)), ("--is", {"dest": "i_s", "default": None}),
+        ("--n", {"default": 1.05}), ("--ib", {"default": 0.0}),
+        ("--en", {"default": 0.0}), ("--rl", dict(opt)),
+        ("--t", {"default": 300.0}))
+    cmd("pll", ("--icp", dict(req)), ("--kvco", dict(req)), ("--n", dict(req)),
+        ("--fc", dict(opt)), ("--pm", dict(opt)), ("--r", dict(opt)),
+        ("--cser", dict(opt)), ("--cshunt", dict(opt)), ("--fref", dict(opt)))
+    cmd("line", ("--f", dict(req)), ("--eeff", dict(opt)), ("--er", dict(opt)),
+        ("--w", dict(opt)), ("--h", dict(opt)), ("--t", {"default": 0.035}),
+        ("--bare", {"action": "store_true"}),
+        ("--length", dict(opt)))
     try:
         a = ap.parse_args(argv)
         res = calc(a)
-    except (ValueError, ZeroDivisionError) as exc:
+    except (ValueError, ZeroDivisionError, RuntimeError) as exc:
         print(json.dumps({"script": "eng_calc", "status": "error",
                           "error": str(exc)}))
         return 2
