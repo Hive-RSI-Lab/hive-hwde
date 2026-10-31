@@ -86,13 +86,30 @@ machine.
   53.34 Ω full-wave against 53.70 Ω quasi-static (−0.68%). This is the check for an RF board's controlled
   impedance before the fab's calculator is trusted.
 
+- `hwde sim_solve planar-geom --pcb B --region X0,Y0,X1,Y1 --port X,Y,DIR,W ...`
+  then `hwde sim_solve planar --geom G.json [--excite 0,1] [--touchstone F.s2p]`:
+  S-parameters of a planar microstrip circuit cut from a board. planar-geom
+  takes every copper item on one layer in the region (any net; custom pads
+  as drawn, via geom.py's new `_custom_pad`; NPTH skipped; holes split since
+  CSXCAD polygons have none) and the dielectric under it from the board's
+  stackup. planar draws the copper as PEC polygons over an infinite ground,
+  adds a straight feed per port (half a wavelength) ending in a 50 Ω lumped
+  port, and splits each feed's three voltage probes into the wave going in
+  and the wave coming out, moved to the reference plane. One openEMS run per
+  excited port. Measured on a 30 mm 50 Ω thru (FR4 1.53 mm, 6 GHz): |S21|
+  within 0.04 dB from 1 to 6 GHz, |S11| below −19 dB (the probe split's
+  floor), phase within 2% of the quasi-static line; 80 s, 44 MB. hw-lab
+  rf-kit's F5 open-stub notch (designed for 2.45 GHz): notch at 2.466 GHz,
+  −56 dB, 3 min. Below f_max/8 the pulse carries little energy and the
+  answer is noise. Limits: infinite ground (so not antennas, nor a coupon's
+  finite ground), ports must leave the circuit straight, the other ports'
+  50 Ω ends reflect a little (error ~|S_ii·Γ|).
+
 ## What is not here yet
 
-- Board geometry into the 3D solvers: a net's copper from the
-  `.kicad_pcb` into an openEMS/Palace deck (S-parameters of a launch, a
-  via transition, a filter or a matching network on hw-lab's FMCW radar,
-  VNA, radar detector and plasma-matching boards), touchstone out,
-  scikit-rf (in the tree's python) to read it.
+- Antennas and finite grounds in openEMS (radiation boundary, the ground
+  layer's own copper, NF2FF); via transitions and launches (3D copper, the
+  SMA body); Palace for the same decks; scikit-rf to read the touchstone.
 - `thermalfv` on a board's real copper. check_irdrop already rasterises a
   net into a grid; feeding its grid and current into `thermalfv.joule`
   gives the self-heated trace and neck temperatures check_thermal's

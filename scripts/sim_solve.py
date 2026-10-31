@@ -22,6 +22,24 @@ right, and the board-facing studies built on them.
         two ways: a disagreement past 3% means one of them is wrong for
         this geometry. --z-target adds the error against the target.
 
+    hwde sim_solve planar --geom GEOM.json [--excite 0,1] [--f-max HZ]
+                          [--f-min HZ] [--points N] [--fine MM]
+                          [--out RES.json] [--touchstone FILE] [--keep DIR]
+        full-wave (openEMS) S-parameters of a planar microstrip circuit:
+        top copper polygons over an infinite ground, ports at reference
+        planes with straight 50 ohm-terminated feeds, waves split from
+        three voltage probes per feed. GEOM.json: {"h", "er", "tand"?,
+        "polys": [[[x, y], ...], ...], "ports": [{"x", "y", "dir", "w"}]}
+        (mm; dir "+x"|"-x"|"+y"|"-y", pointing out of the circuit). One
+        openEMS run per excited port, one at a time.
+
+    hwde sim_solve planar-geom --pcb BOARD --region X0,Y0,X1,Y1
+                          --port X,Y,DIR,W [--port ...] [--layer F.Cu]
+                          [--h MM --er ER --tand TD] [--out GEOM.json]
+        cut the copper of one layer inside a region of a board (all nets,
+        custom pads as drawn) into a GEOM.json for `planar`; h/er default
+        to the board's own stackup (dielectric under the layer).
+
 The cases (docs/solvers.md has the measured errors):
 
     circuit_ngspice     RC low-pass |H(fc)| = 1/sqrt2 and v(tau) = 1 - 1/e
@@ -161,6 +179,119 @@ def openems_line(work: Path, w, h, er, t=0.0, f_max=4e9, freqs=None) -> dict:
     return {"rows": rows, "cells": where["cells"], "seconds": round(time.time() - t0, 1),
             "z0": sum(r_["z0"] for r_ in rows) / len(rows),
             "eps_eff": sum(r_["eps_eff"] for r_ in rows) / len(rows)}
+
+
+def _port_arg(s: str) -> dict:
+    x, y, d, w = s.split(",")
+    if d not in ("+x", "-x", "+y", "-y"):
+        raise SystemExit(f"--port {s}: dir must be +x, -x, +y or -y")
+    return {"x": float(x), "y": float(y), "dir": d, "w": float(w)}
+
+
+def _no_holes(poly) -> list:
+    """A shapely polygon as hole-free pieces (CSXCAD's Polygon has no holes):
+    cut along x at each hole's centre, recursively."""
+    from shapely.geometry import box as sbox
+    from shapely.ops import split
+    from shapely.geometry import LineString
+    if not poly.interiors:
+        return [poly]
+    cx = poly.interiors[0].centroid.x
+    x0, y0, x1, y1 = poly.bounds
+    out = []
+    for piece in split(poly, LineString([(cx, y0 - 1), (cx, y1 + 1)])).geoms:
+        out += _no_holes(piece)
+    return out
+
+
+def planar_geom(pcb, region, ports, layer="F.Cu", h=None, er=None, tand=None) -> dict:
+    """GEOM.json for `planar` from a board: every copper item on `layer`
+    (tracks, pads incl. custom ones, vias, zone fill; any net) clipped to
+    the region. h/er/tand: the dielectric below the layer in the board's
+    stackup unless given."""
+    from lib import geom as G
+    from shapely.geometry import box as sbox
+    from shapely.ops import unary_union
+    bg = G.load_board(pcb)
+    items = [t.poly for t in bg.tracks_of(layer=layer)]
+    items += [p.poly for p in bg.pads_of(layer=layer) if p.kind != "np_thru_hole"]
+    items += [v.poly for v in bg.vias_of(layer=layer)]
+    items += [z.fill_on(layer) for z in bg.zones_of(layer=layer)]
+    cu = unary_union([g for g in items if g is not None and not g.is_empty])
+    cut = cu.intersection(sbox(*region))
+    polys = []
+    for g in (cut.geoms if hasattr(cut, "geoms") else [cut]):
+        if g.geom_type != "Polygon" or g.area < 1e-4:
+            continue
+        for piece in _no_holes(g.simplify(0.005)):
+            polys.append([[round(x, 4), round(y, 4)] for x, y in list(piece.exterior.coords)[:-1]])
+    if h is None or er is None:
+        st = bg.stackup
+        above, below = st.adjacent(layer)
+        other = below or above
+        if other:
+            h = h if h is not None else st.height_between(layer, other)
+            er = er if er is not None else st.epsilon_between(layer, other)
+            if tand is None:
+                i, j = sorted((st.index(layer), st.index(other)))
+                ts = [d.get("loss_tangent") for d in st.dielectrics[i:j] if d.get("loss_tangent")]
+                tand = sum(ts) / len(ts) if ts else None
+    if h is None or er is None:
+        raise SystemExit("planar-geom: no dielectric found under the layer; pass --h and --er")
+    return {"source": str(pcb), "layer": layer, "region": region, "h": h, "er": er,
+            "tand": tand or 0.0, "polys": polys, "ports": ports}
+
+
+def _features(freqs, s11, s21) -> dict:
+    """Where the response's features sit: |S21| peak (band-pass centre),
+    its -3 dB points from the peak, the deepest |S21| (a notch) and the
+    deepest |S11| (best match)."""
+    import math as m
+    db = lambda v: 20 * m.log10(max(abs(v), 1e-12))
+    d21 = [db(v) for v in s21] if s21 else []
+    d11 = [db(v) for v in s11]
+    out = {"s11_min": {"f": freqs[d11.index(min(d11))], "db": round(min(d11), 2)}}
+    if d21:
+        k = d21.index(max(d21))
+        out["s21_max"] = {"f": freqs[k], "db": round(d21[k], 2)}
+        lo = next((freqs[i] for i in range(k, -1, -1) if d21[i] < d21[k] - 3), None)
+        hi = next((freqs[i] for i in range(k, len(d21)) if d21[i] < d21[k] - 3), None)
+        out["s21_3db"] = {"lo": lo, "hi": hi}
+        j = d21.index(min(d21))
+        out["s21_min"] = {"f": freqs[j], "db": round(d21[j], 2)}
+    return out
+
+
+def planar(geo: dict, excites, f_max, f_min=None, points=201, fine=None, keep=None) -> dict:
+    n = len(geo["ports"])
+    f_min = f_min or f_max / 40
+    freqs = [f_min + (f_max - f_min) * i / (points - 1) for i in range(points)]
+    cols, runs = {}, []
+    for e in excites:
+        csx, where = em.planar_deck(geo["polys"], geo["ports"], geo["h"], geo["er"], f_max,
+                                    excite=e, tand=geo.get("tand", 0.0), fine=fine)
+        ctx = tempfile.TemporaryDirectory(prefix="hwde-planar-") if not keep else None
+        work = Path(keep) / f"port{e}" if keep else Path(ctx.name)
+        work.mkdir(parents=True, exist_ok=True)
+        (work / "planar.xml").write_text(csx.xml())
+        t0 = time.time()
+        r = solvers.run("openems", ["planar.xml"], cwd=work, timeout=4 * 3600)
+        if not (work / f"p{e}u0").exists():
+            raise solvers.SolverError(f"openEMS wrote no probes: {(r.stdout + r.stderr)[-400:]}")
+        cols[e] = em.planar_sparams(work, where, e, freqs)
+        runs.append({"excite": e, "cells": where["cells"], "seconds": round(time.time() - t0, 1)})
+        if ctx:
+            ctx.cleanup()
+    e0 = excites[0]
+    s11 = [c[e0] for c in cols[e0]]
+    s21 = [c[1 - e0] for c in cols[e0]] if n == 2 else None
+    res = {"script": SCRIPT, "cmd": "planar", "ports": n, "freqs": freqs, "runs": runs,
+           "s": {f"S{i + 1}{j + 1}": [[round(cols[j][m][i].real, 6), round(cols[j][m][i].imag, 6)]
+                                       for m in range(len(freqs))]
+                 for j in cols for i in range(n)},
+           "features": _features(freqs, s11, s21),
+           "_touchstone": em.touchstone(freqs, cols, n)}
+    return res
 
 
 def _quasi_static(w, h, er, t):
@@ -370,7 +501,57 @@ def main(argv=None) -> int:
     ln.add_argument("--f-max", type=float, default=4e9)
     ln.add_argument("--z-target", type=float)
     ln.add_argument("--json", action="store_true")
+    pl = sub.add_parser("planar")
+    pl.add_argument("--geom", required=True)
+    pl.add_argument("--excite", default="0")
+    pl.add_argument("--f-max", type=float, default=6e9)
+    pl.add_argument("--f-min", type=float)
+    pl.add_argument("--points", type=int, default=201)
+    pl.add_argument("--fine", type=float)
+    pl.add_argument("--out")
+    pl.add_argument("--touchstone")
+    pl.add_argument("--keep")
+    pl.add_argument("--json", action="store_true")
+    pg = sub.add_parser("planar-geom")
+    pg.add_argument("--pcb", required=True)
+    pg.add_argument("--region", required=True)
+    pg.add_argument("--port", action="append", required=True)
+    pg.add_argument("--layer", default="F.Cu")
+    pg.add_argument("--h", type=float)
+    pg.add_argument("--er", type=float)
+    pg.add_argument("--tand", type=float)
+    pg.add_argument("--out")
     args = ap.parse_args(argv)
+
+    if args.cmd == "planar":
+        geo = json.loads(Path(args.geom).read_text())
+        res = planar(geo, [int(k) for k in args.excite.split(",")], args.f_max,
+                     args.f_min, args.points, args.fine, args.keep)
+        if args.touchstone:
+            Path(args.touchstone).write_text(res.pop("_touchstone"))
+        else:
+            res.pop("_touchstone")
+        if args.out:
+            Path(args.out).write_text(json.dumps(res, indent=1) + "\n")
+        if args.json:
+            print(json.dumps(res, indent=1))
+        else:
+            for run in res["runs"]:
+                print(f"port {run['excite']}: {run['cells']} cells, {run['seconds']} s")
+            for name, ft in res["features"].items():
+                print(f"  {name}: {ft}")
+        return 0
+
+    if args.cmd == "planar-geom":
+        geo = planar_geom(args.pcb, [float(v) for v in args.region.split(",")],
+                          [_port_arg(p) for p in args.port], args.layer,
+                          args.h, args.er, args.tand)
+        txt = json.dumps(geo, indent=1) + "\n"
+        if args.out:
+            Path(args.out).write_text(txt)
+        else:
+            print(txt)
+        return 0
 
     if args.cmd == "probe":
         res = solvers.probe()
