@@ -28,7 +28,7 @@
 # it. Verified consumption (T6):
 #   dfm_check-enforced (gerber-level): min_trace_width_mm, min_clearance_mm,
 #     min_copper_to_edge_mm, min_hole_diameter_mm, min_hole_to_hole_mm,
-#     min_hole_to_edge_mm, min_annular_ring_mm (VIAS), min_pth_annular_ring_mm
+#     min_hole_to_edge_mm, min_npth_diameter_mm, min_annular_ring_mm (VIAS), min_pth_annular_ring_mm
 #     (component PTH holes; falls back to min_annular_ring_mm), min_silk_width_mm,
 #     min_solder_mask_dam_mm. (Its paste/outline/release checks are threshold-
 #     free: dfm_pad_tented, dfm_open_outline, dfm_missing_layer.)
@@ -102,6 +102,7 @@ design_rules:
     min_annular_ring_mm: 0.15            # VIA ring; via dia >= hole + 0.1 (JLC; 0.15 preferred)
     min_pth_annular_ring_mm: 0.18        # PTH component ring, JLC 2026-10-31 (#326)
     min_hole_diameter_mm: 0.3
+    min_npth_diameter_mm: 0.5        # JLC: non-plated hole >= 0.5 (2026-10-31, #326)
     min_copper_to_edge_mm: 0.3
     min_hole_to_hole_mm: 0.5
     min_hole_to_edge_mm: 0.5
@@ -121,6 +122,7 @@ design_rules:
     min_annular_ring_mm: 0.15            # VIA ring; via dia >= hole + 0.1 (JLC; 0.15 preferred)
     min_pth_annular_ring_mm: 0.254       # PTH component ring, JLC 2026-10-31 (#326)
     min_hole_diameter_mm: 0.3
+    min_npth_diameter_mm: 0.5        # JLC: non-plated hole >= 0.5 (2026-10-31, #326)
     min_copper_to_edge_mm: 0.3
     min_hole_to_hole_mm: 0.5
     min_hole_to_edge_mm: 0.5
@@ -140,6 +142,7 @@ design_rules:
     min_annular_ring_mm: 0.1             # VIA ring; via dia >= hole + 0.1 (JLC; 0.15 preferred)
     min_pth_annular_ring_mm: 0.15        # PTH component ring, JLC 2026-10-31 (#326)
     min_hole_diameter_mm: 0.2
+    min_npth_diameter_mm: 0.5        # JLC: non-plated hole >= 0.5 (2026-10-31, #326)
     min_copper_to_edge_mm: 0.3
     min_hole_to_hole_mm: 0.5
     min_hole_to_edge_mm: 0.4
@@ -159,6 +162,7 @@ design_rules:
     min_annular_ring_mm: 0.1             # VIA ring; via dia >= hole + 0.1 (JLC; 0.15 preferred)
     min_pth_annular_ring_mm: 0.254       # PTH component ring, JLC 2026-10-31 (#326)
     min_hole_diameter_mm: 0.2
+    min_npth_diameter_mm: 0.5        # JLC: non-plated hole >= 0.5 (2026-10-31, #326)
     min_copper_to_edge_mm: 0.3
     min_hole_to_hole_mm: 0.5
     min_hole_to_edge_mm: 0.4
@@ -178,6 +182,7 @@ design_rules:
     min_annular_ring_mm: 0.1             # VIA ring; via dia >= hole + 0.1 (JLC; 0.15 preferred)
     min_pth_annular_ring_mm: 0.15        # PTH component ring, JLC 2026-10-31 (#326)
     min_hole_diameter_mm: 0.2
+    min_npth_diameter_mm: 0.5        # JLC: non-plated hole >= 0.5 (2026-10-31, #326)
     min_copper_to_edge_mm: 0.3
     min_hole_to_hole_mm: 0.5
     min_hole_to_edge_mm: 0.4

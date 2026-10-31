@@ -390,6 +390,38 @@ def test_dfm_flags_small_drill(tmp_path):
     assert v["diameter_mm"] == pytest.approx(0.15)
 
 
+def test_drill_plating_from_kicad_comments(tmp_path):
+    """gerbonara reads KiCad's X2 plating comments as None, so every NPTH
+    came back plated; gerblib now reads them (per tool, else per file)."""
+    mixed = ("M48\n; #@! TF.FileFunction,MixedPlating,1,2\nMETRIC\n"
+             "; #@! TA.AperFunction,Plated,PTH,ViaDrill\nT1C0.300\n"
+             "; #@! TA.AperFunction,NonPlated,NPTH,ComponentDrill\n"
+             "T2C0.650\n%\nG90\nG05\nT1\nX1.0Y-1.0\nT2\nX3.0Y-1.0\nM30\n")
+    p = tmp_path / "m.drl"
+    p.write_text(mixed)
+    assert [(h.diameter, h.plated) for h in gerblib.read_drill(p)] == \
+        [(0.3, True), (0.65, False)]
+    npth = ("M48\n; #@! TF.FileFunction,NonPlated,1,2,NPTH\nMETRIC\n"
+            "T1C3.200\n%\nG90\nG05\nT1\nX1.0Y-1.0\nM30\n")
+    p.write_text(npth)
+    assert [h.plated for h in gerblib.read_drill(p)] == [False]
+
+
+def test_dfm_flags_small_npth():
+    """#326: JLC's non-plated holes start at 0.5 mm; a 0.4 mm plated hole
+    is fine, the same NPTH is not."""
+    from types import SimpleNamespace as NS
+    from shapely.geometry import Polygon
+    fab = NS(holes=[gerblib.Hole(5, 5, 0.4, plated=True),
+                    gerblib.Hole(9, 5, 0.4, plated=False),
+                    gerblib.Hole(13, 5, 0.5, plated=False)],
+             outline=Polygon())
+    vios: list = []
+    dfm_check.check_holes(fab, RULES_2L, vios)
+    assert [(v["kind"], v.get("plated")) for v in vios] == \
+        [("dfm_hole_size", False)]
+
+
 def test_dfm_flags_hole_to_hole(tmp_path):
     fab = synth_fab(tmp_path, holes=[(0.3, 5.0, -5.0), (0.3, 5.4, -5.0)])
     vios: list = []

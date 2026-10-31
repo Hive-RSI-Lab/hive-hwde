@@ -180,8 +180,45 @@ def read_gerber(path: Path, name: str) -> LayerGeom:
     return lg
 
 
+_TA_PLATING = re.compile(r"#@!\s*TA\.AperFunction,(NonPlated|Plated)", re.I)
+_TF_PLATING = re.compile(r"#@!\s*TF\.FileFunction,(NonPlated|Plated)", re.I)
+_TOOL_DEF = re.compile(r"^T(\d+)C([\d.]+)", re.I)
+
+
+def drill_plating(text: str) -> tuple[dict[float, bool], bool | None]:
+    """KiCad's X2-style Excellon comments -> ({tool diameter mm: plated},
+    file default). gerbonara leaves tool.plated None (and no tool number)
+    for them, which read every NPTH (a USB-C peg, a mounting hole) as
+    plated. A diameter that is both plated and not is left out (unknown)."""
+    tools: dict[float, bool] = {}
+    clash: set[float] = set()
+    default = None
+    pending = None
+    for line in text.splitlines():
+        line = line.strip()
+        if m := _TF_PLATING.search(line):
+            default = m.group(1).lower() == "plated"
+        elif m := _TA_PLATING.search(line):
+            pending = m.group(1).lower() == "plated"
+        elif m := _TOOL_DEF.match(line):
+            d = round(float(m.group(2)), 4)
+            if pending is not None:
+                if tools.get(d, pending) != pending:
+                    clash.add(d)
+                tools[d] = pending
+            pending = None
+        elif line in ("%", "M95"):
+            break
+    return {d: p for d, p in tools.items() if d not in clash}, default
+
+
 def read_drill(path: Path) -> list[Hole]:
     holes: list[Hole] = []
+    try:
+        tool_plated, file_plated = drill_plating(
+            Path(path).read_text(encoding="utf-8", errors="replace"))
+    except OSError:
+        tool_plated, file_plated = {}, None
     with warnings.catch_warnings():
         # kicad-cli emits G90 after the Excellon header; gerbonara warns but
         # parses it correctly. Suppressed here so every caller (gate.py runs
@@ -197,7 +234,14 @@ def read_drill(path: Path) -> list[Hole]:
             dia = getattr(getattr(obj, "aperture", None), "diameter", None)
         if dia is None:
             continue
-        plated = getattr(obj, "plated", True)
+        plated = getattr(obj, "plated", None)
+        if plated is None:
+            tool = getattr(obj, "tool", None)
+            plated = getattr(tool, "plated", None)
+            if plated is None:
+                plated = tool_plated.get(round(float(dia), 4))
+            if plated is None:
+                plated = file_plated
         holes.append(Hole(x=o.x, y=-o.y, diameter=float(dia),
                           plated=True if plated is None else bool(plated)))
     return holes

@@ -430,6 +430,16 @@ def check_holes(fab, rules, vios: list, cast=()) -> None:
                     f"drill {h.diameter:.4f} mm below JLC minimum {lo_d} mm",
                     SOURCE, kind="dfm_hole_size",
                     diameter_mm=checklib.rnd(h.diameter), min_mm=lo_d))
+    lo_np = rules.get("min_npth_diameter_mm")
+    if lo_np is not None:
+        for h in holes:
+            if not h.plated and _below(h.diameter, lo_np):
+                vios.append(checklib.violation(
+                    CHECK, "error", (h.x, h.y), None, None, [],
+                    f"non-plated drill {h.diameter:.4f} mm below JLC minimum "
+                    f"{lo_np} mm", SOURCE, kind="dfm_hole_size",
+                    diameter_mm=checklib.rnd(h.diameter), min_mm=lo_np,
+                    plated=False))
 
     lo_hh = rules.get("min_hole_to_hole_mm")
     if lo_hh is not None and len(holes) > 1:
