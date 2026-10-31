@@ -320,37 +320,6 @@ U7 (GND or +3V3 fill under the antenna on all four layers). lite-main
 passes both, with warnings: 2.2 mm cleared beside the antenna, and ES8388
 MCLK on GPIO0 with no known reset state.
 
-## RF layout
-
-`check_rf` (verify suite, hive-hwde #335) checks what a board declares about
-its RF copper in constraints.json, each part at the net's own frequency
-(`f_ghz`). The keys are in `reference/constraints_schema.md`:
-
-- `rf` nets: an open branch (a track or via that ends on no pad) or a via
-  barrel left past the last layer it joins, longer than lambda/20
-  (`max_stub_deg`, default 18 deg), fails unless `allow_stubs`. `max_deg`
-  and `length_deg`/`tol_deg` bound the electrical length between `path`'s
-  two pads. ε_eff is Hammerstad-Jensen on outer layers
-  (`impedance.microstrip_eeff_closed_form`, within 0.5% of the field
-  solver) and er inside, quasi-static: it has no dispersion yet.
-- `rf_phase` groups: paths that must match within `tol_deg`.
-- `rf_blocks` + `rf_isolation`: two blocks' copper on one layer closer than
-  5 h (or `min_mm`) fails unless ground vias stand between them at
-  lambda_g/10 of the higher frequency. `wall: true` demands the wall at
-  any spacing.
-- `shields`: a can (its footprint's pads, or a rect/poly) must cover its
-  `refs`, have exposed ground land all round, ground vias along it at
-  lambda_g/10, and with `max_height_mm`, nothing inside taller.
-- `rf_cutouts`: a reference-plane clearance under a launch or an antenna
-  (a part's pads grown by `margin_mm`, on named inner layers). `keepout_gen`
-  draws it as a rule area, and `check_rf` fails copper left inside it.
-  `placement.keepouts` entries take `layers` for the same per-layer areas.
-
-rf4 (915 MHz) passes under its RF declarations
-(`tests/golden/mutations/rf4_rf.py`, which every rf mutant's sidecar carries). The planted faults are in `tests/golden/manifest.d/check_rf.yaml`:
-a dangling feed branch, a feed detour, a host line hugging the RF pin, a can
-with no ring, and a plane solid under a declared launch cutout.
-
 ## ESD at the connectors, and what the ingest runs found
 
 `bin/hwde check_esd --pcb <board> [--constraints c.json]` (run by hand for
