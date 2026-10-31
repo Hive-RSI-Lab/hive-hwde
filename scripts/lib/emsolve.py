@@ -291,7 +291,14 @@ def _axis_lines(fixed, lo, hi, fine, coarse, pad):
     steps across the copper's extent [lo, hi], graded out to `pad` beyond
     it at up to `coarse`. Lines closer than fine/3 to an edge are dropped so
     the edges keep their own lines."""
-    fixed = sorted(set(round(v, 6) for v in fixed))
+    # edges closer than fine/4 share one line: a sliver cell sets openEMS's
+    # timestep for the whole run (a 0.02 mm cell made a filter run 10x long)
+    merged = []
+    for v in sorted(set(round(v, 6) for v in fixed)):
+        if merged and v - merged[-1] < fine / 4:
+            continue
+        merged.append(v)
+    fixed = merged
     core = set(fixed)
     x = lo
     for v in uniform(lo, hi, fine):
