@@ -272,6 +272,28 @@ def zdiff(w: float, s: float, h: float, t: float, er: float, method: str | None 
     return field_microstrip(w, h, t, er, s, mask)["zdiff"]
 
 
+def coupling(res: dict) -> dict:
+    """Crosstalk coefficients of two identical edge-coupled lines from an
+    even=True field solve (field_microstrip / field_stripline with s and
+    even=True). Each mode's per-line C and C_air come back out of its Z and
+    eps_eff (Z = 1/(c0*sqrt(C*C_air)), eps_eff = C/C_air), and
+        kC = Cm/C = (C_odd - C_even) / (C_odd + C_even)
+        kL = Lm/L = (Ca_odd - Ca_even) / (Ca_odd + Ca_even)   (L = 1/(c0^2 Ca))
+    Bogatin's near- and far-end coefficients (Signal and Power Integrity -
+    Simplified, ch. 10) follow: kb = (kC + kL)/4 is the saturated NEXT as a
+    fraction of the aggressor's step; kf = (kC - kL)/2 is the FEXT per unit of
+    coupled delay over rise time, FEXT = kf * (Len / v) / t_r. In a homogeneous
+    dielectric (stripline) kC = kL and kf = 0."""
+    def caps(z, ee):
+        c = math.sqrt(ee) / (C0 * z)
+        return c, c / ee
+    co, cao = caps(res["zodd"], res["eps_eff_odd"])
+    ce, cae = caps(res["zeven"], res["eps_eff_even"])
+    kc = (co - ce) / (co + ce)
+    kl = (cao - cae) / (cao + cae)
+    return {"kC": kc, "kL": kl, "kb": (kc + kl) / 4.0, "kf": (kc - kl) / 2.0}
+
+
 def _bisect(f, lo: float, hi: float, tol: float = 1e-4) -> float:
     flo = f(lo)
     if flo * f(hi) > 0:  # target unreachable in range: clamp to nearer endpoint

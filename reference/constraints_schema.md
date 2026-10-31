@@ -95,6 +95,18 @@ Consumers per key (script -> phase):
   // A5/A7. Inner layers are always B1. CLI --coating overrides.
   "coating": "soldermask",
 
+  // check_si (P8): signal integrity of the nets that need it. Nets are
+  // found by name and driver (clocks, RMII, I2S, SPI, USB, Ethernet MDI,
+  // crystals); this block only declares a net the names miss, corrects a
+  // class or edge, or sets a target. Every key is optional.
+  "si": {"nets": {"/ETH_CLK": {"class": "osc_clock", "t_rise_ns": 1.0,
+                               "z0_ohm": 50, "z0_tol_pct": 20,
+                               "driver_ohm": 20, "swing_v": 3.3}},
+         "ignore": ["/SLOW_CLK"],
+         "victims": {"/VREF": "analog"},
+         "groups": [{"name": "rmii_tx", "ui_ns": 20,
+                     "nets": ["/RMII_TXD0", "/RMII_TXD1", "/RMII_TX_EN"]}]},
+
   // check_antenna (P8): which modules have a PCB antenna, for a part
   // reference/rf_modules.yaml does not know or names wrongly. "pcb" checks
   // the copper under its antenna end and its place at the board edge;
