@@ -378,8 +378,19 @@ longest member), `tol_mm` or `window_mm`, and `max_mm`, `min_mm`,
 `not_longer_than` bounds (`reference/constraints_schema.md`). Each mismatch
 (`length_group_mismatch`, `length_group_bound`) says how much the net needs;
 an unrouted or open member is a warning, and a board with DDR-named nets but
-no groups warns that nothing was matched. route_cleanup's snap leaves every
-net a group names as routed.
+no groups warns that nothing was matched. route_cleanup's snap and
+route_improve leave every net a group names as routed.
+
+`route_tune` (P7, after the snap) lengthens the short ones: trombone bumps on
+the straight runs of each single-ended member's measured path, legs three
+track widths apart, the tallest that clears the board's clearance and edge
+rule, until the net sits in the middle of its range. It measures with the
+check's own function, so what it tunes to is what verify judges, and works
+on any copper (Freerouting's, KRT's, hand-routed). KRT's own matcher
+(`route.py --length-match-group`) tunes only nets it routes in the same run,
+and only to the group's longest. A net that is too long, a run with no room
+and a diff pair's half are reported, not forced; DRC that grows rolls the
+board back.
 
 ## ESD at the connectors, and what the ingest runs found
 

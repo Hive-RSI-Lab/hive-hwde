@@ -84,7 +84,8 @@ rules as routing constraints; cite the record id when you apply one.
    45-degree copper: verify FAILS on every off-angle segment left. Pass
    `--keep-net <net>` for an RF or length-matched net whose geometry is
    intent and constraints.json does not declare (its diff_pairs,
-   length_match, rf and impedance-controlled high_speed nets, and pairs
+   length_match, length_groups, rf and impedance-controlled high_speed
+   nets, and pairs
    found by name, are kept automatically). Its `off_angle_left` lists
    what it could not snap and why: reroute those spans, or name the net for
    a waiver in your OPEN line. Exit 1 `cleanup_regression`: restore the
@@ -96,6 +97,19 @@ rules as routing constraints; cite the record id when you apply one.
    unchanged). It can self-detect a connectivity regression (exit 1 cleanup_regression, board
    left modified): restore the snapshot and CONTINUE WITHOUT cleanup - it
    is optional by design.
+5c. Length groups (constraints `length_groups`: DDR byte lanes, address/
+   command to the clock): `scripts/route_tune.py --pcb <board>
+   --constraints <board dir>/constraints.json --out-report
+   <dir>/route_tune.json` after the snap. It adds trombone meanders to each
+   short single-ended member until it sits mid-range of its reference
+   (measured as check_length_groups measures: pad to pad, plus the via
+   barrel the signal travels), DRC-checked, rolled back if DRC grows.
+   `--dry-run --ops-out ops.json` shows the plan first. Its findings:
+   `tune_too_long` (a meander only lengthens: route that net shorter or
+   lengthen the reference), `tune_no_room` (no straight run with room:
+   move the neighbours or raise `--amplitude`), `tune_pair_member` (a diff
+   pair half: pairs are matched by route_critical / check_diffpair).
+   route_cleanup's snap and route_improve leave every group's nets alone.
 5b. Netclasses are per-required-width since T1 (glance-check the .kicad_pro
    split; further splits are .kicad_pro ONLY, never the .kicad_dru). Width
    unmeetable at a pad? Pour fan-in per reference/remediations/track_width.md.
