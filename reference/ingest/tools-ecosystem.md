@@ -303,12 +303,12 @@ briefs (the lead's pace). The rest wait here for the lead.
 
 ### Coupon boards (tools that need hardware to be trusted)
 
-- **Impedance coupon:** 2- and 4-layer JLC stack-ups, with 50 Ω single and
+- **Impedance coupon** (on hw-lab's `zcoupon` board): 2- and 4-layer JLC stack-ups, with 50 Ω single and
   90/100 Ω differential lines at the w/h values in V1, coated and uncoated,
   each with SMA or U.FL ends and a through-line for de-embedding. Measured
   with a VNA or TDR (the person's call: they may not own one), it settles
   the mask shift and JLC's real εr. Without an instrument, a ring resonator
   read by a NanoVNA (about $60, the person's purchase) still gives εr_eff.
-- **Loop-inductance coupon:** three buck hot-loop layouts. The ringing
+- **Loop-inductance coupon** (on hw-lab's `hc-power` board, or `emc-lab`): three buck hot-loop layouts. The ringing
   frequency at the switch node, with a known C_oss, gives L_loop to
   compare with FastHenry. Shared with the power/emc ingestions.
