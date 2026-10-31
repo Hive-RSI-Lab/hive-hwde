@@ -529,7 +529,8 @@ def check_expanders(board, kb, mcu, bg) -> tuple[list, list]:
 # pin is active low (the convention even when the symbol drops the bar).
 ENABLE_NAMES = re.compile(r"^(N|N_)?(EN|ENA|ENABLE|EN[0-9]|CE|ON|PWR_?EN|"
                           r"LED_?EN|LOAD_?EN)(_?N|B)?$")
-SHUTDOWN_NAMES = re.compile(r"^(N|N_)?(SHDN|SHUTDOWN|SLEEP|STBY|STANDBY)"
+SHUTDOWN_NAMES = re.compile(r"^(N|N_)?(SHDN|SHUTDOWN|SLEEP|STBY|STANDBY|SDZ|"
+                            r"SDN|SD_N|SDB)"
                             r"(_?N|B)?$")
 DISABLE_NAMES = re.compile(r"^(N|N_)?(DIS|DISABLE|OFF|DRVOFF)(_?N|B)?$")
 # a connector pin whose net or pin is a debug port: its pull is the point

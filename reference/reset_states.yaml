@@ -8,6 +8,10 @@
 # an EasyEDA "_<pin number>" suffix and KiCad's ~{...} overbar dropped
 # ("IO0_25" -> IO0, "~{INT}_1" -> INT); `aliases` maps other names a
 # symbol may use onto those.
+# glitch: pins the chip itself drives or pulls during power-up, before
+# firmware runs (Espressif's "pins with glitches at power-up" tables, and
+# the ROM boot log on U0TXD), for check_reset_drive.py: `pins` a regex on
+# the canonical pin name, `level` low | high | both | toggle, `us` how long.
 # verified: false means typed from memory of the datasheet, not re-read:
 # check_straps says so in its finding, and the review that relies on it
 # reads the datasheet once and flips it (with the date) here.
@@ -20,7 +24,13 @@ mcus:
     vih: 0.75
     pull_ohm: 45000  # internal weak pull-up/down, nominal
     enable: [EN, CHIP_PU, CHIP_EN]
-    aliases: {MTDI: IO12, MTDO: IO15, MTMS: IO14, MTCK: IO13, BOOT: IO0}
+    aliases: {MTDI: IO12, MTDO: IO15, MTMS: IO14, MTCK: IO13, BOOT: IO0,
+              U0TXD: IO1, TXD0: IO1, U0RXD: IO3, RXD0: IO3}
+    glitch:
+      - pins: '^IO1$'
+        level: toggle
+        us: 20000
+        why: "U0TXD carries the ROM boot log from reset (unless MTDO or the eFuse silences it)"
     straps:
       IO0: {pull: up, want: high, severity: error,
             why: "GPIO0 = 0 boots the UART download mode instead of the flash"}
@@ -42,7 +52,25 @@ mcus:
     vih: 0.75
     pull_ohm: 45000
     enable: [EN, CHIP_PU, CHIP_EN]
-    aliases: {BOOT: IO0}
+    aliases: {BOOT: IO0, U0TXD: IO43, TXD0: IO43, U0RXD: IO44, RXD0: IO44,
+              USB_D-: IO19, USB_D+: IO20}
+    glitch:
+      - pins: '^IO([1-9]|1[0-7])$'
+        level: low
+        us: 60
+        why: "GPIO1-17 glitch low for ~60 us at power-up"
+      - pins: '^IO(18|19)$'
+        level: both
+        us: 60
+        why: "GPIO18/19 glitch low then high for ~60 us each at power-up"
+      - pins: '^IO20$'
+        level: both
+        us: 170000
+        why: "GPIO20 is USB_D+: it glitches at power-up, and the USB-Serial-JTAG pull-up holds it high for up to ~170 ms until firmware takes the pin (or an eFuse disables USB)"
+      - pins: '^IO43$'
+        level: toggle
+        us: 20000
+        why: "U0TXD carries the ROM boot log from reset"
     straps:
       IO0: {pull: up, want: high, severity: error,
             why: "GPIO0 = 0 boots the download mode instead of the flash"}
@@ -52,7 +80,7 @@ mcus:
              why: "GPIO45 = 1 sets VDD_SPI to 1.8 V; 3.3 V flash then fails (unless the eFuse overrides it)"}
       IO3: {pull: none, want: any, severity: warning,
             why: "GPIO3 picks the JTAG source when the eFuses leave it to the strap"}
-    source: ESP32-S3 datasheet v1.x §3 Boot Configurations (strapping pins)
+    source: ESP32-S3 datasheet v1.x §3 Boot Configurations (strapping pins) and §2 pins with glitches at power-up; ESP32-S3 Hardware Design Guidelines (USB_D+ needs an external pull-up or the OTG download eFuse for a stable start)
     verified: false
 
   - family: ESP32-C3
@@ -62,7 +90,21 @@ mcus:
     vih: 0.75
     pull_ohm: 45000
     enable: [EN, CHIP_EN, CHIP_PU]
-    aliases: {BOOT: IO9}
+    aliases: {BOOT: IO9, MTCK: IO6, MTDO: IO7, U0RXD: IO20, RXD0: IO20,
+              U0TXD: IO21, TXD0: IO21}
+    glitch:
+      - pins: '^IO(6|7)$'
+        level: high
+        us: 0.005
+        why: "MTCK and MTDO glitch high for ~5 ns at power-up"
+      - pins: '^IO(10|20)$'
+        level: low
+        us: 0.005
+        why: "GPIO10 and U0RXD glitch low for ~5 ns at power-up"
+      - pins: '^IO21$'
+        level: toggle
+        us: 20000
+        why: "U0TXD carries the ROM boot log from reset"
     straps:
       IO9: {pull: up, want: high, severity: error,
             why: "GPIO9 = 0 boots the download mode instead of the flash"}
@@ -77,7 +119,7 @@ mcus:
       IO4: {pull: up, why: "MTMS: the JTAG pad's pull-up is on from reset"}
       IO5: {pull: up, why: "MTDI: the JTAG pad's pull-up is on from reset"}
       IO6: {pull: up, why: "MTCK: the JTAG pad's pull-up is on from reset (minuet v3: the LED strip came on early)"}
-    source: ESP32-C3 datasheet v1.x §2.4 Strapping Pins, Table 2-4 IO MUX reset column; ESP32-C3 Hardware Design Guidelines §2.6; minuet v3 design-and-errata.md (GPIO6 pull-up at reset)
+    source: ESP32-C3 datasheet v1.x §2.4 Strapping Pins, §2 power-up glitches (MTCK/MTDO high, GPIO10/U0RXD low, ~5 ns), Table 2-4 IO MUX reset column; ESP32-C3 Hardware Design Guidelines §2.6; minuet v3 design-and-errata.md (GPIO6 pull-up at reset)
     verified: false
 
   - family: ESP32-C6
@@ -87,7 +129,12 @@ mcus:
     vih: 0.75
     pull_ohm: 45000
     enable: [EN, CHIP_EN, CHIP_PU]
-    aliases: {BOOT: IO9}
+    aliases: {BOOT: IO9, U0TXD: IO16, TXD0: IO16, U0RXD: IO17, RXD0: IO17}
+    glitch:
+      - pins: '^IO16$'
+        level: toggle
+        us: 20000
+        why: "U0TXD carries the ROM boot log from reset"
     straps:
       IO9: {pull: up, want: high, severity: error,
             why: "GPIO9 = 0 boots the download mode instead of the flash"}

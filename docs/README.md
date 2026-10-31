@@ -280,6 +280,15 @@ every board:
   whose pull fights an external one. What each part does at reset is in
   `reference/reset_states.yaml`; a pin it doesn't know is a warning naming
   the pin. Add the part (with its datasheet) rather than ignoring it.
+- `check_reset_drive` builds beside it with the same resolver: every FET
+  gate, BJT base and part enable (EN, ON, SHDN, SDZ...) an MCU pin reaches,
+  directly or through one resistor, must sit at its off level at power-on
+  with the pin undriven. A floating FET gate or a mid-band enable fails, a
+  floating enable or base warns (the part may pull it), and a load on a pin
+  the chip itself drives during power-up (`glitch` in reset_states.yaml:
+  the ESP32-S3's GPIO1-17 low for ~60 us, its USB_D+ high for up to
+  ~170 ms, U0TXD's boot log) fails whatever pull it has. Pins the chip
+  pulls at reset stay check_straps' `load_on_at_reset`.
 - `check_antenna` finds a module's PCB antenna end from its footprint (the
   body beyond the pad field), and fails copper of any kind under it on any
   layer. It warns when the end is more than 1 mm inside the board edge, or
