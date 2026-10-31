@@ -614,6 +614,42 @@ def test_write_project_minimal(tmp_path):
     assert set(pro) == {"board", "erc", "meta", "schematic"}
 
 
+def test_write_project_keeps_an_existing_pro(tmp_path):
+    """#440: a schematic rebuild after P5 must not wipe board_init's design
+    settings/stackup and rules_gen's net classes."""
+    old = {
+        "board": {"design_settings": {"rules": {"min_track_width": 0.09,
+                                                "min_clearance": 0.1}},
+                  "layer_presets": [], "stackup": {"x": 1}},
+        "net_settings": {"classes": [{"name": "RF", "track_width": 0.3}]},
+        "erc": {"erc_exclusions": [["a", "b"]],
+                "rule_severities": {"lib_symbol_issues": "error",
+                                    "pin_not_connected": "warning"}},
+        "meta": {"filename": "other.kicad_pro", "version": 3},
+        "pcbnew": {"page_layout_descr_file": ""},
+    }
+    (tmp_path / "demo.kicad_pro").write_text(json.dumps(old), "utf-8")
+    pro = json.loads(schlib.write_project("demo", tmp_path).read_text("utf-8"))
+    assert pro["net_settings"] == old["net_settings"]
+    assert pro["pcbnew"] == old["pcbnew"]
+    rules = pro["board"]["design_settings"]["rules"]
+    assert rules == {"min_track_width": 0.09, "min_clearance": 0.1}
+    assert pro["board"]["stackup"] == {"x": 1}
+    # the schematic's own library-check severities are forced back ...
+    assert pro["board"]["design_settings"]["rule_severities"][
+        "lib_footprint_issues"] == "ignore"
+    sev = pro["erc"]["rule_severities"]
+    assert sev["lib_symbol_issues"] == "ignore"
+    # ... the rest of erc is the user's
+    assert sev["pin_not_connected"] == "warning"
+    assert pro["erc"]["erc_exclusions"] == [["a", "b"]]
+    assert pro["meta"]["filename"] == "demo.kicad_pro"
+    # unreadable -> replaced by the minimal file
+    (tmp_path / "demo.kicad_pro").write_text("{not json", "utf-8")
+    pro = json.loads(schlib.write_project("demo", tmp_path).read_text("utf-8"))
+    assert set(pro) == {"board", "erc", "meta", "schematic"}
+
+
 # ------------------------------------------------------------ smoke (live)
 
 def _run_gen(gen: Path, out_dir: Path) -> dict:
