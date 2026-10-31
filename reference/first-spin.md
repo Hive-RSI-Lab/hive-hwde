@@ -49,7 +49,7 @@ fable/high; opus/high for parts and DFM). The usual domains:
 | analog / audio | headroom at every stage (common-mode, output swing on its real supply), gain staging to clip, input coupling corners, switch thresholds at the logic levels driving them |
 | digital | straps and reset states at power-on and on an MCU-only reset (internal pulls of every attached IC), clocks against their limits, firmware support for every interface, antenna keep-out |
 | thermal | Tj at the stated load for every hot part from the datasheet's own theta (pad-up packages need a heatsink path, not vias), enclosure air |
-| DFM / assembly | footprints against the maker's drawing (posts, slots, annulus, edge), paste on exposed pads, finish for the finest pitch, CPL rotation against JLC's model |
+| DFM / assembly | footprints against the maker's drawing (posts, slots, annulus, edge), paste on exposed pads and stencil release (`hwde check_paste`), finish for the finest pitch, CPL rotation against JLC's model |
 | parts | pin-to-pad against the datasheet pin table for every IC and connector, stock and lifecycle, ratings |
 
 Give each the same brief (the role prompt carries the rules): the board
