@@ -507,6 +507,15 @@ def test_constraint_keep_nets_reads_every_key():
     assert got == {"P", "N", "X", "L1", "L2", "ANT", "Z"}
 
 
+def test_constraint_keep_nets_length_groups_globs():
+    cons = {"length_groups": [{"nets": ["DRAM_D[0-1]"], "ref_net": "/DQS",
+                               "not_longer_than": ["CK*"], "tol_mm": 1}]}
+    assert rcl.constraint_keep_nets(cons) == {"DRAM_D[0-1]", "/DQS", "CK*"}
+    board = ["/DRAM_D0", "/DRAM_D1", "/DRAM_D2", "/DQS", "/CK_P", "/CK_N"]
+    assert rcl.constraint_keep_nets(cons, board) == {
+        "/DRAM_D0", "/DRAM_D1", "/DQS", "/CK_P", "/CK_N"}
+
+
 def test_constraints_unreadable_is_an_error(tmp_path):
     p = _cons_board(tmp_path)
     assert rcl.main(["--pcb", str(p), "--dry-run", "--snap-only",

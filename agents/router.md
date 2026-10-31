@@ -11,10 +11,10 @@ prompt may carry KNOWLEDGE RECORDS (knowledge.py --select): treat their
 rules as routing constraints; cite the record id when you apply one.
 
 ## The chain (board-class dependent - this order is live-verified)
-- **2-layer:** route_critical -> route_auto -> stitch_vias -> plane_repair
+- **2-layer:** [route_escape] -> route_critical -> route_auto -> stitch_vias -> plane_repair
   -> route_improve -> snap45 -> [route_cleanup] -> gate. (Pre-route stitch vias would be Freerouting
   obstacles.)
-- **4-layer:** route_critical -> stitch_vias -> route_auto -> plane_repair
+- **4-layer:** [route_escape] -> route_critical -> stitch_vias -> route_auto -> plane_repair
   -> route_improve -> snap45 -> [route_cleanup] -> gate. (Stitching first pre-connects SMD pads to the
   inner planes; Freerouting's remaining work shrinks ~40%.)
 
@@ -30,6 +30,18 @@ rules as routing constraints; cite the record id when you apply one.
    (and share settings) become one zone over their union, so a pour can be
    drawn as several rects; ones with different settings stay apart (a
    note says so) and need a track across the seam.
+0a. A board with a BGA (any fine-pitch ball grid; route_escape finds them
+   by geometry): `scripts/route_escape.py --pcb <board>` after rules_gen
+   and the planes. It fans each field out with KRT bga_fanout (dog-bone
+   when the pitch budget allows, else between balls) at the fab floors,
+   writes the courtyard clearance rule (`aiee_bga_escape_<ref>`, which
+   rules_gen also writes), strips via-in-pad (a paid fab option;
+   `--allow-via-in-pad` keeps it), nudges decouplers off the vias, grades
+   by kicad-cli DRC and rips any escape that broke a rule. `--plan` shows
+   the geometry and budget without routing. Balls it leaves
+   (`left_for_routers`) are ordinary route_critical / route_auto work; a
+   0.5 mm field that fails the budget needs via-in-pad or HDI, which is
+   a fab decision for the person, not a script to write.
 1. `scripts/route_critical.py --pcb <board>` - diff pairs at computed
    impedance geometry (skew-checked via check_diffpair), high-current power
    at IPC-2152 x1.5 width, RF at impedance width + fence handoff. It SKIPS
@@ -84,7 +96,8 @@ rules as routing constraints; cite the record id when you apply one.
    45-degree copper: verify FAILS on every off-angle segment left. Pass
    `--keep-net <net>` for an RF or length-matched net whose geometry is
    intent and constraints.json does not declare (its diff_pairs,
-   length_match, rf and impedance-controlled high_speed nets, and pairs
+   length_match, length_groups, rf and impedance-controlled high_speed
+   nets, and pairs
    found by name, are kept automatically). Its `off_angle_left` lists
    what it could not snap and why: reroute those spans, or name the net for
    a waiver in your OPEN line. Exit 1 `cleanup_regression`: restore the
@@ -96,6 +109,19 @@ rules as routing constraints; cite the record id when you apply one.
    unchanged). It can self-detect a connectivity regression (exit 1 cleanup_regression, board
    left modified): restore the snapshot and CONTINUE WITHOUT cleanup - it
    is optional by design.
+5c. Length groups (constraints `length_groups`: DDR byte lanes, address/
+   command to the clock): `scripts/route_tune.py --pcb <board>
+   --constraints <board dir>/constraints.json --out-report
+   <dir>/route_tune.json` after the snap. It adds trombone meanders to each
+   short single-ended member until it sits mid-range of its reference
+   (measured as check_length_groups measures: pad to pad, plus the via
+   barrel the signal travels), DRC-checked, rolled back if DRC grows.
+   `--dry-run --ops-out ops.json` shows the plan first. Its findings:
+   `tune_too_long` (a meander only lengthens: route that net shorter or
+   lengthen the reference), `tune_no_room` (no straight run with room:
+   move the neighbours or raise `--amplitude`), `tune_pair_member` (a diff
+   pair half: pairs are matched by route_critical / check_diffpair).
+   route_cleanup's snap and route_improve leave every group's nets alone.
 5b. Netclasses are per-required-width since T1 (glance-check the .kicad_pro
    split; further splits are .kicad_pro ONLY, never the .kicad_dru). Width
    unmeetable at a pad? Pour fan-in per reference/remediations/track_width.md.

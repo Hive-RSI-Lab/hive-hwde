@@ -1163,3 +1163,115 @@ def test_pos_is_edge_fraction_and_all_three_holes_fit():
     assert not model.footprints["C1"].is_mechanical
     assert model.footprints["H1"].edge_keep(0.3) == pytest.approx(0.05)
     assert model.footprints["H1"].edge_keep(0.2) == 0.0
+
+
+# ============================================ back-side decoupling under a BGA
+# hw-lab linux-computer (i.MX6ULL BGA-289): 40 decouplers could not ring the
+# 14 mm package on top (15 courtyard overlaps); IMX6ULLHDG 3.2.1 puts them
+# on the bottom, under their balls.
+
+def _bga_pads(n: int = 8, pitch: float = 0.8, nets=None) -> str:
+    out = ""
+    for r in range(n):
+        for c in range(n):
+            num = f"{'ABCDEFGHJKLMNPRT'[r]}{c + 1}"
+            net = (nets or {}).get(num, f"S{num}")
+            out += _pad(num, (c - (n - 1) / 2) * pitch,
+                        (r - (n - 1) / 2) * pitch, net, size=0.4)
+    return out
+
+
+def _bga_board(tmp_path_factory, name="bgab", ncaps=12):
+    rails = {"C3": "V1", "D4": "V1", "E5": "V2", "F6": "V2", "C6": "V3",
+             "F3": "V3", "D5": "V1", "E4": "V2", "B2": "V3", "G7": "V1",
+             "B7": "V2", "G2": "V3"}
+    body = _fp("U1", 20, 15, pads=_bga_pads(nets=rails),
+               cy=(-3.6, -3.6, 3.6, 3.6))
+    dec = []
+    for i, (ball, net) in enumerate(sorted(rails.items())[:ncaps]):
+        ref = f"C{i + 1}"
+        body += _fp(ref, 2 + 2.5 * i, 27, pads=_pad("1", -0.48, 0, net,
+                                                    size=0.5)
+                    + _pad("2", 0.48, 0, "GND", size=0.5),
+                    cy=(-0.93, -0.47, 0.93, 0.47))
+        dec.append({"cap": ref, "ic": "U1", "pin": ball, "rail": net})
+    return _pcb(tmp_path_factory, name, body, w=40.0, h=30.0), \
+        {"associations": dec}
+
+
+def test_is_area_array():
+    def fp(pads):
+        return placelib.Footprint(ref="U", fpid="t:U", pos=(0, 0), angle=0,
+                                  side="front", attrs=frozenset(),
+                                  locked=False, pads=pads,
+                                  courtyard_local=None)
+    grid = [placelib.FpPad(f"{r}{c}", None, (c * 0.8, r * 0.8), (0.4, 0.4),
+                           False) for r in range(8) for c in range(8)]
+    assert place_seed.is_area_array(fp(grid))
+    # a QFN-48: 12 pads a side and one exposed pad: perimeter, not a grid
+    qfn = []
+    for i in range(12):
+        t = -2.75 + i * 0.5
+        qfn += [placelib.FpPad(f"a{i}", None, (t, -3.5), (0.25, 0.8), False),
+                placelib.FpPad(f"b{i}", None, (t, 3.5), (0.25, 0.8), False),
+                placelib.FpPad(f"c{i}", None, (-3.5, t), (0.8, 0.25), False),
+                placelib.FpPad(f"d{i}", None, (3.5, t), (0.8, 0.25), False)]
+    qfn.append(placelib.FpPad("EP", None, (0, 0), (4, 4), False))
+    assert not place_seed.is_area_array(fp(qfn))
+    assert not place_seed.is_area_array(fp(grid[:30]))
+
+
+def test_seed_puts_bga_decouplers_under_it_on_the_back(tmp_path_factory):
+    p, dec = _bga_board(tmp_path_factory)
+    ops, viol, facts, model = place_seed.seed(p, {"placement": {}}, dec,
+                                              1.0, 0.8)
+    assert not viol
+    assert placelib.legality_violations(model, {}) == []
+    u1 = model.footprints["U1"]
+    room = u1.extents_abs().buffer(place_seed.BACKSIDE_REACH_MM + 1e-6,
+                                   join_style=2)
+    caps = [model.footprints[a["cap"]] for a in dec["associations"]]
+    for c, a in zip(caps, dec["associations"]):
+        assert c.side == "back", c.ref
+        assert room.contains(c.extents_abs()), c.ref
+        ball = [q for q in u1.pads if q.number == a["pin"]][0]
+        bx, by = u1.to_abs(ball.local)
+        assert math.dist(c.center_abs(), (bx, by)) < 4.0, c.ref
+    # no two back-side caps overlap
+    for i, a in enumerate(caps):
+        for b in caps[i + 1:]:
+            assert a.extents_abs().intersection(b.extents_abs()).area \
+                <= placelib.EPS_AREA
+    assert {o["side"] for o in ops if o["ref"].startswith("C")} == {"back"}
+    ops2, _v, _f, _m = place_seed.seed(p, {"placement": {}}, dec, 1.0, 0.8)
+    assert ops == ops2
+
+
+def test_seed_backside_decoupling_off_keeps_front(tmp_path_factory):
+    p, dec = _bga_board(tmp_path_factory, "bgaoff", ncaps=4)
+    con = {"placement": {"backside_decoupling": False}}
+    ops, viol, _f, model = place_seed.seed(p, con, dec, 1.0, 0.8)
+    assert {model.footprints[f"C{i}"].side for i in range(1, 5)} == {"front"}
+    assert not viol
+
+
+def test_seed_side_pin_keeps_a_cap_on_its_side(tmp_path_factory):
+    p, dec = _bga_board(tmp_path_factory, "bgapin", ncaps=4)
+    con = {"placement": {"sides": [{"ref": "C2", "side": "front"}]}}
+    _ops, viol, _f, model = place_seed.seed(p, con, dec, 1.0, 0.8)
+    assert model.footprints["C2"].side == "front"
+    assert model.footprints["C1"].side == "back"
+    assert not viol
+
+
+def test_anneal_inherits_back_side_slots_under_a_bga(tmp_path_factory):
+    import place_anneal
+    p, dec = _bga_board(tmp_path_factory, "bgainh", ncaps=6)
+    _ops, _viol, _f, model = place_seed.seed(p, {"placement": {}}, dec,
+                                             1.0, 0.8)
+    clusters, _w = placelib.build_clusters(model, dec, {})
+    c = [c for c in clusters if c.anchor == "U1"][0]
+    warnings, reslotted = [], []
+    slots = place_anneal._inherit_slots(model, c, dec, warnings, reslotted)
+    assert reslotted == [], warnings
+    assert set(slots) == {f"C{i}" for i in range(1, 7)}

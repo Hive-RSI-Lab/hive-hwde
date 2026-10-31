@@ -1,0 +1,11 @@
+# check_si: signal integrity on the nets that need it, found by interface
+# (clocks, RMII, I2S, SPI, USB, Ethernet MDI): electrical length against the
+# edge, series termination of long clocks, impedance steps and targets,
+# return path, crosstalk into neighbours and group skew (lead's list of
+# 10-29, item 3). Board only; constraints.json may declare or override nets
+# (si) and the power nets it reads.
+name: check_si
+needs: []
+args: []
+optional:
+  constraints: [--constraints, "{constraints}"]

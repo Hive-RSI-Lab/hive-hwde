@@ -73,6 +73,15 @@ class Csx:
                 return
         raise KeyError(name)
 
+    def polygon(self, name: str, pts, z: float, prio: int = 0) -> None:
+        """A zero-thickness polygon in the plane z (CSXCAD's Polygon
+        primitive, normal +z): board copper drawn as it is on the board."""
+        for kind, attrs, inner, boxes in self.props:
+            if attrs["Name"] == name:
+                boxes.append(("poly", prio, float(z), [(float(x), float(y)) for x, y in pts]))
+                return
+        raise KeyError(name)
+
     def metal(self, name):
         return self.prop("Metal", name)
 
@@ -118,7 +127,14 @@ class Csx:
                 ia = " ".join(f"{k}={quoteattr(_fmt(v))}" for k, v in inner.items())
                 out.append(f"        <Property {ia}/>")
             out.append("        <Primitives>")
-            for prio, p1, p2 in boxes:
+            for prim in boxes:
+                if prim[0] == "poly":
+                    _, prio, z, pts = prim
+                    vs = "".join(f'<Vertex X1="{_fmt(x)}" X2="{_fmt(y)}"/>' for x, y in pts)
+                    out.append(f'          <Polygon Priority="{prio}" NormDir="2" Elevation="{_fmt(z)}"'
+                               f' QtyVertices="{len(pts)}">{vs}</Polygon>')
+                    continue
+                prio, p1, p2 = prim
                 out.append(f'          <Box Priority="{prio}">'
                            f'<P1 X="{_fmt(p1[0])}" Y="{_fmt(p1[1])}" Z="{_fmt(p1[2])}"/>'
                            f'<P2 X="{_fmt(p2[0])}" Y="{_fmt(p2[1])}" Z="{_fmt(p2[2])}"/></Box>')
@@ -266,6 +282,174 @@ def microstrip_z0_from_probes(sim: Path, where: dict, freqs) -> list[dict]:
         eps = (beta * C0 / (2 * math.pi * f)) ** 2
         out.append({"f": f, "z0": abs(z.real), "z0_imag": z.imag, "eps_eff": eps})
     return out
+
+
+# ---------------------------------------------------------- planar circuits
+
+def _axis_lines(fixed, lo, hi, fine, coarse, pad):
+    """Mesh lines along one axis: every copper edge in `fixed`, `fine`
+    steps across the copper's extent [lo, hi], graded out to `pad` beyond
+    it at up to `coarse`. Lines closer than fine/3 to an edge are dropped so
+    the edges keep their own lines."""
+    # edges closer than fine/4 share one line: a sliver cell sets openEMS's
+    # timestep for the whole run (a 0.02 mm cell made a filter run 10x long)
+    merged = []
+    for v in sorted(set(round(v, 6) for v in fixed)):
+        if merged and v - merged[-1] < fine / 4:
+            continue
+        merged.append(v)
+    fixed = merged
+    core = set(fixed)
+    x = lo
+    for v in uniform(lo, hi, fine):
+        if all(abs(v - f) > fine / 3 for f in fixed):
+            core.add(round(v, 6))
+    out = set(core)
+    out |= set(graded(hi, hi + pad, fine, coarse))
+    out |= set(-v for v in graded(-lo, -lo + pad, fine, coarse))
+    return sorted(out)
+
+
+def _snap(lines, v):
+    return min(lines, key=lambda q: abs(q - v))
+
+
+def planar_deck(polys, ports, h: float, er: float, f_max: float,
+                excite: int = 0, tand: float = 0.0, fine: float | None = None,
+                feed_len: float | None = None):
+    """The deck for a planar microstrip circuit and where its probes are.
+
+    polys: the top copper, a list of [(x, y), ...] outlines (mm), drawn as
+    zero-thickness PEC at z = h over an infinite ground (the zmin PEC wall)
+    through h of er (tan delta as a conductivity at f_max/2). ports: one
+    dict per port, {"x", "y", "dir": "+x"|"-x"|"+y"|"-y", "w"}: its
+    reference plane at (x, y), the line w wide leaving the circuit toward
+    dir. Each port gets a straight feed of that width, feed_len long, ending
+    in a 50 ohm lumped port (the source on port `excite`), and three voltage
+    probes along it that `planar_waves` splits into the wave going in and
+    the wave coming out, moved to the reference plane. A port's line must
+    run straight out of the circuit for feed_len (the deck adds that copper,
+    so the circuit should stop at its planes)."""
+    lam_min = C0 / f_max * 1e3 / math.sqrt(er)
+    feed_len = feed_len or max(lam_min / 2, 10 * h)
+    ws = [p["w"] for p in ports]
+    fine = fine or min(min(ws) / 6, lam_min / 40, h / 2)
+    coarse = min(lam_min / 15, 3.0)
+    copper = [list(map(tuple, pl)) for pl in polys]
+    feeds = []
+    for p in ports:
+        x, y, w, d = p["x"], p["y"], p["w"], p["dir"]
+        sx = {"+x": 1, "-x": -1}.get(d, 0)
+        sy = {"+y": 1, "-y": -1}.get(d, 0)
+        ex, ey = x + sx * feed_len, y + sy * feed_len
+        if sx:
+            copper.append([(min(x, ex), y - w / 2), (max(x, ex), y - w / 2),
+                           (max(x, ex), y + w / 2), (min(x, ex), y + w / 2)])
+        else:
+            copper.append([(x - w / 2, min(y, ey)), (x + w / 2, min(y, ey)),
+                           (x + w / 2, max(y, ey)), (x - w / 2, max(y, ey))])
+        feeds.append((x, y, ex, ey, sx, sy, w))
+    xs = [q[0] for pl in copper for q in pl]
+    ys = [q[1] for pl in copper for q in pl]
+    pad = max(lam_min / 6, 12 * h, 6.0)
+    csx = Csx(1e-3)
+    csx.gauss(f_max / 2, f_max / 2)
+    csx.bc = ["MUR", "MUR", "MUR", "MUR", "PEC", "MUR"]
+    csx.fdtd["endCriteria"] = 1e-4
+    kappa = 2 * math.pi * (f_max / 2) * EPS0 * er * tand if tand else 0.0
+    sub = csx.material("substrate", er, kappa)
+    x0, x1, y0, y1 = min(xs) - pad, max(xs) + pad, min(ys) - pad, max(ys) + pad
+    csx.box(sub, (x0, y0, 0), (x1, y1, h))
+    cu = csx.metal("copper")
+    for pl in copper:
+        csx.polygon(cu, pl, h, prio=10)
+    csx.add_lines("x", _axis_lines(xs, min(xs), max(xs), fine, coarse, pad))
+    csx.add_lines("y", _axis_lines(ys, min(ys), max(ys), fine, coarse, pad))
+    fz = h / 6
+    top = max(12 * h, lam_min / 6)
+    csx.add_lines("z", uniform(0, h, fz) + graded(h, h + top, fz, coarse))
+    xl, yl = sorted(csx.lines["x"]), sorted(csx.lines["y"])
+    where = {"ports": [], "cells": len(xl) * len(yl) * len(csx.lines["z"])}
+    for k, (x, y, ex, ey, sx, sy, w) in enumerate(feeds):
+        # the port: a 50 ohm lumped element from ground to the feed's end
+        # (and the source on the excited port), one cell in from the end
+        if sx:
+            xe = _snap(xl, ex - sx * fine)
+            pa, pb = (xe, y - w / 2, 0), (xe, y + w / 2, h)
+        else:
+            ye = _snap(yl, ey - sy * fine)
+            pa, pb = (x - w / 2, ye, 0), (x + w / 2, ye, h)
+        if k == excite:
+            e = csx.excitation(f"src{k}", (0, 0, -1))
+            csx.box(e, pa, pb, prio=5)
+        r = csx.lumped(f"port{k}", 2, 50.0)
+        csx.box(r, pa, pb, prio=5)
+        # three probes a third of the feed apart, the first a quarter in
+        pr = []
+        for j, frac in enumerate((0.25, 0.5, 0.75)):
+            if sx:
+                px = _snap(xl, x + sx * frac * feed_len)
+                csx.probe(f"p{k}u{j}", 0)
+                csx.box(f"p{k}u{j}", (px, y, 0), (px, y, h))
+                pr.append(abs(px - x))
+            else:
+                py = _snap(yl, y + sy * frac * feed_len)
+                csx.probe(f"p{k}u{j}", 0)
+                csx.box(f"p{k}u{j}", (x, py, 0), (x, py, h))
+                pr.append(abs(py - y))
+        where["ports"].append({"dist": pr})
+    return csx, where
+
+
+def planar_waves(sim: Path, where: dict, k: int, freqs) -> list[tuple[complex, complex]]:
+    """(a, b) at port k's reference plane per frequency: a the wave going
+    into the circuit, b the wave coming out, from the port's three voltage
+    probes at distances s0 < s1 < s2 from the plane. With s measured
+    outward, V(s) = a e^(gamma s) + b e^(-gamma s); the probes need not be
+    evenly spaced, so gamma comes from the first and last pair by solving
+    the exact relation numerically, then (a, b) by least squares."""
+    import cmath
+    import numpy as np
+    us = [dft(*read_probe(sim / f"p{k}u{j}"), freqs) for j in range(3)]
+    s = [d * 1e-3 for d in where["ports"][k]["dist"]]
+    out = []
+    for i, f in enumerate(freqs):
+        u = [us[j][i] for j in range(3)]
+        # evenly spaced probes (snapped to the mesh, so nearly): the middle
+        # one gives cosh(gamma d) = (u0 + u2) / (2 u1)
+        d = (s[2] - s[0]) / 2
+        g = cmath.acosh((u[0] + u[2]) / (2 * u[1])) / d
+        if g.imag < 0:
+            g = -g
+        A = np.array([[cmath.exp(g * sj), cmath.exp(-g * sj)] for sj in s])
+        sol, *_ = np.linalg.lstsq(A, np.array(u), rcond=None)
+        out.append((complex(sol[0]), complex(sol[1])))
+    return out
+
+
+def planar_sparams(sim: Path, where: dict, excite: int, freqs) -> list[list[complex]]:
+    """Column `excite` of S: S[i][excite] = b_i / a_excite, per frequency.
+    The other ports' 50 ohm ends reflect a little (a_i != 0); that error is
+    about |S_ii * Gamma_end|, small for a 50 ohm line ending in 50 ohm."""
+    waves = [planar_waves(sim, where, k, freqs) for k in range(len(where["ports"]))]
+    return [[waves[i][n][1] / waves[excite][n][0] for i in range(len(waves))]
+            for n in range(len(freqs))]
+
+
+def touchstone(freqs, cols: dict, n: int) -> str:
+    """A Touchstone v1 file (Hz, S, RI, R 50) from S columns cols[j] =
+    [[S_0j..S_(n-1)j] per freq]; columns not run are written as 0."""
+    lines = [f"! hwde sim_solve planar, openEMS", "# Hz S RI R 50"]
+    # v1 order: a 2-port is S11 S21 S12 S22; n > 2 is row by row
+    order = ([(0, 0), (1, 0), (0, 1), (1, 1)] if n == 2
+             else [(i, j) for i in range(n) for j in range(n)])
+    for m, f in enumerate(freqs):
+        row = [f"{f:.6e}"]
+        for i, j in order:
+            v = cols[j][m][i] if j in cols else 0j
+            row += [f"{v.real:.6e}", f"{v.imag:.6e}"]
+        lines.append(" ".join(row))
+    return "\n".join(lines) + "\n"
 
 
 # ================================================================ Palace

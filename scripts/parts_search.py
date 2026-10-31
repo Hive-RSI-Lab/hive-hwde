@@ -94,12 +94,57 @@ def _split_placeholders(parts: list[dict]) -> tuple[list[dict], int]:
 _PICK_PACKAGES = {"0402", "0603", "0805"}
 
 
-def _pick_basic_passive(parts: list[dict], qty: int) -> dict | None:
+# A passive's value: number, SI prefix, unit (4.7 ohm, 4.7kΩ, 100nF, 2.2 uH).
+# The prefix is case-sensitive so mohm/mΩ (milli) and Mohm/MΩ (mega) differ.
+_PASSIVE_VAL = re.compile(
+    r"(?<![\d.])(\d+(?:\.\d+)?)\s*([pnuµμmkKMG]?)\s*([oO][hH][mM][sS]?|\u2126|\u03a9|F|H)"
+    r"(?![A-Za-z])")
+_PREFIX = {"p": 1e-12, "n": 1e-9, "u": 1e-6, "µ": 1e-6, "μ": 1e-6, "m": 1e-3,
+           "": 1.0, "k": 1e3, "K": 1e3, "M": 1e6, "G": 1e9}
+_VALUE_ATTRS = {"ohm": "resistance", "F": "capacitance", "H": "inductance"}
+
+
+def _passive_values(text: str) -> list[tuple[float, str]]:
+    """Every (value, unit) a text states: '4.7Ω ±1% 0603' -> [(4.7, 'ohm')]."""
+    out = []
+    for num, pre, unit in _PASSIVE_VAL.findall(text):
+        u = unit if unit in ("F", "H") else "ohm"
+        out.append((float(num) * _PREFIX[pre], u))
+    return out
+
+
+def _query_value(query: str) -> tuple[float, str] | None:
+    """The one value a passive query asks for (shorthand 4R7/10K spelled out
+    first); None when it names none, or several."""
+    vals = set(_passive_values(_normalize_value_query(query) or query))
+    return vals.pop() if len(vals) == 1 else None
+
+
+def _same(a: float, b: float) -> bool:
+    return abs(a - b) <= 1e-9 * max(abs(a), abs(b))
+
+
+def _has_value(p: dict, want: tuple[float, str]) -> bool:
+    """The row is of the wanted value: its value attribute when it has one,
+    else its description. JLC's keyword search is fuzzy, so '4.7 ohm' also
+    returns 47 Ω rows (issue #384)."""
+    num, unit = want
+    attr = [a for a in p.get("attributes") or []
+            if str(a.get("name", "")).lower() == _VALUE_ATTRS[unit]]
+    texts = [str(a.get("value", "")) for a in attr] or [p.get("description", "")]
+    return any(u == unit and _same(v, num)
+               for t in texts for v, u in _passive_values(t))
+
+
+def _pick_basic_passive(parts: list[dict], qty: int,
+                        want: tuple[float, str] | None = None) -> dict | None:
     """part-sourcer rules 1-2, deterministically: JLC Basic (no feeder fee),
-    standard package, stock >= 5x build qty; cheapest conforming row wins."""
+    standard package, stock >= 5x build qty, of the value asked for; cheapest
+    conforming row wins."""
     conforming = [p for p in parts
                   if p["basic"] and p["package"] in _PICK_PACKAGES
-                  and p["stock"] >= 5 * qty]
+                  and p["stock"] >= 5 * qty
+                  and (want is None or _has_value(p, want))]
     conforming.sort(key=lambda p: (p["price"] is None,
                                    p["price"] if p["price"] is not None else 0.0,
                                    -p["stock"]))
@@ -316,7 +361,7 @@ def search(args) -> dict:
         contains=filters.get("contains"))
     parts.sort(key=partslib.rank_key)
     if args.pick == "basic-passive":
-        sel = _pick_basic_passive(parts, args.qty)
+        sel = _pick_basic_passive(parts, args.qty, _query_value(args.query or ""))
         parts = [sel] if sel is not None else []
     top = parts[: args.limit]
     for i, p in enumerate(top):
@@ -338,7 +383,7 @@ def search(args) -> dict:
         if not top:
             payload["hint"] = (
                 "no conforming Basic passive (Basic + 0402/0603/0805 + stock "
-                f">= 5x qty {args.qty}): a stock-out of the standard form, "
+                f">= 5x qty {args.qty} + the query's value): a stock-out of the standard form, "
                 "not a bad query - pick by judgment")
     if query_retried:
         payload["query_retried"] = query_retried

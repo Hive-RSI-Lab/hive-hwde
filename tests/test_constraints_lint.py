@@ -314,3 +314,16 @@ def test_blocks_section_lints(tmp_path):
 
     vs, _ = lint_doc(tmp_path, {"blocks": [{"topolgy": "buck"}]})
     assert any(v["kind"] == "misspelled_key" for v in errors(vs))
+
+
+def test_note_beside_a_documented_key_is_not_a_misspelling(tmp_path):
+    """linux-computer writes length_groups_note next to length_groups: prose
+    about the section, an unknown-key warning, never misspelled_key."""
+    p = tmp_path / "constraints.json"
+    p.write_text(json.dumps({
+        "length_groups": [{"nets": ["DRAM_D*"], "tol_mm": 0.635}],
+        "length_groups_note": "Table 22 rules not expressible yet"}),
+        encoding="utf-8")
+    payload, _ = constraints_lint.run(["--file", str(p)])
+    kinds = {v["kind"] for v in payload["violations"]}
+    assert "misspelled_key" not in kinds and "unknown_key" in kinds

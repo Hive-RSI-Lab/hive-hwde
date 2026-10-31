@@ -13,6 +13,15 @@ arrangement:
    the pad of its target pin (2-pad parts are rotated so the shared-net pad
    points at the pin), deterministically nudged around the perimeter until
    collision-free.
+   Under an area-array anchor (a BGA: is_area_array) a small 2-pad SMD
+   satellite (a 0201/0402 decoupler, BACKSIDE_MAX_MM) goes on the OTHER side,
+   under its ball, nudged on a 0.2 mm grid until it clears the other parts
+   on that side and kept inside the anchor's courtyard (+BACKSIDE_REACH_MM):
+   IMX6ULLHDG 3.2.1 and every BGA vendor guide put them there, and 40 caps
+   cannot ring a 14 mm package. One that finds no room under the package
+   falls back to the perimeter on the anchor's side. placement
+   {"backside_decoupling": false} keeps every satellite on the anchor's
+   side (a one-sided-assembly board).
 3. placement.edges pins connector clusters to board edges: distributed along
    the declared edge, or with an explicit pos the part's ORIGIN sits at that
    fraction of the edge's length (clamped so the cluster's copper clears the
@@ -87,6 +96,55 @@ OUTWARD = {"left": (-1.0, 0.0), "right": (1.0, 0.0),
 SAT_GAP = 0.3          # mm clearance satellite <-> anchor courtyard
 NUDGE_ANGLES = [0] + [s * a for a in range(15, 181, 15) for s in (1, -1)]
 SPRING_ITERS = 250
+# back-side satellites under an area-array anchor (see the docstring, 2.)
+BACKSIDE_MAX_MM = 2.0      # longest courtyard side of a satellite that may go under
+BACKSIDE_REACH_MM = 0.5    # how far past the anchor courtyard it may sit
+BACKSIDE_STEP_MM = 0.2
+BACKSIDE_GAP_MM = 0.05     # between parts under the package: survives the
+                           # ops' coordinate rounding (touching courtyards
+                           # came back 0.01 mm2 over on linux-computer)
+BACKSIDE_RINGS = 25        # spiral rings searched: 25 x 0.2 = 5 mm round the ball
+
+
+def is_area_array(fp: Footprint) -> bool:
+    """A ball/land grid, not a perimeter package: at least a 6 x 6 grid of
+    pad rows/columns, 36+ pads, and 9+ of them strictly inside the outer
+    rows and columns (a QFN's exposed pad is one, a QFN-16 has 6 x 6 rows
+    but nothing inside)."""
+    pads = [p for p in fp.pads if not p.through]
+    if len(pads) < 36:
+        return False
+    xs = sorted({round(p.local[0], 2) for p in pads})
+    ys = sorted({round(p.local[1], 2) for p in pads})
+    if len(xs) < 6 or len(ys) < 6:
+        return False
+    inner = [p for p in pads
+             if xs[0] < round(p.local[0], 2) < xs[-1]
+             and ys[0] < round(p.local[1], 2) < ys[-1]]
+    return len(inner) >= 9
+
+
+def _backside_ok(model: PlaceModel, anchor: Footprint, fp: Footprint,
+                 placement: dict | None) -> bool:
+    if placement is not None and placement.get("backside_decoupling") is False:
+        return False
+    if len(fp.pads) != 2 or any(p.through for p in fp.pads):
+        return False
+    if any(r.get("ref") == fp.ref for r in (placement or {}).get("sides", [])):
+        return False                       # a pinned side wins
+    minx, miny, maxx, maxy = fp.extents_local().bounds
+    return max(maxx - minx, maxy - miny) <= BACKSIDE_MAX_MM
+
+
+def _spiral(step: float, rings: int):
+    yield (0.0, 0.0)
+    for r in range(1, rings + 1):
+        pts = [(i, -r) for i in range(-r, r + 1)] + \
+              [(r, j) for j in range(-r + 1, r + 1)] + \
+              [(i, r) for i in range(r - 1, -r - 1, -1)] + \
+              [(-r, j) for j in range(r - 1, -r, -1)]
+        for i, j in sorted(pts, key=lambda q: (q[0] ** 2 + q[1] ** 2, q)):
+            yield (i * step, j * step)
 
 
 def _ang(v) -> float:
@@ -107,7 +165,8 @@ def _centered(poly):
 
 def layout_satellites(model: PlaceModel, cluster: Cluster,
                       warnings: list[str], *, only: set | None = None,
-                      keep: dict | None = None) -> dict[str, tuple]:
+                      keep: dict | None = None,
+                      placement: dict | None = None) -> dict[str, tuple]:
     """ref -> ((slot_x, slot_y) anchor-origin local frame, rel_angle_deg).
 
     only/keep (U20, for place_anneal's slot inheritance): slot just the
@@ -125,10 +184,15 @@ def layout_satellites(model: PlaceModel, cluster: Cluster,
     ac = anchor.center_local()
     rc = _circumradius(ext)
     placed = [ext]
+    under = []          # the anchor's other side, under the package
+    other = "back" if anchor.side == "front" else "front"
+    area = is_area_array(anchor)
     for ref, (kslot, krel) in (keep or {}).items():
-        p = affinity.rotate(_centered(model.footprints[ref].extents_local()),
+        kfp = model.footprints[ref]
+        p = affinity.rotate(_centered(kfp.extents_local()),
                             -krel, origin=(0, 0))
-        placed.append(affinity.translate(p, kslot[0], kslot[1]))
+        (under if kfp.side != anchor.side else placed).append(
+            affinity.translate(p, kslot[0], kslot[1]))
     slots: dict[str, tuple] = {}
 
     def keyed(s):
@@ -140,9 +204,22 @@ def layout_satellites(model: PlaceModel, cluster: Cluster,
         [s for s in cluster.satellites if s.ref in only]
     for i, sat in enumerate(sorted(sats, key=keyed)):
         fp = model.footprints[sat.ref]
+        pin = _pin_local(anchor, sat)
+        if area and pin is not None and _backside_ok(model, anchor, fp,
+                                                     placement):
+            got = _slot_under(anchor, fp, sat, pin, ext, under, other)
+            if got is not None:
+                slots[sat.ref] = got[0]
+                under.append(got[1])
+                continue
+            warnings.append(f"satellite {sat.ref} found no room under "
+                            f"{cluster.anchor}: perimeter slot used")
+        pinned = any(r.get("ref") == fp.ref
+                     for r in (placement or {}).get("sides", []))
+        if fp.side != anchor.side and not pinned:
+            fp.mirror()          # back from an earlier under-slot attempt
         sat_rel = _centered(fp.extents_local())
         r_sat = _circumradius(sat_rel)
-        pin = _pin_local(anchor, sat)
         if pin is None and sat.target_pin is not None:
             warnings.append(f"{cluster.anchor}.{sat.target_pin[1]} not found "
                             f"for satellite {sat.ref} - perimeter slot used")
@@ -184,6 +261,33 @@ def layout_satellites(model: PlaceModel, cluster: Cluster,
         slots[sat.ref] = (chosen[0], rel)
         placed.append(chosen[1])
     return slots
+
+
+def _slot_under(anchor: Footprint, fp: Footprint, sat, pin, ext, under,
+                side: str):
+    """((slot, rel), polygon) for `fp` on `side`, centred as near its ball
+    `pin` as the parts already under the package allow, inside the anchor
+    courtyard grown by BACKSIDE_REACH_MM; None when nothing fits. Mirrors
+    `fp` onto `side` only when a slot is found."""
+    flipped = fp.side != side
+    if flipped:
+        fp.mirror()
+    ac = anchor.center_local()
+    toward = _unit((ac[0] - pin[0], ac[1] - pin[1]))
+    rel = _facing_rel(anchor, fp, sat, toward)
+    poly0 = affinity.rotate(_centered(fp.extents_local()), -rel, origin=(0, 0))
+    room = ext.buffer(BACKSIDE_REACH_MM, join_style=2)
+    for dx, dy in _spiral(BACKSIDE_STEP_MM, BACKSIDE_RINGS):
+        cand = (pin[0] + dx, pin[1] + dy)
+        poly = affinity.translate(poly0, cand[0], cand[1])
+        if not room.contains(poly):
+            continue
+        grown = poly.buffer(BACKSIDE_GAP_MM, join_style=2)
+        if all(grown.intersection(p).area <= placelib.EPS_AREA for p in under):
+            return ((cand, rel), poly)
+    if flipped:
+        fp.mirror()
+    return None
 
 
 def _support(poly, d) -> float:
@@ -579,7 +683,8 @@ def seed(pcb: Path, constraints: dict, decoupling: dict,
     clusters, warnings = placelib.build_clusters(model, decoupling, placement)
     import placetemplates
     placetemplates.audit_groups(model, placement, warnings)
-    slots_of = {c.anchor: layout_satellites(model, c, warnings)
+    slots_of = {c.anchor: layout_satellites(model, c, warnings,
+                                            placement=placement)
                 for c in clusters}
 
     edge_clusters = [c for c in clusters if c.edge]

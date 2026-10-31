@@ -197,11 +197,26 @@ def is_ground(net: str) -> bool:
     return bool(GROUND_RE.match(base_net(net)))
 
 
+# A name word that makes the net a signal about a rail, not the rail:
+# PG_1V35 is 1V35's power-good, ADC_1V35 its divided-down sense.
+SIGNAL_WORDS = {"PG", "PGOOD", "PGD", "PWRGD", "PWROK", "POK", "OK", "ADC",
+                "AIN", "SENSE", "SNS", "VSENSE", "ISENSE", "FB", "EN", "ENA",
+                "ENABLE", "MON", "DIV", "DET", "FLT", "FAULT", "ALERT",
+                "MEAS", "CTRL", "INT", "IRQ", "SEL", "TRIP", "OVP", "UVP",
+                "SS", "TRK", "TRACK", "COMP", "ILIM"}
+
+
 def volts_from_name(net: str) -> float | None:
+    """A rail's voltage read from its name: +3V3, 1V35, VCC_5V, VBUS and
+    VBUS_J1 (any VBUS word) as 5 V, grounds 0. A name with a signal word
+    (PG_1V35, ADC_1V35, VBUS_SENSE, 3V3_EN) is a signal, not a rail."""
     n = base_net(net)
     if GROUND_RE.match(n):
         return 0.0
-    if n.endswith("VBUS"):
+    words = n.split("_")
+    if SIGNAL_WORDS & set(words):
+        return None
+    if n.endswith("VBUS") or "VBUS" in words:
         return 5.0
     m = re.search(r"(?<![A-Z0-9.])([+-])?(\d+)V(\d+)(?![0-9])", n)
     if m:

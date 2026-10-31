@@ -306,6 +306,15 @@ every board:
   whose pull fights an external one. What each part does at reset is in
   `reference/reset_states.yaml`; a pin it doesn't know is a warning naming
   the pin. Add the part (with its datasheet) rather than ignoring it.
+- `check_reset_drive` builds beside it with the same resolver: every FET
+  gate, BJT base and part enable (EN, ON, SHDN, SDZ...) an MCU pin reaches,
+  directly or through one resistor, must sit at its off level at power-on
+  with the pin undriven. A floating FET gate or a mid-band enable fails, a
+  floating enable or base warns (the part may pull it), and a load on a pin
+  the chip itself drives during power-up (`glitch` in reset_states.yaml:
+  the ESP32-S3's GPIO1-17 low for ~60 us, its USB_D+ high for up to
+  ~170 ms, U0TXD's boot log) fails whatever pull it has. Pins the chip
+  pulls at reset stay check_straps' `load_on_at_reset`.
 - `check_antenna` finds a module's PCB antenna end from its footprint (the
   body beyond the pad field), and fails copper of any kind under it on any
   layer. It warns when the end is more than 1 mm inside the board edge, or
@@ -319,6 +328,69 @@ ESP32 reset) and six of its expander pins, and `check_antenna` fails core's
 U7 (GND or +3V3 fill under the antenna on all four layers). lite-main
 passes both, with warnings: 2.2 mm cleared beside the antenna, and ES8388
 MCLK on GPIO0 with no known reset state.
+
+## Signal integrity
+
+`check_si` (verify suite) finds the nets that need signal-integrity care by
+interface rather than by declaration: oscillator and MCU clocks, RMII, I2S,
+SPI, USB, Ethernet MDI and crystal nets, by name and by what drives them (an
+oscillator part on the net or behind its series resistor makes a 1 ns edge,
+an MCU pin 2 ns). For each it solves the board's own stackup (the field
+solver in `lib/impedance.py`) for Z0 and delay, and holds the net's longest
+pad-to-pad path against its critical length, t_rise / 6 (Johnson). Past it
+the net is a transmission line, and:
+
+- a clock with no series resistor is `si_unterminated_clock`, and one whose
+  resistor plus a ~20 ohm driver misses Z0 is `si_series_mismatch`;
+- two long parts of the net more than 0.10 apart in reflection coefficient
+  are `si_impedance_step`; a declared `z0_ohm`, or a pair's standard Zdiff
+  (USB 90, 100BASE-TX 100), missed is `si_impedance_target`;
+- the net goes through `check_return_path`'s corridor and return-via tests
+  with its own rise time (findings keep that check's kinds).
+
+Every fast net is also an aggressor: each near-parallel neighbour on its layer
+is solved as a coupled pair (`impedance.coupling`: Bogatin's kb and kf from
+the even and odd modes), and NEXT and FEXT over the coupled run are held to
+5% of the swing for a digital victim and 1% for an analog one or a crystal
+(`si_crosstalk`). RMII's halves are held to 10% of their 20 ns interval in
+flight-time spread (`si_skew`). The report lists every SI net's length,
+delay, Z0, critical length, termination and worst neighbours, pass or fail.
+`constraints.json` `si` declares, corrects or ignores nets
+(`reference/constraints_schema.md`).
+
+On the pinned boards it finds core's I2S_BCK (98 mm from the ESP32 to three
+converters with no series resistor), three core B.Cu runs over In2's +3V3
+plane where tracks on In2 cut it right under them, and lite-main's I2S_DOUT
+0.13 mm from BCLK for 47 mm on a 2-layer board. The planted fault
+`si-unterminated-clock` stretches usbbuck4's MCO past its critical length.
+
+## Length-matched groups (DDR)
+
+`check_length_groups` (verify suite) holds groups of nets to a reference
+length, the way DDR layout rules are written: a byte lane's data and mask
+within +/-0.635 mm of its DQS, address/command within a window of the clock.
+Each net's length is its copper path between its two farthest terminal pads
+(a stub or test-point branch doesn't count) plus the via barrel wherever the
+path changes layer, from the board's stackup: the barrel below the exit
+layer is a stub and isn't counted. `constraints.json` `length_groups`
+declares the groups: `nets` (globs), `ref_net`/`ref_nets` (else the group's
+longest member), `tol_mm` or `window_mm`, and `max_mm`, `min_mm`,
+`not_longer_than` bounds (`reference/constraints_schema.md`). Each mismatch
+(`length_group_mismatch`, `length_group_bound`) says how much the net needs;
+an unrouted or open member is a warning, and a board with DDR-named nets but
+no groups warns that nothing was matched. route_cleanup's snap and
+route_improve leave every net a group names as routed.
+
+`route_tune` (P7, after the snap) lengthens the short ones: trombone bumps on
+the straight runs of each single-ended member's measured path, legs three
+track widths apart, the tallest that clears the board's clearance and edge
+rule, until the net sits in the middle of its range. It measures with the
+check's own function, so what it tunes to is what verify judges, and works
+on any copper (Freerouting's, KRT's, hand-routed). KRT's own matcher
+(`route.py --length-match-group`) tunes only nets it routes in the same run,
+and only to the group's longest. A net that is too long, a run with no room
+and a diff pair's half are reported, not forced; DRC that grows rolls the
+board back.
 
 ## ESD at the connectors, and what the ingest runs found
 
@@ -367,6 +439,31 @@ connector in the wrong place. The check reports `model_offset` with a fit of
 `(offset (xyz 0 -2.2 0)) (rotate (xyz 0 0 180))`. `fpfix.body_flags`
 still flags a pulled library footprint at pull time (THT pins only). This
 check runs on the board, every time.
+
+## Placement type against the pads
+
+A footprint's `(attr smd)` or `(attr through_hole)` is how KiCad's position
+export, `kicad-cli pcb export stats` and bom_cpl's assembly class say the
+part is fitted. EasyEDA's XR0850 8x8 mm power inductor ships
+`(attr through_hole)` on two SMD pads, so pinned lite-main's
+`bom-cpl.json` sent L1-L4, four reflowed inductors, to JLC's THT step.
+`scripts/lib/fpattr.py` reads the type off the pads: SMD pads only make it
+`smd`, plated pins only make it `through_hole`, and both (USB-C shell legs,
+pin-in-paste, THT parts with SMD tabs) leave its own type standing. A plated
+hole inside an SMD pad is a thermal via, not a pin, so U8's exposed-pad
+HTSSOP-32 stays `smd`. Parts marked `board_only`, `exclude_from_bom` or
+`virtual` aren't judged.
+
+- `fpfix` rule G writes the type the pads give into the library, so
+  `lib_pull` fixes it on every pull. `fpfix.py --pcb` does the same for
+  footprints already placed on a board. A footprint with both kinds of pad
+  and no type at all is residue: only the part's drawing settles it.
+- `bom_cpl` classes a part by its pads where the attr contradicts them,
+  and lists each one under `attr_mismatch` in its report (and on stderr).
+- `check_fp_attr` (verify suite) fails each placed footprint whose attr its
+  pads contradict (`fp_attr_mismatch`), or that has both kinds of pad and no
+  type (`fp_attr_unspecified`, which the position export drops). Planted
+  fault `attr-tht-on-smd`: blinky2's SOT-223 U2 marked through_hole.
 
 ## A USB device's PHY
 
@@ -469,7 +566,7 @@ nothing in the Hive should ask for them.
 
 ## What doesn't work here yet
 
-- `route_critical` and KRT's finishing pass need KiCadRoutingTools 0.19.0.
+- `route_escape`, `route_critical` and KRT's finishing pass need KiCadRoutingTools 0.19.0.
   It's now in `/hive/tools/kicad-routing-tools/KiCadRoutingTools-0.19.0`,
   but nothing points the skill at it yet (brief 261028-141924). A board with
   diff pairs, high-current power or RF needs it.

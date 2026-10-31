@@ -220,3 +220,91 @@ def test_live_palace_validates():
 def test_live_openems_validates():
     c = sim_solve.validate({"openems_microstrip"})["cases"][0]
     assert c["status"] == "pass", c
+
+
+# ---------------------------------------------------------------- planar
+
+def test_planar_deck_writes_polygons_ports_and_probes():
+    poly = [[0, -1.4], [30, -1.4], [30, 1.4], [0, 1.4]]
+    ports = [{"x": 0, "y": 0, "dir": "-x", "w": 2.8}, {"x": 30, "y": 0, "dir": "+x", "w": 2.8}]
+    csx, where = em.planar_deck([poly], ports, 1.53, 4.5, 6e9, excite=1)
+    root = ET.fromstring(csx.xml())
+    polys = root.findall(".//Polygon")
+    assert len(polys) == 3                        # the circuit + one feed per port
+    assert all(p.get("NormDir") == "2" and float(p.get("Elevation")) == 1.53 for p in polys)
+    assert len(polys[0].findall("Vertex")) == 4
+    names = {p.get("Name") for p in root.iter() if p.get("Name")}
+    assert {"src1", "port0", "port1"} <= names and "src0" not in names
+    assert {f"p{k}u{j}" for k in (0, 1) for j in range(3)} <= names
+    for pr in where["ports"]:
+        d = pr["dist"]
+        assert d[0] < d[1] < d[2]
+    xs = [float(v) for v in root.find(".//XLines").text.split(",")]
+    for edge in (0.0, 30.0):                      # copper edges have their own lines
+        assert any(abs(x - edge) < 1e-6 for x in xs)
+
+
+def test_planar_waves_recover_a_and_b(tmp_path):
+    """Probes a line with a known incident and reflected wave would give:
+    the reader returns both at the reference plane, whatever the reflection."""
+    import numpy as np
+    eps, f = 3.0, 2e9
+    beta = 2 * math.pi * f * math.sqrt(eps) / em.C0
+    a, b = 1.0 * np.exp(0.3j), 0.35 * np.exp(-1.1j)
+    t = np.arange(0, 100e-9, 2e-12)
+    where = {"ports": [{"dist": [5.0, 10.0, 15.0]}]}
+    for j, s in enumerate(where["ports"][0]["dist"]):
+        sm = s * 1e-3
+        ph = a * np.exp(1j * beta * sm) + b * np.exp(-1j * beta * sm)   # V(s) = a e^gs + b e^-gs
+        v = np.real(ph * np.exp(2j * math.pi * f * t)) * np.hanning(t.size)
+        (tmp_path / f"p0u{j}").write_text("% t v\n" + "\n".join(f"{x:.6e}\t{y:.9e}" for x, y in zip(t, v)))
+    (ga, gb), = em.planar_waves(tmp_path, where, 0, [f])
+    assert abs(gb / ga - b / a) < 1e-3
+
+
+def test_touchstone_two_port_is_column_major():
+    cols = {0: [[0.1 + 0j, 0.9 + 0j]]}             # S11, S21 from port 1's run
+    line = em.touchstone([1e9], cols, 2).splitlines()[-1].split()
+    assert [float(v) for v in line[1:]] == [0.1, 0, 0.9, 0, 0, 0, 0, 0]
+
+
+def test_planar_geom_cuts_custom_pads_and_skips_npth(tmp_path):
+    pcb = tmp_path / "c.kicad_pcb"
+    pcb.write_text('''(kicad_pcb (version 20240108) (generator test)
+  (general (thickness 1.6))
+  (layers (0 "F.Cu" signal) (31 "B.Cu" signal) (44 "Edge.Cuts" user))
+  (setup (stackup (layer "F.Cu" (type "copper") (thickness 0.035))
+    (layer "dielectric 1" (type "core") (thickness 1.53) (material "FR4") (epsilon_r 4.5))
+    (layer "B.Cu" (type "copper") (thickness 0.035))))
+  (net 0 "") (net 1 "A")
+  (footprint "t:RF" (layer "F.Cu") (at 10 10)
+    (property "Reference" "RFS1")
+    (pad "1" smd custom (at 0 0) (size 0.2 0.2) (layers "F.Cu" "F.Mask") (net 1 "A")
+      (options (clearance outline) (anchor rect))
+      (primitives (gr_poly (pts (xy -5 -1) (xy 5 -1) (xy 5 1) (xy -5 1)) (width 0) (fill yes))))
+    (pad "" np_thru_hole circle (at 0 4) (size 0.5 0.5) (drill 0.5) (layers "*.Cu" "*.Mask")))
+)
+''')
+    g = sim_solve.planar_geom(str(pcb), [0, 0, 20, 20], [{"x": 5, "y": 10, "dir": "-x", "w": 2}])
+    assert g["h"] == pytest.approx(1.53) and g["er"] == pytest.approx(4.5)
+    assert len(g["polys"]) == 1
+    xs = [p[0] for p in g["polys"][0]]
+    assert min(xs) == pytest.approx(5) and max(xs) == pytest.approx(15)   # the polygon, not a 0.2 mm box
+
+
+def test_no_holes_splits_a_ring():
+    from shapely.geometry import Point
+    ring = Point(0, 0).buffer(10).difference(Point(0, 0).buffer(8))
+    pieces = sim_solve._no_holes(ring)
+    assert len(pieces) >= 2 and all(not p.interiors for p in pieces)
+    assert sum(p.area for p in pieces) == pytest.approx(ring.area, rel=1e-6)
+
+
+@live
+def test_live_planar_thru_line_is_transparent(tmp_path):
+    geo = {"h": 1.53, "er": 4.5, "polys": [[[0, -1.4265], [30, -1.4265], [30, 1.4265], [0, 1.4265]]],
+           "ports": [{"x": 0, "y": 0, "dir": "-x", "w": 2.853}, {"x": 30, "y": 0, "dir": "+x", "w": 2.853}]}
+    res = sim_solve.planar(geo, [0], 6e9, f_min=1e9, points=11)
+    for s11, s21 in zip(res["s"]["S11"], res["s"]["S21"]):
+        assert abs(complex(*s21)) == pytest.approx(1.0, abs=0.02)
+        assert abs(complex(*s11)) < 0.12        # -18 dB: the probe split's floor

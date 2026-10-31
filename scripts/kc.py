@@ -43,9 +43,12 @@ import argparse
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import traceback
 from pathlib import Path
 
@@ -53,7 +56,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from lib import checklib  # noqa: E402
 from lib import env  # noqa: E402
 
-_TIMEOUT = 300
+# A kicad-cli run ends when it stops making progress, not at a fixed time
+# (issue #414: core's DRC passed 300 s on a loaded machine while working).
+# Progress is output on its pipes or CPU time gained by its process group
+# (the AppImage's AppRun forks the real kicad-cli). A run with neither for
+# STALL_S is wedged and is killed; HARD_S is the wall-clock backstop.
+# HWDE_KC_STALL_S and HWDE_KC_TIMEOUT (the hard cap; 0 = none) override them.
+STALL_S = 180.0
+HARD_S = 3600.0
+_TIMEOUT = None   # run_cli's default: HWDE_KC_TIMEOUT, else HARD_S
+_POLL_S = 1.0
 
 # The seven required keys, in schema order (used by tests and docs).
 SCHEMA_KEYS = ("check", "severity", "pos", "layer", "net", "refs", "msg")
@@ -184,12 +196,125 @@ def resolve_cli() -> Path:
     return cli
 
 
-def run_cli(cli: Path, args: list[str], timeout: int = _TIMEOUT,
+def _env_s(name: str, default: float | None) -> float | None:
+    """Seconds from the environment (0 or less = no limit), else default."""
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    try:
+        v = float(raw)
+    except ValueError:
+        return default
+    return v if v > 0 else None
+
+
+def _group_cpu_ticks(pgid: int) -> int | None:
+    """CPU ticks (user + system, own and reaped children) of every process in
+    the group, from /proc; None where /proc can't say (not Linux)."""
+    proc = Path("/proc")
+    if not (proc / "self" / "stat").exists():
+        return None
+    total = 0
+    try:
+        entries = list(proc.iterdir())
+    except OSError:
+        return None
+    for d in entries:
+        if not d.name.isdigit():
+            continue
+        try:
+            stat = (d / "stat").read_text()
+        except OSError:
+            continue
+        # comm may hold spaces/parens: the fields start after the last ')'
+        f = stat[stat.rfind(")") + 2:].split()
+        try:
+            if int(f[2]) != pgid:          # field 5: pgrp
+                continue
+            total += sum(int(x) for x in f[11:15])   # utime stime cutime cstime
+        except (IndexError, ValueError):
+            continue
+    return total
+
+
+def run_watched(cmd: list[str], *, stall_s: float | None, hard_s: float | None,
+                env: dict | None = None, cwd: str | None = None
+                ) -> subprocess.CompletedProcess:
+    """subprocess.run(cmd, capture_output, text) that ends a run only when it
+    stops making progress (no output and no CPU time for stall_s) or passes
+    hard_s. On either, the whole process group is killed and
+    subprocess.TimeoutExpired is raised (its `timeout` is the limit hit, and
+    `stalled` says which)."""
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            env=env, cwd=cwd, start_new_session=True)
+    out: list[bytes] = []
+    err: list[bytes] = []
+    last = [time.monotonic()]
+
+    def pump(stream, sink):
+        # os.read returns what is there: a buffered read would wait for a
+        # full block and see a run that prints slowly as silent
+        fd = stream.fileno()
+        while True:
+            chunk = os.read(fd, 65536)
+            if not chunk:
+                break
+            sink.append(chunk)
+            last[0] = time.monotonic()
+
+    pumps = [threading.Thread(target=pump, args=(proc.stdout, out), daemon=True),
+             threading.Thread(target=pump, args=(proc.stderr, err), daemon=True)]
+    for t in pumps:
+        t.start()
+    start = time.monotonic()
+    ticks = _group_cpu_ticks(proc.pid)
+    hit = None
+    while True:
+        try:
+            proc.wait(timeout=_POLL_S)
+            break
+        except subprocess.TimeoutExpired:
+            pass
+        now = time.monotonic()
+        t = _group_cpu_ticks(proc.pid)
+        if t is not None and ticks is not None and t > ticks:
+            last[0] = now
+        if t is not None:
+            ticks = t
+        if hard_s is not None and now - start > hard_s:
+            hit = ("hard", hard_s)
+        elif stall_s is not None and now - last[0] > stall_s:
+            hit = ("stall", stall_s)
+        if hit:
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except OSError:
+                proc.kill()
+            proc.wait()
+            break
+    for t in pumps:
+        t.join(5)
+    proc.stdout.close()
+    proc.stderr.close()
+
+    def text(chunks: list[bytes]) -> str:
+        return b"".join(chunks).decode("utf-8", "replace").replace("\r\n", "\n")
+
+    if hit:
+        exc = subprocess.TimeoutExpired(cmd, hit[1], text(out), text(err))
+        exc.stalled = hit[0] == "stall"
+        raise exc
+    return subprocess.CompletedProcess(cmd, proc.returncode, text(out), text(err))
+
+
+def run_cli(cli: Path, args: list[str], timeout: float | None = _TIMEOUT,
             env: dict | None = None) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        [str(cli), *args], capture_output=True, text=True,
-        encoding="utf-8", errors="replace", timeout=timeout, env=env,
-    )
+    """Run kicad-cli. It is killed when it makes no progress for STALL_S
+    (HWDE_KC_STALL_S), or past its hard cap: HWDE_KC_TIMEOUT when set, else
+    `timeout` when a caller gives one, else HARD_S."""
+    hard = _env_s("HWDE_KC_TIMEOUT", timeout if timeout is not None else HARD_S)
+    return run_watched([str(cli), *args], stall_s=_env_s("HWDE_KC_STALL_S", STALL_S),
+                       hard_s=hard, env=env)
 
 
 def _run_json_report(cli: Path, section_args: list[str],
@@ -316,7 +441,7 @@ def export_step(cli: Path, pcb: Path, out_file: Path, force: bool = True) -> dic
     if force:
         args.append("--force")
     args.append(str(pcb))
-    cp = run_cli(cli, args, timeout=600)
+    cp = run_cli(cli, args)
     return _export_result("step", pcb, cp, [out_file])
 
 
@@ -547,7 +672,7 @@ def render_png(cli: Path, pcb: Path, out_file: Path, *, side: str = "top",
             src = Path(td) / pcb.name
             src.write_text(text, encoding="utf-8")
         args.append(str(src))
-        cp = run_cli(cli, args, timeout=600, env=renv)
+        cp = run_cli(cli, args, env=renv)
     res = _export_result("render", pcb, cp, [out_file])
     res["view"] = side if not rotate else "iso"
     # a part whose model file is missing renders as bare pads - say which

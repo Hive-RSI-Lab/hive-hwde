@@ -165,3 +165,18 @@ def test_cli_rf(capsys):
 def test_cli_rf_errors(capsys, argv):
     code, out = run(capsys, *argv)
     assert code == 2 and out["status"] == "error"
+
+
+@pytest.mark.parametrize("c1,c2,stray", [("18", "18", "4"),
+                                         ("18p", "18pF", "4p"),
+                                         ("18e-12", "0.018n", "4")])
+def test_cli_crystal_bare_numbers_are_pf(capsys, c1, c2, stray):
+    code, out = run(capsys, "crystal", "--c1", c1, "--c2", c2,
+                    "--stray", stray)
+    assert code == 0 and out["result"]["cl_pf"] == pytest.approx(13.0)
+
+
+def test_cli_i2c_bare_cb_is_pf(capsys):
+    _, bare = run(capsys, "i2c", "--vdd", "3.3", "--rp", "2k2", "--cb", "50")
+    _, unit = run(capsys, "i2c", "--vdd", "3.3", "--rp", "2k2", "--cb", "50p")
+    assert bare["result"] == unit["result"]
