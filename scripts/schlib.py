@@ -1089,7 +1089,13 @@ def write_project(name: str, out_dir: Path | str) -> Path:
     authority; keep it MINIMAL - unexpected keys can make KiCad reject the
     whole file and silently fall back to defaults (LEARNINGS [kicad]).
     Library-configuration checks are ignored on purpose: generated designs
-    embed their symbols and must not break on library updates."""
+    embed their symbols and must not break on library updates.
+
+    An existing project file is MERGED, not replaced (#440): after P5 it
+    carries board_init's design settings and stackup, rules_gen's net
+    classes and the DRC floors, and a schematic rebuild must not wipe them.
+    Every key already there is kept; the only thing the schematic forces is
+    its ERC library-check severities. An unreadable file is replaced."""
     out_dir = Path(out_dir)
     pro = {
         "board": {
@@ -1117,8 +1123,28 @@ def write_project(name: str, out_dir: Path | str) -> Path:
     }
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / f"{name}.kicad_pro"
+    try:
+        old = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        old = None
+    if isinstance(old, dict):
+        forced = pro["erc"]["rule_severities"]
+        pro = _merge_kept(pro, old)
+        pro["erc"].setdefault("rule_severities", {}).update(forced)
+        pro["meta"]["filename"] = f"{name}.kicad_pro"
     path.write_text(json.dumps(pro, indent=2) + "\n", encoding="utf-8")
     return path
+
+
+def _merge_kept(new: dict, old: dict) -> dict:
+    """new's keys deep-merged under old's: on a clash old wins."""
+    out = dict(old)
+    for k, v in new.items():
+        if k not in out:
+            out[k] = v
+        elif isinstance(v, dict) and isinstance(out[k], dict):
+            out[k] = _merge_kept(v, out[k])
+    return out
 
 
 def pin_table(lib_id: str, lib_paths: list | None = None) -> dict:
