@@ -1,0 +1,128 @@
+# The research topics hwde follows (scripts/papers.py, docs/research/README.md).
+#
+# Each topic is a few literature queries run against OpenAlex (which indexes
+# journals, conferences and arXiv), the EE area it serves (the EE map's area
+# name), the hwde tools its findings would sharpen, how often it is due, and
+# the earliest publication date worth reading. `papers.py scan --due --add`
+# runs the due ones and stamps last_scanned; a topic with no hits worth
+# keeping still gets stamped, so the loop moves on.
+#
+# Add a topic when a design, a review or an ingestion run finds a question
+# hwde answers from folklore; drop one that keeps returning nothing kept.
+topics:
+- id: decoupling-pdn
+  area: power-integrity
+  tools:
+  - check_decoupling
+  - check_pdn_z
+  - check_pdn
+  queries:
+  - PCB power distribution network decoupling capacitor anti-resonance
+  - target impedance PDN decoupling capacitor selection
+  since: '2015-01-01'
+  every_days: 30
+  last_scanned: '2026-10-30'
+- id: mlcc-derating
+  area: passives
+  tools:
+  - mlcc_dcbias
+  - check_ratings
+  queries:
+  - MLCC DC bias capacitance loss class II dielectric
+  - multilayer ceramic capacitor aging DC bias X7R X5R measurement
+  since: '2012-01-01'
+  every_days: 60
+  last_scanned: '2026-10-30'
+- id: trace-current-thermal
+  area: thermal
+  tools:
+  - check_current
+  - check_thermal
+  - check_irdrop
+  queries:
+  - PCB trace current carrying capacity temperature rise IPC-2152
+  - printed circuit board copper trace fusing current thermal model
+  since: '2010-01-01'
+  every_days: 60
+  last_scanned: '2026-10-30'
+- id: via-si
+  area: signal-integrity
+  tools:
+  - check_diffpair
+  - check_return_path
+  - route_quality
+  queries:
+  - via stub resonance backdrill PCB signal integrity
+  - return path discontinuity reference plane change via stitching
+  since: '2015-01-01'
+  every_days: 30
+  last_scanned: '2026-10-30'
+- id: emc-layout
+  area: emc
+  tools:
+  - check_return_path
+  - check_route_style
+  - stitch_vias
+  queries:
+  - PCB layout radiated emissions ground plane slot common mode
+  - switching converter layout hot loop EMI parasitic inductance
+  since: '2015-01-01'
+  every_days: 30
+  last_scanned: '2026-10-30'
+- id: class-d-audio
+  area: analog-audio
+  tools:
+  - netlist_audit
+  - sim_board
+  queries:
+  - class-D audio amplifier output LC filter design distortion
+  - class D amplifier PCB layout EMI audio
+  since: '2015-01-01'
+  every_days: 60
+  last_scanned: '2026-10-30'
+- id: esd-protection
+  area: protection
+  tools:
+  - netlist_audit
+  - check_ratings
+  queries:
+  - ESD protection TVS diode PCB layout system level IEC 61000-4-2
+  since: '2015-01-01'
+  every_days: 60
+  last_scanned: '2026-10-30'
+- id: solder-assembly
+  area: dfm-assembly
+  tools:
+  - dfm_check
+  - fp_verify
+  - check_courtyard
+  queries:
+  - solder paste stencil aperture QFN voiding reflow
+  - tombstoning passive component reflow pad design
+  since: '2012-01-01'
+  every_days: 60
+  last_scanned: '2026-10-30'
+- id: ml-placement-routing
+  area: eda-automation
+  tools:
+  - place_anneal
+  - place_seed
+  - route_auto
+  - route_improve
+  queries:
+  - printed circuit board placement reinforcement learning
+  - PCB routing machine learning automated router
+  since: '2019-01-01'
+  every_days: 30
+  last_scanned: '2026-10-30'
+- id: gan-power-layout
+  area: power
+  tools:
+  - check_power_path
+  - check_return_path
+  - sim_board
+  queries:
+  - GaN transistor power loop PCB layout parasitic inductance ringing
+  since: '2016-01-01'
+  every_days: 60
+  last_scanned: '2026-10-30'
