@@ -22,8 +22,10 @@
    "check_bom_sync": 0,
    "check_courtyard": 105,
    "check_mate_pins": 0,
+   "check_model_fit": 0,
    "check_model_paths": 23,
    "check_power_path": 1,
+   "check_rf": 0,
    "check_straps": 1
   },
   "by_kind": {
@@ -69,7 +71,7 @@
  },
  "e2e": null,
  "_baseline": {
-  "created": "2026-10-30",
+  "created": "2026-10-31",
   "kicad_version": null
  }
 }

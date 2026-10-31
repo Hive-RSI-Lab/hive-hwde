@@ -98,6 +98,43 @@ SECTIONS: dict[str, dict[str, dict[str, str]]] = {
         "required": {"layer": "str", "net": "str"},
         "optional": {"region": "rect"},
     },
+    # route_critical sizes rf widths; check_rf checks stubs, length and
+    # phase at f_ghz (hive-hwde #335)
+    "rf": {
+        "required": {"net": "str"},
+        "optional": {"impedance_ohm": "num", "f_ghz": "num",
+                     "path": "str_list", "max_deg": "num",
+                     "length_deg": "num", "tol_deg": "num",
+                     "max_stub_deg": "num", "allow_stubs": "bool",
+                     "reason": "str"},
+    },
+    "rf_phase": {
+        "required": {"nets": "str_list", "tol_deg": "num"},
+        "optional": {"f_ghz": "num", "reason": "str"},
+    },
+    "rf_blocks": {
+        "required": {"name": "str", "f_ghz": "num"},
+        "optional": {"refs": "str_list", "nets": "str_list",
+                     "ground": "str", "reason": "str"},
+    },
+    "rf_isolation": {
+        "required": {"a": "str", "b": "str"},
+        "optional": {"min_mm": "num", "wall": "bool", "reason": "str"},
+    },
+    "shields": {
+        "required": {"name": "str"},
+        "optional": {"ref": "str", "rect": "rect", "poly": "point_list",
+                     "refs": "str_list", "side": "side", "net": "str",
+                     "ring_mm": "num", "fence_pitch_mm": "num",
+                     "f_ghz": "num", "max_height_mm": "num",
+                     "heights": "map", "reason": "str"},
+    },
+    "rf_cutouts": {
+        "required": {"layers": "str_list"},
+        "optional": {"ref": "str", "pads": "str_list", "margin_mm": "num",
+                     "rect": "rect", "poly": "point_list", "name": "str",
+                     "reason": "str"},
+    },
     # U4: P2's machine-readable block list - knowledge.py --select keys
     # record retrieval on each entry's topology token. U13: operating_point
     # = unit-suffixed dims ({vin_v: 12, edge_ns: 5, switching_kind: hard})
@@ -118,7 +155,8 @@ PLACEMENT: dict[str, dict[str, dict[str, str]]] = {
                  "optional": {"rect": "rect", "poly": "point_list",
                               "side": "str", "reason": "str",
                               # keepout_gen: a copper rule area too
-                              "copper": "bool_or_map", "name": "str"}},
+                              "copper": "bool_or_map", "name": "str",
+                              "layers": "str_list"}},
     "separation": {"required": {"a": "str_list", "b": "str_list",
                                 "min_mm": "num"},
                    "optional": {"reason": "str"}},
