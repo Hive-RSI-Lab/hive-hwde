@@ -390,6 +390,38 @@ def test_dfm_flags_small_drill(tmp_path):
     assert v["diameter_mm"] == pytest.approx(0.15)
 
 
+def test_drill_plating_from_kicad_comments(tmp_path):
+    """gerbonara reads KiCad's X2 plating comments as None, so every NPTH
+    came back plated; gerblib now reads them (per tool, else per file)."""
+    mixed = ("M48\n; #@! TF.FileFunction,MixedPlating,1,2\nMETRIC\n"
+             "; #@! TA.AperFunction,Plated,PTH,ViaDrill\nT1C0.300\n"
+             "; #@! TA.AperFunction,NonPlated,NPTH,ComponentDrill\n"
+             "T2C0.650\n%\nG90\nG05\nT1\nX1.0Y-1.0\nT2\nX3.0Y-1.0\nM30\n")
+    p = tmp_path / "m.drl"
+    p.write_text(mixed)
+    assert [(h.diameter, h.plated) for h in gerblib.read_drill(p)] == \
+        [(0.3, True), (0.65, False)]
+    npth = ("M48\n; #@! TF.FileFunction,NonPlated,1,2,NPTH\nMETRIC\n"
+            "T1C3.200\n%\nG90\nG05\nT1\nX1.0Y-1.0\nM30\n")
+    p.write_text(npth)
+    assert [h.plated for h in gerblib.read_drill(p)] == [False]
+
+
+def test_dfm_flags_small_npth():
+    """#326: JLC's non-plated holes start at 0.5 mm; a 0.4 mm plated hole
+    is fine, the same NPTH is not."""
+    from types import SimpleNamespace as NS
+    from shapely.geometry import Polygon
+    fab = NS(holes=[gerblib.Hole(5, 5, 0.4, plated=True),
+                    gerblib.Hole(9, 5, 0.4, plated=False),
+                    gerblib.Hole(13, 5, 0.5, plated=False)],
+             outline=Polygon())
+    vios: list = []
+    dfm_check.check_holes(fab, RULES_2L, vios)
+    assert [(v["kind"], v.get("plated")) for v in vios] == \
+        [("dfm_hole_size", False)]
+
+
 def test_dfm_flags_hole_to_hole(tmp_path):
     fab = synth_fab(tmp_path, holes=[(0.3, 5.0, -5.0), (0.3, 5.4, -5.0)])
     vios: list = []
@@ -407,12 +439,56 @@ def test_dfm_flags_thin_annular_ring(tmp_path):
     assert vios[0]["ring_mm"] == pytest.approx(0.05, abs=5e-3)
 
 
+class _ViaBoard:
+    """A board stand-in whose vias sit on the fab's holes."""
+    def __init__(self, fab):
+        from types import SimpleNamespace as NS
+        self._v = [NS(at=(h.x, h.y), drill=h.diameter) for h in fab.holes]
+
+    def vias_of(self, net=None, layer=None):
+        return self._v
+
+
 def test_dfm_accepts_annular_ring_at_the_limit(tmp_path):
     fab = synth_fab(tmp_path, flashes=[(0.6, 5.0, -5.0)],
                     holes=[(0.3, 5.0, -5.0)])
     vios: list = []
-    dfm_check.check_annular_ring(fab, RULES_2L, vios)
+    dfm_check.check_annular_ring(fab, RULES_2L, vios, bg=_ViaBoard(fab))
     assert vios == []
+
+
+def test_dfm_pth_ring_is_held_apart_from_the_via_ring(tmp_path):
+    """#326: JLC's PTH component ring (0.18 on 2 layers) is not the via
+    ring (0.15). The same 0.6/0.3 copper passes as a via, fails as a pad."""
+    assert RULES_2L["min_pth_annular_ring_mm"] == pytest.approx(0.18)
+    fab = synth_fab(tmp_path, flashes=[(0.6, 5.0, -5.0)],
+                    holes=[(0.3, 5.0, -5.0)])
+    vios: list = []
+    dfm_check.check_annular_ring(fab, RULES_2L, vios)      # no via there
+    assert [(v["kind"], v["hole"], v["min_mm"]) for v in vios] == \
+        [("dfm_annular_ring", "PTH pad", 0.18)]
+    # a vendor row with one ring value holds every hole to it
+    one = {k: v for k, v in RULES_2L.items() if k != "min_pth_annular_ring_mm"}
+    vios = []
+    dfm_check.check_annular_ring(fab, one, vios)
+    assert vios == []
+
+
+def test_every_fab_row_floor_via_meets_its_own_via_ring():
+    """#443: JLC 6L said via 0.45/0.2 and ring 0.15 - a 0.125 ring, so
+    every floor via failed kicad-cli's annular_width."""
+    import vendors
+    for vid in vendors.ids():
+        caps = yaml.safe_load(vendors.capabilities_path(vid).read_text())
+        for key, row in (caps.get("design_rules") or {}).items():
+            if not all(k in row for k in ("min_via_diameter_mm",
+                                          "min_via_drill_mm",
+                                          "min_annular_ring_mm")):
+                continue
+            ring = (row["min_via_diameter_mm"] - row["min_via_drill_mm"]) / 2
+            assert ring >= row["min_annular_ring_mm"] - 1e-9, (vid, key)
+            assert row.get("min_pth_annular_ring_mm", 1.0) >= \
+                row["min_annular_ring_mm"] - 1e-9, (vid, key)
 
 
 def test_dfm_annular_ring_unions_overlapping_flashes(tmp_path):
@@ -426,7 +502,7 @@ def test_dfm_annular_ring_unions_overlapping_flashes(tmp_path):
                     flashes=[(0.6, 5.0, -5.0), (1.4, 5.645, -5.0)],
                     holes=[(0.3, 5.0, -5.0)])
     vios: list = []
-    dfm_check.check_annular_ring(fab, RULES_2L, vios)
+    dfm_check.check_annular_ring(fab, RULES_2L, vios, bg=_ViaBoard(fab))
     assert vios == []  # union ring = the via's own 0.15, not -0.095
 
 

@@ -9,8 +9,8 @@ DSN exporter emits it as protected wires, see route_auto.py).
 
 Per BGA (lib/bgalib.find_bgas: geometric grid detection, not the name):
   1. escape geometry from the board's FAB floors (bgalib.escape_params):
-     via = max(min via, drill + 2 annular) - the floor via of JLC's 6-layer
-     row (0.45/0.2) breaks its own 0.15 annular ring, so 0.5/0.2;
+     via = max(min via, drill + 2 annular) - a guard for a fab row whose
+     floor via breaks its own via ring (JLC 6L did, #443: fixed to 0.1);
      clearance = max(min clearance, hole clearance - ring). The netclass
      clearance is usually wider than a 0.8 mm field allows, so a
      courtyard-scoped DRU rule (bgalib.dru_rule; rules_gen.py writes the
