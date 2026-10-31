@@ -149,7 +149,7 @@ ENCLOSURE = {"box_mm": "num_list", "stl": "str_or_list", "wall_mm": "num",
              "riser_mm2": "num", "outlet_mm2": "num", "stack_mm": "num",
              "floor": "str"}
 SCHEMA_TOP_KEYS = set(SECTIONS) | {"placement", "coating", "antennas",
-                                   "enclosure", "ambient_c"}
+                                   "enclosure", "ambient_c", "cable_pf"}
 ENVELOPE_ALIASES = {"power_constraints": "power",
                     "thermal_constraints": "thermal",
                     "voltage_constraints": "voltages"}
@@ -354,6 +354,12 @@ class _FileLint:
                 if not _is_num(val):
                     self.add("error", "bad_type",
                              f"{path}: ambient_c must be a number", path)
+            elif key == "cable_pf":
+                if not (isinstance(val, dict)
+                        and all(_is_num(v) and v >= 0 for v in val.values())):
+                    self.add("error", "bad_type",
+                             f"{path}: cable_pf must map connector refs to "
+                             "picofarads", path)
             elif key == "notes":
                 if not isinstance(val, list):
                     self.add("error", "bad_type",

@@ -1,0 +1,13 @@
+# Seeded fault for check_cap_load (reference/ingest/analog-audio.md gap 2).
+mutants:
+  opamp-cable-no-buildout:
+    board: usbbuck4
+    script: mutations/opamp_cable_no_buildout.py
+    check: check_cap_load
+    defect: >-
+      NETLIST fault: an NE5532 follower drives a line-out jack through its
+      10 uF coupling cap with no build-out resistor; 1 nF of cable leaves
+      about 31 deg of phase margin; ERC sees a cap and a connector
+    expect:
+      kind: cap_load_pm
+      ref: U98

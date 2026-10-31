@@ -101,6 +101,11 @@ Consumers per key (script -> phase):
   // "external" (u.FL / IPEX) skips it.
   "antennas": {"U7": "pcb"},
 
+  // check_cap_load (P8): the cable capacitance in pF an op-amp sees through
+  // each connector, for its phase margin. A connector not named gets 1000 pF
+  // (10 m of audio cable at ~100 pF/m); a board-to-board header is ~20.
+  "cable_pf": {"J3": 1000, "J7": 20},
+
   // check_thermal (P8), place_anneal spreading term (P6)
   "thermal": [{"ref": "U2", "power_w": 0.8, "net": "GND", "dt_c": 40,
                "min_vias": 4},
