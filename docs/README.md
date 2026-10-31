@@ -474,3 +474,9 @@ or folklore, and its ranked gap list: [dfm-assembly](../reference/ingest/dfm-ass
 `hwde check_paste --pcb <board> [--stencil-mm 0.10]` (stencil area ratio,
 exposed-pad paste) came from it; run it in the DFM/assembly review. It is
 not in the verify suite yet (task 261031-013753-d3238414d5).
+
+- [reference/ingest/tools-ecosystem.md](../reference/ingest/tools-ecosystem.md):
+  open-source EDA and EE tools against hwde. The Hive already has openEMS,
+  FasterCap, FastHenry, Palace and ngspice-47 in its IIC-OSIC-TOOLS tree;
+  hwde's impedance solver checked against two independent methods; KLC and
+  kicad-happy run on lite-main; a ranked gap list.
