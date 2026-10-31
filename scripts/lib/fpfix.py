@@ -39,6 +39,14 @@ them measured against real DRC on the shipped boards (LEARNINGS 2026-07-28
      numbered SMD pad takes that pad's number, loses its paste layers and
      connects solid to a pour (zone_connect 2: spokes starve a thermal via).
 
+  G  placement type against the pads: EasyEDA's XR0850 power inductor ships
+     `(attr through_hole)` on two SMD pads (lite-main L1-L4), so bom_cpl and
+     KiCad's position export sent four reflowed parts to the THT step. A
+     footprint with only SMD pads gets `smd`, one with only plated pins
+     `through_hole` (fpattr.py; F's thermal vias aren't pins). One with both
+     keeps its own type; with both and no type at all it is residue: only the
+     part's drawing says how it is fitted.
+
 Flags (reported, never fixed: only the part's drawing can settle them), from
 the footprint's own 3D model when lib_pull fetched one (body_flags):
   model_off_footprint  the model's pins below the board miss the footprint's
@@ -64,9 +72,9 @@ Library API:
   analyze(text, **opts)  -> {"items": [...], "worst_gap_mm": float|None, ...}
   fix_file(path, **opts) -> report dict
 
-Board API (rule E only):
-  fix_board(pcb, dry_run=False) -> report dict: the courtyards of the
-  footprints PLACED on a board, which KiCad copies in and a library fix does
+Board API (rules E and G):
+  fix_board(pcb, dry_run=False) -> report dict: the courtyards and placement
+  types of the footprints PLACED on a board, which KiCad copies in and a library fix does
   not reach. Run it after fixing the library the board was built from.
 
 CLI (SPEC section 6): fpfix.py --lib <dir>.pretty [--dry-run] [--out r.json]
@@ -88,6 +96,7 @@ from shapely.ops import unary_union
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import geom  # noqa: E402  (pad polygons + arc sampling: one geometry source)
+import fpattr  # noqa: E402  (rule G: the placement type the pads give)
 
 # JLC's minimum silkscreen line width; anything thinner cannot print.
 MIN_LINE_WIDTH = 0.15
@@ -435,8 +444,9 @@ def sanitize(text: str, *, min_gap: float = MIN_GAP,
              promote_silk: bool = True, fix_pegs: bool = True,
              fix_body_text: bool = True,
              fix_courtyard: bool = True,
-             fix_ep_vias: bool = True) -> tuple[str, list[dict]]:
-    """Apply rules A-F. Returns (new_text, actions); idempotent."""
+             fix_ep_vias: bool = True,
+             fix_attr: bool = True) -> tuple[str, list[dict]]:
+    """Apply rules A-G. Returns (new_text, actions); idempotent."""
     nodes, copper, silk = _collect(text)
     actions: list[dict] = []
     edits: list[tuple[int, int, str | None, str]] = []  # start, end, replacement|None
@@ -560,8 +570,6 @@ def sanitize(text: str, *, min_gap: float = MIN_GAP,
             if act:
                 actions.append(act)
 
-    if not edits:
-        return text, actions
     out = text
     for start, end, repl, _why in sorted(edits, key=lambda t: -t[0]):
         if repl is None:
@@ -576,7 +584,26 @@ def sanitize(text: str, *, min_gap: float = MIN_GAP,
             out = out[:ls] + out[le:]
         else:
             out = out[:start] + repl + out[end:]
+
+    # ---- G: the placement type (attr) the pads give, after F numbered the
+    # thermal vias (they then count as the EP's, not as pins)
+    if fix_attr:
+        out, act = attr_edit(out)
+        if act:
+            actions.append(act)
     return out, actions
+
+
+def attr_edit(text: str, rot_offset: float = 0.0) -> tuple[str, dict | None]:
+    """Rule G on one footprint's text: (new text, action or None)."""
+    v = fpattr.judge(_parse(text), rot_offset)
+    if not v["mismatch"]:
+        return text, None
+    act = {"rule": "G", "action": "set_attr" if v["fix"] else "residue_attr",
+           "from": v["declared"], "to": v["fix"], "smd_pads": v["smd"],
+           "tht_pins": v["tht"], "thermal_vias": v["thermal_vias"],
+           "detail": fpattr.why(v)}
+    return (fpattr.set_type(text, v["fix"]) if v["fix"] else text), act
 
 
 def _unnamed(node) -> bool:
@@ -999,7 +1026,7 @@ def _apply(text: str, edits) -> str:
 
 
 def fix_board(pcb: str | Path, *, dry_run: bool = False) -> dict:
-    """Rule E on every footprint placed on a board, in place."""
+    """Rules E and G on every footprint placed on a board, in place."""
     p = Path(pcb)
     text = p.read_text(encoding="utf-8")
     edits, rows = [], []
@@ -1021,16 +1048,23 @@ def fix_board(pcb: str | Path, *, dry_run: bool = False) -> dict:
                                           for h, _, _, n in nodes if h == "pad")
                               if q is not None])
         fe = courtyard_edits(sub, nodes, copper)
-        if not fe:
+        new = _apply(sub, [(a, b, r) for a, b, r, _ in fe]) if fe else sub
+        new, g = attr_edit(new, -fangle)
+        acts = [act for *_, act in fe if act] + ([g] if g else [])
+        if new == sub and not acts:
             continue
-        edits.append((s, e, _apply(sub, [(a, b, r) for a, b, r, _ in fe])))
+        if new != sub:
+            edits.append((s, e, new))
         rows.append({"ref": ref, "footprint": str(_tok(root[1])),
-                     "actions": [act for *_, act in fe if act]})
+                     "actions": acts})
     new = _apply(text, edits) if edits else text
     if new != text and not dry_run:
         p.write_text(new, encoding="utf-8")
+    residue = sum(1 for r in rows for a in r["actions"]
+                  if a["action"].startswith("residue"))
     return {"script": "fpfix", "pcb": str(p), "dry_run": bool(dry_run),
-            "changed": len(rows), "status": "pass", "results": rows}
+            "changed": len(edits), "residue": residue,
+            "status": "residue" if residue else "pass", "results": rows}
 
 
 # ------------------------------------------------------- real-DRC measurement
@@ -1086,7 +1120,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     src = ap.add_mutually_exclusive_group(required=True)
     src.add_argument("--lib", help="a .pretty directory")
-    src.add_argument("--pcb", help="a board: rule E on its placed footprints")
+    src.add_argument("--pcb", help="a board: rules E and G on its placed footprints")
     ap.add_argument("--only", nargs="+", help="limit to these footprint names")
     ap.add_argument("--min-gap", type=float, default=MIN_GAP,
                     help=f"silk-to-copper bar, mm (default {MIN_GAP})")
@@ -1099,6 +1133,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="leave hidden legend text alone")
     ap.add_argument("--no-ep-vias", action="store_true",
                     help="leave an exposed pad's unnumbered vias alone")
+    ap.add_argument("--no-attr", action="store_true",
+                    help="leave the placement type (attr) alone")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--verify-drc", action="store_true",
                     help="measure the result with real DRC on a scratch board")
@@ -1115,7 +1151,8 @@ def main(argv: list[str] | None = None) -> int:
                               promote_silk=not args.no_promote,
                               fix_pegs=not args.no_pegs,
                               fix_body_text=not args.no_body_text,
-                              fix_ep_vias=not args.no_ep_vias)
+                              fix_ep_vias=not args.no_ep_vias,
+                              fix_attr=not args.no_attr)
         if args.verify_drc and args.lib:
             drc = scratch_drc(args.lib, args.only)
             payload["drc"] = {"status": drc["status"], "counts": drc["counts"],
