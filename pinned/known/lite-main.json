@@ -671,6 +671,66 @@
   },
   {
    "gate": "verify",
+   "check": "check_fp_attr",
+   "net": null,
+   "refs": [
+    "L1"
+   ],
+   "pos": [
+    89.865,
+    87.323
+   ],
+   "kind": "fp_attr_mismatch",
+   "verdict": "real",
+   "reason": "EasyEDA's IND-SMD_L8.0-W8.0_XR0850 footprint is (attr through_hole) on its two SMD pads, so the board's bom-cpl.json sent this reflowed inductor to JLC's THT step and kicad-cli's stats count it THT (KLC F6.1/F7.1 agree): the board's library, not an hwde misreading"
+  },
+  {
+   "gate": "verify",
+   "check": "check_fp_attr",
+   "net": null,
+   "refs": [
+    "L2"
+   ],
+   "pos": [
+    98.365,
+    87.323
+   ],
+   "kind": "fp_attr_mismatch",
+   "verdict": "real",
+   "reason": "EasyEDA's IND-SMD_L8.0-W8.0_XR0850 footprint is (attr through_hole) on its two SMD pads, so the board's bom-cpl.json sent this reflowed inductor to JLC's THT step and kicad-cli's stats count it THT (KLC F6.1/F7.1 agree): the board's library, not an hwde misreading"
+  },
+  {
+   "gate": "verify",
+   "check": "check_fp_attr",
+   "net": null,
+   "refs": [
+    "L3"
+   ],
+   "pos": [
+    106.865,
+    87.323
+   ],
+   "kind": "fp_attr_mismatch",
+   "verdict": "real",
+   "reason": "EasyEDA's IND-SMD_L8.0-W8.0_XR0850 footprint is (attr through_hole) on its two SMD pads, so the board's bom-cpl.json sent this reflowed inductor to JLC's THT step and kicad-cli's stats count it THT (KLC F6.1/F7.1 agree): the board's library, not an hwde misreading"
+  },
+  {
+   "gate": "verify",
+   "check": "check_fp_attr",
+   "net": null,
+   "refs": [
+    "L4"
+   ],
+   "pos": [
+    115.365,
+    87.323
+   ],
+   "kind": "fp_attr_mismatch",
+   "verdict": "real",
+   "reason": "EasyEDA's IND-SMD_L8.0-W8.0_XR0850 footprint is (attr through_hole) on its two SMD pads, so the board's bom-cpl.json sent this reflowed inductor to JLC's THT step and kicad-cli's stats count it THT (KLC F6.1/F7.1 agree): the board's library, not an hwde misreading"
+  },
+  {
+   "gate": "verify",
    "check": "check_si",
    "net": "/I2S_BCLK",
    "refs": [],

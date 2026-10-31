@@ -77,7 +77,9 @@ Where a class comes from, highest priority first:
   1. parts.json line `refdes_class: {"C203": "dnp"}` (or legacy `refdes_dnp`)
   2. parts.json line `assembly_class` (applies to every ref in `refdes`)
   3. the board file's own footprint attributes (`dnp`, `exclude_from_bom`/
-     `board_only`, `exclude_from_pos_files`, then `through_hole` -> tht)
+     `board_only`, `exclude_from_pos_files`, then `through_hole` -> tht),
+     the placement type read off the pads where (attr) contradicts them
+     (`attr_mismatch` in the report)
   4. default `smt_placed`
 Instructions text: `refdes_notes: {ref: text}` > line `assembly_notes` >
 a per-class default sentence.
@@ -123,6 +125,7 @@ SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 
+import fpattr  # noqa: E402
 import kc  # noqa: E402
 
 REF_ROTATIONS = SCRIPTS.parent / "reference" / "jlc_rotations.csv"
@@ -259,6 +262,12 @@ def board_part_fields(pcb: Path) -> dict[str, dict]:
     the BOM, not machine-placed), and `through_hole` with none of those ->
     tht (in the upload, fitted in the THT step). parts.json outranks all of them; see
     resolve_assembly.
+
+    The placement type is read off the pads when the two disagree
+    (fpattr.judge): EasyEDA's XR0850 inductor is `through_hole` on two SMD
+    pads (lite-main L1-L4), and is classed by its pads, SMT. Such a ref
+    carries `attr_mismatch` {attr, pads_say, detail}; the report lists them
+    and check_fp_attr fails the board until the footprint is fixed.
     """
     import sexpdata
     out: dict[str, dict] = {}
@@ -279,6 +288,7 @@ def board_part_fields(pcb: Path) -> dict[str, dict]:
             continue
         ref = lcsc = None
         attrs: set[str] = set()
+        angle = 0.0
         for sub in node[1:]:
             if head(sub) == "property" and len(sub) >= 3:
                 pname = sval(sub[1])
@@ -288,6 +298,17 @@ def board_part_fields(pcb: Path) -> dict[str, dict]:
                     lcsc = sval(sub[2]).strip() or lcsc
             elif head(sub) == "attr":
                 attrs |= {sval(a) for a in sub[1:]}
+            elif head(sub) == "at" and len(sub) >= 4:
+                angle = float(sub[3])
+        # the pads, not the (attr) type, say how the part is fitted
+        verdict = fpattr.judge(node, -angle)
+        mismatch = None
+        if verdict["mismatch"]:
+            mismatch = {"attr": verdict["declared"],
+                        "pads_say": verdict["pads_say"],
+                        "detail": fpattr.why(verdict)}
+            if verdict["pads_say"]:
+                attrs = (attrs - set(fpattr.TYPES)) | {verdict["pads_say"]}
         if "dnp" in attrs:
             attr_class = "dnp"
         elif {"exclude_from_bom", "board_only"} & attrs:
@@ -298,9 +319,11 @@ def board_part_fields(pcb: Path) -> dict[str, dict]:
             attr_class = THT_CLASS
         else:
             attr_class = None
-        if ref and (lcsc or attr_class):
+        if ref and (lcsc or attr_class or mismatch):
             out[ref] = {"lcsc": lcsc, "mpn": None,
                         "dnp": "dnp" in attrs, "attr_class": attr_class}
+            if mismatch:
+                out[ref]["attr_mismatch"] = mismatch
     return out
 
 
@@ -853,6 +876,11 @@ def run(pcb: Path, out_dir: Path, pos: Path | None = None,
                      "why": "not checked: stock and part match are unknown "
                             "until stock_check.py runs live"}
 
+    attr_mismatch = [{"ref": r, "class": classes.get(r),
+                      **board_fields[r]["attr_mismatch"]}
+                     for r in sorted(board_fields, key=_natural_key)
+                     if board_fields[r].get("attr_mismatch")]
+
     corrected = [a for a in audit if a["correction"] != 0.0]
     import castellation
     # None = not known (no board file beside a supplied pos file)
@@ -891,6 +919,9 @@ def run(pcb: Path, out_dir: Path, pos: Path | None = None,
         "off_lcsc": off_lcsc,
         "unplaced_smt": unplaced_smt,
         "qty_mismatch": qty_mismatch,
+        # footprints whose (attr) type the pads contradict: classed by the
+        # pads above; check_fp_attr fails the board until they're fixed
+        "attr_mismatch": attr_mismatch,
         "violations": violations,
         "bom_complete": not unsourced,
         # counted from the board's pads, so the report and the order say
@@ -955,6 +986,10 @@ def main(argv: list[str] | None = None) -> int:
     for b in rep["stock"].get("blocking") or []:
         print(f"bom_cpl: JLC cannot place {','.join(b['refs'])} "
               f"{b['lcsc']} as ordered [{b['status']}]: {b['why']}",
+              file=sys.stderr)
+    for m in rep["attr_mismatch"]:
+        print(f"bom_cpl: {m['ref']} classed {m['class']} by its pads: "
+              f"{m['detail']} (fix the footprint: fpfix.py rule G)",
               file=sys.stderr)
     text = json.dumps(rep, indent=1)
     (Path(args.out).write_text(text, encoding="utf-8") if args.out
