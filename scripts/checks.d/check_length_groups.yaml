@@ -1,0 +1,11 @@
+# check_length_groups: groups of nets length-matched to a reference (DDR byte
+# lanes to their DQS, address/command to the clock): each net's routed
+# length, track plus via barrel from the stackup, between its terminal pads,
+# against constraints.json length_groups (tol_mm, window_mm, max_mm, ...).
+# Board only; without length_groups it warns on DDR-named nets and passes
+# (hive-hwde #324).
+name: check_length_groups
+needs: []
+args: []
+optional:
+  constraints: [--constraints, "{constraints}"]

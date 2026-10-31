@@ -72,6 +72,25 @@ Consumers per key (script -> phase):
   // changes its length.
   "length_match": [{"nets": ["/DQ0", "/DQ1", "/DQS"], "tol_mm": 1.0}],
 
+  // check_length_groups (P8) and route_tune (P7): each net's routed length
+  // (track + via barrel, pad to pad) held to its group's reference. nets,
+  // ref_nets, not_longer_than take fnmatch globs, with or without the
+  // sheet's leading "/". No ref_net(s): matched to the group's longest
+  // member. ref_stat min|max|mean of the reference nets (default min).
+  // window_mm [lo, hi] (length - reference) replaces the symmetric tol_mm;
+  // max_mm / min_mm / not_longer_than (no net longer than the shortest of
+  // these) are absolute bounds. terminals limits the path ends to these
+  // refs' pads. Nets here are also left alone by route_cleanup's snap.
+  "length_groups": [{
+    "name": "BYTE0", "nets": ["DRAM_D[0-7]", "DRAM_DQM0"],
+    "ref_nets": ["DRAM_SDQS0_P", "DRAM_SDQS0_N"], "tol_mm": 0.635,
+    "not_longer_than": ["DRAM_SDCLK0_*"]
+  }, {
+    "name": "ADDR_CMD", "nets": ["DRAM_A*", "DRAM_BA*"],
+    "ref_nets": ["DRAM_SDCLK0_*"], "window_mm": [-5.08, 0],
+    "terminals": ["U1", "U3"], "severity": "error"
+  }],
+
   // check_creepage (P8) + rules_gen (P5, T6): IPC-2221 spacing for pairs
   // > 30 V apart. rules_gen emits named aiee_hv_* clearance DRU rules from
   // these (never hand-author HV rules); check_creepage audits the routed
