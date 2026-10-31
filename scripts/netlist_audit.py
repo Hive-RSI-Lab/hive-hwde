@@ -43,6 +43,17 @@ schematic-level structural problems BEFORE board work starts:
    pin on the way makes it unknown and skipped) - sits outside the part's
    input common-mode range on its own supply pins. The output is undefined
    there (errata corpus: minuet v3 LMV331, inputs at 3.1 V, range to 2.6 V).
+ - opamp_input_no_dc_path (error): an op-amp, comparator or in-amp
+   input (Amplifier_Operational/Instrumentation/Comparator symbols,
+   opamp_cm.yaml, common op-amp part numbers) whose net reaches, through
+   resistors, inductors, beads and jumpers, only capacitors, diodes, test
+   points and other inputs: no path for its bias current, so it drifts to
+   a rail (an AC-coupled input with no bias resistor).
+   opamp_input_dc_via_connector_only (warning) when the only path is a
+   connector pin: it floats with the cable out.
+ - polarized_cap_reverse (warning): an electrolytic or tantalum (C_Polarized
+   / CP symbol or footprint, + on pin 1 or the pin named +) whose + side
+   rests more than 0.5 V below its - side, by the input_common_mode solve.
  - pin_part_missing: a part reference/pin_requirements.yaml says the IC's
    datasheet requires between two of its pins (CBK from FB_BK to GND_BK)
    that no part of that kind and value spans (error), or, in a
@@ -461,6 +472,106 @@ def _dc_level(net: str, nets: dict, comps: dict,
                 f = g[r][c] / g[c][c]
                 g[r] = [x - f * y for x, y in zip(g[r], g[c])]
     return g[0][k] / g[0][0], sorted(opened), ""
+
+
+# ------------------------------------------------------------ amplifier DC path
+
+# op-amp, comparator and in-amp symbol libraries; a part from one, or in
+# opamp_cm.yaml, or with a common op-amp part number, is an amplifier whose
+# +/- inputs need a DC path. Audio power amps (TPA31xx, PAM8xxx) are left out
+# on purpose: most bias their own inputs, so an AC-coupled input is right.
+_AMP_LIB_RE = re.compile(r"^(Amplifier_Operational|Amplifier_Instrumentation|"
+                         r"Comparator)$")
+_AMP_VALUE_RE = re.compile(
+    r"^(NE55[3-4]\d|OPA\d|TL0[678]\d|LM(358|324|833|4562|6171|6172|2904|"
+    r"2902|393|339|311)|MCP6\d|TLV[234689]\d|LMV\d|ADA4\d|AD8[0-6]\d\d|RC4558|"
+    r"NJM\d|LT1\d\d\d|LTC6\d|INA\d)", re.I)
+# two-terminal parts that carry DC from one net to the other
+_DC_PASS_RE = re.compile(r"^(R|L|FB|NT|JP|SB|F|RV)\d")
+# parts whose pins are no DC path for a bias current: capacitors, test
+# points, diodes (clamps conduct only past a rail), crystals
+_DC_BLOCK_RE = re.compile(r"^(C|TP|D|Y|X)\d")
+# polarized capacitors: symbol or footprint
+_POLCAP_SYM_RE = re.compile(r"^(C_Polarized|CP|C_Pol|CP_Small|"
+                            r"C_Polarized_Small|CP1|CP1_Small)(_|$)", re.I)
+_POLCAP_FP_RE = re.compile(r"(CP_Elec|CP_Radial|CP_Axial|C_Elec|CP_Tantalum|"
+                           r"Tantalum|C_Pol)", re.I)
+POLCAP_REVERSE_V = 0.5
+
+
+def _is_amp(comp: dict, table: list[dict]) -> bool:
+    lib, part = comp.get("libsource") or ("", "")
+    return bool(_AMP_LIB_RE.match(lib) or _cm_row(comp, table)
+                or _AMP_VALUE_RE.match((comp.get("value") or "").strip())
+                or _AMP_VALUE_RE.match(part or ""))
+
+
+def _dc_path(net: str, nets: dict, comps: dict,
+             comp_pins: dict[str, dict[str, str]], rails: dict[str, float],
+             amp_refs: set[str]) -> tuple[str, list[str], list[str]]:
+    """Where an amplifier input's bias current can flow: ("rail", ...) when
+    a resistor/inductor/jumper chain reaches a ground or a net of known
+    volts or any driving pin (an output, a power pin, an IC pin of unknown
+    type), ("connector", refs, nets) when the only way out is a connector
+    pin (it floats when nothing is plugged in), ("none", [], nets) when it
+    reaches only capacitors, diodes, test points and other inputs."""
+    seen, todo = {net}, [net]
+    via_conn: set[str] = set()
+    while todo:
+        n = todo.pop()
+        if n in rails or _is_ground_name(n):
+            return "rail", [], sorted(seen)
+        for m in nets[n]:
+            ref = m["ref"] or ""
+            pins = comp_pins.get(ref, {})
+            func = (m.get("pinfunction") or "").upper()
+            if _DC_PASS_RE.match(ref) and len(pins) == 2:
+                far = next((nt for p, nt in pins.items() if p != m["pin"]),
+                           n)
+                if far not in seen:
+                    seen.add(far)
+                    todo.append(far)
+            elif _DC_BLOCK_RE.match(ref):
+                continue
+            elif _CONNECTOR_RE.match(ref):
+                via_conn.add(ref)
+            elif _base_type(m["pintype"]) == "input" or (
+                    ref in amp_refs and _AMP_IN_RE.match(func)):
+                continue
+            elif _base_type(m["pintype"]) in ("no_connect", "unspecified") \
+                    and not func:
+                continue
+            else:
+                return "rail", [], sorted(seen)
+    if via_conn:
+        return "connector", sorted(via_conn), sorted(seen)
+    return "none", [], sorted(seen)
+
+
+def _polcap_pins(ref: str, comp: dict, nets: dict,
+                 comp_pins: dict[str, dict[str, str]]) -> tuple | None:
+    """(+ net, - net) of a polarized capacitor, or None if it isn't one.
+    KiCad's C_Polarized and CP_* footprints put + on pin 1; a pin named
+    + or - overrides that."""
+    lib, part = comp.get("libsource") or ("", "")
+    if not (_POLCAP_SYM_RE.match(part or "") or
+            _POLCAP_FP_RE.search(comp.get("footprint") or "")):
+        return None
+    pins = comp_pins.get(ref, {})
+    if len(pins) != 2:
+        return None
+    named = {}
+    for p, n in pins.items():
+        for m in nets[n]:
+            if m["ref"] == ref and m["pin"] == p:
+                f = (m.get("pinfunction") or "").strip()
+                if f in ("+", "-"):
+                    named[f] = n
+    if len(named) == 2:
+        return named["+"], named["-"]
+    if "1" in pins and "2" in pins:
+        return pins["1"], pins["2"]
+    return None
 
 
 def compare_netlists(a: dict, b: dict) -> dict:
@@ -933,6 +1044,81 @@ def audit(parsed: dict, constraints: dict,
               f"the board", part=req["id"], pin=req["pin"], to=req["to"],
               drawn_elsewhere=elsewhere)
 
+    # 12. an op-amp, comparator or in-amp input with no DC path for its bias
+    # current: an AC-coupled input with no bias resistor, or a follower fed
+    # only through a capacitor. The bias current charges the coupling cap
+    # (Ib/C: 10 nA into 1 uF walks 10 mV/s) until the input sits on a rail.
+    # A DC-coupled input whose only path is a connector floats when the
+    # cable is out: warned, since the source may be part of the design.
+    amp_refs = {r for r in comps if _is_amp(comps[r], table)}
+    dc_checked = 0
+    for ref in sorted(amp_refs):
+        pins = comp_pins.get(ref, {})
+        for p, net in sorted(pins.items()):
+            mem = next((m for m in nets[net] if m["ref"] == ref
+                        and m["pin"] == p), None)
+            if not mem or not _AMP_IN_RE.match(
+                    (mem.get("pinfunction") or "").upper()):
+                continue
+            if net.startswith("unconnected-"):
+                continue
+            dc_checked += 1
+            how, conns, reached = _dc_path(net, nets, comps, comp_pins,
+                                           rails, amp_refs)
+            if how == "rail":
+                continue
+            caps = sorted({m["ref"] for n in reached for m in nets[n]
+                           if (m["ref"] or "").startswith("C")})
+            name = f"{ref} ({comps[ref].get('value')}) input " \
+                   f"{mem['pinfunction']} (pin {p}) on '{net}'"
+            if how == "none":
+                v("error", "opamp_input_no_dc_path", net, [ref] + caps,
+                  f"{name} has no DC path for its bias current: it "
+                  f"reaches only " + (f"capacitors ({', '.join(caps)}), "
+                                      if caps else "") +
+                  "diodes, test points and other inputs. The bias current "
+                  "charges the node until the input sits at a rail. Add a "
+                  "resistor from the input to ground or to the stage's bias "
+                  "point (ADI Analog Dialogue 41-08, TI SLOD006 ch. 12)",
+                  pin=p, reached=reached)
+            else:
+                v("warning", "opamp_input_dc_via_connector_only", net,
+                  [ref] + conns,
+                  f"{name}: its only DC path is through {', '.join(conns)}"
+                  f" - with nothing plugged in the input floats (rails, "
+                  f"hum, a thump on plug-in). A resistor to ground or the "
+                  f"bias point (100k-1M) holds it; ignore if the cable is "
+                  f"never unplugged", pin=p, connectors=conns)
+
+    # 13. a polarized capacitor whose + terminal rests below its -
+    # terminal, from the same rail/resistor solve input_common_mode uses
+    # (aluminium electrolytics and tantalums take no sustained reverse
+    # bias; see reference/ingest/analog-audio.md)
+    pol_checked = 0
+    for ref in sorted(comps):
+        pn = _polcap_pins(ref, comps[ref], nets, comp_pins)
+        if not pn:
+            continue
+        levels = []
+        for net in pn:
+            if net in rails:
+                levels.append(rails[net])
+            else:
+                lvl, _o, _w = _dc_level(net, nets, comps, comp_pins, rails)
+                levels.append(lvl)
+        if None in levels:
+            continue
+        pol_checked += 1
+        vrev = levels[1] - levels[0]
+        if vrev > POLCAP_REVERSE_V:
+            v("warning", "polarized_cap_reverse", pn[0], [ref],
+              f"{ref} ({comps[ref].get('value')}) is polarized but its + "
+              f"terminal ('{pn[0]}', {levels[0]:.2f} V) rests {vrev:.2f} V "
+              f"below its - terminal ('{pn[1]}', {levels[1]:.2f} V): "
+              f"reverse biased at DC. Turn it round, or use a non-polar "
+              f"part if the bias can go either way",
+              plus_v=round(levels[0], 3), minus_v=round(levels[1], 3))
+
     facts = {
         "nets": len(nets),
         "components": len(comps),
@@ -945,6 +1131,8 @@ def audit(parsed: dict, constraints: dict,
         "decoupling_associations": n_assoc,
         "power": power_facts,
         "common_mode_inputs_checked": cm_checked,
+        "amp_inputs_dc_checked": dc_checked,
+        "polarized_caps_checked": pol_checked,
     }
     return violations, facts
 

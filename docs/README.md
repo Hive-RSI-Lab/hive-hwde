@@ -79,6 +79,20 @@ page covers how an agent runs it inside the Hive.
   of each high-current run in `power_paths`; `hwde soa_check` gives a FET's
   Tj for a written margin. These are what hifi-receiver-2's first-spin
   power review did by hand (its docs/review-2/power.md).
+- A board with analog or audio stages gets its hand numbers from
+  `hwde analog_calc <calc>`: stage noise (`noise`), line levels and
+  bridging (`level`, `bridge`, `damping`), coupling corners (`hpf`),
+  slew (`fpbw`), op-amp phase margin into a cap load and the Riso that
+  fixes it (`riso`), class-D LC filters and output power (`lc`,
+  `classd`), and a SAR ADC's charge-bucket settling (`sar`).
+  `hwde analog_verify` re-proves each one against ngspice.
+  netlist_audit errors on an op-amp/comparator/in-amp input with no DC
+  path for its bias current (`opamp_input_no_dc_path`), and warns on one
+  held only by a connector and on a reverse-biased electrolytic
+  (`polarized_cap_reverse`). Which rules of thumb held up, which are
+  folklore, and the ngspice traps (`x^3` drops the sign; THD needs a
+  max timestep) are in
+  [reference/ingest/analog-audio.md](../reference/ingest/analog-audio.md).
 - A board that runs firmware gets `hwde check_fw --board boards/<name>`,
   run at every schematic change, not first at bring-up. It runs hive-fw's
   `fw constraints` (with `fw pins` inside it) for each firmware target whose
