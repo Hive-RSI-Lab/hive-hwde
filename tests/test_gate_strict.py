@@ -362,7 +362,7 @@ def test_verify_all_strict_with_declared_na_passes(tmp_path):
                   "check_mating", "check_mate_pins", "check_bom_sync",
                   "check_model_paths", "check_antenna", "check_straps",
                   "check_model_fit", "check_usb_phy", "check_vias",
-                  "check_reset_drive", "check_si"]
+                  "check_reset_drive", "check_si", "check_fp_attr"]
     assert sorted(cov["required"]) == sorted(board_only)
     assert sorted(cov["ran"]) == sorted(board_only)
     assert cov["skipped_error"] == {}
