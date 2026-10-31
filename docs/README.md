@@ -320,6 +320,41 @@ U7 (GND or +3V3 fill under the antenna on all four layers). lite-main
 passes both, with warnings: 2.2 mm cleared beside the antenna, and ES8388
 MCLK on GPIO0 with no known reset state.
 
+## Signal integrity
+
+`check_si` (verify suite) finds the nets that need signal-integrity care by
+interface rather than by declaration: oscillator and MCU clocks, RMII, I2S,
+SPI, USB, Ethernet MDI and crystal nets, by name and by what drives them (an
+oscillator part on the net or behind its series resistor makes a 1 ns edge,
+an MCU pin 2 ns). For each it solves the board's own stackup (the field
+solver in `lib/impedance.py`) for Z0 and delay, and holds the net's longest
+pad-to-pad path against its critical length, t_rise / 6 (Johnson). Past it
+the net is a transmission line, and:
+
+- a clock with no series resistor is `si_unterminated_clock`, and one whose
+  resistor plus a ~20 ohm driver misses Z0 is `si_series_mismatch`;
+- two long parts of the net more than 0.10 apart in reflection coefficient
+  are `si_impedance_step`; a declared `z0_ohm`, or a pair's standard Zdiff
+  (USB 90, 100BASE-TX 100), missed is `si_impedance_target`;
+- the net goes through `check_return_path`'s corridor and return-via tests
+  with its own rise time (findings keep that check's kinds).
+
+Every fast net is also an aggressor: each near-parallel neighbour on its layer
+is solved as a coupled pair (`impedance.coupling`: Bogatin's kb and kf from
+the even and odd modes), and NEXT and FEXT over the coupled run are held to
+5% of the swing for a digital victim and 1% for an analog one or a crystal
+(`si_crosstalk`). RMII's halves are held to 10% of their 20 ns interval in
+flight-time spread (`si_skew`). The report lists every SI net's length,
+delay, Z0, critical length, termination and worst neighbours, pass or fail.
+`constraints.json` `si` declares, corrects or ignores nets
+(`reference/constraints_schema.md`).
+
+On the pinned boards it finds core's I2S_BCK (98 mm from the ESP32 to three
+converters with no series resistor), three core B.Cu runs over In2's +3V3
+plane where tracks on In2 cut it right under them, and lite-main's I2S_DOUT
+0.13 mm from BCLK for 47 mm on a 2-layer board. The planted fault
+`si-unterminated-clock` stretches usbbuck4's MCO past its critical length.
+
 ## ESD at the connectors, and what the ingest runs found
 
 `bin/hwde check_esd --pcb <board> [--constraints c.json]` (run by hand for
