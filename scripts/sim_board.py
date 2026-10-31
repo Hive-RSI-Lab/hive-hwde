@@ -21,7 +21,13 @@ reviewer would otherwise work out by hand:
 Findings (violation kind; severity):
   resistor_overpower      R dissipation above its rating (error in the
                           default scenario, warning in io_* ones); above
-                          half its rating is a derating warning
+                          half its rating is a derating warning. The
+                          rating is P70 derated linearly to 0 at 155 C
+                          when constraints give an ambient_c above 70 C
+  resistor_overvoltage    the volts across an R above its limiting element
+                          voltage (parts.json Voltage-Supply(Max), else the
+                          chip size's D/CRCW e3 Umax): an 0805 2 MOhm on a
+                          400 V bus dissipates 0.08 W but is over 150 V
   cap_overvoltage         DC across a cap above its rated voltage (error);
   cap_dc_bias             class-II ceramic at more than half its rating
                           (warning: it loses much of its capacitance)
@@ -735,6 +741,16 @@ def resistor_rating(e: dict, part: dict | None) -> tuple[float | None, str]:
         if w else (None, "unknown")
 
 
+def resistor_umax(e: dict, part: dict | None) -> tuple[float | None, str]:
+    v = engcalc.parse_volts(attr(part, r"^Voltage-Supply\(Max\)",
+                                 r"^Working Voltage"))
+    if v:
+        return v, "parts.json"
+    v = engcalc.resistor_umax_v(e["footprint"])
+    return (v, f"{engcalc.package_code(e['footprint'])} package default, "
+               "D/CRCW e3") if v else (None, "unknown")
+
+
 def cap_rating(c: dict, part: dict | None) -> tuple[float | None, str]:
     v = engcalc.parse_volts(attr(part, r"^Voltage Rat"))
     if v:
@@ -851,10 +867,13 @@ def analyze(board: dict, parts: dict, rails: dict, opts: dict) -> tuple:
         o = ops[sc]
         return o["v"].get(net) if net in o["driven"] else None
 
-    # resistors: dissipation against rating, every scenario
+    # resistors: dissipation against rating derated to the ambient, and
+    # the volts across against the limiting element voltage, every scenario
+    t_amb = opts.get("ambient_c")
+    derate = engcalc.resistor_derate(t_amb)
     rfacts = []
     for e in (x for x in model["elems"] if x["kind"] == "R" and x["value"] > 0):
-        worst = None
+        worst = vworst = None
         for sc in ops:
             va, vb = (volts(sc, n) for n in e["nets"])
             if va is None or vb is None:
@@ -862,12 +881,30 @@ def analyze(board: dict, parts: dict, rails: dict, opts: dict) -> tuple:
             p = (va - vb) ** 2 / e["value"]
             if worst is None or p > worst[0]:
                 worst = (p, sc)
+            if vworst is None or abs(va - vb) > vworst[0]:
+                vworst = (abs(va - vb), sc)
         if worst is None:
             continue
+        umax, usrc = resistor_umax(e, parts.get(e["ref"]))
+        if umax is not None and vworst[0] > umax:
+            sev = "error" if vworst[1] == "default" else "warning"
+            vios.append(_vio("resistor_overvoltage", sev, [e["ref"]],
+                             e["nets"][0],
+                             f"{e['ref']} has {_f(vworst[0], 'V')} across it "
+                             f"({vworst[1]}), over its {_f(umax, 'V')} "
+                             f"limiting element voltage ({usrc}): it arcs "
+                             "or drifts before its power rating matters",
+                             v_across=vworst[0], umax_v=umax,
+                             scenario=vworst[1]))
         rating, rsrc = resistor_rating(e, parts.get(e["ref"]))
+        if rating is not None and derate < 1.0:
+            rating, rsrc = rating * derate, (
+                f"{rsrc}, derated x{derate:.2f} at {_f(t_amb)} C ambient")
         rfacts.append({"ref": e["ref"], "p_w": checklib.rnd(worst[0], 6),
                        "scenario": worst[1], "rating_w": rating,
-                       "rating_source": rsrc})
+                       "rating_source": rsrc,
+                       "v_across": checklib.rnd(vworst[0], 4),
+                       "umax_v": umax})
         if rating is None:
             if worst[0] > 0.05:
                 unknowns.append({"ref": e["ref"], "what": "power rating",
@@ -1430,7 +1467,10 @@ def run(a) -> dict:
             "rail_min": rail_mins(rails, cons,
                                   _pairs(a.rail_min, "--rail-min")),
             "vref": _pairs(a.vref, "--vref"), "i2c_khz": a.i2c_khz,
-            "i2c_cb_pf": a.i2c_cb_pf}
+            "i2c_cb_pf": a.i2c_cb_pf,
+            "ambient_c": (cons or {}).get("ambient_c")
+            if isinstance((cons or {}).get("ambient_c"), (int, float))
+            else None}
     (model, ops, tran, scen, ens, vios, unknowns, facts,
      version) = analyze(board, parts, rails, opts)
     regulator_findings(board, parts, rails, model, opts, vios, unknowns, facts)

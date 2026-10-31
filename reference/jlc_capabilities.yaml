@@ -136,7 +136,7 @@ design_rules:
     outer_copper_oz: 1.0
     inner_copper_oz: 0.5
 
-  4layer_2oz:
+  4layer_2oz: &multilayer_2oz
     min_trace_width_mm: 0.1524       # 6 mil outer (2 oz)
     min_clearance_mm: 0.1016         # 4 mil
     min_via_drill_mm: 0.2
@@ -154,7 +154,7 @@ design_rules:
     outer_copper_oz: 2.0
     inner_copper_oz: 0.5
 
-  6layer_1oz:
+  6layer_1oz: &multilayer_1oz
     min_trace_width_mm: 0.0889       # 3.5 mil
     min_clearance_mm: 0.0889         # 3.5 mil
     min_via_drill_mm: 0.2
@@ -171,3 +171,68 @@ design_rules:
     min_pad_size_mm: 0.25
     outer_copper_oz: 1.0
     inner_copper_oz: 0.5
+
+  # 6 to 32 layers (JLC: 'Layer count 1-32'). The capabilities page gives
+  # one 'Multilayer' figure for every multilayer count, so each row is the
+  # 6-layer (1 oz) or 4-layer (2 oz) row by reference; a count JLC prices
+  # differently changes only its own row. Verified 2026-10-30.
+  6layer_2oz: *multilayer_2oz
+  8layer_1oz: *multilayer_1oz
+  8layer_2oz: *multilayer_2oz
+  10layer_1oz: *multilayer_1oz
+  10layer_2oz: *multilayer_2oz
+  12layer_1oz: *multilayer_1oz
+  12layer_2oz: *multilayer_2oz
+  14layer_1oz: *multilayer_1oz
+  14layer_2oz: *multilayer_2oz
+  16layer_1oz: *multilayer_1oz
+  16layer_2oz: *multilayer_2oz
+  18layer_1oz: *multilayer_1oz
+  18layer_2oz: *multilayer_2oz
+  20layer_1oz: *multilayer_1oz
+  20layer_2oz: *multilayer_2oz
+  22layer_1oz: *multilayer_1oz
+  22layer_2oz: *multilayer_2oz
+  24layer_1oz: *multilayer_1oz
+  24layer_2oz: *multilayer_2oz
+  26layer_1oz: *multilayer_1oz
+  26layer_2oz: *multilayer_2oz
+  28layer_1oz: *multilayer_1oz
+  28layer_2oz: *multilayer_2oz
+  30layer_1oz: *multilayer_1oz
+  30layer_2oz: *multilayer_2oz
+  32layer_1oz: *multilayer_1oz
+  32layer_2oz: *multilayer_2oz
+
+# HDI (laser microvias, mechanical buried vias, sequential lamination), read
+# 2026-10-30 from https://jlcpcb.com/help/article/hdi-pcb-capabilities-faq
+# (and the HDI row of https://jlcpcb.com/capabilities/pcb-capabilities).
+# Read by check_vias.py; the spans a build allows are its stackups.yaml
+# entry's own `vias` list.
+hdi:
+  layers: [4, 24]                    # "4-24 layer blind/buried-via boards"
+  max_order: 3                       # 1st-, 2nd- and 3rd-order HDI
+  finished_thickness_mm: [0.5, 2.4]
+  laser_drill_mm: [0.075, 0.15]      # blind (laser) via hole; default 0.1
+  laser_pad_over_drill_mm: 0.15      # pad >= hole + 0.15 (0.075 ring)
+  laser_dielectric_mm: [0.05, 0.127] # dielectric a laser via crosses
+  laser_max_aspect: 1.0              # depth : hole <= 1 : 1
+  buried_drill_mm: [0.15, 0.55]      # mechanical, resin plugged + capped
+  buried_pad_over_drill_mm: 0.15
+  buried_min_core_mm: 0.30           # core a buried via crosses
+  through_min_drill_mm: 0.15
+  through_pad_over_drill_mm: 0.10
+  mech_max_aspect: 16.0              # buried and through: depth : hole <= 16
+  hole_to_hole_same_net_mm: 0.13     # blind via edge to any via edge
+  hole_to_hole_diff_net_mm: 0.24
+  laser_hole_to_edge_mm: 0.35        # blind via edge to the routed edge
+  hole_to_trace_mm: 0.15             # any via edge to a trace edge
+  min_trace_width_mm: 0.0762         # 3 mil (2.7 mil "extreme")
+  min_clearance_mm: 0.0762
+  board_mm: {min: [5, 5], max: [576, 469]}
+
+# Standard (non-HDI) multilayer drilling: through vias only. A through via's
+# board-thickness : drill ratio above this is a deep hole JLC's capabilities
+# don't list (1.6 mm / 0.15 mm = 10.7; the HDI FAQ allows 16 for its own
+# builds, 2.4 mm / 0.15 mm).
+through_max_aspect: 16.0

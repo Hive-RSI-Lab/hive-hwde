@@ -1,0 +1,13 @@
+# Seeded fault for check_usb_phy (a USB device's PHY needs, issue #315).
+mutants:
+  usb-dp-pullup-weak:
+    board: usbbuck4
+    script: mutations/usb_dp_pullup_weak.py
+    check: check_usb_phy
+    defect: >-
+      NETLIST fault: the STM32F103's external D+ pull-up R3 is 10 k, not
+      1.5 k +/-5% (the Blue Pill clone's defect), so the host may not
+      enumerate it; ERC sees a resistor to a rail
+    expect:
+      kind: usb_dp_pullup_value
+      ref: R3

@@ -368,6 +368,34 @@ connector in the wrong place. The check reports `model_offset` with a fit of
 still flags a pulled library footprint at pull time (THT pins only). This
 check runs on the board, every time.
 
+## A USB device's PHY
+
+`check_usb_phy` (verify suite) reads the board's netlist from each connector
+pin named D+/D-/DP/DM/DP1... to the first IC, through 0 R and ferrites. A
+resistor of 100 ohm or less on the way is a series element, and a larger one
+is a pull. It holds the IC to what its own vendor's document says, row by
+row in `reference/usb_phys.yaml` (WCH CH340, the STM32 lines of AN4879
+Rev 5, NXP LPC per AN11392, RP2040, ESP32-S3):
+
+- series resistors only where the PHY wants them: an error for a series R
+  on ST's or WCH's PHYs, which embed USB 2.0's 28-44 ohm driver impedance,
+  and an error for none on an LPC (33 ohm) or RP2040 (27 ohm). The
+  "22-27 ohm always" rule is folklore.
+- the D+ pull-up where the PHY has none: 1.5 k +/-5% to 3.0-3.6 V (USB 2.0
+  pull-up ECN, 7.1.5.1). A Blue Pill's 10 k fails, and so does a pull-up to
+  VBUS. An extra pull-up beside a PHY's own is a warning, and a pull-up on
+  D- is an error.
+- on USB-C, both D+ pins (and both D-) joined, and on a sink each CC pin's
+  total Rd 5.1 k +/-20%, internal Rd included (Type-C R2.5 Table 4-28). That
+  catches a bare receptacle with none, and a CH224K/A/Q (Rd inside) with an
+  external 5.1 k beside it. Outside +/-10% is a warning: the sink attaches
+  but can't read the source's current. A CC with an Rp is a source port and
+  isn't judged.
+
+An IC the file doesn't know is a warning naming it. Add its row with the
+datasheet's section rather than copying another vendor's habit. lite-main
+and core (CH340B, CH224A/Q) pass clean.
+
 ## Finishing a dense board's routing
 
 `route_auto` ends with `route_finish`, so a dense board needs no copper
@@ -386,6 +414,51 @@ ripped, one Freerouting rung left 54 unconnected and 16 DRC errors.
 `route_auto` with `route_finish` then took it to a handful unconnected with
 no DRC errors. What remained was a 0.4 mm-pitch QFN pocket walled in by a
 VBUS_IN track and a 77 mm long haul.
+
+## Boards from other EDA tools, and back
+
+`hwde eda_io import <file> --out <dir>` brings in a board from Altium
+(.PcbDoc), Allegro/OrCAD PCB Editor (a Fabmaster extract .txt), Eagle and
+Fusion's EAGLE export (.brd), EasyEDA Std (.json) and PADS (.asc) through
+KiCad's own importer. KiCad says "Successfully saved" even when it skips a
+layer, and its JSON report keeps `warnings: []`. So eda_io reads the source
+file itself (`scripts/lib/edasrc.py`; the Altium reader is a small
+compound-file reader, `lib/cfb.py`) and compares it with the import: copper
+objects per layer, parts by reference, nets by name, vias, the outline. It
+also refills the zones, runs DRC at the imported rules, and writes
+`losses.md`: **Lost** (copper, parts or the outline, exit 1), **Check**
+(renames, unrouted, netless pads, layers with drawings that were dropped)
+and **Note**, then what the path never carries. Then `hwde intake --source
+<dir>` makes it a workspace. It lands at P6/P8 with no schematic:
+kicad-cli has no schematic importer, so the schematic comes in through
+Eeschema's GUI importer or is redrawn.
+
+On KiCad's own QA boards with KiCad 10.0.6:
+
+- Altium 4 and 6 layers, Eagle, Allegro 4 layers, EasyEDA Std 4 layers and
+  PADS all import. The 14 to 16 Altium "Internal Plane N" and Allegro
+  subclasses KiCad skips are empty in the source, so they're a note.
+  Allegro's 16 drawing layers (fab notes, dimensions, DXF imports) are gone
+  and named.
+- Eagle: KiCad writes the parts' name texts on a layer called `UNDEFINED`,
+  then refuses to load its own board. eda_io moves them to Cmts.User and
+  says so. It renames a part with no number (`PWR` -> `PWR0`).
+- EasyEDA Pro (.epro) crashes kicad-cli (`bad_function_call`). Export
+  Altium from EasyEDA Pro instead. Allegro's binary .brd and OrCAD Capture
+  have no importer at all. eda_io says so and exits 2.
+
+`hwde eda_io export <board>.kicad_pcb --to altium,allegro,orcad,pads,eagle,fusion,easyeda,neutral`
+writes what each tool reads: the KiCad project (Altium's Import Wizard,
+EasyEDA), IPC-2581 and ODB++ (Allegro/OrCAD, PADS, CAM), Allegro Telesis,
+OrCAD and PADS netlists, GenCAD, IPC-D-356 and STEP (`--step`). It reads the
+IPC-2581 and ODB++ back and checks every part, net and copper layer is in
+them. The netlists are checked against the board's nets. Per target,
+`losses.md` says how to bring it in and what doesn't carry. Rules never
+carry. Allegro/PADS need their own footprints by name. Eagle and Fusion
+Electronics have no editable path from anything KiCad writes, so only
+IPC-2581 and STEP go. None of those other tools runs here, so the steps on
+their side are their makers' documented imports, not tested. `hwde eda_io
+formats` prints the table.
 
 ## What it never does
 
@@ -429,3 +502,9 @@ or folklore, and its ranked gap list: [dfm-assembly](../reference/ingest/dfm-ass
 `hwde check_paste --pcb <board> [--stencil-mm 0.10]` (stencil area ratio,
 exposed-pad paste) came from it; run it in the DFM/assembly review. It is
 not in the verify suite yet (task 261031-013753-d3238414d5).
+
+- [reference/ingest/tools-ecosystem.md](../reference/ingest/tools-ecosystem.md):
+  open-source EDA and EE tools against hwde. The Hive already has openEMS,
+  FasterCap, FastHenry, Palace and ngspice-47 in its IIC-OSIC-TOOLS tree;
+  hwde's impedance solver checked against two independent methods; KLC and
+  kicad-happy run on lite-main; a ranked gap list.
