@@ -123,6 +123,10 @@ def test_matched_meander_to_the_target_is_free_past_it_is_charged(tmp_path):
                          _path([(0, 10), (0, 25), (10, 25), (10, 10)], "B")))
     lb = _q(_board(tmp_path, long, "l"), cons)["nets"]["B"]
     assert lb["quality"] < b["quality"]
+    # a length_groups entry (globs, a reference net) is matched the same way
+    groups = {"length_groups": [{"nets": ["B*"], "ref_net": "A", "tol_mm": 1}]}
+    gb = _q(_board(tmp_path, body, "g"), groups)["nets"]["B"]
+    assert gb["class"] == "matched" and gb["ideal_mm"] == pytest.approx(20)
 
 
 def test_classes_and_unjudged_nets(tmp_path):
