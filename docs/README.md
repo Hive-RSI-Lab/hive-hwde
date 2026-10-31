@@ -294,6 +294,19 @@ U7 (GND or +3V3 fill under the antenna on all four layers). lite-main
 passes both, with warnings: 2.2 mm cleared beside the antenna, and ES8388
 MCLK on GPIO0 with no known reset state.
 
+## ESD at the connectors, and what the ingest runs found
+
+`bin/hwde check_esd --pcb <board> [--constraints c.json]` (run by hand for
+now; it joins the verify suite once its findings on the pinned boards are
+judged) checks that every line leaving the board through a connector reaches
+a TVS / ESD clamp first, with no via or branch before it, the clamp near the
+pin and a ground via at its ground pad. It also prints an L·dI/dt estimate
+of the overshoot for each line. `constraints.json` `esd.internal`,
+`esd.exempt_nets`, `esd.clamps` and `esd.level_kv` tune it. The rules behind
+it, and which EMC, ESD and thermal rules of thumb are verified, disputed or
+folklore, are in [`reference/ingest/emc-thermal.md`](../reference/ingest/emc-thermal.md),
+with the scripts that reproduce them.
+
 ## 3D models on their pads
 
 `check_model_fit` (verify suite) reads every footprint's 3D model, VRML or
