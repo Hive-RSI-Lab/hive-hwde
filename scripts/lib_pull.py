@@ -62,7 +62,11 @@ A run keeps to a time budget (--budget-s, default 7 min): an EasyEDA call
 that would overrun it isn't started, the rest come back `deferred` with
 status `partial` (exit 1), and the fix-ups below still run on what was
 pulled. Re-running the same command resumes: parts already in the library
-aren't fetched again.
+aren't fetched again. Every easyeda2kicad call has a timeout (90 s, or
+HWDE_EASYEDA_TIMEOUT_S, cut to what is left of the budget) that kills its
+whole process group, so a stalled EasyEDA request can't hang the run: that
+part comes back `deferred` (`stalled`) and the batch goes on. Each call
+prints one progress line on stderr.
 
 `--parts parts/parts.json` pulls every part in ONE paced batch: parts are
 spaced --pace-s apart (auto: 0 for <=10 parts, 15 s for more - EasyEDA's
@@ -85,7 +89,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import signal
 import subprocess
 import sys
 import tempfile
@@ -104,8 +110,43 @@ import lib_refdes_norm  # noqa: E402
 from lib import env  # noqa: E402
 
 
+def _call_timeout_s() -> float:
+    """The longest one easyeda2kicad call may take (HWDE_EASYEDA_TIMEOUT_S)."""
+    try:
+        return max(5.0, float(os.environ.get("HWDE_EASYEDA_TIMEOUT_S", "")))
+    except ValueError:
+        return CALL_TIMEOUT_S
+
+
+def _run_bounded(cmd: list[str], timeout_s: float) -> subprocess.CompletedProcess:
+    """subprocess.run(cmd, capture_output) that really ends at timeout_s.
+
+    subprocess.run kills only its child on a timeout and then waits for the
+    pipes to close, so a grandchild still holding them (or a child stuck in a
+    socket read that ignores the kill's delivery until it returns) makes it
+    wait on. This runs the command in its own session, kills the whole
+    process group, and stops reading the pipes after a short grace."""
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            text=True, encoding="utf-8", errors="replace",
+                            start_new_session=True)
+    try:
+        out, err = proc.communicate(timeout=timeout_s)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError, OSError):
+            proc.kill()
+        try:
+            proc.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            pass
+        raise subprocess.TimeoutExpired(cmd, timeout_s) from None
+    return subprocess.CompletedProcess(cmd, proc.returncode, out, err)
+
+
 def _run_easyeda(lcsc: str, base: Path, no_3d: bool, overwrite: bool,
-                 only_3d: bool = False) -> subprocess.CompletedProcess:
+                 only_3d: bool = False,
+                 timeout_s: float | None = None) -> subprocess.CompletedProcess:
     cmd = [sys.executable, "-m", "easyeda2kicad",
            f"--lcsc_id={lcsc}", "--output", str(base)]
     if only_3d:
@@ -114,8 +155,22 @@ def _run_easyeda(lcsc: str, base: Path, no_3d: bool, overwrite: bool,
         cmd += ["--symbol", "--footprint"] if no_3d else ["--full"]
     if overwrite:
         cmd.append("--overwrite")
-    return subprocess.run(cmd, capture_output=True, text=True,
-                          encoding="utf-8", errors="replace", timeout=120)
+    return _run_bounded(cmd, timeout_s or _call_timeout_s())
+
+
+def _stalled(lcsc: str, timeout_s: float | None) -> dict:
+    """A call that gave nothing in its time: EasyEDA or the network stalled,
+    not the part. Deferred, so the run says partial and a re-run resumes."""
+    t = timeout_s or _call_timeout_s()
+    return {"lcsc": lcsc, "status": "deferred", "stalled": True,
+            "detail": f"easyeda2kicad stalled: no answer in {t:.0f} s "
+                      "(EasyEDA or the network); re-run to resume"}
+
+
+def _progress(msg: str) -> None:
+    """One line per EasyEDA call on stderr, so a slow run shows it is alive
+    (stdout stays the JSON report)."""
+    print(f"lib_pull: {msg}", file=sys.stderr, flush=True)
 
 
 def _symbol_entry(sym_lib: Path, lcsc: str) -> dict | None:
@@ -136,7 +191,8 @@ def _present(lcsc: str, base: Path) -> tuple[dict | None, Path | None]:
     return entry, (cand if cand.exists() else None)
 
 
-def _pull_one(lcsc: str, base: Path, no_3d: bool, overwrite: bool) -> dict:
+def _pull_one(lcsc: str, base: Path, no_3d: bool, overwrite: bool,
+              timeout_s: float | None = None) -> dict:
     sym_lib = base.with_suffix(".kicad_sym")
     pretty = Path(str(base) + ".pretty")
     # A part already in the library is not handed to easyeda2kicad at all: it
@@ -148,9 +204,13 @@ def _pull_one(lcsc: str, base: Path, no_3d: bool, overwrite: bool) -> dict:
         cp, log, already, created = None, "", True, False
     else:
         try:
-            cp = _run_easyeda(lcsc, base, no_3d, overwrite)
+            if timeout_s is None:
+                cp = _run_easyeda(lcsc, base, no_3d, overwrite)
+            else:
+                cp = _run_easyeda(lcsc, base, no_3d, overwrite,
+                                  timeout_s=timeout_s)
         except subprocess.TimeoutExpired:
-            return {"lcsc": lcsc, "status": "error", "detail": "easyeda2kicad timed out (network?)"}
+            return _stalled(lcsc, timeout_s)
         log = (cp.stdout or "") + (cp.stderr or "")
         already = "already exists" in log
         created = "Created Kicad footprint" in log or "Created Kicad symbol" in log
@@ -219,6 +279,12 @@ DEFAULT_BUDGET_S = 420.0
 EST_CALL_S = 20.0
 # The 403 back-off: CloudFront's WAF block clears in ~60-120 s.
 BACKOFF_S = 90.0
+# The longest one easyeda2kicad call may take: a clean pull with its 3D model
+# takes 3-20 s, so a call silent for this long has stalled (issue #410).
+# HWDE_EASYEDA_TIMEOUT_S overrides it. A call never runs past the budget.
+CALL_TIMEOUT_S = 90.0
+# A call isn't started with less than this left of the budget.
+MIN_CALL_S = 10.0
 
 
 class _Pacer:
@@ -249,7 +315,16 @@ class _Pacer:
         spent = time.monotonic() - self.t0
         est = (spent - self.slept) / self.calls if self.calls else EST_CALL_S
         pace = self.pace_s if self.calls else 0.0
-        return spent + pace + extra + max(est, 0.0) <= self.budget_s
+        return spent + pace + extra + max(est, MIN_CALL_S) <= self.budget_s
+
+    def call_timeout(self) -> float:
+        """The timeout for the call about to start: the per-call cap, cut to
+        what is left of the budget, so no call outlives the run's budget."""
+        cap = _call_timeout_s()
+        if not self.budget_s:
+            return cap
+        left = self.budget_s - (time.monotonic() - self.t0)
+        return max(MIN_CALL_S, min(cap, left))
 
 
 def _auto_pace(n_parts: int) -> float:
@@ -276,6 +351,7 @@ def _pull_all(ids: list[str], base: Path, no_3d: bool, overwrite: bool,
     results: list[dict] = []
     retried = 0
     for i, lcsc in enumerate(ids):
+        timeout_s = None
         if overwrite or None in _present(lcsc, base):
             if not pacer.fits():
                 results += [{"lcsc": l, "status": "deferred",
@@ -283,7 +359,12 @@ def _pull_all(ids: list[str], base: Path, no_3d: bool, overwrite: bool,
                             for l in ids[i:]]
                 break
             pacer.wait()
-        r = _pull_one(lcsc, base, no_3d, overwrite)
+            timeout_s = pacer.call_timeout()
+        t0 = time.monotonic()
+        r = _pull_one(lcsc, base, no_3d, overwrite, timeout_s=timeout_s)
+        if timeout_s is not None:
+            _progress(f"[{i + 1}/{len(ids)}] {lcsc} {r['status']} "
+                      f"({time.monotonic() - t0:.1f} s)")
         if r["status"] == "error" and _is_rate_limited(r.get("detail", "")):
             if not pacer.fits(BACKOFF_S):
                 results.append(dict(r, status="deferred",
@@ -294,7 +375,8 @@ def _pull_all(ids: list[str], base: Path, no_3d: bool, overwrite: bool,
                             for l in ids[i + 1:]]
                 break
             pacer.sleep(BACKOFF_S)   # CloudFront WAF block clears in ~60-120 s
-            r = _pull_one(lcsc, base, no_3d, overwrite)
+            r = _pull_one(lcsc, base, no_3d, overwrite,
+                          timeout_s=pacer.call_timeout())
             r["retried"] = True
             retried += 1
         results.append(r)
@@ -351,10 +433,12 @@ def _restore_models(results: list[dict], base: Path, pacer: _Pacer) -> dict:
                 continue
             pacer.wait()
             try:
-                cp = _run_easyeda(r["lcsc"], base, False, False, only_3d=True)
+                cp = _run_easyeda(r["lcsc"], base, False, False, only_3d=True,
+                                  timeout_s=pacer.call_timeout())
                 log = (cp.stdout or "") + (cp.stderr or "")
             except subprocess.TimeoutExpired:
-                log = "easyeda2kicad timed out (network?)"
+                log = "easyeda2kicad stalled (EasyEDA or the network)"
+            _progress(f"3D {r['lcsc']} {fp['name']}")
             left = _missing_models(Path(fp["file"]), models)
             got = sorted(set(missing) - set(left))
             restored += got

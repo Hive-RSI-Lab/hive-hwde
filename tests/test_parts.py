@@ -654,7 +654,7 @@ def test_pull_all_paces_between_parts(monkeypatch):
     sleeps = []
     monkeypatch.setattr(lib_pull.time, "sleep", lambda s: sleeps.append(s))
     monkeypatch.setattr(lib_pull, "_pull_one",
-                        lambda l, b, n, o: {"lcsc": l, "status": "pulled"})
+                        lambda l, b, n, o, **k: {"lcsc": l, "status": "pulled"})
     res, retried = lib_pull._pull_all(["C1", "C2", "C3"], Path("x"), True, False,
                                        lib_pull._Pacer(15.0))
     assert sleeps == [15.0, 15.0] and retried == 0 and len(res) == 3
@@ -665,7 +665,7 @@ def _batch_fake_run(tmp_path, fail_first_for=(), always_fail=()):
     pulled: set[str] = set()
     calls: dict[str, int] = {}
 
-    def fake(lcsc, base, no_3d, overwrite):
+    def fake(lcsc, base, no_3d, overwrite, **k):
         calls[lcsc] = calls.get(lcsc, 0) + 1
         if lcsc in always_fail or (lcsc in fail_first_for and calls[lcsc] == 1):
             return SimpleNamespace(stdout="", stderr="HTTP Error 403: Forbidden",

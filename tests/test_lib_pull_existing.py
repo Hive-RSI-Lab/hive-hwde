@@ -61,7 +61,7 @@ def calls(monkeypatch):
     """Record easyeda2kicad runs; a --3d run writes the model it would fetch."""
     seen: list[tuple[str, bool]] = []
 
-    def fake(lcsc, base, no_3d, overwrite, only_3d=False):
+    def fake(lcsc, base, no_3d, overwrite, only_3d=False, **kw):
         seen.append((lcsc, only_3d))
         if only_3d:
             d = Path(str(base) + ".3dshapes")
@@ -200,3 +200,53 @@ def test_an_extract_beside_parts_json_wins(tmp_path):
                               str(parts / "parts.json"))
     assert rep["extracts_matched"] == ["C22396388"]
     assert rep["power_in"] == ["TCA9535PWR:24"]     # GND not in the extract
+
+
+# ------------------------------------------- issue #410: no call hangs the run
+
+def test_run_bounded_kills_the_group_holding_its_pipes():
+    """A grandchild that keeps stdout open must not keep the call waiting."""
+    import subprocess
+    import time
+    t0 = time.monotonic()
+    with pytest.raises(subprocess.TimeoutExpired):
+        lib_pull._run_bounded(["sh", "-c", "sleep 30 & sleep 30"], 1.0)
+    assert time.monotonic() - t0 < 10
+
+
+def test_run_bounded_returns_output():
+    cp = lib_pull._run_bounded(["sh", "-c", "echo out; echo err >&2; exit 3"], 10)
+    assert (cp.stdout, cp.stderr, cp.returncode) == ("out\n", "err\n", 3)
+
+
+def test_a_stalled_part_is_deferred_and_the_batch_goes_on(base, monkeypatch, capsys):
+    import subprocess
+    seen = []
+
+    def fake(lcsc, base_, no_3d, overwrite, only_3d=False, timeout_s=None):
+        seen.append((lcsc, timeout_s))
+        if lcsc == "C9":
+            raise subprocess.TimeoutExpired("easyeda2kicad", timeout_s)
+        return SimpleNamespace(stdout="", stderr="", returncode=0)
+
+    monkeypatch.setattr(lib_pull, "_run_easyeda", fake)
+    results, _ = lib_pull._pull_all(["C9", "C1", "C8"], base, True, False,
+                                    lib_pull._Pacer(0, 600))
+    by = {r["lcsc"]: r for r in results}
+    assert by["C9"]["status"] == "deferred" and by["C9"]["stalled"]
+    assert "re-run" in by["C9"]["detail"]
+    assert by["C1"]["status"] == "exists"          # in the library: no call
+    assert [l for l, _ in seen] == ["C9", "C8"]    # the batch went on
+    assert all(t is not None and t <= lib_pull.CALL_TIMEOUT_S for _, t in seen)
+    assert "[1/3] C9 deferred" in capsys.readouterr().err
+
+
+def test_call_timeout_never_outlives_the_budget(monkeypatch):
+    monkeypatch.delenv("HWDE_EASYEDA_TIMEOUT_S", raising=False)
+    assert lib_pull._Pacer(0).call_timeout() == lib_pull.CALL_TIMEOUT_S
+    p = lib_pull._Pacer(0, 30)
+    assert lib_pull.MIN_CALL_S <= p.call_timeout() <= 30
+    monkeypatch.setenv("HWDE_EASYEDA_TIMEOUT_S", "12")
+    assert lib_pull._Pacer(0, 600).call_timeout() == 12
+    monkeypatch.setenv("HWDE_EASYEDA_TIMEOUT_S", "junk")
+    assert lib_pull._Pacer(0).call_timeout() == lib_pull.CALL_TIMEOUT_S
