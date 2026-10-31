@@ -1,4 +1,4 @@
-# stackups.yaml - JLC PCB stackups the fab ACTUALLY SELLS + controlled-impedance
+# stackups.yaml - PCB stackups the fabs ACTUALLY SELL + controlled-impedance
 # geometry. Consumed by board_init.py (writes the (stackup) block into the
 # .kicad_pcb) and rules_gen.py (diff-pair width/gap, net classes / DRU).
 #
@@ -2435,3 +2435,900 @@ stackups:
       - {name: "dielectric 3", type: prepreg,  thickness_mm: 0.5124, material: "FR4 7628x2+1080", plies: "1080*1 0.0764 + 7628*1 0.218 + 7628*1 0.218", epsilon_r: 4.05, loss_tangent: 0.02}
       - {name: "B.Cu",         type: copper,   thickness_mm: 0.035,  copper_oz: 1.0}
     controlled_impedance: []
+
+  # ------------------------------------------------ other fabs (#446)
+  # Stackups other fabs PUBLISH, so one design can be sized for (and a
+  # coupon compared across) PCBWay, OSH Park and AISLER. Each carries
+  # `vendor: <id>` (reference/vendors/<id>.yaml): board_init and rules_gen
+  # take that vendor's fab floors (fabfloors.vendor_profile) instead of
+  # JLC's. `defaults` stay JLC. method: vendor_page = transcribed from the
+  # public page in provenance.source (no account, no API). The
+  # controlled_impedance table is scripts/stackup_rows.py's output (outer
+  # microstrip + closed_form, and stripline on each inner layer whose
+  # neighbours are both inner, referenced to those two); widths under the
+  # vendor's min trace are pinned there and the gap solved (gap_solved),
+  # with z_ohm = what that gives and unreachable: true when it misses the
+  # target by > 2 %. `fab_table` is the fab's own published impedance
+  # table, with hwde_z_ohm = impedance.py at the fab's geometry;
+  # `disagrees` says where they part (> 10 %). finished_allowance_mm: the
+  # fab states finished thickness = lamination + ~0.1 mm (plating, mask).
+  #
+  # Eurocircuits: NOT carried. It publishes no layer thicknesses: its
+  # stackups live in the account-side Buildup Editor; the DEFINED
+  # IMPEDANCE pool page (eurocircuits.com/?p=10620, read 2026-10-31) says
+  # only "IS400, 120 um prepreg on top and bottom", pooled 1.00 mm 4L /
+  # 1.55 mm 6-8L. Add it from a Buildup Editor export when someone has one.
+  PCBWAY-4L-1.6-7628:
+    description: 'PCBWay 4-layer 1.6 mm, 1 oz outer / 1 oz inner, 7628 prepreg (PCBWay structure #2, residual copper 50%).'
+    vendor: pcbway
+    available: true
+    thickness_mm: 1.6
+    finished_allowance_mm: 0.1
+    copper_finish: HASL
+    dielectric_constraints: true
+    epsilon_r_assumed: false
+    epsilon_r_source: vendor_page
+    provenance: {method: vendor_page, source: 'https://www.pcbway.com/multi-layer-laminated-structure.html', verified: '2026-10-31', live_verified: true,
+      note: 'PCBWay''s ''PCB standard stackup'' list, 1.6 mm, finished 1 oz outer (0.5 oz base plated up) / 1 oz inner, inner residual copper 50% (PCBWay
+        also lists 70% and 30% variants: prepreg 0.0070 mm thicker / thinner). Thicknesses are PCBWay''s ''after lamination'' column, DK per material as printed.
+        Loss tangent not published (assumed 0.02).', fab_calculator: 'https://www.pcbway.com/pcb_prototype/impedance_calculator.html (interactive, not read)'}
+    layers: 4
+    stack_total_mm: 1.527
+    finished_thickness_mm: 1.59
+    stack:
+    - {name: F.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 1, type: prepreg, thickness_mm: 0.1785, material: FR4 7628 RC46%, epsilon_r: 4.74, loss_tangent: 0.02, plies: 7628 0.1785}
+    - {name: In1.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 2, type: core, thickness_mm: 1.03, material: FR4 core 1.1mm with Cu, epsilon_r: 4.6, loss_tangent: 0.02}
+    - {name: In2.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 3, type: prepreg, thickness_mm: 0.1785, material: FR4 7628 RC46%, epsilon_r: 4.74, loss_tangent: 0.02, plies: 7628 0.1785}
+    - {name: B.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    controlled_impedance:
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.2742
+      closed_form: {width_mm: 0.277}
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.2205
+      gap_mm: 0.1785
+      closed_form: {width_mm: 0.2334, gap_mm: 0.1785}
+      note: USB 2.0 / ULPI
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.1668
+      gap_mm: 0.1785
+      closed_form: {width_mm: 0.189, gap_mm: 0.1785}
+      note: Ethernet / LVDS / general 100R
+  PCBWAY-6L-1.6-7628:
+    description: 'PCBWay 6-layer 1.6 mm, 1 oz outer / 1 oz inner, 7628 prepreg, 0.5 mm cores (PCBWay structure #2, residual copper 50%).'
+    vendor: pcbway
+    available: true
+    thickness_mm: 1.6
+    finished_allowance_mm: 0.1
+    copper_finish: HASL
+    dielectric_constraints: true
+    epsilon_r_assumed: false
+    epsilon_r_source: vendor_page
+    provenance: {method: vendor_page, source: 'https://www.pcbway.com/multi-layer-laminated-structure.html', verified: '2026-10-31', live_verified: true,
+      note: 'PCBWay''s ''PCB standard stackup'' list, 1.6 mm, finished 1 oz outer (0.5 oz base plated up) / 1 oz inner, inner residual copper 50% (PCBWay
+        also lists 70% and 30% variants: prepreg 0.0070 mm thicker / thinner). Thicknesses are PCBWay''s ''after lamination'' column, DK per material as printed.
+        Loss tangent not published (assumed 0.02).'}
+    layers: 6
+    stack_total_mm: 1.588
+    finished_thickness_mm: 1.65
+    stack:
+    - {name: F.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 1, type: prepreg, thickness_mm: 0.1785, material: FR4 7628 RC46%, epsilon_r: 4.74, loss_tangent: 0.02}
+    - {name: In1.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 2, type: core, thickness_mm: 0.43, material: FR4 core 0.5mm with Cu, epsilon_r: 4.6, loss_tangent: 0.02}
+    - {name: In2.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 3, type: prepreg, thickness_mm: 0.161, material: FR4 7628 RC46%, epsilon_r: 4.74, loss_tangent: 0.02}
+    - {name: In3.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 4, type: core, thickness_mm: 0.43, material: FR4 core 0.5mm with Cu, epsilon_r: 4.6, loss_tangent: 0.02}
+    - {name: In4.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 5, type: prepreg, thickness_mm: 0.1785, material: FR4 7628 RC46%, epsilon_r: 4.74, loss_tangent: 0.02}
+    - {name: B.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    controlled_impedance:
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.2742
+      closed_form: {width_mm: 0.277}
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.2205
+      gap_mm: 0.1785
+      closed_form: {width_mm: 0.2334, gap_mm: 0.1785}
+      note: USB 2.0 / ULPI
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.1668
+      gap_mm: 0.1785
+      closed_form: {width_mm: 0.189, gap_mm: 0.1785}
+      note: Ethernet / LVDS / general 100R
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: In2.Cu
+      reference: &id001 [In1.Cu, In3.Cu]
+      model: stripline
+      width_mm: 0.127
+      below_fab_floor: true
+      z_ohm: 48.8
+      unreachable: true
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: In2.Cu
+      reference: *id001
+      model: stripline
+      width_mm: 0.127
+      gap_mm: 0.2785
+      gap_solved: true
+      z_ohm: 90.0
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: In2.Cu
+      reference: *id001
+      model: stripline
+      width_mm: 0.127
+      gap_mm: 1.0
+      gap_solved: true
+      z_ohm: 97.4
+      unreachable: true
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: In3.Cu
+      reference: &id002 [In2.Cu, In4.Cu]
+      model: stripline
+      width_mm: 0.127
+      below_fab_floor: true
+      z_ohm: 48.8
+      unreachable: true
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: In3.Cu
+      reference: *id002
+      model: stripline
+      width_mm: 0.127
+      gap_mm: 0.2785
+      gap_solved: true
+      z_ohm: 90.0
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: In3.Cu
+      reference: *id002
+      model: stripline
+      width_mm: 0.127
+      gap_mm: 1.0
+      gap_solved: true
+      z_ohm: 97.4
+      unreachable: true
+  PCBWAY-8L-1.6-2116:
+    description: 'PCBWay 8-layer 1.6 mm, 1 oz outer / 1 oz inner, 2116 outer prepreg, 7628 inner prepreg, 0.3 mm cores (PCBWay structure #2, residual copper
+      50%).'
+    vendor: pcbway
+    available: true
+    thickness_mm: 1.6
+    finished_allowance_mm: 0.1
+    copper_finish: HASL
+    dielectric_constraints: true
+    epsilon_r_assumed: false
+    epsilon_r_source: vendor_page
+    provenance: {method: vendor_page, source: 'https://www.pcbway.com/multi-layer-laminated-structure.html', verified: '2026-10-31', live_verified: true,
+      note: 'PCBWay''s ''PCB standard stackup'' list, 1.6 mm, finished 1 oz outer (0.5 oz base plated up) / 1 oz inner, inner residual copper 50% (PCBWay
+        also lists 70% and 30% variants: prepreg 0.0070 mm thicker / thinner). Thicknesses are PCBWay''s ''after lamination'' column, DK per material as printed.
+        Loss tangent not published (assumed 0.02).'}
+    layers: 8
+    stack_total_mm: 1.517
+    finished_thickness_mm: 1.58
+    stack:
+    - {name: F.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 1, type: prepreg, thickness_mm: 0.1125, material: FR4 2116 RC58%, epsilon_r: 4.45, loss_tangent: 0.02}
+    - {name: In1.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 2, type: core, thickness_mm: 0.23, material: FR4 core 0.3mm with Cu, epsilon_r: 4.6, loss_tangent: 0.02}
+    - {name: In2.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 3, type: prepreg, thickness_mm: 0.161, material: FR4 7628 RC46%, epsilon_r: 4.74, loss_tangent: 0.02}
+    - {name: In3.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 4, type: core, thickness_mm: 0.23, material: FR4 core 0.3mm with Cu, epsilon_r: 4.6, loss_tangent: 0.02}
+    - {name: In4.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 5, type: prepreg, thickness_mm: 0.161, material: FR4 7628 RC46%, epsilon_r: 4.74, loss_tangent: 0.02}
+    - {name: In5.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 6, type: core, thickness_mm: 0.23, material: FR4 core 0.3mm with Cu, epsilon_r: 4.6, loss_tangent: 0.02}
+    - {name: In6.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 7, type: prepreg, thickness_mm: 0.1125, material: FR4 2116 RC58%, epsilon_r: 4.45, loss_tangent: 0.02}
+    - {name: B.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    controlled_impedance:
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.1683
+      closed_form: {width_mm: 0.1655}
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.1322
+      gap_mm: 0.13
+      closed_form: {width_mm: 0.1463, gap_mm: 0.13}
+      note: USB 2.0 / ULPI
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.127
+      gap_mm: 0.1997
+      gap_solved: true
+      z_ohm: 100.0
+      closed_form: {width_mm: 0.127, gap_mm: 0.1554, gap_solved: true, z_ohm: 100.0}
+      note: Ethernet / LVDS / general 100R
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: In2.Cu
+      reference: &id003 [In1.Cu, In3.Cu]
+      model: stripline
+      width_mm: 0.127
+      below_fab_floor: true
+      z_ohm: 45.3
+      unreachable: true
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: In2.Cu
+      reference: *id003
+      model: stripline
+      width_mm: 0.127
+      gap_mm: 0.5241
+      gap_solved: true
+      z_ohm: 90.0
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: In2.Cu
+      reference: *id003
+      model: stripline
+      width_mm: 0.127
+      gap_mm: 1.0
+      gap_solved: true
+      z_ohm: 90.5
+      unreachable: true
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: In3.Cu
+      reference: &id004 [In2.Cu, In4.Cu]
+      model: stripline
+      width_mm: 0.127
+      below_fab_floor: true
+      z_ohm: 45.3
+      unreachable: true
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: In3.Cu
+      reference: *id004
+      model: stripline
+      width_mm: 0.127
+      gap_mm: 0.5241
+      gap_solved: true
+      z_ohm: 90.0
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: In3.Cu
+      reference: *id004
+      model: stripline
+      width_mm: 0.127
+      gap_mm: 1.0
+      gap_solved: true
+      z_ohm: 90.5
+      unreachable: true
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: In4.Cu
+      reference: &id005 [In3.Cu, In5.Cu]
+      model: stripline
+      width_mm: 0.127
+      below_fab_floor: true
+      z_ohm: 45.3
+      unreachable: true
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: In4.Cu
+      reference: *id005
+      model: stripline
+      width_mm: 0.127
+      gap_mm: 0.5241
+      gap_solved: true
+      z_ohm: 90.0
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: In4.Cu
+      reference: *id005
+      model: stripline
+      width_mm: 0.127
+      gap_mm: 1.0
+      gap_solved: true
+      z_ohm: 90.5
+      unreachable: true
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: In5.Cu
+      reference: &id006 [In4.Cu, In6.Cu]
+      model: stripline
+      width_mm: 0.127
+      below_fab_floor: true
+      z_ohm: 45.3
+      unreachable: true
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: In5.Cu
+      reference: *id006
+      model: stripline
+      width_mm: 0.127
+      gap_mm: 0.5241
+      gap_solved: true
+      z_ohm: 90.0
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: In5.Cu
+      reference: *id006
+      model: stripline
+      width_mm: 0.127
+      gap_mm: 1.0
+      gap_solved: true
+      z_ohm: 90.5
+      unreachable: true
+  OSHPARK-4L-1.6-FR408HR:
+    description: OSH Park 4-layer prototype, 1.6 mm, Isola FR408HR, 1 oz outer (clad+plated, 0.0432 mm) / 0.5 oz inner.
+    vendor: oshpark
+    available: true
+    thickness_mm: 1.6
+    finished_allowance_mm: 0.1
+    copper_finish: ENIG
+    dielectric_constraints: true
+    epsilon_r_assumed: false
+    epsilon_r_source: vendor_page
+    provenance: {method: vendor_page, source: 'https://docs.oshpark.com/services/four-layer/', verified: '2026-10-31', live_verified: true, impedance_table: 'https://docs.oshpark.com/resources/four-layer-impedance-table.png',
+      note: 'Stackup table on the service page. Dk 3.61 at 1 GHz is given for the 2113 prepreg and as the material spec''s ''Dielectric''; the core''s Dk
+        is not printed per layer, so it takes the same 3.61. Loss tangent not published on this page (FR408HR datasheet ~0.01; assumed). Solder mask 0.6 mil
+        (the solver keeps JLC''s 1.2/0.6 mil coating). impedance.py uses 0.035 mm for 1 oz outer copper (the stack block keeps OSH Park''s 0.0432).'}
+    layers: 4
+    stack_total_mm: 1.5118
+    finished_thickness_mm: 1.6
+    stack:
+    - {name: F.Cu, type: copper, thickness_mm: 0.0432, copper_oz: 1.0}
+    - {name: dielectric 1, type: prepreg, thickness_mm: 0.1999, material: FR408HR 2113, epsilon_r: 3.61, loss_tangent: 0.01}
+    - {name: In1.Cu, type: copper, thickness_mm: 0.0175, copper_oz: 0.5}
+    - {name: dielectric 2, type: core, thickness_mm: 0.9906, material: FR408HR core, epsilon_r: 3.61, loss_tangent: 0.01}
+    - {name: In2.Cu, type: copper, thickness_mm: 0.0175, copper_oz: 0.5}
+    - {name: dielectric 3, type: prepreg, thickness_mm: 0.1999, material: FR408HR 2113, epsilon_r: 3.61, loss_tangent: 0.01}
+    - {name: B.Cu, type: copper, thickness_mm: 0.0432, copper_oz: 1.0}
+    controlled_impedance:
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.386
+      closed_form: {width_mm: 0.3685}
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.3221
+      gap_mm: 0.1999
+      closed_form: {width_mm: 0.3175, gap_mm: 0.1999}
+      note: USB 2.0 / ULPI
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.2515
+      gap_mm: 0.1999
+      closed_form: {width_mm: 0.2648, gap_mm: 0.1999}
+      note: Ethernet / LVDS / general 100R
+    fab_table:
+    - {layer: outer, kind: single, impedance_ohm: 50, width_mm: 0.381, fab_z_ohm: 49.8, hwde_z_ohm: 50.4}
+    - {layer: outer, kind: diff, impedance_ohm: 90, width_mm: 0.2286, gap_mm: 0.127, fab_z_ohm: 91.5, hwde_z_ohm: 91.9}
+    - {layer: outer, kind: diff, impedance_ohm: 100, width_mm: 0.1753, gap_mm: 0.1295, fab_z_ohm: 100.3, hwde_z_ohm: 100.9}
+  OSHPARK-6L-1.6-FR408HR:
+    description: OSH Park 6-layer prototype, 1.6 mm, Isola FR408HR, 1 oz outer (clad+plated) / 0.5 oz inner, 106 prepreg + 2113 cores outside a 0.93 mm core.
+    vendor: oshpark
+    available: true
+    thickness_mm: 1.6
+    finished_allowance_mm: 0.1
+    copper_finish: ENIG
+    dielectric_constraints: true
+    epsilon_r_assumed: false
+    epsilon_r_source: vendor_page
+    provenance: {method: vendor_page, source: 'https://docs.oshpark.com/services/six-layer/', verified: '2026-10-31', live_verified: true, impedance_table: 'https://docs.oshpark.com/resources/six-layer-impedance-table.png',
+      note: 'Stackup table on the service page gives thickness, Dk and Df per layer for the 106 prepreg (3.23/0.011) and 2113 cores (3.66/0.009); the centre
+        0.9256 mm FR408HR core has no Dk printed, so it takes the 2113 core''s 3.66. Inner 0.5 oz copper is clad 0.0175 mm. impedance.py uses 0.035 mm for
+        1 oz outer copper (OSH Park: 0.0432).'}
+    layers: 6
+    stack_total_mm: 1.5066
+    finished_thickness_mm: 1.6
+    stack:
+    - {name: F.Cu, type: copper, thickness_mm: 0.0432, copper_oz: 1.0}
+    - {name: dielectric 1, type: prepreg, thickness_mm: 0.1107, material: FR408HR 106 75% RC, epsilon_r: 3.23, loss_tangent: 0.011}
+    - {name: In1.Cu, type: copper, thickness_mm: 0.0175, copper_oz: 0.5}
+    - {name: dielectric 2, type: core, thickness_mm: 0.1016, material: FR408HR 2113 core, epsilon_r: 3.66, loss_tangent: 0.009}
+    - {name: In2.Cu, type: copper, thickness_mm: 0.0175, copper_oz: 0.5}
+    - {name: dielectric 3, type: core, thickness_mm: 0.9256, material: FR408HR core, epsilon_r: 3.66, loss_tangent: 0.009}
+    - {name: In3.Cu, type: copper, thickness_mm: 0.0175, copper_oz: 0.5}
+    - {name: dielectric 4, type: core, thickness_mm: 0.1016, material: FR408HR 2113 core, epsilon_r: 3.66, loss_tangent: 0.009}
+    - {name: In4.Cu, type: copper, thickness_mm: 0.0175, copper_oz: 0.5}
+    - {name: dielectric 5, type: prepreg, thickness_mm: 0.1107, material: FR408HR 106 75% RC, epsilon_r: 3.23, loss_tangent: 0.011}
+    - {name: B.Cu, type: copper, thickness_mm: 0.0432, copper_oz: 1.0}
+    controlled_impedance:
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.2134
+      closed_form: {width_mm: 0.1962}
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.171
+      gap_mm: 0.13
+      closed_form: {width_mm: 0.1775, gap_mm: 0.13}
+      note: USB 2.0 / ULPI
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.1296
+      gap_mm: 0.13
+      closed_form: {width_mm: 0.1473, gap_mm: 0.13}
+      note: Ethernet / LVDS / general 100R
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: In2.Cu
+      reference: &id007 [In1.Cu, In3.Cu]
+      model: stripline
+      width_mm: 0.127
+      below_fab_floor: true
+      z_ohm: 49.8
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: In2.Cu
+      reference: *id007
+      model: stripline
+      width_mm: 0.127
+      gap_mm: 0.1862
+      gap_solved: true
+      z_ohm: 90.0
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: In2.Cu
+      reference: *id007
+      model: stripline
+      width_mm: 0.127
+      gap_mm: 1.0
+      gap_solved: true
+      z_ohm: 99.2
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: In3.Cu
+      reference: &id008 [In2.Cu, In4.Cu]
+      model: stripline
+      width_mm: 0.127
+      below_fab_floor: true
+      z_ohm: 49.8
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: In3.Cu
+      reference: *id008
+      model: stripline
+      width_mm: 0.127
+      gap_mm: 0.1862
+      gap_solved: true
+      z_ohm: 90.0
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: In3.Cu
+      reference: *id008
+      model: stripline
+      width_mm: 0.127
+      gap_mm: 1.0
+      gap_solved: true
+      z_ohm: 99.2
+    fab_table:
+    - {layer: outer, kind: single, impedance_ohm: 50, width_mm: 0.2108, fab_z_ohm: 50.1, hwde_z_ohm: 50.3}
+    - {layer: outer, kind: diff, impedance_ohm: 90, width_mm: 0.1727, gap_mm: 0.1321, fab_z_ohm: 89.6, hwde_z_ohm: 90.0}
+    - {layer: outer, kind: diff, impedance_ohm: 100, width_mm: 0.1448, gap_mm: 0.16, fab_z_ohm: 100.1, hwde_z_ohm: 100.8}
+    - layer: In2.Cu
+      kind: single
+      impedance_ohm: 50
+      width_mm: 0.16
+      reference: [In1.Cu, In3.Cu]
+      fab_z_ohm: 50.0
+      disagrees: 'hwde''s stripline gives ~11 % lower Z at OSH Park''s inner geometry (In2 sits 0.10 mm from In1 and 0.93 mm from In3, so it is nearly embedded
+        microstrip). Which is right is what the zcoupon panel (hw-lab #53) measures.'
+      hwde_z_ohm: 44.4
+    - layer: In2.Cu
+      kind: diff
+      impedance_ohm: 90
+      width_mm: 0.1499
+      gap_mm: 0.1549
+      reference: [In1.Cu, In3.Cu]
+      fab_z_ohm: 89.9
+      disagrees: 'hwde''s stripline gives ~11 % lower Z at OSH Park''s inner geometry (In2 sits 0.10 mm from In1 and 0.93 mm from In3, so it is nearly embedded
+        microstrip). Which is right is what the zcoupon panel (hw-lab #53) measures.'
+      hwde_z_ohm: 81.2
+    - layer: In2.Cu
+      kind: diff
+      impedance_ohm: 100
+      width_mm: 0.127
+      gap_mm: 0.1778
+      reference: [In1.Cu, In3.Cu]
+      fab_z_ohm: 99.1
+      disagrees: 'hwde''s stripline gives ~11 % lower Z at OSH Park''s inner geometry (In2 sits 0.10 mm from In1 and 0.93 mm from In3, so it is nearly embedded
+        microstrip). Which is right is what the zcoupon panel (hw-lab #53) measures.'
+      hwde_z_ohm: 89.4
+  AISLER-4L-1.6-1080:
+    description: AISLER 4-layer 1.6 mm 35 um (ENIG), 2x1080 prepreg, 1.2 mm core.
+    vendor: aisler
+    available: true
+    thickness_mm: 1.6
+    copper_finish: ENIG
+    dielectric_constraints: true
+    epsilon_r_assumed: false
+    epsilon_r_source: vendor_page
+    provenance: {method: vendor_page, source: 'https://community.aisler.net/t/4-layers-1-6mm-35-m-stackup/5457', verified: '2026-10-31', live_verified: true,
+      note: 'Stackup image + impedance table in AISLER''s help centre (post updated 2026-05-12). Dk is printed as a range (prepreg 4.0-4.3, core 4.5-4.6);
+        the midpoints are used. Loss tangent not published for 4L (6L/8L pages say ~0.02). The 70 um 4L build is ''variable'' stock (AISLER t/5523): no stackup
+        to size against, so it is not carried.'}
+    layers: 4
+    stack_total_mm: 1.62
+    finished_thickness_mm: 1.6
+    stack:
+    - {name: F.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 1, type: prepreg, thickness_mm: 0.14, material: FR4 1080 x2, epsilon_r: 4.15, loss_tangent: 0.02, plies: 1080 0.070 + 1080 0.070}
+    - {name: In1.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 2, type: core, thickness_mm: 1.2, material: FR4 core, epsilon_r: 4.55, loss_tangent: 0.02}
+    - {name: In2.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 3, type: prepreg, thickness_mm: 0.14, material: FR4 1080 x2, epsilon_r: 4.15, loss_tangent: 0.02, plies: 1080 0.070 + 1080 0.070}
+    - {name: B.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    controlled_impedance:
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.2309
+      closed_form: {width_mm: 0.2261}
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.1771
+      gap_mm: 0.14
+      closed_form: {width_mm: 0.1911, gap_mm: 0.14}
+      note: USB 2.0 / ULPI
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.132
+      gap_mm: 0.14
+      closed_form: {width_mm: 0.1552, gap_mm: 0.14}
+      note: Ethernet / LVDS / general 100R
+    fab_table:
+    - {layer: outer, kind: single, impedance_ohm: 50, width_mm: 0.295, disagrees: 'AISLER''s 4L table gives 295 um for 50 ohm; on the published 0.14 mm 2x1080
+        prepreg hwde''s coated microstrip gives 44 ohm there (231 um for 50). AISLER calls its table ''a basic orientation'' and its 0.8 mm page reuses the
+        same numbers unverified (t/5460); the table likely predates the current prepreg. Measured on zcoupon (hw-lab #53).', hwde_z_ohm: 43.9}
+    - {layer: outer, kind: diff, impedance_ohm: 90, width_mm: 0.26, gap_mm: 0.135, disagrees: 'AISLER''s 4L table gives 295 um for 50 ohm; on the published
+        0.14 mm 2x1080 prepreg hwde''s coated microstrip gives 44 ohm there (231 um for 50). AISLER calls its table ''a basic orientation'' and its 0.8 mm
+        page reuses the same numbers unverified (t/5460); the table likely predates the current prepreg. Measured on zcoupon (hw-lab #53).', hwde_z_ohm: 75.9}
+    - {layer: outer, kind: diff, impedance_ohm: 100, width_mm: 0.22, gap_mm: 0.15, disagrees: 'AISLER''s 4L table gives 295 um for 50 ohm; on the published
+        0.14 mm 2x1080 prepreg hwde''s coated microstrip gives 44 ohm there (231 um for 50). AISLER calls its table ''a basic orientation'' and its 0.8 mm
+        page reuses the same numbers unverified (t/5460); the table likely predates the current prepreg. Measured on zcoupon (hw-lab #53).', hwde_z_ohm: 83.7}
+  AISLER-6L-1.6-2116:
+    description: AISLER 6-layer 1.6 mm 35 um (ENIG), 2116 prepreg, 0.3 mm cores.
+    vendor: aisler
+    available: true
+    thickness_mm: 1.6
+    copper_finish: ENIG
+    dielectric_constraints: true
+    epsilon_r_assumed: false
+    epsilon_r_source: vendor_page
+    provenance: {method: vendor_page, source: 'https://community.aisler.net/t/6-layers-1-6mm-35-m-stackup/5458', verified: '2026-10-31', live_verified: true,
+      note: 'Stackup image + impedance table in AISLER''s help centre (updated 2026-01-26; AISLER: ''the Dk values are fixed for this stack up'', t/5504).
+        Df ~0.02 as published. 6L is listed in AISLER''s design rules (t/5467); board.layers in vendors/aisler.yaml says 6L+ is on request.'}
+    layers: 6
+    stack_total_mm: 1.615
+    finished_thickness_mm: 1.6
+    stack:
+    - {name: F.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 1, type: prepreg, thickness_mm: 0.23, material: FR4 2116 x2, epsilon_r: 4.25, loss_tangent: 0.02, plies: 2116 0.115 x2}
+    - {name: In1.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 2, type: core, thickness_mm: 0.3, material: FR4 core, epsilon_r: 4.5, loss_tangent: 0.02}
+    - {name: In2.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 3, type: prepreg, thickness_mm: 0.345, material: FR4 2116 x3, epsilon_r: 4.25, loss_tangent: 0.02, plies: 2116 0.115 x3}
+    - {name: In3.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 4, type: core, thickness_mm: 0.3, material: FR4 core, epsilon_r: 4.5, loss_tangent: 0.02}
+    - {name: In4.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 5, type: prepreg, thickness_mm: 0.23, material: FR4 2116 x2, epsilon_r: 4.25, loss_tangent: 0.02, plies: 2116 0.115 x2}
+    - {name: B.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    controlled_impedance:
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.3984
+      closed_form: {width_mm: 0.3943}
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.3367
+      gap_mm: 0.23
+      closed_form: {width_mm: 0.337, gap_mm: 0.23}
+      note: USB 2.0 / ULPI
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.2624
+      gap_mm: 0.23
+      closed_form: {width_mm: 0.2782, gap_mm: 0.23}
+      note: Ethernet / LVDS / general 100R
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: In2.Cu
+      reference: &id009 [In1.Cu, In3.Cu]
+      model: stripline
+      width_mm: 0.2303
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: In2.Cu
+      reference: *id009
+      model: stripline
+      width_mm: 0.2273
+      gap_mm: 0.3
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: In2.Cu
+      reference: *id009
+      model: stripline
+      width_mm: 0.1715
+      gap_mm: 0.3
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: In3.Cu
+      reference: &id010 [In2.Cu, In4.Cu]
+      model: stripline
+      width_mm: 0.2303
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: In3.Cu
+      reference: *id010
+      model: stripline
+      width_mm: 0.2273
+      gap_mm: 0.3
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: In3.Cu
+      reference: *id010
+      model: stripline
+      width_mm: 0.1715
+      gap_mm: 0.3
+    fab_table:
+    - {layer: outer, kind: single, impedance_ohm: 50, width_mm: 0.395, hwde_z_ohm: 50.2}
+    - {layer: outer, kind: diff, impedance_ohm: 90, width_mm: 0.23, gap_mm: 0.12, hwde_z_ohm: 88.0}
+    - {layer: outer, kind: diff, impedance_ohm: 100, width_mm: 0.18, gap_mm: 0.13, hwde_z_ohm: 97.5}
+  AISLER-8L-1.6-1080:
+    description: AISLER 8-layer 1.6 mm 35 um (ENIG), 1080/2116 prepreg, 0.2 mm cores.
+    vendor: aisler
+    available: true
+    thickness_mm: 1.6
+    copper_finish: ENIG
+    dielectric_constraints: true
+    epsilon_r_assumed: false
+    epsilon_r_source: vendor_page
+    provenance: {method: vendor_page, source: 'https://community.aisler.net/t/8-layers-1-6mm-35-m-stackup/5459', verified: '2026-10-31', live_verified: true,
+      note: 'Stackup image + impedance table in AISLER''s help centre (updated 2026-01-26). Df ~0.02 as published. The middle core''s Dk is printed 4.00 (the
+        outer cores 4.4) and is kept as printed. AISLER publishes NO 8-layer design rules (vendors/aisler.yaml has no 8layer row), so board_init/rules_gen
+        refuse this entry''s fab floors until AISLER''s 8L rules are added.'}
+    layers: 8
+    stack_total_mm: 1.67
+    finished_thickness_mm: 1.6
+    stack:
+    - {name: F.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 1, type: prepreg, thickness_mm: 0.14, material: FR4 1080 x2, epsilon_r: 4.0, loss_tangent: 0.02, plies: 1080 0.070 x2}
+    - {name: In1.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 2, type: core, thickness_mm: 0.2, material: FR4 core, epsilon_r: 4.4, loss_tangent: 0.02}
+    - {name: In2.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 3, type: prepreg, thickness_mm: 0.255, material: FR4 1080+2116+1080, epsilon_r: 4.109, loss_tangent: 0.02, plies: 1080 0.070 (4.0)
+        + 2116 0.115 (4.25) + 1080 0.070 (4.0)}
+    - {name: In3.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 4, type: core, thickness_mm: 0.2, material: FR4 core, epsilon_r: 4.0, loss_tangent: 0.02}
+    - {name: In4.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 5, type: prepreg, thickness_mm: 0.255, material: FR4 1080+2116+1080, epsilon_r: 4.109, loss_tangent: 0.02, plies: 1080 0.070 (4.0)
+        + 2116 0.115 (4.25) + 1080 0.070 (4.0)}
+    - {name: In5.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 6, type: core, thickness_mm: 0.2, material: FR4 core, epsilon_r: 4.4, loss_tangent: 0.02}
+    - {name: In6.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 7, type: prepreg, thickness_mm: 0.14, material: FR4 1080 x2, epsilon_r: 4.0, loss_tangent: 0.02, plies: 1080 0.070 x2}
+    - {name: B.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    controlled_impedance:
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.2378
+      closed_form: {width_mm: 0.2312}
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.1829
+      gap_mm: 0.14
+      closed_form: {width_mm: 0.1959, gap_mm: 0.14}
+      note: USB 2.0 / ULPI
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.1369
+      gap_mm: 0.14
+      closed_form: {width_mm: 0.1597, gap_mm: 0.14}
+      note: Ethernet / LVDS / general 100R
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: In2.Cu
+      reference: &id011 [In1.Cu, In3.Cu]
+      model: stripline
+      width_mm: 0.1452
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: In2.Cu
+      reference: *id011
+      model: stripline
+      width_mm: 0.1371
+      gap_mm: 0.2
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: In2.Cu
+      reference: *id011
+      model: stripline
+      width_mm: 0.0997
+      gap_mm: 0.2
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: In3.Cu
+      reference: &id012 [In2.Cu, In4.Cu]
+      model: stripline
+      width_mm: 0.1557
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: In3.Cu
+      reference: *id012
+      model: stripline
+      width_mm: 0.148
+      gap_mm: 0.2
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: In3.Cu
+      reference: *id012
+      model: stripline
+      width_mm: 0.1095
+      gap_mm: 0.2
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: In4.Cu
+      reference: &id013 [In3.Cu, In5.Cu]
+      model: stripline
+      width_mm: 0.1557
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: In4.Cu
+      reference: *id013
+      model: stripline
+      width_mm: 0.148
+      gap_mm: 0.2
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: In4.Cu
+      reference: *id013
+      model: stripline
+      width_mm: 0.1095
+      gap_mm: 0.2
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: In5.Cu
+      reference: &id014 [In4.Cu, In6.Cu]
+      model: stripline
+      width_mm: 0.1452
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: In5.Cu
+      reference: *id014
+      model: stripline
+      width_mm: 0.1371
+      gap_mm: 0.2
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: In5.Cu
+      reference: *id014
+      model: stripline
+      width_mm: 0.0997
+      gap_mm: 0.2
+    fab_table:
+    - {layer: outer, kind: single, impedance_ohm: 50, width_mm: 0.245, hwde_z_ohm: 49.2}
+    - {layer: outer, kind: diff, impedance_ohm: 90, width_mm: 0.18, gap_mm: 0.12, hwde_z_ohm: 86.9}
+    - {layer: outer, kind: diff, impedance_ohm: 100, width_mm: 0.12, gap_mm: 0.115, hwde_z_ohm: 98.5}
