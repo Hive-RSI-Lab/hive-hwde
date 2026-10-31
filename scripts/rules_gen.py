@@ -785,6 +785,7 @@ def main(argv: list[str] | None = None) -> int:
             "renamed_rules": report.get("renamed_rules", []),
             "power": report["power"], "diff_pairs": report["diff_pairs"],
             "hv_rules": report["hv_rules"],
+            "package_rules": report.get("package_rules", []),
             "necks": report["necks"],
             "warnings": [
                 f"{f['net']} is plane_fed but constraints planes has no pour "
