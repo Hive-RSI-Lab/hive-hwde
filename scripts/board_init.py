@@ -88,6 +88,7 @@ sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 from lib import env  # noqa: E402
 from lib import fabfloors  # noqa: E402
+import fabmaterial  # noqa: E402
 from lib import statelib  # noqa: E402
 import kc  # noqa: E402
 
@@ -588,7 +589,12 @@ def main(argv: list[str] | None = None) -> int:
                 f"JLC{args.layers:02d}` / `entry --name ...` and pass --stackup")
         stackup = stacks["stackups"].get(stk_name)
         if stackup is None:
-            raise RuntimeError(f"stackup {stk_name!r} not in stackups.yaml")
+            # a Rogers grade or hybrid JLC doesn't sell gets its reason, not
+            # just "unknown name" (jlc_capabilities.yaml not_offered)
+            why = fabmaterial.not_offered(
+                fabmaterial.family_of_name(str(stk_name)))
+            raise RuntimeError(f"stackup {stk_name!r} not in stackups.yaml"
+                               + (f" - {why}" if why else ""))
         if stackup["layers"] != args.layers:
             raise RuntimeError(f"stackup {stk_name} is {stackup['layers']}-layer, "
                                f"--layers {args.layers}")
@@ -609,7 +615,11 @@ def main(argv: list[str] | None = None) -> int:
         if outer_oz is None:
             coppers = [ly for ly in stackup["stack"] if ly["type"] == "copper"]
             outer_oz = float(coppers[0].get("copper_oz", 1.0)) if coppers else 1.0
-        cap_class, cap = fabfloors.profile(args.layers, outer_oz)
+        # ...and for the stackup's laminate: a Rogers board gets JLC's
+        # high-frequency floors, and a material JLC doesn't build stops here
+        material = fabmaterial.stackup_family(stackup)
+        cap_class, cap = fabfloors.profile(args.layers, outer_oz,
+                                           material=material)
 
         holes_arg = str(args.mounting_holes).strip().lower()
         if holes_arg != "auto":
@@ -699,6 +709,7 @@ def main(argv: list[str] | None = None) -> int:
             "status": "pass" if check["clean"] else "violations",
             "board": str(pcb_path), "stackup": stk_name, "layers": args.layers,
             "fab_profile": cap_class, "copper_oz": outer_oz,
+            "material": material,
             "fab_floors": floors,
             "components": len(components), "nets": worker["nets"],
             "outline_bbox": worker["bbox"],

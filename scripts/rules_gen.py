@@ -67,6 +67,7 @@ sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 import check_current  # noqa: E402  (required_width_mm)
 import fabfloors  # noqa: E402  (the single source of fab minimums)
+import fabmaterial  # noqa: E402  (which laminate: floors + order)
 import impedance as imp  # noqa: E402
 
 REFERENCE = SCRIPTS.parent / "reference"
@@ -951,8 +952,40 @@ def main(argv: list[str] | None = None) -> int:
         outer_oz = args.copper_oz if args.copper_oz is not None else \
             (derived_oz if derived_oz is not None else 1.0)
 
+        # Laminate: the named stackup's, checked against the board's own
+        # stackup block when there is a board - a Rogers board must not get
+        # FR-4 floors or FR-4 diff-pair geometry (SI-09 at design time).
+        if stk_name and stackup is None and not args.baseline_only:
+            why = fabmaterial.not_offered(fabmaterial.family_of_name(stk_name))
+            raise SystemExit(f"stackup {stk_name!r} not in stackups.yaml"
+                             + (f" - {why}" if why else ""))
         try:
-            cls, cap = fabfloors.profile(args.layers, outer_oz)
+            material = (fabmaterial.stackup_family(stackup)
+                        if stackup is not None else fabmaterial.FR4)
+        except fabmaterial.MaterialError as exc:
+            raise SystemExit(f"stackup {stk_name}: {exc}") from exc
+        board_pcb = Path(args.pcb) if args.pcb else (
+            Path(args.pro).with_suffix(".kicad_pcb") if args.pro else None)
+        if board_pcb is not None and board_pcb.is_file() \
+                and fabmaterial.board_materials(board_pcb):
+            board_mat = fabmaterial.board_family(board_pcb)
+            if board_mat != material:
+                hint = ""
+                if not args.stackup:
+                    same = [n for n, s in stacks["stackups"].items()
+                            if s.get("available") is not False
+                            and s.get("layers") == args.layers
+                            and s.get("material_family") == board_mat]
+                    hint = (f"; pass --stackup ({', '.join(same)})" if same
+                            else "")
+                raise SystemExit(
+                    f"{board_pcb.name} is built on {board_mat} (its stackup "
+                    f"block) but rules_gen resolved stackup {stk_name} "
+                    f"({material}){hint}. Fab floors and impedance geometry "
+                    "would be the wrong laminate's")
+        try:
+            cls, cap = fabfloors.profile(args.layers, outer_oz,
+                                         material=material)
         except fabfloors.FabFloorError as exc:
             raise SystemExit(str(exc)) from exc
 
@@ -1006,7 +1039,7 @@ def main(argv: list[str] | None = None) -> int:
         result = {
             "script": "rules_gen", "status": "pass",
             "capability_class": cls, "stackup": stk_name,
-            "copper_oz": outer_oz,
+            "copper_oz": outer_oz, "material": material,
             "rule_count": len(rules),
             "rule_names": [r.name for r in rules],
             "renamed_rules": report.get("renamed_rules", []),

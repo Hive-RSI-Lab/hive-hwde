@@ -16,6 +16,7 @@ SCRIPTS = REPO / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 import dfm_check  # noqa: E402
+import fabmaterial  # noqa: E402
 import ledgerlib  # noqa: E402
 import order_quote  # noqa: E402
 import vendor  # noqa: E402
@@ -88,7 +89,11 @@ def test_every_profile_is_sourced_and_usable(vid):
     assert m.get("services", {}).get("pcb") is not None
     for key, row in prof["capabilities"]["design_rules"].items():
         layers, oz = key.split("layer_")
-        assert int(layers) >= 1 and oz.endswith("oz"), key
+        # a non-FR-4 laminate's row carries its family (lib/fabmaterial.py):
+        # 2layer_1oz_ro4350b
+        oz, _, family = oz.partition("oz")
+        assert int(layers) >= 1 and float(oz) > 0, key
+        assert not family or family.lstrip("_") in fabmaterial.materials(), key
         for r in vendors.REQUIRED_RULES:
             assert 0.02 < float(row[r]) < 2.0, (vid, key, r, row[r])
     asm = prof.get("assembly")

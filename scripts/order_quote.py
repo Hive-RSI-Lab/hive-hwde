@@ -38,6 +38,7 @@ sys.path.insert(0, str(SCRIPTS / "lib"))
 import yaml  # noqa: E402
 
 import castellation  # noqa: E402
+import fabmaterial  # noqa: E402
 import geom  # noqa: E402
 import safelib  # noqa: E402
 
@@ -106,11 +107,21 @@ def area_cost(pricing: dict, layers: int, qty: int, w: float,
 
 def pcb_cost(pricing: dict, layers: int, qty: int, w: float, h: float,
              finish: str, color: str, thickness: float = 1.6,
-             castellated: bool = False) -> dict:
+             castellated: bool = False, material: str = "fr4") -> dict:
     if pricing.get("model") == "per_area":
         return area_cost(pricing, layers, qty, w, h)
     pcb = pricing["pcb"]
-    base_table = pcb["base"].get(layers) or pcb["base"].get(str(layers))
+    if material and material != fabmaterial.FR4:
+        # a Rogers/PTFE board is JLC's high-frequency product: its own
+        # price line, never the FR-4 promo table
+        hf = (pcb.get("high_frequency") or {}).get(material) or {}
+        base_table = hf.get(layers) or hf.get(str(layers))
+        if base_table is None:
+            raise ValueError(f"no price points for {layers}-layer "
+                             f"{material} boards (jlc_pricing.yaml "
+                             "pcb.high_frequency)")
+    else:
+        base_table = pcb["base"].get(layers) or pcb["base"].get(str(layers))
     if base_table is None:
         raise ValueError(f"no price points for {layers}-layer boards")
     base, at_qty = _nearest_qty_price(base_table, qty)
@@ -236,7 +247,7 @@ def _assembly_counts(pcb: Path,
 
 def run(pcb: Path, qtys: list[int], finishes: list[str], colors: list[str],
         assembly: bool = False, parts_json: Path | None = None,
-        pricing_path: Path | None = None, thickness: float = 1.6,
+        pricing_path: Path | None = None, thickness: float | None = None,
         vendor: str | None = None) -> dict:
     meta_v: dict = {}
     lead_v: dict = {}
@@ -264,6 +275,34 @@ def run(pcb: Path, qtys: list[int], finishes: list[str], colors: list[str],
     bg = geom.load_board(pcb)
     layers = len(bg.stackup.copper_layers)
     n_cast = len(castellation.pads(bg))
+    # the board's laminate decides the product line and the options it
+    # has: a RO4350B board is ENIG + green only, at JLC's HF prices
+    material = fabmaterial.board_family(pcb)
+    why = fabmaterial.not_offered(material)
+    if why:
+        raise ValueError(f"board laminate {material}: {why}")
+    if material != fabmaterial.FR4 and meta_v \
+            and meta_v.get("id") not in (None, "jlcpcb"):
+        # the HF rows, options and price line are JLC's; another vendor's
+        # FR-4 table would quietly price a Rogers board as FR-4
+        raise ValueError(f"board laminate {material}: only JLC's "
+                         "high-frequency line is encoded; quote it at "
+                         f"{meta_v.get('quote_url') or meta_v.get('id')}")
+    if material != fabmaterial.FR4:
+        mrow = fabmaterial.row(material)
+        allowed_f = [str(f) for f in mrow.get("surface_finish") or []]
+        allowed_c = [str(c) for c in mrow.get("solder_mask_colors") or []]
+        finishes = [f for f in finishes
+                    if not allowed_f or f.upper() in
+                    {a.upper() for a in allowed_f}] or allowed_f
+        colors = [c for c in colors
+                  if not allowed_c or c.lower() in
+                  {a.lower() for a in allowed_c}] or allowed_c
+    if thickness is None:
+        # FR-4 keeps its 1.6 mm default; an HF board's thickness is its
+        # stackup's finished one (board_init wrote it into (general))
+        thickness = (round(float(bg.stackup.total_thickness), 3)
+                     if material != fabmaterial.FR4 else 1.6)
 
     n_parts, n_joints, n_extended = (0, 0, 0)
     n_extended_source = None
@@ -276,7 +315,8 @@ def run(pcb: Path, qtys: list[int], finishes: list[str], colors: list[str],
         for finish in finishes:
             for color in colors:
                 pc = pcb_cost(pricing, layers, qty, w, h, finish, color,
-                              thickness, castellated=n_cast > 0)
+                              thickness, castellated=n_cast > 0,
+                              material=material)
                 row = {"qty": qty, "surface_finish": finish,
                        "solder_mask_color": color, "pcb": pc,
                        "total": pc["total"]}
@@ -292,6 +332,8 @@ def run(pcb: Path, qtys: list[int], finishes: list[str], colors: list[str],
     lt = pricing.get("lead_time_days") or lead_v
     pcb_lt = (lt.get("pcb", {}).get(layers)
               or lt.get("pcb", {}).get(str(layers)) or {})
+    if material != fabmaterial.FR4:
+        pcb_lt = lt.get("pcb", {}).get("high_frequency") or pcb_lt
     lead = {"pcb_days": pcb_lt,
             "assembly_additional_days": lt.get("assembly_additional")
             if assembly else 0,
@@ -332,6 +374,9 @@ def run(pcb: Path, qtys: list[int], finishes: list[str], colors: list[str],
     if n_cast:
         # only on a castellated board, so every other spec stays as it was
         spec["castellated_pads"] = n_cast
+    if material != fabmaterial.FR4:
+        # only off FR-4, for the same reason: order_submit binds it
+        spec["material"] = material
     if assembly:
         # only in assembly runs, so the P10 bench spec stays byte-identical
         spec["n_extended_source"] = n_extended_source
@@ -387,7 +432,9 @@ def main(argv: list[str] | None = None) -> int:
                     help="comma list of quantities (default 5,10,30)")
     ap.add_argument("--finish", default="HASL,ENIG")
     ap.add_argument("--colors", default="green")
-    ap.add_argument("--thickness", type=float, default=1.6)
+    ap.add_argument("--thickness", type=float, default=None,
+                    help="board thickness, mm (default 1.6 on FR-4; the "
+                         "board's own on a high-frequency laminate)")
     ap.add_argument("--assembly", action="store_true",
                     help="include SMT assembly in the matrix")
     ap.add_argument("--parts", help="parts.json (Basic/Extended feeder fees)")
