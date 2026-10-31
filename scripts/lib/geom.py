@@ -173,6 +173,12 @@ class Track:
         return self.shape.length
 
 
+# `(via <word> ...)`: KiCad 10 writes blind, buried and micro; KiCad 9 and
+# earlier wrote blind for both blind and buried.
+_VIA_KINDS = {"blind": "blind", "buried": "buried", "micro": "micro",
+              "through": "through"}
+
+
 @dataclass(frozen=True)
 class Via:
     net: str
@@ -181,6 +187,9 @@ class Via:
     drill: float
     layers: tuple[str, ...]  # copper layers spanned (inclusive)
     uuid: Optional[str] = None  # see Track.uuid
+    # KiCad's via type: through | blind | buried | micro (the word after
+    # `(via`; KiCad 10 writes none for a through via)
+    kind: str = "through"
 
     @cached_property
     def poly(self) -> Polygon:
@@ -453,9 +462,11 @@ def _build_stackup(root, copper_layers: list[str], total_thickness: float) -> St
             name = _strs(layer)[0] if _strs(layer) else ""
             th = _kid(layer, "thickness")
             er = _kid(layer, "epsilon_r")
+            ty = _kid(layer, "type")
             entry = {
                 "height": _nums(th)[0] if th is not None and _nums(th) else 0.0,
                 "epsilon_r": _nums(er)[0] if er is not None and _nums(er) else _FR4_ER,
+                "type": (_strs(ty)[0] if ty is not None and _strs(ty) else ""),
             }
             order.append((name, entry))
         # Walk copper-to-copper, summing dielectric sublayers between them.
@@ -463,21 +474,28 @@ def _build_stackup(root, copper_layers: list[str], total_thickness: float) -> St
         cur: Optional[str] = None
         acc_h = 0.0
         acc_er: list[float] = []
+        acc_ty: list[str] = []
         for name, entry in order:
             if name in cu_names:
                 if cur is not None:
                     dielectrics.append({
                         "above": cur, "below": name, "height": acc_h,
                         "epsilon_r": (sum(acc_er) / len(acc_er)) if acc_er else _FR4_ER,
+                        # core | prepreg (a gap of both reads prepreg: it
+                        # is pressed, not a laminate bought whole)
+                        "kind": ("core" if acc_ty and set(acc_ty) == {"core"}
+                                 else "prepreg" if acc_ty else ""),
                     })
                 cur = name
-                acc_h, acc_er = 0.0, []
+                acc_h, acc_er, acc_ty = 0.0, [], []
                 if entry["height"] > 0:  # copper thickness from the block
                     cu_th[name] = entry["height"]
             else:
                 acc_h += entry["height"]
                 if entry["epsilon_r"]:
                     acc_er.append(entry["epsilon_r"])
+                if entry["type"] in ("core", "prepreg"):
+                    acc_ty.append(entry["type"])
         if len(dielectrics) == n - 1:
             return Stackup(copper_layers, total_thickness, dielectrics, cu_th,
                            assumed=False, source="board (stackup)")
@@ -670,11 +688,14 @@ class BoardGeom:
             else:
                 spanned = tuple(self.copper_layers)  # default through-via
             a = _nums(at)
+            words = [_tok(w) for w in via[1:] if isinstance(w, sexpdata.Symbol)]
+            kind = next((w for w in words if w in _VIA_KINDS), "through")
             self._vias.append(Via(
                 net=self._resolve_net(via) or "", at=(a[0], a[1]),
                 diameter=_nums(size)[0],
                 drill=_nums(drill)[0] if drill and _nums(drill) else 0.0,
-                layers=spanned, uuid=_uuid_of(via)))
+                layers=spanned, uuid=_uuid_of(via),
+                kind=_VIA_KINDS.get(kind, "through")))
 
     def _parse_footprints(self, root):
         for fp in _kids(root, "footprint"):
