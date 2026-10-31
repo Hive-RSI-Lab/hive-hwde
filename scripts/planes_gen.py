@@ -425,13 +425,31 @@ def ep_pads(bg: geom.BoardGeom, nets: set[str],
         netted_smd = [p for p in by_ref[ref] if len(p.layers) == 1 and p.net]
         if not netted_smd:
             continue
-        ep = max(netted_smd, key=lambda p: (p.size[0] * p.size[1], p.number))
-        if ep.size[0] * ep.size[1] < min_mm2:
+        # copper area, not the anchor box: a custom pad's anchor can be
+        # 0.005 mm while its primitives make ~7 mm2 (LMG2100 PGND, #435)
+        ep = max(netted_smd, key=lambda p: (_pad_area(p), p.number))
+        if _pad_area(ep) < min_mm2:
             continue
         if ep.net not in nets:
             continue  # EP belongs to another net -> skip the whole footprint
         out.append(ep)
     return out
+
+
+def _pad_area(p) -> float:
+    try:
+        a = p.poly.area
+    except Exception:  # noqa: BLE001 - degenerate geometry: the box
+        a = 0.0
+    return a if a > 0 else p.size[0] * p.size[1]
+
+
+def via_keepouts(bg: geom.BoardGeom) -> list:
+    """Outlines of rule areas that forbid vias. A through via spans every
+    copper layer, so a via keepout on any layer blocks it (#435)."""
+    return [ra["outline"] for ra in bg.rule_areas
+            if not ra["outline"].is_empty
+            and str((ra.get("flags") or {}).get("vias", "")) == "not_allowed"]
 
 
 def via_grid(poly: Polygon, *, size: float = VIA_SIZE_MM,
@@ -480,15 +498,27 @@ def _ep_existing_drills(bg: geom.BoardGeom, ep) -> list:
 def thermal_via_ops(bg: geom.BoardGeom, plane_nets: set[str], *,
                     ep_min_mm2: float = EP_MIN_MM2, size: float = VIA_SIZE_MM,
                     drill: float = VIA_DRILL_MM,
-                    pitch: float = VIA_PITCH_MM) -> tuple[list[dict], list[dict]]:
+                    pitch: float = VIA_PITCH_MM,
+                    pour_layers: dict[str, set[str]] | None = None
+                    ) -> tuple[list[dict], list[dict]]:
     """-> (route_edit add_via ops, per-pad facts). T6 (P7A-5): existing
     drills inside the land are respected - grid points inside the hole
     floor of any of them are dropped, and a land already carrying >=
     EP_OWN_ARRAY thru-hole items skips the grid entirely (the footprint
-    ships its own via array)."""
+    ships its own via array). #435: no via inside a rule area that forbids
+    vias, and none for a pad whose net has no pour on another copper layer
+    (pour_layers: net -> layers poured; None = don't ask)."""
     ops: list[dict] = []
     pads: list[dict] = []
+    keepouts = via_keepouts(bg)
     for ep in ep_pads(bg, plane_nets, ep_min_mm2):
+        if pour_layers is not None and \
+                not (set(pour_layers.get(ep.net) or ()) - set(ep.layers)):
+            pads.append({"ref": ep.ref, "pad": ep.number, "net": ep.net,
+                         "vias": 0,
+                         "note": "net has no pour on another copper layer; "
+                                 "vias would connect nothing"})
+            continue
         existing = _ep_existing_drills(bg, ep)
         if len(existing) >= EP_OWN_ARRAY:
             pads.append({"ref": ep.ref, "pad": ep.number, "net": ep.net,
@@ -503,6 +533,17 @@ def thermal_via_ops(bg: geom.BoardGeom, plane_nets: set[str], *,
             pts = [p for p in pts
                    if all(h.distance(Point(p)) >= floor - 1e-9
                           for h in existing)]
+        if keepouts:
+            n0 = len(pts)
+            pts = [p for p in pts
+                   if not any(k.intersects(Point(p).buffer(size / 2.0))
+                              for k in keepouts)]
+            if n0 and not pts:
+                pads.append({"ref": ep.ref, "pad": ep.number, "net": ep.net,
+                             "vias": 0,
+                             "note": "pad inside a rule area that forbids "
+                                     "vias; grid skipped"})
+                continue
         if not pts:
             continue
         for x, y in pts:
@@ -514,6 +555,18 @@ def thermal_via_ops(bg: geom.BoardGeom, plane_nets: set[str], *,
 
 
 # ------------------------------------------------------------- verification
+
+def pour_layers(bg: geom.BoardGeom, plan: list[dict]) -> dict[str, set[str]]:
+    """net -> copper layers it is poured on: the plan plus zones already on
+    the board."""
+    out: dict[str, set[str]] = {}
+    for z in plan:
+        out.setdefault(z["net"], set()).add(z["layer"])
+    for z in bg.zones_of():
+        if z.net:
+            out.setdefault(z.net, set()).update(z.layers)
+    return out
+
 
 def _fill_in_region(bg: geom.BoardGeom, net: str, layer: str,
                     region) -> tuple[float, int]:
@@ -647,7 +700,7 @@ def run(argv: list[str] | None = None):
             via_ops, via_pads = thermal_via_ops(
                 bg, plane_nets, ep_min_mm2=args.ep_min_mm2,
                 size=args.via_size, drill=args.via_drill,
-                pitch=args.via_pitch)
+                pitch=args.via_pitch, pour_layers=pour_layers(bg, plan))
             if via_ops:
                 route_edit.apply_ops(staged, via_ops)
 
