@@ -654,7 +654,7 @@ def test_pull_all_paces_between_parts(monkeypatch):
     sleeps = []
     monkeypatch.setattr(lib_pull.time, "sleep", lambda s: sleeps.append(s))
     monkeypatch.setattr(lib_pull, "_pull_one",
-                        lambda l, b, n, o: {"lcsc": l, "status": "pulled"})
+                        lambda l, b, n, o, **k: {"lcsc": l, "status": "pulled"})
     res, retried = lib_pull._pull_all(["C1", "C2", "C3"], Path("x"), True, False,
                                        lib_pull._Pacer(15.0))
     assert sleeps == [15.0, 15.0] and retried == 0 and len(res) == 3
@@ -665,7 +665,7 @@ def _batch_fake_run(tmp_path, fail_first_for=(), always_fail=()):
     pulled: set[str] = set()
     calls: dict[str, int] = {}
 
-    def fake(lcsc, base, no_3d, overwrite):
+    def fake(lcsc, base, no_3d, overwrite, **k):
         calls[lcsc] = calls.get(lcsc, 0) + 1
         if lcsc in always_fail or (lcsc in fail_first_for and calls[lcsc] == 1):
             return SimpleNamespace(stdout="", stderr="HTTP Error 403: Forbidden",
@@ -928,6 +928,40 @@ def test_parts_search_pick_no_candidate_is_distinct(tmp_path, capsys, monkeypatc
     assert code == 0                       # a completed query, not an error
     assert payload["status"] == "no_candidate"
     assert payload["results"] == [] and "stock-out" in payload["hint"]
+
+
+
+def test_parts_search_pick_keeps_the_asked_value(tmp_path, capsys, monkeypatch):
+    # issue #384: JLC's fuzzy search for 4.7 ohm returns cheaper 47 ohm rows
+    rows = [
+        {"lcsc": "C47", "model": "R47", "type": "Basic", "stock": 90000,
+         "price": 0.0005, "package": "0603", "brand": "UNI",
+         "description": "47\u03a9 \u00b11% 100mW 0603",
+         "datasheet": "http://d/47.pdf",
+         "attributes": [{"name": "Resistance", "value": "47\u03a9"}]},
+        {"lcsc": "C4K7", "model": "R4K7", "type": "Basic", "stock": 90000,
+         "price": 0.0006, "package": "0603", "brand": "UNI",
+         "description": "4.7k\u03a9 \u00b11% 100mW 0603",
+         "datasheet": "http://d/4k7.pdf"},
+        {"lcsc": "C4R7", "model": "R4R7", "type": "Basic", "stock": 90000,
+         "price": 0.0009, "package": "0603", "brand": "UNI",
+         "description": "4.7\u03a9 \u00b11% 100mW 0603",
+         "datasheet": "http://d/4r7.pdf",
+         "attributes": [{"name": "Resistance", "value": "4.7\u03a9"}]},
+    ]
+    monkeypatch.setattr(partslib, "live_search",
+                        lambda *a, **k: (list(rows), 3))
+    for q, want in (("4.7 ohm 0603", "C4R7"), ("4R7 0603", "C4R7"),
+                    ("4.7k 0603", "C4K7"), ("47 ohm", "C47")):
+        code, payload = run_main(
+            parts_search, ["--query", q, "--pick", "basic-passive"],
+            tmp_path, capsys, name=want + q.replace(" ", "_"))
+        assert code == 0 and payload["status"] == "pass", q
+        assert payload["results"][0]["lcsc"] == want, q
+    code, payload = run_main(
+        parts_search, ["--query", "2.2 ohm 0603", "--pick", "basic-passive"],
+        tmp_path, capsys, name="none")
+    assert payload["status"] == "no_candidate"
 
 
 # ================================= fp_verify geometry (T6 batch C, rows 111/115)

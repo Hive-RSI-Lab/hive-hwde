@@ -166,7 +166,8 @@ def _netclass_of(pro: dict, net: str) -> str | None:
 
 def classify(bg, constraints: dict | None, pro: dict | None) -> tuple[dict, list]:
     """(net -> class, groups) where groups are the matched sets (diff pairs
-    and length_match groups) whose members share one ideal."""
+    and length_match / length_groups groups, globs resolved) whose members
+    share one ideal."""
     import check_diffpair
 
     c = constraints or {}
@@ -195,6 +196,15 @@ def classify(bg, constraints: dict | None, pro: dict | None) -> tuple[dict, list
         groups.append([x for x in (p, n) if x])
     for g in c.get("length_match", []) or []:
         nets = [n for n in g.get("nets", []) or []]
+        for n in nets:
+            put(n, "matched")
+        groups.append(nets)
+    for g in c.get("length_groups", []) or []:
+        if not isinstance(g, dict):
+            continue
+        import check_length_groups as clg
+        pats = list(g.get("nets") or []) + clg._ref_nets(g)
+        nets = clg.match_nets(pats, bg.nets)[0]
         for n in nets:
             put(n, "matched")
         groups.append(nets)

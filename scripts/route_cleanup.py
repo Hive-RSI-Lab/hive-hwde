@@ -1193,11 +1193,29 @@ def build_plan(bg: geom.BoardGeom, segs, vias, smooth: bool = True,
     }
 
 
-def constraint_keep_nets(cons: dict) -> set[str]:
+def _length_group_nets(e: dict, board_nets) -> set[str]:
+    """Every net a length_groups entry names (members, references, caps):
+    globs are matched against the board's nets when given, else taken as
+    exact names."""
+    pats = []
+    for key in ("nets", "ref_nets", "not_longer_than"):
+        v = e.get(key) or []
+        pats.extend([v] if isinstance(v, str) else v)
+    if e.get("ref_net"):
+        pats.append(e["ref_net"])
+    pats = [p for p in pats if isinstance(p, str) and p]
+    if board_nets is None:
+        return set(pats)
+    import check_length_groups  # noqa: PLC0415 - lazy
+    return set(check_length_groups.match_nets(pats, board_nets)[0])
+
+
+def constraint_keep_nets(cons: dict, board_nets=None) -> set[str]:
     """Nets constraints.json gives intended geometry, which the snap must
     leave: both members of every declared diff pair (check_diffpair takes
     diff_pairs as authoritative), every net of a length_match group
-    ({"nets": [...]}), every rf entry and every high_speed entry carrying an
+    ({"nets": [...]}) and of a length_groups entry (globs resolved against
+    board_nets when given), every rf entry and every high_speed entry carrying an
     impedance_ohm target (route_critical routes both at impedance width)."""
     def entries(key):
         return [e for e in (cons.get(key) or []) if isinstance(e, dict)]
@@ -1206,6 +1224,8 @@ def constraint_keep_nets(cons: dict) -> set[str]:
         out.update(n for n in (e.get("p"), e.get("n")) if n)
     for e in entries("length_match"):
         out.update(n for n in (e.get("nets") or []) if isinstance(n, str) and n)
+    for e in entries("length_groups"):
+        out.update(_length_group_nets(e, board_nets))
     for e in entries("rf"):
         if e.get("net"):
             out.add(e["net"])
@@ -1273,7 +1293,7 @@ def run(argv: list[str] | None = None):
         if not isinstance(cons, dict):
             raise CheckError(f"constraints {args.constraints} is not an "
                              "object")
-        keep |= constraint_keep_nets(cons)
+        keep |= constraint_keep_nets(cons, bg.nets)
         # a declared diff_pairs list is the whole set: speaker A_SPK_L+/-
         # are not a pair just because their names end in +/-
         discover = not isinstance(cons.get("diff_pairs"), list)

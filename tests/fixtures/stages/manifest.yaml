@@ -255,6 +255,11 @@ fixtures:
       # bed445a: the shipped board's EasyEDA 0603 courtyards miss their pads
       - check: check_courtyard
         kind: courtyard_pads
+      # #415: EasyEDA's SW-SMD_6P tact switch is (attr through_hole) on six
+      # SMD pads, so the shipped board's CPL sent SW1 to the THT step
+      - check: check_fp_attr
+        kind: fp_attr_mismatch
+        ref: SW1
   carrier_verify:
     stage: P8
     board: lumina-carrier

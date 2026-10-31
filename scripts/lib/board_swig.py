@@ -18,7 +18,7 @@ zone fill (if any) is a later kicad-cli step - pcbnew.ZONE_FILLER segfaults
 headless (LEARNINGS [swig]).
 
   out            output .kicad_pcb path
-  layers         2 | 4
+  layers         2 | 4 | 6 ... 32 (copper layers, even)
   components     [{ref, value, fp:"Lib:Name"}, ...]
   netmap         {"REF.PAD": "netname", ...}
   skip_unconnected_nets  bool - leave pads on `unconnected-*` pseudo-nets NETLESS

@@ -57,10 +57,25 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
    supply pin below its recommended min.
  - rating_over_current (warning): a power_out pin whose net's
    constraints `power[].current_a` exceeds the pin's current rating.
+   A fuse or PPTC (F*/FU*, or a parts.json hold-current attribute) carrying
+   a constraints power[].current_a: over its rating at the ambient is an
+   error, a fuse past 75 % of its rerated current (k_T, Littelfuse) or a
+   PPTC whose Ihold at the ambient (typical Bourns/Littelfuse table) clears
+   the current by under 10 % a warning (R-RAT-3, R-RAT-4).
  - rating_unrated (warning): a part with no rating to check a connected
    pin against - no extraction, no row that names or classes the pin, or a
    relative bound whose reference supply has no known voltage. One per
    part, listing the pins. Never a silent pass.
+ - rating_over_voltage, also: a chip resistor's volts across it above its
+   limiting element voltage (parts.json Voltage-Supply(Max), else the chip
+   size's D/CRCW e3 Umax; R-RAT-1); a fuse or PPTC whose voltage rating is
+   under the rail it sits on (it must hold the rail off once open).
+ - rating_over_temperature (error): the board's ambient above a part's
+   operating range (parts.json "Operating Temperature", or the
+   extraction's operating_temp_c), or constraints ambient_min_c below it
+   (R-REL-2). The ambient is constraints ambient_c, else the enclosure air
+   check_thermal works out, else 25 C, said so in `ambient`.
+Sources and verified/disputed tags: docs/ingest/safety-components.md.
 A pin on a net of unknown voltage is not a finding (counted in facts).
 
 The fact ledger (lib/ledgerlib.py): each refdes gets a `rating` fact
@@ -86,6 +101,7 @@ import sexpdata
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE / "lib"))
 import checklib  # noqa: E402
+import engcalc  # noqa: E402
 from checklib import CheckError, violation  # noqa: E402
 
 SCRIPT = "check_ratings"
@@ -165,6 +181,8 @@ def load_parts_on_board(pcb: Path) -> list[dict]:
         out.append({"ref": props.get("Reference", "?"),
                     "lcsc": (props.get("LCSC") or props.get("LCSC Part")
                              or "").strip(),
+                    "value": props.get("Value", ""),
+                    "footprint": str(fp[1]) if len(fp) > 1 else "",
                     "pads": pads, "fns": fns, "nums": sorted(nums)})
     return out
 
@@ -179,11 +197,26 @@ def is_ground(net: str) -> bool:
     return bool(GROUND_RE.match(base_net(net)))
 
 
+# A name word that makes the net a signal about a rail, not the rail:
+# PG_1V35 is 1V35's power-good, ADC_1V35 its divided-down sense.
+SIGNAL_WORDS = {"PG", "PGOOD", "PGD", "PWRGD", "PWROK", "POK", "OK", "ADC",
+                "AIN", "SENSE", "SNS", "VSENSE", "ISENSE", "FB", "EN", "ENA",
+                "ENABLE", "MON", "DIV", "DET", "FLT", "FAULT", "ALERT",
+                "MEAS", "CTRL", "INT", "IRQ", "SEL", "TRIP", "OVP", "UVP",
+                "SS", "TRK", "TRACK", "COMP", "ILIM"}
+
+
 def volts_from_name(net: str) -> float | None:
+    """A rail's voltage read from its name: +3V3, 1V35, VCC_5V, VBUS and
+    VBUS_J1 (any VBUS word) as 5 V, grounds 0. A name with a signal word
+    (PG_1V35, ADC_1V35, VBUS_SENSE, 3V3_EN) is a signal, not a rail."""
     n = base_net(net)
     if GROUND_RE.match(n):
         return 0.0
-    if n.endswith("VBUS"):
+    words = n.split("_")
+    if SIGNAL_WORDS & set(words):
+        return None
+    if n.endswith("VBUS") or "VBUS" in words:
         return 5.0
     m = re.search(r"(?<![A-Z0-9.])([+-])?(\d+)V(\d+)(?![0-9])", n)
     if m:
@@ -482,7 +515,8 @@ def _fmt(v: float) -> str:
 
 
 def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
-              power_tree: Path | None) -> tuple[list[dict], dict]:
+              power_tree: Path | None,
+              cons_dir: Path | None = None) -> tuple[list[dict], dict]:
     board = load_parts_on_board(pcb)
     pj = parts_dir / "parts.json"
     bom = checklib.load_json(pj, "parts.json").get("parts", []) \
@@ -559,6 +593,8 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
         if not pads:
             continue
         ext = exts.get(b["lcsc"])
+        if ext is None and is_fuse(b, bom_by_lcsc.get(b["lcsc"])):
+            continue  # rated rail-to-ground, not across: fuse_findings
         dio = diodes.get(ref)
         if ext is None and dio:
             vk, va = volts.get(pads[dio["k"]]), volts.get(pads[dio["a"]])
@@ -718,6 +754,10 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                  f"{dio['how']}]", pin=f"{ref}.{dio['k']}", net_v=vk - va,
                  limit_v=dio["vr"], rating=dio["src"],
                  scenario=f"{conn['ref']} reversed")
+    amb = ambient(constraints, cons_dir)
+    fuse_facts = fuse_findings(board, bom_by_lcsc, volts, vsrc, currents,
+                               amb, emit, checked_by_ref, unrated_passives)
+    temp_facts = temperature_findings(board, bom_by_lcsc, exts, amb, emit)
     lcsc_of = {b["ref"]: b["lcsc"] for b in board}
     bare = [r for r in unrated_passives
             if not (bom_by_lcsc.get(lcsc_of.get(r)) or {}).get("attributes")]
@@ -736,6 +776,8 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
              "pins_checked": checked_pins,
              "reversed_inputs": reversed_inputs,
              "pins_on_unknown_nets": unknown_net_pins,
+             "ambient": amb, "fuses": fuse_facts,
+             "operating_range": temp_facts,
              "ledger_facts": ledger_facts(board, exts, out, checked_by_ref,
                                           bom_by_lcsc)}
     return out, facts
@@ -749,21 +791,21 @@ def _check_unextracted(b: dict, bom: dict | None, volts: dict, emit,
     True when a rating was compared with known volts."""
     ref, pads = b["ref"], b["pads"]
     nets = sorted(set(pads.values()))
-    rated = None
-    for a in (bom or {}).get("attributes") or []:
-        if V_ATTR_RE.search(str(a.get("name") or "")):
-            m = re.search(r"(\d+(?:\.\d+)?)\s*(k?)V", str(a.get("value") or ""))
-            if m:
-                rated = float(m.group(1)) * (1000 if m.group(2) else 1)
+    rated = bom_volts(bom)
+    src = "parts.json"
+    if rated is None and len(nets) == 2 and re.match(r"^R\d", ref):
+        rated = engcalc.resistor_umax_v(b.get("footprint"))
+        src = (f"{engcalc.package_code(b.get('footprint'))} limiting element "
+               "voltage, D/CRCW e3 table")
     if rated is not None and len(nets) == 2:
         va, vb = volts.get(nets[0]), volts.get(nets[1])
         if va is None or vb is None:
             return False
         if abs(va - vb) > rated + EPS:
             emit("rating_over_voltage", "error", ref, nets[0],
-                 f"{ref} is rated {_fmt(rated)} V but sits across "
+                 f"{ref} is rated {_fmt(rated)} V [{src}] but sits across "
                  f"{nets[0]} = {_fmt(va)} V and {nets[1]} = {_fmt(vb)} V",
-                 limit_v=rated, net_v=abs(va - vb))
+                 limit_v=rated, net_v=abs(va - vb), rating=src)
         return True
     if len(nets) <= 1:
         return False  # a single-net part stresses nothing
@@ -775,6 +817,210 @@ def _check_unextracted(b: dict, bom: dict | None, volts: dict, emit,
     emit("rating_unrated", "warning", ref, None,
          f"{ref} ({b['lcsc'] or 'no LCSC'}): {why}", pins=[why])
     return False
+
+
+def bom_volts(bom: dict | None) -> float | None:
+    """A part's voltage-rated attribute in parts.json (V_ATTR_RE), or None."""
+    rated = None
+    for a in (bom or {}).get("attributes") or []:
+        if V_ATTR_RE.search(str(a.get("name") or "")):
+            m = re.search(r"(\d+(?:\.\d+)?)\s*(k?)V", str(a.get("value") or ""))
+            if m:
+                rated = float(m.group(1)) * (1000 if m.group(2) else 1)
+    return rated
+
+
+# --- ambient: fuses, PPTCs and every part's operating range -------------------
+
+DEFAULT_AMBIENT_C = 25.0
+HOLD_ATTR_RE = re.compile(r"hold(?:ing)?\s*current|current.*hold|\(ih\)", re.I)
+FUSE_I_ATTR_RE = re.compile(r"current.*rat|rated.*current|^current$", re.I)
+FUSE_V_ATTR_RE = re.compile(r"volt.*(?:max|rat)|rated.*volt|^voltage", re.I)
+PPTC_TEXT_RE = re.compile(r"PPTC|resettable|polyfuse|polyswitch|multifuse|"
+                          r"\bPTC\b", re.I)
+TEMP_ATTR_RE = re.compile(r"operating temp", re.I)
+
+
+def ambient(cons: dict | None, cons_dir: Path | None) -> dict:
+    """The air the board's parts sit in: {c, min_c, src}. constraints
+    `ambient_c`, else the enclosure's inside air as check_thermal works it
+    out (room_c plus the thermal entries' heat through the walls), else
+    25 C, said so in `src`. `ambient_min_c` is the coldest it starts in
+    (None: the cold end is not checked)."""
+    cons = cons or {}
+    lo = cons.get("ambient_min_c")
+    lo = float(lo) if isinstance(lo, (int, float)) else None
+    if isinstance(cons.get("ambient_c"), (int, float)):
+        return {"c": float(cons["ambient_c"]), "min_c": lo,
+                "src": "constraints ambient_c"}
+    if isinstance(cons.get("enclosure"), dict):
+        try:
+            import check_thermal
+            heat = sum(float(e.get("power_w", 0) or 0)
+                       for e in cons.get("thermal") or [])
+            air, _, _ = check_thermal.enclosure_air(
+                cons["enclosure"], heat, cons_dir or Path("."))
+            return {"c": round(float(air), 1), "min_c": lo,
+                    "src": "enclosure air (check_thermal)"}
+        except Exception as exc:  # noqa: BLE001
+            room = cons["enclosure"].get("room_c", 30)
+            if isinstance(room, (int, float)):
+                return {"c": float(room), "min_c": lo,
+                        "src": f"enclosure room_c (box air not worked out: "
+                               f"{str(exc)[:80]})"}
+    return {"c": DEFAULT_AMBIENT_C, "min_c": lo,
+            "src": "default 25 C: constraints carry no ambient_c"}
+
+
+def _attr(bom: dict | None, rx: re.Pattern) -> str | None:
+    for a in (bom or {}).get("attributes") or []:
+        if rx.search(str(a.get("name") or "")):
+            return str(a.get("value") or "")
+    return None
+
+
+def is_fuse(b: dict, bom: dict | None) -> bool:
+    if len(set(b["pads"].values())) != 2 and not re.match(r"^F\d", b["ref"]):
+        return False
+    return bool(re.match(r"^(?:F|FU)\d", b["ref"])) or \
+        _attr(bom, HOLD_ATTR_RE) is not None
+
+
+def is_pptc(bom: dict | None) -> bool:
+    if _attr(bom, HOLD_ATTR_RE) is not None:
+        return True
+    text = " ".join(str((bom or {}).get(k) or "") for k in
+                    ("category", "description", "mpn", "name", "value"))
+    return bool(PPTC_TEXT_RE.search(text))
+
+
+def fuse_findings(board: list[dict], bom_by_lcsc: dict, volts: dict,
+                  vsrc: dict, currents: dict, amb: dict, emit,
+                  checked: dict, unrated_passives: list[str]) -> list[dict]:
+    """Fuses and PPTCs (F*, or a parts.json hold-current attribute) at the
+    board's ambient (R-RAT-3, R-RAT-4). The current is the larger
+    constraints power[].current_a of its two nets; its voltage is the
+    larger rail it sits on, against ground: a fuse that opens must hold off
+    the circuit's voltage, not the millivolts across it while it conducts.
+      fuse: I_op over 0.75 x k_T x I_rated warns (it ages open), over
+            k_T x I_rated is an error;
+      PPTC: Ihold(T) = Ihold x the typical derating table, under I_op is an
+            error (it trips in normal running), under 1.1 x I_op warns;
+      either: a voltage rating (Vmax) under the rail is an error."""
+    t = amb["c"]
+    out = []
+    for b in sorted(board, key=lambda x: x["ref"]):
+        bom = bom_by_lcsc.get(b["lcsc"])
+        if not b["pads"] or not is_fuse(b, bom):
+            continue
+        ref, nets = b["ref"], sorted(set(b["pads"].values()))
+        pptc = is_pptc(bom)
+        kind = "PPTC" if pptc else "fuse"
+        irated = engcalc.parse_amps(_attr(bom, HOLD_ATTR_RE) if pptc else
+                                    _attr(bom, FUSE_I_ATTR_RE))
+        vrated = engcalc.parse_volts(_attr(bom, FUSE_V_ATTR_RE))
+        iop = max((currents[n] for n in nets if n in currents), default=None)
+        vs = [abs(volts[n]) for n in nets if n in volts]
+        vop = max(vs) if vs else None
+        fact = {"ref": ref, "kind": kind, "rated_a": irated,
+                "rated_v": vrated, "op_a": iop, "op_v": vop, "ambient_c": t}
+        out.append(fact)
+        if irated is None and vrated is None:
+            unrated_passives.append(ref)
+            continue
+        net = nets[0]
+        did = False
+        if vrated is not None and vop is not None:
+            did = True
+            if vop > vrated + EPS:
+                emit("rating_over_voltage", "error", ref, net,
+                     f"{ref} ({kind}) is rated {_fmt(vrated)} V but sits on "
+                     f"{_fmt(vop)} V ({'/'.join(vsrc[n] for n in nets if n in vsrc)}): "
+                     "once it opens it must hold off the rail [parts.json]",
+                     limit_v=vrated, net_v=vop, rating="parts.json")
+        if irated is not None and iop is not None:
+            did = True
+            if pptc:
+                k = engcalc.pptc_hold_factor(t)
+                hold = irated * k
+                fact.update(hold_at_ambient_a=round(hold, 4), k=round(k, 3))
+                why = (f"{ref} (PPTC) holds {_fmt(irated)} A at 23 C, "
+                       f"{_fmt(hold)} A at {_fmt(t)} C ({amb['src']}; x"
+                       f"{k:.2f}, typical Bourns/Littelfuse derating - the "
+                       f"part's own table wins), against {_fmt(iop)} A on "
+                       f"{'/'.join(n for n in nets if n in currents)} "
+                       "(constraints power[])")
+                if iop > hold + EPS:
+                    emit("rating_over_current", "error", ref, net,
+                         why + ": it trips in normal running", limit_a=hold,
+                         current_a=iop, ambient_c=t)
+                elif iop * engcalc.PPTC_MARGIN > hold + EPS:
+                    emit("rating_over_current", "warning", ref, net,
+                         why + ": under the 10 % hold margin", limit_a=hold,
+                         current_a=iop, ambient_c=t)
+            else:
+                k = engcalc.fuse_rerate(t)
+                cap = irated * k
+                use = cap * engcalc.FUSE_LOAD_FRACTION
+                fact.update(rerated_a=round(cap, 4), k=round(k, 3))
+                why = (f"{ref} (fuse) is rated {_fmt(irated)} A, "
+                       f"{_fmt(cap)} A at {_fmt(t)} C ({amb['src']}; k_T "
+                       f"{k:.2f}), against {_fmt(iop)} A on "
+                       f"{'/'.join(n for n in nets if n in currents)} "
+                       "(constraints power[])")
+                if iop > cap + EPS:
+                    emit("rating_over_current", "error", ref, net,
+                         why + ": over its rerated current", limit_a=cap,
+                         current_a=iop, ambient_c=t)
+                elif iop > use + EPS:
+                    emit("rating_over_current", "warning", ref, net,
+                         why + f": over 75 % of it ({_fmt(use)} A), where a "
+                         "fuse ages and opens on its own", limit_a=use,
+                         current_a=iop, ambient_c=t)
+        if did:
+            checked[ref] = checked.get(ref, 0) + 1
+    return out
+
+
+def temperature_findings(board: list[dict], bom_by_lcsc: dict, exts: dict,
+                         amb: dict, emit) -> dict:
+    """Every part's operating temperature range (parts.json "Operating
+    Temperature", else the extraction's `operating_temp_c` [lo, hi])
+    against the board's ambient (R-REL-2): an ambient above the part's
+    maximum, or an `ambient_min_c` below its minimum, is an error; a range
+    LCSC gives for the junction only (@(Tj)) is held against the air too, a
+    bound the air must not pass. The part's own rise comes on top
+    (check_thermal), so passing here is necessary, not sufficient."""
+    t, lo_amb = amb["c"], amb["min_c"]
+    checked, ranges = 0, {}
+    for b in sorted(board, key=lambda x: x["ref"]):
+        if not b["pads"]:
+            continue
+        rng = engcalc.parse_temp_range(_attr(bom_by_lcsc.get(b["lcsc"]),
+                                             TEMP_ATTR_RE))
+        src = "parts.json Operating Temperature"
+        ot = (exts.get(b["lcsc"]) or {}).get("operating_temp_c")
+        if rng is None and isinstance(ot, list) and len(ot) == 2 and \
+                all(isinstance(x, (int, float)) for x in ot):
+            rng, src = (float(ot[0]), float(ot[1]), False), "extraction"
+        if rng is None:
+            continue
+        lo, hi, tj = rng
+        checked += 1
+        ranges[f"{_fmt(lo)}..{_fmt(hi)}"] = ranges.get(
+            f"{_fmt(lo)}..{_fmt(hi)}", 0) + 1
+        what = "junction " if tj else ""
+        if t > hi + EPS:
+            emit("rating_over_temperature", "error", b["ref"], None,
+                 f"{b['ref']} operates to {_fmt(hi)} C ({what}max, {src}) "
+                 f"but the board's air is {_fmt(t)} C ({amb['src']})",
+                 limit_c=hi, ambient_c=t, rating=src)
+        elif lo_amb is not None and lo_amb < lo - EPS:
+            emit("rating_over_temperature", "error", b["ref"], None,
+                 f"{b['ref']} operates down to {_fmt(lo)} C ({src}) but the "
+                 f"board starts at {_fmt(lo_amb)} C (constraints "
+                 "ambient_min_c)", limit_c=lo, ambient_c=lo_amb, rating=src)
+    return {"parts_checked": checked, "ranges": dict(sorted(ranges.items()))}
 
 
 VR_ATTR_RE = re.compile(r"reverse.*volt|\(vr\)|\bvrrm\b", re.I)
@@ -998,7 +1244,9 @@ def run(argv=None):
         ws / "architecture" / "power_tree.md"
     cons = checklib.load_json(args.constraints, "constraints") \
         if args.constraints else None
-    viol, facts = run_check(pcb, parts, cons, tree)
+    viol, facts = run_check(pcb, parts, cons, tree,
+                            Path(args.constraints).resolve().parent
+                            if args.constraints else None)
     import ledgerlib
     lf = facts.pop("ledger_facts")
     if ledgerlib.writable(ws):

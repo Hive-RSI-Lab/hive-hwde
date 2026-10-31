@@ -173,6 +173,12 @@ class Track:
         return self.shape.length
 
 
+# `(via <word> ...)`: KiCad 10 writes blind, buried and micro; KiCad 9 and
+# earlier wrote blind for both blind and buried.
+_VIA_KINDS = {"blind": "blind", "buried": "buried", "micro": "micro",
+              "through": "through"}
+
+
 @dataclass(frozen=True)
 class Via:
     net: str
@@ -181,6 +187,9 @@ class Via:
     drill: float
     layers: tuple[str, ...]  # copper layers spanned (inclusive)
     uuid: Optional[str] = None  # see Track.uuid
+    # KiCad's via type: through | blind | buried | micro (the word after
+    # `(via`; KiCad 10 writes none for a through via)
+    kind: str = "through"
 
     @cached_property
     def poly(self) -> Polygon:
@@ -213,6 +222,10 @@ class Pad:
     # pad_prop_castellated)` - a plated half-hole on the board edge
     # (lib/castellation.py).
     castellated: bool = False
+    # A custom pad's copper in the pad's own frame (its primitives unioned
+    # with its anchor), or None: printed RF structures, net ties and odd
+    # footprints are custom pads, and their bounding box is not their copper.
+    custom: Optional[object] = None
     # The pad's type token: smd | thru_hole | np_thru_hole | connect.
     kind: str = ""
     # The symbol pin's name as the board stores it, `(pinfunction "SW")`
@@ -233,6 +246,9 @@ class Pad:
 
     @cached_property
     def poly(self) -> Polygon:
+        if self.custom is not None and not self.custom.is_empty:
+            g = affinity.rotate(self.custom, -self.angle, origin=(0, 0), use_radians=False)
+            return affinity.translate(g, self.copper_center[0], self.copper_center[1])
         return _pad_polygon(self.shape, self.size[0], self.size[1],
                             self.rratio, self.copper_center, self.angle)
 
@@ -342,8 +358,8 @@ def _pad_polygon(shape: str, w: float, h: float, rratio: float,
     Built at the origin then rotated by -angle (KiCad CW-positive with Y down)
     and translated. All corpus shapes are axis-symmetric, so the rotation sign
     does not change the covered region; only `center` (fixed by the footprint
-    transform in the caller) matters. trapezoid/custom are absent from the
-    corpus and fall back to the size bounding box.
+    transform in the caller) matters. trapezoid falls back to the size
+    bounding box; a custom pad with primitives is built by _custom_pad.
     """
     w = max(w, 0.0)
     h = max(h, 0.0)
@@ -372,6 +388,64 @@ def _pad_polygon(shape: str, w: float, h: float, rratio: float,
         g = box(-w / 2, -h / 2, w / 2, h / 2)
     g = affinity.rotate(g, -angle, origin=(0, 0), use_radians=False)
     return affinity.translate(g, center[0], center[1])
+
+
+def _custom_pad(pad, w: float, h: float):
+    """A custom pad's copper in its own frame: the anchor (rect or circle,
+    `size`) unioned with its primitives - gr_poly (filled, or its outline
+    stroked), gr_rect, gr_circle, gr_line, gr_arc. None when it has none,
+    so the caller keeps the old bounding-box fallback."""
+    prims = _kid(pad, "primitives")
+    if prims is None:
+        return None
+    anchor = "rect"
+    opts = _kid(pad, "options")
+    if opts is not None and _kid(opts, "anchor") is not None:
+        anchor = _tok(_kid(opts, "anchor")[1]) if len(_kid(opts, "anchor")) > 1 else "rect"
+    parts = [Point(0, 0).buffer(w / 2.0, quad_segs=_QUAD_SEGS) if anchor == "circle"
+             else box(-w / 2, -h / 2, w / 2, h / 2)]
+    for n in prims[1:]:
+        if not _is_node(n):
+            continue
+        kind = _head(n)
+        wn = _kid(n, "width")
+        st = _kid(n, "stroke")
+        if wn is None and st is not None:
+            wn = _kid(st, "width")
+        sw = _nums(wn)[0] if wn is not None and _nums(wn) else 0.0
+        fill = _kid(n, "fill")
+        filled = fill is not None and any(_tok(x) in ("yes", "solid", "true") for x in fill[1:])
+        try:
+            if kind == "gr_poly":
+                pts = _pts(_kid(n, "pts"))
+                if len(pts) >= 3:
+                    g = Polygon(pts)
+                    if not g.is_valid:
+                        g = g.buffer(0)
+                    if filled or sw <= 0:
+                        parts.append(g.buffer(sw / 2.0) if sw > 0 else g)
+                    else:
+                        parts.append(g.exterior.buffer(sw / 2.0))
+            elif kind == "gr_rect":
+                a, b = _nums(_kid(n, "start")), _nums(_kid(n, "end"))
+                g = box(min(a[0], b[0]), min(a[1], b[1]), max(a[0], b[0]), max(a[1], b[1]))
+                parts.append(g.buffer(sw / 2.0, join_style="mitre") if filled or sw <= 0
+                             else g.exterior.buffer(sw / 2.0))
+            elif kind == "gr_circle":
+                c, e = _nums(_kid(n, "center")), _nums(_kid(n, "end"))
+                r = math.hypot(e[0] - c[0], e[1] - c[1])
+                g = Point(c[0], c[1]).buffer(r, quad_segs=_QUAD_SEGS)
+                parts.append(g.buffer(sw / 2.0) if filled or sw <= 0 else g.exterior.buffer(sw / 2.0))
+            elif kind == "gr_line":
+                a, b = _nums(_kid(n, "start")), _nums(_kid(n, "end"))
+                parts.append(LineString([a[:2], b[:2]]).buffer(max(sw, 1e-3) / 2.0))
+            elif kind == "gr_arc":
+                a, m, b = (_nums(_kid(n, k)) for k in ("start", "mid", "end"))
+                parts.append(LineString(_arc_points(tuple(a[:2]), tuple(m[:2]), tuple(b[:2])))
+                             .buffer(max(sw, 1e-3) / 2.0))
+        except (TypeError, IndexError, ValueError):
+            continue
+    return _union(parts)
 
 
 def _union(geoms: Iterable) -> MultiPolygon | Polygon:
@@ -453,9 +527,11 @@ def _build_stackup(root, copper_layers: list[str], total_thickness: float) -> St
             name = _strs(layer)[0] if _strs(layer) else ""
             th = _kid(layer, "thickness")
             er = _kid(layer, "epsilon_r")
+            ty = _kid(layer, "type")
             entry = {
                 "height": _nums(th)[0] if th is not None and _nums(th) else 0.0,
                 "epsilon_r": _nums(er)[0] if er is not None and _nums(er) else _FR4_ER,
+                "type": (_strs(ty)[0] if ty is not None and _strs(ty) else ""),
             }
             order.append((name, entry))
         # Walk copper-to-copper, summing dielectric sublayers between them.
@@ -463,21 +539,28 @@ def _build_stackup(root, copper_layers: list[str], total_thickness: float) -> St
         cur: Optional[str] = None
         acc_h = 0.0
         acc_er: list[float] = []
+        acc_ty: list[str] = []
         for name, entry in order:
             if name in cu_names:
                 if cur is not None:
                     dielectrics.append({
                         "above": cur, "below": name, "height": acc_h,
                         "epsilon_r": (sum(acc_er) / len(acc_er)) if acc_er else _FR4_ER,
+                        # core | prepreg (a gap of both reads prepreg: it
+                        # is pressed, not a laminate bought whole)
+                        "kind": ("core" if acc_ty and set(acc_ty) == {"core"}
+                                 else "prepreg" if acc_ty else ""),
                     })
                 cur = name
-                acc_h, acc_er = 0.0, []
+                acc_h, acc_er, acc_ty = 0.0, [], []
                 if entry["height"] > 0:  # copper thickness from the block
                     cu_th[name] = entry["height"]
             else:
                 acc_h += entry["height"]
                 if entry["epsilon_r"]:
                     acc_er.append(entry["epsilon_r"])
+                if entry["type"] in ("core", "prepreg"):
+                    acc_ty.append(entry["type"])
         if len(dielectrics) == n - 1:
             return Stackup(copper_layers, total_thickness, dielectrics, cu_th,
                            assumed=False, source="board (stackup)")
@@ -670,11 +753,14 @@ class BoardGeom:
             else:
                 spanned = tuple(self.copper_layers)  # default through-via
             a = _nums(at)
+            words = [_tok(w) for w in via[1:] if isinstance(w, sexpdata.Symbol)]
+            kind = next((w for w in words if w in _VIA_KINDS), "through")
             self._vias.append(Via(
                 net=self._resolve_net(via) or "", at=(a[0], a[1]),
                 diameter=_nums(size)[0],
                 drill=_nums(drill)[0] if drill and _nums(drill) else 0.0,
-                layers=spanned, uuid=_uuid_of(via)))
+                layers=spanned, uuid=_uuid_of(via),
+                kind=_VIA_KINDS.get(kind, "through")))
 
     def _parse_footprints(self, root):
         for fp in _kids(root, "footprint"):
@@ -695,7 +781,8 @@ class BoardGeom:
             # ref -> lib id + Value field (check_current bounds a resistor
             # branch's current from these; check_thermal knows a package by
             # its LCSC/MPN props); the last duplicate ref wins
-            self.footprints[ref] = {"lib": lib, "value": value, "props": props}
+            self.footprints[ref] = {"lib": lib, "value": value, "props": props,
+                                    "at": (fx, fy), "angle": fangle}
             for pad in _kids(fp, "pad"):
                 self._add_pad(pad, fx, fy, fangle, ref)
 
@@ -743,7 +830,9 @@ class BoardGeom:
                 on = _nums(onode)
                 if len(on) >= 2:
                     drill_off = (on[0], on[1])
+        custom = _custom_pad(pad, w, h) if pshape == "custom" else None
         made = Pad(
+            custom=custom,
             ref=ref, number=number, net=self._resolve_net(pad),
             shape=pshape, size=(w, h), center=center, angle=pad_angle,
             rratio=rratio, layers=layers, drill=drill,

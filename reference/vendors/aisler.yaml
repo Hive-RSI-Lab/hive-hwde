@@ -1,0 +1,167 @@
+# aisler.yaml - AISLER (Aachen, DE): boards, stencils and assembly, priced
+# by a published formula.
+#
+# Copied 2026-10-31 from AISLER's help centre (community.aisler.net, the
+# design-rule pages per build and the pricing / assembly / castellation
+# pages; meta.source_urls). All lengths mm.
+#
+# CAVEATS
+# - Rules depend on the FINISH as well as copper: 2L HASL is stricter than
+#   2L ENIG (trace 0.2 / space 0.15 / via drill 0.3 / via ring 0.2 against
+#   0.125 / 0.125 / 0.25 / 0.1). A profile key can't carry the finish, so
+#   these rows are the ENIG builds (4 layers are ENIG only), and the price
+#   below is ENIG's. Order HASL only after checking the HASL page.
+# - min_annular_ring_mm is the VIA ring (drills <= 0.45 mm). Component PTHs
+#   (> 0.45 mm) need 0.3 mm, which dfm_check's single ring key can't apply.
+# - Silk line width is not published (only text height 0.8 mm and silk to
+#   pad 0.125), so min_silk_width_mm is left out.
+# - Hole-to-edge is not published; copper-to-edge is 0.3.
+# - Castellations: offered, no surcharge, need user-defined bridges; the
+#   only figures are "recommended minimal drill 1.0 mm" and slots 0.7-2.8.
+# - ASSEMBLY TAKES THE BOARD FILE: "No assembly is possible with traditional
+#   Gerber files ... also if you provide us a BOM and a PnP" (gerber page).
+#   AISLER builds BOM and placement from the .kicad_pcb, so
+#   assembly.upload is native and vendor.py packages the board file.
+
+meta:
+  id: aisler
+  name: AISLER
+  country: DE
+  services: {pcb: true, pcba: true, stencil: true}
+  quote_url: "https://aisler.net/"
+  source_urls:
+    - https://community.aisler.net/t/2-layer-1-6mm-35-m-enig-design-rules/3732
+    - https://community.aisler.net/t/2-layer-1-6mm-70-m-enig-design-rules/5465
+    - https://community.aisler.net/t/4-layer-35-m-enig-design-rules/3733
+    - https://community.aisler.net/t/4-layer-70-m-enig-design-rules/5772
+    - https://community.aisler.net/t/6l-layer-35-m-enig-design-rules/5467
+    - https://community.aisler.net/t/our-simple-pricing/102
+    - https://community.aisler.net/t/castellated-edges/48
+    - https://community.aisler.net/t/assembly-portfolio/4674
+    - https://community.aisler.net/t/component-procurement-capabilities/2464
+    - https://community.aisler.net/t/support-for-traditional-gerber-files/99
+    - https://community.aisler.net/t/service-status/399
+  verified: "2026-10-31"
+  order: {method: web_upload, api: false,
+          notes: "Upload the .kicad_pcb (or ODB++/gerbers for bare boards) at aisler.net."}
+
+board:
+  layers: [2, 4, 6]              # 6L+ is on request (assembly portfolio: "Layers > 4" an option)
+  max_size_mm: [500, 500]
+  min_size_mm: [10, 10]
+  copper_oz_outer: [1, 2]        # 35 / 70 um
+  thickness_options_mm: [1.6, 0.8]   # 0.8 only 4L ENIG; others 1.6
+  max_hole_diameter_mm: 5.6
+  surface_finish: [HASL, ENIG]
+  solder_mask_colors: [purple]
+  castellated: true
+  blind_buried_vias: null        # "Advanced Via Technologies: on demand"
+
+design_rules:
+  2layer_1oz:
+    min_trace_width_mm: 0.125
+    min_clearance_mm: 0.125
+    min_via_drill_mm: 0.25
+    min_hole_diameter_mm: 0.25
+    min_annular_ring_mm: 0.1       # via; PTH 0.3
+    min_via_diameter_mm: 0.45      # drill + 2 x ring
+    min_copper_to_edge_mm: 0.3
+    min_hole_to_hole_mm: 0.3       # "min. drill spacing"
+    min_silk_height_mm: 0.8
+    min_solder_mask_dam_mm: 0.1
+    outer_copper_oz: 1.0
+    inner_copper_oz: 0.0
+  2layer_2oz:
+    min_trace_width_mm: 0.175
+    min_clearance_mm: 0.175
+    min_via_drill_mm: 0.25
+    min_hole_diameter_mm: 0.25
+    min_annular_ring_mm: 0.15
+    min_via_diameter_mm: 0.55
+    min_copper_to_edge_mm: 0.3
+    min_hole_to_hole_mm: 0.3
+    min_silk_height_mm: 0.8
+    min_solder_mask_dam_mm: 0.1
+    outer_copper_oz: 2.0
+    inner_copper_oz: 0.0
+  4layer_1oz:
+    min_trace_width_mm: 0.125
+    min_clearance_mm: 0.125
+    min_via_drill_mm: 0.25
+    min_hole_diameter_mm: 0.25
+    min_annular_ring_mm: 0.1
+    min_via_diameter_mm: 0.45
+    min_copper_to_edge_mm: 0.3
+    min_hole_to_hole_mm: 0.3
+    min_silk_height_mm: 0.8
+    min_solder_mask_dam_mm: 0.1
+    outer_copper_oz: 1.0
+    inner_copper_oz: 1.0
+  4layer_2oz:
+    min_trace_width_mm: 0.175      # outer 7 mil (inner 5)
+    min_clearance_mm: 0.2          # 8 mil
+    min_via_drill_mm: 0.25
+    min_hole_diameter_mm: 0.25
+    min_annular_ring_mm: 0.15
+    min_via_diameter_mm: 0.55
+    min_copper_to_edge_mm: 0.3
+    min_hole_to_hole_mm: 0.3
+    min_silk_height_mm: 0.8
+    min_solder_mask_dam_mm: 0.1
+    outer_copper_oz: 2.0
+    inner_copper_oz: 1.0
+  6layer_1oz:
+    min_trace_width_mm: 0.1
+    min_clearance_mm: 0.1
+    min_via_drill_mm: 0.25
+    min_hole_diameter_mm: 0.25
+    min_annular_ring_mm: 0.1
+    min_via_diameter_mm: 0.45
+    min_copper_to_edge_mm: 0.3
+    min_hole_to_hole_mm: 0.3
+    min_silk_height_mm: 0.8
+    min_solder_mask_dam_mm: 0.1
+    outer_copper_oz: 1.0
+    inner_copper_oz: 1.0
+
+castellated:
+  min_drill_mm: 1.0                # "recommended minimal drill diameter"
+  min_annular_ring_mm: 0.3         # "same as for conventional plated holes" (PTH)
+  on_outline_tol_mm: 0.05          # ours: hole centre on Edge.Cuts
+
+assembly:
+  upload: native                 # BOM and placement come from the board file
+  sides: [top, bottom]           # "Doubled-sided possible"
+  max_board_mm: [430, 470]       # self-checkout limit
+  min_pitch_mm: 0.35             # actives (passives 0.4, BGA 0.4)
+  smallest_passive: "0201"
+  bga: true
+  sourcing: both                 # turnkey from its BOM tool, or customer-supplied
+  part_number: mpn
+  distributors: [wurth, ti, mouser, digikey, farnell, arrow, lcsc]
+  consigned: true
+  rotation: kicad                # pad 1 / polarity marker from the board itself
+
+files:
+  gerber: RS-274X
+  drill: excellon
+  archive: zip
+  accepts_native: [kicad_pcb]
+  notes: "AISLER recommends the native board file or ODB++; gerbers get no assembly."
+
+pricing:
+  model: per_area
+  currency: EUR                  # net of VAT
+  unit: cm2
+  copies: 3                      # sold in sets of 3
+  per: board                     # price = job fee + area x fee x quantity
+  setup: 12.0                    # job fee, 2L ENIG Budget (4L 1.6 mm: 14.00)
+  rate: {2: 0.097, 4: 0.13}      # ENIG Budget, EUR per cm2 per board
+  verified: "2026-10-31"
+  # The 4L job fee is 14.00, not 12.00: the model holds one setup, so 4L
+  # estimates run 2 EUR low. The page's worked example uses 0.051 EUR/cm2
+  # for 2L HASL against its own table's 0.067; the table is taken.
+
+lead_time_days:                  # working days, Budget service (service status page)
+  pcb: {2: 10, 4: 10}
+  assembly_additional: 8         # Amazing Assembly 18 total incl. material

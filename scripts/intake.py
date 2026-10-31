@@ -500,7 +500,7 @@ def upgrade_file(cli: Path, path: Path) -> dict:
     import kc  # noqa: PLC0415  (sibling wrapper; deferred for pure imports)
     section = "pcb" if path.suffix == ".kicad_pcb" else "sch"
     before = file_format(path)
-    cp = kc.run_cli(cli, [section, "upgrade", str(path)], timeout=300)
+    cp = kc.run_cli(cli, [section, "upgrade", str(path)])
     if cp.returncode != 0:
         raise CheckError(
             f"{path.name}: the pinned kicad-cli cannot load this file "

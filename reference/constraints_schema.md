@@ -18,7 +18,12 @@ Consumers per key (script -> phase):
     "k": 3,                          // corridor = k x trace width (default 3)
     "t_rise_ns": 1.0,                // sets return-via radius + stitch pitch
     "return_via_radius_mm": 2.0,     // fallback when t_rise_ns absent
-    "impedance_ohm": 50              // optional; rules_gen sizes the width
+    "impedance_ohm": 50              // optional; rules_gen reports the outer
+                                     // microstrip width (impedance facts) and
+                                     // writes a track_width rule per inner
+                                     // stripline layer (pours above + below
+                                     // in "planes"); no netclass, the board
+                                     // keeps its own (RF boards)
   }],
 
   // check_current (P8), rules_gen per-net width rules (P5),
@@ -72,6 +77,25 @@ Consumers per key (script -> phase):
   // changes its length.
   "length_match": [{"nets": ["/DQ0", "/DQ1", "/DQS"], "tol_mm": 1.0}],
 
+  // check_length_groups (P8) and route_tune (P7): each net's routed length
+  // (track + via barrel, pad to pad) held to its group's reference. nets,
+  // ref_nets, not_longer_than take fnmatch globs, with or without the
+  // sheet's leading "/". No ref_net(s): matched to the group's longest
+  // member. ref_stat min|max|mean of the reference nets (default min).
+  // window_mm [lo, hi] (length - reference) replaces the symmetric tol_mm;
+  // max_mm / min_mm / not_longer_than (no net longer than the shortest of
+  // these) are absolute bounds. terminals limits the path ends to these
+  // refs' pads. Nets here are also left alone by route_cleanup's snap.
+  "length_groups": [{
+    "name": "BYTE0", "nets": ["DRAM_D[0-7]", "DRAM_DQM0"],
+    "ref_nets": ["DRAM_SDQS0_P", "DRAM_SDQS0_N"], "tol_mm": 0.635,
+    "not_longer_than": ["DRAM_SDCLK0_*"]
+  }, {
+    "name": "ADDR_CMD", "nets": ["DRAM_A*", "DRAM_BA*"],
+    "ref_nets": ["DRAM_SDCLK0_*"], "window_mm": [-5.08, 0],
+    "terminals": ["U1", "U3"], "severity": "error"
+  }],
+
   // check_creepage (P8) + rules_gen (P5, T6): IPC-2221 spacing for pairs
   // > 30 V apart. rules_gen emits named aiee_hv_* clearance DRU rules from
   // these (never hand-author HV rules); check_creepage audits the routed
@@ -94,6 +118,24 @@ Consumers per key (script -> phase):
   // traces/tented vias, A6 lands (mask relief exposes them); conformal ->
   // A5/A7. Inner layers are always B1. CLI --coating overrides.
   "coating": "soldermask",
+  // package_ratings: a part rated for its nets at its own pin pitch (a
+  // 48 V controller's 0.5 mm pins, a 100 V 0402). rules_gen emits one
+  // clearance rule scoped to that courtyard after the HV rules;
+  // check_creepage keeps the pairs as dru_footprint_scope warnings.
+  "package_ratings": [{"ref": "U2", "clearance_mm": 0.1,
+                       "why": "LM5069 VIN pin, 0.5 mm pitch"}],
+
+  // check_si (P8): signal integrity of the nets that need it. Nets are
+  // found by name and driver (clocks, RMII, I2S, SPI, USB, Ethernet MDI,
+  // crystals); this block only declares a net the names miss, corrects a
+  // class or edge, or sets a target. Every key is optional.
+  "si": {"nets": {"/ETH_CLK": {"class": "osc_clock", "t_rise_ns": 1.0,
+                               "z0_ohm": 50, "z0_tol_pct": 20,
+                               "driver_ohm": 20, "swing_v": 3.3}},
+         "ignore": ["/SLOW_CLK"],
+         "victims": {"/VREF": "analog"},
+         "groups": [{"name": "rmii_tx", "ui_ns": 20,
+                     "nets": ["/RMII_TXD0", "/RMII_TXD1", "/RMII_TX_EN"]}]},
 
   // check_antenna (P8): which modules have a PCB antenna, for a part
   // reference/rf_modules.yaml does not know or names wrongly. "pcb" checks
@@ -160,8 +202,16 @@ Consumers per key (script -> phase):
                 "material": "PETG", "room_c": 30, "other_w": 1.4,
                 "inlet_mm2": 3300, "riser_mm2": 228, "outlet_mm2": 3300,
                 "stack_mm": 40, "floor": "feet"},
-  // the air when there is no enclosure (C); tj_max_c and ripple life use it
+  // the air when there is no enclosure (C); tj_max_c and ripple life use it,
+  // and check_ratings holds every part's operating range, resistor power
+  // (derated from 70 C to 0 at 155 C, also in sim_board), fuse rerating
+  // and PPTC hold current against it. With an enclosure and no ambient_c,
+  // check_ratings takes the box air check_thermal works out; with neither,
+  // 25 C, said so in its report's `ambient`.
   "ambient_c": 45,
+  // check_ratings: the coldest the board starts in (C); a part whose
+  // operating range starts above it is an error. Absent: not checked.
+  "ambient_min_c": -20,
 
   // check_thermal (P8): bulk-capacitor ripple current and life
   "ripple": [{"ref": "C5", "irms_a": 0.55, "rated_irms_a": 0.6,
@@ -208,7 +258,9 @@ Consumers per key (script -> phase):
     //        same rectangles as keepouts so place_anneal keeps them clear.
   },
 
-  // planes_gen (P7). Defaults when absent: 2-layer -> B.Cu GND pour;
+  // planes_gen (P7); rules_gen reads the layers too: an inner layer with a
+  // pour on the copper above and below is stripline and gets solved
+  // per-layer impedance widths (#323). Defaults when absent: 2-layer -> B.Cu GND pour;
   // 4-layer -> In1 GND + In2 dominant-power; high_speed references are
   // always guaranteed a plane.
   "planes": [{"layer": "In2.Cu", "net": "+3V3",

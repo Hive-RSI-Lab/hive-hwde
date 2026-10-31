@@ -101,7 +101,9 @@ def test_parse_bounds(value, param, rec, want):
 @pytest.mark.parametrize("net,v", [
     ("+3V3", 3.3), ("3V3", 3.3), ("+12V", 12.0), ("-5V", -5.0),
     ("/VCC_5V", 5.0), ("VBUS", 5.0), ("GND", 0.0), ("/pwr/V48_RTN", 0.0),
-    ("/I2C_SDA", None), ("/SW", None)])
+    ("/I2C_SDA", None), ("/SW", None), ("/power/1V35", 1.35),
+    ("/power/PG_1V35", None), ("/ADC_1V35", None), ("/VBUS_J1", 5.0),
+    ("/usb/VBUS_J2", 5.0), ("/VBUS_SENSE", None), ("/3V3_EN", None)])
 def test_volts_from_name(net, v):
     assert cr.volts_from_name(net) == v
 
@@ -144,13 +146,14 @@ def test_power_tree_range_and_tolerance_cells(tmp_path):
 
 def _ws(tmp_path: Path, fps: list[tuple], parts: dict, bom=None,
         tree: str | None = None) -> Path:
-    """fps: (ref, lcsc, {pad: net}); parts: {lcsc: extraction}."""
+    """fps: (ref, lcsc, {pad: net}[, footprint]); parts: {lcsc: extraction}."""
     ws = tmp_path / "ws"
     (ws / "kicad").mkdir(parents=True)
     (ws / "parts").mkdir()
     lines = ["(kicad_pcb (version 20240108)"]
-    for ref, lcsc, pads in fps:
-        lines.append(f'  (footprint "x" (property "Reference" "{ref}")'
+    for ref, lcsc, pads, *fp in fps:
+        lines.append(f'  (footprint "{fp[0] if fp else "x"}" '
+                     f'(property "Reference" "{ref}")'
                      f' (property "LCSC" "{lcsc}")')
         for num, net in pads.items():
             lines.append(f'    (pad "{num}" smd rect (net "{net}"))')
@@ -407,3 +410,130 @@ def test_hwde_led_test_d1_reversed_input(tmp_path):
           if v["kind"] == "rating_reverse_polarity"]
     assert [(v["pin"], v["scenario"]) for v in rp] == [("D1.1", "J1 reversed")]
     assert rp[0]["net_v"] == pytest.approx(5.25)
+
+
+# ------------------------------------------- resistor Umax, fuses, ambient
+
+def _cons(tmp_path: Path, **kw) -> Path:
+    c = tmp_path / "constraints.json"
+    c.write_text(json.dumps(kw))
+    return c
+
+
+def test_resistor_limiting_element_voltage_by_chip_size(tmp_path):
+    # a 0402 bleeder across +60V: 50 V Umax (D/CRCW e3), at any power
+    bom = [{"lcsc": "C25", "mpn": "0402WGF1005TCE", "attributes": []}]
+    ws = _ws(tmp_path, [("R1", "C25", {"1": "+60V", "2": "GND"},
+                         "Resistor_SMD:R_0402_1005Metric")], {}, bom)
+    (e,) = _errors(_run(ws))
+    assert e["kind"] == "rating_over_voltage" and e["refs"] == ["R1"]
+    assert e["limit_v"] == 50 and "limiting element" in e["rating"]
+    # the same part as an 0805 (150 V) holds, and is no longer unrated
+    ws2 = _ws(tmp_path / "b", [("R1", "C25", {"1": "+60V", "2": "GND"},
+                                "Resistor_SMD:R_0805_2012Metric")], {}, bom)
+    assert _run(ws2)["violations"] == []
+
+
+PPTC_BOM = [{"lcsc": "C70069", "mpn": "SMD1206P110TF", "category": "PTC "
+             "Resettable Fuses", "attributes": [
+                 {"name": "Current - Hold (Ih)", "value": "1.1A"},
+                 {"name": "Current - Trip (It)", "value": "2.2A"},
+                 {"name": "Voltage - Max", "value": "16V"},
+                 {"name": "Operating Temperature", "value": "-40℃~+85℃"}]}]
+
+
+def test_pptc_hold_current_at_ambient_and_vmax(tmp_path):
+    # R-RAT-4's planted fault: a 1206 PPTC, 1.1 A hold at 23 C (~0.75 A at
+    # 70 C), on a 1 A 20 V rail, Vmax 16 V: two errors
+    fps = [("F1", "C70069", {"1": "/VIN_RAW", "2": "/VIN"})]
+    ws = _ws(tmp_path, fps, {}, PPTC_BOM)
+    c = _cons(tmp_path, ambient_c=70,
+              voltages=[{"net": "/VIN_RAW", "voltage": 20},
+                        {"net": "/VIN", "voltage": 20}],
+              power=[{"net": "/VIN", "current_a": 1.0}])
+    p = _run(ws, c)
+    errs = sorted((e["kind"], e["refs"][0]) for e in _errors(p))
+    assert errs == [("rating_over_current", "F1"),
+                    ("rating_over_voltage", "F1")]
+    oc = next(e for e in _errors(p) if e["kind"] == "rating_over_current")
+    assert oc["limit_a"] == pytest.approx(0.748)
+    assert p["fuses"][0]["kind"] == "PPTC"
+    assert p["ambient"]["src"] == "constraints ambient_c"
+    # at 25 C on a 12 V rail the same part holds 1 A with margin: quiet
+    (tmp_path / "b").mkdir()
+    c2 = _cons(tmp_path / "b", voltages=[{"net": "/VIN_RAW", "voltage": 12}],
+               power=[{"net": "/VIN", "current_a": 0.9}])
+    p2 = _run(ws, c2)
+    assert _errors(p2) == []
+    assert not any(v["kind"] == "rating_over_current" for v in p2["violations"])
+    # under the 10 % margin warns: 1.05 A against 1.1 x 0.99
+    (tmp_path / "c").mkdir()
+    c3 = _cons(tmp_path / "c", ambient_c=25,
+               power=[{"net": "/VIN", "current_a": 1.05}])
+    w = [v for v in _run(ws, c3)["violations"]
+         if v["kind"] == "rating_over_current"]
+    assert [v["severity"] for v in w] == ["warning"]
+
+
+def test_fuse_runs_at_75_percent_of_its_rerated_current(tmp_path):
+    # Littelfuse 881 at 70 C: k 0.90. 1.5 A on a 2 A fuse is over
+    # 0.75 x 0.9 x 2 = 1.35 A (warning); 2.5 A holds; 1.9 A on 2 A at 70 C
+    # is over 1.8 A outright (error)
+    def bom(amps):
+        return [{"lcsc": "C9", "mpn": "0881002.MXEP", "attributes": [
+            {"name": "Current Rating", "value": f"{amps}A"},
+            {"name": "Voltage Rating (DC)", "value": "63V"}]}]
+    fps = [("F1", "C9", {"1": "+12V", "2": "/V12F"})]
+    def kinds(amps, iop, sub):
+        d = tmp_path / sub
+        d.mkdir()
+        c = _cons(d, ambient_c=70, power=[{"net": "/V12F",
+                                           "current_a": iop}])
+        return [(v["kind"], v["severity"]) for v in
+                _run(_ws(d, fps, {}, bom(amps)), c)["violations"]]
+    assert kinds(2, 1.5, "a") == [("rating_over_current", "warning")]
+    assert kinds(2.5, 1.5, "b") == []
+    assert kinds(2, 1.9, "c") == [("rating_over_current", "error")]
+
+
+def test_fuse_voltage_is_the_rail_not_the_drop_across_it(tmp_path):
+    bom = [{"lcsc": "C9", "mpn": "F", "attributes": [
+        {"name": "Current Rating", "value": "2A"},
+        {"name": "Voltage Rating", "value": "32V"}]}]
+    ws = _ws(tmp_path, [("F1", "C9", {"1": "+48V", "2": "/V48F"})], {}, bom)
+    (e,) = _errors(_run(ws))
+    assert e["kind"] == "rating_over_voltage" and e["limit_v"] == 32
+    assert e["net_v"] == 48
+
+
+def test_operating_range_against_the_ambient(tmp_path):
+    # a 0..70 C commercial part on an 85 C board; the -40..85 one holds
+    bom = [{"lcsc": "C1", "mpn": "COMM", "attributes": [
+               {"name": "Operating Temperature", "value": "0℃~+70℃"}]},
+           {"lcsc": "C2", "mpn": "IND", "attributes": [
+               {"name": "Operating Temperature", "value": "-40℃~+85℃"}]}]
+    fps = [("U1", "C1", {"1": "+3V3", "2": "GND"}),
+           ("U2", "C2", {"1": "+3V3", "2": "GND"})]
+    ws = _ws(tmp_path, fps, {}, bom)
+    p = _run(ws, _cons(tmp_path, ambient_c=85))
+    t = [v for v in p["violations"] if v["kind"] == "rating_over_temperature"]
+    assert [(v["refs"], v["severity"], v["limit_c"]) for v in t] == \
+        [(["U1"], "error", 70)]
+    assert p["operating_range"]["parts_checked"] == 2
+    # a cold start below the industrial part's -40 C
+    p = _run(ws, _cons(tmp_path, ambient_c=25, ambient_min_c=-45))
+    t = [v for v in p["violations"] if v["kind"] == "rating_over_temperature"]
+    assert sorted(v["refs"][0] for v in t) == ["U1", "U2"]
+    # no ambient_c: 25 C, said so, and nothing fires
+    p = _run(ws)
+    assert p["ambient"]["c"] == 25 and "default" in p["ambient"]["src"]
+    assert not any(v["kind"] == "rating_over_temperature"
+                   for v in p["violations"])
+
+
+def test_lamp_holder_led_is_not_a_pptc(tmp_path):
+    # LCSC's LED attribute "Lamp Holder Type" once read as a hold current
+    bom = [{"lcsc": "C2286", "mpn": "KT-0603R", "attributes": [
+        {"name": "Lamp Holder Type", "value": "1.6mm x 0.8mm square LED"}]}]
+    ws = _ws(tmp_path, [("D2", "C2286", {"1": "/LED", "2": "GND"})], {}, bom)
+    assert _run(ws)["fuses"] == []

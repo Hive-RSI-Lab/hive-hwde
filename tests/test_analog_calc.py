@@ -106,7 +106,7 @@ def test_ti_sloa119b_8_ohm_filter_is_butterworth_at_28k():
 
 def test_lc_peaks_without_its_load():
     r = ac.classd_lc(10e-6, 0.68e-6, 8, f_sw=400e3, r_dcr=0.05)
-    assert r["peak_db"] == pytest.approx(1.5, abs=0.05)
+    assert r["peak_db"] == pytest.approx(1.35, abs=0.05)  # 1.5 with no DCR
     assert r["peak_db_2x_load"] > r["peak_db"] + 3
     assert r["peak_db_open"] > 30 and r["q_open"] > 50
 
@@ -147,7 +147,7 @@ def test_thd_from_samples():
 def test_twenty_x_bucket_rule_does_not_settle_by_itself():
     # Cf = 20 Cs bounds the kickback to 1/21 of full scale ...
     r = ac.sar_rc(100, 800e-12, 40e-12, 12, 300e-9)
-    assert r["c_ratio"] == 20 and r["kickback_v"] == pytest.approx(1 / 21)
+    assert r["c_ratio"] == pytest.approx(20) and r["kickback_v"] == pytest.approx(1 / 21)
     # ... but with 100 ohm and 300 ns a 12-bit SAR is still 5 LSB off
     assert not r["settled"] and r["residual_lsb"] == pytest.approx(5.48,
                                                                    abs=0.05)

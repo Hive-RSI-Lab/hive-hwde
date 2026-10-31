@@ -68,6 +68,11 @@ _TOOLS = "runs the live toolchain (kicad-cli, KiCad's python, java)"
 _BOARD = "runs a whole fixture board's checks or bench stage"
 _INTAKE = "materializes a whole KiCad project through intake"
 SLOW = {
+    "tests/test_route_escape.py::test_live_escape_synthetic_bga": "runs KRT bga_fanout and kicad-cli DRC on a synthetic BGA",
+    "tests/test_solvers.py::test_live_solver_validates": "runs ngspice, Xyce, FastHenry, FasterCap from the IIC-OSIC-TOOLS tree; machine-load sensitive",
+    "tests/test_solvers.py::test_live_palace_validates": "runs Palace (FEM eigenmode) on the IIC-OSIC-TOOLS tree",
+    "tests/test_solvers.py::test_live_openems_validates": "runs an openEMS full-wave solve (minutes)",
+    "tests/test_solvers.py::test_live_planar_thru_line_is_transparent": "runs an openEMS planar S-parameter solve (~1.5 min)",
     "tests/test_check_env.py::test_passes_on_dev_machine": _TOOLS,
     "tests/test_check_env.py::test_out_file_and_quiet": _TOOLS,
     "tests/test_check_env.py::test_unpinned_discovery_still_resolves_10x": _TOOLS,
@@ -77,6 +82,7 @@ SLOW = {
     "tests/test_board_setup.py::test_board_init_fixed_outline_too_tight_gets_no_default_holes": _TOOLS,
     "tests/test_build_modes.py::test_board_init_cli_does_not_refuse_a_fixed_outline": _TOOLS,
     "tests/test_bench.py::test_offline_fixture_matches_baseline": _BOARD,
+    "tests/test_route_tune.py::test_tune_blinky2_live": _TOOLS,
     "tests/test_dfm_zone_fill.py::test_live_refill_confirms_dfm1": _TOOLS,
     "tests/test_bench.py::test_known_answers_fire_where_expected": _BOARD,
     "tests/test_mcp_server.py::test_dfm_check_is_read_only": _BOARD,
@@ -93,6 +99,8 @@ SLOW = {
     "tests/test_intake.py::test_no_upgrade_mixed_versions_is_refused_before_materializing": _INTAKE,
     "tests/test_intake.py::test_hermetic_intake_builds_a_valid_workspace": _INTAKE,
     "tests/test_intake.py::test_board_only_project_imports_with_a_no_schematic_warning": _INTAKE,
+    "tests/test_eda_io.py::test_import_eagle_end_to_end": _TOOLS,
+    "tests/test_eda_io.py::test_export_round_trips_parts_and_nets": _TOOLS,
 }
 
 

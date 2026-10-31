@@ -86,3 +86,15 @@ def test_keepout_gen_draws_and_replaces(tmp_path):
     assert areas[0]["flags"].get("tracks") == "not_allowed"
     assert areas[0]["flags"].get("footprints") == "allowed"
     assert payload["facts"]["removed"] == 1
+
+
+def test_layers_override_side_for_the_copper():
+    cu4 = ["F.Cu", "In1.Cu", "In2.Cu", "B.Cu"]
+    cons = {"placement": {"keepouts": [
+        {"rect": [0, 0, 10, 10], "side": "back", "name": "coupon",
+         "layers": ["B.Cu", "In1.Cu"], "copper": True}]}}
+    (a,) = keepout_gen.plan_areas(cons, cu4)
+    assert a["layers"] == ["In1.Cu", "B.Cu"]     # board order
+    with pytest.raises(CheckError):
+        keepout_gen.plan_areas({"placement": {"keepouts": [
+            {"rect": [0, 0, 1, 1], "layers": ["In3.Cu"], "copper": True}]}}, cu4)

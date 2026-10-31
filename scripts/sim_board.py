@@ -21,7 +21,13 @@ reviewer would otherwise work out by hand:
 Findings (violation kind; severity):
   resistor_overpower      R dissipation above its rating (error in the
                           default scenario, warning in io_* ones); above
-                          half its rating is a derating warning
+                          half its rating is a derating warning. The
+                          rating is P70 derated linearly to 0 at 155 C
+                          when constraints give an ambient_c above 70 C
+  resistor_overvoltage    the volts across an R above its limiting element
+                          voltage (parts.json Voltage-Supply(Max), else the
+                          chip size's D/CRCW e3 Umax): an 0805 2 MOhm on a
+                          400 V bus dissipates 0.08 W but is over 150 V
   cap_overvoltage         DC across a cap above its rated voltage (error);
   cap_dc_bias             class-II ceramic at more than half its rating
                           (warning: it loses much of its capacitance)
@@ -735,6 +741,16 @@ def resistor_rating(e: dict, part: dict | None) -> tuple[float | None, str]:
         if w else (None, "unknown")
 
 
+def resistor_umax(e: dict, part: dict | None) -> tuple[float | None, str]:
+    v = engcalc.parse_volts(attr(part, r"^Voltage-Supply\(Max\)",
+                                 r"^Working Voltage"))
+    if v:
+        return v, "parts.json"
+    v = engcalc.resistor_umax_v(e["footprint"])
+    return (v, f"{engcalc.package_code(e['footprint'])} package default, "
+               "D/CRCW e3") if v else (None, "unknown")
+
+
 def cap_rating(c: dict, part: dict | None) -> tuple[float | None, str]:
     v = engcalc.parse_volts(attr(part, r"^Voltage Rat"))
     if v:
@@ -851,10 +867,13 @@ def analyze(board: dict, parts: dict, rails: dict, opts: dict) -> tuple:
         o = ops[sc]
         return o["v"].get(net) if net in o["driven"] else None
 
-    # resistors: dissipation against rating, every scenario
+    # resistors: dissipation against rating derated to the ambient, and
+    # the volts across against the limiting element voltage, every scenario
+    t_amb = opts.get("ambient_c")
+    derate = engcalc.resistor_derate(t_amb)
     rfacts = []
     for e in (x for x in model["elems"] if x["kind"] == "R" and x["value"] > 0):
-        worst = None
+        worst = vworst = None
         for sc in ops:
             va, vb = (volts(sc, n) for n in e["nets"])
             if va is None or vb is None:
@@ -862,12 +881,30 @@ def analyze(board: dict, parts: dict, rails: dict, opts: dict) -> tuple:
             p = (va - vb) ** 2 / e["value"]
             if worst is None or p > worst[0]:
                 worst = (p, sc)
+            if vworst is None or abs(va - vb) > vworst[0]:
+                vworst = (abs(va - vb), sc)
         if worst is None:
             continue
+        umax, usrc = resistor_umax(e, parts.get(e["ref"]))
+        if umax is not None and vworst[0] > umax:
+            sev = "error" if vworst[1] == "default" else "warning"
+            vios.append(_vio("resistor_overvoltage", sev, [e["ref"]],
+                             e["nets"][0],
+                             f"{e['ref']} has {_f(vworst[0], 'V')} across it "
+                             f"({vworst[1]}), over its {_f(umax, 'V')} "
+                             f"limiting element voltage ({usrc}): it arcs "
+                             "or drifts before its power rating matters",
+                             v_across=vworst[0], umax_v=umax,
+                             scenario=vworst[1]))
         rating, rsrc = resistor_rating(e, parts.get(e["ref"]))
+        if rating is not None and derate < 1.0:
+            rating, rsrc = rating * derate, (
+                f"{rsrc}, derated x{derate:.2f} at {_f(t_amb)} C ambient")
         rfacts.append({"ref": e["ref"], "p_w": checklib.rnd(worst[0], 6),
                        "scenario": worst[1], "rating_w": rating,
-                       "rating_source": rsrc})
+                       "rating_source": rsrc,
+                       "v_across": checklib.rnd(vworst[0], 4),
+                       "umax_v": umax})
         if rating is None:
             if worst[0] > 0.05:
                 unknowns.append({"ref": e["ref"], "what": "power rating",
@@ -955,6 +992,10 @@ def regulator_findings(board, parts, rails, model, opts, vios, unknowns,
                        facts):
     table = load_vrefs()
     out = []
+    pins: dict[str, int] = {}
+    for c in board["comps"].values():
+        for p in c["pins"].values():
+            pins[p["net"]] = pins.get(p["net"], 0) + 1
     for c in board["comps"].values():
         if c["kind"] not in ("U", "IC"):
             continue
@@ -963,10 +1004,11 @@ def regulator_findings(board, parts, rails, model, opts, vios, unknowns,
         for fb in sorted(fbs):
             if fb in rails:
                 continue   # FB tied straight to the output: fixed ratio 1
-            rs = [e for e in model["elems"] if e["kind"] == "R"
-                  and fb in e["nets"]]
-            tops = [e for e in rs if _other(e, fb) not in model["grounds"]]
-            bots = [e for e in rs if _other(e, fb) in model["grounds"]]
+            legs = [_r_chain(e, fb, model, pins, rails)
+                    for e in model["elems"]
+                    if e["kind"] == "R" and fb in e["nets"]]
+            tops = [g for g in legs if g["end"] not in model["grounds"]]
+            bots = [g for g in legs if g["end"] in model["grounds"]]
             if len(tops) != 1 or len(bots) != 1:
                 unknowns.append({"ref": c["ref"], "what": f"FB net {fb}",
                                  "why": f"{len(tops)} top / {len(bots)} "
@@ -974,7 +1016,7 @@ def regulator_findings(board, parts, rails, model, opts, vios, unknowns,
                                         "divider, set the Vout by hand"})
                 continue
             top, bot = tops[0], bots[0]
-            out_net = _other(top, fb)
+            out_net = top["end"]
             vr = find_vref(c, parts.get(c["ref"]), opts["vref"], table)
             row = {"ref": c["ref"], "fb_net": fb, "out_net": out_net,
                    "r_top": top["ref"], "r_bot": bot["ref"],
@@ -987,9 +1029,9 @@ def regulator_findings(board, parts, rails, model, opts, vios, unknowns,
                 out.append(row)
                 continue
             vref, vtol, vsrc, verified = vr
-            rtol = max(engcalc.parse_tolerance(attr(parts.get(e["ref"]),
+            rtol = max(engcalc.parse_tolerance(attr(parts.get(r),
                                                     r"^Tolerance")) or 0.01
-                       for e in (top, bot))
+                       for r in top["refs"] + bot["refs"])
             fbv = engcalc.fb_vout(vref, top["value"], bot["value"], rtol, vtol)
             row.update({"vref": vref, "vref_source": vsrc,
                         "vref_verified": verified, "r_tol": rtol,
@@ -1010,7 +1052,7 @@ def regulator_findings(board, parts, rails, model, opts, vios, unknowns,
                     vios.append(_vio(
                         "fb_divider_mismatch",
                         "error" if abs(d) > 0.05 else "warning",
-                        [c["ref"], top["ref"], bot["ref"]], out_net,
+                        [c["ref"], *top["refs"], *bot["refs"]], out_net,
                         f"{c['ref']} FB divider {top['ref']}/{bot['ref']} "
                         f"({_f(top['value'], 'ohm')}/"
                         f"{_f(bot['value'], 'ohm')}, Vref {vref:g} V) sets "
@@ -1020,6 +1062,27 @@ def regulator_findings(board, parts, rails, model, opts, vios, unknowns,
                         vout=fbv, declared_v=declared[0]))
             out.append(row)
     facts["regulators_fb"] = out
+
+
+def _r_chain(e: dict, fb: str, model: dict, pins: dict[str, int],
+             rails: dict) -> dict:
+    """The resistor leg from FB through `e`: resistors in series are walked
+    through any net only two resistor pins touch (no rail, no ground), so
+    R_a + R_b to ground reads as one bottom of R_a + R_b."""
+    rs = [x for x in model["elems"] if x["kind"] == "R"]
+    chain, net, cur = [e], fb, e
+    while True:
+        net = _other(cur, net)
+        if net in model["grounds"] or net in rails or pins.get(net) != 2:
+            break
+        nxt = [x for x in rs if net in x["nets"] and x is not cur]
+        if len(nxt) != 1 or nxt[0] in chain or fb in nxt[0]["nets"]:
+            break
+        cur = nxt[0]
+        chain.append(cur)
+    refs = [x["ref"] for x in chain]
+    return {"ref": "+".join(refs), "refs": refs, "end": net,
+            "value": sum(x["value"] for x in chain)}
 
 
 def _other(e: dict, net: str) -> str:
@@ -1430,7 +1493,10 @@ def run(a) -> dict:
             "rail_min": rail_mins(rails, cons,
                                   _pairs(a.rail_min, "--rail-min")),
             "vref": _pairs(a.vref, "--vref"), "i2c_khz": a.i2c_khz,
-            "i2c_cb_pf": a.i2c_cb_pf}
+            "i2c_cb_pf": a.i2c_cb_pf,
+            "ambient_c": (cons or {}).get("ambient_c")
+            if isinstance((cons or {}).get("ambient_c"), (int, float))
+            else None}
     (model, ops, tran, scen, ens, vios, unknowns, facts,
      version) = analyze(board, parts, rails, opts)
     regulator_findings(board, parts, rails, model, opts, vios, unknowns, facts)

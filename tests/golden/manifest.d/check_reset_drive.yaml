@@ -1,0 +1,14 @@
+# Seeded fault for check_reset_drive (FW-08: a GPIO's reset state leaves a
+# FET gate floating until firmware drives it).
+mutants:
+  reset-gate-floating:
+    board: usbbuck4
+    script: mutations/reset_gate_floating.py
+    check: check_reset_drive
+    defect: >-
+      NETLIST fault: an ESP32-S3's GPIO5 drives a low-side 2N7002's gate
+      through 100 R with no pull-down, so the gate floats from power-on
+      until firmware drives the pin; ERC sees a resistor between two pins
+    expect:
+      kind: gate_floating
+      ref: Q99

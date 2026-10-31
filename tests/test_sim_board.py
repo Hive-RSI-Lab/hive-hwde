@@ -2,7 +2,8 @@
 
 A small synthetic board carries one planted fault per finding the script
 makes: a 100 ohm 0603 across +5V (overpower), an FB divider set 10 % off
-its rail, a 470 ohm I2C pull-up (too strong for 3 mA), an LED a GPIO drives
+its rail, a 0402 10 Mohm bleeder on +60V (over its 50 V Umax at 0.36 mW),
+a 470 ohm I2C pull-up (too strong for 3 mA), an LED a GPIO drives
 at ~26 mA, a 10 V X5R cap on 9 V (DC bias), a P-FET whose gate a GPIO pulls
 to ground from 20 V, an enable RC that settles below 0.7 VDD - and one RC
 enable that is fine. The engine tests run wherever the KiCad-bundled ngspice
@@ -59,6 +60,7 @@ BOARD = [
     ("R12", "1k", "R_0402_1005Metric", {"1": ("/LOAD", ""), "2": ("GND", "")}),
     ("L1", "10uH", "L_1210", {"1": ("+3V3", ""), "2": ("+3V3A", "")}),
     ("R13", "330", "R_0402_1005Metric", {"1": ("+3V3A", ""), "2": ("GND", "")}),
+    ("R14", "10M", "R_0402_1005Metric", {"1": ("+60V", ""), "2": ("GND", "")}),
 ]
 
 
@@ -121,6 +123,41 @@ def test_worked_examples():
     assert engcalc.crystal_load_pf(18, 18) == pytest.approx(13.0)
     assert engcalc.ldo_tj(5, 3.3, 0.3, 180, 40)["tj_c"] == pytest.approx(131.8)
     assert engcalc.holdup_s(470e-6, 20, 12, 0.5) == pytest.approx(7.52e-3)
+    # D/CRCW e3: 0603 Umax 75 V, critical R = 75^2 / 0.1 = 56.25 kOhm
+    assert engcalc.resistor_umax_v("R_0603_1608Metric") == 75
+    assert engcalc.resistor_umax_v("R_2512_6332Metric") == 500
+    assert 75 ** 2 / engcalc.resistor_rating_w("R_0603") == pytest.approx(
+        56250)
+    # thick film: flat to 70 C, 0 at 155 C; 85 C -> 0.82 (R-RAT-2)
+    assert engcalc.resistor_derate(25) == engcalc.resistor_derate(70) == 1
+    assert engcalc.resistor_derate(85) == pytest.approx(0.8235, abs=1e-4)
+    assert engcalc.resistor_derate(160) == 0
+    # Littelfuse 881 at 70 C: k 0.90, so 1.5 A needs 1.5/(0.75*0.9) = 2.22 A
+    assert engcalc.fuse_rerate(70) == pytest.approx(0.90)
+    assert engcalc.fuse_rerate(0) == 1.0
+    assert 1.5 / (engcalc.FUSE_LOAD_FRACTION * engcalc.fuse_rerate(70)) \
+        == pytest.approx(2.222, abs=1e-3)
+    # a 1.1 A (23 C) PPTC holds about 0.75 A at 70 C
+    assert 1.1 * engcalc.pptc_hold_factor(70) == pytest.approx(0.748)
+    assert engcalc.pptc_hold_factor(23) == 1.0
+    assert engcalc.pptc_hold_factor(-40) > 1.4
+
+
+@pytest.mark.parametrize("text,want", [
+    ("-40℃~+85℃", (-40, 85, False)), ("-55℃~+155℃", (-55, 155, False)),
+    ("-40℃~+125℃@(Tj)", (-40, 125, True)),
+    ("-40℃~+125℃@(TA/TJ)", (-40, 125, False)),
+    ("-40°C ~ 125°C", (-40, 125, False)), ("0 to 70 C", (0, 70, False)),
+    ("25V", None), ("", None), (None, None)])
+def test_parse_temp_range(text, want):
+    assert engcalc.parse_temp_range(text) == want
+
+
+def test_parse_amps():
+    assert engcalc.parse_amps("750 mA") == pytest.approx(0.75)
+    assert engcalc.parse_amps("1.1A") == pytest.approx(1.1)
+    assert engcalc.parse_amps("6A 32V") == 6
+    assert engcalc.parse_amps("32V") is None
     assert engcalc.led_color("KT-0603", "Red") == "red"
     assert engcalc.led_color("yellow-green") == "yellow-green"
 
@@ -240,6 +277,40 @@ def test_engine_resistor_overpower(report):
             if v["refs"] == ["R3"]]
     assert v["severity"] == "error" and v["power_w"] == pytest.approx(0.25,
                                                                        rel=1e-3)
+
+
+def test_engine_resistor_overvoltage(report):
+    # 60 V across an 0402 (Umax 50 V): 0.36 mW passes the power check
+    (v,) = _kinds(report, "resistor_overvoltage")
+    assert v["refs"] == ["R14"] and v["severity"] == "error"
+    assert v["v_across"] == pytest.approx(60) and v["umax_v"] == 50
+    assert not any(x["refs"] == ["R14"]
+                   for x in _kinds(report, "resistor_overpower"))
+
+
+def test_engine_resistor_power_derated_at_ambient(tmp_path):
+    if env.find_ngspice_dll() is None:
+        pytest.skip("no ngspice shared library")
+    # an 0603 1.5k across +10V: 67 mW, a warning at 25 C (over half of
+    # 0.1 W), over its rating at 100 C, where it holds 0.1 x 55/85 = 65 mW
+    net = write_net(tmp_path / "d.net", [
+        ("R1", "1.5k", "R_0603_1608Metric", {"1": ("+10V", ""),
+                                             "2": ("GND", "")})])
+    got = {}
+    for amb in (None, 100):
+        cons = tmp_path / f"c{amb}.json"
+        cons.write_text(json.dumps({"ambient_c": amb} if amb else {}))
+        out = tmp_path / f"r{amb}.json"
+        subprocess.run([sys.executable, str(SCRIPTS / "sim_board.py"),
+                        "--net", str(net), "--constraints", str(cons),
+                        "--out", str(out)], capture_output=True, text=True,
+                       timeout=300)
+        rep = json.loads(out.read_text(encoding="utf-8"))
+        (got[amb],) = _kinds(rep, "resistor_overpower")
+    assert got[None]["severity"] == "warning"
+    assert got[100]["severity"] == "error"
+    assert got[100]["rating_w"] == pytest.approx(0.1 * 55 / 85)
+    assert "derated" in got[100]["msg"]
 
 
 def test_engine_fb_divider(report):
@@ -378,3 +449,32 @@ def test_engine_no_underdrive_without_min(tmp_path, need_engine):
     rep = _pd_report(tmp_path, {"Vgs(th) max": "2.5V", **RDSON}, min_v=None)
     assert _kinds(rep, "mosfet_underdrive") == []
     assert "rail_min_v" not in rep
+
+
+def test_fb_divider_series_bottom_chain(tmp_path):
+    """A bottom of two resistors in series (FB -> R2 -> mid -> R3 -> GND)
+    reads as one bottom of R2 + R3, not '1 top / 0 bottom'."""
+    board = [
+        ("U4", "TPS54302", "SOT-23-6", {"1": ("GND", "GND"),
+                                        "3": ("+12V", "VIN"),
+                                        "4": ("/B1V375_FB", "FB")}),
+        ("R1", "100k", "R_0402_1005Metric", {"1": ("+5V", ""),
+                                             "2": ("/B1V375_FB", "")}),
+        ("R2", "10k", "R_0402_1005Metric", {"1": ("/B1V375_FB", ""),
+                                            "2": ("/MID", "")}),
+        ("R3", "5k", "R_0402_1005Metric", {"1": ("/MID", ""),
+                                           "2": ("GND", "")}),
+    ]
+    b = sim_board.load_board(write_net(tmp_path / "b.net", board))
+    rails = sim_board.resolve_rails(b, {}, None, None, {})
+    model = sim_board.build_model(b, {}, rails)
+    vios, unknowns, facts = [], [], {}
+    sim_board.regulator_findings(b, {}, rails, model, {"vref": {}}, vios,
+                                 unknowns, facts)
+    assert not any("plain divider" in u["why"] for u in unknowns)
+    (row,) = facts["regulators_fb"]
+    assert row["r_top"] == "R1" and row["r_bot"] == "R2+R3"
+    assert row["out_net"] == "+5V"
+    assert row["ratio"] == pytest.approx(1 + 100 / 15)
+    (v,) = vios
+    assert v["refs"] == ["R1", "R2", "R3", "U4"]
