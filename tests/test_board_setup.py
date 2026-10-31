@@ -395,6 +395,21 @@ def test_parse_netlist_custom_fields(tmp_path):
     assert by_ref["C1"]["fields"] == {}
 
 
+def test_parse_netlist_dnp_and_exclude_from_bom(tmp_path):
+    """#439: (in_bom no) reaches the netlist as a valueless
+    `(property (name "exclude_from_bom"))`, like dnp; parse_netlist surfaces
+    both so the worker can mirror them onto the footprint."""
+    txt = MINI_NET.replace(
+        '(footprint "Resistor_SMD:R_0603_1608Metric"))',
+        '(footprint "Resistor_SMD:R_0603_1608Metric")\n'
+        '      (property (name "exclude_from_bom")) (property (name "dnp")))')
+    n = tmp_path / "x.net"
+    n.write_text(txt, encoding="utf-8")
+    by_ref = {c["ref"]: c for c in board_init.parse_netlist(n)[0]}
+    assert by_ref["R1"]["dnp"] and by_ref["R1"]["exclude_from_bom"]
+    assert not by_ref["C1"]["dnp"] and not by_ref["C1"]["exclude_from_bom"]
+
+
 def test_transient_silk_partition():
     """S14: cross-footprint silk at shelf positions is transient (placement
     re-positions); single-footprint silk (own silk over own pad) is a library
@@ -1025,6 +1040,30 @@ def test_board_init_lcsc_fields_and_inplace_schematic(cli, usbbuck4_net, tmp_pat
         break
     else:
         pytest.fail("LCSC footprint fields are not hidden")
+
+
+@pytest.mark.smoke
+def test_board_init_mirrors_in_bom(cli, tmp_path):
+    """#439: a symbol with (in_bom no) must give a footprint with
+    exclude_from_bom, else parity reports footprint_symbol_mismatch and the
+    unconnected-net retry is blocked."""
+    sch = tmp_path / "usbbuck4.kicad_sch"
+    txt = (GOLDEN / "usbbuck4" / "usbbuck4.kicad_sch").read_text("utf-8")
+    sch.write_text(txt.replace("(in_bom yes)", "(in_bom no)"), "utf-8")
+    net = tmp_path / "u.net"
+    assert kc.export_netlist(cli, sch, net)["status"] == "pass"
+    assert "exclude_from_bom" in net.read_text("utf-8")
+    rep = tmp_path / "report.json"
+    rc = board_init.main([
+        "--netlist", str(net), "--name", "usbbuck4",
+        "--out", str(tmp_path / "kicad"), "--layers", "2",
+        "--mounting-holes", "0", "--schematic", str(sch),
+        "--out-report", str(rep)])
+    r = json.loads(rep.read_text("utf-8"))
+    assert rc == 0 and r["status"] == "pass", r
+    assert r["self_check"]["parity_count"] == 0
+    board = (tmp_path / "kicad" / "usbbuck4.kicad_pcb").read_text("utf-8")
+    assert board.count("exclude_from_bom") >= r["components"]
 
 
 def _prep_golden(tmp_path, board="usbbuck4"):

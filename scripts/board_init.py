@@ -145,7 +145,7 @@ def _comp_fields(comp) -> dict[str, str]:
 
 
 def parse_netlist(path: Path) -> tuple[list[dict], dict]:
-    """kicadsexpr netlist -> ([{ref, value, fp, dnp, fields}], {"REF.PAD": net})."""
+    """kicadsexpr netlist -> ([{ref, value, fp, dnp, exclude_from_bom, fields}], {"REF.PAD": net})."""
     data = sexpdata.loads(path.read_text(encoding="utf-8"))
     components: list[dict] = []
     netmap: dict[str, str] = {}
@@ -160,10 +160,14 @@ def parse_netlist(path: Path) -> tuple[list[dict], dict]:
                 # `(property (name "dnp"))` - valueless, present only when the
                 # symbol carries KiCad's native do-not-populate attribute. It
                 # is a property, not a field, so _comp_fields never sees it.
-                dnp = any(_sym(_find1(pr, "name")[1]) == "dnp"
-                          for pr in _find(comp, "property"))
+                # `exclude_from_bom` is written the same way when the symbol
+                # says (in_bom no) (measured, KiCad 10.0.6).
+                props = {_sym(_find1(pr, "name")[1])
+                         for pr in _find(comp, "property")}
                 components.append({"ref": ref, "value": value, "fp": fp,
-                                   "dnp": dnp,
+                                   "dnp": "dnp" in props,
+                                   "exclude_from_bom":
+                                       "exclude_from_bom" in props,
                                    "fields": _comp_fields(comp)})
         elif _head(section) == "nets":
             for net in _find(section, "net"):
