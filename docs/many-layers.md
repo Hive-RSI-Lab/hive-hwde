@@ -84,8 +84,17 @@ Its planted fault is `blind-via-no-lamination` on rf4.
 
 ## Not done yet
 
-- Inner-layer stripline impedance and per-layer rules in rules_gen are task
-  261031-013616's (the impedance half of the 6-layer Linux board).
+- (Done, #323) rules_gen sizes inner stripline: an inner layer with a pour
+  (constraints `planes`) on the copper above and below gets layer-scoped
+  `aiee_diff_w_<pair>_<layer>` / `aiee_diff_gap_<pair>_<layer>` and
+  `aiee_z<ohm>_w_<layer>` track_width rules, solved with
+  impedance.field_stripline (the trace on the core, embedded in the
+  prepreg, as check_diffpair solves). Where the solved width is under the
+  fab floor (100 ohm on JLC 6-layer L3: 0.078 mm), the width is pinned at
+  the floor and the gap solved. Inner layers without a pour on both sides
+  keep the disallow guard. Not yet: the routers (DSN export, KRT) draw with
+  the netclass (outer) width, so an inner run needs route_edit set_width or
+  a DRC-led fix until the router reads the per-layer widths.
 - route_auto and planes_gen don't place blind or micro vias themselves; a
   board gets them by hand or a later router.
 - rules_gen writes no per-via-type DRU rules yet (KiCad's `A.Via_Type`).

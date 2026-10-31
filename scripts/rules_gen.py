@@ -12,8 +12,12 @@ expressible as a rule becomes a named DRC violation, so the standard DRC gate
      constraints:
        - power nets  -> minimum track width (IPC-2152 via check_current) per net
        - diff pairs  -> diff_pair_gap rule + differential width (impedance.py +
-         stackup) + inner-layer `disallow track` (V12: only OUTER microstrip is
-         solved, T6 P5-4)
+         stackup); on an inner STRIPLINE layer (a pour on the layers above and
+         below, from constraints planes) a layer-scoped width/gap solved with
+         impedance.field_stripline (#323); any other inner layer keeps the
+         `disallow track` guard (T6 P5-4)
+       - high_speed impedance_ohm (single-ended) -> outer microstrip width as
+         a fact, and a layer-scoped track_width rule per stripline layer
        - voltages / voltage_pairs -> named HV clearance rules from the IPC-2221
          table in check_creepage (T6 P5-3; carrier hand-authored these before)
      Baseline rules are emitted FIRST and per-net rules LAST: when two rules of the
@@ -289,33 +293,198 @@ def detect_diff_pairs(constraints: dict) -> list[dict]:
     return pairs
 
 
-def diff_pair_rules(pairs: list[dict], stackup: dict) -> tuple[list[Rule], list[dict]]:
-    """diff_pair_gap rule + computed width/gap per pair (impedance.py)."""
+def _series_dielectric(stack: list[dict], a: int, b: int) -> tuple[float, float]:
+    """(height, epsilon_r) of the dielectrics between stack rows a and b: the
+    heights summed, epsilon_r as plies in series (h / sum(h_i / er_i))."""
+    plies = [ly for ly in stack[a + 1:b] if ly["type"] != "copper"]
+    h = sum(float(ly["thickness_mm"]) for ly in plies)
+    if h <= 0:
+        return 0.0, 4.5
+    inv = sum(float(ly["thickness_mm"]) / float(ly.get("epsilon_r", 4.5))
+              for ly in plies)
+    return h, h / inv
+
+
+def plane_layers(stackup: dict, constraints: dict) -> set[str]:
+    """Copper layers that carry a pour: constraints planes' layers, else
+    planes_gen's defaults (the 2nd and 3rd copper on 4+ layers)."""
+    names = [ly["name"] for ly in stackup.get("stack", []) if ly["type"] == "copper"]
+    planes = constraints.get("planes")
+    if planes is None:
+        return set(names[1:3]) if len(names) >= 4 else set()
+    return {e.get("layer") for e in planes if e.get("layer")}
+
+
+def stripline_layers(stackup: dict, constraints: dict) -> dict[str, dict]:
+    """Inner signal layers that are stripline: a pour on the copper layer
+    above AND below, none on the layer itself. Each maps to the geometry
+    impedance.field_stripline takes: the trace sits on the THICKER dielectric
+    (h_base, the core on JLC builds) and is embedded in the thinner (h_fill,
+    prepreg) - the same convention check_diffpair solves with."""
+    stack = stackup.get("stack") or []
+    rows = [i for i, ly in enumerate(stack) if ly["type"] == "copper"]
+    names = [stack[i]["name"] for i in rows]
+    pours = plane_layers(stackup, constraints)
+    out: dict[str, dict] = {}
+    for k in range(1, len(rows) - 1):
+        name = names[k]
+        if name in pours or names[k - 1] not in pours or names[k + 1] not in pours:
+            continue
+        up = _series_dielectric(stack, rows[k - 1], rows[k])
+        dn = _series_dielectric(stack, rows[k], rows[k + 1])
+        (hb, eb), (hf, ef) = sorted([up, dn], reverse=True)
+        t = float(stack[rows[k]].get("thickness_mm")
+                  or CU_OZ_MM.get(stack[rows[k]].get("copper_oz", 0.5), 0.0175))
+        out[name] = {"h_base": round(hb, 4), "er_base": round(eb, 3),
+                     "h_fill": round(hf, 4), "er_fill": round(ef, 3),
+                     "t": t, "planes": [names[k - 1], names[k + 1]]}
+    return out
+
+
+def stripline_geometry(z_target: float, geo: dict, diff: bool,
+                       floor: float = 0.0) -> dict:
+    """Width (and, for a pair, the gap) whose stripline impedance on `geo` is
+    z_target. A pair's gap is pinned at clamp(h_fill, 0.13, 0.30), the outer
+    pairs' convention (tight coupling, a gap the fab draws), and the width
+    solved; when that width is under the fab floor the width is pinned at
+    the floor and the gap solved instead (a thin prepreg makes a 100 ohm
+    pair narrow: JLC's 6-layer L3 wants 0.078 mm at 0.13 mm)."""
+    hb, hf, t = geo["h_base"], geo["h_fill"], geo["t"]
+    eb, ef = geo["er_base"], geo["er_fill"]
+    s = min(max(hf, 0.13), 0.30) if diff else None
+    key = "zdiff" if diff else "z0"
+
+    def z_of(w: float, gap: float | None = s) -> float:
+        return imp.field_stripline(w, hb, hf, t, eb, ef, gap)[key]
+
+    # Z falls with width; a guess from the thinner side's height
+    w = imp._secant_log(z_of, float(z_target), max(0.05, 0.8 * hf), 0.02, 2.0)
+    out = {"model": "stripline"}
+    if w < floor:
+        w = floor
+        if diff:   # Zdiff grows with the gap: solve 1/Z, which falls
+            s = imp._secant_log(lambda g: 1.0 / z_of(w, g), 1.0 / float(z_target),
+                                s, 0.05, 1.0)
+            out["gap_solved"] = True
+        else:
+            out["below_fab_floor"] = True
+    out.update({"width_mm": round(w, 4),
+                "zdiff_ohm" if diff else "z0_ohm": round(z_of(w, s), 2)})
+    if diff:
+        out["gap_mm"] = round(s, 4)
+    return out
+
+
+def _layer_tag(layer: str) -> str:
+    return re.sub(r"[^A-Za-z0-9]", "", layer.replace(".Cu", ""))
+
+
+def _width_window(w: float, floor: float) -> str:
+    """track_width (min/opt/max) for an impedance-sized width: +-10 % (about
+    +-6 % in Z), the minimum never under the fab floor."""
+    lo = max(floor, w * 0.9)
+    return f"(min {lo:.4f}mm) (opt {w:.4f}mm) (max {max(lo, w * 1.1):.4f}mm)"
+
+
+def diff_pair_rules(pairs: list[dict], stackup: dict, constraints: dict | None = None,
+                    floor: float = 0.0) -> tuple[list[Rule], list[dict]]:
+    """diff_pair_gap rule + computed width/gap per pair (impedance.py).
+
+    Inner layers: a stripline layer (stripline_layers: a pour above and
+    below) gets its own solved width/gap as layer-scoped track_width and
+    diff_pair_gap rules; any other inner layer keeps the guard (a named
+    disallow-track), since nothing there is a reference to size against."""
     rules: list[Rule] = []
     facts: list[dict] = []
     # outer microstrip: dielectric gap to the nearest inner plane + its er
     h, er, cu_oz = outer_microstrip_params(stackup)
+    strip = stripline_layers(stackup, constraints or {})
+    inner = [ly["name"] for ly in stackup.get("stack", [])
+             if ly["type"] == "copper"][1:-1]
     for dp in pairs:
         w, gap = imp.diff_pair(float(dp["impedance_ohm"]), h,
                                imp.CU_OZ_MM.get(cu_oz, 0.035), er)
         safe = re.sub(r"[^A-Za-z0-9]", "_", dp["base"]).strip("_")
+        cond = f"A.NetName == '{dp['p']}' || A.NetName == '{dp['n']}'"
         # gap floor: a differential gap smaller than this is a skew/coupling defect
-        rules.append(Rule(
-            f"aiee_diff_gap_{safe}", "diff_pair_gap", round(gap, 4),
-            condition=(f"A.NetName == '{dp['p']}' || A.NetName == '{dp['n']}'")))
-        # Inner-layer guard (T6 P5-4): the width/gap above is solved for the
-        # OUTER coated microstrip; the same pair on an inner layer (1080B's
-        # inner dielectrics are nothing like it) would be mis-sized, so an
-        # inner-layer segment of the pair is a NAMED DRC violation instead
-        # of a silent impedance error. Layer transitions via vias remain
-        # legal (vias are not tracks). Waiver path: reference/remediations -
-        # delete the rule consciously only after solving the inner geometry
-        # with impedance.field_stripline (check_diffpair reports the result).
-        rules.append(Rule(
-            f"aiee_diff_outer_only_{safe}", "disallow track", layer="inner",
-            condition=(f"A.NetName == '{dp['p']}' || A.NetName == '{dp['n']}'")))
-        facts.append({"pair": [dp["p"], dp["n"]], "impedance_ohm": dp["impedance_ohm"],
-                      "width_mm": w, "gap_mm": gap})
+        rules.append(Rule(f"aiee_diff_gap_{safe}", "diff_pair_gap", round(gap, 4),
+                          condition=cond))
+        layers: dict[str, dict] = {}
+        for lname, geo in strip.items():
+            try:
+                g = stripline_geometry(float(dp["impedance_ohm"]), geo, diff=True,
+                                       floor=floor)
+            except (ValueError, RuntimeError, ZeroDivisionError) as e:
+                layers[lname] = {"note": f"stripline not solved: {e}"}
+                continue
+            layers[lname] = g
+            tag = _layer_tag(lname)
+            rules.append(Rule(f"aiee_diff_w_{safe}_{tag}", "track_width",
+                              layer=f'"{lname}"', condition=cond,
+                              extra=_width_window(g["width_mm"], floor)))
+            rules.append(Rule(f"aiee_diff_gap_{safe}_{tag}", "diff_pair_gap",
+                              layer=f'"{lname}"', condition=cond,
+                              extra=f"(min {g['gap_mm'] * 0.9:.4f}mm) "
+                                    f"(opt {g['gap_mm']:.4f}mm)"))
+        # Inner-layer guard (T6 P5-4): an inner layer with no pour on both
+        # sides has no geometry to solve, so a pair segment there is a NAMED
+        # DRC violation instead of a silent impedance error. Layer
+        # transitions via vias remain legal (vias are not tracks).
+        unsized = [n for n in inner if n not in layers or "width_mm" not in layers[n]]
+        if unsized and len(unsized) == len(inner):
+            rules.append(Rule(f"aiee_diff_outer_only_{safe}", "disallow track",
+                              layer="inner", condition=cond))
+        else:
+            for n in unsized:
+                rules.append(Rule(f"aiee_diff_outer_only_{safe}_{_layer_tag(n)}",
+                                  "disallow track", layer=f'"{n}"', condition=cond))
+        f = {"pair": [dp["p"], dp["n"]], "impedance_ohm": dp["impedance_ohm"],
+             "width_mm": w, "gap_mm": gap}
+        if layers:
+            f["layers"] = layers
+        facts.append(f)
+    return rules, facts
+
+
+def impedance_rules(constraints: dict, stackup: dict, pairs: list[dict],
+                    floor: float = 0.0) -> tuple[list[Rule], list[dict]]:
+    """Single-ended high_speed nets with impedance_ohm: the outer microstrip
+    width (a fact: the router's class is left to the board, RF boards draw
+    their own) and, per stripline layer, a layer-scoped track_width rule."""
+    in_pair = {n for dp in pairs for n in (dp["p"], dp["n"])}
+    nets = [e for e in constraints.get("high_speed", [])
+            if e.get("impedance_ohm") and e.get("net") not in in_pair]
+    if not nets:
+        return [], []
+    h, er, cu_oz = outer_microstrip_params(stackup)
+    t = imp.CU_OZ_MM.get(cu_oz, 0.035)
+    strip = stripline_layers(stackup, constraints)
+    rules: list[Rule] = []
+    facts: list[dict] = []
+    by_z: dict[float, dict] = {}
+    for e in nets:
+        z = float(e["impedance_ohm"])
+        if z not in by_z:
+            sol = {"outer_width_mm": round(imp.solve_width(z, h, t, er), 4), "layers": {}}
+            for lname, geo in strip.items():
+                try:
+                    g = stripline_geometry(z, geo, diff=False, floor=floor)
+                except (ValueError, RuntimeError, ZeroDivisionError) as ex:
+                    sol["layers"][lname] = {"note": f"stripline not solved: {ex}"}
+                    continue
+                sol["layers"][lname] = g
+            by_z[z] = sol
+        facts.append({"net": e["net"], "impedance_ohm": z, **by_z[z]})
+    # one rule per (impedance, layer): its nets ORed in the condition
+    for z, sol in by_z.items():
+        members = [f["net"] for f in facts if f["impedance_ohm"] == z]
+        cond = " || ".join(f"A.NetName == '{n}'" for n in members)
+        for lname, g in sol["layers"].items():
+            if "width_mm" not in g:
+                continue
+            rules.append(Rule(f"aiee_z{_mm_tag(z)}_w_{_layer_tag(lname)}", "track_width",
+                              layer=f'"{lname}"', condition=cond,
+                              extra=_width_window(g["width_mm"], floor)))
     return rules, facts
 
 
@@ -671,13 +840,15 @@ def build(constraints: dict, cap: dict, stackup: dict, baseline_only: bool,
         pr, pf = power_rules(constraints, cu_mm)
         nr, nf = neck_rules(bg, pf, cap) if bg is not None else ([], [])
         pairs = detect_diff_pairs(constraints)
-        dr, df = diff_pair_rules(pairs, stackup)
+        floor = float(cap.get("min_trace_width_mm", 0.0) or 0.0)
+        dr, df = diff_pair_rules(pairs, stackup, constraints, floor)
+        zr, zf = impedance_rules(constraints, stackup, pairs, floor)
         hr, hf = voltage_rules(constraints, cap)
         kr, kf = package_rules(constraints)
         br, bf = bga_rules(bg, cap) if bg is not None else ([], [])
         # HV and package-rating clearances stay last: KiCad's later rule
         # wins, and a courtyard's escape clearance must never undercut them
-        rules += pr + nr + dr + br + hr + kr
+        rules += pr + nr + dr + zr + br + hr + kr
         report["package_rules"] = kf
         report["necks"] = nf
         report["bga_escape"] = bf
@@ -685,6 +856,8 @@ def build(constraints: dict, cap: dict, stackup: dict, baseline_only: bool,
         classes, patterns = net_classes(constraints, pf, df, cap, hf)
         report["power"] = pf
         report["diff_pairs"] = df
+        report["impedance"] = zf
+        report["stripline_layers"] = stripline_layers(stackup, constraints)
         report["classes"] = classes
         report["patterns"] = patterns
         report["hv_rules"] = hf
@@ -815,6 +988,8 @@ def main(argv: list[str] | None = None) -> int:
             "rule_names": [r.name for r in rules],
             "renamed_rules": report.get("renamed_rules", []),
             "power": report["power"], "diff_pairs": report["diff_pairs"],
+            "impedance": report.get("impedance", []),
+            "stripline_layers": report.get("stripline_layers", {}),
             "hv_rules": report["hv_rules"],
             "package_rules": report.get("package_rules", []),
             "necks": report["necks"],

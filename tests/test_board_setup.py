@@ -1335,6 +1335,100 @@ def test_diff_outer_only_enforced(cli, tmp_path):
     assert hit and hit[0]["check"] == "items_not_allowed"
 
 
+# ============ #323: inner stripline layers get solved widths, not the guard
+
+_SIX_PLANES = [{"layer": "In1.Cu", "net": "GND"}, {"layer": "In3.Cu", "net": "+3V3"},
+               {"layer": "In4.Cu", "net": "GND"}]
+
+
+def _ddr_cons():
+    return {"planes": _SIX_PLANES,
+            "diff_pairs": [{"p": "/CK_P", "n": "/CK_N", "base": "CK", "impedance_ohm": 100},
+                           {"p": "/USB_DP", "n": "/USB_DM", "base": "USB",
+                            "impedance_ohm": 90}],
+            "high_speed": [{"net": "/D0", "reference": "GND", "impedance_ohm": 50},
+                           {"net": "/D1", "reference": "GND", "impedance_ohm": 50},
+                           {"net": "/CK_P", "reference": "GND", "impedance_ohm": 50}]}
+
+
+def test_stripline_layers_need_a_pour_both_sides():
+    stk = _stackup("JLC06161H-3313")
+    sl = rules_gen.stripline_layers(stk, {"planes": _SIX_PLANES})
+    # In2 sits between In1 (GND) and In3 (+3V3); In1/In3/In4 are pours
+    assert list(sl) == ["In2.Cu"]
+    g = sl["In2.Cu"]
+    assert g["planes"] == ["In1.Cu", "In3.Cu"]
+    # the trace sits on the 0.55 core, embedded in the 2116 prepreg
+    assert g["h_base"] == pytest.approx(0.55) and g["h_fill"] == pytest.approx(0.1088)
+    # planes_gen's 6-layer defaults (In1, In2 pours) leave no stripline layer
+    assert rules_gen.stripline_layers(stk, {}) == {}
+    # a 4-layer board's inner layers are its planes
+    assert rules_gen.stripline_layers(_stackup(), {}) == {}
+
+
+def test_stripline_pair_widths_and_guards():
+    cap = _cap("6layer_1oz")
+    floor = float(cap["min_trace_width_mm"])
+    rules, rep = rules_gen.build(_ddr_cons(), cap, _stackup("JLC06161H-3313"), False)
+    byname = {r.name: r for r in rules}
+    ck = next(f for f in rep["diff_pairs"] if f["pair"][0] == "/CK_P")
+    g = ck["layers"]["In2.Cu"]
+    assert g["zdiff_ohm"] == pytest.approx(100, abs=1)
+    assert g["width_mm"] >= floor - 1e-9
+    usb = next(f for f in rep["diff_pairs"] if f["pair"][0] == "/USB_DP")
+    assert usb["layers"]["In2.Cu"]["zdiff_ohm"] == pytest.approx(90, abs=1)
+    w = byname["aiee_diff_w_CK_In2"]
+    assert w.constraint == "track_width" and w.layer == '"In2.Cu"'
+    assert "(opt %.4fmm)" % g["width_mm"] in w.render()
+    assert '(layer "In2.Cu")' in byname["aiee_diff_gap_CK_In2"].render()
+    # the guard moves to the inner layers that are not stripline
+    assert "aiee_diff_outer_only_CK" not in byname
+    for lay in ("In1", "In3", "In4"):
+        assert byname[f"aiee_diff_outer_only_CK_{lay}"].constraint == "disallow track"
+    assert "aiee_diff_outer_only_CK_In2" not in byname
+
+
+def test_stripline_single_ended_rule_no_class():
+    rules, rep = rules_gen.build(_ddr_cons(), _cap("6layer_1oz"),
+                                 _stackup("JLC06161H-3313"), False)
+    z = rep["impedance"]
+    # /CK_P is a pair member: sized as the pair, not single-ended
+    assert [f["net"] for f in z] == ["/D0", "/D1"]
+    assert z[0]["outer_width_mm"] == pytest.approx(0.155, abs=0.01)
+    assert z[0]["layers"]["In2.Cu"]["z0_ohm"] == pytest.approx(50, abs=1)
+    r = {x.name: x for x in rules}["aiee_z50_w_In2"]
+    assert "'/D0'" in r.condition and "'/D1'" in r.condition
+    assert "'/CK_P'" not in r.condition
+    # no single-ended netclass: an RF board keeps the classes it draws with
+    assert not [c for c in rep["classes"] if c["name"].startswith("Z")]
+
+
+@pytest.mark.smoke
+def test_stripline_width_enforced(cli, tmp_path):
+    """Live proof of the layer-scoped track_width rule on pinned KiCad: with
+    F.Cu and In2.Cu declared pours, In1.Cu is stripline (90 ohm: 0.27 mm);
+    a 0.6 mm /USB_DP segment there fails DRC naming aiee_diff_w_USB_In1, not
+    the guard."""
+    pcb = _prep_golden(tmp_path)
+    cons = json.loads((GOLDEN / "usbbuck4" / "constraints.json").read_text("utf-8"))
+    cons["planes"] = [{"layer": "F.Cu", "net": "GND"}, {"layer": "In2.Cu", "net": "GND"}]
+    cpath = tmp_path / "c.json"
+    cpath.write_text(json.dumps(cons), encoding="utf-8")
+    assert rules_gen.main(["--constraints", str(cpath), "--layers", "4",
+                           "--out-dru", str(pcb.with_suffix(".kicad_dru")),
+                           "--out", str(tmp_path / "r.json")]) == 0
+    text = pcb.read_text("utf-8")
+    seg = ('\t(segment\n\t\t(start 141.4 116.25)\n\t\t(end 140.8 116.25)\n'
+           '\t\t(width 0.6)\n\t\t(layer "In1.Cu")\n\t\t(net "/USB_DP")\n'
+           '\t\t(uuid "aaaaaaaa-0000-0000-0000-000000000002")\n\t)\n')
+    i = text.rfind(")")
+    pcb.write_text(text[:i] + seg + text[i:], encoding="utf-8")
+    rep = _drc(cli, pcb)
+    names = _rule_names(rep)
+    assert "aiee_diff_w_USB_In1" in names, rep["violations"]
+    assert "aiee_diff_outer_only_USB" not in names
+
+
 # ========================= T6 P5-5: check_dru (ladder row 160 - the DRU half)
 
 def test_check_dru_passes_generated_dru(tmp_path):

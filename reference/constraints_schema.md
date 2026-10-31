@@ -18,7 +18,12 @@ Consumers per key (script -> phase):
     "k": 3,                          // corridor = k x trace width (default 3)
     "t_rise_ns": 1.0,                // sets return-via radius + stitch pitch
     "return_via_radius_mm": 2.0,     // fallback when t_rise_ns absent
-    "impedance_ohm": 50              // optional; rules_gen sizes the width
+    "impedance_ohm": 50              // optional; rules_gen reports the outer
+                                     // microstrip width (impedance facts) and
+                                     // writes a track_width rule per inner
+                                     // stripline layer (pours above + below
+                                     // in "planes"); no netclass, the board
+                                     // keeps its own (RF boards)
   }],
 
   // check_current (P8), rules_gen per-net width rules (P5),
@@ -248,7 +253,9 @@ Consumers per key (script -> phase):
     //        same rectangles as keepouts so place_anneal keeps them clear.
   },
 
-  // planes_gen (P7). Defaults when absent: 2-layer -> B.Cu GND pour;
+  // planes_gen (P7); rules_gen reads the layers too: an inner layer with a
+  // pour on the copper above and below is stripline and gets solved
+  // per-layer impedance widths (#323). Defaults when absent: 2-layer -> B.Cu GND pour;
   // 4-layer -> In1 GND + In2 dominant-power; high_speed references are
   // always guaranteed a plane.
   "planes": [{"layer": "In2.Cu", "net": "+3V3",
