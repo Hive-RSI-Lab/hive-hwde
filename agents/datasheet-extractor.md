@@ -32,8 +32,11 @@ venv python; JSON out, exit 0/1/2. Keep output ASCII.
 ## Scripts
 1. `scripts/datasheet_extract.py --pdf parts/<file>.pdf --out parts/<lcsc>.grounding.json`
    - emits `{text_by_page, schema, template}`: per-page PDF text plus the
-   JSON Schema your output must satisfy. Image-only datasheets yield ~empty
-   text - then read the PDF pages directly (visually) instead.
+   JSON Schema your output must satisfy. Add `--render parts/<lcsc>.pages`
+   to get the image-only pages and the mechanical-drawing pages as PNGs
+   (`rendered` in the payload; a scan is OCR'd into text_by_page when
+   tesseract is installed) - read the drawings from those images, not from
+   the text layer's loose numbers.
 2. Fill the template -> write `parts/<lcsc>.json`.
 3. `scripts/datasheet_extract.py --validate parts/<lcsc>.json` - MUST exit 0
    (schema errors come back with precise paths; fix and re-validate).
@@ -55,6 +58,17 @@ venv python; JSON out, exit 0/1/2. Keep output ASCII.
   the body), `land_pattern.courtyard_mm` [w, h], and for a connector
   `land_pattern.wire_entry_local` (+X/-X/+Y/-Y, KiCad y down). A missing one
   is a gap the P3 screen reports, never a number you guess.
+- Mechanical (every through-hole part and every connector): the
+  `mechanical` block from the dimensioned drawing and its PCB layout -
+  `pins` (the leads' MAX cross-section, dia_mm or w_mm x t_mm, with the
+  drawing's recommended hole_mm; `pads` when the leads differ),
+  `posts` (count and size of every locating post, peg or boss: each needs
+  a hole of its own), `edge.overhang_mm` (where the drawing's PCB-edge line
+  falls: how far the body's front stands past it, negative when set back),
+  and `source` (page and figure). check_connector_fit holds the board's
+  footprint to these - a missing post hole or an under-size hole for the
+  leads (hifi-receiver-2 DFM-1) fails verify. A field the drawing does not
+  give stays out and goes in OPEN.
 - Layout notes: transcribe the vendor's layout section as terse bullets
   (loop areas, Kelvin connections, keepouts, plane advice).
 - abs_max: supply, IO, temperature - the schematic reviewer and

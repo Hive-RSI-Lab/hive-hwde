@@ -88,6 +88,15 @@ What moved where:
   junction temperature through a pulse; `scripts/mlcc_dcbias.py` and
   `scripts/lib/mlcc.py` with `reference/mlcc_dcbias.yaml`, ceramics at DC
   bias (sim_board's DC-bias warning reports the derated value).
+- Checks a reviewer of hifi-receiver-2's first spin did by hand (10-29):
+  `scripts/check_connector_fit.py` holds each part's leads, locating posts
+  and front edge to its mechanical drawing (the extraction's new
+  `mechanical` block; `fp_verify` applies the lead and post rules to a
+  library footprint), and reports every mating connector's overhang;
+  `scripts/check_ep_paste.py` measures each exposed pad's paste coverage and
+  fails paste printed over its vias. `datasheet_extract.py --render` renders
+  scanned and drawing pages for the extractor (OCR'd with tesseract when
+  installed).
 - A live stock-and-match check on every BOM row (the person, 10-28: "didn't
   the hive pull the JLC and LCSC?"): `scripts/stock_check.py` and
   `scripts/lib/stocklib.py` read JLC's and LCSC's own record for each code
