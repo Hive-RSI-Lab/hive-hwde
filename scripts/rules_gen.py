@@ -234,6 +234,15 @@ def neck_rules(bg, power_facts: list[dict], cap: dict
     return rules, facts
 
 
+def _bga_refs(bg) -> list[str]:
+    """Refs of the board's ball grids (none without a board)."""
+    if bg is None:
+        return []
+    sys.path.insert(0, str(SCRIPTS / "lib"))
+    import bgalib
+    return [b.ref.replace("'", "") for b in bgalib.find_bgas(bg)]
+
+
 def bga_rules(bg, cap: dict) -> tuple[list[Rule], list[dict]]:
     """The escape clearance inside each ball grid's courtyard (#325): the
     netclass clearance (hole clearance less the class via's ring) is wider
@@ -379,6 +388,17 @@ def _layer_tag(layer: str) -> str:
     return re.sub(r"[^A-Za-z0-9]", "", layer.replace(".Cu", ""))
 
 
+def _neckdown(cond: str, bga_refs: list[str] | None) -> str:
+    """An impedance width rule's condition, minus the inside of every ball
+    grid's courtyard: escape stubs neck down to the fab floor there (#325's
+    dog-bones), as every BGA fan-out does, and the stripline width applies
+    from the field's edge on."""
+    if not bga_refs:
+        return cond
+    inside = " || ".join(f"A.intersectsCourtyard('{r}')" for r in bga_refs)
+    return f"({cond}) && !({inside})"
+
+
 def _width_window(w: float, floor: float) -> str:
     """track_width (min/opt/max) for an impedance-sized width: +-10 % (about
     +-6 % in Z), the minimum never under the fab floor."""
@@ -387,7 +407,8 @@ def _width_window(w: float, floor: float) -> str:
 
 
 def diff_pair_rules(pairs: list[dict], stackup: dict, constraints: dict | None = None,
-                    floor: float = 0.0) -> tuple[list[Rule], list[dict]]:
+                    floor: float = 0.0, bga_refs: list[str] | None = None
+                    ) -> tuple[list[Rule], list[dict]]:
     """diff_pair_gap rule + computed width/gap per pair (impedance.py).
 
     Inner layers: a stripline layer (stripline_layers: a pour above and
@@ -420,10 +441,10 @@ def diff_pair_rules(pairs: list[dict], stackup: dict, constraints: dict | None =
             layers[lname] = g
             tag = _layer_tag(lname)
             rules.append(Rule(f"aiee_diff_w_{safe}_{tag}", "track_width",
-                              layer=f'"{lname}"', condition=cond,
+                              layer=f'"{lname}"', condition=_neckdown(cond, bga_refs),
                               extra=_width_window(g["width_mm"], floor)))
             rules.append(Rule(f"aiee_diff_gap_{safe}_{tag}", "diff_pair_gap",
-                              layer=f'"{lname}"', condition=cond,
+                              layer=f'"{lname}"', condition=_neckdown(cond, bga_refs),
                               extra=f"(min {g['gap_mm'] * 0.9:.4f}mm) "
                                     f"(opt {g['gap_mm']:.4f}mm)"))
         # Inner-layer guard (T6 P5-4): an inner layer with no pour on both
@@ -447,7 +468,8 @@ def diff_pair_rules(pairs: list[dict], stackup: dict, constraints: dict | None =
 
 
 def impedance_rules(constraints: dict, stackup: dict, pairs: list[dict],
-                    floor: float = 0.0) -> tuple[list[Rule], list[dict]]:
+                    floor: float = 0.0, bga_refs: list[str] | None = None
+                    ) -> tuple[list[Rule], list[dict]]:
     """Single-ended high_speed nets with impedance_ohm: the outer microstrip
     width (a fact: the router's class is left to the board, RF boards draw
     their own) and, per stripline layer, a layer-scoped track_width rule."""
@@ -483,7 +505,7 @@ def impedance_rules(constraints: dict, stackup: dict, pairs: list[dict],
             if "width_mm" not in g:
                 continue
             rules.append(Rule(f"aiee_z{_mm_tag(z)}_w_{_layer_tag(lname)}", "track_width",
-                              layer=f'"{lname}"', condition=cond,
+                              layer=f'"{lname}"', condition=_neckdown(cond, bga_refs),
                               extra=_width_window(g["width_mm"], floor)))
     return rules, facts
 
@@ -841,8 +863,9 @@ def build(constraints: dict, cap: dict, stackup: dict, baseline_only: bool,
         nr, nf = neck_rules(bg, pf, cap) if bg is not None else ([], [])
         pairs = detect_diff_pairs(constraints)
         floor = float(cap.get("min_trace_width_mm", 0.0) or 0.0)
-        dr, df = diff_pair_rules(pairs, stackup, constraints, floor)
-        zr, zf = impedance_rules(constraints, stackup, pairs, floor)
+        bga_refs = _bga_refs(bg)
+        dr, df = diff_pair_rules(pairs, stackup, constraints, floor, bga_refs)
+        zr, zf = impedance_rules(constraints, stackup, pairs, floor, bga_refs)
         hr, hf = voltage_rules(constraints, cap)
         kr, kf = package_rules(constraints)
         br, bf = bga_rules(bg, cap) if bg is not None else ([], [])

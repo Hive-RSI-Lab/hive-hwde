@@ -1403,6 +1403,21 @@ def test_stripline_single_ended_rule_no_class():
     assert not [c for c in rep["classes"] if c["name"].startswith("Z")]
 
 
+def test_stripline_width_necks_down_in_bga_fields():
+    """BGA escape stubs run at the fab floor inside the field (#325): the
+    stripline width rules exclude every ball grid's courtyard."""
+    cons, stk = _ddr_cons(), _stackup("JLC06161H-3313")
+    pairs = rules_gen.detect_diff_pairs(cons)
+    dr, _ = rules_gen.diff_pair_rules(pairs, stk, cons, 0.0889, ["U100", "U200"])
+    zr, _ = rules_gen.impedance_rules(cons, stk, pairs, 0.0889, ["U100", "U200"])
+    for r in dr + zr:
+        if r.constraint in ("track_width", "diff_pair_gap") and r.layer:
+            assert r.condition.endswith("&& !(A.intersectsCourtyard('U100') || "
+                                        "A.intersectsCourtyard('U200'))"), r.name
+    plain, _ = rules_gen.impedance_rules(cons, stk, pairs, 0.0889, [])
+    assert "intersectsCourtyard" not in plain[0].condition
+
+
 @pytest.mark.smoke
 def test_stripline_width_enforced(cli, tmp_path):
     """Live proof of the layer-scoped track_width rule on pinned KiCad: with
