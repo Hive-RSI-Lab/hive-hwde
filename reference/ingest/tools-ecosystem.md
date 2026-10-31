@@ -69,22 +69,25 @@ Each case was solved three ways: hwde's own solver
 (Hammerstad-Jensen with the thickness correction, no dispersion; BSD-3), and
 the IPC-2141 formula (hwde's `closed_form` fallback). FasterCap 2D BEM was the
 fourth method, with a 40·max(w,h) finite ground strip. Run them with
-`z0_hwde.py`, `z0_hj.py` and `fc_ms.py` on `z0_cases.txt`.
+`z0_hwde.py`, `z0_hj.py` and `fc_ms.py` on `z0_cases.txt`. FasterCap
+finished only the w = 0.2 mm case. At `-a0.002` the wider cases ran past
+15 minutes each and I stopped them, so they're still to do (gap G2).
 
 | w mm | h mm | w/h | H-J Ω | hwde Ω | FasterCap Ω | IPC-2141 Ω | hwde vs H-J | IPC vs H-J | JLC mask shifts hwde by |
 |---|---|---|---|---|---|---|---|---|---|
 | 0.10 | 0.2104 | 0.48 | 87.96 | 88.42 | | 86.35 | +0.5% | −1.8% | −6.9% |
 | 0.20 | 0.2104 | 0.95 | 67.94 | 68.34 | 68.11 | 67.29 | +0.6% | −1.0% | −5.0% |
-| 0.36 | 0.2104 | 1.71 | 50.92 | 51.19 | FC036 | 49.08 | +0.5% | −3.6% | −3.6% |
-| 0.60 | 0.2104 | 2.85 | 37.50 | 37.63 | FC060 | 32.24 | +0.4% | **−14.0%** | −2.6% |
-| 1.00 | 0.2104 | 4.75 | 26.30 | 26.35 | FC100 | 14.80 | +0.2% | **−43.7%** | −1.8% |
+| 0.36 | 0.2104 | 1.71 | 50.92 | 51.19 | — | 49.08 | +0.5% | −3.6% | −3.6% |
+| 0.60 | 0.2104 | 2.85 | 37.50 | 37.63 | — | 32.24 | +0.4% | **−14.0%** | −2.6% |
+| 1.00 | 0.2104 | 4.75 | 26.30 | 26.35 | — | 14.80 | +0.2% | **−43.7%** | −1.8% |
 | 0.25 | 1.5 | 0.17 | 128.54 | 129.33 | | 130.34 | +0.6% | +1.4% | −2.8% |
 | 1.00 | 1.5 | 0.67 | 82.85 | 83.30 | | 84.97 | +0.5% | +2.6% | −1.2% |
 | 2.90 | 1.5 | 1.93 | 48.75 | 48.92 | | 47.86 | +0.4% | −1.8% | −0.6% |
 | 5.00 | 1.5 | 3.33 | 34.27 | 34.32 | | 28.59 | +0.2% | **−16.6%** | −0.4% |
 
 - **Verified:** hwde's field solver is within 0.6% of Hammerstad-Jensen
-  everywhere, and within 0.4% of FasterCap where both ran. These are three
+  everywhere, and within 0.4% of FasterCap on the one case it finished (FasterCap is
+  within 0.25% of H-J there). These are three
   independent methods (finite volume, a published closed-form fit, boundary
   elements), so the solver hwde uses by default can be trusted to about 1%
   for uncoated microstrip. That is well inside the ±10% JLC promises on a

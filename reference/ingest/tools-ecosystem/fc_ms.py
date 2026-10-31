@@ -8,11 +8,10 @@ def S(f, n, a, b): f.write(f"S {n} {a[0]:.9g} {a[1]:.9g} {b[0]:.9g} {b[1]:.9g}\n
 def poly(f, n, pts):
     for a, b in zip(pts[:-1], pts[1:]): S(f, n, a, b)
 def run(w, h, t, er, Lf=40, err=0.002):
-    d = tempfile.mkdtemp(dir="/tmp/ingest-tools")
+    d = tempfile.mkdtemp(prefix="fc_ms_")
     L = Lf * max(h, w); g = t
     x0, x1 = -w/2, w/2
     def files(e):
-        open(f"{d}/g_top.txt", "w").write("0\n"); 
         with open(f"{d}/g_top.txt", "w") as f: f.write("0 gnd top\n"); poly(f, "g", [(-L, 0), (L, 0)])
         with open(f"{d}/g_rest.txt", "w") as f: f.write("0 gnd rest\n"); poly(f, "g", [(L, 0), (L, -g), (-L, -g), (-L, 0)])
         with open(f"{d}/t_air.txt", "w") as f: f.write("0 tr air\n"); poly(f, "t", [(x0, h), (x0, h+t), (x1, h+t), (x1, h)])
