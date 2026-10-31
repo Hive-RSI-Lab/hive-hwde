@@ -1,7 +1,9 @@
 # Designing a board with hwde in the Hive
 
 hwde is the Hive's KiCad design module. It takes a board from a written
-brief to checked KiCad files and a JLCPCB fab package. The way through is
+brief to checked KiCad files and a JLCPCB fab package, or another
+vendor's ([vendors.md](vendors.md): PCBWay, OSH Park, Aisler, Eurocircuits,
+Seeed Fusion; their rules, files, sourcing and prices). The way through is
 [playbook.md](playbook.md); the agent roles are in [`agents/`](../agents/),
 the scripts in [`scripts/`](../scripts/) and their tables, recipes and
 knowledge in [`reference/`](../reference/). It began as ihsan-sa/hwde's Claude

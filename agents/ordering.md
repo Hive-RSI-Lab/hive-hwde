@@ -12,12 +12,23 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
   assembly), the board (for real geometry).
 
 ## Steps
+0. `scripts/vendor.py fit --pcb kicad/<board>.kicad_pcb --fab-dir fab
+   [--assembly --parts parts/parts.json]` - every vendor in
+   `reference/vendors/` side by side: whether it can build this board
+   (layers, size, copper, thickness, castellations, blind/buried vias,
+   bottom-side parts, pitch, and dfm_check's copper/drill/silk families at
+   ITS minimums) and its estimate. JLC stays the default; when the person
+   picks another (`vendor.py choose`), `vendor.py package` writes that
+   vendor's upload set in `fab/<vendor>/` (its BOM/CPL columns, KiCad
+   rotations, ORDER.md), the ledger expects the vendor's fit fact before
+   release, and steps 3-4 below (JLC's order_submit and API) don't apply:
+   the order is the person's, on the vendor's site (docs/vendors.md).
 1. `scripts/order_quote.py --pcb kicad/<board>.kicad_pcb [--qty ...]`
    - quantity x finish x mask-colour x assembly matrix with lead times,
    computed from real board geometry against `reference/jlc_pricing.yaml`.
    EVERY figure is `estimated: true` (transcribed headline prices, not a
    quote); the payload carries the authoritative quote URL - always present
-   it alongside.
+   it alongside. `--vendor <id>` prices at another vendor's profile.
 2. Recommend ONE row (cheapest that satisfies requirements; call out where
    +$N buys something real, e.g. ENIG for fine-pitch).
 3. `scripts/order_submit.py --pcb ... --quote <chosen>` - locates + hashes
