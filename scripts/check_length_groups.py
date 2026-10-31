@@ -171,7 +171,8 @@ def net_length(bg, net: str, terminals=None) -> dict:
     between its two farthest terminal pads (module doc). `terminals` limits
     the pads to those refs. Keys: routed (any copper), connected (a pad-to-
     pad path exists), length_mm, track_mm, via_mm, vias, delay_ps, from/to
-    ("REF.pin"), total_track_mm, layers {layer: mm}."""
+    ("REF.pin"), total_track_mm, layers {layer: mm}, and path_tracks (the
+    geom.Track objects along the path, in order; not for the report)."""
     tracks = bg.tracks_of(net)
     total = sum(t.length for t in tracks)
     out = {"net": net, "routed": bool(tracks),
@@ -211,7 +212,7 @@ def net_length(bg, net: str, terminals=None) -> dict:
             # a barrel is surrounded by dielectric: its delay uses the mean er
             delay_ps += b * math.sqrt(_mean_er(bg)) / C_MM_PER_PS
         prev_layer = t.layer
-    return {**out, "connected": True,
+    return {**out, "connected": True, "path_tracks": path_tracks,
             "length_mm": checklib.rnd(track_mm + via_mm),
             "track_mm": checklib.rnd(track_mm), "via_mm": checklib.rnd(via_mm),
             "vias": vias, "delay_ps": checklib.rnd(delay_ps, 1),
@@ -289,6 +290,11 @@ def _rep_point(bg, net):
         return None
     c = tks[0].shape.interpolate(0.5, normalized=True).coords[0]
     return (c[0], c[1])
+
+
+def _rep_layer(bg, net):
+    tks = bg.tracks_of(net)
+    return tks[0].layer if tks else None
 
 
 def check_group(bg, g: dict, cache: dict):
@@ -388,7 +394,7 @@ def check_group(bg, g: dict, cache: dict):
                 lim = (f"+/-{hi:g} mm" if window is None
                        else f"window [{lo:g}, {hi:g}] mm")
                 vs.append(violation(
-                    SCRIPT, sev, _rep_point(bg, net), None, net, [],
+                    SCRIPT, sev, _rep_point(bg, net), _rep_layer(bg, net), net, [],
                     f"length group {name}: {net} is {L:.3f} mm, {d:+.3f} mm "
                     f"from the reference {ref_len:.3f} mm ({ref_what}); "
                     f"limit {lim}, so it needs {need:+.3f} mm",
@@ -409,7 +415,7 @@ def check_group(bg, g: dict, cache: dict):
                      if what == "not_longer_than"
                      else "over max_mm" if what == "max_mm" else "under min_mm")
             vs.append(violation(
-                SCRIPT, sev, _rep_point(bg, net), None, net, [],
+                SCRIPT, sev, _rep_point(bg, net), _rep_layer(bg, net), net, [],
                 f"length group {name}: {net} is {L:.3f} mm, {label} "
                 f"({float(lim):.3f} mm)",
                 SCRIPT, **{**common, "kind": "length_group_bound",
@@ -420,7 +426,9 @@ def check_group(bg, g: dict, cache: dict):
              "reference_mm": checklib.rnd(ref_len) if ref_len is not None else None,
              "reference": ref_what, "window_mm": [lo, hi] if lo is not None else None,
              "spread_mm": checklib.rnd(max(lens) - min(lens)) if lens else None,
-             "not_longer_than_mm": checklib.rnd(cap) if cap is not None else None}
+             "not_longer_than_mm": checklib.rnd(cap) if cap is not None else None,
+             "ref_nets": refs, "cap_nets": caps,
+             "max_mm": max_mm, "min_mm": min_mm}
     return vs, facts
 
 

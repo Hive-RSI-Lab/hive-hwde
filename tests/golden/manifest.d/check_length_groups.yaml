@@ -1,0 +1,14 @@
+# Seeded fault for check_length_groups (docs/failure-modes.md section 4).
+mutants:
+  swd-length-unmatched:
+    board: blinky2
+    script: mutations/swd_length_unmatched.py
+    check: check_length_groups
+    defect: >-
+      SIDECAR fault (copper unchanged): constraints.json holds SWCLK and
+      SWDIO to one length within 1 mm, as a DDR byte lane is held; the
+      golden routes SWCLK 14.0 mm and SWDIO 25.4 mm
+    expect:
+      kind: length_group_mismatch
+      net: /SWCLK
+      pos: [141.42, 111.45]   # SWCLK's first track, mid-length
