@@ -566,7 +566,7 @@ nothing in the Hive should ask for them.
 
 ## What doesn't work here yet
 
-- `route_critical` and KRT's finishing pass need KiCadRoutingTools 0.19.0.
+- `route_escape`, `route_critical` and KRT's finishing pass need KiCadRoutingTools 0.19.0.
   It's now in `/hive/tools/kicad-routing-tools/KiCadRoutingTools-0.19.0`,
   but nothing points the skill at it yet (brief 261028-141924). A board with
   diff pairs, high-current power or RF needs it.
