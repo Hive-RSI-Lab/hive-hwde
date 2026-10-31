@@ -29,7 +29,9 @@ the pull is reported (all idempotent, all text surgery):
   fpfix           silk artifacts on pad copper, outlines under the silk-to-copper
                   bar, plated locating pegs (zero annular ring), legend text
                   hidden under the body, courtyards drawn inside their own pads
-                  (EasyEDA's 0603s), an exposed pad's unnumbered thermal vias
+                  (EasyEDA's 0603s), an exposed pad's unnumbered thermal vias,
+                  a placement type (attr) its pads contradict (EasyEDA's
+                  XR0850 inductor: through_hole on two SMD pads)
                                              -> --no-autofix to skip
                   It also reads each part's 3D model and lists in
                   autofix.flags what it can't fix: a model off its footprint,
@@ -478,12 +480,13 @@ def _register_project(project: Path, nickname: str, sym_lib: Path | None,
 # ------------------------------------------------------------ post-pull hygiene
 
 def _autofix(pretty: Path, names: list[str], dry_run: bool) -> dict:
-    """Sanitise the footprints this pull produced (fpfix rules A-E).
+    """Sanitise the footprints this pull produced (fpfix rules A-G).
 
     Every pull ships the same library-inherent defects - silk artifacts on pad
     copper, outlines under the silk-to-copper bar, plated locating pegs with no
     annular ring, legend text hidden under the body, a courtyard that is the
-    body outline and leaves the pads outside. They were repaired by hand
+    body outline and leaves the pads outside, a placement type (attr) the
+    pads contradict. They were repaired by hand
     on three shipped boards (boards/*/lib/EDITS.md) before this ran at pull time.
     """
     rep = fpfix.fix_lib(pretty, dry_run=dry_run, names=names)

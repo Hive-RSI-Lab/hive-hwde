@@ -1,0 +1,14 @@
+# Seeded fault for check_fp_attr (docs/failure-modes.md section 4).
+mutants:
+  attr-tht-on-smd:
+    board: blinky2
+    script: mutations/attr_tht_on_smd.py
+    check: check_fp_attr
+    defect: >-
+      LIBRARY fault: U2's SOT-223 footprint is (attr through_hole) on four
+      SMD pads, so the BOM sends a reflowed regulator to the THT step
+      (EasyEDA's XR0850 inductor, lite-main L1-L4)
+    expect:
+      kind: fp_attr_mismatch
+      ref: U2
+      pos: [111.6, 106]   # U2's origin

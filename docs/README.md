@@ -412,6 +412,31 @@ connector in the wrong place. The check reports `model_offset` with a fit of
 still flags a pulled library footprint at pull time (THT pins only). This
 check runs on the board, every time.
 
+## Placement type against the pads
+
+A footprint's `(attr smd)` or `(attr through_hole)` is how KiCad's position
+export, `kicad-cli pcb export stats` and bom_cpl's assembly class say the
+part is fitted. EasyEDA's XR0850 8x8 mm power inductor ships
+`(attr through_hole)` on two SMD pads, so pinned lite-main's
+`bom-cpl.json` sent L1-L4, four reflowed inductors, to JLC's THT step.
+`scripts/lib/fpattr.py` reads the type off the pads: SMD pads only make it
+`smd`, plated pins only make it `through_hole`, and both (USB-C shell legs,
+pin-in-paste, THT parts with SMD tabs) leave its own type standing. A plated
+hole inside an SMD pad is a thermal via, not a pin, so U8's exposed-pad
+HTSSOP-32 stays `smd`. Parts marked `board_only`, `exclude_from_bom` or
+`virtual` aren't judged.
+
+- `fpfix` rule G writes the type the pads give into the library, so
+  `lib_pull` fixes it on every pull. `fpfix.py --pcb` does the same for
+  footprints already placed on a board. A footprint with both kinds of pad
+  and no type at all is residue: only the part's drawing settles it.
+- `bom_cpl` classes a part by its pads where the attr contradicts them,
+  and lists each one under `attr_mismatch` in its report (and on stderr).
+- `check_fp_attr` (verify suite) fails each placed footprint whose attr its
+  pads contradict (`fp_attr_mismatch`), or that has both kinds of pad and no
+  type (`fp_attr_unspecified`, which the position export drops). Planted
+  fault `attr-tht-on-smd`: blinky2's SOT-223 U2 marked through_hole.
+
 ## A USB device's PHY
 
 `check_usb_phy` (verify suite) reads the board's netlist from each connector

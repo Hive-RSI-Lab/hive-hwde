@@ -1,0 +1,6 @@
+# check_fp_attr: every placed footprint's placement type (attr smd /
+# through_hole) matches its pads (EasyEDA's XR0850 inductor is through_hole
+# on two SMD pads, so lite-main's L1-L4 went to JLC's THT step). Board only.
+name: check_fp_attr
+needs: []
+args: []
