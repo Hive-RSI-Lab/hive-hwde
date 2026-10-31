@@ -342,14 +342,16 @@ def build(job: dict) -> dict:
         for field in fp.GetFields():
             if field.GetName() in (comp.get("fields") or {}):
                 field.SetVisible(False)  # metadata, not board art
-        # KiCad's native do-not-populate flag is a SYMBOL attribute that must be
-        # mirrored on the footprint, else `drc --schematic-parity` reports
-        # footprint_symbol_mismatch "'Do not populate' settings differ". Only
-        # FP_DNP is set: in_bom / on_board stay whatever the symbol said, and
-        # flipping exclude_from_bom here would just trade one mismatch for
-        # another.
+        # KiCad's native do-not-populate flag and the symbol's in_bom are
+        # SYMBOL attributes that must be mirrored on the footprint, else
+        # `drc --schematic-parity` reports footprint_symbol_mismatch ("'Do not
+        # populate' / 'Exclude from bill of materials' settings differ"). A
+        # stock footprint can carry (attr exclude_from_bom) of its own
+        # (Tag-Connect, solder jumpers); the symbol wins, both ways (#439).
         if comp.get("dnp"):
             fp.SetAttributes(fp.GetAttributes() | getattr(pcbnew, "FP_DNP", 0))
+        if "exclude_from_bom" in comp:
+            fp.SetExcludedFromBOM(bool(comp["exclude_from_bom"]))
         board.Add(fp)
         for pad in fp.Pads():
             want = netmap.get(f"{comp['ref']}.{pad.GetNumber()}")
