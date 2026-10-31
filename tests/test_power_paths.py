@@ -351,3 +351,96 @@ def test_inrush_review_fix_passes(tmp_path):
            and v["scenario"] in ("step_30", "fw_on")]
     assert bad == [], bad
     assert _scenario(rep, "step_30")["src_peak_a"] < 3.0
+
+
+# ------------------------------------------------------------ hot-plug
+
+# bms-4s's charger entry (#430): a USB-C VBUS straight onto a BQ25798's
+# VBUS/VAC pins with ceramics only and the data sheet's 2 R + 2.2 uF RC -
+# no load switch, so the switch scenarios have nothing to judge.
+CERAMIC_ENTRY = [
+    ("J1", "USB-C", "USB_C_Receptacle", {"1": ("VBUS", "VBUS"),
+                                         "2": ("GND", "GND")}),
+    ("C1", "10uF 50V X5R", "C_1206_3216Metric", {"1": ("VBUS", ""),
+                                                 "2": ("GND", "")}),
+    ("C2", "10uF 50V X5R", "C_1206_3216Metric", {"1": ("VBUS", ""),
+                                                 "2": ("GND", "")}),
+    ("C3", "1uF 50V X5R", "C_0603_1608Metric", {"1": ("VBUS", ""),
+                                                "2": ("GND", "")}),
+    ("R1", "2", "R_0603", {"1": ("VBUS", ""), "2": ("/SNUB", "")}),
+    ("C4", "2.2uF 50V X5R", "C_0805_2012Metric", {"1": ("/SNUB", ""),
+                                                  "2": ("GND", "")}),
+    ("U1", "BQ25798", "QFN-29", {"2": ("VBUS", "VBUS"), "8": ("VBUS", "VAC2"),
+                                 "9": ("VBUS", "VAC1"), "20": ("GND", "GND"),
+                                 "11": ("/STAT", "STAT")}),
+    ("U2", "XYZ123", "SOT-23-6", {"1": ("VBUS", "VIN"), "2": ("GND", "GND")}),
+]
+
+
+def test_tvs_card_has_its_clamp_resistance(tmp_path):
+    import sim_board
+    board = sim_board.load_board(write_net(tmp_path / "t.net", [
+        ("D1", "SMAJ24A", "D_SMA", {"1": ("VBUS", "K"), "2": ("GND", "A")})]))
+    e = {"ref": "D1", "bv": 24 * 1.11}
+    card = sim_inrush.tvs_card(e, board, {})
+    # SMAJ24A: Vc 38.9 V at Ipp 10.3 A, Vbr 26.7 V: RS ~1.2 ohm
+    rs = float(card.split("RS=")[1].rstrip(")"))
+    assert 1.0 < rs < 1.4
+    assert sim_inrush.tvs_card({"ref": "D1", "bv": None}, board, {}) is None
+
+
+def test_pin_abs_max_from_the_table(tmp_path):
+    import sim_board
+    board = sim_board.load_board(write_net(tmp_path / "b.net",
+                                           CERAMIC_ENTRY))
+    rated, unrated = sim_inrush.pin_abs_max(board, {}, None, {"VBUS"})
+    assert {(r["ref"], r["fn"], r["max_v"]) for r in rated} == {
+        ("U1", "VBUS", 30.0), ("U1", "VAC1", 30.0), ("U1", "VAC2", 30.0)}
+    assert [(u["ref"], u["fn"]) for u in unrated] == [("U2", "VIN")]
+
+
+def _hotplug(tmp_path, board):
+    if env.find_ngspice_dll() is None:
+        pytest.skip("no ngspice shared library")
+    net = write_net(tmp_path / "b.net", board)
+    out = tmp_path / "r.json"
+    subprocess.run([sys.executable, str(SCRIPTS / "sim_inrush.py"), "--net",
+                    str(net), "--rail", "VBUS=20", "--out", str(out)],
+                   capture_output=True, text=True, timeout=900)
+    return json.loads(out.read_text(encoding="utf-8"))
+
+
+def test_hotplug_rings_a_ceramic_entry_over_abs_max(tmp_path):
+    rep = _hotplug(tmp_path, CERAMIC_ENTRY)
+    assert rep["switches"] == []
+    hits = [v for v in rep["violations"] if v["kind"] == "hotplug_overvoltage"]
+    assert [(v["refs"], v["net"]) for v in hits] == [(["U1"], "VBUS")]
+    assert all(v["severity"] == "error" for v in hits)
+    # ad09d's hand deck: 2 R + 2.2 uF rings 20 V to 32-33 V
+    peak = max(r["peak_v"]["VBUS"] for r in rep["hotplug"]["runs"])
+    assert 30 < peak < 38
+    assert any(k["ref"] == "U2" and k["what"] == "pin abs max"
+               for k in rep["known_unknowns"])
+
+
+def test_hotplug_damped_entry_passes(tmp_path):
+    # bms-4s as built: 0.5 R + 47 uF polymer across VBUS and an SMAJ24A
+    board = [r for r in CERAMIC_ENTRY if r[0] not in ("R1", "C4")] + [
+        ("R1", "0.5", "R_2512", {"1": ("VBUS", ""), "2": ("/SNUB", "")}),
+        ("C4", "47uF/35V polymer", "CP_Elec_6.3x5.8",
+         {"1": ("/SNUB", ""), "2": ("GND", "")}),
+        ("D1", "SMAJ24A", "D_SMA", {"1": ("VBUS", "K"), "2": ("GND", "A")})]
+    rep = _hotplug(tmp_path, board)
+    assert not [v for v in rep["violations"]
+                if v["kind"] == "hotplug_overvoltage"]
+    peak = max(r["peak_v"]["VBUS"] for r in rep["hotplug"]["runs"])
+    assert 20 < peak < 27
+
+
+def test_bsc010n04ls_row():
+    t = soa.load()
+    row = soa.find("BSC010N04LSATMA1", "", "", t)
+    assert row and not row.get("generic") and row["tj_max"] == 175
+    # diagram 3: ~0.86 A at 40 V for 1 ms -> ~34 W
+    assert 25 < soa.soa_power(row, 1e-3) < 45
+    assert soa.find("BSC010N04LS6ATMA1", "", "", t) is None

@@ -39,9 +39,23 @@ Findings (kind; severity):
   sink_bulk_over_pd  more than 100 uF effective on the source side
                      (cSnkBulkPd; error); over 10 uF is a fact (cSnkBulk)
 
+  hotplug_overvoltage  a source already at the contract voltage closed onto
+                     the entry through 0.08 ohm and 0.5/1/2 uH of cable
+                     (no switch in the way: the entry's own ceramics, RC
+                     dampers and TVS take the edge) rings a net on the
+                     source side over an IC pin's abs max (error). Abs max
+                     from the part's extraction (<parts>/<LCSC>.json),
+                     else its reference/pin_ratings.yaml abs_max_v; a
+                     pin with neither is a known unknown. Runs with or
+                     without a load switch; --no-hotplug skips it. A TVS
+                     is given the series resistance its family's clamping
+                     voltage implies.
+
 Facts: per scenario the peak source current, time above contract, and per
 switch peak power, energy, Tj peak, output peak/final, Vgs peak, the
-10-90 % rise time with firmware on. `known_unknowns` names the FETs on
+10-90 % rise time with firmware on; `hotplug`: per cable L the peak on
+each source-side net and the source current, and the pins judged.
+`known_unknowns` names the FETs on
 generic models or data, assumed dielectrics and the open IC loads.
 
 CLI:
@@ -81,6 +95,18 @@ CSNKBULKPD_F = 100e-6
 FW_OFF_WARN_V = 1.0
 DEFAULT_CONTRACT_A = 3.0
 VTO_RE = re.compile(r"Vto=\s*-?[\d.eE+-]+", re.I)
+# hot-plug: a source already at its voltage switched onto the entry net
+# through a cable (contact closure), no load switch in the way
+HOTPLUG_L = (0.5e-6, 1e-6, 2e-6)
+HOTPLUG_R = 0.08
+HOTPLUG_T0 = 1e-6
+HOTPLUG_RISE = 10e-9
+HOTPLUG_TSTOP = 100e-6
+# TVS families: peak pulse power (10/1000 us) and Vc / Vrwm at Ipp
+TVS_FAMILY = (("SMAJ", 400.0), ("P4SMA", 400.0), ("SMBJ", 600.0),
+              ("P6KE", 600.0), ("SMCJ", 1500.0), ("SMF", 200.0))
+TVS_VC_X = 1.62
+TVS_RE = re.compile(r"(SMAJ|P4SMA|SMBJ|P6KE|SMCJ|SMF)(\d+(?:\.\d+)?)", re.I)
 
 
 def _vio(kind, sev, refs, net, msg, **extra):
@@ -183,6 +209,22 @@ def derated(e: dict, board: dict, parts: dict, volts: dict) -> float:
                       mpn=part.get("mpn", ""), rated_v=rated)["c_eff"]
 
 
+def tvs_card(e: dict, board: dict, parts: dict) -> str | None:
+    """A TVS card with the series resistance its clamping voltage implies:
+    sim_board's card clamps hard at BV, which hides a hot-plug's overshoot.
+    RS = (Vc - Vbr) / Ipp, Vc = 1.62 x Vrwm and Ipp = Ppk / Vc for the
+    SMAJ/SMBJ/SMCJ-style families (SMAJ24A: Vbr 26.7, 38.9 V at 10.3 A)."""
+    text = " ".join([board["comps"][e["ref"]]["value"],
+                     (parts.get(e["ref"]) or {}).get("mpn") or ""])
+    m = TVS_RE.search(text)
+    if not m or not e.get("bv"):
+        return None
+    ppk = dict(TVS_FAMILY)[m.group(1).upper()]
+    vc = TVS_VC_X * float(m.group(2))
+    rs = max(vc - e["bv"], 0.0) / (ppk / vc)
+    return f"D(IS=1e-12 N=1 BV={e['bv']:g} IBV=1m RS={rs:.3g})"
+
+
 def build(board, parts, rails, model, switches, entry, vc, table, loads):
     """Everything but the scenario: element lines, models, which rails get
     ideal sources, the io/open-drain nets, and the per-net DC the caps are
@@ -232,6 +274,14 @@ def build(board, parts, rails, model, switches, entry, vc, table, loads):
             continue
         if e.get("tran"):
             lines.append(e["tran"])
+        if e["kind"] == "D" and e.get("type") == "tvs":
+            card = tvs_card(e, board, parts)
+            if card:
+                models.append(f".model D_{e['ref']}".upper() + f" {card}")
+                continue
+            unknowns.append({"ref": e["ref"], "what": "TVS clamp",
+                             "why": "family not read: clamps hard at BV "
+                                    "(no series resistance)"})
         if e.get("model"):
             models.append(e["model"])
     for net, ohms in loads.items():
@@ -255,11 +305,12 @@ def build(board, parts, rails, model, switches, entry, vc, table, loads):
             "cards": cards, "volts": volts}
 
 
-def deck(model, b, entry, sc, corner: tuple[str, float] | None = None
-         ) -> str:
+def deck(model, b, entry, sc, corner: tuple[str, float] | None = None,
+         src: list[str] | None = None, tran: str | None = None) -> str:
     node = model["node"]
     out = [f"* sim_inrush {sc['name']}", ".options rshunt=1e9"]
-    out += pdsource.source_lines(node[entry], sc)
+    out += src if src is not None else \
+        pdsource.source_lines(node[entry], sc)
     used = {t for ln in b["lines"] for t in ln.split()[1:]}
     for net, v in sorted(b["held"].items()):
         nd = node[net]
@@ -288,9 +339,124 @@ def deck(model, b, entry, sc, corner: tuple[str, float] | None = None
                                                     card))
     out += models
     out.append(".model SW_OD SW(Ron=25 Roff=1e9 Vt=0.5 Vh=0.1)")
-    out.append(f".tran 50u {sc['tstop']:.6g} 0 50u")
+    out.append(tran or f".tran 50u {sc['tstop']:.6g} 0 50u")
     out.append(".end")
     return "\n".join(out) + "\n"
+
+
+# ------------------------------------------------------------- hot-plug
+
+def pin_abs_max(board: dict, parts: dict, parts_dir: Path | None,
+                nets: set[str]) -> tuple[list[dict], list[dict]]:
+    """IC pins on `nets` with their abs max to ground: the part's datasheet
+    extraction (<parts>/<LCSC>.json) first, then the abs_max_v of its
+    reference/pin_ratings.yaml row. -> (rated [{ref, pin, fn, net, max_v,
+    source}], unrated [{ref, pin, fn, net}])."""
+    import check_ratings
+    table = [r for r in sim_board.load_pin_ratings() if r.get("abs_max_v")]
+    raw: dict[str, dict] = {}
+    pj = parts_dir / "parts.json" if parts_dir else None
+    if pj and pj.is_file():
+        for p in checklib.load_json(pj, "parts.json").get("parts") or []:
+            for r in p.get("refdes") or []:
+                raw[r] = p
+    rated, unrated = [], []
+    for ref in sorted(board["comps"], key=sim_board._natural):
+        c = board["comps"][ref]
+        if c["kind"] not in ("U", "IC"):
+            continue
+        pins = {k: p for k, p in c["pins"].items() if p["net"] in nets}
+        if not pins:
+            continue
+        lcsc = (raw.get(ref) or {}).get("lcsc")
+        ext_r = {}
+        ext = parts_dir / f"{lcsc}.json" if parts_dir and lcsc else None
+        if ext and ext.is_file():
+            ext_r = check_ratings.part_ratings(
+                checklib.load_json(ext, "extraction"))
+        names = [x for x in ((parts.get(ref) or {}).get("mpn"), c["value"])
+                 if x]
+        for pin, p in sorted(pins.items()):
+            hit = None
+            rows = [r for r in (ext_r.get(pin) or {}).get(
+                ("voltage", "abs")) or [] if r["ref"] is None
+                and isinstance(r["hi"], (int, float))]
+            if rows:
+                r = min(rows, key=lambda r: r["hi"])
+                hit = (float(r["hi"]), f"{lcsc}.json {r['src']}")
+            else:
+                fns = sim_board._pin_fns(p)
+                r = next((r for r in table
+                          if any(r["_m"].search(x) for x in names)
+                          and any(r["_p"].match(f) for f in fns)), None)
+                if r:
+                    hit = (float(r["abs_max_v"]), "reference/pin_ratings."
+                           f"yaml: {str(r.get('source', '')).strip()}")
+            item = {"ref": ref, "pin": pin, "fn": "/".join(p["fn"]),
+                    "net": p["net"]}
+            if hit:
+                rated.append(item | {"max_v": hit[0], "source": hit[1]})
+            else:
+                unrated.append(item)
+    return rated, unrated
+
+
+def hotplug_src(node: str, vc: float, ind: float) -> list[str]:
+    t1 = HOTPLUG_T0 + HOTPLUG_RISE
+    return [f"VHP hp_src 0 PWL(0 0 {HOTPLUG_T0:g} 0 {t1:g} {vc:.6g})",
+            f"RHP hp_src hp_r {HOTPLUG_R:g}",
+            f"LHP hp_r {node} {ind:g}"]
+
+
+def hotplug(model, b, entry, vc, dll, timeout) -> list[dict]:
+    """The source at vc closed onto the entry through each cable L: the
+    peak on every source-side net and the peak current."""
+    node = model["node"]
+    sc = {"name": "hotplug", "fw": [(0.0, 0)], "pg": [(0.0, 0)]}
+    tran = f".tran 5n {HOTPLUG_TSTOP:g} 0 10n"
+    decks = [deck(model, b, entry, dict(sc, name=f"hotplug_{ind * 1e6:g}uH"),
+                  src=hotplug_src(node[entry], vc, ind), tran=tran)
+             for ind in HOTPLUG_L]
+    plots, _v = sim_board.run_engine(decks, dll, timeout)
+    out = []
+    for ind, plot in zip(HOTPLUG_L, plots):
+        peaks = {}
+        for net in sorted(b["side"]):
+            v = _series(plot, node[net])
+            if v:
+                peaks[net] = max(v)
+        out.append({"scenario": f"hotplug_{ind * 1e6:g}uH", "cable_l_h": ind,
+                    "peak_v": peaks, "src_peak_a": max(
+                        (-x for x in plot.get("vhp#branch") or []),
+                        default=0.0)})
+    return out
+
+
+def judge_hotplug(runs, rated, vc, vios):
+    """One finding per IC and net: its lowest-rated pin there."""
+    by: dict[tuple, dict] = {}
+    for p in rated:
+        k = (p["ref"], p["net"])
+        q = by.get(k)
+        fns = sorted(set((q["fn"].split("/") if q else []) +
+                         p["fn"].split("/")))
+        if q is None or p["max_v"] < q["max_v"]:
+            q = dict(p)
+        by[k] = q | {"fn": "/".join(fns)}
+    for p in by.values():
+        worst = max(runs, key=lambda r: r["peak_v"].get(p["net"], 0.0))
+        v = worst["peak_v"].get(p["net"])
+        if v is None or v <= p["max_v"]:
+            continue
+        vios.append(_vio(
+            "hotplug_overvoltage", "error", [p["ref"]], p["net"],
+            f"{worst['scenario']}: a {vc:g} V source plugged in through "
+            f"{worst['cable_l_h'] * 1e6:g} uH of cable rings {p['net']} to "
+            f"{v:.3g} V, over {p['ref']} {p['fn']}'s {p['max_v']:g} V abs "
+            f"max ({p['source']}) - damp the entry (an RC snubber or "
+            "electrolytic across it, a TVS that clamps below the abs max) "
+            "or add an inrush-limited switch", scenario=worst["scenario"],
+            peak_v=v, abs_max_v=p["max_v"], pin=p["pin"]))
 
 
 # ------------------------------------------------------------- judging
@@ -411,19 +577,48 @@ def run(a) -> dict:
     table = soa.load()
     switches = find_switches(board, parts, rails, model, table)
     entry = entry_net(board, model, switches, a.entry)
-    if not switches or entry is None:
+    if entry is None:
         return checklib.report(SCRIPT, inp["net"], [], switches=[],
-                               note="no load switch with bulk found")
+                               note="no load switch with bulk and no "
+                                    "connector VBUS entry found")
     pd = (cons or {}).get("pd_source") or {}
     vc = a.contract_v or pd.get("contract_v") or \
-        max(v for n, (v, _s) in rails.items()
-            if n in {s["in"] for s in switches} or n == entry)
+        max((v for n, (v, _s) in rails.items()
+             if n in {s["in"] for s in switches} or n == entry),
+            default=None)
+    if vc is None:
+        return checklib.report(SCRIPT, inp["net"], [], switches=[],
+                               entry=entry, note=f"{entry} has no voltage: "
+                               "give --contract-v or a --rail")
     ia = a.contract_a or pd.get("contract_a") or DEFAULT_CONTRACT_A
     loads = sim_board._pairs(a.load, "--load")
     for n in loads:
         if n not in model["node"]:
             raise checklib.CheckError(f"--load {n}: no such net")
     b = build(board, parts, rails, model, switches, entry, vc, table, loads)
+    vios: list[dict] = []
+    hp, rated, unrated = [], [], []
+    if not a.no_hotplug:
+        rated, unrated = pin_abs_max(board, parts, inp["parts"],
+                                     b["side"])
+        hp = hotplug(model, b, entry, vc, dll, a.timeout)
+        judge_hotplug(hp, rated, vc, vios)
+    hp_facts = {"source_v": vc, "cable_r_ohm": HOTPLUG_R, "runs": [
+        {"scenario": r["scenario"], "cable_l_h": r["cable_l_h"],
+         "src_peak_a": checklib.rnd(r["src_peak_a"], 4),
+         "peak_v": {n: checklib.rnd(v, 4) for n, v in r["peak_v"].items()}}
+        for r in hp], "pins_judged": rated} if hp else None
+    if not switches:
+        unknowns = list(b["unknowns"]) + [
+            {"ref": u["ref"], "what": "pin abs max", "why":
+             f"{u['fn']} on {u['net']}: no extraction or "
+             "reference/pin_ratings.yaml row, hot-plug peak not judged"}
+            for u in unrated]
+        return checklib.report(
+            SCRIPT, inp["net"], vios, switches=[], entry=entry,
+            source_side=sorted(b["side"]), hotplug=hp_facts,
+            note="no load switch with bulk found: hot-plug only",
+            known_unknowns=unknowns)
     slews = tuple(float(x) for x in a.slews.split(","))
     scs = pdsource.scenarios(vc, slews, a.window_ms * 1e-3)
     runs = [(sc, None) for sc in scs]
@@ -442,7 +637,6 @@ def run(a) -> dict:
         m = measure(plot, model, b, sc, switches, ia, a.ta)
         m["fw_off"] = sc["fw_off"]
         results.append(m)
-    vios: list[dict] = []
     judge(results, switches, vc, ia, vios)
     caps = ground_caps(model)
     side_c = sum(derated(e, board, parts, b["volts"]) for e in model["elems"]
@@ -454,7 +648,11 @@ def run(a) -> dict:
                          f"source side of the switches, over USB PD's "
                          f"cSnkBulkPd {sim_board._f(CSNKBULKPD_F, 'F')}",
                          c_f=side_c))
-    unknowns = list(b["unknowns"])
+    unknowns = list(b["unknowns"]) + [
+        {"ref": u["ref"], "what": "pin abs max", "why":
+         f"{u['fn']} on {u['net']}: no extraction or "
+         "reference/pin_ratings.yaml row, hot-plug peak not judged"}
+        for u in unrated]
     for s in switches:
         if s["row"] is None:
             unknowns.append({"ref": s["ref"], "what": "thermal data",
@@ -477,7 +675,7 @@ def run(a) -> dict:
     return checklib.report(
         SCRIPT, inp["net"], vios,
         engine={"dll": str(dll), "ngspice_version": version},
-        entry=entry, source_side=sorted(b["side"]),
+        entry=entry, source_side=sorted(b["side"]), hotplug=hp_facts,
         contract={"v": vc, "a": ia, "source": "--contract" if a.contract_v
                   or a.contract_a else "constraints pd_source" if pd else
                   "entry rail voltage, 3 A default"},
@@ -518,6 +716,9 @@ def main(argv: list[str] | None = None) -> int:
         f"{s:g}" for s in pdsource.STEP_SLEWS))
     ap.add_argument("--window-ms", type=float,
                     default=pdsource.WINDOW * 1e3)
+    ap.add_argument("--no-hotplug", action="store_true",
+                    help="skip the hot-plug runs (source closed onto the "
+                         "entry through the cable)")
     ap.add_argument("--timeout", type=float, default=600.0)
     ap.add_argument("--out")
     a = ap.parse_args(argv)
