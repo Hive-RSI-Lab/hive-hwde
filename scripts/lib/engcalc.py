@@ -18,6 +18,13 @@ and a test pins each one to a worked example:
   led_vf              a forward voltage by colour, when no datasheet says
   ldo_tj              an LDO's dissipation and junction temperature
   holdup_s            how long a bulk cap holds a rail above a floor
+  friis_cascade       an RF chain's gain, NF, Te and IIP3 (Friis)
+  rx_sensitivity      kTB + NF noise floor and sensitivity at an SNR
+  diode_detector      a square-law detector's NEP, MDS and TSS
+  pll_loop_design     a charge-pump PLL's passive 2nd-order loop filter
+  pll_loop_analyse    that filter's fc, phase margin and closed-loop BW
+  line_wavelength     lambda0, guided lambda, quarter wave, phase of a line
+  microstrip_dispersion  eps_eff at frequency (Getsinger)
 
 Every default here (package ratings, LED Vf by colour, I2C pin
 capacitance, crystal stray) is a rule of thumb, not a datasheet: callers
@@ -207,3 +214,234 @@ def ldo_tj(vin: float, vout: float, iout: float, theta_ja: float,
 def holdup_s(c: float, v_start: float, v_min: float, i_load: float) -> float:
     """Time a capacitor alone holds a constant-current load above v_min."""
     return c * (v_start - v_min) / i_load
+
+
+# ---------------------------------------------------------------------- RF
+#
+# The RF budget a radar, receiver or synthesiser review writes down.
+# Reference temperature T0 = 290 K (IEEE noise figure); kT0 = -173.98 dBm/Hz.
+
+K_BOLTZMANN = 1.380649e-23
+T0_K = 290.0
+C0_M_S = 299_792_458.0
+MU0 = 4e-7 * math.pi
+
+
+def db_to_lin(db: float) -> float:
+    return 10.0 ** (db / 10.0)
+
+
+def lin_to_db(x: float) -> float:
+    return 10.0 * math.log10(x)
+
+
+def noise_floor_dbm(bw_hz: float, t_k: float = T0_K) -> float:
+    """kTB in dBm."""
+    if bw_hz <= 0 or t_k <= 0:
+        raise ValueError("bandwidth and temperature must be positive")
+    return lin_to_db(K_BOLTZMANN * t_k * bw_hz * 1e3)
+
+
+def friis_cascade(stages: list[dict]) -> dict:
+    """Friis noise and gain cascade, input-referred IIP3 when stages give
+    OIP3. Each stage: {name, gain_db, nf_db[, oip3_dbm]}; a passive loss of
+    L dB is gain -L, NF L (at T0). F = F1 + (F2-1)/G1 + (F3-1)/(G1 G2) ...;
+    1/IIP3 = sum(G_before_i / IIP3_i) in mW, IIP3_i = OIP3_i / G_i. A stage
+    without oip3_dbm is taken as perfectly linear. `share` is each stage's
+    fraction of the cascade's excess noise (F - 1)."""
+    if not stages:
+        raise ValueError("no stages")
+    g_before, f_tot, inv_iip3 = 1.0, 1.0, 0.0
+    rows, adds = [], []
+    for st in stages:
+        g = db_to_lin(float(st["gain_db"]))
+        f = db_to_lin(float(st["nf_db"]))
+        if f < 1.0:
+            raise ValueError(f"stage {st.get('name')}: NF below 0 dB")
+        add = (f - 1.0) / g_before
+        f_tot += add
+        adds.append(add)
+        if st.get("oip3_dbm") is not None:
+            iip3_mw = db_to_lin(float(st["oip3_dbm"])) / g
+            inv_iip3 += g_before / iip3_mw
+        g_before *= g
+        rows.append({"name": st.get("name"), "gain_db": float(st["gain_db"]),
+                     "nf_db": float(st["nf_db"]),
+                     "cum_gain_db": lin_to_db(g_before),
+                     "cum_nf_db": lin_to_db(f_tot)})
+    excess = f_tot - 1.0
+    for row, add in zip(rows, adds):
+        row["share"] = add / excess if excess > 0 else 0.0
+    out = {"gain_db": lin_to_db(g_before), "nf_db": lin_to_db(f_tot),
+           "te_k": T0_K * excess, "stages": rows}
+    if inv_iip3 > 0:
+        out["iip3_dbm"] = lin_to_db(1.0 / inv_iip3)
+        out["oip3_dbm"] = out["iip3_dbm"] + out["gain_db"]
+    return out
+
+
+def rx_sensitivity(nf_db: float, bw_hz: float, snr_db: float = 0.0,
+                   t_k: float = T0_K) -> dict:
+    """A receiver's noise floor (kTB + NF) and the input that gives snr_db
+    over it: MDS at snr 0 dB, sensitivity at the demodulator's SNR."""
+    floor = noise_floor_dbm(bw_hz, t_k) + nf_db
+    return {"noise_floor_dbm": floor, "sensitivity_dbm": floor + snr_db,
+            "ktb_dbm_hz": noise_floor_dbm(1.0, t_k)}
+
+
+def diode_detector(bw_hz: float, responsivity_v_w: float | None = None,
+                   rv_ohm: float | None = None, i_s: float | None = None,
+                   n: float = 1.05, i_bias: float = 0.0,
+                   en_v_rthz: float = 0.0, r_load: float | None = None,
+                   t_k: float = 300.0) -> dict:
+    """A square-law (Schottky) video detector's sensitivity.
+
+    Responsivity and video resistance come from the datasheet, or from the
+    diode's Is (+ bias) as the ideal matched-input limit: Rv = n Vt /
+    (Is + Ib), beta = Rv / (2 n Vt) = 1 / (2 (Is + Ib)) V/W - a real
+    detector with input mismatch and junction capacitance at 10-35 GHz
+    gets several dB less, so a datasheet figure at the frequency wins.
+    A load r_load divides the video voltage by Rv / (Rv + RL).
+    Noise at the video output: Rv's thermal noise sqrt(4kT Rv) (shot
+    noise of a biased diode is 1/sqrt(2) of that and is folded in as the
+    same figure, the usual approximation) plus the video amp's en.
+    NEP = vn / beta; MDS = NEP sqrt(B) (video SNR 1); TSS ~ 2.5 NEP
+    sqrt(B) - the rule of thumb for the tangential (~8 dB) criterion.
+    Square law holds below about -20 dBm; above that the output goes linear."""
+    vt = K_BOLTZMANN * t_k / 1.602176634e-19
+    ideal = responsivity_v_w is None
+    if ideal:
+        if i_s is None:
+            raise ValueError("give --responsivity and --rv, or --is")
+        rv_ohm = n * vt / (i_s + i_bias)
+        responsivity_v_w = rv_ohm / (2 * n * vt)
+    if rv_ohm is None or rv_ohm <= 0 or responsivity_v_w <= 0 or bw_hz <= 0:
+        raise ValueError("responsivity, rv and bandwidth must be positive")
+    beta = responsivity_v_w
+    if r_load:
+        beta *= r_load / (rv_ohm + r_load)
+    vn = math.sqrt(4 * K_BOLTZMANN * t_k * rv_ohm + en_v_rthz ** 2)
+    nep = vn / beta
+    mds_w = nep * math.sqrt(bw_hz)
+    return {"responsivity_v_w": beta, "responsivity_ideal": ideal,
+            "rv_ohm": rv_ohm, "vn_v_rthz": vn, "nep_w_rthz": nep,
+            "nep_dbm_rthz": lin_to_db(nep * 1e3),
+            "mds_dbm": lin_to_db(mds_w * 1e3),
+            "tss_dbm": lin_to_db(2.5 * mds_w * 1e3),
+            "square_law_max_dbm": -20.0}
+
+
+# Charge-pump PLL, passive 2nd-order loop filter (a series R + C_series
+# from the pump to ground, C_shunt across both). Open loop
+#   G(s) = Icp Kvco Z(s) / (s N),  Icp in A, Kvco in Hz/V
+# (Kd = Icp / 2pi A/rad times Kv = 2pi Kvco rad/s/V), and
+#   Z(s) = (1 + s T2) / (s (C_series + C_shunt) (1 + s T1)),
+#   T2 = R C_series, T1 = R C_series C_shunt / (C_series + C_shunt).
+# Design follows Banerjee, "PLL Performance, Simulation and Design", ch. 9:
+# put the phase-margin peak at fc.
+
+def _pll_open_loop(w: float, icp: float, kvco: float, n: float, r: float,
+                   c_series: float, c_shunt: float) -> complex:
+    s = 1j * w
+    ctot = c_series + c_shunt
+    t2 = r * c_series
+    t1 = r * c_series * c_shunt / ctot
+    z = (1 + s * t2) / (s * ctot * (1 + s * t1))
+    return icp * kvco * z / (s * n)
+
+
+def pll_loop_design(icp: float, kvco: float, n: float, fc_hz: float,
+                    pm_deg: float) -> dict:
+    """R, C_series, C_shunt for loop bandwidth fc and phase margin pm."""
+    if not 0 < pm_deg < 90:
+        raise ValueError("phase margin must be between 0 and 90 degrees")
+    if min(icp, kvco, n, fc_hz) <= 0:
+        raise ValueError("icp, kvco, n and fc must be positive")
+    wc = 2 * math.pi * fc_hz
+    phi = math.radians(pm_deg)
+    t1 = (1 / math.cos(phi) - math.tan(phi)) / wc
+    t2 = 1 / (wc * wc * t1)
+    a0 = (icp * kvco / (wc * wc * n)) * math.sqrt(
+        (1 + (wc * t2) ** 2) / (1 + (wc * t1) ** 2))
+    c_shunt = a0 * t1 / t2
+    c_series = a0 - c_shunt
+    return {"r_ohm": t2 / c_series, "c_series_f": c_series,
+            "c_shunt_f": c_shunt, "t1_s": t1, "t2_s": t2}
+
+
+def pll_loop_analyse(icp: float, kvco: float, n: float, r: float,
+                     c_series: float, c_shunt: float,
+                     f_ref: float | None = None) -> dict:
+    """The loop's crossover fc, phase margin there, closed-loop -3 dB
+    bandwidth and peaking, from the parts on the board."""
+    if min(icp, kvco, n, r, c_series, c_shunt) <= 0:
+        raise ValueError("every pll input must be positive")
+    g = lambda w: _pll_open_loop(w, icp, kvco, n, r, c_series, c_shunt)  # noqa: E731
+
+    def cross(fn, target):
+        lo, hi = 1e-3, 1e12          # rad/s, |fn| falls through target once
+        for _ in range(200):
+            mid = math.sqrt(lo * hi)
+            if fn(mid) > target:
+                lo = mid
+            else:
+                hi = mid
+        return math.sqrt(lo * hi)
+
+    wc = cross(lambda w: abs(g(w)), 1.0)
+    pm = 180.0 + math.degrees(math.atan2(g(wc).imag, g(wc).real))
+    pm = (pm + 180.0) % 360.0 - 180.0
+    cl = lambda w: abs(g(w) / (1 + g(w)))  # noqa: E731
+    w3 = cross(lambda w: cl(w) if w > wc / 100 else 2.0, 1 / math.sqrt(2))
+    peak = max(cl(wc * 10 ** (k / 100.0)) for k in range(-200, 201))
+    out = {"fc_hz": wc / (2 * math.pi), "phase_margin_deg": pm,
+           "f3db_hz": w3 / (2 * math.pi),
+           "peaking_db": 20 * math.log10(max(peak, 1.0)),
+           "pole_hz": 1 / (2 * math.pi * r * c_series * c_shunt
+                           / (c_series + c_shunt)),
+           "zero_hz": 1 / (2 * math.pi * r * c_series)}
+    if f_ref:
+        # a sampled loop stays continuous-time-like below about fref/10
+        out["fref_over_fc"] = f_ref / out["fc_hz"]
+        out["fc_ok"] = out["fref_over_fc"] >= 10.0
+    return out
+
+
+def microstrip_eeff_static(w_mm: float, h_mm: float, er: float) -> float:
+    """Hammerstad's quasi-static eps_eff of a bare, zero-thickness
+    microstrip (the fallback when impedance.py's field solver is absent)."""
+    u = w_mm / h_mm
+    e = (er + 1) / 2 + (er - 1) / 2 / math.sqrt(1 + 12 / u)
+    if u < 1:
+        e += (er - 1) / 2 * 0.04 * (1 - u) ** 2
+    return e
+
+
+def microstrip_dispersion(er: float, eeff0: float, z0: float, h_mm: float,
+                          f_hz: float) -> float:
+    """Getsinger's microstrip dispersion: eps_eff(f) = er - (er - eeff0) /
+    (1 + G (f / fp)^2), fp = Z0 / (2 mu0 h), G = 0.6 + 0.009 Z0. Within a
+    few % of Kirschning-Jansen up to ~fp; matters from ~10 GHz on FR4."""
+    fp = z0 / (2 * MU0 * h_mm * 1e-3)
+    g = 0.6 + 0.009 * z0
+    return er - (er - eeff0) / (1 + g * (f_hz / fp) ** 2)
+
+
+def line_wavelength(f_hz: float, eps_eff: float,
+                    length_mm: float | None = None) -> dict:
+    """Free-space and guided wavelength, the quarter-wave, the lambda/10
+    'electrically short' limit, delay per mm and a length's phase."""
+    if f_hz <= 0 or eps_eff < 1.0:
+        raise ValueError("f must be positive and eps_eff >= 1")
+    lam0 = C0_M_S / f_hz * 1e3
+    lamg = lam0 / math.sqrt(eps_eff)
+    out = {"lambda0_mm": lam0, "lambdag_mm": lamg,
+           "quarter_wave_mm": lamg / 4, "half_wave_mm": lamg / 2,
+           "short_limit_mm": lamg / 10, "eps_eff": eps_eff,
+           "vp_c": 1 / math.sqrt(eps_eff),
+           "delay_ps_per_mm": math.sqrt(eps_eff) / C0_M_S * 1e12 * 1e-3}
+    if length_mm is not None:
+        out["length_mm"] = length_mm
+        out["phase_deg"] = 360.0 * length_mm / lamg
+        out["delay_ps"] = length_mm * out["delay_ps_per_mm"]
+    return out
