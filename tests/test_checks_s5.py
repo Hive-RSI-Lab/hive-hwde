@@ -672,6 +672,41 @@ def test_silk_rotated_refdes_no_false_positive(tmp_path_factory):
     assert [v for v in vs if v["kind"] == "silk_over_pad"] == []
 
 
+def _silk_just_hits(tmp_path_factory, name, x, justify, side="F"):
+    eff = f" (justify {justify})" if justify else ""
+    body = (f'  (footprint "t:J" (at 10 6) (layer "{side}.Cu")\n'
+            f'    (property "Reference" "J1" (at 0 -3 0) (layer "{side}.SilkS"))\n'
+            f'    (pad "1" smd rect (at 0 0) (size 1 1) (layers "{side}.Cu") (net "K")))\n'
+            f'  (gr_text "LONGLABEL" (at {x} 6 0) (layer "{side}.SilkS") '
+            f'(effects (font (size 1 1) (thickness 0.15)){eff}))\n')
+    bg = _board(tmp_path_factory, name, body)
+    root = __import__("sexpdata").loads(bg.path.read_text(encoding="utf-8"))
+    vs = check_silk.run_checks(bg, check_silk.parse_silk(root))
+    return [v for v in vs if v["kind"] == "silk_over_pad" and "J1" in v["refs"]]
+
+
+def test_silk_text_justification(tmp_path_factory):
+    """#427: a left-justified label starts AT its anchor; boxing it as centred
+    put half its width over a pad it never touches."""
+    # anchor 1 mm right of the pad centre: left-justified runs away from it
+    assert _silk_just_hits(tmp_path_factory, "jl", 11, "left") == []
+    # the same text centred there straddles the pad
+    assert _silk_just_hits(tmp_path_factory, "jc", 11, None)
+    # right-justified, anchored left of the pad: clear; anchored right: hits
+    assert _silk_just_hits(tmp_path_factory, "jr", 9, "right") == []
+    assert _silk_just_hits(tmp_path_factory, "jr2", 11, "right")
+    # bottom-side mirrored text: left-justify runs to the LEFT in board coords
+    assert _silk_just_hits(tmp_path_factory, "jm", 9, "left mirror", "B") == []
+    assert _silk_just_hits(tmp_path_factory, "jm2", 11, "left mirror", "B")
+
+
+def test_silk_justify_parse():
+    import sexpdata
+    eff = sexpdata.loads('(effects (font (size 1 1)) (justify right top mirror))')
+    assert check_silk._justify(eff) == (-1, -1)
+    assert check_silk._justify(sexpdata.loads('(effects (font (size 1 1)))')) == (0, 0)
+
+
 # ============================================================ pure: cluster
 
 def test_cluster_by_net_kind_region():
