@@ -7,7 +7,13 @@ and a test pins each one to a worked example:
   parse_value         "4k7" -> 4700, "2.2uF" -> 2.2e-6, "100R" -> 100,
                       "10uH 8A" -> 1e-5 (first token); "1M" is mega here
   package_code        footprint -> imperial chip size ("0603"), or None
-  resistor_rating_w   the usual thick-film rating for a chip size
+  resistor_rating_w   the usual thick-film rating for a chip size (P70)
+  resistor_umax_v     a chip size's limiting element voltage (Umax)
+  resistor_derate     P(T)/P70: flat to 70 C, linear to 0 at 155 C
+  fuse_rerate         a fuse's current rerate k_T at an ambient
+  pptc_hold_factor    a PPTC's Ihold(T)/Ihold(23 C)
+  parse_amps          '500mA' -> 0.5, '1.1A' -> 1.1
+  parse_temp_range    '-40℃~+85℃' -> (-40, 85, False); '@(Tj)' -> True
   divider_out         Vout of a two-resistor divider
   fb_vout             a regulator's Vout from its FB divider and Vref,
                       with the worst-case spread over R and Vref tolerance
@@ -127,6 +133,99 @@ def package_code(footprint: str | None) -> str | None:
 def resistor_rating_w(footprint: str | None) -> float | None:
     code = package_code(footprint)
     return RESISTOR_RATING_W.get(code) if code else None
+
+
+# Limiting element voltage (Umax, max continuous working voltage) per chip
+# size: Vishay D/CRCW e3 (doc 20035) for 0402-2512; 0201 and 01005 from
+# Yageo RC (25 V, 15 V), which D/CRCW does not list. A resistor's voltage is
+# min(sqrt(P*R), Umax): above the critical resistance Umax^2/P70 (56 kOhm
+# for an 0603) voltage limits the part before power does
+# (docs/ingest/safety-components.md R-RAT-1).
+RESISTOR_UMAX_V = {"01005": 15.0, "0201": 25.0, "0402": 50.0, "0603": 75.0,
+                   "0805": 150.0, "1206": 200.0, "1210": 200.0,
+                   "2010": 200.0, "2512": 500.0}
+
+
+def resistor_umax_v(footprint: str | None) -> float | None:
+    code = package_code(footprint)
+    return RESISTOR_UMAX_V.get(code) if code else None
+
+
+def resistor_derate(t_amb: float | None) -> float:
+    """Thick-film rated power at an ambient as a fraction of P70: full to
+    70 C, falling linearly to 0 at 155 C (D/CRCW e3 derating chart,
+    R-RAT-2). 85 C -> 0.82."""
+    if t_amb is None or t_amb <= 70.0:
+        return 1.0
+    return max(0.0, (155.0 - t_amb) / 85.0)
+
+
+def _interp(table: list[tuple[float, float]], t: float) -> float:
+    if t <= table[0][0]:
+        return table[0][1]
+    for (t0, k0), (t1, k1) in zip(table, table[1:]):
+        if t <= t1:
+            return k0 + (k1 - k0) * (t - t0) / (t1 - t0)
+    return table[-1][1]
+
+
+# A fuse's current rerate with ambient: Littelfuse 881 / chip-fuse curves
+# (0.90 at 70 C); no credit below 25 C. On top of it the fuse runs at no more
+# than 75 % of its rating (Littelfuse Fuseology guide; R-RAT-3).
+FUSE_RERATE = [(25.0, 1.0), (70.0, 0.90), (85.0, 0.85), (100.0, 0.80),
+               (125.0, 0.70)]
+FUSE_LOAD_FRACTION = 0.75
+# A PPTC's hold current against ambient, as a fraction of Ihold at 23 C: the
+# typical table of Bourns Multifuse MF-MSMF/MF-NSMF and Littelfuse
+# PolySwitch chip devices (S8, S9). The part's own table wins; Ihold(T)
+# should clear the operating current by 10 % (R-RAT-4).
+PPTC_HOLD = [(-40.0, 1.48), (-20.0, 1.33), (0.0, 1.17), (23.0, 1.0),
+             (40.0, 0.87), (50.0, 0.80), (60.0, 0.73), (70.0, 0.68),
+             (85.0, 0.56)]
+PPTC_MARGIN = 1.1
+
+
+def fuse_rerate(t_amb: float | None) -> float:
+    return 1.0 if t_amb is None else _interp(FUSE_RERATE, t_amb)
+
+
+def pptc_hold_factor(t_amb: float | None) -> float:
+    return 1.0 if t_amb is None else _interp(PPTC_HOLD, t_amb)
+
+
+_AMP = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)\s*(m|u|µ)?A(?![a-zA-Z])")
+
+
+def parse_amps(text) -> float | None:
+    """'500mA' -> 0.5, '1.1A' -> 1.1, '750 mA' -> 0.75, else None."""
+    m = _AMP.search(str(text or ""))
+    if not m:
+        return None
+    return float(m.group(1)) * {"m": 1e-3, "u": 1e-6, "µ": 1e-6}.get(
+        m.group(2) or "", 1.0)
+
+
+_TRANGE = re.compile(r"([+-]?\s*\d+(?:\.\d+)?)\s*(?:℃|°\s*C|C)?\s*(?:~|to|\.\.|"
+                     r"\s-\s|-(?=\s*[+-]?\d))\s*([+-]?\s*\d+(?:\.\d+)?)"
+                     r"\s*(?:℃|°\s*C|C)", re.I)
+
+
+def parse_temp_range(text) -> tuple[float, float, bool] | None:
+    """An operating temperature range as LCSC writes it: '-40℃~+85℃' ->
+    (-40.0, 85.0, False); '-40℃~+125℃@(TJ)' -> (-40.0, 125.0, True), the
+    flag saying the bound is the junction's alone, not the air's ('@(TA/TJ)'
+    binds the air too). None when the
+    text names no range."""
+    s = str(text or "")
+    m = _TRANGE.search(s)
+    if not m:
+        return None
+    lo, hi = (float(g.replace(" ", "")) for g in m.groups())
+    if lo > hi:
+        return None
+    tj = bool(re.search(r"T\s*J\b|junction", s, re.I)) and \
+        not re.search(r"T\s*A\b|ambient", s, re.I)
+    return lo, hi, tj
 
 
 # ---------------------------------------------------------------- circuits
