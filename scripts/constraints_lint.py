@@ -167,7 +167,8 @@ ENCLOSURE = {"box_mm": "num_list", "stl": "str_or_list", "wall_mm": "num",
              "riser_mm2": "num", "outlet_mm2": "num", "stack_mm": "num",
              "floor": "str"}
 SCHEMA_TOP_KEYS = set(SECTIONS) | {"placement", "coating", "antennas", "si",
-                                   "enclosure", "ambient_c", "ambient_min_c"}
+                                   "enclosure", "ambient_c", "ambient_min_c",
+                                   "pin_modes"}
 ENVELOPE_ALIASES = {"power_constraints": "power",
                     "thermal_constraints": "thermal",
                     "voltage_constraints": "voltages"}
@@ -378,6 +379,15 @@ class _FileLint:
                 if not _is_num(val):
                     self.add("error", "bad_type",
                              f"{path}: {key} must be a number", path)
+            elif key == "pin_modes":
+                # sim_board: {ref: {pin or function: mode}}
+                if not (isinstance(val, dict) and all(
+                        isinstance(m, dict) and all(isinstance(v, str)
+                                                    for v in m.values())
+                        for m in val.values())):
+                    self.add("error", "bad_type",
+                             f"{path}: pin_modes must be {{ref: {{pin: "
+                             "mode}}}", path)
             elif key == "notes":
                 if not isinstance(val, list):
                     self.add("error", "bad_type",

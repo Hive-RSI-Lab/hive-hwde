@@ -101,6 +101,13 @@ def test_wrong_value_type_is_error(tmp_path):
     assert [e["kind"] for e in errors(vs)] == ["bad_type"]
 
 
+def test_pin_modes_shape(tmp_path):
+    vs, _ = lint_doc(tmp_path, {"pin_modes": {"U1": {"PB11": "analog"}}})
+    assert vs == []
+    vs, _ = lint_doc(tmp_path, {"pin_modes": {"U1": "analog"}})
+    assert [e["kind"] for e in errors(vs)] == ["bad_type"]
+
+
 def test_bool_is_not_a_number(tmp_path):
     vs, _ = lint_doc(tmp_path, {"voltages": [{"net": "X", "voltage": True}]})
     assert [e["kind"] for e in errors(vs)] == ["bad_type"]

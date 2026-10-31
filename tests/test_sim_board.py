@@ -478,3 +478,135 @@ def test_fb_divider_series_bottom_chain(tmp_path):
     assert row["ratio"] == pytest.approx(1 + 100 / 15)
     (v,) = vios
     assert v["refs"] == ["R1", "R2", "R3", "U4"]
+
+
+# ------------------------------------- SoC pads, pin modes, pin ratings
+
+# An i.MX-style SoC whose pads carry their default function: ENET2_TX_EN
+# (muxed to a GPIO) drives a status LED; DRAM/USB pads and an ADC-named net
+# stay undriven. An MCU's PB11 sits on a peak detector (an ADC input the
+# board's pin_modes names). An INA240 on VS = 3.3 V measures a 12 V rail;
+# a gate driver's HB rides above its VDD; a 2 R + 2.2 uF snubber's mid node
+# on a sheet is named after VBUS but is no rail.
+SOC_BOARD = [
+    ("U5", "MCIMX6Y2CVM08AB", "BGA-289", {
+        "N13": ("+3V3", "VDD_HIGH_IN"), "A1": ("GND", "GND"),
+        "B15": ("/LED_STATUS", "ENET2_TX_EN_B15"),
+        "F17": ("/U4TX", "UART4_TX_DATA_F17"),
+        "G6": ("/DQ0", "DRAM_DATA00_G6"),
+        "U14": ("/USB_DP", "USB_OTG1_DP_U14"),
+        "L17": ("/ADC_1V35", "GPIO1_IO03_L17")}),
+    ("R20", "470", "R_0402_1005Metric", {"1": ("/LED_STATUS", ""),
+                                         "2": ("/LED_K", "")}),
+    ("D20", "red", "LED_0603_1608Metric", {"1": ("GND", "K"),
+                                           "2": ("/LED_K", "A")}),
+    ("R21", "10k", "R_0402_1005Metric", {"1": ("/U4TX", ""),
+                                         "2": ("GND", "")}),
+    ("R22", "240", "R_0402_1005Metric", {"1": ("/DQ0", ""),
+                                         "2": ("GND", "")}),
+    ("R23", "10k", "R_0402_1005Metric", {"1": ("+1V35", ""),
+                                         "2": ("/ADC_1V35", "")}),
+    ("R24", "10k", "R_0402_1005Metric", {"1": ("/ADC_1V35", ""),
+                                         "2": ("GND", "")}),
+    ("U6", "STM32G474RBT3", "LQFP-64", {"1": ("+3V3", "VDD"),
+                                        "2": ("GND", "VSS"),
+                                        "30": ("/SWPK_A", "PB11")}),
+    ("C20", "100pF", "C_0402_1005Metric", {"1": ("/SWPK_A", ""),
+                                           "2": ("GND", "")}),
+    ("R25", "10", "R_0402_1005Metric", {"1": ("/SWPK_A", ""),
+                                        "2": ("GND", "")}),
+    ("U7", "INA240A2DR", "SOIC-8", {"5": ("+3V3", "VS"), "2": ("GND", "GND"),
+                                    "8": ("/SHUNT_P", "IN+"),
+                                    "1": ("/SHUNT_N", "IN–")}),
+    ("R26", "0.01", "R_2512_6332Metric", {"1": ("+12V", ""),
+                                          "2": ("/SHUNT_P", "")}),
+    ("R27", "0.01", "R_2512_6332Metric", {"1": ("/SHUNT_P", ""),
+                                          "2": ("/SHUNT_N", "")}),
+    ("R28", "10k", "R_0603_1608Metric", {"1": ("/SHUNT_N", ""),
+                                         "2": ("GND", "")}),
+    ("U8", "UCC27211", "SOIC-8", {"1": ("+3V3", "VDD"), "7": ("GND", "VSS"),
+                                  "2": ("/HB", "HB")}),
+    ("R29", "1k", "R_0402_1005Metric", {"1": ("+12V", ""), "2": ("/HB", "")}),
+    ("R30", "2", "R_1206_3216Metric", {"1": ("+12V", ""),
+                                       "2": ("/charger/CHG_VBUS_RC", "")}),
+    ("C21", "2.2uF", "C_0805_2012Metric", {"1": ("/charger/CHG_VBUS_RC", ""),
+                                           "2": ("GND", "")}),
+]
+
+
+def test_soc_pads_and_pin_modes(tmp_path):
+    b = sim_board.load_board(write_net(tmp_path / "s.net", SOC_BOARD))
+    rails = sim_board.resolve_rails(b, {}, None, None, {})
+    assert "/charger/CHG_VBUS_RC" not in rails and "+12V" in rails
+    model = sim_board.build_model(b, {}, rails)
+    skipped = []
+    io, od = sim_board.io_nets(b, rails, model, None, skipped)
+    assert {"/LED_STATUS", "/U4TX", "/SWPK_A"} <= set(io)
+    assert not {"/DQ0", "/USB_DP", "/ADC_1V35"} & set(io)
+    assert skipped == [{"ref": "U5", "pin": "L17", "net": "/ADC_1V35",
+                        "why": "analog net name"}]
+    modes = sim_board.pin_modes({"pin_modes": {"U6": {"PB11": "analog"}}},
+                                ["U5.ADC_1V35=io", "U5.F17=nc"])
+    assert modes == {"U6": {"PB11": "off"}, "U5": {"ADC_1V35": "io",
+                                                   "F17": "off"}}
+    modes["U5"]["GPIO1_IO03"] = "io"
+    io, _ = sim_board.io_nets(b, rails, model, modes)
+    assert "/SWPK_A" not in io and "/U4TX" not in io and "/ADC_1V35" in io
+    for bad in (["U5.F17"], ["U5=io"], ["U5.F17=sideways"]):
+        with pytest.raises(sim_board.checklib.CheckError):
+            sim_board.pin_modes(None, bad)
+    for fn in ("ENET2_TX_EN", "UART4_TX_DATA", "GPIO1_IO03", "LCD_DATA05",
+               "SD1_CMD", "GPIO0_A4_D"):
+        assert sim_board.SOC_PAD_FN.match(fn), fn
+    for fn in ("DRAM_DATA00", "USB_OTG1_DP", "SDA", "CAN_H", "VDD_SOC_IN"):
+        assert not (sim_board.SOC_PAD_FN.match(fn)
+                    and not sim_board.SOC_NOT_IO.match(fn)), fn
+
+
+def test_pin_rating():
+    table = sim_board.load_pin_ratings()
+    c = {"ref": "U7", "value": "INA240A2DR"}
+    lim, src = sim_board.pin_rating(c, {"fn": ["IN–"]}, None, table)
+    assert lim == 80 and "SBOS662" in src
+    bq = {"ref": "U301", "value": "x"}
+    part = {"mpn": "BQ76952PFBR", "attrs": {}}
+    assert sim_board.pin_rating(bq, {"fn": ["PDSG"]}, part, table)[0] == 85
+    assert sim_board.pin_rating(bq, {"fn": ["REGIN"]}, part, table) == \
+        (None, "")
+    csa = {"ref": "U9", "value": "XYZ123"}
+    part = {"mpn": "XYZ123", "attrs": {"Common Mode Voltage": "-4V~75V"}}
+    assert sim_board.pin_rating(csa, {"fn": ["IN+"]}, part, table)[0] == 75
+    assert sim_board.pin_rating(csa, {"fn": ["HB"]}, None, table)[0] == \
+        "switch_node"
+
+
+def test_underdrive_at_rdson_vgs_is_at_spec():
+    e = {"ref": "Q501", "type": "nmos", "roles": {"G": "/G"}}
+    part = {"attrs": {"Vgs(th) max": "1V", "RDS(on)": "20mΩ@2.5V"}}
+    vios, unknowns, row = [], [], {}
+    sim_board.underdrive(e, part, {"io_high": 2.497}, row, vios, unknowns)
+    assert vios == []
+    sim_board.underdrive(e, part, {"io_high": 2.3}, row, vios, unknowns)
+    assert [v["kind"] for v in vios] == ["mosfet_underdrive"]
+
+
+def test_engine_soc_board(tmp_path, need_engine):
+    (tmp_path / "kicad").mkdir()
+    write_net(tmp_path / "kicad" / "s.net", SOC_BOARD)
+    (tmp_path / "kicad" / "constraints.json").write_text(json.dumps(
+        {"pin_modes": {"U6": {"PB11": "analog"}}}), encoding="utf-8")
+    out = tmp_path / "sim.json"
+    subprocess.run([sys.executable, str(SCRIPTS / "sim_board.py"),
+                    "--workspace", str(tmp_path), "--out", str(out)],
+                   capture_output=True, text=True, timeout=300)
+    rep = json.loads(out.read_text(encoding="utf-8"))
+    (led,) = rep["leds"]
+    assert led["current_a"]["io_high"] == pytest.approx(3e-3, rel=0.25)
+    assert _kinds(rep, "led_dark") == []
+    assert _kinds(rep, "gpio_overcurrent") == []      # PB11 not driven
+    assert _kinds(rep, "input_above_supply") == []    # INA240, HB
+    assert _kinds(rep, "resistor_overpower") == []    # no 12 V on R30's end
+    assert any(u["what"] == "/charger/CHG_VBUS_RC not a rail"
+               for u in rep["known_unknowns"])
+    assert any(u["ref"] == "U8" and u["what"].startswith("pin 2 (HB)")
+               for u in rep["known_unknowns"])
