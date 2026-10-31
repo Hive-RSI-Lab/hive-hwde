@@ -22,7 +22,7 @@ venv python. Keep output ASCII.
   enclosure, what the person will plug it into.
 - hwde's checks where they fit (`check_current`, `check_thermal`,
   `check_irdrop`, `check_pdn_z`, `check_return_path`, `check_ratings`,
-  `check_creepage`, `check_straps`, `check_antenna`, `check_observability`,
+  `check_creepage`, `check_straps`, `check_reset_drive`, `check_antenna`, `check_observability`,
   `sim_board.py`, `eng_calc.py`).
   Use one where it fits and SAY where it is wrong or blind.
 - SPICE: write testbenches (`tb.cir` + `tb.bounds.json`) under

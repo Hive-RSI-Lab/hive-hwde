@@ -306,6 +306,15 @@ every board:
   whose pull fights an external one. What each part does at reset is in
   `reference/reset_states.yaml`; a pin it doesn't know is a warning naming
   the pin. Add the part (with its datasheet) rather than ignoring it.
+- `check_reset_drive` builds beside it with the same resolver: every FET
+  gate, BJT base and part enable (EN, ON, SHDN, SDZ...) an MCU pin reaches,
+  directly or through one resistor, must sit at its off level at power-on
+  with the pin undriven. A floating FET gate or a mid-band enable fails, a
+  floating enable or base warns (the part may pull it), and a load on a pin
+  the chip itself drives during power-up (`glitch` in reset_states.yaml:
+  the ESP32-S3's GPIO1-17 low for ~60 us, its USB_D+ high for up to
+  ~170 ms, U0TXD's boot log) fails whatever pull it has. Pins the chip
+  pulls at reset stay check_straps' `load_on_at_reset`.
 - `check_antenna` finds a module's PCB antenna end from its footprint (the
   body beyond the pad field), and fails copper of any kind under it on any
   layer. It warns when the end is more than 1 mm inside the board edge, or
@@ -319,6 +328,41 @@ ESP32 reset) and six of its expander pins, and `check_antenna` fails core's
 U7 (GND or +3V3 fill under the antenna on all four layers). lite-main
 passes both, with warnings: 2.2 mm cleared beside the antenna, and ES8388
 MCLK on GPIO0 with no known reset state.
+
+## Signal integrity
+
+`check_si` (verify suite) finds the nets that need signal-integrity care by
+interface rather than by declaration: oscillator and MCU clocks, RMII, I2S,
+SPI, USB, Ethernet MDI and crystal nets, by name and by what drives them (an
+oscillator part on the net or behind its series resistor makes a 1 ns edge,
+an MCU pin 2 ns). For each it solves the board's own stackup (the field
+solver in `lib/impedance.py`) for Z0 and delay, and holds the net's longest
+pad-to-pad path against its critical length, t_rise / 6 (Johnson). Past it
+the net is a transmission line, and:
+
+- a clock with no series resistor is `si_unterminated_clock`, and one whose
+  resistor plus a ~20 ohm driver misses Z0 is `si_series_mismatch`;
+- two long parts of the net more than 0.10 apart in reflection coefficient
+  are `si_impedance_step`; a declared `z0_ohm`, or a pair's standard Zdiff
+  (USB 90, 100BASE-TX 100), missed is `si_impedance_target`;
+- the net goes through `check_return_path`'s corridor and return-via tests
+  with its own rise time (findings keep that check's kinds).
+
+Every fast net is also an aggressor: each near-parallel neighbour on its layer
+is solved as a coupled pair (`impedance.coupling`: Bogatin's kb and kf from
+the even and odd modes), and NEXT and FEXT over the coupled run are held to
+5% of the swing for a digital victim and 1% for an analog one or a crystal
+(`si_crosstalk`). RMII's halves are held to 10% of their 20 ns interval in
+flight-time spread (`si_skew`). The report lists every SI net's length,
+delay, Z0, critical length, termination and worst neighbours, pass or fail.
+`constraints.json` `si` declares, corrects or ignores nets
+(`reference/constraints_schema.md`).
+
+On the pinned boards it finds core's I2S_BCK (98 mm from the ESP32 to three
+converters with no series resistor), three core B.Cu runs over In2's +3V3
+plane where tracks on In2 cut it right under them, and lite-main's I2S_DOUT
+0.13 mm from BCLK for 47 mm on a 2-layer board. The planted fault
+`si-unterminated-clock` stretches usbbuck4's MCO past its critical length.
 
 ## ESD at the connectors, and what the ingest runs found
 

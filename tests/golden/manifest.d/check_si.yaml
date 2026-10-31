@@ -1,0 +1,12 @@
+# Seeded fault for check_si (docs/failure-modes.yaml SI-12).
+mutants:
+  si-unterminated-clock:
+    board: usbbuck4
+    script: mutations/si_unterminated_clock.py
+    check: check_si
+    defect: >-
+      MCO (the STM32's clock out, a ~2 ns edge) detoured to ~63 mm, past the
+      ~55 mm critical length on usbbuck4's stackup, with no series resistor
+    expect:
+      kind: si_unterminated_clock
+      net: /MCO

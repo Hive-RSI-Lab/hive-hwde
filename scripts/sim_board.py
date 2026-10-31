@@ -992,6 +992,10 @@ def regulator_findings(board, parts, rails, model, opts, vios, unknowns,
                        facts):
     table = load_vrefs()
     out = []
+    pins: dict[str, int] = {}
+    for c in board["comps"].values():
+        for p in c["pins"].values():
+            pins[p["net"]] = pins.get(p["net"], 0) + 1
     for c in board["comps"].values():
         if c["kind"] not in ("U", "IC"):
             continue
@@ -1000,10 +1004,11 @@ def regulator_findings(board, parts, rails, model, opts, vios, unknowns,
         for fb in sorted(fbs):
             if fb in rails:
                 continue   # FB tied straight to the output: fixed ratio 1
-            rs = [e for e in model["elems"] if e["kind"] == "R"
-                  and fb in e["nets"]]
-            tops = [e for e in rs if _other(e, fb) not in model["grounds"]]
-            bots = [e for e in rs if _other(e, fb) in model["grounds"]]
+            legs = [_r_chain(e, fb, model, pins, rails)
+                    for e in model["elems"]
+                    if e["kind"] == "R" and fb in e["nets"]]
+            tops = [g for g in legs if g["end"] not in model["grounds"]]
+            bots = [g for g in legs if g["end"] in model["grounds"]]
             if len(tops) != 1 or len(bots) != 1:
                 unknowns.append({"ref": c["ref"], "what": f"FB net {fb}",
                                  "why": f"{len(tops)} top / {len(bots)} "
@@ -1011,7 +1016,7 @@ def regulator_findings(board, parts, rails, model, opts, vios, unknowns,
                                         "divider, set the Vout by hand"})
                 continue
             top, bot = tops[0], bots[0]
-            out_net = _other(top, fb)
+            out_net = top["end"]
             vr = find_vref(c, parts.get(c["ref"]), opts["vref"], table)
             row = {"ref": c["ref"], "fb_net": fb, "out_net": out_net,
                    "r_top": top["ref"], "r_bot": bot["ref"],
@@ -1024,9 +1029,9 @@ def regulator_findings(board, parts, rails, model, opts, vios, unknowns,
                 out.append(row)
                 continue
             vref, vtol, vsrc, verified = vr
-            rtol = max(engcalc.parse_tolerance(attr(parts.get(e["ref"]),
+            rtol = max(engcalc.parse_tolerance(attr(parts.get(r),
                                                     r"^Tolerance")) or 0.01
-                       for e in (top, bot))
+                       for r in top["refs"] + bot["refs"])
             fbv = engcalc.fb_vout(vref, top["value"], bot["value"], rtol, vtol)
             row.update({"vref": vref, "vref_source": vsrc,
                         "vref_verified": verified, "r_tol": rtol,
@@ -1047,7 +1052,7 @@ def regulator_findings(board, parts, rails, model, opts, vios, unknowns,
                     vios.append(_vio(
                         "fb_divider_mismatch",
                         "error" if abs(d) > 0.05 else "warning",
-                        [c["ref"], top["ref"], bot["ref"]], out_net,
+                        [c["ref"], *top["refs"], *bot["refs"]], out_net,
                         f"{c['ref']} FB divider {top['ref']}/{bot['ref']} "
                         f"({_f(top['value'], 'ohm')}/"
                         f"{_f(bot['value'], 'ohm')}, Vref {vref:g} V) sets "
@@ -1057,6 +1062,27 @@ def regulator_findings(board, parts, rails, model, opts, vios, unknowns,
                         vout=fbv, declared_v=declared[0]))
             out.append(row)
     facts["regulators_fb"] = out
+
+
+def _r_chain(e: dict, fb: str, model: dict, pins: dict[str, int],
+             rails: dict) -> dict:
+    """The resistor leg from FB through `e`: resistors in series are walked
+    through any net only two resistor pins touch (no rail, no ground), so
+    R_a + R_b to ground reads as one bottom of R_a + R_b."""
+    rs = [x for x in model["elems"] if x["kind"] == "R"]
+    chain, net, cur = [e], fb, e
+    while True:
+        net = _other(cur, net)
+        if net in model["grounds"] or net in rails or pins.get(net) != 2:
+            break
+        nxt = [x for x in rs if net in x["nets"] and x is not cur]
+        if len(nxt) != 1 or nxt[0] in chain or fb in nxt[0]["nets"]:
+            break
+        cur = nxt[0]
+        chain.append(cur)
+    refs = [x["ref"] for x in chain]
+    return {"ref": "+".join(refs), "refs": refs, "end": net,
+            "value": sum(x["value"] for x in chain)}
 
 
 def _other(e: dict, net: str) -> str:
