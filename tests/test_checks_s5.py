@@ -1324,3 +1324,62 @@ def test_verify_all_rf4_under_30s(tmp_path):
          "--reports-dir", str(tmp_path)])
     elapsed = time.perf_counter() - t0
     assert_under(elapsed, 30.0, "verify_all on rf4")
+
+
+# ------------------------------------------- thermal: copper past 1 in^2
+
+def test_fin_reproduces_th5_and_extends_the_curve():
+    """The fin model (emc-thermal TH-5): a 2 mm source on 1 oz still gains
+    ~3x from 645 mm2 to an unbounded sheet; anchored to the curve's slope,
+    copper keeps helping past A_SAT, flattening near ~2100 mm2."""
+    fin = check_thermal.fin_theta
+    assert fin(2.0, 645, 0.035) == pytest.approx(92, rel=0.02)
+    assert fin(2.0, math.pi * 2000.0 ** 2, 0.035) == pytest.approx(32, rel=0.02)
+    sp = check_thermal.spread_model(9.0, 0.035, False)
+    sat = check_thermal.A_SAT_MM2
+    th = sp["theta"]
+    assert th(sat) == pytest.approx(check_thermal.theta_ja(sat, False))
+    assert th(sat + 1e-3) == pytest.approx(th(sat), abs=0.01)  # continuous
+    vals = [th(a) for a in (645, 1000, 2000, 5000, 1e5)]
+    assert all(b < a for a, b in zip(vals, vals[1:]))
+    assert sp["sheet_cw"] == pytest.approx(50, abs=3)
+    assert sp["sat_mm2"] == pytest.approx(2100, rel=0.1)
+    assert th(sp["sat_mm2"]) == pytest.approx(sp["sheet_cw"] * 1.1, rel=0.01)
+    # thicker copper spreads further, so it saturates later and lower
+    sp2 = check_thermal.spread_model(9.0, 0.070, False)
+    assert sp2["sat_mm2"] > sp["sat_mm2"]
+
+
+def test_thermal_2l_past_best_case_says_grow_when_spreading_meets(
+        tmp_path_factory):
+    """2.5 W, 85 C: over the screen's best 2-layer case (~38 C/W, pours
+    capped at 1 in^2) but not the spreading model's (~29 C/W with ~2100 mm2
+    pours), so the remedy names the bigger pour; pass/fail is unchanged."""
+    vias = _via_grid(THERMAL_VIA, base=20.0)
+    bg = _thermal_2l_board(tmp_path_factory, "amp2lgrow", vias=vias)
+    vs, facts = check_thermal.check_part(bg, dict(AMP_2L, power_w=2.5))
+    assert facts["theta_best_2l_spread_cw"] == pytest.approx(29, abs=1.5)
+    assert facts["area_far_mm2"] == pytest.approx(900, rel=0.02)
+    err = [v for v in vs if v["kind"] == "thermal_area"]
+    assert err and "even the best 2-layer case" in err[0]["msg"]
+    assert "or grow both GND pours" in err[0]["msg"]
+    assert "the screen credits copper only to 645 mm2" in err[0]["msg"]
+
+
+def test_thermal_2l_big_pour_already_saturated_no_grow(tmp_path_factory):
+    """Pours already past the saturation radius: no 'grow' advice."""
+    vias = _via_grid(THERMAL_VIA, base=20.0)
+    bg = _thermal_2l_board(tmp_path_factory, "amp2lbig", vias=vias, half=30.0)
+    vs, facts = check_thermal.check_part(bg, dict(AMP_2L, power_w=2.5))
+    assert facts["area_far_mm2"] >= 0.98 * facts["copper_sat_mm2"]
+    err = [v for v in vs if v["kind"] == "thermal_area"]
+    assert err and "or grow" not in err[0]["msg"]
+
+
+def test_thermal_over_even_a_sheet_no_grow(tmp_path_factory):
+    """3 W into 85 C is past even the spreading model's big pours."""
+    vias = _via_grid(THERMAL_VIA, base=20.0)
+    bg = _thermal_2l_board(tmp_path_factory, "amp2lsheet", vias=vias)
+    vs, _ = check_thermal.check_part(bg, dict(AMP_2L, power_w=3.0))
+    err = [v for v in vs if v["kind"] == "thermal_area"]
+    assert err and "or grow" not in err[0]["msg"]
