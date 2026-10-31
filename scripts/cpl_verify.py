@@ -25,7 +25,9 @@ per LCSC number) and fits it onto the board footprint:
             pad number, and a 180-degree turn is never accepted for it.
   no data   No LCSC number, no cached or fetchable model, fewer than two
             shared pad numbers, no turn that fits, or a bottom-side part
-            (JLC's bottom convention is not modelled) is a FAILURE, never a
+            whose orientation hangs on JLC's bottom convention (not
+            modelled: anything but a non-polar two-pad part with its pad
+            axis at 0/90 deg, whose axis no mirror changes) is a FAILURE, never a
             pass - `no_model`, `no_fit` or `bottom_unverified`. A model
             fetch that errored (network, HTTP status) is `fetch_failed`,
             never `no_model`: it says nothing about the part or its pin 1.
@@ -277,10 +279,6 @@ def _ang_eq(a: float, b: float, tol: float = ROT_TOL_DEG) -> bool:
 def analyse(fp: Footprint, model) -> dict:
     """The corrections that put this model onto this footprint, with how
     they were found. No CPL involved, so bom_cpl can derive from it."""
-    if fp.side != "top":
-        return {"verdict": "bottom_unverified",
-                "why": "bottom-side part: JLC's bottom placement convention is "
-                       "not modelled - confirm it in JLC's preview"}
     if model is None:
         return {"verdict": "no_model",
                 "why": "no LCSC footprint model (no LCSC number, or EasyEDA "
@@ -299,6 +297,8 @@ def analyse(fp: Footprint, model) -> dict:
     polar = is_polar(fp, model)
     out = {"polar": polar, "tol_mm": round(tol, 3), "basis": "pad number"}
     corr = [c for c, _ in num_fit]
+    if fp.side != "top":
+        return _bottom(fp, model, kpads, polar, corr, out)
     if polar:
         mr, br = model_roles(model), board_roles(fp, model)
         shared = set(mr.values()) & set(br.values())
@@ -333,6 +333,38 @@ def analyse(fp: Footprint, model) -> dict:
     return out
 
 
+def _bottom(fp: Footprint, model, kpads, polar, corr, out) -> dict:
+    """A bottom-side part. JLC's bottom convention (which way the board is
+    mirrored, which way a rotation turns seen from below) is not modelled,
+    so only what no convention changes is checked: a non-polar two-pad part
+    whose pad axis lies at 0 or 90 deg. A mirror about either board axis
+    keeps such an axis, and a turn by a multiple of 90 deg reads the same
+    clockwise or counter-clockwise modulo 180, so the CPL rotation's axis is
+    right under every convention. Anything else stays bottom_unverified."""
+    why = None
+    if polar:
+        why = "a polarised part's pin 1 depends on the mirror"
+    elif not (len(model.pads) == 2 and len(kpads) == 2):
+        why = "a part with more than two pads depends on the mirror"
+    elif not corr:
+        why = ("the LCSC model's pads do not land on the board footprint's "
+               "pads at any 45-degree turn")
+    elif any(c % 90 for c in corr) or not _ang_eq(fp.rot % 90.0, 0.0) \
+            and not _ang_eq(fp.rot % 90.0, 90.0):
+        why = "a pad axis off 0/90 deg reads differently under each mirror"
+    if why:
+        out.update(verdict="bottom_unverified",
+                   why=f"bottom-side part: JLC's bottom placement convention "
+                       f"is not modelled, and {why} - confirm it in JLC's "
+                       f"preview")
+        return out
+    corr = sorted({c % 360 for c in corr} | {(c + 180) % 360 for c in corr})
+    out.update(verdict="ok", corrections=corr, side="bottom",
+               basis="pad axis (bottom side: a 0/90-deg axis of a non-polar "
+                     "two-pad part is the same under any mirror)")
+    return out
+
+
 def derive_rotation(fp: Footprint, model) -> float | None:
     """The CPL rotation the model says this part needs, or None."""
     a = analyse(fp, model)
@@ -358,6 +390,8 @@ def check_part(fp: Footprint, model, cpl: dict) -> dict:
         row["verdict"] = "wrong_rotation"
         row["why"] = (f"CPL rotation {cpl['rot']:g} puts pin 1 off pad 1; the "
                       f"LCSC model needs {want[0]:g}")
+    if fp.side != "top":
+        return row   # the bottom's coordinate mirror is not modelled either
     # Offset: model pad centre vs board pad centre, both placed.
     em = [(p.x, p.y) for p in model.pads]
     km = [(p.x, p.y) for p in fp.pads]
