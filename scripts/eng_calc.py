@@ -12,6 +12,7 @@ notation (4k7, 2.2u, 100n, 1M). Output is one JSON object.
   led       --vsupply 3.3 --r 1k [--vf 2.0 | --color red]
   i2c       --vdd 3.3 --rp 2.2k --cb 50p [--khz 400]
   crystal   --c1 18p --c2 18p [--stray 4p]           load capacitance
+            (capacitances here and i2c --cb: a bare number is pF)
   ldo       --vin 5 --vout 3.3 --iout 0.3 --theta 180 [--ta 40] [--iq 50u]
   holdup    --c 470u --vstart 20 --vmin 12 --iload 0.5
   rpower    --r 100 --v 3.3 [--footprint R_0603_1608Metric]
@@ -52,6 +53,22 @@ def num(text: str) -> float:
         if v is not None:
             return v
     raise argparse.ArgumentTypeError(f"not a value: {text!r}")
+
+
+def pf(text: str) -> float:
+    """A small capacitance in farads: '18p', '18pF' or a bare '18' (pF, as
+    load and bus capacitances are written; 18 F is never meant). A bare
+    number under 1e-6 is already farads ('18e-12')."""
+    s = str(text).strip()
+    try:
+        v = float(s)
+        return v if abs(v) < 1e-6 else v * 1e-12
+    except ValueError:
+        pass
+    v = engcalc.parse_value(s)
+    if v is None:
+        raise argparse.ArgumentTypeError(f"not a capacitance: {text!r}")
+    return v
 
 
 def calc(a) -> dict:
@@ -183,10 +200,11 @@ def main(argv=None) -> int:
     cmd("led", ("--vsupply", dict(req)), ("--r", dict(req)),
         ("--vf", {"default": None}), ("--color", {"type": str,
                                                   "default": None}))
-    cmd("i2c", ("--vdd", dict(req)), ("--rp", dict(req)), ("--cb", dict(req)),
+    cmd("i2c", ("--vdd", dict(req)), ("--rp", dict(req)), ("--cb", dict(req, type=pf)),
         ("--khz", {"type": int, "default": 400}))
-    cmd("crystal", ("--c1", dict(req)), ("--c2", dict(req)),
-        ("--stray", {"default": engcalc.CRYSTAL_STRAY_PF * 1e-12}))
+    cmd("crystal", ("--c1", dict(req, type=pf)), ("--c2", dict(req, type=pf)),
+        ("--stray", {"type": pf,
+                     "default": engcalc.CRYSTAL_STRAY_PF * 1e-12}))
     cmd("ldo", ("--vin", dict(req)), ("--vout", dict(req)),
         ("--iout", dict(req)), ("--theta", dict(req)),
         ("--ta", {"default": 25.0}), ("--iq", {"default": 0.0}))
