@@ -143,7 +143,8 @@ weighed like any other report:
   scenarios (default, every IC I/O low, high, running) plus a rail-ramp
   transient. Reports resistor overpower, cap overvoltage/DC bias, the Vout
   each FB divider sets against the rail it feeds, LED and GPIO currents,
-  pins above their IC's supply, MOSFET Vgs (too much, and too little to
+  pins above their IC's supply (or above their own rating in
+  reference/pin_ratings.yaml: CSA inputs, BMS AFE pins), MOSFET Vgs (too much, and too little to
   turn on: rerun at each rail's `min` in constraints), enable/reset RC timing, I2C
   pull-up limits, RC corners, crystal loads - and `known_unknowns`, every
   fact it could not decide (a Vref not verified, a Vgs rating not known).

@@ -107,6 +107,15 @@ Consumers per key (script -> phase):
   // DC scenarios there and judges MOSFET on-state drive (mosfet_underdrive).
   "voltages": [{"net": "HV_BUS", "voltage": 48},
                {"net": "VBUS", "voltage": 21, "min": 9}],
+  // pin_modes (sim_board): how its io scenarios treat an IC pin, by refdes
+  // and pin number or function name. io/output/gpio: driven low and high;
+  // od: an open-drain status line; analog/adc/input/nc: never driven (an
+  // ADC input on a peak detector, an unused pad). Without it, pins with a
+  // GPIO name (PB11, IO5) or an SoC pad function (ENET2_TX_EN,
+  // UART4_TX_DATA) are driven, unless the net is named as analog (ADC_x,
+  // x_SNS, x_DIV, x_MON). `--pin-mode U1.PB11=analog` does the same.
+  "pin_modes": {"U1": {"PB11": "analog", "PC3": "analog"},
+                "U100": {"B15": "output"}},
   // voltage_pairs (T2): explicit net-PAIR differential that node voltages
   // cannot express (bridge/AC inputs - two 57 V taps carry 114 V between
   // them). Overrides the derived difference for that pair; a pair declared
