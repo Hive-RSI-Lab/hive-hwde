@@ -24,6 +24,14 @@ output ASCII.
    2-layer, JLC04161H-1080B 4-layer; `available: false` entries are REFUSED
    by board_init - one JLC never sold sized a real 100R board) + why (layer
    count drivers: impedance control, planes, density); class 2L vs 4L.
+   RF / microwave (a line that must hold its impedance at GHz): JLC's
+   high-frequency line is 2-layer RO4350B only (`JLC_HF2_RO4350B_*`: 0.508
+   and 0.762 mm cores carry solved 50/90/100 ohm widths at design Dk 3.66;
+   ENIG, green, no impedance control sold, about $47 for 5). RO4003C and
+   Rogers + FR-4 hybrids are NOT sold (jlc_capabilities.yaml `not_offered`):
+   put the RF on a 2-layer RO4350B board and the rest on FR-4, joined by
+   coax, or take it to another fab. Name the stackup in `stackup.md`; every
+   later stage reads the laminate from the board.
 4. `sheets.md` - hierarchical sheet plan: sheet name, its blocks, its
    interface nets (these become hier pins/labels at P4 and placement groups
    at P6), per-sheet refdes ranges (refs must be unique ACROSS sheets,

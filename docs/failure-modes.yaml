@@ -1758,7 +1758,8 @@ modes:
   shows: nonexistent template; 1 oz vs 0.5 oz inner
   catch: compare order stackup to design
   coverage:
-    script: order_submit (partial)
+    script: order_submit (partial; laminate - board stackup block vs quote,
+      attestation and pcbParam plateType - checked since #332)
     rule: '-'
     level: L1
   target_level: L3

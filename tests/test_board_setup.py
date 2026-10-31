@@ -70,7 +70,11 @@ def test_stackups_yaml_valid():
         # real 1.6 mm laminations sum to 1.58-1.66 mm.
         total = sum(ly["thickness_mm"] for ly in s["stack"])
         assert abs(total - s["stack_total_mm"]) < 1e-6, f"{name}: sums to {total}"
-        assert abs(total - s["thickness_mm"]) / s["thickness_mm"] < 0.05, \
+        # JLC's high-frequency line states FINISHED thickness (mask and
+        # plating included), so those entries carry the allowance explicitly
+        slack = float(s.get("finished_allowance_mm", 0.0))
+        assert abs(total - s["thickness_mm"]) / s["thickness_mm"] < 0.05 \
+            or 0 <= s["thickness_mm"] - total <= slack, \
             f"{name}: nominal {s['thickness_mm']} vs lamination {total}"
         for ci in s.get("controlled_impedance", []):
             assert ci["width_mm"] > 0

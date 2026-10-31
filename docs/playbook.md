@@ -385,8 +385,13 @@ substitution in the spawn ledger. Never silently drop to a weaker tier.
 
 ## Known limits (be honest about these)
 
-- No field solver: impedance from stackup tables, SI checks geometric.
-  Multi-GHz serdes is out of scope; say so if a brief asks.
+- No full-wave solver: impedance is impedance.py's 2D quasi-static field
+  solve (no dispersion, no loss), SI checks geometric. Multi-GHz serdes is
+  out of scope; say so if a brief asks.
+- RF laminate at JLC: 2-layer RO4350B only (stackups `JLC_HF2_RO4350B_*`,
+  jlc_capabilities.yaml `materials`). RO4003C and Rogers + FR-4 hybrids are
+  not sold there and are refused by name; JLC sells no impedance control on
+  the HF line, so its widths are hwde's own solve at design Dk 3.66.
 - JLCDFM and payment are human steps by design (no public APIs).
 - kipy/IPC is the KiCad-11 migration target; this pin drives SWIG bundled
   python via the edit scripts - never bypass them.

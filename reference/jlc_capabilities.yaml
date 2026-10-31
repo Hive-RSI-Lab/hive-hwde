@@ -171,3 +171,159 @@ design_rules:
     min_pad_size_mm: 0.25
     outer_copper_oz: 1.0
     inner_copper_oz: 0.5
+
+  # ---------------------------------------------- high-frequency (RF) material
+  # JLC's "High-Frequency PCBs" line (jlc_capabilities `materials:` below).
+  # Key = <layers>layer_<oz>oz_<material family> (lib/fabmaterial.py); FR-4
+  # keys carry no suffix. Source (read 2026-10-31):
+  #   https://jlcpcb.com/pcb-fabrication/high-frequency-pcb  - "Minimum
+  #     Drill 0.2mm; Minimum Track Width and Spacing 0.10 / 0.10 mm (4 / 4
+  #     mil); Layer 2-layer; Copper Weight 1oz; ENIG"
+  #   https://jlcpcb.com/capabilities/pcb-capabilities - "RF PCB: 1 oz
+  #     copper, 2-layer RF PCBs with Rogers and PTFE cores"; drill 0.15 is
+  #     the FR-4 2-layer floor, NOT claimed for RF.
+  # Every row not named on those pages (annular ring, edge, hole-to-hole,
+  # silk, mask) is the FR-4 2layer_1oz value - JLC publishes no separate HF
+  # number, and the FR-4 one is the stricter assumption. Via diameter =
+  # 0.2 drill + 2 x 0.15 ring.
+  2layer_1oz_ro4350b:
+    min_trace_width_mm: 0.10         # 4 mil (HF page)
+    min_clearance_mm: 0.10           # 4 mil (HF page)
+    min_via_drill_mm: 0.2            # HF page "Minimum Drill"
+    min_via_diameter_mm: 0.5
+    min_annular_ring_mm: 0.15
+    min_hole_diameter_mm: 0.2
+    min_copper_to_edge_mm: 0.3
+    min_hole_to_hole_mm: 0.5
+    min_hole_to_edge_mm: 0.5
+    min_silk_width_mm: 0.15
+    min_silk_height_mm: 1.0
+    min_solder_mask_dam_mm: 0.1
+    min_solder_mask_clearance_mm: 0.05
+    min_pad_size_mm: 0.25
+    outer_copper_oz: 1.0
+    inner_copper_oz: 0.0
+
+  2layer_1oz_ptfe_zyf:
+    min_trace_width_mm: 0.10
+    min_clearance_mm: 0.10
+    min_via_drill_mm: 0.2
+    min_via_diameter_mm: 0.5
+    min_annular_ring_mm: 0.15
+    min_hole_diameter_mm: 0.2
+    min_copper_to_edge_mm: 0.3
+    min_hole_to_hole_mm: 0.5
+    min_hole_to_edge_mm: 0.5
+    min_silk_width_mm: 0.15
+    min_silk_height_mm: 1.0
+    min_solder_mask_dam_mm: 0.1
+    min_solder_mask_clearance_mm: 0.05
+    min_pad_size_mm: 0.25
+    outer_copper_oz: 1.0
+    inner_copper_oz: 0.0
+
+# ------------------------------------------------------------------ materials
+# Laminates JLC sells, read by lib/fabmaterial.py: a board's family comes
+# from its stackup block's dielectric names (`match`, case-insensitive
+# regexes; anything matching none is FR-4). The family picks the
+# design_rules row (suffix), the order's plateType, the options the quote
+# page allows, and the price line (jlc_pricing.yaml pcb.high_frequency).
+#
+# Verified 2026-10-31 against:
+#   [hf]   https://jlcpcb.com/pcb-fabrication/high-frequency-pcb
+#   [caps] https://jlcpcb.com/capabilities/pcb-capabilities
+#   [blog] https://jlcpcb.com/blog/rf-pcb-design (2026-10-20, JLC's own)
+#   [calc] JLC's impedance calculator template list, swept in full
+#          (5886 templates, 2-64 layers, POST /api/jlcTools/impedance/
+#          selectPageImpedanceDefaultTemplate pageNum 1..59): every
+#          dielectric is FR-4 core/PP or flex PI - NO Rogers or PTFE
+#          template exists, so JLC has no impedance-controlled HF product.
+# RE-VERIFY before ordering: this line is new and changes (the [blog] and
+# [hf] pages already disagree on how thicknesses are stated).
+materials:
+  fr4:
+    label: "FR-4 (Tg140)"
+    plate_type: 1                 # order API enum, live-verified on every quote
+    material_details: 0           # FR4 Standard Tg140
+    match: []
+  ro4350b:
+    label: "Rogers RO4350B"
+    product: high_frequency
+    # plateType 5 is what JLC's own "Get Instant Quote" link on [hf] sends
+    # (cart.jlcpcb.com/quote?...&plateType=5). The open-API calculate has
+    # not yet been run with it (no credentialed HF quote) - order_submit
+    # adds a human step to confirm the material on the quote page.
+    plate_type: 5
+    plate_type_source: "jlcpcb.com/pcb-fabrication/high-frequency-pcb quote link, 2026-10-31"
+    match: ['RO\s*4350']
+    dk_process: 3.48              # [hf] "RO4350B (Dk=3.48, Df=0.0037)", 10 GHz
+    dk_design: 3.66               # [blog] "size ... from ... 3.66 design Dk"
+    df: 0.0037
+    layers: [2]                   # [hf] [caps]
+    copper_oz: [1]                # [hf] [caps]
+    # [hf] states FINISHED board thickness; [blog] states the cores. The
+    # pairing (0.508 -> 0.65, 0.762 -> 0.9, 1.524 -> 1.65) is inferred:
+    # core + 2 x 35 um copper + mask/ENIG lands 0.05-0.07 mm under each.
+    finished_thickness_mm: [0.65, 0.9, 1.65]
+    core_thickness_mm: [0.508, 0.762, 1.524]
+    surface_finish: [ENIG]        # [hf]; [caps]: "high-frequency boards ... do not support HASL"
+    solder_mask_colors: [green]   # [hf]
+    silkscreen_colors: [white]    # [hf]
+    min_size_mm: [3, 3]           # [hf] [caps]
+    max_size_mm: [590, 438]       # [hf] [caps] "Rogers / PTFE Teflon PCB: 590 x 438 mm"
+    impedance_control: false      # [blog] "JLCPCB does not yet offer it on two-layer boards"; [calc]
+    lead_time_days: [4, 5]        # [hf]
+    order_notes:
+      - "JLC's high-frequency line is a separate product: on the quote page
+        pick Material Type Rogers (or open cart.jlcpcb.com/quote?plateType=5)
+        and check the summary says RO4350B before paying."
+      - "No impedance control is sold on this material: do not tick
+        'Impedance Control' - the widths are hwde's, solved at design Dk."
+  ptfe_zyf:
+    label: "PTFE (ZYF series)"
+    product: high_frequency
+    plate_type: 5
+    plate_type_source: "same HF quote link as ro4350b; grade picked on the quote page"
+    match: ['ZYF', 'PTFE', 'Teflon']
+    # [hf]: ZYF255DA 2.55/0.0018, ZYF265D 2.65/0.0019, ZYF300CA-C 2.94/
+    # 0.0016, ZYF300CA-P 3.0/0.0018. No stackups.yaml entry yet: JLC
+    # publishes no ZYF core thickness.
+    grades:
+      ZYF255DA: {dk: 2.55, df: 0.0018}
+      ZYF265D: {dk: 2.65, df: 0.0019}
+      ZYF300CA-C: {dk: 2.94, df: 0.0016}
+      ZYF300CA-P: {dk: 3.0, df: 0.0018}
+    layers: [2]
+    copper_oz: [1]
+    finished_thickness_mm: [0.65, 0.9, 1.65]
+    surface_finish: [ENIG]
+    solder_mask_colors: [green]
+    silkscreen_colors: [white]
+    min_size_mm: [3, 3]
+    max_size_mm: [590, 438]
+    impedance_control: false
+    lead_time_days: [4, 5]
+
+# Materials asked for that JLC does NOT sell (2026-10-31). A stackup or a
+# board whose dielectrics match one of these is refused by name with the
+# replacements, the way retired stackups are. `hybrid` is any stack that
+# mixes families (e.g. RO4350B L1-L2 over FR-4).
+not_offered:
+  ro4003c:
+    match: ['RO\s*4003']
+    reason: "JLC's high-frequency line lists RO4350B and ZYF PTFE only
+      ([hf] materials table, [blog] 2026-10-20); RO4003C is on no JLC page
+      or calculator template."
+    replacements: [ro4350b, "another fab (#320)"]
+  rogers_other:
+    match: ['RO\s*3\d{3}', 'RT\s*/?\s*duroid', 'RO\s*4835', 'RO\s*4450', 'RO\s*4360']
+    reason: "Not in JLC's high-frequency materials table ([hf], 2026-10-31)."
+    replacements: [ro4350b, "another fab (#320)"]
+  hybrid:
+    reason: "JLC sells high-frequency material as 2-layer boards only ([caps]
+      'RF PCB: 1 oz copper, 2-layer RF PCBs with Rogers and PTFE cores'; [hf]
+      'Layer 2-layer'); no hybrid Rogers + FR-4 multilayer is offered, and no
+      calculator template has a Rogers layer ([calc]). JLC's own advice
+      ([blog]): a 2-layer RO4350B RF board joined to the FR-4 main board by
+      coax."
+    replacements: ["2-layer RO4350B RF board + FR-4 main board", "another fab (#320)"]

@@ -37,7 +37,9 @@
 # read 2026-09-27 into tests/fixtures/jlc_impedance/<template>_template.json.
 # Entries using those values say `epsilon_r_assumed: false` and
 # `epsilon_r_source: jlc_calculator_template`; the rest keep ASSUMED FR4
-# values (`epsilon_r_assumed: true`). loss_tangent is assumed everywhere.
+# values (`epsilon_r_assumed: true`). loss_tangent is assumed on every FR-4
+# entry; the Rogers entries carry the datasheet's (RO4350B 0.0037 at 10 GHz)
+# and Rogers' design Dk (`epsilon_r_source: rogers_design_dk`).
 #
 # CONTROLLED-IMPEDANCE geometry (width_mm / gap_mm) is COMPUTED from the
 # physical stackup by scripts/lib/impedance.py's 2D field solver (coated
@@ -100,9 +102,10 @@ stackups:
       - {name: "F.Cu",         type: copper,      thickness_mm: 0.035, copper_oz: 1.0}
       - {name: "dielectric 1", type: core,        thickness_mm: 1.530, material: "FR4", epsilon_r: 4.5, loss_tangent: 0.02}
       - {name: "B.Cu",         type: copper,      thickness_mm: 0.035, copper_oz: 1.0}
-    # No standard controlled-impedance offering: a 2-layer board has no adjacent
-    # reference plane, so single-ended 50 ohm would need a ~2.7 mm trace. Route
-    # wide/pours instead of controlled impedance.
+    # No solved profiles: the reference plane is 1.53 mm away, so single-ended
+    # 50 ohm would need a ~2.7 mm trace. That is the dielectric's thickness,
+    # not the layer count - a thin 2-layer core (JLC_HF2_RO4350B_0.508) gets
+    # profiles. Route wide/pours instead of controlled impedance here.
     controlled_impedance: []
 
   JLC2313_1.6_2oz:
@@ -216,6 +219,134 @@ stackups:
       - {profile: se_50,    kind: single, impedance_ohm: 50,  layer: outer, reference: nearest_plane, width_mm: 0.7377, closed_form: {width_mm: 0.7138}}
       - {profile: diff_90,  kind: diff,   impedance_ohm: 90,  layer: outer, reference: nearest_plane, width_mm: 0.5256, gap_mm: 0.3, closed_form: {width_mm: 0.5266, gap_mm: 0.3}}
       - {profile: diff_100, kind: diff,   impedance_ohm: 100, layer: outer, reference: nearest_plane, width_mm: 0.3966, gap_mm: 0.3, closed_form: {width_mm: 0.4236, gap_mm: 0.3}}
+
+  # ------------------------------------------------------ RF / Rogers (HF line)
+  # JLC's high-frequency product (jlc_capabilities.yaml materials.ro4350b):
+  # 2-layer RO4350B only, 1 oz, ENIG, green. RO4003C and hybrid Rogers+FR-4
+  # stacks are NOT sold (jlc_capabilities.yaml not_offered) - board_init and
+  # rules_gen refuse them by name. epsilon_r is Rogers' DESIGN Dk (3.66), the
+  # value to size lines from; dk_process (3.48) is the datasheet's process
+  # Dk, kept for the record. Whether a 2-layer stack gets solved profiles is
+  # keyed on the dielectric thickness (REFERENCE_PLANE_MAX_H_MM in
+  # tests/test_fabmaterial.py), not on the layer count.
+
+  JLC_HF2_RO4350B_0.508:
+    description: "JLCPCB high-frequency 2-layer, Rogers RO4350B 0.508 mm
+      (20 mil) core, 1 oz, ENIG, green mask - 0.65 mm finished. A
+      SEPARATE JLC product (plateType 5), not the FR-4 line: no impedance
+      control, 2 layers only, 590 x 438 mm max."
+    available: true
+    material_family: ro4350b
+    provenance:
+      method: vendor_page
+      source: https://jlcpcb.com/pcb-fabrication/high-frequency-pcb
+      cross_check: https://jlcpcb.com/blog/rf-pcb-design
+      live_verified: false
+      api_note: "JLC's impedance calculator has NO Rogers template (full
+        sweep of 5886 templates, 2026-10-31), so there is nothing to read
+        back; the order API's HF calculate is not yet run. Core 0.508
+        from [blog] 'RO4350B cores come in 0.51, 0.76, and 1.52 mm'; the
+        finished 0.65 mm is [hf]'s thickness option, paired by order."
+      verified: "2026-10-31"
+    layers: 2
+    thickness_mm: 0.65            # finished thickness to SELECT on the quote page
+    stack_total_mm: 0.578         # core + copper; mask/ENIG make up the rest
+    finished_allowance_mm: 0.08   # finished - lamination (mask + plating), [hf] vs [blog]
+    copper_finish: ENIG
+    dielectric_constraints: true  # thin core: B.Cu is the reference plane
+    epsilon_r_assumed: false
+    epsilon_r_source: rogers_design_dk
+    dk_process: 3.48
+    stack:
+      - {name: "F.Cu",         type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+      - {name: "dielectric 1", type: core,   thickness_mm: 0.508, material: "Rogers RO4350B", epsilon_r: 3.66, loss_tangent: 0.0037}
+      - {name: "B.Cu",         type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    # Outer coated microstrip over the B.Cu plane, h = core, er = the
+    # DESIGN Dk 3.66 (not the 3.48 process Dk: Rogers' own design value
+    # for microstrip; JLC's [blog] says size from 3.66). Computed by
+    # impedance.py with JLC's mask coating (the HF line ships green
+    # mask; strip it over RF lines and re-solve with mask=None).
+    controlled_impedance:
+      - {profile: se_50,    kind: single, impedance_ohm: 50,  layer: outer, reference: nearest_plane, width_mm: 1.0497, closed_form: {width_mm: 0.9973}}
+      - {profile: diff_90, kind: diff,   impedance_ohm: 90, layer: outer, reference: nearest_plane, width_mm: 0.7734, gap_mm: 0.3, closed_form: {width_mm: 0.7226, gap_mm: 0.3}}
+      - {profile: diff_100, kind: diff,   impedance_ohm: 100, layer: outer, reference: nearest_plane, width_mm: 0.6014, gap_mm: 0.3, closed_form: {width_mm: 0.5977, gap_mm: 0.3}}
+
+  JLC_HF2_RO4350B_0.762:
+    description: "JLCPCB high-frequency 2-layer, Rogers RO4350B 0.762 mm
+      (30 mil) core, 1 oz, ENIG, green mask - 0.9 mm finished. A
+      SEPARATE JLC product (plateType 5), not the FR-4 line: no impedance
+      control, 2 layers only, 590 x 438 mm max."
+    available: true
+    material_family: ro4350b
+    provenance:
+      method: vendor_page
+      source: https://jlcpcb.com/pcb-fabrication/high-frequency-pcb
+      cross_check: https://jlcpcb.com/blog/rf-pcb-design
+      live_verified: false
+      api_note: "JLC's impedance calculator has NO Rogers template (full
+        sweep of 5886 templates, 2026-10-31), so there is nothing to read
+        back; the order API's HF calculate is not yet run. Core 0.762
+        from [blog] 'RO4350B cores come in 0.51, 0.76, and 1.52 mm'; the
+        finished 0.9 mm is [hf]'s thickness option, paired by order."
+      verified: "2026-10-31"
+    layers: 2
+    thickness_mm: 0.9            # finished thickness to SELECT on the quote page
+    stack_total_mm: 0.832         # core + copper; mask/ENIG make up the rest
+    finished_allowance_mm: 0.08   # finished - lamination (mask + plating), [hf] vs [blog]
+    copper_finish: ENIG
+    dielectric_constraints: true  # thin core: B.Cu is the reference plane
+    epsilon_r_assumed: false
+    epsilon_r_source: rogers_design_dk
+    dk_process: 3.48
+    stack:
+      - {name: "F.Cu",         type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+      - {name: "dielectric 1", type: core,   thickness_mm: 0.762, material: "Rogers RO4350B", epsilon_r: 3.66, loss_tangent: 0.0037}
+      - {name: "B.Cu",         type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    # Outer coated microstrip over the B.Cu plane, h = core, er = the
+    # DESIGN Dk 3.66 (not the 3.48 process Dk: Rogers' own design value
+    # for microstrip; JLC's [blog] says size from 3.66). Computed by
+    # impedance.py with JLC's mask coating (the HF line ships green
+    # mask; strip it over RF lines and re-solve with mask=None).
+    controlled_impedance:
+      - {profile: se_50,    kind: single, impedance_ohm: 50,  layer: outer, reference: nearest_plane, width_mm: 1.6047, closed_form: {width_mm: 1.5178}}
+      - {profile: diff_90, kind: diff,   impedance_ohm: 90, layer: outer, reference: nearest_plane, width_mm: 0.9985, gap_mm: 0.3, closed_form: {width_mm: 0.9605, gap_mm: 0.3}}
+      - {profile: diff_100, kind: diff,   impedance_ohm: 100, layer: outer, reference: nearest_plane, width_mm: 0.7536, gap_mm: 0.3, closed_form: {width_mm: 0.7844, gap_mm: 0.3}}
+
+  JLC_HF2_RO4350B_1.524:
+    description: "JLCPCB high-frequency 2-layer, Rogers RO4350B 1.524 mm
+      (60 mil) core, 1 oz, ENIG, green mask - 1.65 mm finished. A
+      SEPARATE JLC product (plateType 5), not the FR-4 line: no impedance
+      control, 2 layers only, 590 x 438 mm max."
+    available: true
+    material_family: ro4350b
+    provenance:
+      method: vendor_page
+      source: https://jlcpcb.com/pcb-fabrication/high-frequency-pcb
+      cross_check: https://jlcpcb.com/blog/rf-pcb-design
+      live_verified: false
+      api_note: "JLC's impedance calculator has NO Rogers template (full
+        sweep of 5886 templates, 2026-10-31), so there is nothing to read
+        back; the order API's HF calculate is not yet run. Core 1.524
+        from [blog] 'RO4350B cores come in 0.51, 0.76, and 1.52 mm'; the
+        finished 1.65 mm is [hf]'s thickness option, paired by order."
+      verified: "2026-10-31"
+    layers: 2
+    thickness_mm: 1.65            # finished thickness to SELECT on the quote page
+    stack_total_mm: 1.594         # core + copper; mask/ENIG make up the rest
+    finished_allowance_mm: 0.08   # finished - lamination (mask + plating), [hf] vs [blog]
+    copper_finish: ENIG
+    dielectric_constraints: true  # thin core: B.Cu is the reference plane
+    epsilon_r_assumed: false
+    epsilon_r_source: rogers_design_dk
+    dk_process: 3.48
+    stack:
+      - {name: "F.Cu",         type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+      - {name: "dielectric 1", type: core,   thickness_mm: 1.524, material: "Rogers RO4350B", epsilon_r: 3.66, loss_tangent: 0.0037}
+      - {name: "B.Cu",         type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    # No solved profiles: 50 ohm on a 1.524 mm core is ~3.3 mm wide -
+    # past REFERENCE_PLANE_MAX_H_MM, the same call as 1.6 mm FR-4. Use the
+    # 0.508 / 0.762 mm entries for RF lines.
+    controlled_impedance: []
 
   # ------------------------------------------------------------- RETIRED
   # Kept so a board designed against them fails LOUDLY by name.
