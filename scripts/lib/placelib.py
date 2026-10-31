@@ -406,6 +406,11 @@ def class_sets(constraints: dict | None, decoupling: dict | None):
 class Satellite:
     ref: str
     target_pin: tuple[str, str] | None  # (anchor_ref, pad_number) or None
+    # a NESTED satellite (#431): its own anchor (`parent`, also named in
+    # target_pin) is itself a satellite of the cluster - a decoupler of an
+    # IC that is a group member. It rides the cluster, slotted at its
+    # parent's pin once the parent has a slot.
+    parent: str | None = None
 
 
 @dataclass
@@ -414,6 +419,7 @@ class Cluster:
     satellites: list[Satellite] = field(default_factory=list)
     edge: dict | None = None    # placement.edges entry pinned to this cluster
     template: str | None = None  # placement.groups[].template ("crystal", ...)
+    fixed: bool = False         # anchor never moves (locked / placement.fixed)
 
     @property
     def refs(self) -> list[str]:
@@ -421,12 +427,22 @@ class Cluster:
 
 
 def build_clusters(model: PlaceModel, decoupling: dict | None,
-                   placement: dict | None) -> tuple[list[Cluster], list[str]]:
+                   placement: dict | None, *, with_fixed: bool = False
+                   ) -> tuple[list[Cluster], list[str]]:
     """Satellite clusters from decoupling associations + explicit placement
     groups; every remaining movable footprint is a singleton. Returns
-    (clusters sorted by anchor, warnings). Missing refs warn, never raise."""
+    (clusters sorted by anchor, warnings). Missing refs warn, never raise.
+
+    A satellite of a satellite (an IC group member's decoupler) is folded
+    into the top cluster as a NESTED satellite (Satellite.parent), in
+    whichever order the associations arrive (#431). A part that never moves
+    (locked, board_only, placement.fixed) is never claimed as a satellite.
+    with_fixed: also return a Cluster(fixed=True) for every fixed anchor
+    that has satellites, so the caller can place them round it (#431);
+    without it those satellites are in no cluster."""
     warnings: list[str] = []
     fps = model.footprints
+    fixed_extra = set((placement or {}).get("fixed", []))
     owner: dict[str, str] = {}          # satellite ref -> anchor ref
     sat_of: dict[str, list[Satellite]] = {}
 
@@ -435,17 +451,20 @@ def build_clusters(model: PlaceModel, decoupling: dict | None,
             missing = sat if sat not in fps else anchor
             warnings.append(f"{src}: ref {missing} not on board - ignored")
             return
-        if not fps[sat].is_movable:
+        if not fps[sat].is_movable or sat in fixed_extra:
             return
         if sat in owner:
             if owner[sat] != anchor:
                 warnings.append(f"{src}: {sat} already satellite of {owner[sat]}"
                                 f" - keeping first association")
             return
-        if anchor in owner:
-            warnings.append(f"{src}: anchor {anchor} is itself a satellite of "
-                            f"{owner[anchor]} - {sat} ignored")
-            return
+        up = anchor
+        while up in owner:
+            up = owner[up]
+            if up == sat:
+                warnings.append(f"{src}: {sat} -> {anchor} would make a "
+                                f"satellite loop - {sat} ignored")
+                return
         owner[sat] = anchor
         sat_of.setdefault(anchor, []).append(
             Satellite(sat, (anchor, pin) if pin else None))
@@ -462,21 +481,45 @@ def build_clusters(model: PlaceModel, decoupling: dict | None,
         for m in g.get("members", []):
             claim(m, anchor, None, f"group {g.get('name', anchor)}")
 
+    def top(ref: str) -> str:
+        while ref in owner:
+            ref = owner[ref]
+        return ref
+
+    def depth(ref: str) -> int:
+        d = 0
+        while ref in owner:
+            ref, d = owner[ref], d + 1
+        return d
+
+    # fold nested satellites into their top cluster, parents first
+    members: dict[str, list[Satellite]] = {}
+    for anchor in sorted(sat_of):
+        t = top(anchor)
+        for s in sat_of[anchor]:
+            if anchor != t:
+                s.parent = anchor
+            members.setdefault(t, []).append(s)
+    for t in members:
+        members[t].sort(key=lambda s: (depth(s.ref), s.ref))
+
     edges = {e["ref"]: e for e in (placement or {}).get("edges", [])
              if e.get("ref")}
-    fixed_extra = set((placement or {}).get("fixed", []))
 
     clusters, fixed = [], []
     for ref in sorted(fps):
         f = fps[ref]
         if not f.is_movable or ref in fixed_extra:
             fixed.append(ref)
+            if with_fixed and members.get(ref):
+                clusters.append(Cluster(anchor=ref, satellites=members[ref],
+                                        template=tmpl_of.get(ref),
+                                        fixed=True))
             continue
         if ref in owner:
             continue
-        c = Cluster(anchor=ref, satellites=sorted(
-            sat_of.get(ref, []), key=lambda s: s.ref),
-            template=tmpl_of.get(ref))
+        c = Cluster(anchor=ref, satellites=members.get(ref, []),
+                    template=tmpl_of.get(ref))
         anchor_edge = edges.get(ref)
         for s in c.satellites:
             if s.ref in edges and anchor_edge is None:
