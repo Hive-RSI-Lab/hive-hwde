@@ -96,7 +96,14 @@ SECTIONS: dict[str, dict[str, dict[str, str]]] = {
     },
     "planes": {
         "required": {"layer": "str", "net": "str"},
-        "optional": {"region": "rect"},
+        "optional": {"region": "rect", "priority": "num",
+                     "min_island_mm2": "num", "clearance": "num",
+                     "min_width": "num", "connect": "str"},
+    },
+    # rules_gen: a part rated for its nets at its own pin pitch
+    "package_ratings": {
+        "required": {"ref": "str", "clearance_mm": "num"},
+        "optional": {"why": "str"},
     },
     # U4: P2's machine-readable block list - knowledge.py --select keys
     # record retrieval on each entry's topology token. U13: operating_point
@@ -118,7 +125,8 @@ PLACEMENT: dict[str, dict[str, dict[str, str]]] = {
                  "optional": {"rect": "rect", "poly": "point_list",
                               "side": "str", "reason": "str",
                               # keepout_gen: a copper rule area too
-                              "copper": "bool_or_map", "name": "str"}},
+                              "copper": "bool_or_map", "name": "str",
+                              "layers": "str_list"}},
     "separation": {"required": {"a": "str_list", "b": "str_list",
                                 "min_mm": "num"},
                    "optional": {"reason": "str"}},

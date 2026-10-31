@@ -8,7 +8,10 @@ track, via or pour may go; pads and footprints stay allowed, so an antenna's
 own module can sit at its edge. Freerouting gets rule areas as DSN keepouts,
 stitch_vias and planes_gen keep out of them, and DRC grades them.
 "copper" may instead be a dict naming what is kept out, e.g. {"tracks": true,
-"vias": true, "pours": false}. An optional "name" labels the area.
+"vias": true, "pours": false}. An optional "name" labels the area. An
+optional "layers" list (copper layer names, e.g. ["In1.Cu", "In2.Cu"])
+overrides "side" for the copper only: a heater coupon's inner layers
+cleared under a top-copper island, a hot loop forced onto F.Cu.
 
 Run it after placement and before planes_gen/route_auto (the ESP32 antenna on
 lite-main, hifi-receiver-2, was drawn by a board-local script). Idempotent:
@@ -64,6 +67,12 @@ def plan_areas(constraints: dict, copper_layers: list[str]) -> list[dict]:
         else:
             raise CheckError(f"placement.keepouts[{i}]: side {side!r} is "
                              "not front, back or both")
+        if k.get("layers"):
+            bad = [l for l in k["layers"] if l not in copper_layers]
+            if bad:
+                raise CheckError(f"placement.keepouts[{i}]: layers {bad} are "
+                                 f"not copper layers of this board")
+            layers = [l for l in copper_layers if l in k["layers"]]
         label = re.sub(r"[^A-Za-z0-9_]+", "_",
                        str(k.get("name") or k.get("reason") or i)).strip("_")
         area = {"name": f"{PREFIX}_{label or i}", "layers": layers,
