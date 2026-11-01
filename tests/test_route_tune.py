@@ -195,16 +195,23 @@ def test_other_nets_pours_are_obstacles(tmp_path):
     assert ops and payload["tuned"][0]["added_mm"] == pytest.approx(2.0, abs=0.011)
 
 
-def test_pair_members_are_not_tuned(tmp_path):
+def test_pair_members_are_tuned_as_a_pair(tmp_path):
+    # /D0 and /D2 stand in for a declared pair, 12 mm apart: too far for
+    # coupled bumps, so each leg gets its own, facing away from the other
     pcb = board(tmp_path, {"/D1": 2.0})
-    # /D0 and /D2 stand in for a declared pair
     cons = cons_file(tmp_path, [{"name": "B", "nets": ["/D0", "/D1", "/D2"],
                                  "tol_mm": 0.3}],
                      {"diff_pairs": [{"p": "/D0", "n": "/D2"}]})
-    payload, ops = plan(pcb, cons)
-    assert sorted(v["kind"] for v in payload["violations"]) == [
-        "tune_pair_member", "tune_pair_member"]
-    assert ops == []
+    payload, ops = plan(pcb, cons, **{"no-skew": ""})
+    assert payload["violations"] == []
+    rows = {t["net"]: t for t in payload["tuned"]}
+    assert set(rows) == {"/D0", "/D2"}
+    assert all(t["kind"] == "pair_length" and t["coupled_mm"] == 0
+               and t["added_mm"] == pytest.approx(2.0, abs=0.011)
+               for t in rows.values())
+    paths = {o["net"]: o["points"] for o in ops if o["op"] == "add_path"}
+    assert all(q[1] <= 5 + 1e-9 for q in paths["/D0"])     # D2 is below
+    assert all(q[1] >= 17 - 1e-9 for q in paths["/D2"])
 
 
 def test_reference_groups_go_first():

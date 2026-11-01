@@ -9,6 +9,15 @@ Per pair (from constraints.json["diff_pairs"], else auto-discovered by name):
  - UNCOUPLED length: run of either trace whose partner has walked away farther
    than coupling_gap_max - the fingerprint of a one-sided meander/detour;
  - VIA symmetry: the two nets should transition layers together;
+ - RUNNING skew (dynamic phase, #476): along the coupled trunk, each sample
+   of the P centreline is matched to the nearest point of N's trunk on the
+   same layer; s_p - s_n (arc length from the matched start terminals) is the
+   skew built up so far. A run of samples over max_phase_skew_mm (default
+   max_skew_mm) of one sign, lasting at least phase_window_mm (else rise_ps
+   / 10 as distance, else 5 mm), is a diffpair_phase finding - a pair with
+   +1 mm at one bend and -1 mm at the next ends at skew 0 but carries 1 mm of
+   phase error in between. The excursion that runs into the far end and is
+   no bigger than the end skew is the end skew itself (diffpair_skew's);
  - IMPEDANCE as drawn: the pair's dominant width and its median edge gap on
    its main layer, solved by lib/impedance.py's 2D field solver against the
    board's own stackup (coated microstrip outside, stripline inside). Always
@@ -41,6 +50,9 @@ constraints.json["diff_pairs"] entries (all keys but the nets optional):
      "term_pair_mm": 2.5,              # cross-ref terminal pairing window
      "impedance_ohm": 90,              # differential target
      "impedance_tol_pct": 10,          # allowed miss, percent
+     "max_phase_skew_mm": 0.15,        # running-skew limit (default max_skew_mm)
+     "phase_window_mm": 5.0,           # shorter excursions are not judged
+     "rise_ps": 500,                   # else window = rise_ps / 10 as distance
      "kind": "sense"}                  # DC Kelvin / low-frequency sense pair
 A "kind" of sense (also kelvin, dc_sense, low_frequency) marks a shunt-sense
 pair: no skew, uncoupled-length or impedance limits (high-speed rules mean
@@ -58,6 +70,7 @@ import statistics
 import sys
 from pathlib import Path
 
+from shapely.geometry import LineString
 from shapely.ops import unary_union
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
@@ -76,6 +89,8 @@ TERM_PAIR_MM = 2.5             # cross-ref matched-terminal window (same-ref: no
 GAP_TOL_MM = 0.5              # coupled-region gap may wander this much (warn)
 IMPEDANCE_TOL_PCT = 10.0       # JLC's standard controlled-impedance tolerance
 SAMPLE_MM = 0.1               # centerline sampling step for gap / uncoupled
+PHASE_WINDOW_MM = 5.0         # default: shorter running-skew excursions pass
+TAIL_TOL_MM = 0.05            # an end excursion this close to the end skew is it
 
 # Suffix pairs used to auto-discover pairs: two nets sharing a stem whose final
 # token is (positive, negative). Deliberately conservative - the ambiguous
@@ -189,6 +204,154 @@ def trunk_length(bg, net, terminals):
     if best is None:
         return total, False, sorted(name for name, _ in named)
     return best, True, []
+
+
+# ------------------------------------------------------------ running skew
+
+def trunk_pieces(g, steps):
+    """([(line, layer, s0, track)], length) for a netconn.shortest_path step
+    list: each track edge as a LineString oriented along the path, s0 the
+    path length before it (join edges - via, pad, cap overlap - add their
+    weight, as trunk_length counts them)."""
+    out, s = [], 0.0
+    for u, _v, w, eid in steps:
+        t = g.tracks.get(eid) if not isinstance(eid, tuple) else None
+        if t is not None:
+            a = t.shape.coords[0]
+            fwd = u == ("pt", netconn._snap(a, netconn.SNAP))
+            line = t.shape if fwd else LineString(list(t.shape.coords)[::-1])
+            out.append((line, t.layer, s, t))
+        s += w
+    return out, s
+
+
+def pair_trunks(bg, p, n, term):
+    """The two trunks between the SAME matched terminal pairs (the pair of
+    pairs giving the longest P path), each as trunk_pieces; None when either
+    net cannot connect them."""
+    gp, gn = netconn.build(bg, p), netconn.build(bg, n)
+    best = None
+    for i in range(len(term)):
+        for j in range(i + 1, len(term)):
+            rp = netconn.shortest_path(gp, netconn.pad_node(gp, term[i][0]),
+                                       netconn.pad_node(gp, term[j][0]))
+            rn = netconn.shortest_path(gn, netconn.pad_node(gn, term[i][1]),
+                                       netconn.pad_node(gn, term[j][1]))
+            if rp and rn and (best is None or rp[0] > best[0]):
+                best = (rp[0], rp, rn)
+    if best is None:
+        return None
+    _, rp, rn = best
+    pp, lp = trunk_pieces(gp, rp[1])
+    pn, ln = trunk_pieces(gn, rn[1])
+    return {"p": pp, "n": pn, "lp": lp, "ln": ln}
+
+
+def _tangent(line, at: float):
+    L = line.length
+    a = line.interpolate(max(0.0, at - 0.01))
+    b = line.interpolate(min(L, at + 0.01))
+    d = math.hypot(b.x - a.x, b.y - a.y)
+    return ((b.x - a.x) / d, (b.y - a.y) / d) if d > 0 else (0.0, 0.0)
+
+
+def running_skew(trunks, coupling_max, step=SAMPLE_MM):
+    """[(s_p, s_n, r, (x, y))] along P's trunk, in path order: each sample of
+    P matched to the nearest point of N's trunk on the same layer, r = s_p -
+    s_n the skew built up so far (+ = P longer). A sample counts only when N
+    runs ABREAST of it: within coupling_max, parallel (|cos| >= 0.9) and
+    with the foot inside the N segment, not clamped to its end - otherwise a
+    P sample beside a one-sided detour maps to the detour leg's foot and
+    reads as a ramp. Corners and detours therefore show as steps."""
+    by_layer: dict[str, list] = {}
+    for line, layer, s0, _ in trunks["n"]:
+        if line.length > 0:
+            by_layer.setdefault(layer, []).append((line, s0))
+    out = []
+    for line, layer, s0, _ in trunks["p"]:
+        cands = by_layer.get(layer)
+        L = line.length
+        if not cands or L <= 0:
+            continue
+        k = max(1, int(math.ceil(L / step)))
+        for i in range(k):
+            sl = (i + 0.5) * L / k
+            pt = line.interpolate(sl)
+            tp = None
+            best = None
+            for nl, ns0 in cands:
+                d = nl.distance(pt)
+                if d > coupling_max or (best is not None and d >= best[0]):
+                    continue
+                t = nl.project(pt)
+                if t <= 1e-6 or t >= nl.length - 1e-6:
+                    continue                    # clamped: not abreast
+                if tp is None:
+                    tp = _tangent(line, sl)
+                tn = _tangent(nl, t)
+                if abs(tp[0] * tn[0] + tp[1] * tn[1]) < 0.9:
+                    continue
+                best = (d, ns0 + t)
+            if best is None:
+                continue
+            sp = s0 + sl
+            out.append((sp, best[1], sp - best[1], (pt.x, pt.y)))
+    return out
+
+
+def excursions(samples, limit, step=SAMPLE_MM) -> list[dict]:
+    """Runs of consecutive samples with |r| over `limit` and one sign."""
+    out, cur = [], None
+    for i, (sp, _sn, r, xy) in enumerate(samples):
+        sign = 1 if r > 0 else -1
+        if abs(r) > limit and cur is not None and cur["sign"] == sign:
+            cur["i1"] = i
+            if abs(r) > abs(cur["peak"]):
+                cur["peak"], cur["at"] = r, xy
+            continue
+        if cur is not None:
+            out.append(cur)
+            cur = None
+        if abs(r) > limit:
+            cur = {"sign": sign, "i0": i, "i1": i, "peak": r, "at": xy}
+    if cur is not None:
+        out.append(cur)
+    for e in out:
+        e["from_mm"] = samples[e["i0"]][0]
+        e["to_mm"] = samples[e["i1"]][0]
+        e["length_mm"] = e["to_mm"] - e["from_mm"] + step
+    return out
+
+
+def phase_window(spec, eps) -> float:
+    if spec.get("phase_window_mm") is not None:
+        return float(spec["phase_window_mm"])
+    if spec.get("rise_ps"):
+        return float(spec["rise_ps"]) / 10 * C_MM_PER_PS / math.sqrt(eps)
+    return PHASE_WINDOW_MM
+
+
+def pair_phase(bg, spec, term, coupling_max, eps) -> dict | None:
+    """Running-skew profile of a pair (module doc): trunks, samples, limit,
+    window, signed end skew, every excursion and the flagged ones (long
+    enough and not the end skew's own tail). None when the trunks are open."""
+    tr = pair_trunks(bg, spec["p"], spec["n"], term)
+    if tr is None:
+        return None
+    samples = running_skew(tr, coupling_max)
+    limit = float(spec.get("max_phase_skew_mm",
+                           spec.get("max_skew_mm", MAX_SKEW_MM)))
+    window = phase_window(spec, eps)
+    end = tr["lp"] - tr["ln"]
+    exc = excursions(samples, limit)
+    for e in exc:
+        e["tail"] = (e["i1"] == len(samples) - 1 and e["sign"] * end > 0
+                     and abs(e["peak"]) <= abs(end) + TAIL_TOL_MM)
+    flagged = [e for e in exc if e["length_mm"] >= window - 1e-9 and not e["tail"]]
+    peak = max((r for _, _, r, _ in samples), key=abs, default=0.0)
+    return {"trunks": tr, "samples": samples, "limit_mm": limit,
+            "window_mm": window, "end_skew_mm": end, "peak_mm": peak,
+            "excursions": exc, "flagged": flagged}
 
 
 # ------------------------------------------------------------ coupling
@@ -328,6 +491,40 @@ def check_pair(bg: geom.BoardGeom, spec: dict):
             SCRIPT, **{**common, "kind": "diffpair_via_asymmetry",
                        "vias_p": vp, "vias_n": vn}))
 
+    phase = None
+    if okp and okn and not sense:
+        ph = pair_phase(bg, spec, term, coupling_max, eps)
+        if ph is not None:
+            phase = {"peak_mm": checklib.rnd(ph["peak_mm"]),
+                     "end_skew_mm": checklib.rnd(ph["end_skew_mm"]),
+                     "limit_mm": ph["limit_mm"],
+                     "window_mm": checklib.rnd(ph["window_mm"]),
+                     "samples": len(ph["samples"]),
+                     "excursions": [{"from_mm": checklib.rnd(e["from_mm"]),
+                                     "to_mm": checklib.rnd(e["to_mm"]),
+                                     "peak_mm": checklib.rnd(e["peak"])}
+                                    for e in ph["flagged"]]}
+            if ph["flagged"]:
+                worst = max(ph["flagged"], key=lambda e: abs(e["peak"]))
+                pk = abs(worst["peak"])
+                violations.append(violation(
+                    SCRIPT, "error" if pk > 2 * ph["limit_mm"] else "warning",
+                    worst["at"], None, p, [],
+                    f"diff pair {p}/{n} running skew reaches {worst['peak']:+.2f} mm "
+                    f"over {worst['length_mm']:.1f} mm of its trunk "
+                    f"({worst['from_mm']:.1f}-{worst['to_mm']:.1f} mm from "
+                    f"{term[0][0].ref if term else '?'}); limit "
+                    f"{ph['limit_mm']:g} mm over {ph['window_mm']:.1f} mm (end skew "
+                    f"{ph['end_skew_mm']:+.2f} mm): tune near the bend that "
+                    f"builds it", SCRIPT,
+                    **{**common, "kind": "diffpair_phase",
+                       "peak_mm": checklib.rnd(worst["peak"]),
+                       "from_mm": checklib.rnd(worst["from_mm"]),
+                       "to_mm": checklib.rnd(worst["to_mm"]),
+                       "limit_mm": ph["limit_mm"],
+                       "window_mm": checklib.rnd(ph["window_mm"]),
+                       "excursions": len(ph["flagged"])}))
+
     zinfo = pair_impedance(bg, p, n, stats["gap_median_mm"])
     zinfo["layers"] = layer_impedance(bg, p, n, coupling_max)
     target = None if sense else spec.get("impedance_ohm")
@@ -367,7 +564,8 @@ def check_pair(bg: geom.BoardGeom, spec: dict):
              "uncoupled_p_mm": checklib.rnd(unc_p),
              "uncoupled_n_mm": checklib.rnd(unc_n),
              "coupling_max_mm": checklib.rnd(coupling_max),
-             "vias_p": vp, "vias_n": vn, **stats, "impedance": zinfo}
+             "vias_p": vp, "vias_n": vn, **stats, "impedance": zinfo,
+             **({"phase": phase} if phase is not None else {})}
     return violations, facts
 
 

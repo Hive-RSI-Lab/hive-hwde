@@ -207,6 +207,40 @@ def shortest_path_len(g: NetGraph, a, b) -> float | None:
     return dist.get(b)
 
 
+def shortest_path(g: NetGraph, a, b):
+    """Dijkstra a -> b returning (length, [(u, v, weight, edge_id), ...]) in
+    path order, or None when either node is absent or b is unreachable. Same
+    weights as shortest_path_len, so the two agree on length."""
+    if a is None or b is None or a not in g.adj or b not in g.adj:
+        return None
+    tie = itertools.count()
+    dist = {a: 0.0}
+    prev: dict = {}
+    pq = [(0.0, next(tie), a)]
+    while pq:
+        d, _, u = heapq.heappop(pq)
+        if u == b:
+            break
+        if d > dist.get(u, math.inf):
+            continue
+        for v, w, eid in g.adj[u]:
+            nd = d + w
+            if nd < dist.get(v, math.inf):
+                dist[v] = nd
+                prev[v] = (u, w, eid)
+                heapq.heappush(pq, (nd, next(tie), v))
+    if b not in dist:
+        return None
+    steps = []
+    node = b
+    while node != a:
+        u, w, eid = prev[node]
+        steps.append((u, node, w, eid))
+        node = u
+    steps.reverse()
+    return dist[b], steps
+
+
 def pad_node(g: NetGraph, pad):
     """The graph node for a Pad object, or None if the pad is not in this
     graph (pad on another net, or graph built for a different net)."""
