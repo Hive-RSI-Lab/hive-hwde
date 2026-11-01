@@ -68,6 +68,10 @@ class Footprint:
     pads: list[FpPad]
     courtyard_local: Polygon | None   # local frame, the part's own side
     courtyard_missing: bool = False   # True when extents fall back to pads
+    # how far a pad field grows for placement legality: 0.25 for what hwde
+    # places; constraints placement.pad_margin_mm lowers it for an imported
+    # layout (hw-lab eda-crossover: SparkFun's 0402s 0.2 mm pad to pad)
+    pad_margin: float = 0.25
 
     # -- derived, local frame -------------------------------------------
     def _pad_box_local(self) -> Polygon | None:
@@ -76,7 +80,7 @@ class Footprint:
         box - the unrotated read under-reported 0.275 mm per side)."""
         if not self.pads:
             return None
-        m = 0.25
+        m = self.pad_margin
         x0 = y0 = math.inf
         x1 = y1 = -math.inf
         for p in self.pads:
@@ -101,7 +105,7 @@ class Footprint:
         class stays caught."""
         if not self.pads:
             return None
-        m = 0.25
+        m = self.pad_margin
         boxes = []
         for p in self.pads:
             th = math.radians(p.rot)
@@ -608,9 +612,14 @@ def legality_violations(model: PlaceModel, placement: dict | None) -> list[dict]
     placement = placement or {}
     edges = {e["ref"]: e for e in placement.get("edges", []) if e.get("ref")}
     fps = [model.footprints[r] for r in sorted(model.footprints)]
+    if placement.get("pad_margin_mm") is not None:
+        for f in fps:
+            f.pad_margin = float(placement["pad_margin_mm"])
     ext = {f.ref: f.extents_abs() for f in fps}
 
     def collides(a: Footprint, b: Footprint) -> bool:
+        if (a.is_mechanical and not a.pads) or (b.is_mechanical and not b.pads):
+            return False  # artwork (a logo, a silk label): nothing to place
         if a.side == b.side:
             return True
         thru = ("through_hole" in a.attrs or any(p.through for p in a.pads)
@@ -668,8 +677,9 @@ def legality_violations(model: PlaceModel, placement: dict | None) -> list[dict]
                         f"{f.ref} mostly outside the board outline", SOURCE,
                         kind="outside_outline",
                         outside_mm2=checklib.rnd(outside.area)))
-        elif outside.area > EPS_AREA and f.is_movable:
-            # board_only/locked infrastructure (mounting holes) may kiss the
+        elif outside.area > EPS_AREA and f.is_movable and not f.is_mechanical:
+            # board_only/locked infrastructure (mounting holes), artwork and
+            # what isn't assembled (castellations, wire pads) may kiss the
             # outline by design - obstacles, not placement subjects
             c = e.centroid
             v.append(checklib.violation(
