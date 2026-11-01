@@ -210,3 +210,14 @@ def test_mask_web_agrees_with_the_kicad_f_mask_gerber(tmp_path):
             assert vios[0]["web_mm"] == pytest.approx(web, abs=0.005)
         else:
             assert vios == []
+
+
+def test_a_drill_grazing_the_pad_edge_is_not_a_via_in_pad(tmp_path):
+    # tented 0.3 mm drill reaching 0.03 mm into pad 2 (edge at x = 11.175):
+    # inside the mask's registration, not counted
+    pcb = _board(tmp_path, _setup(), _r0603(), _via(11.175 + 0.15 - 0.03, 10.0))
+    assert _kinds(pcb)[0] == []
+    # 0.08 mm in is a via in the pad
+    pcb = _board(tmp_path, _setup(), _r0603(), _via(11.175 + 0.15 - 0.08, 10.0),
+                 name="c")
+    assert _kinds(pcb)[0] == ["wick_via_in_pad"]

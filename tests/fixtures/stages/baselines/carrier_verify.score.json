@@ -5,7 +5,7 @@
  "board": "lumina-carrier",
  "metrics": {
   "errors": 194,
-  "warnings": 242,
+  "warnings": 239,
   "by_check": {
    "check_return_path": 4,
    "check_current": 71,
@@ -34,7 +34,7 @@
    "check_straps": 1,
    "check_usb_phy": 0,
    "check_vias": 0,
-   "check_wicking": 77
+   "check_wicking": 74
   },
   "by_kind": {
    "antenna_side_clearance": 1,
@@ -56,7 +56,7 @@
    "silk_misattributed": 3,
    "strap_unknown": 1,
    "undersized_track": 45,
-   "wick_via_in_pad": 77
+   "wick_via_in_pad": 74
   },
   "si": {
    "decap_worst_loop_nh": 13.6834,
@@ -69,7 +69,7 @@
  "metrics_live": null,
  "penalties": {
   "errors": 194.0,
-  "warnings": 242.0,
+  "warnings": 239.0,
   "known_answer_missed": 0.0,
   "forbidden_errors": 0.0
  },

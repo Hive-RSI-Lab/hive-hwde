@@ -12,7 +12,8 @@ vias to be plugged/tented from the far side, kept out of the paste
 check_ep_paste's (paste_on_via); here they are only counted
 (`ep_vias_skipped`). Findings (all warnings):
 
-  wick_via_in_pad   a via's drill lies inside an SMD pad's mask opening
+  wick_via_in_pad   a via's drill reaches 0.05 mm or more (past the mask's
+                    registration) into an SMD pad's mask opening
                     (via in pad) and the via is neither filled nor capped:
                     the joint drains down the barrel. Fix: move it off the
                     pad behind a mask dam, or order the via filled and
@@ -70,6 +71,9 @@ SOURCE = SCRIPT
 NEAR_MM = 0.25      # Eurocircuits: a via this close to a pad needs a dam
 DAM_MM = 0.1        # JLC min_solder_mask_dam_mm (every class)
 AGREE_MM = 0.01     # board model vs gerber web
+# a drill reaching less than this into a pad's mask opening is a graze
+# inside the mask's registration (JLC: +-0.05 mm), not a via in the pad
+INTRUDE_MM = 0.05
 SIDES = ("F", "B")
 
 
@@ -158,6 +162,18 @@ def read_vias(root, dflt: dict, cu: list[str]) -> list[dict]:
                     else None),
             "uuid": geom._uuid_of(v)})
     return out
+
+
+def _intrusion(v: dict, opening) -> float:
+    """How far the via's hole reaches into a mask opening (mm): its radius
+    less the centre's distance to the opening, the full radius (or more)
+    when the centre is inside."""
+    c = Point(v["at"])
+    r = v["drill"] / 2.0
+    if opening.contains(c):
+        return r + opening.exterior.distance(c) if hasattr(opening, "exterior") \
+            else r
+    return r - opening.distance(c)
 
 
 def _margin(node):
@@ -297,7 +313,8 @@ def check(pcb: Path, gerbers: Path | None = None, dam_mm: float = DAM_MM
             vcu = Point(v["at"]).buffer(v["diameter"] / 2.0)
             reach = vcu.buffer(NEAR_MM + 1.0)
             near = [pads[i] for i in tree.query(reach)]
-            inside = [p for p in near if drill.intersects(p["mask"][s])]
+            inside = [p for p in near
+                      if _intrusion(v, p["mask"][s]) >= INTRUDE_MM - 1e-9]
             if inside:
                 p = inside[0]
                 if eps.get(p["ref"]) is p:

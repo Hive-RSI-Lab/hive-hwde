@@ -5,7 +5,7 @@
  "board": "usbbuck4",
  "metrics": {
   "errors": 1,
-  "warnings": 3,
+  "warnings": 1,
   "by_check": {
    "check_return_path": 1,
    "check_current": 0,
@@ -34,11 +34,11 @@
    "check_straps": 0,
    "check_usb_phy": 0,
    "check_vias": 0,
-   "check_wicking": 3
+   "check_wicking": 1
   },
   "by_kind": {
    "missing_return_via": 1,
-   "wick_via_in_pad": 3
+   "wick_via_in_pad": 1
   },
   "si": {
    "decap_worst_loop_nh": 15.7312,
@@ -51,11 +51,11 @@
  "metrics_live": null,
  "penalties": {
   "errors": 1.0,
-  "warnings": 3.0,
+  "warnings": 1.0,
   "known_answer_missed": 0.0,
   "forbidden_errors": 0.0
  },
- "composite": 99.2,
+ "composite": 99.4,
  "composite_inputs": "full",
  "known_answer": {
   "status": "ok",
