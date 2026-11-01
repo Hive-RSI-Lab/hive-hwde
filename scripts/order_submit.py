@@ -183,6 +183,7 @@ _GENERATED_STEP_PREFIXES = (
     "JLCPCB API scope approval pending",
     "API quote in ",
     "API order created:",
+    "IPC-D-356 NETLIST:",
 )
 
 
@@ -211,6 +212,20 @@ def _find(fab_dir: Path, *patterns: str) -> Path | None:
         if hits:
             return hits[0]
     return None
+
+
+def _zip_netlist(zip_path) -> str | None:
+    """The IPC-D-356 member of the gerber zip (fab_export ships one)."""
+    import zipfile
+    if not zip_path:
+        return None
+    try:
+        with zipfile.ZipFile(zip_path) as zf:
+            hits = sorted(n for n in zf.namelist()
+                          if n.lower().endswith((".ipc", ".d356")))
+    except (OSError, TypeError, zipfile.BadZipFile):
+        return None
+    return hits[0] if hits else None
 
 
 def collect_package(fab_dir: Path) -> tuple[dict, list[str]]:
@@ -1297,6 +1312,13 @@ def run(pcb: Path, fab_dir: Path, quote: Path | None = None,
             "Review, then pay. Payment is always the human's action.",
         ],
     }
+    ipc = _zip_netlist(artifacts.get("gerber_zip", {}).get("path"))
+    if ipc:
+        manifest["human_steps"].insert(-1, (
+            f"IPC-D-356 NETLIST: the zip carries {ipc} - keep the 100% "
+            "electrical (flying probe) test on and, where the quote page "
+            "asks for a netlist, point it at that file, so the fab tests "
+            "the board against the design and not against its own gerbers."))
     if n_cast:
         manifest["human_steps"].insert(-1, (
             f"CASTELLATED: the board has {n_cast} castellated pad(s) - set "

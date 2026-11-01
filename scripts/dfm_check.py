@@ -64,6 +64,15 @@ Checks (all thresholds from reference/jlc_capabilities.yaml, keyed
            out (KiCad clears them by hole clearance). ERROR
            (dfm_stale_zone_fill); refill before export. No refill possible
            = a coverage hole (zone_fill skipped), never a pass
+  netlist  Valor/CAM350 netlist compare, what a fab's E-test does: the
+           shipped copper's islands, joined through plated holes and slots
+           (blind/buried by their drill file's span), against the IPC-D-356
+           netlist (the package's `<name>.ipc`, else kicad-cli's from the
+           board; lib/ipcd356.py). One island holding two nets = ERROR
+           dfm_net_short (net ties exempt); one net in two islands, or a
+           test point on no copper = ERROR dfm_net_open; a D-356 name that
+           stands for two board nets (kicad-cli truncates to 14 chars) =
+           WARNING dfm_netlist_name_clash
   release  gerber layer completeness (against the BOARD's declared layer set,
            never the files being audited - a package that dropped a layer must
            read as incomplete, not as a smaller board), drill validity,
@@ -980,6 +989,86 @@ def check_release(fab, expected_cu: list[str], vios: list,
     return facts
 
 
+# ------------------------------------------------------------- netlist
+
+def _shipped_netlist(gdir: Path) -> Path | None:
+    for d in (gdir, gdir.parent):
+        hits = sorted(p for p in d.glob("*") if p.is_file()
+                      and p.suffix.lower() in (".ipc", ".d356"))
+        if hits:
+            return hits[0]
+    return None
+
+
+def check_netlist(fab, pcb: Path, bg, gdir: Path, tmp: Path,
+                  vios: list) -> tuple[dict, str | None]:
+    """Netlist compare (Valor/CAM350, a fab's E-test): the shipped copper's
+    connectivity against the IPC-D-356 netlist, the package's own when it
+    ships one, else kicad-cli's from the board. -> (facts, skip reason)."""
+    import ipcd356
+    src = _shipped_netlist(gdir)
+    origin = "package"
+    if src is None:
+        origin = "board"
+        try:
+            import kc
+            src = tmp / f"{pcb.stem}.ipc"
+            res = kc.export_ipcd356(kc.resolve_cli(), pcb, src)
+            if res.get("status") != "pass":
+                return {}, ("kicad-cli ipcd356 export failed: "
+                            f"{res.get('stderr_tail')}")
+        except Exception as exc:  # noqa: BLE001 (no kicad-cli = coverage hole)
+            return {}, f"no IPC-D-356 netlist ({type(exc).__name__}: {exc})"
+    try:
+        d356 = ipcd356.parse(src.read_text(encoding="utf-8", errors="replace"))
+    except ipcd356.D356Error as exc:
+        return {}, f"IPC-D-356 netlist unreadable: {exc}"
+    clashes = ipcd356.resolve(d356, bg)
+    ties = ipcd356.net_tie_classes(
+        pcb.read_text(encoding="utf-8", errors="replace"), bg)
+    res = ipcd356.compare(fab, d356, ties)
+    for c in clashes:
+        vios.append(checklib.violation(
+            CHECK, "warning", None, None, None, [],
+            f"IPC-D-356 net name {c['d356_net']!r} stands for "
+            f"{len(c['board_nets'])} board nets ({', '.join(c['board_nets'])})"
+            " - kicad-cli keeps the last 14 characters, so a tester reads "
+            "them as one net and fails a good board; rename the nets",
+            SOURCE, kind="dfm_netlist_name_clash", **c))
+    for sh in res["shorts"]:
+        x, y = sh["at"]
+        near = " / ".join(f"{p['ref']}-{p['pin']}".rstrip("-")
+                          for p in sh["near"])
+        vios.append(checklib.violation(
+            CHECK, "error", (x, y), sh["island"]["layer"], None,
+            sorted({p["ref"] for p in sh["near"]} - {"VIA"}),
+            f"short in the shipped copper: nets {', '.join(sh['nets'])} are "
+            f"one conductor (nearest test points {near})", SOURCE,
+            kind="dfm_net_short", nets=sh["nets"], points=sh["points"],
+            island=sh["island"]))
+    for op in res["opens"]:
+        x, y = op["at"]
+        if "no_copper" in op:
+            tp = op["no_copper"]
+            msg = (f"open in the shipped copper: net {op['net']} test point "
+                   f"{tp['ref']}-{tp['pin']} lands on no copper")
+            refs = [tp["ref"]]
+        else:
+            msg = (f"open in the shipped copper: net {op['net']} is "
+                   f"{op['n_fragments']} pieces "
+                   f"({'; '.join(', '.join(f[:4]) for f in op['fragments'][:4])})")
+            refs = sorted({lbl.split("-")[0] for f in op["fragments"]
+                           for lbl in f} - {"VIA"})
+        vios.append(checklib.violation(
+            CHECK, "error", (x, y), None, op["net"], refs, msg, SOURCE,
+            kind="dfm_net_open", fragments=op["fragments"]))
+    return {"netlist": {
+        "source": origin, "file": src.name, "test_points": res["n_points"],
+        "nets": res["n_nets"], "plated_holes": res["n_plated_holes"],
+        "islands": res["n_islands"], "shorts": len(res["shorts"]),
+        "opens": len(res["opens"]), "name_clashes": len(clashes)}}, None
+
+
 # ------------------------------------------------------------------ driver
 
 # Coverage families (U2, codex C7) -> the violation kinds they emit. A family
@@ -1002,6 +1091,7 @@ DFM_FAMILIES = {
             "dfm_assembly_qty_mismatch", "dfm_unplaced_in_package"),
     "release": ("dfm_open_outline", "dfm_missing_layer", "dfm_no_drill"),
     "castellation": castellation.KINDS + ("castellated_rules_unknown",),
+    "netlist": ("dfm_net_short", "dfm_net_open", "dfm_netlist_name_clash"),
 }
 
 
@@ -1140,6 +1230,14 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
             check_mask_dam(fab, rules, vios)
             check_pad_tented(fab, vios)
 
+        netlist_skipped = None
+        if "netlist" in skip:
+            netlist_skipped = "skipped via --skip"
+        else:
+            nfacts, netlist_skipped = check_netlist(fab, pcb, bg, gdir, tmp,
+                                                    vios)
+            facts.update(nfacts)
+
         parts_report = None
         if parts is not None:
             import bom_cpl
@@ -1190,6 +1288,8 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
                 skipped_cov[fam] = "skipped via --skip"
         if zone_fill_skipped:
             skipped_cov["zone_fill"] = zone_fill_skipped
+        if netlist_skipped:
+            skipped_cov["netlist"] = netlist_skipped
         no_outline = fab.edge_file is None or fab.outline.is_empty
         edge_reason = "Edge.Cuts missing or does not form a closed outline"
         if no_outline or "copper" in skip:
@@ -1288,7 +1388,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="never fetch LCSC models (uncached = cpl_no_model)")
     ap.add_argument("--skip", default="",
                     help="comma list of groups to skip: "
-                         "copper,drill,silk,castellation,zone_fill,placement")
+                         "copper,drill,silk,castellation,zone_fill,"
+                         "netlist,placement")
     ap.add_argument("--strict", action="store_true",
                     help="release mode (codex C7): any sub-check family that "
                          "could not run (open outline, no netlist, no "

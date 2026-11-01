@@ -68,6 +68,7 @@ _TOOLS = "runs the live toolchain (kicad-cli, KiCad's python, java)"
 _BOARD = "runs a whole fixture board's checks or bench stage"
 _INTAKE = "materializes a whole KiCad project through intake"
 SLOW = {
+    "tests/test_netlist_compare.py::test_pinned_board_ships_a_netlist_its_gerbers_match": "exports the pinned lite-main/core fab packages with kicad-cli",
     "tests/test_route_escape.py::test_live_escape_synthetic_bga": "runs KRT bga_fanout and kicad-cli DRC on a synthetic BGA",
     "tests/test_solvers.py::test_live_solver_validates": "runs ngspice, Xyce, FastHenry, FasterCap from the IIC-OSIC-TOOLS tree; machine-load sensitive",
     "tests/test_solvers.py::test_live_palace_validates": "runs Palace (FEM eigenmode) on the IIC-OSIC-TOOLS tree",

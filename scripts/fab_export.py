@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""fab_export.py - JLCPCB fabrication package: gerbers + drill + pos, zipped.
+"""fab_export.py - JLCPCB fabrication package: gerbers + drill + IPC-D-356 + pos.
 
 The P9 export step (SPEC 6.4). Drives the S2 kc.py wrappers to produce the
 fab deliverables JLCPCB expects and bundles the gerbers + drill into one zip
@@ -12,6 +12,8 @@ JLC guidance replicated here:
     silently clips it.
   - Drill: Excellon, millimetres (kicad-cli defaults pos+drill sanely once the
     kc.py wrappers force units; LEARNINGS [kicad-cli]).
+  - IPC-D-356 netlist `<name>.ipc` (kicad-cli pcb export ipcd356) in the
+    gerber dir and zip: the fab's flying-probe E-test runs against it.
   - Pos (CPL source): both sides, csv, mm. bom_cpl.py reformats it into JLC's
     CPL with rotation corrections.
   - Gerbers use KiCad's standard extensions/X2, which current JLC accepts. No
@@ -161,6 +163,14 @@ def run(pcb: Path, out_dir: Path, name: str | None = None,
     d = kc.export_drill(cli, pcb, drill_dir, fmt="excellon")
     if d.get("status") != "pass":
         raise RuntimeError(f"drill export failed: {d.get('stderr') or d}")
+    # The bare-board tester's netlist, in the zip beside the gerbers: JLC,
+    # PCBWay and Eurocircuits E-test against it when one is supplied, else
+    # against a netlist they extract from the same gerbers (so an export
+    # defect would test good). dfm_check compares the gerbers with it.
+    ipc_file = gerber_dir / f"{name}.ipc"
+    n = kc.export_ipcd356(cli, pcb, ipc_file)
+    if n.get("status") != "pass":
+        raise RuntimeError(f"ipcd356 export failed: {n.get('stderr_tail') or n}")
     pos_file = out_dir / f"{name}-pos.csv"
     p = kc.export_pos(cli, pcb, pos_file, side="both", fmt="csv", units="mm")
     if p.get("status") != "pass":
@@ -194,6 +204,7 @@ def run(pcb: Path, out_dir: Path, name: str | None = None,
         "out_dir": str(out_dir),
         "gerber_dir": str(gerber_dir),
         "pos_file": str(pos_file),
+        "ipc_netlist": str(ipc_file),
         "files": files_meta,
         "gerber_zip": str(zip_path) if zip_path else None,
         "gerber_zip_sha256": zip_sha,
