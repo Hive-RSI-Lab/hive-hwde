@@ -477,6 +477,21 @@ def test_dfm_hole_to_hole_split_via_and_pad(tmp_path):
     assert sorted(v.get("holes") for v in vios) == ["castellated", "pad"]
 
 
+def test_castellated_hole_band(tmp_path):
+    """A castellated hole beside a plated one: under JLC's capabilities page
+    (0.5) fails, between it and the blog's 0.6 warns."""
+    def run(gap):
+        fab = synth_fab(tmp_path, holes=[(0.6, 5.0, -5.0), (0.6, 5.0 + 0.6 + gap, -5.0)])
+        vios = []
+        h = fab.holes[0]
+        dfm_check.check_holes(fab, RULES_4L, vios, cast=[(h.x, h.y, 0.3)],
+                              cast_hh=0.6, cast_abs=0.5)
+        return [(v["kind"], v["severity"]) for v in vios if "hole_to_hole" in v["kind"]]
+    assert run(0.545) == [("dfm_hole_to_hole_preferred", "warning")]
+    assert run(0.45) == [("dfm_hole_to_hole", "error")]
+    assert run(0.7) == []
+
+
 def test_dfm_copper_to_edge_band(tmp_path):
     """#554: JLC's routed edge is 0.2; 0.2-0.3 warns once, under 0.2 fails."""
     fab = synth_fab(tmp_path, traces=[(0.2, 0.35, -5.0, 8.0, -5.0),

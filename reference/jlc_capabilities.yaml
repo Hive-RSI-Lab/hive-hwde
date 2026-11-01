@@ -96,6 +96,8 @@ castellated:
   min_drill_mm: 0.6                 # [blog] B (caps says 0.5)
   rec_drill_mm: 1.0                 # [blog] recommended 0.8-1.0
   min_hole_to_hole_mm: 0.6          # [blog] C, hole edge to hole edge
+  abs_min_hole_to_hole_mm: 0.5      # [caps] 'Hole to hole (D): >= 0.5 mm': a castellated hole
+                                    # and a plated hole between the two figures warn (#554's split)
   rec_hole_to_hole_mm: 0.8          # [blog] recommended
   min_annular_ring_mm: 0.18         # [blog] D absolute minimum
   rec_annular_ring_mm: 0.25         # [blog] D
