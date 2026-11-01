@@ -106,7 +106,7 @@ machine.
   impedance before the fab's calculator is trusted.
 
 - `hwde sim_solve planar-geom --pcb B --region X0,Y0,X1,Y1 --port X,Y,DIR,W ...`
-  then `hwde sim_solve planar --geom G.json [--excite 0,1] [--touchstone F.s2p]`:
+  then `hwde sim_solve planar --geom G.json [--excite all|0,1] [--touchstone F.s2p]`:
   S-parameters of a planar microstrip circuit cut from a board. planar-geom
   takes every copper item on one layer in the region (any net; custom pads
   as drawn, via geom.py's new `_custom_pad`; NPTH skipped; holes split since
@@ -114,15 +114,15 @@ machine.
   stackup. planar draws the copper as PEC polygons over an infinite ground,
   adds a straight feed per port (half a wavelength) ending in a 50 Ω lumped
   port, and splits each feed's three voltage probes into the wave going in
-  and the wave coming out, moved to the reference plane. One openEMS run per
-  excited port. Measured on a 30 mm 50 Ω thru (FR4 1.53 mm, 6 GHz): |S21|
+  and the wave coming out, moved to the reference plane, with the feed's gamma
+  fitted over the band so a standing-wave null can't upset it. One openEMS run
+  per excited port. Measured on a 30 mm 50 Ω thru (FR4 1.53 mm, 6 GHz): |S21|
   within 0.04 dB from 1 to 6 GHz, |S11| below −19 dB (the probe split's
   floor), phase within 2% of the quasi-static line; 80 s, 44 MB. hw-lab
   rf-kit's F5 open-stub notch (designed for 2.45 GHz): notch at 2.466 GHz,
   −56 dB, 3 min. Below f_max/8 the pulse carries little energy and the
   answer is noise. Limits: infinite ground (so not antennas, nor a coupon's
-  finite ground), ports must leave the circuit straight, the other ports'
-  50 Ω ends reflect a little (error ~|S_ii·Γ|).
+  finite ground), ports must leave the circuit straight.
 
 - `hwde sim_solve board --pcb B --region X0,Y0,X1,Y1 --port X,Y,DIR[,LAYER[,W]] ...
   [--part REF=OHMS] [--symmetric] [--touchstone F.s2p] [--deck-only DIR]`
@@ -245,13 +245,10 @@ pretending.
 `sim_solve planar` runs check on its own S. It judges only the excited
 columns: passivity per column, and reciprocity once both S_ij and S_ji
 ran. The result is `quality` in the output, and the command exits 1 when
-the check fails. It does fail on the 30 mm thru above (both ports, 41
-points, 1-6 GHz): reciprocity and causality are 100 %, but passivity is
-62.6 % (poor), with sigma_max 1.11 at 5.9 GHz. The probe split's
-\|S11\| floor of about -19 dB sits on top of \|S21\| = 1. Until that
-floor comes down, planar S is fit for frequency-domain reading, not for a
-transient. `sim_solve board`'s thru (tests/test_emboard.py, S = B A^-1
-from V+I probes) passes the same check.
+the check fails. Excite every port (its default): S = B A^-1 and the 30 mm
+thru passes (sigma_max 1.0008, no failing point, 0.125-5 GHz, tests/
+test_solvers.py). One column leaves the far 50 ohm end's reflection in it,
+about -19 dB on a thru, and that fails.
 
 ## What is not here yet
 
