@@ -491,7 +491,9 @@ def measure(plot, model, b, sc, switches, contract_a, ta) -> dict:
                "vgs_peak_v": max((abs(g - x) for g, x in
                                   zip(vg[k0:], vsrc[k0:])), default=0.0)}
         if s["row"]:
-            j = soa.junction(s["row"], t[k0:], ps[k0:], ta)
+            j = soa.junction(s["row"], t[k0:], ps[k0:], ta,
+                             vds=[abs(a - c) for a, c in
+                                  zip(vin[k0:], vout[k0:])])
             row.update(p_peak_w=j["p_peak_w"], energy_j=j["energy_j"],
                        tj_peak_c=j["tj_peak_c"], width_s=j["width_s"])
         else:

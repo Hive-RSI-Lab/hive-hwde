@@ -16,6 +16,17 @@ between the points in reference/fet_power.yaml; below its first point it
 falls as sqrt(t) (one-dimensional heat flow into the die), past its last it
 stays at the last value (steady state).
 
+Linear-mode SOA (rows with soa_vds): past a few volts the SOA lines of
+many trench parts (OptiMOS, most modern low-RDS(on) FETs) fall as 1/VDS^2
+- thermal instability, hot spots - not as the 1/VDS that Zth alone gives,
+so the power a part takes for t depends on VDS. A row whose zth was read
+off the SOA at soa_vds carries soa_vds, soa_vds_exp (1 for 1/VDS^2 current
+lines: allowed power ~ 1/VDS) and soa_vds_knee (the VDS below which the
+lines stop following it); junction() given vds(t) then superposes
+p(t) x (max(|vds|, knee) / soa_vds)^exp - an equivalent pulse on the
+curve's own basis. The Tj it reports is that equivalent, not a die
+temperature; it is the SOA verdict.
+
 Verdicts (judge()): tj_peak over tj_max is an error; within DERATE_C of it a
 warning. Data from a package's generic row (no part row) never makes an
 error: it is a warning naming the part to look up.
@@ -127,17 +138,32 @@ def _interp(ts, ps, t):
     return ps[lo] + f * (ps[hi] - ps[lo])
 
 
+def vds_scale(row: dict, vds: float) -> float:
+    """The factor on p for a pulse at vds against a zth read off the SOA
+    at the row's soa_vds (1 for a row without one)."""
+    v0 = row.get("soa_vds")
+    if not v0:
+        return 1.0
+    v = max(abs(vds), float(row.get("soa_vds_knee") or 0.0))
+    return (v / float(v0)) ** float(row.get("soa_vds_exp", 1.0))
+
+
 def junction(row: dict, ts: list[float], ps: list[float],
-             ta: float = 25.0) -> dict:
+             ta: float = 25.0, vds: list[float] | None = None) -> dict:
     """Peak Tj for power waveform p(t) (W) at ambient ta, plus the pulse's
-    energy, peak power, its width and the time of the Tj peak."""
+    energy, peak power, its width and the time of the Tj peak. With vds(t)
+    and a row carrying soa_vds, p is scaled to the SOA's VDS first."""
     energy = sum(0.5 * (ps[i] + ps[i + 1]) * (ts[i + 1] - ts[i])
                  for i in range(len(ts) - 1))
     pk = max(ps) if ps else 0.0
+    scaled = bool(vds is not None and row.get("soa_vds"))
+    if scaled:
+        ps = [p * vds_scale(row, v) for p, v in zip(ps, vds)]
     rt, rp = resample(ts, ps)
     if len(rt) < 2:
         return {"tj_peak_c": ta, "energy_j": energy, "p_peak_w": pk,
-                "width_s": 0.0, "t_peak_s": rt[0] if rt else 0.0}
+                "width_s": 0.0, "t_peak_s": rt[0] if rt else 0.0,
+                "vds_scaled": scaled}
     dt = rt[1] - rt[0]
     steps = [rp[0]] + [rp[k] - rp[k - 1] for k in range(1, len(rp))]
     # evaluate at each step end and one pulse-length after (cooling)
@@ -150,23 +176,26 @@ def junction(row: dict, ts: list[float], ps: list[float],
     width = energy / pk if pk > 0 else 0.0
     return {"tj_peak_c": best, "energy_j": energy, "p_peak_w": pk,
             "width_s": width, "t_peak_s": t_best,
-            "zth_at_width": zth(row, width) if width > 0 else None}
+            "zth_at_width": zth(row, width) if width > 0 else None,
+            "vds_scaled": scaled}
 
 
 def hotswap_profile(c_f: float, v: float, *, t_ramp: float | None = None,
                     i_a: float | None = None, i_load: float = 0.0,
-                    n: int = 200) -> tuple[list[float], list[float]]:
+                    n: int = 200, with_vds: bool = False) -> tuple:
     """p(t) of a switch ramping a capacitor c_f from 0 to v at a constant
     charging current (i_a, or c_f * v / t_ramp), with a resistive-free
-    load current i_load beside it: p = (i_c + i_load) * (v - vout(t))."""
+    load current i_load beside it: p = (i_c + i_load) * (v - vout(t)).
+    with_vds: also the switch's vds(t) = v - vout(t)."""
     if i_a is None:
         if not t_ramp:
             raise ValueError("hotswap needs t_ramp or i_a")
         i_a = c_f * v / t_ramp
     t_end = c_f * v / i_a
     ts = [t_end * k / n for k in range(n + 1)]
-    ps = [(i_a + i_load) * (v - i_a * t / c_f) for t in ts]
-    return ts, ps
+    vds = [v - i_a * t / c_f for t in ts]
+    ps = [(i_a + i_load) * x for x in vds]
+    return (ts, ps, vds) if with_vds else (ts, ps)
 
 
 def judge(row: dict, res: dict) -> tuple[str | None, str]:
