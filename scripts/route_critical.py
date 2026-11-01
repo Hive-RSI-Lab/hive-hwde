@@ -927,6 +927,10 @@ def _stripline_width_for_pitch(bg: geom.BoardGeom, layer: str, z: float,
         return lo
 
 
+# Cost of a pinned pair's later layers: only worth using to reach its pins.
+PINNED_ESCAPE_COST = "8"
+
+
 def pair_layer_plan(bg: geom.BoardGeom, z: float, gap_c2c: float | None,
                     geo: dict, p: str, n: str) -> dict | None:
     """KRT geometry for a pair rules_gen sized on stripline layers (#489),
@@ -1074,13 +1078,20 @@ def route_diff_item(ctx: dict, spec: dict) -> tuple[dict | None, dict | None]:
     ladder = [(w, g)]
     if abs(w - FALLBACK_PAIR_WIDTH) > 1e-6:
         ladder.append((FALLBACK_PAIR_WIDTH, max(g, ctx["floors"]["clearance"])))
+    # constraints may pin a pair to layers, cheapest first (a bus laid out as
+    # a river: each pair on its planned layer, none hooking over the next).
+    # Pinned pairs get no fallback rung: that width only exists on the outers.
+    pinned = list(spec.get("layers") or [])
+    if pinned:
+        ladder = ladder[:1]
 
     stubs = unmatched_stub_pads(bg, p, n)
     terms = [t for t in termination_pads(bg, p, n) if t not in stubs]
     stubs = sorted(stubs + terms)
     original_text = staged.read_text(encoding="utf-8")
     launch = None
-    if plan:
+    # a pair pinned to an outer layer keeps its outer-layer escape stubs
+    if plan and (not pinned or pinned[0] in bg.copper_layers[1:-1]):
         launch = launch_pair(ctx, bg, p, n, plan, {r for r, _ in stubs})
     pre_uuids = _copper_uuids(staged)
     restores: list[tuple[str, str]] = []
@@ -1100,11 +1111,16 @@ def route_diff_item(ctx: dict, spec: dict) -> tuple[dict | None, dict | None]:
             # rung 1 of a stripline-sized pair may use its inner layers at
             # their own widths; the 0.2 mm fallback stays on the outers
             lplan = plan if rung == 1 else None
+            use_layers = lplan["layers"] if lplan else outer
+            use_costs = lplan["costs"] if lplan else costs
+            if pinned:
+                use_layers = pinned
+                use_costs = ["1"] + [PINNED_ESCAPE_COST] * (len(pinned) - 1)
             summary = run_krt(
                 ctx["krt"], "route_diff.py", staged, out,
                 ["--nets", p, n,
-                 "--layers", *(lplan["layers"] if lplan else outer),
-                 "--layer-costs", *(lplan["costs"] if lplan else costs),
+                 "--layers", *use_layers,
+                 "--layer-costs", *use_costs,
                  "--track-width", f"{rw:g}", "--diff-pair-gap", f"{rg:g}",
                  "--via-size", f"{pair_via_size(ctx['floors']):g}"],
                 ctx["floors"], ctx["fab_file"], ctx["grid_step"],
