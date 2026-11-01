@@ -9,8 +9,9 @@ Ctrl+S, Ctrl+Q. Then the result is read back through kicad-cli (netlist,
 ERC) and compared with the source by connectivity: every source net as a set
 of (reference, pad), against the same from KiCad's netlist.
 
-Readers here: Eagle .sch. Other formats (Altium .SchDoc, EasyEDA, CADSTAR)
-import the same way but are only counted, not compared.
+Readers here: Eagle .sch and Altium .SchDoc (one flat sheet). Other formats
+(Altium .PrjPcb hierarchies, EasyEDA, CADSTAR) import the same way but are
+only counted, not compared.
 """
 from __future__ import annotations
 
@@ -255,6 +256,188 @@ def eagle_sch_nets(path: Path) -> tuple[set[str], dict[str, set[tuple[str, str]]
             for pad in pads or ():
                 nets[name].add((ref, pad))
     return parts, dict(nets)
+
+
+# Altium .SchDoc: a compound file whose "FileHeader" stream is a list of
+# |KEY=VAL| records (the first is the header). OWNERINDEX on a child counts
+# records from 0 after the header. Coordinates are in 10 mil with a
+# 1/100000 _FRAC part. Children carry sheet coordinates already placed
+# (rotated/mirrored), so a pin's connection point is LOCATION + PINLENGTH
+# along its PINCONGLOMERATE direction (bits 0-1: 0 right, 1 up, 2 left,
+# 3 down), as KiCad's importer reads it.
+_AL_COMPONENT, _AL_PIN, _AL_POWER, _AL_PORT, _AL_NETLABEL = "1", "2", "17", "18", "25"
+_AL_WIRE, _AL_JUNCTION, _AL_DESIGNATOR, _AL_IMPL = "27", "29", "34", "45"
+_AL_SHEETSYM = "15"
+_AL_DIR = {0: (1, 0), 1: (0, 1), 2: (-1, 0), 3: (0, -1)}
+
+
+def _al_coord(r: dict, key: str) -> int:
+    return int(r.get(key, "0") or 0) * 100000 + int(r.get(key + "_FRAC", "0") or 0)
+
+
+def _al_xy(r: dict, base: str = "LOCATION") -> tuple[int, int]:
+    return _al_coord(r, base + ".X"), _al_coord(r, base + ".Y")
+
+
+def _on_segment(p, a, b) -> bool:
+    (x, y), (x1, y1), (x2, y2) = p, a, b
+    if (x2 - x1) * (y - y1) != (y2 - y1) * (x - x1):
+        return False
+    return min(x1, x2) <= x <= max(x1, x2) and min(y1, y2) <= y <= max(y1, y2)
+
+
+def altium_records(path: Path) -> list[dict]:
+    from . import cfb
+    files = cfb.read(path.read_bytes())
+    blob = files.get("FileHeader")
+    if blob is None:
+        raise ImportError_(f"{path.name}: no FileHeader stream (not a binary SchDoc)")
+    recs = [edasrc._props(r.rstrip(b"\0")) for r in edasrc._length_prefixed(blob)]
+    return recs[1:] if recs and "HEADER" in recs[0] else recs
+
+
+def altium_sch_nets(path: Path) -> tuple[set[str], dict[str, set[tuple[str, str]]], list[str]]:
+    """An Altium .SchDoc (one sheet): (references of parts with a PCB
+    footprint, net -> {(ref, pin)}, notes on what wasn't followed).
+
+    Connectivity as Altium draws it: wire vertices join wires; a pin end, a
+    wire end, a net label, a power port or a junction landing anywhere on a
+    wire joins it (Altium's auto-junction), crossing wires don't; same-named
+    net labels and power ports (and ports, on one flat sheet) are one net.
+    Unnamed nets are N$<n>, so compare() doesn't call them renamed."""
+    recs = altium_records(path)
+    notes: list[str] = []
+
+    def owner_chain(i: int):
+        seen = set()
+        while 0 <= i < len(recs) and i not in seen:
+            seen.add(i)
+            yield i
+            i = int(recs[i].get("OWNERINDEX", "-1") or -1)
+
+    comps = {i: r for i, r in enumerate(recs) if r.get("RECORD") == _AL_COMPONENT}
+    ref_of, packaged = {}, set()
+    for i, r in enumerate(recs):
+        kind = r.get("RECORD")
+        if kind == _AL_DESIGNATOR:
+            ref_of[int(r.get("OWNERINDEX", -1))] = r.get("TEXT", "")
+        elif kind == _AL_IMPL and r.get("MODELTYPE", "").upper() == "PCBLIB":
+            top = [j for j in owner_chain(i) if j in comps]
+            if top:
+                packaged.add(top[0])
+    parts = {ref_of[i] for i in packaged if ref_of.get(i)}
+
+    # union-find over connection points
+    parent: dict = {}
+
+    def find(a):
+        parent.setdefault(a, a)
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+
+    def union(a, b):
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[ra] = rb
+
+    segs = []  # (a, b, wire node)
+    points: list[tuple[tuple[int, int], object]] = []  # things that land on wires
+    names: dict[object, set[str]] = defaultdict(set)
+    power: dict[object, set[str]] = defaultdict(set)
+    pin_node: dict[tuple[str, str], object] = {}
+    skipped = Counter()
+    for i, r in enumerate(recs):
+        kind = r.get("RECORD")
+        if kind == _AL_WIRE:
+            n = int(r.get("LOCATIONCOUNT", "0") or 0)
+            pts = [(_al_coord(r, f"X{k}"), _al_coord(r, f"Y{k}")) for k in range(1, n + 1)]
+            node = ("w", i)
+            find(node)
+            for a, b in zip(pts, pts[1:]):
+                segs.append((a, b, node))
+            for pt in pts:
+                points.append((pt, node))
+        elif kind == _AL_PIN:
+            owner = int(r.get("OWNERINDEX", "-1") or -1)
+            comp = comps.get(owner)
+            if comp is None:
+                continue
+            part = r.get("OWNERPARTID", "-1")
+            if part not in ("-1", comp.get("CURRENTPARTID", "-1")):
+                continue
+            if r.get("OWNERPARTDISPLAYMODE", "0") != comp.get("DISPLAYMODE", "0"):
+                continue
+            ref = ref_of.get(owner)
+            if not ref:
+                continue
+            conglom = int(r.get("PINCONGLOMERATE", "0") or 0)
+            dx, dy = _AL_DIR[conglom & 3]
+            length = _al_coord(r, "PINLENGTH")
+            x, y = _al_xy(r)
+            node = ("p", ref, r.get("DESIGNATOR", ""))
+            find(node)
+            pin_node[(ref, r.get("DESIGNATOR", ""))] = node
+            points.append(((x + dx * length, y + dy * length), node))
+            if conglom & 4 and r.get("HIDDENNETNAME"):
+                power[node].add(r["HIDDENNETNAME"])
+        elif kind in (_AL_NETLABEL, _AL_POWER, _AL_JUNCTION, _AL_PORT):
+            node = (kind, i)
+            find(node)
+            points.append((_al_xy(r), node))
+            text = r.get("TEXT") or r.get("NAME") or ""
+            if kind == _AL_POWER and text:
+                power[node].add(text)
+            elif kind in (_AL_NETLABEL, _AL_PORT) and text:
+                names[node].add(text)
+        elif kind == _AL_SHEETSYM:
+            skipped["sheet symbols"] += 1
+    if skipped:
+        notes.append("not followed: " + ", ".join(f"{n} {k}" for k, n in skipped.items())
+                     + " (one flat sheet only; hierarchy isn't read)")
+    # points on wires (a grid of buckets by x would do; boards are small)
+    by_pt: dict[tuple[int, int], list] = defaultdict(list)
+    for pt, node in points:
+        by_pt[pt].append(node)
+    for pt, nodes in by_pt.items():  # coincident points: pin-on-pin, label-on-pin...
+        for nd in nodes[1:]:
+            union(nodes[0], nd)
+    for a, b, wnode in segs:
+        x0, x1 = sorted((a[0], b[0]))
+        y0, y1 = sorted((a[1], b[1]))
+        for pt, nodes in by_pt.items():
+            if x0 <= pt[0] <= x1 and y0 <= pt[1] <= y1 and _on_segment(pt, a, b):
+                for nd in nodes:
+                    union(wnode, nd)
+    # same name, same net (power ports beat labels for the name)
+    by_name: dict[str, object] = {}
+    for table in (power, names):
+        for node, ns in table.items():
+            for nm in ns:
+                if nm in by_name:
+                    union(by_name[nm], node)
+                else:
+                    by_name[nm] = node
+    groups: dict[object, set[tuple[str, str]]] = defaultdict(set)
+    for (ref, pin), node in pin_node.items():
+        if ref in parts:
+            groups[find(node)].add((ref, pin))
+    gname: dict[object, list[str]] = defaultdict(list)
+    for table, rank in ((power, 0), (names, 1)):
+        for node, ns in table.items():
+            for nm in ns:
+                gname[find(node)].append((rank, nm))
+    nets: dict[str, set[tuple[str, str]]] = {}
+    k = 0
+    for root, pins in sorted(groups.items(), key=lambda kv: sorted(kv[1])):
+        if gname.get(root):
+            name = min(gname[root])[1]
+        else:
+            k += 1
+            name = f"N${k}"
+        nets.setdefault(name, set()).update(pins)
+    return parts, nets, notes
 
 
 def kicad_netlist(cli: Path, sch: Path) -> tuple[set[str], dict[str, set[tuple[str, str]]]]:

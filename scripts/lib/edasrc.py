@@ -62,12 +62,16 @@ class Source:
     # with no pad under them): counted, not converted
     milling_other: int = 0
     notes: list[str] = field(default_factory=list)
+    # Altium: schematic designator (SOURCEDESIGNATOR) -> the designator the
+    # PCB shows, where they differ (PCB-side renames never annotated back).
+    # KiCad's importer takes the PCB's.
+    pcb_refs: dict[str, str] = field(default_factory=dict)
 
     def to_json(self) -> dict:
         return {"format": self.format, "parts": len(self.refs),
                 "nets": len(self.nets), "copper": self.copper,
                 "copper_declared": self.copper_declared, "vias": self.vias,
-                "notes": self.notes}
+                "notes": self.notes, "pcb_refs": self.pcb_refs}
 
 
 class Unreadable(ValueError):
@@ -180,6 +184,30 @@ def _typed_records(blob: bytes):
         i += 5 + n
 
 
+def _altium_designator_texts(blob: bytes) -> dict[int, str]:
+    """Texts6: component index -> its designator text as the PCB shows it
+    (what KiCad's importer takes as the reference). Each record is type 5,
+    then a property block (layer u8, ..., component u16 at 7, ..., is_comment
+    u8 at 40, is_designator u8 at 41) and a Pascal string block."""
+    out: dict[int, str] = {}
+    i = 0
+    while i + 5 <= len(blob):
+        i += 1
+        n1 = struct.unpack_from("<I", blob, i)[0]
+        b1 = blob[i + 4:i + 4 + n1]
+        i += 4 + n1
+        if i + 4 > len(blob):
+            break
+        n2 = struct.unpack_from("<I", blob, i)[0]
+        b2 = blob[i + 4:i + 4 + n2]
+        i += 4 + n2
+        if len(b1) > 41 and b1[41] and b2:
+            comp = struct.unpack_from("<H", b1, 7)[0]
+            if comp != 0xFFFF:
+                out[comp] = b2[1:1 + b2[0]].decode("latin1")
+    return out
+
+
 def read_altium(path: Path) -> Source:
     files = cfb.read(path.read_bytes())
     src = Source("altium")
@@ -210,10 +238,13 @@ def read_altium(path: Path) -> Source:
             src.notes.append(f"{name} holds {counts[lid]} copper objects but "
                              "isn't in Altium's layer stack (a disabled "
                              "layer: Altium doesn't fabricate it either)")
-    for rec in _length_prefixed(files.get("Components6/Data", b"")):
+    shown = _altium_designator_texts(files.get("Texts6/Data", b""))
+    for i, rec in enumerate(_length_prefixed(files.get("Components6/Data", b""))):
         ref = _props(rec).get("SOURCEDESIGNATOR")
         if ref:
             src.refs.add(ref)
+            if shown.get(i) and shown[i] != ref:
+                src.pcb_refs[ref] = shown[i]
     for rec in _length_prefixed(files.get("Nets6/Data", b"")):
         name = _props(rec).get("NAME")
         if name:
@@ -656,6 +687,22 @@ def compare(src: Source | None, board: Board, report: dict, log: str) -> list[Lo
         missing = src.refs - set(board.refs)
         extra = set(board.refs) - src.refs
         renamed = {}
+        pcb_named = {}
+        for r in sorted(missing):  # Altium: the PCB shows another designator
+            shown = src.pcb_refs.get(r)
+            if shown and (shown in board.refs or any(
+                    re.fullmatch(re.escape(shown) + r"_?\d+", e) for e in board.refs)):
+                pcb_named[r] = shown
+        missing -= set(pcb_named)
+        extra -= {e for e in extra if any(e == v or re.fullmatch(re.escape(v) + r"_?\d+", e)
+                                          for v in pcb_named.values())}
+        if pcb_named:
+            losses.append(Loss("check", "parts",
+                               f"{len(pcb_named)} parts carry a PCB designator that isn't "
+                               "their schematic designator (Altium SOURCEDESIGNATOR); the "
+                               "import takes the PCB's, so board and schematic won't pair "
+                               "until they're renamed back: " +
+                               _sample(f"{a} shown as {b}" for a, b in pcb_named.items())))
         for r in sorted(missing):
             # KiCad gives a reference with no number one ("PWR" -> "PWR0")
             cand = [e for e in extra if re.fullmatch(re.escape(r) + r"_?\d+", e)]

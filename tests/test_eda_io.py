@@ -50,13 +50,19 @@ def _cfb_write(streams: dict[str, bytes]) -> bytes:
                 + struct.pack("<IQ", start, size))
 
     NONE = 0xFFFFFFFF
-    storages = sorted({k.split("/")[0] for k in streams})
+    storages = sorted({k.split("/")[0] for k in streams})  # "Name" alone: a root stream
     ents = [None]  # root first
     for i, st in enumerate(storages):
-        data = streams[st + "/Data"]
-        start = put(data)
         sid = len(ents)
         ents.append(None)
+        nxt = NONE
+        if st in streams:  # a stream at the root (SchDoc's FileHeader)
+            data = streams[st]
+            nxt = sid + 1 if i < len(storages) - 1 else NONE
+            ents[sid] = entry(st, 2, NONE, nxt, NONE, put(data), len(data))
+            continue
+        data = streams[st + "/Data"]
+        start = put(data)
         did = len(ents)
         ents.append(entry("Data", 2, NONE, NONE, NONE, start, len(data)))
         nxt = sid + 2 if i < len(storages) - 1 else NONE
@@ -520,3 +526,98 @@ def test_eagle_milling_slots(tmp_path):
     assert src.slots == [{"ref": "J5", "pad": "SHLD1", "x1": -4.318, "y1": -0.365,
                           "x2": -4.318, "y2": -1.465, "w": 0.6}]
     assert src.milling_other == 2  # the board-level wire and the stray one
+
+
+def _schdoc(tmp: Path) -> Path:
+    """A one-sheet Altium SchDoc: R1/R2 tied by a polyline wire carrying net
+    label SIG; R4 joins it by a wire ending mid-segment (a T); R3's wire
+    crosses it with no junction (not joined); R1.2/R2.2 meet by power port
+    name only; U9 has no footprint; R2's part-2 pin isn't placed."""
+    recs: list[dict] = []
+
+    def add(**kv) -> int:
+        recs.append({k.replace("_", "."): str(v) for k, v in kv.items()})
+        return len(recs) - 1
+
+    def part(ref, pins, packaged=True):
+        c = add(RECORD=1, CURRENTPARTID=1, OWNERPARTID=-1)
+        for num, (x, y, d, owner_part) in pins.items():
+            add(RECORD=2, OWNERINDEX=c, OWNERPARTID=owner_part, PINCONGLOMERATE=d,
+                PINLENGTH=10, LOCATION_X=x, LOCATION_Y=y, DESIGNATOR=num)
+        add(RECORD=34, OWNERINDEX=c, TEXT=ref, NAME="Designator")
+        if packaged:
+            lst = add(RECORD=44, OWNERINDEX=c)
+            add(RECORD=45, OWNERINDEX=lst, MODELTYPE="PCBLIB", MODELNAME="R0603")
+
+    def wire(*pts):
+        kv = {"RECORD": 27, "LOCATIONCOUNT": len(pts)}
+        for k, (x, y) in enumerate(pts, 1):
+            kv[f"X{k}"], kv[f"Y{k}"] = x, y
+        add(**kv)
+
+    part("R1", {"1": (100, 100, 2, 1), "2": (110, 100, 0, 1)})       # ends (90,100) (120,100)
+    part("R2", {"1": (200, 100, 2, 1), "2": (210, 100, 0, 1),        # ends (190,100) (220,100)
+                "3": (400, 400, 0, 2)})                               # part 2: not placed
+    part("R3", {"1": (150, 90, 3, 1), "2": (300, 300, 0, 1)})        # end (150,80)
+    part("R4", {"1": (170, 40, 3, 1), "2": (600, 600, 0, 1)})        # end (170,30)
+    part("U9", {"1": (140, 60, 3, 1)}, packaged=False)               # end (140,50), on SIG
+    wire((90, 100), (90, 50), (190, 50), (190, 100))
+    add(RECORD=25, LOCATION_X=140, LOCATION_Y=50, TEXT="SIG")
+    wire((150, 0), (150, 80))                                         # crosses SIG at (150,50)
+    wire((170, 30), (170, 50))                                        # T onto SIG
+    wire((120, 100), (120, 150))
+    add(RECORD=17, LOCATION_X=120, LOCATION_Y=150, TEXT="GND")
+    wire((220, 100), (220, 160))
+    add(RECORD=17, LOCATION_X=220, LOCATION_Y=160, TEXT="GND")
+    add(RECORD=25, LOCATION_X=405, LOCATION_Y=400, TEXT="GND")        # on the unplaced pin
+    head = {"HEADER": "Protel for Windows - Schematic Capture Binary File Version 5.0"}
+    p = tmp / "m.SchDoc"
+    p.write_bytes(_cfb_write({"FileHeader": _text_records(head, *recs)}))
+    return p
+
+
+def test_altium_sch_nets(tmp_path):
+    from lib import schimport
+    p = _schdoc(tmp_path)
+    assert schimport.detect(p) == "altium"
+    parts, nets, notes = schimport.altium_sch_nets(p)
+    assert parts == {"R1", "R2", "R3", "R4"} and notes == []
+    assert nets["SIG"] == {("R1", "1"), ("R2", "1"), ("R4", "1")}
+    assert nets["GND"] == {("R1", "2"), ("R2", "2")}
+    alone = [n for n, pins in nets.items() if ("R3", "1") in pins]
+    assert alone and alone[0].startswith("N$") and nets[alone[0]] == {("R3", "1")}
+    assert not any(("R2", "3") in pins for pins in nets.values())
+    # the KiCad side agreeing gives no losses; a split gives one
+    assert schimport.compare(parts, nets, parts, nets) == []
+    bad = dict(nets, SIG={("R1", "1"), ("R2", "1")}, X={("R4", "1")})
+    assert any(l["level"] == "lost" for l in schimport.compare(parts, nets, parts, bad))
+
+
+def _text6(comp: int, text: str, designator: bool) -> bytes:
+    b1 = bytearray(230)
+    struct.pack_into("<H", b1, 7, comp)
+    b1[41] = 1 if designator else 0
+    b2 = bytes([len(text)]) + text.encode("latin1")
+    return (bytes([5]) + struct.pack("<I", len(b1)) + bytes(b1)
+            + struct.pack("<I", len(b2)) + b2)
+
+
+def test_altium_pcb_designator_differs_from_schematic(tmp_path):
+    """The PCB shows '1K5' for schematic R1 (renamed on the PCB, never
+    annotated back): KiCad imports '1K5'. That's a rename to undo, not a lost
+    part."""
+    streams = {
+        "Board6/Data": struct.pack("<I", 0) + _props({"LAYER1NAME": "Top Layer",
+                                                      "LAYER1NEXT": "32", "LAYER32NEXT": "0"}),
+        "Components6/Data": _text_records({"SOURCEDESIGNATOR": "R1"}, {"SOURCEDESIGNATOR": "U1"}),
+        "Texts6/Data": _text6(0, "Thick Film", False) + _text6(0, "1K5", True)
+        + _text6(1, "U1", True) + _text6(0xFFFF, "V1.0", False),
+    }
+    p = tmp_path / "b.PcbDoc"
+    p.write_bytes(_cfb_write(streams))
+    src = edasrc.read_source(p)
+    assert src.pcb_refs == {"R1": "1K5"}
+    board = edasrc.Board(refs=["1K5", "U1"])
+    got = edasrc.compare(src, board, {}, "")
+    assert not any(l.level == "lost" and l.what == "parts" for l in got)
+    assert any("R1 shown as 1K5" in l.text for l in got)
