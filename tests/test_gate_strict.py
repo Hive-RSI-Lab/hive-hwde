@@ -356,12 +356,13 @@ def test_verify_all_strict_with_declared_na_passes(tmp_path):
     summary, _ = verify_all.run(["--pcb", str(BLINKY), "--strict",
                                  "--constraints", str(cpath),
                                  "--reports-dir", str(tmp_path / "rep")])
-    # blinky2's two stock 1.0 mm header drills under IPC-2222 (#474) are
-    # warnings, below the fail bar; nothing else
+    # blinky2's two stock 1.0 mm header drills under IPC-2222 (#474), and its
+    # STM32F103 with no netlist beside it (check_straps, #602), are warnings,
+    # below the fail bar; nothing else
     assert summary["status"] in ("pass", "violations")
-    assert summary["counts"]["by_severity"] == {"warning": 2}
+    assert summary["counts"]["by_severity"] == {"warning": 3}
     assert {k for k, v in summary["counts"]["by_check"].items() if v} \
-        == {"check_connector_fit"}
+        == {"check_connector_fit", "check_straps"}
     cov = summary["coverage"]
     board_only = ["check_diffpair", "check_silk", "check_courtyard", "check_route_style",
                   "check_connector_fit", "check_ep_paste",

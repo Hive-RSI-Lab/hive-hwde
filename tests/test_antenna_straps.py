@@ -248,13 +248,15 @@ def test_pin_names_normalise():
     assert check_straps.pin_name("GPIO12", "14") == "IO12"
 
 
-def test_no_netlist_without_an_mcu_passes(tmp_path):
+def test_no_netlist_with_a_known_mcu_warns(tmp_path):
+    """blinky2's U1 is an STM32F103, which has a row since #602."""
     pcb = tmp_path / "b.kicad_pcb"
     pcb.write_text((REPO / "tests" / "golden" / "blinky2" /
                     "blinky2.kicad_pcb").read_text(encoding="utf-8"),
                    encoding="utf-8")
     payload, _ = check_straps.run(["--pcb", str(pcb)])
-    assert payload["status"] == "pass"
+    (v,) = payload["violations"]
+    assert v["kind"] == "no_netlist" and v["refs"] == ["U1"]
 
 
 def test_both_checks_join_verify_all():

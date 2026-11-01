@@ -51,6 +51,17 @@ Findings:
                       MCU has no row, so nothing about it was judged
   no_netlist          warning: the board has an MCU from the file but no
                       netlist beside it, so nothing was resolved
+  dead_battery_rd     warning: an STM32G4 UCPD dead-battery control pin (PA9,
+                      PA10) reads high (or may) at reset, so the chip puts
+                      5.1 k to ground on the CC pin it controls (PB6, PB4)
+                      until firmware sets UCPD1_DBDIS
+  dead_battery_open   warning: a CC pin reaches a USB-C connector with its
+                      DBCC pin neither on that CC line nor tied low (RM0440
+                      46.4.6: one or the other)
+  programming_pin_load warning: a pin the programmer clocks while the MCU is
+                      held in reset (the ATmega's MOSI, SCK; reset_states.yaml
+                      `programming`) drives a FET gate or a part's enable, so
+                      that load switches during every program cycle
 
 The netlist is the board's own `<board>.net` beside the .kicad_pcb (the one
 the pipeline exports), or --netlist.
@@ -87,7 +98,7 @@ DEFAULT_VDD = 3.3
 MAX_DEPTH = 4       # series resistors followed from a pin
 SHORT_PREFIXES = ("L", "FB", "F", "NT")
 PASSIVE_PREFIXES = ("C", "D", "LED", "Q", "SW", "S", "TP", "H", "MH", "BT",
-                    "K")
+                    "K", "JP")
 CONNECTOR_PREFIXES = ("J", "P", "CN", "CON", "X")
 
 
@@ -182,6 +193,23 @@ class Board:
         return all(n.startswith("unconnected-") for n in self.names.get(g, []))
 
 
+def part_supply(board: Board, ref: str) -> float:
+    """The rail on a part's supply pin (DEFAULT_VDD if none can be named)."""
+    for meta in board.pins.get(ref, {}).values():
+        if re.match(r"^(VCC|VDD|VDDIO|VIO|3V3|VDD3P3)", meta["name"]):
+            v = board.rail(board.group[meta["net"]])
+            if v:
+                return v
+    return DEFAULT_VDD
+
+
+def mcu_vdd(board: Board, mcu: dict) -> float:
+    """An MCU's supply: the row's `vdd`, or the rail on its own supply pin
+    for a family that runs at more than one voltage (`vdd: supply`)."""
+    vdd = mcu["row"].get("vdd", DEFAULT_VDD)
+    return part_supply(board, mcu["ref"]) if vdd == "supply" else vdd
+
+
 class Resolver:
     def __init__(self, board: Board, kb: dict, mcu: dict | None,
                  mcu_pulls: dict | None = None):
@@ -199,17 +227,13 @@ class Resolver:
                     break
         self.enable_net = None
         if mcu:
-            for pin, meta in board.pins[mcu["ref"]].items():
-                if meta["name"] in [e.upper() for e in mcu["row"]["enable"]]:
-                    self.enable_net = board.net(mcu["ref"], pin)
+            pins = mcu_pins(board, mcu)
+            for name in mcu["row"]["enable"]:
+                if name.upper() in pins:
+                    self.enable_net = board.net(mcu["ref"], pins[name.upper()])
 
     def part_vdd(self, ref: str) -> float:
-        for meta in self.b.pins.get(ref, {}).values():
-            if re.match(r"^(VCC|VDD|VDDIO|VIO|3V3|VDD3P3)", meta["name"]):
-                v = self.b.rail(self.b.group[meta["net"]])
-                if v:
-                    return v
-        return DEFAULT_VDD
+        return part_supply(self.b, ref)
 
     def is_osc(self, ref: str) -> bool:
         if not self.osc["_refs"].match(ref):
@@ -402,13 +426,18 @@ def find_mcus(board: Board, kb: dict) -> list[dict]:
 
 
 def mcu_pins(board: Board, mcu: dict) -> dict[str, str]:
-    """{canonical strap name: pin number} for one MCU."""
+    """{canonical strap name: pin number} for one MCU. A pin's name splits
+    on the row's `pin_split` (PB8-BOOT0, PD3_(PCINT19/OC2B/INT1))."""
+    row = mcu["row"]
     aliases = {k.upper(): v.upper() for k, v in
-               (mcu["row"].get("aliases") or {}).items()}
+               (row.get("aliases") or {}).items()}
+    split = row.get("pin_split", r"[/,]")
     out = {}
     for pin, meta in board.pins[mcu["ref"]].items():
-        for tok in re.split(r"[/,]", meta["name"]):
+        for tok in re.split(split, meta["name"]):
             tok = re.sub(r"^GPIO(\d+)$", r"IO\1", tok.strip())
+            if not tok:
+                continue
             tok = aliases.get(tok, tok)
             out.setdefault(tok, pin)
     return out
@@ -427,7 +456,7 @@ def check_mcu(board, kb, mcu, bg) -> tuple[list, list]:
     viols, facts = [], []
     row = mcu["row"]
     res = Resolver(board, kb, mcu)
-    vdd = row.get("vdd", DEFAULT_VDD)
+    vdd = mcu_vdd(board, mcu)
     pins = mcu_pins(board, mcu)
     unverified = "" if row.get("verified", False) else \
         " (reset_states.yaml: unverified)"
@@ -439,7 +468,7 @@ def check_mcu(board, kb, mcu, bg) -> tuple[list, list]:
         internal = None
         if spec.get("pull") in ("up", "down"):
             internal = (vdd if spec["pull"] == "up" else 0.0,
-                        row.get("pull_ohm", 45000),
+                        spec.get("ohm", row.get("pull_ohm", 45000)),
                         f"{mcu['ref']} internal {spec['pull']}")
         want = spec.get("want", "any")
         fact = {"mcu": mcu["ref"], "strap": strap, "pin": pin,
@@ -448,13 +477,21 @@ def check_mcu(board, kb, mcu, bg) -> tuple[list, list]:
         unknown = []
         for event in EVENTS:
             st = res.state(g, event, skip={(mcu["ref"], pin)}, vdd=vdd,
-                           vil=row.get("vil", 0.25), vih=row.get("vih", 0.75),
+                           vil=spec.get("vil", row.get("vil", 0.25)),
+                           vih=spec.get("vih", row.get("vih", 0.75)),
                            internal=internal)
             fact[event] = st["text"]
             unknown = st["unknown"]
+            if spec.get("connector_ok"):
+                # a reset line on the debug header is the point of the header
+                unknown = [u for u in unknown if not u.endswith("a connector")]
             ok = st["state"] == want or (
                 want == "any" and st["state"] in ("high", "low", "undefined",
                                                   "floating"))
+            if st["state"] == "floating" and unknown and not internal:
+                # no pull, but a part we don't know is on the net: it may hold
+                # the pin either way, so this is strap_unknown, not "floating"
+                ok = True
             if not ok:
                 bad[event] = st["text"]
         facts.append(fact)
@@ -462,12 +499,14 @@ def check_mcu(board, kb, mcu, bg) -> tuple[list, list]:
         if bad:
             events = " and ".join(EVENT_TEXT[e] for e in bad)
             texts = sorted(set(bad.values()))
+            also = (f"; it also reaches {', '.join(sorted(set(unknown)))}, "
+                    "whose reset state hwde doesn't know" if unknown else "")
             viols.append(checklib.violation(
                 SCRIPT, spec.get("severity", "error"), pos, None,
                 board.label(g), [mcu["ref"]],
                 f"{mcu['ref']} {strap} (pin {pin}, {board.label(g)}) must "
                 f"read {want} at reset, but {events} it reads "
-                f"{' / '.join(texts)}: {spec.get('why', '')}{unverified}",
+                f"{' / '.join(texts)}{also}: {spec.get('why', '')}{unverified}",
                 SOURCE, kind="strap_level", strap=strap, events=sorted(bad),
                 states=bad))
         elif unknown and want != "any":
@@ -477,7 +516,8 @@ def check_mcu(board, kb, mcu, bg) -> tuple[list, list]:
                 f"reaches {', '.join(sorted(set(unknown)))}, whose reset "
                 "state hwde doesn't know: confirm each is an input or hi-Z "
                 f"until the strap latches (or add the part to "
-                "reset_states.yaml)", SOURCE, kind="strap_unknown",
+                f"reset_states.yaml). {spec.get('why', '')}", SOURCE,
+                kind="strap_unknown",
                 strap=strap, unknown=sorted(set(unknown))))
     return viols, facts
 
@@ -602,7 +642,7 @@ def check_reset_pulls(board, kb, mcu, bg) -> tuple[list, list]:
     but the MCU's own pull, whatever the connector feeds sees it."""
     viols, facts = [], []
     row = mcu["row"]
-    vdd = row.get("vdd", DEFAULT_VDD)
+    vdd = mcu_vdd(board, mcu)
     ohm = row.get("pull_ohm", 45000)
     pins = mcu_pins(board, mcu)
     unverified = "" if row.get("verified", False) else \
@@ -621,6 +661,7 @@ def check_reset_pulls(board, kb, mcu, bg) -> tuple[list, list]:
             mpulls[(mcu["ref"], pin)] = (
                 vdd if spec["pull"] == "up" else 0.0, spec.get("ohm", ohm),
                 f"{mcu['ref']} {name} internal {spec['pull']}")
+    mpulls.update(dead_battery_pulls(board, kb, mcu))
     res = Resolver(board, kb, mcu, mcu_pulls=mpulls)
     for name, spec in sorted(pulled.items()):
         pin = pins.get(name)
@@ -709,6 +750,140 @@ def check_reset_pulls(board, kb, mcu, bg) -> tuple[list, list]:
     return viols, facts
 
 
+def dead_battery_states(board, kb, mcu) -> list[dict]:
+    """Each UCPD dead-battery pair in the row (`dead_battery`): what its DBCC
+    pin reads at reset, so whether the chip's Rd sits on its CC pin. `tied`
+    is the wiring the manual means (DBCC on the CC line); `on` is high;
+    `maybe` is mid-band or a clock; `unknown` is no pull but an IC whose
+    reset state we don't know, listed in the facts and not judged."""
+    row, out = mcu["row"], []
+    pins = mcu_pins(board, mcu)
+    vdd = mcu_vdd(board, mcu)
+    res = Resolver(board, kb, mcu)
+    for pair in row.get("dead_battery") or []:
+        cc, db = pins.get(pair["cc"].upper()), pins.get(pair["db"].upper())
+        if cc is None or db is None:
+            continue
+        cg, dg = board.net(mcu["ref"], cc), board.net(mcu["ref"], db)
+        d = {**pair, "cc_pin": cc, "db_pin": db, "cc_net": cg, "db_net": dg}
+        if cg == dg:
+            d.update(mode="tied", text="on its CC line")
+        elif board.unconnected(dg):
+            d.update(mode="open", text="not connected")
+        else:
+            st = res.state(dg, "por", skip={(mcu["ref"], db)}, vdd=vdd,
+                           vil=row.get("vil", 0.3), vih=row.get("vih", 0.7))
+            d["text"] = st["text"]
+            d["mode"] = {"high": "on", "low": "off", "undefined": "maybe",
+                         "toggling": "maybe", "may_toggle": "maybe",
+                         "firmware": "maybe"}.get(
+                st["state"], "unknown" if st["unknown"] else "open")
+        out.append(d)
+    return out
+
+
+def dead_battery_pulls(board, kb, mcu) -> dict:
+    """{(mcu, CC pin): (0 V, Rd, label)} for each CC pin whose Rd is on at
+    reset. PB4's JTAG pull-up (40 k) is also on there; Rd is eight times
+    stronger and sets the level, so it stands in for both."""
+    return {(mcu["ref"], d["cc_pin"]):
+            (0.0, d["ohm"], f"{mcu['ref']} {d['cc']} dead-battery Rd")
+            for d in dead_battery_states(board, kb, mcu)
+            if d["mode"] == "on"}
+
+
+def check_dead_battery(board, kb, mcu, bg) -> tuple[list, list]:
+    viols, facts = [], []
+    ref = mcu["ref"]
+    res = Resolver(board, kb, mcu,
+                   mcu_pulls=dead_battery_pulls(board, kb, mcu))
+    for d in dead_battery_states(board, kb, mcu):
+        g = d["cc_net"]
+        facts.append({"mcu": ref, "cc": d["cc"], "db": d["db"],
+                      "cc_net": board.label(g), "db_net": board.label(d["db_net"]),
+                      "mode": d["mode"], "db_reads": d["text"]})
+        if board.unconnected(g):
+            continue
+        typec = any(re.search(r"\bCC[12]\b", n)
+                    for n in board.names.get(g, [])) or any(
+            prefix(r) in CONNECTOR_PREFIXES and re.fullmatch(
+                r"(A5|B5|CC[12]?)", board.pins[r][p]["name"])
+            for r, p in board.nodes.get(g, []))
+        pos = pad_pos(bg, ref, d["cc_pin"])
+        if typec and d["mode"] in ("open", "on", "maybe", "unknown"):
+            viols.append(checklib.violation(
+                SCRIPT, "warning", pos, None, board.label(g), [ref],
+                f"{ref} {d['cc']} ({board.label(g)}) reaches a USB-C CC pin, "
+                f"but its dead-battery pin {d['db']} is {d['text']}: "
+                "RM0440 46.4.6 wants it on that CC line (a sink that must "
+                "enumerate unpowered) or tied to ground, or the Rd the source "
+                "sees is left to whatever that pin does", SOURCE,
+                kind="dead_battery_open", cc=d["cc"], db=d["db"]))
+            continue
+        if d["mode"] not in ("on", "maybe"):
+            continue
+        st = res.state(g, "por", vdd=mcu_vdd(board, mcu), vil=IO_VIL,
+                       vih=IO_VIH)
+        may = "may put" if d["mode"] == "maybe" else "puts"
+        viols.append(checklib.violation(
+            SCRIPT, "warning", pos, None, board.label(g), [ref],
+            f"{ref} {d['db']} ({board.label(d['db_net'])}) reads {d['text']} "
+            f"at reset, which {may} the chip's {d['ohm'] / 1000:g} k dead-battery "
+            f"Rd on {d['cc']} ({board.label(g)}) until firmware sets "
+            f"UCPD1_DBDIS in PWR_CR3: that net reads {st['text']} before then. "
+            "Hold the control pin low at reset, or check the net's load "
+            "tolerates it", SOURCE, kind="dead_battery_rd", cc=d["cc"],
+            db=d["db"], mode=d["mode"]))
+    return viols, facts
+
+
+def check_programming(board, kb, mcu, bg) -> tuple[list, list]:
+    """A pin a programmer clocks while the MCU is held in reset (the row's
+    `programming`): a FET gate or enable on it switches with every byte."""
+    row = mcu["row"]
+    prog = row.get("programming")
+    if not prog:
+        return [], []
+    viols, facts = [], []
+    pins = mcu_pins(board, mcu)
+    for name in prog["pins"]:
+        pin = pins.get(name.upper())
+        if pin is None:
+            continue
+        g = board.net(mcu["ref"], pin)
+        if board.unconnected(g):
+            continue
+        loads, seen = [], set()
+        for ref, rpin, gg in near_nodes(board, g):
+            if ref == mcu["ref"] or (ref, rpin) in seen:
+                continue
+            seen.add((ref, rpin))
+            meta = board.pins[ref][rpin]
+            if prefix(ref) == "Q":
+                hit = meta["name"] in GATE_NAMES
+            elif prefix(ref) in PASSIVE_PREFIXES + CONNECTOR_PREFIXES \
+                    or ref in board.shorts or prefix(ref) == "R":
+                hit = False
+            else:
+                hit = part_on(meta["name"], meta.get("bar", False),
+                              "high") is not None
+            if not hit:
+                continue
+            loads.append(ref)
+            viols.append(checklib.violation(
+                SCRIPT, "warning", pad_pos(bg, ref, rpin), None,
+                board.label(gg), [mcu["ref"], ref],
+                f"{mcu['ref']} {name} (pin {pin}, {board.label(g)}) is clocked "
+                f"by the programmer while the MCU is in reset ({prog['why']}), "
+                f"and it drives {ref} {meta['name']} ({board.value(ref)}): "
+                "that load switches during every program cycle. Move it to "
+                "another pin, or gate it off while RESET is low", SOURCE,
+                kind="programming_pin_load", pin=name))
+        facts.append({"mcu": mcu["ref"], "pin": pin, "name": name,
+                      "net": board.label(g), "loads": loads})
+    return viols, facts
+
+
 GATE_NAMES = ("G", "GATE")
 
 
@@ -766,7 +941,7 @@ def check(pcb: Path, netlist: Path | None = None, kb: dict | None = None):
     board = Board(simlib.parse_netlist(netlist))
     viols, straps, ios = [], [], []
     mcus = find_mcus(board, kb)
-    pulls = []
+    pulls, dead, prog = [], [], []
     for mcu in mcus:
         v, f = check_mcu(board, kb, mcu, bg)
         viols += v
@@ -774,6 +949,12 @@ def check(pcb: Path, netlist: Path | None = None, kb: dict | None = None):
         v, f = check_reset_pulls(board, kb, mcu, bg)
         viols += v
         pulls += f
+        v, f = check_dead_battery(board, kb, mcu, bg)
+        viols += v
+        dead += f
+        v, f = check_programming(board, kb, mcu, bg)
+        viols += v
+        prog += f
     v, f = check_expanders(board, kb, mcus[0] if mcus else None, bg)
     viols += v
     ios += f
@@ -789,6 +970,7 @@ def check(pcb: Path, netlist: Path | None = None, kb: dict | None = None):
             "mcus": [m["ref"] for m in mcus],
             "mcus_unknown": sorted(unknown),
             "straps": straps, "reset_pulls": pulls,
+            "dead_battery": dead, "programming": prog,
             "expander_pins": ios}
     if not mcus and not ios:
         seen["nothing_to_judge"] = mcu_verdict(mcus, unknown)

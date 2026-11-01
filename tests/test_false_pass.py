@@ -113,14 +113,14 @@ def test_rp2040_row_matches_its_pad_table():
 # -------------------------------------------------------- nothing to judge
 
 def test_unknown_mcu_is_said_and_is_not_a_pass(tmp_path):
-    pcb = _netlist(tmp_path, {"U1": "STM32F103C8T6"},
+    pcb = _netlist(tmp_path, {"U1": "STM32L476RGT6"},
                    {"+3V3": [("U1", "1", "VDD_1")]})
     p = _straps(pcb, tmp_path)
     (v,) = _by_kind(p)["mcu_unknown"]
     assert v["refs"] == ["U1"] and v["severity"] == "warning"
-    assert "U1 (STM32F103C8T6)" in p["nothing_to_judge"]
+    assert "U1 (STM32L476RGT6)" in p["nothing_to_judge"]
     d = _drive(pcb, tmp_path)
-    assert d["status"] == "pass" and "U1 (STM32F103C8T6)" in d["nothing_to_judge"]
+    assert d["status"] == "pass" and "U1 (STM32L476RGT6)" in d["nothing_to_judge"]
 
 
 def test_no_mcu_is_nothing_to_judge(tmp_path):

@@ -11,3 +11,14 @@ mutants:
     expect:
       kind: strap_level
       ref: U9
+  strap-boot0-high:
+    board: usbbuck4
+    script: mutations/strap_boot0_high.py
+    check: check_straps
+    defect: >-
+      NETLIST fault: usbbuck4's STM32F103 BOOT0, on 10 k to ground, gains
+      1 k to +3V3, so it boots system memory instead of the flash on every
+      reset; ERC sees a resistor to a rail
+    expect:
+      kind: strap_level
+      ref: U1

@@ -77,7 +77,8 @@ DEFAULT_VTH = 0.5
 GLITCH_ERROR_US = 1.0
 # a BJT base this far from its emitter conducts (VBE(on) at low current)
 VBE_ON = 0.5
-PIN_RE = re.compile(r"^IO\d+$")
+# what a GPIO is called, unless the MCU's row says (`gpio`: STM32 PA0, AVR PD3)
+GPIO_DEFAULT = r"^IO\d+$"
 
 
 def load_glitches(row: dict) -> list[dict]:
@@ -90,8 +91,9 @@ def load_glitches(row: dict) -> list[dict]:
 def gpio_pins(board, mcu) -> dict[str, str]:
     """{pin number: canonical IO name} for the MCU's GPIOs."""
     out = {}
+    gpio = re.compile(mcu["row"].get("gpio", GPIO_DEFAULT))
     for name, pin in cs.mcu_pins(board, mcu).items():
-        if PIN_RE.match(name):
+        if gpio.match(name):
             out.setdefault(pin, name)
     return out
 
@@ -144,7 +146,7 @@ def on_levels(glitch: dict) -> set[str]:
 def check_mcu(board, kb, mcu, bg) -> tuple[list, list]:
     viols, facts = [], []
     row = mcu["row"]
-    vdd = row.get("vdd", cs.DEFAULT_VDD)
+    vdd = cs.mcu_vdd(board, mcu)
     ohm = row.get("pull_ohm", 45000)
     unverified = "" if row.get("verified", False) else \
         " (reset_states.yaml: unverified)"
@@ -157,6 +159,7 @@ def check_mcu(board, kb, mcu, bg) -> tuple[list, list]:
             mpulls[(mcu["ref"], pin)] = (
                 vdd if spec["pull"] == "up" else 0.0, spec.get("ohm", ohm),
                 f"{mcu['ref']} {name} internal {spec['pull']}")
+    mpulls.update(cs.dead_battery_pulls(board, kb, mcu))
     res = cs.Resolver(board, kb, mcu, mcu_pulls=mpulls)
     glitches = load_glitches(row)
     for pin, name in sorted(names.items(), key=lambda kv: kv[0].zfill(4)):

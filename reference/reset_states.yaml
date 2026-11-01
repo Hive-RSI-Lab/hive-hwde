@@ -12,6 +12,17 @@
 # firmware runs (Espressif's "pins with glitches at power-up" tables, and
 # the ROM boot log on U0TXD), for check_reset_drive.py: `pins` a regex on
 # the canonical pin name, `level` low | high | both | toggle, `us` how long.
+# gpio: a regex on the canonical name, what this family calls a GPIO, for
+# check_reset_drive.py (default ^IO\d+$).
+# pin_split: a regex that splits a symbol's pin name into its names (default
+# [/,]): "PB8-BOOT0", "PD3_(PCINT19/OC2B/INT1)".
+# vdd: volts, or `supply` for the rail on the part's own supply pin.
+# A strap may carry its own vil/vih, ohm, and connector_ok (a connector on the
+# net isn't an unknown driver: a reset line on the debug header).
+# dead_battery: UCPD pairs: a high on `db` puts `ohm` to ground on `cc` from
+# reset until firmware disables it (check_straps dead_battery_rd).
+# programming: pins a programmer clocks while the MCU is held in reset
+# (check_straps programming_pin_load).
 # verified: false means typed from memory of the datasheet, not re-read:
 # check_straps says so in its finding, and the review that relies on it
 # reads the datasheet once and flips it (with the date) here.
@@ -212,6 +223,109 @@ mcus:
       SWCLK: {pull: up, why: "SWCLK's pull-up is on from reset"}
       SWD: {pull: up, why: "SWD's pull-up is on from reset"}
     source: RP2040 datasheet build 2025-02-20 (3184e62) Pinout section Reset State column (GPIO pull-down, QSPI_CSn/SWCLK/SWD/RUN pull-up, TESTEN pull-down), PADS_BANK0 GPIOn register, IO electrical table (VIH 2 V, VIL 0.8 V at 3.3 V, RPU/RPD 50-80 k), bootrom "Check if SPI CS pin is tied low", section 1.4.3 "TESTEN Factory test mode pin. Tie to GND."
+    verified: true
+
+  # GPIOs are analog (hi-Z) from reset, so a gate on one floats; only the debug
+  # pins pull. GPIOx_PUPDR reset: port A 0x6400 0000, port B 0x0000 0100.
+  - family: STM32G4
+    match: '^STM32G4'
+    vdd: supply
+    vil: 0.3             # all but FT_c pins
+    vih: 0.7
+    pull_ohm: 40000      # RPU, RPD 25-55 k
+    enable: [NRST]
+    gpio: '^P[A-G]\d{1,2}$'
+    pin_split: '[-/,()\s]+'
+    aliases: {PB8: BOOT0, PG10: NRST, SWDIO: PA13, SWDAT: PA13, JTMS: PA13,
+              SWCLK: PA14, JTCK: PA14, JTDI: PA15, JTDO: PB3, NJTRST: PB4}
+    straps:
+      BOOT0: {pull: none, want: low, severity: error,
+              why: "as shipped (nSWBOOT0 = 1) PB8 picks the boot space, and high boots the system-memory bootloader, not the flash; PB8 is free for other use only once nSWBOOT0 = 0 is programmed, and the first boot still reads the pin"}
+      NRST: {pull: up, ohm: 40000, want: high, severity: error, connector_ok: true,
+             why: "NRST held low keeps the chip in reset (it is reset mode at every POR until the option bytes load, even with NRST_MODE = GPIO)"}
+    reset_pulls:
+      PA13: {pull: up, why: "JTMS/SWDIO's pull-up is on from reset"}
+      PA14: {pull: down, why: "JTCK/SWCLK's pull-down is on from reset"}
+      PA15: {pull: up, why: "JTDI's pull-up is on from reset"}
+      PB4: {pull: up, why: "NJTRST's pull-up is on from reset (cat 4 parts: only with PB4_PUPEN set)"}
+    dead_battery:
+      - {cc: PB6, db: PA9, ohm: 5100}
+      - {cc: PB4, db: PA10, ohm: 5100}
+    source: RM0440 Rev 7 section 2.6.1 (boot modes, PB8/BOOT0), 9.3.1 and 9.4.4 (debug pulls, PUPDR reset), 9.3.15-16, 7.1.2 (NRST), 46.4.6 and PWR_CR3 UCPD1_DBDIS (dead battery), 47.4.3; DS12589 Rev 6 (STM32G431) pin table notes 5, 6, Table 53 VIL/VIH/RPU, Table 57 NRST. G474 pins read from the netlists, its datasheet not read.
+    verified: true
+
+  - family: STM32F4
+    match: '^STM32F4(05|15|07|17|27|37|29|39)'
+    vdd: supply
+    vil: 0.3
+    vih: 0.7
+    pull_ohm: 40000      # RPU, RPD 30-50 k
+    enable: [NRST]
+    gpio: '^P[A-K]\d{1,2}$'
+    pin_split: '[-/,()\s]+'
+    aliases: {BOOT1: PB2, SWDIO: PA13, SWDAT: PA13, JTMS: PA13, SWCLK: PA14,
+              JTCK: PA14, JTDI: PA15, JTDO: PB3, NJTRST: PB4}
+    straps:
+      BOOT0: {pull: none, want: low, severity: error, vil: 0.13, vih: 0.38,
+              why: "BOOT0 = 1 boots system memory or SRAM (BOOT1 picks), not the flash"}
+      PB2: {pull: none, want: any, severity: warning,
+            why: "BOOT1, read only with BOOT0 = 1"}
+      NRST: {pull: up, ohm: 40000, want: high, severity: error, connector_ok: true,
+             why: "NRST held low keeps the chip in reset"}
+    reset_pulls:
+      PA13: {pull: up, why: "JTMS/SWDIO's pull-up is on from reset"}
+      PA14: {pull: down, why: "JTCK/SWCLK's pull-down is on from reset"}
+      PA15: {pull: up, why: "JTDI's pull-up is on from reset"}
+      PB4: {pull: up, why: "NJTRST's pull-up is on from reset"}
+    source: RM0090 Rev 19 section 2.4 Table 2 (boot modes), 8.3.1 and 8.4.4 (debug pulls, PUPDR reset, input floating); DS8626 Rev 9 (STM32F407) Table 48 (BOOT0 VIL 0.1 VDD + 0.1, VIH 0.17 VDD + 0.7, here as fractions at 3.3 V; RPU, RPD 30-50 k), Table 51 NRST.
+    verified: true
+
+  - family: STM32F1
+    match: '^STM32F10[1-357]'
+    vdd: supply
+    vil: 0.35            # "all I/Os except BOOT0"; BOOT0's own isn't in Table 36
+    vih: 0.65
+    pull_ohm: 40000      # RPU, RPD 30-50 k
+    enable: [NRST]
+    gpio: '^P[A-G]\d{1,2}$'
+    pin_split: '[-/,()\s]+'
+    aliases: {BOOT1: PB2, SWDIO: PA13, JTMS: PA13, SWCLK: PA14, JTCK: PA14,
+              JTDI: PA15, JTDO: PB3, NJTRST: PB4}
+    straps:
+      BOOT0: {pull: none, want: low, severity: error,
+              why: "BOOT0 = 1 boots system memory or SRAM (BOOT1 picks), not the flash"}
+      PB2: {pull: none, want: any, severity: warning,
+            why: "BOOT1, read only with BOOT0 = 1"}
+      NRST: {pull: up, ohm: 40000, want: high, severity: error, connector_ok: true,
+             vil: 0.24, vih: 0.61,
+             why: "NRST held low keeps the chip in reset"}
+    reset_pulls:
+      PA13: {pull: up, why: "JTMS's pull-up is on from reset"}
+      PA14: {pull: down, why: "JTCK's pull-down is on from reset"}
+      PA15: {pull: up, why: "JTDI's pull-up is on from reset"}
+      PB4: {pull: up, why: "NJTRST's pull-up is on from reset"}
+    source: RM0008 Rev 21 section 3.4 Table 9 (boot modes), 9.1.1 (input floating, JTAG pulls); DS5319 Rev 19 (STM32F103x8/B) Table 36 (VIL 0.35, VIH 0.65 VDD except BOOT0; RPU, RPD 30-50 k), Table 39 NRST (0.8 V, 2 V, here as fractions at 3.3 V). Only the F103 datasheet read; F101/102/105/107 share the manual.
+    verified: true
+
+  # Every port pin is tri-stated by reset, its pull-up off; only RESET pulls.
+  - family: ATmega48/88/168/328
+    match: '^ATMEGA((48|88|168)P?A|328(?!PB))'
+    vdd: supply
+    vil: 0.3             # VCC 2.4-5.5 V (0.2 below that)
+    vih: 0.6
+    pull_ohm: 45000      # RRST 30-60 k
+    enable: [RESET]
+    gpio: '^P[B-D][0-7]$'
+    pin_split: '[_/,()\s]+'
+    aliases: {PC6: RESET, MOSI: PB3, MISO: PB4, SCK: PB5}
+    straps:
+      RESET: {pull: up, want: high, severity: error, connector_ok: true,
+              vil: 0.1, vih: 0.9,
+              why: "RESET low holds the chip in reset (unless the RSTDISBL fuse is programmed, then it is PC6)"}
+    programming:
+      pins: [PB3, PB5]   # MOSI, SCK (MISO is the chip's output)
+      why: "serial downloading, with RESET low"
+    source: Microchip DS40002061B (ATmega48A/PA/88A/PA/168A/PA/328/P) section 1.1.5 PC6/RESET, 14.2.1 "port pins are tri-stated when reset condition becomes active", 28.8 Serial Downloading and Table 28-17 (MOSI PB3, MISO PB4, SCK PB5), DC table (VIL 0.3, VIH 0.6, VIL2 0.1, VIH2 0.9 VCC; RRST 30-60 k).
     verified: true
 
 parts:
