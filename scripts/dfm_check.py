@@ -602,6 +602,8 @@ def check_via_sizes(rules, vios: list, bg) -> None:
         if v.kind not in ("through", None, ""):
             continue
         dr, di = v.drill, v.diameter
+        if not dr or dr <= 0:
+            continue    # no hole (an import's drill-less via): not a via
         if _below(dr, hard_dr) or _below(di, hard_di):
             vios.append(checklib.violation(
                 CHECK, "error", v.at, None, v.net, [],

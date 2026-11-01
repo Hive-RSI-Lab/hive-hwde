@@ -508,7 +508,8 @@ def test_dfm_via_ring_band_and_cost_tier(tmp_path):
     assert [v["count"] for v in vios if v["severity"] == "warning"] == [2]
     vios = []
     dfm_check.check_via_sizes(RULES_4L, vios, _via_bg(vias + [
-        (0.45, 0.2, 1, 1), (0.3, 0.15, 2, 2), (0.2, 0.1, 3, 3)]))
+        (0.45, 0.2, 1, 1), (0.3, 0.15, 2, 2), (0.2, 0.1, 3, 3),
+        (2.54, 0.0, 4, 4)]))
     got = sorted((v["kind"], v["severity"], v.get("count")) for v in vios)
     assert got == [("dfm_via_cost_tier", "warning", 1),     # 0.28/0.2
                    ("dfm_via_cost_tier", "warning", 1),     # 0.3/0.15
