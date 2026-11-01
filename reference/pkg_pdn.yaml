@@ -1,0 +1,44 @@
+# Package + die PDN models for check_pdn_z / pdnlib.package_for (#490).
+#
+# l_pkg_nh   series inductance of the package power path (balls/leads, bond
+#            wires, package planes) seen from the board pads to the die
+# c_die_nf   on-die (+ on-package) decoupling across the rail
+# r_pkg_mohm / r_die_mohm  optional series resistances (damping)
+#
+# Rows are matched in order: `match` (regex on the served IC's value / MPN /
+# LCSC text), then `footprint` (regex on its footprint name), then `default`.
+# A row is a fact only with `verified: true` and a `source` naming the
+# vendor document and table; every other row is a class value hwde reports
+# as assumed. The package corner f = 1/(2 pi sqrt(L_pkg C_die)) is where the
+# board's target band ends, so a wrong row moves the band edge, not the
+# board's impedance.
+#
+# None of the rows below is from a vendor document yet: NXP (i.MX6ULL
+# AN5170-class hardware guides), Lattice (ECP5 TN1068 power) and Espressif
+# publish decap lists and currents but no L_pkg/C_die numbers this table
+# could cite. Add a verified row when one is read.
+packages:
+  - footprint: "BGA|FBGA|CSP|caBGA|csfBGA|TFBGA|LFBGA|MAPBGA"
+    l_pkg_nh: 0.2
+    c_die_nf: 20
+    r_die_mohm: 10
+    verified: false
+    source: "class value: BGA core rail, many balls in parallel"
+  - footprint: "QFN|DFN|LGA|SON"
+    l_pkg_nh: 0.8
+    c_die_nf: 3
+    r_die_mohm: 20
+    verified: false
+    source: "class value: QFN/LGA, a few power pads + bond wires"
+  - footprint: "QFP|SOIC|SOP|SSOP|TSSOP|MSOP|SOT"
+    l_pkg_nh: 2.0
+    c_die_nf: 1
+    r_die_mohm: 50
+    verified: false
+    source: "class value: leaded package, one lead + bond wire per rail pin"
+  - default: true
+    l_pkg_nh: 0.5
+    c_die_nf: 5
+    r_die_mohm: 20
+    verified: false
+    source: "generic default"

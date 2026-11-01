@@ -25,6 +25,7 @@ Pure python, no KiCad: tests feed it synthetic files.
 from __future__ import annotations
 
 import json
+import math
 import re
 import struct
 import xml.etree.ElementTree as ET
@@ -52,6 +53,14 @@ class Source:
     # source copper layer name -> the KiCad layer the importer puts it on,
     # for importers whose report names KiCad's layers, not the source's
     kicad_names: dict[str, str] = field(default_factory=dict)
+    # Eagle: Milling-layer (46) wires in a package that run through a drilled
+    # pad, i.e. a slotted hole KiCad's importer drops (it puts them on a layer
+    # named UNDEFINED). Package coordinates, Eagle's y-up:
+    # {"ref", "pad", "x1", "y1", "x2", "y2", "w"} in mm
+    slots: list[dict] = field(default_factory=list)
+    # Milling wires that aren't a pad's slot (board cut-outs, or in a package
+    # with no pad under them): counted, not converted
+    milling_other: int = 0
     notes: list[str] = field(default_factory=list)
 
     def to_json(self) -> dict:
@@ -247,9 +256,47 @@ def read_eagle(path: Path) -> Source:
             inner += 1
         src.kicad_names[name] = "F.Cu" if lay == 1 else "B.Cu" if lay == 16 else f"In{inner}.Cu"
     src.vias = sum(1 for _ in board.iter("via"))
+    _eagle_slots(root, board, src)
     src.refs = {e.get("name") for e in board.iter("element") if e.get("name")}
     src.nets = {eagle_overbar(s.get("name")) for s in board.iter("signal") if s.get("name")}
     return src
+
+
+def _eagle_slots(root, board, src: Source) -> None:
+    """Milling (46) wires through a package's drilled pads: slots."""
+    pkgs = {}
+    for lib in root.iter("library"):
+        for pk in lib.iter("package"):
+            pkgs[(lib.get("name"), lib.get("urn"), pk.get("name"))] = pk
+    plain = board.find("plain")
+    src.milling_other += sum(1 for w in (plain.iter("wire") if plain is not None else ())
+                             if w.get("layer") == "46")
+    for el in board.iter("element"):
+        pk = pkgs.get((el.get("library"), el.get("library_urn"), el.get("package")))
+        if pk is None:
+            pk = next((v for (l, _, n), v in pkgs.items()
+                       if (l, n) == (el.get("library"), el.get("package"))), None)
+        if pk is None:
+            continue
+        pads = [(p.get("name"), float(p.get("x")), float(p.get("y")), float(p.get("drill", 0)))
+                for p in pk.iter("pad") if p.get("drill")]
+        for w in pk.iter("wire"):
+            if w.get("layer") != "46":
+                continue
+            x1, y1, x2, y2 = (float(w.get(k)) for k in ("x1", "y1", "x2", "y2"))
+            width = float(w.get("width", 0))
+            hit = None
+            for name, px, py, drill in pads:
+                dx, dy = x2 - x1, y2 - y1
+                t = 0.0 if dx == dy == 0 else max(0.0, min(1.0, ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)))
+                if math.hypot(x1 + t * dx - px, y1 + t * dy - py) <= (width + drill) / 2:
+                    hit = name
+                    break
+            if hit:
+                src.slots.append({"ref": el.get("name"), "pad": hit, "x1": x1, "y1": y1,
+                                  "x2": x2, "y2": y2, "w": width})
+            else:
+                src.milling_other += 1
 
 
 def eagle_overbar(name: str) -> str:

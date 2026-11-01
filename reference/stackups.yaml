@@ -3392,3 +3392,99 @@ stackups:
     - {layer: outer, kind: single, impedance_ohm: 50, width_mm: 0.245, hwde_z_ohm: 49.2}
     - {layer: outer, kind: diff, impedance_ohm: 90, width_mm: 0.18, gap_mm: 0.12, hwde_z_ohm: 86.9}
     - {layer: outer, kind: diff, impedance_ohm: 100, width_mm: 0.12, gap_mm: 0.115, hwde_z_ohm: 98.5}
+
+  JLC04081H-3313:
+    description: 'JLCPCB 4-layer, 0.8 mm nominal, 1 oz outer / 0.5 oz inner. JLC''s own name: JLC04081H-3313(通用免费/成品板厚0.80±0.10mm).'
+    available: true
+    provenance:
+      method: jlc_calculator_template
+      endpoint: https://jlcpcb.com/api/jlcTools/impedance/selectPageImpedanceDefaultTemplate
+      request:
+        appointName: JLC04081H-3313
+      template_name: JLC04081H-3313
+      template_access_id: 2f9c1190f31a4846aadd961bcdd9b7a5
+      display_name: JLC04081H-3313(通用免费/成品板厚0.80±0.10mm)
+      jlc_tags:
+      - free
+      - general
+      live_verified: true
+      order_api_verified: false
+      verified: '2026-11-01'
+      note: 'Every thickness and epsilon_r is JLC''s calculator template''s; a gap of several plies carries
+        their series epsilon_r. Not yet read back from the order API (no JLC account in the Hive): re-verify
+        before ordering controlled impedance.'
+    layers: 4
+    thickness_mm: 0.8
+    stack_total_mm: 0.7992
+    copper_finish: HASL
+    dielectric_constraints: true
+    epsilon_r_assumed: false
+    epsilon_r_source: jlc_calculator_template
+    stack:
+    - name: F.Cu
+      type: copper
+      thickness_mm: 0.035
+      copper_oz: 1.0
+    - name: dielectric 1
+      type: prepreg
+      thickness_mm: 0.0994
+      material: FR4 3313
+      epsilon_r: 4.1
+      loss_tangent: 0.02
+      plies: 3313 0.0994
+    - name: In1.Cu
+      type: copper
+      thickness_mm: 0.0152
+      copper_oz: 0.5
+    - name: dielectric 2
+      type: core
+      thickness_mm: 0.5
+      material: FR4 core 0.5mm
+      epsilon_r: 4.48
+      loss_tangent: 0.02
+    - name: In2.Cu
+      type: copper
+      thickness_mm: 0.0152
+      copper_oz: 0.5
+    - name: dielectric 3
+      type: prepreg
+      thickness_mm: 0.0994
+      material: FR4 3313
+      epsilon_r: 4.1
+      loss_tangent: 0.02
+      plies: 3313 0.0994
+    - name: B.Cu
+      type: copper
+      thickness_mm: 0.035
+      copper_oz: 1.0
+    controlled_impedance:
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.1552
+      closed_form:
+        width_mm: 0.1491
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.1276
+      gap_mm: 0.13
+      closed_form:
+        width_mm: 0.1383
+        gap_mm: 0.13
+      note: USB 2.0 / ULPI
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.0948
+      gap_mm: 0.13
+      closed_form:
+        width_mm: 0.112
+        gap_mm: 0.13
+      note: Ethernet / LVDS / general 100R
