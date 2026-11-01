@@ -107,9 +107,14 @@ outcome, never same bytes.
 
 Contract (SPEC section 6):
   route_critical.py --pcb B.kicad_pcb [--constraints c.json]
-      [--only diff|power|rf] [--plan plan.json] [--grid-step MM]
+      [--only diff|power|rf|bus] [--plan plan.json] [--grid-step MM]
       [--timeout-s S] [--work-dir DIR] [--out-report r.json]
       [--pad-window [--nets A,B]]
+  --only bus (#546; not in the default order): constraints length_groups'
+  single-ended nets in one KRT --bus run. Run it after --only diff, so the
+  pairs land first.
+  A stripline pair's BGA terminals are re-laid first when KRT can't launch
+  from them (lib/pairlaunch.py); a pair that doesn't route gets its stubs back.
   exit 0 = every critical item routed + DRC gained nothing + diff-pair check
   passes; 1 = some item failed or a check flags (board still updated with
   what succeeded - only reachable when DRC gained no new errors); 2 = error
@@ -148,6 +153,7 @@ import env  # noqa: E402
 import geom  # noqa: E402
 import impedance as imp  # noqa: E402
 import kc  # noqa: E402
+import pairlaunch  # noqa: E402  (#546 pair stubs a coupled router can launch from)
 import route_edit  # noqa: E402  (width normalization ops)
 import zrules  # noqa: E402  (#489 rules_gen's per-layer impedance widths)
 import routelib  # noqa: E402  (fresh_work_dir / swap_in)
@@ -155,6 +161,8 @@ from checklib import CheckError, violation  # noqa: E402
 
 SCRIPT = "route_critical"
 DEFAULT_ORDER = ("diff", "rf", "power")
+ALL_KINDS = (*DEFAULT_ORDER, "bus")   # bus runs only when asked for (#546)
+BUS_TIMEOUT_S = 3000        # KRT --bus on ~50 nets: 9+ min on a loaded tower
 POWER_MARGIN = 1.5          # IPC-2152 minimum * this
 POWER_WIDTH_FLOOR = 0.3     # mm - never route a declared power net thinner
 FALLBACK_PAIR_WIDTH = 0.2   # mm - diff ladder rung 2 (fine-pitch escape)
@@ -299,18 +307,40 @@ def power_specs(constraints: dict, cu_mm: float = 0.035) -> list[dict]:
 
 
 def plan_order(only: str | None, plan: dict | None) -> list[str]:
-    """Item-kind order: --plan {'order': [...]} overrides, --only filters."""
+    """Item-kind order: --plan {'order': [...]} overrides, --only filters.
+    'bus' is not in the default order: --only bus or a plan names it."""
     order = list(DEFAULT_ORDER)
     if plan:
         want = plan.get("order")
         if not (isinstance(want, list) and want
-                and all(k in DEFAULT_ORDER for k in want)):
+                and all(k in ALL_KINDS for k in want)):
             raise CheckError(f"plan 'order' must be a non-empty subset of "
-                             f"{list(DEFAULT_ORDER)}, got {want!r}")
+                             f"{list(ALL_KINDS)}, got {want!r}")
         order = list(dict.fromkeys(want))
+    if only == "bus" and not plan:
+        return ["bus"]
     if only:
         order = [k for k in order if k == only]
     return order
+
+
+def bus_specs(constraints: dict, board_nets, pair_nets: set[str]) -> list[dict]:
+    """The length_groups (#324) as buses: {name, nets} per group of single-
+    ended members on this board. A pair's nets stay with the diff step, and a
+    net in two groups (DDR's *_MATCH groups) routes once, under the first."""
+    seen: set[str] = set()
+    out = []
+    for g in constraints.get("length_groups") or []:
+        nets = []
+        for pat in g.get("nets") or []:
+            nets += [n for n in sorted(board_nets)
+                     if fnmatch.fnmatchcase(n, pat)
+                     or fnmatch.fnmatchcase(n.lstrip("/"), pat.lstrip("/"))]
+        nets = [n for n in dict.fromkeys(nets) if n not in pair_nets and n not in seen]
+        seen.update(nets)
+        if nets:
+            out.append({"name": g.get("name"), "nets": nets})
+    return out
 
 
 def grading_floors(pro_path: Path | None) -> dict:
@@ -949,6 +979,44 @@ def bare_bga_balls(bg: geom.BoardGeom, p: str, n: str) -> list[str]:
     return out
 
 
+def launch_pair(ctx: dict, bg: geom.BoardGeom, p: str, n: str, plan: dict,
+                skip_refs) -> dict | None:
+    """Re-lay this stripline pair's BGA terminals where KRT can launch it
+    (#546: lib/pairlaunch.py). Edits the staged board; the caller restores it
+    if the pair doesn't route. Returns the fact, None when nothing changed."""
+    inner = [ly for ly in plan["layers"] if ly in bg.copper_layers[1:-1]]
+    if not inner:
+        return None
+    floors = ctx["floors"]
+    spec = pairlaunch.Spec(
+        layer=inner[0], width=plan["layer_widths"][inner[0]],
+        pitch=plan["pitch_mm"], clearance=floors["clearance"],
+        via_d=floors["via_diameter"], via_drill=floors["via_drill"],
+        hole_to_hole=floors.get("hole_to_hole", 0.0))
+    got = pairlaunch.plan_launch(bg, bgalib.find_bgas(bg), p, n, spec, skip_refs)
+    if got["ops"]:
+        route_edit.apply_ops(ctx["staged"], got["ops"])
+        ctx.setdefault("launched", set()).update((p, n))
+    if not got["ops"] and not got["failed"]:
+        return None
+    return {"terminals": got["terminals"], "failed": got["failed"]}
+
+
+def snap_layer_widths(pcb: Path, nets: tuple[str, str],
+                      widths: dict[str, float], old_uuids: set[str]) -> int:
+    """KRT draws a pair's connector to a stub tip at --track-width, whatever
+    the layer's width is (#546: 0.1054 mm on In2 against a 0.0978 max). Set
+    this run's new tracks to their layer's width; returns how many changed."""
+    bg = geom.BoardGeom.from_file(pcb)
+    ops = [{"op": "set_width", "width": widths[t.layer], "uuid_prefix": t.uuid}
+           for net in nets for t in bg.tracks_of(net=net)
+           if t.layer in widths and t.uuid not in old_uuids
+           and abs(t.width - widths[t.layer]) > 1e-4]
+    if ops:
+        route_edit.apply_ops(pcb, ops)
+    return len(ops)
+
+
 # check_diffpair kinds that reject a routed rung (#529): a pair KRT reports
 # "coupled" can still run apart for 15 mm (Ethernet on linux-computer) or sit
 # off its impedance. Skew alone is route_tune's job (it trims it), so a skew
@@ -1006,10 +1074,16 @@ def route_diff_item(ctx: dict, spec: dict) -> tuple[dict | None, dict | None]:
     terms = [t for t in termination_pads(bg, p, n) if t not in stubs]
     stubs = sorted(stubs + terms)
     original_text = staged.read_text(encoding="utf-8")
+    launch = None
+    if plan:
+        launch = launch_pair(ctx, bg, p, n, plan, {r for r, _ in stubs})
+    pre_uuids = _copper_uuids(staged)
     restores: list[tuple[str, str]] = []
     if stubs:
-        detached_text, restores = detach_stub_pads(original_text, stubs)
+        detached_text, restores = detach_stub_pads(
+            staged.read_text(encoding="utf-8"), stubs)
         staged.write_text(detached_text, encoding="utf-8")
+    routed_ok = False
 
     outer = _outer_layers(bg)
     costs = ["1"] if len(outer) == 1 else ["1", "3"]
@@ -1043,6 +1117,8 @@ def route_diff_item(ctx: dict, spec: dict) -> tuple[dict | None, dict | None]:
                 if restores:
                     text = restore_stub_pads(text, restores)
                 out.write_text(text, encoding="utf-8")
+                if lplan:
+                    snap_layer_widths(out, (p, n), lplan["layer_widths"], pre_uuids)
                 bad, check = rung_verdict(out, spec, rw + rg, z)
                 if bad:
                     rejected.append({"rung": rung, "width_mm": rw, "gap_mm": rg,
@@ -1052,6 +1128,7 @@ def route_diff_item(ctx: dict, spec: dict) -> tuple[dict | None, dict | None]:
                     continue
                 os.replace(out, staged)
                 restores = []          # consumed: staged now holds original pads
+                routed_ok = True
                 bg2 = geom.BoardGeom.from_file(staged)
                 layers = sorted({t.layer for net in (p, n)
                                  for t in bg2.tracks_of(net=net)})
@@ -1066,6 +1143,7 @@ def route_diff_item(ctx: dict, spec: dict) -> tuple[dict | None, dict | None]:
                            if terms else {}),
                         "layers_used": layers,
                         "check": check,
+                        **({"launch": launch} if launch else {}),
                         **({"rejected_rungs": rejected} if rejected else {}),
                         "krt": _slim(summary, ("routed_diff_pairs",
                                                "total_vias", "total_time",
@@ -1089,10 +1167,12 @@ def route_diff_item(ctx: dict, spec: dict) -> tuple[dict | None, dict | None]:
             f"({last_reason}); tried widths "
             f"{[rw for rw, _ in ladder]}{hint}", SCRIPT,
             kind="critical_route_failed", pair=[p, n], reason=last_reason,
-            **({"unescaped_balls": bare} if bare else {}))
+            **({"unescaped_balls": bare} if bare else {}),
+            **({"launch": launch} if launch else {}))
     finally:
-        if restores:  # pair never routed - undo the detach on the staged board
+        if not routed_ok:  # undo the launch and the detach on the staged board
             staged.write_text(original_text, encoding="utf-8")
+            ctx.get("launched", set()).difference_update((p, n))
 
 
 def _route_single_item(ctx: dict, kind: str, nets: list[str],
@@ -1347,6 +1427,35 @@ def route_rf_item(ctx: dict, specs: list[dict]) -> tuple[list, list]:
     return facts, violations
 
 
+def route_bus_item(ctx: dict, specs: list[dict], impedance: dict[str, float]
+                   ) -> tuple[list, list]:
+    """Every length group's nets, in one KRT --bus run (#546): KRT detects the
+    groups from the clustered stub tips, plans a corridor per group, routes
+    the members side by side and rips up among them. Input copper is
+    read-only, so a net that fails keeps its escape stubs. Width: each layer's
+    own for the group's impedance, when the nets have one. route_tune trims
+    the lengths afterwards."""
+    bg = geom.BoardGeom.from_file(ctx["staged"])
+    nets = [n for s in specs for n in s["nets"]]
+    outer = _outer_layers(bg)
+    inner = {ly: lw for ly, lw in zrules.layer_widths(
+        ctx.get("zgeo") or {}, nets).items() if ly in bg.copper_layers[1:-1]}
+    zs = {impedance[n] for n in nets if n in impedance}
+    w = rf_width(bg, zs.pop()) if len(zs) == 1 else BASE_TRACK_WIDTH
+    w = max(w, ctx["floors"]["track_width"])
+    layers = [outer[0], *sorted(inner)] + outer[1:]
+    group_of = {n: s["name"] for s in specs for n in s["nets"]}
+    meta = {n: {"group": group_of[n], "width_mm": w,
+                **({"layer_widths": {**{ly: w for ly in outer}, **inner}} if inner else {})}
+            for n in nets}
+    widths = {**{ly: w for ly in outer}, **inner} if inner else None
+    return _route_single_item(
+        {**ctx, "timeout_s": max(ctx["timeout_s"], BUS_TIMEOUT_S)}, "bus", nets,
+        ["--track-width", f"{w:g}", "--layers", *layers,
+         "--bus", "--ordering", "bus", "--keep-input-copper"],
+        meta, layer_widths=widths)
+
+
 # ------------------------------------------------------------ verification
 
 def drc_by_check(report: dict, severity: str | None = None) -> dict[str, int]:
@@ -1449,7 +1558,7 @@ def run(argv: list[str] | None = None):
     ap.add_argument("--pcb", required=True)
     ap.add_argument("--constraints", default=None,
                     help="constraints.json (default: next to the board)")
-    ap.add_argument("--only", choices=list(DEFAULT_ORDER), default=None)
+    ap.add_argument("--only", choices=list(ALL_KINDS), default=None)
     ap.add_argument("--plan", default=None,
                     help='plan.json {"order": ["diff","rf","power"]}')
     ap.add_argument("--pad-window", action="store_true",
@@ -1486,10 +1595,11 @@ def run(argv: list[str] | None = None):
     r_specs = rf_specs(constraints, pair_nets)
     p_specs = [s for s in power_specs(constraints, cu_outer)
                if s["net"] not in pair_nets]
-    by_kind = {"diff": d_specs, "rf": r_specs, "power": p_specs}
+    by_kind = {"diff": d_specs, "rf": r_specs, "power": p_specs,
+               "bus": bus_specs(constraints, bg0.nets, pair_nets)}
     todo = [(k, by_kind[k]) for k in order if by_kind[k]]
     skipped = [{"kind": k, "count": len(by_kind[k]), "why": "not in --only/plan"}
-               for k in DEFAULT_ORDER if by_kind[k] and k not in order]
+               for k in DEFAULT_ORDER if by_kind[k] and k not in order]  # bus is opt-in
 
     if not todo:
         payload = checklib.report(SCRIPT, str(pcb), [], facts={
@@ -1527,6 +1637,8 @@ def run(argv: list[str] | None = None):
         kc.run_drc(cli, staged, refill=True, save_board=True)
     before = kc.run_drc(cli, staged, all_track_errors=True)
     old_uuids = _copper_uuids(staged)
+    baseline = work / "baseline.kicad_pcb"
+    shutil.copy2(staged, baseline)
 
     routed, violations = [], []
     for kind, specs in todo:
@@ -1548,6 +1660,14 @@ def run(argv: list[str] | None = None):
             facts, vs = route_rf_item(ctx, specs)
             routed.extend(facts)
             violations.extend(vs)
+        elif kind == "bus":
+            z = {}
+            for h in constraints.get("high_speed") or []:
+                if h.get("net") and h.get("impedance_ohm"):
+                    z[h["net"]] = float(h["impedance_ohm"])
+            facts, vs = route_bus_item(ctx, specs, z)
+            routed.extend(facts)
+            violations.extend(vs)
 
     # verification on the staged result, before the original is touched
     if bg0.zones_of():
@@ -1563,8 +1683,18 @@ def run(argv: list[str] | None = None):
                                   if not f.get("plane_carried")
                                   for n in f["nets"]})
         if bad:
+            # half a pair is no use: a rolled-back net takes its partner
+            for f in routed:
+                if f["kind"] == "diff" and set(f["nets"]) & bad:
+                    bad |= set(f["nets"])
             ripped = {"nets": sorted(bad), "new_errors": delta["new"],
                       "items_removed": rip_new_copper(staged, old_uuids, bad)}
+            # a launched pair's old stubs are gone: put them back
+            back = sorted(bad & ctx.get("launched", set()))
+            if back:
+                route_edit.apply_ops(staged, [
+                    {"op": "rip", "net": back},
+                    {"op": "copy_from", "pcb": str(baseline), "net": back}])
             if bg0.zones_of():
                 kc.run_drc(cli, staged, refill=True, save_board=True)
             after = kc.run_drc(cli, staged, all_track_errors=True)
