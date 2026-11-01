@@ -7,7 +7,12 @@ Per pair (from constraints.json["diff_pairs"], else auto-discovered by name):
  - GAP consistency: nearest-partner distance sampled along the coupled run
    (min / median / p90 / max), warned if it wanders beyond tolerance;
  - UNCOUPLED length: run of either trace whose partner has walked away farther
-   than coupling_gap_max - the fingerprint of a one-sided meander/detour;
+   than coupling_gap_max - the fingerprint of a one-sided meander/detour.
+   Copper inside a ball field that holds one of the pair's balls (the BGA's
+   ball bbox grown by one pitch, lib/bgalib) is BREAKOUT, reported as
+   breakout_p_mm / breakout_n_mm and not judged: between dog-bone vias a
+   0.8 mm field has room for one track per channel, so P and N leave it
+   one ball pitch apart by construction (#529);
  - VIA symmetry: the two nets should transition layers together;
  - RUNNING skew (dynamic phase, #476): along the coupled trunk, each sample
    of the P centreline is matched to the nearest point of N's trunk on the
@@ -70,7 +75,7 @@ import statistics
 import sys
 from pathlib import Path
 
-from shapely.geometry import LineString
+from shapely.geometry import LineString, box
 from shapely.ops import unary_union
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
@@ -78,6 +83,7 @@ import checklib  # noqa: E402
 import geom  # noqa: E402
 import impedance  # noqa: E402
 import netconn  # noqa: E402
+import bgalib  # noqa: E402
 from checklib import CheckError, violation  # noqa: E402
 
 SCRIPT = "check_diffpair"
@@ -360,8 +366,9 @@ def net_geometry(bg, net):
     return unary_union([t.shape for t in bg.tracks_of(net)])
 
 
-def sample_gaps(line_geom, other_geom, step=SAMPLE_MM):
-    """(arc_len, gap) samples of one net's centerline vs the other net."""
+def sample_gaps(line_geom, other_geom, step=SAMPLE_MM, with_points=False):
+    """(arc_len, gap) samples of one net's centerline vs the other net;
+    (arc_len, gap, midpoint) with with_points."""
     out = []
     if line_geom.is_empty or other_geom.is_empty:
         return out  # distance to an empty geometry is NaN; caller handles
@@ -373,14 +380,38 @@ def sample_gaps(line_geom, other_geom, step=SAMPLE_MM):
         for i in range(nseg):
             seglen = L / nseg
             mid = line.interpolate((i + 0.5) * seglen)
-            out.append((seglen, other_geom.distance(mid)))
+            out.append((seglen, other_geom.distance(mid), mid) if with_points
+                       else (seglen, other_geom.distance(mid)))
     return out
 
 
-def coupling_stats(bg, p, n, coupling_max):
+def breakout_region(bg, p, n):
+    """Union of the ball fields that hold a ball of p or n: the BGA's ball
+    bbox grown by one pitch (the escape stubs end just past the outer row).
+    None when the pair has no ball."""
+    regions = []
+    for b in bgalib.find_bgas(bg):
+        if p in b.nets.values() or n in b.nets.values():
+            x0, y0, x1, y1 = b.bbox
+            regions.append(box(x0, y0, x1, y1).buffer(b.pitch, join_style=2))
+    return unary_union(regions) if regions else None
+
+
+def coupling_stats(bg, p, n, coupling_max, breakout=None):
     gp, gn = net_geometry(bg, p), net_geometry(bg, n)
-    sp = sample_gaps(gp, gn)
-    sn = sample_gaps(gn, gp)
+    sp = sample_gaps(gp, gn, with_points=True)
+    sn = sample_gaps(gn, gp, with_points=True)
+
+    def split(samples):
+        inside = [(sl, g) for sl, g, pt in samples
+                  if breakout is not None and breakout.contains(pt)]
+        if not inside:
+            return [(sl, g) for sl, g, _ in samples], 0.0
+        return ([(sl, g) for sl, g, pt in samples if not breakout.contains(pt)],
+                sum(sl for sl, _ in inside))
+
+    sp, bo_p = split(sp)
+    sn, bo_n = split(sn)
     unc_p = sum(sl for sl, g in sp if g > coupling_max)
     unc_n = sum(sl for sl, g in sn if g > coupling_max)
     coupled = [g for sl, g in sp + sn if g <= coupling_max]
@@ -393,6 +424,9 @@ def coupling_stats(bg, p, n, coupling_max):
         "gap_p90_mm": checklib.rnd(allgaps[int(0.9 * (len(allgaps) - 1))]) if allgaps else None,
         "coupled_gap_max_mm": checklib.rnd(max(coupled)) if coupled else None,
     }
+    if breakout is not None:
+        stats["breakout_p_mm"] = checklib.rnd(bo_p)
+        stats["breakout_n_mm"] = checklib.rnd(bo_n)
     return unc_p, unc_n, stats
 
 
@@ -427,7 +461,8 @@ def check_pair(bg: geom.BoardGeom, spec: dict):
         _, _, s0 = coupling_stats(bg, p, n, 1e9)
         nom = s0["nominal_gap_mm"] or 0.2
     coupling_max = max(factor * nom, nom + 0.5)
-    unc_p, unc_n, stats = coupling_stats(bg, p, n, coupling_max)
+    unc_p, unc_n, stats = coupling_stats(bg, p, n, coupling_max,
+                                         breakout_region(bg, p, n))
     uncoupled = max(unc_p, unc_n)
 
     eps = _pair_epsilon(bg, p, n)
