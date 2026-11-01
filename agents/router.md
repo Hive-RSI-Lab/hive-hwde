@@ -135,6 +135,18 @@ rules as routing constraints; cite the record id when you apply one.
 5b. Netclasses are per-required-width since T1 (glance-check the .kicad_pro
    split; further splits are .kicad_pro ONLY, never the .kicad_dru). Width
    unmeetable at a pad? Pour fan-in per reference/remediations/track_width.md.
+5d. Teardrops (#480): `scripts/route_teardrops.py --pcb <board>
+   --out-report <dir>/route_teardrops.json` last, after every track edit.
+   It enables KiCad's own teardrops on each via and PTH pad with a track
+   join (SMD pads with constraints `teardrops.smd`, never under a part
+   finer than 0.65 mm) and refills, so KiCad draws the teardrop zones; any
+   later refill keeps them. It runs when constraints `teardrops.enabled`
+   or when they are required (a FLEX_* rule area = rigid-flex, or
+   `teardrops.required`), else reports `skipped`. Exit 1
+   `teardrop_regression`: DRC grew, board left as it was. dfm_check's
+   `teardrop` family then flags a ring under 0.125 mm (JLC 0.05 + 0.075
+   drill wander) with no drop (`dfm_ring_breakout`) and, on flex, any
+   join with none (`dfm_teardrop_missing`).
 6. Gate: `scripts/gate.py --gate drc_routed kicad/<board>.kicad_pcb` -
    exit 0 (parity + all track errors, err+warn zero).
 

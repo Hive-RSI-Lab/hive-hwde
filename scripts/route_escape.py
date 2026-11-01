@@ -48,6 +48,29 @@ escaped at two BGAs that grazes a resistor beside one keeps the other.
 left_for_routers is per field (a net escaped at U200 but not at U100 is left
 at U100).
 
+Via-in-pad at 0.8 mm (#552): every KRT run goes through lib/krt_launch.py
+--hole-to-hole <board floor>, since KRT checks drills against its own 0.20
+constant and placed dog-bone gap vias 0.566 mm from a via-in-pad (0.366
+hole to hole against JLC 6L's 0.5). KRT still picks gap sites before it
+falls back to via-in-pad, so with --allow-via-in-pad each field's NEW
+in-pad vias are checked (vip_conflicts) against every via (hole to hole,
+copper) and every foreign track (a floor-size 0.45 via bulges past a 0.32
+pad onto stubs KRT threaded past the pad); a clashing in-pad ball loses its
+escape and its neighbour keeps a clean one (DRC alone rips both). A ball
+net with a .kicad_dru track-width rule wider than the escape track
+(VBUS_J1's 0.32 neck) is not given to KRT (held_wide); left for the
+routers. The 150+ track_dangling warnings after an escape are the kept
+stubs themselves (open until routed), not rip leftovers.
+
+--toward-partner (#547, opt-in): the constraints' diff-pair and
+length_groups nets escape out of the field sides facing the nearest pad of
+the same net on another part (partner_sides; krt_launch --escape-open
+re-compiles KRT's dog-bone engine with a per-net goal). It costs gap sites:
+a closed side sends more balls to via-in-pad. On linux-computer it is worse
+than the default (U100's DDR balls are in its bottom-right corner, U200 is
+up-left: forcing 48 nets out left/up loses most of them); it pays where a
+field's balls already face their partner.
+
 Power and ground balls are not fanned (KRT treats them as plane balls: they
 want one via straight to their plane - stitch_vias' job).
 
@@ -156,6 +179,128 @@ FIELD_REACH_MM = 3.0      # an escape's copper lies within this of its ball bbox
 
 def field_region(bga: bgalib.Bga):
     return box(*bga.bbox).buffer(FIELD_REACH_MM)
+
+
+SIDE_NORMALS = {"left": (-1.0, 0.0), "right": (1.0, 0.0),
+                "up": (0.0, -1.0), "down": (0.0, 1.0)}
+OPEN_COS = 0.38            # a side opens when the partner lies within ~67 deg of it
+
+
+def open_sides(dx: float, dy: float) -> tuple[str, ...]:
+    """Field sides (board axes, up = -y) facing a partner at (dx, dy) from
+    the ball: one side within ~22 deg of an axis, else the two around it."""
+    d = (dx * dx + dy * dy) ** 0.5
+    if d < 1e-9:
+        return ()
+    return tuple(s for s, (nx, ny) in SIDE_NORMALS.items()
+                 if (nx * dx + ny * dy) / d >= OPEN_COS)
+
+
+def partner_sides(bg, bga: bgalib.Bga, nets) -> dict[str, tuple[str, ...]]:
+    """net -> the field sides facing that net's nearest pad on another part
+    (#547). Nets with no pad off this BGA are left out."""
+    own: dict[str, list] = {}
+    for pd in bg.pads_of(ref=bga.ref):
+        if pd.net in nets:
+            own.setdefault(pd.net, []).append(pd.center)
+    out: dict[str, tuple[str, ...]] = {}
+    for net in sorted(own):
+        pts = own[net]
+        cx = sum(x for x, _ in pts) / len(pts)
+        cy = sum(y for _, y in pts) / len(pts)
+        far = [pd.center for pd in bg.pads_of(net=net) if pd.ref != bga.ref]
+        if not far:
+            continue
+        tx, ty = min(far, key=lambda q: (q[0] - cx) ** 2 + (q[1] - cy) ** 2)
+        sides = open_sides(tx - cx, ty - cy)
+        if sides:
+            out[net] = sides
+    return out
+
+
+def toward_fact(sides: dict[str, tuple[str, ...]]) -> dict:
+    """{"left+up": n nets, ...} for the report."""
+    out: dict[str, int] = {}
+    for s in sides.values():
+        k = "+".join(s)
+        out[k] = out.get(k, 0) + 1
+    return dict(sorted(out.items()))
+
+
+def toward_nets(cons: dict, board_nets, specs: list[dict]) -> list[str]:
+    """The nets --toward-partner steers: every diff pair's P/N and every
+    length_groups member/ref net (check_length_groups' matching)."""
+    import check_length_groups as clg
+
+    out = {x for s in specs for x in (s.get("p"), s.get("n")) if x}
+    for g in cons.get("length_groups") or []:
+        if not isinstance(g, dict):
+            continue
+        for key in ("nets", "ref_nets"):
+            found, _ = clg.match_nets(g.get(key) or [], board_nets)
+            out.update(found)
+    return sorted(out)
+
+
+def fanout_nets(bga: bgalib.Bga, wide: dict[str, float], track: float,
+                plane_min: int = 6) -> tuple[list[str], list[str]]:
+    """(nets KRT may fan out, nets held back because a .kicad_dru width rule
+    is wider than the escape track). KRT fans every net it is given at one
+    width (VBUS_J1 at U100: 0.089 mm under a 0.32 mm neck rule, #552), so a
+    wide net is left for the routers. KRT's own plane-ball rule (>= plane_min
+    balls on the part) is kept, since a --nets list switches it off."""
+    count: dict[str, int] = {}
+    for n in bga.nets.values():
+        if n:
+            count[n] = count.get(n, 0) + 1
+    held = sorted(n for n in count if wide.get(n, 0.0) > track + 1e-6
+                  and count[n] < plane_min)
+    ok = sorted(n for n in count if count[n] < plane_min and n not in held)
+    return ok, held
+
+
+def vip_conflicts(bg, bga: bgalib.Bga, new_uuids: set[str],
+                  hole_to_hole: float, clearance: float) -> set[str]:
+    """Nets whose NEW via-in-pad (a via centred in its own ball's pad)
+    breaks hole-to-hole or copper clearance against any other via, or
+    copper clearance against a foreign track (#552).
+    KRT picks dog-bone gap sites before it falls back to via-in-pad and never
+    re-checks the fallback against the gap vias around it: at 0.8 mm pitch a
+    diagonal gap via sits 0.566 mm from the pad centre, inside any 0.5 mm
+    hole-to-hole floor. Dropping the in-pad ball keeps its neighbour's
+    clean gap escape (DRC alone rips both nets)."""
+    pads = [pd for pd in bg.pads_of(ref=bga.ref) if pd.net]
+    vias = list(bg.vias_of())
+    region = field_region(bga)
+    near = [v for v in vias if region.contains(Point(v.at))]
+    inpad = []
+    for v in near:
+        if not v.uuid or v.uuid not in new_uuids:
+            continue
+        pt = Point(v.at)
+        if any(pd.net == v.net and pd.poly.buffer(1e-4).contains(pt)
+               for pd in pads):
+            inpad.append(v)
+    tracks = [x for x in bg.tracks_of() if x.net and region.intersects(x.poly)]
+    out: set[str] = set()
+    for v in inpad:
+        for o in near:
+            if o is v:
+                continue
+            d = ((o.at[0] - v.at[0]) ** 2 + (o.at[1] - v.at[1]) ** 2) ** 0.5
+            if d < (o.drill + v.drill) / 2 + hole_to_hole - 1e-6 or (
+                    o.net != v.net
+                    and d < (o.diameter + v.diameter) / 2 + clearance - 1e-6):
+                out.add(v.net)
+                break
+        else:
+            # a floor-size via bulging past a small pad grazes the stubs KRT
+            # threaded past the PAD (#552: 0.45 vias in 0.32 pads)
+            reach = v.poly.buffer(clearance - 1e-6)
+            if any(x.net != v.net and v.spans(x.layer)
+                   and reach.intersects(x.poly) for x in tracks):
+                out.add(v.net)
+    return out
 
 
 def error_fields(before: dict, after: dict, nets: set[str],
@@ -282,9 +427,11 @@ def footprint_moves(before, after, refs: set[str] | None = None) -> list[dict]:
 # ------------------------------------------------------------ KRT steps
 
 def _run(krt: Path, script: str, args: list[str], timeout_s: int,
-         log: Path) -> tuple[int, str]:
+         log: Path, launch: list[str] | None = None) -> tuple[int, str]:
+    """KRT script through lib/krt_launch.py (hwde's KRT patches, #552/#547)."""
     import subprocess
-    cmd = [sys.executable, script, *args]
+    cmd = [sys.executable, str(SCRIPTS / "lib" / "krt_launch.py"),
+           *(launch or []), script, *args]
     try:
         cp = subprocess.run(cmd, cwd=str(krt), capture_output=True, text=True,
                             encoding="utf-8", errors="replace",
@@ -306,17 +453,25 @@ def _keep_sidecars(staged: Path, pristine: dict[str, bytes]) -> None:
 def fan_one(ctx: dict, bga: bgalib.Bga, ep: dict, layers: list[str],
             method: str | None = None, nets: list[str] | None = None,
             pairs: list[list[str]] | None = None,
-            pair_gap: float | None = None, tag: str = "") -> dict:
+            pair_gap: float | None = None, tag: str = "",
+            open_to: dict[str, tuple[str, ...]] | None = None) -> dict:
     staged, work, krt = ctx["staged"], ctx["work"], ctx["krt"]
     out = work / (f"{staged.stem}.{bga.ref}.{method or ep['method']}"
                   f"{'.' + tag if tag else ''}.kicad_pcb")
     fab = fab_overrides(work, ep, ctx["floors"])
+    launch = ["--hole-to-hole", f"{ctx['floors']['hole_to_hole']:g}"]
+    if open_to:
+        plan = work / f"{out.stem}.open.json"
+        plan.write_text(json.dumps({"open": {n: list(s) for n, s in
+                                             sorted(open_to.items())}},
+                                   indent=1), encoding="utf-8")
+        launch += ["--escape-open", str(plan)]
     rcode, stdout = _run(krt, "bga_fanout.py",
                          [str(staged), "--output", str(out),
                           *fanout_args(bga, ep, layers, fab, ctx["grid_step"],
                                        method, pairs, pair_gap)]
                          + (["--nets", *nets] if nets else []),
-                         ctx["timeout_s"], out.with_suffix(".log"))
+                         ctx["timeout_s"], out.with_suffix(".log"), launch)
     summary = rc.parse_summary(stdout)
     if summary is None or not out.is_file():
         tail = stdout.strip()[-400:]
@@ -371,6 +526,10 @@ def run(argv: list[str] | None = None):
                     help="a pairs-only KRT pass before the rest, so pair balls "
                          "take the gap sites first (more pairs coupled, often "
                          "fewer single balls escaped)")
+    ap.add_argument("--toward-partner", action="store_true",
+                    help="escape the constraints' diff-pair and length_groups "
+                         "nets out of the field sides facing the part each "
+                         "one goes to (#547)")
     ap.add_argument("--plan", action="store_true",
                     help="no routing: report the BGAs, geometry and budget")
     ap.add_argument("--grid-step", type=float, default=DEFAULT_GRID)
@@ -395,11 +554,17 @@ def run(argv: list[str] | None = None):
     explicit_layers = [x.strip() for x in args.layers.split(",")] \
         if args.layers else None
     specs: list[dict] = []
-    if not args.no_pairs:
-        cons = rc._sidecar(pcb, args.constraints, "constraints.json")
-        if cons:
-            specs = rc.diff_specs(checklib.load_json(cons, "constraints"),
-                                  bg0.nets)
+    cons = rc._sidecar(pcb, args.constraints, "constraints.json")
+    cons_data = checklib.load_json(cons, "constraints") if cons else {}
+    if cons_data:
+        all_specs = rc.diff_specs(cons_data, bg0.nets)
+        if not args.no_pairs:
+            specs = all_specs
+    else:
+        all_specs = []
+    if args.toward_partner and not cons_data:
+        raise CheckError("--toward-partner needs constraints.json (its diff "
+                         "pairs and length_groups name the nets)")
     geo = zrules.board_layer_geometry(pcb)
     plans = []
     for b in bgas:
@@ -449,24 +614,34 @@ def run(argv: list[str] | None = None):
     before = kc.run_drc(cli, staged, all_track_errors=True)
     old_uuids = rc._copper_uuids(staged)
 
+    wide = rc.dru_net_floors(dru, "track_width")
+    toward = set(toward_nets(cons_data, bg0.nets, all_specs)) \
+        if args.toward_partner else set()
+    keys = ("requested", "escaped", "failed", "unescaped_nets",
+            "drc_grazes", "deferred_fanout_nets")
     results = []
     for p in plans:
         b, ep = p["bga"], p["ep"]
+        allowed, held = fanout_nets(b, wide, ep["track_width"])
+        only = allowed if held else None    # None: KRT's own net choice
+        aset = set(allowed)
         first = None
+        sides = (partner_sides(bg0, b, toward & aset) if toward else {})
         if p["pairs"] and args.pairs_first:
             # pairs first: their balls claim the dog-bone gap sites before
             # the single balls do (a full field otherwise leaves a deep pair
             # only via-in-pad, which is stripped)
             first = fan_one(ctx, b, ep, p["layers"],
-                            nets=[x for pr in p["pairs"] for x in pr],
+                            nets=[x for pr in p["pairs"] for x in pr
+                                  if x in aset],
                             pairs=p["pairs"], pair_gap=p["pair_gap"],
                             tag="pairs")
         summary = fan_one(ctx, b, ep, p["layers"], pairs=p["pairs"],
-                          pair_gap=p["pair_gap"])
-        keys = ("requested", "escaped", "failed", "unescaped_nets",
-                "drc_grazes", "deferred_fanout_nets")
+                          pair_gap=p["pair_gap"], nets=only, open_to=sides)
         r = {**_plan_fact(p), "krt": rc._slim(summary, keys),
-             **({"krt_pairs": rc._slim(first, keys)} if first else {})}
+             **({"krt_pairs": rc._slim(first, keys)} if first else {}),
+             **({"toward_partner": toward_fact(sides)} if sides else {}),
+             **({"held_wide": held} if held else {})}
         bg = geom.BoardGeom.from_file(staged)
         new = {x.uuid for x in list(bg.tracks_of()) + list(bg.vias_of())
                if x.uuid and x.uuid not in old_uuids}
@@ -476,7 +651,15 @@ def run(argv: list[str] | None = None):
         if vip and not args.allow_via_in_pad:
             r["via_in_pad"]["items_removed"] = rc.rip_new_copper(
                 staged, old_uuids, set(vip))
-        r["_vip"] = set(vip)
+        elif vip:
+            clash = vip_conflicts(bg, b, new, floors["hole_to_hole"],
+                                  ep["clearance"])
+            if clash:
+                r["via_in_pad"]["clashing"] = sorted(clash)
+                r["via_in_pad"]["items_removed"] = rip_in_fields(
+                    staged, old_uuids, {n: {b.ref} for n in clash}, [b])
+        r["_vip"] = set(vip) if not args.allow_via_in_pad else set()
+        r["_lost"] = set(held) | set(r["via_in_pad"].get("clashing", []))
         results.append(r)
 
     moved = []
@@ -528,16 +711,17 @@ def run(argv: list[str] | None = None):
         r["ripped_by_drc"] = sorted(ripped_here & own)
         ripped_all = ripped_here
         lost = set(r["krt"].get("unescaped_nets", []) or [])
-        left = sorted((lost | (ripped_all & own)
-                       | (set() if args.allow_via_in_pad else vip))
+        left = sorted((lost | (ripped_all & own) | vip | r.pop("_lost"))
                       - kept_here)
         r["left_for_routers"] = left
         if left:
             violations.append(violation(
                 SCRIPT, "warning", None, None, None, [r["ref"]],
                 f"{r['ref']}: {len(left)} ball net(s) not escaped (KRT "
-                f"dropped {len(lost)}, via-in-pad stripped "
-                f"{0 if args.allow_via_in_pad else len(vip)}, DRC ripped "
+                f"dropped {len(lost)}, via-in-pad stripped {len(vip)}, "
+                f"via-in-pad clashing "
+                f"{len(r['via_in_pad'].get('clashing', []))}, wide nets held "
+                f"{len(r.get('held_wide', []))}, DRC ripped "
                 f"{len(r['ripped_by_drc'])}); left for route_critical / "
                 "route_auto", SCRIPT, kind="bga_escape_incomplete",
                 nets=left[:40]))

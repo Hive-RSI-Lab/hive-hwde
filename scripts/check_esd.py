@@ -46,6 +46,36 @@ Findings:
                        through pad within GND_VIA_MM (SLVA680 2.4: "one VIA
                        immediately adjacent to the ground pin")
 
+  esd_corridor_coupled warning: another net's track runs in the corridor
+                       beside the connector-to-clamp stretch (same or
+                       adjacent copper layer) and the strike's dI/dt couples
+                       more than the victim's abs max into it (SLVA680 2.2,
+                       emc-thermal ESD-9). V = M dI/dt, M summed over every
+                       parallel piece.
+
+The corridor (ESD-9): every segment of the routed connector-to-clamp path is
+the aggressor. A victim piece is another net's track segment on the same or
+an adjacent copper layer, within the corridor, at most 30 degrees off the
+aggressor's direction (perpendicular filaments have no partial mutual). M is
+Grover's filament mutual (lib/emsolve.filament_mutual, the bars' GMD as d; it
+matches FastHenry within 0.2 %, `sim_solve validate --only fasthenry_pair`)
+times cos(angle). Over a ground plane (the nearest other layer whose GND fill
+covers the aggressor) the strike returns in the plane, so M is the loop
+mutual by images, M(d) - M(d_image); with no plane it is the free-space
+partial mutual (an upper bound). Ground nets are not victims; another
+clamped connector line (the pair partner) and power rails (decoupled) are
+listed, not judged. Victim abs max: constraints esd.victim_abs_max_v (a
+number or {net glob: V}), else the lowest numeric abs max of the ICs' pins on
+that net (sim_inrush.pin_abs_max: the datasheet extractions in --parts, by
+default the board's own parts/, then reference/pin_ratings.yaml), else
+VICTIM_ABS_MAX_V = 3.6 (judgement: VDD + 0.3 of 3.3 V CMOS; the finding names
+which one it used). Tracks only: another net's pour is not a victim. Corridor half-width: constraints
+esd.corridor_mm, else (a judgement, like FAR_MM) the lateral gap at which a
+neighbour running the stretch's whole length on its layer would pick up
+CORRIDOR_V (constraints esd.corridor_v), capped at CORRIDOR_MAX_MM. The
+coupled volts are open-circuit volts in the victim's loop: a screen, not a
+sign-off (a terminated victim sees less).
+
 Every line also reports est_extra_v: (shared path + ground path) inductance
 times the strike's dI/dt at the level asked ({"esd": {"level_kv": 8}}). It
 is an order-of-magnitude screen, not a sign-off: a trace over a solid plane
@@ -53,12 +83,13 @@ has less loop inductance than its partial self-inductance, so it errs high.
 
 Not registered in scripts/checks.d yet: its findings on the pinned boards
 need judging in their ledgers first (docs/score.md), so it runs by hand:
-    bin/hwde check_esd --pcb board.kicad_pcb [--constraints c.json]
+    bin/hwde check_esd --pcb board.kicad_pcb [--constraints c.json] [--parts D]
 CLI exit 0 pass / 1 violations / 2 error, per SPEC section 6.
 """
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import heapq
 import math
 import re
@@ -71,6 +102,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE / "lib"))
 import checklib  # noqa: E402
+import emsolve  # noqa: E402
 import geom  # noqa: E402
 
 SCRIPT = "check_esd"
@@ -100,6 +132,11 @@ NH_PER_VIA = 1.2     # 1.6 mm through via, 0.3 mm drill (verify.py, Johnson)
 FAR_MM = 10.0        # judgement (see docstring)
 GND_VIA_MM = 2.0     # judgement: pad edge to the nearest ground via
 JOIN_MM = 0.01
+VICTIM_ABS_MAX_V = 3.6   # judgement: VDD + 0.3 of 3.3 V CMOS
+CORRIDOR_V = 3.6         # judgement: corridor = where a full-length run gets this
+CORRIDOR_MAX_MM = 10.0
+CORRIDOR_MIN_MM = 0.5
+PARALLEL_COS = math.cos(math.radians(30))
 
 
 def dI_dt(level_kv: float) -> float:
@@ -133,6 +170,7 @@ class NetGraph:
         self.adj: dict = {}
         self.pos: dict = {}
         tracks = bg.tracks_of(net)
+        self.tracks = tracks
         vias = bg.vias_of(net)
         pads = bg.pads_of(net)
         ends = []
@@ -222,9 +260,225 @@ def ground_reach(bg, pad) -> float | None:
     return min(pad.poly.distance(c) for c in cands)
 
 
+# ------------------------------------------------------------ the corridor
+
+def _z(stack, layer: str) -> float:
+    return stack.height_between(stack.copper_layers[0], layer)
+
+
+def _pieces(track) -> list:
+    """(p0, p1) straight pieces of a track's centreline (arcs are polylines)."""
+    c = list(track.shape.coords)
+    return [(c[i], c[i + 1]) for i in range(len(c) - 1)
+            if math.dist(c[i], c[i + 1]) > 1e-6]
+
+
+def stretch_tracks(graph, path) -> list:
+    """The net's tracks the connector-to-clamp path runs along."""
+    out, seen = [], set()
+    for a, b in zip(path, path[1:]):
+        if a[0] == b[0] == "t" and a[1] == b[1] and a[1] not in seen:
+            seen.add(a[1])
+            out.append(graph.tracks[a[1]])
+    return out
+
+
+def ground_plane(bg, layer: str, pt) -> str | None:
+    """The nearest other copper layer whose ground fill covers pt."""
+    st = bg.stackup
+    i = st.index(layer)
+    order = sorted((l for l in st.copper_layers if l != layer),
+                   key=lambda l: abs(st.index(l) - i))
+    P = Point(pt)
+    for l in order:
+        for z in bg.zones_of(layer=l):
+            if is_ground(z.net) and z.fill_on(l).covers(P):
+                return l
+    return None
+
+
+def pair_mutual(p0, p1, layer_a, w_a, q0, q1, layer_v, w_v, stack,
+                plane) -> tuple[float, float, float] | None:
+    """(M H, parallel mm, lateral gap mm) of victim piece q on aggressor
+    piece p, or None when they are not parallel enough."""
+    ux, uy = p1[0] - p0[0], p1[1] - p0[1]
+    la = math.hypot(ux, uy)
+    ux, uy = ux / la, uy / la
+    vx, vy = q1[0] - q0[0], q1[1] - q0[1]
+    lv = math.hypot(vx, vy)
+    cos = (ux * vx + uy * vy) / lv
+    if abs(cos) < PARALLEL_COS:
+        return None
+    b1 = (q0[0] - p0[0]) * ux + (q0[1] - p0[1]) * uy
+    b2 = (q1[0] - p0[0]) * ux + (q1[1] - p0[1]) * uy
+    mx, my = (q0[0] + q1[0]) / 2 - p0[0], (q0[1] + q1[1]) / 2 - p0[1]
+    lat = abs(mx * uy - my * ux)
+    overlap = max(0.0, min(la, max(b1, b2)) - max(0.0, min(b1, b2)))
+    if overlap <= 0:
+        return None
+    za, zv = _z(stack, layer_a), _z(stack, layer_v)
+    t = stack.copper_thickness.get(layer_a, 0.035)
+    w = (w_a + w_v) / 2
+    d = emsolve.rect_gmd(w, t, lat, za - zv, n=4) if lat < 5 * w + 1 else \
+        math.hypot(lat, za - zv)
+    lo, hi = sorted((b1, b2))
+    m = emsolve.filament_mutual(0.0, la, lo, hi, d)
+    if plane is not None:   # the strike returns in the plane: its image
+        zp = _z(stack, plane)
+        m -= emsolve.filament_mutual(0.0, la, lo, hi,
+                                     math.hypot(lat, 2 * zp - za - zv))
+    # summed as magnitudes: a net's pieces are drawn in either direction, so
+    # the sign of cos says nothing about its current (an upper bound)
+    return abs(cos) * max(m, 0.0), overlap, lat
+
+
+def corridor_width(length_mm: float, h: float | None,
+                   didt: float, volts: float) -> float:
+    """Lateral gap (mm) at which a track running the whole stretch beside it
+    picks up `volts` (bisection), within [CORRIDOR_MIN_MM, CORRIDOR_MAX_MM]."""
+    if length_mm <= 0:
+        return CORRIDOR_MIN_MM
+
+    def v(d):
+        m = emsolve.filament_mutual(0, length_mm, 0, length_mm, d)
+        if h is not None:
+            m -= emsolve.filament_mutual(0, length_mm, 0, length_mm,
+                                         math.hypot(d, 2 * h))
+        return m * didt
+    lo, hi = CORRIDOR_MIN_MM, CORRIDOR_MAX_MM
+    if v(hi) >= volts:
+        return hi
+    if v(lo) <= volts:
+        return lo
+    for _ in range(40):
+        mid = (lo + hi) / 2
+        lo, hi = (mid, hi) if v(mid) > volts else (lo, mid)
+    return hi
+
+
+def rated_pins(bg, parts_dir: Path | None, nets: set) -> dict:
+    """net -> (lowest numeric abs max of the ICs' pins on it, where from)."""
+    import sim_board
+    import sim_inrush
+    comps = {}
+    for p in bg.pads_of():
+        if p.net in nets:
+            ref = comps.setdefault(p.ref, {
+                "ref": p.ref, "pins": {},
+                "value": bg.footprints.get(p.ref, {}).get("value") or "",
+                "kind": (re.match(r"[A-Za-z]*", p.ref).group(0)).upper()})
+            ref["pins"][p.number] = {
+                "net": p.net, "fn": sim_board.norm_fn(p.pinfunction, p.number)}
+    parts = {}
+    pj = parts_dir / "parts.json" if parts_dir else None
+    if pj and pj.is_file():
+        for row in checklib.load_json(pj, "parts.json").get("parts") or []:
+            for r in row.get("refdes") or []:
+                parts[r] = row
+    rated, _ = sim_inrush.pin_abs_max({"comps": comps}, parts, parts_dir, nets)
+    out: dict = {}
+    for r in rated:
+        if r["net"] not in out or r["max_v"] < out[r["net"]][0]:
+            out[r["net"]] = (r["max_v"], f"{r['ref']} pin {r['pin']}: {r['source']}")
+    return out
+
+
+def victim_limit(cfg: dict, net: str, rated: dict) -> tuple[float, str]:
+    vm = cfg.get("victim_abs_max_v")
+    if isinstance(vm, (int, float)):
+        return float(vm), "constraints esd.victim_abs_max_v"
+    if isinstance(vm, dict):
+        for pat, v in vm.items():
+            if fnmatch.fnmatchcase(net, pat):
+                return float(v), f"constraints esd.victim_abs_max_v[{pat}]"
+    if net in rated:
+        return rated[net]
+    return VICTIM_ABS_MAX_V, "default (judgement: VDD + 0.3 of 3.3 V CMOS)"
+
+
+def corridor(bg, cfg: dict, net: str, stretch: list, didt: float,
+             clamped_nets: set, parts_dir: Path | None
+             ) -> tuple[dict, list[dict]]:
+    """Facts for one connector-to-clamp stretch and its neighbours
+    [{net, layer, parallel_mm, gap_mm, m_nh, v, limit_v, judged}]."""
+    st = bg.stackup
+    length = sum(t.length for t in stretch)
+    longest = max(stretch, key=lambda t: t.length)
+    mid = longest.shape.interpolate(0.5, normalized=True).coords[0]
+    plane0 = ground_plane(bg, longest.layer, mid)
+    h0 = st.height_between(longest.layer, plane0) if plane0 else None
+    if cfg.get("corridor_mm") is not None:
+        width, src = float(cfg["corridor_mm"]), "constraints esd.corridor_mm"
+    else:
+        width = corridor_width(length, h0, didt,
+                               float(cfg.get("corridor_v", CORRIDOR_V)))
+        src = ("judgement: the gap where a full-length neighbour picks up "
+               f"{float(cfg.get('corridor_v', CORRIDOR_V)):g} V")
+    fact = {"stretch_mm": checklib.rnd(length, 2),
+            "layers": sorted({t.layer for t in stretch}),
+            "plane": plane0, "plane_h_mm": None if h0 is None else
+            checklib.rnd(h0, 3),
+            "model": "loop_over_plane" if plane0 else "partial_free_space",
+            "corridor_mm": checklib.rnd(width, 2), "corridor_source": src}
+    by_net: dict = {}
+    for t in stretch:
+        near = [t.layer] + [l for l in st.adjacent(t.layer) if l]
+        tm = t.shape.interpolate(0.5, normalized=True).coords[0]
+        plane = ground_plane(bg, t.layer, tm)
+        zone = t.shape.buffer(width + t.width / 2)
+        for l in near:
+            for v in bg.tracks_of(layer=l):
+                if (not v.net or v.net == net or is_ground(v.net)
+                        or not zone.intersects(v.shape)):
+                    continue
+                vpart = v.shape.intersection(zone)
+                for p0, p1 in _pieces(t):
+                    for g in getattr(vpart, "geoms", [vpart]):
+                        if g.geom_type != "LineString" or g.length < 1e-6:
+                            continue
+                        c = list(g.coords)
+                        for q0, q1 in zip(c, c[1:]):
+                            if math.dist(q0, q1) < 1e-6:
+                                continue
+                            r = pair_mutual(p0, p1, t.layer, t.width, q0, q1,
+                                            l, v.width, st, plane)
+                            if r is None:
+                                continue
+                            m, par, lat = r
+                            e = by_net.setdefault(v.net, {
+                                "net": v.net, "layers": set(), "m": 0.0,
+                                "parallel_mm": 0.0, "gap_mm": math.inf,
+                                "at": q0})
+                            e["layers"].add(l)
+                            e["m"] += m
+                            e["parallel_mm"] += par
+                            gap = max(lat - (t.width + v.width) / 2, 0.0) \
+                                if l == t.layer else lat
+                            if gap < e["gap_mm"]:
+                                e["gap_mm"], e["at"] = gap, q0
+    out = []
+    rated = rated_pins(bg, parts_dir, set(by_net)) if by_net else {}
+    for n, e in sorted(by_net.items()):
+        m = abs(e["m"])
+        lim, lsrc = victim_limit(cfg, n, rated)
+        judged = not (n in clamped_nets or is_power(n))
+        out.append({"net": n, "layers": sorted(e["layers"]),
+                    "parallel_mm": checklib.rnd(e["parallel_mm"], 2),
+                    "gap_mm": checklib.rnd(e["gap_mm"], 3),
+                    "m_nh": checklib.rnd(m * 1e9, 3),
+                    "v": checklib.rnd(m * didt, 1), "limit_v": lim,
+                    "limit_source": lsrc, "judged": judged,
+                    "why_not": None if judged else
+                    ("clamped connector line" if n in clamped_nets
+                     else "power rail (decoupled)"),
+                    "_at": e["at"]})
+    return fact, out
+
+
 # --------------------------------------------------------------- the check
 
-def check(pcb: Path, constraints: dict | None = None) -> tuple[list, dict]:
+def check(pcb: Path, constraints: dict | None = None,
+          parts_dir: Path | None = None) -> tuple[list, dict]:
     cfg = (constraints or {}).get("esd") or {}
     level_kv = float(cfg.get("level_kv", 8.0))
     didt = dI_dt(level_kv)
@@ -251,6 +505,7 @@ def check(pcb: Path, constraints: dict | None = None) -> tuple[list, dict]:
         conns.append(r)
     graphs: dict = {}
     viols, lines = [], []
+    pending = []
 
     def graph(net):
         if net not in graphs:
@@ -322,6 +577,10 @@ def check(pcb: Path, constraints: dict | None = None) -> tuple[list, dict]:
             fact.update(clamp=clamp.ref, clamp_pin=clamp.number,
                         mm=checklib.rnd(line["mm"], 2), routed=line["routed"],
                         vias=line["vias"])
+            if line["routed"]:
+                st_tracks = stretch_tracks(g, line["path"])
+                if st_tracks:
+                    pending.append((fact, net, st_tracks, clamp))
             # parts reached before the clamp, off its path
             on_path = set(line["path"])
             first = []
@@ -393,6 +652,31 @@ def check(pcb: Path, constraints: dict | None = None) -> tuple[list, dict]:
             nh = (max(stub, 0.0) + (gmm or 0.0)) * NH_PER_MM
             fact["est_extra_nh"] = checklib.rnd(nh, 2)
             fact["est_extra_v"] = checklib.rnd(nh * 1e-9 * didt, 1)
+    clamped = {f["net"] for f in lines if f.get("clamp")}
+    for fact, net, st_tracks, clamp in pending:
+        cf, neigh = corridor(bg, cfg, net, st_tracks, didt, clamped, parts_dir)
+        for nb in neigh:
+            at = nb.pop("_at")
+            if nb["judged"] and nb["v"] > nb["limit_v"]:
+                viols.append(checklib.violation(
+                    SCRIPT, "warning", at, None, nb["net"],
+                    [fact["connector"], clamp.ref],
+                    f"{fact['connector']} pin {fact['pin']} ({net}): "
+                    f"{nb['net']} runs {nb['parallel_mm']:.1f} mm beside the "
+                    f"connector-to-clamp stretch ({clamp.ref}), "
+                    f"{nb['gap_mm']:.2f} mm away on {'/'.join(nb['layers'])}: "
+                    f"an {level_kv:g} kV strike couples ~{nb['v']:.1f} V "
+                    f"(M {nb['m_nh']:.2f} nH, {cf['model']}) against its "
+                    f"{nb['limit_v']:g} V abs max ({nb['limit_source']}): route it outside the "
+                    f"{cf['corridor_mm']:.1f} mm corridor or move the clamp "
+                    "to the connector (SLVA680 2.2)", SOURCE,
+                    kind="esd_corridor_coupled", victim=nb["net"],
+                    coupled_v=nb["v"], m_nh=nb["m_nh"],
+                    parallel_mm=nb["parallel_mm"], gap_mm=nb["gap_mm"],
+                    limit_v=nb["limit_v"], limit_source=nb["limit_source"],
+                    corridor_mm=cf["corridor_mm"]))
+        cf["neighbours"] = neigh
+        fact["corridor"] = cf
     return viols, {"level_kv": level_kv, "di_dt_a_per_s": didt,
                    "connectors": conns, "internal_by_value": skipped,
                    "clamps": sorted(clamps),
@@ -403,6 +687,8 @@ def run(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--pcb", required=True)
     ap.add_argument("--constraints")
+    ap.add_argument("--parts", help="datasheet extractions and parts.json "
+                    "for the victims' abs max (default: the board's parts/)")
     ap.add_argument("--out", help="write the JSON report here")
     args = ap.parse_args(argv)
     pcb = Path(args.pcb)
@@ -410,7 +696,8 @@ def run(argv=None):
         raise checklib.CheckError(f"board not found: {pcb}")
     cons = (checklib.load_json(args.constraints, "constraints")
             if args.constraints else None)
-    viols, facts = check(pcb, cons)
+    parts = Path(args.parts) if args.parts else pcb.resolve().parent.parent / "parts"
+    viols, facts = check(pcb, cons, parts if parts.is_dir() else None)
     return checklib.report(SCRIPT, pcb, viols, checked=[facts]), args.out
 
 

@@ -1,0 +1,13 @@
+# Seeded fault for check_surge (hive-hwde #492).
+mutants:
+  surge-swd-unclamped:
+    board: blinky2
+    script: mutations/surge_swd_unclamped.py
+    check: check_surge
+    defect: >-
+      SIDECAR fault (copper unchanged): constraints.json declares the SWD
+      header a signal port on an outdoor cable; no clamp on /SWDIO or /SWCLK,
+      so the assumed 1 kV surge through 42 ohm meets the MCU's pins
+    expect:
+      kind: surge_unclamped
+      net: /SWDIO

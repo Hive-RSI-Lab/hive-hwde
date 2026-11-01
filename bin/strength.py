@@ -29,8 +29,10 @@ could hide (docs/score.md, "The planted faults").
   dfm     the bench's P9 fixtures with a known answer (tests/fixtures/
           stages), and faults planted at JLC's published floors in a copy
           of pd-trigger's shipped drill file (DRILL_FAULTS): a hole closer
-          to its neighbour than 0.5 mm, a drill under 0.3 mm. A floor in
-          jlc_capabilities.yaml lowered past them lets the fault through.
+          to its neighbour than JLC's absolute 0.45 mm, a drill under its
+          absolute 0.15 mm (under min_* but over abs_min_* is only a warning,
+          #554). A floor in jlc_capabilities.yaml lowered past them lets the
+          fault through.
 
 ERC and DRC themselves are KiCad's; their planted faults would need
 kicad-cli and are not here (the gate leg still holds what hwde decides
@@ -57,13 +59,13 @@ sys.path[:0] = [str(SCRIPTS), str(SCRIPTS / "lib")]
 # "must be clean"; drc_routed fails on warnings since S3).
 FAILS_ON = {"erc": ("error", "warning"), "drc_routed": ("error", "warning"),
             "verify": ("error",), "dfm": ("error",)}
-# (name, kind dfm must report, fault): faults at JLC's published floors
-# (hole edge to hole edge 0.5 mm, drill 0.3 mm), planted in pd-trigger's
+# (name, kind dfm must report, fault): faults under JLC's absolute floors
+# (pad hole edge to hole edge 0.45 mm, drill 0.15 mm), planted in pd-trigger's
 # shipped drill file. "pair" is a hole beside an existing one, "lone" a
 # hole of its own, each away from every other hole.
 DRILL_FAULTS = (
-    ("hole-to-hole-0.45", "dfm_hole_to_hole", {"pair": 0.45}),
-    ("drill-0.25", "dfm_hole_size", {"lone": 0.25}),
+    ("hole-to-hole-0.40", "dfm_hole_to_hole", {"pair": 0.40}),
+    ("drill-0.12", "dfm_hole_size", {"lone": 0.12}),
 )
 DRILL_BOARD = "pd_trigger_dfm"
 # Real findings for the gates whose tool is KiCad's (no kicad-cli offline):

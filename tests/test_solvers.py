@@ -255,7 +255,7 @@ def test_harmonic_mean_resolves_copper_edges():
 # ---------------------------------------------------------------- live
 
 @live
-@pytest.mark.parametrize("name", ["circuit_ngspice", "circuit_xyce", "fasthenry_bar",
+@pytest.mark.parametrize("name", ["circuit_ngspice", "circuit_xyce", "fasthenry_bar", "fasthenry_pair",
                                   "fastercap_cube", "circuit_xspice", "circuit_osdi",
                                   "circuit_xspice_kicad"])
 def test_live_solver_validates(name):
@@ -314,6 +314,16 @@ def test_planar_waves_recover_a_and_b(tmp_path):
         (tmp_path / f"p0u{j}").write_text("% t v\n" + "\n".join(f"{x:.6e}\t{y:.9e}" for x, y in zip(t, v)))
     (ga, gb), = em.planar_waves(tmp_path, where, 0, [f])
     assert abs(gb / ga - b / a) < 1e-3
+
+
+def test_planar_waves_reject_a_silent_probe(tmp_path):
+    """A probe openEMS left at zero (run stopped early) is an error, not a
+    ZeroDivisionError deep in the wave fit."""
+    where = {"ports": [{"dist": [5.0, 10.0, 15.0]}]}
+    for j in range(3):
+        (tmp_path / f"p0u{j}").write_text("% t v\n" + "\n".join(f"{i * 1e-12:.6e}\t0" for i in range(50)))
+    with pytest.raises(solvers.SolverError, match="no signal"):
+        em.planar_waves(tmp_path, where, 0, [2e9])
 
 
 def test_touchstone_two_port_is_column_major():

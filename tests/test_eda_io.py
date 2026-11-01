@@ -660,6 +660,9 @@ def test_board_only_footprints_are_not_parts(tmp_path):
     pcb = tmp_path / "b.kicad_pcb"
     pcb.write_text('(kicad_pcb\n\t(footprint "L:LOGO"\n\t\t(layer "F.Cu")\n'
                    '\t\t(property "Reference" "LOGO1")\n\t\t(attr board_only exclude_from_pos_files exclude_from_bom)\n\t)\n'
-                   '\t(footprint "L:R"\n\t\t(layer "F.Cu")\n\t\t(property "Reference" "R1")\n\t\t(attr smd)\n\t)\n)\n')
+                   '\t(footprint "L:R"\n\t\t(layer "F.Cu")\n\t\t(property "Reference" "R1")\n\t\t(attr smd)\n'
+                   '\t\t(pad "1" smd rect\n\t\t\t(at 0 0)\n\t\t)\n\t)\n'
+                   '\t(footprint "L:FRAME"\n\t\t(layer "F.Cu")\n\t\t(property "Reference" "FRAME2")\n\t)\n)\n')
     b = edasrc.read_board(pcb)
-    assert b.board_only == {"LOGO1"} and set(b.refs) == {"LOGO1", "R1"}
+    # a frame with a symbol but no pads has nothing to place either
+    assert b.board_only == {"LOGO1", "FRAME2"} and set(b.refs) == {"LOGO1", "R1", "FRAME2"}

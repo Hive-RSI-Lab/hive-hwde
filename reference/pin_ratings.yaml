@@ -11,7 +11,9 @@
 # (operating) common-mode or pin range where it has one, else its absolute
 # maximum. abs_max_v (optional): the absolute maximum, which transient
 # checks judge a peak against (sim_inrush's hot-plug); a row without it is
-# not used there. source: where the number came from. `verified: false` means typed
+# not used there. pin_numbers (optional): a regex on the pad number, for
+# check_surge on a board whose pads carry no pin names (the part's package
+# is then fixed by the row). source: where the number came from. `verified: false` means typed
 # from memory of the datasheet, not re-read: the review that relies on it
 # reads the datasheet once and flips it (with the date).
 #
@@ -66,6 +68,16 @@ parts:
     abs_max_v: 85
     source: TI SLUSE13B (BQ76952) 7.1 absolute maximum, BAT/PACK/LD/CHG/DSG/PCHG/PDSG to VSS + 85 V
     verified: false
+  - match: '^CH224[QA]'
+    pins: '^(VHV|VBUS|PG|CC1|CC2)$'
+    pin_numbers: '^(1|6|7|8|10)$'
+    max_v: 30
+    abs_max_v: 32
+    source: >-
+      WCH CH224 datasheet V2.0 8.1.1 absolute maximum VHV, PG, VBUS, CC1, CC2
+      -0.5 to 32 V; table 4-1 ESSOP-10 pins VHV 1, CC2 6, CC1 7, VBUS 8, PG 10;
+      max_v 30 from the LCSC listing's supply range
+    verified: true
   - match: '^LM506[79]'
     pins: '^(SENSE|OUT|UVLO|OVLO|VIN)$'
     max_v: 100
