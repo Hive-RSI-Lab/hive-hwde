@@ -511,6 +511,15 @@ where the footprint has no hole) are errors too. `model_unmatched` (no
 placement meets half the pads: a wrong model) is a warning. A missing or
 hidden model is skipped.
 
+`check_body_clash` (verify suite, #608) reads the same models as solids in board
+coordinates, on a 0.1 mm lattice, and fails when two parts share material
+(`body_clash`), pin tails against the far side's parts included, or a body stands
+in a mounting hole's screw column (`body_over_hole`). It warns on a body past its
+own courtyard, tall bodies under 0.3 mm apart, a non-connector overhanging the
+edge, and a connector with no readable model. Parts with no model are listed in
+`not_judged`: a board with few models is hardly judged, so read that list. The
+visual half is `agents/mech-reviewer.md` with `render.py --views mech`.
+
 `lib_pull` runs the same fit on every footprint it pulls
 (`check_model_fit.fit_footprint`) and writes the fitted `(offset)`,
 `(rotate)` and `(scale)` into the library's `(model ...)`, so a model

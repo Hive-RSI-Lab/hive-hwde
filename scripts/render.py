@@ -45,11 +45,18 @@ VIEWS = {
     "front": ("front", False),
     "back": ("back", False),
     "iso": ("top", True),
+    "iso_ne": ("top", "-45,0,-45"),
+    "iso_sw": ("top", "-45,0,135"),
+    "iso_nw": ("top", "-45,0,-135"),
 }
 
 # fixed view sets: name -> views (agents/verify-reviewer.md renders `review`)
 VIEW_SETS = {
     "review": ["top", "bottom", "iso"],
+    # agents/mech-reviewer.md: all four elevations, where a tall part's side
+    # ear shows, and the four corners, where the iso hides the far side
+    "mech": ["top", "bottom", "front", "back", "left", "right",
+             "iso", "iso_ne", "iso_sw", "iso_nw"],
 }
 
 
@@ -62,7 +69,7 @@ def render_views(pcb: Path, views: list[str], out_dir: Path, *,
         side, iso = VIEWS[view]
         out = out_dir / f"{pcb.stem}_{view}.png"
         r = kc.render_png(cli, pcb, out, side=side, width=width, height=height,
-                          quality=quality, rotate=kc.ISO_ROTATE if iso else None)
+                          quality=quality, rotate=(kc.ISO_ROTATE if iso is True else iso) or None)
         missing.update(r.get("models_missing", []))
         relinked.update(r.get("models_relinked", []))
         results.append({"view": view, "path": out_dir_relpath(r, out),
