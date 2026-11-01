@@ -24,10 +24,12 @@ NETS = {
     "/I2C_SCL": [("U1", "13"), ("R2", "2")],
     "/I2S_DOUT": [("U1", "14")],
     "/IR_IN": [("U1", "5"), ("R4", "2")],
+    "/ADC_SCLK": [("U1", "20")],   # an SPI clock: SCLK is not SCL, no pull-up wanted
 }
 PINS = [  # fw pins' rows: (gpio, firmware name, net)
     (13, "I2C_SDA", "I2C_SDA"), (14, "I2C_SCL", "I2C_SCL"),
-    (12, "PIN_I2S_DOUT", "I2S_DOUT"), (36, "PIN_IR", "IR_IN")]
+    (12, "PIN_I2S_DOUT", "I2S_DOUT"), (36, "PIN_IR", "IR_IN"),
+    (18, "PDAQ_PIN_ADC_SCLK", "ADC_SCLK")]
 
 
 def netlist(path: Path, nets: dict) -> Path:
