@@ -1383,3 +1383,25 @@ def test_anneal_inherits_back_side_slots_under_a_bga(tmp_path_factory):
     slots = place_anneal._inherit_slots(model, c, dec, warnings, reslotted)
     assert reslotted == [], warnings
     assert set(slots) == {f"C{i}" for i in range(1, 7)}
+
+
+def test_pad_margin_and_artwork_in_legality(tmp_path_factory):
+    """constraints placement.pad_margin_mm lowers the overlap test's pad margin
+    for an imported layout; artwork (no pads, not assembled) never overlaps;
+    what isn't assembled may overhang the outline. Case: hw-lab eda-crossover."""
+    def part(ref, x, y=10, attr="smd", pad=True):
+        body = _pad("1", 0, 0) if pad else ""
+        return (f'(footprint "L:{ref}" (layer "F.Cu") (at {x} {y}) '
+                f'(property "Reference" "{ref}" (at 0 0 0) (layer "F.Fab")) (attr {attr}) {body})\n')
+    off = "smd exclude_from_pos_files exclude_from_bom"
+    body = (part("R1", 10) + part("R2", 11.0)            # pad boxes 1 mm wide: 0 gap apart
+            + part("LOGO1", 10.5, attr="board_only exclude_from_pos_files exclude_from_bom", pad=False)
+            + part("J1", 0.0, attr=off))
+    m = _model(tmp_path_factory, "padm", body)
+    v = placelib.legality_violations(m, None)
+    assert any(x["kind"] == "courtyard_overlap" and x["refs"] == ["R1", "R2"] for x in v)
+    assert not any("LOGO1" in (x.get("refs") or []) for x in v)
+    assert not any(x["kind"] == "outside_outline" for x in v)
+    m = _model(tmp_path_factory, "padm2", body)
+    v = placelib.legality_violations(m, {"pad_margin_mm": 0.0})
+    assert not any(x["kind"] == "courtyard_overlap" and x["refs"] == ["R1", "R2"] for x in v)

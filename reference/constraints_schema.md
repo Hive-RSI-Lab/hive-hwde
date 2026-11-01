@@ -331,6 +331,10 @@ Consumers per key (script -> phase):
 
   // placelib/place_seed/place_metrics/place_anneal (P6)
   "placement": {
+    "pad_margin_mm": 0.0,
+    //        how far pad fields grow for the place gate's overlap test
+    //        (default 0.25, for what hwde places). Lower it only for an
+    //        imported layout that's been built; DRC still holds courtyards.
     "edges": [{"ref": "J1", "edge": "left", "pos": 0.5, "rot": 90}],
     //        edge in left|right|top|bottom (render-oriented: top = min y);
     //        pos 0..1 along the edge: where the part's ORIGIN sits, as a
