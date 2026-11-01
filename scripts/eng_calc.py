@@ -25,6 +25,8 @@ notation (4k7, 2.2u, 100n, 1M). Output is one JSON object.
   pll       --icp 5m --kvco 100M --n 2400 (--fc 100k --pm 50 |
             --r 1k --cser 10n --cshunt 1n) [--fref 10M]
                                                      loop filter, fc, PM
+  lmatch    --z 200-j100 --z0 100 --f 500M           L-sections (Pozar
+            5.1); pi/T, real parts, MC: hwde rf_synth match
   line      --f 24G (--eeff 3.3 | --er 4.4 [--w 0.3 --h 0.2 [--t 0.035]
             [--bare]]) [--length 12.5]               wavelength, phase
 
@@ -127,7 +129,30 @@ def calc(a) -> dict:
         return d
     if c == "line":
         return line(a)
+    if c == "lmatch":
+        return lmatch(a)
     raise ValueError(c)
+
+
+def lmatch(a) -> dict:
+    """Every L-section from --z to a real --z0 at --f (Pozar sec. 5.1,
+    lib/rfmatch.py); the full design (pi/T, real parts, Monte Carlo) is
+    `hwde rf_synth match`."""
+    import rfmatch
+    z, fz = rfmatch.parse_z(a.z)
+    f = a.f or fz
+    if not f:
+        raise ValueError("no frequency: --f or --z R+jX@f")
+    unit = {"L": "H", "C": "F"}
+    sols = []
+    for n in rfmatch.l_sections(z, a.z0, f):
+        sols.append({"form": n["form"], "elements": [
+            {"where": e["where"], "kind": e["kind"], "value": e["value"],
+             "text": rfmatch.fmt_si(e["value"], unit[e["kind"]]),
+             **({"x_ohm": e["x"]} if "x" in e else {"b_s": e["b"]})}
+            for e in n["elements"]]})
+    return {"z_load": [z.real, z.imag], "z0": a.z0, "f_hz": f,
+            "solutions": sols}
 
 
 def stage(text: str) -> dict:
@@ -231,6 +256,8 @@ def main(argv=None) -> int:
         ("--w", dict(opt)), ("--h", dict(opt)), ("--t", {"default": 0.035}),
         ("--bare", {"action": "store_true"}),
         ("--length", dict(opt)))
+    cmd("lmatch", ("--z", dict(req, type=str)), ("--z0", {"default": 50.0}),
+        ("--f", dict(opt)))
     try:
         a = ap.parse_args(argv)
         res = calc(a)

@@ -179,7 +179,7 @@ ENCLOSURE = {"box_mm": "num_list", "stl": "str_or_list", "wall_mm": "num",
 SCHEMA_TOP_KEYS = set(SECTIONS) | {"placement", "coating", "antennas", "si",
                                    "enclosure", "ambient_c", "ambient_min_c",
                                    "cable_pf", "pin_modes", "ddr",
-                                   "testpoints", "surge"}
+                                   "testpoints", "rf_match", "surge"}
 ENVELOPE_ALIASES = {"power_constraints": "power",
                     "thermal_constraints": "thermal",
                     "voltage_constraints": "voltages"}
@@ -431,6 +431,12 @@ class _FileLint:
                              f"{path}: testpoints must be an object of "
                              f"{', '.join(sorted(nums))} (numbers), fixture "
                              "(bool), nets (globs)", path)
+            elif key == "rf_match":
+                # check_rf_match (#488) validates its entries itself (exit 2)
+                if not (isinstance(val, (list, dict))):
+                    self.add("error", "bad_type",
+                             f"{path}: rf_match must be a list of {{load, "
+                             "zin | s1p, band_hz}}", path)
             elif key == "surge":
                 # check_surge (#492): declared cable ports
                 ok = isinstance(val, dict) and isinstance(
