@@ -115,6 +115,10 @@ def _flag(node, name: str):
     return v == "yes" if v in ("yes", "no") else None
 
 
+TENTING_ASSUMED = ("vias: the board's setup has no tenting setting, so every "
+                   "via without its own was taken as tented")
+
+
 def board_defaults(root) -> dict:
     setup = _kid(root, "setup")
     tent = {"F": True, "B": True}
@@ -123,6 +127,7 @@ def board_defaults(root) -> dict:
     plug.update(_yn(setup, "plugging"))
     return {
         "tenting": tent, "plugging": plug,
+        "tenting_assumed": not _yn(setup, "tenting"),
         "filling": bool(_flag(setup, "filling")),
         "capping": bool(_flag(setup, "capping")),
         "mask_margin": _num(setup, "pad_to_mask_clearance", 0.0) or 0.0,
@@ -289,7 +294,8 @@ def check(pcb: Path, gerbers: Path | None = None, dam_mm: float = DAM_MM
         import gerblib
         fab = gerblib.open_fab(gerbers)
         gm = {s: GerberMask(fab.mask(s)) for s in SIDES if fab.mask(s)}
-    seen = {"vias": len(vias), "vias_filled_or_capped": 0, "smd_pads": 0,
+    seen = {"vias": len(vias), "tenting_assumed": dflt["tenting_assumed"],
+            "vias_filled_or_capped": 0, "smd_pads": 0,
             "pairs_near": 0, "ep_vias_skipped": 0, "dam_mm": dam,
             "gerbers": str(gerbers) if gm else None}
     cross = {"agree": 0, "disagree": []}
@@ -389,7 +395,9 @@ def run(argv=None):
     if not pcb.is_file():
         raise checklib.CheckError(f"board not found: {pcb}")
     vios, seen = check(pcb, _gerber_dir(pcb, args.gerbers), args.dam_mm)
-    return checklib.report(SCRIPT, pcb, vios, checked=[seen]), args.out
+    return checklib.report(
+        SCRIPT, pcb, vios, checked=[seen], not_judged=[TENTING_ASSUMED]
+        if seen.get("tenting_assumed") and seen.get("vias") else None), args.out
 
 
 def main(argv=None) -> int:

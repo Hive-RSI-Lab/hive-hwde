@@ -75,9 +75,11 @@ COUPLING_C = 100e-9        # a series cap this big is a short at MHz
 LINK_OHMS = 0.5            # 0 R / jumpers join nets
 
 _OUT_RE = re.compile(r"^(?:V?OUT_?[A-D1-4]?|[A-D1-4]OUT|OUT_?[A-D1-4]|~)$")
-_INV_RE = re.compile(r"^(?:-|-IN_?[A-D1-4]?|IN_?[A-D1-4]?-|INV|IN_?[A-D1-4]?N)$")
-_NONINV_RE = re.compile(r"^(?:\+|\+IN_?[A-D1-4]?|IN_?[A-D1-4]?\+|NI|"
+_INV_RE = re.compile(r"^(?:-|-IN_?[A-D1-4]?|[A-D1-4]?IN_?[A-D1-4]?-|INV|"
+                     r"IN_?[A-D1-4]?N)$")
+_NONINV_RE = re.compile(r"^(?:\+|\+IN_?[A-D1-4]?|[A-D1-4]?IN_?[A-D1-4]?\+|NI|"
                         r"IN_?[A-D1-4]?P)$")
+AMP_PREFIXES = ("U", "IC", "A", "AR", "OA", "OP", "N")  # an amp's refdes
 _CONN_RE = re.compile(r"^(J|P|CN|X|CON)\d")
 _UNIT_RE = re.compile(r"([A-D1-4])$")
 
@@ -135,7 +137,7 @@ def opamps(board: Board, table: list[dict]) -> list[tuple[str, dict | None]]:
     for ref in sorted(board.comps):
         row = _row(board.comps[ref], table)
         if row is None:
-            if _prefix(ref) != "U":
+            if _prefix(ref) not in AMP_PREFIXES:
                 continue
             fns = {f for _, f, _ in board.pins.get(ref, {}).values()}
             if not (any(_INV_RE.match(f) for f in fns)

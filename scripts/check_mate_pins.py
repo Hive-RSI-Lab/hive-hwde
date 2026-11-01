@@ -296,7 +296,8 @@ def pair_violations(model, pcb: Path, pairs: list, cons_dir: Path | None,
                 pin=anum, mate_pin=bnum, mate_net=bnet, supply_short=short,
                 supply_on_signal=on_sig))
         fact = {"ref": ref, "mate_ref": mref, "mate_pcb": mpath.name,
-                "mount": mount, "pins": len(met), "mismatched": bad}
+                "mount": mount, "pins": len(met), "mismatched": bad,
+                "compared": _compared(met, nmap)}
         if res:
             fact["cable"] = {k: res[k] for k in ("name", "type", "note", "pins")}
         facts.append(fact)
@@ -419,6 +420,30 @@ def unkeyed_violations(model, table: dict) -> list[dict]:
     return out
 
 
+CONNECTOR_REF_RE = re.compile(r"^(J|P|CN|CON|X)\d")
+
+
+def identical_connectors(model, table: dict) -> tuple[int, list[str]]:
+    """(identical unkeyed connector groups the rail-swap rule judges, the
+    same-footprint connectors it can't: no family says if they are keyed)."""
+    groups: dict[str, list] = {}
+    for fp in sorted(model.footprints.values(), key=lambda f: f.ref):
+        if CONNECTOR_REF_RE.match(fp.ref):
+            groups.setdefault(fp.fpid, []).append(fp.ref)
+    judged, left = 0, []
+    for fpid, refs in groups.items():
+        if len(refs) < 2:
+            continue
+        fam = family(fpid, table)
+        if fam is None:
+            left.append(f"{', '.join(refs)} ({fpid.split(':')[-1]}): no "
+                        "connector family knows this footprint, so a plug in "
+                        "the wrong one was not judged")
+        elif not fam.get("keyed", True):
+            judged += 1
+    return judged, left
+
+
 def run(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--pcb", required=True)
@@ -454,8 +479,14 @@ def run(argv=None):
     violations += unkeyed_violations(model, table)
     for v in violations:
         v["check"] = "mate_pins"
-    return checklib.report(SCRIPT, str(pcb), violations,
-                           pairs=facts), args.out
+    groups, left = identical_connectors(model, table)
+    left += [f"{f['ref']} <-> {f['mate_ref']}: no pin has a net on both sides"
+             for f in facts if not f["compared"]]
+    compared = any(f["compared"] for f in facts)
+    return checklib.report(
+        SCRIPT, str(pcb), violations, pairs=facts, not_judged=left,
+        nothing_to_judge=None if compared or groups else
+        "no mating_pairs compared and no identical unkeyed connectors"), args.out
 
 
 def main(argv=None) -> int:

@@ -408,7 +408,10 @@ def run(argv=None):
         violations.extend(vs)
         checked.append(facts)
 
-    payload = checklib.report(SCRIPT, args.pcb, violations, checked=checked)
+    payload = checklib.report(
+        SCRIPT, args.pcb, violations, checked=checked,
+        nothing_to_judge=None if checked else
+        "no high_speed entries in constraints")
     return payload, args.out
 
 

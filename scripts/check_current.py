@@ -1245,8 +1245,14 @@ def run(argv=None):
         checked.append(facts)
 
     extra = {"unrated_switch_nodes": unrated} if unrated else {}
-    payload = checklib.report(SCRIPT, args.pcb, violations, checked=checked,
-                              stackup_assumed=bg.stackup.assumed, **extra)
+    payload = checklib.report(
+        SCRIPT, args.pcb, violations, checked=checked,
+        stackup_assumed=bg.stackup.assumed,
+        nothing_to_judge=None if checked else
+        "no power entries in constraints and no switcher the table knows",
+        not_judged=[f"{u['ref']} ({u.get('value')}) {u['pin']} on {u['net']}: "
+                    "a switch node whose part isn't in switch_nodes.yaml and "
+                    "with no power entry" for u in unrated], **extra)
     return payload, args.out
 
 

@@ -187,6 +187,7 @@ def check(pcb: Path, stackup_name: str | None = None,
                  "--stackup" if stackup_name else
                  "matched by layer thicknesses" if name else
                  "no stackups.yaml entry matches the board's stack"),
+             "stackup_assumed": bool(bg.stackup.assumed),
              "copper_layers": n, "vias": len(vias),
              "non_through": len(blind),
              "hdi_entry": is_hdi_entry,
@@ -407,6 +408,7 @@ def run(argv=None):
         raise checklib.CheckError(f"board not found: {pcb}")
     viols, facts = check(pcb, args.stackup)
     return checklib.report(SCRIPT, pcb, viols, checked=[facts],
+                           stackup_assumed=facts["stackup_assumed"],
                            nothing_to_judge=None if facts.get("vias") else
                            "the board has no vias"), args.out
 

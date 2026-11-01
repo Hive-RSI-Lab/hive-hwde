@@ -955,14 +955,18 @@ def check_polarity(bg, netlist: dict, vios: list) -> dict:
         by_ref.setdefault(pad.ref, []).append(pad)
 
     checked = 0
+    no_common: list[str] = []
     for ref, pads in sorted(by_ref.items()):
         want = {p: n for (r, p), n in expected.items() if r == ref}
         if not want:
             continue  # not an assembled part (mounting hole, board_only)
-        checked += 1
         got = {}
         for pad in pads:
             got.setdefault(pad.number, set()).add(pad.net)
+        if not set(got) & set(want):
+            no_common.append(ref)  # compared nothing: not a checked part
+            continue
+        checked += 1
         mism = [(num, sorted(nets)[0], want[num])
                 for num, nets in sorted(got.items())
                 if num in want and want[num] not in nets]
@@ -1005,7 +1009,9 @@ def check_polarity(bg, netlist: dict, vios: list) -> dict:
             kind=kind, rotation_delta_deg=rot,
             mismatches=[{"pad": n, "board": a, "schematic": w}
                         for n, a, w in mism]))
-    return {"refs_checked": checked}
+    in_netlist = {r for r, _p in expected}
+    return {"refs_checked": checked, "refs_no_common_pads": no_common,
+            "refs_only_in_netlist": sorted(in_netlist - set(by_ref))}
 
 
 # ------------------------------------------------------------ placement
@@ -1563,6 +1569,20 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
                 v["msg"] = msg.replace("JLC minimum", f"{fab_name} minimum") \
                     .replace("JLC's", f"{fab_name}'s")
         facts["vendor"] = vendor
+    left = list(facts.get("not_judged") or [])
+    pol = facts.get("polarity") or {}
+    if pol.get("refs_no_common_pads"):
+        left.append("polarity: no pad number in common with the schematic: "
+                    + ", ".join(pol["refs_no_common_pads"]))
+    if pol.get("refs_only_in_netlist"):
+        left.append("polarity: in the schematic, no connected pad on the "
+                    "board: " + ", ".join(pol["refs_only_in_netlist"]))
+    if pol.get("status") == "checked" and not pol.get("refs_checked"):
+        left.append("polarity: no part could be compared")
+    if facts.get("copper_oz_source") == "default":
+        left.append("copper weight: no thickness in a (stackup) block, so "
+                    "the 1 oz floors were used")
+    facts["not_judged"] = left
     payload = checklib.report("dfm_check", pcb, vios, **facts)
     # Warnings alone do not fail the gate (netlist_audit / fp_verify precedent):
     # KiCad's stock 0.12 mm silk and tight mask dams are advisory, not defects.

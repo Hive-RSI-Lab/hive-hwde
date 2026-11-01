@@ -53,6 +53,14 @@ same pair is not consulted.
 The corpus carries no >30 V nets, so this check is clean on all goldens; supply
 voltages via constraints.json to exercise it (synthetic HV fixtures are tested).
 
+What it can't judge it says (#601). A net outside `voltages` is read as 0 V, so
+an unlisted 48 V net is never swept against its neighbours: not_judged names
+any unlisted net whose name reads above 30 V, any unlisted supply (a RAIL_RE
+name, a power[] entry, a pour) whose voltage nothing states, and any listed
+>30 V net or voltage_pairs net not on the board. With no pair over 30 V at all
+the report says nothing_to_judge. None of this is a finding: the name is a
+reason to declare the voltage, not evidence of a gap.
+
 CLI: --pcb board.kicad_pcb --constraints constraints.json
      [--coating {none,soldermask,conformal}] [--out report.json]
      exit 0/1/2 per SPEC section 6.
@@ -83,6 +91,8 @@ from shapely.strtree import STRtree
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
 import checklib  # noqa: E402
 import geom  # noqa: E402
+from check_mate_pins import RAIL_RE  # noqa: E402
+from check_ratings import SIGNAL_WORDS, base_net, volts_from_name  # noqa: E402
 from checklib import CheckError, violation  # noqa: E402
 
 SCRIPT = "check_creepage"
@@ -159,6 +169,32 @@ def voltage_map(cons: dict) -> dict[str, float]:
         if entry.get("net") and "voltage" in entry:
             vmap[entry["net"]] = float(entry["voltage"])
     return vmap
+
+
+# supply names RAIL_RE (connector rails) has no reason to know
+HV_NAME_RE = re.compile(r"^(HV|VHV|VMOT|VPWR|VSUP|VPP|PWR)(_|\d|$)")
+
+
+def undeclared_nets(bg: geom.BoardGeom, vmap: dict, cons: dict,
+                    vpairs: list) -> list[str]:
+    """Module doc: the nets this run read as 0 V for want of a voltage, worth
+    naming because the 0 may be wrong: their names or their use say supply."""
+    known = set(vmap) | {n for a, b, _v in vpairs for n in (a, b)}
+    powered = {e.get("net") for e in cons.get("power") or []
+               if isinstance(e, dict)}
+    poured = {z.net for z in bg.zones_of() if z.net}
+    out: list[str] = []
+    for net in sorted(n for n in bg.nets if n and n not in known):
+        named = volts_from_name(net)
+        if named is not None and abs(named) > HV_THRESHOLD_V:
+            out.append(f"{net}: its name reads {named:g} V but it has no "
+                       "voltages entry, so it was read as 0 V")
+        elif named is None and not SIGNAL_WORDS & set(base_net(net).split("_")) \
+                and (net in powered or net in poured
+                     or RAIL_RE.search(base_net(net))
+                     or HV_NAME_RE.search(base_net(net))):
+            out.append(f"{net}: a supply with no stated voltage, read as 0 V")
+    return out
 
 
 def voltage_pair_list(cons: dict) -> list[tuple[str, str, float]]:
@@ -499,6 +535,18 @@ def run(argv=None):
                         "voltage_pair": True, "pairs_checked": len(summ),
                         "pairs": summ})
 
+    not_judged = undeclared_nets(bg, vmap, cons, vpairs)
+    not_judged += [f"{n}: listed above {HV_THRESHOLD_V:.0f} V but not on the "
+                   "board (renamed?)" for n in skipped
+                   if abs(vmap.get(n, HV_THRESHOLD_V + 1)) > HV_THRESHOLD_V]
+    swept = any(c["pairs_checked"] for c in checked)
+    nothing = None
+    if not swept and not violations:
+        nothing = ("no voltages or voltage_pairs in constraints: every net "
+                   "reads as 0 V" if not vmap and not vpairs else
+                   f"no two nets with copper on one layer are declared more "
+                   f"than {HV_THRESHOLD_V:.0f} V apart")
+
     # sidecar-adoption lint (T6, facts only - never a violation): when no
     # coating is declared and findings were adjudicated on the uncoated
     # B2/B3 rows, a "coating" constraints key would change those verdicts.
@@ -521,6 +569,7 @@ def run(argv=None):
                                    "courtyard_found":
                                        s["courtyard_poly"] is not None}
                                   for s in scopes],
+                              nothing_to_judge=nothing, not_judged=not_judged,
                               **hint)
     return payload, args.out
 

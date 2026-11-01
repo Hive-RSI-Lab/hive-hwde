@@ -724,6 +724,7 @@ def check(pcb: Path, constraints: dict | None = None,
     vios += tv
 
     seen = {
+        "tenting_assumed": dflt["tenting_assumed"],
         "config": {k: cfg[k] for k in DEFAULTS},
         "nets": len(nets), "nets_scope": "constraints" if cfg["nets"]
         else "all nets with 2+ pads",
@@ -764,7 +765,10 @@ def run(argv=None):
     cons = checklib.load_json(args.constraints, "constraints") \
         if args.constraints and Path(args.constraints).is_file() else None
     vios, seen = check(pcb, cons, args.all_points)
-    return checklib.report(SCRIPT, pcb, vios, checked=[seen]), args.out
+    return checklib.report(
+        SCRIPT, pcb, vios, checked=[seen],
+        not_judged=[check_wicking.TENTING_ASSUMED]
+        if seen.get("tenting_assumed") else None), args.out
 
 
 def main(argv=None) -> int:
