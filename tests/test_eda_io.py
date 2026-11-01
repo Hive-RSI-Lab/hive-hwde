@@ -498,3 +498,25 @@ def test_prune_symbol_lib(tmp_path):
     assert '(symbol "R"' in text and '(symbol "C"' not in text
     # the kept form ends where its parens balance, quoted parens aside
     assert '(property "Value" "a (b) \\"c)" )\n\t)' in text and text.endswith("\t)\n)\n")
+
+
+def test_eagle_milling_slots(tmp_path):
+    """A Milling (46) wire through a package's drilled pad is that pad's slot
+    (SparkFun's USB-C shell tabs); one elsewhere is counted, not a slot."""
+    brd = """<?xml version="1.0"?><eagle><drawing><layers>
+<layer number="1" name="Top" active="yes"/><layer number="16" name="Bottom" active="yes"/>
+</layers><board><plain><wire x1="0" y1="0" x2="1" y2="0" width="0.5" layer="46"/></plain>
+<libraries><library name="L"><packages><package name="USBC">
+<pad name="SHLD1" x="-4.318" y="-0.915" drill="0.4" diameter="0.6" shape="long" rot="R90"/>
+<pad name="P2" x="2" y="2" drill="0.4"/>
+<wire x1="-4.318" y1="-0.365" x2="-4.318" y2="-1.465" width="0.6" layer="46"/>
+<wire x1="9" y1="9" x2="9" y2="8" width="0.6" layer="46"/>
+</package></packages></library></libraries>
+<elements><element name="J5" library="L" package="USBC" x="0" y="0"/></elements>
+<signals/></board></drawing></eagle>"""
+    p = tmp_path / "s.brd"
+    p.write_text(brd)
+    src = edasrc.read_source(p)
+    assert src.slots == [{"ref": "J5", "pad": "SHLD1", "x1": -4.318, "y1": -0.365,
+                          "x2": -4.318, "y2": -1.465, "w": 0.6}]
+    assert src.milling_other == 2  # the board-level wire and the stray one
