@@ -254,6 +254,7 @@ def _placement_adjust_request(bg: geom.BoardGeom, unrouted: list[str],
 
 
 def _krt_finish(cli: Path, staged: Path, work: Path, drc: dict, *,
+                power_layers: list[str] | None = None,
                 refill: bool, parity: bool, timeout_s: int) -> dict | None:
     """Deterministic post-Freerouting mop-up via the vendored
     KiCadRoutingTools (S11 acceptance: FR leaves 0.5 mm-pitch LQFP GND pins
@@ -314,6 +315,12 @@ def _krt_finish(cli: Path, staged: Path, work: Path, drc: dict, *,
         wide = {n: w for n, w in dru_widths.items()
                 if n in nets and w > floors["track_width"] + 1e-6}
         extra = ["--nets", *nets]
+        if power_layers:
+            # KRT defaults to every copper layer: without this it runs signals
+            # across a plane the caller named (bldc-drive: 128 mm on In1 GND)
+            all_layers = geom.BoardGeom.from_file(staged).copper_layers
+            extra += ["--layers", *[ly for ly in all_layers
+                                    if ly not in power_layers]]
         if wide:
             extra += ["--power-nets", *sorted(wide), "--power-nets-widths",
                       *[f"{wide[n]:g}" for n in sorted(wide)],
@@ -672,6 +679,7 @@ def run(argv: list[str] | None = None):
     finish_facts = None
     if not args.no_krt_finish:
         finish_facts = _krt_finish(cli, staged, work, drc,
+                                   power_layers=power_layers,
                                    refill=has_zones,
                                    parity=sch.is_file(),
                                    timeout_s=min(args.timeout_s, 600))
@@ -690,7 +698,10 @@ def run(argv: list[str] | None = None):
         import route_finish
         maze_facts = route_finish.finish_staged(
             cli, staged, drc, parity=sch.is_file(), refill=has_zones,
-            rip_errors=True)
+            rip_errors=True,
+            layers=(",".join(ly for ly in bg.copper_layers
+                             if ly not in power_layers)
+                    if power_layers else "auto"))
         if maze_facts.get("kept"):
             drc = maze_facts.pop("drc")
         else:
