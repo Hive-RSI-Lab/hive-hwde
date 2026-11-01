@@ -678,7 +678,9 @@ def run(argv=None):
                 spread_ps=checklib.rnd(spread, 1), budget_ps=checklib.rnd(budget, 1)))
 
     payload = checklib.report(SCRIPT, args.pcb, violations, nets=nets_out,
-                              groups=group_out, stackup_assumed=bool(bg.stackup.assumed))
+                              groups=group_out, stackup_assumed=bool(bg.stackup.assumed),
+                              nothing_to_judge=None if nets_out else
+                              "no net matches a signal class by name or si.nets")
     return payload, args.out
 
 

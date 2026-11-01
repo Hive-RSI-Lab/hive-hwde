@@ -15,6 +15,10 @@
 # verified: false means typed from memory of the datasheet, not re-read:
 # check_straps says so in its finding, and the review that relies on it
 # reads the datasheet once and flips it (with the date) here.
+# mcu_like: part Values that are an MCU, known here or not. A board with one
+# the `mcus` rows don't match has had nothing judged, and check_straps says so
+# (mcu_unknown) rather than passing.
+mcu_like: '^(STM32|STM8|GD32|CH32|CH5[0-9]|AT32|APM32|HC32|MM32|PY32|N32|ESP32|ESP8266|ESP8285|ESP8684|RP2040|RP2350|NRF5|NRF9|ATMEGA|ATTINY|ATSAM|AT90|SAM[DEL][0-9]|PIC1[0268]|PIC24|PIC32|DSPIC|MSP430|MSPM0|TM4C|TMS320|LPC[0-9]|MK[LEVWS][0-9]|MIMX|MCIMX|EFM32|EFR32|R7FA|R5F|CY8C|XMC[0-9]|LGT8|W80[0-9]|BL60[0-9])'
 
 mcus:
   - family: ESP32
@@ -155,6 +159,61 @@ mcus:
 #                     keep whatever firmware set unless that pin follows the
 #                     MCU's enable.
 #   kind: input     - the named pins are inputs at reset (loads, not drivers)
+  # Every GPIO is pulled down from reset (RP2040 datasheet Pinout table,
+  # Reset State column; PADS_BANK0 GPIOn reset PDE=1, PUE=0).
+  - family: RP2040
+    match: '^RP2040'
+    vdd: 3.3
+    vil: 0.242             # VIL 0.8 V at IOVDD 3.3 V
+    vih: 0.606             # VIH 2.0 V at IOVDD 3.3 V
+    pull_ohm: 65000        # RPU, RPD 50-80 k
+    enable: [RUN]
+    aliases: {QSPI_CS: QSPI_SS, QSPI_CSN: QSPI_SS, QSPI_SS_N: QSPI_SS,
+              QSPI_SSN: QSPI_SS, SWDIO: SWD}
+    straps:
+      QSPI_SS: {pull: up, want: high, severity: error,
+                why: "the boot ROM skips flash when the QSPI chip select is tied low (the BOOTSEL button)"}
+      TESTEN: {pull: down, want: low, severity: error,
+               why: "factory test mode pin: tie to GND"}
+    reset_pulls:
+      # offboard: false, because every GPIO has this pull: a load it turns on
+      # is load_on_at_reset, but each pin leaving the board isn't a finding.
+      IO0: &rp_pd {pull: down, offboard: false,
+                   why: "RP2040 GPIOs are pulled down from reset"}
+      IO1: *rp_pd
+      IO2: *rp_pd
+      IO3: *rp_pd
+      IO4: *rp_pd
+      IO5: *rp_pd
+      IO6: *rp_pd
+      IO7: *rp_pd
+      IO8: *rp_pd
+      IO9: *rp_pd
+      IO10: *rp_pd
+      IO11: *rp_pd
+      IO12: *rp_pd
+      IO13: *rp_pd
+      IO14: *rp_pd
+      IO15: *rp_pd
+      IO16: *rp_pd
+      IO17: *rp_pd
+      IO18: *rp_pd
+      IO19: *rp_pd
+      IO20: *rp_pd
+      IO21: *rp_pd
+      IO22: *rp_pd
+      IO23: *rp_pd
+      IO24: *rp_pd
+      IO25: *rp_pd
+      IO26: *rp_pd
+      IO27: *rp_pd
+      IO28: *rp_pd
+      IO29: *rp_pd
+      SWCLK: {pull: up, why: "SWCLK's pull-up is on from reset"}
+      SWD: {pull: up, why: "SWD's pull-up is on from reset"}
+    source: RP2040 datasheet build 2025-02-20 (3184e62) Pinout section Reset State column (GPIO pull-down, QSPI_CSn/SWCLK/SWD/RUN pull-up, TESTEN pull-down), PADS_BANK0 GPIOn register, IO electrical table (VIH 2 V, VIL 0.8 V at 3.3 V, RPU/RPD 50-80 k), bootrom "Check if SPI CS pin is tied low", section 1.4.3 "TESTEN Factory test mode pin. Tie to GND."
+    verified: true
+
 parts:
   - match: '^(TCA9555|PCA9555)'
     kind: expander
@@ -195,6 +254,11 @@ parts:
     kind: input
     pins: '^(NRST|RST|XTAL1/CLKIN|XTAL1|CLKIN|MDC|TXD[01]|TXEN)$'
     source: Microchip LAN8720A DS00002165B pin table
+    verified: false
+  - match: '^(W25Q|GD25Q|MX25[LU]|IS25[LW]P|AT25[SQ]F|S25FL)'
+    kind: input
+    pins: '^(CS|CS#|CSN|NCS|SS|SS#|/CS)$'
+    source: SPI NOR flash pin tables (Winbond W25Q128JV CS input, no driver on it)
     verified: false
   - match: '^PCM510[0-9]'
     kind: input

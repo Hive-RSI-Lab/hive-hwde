@@ -484,7 +484,9 @@ def run(argv=None):
             if args.constraints else None)
     viols, facts = check(pcb, cons, Path(args.parts) if args.parts else None,
                          args.spice)
-    return checklib.report(SCRIPT, pcb, viols, checked=[facts]), args.out
+    return checklib.report(SCRIPT, pcb, viols, checked=[facts],
+                           nothing_to_judge=None if facts.get("ports_declared")
+                           else "no surge.ports in constraints"), args.out
 
 
 def main(argv=None) -> int:

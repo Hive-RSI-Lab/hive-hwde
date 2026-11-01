@@ -377,7 +377,9 @@ def run(argv=None):
     if args.constraints:
         cons = json.loads(Path(args.constraints).read_text(encoding="utf-8"))
     viols, seen = check(pcb, nl, cons, args.cable_pf)
-    return checklib.report(SCRIPT, pcb, viols, checked=[seen]), args.out
+    return checklib.report(SCRIPT, pcb, viols, checked=[seen],
+                           nothing_to_judge=None if seen.get("opamps") else
+                           "no op-amp found"), args.out
 
 
 def main(argv=None) -> int:

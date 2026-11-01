@@ -47,6 +47,8 @@ Findings:
                       nothing else on its net that could hold it
   io_reset_holds      warning: an expander whose outputs survive an MCU
                       reset (no RESET pin on the MCU's enable)
+  mcu_unknown         warning: a part reset_states.yaml's mcu_like calls an
+                      MCU has no row, so nothing about it was judged
   no_netlist          warning: the board has an MCU from the file but no
                       netlist beside it, so nothing was resolved
 
@@ -365,6 +367,29 @@ class Resolver:
                         f"{vih * vdd:.2f} V; {pulls_txt})"}
 
 
+def unknown_mcus(values: dict[str, str], kb: dict) -> list[str]:
+    """Refs whose Value is an MCU (kb mcu_like) that no `mcus` row matches:
+    nothing about their straps or reset states can be judged."""
+    like = kb.get("mcu_like")
+    if not like:
+        return []
+    return sorted(ref for ref, val in values.items()
+                  if re.search(like, val or "", re.I)
+                  and not any(r["_match"].search(val)
+                              for r in kb.get("mcus") or []))
+
+
+def mcu_verdict(known: list, unknown: dict[str, str]) -> str | None:
+    """Why an MCU check judged nothing (None when it had an MCU to judge):
+    the coverage line in place of a pass."""
+    if known:
+        return None
+    if unknown:
+        return ("reference/reset_states.yaml has no row for "
+                + ", ".join(f"{r} ({v})" for r, v in sorted(unknown.items())))
+    return "no MCU on the board"
+
+
 def find_mcus(board: Board, kb: dict) -> list[dict]:
     out = []
     for ref in sorted(board.pins):
@@ -659,7 +684,7 @@ def check_reset_pulls(board, kb, mcu, bg) -> tuple[list, list]:
                 f"pull, or use a pin with no reset pull{unverified}",
                 SOURCE, kind="load_on_at_reset", pin=name,
                 part_pin=meta["name"]))
-        if spec["strap"]:
+        if spec["strap"] or spec.get("offboard") is False:
             continue  # a boot pin on a programming header is meant to be
         ext = [p for p in st["pulls"] if not p.startswith(f"{mcu['ref']} ")]
         conns = [f"{ref}.{rpin}" for ref, rpin in board.nodes.get(g, [])
@@ -728,7 +753,9 @@ def check(pcb: Path, netlist: Path | None = None, kb: dict | None = None):
                 if any(r["_match"].search(fp.get("value") or "")
                        for r in kb.get("mcus") or [])]
         if not mcus:
-            return [], {"netlist": None, "mcus": []}
+            return [], {"netlist": None, "mcus": [],
+                        "nothing_to_judge": "no netlist beside the board, "
+                                            "and no known MCU on it"}
         return [checklib.violation(
             SCRIPT, "warning", None, None, None, mcus,
             f"{', '.join(sorted(mcus))}: no netlist beside {pcb.name} "
@@ -750,10 +777,22 @@ def check(pcb: Path, netlist: Path | None = None, kb: dict | None = None):
     v, f = check_expanders(board, kb, mcus[0] if mcus else None, bg)
     viols += v
     ios += f
-    return viols, {"netlist": str(netlist),
-                   "mcus": [m["ref"] for m in mcus],
-                   "straps": straps, "reset_pulls": pulls,
-                   "expander_pins": ios}
+    values = {r: board.value(r) for r in board.pins}
+    unknown = {r: values[r] for r in unknown_mcus(values, kb)}
+    for ref, val in sorted(unknown.items()):
+        viols.append(checklib.violation(
+            SCRIPT, "warning", None, None, None, [ref],
+            f"{ref} ({val}) is an MCU reference/reset_states.yaml has no row "
+            "for, so its straps and reset pulls weren't judged: add its row "
+            "from its datasheet", SOURCE, kind="mcu_unknown"))
+    seen = {"netlist": str(netlist),
+            "mcus": [m["ref"] for m in mcus],
+            "mcus_unknown": sorted(unknown),
+            "straps": straps, "reset_pulls": pulls,
+            "expander_pins": ios}
+    if not mcus and not ios:
+        seen["nothing_to_judge"] = mcu_verdict(mcus, unknown)
+    return viols, seen
 
 
 def run(argv=None):
@@ -769,7 +808,9 @@ def run(argv=None):
     if nl is not None and not nl.is_file():
         raise checklib.CheckError(f"netlist not found: {nl}")
     viols, seen = check(pcb, nl)
-    return checklib.report(SCRIPT, pcb, viols, checked=[seen]), args.out
+    return checklib.report(SCRIPT, pcb, viols, checked=[seen],
+                           nothing_to_judge=seen.get("nothing_to_judge")
+                           ), args.out
 
 
 def main(argv=None) -> int:

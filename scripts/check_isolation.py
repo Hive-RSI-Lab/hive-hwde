@@ -738,7 +738,9 @@ def run(argv=None):
     cons = (checklib.load_json(args.constraints, "constraints")
             if args.constraints else None)
     viols, facts = check(pcb, cons)
-    return checklib.report(SCRIPT, pcb, viols, checked=[facts]), args.out
+    return checklib.report(SCRIPT, pcb, viols, checked=[facts],
+                           nothing_to_judge=None if facts.get("judged", True)
+                           else facts.get("why")), args.out
 
 
 def main(argv=None) -> int:

@@ -42,11 +42,13 @@ Summary schema (stable - downstream consumers may rely on it):
     {"script": "verify_all", "board": "<name>", "status": pass|violations|error,
      "counts": {"total", "by_severity"{}, "by_source"{}, "by_check"{}},
      "checks": {"<name>": {"status": pass|violations|error|skipped|
-                           skipped_error|not_applicable,
+                           skipped_error|not_applicable|nothing_to_judge,
                            "counts"{}, "report": "<path>"|null, "reason"?}},
      "coverage": {"strict", "required"[], "ran"[], "passed"[], "failed"[],
                   "waived"[], "not_applicable"{name: {reason, approved}},
-                  "skipped_error"{name: reason}},
+                  "skipped_error"{name: reason},
+                  "nothing_to_judge"{name: reason},
+                  "not_judged"{name: [what]}},
      "violations": [ ...merged normalized violations, each keeps its "source"...],
      "report_schema", "generated_at", "input", "input_digest"}
 
@@ -55,6 +57,14 @@ coverage.failed = ran with error-severity findings; passed = ran without
 coverage.skipped_error in BOTH modes (a coverage hole is a fact either way);
 only strict turns them into an error status. coverage.waived is filled by
 gate.py at evaluation (waivers are gate-side artifacts).
+
+A check that ran and found nothing it could judge (its report carries
+`nothing_to_judge`: no MCU on an MCU check, no netlist) is not a pass: it
+stays in `ran` but leaves `passed` for coverage.nothing_to_judge, and its
+checks entry reads status nothing_to_judge. An error finding keeps it in
+`failed`; a warning about the hole (mcu_unknown) doesn't make it a pass. It
+fails neither mode (a board with no MCU is fine); it is said out loud.
+`not_judged` lists what a check that judged other things had to leave out.
 
 Exit: 0 all pass, 1 any violations, 2 any check errored (could not verify),
 a strict coverage failure, or a bad invocation.
@@ -277,6 +287,8 @@ def run_one(check: dict, inputs: dict, reports_dir: Path,
         "report": str(report_path) if report_path.exists() else None,
         "error": payload.get("error"),
         "violations": payload.get("violations", []),
+        "nothing_to_judge": payload.get("nothing_to_judge"),
+        "not_judged": payload.get("not_judged"),
     }
 
 
@@ -320,12 +332,18 @@ def coverage_matrix(results: list[dict], na: dict, strict: bool) -> dict:
     run. `waived` is filled by gate.py at evaluation time."""
     ran, passed, failed = [], [], []
     skipped_error: dict[str, str] = {}
+    nothing: dict[str, str] = {}
+    not_judged: dict[str, list] = {}
     for r in results:
         st = r["status"]
+        if r.get("not_judged"):
+            not_judged[r["name"]] = r["not_judged"]
         if st in ("pass", "violations"):
             ran.append(r["name"])
             if any(v.get("severity") == "error" for v in r["violations"]):
                 failed.append(r["name"])
+            elif r.get("nothing_to_judge"):
+                nothing[r["name"]] = r["nothing_to_judge"]
             else:
                 passed.append(r["name"])
         elif st in ("skipped", "skipped_error"):
@@ -343,6 +361,8 @@ def coverage_matrix(results: list[dict], na: dict, strict: bool) -> dict:
                                "approved": e.get("approved")}
                            for n, e in na.items()},
         "skipped_error": skipped_error,
+        "nothing_to_judge": nothing,
+        "not_judged": not_judged,
     }
 
 
@@ -360,6 +380,10 @@ def merge(board, results: list[dict], na: dict | None = None,
             errored = True  # skipped_error only exists under strict
         entry = {"status": r["status"], "counts": r["counts"],
                  "report": r["report"]}
+        if r.get("nothing_to_judge"):
+            entry["reason"] = r["nothing_to_judge"]
+            if r["status"] == "pass":
+                entry["status"] = "nothing_to_judge"
         if r.get("reason"):
             entry["reason"] = r["reason"]
         if r.get("error"):

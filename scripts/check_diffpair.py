@@ -772,7 +772,12 @@ def run(argv=None):
         violations.extend(vs)
         checked.append(facts)
 
-    payload = checklib.report(SCRIPT, args.pcb, violations, checked=checked)
+    unrouted = ["/".join(c["pair"]) for c in checked if c.get("routed") is False]
+    payload = checklib.report(
+        SCRIPT, args.pcb, violations, checked=checked,
+        not_judged=[f"{u}: not fully routed" for u in unrouted],
+        nothing_to_judge=None if len(checked) > len(unrouted) else
+        "no routed differential pair")
     return payload, args.out
 
 

@@ -46,7 +46,8 @@ Findings:
                       toward the load's on level, which no pull holds off
 
 The netlist is the board's own `<board>.net` beside the .kicad_pcb, or
---netlist; with none, check_straps raises no_netlist and this check passes.
+--netlist; with none, or with no MCU reset_states.yaml knows, this check
+reports nothing_to_judge (check_straps raises no_netlist / mcu_unknown).
 
 CLI: --pcb board.kicad_pcb [--netlist board.net] [--out report.json]
      exit 0 pass / 1 violations / 2 error, per SPEC section 6.
@@ -290,7 +291,8 @@ def check(pcb: Path, netlist: Path | None = None, kb: dict | None = None):
     kb = cs.load_kb() if kb is None else kb
     netlist = netlist or cs.find_netlist(pcb)
     if netlist is None:
-        return [], {"netlist": None, "mcus": []}
+        return [], {"netlist": None, "mcus": [],
+                    "nothing_to_judge": "no netlist beside the board"}
     bg = geom.load_board(pcb)
     board = cs.Board(simlib.parse_netlist(netlist))
     viols, loads = [], []
@@ -299,8 +301,14 @@ def check(pcb: Path, netlist: Path | None = None, kb: dict | None = None):
         v, f = check_mcu(board, kb, mcu, bg)
         viols += v
         loads += f
-    return viols, {"netlist": str(netlist), "mcus": [m["ref"] for m in mcus],
-                   "loads": loads}
+    values = {r: board.value(r) for r in board.pins}
+    unknown = {r: values[r] for r in cs.unknown_mcus(values, kb)}
+    seen = {"netlist": str(netlist), "mcus": [m["ref"] for m in mcus],
+            "mcus_unknown": sorted(unknown), "loads": loads}
+    why = cs.mcu_verdict(mcus, unknown)
+    if why:
+        seen["nothing_to_judge"] = why
+    return viols, seen
 
 
 def run(argv=None):
@@ -316,7 +324,9 @@ def run(argv=None):
     if nl is not None and not nl.is_file():
         raise checklib.CheckError(f"netlist not found: {nl}")
     viols, seen = check(pcb, nl)
-    return checklib.report(SCRIPT, pcb, viols, checked=[seen]), args.out
+    return checklib.report(SCRIPT, pcb, viols, checked=[seen],
+                           nothing_to_judge=seen.get("nothing_to_judge")
+                           ), args.out
 
 
 def main(argv=None) -> int:

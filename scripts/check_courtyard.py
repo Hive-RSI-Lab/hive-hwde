@@ -61,11 +61,13 @@ def check(pcb: Path) -> tuple[list[dict], dict]:
     for p in bg.pads_of():
         pads.setdefault(p.ref, []).append(p)
     viols = []
-    seen = {"footprints": 0, "with_courtyard": 0}
+    seen = {"footprints": 0, "with_courtyard": 0, "no_courtyard": []}
     for ref in sorted(model.footprints):
         f = model.footprints[ref]
         seen["footprints"] += 1
         cy = courtyard_abs(f)
+        if cy is None and pads.get(ref):
+            seen["no_courtyard"].append(ref)
         if cy is None or not pads.get(ref):
             continue
         seen["with_courtyard"] += 1
@@ -103,7 +105,12 @@ def run(argv=None):
     if not pcb.is_file():
         raise checklib.CheckError(f"board not found: {pcb}")
     viols, seen = check(pcb)
-    return checklib.report(SCRIPT, pcb, viols, checked=[seen]), args.out
+    return checklib.report(
+        SCRIPT, pcb, viols, checked=[seen],
+        nothing_to_judge=None if seen["with_courtyard"] else
+        "no footprint with pads has a courtyard",
+        not_judged=seen["no_courtyard"] if seen["with_courtyard"] else None
+        ), args.out
 
 
 def main(argv=None) -> int:

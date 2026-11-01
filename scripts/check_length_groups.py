@@ -472,7 +472,9 @@ def run(argv=None):
         violations.extend(vs)
         checked.append(facts)
     payload = checklib.report(SCRIPT, args.pcb, violations, groups=checked,
-                              stackup_assumed=bool(bg.stackup.assumed))
+                              stackup_assumed=bool(bg.stackup.assumed),
+                              nothing_to_judge=None if checked else
+                              "no length_groups in constraints")
     return payload, args.out
 
 
