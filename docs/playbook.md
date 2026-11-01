@@ -135,7 +135,9 @@ weighed like any other report:
   KiCad's ngspice (Xyce, openEMS, Palace, FastHenry, FasterCap, hwde's own
   thermal/electro-thermal plane solver), each held to a closed-form case by
   `sim_solve validate`; `sim_solve line` checks a microstrip's Z0 full-wave
-  against impedance.py. docs/solvers.md.
+  against impedance.py; `sim_solve board` gives the S-parameters of a
+  board region (all layers, vias, lumped parts) as a Touchstone file.
+  docs/solvers.md.
 - `scripts/parts_enrich.py --workspace <ws>`: fills parts.json
   `attributes` (Power, Voltage Rated, Vgs, RDS(on), Vf, common mode) from
   each row's LCSC listing, keeping any value the row already has. Run it

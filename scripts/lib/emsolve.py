@@ -105,10 +105,57 @@ class Csx:
         self.exc = {"Type": 0, "f0": f0, "fc": fc}
         self.fdtd["f_max"] = f0 + fc
 
+    def dgauss(self, f_max: float, f_peak: float | None = None):
+        """A derivative-of-Gaussian pulse (openEMS custom excitation, Type
+        10): no DC at all, so a structure with no DC path to a port (open
+        coax ends, a series gap) holds no static charge and the run meets
+        its end criterion; a Gaussian with f0 = fc carries DC and its energy
+        plateaus (hw-lab vna-verify, #455 trap 3). Its spectrum peaks at
+        f_peak (f_max/2.5: -15 dB at f_max and at f_max/20). openEMS takes
+        the custom pulse's f0 as the sampling rate of its probes, so f0 is
+        f_max, never f_peak (f0 = 2 GHz gave 17 samples)."""
+        f_peak = f_peak or f_max / 2.5
+        tau = 1.0 / (2 * math.pi * f_peak)
+        t0 = 5 * tau
+        fn = f"-(t-{t0:.6e})/{tau:.6e}*exp(-((t-{t0:.6e})/{tau:.6e})^2/2)"
+        self.exc = {"Type": 10, "f0": f_max, "Function": fn}
+        self.fdtd["f_max"] = f_max
+
     def add_lines(self, axis: str, vals) -> None:
         self.lines[axis].update(round(float(v), 9) for v in vals)
 
+    def sheets_off_mesh(self) -> list[tuple[str, str, float]]:
+        """Zero-thickness metal (a Polygon, or a Box flat in one axis) whose
+        plane is not a mesh line: CSXCAD prints 'Unused primitive' and runs
+        without it, so a ground plane silently vanishes (hw-lab vna-verify:
+        merged mesh lines moved z=0, In1 was dropped and a 50 ohm CPWG read
+        65 ohm; #455 trap 1). [(property, axis, value)]."""
+        ax = "xyz"
+        lines = {a: sorted(self.lines[a]) for a in ax}
+
+        def on(a, v):
+            ls = lines[a]
+            return any(abs(q - v) < 1e-6 for q in ls)
+        out = []
+        for kind, attrs, inner, boxes in self.props:
+            if kind not in ("Metal", "ConductingSheet"):
+                continue
+            for prim in boxes:
+                if prim[0] == "poly":
+                    if not on("z", prim[2]):
+                        out.append((attrs["Name"], "z", prim[2]))
+                    continue
+                _, p1, p2 = prim
+                for i, a in enumerate(ax):
+                    if abs(p1[i] - p2[i]) < 1e-9 and not on(a, p1[i]):
+                        out.append((attrs["Name"], a, p1[i]))
+        return out
+
     def xml(self) -> str:
+        off = self.sheets_off_mesh()
+        if off:
+            raise ValueError("zero-thickness metal off every mesh line (CSXCAD would drop it): "
+                             + ", ".join(f"{n} {a}={v:g}" for n, a, v in off[:6]))
         bcn = ["xmin", "xmax", "ymin", "ymax", "zmin", "zmax"]
         out = ['<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>', "<openEMS>"]
         fd = " ".join(f"{k}={quoteattr(_fmt(v))}" for k, v in self.fdtd.items())

@@ -40,6 +40,22 @@ right, and the board-facing studies built on them.
         custom pads as drawn) into a GEOM.json for `planar`; h/er default
         to the board's own stackup (dielectric under the layer).
 
+    hwde sim_solve board --pcb BOARD --region X0,Y0,X1,Y1
+                         --port X,Y,DIR[,LAYER[,W]] [--port ...]
+                         [--part REF=OHMS ...] [--f-max HZ] [--f-min HZ]
+                         [--points N] [--symmetric] [--fine MM]
+                         [--touchstone FILE] [--out RES.json] [--keep DIR]
+                         [--deck-only DIR] [--json]
+        full-wave (openEMS) S-parameters of a region of a board with every
+        copper layer of its stackup (lib/emboard.py): CPWG and coplanar
+        ground, reference-plane cut-outs, via fences and plated holes as
+        drawn, 2-pad parts as lumped resistors (--part). Each port sits on
+        the region's edge (the region is cut at its plane) and the line
+        leaving there is carried out as a feed with V/I probes, so S is
+        referenced to 50 ohm at the plane whatever the line's own Z.
+        --symmetric: a mirror-symmetric 2-port is excited once. --deck-only
+        writes the deck(s) and the probe map without running.
+
 The cases (docs/solvers.md has the measured errors):
 
     circuit_ngspice     RC low-pass |H(fc)| = 1/sqrt2 and v(tau) = 1 - 1/e
@@ -467,6 +483,38 @@ def planar(geo: dict, excites, f_max, f_min=None, points=201, fine=None, keep=No
     return res
 
 
+def board_study(pcb, region, ports, parts=None, f_max=6e9, f_min=None, points=201,
+                symmetric=False, fine=None, keep=None, deck_only=None) -> dict:
+    """`hwde sim_solve board`: extract -> deck -> openEMS -> S (lib/emboard)."""
+    from lib import emboard as eb
+    geo = eb.extract(pcb, region, parts)
+    if deck_only:
+        out = Path(deck_only)
+        out.mkdir(parents=True, exist_ok=True)
+        n = len(ports)
+        decks = []
+        for e in ([0] if symmetric and n == 2 else range(n)):
+            csx, where = eb.deck(geo, ports, f_max, e, fine=fine)
+            d = out / f"port{e}"
+            d.mkdir(exist_ok=True)
+            (d / "deck.xml").write_text(csx.xml())
+            (d / "where.json").write_text(json.dumps(where, indent=1) + "\n")
+            decks.append({"excite": e, "dir": str(d), "cells": where["cells"], "mesh": where["mesh"]})
+        return {"script": SCRIPT, "cmd": "board", "decks": decks, "ports": where["ports"]}
+    res = eb.study(geo, ports, f_max, f_min, points, symmetric=symmetric, keep=keep, fine=fine)
+    S, freqs = res.pop("S"), res["freqs"]
+    n = len(res["ports"])
+    res["s"] = {f"S{i + 1}{j + 1}": [[round(s[i][j].real, 6), round(s[i][j].imag, 6)] for s in S]
+                for i in range(n) for j in range(n)}
+    res["features"] = _features(freqs, [s[0][0] for s in S], [s[1][0] for s in S] if n > 1 else None)
+    res["_touchstone"] = eb.touchstone(freqs, S, [f"hwde sim_solve board, openEMS: {pcb} region {region}",
+                                                  "ports: " + "; ".join(
+                                                      f"{p['x']},{p['y']},{p['dir']} {p['layer']} ref {p['ref']} "
+                                                      f"net {p['net']} w {p['w']}" for p in res["ports"])])
+    res.update(script=SCRIPT, cmd="board", source=str(pcb))
+    return res
+
+
 def _quasi_static(w, h, er, t):
     from lib import impedance as imp
     return imp.field_microstrip(w, h, max(t, 1e-4), er, mask=None)
@@ -697,7 +745,50 @@ def main(argv=None) -> int:
     pg.add_argument("--er", type=float)
     pg.add_argument("--tand", type=float)
     pg.add_argument("--out")
+    bd = sub.add_parser("board")
+    bd.add_argument("--pcb", required=True)
+    bd.add_argument("--region", required=True)
+    bd.add_argument("--port", action="append", required=True)
+    bd.add_argument("--part", action="append", default=[])
+    bd.add_argument("--f-max", type=float, default=6e9)
+    bd.add_argument("--f-min", type=float)
+    bd.add_argument("--points", type=int, default=201)
+    bd.add_argument("--symmetric", action="store_true")
+    bd.add_argument("--fine", type=float)
+    bd.add_argument("--touchstone")
+    bd.add_argument("--out")
+    bd.add_argument("--keep")
+    bd.add_argument("--deck-only")
+    bd.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
+
+    if args.cmd == "board":
+        parts = {}
+        for s_ in args.part:
+            ref, _, ohm = s_.partition("=")
+            parts[ref] = float(ohm)
+        res = board_study(args.pcb, [float(v) for v in args.region.split(",")], args.port, parts,
+                          args.f_max, args.f_min, args.points, args.symmetric, args.fine,
+                          args.keep, args.deck_only)
+        ts = res.pop("_touchstone", None)
+        if args.touchstone and ts:
+            Path(args.touchstone).write_text(ts)
+        if args.out:
+            Path(args.out).write_text(json.dumps(res, indent=1) + "\n")
+        if args.json:
+            print(json.dumps(res, indent=1))
+        else:
+            for p in res["ports"]:
+                print(f"port {p['x']},{p['y']},{p['dir']}: {p['layer']} over {p['ref']} "
+                      f"(h {p['h']}, er {p['er']}), net {p['net']}, w {p['w']}")
+            for d in res.get("decks", []):
+                print(f"deck port{d['excite']}: {d['cells']} cells {d['mesh']} -> {d['dir']}")
+            for r_ in res.get("runs", []):
+                print(f"run port{r_['excite']}: {r_['cells']} cells, {r_['seconds']} s, "
+                      f"feed Z {r_['z_feed']} ohm")
+            for name, ft in res.get("features", {}).items():
+                print(f"  {name}: {ft}")
+        return 0
 
     if args.cmd == "planar":
         geo = json.loads(Path(args.geom).read_text())
