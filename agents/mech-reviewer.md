@@ -13,6 +13,9 @@ Fresh context: you did not place this board. Run scripts with the repo venv pyth
   never held to a drawing makes every 3D check and picture wrong.
 - `scripts/render.py B --views mech --w 2400 --out-dir reports/renders/mech`
   (top, bottom, the four elevations, four corner isos). Open EVERY one with Read.
+  The `back` and `front` elevations show a connector row's side ears best. The
+  render leaves out DNP parts (hifi core's Ultra-only TOSLINK U19 has no body in
+  it), so list them and judge them from check_body_clash, which reads them all.
 - The vendor drawing of each connector and each part taller than 5 mm.
 
 ## Hunt list. Answer each with the refs and the view you saw it in.

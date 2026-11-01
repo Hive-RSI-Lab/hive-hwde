@@ -13,13 +13,13 @@ coordinates, with z = 0 at the top face and the back side below -thickness, so
 a through-hole part's pin tails meet the parts on the far side. The surfaces
 are rasterised on a shared lattice of VOX_MM (coarser for a very large part,
 VOX_MAX_CELLS) and closed shells are filled, so a part wholly inside another
-still overlaps it. A model that isn't closed stays a surface (`open_shells`
-in the report): two such surfaces crossing read thin, so that is reported as
-a warning, not hidden.
+still overlaps it. A model that isn't closed (`open_shells` in the report; a
+STEP's curved faces, read roughly) is filled by scanning along each axis instead.
 
 Findings, one per pair or part, kind:
   body_clash        error: two bodies share material at least CLASH_MM thick.
-  body_contact      warning: two open shells cross, too thin to measure.
+  body_contact      warning: open shells cross but share under CLASH_MM, too thin
+                    to measure, over at least 1 mm.
   body_tight        warning: two bodies both taller than TALL_MM stand under
                     TIGHT_MM apart. Through-hole parts lean as they're soldered
                     and a jack that touches its neighbour takes plug force.
@@ -32,8 +32,8 @@ Findings, one per pair or part, kind:
                     to HEAD_HEIGHT_MM).
   body_off_board    warning: a part that isn't a connector has a body past the
                     outline by more than OFF_BOARD_MM.
-  body_unjudged     warning: a connector or tall-class part (J, CN, X, P) has no
-                    readable model, so nothing here judged it.
+  body_unjudged     warning, one per board: connectors (J, CN, X, P) with no
+                    readable model, so nothing here judged them.
 
 A part with no model can't be judged, and the report's not_judged says which.
 Deliberate nesting (a battery in its holder, a part under a shield) goes in
@@ -220,7 +220,20 @@ def rasterise(body: Body, vox: float | None = None) -> None:
     # a thin part has no inside at this pitch: only a real volume says "open"
     size = sorted(body.box[i + 3] - body.box[i] for i in range(3))
     body.sealed = int(grid.sum()) > surface or size[0] < 4 * vox
+    if not body.sealed:
+        grid = _scan_fill(grid)
     body.cells, body.org, body.vox = grid, tuple(lo), vox
+
+
+def _scan_fill(grid: np.ndarray) -> np.ndarray:
+    """A shell with gaps (lib/modelgeom reads a STEP's curved faces as their
+    vertex loops): a cell is inside when surface lies both ways along all three
+    axes. A notch or the space under an ear has an open side, so it stays out."""
+    out = np.ones_like(grid)
+    for axis in range(3):
+        out &= np.logical_or.accumulate(grid, axis=axis)
+        out &= np.flip(np.logical_or.accumulate(np.flip(grid, axis), axis=axis), axis)
+    return out | grid
 
 
 def overlap(a: Body, b: Body):
@@ -484,20 +497,17 @@ def check(pcb: Path, constraints: dict | None = None, model_dirs=()):
                     "hole", SCRIPT, kind="body_over_hole"))
 
     judged = {b.ref for b in parts}
-    no_model = []
-    for ref in sorted(place.footprints):
-        if ref in judged or SKIP_UNJUDGED.match(ref) \
-                or "board_only" in place.footprints[ref].attrs \
-                or not place.footprints[ref].pads:
-            continue
-        no_model.append(ref)
-        if CONNECTOR_REFS.match(ref):
-            f = place.footprints[ref]
-            viols.append(checklib.violation(
-                SCRIPT, "warning", f.pos, None, None, [ref],
-                f"{ref}: no readable 3D model, so its body was checked against "
-                "nothing. A connector is where a body clash costs most. Fix: "
-                "add the model", SCRIPT, kind="body_unjudged"))
+    no_model = [r for r, f in sorted(place.footprints.items())
+                if r not in judged and not SKIP_UNJUDGED.match(r)
+                and "board_only" not in f.attrs and f.pads]
+    connectors = [r for r in no_model if CONNECTOR_REFS.match(r)]
+    if connectors:
+        viols.append(checklib.violation(
+            SCRIPT, "warning", None, None, None, connectors,
+            f"{' '.join(connectors)}: no readable 3D model, so these connectors'"
+            " bodies were checked against nothing, and a connector is where a "
+            "body clash costs most. Fix: add the models",
+            SCRIPT, kind="body_unjudged"))
     facts = {k: v for k, v in facts.items() if v}
     return viols, {
         **facts, "bodies": len(parts), "pairs_compared": len(pairs),

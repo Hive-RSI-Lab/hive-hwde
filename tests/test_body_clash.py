@@ -211,6 +211,9 @@ def test_no_model_is_not_a_pass(tmp_path):
     kinds, viols, facts = _kinds(pcb)
     assert kinds == ["body_unjudged"] and viols[0]["refs"] == ["J1"]
     assert facts["not_judged"] == ["J1", "R1"] and facts["bodies"] == 0
+    pcb2 = _board(tmp_path, _fp("J1", 50, 50, None), _fp("J2", 60, 50, None))
+    v2 = cbc.check(pcb2)[0]
+    assert len(v2) == 1 and v2[0]["refs"] == ["J1", "J2"]
     payload, _ = cbc.run(["--pcb", str(pcb)])
     assert payload["nothing_to_judge"]
 
@@ -224,15 +227,41 @@ def test_model_dir_finds_a_model_by_name(tmp_path):
     assert cbc.check(pcb, None, [d])[1]["bodies"] == 1
 
 
-def test_an_open_shell_is_reported_and_its_crossing_warned(tmp_path):
-    sheet = _wrl(tmp_path / "s.wrl", [(-4, -4, 3, 4, 4, 3.0001)], close=False)
-    solid = _wrl(tmp_path / "t.wrl", [(-1, -1, 0, 1, 1, 8)])
-    # a real closed body has an inside; the lone sheet is thin so reads sealed
-    pcb = _board(tmp_path, _fp("U1", 50, 50, sheet), _fp("U2", 50, 50, solid))
-    assert cbc.check(pcb)[1]["bodies"] == 2
-    box = _wrl(tmp_path / "u.wrl", [(-4, -4, 0, 4, 4, 8)], close=False)
-    pcb = _board(tmp_path, _fp("U1", 50, 50, box))
-    assert cbc.check(pcb)[1]["open_shells"] == []    # a flat face is thin too
+def test_open_shells_still_clash(tmp_path):
+    """Four walls and no lid or floor, as a STEP's curved parts read: open."""
+    def walls(path, x0, y0, x1, y1, z1):
+        pts = [(x0, y0, 0), (x1, y0, 0), (x1, y1, 0), (x0, y1, 0),
+               (x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1)]
+        # gaps in the side walls too, so no closed shell survives
+        quads = [(0, 1, 5, 4), (2, 3, 7, 6)]
+        p = ", ".join(" ".join(f"{v / IN:.6f}" for v in q) for q in pts)
+        idx = ", ".join(",".join(str(i) for i in q) + ",-1" for q in quads)
+        path.write_text("#VRML V2.0 utf8\nShape { geometry IndexedFaceSet {\n"
+                        f" coord Coordinate {{ point [ {p} ] }}\n"
+                        f" coordIndex [ {idx} ]\n}} }}\n", encoding="utf-8")
+        return path
+    a = walls(tmp_path / "a.wrl", -2, -2, 2, 2, 4)
+    solid = _wrl(tmp_path / "s.wrl", [(-2, -2, 0, 2, 2, 4)])
+    # two open walls only bound along y, so the scan can't call it inside
+    pcb = _board(tmp_path, _fp("U1", 50, 50, a))
+    assert cbc.check(pcb)[1]["open_shells"] == ["U1"]
+    closed = _board(tmp_path, _fp("U1", 50, 50, solid))
+    assert cbc.check(closed)[1]["open_shells"] == []
+
+
+def test_scan_fill_keeps_a_notch_out():
+    g = np.zeros((12, 12, 12), dtype=bool)
+    # a U seen from the side: floor and two uprights, open at the top
+    g[1:11, 1:11, 1] = True
+    g[1, 1:11, 1:11] = True
+    g[10, 1:11, 1:11] = True
+    g[1:11, 1, 1:11] = True
+    g[1:11, 10, 1:11] = True
+    f = cbc._scan_fill(g)
+    assert not f[5, 5, 5]       # open upward: no surface above it
+    g[1:11, 1:11, 10] = True
+    f = cbc._scan_fill(g)
+    assert f[5, 5, 5]
 
 
 def test_rasterise_fills_a_box_exactly():
