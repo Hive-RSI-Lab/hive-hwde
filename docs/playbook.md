@@ -136,6 +136,12 @@ weighed like any other report:
   thermal/electro-thermal plane solver), each held to a closed-form case by
   `sim_solve validate`; `sim_solve line` checks a microstrip's Z0 full-wave
   against impedance.py. docs/solvers.md.
+- `scripts/parts_enrich.py --workspace <ws>`: fills parts.json
+  `attributes` (Power, Voltage Rated, Vgs, RDS(on), Vf, common mode) from
+  each row's LCSC listing, keeping any value the row already has. Run it
+  once the BOM has LCSC codes and before sim_board / check_ratings: without
+  it every resistor is judged at its package default and every cap rating
+  is a known unknown.
 - `scripts/sim_board.py --workspace <ws>`: ngspice on the board's own
   netlist, no testbench to write. Rails are sources, ICs open, every R, C,
   L, diode, LED, zener and recognised BJT/MOSFET in place (a dual, e.g.
