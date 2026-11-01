@@ -35,8 +35,8 @@ MIN_FILL = 0.25       # balls / grid sites: a depopulated BGA keeps far more
 MAX_BALL_ASPECT = 1.5  # long side / short side of a ball pad (QFN leads ~3)
 RULE_PREFIX = "aiee_bga_escape_"
 # rules_gen names whose clearance an escape rule must never override:
-# voltage_rules (HV) and package_rules (package ratings)
-KEEP_LAST = ("aiee_hv_", "aiee_pkg_rating_")
+# voltage_rules (HV), package_rules (package ratings), isolation_rules (barriers)
+KEEP_LAST = ("aiee_hv_", "aiee_pkg_rating_", "aiee_iso_")
 
 # KiCad board-setup hole clearance when the project sets none
 # (rules_gen.KICAD_HOLE_CLEARANCE_MM - the same number).

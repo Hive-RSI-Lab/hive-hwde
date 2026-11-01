@@ -112,6 +112,21 @@ def _dsn_net_rules(staged: Path, dsn: Path) -> list[str]:
     return moved
 
 
+def _dsn_barriers(staged: Path, dsn: Path) -> list[dict]:
+    """Write the staged board's barrier rules (rules_gen's aiee_iso_*, #595)
+    into the DSN as pair clearances, so Freerouting stays out of the gap; run
+    last of the class edits, since it splits the classes they make."""
+    ddru = staged.with_suffix(".kicad_dru")
+    if not ddru.is_file():
+        return []
+    text, pairs = routelib.dsn_apply_barriers(
+        dsn.read_text(encoding="utf-8"),
+        routelib.dru_barriers(ddru.read_text(encoding="utf-8")))
+    if pairs:
+        dsn.write_text(text, encoding="utf-8")
+    return pairs
+
+
 def _dsn_layer_widths(staged: Path, dsn: Path) -> list[str]:
     """Write rules_gen's per-layer impedance widths (stripline layers, #489:
     zrules) into the DSN as class layer_rules, so Freerouting draws an inner
@@ -330,8 +345,11 @@ def _krt_finish(cli: Path, staged: Path, work: Path, drc: dict, *,
         after = kc.run_drc(cli, staged, parity=parity, all_track_errors=True)
         b_err = {k: v for k, v in _err_counts(drc).items()}
         a_err = _err_counts(after)
+        # KRT knows no barrier (net-wide clearances only): a finish that puts
+        # copper into one isn't better, however many nets it connects
         better = (sum(a_err.values()) < sum(b_err.values())
-                  and not (set(a_err) - set(b_err)))
+                  and not (set(a_err) - set(b_err))
+                  and _barrier_errors(after) <= _barrier_errors(drc))
         if not better:
             shutil.copy2(backup, staged)
             return {"kept": False, "nets": nets,
@@ -374,6 +392,11 @@ def _variance(graded: list[dict]) -> dict:
             for k in ("drc_unrouted_nets", "drc_errors", "drc_total")}
 
 
+def _barrier_errors(report: dict) -> int:
+    return sum("aiee_iso_" in str(v.get("description") or v.get("msg") or "")
+               for v in report.get("violations", []))
+
+
 def _err_counts(report: dict) -> dict[str, int]:
     out: dict[str, int] = {}
     for v in report["violations"]:
@@ -410,6 +433,7 @@ def route_probe(pcb: Path, *, passes: int = 4, timeout_s: int = 180,
     _dsn_layer_widths(staged, dsn)
     _dsn_hole_rules(staged, dsn, bg)
     merged = _dsn_merge_wires(dsn)
+    _dsn_barriers(staged, dsn)
     facts = routelib.run_freerouting(
         java, jar, dsn, ses, rung={"mp": passes}, timeout=timeout_s,
         log_file=work / "probe.log")
@@ -493,6 +517,7 @@ def run(argv: list[str] | None = None):
     hole_rules = _dsn_hole_rules(staged, dsn, bg)
     grown = hole_rules.pop("grown")
     dsn_wires_merged = _dsn_merge_wires(dsn)
+    dsn_barriers = _dsn_barriers(staged, dsn)
 
     # 3. Freerouting escalation ladder
     ladder = routelib.DEFAULT_LADDER[:max(1, args.max_rungs)]
@@ -708,6 +733,7 @@ def run(argv: list[str] | None = None):
             "power_layers": power_layers,
             "dsn_net_rules": dsn_net_rules,
             "dsn_layer_widths": dsn_layer_widths,
+            "dsn_barriers": dsn_barriers,
             "dsn_hole_rules": hole_rules,
             "dsn_wires_merged": dsn_wires_merged,
             "krt_finish": finish_facts,

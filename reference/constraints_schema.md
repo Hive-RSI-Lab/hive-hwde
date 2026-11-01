@@ -167,6 +167,12 @@ Consumers per key (script -> phase):
   // both domains, each with the ratings that must cover the barrier. floating:
   // nets known to be in no domain (globs); their copper still counts as
   // shortening the path. Mask earns no credit.
+  // rules_gen (P5, #595) writes aiee_iso_<barrier>_outer/_inner from this block
+  // and route_auto hands the pair to Freerouting. Outer is the creepage number
+  // as a straight distance; slot_earns_creepage: true on a barrier drops it to
+  // the clearance number and leaves the path round the slot to check_isolation.
+  // A part in parts whose rating covers the barrier gets a pad-to-pad exception.
+  // Net globs take * and ? only (no [..]); KiCad matches them case-insensitively.
   "isolation": {
     "domains": {"HOST": {"nets": ["VBUS", "GND_USB", "/usb/*"]},
                 "LOGIC": {"nets": ["+3V3", "GND", "/mcu/*"]}},
