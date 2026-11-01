@@ -618,8 +618,12 @@ def legality_violations(model: PlaceModel, placement: dict | None) -> list[dict]
     ext = {f.ref: f.extents_abs() for f in fps}
 
     def collides(a: Footprint, b: Footprint) -> bool:
-        if (a.is_mechanical and not a.pads) or (b.is_mechanical and not b.pads):
-            return False  # artwork (a logo, a silk label): nothing to place
+        # not assembled and nothing through the board (a logo, a silk label, a
+        # fiducial, wire pads): nothing to place, so nothing to collide with.
+        # DRC holds their copper. A mounting hole is through: it still counts.
+        for f in (a, b):
+            if f.is_mechanical and not any(p.through for p in f.pads):
+                return False
         if a.side == b.side:
             return True
         thru = ("through_hole" in a.attrs or any(p.through for p in a.pads)
