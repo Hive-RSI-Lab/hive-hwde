@@ -1,0 +1,1 @@
+{"channels": [{"name": "rc", "source": "ch1", "targets": ["ch2", "ch3"], "transform": "grid", "pitch": [0, 10]}]}

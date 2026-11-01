@@ -425,6 +425,27 @@ unverified), `ddr_rate_over`, `ddr_part_unknown`, `ddr_slew_clamped`,
 matched lane), so a single DQ 15 mm long still passes timing and only
 check_length_groups' HDG window flags it; at DDR3L-1600 without calibration
 the same fault is a `ddr_setup_violation`.
+## Repeated channels: lay out one, stamp the rest
+
+A board with N identical channels (one sheet instanced N times: an 8-input
+DAQ, per-cell balancers, per-port ESD, the L and R amps) gets one layout.
+`constraints.json` `channels` names the source channel and its targets (by
+sheet instance, or ref lists) and the transform: a grid pitch, or explicit
+offsets with a 0/90/180/270 turn. `place_replicate --stage place` (P6, after
+the source channel is laid out) puts every target's parts where the
+source's land under the transform and locks them; `--stage route` (P7, once
+the source is routed) copies its tracks and vias with each net mapped
+through the pad table (the source's MID becomes the target's MID, GND stays
+GND). Copy that would touch another net is dropped and listed; the nets
+between channels are route_auto's. Parts pair by symbol uuid, which is the
+same in every instance of a sheet file, so R101 pairs with R201 because it
+is the same symbol; two copies of a sheet file pair by ref number mod 100.
+A part only one channel has is reported and keeps normal placement.
+place_metrics and route_quality report `channel_symmetry`: the share of each
+target's parts and copper sitting exactly where the source's land (1.0 = an
+exact stamp). KiCad 10's own Repeat Layout needs the GUI, so hwde does the
+transform itself.
+
 ## Op-amp outputs into a cable or a big capacitor
 
 `check_cap_load` follows every op-amp output on the board's netlist through

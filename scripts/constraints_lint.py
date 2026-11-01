@@ -118,6 +118,13 @@ SECTIONS: dict[str, dict[str, dict[str, str]]] = {
         "required": {"ref": "str", "clearance_mm": "num"},
         "optional": {"why": "str"},
     },
+    # place_replicate (#482): a source channel stamped into its targets
+    "channels": {
+        "required": {"source": "str_or_list", "targets": "targets"},
+        "optional": {"name": "str", "transform": "str", "pitch": "pair",
+                     "offsets": "offsets", "origin": "pair", "route": "bool",
+                     "margin_mm": "num", "reason": "str"},
+    },
     # U4: P2's machine-readable block list - knowledge.py --select keys
     # record retrieval on each entry's topology token. U13: operating_point
     # = unit-suffixed dims ({vin_v: 12, edge_ns: 5, switching_kind: hard})
@@ -235,6 +242,14 @@ def _type_ok(spec: str, v) -> bool:
         return isinstance(v, str) or (
             isinstance(v, list) and bool(v)
             and all(isinstance(x, str) for x in v))
+    if spec == "targets":   # sheet names, or one ref list per target
+        return isinstance(v, list) and bool(v) and (
+            all(isinstance(x, str) for x in v)
+            or all(_type_ok("str_list", x) and x for x in v))
+    if spec == "offsets":   # explicit transforms {dx, dy, [rot]}
+        return isinstance(v, list) and all(
+            isinstance(o, dict) and set(o) <= {"dx", "dy", "rot"}
+            and all(_is_num(x) for x in o.values()) for o in v)
     if spec == "overrides":
         return isinstance(v, list)
     if spec == "map":       # flat scalar map (operating points): str keys,

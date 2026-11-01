@@ -1,0 +1,41 @@
+{
+  "board": {
+    "design_settings": {
+      "rule_severities": {
+        "lib_footprint_issues": "ignore",
+        "lib_footprint_mismatch": "ignore",
+        "track_width": "error",
+        "clearance": "error",
+        "hole_to_hole": "error",
+        "hole_clearance": "error",
+        "copper_edge_clearance": "error",
+        "annular_width": "error",
+        "drill_out_of_range": "error"
+      },
+      "rules": {
+        "min_clearance": 0.127,
+        "min_track_width": 0.127,
+        "min_via_diameter": 0.6,
+        "min_through_hole_diameter": 0.3,
+        "min_via_annular_width": 0.15,
+        "min_hole_to_hole": 0.5,
+        "min_copper_edge_clearance": 0.3
+      }
+    }
+  },
+  "erc": {
+    "rule_severities": {
+      "lib_symbol_issues": "ignore",
+      "lib_symbol_mismatch": "ignore",
+      "footprint_link_issues": "ignore"
+    }
+  },
+  "meta": {
+    "filename": "rep.kicad_pro",
+    "version": 3
+  },
+  "schematic": {
+    "legacy_lib_dir": "",
+    "legacy_lib_list": []
+  }
+}

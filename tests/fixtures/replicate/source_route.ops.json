@@ -1,0 +1,10 @@
+{"version": 1, "ops": [
+ {"op": "add_path", "points": [[114.775,106],[117,106],[117,107.725]], "width": 0.25, "layer": "F.Cu", "net": "/ch1/MID"},
+ {"op": "add_track", "start": [117,106], "end": [119.225,106], "width": 0.25, "layer": "F.Cu", "net": "/ch1/MID"},
+ {"op": "add_path", "points": [[120.775,106],[123,106],[123,107.725]], "width": 0.25, "layer": "F.Cu", "net": "/OUT1"},
+ {"op": "add_track", "start": [117,109.275], "end": [117,110.5], "width": 0.3, "layer": "F.Cu", "net": "/GND"},
+ {"op": "add_via", "at": [117,110.5], "size": 0.6, "drill": 0.3, "net": "/GND"},
+ {"op": "add_track", "start": [117,110.5], "end": [123,110.5], "width": 0.3, "layer": "B.Cu", "net": "/GND"},
+ {"op": "add_via", "at": [123,110.5], "size": 0.6, "drill": 0.3, "net": "/GND"},
+ {"op": "add_track", "start": [123,110.5], "end": [123,109.275], "width": 0.3, "layer": "F.Cu", "net": "/GND"}
+]}
