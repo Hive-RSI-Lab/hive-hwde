@@ -150,6 +150,41 @@ def test_refs_filter(tmp_path):
     assert [b.ref for b in bgalib.find_bgas(bg, ["U1"])] == ["U1"]
 
 
+def _qfn_ep(n_side=12, pitch=0.5, ep=5.0) -> str:
+    """A real QFN: oblong leads on all four sides (the lattice comes out at
+    0.25 mm) and a big exposed pad in the middle, which used to pass as an
+    interior ball (hive-hwde issue: route_escape planned escapes for QFNs)."""
+    pads = []
+    k = 0
+    span = 3.0
+    for i in range(n_side):
+        o = (i - (n_side - 1) / 2) * pitch
+        for x, y, w, h in ((o, -span, 0.25, 0.8), (o, span, 0.25, 0.8),
+                           (-span, o, 0.8, 0.25), (span, o, 0.8, 0.25)):
+            k += 1
+            pads.append(_pad(str(k), x, y, f"/Q{k}", h, shape="roundrect",
+                             w=w))
+    pads.append(_pad(str(k + 1), 0.0, 0.0, "/GND", ep, shape="rect"))
+    return _fp("U8", 32.0, 8.0, "".join(pads), (3.6, 3.6))
+
+
+def test_qfn_with_exposed_pad_is_not_a_bga(tmp_path):
+    bg = geom.BoardGeom.from_file(board(tmp_path, extra=_qfn_ep()))
+    assert [b.ref for b in bgalib.find_bgas(bg)] == ["U1"]
+
+
+def test_depopulated_bga_is_still_found(tmp_path):
+    """A ball field with its centre depopulated (a ring two balls deep plus
+    a centre island) is still a BGA."""
+    skip = ({(r, c) for r in range(2, 6) for c in range(2, 6)}
+            - {(3, 3), (3, 4), (4, 3), (4, 4)})
+    pads = "".join(_pad(num, x, y, net, 0.35) for num, x, y, net
+                   in _grid(8, 0.8, 0.35, prefix="D", skip=skip))
+    bg = geom.BoardGeom.from_file(board(tmp_path, extra=_fp(
+        "U5", 30.0, 30.0, pads, (3.5, 3.5))))
+    assert "U5" in [b.ref for b in bgalib.find_bgas(bg)]
+
+
 # ============================================================ budget
 
 def _bga(pitch, pad):
