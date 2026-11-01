@@ -413,7 +413,10 @@ def test_pinned_board_ships_a_netlist_its_gerbers_match(board, tmp_path):
     no T into a track body), so it may split a net the copper joins but
     never join what the copper splits: gerber fragments <= netconn's."""
     import fab_export
-    pcb = REPO / "pinned" / board / "kicad" / f"{board}.kicad_pcb"
+    # on a copy: kicad-cli leaves a .kicad_prl beside the board, and any
+    # file in pinned/ moves bin/score.py's digest
+    shutil.copytree(REPO / "pinned" / board / "kicad", tmp_path / "kicad")
+    pcb = tmp_path / "kicad" / f"{board}.kicad_pcb"
     man = fab_export.run(pcb, tmp_path / "fab")
     ipc = Path(man["ipc_netlist"])
     assert ipc.is_file() and ipc.parent == Path(man["gerber_dir"])
