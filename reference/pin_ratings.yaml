@@ -9,7 +9,9 @@
 # names (upper case; an en dash reads as '-'). max_v: the highest DC level
 # the pin may sit at, to the part's ground - the datasheet's recommended
 # (operating) common-mode or pin range where it has one, else its absolute
-# maximum. source: where the number came from. `verified: false` means typed
+# maximum. abs_max_v (optional): the absolute maximum, which transient
+# checks judge a peak against (sim_inrush's hot-plug); a row without it is
+# not used there. source: where the number came from. `verified: false` means typed
 # from memory of the datasheet, not re-read: the review that relies on it
 # reads the datasheet once and flips it (with the date).
 #
@@ -61,10 +63,21 @@ parts:
   - match: '^BQ7695[02]|^BQ76942'
     pins: '^(BAT|PACK|LD|CHG|DSG|PCHG|PDSG|VC\d+)$'
     max_v: 85
+    abs_max_v: 85
     source: TI SLUSE13B (BQ76952) 7.1 absolute maximum, BAT/PACK/LD/CHG/DSG/PCHG/PDSG to VSS + 85 V
     verified: false
   - match: '^LM506[79]'
     pins: '^(SENSE|OUT|UVLO|OVLO|VIN)$'
     max_v: 100
+    abs_max_v: 100
     source: TI SNVS452 (LM5069) absolute maximum VIN, SENSE, OUT to 100 V
     verified: false
+  - match: '^BQ25798'
+    pins: '^(VBUS|VAC1|VAC2|PMID)$'
+    max_v: 24
+    abs_max_v: 30
+    source: >-
+      TI SLUSDV2C (BQ25798, rev. Jun 2026) 6.3 recommended VVBUS 3.6..24 V;
+      6.1 absolute maximum VAC1, VAC2, VBUS, PMID (converter not switching)
+      30 V
+    verified: true
