@@ -255,7 +255,7 @@ def test_harmonic_mean_resolves_copper_edges():
 # ---------------------------------------------------------------- live
 
 @live
-@pytest.mark.parametrize("name", ["circuit_ngspice", "circuit_xyce", "fasthenry_bar",
+@pytest.mark.parametrize("name", ["circuit_ngspice", "circuit_xyce", "fasthenry_bar", "fasthenry_pair",
                                   "fastercap_cube", "circuit_xspice", "circuit_osdi",
                                   "circuit_xspice_kicad"])
 def test_live_solver_validates(name):
