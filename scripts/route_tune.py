@@ -1,4 +1,4 @@
-"""route_tune - length tuning of routed length groups (P7, hive-hwde #324).
+"""route_tune - length tuning of length groups and diff-pair skew (P7, #324, #476).
 
 check_length_groups judges each constraints.json length_groups net against
 its group's reference; this adds trombone meanders to the nets that are too
@@ -14,8 +14,7 @@ below it, or a cap, and the length is the one check_length_groups measures
 (the barrel the signal travels, pad to pad). The tuner measures with that
 same function, so what it tunes to is exactly what verify judges.
 
-Per net that needs +D mm (single-ended members only; a diff pair's halves are
-check_diffpair's and are reported, not tuned):
+Per single-ended net that needs +D mm (pairs: see below):
   * candidate runs are the STRAIGHT tracks on the net's measured pad-to-pad
     path, longest first; a lead of max(0.5 mm, 2 w) is left at each end;
   * a run becomes a train of k rectangular bumps of height h on one side
@@ -33,6 +32,28 @@ check_diffpair's and are reported, not tuned):
     outline; bumps already placed this run are obstacles for the next;
   * a net that is too LONG cannot be fixed by lengthening it and is reported
     (route it shorter, or lengthen the reference).
+Diff pairs (#476), measured with check_diffpair's own trunk and running-
+skew functions, so the tuner and the check agree:
+  * a pair in a length group is tuned AS A PAIR: coupled bumps on both legs
+    (the outer leg's bump is spacing + 2 g wide, the inner one nests inside
+    it at the pair pitch g, so both legs gain exactly 2 h and the skew does
+    not move) for what both need, then single-leg bumps for the rest;
+  * every pair's SKEW (end skew over max_skew_mm, or a running-skew
+    excursion check_diffpair flags as diffpair_phase) is tuned on the short
+    leg next to where the skew builds (the dynamic-phase rule: pro tools put
+    the bump by the bend, not at one end): the profile's first excursion
+    gives the place and the plateau it reaches the amount; the train sits
+    on the nearest straight trunk run (a phase fix within half a phase
+    window of it, sliding up to SLIDE_MM to find room), faces away from the
+    partner, and every point of it stays within the coupling threshold
+    minus PAIR_MARGIN_MM of the partner, so no sample turns uncoupled and
+    the impedance (median gap) does not move. One fix per pair per pass; an
+    excursion with no room falls through to the next, then the end skew.
+    The partner is held to "no closer than this run already is" instead of
+    the board clearance (a pair's gap is under it). --no-skew skips this,
+    --pairs limits it; a --groups run leaves other pairs alone.
+  * a run with same-net copper joined along its body (a T into a pull-up
+    stub, a via) is never a candidate: a meander would cut the tap off.
 The ops (remove the run, add_path the meander) go through route_edit.apply_ops
 (the pipeline's only routing writer). Groups whose members are another
 group's reference are tuned first (DQS before its byte lane, the clock
@@ -42,10 +63,12 @@ before tuning; any grown error type rolls the board back (exit 2).
 
 CLI:
   route_tune.py --pcb B.kicad_pcb --constraints c.json [--groups A,B]
-      [--amplitude MM] [--spacing MM] [--margin MM] [--passes N]
-      [--dry-run] [--ops-out ops.json] [--no-drc] [--out-report r.json]
-  exit 0 = every group passes check_length_groups after tuning; 1 = some
-  net is still out (board keeps what was tuned); 2 = error (board untouched).
+      [--pairs NET,..] [--no-skew] [--amplitude MM] [--spacing MM]
+      [--margin MM] [--passes N] [--dry-run] [--ops-out ops.json]
+      [--no-drc] [--out-report r.json]
+  exit 0 = every group passes check_length_groups and every tuned pair
+  passes check_diffpair's skew and phase after tuning; 1 = something is
+  still out (board keeps what was tuned); 2 = error (board untouched).
 """
 from __future__ import annotations
 

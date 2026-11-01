@@ -64,7 +64,10 @@ SECTIONS: dict[str, dict[str, dict[str, str]]] = {
         "required": {"p": "str", "n": "str"},
         "optional": {"base": "str", "impedance_ohm": "num", "gap_mm": "num",
                      "max_skew_mm": "num", "max_uncoupled_mm": "num",
-                     "term_pair_mm": "num", "operating_point": "map"},
+                     "term_pair_mm": "num", "operating_point": "map",
+                     # running skew (#476)
+                     "max_phase_skew_mm": "num", "phase_window_mm": "num",
+                     "rise_ps": "num"},
     },
     # route_cleanup --snap-only leaves these nets as routed
     "length_match": {

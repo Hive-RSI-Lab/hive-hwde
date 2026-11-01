@@ -60,8 +60,12 @@ Consumers per key (script -> phase):
     "p": "/USB_DP", "n": "/USB_DM", "base": "USB",
     "impedance_ohm": 90,             // differential target
     "gap_mm": 0.2, "max_skew_mm": 5, "max_uncoupled_mm": 5,
-    "term_pair_mm": 2.5              // cross-ref terminal-match window (T2);
+    "term_pair_mm": 2.5,             // cross-ref terminal-match window (T2);
                                      // same-footprint P/N pads always match
+    // running skew (#476): flagged where it stays over max_phase_skew_mm
+    // (default max_skew_mm) for phase_window_mm (else rise_ps / 10 as
+    // distance, else 5 mm); route_tune bumps the short leg there
+    "max_phase_skew_mm": 0.15, "phase_window_mm": 5, "rise_ps": 500
   }, {
     // DC Kelvin / low-frequency shunt-sense pair: "kind" sense|kelvin|
     // dc_sense|low_frequency drops the skew, uncoupled-length and impedance

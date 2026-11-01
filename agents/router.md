@@ -113,14 +113,17 @@ rules as routing constraints; cite the record id when you apply one.
    command to the clock): `scripts/route_tune.py --pcb <board>
    --constraints <board dir>/constraints.json --out-report
    <dir>/route_tune.json` after the snap. It adds trombone meanders to each
-   short single-ended member until it sits mid-range of its reference
+   short member until it sits mid-range of its reference (a diff pair as
+   a pair: coupled bumps on both legs), and bumps the short leg of every
+   pair over its skew or running-skew limit next to the bend that built it
    (measured as check_length_groups measures: pad to pad, plus the via
    barrel the signal travels), DRC-checked, rolled back if DRC grows.
    `--dry-run --ops-out ops.json` shows the plan first. Its findings:
    `tune_too_long` (a meander only lengthens: route that net shorter or
    lengthen the reference), `tune_no_room` (no straight run with room:
-   move the neighbours or raise `--amplitude`), `tune_pair_member` (a diff
-   pair half: pairs are matched by route_critical / check_diffpair).
+   move the neighbours or raise `--amplitude`), `tune_skew_no_room` (no
+   coupled room for a pair's skew bumps near the bend: reroute the bend or
+   widen the space beside the short leg).
    route_cleanup's snap and route_improve leave every group's nets alone.
 5b. Netclasses are per-required-width since T1 (glance-check the .kicad_pro
    split; further splits are .kicad_pro ONLY, never the .kicad_dru). Width
