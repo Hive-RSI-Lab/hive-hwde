@@ -138,28 +138,31 @@ def _energy(xs, ys, eps_cell, fixed, volts) -> float:
     return float(np.sum(g * (phi[a] - phi[b]) ** 2))
 
 
-def _section_once(conductors, slabs, masks, top_plane, excite, refine):
-    """(C, C_air) in eps0-units per line for one grid resolution.
+def _section_once(conductors, slabs, masks, top_plane, excite, refine, full=False):
+    """(C, C_air) in eps0-units per line for one grid resolution. full=True
+    meshes both sides of x=0 for a section with no mirror symmetry (two
+    lines of different widths) and returns the raw energy, V' C V.
 
     Every cross-section here is mirror-symmetric about x=0 (_traces), so only
     x >= 0 is meshed: the mirror plane is Neumann for a single trace or the
     even mode and a 0 V wall for the odd mode (+1/-1). Half the nodes, and
     the energy of the full section is twice the half's."""
-    odd = len(excite) == 2 and excite[0] == -excite[1]
+    odd = not full and len(excite) == 2 and excite[0] == -excite[1]
     struct = max([s[1] for s in slabs] + [c[3] for c in conductors]
                  + [m[3] for m in masks])
     ytop = top_plane if top_plane is not None else struct * LID_FACTOR
-    span = max(c[1] for c in conductors) * 2
+    span = max(max(abs(c[0]), abs(c[1])) for c in conductors) * 2
     side = SIDE_FACTOR * max(top_plane or struct, span) + span / 2
     feat = [c[1] - c[0] for c in conductors] + [s[1] - s[0] for s in slabs]
     xe = sorted({x for c in conductors for x in c[:2]})
     feat += [b - a for a, b in zip(xe[:-1], xe[1:])]
     dmin = min(f for f in feat if f > 1e-9) / (DMIN_DIV * refine)
     grow = GROW ** (1.0 / refine)
-    xb = [0.0, side] + xe + [x for m in masks for x in m[:2]]
+    x_lo = -side if full else 0.0
+    xb = [x_lo, 0.0, side] + xe + [x for m in masks for x in m[:2]]
     yb = [0.0, ytop] + [y for s in slabs for y in s[:2]] \
         + [y for c in conductors for y in c[2:]] + [y for m in masks for y in m[2:]]
-    xs = _axis([x for x in xb if 0.0 <= x <= side], dmin, side / 10, grow)
+    xs = _axis([x for x in xb if x_lo <= x <= side], dmin, side / 10, grow)
     ys = _axis([y for y in yb if 0.0 <= y <= ytop], dmin, ytop / 10, grow)
     xm, ym = (xs[:-1] + xs[1:]) / 2, (ys[:-1] + ys[1:]) / 2
     eps = np.ones((len(ym), len(xm)))
@@ -174,12 +177,12 @@ def _section_once(conductors, slabs, masks, top_plane, excite, refine):
     volts = np.zeros_like(gx)
     tol = 1e-9
     for (x0, x1, y0, y1), v in zip(conductors, excite):
-        if x1 <= tol:
+        if x1 <= tol and not full:
             continue  # the mirrored half
         inside = (gx >= x0 - tol) & (gx <= x1 + tol) & (gy >= y0 - tol) & (gy <= y1 + tol)
         fixed |= inside
         volts[inside] = v
-    nv = sum(v * v for v in excite) / 2.0
+    nv = 1.0 if full else sum(v * v for v in excite) / 2.0
     return (_energy(xs, ys, eps, fixed, volts) / nv,
             _energy(xs, ys, np.ones_like(eps), fixed, volts) / nv)
 
@@ -277,6 +280,74 @@ def field_stripline(w: float, h_base: float, h_fill: float, t: float,
     slabs = ((0.0, _r(h_base), float(er_base)),
              (_r(h_base), _r(h_base + h_fill), float(er_fill)))
     return _result(_traces(w, s, h_base, t), slabs, (), _r(h_base + h_fill), even)
+
+
+def _pair_traces(w1: float, w2: float, s: float, y0: float, t: float):
+    return ((_r(-s / 2 - w1), _r(-s / 2), _r(y0), _r(y0 + t)),
+            (_r(s / 2), _r(s / 2 + w2), _r(y0), _r(y0 + t)))
+
+
+def _lc_unequal(cond, slabs, masks, top_plane) -> dict:
+    """2x2 Maxwell C and L (F/m, H/m) of two lines with no mirror symmetry."""
+    def maxwell(idx):
+        def e(v, refine):
+            return _section_once(cond, slabs, masks, top_plane, v, refine, full=True)[idx]
+        c11, c22, tot = (e(v, 1) for v in ((1.0, 0.0), (0.0, 1.0), (1.0, 1.0)))
+        if RICHARDSON:
+            c11, c22, tot = (2 * e(v, 2) - x for v, x in
+                             (((1.0, 0.0), c11), ((0.0, 1.0), c22), ((1.0, 1.0), tot)))
+        return c11, c22, (tot - c11 - c22) / 2.0
+    c, a = maxwell(0), maxwell(1)
+    return _lc_from_caps(c, a)
+
+
+def _lc_from_caps(c, a) -> dict:
+    """(c11, c22, c12) of the section and of the same section in air, in eps0
+    units, to matrices: L = mu0 eps0 inv(C_air), so L and C share the solve."""
+    det = a[0] * a[1] - a[2] * a[2]
+    k = 1.0 / (C0 * C0 * EPS0)
+    return {"C": [[EPS0 * c[0], EPS0 * c[2]], [EPS0 * c[2], EPS0 * c[1]]],
+            "L": [[k * a[1] / det, -k * a[2] / det], [-k * a[2] / det, k * a[0] / det]]}
+
+
+def lc_from_modes(res: dict) -> dict:
+    """2x2 L, C (H/m, F/m, Maxwell: C12 < 0) of two identical lines from an
+    even=True field solve, with the same mode-to-capacitance step as coupling()."""
+    def caps(z, ee):
+        cc = math.sqrt(ee) / (C0 * z) / EPS0
+        return cc, cc / ee
+    co, ao = caps(res["zodd"], res["eps_eff_odd"])
+    ce, ae = caps(res["zeven"], res["eps_eff_even"])
+    c11, a11 = (co + ce) / 2.0, (ao + ae) / 2.0
+    return _lc_from_caps((c11, c11, (ce - co) / 2.0), (a11, a11, (ae - ao) / 2.0))
+
+
+def lc_microstrip(w1: float, w2: float, s: float, h: float, t: float, er: float,
+                  mask: dict | None = JLC_MASK) -> dict:
+    """2x2 L, C per metre of two edge-coupled outer-layer lines, gap s."""
+    if abs(w1 - w2) < 1e-6:
+        return lc_from_modes(field_microstrip(w1, h, t, er, s, mask, even=True))
+    if not SOLVER_OK:
+        raise RuntimeError("field solver needs numpy + scipy")
+    cond = _pair_traces(w1, w2, s, h, t)
+    masks = ()
+    if mask:
+        c1, c2, mer = float(mask["c1"]), float(mask["c2"]), float(mask["er"])
+        masks = ((-1e3, 1e3, _r(h), _r(h + c1), mer),) + tuple(
+            (_r(x0 - c2), _r(x1 + c2), _r(h), _r(h + t + c2), mer) for x0, x1, _, _ in cond)
+    return _lc_unequal(cond, ((0.0, _r(h), float(er)),), masks, None)
+
+
+def lc_stripline(w1: float, w2: float, s: float, h_base: float, h_fill: float, t: float,
+                 er_base: float, er_fill: float) -> dict:
+    """2x2 L, C per metre of two edge-coupled inner-layer lines, gap s."""
+    if abs(w1 - w2) < 1e-6:
+        return lc_from_modes(field_stripline(w1, h_base, h_fill, t, er_base, er_fill, s, even=True))
+    if not SOLVER_OK:
+        raise RuntimeError("field solver needs numpy + scipy")
+    slabs = ((0.0, _r(h_base), float(er_base)),
+             (_r(h_base), _r(h_base + h_fill), float(er_fill)))
+    return _lc_unequal(_pair_traces(w1, w2, s, h_base, t), slabs, (), _r(h_base + h_fill))
 
 
 # ============================================================ public helpers

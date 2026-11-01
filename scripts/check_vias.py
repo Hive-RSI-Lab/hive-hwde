@@ -406,7 +406,9 @@ def run(argv=None):
     if not pcb.is_file():
         raise checklib.CheckError(f"board not found: {pcb}")
     viols, facts = check(pcb, args.stackup)
-    return checklib.report(SCRIPT, pcb, viols, checked=[facts]), args.out
+    return checklib.report(SCRIPT, pcb, viols, checked=[facts],
+                           nothing_to_judge=None if facts.get("vias") else
+                           "the board has no vias"), args.out
 
 
 def main(argv=None) -> int:

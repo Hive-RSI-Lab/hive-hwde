@@ -358,6 +358,13 @@ delay, Z0, critical length, termination and worst neighbours, pass or fail.
 `constraints.json` `si` declares, corrects or ignores nets
 (`reference/constraints_schema.md`).
 
+The three worst crosstalk estimates are also simulated (`hwde sim_si --pcb B
+--xtalk --aggressor A --victim V` runs one by hand): both nets' routed paths as
+T lines and coupled sections with a 2x2 L, C from the same field solver, the
+driver's R and any series R behind a ramp, the receiver's R and C at the far end
+(`si_crosstalk_sim`; `crosstalk_sim` holds estimate vs simulated). Without
+ngspice the estimates stand and `not_run` says so.
+
 On the pinned boards it finds core's I2S_BCK (98 mm from the ESP32 to three
 converters with no series resistor), three core B.Cu runs over In2's +3V3
 plane where tracks on In2 cut it right under them, and lite-main's I2S_DOUT

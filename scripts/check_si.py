@@ -57,8 +57,17 @@ interface, and asks of each the questions Johnson's and Bogatin's rules ask:
 Every SI net's figures are in the report (`nets`), so a net that passes
 still shows its length, delay, Z0 and critical length.
 
+ 8. CROSSTALK SIMULATED (si_crosstalk_sim). The top N estimates (--xtalk-sim N,
+    si.xtalk_sim_top, default XTALK_SIM_TOP; 0 = none) at or past
+    XTALK_SIM_FLOOR of their budget go through sim_si.simulate_pair: the routed
+    pair as coupled lines with its real terminations. `crosstalk_sim` holds
+    estimate vs simulated for each. The estimate is the launched-step formula
+    at the full swing on matched ends, so the two differ by the driver's divider
+    and by what the ends reflect. No ngspice here: `not_run` says so and the
+    estimates stand.
+
 CLI: --pcb board.kicad_pcb [--constraints constraints.json] [--out report.json]
-     exit 0/1/2 per SPEC section 6.
+     [--xtalk-sim N]. exit 0/1/2 per SPEC section 6.
 
 constraints.json["si"] (all optional):
     {"nets": {"/ETH_CLK": {"class": "osc_clock", "t_rise_ns": 1.5,
@@ -66,7 +75,10 @@ constraints.json["si"] (all optional):
                            "driver_ohm": 20, "swing_v": 3.3}},
      "ignore": ["/SLOW_CLK"],          # not an SI net, whatever its name
      "victims": {"/VREF": "analog"},   # analog | digital | ignore
-     "groups": [{"name": "rmii_tx", "nets": [...], "ui_ns": 20}]}
+     "groups": [{"name": "rmii_tx", "nets": [...], "ui_ns": 20}],
+     "xtalk_sim_top": 3}
+    A net's entry also takes driver ("U1" or "U1.3"), c_in_pf, r_in_ohm and
+    noise_margin_v for the simulation (sim_si.py).
 """
 from __future__ import annotations
 
@@ -106,6 +118,8 @@ VICTIM_BUDGET = {"digital": 0.05, "analog": 0.01}
 SKEW_UI = 0.10                 # flight-time spread allowed, fraction of UI
 DEFAULT_ER = 4.5
 MIN_CROSSING_MM = 0.25         # plane-gap crossing an inferred net is held to
+XTALK_SIM_TOP = 3              # worst estimates simulated
+XTALK_SIM_FLOOR = 0.25         # ... that reach this fraction of their budget
 
 # class -> fastest edge and what the class asks. t_rise_ns is the 10-90 edge
 # the class's drivers can make (an oscillator's ~1 ns, an MCU GPIO at full
@@ -475,6 +489,8 @@ def run(argv=None):
     ap.add_argument("--pcb", required=True)
     ap.add_argument("--constraints", help="constraints.json (optional si block)")
     ap.add_argument("--out")
+    ap.add_argument("--xtalk-sim", type=int, metavar="N",
+                    help="simulate the N worst crosstalk estimates (0 = none)")
     args = ap.parse_args(argv)
 
     cons = checklib.load_json(args.constraints, "constraints") \
@@ -495,6 +511,7 @@ def run(argv=None):
     violations: list[dict] = []
     nets_out: list[dict] = []
     done_pairs: set = set()
+    estimates: list[dict] = []
     for net, spec in specs.items():
         if not bg.tracks_of(net):
             continue
@@ -637,6 +654,9 @@ def run(argv=None):
                        "min_gap_mm": checklib.rnd(x["min_gap_mm"], 3)}
                 if len(worst) < 5:
                     worst.append(rec)
+                estimates.append({"aggressor": net, "victim": vnet, "budget": budget,
+                                  "noise": noise, "swing": swing, "next": x["next"],
+                                  "fext": x["fext"], "pos": x["pos"], "layer": x["layer"]})
                 if noise > budget:
                     violations.append(violation(
                         SCRIPT, "warning", x["pos"], x["layer"], vnet, [],
@@ -677,9 +697,66 @@ def run(argv=None):
                 SCRIPT, kind="si_skew", group=g.get("name"),
                 spread_ps=checklib.rnd(spread, 1), budget_ps=checklib.rnd(budget, 1)))
 
+    # 8. the worst estimates, simulated
+    top = args.xtalk_sim if args.xtalk_sim is not None else si.get("xtalk_sim_top", XTALK_SIM_TOP)
+    sim_out = simulate_worst(bg, lm, estimates, int(top), specs, si, power_nets, violations)
+
     payload = checklib.report(SCRIPT, args.pcb, violations, nets=nets_out,
-                              groups=group_out, stackup_assumed=bool(bg.stackup.assumed))
+                              groups=group_out, stackup_assumed=bool(bg.stackup.assumed),
+                              crosstalk_sim=sim_out,
+                              nothing_to_judge=None if nets_out else
+                              "no net matches a signal class by name or si.nets")
     return payload, args.out
+
+
+def simulate_worst(bg, lm, estimates, top, specs, si, power_nets, violations) -> dict:
+    """Module doc item 8: estimate vs simulated for the top pairs."""
+    if top <= 0:
+        return {"not_run": "off"}
+    worst = sorted((e for e in estimates
+                    if e["noise"] >= XTALK_SIM_FLOOR * e["budget"]
+                    and pair_of(e["aggressor"], specs) != e["victim"]),
+                   key=lambda e: (-e["noise"] / e["budget"], e["aggressor"], e["victim"]))[:top]
+    if not worst:
+        return {"pairs": []}
+    import sim_si
+    import solvers
+    why = sim_si.available()
+    if why:
+        return {"not_run": why, "pairs_waiting": [[e["aggressor"], e["victim"]] for e in worst]}
+    pairs = []
+    for e in worst:
+        a, v = e["aggressor"], e["victim"]
+        rec = {"aggressor": a, "victim": v,
+               "estimate_mv": checklib.rnd(1000 * e["swing"] * e["noise"], 1),
+               "estimate_next_mv": checklib.rnd(1000 * e["swing"] * e["next"], 1),
+               "estimate_fext_mv": checklib.rnd(1000 * e["swing"] * e["fext"], 1)}
+        try:
+            r = sim_si.simulate_pair(bg, lm, a, v, specs, si, power_nets)
+        except (CheckError, solvers.SolverError, ValueError, FloatingPointError) as ex:
+            r = {"not_simulated": str(ex)[:300]}
+        rec.update(r)
+        if "noise_v" in r:
+            rec.pop("noise_v")
+            rec["sim_over_estimate"] = checklib.rnd(r["noise_mv"] / rec["estimate_mv"], 3) \
+                if rec["estimate_mv"] else None
+            if r["over_budget"]:
+                far = max(r["ends"].items(), key=lambda kv: abs(kv[1]["peak_mv"])
+                          if kv[1]["receiver"] else -1.0)
+                over = "past" if r["over_margin"] else "inside"
+                violations.append(violation(
+                    SCRIPT, "warning", e["pos"], e["layer"], v, [],
+                    f"{a} (t_r {r['t_rise_ns']:g} ns, {r['swing_v']:g} V) puts "
+                    f"{r['noise_mv']:.0f} mV on {v} at receiver {far[0]}, simulated with "
+                    f"the routed terminations (estimate {rec['estimate_mv']:.0f} mV): over "
+                    f"the {r['budget_mv']:.0f} mV budget and {over} the "
+                    f"{r['margin_mv']:.0f} mV noise margin. Space them out or shorten "
+                    f"the {r['coupled_mm']:.0f} mm run", SCRIPT, kind="si_crosstalk_sim",
+                    aggressor=a, noise_mv=r["noise_mv"], estimate_mv=rec["estimate_mv"],
+                    budget_mv=r["budget_mv"], margin_mv=r["margin_mv"],
+                    over_margin=r["over_margin"], coupled_mm=r["coupled_mm"]))
+        pairs.append(rec)
+    return {"pairs": pairs}
 
 
 def auto_groups(specs) -> list[dict]:

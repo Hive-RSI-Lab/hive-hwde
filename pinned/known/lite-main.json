@@ -741,6 +741,45 @@
    "kind": "si_crosstalk",
    "verdict": "real",
    "reason": "I2S_DOUT runs 0.13 mm from I2S_BCLK for 47 mm on B.Cu of a 2-layer board (the plane is 1.5 mm away), so their coupling saturates near 5% of a 3.3 V edge on the bit clock"
+  },
+  {
+   "gate": "verify",
+   "check": "check_si",
+   "net": "/I2S_BCLK",
+   "refs": [],
+   "pos": [
+    52.189,
+    131.839
+   ],
+   "kind": "si_crosstalk_sim",
+   "verdict": "real",
+   "reason": "/I2S_DOUT beside /I2S_BCLK (37 mm): sim_si puts 490 mV on the receiver with no driver declared (worst orientation), past the 165 mV budget, inside the 396 mV margin; with both nets driven from the one IC it still reads 256-377 mV, so it isn't the orientation"
+  },
+  {
+   "gate": "verify",
+   "check": "check_si",
+   "net": "/I2S_DOUT",
+   "refs": [],
+   "pos": [
+    51.062,
+    132.5
+   ],
+   "kind": "si_crosstalk_sim",
+   "verdict": "real",
+   "reason": "/I2S_BCLK beside /I2S_DOUT (36 mm): sim_si puts 581 mV on the receiver with no driver declared (worst orientation), past the 165 mV budget, inside the 396 mV margin; with both nets driven from the one IC it still reads 256-377 mV, so it isn't the orientation"
+  },
+  {
+   "gate": "verify",
+   "check": "check_si",
+   "net": "/I2S_DOUT",
+   "refs": [],
+   "pos": [
+    46.35,
+    133.913
+   ],
+   "kind": "si_crosstalk_sim",
+   "verdict": "real",
+   "reason": "/I2S_LRCK beside /I2S_DOUT (42 mm): sim_si puts 499 mV on the receiver with no driver declared (worst orientation), past the 165 mV budget, inside the 396 mV margin; with both nets driven from the one IC it still reads 256-377 mV, so it isn't the orientation"
   }
  ]
 }

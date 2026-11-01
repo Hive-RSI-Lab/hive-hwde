@@ -1779,7 +1779,8 @@ modes:
     rule: si_crosstalk
     level: L2
   target_level: L2
-  gap: same-layer edge coupling only; broadside (adjacent-layer) coupling not modelled
+  gap: same-layer edge coupling only, estimated and simulated (si_crosstalk_sim); broadside
+    (adjacent-layer) coupling not modelled
   hit_on:
   - lite-main
   sources:

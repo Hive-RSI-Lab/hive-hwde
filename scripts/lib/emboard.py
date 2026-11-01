@@ -57,6 +57,18 @@ C0 = em.C0
 ZREF = 50.0
 _DIRS = {"+x": (1, 0), "-x": (-1, 0), "+y": (0, 1), "-y": (0, -1)}
 
+# How long a run lasts. openEMS tests endCriteria only at its progress report,
+# every 4 s of wall clock, so a small deck stops at the first report and its
+# record is as long as the machine's load allowed (#585: 1.2 to 3.6 ns on one
+# deck, and a record cut at 1.2 ns reads sigma_max 1.007). So the energy never
+# ends a run here (a 0 would mean openEMS's default, and Csx rounds a float to
+# 12 places, hence the string): the deck sets the steps, and study() doubles
+# them until the probes have rung down.
+RUN_ALL_STEPS = "1e-300"
+RECORD_TRANSITS = 6     # corner-to-corner trips of the domain after the pulse
+TAIL_MAX = 1e-3         # the last tenth of a record against its peak voltage
+STEPS_MAX = 200000
+
 
 # ================================================================ stack
 
@@ -365,6 +377,19 @@ def _edge_intervals(geom, port: Port, window: float) -> list[tuple[float, float]
     return merged
 
 
+def record_steps(lines: dict, f_max: float, er_max: float) -> int:
+    """Timesteps for the pulse (10 tau, emsolve.Csx.dgauss) and
+    RECORD_TRANSITS trips across the mesh. The step is the vacuum Courant
+    limit of the smallest cells, at or under the one openEMS picks, so the
+    record is at least this long."""
+    span = [max(lines[a]) - min(lines[a]) for a in "xyz"]
+    least = [min(q - p for p, q in zip(lines[a], lines[a][1:])) for a in "xyz"]
+    dt = 1e-3 / (C0 * math.sqrt(sum(1 / d ** 2 for d in least)))
+    pulse = 10 * 2.5 / (2 * math.pi * f_max)
+    trip = math.hypot(*span[:2]) * 1e-3 * math.sqrt(er_max) / C0
+    return min(STEPS_MAX, math.ceil((pulse + RECORD_TRANSITS * trip) / dt))
+
+
 def _thirds(g, fine, region):
     """Mesh lines for a signal conductor's edges by openEMS's thirds rule:
     no line on an axis-aligned edge, one fine/3 inside it and one 2 fine/3
@@ -572,7 +597,7 @@ def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None 
     csx = em.Csx(1e-3)
     csx.dgauss(f_max)
     csx.bc = ["MUR", "MUR", "MUR", "MUR", "PEC" if floor == "pec" else "MUR", "MUR"]
-    csx.fdtd["endCriteria"] = 1e-4
+    csx.fdtd["endCriteria"] = RUN_ALL_STEPS
     for i, (z0, z1, er) in enumerate(stack.slabs):
         m = csx.material(f"slab{i}", er)
         csx.box(m, (dom[0], dom[1], z0), (dom[2], dom[3], z1))
@@ -615,6 +640,7 @@ def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None 
         csx.add_lines(a, lines[a])
 
     # ports: a 50 ohm end one cell in from each feed's end, the probes
+    csx.fdtd["NumberOfTimesteps"] = record_steps(lines, f_max, stack.er_max())
     where = {"ports": [], "excite": excite, "region": list(region), "fine": fine,
              "feed_len": feed_len, "floor": floor,
              "mesh": [len(lines["x"]), len(lines["y"]), len(lines["z"])],
@@ -676,9 +702,14 @@ def port_vi(sim: Path, where: dict, k: int, freqs) -> list[dict]:
     """V and I (into the circuit) at port k's plane, and the feed's own Z
     and gamma, per frequency. With s the distance out from the plane,
     V(s) = a e^(gamma s) + b e^(-gamma s) and I = (a e^(gamma s) - b
-    e^(-gamma s)) / Z; Z from u1..u3 and i1, i2 as in emsolve's
-    microstrip_z0_from_probes (exact on a uniform line), gamma from
-    cosh(gamma d) = (u1 + u3) / (2 u2), (a, b) from the three voltages."""
+    e^(-gamma s)) / Z. On a uniform line, with t = 2 sinh(gamma d / 2),
+    (u1 - u3) / (i1 + i2) = t Z and (i1 - i2) / u2 = t / Z, so Z is the
+    square root of their ratio (emsolve's microstrip_z0_from_probes) and t
+    of their product; (a, b) from the three voltages. Not cosh(gamma d) =
+    (u1 + u3) / (2 u2): that is a second difference, so it multiplies the
+    probes' noise by 1 / (beta d)^2 (about 1000 at 600 MHz over 1.5 mm, and
+    a -130 dB tail then read as sigma_max 1.002 on a lossless thru, #585)
+    where this multiplies it by 1 / (beta d)."""
     import numpy as np
     us = [em.dft(*em.read_probe(sim / f"p{k}u{j}"), freqs) for j in range(3)]
     ii = [em.dft(*em.read_probe(sim / f"p{k}i{j}"), freqs) for j in range(2)]
@@ -691,13 +722,26 @@ def port_vi(sim: Path, where: dict, k: int, freqs) -> list[dict]:
         z = cmath.sqrt(u2 * (u1 - u3) / (i1 * i1 - i2 * i2))
         if z.real < 0:
             z = -z
-        g = cmath.acosh((u1 + u3) / (2 * u2)) / d
+        g = 2 * cmath.asinh(cmath.sqrt((u1 - u3) * (i1 - i2) / ((i1 + i2) * u2)) / 2) / d
         if g.imag < 0:
             g = -g
         A = np.array([[cmath.exp(g * sj), cmath.exp(-g * sj)] for sj in s])
         (a, b), *_ = np.linalg.lstsq(A, np.array([u1, u2, u3]), rcond=None)
         out.append({"v": complex(a + b), "i": complex((a - b) / z), "z": z, "gamma": g})
     return out
+
+
+def record_tail(sim: Path, where: dict) -> float:
+    """The largest voltage on any port's probes in the record's last tenth,
+    over the largest anywhere in it."""
+    import numpy as np
+    peak = tail = 0.0
+    for k in range(len(where["ports"])):
+        for j in range(3):
+            v = np.abs(em.read_probe(sim / f"p{k}u{j}")[1])
+            peak = max(peak, float(v.max()))
+            tail = max(tail, float(v[-max(1, v.size // 10):].max()))
+    return tail / peak if peak else 0.0
 
 
 def waves(sim: Path, where: dict, freqs, zref: float = ZREF) -> list[list[tuple[complex, complex]]]:
@@ -770,17 +814,25 @@ def study(geo: dict, ports, f_max: float, f_min: float | None = None, points: in
         ctx = tempfile.TemporaryDirectory(prefix="hwde-emboard-") if not keep else None
         work = Path(keep) / f"port{e}" if keep else Path(ctx.name)
         work.mkdir(parents=True, exist_ok=True)
-        (work / "deck.xml").write_text(csx.xml())
         t0 = time.time()
-        if run:
-            run(csx, where, work)
-        else:
+        while True:
+            (work / "deck.xml").write_text(csx.xml())
+            if run:
+                run(csx, where, work)
+                tail = None
+                break
             r = solvers.run("openems", ["deck.xml"], cwd=work, timeout=4 * 3600)
             if not (work / "p0u0").exists():
                 raise solvers.SolverError(f"openEMS wrote no probes: {(r.stdout + r.stderr)[-400:]}")
+            tail = record_tail(work, where)
+            steps = csx.fdtd["NumberOfTimesteps"]
+            if tail <= TAIL_MAX or steps >= STEPS_MAX:
+                break
+            csx.fdtd["NumberOfTimesteps"] = min(STEPS_MAX, 2 * steps)
         runs[e] = waves(work, where, freqs)
         zf = [abs(port_vi(work, where, k, [f_max / 2])[0]["z"]) for k in range(n)]
         info.append({"excite": e, "cells": where["cells"], "mesh": where["mesh"],
+                     "steps": csx.fdtd["NumberOfTimesteps"], "tail": tail,
                      "seconds": round(time.time() - t0, 1), "z_feed": [round(z, 2) for z in zf]})
         if ctx:
             ctx.cleanup()

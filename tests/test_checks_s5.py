@@ -826,7 +826,12 @@ def test_verify_all_goldens_clean(tmp_path):
                      *S5_CHECKS):
             expect = "violations" if (board, name) == ("rf4", "check_silk") \
                 else "pass"
-            assert summary["checks"][name]["status"] == expect, name
+            # a golden with no diff pair or antenna has nothing to judge (#591)
+            got = summary["checks"][name]["status"]
+            assert got == expect or got == "nothing_to_judge", name
+        assert {"check_return_path", "check_current", "check_decoupling",
+                "check_courtyard"} \
+            <= set(summary["coverage"]["passed"])
 
 
 # ============================================================ corpus: mutants
@@ -1028,7 +1033,9 @@ def test_verify_all_skips_missing_inputs(tmp_path):
     assert summary["checks"]["check_decoupling"]["status"] == "skipped"
     assert summary["checks"]["check_pdn"]["status"] == "skipped"
     assert summary["checks"]["check_silk"]["status"] == "pass"
-    assert summary["checks"]["check_diffpair"]["status"] == "pass"
+    # blinky2 has no differential pair: it ran, with nothing to judge (#591)
+    assert summary["checks"]["check_diffpair"]["status"] == "nothing_to_judge"
+    assert "check_diffpair" in summary["coverage"]["nothing_to_judge"]
 
 
 # ============================================================ CLI contract

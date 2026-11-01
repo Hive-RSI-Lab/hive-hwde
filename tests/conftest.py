@@ -70,6 +70,7 @@ _INTAKE = "materializes a whole KiCad project through intake"
 SLOW = {
     "tests/test_rf_synth.py::test_live_ngspice_ac_gives_the_same_rl": "runs ngspice AC decks in a worker",
     "tests/test_rf_synth.py::test_live_ngspice_mc_matches_the_closed_form": "runs a 40-draw Monte Carlo through ngspice workers",
+    "tests/test_sim_si.py::test_planted_victim_beside_a_fast_clock": "field-solves pinned lite-main's nets twice and runs ngspice",
     "tests/test_check_testpoints.py::test_access_side_and_position_match_kicad_ipcd356": "exports pinned lite-main's IPC-D-356 with kicad-cli",
     "tests/test_check_wicking.py::test_mask_web_agrees_with_the_kicad_f_mask_gerber": _TOOLS,
     "tests/test_via_stubs.py::test_live_backdrill_round_trip": _TOOLS,
@@ -82,6 +83,7 @@ SLOW = {
     "tests/test_solvers.py::test_live_openems_validates": "runs an openEMS full-wave solve (minutes)",
     "tests/test_solvers.py::test_live_planar_thru_line_is_transparent": "runs an openEMS planar S-parameter solve (~1.5 min)",
     "tests/test_emboard.py::test_live_board_thru_matches_the_line_closed_form": "runs an openEMS board S-parameter solve",
+    "tests/test_emboard.py::test_live_board_run_is_the_same_under_any_load": "runs an openEMS board S-parameter solve twice",
     "tests/test_emboard.py::test_live_board_open_stub_notch": "runs an openEMS board S-parameter solve",
     "tests/test_emboard.py::test_live_board_mutant_wrong_width_misses_z0": "runs an openEMS board S-parameter solve",
     "tests/test_sparam.py::test_live_fit_spice_round_trip": "vector-fits with scikit-rf and runs ngspice AC from the IIC-OSIC-TOOLS tree",

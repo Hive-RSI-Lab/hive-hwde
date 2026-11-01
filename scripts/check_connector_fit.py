@@ -455,7 +455,10 @@ def run(argv=None):
         raise checklib.CheckError(f"board not found: {pcb}")
     parts = Path(args.parts) if args.parts else None
     viols, facts = check(pcb, parts if parts and parts.is_dir() else None)
-    return checklib.report(SCRIPT, pcb, viols, **facts), args.out
+    return checklib.report(
+        SCRIPT, pcb, viols, **facts,
+        not_judged=[f"{u['ref']}: {u['why']}" for u in facts["unverified"]]
+        ), args.out
 
 
 def main(argv=None) -> int:

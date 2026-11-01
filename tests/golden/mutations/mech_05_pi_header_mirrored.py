@@ -55,6 +55,8 @@ def header(mirrored: bool = True, ref: str = "J9", at=AT,
             f' (uuid "00000000-0000-4000-8000-000000050742")\n'
             f'\t\t\t(effects (font (size 1 1) (thickness 0.15))'
             f' (justify mirror)))\n'
+            + mutlib.footprint_fields("00000000-0000-4000-8000-00000005075",
+                                      "B.Fab") +
             f'\t\t(attr through_hole)\n'
             f'\t\t(fp_rect (start -1.8 {y0}) (end 4.35 {y1})'
             f' (stroke (width 0.05) (type solid)) (fill no)'

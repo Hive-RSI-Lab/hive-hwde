@@ -99,6 +99,16 @@ def parse_farads(value) -> float | None:
     return float(m.group(1)) * _SCALE[m.group(2).lower()]
 
 
+def association_value(bg: geom.BoardGeom, a: dict):
+    """A cap's value: the association's, else its footprint's on the board
+    (decoupling.json need not carry one, and an unread value would judge a
+    10 uF cap against the mid class's limits)."""
+    if a.get("value") not in (None, ""):
+        return a["value"]
+    fp = (getattr(bg, "footprints", None) or {}).get(a.get("cap")) or {}
+    return fp.get("value")
+
+
 def value_class(farads: float | None) -> str:
     if farads is None:
         return "mid"  # unknown value: middle class, documented default
@@ -171,11 +181,12 @@ def check_association(bg: geom.BoardGeom, a: dict, reg_groups: dict | None = Non
     gnd_leg = 0.0 if gnd_leg is None else gnd_leg
     loop_nh = NH_PER_MM * (dist + gnd_leg) + NH_PER_VIA * (rail_vias + 1)
 
-    farads = parse_farads(a.get("value"))
+    value = association_value(bg, a)
+    farads = parse_farads(value)
     cls = a.get("class") or value_class(farads)
     if reg_groups is not None and a.get("role") == "reg_input":
         reg_groups.setdefault((ic, pin, rail), []).append({
-            "cap": cap, "value": a.get("value", "?"), "dist": dist,
+            "cap": cap, "value": value or "?", "dist": dist,
             "hf_capable": (a.get("class") == "hf"
                            or (farads is not None
                                and farads <= REG_INPUT_HF_MAX_F)),

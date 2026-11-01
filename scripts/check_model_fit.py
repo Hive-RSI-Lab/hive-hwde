@@ -750,7 +750,9 @@ def run(argv=None):
     if not pcb.is_file():
         raise checklib.CheckError(f"board not found: {pcb}")
     viols, facts = check(pcb)
-    return checklib.report(SCRIPT, pcb, viols, **facts), args.out
+    return checklib.report(SCRIPT, pcb, viols, **facts,
+                           nothing_to_judge=None if facts.get("checked") else
+                           "no 3D model could be read"), args.out
 
 
 def main(argv=None) -> int:

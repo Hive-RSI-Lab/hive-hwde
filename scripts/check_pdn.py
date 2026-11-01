@@ -9,7 +9,11 @@ decoupling.json metadata check_decoupling uses) and sanity-check the inventory:
  - a rail with NO decoupling at all is an error (nothing holds the rail up
    during a transient);
  - a rail with caps but NO bulk reservoir (nothing >= 1 uF) is a warning (only
-   ceramics -> poor low-frequency impedance / droop under load steps).
+   ceramics -> poor low-frequency impedance / droop under load steps);
+ - a cap's value comes from its association, else from the board's footprint
+   (decoupling.json need not carry one). A cap with neither readable is
+   pdn_value_unread (warning): "no bulk" can't be said of a rail while any of
+   its caps is unread, so that rail gets this finding instead.
 
 Ceramic (high-frequency) coverage is REPORTED but not gated: an input/bulk rail
 legitimately carries only bulk capacitance, and flagging it would false-positive
@@ -68,13 +72,19 @@ def board_caps(bg: geom.BoardGeom, rail: str) -> list[dict]:
     return out
 
 
+def cap_farads(bg: geom.BoardGeom, assoc: dict) -> float | None:
+    """The association's value, else the board's own for that footprint."""
+    return check_decoupling.parse_farads(
+        check_decoupling.association_value(bg, assoc))
+
+
 def check_rail(bg: geom.BoardGeom, rail: str, current_a, assocs: list[dict]):
     caps = rail_caps(rail, assocs)
     from_board = [] if caps else board_caps(bg, rail)
     caps = caps or from_board
-    parsed = [(a.get("cap"), check_decoupling.parse_farads(a.get("value")))
-              for a in caps]
+    parsed = [(a.get("cap"), cap_farads(bg, a)) for a in caps]
     refs = sorted({c for c, _ in parsed if c})
+    unread = sorted({c for c, f in parsed if c and f is None})
     bulk = [c for c, f in parsed if f is not None and f >= BULK_MIN_F]
     ceramic = [c for c, f in parsed if f is not None and f < CERAMIC_MAX_F]
     total_f = sum(f for _, f in parsed if f is not None)
@@ -88,6 +98,13 @@ def check_rail(bg: geom.BoardGeom, rail: str, current_a, assocs: list[dict]):
             f"{f' ({current_a} A)' if current_a is not None else ''} has no "
             f"decoupling capacitors", SCRIPT, kind="pdn_undecoupled",
             rail=rail, cap_count=0))
+    elif unread and not bulk:
+        violations.append(violation(
+            SCRIPT, "warning", None, None, rail, unread,
+            f"power rail {rail}: no readable value on {', '.join(unread)}, so "
+            "its reservoir can't be judged: give them a value on the "
+            "footprint or in decoupling.json", SCRIPT,
+            kind="pdn_value_unread", rail=rail, cap_count=len(caps)))
     elif not bulk:
         violations.append(violation(
             SCRIPT, "warning", None, None, rail, refs,
@@ -98,7 +115,7 @@ def check_rail(bg: geom.BoardGeom, rail: str, current_a, assocs: list[dict]):
     facts = {"rail": rail, "current_a": current_a, "on_board": on_board,
              "caps": refs, "caps_from_board": sorted(c["cap"] for c in from_board),
              "cap_count": len(caps), "bulk_count": len(bulk),
-             "ceramic_count": len(ceramic),
+             "ceramic_count": len(ceramic), "caps_unread": unread,
              "total_uf": checklib.rnd(total_f * 1e6)}
     return violations, facts
 
@@ -145,7 +162,11 @@ def run(argv=None):
         violations.extend(vs)
         checked.append(facts)
 
-    payload = checklib.report(SCRIPT, args.pcb, violations, checked=checked)
+    judged = [c for c in checked if "skipped" not in c]
+    payload = checklib.report(
+        SCRIPT, args.pcb, violations, checked=checked,
+        nothing_to_judge=None if judged else
+        "constraints list no power rail to judge")
     return payload, args.out
 
 

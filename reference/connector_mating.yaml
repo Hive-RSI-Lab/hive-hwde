@@ -48,7 +48,7 @@ families:
   - {family: usb_a, entry: horizontal, plug_mm: 30.0,
      match: 'USB-?A\b|USB_A'}
   - {family: usb_c, entry: horizontal, plug_mm: 20.0,
-     match: 'USB-?C|TYPE-?C'}
+     match: 'US[BC]-?C|TYPE-?C'}
   - {family: usb_micro_mini, entry: horizontal, plug_mm: 20.0,
      match: 'MICRO-?USB|MINI-?USB|USB_MICRO|USB_MINI|USB-SMD_USB-111|USB-?B\b|USB_B'}
   - {family: barrel_jack, entry: horizontal, plug_mm: 25.0,
@@ -56,7 +56,7 @@ families:
   - {family: rj45, entry: horizontal, plug_mm: 30.0,
      match: 'RJ-?45|8P8C'}
   - {family: card_slot, entry: horizontal, plug_mm: 15.0,
-     match: 'MICRO-?SD|TF-?CARD|SD-?CARD|SIM-?CARD|NANO-?SIM'}
+     match: 'MICRO-?SD|TF-?CARD|TF-(SMD|PUSH)|SD-?CARD|SIM-?CARD|NANO-?SIM'}
   # a wire-to-board plug or an FPC tail is held by its wires, so a short
   # ledge of board in front of the mouth does not stop it going in
   - {family: fpc_ffc, entry: horizontal, plug_mm: 8.0, grip_mm: 2.0,
@@ -72,7 +72,7 @@ families:
   # too), and KiCad's *_Horizontal library names
   - {family: wire_to_board_side, entry: horizontal, plug_mm: 12.0,
      mouth_tol_mm: 1.5,
-     match: '(^|[^A-Z])SM?\d+B-|JST_.*HORIZONTAL|MOLEX_.*HORIZONTAL'}
+     match: '(^|[^A-Z])SM?\d+B-|JST_.*HORIZONTAL|MOLEX_.*HORIZONTAL|JST\d+[-_].*_RA$'}
   - {family: header_right_angle, entry: horizontal, plug_mm: 12.0,
      match: 'HDR-.*-R-|PIN(HEADER|SOCKET)_.*HORIZONTAL'}
   # vertical

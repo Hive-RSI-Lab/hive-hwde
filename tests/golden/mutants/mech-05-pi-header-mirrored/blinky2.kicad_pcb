@@ -3581,10 +3581,10 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 0 0 270)
-			(layer "F.Fab")
+			(at 0 0 0)
+			(layer "B.Fab")
 			(hide yes)
-			(uuid "904b28d2-1e99-42b7-9559-3b320cbd636e")
+			(uuid "00000000-0000-4000-8000-000000050750")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3592,10 +3592,10 @@
 			)
 		)
 		(property "Description" ""
-			(at 0 0 270)
-			(layer "F.Fab")
+			(at 0 0 0)
+			(layer "B.Fab")
 			(hide yes)
-			(uuid "ea1d6b0e-3edf-43e0-9ae2-8269c55778e2")
+			(uuid "00000000-0000-4000-8000-000000050751")
 			(effects
 				(font
 					(size 1.27 1.27)

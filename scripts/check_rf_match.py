@@ -331,7 +331,9 @@ def run(argv=None):
         cons = checklib.load_json(args.constraints, "constraints")
         base = Path(args.constraints).resolve().parent
     vios, seen = check(pcb, cons, base)
-    return checklib.report(SCRIPT, pcb, vios, checked=[seen]), args.out
+    return checklib.report(SCRIPT, pcb, vios, checked=[seen],
+                           nothing_to_judge=None if seen.get("networks") else
+                           "no rf_match in constraints"), args.out
 
 
 def main(argv=None) -> int:
