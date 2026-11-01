@@ -652,3 +652,14 @@ def test_eagle_design_rules(tmp_path):
     assert pro["board"]["design_settings"]["rules"]["min_via_diameter"] == 0.3524
     assert {"netclass": "Power", "pattern": "RAW"} in pro["net_settings"]["netclass_patterns"]
     assert out["classes"] == ["Power (1 nets)"]
+
+
+def test_board_only_footprints_are_not_parts(tmp_path):
+    """Silk art / logos with (attr board_only) are no component: ODB++ lists
+    none, so the export check mustn't call them lost."""
+    pcb = tmp_path / "b.kicad_pcb"
+    pcb.write_text('(kicad_pcb\n\t(footprint "L:LOGO"\n\t\t(layer "F.Cu")\n'
+                   '\t\t(property "Reference" "LOGO1")\n\t\t(attr board_only exclude_from_pos_files exclude_from_bom)\n\t)\n'
+                   '\t(footprint "L:R"\n\t\t(layer "F.Cu")\n\t\t(property "Reference" "R1")\n\t\t(attr smd)\n\t)\n)\n')
+    b = edasrc.read_board(pcb)
+    assert b.board_only == {"LOGO1"} and set(b.refs) == {"LOGO1", "R1"}
