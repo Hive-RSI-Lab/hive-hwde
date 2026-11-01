@@ -1,0 +1,70 @@
+# Which way a pin points, for lib/netdir.py (#605): the part-data tier, ahead of
+# guessing from a pin's name. Read where a pin's name misleads or says nothing.
+#
+# match: regex on the part's MPN (parts.json) or value, case-insensitive.
+# pins: regex on each of the pin's function names (upper case). pin_numbers
+# (optional): regex on the pad number, for a board with no pin names.
+# dir: in | out | bidir, or the two bus roles:
+#   master  driven by the bus master, and the part may be the master itself
+#           (a codec's SCLK/LRCK, I/O in master mode)
+#   slave   driven by the selected slave (MISO)
+# source: where it came from. `verified: false` = from memory or a borrowed
+# family, not re-read; the first review relying on it reads the sheet and flips it.
+parts:
+  - match: '^ES8388'
+    pins: '^(MCLK|DSDIN)$'
+    dir: in
+    source: Everest ES8388 rev 5.0 pin table, read 2026-11-01
+    verified: true
+  - match: '^ES8388'
+    pins: '^ASDOUT$'
+    dir: out
+    source: Everest ES8388 rev 5.0 pin table, read 2026-11-01
+    verified: true
+  - match: '^ES8388'
+    pins: '^(SCLK|LRCK)$'
+    dir: master
+    source: Everest ES8388 rev 5.0 pin table (I/O; slave mode takes them from outside)
+    verified: true
+  - match: '^PCM510[0-2]A?'
+    pins: '^(BCK|DIN|LRCK|SCK)$'
+    dir: in
+    source: TI PCM5102A SLASE12 pin table (all I), read 2026-11-01
+    verified: true
+  - match: '^ESP32-WROVER'
+    pins: '^(SENSOR_VP|SENSOR_VN|IO3[4-9])$'
+    dir: in
+    source: Espressif ESP32-WROVER-E datasheet pin table (I), read 2026-11-01
+    verified: true
+  - match: '^ES9018'
+    pins: '^DATA2$'
+    dir: in
+    source: ES9018K2M, from memory (esstech.com.tw unreachable from the tower)
+    verified: false
+  - match: '^ES9018'
+    pins: '^(DATA_CLK|DATA1)$'
+    dir: master
+    source: ES9018K2M, from memory (bit clock and LRCK in I2S; it has a master mode)
+    verified: false
+  # An RMII PHY names its pins for the MAC's signal: TXD is the PHY's INPUT.
+  - match: '^(LAN87|KSZ80|RTL82[01]|DP838|IP101)'
+    pins: '^(TXD\d*|TXEN|TX_EN)$'
+    dir: in
+    source: RMII pin naming (from memory; PHY family)
+    verified: false
+  - match: '^(LAN87|KSZ80|RTL82[01]|DP838|IP101)'
+    pins: '^(RXD\d*|CRS_DV|CRS|RX_DV|RXER|RX_ER)$'
+    dir: out
+    source: RMII pin naming (from memory; PHY family)
+    verified: false
+  # DDR3: address and control come from the controller, DQ/DQS go both ways.
+  - match: '^(MT41|MT40|K4B|H5TQ|NT5CC|AS4C|IS4[36]T)'
+    pins: '^(A\d+|BA\d|CK|CKE|CS|CS#|RAS|RAS#|CAS|CAS#|WE|WE#|ODT|RESET|RESET#)$'
+    dir: in
+    source: JEDEC JESD79-3 ball functions (from memory)
+    verified: false
+  - match: '^(MT41|MT40|K4B|H5TQ|NT5CC|AS4C|IS4[36]T)'
+    pins: '^(DQ\d*|[LU]?DQS[LU]?#?|[LU]?DM)$'
+    dir: bidir
+    source: JEDEC JESD79-3 ball functions (from memory)
+    verified: false

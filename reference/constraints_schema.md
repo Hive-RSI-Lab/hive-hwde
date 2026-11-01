@@ -232,10 +232,14 @@ Consumers per key (script -> phase):
                                "driver_ohm": 20, "swing_v": 3.3,
                                // sim_si, for the simulated crosstalk: which end
                                // drives ("U1" or "U1.3"), the receiver's load,
-                               // its noise margin (default 12% of its swing)
+                               // its noise margin (default 12% of its swing).
+                               // driver "both" = two-way, stops the inference
+                               // (lib/netdir.py: reports list what it guessed)
                                "driver": "U1", "c_in_pf": 3, "r_in_ohm": 1e6,
                                "noise_margin_v": 0.4}},
          "ignore": ["/SLOW_CLK"],
+         // who masters a bus, for its clocks, selects and MISO/MOSI
+         "buses": [{"master": "U5", "nets": ["/I2S_*"]}],
          "victims": {"/VREF": "analog"},
          "groups": [{"name": "rmii_tx", "ui_ns": 20,
                      "nets": ["/RMII_TXD0", "/RMII_TXD1", "/RMII_TX_EN"]}],

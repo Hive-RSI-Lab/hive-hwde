@@ -9,3 +9,4 @@ needs: []
 args: []
 optional:
   constraints: [--constraints, "{constraints}"]
+  parts: [--parts, "{parts}"]

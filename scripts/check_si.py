@@ -67,7 +67,7 @@ still shows its length, delay, Z0 and critical length.
     estimates stand.
 
 CLI: --pcb board.kicad_pcb [--constraints constraints.json] [--out report.json]
-     [--xtalk-sim N]. exit 0/1/2 per SPEC section 6.
+     [--parts DIR] [--netlist board.net] [--xtalk-sim N]. exit 0/1/2 per SPEC section 6.
 
 constraints.json["si"] (all optional):
     {"nets": {"/ETH_CLK": {"class": "osc_clock", "t_rise_ns": 1.5,
@@ -77,8 +77,13 @@ constraints.json["si"] (all optional):
      "victims": {"/VREF": "analog"},   # analog | digital | ignore
      "groups": [{"name": "rmii_tx", "nets": [...], "ui_ns": 20}],
      "xtalk_sim_top": 3}
-    A net's entry also takes driver ("U1" or "U1.3"), c_in_pf, r_in_ohm and
-    noise_margin_v for the simulation (sim_si.py).
+    A net's entry also takes driver ("U1", "U1.3" or "both"), c_in_pf, r_in_ohm
+    and noise_margin_v for the simulation (sim_si.py). "buses" [{master, nets}]
+    names a bus's master (lib/netdir.py).
+
+Which end drives comes from lib/netdir.driver_of; nets it can't tell are in the
+report's drivers_assumed, so an owner can declare them. With a known driver a
+series R further from it than the critical length is si_series_far_end.
 """
 from __future__ import annotations
 
@@ -96,6 +101,7 @@ import checklib  # noqa: E402
 import geom  # noqa: E402
 import impedance  # noqa: E402
 import netconn  # noqa: E402
+import netdir  # noqa: E402
 from checklib import CheckError, violation  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -326,6 +332,26 @@ def series_resistors(bg, net, power_nets) -> list[dict]:
     return out
 
 
+def series_far_from_driver(bg, net, drv, series, l_crit) -> dict:
+    """ref -> mm, for series resistors further from a known driver than the line's
+    critical length: at the receiver's end they don't match the source."""
+    if not drv["pad"] or not series:
+        return {}
+    g = netconn.build(bg, net)
+    pads = bg.pads_of(net)
+    start = next((netconn.pad_node(g, p) for p in pads
+                  if f"{p.ref}.{p.number}" == drv["pad"]), None)
+    out = {}
+    for s in series:
+        if s["ref"] == drv["ref"] or start is None:
+            continue
+        node = next((netconn.pad_node(g, p) for p in pads if p.ref == s["ref"]), None)
+        d = netconn.shortest_path_len(g, start, node) if node else None
+        if d is not None and d > l_crit:
+            out[s["ref"]] = d
+    return out
+
+
 def rep_point(bg, net):
     tks = bg.tracks_of(net)
     if tks:
@@ -488,6 +514,8 @@ def run(argv=None):
     ap = argparse.ArgumentParser(description="Signal integrity of the nets that need it.")
     ap.add_argument("--pcb", required=True)
     ap.add_argument("--constraints", help="constraints.json (optional si block)")
+    ap.add_argument("--parts", help="parts dir (default <ws>/parts): pin directions")
+    ap.add_argument("--netlist", help="<board>.net with the pin names (default beside the PCB)")
     ap.add_argument("--out")
     ap.add_argument("--xtalk-sim", type=int, metavar="N",
                     help="simulate the N worst crosstalk estimates (0 = none)")
@@ -501,6 +529,7 @@ def run(argv=None):
     power_nets |= {z.net for z in bg.zones_of() if z.net}
     lm = LineModel(bg)
     specs = resolve(bg, cons, power_nets)
+    pins = netdir.PinData(bg, si=si, parts_dir=args.parts, netlist=args.netlist)
     declared_hs = {e.get("net") for e in cons.get("high_speed", []) if isinstance(e, dict)}
 
     index = {}
@@ -533,6 +562,7 @@ def run(argv=None):
         main = parts[0]
         pos = rep_point(bg, net)
         series = series_resistors(bg, net, power_nets)
+        drv = netdir.driver_of(bg, net, pins, spec, power_nets)
         facts = {"net": net, "class": spec["class"], "t_rise_ns": spec["t_rise_ns"],
                  "length_mm": checklib.rnd(length, 2), "path": "pad-to-pad" if ok else "total copper",
                  "delay_ps": checklib.rnd(delay, 1), "critical_mm": checklib.rnd(l_crit, 1),
@@ -543,7 +573,8 @@ def run(argv=None):
                             "length_mm": checklib.rnd(p["length_mm"], 2),
                             "z0_ohm": checklib.rnd(p["z0"], 1) if p["z0"] else None}
                            for p in parts],
-                 "series_r": [{k: v for k, v in s.items() if k != "pos"} for s in series]}
+                 "series_r": [{k: v for k, v in s.items() if k != "pos"} for s in series],
+                 "driver": drv}
         common = {"si_class": spec["class"], "length_mm": checklib.rnd(length, 2),
                   "critical_mm": checklib.rnd(l_crit, 1), "t_rise_ns": spec["t_rise_ns"]}
 
@@ -551,14 +582,28 @@ def run(argv=None):
         if tline and spec.get("clock") and main["z0"]:
             real = [s for s in series if s["ohm"] is None or s["ohm"] > 1.0]
             r_drv = float(spec.get("driver_ohm", DRIVER_OHM))
-            if not real:
+            far = series_far_from_driver(bg, net, drv, real, l_crit)
+            real = [s for s in real if s["ref"] not in far]
+            where = f"at the driver {drv['pad']}" if drv["pad"] else "at the driver"
+            if far and not real:
+                ref, away = next(iter(far.items()))
+                violations.append(violation(
+                    SCRIPT, "warning", pos, main["layer"], net, list(far),
+                    f"{net} ({spec['class']}, t_r {spec['t_rise_ns']} ns): series {ref} is "
+                    f"{away:.0f} mm from the driver {drv['pad']}, past the {l_crit:.0f} mm "
+                    f"critical length, so it doesn't terminate the line's source. Put it "
+                    f"{where} ({drv['source']})", SCRIPT, kind="si_series_far_end",
+                    driver=drv["pad"], driver_source=drv["source"],
+                    far_from_driver_mm=checklib.rnd(away, 1), **common))
+                facts["termination"] = {"ref": ref, "far_from_driver_mm": checklib.rnd(away, 1)}
+            elif not real:
                 violations.append(violation(
                     SCRIPT, "warning", pos, main["layer"], net, [s["ref"] for s in series],
                     f"{net} ({spec['class']}, t_r {spec['t_rise_ns']} ns) runs "
                     f"{length:.0f} mm, past its {l_crit:.0f} mm critical length, with "
                     f"no series termination: its edges ring and can double-clock. "
-                    f"Put ~{max(0.0, main['z0'] - r_drv):.0f} ohm in series at the "
-                    f"driver (Z0 {main['z0']:.0f} ohm less ~{r_drv:.0f} ohm driver)",
+                    f"Put ~{max(0.0, main['z0'] - r_drv):.0f} ohm in series {where} "
+                    f"(Z0 {main['z0']:.0f} ohm less ~{r_drv:.0f} ohm driver)",
                     SCRIPT, kind="si_unterminated_clock", z0_ohm=checklib.rnd(main["z0"], 1),
                     **common))
                 facts["termination"] = "none"
@@ -699,17 +744,19 @@ def run(argv=None):
 
     # 8. the worst estimates, simulated
     top = args.xtalk_sim if args.xtalk_sim is not None else si.get("xtalk_sim_top", XTALK_SIM_TOP)
-    sim_out = simulate_worst(bg, lm, estimates, int(top), specs, si, power_nets, violations)
+    sim_out = simulate_worst(bg, lm, estimates, int(top), specs, si, power_nets, violations, pins)
 
     payload = checklib.report(SCRIPT, args.pcb, violations, nets=nets_out,
                               groups=group_out, stackup_assumed=bool(bg.stackup.assumed),
                               crosstalk_sim=sim_out,
+                              drivers_assumed=sorted(f["net"] for f in nets_out
+                                                     if f.get("driver", {"pad": 1})["pad"] is None),
                               nothing_to_judge=None if nets_out else
                               "no net matches a signal class by name or si.nets")
     return payload, args.out
 
 
-def simulate_worst(bg, lm, estimates, top, specs, si, power_nets, violations) -> dict:
+def simulate_worst(bg, lm, estimates, top, specs, si, power_nets, violations, pins=None) -> dict:
     """Module doc item 8: estimate vs simulated for the top pairs."""
     if top <= 0:
         return {"not_run": "off"}
@@ -732,7 +779,7 @@ def simulate_worst(bg, lm, estimates, top, specs, si, power_nets, violations) ->
                "estimate_next_mv": checklib.rnd(1000 * e["swing"] * e["next"], 1),
                "estimate_fext_mv": checklib.rnd(1000 * e["swing"] * e["fext"], 1)}
         try:
-            r = sim_si.simulate_pair(bg, lm, a, v, specs, si, power_nets)
+            r = sim_si.simulate_pair(bg, lm, a, v, specs, si, power_nets, pins=pins)
         except (CheckError, solvers.SolverError, ValueError, FloatingPointError) as ex:
             r = {"not_simulated": str(ex)[:300]}
         rec.update(r)

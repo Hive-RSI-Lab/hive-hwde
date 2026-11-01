@@ -20,9 +20,11 @@ path by T lines. Terminals are the real ones:
               tapping a coupled section sits at the section's nearer end. Off-path
               copper isn't modelled (`off_path_mm` says how much).
 
-Which end drives: si.nets[net].driver ("U1" or "U1.3"), else the end with the
-series R, else an oscillator part. With none of those it isn't known, so every
-orientation is run and the worst kept (`driver_assumed`).
+Which end drives: lib/netdir.driver_of (declared, an oscillator, part data, pin
+names, the bus's master, the one series R); `drivers` says which answered. A driver
+in the middle of a net starts the path: driver to its farthest pad. With no answer
+every orientation is run and the worst kept (`driver_assumed`, `orientations`): a
+two-way line's read and write are those cases.
 
 The ramp is t_r long, 0-100. A real edge with that 10-90 has a peak dV/dt of
 1.02 V/t_r (Gaussian), and peak dV/dt is what FEXT follows, so ramp length =
@@ -58,6 +60,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
 import checklib  # noqa: E402
 import coupledline as cl  # noqa: E402
+import netdir  # noqa: E402
 import geom  # noqa: E402
 import impedance  # noqa: E402
 import netconn  # noqa: E402
@@ -284,18 +287,26 @@ def _on_victim(secs, pv):
 
 # ------------------------------------------------------------ terminals
 
-def terminal_pads(bg, net):
-    """The two farthest connected pads of a net, as check_si.line_length."""
+def terminal_pads(bg, net, driver=None):
+    """The two farthest connected pads of a net, as check_si.line_length; with a
+    driver ("U1.3") off that pair, the driver and the pad farthest from it."""
     pads = bg.pads_of(net)
     g = netconn.build(bg, net)
     named = [(p, netconn.pad_node(g, p)) for p in pads]
     named = [(p, n) for p, n in named if n]
-    best = None
+    best = best_d = None
     for i, (p, a) in enumerate(named):
         for q, b in named[i + 1:]:
             d = netconn.shortest_path_len(g, a, b)
-            if d is not None and (best is None or d > best[0]):
+            if d is None:
+                continue
+            if best is None or d > best[0]:
                 best = (d, p, q)
+            if driver in (_pad_name(p), _pad_name(q)) and (best_d is None or d > best_d[0]):
+                best_d = (d, p, q)
+    if best and driver in (_pad_name(best[1]), _pad_name(best[2])):
+        return best[1], best[2]
+    best = best_d or best
     return (best[1], best[2]) if best else None
 
 
@@ -303,21 +314,9 @@ def _pad_name(p):
     return f"{p.ref}.{p.number}"
 
 
-def driver_end(bg, net, spec, a, b, power_nets):
-    """(driving pad or None) by the module doc's rule."""
-    want = spec.get("driver")
-    for p in (a, b):
-        if want and want in (p.ref, _pad_name(p)):
-            return p
-    series = {s["ref"] for s in check_si.series_resistors(bg, net, power_nets)}
-    for p in (a, b):
-        if p.ref in series:
-            return p
-    osc, _ = check_si.oscillator_parts(bg, net, power_nets)
-    for p in (a, b):
-        if p.ref in osc:
-            return p
-    return None
+def driver_end(driver, a, b):
+    """The terminal that driver_of named, or None."""
+    return next((p for p in (a, b) if _pad_name(p) == driver.get("pad")), None)
 
 
 def _series_ohm(bg, pad, net, power_nets) -> float:
@@ -501,13 +500,17 @@ def _orientations(a, b, known):
 
 
 def simulate_pair(bg, lm, aggressor, victim, specs=None, si=None, power_nets=frozenset(),
-                  t_rise_ns=None, swing=None, engine="auto") -> dict:
+                  t_rise_ns=None, swing=None, engine="auto", pins=None) -> dict:
     """One aggressor -> victim. {sections, ends, noise_v, budget_v, margin_v,
     engines, ...}, or {"not_simulated": why}."""
     specs = specs or {}
     si = si or {}
     sa, sv = specs.get(aggressor) or {}, specs.get(victim) or {}
-    ta, tv = terminal_pads(bg, aggressor), terminal_pads(bg, victim)
+    pins = pins or netdir.PinData(bg, si=si)
+    who_a = netdir.driver_of(bg, aggressor, pins, sa, power_nets)
+    who_v = netdir.driver_of(bg, victim, pins, sv, power_nets)
+    ta = terminal_pads(bg, aggressor, who_a["pad"])
+    tv = terminal_pads(bg, victim, who_v["pad"])
     if not ta or not tv:
         return {"not_simulated": "a net has no copper path between two pads"}
     pa, pv = NetPath(bg, lm, aggressor, *ta), NetPath(bg, lm, victim, *tv)
@@ -519,14 +522,17 @@ def simulate_pair(bg, lm, aggressor, victim, specs=None, si=None, power_nets=fro
                 "off_path_mm": {aggressor: checklib.rnd(pa.off_path_mm, 1),
                                 victim: checklib.rnd(pv.off_path_mm, 1)}}
     v = float(swing if swing is not None else sa.get("swing_v", check_si.SWING_V))
-    drv_a = driver_end(bg, aggressor, sa, *ta, power_nets)
-    drv_v = driver_end(bg, victim, sv, *tv, power_nets)
+    drv_a = driver_end(who_a, *ta)
+    drv_v = driver_end(who_v, *tv)
     best = None
+    runs = []
     for da in _orientations(*ta, drv_a):
         for dv in _orientations(*tv, drv_v):
             deck, ends = build_deck(bg, lm, pa, pv, secs, da, dv, sa, sv, v, t_r_s, power_nets)
             got = _run_engines(deck, ends, engine)
             rx = max((abs(got["peaks"][n]) for n, e in ends.items() if e["receiver"]), default=0.0)
+            runs.append({"aggressor_from": _pad_name(da), "victim_driver": _pad_name(dv),
+                         "noise_mv": checklib.rnd(1000 * rx, 2)})
             if best is None or rx > best["rx"]:
                 best = {"rx": rx, "got": got, "ends": ends, "da": da, "dv": dv}
     vcls = check_si.victim_class(victim, si, power_nets, specs)
@@ -543,6 +549,8 @@ def simulate_pair(bg, lm, aggressor, victim, specs=None, si=None, power_nets=fro
         "victim_path": {"driver": _pad_name(best["dv"]), "length_mm": checklib.rnd(pv.length, 2),
                         "off_path_mm": checklib.rnd(pv.off_path_mm, 1)},
         "driver_assumed": {aggressor: drv_a is None, victim: drv_v is None},
+        "drivers": {aggressor: who_a, victim: who_v},
+        "orientations": runs,
         "sections": [{"layer": s["layer"], "length_mm": checklib.rnd(s["a1"] - s["a0"], 2),
                       "gap_mm": checklib.rnd(s["gap"], 3), "dropped": s["dropped"]} for s in secs],
         "coupled_mm": checklib.rnd(sum(s["a1"] - s["a0"] for s in kept), 2),
@@ -592,6 +600,8 @@ def run(argv=None):
     ap.add_argument("--aggressor", required=True)
     ap.add_argument("--victim", required=True)
     ap.add_argument("--constraints")
+    ap.add_argument("--parts", help="parts dir (default <ws>/parts): pin directions")
+    ap.add_argument("--netlist", help="<board>.net with the pin names (default beside the PCB)")
     ap.add_argument("--t-rise-ns", type=float)
     ap.add_argument("--swing", type=float)
     ap.add_argument("--engine", choices=("auto", "cpl", "modal", "xyce", "both"), default="auto")
@@ -609,8 +619,10 @@ def run(argv=None):
     if not bg.tracks_of(args.aggressor) or not bg.tracks_of(args.victim):
         raise CheckError("a net has no tracks on this board")
     specs = check_si.resolve(bg, cons, power)
-    res = simulate_pair(bg, lm, args.aggressor, args.victim, specs, cons.get("si") or {}, power,
-                        args.t_rise_ns, args.swing, args.engine)
+    si = cons.get("si") or {}
+    pins = netdir.PinData(bg, si=si, parts_dir=args.parts, netlist=args.netlist)
+    res = simulate_pair(bg, lm, args.aggressor, args.victim, specs, si, power,
+                        args.t_rise_ns, args.swing, args.engine, pins)
     vs = []
     if res.get("over_budget"):
         vs.append(violation(
