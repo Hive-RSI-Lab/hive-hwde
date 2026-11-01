@@ -8,7 +8,9 @@ exposed pad voids and the other side grows a solder ball. Valor NPI and
 CAM350 flag it; Eurocircuits asks for a mask dam between any via within
 0.25 mm of a pad; NXP AN-HVQFN and TI SLUA271 ask for exposed-pad thermal
 vias to be plugged/tented from the far side, kept out of the paste
-(window-pane) or filled (VIPPO). Findings (all warnings):
+(window-pane) or filled (VIPPO). An exposed pad's own vias are
+check_ep_paste's (paste_on_via); here they are only counted
+(`ep_vias_skipped`). Findings (all warnings):
 
   wick_via_in_pad   a via's drill lies inside an SMD pad's mask opening
                     (via in pad) and the via is neither filled nor capped:
@@ -16,10 +18,6 @@ vias to be plugged/tented from the far side, kept out of the paste
                     pad behind a mask dam, or order the via filled and
                     capped (IPC-4761 type VII; #338) and set the board's
                     via filling/capping.
-  wick_ep_via       an exposed (thermal) pad's open via sits under its paste
-                    and is not tented or plugged on the far side. Fix: tent
-                    or plug it from the bottom, open the paste as a window
-                    pane that misses the vias, or order VIPPO.
   wick_via_mask_web an untented via within 0.25 mm of an SMD pad (copper to
                     copper) whose mask opening is less than the dam minimum
                     from the pad's: the openings merge (or the fab strips
@@ -167,8 +165,7 @@ def _margin(node):
 
 
 def read_pads(root, dflt: dict) -> dict[str, list[dict]]:
-    """{ref: [pad]} with copper, mask opening and paste aperture per side."""
-    b_pm, b_pr = check_paste._board_margin(root)
+    """{ref: [pad]} with its copper and its mask opening per side."""
     out: dict[str, list[dict]] = {}
     for fp in _kids(root, "footprint"):
         at = _kid(fp, "at")
@@ -178,9 +175,6 @@ def read_pads(root, dflt: dict) -> dict[str, list[dict]]:
                     if len(pv := _strs(prop)) >= 2 and pv[0] == "Reference"),
                    "?")
         f_mm = _margin(fp)
-        f_pm, f_pr = check_paste._margin(fp)
-        lib = _strs(fp)[0] if _strs(fp) else ""
-        leadless = bool(check_paste.LEADLESS.search(lib.split(":")[-1]))
         for pad in _kids(fp, "pad"):
             if len(pad) < 4:
                 continue
@@ -213,22 +207,10 @@ def read_pads(root, dflt: dict) -> dict[str, list[dict]]:
                 if f"{s}.Mask" in layers or "*.Mask" in layers:
                     mask[s] = (copper.buffer(mm, join_style="mitre")
                                if mm else copper)
-            ap = None
-            pside = check_paste._paste_side(layers)
-            if pside is not None and shape != "custom":
-                p_m, p_r = check_paste._margin(pad)
-                m = next(v for v in (p_m, f_pm, b_pm) if v is not None)
-                r = next(v for v in (p_r, f_pr, b_pr) if v is not None)
-                if cu_side is None:
-                    m = r = 0.0
-                aw, ah = check_paste.aperture_size(w, h, m, r)
-                if aw > 0 and ah > 0:
-                    ap = geom._pad_polygon(shape, aw, ah, rratio, c, angle)
             out.setdefault(ref, []).append({
                 "ref": ref, "number": str(pad[1]), "kind": kind,
-                "cu_side": cu_side, "paste_side": pside, "copper": copper,
-                "mask": mask, "aperture": ap, "center": c,
-                "leadless": leadless})
+                "cu_side": cu_side, "copper": copper, "mask": mask,
+                "center": c})
     return out
 
 
@@ -292,11 +274,10 @@ def check(pcb: Path, gerbers: Path | None = None, dam_mm: float = DAM_MM
         fab = gerblib.open_fab(gerbers)
         gm = {s: GerberMask(fab.mask(s)) for s in SIDES if fab.mask(s)}
     seen = {"vias": len(vias), "vias_filled_or_capped": 0, "smd_pads": 0,
-            "pairs_near": 0, "dam_mm": dam,
+            "pairs_near": 0, "ep_vias_skipped": 0, "dam_mm": dam,
             "gerbers": str(gerbers) if gm else None}
     cross = {"agree": 0, "disagree": []}
     vios: list[dict] = []
-    ep_hits: dict[tuple, list] = {}
     pad_hits: dict[tuple, list] = {}
     for s in SIDES:
         pads = [p for ps in fps.values() for p in ps
@@ -305,7 +286,6 @@ def check(pcb: Path, gerbers: Path | None = None, dam_mm: float = DAM_MM
         if not pads:
             continue
         tree = STRtree([p["mask"][s] for p in pads])
-        other = "B" if s == "F" else "F"
         for v in vias:
             if s not in v["sides"]:
                 continue
@@ -320,15 +300,8 @@ def check(pcb: Path, gerbers: Path | None = None, dam_mm: float = DAM_MM
             inside = [p for p in near if drill.intersects(p["mask"][s])]
             if inside:
                 p = inside[0]
-                ep = eps.get(p["ref"])
-                if ep is p:
-                    aps = [q["aperture"] for q in fps[p["ref"]]
-                           if q["aperture"] is not None and q["paste_side"] == s]
-                    if not any(a.intersects(drill) for a in aps):
-                        continue
-                    if v["tent"][other] or v["plug"][other] or v["plug"][s]:
-                        continue
-                    ep_hits.setdefault((p["ref"], p["number"], s), []).append(v)
+                if eps.get(p["ref"]) is p:
+                    seen["ep_vias_skipped"] += 1
                     continue
                 pad_hits.setdefault((p["ref"], p["number"], s), []).append(v)
                 continue
@@ -383,16 +356,6 @@ def check(pcb: Path, gerbers: Path | None = None, dam_mm: float = DAM_MM
             SOURCE, kind="wick_via_in_pad", pad=num, vias=len(vs),
             drill_mm=min(v["drill"] for v in vs),
             at=[[checklib.rnd(c) for c in v["at"]] for v in vs]))
-    for (ref, num, s), vs in sorted(ep_hits.items()):
-        vios.append(checklib.violation(
-            SCRIPT, "warning", vs[0]["at"], f"{s}.Paste", vs[0]["net"], [ref],
-            f"{ref}: {len(vs)} open thermal via(s) in exposed pad {num} sit "
-            f"under its paste and are not tented or plugged on the "
-            f"{'bottom' if s == 'F' else 'top'}; the paste drains into "
-            f"them (voids, solder balls on the far side). Tent or plug them "
-            f"from the {'bottom' if s == 'F' else 'top'}, open the paste as "
-            f"a window pane that misses the vias, or order VIPPO",
-            SOURCE, kind="wick_ep_via", pad=num, vias=len(vs)))
     if gm:
         seen["mask_crosscheck"] = cross
     return vios, seen

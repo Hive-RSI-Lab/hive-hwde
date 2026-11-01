@@ -46,7 +46,7 @@ def _via(x, y, size=0.6, drill=0.3, extra="") -> str:
             f'(layers "F.Cu" "B.Cu") {extra} (net "N2"))\n')
 
 
-def _qfn(ep_paste=True, panes="") -> str:
+def _qfn() -> str:
     """QFN-16, 0.5 mm pitch, 2.6 mm exposed pad at (20, 20) with 4 vias."""
     pads, n = [], 1
     for side in range(4):
@@ -57,12 +57,11 @@ def _qfn(ep_paste=True, panes="") -> str:
             pads.append(f'(pad "{n}" smd rect (at {x} {y} {rot}) '
                         f'(size 0.25 0.8) {SMD})')
             n += 1
-    lay = SMD if ep_paste else '(layers "F.Cu" "F.Mask")'
-    pads.append(f'(pad "17" smd rect (at 0 0) (size 2.6 2.6) {lay} '
+    pads.append(f'(pad "17" smd rect (at 0 0) (size 2.6 2.6) {SMD} '
                 f'(net "GND"))')
     return ('(footprint "Package_DFN_QFN:QFN-16-1EP_4x4mm" (layer "F.Cu") '
             '(at 20 20)\n (property "Reference" "U1" (at 0 -3 0) '
-            '(layer "F.SilkS"))\n ' + "\n ".join(pads) + f"\n {panes})\n")
+            '(layer "F.SilkS"))\n ' + "\n ".join(pads) + ")\n")
 
 
 def _ep_vias() -> str:
@@ -161,32 +160,11 @@ def test_untented_via_far_from_pads_passes(tmp_path):
     assert kinds == [] and seen["pairs_near"] == 0
 
 
-def test_ep_thermal_vias_under_paste_untented_below_warn(tmp_path):
+def test_exposed_pad_vias_are_left_to_check_ep_paste(tmp_path):
+    # untented, under full paste: check_ep_paste's paste_on_via, not ours
     pcb = _board(tmp_path, _setup(tent=("no", "no")), _qfn(), _ep_vias())
-    kinds, vios, _ = _kinds(pcb)
-    assert kinds == ["wick_ep_via"]
-    assert vios[0]["vias"] == 4 and vios[0]["pad"] == "17"
-
-
-def test_ep_vias_tented_on_the_bottom_pass(tmp_path):
-    pcb = _board(tmp_path, _setup(tent=("no", "yes")), _qfn(), _ep_vias())
-    assert _kinds(pcb)[0] == []
-
-
-def test_ep_vias_plugged_pass(tmp_path):
-    pcb = _board(tmp_path, _setup(tent=("no", "no"), plug=("no", "yes")),
-                 _qfn(), _ep_vias())
-    assert _kinds(pcb)[0] == []
-
-
-def test_ep_window_pane_paste_missing_the_vias_passes(tmp_path):
-    # four 0.5 mm paste squares centred between the vias, none over a drill
-    panes = " ".join(
-        f'(pad "" smd rect (at {x} {y}) (size 0.5 0.5) (layers "F.Paste"))'
-        for x, y in ((0, -0.6), (0, 0.6), (-0.6, 0), (0.6, 0)))
-    pcb = _board(tmp_path, _setup(tent=("no", "no")),
-                 _qfn(ep_paste=False, panes=panes), _ep_vias())
-    assert _kinds(pcb)[0] == []
+    kinds, _, seen = _kinds(pcb)
+    assert kinds == [] and seen["ep_vias_skipped"] == 4
 
 
 def test_kicad8_list_form_tenting(tmp_path):
