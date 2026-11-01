@@ -44,7 +44,7 @@ jobs:
           java-version: "25"
       # KiCad's SWIG paths need an X display; bin/hwde runs them under xvfb-run.
       - name: xvfb
-        run: sudo apt-get install -y xvfb
+        run: sudo apt-get install -y xvfb poppler-utils
       - name: cache KiCad's AppImage
         uses: actions/cache@v4
         with:

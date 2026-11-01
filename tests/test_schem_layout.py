@@ -165,3 +165,29 @@ def test_hier_fixture_redraws_clean(tmp_path):
     _report, code = sl.run(top)
     assert code == 0
     assert sl.netlist(top) == before
+
+
+def test_stubs_and_wires_keep_a_pin_pitch_apart():
+    import schem_lint as sl_
+    # 1.27 apart, running side by side: flagged; a pin pitch apart, or only
+    # stepping past an end, isn't
+    a = (0.0, 0.0, 10.0, 0.0)
+    assert sl_.close_wires([a, (0.0, 1.27, 10.0, 1.27)])
+    assert not sl_.close_wires([a, (0.0, 2.54, 10.0, 2.54)])
+    assert not sl_.close_wires([a, (10.0, 1.27, 20.0, 1.27)])
+
+
+def test_redrawn_board_has_no_close_wires_or_text_on_text(tmp_path):
+    import schem_lint as sl_
+    top = _board(tmp_path)
+    assert sl.run(top)[1] == 0
+    res = sl_.measure(top, sl._cli())
+    assert res["close_wires"] == 0, res["examples"]["close_wires"]
+    assert res["text_text"] == 0, res["examples"]["text_text"]
+
+
+def test_a_part_text_goes_round_what_is_already_there():
+    box = sl.Boxes()
+    box.add((0.0, 0.0, 10.0, 2.0))
+    assert box.hits((1.0, 0.5, 2.0, 1.5)) > 0
+    assert box.hits((1.0, 5.0, 2.0, 6.0)) == 0

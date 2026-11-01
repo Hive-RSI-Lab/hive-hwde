@@ -39,6 +39,7 @@ from __future__ import annotations
 import argparse
 import heapq
 import json
+import math
 import re
 import shutil
 import subprocess
@@ -67,6 +68,12 @@ NS = uuid.UUID("6f0c2f9e-52a5-4c3e-9d7f-3b1d3c1e7a11")
 MAX_LABEL_PINS = 5       # a net on more pins than this between blocks keeps labels
 MAX_WIRE_MM = 90.0       # ... and so does one longer than this
 MAX_CROSSINGS = 2        # ... or one that would cross more wires than this
+TURN_NAME = 8.0          # a name longer than this reads level off a vertical pin
+MERGE_RAIL = 7.62        # rail pins this close on a side share one symbol
+SNUG = 0.7               # router's extra cost a cell for running one pitch from a wire
+TEXT_H = 1.27            # what a line of text takes, across its run
+TEXT_PAD = 0.3           # clear room kept round text when it is placed
+SHUNT_TEXT = 5.17        # a shunt's text offset, the next body's half width, a margin
 
 _GND = re.compile(r"(^|[/_.])(A|D|P|S|C|E|R|H)?(GND|VSS|VEE|0V)([A-Z0-9_]*)$", re.I)
 _RAIL = re.compile(r"^(\+|-)?\d+V\d*|^\+|^V(CC|DD|BUS|IN|BAT|SYS|REF|OUT|S)\b"
@@ -89,6 +96,10 @@ def cell(p) -> tuple[int, int]:
 
 def pos(c) -> tuple[float, float]:
     return (round(c[0] * G, 4), round(c[1] * G, 4))
+
+
+def snap_up(v: float, g: float = 2.54) -> float:
+    return round(math.ceil(v / g - 1e-6) * g, 4)
 
 
 def fmt(v: float) -> str:
@@ -209,7 +220,6 @@ class Sym:
 
     def pin_out(self, pin: Pin, at=None) -> tuple[int, int]:
         """Page direction a wire leaves this pin."""
-        import math
         a = math.radians(pin.ang)
         at = at or self.new_at or self.at
         tip = sr.to_page(pin.lx, pin.ly, at, self.mirror)
@@ -434,6 +444,8 @@ class Drawing:
         self.vwires: dict = {}
         self.nodes: dict = {}        # cell -> net id: wire ends, bends, pins
         self.power_pins: set = set()
+        self.fixed_text: list = []   # boxes of text that sits where it sits
+        self.power_boxes: list = []  # boxes of the power symbols drawn
 
     # -- obstacles
     def block_box(self, box, kind="body", pad=0.0):
@@ -444,23 +456,24 @@ class Drawing:
             for y in range(cy0, cy1 + 1):
                 self.blocked.setdefault((x, y), kind)
 
-    def block_text(self, s: str, at, justify: str | None, vertical=False):
-        w, h = text_w(s), 1.27
-        x, y = at
-        if vertical:
-            if justify == "left":     # runs upward
-                self.block_box((x - h / 2, y - w, x + h / 2, y), "text")
-            elif justify == "right":
-                self.block_box((x - h / 2, y, x + h / 2, y + w), "text")
-            else:
-                self.block_box((x - h / 2, y - w / 2, x + h / 2, y + w / 2), "text")
-            return
-        if justify == "left":
-            self.block_box((x, y - h / 2, x + w, y + h / 2), "text")
-        elif justify == "right":
-            self.block_box((x - w, y - h / 2, x, y + h / 2), "text")
-        else:
-            self.block_box((x - w / 2, y - h / 2, x + w / 2, y + h / 2), "text")
+    def block_text(self, s: str, at, justify: str | None, vertical=False, fixed=True):
+        box = text_box(s, at, justify, vertical)
+        self.block_box(box, "text")
+        if fixed:
+            self.fixed_text.append(box)
+
+    def text_hits(self, box, net_id: int) -> int:
+        """Cells of this box something else already takes."""
+        hits = 0
+        cx0, cy0 = cell((box[0], box[1]))
+        cx1, cy1 = cell((box[2], box[3]))
+        for x in range(cx0, cx1 + 1):
+            for y in range(cy0, cy1 + 1):
+                c = (x, y)
+                if c in self.blocked or self.hwires.get(c, net_id) != net_id \
+                        or self.vwires.get(c, net_id) != net_id:
+                    hits += 1
+        return hits
 
     # -- wires
     def add_path(self, net: Net, cells: list[tuple]) -> None:
@@ -527,14 +540,17 @@ class Drawing:
         if d[1] == 1:
             ty = at[1] + 5.08
         self.power_pins.add(cell(at))
-        self.clones.append(_clone_text(proto, ref, sym_at, (tx, ty), just, self.sheet.path.stem,
-                                       self.power_i))
         ext = 3.81
         x0, x1 = sorted((at[0], at[0] + d[0] * ext))
         y0, y1 = sorted((at[1], at[1] + d[1] * ext))
-        self.block_box((x0 - 1.27 * abs(d[1]), y0 - 1.27 * abs(d[0]),
-                        x1 + 1.27 * abs(d[1]), y1 + 1.27 * abs(d[0])), "power")
-        self.block_text(proto.value, (tx, ty), just)
+        box = (x0 - 1.27 * abs(d[1]), y0 - 1.27 * abs(d[0]),
+               x1 + 1.27 * abs(d[1]), y1 + 1.27 * abs(d[0]))
+        self.block_box(box, "power")
+        self.power_boxes.append(box)
+        self.block_text(proto.value, (tx, ty), just, fixed=False)
+        # its text is settled, and the symbol written, once everything is drawn
+        self.clones.append({"proto": proto, "ref": ref, "at": sym_at, "text": (tx, ty, just),
+                            "n": self.power_i, "pin": at, "d": d})
 
     def drop(self, net: Net, at, d: tuple[int, int]) -> None:
         """End this wire on the net's own symbol or name. The first end on a
@@ -575,6 +591,23 @@ class Drawing:
             return
         self.nodes[cell(p)] = net.id
         self.label(last[0], last[1], p, d, last[2])
+
+
+def text_box(s: str, at, justify: str | None, vertical=False) -> tuple:
+    """(x0, y0, x1, y1) of a line of text at this anchor."""
+    w, h = text_w(s), TEXT_H
+    x, y = at
+    if vertical:
+        if justify == "left":     # runs upward
+            return (x - h / 2, y - w, x + h / 2, y)
+        if justify == "right":
+            return (x - h / 2, y, x + h / 2, y + w)
+        return (x - h / 2, y - w / 2, x + h / 2, y + w / 2)
+    if justify == "left":
+        return (x, y - h / 2, x + w, y + h / 2)
+    if justify == "right":
+        return (x - w, y - h / 2, x, y + h / 2)
+    return (x - w / 2, y - h / 2, x + w / 2, y + h / 2)
 
 
 def _power_points_down(proto: Sym) -> bool:
@@ -798,9 +831,13 @@ def _lay_strip(block: Block, strip: Strip, x0: float, y: float, side: int,
                 ep = _local_pin(s, o, at)
                 block.grow((ep[0] - 2.54, min(ep[1], ep[1] + reach), ep[0] + 2.54,
                             max(ep[1], ep[1] + reach)))
-            w = max(text_w(s.ref), text_w(s.value)) + 3.81
-            x = round(x + side * max(snap(w, 2.54), 7.62), 4)
+            x = round(x + side * _shunt_pitch(s), 4)
     return x
+
+
+def _shunt_pitch(s: Sym) -> float:
+    """From a hanging part to the next one, with this one's text between."""
+    return max(snap_up(max(text_w(s.ref), text_w(s.value)) + SHUNT_TEXT), 7.62)
 
 
 def _local_pin(s: Sym, pin: Pin, at) -> tuple:
@@ -831,8 +868,7 @@ def _lay_bank(block: Block, caps: list[tuple[Sym, Pin, Pin]], rail: Net, gnd: Ne
         block.place(s, at)
         y_bot = max(y_bot, _local_pin(s, bot, at)[1])
         xs.append((x, s, bot, at))
-        w = max(text_w(s.ref), text_w(s.value)) + 3.81
-        x = round(x + max(snap(w, 2.54), 7.62), 4)
+        x = round(x + _shunt_pitch(s), 4)
     last = xs[-1][0]
     block.ops.append(("wire", rail, (x0, y_top), (last, y_top)))
     block.ops.append(("drop", rail, (x0, y_top), (0, -1)))
@@ -842,8 +878,10 @@ def _lay_bank(block: Block, caps: list[tuple[Sym, Pin, Pin]], rail: Net, gnd: Ne
             block.ops.append(("wire", gnd, p, (bx, y_bot)))
     block.ops.append(("wire", gnd, (x0, y_bot), (last, y_bot)))
     block.ops.append(("drop", gnd, (x0, y_bot), (0, 1)))
-    block.grow((x0 - text_w(rail.name()) / 2 - 1.27, y_top - 7.62, last + 7.62, y_bot + 7.62))
-    return last + BANK_GAP
+    # the last cap's text runs out to its right, past the rail's end
+    room = max(BANK_GAP, _shunt_pitch(xs[-1][1]))
+    block.grow((x0 - text_w(rail.name()) / 2 - 1.27, y_top - 7.62, last + room, y_bot + 7.62))
+    return last + room
 
 
 def _layout_part(sheet: Sheet, part: Sym, used: set, banks: dict) -> Block:
@@ -1129,12 +1167,21 @@ def _route(dr: Drawing, net: Net, starts: set, goal: tuple, bound, max_cost: flo
             cross = dr.vwires if horiz else dr.hwires
             if same.get(n, nid) != nid:
                 continue
+            # never alongside another net nearer than a pin pitch: past that a
+            # label reads better; and give it room when there is room
+            side = (0, 1) if horiz else (1, 0)
+            if pin != nid and (same.get((n[0] + side[0], n[1] + side[1]), nid) != nid
+                               or same.get((n[0] - side[0], n[1] - side[1]), nid) != nid):
+                continue
             if nd != d and prev is not None:
                 # may not turn on someone else's wire
                 if dr.hwires.get(c, nid) != nid or dr.vwires.get(c, nid) != nid:
                     continue
             ncr = cr
             cost = 1.0
+            if same.get((n[0] + 2 * side[0], n[1] + 2 * side[1]), nid) != nid \
+                    or same.get((n[0] - 2 * side[0], n[1] - 2 * side[1]), nid) != nid:
+                cost += SNUG
             if cross.get(n, nid) != nid:
                 ncr += 1
                 cost += CROSS
@@ -1227,28 +1274,99 @@ def _clear_for(dr: Drawing, net: Net, c) -> bool:
     return True
 
 
-def _stub_label(dr: Drawing, net: Net, s: Sym, p: Pin) -> None:
-    """A pin that keeps a name instead of a wire. The stub stretches past
-    anything of another net; a label on someone else's wire would join them."""
+def _first_name(net: Net) -> tuple:
+    """The name `Drawing.drop` will put at the end of a stub: (kind, name)."""
+    if net.power:
+        return ("power", net.power[0].value)
+    if net.anchored:
+        if net.locals:
+            return ("label", net.locals[0])
+        if net.hiers:
+            return ("hierarchical_label", net.hiers[0][0])
+        return ("global_label", net.globals[0][0] if net.globals else net.name())
+    names = [("label", x) for x in net.locals] + [("global_label", g[0]) for g in net.globals] \
+        + [("hierarchical_label", h[0]) for h in net.hiers]
+    return names[-1] if names else ("label", net.name())
+
+
+def _name_box(kind: str, name: str, at, d: tuple[int, int]) -> tuple:
+    off = 0.0 if kind == "label" else 2.54
+    ang = {(1, 0): 0, (-1, 0): 180, (0, -1): 90, (0, 1): 270}[d]
+    just = "left" if ang in (0, 90) else "right"
+    return text_box(name, (at[0] + d[0] * off, at[1] + d[1] * off), just, ang in (90, 270))
+
+
+def _beside_wire(dr: Drawing, net: Net, c: tuple, d: tuple) -> bool:
+    """A wire of this net through c, going d, would run next to another net's."""
+    table, side = (dr.hwires, (0, 1)) if d[1] == 0 else (dr.vwires, (1, 0))
+    return table.get((c[0] + side[0], c[1] + side[1]), net.id) != net.id \
+        or table.get((c[0] - side[0], c[1] - side[1]), net.id) != net.id
+
+
+def _plan_stub(dr: Drawing, net: Net, s: Sym, p: Pin, kind: str, name: str) -> tuple:
+    """How a pin's stub reaches room for its name: (hits, run, end cell, turn).
+    It stretches past anything of another net (a name on someone else's wire
+    would join them); a vertical stub with no room turns aside so the name can
+    read level, as a name along a column of parts would run over them."""
     d = s.pin_out(p)
-    a = s.pin_page(p)
-    c = cell(a)
-    run = 0
+    c = cell(s.pin_page(p))
+    best = None
     for n in range(1, 25):
         cur = (c[0] + d[0] * n, c[1] + d[1] * n)
         if not _clear_for(dr, net, cur) or dr.blocked.get(cur) == "body":
-            if n > 2 and run >= 2:
+            if n > 2 and best is not None:
                 break
             what = dr.pin_cells.get(cur), dr.hwires.get(cur), dr.vwires.get(cur), \
                 dr.nodes.get(cur), dr.blocked.get(cur), net.id
-            raise LayoutError(f"{s.ref}.{p.num}: no room for a stub to name {net.name()} "
+            raise LayoutError(f"{s.ref}.{p.num}: no room for a stub to name {name} "
                               f"at {pos(cur)}: {what}")
-        run = n
-        if n >= 2 and dr.blocked.get((cur[0] + d[0], cur[1] + d[1])) is None:
+        if n < 2:
+            continue
+        # a stub through someone's text counts against it, as the name does
+        crossed = sum(1 for i in range(1, n + 1)
+                      if (c[0] + d[0] * i, c[1] + d[1] * i) in dr.blocked)
+        crossed += sum(1 for i in range(1, n + 1)
+                       if _beside_wire(dr, net, (c[0] + d[0] * i, c[1] + d[1] * i), d))
+        hits = crossed * 2 + dr.text_hits(_name_box(kind, name, pos(cur), d), net.id)
+        if best is None or hits < best[0]:
+            best = (hits, n, cur, None)
+        if hits == 0:
             break
-    e = pos((c[0] + d[0] * run, c[1] + d[1] * run))
-    dr.wire(net, a, e)
-    dr.drop(net, e, d)
+    if d[0] == 0 and (best[0] > 0 or text_w(name) > TURN_NAME):
+        for sgn in (1, -1):
+            for n in (2, 3, 4):
+                corner = (c[0] + d[0] * n, c[1] + d[1] * n)
+                way = [(c[0] + d[0] * i, c[1] + d[1] * i) for i in range(1, n + 1)]
+                way += [(corner[0] + sgn * i, corner[1]) for i in (1, 2)]
+                if not all(_clear_for(dr, net, w) and w not in dr.blocked for w in way):
+                    continue
+                hits = dr.text_hits(_name_box(kind, name, pos(way[-1]), (sgn, 0)), net.id)
+                hits += 2 * sum(1 for w in way[:n] if _beside_wire(dr, net, w, d))
+                hits += 2 * sum(1 for w in way[n:] if _beside_wire(dr, net, w, (sgn, 0)))
+                if hits < best[0] or (hits == best[0] and best[3] is None):
+                    best = (hits, n, way[-1], (sgn, 0))
+    return best
+
+
+def _draw_stub(dr: Drawing, net: Net, s: Sym, p: Pin, plan: tuple) -> tuple:
+    """The wires of a planned stub; returns where its name goes and which way."""
+    _hits, run, end, turn = plan
+    d = s.pin_out(p)
+    a = s.pin_page(p)
+    c = cell(a)
+    corner = pos((c[0] + d[0] * run, c[1] + d[1] * run))
+    dr.wire(net, a, corner)
+    if turn is None:
+        return corner, d
+    dr.wire(net, corner, pos(end))
+    return pos(end), turn
+
+
+def _stub_label(dr: Drawing, net: Net, s: Sym, p: Pin) -> None:
+    """A pin that keeps a name instead of a wire."""
+    kind, name = _first_name(net)
+    at, d = _draw_stub(dr, net, s, p, _plan_stub(dr, net, s, p, kind, name))
+    dr.drop(net, at, d)
 
 
 def _label_spot(dr: Drawing, net: Net, name: str):
@@ -1294,33 +1412,52 @@ def _name_tree(dr: Drawing, net: Net, tree_pins: list) -> None:
             dr.labels.append({"kind": "label", "name": name, "at": at, "ang": 0,
                               "just": "left", "shape": ""})
             dr.block_text(name, (at[0], at[1] - 1.27), "left")
-    stubs = iter(sorted(tree_pins, key=lambda sp: _ref_key(sp[0].ref)))
+    pins = sorted(tree_pins, key=lambda sp: _ref_key(sp[0].ref))
     for kind, name, shape in names:
-        s, p = next(stubs)
-        d = s.pin_out(p)
-        c = cell(s.pin_page(p))
-        # off the pin's own run if it has one
-        e = (c[0] + d[0] * 2, c[1] + d[1] * 2)
-        if not _clear_for(dr, net, e) or not _clear_for(dr, net, (c[0] + d[0], c[1] + d[1])):
-            raise LayoutError(f"{s.ref}.{p.num}: no room to name {name}")
-        dr.wire(net, pos(c), pos(e))
-        dr.label(kind, name, pos(e), d, shape)
+        # off whichever pin has the most room for it
+        best = None
+        for s, p in pins:
+            try:
+                plan = _plan_stub(dr, net, s, p, kind, name)
+            except LayoutError:
+                continue
+            if best is None or plan[0] < best[0][0]:
+                best = (plan, s, p)
+            if plan[0] == 0:
+                break
+        if best is None:
+            raise LayoutError(f"{pins[0][0].ref}: no room to name {name}")
+        plan, s, p = best
+        pins.remove((s, p))
+        at, d = _draw_stub(dr, net, s, p, plan)
+        dr.label(kind, name, at, d, shape)
 
 
 def _merge_rail_pins(part: Sym, pins: list[Pin], sheet: Sheet) -> list[list[Pin]]:
-    """Rail pins side by side share one stub."""
+    """Rail pins near each other on one side share one stub, as long as no other
+    pin comes out between them: a symbol each would only stack their text."""
     groups: list[list[Pin]] = []
-    for p in sorted(pins, key=lambda p: part.pin_page(p)):
+    tips = {p.num: part.pin_page(p) for p in part.visible_pins()}
+    for p in sorted(pins, key=lambda p: (part.pin_out(p), part.pin_page(p))):
         n = sheet.pin_net.get((part.key(), p.num))
-        if groups:
+        if groups and n is not None:
             last = groups[-1][-1]
             la, a = part.pin_page(last), part.pin_page(p)
-            if sheet.pin_net.get((part.key(), last.num)) is n and \
-                    abs(la[0] - a[0]) + abs(la[1] - a[1]) <= 2.54 + 1e-6 and n is not None:
+            if sheet.pin_net.get((part.key(), last.num)) is n and part.pin_out(last) == part.pin_out(p) \
+                    and abs(la[0] - a[0]) + abs(la[1] - a[1]) <= MERGE_RAIL + 1e-6 \
+                    and not any(q2.num not in (last.num, p.num) and part.pin_out(q2) == part.pin_out(p)
+                                and _between(tips[q2.num], la, a) for q2 in part.visible_pins()):
                 groups[-1].append(p)
                 continue
         groups.append([p])
     return groups
+
+
+def _between(c, a, b) -> bool:
+    """c lies on the straight run from a to b, or would be crossed by a rail along it."""
+    if a[0] == b[0]:
+        return min(a[1], b[1]) <= c[1] <= max(a[1], b[1])
+    return min(a[0], b[0]) <= c[0] <= max(a[0], b[0])
 
 
 # ---------------------------------------------------------------------- redraw
@@ -1411,7 +1548,7 @@ def redraw(sheet: Sheet, power_base: int = 9000) -> tuple[str, dict]:
         fields[s.uuid] = _field_spots(s)
         for name, (fx, fy, just) in fields[s.uuid].items():
             txt = s.ref if name == "Reference" else s.value
-            dr.block_text(txt, (fx, fy), just)
+            dr.block_text(txt, (fx, fy), just, fixed=False)
     for s in placed_all:
         for p in s.visible_pins():
             _clear_pin_way(dr, s, p)
@@ -1552,6 +1689,8 @@ def redraw(sheet: Sheet, power_base: int = 9000) -> tuple[str, dict]:
             if not n.pins and not n.flags:
                 raise LayoutError(f"rail {n.name()}: power symbol on nothing")
 
+    _settle_text(dr, fields, placed_all)
+    dr.notes_at = snap(flag_y + (12.7 if fx else 0.0), 2.54)
     text = _write(sheet, dr, fields, placed_all)
     _self_check(sheet, text)
     report = {"parts": len(placed_all), "blocks": len(blocks),
@@ -1600,6 +1739,145 @@ def _field_spots(s: Sym) -> dict:
                 "Value": (round(cx, 4), round(cy + 3.05, 4), None)}
     return {"Reference": (round(b[0], 4), round(b[1] - 1.91, 4), "left"),
             "Value": (round(b[0], 4), round(b[3] + 1.91, 4), "left")}
+
+
+# ------------------------------------------------------------------------- text
+
+class Boxes:
+    """Boxes on the page, found by bucket."""
+    SIZE = 10.0
+
+    def __init__(self):
+        self.buckets: dict = defaultdict(list)
+
+    def _keys(self, b):
+        for x in range(int(b[0] // self.SIZE), int(b[2] // self.SIZE) + 1):
+            for y in range(int(b[1] // self.SIZE), int(b[3] // self.SIZE) + 1):
+                yield (x, y)
+
+    def add(self, b) -> None:
+        for k in self._keys(b):
+            self.buckets[k].append(b)
+
+    def hits(self, b, pad: float = TEXT_PAD) -> float:
+        """How much of the box, padded, lies on what's there."""
+        area = 0.0
+        seen = set()
+        g = (b[0] - pad, b[1] - pad, b[2] + pad, b[3] + pad)
+        for k in self._keys(g):
+            for o in self.buckets.get(k, ()):
+                w = min(g[2], o[2]) - max(g[0], o[0])
+                h = min(g[3], o[3]) - max(g[1], o[1])
+                if w > 0 and h > 0 and o not in seen:
+                    seen.add(o)
+                    area += max(w * h, 0.05)
+        return area
+
+
+def _part_field_places(s: Sym) -> list[dict]:
+    """Where a part's Reference and Value may go, the usual place first."""
+    b = s.body_box()
+    cx, cy = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
+    usual = _field_spots(s)
+    out = [usual]
+    if passive_like(s):
+        if s.pin_out(s.visible_pins()[0])[0] == 0:
+            rx, lx = snap(cx + 2.54), snap(cx - 2.54)
+            for dy in (0.0, -2.54, 2.54, -5.08, 5.08):
+                for x, j in ((rx, "left"), (lx, "right")):
+                    out.append({"Reference": (x, round(cy - 1.27 + dy, 4), j),
+                                "Value": (x, round(cy + 1.27 + dy, 4), j)})
+        else:
+            up, dn = round(cy - 3.05, 4), round(cy + 3.05, 4)
+            for dx in (0.0, 2.54, -2.54, 5.08, -5.08):
+                x = round(cx + dx, 4)
+                out.append({"Reference": (x, up, None), "Value": (x, dn, None)})
+                out.append({"Reference": (x, round(up - 2.54, 4), None), "Value": (x, up, None)})
+                out.append({"Reference": (x, dn, None), "Value": (x, round(dn + 2.54, 4), None)})
+        return out
+    x0, y0, x1, y1 = b
+    spots = [(x0, y0 - 1.91, "left"), (x1, y0 - 1.91, "right"), (x0, y1 + 1.91, "left"),
+             (x0 - 1.27, y0 - 1.91, "right"), (x1 + 1.27, y1 + 1.91, "left"),
+             (x0, y0 - 7.62, "left"), (x0, y1 + 7.62, "left"),
+             (x1, y1 + 1.91, "right"), (x0, y0 - 4.45, "left"), (x1, y0 - 4.45, "right"),
+             (x0, y1 + 4.45, "left"), (x1, y1 + 4.45, "right"), (x1 + 1.27, y0, "left"),
+             (x0 - 1.27, y0, "right"), (x1 + 1.27, y1, "left"), (x0 - 1.27, y1, "right")]
+    spots = [(round(x, 4), round(y, 4), j) for x, y, j in spots]
+    for r in spots:
+        for v in spots:
+            if r != v:
+                out.append({"Reference": r, "Value": v})
+    return out
+
+
+def _power_text_places(c: dict) -> list[tuple]:
+    """Where a power symbol's name may go, the usual place first."""
+    x, y = c["pin"]
+    d = c["d"]
+    out = [c["text"]]
+    if d[1]:
+        ty = c["text"][1]
+        far = round(ty + d[1] * 2.54, 4)
+        mid = round(y + d[1] * 3.81, 4)
+        out += [(round(x + 2.54, 4), mid, "left"), (round(x - 2.54, 4), mid, "right"),
+                (x, far, None)]
+        out += [(round(x + 2.54, 4), ty, "left"), (round(x - 2.54, 4), ty, "right")]
+    else:
+        tx = c["text"][0]
+        just = c["text"][2]
+        out += [(tx, round(y - 2.54, 4), just), (tx, round(y + 2.54, 4), just),
+                (round(tx + d[0] * 2.54, 4), y, just)]
+    return out
+
+
+def _settle_text(dr: Drawing, fields: dict, placed: list[Sym]) -> None:
+    """Everything is drawn: put each movable piece of text where it is clearest.
+    Bodies, wires and names on wires stay; these go round them, and each other."""
+    ob = Boxes()
+    for s in placed:
+        ob.add(tuple(s.body_box()))
+    for box in dr.power_boxes + dr.fixed_text:
+        ob.add(box)
+    for steps in dr.wires.values():
+        for a, b in steps:
+            pa, pb = pos(a), pos(b)
+            ob.add((min(pa[0], pb[0]) - 0.05, min(pa[1], pb[1]) - 0.05,
+                    max(pa[0], pb[0]) + 0.05, max(pa[1], pb[1]) + 0.05))
+    for c in dr.clones:
+        best = None
+        for place in _power_text_places(c):
+            box = text_box(c["proto"].value, place[:2], place[2])
+            score = ob.hits(box)
+            if best is None or score < best[0] - 1e-9:
+                best = (score, place, box)
+            if score == 0:
+                break
+        c["text"] = best[1]
+        ob.add(best[2])
+    # parts with least room first would be better; ref order keeps it the same each run
+    for s in placed:
+        if s.uuid not in fields:
+            continue
+        best = None
+        for place in _part_field_places(s):
+            boxes = []
+            for name, (x, y, just) in place.items():
+                txt = s.ref if name == "Reference" else s.value
+                boxes.append(text_box(txt, (x, y), just))
+            score = sum(ob.hits(b) for b in boxes)
+            if len(boxes) == 2 and _overlap(boxes[0], boxes[1]):
+                score += 100.0
+            if best is None or score < best[0] - 1e-9:
+                best = (score, place, boxes)
+            if score == 0:
+                break
+        fields[s.uuid] = best[1]
+        for b in best[2]:
+            ob.add(b)
+
+
+def _overlap(a, b) -> bool:
+    return min(a[2], b[2]) > max(a[0], b[0]) and min(a[3], b[3]) > max(a[1], b[1])
 
 
 # ---------------------------------------------------------------------- output
@@ -1703,9 +1981,15 @@ def _write(sheet: Sheet, dr: Drawing, fields: dict, placed: list[Sym]) -> str:
     last = sheet.body[0]
     sym_i = 0
     stem = sheet.path.stem
+    note_y = dr.notes_at
     for h, a, b in sheet.top_forms:
         keep.append(sheet.text[last:a])
         last = b
+        if h in ("text", "text_box"):
+            # its parts have moved: a note lands on them if it stays put
+            form, note_y = _move_note(sheet.text[a:b], h, note_y)
+            keep.append(form)
+            continue
         if h == "symbol":
             s = sheet.syms[sym_i]
             sym_i += 1
@@ -1719,7 +2003,8 @@ def _write(sheet: Sheet, dr: Drawing, fields: dict, placed: list[Sym]) -> str:
             keep.append(sheet.text[a:b])
     tail = sheet.text[last:]
 
-    new = list(dr.clones)
+    new = [_clone_text(c["proto"], c["ref"], c["at"], c["text"][:2], c["text"][2], stem, c["n"])
+           for c in dr.clones]
     for i, (a, b) in enumerate(runs):
         pa, pb = pos(a), pos(b)
         new.append(f'(wire (pts (xy {fmt(pa[0])} {fmt(pa[1])}) (xy {fmt(pb[0])} {fmt(pb[1])})) '
@@ -1751,9 +2036,36 @@ def _write(sheet: Sheet, dr: Drawing, fields: dict, placed: list[Sym]) -> str:
     return _hide_two_pin_numbers(sheet.text[:sheet.body[0]] + joined + tail, sheet)
 
 
+def _move_note(form: str, kind: str, y: float) -> tuple[str, float]:
+    """A note, moved to the left edge with its top at y: the form, and the y
+    below it."""
+    head = re.match(r'\(\s*' + kind + r'\s+"((?:[^"\\]|\\.)*)"', form)
+    at = re.compile(r'\(at \S+ \S+(?: \S+)?\)').search(form, head.end())
+    if at is None:
+        return form, y
+    size = re.search(r'\(font\s*(?:\(face "[^"]*"\)\s*)?\(size (\S+) (\S+)\)', form)
+    fs = float(size.group(1)) if size else 1.27
+    lines = head.group(1).split("\\n")
+    w = max(len(ln) for ln in lines) * fs * TEXT_W / 1.27
+    if kind == "text_box":
+        box = re.search(r'\(size (\S+) (\S+)\)', form[at.end():])
+        h = float(box.group(2)) if box else len(lines) * fs * 1.7
+        ax, ay = 0.0, y
+    else:
+        h = len(lines) * fs * 1.7
+        just = re.search(r'\(justify ([^()]*)\)', form)
+        just = just.group(1).split() if just else []
+        ax = w if "right" in just else 0.0 if "left" in just else w / 2
+        ay = y + h if "bottom" in just else y if "top" in just else y + h / 2
+    x, ay = snap(ax), snap(ay)
+    return (form[:at.start()] + f'(at {fmt(x)} {fmt(ay)} 0)' + form[at.end():],
+            snap_up(y + h + 2.54))
+
+
 def _hide_two_pin_numbers(text: str, sheet: Sheet) -> str:
-    """A resistor doesn't need its pin numbers printed; the embedded symbol
-    says so. Polarity marks are in the graphics, so diodes lose nothing."""
+    """A resistor doesn't need its pins' numbers or names printed (imported
+    symbols name theirs 1 and 2); the embedded symbol says so. Polarity marks are
+    in the graphics, so diodes lose nothing."""
     ids = {s.lib_id for s in sheet.syms if not s.is_power and passive_like(s)}
     m = re.search(r"\(lib_symbols", text)
     if not m or not ids:
@@ -1768,7 +2080,9 @@ def _hide_two_pin_numbers(text: str, sheet: Sheet) -> str:
                 f = block[c:d]
                 f2 = re.sub(r'\(pin_numbers[^()]*(\(hide [^()]*\))?[^()]*\)\s*', "", f, count=1)
                 head = re.match(r'\(symbol\s+"[^"]+"', f2)
-                f2 = f2[:head.end()] + " (pin_numbers (hide yes))" + f2[head.end():]
+                f2 = re.sub(r'\(pin_names[^()]*(\([^()]*\)[^()]*)*\)\s*', "", f2, count=1)
+                f2 = f2[:head.end()] + " (pin_numbers (hide yes)) (pin_names (hide yes))" \
+                    + f2[head.end():]
                 out.append(block[last:c])
                 out.append(f2)
                 last = d
@@ -1807,7 +2121,10 @@ def netlist(sch: Path) -> dict:
         ref = str(sr._tok(sr._kid(c, "ref")[1]))
         stamps = sr._kid(c, "tstamps")
         path = sr._kid(c, "sheetpath")
-        nets[f"#comp {ref}"] = [str(sr._tok(x)) for x in (stamps or [])[1:]] + \
+        # kicad-cli lists a multi-unit part's other units in page order, so only
+        # the first stamp has a fixed place; the set of them must still match
+        ids = [str(sr._tok(x)) for x in (stamps or [])[1:]]
+        nets[f"#comp {ref}"] = ids[:1] + sorted(ids[1:]) + \
             [str(sr._tok(sr._kid(path, "tstamps")[1]))] if path is not None else []
     return nets
 
