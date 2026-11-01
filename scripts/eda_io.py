@@ -268,6 +268,14 @@ def repair_and_load(pcb: Path) -> dict:
     return {"moved": moved, "to": to}
 
 
+def write_dru_rules(pcb: Path, prefix: str, rules: list[str]) -> None:
+    """Replace this import's rules (named prefix*) in the board's .kicad_dru."""
+    path = pcb.with_suffix(".kicad_dru")
+    text = path.read_text() if path.exists() else "(version 1)\n"
+    text = re.sub(r'\(rule "' + re.escape(prefix) + r'.*?\)\)\)\n?', "", text, flags=re.S)
+    path.write_text(text.rstrip() + "\n" + "\n".join(rules) + "\n")
+
+
 def apply_source_rules(pcb: Path, src) -> dict:
     """The source's own design rules into the imported project's board setup
     and net classes (KiCad's Eagle importer carries none, so the board would
@@ -296,7 +304,7 @@ def apply_source_rules(pcb: Path, src) -> dict:
                  ("via_drill", rules.get("via_drill")), ("via_diameter", rules.get("via_diameter"))):
         if v:
             default[k] = v
-    made = []
+    made, dru = [], []
     patterns = ns.setdefault("netclass_patterns", []) or []
     for c in getattr(src, "classes", []):
         if c["number"] == "0" or not (c["width"] or c["clearance"] or c["drill"]) or not c["nets"]:
@@ -304,8 +312,13 @@ def apply_source_rules(pcb: Path, src) -> dict:
         nc = {k: v for k, v in default.items() if k != "name"} | {"name": c["name"]}
         if c["width"]:
             nc["track_width"] = max(c["width"], rules.get("track_width") or 0)
-        if c["clearance"]:
-            nc["clearance"] = max(c["clearance"], rules.get("clearance") or 0)
+        if c["clearance"] and c["clearance"] > (rules.get("clearance") or 0):
+            # Eagle's class clearance holds between two nets OF that class; a
+            # KiCad net-class clearance would hold against every net, so it
+            # goes in a DRU rule scoped to the pair
+            dru.append(f'(rule "eagle_class_{c["name"]}"\n'
+                       f'\t(condition "A.NetClass == \'{c["name"]}\' && B.NetClass == \'{c["name"]}\'")\n'
+                       f'\t(constraint clearance (min {c["clearance"]}mm)))')
         if c["drill"]:
             nc["via_drill"] = c["drill"]
             nc["via_diameter"] = round(c["drill"] + 2 * (rules.get("via_annular") or 0), 4)
@@ -315,7 +328,9 @@ def apply_source_rules(pcb: Path, src) -> dict:
         made.append(f"{c['name']} ({len(c['nets'])} nets)")
     ns["netclass_patterns"] = patterns
     pro.write_text(json.dumps(d, indent=2))
-    return {"rules": rules, "classes": made}
+    if dru:
+        write_dru_rules(pcb, "eagle_class_", dru)
+    return {"rules": rules, "classes": made, "dru": len(dru)}
 
 
 def write_fp_lib(pcb: Path, libname: str, src=None) -> dict:
@@ -332,6 +347,9 @@ def write_fp_lib(pcb: Path, libname: str, src=None) -> dict:
         sj = pcb.parent / "eagle-slots.json"
         sj.write_text(json.dumps(src.slots, indent=1))
         args.append(sj)
+    else:
+        args.append("-")
+    args.append(getattr(src, "format", "") or "")
     proc = _run(args)
     try:
         # SWIG prints its "memory leak ... no destructor" notes on stdout too
@@ -382,6 +400,23 @@ def do_import(source: Path, out: Path, fmt: str | None = None) -> tuple[int, dic
         result["source_read_error"] = f"{type(exc).__name__}: {exc}"
     fplib = write_fp_lib(pcb, source.stem, src)
     srules = apply_source_rules(pcb, src) if src is not None else {}
+    if fplib.get("castellated"):
+        # board setup minimums are floors a DRU rule can't go under, so the
+        # copper-to-edge minimum moves into a general rule the castellation
+        # rules (later, so they win) relax
+        pro = pcb.with_suffix(".kicad_pro")
+        d = json.loads(pro.read_text()) if pro.exists() else {}
+        r = d.setdefault("board", {}).setdefault("design_settings", {}).setdefault("rules", {})
+        edge = r.get("min_copper_edge_clearance") or 0
+        r["min_copper_edge_clearance"] = 0.0
+        pro.write_text(json.dumps(d, indent=2))
+        write_dru_rules(pcb, "eda_io_castellation_", ([
+            f'(rule "eda_io_castellation_edge"\n\t(constraint edge_clearance (min {edge}mm)))']
+            if edge else []) + [
+            f'(rule "eda_io_castellation_{ref}"\n'
+            f'\t(condition "A.Type == \'Pad\' && A.memberOfFootprint(\'{ref}\')")\n'
+            f'\t(constraint edge_clearance (min 0mm)))'
+            for ref in sorted(fplib["castellated"])])
     drc = refill_and_drc(pcb)
     board = edasrc.read_board(pcb)
     losses = [l.to_json() for l in edasrc.compare(src, board, report, log)]
@@ -432,6 +467,19 @@ def do_import(source: Path, out: Path, fmt: str | None = None) -> tuple[int, dic
         losses.append({"level": "lost", "what": "milling",
                        "text": f"{src.milling_other} Eagle Milling wires that aren't a pad's slot "
                                "(board cut-outs?) aren't on Edge.Cuts: KiCad's importer drops them"})
+    if fplib.get("castellated"):
+        c = fplib["castellated"]
+        losses.append({"level": "check", "what": "castellation",
+                       "text": f"plated holes on the board outline marked castellated "
+                               f"({', '.join(f'{k} x{v}' for k, v in sorted(c.items()))}); their "
+                               "footprints' pads may reach the edge (DRU eda_io_castellation_*). "
+                               "Order with castellated holes"})
+    if fplib.get("npth_trimmed"):
+        n = fplib["npth_trimmed"]
+        losses.append({"level": "check", "what": "footprints",
+                       "text": f"{len(n)} Eagle holes came in as NPTH pads with copper wider than "
+                               f"the drill ({edasrc._sample(sorted(set(n)))}); trimmed to the drill, "
+                               "as the source has no copper there"})
     pc = fplib.get("pad_copper") or {}
     if pc.get("converted"):
         losses.append({"level": "check", "what": "footprints",
