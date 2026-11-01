@@ -651,10 +651,16 @@ def build_cpl(parts: list[dict], rules, derive=None
             corr = round((final - p["rot"]) % 360.0, 4)
             pat, source = None, "lcsc_model"
         layer = "Bottom" if p["side"] in ("bottom", "back") else "Top"
+        # the part's centre where the footprint's origin isn't it (from the
+        # LCSC model; the pos file's y is up, the board's down)
+        off = derive.offset(p["ref"], final) if model_rot is not None and hasattr(derive, "offset") else None
+        mid_x, mid_y = p["x"], p["y"]
+        if off:
+            mid_x, mid_y = mid_x + off[0], mid_y - off[1]
         cpl.append({
             "Designator": p["ref"],
-            "Mid X": f'{p["x"]:.4f}',
-            "Mid Y": f'{p["y"]:.4f}',
+            "Mid X": f'{mid_x:.4f}',
+            "Mid Y": f'{mid_y:.4f}',
             "Layer": layer,
             "Rotation": f"{final:.4f}",
         })
@@ -662,6 +668,8 @@ def build_cpl(parts: list[dict], rules, derive=None
                       "base_rot": round(p["rot"], 4),
                       "correction": corr, "final_rot": round(final, 4),
                       "matched": pat, "source": source, "layer": layer})
+        if off:
+            audit[-1]["offset_mm"] = [round(off[0], 4), round(off[1], 4)]
         if fetch_error:
             audit[-1]["fetch_error"] = fetch_error
     return cpl, audit
@@ -686,7 +694,14 @@ def model_deriver(pcb: Path, parts_map: dict[str, dict], cache_dir: Path,
         if errs:
             derive.errors[ref] = next(iter(errs.values()))
         return cpl_verify.derive_rotation(fp, model)
+
+    def offset(ref: str, cpl_rot: float):
+        fp, lcsc = fps.get(ref), parts_map.get(ref, {}).get("lcsc")
+        if fp is None or not lcsc:
+            return None
+        return cpl_verify.placement_offset(fp, easyeda.get(lcsc, cache_dir, fetch=False), cpl_rot)
     derive.errors = {}
+    derive.offset = offset
     return derive
 
 

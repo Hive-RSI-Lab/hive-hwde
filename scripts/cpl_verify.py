@@ -255,6 +255,11 @@ def board_roles(fp: Footprint, model) -> dict[str, str]:
     got = {p.number: role(p.function) for p in fp.pads if role(p.function)}
     if got:
         return got
+    # pads named for the pin itself (Eagle libraries: A/C, A/K): a diode's C is
+    # its cathode, whatever a lone "C" means elsewhere
+    named = {p.number.upper(): p.number for p in fp.pads}
+    if set(named) in ({"A", "C"}, {"A", "K"}):
+        return {pad: ("A" if up == "A" else "K") for up, pad in named.items()}
     n = fp.name
     if re.match(r"^(D_|LED_)", n):
         return {"1": "K", "2": "A"}
@@ -276,6 +281,34 @@ def _ang_eq(a: float, b: float, tol: float = ROT_TOL_DEG) -> bool:
     return min(d, 360.0 - d) <= tol
 
 
+_SWITCH_REF = re.compile(r"^(S|SW|BTN)\d")
+
+
+def _geometry_fit(mpads, kpads, tol) -> list[float]:
+    """Turns (multiples of 45 deg) that land every model pad on a board pad,
+    one to one, numbers aside."""
+    fits = []
+    kc = [(p.x, p.y) for p in kpads]
+    for c in range(0, 360, 45):
+        placed = [rot(p.x, p.y, float(c)) for p in mpads]
+        used = set()
+        for x, y in placed:
+            hit = next((i for i, q in enumerate(kc)
+                        if i not in used and math.hypot(x - q[0], y - q[1]) <= tol), None)
+            if hit is None:
+                break
+            used.add(hit)
+        else:
+            fits.append(float(c))
+    return fits
+
+
+def _pin_number(number: str) -> str:
+    """An Eagle pad name for a pin number: P1, P$1 -> 1."""
+    m = re.fullmatch(r"[Pp]\$?(\d+)", number or "")
+    return m.group(1) if m else number
+
+
 def analyse(fp: Footprint, model) -> dict:
     """The corrections that put this model onto this footprint, with how
     they were found. No CPL involved, so bom_cpl can derive from it."""
@@ -292,8 +325,8 @@ def analyse(fp: Footprint, model) -> dict:
     gaps = [math.hypot(a[0] - b[0], a[1] - b[1])
             for i, a in enumerate(kc) for b in kc[i + 1:]]
     tol = max(0.2, 0.5 * min(gaps, default=0.5))
-    num_fit = _fit(_centres(model.pads, lambda p: p.number),
-                   _centres(kpads, lambda p: p.number), tol)
+    num_fit = _fit(_centres(model.pads, lambda p: _pin_number(p.number)),
+                   _centres(kpads, lambda p: _pin_number(p.number)), tol)
     polar = is_polar(fp, model)
     out = {"polar": polar, "tol_mm": round(tol, 3), "basis": "pad number"}
     corr = [c for c, _ in num_fit]
@@ -324,6 +357,14 @@ def analyse(fp: Footprint, model) -> dict:
             out["basis"] = "pad number (no K/A or +/- names on both sides)"
     elif len(model.pads) == 2 and len(kpads) == 2 and corr:
         corr = sorted({c % 360 for c in corr} | {(c + 180) % 360 for c in corr})
+    elif not corr and _SWITCH_REF.match(fp.ref) and len(model.pads) == len(kpads):
+        # A tact switch's pin numbers carry no order (LCSC's C&K KMR2 model
+        # numbers 1, 2 across the short side; the part commons the long-axis
+        # pairs): what has to hold is its pads landing on the board's. The
+        # pairing itself is the footprint's, not the placement's.
+        corr = _geometry_fit(model.pads, kpads, tol)
+        if corr:
+            out["basis"] = "pad geometry (a switch's pin numbers carry no order)"
     if not corr:
         out.update(verdict="no_fit",
                    why="the LCSC model's pads do not land on the board "
@@ -371,6 +412,28 @@ def derive_rotation(fp: Footprint, model) -> float | None:
     if a["verdict"] != "ok":
         return None
     return (fp.rot + a["corrections"][0]) % 360.0
+
+
+def _centre_delta(fp: Footprint, model, cpl_rot: float) -> tuple[float, float]:
+    """Board pad centre minus model pad centre, both turned, in the board frame
+    (y down), with the part's position taken as the footprint origin."""
+    em = [(p.x, p.y) for p in model.pads]
+    km = [(p.x, p.y) for p in fp.pads]
+    ec = rot(sum(x for x, _ in em) / len(em), sum(y for _, y in em) / len(em), cpl_rot)
+    kc = rot(sum(x for x, _ in km) / len(km), sum(y for _, y in km) / len(km), fp.rot)
+    return kc[0] - ec[0], kc[1] - ec[1]
+
+
+def placement_offset(fp: Footprint, model, cpl_rot: float) -> tuple[float, float] | None:
+    """How far the CPL position must move off the footprint origin for the
+    part's own pads to land on the board's, when that is over OFFSET_WARN_MM:
+    a footprint whose origin isn't the part's centre (SparkFun's USB-C and
+    Qwiic: 2.8 and 1.9 mm) would otherwise be placed off its pads. Top side
+    only: the bottom's coordinate mirror isn't modelled."""
+    if fp.side != "top" or model is None or analyse(fp, model)["verdict"] != "ok":
+        return None
+    dx, dy = _centre_delta(fp, model, cpl_rot)
+    return (dx, dy) if math.hypot(dx, dy) > OFFSET_WARN_MM else None
 
 
 def check_part(fp: Footprint, model, cpl: dict) -> dict:

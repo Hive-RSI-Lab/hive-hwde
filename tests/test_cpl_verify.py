@@ -611,3 +611,61 @@ def test_dfm_rotation_mismatch_from_the_cache_still_fails(ws, tmp_path,
     assert [v["kind"] for v in vios] == ["cpl_rotation"]
     assert dfm_check.grade(vios) == {"status": "violations"}
     assert easyeda.rate_limited() is None   # never asked
+
+
+# ------- imported (Eagle) libraries: hw-lab eda-crossover -------
+
+def _model(pads, names=None, package="X"):
+    from types import SimpleNamespace as NS
+    return NS(lcsc="C1", package=package, pin_names=names or {},
+              pads=[NS(number=n, x=x, y=y) for n, x, y in pads])
+
+
+def _kfp(ref, pads, rot=0.0, name="SparkFun:PART"):
+    return cv.Footprint(ref, name, 10.0, 10.0, rot, "top",
+                        [cv.KPad(n, x, y, 0.6, 0.6) for n, x, y in pads])
+
+
+def test_eagle_pads_a_c_are_anode_cathode():
+    """A board pad named C beside one named A is a cathode: the LED that the
+    package table would have placed backwards (K on A) gets 180."""
+    fp = _kfp("LED1", [("A", -0.88, 0), ("C", 0.88, 0)], name="SparkFun:LED-0603")
+    model = _model([("1", 0.8, 0), ("2", -0.8, 0)], {"1": "A", "2": "K"}, "LED0603")
+    a = cv.analyse(fp, model)
+    assert a["verdict"] == "ok" and "role" in a["basis"]
+    assert a["corrections"] == [180.0]
+    fp = _kfp("LED1", [("A", 0.88, 0), ("C", -0.88, 0)], name="SparkFun:LED-0603")
+    assert cv.analyse(fp, model)["corrections"] == [0.0]
+    assert cv.board_roles(fp, model) == {"A": "A", "C": "K"}
+
+
+def test_eagle_p1_pads_match_model_numbers():
+    pads = [("1", -0.85, 0.7), ("2", 0.85, 0.7), ("3", 0.85, -0.7), ("4", -0.85, -0.7)]
+    fp = _kfp("Y1", [("P" + n, x, y) for n, x, y in pads])
+    assert cv.analyse(fp, _model(pads))["verdict"] == "ok"
+
+
+def test_switch_pads_fit_by_geometry_not_numbers():
+    """LCSC's KMR2 model numbers its pins across the short side; SparkFun's
+    footprint along the long one. A switch only has to land on its pads;
+    anything else with that mismatch stays no_fit."""
+    model = _model([("1", 2.05, -0.8), ("2", 2.05, 0.8), ("3", -2.05, 0.8), ("4", -2.05, -0.8)])
+    board = [("1", -2.05, 0.8), ("2", 2.05, 0.8), ("3", 2.05, -0.8), ("4", -2.05, -0.8)]
+    a = cv.analyse(_kfp("S1", board), model)
+    assert a["verdict"] == "ok" and "geometry" in a["basis"] and 0.0 in a["corrections"]
+    assert cv.analyse(_kfp("U1", board), model)["verdict"] == "no_fit"
+    wider = [("1", -3.0, 0.8), ("2", 3.0, 0.8), ("3", 3.0, -0.8), ("4", -3.0, -0.8)]
+    assert cv.analyse(_kfp("S1", wider), model)["verdict"] == "no_fit"
+
+
+def test_placement_offset_when_origin_isnt_the_part_centre():
+    """A connector whose footprint origin is off its pads' centre: the CPL has
+    to carry the difference (SparkFun's Qwiic 1.87 mm), or JLC places it off
+    its pads. A small one is left alone."""
+    model = _model([("1", -1.5, -1.0), ("2", 1.5, -1.0), ("3", -1.5, 1.0), ("4", 1.5, 1.0)])
+    pads = [(n, x, y + 1.87) for n, x, y in
+            [("1", -1.5, -1.0), ("2", 1.5, -1.0), ("3", -1.5, 1.0), ("4", 1.5, 1.0)]]
+    dx, dy = cv.placement_offset(_kfp("J2", pads), model, 0.0)
+    assert abs(dx) < 1e-6 and abs(dy - 1.87) < 1e-6
+    near = [(n, x, y - 1.87 + 0.1) for n, x, y in pads]
+    assert cv.placement_offset(_kfp("J2", near), model, 0.0) is None
