@@ -363,6 +363,13 @@ def analyse(fp: Footprint, model) -> dict:
         # pairs): what has to hold is its pads landing on the board's. The
         # pairing itself is the footprint's, not the placement's.
         corr = _geometry_fit(model.pads, kpads, tol)
+        # either turn works; pin 1 on pad 1 when one does it, so the image
+        # pass (red dot on cyan 1) agrees
+        m1 = next((p for p in model.pads if p.number == "1"), None)
+        k1 = next((p for p in kpads if _pin_number(p.number) == "1"), None)
+        if corr and m1 and k1:
+            corr.sort(key=lambda c: math.hypot(rot(m1.x, m1.y, c)[0] - k1.x,
+                                               rot(m1.x, m1.y, c)[1] - k1.y))
         if corr:
             out["basis"] = "pad geometry (a switch's pin numbers carry no order)"
     if not corr:

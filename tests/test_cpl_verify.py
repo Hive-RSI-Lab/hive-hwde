@@ -652,7 +652,9 @@ def test_switch_pads_fit_by_geometry_not_numbers():
     model = _model([("1", 2.05, -0.8), ("2", 2.05, 0.8), ("3", -2.05, 0.8), ("4", -2.05, -0.8)])
     board = [("1", -2.05, 0.8), ("2", 2.05, 0.8), ("3", 2.05, -0.8), ("4", -2.05, -0.8)]
     a = cv.analyse(_kfp("S1", board), model)
-    assert a["verdict"] == "ok" and "geometry" in a["basis"] and 0.0 in a["corrections"]
+    assert a["verdict"] == "ok" and "geometry" in a["basis"] and set(a["corrections"]) == {0.0, 180.0}
+    # the turn with pin 1 on pad 1 first: model 1 is (2.05, -0.8), board 1 (-2.05, 0.8)
+    assert a["corrections"][0] == 180.0
     assert cv.analyse(_kfp("U1", board), model)["verdict"] == "no_fit"
     wider = [("1", -3.0, 0.8), ("2", 3.0, 0.8), ("3", 3.0, -0.8), ("4", -3.0, -0.8)]
     assert cv.analyse(_kfp("S1", wider), model)["verdict"] == "no_fit"
