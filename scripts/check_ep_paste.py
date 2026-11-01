@@ -12,7 +12,12 @@ Paste apertures are read from the board as JLC's stencil gets them: each
 SMD pad on F.Paste/B.Paste grown by its paste margin (the pad's own, else
 its footprint's, else the board's pad_to_paste_clearance, each as a margin
 plus a ratio of the pad's size, as KiCad does), plus the paste-only pads a
-footprint carries (a QFN's window-pane apertures).
+footprint carries (a QFN's window-pane apertures), plus every graphic drawn
+on F.Paste/B.Paste (a footprint's fp_poly/fp_rect/fp_circle/fp_line, or a
+board gr_* shape): Eagle draws an exposed pad's windows on tCream with the
+pad's own cream off, and KiCad's importer brings them in as F.Paste
+graphics, which the stencil gerber carries (hive-hwde #544). A footprint's
+graphic counts for its own exposed pad; a board graphic for any it covers.
 
   ep_paste_missing   error: an exposed pad with no paste at all - the
                      ground/thermal joint is never made
@@ -54,6 +59,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE / "lib"))
 import checklib  # noqa: E402
+import fpfix  # noqa: E402
 from geom import (_kid, _kids, _nums, _pad_polygon, _pts, _rot, _strs,  # noqa: E402
                   _tok)
 
@@ -115,12 +121,45 @@ class Ap:
         return self.poly((mx, my))
 
 
+class Gfx:
+    """A paste-layer graphic as an aperture: no copper, no pad number."""
+    kind, copper, number = "graphic", frozenset(), "graphic"
+
+    def __init__(self, ref, sides, poly):
+        self.ref, self.paste, self.poly = ref, sides, poly
+
+
+_GFX = ("poly", "rect", "circle", "line", "arc")
+
+
+def _gfx_poly(node, origin=(0.0, 0.0), angle=0.0):
+    """The printed area of a graphic node (fill plus stroke), board frame."""
+    head = str(_tok(node[0]))
+    sh = fpfix.graphic_shape(["fp_" + head.split("_", 1)[1]] + list(node[1:]))
+    if sh is None:
+        return None
+    w = fpfix._stroke_width(node) or 0.0
+    area = sh if sh.geom_type == "Polygon" else Polygon()
+    if w > 0:
+        area = unary_union([area, sh.buffer(w / 2.0, quad_segs=8)])
+    if area.is_empty or area.area <= 0:
+        return None
+    if angle:
+        area = affinity.rotate(area, -angle, origin=(0, 0))
+    return affinity.translate(area, *origin)
+
+
+def _gfx_sides(node) -> set:
+    lay = _strs(_kid(node, "layer")) if _kid(node, "layer") is not None else []
+    return {s for s in ("F", "B") if f"{s}.Paste" in lay}
+
+
 def _margin(node, keys) -> tuple[float | None, float | None]:
     return _num(node, keys[0]), next(
         (v for k in keys[1:] if (v := _num(node, k)) is not None), None)
 
 
-def load(pcb: Path) -> tuple[list[Ap], list[dict]]:
+def load(pcb: Path) -> tuple[list, list[dict]]:
     try:
         root = sexpdata.loads(pcb.read_text(encoding="utf-8"))
     except Exception as exc:  # noqa: BLE001
@@ -171,6 +210,18 @@ def load(pcb: Path) -> tuple[list[Ap], list[dict]]:
                            (fx + dx, fy + dy), rest[0] if rest else 0.0,
                            _nums(rr)[0] if rr is not None else 0.0,
                            sides("Cu"), sides("Paste"), (m, r), prims))
+        for g in fp[1:]:
+            if not (isinstance(g, list) and g) or \
+                    str(_tok(g[0])) not in tuple("fp_" + k for k in _GFX):
+                continue
+            if (sd := _gfx_sides(g)) and \
+                    (poly := _gfx_poly(g, (fx, fy), fa)) is not None:
+                pads.append(Gfx(ref, sd, poly))
+    for g in root[1:]:
+        if isinstance(g, list) and g and \
+                str(_tok(g[0])) in tuple("gr_" + k for k in _GFX) and \
+                (sd := _gfx_sides(g)) and (poly := _gfx_poly(g)) is not None:
+            pads.append(Gfx(None, sd, poly))
     vias = []
     for v in _kids(root, "via"):
         at, dr = _kid(v, "at"), _kid(v, "drill")
@@ -212,6 +263,10 @@ def check(pcb: Path) -> tuple[list[dict], dict]:
     # the stencil: every aperture per side, with the pad it came from
     apertures: dict[str, list[tuple[Ap, Polygon]]] = {"F": [], "B": []}
     for p in pads:
+        if p.kind == "graphic":
+            for side in p.paste:
+                apertures[side].append((p, p.poly))
+            continue
         if p.kind not in ("smd", "connect") or not p.paste:
             continue
         poly = p.paste_poly() if p.copper else p.copper_poly()
@@ -226,8 +281,8 @@ def check(pcb: Path) -> tuple[list[dict], dict]:
         side = next(iter(sorted(ep.copper)))
         cu = ep.copper_poly()
         mine = [poly for p, poly in apertures[side]
-                if p.ref == ep.ref and (p is ep or not p.copper)
-                and poly.intersects(cu)]
+                if (p.ref == ep.ref or p.ref is None)
+                and (p is ep or not p.copper) and poly.intersects(cu)]
         paste = unary_union(mine).intersection(cu) if mine else Polygon()
         cover = paste.area / cu.area if cu.area else 0.0
         under = [v for v in vias if cu.contains(Point(v["at"]))]
@@ -235,6 +290,9 @@ def check(pcb: Path) -> tuple[list[dict], dict]:
                "pad_mm2": checklib.rnd(cu.area, 3),
                "paste_mm2": checklib.rnd(paste.area, 3),
                "coverage": checklib.rnd(cover, 3), "apertures": len(mine),
+               "graphic_apertures": sum(
+                   1 for p, poly in apertures[side] if p.kind == "graphic"
+                   and p.ref in (ep.ref, None) and poly.intersects(cu)),
                "vias_in_pad": len(under)}
         eps.append(row)
         layer = f"{side}.Paste"
@@ -272,9 +330,10 @@ def check(pcb: Path) -> tuple[list[dict], dict]:
             hits += 1
             if v["plugged"]:
                 continue
-            on = sorted({(p.ref, p.number) for p, _ in under})
+            on = sorted({(p.ref or "board", p.number) for p, _ in under})
             in_ep = any((p.ref, p.number) in ep_cu or (
-                not p.copper and any(r == p.ref and cu.intersects(poly)
+                not p.copper and any(p.ref in (r, None)
+                                     and cu.intersects(poly)
                                      for (r, _), cu in ep_cu.items()))
                 for p, poly in under)
             refs = sorted({r for r, _ in on})
@@ -283,7 +342,8 @@ def check(pcb: Path) -> tuple[list[dict], dict]:
                               "side": side,
                               "pads": [f"{r}:{n}" for r, n in on]})
                 continue
-            names = ", ".join(f"{r} pad {n}" for r, n in on)
+            names = ", ".join(f"{r} paste graphic" if n == "graphic"
+                              else f"{r} pad {n}" for r, n in on)
             viols.append(checklib.violation(
                 SCRIPT, "error", v["at"],
                 f"{side}.Paste", v["net"], refs,
