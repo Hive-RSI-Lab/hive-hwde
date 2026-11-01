@@ -74,9 +74,10 @@ IMPORT_NEVER = {
         "run until the schematic comes in through the KiCad GUI (Eeschema: "
         "File > Import > Non-KiCad Schematic reads Altium, CADSTAR, Eagle, "
         "EasyEDA Std/Pro and LTspice) or is redrawn.",
-        "Design rules: only what the importer maps onto KiCad's board setup "
-        "and net classes comes in, and it isn't compared here. Derive the "
-        "board's rules again (rules_gen) before trusting DRC.",
+        "Design rules: an Eagle board's own rules and net classes are carried "
+        "into board setup (eda_io, not KiCad's importer); other formats get "
+        "only what the importer maps. Either way they are the DESIGNER's "
+        "rules: check the fab's floors with dfm_check / rules_gen.",
         "Footprints come out of the board into <stem>.pretty (fp-lib-table "
         "beside it) as the source drew them: no LCSC numbers, 3D models or "
         "datasheet links; lib_pull / fp_verify see them as unknown parts.",
@@ -267,6 +268,56 @@ def repair_and_load(pcb: Path) -> dict:
     return {"moved": moved, "to": to}
 
 
+def apply_source_rules(pcb: Path, src) -> dict:
+    """The source's own design rules into the imported project's board setup
+    and net classes (KiCad's Eagle importer carries none, so the board would
+    be judged at KiCad's defaults: 0.2 mm clearance, 0.5 mm vias). DRC then
+    checks what the designer's DRC checked; a fab's floors are dfm_check's."""
+    rules = getattr(src, "rules", None) or {}
+    if not rules:
+        return {}
+    pro = pcb.with_suffix(".kicad_pro")
+    d = json.loads(pro.read_text()) if pro.exists() else {}
+    r = d.setdefault("board", {}).setdefault("design_settings", {}).setdefault("rules", {})
+    put = {"min_clearance": rules.get("clearance"), "min_track_width": rules.get("track_width"),
+           "min_through_hole_diameter": rules.get("via_drill"),
+           "min_via_annular_width": rules.get("via_annular"),
+           "min_via_diameter": rules.get("via_diameter"),
+           "min_copper_edge_clearance": rules.get("copper_edge"),
+           "min_hole_clearance": rules.get("hole_clearance")}
+    r.update({k: v for k, v in put.items() if v is not None})
+    ns = d.setdefault("net_settings", {})
+    classes = ns.setdefault("classes", [])
+    default = next((c for c in classes if c.get("name") == "Default"), None)
+    if default is None:
+        default = {"name": "Default"}
+        classes.insert(0, default)
+    for k, v in (("clearance", rules.get("clearance")), ("track_width", rules.get("track_width")),
+                 ("via_drill", rules.get("via_drill")), ("via_diameter", rules.get("via_diameter"))):
+        if v:
+            default[k] = v
+    made = []
+    patterns = ns.setdefault("netclass_patterns", []) or []
+    for c in getattr(src, "classes", []):
+        if c["number"] == "0" or not (c["width"] or c["clearance"] or c["drill"]) or not c["nets"]:
+            continue
+        nc = {k: v for k, v in default.items() if k != "name"} | {"name": c["name"]}
+        if c["width"]:
+            nc["track_width"] = max(c["width"], rules.get("track_width") or 0)
+        if c["clearance"]:
+            nc["clearance"] = max(c["clearance"], rules.get("clearance") or 0)
+        if c["drill"]:
+            nc["via_drill"] = c["drill"]
+            nc["via_diameter"] = round(c["drill"] + 2 * (rules.get("via_annular") or 0), 4)
+        classes[:] = [x for x in classes if x.get("name") != c["name"]] + [nc]
+        patterns[:] = [x for x in patterns if x.get("netclass") != c["name"]]
+        patterns += [{"netclass": c["name"], "pattern": n} for n in c["nets"]]
+        made.append(f"{c['name']} ({len(c['nets'])} nets)")
+    ns["netclass_patterns"] = patterns
+    pro.write_text(json.dumps(d, indent=2))
+    return {"rules": rules, "classes": made}
+
+
 def write_fp_lib(pcb: Path, libname: str, src=None) -> dict:
     """The board's embedded footprints as <libname>.pretty beside it, an
     fp-lib-table naming it, and the board's footprints relinked to
@@ -330,6 +381,7 @@ def do_import(source: Path, out: Path, fmt: str | None = None) -> tuple[int, dic
         src = None
         result["source_read_error"] = f"{type(exc).__name__}: {exc}"
     fplib = write_fp_lib(pcb, source.stem, src)
+    srules = apply_source_rules(pcb, src) if src is not None else {}
     drc = refill_and_drc(pcb)
     board = edasrc.read_board(pcb)
     losses = [l.to_json() for l in edasrc.compare(src, board, report, log)]
@@ -345,15 +397,29 @@ def do_import(source: Path, out: Path, fmt: str | None = None) -> tuple[int, dic
     if drc.get("violations"):
         top = ", ".join(f"{k} {v}" for k, v in drc["by_type"][:6])
         losses.append({"level": "note", "what": "drc",
-                       "text": f"KiCad DRC on the import, at the rules the importer set: "
-                               f"{drc['violations']} violations ({top}). Derive the rules "
-                               "(rules_gen) before reading much into them"})
+                       "text": (f"KiCad DRC on the import, at the source's own rules: "
+                                f"{drc['violations']} violations ({top})" if srules.get("rules") else
+                                f"KiCad DRC on the import, at the rules the importer set: "
+                                f"{drc['violations']} violations ({top}). Derive the rules "
+                                "(rules_gen) before reading much into them")})
     if repairs.get("moved"):
         losses.insert(0, {"level": "check", "what": "importer",
                           "text": f"{repairs['moved']} items KiCad's importer put on a layer "
                                   f"named {UNDEFINED!r} (Eagle texts and Milling wires) were moved to "
                                   f"{repairs['to']}: as written, KiCad itself refuses to load "
                                   "the board ('items found on undefined layers')"})
+    if srules.get("rules"):
+        r = srules["rules"]
+        losses.append({"level": "note", "what": "rules",
+                       "text": "the source's design rules (KiCad's importer drops them) set the "
+                               "board setup and Default net class: " + ", ".join(
+                                   f"{k} {v} mm" for k, v in r.items())
+                               + (f"; net classes {', '.join(srules['classes'])}" if srules["classes"] else "")
+                               + ". DRC below is at these; a fab's floors are dfm_check's"})
+    elif detected == "eagle":
+        losses.append({"level": "check", "what": "rules",
+                       "text": "no design rules read from the source: the board is at KiCad's "
+                               "default rules"})
     if src is not None and src.slots:
         done = fplib.get("slots") or []
         losses.append({"level": "check" if len(done) == len(src.slots) else "lost",

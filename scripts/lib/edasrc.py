@@ -61,6 +61,11 @@ class Source:
     # Milling wires that aren't a pad's slot (board cut-outs, or in a package
     # with no pad under them): counted, not converted
     milling_other: int = 0
+    # Eagle: the board's design rules (<designrules> params, mm) and net
+    # classes [{name, width, drill, clearance, nets}] - KiCad's importer
+    # carries neither, so the board comes in at KiCad's defaults
+    rules: dict = field(default_factory=dict)
+    classes: list[dict] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     # Altium: schematic designator (SOURCEDESIGNATOR) -> the designator the
     # PCB shows, where they differ (PCB-side renames never annotated back).
@@ -288,6 +293,7 @@ def read_eagle(path: Path) -> Source:
         src.kicad_names[name] = "F.Cu" if lay == 1 else "B.Cu" if lay == 16 else f"In{inner}.Cu"
     src.vias = sum(1 for _ in board.iter("via"))
     _eagle_slots(root, board, src)
+    _eagle_rules(root, board, src)
     src.refs = {e.get("name") for e in board.iter("element") if e.get("name")}
     src.nets = {eagle_overbar(s.get("name")) for s in board.iter("signal") if s.get("name")}
     return src
@@ -328,6 +334,55 @@ def _eagle_slots(root, board, src: Source) -> None:
                                   "x2": x2, "y2": y2, "w": width})
             else:
                 src.milling_other += 1
+
+
+def _eagle_len(v: str | None) -> float | None:
+    """An Eagle length ('4mil', '0.2mm', '0.01in', '0.25' ratio) in mm."""
+    if not v:
+        return None
+    m = re.fullmatch(r"\s*(-?[\d.]+)\s*(mil|mm|in|mic)?\s*", v)
+    if not m:
+        return None
+    n = float(m.group(1))
+    return {"mil": n * 0.0254, "mm": n, "in": n * 25.4, "mic": n / 1000,
+            None: n}[m.group(2)]
+
+
+def _eagle_rules(root, board, src: Source) -> None:
+    """<designrules> params and <classes> of an Eagle board, in mm."""
+    p = {e.get("name"): e.get("value") for e in board.iter("param")}
+    if not p:
+        return
+    mm = {k: _eagle_len(v) for k, v in p.items()}
+    dist = [mm.get(k) for k in ("mdWireWire", "mdWirePad", "mdWireVia", "mdPadPad", "mdPadVia",
+                                "mdViaVia", "mdSmdPad", "mdSmdVia", "mdSmdSmd")]
+    dist = [d for d in dist if d]
+    drill = mm.get("msDrill")
+    ring = mm.get("rlMinViaOuter")
+    # Eagle's via ring: rvViaOuter x drill, clamped to [rlMinViaOuter, rlMaxViaOuter]
+    if drill and ring is not None:
+        rv, rmax = mm.get("rvViaOuter") or 0, mm.get("rlMaxViaOuter") or ring
+        ring = min(max(rv * drill, ring), rmax)
+    src.rules = {k: round(v, 4) for k, v in {
+        "clearance": min(dist) if dist else None,
+        "track_width": mm.get("msWidth"),
+        "via_drill": drill,
+        "via_annular": ring,
+        "via_diameter": drill + 2 * ring if drill and ring is not None else None,
+        "copper_edge": mm.get("mdCopperDimension"),
+        "hole_clearance": mm.get("mdDrill"),
+    }.items() if v}
+    members: dict[str, list[str]] = {}
+    for sig in board.iter("signal"):
+        members.setdefault(sig.get("class", "0"), []).append(eagle_overbar(sig.get("name")))
+    for c in board.iter("class"):
+        num = c.get("number")
+        clr = [_eagle_len(x.get("value")) for x in c.iter("clearance") if x.get("class") == num]
+        src.classes.append({"number": num, "name": c.get("name"),
+                            "width": _eagle_len(c.get("width")) or 0.0,
+                            "drill": _eagle_len(c.get("drill")) or 0.0,
+                            "clearance": (clr[0] if clr else 0.0) or 0.0,
+                            "nets": sorted(members.get(num, []))})
 
 
 def eagle_overbar(name: str) -> str:
