@@ -17,7 +17,9 @@ How the lines are read: from each connector pin named D+/DP/DP1/D-/DM/DN...,
 the net is walked through 0 R, ferrites and inductors (joined), and through
 any resistor of series_max_ohm (100) or less (a series element). A larger
 resistor is a pull: to a rail (its volts from the net name), or to a GPIO
-or a transistor (switched). The first IC reached is the PHY, unless it is
+or a transistor (switched). A two-pad solder jumper (JP/SJ/SB/NT) is walked
+through as closed; a solder-pad breakout of more pads is an access point on
+the line, not a PHY. The first IC reached is the PHY, unless it is
 in not_phy (an ESD array, a charger sink watching DP/DM). CC is read the
 same way from pins named CC/CC1/CC2: a pull to GND is an Rd, to a positive
 rail an Rp (a source or DRP port, not checked), and a known sink controller
@@ -50,7 +52,9 @@ Findings:
                          internal Rd can't be counted
 
 The netlist is the board's own `<board>.net` beside the .kicad_pcb, or
---netlist. A board with no netlist passes with nothing checked.
+--netlist. A board with no netlist, or no connector with USB-named pins,
+reports nothing_to_judge. A D+ that reaches no PHY, or a resistor on the line
+with no readable value, goes in not_judged.
 
 CLI: --pcb board.kicad_pcb [--netlist board.net] [--out report.json]
      exit 0 pass / 1 violations / 2 error, per SPEC section 6.
@@ -81,6 +85,10 @@ DP_RE = re.compile(r"^(D\+|DP[12]?|D_P|USB_?D\+|USB_?DP)$")
 DM_RE = re.compile(r"^(D-|D[MN][12]?|D_[MN]|USB_?D-|USB_?D[MN])$")
 CC_RE = re.compile(r"^CC[12]?$")
 SWITCH_PREFIXES = ("Q", "U", "IC")
+# solder jumpers and solder pads: never a PHY. Two pads in line are walked
+# through (the line goes on); more is an access point on the line (a USB
+# breakout's VBUS/D+/D-/GND pads) and the walk leaves it.
+JUMPER_PREFIXES = ("JP", "SJ", "SB", "NT")
 MAX_DEPTH = 3
 DM_PULLUP_MAX_OHM = 10000   # a pull-up this strong on D- marks low speed
 USB_SRC = ("USB 2.0 Pull-up/pull-down resistors ECN, section 7.1.5.1: "
@@ -111,19 +119,28 @@ def row_for(rows, value: str):
 def is_ic(board: Board, ref: str) -> bool:
     p = prefix(ref)
     return not (p in PASSIVE_PREFIXES or p in CONNECTOR_PREFIXES or p == "R"
-                or ref in board.shorts)
+                or p in JUMPER_PREFIXES or ref in board.shorts)
 
 
 def walk(board: Board, g0: str, series_max: float) -> dict:
     """What hangs on a signal from net group g0: ICs with the series
     resistors between (ics), pulls (pulls) and unparsed resistors."""
-    out = {"ics": [], "pulls": [], "unparsed": []}
+    out = {"ics": [], "pulls": [], "unparsed": [], "jumpers": []}
     seen = set()
 
     def visit(g, path, depth):
         seen.add(g)
         for ref, pin in board.nodes.get(g, []):
             if prefix(ref) in CONNECTOR_PREFIXES:
+                continue
+            if prefix(ref) in JUMPER_PREFIXES:
+                if len(board.pins[ref]) == 2:
+                    other = [q for q in board.pins[ref] if q != pin][0]
+                    og = board.net(ref, other)
+                    if og not in seen and not board.unconnected(og) \
+                            and depth < MAX_DEPTH:
+                        out["jumpers"].append(ref)
+                        visit(og, path, depth + 1)
                 continue
             if prefix(ref) == "R" and len(board.pins[ref]) == 2:
                 if ref in {r for r, _ in path}:
@@ -341,6 +358,14 @@ def check_data(board, bg, kb, conns) -> tuple[list, list]:
         for gdp in sorted(dps):
             dpw = walk(board, gdp, bus["series_max_ohm"])
             dmws = [walk(board, g, bus["series_max_ohm"]) for g in sorted(dms)]
+            for w in (dpw, *dmws):
+                for ref in w["unparsed"]:
+                    facts.append({"connector": cref, "not_judged":
+                                  f"{ref} ({board.value(ref)}) on the data "
+                                  "lines has no readable value"})
+            if not dpw["ics"]:
+                facts.append({"connector": cref, "not_judged":
+                              f"{cref} D+ ({board.label(gdp)}) reaches no IC"})
             for ent in dpw["ics"]:
                 phy, value = ent["ref"], board.value(ent["ref"])
                 if kb["_not_phy"].search(value):
@@ -381,6 +406,7 @@ def check_data(board, bg, kb, conns) -> tuple[list, list]:
                     "series": {"D+": [r for r, _ in ent["path"]],
                                "D-": [r for r, _ in dm["path"]]
                                if dm else None},
+                    "jumpers": dpw["jumpers"],
                     "dp_pullups": [p["ref"] for p in pullups(dpw)]})
     return viols, facts
 
@@ -396,7 +422,7 @@ def check_cc(board, bg, kb, cref, c) -> tuple[list, list]:
         name = board.pins[cref][pin]["name"]
         w = walk(board, g, bus["series_max_ohm"]) \
             if not board.unconnected(g) else {"ics": [], "pulls": [],
-                                              "unparsed": []}
+                                              "unparsed": [], "jumpers": []}
         rp = [p for p in w["pulls"] if p["volts"] is None or p["volts"] > 0]
         rd = [p for p in w["pulls"] if p["volts"] == 0]
         inside, unknown = [], []
@@ -424,6 +450,9 @@ def check_cc(board, bg, kb, cref, c) -> tuple[list, list]:
                       "total_ohm": checklib.rnd(total, 1)
                       if total is not None else None})
         if w["unparsed"]:
+            facts[-1]["not_judged"] = (
+                f"{cref} {name}: {', '.join(w['unparsed'])} on CC has no "
+                "readable value")
             continue
         if unknown:
             u = unknown[0]
@@ -479,7 +508,8 @@ def check(pcb: Path, netlist: Path | None = None, kb: dict | None = None):
     kb = load_kb() if kb is None else kb
     netlist = netlist or find_netlist(pcb)
     if netlist is None:
-        return [], {"netlist": None}
+        return [], {"netlist": None,
+                    "nothing_to_judge": "no netlist beside the board"}
     bg = geom.load_board(pcb)
     board = Board(simlib.parse_netlist(netlist))
     conns = connectors(board)
@@ -492,8 +522,14 @@ def check(pcb: Path, netlist: Path | None = None, kb: dict | None = None):
             cc_facts += f
     v, data = check_data(board, bg, kb, conns)
     viols += v
-    return viols, {"netlist": str(netlist), "connectors": sorted(conns),
-                   "phys": data, "cc": cc_facts}
+    seen = {"netlist": str(netlist), "connectors": sorted(conns),
+            "phys": data, "cc": cc_facts}
+    left = [f["not_judged"] for f in data + cc_facts if f.get("not_judged")]
+    if left:
+        seen["not_judged"] = sorted(set(left))
+    if not conns:
+        seen["nothing_to_judge"] = "no connector with USB-named pins"
+    return viols, seen
 
 
 def run(argv=None):
@@ -509,7 +545,9 @@ def run(argv=None):
     if nl is not None and not nl.is_file():
         raise checklib.CheckError(f"netlist not found: {nl}")
     viols, seen = check(pcb, nl)
-    return checklib.report(SCRIPT, pcb, viols, checked=[seen]), args.out
+    return checklib.report(SCRIPT, pcb, viols, checked=[seen],
+                           nothing_to_judge=seen.get("nothing_to_judge"),
+                           not_judged=seen.get("not_judged")), args.out
 
 
 def main(argv=None) -> int:

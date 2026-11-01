@@ -275,7 +275,10 @@ def run(argv=None):
         facts["fixed"] = fixed
     if restamped is not None:
         facts["restamped"] = restamped
-    return checklib.report(SCRIPT, pcb, viols, **facts), args.out
+    none = "(model " not in pcb.read_text(encoding="utf-8", errors="replace")
+    return checklib.report(SCRIPT, pcb, viols, **facts,
+                           nothing_to_judge="no 3D model on the board"
+                           if none else None), args.out
 
 
 def main(argv=None) -> int:

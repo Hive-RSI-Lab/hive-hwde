@@ -24,10 +24,16 @@ in front of it.
 CLI: --pcb board.kicad_pcb [--constraints c.json] [--out report.json]
 constraints.json defaults to the board's own directory, as in the place
 gate.   exit 0/1/2 per SPEC section 6.
+
+A J/P/CN/CON part whose footprint no family matches isn't judged: the report's
+not_judged names each (a side-entry wire-to-board socket no row knows reads
+the same as a test pad, until a row is added), and a board where nothing was
+judged reports nothing_to_judge.
 """
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -37,6 +43,7 @@ import matinglib  # noqa: E402
 import placelib  # noqa: E402
 
 SCRIPT = "check_mating"
+CONNECTOR_REF = re.compile(r"^(J|P|CN|CON)\d+$")
 
 
 def run(argv=None):
@@ -54,13 +61,19 @@ def run(argv=None):
     placement = None
     if args.constraints or cpath.is_file():
         placement = checklib.load_json(cpath, "constraints").get("placement")
-    violations, facts = matinglib.violations(placelib.PlaceModel(pcb), pcb,
-                                             placement)
+    model = placelib.PlaceModel(pcb)
+    violations, facts = matinglib.violations(model, pcb, placement)
     for v in violations:
         v["check"] = "mating"
         v["source"] = SCRIPT
-    return checklib.report(SCRIPT, str(pcb), violations,
-                           connectors=facts), args.out
+    judged = {f["ref"] for f in facts}
+    left = sorted(f"{r} ({matinglib._name(f.fpid)})"
+                  for r, f in model.footprints.items()
+                  if CONNECTOR_REF.match(r) and r not in judged)
+    return checklib.report(
+        SCRIPT, str(pcb), violations, connectors=facts, not_judged=left,
+        nothing_to_judge=None if facts else
+        "no connector reference/connector_mating.yaml knows"), args.out
 
 
 def main(argv=None) -> int:

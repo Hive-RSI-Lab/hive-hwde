@@ -400,7 +400,10 @@ def run(argv=None):
     return checklib.report(
         SCRIPT, pcb, viols, legs=legs, skipped=skipped,
         fab_dir=str(fab) if fab else None,
-        parts=str(parts) if parts else None), args.out
+        parts=str(parts) if parts else None,
+        not_judged=skipped,
+        nothing_to_judge=None if any(legs.values()) else
+        "no schematic, parts.json or fab files to compare"), args.out
 
 
 def main(argv=None) -> int:

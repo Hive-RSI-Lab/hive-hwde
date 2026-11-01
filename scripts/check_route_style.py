@@ -203,7 +203,10 @@ def run(argv=None):
     if not pcb.exists():
         raise checklib.CheckError(f"board not found: {pcb}")
     style, violations = score_board(geom.load_board(pcb))
-    return checklib.report(SCRIPT, pcb, violations, style=style), args.out
+    return checklib.report(SCRIPT, pcb, violations, style=style,
+                           nothing_to_judge=None
+                           if style["segments"] + style["arcs"] else
+                           "the board has no tracks"), args.out
 
 
 def main(argv=None) -> int:

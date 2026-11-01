@@ -684,20 +684,26 @@ def check_via_sizes(rules, vios: list, bg) -> None:
 
 
 def check_annular_ring(fab, rules, vios: list, cast=(), bg=None) -> None:
-    """Radial copper around each plated hole, measured on the OUTER layers
-    (where the ring is thinnest after registration). A via is held to the
-    via ring (min_annular_ring_mm), every other plated hole to the PTH
-    component ring (min_pth_annular_ring_mm; the via value when the vendor
-    publishes only one) - JLC: 0.18 2-layer / 0.15 multilayer (#326)."""
+    """Radial copper around each plated hole, on every copper layer that has
+    a pad on it: the thinnest ring counts. A via is held to the via ring
+    (min_annular_ring_mm), every other plated hole to the PTH component ring
+    (min_pth_annular_ring_mm; the via value when the vendor publishes only
+    one) - JLC: 0.18 2-layer / 0.15 multilayer (#326).
+
+    Inner layers count (#590): a footprint with an SMD pad over its hole on
+    both outer layers reads a wide ring there while the barrel's inner pads
+    keep the thin one (eda-crossover J3/J4: 0.35 mm outer, 0.083 mm inner).
+    An inner pad sitting in a pour wide enough to carry the ring is fine."""
     hard_via, lo_via = _floors(rules, "min_annular_ring_mm")
     lo_pth = rules.get("min_pth_annular_ring_mm", lo_via)
     if lo_via is None and lo_pth is None:
         return
     is_via = _via_matcher(bg) or (lambda h: False)
     band: list = []
-    outer = [n for n in ("F.Cu", "B.Cu") if n in fab.copper_files]
+    outer = ("F.Cu", "B.Cu")
     pads_by_layer = {}
-    for name in outer:
+    pours_by_layer = {}
+    for name in fab.copper_layer_names():
         lg = fab.copper(name)
         if lg is None:
             continue
@@ -706,12 +712,16 @@ def check_annular_ring(fab, rules, vios: list, cast=(), bg=None) -> None:
         # hole" measures the antipad gap and invents a ~1 mil ring shortfall.
         polys = lg.pads
         pads_by_layer[name] = (polys, STRtree(polys) if polys else None)
+        if name not in outer and lg.pours:
+            pours_by_layer[name] = (lg.pours, STRtree(lg.pours))
 
     for h in fab.holes:
         if not h.plated or _castellated_at(cast, h.x, h.y):
             continue  # a half-hole's ring is castellation's to measure
         c = Point(h.x, h.y)
         r = h.diameter / 2.0
+        via = is_via(h)
+        need = (lo_via if via else lo_pth) or 0.0
         best = None
         for name, (polys, tree) in pads_by_layer.items():
             if tree is None:
@@ -728,12 +738,18 @@ def check_annular_ring(fab, rules, vios: list, cast=(), bg=None) -> None:
             merged = containing[0] if len(containing) == 1 \
                 else unary_union(containing)
             ring = merged.exterior.distance(c) - r
+            if name in pours_by_layer and _below(ring, need):
+                # the pad's own flash is short, but a pour may carry the ring
+                pours, ptree = pours_by_layer[name]
+                disk = c.buffer(r + need - 1e-3)
+                near = [pours[int(i)] for i in ptree.query(disk)]
+                if near and unary_union([merged, *near]).covers(disk):
+                    continue
             if best is None or ring < best[0]:
                 best = (ring, name)
         if best is None:
             continue  # no pad around it on an outer layer (NPTH / inner-only)
         ring, name = best
-        via = is_via(h)
         lo = hard_via if via else lo_pth
         if via and lo is not None and not _below(ring, lo) \
                 and _below(ring, lo_via):
@@ -743,8 +759,8 @@ def check_annular_ring(fab, rules, vios: list, cast=(), bg=None) -> None:
             what = "via" if via else "PTH pad"
             vios.append(checklib.violation(
                 CHECK, "error", (h.x, h.y), name, None, [],
-                f"{what} annular ring {ring:.4f} mm below JLC minimum "
-                f"{lo} mm", SOURCE, kind="dfm_annular_ring",
+                f"{what} annular ring {ring:.4f} mm on {name} below JLC "
+                f"minimum {lo} mm", SOURCE, kind="dfm_annular_ring",
                 ring_mm=checklib.rnd(ring), min_mm=lo, hole=what,
                 drill_mm=checklib.rnd(h.diameter)))
     _band_warning(vios, band, "dfm_annular_ring", "via rings", hard_via,

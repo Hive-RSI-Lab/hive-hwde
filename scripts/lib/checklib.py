@@ -151,6 +151,12 @@ def summarize(violations: list[dict]) -> dict:
 
 
 def report(script: str, board, violations: list[dict], **facts) -> dict:
+    """The check's JSON. Two optional facts feed verify_all's coverage:
+    nothing_to_judge (why the check had nothing it could judge: not a pass)
+    and not_judged (what it had to leave out while judging the rest)."""
+    for key in ("nothing_to_judge", "not_judged"):
+        if not facts.get(key):
+            facts.pop(key, None)
     payload = {
         "script": script,
         "status": "violations" if violations else "pass",

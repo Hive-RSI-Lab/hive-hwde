@@ -196,6 +196,13 @@ def _edge_gap(outline, body, u) -> float:
     return min(ts) - hi
 
 
+# Courtyards carry a margin the parts don't. A neighbour's courtyard reaching
+# this far past the edge beside the mouth, or this far across the mouth's
+# courtyard width, touches neither hand nor plug (eda-crossover's tact switches
+# flank its Qwiic socket flush with the edge: 0.05 mm over it, 0.12 mm across).
+GRIP_EDGE_TOL_MM = 0.25
+
+
 def _zone(body, u, gap: float, plug: float, grip: float):
     """Insertion zone: the mouth's own width from the mouth face to the board
     edge (the plug slides over that ledge), then that width plus grip each
@@ -211,10 +218,10 @@ def _zone(body, u, gap: float, plug: float, grip: float):
         return box(min(pts[0][0], pts[1][0]), min(pts[0][1], pts[1][1]),
                    max(pts[0][0], pts[1][0]), max(pts[0][1], pts[1][1]))
 
-    zone = rect(edge, edge + plug + grip, wlo - grip, whi + grip)
-    if edge > front:
-        zone = zone.union(rect(front, edge, wlo, whi))
-    return zone
+    zone = rect(edge + GRIP_EDGE_TOL_MM, edge + plug + grip, wlo - grip,
+                whi + grip)
+    return zone.union(rect(front, edge + GRIP_EDGE_TOL_MM,
+                           wlo + GRIP_EDGE_TOL_MM, whi - GRIP_EDGE_TOL_MM))
 
 
 # ------------------------------------------------------------ part heights

@@ -593,7 +593,9 @@ def run(argv=None):
         if args.constraints else {}
     ddr = cons.get("ddr")
     if not ddr:
-        return checklib.report(SCRIPT, args.pcb, [], judged=False), args.out
+        return checklib.report(SCRIPT, args.pcb, [], judged=False,
+                               nothing_to_judge="no ddr block in constraints"
+                               ), args.out
     lgroups = {g.get("name"): g for g in cons.get("length_groups") or []
                if isinstance(g, dict) and g.get("name")}
     validate(ddr, lgroups)

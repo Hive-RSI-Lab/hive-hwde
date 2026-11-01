@@ -519,7 +519,9 @@ def run(argv=None):
     return checklib.report(SCRIPT, a.pcb, vios, paths=facts,
                            via_amps=a.via_amps or
                            f"barrel, {a.plating_mm} mm plating",
-                           stackup_assumed=bg.stackup.assumed), a.out
+                           stackup_assumed=bg.stackup.assumed,
+                           nothing_to_judge=None if facts else
+                           "no power path found to judge"), a.out
 
 
 def _parser() -> argparse.ArgumentParser:

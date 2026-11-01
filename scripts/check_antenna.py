@@ -298,7 +298,10 @@ def run(argv=None):
     cons = (checklib.load_json(args.constraints, "constraints")
             if args.constraints else None)
     viols, seen = check(pcb, cons)
-    return checklib.report(SCRIPT, pcb, viols, checked=[seen]), args.out
+    return checklib.report(SCRIPT, pcb, viols, checked=[seen],
+                           nothing_to_judge=None if seen.get("modules") else
+                           "no module reference/rf_modules.yaml knows"
+                           ), args.out
 
 
 def main(argv=None) -> int:
