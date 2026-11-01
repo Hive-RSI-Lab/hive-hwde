@@ -78,6 +78,9 @@ SLOW = {
     "tests/test_solvers.py::test_live_palace_validates": "runs Palace (FEM eigenmode) on the IIC-OSIC-TOOLS tree",
     "tests/test_solvers.py::test_live_openems_validates": "runs an openEMS full-wave solve (minutes)",
     "tests/test_solvers.py::test_live_planar_thru_line_is_transparent": "runs an openEMS planar S-parameter solve (~1.5 min)",
+    "tests/test_emboard.py::test_live_board_thru_matches_the_line_closed_form": "runs an openEMS board S-parameter solve",
+    "tests/test_emboard.py::test_live_board_open_stub_notch": "runs an openEMS board S-parameter solve",
+    "tests/test_emboard.py::test_live_board_mutant_wrong_width_misses_z0": "runs an openEMS board S-parameter solve",
     "tests/test_check_env.py::test_passes_on_dev_machine": _TOOLS,
     "tests/test_check_env.py::test_out_file_and_quiet": _TOOLS,
     "tests/test_check_env.py::test_unpinned_discovery_still_resolves_10x": _TOOLS,
@@ -106,6 +109,9 @@ SLOW = {
     "tests/test_intake.py::test_board_only_project_imports_with_a_no_schematic_warning": _INTAKE,
     "tests/test_eda_io.py::test_import_eagle_end_to_end": _TOOLS,
     "tests/test_eda_io.py::test_export_round_trips_parts_and_nets": _TOOLS,
+    "tests/test_tolerance.py::test_live_ngspice_divider_wca_and_mc": "runs ~60 ngspice decks in sim_run batch workers",
+    "tests/test_tolerance.py::test_live_ngspice_rc_fc_corners": "runs ngspice AC sweeps in sim_run batch workers",
+    "tests/test_tolerance.py::test_live_xyce_sampling_agrees_with_python_mc": "runs Xyce .sampling from the IIC-OSIC-TOOLS tree",
 }
 
 

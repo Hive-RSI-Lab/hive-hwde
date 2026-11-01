@@ -13,6 +13,7 @@ binary through the image's own loader. Nothing is installed.
 | openEMS | full-wave 3D, FDTD | v0.37.0-rc2 | `lib/emsolve.py` `Csx` (CSXCAD XML) |
 | Palace | full-wave 3D, FEM: eigenmode, driven S-params, electro/magnetostatic | v0.18.1 | `lib/emsolve.py` (JSON config + gmsh mesh) |
 | gmsh | mesher for Palace | 4.12.1 | `lib/emsolve.py` (`.geo`) |
+| OpenVAF | Verilog-A to OSDI compiler, for compact models in ngspice | 20260616 (OpenVAF-reloaded) | `solvers.compile_va` |
 | FastHenry2 | quasi-static L / R extraction | 3.0.1 | `lib/emsolve.py` |
 | FasterCap | quasi-static C extraction | 6.0.7 | `lib/emsolve.py` |
 | thermalfv | board-plane heat spreading + electro-thermal coupling | hwde's own | `lib/thermalfv.py` |
@@ -30,6 +31,9 @@ Measured on this machine, 2026-10-30:
 |---|---|---|---|---|
 | circuit_ngspice | ngspice | RC low-pass: \|H(fc)\| = 1/√2, step v(τ) = 1 − 1/e | 0.000% | 0.5% |
 | circuit_xyce | Xyce | the same deck | +0.017% | 0.5% |
+| circuit_xspice | ngspice + XSPICE | d_and truth table + 4-bit ripple counter (exact); adc_bridge -> d_dff -> dac_bridge puts a square wave on the next clock edge + bridge/flop delays; 1st-order sigma-delta ones density = Vin/Vref over 4096 clocks (Vin 0.3137, 0.7071) | logic exact, delay −0.15%, density +0.02% | 0.5% |
+| circuit_osdi | ngspice + OpenVAF | Verilog-A 2k over a plain 1k: v = 1/3 | 0.000% | 0.01% |
+| circuit_xspice_kicad | KiCad 10.0.6's libngspice (sim_run's engine) | the circuit_xspice decks + the OSDI divider from `.va` source | as circuit_xspice | 0.5% |
 | openems_microstrip | openEMS | Hammerstad-Jensen Z0 and ε_eff, 1.5 mm on 0.8 mm of εr 4, 1–2 GHz | −0.1% (Z0), +0.13% (ε_eff) | 2% |
 | palace_cavity | Palace + gmsh | closed 40×30×20 mm PEC box, first four modes | +0.025% worst | 0.5% |
 | fasthenry_bar | FastHenry | 10×1×0.035 mm Cu bar: R = l/(σwt); L by Ruehli's partial self-inductance | +0.25% (L), 0.00% (R) | 2% |
@@ -71,9 +75,24 @@ machine.
   saturated (load 244, 10-30) its 4 s RC deck took 290 s, almost all of it
   spent waiting, not computing. Each case allows 20 minutes, and OpenBLAS runs one
   thread (its pool busy-waits). The live-solver tests are in test-slow.
-- ngspice warns that its code models (`tlines.cm` ...) are not loaded:
-  the tree's `spinit` names `/foss/tools/...`. Plain SPICE decks don't need
-  them. A deck that does (XSPICE, OSDI/Verilog-A) needs them loaded first.
+- **XSPICE and OSDI (#499).** The tree's own `spinit` names
+  `/foss/tools/...` for its code models, which isn't here, so `solvers.command`
+  points ngspice's `SPICE_SCRIPTS` at hwde's spinit
+  (`~/.cache/hwde/ngspice-init/<tree>/spinit`) with a `codemodel` line per
+  `lib/ngspice/*.cm` the tree really has (analog, digital, spice2poly, table,
+  tlines, xtradev, xtraevt). `A` devices, `d_*` gates and flops, `adc_bridge`
+  / `dac_bridge` then parse. KiCad's bundled libngspice finds no spinit either:
+  `simlib` loads the `*.cm` beside it (`lib/ngspice/`) into every engine it
+  starts, so `sim_run` and `sim_board` benches may use `A` devices too.
+  OSDI: a deck loads its model itself, `.control` / `pre_osdi FILE` / `.endc`,
+  in both engines. In a sim_run bench a relative FILE is beside the bench,
+  and a `.va` FILE is compiled first with the tree's OpenVAF
+  (`solvers.compile_va`, cached in `~/.cache/hwde/osdi/` by source hash).
+  The tree's prebuilt `.osdi` (psp103_nqs, r3_cmc, bsimcmg) are in
+  `lib/ngspice/`; vacask's under `foss/tools/vacask/lib/vacask/mod/` are for
+  VACASK. `bin/openvaf` is an absolute symlink into `/foss`: hwde runs
+  `openvaf-r`. Gotcha: an integrator cap with no DC path needs `uic` and an
+  `.ic`, or the operating point is singular and the loop starts saturated.
 
 ## Studies for boards
 
@@ -105,11 +124,65 @@ machine.
   finite ground), ports must leave the circuit straight, the other ports'
   50 Ω ends reflect a little (error ~|S_ii·Γ|).
 
+- `hwde sim_solve board --pcb B --region X0,Y0,X1,Y1 --port X,Y,DIR[,LAYER[,W]] ...
+  [--part REF=OHMS] [--symmetric] [--touchstone F.s2p] [--deck-only DIR]`
+  (#455, `lib/emboard.py`): S-parameters of a region of a board with
+  every copper layer of its stackup, not one layer over an infinite
+  ground. `emboard.extract` cuts the region into plain data (each layer's
+  z from the board's stackup, copper per net, via and plated-pad barrels,
+  2-pad parts as lumped resistors); `emboard.deck` builds the openEMS deck;
+  `emboard.waves`/`sparams` read it; `emboard.study` runs it. A port sits
+  on the region's edge (the region is cut at its plane). Its net, width and
+  reference layer (the nearest layer with copper under it) come from the
+  copper. Every layer's copper crossing the edge near it is carried out
+  as a feed, half a wavelength long: signal, coplanar ground (stitched to
+  the reference layer) and the plane. The feed ends in a 50 Ω lumped port.
+  Three voltage and two current probes on the feed give its own Z and γ
+  exactly, so V and I are moved to the plane and S is referenced to 50 Ω
+  there: a line drawn at the wrong width reads as mismatched, which PR 442's
+  voltage-only split cannot see (its S is referenced to the feed's own Z).
+  With every port excited S = B·A⁻¹, exact whatever the far ends reflect.
+  The three openEMS traps from hw-lab vna-verify are built in:
+  1. every copper plane is a pinned z line, and `Csx.xml()` refuses to write
+     a deck whose zero-thickness metal is off the mesh
+     (`Csx.sheets_off_mesh`; CSXCAD would drop it with "Unused primitive");
+  2. MUR walls, never PML_8 (it grew without bound there);
+  3. a derivative-of-Gaussian pulse (`Csx.dgauss`: no DC, f0 = f_max as
+     the probe sampling rate).
+  The dielectric is lossless, because a conductivity is a loss tangent at
+  one frequency only; add dielectric and copper loss in the circuit model.
+  The mesh uses openEMS's thirds rule on the signal's edges: a line on the
+  edge read 48.2 Ω for a 50 Ω line, the thirds rule reads 50.6–51.1 Ω.
+  Known answers (tests/test_emboard.py, test-slow; synthetic 2-layer
+  coupon, 0.5 mm of εr 4.4, w 0.959 mm = 50 Ω quasi-static, 6 GHz, about
+  5–13 s each):
+  | case | measured | tolerance |
+  |---|---|---|
+  | 30 mm thru vs ABCD of the line (impedance.py Z0, ε_eff), f_max/10–f_max (phase, ε_eff from f_max/5) | \|S21\| within 0.05 dB; phase within 0.7% of βl; Z0 back from S 49.7–51.3 Ω; ε_eff +0.4..+1.2%; \|S11\| ≤ −35 dB | 0.1 dB, 1.5%, 3%, 2.5%, −25 dB |
+  | open stub 13 mm from the line's centre | notch 3.110 GHz vs c/(4(L+ΔL_open)√ε_eff) = 3.112 GHz (−0.07%) | 2% |
+  | mutant: the line twice as wide | Z0 31.2 Ω (its own quasi-static 31.5), so 38% off 50 Ω: the thru check fails | must fail |
+  On hw-lab vna-verify's thru row (4 layers JLC04161H-1080B, CPWG 0.43/0.25
+  bare over In1, via fences, 30 mm cut between the SMAs; 634k cells, 8 min
+  on the loaded tower): ε_eff 2.83–2.87 against field_cpwg's 2.851,
+  S21 phase within 1.2° of the line, \|S21\| within 0.05 dB, Z0 53.6–54.7 Ω
+  against 53.05 Ω, \|S11\| peaks −22 dB (a 53 Ω line on a 50 Ω reference).
+  `line_from_s` cannot read Z0 where βl is a multiple of π, nor phase or
+  ε_eff where βl is small (under ~70°).
+  The default cell is min(w/5, h/2.5, λ/40) across the signal: at h/1.5 a
+  w/h = 3.8 line read ε_eff 4.1 against 3.55, at h/2.5 3.60.
+  `impedance.field_cpwg(w, g, h, t, er, ground_w)` is the public CPWG
+  solve (vna-verify's 0.43/0.25 on 0.2444 mm of 3.91: 53.05 Ω bare).
+  Hooks for 3D studies (#479, #481): `deck(..., extra=fn)` gets the Csx
+  and a context (stack, ports, fixed/pinned mesh lines) before the mesh
+  is smoothed. Limits: ports must be axis-aligned on the region's edge;
+  connector bodies (SMA) are not modelled (#479); no loss.
+
 ## What is not here yet
 
-- Antennas and finite grounds in openEMS (radiation boundary, the ground
-  layer's own copper, NF2FF); via transitions and launches (3D copper, the
-  SMA body); Palace for the same decks; scikit-rf to read the touchstone.
+- Antennas in openEMS (radiation boundary, NF2FF: #481); connector
+  bodies and launches (the SMA's coax and pin: #479; `sim_solve board`
+  already has the vias and plane cut-outs); Palace for the same decks;
+  scikit-rf to read the touchstone.
 - `thermalfv` on a board's real copper. check_irdrop already rasterises a
   net into a grid; feeding its grid and current into `thermalfv.joule`
   gives the self-heated trace and neck temperatures check_thermal's

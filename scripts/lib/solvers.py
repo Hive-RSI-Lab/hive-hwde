@@ -11,6 +11,11 @@ module's toolchain) that already holds the open simulators a board needs:
   gmsh       the mesher Palace reads
   fasthenry  quasi-static inductance / resistance extraction (FastHenry2)
   fastercap  quasi-static capacitance extraction (FasterCap)
+  openvaf    Verilog-A -> OSDI compiler, for compact models in ngspice
+
+ngspice runs with hwde's own spinit (ngspice_init_dir): the tree's names
+/foss/tools/... for its XSPICE code models (digital.cm, analog.cm,
+tlines.cm, ...), so without it no `A` device or `d_` model parses.
 
 Every binary there is an Ubuntu 24.04 ELF built against glibc 2.39, and the
 host's libc is newer, so each one runs through the image's own loader
@@ -63,6 +68,9 @@ TOOLS = {
                   r"FastHenry (\S+)"),
     "fastercap": ("foss/tools/rftoolkit/bin/FasterCap", ["-v"],
                   r"(?i)FasterCap[^\n]*?(\d+\.\d+\.\d+)"),
+    # bin/openvaf is an absolute symlink to /foss/...; openvaf-r is the ELF.
+    "openvaf": ("foss/tools/openvaf/bin/openvaf-r", ["--version"],
+                r"OpenVAF\S*\s+(\S+)"),
 }
 
 # What each solver is for, for probe's table and docs/solvers.md.
@@ -74,7 +82,12 @@ KIND = {
     "gmsh": "mesher",
     "fasthenry": "quasi-static L/R extraction",
     "fastercap": "quasi-static C extraction",
+    "openvaf": "Verilog-A compiler (OSDI models for ngspice)",
 }
+
+# ngspice's XSPICE code models and the tree's prebuilt OSDI models.
+NGSPICE_LIB = "foss/tools/ngspice/lib/ngspice"
+CACHE = Path(os.environ.get("XDG_CACHE_HOME") or "~/.cache").expanduser() / "hwde"
 
 
 class SolverError(RuntimeError):
@@ -137,9 +150,69 @@ def command(tool: str, args: list[str], root: Path | None = None) -> tuple[list[
         "SPICE_SCRIPTS": str(t / "foss/tools/ngspice/share/ngspice/scripts"),
         "HWLOC_COMPONENTS": "-linux",
     })
+    if tool == "ngspice":
+        # the tree's own spinit loads its code models from /foss/tools/...,
+        # which isn't here: hwde writes one naming the real files.
+        env["SPICE_SCRIPTS"] = str(ngspice_init_dir(t))
     env.pop("PYTHONHOME", None)
     ld = t / "lib64/ld-linux-x86-64.so.2"
     return [str(ld), "--library-path", _libpath(t), str(exe), *args], env
+
+
+def codemodels(root: Path | None = None) -> list[Path]:
+    """The XSPICE code model libraries (*.cm) in the tree's ngspice."""
+    t = root or toolchain_root()
+    return sorted((t / NGSPICE_LIB).glob("*.cm")) if t else []
+
+
+def spinit_text(cms: list[Path]) -> str:
+    """An ngspice init file that loads these code models (and nothing that
+    isn't there: the tree's own spinit names /foss/tools/... paths and
+    three OSDI files unconditionally). A deck loads OSDI itself with
+    `.control / pre_osdi FILE.osdi / .endc`."""
+    lines = ["* hwde: ngspice init (lib/solvers.py)", "alias exit quit",
+             "set num_threads=1"]
+    lines += [f"codemodel {p}" for p in cms]
+    return "\n".join(lines) + "\n"
+
+
+def ngspice_init_dir(root: Path) -> Path:
+    """A directory holding hwde's spinit for this tree (SPICE_SCRIPTS)."""
+    text = spinit_text(codemodels(root))
+    d = CACHE / "ngspice-init" / root.name
+    try:
+        d.mkdir(parents=True, exist_ok=True)
+        f = d / "spinit"
+        if not f.exists() or f.read_text() != text:
+            tmp = d / f"spinit.{os.getpid()}"
+            tmp.write_text(text)
+            os.replace(tmp, f)
+    except OSError:
+        import tempfile
+        d = Path(tempfile.mkdtemp(prefix="hwde-spinit-"))
+        (d / "spinit").write_text(text)
+    return d
+
+
+def compile_va(va: Path | str, out: Path | str | None = None,
+               root: Path | None = None) -> Path:
+    """Compile a Verilog-A file to an OSDI library with the tree's OpenVAF.
+    Default output: ~/.cache/hwde/osdi/<stem>-<hash of the source>.osdi,
+    reused while the source is unchanged."""
+    import hashlib
+    va = Path(va).resolve()
+    if out is None:
+        h = hashlib.sha256(va.read_bytes()).hexdigest()[:12]
+        out = CACHE / "osdi" / f"{va.stem}-{h}.osdi"
+        if out.exists():
+            return out
+    out = Path(out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    r = run("openvaf", [str(va), "-o", str(out)], cwd=va.parent, timeout=300,
+            stdin="", root=root)
+    if not r.ok or not out.exists():
+        raise SolverError(f"openvaf {va.name}: {(r.stdout + r.stderr)[-400:]}")
+    return out
 
 
 @dataclass
@@ -186,4 +259,5 @@ def probe(root: Path | None = None) -> dict:
     t = root or toolchain_root()
     return {"toolchain": str(t) if t else None,
             "tools": {k: {"kind": KIND[k], "version": version(k, t) if t else None}
-                      for k in TOOLS}}
+                      for k in TOOLS},
+            "codemodels": [p.name for p in codemodels(t)] if t else []}

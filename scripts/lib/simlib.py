@@ -314,12 +314,32 @@ def synth_fragment(parsed: dict, refs=None, nets=None) -> dict:
 # ----------------------------------------------------------------- bounds
 
 
+def load_sidecar(path: Path | str) -> tuple[list[dict], dict | None]:
+    """`<bench>.bounds.json` -> (bounds, tolerance config or None). The
+    sidecar is a JSON list of bounds, or an object {"bounds": [...],
+    "tolerance": {...}} (lib/simtol.py documents the tolerance block)."""
+    data = checklib.load_json(path, "bounds sidecar")
+    cfg = None
+    if isinstance(data, dict):
+        if "tolerance" in data:
+            import simtol
+            cfg = simtol.check_cfg(data["tolerance"], f"bounds sidecar {path}")
+        data = data.get("bounds")
+    return _check_bounds(data, path), cfg
+
+
 def load_bounds(path: Path | str) -> list[dict]:
     """`<bench>.bounds.json` sidecar: a JSON LIST of
-    {measure, min?, max?, severity: error|warning, msg?}."""
-    data = checklib.load_json(path, "bounds sidecar")
+    {measure, min?, max?, severity: error|warning, msg?} (or an object
+    holding it under "bounds", see load_sidecar)."""
+    return load_sidecar(path)[0]
+
+
+def _check_bounds(data, path) -> list[dict]:
     if not isinstance(data, list):
-        raise checklib.CheckError(f"bounds sidecar {path}: must be a JSON list")
+        raise checklib.CheckError(
+            f"bounds sidecar {path}: must be a JSON list (or an object "
+            "with a 'bounds' list)")
     if not data:
         raise checklib.CheckError(
             f"bounds sidecar {path}: empty list - an ungated testbench "
@@ -423,6 +443,62 @@ def setup_engine_env(dll: Path) -> None:
     os.environ.setdefault("SPICE_LIB_DIR", str(dll.parent))
 
 
+def codemodel_files(dll: Path | None) -> list[Path]:
+    """The XSPICE code models (*.cm) KiCad ships beside its libngspice:
+    lib/ngspice/ next to the library (an AppImage: shared/lib/ngspice).
+    KiCad's own simulator loads them through its spinit; the bare library
+    finds no spinit, so without these an `A` device does not parse."""
+    if dll is None:
+        return []
+    dll = Path(dll).resolve()
+    for d in (dll.parent / "ngspice", dll.parent.parent / "lib" / "ngspice"):
+        cms = sorted(d.glob("*.cm"))
+        if cms:
+            return cms
+    return []
+
+
+def _new_engine():
+    """A fresh in-process ngspice with KiCad's code models loaded."""
+    global _NG
+    from InSpice.Spice.NgSpice.Shared import NgSpiceShared
+    if os.name != "nt" and _DLL is not None:
+        # off Windows InSpice's find_library is ctypes.util.find_library,
+        # which only sees the system linker cache: a user-space KiCad's
+        # libngspice.so.0 is never found (LEARNINGS 2026-09-27 [sim])
+        NgSpiceShared.find_library = classmethod(lambda cls, n: str(_DLL))
+    ng = NgSpiceShared.new_instance()
+    _NG = ng
+    if not getattr(ng, "_hwde_cm", False):
+        for cm in codemodel_files(_DLL):
+            ng.exec_command(f"codemodel {cm}")
+        ng._hwde_cm = True
+    return ng
+
+
+_PRE_OSDI = re.compile(r"^(\s*pre_osdi\s+)(\S+)(.*)$", re.IGNORECASE)
+
+
+def resolve_osdi(text: str, base: Path) -> str:
+    """Make a deck's `pre_osdi FILE` lines (inside .control) absolute,
+    relative to the bench's directory. A FILE ending in .va is compiled
+    first with the IIC tree's OpenVAF (lib/solvers.compile_va, cached), so a
+    bench can carry its Verilog-A model as source."""
+    out = []
+    for ln in text.splitlines():
+        m = _PRE_OSDI.match(ln)
+        if m:
+            f = Path(m.group(2).strip('"'))
+            if not f.is_absolute():
+                f = Path(base) / f
+            if f.suffix.lower() == ".va":
+                import solvers
+                f = solvers.compile_va(f)
+            ln = f"{m.group(1)}{f}{m.group(3)}"
+        out.append(ln)
+    return "\n".join(out) + ("\n" if text.endswith("\n") else "")
+
+
 def prepare_circuit(text: str) -> str:
     """Normalize a testbench: ensure the trailing .end (a missing one makes
     ngspice silently load NO circuit) and inject `.options rshunt=1e9` after
@@ -484,16 +560,8 @@ def run_circuit(circuit: str) -> dict:
     engine-side problems; callers (the sim_run worker) run this whole
     function in a killable subprocess for hard timeouts / crash isolation.
     setup_engine_env() must have been called first."""
-    global _NG
     try:
-        from InSpice.Spice.NgSpice.Shared import NgSpiceShared
-        if os.name != "nt" and _DLL is not None:
-            # off Windows InSpice's find_library is ctypes.util.find_library,
-            # which only sees the system linker cache: a user-space KiCad's
-            # libngspice.so.0 is never found (LEARNINGS 2026-09-27 [sim])
-            NgSpiceShared.find_library = classmethod(lambda cls, n: str(_DLL))
-        ng = NgSpiceShared.new_instance()
-        _NG = ng
+        ng = _new_engine()
     except Exception as exc:  # DLL missing/unloadable
         return {"status": "error",
                 "error": f"engine load failed: {type(exc).__name__}: {exc}"}
@@ -531,6 +599,45 @@ def run_circuit(circuit: str) -> dict:
             "vectors": vectors, "log_tail": tail(stdout)}
 
 
+def run_circuits(circuits: list[str]) -> dict:
+    """Run prepared circuits one after another in ONE in-process engine
+    (tolerance analyses: hundreds of variants of a bench) ->
+    {"status": "ok", ngspice_version, "runs": [{"measures", "failed"} |
+    {"error"}]} or {"status": "error", "error"}. Never raises for engine
+    problems; setup_engine_env() first; the caller holds the kill switch."""
+    global _NG
+    try:
+        from InSpice.Spice.NgSpice.Shared import NgSpiceShared
+        if os.name != "nt" and _DLL is not None:
+            NgSpiceShared.find_library = classmethod(lambda cls, n: str(_DLL))
+        ng = NgSpiceShared.new_instance()
+        _NG = ng
+    except Exception as exc:  # DLL missing/unloadable
+        return {"status": "error",
+                "error": f"engine load failed: {type(exc).__name__}: {exc}"}
+    runs = []
+    for circuit in circuits:
+        ng.clear_output()
+        try:
+            ng.load_circuit(circuit)
+        except Exception as exc:
+            runs.append({"error": f"circuit rejected: {type(exc).__name__}"})
+            continue
+        try:
+            ng.run()
+        except Exception:
+            pass  # a failed .measure; the rest are still in stdout
+        runs.append({"measures": parse_measures(ng.stdout),
+                     "failed": parse_failed_measures(ng.stderr)})
+        try:
+            ng.destroy()
+            ng.remove_circuit()
+        except Exception:
+            pass
+    return {"status": "ok", "ngspice_version": ng.ngspice_version,
+            "runs": runs}
+
+
 def run_vectors(circuits: list[str]) -> dict:
     """Run prepared circuits one after another in the in-process engine and
     return every vector of each one's last plot as plain lists:
@@ -540,13 +647,8 @@ def run_vectors(circuits: list[str]) -> dict:
     runs it in a killable worker. An op plot's vectors hold one value each;
     a voltage source's branch current is "<name>#branch" (negative while
     the source delivers current)."""
-    global _NG
     try:
-        from InSpice.Spice.NgSpice.Shared import NgSpiceShared
-        if os.name != "nt" and _DLL is not None:
-            NgSpiceShared.find_library = classmethod(lambda cls, n: str(_DLL))
-        ng = NgSpiceShared.new_instance()
-        _NG = ng
+        ng = _new_engine()
     except Exception as exc:  # DLL missing/unloadable
         return {"status": "error",
                 "error": f"engine load failed: {type(exc).__name__}: {exc}"}

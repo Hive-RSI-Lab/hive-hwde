@@ -40,10 +40,32 @@ right, and the board-facing studies built on them.
         custom pads as drawn) into a GEOM.json for `planar`; h/er default
         to the board's own stackup (dielectric under the layer).
 
+    hwde sim_solve board --pcb BOARD --region X0,Y0,X1,Y1
+                         --port X,Y,DIR[,LAYER[,W]] [--port ...]
+                         [--part REF=OHMS ...] [--f-max HZ] [--f-min HZ]
+                         [--points N] [--symmetric] [--fine MM]
+                         [--touchstone FILE] [--out RES.json] [--keep DIR]
+                         [--deck-only DIR] [--json]
+        full-wave (openEMS) S-parameters of a region of a board with every
+        copper layer of its stackup (lib/emboard.py): CPWG and coplanar
+        ground, reference-plane cut-outs, via fences and plated holes as
+        drawn, 2-pad parts as lumped resistors (--part). Each port sits on
+        the region's edge (the region is cut at its plane) and the line
+        leaving there is carried out as a feed with V/I probes, so S is
+        referenced to 50 ohm at the plane whatever the line's own Z.
+        --symmetric: a mirror-symmetric 2-port is excited once. --deck-only
+        writes the deck(s) and the probe map without running.
+
 The cases (docs/solvers.md has the measured errors):
 
     circuit_ngspice     RC low-pass |H(fc)| = 1/sqrt2 and v(tau) = 1 - 1/e
     circuit_xyce        the same deck in Xyce
+    circuit_xspice      XSPICE code models: d_and truth table and a 4-bit
+                        counter (exact), adc_bridge -> d_dff -> dac_bridge
+                        delay, 1st-order sigma-delta density = Vin/Vref
+    circuit_osdi        an OpenVAF-compiled Verilog-A resistor vs a plain R
+    circuit_xspice_kicad  the XSPICE decks (and the OSDI divider) through
+                        KiCad's libngspice, the engine sim_run uses
     openems_microstrip  openEMS Z0 vs impedance.py's field solver (and
                         Hammerstad-Jensen), 1.5 mm on 0.8 mm of er 4
     palace_cavity       Palace eigenmodes of a 40x30x20 mm PEC box vs
@@ -70,6 +92,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
 
 from lib import emsolve as em  # noqa: E402
 from lib import solvers  # noqa: E402
@@ -162,6 +185,172 @@ def case_circuit_xyce(work: Path) -> dict:
                   [(_interp(fa, ha, 1000.0), e_h), (_interp(tt, vt, RC_TAU), e_v)], 0.5,
                   "RC low-pass: |H(1/(2 pi RC))| = 1/sqrt(2), step v(RC) = 1 - 1/e")
 
+
+# ---------------------------------------------------------------- mixed-signal (XSPICE, OSDI)
+
+# One clock for the digital decks: rising edges at 0.5 us + k us (1 ns ramps).
+XS_CLK = "vc clk 0 pulse(0 5 0.5u 1n 1n 0.5u 1u)\n"
+XS_MODELS = (".model adc1 adc_bridge(in_low=1 in_high=2)\n"
+             ".model and1 d_and(rise_delay=1n fall_delay=1n)\n"
+             ".model ff1 d_dff(clk_delay=10n set_delay=10n reset_delay=10n "
+             "rise_delay=1n fall_delay=1n)\n"
+             ".model dac1 dac_bridge(out_low=0 out_high=1)\n")
+# a = 0101 and b = 0011 over 0-8 us (2 us each): AND sampled mid-slot.
+XS_AND = {"and1": (1e-6, 0), "and2": (3e-6, 0), "and3": (5e-6, 0), "and4": (7e-6, 1)}
+# the ripple counter's value just after edge n (edges at 0.5 + k us)
+XS_CNT = {f"cnt{n}": (n + 0.2, n % 16) for n in (5, 11, 16, 21)}
+# d_dff clocked at 1 MHz: q follows a's 2nd rise (6 us) and 2nd fall (8 us)
+# at the next clock edge (6.5, 8.5 us) plus the bridge and flop delays:
+# clock to adc threshold 0.4 ns + adc 1 ns + clk_delay 10 ns + the flop's
+# rise/fall 1 ns + dac to half swing 0.5 ns; a's 2.5 V point is 0.5 ns into
+# its ramp. One clock late (or early) would be 1 us off: 200% here.
+XS_DELAY = 0.5e-6 + (0.4 + 1 + 10 + 1 + 0.5 - 0.5) * 1e-9
+SD_VIN = (0.3137, 0.7071)              # first-order sigma-delta inputs, Vref = 1
+SD_CLOCKS = 4096
+
+
+def xspice_logic_deck() -> str:
+    meas = [f".meas tran {k} find v(yand) at={t}" for k, (t, _) in XS_AND.items()]
+    meas += [f".meas tran {k} find v(cnt) at={t}u" for k, (t, _) in XS_CNT.items()]
+    meas += [".meas tran tdr when v(a)=2.5 rise=2", ".meas tran tqr when v(yq)=0.5 rise=2",
+             ".meas tran tdf when v(a)=2.5 fall=2", ".meas tran tqf when v(yq)=0.5 fall=2"]
+    return ("* hwde xspice: d_and truth table, d_dff, 4-bit ripple counter\n"
+            "va a 0 pulse(0 5 2u 1n 1n 2u 4u)\nvb b 0 pulse(0 5 4u 1n 1n 4u 8u)\n" + XS_CLK +
+            "aadc [a b clk] [da db dclk] adc1\n"
+            "aand [da db] dand and1\n"
+            "aff da dclk null null dq dqb ff1\n"
+            "* each stage toggles (d = qbar) on the falling q of the one before\n"
+            "a0 q0b dclk null null q0 q0b ff1\na1 q1b q0b null null q1 q1b ff1\n"
+            "a2 q2b q1b null null q2 q2b ff1\na3 q3b q2b null null q3 q3b ff1\n"
+            "adac [dand dq q0 q1 q2 q3] [yand yq c0 c1 c2 c3] dac1\n"
+            "bcnt cnt 0 v = v(c0) + 2*v(c1) + 4*v(c2) + 8*v(c3)\n" + XS_MODELS +
+            ".tran 1n 22u 0 1n\n" + "\n".join(meas) + "\n.end\n")
+
+
+def sigma_delta_deck(vin: float) -> str:
+    """First-order sigma-delta: an ideal integrator of (vin - fb), a
+    comparator, a d_dff sampling it at 1 MHz and a 1-bit DAC (0/1 V) as fb.
+    The integrator stays bounded, so over N clocks the ones density is
+    vin/Vref within ~(swing/step)/N; the mean of fb is that density."""
+    t_end = 10 + SD_CLOCKS
+    return ("* hwde xspice: first-order sigma-delta on DC\n"
+            f"vin in 0 dc {vin}\n" + XS_CLK.replace("pulse(0 5", "pulse(0 1") +
+            "bint 0 int i = 1e-6*(v(in) - v(fb))\ncint int 0 1n\n"
+            "bcmp cmp 0 v = v(int) > 0 ? 1 : 0\n"
+            "aadc [cmp clk] [dcmp dclk] adcsd\n"
+            ".model adcsd adc_bridge(in_low=0.4 in_high=0.6)\n"
+            "aff dcmp dclk null null dq dqb ff1\nadac [dq] [fb] dac1\n" +
+            XS_MODELS + ".ic v(int)=0\n"
+            f".tran 0.1u {t_end}u 0 0.1u uic\n"
+            f".meas tran dens avg v(fb) from=10u to={t_end}u\n.end\n")
+
+
+OSDI_VA = """`include "disciplines.vams"
+module hwde_res(p, n);
+  inout p, n; electrical p, n;
+  parameter real r = 1k from (0:inf);
+  analog I(p, n) <+ V(p, n) / r;
+endmodule
+"""
+
+
+def osdi_deck(osdi: Path | str) -> str:
+    """A 2k Verilog-A resistor over a plain 1k: v(b) = 1/3 of v(a)."""
+    return ("* hwde osdi: Verilog-A resistor divider\n"
+            f".control\npre_osdi {osdi}\n.endc\n"
+            "v1 a 0 dc 1\nn1 a b rva\n.model rva hwde_res r=2k\nr2 b 0 1k\n"
+            ".dc v1 0 1 0.5\n.meas dc vb find v(b) at=1\n.end\n")
+
+
+def _xspice_pairs(meas: dict, tag: str) -> list[tuple[str, float, float]]:
+    """(what, measured, expected) from the logic deck's measures."""
+    def get(k):
+        if k not in meas:
+            raise solvers.SolverError(f"{tag}: measure {k} missing")
+        return meas[k]
+    bits = [(k, e) for k, (_, e) in XS_AND.items()] + [(k, e) for k, (_, e) in XS_CNT.items()]
+    right = sum(1 for k, e in bits if abs(get(k) - e) < 0.05)
+    return [("logic samples right", right / len(bits), 1.0),
+            ("d_dff rise delay", get("tqr") - get("tdr"), XS_DELAY),
+            ("d_dff fall delay", get("tqf") - get("tdf"), XS_DELAY)]
+
+
+def _ngspice_measures(work: Path, name: str, deck: str) -> dict:
+    import simlib
+    (work / f"{name}.cir").write_text(deck)
+    r = solvers.run("ngspice", ["-b", f"{name}.cir"], cwd=work, timeout=1200)
+    meas = simlib.parse_measures(r.stdout)
+    if not meas:
+        raise solvers.SolverError(f"ngspice {name}: no measures: {(r.stdout + r.stderr)[-400:]}")
+    return meas
+
+
+def _xspice_case(name, solver, measure) -> dict:
+    """The XSPICE checks through one engine: measure(tag, deck) -> {name: value}."""
+    pairs = _xspice_pairs(measure("logic", xspice_logic_deck()), name)
+    for k, vin in enumerate(SD_VIN):
+        d = measure(f"sd{k}", sigma_delta_deck(vin))["dens"]
+        pairs.append((f"sigma-delta density, vin {vin}", d, vin))
+    c = _worst(name, solver, "logic, d_dff delay, sigma-delta density",
+               [(m, e) for _, m, e in pairs], 0.5,
+               "d_and truth table + 4-bit counter (exact); adc_bridge -> d_dff -> dac_bridge "
+               "delays a square wave to the next clock edge + bridge/flop delays; "
+               f"1st-order sigma-delta ones density = Vin/Vref over {SD_CLOCKS} clocks")
+    c["checks"] = [{"what": w, "measured": m, "expected": e} for w, m, e in pairs]
+    return c
+
+
+def case_circuit_xspice(work: Path) -> dict:
+    return _xspice_case("circuit_xspice", "ngspice",
+                        lambda tag, deck: _ngspice_measures(work, tag, deck))
+
+
+def case_circuit_osdi(work: Path) -> dict:
+    (work / "hwde_res.va").write_text(OSDI_VA)
+    osdi = solvers.compile_va(work / "hwde_res.va", work / "hwde_res.osdi")
+    vb = _ngspice_measures(work, "osdi", osdi_deck(osdi))["vb"]
+    return _case("circuit_osdi", "ngspice", "v(b) of a Verilog-A 2k over 1k", vb, 1 / 3,
+                 0.01, "OpenVAF-compiled resistor matches a plain R: 1k/(2k + 1k)")
+
+
+def _kicad_measures(work: Path, dll: Path, tag: str, deck: str) -> dict:
+    """One deck through sim_run's worker on KiCad's libngspice."""
+    import subprocess
+    cir = work / f"kicad_{tag}.cir"
+    cir.write_text(deck)
+    p = subprocess.run([sys.executable, str(Path(__file__).resolve().parent / "sim_run.py"),
+                        "--exec-one", str(cir), "--dll", str(dll)],
+                       capture_output=True, text=True, timeout=1200)
+    try:
+        res = json.loads(p.stdout)
+    except json.JSONDecodeError:
+        raise solvers.SolverError(f"KiCad ngspice {tag}: {(p.stderr or p.stdout)[-400:]}")
+    if res.get("status") != "ok" or not res.get("measures"):
+        raise solvers.SolverError(f"KiCad ngspice {tag}: {res.get('error') or res.get('log_tail', '')[-300:]}")
+    return res["measures"]
+
+
+def case_circuit_xspice_kicad(work: Path) -> dict:
+    """The same decks through KiCad's bundled libngspice (sim_run's engine),
+    which gets its code models from simlib.codemodel_files; plus the OSDI
+    divider when the tree's OpenVAF is there to compile it."""
+    from lib import env as hwenv
+    dll = hwenv.find_ngspice_dll()
+    if dll is None:
+        return {"name": "circuit_xspice_kicad", "solver": "kicad-ngspice", "status": "missing",
+                "detail": "no KiCad libngspice (install KiCad 10 or set HWDE_NGSPICE_DLL)"}
+    c = _xspice_case("circuit_xspice_kicad", "kicad-ngspice",
+                     lambda tag, deck: _kicad_measures(work, dll, tag, deck))
+    c["dll"] = str(dll)
+    if solvers.tool_path("openvaf") is not None:
+        (work / "hwde_res.va").write_text(OSDI_VA)
+        vb = _kicad_measures(work, dll, "osdi", osdi_deck("hwde_res.va"))["vb"]
+        c["checks"].append({"what": "OSDI divider (pre_osdi .va)", "measured": vb, "expected": 1 / 3})
+        err = (vb - 1 / 3) * 3 * 100
+        if abs(err) > abs(c["err_pct"]):
+            c.update(measured=vb, expected=1 / 3, err_pct=round(err, 4),
+                     status="pass" if abs(err) <= c["tol_pct"] else "fail")
+    return c
 
 # ---------------------------------------------------------------- full-wave
 
@@ -291,6 +480,38 @@ def planar(geo: dict, excites, f_max, f_min=None, points=201, fine=None, keep=No
                  for j in cols for i in range(n)},
            "features": _features(freqs, s11, s21),
            "_touchstone": em.touchstone(freqs, cols, n)}
+    return res
+
+
+def board_study(pcb, region, ports, parts=None, f_max=6e9, f_min=None, points=201,
+                symmetric=False, fine=None, keep=None, deck_only=None) -> dict:
+    """`hwde sim_solve board`: extract -> deck -> openEMS -> S (lib/emboard)."""
+    from lib import emboard as eb
+    geo = eb.extract(pcb, region, parts)
+    if deck_only:
+        out = Path(deck_only)
+        out.mkdir(parents=True, exist_ok=True)
+        n = len(ports)
+        decks = []
+        for e in ([0] if symmetric and n == 2 else range(n)):
+            csx, where = eb.deck(geo, ports, f_max, e, fine=fine)
+            d = out / f"port{e}"
+            d.mkdir(exist_ok=True)
+            (d / "deck.xml").write_text(csx.xml())
+            (d / "where.json").write_text(json.dumps(where, indent=1) + "\n")
+            decks.append({"excite": e, "dir": str(d), "cells": where["cells"], "mesh": where["mesh"]})
+        return {"script": SCRIPT, "cmd": "board", "decks": decks, "ports": where["ports"]}
+    res = eb.study(geo, ports, f_max, f_min, points, symmetric=symmetric, keep=keep, fine=fine)
+    S, freqs = res.pop("S"), res["freqs"]
+    n = len(res["ports"])
+    res["s"] = {f"S{i + 1}{j + 1}": [[round(s[i][j].real, 6), round(s[i][j].imag, 6)] for s in S]
+                for i in range(n) for j in range(n)}
+    res["features"] = _features(freqs, [s[0][0] for s in S], [s[1][0] for s in S] if n > 1 else None)
+    res["_touchstone"] = eb.touchstone(freqs, S, [f"hwde sim_solve board, openEMS: {pcb} region {region}",
+                                                  "ports: " + "; ".join(
+                                                      f"{p['x']},{p['y']},{p['dir']} {p['layer']} ref {p['ref']} "
+                                                      f"net {p['net']} w {p['w']}" for p in res["ports"])])
+    res.update(script=SCRIPT, cmd="board", source=str(pcb))
     return res
 
 
@@ -435,6 +656,9 @@ def case_electrothermal(work: Path) -> dict:
 CASES = {
     "circuit_ngspice": ("ngspice", case_circuit_ngspice),
     "circuit_xyce": ("xyce", case_circuit_xyce),
+    "circuit_xspice": ("ngspice", case_circuit_xspice),
+    "circuit_osdi": ("openvaf", case_circuit_osdi),
+    "circuit_xspice_kicad": (None, case_circuit_xspice_kicad),
     "openems_microstrip": ("openems", case_openems_microstrip),
     "palace_cavity": ("palace", case_palace_cavity),
     "fasthenry_bar": ("fasthenry", case_fasthenry_bar),
@@ -443,7 +667,7 @@ CASES = {
     "thermal_point": (None, case_thermal_point),
     "electrothermal": (None, case_electrothermal),
 }
-NEEDS = {"palace_cavity": ("gmsh",)}
+NEEDS = {"palace_cavity": ("gmsh",), "circuit_osdi": ("ngspice",)}
 
 
 def validate(only=None, strict=False) -> dict:
@@ -521,7 +745,50 @@ def main(argv=None) -> int:
     pg.add_argument("--er", type=float)
     pg.add_argument("--tand", type=float)
     pg.add_argument("--out")
+    bd = sub.add_parser("board")
+    bd.add_argument("--pcb", required=True)
+    bd.add_argument("--region", required=True)
+    bd.add_argument("--port", action="append", required=True)
+    bd.add_argument("--part", action="append", default=[])
+    bd.add_argument("--f-max", type=float, default=6e9)
+    bd.add_argument("--f-min", type=float)
+    bd.add_argument("--points", type=int, default=201)
+    bd.add_argument("--symmetric", action="store_true")
+    bd.add_argument("--fine", type=float)
+    bd.add_argument("--touchstone")
+    bd.add_argument("--out")
+    bd.add_argument("--keep")
+    bd.add_argument("--deck-only")
+    bd.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
+
+    if args.cmd == "board":
+        parts = {}
+        for s_ in args.part:
+            ref, _, ohm = s_.partition("=")
+            parts[ref] = float(ohm)
+        res = board_study(args.pcb, [float(v) for v in args.region.split(",")], args.port, parts,
+                          args.f_max, args.f_min, args.points, args.symmetric, args.fine,
+                          args.keep, args.deck_only)
+        ts = res.pop("_touchstone", None)
+        if args.touchstone and ts:
+            Path(args.touchstone).write_text(ts)
+        if args.out:
+            Path(args.out).write_text(json.dumps(res, indent=1) + "\n")
+        if args.json:
+            print(json.dumps(res, indent=1))
+        else:
+            for p in res["ports"]:
+                print(f"port {p['x']},{p['y']},{p['dir']}: {p['layer']} over {p['ref']} "
+                      f"(h {p['h']}, er {p['er']}), net {p['net']}, w {p['w']}")
+            for d in res.get("decks", []):
+                print(f"deck port{d['excite']}: {d['cells']} cells {d['mesh']} -> {d['dir']}")
+            for r_ in res.get("runs", []):
+                print(f"run port{r_['excite']}: {r_['cells']} cells, {r_['seconds']} s, "
+                      f"feed Z {r_['z_feed']} ohm")
+            for name, ft in res.get("features", {}).items():
+                print(f"  {name}: {ft}")
+        return 0
 
     if args.cmd == "planar":
         geo = json.loads(Path(args.geom).read_text())
