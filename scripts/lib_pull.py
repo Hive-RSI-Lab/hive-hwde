@@ -38,6 +38,14 @@ the pull is reported (all idempotent, all text surgery):
                   a peg with no hole, a body outside the courtyard.
   lib_refdes_norm every reference text sits at a blanket (0,-4.0) mm whatever the
                   part size                  -> --no-refdes-norm to skip
+  shared names    EasyEDA names footprints by package, so a pull can rewrite
+                  another part's footprint file (#412): same pads -> the old,
+                  repaired file goes back; different pads -> this part's is
+                  written as <name>_<LCSC> and its symbol pointed there
+                  (result: shared_footprint). Pulled pins numbered twice
+                  (USB-A shell legs "0","0", #393) get their own numbers in
+                  symbol and footprint when the counts match
+                  (result: renumbered_pins). lib/pullfix.py.
   lib_pin_types   every pin `unspecified`: the symbols this run pulled are
                   retyped (power_in on an IC's VCC/GND-named pins, else
                   passive; from parts/<lcsc>.json extracts beside --parts when
@@ -66,7 +74,8 @@ aren't fetched again. Every easyeda2kicad call has a timeout (90 s, or
 HWDE_EASYEDA_TIMEOUT_S, cut to what is left of the budget) that kills its
 whole process group, so a stalled EasyEDA request can't hang the run: that
 part comes back `deferred` (`stalled`) and the batch goes on. Each call
-prints one progress line on stderr.
+prints one progress line on stderr, and with --out the report is rewritten
+(status `running`) after every part, so a killed run leaves a record.
 
 `--parts parts/parts.json` pulls every part in ONE paced batch: parts are
 spaced --pace-s apart (auto: 0 for <=10 parts, 15 s for more - EasyEDA's
@@ -104,6 +113,7 @@ sys.path.insert(0, str(SCRIPTS / "lib"))
 import check_model_fit  # noqa: E402
 import fplib  # noqa: E402
 import fpfix  # noqa: E402
+import pullfix  # noqa: E402
 import kc  # noqa: E402
 import lib_pin_types  # noqa: E402
 import lib_refdes_norm  # noqa: E402
@@ -200,9 +210,11 @@ def _pull_one(lcsc: str, base: Path, no_3d: bool, overwrite: bool,
     # _restore_models' job), and a symbol whose name has a space or '/' is
     # appended again anyway (_dedupe_symbols).
     entry, fp_file = (None, None) if overwrite else _present(lcsc, base)
+    before: dict[str, str] = {}
     if entry is not None and fp_file is not None:
         cp, log, already, created = None, "", True, False
     else:
+        before = _fp_snapshot(pretty)
         try:
             if timeout_s is None:
                 cp = _run_easyeda(lcsc, base, no_3d, overwrite)
@@ -240,6 +252,11 @@ def _pull_one(lcsc: str, base: Path, no_3d: bool, overwrite: bool,
 
     warnings = []
     fp_reports = []
+    shared = renumbered = None
+    if cp is not None:
+        fp_file, shared = _shared_footprint(lcsc, base, entry, fp_file,
+                                            before, overwrite, warnings)
+        renumbered = _duplicate_pins(base, entry, fp_file, warnings)
     try:
         f = fplib.parse_footprint(fp_file)
     except Exception as exc:  # noqa: BLE001
@@ -265,7 +282,111 @@ def _pull_one(lcsc: str, base: Path, no_3d: bool, overwrite: bool,
         "footprint_lib": str(pretty) if pretty.is_dir() else None,
         "footprints": fp_reports,
         "warnings": warnings,
+        **({"shared_footprint": shared} if shared else {}),
+        **({"renumbered_pins": renumbered} if renumbered else {}),
     }
+
+
+def _fp_snapshot(pretty: Path) -> dict[str, str]:
+    """name -> text of every footprint in the library before a pull."""
+    if not pretty.is_dir():
+        return {}
+    out = {}
+    for p in pretty.glob("*.kicad_mod"):
+        try:
+            out[p.name] = p.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            pass
+    return out
+
+
+def _shared_footprint(lcsc: str, base: Path, entry: dict, fp_file: Path,
+                      before: dict[str, str], overwrite: bool,
+                      warnings: list[str]) -> tuple[Path, dict | None]:
+    """The pull rewrote a footprint file that was already there (#412):
+    EasyEDA names footprints by package, so another part may own it.
+    Same copper -> the old file goes back (it carries fpfix's repairs),
+    unless --overwrite asked for a fresh pull. Different copper and another
+    part's symbol names the file -> the old file goes back and this part's
+    footprint is written as <name>_<lcsc>, its symbol pointed there.
+    -> (this part's footprint file, what was done or None)."""
+    old = before.get(fp_file.name)
+    if old is None:
+        return fp_file, None
+    try:
+        new = fp_file.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return fp_file, None
+    if new == old:
+        return fp_file, None
+    sym_lib = base.with_suffix(".kicad_sym")
+    stem = fp_file.stem
+    others = sorted({e["lcsc"] or e["name"] for e in fplib.symbol_index(sym_lib)
+                     if e["footprint"].split(":")[-1] == stem
+                     and e["lcsc"] != lcsc})
+    try:
+        same = pullfix.same_pads(old, new)
+    except Exception as exc:  # noqa: BLE001 - unparseable: keep what was there
+        warnings.append(f"{fp_file.name}: could not compare the re-pulled "
+                        f"footprint ({exc}); the earlier file is kept")
+        same = True
+    if same:
+        if overwrite and not others:
+            return fp_file, None
+        fp_file.write_text(old, encoding="utf-8")
+        return fp_file, {"footprint": stem, "action": "kept_existing",
+                         "shared_with": others}
+    if not others:
+        return fp_file, None
+    split = f"{stem}_{lcsc}"
+    target = fp_file.with_name(split + ".kicad_mod")
+    text = sym_lib.read_text(encoding="utf-8")
+    lib = entry["footprint"].split(":")[0] if ":" in entry["footprint"] \
+        else base.name
+    out = pullfix.set_symbol_footprint(text, entry["name"], f"{lib}:{split}")
+    if out is None:
+        warnings.append(f"{fp_file.name}: shared with {others} and its pads "
+                        f"differ, but symbol {entry['name']} has no Footprint "
+                        f"property to re-point; left as pulled")
+        return fp_file, {"footprint": stem, "action": "conflict",
+                         "shared_with": others}
+    target.write_text(pullfix.rename_footprint(new, split), encoding="utf-8")
+    fp_file.write_text(old, encoding="utf-8")
+    sym_lib.write_text(out, encoding="utf-8")
+    entry["footprint"] = f"{lib}:{split}"
+    warnings.append(f"{stem} is another part's footprint ({', '.join(others)}) "
+                    f"with different pads: this part's is {split}")
+    return target, {"footprint": stem, "action": "split", "as": split,
+                    "shared_with": others}
+
+
+def _duplicate_pins(base: Path, entry: dict, fp_file: Path,
+                    warnings: list[str]) -> list[dict] | None:
+    """Give duplicate pin/pad numbers (EasyEDA's USB-A shell legs, both "0")
+    their own numbers in the symbol and the footprint (#393)."""
+    sym_lib = base.with_suffix(".kicad_sym")
+    try:
+        sym = sym_lib.read_text(encoding="utf-8")
+        fp = fp_file.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+    sym2, fp2, changes, warns = pullfix.renumber_duplicate_pins(
+        sym, entry["name"], fp)
+    warnings.extend(warns)
+    if not changes:
+        return None
+    others = [e["name"] for e in fplib.symbol_index(sym_lib)
+              if e["footprint"].split(":")[-1] == fp_file.stem
+              and e["name"] != entry["name"]]
+    if others:
+        warnings.append(f"{entry['name']}: duplicate pin numbers left: its "
+                        f"footprint {fp_file.stem} is shared with {others}")
+        return None
+    sym_lib.write_text(sym2, encoding="utf-8")
+    fp_file.write_text(fp2, encoding="utf-8")
+    warnings.append(f"{entry['name']}: duplicate pin numbers renumbered "
+                    + ", ".join(f"{c['from']}->{c['to']}" for c in changes))
+    return changes
 
 
 # ------------------------------------------------------- batch pacing + dedupe
@@ -338,7 +459,7 @@ def _is_rate_limited(detail: str) -> bool:
 
 
 def _pull_all(ids: list[str], base: Path, no_3d: bool, overwrite: bool,
-              pacer: _Pacer) -> tuple[list[dict], int]:
+              pacer: _Pacer, on_result=None) -> tuple[list[dict], int]:
     """Pull every id, paced; on a 403 back off 90 s and retry that part once.
 
     The retried part is re-verified on disk by _pull_one's symbol-index gate
@@ -346,6 +467,8 @@ def _pull_all(ids: list[str], base: Path, no_3d: bool, overwrite: bool,
     the pacer's budget isn't started: that part and the rest come back
     `deferred`, so the run ends with time left to fix up what it has, and a
     re-run resumes (parts in the library aren't fetched again).
+    on_result(results) runs after each part, so a run killed mid-batch
+    still leaves a record of what it pulled (#412).
     Returns (results, n_retried).
     """
     results: list[dict] = []
@@ -380,6 +503,8 @@ def _pull_all(ids: list[str], base: Path, no_3d: bool, overwrite: bool,
             r["retried"] = True
             retried += 1
         results.append(r)
+        if on_result is not None:
+            on_result(results)
     return results, retried
 
 
@@ -782,7 +907,17 @@ def main(argv: list[str] | None = None) -> int:
             ids = list(args.lcsc)
         pace_s = _auto_pace(len(ids)) if args.pace_s is None else max(0.0, args.pace_s)
         pacer = _Pacer(pace_s, args.budget_s)
-        results, n_retried = _pull_all(ids, base, args.no_3d, args.overwrite, pacer)
+        def progress(results):
+            # a run killed mid-batch (the tool call's limit) still leaves a
+            # record of what it pulled; the fix-ups run at the end
+            if args.out:
+                Path(args.out).write_text(json.dumps(
+                    {"script": "lib_pull", "status": "running",
+                     "lib_name": args.lib_name, "results": results},
+                    indent=1, ensure_ascii=True), encoding="utf-8")
+
+        results, n_retried = _pull_all(ids, base, args.no_3d, args.overwrite,
+                                       pacer, on_result=progress)
         restored = (None if args.no_3d
                     else _restore_models(results, base, pacer))
 

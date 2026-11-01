@@ -248,6 +248,11 @@ class Sheet:
             c = self.sch.components.add(lib_id, reference=ref, value=value,
                                         position=tuple(at[:2]),
                                         rotation=rotation)
+        if footprint is None:
+            # kicad-sch-api leaves the instance's Footprint empty even when
+            # the library symbol names one (lib_pull's symbols all do); KiCad
+            # copies it on placement, so do the same (#412)
+            footprint = lib_footprint(lib_id)
         if footprint:
             c.footprint = footprint
         for key, val in (fields or {}).items():
@@ -1145,6 +1150,26 @@ def _merge_kept(new: dict, old: dict) -> dict:
         elif isinstance(v, dict) and isinstance(out[k], dict):
             out[k] = _merge_kept(v, out[k])
     return out
+
+
+def lib_footprint(lib_id: str) -> str | None:
+    """The Footprint property of the library symbol `lib_id` as the
+    kicad-sch-api cache has it (a project lib must be registered first:
+    Sheet.add_component does), or None when it has none or is unknown."""
+    try:
+        with _quiet():
+            sym = ksa.get_symbol_cache().get_symbol(lib_id)
+    except Exception:  # noqa: BLE001 - unknown lib/symbol: no default
+        return None
+    for node in (getattr(sym, "raw_kicad_data", None) or []):
+        if isinstance(node, list) and len(node) > 2 \
+                and str(node[0]) == "property" and node[1] == "Footprint":
+            val = str(node[2]).strip()
+            if not val:
+                return None
+            nick = lib_id.split(":", 1)[0]
+            return val if ":" in val or not nick else f"{nick}:{val}"
+    return None
 
 
 def pin_table(lib_id: str, lib_paths: list | None = None) -> dict:
