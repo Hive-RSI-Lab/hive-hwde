@@ -41,6 +41,7 @@ sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 
 import kc  # noqa: E402
+import gerblib  # noqa: E402
 from lib import env  # noqa: E402
 
 # Non-copper fab layers, in JLC upload order. Copper layers are inserted from
@@ -167,6 +168,68 @@ def export_ipc_absolute(cli: Path, pcb: Path, ipc_file: Path) -> dict:
         return kc.export_ipcd356(cli, copy, ipc_file)
 
 
+def _hits(path: Path) -> list[str]:
+    return [ln.strip() for ln in path.read_text(encoding="utf-8", errors="replace")
+            .splitlines() if re.match(r"X-?[\d.]+Y-?[\d.]+", ln.strip())]
+
+
+def tidy_backdrill_files(drill_dir: Path) -> list[Path]:
+    """KiCad writes each back-drill span twice, `<name>_Backdrills_Drill_a_b.drl`
+    and `<name>-<layer>-<side>-backdrill.drl`, with the same hits. A fab given
+    both can drill twice or ask, so one of them ships."""
+    files = sorted(p for p in drill_dir.glob("*.drl") if gerblib.is_backdrill(p))
+    named = {tuple(_hits(p)) for p in files if p.name.endswith("-backdrill.drl")}
+    keep = []
+    for p in files:
+        if not p.name.endswith("-backdrill.drl") and tuple(_hits(p)) in named:
+            p.unlink()
+        else:
+            keep.append(p)
+    return keep
+
+
+def write_backdrill_note(pcb: Path, files: list[Path], drill_dir: Path,
+                         name: str) -> Path:
+    """`<name>-backdrill.md` in the zip: what each pass is, in the terms a fab
+    asks for (start side, must-cut layer, must-not-cut layer, depth, tool).
+    Markdown, since gerblib reads any .txt as a drill file."""
+    import sexpdata
+    import geom
+    import viastub
+    bg = geom.load_board(pcb)
+    st = viastub.Stack(bg.stackup)
+    drills = viastub.read_backdrills(sexpdata.loads(pcb.read_text(encoding="utf-8")))
+    rows = {}
+    for v in bg.vias_of():
+        here = drills.get((round(v.at[0], 4), round(v.at[1], 4)))
+        if not here:
+            continue
+        used = viastub.used_layers(bg, v) or [v.layers[0]]
+        for row in viastub.stubs(st, v, used, here):
+            if "backdrill" not in row:
+                continue
+            d = row["backdrill"]
+            key = (d["start"], d["end"], d["size"], row["exit"], row["depth_mm"],
+                   row["barrel_left_mm"], row["length_mm"])
+            rows[key] = rows.get(key, 0) + 1
+    lines = [f"# {name}: back-drill (controlled-depth drilling)", "",
+             "Request back-drilling on the order; it is a priced option at the "
+             "fab, and not every fab offers it.",
+             f"Board thickness (copper + dielectric): {st.thickness:.3f} mm.",
+             "Depth is from the start layer's outer face to the middle of the "
+             "end layer.", "",
+             "| Drill from | Must cut to | Must NOT cut | Tool mm | Holes | "
+             "Depth mm | Barrel left mm | Stub past signal mm |",
+             "|---|---|---|---|---|---|---|---|"]
+    for (start, end, size, exit_, depth, left, stub), n in sorted(rows.items()):
+        lines.append(f"| {start} | {end} | {exit_} | {size:.3f} | {n} | {depth:.3f} "
+                     f"| {left:.3f} | {stub:.3f} |")
+    lines += ["", "Drill files: " + ", ".join(p.name for p in files), ""]
+    path = drill_dir / f"{name}-backdrill.md"
+    path.write_text("\n".join(lines), encoding="utf-8")
+    return path
+
+
 def sha256(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as fh:
@@ -187,12 +250,21 @@ def run(pcb: Path, out_dir: Path, name: str | None = None,
     layer_names = layers or jlc_layer_list(pcb)
     coppers = copper_layers(pcb)
 
+    # a back-drill the board no longer has must not ship from the last export
+    if gerber_dir.is_dir():
+        for old in gerber_dir.glob("*.drl"):
+            if gerblib.is_backdrill(old):
+                old.unlink()
+        (gerber_dir / f"{name}-backdrill.md").unlink(missing_ok=True)
     g = kc.export_gerbers(cli, pcb, gerber_dir, layers=",".join(layer_names))
     if g.get("status") != "pass":
         raise RuntimeError(f"gerber export failed: {g.get('stderr') or g}")
     d = kc.export_drill(cli, pcb, drill_dir, fmt="excellon")
     if d.get("status") != "pass":
         raise RuntimeError(f"drill export failed: {d.get('stderr') or d}")
+    backdrill_files = tidy_backdrill_files(drill_dir)
+    backdrill_note = (write_backdrill_note(pcb, backdrill_files, drill_dir, name)
+                      if backdrill_files else None)
     # The bare-board tester's netlist, in the zip beside the gerbers: JLC,
     # PCBWay and Eurocircuits E-test against it when one is supplied, else
     # against a netlist they extract from the same gerbers (so an export
@@ -239,6 +311,9 @@ def run(pcb: Path, out_dir: Path, name: str | None = None,
         "gerber_zip": str(zip_path) if zip_path else None,
         "gerber_zip_sha256": zip_sha,
         **({"order_notes": str(notes)} if notes else {}),
+        **({"backdrill": {"files": [p.name for p in backdrill_files],
+                          "note": backdrill_note.name}}
+           if backdrill_files else {}),
     }
 
 

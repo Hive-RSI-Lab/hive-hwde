@@ -183,6 +183,16 @@ castellated:
   min_annular_ring_mm: 0.254        # [castell] "same as for regular through-holes": [caps] adv. 1 oz component hole 10 mil
   on_outline_tol_mm: 0.05           # ours: hole centre must sit on Edge.Cuts
 
+# check_via_stubs / via_backdrill (#478). PCBWay's blog "What is PCB Back
+# Drilling" (read 2026-11-01): hole "typically around 4-6 mils larger" than the
+# via; the larger end taken. That page gives no depth tolerance or minimum stub,
+# and I found no PCBWay page that does, so none is carried here: get them with
+# the quote and set depth_tol_mm.
+backdrill:
+  offered: true
+  drill_oversize_mm: 0.15
+  source: https://www.pcbway.com/blog/PCB_Basic_Information/What_is_PCB_Back_Drilling_PCB_Knowledge_9e8a2fea.html
+
 board:
   layers: [1, 2, 4, 6, 8, 10, 12, 14]     # [caps] standard 1-14; [quote] layer menu
   max_size_mm: [508, 600]        # [caps] adv. multilayer 508x600, 1-2L 508x610 (standard table: 600x1200 / 560x1150)

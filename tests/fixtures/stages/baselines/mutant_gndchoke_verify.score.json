@@ -37,6 +37,7 @@
    "check_surge": 0,
    "check_testpoints": 0,
    "check_usb_phy": 0,
+   "check_via_stubs": 0,
    "check_vias": 0,
    "check_wicking": 2
   },

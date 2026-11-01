@@ -70,6 +70,7 @@ _INTAKE = "materializes a whole KiCad project through intake"
 SLOW = {
     "tests/test_check_testpoints.py::test_access_side_and_position_match_kicad_ipcd356": "exports pinned lite-main's IPC-D-356 with kicad-cli",
     "tests/test_check_wicking.py::test_mask_web_agrees_with_the_kicad_f_mask_gerber": _TOOLS,
+    "tests/test_via_stubs.py::test_live_backdrill_round_trip": _TOOLS,
     "tests/test_netlist_compare.py::test_pinned_board_ships_a_netlist_its_gerbers_match": "exports the pinned lite-main/core fab packages with kicad-cli",
     "tests/test_route_escape.py::test_live_escape_synthetic_bga": "runs KRT bga_fanout and kicad-cli DRC on a synthetic BGA",
     "tests/test_zroute.py::test_live_route_critical_pair_l1_l3_drc_clean": "runs KRT route_diff/route and kicad-cli DRC on a synthetic 6-layer board",

@@ -23,6 +23,10 @@ meta:
 capabilities_file: ../jlc_capabilities.yaml   # board:, castellated:, design_rules:
 pricing_file: ../jlc_pricing.yaml             # pricing model "table"
 
+# check_via_stubs / via_backdrill (#478): JLC doesn't offer back-drill, as #478
+# states; not re-read from JLC's pages for this entry.
+backdrill: {offered: false}
+
 board:
   layers: [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
   max_size_mm: [500, 400]        # 2-layer; multilayer is smaller, see source
