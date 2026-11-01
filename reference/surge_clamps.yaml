@@ -1,0 +1,23 @@
+# Clamps whose surge ratings aren't given by the TVS family rule in
+# scripts/lib/surgelib.py (SMAJ/SMBJ/SMCJ/P6KE/P4SMA/SMF + standoff). 8/20 us
+# numbers, the waveform IEC 61000-4-5 delivers into a short.
+#
+# match: regex on the part's value / MPN (case-insensitive). vrwm, vbr
+# (typical or the middle of the range), vc at ipp_a. ppk_w optional.
+# verified: false = typed from memory of the datasheet, not re-read.
+# Constraints surge.clamps.<ref> overrides a row.
+parts:
+  - match: 'USBLC6-[24]'
+    vrwm: 5.25
+    vbr: 6.1
+    vc: 17
+    ipp_a: 5
+    source: ST USBLC6-2/-4 datasheet, Ipp 5 A 8/20 us, Vcl 17 V at 5 A
+    verified: false
+  - match: 'SRV05-4'
+    vrwm: 5
+    vbr: 6.0
+    vc: 20
+    ipp_a: 25
+    source: Semtech SRV05-4 datasheet, Ipp 25 A 8/20 us
+    verified: false

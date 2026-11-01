@@ -140,6 +140,18 @@ Consumers per key (script -> phase):
   "testpoints": {"nets": ["+*", "GND", "/NRST"], "min_coverage_pct": 90,
                  "fixture": false},
 
+  // check_surge (P8, #492): IEC 61000-4-5 surge / 61000-4-4 EFT on cable
+  // ports. Only declared ports are judged. kind picks the assumed level from
+  // reference/surge_levels.yaml (environment residential | industrial, by
+  // cable_m and outdoor); level_kv / eft_kv force one. earthed adds the
+  // line-earth modes on dc_power and mains. nets (globs) narrows the lines
+  // (a USB-C port: VBUS). clamps overrides a clamp's ratings {vbr, vc, ipp_a
+  // (8/20), ppk_w, vrwm}; abs_max a pin's limit (ref or ref.pin).
+  "surge": {"environment": "residential",
+            "ports": {"J1": {"kind": "dc_power", "cable_m": 2, "nets": ["VBUS"],
+                             "level_kv": 0.5}},
+            "abs_max": {"U2.3": 30}},
+
   // check_creepage (P8) + rules_gen (P5, T6): IPC-2221 spacing for pairs
   // > 30 V apart. rules_gen emits named aiee_hv_* clearance DRU rules from
   // these (never hand-author HV rules); check_creepage audits the routed
