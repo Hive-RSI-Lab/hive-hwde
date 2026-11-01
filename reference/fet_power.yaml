@@ -7,6 +7,10 @@
 # zth: single-pulse junction-ambient transient thermal impedance, [seconds,
 #      C/W] points (log-log interpolated). Where the datasheet gives only a
 #      single-pulse SOA power curve P(t) at 25 C, zth = (tj_max - 25) / P(t).
+# soa_vds, soa_vds_exp, soa_vds_knee (optional): zth was read off the SOA
+#      at VDS = soa_vds on a part whose SOA lines fall faster than 1/VDS
+#      (linear-mode instability); the allowed power scales as
+#      (soa_vds / max(VDS, knee))^exp - lib/soa.py.
 # spice: a .model card (ngspice VDMOS) fitted to the datasheet curves; the
 #      model is named by sim_inrush.py, so write it without a name:
 #      "VDMOS pchan Vto=... ".
@@ -45,10 +49,13 @@ fets:
     # ~2 V (linear-mode thermal instability), so these are far tighter than
     # the diagram 4 ZthJC (single pulse 0.016 / 0.068 / 0.30 / 0.62 K/W at
     # 10 us / 100 us / 1 ms / 10 ms, 0.9 K/W flat from 100 ms) and are the
-    # binding limit for a switch ramping in its linear region; at 20 V the
-    # SOA allows twice the power these give.
+    # binding limit for a switch ramping in its linear region; soa_vds
+    # scales them to the pulse's VDS (20 V: twice the power).
     zth: [[1.0e-5, 0.019], [1.0e-4, 0.36], [1.0e-3, 4.4], [1.0e-2, 21.0],
           [1000.0, 50.0]]
+    soa_vds: 40
+    soa_vds_exp: 1
+    soa_vds_knee: 2.0
     spice: >-
       VDMOS nchan Vto=1.95 Kp=490 Rs=0.2m Rd=0.5m Rg=0.8 lambda=0.001
       mtriode=2 Cgdmax=0.75n Cgdmin=0.16n a=0.5 Cgs=6.6n Cjo=9.5n m=0.5
