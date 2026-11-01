@@ -21,8 +21,21 @@
 # component-hole ring dfm_check holds every non-via plated hole to.
 # Invariant (tests): min_via_diameter_mm >= min_via_drill_mm + 2 x via ring.
 #
-# Values are JLCPCB's *manufacturing minimums*. rules_gen may set a design to a
-# more conservative value; dfm_check flags anything BELOW these.
+# min_* values are what a design is held to (rules_gen, fabfloors, the
+# routers): JLC's preferred figure or a margin over its minimum. Where JLC
+# publishes a lower ABSOLUTE floor, the row carries it as abs_min_* (#554,
+# JLC page fetched 2026-11-01): dfm_check fails only below abs_min_* and
+# warns between abs_min_* and min_* (naming the cost tier where JLC charges
+# for it). A key with no abs_min_* fails below min_* as before.
+#   via: 'Min. via hole size/diameter 0.15/0.25'; 'via diameter should be
+#     0.1 mm (0.15 preferred) larger than the hole' (ring 0.05 / 0.075);
+#     '0.1/0.15 hole with any via diameter, and 0.2/0.25 hole with via
+#     diameter < 0.45, will cost more' (a price tier, not a floor).
+#   'Copper clearance from routed board edges >= 0.2' (V-cut 0.4: the min_
+#     0.3 keeps room for the +-0.2 routing tolerance).
+#   'Via hole-to-hole spacing 0.2', 'Pad hole-to-hole spacing 0.45'
+#     (castellated holes: the castellated block). A pair of board vias is
+#     held to the via figure, any pair with a pad hole to the pad figure.
 #
 # COVERAGE BOUNDARY - a key's presence here does NOT imply a local check reads
 # it. Verified consumption (T6):
@@ -106,6 +119,14 @@ design_rules:
     min_copper_to_edge_mm: 0.3
     min_hole_to_hole_mm: 0.5
     min_hole_to_edge_mm: 0.5
+    abs_min_via_drill_mm: 0.15       # JLC absolute (#554); 0.1/0.15 costs more
+    abs_min_via_diameter_mm: 0.25    # JLC absolute (#554); < 0.45 costs more
+    abs_min_annular_ring_mm: 0.05    # JLC via ring absolute (0.075 preferred)
+    abs_min_hole_diameter_mm: 0.15   # JLC drill 0.15-6.3 (0.15 costs more)
+    abs_min_copper_to_edge_mm: 0.2   # JLC routed edge (V-cut 0.4)
+    abs_min_hole_to_hole_mm: 0.45    # JLC pad hole-to-hole
+    min_via_hole_to_hole_mm: 0.5     # via-to-via: designed like any hole pair
+    abs_min_via_hole_to_hole_mm: 0.2 # JLC via hole-to-hole
     min_silk_width_mm: 0.15
     min_silk_height_mm: 1.0          # ~40 mil legible floor
     min_solder_mask_dam_mm: 0.1
@@ -126,6 +147,14 @@ design_rules:
     min_copper_to_edge_mm: 0.3
     min_hole_to_hole_mm: 0.5
     min_hole_to_edge_mm: 0.5
+    abs_min_via_drill_mm: 0.15       # JLC absolute (#554); 0.1/0.15 costs more
+    abs_min_via_diameter_mm: 0.25    # JLC absolute (#554); < 0.45 costs more
+    abs_min_annular_ring_mm: 0.05    # JLC via ring absolute (0.075 preferred)
+    abs_min_hole_diameter_mm: 0.15   # JLC drill 0.15-6.3 (0.15 costs more)
+    abs_min_copper_to_edge_mm: 0.2   # JLC routed edge (V-cut 0.4)
+    abs_min_hole_to_hole_mm: 0.45    # JLC pad hole-to-hole
+    min_via_hole_to_hole_mm: 0.5     # via-to-via: designed like any hole pair
+    abs_min_via_hole_to_hole_mm: 0.2 # JLC via hole-to-hole
     min_silk_width_mm: 0.15
     min_silk_height_mm: 1.0
     min_solder_mask_dam_mm: 0.1
@@ -146,6 +175,14 @@ design_rules:
     min_copper_to_edge_mm: 0.3
     min_hole_to_hole_mm: 0.5
     min_hole_to_edge_mm: 0.4
+    abs_min_via_drill_mm: 0.15       # JLC absolute (#554); 0.1/0.15 costs more
+    abs_min_via_diameter_mm: 0.25    # JLC absolute (#554); < 0.45 costs more
+    abs_min_annular_ring_mm: 0.05    # JLC via ring absolute (0.075 preferred)
+    abs_min_hole_diameter_mm: 0.15   # JLC drill 0.15-6.3 (0.15 costs more)
+    abs_min_copper_to_edge_mm: 0.2   # JLC routed edge (V-cut 0.4)
+    abs_min_hole_to_hole_mm: 0.45    # JLC pad hole-to-hole
+    min_via_hole_to_hole_mm: 0.5     # via-to-via: designed like any hole pair
+    abs_min_via_hole_to_hole_mm: 0.2 # JLC via hole-to-hole
     min_silk_width_mm: 0.15
     min_silk_height_mm: 1.0
     min_solder_mask_dam_mm: 0.1
@@ -166,6 +203,14 @@ design_rules:
     min_copper_to_edge_mm: 0.3
     min_hole_to_hole_mm: 0.5
     min_hole_to_edge_mm: 0.4
+    abs_min_via_drill_mm: 0.15       # JLC absolute (#554); 0.1/0.15 costs more
+    abs_min_via_diameter_mm: 0.25    # JLC absolute (#554); < 0.45 costs more
+    abs_min_annular_ring_mm: 0.05    # JLC via ring absolute (0.075 preferred)
+    abs_min_hole_diameter_mm: 0.15   # JLC drill 0.15-6.3 (0.15 costs more)
+    abs_min_copper_to_edge_mm: 0.2   # JLC routed edge (V-cut 0.4)
+    abs_min_hole_to_hole_mm: 0.45    # JLC pad hole-to-hole
+    min_via_hole_to_hole_mm: 0.5     # via-to-via: designed like any hole pair
+    abs_min_via_hole_to_hole_mm: 0.2 # JLC via hole-to-hole
     min_silk_width_mm: 0.15
     min_silk_height_mm: 1.0
     min_solder_mask_dam_mm: 0.1
@@ -186,6 +231,14 @@ design_rules:
     min_copper_to_edge_mm: 0.3
     min_hole_to_hole_mm: 0.5
     min_hole_to_edge_mm: 0.4
+    abs_min_via_drill_mm: 0.15       # JLC absolute (#554); 0.1/0.15 costs more
+    abs_min_via_diameter_mm: 0.25    # JLC absolute (#554); < 0.45 costs more
+    abs_min_annular_ring_mm: 0.05    # JLC via ring absolute (0.075 preferred)
+    abs_min_hole_diameter_mm: 0.15   # JLC drill 0.15-6.3 (0.15 costs more)
+    abs_min_copper_to_edge_mm: 0.2   # JLC routed edge (V-cut 0.4)
+    abs_min_hole_to_hole_mm: 0.45    # JLC pad hole-to-hole
+    min_via_hole_to_hole_mm: 0.5     # via-to-via: designed like any hole pair
+    abs_min_via_hole_to_hole_mm: 0.2 # JLC via hole-to-hole
     min_silk_width_mm: 0.15
     min_silk_height_mm: 1.0
     min_solder_mask_dam_mm: 0.1
