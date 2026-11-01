@@ -1,0 +1,10 @@
+# check_surge: IEC 61000-4-5 surge and 61000-4-4 EFT on declared cable ports
+# (hive-hwde #492). Per port in constraints surge.ports: the assumed level,
+# the clamp's stress against its 8/20 rating, Vc(I) against the abs max of the
+# pins behind it. A board that declares no ports has nothing to judge.
+name: check_surge
+needs: []
+args: []
+optional:
+  constraints: [--constraints, "{constraints}"]
+  parts: [--parts, "{parts}"]

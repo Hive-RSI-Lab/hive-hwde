@@ -1,0 +1,53 @@
+# Immunity test levels check_surge assumes for a declared cable port, read
+# from the generic immunity standards. A finding quotes the level as an
+# ASSUMPTION: the product's own standard and the customer's test plan decide,
+# so constraints surge.ports.<ref>.level_kv / eft_kv overrides any row.
+#
+# surge: IEC 61000-4-5 combination wave, per coupling mode.
+#   ll = line to line, le = line to ground. z_ohm is the coupling network's
+#   series impedance, added to the generator's 2 ohm: Ed.3 Fig. 5-13 give
+#   none line-line and 10 ohm line-earth on power, 40 ohm in total on
+#   interconnection lines.
+#   le on a power port needs an earth: the board floats otherwise, and only
+#   stray capacitance carries the surge (constraints port earthed: true).
+# eft: IEC 61000-4-4 burst, 5/50 ns, 50 ohm generator.
+# min_cable_m: the level applies only above this cable length (or outdoor).
+#   0 = always.
+# verified: false = typed from memory of the standard, not re-read (the IEC
+# texts are paid; none is on the tower). The review that relies on a row
+# checks the standard and flips it.
+source: >-
+  IEC 61000-6-1 (residential) / IEC 61000-6-2 (industrial) port tables and
+  EN 55035 wired-network ports; coupling from IEC 61000-4-5:2014
+verified: false
+environments:
+  residential:
+    dc_power:
+      surge: {min_cable_m: 30, modes: [{mode: ll, kv: 0.5, z_ohm: 0},
+                                        {mode: le, kv: 0.5, z_ohm: 10}]}
+      eft: {min_cable_m: 3, kv: 0.5}
+    mains:
+      surge: {min_cable_m: 0, modes: [{mode: ll, kv: 1.0, z_ohm: 0},
+                                      {mode: le, kv: 2.0, z_ohm: 10}]}
+      eft: {min_cable_m: 0, kv: 1.0}
+    signal:
+      surge: {min_cable_m: 30, modes: [{mode: le, kv: 1.0, z_ohm: 40}]}
+      eft: {min_cable_m: 3, kv: 0.5}
+    ethernet:
+      surge: {min_cable_m: 30, modes: [{mode: le, kv: 1.0, z_ohm: 40}]}
+      eft: {min_cable_m: 3, kv: 0.5}
+  industrial:
+    dc_power:
+      surge: {min_cable_m: 30, modes: [{mode: ll, kv: 0.5, z_ohm: 0},
+                                        {mode: le, kv: 0.5, z_ohm: 10}]}
+      eft: {min_cable_m: 3, kv: 2.0}
+    mains:
+      surge: {min_cable_m: 0, modes: [{mode: ll, kv: 1.0, z_ohm: 0},
+                                      {mode: le, kv: 2.0, z_ohm: 10}]}
+      eft: {min_cable_m: 0, kv: 2.0}
+    signal:
+      surge: {min_cable_m: 30, modes: [{mode: le, kv: 1.0, z_ohm: 40}]}
+      eft: {min_cable_m: 3, kv: 1.0}
+    ethernet:
+      surge: {min_cable_m: 30, modes: [{mode: le, kv: 1.0, z_ohm: 40}]}
+      eft: {min_cable_m: 3, kv: 1.0}
