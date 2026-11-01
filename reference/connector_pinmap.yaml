@@ -109,3 +109,19 @@ standard_headers:
       3V3: '^\+?(3V3|3\.3V)$'
       5V: '^\+?(5V|5V0|5\.0V)$'
       GND: '^(D|P)?GND$'
+
+# FFC/FPC sockets for a mating_pairs cable (lib/cablelib.py, #485). Which pin
+# meets which across a flat cable depends on the cable type (A same-side, B
+# opposite-side contacts) and on each socket's handedness, set by:
+#   contact - top (contacts on the side away from the board), bottom (towards
+#             it) or dual (both: the cable goes in either way up)
+#   entry   - tabs (the slot opens on the mounting-tab side, away from the
+#             signal leads) or leads (it opens over the signal leads)
+# The same part at both ends needs neither (Type B is then straight, Type A
+# reversed). A pair's cable.ends {ref: {contact, entry}} overrides a row.
+# Fill rows from the maker's drawing only; say where it came from.
+ffc_sockets:
+  - name: xunpu-fpc-05f
+    match: 'FPC-05F-\d+PH20'
+    contact: bottom          # LCSC C2856803 listing; drawing PDF unreadable
+    source: 'LCSC C2856803 listing (hifi-receiver docs/review-2/dfm.md)'
