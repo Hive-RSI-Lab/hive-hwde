@@ -32,6 +32,7 @@
    "check_model_paths": 0,
    "check_power_path": 0,
    "check_reset_drive": 0,
+   "check_rf_match": 0,
    "check_si": 0,
    "check_straps": 0,
    "check_surge": 0,

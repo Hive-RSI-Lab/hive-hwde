@@ -68,6 +68,8 @@ _TOOLS = "runs the live toolchain (kicad-cli, KiCad's python, java)"
 _BOARD = "runs a whole fixture board's checks or bench stage"
 _INTAKE = "materializes a whole KiCad project through intake"
 SLOW = {
+    "tests/test_rf_synth.py::test_live_ngspice_ac_gives_the_same_rl": "runs ngspice AC decks in a worker",
+    "tests/test_rf_synth.py::test_live_ngspice_mc_matches_the_closed_form": "runs a 40-draw Monte Carlo through ngspice workers",
     "tests/test_check_testpoints.py::test_access_side_and_position_match_kicad_ipcd356": "exports pinned lite-main's IPC-D-356 with kicad-cli",
     "tests/test_check_wicking.py::test_mask_web_agrees_with_the_kicad_f_mask_gerber": _TOOLS,
     "tests/test_via_stubs.py::test_live_backdrill_round_trip": _TOOLS,
@@ -93,6 +95,8 @@ SLOW = {
     "tests/test_build_modes.py::test_board_init_cli_does_not_refuse_a_fixed_outline": _TOOLS,
     "tests/test_bench.py::test_offline_fixture_matches_baseline": _BOARD,
     "tests/test_route_tune.py::test_tune_blinky2_live": _TOOLS,
+    "tests/test_teardrops.py::test_live_teardrops_led_count_drc_idempotent": _TOOLS,
+    "tests/test_teardrops.py::test_live_teardrops_bb_adc_count": _TOOLS,
     "tests/test_dfm_zone_fill.py::test_live_refill_confirms_dfm1": _TOOLS,
     "tests/test_bench.py::test_known_answers_fire_where_expected": _BOARD,
     "tests/test_mcp_server.py::test_dfm_check_is_read_only": _BOARD,

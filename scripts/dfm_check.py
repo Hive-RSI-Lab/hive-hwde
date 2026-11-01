@@ -715,6 +715,38 @@ def check_annular_ring(fab, rules, vios: list, cast=(), bg=None) -> None:
                   lo_via, unit="ring_mm")
 
 
+def check_teardrops(pcb: Path, caps: dict, vios: list) -> dict:
+    """Ring breakout vs teardrops, on the BOARD file (#480,
+    lib/teardroplib.py): gerbers can't tell a teardrop zone from a pour.
+    A via / PTH ring under the fab's absolute ring + drill wander
+    (jlc_capabilities board: min_ring_abs_mm + drill_wander_mm, JLC 0.05 +
+    0.075) with a track join that has no teardrop and no same-net pour is
+    dfm_ring_breakout (warning; error where teardrops are required). On a
+    board that requires them (a FLEX_* rule area, or constraints
+    teardrops.required in the constraints.json beside the board) every such
+    join is dfm_teardrop_missing (error)."""
+    import teardroplib as tdl
+    board_caps = caps.get("board") or {}
+    wander = float(board_caps.get("drill_wander_mm", tdl.DRILL_WANDER_MM))
+    abs_min = float(board_caps.get("min_ring_abs_mm", tdl.MIN_RING_ABS_MM))
+    cfg = tdl.config(tdl.load_constraints(pcb.parent / "constraints.json"))
+    board = tdl.read(pcb, cfg)
+    req = tdl.required(cfg, board.flex)
+    found = tdl.ring_findings(board, req=req, wander=wander, abs_min=abs_min)
+    for f in found:
+        vios.append(checklib.violation(
+            CHECK, f["severity"], f["pos"], f["layers"][0], f["net"], [],
+            f["msg"], SOURCE, kind=f["kind"], item=f["item"],
+            ring_mm=f["ring_mm"], limit_mm=f["limit_mm"], layers=f["layers"]))
+    holes = [it for it in board.items if it.kind != "smd"]
+    return {"required": req, "flex_areas": board.flex,
+            "drops": board.drop_count,
+            "items_with_drops": sum(1 for it in holes if it.drops),
+            "ring_limit_mm": round(abs_min + wander, 4),
+            "below_limit": sum(1 for it in holes if it.ring_mm is not None
+                               and it.ring_mm < abs_min + wander - 1e-9)}
+
+
 # -------------------------------------------------------- silk / mask checks
 
 def check_silk(fab, rules, vios: list, bg=None) -> None:
@@ -1244,6 +1276,7 @@ DFM_FAMILIES = {
     "release": ("dfm_open_outline", "dfm_missing_layer", "dfm_no_drill"),
     "castellation": castellation.KINDS + ("castellated_rules_unknown",),
     "netlist": ("dfm_net_short", "dfm_net_open", "dfm_netlist_name_clash"),
+    "teardrop": ("dfm_ring_breakout", "dfm_teardrop_missing"),
 }
 
 
@@ -1365,6 +1398,8 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
                             "abs_min_hole_to_hole_mm"))
             check_annular_ring(fab, rules, vios, cast, bg=bg)
             check_via_sizes(rules, vios, bg)
+        if "teardrop" not in skip:
+            facts["teardrop"] = check_teardrops(pcb, caps, vios)
         if "castellation" not in skip and "castellated" not in caps:
             # a vendor that publishes no castellation rules: nothing to
             # measure against, so a castellated board can't pass there
@@ -1440,7 +1475,8 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
 
         # U2 coverage (codex C7): record which families never ran and why.
         skipped_cov: dict[str, str] = {}
-        for fam in ("copper", "drill", "silk", "castellation", "zone_fill"):
+        for fam in ("copper", "drill", "silk", "castellation", "zone_fill",
+                    "teardrop"):
             if fam in skip:
                 skipped_cov[fam] = "skipped via --skip"
         if zone_fill_skipped:

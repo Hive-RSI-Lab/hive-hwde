@@ -3279,6 +3279,240 @@
    "kind": "corridor_void",
    "verdict": "real",
    "reason": "GND tracks routed on In2 cut the +3V3 plane under RXD1's B.Cu run; the return path detours round the cut"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": "GND",
+   "refs": [],
+   "pos": [
+    86.8,
+    165.95
+   ],
+   "kind": "dfm_ring_breakout",
+   "verdict": "real",
+   "reason": "0.5/0.3 via, ring 0.1 mm under JLC's 0.05 abs ring + 0.075 drill wander, with a track join and no teardrop: the drill can break out at the neck (route_teardrops.py fixes it)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": "GND",
+   "refs": [],
+   "pos": [
+    107.6,
+    148.8
+   ],
+   "kind": "dfm_ring_breakout",
+   "verdict": "real",
+   "reason": "0.5/0.3 via, ring 0.1 mm under JLC's 0.05 abs ring + 0.075 drill wander, with a track join and no teardrop: the drill can break out at the neck (route_teardrops.py fixes it)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": "GND",
+   "refs": [],
+   "pos": [
+    125.65,
+    147.85
+   ],
+   "kind": "dfm_ring_breakout",
+   "verdict": "real",
+   "reason": "0.5/0.3 via, ring 0.1 mm under JLC's 0.05 abs ring + 0.075 drill wander, with a track join and no teardrop: the drill can break out at the neck (route_teardrops.py fixes it)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": "GND",
+   "refs": [],
+   "pos": [
+    124.95,
+    142.55
+   ],
+   "kind": "dfm_ring_breakout",
+   "verdict": "real",
+   "reason": "0.5/0.3 via, ring 0.1 mm under JLC's 0.05 abs ring + 0.075 drill wander, with a track join and no teardrop: the drill can break out at the neck (route_teardrops.py fixes it)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": "GND",
+   "refs": [],
+   "pos": [
+    104.2,
+    198.6
+   ],
+   "kind": "dfm_ring_breakout",
+   "verdict": "real",
+   "reason": "0.5/0.3 via, ring 0.1 mm under JLC's 0.05 abs ring + 0.075 drill wander, with a track join and no teardrop: the drill can break out at the neck (route_teardrops.py fixes it)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": "GND",
+   "refs": [],
+   "pos": [
+    77.25,
+    195.75
+   ],
+   "kind": "dfm_ring_breakout",
+   "verdict": "real",
+   "reason": "0.5/0.3 via, ring 0.1 mm under JLC's 0.05 abs ring + 0.075 drill wander, with a track join and no teardrop: the drill can break out at the neck (route_teardrops.py fixes it)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": "GND",
+   "refs": [],
+   "pos": [
+    52.35,
+    168.4
+   ],
+   "kind": "dfm_ring_breakout",
+   "verdict": "real",
+   "reason": "0.5/0.3 via, ring 0.1 mm under JLC's 0.05 abs ring + 0.075 drill wander, with a track join and no teardrop: the drill can break out at the neck (route_teardrops.py fixes it)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": "GND",
+   "refs": [],
+   "pos": [
+    121.7,
+    144.2
+   ],
+   "kind": "dfm_ring_breakout",
+   "verdict": "real",
+   "reason": "0.5/0.3 via, ring 0.1 mm under JLC's 0.05 abs ring + 0.075 drill wander, with a track join and no teardrop: the drill can break out at the neck (route_teardrops.py fixes it)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": "GND",
+   "refs": [],
+   "pos": [
+    120.5,
+    145.4
+   ],
+   "kind": "dfm_ring_breakout",
+   "verdict": "real",
+   "reason": "0.5/0.3 via, ring 0.1 mm under JLC's 0.05 abs ring + 0.075 drill wander, with a track join and no teardrop: the drill can break out at the neck (route_teardrops.py fixes it)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": "GND",
+   "refs": [],
+   "pos": [
+    126.3,
+    150.5
+   ],
+   "kind": "dfm_ring_breakout",
+   "verdict": "real",
+   "reason": "0.5/0.3 via, ring 0.1 mm under JLC's 0.05 abs ring + 0.075 drill wander, with a track join and no teardrop: the drill can break out at the neck (route_teardrops.py fixes it)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": "GND",
+   "refs": [],
+   "pos": [
+    111.25,
+    141.9
+   ],
+   "kind": "dfm_ring_breakout",
+   "verdict": "real",
+   "reason": "0.5/0.3 via, ring 0.1 mm under JLC's 0.05 abs ring + 0.075 drill wander, with a track join and no teardrop: the drill can break out at the neck (route_teardrops.py fixes it)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": "GND",
+   "refs": [],
+   "pos": [
+    81.3,
+    193.1
+   ],
+   "kind": "dfm_ring_breakout",
+   "verdict": "real",
+   "reason": "0.5/0.3 via, ring 0.1 mm under JLC's 0.05 abs ring + 0.075 drill wander, with a track join and no teardrop: the drill can break out at the neck (route_teardrops.py fixes it)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": "GND",
+   "refs": [],
+   "pos": [
+    109.9,
+    150.2
+   ],
+   "kind": "dfm_ring_breakout",
+   "verdict": "real",
+   "reason": "0.5/0.3 via, ring 0.1 mm under JLC's 0.05 abs ring + 0.075 drill wander, with a track join and no teardrop: the drill can break out at the neck (route_teardrops.py fixes it)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": "+5VA",
+   "refs": [],
+   "pos": [
+    102.7,
+    159.2
+   ],
+   "kind": "dfm_ring_breakout",
+   "verdict": "real",
+   "reason": "0.5/0.3 via, ring 0.1 mm under JLC's 0.05 abs ring + 0.075 drill wander, with a track join and no teardrop: the drill can break out at the neck (route_teardrops.py fixes it)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": "/linein/ADC_RP",
+   "refs": [],
+   "pos": [
+    130.35,
+    156.45
+   ],
+   "kind": "dfm_ring_breakout",
+   "verdict": "real",
+   "reason": "0.5/0.3 via, ring 0.1 mm under JLC's 0.05 abs ring + 0.075 drill wander, with a track join and no teardrop: the drill can break out at the neck (route_teardrops.py fixes it)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": "/IR_IN",
+   "refs": [],
+   "pos": [
+    62.55,
+    218.25
+   ],
+   "kind": "dfm_ring_breakout",
+   "verdict": "real",
+   "reason": "0.5/0.3 via, ring 0.1 mm under JLC's 0.05 abs ring + 0.075 drill wander, with a track join and no teardrop: the drill can break out at the neck (route_teardrops.py fixes it)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": "/IR_IN",
+   "refs": [],
+   "pos": [
+    59.1,
+    218.15
+   ],
+   "kind": "dfm_ring_breakout",
+   "verdict": "real",
+   "reason": "0.5/0.3 via, ring 0.1 mm under JLC's 0.05 abs ring + 0.075 drill wander, with a track join and no teardrop: the drill can break out at the neck (route_teardrops.py fixes it)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": "/power_in/CC2",
+   "refs": [],
+   "pos": [
+    43.6,
+    185.4
+   ],
+   "kind": "dfm_ring_breakout",
+   "verdict": "real",
+   "reason": "0.5/0.3 via, ring 0.1 mm under JLC's 0.05 abs ring + 0.075 drill wander, with a track join and no teardrop: the drill can break out at the neck (route_teardrops.py fixes it)"
   }
  ]
 }

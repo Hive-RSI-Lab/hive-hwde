@@ -75,6 +75,9 @@ The cases (docs/solvers.md has the measured errors):
                         f = c/2 sqrt((m/a)^2 + (n/b)^2 + (p/d)^2)
     fasthenry_bar       a 10 x 1 x 0.035 mm copper bar: R = l/(sigma w t),
                         L vs Ruehli's partial self-inductance
+    fasthenry_pair      two parallel 10 x 0.2 x 0.035 mm bars 0.2 mm apart:
+                        partial mutual M vs Grover's filament formula at
+                        the bars' GMD (check_esd's corridor coupling)
     fastercap_cube      a 1 mm cube's capacitance vs 0.66067813 * 4 pi eps0 a
     thermal_fin         thermalfv's 1D fin vs 1/cosh(mL)
     thermal_point       thermalfv's point source on a plate vs P/(2 pi kt) K0(mr)
@@ -612,6 +615,24 @@ def case_fasthenry_bar(work: Path) -> dict:
                   "L = mu0 l/2pi (ln(2l/(w+t)) + 1/2 + 0.2235 (w+t)/l)")
 
 
+PAIR = (10.0, 0.2, 0.035, 0.2)
+
+
+def case_fasthenry_pair(work: Path) -> dict:
+    l, w, t, gap = PAIR
+    (work / "pair.inp").write_text(em.fasthenry_pair(l, w, t, gap, f=1e3))
+    r = solvers.run("fasthenry", ["pair.inp"], cwd=work, timeout=1200)
+    if not (work / "Zc.mat").exists():
+        raise solvers.SolverError(f"FastHenry: {(r.stdout + r.stderr)[-300:]}")
+    f, z = em.read_zc_matrix(work / "Zc.mat")
+    w_ = 2 * math.pi * f
+    return _worst("fasthenry_pair", "fasthenry", "M (H), L (H)",
+                  [(z[0][1].imag / w_, em.bar_pair_mutual(l, w, t, gap)),
+                   (z[0][0].imag / w_, em.bar_partial_inductance(l, w, t))],
+                  5.0, f"two {l}x{w}x{t} mm Cu bars {gap} mm apart at 1 kHz: "
+                  "M = Grover's filament mutual at the GMD")
+
+
 def case_fastercap_cube(work: Path) -> dict:
     a = 1.0
     (work / "cube.txt").write_text(em.fastercap_cube(a, 4))
@@ -684,6 +705,7 @@ CASES = {
     "openems_microstrip": ("openems", case_openems_microstrip),
     "palace_cavity": ("palace", case_palace_cavity),
     "fasthenry_bar": ("fasthenry", case_fasthenry_bar),
+    "fasthenry_pair": ("fasthenry", case_fasthenry_pair),
     "fastercap_cube": ("fastercap", case_fastercap_cube),
     "thermal_fin": (None, case_thermal_fin),
     "thermal_point": (None, case_thermal_point),
