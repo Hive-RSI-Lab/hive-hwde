@@ -261,3 +261,63 @@ def test_fp_verify_holds_a_library_footprint_to_the_drawing(tmp_path):
     vs, facts, _ = fp_verify.verify(mod, ds, 0.05, 0.1)
     assert _kinds(vs, "error") == ["post_holes_missing"] + ["tht_pin_tight"] * 3
     assert facts["mechanical"]["posts"] == [{"count": 2, "holes": 0}]
+
+
+# ------------------------------------------------- IPC-2222 hole vs lead (#474)
+
+def header(drill=1.0, n=5, fpid="Connector_PinHeader_2.54mm:"
+           "PinHeader_2x05_P2.54mm_Vertical"):
+    """A 2xN 2.54 mm header at (10, 5) with no extraction."""
+    pads = "".join(_tht(str(2 * i + r + 1), 2.54 * r, 2.54 * i, drill, size=1.7)
+                   for i in range(n) for r in range(2))
+    return (f'  (footprint "{fpid}" (layer "F.Cu")\n    (at 10 5)\n'
+            f'    (property "Reference" "J3" (at 0 0 0))\n'
+            f'    (attr through_hole)\n{pads})\n')
+
+
+def test_stock_header_drill_under_ipc2222_warns_once(tmp_path):
+    # 0.64 mm square post: 0.905 mm diagonal, level C minimum 1.055 mm
+    vs, facts = ccf.check(_board(tmp_path, header(1.0)), None)
+    assert _kinds(vs) == ["tht_hole_ipc2222"]
+    w = vs[0]
+    assert w["severity"] == "warning" and w["refs"] == ["J3"]
+    assert w["min_hole_mm"] == pytest.approx(1.055, abs=1e-3)
+    assert w["gap_mm"] == pytest.approx(0.095, abs=1e-3)
+    assert w["pads"] == [str(i) for i in range(1, 11)]
+    assert "1.10 mm" in w["msg"]
+    assert facts["parts"][0]["lead_source"] == "stock"
+
+
+def test_stock_header_at_ipc2222_passes(tmp_path):
+    vs, _ = ccf.check(_board(tmp_path, header(1.1)), None)
+    assert vs == []
+
+
+def test_stock_header_drill_under_the_lead_is_an_error(tmp_path):
+    vs, _ = ccf.check(_board(tmp_path, header(0.9)), None)
+    assert _kinds(vs, "error") == ["tht_pin_tight"] * 10
+    assert _kinds(vs, "warning") == []
+
+
+def test_two_mm_header_uses_its_own_post(tmp_path):
+    # 0.5 mm post: 0.707 diagonal + 0.15 = 0.857; 0.8 mm drill warns
+    fp = "Connector_PinHeader_2.00mm:PinHeader_1x04_P2.00mm_Vertical"
+    vs, _ = ccf.check(_board(tmp_path, header(0.8, n=2, fpid=fp)), None)
+    assert _kinds(vs) == ["tht_hole_ipc2222"]
+    assert vs[0]["min_hole_mm"] == pytest.approx(0.857, abs=1e-3)
+
+
+def test_drawing_lead_between_tolerance_and_ipc2222_warns(tmp_path):
+    # 0.94 mm diagonal in a 1.05 mm hole: goes in (0.11 > 0.08), under IPC C
+    pcb = _board(tmp_path, rca(drill=1.05, posts=True, fab_front=5.0))
+    mech = {**MECH, "pins": [{"w_mm": 0.8, "t_mm": 0.5}]}
+    vs, _ = ccf.check(pcb, _parts(tmp_path, mech))
+    assert _kinds(vs) == ["tht_hole_ipc2222"]
+    assert vs[0]["pads"] == ["1", "2", "3"]
+
+
+def test_a_square_lead_is_measured_across_its_diagonal():
+    assert ccf.clearance((1.0, 1.0), (0.64, 0.64), rect=True) == \
+        pytest.approx(1.0 - 0.9051, abs=1e-4)
+    assert ccf.clearance((1.0, 1.0), (0.64, 0.64), rect=False) == \
+        pytest.approx(0.36)

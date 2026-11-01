@@ -795,8 +795,9 @@ def test_golden_clean_pdn(board):
 
 
 GOLDEN_KNOWN_WARNINGS = {
-    "rf4": {"check_silk": 1, "check_wicking": 3},
-    "usbbuck4": {"check_wicking": 1},
+    "blinky2": {"check_connector_fit": 2},
+    "rf4": {"check_silk": 1, "check_wicking": 3, "check_connector_fit": 1},
+    "usbbuck4": {"check_wicking": 1, "check_connector_fit": 2},
 }
 
 
@@ -810,7 +811,9 @@ def test_verify_all_goldens_clean(tmp_path):
         # the known warnings, nothing else: rf4's C14 silk_misattributed
         # (see test_golden_clean_silk); open vias in pads (#475): rf4's J1
         # edge-SMA ground pads (top and bottom) and U1 pad 1, usbbuck4's
-        # Y1 pad 4
+        # Y1 pad 4; KiCad's stock 1.0 mm header drill under IPC-2222 (#474:
+        # tht_hole_ipc2222, one per header: blinky2 J1 J2, rf4 J2,
+        # usbbuck4 J2 J3)
         known = GOLDEN_KNOWN_WARNINGS.get(board, {})
         by_check = {k: v for k, v in summary["counts"]["by_check"].items()
                     if v}

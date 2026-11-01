@@ -22,8 +22,14 @@ pages beside the text, OCR'd when they are scans):
 Findings:
   tht_pin_tight       error: a lead's cross-section (a rectangular pin's
                       diagonal, or per axis in a slot) leaves less than
-                      PIN_CLEAR_MM in its finished hole - with JLC's -0.08 mm
+                      PIN_CLEAR_MM in its hole - at JLC's -0.08 mm
                       plated-hole tolerance it may not go in at all
+  tht_hole_ipc2222    warning (one per part): a round hole that takes the
+                      lead but is under IPC-2222 9.2.1's minimum, the lead's
+                      max diameter (a square/rect lead's diagonal) + 0.15 mm
+                      (level C; B 0.20, A 0.25). A 0.64 mm square header pin
+                      wants 1.055 mm; KiCad's stock 1.0 mm drill fits in
+                      practice but leaves no room for solder to wet through
   tht_hole_loose      warning: a round hole more than LOOSE_MM over the
                       lead (poor wetting, the part leans)
   tht_hole_under_spec warning: the hole is under the drawing's hole_mm by
@@ -43,7 +49,9 @@ Every mating connector's front vs Edge.Cuts is reported in the facts
 model's box or the courtyard), drawing or not; connectors whose extraction
 has no `mechanical` block are listed under `unverified`, so a review sees
 what this check could not hold to a drawing. A part with no extraction is
-never failed for it.
+never failed for it. A part with no `mechanical.pins` whose footprint is a
+stock pin header is held to reference/tht_leads.yaml's lead instead (the
+part's fact says `lead_source: stock`).
 
 CLI: --pcb board.kicad_pcb [--parts DIR] [--out report.json]
      exit 0 pass / 1 violations / 2 error, per SPEC section 6.
@@ -57,6 +65,7 @@ import sys
 from pathlib import Path
 
 import sexpdata
+import yaml
 from shapely import affinity
 from shapely.geometry import LineString, MultiPoint
 
@@ -72,8 +81,12 @@ from geom import _kids, _strs  # noqa: E402
 SCRIPT = "check_connector_fit"
 SOURCE = SCRIPT  # verify_all, gate and the scorecard match a finding to its check by source
 # A lead needs this much more than its cross-section: JLC's plated holes
-# finish -0.08/+0.13 mm of the drill size.
-PIN_CLEAR_MM = 0.10
+# finish -0.08/+0.13 mm of the drill size, so less may not take the lead.
+PIN_CLEAR_MM = 0.08
+# IPC-2222A 9.2.1: plated hole minus the lead's max diameter, per level
+IPC2222_MM = {"A": 0.25, "B": 0.20, "C": 0.15}
+IPC2222_LEVEL = "C"
+LEADS = HERE.parent / "reference" / "tht_leads.yaml"
 # A round hole this much over the lead leaves it loose (IPC-2222 level B is
 # lead + 0.25 mm; 0.7 mm is well past any class).
 LOOSE_MM = 0.70
@@ -93,19 +106,24 @@ def _cross(spec: dict) -> tuple[float, float] | None:
     return None
 
 
-def clearance(drill: tuple[float, float], cross: tuple[float, float]) -> float:
+def clearance(drill: tuple[float, float], cross: tuple[float, float],
+              rect: bool | None = None) -> float:
     """The least gap (hole minus lead) when the lead goes through the hole:
-    a round hole against the lead's diagonal, a slot per axis."""
+    a round hole against the lead's diagonal, a slot per axis. `rect` says
+    the lead is a square/rectangular pin (w_mm + t_mm), so a square one is
+    measured across its diagonal too; None reads it from the sides."""
     dmin, dmax = sorted(drill)
     pmin, pmax = cross
+    if rect is None:
+        rect = abs(pmax - pmin) >= 1e-6
     if abs(dmax - dmin) < 1e-6:
-        return dmin - (pmin if abs(pmax - pmin) < 1e-6
-                       else math.hypot(pmin, pmax))
+        return dmin - (math.hypot(pmin, pmax) if rect else pmin)
     return min(dmin - pmin, dmax - pmax)
 
 
-def _fmt_cross(c: tuple[float, float]) -> str:
-    return (f"{c[0]:.2f} mm round" if abs(c[0] - c[1]) < 1e-6
+def _fmt_cross(c: tuple[float, float], rect: bool = True) -> str:
+    return (f"{c[0]:.2f} mm round" if not rect
+            else f"{c[0]:.2f} mm square" if abs(c[0] - c[1]) < 1e-6
             else f"{c[0]:.2f} x {c[1]:.2f} mm")
 
 
@@ -173,9 +191,10 @@ def check_pins(ref, f, pads, mech, viols, fact):
     for p in holes:
         if p.ptype == "thru_hole" and p.number:
             by_num.setdefault(p.number, []).append(p)
-    fits = []
+    fits, ipc = [], []
     for spec in mech.get("pins") or []:
         cross = _cross(spec)
+        rect = not spec.get("dia_mm")
         names = [str(n) for n in spec.get("pads") or []] or sorted(by_num)
         for num in names:
             got = by_num.get(num)
@@ -191,17 +210,17 @@ def check_pins(ref, f, pads, mech, viols, fact):
                 used.add(id(p))
                 if cross is None:
                     continue
-                gap = clearance(p.drill_xy, cross)
+                gap = clearance(p.drill_xy, cross, rect)
                 pos = f.to_abs(p.at[:2])
                 fits.append({"pad": num, "drill": [checklib.rnd(v, 3) for v in p.drill_xy],
                              "lead": list(cross), "gap_mm": checklib.rnd(gap, 3)})
-                what = (f"{ref} pad {num}: the lead ({_fmt_cross(cross)}) "
+                what = (f"{ref} pad {num}: the lead ({_fmt_cross(cross, rect)}) "
                         f"in a {_fmt_drill(p.drill_xy)} hole")
                 if gap < PIN_CLEAR_MM:
                     viols.append(checklib.violation(
                         SCRIPT, "error", pos, None, None, [ref],
-                        f"{what} leaves {gap:.2f} mm (needs {PIN_CLEAR_MM} "
-                        "mm with the plated hole's -0.08 mm tolerance): it "
+                        f"{what} leaves {gap:.3f} mm (the plated hole "
+                        f"finishes up to {PIN_CLEAR_MM} mm under its drill): it "
                         "may not go in. Use the drawing's hole, or the "
                         "footprint of the part actually ordered", SOURCE,
                         kind="tht_pin_tight", pad=num, gap_mm=checklib.rnd(gap, 3),
@@ -215,6 +234,9 @@ def check_pins(ref, f, pads, mech, viols, fact):
                         "part may lean - is this the right footprint?",
                         SOURCE, kind="tht_hole_loose", pad=num,
                         gap_mm=checklib.rnd(gap, 3), footprint=f.fpid))
+                elif abs(p.drill_xy[0] - p.drill_xy[1]) < 1e-6 \
+                        and gap < IPC2222_MM[IPC2222_LEVEL] - 1e-6:
+                    ipc.append((num, p, cross, gap, pos, rect))
                 if spec.get("hole_mm") and \
                         min(p.drill_xy) < float(spec["hole_mm"]) - SPEC_TOL_MM:
                     viols.append(checklib.violation(
@@ -223,8 +245,44 @@ def check_pins(ref, f, pads, mech, viols, fact):
                         f"{float(spec['hole_mm']):.2f} mm hole", SOURCE,
                         kind="tht_hole_under_spec", pad=num,
                         footprint=f.fpid))
+    if ipc:
+        num, p, cross, gap, pos, rect = min(ipc, key=lambda t: t[3])
+        need = p.drill_xy[0] - gap + IPC2222_MM[IPC2222_LEVEL]
+        pads_ = sorted({t[0] for t in ipc}, key=_padkey)
+        viols.append(checklib.violation(
+            SCRIPT, "warning", pos, None, None, [ref],
+            f"{ref}: {len(ipc)} plated hole(s) (pads {', '.join(pads_)}) of "
+            f"{_fmt_drill(p.drill_xy)} leave {gap:.3f} mm over the lead "
+            f"({_fmt_cross(cross, rect)}, {p.drill_xy[0] - gap:.3f} mm max "
+            f"diameter); IPC-2222 level {IPC2222_LEVEL} wants lead + "
+            f"{IPC2222_MM[IPC2222_LEVEL]} mm = {need:.3f} mm (B "
+            f"{IPC2222_MM['B']}, A {IPC2222_MM['A']}). It goes in, but tight: "
+            f"drill {math.ceil(need * 20 - 1e-6) / 20:.2f} mm for solder to "
+            f"wet through", SOURCE, kind="tht_hole_ipc2222", pads=pads_,
+            gap_mm=checklib.rnd(gap, 3), min_hole_mm=checklib.rnd(need, 3),
+            level=IPC2222_LEVEL, footprint=f.fpid))
     fact["pins"] = fits
     return used
+
+
+def _padkey(n: str):
+    return (0, int(n), "") if n.isdigit() else (1, 0, n)
+
+
+def load_leads(path: Path = LEADS) -> list[dict]:
+    if not path.is_file():
+        return []
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return [{**e, "re": re.compile(e["match"])} for e in data.get("leads") or []]
+
+
+def stock_lead(fpid: str, leads: list[dict]) -> dict | None:
+    """The stock-table `mechanical` for a footprint, or None."""
+    name = fpid.split(":")[-1]
+    for e in leads:
+        if e["re"].search(name):
+            return {"pins": e["pins"], "source": e.get("source", "")}
+    return None
 
 
 def check_posts(ref, f, pads, mech, used, viols, fact):
@@ -237,13 +295,14 @@ def check_posts(ref, f, pads, mech, used, viols, fact):
     rows = []
     for spec in mech.get("posts") or []:
         cross = _cross(spec)
+        rect = not spec.get("dia_mm")
         need = int(spec["count"])
         if spec.get("hole_mm"):
             ok = [p for p in spare
                   if min(p.drill_xy) >= float(spec["hole_mm"]) - POST_TOL_MM]
         elif cross is not None:
             ok = [p for p in spare
-                  if clearance(p.drill_xy, cross) >= POST_TOL_MM]
+                  if clearance(p.drill_xy, cross, rect) >= POST_TOL_MM]
         else:
             ok = list(spare)
         small = [p for p in spare if p not in ok]
@@ -253,7 +312,7 @@ def check_posts(ref, f, pads, mech, used, viols, fact):
                 spare.remove(p)
             continue
         size = (f"{float(spec['hole_mm']):.2f} mm hole" if spec.get("hole_mm")
-                else f"{_fmt_cross(cross)} post" if cross else "post")
+                else f"{_fmt_cross(cross, rect)} post" if cross else "post")
         also = (" (" + ", ".join(_fmt_drill(p.drill_xy) for p in small)
                 + " too small)") if small else ""
         viols.append(checklib.violation(
@@ -328,6 +387,7 @@ def check(pcb: Path, parts: Path | None) -> tuple[list[dict], dict]:
     exts = load_extractions(parts, {b["lcsc"] for b in board.values()})
     metas = matinglib.board_meta(pcb)
     table = matinglib.load_table()
+    leads = load_leads()
     viols: list[dict] = []
     facts = {"parts": [], "edges": [], "unverified": []}
     for ref in sorted(model.footprints):
@@ -347,6 +407,10 @@ def check(pcb: Path, parts: Path | None) -> tuple[list[dict], dict]:
         if mech:
             used = check_pins(ref, f, b["pads"], mech, viols, fact)
             check_posts(ref, f, b["pads"], mech, used, viols, fact)
+        elif (stock := stock_lead(f.fpid, leads)) is not None:
+            fact["lead_source"] = "stock"
+            check_pins(ref, f, b["pads"], stock, viols, fact)
+            facts["parts"].append(fact)
         edge = None
         if (fam is not None and fam.get("entry") == "horizontal") \
                 or mech.get("edge"):

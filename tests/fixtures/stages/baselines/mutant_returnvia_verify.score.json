@@ -5,7 +5,7 @@
  "board": "usbbuck4",
  "metrics": {
   "errors": 1,
-  "warnings": 1,
+  "warnings": 3,
   "by_check": {
    "check_return_path": 1,
    "check_current": 0,
@@ -21,7 +21,7 @@
    "check_antenna": 0,
    "check_bom_sync": 0,
    "check_cap_load": 0,
-   "check_connector_fit": 0,
+   "check_connector_fit": 2,
    "check_courtyard": 0,
    "check_ep_paste": 0,
    "check_fp_attr": 0,
@@ -39,6 +39,7 @@
   },
   "by_kind": {
    "missing_return_via": 1,
+   "tht_hole_ipc2222": 2,
    "wick_via_in_pad": 1
   },
   "si": {
@@ -52,11 +53,11 @@
  "metrics_live": null,
  "penalties": {
   "errors": 1.0,
-  "warnings": 1.0,
+  "warnings": 3.0,
   "known_answer_missed": 0.0,
   "forbidden_errors": 0.0
  },
- "composite": 99.4,
+ "composite": 99.2,
  "composite_inputs": "full",
  "known_answer": {
   "status": "ok",
@@ -66,7 +67,7 @@
  },
  "e2e": null,
  "_baseline": {
-  "created": "2026-10-31",
+  "created": "2026-11-01",
   "kicad_version": null
  }
 }

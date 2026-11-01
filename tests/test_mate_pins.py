@@ -344,3 +344,59 @@ def test_lumina_carrier_and_par_stack(tmp_path):
         ("J4", "20"), ("J4", "21"), ("J4", "22")}
     flip = _run(carrier, [{**pairs[0], "mount": "flip"}], tmp=tmp_path)
     assert any(v["supply_short"] and v["net"] == "+48V_SW" for v in flip)
+
+
+# ------------------------------------- bottom-side connector mirrored (#474)
+
+HDR10 = "Connector_PinHeader_2.54mm:PinHeader_2x05_P2.54mm_Vertical"
+SKT10 = "Connector_PinSocket_2.54mm:PinSocket_2x05_P2.54mm_Vertical"
+NETS10 = ["+5V", "GND", "/SDA", "/SCL", "/TX", "/RX", "/INT", "/RST",
+          "+3V3", "GND"]
+
+
+def _fp2x5(ref, fpid, nets, layer="F.Cu"):
+    """A 2x5 odd/even header at (10, 10) as KiCad stores it: a footprint
+    flipped to B.Cu has its pad x mirrored (pcbnew bakes the flip in)."""
+    sx = -1 if layer == "B.Cu" else 1
+    pads = "".join(
+        f'    (pad "{2 * i + r + 1}" thru_hole circle (at {sx * 2.54 * r} '
+        f'{2.54 * i}) (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") '
+        f'(net "{nets[2 * i + r]}"))\n' for i in range(5) for r in range(2))
+    crt = "F.CrtYd" if layer == "F.Cu" else "B.CrtYd"
+    return (f'  (footprint "{fpid}" (layer "{layer}") (at 10 10)\n'
+            f'    (property "Reference" "{ref}" (at 0 -2 0))\n'
+            f'    (attr through_hole)\n'
+            f'    (fp_rect (start -4 -1.5) (end 4 12) (stroke (width 0.05))'
+            f' (fill no) (layer "{crt}"))\n{pads}  )\n')
+
+
+def _pair10(tmp_path, mate_layer, mount="stack"):
+    main = _board(tmp_path / "main.kicad_pcb", _fp2x5("J2", HDR10, NETS10))
+    _board(tmp_path / "mate" / "d.kicad_pcb",
+           _fp2x5("J1", SKT10, NETS10, layer=mate_layer))
+    return _run(main, [{"ref": "J2", "mate_ref": "J1",
+                        "mate_pcb": "mate/d.kicad_pcb", "mount": mount}])
+
+
+def test_bottom_side_socket_mirrored_against_its_mate(tmp_path):
+    # planted fault: the mate's socket, numbered pin n = net n like the
+    # header, flipped to B.Cu: its rows swap, every pin meets the other row
+    vs = _pair10(tmp_path, "B.Cu")
+    mir = [v for v in vs if v["kind"] == "mate_mirrored"]
+    assert len(mir) == 1 and mir[0]["severity"] == "error"
+    assert mir[0]["bottom"] == ["J1"] and mir[0]["mismatched"] == 10
+    assert "pin 1 meets pin 2" in mir[0]["msg"]
+    assert {v["kind"] for v in vs} == {"mate_mirrored", "mate_pin_mismatch"}
+
+
+def test_same_socket_on_the_top_mates(tmp_path):
+    assert _pair10(tmp_path, "F.Cu") == []
+
+
+def test_front_side_pair_with_wrong_nets_is_not_called_a_mirror(tmp_path):
+    main = _board(tmp_path / "main.kicad_pcb", _fp2x5("J2", HDR10, NETS10))
+    swapped = NETS10[:2] + [NETS10[3], NETS10[2]] + NETS10[4:]
+    _board(tmp_path / "mate" / "d.kicad_pcb", _fp2x5("J1", SKT10, swapped))
+    vs = _run(main, [{"ref": "J2", "mate_ref": "J1",
+                      "mate_pcb": "mate/d.kicad_pcb"}])
+    assert {v["kind"] for v in vs} == {"mate_pin_mismatch"}
