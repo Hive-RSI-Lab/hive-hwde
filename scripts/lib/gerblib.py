@@ -247,6 +247,52 @@ def read_drill(path: Path) -> list[Hole]:
     return holes
 
 
+@dataclass
+class Slot:
+    """A routed drill hit (Excellon G85 / G00-G01 route): the hole is the
+    line buffered by half the tool. KiCad writes an oval drill this way,
+    even one a few microns off round (pinned core's USB-C J1: 0.3998 x
+    0.4 mm, so a zero-length slot)."""
+    line: LineString
+    diameter: float
+    plated: bool = True
+
+    @property
+    def poly(self):
+        return self.line.buffer(max(self.diameter, 0.01) / 2.0, quad_segs=8)
+
+
+def read_slots(path: Path) -> list[Slot]:
+    """The routed hits read_drill leaves out (it keeps flashes only)."""
+    try:
+        tool_plated, file_plated = drill_plating(
+            Path(path).read_text(encoding="utf-8", errors="replace"))
+    except OSError:
+        tool_plated, file_plated = {}, None
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        ef = ExcellonFile.open(str(path))
+    out: list[Slot] = []
+    for obj in ef.objects:
+        if not isinstance(obj, (Line, Arc)):
+            continue
+        o = obj.converted("mm")
+        tool = getattr(obj, "aperture", None) or getattr(obj, "tool", None)
+        dia = getattr(tool, "diameter", None)
+        if dia is None:
+            continue
+        plated = getattr(tool, "plated", None)
+        if plated is None:
+            plated = tool_plated.get(round(float(dia), 4))
+        if plated is None:
+            plated = file_plated
+        a, b = (o.x1, -o.y1), (o.x2, -o.y2)
+        line = LineString([a, b] if a != b else [a, (a[0] + 1e-6, a[1])])
+        out.append(Slot(line=line, diameter=float(dia),
+                        plated=True if plated is None else bool(plated)))
+    return out
+
+
 class FabStack:
     """Every gerber/drill file in one exported fab directory."""
 

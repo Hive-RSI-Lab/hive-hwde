@@ -448,7 +448,7 @@ def test_iteration_ladder_retries_failed_nets_once(tmp_path, monkeypatch):
     calls = []
 
     def fake_krt(krt, script, staged, out, extra, floors, fab, grid, t_s,
-                 net_clearances=None, stdout_sink=None):
+                 net_clearances=None, stdout_sink=None, layer_widths=None):
         calls.append(list(extra))
         shutil.copy2(staged, out)
         if len(calls) == 1:
@@ -480,7 +480,7 @@ def test_no_retry_when_frontier_is_rippable(tmp_path, monkeypatch):
     calls = []
 
     def fake_krt(krt, script, staged, out, extra, floors, fab, grid, t_s,
-                 net_clearances=None, stdout_sink=None):
+                 net_clearances=None, stdout_sink=None, layer_widths=None):
         calls.append(list(extra))
         shutil.copy2(staged, out)
         if stdout_sink is not None:

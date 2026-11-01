@@ -342,6 +342,64 @@ def dsn_apply_net_rules(dsn_text: str, widths: dict[str, float],
     return "".join(out), moved
 
 
+def dsn_apply_layer_widths(dsn_text: str,
+                           widths: dict[str, dict[str, float]]) -> tuple[str, list]:
+    """Per-layer trace widths (mm) for nets rules_gen sized per stripline
+    layer (#489: zrules.layer_geometry): each such net gets its own class
+    (unless it is already alone in one) carrying a Specctra
+    `(layer_rule <layer> (rule (width W)))` per layer, which Freerouting
+    reads into the class's per-layer trace half-width. Layers the DSN does
+    not declare are skipped. Returns (text, [net, ...] given layer rules);
+    a DSN not in `(resolution um N)` comes back unchanged."""
+    if not widths or not re.search(r"\(resolution\s+um\s+\d+\)", dsn_text):
+        return dsn_text, []
+    declared = set(re.findall(r"\(layer\s+\"?([^\s\"()]+)\"?\s*\(type", dsn_text))
+    want = {n: {ly: w for ly, w in m.items() if ly in declared}
+            for n, m in widths.items()}
+    want = {n: m for n, m in want.items() if m}
+    if not want:
+        return dsn_text, []
+
+    def rules_for(net: str) -> str:
+        return "".join(f"\n      (layer_rule {ly}\n        (rule (width "
+                       f"{w * 1000.0:g}))\n      )"
+                       for ly, w in sorted(want[net].items()))
+
+    out, done, pos = [], [], 0
+    for m in re.finditer(r"\(class\s", dsn_text):
+        if m.start() < pos:
+            continue
+        end = _sexp_end(dsn_text, m.start())
+        block = dsn_text[m.start():end]
+        head_end = next((j for j, t in enumerate(_quote_mask(block))
+                         if j and t == "("), -1)
+        head = block[:head_end] if head_end > 0 else block[:-1]
+        body = block[head_end:-1] if head_end > 0 else ""
+        toks = _DSN_TOKEN_RE.findall(head)[1:]
+        name, members = toks[0], toks[1:]
+        hit = [t for t in members if t.strip('"') in want]
+        out.append(dsn_text[pos:m.start()])
+        pos = end
+        if not hit:
+            out.append(block)
+            continue
+        keep = [t for t in members if t not in hit]
+        parts = []
+        if keep:
+            parts.append(f"(class {name} {' '.join(keep)}\n      "
+                         f"{body.strip()}\n    )")
+        for tok in hit:
+            net = tok.strip('"')
+            cname = name if not keep and len(hit) == 1 else \
+                "aiee_" + re.sub(r"[^A-Za-z0-9_]", "_", net)
+            parts.append(f"(class {cname} {tok}\n      {body.strip()}"
+                         f"{rules_for(net)}\n    )")
+            done.append(net)
+        out.append("\n    ".join(parts))
+    out.append(dsn_text[pos:])
+    return "".join(out), done
+
+
 _DSN_SEXP_TOKEN_RE = re.compile(r'"[^"]*"|[()]|[^\s()"]+')
 _DSN_HEAD_RE = re.compile(r"\(\s*([^\s()]+)")
 

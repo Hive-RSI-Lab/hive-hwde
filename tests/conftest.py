@@ -70,7 +70,10 @@ _INTAKE = "materializes a whole KiCad project through intake"
 _TOOLS_ = None
 SLOW = {
     "tests/test_check_wicking.py::test_mask_web_agrees_with_the_kicad_f_mask_gerber": _TOOLS,
+    "tests/test_netlist_compare.py::test_pinned_board_ships_a_netlist_its_gerbers_match": "exports the pinned lite-main/core fab packages with kicad-cli",
     "tests/test_route_escape.py::test_live_escape_synthetic_bga": "runs KRT bga_fanout and kicad-cli DRC on a synthetic BGA",
+    "tests/test_zroute.py::test_live_route_critical_pair_l1_l3_drc_clean": "runs KRT route_diff/route and kicad-cli DRC on a synthetic 6-layer board",
+    "tests/test_zroute.py::test_live_freerouting_draws_dsn_layer_widths": "runs Freerouting and kicad-cli DRC on a synthetic 6-layer board",
     "tests/test_solvers.py::test_live_solver_validates": "runs ngspice, Xyce, FastHenry, FasterCap from the IIC-OSIC-TOOLS tree; machine-load sensitive",
     "tests/test_solvers.py::test_live_palace_validates": "runs Palace (FEM eigenmode) on the IIC-OSIC-TOOLS tree",
     "tests/test_solvers.py::test_live_openems_validates": "runs an openEMS full-wave solve (minutes)",
