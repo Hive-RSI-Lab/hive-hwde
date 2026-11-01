@@ -473,3 +473,67 @@ def test_nonfinite_bound_limits_rejected(tmp_path):
     p.write_text('[{"measure": "m", "min": true}]', encoding="utf-8")
     with pytest.raises(Exception, match="finite"):
         simlib.load_bounds(p)
+
+
+# ------------------------------------------------------------- XSPICE / OSDI
+
+def test_codemodels_are_found_beside_kicads_libngspice(tmp_path):
+    lib = tmp_path / "lib"
+    (lib / "ngspice").mkdir(parents=True)
+    dll = lib / "libngspice.so"
+    dll.write_text("")
+    assert simlib.codemodel_files(dll) == []
+    for cm in ("digital.cm", "analog.cm"):
+        (lib / "ngspice" / cm).write_text("")
+    assert [p.name for p in simlib.codemodel_files(dll)] == ["analog.cm", "digital.cm"]
+    assert simlib.codemodel_files(None) == []
+
+
+def test_resolve_osdi_makes_paths_absolute_beside_the_bench(tmp_path):
+    deck = "t\n.control\n  pre_osdi models/r.osdi\npre_osdi /abs/q.osdi\n.endc\nr1 a 0 1k\n.end\n"
+    out = simlib.resolve_osdi(deck, tmp_path)
+    assert f"  pre_osdi {tmp_path / 'models/r.osdi'}" in out.splitlines()
+    assert "pre_osdi /abs/q.osdi" in out.splitlines()
+    assert out.endswith(".end\n")
+
+
+XSPICE_BENCH = """* xspice + osdi through the sim gate
+.control
+pre_osdi hwde_res.va
+.endc
+va a 0 pulse(0 5 2u 1n 1n 2u 4u)
+vb b 0 pulse(0 5 4u 1n 1n 4u 8u)
+aadc [a b] [da db] adc1
+.model adc1 adc_bridge(in_low=1 in_high=2)
+aand [da db] dy and1
+.model and1 d_and
+adac [dy] [y] dac1
+.model dac1 dac_bridge(out_low=0 out_high=1)
+n1 y m rva
+.model rva hwde_res r=2k
+r2 m 0 1k
+.tran 10n 8u
+.meas tran and00 find v(y) at=1u
+.meas tran and11 find v(m) at=7u
+.end
+"""
+
+
+@pytest.mark.smoke
+def test_smoke_xspice_and_osdi_bench_through_sim_run(ngspice_dll, tmp_path):
+    """sim_run decks may use A devices (KiCad's code models) and a
+    Verilog-A model given as source beside the bench (OpenVAF from the tree)."""
+    sys.path.insert(0, str(SCRIPTS))
+    import sim_solve
+    from lib import solvers
+    if solvers.tool_path("openvaf") is None:
+        pytest.skip("no OpenVAF (IIC-OSIC-TOOLS tree)")
+    (tmp_path / "hwde_res.va").write_text(sim_solve.OSDI_VA)
+    (tmp_path / "x.cir").write_text(XSPICE_BENCH)
+    (tmp_path / "x.bounds.json").write_text(json.dumps([
+        {"measure": "and00", "min": -0.01, "max": 0.01, "severity": "error"},
+        {"measure": "and11", "min": 0.332, "max": 0.335, "severity": "error"}]))
+    rep = sim_run.run(tmp_path / "x.cir")
+    assert rep["status"] == "pass", rep["violations"]
+    m = rep["testbenches"][0]["measures"]
+    assert m["and11"] == pytest.approx(1 / 3, rel=1e-4)

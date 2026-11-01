@@ -74,6 +74,59 @@ def test_validate_reports_missing_not_failed(tmp_path, monkeypatch):
     assert not sim_solve.validate({"fasthenry_bar"}, strict=True)["ok"]
 
 
+# ---------------------------------------------------------------- ngspice init (XSPICE)
+
+def test_ngspice_gets_hwdes_spinit_naming_the_trees_code_models(tmp_path, monkeypatch):
+    t = _fake_tree(tmp_path)
+    exe = t / solvers.TOOLS["ngspice"][0]
+    exe.parent.mkdir(parents=True)
+    exe.write_text("")
+    lib = t / solvers.NGSPICE_LIB
+    lib.mkdir(parents=True)
+    for cm in ("digital.cm", "analog.cm", "tlines.cm"):
+        (lib / cm).write_text("")
+    (lib / "r3_cmc.osdi").write_text("")
+    monkeypatch.setenv("HWDE_EDA_TOOLCHAIN", str(t))
+    monkeypatch.setattr(solvers, "CACHE", tmp_path / "cache")
+    _, env = solvers.command("ngspice", ["-b", "x.cir"])
+    spinit = (Path(env["SPICE_SCRIPTS"]) / "spinit").read_text()
+    loads = [ln.split(None, 1)[1] for ln in spinit.splitlines() if ln.startswith("codemodel ")]
+    assert loads == [str(lib / c) for c in ("analog.cm", "digital.cm", "tlines.cm")]
+    assert "codemodel /foss/" not in spinit and "osdi" not in spinit
+    assert [p.name for p in solvers.codemodels(t)] == ["analog.cm", "digital.cm", "tlines.cm"]
+    # other tools keep the tree's own scripts dir
+    exe2 = t / solvers.TOOLS["xyce"][0]
+    exe2.parent.mkdir(parents=True)
+    exe2.write_text("")
+    assert solvers.command("xyce", [])[1]["SPICE_SCRIPTS"].endswith("share/ngspice/scripts")
+
+
+def test_xspice_decks_and_their_known_answers():
+    logic = sim_solve.xspice_logic_deck()
+    for model in ("adc_bridge", "d_and", "d_dff", "dac_bridge"):
+        assert model in logic
+    # the counter reads n mod 16 just after clock edge n
+    assert {k: e for k, (_, e) in sim_solve.XS_CNT.items()} == {
+        "cnt5": 5, "cnt11": 11, "cnt16": 0, "cnt21": 5}
+    assert [e for _, e in sim_solve.XS_AND.values()] == [0, 0, 0, 1]
+    sd = sim_solve.sigma_delta_deck(0.25)
+    assert "vin in 0 dc 0.25" in sd and f"to={10 + sim_solve.SD_CLOCKS}u" in sd
+    assert "pre_osdi /x/r.osdi" in sim_solve.osdi_deck("/x/r.osdi")
+    # a synthetic engine that gets everything right passes; one bit wrong fails
+    good = {k: e for k, (_, e) in {**sim_solve.XS_AND, **sim_solve.XS_CNT}.items()}
+    good.update(tdr=6e-6, tqr=6e-6 + sim_solve.XS_DELAY, tdf=8e-6, tqf=8e-6 + sim_solve.XS_DELAY)
+
+    def engine(meas):
+        return lambda tag, deck: meas if tag == "logic" else {
+            "dens": float(deck.split("vin in 0 dc ")[1].split()[0])}
+    assert sim_solve._xspice_case("x", "ngspice", engine(good))["status"] == "pass"
+    bad = dict(good, cnt16=16.0)
+    c = sim_solve._xspice_case("x", "ngspice", engine(bad))
+    assert c["status"] == "fail" and c["checks"][0]["measured"] == 7 / 8
+    late = dict(good, tqr=good["tqr"] + 1e-6)   # one clock late
+    assert sim_solve._xspice_case("x", "ngspice", engine(late))["status"] == "fail"
+
+
 # ---------------------------------------------------------------- decks
 
 def test_microstrip_deck_is_csxcad_xml_with_probes_on_the_mesh():
@@ -203,7 +256,8 @@ def test_harmonic_mean_resolves_copper_edges():
 
 @live
 @pytest.mark.parametrize("name", ["circuit_ngspice", "circuit_xyce", "fasthenry_bar",
-                                  "fastercap_cube"])
+                                  "fastercap_cube", "circuit_xspice", "circuit_osdi",
+                                  "circuit_xspice_kicad"])
 def test_live_solver_validates(name):
     res = sim_solve.validate({name})
     c = res["cases"][0]

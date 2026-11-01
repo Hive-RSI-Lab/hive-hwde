@@ -13,6 +13,7 @@ binary through the image's own loader. Nothing is installed.
 | openEMS | full-wave 3D, FDTD | v0.37.0-rc2 | `lib/emsolve.py` `Csx` (CSXCAD XML) |
 | Palace | full-wave 3D, FEM: eigenmode, driven S-params, electro/magnetostatic | v0.18.1 | `lib/emsolve.py` (JSON config + gmsh mesh) |
 | gmsh | mesher for Palace | 4.12.1 | `lib/emsolve.py` (`.geo`) |
+| OpenVAF | Verilog-A to OSDI compiler, for compact models in ngspice | 20260616 (OpenVAF-reloaded) | `solvers.compile_va` |
 | FastHenry2 | quasi-static L / R extraction | 3.0.1 | `lib/emsolve.py` |
 | FasterCap | quasi-static C extraction | 6.0.7 | `lib/emsolve.py` |
 | thermalfv | board-plane heat spreading + electro-thermal coupling | hwde's own | `lib/thermalfv.py` |
@@ -30,6 +31,9 @@ Measured on this machine, 2026-10-30:
 |---|---|---|---|---|
 | circuit_ngspice | ngspice | RC low-pass: \|H(fc)\| = 1/√2, step v(τ) = 1 − 1/e | 0.000% | 0.5% |
 | circuit_xyce | Xyce | the same deck | +0.017% | 0.5% |
+| circuit_xspice | ngspice + XSPICE | d_and truth table + 4-bit ripple counter (exact); adc_bridge -> d_dff -> dac_bridge puts a square wave on the next clock edge + bridge/flop delays; 1st-order sigma-delta ones density = Vin/Vref over 4096 clocks (Vin 0.3137, 0.7071) | logic exact, delay −0.15%, density +0.02% | 0.5% |
+| circuit_osdi | ngspice + OpenVAF | Verilog-A 2k over a plain 1k: v = 1/3 | 0.000% | 0.01% |
+| circuit_xspice_kicad | KiCad 10.0.6's libngspice (sim_run's engine) | the circuit_xspice decks + the OSDI divider from `.va` source | as circuit_xspice | 0.5% |
 | openems_microstrip | openEMS | Hammerstad-Jensen Z0 and ε_eff, 1.5 mm on 0.8 mm of εr 4, 1–2 GHz | −0.1% (Z0), +0.13% (ε_eff) | 2% |
 | palace_cavity | Palace + gmsh | closed 40×30×20 mm PEC box, first four modes | +0.025% worst | 0.5% |
 | fasthenry_bar | FastHenry | 10×1×0.035 mm Cu bar: R = l/(σwt); L by Ruehli's partial self-inductance | +0.25% (L), 0.00% (R) | 2% |
@@ -71,9 +75,24 @@ machine.
   saturated (load 244, 10-30) its 4 s RC deck took 290 s, almost all of it
   spent waiting, not computing. Each case allows 20 minutes, and OpenBLAS runs one
   thread (its pool busy-waits). The live-solver tests are in test-slow.
-- ngspice warns that its code models (`tlines.cm` ...) are not loaded:
-  the tree's `spinit` names `/foss/tools/...`. Plain SPICE decks don't need
-  them. A deck that does (XSPICE, OSDI/Verilog-A) needs them loaded first.
+- **XSPICE and OSDI (#499).** The tree's own `spinit` names
+  `/foss/tools/...` for its code models, which isn't here, so `solvers.command`
+  points ngspice's `SPICE_SCRIPTS` at hwde's spinit
+  (`~/.cache/hwde/ngspice-init/<tree>/spinit`) with a `codemodel` line per
+  `lib/ngspice/*.cm` the tree really has (analog, digital, spice2poly, table,
+  tlines, xtradev, xtraevt). `A` devices, `d_*` gates and flops, `adc_bridge`
+  / `dac_bridge` then parse. KiCad's bundled libngspice finds no spinit either:
+  `simlib` loads the `*.cm` beside it (`lib/ngspice/`) into every engine it
+  starts, so `sim_run` and `sim_board` benches may use `A` devices too.
+  OSDI: a deck loads its model itself, `.control` / `pre_osdi FILE` / `.endc`,
+  in both engines. In a sim_run bench a relative FILE is beside the bench,
+  and a `.va` FILE is compiled first with the tree's OpenVAF
+  (`solvers.compile_va`, cached in `~/.cache/hwde/osdi/` by source hash).
+  The tree's prebuilt `.osdi` (psp103_nqs, r3_cmc, bsimcmg) are in
+  `lib/ngspice/`; vacask's under `foss/tools/vacask/lib/vacask/mod/` are for
+  VACASK. `bin/openvaf` is an absolute symlink into `/foss`: hwde runs
+  `openvaf-r`. Gotcha: an integrator cap with no DC path needs `uic` and an
+  `.ic`, or the operating point is singular and the loop starts saturated.
 
 ## Studies for boards
 
