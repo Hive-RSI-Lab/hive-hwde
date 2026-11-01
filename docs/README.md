@@ -388,9 +388,19 @@ rule, until the net sits in the middle of its range. It measures with the
 check's own function, so what it tunes to is what verify judges, and works
 on any copper (Freerouting's, KRT's, hand-routed). KRT's own matcher
 (`route.py --length-match-group`) tunes only nets it routes in the same run,
-and only to the group's longest. A net that is too long, a run with no room
-and a diff pair's half are reported, not forced; DRC that grows rolls the
-board back.
+and only to the group's longest. A net that is too long and a run with no
+room are reported, not forced; DRC that grows rolls the board back.
+
+Diff pairs (#476): a pair in a length group gets coupled bumps on both legs
+(the inner bump nests inside the outer one at the pair pitch, so both gain
+the same and the skew stays), and any pair over its skew gets bumps on the
+short leg next to the bend that built the skew, facing away from the
+partner and low enough that the leg stays coupled. `check_diffpair` judges
+the running skew too (`diffpair_phase`): P's trunk is sampled every 0.1 mm
+against the point of N's trunk abreast of it, and a stretch over
+`max_phase_skew_mm` (default `max_skew_mm`) lasting `phase_window_mm`
+(else `rise_ps`/10 as distance, else 5 mm) is flagged even when the end
+skew is 0 (+1 mm at one bend, -1 mm at the next).
 
 ## Op-amp outputs into a cable or a big capacitor
 
