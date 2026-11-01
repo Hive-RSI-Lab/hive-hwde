@@ -260,6 +260,31 @@ for fp in board.GetFootprints():
                 castellated.setdefault(fp.GetReference(), 0)
                 castellated[fp.GetReference()] += 1
 
+# Placement type: Eagle has none and KiCad's importer leaves every footprint
+# unspecified; check_fp_attr (and the CPL) need it. From the pads: SMD pads
+# -> smd (THT legs only anchor it), only plated holes -> through_hole. A
+# castellated footprint is the board's own edge, not a part: out of the BOM
+# and the placement file.
+attrs = {"smd": 0, "through_hole": 0, "not_placed": []}
+for fp in board.GetFootprints():
+    a = fp.GetAttributes()
+    if a & (pcbnew.FP_SMD | pcbnew.FP_THROUGH_HOLE) or fp.IsBoardOnly():
+        continue
+    kinds = {p.GetAttribute() for p in fp.Pads()}
+    if not kinds:
+        continue
+    ref = fp.GetReference()
+    if ref in castellated:
+        fp.SetExcludedFromBOM(True)
+        fp.SetExcludedFromPosFiles(True)
+        attrs["not_placed"].append(ref)
+    if pcbnew.PAD_ATTRIB_SMD in kinds:
+        fp.SetAttributes(a | pcbnew.FP_SMD)
+        attrs["smd"] += 1
+    elif pcbnew.PAD_ATTRIB_PTH in kinds:
+        fp.SetAttributes(a | pcbnew.FP_THROUGH_HOLE)
+        attrs["through_hole"] += 1
+
 plans = [(fp, plan_pad_copper(fp)) for fp in board.GetFootprints()]
 apply_slots(board)
 for fp, plan in plans:
@@ -307,4 +332,4 @@ board.Save(board_path)
 print(json.dumps({"written": sorted(written), "variants": variants,
                   "pad_copper": {"converted": converted, "left": left},
                   "slots": slotted, "npth_trimmed": [r for _, _, r in trimmed],
-                  "castellated": castellated}))
+                  "castellated": castellated, "attrs": attrs}))

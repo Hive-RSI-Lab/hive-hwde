@@ -474,6 +474,13 @@ def do_import(source: Path, out: Path, fmt: str | None = None) -> tuple[int, dic
                                f"({', '.join(f'{k} x{v}' for k, v in sorted(c.items()))}); their "
                                "footprints' pads may reach the edge (DRU eda_io_castellation_*). "
                                "Order with castellated holes"})
+    at = fplib.get("attrs") or {}
+    if at.get("smd") or at.get("through_hole"):
+        losses.append({"level": "check", "what": "footprints",
+                       "text": f"placement type set from the pads (the source has none): "
+                               f"{at['smd']} smd, {at['through_hole']} through_hole"
+                               + (f"; castellations {', '.join(at['not_placed'])} out of the BOM "
+                                  "and placement file" if at.get("not_placed") else "")})
     if fplib.get("npth_trimmed"):
         n = fplib["npth_trimmed"]
         losses.append({"level": "check", "what": "footprints",
