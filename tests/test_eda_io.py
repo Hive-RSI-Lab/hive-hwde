@@ -420,6 +420,10 @@ def test_import_eagle_end_to_end(tmp_path):
     assert res["board_counts"]["copper"].get("In1.Cu") == 1
     assert not any(l["level"] == "lost" for l in res["losses"])
     assert eda_io._loads(Path(res["board"])) is None
+    # the embedded footprints come out as a library the board links to
+    assert res["footprint_lib"].get("written"), res["footprint_lib"]
+    assert (tmp_path / "o" / "mini.pretty").is_dir()
+    assert '(footprint "mini:' in Path(res["board"]).read_text()
     md = (tmp_path / "o" / "losses.md").read_text()
     assert "Board only" in md and "Verdict" in md
 
@@ -435,3 +439,48 @@ def test_export_round_trips_parts_and_nets(tmp_path):
     assert rc == 0, res["findings"]
     assert {"ipc2581", "odb", "kicad", "kicad-zip", "gencad", "ipcd356"} <= set(res["files"])
     assert (tmp_path / "x" / "losses.md").read_text().count("###") == 3
+
+
+# ------------------------------------------------------- schematic import
+
+_MINI_SCH = """<?xml version="1.0"?>
+<eagle><drawing><schematic><libraries><library name="L"><devicesets>
+<deviceset name="R"><gates><gate name="G$1" symbol="R"/></gates><devices>
+<device name="" package="0402"><connects><connect gate="G$1" pin="1" pad="1"/>
+<connect gate="G$1" pin="2" pad="2"/></connects></device></devices></deviceset>
+<deviceset name="GND"><gates><gate name="1" symbol="GND"/></gates><devices>
+<device name=""/></devices></deviceset></devicesets></library></libraries>
+<parts><part name="R1" library="L" deviceset="R" device=""/>
+<part name="R2" library="L" deviceset="R" device=""/>
+<part name="GND1" library="L" deviceset="GND" device=""/></parts>
+<sheets><sheet><nets>
+<net name="!RST!"><segment><pinref part="R1" gate="G$1" pin="1"/><pinref part="R2" gate="G$1" pin="1"/></segment></net>
+<net name="GND"><segment><pinref part="R1" gate="G$1" pin="2"/><pinref part="R2" gate="G$1" pin="2"/><pinref part="GND1" gate="1" pin="GND"/></segment></net>
+</nets></sheet></sheets></schematic></drawing></eagle>"""
+
+
+def test_eagle_sch_nets(tmp_path):
+    from lib import schimport
+    p = tmp_path / "m.sch"
+    p.write_text(_MINI_SCH)
+    assert schimport.detect(p) == "eagle"
+    parts, nets = schimport.eagle_sch_nets(p)
+    assert parts == {"R1", "R2"}  # the supply symbol has no package
+    assert nets["~{RST}"] == {("R1", "1"), ("R2", "1")}
+    assert nets["GND"] == {("R1", "2"), ("R2", "2")}
+
+
+def test_sch_compare_finds_split_joined_missing():
+    from lib import schimport
+    src_nets = {"A": {("R1", "1"), ("R2", "1")}, "B": {("R1", "2"), ("R2", "2")},
+                "N$3": {("R3", "1"), ("R4", "1")}}
+    ok = {"/A": {("R1", "1"), ("R2", "1")}, "B": {("R1", "2"), ("R2", "2")},
+          "Net-(R3-Pad1)": {("R3", "1"), ("R4", "1")}}
+    assert schimport.compare({"R1", "R2"}, src_nets, {"R1", "R2", "#PWR1"}, ok) == []
+    bad = {"A": {("R1", "1"), ("R2", "1"), ("R1", "2"), ("R2", "2")},
+           "x": {("R3", "1")}, "y": {("R4", "1")}}
+    got = {(l["level"], l["what"]) for l in
+           schimport.compare({"R1", "R2", "R9"}, src_nets, {"R1", "R2"}, bad)}
+    assert {("lost", "parts"), ("lost", "nets")} <= got
+    texts = " ".join(l["text"] for l in schimport.compare(set(), src_nets, set(), bad))
+    assert "split" in texts and "join" in texts

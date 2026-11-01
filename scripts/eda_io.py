@@ -17,6 +17,15 @@ down, in numbers, what didn't make it (losses.md beside the files).
       importer's own errors), 2 not imported at all (and why, with what to
       do instead: Allegro's binary .brd, EasyEDA Pro, OrCAD Capture).
 
+  import-sch SOURCE [--out DIR]
+      A non-KiCad schematic (Eagle .sch; Altium .SchDoc, EasyEDA, CADSTAR,
+      LTspice untested) into .kicad_sch. kicad-cli can't, so eeschema's own
+      importer runs on a private Xvfb, driven by keys (lib/schimport.py).
+      Then KiCad's netlist is compared with the source by connectivity
+      (each source net as its (reference, pad) set; Eagle only) and ERC is
+      run. Writes DIR/<stem>.kicad_sch, the imported symbol library,
+      import-sch.json, losses-sch.md. Exit 0/1/2 as import.
+
   export BOARD.kicad_pcb --to TARGET[,TARGET...] [--out DIR] [--step]
       TARGET: altium allegro orcad pads eagle fusion easyeda neutral.
       Writes what that tool can read (the KiCad project, IPC-2581, ODB++,
@@ -48,6 +57,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from lib import edasrc  # noqa: E402
 from lib import env  # noqa: E402
+from lib import schimport  # noqa: E402
 
 _TIMEOUT = 600
 
@@ -67,8 +77,9 @@ IMPORT_NEVER = {
         "Design rules: only what the importer maps onto KiCad's board setup "
         "and net classes comes in, and it isn't compared here. Derive the "
         "board's rules again (rules_gen) before trusting DRC.",
-        "Footprints are embedded in the board, not linked to a library: "
-        "lib_pull / fp_verify see them as unknown parts.",
+        "Footprints come out of the board into <stem>.pretty (fp-lib-table "
+        "beside it) as the source drew them: no LCSC numbers, 3D models or "
+        "datasheet links; lib_pull / fp_verify see them as unknown parts.",
     ],
     "altium": ["Altium's rooms, unions, component classes and its rule "
                "scopes (query language) have no KiCad equivalent beyond what "
@@ -256,6 +267,27 @@ def repair_and_load(pcb: Path) -> dict:
     return {"moved": moved, "to": to}
 
 
+def write_fp_lib(pcb: Path, libname: str) -> dict:
+    """The board's embedded footprints as <libname>.pretty beside it, an
+    fp-lib-table naming it, and the board's footprints relinked to
+    libname:name (what eeschema's importer writes in Footprint fields, so
+    import-sch's schematic and this board agree). KiCad's bundled python."""
+    kpy = env.find_kicad_python(_cli())
+    if not kpy:
+        return {"error": "no KiCad bundled python (pcbnew) beside kicad-cli"}
+    pretty = pcb.parent / f"{libname}.pretty"
+    proc = _run([kpy, Path(__file__).resolve().parent / "lib" / "fp_extract_kpy.py",
+                 pcb, pretty, libname])
+    try:
+        res = json.loads((proc.stdout or "").strip().splitlines()[-1])
+    except (IndexError, json.JSONDecodeError):
+        return {"error": "footprint export failed: " + (proc.stderr or "").strip()[-300:]}
+    (pcb.parent / "fp-lib-table").write_text(
+        f'(fp_lib_table\n  (version 7)\n  (lib (name "{libname}") (type "KiCad") '
+        f'(uri "${{KIPRJMOD}}/{pretty.name}") (options "") (descr "eda_io import"))\n)\n')
+    return res
+
+
 def do_import(source: Path, out: Path, fmt: str | None = None) -> tuple[int, dict]:
     out.mkdir(parents=True, exist_ok=True)
     detected = fmt or edasrc.detect(source)
@@ -286,6 +318,7 @@ def do_import(source: Path, out: Path, fmt: str | None = None) -> tuple[int, dic
     if repairs.get("error"):
         result["error"] = repairs["error"]
         return 2, result
+    fplib = write_fp_lib(pcb, source.stem)
     drc = refill_and_drc(pcb)
     try:
         src = edasrc.read_source(source, detected)
@@ -315,6 +348,14 @@ def do_import(source: Path, out: Path, fmt: str | None = None) -> tuple[int, dic
                                   f"named {UNDEFINED!r} (Eagle texts, so far) were moved to "
                                   f"{repairs['to']}: as written, KiCad itself refuses to load "
                                   "the board ('items found on undefined layers')"})
+    if fplib.get("error"):
+        losses.append({"level": "check", "what": "footprints",
+                       "text": f"no footprint library written: {fplib['error']}"})
+    elif fplib.get("variants"):
+        losses.append({"level": "check", "what": "footprints",
+                       "text": "footprints sharing a name but not their pads (the library "
+                               "keeps the first): " + edasrc._sample(
+                                   f"{k} ({', '.join(v)})" for k, v in fplib["variants"].items())})
     if src is None:
         losses.append({"level": "check", "what": "source",
                        "text": "the source file wasn't counted (no reader for "
@@ -323,6 +364,7 @@ def do_import(source: Path, out: Path, fmt: str | None = None) -> tuple[int, dic
     lost = any(l["level"] == "lost" for l in losses)
     never = IMPORT_NEVER["*"] + IMPORT_NEVER.get(detected, [])
     result.update(ok=True, board=str(pcb), kicad_format=report.get("source_format"), drc=drc,
+                  footprint_lib=fplib,
                   source_counts=src.to_json() if src else None,
                   board_counts=board.to_json(), losses=losses, never=never,
                   lost=lost)
@@ -344,6 +386,65 @@ def do_import(source: Path, out: Path, fmt: str | None = None) -> tuple[int, dic
                                      if lost else "nothing lost by count; the checks and "
                                      "notes below still need a look.")]
     _write_losses(out / "losses.md", f"Import of {source.name}", head, losses, never)
+    return (1 if lost else 0), result
+
+
+def do_import_sch(source: Path, out: Path) -> tuple[int, dict]:
+    fmt = schimport.detect(source)
+    result: dict = {"source": str(source), "format": fmt, "ok": False}
+    if fmt in (None, "kicad-legacy"):
+        result["error"] = ("already a KiCad schematic: `kicad-cli sch upgrade` reads it"
+                           if fmt else "not a schematic eeschema's importer reads "
+                           "(Eagle .sch, Altium .SchDoc/.PrjPcb, EasyEDA .json/.epro, "
+                           "CADSTAR .csa, LTspice .asc)")
+        return 2, result
+    try:
+        sch, steps = schimport.gui_import(source, out, _cli())
+    except (schimport.ImportError_, schimport.xdrive.XError) as exc:
+        result["error"] = str(exc)
+        return 2, result
+    refs, nets = schimport.kicad_netlist(_cli(), sch)
+    losses: list[dict] = []
+    src_parts = src_nets = None
+    if fmt == "eagle":
+        src_parts, src_nets = schimport.eagle_sch_nets(source)
+        losses += schimport.compare(src_parts, src_nets, refs, nets)
+    else:
+        losses.append({"level": "check", "what": "source",
+                       "text": f"no {fmt} schematic reader here: the import is counted, "
+                               "not compared with the source"})
+    erc = schimport.erc_summary(_cli(), sch)
+    if erc.get("errors"):
+        top = ", ".join(f"{k} {v}" for k, v in erc["by_type"][:6])
+        losses.append({"level": "check", "what": "erc",
+                       "text": f"ERC on the import: {erc['errors']} errors, "
+                               f"{erc['warnings']} warnings ({top}). Some are the source's "
+                               "own (Eagle has no ERC pin types to speak of); read them"})
+    lost = any(l["level"] == "lost" for l in losses)
+    never = ["Symbols land in one <stem>-<format>-import.kicad_sym beside the "
+             "schematic, not in a library hwde knows: lib_pull / sym checks see them "
+             "as unknown parts.",
+             "Pin electrical types come from the source's library (Eagle: io/pas/"
+             "pwr/sup...); ERC is only as good as those.",
+             "Footprint fields name the imported board's embedded footprints; pair "
+             "this schematic with the same source's board (eda_io import)."]
+    result.update(ok=True, schematic=str(sch), steps=steps, erc=erc,
+                  counts={"parts": len([r for r in refs if not r.startswith("#")]),
+                          "nets": len(nets),
+                          "source_parts": len(src_parts) if src_parts is not None else None,
+                          "source_nets": len(src_nets) if src_nets is not None else None},
+                  losses=losses, never=never, lost=lost)
+    (out / "import-sch.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
+    c = result["counts"]
+    head = [f"Source: `{source.name}` ({fmt}), imported by eeschema "
+            f"{env.kicad_cli_version_line(_cli()) or ''} on a private Xvfb".rstrip(), "",
+            f"Imported: {c['parts']} parts, {c['nets']} nets"
+            + (f"; source: {c['source_parts']} packaged parts, {c['source_nets']} nets."
+               if c["source_parts"] is not None else "."), "",
+            "**Verdict:** " + ("something was LOST; read below." if lost else
+                               "connectivity matches the source; the checks below still "
+                               "need a look." if fmt == "eagle" else "imported, not compared.")]
+    _write_losses(out / "losses-sch.md", f"Schematic import of {source.name}", head, losses, never)
     return (1 if lost else 0), result
 
 
@@ -554,6 +655,10 @@ def main(argv=None) -> int:
     pi.add_argument("--out", type=Path)
     pi.add_argument("--format", choices=sorted(set(KICAD_FORMAT)))
     pi.add_argument("--json", action="store_true")
+    ps = sub.add_parser("import-sch")
+    ps.add_argument("source", type=Path)
+    ps.add_argument("--out", type=Path)
+    ps.add_argument("--json", action="store_true")
     pe = sub.add_parser("export")
     pe.add_argument("board", type=Path)
     pe.add_argument("--to", required=True,
@@ -579,6 +684,10 @@ def main(argv=None) -> int:
             rc, res = do_import(src, out, a.format)
         except edasrc.Unreadable as exc:
             rc, res = 2, {"source": str(src), "ok": False, "error": str(exc)}
+    elif a.cmd == "import-sch":
+        src = a.source.resolve()
+        out = (a.out or Path(src.stem + "-kicad")).resolve()
+        rc, res = do_import_sch(src, out)
     else:
         targets = [t.strip() for t in a.to.split(",") if t.strip()]
         bad = [t for t in targets if t not in TARGETS]
@@ -592,7 +701,8 @@ def main(argv=None) -> int:
     elif res.get("error"):
         print(f"eda_io: {res['error']}", file=sys.stderr)
     else:
-        print((out / "losses.md").read_text(encoding="utf-8"))
+        name = "losses-sch.md" if a.cmd == "import-sch" else "losses.md"
+        print((out / name).read_text(encoding="utf-8"))
     return rc
 
 
