@@ -23,7 +23,8 @@ Palace (FEM) reads a JSON config and a gmsh mesh: `box_mesh_geo` and
 uses; Palace's eigen frequencies come back in postpro/eig.csv.
 
 FastHenry and FasterCap read their own text decks: `fasthenry_bar` (a
-straight rectangular bar) and `fastercap_cube` (a unit cube's six faces as
+straight rectangular bar), `fasthenry_pair` (two parallel bars, for the
+partial mutual `bar_pair_mutual` / `filament_mutual`) and `fastercap_cube` (a unit cube's six faces as
 panels), with parsers for their outputs.
 
 Lengths here are mm unless named otherwise.
@@ -597,6 +598,80 @@ def bar_partial_inductance(l: float, w: float, t: float) -> float:
     L = mu0 l / 2pi * (ln(2l/(w+t)) + 1/2 + 0.2235 (w+t)/l)."""
     lm = l * 1e-3
     return MU0 * lm / (2 * math.pi) * (math.log(2 * l / (w + t)) + 0.5 + 0.2235 * (w + t) / l)
+
+
+def fasthenry_pair(l: float, w: float, t: float, gap: float,
+                   sigma_s_per_m: float = 5.8e7, f: float = 1e3,
+                   nw: int = 5, nh: int = 1) -> str:
+    """Two parallel bars l x w x t (mm) along x, `gap` mm edge to edge in y,
+    each its own port: Zc.mat's off-diagonal is j omega M."""
+    sig = sigma_s_per_m * 1e-3
+    y = w + gap
+    e = f"w={w} h={t} sigma={sig} nwinc={nw} nhinc={nh}"
+    return ("* hwde bar pair\n.units mm\n"
+            f"N1 x=0 y=0 z=0\nN2 x={l} y=0 z=0\n"
+            f"N3 x=0 y={y} z=0\nN4 x={l} y={y} z=0\n"
+            f"E1 N1 N2 {e}\nE2 N3 N4 {e}\n"
+            ".external N1 N2\n.external N3 N4\n"
+            f".freq fmin={f} fmax={f} ndec=1\n.end\n")
+
+
+def read_zc_matrix(path: Path) -> tuple[float, list[list[complex]]]:
+    """(frequency, Z) of the first frequency in FastHenry's Zc.mat, any
+    port count ('... frequency = 1000 2 x 2' then n rows of 're +imj')."""
+    txt = Path(path).read_text()
+    m = re.search(r"frequency\s*=\s*([0-9.eE+\-]+)\s+(\d+)\s*x\s*(\d+)", txt)
+    if not m:
+        raise ValueError(f"no impedance matrix in {path}")
+    n = int(m.group(2))
+    num = r"([+\-]?[0-9.]+(?:[eE][+\-]?\d+)?)"
+    cells = re.findall(num + r"\s*" + num + "j", txt[m.end():])
+    if len(cells) < n * n:
+        raise ValueError(f"short impedance matrix in {path}")
+    z = [complex(float(a), float(b)) for a, b in cells[:n * n]]
+    return float(m.group(1)), [z[i * n:(i + 1) * n] for i in range(n)]
+
+
+def filament_mutual(a1: float, a2: float, b1: float, b2: float,
+                    d: float) -> float:
+    """Partial mutual inductance (H) of two parallel straight filaments
+    along one axis, one over [a1, a2], the other over [b1, b2] (mm), d mm
+    apart (Grover 1946 ch. 6; Paul, Inductance: Loop and Partial, 2010,
+    eq. 5.25): mu0/4pi * [F(a2-b1) + F(a1-b2) - F(a1-b1) - F(a2-b2)],
+    F(u) = u asinh(u/d) - sqrt(u^2 + d^2). Equal spans give Grover's
+    mu0 l/2pi (asinh(l/d) - sqrt(1 + d^2/l^2) + d/l)."""
+    d = max(d, 1e-9)
+
+    def F(u):
+        return u * math.asinh(u / d) - math.hypot(u, d)
+    v = F(a2 - b1) + F(a1 - b2) - F(a1 - b1) - F(a2 - b2)
+    return MU0 / (4 * math.pi) * v * 1e-3
+
+
+def rect_gmd(w: float, t: float, dy: float, dz: float = 0.0,
+             n: int = 8) -> float:
+    """Geometric mean distance (mm) between two w x t rectangles whose
+    centres are (dy, dz) apart (Gauss-Legendre, n x n points a side): the
+    filament distance that makes filament_mutual a bar-pair mutual
+    (Grover's GMD method)."""
+    import numpy as np
+    x, wt = np.polynomial.legendre.leggauss(n)
+    ys, zs = x * w / 2, x * t / 2
+    Y1, Z1 = np.meshgrid(ys, zs, indexing="ij")
+    W1 = np.outer(wt, wt) / 4
+    p = np.stack([Y1.ravel(), Z1.ravel()], 1)
+    q = p + np.array([dy, dz])
+    wv = W1.ravel()
+    r = np.hypot(p[:, None, 0] - q[None, :, 0], p[:, None, 1] - q[None, :, 1])
+    r = np.maximum(r, 1e-6)     # coincident points (shorted test copper)
+    return float(math.exp(np.sum(np.outer(wv, wv) * np.log(r))))
+
+
+def bar_pair_mutual(l: float, w: float, t: float, gap: float) -> float:
+    """Partial mutual inductance (H) of two equal parallel bars l x w x t
+    (mm), `gap` mm edge to edge, side by side in one plane: Grover's
+    filament formula at the bars' GMD."""
+    return filament_mutual(0, l, 0, l, rect_gmd(w, t, w + gap))
 
 
 def fastercap_cube(a: float, n: int) -> str:

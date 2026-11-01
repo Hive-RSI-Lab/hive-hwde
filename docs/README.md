@@ -473,8 +473,13 @@ now; it joins the verify suite once its findings on the pinned boards are
 judged) checks that every line leaving the board through a connector reaches
 a TVS / ESD clamp first, with no via or branch before it, the clamp near the
 pin and a ground via at its ground pad. It also prints an L·dI/dt estimate
-of the overshoot for each line. `constraints.json` `esd.internal`,
-`esd.exempt_nets`, `esd.clamps` and `esd.level_kv` tune it. The rules behind
+of the overshoot for each line, and for each connector-to-clamp stretch what
+runs beside it in a corridor (same or adjacent layer): the volts the strike
+couples in (M·dI/dt, Grover's partial mutual, by images over a ground plane)
+against the victim pins' abs max (`--parts`, `esd.victim_abs_max_v`). The
+corridor's width is a judgement derived from those volts (`esd.corridor_mm`,
+`esd.corridor_v`). `constraints.json` `esd.internal`, `esd.exempt_nets`,
+`esd.clamps` and `esd.level_kv` tune the rest. The rules behind
 it, and which EMC, ESD and thermal rules of thumb are verified, disputed or
 folklore, are in [`reference/ingest/emc-thermal.md`](../reference/ingest/emc-thermal.md),
 with the scripts that reproduce them.

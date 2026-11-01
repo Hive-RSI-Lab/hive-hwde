@@ -60,7 +60,7 @@ university and author pages, and open tools. No pirated books.
 | ESD-6 | One ground via right at the clamp's ground pad | **verified** (SLVA680 §2.4, and ESD-4 sets the cost of not doing it) | `check_esd` `esd_ground_far` |
 | ESD-7 | Clamp within 10 mm of the connector pin | **judgement**. Only one blog (PCBSync) gives a number. TI says "as close as design rules allow" | `check_esd.FAR_MM`, labelled a judgement |
 | ESD-8 | "A 90° corner on the line arcs: field ≥ 7 kV, arcs for radius < 2.6 mm" (SLVA680 §2.2) | **disputed**. The figure mixes volts and field. 2.6 mm is about the uniform-field air gap that holds 7 kV at ~3 kV/mm (2.3 mm), which is a spacing between conductors, not a corner property. Once the clamp conducts the line sits at tens of volts. LearnEMC and Bogatin measure no emission difference between corner styles | `air_gap_for_kv`; LearnEMC QotW 2023-12-25 |
-| ESD-9 | Keep unprotected traces out of the region between the connector and the clamp (SLVA680 §2.2) | plausible, **single source**; follows from ESD-4's dI/dt. Not checked yet | gap G6 |
+| ESD-9 | Keep unprotected traces out of the region between the connector and the clamp (SLVA680 §2.2) | plausible, **single source**; follows from ESD-4's dI/dt | `check_esd` `esd_corridor_coupled` (#494) |
 | ESD-10 | A USB 2.0 HS clamp is ≤ ~4-5 pF per line (TI < 4, onsemi < 5, Nexperia's 5 pF board budget; parts ~1 pF are usual) | **verified** (three vendors on the same spec budget). One blog's "5-10 pF" is looser than all three: folklore | gap G2 |
 
 ### check_esd on the pinned boards (run by hand, not scored)
@@ -134,7 +134,8 @@ File the rest in this order as in-flight work drops: G8, G6, G5, G7, G9.
 - **G5**: a plane-gap crossing screen for every net with a fast edge (not
   only `constraints.high_speed`), from EMC-6 and EMC-3. Overlaps the
   digital-si-rf ingest; left for it.
-- **G6**: ESD-9's keep-out: unprotected traces running beside the
+- **G6** (done, #494: `check_esd` `esd_corridor_coupled`, and `esd_via_first`
+  for the via): ESD-9's keep-out: unprotected traces running beside the
   connector-to-clamp stretch, or the via that stretch takes.
 - **G7**: a bring-up helper: from IR or thermocouple top temperatures and
   measured power, Tj = Ttop + ΨJT·P against the part's limit.
