@@ -63,7 +63,8 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    pitch (a 48 V controller's 0.5 mm pins, a 100 V 0402) gets
    `package_ratings: [{"ref", "clearance_mm", "why"}]`: one clearance rule
    scoped to that courtyard, emitted after the HV rules (check_creepage
-   keeps those pairs as dru_footprint_scope warnings). Copper weight is DERIVED from the stackup like
+   keeps those pairs as dru_footprint_scope warnings). Constraints `isolation`
+   gets `aiee_iso_*` barrier rules, after those: remediations/isolation.md. Copper weight is DERIVED from the stackup like
    board_init's - do not pass `--copper-oz` (an explicit value contradicting
    the named stackup exits 2). Check the JSON's `capability_class` matches
    the board's copper (e.g. `2layer_2oz` on a 2-oz build). kicad-cli
