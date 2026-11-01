@@ -406,8 +406,11 @@ def do_import(source: Path, out: Path, fmt: str | None = None) -> tuple[int, dic
             f"{bc['vias']} vias, {bc['zones']} zones."]
     if src:
         sc = src.to_json()
+        per = {k: v for k, v in (sc["copper"] or {}).items() if v}  # Altium names 30 mids + 16 planes
+        empty = len(sc["copper"] or {}) - len(per)
         head.append(f"Source: {sc['parts']} parts, {sc['nets']} nets, copper "
-                    f"objects per layer {sc['copper']}.")
+                    f"objects per layer {per}" + (f" ({empty} named layers empty)" if empty
+                                                  else "") + ".")
     head += ["", f"Next: `bin/hwde intake --source {out}` makes it an hwde workspace "
              "(board only, so it lands at P6/P8 with no schematic)."]
     head += ["", "**Verdict:** " + ("something was LOST; read below before using this board."
@@ -415,6 +418,9 @@ def do_import(source: Path, out: Path, fmt: str | None = None) -> tuple[int, dic
                                      "notes below still need a look.")]
     _write_losses(out / "losses.md", f"Import of {source.name}", head, losses, never)
     return (1 if lost else 0), result
+
+
+_ERC_SOURCE_NOTE = {"eagle": " (Eagle has no ERC pin types to speak of)"}
 
 
 def do_import_sch(source: Path, out: Path) -> tuple[int, dict]:
@@ -437,6 +443,10 @@ def do_import_sch(source: Path, out: Path) -> tuple[int, dict]:
     if fmt == "eagle":
         src_parts, src_nets = schimport.eagle_sch_nets(source)
         losses += schimport.compare(src_parts, src_nets, refs, nets)
+    elif fmt == "altium" and source.suffix.lower() == ".schdoc":
+        src_parts, src_nets, notes = schimport.altium_sch_nets(source)
+        losses += schimport.compare(src_parts, src_nets, refs, nets)
+        losses += [{"level": "check", "what": "source", "text": n} for n in notes]
     else:
         losses.append({"level": "check", "what": "source",
                        "text": f"no {fmt} schematic reader here: the import is counted, "
@@ -447,7 +457,7 @@ def do_import_sch(source: Path, out: Path) -> tuple[int, dict]:
         losses.append({"level": "check", "what": "erc",
                        "text": f"ERC on the import: {erc['errors']} errors, "
                                f"{erc['warnings']} warnings ({top}). Some are the source's "
-                               "own (Eagle has no ERC pin types to speak of); read them"})
+                               f"own{_ERC_SOURCE_NOTE.get(fmt, '')}; read them"})
     lost = any(l["level"] == "lost" for l in losses)
     never = ["Symbols land in one <stem>-<format>-import.kicad_sym beside the "
              "schematic, not in a library hwde knows: lib_pull / sym checks see them "
@@ -471,7 +481,8 @@ def do_import_sch(source: Path, out: Path) -> tuple[int, dict]:
                if c["source_parts"] is not None else "."), "",
             "**Verdict:** " + ("something was LOST; read below." if lost else
                                "connectivity matches the source; the checks below still "
-                               "need a look." if fmt == "eagle" else "imported, not compared.")]
+                               "need a look." if src_parts is not None else
+                               "imported, not compared.")]
     _write_losses(out / "losses-sch.md", f"Schematic import of {source.name}", head, losses, never)
     return (1 if lost else 0), result
 
