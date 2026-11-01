@@ -22,7 +22,7 @@ right, and the board-facing studies built on them.
         two ways: a disagreement past 3% means one of them is wrong for
         this geometry. --z-target adds the error against the target.
 
-    hwde sim_solve planar --geom GEOM.json [--excite 0,1] [--f-max HZ]
+    hwde sim_solve planar --geom GEOM.json [--excite all|0,1] [--f-max HZ]
                           [--f-min HZ] [--points N] [--fine MM]
                           [--out RES.json] [--touchstone FILE] [--keep DIR]
         full-wave (openEMS) S-parameters of a planar microstrip circuit:
@@ -31,7 +31,10 @@ right, and the board-facing studies built on them.
         three voltage probes per feed. GEOM.json: {"h", "er", "tand"?,
         "polys": [[[x, y], ...], ...], "ports": [{"x", "y", "dir", "w"}]}
         (mm; dir "+x"|"-x"|"+y"|"-y", pointing out of the circuit). One
-        openEMS run per excited port, one at a time. The S it writes is
+        openEMS run per excited port, one at a time. Every port excited
+        (the default) gives S = B A^-1, exact whatever the 50 ohm ends
+        reflect; fewer gives those columns with the ends' reflection left
+        in. The S it writes is
         checked by lib/sparam (IEEE P370 passivity/reciprocity/causality,
         failing points; `quality` in the result): exit 1 when it fails.
 
@@ -461,12 +464,13 @@ def planar(geo: dict, excites, f_max, f_min=None, points=201, fine=None, keep=No
     n = len(geo["ports"])
     f_min = f_min or f_max / 40
     freqs = [f_min + (f_max - f_min) * i / (points - 1) for i in range(points)]
-    cols, runs = {}, []
+    cols, runs, kept = {}, [], []
+    scratch = tempfile.TemporaryDirectory(prefix="hwde-planar-") if not keep else None
+    full = sorted(excites) == list(range(n))
     for e in excites:
         csx, where = em.planar_deck(geo["polys"], geo["ports"], geo["h"], geo["er"], f_max,
                                     excite=e, tand=geo.get("tand", 0.0), fine=fine)
-        ctx = tempfile.TemporaryDirectory(prefix="hwde-planar-") if not keep else None
-        work = Path(keep) / f"port{e}" if keep else Path(ctx.name)
+        work = Path(keep or scratch.name) / f"port{e}"
         work.mkdir(parents=True, exist_ok=True)
         (work / "planar.xml").write_text(csx.xml())
         t0 = time.time()
@@ -476,10 +480,14 @@ def planar(geo: dict, excites, f_max, f_min=None, points=201, fine=None, keep=No
                                       f"{(r.stdout + r.stderr)[-400:]}")
         if not (work / f"p{e}u0").exists():
             raise solvers.SolverError(f"openEMS wrote no probes: {(r.stdout + r.stderr)[-400:]}")
-        cols[e] = em.planar_sparams(work, where, e, freqs)
+        if not full:
+            cols[e] = em.planar_sparams(work, where, e, freqs)
+        kept.append((e, work))
         runs.append({"excite": e, "cells": where["cells"], "seconds": round(time.time() - t0, 1)})
-        if ctx:
-            ctx.cleanup()
+    if full:
+        cols = em.planar_s_matrix([w for _, w in sorted(kept)], where, freqs)
+    if scratch:
+        scratch.cleanup()
     e0 = excites[0]
     s11 = [c[e0] for c in cols[e0]]
     s21 = [c[1 - e0] for c in cols[e0]] if n == 2 else None
@@ -771,7 +779,7 @@ def main(argv=None) -> int:
     ln.add_argument("--json", action="store_true")
     pl = sub.add_parser("planar")
     pl.add_argument("--geom", required=True)
-    pl.add_argument("--excite", default="0")
+    pl.add_argument("--excite", default="all")
     pl.add_argument("--f-max", type=float, default=6e9)
     pl.add_argument("--f-min", type=float)
     pl.add_argument("--points", type=int, default=201)
@@ -843,7 +851,9 @@ def main(argv=None) -> int:
 
     if args.cmd == "planar":
         geo = json.loads(Path(args.geom).read_text())
-        res = planar(geo, [int(k) for k in args.excite.split(",")], args.f_max,
+        excites = (list(range(len(geo["ports"]))) if args.excite == "all"
+                   else [int(k) for k in args.excite.split(",")])
+        res = planar(geo, excites, args.f_max,
                      args.f_min, args.points, args.fine, args.keep)
         if args.touchstone:
             Path(args.touchstone).write_text(res.pop("_touchstone"))
