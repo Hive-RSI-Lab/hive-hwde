@@ -25,6 +25,7 @@ import html
 import json
 import math
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -181,6 +182,8 @@ def main(argv=None) -> int:
         return 2
     try:
         cli = sl._cli()
+        if shutil.which("pdftotext") is None:
+            raise RuntimeError("needs pdftotext (poppler-utils)")
         res = {"sheets": {}}
         for f in sl.sheet_files(a.sch):
             res["sheets"][f.name] = measure(f, cli)
