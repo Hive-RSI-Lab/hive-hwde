@@ -97,9 +97,9 @@ schematic agent (record it).
 - P8 layout legs, advisory by default: `check_irdrop.py` (2.5D FDM IR drop +
   current density on the real copper; gates only when `irdrop_mv_max` /
   `jmax_a_per_mm` are declared; honor `grid_unconverged` warnings) and
-  `check_pdn_z.py --metadata decoupling.json` (plane-cavity |Z|; judge peaks and
-  `first_min` - `z_max` is a band-edge model artifact; `pdn_target_mohm` gates
-  antiresonance peaks only). Fold both into the P8 review; never block on them
+  `check_pdn_z.py --metadata decoupling.json` (+ constraints: a rail with
+  `transient_a` gets Z_t = V*ripple/dI judged to the package corner, VRM in
+  the chain; see its docstring. Rails without one: `targets_missing`). Fold both into the P8 review; never block on them
   without constraints-declared bounds.
 
 ## Run close, resuming, and what not to do
