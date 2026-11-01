@@ -131,16 +131,16 @@ def test_a_lowered_jlc_floor_lets_the_drill_faults_through(tmp_path, monkeypatch
         for k, v in d.items():
             if isinstance(v, dict):
                 lower(v)
-            elif k == "min_hole_to_hole_mm":
-                d[k] = 0.4
-            elif k == "min_hole_diameter_mm":
-                d[k] = 0.2
+            elif k in ("min_hole_to_hole_mm", "abs_min_hole_to_hole_mm"):
+                d[k] = 0.35
+            elif k in ("min_hole_diameter_mm", "abs_min_hole_diameter_mm"):
+                d[k] = 0.1
     lower(caps)
     p = tmp_path / "caps.yaml"
     p.write_text(yaml.safe_dump(caps), encoding="utf-8")
     monkeypatch.setattr(dfm_check, "CAPABILITIES", p)
     assert set(_missed(strength.dfm_faults())) == {
-        "dfm hole-to-hole-0.45 (dfm_hole_to_hole)", "dfm drill-0.25 (dfm_hole_size)"}
+        "dfm hole-to-hole-0.40 (dfm_hole_to_hole)", "dfm drill-0.12 (dfm_hole_size)"}
 
 
 def test_a_check_with_no_planted_fault_is_a_miss(monkeypatch):
