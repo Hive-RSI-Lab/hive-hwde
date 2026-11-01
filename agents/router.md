@@ -109,8 +109,8 @@ rules as routing constraints; cite the record id when you apply one.
    unchanged). It can self-detect a connectivity regression (exit 1 cleanup_regression, board
    left modified): restore the snapshot and CONTINUE WITHOUT cleanup - it
    is optional by design.
-5c. Length groups (constraints `length_groups`: DDR byte lanes, address/
-   command to the clock): `scripts/route_tune.py --pcb <board>
+5c. Length groups and diff pairs (constraints `length_groups`: DDR byte
+   lanes, address/command to the clock; `diff_pairs`: skew): `scripts/route_tune.py --pcb <board>
    --constraints <board dir>/constraints.json --out-report
    <dir>/route_tune.json` after the snap. It adds trombone meanders to each
    short member until it sits mid-range of its reference (a diff pair as
