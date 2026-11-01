@@ -1409,3 +1409,15 @@ def test_dfm_runtime_budget(fab_dirs):
     dfm_check.run(board_path("rf4"), fab_dir=d,
                   schematic=GOLDEN / "rf4" / "rf4.kicad_sch")
     assert time.time() - t0 < 30.0
+
+
+def test_mouse_bite_rows_are_not_hole_pairs():
+    """JLC asks for 0.5-0.8 mm unplated holes 0.2-0.3 mm apart on a tab; a
+    plated pair, or a tighter or odd-sized row, is still held to the rule."""
+    from types import SimpleNamespace as H
+    from dfm_check import _mouse_bite_pair as pair
+    bite = H(plated=False, diameter=0.5)
+    assert pair(bite, H(plated=False, diameter=0.5))
+    assert not pair(bite, H(plated=True, diameter=0.5))
+    assert not pair(bite, H(plated=False, diameter=0.6))
+    assert not pair(H(plated=False, diameter=0.4), H(plated=False, diameter=0.4))
