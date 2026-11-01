@@ -92,6 +92,8 @@ SLOW = {
     "tests/test_build_modes.py::test_board_init_cli_does_not_refuse_a_fixed_outline": _TOOLS,
     "tests/test_bench.py::test_offline_fixture_matches_baseline": _BOARD,
     "tests/test_route_tune.py::test_tune_blinky2_live": _TOOLS,
+    "tests/test_teardrops.py::test_live_teardrops_led_count_drc_idempotent": _TOOLS,
+    "tests/test_teardrops.py::test_live_teardrops_bb_adc_count": _TOOLS,
     "tests/test_dfm_zone_fill.py::test_live_refill_confirms_dfm1": _TOOLS,
     "tests/test_bench.py::test_known_answers_fire_where_expected": _BOARD,
     "tests/test_mcp_server.py::test_dfm_check_is_read_only": _BOARD,

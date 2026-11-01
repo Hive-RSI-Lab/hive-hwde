@@ -74,6 +74,12 @@ board:
   thickness_options_mm: [0.4, 0.6, 0.8, 1.0, 1.2, 1.6, 2.0]
   thickness_default_mm: 1.6
   max_hole_diameter_mm: 6.3
+  # Ring breakout (#480, dfm_check teardrop family): JLC drills within
+  # +/- 0.075 mm of the pad centre, and its absolute via ring is 0.05
+  # ("via diameter >= hole + 0.1"). A ring under 0.05 + 0.075 = 0.125 can
+  # lose its copper at the track neck: it needs a teardrop there.
+  drill_wander_mm: 0.075
+  min_ring_abs_mm: 0.05
   surface_finish: [HASL, "LeadFree HASL", ENIG]
   solder_mask_colors: [green, black, blue, red, white, yellow, purple, "matte black", "matte green"]
   silkscreen_colors: [white, black]
