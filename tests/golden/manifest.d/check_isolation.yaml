@@ -1,0 +1,13 @@
+# Seeded fault for check_isolation (hive-hwde #353).
+mutants:
+  iso-swd-uncrossable:
+    board: blinky2
+    script: mutations/iso_swd_uncrossable.py
+    check: check_isolation
+    defect: >-
+      SIDECAR fault (copper unchanged): constraints.json declares a reinforced
+      barrier between the SWD lines and the MCU's rails; nothing on the board
+      isolates them, so U1 has pins in both domains and no declared rating
+    expect:
+      kind: iso_part_unrated
+      net: +3V3

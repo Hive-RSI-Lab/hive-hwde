@@ -3273,11 +3273,11 @@ modes:
   shows: 3.58 -> 1.05 mm vs vendor 1.40 mm
   catch: declared barrier checked vs footprint
   coverage:
-    script: check_creepage (partial)
-    rule: '-'
-    level: L1
+    script: check_isolation
+    rule: iso_clearance; iso_creepage; iso_part_pin_gap
+    level: L2
   target_level: L2
-  gap: barrier not declared
+  gap: only on a board that declares the barrier
   hit_on:
   - lumina-carrier
   sources:

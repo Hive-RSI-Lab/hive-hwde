@@ -30,7 +30,8 @@ have same-layer copper closer than the IPC-2221 Table 6-1 minimum for the adjudi
   locks sat 0.66 mm from 57 V and neither this check nor DRC saw them (1785). An equal-potential
   pair (bridge input, 0.3295 mm at 57 V - 1600) is seen ONLY if declared in `voltage_pairs`.
 - Blind to isolation barriers: magjack/opto/isolated-DCDC spacing comes from the part datasheet and
-  hipot rating, not `voltages[]` - a 1.05 mm barrier collapse passes at 0.635 mm (1110). A shell
+  hipot rating, not `voltages[]` - a 1.05 mm barrier collapse passes at 0.635 mm (1110). Declare the
+  barrier in constraints `isolation` and check_isolation judges it (isolation.md). A shell
   board-lock pad against an HV tap IS voltage-derived and does get caught (1226).
 - The count is not the population: hits are deduped at 0.1 mm and capped at 500 per (net pair,
   layer). Read `checked[].pairs[].pairs_under_requirement` / `truncated` (check_creepage.py:83-84).

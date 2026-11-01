@@ -1,0 +1,186 @@
+# Isolation spacing tables for check_isolation (hive-hwde #353).
+#
+# Every row carries its own `verified` flag and source id. verified: true means
+# the value was READ from the named document, not remembered. verified: false
+# means nobody has read it: the row is there so the check can run, and any
+# finding that rests on one says so (table_verified: false).
+#
+# IEC's own text is paid. IS 15382 (Part 1):2003 is India's published adoption,
+# "identical with IEC 60664-1 (2002)", and its table pages were read as page
+# images on 2026-11-01 (the PDF's text layer is an OCR with holes; do not
+# re-derive rows from it). Table numbers differ by edition:
+#   IS 15382 / IEC 2002   IEC 60664-1:2007   IEC 60664-1:2020
+#   Table 1               Table F.1          Table F.1
+#   Table 2               Table F.2          Table F.2
+#   Table 4               Table F.4          Table F.5
+#   Table 7a              Table F.7a         Table F.8
+#   Table A.2             Table A.2          Table A.2 / F.10
+# The 2007 numbers are as TI SLUAAR5 and SLUP419 quote them (F.7a isn't quoted
+# there: from memory); the 2020 numbers are from IEC's own table of contents
+# (preview PDF on vde-verlag.de). Values
+# are those of the 2002 text: later editions were not read, so a change in them
+# would not show here.
+sources:
+  is15382:
+    title: IS 15382 (Part 1):2003, identical with IEC 60664-1 (2002)
+    url: https://law.resource.org/pub/in/bis/S05/is.15382.1.2003.pdf
+  slup419:
+    title: TI SLUP419, Demystifying clearance and creepage distance (Table 5 quotes IEC 62368-1 Table 10)
+    url: https://www.ti.com/lit/pdf/slup419
+  sluaar5:
+    title: TI SLUAAR5, Circuit board insulation design according to IEC60664 (worked interpolation, A.2 at 4000 m)
+    url: https://www.ti.com/lit/pdf/sluaar5
+  none:
+    title: not read; typed from memory or borrowed from IEC 60664-1 on the assumption the tables agree
+
+iec60664_1:
+  # IS 15382 Table 1. Line-to-neutral V up to and including -> rated impulse V
+  # by overvoltage category. SLUP419 Table 4 agrees on 50/150/300/600.
+  rated_impulse:
+    source: is15382
+    verified: true
+    rows:
+      - {v: 50, I: 330, II: 500, III: 800, IV: 1500}
+      - {v: 100, I: 500, II: 800, III: 1500, IV: 2500}
+      - {v: 150, I: 800, II: 1500, III: 2500, IV: 4000}
+      - {v: 300, I: 1500, II: 2500, III: 4000, IV: 6000}
+      - {v: 600, I: 2500, II: 4000, III: 6000, IV: 8000}
+      - {v: 1000, I: 4000, II: 6000, III: 8000, IV: 12000}
+  # IS 15382 Table 2 footnote 2 (clause 2.1.1.2): reinforced takes the next of
+  # these; a basic value off the series, or the top one, takes 160 % (3.1.5).
+  preferred_impulse_kv: [0.33, 0.5, 0.8, 1.5, 2.5, 4.0, 6.0, 8.0, 12.0]
+  # IS 15382 Table 2, Case A (inhomogeneous field), minimum clearance in air
+  # up to 2000 m, by pollution degree. PD4 is PD3 with a 1.6 mm floor
+  # (footnote 6). Interpolation between rows is allowed for internal circuits
+  # (footnote 5, 2.2.2.3.2).
+  clearance_impulse:
+    - {kv: 0.33, pd1: 0.01, pd2: 0.2, pd3: 0.8, verified: true, source: is15382}
+    - {kv: 0.40, pd1: 0.02, pd2: 0.2, pd3: 0.8, verified: true, source: is15382}
+    - {kv: 0.50, pd1: 0.04, pd2: 0.2, pd3: 0.8, verified: true, source: is15382}
+    - {kv: 0.60, pd1: 0.06, pd2: 0.2, pd3: 0.8, verified: true, source: is15382}
+    - {kv: 0.80, pd1: 0.10, pd2: 0.2, pd3: 0.8, verified: true, source: is15382}
+    - {kv: 1.0, pd1: 0.15, pd2: 0.2, pd3: 0.8, verified: true, source: is15382}
+    - {kv: 1.2, pd1: 0.25, pd2: 0.25, pd3: 0.8, verified: true, source: is15382}
+    - {kv: 1.5, pd1: 0.5, pd2: 0.5, pd3: 0.8, verified: true, source: is15382}
+    - {kv: 2.0, pd1: 1.0, pd2: 1.0, pd3: 1.0, verified: true, source: is15382}
+    - {kv: 2.5, pd1: 1.5, pd2: 1.5, pd3: 1.5, verified: true, source: is15382}
+    - {kv: 3.0, pd1: 2.0, pd2: 2.0, pd3: 2.0, verified: true, source: is15382}
+    - {kv: 4.0, pd1: 3.0, pd2: 3.0, pd3: 3.0, verified: true, source: is15382}
+    - {kv: 5.0, pd1: 4.0, pd2: 4.0, pd3: 4.0, verified: true, source: is15382}
+    - {kv: 6.0, pd1: 5.5, pd2: 5.5, pd3: 5.5, verified: true, source: is15382}
+    - {kv: 8.0, pd1: 8.0, pd2: 8.0, pd3: 8.0, verified: true, source: is15382}
+    - {kv: 10, pd1: 11, pd2: 11, pd3: 11, verified: true, source: is15382}
+    - {kv: 12, pd1: 14, pd2: 14, pd3: 14, verified: true, source: is15382}
+    - {kv: 15, pd1: 18, pd2: 18, pd3: 18, verified: true, source: is15382}
+    - {kv: 20, pd1: 25, pd2: 25, pd3: 25, verified: true, source: is15382}
+    - {kv: 25, pd1: 33, pd2: 33, pd3: 33, verified: true, source: is15382}
+    - {kv: 30, pd1: 40, pd2: 40, pd3: 40, verified: true, source: is15382}
+    - {kv: 40, pd1: 60, pd2: 60, pd3: 60, verified: true, source: is15382}
+    - {kv: 50, pd1: 75, pd2: 75, pd3: 75, verified: true, source: is15382}
+    - {kv: 60, pd1: 90, pd2: 90, pd3: 90, verified: true, source: is15382}
+    - {kv: 80, pd1: 130, pd2: 130, pd3: 130, verified: true, source: is15382}
+    - {kv: 100, pd1: 170, pd2: 170, pd3: 170, verified: true, source: is15382}
+  # IS 15382 Table 7a, Case A: steady-state, temporary or recurring PEAK voltage.
+  # "The clearances for other voltages are obtained by interpolation."
+  clearance_peak:
+    - {kv: 0.33, mm: 0.01, verified: true, source: is15382}
+    - {kv: 0.4, mm: 0.02, verified: true, source: is15382}
+    - {kv: 0.5, mm: 0.04, verified: true, source: is15382}
+    - {kv: 0.6, mm: 0.06, verified: true, source: is15382}
+    - {kv: 0.8, mm: 0.13, verified: true, source: is15382}
+    - {kv: 1.0, mm: 0.26, verified: true, source: is15382}
+    - {kv: 1.2, mm: 0.42, verified: true, source: is15382}
+    - {kv: 1.5, mm: 0.76, verified: true, source: is15382}
+    - {kv: 2.0, mm: 1.27, verified: true, source: is15382}
+    - {kv: 2.5, mm: 1.8, verified: true, source: is15382}
+    - {kv: 3.0, mm: 2.4, verified: true, source: is15382}
+    - {kv: 4.0, mm: 3.8, verified: true, source: is15382}
+    - {kv: 5.0, mm: 5.7, verified: true, source: is15382}
+    - {kv: 6.0, mm: 7.9, verified: true, source: is15382}
+    - {kv: 8.0, mm: 11.0, verified: true, source: is15382}
+    - {kv: 10, mm: 15.2, verified: true, source: is15382}
+    - {kv: 12, mm: 19, verified: true, source: is15382}
+    - {kv: 15, mm: 25, verified: true, source: is15382}
+    - {kv: 20, mm: 34, verified: true, source: is15382}
+    - {kv: 25, mm: 44, verified: true, source: is15382}
+    - {kv: 30, mm: 55, verified: true, source: is15382}
+    - {kv: 40, mm: 77, verified: true, source: is15382}
+    - {kv: 50, mm: 100, verified: true, source: is15382}
+  # IS 15382 Table 4, creepage by working V rms. Columns: pwm1, pwm2 = printed
+  # wiring material at PD1 / PD2 (pwm2 excludes IIIb; both stop at 1000 V);
+  # pd1 = all groups; pd2_*, pd3_* by material group, where III covers IIIa and
+  # IIIb. Footnote 3: rows from 12.5 kV up are provisional, extrapolated.
+  # Interpolation: the text allows it (3.2.2 note); SLUAAR5 eq. 2-3 does it
+  # linearly, as this table's reader does.
+  creepage:
+    - {v: 10, pwm1: 0.025, pwm2: 0.04, pd1: 0.08, pd2_I: 0.4, pd2_II: 0.4, pd2_III: 0.4, pd3_I: 1, pd3_II: 1, pd3_III: 1, verified: true, source: is15382}
+    - {v: 12.5, pwm1: 0.025, pwm2: 0.04, pd1: 0.09, pd2_I: 0.42, pd2_II: 0.42, pd2_III: 0.42, pd3_I: 1.05, pd3_II: 1.05, pd3_III: 1.05, verified: true, source: is15382}
+    - {v: 16, pwm1: 0.025, pwm2: 0.04, pd1: 0.1, pd2_I: 0.45, pd2_II: 0.45, pd2_III: 0.45, pd3_I: 1.1, pd3_II: 1.1, pd3_III: 1.1, verified: true, source: is15382}
+    - {v: 20, pwm1: 0.025, pwm2: 0.04, pd1: 0.11, pd2_I: 0.48, pd2_II: 0.48, pd2_III: 0.48, pd3_I: 1.2, pd3_II: 1.2, pd3_III: 1.2, verified: true, source: is15382}
+    - {v: 25, pwm1: 0.025, pwm2: 0.04, pd1: 0.125, pd2_I: 0.5, pd2_II: 0.5, pd2_III: 0.5, pd3_I: 1.25, pd3_II: 1.25, pd3_III: 1.25, verified: true, source: is15382}
+    - {v: 32, pwm1: 0.025, pwm2: 0.04, pd1: 0.14, pd2_I: 0.53, pd2_II: 0.53, pd2_III: 0.53, pd3_I: 1.3, pd3_II: 1.3, pd3_III: 1.3, verified: true, source: is15382}
+    - {v: 40, pwm1: 0.025, pwm2: 0.04, pd1: 0.16, pd2_I: 0.56, pd2_II: 0.8, pd2_III: 1.1, pd3_I: 1.4, pd3_II: 1.6, pd3_III: 1.8, verified: true, source: is15382}
+    - {v: 50, pwm1: 0.025, pwm2: 0.04, pd1: 0.18, pd2_I: 0.6, pd2_II: 0.85, pd2_III: 1.2, pd3_I: 1.5, pd3_II: 1.7, pd3_III: 1.9, verified: true, source: is15382}
+    - {v: 63, pwm1: 0.04, pwm2: 0.063, pd1: 0.2, pd2_I: 0.63, pd2_II: 0.9, pd2_III: 1.25, pd3_I: 1.6, pd3_II: 1.8, pd3_III: 2, verified: true, source: is15382}
+    - {v: 80, pwm1: 0.063, pwm2: 0.10, pd1: 0.22, pd2_I: 0.67, pd2_II: 0.95, pd2_III: 1.3, pd3_I: 1.7, pd3_II: 1.9, pd3_III: 2.1, verified: true, source: is15382}
+    - {v: 100, pwm1: 0.1, pwm2: 0.16, pd1: 0.25, pd2_I: 0.71, pd2_II: 1, pd2_III: 1.4, pd3_I: 1.8, pd3_II: 2, pd3_III: 2.2, verified: true, source: is15382}
+    - {v: 125, pwm1: 0.16, pwm2: 0.25, pd1: 0.28, pd2_I: 0.75, pd2_II: 1.05, pd2_III: 1.5, pd3_I: 1.9, pd3_II: 2.1, pd3_III: 2.4, verified: true, source: is15382}
+    - {v: 160, pwm1: 0.25, pwm2: 0.40, pd1: 0.32, pd2_I: 0.8, pd2_II: 1.1, pd2_III: 1.6, pd3_I: 2.0, pd3_II: 2.2, pd3_III: 2.5, verified: true, source: is15382}
+    - {v: 200, pwm1: 0.4, pwm2: 0.63, pd1: 0.42, pd2_I: 1, pd2_II: 1.4, pd2_III: 2.0, pd3_I: 2.5, pd3_II: 2.8, pd3_III: 3.2, verified: true, source: is15382}
+    - {v: 250, pwm1: 0.56, pwm2: 1.0, pd1: 0.56, pd2_I: 1.25, pd2_II: 1.8, pd2_III: 2.5, pd3_I: 3.2, pd3_II: 3.6, pd3_III: 4.0, verified: true, source: is15382}
+    - {v: 320, pwm1: 0.75, pwm2: 1.6, pd1: 0.75, pd2_I: 1.6, pd2_II: 2.2, pd2_III: 3.2, pd3_I: 4.0, pd3_II: 4.5, pd3_III: 5.0, verified: true, source: is15382}
+    - {v: 400, pwm1: 1, pwm2: 2.0, pd1: 1, pd2_I: 2.0, pd2_II: 2.8, pd2_III: 4.0, pd3_I: 5.0, pd3_II: 5.6, pd3_III: 6.3, verified: true, source: is15382}
+    - {v: 500, pwm1: 1.3, pwm2: 2.5, pd1: 1.3, pd2_I: 2.5, pd2_II: 3.6, pd2_III: 5, pd3_I: 6.3, pd3_II: 7.1, pd3_III: 8, verified: true, source: is15382}
+    - {v: 630, pwm1: 1.8, pwm2: 3.2, pd1: 1.8, pd2_I: 3.2, pd2_II: 4.5, pd2_III: 6.3, pd3_I: 8, pd3_II: 9, pd3_III: 10, verified: true, source: is15382}
+    - {v: 800, pwm1: 2.4, pwm2: 4.0, pd1: 2.4, pd2_I: 4.0, pd2_II: 5.6, pd2_III: 8, pd3_I: 10, pd3_II: 11, pd3_III: 12.5, verified: true, source: is15382}
+    - {v: 1000, pwm1: 3.2, pwm2: 5.0, pd1: 3.2, pd2_I: 5.0, pd2_II: 7.1, pd2_III: 10, pd3_I: 12.5, pd3_II: 14, pd3_III: 16, verified: true, source: is15382}
+    - {v: 1250, pd1: 4.2, pd2_I: 6.3, pd2_II: 9, pd2_III: 12.5, pd3_I: 16, pd3_II: 18, pd3_III: 20, verified: true, source: is15382}
+    - {v: 1600, pd1: 5.6, pd2_I: 8, pd2_II: 11, pd2_III: 16, pd3_I: 20, pd3_II: 22, pd3_III: 25, verified: true, source: is15382}
+    - {v: 2000, pd1: 7.5, pd2_I: 10, pd2_II: 14, pd2_III: 20, pd3_I: 25, pd3_II: 28, pd3_III: 32, verified: true, source: is15382}
+    - {v: 2500, pd1: 10, pd2_I: 12.5, pd2_II: 18, pd2_III: 25, pd3_I: 32, pd3_II: 36, pd3_III: 40, verified: true, source: is15382}
+    - {v: 3200, pd1: 12.5, pd2_I: 16, pd2_II: 22, pd2_III: 32, pd3_I: 40, pd3_II: 45, pd3_III: 50, verified: true, source: is15382}
+    - {v: 4000, pd1: 16, pd2_I: 20, pd2_II: 28, pd2_III: 40, pd3_I: 50, pd3_II: 56, pd3_III: 63, verified: true, source: is15382}
+    - {v: 5000, pd1: 20, pd2_I: 25, pd2_II: 36, pd2_III: 50, pd3_I: 63, pd3_II: 71, pd3_III: 80, verified: true, source: is15382}
+    - {v: 6300, pd1: 25, pd2_I: 32, pd2_II: 45, pd2_III: 63, pd3_I: 80, pd3_II: 90, pd3_III: 100, verified: true, source: is15382}
+    - {v: 8000, pd1: 32, pd2_I: 40, pd2_II: 56, pd2_III: 80, pd3_I: 100, pd3_II: 110, pd3_III: 125, verified: true, source: is15382}
+    - {v: 10000, pd1: 40, pd2_I: 50, pd2_II: 71, pd2_III: 100, pd3_I: 125, pd3_II: 140, pd3_III: 160, verified: true, source: is15382}
+  # IS 15382 Table A.2. The text doesn't state a rule between rows here; a later
+  # IEC draft forbids interpolating, so an altitude between rows takes the next
+  # row up (the safe side either way).
+  altitude:
+    - {m: 2000, factor: 1.00, verified: true, source: is15382}
+    - {m: 3000, factor: 1.14, verified: true, source: is15382}
+    - {m: 4000, factor: 1.29, verified: true, source: is15382}
+    - {m: 5000, factor: 1.48, verified: true, source: is15382}
+    - {m: 6000, factor: 1.70, verified: true, source: is15382}
+    - {m: 7000, factor: 1.95, verified: true, source: is15382}
+    - {m: 8000, factor: 2.25, verified: true, source: is15382}
+    - {m: 9000, factor: 2.62, verified: true, source: is15382}
+    - {m: 10000, factor: 3.02, verified: true, source: is15382}
+    - {m: 15000, factor: 6.67, verified: true, source: is15382}
+    - {m: 20000, factor: 14.5, verified: true, source: is15382}
+  # IS 15382 clause 4.2: narrower than X, a groove or slot is bridged (no
+  # credit). "If the associated clearance is less than 3 mm, the minimum
+  # dimension X may be reduced to one third of this clearance": a "may", and
+  # the check does not take it, so a narrower slot never earns credit here.
+  groove_x_mm: {source: is15382, verified: true, pd1: 0.25, pd2: 1.0, pd3: 1.5, pd4: 1.5}
+
+# IEC 62368-1: Table 10 has four rows quoted with their table number in SLUP419
+# Table 5, all equal to 60664-1 Table 7a's Case A at the same kV. The other rows
+# are 7a's values on the assumption the agreement holds: unread. Table 17
+# (creepage) was not found anywhere the tower can reach, so every creepage row
+# borrows 60664-1 Table 4 and stays verified: false until someone reads it.
+iec62368_1:
+  clearance_verified_kv: {1.5: slup419, 2.5: slup419, 4.0: slup419, 6.0: slup419}
+  clearance_borrows: iec60664_1.clearance_peak
+  creepage_borrows: iec60664_1.creepage
+  creepage_verified: false
+  altitude_borrows: iec60664_1.altitude
+  altitude_verified: false   # 62368-1 has its own table; not read
+  rated_impulse_borrows: iec60664_1.rated_impulse
+  rated_impulse_verified: false   # its Table 12; not read
+  groove_x_borrows: iec60664_1.groove_x_mm
+  groove_x_verified: false
+  # Reinforced in 62368-1, from memory: clearance at 1.6 x the voltage, creepage
+  # doubled. Not read.
+  reinforced_verified: false

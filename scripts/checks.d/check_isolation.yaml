@@ -1,0 +1,9 @@
+# check_isolation: declared isolation domains and barriers against IEC 60664-1 /
+# 62368-1 (hive-hwde #353): clearance, surface creepage round slots, inner-layer
+# and through-laminate rules, and nothing but rated parts crossing. A board that
+# declares no isolation block has nothing to judge.
+name: check_isolation
+needs: []
+args: []
+optional:
+  constraints: [--constraints, "{constraints}"]

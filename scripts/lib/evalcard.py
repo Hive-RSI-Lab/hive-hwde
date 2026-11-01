@@ -65,6 +65,7 @@ CHECK_AREA = {
     "check_pdn": "power",
     "check_thermal": "power",
     "check_creepage": "power",
+    "check_isolation": "power",
     "check_silk": "manufacturing",
     "gate_dfm": "manufacturing",
     "dfm_check": "manufacturing",
