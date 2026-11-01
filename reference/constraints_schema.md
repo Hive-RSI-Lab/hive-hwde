@@ -100,6 +100,20 @@ Consumers per key (script -> phase):
     "terminals": ["U1", "U3"], "severity": "error"
   }],
 
+  // place_replicate (P6 place / P7 route, #482): one layout for N
+  // identical channels. source = a sheet instance name ("ch1") or path
+  // ("/ch1/"), or a ref list; targets = sheet names, or one ref list per
+  // target (paired by position). Sheet parts pair by symbol uuid (the
+  // netlist's tstamps: the same in every instance of a sheet file), else
+  // by ref number mod 100 (R101 <-> R201). transform grid: target i sits
+  // at (i+1) * pitch; explicit: one {dx, dy, rot 0|90|180|270} per target,
+  // rotated about origin (default the centre of the source parts). route
+  // false = placement only. margin_mm (1.0): slack round the source
+  // courtyards' hull inside which shared nets' (GND) copper is copied.
+  // place_metrics / route_quality report channel_symmetry.
+  "channels": [{"name": "afe", "source": "ch1", "targets": ["ch2", "ch3"],
+                "transform": "grid", "pitch": [0, 10]}],
+
   // check_ddr_timing (P8, #487): the timing budget over the length groups
   // above. groups name length_groups entries: dq = members vs their
   // ref_nets (the DQS pair), addr = members vs ref_nets (CK), dqs = the

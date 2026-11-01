@@ -568,6 +568,9 @@ _STOCK_MODEL_RE = re.compile(r"\$\{KICAD\d*_3DMODEL_DIR\}/")
 _KIPRJMOD = "${KIPRJMOD}/"
 
 
+EMBED_PREFIX = "kicad-embed://"
+
+
 def model_path_kind(path: str, project: Path, ws: Path) -> str | None:
     """Why a model path is not portable, or None when it is. Portable means
     KiCad finds the same file on any checkout: the stock library through
@@ -575,8 +578,12 @@ def model_path_kind(path: str, project: Path, ws: Path) -> str | None:
     dir) that stays inside workspace `ws`.
       absolute            /home/.., C:/.., \\\\host\\..: dies with that checkout
       outside_workspace   ${KIPRJMOD}/ climbing out of the workspace
-      unanchored          a bare relative path or any other ${VAR}"""
+      unanchored          a bare relative path or any other ${VAR}
+    kicad-embed://<name> (KiCad 9+ embedded files, what the Altium importer
+    writes) is portable: the model is stored in the board or footprint."""
     if _STOCK_MODEL_RE.match(path):
+        return None
+    if path.startswith(EMBED_PREFIX):  # the file travels inside the board/footprint
         return None
     if path.startswith(_KIPRJMOD):
         target = os.path.normpath(Path(project).resolve() / path[len(_KIPRJMOD):])

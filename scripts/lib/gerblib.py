@@ -49,6 +49,10 @@ _DRILL_RE = re.compile(r"\.(drl|xln|txt)$", re.I)
 # (verified against this repo's own 4-layer exports). Silk/mask/paste/edge
 # names cannot be renamed in KiCad, so only copper needs the fallback.
 _COPPER_EXT_RE = re.compile(r"\.(?:(gtl)|(gbl)|g(\d+))$", re.I)
+# Protel extensions alone, for gerbers named after a board's own layer names
+# (an Altium import keeps "Top Solder", "Bottom Overlay"...): o = overlay
+# (silk), s = solder mask, p = paste; t/b = top/bottom
+_SIDE_EXT_RE = re.compile(r"\.g([tb])([osp])$", re.I)
 
 
 def _layer_key(token: str) -> str:
@@ -131,7 +135,14 @@ def _flash_polys(obj) -> list:
             poly = Polygon([(x, -y) for x, y in pts]).buffer(0)
             if not poly.is_empty:
                 out.append(poly)
-    return out
+    if len(out) < 2:
+        return out
+    # One flash is one pad: a macro aperture (KiCad's RoundRect = a body
+    # polygon + four corner circles + four edge lines) comes as several
+    # primitives; kept apart, a check that takes "the pad around this hole"
+    # measured the body alone, short by the corner radius on every side.
+    u = unary_union(out)
+    return [g for g in getattr(u, "geoms", [u]) if not g.is_empty]
 
 
 def read_gerber(path: Path, name: str) -> LayerGeom:
@@ -330,6 +341,11 @@ class FabStack:
                 key = ("F.Cu" if m.group(1) else "B.Cu" if m.group(2)
                        else f"In{int(m.group(3))}.Cu")
                 self.copper_files.setdefault(key, p)
+            elif (m := _SIDE_EXT_RE.search(n)):
+                side = "F" if m.group(1).lower() == "t" else "B"
+                kind = {"o": self.silk_files, "s": self.mask_files,
+                        "p": self.paste_files}[m.group(2).lower()]
+                kind.setdefault(side, p)
 
     # ------------------------------------------------------------ accessors
     def _get(self, path: Path | None, name: str) -> LayerGeom | None:

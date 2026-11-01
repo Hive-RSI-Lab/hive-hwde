@@ -19,6 +19,8 @@ facts block for the annealer/agent:
     decoupling: [check_association facts...],        # distances pre-route
     mating: [matinglib facts...],                    # per mating connector
     utilization: {component_mm2, board_mm2, ratio},
+    channel_symmetry: {score, channels: [...]}       # only with constraints
+                                                     # `channels` (#482)
   }
 
 The *_signal variants (T6 P6A-1) exclude gnd-class nets via
@@ -142,6 +144,13 @@ def collect(pcb: Path, constraints_path: Path | None,
                             comp / model.outline.area, 3)
                         if model.outline.area else None},
     }
+    if constraints.get("channels"):
+        import replicatelib
+        try:
+            metrics["channel_symmetry"] = replicatelib.symmetry(
+                pcb, constraints, routing=False)
+        except replicatelib.ReplicateError as e:
+            metrics["channel_symmetry"] = {"error": str(e)}
     return violations, metrics
 
 

@@ -437,3 +437,63 @@ def test_pinned_board_ships_a_netlist_its_gerbers_match(board, tmp_path):
     assert rep["netlist"]["source"] == "package"
     assert not [v for v in rep["violations"]
                 if v["kind"] in ("dfm_net_short", "dfm_net_open")]
+
+
+def test_layers_named_by_the_board_are_found_by_protel_extension(tmp_path):
+    """An Altium import keeps its layer names, so kicad-cli writes
+    'b-Top Solder.gts', 'b-Bottom Overlay.gbo': mask/silk/paste by extension."""
+    for n in ("b-Top Layer.gtl", "b-Bottom Layer.gbl", "b-Top Solder.gts",
+              "b-Bottom Solder.gbs", "b-Top Overlay.gto", "b-Bottom Overlay.gbo",
+              "b-Top Paste.gtp", "b-Edge_Cuts.gm1"):
+        (tmp_path / n).write_text("G04 empty*\nM02*\n")
+    fab = gerblib.FabStack(tmp_path)
+    assert set(fab.copper_files) == {"F.Cu", "B.Cu"}
+    assert set(fab.mask_files) == {"F", "B"} and set(fab.silk_files) == {"F", "B"}
+    assert set(fab.paste_files) == {"F"} and fab.edge_file is not None
+
+
+def test_ipc_netlist_of_a_board_with_an_aux_origin_is_absolute(tmp_path):
+    """kicad-cli writes IPC-D-356 from the aux origin; the gerbers are
+    absolute. fab_export's netlist must land where the gerbers' copper is."""
+    import fab_export
+    import kc
+    try:
+        cli = kc.resolve_cli()
+    except Exception:  # noqa: BLE001
+        pytest.skip("no kicad-cli")
+    moved = tmp_path / "pd-trigger.kicad_pcb"
+    text = PD_PCB.read_text(encoding="utf-8")
+    text = re.sub(r"\(aux_axis_origin [-\d.]+ [-\d.]+\)\s*", "", text)
+    moved.write_text(text.replace("(setup\n", "(setup\n\t\t(aux_axis_origin 50 80)\n", 1),
+                     encoding="utf-8")
+    assert fab_export.aux_origin(moved) == (50.0, 80.0)
+    plain = tmp_path / "plain.ipc"
+    kc.export_ipcd356(cli, PD_PCB, plain)
+    fixed = tmp_path / "fixed.ipc"
+    assert fab_export.export_ipc_absolute(cli, moved, fixed)["status"] == "pass"
+
+    def coords(p):
+        return sorted(ln[: 80] for ln in p.read_text().splitlines() if ln[:3] in ("317", "327"))
+    assert coords(fixed) == coords(plain)
+    shifted = tmp_path / "shifted.ipc"
+    kc.export_ipcd356(cli, moved, shifted)
+    assert coords(shifted) != coords(plain)  # what kicad-cli alone writes
+
+
+def test_roundrect_flash_is_one_pad_of_its_full_size(tmp_path):
+    """KiCad's RoundRect macro = body polygon + 4 corner circles + 4 edge
+    lines. Read as one pad, a 1.524 x 1.778 mm pad is that size (the body
+    alone was 1.143 x 1.397: every ring check came up short by the radius)."""
+    g = ("%FSLAX46Y46*%\n%MOMM*%\n%LPD*%\n%AMRoundRect*\n"
+         "4,1,4,$2,$3,$4,$5,$6,$7,$8,$9,$2,$3,0*\n"
+         "1,1,$1+$1,$2,$3*\n1,1,$1+$1,$4,$5*\n1,1,$1+$1,$6,$7*\n1,1,$1+$1,$8,$9*\n"
+         "20,1,$1+$1,$2,$3,$4,$5,0*\n20,1,$1+$1,$4,$5,$6,$7,0*\n"
+         "20,1,$1+$1,$6,$7,$8,$9,0*\n20,1,$1+$1,$8,$9,$2,$3,0*%\n"
+         "%ADD18RoundRect,0.190500X0.571500X0.698500X-0.571500X0.698500X"
+         "-0.571500X-0.698500X0.571500X-0.698500X0*%\n"
+         "D18*\nX10000000Y-20000000D03*\nM02*\n")
+    (tmp_path / "b-F_Cu.gtl").write_text(g)
+    lg = gerblib.FabStack(tmp_path).copper("F.Cu")
+    assert len(lg.pads) == 1
+    x0, y0, x1, y1 = lg.pads[0].bounds
+    assert x1 - x0 == pytest.approx(1.524, abs=0.01) and y1 - y0 == pytest.approx(1.778, abs=0.01)

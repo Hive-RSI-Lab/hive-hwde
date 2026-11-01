@@ -649,7 +649,7 @@ def check_odb(zpath: Path, board: edasrc.Board) -> list[dict]:
                     f = line.split()
                     if f[:1] == ["CMP"] and len(f) > 7:
                         refs.add(f[6])
-    want = {r for r in board.refs if r}
+    want = {r for r in board.refs if r} - board.board_only
     if want - refs:
         return [{"level": "lost", "what": "odb",
                  "text": f"{len(want - refs)} parts missing from the ODB++: "

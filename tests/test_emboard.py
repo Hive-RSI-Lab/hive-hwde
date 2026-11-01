@@ -349,8 +349,13 @@ def _thru_check(res, length=30.0) -> dict:
 
 @live
 def test_live_board_thru_matches_the_line_closed_form(tmp_path):
-    c = _thru_check(_run(tmp_path, "thru"))
+    res = _run(tmp_path, "thru")
+    c = _thru_check(res)
     assert c["ok"], c
+    # #483: a matched thru is passive, reciprocal and causal by P370's check
+    from lib import sparam
+    q = sparam.check(res["freqs"], res["S"])
+    assert q["ok"], sparam.summary(q)
 
 
 @live

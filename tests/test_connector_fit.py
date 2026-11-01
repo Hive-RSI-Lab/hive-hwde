@@ -197,6 +197,46 @@ def test_no_paste_on_the_ep_and_a_plugged_via(tmp_path):
     assert _kinds(vs) == ["ep_paste_high"] and facts["vias_under_paste"] == 1
 
 
+def _gfx_windows(prefix="fp", layer="F.Paste", fill="yes", at=(0, 0)):
+    out = ""
+    for x, y in ((-0.8, -0.8), (0.8, -0.8), (0.8, 0.8), (-0.8, 0.8)):
+        x, y = x + at[0], y + at[1]
+        out += (f'    ({prefix}_rect (start {x - 0.6} {y - 0.6}) '
+                f'(end {x + 0.6} {y + 0.6}) (stroke (width 0) (type default))'
+                f' (fill {fill}) (layer "{layer}"))\n')
+    return out
+
+
+def test_paste_graphics_over_the_ep_count(tmp_path):
+    # hive-hwde #544: Eagle's tCream windows arrive as F.Paste graphics in the
+    # footprint, with the pad's own paste off
+    body = qfn('"F.Cu" "F.Mask"').rstrip()[:-1] + _gfx_windows() + ")\n"
+    vs, facts = cep.check(_board(tmp_path, body + via()))
+    assert vs == []
+    ep = facts["exposed_pads"][0]
+    assert ep["coverage"] == pytest.approx(4 * 1.44 / 9, abs=1e-3)
+    assert ep["graphic_apertures"] == 4
+    # an outline on F.Paste with no width prints nothing; a B.Paste one is
+    # the other side's stencil
+    for fill, layer in (("no", "F.Paste"), ("yes", "B.Paste")):
+        body = qfn('"F.Cu" "F.Mask"').rstrip()[:-1] + \
+            _gfx_windows(fill=fill, layer=layer) + ")\n"
+        vs, _ = cep.check(_board(tmp_path, body))
+        assert _kinds(vs) == ["ep_paste_missing"]
+
+
+def test_board_paste_graphic_over_a_via_fails(tmp_path):
+    # a board-level window (footprint at 15, 10) counts, and one on the via
+    # is paste_on_via
+    body = qfn('"F.Cu" "F.Mask"') + _gfx_windows("gr", at=(15, 10)) + \
+        '  (gr_circle (center 15 10) (end 15.3 10) (stroke (width 0)) ' \
+        '(fill yes) (layer "F.Paste"))\n'
+    vs, facts = cep.check(_board(tmp_path, body + via()))
+    assert _kinds(vs) == ["paste_on_via"]
+    assert "board paste graphic" in vs[0]["msg"]
+    assert facts["exposed_pads"][0]["graphic_apertures"] == 5
+
+
 def test_paste_margin_ratio_shrinks_the_aperture(tmp_path):
     # pad ratio -0.2: 3 mm - 2 x 0.6 = 1.8 mm square, 36 % of the pad, and
     # off the via at (16.2, 11.2)

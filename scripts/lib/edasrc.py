@@ -556,6 +556,9 @@ class Board:
     layer_names: dict[str, str] = field(default_factory=dict)  # In1.Cu -> user name
     copper: Counter = field(default_factory=Counter)  # layer -> tracks/arcs/zones
     refs: list[str] = field(default_factory=list)
+    # footprints with (attr ... board_only): silk art, logos, a frame - no
+    # component, so no ODB++/IPC-2581 component record either
+    board_only: set[str] = field(default_factory=set)
     nets: set[str] = field(default_factory=set)
     vias: int = 0
     zones: int = 0
@@ -635,6 +638,8 @@ def read_board(path: Path) -> Board:
             r = re.search(r'\(property "Reference" "([^"]*)"', blk)
             ref = r.group(1) if r else ""
             b.refs.append(ref)
+            if re.search(r"\(attr[^)]*\bboard_only\b", blk):
+                b.board_only.add(ref)
             if "(model " not in blk and re.search(r"\(pad ", blk) and "(attr" in blk and "board_only" not in blk:
                 b.no_model.append(ref)
             for pad in re.finditer(r"\n\t\t\(pad \"[^\"]*\" (\w+)(.*?)(?=\n\t\t\(|\n\t\)|\Z)", blk, re.S):

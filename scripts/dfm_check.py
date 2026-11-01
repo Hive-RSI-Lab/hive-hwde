@@ -1011,9 +1011,10 @@ def check_netlist(fab, pcb: Path, bg, gdir: Path, tmp: Path,
     if src is None:
         origin = "board"
         try:
+            import fab_export
             import kc
             src = tmp / f"{pcb.stem}.ipc"
-            res = kc.export_ipcd356(kc.resolve_cli(), pcb, src)
+            res = fab_export.export_ipc_absolute(kc.resolve_cli(), pcb, src)
             if res.get("status") != "pass":
                 return {}, ("kicad-cli ipcd356 export failed: "
                             f"{res.get('stderr_tail')}")

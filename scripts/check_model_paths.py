@@ -19,6 +19,9 @@ footprint that uses it, pos = the first one), kind:
   model_path_absolute           /home/.., C:/.., \\\\host\\..
   model_path_outside_workspace  ${KIPRJMOD}/ climbing out of the workspace
   model_path_unanchored         a bare relative path, or any other ${VAR}
+  model_path_embed_missing      kicad-embed://<name> with no embedded file of
+                                that name in the board (kicad-embed:// paths
+                                are portable: the file is in the board)
 Whether the file exists today does not matter: a path into a live worktree
 resolves until the day that worktree goes. A path whose file is missing is
 render's concern (kc.model_audit), not this check's.
@@ -52,6 +55,7 @@ CLI: --pcb board.kicad_pcb [--fix] [--out report.json]
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -68,7 +72,8 @@ import statelib  # noqa: E402
 SCRIPT = "check_model_paths"
 KINDS = {"absolute": "model_path_absolute",
          "outside_workspace": "model_path_outside_workspace",
-         "unanchored": "model_path_unanchored"}
+         "unanchored": "model_path_unanchored",
+         "embed_missing": "model_path_embed_missing"}
 
 
 def _head(node) -> str | None:
@@ -198,8 +203,14 @@ def check(pcb: Path, ws: Path) -> list[dict]:
     project = pcb.resolve().parent
     libs = kc.model_libs(project)
     by_path: dict[str, dict] = {}
+    text = _read(pcb)
+    embedded = set(re.findall(r'\(embedded_files(?:(?!\n\t\(footprint ).)*?\(name "([^"]*)"', text, re.S)) \
+        | set(re.findall(r'\(file\s*\(name "([^"]*)"', text))
     for ref, pos, path in board_models(pcb):
         why = kc.model_path_kind(path, project, ws)
+        if why is None and path.startswith(kc.EMBED_PREFIX) \
+                and path[len(kc.EMBED_PREFIX):] not in embedded:
+            why = "embed_missing"
         if why is None:
             continue
         hit = by_path.setdefault(path, {"why": why, "refs": [], "pos": pos})
@@ -218,11 +229,15 @@ def check(pcb: Path, ws: Path) -> list[dict]:
                         f"the part with lib_pull.py, or copy it in), then run "
                         f"check_model_paths.py --pcb {pcb} --fix; a stock "
                         f"KiCad model takes ${{KICAD10_3DMODEL_DIR}}/...")
+        if h["why"] == "embed_missing":
+            fix_line = (f"embed {name} in the board (KiCad: Board Setup > Embedded Files), "
+                        f"or point the model at a library file")
         kind = KINDS[h["why"]]
         refs = h["refs"]
+        what = ("names an embedded file the board doesn't hold" if h["why"] == "embed_missing"
+                else f"is {h['why'].replace('_', ' ')} - it breaks once that checkout moves")
         msg = (f"{', '.join(refs[:6])}{' ...' if len(refs) > 6 else ''}: "
-               f"3D model path {path} is {h['why'].replace('_', ' ')} - it "
-               f"breaks once that checkout moves. Fix: {fix_line}")
+               f"3D model path {path} {what}. Fix: {fix_line}")
         viols.append(checklib.violation(
             SCRIPT, "error", h["pos"], None, None, refs, msg, SCRIPT,
             kind=kind, model_path=path, fixable=bool(lib_file),
