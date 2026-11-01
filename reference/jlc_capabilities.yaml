@@ -45,9 +45,11 @@
 #     (component PTH holes; falls back to min_annular_ring_mm), min_silk_width_mm,
 #     min_solder_mask_dam_mm. (Its paste/outline/release checks are threshold-
 #     free: dfm_pad_tented, dfm_open_outline, dfm_missing_layer.)
-#   rules_gen/fabfloors seeds ONLY (design-rule generation, never gerber-
-#     checked): min_via_drill_mm, min_via_diameter_mm, outer_copper_oz
-#     (inner_copper_oz is descriptive profile metadata).
+#   dfm_check also reads the abs_min_* floors, min_via_hole_to_hole_mm,
+#     and (board vias, check_via_sizes, rows with abs_min_via_drill_mm
+#     only) min_via_drill_mm / min_via_diameter_mm.
+#   rules_gen/fabfloors seeds: min_via_drill_mm, min_via_diameter_mm,
+#     outer_copper_oz (inner_copper_oz is descriptive profile metadata).
 #   consumed by NO code: min_pad_size_mm, min_silk_height_mm,
 #     min_solder_mask_clearance_mm. These and the remaining JLCDFM classes
 #     (silk text height, min pad size, mask-to-copper clearance, copper
