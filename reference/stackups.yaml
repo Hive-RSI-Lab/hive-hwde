@@ -2361,46 +2361,106 @@ stackups:
   # ------------------------------------------------------------- RETIRED
   # Kept so a board designed against them fails LOUDLY by name.
 
+  # JLC04161H-3313 (live, 2026-10-31): the name was retired on 2026-08-06 as
+  # a phantom with a 0.2104 mm 7628 prepreg. JLC's calculator now carries a
+  # template under this name with a different build (3313 0.0994 mm L1-L2,
+  # 1.265 mm core), read by stackup_fetch. Same caveat as every calculator
+  # entry: order_api_verified false, confirm in the order form before
+  # routing controlled impedance (hive-hwde#468, hw-lab radar-detector).
   JLC04161H-3313:
-    description: "PHANTOM - never offered by JLC. Was stackups.yaml's 4-layer
-      default until 2026-08-06."
-    available: false
-    retired:
-      reason: "JLC has never offered a -3313 template for 4L/1.6mm/1oz/0.5oz;
-        the 0.2104 mm prepreg below is not purchasable. Verified live
-        2026-07-30 (swept plateType 0-3 and delamination 0-3) and again
-        2026-08-06."
-      replacements: [JLC04161H-1080B]
-      impact: "lumina-carrier's 100 ohm MDI was solved against this
-        lamination and routed 0.260/0.210 mm; on the real 1080B geometry that
-        measures 105.5 ohm (+5.5%), acceptable for 100BASE-TX but a DIFFERENT
-        BOARD than the one verified. LEARNINGS 2026-07-30 [stackup][ordering]."
-      retired_on: "2026-08-06"
+    description: 'JLCPCB 4-layer, 1.6 mm nominal, 1 oz outer / 0.5 oz inner. JLC''s own name: JLC04161H-3313(成品板厚1.56mm±10%).'
+    available: true
     provenance:
-      method: none
-      live_verified: false
-      refuted_by:
-        endpoint: /overseas/openapi/pcb/getImpedanceTemplateSettingList
-        verified: "2026-08-06"
-      verified: "2026-08-06"
+      method: jlc_calculator_template
+      endpoint: https://jlcpcb.com/api/jlcTools/impedance/selectPageImpedanceDefaultTemplate
+      request:
+        appointName: JLC04161H-3313
+      template_name: JLC04161H-3313
+      template_access_id: 6381a6960c0a46dba4daf70c97bd5dce
+      display_name: JLC04161H-3313(成品板厚1.56mm±10%)
+      jlc_tags: []
+      live_verified: true
+      order_api_verified: false
+      verified: '2026-10-31'
+      note: 'Every thickness and epsilon_r is JLC''s calculator template''s; a gap of several plies carries
+        their series epsilon_r. Not yet read back from the order API (no JLC account in the Hive): re-verify
+        before ordering controlled impedance.'
     layers: 4
     thickness_mm: 1.6
-    stack_total_mm: 1.5908
+    stack_total_mm: 1.5642
     copper_finish: HASL
     dielectric_constraints: true
-    epsilon_r_assumed: true
+    epsilon_r_assumed: false
+    epsilon_r_source: jlc_calculator_template
     stack:
-      - {name: "F.Cu",         type: copper,   thickness_mm: 0.035,  copper_oz: 1.0}
-      - {name: "dielectric 1", type: prepreg,  thickness_mm: 0.2104, material: "FR4 7628", epsilon_r: 4.05, loss_tangent: 0.02}
-      - {name: "In1.Cu",       type: copper,   thickness_mm: 0.0175, copper_oz: 0.5}
-      - {name: "dielectric 2", type: core,     thickness_mm: 1.065,  material: "FR4",      epsilon_r: 4.6,  loss_tangent: 0.02}
-      - {name: "In2.Cu",       type: copper,   thickness_mm: 0.0175, copper_oz: 0.5}
-      - {name: "dielectric 3", type: prepreg,  thickness_mm: 0.2104, material: "FR4 7628", epsilon_r: 4.05, loss_tangent: 0.02}
-      - {name: "B.Cu",         type: copper,   thickness_mm: 0.035,  copper_oz: 1.0}
+    - name: F.Cu
+      type: copper
+      thickness_mm: 0.035
+      copper_oz: 1.0
+    - name: dielectric 1
+      type: prepreg
+      thickness_mm: 0.0994
+      material: FR4 3313
+      epsilon_r: 4.1
+      loss_tangent: 0.02
+      plies: 3313 0.0994
+    - name: In1.Cu
+      type: copper
+      thickness_mm: 0.0152
+      copper_oz: 0.5
+    - name: dielectric 2
+      type: core
+      thickness_mm: 1.265
+      material: FR4 core 1.3mm
+      epsilon_r: 4.42
+      loss_tangent: 0.02
+    - name: In2.Cu
+      type: copper
+      thickness_mm: 0.0152
+      copper_oz: 0.5
+    - name: dielectric 3
+      type: prepreg
+      thickness_mm: 0.0994
+      material: FR4 3313
+      epsilon_r: 4.1
+      loss_tangent: 0.02
+      plies: 3313 0.0994
+    - name: B.Cu
+      type: copper
+      thickness_mm: 0.035
+      copper_oz: 1.0
+    finished_thickness_mm: 1.56
     controlled_impedance:
-      - {profile: se_50,    kind: single, impedance_ohm: 50,  layer: outer, reference: nearest_plane, width_mm: 0.3669}
-      - {profile: diff_90,  kind: diff,   impedance_ohm: 90,  layer: outer, reference: nearest_plane, width_mm: 0.314, gap_mm: 0.2104}
-      - {profile: diff_100, kind: diff,   impedance_ohm: 100, layer: outer, reference: nearest_plane, width_mm: 0.2597, gap_mm: 0.2104}
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.1552
+      closed_form:
+        width_mm: 0.1491
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.1276
+      gap_mm: 0.13
+      closed_form:
+        width_mm: 0.1383
+        gap_mm: 0.13
+      note: USB 2.0 / ULPI
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.0948
+      gap_mm: 0.13
+      closed_form:
+        width_mm: 0.112
+        gap_mm: 0.13
+      note: Ethernet / LVDS / general 100R
 
   JLC04161H-7628G:
     description: "WITHDRAWN by JLC between 2026-07-30 and 2026-08-06 - real

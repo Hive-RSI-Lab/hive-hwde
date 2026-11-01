@@ -849,12 +849,13 @@ def test_board_init_writes_profile_floors(cli, usbbuck4_net, tmp_path):
 @pytest.mark.smoke
 def test_board_init_refuses_unavailable_stackup(cli, usbbuck4_net, tmp_path):
     """A stackup JLC does not sell must fail LOUDLY by name, with its
-    replacement - never silently size a board (JLC04161H-3313 phantom)."""
+    replacement - never silently size a board (the old JLC04161H-3313 phantom;
+    7628G is the retired entry kept for this)."""
     rep = tmp_path / "report.json"
     rc = board_init.main([
         "--netlist", str(usbbuck4_net), "--name", "usbbuck4",
         "--out", str(tmp_path / "kicad"), "--layers", "4",
-        "--stackup", "JLC04161H-3313", "--out-report", str(rep)])
+        "--stackup", "JLC04161H-7628G", "--out-report", str(rep)])
     r = json.loads(rep.read_text("utf-8"))
     assert rc == 2 and r["status"] == "error"
     assert "available: false" in r["error"]
@@ -862,7 +863,7 @@ def test_board_init_refuses_unavailable_stackup(cli, usbbuck4_net, tmp_path):
 
 
 def test_rules_gen_refuses_unavailable_stackup(tmp_path, capsys):
-    rc = rules_gen.main(["--layers", "4", "--stackup", "JLC04161H-3313",
+    rc = rules_gen.main(["--layers", "4", "--stackup", "JLC04161H-7628G",
                          "--out-dru", str(tmp_path / "b.kicad_dru")])
     assert rc == 2
     out = json.loads(capsys.readouterr().out)
