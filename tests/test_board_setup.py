@@ -119,8 +119,8 @@ def test_controlled_impedance_matches_stack():
     st = yaml.safe_load((REFERENCE / "stackups.yaml").read_text("utf-8"))
     for name, s in st["stackups"].items():
         rows = s.get("controlled_impedance") or []
-        if not rows or not s["available"]:
-            continue
+        if not rows or not s["available"] or s.get("vendor"):
+            continue   # other fabs' tables: test_vendor_stackup_rows_regenerate
         h, er, oz = rules_gen.outer_microstrip_params(s)
         t = imp.CU_OZ_MM.get(oz, 0.035)
         for ci in rows:
@@ -134,6 +134,151 @@ def test_controlled_impedance_matches_stack():
                                          method=method)
                     assert abs(w - row["width_mm"]) < 5e-4, f"{tag} width"
                     assert abs(g - row["gap_mm"]) < 5e-4, f"{tag} gap"
+
+
+VENDOR_STACKS = {n: s for n, s in yaml.safe_load(
+    (REFERENCE / "stackups.yaml").read_text("utf-8"))["stackups"].items()
+    if s.get("vendor")}
+
+
+def _same(a, b, tag):
+    """Two controlled_impedance tables equal, floats to 5e-4 mm / 0.1 ohm."""
+    if isinstance(a, dict):
+        assert isinstance(b, dict) and set(a) == set(b), f"{tag}: {a} vs {b}"
+        for k in a:
+            _same(a[k], b[k], f"{tag}.{k}")
+    elif isinstance(a, list):
+        assert isinstance(b, list) and len(a) == len(b), f"{tag}: length"
+        for i, (x, y) in enumerate(zip(a, b)):
+            _same(x, y, f"{tag}[{i}]")
+    elif isinstance(a, float) or isinstance(b, float):
+        assert abs(float(a) - float(b)) < (0.051 if "z_ohm" in tag else 5e-4), \
+            f"{tag}: {a} vs {b}"
+    else:
+        assert a == b, f"{tag}: {a!r} vs {b!r}"
+
+
+def test_vendor_stackups_present():
+    """#446: PCBWay 4/6/8L, OSH Park 4/6L, AISLER 4/6/8L, each with its
+    vendor's profile, a public source and outer se_50/diff_90/diff_100."""
+    import vendors
+    have = {(s["vendor"], s["layers"]) for s in VENDOR_STACKS.values()}
+    want = {("pcbway", 4), ("pcbway", 6), ("pcbway", 8), ("oshpark", 4),
+            ("oshpark", 6), ("aisler", 4), ("aisler", 6), ("aisler", 8)}
+    assert want <= have, want - have
+    for name, s in VENDOR_STACKS.items():
+        vendors.load(s["vendor"])                  # a real profile
+        assert name.startswith(s["vendor"].upper() + "-"), name
+        prov = s["provenance"]
+        assert prov["method"] == "vendor_page" and prov["source"].startswith("https://")
+        for ly in s["stack"]:
+            if ly["type"] != "copper":
+                assert ly["epsilon_r"] > 3 and ly["thickness_mm"] > 0, name
+        outer = {r["profile"] for r in s["controlled_impedance"]
+                 if r["layer"] == "outer"}
+        assert outer == {"se_50", "diff_90", "diff_100"}, name
+        if s["layers"] >= 6:
+            assert any(r["layer"] != "outer" for r in s["controlled_impedance"]), \
+                f"{name}: no stripline rows"
+
+
+@pytest.mark.skipif(not imp.SOLVER_OK, reason="field solver needs numpy/scipy")
+@pytest.mark.parametrize("name", sorted(VENDOR_STACKS))
+def test_vendor_stackup_rows_regenerate(name):
+    """Each vendor table is stackup_rows.py's output for its own stack, at
+    its vendor's min trace (regenerate with `hwde stackup_rows --stackup`)."""
+    import stackup_rows
+    s = VENDOR_STACKS[name]
+    _same(s["controlled_impedance"], stackup_rows.rows_for(s), name)
+    floor = stackup_rows.fab_floor(s)
+    for r in s["controlled_impedance"]:
+        assert r["width_mm"] >= floor - 1e-9, f"{name} {r['layer']} {r['profile']}"
+        if r.get("gap_solved"):
+            assert abs(r["width_mm"] - floor) < 1e-9
+
+
+@pytest.mark.skipif(not imp.SOLVER_OK, reason="field solver needs numpy/scipy")
+@pytest.mark.parametrize("name", sorted(n for n, s in VENDOR_STACKS.items()
+                                        if s.get("fab_table")))
+def test_vendor_fab_table_agrees(name):
+    """The fab's own impedance table vs impedance.py at the fab's geometry:
+    hwde_z_ohm is reproducible, and within the fab's +-10 % of target unless
+    the row says why not (`disagrees`, measured on hw-lab zcoupon)."""
+    s = VENDOR_STACKS[name]
+    h, er, oz = rules_gen.outer_microstrip_params(s)
+    t = imp.CU_OZ_MM[oz]
+    for f in s["fab_table"]:
+        if f["layer"] == "outer":
+            z = (imp.microstrip_z0(f["width_mm"], h, t, er) if f["kind"] == "single"
+                 else imp.zdiff(f["width_mm"], f["gap_mm"], h, t, er))
+        else:
+            geo = rules_gen.stripline_layers(
+                s, {"planes": [{"layer": r} for r in f["reference"]]})[f["layer"]]
+            res = imp.field_stripline(f["width_mm"], geo["h_base"], geo["h_fill"],
+                                      geo["t"], geo["er_base"], geo["er_fill"],
+                                      f.get("gap_mm"))
+            z = res["zdiff" if f["kind"] == "diff" else "z0"]
+        tag = f"{name} {f['layer']} {f['kind']} {f['impedance_ohm']}"
+        assert abs(z - f["hwde_z_ohm"]) < 0.11, f"{tag}: {z:.2f}"
+        off = abs(z - f["impedance_ohm"]) / f["impedance_ohm"]
+        if f.get("disagrees"):
+            assert off > 0.05, f"{tag}: agrees now ({z:.1f}); drop `disagrees`"
+        else:
+            assert off <= 0.10, f"{tag}: {z:.1f} ohm"
+
+
+def test_vendor_fab_floors():
+    """A vendor stackup's floors are its vendor's (#446): OSH Park 4L draws
+    5 mil, keys the vendor doesn't publish come from JLC and are named, and
+    a build the vendor has no rules for is refused, not given JLC's."""
+    assert fabfloors.vendor_of({"vendor": "oshpark"}) == "oshpark"
+    assert fabfloors.vendor_of({}) is None
+    assert fabfloors.vendor_of({"vendor": "jlcpcb"}) is None
+    cls, row = fabfloors.profile(4, 1.0, vendor="oshpark")
+    assert cls == "oshpark:4layer_1oz"
+    assert row["min_trace_width_mm"] == pytest.approx(0.127)
+    assert "min_hole_to_hole_mm" in row["_floors_from_jlc"]
+    _, jlc = fabfloors.profile(4, 1.0)
+    assert row["min_hole_to_hole_mm"] == jlc["min_hole_to_hole_mm"]
+    assert fabfloors.check_pro(
+        {"board": {"design_settings": {"rules": fabfloors.pro_rules(row),
+                                       "rule_severities": fabfloors.pro_rule_severities()}}},
+        row) == []
+    _, pw8 = fabfloors.profile(8, 1.0, vendor="pcbway")
+    assert pw8["min_trace_width_mm"] == pytest.approx(0.127)
+    with pytest.raises(fabfloors.FabFloorError, match="aisler publishes no design rules for 8layer"):
+        fabfloors.profile(8, 1.0, vendor="aisler")
+
+
+def test_rules_gen_vendor_stackup(tmp_path):
+    """rules_gen --stackup OSHPARK-...: OSH Park's floors in the DRU baseline."""
+    dru = tmp_path / "b.kicad_dru"
+    rc = rules_gen.main(["--layers", "4", "--stackup", "OSHPARK-4L-1.6-FR408HR",
+                         "--baseline-only", "--out-dru", str(dru),
+                         "--out", str(tmp_path / "r.json")])
+    assert rc == 0
+    rep = json.loads((tmp_path / "r.json").read_text())
+    assert rep["capability_class"] == "oshpark:4layer_1oz"
+    assert re.search(r'aiee_track_width_floor.*?\(min 0\.127', dru.read_text(),
+                     re.S)
+
+
+@pytest.mark.skipif(not imp.SOLVER_OK, reason="field solver needs numpy/scipy")
+def test_outer_pair_under_vendor_floor_pins_width():
+    """A 100 ohm outer pair on PCBWay 8L's 0.11 mm prepreg solves under
+    PCBWay's 0.127 mm: rules_gen pins the width and solves the gap."""
+    s = VENDOR_STACKS["PCBWAY-8L-1.6-2116"]
+    pairs = [{"base": "D", "p": "D_P", "n": "D_N", "impedance_ohm": 100}]
+    _, free = rules_gen.diff_pair_rules(pairs, s, {}, floor=0.0)
+    assert free[0]["width_mm"] < 0.127
+    rules, facts = rules_gen.diff_pair_rules(pairs, s, {}, floor=0.127)
+    f = facts[0]
+    assert f["width_mm"] == pytest.approx(0.127) and f.get("gap_solved")
+    h, er, oz = rules_gen.outer_microstrip_params(s)
+    assert imp.zdiff(f["width_mm"], f["gap_mm"], h, imp.CU_OZ_MM[oz], er) \
+        == pytest.approx(100, abs=1.0)
+    gap_rule = next(r for r in rules if r.name == "aiee_diff_gap_D")
+    assert gap_rule.minv == pytest.approx(f["gap_mm"], abs=1e-4)
 
 
 def test_rotations_csv_valid():
@@ -704,12 +849,13 @@ def test_board_init_writes_profile_floors(cli, usbbuck4_net, tmp_path):
 @pytest.mark.smoke
 def test_board_init_refuses_unavailable_stackup(cli, usbbuck4_net, tmp_path):
     """A stackup JLC does not sell must fail LOUDLY by name, with its
-    replacement - never silently size a board (JLC04161H-3313 phantom)."""
+    replacement - never silently size a board (the old JLC04161H-3313 phantom;
+    7628G is the retired entry kept for this)."""
     rep = tmp_path / "report.json"
     rc = board_init.main([
         "--netlist", str(usbbuck4_net), "--name", "usbbuck4",
         "--out", str(tmp_path / "kicad"), "--layers", "4",
-        "--stackup", "JLC04161H-3313", "--out-report", str(rep)])
+        "--stackup", "JLC04161H-7628G", "--out-report", str(rep)])
     r = json.loads(rep.read_text("utf-8"))
     assert rc == 2 and r["status"] == "error"
     assert "available: false" in r["error"]
@@ -717,7 +863,7 @@ def test_board_init_refuses_unavailable_stackup(cli, usbbuck4_net, tmp_path):
 
 
 def test_rules_gen_refuses_unavailable_stackup(tmp_path, capsys):
-    rc = rules_gen.main(["--layers", "4", "--stackup", "JLC04161H-3313",
+    rc = rules_gen.main(["--layers", "4", "--stackup", "JLC04161H-7628G",
                          "--out-dru", str(tmp_path / "b.kicad_dru")])
     assert rc == 2
     out = json.loads(capsys.readouterr().out)

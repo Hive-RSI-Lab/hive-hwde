@@ -616,10 +616,13 @@ def main(argv: list[str] | None = None) -> int:
             coppers = [ly for ly in stackup["stack"] if ly["type"] == "copper"]
             outer_oz = float(coppers[0].get("copper_oz", 1.0)) if coppers else 1.0
         # ...and for the stackup's laminate: a Rogers board gets JLC's
-        # high-frequency floors, and a material JLC doesn't build stops here
+        # high-frequency floors, and a material JLC doesn't build stops here;
+        # ...and the stackup's fab: a PCBWay/OSH Park/AISLER entry takes
+        # that vendor's floors (reference/vendors/, #446)
         material = fabmaterial.stackup_family(stackup)
         cap_class, cap = fabfloors.profile(args.layers, outer_oz,
-                                           material=material)
+                                           material=material,
+                                           vendor=fabfloors.vendor_of(stackup))
 
         holes_arg = str(args.mounting_holes).strip().lower()
         if holes_arg != "auto":
@@ -710,6 +713,7 @@ def main(argv: list[str] | None = None) -> int:
             "board": str(pcb_path), "stackup": stk_name, "layers": args.layers,
             "fab_profile": cap_class, "copper_oz": outer_oz,
             "material": material,
+            "vendor": stackup.get("vendor", "jlcpcb"),
             "fab_floors": floors,
             "components": len(components), "nets": worker["nets"],
             "outline_bbox": worker["bbox"],

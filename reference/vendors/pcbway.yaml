@@ -150,6 +150,26 @@ design_rules:
     inner_copper_oz: 1.0
     # inner isolation ring, 6L: >= 8 mil normal ([caps] adv. 13) - no key for it
 
+  8layer_1oz:
+    # [caps] advanced lists one "Multilayer PCB" column for 3-16 layers; the
+    # only per-layer-count item is the inner isolation ring (13), which has
+    # no key here, and min board thickness (27: 8L >= 1.20 mm). So 8L takes
+    # the 6L values. Added 2026-10-31 for the PCBWay 8L stackup (#446).
+    min_trace_width_mm: 0.127
+    min_clearance_mm: 0.1524
+    min_via_drill_mm: 0.2
+    min_via_diameter_mm: 0.5
+    min_annular_ring_mm: 0.15
+    min_hole_diameter_mm: 0.2
+    min_copper_to_edge_mm: 0.25
+    min_hole_to_hole_mm: 0.4064
+    min_silk_width_mm: 0.15
+    min_silk_height_mm: 0.8
+    min_solder_mask_dam_mm: 0.1143
+    outer_copper_oz: 1.0
+    inner_copper_oz: 1.0
+    # inner isolation ring, 8L: >= 9 mil normal ([caps] adv. 13) - no key for it
+
 # Plated half-holes. [caps] standard: min diameter 0.4. [caps] advanced:
 # diameter >= 0.5 normal (0.4-0.5 medium), spacing edge-to-edge >= 0.3
 # normal. [castell]: "typically 0.6, accepts 0.4"; hole spacing 0.55

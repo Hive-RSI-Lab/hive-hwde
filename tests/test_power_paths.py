@@ -444,3 +444,35 @@ def test_bsc010n04ls_row():
     # diagram 3: ~0.86 A at 40 V for 1 ms -> ~34 W
     assert 25 < soa.soa_power(row, 1e-3) < 45
     assert soa.find("BSC010N04LS6ATMA1", "", "", t) is None
+
+
+def test_soa_scales_to_the_pulse_vds():
+    # #453: BSC010N04LS's zth is its 40 V SOA; at 20 V the part takes twice
+    # the power, below the 2 V knee no more than at 2 V
+    row = soa.find("BSC010N04LS")
+    assert soa.vds_scale(row, 40) == pytest.approx(1.0)
+    assert soa.vds_scale(row, 20) == pytest.approx(0.5)
+    assert soa.vds_scale(row, 0.5) == pytest.approx(2.0 / 40)
+    ts = [k * 1e-5 for k in range(101)]
+    ps = [30.0] * len(ts)
+    at40 = soa.junction(row, ts, ps, vds=[40.0] * len(ts))
+    at20 = soa.junction(row, ts, ps, vds=[20.0] * len(ts))
+    assert at40["vds_scaled"] and not soa.junction(row, ts, ps)["vds_scaled"]
+    assert at20["tj_peak_c"] - 25 == pytest.approx(
+        (at40["tj_peak_c"] - 25) / 2, rel=1e-6)
+    assert at20["energy_j"] == at40["energy_j"]
+    # a row without soa_vds ignores vds
+    ao = soa.find("AO4485")
+    assert soa.junction(ao, ts, ps, vds=[5.0] * len(ts))["tj_peak_c"] == \
+        soa.junction(ao, ts, ps)["tj_peak_c"]
+
+
+def test_soa_check_hotswap_uses_the_ramp_vds():
+    rc, rep = _cli("soa_check.py", "--fet", "BSC010N04LS", "--hotswap",
+                   "--c", "470u", "--v", "16.8", "--t-ramp", "2m")
+    assert rep["result"]["vds_scaled"] is True
+    # unscaled (40 V basis) this ramp read 256 C
+    assert rep["result"]["tj_peak_c"] < 175, rep["result"]
+    _rc, at = _cli("soa_check.py", "--fet", "BSC010N04LS", "--at", "1m",
+                   "--vds", "20")
+    assert at["soa_power_w"] == pytest.approx(2 * 150 / 4.4, rel=1e-3)

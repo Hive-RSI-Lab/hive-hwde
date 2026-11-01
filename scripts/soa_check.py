@@ -12,8 +12,11 @@ a simulated peak power and energy against the datasheet's SOA curve.
     soa_check.py --fet AO4485 --hotswap --c 940u --v 28 --i 2.2
   a simulated waveform (CSV with a header: time and p, or time, vds, id):
     soa_check.py --fet AO4485 --csv fet.csv [--ta 25]
-  the part's single-pulse SOA power at a pulse width:
-    soa_check.py --fet AO4485 --at 10m
+  the part's single-pulse SOA power at a pulse width (at the row's
+  soa_vds, or --vds to scale it):
+    soa_check.py --fet AO4485 --at 10m [--vds 20]
+A row with soa_vds (linear-mode SOA, lib/soa.py) scales p(t) by the pulse's
+own VDS: the hot-swap ramp's, or the CSV's vds column.
   a part not in the table: --footprint SOIC-8 uses the package's generic
   row (warnings only), or give --zth "1m:2.5,10m:6.25,1:20" --tj-max 150.
 
@@ -46,19 +49,22 @@ def _val(text: str, what: str) -> float:
     return v
 
 
-def read_csv(path: Path) -> tuple[list[float], list[float]]:
+def read_csv(path: Path) -> tuple[list[float], list[float],
+                                  list[float] | None]:
     with path.open(newline="", encoding="utf-8") as fh:
         rows = list(csv.reader(fh))
     if len(rows) < 3:
         raise checklib.CheckError(f"{path}: want a header and 2+ rows")
     head = [h.strip().lower() for h in rows[0]]
     ti = next((i for i, h in enumerate(head) if h.startswith("t")), 0)
-    ts, ps = [], []
+    ts, ps, vds = [], [], []
     for r in rows[1:]:
         if not r:
             continue
         vals = [float(x) for x in r]
         ts.append(vals[ti])
+        if "vds" in head:
+            vds.append(vals[head.index("vds")])
         if "p" in head:
             ps.append(abs(vals[head.index("p")]))
         elif "vds" in head and "id" in head:
@@ -66,7 +72,12 @@ def read_csv(path: Path) -> tuple[list[float], list[float]]:
         else:
             raise checklib.CheckError(f"{path}: want columns t,p or "
                                       "t,vds,id")
-    return ts, ps
+    return ts, ps, vds or None
+
+
+def _rounded(res: dict) -> dict:
+    return {k: v if isinstance(v, bool) else checklib.rnd(v, 5)
+            for k, v in res.items() if v is not None}
 
 
 def thermal_row(a) -> dict:
@@ -92,27 +103,31 @@ def thermal_row(a) -> dict:
 def run(a) -> dict:
     row = thermal_row(a)
     facts = {"fet": a.fet, "thermal": {k: row.get(k) for k in (
-        "match", "tj_max", "rth_ja", "zth", "source", "verified",
-        "generic")}, "ta_c": a.ta}
+        "match", "tj_max", "rth_ja", "zth", "soa_vds", "soa_vds_exp",
+        "soa_vds_knee", "source", "verified", "generic")}, "ta_c": a.ta}
     if a.at:
         t = _val(a.at, "--at")
+        k = soa.vds_scale(row, a.vds) if a.vds is not None else 1.0
         return checklib.report(SCRIPT, "cli", [], **facts,
                                pulse_s=t, zth_c_per_w=soa.zth(row, t),
-                               soa_power_w=soa.soa_power(row, t, a.ta))
+                               vds=a.vds if a.vds is not None
+                               else row.get("soa_vds"),
+                               soa_power_w=soa.soa_power(row, t, a.ta) / k)
     if a.hotswap:
         c = _val(a.c, "--c")
-        ts, ps = soa.hotswap_profile(
+        ts, ps, vds = soa.hotswap_profile(
             c, a.v, t_ramp=_val(a.t_ramp, "--t-ramp") if a.t_ramp else None,
-            i_a=_val(a.i, "--i") if a.i else None, i_load=a.i_load)
+            i_a=_val(a.i, "--i") if a.i else None, i_load=a.i_load,
+            with_vds=True)
         facts["pulse"] = {"kind": "hotswap", "c_f": c, "v": a.v,
                           "ramp_s": ts[-1], "i_charge_a": c * a.v / ts[-1],
                           "i_load_a": a.i_load}
     elif a.csv:
-        ts, ps = read_csv(Path(a.csv))
+        ts, ps, vds = read_csv(Path(a.csv))
         facts["pulse"] = {"kind": "csv", "file": a.csv, "samples": len(ts)}
     else:
         raise checklib.CheckError("give --hotswap, --csv or --at")
-    res = soa.junction(row, ts, ps, a.ta)
+    res = soa.junction(row, ts, ps, a.ta, vds=vds)
     sev, why = soa.judge(row, res)
     vios = []
     if sev:
@@ -121,11 +136,9 @@ def run(a) -> dict:
             f"({res['p_peak_w']:.3g} W peak, {res['energy_j']:.3g} J over "
             f"about {res['width_s'] * 1e3:.3g} ms, Ta {a.ta:g} C"
             f"{'; generic package data' if row.get('generic') else ''})",
-            SCRIPT, kind="fet_soa", **{k: checklib.rnd(v, 5) for k, v in
-                                       res.items() if v is not None}))
+            SCRIPT, kind="fet_soa", **_rounded(res)))
     return checklib.report(SCRIPT, "cli", vios, **facts, verdict=why,
-                           result={k: checklib.rnd(v, 5) for k, v in
-                                   res.items() if v is not None})
+                           result=_rounded(res))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -145,6 +158,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--i-load", type=float, default=0.0)
     ap.add_argument("--csv")
     ap.add_argument("--at", help="pulse width for the SOA power (10m)")
+    ap.add_argument("--vds", type=float,
+                    help="with --at: the VDS (rows with soa_vds)")
     ap.add_argument("--out")
     a = ap.parse_args(argv)
     if a.hotswap and (not a.c or a.v is None or not (a.t_ramp or a.i)):

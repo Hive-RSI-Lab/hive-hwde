@@ -233,7 +233,8 @@ def board_checks(res: dict, parsed: dict, constraints: dict | None, tag: str) ->
                 add("fw_input_floating", "error", net, refs,
                     f"GPIO{gpio} ({r.get('name')}, net {net}) is input only with no pull-up "
                     "inside, and nothing on the board drives or pulls it")
-        if re.search(r"SDA|SCL", str(r.get("name")), re.I) and not ups:
+        # SDA/SCL as a word of the name (I2C_SCL, SCL0), not inside SCLK
+        if re.search(r"(?<![A-Z])(SDA|SCL)(?![A-Z])", str(r.get("name")).upper()) and not ups:
             add("fw_i2c_pullup", "error", net, refs,
                 f"I2C line GPIO{gpio} ({r.get('name')}, net {net}) has no pull-up resistor "
                 f"to a supply" + (f"; the firmware runs it at {res['peripherals']['i2c_hz'] // 1000} kHz"
