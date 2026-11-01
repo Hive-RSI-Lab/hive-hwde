@@ -316,6 +316,16 @@ def test_planar_waves_recover_a_and_b(tmp_path):
     assert abs(gb / ga - b / a) < 1e-3
 
 
+def test_planar_waves_reject_a_silent_probe(tmp_path):
+    """A probe openEMS left at zero (run stopped early) is an error, not a
+    ZeroDivisionError deep in the wave fit."""
+    where = {"ports": [{"dist": [5.0, 10.0, 15.0]}]}
+    for j in range(3):
+        (tmp_path / f"p0u{j}").write_text("% t v\n" + "\n".join(f"{i * 1e-12:.6e}\t0" for i in range(50)))
+    with pytest.raises(solvers.SolverError, match="no signal"):
+        em.planar_waves(tmp_path, where, 0, [2e9])
+
+
 def test_touchstone_two_port_is_column_major():
     cols = {0: [[0.1 + 0j, 0.9 + 0j]]}             # S11, S21 from port 1's run
     line = em.touchstone([1e9], cols, 2).splitlines()[-1].split()

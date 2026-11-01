@@ -468,6 +468,9 @@ def planar(geo: dict, excites, f_max, f_min=None, points=201, fine=None, keep=No
         (work / "planar.xml").write_text(csx.xml())
         t0 = time.time()
         r = solvers.run("openems", ["planar.xml"], cwd=work, timeout=4 * 3600)
+        if r.returncode:
+            raise solvers.SolverError(f"openEMS exited {r.returncode} in {work}: "
+                                      f"{(r.stdout + r.stderr)[-400:]}")
         if not (work / f"p{e}u0").exists():
             raise solvers.SolverError(f"openEMS wrote no probes: {(r.stdout + r.stderr)[-400:]}")
         cols[e] = em.planar_sparams(work, where, e, freqs)
