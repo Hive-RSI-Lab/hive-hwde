@@ -35,6 +35,7 @@ Three concerns, used by route_edit.py / route_auto.py / planes_gen.py:
 """
 from __future__ import annotations
 
+import fnmatch
 import json
 import re
 import subprocess
@@ -340,6 +341,107 @@ def dsn_apply_net_rules(dsn_text: str, widths: dict[str, float],
         pos = end
     out.append(dsn_text[pos:])
     return "".join(out), moved
+
+
+def dru_barriers(dru_text: str) -> list[dict]:
+    """rules_gen's aiee_iso_<barrier>_* rules as [{a: [globs], b: [globs],
+    clearance_mm}], one per pair of domains, at the larger of its outer and
+    inner rules: the DSN holds a pair's clearance for every layer. A part's own
+    pad exception isn't a barrier, so it isn't read."""
+    pairs: dict[tuple, float] = {}
+    for m in re.finditer(r'\(rule\s+"aiee_iso_[^"]*"(.*?)\n\)', dru_text or "", re.S):
+        body = m.group(1)
+        if "memberOfFootprint" in body:
+            continue
+        mm = re.search(r"\(constraint\s+clearance\s+\(min\s+([\d.]+)\s*mm\)\)", body)
+        a = re.findall(r"A\.NetName == '([^']+)'", body)
+        b = re.findall(r"B\.NetName == '([^']+)'", body)
+        if mm and a and b:
+            key = (tuple(a), tuple(b))
+            pairs[key] = max(pairs.get(key, 0.0), float(mm.group(1)))
+    return [{"a": list(a), "b": list(b), "clearance_mm": mm}
+            for (a, b), mm in pairs.items()]
+
+
+def dsn_apply_barriers(dsn_text: str, barriers: list[dict]) -> tuple[str, list]:
+    """Hold each barrier's two domains apart in the DSN, and only those: a net
+    class clearance would hold a net that far from its own domain too. Splits
+    each class by the sides its nets are on (rules and vias kept), and adds a
+    (class_class (classes X Y) (rule (clearance um))) for every pair across a
+    barrier, which Freerouting takes as a pair clearance for tracks, vias and
+    pads alike. Globs match as KiCad's == does, case-insensitively, so router
+    and DRC see one set of nets. Returns (text, [{classes, clearance_mm}]).
+    Only a `(resolution um N)` DSN is handled."""
+    if not barriers or not re.search(r"\(resolution\s+um\s+\d+\)", dsn_text):
+        return dsn_text, []
+
+    def sides(net: str) -> tuple:
+        low = net.lower()
+        got = []
+        for i, b in enumerate(barriers):
+            for side in ("a", "b"):
+                if any(fnmatch.fnmatchcase(low, p.lower()) for p in b[side]):
+                    got.append((i, side))
+        return tuple(got)
+
+    out, pos = [], 0
+    members: dict[tuple, list[str]] = {}
+    for m in re.finditer(r"\(class\s", dsn_text):
+        if m.start() < pos:
+            continue
+        end = _sexp_end(dsn_text, m.start())
+        block = dsn_text[m.start():end]
+        head_end = next((j for j, t in enumerate(_quote_mask(block))
+                         if j and t == "("), -1)
+        head = block[:head_end] if head_end > 0 else block[:-1]
+        body = block[head_end:-1] if head_end > 0 else ""
+        toks = _DSN_TOKEN_RE.findall(head)[1:]
+        name, nets = toks[0], toks[1:]
+        groups: dict[tuple, list[str]] = {}
+        for tok in nets:
+            groups.setdefault(sides(tok.strip('"')), []).append(tok)
+        out.append(dsn_text[pos:m.start()])
+        parts = []
+        for k, (sig, toks_g) in enumerate(sorted(groups.items())):
+            cname = name
+            if sig:
+                tag = "_".join(f"{i}{s}" for i, s in sig)
+                cname = re.sub(r"[^A-Za-z0-9_]", "_", name.strip('"')) + f"_iso{tag}"
+                members.setdefault(sig, []).append(cname)
+            parts.append(f"(class {cname} {' '.join(toks_g)}\n      {body.strip()}\n    )")
+        out.append("\n    ".join(parts) if parts else block)
+        pos = end
+    out.append(dsn_text[pos:])
+    text = "".join(out)
+
+    pairs, seen = [], set()
+    for i, b in enumerate(barriers):
+        um = float(b["clearance_mm"]) * 1000.0
+        for sig_a, cls_a in sorted(members.items()):
+            if (i, "a") not in sig_a:
+                continue
+            for sig_b, cls_b in sorted(members.items()):
+                if (i, "b") not in sig_b:
+                    continue
+                for x in cls_a:
+                    for y in cls_b:
+                        if x != y and (x, y) not in seen:
+                            seen.add((x, y))
+                            pairs.append({"classes": [x, y], "um": um,
+                                          "clearance_mm": float(b["clearance_mm"])})
+    if not pairs:
+        return dsn_text, []
+    clause = "".join(
+        f"\n    (class_class (classes {p['classes'][0]} {p['classes'][1]})"
+        f"\n      (rule (clearance {p['um']:g}))\n    )" for p in pairs)
+    scan = _parser_blanked(text)
+    net = re.search(r"\(network[\s)]", _quote_mask(scan))
+    if not net:      # a barrier silently dropped is a route through the gap
+        raise CheckError("DSN has classes but no (network ...) for the barriers")
+    close = _sexp_end(scan, net.start()) - 1
+    text = text[:close].rstrip() + clause + "\n  " + text[close:]
+    return text, [{"classes": p["classes"], "clearance_mm": p["clearance_mm"]}
+                  for p in pairs]
 
 
 def dsn_apply_layer_widths(dsn_text: str,

@@ -68,6 +68,12 @@ _TOOLS = "runs the live toolchain (kicad-cli, KiCad's python, java)"
 _BOARD = "runs a whole fixture board's checks or bench stage"
 _INTAKE = "materializes a whole KiCad project through intake"
 SLOW = {
+    "tests/test_isolation_rules.py::test_live_drc_and_check_isolation_agree_on_the_same_copper": _TOOLS,
+    "tests/test_isolation_rules.py::test_live_a_domains_own_nets_keep_their_ordinary_spacing": _TOOLS,
+    "tests/test_isolation_rules.py::test_live_slot_board_rule_falls_to_the_clearance": _TOOLS,
+    "tests/test_isolation_rules.py::test_live_rated_part_excepted_pad_to_pad_only": _TOOLS,
+    "tests/test_isolation_rules.py::test_live_pour_stays_out_of_the_gap": _TOOLS,
+    "tests/test_isolation_rules.py::test_live_route_auto_keeps_out_of_the_gap": _TOOLS,
     "tests/test_rf_synth.py::test_live_ngspice_ac_gives_the_same_rl": "runs ngspice AC decks in a worker",
     "tests/test_rf_synth.py::test_live_ngspice_mc_matches_the_closed_form": "runs a 40-draw Monte Carlo through ngspice workers",
     "tests/test_sim_si.py::test_planted_victim_beside_a_fast_clock": "field-solves pinned lite-main's nets twice and runs ngspice",

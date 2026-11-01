@@ -407,10 +407,15 @@ def parse_dru_rules(text: str) -> list[dict]:
     literals in the condition ([] for unconditioned/baseline rules);
     condition = the raw condition string (None when absent); layer = the
     (layer ...) clause token (None when absent). Only the shapes rules_gen
-    emits are recognized; anything else simply yields no row."""
+    emits are recognized; anything else simply yields no row. A barrier rule
+    (aiee_iso_*) yields none on purpose: it holds between two domains, and every
+    reader here takes a NetName as net-wide, which would hold a net 8 mm from
+    its own domain. routelib.dru_barriers reads those."""
     out: list[dict] = []
     for m in _DRU_RULE_RE.finditer(text or ""):
         name, body = m.group(1), m.group(2)
+        if name.startswith("aiee_iso_"):
+            continue
         c = _DRU_CONSTRAINT_RE.search(body)
         if not c:
             continue

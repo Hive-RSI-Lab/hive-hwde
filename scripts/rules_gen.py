@@ -53,6 +53,7 @@ I/O: SPEC section 6 - argparse, JSON to stdout or --out, exit 0/1/2, no interact
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 import math
 import re
@@ -95,7 +96,9 @@ class Rule:
     """One .kicad_dru rule."""
     def __init__(self, name: str, constraint: str, minv: float | None = None,
                  condition: str | None = None, layer: str | None = None,
-                 severity: str | None = None, extra: str | None = None):
+                 severity: str | None = None, extra: str | None = None,
+                 comment: str | None = None):
+        self.comment = comment
         self.name = name
         self.constraint = constraint
         self.minv = minv
@@ -105,7 +108,8 @@ class Rule:
         self.extra = extra
 
     def render(self) -> str:
-        lines = [f'(rule "{self.name}"']
+        lines = [f'# {ln}' for ln in (self.comment or "").splitlines()]
+        lines.append(f'(rule "{self.name}"')
         if self.severity:
             lines.append(f'\t(severity {self.severity})')
         if self.layer:
@@ -644,6 +648,155 @@ def package_rules(constraints: dict) -> tuple[list[Rule], list[dict]]:
     return rules, facts
 
 
+def _domain_expr(side: str, pats: list[str]) -> str:
+    """(A.NetName == 'x' || A.NetName == '/usb/*'). KiCad's == takes * and ?
+    (checked live), case-insensitively, so a glob can only catch more than
+    check_isolation's, never less. It has no [..] set: refused, not misread."""
+    for p in pats:
+        if "[" in p or "'" in p:
+            raise ValueError(f"isolation net pattern {p!r}: a DRU condition has "
+                             "no [..] set and no quote; list the nets")
+    return "(" + " || ".join(f"{side}.NetName == '{p}'" for p in pats) + ")"
+
+
+def _mm_up(mm: float) -> float:
+    """To the rule's 4 decimals, upward: a rule never sits under its table."""
+    return math.ceil(round(mm * 1e4, 6)) / 1e4
+
+
+def _hv_floor(hv_facts: list[dict], nets_a: list[str], nets_b: list[str]) -> float:
+    """The largest HV clearance a barrier rule would override (the later rule
+    wins, so it must carry it): a net-wide rule on a net of either domain, or
+    a pair rule across the barrier. A waiver lowers nothing."""
+    def hit(net, pats):
+        return any(fnmatch.fnmatchcase(net, p) for p in pats)
+    floor = 0.0
+    for f in hv_facts:
+        if f.get("waiver"):
+            continue
+        if "net" in f:
+            on = hit(f["net"], nets_a + nets_b)
+        else:
+            a, b = f["pair"]
+            on = (hit(a, nets_a) and hit(b, nets_b)) or (hit(a, nets_b) and hit(b, nets_a))
+        if on:
+            floor = max(floor, float(f["clearance_mm"]))
+    return floor
+
+
+def isolation_rules(constraints: dict, cap: dict, stackup: dict | None,
+                    hv_facts: list[dict], bg=None) -> tuple[list[Rule], list[dict]]:
+    """Barrier clearance from constraints `isolation` (#595), from the same
+    isotables.requirement() numbers check_isolation judges with.
+
+    One rule per barrier and layer class, scoped to the pair of domains, so a
+    domain's own nets keep their ordinary spacing:
+      aiee_iso_<barrier>_outer   the creepage requirement as a straight distance
+      aiee_iso_<barrier>_inner   the inner rule (only with inner copper)
+      aiee_iso_part_<ref>_<barrier>   a rated part's own pads, pad to pad only
+
+    Slots: a DRU clearance is a straight distance and can't see a path round a
+    slot, so the outer rule never takes slot credit: it's the full creepage
+    number, which also keeps the gap honest for a slot that doesn't run past the
+    copper. A board whose slot does earn the creepage declares
+    slot_earns_creepage on the barrier; its rule drops to the clearance
+    requirement, and check_isolation alone judges the creepage round the slot.
+
+    The part exception goes only to a part whose declared rating covers the
+    barrier: an unrated or short part stays flagged by DRC, as it is by
+    check_isolation. It's memberOfFootprint, not the courtyard: a track through
+    the courtyard is still a crossing. These rules follow the HV and package
+    rules, so neither can lower a barrier inside a courtyard."""
+    iso = constraints.get("isolation")
+    if not iso:
+        return [], []
+    import check_isolation as ci
+    import isotables
+    domains = iso.get("domains") or {}
+    barriers = iso.get("barriers") or []
+    try:
+        if not barriers:
+            raise ci.CheckError("isolation.barriers must list at least one barrier")
+        netmap = ci.domain_map(iso, sorted(bg.nets))[0] if bg is not None else None
+        for b in barriers:
+            ci._check_barrier(b, domains)
+            for d in b["between"]:
+                if not (domains[d] or {}).get("nets"):
+                    raise ci.CheckError(f"isolation domain {d!r} needs nets")
+        reqs = [isotables.requirement(b) for b in barriers]
+    except (ci.CheckError, isotables.IsoTableError) as exc:
+        raise ValueError(f"isolation: {exc}") from exc
+    has_inner = bool(stackup) and sum(
+        1 for ly in stackup["stack"] if ly["type"] == "copper") > 2
+    span = ci.spanning_parts(bg, netmap) if bg is not None else None
+    rated = iso.get("parts") or {}
+    rules: list[Rule] = []
+    part_rules: list[Rule] = []
+    facts: list[dict] = []
+    for b, req in zip(barriers, reqs):
+        da, db = b["between"]
+        nets_a, nets_b = domains[da]["nets"], domains[db]["nets"]
+        cond = f"{_domain_expr('A', nets_a)} && {_domain_expr('B', nets_b)}"
+        tag = _safe(str(b["name"]))
+        hv = _hv_floor(hv_facts, nets_a, nets_b)
+        cl, cr = req["clearance"], req["creepage"]
+        slotted = bool(b.get("slot_earns_creepage"))
+        table = cl if slotted else cr
+        outer = _mm_up(max(table["mm"], hv))
+        why = (f"barrier {b['name']} {da}/{db}, outer layers: "
+               + (f"clearance {cl['mm']:.3f} mm, because slot_earns_creepage says a "
+                  f"slot earns the creepage ({cr['mm']:.3f} mm); check_isolation "
+                  "judges that path, DRC can't"
+                  if slotted else
+                  f"creepage {cr['mm']:.3f} mm as a straight distance, no slot credit; "
+                  "a DRU clearance can't see a path round a slot")
+               + f"\nbasis: {table['basis']}"
+               + ("" if table["verified"] else "; table row or rule not read from a document")
+               + (f"\nraised to the net's HV clearance {hv:.3f} mm" if hv > table["mm"] else ""))
+        name = f"aiee_iso_{tag}_outer"
+        rules.append(Rule(name, "clearance", outer, condition=cond, layer="outer",
+                          comment=why))
+        fact = {"barrier": b["name"], "between": [da, db], "rule": name,
+                "layers": "outer", "clearance_mm": outer,
+                "basis": table["basis"], "verified": bool(table["verified"]),
+                "slot_earns_creepage": slotted, "hv_floor_mm": hv or None}
+        facts.append(fact)
+        if has_inner:
+            r = req["inner"]
+            inner = _mm_up(max(r["mm"], hv))
+            name = f"aiee_iso_{tag}_inner"
+            rules.append(Rule(
+                name, "clearance", inner, condition=cond, layer="inner",
+                # undeclared, the number is from memory and check_isolation only
+                # warns on it; DRC says the same, and pours still keep it
+                severity=None if r["declared"] or hv > r["mm"] else "warning",
+                comment=f"barrier {b['name']} {da}/{db}, inner layers: solid "
+                        f"insulation {r['mm']:.3f} mm\nbasis: {r['basis']}"))
+            facts.append({"barrier": b["name"], "between": [da, db], "rule": name,
+                          "layers": "inner", "clearance_mm": inner,
+                          "basis": r["basis"], "verified": bool(r["verified"]),
+                          "hv_floor_mm": hv or None})
+        for ref, rating in sorted(rated.items()):
+            if not re.fullmatch(r"[A-Za-z_]+[0-9]+", str(ref)):
+                raise ValueError(f"isolation.parts: bad ref {ref!r}")
+            if span is not None and not {da, db} <= set(span.get(ref, ())):
+                continue
+            short = ci.rating_shortfalls(rating, b, req)
+            if short:
+                fact.setdefault("parts_refused", []).append({"ref": ref, "shortfalls": short})
+                continue
+            floor = _mm_up(float(cap["min_clearance_mm"]))
+            name = f"aiee_iso_part_{_safe(ref)}_{tag}"
+            part_rules.append(Rule(
+                name, "clearance", floor,
+                condition=f"A.memberOfFootprint('{ref}') && B.memberOfFootprint('{ref}')"
+                          f" && {cond}",
+                comment=f"{ref}'s own pads across barrier {b['name']}: its declared "
+                        f"rating covers it; source: {rating.get('source', 'none given')}"))
+            fact.setdefault("parts_excepted", []).append({"ref": ref, "rule": name})
+    return rules + part_rules, facts
+
+
 def outer_microstrip_params(stackup: dict) -> tuple[float, float, float]:
     """(h, epsilon_r, outer_copper_oz) for outer-layer microstrip from a stackup.
 
@@ -889,8 +1042,10 @@ def build(constraints: dict, cap: dict, stackup: dict, baseline_only: bool,
         br, bf = bga_rules(bg, cap) if bg is not None else ([], [])
         # HV and package-rating clearances stay last: KiCad's later rule
         # wins, and a courtyard's escape clearance must never undercut them
-        rules += pr + nr + dr + zr + br + hr + kr
+        ir, if_ = isolation_rules(constraints, cap, stackup, hf, bg)
+        rules += pr + nr + dr + zr + br + hr + kr + ir
         report["package_rules"] = kf
+        report["isolation_rules"] = if_
         report["necks"] = nf
         report["bga_escape"] = bf
         report["renamed_rules"] = unique_rule_names(rules)
@@ -1065,6 +1220,7 @@ def main(argv: list[str] | None = None) -> int:
             "impedance": report.get("impedance", []),
             "stripline_layers": report.get("stripline_layers", {}),
             "hv_rules": report["hv_rules"],
+            "isolation_rules": report.get("isolation_rules", []),
             "package_rules": report.get("package_rules", []),
             "necks": report["necks"],
             "warnings": [

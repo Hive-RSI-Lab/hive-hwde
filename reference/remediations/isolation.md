@@ -27,9 +27,11 @@ or touching across it, or a part across it with no rating that covers it.
 1. Input: a net in the wrong domain, a missing part rating, an undeclared net.
 2. iso_part_unrated: a bleed resistor or ESD cap across the barrier needs a rated part (a Y cap) or
    to go. A solder jumper across a barrier is a crossing.
-3. Copper: move it out of the gap (pour keepouts per layer, rule areas). A DRU rule keeps it out on
-   the next route; rules_gen does not write one from this block yet.
-4. iso_creepage with clearance fine: a slot wider than X, longer than the copper either side.
+3. Copper: move it out of the gap. Run rules_gen: its aiee_iso_* rules hold pours, DRC and route_auto
+   out. route_critical, route_finish and route_cleanup only know net-wide clearances, so check after them.
+4. iso_creepage with clearance fine: a slot wider than X, longer than the copper either side. Then
+   declare slot_earns_creepage on the barrier: DRC can't see the path round a slot, so its rule falls
+   to the clearance number and this check judges the creepage.
 5. iso_part_pin_gap: a footprint whose land row is closer than the barrier. Use the part's own
    land pattern or a wider package; the part's rating doesn't cover the board's lands.
 
