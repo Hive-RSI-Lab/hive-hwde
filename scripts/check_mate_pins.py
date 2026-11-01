@@ -10,6 +10,11 @@ MECH-05, a declared mated pair (constraints.json "mating_pairs"):
  - mate_family_mismatch: the two footprints are known families that do not
    plug into each other, or their pad patterns do not overlay.
  - mate_pair_unresolved: a declared ref, or the mate board, is not there.
+ - mate_mirrored: a pair with a connector on B.Cu whose pins meet the wrong
+   nets, and would all meet their own nets mirrored (the other mount): a
+   bottom-side connector mirrored against its mate (#474; 5 of 18 bring-up
+   post-mortems in reference/ingest/dfm-assembly.md). One error naming the
+   cause, on top of the per-pin mate_pin_mismatch errors.
 
 MECH-05, on this board alone (reference/connector_pinmap.yaml
 standard_headers, a mate whose pinout is a standard):
@@ -253,12 +258,31 @@ def pair_violations(model, pcb: Path, pairs: list, cons_dir: Path | None,
             continue
         nmap = {canon(k): canon(v) for k, v in
                 (pair.get("net_map") or {}).items()}
-        bad = 0
+        rot = float(pair.get("rotation", 0))
+        bad = _mismatches(met, nmap)
+        back = [r for r, fp in ((ref, a_fp), (mref, b_fp))
+                if fp.side == "back"]
+        alt = {"stack": "flip", "flip": "stack"}.get(mount)
+        alt_met = (meetings(a_fp, b_fp, alt, rot, table["tol"])
+                   if bad and back and alt else None)
+        if alt_met is not None and _mismatches(alt_met, nmap) == 0 \
+                and _compared(alt_met, nmap) >= 2:
+            p1 = next(((a, b) for a, b in met if a[0] == "1"), met[0])
+            out.append(checklib.violation(
+                "mate_pins", "error", a_fp.center_abs(), None, None, [ref],
+                f"{ref} <-> {mref} on {mpath.name}: {' and '.join(back)} on "
+                f"the bottom (B.Cu) is mirrored against its mate - pin "
+                f"{p1[0][0]} meets pin {p1[1][0]}, and {bad} of "
+                f"{_compared(met, nmap)} pins meet the wrong net; turned the "
+                f"other way ({alt} mount) every pin would meet its own. Use "
+                f"a footprint numbered for the back side (or mirror the "
+                f"pin-to-net map), or put the connector on the other side",
+                SCRIPT, kind="mate_mirrored", connector=ref, mate=mref,
+                bottom=back, mismatched=bad))
         for (anum, anet, ax, ay), (bnum, bnet, _, _) in met:
             ca, cb = canon(anet), canon(bnet)
             if ca is None or cb is None or nmap.get(ca, ca) == cb:
                 continue
-            bad += 1
             short = (is_supply(anet) and is_supply(bnet))
             on_sig = not short and (is_supply(anet) or is_supply(bnet))
             via = (f" through a {res['name']} cable" if res else "")
@@ -277,6 +301,17 @@ def pair_violations(model, pcb: Path, pairs: list, cons_dir: Path | None,
             fact["cable"] = {k: res[k] for k in ("name", "type", "note", "pins")}
         facts.append(fact)
     return out, facts
+
+
+def _compared(met, nmap) -> int:
+    return sum(1 for a, b in met
+               if canon(a[1]) is not None and canon(b[1]) is not None)
+
+
+def _mismatches(met, nmap) -> int:
+    return sum(1 for a, b in met
+               if canon(a[1]) is not None and canon(b[1]) is not None
+               and nmap.get(canon(a[1]), canon(a[1])) != canon(b[1]))
 
 
 def handedness(pads, pitch: float, tol: float) -> int | None:

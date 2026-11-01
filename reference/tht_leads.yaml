@@ -1,0 +1,19 @@
+# Stock THT lead cross-sections, for parts with no datasheet extraction
+# (`mechanical.pins`) - check_connector_fit's fallback (#474). Matched on the
+# footprint name (after the library colon). Each entry is one `pins` spec in
+# the extraction's shape (dia_mm, or w_mm + t_mm).
+#
+# Square posts of unshrouded pin headers: 0.025 in (0.64 mm) at 2.54 mm
+# pitch, 0.5 mm at 2.00 mm, 0.4 mm at 1.27 mm (Samtec TSW/TMM/FTS, Wurth
+# 61300xxx, Amphenol 10129378 drawings). Sockets' tails vary by maker, so
+# they are left to their extraction.
+leads:
+  - match: '^(PinHeader_\d+x\d+_P2\.54mm|HDR-TH_\d+P-P2\.54-V-M)'
+    pins: [{w_mm: 0.64, t_mm: 0.64}]
+    source: "0.025 in square post (Samtec TSW, Wurth 61300xx1121)"
+  - match: '^PinHeader_\d+x\d+_P2\.00mm'
+    pins: [{w_mm: 0.5, t_mm: 0.5}]
+    source: "0.5 mm square post (Samtec TMM, Wurth 62000xx1121)"
+  - match: '^PinHeader_\d+x\d+_P1\.27mm'
+    pins: [{w_mm: 0.4, t_mm: 0.4}]
+    source: "0.4 mm square post (Samtec FTS, Wurth 62200xx1121)"
