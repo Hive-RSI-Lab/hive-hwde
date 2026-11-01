@@ -152,6 +152,33 @@ Consumers per key (script -> phase):
                              "level_kv": 0.5}},
             "abs_max": {"U2.3": 30}},
 
+  // check_isolation (P8, #353): isolation domains and barriers against IEC
+  // 60664-1 / 62368-1 (reference/iso_tables.yaml, every row marked read or
+  // not). Not judged without this block. Every barrier value is required: a
+  // missing one is exit 2, none is assumed. impulse_v may be mains_v_rms +
+  // overvoltage_category. standard iec60664-1 | iec62368-1; grade functional
+  // | basic | supplementary | reinforced; material_group I | II | IIIa | IIIb.
+  // Optional: withstand_v_rms / peak_v (Table F.7a), min_clearance_mm /
+  // min_creepage_mm (the board's own floor over the tables), inner_min_mm (same
+  // inner layer, as solid insulation), solid_min_mm (through the laminate),
+  // column general | printed_wiring. parts: the ONLY parts allowed pins in
+  // both domains, each with the ratings that must cover the barrier. floating:
+  // nets known to be in no domain (globs); their copper still counts as
+  // shortening the path. Mask earns no credit.
+  "isolation": {
+    "domains": {"HOST": {"nets": ["VBUS", "GND_USB", "/usb/*"]},
+                "LOGIC": {"nets": ["+3V3", "GND", "/mcu/*"]}},
+    "barriers": [{"name": "usb", "between": ["HOST", "LOGIC"],
+                  "standard": "iec60664-1", "grade": "basic",
+                  "working_v_rms": 250, "impulse_v": 4000,
+                  "withstand_v_rms": 5000, "pollution_degree": 2,
+                  "material_group": "IIIa", "altitude_m": 2000}],
+    "parts": {"U1": {"kind": "digital_isolator", "grade": "basic",
+                     "working_v_rms": 400, "impulse_v": 8000,
+                     "withstand_v_rms": 5000, "creepage_mm": 8.0,
+                     "source": "datasheet, rev"}},
+    "floating": []},
+
   // check_creepage (P8) + rules_gen (P5, T6): IPC-2221 spacing for pairs
   // > 30 V apart. rules_gen emits named aiee_hv_* clearance DRU rules from
   // these (never hand-author HV rules); check_creepage audits the routed

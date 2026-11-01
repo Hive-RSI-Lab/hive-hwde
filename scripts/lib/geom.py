@@ -644,6 +644,7 @@ class BoardGeom:
         self._parse_footprints(root)
         self._parse_zones(root)
         self.outline = self._parse_outline(root)
+        self.edge_faces = _edge_faces(root)
 
         self.nets: set[str] = set()
         for coll in (self._tracks, self._vias, self._zones):
@@ -1097,6 +1098,64 @@ class BoardGeom:
 
 
 # ============================================================ layer helpers
+
+def _edge_shape_parts(node, tx, closed: list, open_: list, prefix: str) -> None:
+    """One Edge.Cuts shape (gr_* or fp_*) as a closed polygon or an open line,
+    its points passed through `tx` (the footprint's transform, or identity)."""
+    kind = _head(node)[len(prefix):]
+    if kind == "rect":
+        s, e = _nums(_kid(node, "start")), _nums(_kid(node, "end"))
+        closed.append(Polygon([tx(s[0], s[1]), tx(e[0], s[1]),
+                               tx(e[0], e[1]), tx(s[0], e[1])]))
+    elif kind == "poly":
+        pts = [tx(*p) for p in _pts(_kid(node, "pts") or node)]
+        if len(pts) >= 3:
+            closed.append(Polygon(pts))
+    elif kind == "circle":
+        c, e = _nums(_kid(node, "center")), _nums(_kid(node, "end"))
+        cx, cy = tx(c[0], c[1])
+        r = math.hypot(e[0] - c[0], e[1] - c[1])
+        closed.append(Point(cx, cy).buffer(r, quad_segs=_QUAD_SEGS * 2))
+    elif kind == "line":
+        s, e = _nums(_kid(node, "start")), _nums(_kid(node, "end"))
+        open_.append(LineString([tx(s[0], s[1]), tx(e[0], e[1])]))
+    elif kind == "arc":
+        s, m, e = _kid(node, "start"), _kid(node, "mid"), _kid(node, "end")
+        if s and m and e:
+            open_.append(LineString([tx(*p) for p in _arc_points(
+                tuple(_nums(s)[:2]), tuple(_nums(m)[:2]), tuple(_nums(e)[:2]))]))
+
+
+def _edge_faces(root) -> list[Polygon]:
+    """Every closed face Edge.Cuts draws, largest first and with no interior
+    rings: board-level shapes of every kind and footprint-level ones (a milled
+    slot in a footprint). `.outline` stops at the first gr_rect and ignores
+    footprints, so it can't answer "where are the slots"."""
+    closed: list = []
+    open_: list = []
+    shapes = ("rect", "poly", "circle", "line", "arc")
+    for kind in shapes:
+        for g in _kids(root, f"gr_{kind}"):
+            if _layer_name(g) == "Edge.Cuts":
+                _edge_shape_parts(g, lambda x, y: (x, y), closed, open_, "gr_")
+    for fp in _kids(root, "footprint"):
+        at = _kid(fp, "at")
+        fnums = _nums(at) if at is not None else [0, 0, 0]
+        fx, fy = fnums[0], fnums[1]
+        fa = fnums[2] if len(fnums) > 2 else 0.0
+
+        def tx(x, y, fx=fx, fy=fy, fa=fa):
+            dx, dy = _rot(x, y, -fa)
+            return (fx + dx, fy + dy)
+        for kind in shapes:
+            for g in _kids(fp, f"fp_{kind}"):
+                if _layer_name(g) == "Edge.Cuts":
+                    _edge_shape_parts(g, tx, closed, open_, "fp_")
+    faces = [Polygon(f.exterior) for f in closed if f.is_valid and f.area > 0]
+    if open_:
+        faces += [Polygon(f.exterior) for f in polygonize(unary_union(open_))]
+    return sorted(faces, key=lambda g: g.area, reverse=True)
+
 
 def _layer_name(node) -> Optional[str]:
     l = _kid(node, "layer")
