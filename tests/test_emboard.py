@@ -23,6 +23,7 @@ from __future__ import annotations
 import cmath
 import json
 import math
+import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -251,6 +252,86 @@ def test_port_vi_moves_v_and_i_to_the_plane_whatever_the_feed_z(tmp_path):
     assert abs(b50 / a50 - gl) < 1e-3
 
 
+def test_port_vi_gamma_survives_a_tail_at_a_small_beta_d(tmp_path):
+    """#585: a 600 MHz wave over 1.5 mm probes (beta*d 0.03) with a little
+    noise. A second difference of the voltages reads noise like this as a
+    loss of order 1 /m on a lossless line, and sigma_max 1.002 on a thru."""
+    import numpy as np
+    f, eps, zf = 0.6e9, 3.34, 50.0
+    g = 1j * 2 * math.pi * f * math.sqrt(eps) / em.C0
+    t = np.arange(0, 40e-9, 2e-11)
+    env = np.hanning(t.size)    # long enough that the -f image stays out of the DFT
+    s = [4.5, 6.0, 7.5]
+    where = {"ports": [{"dist": s}]}
+    rng = np.random.default_rng(585)
+
+    def write(name, phasor, scale=1.0):
+        v = np.real(phasor * np.exp(2j * math.pi * f * t)) * env + 1e-3 * scale * rng.standard_normal(t.size)
+        (tmp_path / name).write_text("% t v\n" + "\n".join(f"{x:.6e}\t{y:.12e}" for x, y in zip(t, v)))
+
+    for j, sj in enumerate(s):
+        write(f"p0u{j}", cmath.exp(g * sj * 1e-3))
+    for j, sj in enumerate([5.25, 6.75]):
+        write(f"p0i{j}", cmath.exp(g * sj * 1e-3) / zf, 1 / zf)     # as in a record: the same to both
+    (r,) = eb.port_vi(tmp_path, where, 0, [f])
+    assert r["gamma"].imag == pytest.approx(g.imag, rel=0.01)   # acosh: 4 % off
+
+
+def test_deck_sets_its_own_run_length(cpwg4):
+    """#585: openEMS tests endCriteria only every 4 s of wall clock, so the
+    energy can't be what ends a run, or the load picks the record's length."""
+    a, _ = _deck(cpwg4)
+    assert a.fdtd["endCriteria"] == eb.RUN_ALL_STEPS
+    assert 'endCriteria="1e-300"' in a.xml()
+    assert a.fdtd["NumberOfTimesteps"] < eb.STEPS_MAX
+    assert a.fdtd["NumberOfTimesteps"] == _deck(cpwg4)[0].fdtd["NumberOfTimesteps"]
+
+
+def test_record_steps_cover_the_pulse_and_the_trips():
+    lines = {"x": [0.0, 40.0], "y": [0.0, 30.0], "z": [0.0, 1.0]}
+    n = eb.record_steps(lines, 6e9, 4.0)
+    dt = 1e-3 / (em.C0 * math.sqrt(1 / 40 ** 2 + 1 / 30 ** 2 + 1))
+    want = 10 * 2.5 / (2 * math.pi * 6e9) + eb.RECORD_TRANSITS * 50e-3 * 2 / em.C0
+    assert n * dt == pytest.approx(want, rel=1e-3)
+    assert eb.record_steps({**lines, "z": [0.0, 1e-3]}, 6e9, 4.0) == eb.STEPS_MAX
+
+
+def _ring(path, tail):
+    """Port probes that peak at 1 and hold `tail` in the record's last tenth."""
+    for k in (0, 1):
+        for j in range(3):
+            rows = [(i * 1e-11, 1.0 if i == 5 else (tail if i >= 90 else 0.0)) for i in range(100)]
+            (path / f"p{k}u{j}").write_text("% t v\n" + "\n".join(f"{a:.6e}\t{b:.12e}" for a, b in rows))
+
+
+def test_record_tail(tmp_path):
+    where = {"ports": [{}, {}]}
+    _ring(tmp_path, 2e-3)
+    assert eb.record_tail(tmp_path, where) == pytest.approx(2e-3, rel=1e-6)
+
+
+def test_study_doubles_a_record_that_is_still_ringing(tmp_path, monkeypatch):
+    pcb = tmp_path / "t.kicad_pcb"
+    geo = eb.extract(pcb, coupon(pcb))
+    seen = []
+
+    def run(tool, args, cwd=None, timeout=None):
+        seen.append(int(re.search(r'NumberOfTimesteps="(\d+)"', (Path(cwd) / "deck.xml").read_text()).group(1)))
+        _ring(Path(cwd), 1e-2 if len(seen) == 1 else 1e-5)
+
+    class Done(Exception):
+        pass
+
+    def waves(*a, **k):
+        raise Done
+
+    monkeypatch.setattr(solvers, "run", run)
+    monkeypatch.setattr(eb, "waves", waves)
+    with pytest.raises(Done):
+        eb.study(geo, ["0,10,-x", "30,10,+x"], 6e9, 0.6e9, 3, symmetric=True)
+    assert seen == [seen[0], 2 * seen[0]]
+
+
 def test_sparams_from_waves_full_and_symmetric():
     import numpy as np
     S = np.array([[0.2 + 0.1j, 0.8 - 0.3j], [0.8 - 0.3j, 0.2 + 0.1j]])
@@ -335,10 +416,13 @@ def _thru_check(res, length=30.0) -> dict:
            "s11_db": max(db(s[0][0]) for s in res["S"]),
            "phase_pct": 0.0, "z0_pct": 0.0, "ee_pct": 0.0}
     for f, s, e in zip(FREQS, res["S"], ex):
-        out["z0_pct"] = max(out["z0_pct"], abs(e["z0"] - 50.0) / 50.0 * 100)
+        bl = 2 * math.pi * f * math.sqrt(qs["eps_eff"]) / em.C0 * length * 1e-3
+        # At beta*l = n*pi the line is invisible and Z0 is 0/0: this thru reads
+        # 51.1 and 53.4 at 0.99 and 1.97 pi, 50.4-50.9 at the other 17 points.
+        if abs(math.sin(bl)) > 0.2:
+            out["z0_pct"] = max(out["z0_pct"], abs(e["z0"] - 50.0) / 50.0 * 100)
         if f < F_MAX / 5:
             continue      # beta*l under ~70 deg: phase and eps_eff are ill-conditioned there
-        bl = 2 * math.pi * f * math.sqrt(qs["eps_eff"]) / em.C0 * length * 1e-3
         dph = cmath.phase(s[1][0] / cmath.exp(-1j * bl))
         out["phase_pct"] = max(out["phase_pct"], abs(dph) / bl * 100)
         out["ee_pct"] = max(out["ee_pct"], abs(e["eps_eff"] - qs["eps_eff"]) / qs["eps_eff"] * 100)
@@ -356,6 +440,15 @@ def test_live_board_thru_matches_the_line_closed_form(tmp_path):
     from lib import sparam
     q = sparam.check(res["freqs"], res["S"])
     assert q["ok"], sparam.summary(q)
+
+
+@live
+def test_live_board_run_is_the_same_under_any_load(tmp_path):
+    """#585: bit for bit, so what a run reads doesn't hang on the tower's load."""
+    a = _run(tmp_path, "thru")
+    b = _run(tmp_path, "thru")
+    assert a["S"] == b["S"]
+    assert a["runs"][0]["tail"] <= eb.TAIL_MAX
 
 
 @live

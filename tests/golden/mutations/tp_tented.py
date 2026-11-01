@@ -28,6 +28,7 @@ TP = ('\t(footprint "TestPoint:TestPoint_Pad_D1.0mm"\n'
       '\t\t\t(uuid "5c0de470-0000-4000-8000-000000000003")\n'
       '\t\t\t(effects (font (size 1 1) (thickness 0.15)))\n'
       '\t\t)\n'
+      + mutlib.footprint_fields("5c0de470-0000-4000-8000-00000000001") +
       '\t\t(attr exclude_from_pos_files exclude_from_bom)\n'
       '\t\t(pad "1" smd circle\n'
       '\t\t\t(at 0 0)\n'

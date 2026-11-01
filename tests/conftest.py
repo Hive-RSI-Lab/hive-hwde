@@ -81,6 +81,7 @@ SLOW = {
     "tests/test_solvers.py::test_live_openems_validates": "runs an openEMS full-wave solve (minutes)",
     "tests/test_solvers.py::test_live_planar_thru_line_is_transparent": "runs an openEMS planar S-parameter solve (~1.5 min)",
     "tests/test_emboard.py::test_live_board_thru_matches_the_line_closed_form": "runs an openEMS board S-parameter solve",
+    "tests/test_emboard.py::test_live_board_run_is_the_same_under_any_load": "runs an openEMS board S-parameter solve twice",
     "tests/test_emboard.py::test_live_board_open_stub_notch": "runs an openEMS board S-parameter solve",
     "tests/test_emboard.py::test_live_board_mutant_wrong_width_misses_z0": "runs an openEMS board S-parameter solve",
     "tests/test_sparam.py::test_live_fit_spice_round_trip": "vector-fits with scikit-rf and runs ngspice AC from the IIC-OSIC-TOOLS tree",
