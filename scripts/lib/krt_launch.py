@@ -1,7 +1,8 @@
 """Run a KRT script with hwde's patches (#489, #529).
 
   cd <krt plugins>
-  python krt_launch.py [--layer-widths W.json] [--via-joint-ends] SCRIPT ARGS...
+  python krt_launch.py [--layer-widths W.json] [--via-joint-ends]
+                       [--hole-to-hole MM] [--escape-open O.json] SCRIPT ARGS...
 
 --layer-widths (#489): KRT (KiCadRoutingTools 0.19.0) draws each layer at
   GridRouteConfig.layer_widths[layer] when that map is set, but only its own
@@ -21,6 +22,26 @@
   free end that coincides with an endpoint of the same group on ANOTHER
   layer (a via joint) is not a free end; a group whose only ends are such
   joints keeps KRT's answer.
+
+--hole-to-hole MM (#552): KRT checks drill hole-to-hole against its own
+  constant (routing_defaults.HOLE_TO_HOLE_CLEARANCE, JLC's 0.20 via-to-via
+  spacing), not the --fab-overrides value. A board whose floor is wider
+  (rules_gen's aiee_hole_to_hole_floor, 0.5 on JLC 6L) then gets dog-bone
+  gap vias 0.566 mm from a via-in-pad at 0.8 mm pitch: hole_to_hole and
+  hole_clearance errors DRC rips both nets for. The constant is raised to
+  MM (never lowered) before KRT imports it.
+
+--escape-open O.json (#547): KRT's dog-bone engine escapes every ball and
+  every coupled pair toward the NEARER edge of the ball field. O.json =
+  {"open": {"/DRAM_SDCLK0_P": ["left", "up"], ...}} names, per net, the
+  field sides (board axes, up = -y) its escape may leave by. KRT's
+  under-pad/dog-bone engine (bga_fanout/underpad.py) is re-compiled from
+  its own source with four edits (escape_open_source): the A* goal is
+  "outside the field on an open side" for such a net and the margin past a
+  closed side is not walkable; a coupled pair (side-by-side or end-on) does
+  not try a closed direction; the dog-bone gap site prefers the nearest
+  OPEN side. Nets not named escape as before. Each edit must match KRT's
+  source exactly once, else the launch fails (a KRT bump needs a look).
 
 The KRT script itself runs unchanged (runpy).
 """
@@ -82,9 +103,119 @@ def _patch_free_ends() -> None:
             mod.find_stub_free_ends = patched
 
 
+def raise_hole_to_hole(mm: float) -> float:
+    """Set KRT's hole-to-hole constant to max(KRT's, mm); returns it."""
+    import routing_defaults
+
+    v = max(float(routing_defaults.HOLE_TO_HOLE_CLEARANCE), float(mm))
+    routing_defaults.HOLE_TO_HOLE_CLEARANCE = v
+    return v
+
+
+SIDES = ("left", "right", "up", "down")
+
+_HW_HELPERS = """
+    _hw_open = {}
+    for _hp in fp_pads:
+        _hs = HWDE_OPEN.get(_hp.net_name)
+        if _hs:
+            _hw_open[_hp.net_id] = frozenset(_hs)
+    _hw_far = 10 ** 9
+
+    def _hw_inb(ix, iy, nid):
+        s = _hw_open.get(nid)
+        if not s:
+            return in_bbox(ix, iy)
+        return ((bx0 - (0 if 'left' in s else _hw_far)) <= ix
+                <= (bx1 + (0 if 'right' in s else _hw_far))
+                and (by0 - (0 if 'up' in s else _hw_far)) <= iy
+                <= (by1 + (0 if 'down' in s else _hw_far)))
+
+    def _hw_shut(pad, e):
+        s = _hw_open.get(pad.net_id)
+        if not s:
+            return False
+        ex, ey = e
+        if abs(ex) >= abs(ey):
+            side = 'right' if ex > 0 else 'left'
+        else:
+            side = 'down' if ey > 0 else 'up'
+        return side not in s
+
+    def _hw_dists(p, d_e, d_w, d_s, d_n):
+        s = _hw_open.get(p.net_id)
+        if not s:
+            return d_e, d_w, d_s, d_n
+        big = 1e6
+        return (d_e + (0 if 'right' in s else big),
+                d_w + (0 if 'left' in s else big),
+                d_s + (0 if 'down' in s else big),
+                d_n + (0 if 'up' in s else big))
+"""
+
+# (anchor, replacement) on bga_fanout/underpad.py of KRT 0.19.0; each anchor
+# must occur exactly once
+ESCAPE_OPEN_EDITS = [
+    ("    def heur(ix, iy):\n"
+     "        return max(0, min(ix - bx0, bx1 - ix, iy - by0, by1 - iy))\n",
+     "    def heur(ix, iy):\n"
+     "        return max(0, min(ix - bx0, bx1 - ix, iy - by0, by1 - iy))\n"
+     + _HW_HELPERS),
+    # A* goal: past an open side for a steered net
+    ("            if not in_bbox(cx, cy):\n                path = [cur]\n",
+     "            if not _hw_inb(cx, cy, net_id):\n                path = [cur]\n"),
+    # the margin past a closed side is not walkable (outside the bbox KRT
+    # checks no obstacle, so a walk around the field would short things)
+    ("                    if not occ.inside(nx, ny):\n"
+     "                        continue\n",
+     "                    if not occ.inside(nx, ny):\n"
+     "                        continue\n"
+     "                    if not in_bbox(nx, ny) and _hw_inb(nx, ny, net_id):\n"
+     "                        continue\n"),
+    # coupled pair, side by side
+    ("          for e in cand_e:\n            ex, ey = e\n",
+     "          for e in cand_e:\n            ex, ey = e\n"
+     "            if _hw_shut(pp, e):\n                continue\n"),
+    # coupled pair, end-on
+    ("            ex, ey = sgn * ax, sgn * ay\n"
+     "            De = boundary_dist(mx, my, (ex, ey))\n",
+     "            ex, ey = sgn * ax, sgn * ay\n"
+     "            if _hw_shut(pp, (ex, ey)):\n                continue\n"
+     "            De = boundary_dist(mx, my, (ex, ey))\n"),
+    # dog-bone gap site toward the nearest open side
+    ("        d_s, d_n = grid.max_y - gy, gy - grid.min_y\n",
+     "        d_s, d_n = grid.max_y - gy, gy - grid.min_y\n"
+     "        d_e, d_w, d_s, d_n = _hw_dists(p, d_e, d_w, d_s, d_n)\n"),
+]
+
+
+def escape_open_source(src: str) -> str:
+    """KRT's underpad.py source with the --escape-open edits applied."""
+    for anchor, repl in ESCAPE_OPEN_EDITS:
+        n = src.count(anchor)
+        if n != 1:
+            raise SystemExit(
+                f"krt_launch --escape-open: KRT underpad.py anchor found {n}x "
+                f"(expected 1): {anchor.strip()[:60]!r}")
+        src = src.replace(anchor, repl)
+    return src
+
+
+def _patch_escape_open(plan: dict) -> None:
+    import bga_fanout.underpad as up
+
+    opened = {str(k): [s for s in v if s in SIDES]
+              for k, v in (plan.get("open") or {}).items()}
+    src = escape_open_source(open(up.__file__, encoding="utf-8").read())
+    up.__dict__["HWDE_OPEN"] = opened
+    # re-define the module's functions from the edited source in its own
+    # namespace (bga_fanout imports generate_underpad_escape at call time)
+    exec(compile(src, up.__file__, "exec"), up.__dict__)
+
+
 def main(argv: list[str] | None = None) -> None:
     argv = list(sys.argv[1:] if argv is None else argv)
-    widths, joints = None, False
+    widths, joints, h2h, opened = None, False, None, None
     while argv and argv[0].startswith("--"):
         flag = argv.pop(0)
         if flag == "--layer-widths":
@@ -92,6 +223,11 @@ def main(argv: list[str] | None = None) -> None:
                 widths = {str(k): float(v) for k, v in json.load(fh).items()}
         elif flag == "--via-joint-ends":
             joints = True
+        elif flag == "--hole-to-hole":
+            h2h = float(argv.pop(0))
+        elif flag == "--escape-open":
+            with open(argv.pop(0), encoding="utf-8") as fh:
+                opened = json.load(fh)
         else:
             raise SystemExit(f"krt_launch: unknown flag {flag}")
     if not argv:
@@ -104,6 +240,10 @@ def main(argv: list[str] | None = None) -> None:
         _patch_layer_widths(widths)
     if joints:
         _patch_free_ends()
+    if h2h is not None:
+        raise_hole_to_hole(h2h)
+    if opened:
+        _patch_escape_open(opened)
     sys.argv = [script, *argv]
     runpy.run_path(script, run_name="__main__")
 

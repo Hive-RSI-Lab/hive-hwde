@@ -333,3 +333,56 @@ def test_rip_in_fields_keeps_the_other_field(tmp_path, monkeypatch):
     assert n == 1 and removed == ["a"]
     removed.clear()
     assert re_.rip_in_fields(pcb, set(), {"/CK_P": None}, [u1, u2]) == 2
+
+
+# ------------------------------------------------------------ krt_launch #552/#547
+
+def test_launcher_raises_hole_to_hole(tmp_path):
+    (tmp_path / "routing_defaults.py").write_text(
+        "HOLE_TO_HOLE_CLEARANCE = 0.20\n", encoding="utf-8")
+    (tmp_path / "route_x.py").write_text(
+        "from routing_defaults import HOLE_TO_HOLE_CLEARANCE as H\nprint(H)\n",
+        encoding="utf-8")
+    for arg, want in (("0.5", "0.5"), ("0.1", "0.2")):
+        cp = subprocess.run([sys.executable,
+                             str(SCRIPTS / "lib" / "krt_launch.py"),
+                             "--hole-to-hole", arg, "route_x.py"],
+                            cwd=tmp_path, capture_output=True, text=True,
+                            check=True)
+        assert cp.stdout.strip() == want
+
+
+def test_escape_open_edits_match_pinned_krt():
+    import env
+    krt = env.find_krt()
+    if krt is None:
+        pytest.skip("needs KiCadRoutingTools")
+    src = (Path(krt) / "bga_fanout" / "underpad.py").read_text(encoding="utf-8")
+    out = krt_launch.escape_open_source(src)
+    assert out.count("_hw_inb(") == 3 and out.count("_hw_shut(") == 3
+    compile(out, "underpad.py", "exec")
+    with pytest.raises(SystemExit):
+        krt_launch.escape_open_source("def heur(): pass\n")
+
+
+def test_escape_open_helpers():
+    import textwrap
+    from types import SimpleNamespace as S
+    ns = {"fp_pads": [S(net_name="/A", net_id=1), S(net_name="/B", net_id=2)],
+          "HWDE_OPEN": {"/A": ["left", "up"]},
+          "bx0": 0, "by0": 0, "bx1": 10, "by1": 10,
+          "in_bbox": lambda x, y: 0 <= x <= 10 and 0 <= y <= 10}
+    exec(textwrap.dedent(krt_launch._HW_HELPERS), ns)
+    inb, shut, dists = ns["_hw_inb"], ns["_hw_shut"], ns["_hw_dists"]
+    # /A: past the left/top edge is the goal, past right/bottom is not
+    assert not inb(-1, 5, 1) and not inb(5, -1, 1)
+    assert inb(11, 5, 1) and inb(5, 11, 1)
+    # an unsteered net keeps KRT's bbox
+    assert not inb(11, 5, 2) and inb(5, 5, 2)
+    p1, p2 = S(net_id=1), S(net_id=2)
+    assert shut(p1, (1.0, 0.0)) and shut(p1, (0.0, 1.0))
+    assert not shut(p1, (-1.0, 0.0)) and not shut(p1, (0.0, -1.0))
+    assert not shut(p2, (1.0, 0.0))
+    d = dists(p1, 1.0, 2.0, 3.0, 4.0)
+    assert d[1] == 2.0 and d[3] == 4.0 and d[0] > 1e5 and d[2] > 1e5
+    assert dists(p2, 1.0, 2.0, 3.0, 4.0) == (1.0, 2.0, 3.0, 4.0)

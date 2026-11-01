@@ -367,3 +367,109 @@ def test_live_escape_synthetic_bga(tmp_path):
     # no via sits in a ball (dog-bone, not via-in-pad)
     (g,) = bgalib.find_bgas(bg)
     assert re_.via_in_pad_nets(bg, g, {v.uuid for v in bg.vias_of()}) == {}
+
+
+# ---- #552 via-in-pad clashes, wide nets; #547 escape toward the partner ----
+
+def test_open_sides_face_the_partner():
+    assert re_.open_sides(-3.0, 0.2) == ("left",)
+    assert re_.open_sides(-2.0, -2.0) == ("left", "up")
+    assert re_.open_sides(0.1, 4.0) == ("down",)
+    assert re_.open_sides(0.0, 0.0) == ()
+
+
+def test_partner_sides_from_nearest_off_part_pad(tmp_path):
+    bg = geom.BoardGeom.from_file(board(tmp_path))     # J1 sits below U1
+    (b,) = bgalib.find_bgas(bg)
+    s = re_.partner_sides(bg, b, set(b.nets.values()))
+    assert len(s) == 36 and all("down" in v for v in s.values())
+    assert all("up" not in v for v in s.values())
+    bg2 = geom.BoardGeom.from_file(board(tmp_path, name="c", connector=False))
+    (b2,) = bgalib.find_bgas(bg2)
+    assert re_.partner_sides(bg2, b2, set(b2.nets.values())) == {}
+
+
+def test_fanout_nets_hold_wide_nets_and_keep_plane_balls_out():
+    b = bgalib.Bga(ref="U1", layer="F.Cu", pitch=0.8, rows=3, cols=3,
+                   pad_d=0.32, bbox=(0, 0, 1.6, 1.6), balls=9,
+                   nets={"A1": "/S", "A2": "VBUS", "A3": "GND", "B1": "GND",
+                         "B2": "GND", "B3": "GND", "C1": "GND", "C2": "GND",
+                         "C3": "/T"})
+    ok, held = re_.fanout_nets(b, {"VBUS": 0.32, "/T": 0.0889}, 0.0889)
+    assert ok == ["/S", "/T"] and held == ["VBUS"]
+
+
+def test_toward_nets_pairs_and_length_groups():
+    cons = {"length_groups": [{"name": "B0", "nets": ["DRAM_D[0-1]"],
+                               "ref_nets": ["DRAM_SDQS0_P"]}, "junk"]}
+    specs = [{"p": "/USB_P", "n": "/USB_N"}]
+    nets = {"/DRAM_D0", "/DRAM_D1", "/DRAM_D2", "/DRAM_SDQS0_P", "/USB_P",
+            "/USB_N"}
+    assert re_.toward_nets(cons, nets, specs) == [
+        "/DRAM_D0", "/DRAM_D1", "/DRAM_SDQS0_P", "/USB_N", "/USB_P"]
+
+
+def _via(x, y, net, uid, size=0.45, drill=0.2):
+    return (f'  (via (at {x} {y}) (size {size}) (drill {drill}) '
+            f'(layers "F.Cu" "B.Cu") (net "{net}") (uuid "{uid}"))\n')
+
+
+def test_vip_conflicts_drop_the_in_pad_ball_not_its_neighbour(tmp_path):
+    """A1 (/S0_0) at (18, 13): its via-in-pad is 0.566 mm from the gap via
+    between A1/A2/B1/B2 (/S1_1's dog-bone): 0.366 mm hole to hole < 0.5."""
+    extra = _via(18, 13, "/S0_0", "vip") + _via(18.4, 13.4, "/S1_1", "gap")
+    bg = geom.BoardGeom.from_file(board(tmp_path, extra=extra))
+    (b,) = bgalib.find_bgas(bg)
+    assert re_.vip_conflicts(bg, b, {"vip", "gap"}, 0.5, 0.125) == {"/S0_0"}
+    # old via-in-pad copper is not this run's
+    assert re_.vip_conflicts(bg, b, {"gap"}, 0.5, 0.125) == set()
+    # at KRT's own 0.2 hole-to-hole the pair is legal
+    assert re_.vip_conflicts(bg, b, {"vip", "gap"}, 0.2, 0.1) == set()
+
+
+def test_vip_conflicts_floor_via_grazing_a_stub(tmp_path):
+    """A 0.45 via in a 0.35 pad bulges past it: a foreign F.Cu stub threaded
+    past the pad is 0.06 mm from the via."""
+    seg = ('  (segment (start 18.33 12.5) (end 18.33 13.5) (width 0.0889) '
+           '(layer "F.Cu") (net "/S0_1") (uuid "s1"))\n')
+    extra = _via(18, 13, "/S0_0", "vip") + seg
+    bg = geom.BoardGeom.from_file(board(tmp_path, extra=extra))
+    (b,) = bgalib.find_bgas(bg)
+    assert re_.vip_conflicts(bg, b, {"vip"}, 0.5, 0.125) == {"/S0_0"}
+    bg2 = geom.BoardGeom.from_file(board(tmp_path, name="c",
+                                         extra=_via(18, 13, "/S0_0", "vip")))
+    (b2,) = bgalib.find_bgas(bg2)
+    assert re_.vip_conflicts(bg2, b2, {"vip"}, 0.5, 0.125) == set()
+
+
+def test_live_escape_toward_partner(tmp_path):
+    """--toward-partner: J1 sits below U1, so no escape leaves by the top."""
+    if env.find_kicad_cli() is None or env.find_krt() is None:
+        pytest.skip("needs kicad-cli and KiCadRoutingTools")
+    pcb = board(tmp_path)
+    (tmp_path / "constraints.json").write_text(json.dumps(
+        {"length_groups": [{"name": "all", "nets": ["S*"]}]}),
+        encoding="utf-8")
+    out = tmp_path / "r.json"
+    rc = re_.main(["--pcb", str(pcb), "--toward-partner",
+                   "--out-report", str(out)])
+    rep = json.loads(out.read_text())
+    assert rc in (0, 1), rep
+    f = rep["facts"]
+    (b,) = f["bgas"]
+    assert sum(b["toward_partner"].values()) == 36
+    assert "up" not in "+".join(b["toward_partner"])
+    assert f["drc_delta"]["new"] == {}
+    bg = geom.BoardGeom.from_file(pcb)
+    (g,) = bgalib.find_bgas(bg)
+    x0, y0, x1, _ = g.bbox
+    pts = [pt for t in bg.tracks_of() for pt in t.shape.coords]
+    # nothing crosses the top edge: KRT's field edge is half a pitch past
+    # the ball centres, a left/right escape may run in that rim
+    rim = g.pitch / 2 + 0.05
+    assert pts and not [(x, y) for x, y in pts
+                        if y < y0 - rim and x0 - rim <= x <= x1 + rim]
+    # the closed top costs gap sites: the rest fall back to via-in-pad,
+    # stripped without --allow-via-in-pad, and are left for the routers
+    assert b["kept_nets"] >= 12
+    assert b["kept_nets"] + len(b["left_for_routers"]) == 36
