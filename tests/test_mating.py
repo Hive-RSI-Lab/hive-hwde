@@ -98,6 +98,12 @@ def test_family_table_matches_and_skips():
         assert matinglib.family_of(name)["family"] == "sma_edge", name
     assert matinglib.family_of("aiee:SMA-SMD_BWSMA-KHD-P001")["family"] \
         == "sma_vertical"
+    # #428: KE-Z001 (C496549) is the vertical THT jack, KE-P001 the edge one
+    for name in ("rfkit:SMA-TH_BWSMA-KE-Z001", "x:BWSMA-KE-Z001",
+                 "x:SMA-TH_5P-L6.5-W6.5-H9.8"):
+        assert matinglib.family_of(name)["family"] == "sma_vertical", name
+    assert matinglib.family_of("x:BWSMA-KE-P001")["family"] == "sma_edge"
+    assert matinglib.family_of("x:BWSMA-KE")["family"] == "sma_edge"
 
 
 def test_mouth_read_from_pad_layout_and_rotation(tmp_path):

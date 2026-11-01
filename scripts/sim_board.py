@@ -9,9 +9,12 @@ reviewer would otherwise work out by hand:
 
   scenarios (DC operating points, rails as ideal sources, ICs open):
     default   every IC pin floats: only the passives and rails set nodes
-    io_low    every IC I/O net (a GPIO-like or status pin name) driven to
-              0 V through 25 ohm; BJTs and MOSFETs with generic models
-              follow on their own
+    io_low    every IC I/O net (a GPIO-like or status pin name, or an
+              SoC pad named by its function: ENET2_TX_EN, UART4_TX_DATA)
+              driven to 0 V through 25 ohm; BJTs and MOSFETs with generic
+              models follow on their own. Not driven: a net named as
+              analog (ADC_x, x_SNS, x_DIV), and pins constraints
+              `pin_modes` / --pin-mode mark analog, input or nc
     io_high   every IC I/O net driven to its IC's supply
     io_run    io_high, but status lines (PG, FAULT, INT...) asserted low:
               the powered-up state load switches and enables see
@@ -38,7 +41,11 @@ Findings (violation kind; severity):
                           figure, in some scenario (warning)
   led_dark                an LED that never reaches 0.5 mA (warning)
   gpio_overcurrent        an IC I/O net sourcing/sinking > 20 mA when driven
-  input_above_supply      an IC pin's net above that IC's supply + 0.3 V
+  input_above_supply      an IC pin's net above that IC's supply + 0.3 V,
+                          or for a pin rated above it (reference/
+                          pin_ratings.yaml, a parts.json common-mode
+                          figure) above that rating; a switch-node or
+                          bootstrap pin (HB, HS, BST, SW) is listed
   enable_never_high       an EN/RESET RC net, set by passives from a rail,
                           that never reaches 0.7 VDD (error);
                           enable_before_supply: crosses before its supply
@@ -74,12 +81,15 @@ Inputs: --net kicad/<board>.net, or --workspace <ws> (finds kicad/*.net,
 kicad/constraints.json, architecture/power_tree.md, parts/parts.json).
 Rail voltages: constraints.json `voltages`, the power tree's rail table, a
 fixed-output regulator's OUT pin (LP5907-3.3), then the net name - the same
-ladder check_ratings uses. `--rail NET=V` adds or overrides one.
+ladder check_ratings uses, except that a sheet-local net only passives
+touch (/charger/CHG_VBUS_RC, a snubber's mid node) is no rail by its name.
+`--rail NET=V` adds or overrides one.
 
 CLI:
   sim_board.py --workspace boards/<b> [--out reports/sim_board.json]
   sim_board.py --net x.net [--constraints c.json] [--parts parts/]
-               [--rail VBUS=20] [--rail-min VBUS=9] [--vref U2=0.596] [--i2c-khz 400]
+               [--rail VBUS=20] [--rail-min VBUS=9] [--vref U2=0.596]
+               [--pin-mode U1.PB11=analog] [--i2c-khz 400]
                [--i2c-cb-pf 50] [--ramp-ms 1] [--timeout 120]
 Exit 0 pass / 1 violations / 2 error.
 """
@@ -116,6 +126,26 @@ GPIO_FN = re.compile(
     r"|SDA|SCL|SCK|SCLK|MOSI|MISO|CS|SS|INT\w*|IRQ"
     r"|PG|PGOOD|FAULT\w*|DTR|RTS|CTS|DSR"
     r"|CDATA|CCLK|SENSOR_V[PN]|ADC\d*)$")
+# SoC pads named by their default function (i.MX ENET2_TX_EN, UART4_TX_DATA,
+# GPIO1_IO03; Rockchip/Allwinner the same way): muxable, so I/O. DDR, USB,
+# clock, crystal and boot/reset pads are not.
+SOC_PAD_FN = re.compile(
+    r"^(GPIO\d*_IO\d+|GPIO\d+_[A-D]\d+(_\w+)?"
+    r"|(ENET|RGMII|RMII|UART|USART|LPUART|LCD|CSI|SD|USDHC|NAND|ECSPI|SPI"
+    r"|QSPI|I2C|SAI|I2S|PWM|KPP|JTAG|GPMI|EIM|SNVS_TAMPER|SPDIF|MQS|ESAI)"
+    r"\d*_[A-Z0-9_]+)$")
+SOC_NOT_IO = re.compile(r"^(DRAM|DDR|USB|CCM|XTAL|RTC_X|POR|ONOFF|BOOT_MODE"
+                        r"|TEST_MODE|JTAG_MOD|PMIC|SNVS_PMIC|VDD|NVCC|GND"
+                        r"|ENET\d?_REF_CLK|\w*_(CLK[PN]|[DP][PN]|REXT|VBUS))")
+# A net named as an analog signal (ADC_1V35, VOUT_SNS, ISENSE_A) on a
+# GPIO-named pin: the pin is an ADC input, not driven.
+ANALOG_NET = {"ADC", "AIN", "SNS", "SENSE", "VSENSE", "ISENSE", "MON", "MEAS",
+              "DIV", "VMON", "IMON"}
+# constraints `pin_modes` / --pin-mode values
+PIN_MODES = {"io": "io", "gpio": "io", "output": "io", "out": "io",
+             "bidir": "io", "od": "od", "open_drain": "od", "opendrain": "od",
+             "analog": "off", "adc": "off", "input": "off", "in": "off",
+             "nc": "off", "unused": "off", "off": "off"}
 POWER_FN = re.compile(
     r"^(V(DD|CC|IN|BAT|BUS|HV|S)\w*|[ADP]V(DD|CC)\w*|AVCC|PVCC|HPVDD|3V3|5V"
     r"|V3|IN|VDDIO\w*)$")
@@ -130,6 +160,9 @@ VGS_UNKNOWN_V = 12.0
 # below this on-state |Vgs| a FET is taken as never driven on in the sim
 # (its gate left to an IC pin the sim holds open), not as under-driven
 VGS_ON_FLOOR_V = 0.5
+# a gate driven at the very Vgs RDS(on) is specified at (a 2.5 V rail on a
+# part rated @2.5V) is at spec: the sim's few-mV drops don't make it under
+VGS_SPEC_TOL_V = 0.05
 
 
 # ------------------------------------------------------------------ board
@@ -218,9 +251,30 @@ def resolve_rails(board: dict, parts: dict, constraints: dict | None,
         for p in c["pins"].values():
             if set(p["fn"]) & {"OUT", "VOUT", "VO"}:
                 setv(p["net"], v, f"regulator {c['ref']}")
+    passive_only = _passive_only_nets(board)
     for net in nets:
-        setv(net, check_ratings.volts_from_name(net), "net name")
+        v = check_ratings.volts_from_name(net)
+        if v and net in passive_only and net not in out:
+            # a sheet-local net only passives touch (/charger/CHG_VBUS_RC,
+            # an RC snubber's mid node) is named after a rail, not one
+            continue
+        setv(net, v, "net name")
     return out
+
+
+PASSIVE_KINDS = {"R", "C", "L", "FB", "TP"}
+
+
+def _passive_only_nets(board: dict) -> set[str]:
+    """Sheet-local nets ('/sheet/NAME') whose every pin is on a resistor,
+    capacitor, inductor, bead or test point."""
+    kinds: dict[str, set[str]] = {}
+    for c in board["comps"].values():
+        for p in c["pins"].values():
+            kinds.setdefault(p["net"], set()).add(c["kind"])
+    return {n for n, ks in kinds.items()
+            if n.startswith("/") and n.count("/") >= 2
+            and ks and ks <= PASSIVE_KINDS}
 
 
 def rail_mins(rails: dict, constraints: dict | None,
@@ -522,36 +576,104 @@ OPEN_DRAIN_FN = re.compile(r"^N?(PG|PGOOD|POK|FAULT\w*|INT\w*|IRQ|ALERT"
                            r"|CHRG|STAT\w*)$")
 
 
-def io_nets(board: dict, rails: dict, model: dict) -> tuple[dict, set]:
+def pin_modes(constraints: dict | None, overrides: list[str] | None = None
+              ) -> dict[str, dict[str, str]]:
+    """{ref: {pin number or function: 'io' | 'od' | 'off'}} from
+    constraints `pin_modes` ({"U1": {"PB11": "analog", "B15": "output"}})
+    and --pin-mode REF.PIN=MODE (which wins)."""
+    out: dict[str, dict[str, str]] = {}
+    raw = (constraints or {}).get("pin_modes") or {}
+    if not isinstance(raw, dict):
+        raise checklib.CheckError("constraints pin_modes: want "
+                                  "{ref: {pin: mode}}")
+    items = [(r, k, v) for r, m in raw.items() for k, v in (m or {}).items()]
+    for it in overrides or []:
+        key, sep, v = it.partition("=")
+        r, dot, k = key.partition(".")
+        if not sep or not dot or not r or not k:
+            raise checklib.CheckError(f"--pin-mode {it!r}: want REF.PIN=MODE")
+        items.append((r, k, v))
+    for r, k, v in items:
+        mode = PIN_MODES.get(str(v).strip().lower())
+        if mode is None:
+            raise checklib.CheckError(
+                f"pin mode {r}.{k}={v!r}: want one of "
+                f"{', '.join(sorted(PIN_MODES))}")
+        out.setdefault(r.strip(), {})[str(k).strip().upper()] = mode
+    return out
+
+
+def analog_net(net: str) -> bool:
+    return bool(ANALOG_NET & set(re.split(r"[^A-Z0-9]+",
+                                          check_ratings.base_net(net).upper())))
+
+
+def pin_role(c: dict, pin: str, p: dict, modes: dict | None
+             ) -> tuple[str | None, str]:
+    """(mode, why) for an IC pin: 'io' driven, 'od' driven low as an
+    open-drain status line, 'off' or None not driven."""
+    m = (modes or {}).get(c["ref"]) or {}
+    for k in [pin.upper(), *p["fn"]]:
+        if k in m:
+            return m[k], "pin_modes"
+    fns = p["fn"]
+    if any(OPEN_DRAIN_FN.match(f) for f in fns):
+        return "od", "status name"
+    gp = any(GPIO_FN.match(f) for f in fns)
+    soc = not gp and any(SOC_PAD_FN.match(f) and not SOC_NOT_IO.match(f)
+                         for f in fns)
+    if not (gp or soc):
+        return None, ""
+    if analog_net(p["net"]):
+        return "off", "analog net name"
+    return "io", "GPIO name" if gp else "SoC pad name"
+
+
+def io_nets(board: dict, rails: dict, model: dict,
+            modes: dict | None = None, skipped: list | None = None
+            ) -> tuple[dict, set]:
     """({net: drive volts}, open-drain nets) for IC I/O nets: a net on a
-    GPIO-named IC pin, not a rail. Nets joined by a 0-ohm link count as one
+    GPIO-named IC pin or an SoC pad named by its function (ENET2_TX_EN),
+    not a rail, not an analog-named net (ADC_x, x_SNS), with `modes`
+    (pin_modes) overriding per pin. Nets joined by a 0-ohm link count as one
     and get one drive (on the first of them), at the lowest supply of the
     ICs on any of them. Open-drain nets are those with a status-named pin
-    (PG, FAULT, INT...)."""
+    (PG, FAULT, INT...). `skipped` collects the pins left undriven by
+    pin_modes or an analog net name."""
     grp = _groups_by_zero_ohm(model)
     supply: dict[str, float] = {}
     io: set[str] = set()
     od: set[str] = set()
+    off: set[str] = set()
     for c in board["comps"].values():
         if c["kind"] not in ("U", "IC"):
             continue
         vs = ic_supply(c, rails)
-        for p in c["pins"].values():
+        for pin, p in c["pins"].items():
             n = p["net"]
             if n in rails or n in model["grounds"] or vs is None:
                 continue
             g = grp[n]
             supply[g] = min(supply.get(g, vs), vs)
-            if any(GPIO_FN.match(f) or OPEN_DRAIN_FN.match(f)
-                   for f in p["fn"]):
+            mode, why = pin_role(c, pin, p, modes)
+            if mode == "off":
+                if why == "pin_modes":
+                    off.add(g)
+                if skipped is not None:
+                    skipped.append({"ref": c["ref"], "pin": pin, "net": n,
+                                    "why": why})
+            elif mode in ("io", "od"):
                 io.add(g)
-            if any(OPEN_DRAIN_FN.match(f) for f in p["fn"]):
-                od.add(g)
+                if mode == "od":
+                    od.add(g)
     first = {}
     for n in sorted(grp):
         first.setdefault(grp[n], n)
+    # a net a pin_modes 'off' names stays undriven even when another IC's
+    # pin on it reads as I/O by name
+    io -= off
     return ({first[g]: supply[g] for g in sorted(io)},
-            {first[g] for g in od})
+            {first[g] for g in od if g in io})
 
 
 RAIL_RANK = {"--rail": 0, "constraints": 1, "power_tree": 2}
@@ -815,7 +937,8 @@ def supply_net(c: dict, rails: dict) -> str | None:
 def analyze(board: dict, parts: dict, rails: dict, opts: dict) -> tuple:
     model = build_model(board, parts, rails)
     grounds = model["grounds"]
-    io, od = io_nets(board, rails, model)
+    skipped: list[dict] = []
+    io, od = io_nets(board, rails, model, opts.get("pin_modes"), skipped)
     # io_run: outputs high and status lines (PG, FAULT...) asserted low -
     # the powered-up, running state most enables and load switches see.
     scen = {"default": {}, "io_low": {n: 0.0 for n in io}, "io_high": io,
@@ -836,7 +959,7 @@ def analyze(board: dict, parts: dict, rails: dict, opts: dict) -> tuple:
     if mins:
         lo = {n: ((mins[n], src) if n in mins else (v, src))
               for n, (v, src) in rails.items()}
-        io_lo, od_lo = io_nets(board, lo, model)
+        io_lo, od_lo = io_nets(board, lo, model, opts.get("pin_modes"))
         runs += [(f"{name}@min", lo, d) for name, d in
                  (("default", {}), ("io_low", {n: 0.0 for n in io_lo}),
                   ("io_high", io_lo),
@@ -860,6 +983,8 @@ def analyze(board: dict, parts: dict, rails: dict, opts: dict) -> tuple:
         if not u["why"].startswith("IC/")]
     facts: dict = {"scenarios": {k: {"io_nets_driven": len(d)}
                                  for k, _, d in runs}}
+    if skipped:
+        facts["io_pins_not_driven"] = skipped[:50]
     if mins:
         facts["rail_min_v"] = dict(sorted(mins.items()))
 
@@ -1146,26 +1271,47 @@ def device_findings(board, parts, rails, model, ops, scen, vios, unknowns,
                                  current_a=i, scenario=sc))
     facts["io_currents"] = sorted(gp, key=lambda r: -abs(r["current_a"]))[:25]
 
-    # IC pins above their own supply (default scenario)
+    # IC pins above their own supply (default scenario), or above their
+    # own rating where reference/pin_ratings.yaml or parts.json has one
+    table = load_pin_ratings()
     for c in board["comps"].values():
         if c["kind"] not in ("U", "IC"):
             continue
         vs = ic_supply(c, rails)
         if not vs:
             continue
+        part = parts.get(c["ref"])
         for pin, p in sorted(c["pins"].items()):
             n = p["net"]
             if n in rails or any(POWER_FN.match(f) for f in p["fn"]):
                 continue
             v = ops["default"]["v"].get(n) \
                 if n in ops["default"]["driven"] else None
-            if v is not None and v > vs + 0.3:
+            if v is None or v <= vs + 0.3:
+                continue
+            fns = '/'.join(p['fn']) or '?'
+            lim, src = pin_rating(c, p, part, table)
+            if lim == "switch_node":
+                unknowns.append({"ref": c["ref"], "what": f"pin {pin} "
+                                 f"({fns}) at {v:.3g} V",
+                                 "why": "a switch-node/bootstrap pin above "
+                                        f"the {vs:g} V supply by design: "
+                                        "its rating is the datasheet's"})
+            elif lim is not None:
+                if v > lim:
+                    vios.append(_vio("input_above_supply", "warning",
+                                     [c["ref"]], n,
+                                     f"{c['ref']} pin {pin} ({fns}) sits at "
+                                     f"{v:.3g} V on {n}, above its {lim:g} V "
+                                     f"rating ({src})", volts=v, supply=vs,
+                                     rating=lim))
+            else:
                 vios.append(_vio("input_above_supply", "warning", [c["ref"]],
-                                 n, f"{c['ref']} pin {pin} "
-                                 f"({'/'.join(p['fn']) or '?'}) sits at "
+                                 n, f"{c['ref']} pin {pin} ({fns}) sits at "
                                  f"{v:.3g} V on {n}, above the part's "
                                  f"{vs:g} V supply + 0.3 V - unless the pin "
-                                 "is rated for it", volts=v, supply=vs))
+                                 "is rated for it (reference/"
+                                 "pin_ratings.yaml)", volts=v, supply=vs))
 
     # MOSFET gate-source stress
     fets = []
@@ -1204,6 +1350,52 @@ def device_findings(board, parts, rails, model, ops, scen, vios, unknowns,
                                  vgs=vgs[sc], scenario=sc))
         underdrive(e, part, vgs, fets[-1], vios, unknowns)
     facts["mosfets"] = fets
+
+
+PIN_RATINGS_YAML = SCRIPTS.parent / "reference" / "pin_ratings.yaml"
+SWITCH_NODE_FN = re.compile(r"^(HB\d?|HS\d?|HO\d?|BST\d?|BOOT\d?|CBOOT|SW\d?"
+                            r"|LX\d?|PH\d?|VSW|SW_\w+)$")
+SENSE_IN_FN = re.compile(r"^(IN[+-]|IN[PN]|[+-]IN|VIN[+-]|SENSE[-+PN]|RS[+-]"
+                         r"|CS[+-])$")
+
+
+def load_pin_ratings(path: Path = PIN_RATINGS_YAML) -> list[dict]:
+    if not path.is_file():
+        return []
+    rows = (yaml.safe_load(path.read_text(encoding="utf-8")) or {}) \
+        .get("parts") or []
+    return [{**r, "_m": re.compile(r["match"], re.I),
+             "_p": re.compile(r["pins"])} for r in rows]
+
+
+def _pin_fns(p: dict) -> list[str]:
+    return [f.replace("\u2013", "-").replace("\u2212", "-") for f in p["fn"]]
+
+
+def pin_rating(c: dict, p: dict, part: dict | None, table: list[dict]
+               ) -> tuple[float | str | None, str]:
+    """(max volts, source) for an IC pin rated above its supply:
+    pin_ratings.yaml by MPN and pin name, then a parts.json common-mode
+    attribute on a sense input; ('switch_node', ...) for a bootstrap/switch
+    pin; (None, '') when nothing says."""
+    fns = _pin_fns(p)
+    names = [x for x in ((part or {}).get("mpn"), c["value"]) if x]
+    for r in table:
+        if any(r["_m"].search(x) for x in names) and \
+                any(r["_p"].match(f) for f in fns):
+            return float(r["max_v"]), ("reference/pin_ratings.yaml: "
+                                       f"{r.get('source', '')}"
+                                       + ("" if r.get("verified") else
+                                          ", not re-read"))
+    if any(SENSE_IN_FN.match(f) for f in fns):
+        txt = attr(part, r"Common[- ]?Mode") or ""
+        vs = [float(x) for x in
+              re.findall(r"(-?\d+(?:\.\d+)?)\s*V(?![a-zA-Z])", txt)]
+        if vs:
+            return max(vs), f"parts.json common-mode {txt}"
+    if any(SWITCH_NODE_FN.match(f) for f in fns):
+        return "switch_node", ""
+    return None, ""
 
 
 def fet_vth_max(part: dict | None) -> tuple[float | None, str]:
@@ -1267,7 +1459,7 @@ def underdrive(e, part, vgs, row, vios, unknowns):
         if vth is not None and v < vth:
             found = ("error", sc, v, f"under its {vth:g} V Vgs(th) "
                      f"({vth_src}): it may never turn on")
-        elif rds_vgs is not None and v < rds_vgs:
+        elif rds_vgs is not None and v < rds_vgs - VGS_SPEC_TOL_V:
             found = ("warning", sc, v, f"under the {rds_vgs:g} V its "
                      "RDS(on) is specified at: on-resistance and heat are "
                      "past the datasheet's figures")
@@ -1492,6 +1684,7 @@ def run(a) -> dict:
     opts = {"dll": dll, "timeout": a.timeout, "ramp_ms": a.ramp_ms,
             "rail_min": rail_mins(rails, cons,
                                   _pairs(a.rail_min, "--rail-min")),
+            "pin_modes": pin_modes(cons, a.pin_mode),
             "vref": _pairs(a.vref, "--vref"), "i2c_khz": a.i2c_khz,
             "i2c_cb_pf": a.i2c_cb_pf,
             "ambient_c": (cons or {}).get("ambient_c")
@@ -1505,6 +1698,12 @@ def run(a) -> dict:
     timing_findings(board, rails, model, ops, tran, ens, opts, vios, facts)
     i2c_findings(board, rails, model, opts, vios, unknowns, facts)
     passive_facts(board, rails, model, facts)
+    unknowns += [{"ref": "", "what": f"{n} not a rail",
+                  "why": "named like a rail but only passives on this "
+                         "sheet-local net: left to the network (give "
+                         "--rail if it is one)"}
+                 for n in sorted(_passive_only_nets(board))
+                 if n not in rails and check_ratings.volts_from_name(n)]
     ics = sorted(u["ref"] for u in model["unmodelled"]
                  if u["why"].startswith("IC/"))
     return checklib.report(
@@ -1529,6 +1728,9 @@ def main(argv: list[str] | None = None) -> int:
                     help="NET=volts, adds or overrides a rail")
     ap.add_argument("--rail-min", action="append", default=[],
                     help="NET=volts, the rail's lowest operating voltage")
+    ap.add_argument("--pin-mode", action="append", default=[],
+                    help="REF.PIN=MODE (io/output, od, analog/input/nc): "
+                         "how the io scenarios treat an IC pin")
     ap.add_argument("--vref", action="append", default=[],
                     help="REF=volts, a regulator's FB reference")
     ap.add_argument("--i2c-khz", type=int, default=400,

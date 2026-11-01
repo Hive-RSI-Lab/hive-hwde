@@ -1,0 +1,83 @@
+# IC pins rated above the part's own supply, for sim_board's
+# input_above_supply finding: a current-sense amp's inputs ride the bus it
+# measures (INA240 IN+/IN- to 80 V on a 3.3 V VS), a BMS AFE's FET-drive and
+# pack pins sit at pack voltage, a hot-swap controller's SENSE/OUT at VIN.
+# Such a pin is judged against its own maximum, not VS + 0.3 V.
+#
+# match: a regex tried against the part's MPN (parts.json) and its value
+# (case-insensitive). pins: a regex tried against each of the pin's function
+# names (upper case; an en dash reads as '-'). max_v: the highest DC level
+# the pin may sit at, to the part's ground - the datasheet's recommended
+# (operating) common-mode or pin range where it has one, else its absolute
+# maximum. abs_max_v (optional): the absolute maximum, which transient
+# checks judge a peak against (sim_inrush's hot-plug); a row without it is
+# not used there. source: where the number came from. `verified: false` means typed
+# from memory of the datasheet, not re-read: the review that relies on it
+# reads the datasheet once and flips it (with the date).
+#
+# Also read: a parts.json attribute "Common Mode Voltage" / "Voltage -
+# Common Mode" ("-4V~80V") sets max_v for the part's sense-input pins.
+# Pins named for a switch node or bootstrap (HB HS HO BST BOOT SW LX PH)
+# track the switch node by design and are listed, not judged.
+parts:
+  - match: '^INA240'
+    pins: '^(IN[+-]|IN[PN])$'
+    max_v: 80
+    source: TI SBOS662 (INA240) recommended common-mode input -4 to 80 V
+    verified: false
+  - match: '^INA2(28|29|37|38|39)'
+    pins: '^(IN[+-]|IN[PN]|VBUS)$'
+    max_v: 85
+    source: TI SBOSA20/SBOS959 (INA237/INA228 family) common-mode and VBUS 0 to 85 V
+    verified: false
+  - match: '^INA226'
+    pins: '^(IN[+-]|IN[PN]|VBUS)$'
+    max_v: 36
+    source: TI SBOS547 (INA226) common-mode 0 to 36 V
+    verified: false
+  - match: '^INA219'
+    pins: '^(IN[+-]|IN[PN])$'
+    max_v: 26
+    source: TI SBOS448 (INA219) common-mode 0 to 26 V
+    verified: false
+  - match: '^INA(18[01]|185|199|21[0-5])'
+    pins: '^(IN[+-]|IN[PN])$'
+    max_v: 26
+    source: TI INA180/INA199/INA21x common-mode -0.2/-0.3 to 26 V
+    verified: false
+  - match: '^INA(186|190)'
+    pins: '^(IN[+-]|IN[PN])$'
+    max_v: 40
+    source: TI SBOS850 (INA186) / SBOS863 (INA190) common-mode to 40 V
+    verified: false
+  - match: '^INA28[1]|^INA293'
+    pins: '^(IN[+-]|IN[PN])$'
+    max_v: 110
+    source: TI INA281/INA293 common-mode -4 to 110 V
+    verified: false
+  - match: '^INA290'
+    pins: '^(IN[+-]|IN[PN])$'
+    max_v: 120
+    source: TI SBOS948 (INA290) common-mode 2.7 to 120 V
+    verified: false
+  - match: '^BQ7695[02]|^BQ76942'
+    pins: '^(BAT|PACK|LD|CHG|DSG|PCHG|PDSG|VC\d+)$'
+    max_v: 85
+    abs_max_v: 85
+    source: TI SLUSE13B (BQ76952) 7.1 absolute maximum, BAT/PACK/LD/CHG/DSG/PCHG/PDSG to VSS + 85 V
+    verified: false
+  - match: '^LM506[79]'
+    pins: '^(SENSE|OUT|UVLO|OVLO|VIN)$'
+    max_v: 100
+    abs_max_v: 100
+    source: TI SNVS452 (LM5069) absolute maximum VIN, SENSE, OUT to 100 V
+    verified: false
+  - match: '^BQ25798'
+    pins: '^(VBUS|VAC1|VAC2|PMID)$'
+    max_v: 24
+    abs_max_v: 30
+    source: >-
+      TI SLUSDV2C (BQ25798, rev. Jun 2026) 6.3 recommended VVBUS 3.6..24 V;
+      6.1 absolute maximum VAC1, VAC2, VBUS, PMID (converter not switching)
+      30 V
+    verified: true

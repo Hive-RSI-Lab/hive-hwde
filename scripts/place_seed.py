@@ -7,7 +7,12 @@ arrangement:
    cap to its IC pin as a rigid satellite; constraints.json placement.groups
    declares the other satellite families (crystal + load caps, dividers) until
    S7 emits them; everything else is a singleton. board_only / locked /
-   placement.fixed footprints never move (they are obstacles).
+   placement.fixed footprints never move (they are obstacles), but their
+   satellites do (#431): slotted round the anchor where it stands, then
+   each walked to the nearest spot clear of every placed courtyard,
+   keepout and the edge, before the free clusters are laid out. A
+   satellite of a satellite (an IC group member's decoupler) rides its
+   top cluster, slotted at its parent's pin.
 2. Satellite slots are computed in the anchor's LOCAL frame (they rotate with
    the anchor): each satellite sits just outside the anchor courtyard, facing
    the pad of its target pin (2-pad parts are rotated so the shared-net pad
@@ -194,8 +199,31 @@ def layout_satellites(model: PlaceModel, cluster: Cluster,
         (under if kfp.side != anchor.side else placed).append(
             affinity.translate(p, kslot[0], kslot[1]))
     slots: dict[str, tuple] = {}
+    order = {s.ref: i for i, s in enumerate(cluster.satellites)}
+
+    def pin_of(s):
+        """The target pin in the anchor frame; for a nested satellite, its
+        parent's pad carried through the parent's slot (#431)."""
+        if s.parent is None:
+            return _pin_local(anchor, s)
+        if s.target_pin is None:
+            return None
+        known = slots.get(s.parent) or (keep or {}).get(s.parent)
+        if known is None:
+            return None
+        pfp = model.footprints[s.parent]
+        pads = [p for p in pfp.pads if p.number == str(s.target_pin[1])]
+        if not pads:
+            return None
+        (sx, sy), prel = known
+        pc = pfp.center_local()
+        dx, dy = _rot(pads[0].local[0] - pc[0], pads[0].local[1] - pc[1],
+                      -prel)
+        return (sx + dx, sy + dy)
 
     def keyed(s):
+        if s.parent is not None:   # after its parent (list is depth-sorted)
+            return (2, float(order.get(s.ref, 0)), s.ref)
         p = _pin_local(anchor, s)
         return (0, _ang((p[0] - ac[0], p[1] - ac[1])), s.ref) if p \
             else (1, 0.0, s.ref)
@@ -204,9 +232,11 @@ def layout_satellites(model: PlaceModel, cluster: Cluster,
         [s for s in cluster.satellites if s.ref in only]
     for i, sat in enumerate(sorted(sats, key=keyed)):
         fp = model.footprints[sat.ref]
-        pin = _pin_local(anchor, sat)
-        if area and pin is not None and _backside_ok(model, anchor, fp,
-                                                     placement):
+        pin = pin_of(sat)
+        pin_fp = anchor if sat.parent is None else \
+            model.footprints[sat.parent]
+        if area and pin is not None and sat.parent is None \
+                and _backside_ok(model, anchor, fp, placement):
             got = _slot_under(anchor, fp, sat, pin, ext, under, other)
             if got is not None:
                 slots[sat.ref] = got[0]
@@ -221,10 +251,14 @@ def layout_satellites(model: PlaceModel, cluster: Cluster,
         sat_rel = _centered(fp.extents_local())
         r_sat = _circumradius(sat_rel)
         if pin is None and sat.target_pin is not None:
-            warnings.append(f"{cluster.anchor}.{sat.target_pin[1]} not found "
+            warnings.append(f"{pin_fp.ref}.{sat.target_pin[1]} not found "
                             f"for satellite {sat.ref} - perimeter slot used")
         if pin is not None:
-            base_dir = _unit((pin[0] - ac[0], pin[1] - ac[1]))
+            # out from the part that owns the pin: the anchor, or for a
+            # nested satellite its parent's slot centre
+            oc = ac if sat.parent is None else \
+                (slots.get(sat.parent) or keep[sat.parent])[0]
+            base_dir = _unit((pin[0] - oc[0], pin[1] - oc[1]))
             pivot = pin
         else:
             spread = i * (360.0 / max(1, len(cluster.satellites)))
@@ -233,7 +267,7 @@ def layout_satellites(model: PlaceModel, cluster: Cluster,
             pivot = (ac[0] + base_dir[0] * r, ac[1] + base_dir[1] * r)
 
         toward = (-base_dir[0], -base_dir[1])  # sat center -> pin direction
-        rel = _facing_rel(anchor, fp, sat, toward)
+        rel = _facing_rel(pin_fp, fp, sat, toward)
         poly0 = affinity.rotate(sat_rel, -rel, origin=(0, 0))
         chosen = None
         for off in NUDGE_ANGLES:
@@ -672,6 +706,60 @@ def legalize(model, free_clusters, slots_of, desired, obstacles, interior,
     return unplaced
 
 
+def place_fixed_satellites(model, fixed_clusters, slots_of, obstacles,
+                           interior, forbidden, warnings,
+                           step: float = 0.2, rings: int = 60):
+    """Seat the satellites of each fixed anchor (#431) at their slot round
+    the anchor as it stands; a satellite whose slot collides with an
+    obstacle, a keepout, an earlier satellite or the board edge walks a
+    spiral (step mm) to the nearest clear spot, angle kept. Nested ones
+    follow their parent's FINAL spot, since their slot is relative to it.
+    -> (placed courtyards, refs that found no spot)."""
+    placed: list = []
+    unplaced: list[str] = []
+    for c in fixed_clusters:
+        anchor = model.footprints[c.anchor]
+        own = anchor.extents_abs()
+        moved: dict[str, tuple[float, float]] = {}
+        for s in c.satellites:
+            slot, rel = slots_of[c.anchor][s.ref]
+            fp = model.footprints[s.ref]
+            want = anchor.to_abs(slot)
+            if s.parent in moved:  # carry the parent's walk along
+                want = (want[0] + moved[s.parent][0],
+                        want[1] + moved[s.parent][1])
+            angle = (anchor.angle + rel) % 360.0
+            fp.place_center(want, angle)
+            reach = step * rings + _circumradius(fp.extents_abs()) * 2
+            near = box(want[0] - reach, want[1] - reach,
+                       want[0] + reach, want[1] + reach)
+            # a satellite slotted under the package (other side) overlaps
+            # its own anchor's courtyard by design
+            others = ([own] if fp.side == anchor.side else []) + [
+                o for o in obstacles + placed + forbidden
+                if o.intersects(near) and not o.equals(own)]
+            spot = None
+            for dx, dy in _spiral(step, rings):
+                fp.place_center((want[0] + dx, want[1] + dy), angle)
+                poly = fp.extents_abs()
+                if poly.difference(interior).area > placelib.EPS_AREA:
+                    continue
+                if any(poly.intersection(o).area > placelib.EPS_AREA
+                       for o in others):
+                    continue
+                spot = (dx, dy)
+                break
+            if spot is None:
+                fp.place_center(want, angle)
+                unplaced.append(s.ref)
+                warnings.append(f"satellite {s.ref} of fixed {c.anchor} found "
+                                f"no clear spot - left at its slot")
+                continue
+            moved[s.ref] = spot
+            placed.append(fp.extents_abs())
+    return placed, unplaced
+
+
 # ------------------------------------------------------- driver
 
 def seed(pcb: Path, constraints: dict, decoupling: dict,
@@ -680,15 +768,17 @@ def seed(pcb: Path, constraints: dict, decoupling: dict,
     placement = constraints.get("placement") or {}
     hpwl_before = placelib.hpwl(model)["total_mm"]
 
-    clusters, warnings = placelib.build_clusters(model, decoupling, placement)
+    clusters, warnings = placelib.build_clusters(model, decoupling, placement,
+                                                 with_fixed=True)
     import placetemplates
     placetemplates.audit_groups(model, placement, warnings)
     slots_of = {c.anchor: layout_satellites(model, c, warnings,
                                             placement=placement)
                 for c in clusters}
 
-    edge_clusters = [c for c in clusters if c.edge]
-    free_clusters = [c for c in clusters if not c.edge]
+    fixed_clusters = [c for c in clusters if c.fixed]
+    edge_clusters = [c for c in clusters if c.edge and not c.fixed]
+    free_clusters = [c for c in clusters if not c.edge and not c.fixed]
     place_edge_clusters(model, edge_clusters, slots_of, edge_margin, warnings)
 
     fixed_polys = [f.extents_abs() for f in model.footprints.values()
@@ -708,6 +798,11 @@ def seed(pcb: Path, constraints: dict, decoupling: dict,
             f"board outline too small for edge margin {edge_margin} mm")
     forbidden = [p for side in ("front", "back")
                  for p, _why in placelib._forbidden(model, placement, side)]
+    # satellites of a fixed anchor (#431): slotted round it where it stands,
+    # each then walked to the nearest spot clear of everything placed so far
+    sat_polys, unplaced_sats = place_fixed_satellites(
+        model, fixed_clusters, slots_of, fixed_polys + edge_polys,
+        interior, forbidden, warnings)
     weight = net_weights(constraints, decoupling)
     w = connectivity(model, clusters, weight)
     pinned = {c.anchor: model.footprints[c.anchor].center_abs()
@@ -724,12 +819,14 @@ def seed(pcb: Path, constraints: dict, decoupling: dict,
             want = desired[c.anchor]
             desired[c.anchor] = min(corners, key=lambda k: math.dist(k, want))
     unplaced = legalize(model, free_clusters, slots_of, desired,
-                        fixed_polys + edge_polys, interior, forbidden, grid,
-                        warnings, placelib.copper_edge_mm(model))
+                        fixed_polys + edge_polys + sat_polys, interior,
+                        forbidden, grid, warnings,
+                        placelib.copper_edge_mm(model))
+    unplaced += unplaced_sats
 
     ops = []
     for c in clusters:
-        for ref in c.refs:
+        for ref in (c.refs[1:] if c.fixed else c.refs):
             fp = model.footprints[ref]
             ops.append({"op": "place", "ref": ref,
                         "x": checklib.rnd(fp.pos[0]),
@@ -738,12 +835,14 @@ def seed(pcb: Path, constraints: dict, decoupling: dict,
                         "side": fp.side})
     violations = [checklib.violation(
         "place", "error", model.footprints[a].center_abs(), None, None, [a],
-        f"seed could not legalize cluster {a}", placelib.SOURCE,
+        f"seed could not legalize {'cluster ' if a not in unplaced_sats else 'satellite '}{a}", placelib.SOURCE,
         kind="seed_unplaced") for a in unplaced]
     facts = {
         "clusters": [{"anchor": c.anchor,
                       "satellites": [s.ref for s in c.satellites],
-                      "edge": (c.edge or {}).get("edge")} for c in clusters],
+                      "edge": (c.edge or {}).get("edge"),
+                      **({"fixed": True} if c.fixed else {})}
+                     for c in clusters],
         "warnings": warnings,
         "hpwl_before_mm": hpwl_before,
         "hpwl_seed_mm": placelib.hpwl(model)["total_mm"],

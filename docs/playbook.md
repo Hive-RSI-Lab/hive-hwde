@@ -136,6 +136,12 @@ weighed like any other report:
   thermal/electro-thermal plane solver), each held to a closed-form case by
   `sim_solve validate`; `sim_solve line` checks a microstrip's Z0 full-wave
   against impedance.py. docs/solvers.md.
+- `scripts/parts_enrich.py --workspace <ws>`: fills parts.json
+  `attributes` (Power, Voltage Rated, Vgs, RDS(on), Vf, common mode) from
+  each row's LCSC listing, keeping any value the row already has. Run it
+  once the BOM has LCSC codes and before sim_board / check_ratings: without
+  it every resistor is judged at its package default and every cap rating
+  is a known unknown.
 - `scripts/sim_board.py --workspace <ws>`: ngspice on the board's own
   netlist, no testbench to write. Rails are sources, ICs open, every R, C,
   L, diode, LED, zener and recognised BJT/MOSFET in place (a dual, e.g.
@@ -143,7 +149,8 @@ weighed like any other report:
   scenarios (default, every IC I/O low, high, running) plus a rail-ramp
   transient. Reports resistor overpower, cap overvoltage/DC bias, the Vout
   each FB divider sets against the rail it feeds, LED and GPIO currents,
-  pins above their IC's supply, MOSFET Vgs (too much, and too little to
+  pins above their IC's supply (or above their own rating in
+  reference/pin_ratings.yaml: CSA inputs, BMS AFE pins), MOSFET Vgs (too much, and too little to
   turn on: rerun at each rail's `min` in constraints), enable/reset RC timing, I2C
   pull-up limits, RC corners, crystal loads - and `known_unknowns`, every
   fact it could not decide (a Vref not verified, a Vgs rating not known).

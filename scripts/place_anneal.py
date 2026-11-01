@@ -1447,7 +1447,16 @@ def anneal(pcb: Path, constraints: dict, decoupling: dict, params: Params,
     placement = (constraints or {}).get("placement") or {}
     hpwl_input = placelib.hpwl(model)["total_mm"]
 
-    clusters, warnings = placelib.build_clusters(model, decoupling, placement)
+    clusters, warnings = placelib.build_clusters(model, decoupling, placement,
+                                                 with_fixed=True)
+    # satellites of a fixed anchor were seated by place_seed round it (#431):
+    # the search treats them as fixed too, like their anchor
+    held = [s.ref for c in clusters if c.fixed for s in c.satellites]
+    clusters = [c for c in clusters if not c.fixed]
+    if held:
+        placement = {**placement,
+                     "fixed": list(placement.get("fixed", [])) + held}
+        constraints = {**(constraints or {}), "placement": placement}
     reslotted: list[str] = []
     bodies = _build_bodies(model, clusters, warnings,
                            margin_mm=params.margin_mm, decoupling=decoupling,

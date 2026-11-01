@@ -93,3 +93,26 @@ def test_explicit_project_and_clear_miss(tmp_path):
     assert cp.returncode == 0, cp.stderr[-800:]
     assert "miss: nolib:PART1: no library 'nolib'" in cp.stdout
     assert "sym-lib-table" in cp.stdout
+
+
+def test_placed_part_takes_its_library_footprint(tmp_path):
+    """#412: kicad-sch-api left a placed lib_pull symbol's Footprint empty;
+    KiCad copies the library symbol's on placement, and so does schlib. An
+    explicit footprint still wins."""
+    b = _board(tmp_path)
+    sym = b / "lib" / "tlib.kicad_sym"
+    sym.write_text(sym.read_text().replace(
+        '(property "Value" "PART1"',
+        '(property "Footprint" "tlib:SOT-23-6_X" (id 2) (at 0 0 0) '
+        '(effects (font (size 1.27 1.27)) hide))\n'
+        '        (property "Value" "PART1"'))
+    cp = _run("""
+        import schlib
+        s = schlib.Sheet("t")
+        a = s.add_component("tlib:PART1", "U1", "x", (50.8, 50.8))
+        b = s.add_component("tlib:PART1", "U2", "x", (76.2, 50.8),
+                            footprint="tlib:OTHER")
+        print("fp", a.footprint, b.footprint)
+        """, b / "kicad" / "gen" / "root.py", cwd=Path("/"))
+    assert cp.returncode == 0, cp.stderr[-800:]
+    assert "fp tlib:SOT-23-6_X tlib:OTHER" in cp.stdout

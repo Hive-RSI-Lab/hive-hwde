@@ -4,8 +4,8 @@
  "fixture": "pd_trigger_verify",
  "board": "pd-trigger",
  "metrics": {
-  "errors": 47,
-  "warnings": 45,
+  "errors": 51,
+  "warnings": 47,
   "by_check": {
    "check_return_path": 0,
    "check_current": 41,
@@ -20,8 +20,9 @@
    "check_ratings": 0,
    "check_antenna": 0,
    "check_bom_sync": 0,
-   "check_cap_load": 0,
+   "check_connector_fit": 0,
    "check_courtyard": 28,
+   "check_ep_paste": 6,
    "check_fp_attr": 1,
    "check_length_groups": 0,
    "check_mate_pins": 0,
@@ -36,9 +37,11 @@
   },
   "by_kind": {
    "courtyard_pads": 28,
+   "ep_paste_high": 2,
    "fp_attr_mismatch": 1,
    "insufficient_transition_vias": 14,
    "model_path_absolute": 16,
+   "paste_on_via": 4,
    "pour_neckdown": 1,
    "route_style": 3,
    "silk_misattributed": 3,
@@ -54,16 +57,16 @@
  },
  "metrics_live": null,
  "penalties": {
-  "errors": 47.0,
-  "warnings": 45.0,
+  "errors": 51.0,
+  "warnings": 47.0,
   "known_answer_missed": 0.0,
   "forbidden_errors": 0.0
  },
- "composite": 72.0,
+ "composite": 69.8,
  "composite_inputs": "full",
  "known_answer": {
   "status": "ok",
-  "matched": 4,
+  "matched": 5,
   "missed": [],
   "forbidden_errors": 0
  },

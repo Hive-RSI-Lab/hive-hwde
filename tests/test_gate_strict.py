@@ -359,6 +359,7 @@ def test_verify_all_strict_with_declared_na_passes(tmp_path):
     assert summary["status"] == "pass"
     cov = summary["coverage"]
     board_only = ["check_diffpair", "check_silk", "check_courtyard", "check_route_style",
+                  "check_connector_fit", "check_ep_paste",
                   "check_mating", "check_mate_pins", "check_bom_sync",
                   "check_model_paths", "check_antenna", "check_straps",
                   "check_model_fit", "check_usb_phy", "check_vias",
