@@ -457,7 +457,15 @@ def planar_waves(sim: Path, where: dict, k: int, freqs) -> list[tuple[complex, c
     the exact relation numerically, then (a, b) by least squares."""
     import cmath
     import numpy as np
-    us = [dft(*read_probe(sim / f"p{k}u{j}"), freqs) for j in range(3)]
+    traces = [read_probe(sim / f"p{k}u{j}") for j in range(3)]
+    for j, (ts, vs) in enumerate(traces):
+        # openEMS killed or stopped before the pulse arrived leaves a probe
+        # with no samples or all zeros; say so instead of dividing by it
+        if len(ts) < 2 or not any(vs):
+            from lib.solvers import SolverError
+            raise SolverError(f"probe p{k}u{j} has no signal ({len(ts)} samples): "
+                              "openEMS stopped early or the probe is off the line")
+    us = [dft(ts, vs, freqs) for ts, vs in traces]
     s = [d * 1e-3 for d in where["ports"][k]["dist"]]
     out = []
     for i, f in enumerate(freqs):
@@ -465,6 +473,9 @@ def planar_waves(sim: Path, where: dict, k: int, freqs) -> list[tuple[complex, c
         # evenly spaced probes (snapped to the mesh, so nearly): the middle
         # one gives cosh(gamma d) = (u0 + u2) / (2 u1)
         d = (s[2] - s[0]) / 2
+        if u[1] == 0:
+            from lib.solvers import SolverError
+            raise SolverError(f"port {k}'s middle probe is 0 at {f:.4g} Hz")
         g = cmath.acosh((u[0] + u[2]) / (2 * u[1])) / d
         if g.imag < 0:
             g = -g
