@@ -426,6 +426,11 @@ def diff_pair_rules(pairs: list[dict], stackup: dict, constraints: dict | None =
     for dp in pairs:
         w, gap = imp.diff_pair(float(dp["impedance_ohm"]), h,
                                imp.CU_OZ_MM.get(cu_oz, 0.035), er)
+        pinned = w < floor
+        if pinned:   # under the fab's min trace: pin the width, solve the gap
+            w, gap = imp.diff_pair(float(dp["impedance_ohm"]), h,
+                                   imp.CU_OZ_MM.get(cu_oz, 0.035), er,
+                                   width=floor)
         safe = re.sub(r"[^A-Za-z0-9]", "_", dp["base"]).strip("_")
         cond = f"A.NetName == '{dp['p']}' || A.NetName == '{dp['n']}'"
         # gap floor: a differential gap smaller than this is a skew/coupling defect
@@ -462,6 +467,8 @@ def diff_pair_rules(pairs: list[dict], stackup: dict, constraints: dict | None =
                                   "disallow track", layer=f'"{n}"', condition=cond))
         f = {"pair": [dp["p"], dp["n"]], "impedance_ohm": dp["impedance_ohm"],
              "width_mm": w, "gap_mm": gap}
+        if pinned:
+            f["gap_solved"] = True
         if layers:
             f["layers"] = layers
         facts.append(f)
@@ -488,7 +495,10 @@ def impedance_rules(constraints: dict, stackup: dict, pairs: list[dict],
     for e in nets:
         z = float(e["impedance_ohm"])
         if z not in by_z:
-            sol = {"outer_width_mm": round(imp.solve_width(z, h, t, er), 4), "layers": {}}
+            w_out = imp.solve_width(z, h, t, er)
+            sol = {"outer_width_mm": round(max(w_out, floor), 4), "layers": {}}
+            if w_out < floor:   # a single line can't trade gap for width
+                sol["outer_below_fab_floor"] = True
             for lname, geo in strip.items():
                 try:
                     g = stripline_geometry(z, geo, diff=False, floor=floor)
@@ -985,7 +995,8 @@ def main(argv: list[str] | None = None) -> int:
                     "would be the wrong laminate's")
         try:
             cls, cap = fabfloors.profile(args.layers, outer_oz,
-                                         material=material)
+                                         material=material,
+                                         vendor=fabfloors.vendor_of(stackup))
         except fabfloors.FabFloorError as exc:
             raise SystemExit(str(exc)) from exc
 

@@ -202,3 +202,23 @@ What isn't covered yet: live stock and prices for MPN-sourced vendors
 (`lib/distributors.py` can look up DigiKey and Mouser with keys; `fit`
 doesn't call it), and any vendor's ordering API (JLC's alone is wired, in
 `order_submit.py`). Ordering stays the person's on every vendor.
+
+## Stackups at other fabs (#446)
+
+`reference/stackups.yaml` carries the stackups PCBWay, OSH Park and AISLER
+publish, next to JLC's: `PCBWAY-4L-1.6-7628`, `PCBWAY-6L-1.6-7628`,
+`PCBWAY-8L-1.6-2116`, `OSHPARK-4L-1.6-FR408HR`, `OSHPARK-6L-1.6-FR408HR`,
+`AISLER-4L-1.6-1080`, `AISLER-6L-1.6-2116`, `AISLER-8L-1.6-1080`. Each has
+`vendor: <id>`, so `board_init --stackup <NAME>` and `rules_gen --stackup
+<NAME>` take that vendor's fab floors (`capability_class` reads
+`<vendor>:<layers>layer_<oz>oz`). Floor keys the vendor doesn't publish
+come from JLC's row and are listed in `_floors_from_jlc`. A build with no
+vendor rules (AISLER 8L) is refused. `defaults` stay JLC.
+
+The impedance tables come from `hwde stackup_rows --stackup <NAME>`. Widths
+under the vendor's min trace are pinned and the gap solved. `unreachable:
+true` marks a pinned row that still misses its target, such as a 100 ohm
+stripline pair on a thin dielectric. `fab_table` is the fab's own published
+table, scored by impedance.py. Two disagree and say so: AISLER 4L, and OSH
+Park 6L inner. Eurocircuits publishes no layer thicknesses (its Buildup
+Editor needs an account), so it has no entry.

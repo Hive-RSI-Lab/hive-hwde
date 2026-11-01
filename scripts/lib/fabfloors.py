@@ -122,13 +122,64 @@ def capability_class(layers: int, outer_oz: float,
     return f"{int(layers)}layer_{oz}oz{suffix}"
 
 
+def vendor_of(stackup: dict | None) -> str | None:
+    """The fab a stackups.yaml entry is built by: its `vendor` key; JLC's
+    entries carry none (None = JLC, the pipeline's default)."""
+    v = (stackup or {}).get("vendor")
+    return None if v in (None, "", "jlcpcb") else str(v)
+
+
+def vendor_profile(vendor: str, layers: int, outer_oz: float,
+                   cap_file: Path | None = None) -> tuple[str, dict]:
+    """-> (class name, row) from reference/vendors/<vendor>.yaml (#446). A
+    vendor that doesn't publish a floor key (OSH Park: hole-to-hole; AISLER:
+    silk width) gets JLC's value for that key, named in the row's
+    `_floors_from_jlc` - JLC's rows are never looser on those keys than
+    what the other fabs do publish. No row for this layer count / copper is
+    an error, never a silent JLC fallback."""
+    try:
+        import vendors  # lib/vendors.py, lib/ on sys.path
+    except ImportError:
+        from lib import vendors
+    try:
+        prof = vendors.load(vendor)
+    except vendors.VendorError as exc:
+        raise FabFloorError(str(exc)) from exc
+    rows = prof["capabilities"]["design_rules"]
+    cls = vendors.rule_key(layers, outer_oz)
+    if cls not in rows:
+        raise FabFloorError(
+            f"vendor {vendor} publishes no design rules for {cls} "
+            f"(have: {', '.join(sorted(rows))}); add the row to "
+            f"reference/vendors/{vendor}.yaml from the vendor's own page")
+    row = dict(rows[cls])
+    need = set(PRO_RULE_KEYS.values()) | set(DRU_FLOOR_KEYS.values())
+    missing = sorted(need - set(row))
+    if missing:
+        _, jlc = profile(layers, outer_oz, cap_file)
+        fill = [k for k in missing if k in jlc]
+        row.update({k: jlc[k] for k in fill})
+        row["_floors_from_jlc"] = fill
+    return f"{vendor}:{cls}", row
+
+
 def profile(layers: int, outer_oz: float,
             cap_file: Path | None = None,
-            material: str | None = None) -> tuple[str, dict]:
+            material: str | None = None,
+            vendor: str | None = None) -> tuple[str, dict]:
     """-> (class name, capability row). Raises FabFloorError naming the
     available rows rather than silently falling back to a default profile -
     an unknown profile must never quietly become 1 oz, and a Rogers board
-    must never quietly get FR-4 floors (`material`, lib/fabmaterial.py)."""
+    must never quietly get FR-4 floors (`material`, lib/fabmaterial.py).
+    `vendor` (a stackups.yaml entry's `vendor`, fabfloors.vendor_of) takes
+    the row from that fab's profile instead of JLC's (FR-4 only: the
+    vendor profiles carry no laminate classes)."""
+    if vendor not in (None, "", "jlcpcb"):
+        if material not in (None, "", fabmaterial.FR4):
+            raise FabFloorError(
+                f"{material} at {vendor}: the vendor profiles carry FR-4 "
+                f"rules only (the high-frequency line is JLC's)")
+        return vendor_profile(vendor, layers, outer_oz, cap_file)
     rows = load_capabilities(cap_file)
     cls = capability_class(layers, outer_oz, material)
     if cls not in rows:
