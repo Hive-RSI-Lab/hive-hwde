@@ -1,0 +1,13 @@
+# Seeded fault for check_ep_paste (docs/failure-modes.md section 4).
+mutants:
+  ep-paste-over-via:
+    board: blinky2
+    script: mutations/ep_paste_over_via.py
+    check: check_ep_paste
+    defect: >-
+      U1 carries a 5 x 5 mm GND exposed pad pasted whole over an open GND
+      via, so the solder runs down the barrel and the joint voids
+      (hifi-receiver-2 review DFM-9, Lite U8)
+    expect:
+      kind: paste_on_via
+      pos: [128, 118]   # the via, U1's centre

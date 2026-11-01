@@ -58,7 +58,7 @@ from geom import (_kid, _kids, _nums, _pad_polygon, _pts, _rot, _strs,  # noqa: 
                   _tok)
 
 SCRIPT = "check_ep_paste"
-SOURCE = "check.ep_paste"
+SOURCE = SCRIPT  # verify_all, gate and the scorecard match a finding to its check by source
 COVER_MIN = 0.35
 COVER_MAX = 0.90
 EP_AREA_RATIO = 4.0

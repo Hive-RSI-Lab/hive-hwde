@@ -1,0 +1,14 @@
+# Seeded fault for check_connector_fit (docs/failure-modes.md section 4).
+mutants:
+  post-holes-missing:
+    board: blinky2
+    script: mutations/post_holes_missing.py
+    check: check_connector_fit
+    defect: >-
+      J2's drawing (parts/C9900001.json mechanical.posts) has two 1.0 mm
+      locating posts and its footprint has no hole for them, so the posts
+      stand on the board (hifi-receiver-2 review DFM-1, core's RCA jacks)
+    expect:
+      kind: post_holes_missing
+      ref: J2
+      pos: [146.5, 110.5]   # J2's origin

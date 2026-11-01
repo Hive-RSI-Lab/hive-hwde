@@ -70,7 +70,7 @@ import placelib  # noqa: E402
 from geom import _kids, _strs  # noqa: E402
 
 SCRIPT = "check_connector_fit"
-SOURCE = "check.connector_fit"
+SOURCE = SCRIPT  # verify_all, gate and the scorecard match a finding to its check by source
 # A lead needs this much more than its cross-section: JLC's plated holes
 # finish -0.08/+0.13 mm of the drill size.
 PIN_CLEAR_MM = 0.10
