@@ -147,12 +147,14 @@ def test_both_sides_of_an_inner_transition(tmp_path):
 def test_a_net_with_no_edge_is_measured_not_judged(tmp_path):
     vios, facts = _run(tmp_path, {"high_speed": [{"net": "/SIG", "reference": "GND"}]})
     assert vios == [] and facts["no_edge"] == ["/SIG"]
+    assert "/SIG" in facts["not_judged"][0] and facts["nothing_to_judge"] is None
     assert facts["vias"][0]["stubs"][0]["f_res_ghz"] == pytest.approx(26.82, abs=0.01)
 
 
 def test_undeclared_net_and_no_constraints_stay_silent(tmp_path):
     vios, facts = _run(tmp_path, {})
     assert vios == [] and facts["vias"] == []
+    assert "in constraints" in facts["nothing_to_judge"]
 
 
 def test_one_layer_via_is_not_a_stub(tmp_path):
@@ -160,6 +162,7 @@ def test_one_layer_via_is_not_a_stub(tmp_path):
     pcb.write_text(_board(pcb).read_text().replace(_seg(10, 18, "In1.Cu"), ""))
     vios, facts = check_via_stubs.check(pcb, _hs(t_rise_ns=0.02))
     assert vios == [] and facts["single_layer_vias"] == 1
+    assert facts["nothing_to_judge"] == "no via on a declared fast net"
 
 
 def test_planted_fault_flags_and_shortening_the_stub_clears_it(tmp_path):

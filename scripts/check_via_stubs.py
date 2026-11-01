@@ -181,7 +181,18 @@ def check(pcb: Path, cons: dict) -> tuple[list[dict], dict]:
                    "the fab is unknown")
                 + "; confirm the service and depth tolerance with the fab",
                 SOURCE, kind="backdrill_fab_unknown", vendor=vendor))
+    stubbed = {x["net"] for x in vias_out if x["stubs"]}
+    unjudged = sorted(no_edge & stubbed)
+    nothing = None
+    if not specs and not drilled_any:
+        nothing = "no high_speed, diff_pairs, rf or backdrill nets in constraints"
+    elif not vias_out:
+        nothing = "no via on a declared fast net"
     facts = {"vias": vias_out, "no_edge": sorted(no_edge),
+             "nothing_to_judge": nothing,
+             "not_judged": [f"{n}: via stub measured, but no t_rise_ns, "
+                            f"data_rate_mbps or f_max_ghz to judge it by"
+                            for n in unjudged],
              "single_layer_vias": single, "vendor": vendor,
              "tolerance_source": tol_source,
              "stackup_assumed": bool(bg.stackup.assumed),
