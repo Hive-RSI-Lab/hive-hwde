@@ -202,7 +202,14 @@ weighed like any other report:
   bandwidth and peaking of the parts on the board) and `line` (free-space
   and guided wavelength, quarter wave, lambda/10, a length's phase and
   delay; microstrip eps_eff from the field solver with Getsinger
-  dispersion at f).
+  dispersion at f), `lmatch` (the L-sections, Pozar 5.1).
+- Matching networks: `hwde rf_synth match --z R+jX@f | --s1p F --f0 ..
+  --bw ..` gives every L-section and the pi/T networks for a loaded Q,
+  snapped to E-series parts with 0402 parasitics, the return loss across
+  the band before and after snapping, and an ngspice tolerance Monte Carlo
+  with yield (`lib/rfmatch.py`, `lib/tolerance.py`). On the board,
+  `check_rf_match` (P8) judges the populated network against constraints
+  `rf_match` (the antenna's zin or s1p and the band): RL >= 10 dB.
 
 Sidecars (`constraints.json`, `decoupling.json`, `parts.json`, schematic)
 resolve from the board's own directory - keep them beside the board from P5

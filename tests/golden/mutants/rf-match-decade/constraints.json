@@ -1,0 +1,40 @@
+{
+  "_comment": "S4 verification inputs for the rf4 golden (test fixture). The RF feed chain (RF1 pi-match segment + RF_FEED 50-ohm feed) references the solid In1 GND plane; the plane-split mutant slots In1 under /RF_FEED.",
+  "high_speed": [
+    {
+      "net": "/RF_FEED",
+      "reference": "GND"
+    },
+    {
+      "net": "/RF1",
+      "reference": "GND"
+    }
+  ],
+  "power": [
+    {
+      "net": "+3V3",
+      "current_a": 0.15
+    }
+  ],
+  "placement": {
+    "_comment": "S9 placement inputs. J1 is an edge-mount SMA clamping the right board edge (most of its courtyard hangs off by design).",
+    "edges": [
+      {
+        "ref": "J1",
+        "edge": "right"
+      }
+    ]
+  },
+  "rf_match": [
+    {
+      "load": "J1",
+      "zin": "25+j12@868M",
+      "band_hz": [
+        863000000.0,
+        870000000.0
+      ],
+      "rl_db": 10,
+      "note": "TEST antenna: the impedance rf4's golden pi matches"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+# Seeded fault for check_rf_match (matching-network values, issue #488).
+mutants:
+  rf-match-decade:
+    board: rf4
+    script: mutations/rf_match_decade.py
+    check: check_rf_match
+    defect: >-
+      VALUE fault: C15, the antenna-side shunt of rf4's 868 MHz pi match, is
+      populated as 82 pF instead of 8.2 pF; return loss into the antenna the
+      network was designed for falls from ~19 dB to ~1 dB, which ERC and DRC
+      pass
+    expect:
+      kind: rf_match_rl
+      ref: C15

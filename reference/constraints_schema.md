@@ -182,6 +182,14 @@ Consumers per key (script -> phase):
   // "external" (u.FL / IPEX) skips it.
   "antennas": {"U7": "pcb"},
 
+  // check_rf_match (P8, #488): a matching network's populated values vs
+  // the load it feeds. load (a ref; or net, the feed) and zin "R+jX@f"
+  // (datasheet / measured) or s1p (Touchstone one-port, relative to this
+  // file); band_hz [lo, hi] (default: the zin frequency); z0 50, rl_db 10,
+  // model "generic0402" | "ideal". Design a network: hwde rf_synth match.
+  "rf_match": [{"load": "AE1", "zin": "22-j31@2.45G",
+                "band_hz": [2.4e9, 2.4835e9], "rl_db": 10}],
+
   // check_cap_load (P8): the cable capacitance in pF an op-amp sees through
   // each connector, for its phase margin. A connector not named gets 1000 pF
   // (10 m of audio cable at ~100 pF/m); a board-to-board header is ~20.

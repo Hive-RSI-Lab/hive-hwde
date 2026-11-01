@@ -1,0 +1,11 @@
+# check_rf_match: a matching network's populated values still match the
+# load it feeds (hive-hwde #488). For each constraints `rf_match` entry (a
+# load ref or net, its zin R+jX@f or s1p, the band), walk the two-pad L/C/R
+# ladder from the load to the radio and compute the return loss the 50 ohm
+# source sees across the band with generic 0402 parasitics; under rl_db
+# (10 dB) warns. Board only; nothing to judge without rf_match.
+name: check_rf_match
+needs: []
+args: []
+optional:
+  constraints: [--constraints, "{constraints}"]
