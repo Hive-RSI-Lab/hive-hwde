@@ -54,10 +54,24 @@ KRT facts this adapter encodes (all machine-verified against KRT 0.19.0):
     check_diffpair.matched_terminals - from their net in the KRT INPUT text,
     routes, then restores the net node in the OUTPUT (KRT's writer preserves
     footprint text byte-identical; the restore is verified before the board is
-    accepted). The stub itself is ordinary Freerouting work later.
+    accepted). The stub itself is ordinary Freerouting work later. A two-pad
+    resistor across P and N (a differential termination: DDR CK's 100 ohm at
+    the DRAM) is detached the same way while two other terminals remain, so
+    KRT routes a 2-terminal pair from the escape tips instead of a chain of
+    legs from the pads (#529).
+  * Pairs out of escaped BGAs (#529): route_diff runs through
+    lib/krt_launch.py --via-joint-ends. KRT's stub free-end finder reports a
+    dog-bone via joint as a free end, so a pair started at the via inside the
+    ball field (no-escape-path) instead of at route_escape's stub tip. A
+    pair ball no copper touches (route_escape left it) is named in the
+    failure (unescaped_balls).
   * Diff-pair width ladder: the impedance-derived width is tried first; if the
     pair defers/fails (fine-pitch escape), one fallback rung at 0.2 mm width
-    retries. --grid-step 0.05 (default here) matters: 0.1 quantizes away the
+    retries. Every routed rung is judged by check_diffpair first (#529): an
+    uncoupled-run or impedance ERROR rejects it (the next rung is tried; with
+    none left the pair is critical_pair_rejected and no copper is kept). A
+    skew error is kept and reported: route_tune trims skew. --grid-step 0.05
+    (default here) matters: 0.1 quantizes away the
     tap corridors of 0.5 mm-pitch parts (S11-verified: +3V3 15/16 pads at 0.1,
     21/21 at 0.05).
   * KRT 0.19.0 limitation + workaround: a power net routed wider than the
@@ -127,6 +141,7 @@ from shapely.geometry import box  # noqa: E402
 from shapely.ops import unary_union  # noqa: E402
 
 import check_current  # noqa: E402  (required_width_mm - rules_gen's helper)
+import bgalib  # noqa: E402
 import check_diffpair  # noqa: E402  (discover_pairs / matched_terminals / check_pair)
 import checklib  # noqa: E402
 import env  # noqa: E402
@@ -683,6 +698,36 @@ def unmatched_stub_pads(bg: geom.BoardGeom, p: str, n: str
     return sorted(k for k, flags in groups.items() if not any(flags))
 
 
+TERMINATION_REF = re.compile(r"^R\d")   # a resistor: a 2-pin connector is a terminal
+
+
+def termination_pads(bg: geom.BoardGeom, p: str, n: str
+                     ) -> list[tuple[str, str]]:
+    """(ref, net) of every two-pad resistor with one pad on p and the other on n
+    (a differential termination across the pair: DDR CK's 100 ohm at the
+    DRAM, an LVDS receiver's R). It taps the pair, it is not a trunk end:
+    KRT would make it a third terminal and route the pair as a chain of
+    legs from the pads, never from route_escape's stub tips (#529:
+    SDCLK0 U100 -> R205 -> U200 'electrically-short'). Detached only while
+    the pair keeps two other terminals; its hookup is a short single-ended
+    stub for route_auto."""
+    refs: dict[str, list] = {}
+    for net in (p, n):
+        for pad in bg.pads_of(net=net):
+            refs.setdefault(pad.ref, []).append(pad)
+    out = []
+    for ref, pads in sorted(refs.items()):
+        if not TERMINATION_REF.match(ref):
+            continue
+        allpads = bg.pads_of(ref=ref)
+        if len(allpads) == 2 and {q.net for q in pads} == {p, n} \
+                and len(pads) == 2:
+            out += [(ref, p), (ref, n)]
+    others = {pad.ref for net in (p, n) for pad in bg.pads_of(net=net)} \
+        - {r for r, _ in out}
+    return out if len(others) >= 2 else []
+
+
 # ------------------------------------------------------------ KRT invocation
 
 def _tools() -> tuple[Path, Path]:
@@ -735,14 +780,20 @@ def run_krt(krt_dir: Path, script: str, staged: Path, out: Path,
     stdout_sink: when given, KRT's full stdout is appended to it (the
     Coverage / no-route diagnostics live there, not in the summary).
     layer_widths: {layer: mm} drawn per layer (#489: rules_gen's stripline
-    widths), through lib/krt_layer_widths.py, since KRT only fills its
-    per-layer widths from its own impedance solver."""
-    launch = [sys.executable, script]
+    widths), through lib/krt_launch.py, since KRT only fills its
+    per-layer widths from its own impedance solver.
+    route_diff.py always goes through the launcher with --via-joint-ends
+    (#529): a pair escaped by route_escape starts at its stub tips, not at
+    the dog-bone via inside the ball field."""
+    flags: list[str] = []
     if layer_widths:
         wpath = out.with_suffix(".layer_widths.json")
         wpath.write_text(json.dumps(layer_widths, sort_keys=True), encoding="utf-8")
-        launch = [sys.executable, str(SCRIPTS / "lib" / "krt_layer_widths.py"),
-                  str(wpath), script]
+        flags += ["--layer-widths", str(wpath)]
+    if script == "route_diff.py":
+        flags.append("--via-joint-ends")
+    launch = ([sys.executable, str(SCRIPTS / "lib" / "krt_launch.py"), *flags,
+               script] if flags else [sys.executable, script])
     args = [*launch, str(staged), "--output", str(out),
             "--no-fix-drc-settings",
             "--grid-step", str(grid_step),
@@ -876,6 +927,57 @@ def pair_layer_plan(bg: geom.BoardGeom, z: float, gap_c2c: float | None,
             "layer_widths": widths}
 
 
+def bare_bga_balls(bg: geom.BoardGeom, p: str, n: str) -> list[str]:
+    """"REF.PIN" of every ball of p or n, inside a ball field (bgalib),
+    that no copper of its net touches: route_escape left it (dropped,
+    ripped by DRC, via-in-pad stripped). A coupled pair cannot launch from
+    a bare inner ball of an escaped field (#529)."""
+    out = []
+    for b in bgalib.find_bgas(bg):
+        for num, net in sorted(b.nets.items()):
+            if net not in (p, n):
+                continue
+            pad = next((q for q in bg.pads_of(net=net, ref=b.ref)
+                        if q.number == num), None)
+            if pad is None:
+                continue
+            ring = pad.poly
+            if any(t.poly.intersects(ring) for t in bg.tracks_of(net=net)) \
+                    or any(v.poly.intersects(ring) for v in bg.vias_of(net=net)):
+                continue
+            out.append(f"{b.ref}.{num}")
+    return out
+
+
+# check_diffpair kinds that reject a routed rung (#529): a pair KRT reports
+# "coupled" can still run apart for 15 mm (Ethernet on linux-computer) or sit
+# off its impedance. Skew alone is route_tune's job (it trims it), so a skew
+# error is kept and reported.
+REJECT_KINDS = ("diffpair_uncoupled", "diffpair_impedance")
+
+
+def rung_verdict(pcb: Path, spec: dict, pitch: float, z: float | None
+                 ) -> tuple[list[dict], dict]:
+    """check_diffpair on one routed rung. Returns (rejecting findings,
+    check facts); an empty list keeps the rung."""
+    p, n = spec["p"], spec["n"]
+    cspec = {"p": p, "n": n, "gap_mm": round(pitch, 4)}
+    if z:
+        cspec["impedance_ohm"] = z
+    for k in ("max_skew_mm", "max_uncoupled_mm", "coupling_factor",
+              "impedance_tol_pct", "term_pair_mm", "kind"):
+        if k in spec:
+            cspec[k] = spec[k]
+    vs, facts = check_diffpair.check_pair(geom.BoardGeom.from_file(pcb), cspec)
+    bad = [{"kind": v.get("kind"), "msg": v.get("msg"),
+            **({"layer": v["layer"]} if v.get("layer") else {})}
+           for v in vs if v.get("severity") == "error"
+           and v.get("kind") in REJECT_KINDS]
+    keep = ("skew_mm", "uncoupled_p_mm", "uncoupled_n_mm", "breakout_p_mm",
+            "breakout_n_mm", "coupling_max_mm", "gap_median_mm")
+    return bad, {k: facts[k] for k in keep if k in facts}
+
+
 def route_diff_item(ctx: dict, spec: dict) -> tuple[dict | None, dict | None]:
     """Route one diff pair (width ladder + stub-pad detach). Returns
     (fact, violation): exactly one is None."""
@@ -901,6 +1003,8 @@ def route_diff_item(ctx: dict, spec: dict) -> tuple[dict | None, dict | None]:
         ladder.append((FALLBACK_PAIR_WIDTH, max(g, ctx["floors"]["clearance"])))
 
     stubs = unmatched_stub_pads(bg, p, n)
+    terms = [t for t in termination_pads(bg, p, n) if t not in stubs]
+    stubs = sorted(stubs + terms)
     original_text = staged.read_text(encoding="utf-8")
     restores: list[tuple[str, str]] = []
     if stubs:
@@ -909,6 +1013,7 @@ def route_diff_item(ctx: dict, spec: dict) -> tuple[dict | None, dict | None]:
 
     outer = _outer_layers(bg)
     costs = ["1"] if len(outer) == 1 else ["1", "3"]
+    rejected: list[dict] = []
     try:
         last_reason = "no attempt"
         for rung, (rw, rg) in enumerate(ladder, 1):
@@ -938,6 +1043,13 @@ def route_diff_item(ctx: dict, spec: dict) -> tuple[dict | None, dict | None]:
                 if restores:
                     text = restore_stub_pads(text, restores)
                 out.write_text(text, encoding="utf-8")
+                bad, check = rung_verdict(out, spec, rw + rg, z)
+                if bad:
+                    rejected.append({"rung": rung, "width_mm": rw, "gap_mm": rg,
+                                     "findings": bad, "check": check})
+                    last_reason = "check_diffpair: " + ", ".join(
+                        sorted({b["kind"] for b in bad}))
+                    continue
                 os.replace(out, staged)
                 restores = []          # consumed: staged now holds original pads
                 bg2 = geom.BoardGeom.from_file(staged)
@@ -950,18 +1062,34 @@ def route_diff_item(ctx: dict, spec: dict) -> tuple[dict | None, dict | None]:
                         **({"layer_widths": lplan["layer_widths"],
                             "pitch_mm": lplan["pitch_mm"]} if lplan else {}),
                         "stub_pads_detached": [list(s) for s in stubs],
+                        **({"terminations_left": sorted({r for r, _ in terms})}
+                           if terms else {}),
                         "layers_used": layers,
+                        "check": check,
+                        **({"rejected_rungs": rejected} if rejected else {}),
                         "krt": _slim(summary, ("routed_diff_pairs",
                                                "total_vias", "total_time",
                                                "min_clearance_used"))}
                 return fact, None
             last_reason = reason
+        if rejected:
+            return None, violation(
+                SCRIPT, "error", None, None, p, [],
+                f"critical diff pair {p}/{n} routed but failed check_diffpair "
+                f"on every rung ({last_reason}); the copper was not kept: "
+                + "; ".join(f["msg"] for f in rejected[-1]["findings"])[:400],
+                SCRIPT, kind="critical_pair_rejected", pair=[p, n],
+                reason=last_reason, rejected_rungs=rejected)
+        bare = bare_bga_balls(bg, p, n)
+        hint = (f"; ball(s) {', '.join(bare)} have no escape (route_escape "
+                "left them): escape them first") if bare else ""
         return None, violation(
             SCRIPT, "error", None, None, p, [],
             f"critical diff pair {p}/{n} failed to route as a coupled pair "
             f"({last_reason}); tried widths "
-            f"{[rw for rw, _ in ladder]}", SCRIPT,
-            kind="critical_route_failed", pair=[p, n], reason=last_reason)
+            f"{[rw for rw, _ in ladder]}{hint}", SCRIPT,
+            kind="critical_route_failed", pair=[p, n], reason=last_reason,
+            **({"unescaped_balls": bare} if bare else {}))
     finally:
         if restores:  # pair never routed - undo the detach on the staged board
             staged.write_text(original_text, encoding="utf-8")

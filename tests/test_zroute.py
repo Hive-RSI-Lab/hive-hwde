@@ -1,7 +1,7 @@
 """#489: the routers draw rules_gen's per-layer impedance widths.
 
 rules_gen writes layer-scoped stripline width/gap rules (#323); zrules reads
-them back, route_critical hands them to KRT (lib/krt_layer_widths.py) and
+them back, route_critical hands them to KRT (lib/krt_launch.py) and
 route_auto writes them into the DSN as class layer_rules for Freerouting, so
 an inner run is born at the width DRC grades it against.
 
@@ -250,15 +250,20 @@ def test_run_krt_layer_widths_go_through_the_launcher(tmp_path, monkeypatch):
                rc.KICAD_DEFAULTS, tmp_path / "fab.txt", 0.05, 60,
                layer_widths={"F.Cu": 0.1, "In2.Cu": 0.0889})
     a = seen["args"]
-    assert a[1].endswith("krt_layer_widths.py") and a[3] == "route_diff.py"
-    assert json.loads(Path(a[2]).read_text()) == {"F.Cu": 0.1, "In2.Cu": 0.0889}
+    assert a[1].endswith("krt_launch.py") and a[2] == "--layer-widths"
+    assert a[4:6] == ["--via-joint-ends", "route_diff.py"]
+    assert json.loads(Path(a[3]).read_text()) == {"F.Cu": 0.1, "In2.Cu": 0.0889}
     rc.run_krt(tmp_path, "route_diff.py", tmp_path / "b.kicad_pcb", out, [],
                rc.KICAD_DEFAULTS, tmp_path / "fab.txt", 0.05, 60)
-    assert seen["args"][1] == "route_diff.py"
+    assert seen["args"][1].endswith("krt_launch.py")
+    assert seen["args"][2:4] == ["--via-joint-ends", "route_diff.py"]
+    rc.run_krt(tmp_path, "route.py", tmp_path / "b.kicad_pcb", out, [],
+               rc.KICAD_DEFAULTS, tmp_path / "fab.txt", 0.05, 60)
+    assert seen["args"][1] == "route.py"
 
 
 def test_launcher_fills_layer_widths(tmp_path):
-    """krt_layer_widths.py against a stand-in KRT: the config the script
+    """krt_launch.py --layer-widths against a stand-in KRT: the config the script
     builds carries the widths; one built with its own widths keeps them."""
     import subprocess
     (tmp_path / "routing_config.py").write_text(
@@ -274,8 +279,8 @@ def test_launcher_fills_layer_widths(tmp_path):
         encoding="utf-8")
     w = tmp_path / "w.json"
     w.write_text('{"In2.Cu": 0.0889}', encoding="utf-8")
-    cp = subprocess.run([sys.executable, str(SCRIPTS / "lib" / "krt_layer_widths.py"),
-                         str(w), "route_x.py", "--nets", "/A"], cwd=tmp_path,
+    cp = subprocess.run([sys.executable, str(SCRIPTS / "lib" / "krt_launch.py"),
+                         "--layer-widths", str(w), "route_x.py", "--nets", "/A"], cwd=tmp_path,
                         capture_output=True, text=True, check=True)
     assert json.loads(cp.stdout) == [{"In2.Cu": 0.0889}, {"B.Cu": 0.3}, ["--nets", "/A"]]
 
