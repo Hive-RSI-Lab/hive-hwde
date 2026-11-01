@@ -117,6 +117,15 @@ Consumers per key (script -> phase):
                {"name": "DQS0", "kind": "dqs", "clock": "CK"}]
   },
 
+  // check_testpoints (P8, #470): test-point access and coverage. All
+  // optional: nets (globs; default every net with 2+ pads), probe_mm 0.5
+  // (flying probe), fixture_mm 0.8, pitch_mm 1.27, body_mm 1.0 and
+  // body_h_ratio 0.3 (clearance to part bodies: the larger), edge_mm 3.0,
+  // max_via_drill_mm 0.5; min_coverage_pct warns under it; fixture true
+  // warns on every test point a bed-of-nails pin can't use.
+  "testpoints": {"nets": ["+*", "GND", "/NRST"], "min_coverage_pct": 90,
+                 "fixture": false},
+
   // check_creepage (P8) + rules_gen (P5, T6): IPC-2221 spacing for pairs
   // > 30 V apart. rules_gen emits named aiee_hv_* clearance DRU rules from
   // these (never hand-author HV rules); check_creepage audits the routed

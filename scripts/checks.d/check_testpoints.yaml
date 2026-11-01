@@ -1,0 +1,13 @@
+# check_testpoints: test-point access and coverage for flying-probe and
+# bed-of-nails test (hive-hwde #470). Per net, its probe-able points (TP
+# footprints, open pads clear of part bodies, untented vias <= 0.5 mm
+# drill), each judged flying ok (>= 0.5 mm) / fixture ok (>= 0.8 mm,
+# 1.27 mm pitch, 1 mm or 0.3 x H to bodies, 3 mm to the edge); one-side
+# coverage; a TP no probe can use and a rail with no access warn;
+# Tag-Connect keep-out (no via/track inside, no paste). Board only;
+# constraints `testpoints` tunes it.
+name: check_testpoints
+needs: []
+args: []
+optional:
+  constraints: [--constraints, "{constraints}"]
