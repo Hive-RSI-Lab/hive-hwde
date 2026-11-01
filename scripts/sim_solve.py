@@ -31,7 +31,9 @@ right, and the board-facing studies built on them.
         three voltage probes per feed. GEOM.json: {"h", "er", "tand"?,
         "polys": [[[x, y], ...], ...], "ports": [{"x", "y", "dir", "w"}]}
         (mm; dir "+x"|"-x"|"+y"|"-y", pointing out of the circuit). One
-        openEMS run per excited port, one at a time.
+        openEMS run per excited port, one at a time. The S it writes is
+        checked by lib/sparam (IEEE P370 passivity/reciprocity/causality,
+        failing points; `quality` in the result): exit 1 when it fails.
 
     hwde sim_solve planar-geom --pcb BOARD --region X0,Y0,X1,Y1
                           --port X,Y,DIR,W [--port ...] [--layer F.Cu]
@@ -54,7 +56,8 @@ right, and the board-facing studies built on them.
         leaving there is carried out as a feed with V/I probes, so S is
         referenced to 50 ohm at the plane whatever the line's own Z.
         --symmetric: a mirror-symmetric 2-port is excited once. --deck-only
-        writes the deck(s) and the probe map without running.
+        writes the deck(s) and the probe map without running. Its S is
+        checked by lib/sparam like planar's (`quality`; exit 1 on a fail).
 
 The cases (docs/solvers.md has the measured errors):
 
@@ -479,6 +482,7 @@ def planar(geo: dict, excites, f_max, f_min=None, points=201, fine=None, keep=No
                                        for m in range(len(freqs))]
                  for j in cols for i in range(n)},
            "features": _features(freqs, s11, s21),
+           "quality": _quality(freqs, cols, n),
            "_touchstone": em.touchstone(freqs, cols, n)}
     return res
 
@@ -511,8 +515,23 @@ def board_study(pcb, region, ports, parts=None, f_max=6e9, f_min=None, points=20
                                                   "ports: " + "; ".join(
                                                       f"{p['x']},{p['y']},{p['dir']} {p['layer']} ref {p['ref']} "
                                                       f"net {p['net']} w {p['w']}" for p in res["ports"])])
+    res["quality"] = _quality(freqs, {j: [[s[i][j] for i in range(n)] for s in S] for j in range(n)}, n)
     res.update(script=SCRIPT, cmd="board", source=str(pcb))
     return res
+
+
+def _quality(freqs, cols: dict, n: int) -> dict:
+    """lib/sparam.check on the solve's own S (#483): only the excited
+    columns hold data, so passivity is judged per column and reciprocity
+    only once both S_ij and S_ji were run."""
+    import numpy as np
+    from lib import sparam
+    s = np.zeros((len(freqs), n, n), dtype=complex)
+    for j, col in cols.items():
+        for m, row in enumerate(col):
+            s[m, :, j] = row
+    q = sparam.check(freqs, s, terms=[(i, j) for j in cols for i in range(n)])
+    return json.loads(json.dumps(q, default=float))
 
 
 def _quasi_static(w, h, er, t):
@@ -788,7 +807,14 @@ def main(argv=None) -> int:
                       f"feed Z {r_['z_feed']} ohm")
             for name, ft in res.get("features", {}).items():
                 print(f"  {name}: {ft}")
-        return 0
+        q = res.get("quality")
+        if q is None:   # --deck-only
+            return 0
+        from lib import sparam
+        if not args.json or not q["ok"]:
+            print(sparam.summary({**q, "file": args.touchstone or "board"}),
+                  file=sys.stdout if q["ok"] else sys.stderr)
+        return 0 if q["ok"] else 1
 
     if args.cmd == "planar":
         geo = json.loads(Path(args.geom).read_text())
@@ -807,7 +833,12 @@ def main(argv=None) -> int:
                 print(f"port {run['excite']}: {run['cells']} cells, {run['seconds']} s")
             for name, ft in res["features"].items():
                 print(f"  {name}: {ft}")
-        return 0
+        from lib import sparam
+        q = res["quality"]
+        if not args.json or not q["ok"]:
+            print(sparam.summary({**q, "file": args.touchstone or "planar"}),
+                  file=sys.stdout if q["ok"] else sys.stderr)
+        return 0 if q["ok"] else 1
 
     if args.cmd == "planar-geom":
         geo = planar_geom(args.pcb, [float(v) for v in args.region.split(",")],

@@ -88,6 +88,10 @@ Write `kicad/sims/<name>.cir` + `kicad/sims/<name>.bounds.json`:
   the case's error beside any number one of them gives.
 - `scripts/sim_solve.py line --w --h --er` for a controlled-impedance
   line full-wave, against impedance.py's quasi-static answer.
+- `scripts/sparam.py check F.sNp` before any S-parameter file (EM or VNA)
+  feeds a sim; `scripts/sparam.py fit F.sNp --out F.cir --verify` turns it
+  into a passive subckt (`.include F.cir`, `X1 p1 p2 NAME`) and states
+  the fit's error, which goes beside any number the sim gives.
 
 ## Gate
 - `scripts/sim_run.py --dir kicad/sims [--out reports/sim.json]` - exit 0
