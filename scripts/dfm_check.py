@@ -87,7 +87,13 @@ count from its (layers ...) block, copper weight from its (stackup ...) block
 (0.035 mm = 1 oz), unless --copper-oz pins it explicitly.
 
 Severity policy: a JLCPCB manufacturing minimum that is actually violated is an
-ERROR. Advisory classes that legitimate boards routinely trip - silk stroke
+ERROR. Where the row carries JLC's absolute floor apart from the value a design
+is held to (abs_min_<key> vs min_<key>, #554: via drill/diameter/ring, hole
+size, copper to edge, pad and via hole-to-hole), only a value under the
+absolute floor is an error; one between the two is ONE warning per kind
+(`<kind>_preferred`, listing every place), and a via size JLC builds for
+more money is a warning `dfm_via_cost_tier` per size, naming the tier
+(`via` family: board vias against min_via_drill/min_via_diameter). Advisory classes that legitimate boards routinely trip - silk stroke
 width (KiCad's default 0.12 mm silk prints fine at JLC) and mask dams - are
 WARNINGS, so they are reported without failing the gate (the fp_verify /
 netlist_audit precedent).
@@ -398,6 +404,36 @@ def check_zone_fill(bg, vios: list, fresh=None) -> str | None:
     return None
 
 
+def _floors(rules, key: str) -> tuple[float | None, float | None]:
+    """(fail-below, warn-below) for a capability key: JLC's absolute floor
+    (abs_<key>) and the design value (<key>); no absolute floor = the design
+    value is the fail line and there is no warning band."""
+    lo = rules.get(key)
+    hard = rules.get("abs_" + key, lo)
+    return hard, lo
+
+
+def _band_warning(vios: list, band: list, kind: str, what: str,
+                  hard: float, lo: float, unit: str = "distance_mm") -> None:
+    """One warning for every value in [hard, lo): fab-buildable, under the
+    floor a design is held to. band: [(value, pos, layer)]."""
+    if not band:
+        return
+    band.sort(key=lambda b: b[0])
+    worst, pos, layer = band[0]
+    msg = (f"{len(band)} {what} between JLC's minimum {hard} mm and the "
+           f"{lo} mm a design is held to (worst {worst:.4f} mm): JLC builds "
+           "it; keep it only on purpose")
+    v = checklib.violation(CHECK, "warning", pos, layer, None, [], msg,
+                           SOURCE, kind=kind + "_preferred", count=len(band),
+                           min_mm=hard, preferred_mm=lo,
+                           **{unit: checklib.rnd(worst)})
+    v["items"] = [{"msg": f"{what} {b[0]:.4f} mm",
+                   "pos": [checklib.rnd(b[1][0]), checklib.rnd(b[1][1])]}
+                  for b in band]
+    vios.append(v)
+
+
 def _castellated_at(cast, x: float, y: float, r: float = 0.0) -> bool:
     """True when (x, y) is a castellated hole (cast: castellation.holes())."""
     return any(math.hypot(x - cx, y - cy) <= max(r, d / 2.0)
@@ -405,10 +441,11 @@ def _castellated_at(cast, x: float, y: float, r: float = 0.0) -> bool:
 
 
 def check_copper_to_edge(fab, rules, vios: list, cast=()) -> None:
-    lo = rules.get("min_copper_to_edge_mm")
+    hard, lo = _floors(rules, "min_copper_to_edge_mm")
     outline = fab.outline
     if lo is None or outline.is_empty:
         return
+    band: list = []
     edge = outline.exterior
     disks = [Point(cx, cy).buffer(d / 2.0) for cx, cy, d in cast]
     for name in fab.copper_layer_names():
@@ -421,28 +458,39 @@ def check_copper_to_edge(fab, rules, vios: list, cast=()) -> None:
             d = comp.distance(edge)
             # Copper crossing the outline reads as distance 0; both cases are
             # the same defect (copper too close to / past the board edge).
-            if _below(d, lo):
-                p = comp.centroid
+            p = comp.centroid
+            if _below(d, hard):
                 vios.append(checklib.violation(
                     CHECK, "error", (p.x, p.y), name, None, [],
-                    f"copper {d:.4f} mm from board edge, JLC minimum {lo} mm "
-                    f"on {name}", SOURCE, kind="dfm_copper_to_edge",
-                    distance_mm=checklib.rnd(d), min_mm=lo))
+                    f"copper {d:.4f} mm from board edge, JLC minimum {hard} "
+                    f"mm on {name}", SOURCE, kind="dfm_copper_to_edge",
+                    distance_mm=checklib.rnd(d), min_mm=hard))
+            elif _below(d, lo):
+                band.append((d, (p.x, p.y), name))
+    _band_warning(vios, band, "dfm_copper_to_edge",
+                  "copper features to the routed edge", hard, lo)
 
 
 # ------------------------------------------------------------- drill checks
 
-def check_holes(fab, rules, vios: list, cast=()) -> None:
+def check_holes(fab, rules, vios: list, cast=(), bg=None,
+                cast_hh: float | None = None) -> None:
+    is_via = _via_matcher(bg)
     holes = fab.holes
-    lo_d = rules.get("min_hole_diameter_mm")
+    hard_d, lo_d = _floors(rules, "min_hole_diameter_mm")
     if lo_d is not None:
+        band: list = []
         for h in holes:
-            if _below(h.diameter, lo_d):
+            if _below(h.diameter, hard_d):
                 vios.append(checklib.violation(
                     CHECK, "error", (h.x, h.y), None, None, [],
-                    f"drill {h.diameter:.4f} mm below JLC minimum {lo_d} mm",
-                    SOURCE, kind="dfm_hole_size",
-                    diameter_mm=checklib.rnd(h.diameter), min_mm=lo_d))
+                    f"drill {h.diameter:.4f} mm below JLC minimum {hard_d} "
+                    "mm", SOURCE, kind="dfm_hole_size",
+                    diameter_mm=checklib.rnd(h.diameter), min_mm=hard_d))
+            elif _below(h.diameter, lo_d):
+                band.append((h.diameter, (h.x, h.y), None))
+        _band_warning(vios, band, "dfm_hole_size", "drills", hard_d, lo_d,
+                      unit="diameter_mm")
     lo_np = rules.get("min_npth_diameter_mm")
     if lo_np is not None:
         for h in holes:
@@ -454,19 +502,44 @@ def check_holes(fab, rules, vios: list, cast=()) -> None:
                     diameter_mm=checklib.rnd(h.diameter), min_mm=lo_np,
                     plated=False))
 
-    lo_hh = rules.get("min_hole_to_hole_mm")
+    # JLC: 'Via hole-to-hole 0.2, pad hole-to-hole 0.45' (#554): a pair of
+    # board vias gets the via figure, a pair with a pad hole the pad one, a
+    # castellated hole and a plated hole the castellated block's (cast_hh);
+    # two castellated holes are the castellation family's
+    hard_hh, lo_hh = _floors(rules, "min_hole_to_hole_mm")
+    hard_vv, lo_vv = _floors(rules, "min_via_hole_to_hole_mm")
+    if lo_vv is None:
+        hard_vv, lo_vv = hard_hh, lo_hh
     if lo_hh is not None and len(holes) > 1:
         disks = [Point(h.x, h.y).buffer(h.diameter / 2.0, quad_segs=16)
                  for h in holes]
-        for i, j in _pairs_within(disks, lo_hh):
+        via = [is_via(h) for h in holes] if is_via else [False] * len(holes)
+        band = {"via": [], "pad": [], "castellated": []}
+        for i, j in _pairs_within(disks, max(lo_hh, lo_vv, cast_hh or 0.0)):
+            ci = _castellated_at(cast, holes[i].x, holes[i].y)
+            cj = _castellated_at(cast, holes[j].x, holes[j].y)
+            if ci and cj:
+                continue
+            both = via[i] and via[j]
+            hard, lo = (hard_vv, lo_vv) if both else (hard_hh, lo_hh)
+            what = "via" if both else "pad"
+            if (ci or cj) and cast_hh is not None:
+                hard = lo = max(hard, cast_hh)
+                what = "castellated"
             d = disks[i].distance(disks[j])
-            if _below(d, lo_hh):
+            if _below(d, hard):
                 vios.append(checklib.violation(
                     CHECK, "error", (holes[i].x, holes[i].y), None, None, [],
-                    f"hole-to-hole {d:.4f} mm below JLC minimum {lo_hh} mm",
-                    SOURCE, kind="dfm_hole_to_hole",
-                    distance_mm=checklib.rnd(d), min_mm=lo_hh,
+                    f"{what} hole-to-hole {d:.4f} mm below JLC minimum "
+                    f"{hard} mm", SOURCE, kind="dfm_hole_to_hole",
+                    distance_mm=checklib.rnd(d), min_mm=hard, holes=what,
                     other=[checklib.rnd(holes[j].x), checklib.rnd(holes[j].y)]))
+            elif _below(d, lo):
+                band[what].append((d, (holes[i].x, holes[i].y), None))
+        _band_warning(vios, band["via"], "dfm_via_hole_to_hole",
+                      "via hole pairs", hard_vv, lo_vv)
+        _band_warning(vios, band["pad"], "dfm_hole_to_hole",
+                      "pad hole pairs", hard_hh, lo_hh)
 
     lo_he = rules.get("min_hole_to_edge_mm")
     outline = fab.outline
@@ -492,28 +565,94 @@ def _via_holes(bg) -> list[tuple[float, float, float]]:
     return [(v.at[0], v.at[1], v.drill) for v in bg.vias_of()]
 
 
-def check_annular_ring(fab, rules, vios: list, cast=(), bg=None) -> None:
-    """Radial copper around each plated hole, measured on the OUTER layers
-    (where the ring is thinnest after registration). A via is held to the
-    via ring (min_annular_ring_mm), every other plated hole to the PTH
-    component ring (min_pth_annular_ring_mm; the via value when the vendor
-    publishes only one) - JLC: 0.18 2-layer / 0.15 multilayer (#326)."""
-    lo_via = rules.get("min_annular_ring_mm")
-    lo_pth = rules.get("min_pth_annular_ring_mm", lo_via)
-    if lo_via is None and lo_pth is None:
-        return
+def _via_matcher(bg):
+    """-> is_via(hole) for the drill file's holes (None with no board)."""
     vias = _via_holes(bg)
-    vtree = STRtree([Point(x, y) for x, y, _ in vias]) if vias else None
+    if not vias:
+        return None
+    vtree = STRtree([Point(x, y) for x, y, _ in vias])
 
     def is_via(h) -> bool:
-        if vtree is None:
-            return False
         for idx in vtree.query(Point(h.x, h.y).buffer(0.01)):
             x, y, d = vias[int(idx)]
             if abs(x - h.x) < 0.01 and abs(y - h.y) < 0.01 \
                     and abs(d - h.diameter) < 0.02:
                 return True
         return False
+    return is_via
+
+
+# JLC's via price tiers (pcb-capabilities, 2026-11-01): a hole under 0.2
+# costs more; a 0.2/0.25 hole with a via diameter under 0.45 costs more
+JLC_VIA_TIER = (0.2, 0.25, 0.45)
+
+
+def check_via_sizes(rules, vios: list, bg) -> None:
+    """Board vias against JLC's via floors and its price tiers (#554):
+    under abs_min_via_drill/diameter is an error; '0.1/0.15 mm hole with any
+    via diameter, and 0.2/0.25 mm hole with via diameter < 0.45 cost more'
+    is one warning per via size naming the tier (the order needs that via
+    option). Rows with no abs_ floor (other fabs) are not checked here."""
+    if bg is None or "abs_min_via_drill_mm" not in rules:
+        return
+    hard_dr, lo_dr = _floors(rules, "min_via_drill_mm")
+    hard_di, lo_di = _floors(rules, "min_via_diameter_mm")
+    tier: dict = {}
+    for v in bg.vias_of():
+        if v.kind not in ("through", None, ""):
+            continue
+        dr, di = v.drill, v.diameter
+        if not dr or dr <= 0:
+            continue    # no hole (an import's drill-less via): not a via
+        if _below(dr, hard_dr) or _below(di, hard_di):
+            vios.append(checklib.violation(
+                CHECK, "error", v.at, None, v.net, [],
+                f"via {di:.3f}/{dr:.3f} mm under JLC's minimum via "
+                f"{hard_di}/{hard_dr} mm", SOURCE, kind="dfm_via_size",
+                diameter_mm=checklib.rnd(di), drill_mm=checklib.rnd(dr),
+                min_mm=[hard_di, hard_dr]))
+            continue
+        t_drill, t_small, t_dia = JLC_VIA_TIER
+        if _below(dr, t_drill):
+            kind, why = "dfm_via_cost_tier", (
+                f"a hole under {t_drill} mm costs more at JLC - pick the "
+                "matching via option when ordering, or grow them")
+        elif dr < t_small + GEOM_TOL_MM and _below(di, t_dia):
+            kind, why = "dfm_via_cost_tier", (
+                f"a {t_drill}/{t_small} mm hole with a via diameter under "
+                f"{t_dia} mm costs more at JLC - pick the matching via "
+                "option when ordering, or grow them")
+        elif _below(dr, lo_dr) or _below(di, lo_di):
+            kind, why = "dfm_via_size_preferred", (
+                f"under the {lo_di}/{lo_dr} mm via a design is held to; "
+                "JLC builds it at its standard price")
+        else:
+            continue
+        tier.setdefault((kind, round(di, 3), round(dr, 3), why),
+                        []).append(v)
+    for (kind, di, dr, why), vs in sorted(tier.items()):
+        v = checklib.violation(
+            CHECK, "warning", vs[0].at, None, None, [],
+            f"{len(vs)} via(s) {di}/{dr} mm: {why}", SOURCE,
+            kind=kind, count=len(vs), diameter_mm=di, drill_mm=dr)
+        v["items"] = [{"msg": f"via {di}/{dr} mm",
+                       "pos": [checklib.rnd(x.at[0]), checklib.rnd(x.at[1])]}
+                      for x in vs]
+        vios.append(v)
+
+
+def check_annular_ring(fab, rules, vios: list, cast=(), bg=None) -> None:
+    """Radial copper around each plated hole, measured on the OUTER layers
+    (where the ring is thinnest after registration). A via is held to the
+    via ring (min_annular_ring_mm), every other plated hole to the PTH
+    component ring (min_pth_annular_ring_mm; the via value when the vendor
+    publishes only one) - JLC: 0.18 2-layer / 0.15 multilayer (#326)."""
+    hard_via, lo_via = _floors(rules, "min_annular_ring_mm")
+    lo_pth = rules.get("min_pth_annular_ring_mm", lo_via)
+    if lo_via is None and lo_pth is None:
+        return
+    is_via = _via_matcher(bg) or (lambda h: False)
+    band: list = []
     outer = [n for n in ("F.Cu", "B.Cu") if n in fab.copper_files]
     pads_by_layer = {}
     for name in outer:
@@ -553,7 +692,11 @@ def check_annular_ring(fab, rules, vios: list, cast=(), bg=None) -> None:
             continue  # no pad around it on an outer layer (NPTH / inner-only)
         ring, name = best
         via = is_via(h)
-        lo = lo_via if via else lo_pth
+        lo = hard_via if via else lo_pth
+        if via and lo is not None and not _below(ring, lo) \
+                and _below(ring, lo_via):
+            band.append((ring, (h.x, h.y), name))
+            continue
         if lo is not None and _below(ring, lo):
             what = "via" if via else "PTH pad"
             vios.append(checklib.violation(
@@ -562,6 +705,8 @@ def check_annular_ring(fab, rules, vios: list, cast=(), bg=None) -> None:
                 f"{lo} mm", SOURCE, kind="dfm_annular_ring",
                 ring_mm=checklib.rnd(ring), min_mm=lo, hole=what,
                 drill_mm=checklib.rnd(h.diameter)))
+    _band_warning(vios, band, "dfm_annular_ring", "via rings", hard_via,
+                  lo_via, unit="ring_mm")
 
 
 # -------------------------------------------------------- silk / mask checks
@@ -1207,8 +1352,11 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
         if "zone_fill" not in skip:
             zone_fill_skipped = check_zone_fill(bg, vios)
         if "drill" not in skip:
-            check_holes(fab, rules, vios, cast)
+            check_holes(fab, rules, vios, cast, bg=bg,
+                        cast_hh=(caps.get("castellated") or {}).get(
+                            "min_hole_to_hole_mm"))
             check_annular_ring(fab, rules, vios, cast, bg=bg)
+            check_via_sizes(rules, vios, bg)
         if "castellation" not in skip and "castellated" not in caps:
             # a vendor that publishes no castellation rules: nothing to
             # measure against, so a castellated board can't pass there

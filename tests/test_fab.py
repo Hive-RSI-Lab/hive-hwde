@@ -381,13 +381,13 @@ def test_dfm_round_caps_expose_trace_end_at_edge(tmp_path):
 
 
 def test_dfm_flags_small_drill(tmp_path):
-    fab = synth_fab(tmp_path, holes=[(0.15, 5.0, -5.0)])
+    fab = synth_fab(tmp_path, holes=[(0.12, 5.0, -5.0)])
     vios: list = []
     dfm_check.check_holes(fab, RULES_2L, vios)
     kinds = [v["kind"] for v in vios]
     assert "dfm_hole_size" in kinds
     v = [x for x in vios if x["kind"] == "dfm_hole_size"][0]
-    assert v["diameter_mm"] == pytest.approx(0.15)
+    assert v["diameter_mm"] == pytest.approx(0.12)
 
 
 def test_drill_plating_from_kicad_comments(tmp_path):
@@ -427,6 +427,103 @@ def test_dfm_flags_hole_to_hole(tmp_path):
     vios: list = []
     dfm_check.check_holes(fab, RULES_2L, vios)
     assert "dfm_hole_to_hole" in [v["kind"] for v in vios]
+
+
+def _via_bg(vias):
+    from types import SimpleNamespace as NS
+    vs = [NS(at=(x, y), diameter=di, drill=dr, net="N", kind="through")
+          for di, dr, x, y in vias]
+    return NS(vias_of=lambda net=None, layer=None: vs)
+
+
+def _kinds_sev(vios):
+    return sorted((v["kind"], v["severity"]) for v in vios)
+
+
+def test_jlc_rows_keep_absolute_floors_under_design_floors():
+    """#554: abs_min_<key> is JLC's absolute floor, <key> what a design is
+    held to; the absolute one is never the stricter."""
+    caps = yaml.safe_load((REFERENCE / "jlc_capabilities.yaml").read_text())
+    for key, row in caps["design_rules"].items():
+        for k, v in row.items():
+            if k.startswith("abs_"):
+                assert v <= row[k[4:]], (key, k)
+    assert RULES_4L["abs_min_annular_ring_mm"] == 0.05
+    assert RULES_4L["abs_min_copper_to_edge_mm"] == 0.2
+    assert RULES_4L["abs_min_via_hole_to_hole_mm"] == 0.2
+    assert RULES_4L["abs_min_hole_to_hole_mm"] == 0.45
+
+
+def test_dfm_hole_to_hole_split_via_and_pad(tmp_path):
+    """#554: JLC's 'via hole-to-hole 0.2, pad hole-to-hole 0.45'. Two board
+    vias 0.3 apart are a warning (under the 0.5 a design keeps), the same
+    holes as pad holes an error; vias 0.15 apart are an error."""
+    holes = [(0.2, 5.0, -5.0), (0.2, 5.5, -5.0),       # gap 0.3
+             (0.2, 10.0, -5.0), (0.2, 10.35, -5.0)]    # gap 0.15
+    fab = synth_fab(tmp_path, holes=holes)
+    vios: list = []
+    dfm_check.check_holes(fab, RULES_4L, vios, bg=_via_bg(
+        [(0.45, h.diameter, h.x, h.y) for h in fab.holes]))
+    assert _kinds_sev(vios) == [("dfm_hole_to_hole", "error"),
+                                ("dfm_via_hole_to_hole_preferred", "warning")]
+    assert [v["holes"] for v in vios if v["severity"] == "error"] == ["via"]
+    vios = []
+    dfm_check.check_holes(fab, RULES_4L, vios)          # no vias: pad holes
+    assert _kinds_sev(vios) == [("dfm_hole_to_hole", "error")] * 2
+    # a castellated hole beside a plated one: the castellated figure
+    vios = []
+    dfm_check.check_holes(fab, RULES_4L, vios, cast=[(5.0, 5.0, 0.2)],
+                          cast_hh=0.6)
+    assert sorted(v.get("holes") for v in vios) == ["castellated", "pad"]
+
+
+def test_dfm_copper_to_edge_band(tmp_path):
+    """#554: JLC's routed edge is 0.2; 0.2-0.3 warns once, under 0.2 fails."""
+    fab = synth_fab(tmp_path, traces=[(0.2, 0.35, -5.0, 8.0, -5.0),
+                                      (0.2, 0.35, -15.0, 8.0, -15.0)],
+                    outline_mm=(0.0, -20.0, 20.0, 0.0))
+    vios: list = []
+    dfm_check.check_copper_to_edge(fab, RULES_4L, vios)
+    assert _kinds_sev(vios) == [("dfm_copper_to_edge_preferred", "warning")]
+    assert vios[0]["count"] == 2 and len(vios[0]["items"]) == 2
+    vios = []
+    dfm_check.check_copper_to_edge(fab, RULES_2L | {
+        "abs_min_copper_to_edge_mm": 0.3}, vios)
+    assert _kinds_sev(vios) == [("dfm_copper_to_edge", "error")] * 2
+
+
+def test_dfm_via_ring_band_and_cost_tier(tmp_path):
+    """#554: a 0.352/0.2 via (SparkFun's, ring 0.076) is JLC-buildable:
+    one ring warning and one cost-tier warning, no error; a 0.28/0.2 via
+    (ring 0.04) fails the 0.05 ring."""
+    vias = [(0.352, 0.2, 5.0, -5.0), (0.352, 0.2, 8.0, -5.0),
+            (0.28, 0.2, 11.0, -5.0)]
+    fab = synth_fab(tmp_path, flashes=[(d, x, y) for d, _, x, y in vias],
+                    holes=[(r, x, y) for _, r, x, y in vias])
+    vios: list = []
+    dfm_check.check_annular_ring(fab, RULES_4L, vios, bg=_via_bg(
+        [(0.0, h.diameter, h.x, h.y) for h in fab.holes]))
+    assert _kinds_sev(vios) == [("dfm_annular_ring", "error"),
+                                ("dfm_annular_ring_preferred", "warning")]
+    assert [v["count"] for v in vios if v["severity"] == "warning"] == [2]
+    vios = []
+    dfm_check.check_via_sizes(RULES_4L, vios, _via_bg(vias + [
+        (0.45, 0.2, 1, 1), (0.3, 0.15, 2, 2), (0.2, 0.1, 3, 3),
+        (2.54, 0.0, 4, 4)]))
+    got = sorted((v["kind"], v["severity"], v.get("count")) for v in vios)
+    assert got == [("dfm_via_cost_tier", "warning", 1),     # 0.28/0.2
+                   ("dfm_via_cost_tier", "warning", 1),     # 0.3/0.15
+                   ("dfm_via_cost_tier", "warning", 2),     # 0.352/0.2
+                   ("dfm_via_size", "error", None)]         # 0.2/0.1
+    # 2 layers: a 0.5/0.25 via is under the 0.6/0.3 design via but at JLC's
+    # standard price; a fab row with no absolute floors skips the check
+    vios = []
+    dfm_check.check_via_sizes(RULES_2L, vios, _via_bg([(0.5, 0.25, 1, 1)]))
+    assert _kinds_sev(vios) == [("dfm_via_size_preferred", "warning")]
+    vios = []
+    dfm_check.check_via_sizes({"min_via_drill_mm": 0.3}, vios,
+                              _via_bg([(0.2, 0.1, 1, 1)]))
+    assert vios == []
 
 
 def test_dfm_flags_thin_annular_ring(tmp_path):
