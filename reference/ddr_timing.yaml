@@ -1,0 +1,193 @@
+# DDR timing rows for check_ddr_timing.py (hive-hwde #487).
+#
+# Every number carries the table it came from. `verified: true` means the
+# number was read off the cited document by the person who wrote the row;
+# `verified: false` means it is the best figure we have but nobody re-read
+# it from the source (a finding that rests on it is reported as a warning,
+# not an error).
+#
+# Units: ps unless the key ends _tck (fractions of the clock period) or
+# _mv / _vns. Rates are MT/s (DDR3L-800 = 800 MT/s = 400 MHz CK).
+#
+# Setup/hold at the DRAM are JEDEC "base" values referenced to VIH(AC)/
+# VIL(AC) (setup) and VIH(DC)/VIL(DC) (hold) at a 1 V/ns single-ended input
+# and a 2 V/ns differential strobe/clock. The check converts them to VREF
+# crossings, the reference flight times are measured to:
+#   t_setup(VREF) = base + delta(slew) + (VIH(AC) - VREF) / slew
+#   t_hold(VREF)  = base + delta(slew) + (VREF - VIL(DC)) / slew
+# (Micron 4Gb_DDR3L Rev. P sec. "Data Setup, Hold, and Derating", and the
+# "VREF @ 1 V/ns" rows of its Table 58, which this formula reproduces:
+# tests/test_ddr_timing.py; one exception: Table 58 prints tDS(AC135)
+# DDR3L-1066 at VREF as 250 ps where 90 + 135 = 225; the base is used).
+
+schema: 1
+
+drams:
+  - name: Micron MT41K 4Gb DDR3L
+    # MT41K256M16 (x16), MT41K512M8 (x8), MT41K1G4 (x4): one datasheet
+    match: '^MT41K(256M16|512M8|1G4)'
+    standard: DDR3L
+    source: >-
+      Micron 4Gb_DDR3L.pdf Rev. P 5/17 (09005aef85af8fa8): Table 58 p. 88-89
+      (DQ/DQS/CA timing), Table 60-61 p. 102-103 (tIS/tIH base, AC160
+      derating), Table 65-66 p. 109-110 (tDS/tDH base, AC160 derating),
+      Table 67 (AC135 derating), write leveling rows of Table 58 (p. 91)
+    verified: true
+    levels_mv:            # above/below VREF
+      AC160: 160
+      AC135: 135
+      DC90: 90
+    speeds:
+      800:
+        tDS_base: {AC160: 90, AC135: 140}
+        tDH_base: {DC90: 160}
+        tIS_base: {AC160: 215, AC135: 365}
+        tIH_base: {DC90: 285}
+        tDQSS_tck: [-0.25, 0.25]
+        tDSS_tck: 0.2
+        tDSH_tck: 0.2
+        tDQSQ: 200          # read: DQS to DQ skew, max
+        tQH_tck: 0.38       # read: DQ output hold from DQS, min
+        tWLS: 325
+        tWLH: 325
+      1066:
+        tDS_base: {AC160: 40, AC135: 90}
+        tDH_base: {DC90: 110}
+        tIS_base: {AC160: 140, AC135: 290}
+        tIH_base: {DC90: 210}
+        tDQSS_tck: [-0.25, 0.25]
+        tDSS_tck: 0.2
+        tDSH_tck: 0.2
+        tDQSQ: 150
+        tQH_tck: 0.38
+        tWLS: 245
+        tWLH: 245
+      1333:
+        tDS_base: {AC135: 45}
+        tDH_base: {DC90: 75}
+        tIS_base: {AC160: 80, AC135: 205}
+        tIH_base: {DC90: 150}
+        tDQSS_tck: [-0.25, 0.25]
+        tDSS_tck: 0.2
+        tDSH_tck: 0.2
+        tDQSQ: 125
+        tQH_tck: 0.38
+        tWLS: 195
+        tWLH: 195
+      1600:
+        tDS_base: {AC135: 25}
+        tDH_base: {DC90: 55}
+        tIS_base: {AC160: 60, AC135: 185}
+        tIH_base: {DC90: 130}
+        tDQSS_tck: [-0.27, 0.27]
+        tDSS_tck: 0.18
+        tDSH_tck: 0.18
+        tDQSQ: 100
+        tQH_tck: 0.38
+        tWLS: 165
+        tWLH: 165
+    # Derating deltas [delta_setup, delta_hold] in ps. Rows: single-ended
+    # input slew (V/ns). Columns: differential strobe/clock slew (V/ns).
+    # null = a combination the datasheet leaves blank (shaded: not
+    # supported). Linear interpolation between table points is what JEDEC
+    # allows; outside the table the check clamps and says so.
+    derating:
+      tIS_tIH:
+        AC160:              # Table 61 (DDR3L-800/1066)
+          strobe_vns: [4.0, 3.0, 2.0, 1.8, 1.6, 1.4, 1.2, 1.0]
+          rows:
+            2.0: [[80, 45], [80, 45], [80, 45], [88, 53], [96, 61], [104, 69], [112, 79], [120, 95]]
+            1.5: [[53, 30], [53, 30], [53, 30], [61, 38], [69, 46], [77, 54], [85, 64], [93, 80]]
+            1.0: [[0, 0], [0, 0], [0, 0], [8, 8], [16, 16], [24, 24], [32, 34], [40, 50]]
+            0.9: [[-1, -3], [-1, -3], [-1, -3], [7, 5], [15, 13], [23, 21], [31, 31], [39, 47]]
+            0.8: [[-3, -8], [-3, -8], [-3, -8], [5, 1], [13, 9], [21, 17], [29, 27], [37, 43]]
+            0.7: [[-5, -13], [-5, -13], [-5, -13], [3, -5], [11, 3], [19, 11], [27, 21], [35, 37]]
+            0.6: [[-8, -20], [-8, -20], [-8, -20], [0, -12], [8, -4], [16, 4], [24, 14], [32, 30]]
+            0.5: [[-20, -30], [-20, -30], [-20, -30], [-12, -22], [-4, -14], [4, -6], [12, 4], [20, 20]]
+            0.4: [[-40, -45], [-40, -45], [-40, -45], [-32, -37], [-24, -29], [-16, -21], [-8, -11], [0, 5]]
+        AC135:              # Table 62 (DDR3L-800 to 1600)
+          strobe_vns: [4.0, 3.0, 2.0, 1.8, 1.6, 1.4, 1.2, 1.0]
+          rows:
+            2.0: [[68, 45], [68, 45], [68, 45], [76, 53], [84, 61], [92, 69], [100, 79], [108, 95]]
+            1.5: [[45, 30], [45, 30], [45, 30], [53, 38], [61, 46], [69, 54], [77, 64], [85, 80]]
+            1.0: [[0, 0], [0, 0], [0, 0], [8, 8], [16, 16], [24, 24], [32, 34], [40, 50]]
+            0.9: [[2, -3], [2, -3], [2, -3], [10, 5], [18, 13], [26, 21], [34, 31], [42, 47]]
+            0.8: [[3, -8], [3, -8], [3, -8], [11, 1], [19, 9], [27, 17], [35, 27], [43, 43]]
+            0.7: [[6, -13], [6, -13], [6, -13], [14, -5], [22, 3], [30, 11], [38, 21], [46, 37]]
+            0.6: [[9, -20], [9, -20], [9, -20], [17, -12], [25, -4], [33, 4], [41, 14], [49, 30]]
+            0.5: [[5, -30], [5, -30], [5, -30], [13, -22], [21, -14], [29, -6], [37, 4], [45, 20]]
+            0.4: [[-3, -45], [-3, -45], [-3, -45], [6, -37], [14, -29], [22, -21], [30, -11], [38, 5]]
+      tDS_tDH:
+        AC160:              # Table 66
+          strobe_vns: [4.0, 3.0, 2.0, 1.8, 1.6, 1.4, 1.2, 1.0]
+          # Two cells are printed differently from the same point of the
+          # tIS/tIH table (61): 0.7 V/ns @ 1.8 V/ns prints ΔtDS -3 (Table 61:
+          # 3) and 0.5 @ 1.4 prints ΔtDH 6 (Table 61: -6). Kept as printed.
+          rows:
+            2.0: [[80, 45], [80, 45], [80, 45], null, null, null, null, null]
+            1.5: [[53, 30], [53, 30], [53, 30], [61, 38], null, null, null, null]
+            1.0: [[0, 0], [0, 0], [0, 0], [8, 8], [16, 16], null, null, null]
+            0.9: [null, [-1, -3], [-1, -3], [7, 5], [15, 13], [23, 21], null, null]
+            0.8: [null, null, [-3, -8], [5, 1], [13, 9], [21, 17], [29, 27], null]
+            0.7: [null, null, null, [-3, -5], [11, 3], [19, 11], [27, 21], [35, 37]]
+            0.6: [null, null, null, null, [8, -4], [16, 4], [24, 14], [32, 30]]
+            0.5: [null, null, null, null, null, [4, 6], [12, 4], [20, 20]]
+            0.4: [null, null, null, null, null, null, [-8, -11], [0, 5]]
+        AC135:              # Table 67
+          strobe_vns: [4.0, 3.0, 2.0, 1.8, 1.6, 1.4, 1.2, 1.0]
+          # 0.5 V/ns @ 1.4 prints ΔtDS 39 (Table 62: 29). Kept as printed.
+          rows:
+            2.0: [[68, 45], [68, 45], [68, 45], null, null, null, null, null]
+            1.5: [[45, 30], [45, 30], [45, 30], [53, 38], null, null, null, null]
+            1.0: [[0, 0], [0, 0], [0, 0], [8, 8], [16, 16], null, null, null]
+            0.9: [null, [2, -3], [2, -3], [10, 5], [18, 13], [26, 21], null, null]
+            0.8: [null, null, [3, -8], [11, 1], [19, 9], [27, 17], [35, 27], null]
+            0.7: [null, null, null, [14, -5], [22, 3], [30, 11], [38, 21], [46, 37]]
+            0.6: [null, null, null, null, [25, -4], [33, 4], [41, 14], [49, 30]]
+            0.5: [null, null, null, null, null, [39, -6], [37, 4], [45, 20]]
+            0.4: [null, null, null, null, null, null, [30, -11], [38, 5]]
+
+  - name: JEDEC DDR3L (Micron's values)
+    # The second source on hw-lab linux-computer (Samsung K4B4G1646E) and
+    # any other DDR3L. The setup/hold minimums are JEDEC's (JESD79-3-1A);
+    # Micron publishes them unchanged, so this row reuses Micron's table.
+    # Nobody has read Samsung's own datasheet for these rows.
+    match: '^(K4B\dG\d{4}|NT5CC|IS43TR|H5TC)'
+    standard: DDR3L
+    same_as: Micron MT41K 4Gb DDR3L
+    source: JESD79-3-1A minimums as printed by Micron 4Gb_DDR3L Rev. P 5/17
+    verified: false
+
+controllers:
+  - name: NXP i.MX 6ULL MMDC
+    match: '^(MCIMX6Y|MCIMX6G|IMX6ULL|IMX6UL|i\.MX ?6UL)'
+    source: >-
+      NXP IMX6ULLIEC Rev. 1.2 11/2017: Table 41 p. 57 (DDR3L at 400 MHz,
+      16-bit, max), Table 32 p. 43 (DDR3L pad AC: output slew 2.5-5 V/ns,
+      tSKD 0.1 ns). Rev. 1.1 REMOVED sec. 4.9.4 "DDR SDRAM Specific
+      Parameters" (the controller's output setup/hold window): NXP now
+      publishes no MMDC output timing and makes JEDEC compliance
+      "contingent on the board DDR design adherence to" the HDG layout
+      rules (sec. 4.10.1). So the controller terms below are the pad
+      terms NXP still publishes, plus the MMDC's own calibration.
+    verified: true
+    max_rate_mts: 800
+    # tSKD: "skew between pad rise/fall asymmetry + skew caused by SSN",
+    # max, 400 MHz. Charged once against DQ vs DQS and CA vs CK.
+    out_skew_ps: 100
+    out_slew_vns: [2.5, 5.0]
+    # MMDC write data calibration (MPWRDLCTL per byte) centres DQS in its
+    # byte's DQ eye, so only the spread round the lane's centre is left.
+    write_calibration: true
+    # Write delay-line step, MMDC_MPWRDLCTL WR_DL_ABS_OFFSET "in fractions
+    # of a cycle (1/256)" (IMX6ULLRM MMDC chapter; not re-read: NXP's site
+    # refuses downloads from the tower).
+    cal_step_tck: 0.00390625
+    cal_step_verified: false
+    # Write leveling (MMDC_MPWLDECTRL0/1 per byte): WL_DL_ABS_OFFSET
+    # (0..127/256 cycle) + WL_HC_DEL (half cycle) + WL_CYC_DEL (0..3
+    # cycles). It can only DELAY DQS, so DQS must reach the DRAM no later
+    # than CK (IMX6ULHDG Table 22: DQS <= Clock(min)). Field widths from
+    # the i.MX 6 MMDC register map, not re-read for the 6ULL.
+    leveling_range_tck: [0.0, 3.99609375]
+    leveling_verified: false

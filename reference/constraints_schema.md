@@ -100,6 +100,23 @@ Consumers per key (script -> phase):
     "terminals": ["U1", "U3"], "severity": "error"
   }],
 
+  // check_ddr_timing (P8, #487): the timing budget over the length groups
+  // above. groups name length_groups entries: dq = members vs their
+  // ref_nets (the DQS pair), addr = members vs ref_nets (CK), dqs = the
+  // strobe pair's nets vs the `clock` length group. Parts come from
+  // controller_part / dram_part or the refs' MPN/Value field and are
+  // looked up in reference/ddr_timing.yaml. Optional: input_levels
+  // {data, addr} (AC160 | AC135), slew_vns {dq, dqs, addr, ck} (default
+  // 1/2/1/2, the datasheet base point), allowances_ps {isi, xtalk, vref},
+  // controller_terms {out_skew_ps, write_calibration, cal_step_tck,
+  // write_leveling, leveling_range_tck, max_rate_mts}, timing 1T | 2T.
+  "ddr": {
+    "controller": "U100", "dram": "U200", "rate_mts": 800,
+    "groups": [{"name": "BYTE0", "kind": "dq"},
+               {"name": "ADDR_CMD", "kind": "addr"},
+               {"name": "DQS0", "kind": "dqs", "clock": "CK"}]
+  },
+
   // check_creepage (P8) + rules_gen (P5, T6): IPC-2221 spacing for pairs
   // > 30 V apart. rules_gen emits named aiee_hv_* clearance DRU rules from
   // these (never hand-author HV rules); check_creepage audits the routed

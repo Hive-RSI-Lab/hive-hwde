@@ -171,7 +171,7 @@ ENCLOSURE = {"box_mm": "num_list", "stl": "str_or_list", "wall_mm": "num",
              "floor": "str"}
 SCHEMA_TOP_KEYS = set(SECTIONS) | {"placement", "coating", "antennas", "si",
                                    "enclosure", "ambient_c", "ambient_min_c",
-                                   "cable_pf", "pin_modes"}
+                                   "cable_pf", "pin_modes", "ddr"}
 ENVELOPE_ALIASES = {"power_constraints": "power",
                     "thermal_constraints": "thermal",
                     "voltage_constraints": "voltages"}
@@ -397,6 +397,13 @@ class _FileLint:
                     self.add("error", "bad_type",
                              f"{path}: pin_modes must be {{ref: {{pin: "
                              "mode}}}", path)
+            elif key == "ddr":
+                # check_ddr_timing validates the block itself (exit 2)
+                if not (isinstance(val, dict) and isinstance(
+                        val.get("groups"), list)):
+                    self.add("error", "bad_type",
+                             f"{path}: ddr must be an object with a groups "
+                             "list", path)
             elif key == "notes":
                 if not isinstance(val, list):
                     self.add("error", "bad_type",
