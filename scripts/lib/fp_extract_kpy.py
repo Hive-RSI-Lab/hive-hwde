@@ -3,7 +3,8 @@ board to a .pretty library, unplaced (front side, 0 deg, at the origin), one
 per footprint name, and relink the board's footprints to libname:name (the
 name KiCad's schematic importers put in Footprint fields) and save it.
 argv: board.kicad_pcb out.pretty libname. Prints JSON:
-{"written": [...], "variants": {name: [refs that differ from the first]},
+{"written": [...], "variants": {name: [refs whose copper differs from the
+ first: saved and relinked as <name>_<ref>]},
  "pad_copper": {"converted": n, "left": [...]}}.
 
 Package copper first: Eagle merges a copper polygon drawn in a package with
@@ -154,29 +155,38 @@ def apply_pad_copper(fp, plan):
             fp.Remove(sh)
             converted += 1
             continue
-        if clip and step[0] == "rect":
+        if step[0] == "rect":  # one path for all: built in the footprint frame
             _, sh, src, layer, xs, ys = step
             step = ("poly", sh, src, layer, [(xs[0], ys[0]), (xs[1], ys[0]), (xs[1], ys[1]), (xs[0], ys[1])], None)
         if step[0] == "poly":
             _, sh, src, layer, pts, _ = step
             if clip:
                 pts = clip_to_board(pts)
-            xs2, ys2 = [q[0] for q in pts], [q[1] for q in pts]
-            cx, cy = (min(xs2) + max(xs2)) // 2, (min(ys2) + max(ys2)) // 2
+            # built in the footprint's own frame (relative orientation 0), so
+            # two placements of one footprint at different rotations come out
+            # the same and match their library copy
+            import math
+            org = fp.GetPosition()
+            a = -math.radians(fp.GetOrientationDegrees())
+            ca, sa = math.cos(a), math.sin(a)
+            loc = [((x - org.x) * ca + (y - org.y) * sa, -(x - org.x) * sa + (y - org.y) * ca)
+                   for x, y in pts]
+            xs2, ys2 = [q[0] for q in loc], [q[1] for q in loc]
+            cx, cy = round((min(xs2) + max(xs2)) / 2), round((min(ys2) + max(ys2)) / 2)
             pad = pcbnew.PAD(fp)
             pad.SetNumber(src.GetNumber())
             pad.SetAttribute(pcbnew.PAD_ATTRIB_SMD)
             ls = pcbnew.LSET()
             ls.AddLayer(layer)
             pad.SetLayerSet(ls)
-            pad.SetPosition(pcbnew.VECTOR2I(int(cx), int(cy)))
-            pad.SetOrientationDegrees(0)
+            pad.SetFPRelativePosition(pcbnew.VECTOR2I(cx, cy))
+            pad.SetFPRelativeOrientation(pcbnew.EDA_ANGLE(0, pcbnew.DEGREES_T))
             pad.SetShape(pcbnew.PADSTACK.ALL_LAYERS, pcbnew.PAD_SHAPE_CUSTOM)
             pad.SetAnchorPadShape(pcbnew.PADSTACK.ALL_LAYERS, pcbnew.PAD_SHAPE_CIRCLE)
             pad.SetSize(pcbnew.PADSTACK.ALL_LAYERS, pcbnew.VECTOR2I(100000, 100000))
             vv = pcbnew.VECTOR_VECTOR2I()
-            for x, y in pts:  # primitives are in the pad's own frame
-                vv.append(pcbnew.VECTOR2I(int(x - cx), int(y - cy)))
+            for x, y in loc:  # primitives are in the pad's own frame
+                vv.append(pcbnew.VECTOR2I(round(x - cx), round(y - cy)))
             pad.AddPrimitivePoly(pcbnew.PADSTACK.ALL_LAYERS, vv, 0, True)
             pad.SetNetCode(src.GetNetCode())
             fp.Remove(sh)
@@ -262,8 +272,10 @@ def shape(fp):
     out = []
     for p in fp.Pads():
         pos = p.GetFPRelativePosition()
+        bb = p.GetBoundingBox()  # a custom pad's outline, not just its anchor
         out.append((p.GetNumber(), p.GetSize().x, p.GetSize().y, p.GetShape(),
-                    round(pos.x / 1000), round(pos.y / 1000)))
+                    round(pos.x / 1000), round(pos.y / 1000),
+                    round(bb.GetWidth() / 1000), round(bb.GetHeight() / 1000)))
     return sorted(out)
 
 
@@ -278,10 +290,14 @@ for fp in board.GetFootprints():
     c.SetPosition(pcbnew.VECTOR2I(0, 0))
     sig = shape(c)
     fp.SetFPID(pcbnew.LIB_ID(libname, name))
-    if name in seen:
-        if seen[name] != sig:
-            variants.setdefault(name, []).append(fp.GetReference())
+    if name in seen and seen[name] == sig:
         continue
+    if name in seen:
+        # same name, different copper (a castellation clipped on the other
+        # board edge): its own library footprint, so the board matches it
+        variants.setdefault(name, []).append(fp.GetReference())
+        name = f"{name}_{fp.GetReference()}"
+        fp.SetFPID(pcbnew.LIB_ID(libname, name))
     seen[name] = sig
     c.SetFPID(pcbnew.LIB_ID(libname, name))
     c.SetReference("REF**")

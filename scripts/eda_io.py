@@ -495,8 +495,9 @@ def do_import(source: Path, out: Path, fmt: str | None = None) -> tuple[int, dic
                        "text": f"no footprint library written: {fplib['error']}"})
     elif fplib.get("variants"):
         losses.append({"level": "check", "what": "footprints",
-                       "text": "footprints sharing a name but not their pads (the library "
-                               "keeps the first): " + edasrc._sample(
+                       "text": "footprints sharing a name but not their copper, each saved as "
+                               "<name>_<ref> and the board relinked (set the schematic's "
+                               "Footprint field to match): " + edasrc._sample(
                                    f"{k} ({', '.join(v)})" for k, v in fplib["variants"].items())})
     if src is None:
         losses.append({"level": "check", "what": "source",
