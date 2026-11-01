@@ -423,6 +423,62 @@ def setup_engine_env(dll: Path) -> None:
     os.environ.setdefault("SPICE_LIB_DIR", str(dll.parent))
 
 
+def codemodel_files(dll: Path | None) -> list[Path]:
+    """The XSPICE code models (*.cm) KiCad ships beside its libngspice:
+    lib/ngspice/ next to the library (an AppImage: shared/lib/ngspice).
+    KiCad's own simulator loads them through its spinit; the bare library
+    finds no spinit, so without these an `A` device does not parse."""
+    if dll is None:
+        return []
+    dll = Path(dll).resolve()
+    for d in (dll.parent / "ngspice", dll.parent.parent / "lib" / "ngspice"):
+        cms = sorted(d.glob("*.cm"))
+        if cms:
+            return cms
+    return []
+
+
+def _new_engine():
+    """A fresh in-process ngspice with KiCad's code models loaded."""
+    global _NG
+    from InSpice.Spice.NgSpice.Shared import NgSpiceShared
+    if os.name != "nt" and _DLL is not None:
+        # off Windows InSpice's find_library is ctypes.util.find_library,
+        # which only sees the system linker cache: a user-space KiCad's
+        # libngspice.so.0 is never found (LEARNINGS 2026-09-27 [sim])
+        NgSpiceShared.find_library = classmethod(lambda cls, n: str(_DLL))
+    ng = NgSpiceShared.new_instance()
+    _NG = ng
+    if not getattr(ng, "_hwde_cm", False):
+        for cm in codemodel_files(_DLL):
+            ng.exec_command(f"codemodel {cm}")
+        ng._hwde_cm = True
+    return ng
+
+
+_PRE_OSDI = re.compile(r"^(\s*pre_osdi\s+)(\S+)(.*)$", re.IGNORECASE)
+
+
+def resolve_osdi(text: str, base: Path) -> str:
+    """Make a deck's `pre_osdi FILE` lines (inside .control) absolute,
+    relative to the bench's directory. A FILE ending in .va is compiled
+    first with the IIC tree's OpenVAF (lib/solvers.compile_va, cached), so a
+    bench can carry its Verilog-A model as source."""
+    out = []
+    for ln in text.splitlines():
+        m = _PRE_OSDI.match(ln)
+        if m:
+            f = Path(m.group(2).strip('"'))
+            if not f.is_absolute():
+                f = Path(base) / f
+            if f.suffix.lower() == ".va":
+                import solvers
+                f = solvers.compile_va(f)
+            ln = f"{m.group(1)}{f}{m.group(3)}"
+        out.append(ln)
+    return "\n".join(out) + ("\n" if text.endswith("\n") else "")
+
+
 def prepare_circuit(text: str) -> str:
     """Normalize a testbench: ensure the trailing .end (a missing one makes
     ngspice silently load NO circuit) and inject `.options rshunt=1e9` after
@@ -484,16 +540,8 @@ def run_circuit(circuit: str) -> dict:
     engine-side problems; callers (the sim_run worker) run this whole
     function in a killable subprocess for hard timeouts / crash isolation.
     setup_engine_env() must have been called first."""
-    global _NG
     try:
-        from InSpice.Spice.NgSpice.Shared import NgSpiceShared
-        if os.name != "nt" and _DLL is not None:
-            # off Windows InSpice's find_library is ctypes.util.find_library,
-            # which only sees the system linker cache: a user-space KiCad's
-            # libngspice.so.0 is never found (LEARNINGS 2026-09-27 [sim])
-            NgSpiceShared.find_library = classmethod(lambda cls, n: str(_DLL))
-        ng = NgSpiceShared.new_instance()
-        _NG = ng
+        ng = _new_engine()
     except Exception as exc:  # DLL missing/unloadable
         return {"status": "error",
                 "error": f"engine load failed: {type(exc).__name__}: {exc}"}
@@ -540,13 +588,8 @@ def run_vectors(circuits: list[str]) -> dict:
     runs it in a killable worker. An op plot's vectors hold one value each;
     a voltage source's branch current is "<name>#branch" (negative while
     the source delivers current)."""
-    global _NG
     try:
-        from InSpice.Spice.NgSpice.Shared import NgSpiceShared
-        if os.name != "nt" and _DLL is not None:
-            NgSpiceShared.find_library = classmethod(lambda cls, n: str(_DLL))
-        ng = NgSpiceShared.new_instance()
-        _NG = ng
+        ng = _new_engine()
     except Exception as exc:  # DLL missing/unloadable
         return {"status": "error",
                 "error": f"engine load failed: {type(exc).__name__}: {exc}"}

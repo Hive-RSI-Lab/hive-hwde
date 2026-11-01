@@ -10,6 +10,12 @@ bundles (lib/simlib.py holds the machine-verified engine recipe) and gates
 the measured values against the bounds. It catches the wrong-value defect
 class (a 47k where 4.7k belongs) that ERC/DRC/verify/DFM are all blind to.
 
+Mixed-signal benches: XSPICE `A` devices (d_and, d_dff, adc_bridge,
+dac_bridge, ...) work, since simlib loads the code models KiCad ships beside
+its libngspice. A Verilog-A model comes in with `.control` / `pre_osdi
+FILE` / `.endc`; FILE is relative to the bench, and a `.va` is compiled with
+the IIC tree's OpenVAF first (docs/solvers.md).
+
 Each testbench runs in its OWN worker subprocess (this script re-invoked with
 the internal --exec-one mode): a wedged or crashed engine is killed at
 --timeout and becomes a structured sim_engine_error violation, never a
@@ -181,6 +187,11 @@ def exec_one(cir: Path, dll: Path) -> dict:
     t0 = time.monotonic()
     text = cir.read_text(encoding="utf-8", errors="replace")
     circuit = simlib.prepare_circuit(text)
+    try:
+        circuit = simlib.resolve_osdi(circuit, cir.resolve().parent)
+    except Exception as exc:  # no tree / openvaf failed: this bench only
+        return {"status": "error",
+                "error": f"pre_osdi: {type(exc).__name__}: {exc}"}
     simlib.setup_engine_env(dll)
     res = simlib.run_circuit(circuit)
     res["elapsed_s"] = checklib.rnd(time.monotonic() - t0, 3)
