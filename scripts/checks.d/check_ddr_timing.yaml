@@ -1,0 +1,11 @@
+# check_ddr_timing: DDR timing budget (hive-hwde #487). Routed flight times
+# (check_length_groups' path, field-solved eps_eff per layer and width)
+# against reference/ddr_timing.yaml's datasheet rows: setup/hold margin in
+# ps per byte lane (DQ vs DQS) and for address/command vs CK, tDQSS and the
+# write-leveling range, every term listed. Board only: without constraints
+# `ddr` it passes.
+name: check_ddr_timing
+needs: []
+args: []
+optional:
+  constraints: [--constraints, "{constraints}"]

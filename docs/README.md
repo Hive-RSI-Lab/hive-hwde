@@ -392,6 +392,29 @@ and only to the group's longest. A net that is too long, a run with no room
 and a diff pair's half are reported, not forced; DRC that grows rolls the
 board back.
 
+`check_ddr_timing` (verify suite, #487) turns the same paths into time and
+puts them in a budget, as a memory-interface timing report does. Each
+track's delay comes from the field solver's eps_eff for its layer and width
+(check_si's line model); a pair's reference is the mean of its legs. The
+constraints `ddr` block names the controller and DRAM, the rate and which
+length groups are byte lanes (`dq`, members vs their DQS), address/command
+(`addr`, vs CK) or strobes (`dqs`, vs the CK group). The DRAM's base
+tDS/tDH/tIS/tIH come from `reference/ddr_timing.yaml` (Micron 4Gb DDR3L Rev. P,
+with the slew-derating tables, interpolated bilinearly) and are referred to
+VREF, which reproduces every "VREF @ 1 V/ns" row in Micron's Table 58 but
+one, a misprint. The controller terms are what NXP still publishes for the
+i.MX 6ULL (pad tSKD 100 ps, 400 MHz max; NXP dropped the MMDC output window in
+datasheet Rev. 1.1) plus its write calibration (the lane is re-centred) and
+write leveling (DQS can only be delayed, so DQS must not reach the DRAM after
+CK). Each group reports setup and hold margin in ps with every term, the
+read eye left at the controller, tDQSS, and the leveling margin. Findings:
+`ddr_setup_violation`, `ddr_hold_violation`, `ddr_dqss_violation`,
+`ddr_leveling_out_of_range` (a warning while the 6ULL's leveling range is
+unverified), `ddr_rate_over`, `ddr_part_unknown`, `ddr_slew_clamped`,
+`ddr_unrouted`. At DDR3L-800 the budget is wide (about 270 ps of setup on a
+matched lane), so a single DQ 15 mm long still passes timing and only
+check_length_groups' HDG window flags it; at DDR3L-1600 without calibration
+the same fault is a `ddr_setup_violation`.
 ## Op-amp outputs into a cable or a big capacitor
 
 `check_cap_load` follows every op-amp output on the board's netlist through

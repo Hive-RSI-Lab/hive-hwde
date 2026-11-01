@@ -1,0 +1,15 @@
+# Seeded fault for check_ddr_timing (docs/failure-modes.md section 4).
+mutants:
+  swd-ddr-setup:
+    board: blinky2
+    script: mutations/swd_ddr_setup.py
+    check: check_ddr_timing
+    defect: >-
+      SIDECAR fault (copper unchanged): constraints.json strobes /SWDIO with
+      /SWCLK as one DDR3L-1600 data bit (100 ps controller skew, no write
+      calibration); the golden routes SWCLK 14.0 mm and SWDIO 25.4 mm, so
+      SWDIO lands ~67 ps late and setup goes 14 ps negative
+    expect:
+      kind: ddr_setup_violation
+      net: /SWDIO
+      pos: [133.4, 118.225]   # SWDIO's first track, mid-length

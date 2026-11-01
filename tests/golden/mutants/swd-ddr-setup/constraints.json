@@ -1,0 +1,55 @@
+{
+  "_comment": "S4 verification inputs for the blinky2 golden (test fixture; the pipeline's P2 phase generates this file for real designs). Net names use the board convention: local-label nets /NAME, power nets bare.",
+  "high_speed": [
+    {
+      "net": "/OSC_IN",
+      "reference": "GND"
+    },
+    {
+      "net": "/OSC_OUT",
+      "reference": "GND"
+    }
+  ],
+  "power": [
+    {
+      "net": "+3V3",
+      "current_a": 0.4
+    },
+    {
+      "net": "+5V",
+      "current_a": 0.5
+    }
+  ],
+  "length_groups": [
+    {
+      "name": "SWD",
+      "nets": [
+        "/SWDIO"
+      ],
+      "ref_nets": [
+        "/SWCLK"
+      ],
+      "tol_mm": 20.0
+    }
+  ],
+  "ddr": {
+    "dram_part": "MT41K256M16TW-107",
+    "controller_part": "GENERIC",
+    "rate_mts": 1600,
+    "input_levels": {
+      "data": "AC135",
+      "addr": "AC135"
+    },
+    "controller_terms": {
+      "out_skew_ps": 100,
+      "write_calibration": false,
+      "write_leveling": false
+    },
+    "groups": [
+      {
+        "name": "SWD",
+        "kind": "dq"
+      }
+    ]
+  }
+}
