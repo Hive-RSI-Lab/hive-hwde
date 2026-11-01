@@ -392,6 +392,26 @@ and only to the group's longest. A net that is too long, a run with no room
 and a diff pair's half are reported, not forced; DRC that grows rolls the
 board back.
 
+## Op-amp outputs into a cable or a big capacitor
+
+`check_cap_load` follows every op-amp output on the board's netlist through
+0 ohm links, beads and coupling caps (100 nF and up are shorts at MHz) to
+its load: caps to ground or a rail, and a cable on each connector reached
+(constraints.json `"cable_pf": {"J3": 1000}`, else 1000 pF, 10 m of audio
+cable). It works out the noise gain from the feedback network and runs
+`analogcalc.cap_load_pm` with the part's GBW and open-loop Ro from
+`reference/opamp_drive.yaml`. Under 45 deg of phase margin is an error,
+under 60 a warning, each with the build-out resistor that reaches 60 deg:
+the calculation picks the value, not the 47-100 ohm rule of thumb. A series
+resistor already there is checked as the build-out with the load beyond
+it. An op-amp the table doesn't know is a warning when it drives a load
+with no build-out. Ro is the datasheet's open-loop output impedance at the
+crossover (its Zo plot), not the closed-loop figure in the spec table; the
+rows typed from memory say so in the finding until someone reads the plot.
+
+On hifi-receiver-2's core, the OPA1678 drives nothing capacitive and the
+INA186 drives its 10 nF filter through 1 kohm: no findings.
+
 ## ESD at the connectors, and what the ingest runs found
 
 `bin/hwde check_esd --pcb <board> [--constraints c.json]` (run by hand for

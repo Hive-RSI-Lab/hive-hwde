@@ -168,7 +168,7 @@ ENCLOSURE = {"box_mm": "num_list", "stl": "str_or_list", "wall_mm": "num",
              "floor": "str"}
 SCHEMA_TOP_KEYS = set(SECTIONS) | {"placement", "coating", "antennas", "si",
                                    "enclosure", "ambient_c", "ambient_min_c",
-                                   "pin_modes"}
+                                   "cable_pf", "pin_modes"}
 ENVELOPE_ALIASES = {"power_constraints": "power",
                     "thermal_constraints": "thermal",
                     "voltage_constraints": "voltages"}
@@ -379,6 +379,12 @@ class _FileLint:
                 if not _is_num(val):
                     self.add("error", "bad_type",
                              f"{path}: {key} must be a number", path)
+            elif key == "cable_pf":
+                if not (isinstance(val, dict)
+                        and all(_is_num(v) and v >= 0 for v in val.values())):
+                    self.add("error", "bad_type",
+                             f"{path}: cable_pf must map connector refs to "
+                             "picofarads", path)
             elif key == "pin_modes":
                 # sim_board: {ref: {pin or function: mode}}
                 if not (isinstance(val, dict) and all(

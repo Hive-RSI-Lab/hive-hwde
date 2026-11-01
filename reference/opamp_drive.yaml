@@ -1,0 +1,53 @@
+# Op-amp output drive, for check_cap_load: the phase margin an op-amp keeps
+# into the capacitance on its output (a cable, a filter cap) and whether a
+# build-out resistor is needed (reference/ingest/analog-audio.md A2/A6).
+#
+# match: a regex tried against the part's value and its symbol's lib part
+# (case-insensitive), as in opamp_cm.yaml.
+# gbw_hz: the unity-gain (gain-bandwidth) frequency, typical.
+# ro_ohm: the OPEN-LOOP output impedance near the crossover, from the
+#   datasheet's Zo-vs-frequency plot (not the closed-loop "output resistance"
+#   a spec table gives at 1 kHz, which feedback has divided by the loop gain).
+#   This one number moves the margin most: read it off the plot.
+# fp2_hz: an optional second internal pole (omit: none modelled).
+# cl_stable_pf: optional, the datasheet's own "stable into N pF at G = 1"
+#   statement, reported beside the calculation as the last word.
+# source / verified: as in opamp_cm.yaml. `verified: false` means typed from
+#   memory, not re-read: the finding says so, and whoever relies on it reads
+#   the Zo plot once and flips it (with the date).
+parts:
+  - match: '^(NE|SA|SE)?5532|^NE5534'
+    gbw_hz: 10.0e6
+    ro_ohm: 50
+    source: TI SLOS075 (NE5532) unity-gain BW 10 MHz; open-loop Ro is not tabled (the 0.3 ohm row is closed loop), 50 ohm is the usual macromodel value
+    verified: false
+  - match: '^OPA167[789]'
+    gbw_hz: 16.0e6
+    ro_ohm: 100
+    source: TI SBOS855 (OPA1677/8/9) GBW 16 MHz; Ro from the open-loop output impedance plot, typed from memory
+    verified: false
+  - match: '^OPA161[123]'
+    gbw_hz: 40.0e6
+    ro_ohm: 20
+    source: TI SBOS450 (OPA1611/1612) GBW 40 MHz; Ro from the open-loop output impedance plot, typed from memory
+    verified: false
+  - match: '^(LM4562|LME4972[0-9])'
+    gbw_hz: 55.0e6
+    ro_ohm: 15
+    source: TI SNAS326 (LM4562) GBW 55 MHz; Ro from the open-loop output impedance plot, typed from memory
+    verified: false
+  - match: '^OPA[0-9]?134'
+    gbw_hz: 8.0e6
+    ro_ohm: 50
+    source: TI SBOS058 (OPA134/2134) GBW 8 MHz; Ro typed from memory
+    verified: false
+  - match: '^(NJM|NJU)?4580'
+    gbw_hz: 15.0e6
+    ro_ohm: 50
+    source: NJR NJM4580 GBW 15 MHz; Ro typed from memory
+    verified: false
+  - match: '^TL0[78][1-4]'
+    gbw_hz: 3.0e6
+    ro_ohm: 150
+    source: TI SLOS080 (TL07x) unity-gain BW 3 MHz; Ro typed from memory
+    verified: false

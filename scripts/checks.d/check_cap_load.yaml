@@ -1,0 +1,9 @@
+# check_cap_load: an op-amp output driving a cable or a big capacitor keeps
+# its phase margin or has the build-out resistor that restores it
+# (reference/ingest/analog-audio.md A2/A6, gap 2). Reads the board's own
+# <board>.net beside it; constraints.json cable_pf sets a connector's cable.
+name: check_cap_load
+needs: []
+args: []
+optional:
+  constraints: [--constraints, "{constraints}"]
