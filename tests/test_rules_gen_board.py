@@ -168,3 +168,9 @@ def test_sense_pairs_get_no_impedance_rules():
                            {"p": "/USB_DP", "n": "/USB_DM"}]}
     pairs = rules_gen.detect_diff_pairs(cons)
     assert [p["p"] for p in pairs] == ["/USB_DP"]
+
+
+def test_package_rating_pads_only_scopes_to_the_parts_own_pads():
+    (r,), _ = rules_gen.package_rules({"package_ratings": [
+        {"ref": "J3", "clearance_mm": 0.09, "pads_only": True}]})
+    assert r.condition == "A.memberOfFootprint('J3') && B.memberOfFootprint('J3')"

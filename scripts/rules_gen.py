@@ -634,9 +634,11 @@ def package_rules(constraints: dict) -> tuple[list[Rule], list[dict]]:
             raise ValueError(f"package_ratings: bad ref {ref!r}")
         clr = float(e["clearance_mm"])
         name = f"aiee_pkg_rating_{_safe(ref)}"
+        # pads_only: just the part's own pads. A courtyard term also matches a
+        # long track that starts inside it, and every fill it passes.
+        term = "memberOfFootprint" if e.get("pads_only") else "intersectsCourtyard"
         rules.append(Rule(name, "clearance", round(clr, 4),
-                          condition=f"A.intersectsCourtyard('{ref}') && "
-                                    f"B.intersectsCourtyard('{ref}')"))
+                          condition=f"A.{term}('{ref}') && B.{term}('{ref}')"))
         facts.append({"ref": ref, "clearance_mm": round(clr, 4),
                       "why": e.get("why", ""), "rule": name})
     return rules, facts

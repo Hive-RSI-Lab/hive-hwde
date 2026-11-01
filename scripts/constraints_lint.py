@@ -116,7 +116,7 @@ SECTIONS: dict[str, dict[str, dict[str, str]]] = {
     # rules_gen: a part rated for its nets at its own pin pitch
     "package_ratings": {
         "required": {"ref": "str", "clearance_mm": "num"},
-        "optional": {"why": "str"},
+        "optional": {"why": "str", "pads_only": "bool"},
     },
     # place_replicate (#482): a source channel stamped into its targets
     "channels": {
