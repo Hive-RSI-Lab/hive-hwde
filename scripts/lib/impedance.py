@@ -238,6 +238,31 @@ def field_microstrip(w: float, h: float, t: float, er: float, s: float | None = 
     return _result(cond, ((0.0, _r(h), float(er)),), masks, None, even)
 
 
+def field_cpwg(w: float, g: float, h: float, t: float, er: float,
+               ground_w: float | None = None, mask: dict | None = None) -> dict:
+    """Grounded coplanar waveguide on an outer layer: a w-wide strip with a
+    coplanar ground ground_w wide (default 5 w, and at least 1 mm) g away
+    on each side, over the reference plane h below. The coplanar grounds
+    are conductors held at 0 V with the plane. mask as field_microstrip
+    (None for bare copper, the usual RF opening)."""
+    if w <= 0 or g <= 0 or h <= 0:
+        raise ValueError("w, g and h must be positive")
+    if not SOLVER_OK:
+        raise RuntimeError("field solver needs numpy + scipy")
+    gw = ground_w or max(5 * w, 1.0)
+    a, b = w / 2, w / 2 + g
+    cond = ((_r(-b - gw), _r(-b), _r(h), _r(h + t)),
+            (_r(-a), _r(a), _r(h), _r(h + t)),
+            (_r(b), _r(b + gw), _r(h), _r(h + t)))
+    masks = ()
+    if mask:
+        c1, c2, mer = float(mask["c1"]), float(mask["c2"]), float(mask["er"])
+        masks = ((-1e3, 1e3, _r(h), _r(h + c1), mer),) + tuple(
+            (_r(x0 - c2), _r(x1 + c2), _r(h), _r(h + t + c2), mer) for x0, x1, _, _ in cond)
+    z, ee = _section(cond, ((0.0, _r(h), float(er)),), masks, None, (0.0, 1.0, 0.0))
+    return {"z0": z, "eps_eff": ee}
+
+
 def field_stripline(w: float, h_base: float, h_fill: float, t: float,
                     er_base: float, er_fill: float, s: float | None = None,
                     even: bool = False) -> dict:
