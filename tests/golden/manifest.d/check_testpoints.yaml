@@ -1,0 +1,13 @@
+# Seeded fault for check_testpoints (test-point access, issue #470).
+mutants:
+  tp-tented:
+    board: blinky2
+    script: mutations/tp_tented.py
+    check: check_testpoints
+    defect: >-
+      TEST fault: a test point on /NRST from a footprint whose pad has no
+      F.Mask opening; solder mask covers it, so no probe can touch the
+      reset line (KiCad's DRC passes it)
+    expect:
+      kind: tp_unusable
+      pos: [140, 124]

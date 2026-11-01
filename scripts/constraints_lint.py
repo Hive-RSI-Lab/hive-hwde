@@ -171,7 +171,8 @@ ENCLOSURE = {"box_mm": "num_list", "stl": "str_or_list", "wall_mm": "num",
              "floor": "str"}
 SCHEMA_TOP_KEYS = set(SECTIONS) | {"placement", "coating", "antennas", "si",
                                    "enclosure", "ambient_c", "ambient_min_c",
-                                   "cable_pf", "pin_modes", "ddr"}
+                                   "cable_pf", "pin_modes", "ddr",
+                                   "testpoints"}
 ENVELOPE_ALIASES = {"power_constraints": "power",
                     "thermal_constraints": "thermal",
                     "voltage_constraints": "voltages"}
@@ -397,6 +398,24 @@ class _FileLint:
                     self.add("error", "bad_type",
                              f"{path}: pin_modes must be {{ref: {{pin: "
                              "mode}}}", path)
+            elif key == "testpoints":
+                # check_testpoints (#470): probe rules and the nets in scope
+                nums = {"probe_mm", "fixture_mm", "pitch_mm", "body_mm",
+                        "body_h_ratio", "edge_mm", "max_via_drill_mm",
+                        "min_coverage_pct"}
+                ok = isinstance(val, dict) and all(
+                    (k in nums and isinstance(v, (int, float))
+                     and not isinstance(v, bool))
+                    or (k == "fixture" and isinstance(v, bool))
+                    or (k == "nets" and isinstance(v, list)
+                        and all(isinstance(n, str) for n in v))
+                    or k in ("note", "reason")
+                    for k, v in val.items())
+                if not ok:
+                    self.add("error", "bad_type",
+                             f"{path}: testpoints must be an object of "
+                             f"{', '.join(sorted(nums))} (numbers), fixture "
+                             "(bool), nets (globs)", path)
             elif key == "ddr":
                 # check_ddr_timing validates the block itself (exit 2)
                 if not (isinstance(val, dict) and isinstance(
