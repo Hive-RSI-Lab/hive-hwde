@@ -161,3 +161,16 @@ def test_package_ratings_emit_a_footprint_scoped_clearance_after_hv():
 def test_package_ratings_reject_a_wildcard_ref():
     with pytest.raises(ValueError):
         rules_gen.package_rules({"package_ratings": [{"ref": "U*", "clearance_mm": 0.1}]})
+
+
+def test_sense_pairs_get_no_impedance_rules():
+    cons = {"diff_pairs": [{"p": "/a_KP", "n": "/a_KN", "kind": "sense"},
+                           {"p": "/USB_DP", "n": "/USB_DM"}]}
+    pairs = rules_gen.detect_diff_pairs(cons)
+    assert [p["p"] for p in pairs] == ["/USB_DP"]
+
+
+def test_package_rating_pads_only_scopes_to_the_parts_own_pads():
+    (r,), _ = rules_gen.package_rules({"package_ratings": [
+        {"ref": "J3", "clearance_mm": 0.09, "pads_only": True}]})
+    assert r.condition == "A.memberOfFootprint('J3') && B.memberOfFootprint('J3')"
