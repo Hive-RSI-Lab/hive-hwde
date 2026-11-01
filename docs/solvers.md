@@ -250,7 +250,8 @@ points, 1-6 GHz): reciprocity and causality are 100 %, but passivity is
 62.6 % (poor), with sigma_max 1.11 at 5.9 GHz. The probe split's
 \|S11\| floor of about -19 dB sits on top of \|S21\| = 1. Until that
 floor comes down, planar S is fit for frequency-domain reading, not for a
-transient.
+transient. `sim_solve board`'s thru (tests/test_emboard.py, S = B A^-1
+from V+I probes) passes the same check.
 
 ## What is not here yet
 
