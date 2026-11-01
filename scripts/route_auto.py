@@ -68,6 +68,7 @@ import geom  # noqa: E402
 import kc  # noqa: E402
 import route_edit  # noqa: E402  (finish pass: rip sliver vias by uuid)
 import routelib  # noqa: E402
+import zrules  # noqa: E402  (#489 per-layer impedance widths)
 from checklib import CheckError  # noqa: E402
 
 
@@ -109,6 +110,19 @@ def _dsn_net_rules(staged: Path, dsn: Path) -> list[str]:
     if moved:
         dsn.write_text(text, encoding="utf-8")
     return moved
+
+
+def _dsn_layer_widths(staged: Path, dsn: Path) -> list[str]:
+    """Write rules_gen's per-layer impedance widths (stripline layers, #489:
+    zrules) into the DSN as class layer_rules, so Freerouting draws an inner
+    run at the width DRC grades it against; returns the nets given them."""
+    geo = zrules.board_layer_geometry(staged)
+    text, done = routelib.dsn_apply_layer_widths(
+        dsn.read_text(encoding="utf-8"),
+        {net: zrules.layer_widths(geo, [net]) for net in geo})
+    if done:
+        dsn.write_text(text, encoding="utf-8")
+    return done
 
 
 def _dsn_merge_wires(dsn: Path) -> int:
@@ -393,6 +407,7 @@ def route_probe(pcb: Path, *, passes: int = 4, timeout_s: int = 180,
         "verb": "export_dsn", "board": str(staged), "dsn": str(dsn),
         "layer_types": {ly: "power" for ly in _auto_power_layers(bg)}}, work)
     _dsn_net_rules(staged, dsn)
+    _dsn_layer_widths(staged, dsn)
     _dsn_hole_rules(staged, dsn, bg)
     merged = _dsn_merge_wires(dsn)
     facts = routelib.run_freerouting(
@@ -474,6 +489,7 @@ def run(argv: list[str] | None = None):
         "verb": "export_dsn", "board": str(staged), "dsn": str(dsn),
         "layer_types": {ly: "power" for ly in power_layers}}, work)
     dsn_net_rules = _dsn_net_rules(staged, dsn)
+    dsn_layer_widths = _dsn_layer_widths(staged, dsn)
     hole_rules = _dsn_hole_rules(staged, dsn, bg)
     grown = hole_rules.pop("grown")
     dsn_wires_merged = _dsn_merge_wires(dsn)
@@ -691,6 +707,7 @@ def run(argv: list[str] | None = None):
             if fr_ok else None,
             "power_layers": power_layers,
             "dsn_net_rules": dsn_net_rules,
+            "dsn_layer_widths": dsn_layer_widths,
             "dsn_hole_rules": hole_rules,
             "dsn_wires_merged": dsn_wires_merged,
             "krt_finish": finish_facts,

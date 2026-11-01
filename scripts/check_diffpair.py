@@ -329,6 +329,7 @@ def check_pair(bg: geom.BoardGeom, spec: dict):
                        "vias_p": vp, "vias_n": vn}))
 
     zinfo = pair_impedance(bg, p, n, stats["gap_median_mm"])
+    zinfo["layers"] = layer_impedance(bg, p, n, coupling_max)
     target = None if sense else spec.get("impedance_ohm")
     if target and zinfo.get("zdiff_ohm"):
         tol = float(spec.get("impedance_tol_pct", IMPEDANCE_TOL_PCT))
@@ -343,6 +344,23 @@ def check_pair(bg: geom.BoardGeom, spec: dict):
                            "target_ohm": float(target), "miss_pct": checklib.rnd(miss),
                            **zinfo}))
 
+    if target:
+        tol = float(spec.get("impedance_tol_pct", IMPEDANCE_TOL_PCT))
+        for lay, row in zinfo["layers"].items():
+            if lay == zinfo.get("signal_layer") or not row.get("zdiff_ohm"):
+                continue          # the main layer is judged above
+            miss = (row["zdiff_ohm"] - float(target)) / float(target) * 100
+            if abs(miss) > tol:
+                violations.append(violation(
+                    SCRIPT, "error" if abs(miss) > 2 * tol else "warning", rep_pt,
+                    lay, p, [], f"diff pair {p}/{n} is {row['zdiff_ohm']:.1f} ohm "
+                    f"as drawn on {lay} (width {row['width_mm']} mm, gap "
+                    f"{row['gap_mm']} mm, {row['coupled_mm']} mm coupled); target "
+                    f"{float(target):g} ohm +/-{tol:g}%",
+                    SCRIPT, **{**common, "kind": "diffpair_impedance",
+                               "target_ohm": float(target),
+                               "miss_pct": checklib.rnd(miss), **row}))
+
     facts = {"pair": [p, n], "kind": "sense" if sense else "diff", "length_p_mm": checklib.rnd(lp),
              "length_n_mm": checklib.rnd(ln), "skew_mm": checklib.rnd(skew),
              "skew_ps": checklib.rnd(skew_ps), "branch_free": bool(okp and okn),
@@ -351,6 +369,28 @@ def check_pair(bg: geom.BoardGeom, spec: dict):
              "coupling_max_mm": checklib.rnd(coupling_max),
              "vias_p": vp, "vias_n": vn, **stats, "impedance": zinfo}
     return violations, facts
+
+
+def layer_zdiff(bg, layer: str, w: float, s: float) -> tuple[float | None, str]:
+    """(Zdiff, model) of a pair of width w and edge gap s on `layer`: an
+    outer layer as coated microstrip over its neighbour, an inner one as
+    stripline sitting on the THICKER neighbouring dielectric (the core, on
+    every JLC stackup) and embedded in the thinner (prepreg). (None, "") when
+    the stackup has no reference plane."""
+    if len(bg.copper_layers) < 2 or not bg.stackup.dielectrics:
+        return None, ""
+    above, below = bg.stackup.adjacent(layer)
+    t = bg.stackup.copper_thickness.get(layer, 0.035)
+    if above is None or below is None:
+        ref = below or above
+        return impedance.field_microstrip(
+            w, bg.stackup.height_between(layer, ref), t,
+            bg.stackup.epsilon_between(layer, ref), s)["zdiff"], "coated microstrip"
+    sides = sorted(((bg.stackup.height_between(layer, r),
+                     bg.stackup.epsilon_between(layer, r)) for r in (above, below)),
+                   reverse=True)
+    (hb, eb), (hf, ef) = sides
+    return impedance.field_stripline(w, hb, hf, t, eb, ef, s)["zdiff"], "stripline"
 
 
 def pair_impedance(bg, p, n, gap_c2c) -> dict:
@@ -374,28 +414,52 @@ def pair_impedance(bg, p, n, gap_c2c) -> dict:
         return {**out, "note": "no measurable edge gap; impedance not solved"}
     s = round(gap_c2c - w, 4)
     out["gap_mm"] = s
-    if len(bg.copper_layers) < 2 or not bg.stackup.dielectrics:
-        return {**out, "note": "no reference plane in the stackup; impedance not solved"}
-    above, below = bg.stackup.adjacent(sig)
-    t = bg.stackup.copper_thickness.get(sig, 0.035)
     try:
-        if above is None or below is None:
-            ref = below or above
-            z = impedance.field_microstrip(
-                w, bg.stackup.height_between(sig, ref), t,
-                bg.stackup.epsilon_between(sig, ref), s)["zdiff"]
-            model = "coated microstrip"
-        else:
-            sides = sorted(((bg.stackup.height_between(sig, r),
-                             bg.stackup.epsilon_between(sig, r)) for r in (above, below)),
-                           reverse=True)
-            (hb, eb), (hf, ef) = sides
-            z = impedance.field_stripline(w, hb, hf, t, eb, ef, s)["zdiff"]
-            model = "stripline"
+        z, model = layer_zdiff(bg, sig, w, s)
     except (ValueError, RuntimeError, ZeroDivisionError) as e:
         return {**out, "note": f"impedance not solved: {e}"}
+    if z is None:
+        return {**out, "note": "no reference plane in the stackup; impedance not solved"}
     return {**out, "zdiff_ohm": checklib.rnd(z), "model": model,
             "stackup_assumed": bool(bg.stackup.assumed)}
+
+
+LAYER_MIN_COUPLED_MM = 2.0    # a layer judged on its own carries this much pair
+
+
+def layer_impedance(bg, p, n, coupling_max) -> dict:
+    """Zdiff on EACH layer the pair runs coupled for >= LAYER_MIN_COUPLED_MM
+    (#489: a pair that moves L1 -> L3 changes width and gap with the layer,
+    so the main-layer figure alone says nothing about the other run).
+    {layer: {width_mm, gap_mm, coupled_mm, zdiff_ohm, model}}."""
+    out: dict[str, dict] = {}
+    layers = sorted({t.layer for t in bg.tracks_of(p)} & {t.layer for t in bg.tracks_of(n)})
+    for lay in layers:
+        tp = [t for t in bg.tracks_of(p) if t.layer == lay]
+        tn = [t for t in bg.tracks_of(n) if t.layer == lay]
+        gp = unary_union([t.shape for t in tp])
+        gn = unary_union([t.shape for t in tn])
+        samples = [(sl, g) for sl, g in sample_gaps(gp, gn) + sample_gaps(gn, gp)
+                   if g <= coupling_max]
+        coupled = sum(sl for sl, _ in samples) / 2.0
+        if coupled < LAYER_MIN_COUPLED_MM:
+            continue
+        by_w: dict[float, float] = {}
+        for t in tp + tn:
+            by_w[round(t.width, 4)] = by_w.get(round(t.width, 4), 0.0) + t.length
+        w = max(by_w, key=by_w.get)
+        c2c = statistics.median(g for _, g in samples)
+        row = {"width_mm": w, "gap_mm": checklib.rnd(c2c - w),
+               "coupled_mm": checklib.rnd(coupled)}
+        if c2c - w > 0.01:
+            try:
+                z, model = layer_zdiff(bg, lay, w, round(c2c - w, 4))
+            except (ValueError, RuntimeError, ZeroDivisionError):
+                z, model = None, ""
+            if z is not None:
+                row.update(zdiff_ohm=checklib.rnd(z), model=model)
+        out[lay] = row
+    return out
 
 
 DEFAULT_ER = 4.5              # FR4 fallback when no reference dielectric exists
