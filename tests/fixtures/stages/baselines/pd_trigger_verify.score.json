@@ -5,7 +5,7 @@
  "board": "pd-trigger",
  "metrics": {
   "errors": 51,
-  "warnings": 47,
+  "warnings": 51,
   "by_check": {
    "check_return_path": 0,
    "check_current": 41,
@@ -34,7 +34,8 @@
    "check_si": 0,
    "check_straps": 0,
    "check_usb_phy": 0,
-   "check_vias": 0
+   "check_vias": 0,
+   "check_wicking": 4
   },
   "by_kind": {
    "courtyard_pads": 28,
@@ -46,7 +47,8 @@
    "pour_neckdown": 1,
    "route_style": 3,
    "silk_misattributed": 3,
-   "undersized_track": 26
+   "undersized_track": 26,
+   "wick_via_in_pad": 4
   },
   "si": {
    "decap_worst_loop_nh": 13.1004,
@@ -59,11 +61,11 @@
  "metrics_live": null,
  "penalties": {
   "errors": 51.0,
-  "warnings": 47.0,
+  "warnings": 51.0,
   "known_answer_missed": 0.0,
   "forbidden_errors": 0.0
  },
- "composite": 69.8,
+ "composite": 69.4,
  "composite_inputs": "full",
  "known_answer": {
   "status": "ok",

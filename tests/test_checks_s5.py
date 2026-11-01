@@ -794,6 +794,12 @@ def test_golden_clean_pdn(board):
     assert payload["status"] == "pass", json.dumps(payload["violations"])
 
 
+GOLDEN_KNOWN_WARNINGS = {
+    "rf4": {"check_silk": 1, "check_wicking": 3},
+    "usbbuck4": {"check_wicking": 1},
+}
+
+
 def test_verify_all_goldens_clean(tmp_path):
     for board in BOARDS:
         summary, _ = verify_all.run(
@@ -801,13 +807,17 @@ def test_verify_all_goldens_clean(tmp_path):
              "--constraints", str(GOLDEN / board / "constraints.json"),
              "--decoupling", str(GOLDEN / board / "decoupling.json"),
              "--reports-dir", str(tmp_path / board)])
-        if board == "rf4":
-            # exactly the one known C14 silk_misattributed warning
-            # (see test_golden_clean_silk) - nothing else
-            assert summary["counts"]["by_severity"] == {"warning": 1}, \
-                json.dumps(summary["counts"])
-        else:
-            assert summary["status"] == "pass", json.dumps(summary["counts"])
+        # the known warnings, nothing else: rf4's C14 silk_misattributed
+        # (see test_golden_clean_silk); open vias in pads (#475): rf4's J1
+        # edge-SMA ground pads (top and bottom) and U1 pad 1, usbbuck4's
+        # Y1 pad 4
+        known = GOLDEN_KNOWN_WARNINGS.get(board, {})
+        by_check = {k: v for k, v in summary["counts"]["by_check"].items()
+                    if v}
+        assert by_check == known, json.dumps(summary["counts"])
+        assert summary["counts"]["by_severity"] == (
+            {"warning": sum(known.values())} if known else {}), \
+            json.dumps(summary["counts"])
         # every built check actually ran (not skipped) on a golden
         for name in ("check_return_path", "check_current", "check_decoupling",
                      *S5_CHECKS):

@@ -1,0 +1,13 @@
+# Seeded fault for check_wicking (solder wicking, issue #475).
+mutants:
+  via-wick-untented:
+    board: blinky2
+    script: mutations/via_wick_untented.py
+    check: check_wicking
+    defect: >-
+      ASSEMBLY fault: via tenting switched off on top; the via 0.2 mm off
+      R1 pad 2 opens into the pad's mask opening with no dam, so the
+      joint's solder wicks down the barrel (KiCad's DRC passes it)
+    expect:
+      kind: wick_via_mask_web
+      pos: [130.5, 105.05]

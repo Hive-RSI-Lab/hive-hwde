@@ -1,0 +1,8 @@
+# check_wicking: open vias that steal solder from SMD pads - via in pad
+# (not filled/capped), an untented via within 0.25 mm of a pad with no mask
+# dam, exposed-pad thermal vias under paste with nothing on the far side
+# (#475). Cross-checks mask webs against fab/gerbers when they are fresh.
+# Board only.
+name: check_wicking
+needs: []
+args: []

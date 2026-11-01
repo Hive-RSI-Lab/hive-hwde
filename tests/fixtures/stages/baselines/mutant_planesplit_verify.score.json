@@ -5,7 +5,7 @@
  "board": "rf4",
  "metrics": {
   "errors": 1,
-  "warnings": 1,
+  "warnings": 4,
   "by_check": {
    "check_return_path": 1,
    "check_current": 0,
@@ -34,11 +34,13 @@
    "check_si": 0,
    "check_straps": 0,
    "check_usb_phy": 0,
-   "check_vias": 0
+   "check_vias": 0,
+   "check_wicking": 3
   },
   "by_kind": {
    "corridor_void": 1,
-   "silk_misattributed": 1
+   "silk_misattributed": 1,
+   "wick_via_in_pad": 3
   },
   "si": {
    "decap_worst_loop_nh": 5.5675,
@@ -51,11 +53,11 @@
  "metrics_live": null,
  "penalties": {
   "errors": 1.0,
-  "warnings": 1.0,
+  "warnings": 4.0,
   "known_answer_missed": 0.0,
   "forbidden_errors": 0.0
  },
- "composite": 99.4,
+ "composite": 99.1,
  "composite_inputs": "full",
  "known_answer": {
   "status": "ok",
