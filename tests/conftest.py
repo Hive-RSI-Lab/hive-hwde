@@ -67,7 +67,9 @@ KNOWN_FAILING = {
 _TOOLS = "runs the live toolchain (kicad-cli, KiCad's python, java)"
 _BOARD = "runs a whole fixture board's checks or bench stage"
 _INTAKE = "materializes a whole KiCad project through intake"
+_TOOLS_ = None
 SLOW = {
+    "tests/test_check_wicking.py::test_mask_web_agrees_with_the_kicad_f_mask_gerber": _TOOLS,
     "tests/test_route_escape.py::test_live_escape_synthetic_bga": "runs KRT bga_fanout and kicad-cli DRC on a synthetic BGA",
     "tests/test_solvers.py::test_live_solver_validates": "runs ngspice, Xyce, FastHenry, FasterCap from the IIC-OSIC-TOOLS tree; machine-load sensitive",
     "tests/test_solvers.py::test_live_palace_validates": "runs Palace (FEM eigenmode) on the IIC-OSIC-TOOLS tree",
