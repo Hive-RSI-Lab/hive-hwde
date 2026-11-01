@@ -134,6 +134,7 @@ import geom  # noqa: E402
 import impedance as imp  # noqa: E402
 import kc  # noqa: E402
 import route_edit  # noqa: E402  (width normalization ops)
+import zrules  # noqa: E402  (#489 rules_gen's per-layer impedance widths)
 import routelib  # noqa: E402  (fresh_work_dir / swap_in)
 from checklib import CheckError, violation  # noqa: E402
 
@@ -322,12 +323,27 @@ def grading_floors(pro_path: Path | None) -> dict:
         floors["via_diameter"] = float(rules["min_via_diameter"])
     if rules.get("min_through_hole_diameter"):
         floors["via_drill"] = float(rules["min_through_hole_diameter"])
+    if rules.get("min_hole_to_hole"):
+        floors["hole_to_hole"] = float(rules["min_hole_to_hole"])
     classes = proj.get("net_settings", {}).get("classes", []) or []
     clearances = [c.get("clearance") for c in classes
                   if isinstance(c.get("clearance"), (int, float))]
     if clearances:
         floors["clearance"] = float(max(clearances))
     return floors
+
+
+def pair_via_size(floors: dict) -> float:
+    """Via diameter for a coupled pair's layer change. KRT 0.19.0 sets the
+    P and N vias via_size + clearance apart (centre to centre) and never
+    checks hole_to_hole between them (only between same-net vias, its #300):
+    on JLC's 6-layer floor (0.45/0.2 via, 0.125 clearance, 0.5 hole-to-hole)
+    that is 0.575 against the 0.7 the fab needs, two DRC errors per layer
+    change (#489 live). So the pair's vias grow just enough that KRT's
+    spacing clears hole_to_hole; a board whose floors already allow it keeps
+    the floor via."""
+    need = floors["via_drill"] + floors.get("hole_to_hole", 0.0) - floors["clearance"]
+    return max(floors["via_diameter"], math.ceil(need * 200 - 1e-6) / 200)
 
 
 # ------------------------------------------------------------ DRU parsing
@@ -709,15 +725,25 @@ def run_krt(krt_dir: Path, script: str, staged: Path, out: Path,
             extra: list[str], floors: dict, fab_file: Path,
             grid_step: float, timeout_s: int,
             net_clearances: Path | None = None,
-            stdout_sink: list | None = None) -> dict:
+            stdout_sink: list | None = None,
+            layer_widths: dict[str, float] | None = None) -> dict:
     """One KRT run staged -> fresh out. Returns the parsed LAST JSON_SUMMARY.
     Args are a list (no shell) so net names like '/USB_DP' survive.
     net_clearances: optional per-net clearance JSON for KRT's
     --net-clearances (NOT capped by --clearance - LEARNINGS 1522; this is
     the only path a DRU-only HV clearance reaches the router).
     stdout_sink: when given, KRT's full stdout is appended to it (the
-    Coverage / no-route diagnostics live there, not in the summary)."""
-    args = [sys.executable, script, str(staged), "--output", str(out),
+    Coverage / no-route diagnostics live there, not in the summary).
+    layer_widths: {layer: mm} drawn per layer (#489: rules_gen's stripline
+    widths), through lib/krt_layer_widths.py, since KRT only fills its
+    per-layer widths from its own impedance solver."""
+    launch = [sys.executable, script]
+    if layer_widths:
+        wpath = out.with_suffix(".layer_widths.json")
+        wpath.write_text(json.dumps(layer_widths, sort_keys=True), encoding="utf-8")
+        launch = [sys.executable, str(SCRIPTS / "lib" / "krt_layer_widths.py"),
+                  str(wpath), script]
+    args = [*launch, str(staged), "--output", str(out),
             "--no-fix-drc-settings",
             "--grid-step", str(grid_step),
             "--clearance", str(floors["clearance"]),
@@ -792,6 +818,64 @@ def _next_out(ctx: dict, tag: str) -> Path:
     return ctx["work"] / f"krt_{ctx['seq']:02d}_{tag}.kicad_pcb"
 
 
+STRIPLINE_COST = "2"   # an impedance-sized inner layer: after the near outer
+
+
+def _stripline_width_for_pitch(bg: geom.BoardGeom, layer: str, z: float,
+                               pitch: float, lo: float, hi: float) -> float:
+    """Width in [lo, hi] whose pair, at centre pitch `pitch`, is z ohm on
+    `layer` (check_diffpair.layer_zdiff: the checker's own model). Zdiff
+    falls as the width grows at fixed pitch; outside [lo, hi] the nearer end."""
+    def zd(w: float) -> float:
+        return check_diffpair.layer_zdiff(bg, layer, w, pitch - w)[0] or z
+    try:
+        if zd(lo) <= z:
+            return lo
+        if zd(hi) >= z:
+            return hi
+        for _ in range(30):
+            mid = (lo + hi) / 2
+            lo, hi = (mid, hi) if zd(mid) > z else (lo, mid)
+        return round((lo + hi) / 2, 4)
+    except (ValueError, RuntimeError, ZeroDivisionError):
+        return lo
+
+
+def pair_layer_plan(bg: geom.BoardGeom, z: float, gap_c2c: float | None,
+                    geo: dict, p: str, n: str) -> dict | None:
+    """KRT geometry for a pair rules_gen sized on stripline layers (#489),
+    or None when it has no per-layer rules (2L/4L boards: unchanged).
+
+    KRT's coupled router holds ONE centre pitch (track_width + gap) on every
+    layer and draws each layer at layer_widths[layer]. The pitch is the
+    widest layer's own (width + gap from the .kicad_dru); every other layer
+    is re-solved to hit z at that pitch: the outer by pair_geometry, an inner
+    one inside its DRU width window. So each layer lands on its impedance
+    and its edge gap is never under the DRU gap minimum."""
+    inner = {ly: g for ly, g in (geo.get(p) or {}).items()
+             if ly in bg.copper_layers[1:-1] and "width_mm" in g and "gap_mm" in g}
+    if not inner:
+        return None
+    w_o, g_o = pair_geometry(bg, z, gap_c2c)
+    pitch = max([w_o + g_o] + [g["width_mm"] + g["gap_mm"] for g in inner.values()])
+    if w_o + g_o < pitch - 1e-4:
+        w_o, g_o = pair_geometry(bg, z, pitch)
+        pitch = max(pitch, w_o + g_o)
+    widths = {ly: round(w_o, 4) for ly in _outer_layers(bg)}
+    for ly, g in sorted(inner.items()):
+        w = g["width_mm"]
+        if w + g["gap_mm"] < pitch - 1e-4:
+            w = _stripline_width_for_pitch(bg, ly, z, pitch, g["width_min_mm"],
+                                           g["width_max_mm"])
+        widths[ly] = round(w, 4)
+    outer = _outer_layers(bg)
+    layers = [outer[0], *sorted(inner)] + outer[1:]
+    costs = ["1"] + [STRIPLINE_COST] * len(inner) + (["3"] if len(outer) > 1 else [])
+    return {"layers": layers, "costs": costs, "track_width": round(w_o, 4),
+            "gap": round(pitch - w_o, 4), "pitch_mm": round(pitch, 4),
+            "layer_widths": widths}
+
+
 def route_diff_item(ctx: dict, spec: dict) -> tuple[dict | None, dict | None]:
     """Route one diff pair (width ladder + stub-pad detach). Returns
     (fact, violation): exactly one is None."""
@@ -807,7 +891,11 @@ def route_diff_item(ctx: dict, spec: dict) -> tuple[dict | None, dict | None]:
             kind="critical_missing_net", pair=[p, n], missing=missing)
 
     z = spec.get("impedance_ohm", default_impedance(p, n))
-    w, g = pair_geometry(bg, z, spec.get("gap_mm"))
+    plan = pair_layer_plan(bg, z, spec.get("gap_mm"), ctx.get("zgeo") or {}, p, n)
+    if plan:
+        w, g = plan["track_width"], plan["gap"]
+    else:
+        w, g = pair_geometry(bg, z, spec.get("gap_mm"))
     ladder = [(w, g)]
     if abs(w - FALLBACK_PAIR_WIDTH) > 1e-6:
         ladder.append((FALLBACK_PAIR_WIDTH, max(g, ctx["floors"]["clearance"])))
@@ -825,13 +913,20 @@ def route_diff_item(ctx: dict, spec: dict) -> tuple[dict | None, dict | None]:
         last_reason = "no attempt"
         for rung, (rw, rg) in enumerate(ladder, 1):
             out = _next_out(ctx, f"diff_r{rung}")
+            # rung 1 of a stripline-sized pair may use its inner layers at
+            # their own widths; the 0.2 mm fallback stays on the outers
+            lplan = plan if rung == 1 else None
             summary = run_krt(
                 ctx["krt"], "route_diff.py", staged, out,
-                ["--nets", p, n, "--layers", *outer, "--layer-costs", *costs,
-                 "--track-width", f"{rw:g}", "--diff-pair-gap", f"{rg:g}"],
+                ["--nets", p, n,
+                 "--layers", *(lplan["layers"] if lplan else outer),
+                 "--layer-costs", *(lplan["costs"] if lplan else costs),
+                 "--track-width", f"{rw:g}", "--diff-pair-gap", f"{rg:g}",
+                 "--via-size", f"{pair_via_size(ctx['floors']):g}"],
                 ctx["floors"], ctx["fab_file"], ctx["grid_step"],
                 ctx["timeout_s"],
-                net_clearances=ctx.get("net_clearances"))
+                net_clearances=ctx.get("net_clearances"),
+                layer_widths=lplan["layer_widths"] if lplan else None)
             if summary.get("already_routed"):
                 # idempotent re-run: both nets already fully connected; the
                 # post-run check_diffpair pass still validates coupling.
@@ -852,6 +947,8 @@ def route_diff_item(ctx: dict, spec: dict) -> tuple[dict | None, dict | None]:
                         "impedance_ohm": z,
                         "width_mm": rw, "gap_mm": rg,
                         "impedance_width_mm": w, "ladder_rung": rung,
+                        **({"layer_widths": lplan["layer_widths"],
+                            "pitch_mm": lplan["pitch_mm"]} if lplan else {}),
                         "stub_pads_detached": [list(s) for s in stubs],
                         "layers_used": layers,
                         "krt": _slim(summary, ("routed_diff_pairs",
@@ -872,7 +969,8 @@ def route_diff_item(ctx: dict, spec: dict) -> tuple[dict | None, dict | None]:
 
 def _route_single_item(ctx: dict, kind: str, nets: list[str],
                        extra: list[str], per_net_meta: dict,
-                       net_clearances: Path | None = None
+                       net_clearances: Path | None = None,
+                       layer_widths: dict[str, float] | None = None
                        ) -> tuple[list, list]:
     """Shared route.py runner for power/rf. Returns (facts, violations).
     net_clearances: this run's --net-clearances file (default: the shared
@@ -892,7 +990,7 @@ def _route_single_item(ctx: dict, kind: str, nets: list[str],
                       ctx["floors"], ctx["fab_file"], ctx["grid_step"],
                       ctx["timeout_s"],
                       net_clearances=ncl,
-                      stdout_sink=sink)
+                      stdout_sink=sink, layer_widths=layer_widths)
     os.replace(out, staged)  # keep partial successes; failures become violations
     stdout = sink[0] if sink else ""
     share = coverage_static_share(stdout)
@@ -912,7 +1010,7 @@ def _route_single_item(ctx: dict, kind: str, nets: list[str],
                             str(RETRY_MAX_PROBE_ITERATIONS)],
                          ctx["floors"], ctx["fab_file"], ctx["grid_step"],
                          ctx["timeout_s"],
-                         net_clearances=ncl)
+                         net_clearances=ncl, layer_widths=layer_widths)
         except CheckError as exc:
             retry["error"] = str(exc)[:200]
         else:
@@ -1097,13 +1195,25 @@ def route_rf_item(ctx: dict, specs: list[dict]) -> tuple[list, list]:
     costs = ["1"] if len(outer) == 1 else ["1", "3"]
     for s in live:
         w = rf_width(bg, s["impedance_ohm"])
+        # #489: inner layers rules_gen sized for this net (stripline), each
+        # drawn at its own DRU width
+        inner = {ly: lw for ly, lw in zrules.layer_widths(
+            ctx.get("zgeo") or {}, [s["net"]]).items()
+            if ly in bg.copper_layers[1:-1]}
+        layers, lcosts, widths = outer, costs, None
+        if inner:
+            layers = [outer[0], *sorted(inner)] + outer[1:]
+            lcosts = ["1"] + [STRIPLINE_COST] * len(inner) + costs[1:]
+            widths = {**{ly: w for ly in outer}, **inner}
+        meta = {"impedance_ohm": s["impedance_ohm"], "width_mm": w,
+                "fence_handoff": f"stitch_vias.py --fence-net {s['net']}"}
+        if widths:
+            meta["layer_widths"] = widths
         f, vs = _route_single_item(
             ctx, "rf", [s["net"]],
-            ["--track-width", f"{w:g}", "--layers", *outer,
-             "--layer-costs", *costs],
-            {s["net"]: {"impedance_ohm": s["impedance_ohm"], "width_mm": w,
-                        "fence_handoff":
-                            f"stitch_vias.py --fence-net {s['net']}"}})
+            ["--track-width", f"{w:g}", "--layers", *layers,
+             "--layer-costs", *lcosts],
+            {s["net"]: meta}, layer_widths=widths)
         facts.extend(f)
         violations.extend(vs)
     return facts, violations
@@ -1270,7 +1380,9 @@ def run(argv: list[str] | None = None):
     floors = grading_floors(work / (pcb.stem + ".kicad_pro"))
     ctx = {"staged": staged, "work": work, "krt": krt, "floors": floors,
            "fab_file": write_fab_overrides(work, floors),
-           "grid_step": args.grid_step, "timeout_s": args.timeout_s}
+           "grid_step": args.grid_step, "timeout_s": args.timeout_s,
+           # #489: rules_gen's per-layer (stripline) impedance widths
+           "zgeo": zrules.board_layer_geometry(staged)}
     # Per-net clearances for KRT (T6, LEARNINGS 1522): --clearance is a CAP
     # on KRT's auto-read netclass map and KRT cannot read a .kicad_dru, so
     # HV clearance must travel in an explicit --net-clearances file.
