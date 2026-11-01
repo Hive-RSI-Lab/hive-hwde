@@ -3,7 +3,8 @@ board to a .pretty library, unplaced (front side, 0 deg, at the origin), one
 per footprint name, and relink the board's footprints to libname:name (the
 name KiCad's schematic importers put in Footprint fields) and save it.
 argv: board.kicad_pcb out.pretty libname. Prints JSON:
-{"written": [...], "variants": {name: [refs that differ from the first]},
+{"written": [...], "variants": {name: [refs whose copper differs from the
+ first: saved and relinked as <name>_<ref>]},
  "pad_copper": {"converted": n, "left": [...]}}.
 
 Package copper first: Eagle merges a copper polygon drawn in a package with
@@ -21,8 +22,9 @@ import sys
 import pcbnew
 
 board_path, pretty, libname = sys.argv[1], sys.argv[2], sys.argv[3]
-# argv[4], optional: a JSON file of Eagle slots (edasrc.Source.slots)
-slots = json.load(open(sys.argv[4])) if len(sys.argv) > 4 else []
+# argv[4], optional: a JSON file of Eagle slots (edasrc.Source.slots), "-"
+# for none; argv[5], optional: the source format
+slots = json.load(open(sys.argv[4])) if len(sys.argv) > 4 and sys.argv[4] != "-" else []
 board = pcbnew.LoadBoard(board_path)
 os.makedirs(pretty, exist_ok=True)
 io = pcbnew.PCB_IO_MGR.FindPlugin(pcbnew.PCB_IO_MGR.KICAD_SEXP)
@@ -110,8 +112,38 @@ def plan_pad_copper(fp):
     return plan
 
 
+OUTLINE = None
+
+
+def clip_to_board(pts):
+    """pts (board coords) cut to the board outline: a castellation's copper
+    overhangs the edge in Eagle and the router takes the overhang off, so
+    the clipped shape is what gets made (and what DRC can pass)."""
+    global OUTLINE
+    if OUTLINE is None:
+        OUTLINE = pcbnew.SHAPE_POLY_SET()
+        if not board.GetBoardPolygonOutlines(OUTLINE, True):
+            OUTLINE = False
+        else:
+            # 1 um inside: copper exactly on the outline is a collision to
+            # KiCad's DRC whatever the rules say; 1 um changes no Gerber
+            OUTLINE.Inflate(-1000, pcbnew.CORNER_STRATEGY_ALLOW_ACUTE_CORNERS, 100)
+    if not OUTLINE:
+        return pts
+    sp = pcbnew.SHAPE_POLY_SET()
+    sp.NewOutline()
+    for x, y in pts:
+        sp.Append(int(x), int(y))
+    sp.BooleanIntersection(OUTLINE)
+    if sp.OutlineCount() != 1:
+        return pts
+    o = sp.Outline(0)
+    return [(o.CPoint(i).x, o.CPoint(i).y) for i in range(o.PointCount())]
+
+
 def apply_pad_copper(fp, plan):
     global converted
+    clip = fp.GetReference() in castellated
     grown = {}
     for step in plan:
         if step[0] == "ring":
@@ -123,23 +155,38 @@ def apply_pad_copper(fp, plan):
             fp.Remove(sh)
             converted += 1
             continue
+        if step[0] == "rect":  # one path for all: built in the footprint frame
+            _, sh, src, layer, xs, ys = step
+            step = ("poly", sh, src, layer, [(xs[0], ys[0]), (xs[1], ys[0]), (xs[1], ys[1]), (xs[0], ys[1])], None)
         if step[0] == "poly":
-            _, sh, src, layer, pts, bx = step
-            cx, cy = (bx[0] + bx[2]) // 2, (bx[1] + bx[3]) // 2
+            _, sh, src, layer, pts, _ = step
+            if clip:
+                pts = clip_to_board(pts)
+            # built in the footprint's own frame (relative orientation 0), so
+            # two placements of one footprint at different rotations come out
+            # the same and match their library copy
+            import math
+            org = fp.GetPosition()
+            a = -math.radians(fp.GetOrientationDegrees())
+            ca, sa = math.cos(a), math.sin(a)
+            loc = [((x - org.x) * ca + (y - org.y) * sa, -(x - org.x) * sa + (y - org.y) * ca)
+                   for x, y in pts]
+            xs2, ys2 = [q[0] for q in loc], [q[1] for q in loc]
+            cx, cy = round((min(xs2) + max(xs2)) / 2), round((min(ys2) + max(ys2)) / 2)
             pad = pcbnew.PAD(fp)
             pad.SetNumber(src.GetNumber())
             pad.SetAttribute(pcbnew.PAD_ATTRIB_SMD)
             ls = pcbnew.LSET()
             ls.AddLayer(layer)
             pad.SetLayerSet(ls)
-            pad.SetPosition(pcbnew.VECTOR2I(cx, cy))
-            pad.SetOrientationDegrees(0)
+            pad.SetFPRelativePosition(pcbnew.VECTOR2I(cx, cy))
+            pad.SetFPRelativeOrientation(pcbnew.EDA_ANGLE(0, pcbnew.DEGREES_T))
             pad.SetShape(pcbnew.PADSTACK.ALL_LAYERS, pcbnew.PAD_SHAPE_CUSTOM)
             pad.SetAnchorPadShape(pcbnew.PADSTACK.ALL_LAYERS, pcbnew.PAD_SHAPE_CIRCLE)
             pad.SetSize(pcbnew.PADSTACK.ALL_LAYERS, pcbnew.VECTOR2I(100000, 100000))
             vv = pcbnew.VECTOR_VECTOR2I()
-            for x, y in pts:  # primitives are in the pad's own frame
-                vv.append(pcbnew.VECTOR2I(x - cx, y - cy))
+            for x, y in loc:  # primitives are in the pad's own frame
+                vv.append(pcbnew.VECTOR2I(round(x - cx), round(y - cy)))
             pad.AddPrimitivePoly(pcbnew.PADSTACK.ALL_LAYERS, vv, 0, True)
             pad.SetNetCode(src.GetNetCode())
             fp.Remove(sh)
@@ -165,6 +212,79 @@ def apply_pad_copper(fp, plan):
         converted += 1
 
 
+# An Eagle <hole> is a bare drill; KiCad's importer gives it an NPTH pad
+# wider than the drill on every copper layer (0.80 on a 0.65 hole), copper
+# the source never had and DRC holds tracks off. argv[5] == "eagle" trims
+# them to the drill.
+trimmed = []
+if len(sys.argv) > 5 and sys.argv[5] == "eagle":
+    for fp in board.GetFootprints():
+        for p in list(fp.Pads()):
+            if p.GetAttribute() == pcbnew.PAD_ATTRIB_NPTH:
+                d = p.GetDrillSize()
+                sz = p.GetSize(pcbnew.PADSTACK.ALL_LAYERS)
+                if sz.x > d.x or sz.y > d.y:
+                    trimmed.append((p, pcbnew.VECTOR2I(d.x, d.y), fp.GetReference()))
+    for p, d, _ in trimmed:
+        p.SetSize(pcbnew.PADSTACK.ALL_LAYERS, d)
+
+# Castellations: a plated hole whose centre sits on the board outline. Marked
+# with KiCad's castellated property (fab outputs and DRC know it); the refs
+# go back to eda_io, which lets that footprint's pads reach the edge.
+castellated = {}
+edges = []
+for d in board.GetDrawings():
+    if d.GetLayer() == pcbnew.Edge_Cuts and d.GetClass() == "PCB_SHAPE":
+        sh = d.Cast()
+        if sh.GetShape() == pcbnew.SHAPE_T_SEGMENT:
+            a, b = sh.GetStart(), sh.GetEnd()
+            edges.append((a.x, a.y, b.x, b.y))
+
+
+def on_edge(x, y, tol):
+    for ax, ay, bx, by in edges:
+        dx, dy = bx - ax, by - ay
+        ll = dx * dx + dy * dy
+        t = 0 if ll == 0 else max(0, min(1, ((x - ax) * dx + (y - ay) * dy) / ll))
+        if ((ax + t * dx - x) ** 2 + (ay + t * dy - y) ** 2) ** 0.5 <= tol:
+            return True
+    return False
+
+
+for fp in board.GetFootprints():
+    for p in list(fp.Pads()):
+        if p.GetAttribute() == pcbnew.PAD_ATTRIB_PTH and p.HasHole():
+            c = p.GetPosition()
+            if on_edge(c.x, c.y, max(50_000, p.GetDrillSize().x // 4)):
+                p.SetProperty(pcbnew.PAD_PROP_CASTELLATED)
+                castellated.setdefault(fp.GetReference(), 0)
+                castellated[fp.GetReference()] += 1
+
+# Placement type: Eagle has none and KiCad's importer leaves every footprint
+# unspecified; check_fp_attr (and the CPL) need it. From the pads: SMD pads
+# -> smd (THT legs only anchor it), only plated holes -> through_hole. A
+# castellated footprint is the board's own edge, not a part: out of the BOM
+# and the placement file.
+attrs = {"smd": 0, "through_hole": 0, "not_placed": []}
+for fp in board.GetFootprints():
+    a = fp.GetAttributes()
+    if a & (pcbnew.FP_SMD | pcbnew.FP_THROUGH_HOLE) or fp.IsBoardOnly():
+        continue
+    kinds = {p.GetAttribute() for p in fp.Pads()}
+    if not kinds:
+        continue
+    ref = fp.GetReference()
+    if ref in castellated:
+        fp.SetExcludedFromBOM(True)
+        fp.SetExcludedFromPosFiles(True)
+        attrs["not_placed"].append(ref)
+    if pcbnew.PAD_ATTRIB_SMD in kinds:
+        fp.SetAttributes(a | pcbnew.FP_SMD)
+        attrs["smd"] += 1
+    elif pcbnew.PAD_ATTRIB_PTH in kinds:
+        fp.SetAttributes(a | pcbnew.FP_THROUGH_HOLE)
+        attrs["through_hole"] += 1
+
 plans = [(fp, plan_pad_copper(fp)) for fp in board.GetFootprints()]
 apply_slots(board)
 for fp, plan in plans:
@@ -177,8 +297,10 @@ def shape(fp):
     out = []
     for p in fp.Pads():
         pos = p.GetFPRelativePosition()
+        bb = p.GetBoundingBox()  # a custom pad's outline, not just its anchor
         out.append((p.GetNumber(), p.GetSize().x, p.GetSize().y, p.GetShape(),
-                    round(pos.x / 1000), round(pos.y / 1000)))
+                    round(pos.x / 1000), round(pos.y / 1000),
+                    round(bb.GetWidth() / 1000), round(bb.GetHeight() / 1000)))
     return sorted(out)
 
 
@@ -193,10 +315,14 @@ for fp in board.GetFootprints():
     c.SetPosition(pcbnew.VECTOR2I(0, 0))
     sig = shape(c)
     fp.SetFPID(pcbnew.LIB_ID(libname, name))
-    if name in seen:
-        if seen[name] != sig:
-            variants.setdefault(name, []).append(fp.GetReference())
+    if name in seen and seen[name] == sig:
         continue
+    if name in seen:
+        # same name, different copper (a castellation clipped on the other
+        # board edge): its own library footprint, so the board matches it
+        variants.setdefault(name, []).append(fp.GetReference())
+        name = f"{name}_{fp.GetReference()}"
+        fp.SetFPID(pcbnew.LIB_ID(libname, name))
     seen[name] = sig
     c.SetFPID(pcbnew.LIB_ID(libname, name))
     c.SetReference("REF**")
@@ -205,4 +331,5 @@ for fp in board.GetFootprints():
 board.Save(board_path)
 print(json.dumps({"written": sorted(written), "variants": variants,
                   "pad_copper": {"converted": converted, "left": left},
-                  "slots": slotted}))
+                  "slots": slotted, "npth_trimmed": [r for _, _, r in trimmed],
+                  "castellated": castellated, "attrs": attrs}))

@@ -621,3 +621,34 @@ def test_altium_pcb_designator_differs_from_schematic(tmp_path):
     got = edasrc.compare(src, board, {}, "")
     assert not any(l.level == "lost" and l.what == "parts" for l in got)
     assert any("R1 shown as 1K5" in l.text for l in got)
+
+def test_eagle_design_rules(tmp_path):
+    """An Eagle board's <designrules> and net classes are read in mm (KiCad's
+    importer drops them); the via ring follows Eagle's restring clamp."""
+    brd = """<?xml version="1.0"?><eagle><drawing><layers>
+<layer number="1" name="Top" active="yes"/><layer number="16" name="Bottom" active="yes"/>
+</layers><board><libraries/><elements/>
+<designrules name="x"><param name="mdWireWire" value="4mil"/><param name="mdSmdSmd" value="0.09mm"/>
+<param name="msWidth" value="4mil"/><param name="msDrill" value="0.2mm"/>
+<param name="rvViaOuter" value="0.25"/><param name="rlMinViaOuter" value="3mil"/>
+<param name="rlMaxViaOuter" value="20mil"/><param name="mdCopperDimension" value="6mil"/>
+<param name="mdDrill" value="6mil"/></designrules>
+<classes><class number="0" name="default" width="0" drill="0"/>
+<class number="1" name="Power" width="0.127" drill="0"><clearance class="1" value="0.1778"/></class></classes>
+<signals><signal name="RAW" class="1"/><signal name="!RST!"/></signals></board></drawing></eagle>"""
+    p = tmp_path / "r.brd"
+    p.write_text(brd)
+    src = edasrc.read_source(p)
+    assert src.rules == {"clearance": 0.09, "track_width": 0.1016, "via_drill": 0.2,
+                         "via_annular": 0.0762, "via_diameter": 0.3524,
+                         "copper_edge": 0.1524, "hole_clearance": 0.1524}
+    power = next(c for c in src.classes if c["name"] == "Power")
+    assert power["width"] == 0.127 and power["clearance"] == 0.1778 and power["nets"] == ["RAW"]
+    # into a project file
+    pcb = tmp_path / "r.kicad_pcb"
+    pcb.with_suffix(".kicad_pro").write_text('{"net_settings": {"classes": [{"name": "Default"}]}}')
+    out = eda_io.apply_source_rules(pcb, src)
+    pro = json.loads(pcb.with_suffix(".kicad_pro").read_text())
+    assert pro["board"]["design_settings"]["rules"]["min_via_diameter"] == 0.3524
+    assert {"netclass": "Power", "pattern": "RAW"} in pro["net_settings"]["netclass_patterns"]
+    assert out["classes"] == ["Power (1 nets)"]
