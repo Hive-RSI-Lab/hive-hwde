@@ -46,6 +46,10 @@ Conventions (S1-proven against kicad-cli 10.0.3 ERC, see LEARNINGS [python]):
   pin names (hide_pin_names), and paper="auto" (the default) takes the
   smallest A-size the drawing fits, the drawing centred (fit_sheet;
   fit=False opts out). schem_refdes.audit_sheet flags a label on a part.
+- Project.save and a flat Sheet.save (readable=True, the default) finish by
+  redrawing the result for people: schem_layout draws real wires, blocks and
+  banks, gated on an unchanged kicad-cli netlist and with every symbol UUID
+  kept. A sheet it can't redraw stays as generated; see layout_report.
 - Label anchors are guarded: one landing on a FOREIGN wire run would merge
   two nets and raises ValueError at generation time.
 
@@ -231,6 +235,7 @@ class Sheet:
         self._pwr_i = pwr_base - 1
         self._flg_i = pwr_base - 1
         self.uuid_map: dict[str, str] = {}    # save-time ksa uuid -> kept
+        self.layout_report: dict | None = None  # save-time redraw (schem_layout)
 
     # ---------------------------------------------------------- components
     def add_component(self, lib_id: str, ref: str, value: str, at,
@@ -562,7 +567,7 @@ class Sheet:
     # ---------------------------------------------------------- save
     def save(self, out_dir: Path | str, project: bool = True,
              place_fields: bool = True, keep_uuids: bool = True,
-             fit: bool = True) -> Path:
+             fit: bool = True, readable: bool = True) -> Path:
         """Write the sheet. place_fields (default) runs schem_refdes on the
         saved file so Reference/Value land on the correct side and clear of
         wires/labels/bodies (ksa mirrors every field to the wrong side -
@@ -602,6 +607,8 @@ class Sheet:
             self.uuid_map = stable_uuids(path, previous, self.name)
         if project:
             write_project(self.name, out_dir)
+            if readable:
+                self.layout_report = _readable(path)
         return path
 
     def _place_fields(self, path: Path) -> None:
@@ -674,12 +681,12 @@ class Project:
 
     def save(self, out_dir: Path | str,
              decoupling: Path | str | None = None,
-             place_fields: bool = True) -> Path:
+             place_fields: bool = True, readable: bool = True) -> Path:
         out_dir = Path(out_dir)
         for c in self.children:
             c.save(out_dir, project=False, place_fields=place_fields)
         path = self.root.save(out_dir, project=True,
-                              place_fields=place_fields)
+                              place_fields=place_fields, readable=False)
         # A child's instance paths name the root's and its sheet's UUIDs,
         # which the root's save just settled: carry them into every file.
         moved = {}
@@ -693,7 +700,20 @@ class Project:
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text(json.dumps(payload, indent=1) + "\n",
                          encoding="utf-8")
+        if readable:
+            self.root.layout_report = _readable(path)
         return path
+
+
+def _readable(path: Path) -> dict:
+    """Redraw a saved schematic for people. Never breaks generation: what can't
+    be redrawn stays as generated, and the report says why."""
+    import schem_layout  # sibling script; deferred (shapely, kicad-cli)
+    try:
+        report, _code = schem_layout.run(path)
+        return report
+    except Exception as exc:  # noqa: BLE001 - the drawing is not the design
+        return {"error": f"{type(exc).__name__}: {exc}"}
 
 
 _UUID_NS = uuid.UUID("5b0c2a8e-6f3d-4f53-9a8e-6877646573c1")  # hwde schematics
