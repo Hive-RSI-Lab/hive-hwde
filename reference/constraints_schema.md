@@ -223,11 +223,17 @@ Consumers per key (script -> phase):
   // class or edge, or sets a target. Every key is optional.
   "si": {"nets": {"/ETH_CLK": {"class": "osc_clock", "t_rise_ns": 1.0,
                                "z0_ohm": 50, "z0_tol_pct": 20,
-                               "driver_ohm": 20, "swing_v": 3.3}},
+                               "driver_ohm": 20, "swing_v": 3.3,
+                               // sim_si, for the simulated crosstalk: which end
+                               // drives ("U1" or "U1.3"), the receiver's load,
+                               // its noise margin (default 12% of its swing)
+                               "driver": "U1", "c_in_pf": 3, "r_in_ohm": 1e6,
+                               "noise_margin_v": 0.4}},
          "ignore": ["/SLOW_CLK"],
          "victims": {"/VREF": "analog"},
          "groups": [{"name": "rmii_tx", "ui_ns": 20,
-                     "nets": ["/RMII_TXD0", "/RMII_TXD1", "/RMII_TX_EN"]}]},
+                     "nets": ["/RMII_TXD0", "/RMII_TXD1", "/RMII_TX_EN"]}],
+         "xtalk_sim_top": 3},    // worst crosstalk estimates simulated; 0 = none
 
   // check_antenna (P8): which modules have a PCB antenna, for a part
   // reference/rf_modules.yaml does not know or names wrongly. "pcb" checks
