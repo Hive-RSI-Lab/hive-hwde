@@ -67,7 +67,6 @@ KNOWN_FAILING = {
 _TOOLS = "runs the live toolchain (kicad-cli, KiCad's python, java)"
 _BOARD = "runs a whole fixture board's checks or bench stage"
 _INTAKE = "materializes a whole KiCad project through intake"
-_TOOLS_ = None
 SLOW = {
     "tests/test_check_wicking.py::test_mask_web_agrees_with_the_kicad_f_mask_gerber": _TOOLS,
     "tests/test_netlist_compare.py::test_pinned_board_ships_a_netlist_its_gerbers_match": "exports the pinned lite-main/core fab packages with kicad-cli",
