@@ -41,6 +41,15 @@ python; JSON out, exit 0/1/2. Keep output ASCII.
 - Unconnected INPUT pins are an error - every input is wired, pulled, or
   explicitly no-connect flagged with a one-line justification comment.
 
+## What a person sees
+Wire with stubs and labels as above: that is the source form, and it is what
+makes generators easy to write. `Project.save` and a flat `Sheet.save` then redraw the
+result with `scripts/schem_layout.py`: blocks, real wires, decoupling banks,
+power symbols. The netlist and symbol UUIDs stay the same or the sheet is left
+as generated; `layout_report` says which. So don't hand-place parts for looks,
+and name nets well: names are what a redrawn sheet shows between blocks. A
+sheet that a person drew, or a root with sheet boxes, isn't redrawn.
+
 ## Verify before returning (all three)
 1. Rebuild: run your generator (venv python) - it must write the sheet.
 2. `scripts/kc.py erc kicad/<top>.kicad_sch` (via the root build) or
