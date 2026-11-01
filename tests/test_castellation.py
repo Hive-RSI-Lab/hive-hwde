@@ -376,3 +376,51 @@ def test_half_round_end_counts_from_its_arc():
     runs, corners, arcs = castellation._runs(stadium)
     assert len(runs) == 2 and len(arcs) == 2
     assert all(isinstance(k, L) for k in corners)
+
+
+def _slotted_board(tmp_path):
+    """A 60 mm square frame with a slot whose edge carries two half-holes,
+    the way a panel carries its boards' castellations."""
+    from shapely.geometry import box
+    edges = []
+    for poly in (box(0, 0, 60, 60).exterior, box(20, 20, 40, 40).exterior):
+        c = list(poly.coords)
+        for a, b in zip(c, c[1:]):
+            edges.append(f'(gr_line (start {a[0]} {a[1]}) (end {b[0]} {b[1]}) '
+                         '(stroke (width 0.1) (type solid)) (layer "Edge.Cuts"))')
+    pads = "\n".join(
+        f'(pad "{i}" thru_hole circle (at 20 {y}) (size 1.4 1.4) (drill 0.8) '
+        '(layers "*.Cu" "*.Mask") (property pad_prop_castellated))'
+        for i, y in ((1, 28), (2, 32)))
+    f = tmp_path / "slot.kicad_pcb"
+    f.write_text('(kicad_pcb (version 20240108) (generator "t")\n'
+                 '(layers (0 "F.Cu" signal) (31 "B.Cu" signal) (44 "Edge.Cuts" user))\n'
+                 + "\n".join(edges) +
+                 '\n(footprint "t:row" (layer "F.Cu") (at 0 0)\n'
+                 '(property "Reference" "J1" (at 0 0) (layer "F.SilkS"))\n'
+                 + pads + "))\n")
+    return f
+
+
+def test_a_half_hole_on_a_routed_slot_is_on_the_outline(tmp_path):
+    bg = geom.load_board(_slotted_board(tmp_path))
+    vios, facts = castellation.check(bg, castellation.load_rules())
+    assert facts["castellated_pads"] == 2
+    assert "castellated_off_outline" not in {v["kind"] for v in vios}
+
+
+def test_small_castellated_board_needs_a_standard_pcba_panel():
+    assert castellation.needs_standard_pcba(17.78, 35.07)["panel_needed"]
+    need = castellation.needs_standard_pcba(91.12, 70.0)
+    assert not need["panel_needed"] and need["service"] == "standard"
+
+
+def test_dfm_warns_an_assembled_small_castellated_board_needs_a_panel(tmp_path):
+    import dfm_check
+    bg = geom.load_board(_slotted_board(tmp_path))     # 60 mm: under 70
+    vios = []
+    dfm_check._castellated_pcba(bg, tmp_path, vios)    # no CPL: a bare-board order
+    assert vios == []
+    (tmp_path / "CPL.csv").write_text("Designator\n")
+    dfm_check._castellated_pcba(bg, tmp_path, vios)
+    assert [(v["kind"], v["severity"]) for v in vios] == [("castellated_needs_panel", "warning")]

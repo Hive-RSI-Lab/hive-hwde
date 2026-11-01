@@ -98,6 +98,14 @@ board:
 #           board >= 10 x 10 mm, thickness >= 0.6
 # JLC publishes no fixed surcharge for the "Castellated Holes: Yes" option
 # (it is priced per quote); the estimate lives in jlc_pricing.yaml.
+# Assembling them (jlcpcb.com/capabilities/pcb-assembly-capabilities, read
+# 2026-11-01): Economic PCBA "Not Support"; Standard PCBA supports them, edge
+# rails and fiducials "Necessary", single PCB or panel at least 70 x 70 mm.
+castellated_assembly:
+  service: standard
+  min_panel_mm: 70
+  source: https://jlcpcb.com/capabilities/pcb-assembly-capabilities
+
 castellated:
   min_drill_mm: 0.6                 # [blog] B (caps says 0.5)
   rec_drill_mm: 1.0                 # [blog] recommended 0.8-1.0
