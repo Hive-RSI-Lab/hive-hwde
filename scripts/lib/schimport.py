@@ -165,6 +165,7 @@ def gui_import(source: Path, out: Path, cli: Path, timeout: float = 300) -> tupl
             size = sch.stat().st_size
             time.sleep(1)
         steps.append("saved " + sch.name)
+        steps.append(f"symbol library pruned to the placed symbols: {prune_symbol_lib(sch)}")
         d.focus(main)
         d.key("Control_L+q")
         try:
@@ -180,6 +181,45 @@ def gui_import(source: Path, out: Path, cli: Path, timeout: float = 300) -> tupl
         shutil.rmtree(cfg, ignore_errors=True)
         for lck in out.glob("~*.lck"):
             lck.unlink(missing_ok=True)
+
+
+def prune_symbol_lib(sch: Path) -> dict:
+    """Cut the importer's <stem>-*-import.kicad_sym down to the symbols the
+    schematic places. Eagle's importer writes every symbol of every library
+    the .sch embeds (SparkFun Pro Micro: 390 symbols, 5.4 MB, 36 used)."""
+    used = {m.split(":", 1)[1] for m in re.findall(r'\(lib_id "([^"]+)"\)', sch.read_text())
+            if ":" in m}
+    out = {}
+    for lib in sch.parent.glob(f"{sch.stem}-*-import.kicad_sym"):
+        text = lib.read_text()
+        keep, cut, i = [], 0, 0
+        starts = [m.start() for m in re.finditer(r'(?m)^\t\(symbol "', text)]
+        if not starts:
+            continue
+        head = text[:starts[0]]
+        for st in starts:
+            depth, j = 0, st
+            while True:  # the balanced form from st (names are quoted, no parens in them matter)
+                c = text[j]
+                if c == '"':
+                    j = text.index('"', j + 1)
+                    while text[j - 1] == "\\":
+                        j = text.index('"', j + 1)
+                elif c == "(":
+                    depth += 1
+                elif c == ")":
+                    depth -= 1
+                    if depth == 0:
+                        break
+                j += 1
+            name = re.match(r'\t\(symbol "([^"]*)"', text[st:]).group(1)
+            if name in used:
+                keep.append(text[st:j + 1])
+            else:
+                cut += 1
+        lib.write_text(head + "\n".join(keep) + "\n)\n")
+        out[lib.name] = {"kept": len(keep), "cut": cut}
+    return out
 
 
 # ------------------------------------------------------- source and result
