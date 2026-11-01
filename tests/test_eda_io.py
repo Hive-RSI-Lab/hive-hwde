@@ -484,3 +484,17 @@ def test_sch_compare_finds_split_joined_missing():
     assert {("lost", "parts"), ("lost", "nets")} <= got
     texts = " ".join(l["text"] for l in schimport.compare(set(), src_nets, set(), bad))
     assert "split" in texts and "join" in texts
+
+
+def test_prune_symbol_lib(tmp_path):
+    from lib import schimport
+    (tmp_path / "b.kicad_sch").write_text('(kicad_sch (symbol (lib_id "b-eagle-import:R") (at 0 0 0)))')
+    lib = tmp_path / "b-eagle-import.kicad_sym"
+    lib.write_text('(kicad_symbol_lib\n\t(version 20241209)\n'
+                   '\t(symbol "R"\n\t\t(property "Value" "a (b) \\"c)" )\n\t)\n'
+                   '\t(symbol "C"\n\t\t(pin passive line)\n\t)\n)\n')
+    assert schimport.prune_symbol_lib(tmp_path / "b.kicad_sch") == {lib.name: {"kept": 1, "cut": 1}}
+    text = lib.read_text()
+    assert '(symbol "R"' in text and '(symbol "C"' not in text
+    # the kept form ends where its parens balance, quoted parens aside
+    assert '(property "Value" "a (b) \\"c)" )\n\t)' in text and text.endswith("\t)\n)\n")
