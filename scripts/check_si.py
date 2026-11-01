@@ -514,8 +514,10 @@ def run(argv=None):
     nets_out: list[dict] = []
     done_pairs: set = set()
     estimates: list[dict] = []
+    not_judged: list[str] = []
     for net, spec in specs.items():
         if not bg.tracks_of(net):
+            not_judged.append(f"{net} ({spec['class']}): not routed")
             continue
         if spec["class"] == "crystal":
             # a resonator's sine, not an edge: no line rules, but every
@@ -614,10 +616,17 @@ def run(argv=None):
                         z0_ohm=checklib.rnd(main["z0"], 1), target_ohm=float(target),
                         miss_pct=checklib.rnd(miss, 1), **common))
             mate = pair_of(net, specs) if spec.get("zdiff") else None
+            if spec.get("zdiff") and not mate:
+                not_judged.append(f"{net} ({spec['class']}): has a Zdiff "
+                                  "target but no other half by name, so no "
+                                  "Zdiff was judged")
             if mate and tuple(sorted((net, mate))) not in done_pairs:
                 done_pairs.add(tuple(sorted((net, mate))))
-                vs = pair_target(bg, net, mate, spec, common, pos)
-                violations.extend(vs)
+                if bg.tracks_of(mate):
+                    violations.extend(pair_target(bg, net, mate, spec, common, pos))
+                else:
+                    not_judged.append(f"{net}/{mate}: {mate} is not routed, "
+                                      "so no Zdiff was judged")
 
         # 5. return path of a transmission line
         if tline and net not in declared_hs and lm.planar:
@@ -705,8 +714,9 @@ def run(argv=None):
 
     payload = checklib.report(SCRIPT, args.pcb, violations, nets=nets_out,
                               groups=group_out, stackup_assumed=bool(bg.stackup.assumed),
-                              crosstalk_sim=sim_out,
+                              crosstalk_sim=sim_out, not_judged=not_judged,
                               nothing_to_judge=None if nets_out else
+                              "no classified net is routed" if specs else
                               "no net matches a signal class by name or si.nets")
     return payload, args.out
 

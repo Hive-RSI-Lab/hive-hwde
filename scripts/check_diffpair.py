@@ -756,6 +756,7 @@ def run(argv=None):
 
     violations: list[dict] = []
     checked: list[dict] = []
+    untargeted: list[str] = []
     for spec in resolve_pairs(bg, cons):
         p, n = spec.get("p"), spec.get("n")
         # A stale named pair (renamed/absent net) is a warning, not a whole-check
@@ -771,11 +772,20 @@ def run(argv=None):
         vs, facts = check_pair(bg, spec)
         violations.extend(vs)
         checked.append(facts)
+        if facts.get("routed") is not False and not is_sense(spec) \
+                and not spec.get("impedance_ohm"):
+            untargeted.append(f"{p}/{n}: no impedance target, and held to the "
+                              f"generic {MAX_SKEW_MM:g} mm skew and uncoupled "
+                              "limits unless declared")
 
     unrouted = ["/".join(c["pair"]) for c in checked if c.get("routed") is False]
+    assumed = bool(bg.stackup.assumed) and bool(checked)
     payload = checklib.report(
         SCRIPT, args.pcb, violations, checked=checked,
-        not_judged=[f"{u}: not fully routed" for u in unrouted],
+        stackup_assumed=bool(bg.stackup.assumed),
+        not_judged=[f"{u}: not fully routed" for u in unrouted] + untargeted
+        + (["stackup: no (stackup) block, so any Zdiff is on the default "
+            "FR4"] if assumed else []),
         nothing_to_judge=None if len(checked) > len(unrouted) else
         "no routed differential pair")
     return payload, args.out
