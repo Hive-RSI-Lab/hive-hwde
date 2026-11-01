@@ -25,6 +25,25 @@ MECH-06, on this board alone:
    unkeyed family carry different nets on a pin where either carries a supply
    rail, so a plug made for one, put in the other, meets the wrong rail.
 
+Cables (#485): a "cable" mount with a "cable" description resolves which pin
+meets which from the cable and the sockets (lib/cablelib.py has the proof):
+   "cable": {"kind": "ffc",      # ffc | fpc | idc | discrete
+             "type": "B",        # ffc/fpc: A same-side, B opposite-side
+             "pin_map": "straight",  # optional for ffc (then checked
+                                 # against the type); idc/discrete: straight
+                                 # | reversed | rows_swapped | {"1": "3"}
+             "ends": {"J3": {"contact": "bottom", "entry": "tabs"}},
+             "name": "W1", "length_mm": 40, "pitch_mm": 0.5, "part": "..."}
+ - cable_type_unknown / cable_contact_unknown / cable_map_mismatch /
+   cable_pins_mismatch / cable_map_invalid: the cable can't be resolved, or
+   its declared map is not what its type gives; cable_orientation_ambiguous
+   (warning): a dual-contact socket.
+ - then mate_pin_mismatch per pin as for any pair; supply_on_signal marks a
+   supply meeting a signal. --wireviz FILE writes the harness for WireViz.
+Socket contact side and entry come from connector_pinmap.yaml ffc_sockets
+or cable.ends; the same part at both ends needs neither.
+Without "cable", mount "cable" is pin n to pin n, as before.
+
 constraints.json "mating_pairs" entries:
   {"ref": "J2",                 # connector on this board
    "mate_ref": "J1",            # connector it mates with
@@ -38,6 +57,7 @@ on one board meets "SWDIO" on the other. Pads with no net, or an
 "unconnected-" net, on either side are not compared.
 
 CLI: --pcb board.kicad_pcb [--constraints constraints.json] [--out report.json]
+     [--wireviz harness.yaml]
 exit 0/1/2 per SPEC section 6.
 """
 from __future__ import annotations
@@ -49,6 +69,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
+import cablelib  # noqa: E402
 import checklib  # noqa: E402
 import placelib  # noqa: E402
 import yaml  # noqa: E402
@@ -74,8 +95,10 @@ def load_table(path=TABLE) -> dict:
                                      for k, v in h["nets"].items()},
                      "pin_class": {str(n): k for k, ns in
                                    h["supply_pins"].items() for n in ns}})
+    socks = [{**f, "re": re.compile(f["match"], re.I)}
+             for f in doc.get("ffc_sockets") or []]
     return {"tol": float((doc.get("defaults") or {}).get("overlay_tol_mm", 0.2)),
-            "families": fams, "standards": stds}
+            "families": fams, "standards": stds, "ffc_sockets": socks}
 
 
 def family(fpid: str, table: dict) -> dict | None:
@@ -167,8 +190,11 @@ def _resolve_mate(pair: dict, pcb: Path, cons_dir: Path | None, model,
 
 
 def pair_violations(model, pcb: Path, pairs: list, cons_dir: Path | None,
-                    table: dict) -> tuple[list[dict], list[dict]]:
+                    table: dict, cables: list | None = None
+                    ) -> tuple[list[dict], list[dict]]:
     out, facts, cache = [], [], {}
+    if cables is None:
+        cables = []
     for pair in pairs:
         ref, mref = pair.get("ref"), pair.get("mate_ref")
         mount = pair.get("mount", "stack")
@@ -189,10 +215,33 @@ def pair_violations(model, pcb: Path, pairs: list, cons_dir: Path | None,
                 f"declared mated pair {ref} <-> {mref}: {what}", SCRIPT,
                 kind="mate_pair_unresolved", connector=ref, mate=mref))
             continue
-        fa, fb = family(a_fp.fpid, table), family(b_fp.fpid, table)
-        met = meetings(a_fp, b_fp, mount, float(pair.get("rotation", 0)),
-                       table["tol"])
-        fam_bad = fa and fb and fb["name"] not in (fa.get("mates") or [])
+        cable = pair.get("cable")
+        if mount == "cable" and isinstance(cable, dict):
+            try:
+                res = cablelib.resolve(a_fp, b_fp, cable, table["ffc_sockets"])
+            except cablelib.CableError as e:
+                out.append(checklib.violation(
+                    "mate_pins", "warning" if e.kind ==
+                    "cable_orientation_ambiguous" else "error",
+                    a_fp.center_abs(), None, None, [ref],
+                    f"cable {ref} <-> {mref} on {mpath.name}: {e}", SCRIPT,
+                    kind=e.kind, connector=ref, mate=mref))
+                continue
+            b_by = {p[0]: p for p in _pads(b_fp)}
+            a_by = {p[0]: p for p in _pads(a_fp)}
+            met = [(a_by[k], b_by[v]) for k, v in
+                   sorted(res["map"].items(), key=lambda i: int(i[0])
+                          if i[0].isdigit() else 0)]
+            fam_bad = False
+            cables.append({"name": cable.get("name"), "a_board": pcb.stem,
+                           "a_fp": a_fp, "b_board": mpath.stem, "b_fp": b_fp,
+                           "cable": cable, "resolved": res})
+        else:
+            res = None
+            fa, fb = family(a_fp.fpid, table), family(b_fp.fpid, table)
+            met = meetings(a_fp, b_fp, mount, float(pair.get("rotation", 0)),
+                           table["tol"])
+            fam_bad = fa and fb and fb["name"] not in (fa.get("mates") or [])
         if met is None or fam_bad:
             why = (f"{fa['name']} does not plug into {fb['name']}" if fam_bad
                    else f"pad patterns do not line up ({mount} mount)")
@@ -211,15 +260,22 @@ def pair_violations(model, pcb: Path, pairs: list, cons_dir: Path | None,
                 continue
             bad += 1
             short = (is_supply(anet) and is_supply(bnet))
+            on_sig = not short and (is_supply(anet) or is_supply(bnet))
+            via = (f" through a {res['name']} cable" if res else "")
             out.append(checklib.violation(
                 "mate_pins", "error", (ax, ay), None, anet, [ref],
                 f"{ref} pin {anum} ({anet}) meets {mref} pin {bnum} ({bnet}) "
-                f"on {mpath.name}" + (": a supply short when mated"
-                                      if short else ""),
+                f"on {mpath.name}{via}" + (
+                    ": a supply short when mated" if short else
+                    ": a supply tied to a signal" if on_sig else ""),
                 SCRIPT, kind="mate_pin_mismatch", connector=ref, mate=mref,
-                pin=anum, mate_pin=bnum, mate_net=bnet, supply_short=short))
-        facts.append({"ref": ref, "mate_ref": mref, "mate_pcb": mpath.name,
-                      "mount": mount, "pins": len(met), "mismatched": bad})
+                pin=anum, mate_pin=bnum, mate_net=bnet, supply_short=short,
+                supply_on_signal=on_sig))
+        fact = {"ref": ref, "mate_ref": mref, "mate_pcb": mpath.name,
+                "mount": mount, "pins": len(met), "mismatched": bad}
+        if res:
+            fact["cable"] = {k: res[k] for k in ("name", "type", "note", "pins")}
+        facts.append(fact)
     return out, facts
 
 
@@ -334,6 +390,8 @@ def run(argv=None):
     ap.add_argument("--constraints", default=None,
                     help="constraints.json (mating_pairs list); optional")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--wireviz", default=None,
+                    help="write the declared cables as a WireViz harness YAML")
     args = ap.parse_args(argv)
     pcb = Path(args.pcb)
     if not pcb.is_file():
@@ -349,7 +407,13 @@ def run(argv=None):
     table = load_table()
     model = placelib.PlaceModel(pcb)
     cons_dir = Path(args.constraints).parent if args.constraints else None
-    violations, facts = pair_violations(model, pcb, pairs, cons_dir, table)
+    cables: list = []
+    violations, facts = pair_violations(model, pcb, pairs, cons_dir, table,
+                                        cables)
+    if args.wireviz:
+        Path(args.wireviz).write_text(
+            yaml.safe_dump(cablelib.wireviz(cables), sort_keys=False),
+            encoding="utf-8")
     violations += standard_violations(
         model, table, {p.get("ref") for p in pairs})
     violations += unkeyed_violations(model, table)
