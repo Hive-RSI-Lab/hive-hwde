@@ -474,7 +474,8 @@ def check_copper_to_edge(fab, rules, vios: list, cast=()) -> None:
 # ------------------------------------------------------------- drill checks
 
 def check_holes(fab, rules, vios: list, cast=(), bg=None,
-                cast_hh: float | None = None) -> None:
+                cast_hh: float | None = None,
+                cast_abs: float | None = None) -> None:
     is_via = _via_matcher(bg)
     holes = fab.holes
     hard_d, lo_d = _floors(rules, "min_hole_diameter_mm")
@@ -524,7 +525,8 @@ def check_holes(fab, rules, vios: list, cast=(), bg=None,
             hard, lo = (hard_vv, lo_vv) if both else (hard_hh, lo_hh)
             what = "via" if both else "pad"
             if (ci or cj) and cast_hh is not None:
-                hard = lo = max(hard, cast_hh)
+                # capabilities page's figure fails, the blog's warns (#554)
+                hard, lo = max(hard, cast_abs if cast_abs is not None else cast_hh), max(lo, cast_hh)
                 what = "castellated"
             d = disks[i].distance(disks[j])
             if _below(d, hard):
@@ -540,6 +542,10 @@ def check_holes(fab, rules, vios: list, cast=(), bg=None,
                       "via hole pairs", hard_vv, lo_vv)
         _band_warning(vios, band["pad"], "dfm_hole_to_hole",
                       "pad hole pairs", hard_hh, lo_hh)
+        if cast_hh is not None:
+            _band_warning(vios, band["castellated"], "dfm_hole_to_hole",
+                          "castellated-to-plated hole pairs",
+                          cast_abs if cast_abs is not None else cast_hh, cast_hh)
 
     lo_he = rules.get("min_hole_to_edge_mm")
     outline = fab.outline
@@ -1354,7 +1360,9 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
         if "drill" not in skip:
             check_holes(fab, rules, vios, cast, bg=bg,
                         cast_hh=(caps.get("castellated") or {}).get(
-                            "min_hole_to_hole_mm"))
+                            "min_hole_to_hole_mm"),
+                        cast_abs=(caps.get("castellated") or {}).get(
+                            "abs_min_hole_to_hole_mm"))
             check_annular_ring(fab, rules, vios, cast, bg=bg)
             check_via_sizes(rules, vios, bg)
         if "castellation" not in skip and "castellated" not in caps:
