@@ -31,6 +31,8 @@ from dataclasses import dataclass, field
 MAX_PITCH = 1.27      # mm - coarser grids escape like any other part
 MIN_ROWS = 3
 GRID_TOL = 0.01       # mm - pad centre to grid line
+MIN_FILL = 0.25       # balls / grid sites: a depopulated BGA keeps far more
+MAX_BALL_ASPECT = 1.5  # long side / short side of a ball pad (QFN leads ~3)
 RULE_PREFIX = "aiee_bga_escape_"
 # rules_gen names whose clearance an escape rule must never override:
 # voltage_rules (HV) and package_rules (package ratings)
@@ -99,7 +101,7 @@ def find_bgas(bg, refs: list[str] | None = None) -> list[Bga]:
     for ref in sorted(by_ref):
         if refs and ref not in refs:
             continue
-        pads = by_ref[ref]
+        pads = _ball_pads(by_ref[ref])
         if len(pads) < MIN_ROWS * MIN_ROWS:
             continue
         fp = bg.footprints.get(ref, {})
@@ -120,6 +122,10 @@ def find_bgas(bg, refs: list[str] | None = None) -> list[Bga]:
                     and ys[0] + py / 2 < y < ys[-1] - py / 2]
         if rows < MIN_ROWS or cols < MIN_ROWS or not interior:
             continue
+        # a QFN's leads on a fine lattice (the two sides offset by half a
+        # pitch) fill a few percent of the grid; a ball field fills most of it
+        if len(pads) < MIN_FILL * rows * cols:
+            continue
         cx = [p.center[0] for p in pads]
         cy = [p.center[1] for p in pads]
         out.append(Bga(
@@ -129,6 +135,25 @@ def find_bgas(bg, refs: list[str] | None = None) -> list[Bga]:
             bbox=(min(cx), min(cy), max(cx), max(cy)), balls=len(pads),
             nets={p.number: p.net for p in pads if p.net}))
     return out
+
+
+def _ball_pads(pads) -> list:
+    """The pads that can be balls: near-round, and the common size. A QFN's
+    exposed pad (far bigger than its leads) is dropped, so it can't pass as
+    an interior ball; a footprint whose typical pad is an oblong lead has
+    none."""
+    if not pads:
+        return []
+    def aspect(p):
+        a, b = max(p.size), min(p.size)
+        return a / b if b > 0 else float("inf")
+    sizes = sorted(max(p.size) for p in pads)
+    med = sizes[len(sizes) // 2]
+    common = [p for p in pads if max(p.size) <= 1.5 * med]
+    round_ = [p for p in common if aspect(p) <= MAX_BALL_ASPECT]
+    if len(round_) < 0.8 * len(common):
+        return []
+    return round_
 
 
 def _centroid(pads) -> tuple[float, float]:
