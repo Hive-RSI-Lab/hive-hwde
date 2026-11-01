@@ -638,7 +638,9 @@ def read_board(path: Path) -> Board:
             r = re.search(r'\(property "Reference" "([^"]*)"', blk)
             ref = r.group(1) if r else ""
             b.refs.append(ref)
-            if re.search(r"\(attr[^)]*\bboard_only\b", blk):
+            if re.search(r"\(attr[^)]*\bboard_only\b", blk) or not re.search(r"\n\t\t\(pad ", blk):
+                # board-only, or nothing to place (a logo or frame with a
+                # symbol but no pads): no component record in ODB++
                 b.board_only.add(ref)
             if "(model " not in blk and re.search(r"\(pad ", blk) and "(attr" in blk and "board_only" not in blk:
                 b.no_model.append(ref)
