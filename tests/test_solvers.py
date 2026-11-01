@@ -298,6 +298,15 @@ def test_planar_deck_writes_polygons_ports_and_probes():
         assert any(abs(x - edge) < 1e-6 for x in xs)
 
 
+def test_axis_lines_leave_no_sliver_at_unrounded_ends():
+    """lo/hi with more than 6 decimals: the graded runs must not add a line
+    next to the rounded edge (a 2e-7 mm cell stopped a run at 0.13 ps)."""
+    lo, hi = 9.829597189, 91.407402811
+    lines = em._axis_lines([lo, 25.5, 75.737, hi], lo, hi, 0.5, 3.0, 6.0)
+    assert min(b - a for a, b in zip(lines, lines[1:])) >= 0.5 / 4 - 1e-9
+    assert round(lo, 6) in lines and round(hi, 6) in lines
+
+
 def test_planar_waves_recover_a_and_b(tmp_path):
     """Probes a line with a known incident and reflected wave would give:
     the reader returns both at the reference plane, whatever the reflection."""
