@@ -138,6 +138,10 @@ weighed like any other report:
   against impedance.py; `sim_solve board` gives the S-parameters of a
   board region (all layers, vias, lumped parts) as a Touchstone file.
   docs/solvers.md.
+- `scripts/sparam.py check F.sNp` / `fit F.sNp --out F.cir [--verify]`:
+  IEEE P370 passivity/reciprocity/causality of an EM or VNA S-parameter
+  file with the points that fail, and a passive vector-fitted SPICE subckt
+  of it for a sim_run bench (docs/solvers.md).
 - `scripts/parts_enrich.py --workspace <ws>`: fills parts.json
   `attributes` (Power, Voltage Rated, Vgs, RDS(on), Vf, common mode) from
   each row's LCSC listing, keeping any value the row already has. Run it

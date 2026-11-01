@@ -362,3 +362,8 @@ def test_live_planar_thru_line_is_transparent(tmp_path):
     for s11, s21 in zip(res["s"]["S11"], res["s"]["S21"]):
         assert abs(complex(*s21)) == pytest.approx(1.0, abs=0.02)
         assert abs(complex(*s11)) < 0.12        # -18 dB: the probe split's floor
+    # #483: the solve checks its own S. That floor on a |S21| = 1 line makes
+    # column 1 non-passive (sigma 1.11 at 5.9 GHz, 41 points): reported, not hidden
+    q = res["quality"]
+    assert q["terms"] == ["S11", "S21"] and q["sigma_max"] is not None
+    assert q["levels"]["causality"] == "good"

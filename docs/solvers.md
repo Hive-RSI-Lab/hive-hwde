@@ -177,12 +177,86 @@ machine.
   is smoothed. Limits: ports must be axis-aligned on the region's edge;
   connector bodies (SMA) are not modelled (#479); no loss.
 
+## S-parameter files: quality and macromodel (#483)
+
+`hwde sparam check F.sNp` and `hwde sparam fit F.sNp --out F.cir`
+(`scripts/sparam.py`, `lib/sparam.py`).
+
+- **check** gives the IEEE P370-2020 frequency-domain quality metrics,
+  each 0-100 % with the standard's quality level. The code is a
+  line-by-line port of the standard's open code
+  (opensource.ieee.org/elec-char/ieee-370, TG3/qualityCheckFrequencyDomain.m,
+  BSD-3). The metrics:
+  - passivity: largest singular value of S per point;
+  - reciprocity: mean |S_ij - S_ji|;
+  - causality: the turning direction of each S_ij in the complex plane.
+
+  A metric is an average, so check also lists every frequency point that
+  fails. The verdict fails on any of them (exit 1):
+  - sigma_max > 1 + 1e-3;
+  - |S_ij - S_ji| > 1e-2;
+  - a counter-clockwise turn more than 30x the median turn of its 21
+    neighbours;
+  - or a P370 level below "acceptable".
+
+  Warnings cover what a transient sim needs from the band: a DC point or a
+  start within 1.5 steps of it, a uniform grid, a real DC point, a step
+  under 90 degrees of transmission phase, and a phase that extrapolates
+  to 0 at DC.
+- **fit** runs scikit-rf's VectorFitting (Gustavsen & Semlyen). It is
+  imported from the tree's dist-packages, so hwde's lock doesn't change.
+  It takes the lowest order whose rms |dS| is under `--target-error`
+  (default 1e-3), enforces passivity, and writes `.SUBCKT NAME p1 .. pN`
+  (ground-referenced, z0 from the file). `--verify` runs that subckt
+  through ngspice AC (port k behind 2 V and z0, the others in z0, so
+  S_ik = V_i and S_kk = V_k - 1) and compares the result with the file.
+
+Measured, 2026-11-01:
+
+| case | result |
+|---|---|
+| 5-section RLC ladder, exact S (ABCD), 0-6 GHz, 401 points | 100 / 100 / 99.98 %, no failing point |
+| the same with Im(S21) conjugated at 1.5, 3, 4.5 GHz | nonreciprocal and noncausal at exactly those points |
+| the same with \|S11\| = 1.05 at 0.75, 3.75 GHz | passive_violation at exactly those; noncausal turns at the points next to them |
+| P370 sample S5_M1_plugandplay.s2p (VNA, 6 MHz-60 GHz) | 100 / 99.29 / 53.69 %, passes (sigma_max 1.0004, \|S21-S12\| <= 2.8e-3) |
+| P370 sample Test8_afterAFR_42p5.s4p (de-embedded) | fails: passivity 95.13 % (inconclusive), sigma_max 1.14 above 45 GHz |
+| ladder fit -> subckt -> ngspice AC | 4 complex pole pairs; fit rms 5.22e-4, max 3.73e-3; ngspice rms 5.23e-4, max 3.73e-3 |
+| S5_M1 cut to 6 MHz-18 GHz (2992 points), `--target-error 5e-3 --verify` | 16 pairs + 2 real poles, passive as fitted (sigma_max 0.995); rms 2.68e-3, max 2.67e-2; ngspice the same to 4 digits |
+
+scikit-rf gotchas, worked around in lib/sparam.py:
+- With a DC point in the data its fit is 1e-2 worse, so the DC point is
+  dropped before fitting.
+- auto_fit is unstable (a 1e-13 change in the data moved it from 6 to 8
+  poles). hwde does its own order search on a copy decimated to 400
+  points, then fits the chosen order on every point.
+- The fit leaves real poles at 1e14-1e30 rad/s. Written as SPICE, they
+  become sub-pOhm resistors that ngspice clamps, which wrecks the model.
+  They are folded into the constant term.
+- `is_passive()` has no tolerance, and a ladder's S(inf) = diag(1, -1)
+  sits on the unit circle. hwde judges passivity itself on 0..10 f_max and
+  at infinity, with a 1e-6 tolerance.
+- `Network.passivity` is an element-wise sqrt of S^H S. Only its diagonal
+  means anything.
+
+A long channel (ns of delay over tens of GHz) needs hundreds of poles
+without delay extraction. The fit reports `target_met: false` instead of
+pretending.
+
+`sim_solve planar` runs check on its own S. It judges only the excited
+columns: passivity per column, and reciprocity once both S_ij and S_ji
+ran. The result is `quality` in the output, and the command exits 1 when
+the check fails. It does fail on the 30 mm thru above (both ports, 41
+points, 1-6 GHz): reciprocity and causality are 100 %, but passivity is
+62.6 % (poor), with sigma_max 1.11 at 5.9 GHz. The probe split's
+\|S11\| floor of about -19 dB sits on top of \|S21\| = 1. Until that
+floor comes down, planar S is fit for frequency-domain reading, not for a
+transient.
+
 ## What is not here yet
 
 - Antennas in openEMS (radiation boundary, NF2FF: #481); connector
   bodies and launches (the SMA's coax and pin: #479; `sim_solve board`
-  already has the vias and plane cut-outs); Palace for the same decks;
-  scikit-rf to read the touchstone.
+  already has the vias and plane cut-outs); Palace for the same decks.
 - `thermalfv` on a board's real copper. check_irdrop already rasterises a
   net into a grid; feeding its grid and current into `thermalfv.joule`
   gives the self-heated trace and neck temperatures check_thermal's

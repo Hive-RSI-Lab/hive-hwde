@@ -81,6 +81,7 @@ SLOW = {
     "tests/test_emboard.py::test_live_board_thru_matches_the_line_closed_form": "runs an openEMS board S-parameter solve",
     "tests/test_emboard.py::test_live_board_open_stub_notch": "runs an openEMS board S-parameter solve",
     "tests/test_emboard.py::test_live_board_mutant_wrong_width_misses_z0": "runs an openEMS board S-parameter solve",
+    "tests/test_sparam.py::test_live_fit_spice_round_trip": "vector-fits with scikit-rf and runs ngspice AC from the IIC-OSIC-TOOLS tree",
     "tests/test_check_env.py::test_passes_on_dev_machine": _TOOLS,
     "tests/test_check_env.py::test_out_file_and_quiet": _TOOLS,
     "tests/test_check_env.py::test_unpinned_discovery_still_resolves_10x": _TOOLS,
