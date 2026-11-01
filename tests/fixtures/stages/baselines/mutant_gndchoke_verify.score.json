@@ -23,6 +23,7 @@
    "check_cap_load": 0,
    "check_connector_fit": 0,
    "check_courtyard": 28,
+   "check_ddr_timing": 0,
    "check_ep_paste": 6,
    "check_fp_attr": 1,
    "check_length_groups": 0,
@@ -75,7 +76,7 @@
  },
  "e2e": null,
  "_baseline": {
-  "created": "2026-10-31",
+  "created": "2026-11-01",
   "kicad_version": null
  }
 }
