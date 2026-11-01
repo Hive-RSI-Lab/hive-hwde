@@ -12,6 +12,7 @@ which cites JLC's two published sources. Consumers:
                    castellated holes from the ordinary hole/copper-to-edge and
                    annular-ring checks (holes())
   castellated_fp.py  footprint sizing (load_rules())
+  order_quote.py  needs_standard_pcba() - Economic PCBA can't build them
   order_quote.py / order_submit.py / bom_cpl.py  count() / refs() - the
                    board, not a brief or a doc, decides whether the order
                    says castellated
@@ -40,7 +41,8 @@ KINDS = ("castellated_drill", "castellated_off_outline",
          "castellated_hole_to_hole", "castellated_ring",
          "castellated_pad_extension", "castellated_to_other_edge",
          "castellated_to_corner", "castellated_board_size",
-         "castellated_thickness", "castellated_unmarked")
+         "castellated_thickness", "castellated_unmarked",
+         "castellated_needs_panel")
 # A turn sharper than this at one outline vertex is a sharp corner. geom
 # samples an Edge.Cuts arc into 16 chords, so a rounded corner never turns
 # this much at any one vertex: it is found as a stretch of small same-way
@@ -61,6 +63,19 @@ def load_rules(path: Path | None = None) -> dict:
     if not isinstance(rules, dict):
         raise checklib.CheckError(f"{path or CAPABILITIES} has no castellated: block")
     return rules
+
+
+def needs_standard_pcba(w_mm: float, h_mm: float) -> dict:
+    """What assembling a castellated board takes at JLC (assembly: block of
+    jlc_capabilities.yaml): Standard PCBA, with rails and fiducials, on a
+    board or panel at least this big."""
+    a = (yaml.safe_load(CAPABILITIES.read_text("utf-8")) or {}).get(
+        "castellated_assembly") or {}
+    lo = float(a.get("min_panel_mm", 70.0))
+    return {"service": a.get("service", "standard"), "min_panel_mm": lo,
+            "rails_and_fiducials": True,
+            "panel_needed": min(w_mm, h_mm) < lo - 1e-6,
+            "source": a.get("source")}
 
 
 def pads(bg) -> list:
@@ -199,7 +214,18 @@ def _runs(face) -> tuple[list[LineString], list, list[LineString]]:
     moves where the 3 mm is counted from; a half-round end with no such
     point counts from its arc. The arcs are edges too: a hole cut into one,
     or within 1 mm of one, breaks the other-edge rule like any edge."""
-    pts = list(face.exterior.coords)[:-1]
+    runs, corners, arcs = [], [], []
+    # a routed slot inside the outline is cut like the outer edge: a panel's
+    # half-holes sit on its slots
+    for ring in (face.exterior, *face.interiors):
+        r, c, a = _ring_runs(list(ring.coords)[:-1])
+        runs += r
+        corners += c
+        arcs += a
+    return runs, corners, arcs
+
+
+def _ring_runs(pts: list) -> tuple[list[LineString], list, list[LineString]]:
     n = len(pts)
     spans = _corner_spans(pts)
     if not spans:
@@ -250,7 +276,7 @@ def check(bg, rules: dict, thickness_mm: float | None = None) -> tuple[list, dic
 
     # an ordinary plated hole straddling the outline is a half-hole too
     if face is not None:
-        edge = face.exterior
+        edge = face.boundary
         for p in bg.pads_of():
             if p.castellated or p.drill is None:
                 continue
@@ -291,7 +317,7 @@ def check(bg, rules: dict, thickness_mm: float | None = None) -> tuple[list, dic
             add("castellated_drill", p,
                 f"{p.ref}.{p.number}: castellated drill {d:.3f} mm below JLC "
                 f"minimum {lo_d} mm", diameter_mm=checklib.rnd(d), min_mm=lo_d)
-        off = c.distance(face.exterior)
+        off = c.distance(face.boundary)
         if off > tol:
             add("castellated_off_outline", p,
                 f"{p.ref}.{p.number}: castellated hole centre {off:.3f} mm off "

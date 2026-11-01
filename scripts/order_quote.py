@@ -16,18 +16,30 @@ instead of trusting this table.
 A board with castellated pads (lib/castellation.py) gets the per-order
 castellated-holes adder from jlc_pricing.yaml in every row's pcb cost
 (`pcb.castellated`) and `spec.castellated_pads`; a board without them shows
-neither key.
+neither key. Assembled, it is priced as Standard PCBA, the only service that
+builds it, and `spec.pcba` says so; under 70 mm a side it says a panel with
+rails and fiducials is needed. Quote that panel with --boards-per-panel: --qty
+stays panels, `unit_cost` is per board.
+
+Vias under JLC's free size add the via-size option the order will need
+(`pcb.via_tier`, `spec.via_tier`). --via-fill none,epoxy prices POFV as a
+separate row. --measured-pcb replaces the table's PCB line with a figure read
+from the cart, labelled as such (`pcb.measured`). `components` is the parts at
+parts.json's price breaks, respecting each part's minimum order.
 
 CLI:
   order_quote.py --pcb board.kicad_pcb [--qty 5,10,30] [--assembly]
                  [--parts parts.json] [--finish HASL,ENIG] [--colors green,black]
                  [--pricing jlc_pricing.yaml] [--out quote.json]
+                 [--boards-per-panel N] [--via-fill none,epoxy]
+                 [--measured-pcb USD]
 Exit 0 ok / 2 error.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -105,9 +117,32 @@ def area_cost(pricing: dict, layers: int, qty: int, w: float,
             "total": round(total, 2)}
 
 
+def via_tier(bg) -> str | None:
+    """The via-size option this board's smallest paid via forces, as JLC's
+    hole size; None when every via is at the free size. dfm_check.JLC_VIA_TIER
+    is the rule: under 0.2 costs more, and 0.2/0.25 under 0.45 diameter."""
+    from dfm_check import JLC_VIA_TIER
+    t_drill, t_small, t_dia = JLC_VIA_TIER
+    tier = None
+    for v in bg.vias_of():
+        if not v.drill or v.drill <= 0:
+            continue
+        dr = round(v.drill, 3)
+        if dr < t_drill:
+            name = "0.15" if dr >= 0.15 else "0.1"
+        elif dr <= t_small and round(v.diameter, 3) < t_dia:
+            name = "0.2" if dr < t_small else "0.25"
+        else:
+            continue
+        tier = name if tier is None else min(tier, name, key=float)
+    return tier
+
+
 def pcb_cost(pricing: dict, layers: int, qty: int, w: float, h: float,
              finish: str, color: str, thickness: float = 1.6,
-             castellated: bool = False, material: str = "fr4") -> dict:
+             castellated: bool = False, material: str = "fr4",
+             tier: str | None = None, via_fill: str = "none",
+             measured: float | None = None) -> dict:
     if pricing.get("model") == "per_area":
         return area_cost(pricing, layers, qty, w, h)
     pcb = pricing["pcb"]
@@ -140,12 +175,94 @@ def pcb_cost(pricing: dict, layers: int, qty: int, w: float, h: float,
               + float(opts.get("thickness_mm", {}).get(thickness, 0.0)))
     # the per-order castellated-holes option, only for a board that has them
     cast = float(opts.get("castellated_holes", 0.0)) if castellated else 0.0
-    total = base + oversize + adders + cast
+    # a via tier the table has no price for is an order option all the same
+    tier_usd = float((opts.get("via_tier") or {}).get(tier, 0.0)) if tier else 0.0
+    fill = 0.0
+    if via_fill != "none":
+        table = opts.get("via_fill_epoxy") or {}
+        got = table.get(layers, table.get(str(layers)))
+        if got is None:
+            raise ValueError(f"no POFV price for {layers}-layer boards")
+        fill = float(got)
+    total = base + oversize + adders + cast + tier_usd + fill
     out = {"base": round(base, 2), "base_at_qty": at_qty,
            "oversize": round(oversize, 2), "options": round(adders, 2),
            "total": round(total, 2)}
     if castellated:
         out["castellated"] = round(cast, 2)
+    if tier:
+        out["via_tier"] = round(tier_usd, 2)
+    if via_fill != "none":
+        out["via_fill"] = round(fill, 2)
+    if measured is not None:
+        # the cart's own figure for this board and these options; only POFV,
+        # priced as its own row, stays on top
+        out["measured"] = round(measured, 2)
+        out["total"] = round(measured + fill, 2)
+    return out
+
+
+def _at_most(table: list, n: int) -> float:
+    """The value of the first [limit, value] row n fits under (else the last)."""
+    for limit, value in table:
+        if n <= limit:
+            return float(value)
+    return float(table[-1][1])
+
+
+def standard_assembly_cost(pricing: dict, panels: int, n_parts: int,
+                           n_joints: int, n_distinct: int, n_xray: int,
+                           boards_per_panel: int, area_cm2: float) -> dict:
+    """Standard PCBA for `panels` panels. n_* are per panel, except n_distinct."""
+    a = pricing.get("assembly_standard")
+    if not a:
+        raise ValueError("pricing has no assembly_standard table")
+    pieces = panels * boards_per_panel
+    joints = max(float(a["per_joint"]) * n_joints,
+                 float(a["min_assembly_per_panel"])) * panels
+    feeders = float(a["per_part_feeder"]) * n_distinct
+    fixture = float(a["fixture_fee"]) * _at_most(a["fixtures"], pieces)
+    packing = (float(a["packing_base"])
+               + float(a["packing_per_cm2"]) * area_cm2 * panels)
+    n_x = n_xray * panels
+    xray = _at_most(a["xray"], n_x) * n_x if n_x else 0.0
+    setup, stencil = float(a["setup_fee"]), float(a["stencil"])
+    return {"service": "standard", "setup": round(setup, 2),
+            "stencil": round(stencil, 2), "feeders": round(feeders, 2),
+            "joints": round(joints, 2), "fixture": round(fixture, 2),
+            "packing": round(packing, 2), "xray": round(xray, 2),
+            "n_parts": n_parts, "n_joints": n_joints,
+            "n_distinct_parts": n_distinct, "n_xray": n_xray,
+            "total": round(setup + stencil + feeders + joints + fixture
+                           + packing + xray, 2)}
+
+
+def components_cost(parts_json: Path, boards: int) -> dict:
+    """The placed parts for `boards` boards at parts.json's price breaks, each
+    bought in at least its minimum order. None priced: `unpriced` lists them."""
+    data = json.loads(Path(parts_json).read_text(encoding="utf-8"))
+    items = data.get("parts", data) if isinstance(data, dict) else data
+    total, unpriced = 0.0, []
+    for ent in items if isinstance(items, list) else []:
+        if not isinstance(ent, dict) or \
+                ent.get("assembly_class", PLACED) not in ASSEMBLED:
+            continue
+        need = len(ent.get("refdes") or []) * boards
+        if not need:
+            continue
+        buy = max(need, int(ent.get("min_qty") or 1))
+        breaks = sorted(ent.get("price_breaks") or [], key=lambda b: b["qty"])
+        price = ent.get("price")
+        for b in breaks:
+            if buy >= b["qty"]:
+                price = b["price"]
+        if price is None:
+            unpriced.append(ent.get("lcsc") or str(ent.get("refdes")))
+            continue
+        total += float(price) * buy
+    out = {"total": round(total, 2), "boards": boards}
+    if unpriced:
+        out["unpriced"] = unpriced
     return out
 
 
@@ -164,7 +281,35 @@ def assembly_cost(pricing: dict, qty: int, n_parts: int, n_joints: int,
 
 
 PLACED = "smt_placed"
+PANEL_REF = re.compile(r"_B\d+$")
 ASSEMBLED = (PLACED, "tht")   # bom_cpl.ASSEMBLED_CLASSES: in the upload
+
+
+LEADLESS = re.compile(r"QFN|DFN|BGA|LGA|SON", re.I)
+
+
+def _xray_parts(bg) -> int:
+    """Leadless packages on the board, which Standard PCBA X-rays."""
+    return sum(1 for fp in bg.footprints.values()
+               if LEADLESS.search(fp.get("lib") or ""))
+
+
+def _placed_refs(parts_json: Path | None) -> set[str] | None:
+    """Refs parts.json lists, when it lists them: a footprint in no entry
+    (copper feature, artwork, a test point) is not placed. None without refs,
+    so an older parts.json counts as before."""
+    if parts_json is None or not Path(parts_json).exists():
+        return None
+    data = json.loads(Path(parts_json).read_text(encoding="utf-8"))
+    items = data.get("parts", data) if isinstance(data, dict) else data
+    refs: set[str] = set()
+    for ent in items if isinstance(items, list) else []:
+        if not isinstance(ent, dict):
+            continue
+        if not ent.get("refdes"):
+            return None
+        refs.update(str(r) for r in ent["refdes"])
+    return refs or None
 
 
 def _unplaced_refs(parts_json: Path | None) -> set[str]:
@@ -200,9 +345,13 @@ def _assembly_counts(pcb: Path,
     pd-trigger priced at $0)."""
     bg = geom.load_board(pcb)
     unplaced = _unplaced_refs(parts_json)
+    listed = _placed_refs(parts_json)
     refs: dict[str, int] = {}
     for pad in bg.pads_of():
         if pad.net is None or pad.ref in unplaced:
+            continue
+        # a panel's copies are <ref>_B<n>; parts.json has the single board's
+        if listed is not None and PANEL_REF.sub("", pad.ref) not in listed:
             continue
         refs[pad.ref] = refs.get(pad.ref, 0) + 1
     n_parts = len(refs)
@@ -245,10 +394,24 @@ def _assembly_counts(pcb: Path,
     return n_parts, n_joints, n_extended, source
 
 
+def _distinct_placed(parts_json: Path | None) -> int:
+    """Distinct placed parts: Standard PCBA loads a feeder for each one."""
+    if parts_json is None or not Path(parts_json).exists():
+        raise ValueError("Standard PCBA (a castellated board) needs --parts: "
+                         "its feeder fee is per distinct part")
+    data = json.loads(Path(parts_json).read_text(encoding="utf-8"))
+    items = data.get("parts", data) if isinstance(data, dict) else data
+    return len({(e.get("lcsc") or f"#{i}") for i, e in enumerate(items)
+                if isinstance(e, dict)
+                and e.get("assembly_class", PLACED) in ASSEMBLED})
+
+
 def run(pcb: Path, qtys: list[int], finishes: list[str], colors: list[str],
         assembly: bool = False, parts_json: Path | None = None,
         pricing_path: Path | None = None, thickness: float | None = None,
-        vendor: str | None = None) -> dict:
+        vendor: str | None = None, boards_per_panel: int = 1,
+        via_fills: list[str] | None = None,
+        measured_pcb: float | None = None) -> dict:
     meta_v: dict = {}
     lead_v: dict = {}
     if vendor and not pricing_path:
@@ -275,6 +438,10 @@ def run(pcb: Path, qtys: list[int], finishes: list[str], colors: list[str],
     bg = geom.load_board(pcb)
     layers = len(bg.stackup.copper_layers)
     n_cast = len(castellation.pads(bg))
+    tier = via_tier(bg)
+    via_fills = via_fills or ["none"]
+    # Standard PCBA prices are JLC's: another vendor's table has no such row
+    standard = bool(assembly and n_cast and pricing.get("assembly_standard"))
     # the board's laminate decides the product line and the options it
     # has: a RO4350B board is ENIG + green only, at JLC's HF prices
     material = fabmaterial.board_family(pcb)
@@ -310,23 +477,45 @@ def run(pcb: Path, qtys: list[int], finishes: list[str], colors: list[str],
         n_parts, n_joints, n_extended, n_extended_source = \
             _assembly_counts(pcb, parts_json)
 
+    n_distinct, n_xray = 0, 0
+    if standard:
+        n_xray = _xray_parts(bg)
+        n_distinct = _distinct_placed(parts_json)
+
     matrix = []
     for qty in qtys:
         for finish in finishes:
             for color in colors:
-                pc = pcb_cost(pricing, layers, qty, w, h, finish, color,
-                              thickness, castellated=n_cast > 0,
-                              material=material)
-                row = {"qty": qty, "surface_finish": finish,
-                       "solder_mask_color": color, "pcb": pc,
-                       "total": pc["total"]}
-                if assembly:
-                    ac = assembly_cost(pricing, qty, n_parts, n_joints,
-                                       n_extended)
-                    row["assembly"] = ac
-                    row["total"] = round(pc["total"] + ac["total"], 2)
-                row["unit_cost"] = round(row["total"] / qty, 2)
-                matrix.append(row)
+                for fill in via_fills:
+                    pc = pcb_cost(pricing, layers, qty, w, h, finish, color,
+                                  thickness, castellated=n_cast > 0,
+                                  material=material, tier=tier, via_fill=fill,
+                                  measured=measured_pcb)
+                    row = {"qty": qty, "surface_finish": finish,
+                           "solder_mask_color": color, "pcb": pc,
+                           "total": pc["total"]}
+                    if fill != "none":
+                        row["via_fill"] = fill
+                    if assembly:
+                        ac = (standard_assembly_cost(
+                                pricing, qty, n_parts, n_joints, n_distinct,
+                                n_xray, boards_per_panel, w * h / 100.0)
+                              if standard else
+                              assembly_cost(pricing, qty, n_parts, n_joints,
+                                            n_extended))
+                        row["assembly"] = ac
+                        row["total"] = round(pc["total"] + ac["total"], 2)
+                        if standard and parts_json is not None:
+                            comp = components_cost(parts_json,
+                                                   qty * boards_per_panel)
+                            row["components"] = comp
+                            row["total"] = round(row["total"] + comp["total"],
+                                                 2)
+                    if boards_per_panel > 1:
+                        row["boards"] = qty * boards_per_panel
+                    row["unit_cost"] = round(
+                        row["total"] / (qty * boards_per_panel), 2)
+                    matrix.append(row)
     matrix.sort(key=lambda r: (r["qty"], r["total"]))
 
     lt = pricing.get("lead_time_days") or lead_v
@@ -374,6 +563,14 @@ def run(pcb: Path, qtys: list[int], finishes: list[str], colors: list[str],
     if n_cast:
         # only on a castellated board, so every other spec stays as it was
         spec["castellated_pads"] = n_cast
+        if assembly:
+            spec["pcba"] = castellation.needs_standard_pcba(w, h)
+    if tier:
+        spec["via_tier"] = tier
+    if boards_per_panel > 1:
+        spec["boards_per_panel"] = boards_per_panel
+    if measured_pcb is not None:
+        spec["pcb_measured"] = True
     if material != fabmaterial.FR4:
         # only off FR-4, for the same reason: order_submit binds it
         spec["material"] = material
@@ -441,6 +638,14 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--pricing", help="override reference/jlc_pricing.yaml")
     ap.add_argument("--vendor", help="price at this vendor "
                     "(reference/vendors/<id>.yaml; default JLC)")
+    ap.add_argument("--boards-per-panel", type=int, default=1,
+                    help="--pcb is a panel of N boards: --qty is panels, "
+                         "unit_cost is per board")
+    ap.add_argument("--via-fill", default="none",
+                    help="comma list of none,epoxy: POFV as a row of its own")
+    ap.add_argument("--measured-pcb", type=float,
+                    help="the cart's PCB price for this order, replacing the "
+                         "table's")
     ap.add_argument("--out", help="write JSON here instead of stdout")
     args = ap.parse_args(argv)
 
@@ -452,7 +657,11 @@ def main(argv: list[str] | None = None) -> int:
                   assembly=args.assembly,
                   parts_json=Path(args.parts) if args.parts else None,
                   pricing_path=Path(args.pricing) if args.pricing else None,
-                  thickness=args.thickness, vendor=args.vendor)
+                  thickness=args.thickness, vendor=args.vendor,
+                  boards_per_panel=args.boards_per_panel,
+                  via_fills=[f.strip() for f in args.via_fill.split(",")
+                             if f.strip()],
+                  measured_pcb=args.measured_pcb)
     except Exception as exc:  # noqa: BLE001
         err = {"script": "order_quote", "status": "error",
                "error": f"{type(exc).__name__}: {exc}"}

@@ -446,7 +446,7 @@ def check_copper_to_edge(fab, rules, vios: list, cast=()) -> None:
     if lo is None or outline.is_empty:
         return
     band: list = []
-    edge = outline.exterior
+    edge = outline.boundary    # a panel's routed slots are edges too
     disks = [Point(cx, cy).buffer(d / 2.0) for cx, cy, d in cast]
     for name in fab.copper_layer_names():
         lg = fab.copper(name)
@@ -529,6 +529,8 @@ def check_holes(fab, rules, vios: list, cast=(), bg=None,
                 hard, lo = max(hard, cast_abs if cast_abs is not None else cast_hh), max(lo, cast_hh)
                 what = "castellated"
             d = disks[i].distance(disks[j])
+            if _mouse_bite_pair(holes[i], holes[j]) and d >= MOUSE_BITE_GAP[0] - GEOM_TOL_MM:
+                continue
             if _below(d, hard):
                 vios.append(checklib.violation(
                     CHECK, "error", (holes[i].x, holes[i].y), None, None, [],
@@ -550,7 +552,8 @@ def check_holes(fab, rules, vios: list, cast=(), bg=None,
     lo_he = rules.get("min_hole_to_edge_mm")
     outline = fab.outline
     if lo_he is not None and not outline.is_empty:
-        edge = outline.exterior
+        # the boundary: a panel's routed slots are edges too
+        edge = outline.boundary
         for h in holes:
             if _castellated_at(cast, h.x, h.y):
                 continue
@@ -586,6 +589,39 @@ def _via_matcher(bg):
                 return True
         return False
     return is_via
+
+
+# A breakaway tab's row of holes, as JLC asks for it: 0.5-0.8 mm, 0.2-0.3 mm
+# apart ("Mouse bites Panel", pcb-capabilities, 2026-11-01). Unplated and the
+# same size, or it's an ordinary hole pair.
+MOUSE_BITE_DRILL = (0.5, 0.8)
+MOUSE_BITE_GAP = (0.2, 0.3)
+
+
+def _mouse_bite_pair(a, b) -> bool:
+    return (not a.plated and not b.plated
+            and abs(a.diameter - b.diameter) < GEOM_TOL_MM
+            and MOUSE_BITE_DRILL[0] - GEOM_TOL_MM <= a.diameter
+            <= MOUSE_BITE_DRILL[1] + GEOM_TOL_MM)
+
+
+def _castellated_pcba(bg, fab_dir, vios: list) -> None:
+    """An assembled castellated board has to go as Standard PCBA, with rails
+    and fiducials, at least 70 x 70 mm: under that it needs a panel. A warning:
+    the board itself is fine, and a bare-board order is too."""
+    if bg is None or bg.outline.is_empty or not castellation.pads(bg) \
+            or fab_dir is None or not (Path(fab_dir) / "CPL.csv").exists():
+        return
+    x0, y0, x1, y1 = bg.outline.bounds
+    need = castellation.needs_standard_pcba(x1 - x0, y1 - y0)
+    if need["panel_needed"]:
+        vios.append(checklib.violation(
+            CHECK, "warning", (x0, y0), None, None, [],
+            f"castellated board with a CPL, {x1 - x0:.1f} x {y1 - y0:.1f} mm: "
+            "JLC's Economic PCBA doesn't build castellated holes, and Standard "
+            f"PCBA needs rails, fiducials and {need['min_panel_mm']:g} mm a "
+            "side, so assembly needs a panel", "castellation",
+            kind="castellated_needs_panel"))
 
 
 # JLC's via price tiers (pcb-capabilities, 2026-11-01): a hole under 0.2
@@ -1417,6 +1453,7 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
                 bg.stackup.total_thickness or None)
             vios.extend(cvios)
             facts.update(cfacts)
+            _castellated_pcba(bg, fab_dir, vios)
         if "silk" not in skip:
             check_silk(fab, rules, vios, bg=bg)
             check_mask_dam(fab, rules, vios)

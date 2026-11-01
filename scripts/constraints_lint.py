@@ -191,7 +191,7 @@ ENCLOSURE = {"box_mm": "num_list", "stl": "str_or_list", "wall_mm": "num",
 SCHEMA_TOP_KEYS = set(SECTIONS) | {"placement", "coating", "antennas", "si",
                                    "enclosure", "ambient_c", "ambient_min_c",
                                    "cable_pf", "pin_modes", "ddr",
-                                   "testpoints", "rf_match", "surge"}
+                                   "testpoints", "rf_match", "surge", "isolation"}
 ENVELOPE_ALIASES = {"power_constraints": "power",
                     "thermal_constraints": "thermal",
                     "voltage_constraints": "voltages"}
@@ -460,6 +460,14 @@ class _FileLint:
                     self.add("error", "bad_type",
                              f"{path}: surge.ports must be {{ref: {{kind: "
                              "dc_power|signal|ethernet|mains, ...}}", path)
+            elif key == "isolation":
+                # check_isolation (#353) validates the values itself (exit 2)
+                if not (isinstance(val, dict) and isinstance(
+                        val.get("domains"), dict) and isinstance(
+                        val.get("barriers"), list)):
+                    self.add("error", "bad_type",
+                             f"{path}: isolation must have domains (object) "
+                             "and barriers (list)", path)
             elif key == "ddr":
                 # check_ddr_timing validates the block itself (exit 2)
                 if not (isinstance(val, dict) and isinstance(
