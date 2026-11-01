@@ -38,6 +38,7 @@ def module() -> str:
         '\t\t(property "Value" "ESP32-WROOM-32E" (at 0 14 0) (layer "F.Fab") '
         '(uuid "a9e7a000-0000-4000-8000-000000000902") '
         '(effects (font (size 1 1) (thickness 0.15))))\n'
+        + mutlib.footprint_fields("a9e7a000-0000-4000-8000-00000000091") +
         '\t\t(fp_rect (start -9 -13) (end 9 13) (stroke (width 0.05) '
         '(type solid)) (fill no) (layer "F.CrtYd") '
         '(uuid "a9e7a000-0000-4000-8000-000000000903"))\n'

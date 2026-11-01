@@ -146,6 +146,18 @@ def test_mutation_deterministic_and_effective(name, tmp_path):
             or summary["sidecars"]), f"{name} changed neither board nor inputs"
 
 
+def test_mutlib_refuses_a_footprint_kicad_would_give_random_uuids():
+    """#586: no Datasheet/Description in the text, and KiCad adds both with
+    new UUIDs on every save, so a mutant's bytes change from run to run."""
+    sys.path.insert(0, str(GOLDEN / "mutations"))
+    import mutlib
+    fields = mutlib.footprint_fields("5c0de470-0000-4000-8000-00000000001")
+    assert fields.count("(hide yes)") == 2
+    mutlib.require_footprint_fields(f'(kicad_pcb (footprint "A" {fields}))')
+    with pytest.raises(mutlib.SurgeryError, match="random UUIDs"):
+        mutlib.require_footprint_fields('(kicad_pcb (footprint "A" (layer "F.Cu")))')
+
+
 @pytest.mark.parametrize("name", list(MUTATIONS))
 def test_mutant_committed(name, manifest):
     """The committed mutants directory matches the manifest."""

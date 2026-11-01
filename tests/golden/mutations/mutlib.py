@@ -19,6 +19,7 @@ mutant dir is self-contained.
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -116,6 +117,28 @@ def append_items(text: str, items: str, what: str) -> str:
     return end[:cut] + items + ")\n"
 
 
+def footprint_fields(uuid_stem: str, layer: str = "F.Fab") -> str:
+    """The Datasheet and Description properties for a hand-written footprint,
+    with fixed UUIDs (stem: the UUID's first 35 characters, 0 and 1 follow).
+    KiCad gives a footprint without them new random UUIDs on every save, so
+    the mutant's bytes would change from run to run (#586)."""
+    return "".join(
+        f'\t\t(property "{name}" "" (at 0 0 0) (layer "{layer}") (hide yes) '
+        f'(uuid "{uuid_stem}{i}") (effects (font (size 1.27 1.27))))\n'
+        for i, name in enumerate(("Datasheet", "Description")))
+
+
+def require_footprint_fields(text: str) -> None:
+    """A board about to go through KiCad: every footprint names both fields."""
+    n = len(re.findall(r'\(footprint "', text))
+    for name in ("Datasheet", "Description"):
+        have = len(re.findall(rf'\(property "{name}"', text))
+        if have != n:
+            raise SurgeryError(
+                f"{n} footprints but {have} {name} properties: KiCad would "
+                "give the missing ones random UUIDs (mutlib.footprint_fields)")
+
+
 def segment_sexpr(start, end, width, layer, net, uuid) -> str:
     return (f"\t(segment\n"
             f"\t\t(start {start[0]} {start[1]})\n"
@@ -197,6 +220,7 @@ def dump_json(doc: dict) -> str:
 def finalize(mutant: str, board: str, text: str, out_dir: Path | None,
              detail: dict) -> dict:
     """Write mutant board + project, refill zones, return summary dict."""
+    require_footprint_fields(text)
     out = out_dir or (GOLDEN / "mutants" / mutant)
     out.mkdir(parents=True, exist_ok=True)
     sidecars = detail.pop("sidecars", None) or {}
