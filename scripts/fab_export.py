@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 import zipfile
 from pathlib import Path
@@ -137,6 +138,35 @@ def write_order_notes(pcb: Path, out_dir: Path) -> Path | None:
     return path
 
 
+def aux_origin(pcb: Path) -> tuple[float, float] | None:
+    """The board's aux axis (drill/place) origin, when it isn't (0, 0)."""
+    m = re.search(r"\(aux_axis_origin ([-\d.]+) ([-\d.]+)\)", pcb.read_text(encoding="utf-8"))
+    if m and (float(m.group(1)), float(m.group(2))) != (0.0, 0.0):
+        return float(m.group(1)), float(m.group(2))
+    return None
+
+
+def export_ipc_absolute(cli: Path, pcb: Path, ipc_file: Path) -> dict:
+    """IPC-D-356 in the gerbers' coordinates. kicad-cli writes it from the
+    board's aux (drill/place) origin when the board has one, while gerbers
+    and drill are absolute: an Altium import keeps Altium's origin there, and
+    every netlist point then lands on no copper (each one an open at the
+    fab's tester). Such a board's netlist comes from a copy with the aux
+    origin at (0, 0)."""
+    if not aux_origin(pcb):
+        return kc.export_ipcd356(cli, pcb, ipc_file)
+    import shutil
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        for ext in (".kicad_pro", ".kicad_dru"):
+            if pcb.with_suffix(ext).exists():
+                shutil.copy(pcb.with_suffix(ext), Path(td) / (pcb.stem + ext))
+        copy = Path(td) / pcb.name
+        copy.write_text(re.sub(r"\(aux_axis_origin [-\d.]+ [-\d.]+\)", "(aux_axis_origin 0 0)",
+                               pcb.read_text(encoding="utf-8"), count=1), encoding="utf-8")
+        return kc.export_ipcd356(cli, copy, ipc_file)
+
+
 def sha256(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as fh:
@@ -168,7 +198,7 @@ def run(pcb: Path, out_dir: Path, name: str | None = None,
     # against a netlist they extract from the same gerbers (so an export
     # defect would test good). dfm_check compares the gerbers with it.
     ipc_file = gerber_dir / f"{name}.ipc"
-    n = kc.export_ipcd356(cli, pcb, ipc_file)
+    n = export_ipc_absolute(cli, pcb, ipc_file)
     if n.get("status") != "pass":
         raise RuntimeError(f"ipcd356 export failed: {n.get('stderr_tail') or n}")
     pos_file = out_dir / f"{name}-pos.csv"
