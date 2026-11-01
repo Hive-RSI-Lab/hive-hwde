@@ -314,12 +314,32 @@ def synth_fragment(parsed: dict, refs=None, nets=None) -> dict:
 # ----------------------------------------------------------------- bounds
 
 
+def load_sidecar(path: Path | str) -> tuple[list[dict], dict | None]:
+    """`<bench>.bounds.json` -> (bounds, tolerance config or None). The
+    sidecar is a JSON list of bounds, or an object {"bounds": [...],
+    "tolerance": {...}} (lib/simtol.py documents the tolerance block)."""
+    data = checklib.load_json(path, "bounds sidecar")
+    cfg = None
+    if isinstance(data, dict):
+        if "tolerance" in data:
+            import simtol
+            cfg = simtol.check_cfg(data["tolerance"], f"bounds sidecar {path}")
+        data = data.get("bounds")
+    return _check_bounds(data, path), cfg
+
+
 def load_bounds(path: Path | str) -> list[dict]:
     """`<bench>.bounds.json` sidecar: a JSON LIST of
-    {measure, min?, max?, severity: error|warning, msg?}."""
-    data = checklib.load_json(path, "bounds sidecar")
+    {measure, min?, max?, severity: error|warning, msg?} (or an object
+    holding it under "bounds", see load_sidecar)."""
+    return load_sidecar(path)[0]
+
+
+def _check_bounds(data, path) -> list[dict]:
     if not isinstance(data, list):
-        raise checklib.CheckError(f"bounds sidecar {path}: must be a JSON list")
+        raise checklib.CheckError(
+            f"bounds sidecar {path}: must be a JSON list (or an object "
+            "with a 'bounds' list)")
     if not data:
         raise checklib.CheckError(
             f"bounds sidecar {path}: empty list - an ungated testbench "
@@ -577,6 +597,45 @@ def run_circuit(circuit: str) -> dict:
     return {"status": "ok", "ngspice_version": ng.ngspice_version,
             "measures": measures, "failed_measures": failed,
             "vectors": vectors, "log_tail": tail(stdout)}
+
+
+def run_circuits(circuits: list[str]) -> dict:
+    """Run prepared circuits one after another in ONE in-process engine
+    (tolerance analyses: hundreds of variants of a bench) ->
+    {"status": "ok", ngspice_version, "runs": [{"measures", "failed"} |
+    {"error"}]} or {"status": "error", "error"}. Never raises for engine
+    problems; setup_engine_env() first; the caller holds the kill switch."""
+    global _NG
+    try:
+        from InSpice.Spice.NgSpice.Shared import NgSpiceShared
+        if os.name != "nt" and _DLL is not None:
+            NgSpiceShared.find_library = classmethod(lambda cls, n: str(_DLL))
+        ng = NgSpiceShared.new_instance()
+        _NG = ng
+    except Exception as exc:  # DLL missing/unloadable
+        return {"status": "error",
+                "error": f"engine load failed: {type(exc).__name__}: {exc}"}
+    runs = []
+    for circuit in circuits:
+        ng.clear_output()
+        try:
+            ng.load_circuit(circuit)
+        except Exception as exc:
+            runs.append({"error": f"circuit rejected: {type(exc).__name__}"})
+            continue
+        try:
+            ng.run()
+        except Exception:
+            pass  # a failed .measure; the rest are still in stdout
+        runs.append({"measures": parse_measures(ng.stdout),
+                     "failed": parse_failed_measures(ng.stderr)})
+        try:
+            ng.destroy()
+            ng.remove_circuit()
+        except Exception:
+            pass
+    return {"status": "ok", "ngspice_version": ng.ngspice_version,
+            "runs": runs}
 
 
 def run_vectors(circuits: list[str]) -> dict:

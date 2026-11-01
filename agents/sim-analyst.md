@@ -61,6 +61,16 @@ Write `kicad/sims/<name>.cir` + `kicad/sims/<name>.bounds.json`:
   error|warning, msg}. Every error bound is a design promise with a cited
   source; warnings are functional niceties. A bench without a sidecar FAILS
   the gate by design.
+- Tolerances: a block that only works at nominal (a filter corner, a
+  threshold divider, a gain) gets the object sidecar
+  `{"bounds": [...], "tolerance": {"analysis": "wca"|"corners"|"mc",
+  "n": 200, "seed": 1}}`. The runner varies every R/C/L (and any
+  `.param x` with a `.param tol_x=0.02`) by its tolerance: the sidecar
+  `"tolerances": {"R1": "0.1%", "C3": {"tol": "X7R", "vdc": 3.3}}`, else
+  the element's trailing BOM comment (`R1 a b 10k ; 1%`), else 1% R /
+  class-of-cap / 20% L (assumed, listed). wca fails a bound the EVA band
+  crosses, corners one any vertex crosses, mc a yield under `min_yield`
+  (default 1.0). Report: min/max/mean/sigma, RSS, top-3 sensitivities.
 - `.cir` header comments: source netlist, rename map, model provenance,
   design intent. End with `.end`.
 - Engine facts (the runner enforces/injects some): `.measure` works ONLY

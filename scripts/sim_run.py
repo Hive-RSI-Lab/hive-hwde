@@ -27,6 +27,16 @@ Violation kinds (S2 normalized schema via checklib, source sim.ngspice):
                        .measure failed) - severity of the bound itself
   sim_engine_error     bench could not run (engine crash/timeout, missing or
                        invalid bounds sidecar) - always error severity
+  sim_tolerance_fail   the sidecar's tolerance analysis (wca: EVA band;
+                       corners: every vertex) carries a measure outside
+                       its bound - severity of the bound
+  sim_yield_low        Monte Carlo yield under the sidecar's min_yield
+
+Tolerance analysis (#495): a sidecar object {"bounds": [...], "tolerance":
+{"analysis": "mc"|"corners"|"wca", "n", "seed", ...}} also varies the
+deck's R/C/L values and tolerance-named .params (lib/simtol.py: sources
+and defaults; lib/tolerance.py: EVA, RSS, corners, Monte Carlo and the
+top-3 sensitivities), and reports them under testbenches[].tolerance.
 
 Exit 0 pass / 1 violations / 2 error (SPEC.md section 6). Whole-run failures
 (no ngspice library, no testbenches, bad CLI input) are exit-2 error JSON.
@@ -52,6 +62,8 @@ sys.path.insert(0, str(SCRIPTS / "lib"))
 
 import checklib  # noqa: E402
 import simlib  # noqa: E402
+import simtol  # noqa: E402
+import tolerance  # noqa: E402
 from lib import env  # noqa: E402
 
 SCRIPT = "sim_run"
@@ -125,7 +137,7 @@ def run(input_path: Path, timeout: float = 60.0) -> dict:
             entry["status"] = "error"
             continue
         try:
-            bounds = simlib.load_bounds(bp)
+            bounds, tcfg = simlib.load_sidecar(bp)
         except checklib.CheckError as exc:
             vios.append(simlib.engine_error(cir.name, str(exc)))
             entry["status"] = "error"
@@ -145,11 +157,130 @@ def run(input_path: Path, timeout: float = 60.0) -> dict:
         bvios = simlib.compare_bounds(bounds, entry["measures"], cir.name,
                                       failed_measures=res.get("failed_measures"))
         vios.extend(bvios)
+        if tcfg is not None:
+            tvios = run_tolerance(cir, bounds, tcfg, dll, timeout,
+                                  entry["elapsed_s"], entry)
+            bvios = bvios + tvios
+            vios.extend(tvios)
         entry["status"] = "violations" if bvios else "pass"
     return checklib.report(
         SCRIPT, input_path, vios, input=str(input_path),
         engine={"dll": str(dll), "ngspice_version": version},
         timeout_s=timeout, testbenches=facts)
+
+
+BATCH = 250  # variants per worker process
+
+
+def _run_batch(circuits: list[str], dll: Path, timeout: float) -> dict:
+    """Variants in killable workers of BATCH decks each -> {"runs": [...]}
+    or {"error"}; never raises."""
+    import tempfile
+    runs: list[dict] = []
+    version = None
+    for i in range(0, len(circuits), BATCH):
+        chunk = circuits[i:i + BATCH]
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False,
+                                         encoding="utf-8") as fh:
+            json.dump(chunk, fh)
+            tmp = Path(fh.name)
+        cmd = [sys.executable, str(Path(__file__).resolve()),
+               "--exec-many", str(tmp), "--dll", str(dll)]
+        try:
+            cp = subprocess.run(cmd, capture_output=True, text=True,
+                                encoding="utf-8", errors="replace",
+                                timeout=timeout + WORKER_GRACE_S)
+        except subprocess.TimeoutExpired:
+            return {"error": f"tolerance batch timeout after {timeout:g} s "
+                             "(killed)"}
+        finally:
+            tmp.unlink(missing_ok=True)
+        try:
+            res = json.loads(cp.stdout)
+        except json.JSONDecodeError:
+            tail = (cp.stderr or cp.stdout or "").strip()[-400:]
+            return {"error": f"tolerance worker died (exit {cp.returncode}): "
+                             f"{tail or 'no output'}"}
+        if res.get("status") != "ok":
+            return {"error": res.get("error", "tolerance worker failed")}
+        version = res.get("ngspice_version", version)
+        runs.extend(res["runs"])
+    return {"runs": runs, "ngspice_version": version}
+
+
+def run_tolerance(cir: Path, bounds: list[dict], cfg: dict, dll: Path,
+                  timeout: float, nominal_s: float, entry: dict) -> list[dict]:
+    """The sidecar's tolerance analysis of one bench (lib/simtol.py): every
+    variant deck through ngspice in batch workers, the band (wca/corners)
+    or the yield (mc) gated against the same bounds. Facts land in
+    entry["tolerance"]; returns the violations."""
+    text = simlib.prepare_circuit(cir.read_text(encoding="utf-8",
+                                                errors="replace"))
+    try:
+        params, info, assumed = simtol.build_params(text, cfg)
+    except ValueError as exc:
+        return [simlib.engine_error(cir.name, f"tolerance: {exc}")]
+    if not params:
+        return [simlib.engine_error(cir.name, "tolerance: nothing to vary")]
+    failure: dict = {}
+
+    def batch(points):
+        circuits = [simtol.render(text, info, p) for p in points]
+        # the bench's own timeout, plus its nominal run time for each deck
+        budget = timeout + 3 * max(nominal_s, 0.05) * min(len(circuits),
+                                                          BATCH)
+        res = _run_batch(circuits, dll, budget)
+        if "error" in res:
+            failure.setdefault("error", res["error"])
+            return [{} for _ in points]
+        return [r.get("measures", {}) for r in res["runs"]]
+
+    t0 = time.monotonic()
+    out = tolerance.analyse(params, analysis=cfg["analysis"], n=cfg["n"],
+                            seed=cfg["seed"], bounds=bounds, batch=batch)
+    if failure:
+        return [simlib.engine_error(cir.name, failure["error"])]
+    if not out["nominal"]:
+        return [simlib.engine_error(
+            cir.name, "tolerance: the nominal variant measured nothing")]
+    out.pop("samples", None)
+    out["elapsed_s"] = checklib.rnd(time.monotonic() - t0, 3)
+    if assumed:
+        out["assumed"] = assumed
+    entry["tolerance"] = out
+    vios = []
+    for b, edge, v in tolerance.band_violations(bounds, out):
+        if cfg["analysis"] == "mc":
+            continue
+        name = b["measure"]
+        tops = ", ".join(t["param"] for t in out["top3"].get(name.lower(), []))
+        note = f" - {b['msg']}" if b.get("msg") else ""
+        vios.append(checklib.violation(
+            simlib.CHECK, b.get("severity", "error"), None, None, None, [],
+            f"{cir.name}: {name} reaches {v:g} at the tolerance "
+            f"{'corners' if cfg['analysis'] == 'corners' else 'worst case'}"
+            f", outside {simlib._fmt_bound(b)} (top: {tops}){note}",
+            simlib.SOURCE, kind="sim_tolerance_fail", measure=name,
+            testbench=cir.name, analysis=cfg["analysis"], edge=edge,
+            value=v, bound={"min": b.get("min"), "max": b.get("max")}))
+    if cfg["analysis"] == "mc":
+        y = out.get("yield", {})
+        if y.get("all", 1.0) < cfg["min_yield"]:
+            sev = "error" if any(b.get("severity", "error") == "error"
+                                 and y["per_measure"].get(b["measure"], 1)
+                                 < cfg["min_yield"] for b in bounds) \
+                else "warning"
+            worst = sorted(y["per_measure"].items(), key=lambda kv: kv[1])
+            vios.append(checklib.violation(
+                simlib.CHECK, sev, None, None, None, [],
+                f"{cir.name}: Monte Carlo yield {y['all']:.1%} over "
+                f"n={cfg['n']} (seed {cfg['seed']}) is under "
+                f"{cfg['min_yield']:.1%}; worst {worst[0][0]} "
+                f"{worst[0][1]:.1%}", simlib.SOURCE,
+                kind="sim_yield_low", testbench=cir.name,
+                analysis="mc", yield_all=y["all"],
+                per_measure=y["per_measure"]))
+    return vios
 
 
 def run_list(input_path: Path) -> dict:
@@ -162,7 +293,9 @@ def run_list(input_path: Path) -> dict:
                        "bounds_file": str(bp), "has_bounds": bp.exists()}
         if bp.exists():
             try:
-                entry["bounds"] = simlib.load_bounds(bp)
+                entry["bounds"], tcfg = simlib.load_sidecar(bp)
+                if tcfg is not None:
+                    entry["tolerance"] = tcfg
             except checklib.CheckError as exc:
                 entry["bounds_error"] = str(exc)
         out.append(entry)
@@ -178,6 +311,13 @@ def run_fragment(net: Path, refs: list[str], nets: list[str]) -> dict:
     frag = simlib.synth_fragment(parsed, refs=refs, nets=nets)
     return {"script": SCRIPT, "status": "pass", "mode": "fragment",
             "netlist": str(net), **frag}
+
+
+def exec_many(batch_json: Path, dll: Path) -> dict:
+    """Internal worker: run a JSON list of prepared circuits in one engine."""
+    circuits = json.loads(batch_json.read_text(encoding="utf-8"))
+    simlib.setup_engine_env(dll)
+    return simlib.run_circuits(circuits)
 
 
 def exec_one(cir: Path, dll: Path) -> dict:
@@ -215,7 +355,18 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", help="write JSON report here instead of stdout")
     ap.add_argument("--exec-one", help=argparse.SUPPRESS)  # internal worker
     ap.add_argument("--dll", help=argparse.SUPPRESS)       # internal worker
+    ap.add_argument("--exec-many", help=argparse.SUPPRESS)  # internal worker
     args = ap.parse_args(argv)
+
+    if args.exec_many:
+        try:
+            res = exec_many(Path(args.exec_many), Path(args.dll))
+        except Exception as exc:  # noqa: BLE001
+            print(json.dumps({"status": "error",
+                              "error": f"{type(exc).__name__}: {exc}"}))
+            return 2
+        print(json.dumps(res))
+        return 0 if res.get("status") == "ok" else 2
 
     if args.exec_one:  # worker: raw result JSON, exit 0 ran / 2 crashed
         try:
