@@ -49,6 +49,13 @@ rules as routing constraints; cite the record id when you apply one.
    trunk starves thermal spokes) - do not force them.
    Premise check: `--pad-window` measures each power pad's width ceiling -
    run it before forcing a rule width at a connector (exit 1 = unmeetable).
+   Repeated channels (constraints `channels`, #482): route the SOURCE
+   channel first (route_critical, or `route_edit` ops), then
+   `scripts/place_replicate.py --pcb <board> --stage route --apply` stamps
+   its tracks and vias into every target, nets mapped through the pad
+   table; copy that would touch another net is dropped and listed. The
+   nets between channels and the rest of the board stay for route_auto.
+   `route_quality` reports `channel_symmetry` (1.0 = exact stamp).
 2. `scripts/stitch_vias.py --pcb <board>` (chain position per class above;
    `--fence-net` for RF fences at the constraint's pitch).
 3. `scripts/route_auto.py --pcb <board>` - refill -> DSN export (with the

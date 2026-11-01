@@ -37,6 +37,11 @@ A class's score is sum(ideal) / sum(cost) over its judged nets (long nets
 weigh more), and the board's the same over every judged net. The report
 lists each class's worst nets, which is where a re-route round starts.
 
+A board whose constraints declare `channels` (#482, place_replicate) also
+gets `channel_symmetry`: per target channel, the share of its parts and of
+its copper that sit exactly where the source's land under the declared
+transform, and the minimum over targets as `score`.
+
 Report facts: `quality` = {score, judged, nets_total, classes: {name:
 {score, nets, judged, ideal_mm, length_mm, vias, bends, worst: [...]}},
 nets: {net: {...}}, weights}. No violations unless --min-quality Q: then
@@ -360,7 +365,25 @@ def run(argv=None):
                 f"{f['ideal_mm']:.1f} mm ideal, {f['vias']} vias, "
                 f"{f['bends']} bends", SCRIPT, kind=KIND,
                 quality=f["quality"]))
-    return checklib.report(SCRIPT, pcb, violations, quality=q), args.out
+    extra = {}
+    sym = channel_symmetry(pcb, cons)
+    if sym is not None:
+        extra["channel_symmetry"] = sym
+    return checklib.report(SCRIPT, pcb, violations, quality=q,
+                           **extra), args.out
+
+
+def channel_symmetry(pcb: Path, cons: dict | None) -> dict | None:
+    """constraints `channels` (#482): how far each target channel's
+    placement and copper are from the source's under the declared transform
+    (lib/replicatelib.symmetry; 1.0 = an exact stamp). None without channels."""
+    if not (cons or {}).get("channels"):
+        return None
+    import replicatelib
+    try:
+        return replicatelib.symmetry(pcb, cons, routing=True)
+    except replicatelib.ReplicateError as e:
+        return {"error": str(e)}
 
 
 def main(argv=None) -> int:

@@ -62,6 +62,16 @@ returns `status: checkpoint` (exit 1): the dead end goes to the owner.
   outright. A back-side part reaches its plane through vias - do not let a
   flipped decoupler read as "closer" without checking the loop at P8.
 
+## Stage 2b - repeated channels (constraints `channels`, #482)
+`scripts/place_replicate.py --pcb kicad/<board>.kicad_pcb --stage place
+ --apply` after you have chosen the winner and laid out the SOURCE channel:
+every target channel's parts land where the source's do under the declared
+transform (grid pitch or explicit offsets) and are locked. A part only one
+channel has (`replicate_unmatched`) is not stamped: it stays where it was
+when legal, else moves to the nearest free spot; place it properly by hand.
+place_metrics reports `channel_symmetry` (1.0 = exact). Don't hand-move a
+stamped part; change the source and re-stamp.
+
 ## Stage 3 - select + repair (your judgment, <= 8 edit iterations budget)
 1. Review candidates: metrics first, then renders - apply a candidate to a
    COPY (`scripts/place_edit.py --pcb <copy> --ops cand<k>.ops.json`) and
