@@ -31,6 +31,7 @@ Lengths here are mm unless named otherwise.
 """
 from __future__ import annotations
 
+import bisect
 import math
 import re
 from pathlib import Path
@@ -352,10 +353,16 @@ def _axis_lines(fixed, lo, hi, fine, coarse, pad):
     for v in uniform(lo, hi, fine):
         if all(abs(v - f) > fine / 3 for f in fixed):
             core.add(round(v, 6))
-    out = set(core)
-    out |= set(graded(hi, hi + pad, fine, coarse))
-    out |= set(-v for v in graded(-lo, -lo + pad, fine, coarse))
-    return sorted(out)
+    # the graded runs start at the unrounded lo/hi: a line 2e-7 mm from the
+    # rounded edge made dt 6e-19 s, so 200000 steps ended before the pulse
+    # reached a probe (rf-kit RO4350B S3). Same fine/4 rule; the edges stay.
+    out = sorted(core)
+    for v in sorted(set(graded(hi, hi + pad, fine, coarse))
+                    | set(-v for v in graded(-lo, -lo + pad, fine, coarse))):
+        i = bisect.bisect(out, v)
+        if all(abs(v - q) >= fine / 4 for q in out[max(i - 1, 0):i + 1]):
+            out.insert(i, v)
+    return out
 
 
 def _snap(lines, v):
