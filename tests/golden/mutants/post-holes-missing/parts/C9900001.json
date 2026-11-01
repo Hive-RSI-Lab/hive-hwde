@@ -1,0 +1,35 @@
+{
+  "mpn": "HDR-1x04-POSTS",
+  "lcsc": "C9900001",
+  "pinout": [
+    {
+      "pin": "1",
+      "name": "P1",
+      "type": "passive"
+    },
+    {
+      "pin": "2",
+      "name": "P2",
+      "type": "passive"
+    },
+    {
+      "pin": "3",
+      "name": "P3",
+      "type": "passive"
+    },
+    {
+      "pin": "4",
+      "name": "P4",
+      "type": "passive"
+    }
+  ],
+  "mechanical": {
+    "posts": [
+      {
+        "count": 2,
+        "dia_mm": 1.0
+      }
+    ],
+    "source": "planted fault"
+  }
+}
