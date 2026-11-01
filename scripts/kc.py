@@ -435,6 +435,14 @@ def export_pos(cli: Path, pcb: Path, out_file: Path, side: str = "both",
     return _export_result("pos", pcb, cp, [out_file])
 
 
+def export_ipcd356(cli: Path, pcb: Path, out_file: Path) -> dict:
+    """IPC-D-356 netlist (the bare-board tester's netlist, lib/ipcd356.py)."""
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    cp = run_cli(cli, ["pcb", "export", "ipcd356", "-o", str(out_file),
+                       str(pcb)])
+    return _export_result("ipcd356", pcb, cp, [out_file])
+
+
 def export_step(cli: Path, pcb: Path, out_file: Path, force: bool = True) -> dict:
     out_file.parent.mkdir(parents=True, exist_ok=True)
     args = ["pcb", "export", "step", "-o", str(out_file)]
