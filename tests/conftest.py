@@ -70,6 +70,7 @@ _INTAKE = "materializes a whole KiCad project through intake"
 SLOW = {
     "tests/test_rf_synth.py::test_live_ngspice_ac_gives_the_same_rl": "runs ngspice AC decks in a worker",
     "tests/test_rf_synth.py::test_live_ngspice_mc_matches_the_closed_form": "runs a 40-draw Monte Carlo through ngspice workers",
+    "tests/test_sim_si.py::test_planted_victim_beside_a_fast_clock": "field-solves pinned lite-main's nets twice and runs ngspice",
     "tests/test_check_testpoints.py::test_access_side_and_position_match_kicad_ipcd356": "exports pinned lite-main's IPC-D-356 with kicad-cli",
     "tests/test_check_wicking.py::test_mask_web_agrees_with_the_kicad_f_mask_gerber": _TOOLS,
     "tests/test_netlist_compare.py::test_pinned_board_ships_a_netlist_its_gerbers_match": "exports the pinned lite-main/core fab packages with kicad-cli",

@@ -3513,6 +3513,32 @@
    "kind": "dfm_ring_breakout",
    "verdict": "real",
    "reason": "0.5/0.3 via, ring 0.1 mm under JLC's 0.05 abs ring + 0.075 drill wander, with a track join and no teardrop: the drill can break out at the neck (route_teardrops.py fixes it)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_si",
+   "net": "/I2S_DOUT_MAIN",
+   "refs": [],
+   "pos": [
+    137.313,
+    154.131
+   ],
+   "kind": "si_crosstalk_sim",
+   "verdict": "real",
+   "reason": "/I2S_LRCK beside /I2S_DOUT_MAIN (52 mm): sim_si puts 377 mV on the receiver with no driver declared (worst orientation), past the 165 mV budget, inside the 396 mV margin; with both nets driven from the one IC it still reads 256-377 mV, so it isn't the orientation"
+  },
+  {
+   "gate": "verify",
+   "check": "check_si",
+   "net": "/I2S_LRCK",
+   "refs": [],
+   "pos": [
+    137.689,
+    154.255
+   ],
+   "kind": "si_crosstalk_sim",
+   "verdict": "real",
+   "reason": "/I2S_DOUT_MAIN beside /I2S_LRCK (53 mm): sim_si puts 262 mV on the receiver with no driver declared (worst orientation), past the 165 mV budget, inside the 396 mV margin; with both nets driven from the one IC it still reads 256-377 mV, so it isn't the orientation"
   }
  ]
 }
