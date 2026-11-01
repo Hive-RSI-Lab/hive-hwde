@@ -1,0 +1,8 @@
+# check_via_stubs: quarter-wave via stub resonance on declared fast nets
+# against the net's knee frequency, and declared back-drills against the fab's
+# depth tolerance (#478). Board only; silent without constraints.
+name: check_via_stubs
+needs: []
+args: []
+optional:
+  constraints: [--constraints, "{constraints}"]

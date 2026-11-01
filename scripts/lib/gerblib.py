@@ -223,6 +223,22 @@ def drill_plating(text: str) -> tuple[dict[float, bool], bool | None]:
     return {d: p for d, p in tools.items() if d not in clash}, default
 
 
+def is_backdrill(path: Path) -> bool:
+    """A KiCad back-drill file (#478): a controlled-depth pass over vias that
+    are already in the through-hole file. It is no hole of its own, so hole
+    spacing, plating and netlist reads must not see it."""
+    try:
+        with Path(path).open(encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                if "NonPlated,BackDrill" in line:
+                    return True
+                if line.strip() in ("%", "M95"):
+                    break
+    except OSError:
+        pass
+    return False
+
+
 def read_drill(path: Path) -> list[Hole]:
     holes: list[Hole] = []
     try:
@@ -315,6 +331,7 @@ class FabStack:
         self.paste_files: dict[str, Path] = {}
         self.edge_file: Path | None = None
         self.drill_files: list[Path] = []
+        self.backdrill_files: list[Path] = []
         self._cache: dict[str, LayerGeom] = {}
         self._holes: list[Hole] | None = None
         self._outline = None
@@ -336,7 +353,8 @@ class FabStack:
             elif _EDGE_RE.search(n):
                 self.edge_file = p
             elif _DRILL_RE.search(n) and not n.lower().endswith(".gbrjob"):
-                self.drill_files.append(p)
+                (self.backdrill_files if is_backdrill(p)
+                 else self.drill_files).append(p)
             elif (m := _COPPER_EXT_RE.search(n)):
                 key = ("F.Cu" if m.group(1) else "B.Cu" if m.group(2)
                        else f"In{int(m.group(3))}.Cu")

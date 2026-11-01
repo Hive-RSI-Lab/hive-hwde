@@ -1,0 +1,13 @@
+# Seeded fault for check_via_stubs (via stub resonance, issue #478).
+mutants:
+  via-stub-long:
+    board: usbbuck4
+    script: mutations/via_stub_long.py
+    check: check_via_stubs
+    defect: >-
+      SI fault: a net with a 25 ps edge changes layer from F.Cu to In1 through
+      a through via, leaving the barrel below In1 as an open stub that
+      resonates under 1.5 x the net's knee (KiCad's DRC passes it)
+    expect:
+      kind: via_stub_resonance
+      pos: [141, 123]

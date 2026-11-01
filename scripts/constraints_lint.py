@@ -52,7 +52,9 @@ SECTIONS: dict[str, dict[str, dict[str, str]]] = {
     "high_speed": {
         "required": {"net": "str", "reference": "str_or_map"},
         "optional": {"k": "num", "t_rise_ns": "num",
-                     "return_via_radius_mm": "num", "impedance_ohm": "num"},
+                     "return_via_radius_mm": "num", "impedance_ohm": "num",
+                     # check_via_stubs (#478)
+                     "data_rate_mbps": "num", "f_max_ghz": "num"},
     },
     "power": {
         "required": {"net": "str", "current_a": "num"},
@@ -67,7 +69,17 @@ SECTIONS: dict[str, dict[str, dict[str, str]]] = {
                      "term_pair_mm": "num", "operating_point": "map",
                      # running skew (#476)
                      "max_phase_skew_mm": "num", "phase_window_mm": "num",
-                     "rise_ps": "num"},
+                     "rise_ps": "num",
+                     # check_via_stubs (#478)
+                     "t_rise_ns": "num", "data_rate_mbps": "num"},
+    },
+    # via_backdrill + check_via_stubs (#478): opt-in controlled-depth drilling
+    "backdrill": {
+        "required": {"net": "str"},
+        "optional": {"drill_mm": "num", "depth_tol_mm": "num",
+                     "max_stub_mm": "num", "vendor": "str", "reason": "str",
+                     "t_rise_ns": "num", "data_rate_mbps": "num",
+                     "f_max_ghz": "num"},
     },
     # route_cleanup --snap-only leaves these nets as routed
     "length_match": {

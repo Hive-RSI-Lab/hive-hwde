@@ -17,6 +17,8 @@ Consumers per key (script -> phase):
     "reference": "GND",              // or {"F.Cu": "GND", "B.Cu": "+3V3"}
     "k": 3,                          // corridor = k x trace width (default 3)
     "t_rise_ns": 1.0,                // sets return-via radius + stitch pitch
+    "data_rate_mbps": 10000,         // check_via_stubs knee (also on diff_pairs)
+    "f_max_ghz": 6.0,                // check_via_stubs knee, RF nets (also on rf)
     "return_via_radius_mm": 2.0,     // fallback when t_rise_ns absent
     "impedance_ohm": 50              // optional; rules_gen reports the outer
                                      // microstrip width (impedance facts) and
@@ -221,6 +223,10 @@ Consumers per key (script -> phase):
   // found by name and driver (clocks, RMII, I2S, SPI, USB, Ethernet MDI,
   // crystals); this block only declares a net the names miss, corrects a
   // class or edge, or sets a target. Every key is optional.
+  // via_backdrill + check_via_stubs (#478): opt-in controlled-depth drilling.
+  // Off JLC only. depth_tol_mm: from the fab's quote (default 0.15).
+  "backdrill": [{"net": "/SIG", "drill_mm": 0.5, "depth_tol_mm": 0.1,
+                 "max_stub_mm": 0.4, "vendor": "pcbway"}],
   "si": {"nets": {"/ETH_CLK": {"class": "osc_clock", "t_rise_ns": 1.0,
                                "z0_ohm": 50, "z0_tol_pct": 20,
                                "driver_ohm": 20, "swing_v": 3.3,
