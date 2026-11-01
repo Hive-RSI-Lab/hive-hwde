@@ -72,6 +72,7 @@ def _ws(tmp_path: Path, *fps: str, state: bool = True) -> Path:
     ("${KIPRJMOD}/../../../lib/aiee.3dshapes/R.wrl", "outside_workspace"),
     ("boards/b/lib/aiee.3dshapes/R.wrl", "unanchored"),
     ("${SOME_VAR}/R.wrl", "unanchored"),
+    ("kicad-embed://USB.step", None),
 ])
 def test_model_path_kind(tmp_path, path, kind):
     ws = tmp_path / "boards" / "ws"
@@ -131,6 +132,18 @@ def test_check_flags_outside_workspace_and_unanchored(tmp_path):
     kinds = sorted(v["kind"] for v in cmp.run(["--pcb", str(pcb)])[0]
                    ["violations"])
     assert kinds == ["model_path_outside_workspace", "model_path_unanchored"]
+
+
+def test_embedded_model_passes_unless_the_file_is_missing(tmp_path):
+    """KiCad's Altium importer embeds each footprint's model in the board
+    (kicad-embed://<name>, the file in an (embedded_files) block)."""
+    emb = ('\t\t(embedded_files\n\t\t\t(file\n\t\t\t\t(name "USB.step")\n'
+           '\t\t\t\t(type model)\n\t\t\t\t(data |AAAA|)\n\t\t\t)\n\t\t)\n')
+    fp = _fp("J1", "0 0", "kicad-embed://USB.step")
+    fp = fp[:fp.rindex("\t)\n")] + emb + "\t)\n"  # inside the footprint
+    pcb = _ws(tmp_path, fp, _fp("J2", "1 0", "kicad-embed://Gone.step"))
+    viols = cmp.run(["--pcb", str(pcb)])[0]["violations"]
+    assert [(v["kind"], v["refs"]) for v in viols] == [("model_path_embed_missing", ["J2"])]
 
 
 def test_clean_board_passes(tmp_path):
