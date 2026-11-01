@@ -78,7 +78,9 @@ def build(bg, net: str, include_zones: bool = False, snap: int = SNAP,
     c) via join: an endpoint within via.diameter/2 + tol of the via center,
        with the via spanning the track's layer (weight = distance to center).
     d) pad join: an endpoint inside pad.poly buffered by tol, with the
-       track's layer in pad.layers (weight = distance to pad.center).
+       track's layer in pad.layers (weight = distance to pad.center). A via
+       whose centre is inside the pad and that spans a pad layer joins the
+       pad too: a via-in-pad has no track on the pad's layer (#546).
     e) include_zones=True: each zone-fill polygon becomes a ("zone", j) node
        joined at weight 0 to any endpoint within tol of the fill (same layer)
        and any via within its own radius of the fill (via must span the fill
@@ -162,6 +164,11 @@ def build(bg, net: str, include_zones: bool = False, snap: int = SNAP,
             if poly.distance(Point(pt)) <= tol:
                 join(node, pnode,
                      math.hypot(pt[0] - p.center[0], pt[1] - p.center[1]))
+        for vi, v in enumerate(vias):
+            if any(v.spans(ly) for ly in p.layers) \
+                    and poly.distance(Point(v.at)) <= tol:
+                join(("via", vi), pnode,
+                     math.hypot(v.at[0] - p.center[0], v.at[1] - p.center[1]))
 
     # e) zone-fill joins
     if include_zones:

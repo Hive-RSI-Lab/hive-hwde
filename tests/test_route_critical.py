@@ -710,3 +710,25 @@ def test_rip_new_copper_keeps_old_and_other_nets(tmp_path, monkeypatch):
     assert n == 2
     assert sorted(o["uuid"] for o in seen) == ["new-a", "new-va"]
     assert all(o["op"] == "remove" for o in seen)
+
+
+# ============================================================ pure: bus (#546)
+
+def test_bus_is_opt_in():
+    assert "bus" not in rc.plan_order(None, None)
+    assert rc.plan_order("bus", None) == ["bus"]
+    assert rc.plan_order(None, {"order": ["diff", "bus"]}) == ["diff", "bus"]
+
+
+def test_bus_specs_from_length_groups():
+    nets = {"/D0", "/D1", "/DM", "/DQS_P", "/DQS_N", "/A0", "/CS"}
+    groups = {"length_groups": [
+        {"name": "B0", "nets": ["D[0-1]", "DM"], "ref_nets": ["DQS_P", "DQS_N"]},
+        {"name": "DQS", "nets": ["DQS_P", "DQS_N"]},
+        {"name": "CMD", "nets": ["A0", "CS", "GONE"]},
+        {"name": "CS_MATCH", "nets": ["CS"]},
+    ]}
+    got = rc.bus_specs(groups, nets, {"/DQS_P", "/DQS_N"})
+    assert got == [{"name": "B0", "nets": ["/D0", "/D1", "/DM"]},
+                   {"name": "CMD", "nets": ["/A0", "/CS"]}]
+    assert rc.bus_specs({}, nets, set()) == []
