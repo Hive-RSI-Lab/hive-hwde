@@ -115,6 +115,7 @@ import checklib  # noqa: E402
 import engcalc  # noqa: E402
 import mlcc  # noqa: E402
 import simlib  # noqa: E402
+import tolerance  # noqa: E402
 from lib import env  # noqa: E402
 
 SCRIPT = "sim_board"
@@ -1154,14 +1155,15 @@ def regulator_findings(board, parts, rails, model, opts, vios, unknowns,
                 out.append(row)
                 continue
             vref, vtol, vsrc, verified = vr
-            rtol = max(engcalc.parse_tolerance(attr(parts.get(r),
-                                                    r"^Tolerance")) or 0.01
+            rtol = max(r_tolerance(board, parts, r)
                        for r in top["refs"] + bot["refs"])
             fbv = engcalc.fb_vout(vref, top["value"], bot["value"], rtol, vtol)
+            wc = fb_wca(vref, vtol, top["value"], bot["value"], rtol)
             row.update({"vref": vref, "vref_source": vsrc,
                         "vref_verified": verified, "r_tol": rtol,
                         "vref_tol": vtol,
-                        "vout": {k: checklib.rnd(v, 4) for k, v in fbv.items()}})
+                        "vout": {k: checklib.rnd(v, 4) for k, v in fbv.items()},
+                        "vout_rss": wc["rss"], "vout_top3": wc["top3"]})
             if not verified:
                 unknowns.append({"ref": c["ref"], "what": f"Vref {vref:g} V",
                                  "why": f"{vsrc} - not re-read from the "
@@ -1588,7 +1590,43 @@ def i2c_findings(board, rails, model, opts, vios, unknowns, facts):
     facts["i2c"] = out
 
 
-def passive_facts(board, rails, model, facts):
+def r_tolerance(board, parts, ref) -> float:
+    """A resistor's tolerance from its BOM fields (lib/tolerance.py: the
+    parts.json Tolerance attribute, else the value field, else 1%)."""
+    c = board["comps"].get(ref) or {}
+    p = tolerance.part_tolerance("R", c.get("value", ""),
+                                 attr(parts.get(ref), r"^Tolerance"),
+                                 nom=1.0)
+    return max(1 - p.lo, p.hi - 1)
+
+
+def fb_wca(vref, vtol, r_top, r_bot, rtol) -> dict:
+    """RSS band (tolerance = 3 sigma) and top-3 sensitivities of
+    Vout = Vref (1 + Rtop/Rbot); the EVA band is engcalc.fb_vout's closed
+    form."""
+    g = "gauss"  # WCCA RSS: the tolerance is 3 sigma
+    params = {"vref": tolerance.make_param("vref", vref, vtol, dist=g),
+              "r_top": tolerance.make_param("r_top", r_top, rtol, dist=g),
+              "r_bot": tolerance.make_param("r_bot", r_bot, rtol, dist=g)}
+    res = tolerance.analyse(
+        params, lambda p: {"vout": p["vref"] * (1 + p["r_top"] / p["r_bot"])},
+        analysis="wca")
+    m = res["measures"]["vout"]
+    return {"rss": {"sigma": checklib.rnd(m["rss_sigma"], 5),
+                    "min": checklib.rnd(m["rss_min"], 4),
+                    "max": checklib.rnd(m["rss_max"], 4)},
+            "top3": [t["param"] for t in res["top3"]["vout"]]}
+
+
+def element_tol(board, parts, e) -> tolerance.Param | None:
+    c = board["comps"].get(e["ref"]) or {}
+    return tolerance.part_tolerance(
+        e["kind"], c.get("value", ""), attr(parts.get(e["ref"]),
+                                            r"^Tolerance"),
+        footprint=e.get("footprint") or "", nom=e["value"], name=e["ref"])
+
+
+def passive_facts(board, rails, model, facts, parts=None):
     caps_to_gnd: dict[str, list] = {}
     for e in model["elems"]:
         if e["kind"] == "C":
@@ -1607,12 +1645,26 @@ def passive_facts(board, rails, model, facts):
                 continue
             c = sum(x["value"] for x in caps_to_gnd[n])
             fc = engcalc.rc_corner_hz(e["value"], c)
-            filters.append({"type": "low-pass", "r": e["ref"],
-                            "c": [x["ref"] for x in caps_to_gnd[n]],
-                            "from": src, "node": n,
-                            "tau_s": checklib.rnd(e["value"] * c, 9),
-                            "fc_hz": checklib.rnd(fc, 3),
-                            "audio_band": 20 <= fc <= 20000})
+            row = {"type": "low-pass", "r": e["ref"],
+                   "c": [x["ref"] for x in caps_to_gnd[n]],
+                   "from": src, "node": n,
+                   "tau_s": checklib.rnd(e["value"] * c, 9),
+                   "fc_hz": checklib.rnd(fc, 3),
+                   "audio_band": 20 <= fc <= 20000}
+            rp = element_tol(board, parts or {}, e)
+            cps = [element_tol(board, parts or {}, x)
+                   for x in caps_to_gnd[n]]
+            if rp is not None and all(cps):
+                # fc falls with R and every C: the corners are R and C all
+                # high (min) and all low (max)
+                c_lo = sum(p.lo for p in cps)
+                c_hi = sum(p.hi for p in cps)
+                row["fc_corners_hz"] = [
+                    checklib.rnd(engcalc.rc_corner_hz(rp.hi, c_hi), 3),
+                    checklib.rnd(engcalc.rc_corner_hz(rp.lo, c_lo), 3)]
+                row["tol"] = {"r": rp.source,
+                              "c": sorted({p.source for p in cps})}
+            filters.append(row)
     facts["rc_networks"] = filters[:60]
     xtals = []
     for c in board["comps"].values():
@@ -1697,7 +1749,7 @@ def run(a) -> dict:
                     facts)
     timing_findings(board, rails, model, ops, tran, ens, opts, vios, facts)
     i2c_findings(board, rails, model, opts, vios, unknowns, facts)
-    passive_facts(board, rails, model, facts)
+    passive_facts(board, rails, model, facts, parts)
     unknowns += [{"ref": "", "what": f"{n} not a rail",
                   "why": "named like a rail but only passives on this "
                          "sheet-local net: left to the network (give "
