@@ -282,6 +282,11 @@ def detect_diff_pairs(constraints: dict) -> list[dict]:
     used: set[str] = set()
     # explicit diff_pairs section wins
     for dp in constraints.get("diff_pairs", []):
+        if str(dp.get("kind", "")).lower() in ("sense", "kelvin", "dc_sense", "low_frequency"):
+            # a DC shunt-sense pair: check_diffpair judges it as "routed
+            # together"; it has no impedance, so no width or gap rule either
+            used.update([dp["p"], dp["n"]])
+            continue
         pairs.append({"p": dp["p"], "n": dp["n"], "base": dp.get("base", dp["p"]),
                       "impedance_ohm": dp.get("impedance_ohm", 90)})
         used.update([dp["p"], dp["n"]])
