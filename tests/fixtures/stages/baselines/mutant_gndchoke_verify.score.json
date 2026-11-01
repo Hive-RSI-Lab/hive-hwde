@@ -5,7 +5,7 @@
  "board": "pd-trigger",
  "metrics": {
   "errors": 51,
-  "warnings": 52,
+  "warnings": 53,
   "by_check": {
    "check_return_path": 0,
    "check_current": 44,
@@ -19,6 +19,7 @@
    "check_pdn": 0,
    "check_ratings": 0,
    "check_antenna": 0,
+   "check_body_clash": 1,
    "check_bom_sync": 0,
    "check_cap_load": 0,
    "check_connector_fit": 0,
@@ -44,6 +45,7 @@
    "check_wicking": 2
   },
   "by_kind": {
+   "body_unjudged": 1,
    "courtyard_pads": 28,
    "ep_paste_high": 2,
    "fp_attr_mismatch": 1,
@@ -67,11 +69,11 @@
  "metrics_live": null,
  "penalties": {
   "errors": 51.0,
-  "warnings": 52.0,
+  "warnings": 53.0,
   "known_answer_missed": 0.0,
   "forbidden_errors": 0.0
  },
- "composite": 69.3,
+ "composite": 69.2,
  "composite_inputs": "full",
  "known_answer": {
   "status": "ok",
