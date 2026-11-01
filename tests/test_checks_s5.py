@@ -797,7 +797,8 @@ def test_golden_clean_pdn(board):
 GOLDEN_KNOWN_WARNINGS = {
     "blinky2": {"check_connector_fit": 2},
     "rf4": {"check_silk": 1, "check_wicking": 3, "check_connector_fit": 1},
-    "usbbuck4": {"check_wicking": 1, "check_connector_fit": 2},
+    "usbbuck4": {"check_wicking": 1, "check_connector_fit": 2,
+                 "check_body_clash": 1},
 }
 
 

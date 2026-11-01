@@ -1,0 +1,13 @@
+# Seeded fault for check_body_clash (#608).
+mutants:
+  body-ear-clash:
+    board: blinky2
+    script: mutations/body_ear_clash.py
+    check: check_body_clash
+    defect: >-
+      LIBRARY fault: J1 gains a body past its courtyard that runs into U2, with
+      copper and courtyards unchanged, so only the 3D bodies show it (hifi core's
+      RCA jack ear ran 2 mm into a speaker post with every 2D check green)
+    expect:
+      kind: body_clash
+      refs: [J1, U2]

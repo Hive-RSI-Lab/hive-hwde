@@ -191,7 +191,8 @@ ENCLOSURE = {"box_mm": "num_list", "stl": "str_or_list", "wall_mm": "num",
 SCHEMA_TOP_KEYS = set(SECTIONS) | {"placement", "coating", "antennas", "si",
                                    "enclosure", "ambient_c", "ambient_min_c",
                                    "cable_pf", "pin_modes", "ddr",
-                                   "testpoints", "rf_match", "surge", "isolation"}
+                                   "testpoints", "rf_match", "surge", "isolation",
+                                   "mechanical"}
 ENVELOPE_ALIASES = {"power_constraints": "power",
                     "thermal_constraints": "thermal",
                     "voltage_constraints": "voltages"}
@@ -425,6 +426,18 @@ class _FileLint:
                     self.add("error", "bad_type",
                              f"{path}: pin_modes must be {{ref: {{pin: "
                              "mode}}}", path)
+            elif key == "mechanical":
+                # check_body_clash (#608): deliberate nesting, each with a why
+                allow = val.get("allow_body_overlap", []) \
+                    if isinstance(val, dict) else None
+                if not isinstance(allow, list) or not all(
+                        isinstance(e, dict) and isinstance(e.get("why"), str)
+                        and e["why"].strip()
+                        and isinstance(e.get("refs"), list)
+                        and len(e["refs"]) == 2 for e in allow):
+                    self.add("error", "bad_type",
+                             f"{path}: mechanical.allow_body_overlap must be a "
+                             "list of {refs: [A, B], why: text}", path)
             elif key == "testpoints":
                 # check_testpoints (#470): probe rules and the nets in scope
                 nums = {"probe_mm", "fixture_mm", "pitch_mm", "body_mm",

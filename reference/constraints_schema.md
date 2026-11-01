@@ -142,6 +142,12 @@ Consumers per key (script -> phase):
   "testpoints": {"nets": ["+*", "GND", "/NRST"], "min_coverage_pct": 90,
                  "fixture": false},
 
+  // check_body_clash (P8, #608): parts whose 3D bodies overlap on purpose (a
+  // battery in its holder, a part under a shield). Each needs a why. Anything
+  // else that overlaps is an error.
+  "mechanical": {"allow_body_overlap": [
+    {"refs": ["BT1", "J9"], "why": "the cell sits in its holder"}]},
+
   // check_surge (P8, #492): IEC 61000-4-5 surge / 61000-4-4 EFT on cable
   // ports. Only declared ports are judged. kind picks the assumed level from
   // reference/surge_levels.yaml (environment residential | industrial, by

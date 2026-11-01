@@ -5,7 +5,7 @@
  "board": "lumina-carrier",
  "metrics": {
   "errors": 196,
-  "warnings": 239,
+  "warnings": 240,
   "by_check": {
    "check_return_path": 4,
    "check_current": 71,
@@ -19,6 +19,7 @@
    "check_pdn": 0,
    "check_ratings": 0,
    "check_antenna": 1,
+   "check_body_clash": 1,
    "check_bom_sync": 0,
    "check_cap_load": 0,
    "check_connector_fit": 0,
@@ -45,6 +46,7 @@
   },
   "by_kind": {
    "antenna_side_clearance": 1,
+   "body_unjudged": 1,
    "corridor_void": 4,
    "courtyard_pads": 105,
    "creepage": 26,
@@ -77,7 +79,7 @@
  "metrics_live": null,
  "penalties": {
   "errors": 196.0,
-  "warnings": 239.0,
+  "warnings": 240.0,
   "known_answer_missed": 0.0,
   "forbidden_errors": 0.0
  },
