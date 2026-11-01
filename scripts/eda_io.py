@@ -267,7 +267,7 @@ def repair_and_load(pcb: Path) -> dict:
     return {"moved": moved, "to": to}
 
 
-def write_fp_lib(pcb: Path, libname: str) -> dict:
+def write_fp_lib(pcb: Path, libname: str, src=None) -> dict:
     """The board's embedded footprints as <libname>.pretty beside it, an
     fp-lib-table naming it, and the board's footprints relinked to
     libname:name (what eeschema's importer writes in Footprint fields, so
@@ -276,11 +276,17 @@ def write_fp_lib(pcb: Path, libname: str) -> dict:
     if not kpy:
         return {"error": "no KiCad bundled python (pcbnew) beside kicad-cli"}
     pretty = pcb.parent / f"{libname}.pretty"
-    proc = _run([kpy, Path(__file__).resolve().parent / "lib" / "fp_extract_kpy.py",
-                 pcb, pretty, libname])
+    args = [kpy, Path(__file__).resolve().parent / "lib" / "fp_extract_kpy.py", pcb, pretty, libname]
+    if src is not None and src.slots:
+        sj = pcb.parent / "eagle-slots.json"
+        sj.write_text(json.dumps(src.slots, indent=1))
+        args.append(sj)
+    proc = _run(args)
     try:
-        res = json.loads((proc.stdout or "").strip().splitlines()[-1])
-    except (IndexError, json.JSONDecodeError):
+        # SWIG prints its "memory leak ... no destructor" notes on stdout too
+        res = json.loads(next(l for l in reversed((proc.stdout or "").splitlines())
+                              if l.startswith('{"written"')))
+    except (StopIteration, json.JSONDecodeError):
         return {"error": "footprint export failed: " + (proc.stderr or "").strip()[-300:]}
     (pcb.parent / "fp-lib-table").write_text(
         f'(fp_lib_table\n  (version 7)\n  (lib (name "{libname}") (type "KiCad") '
@@ -318,13 +324,13 @@ def do_import(source: Path, out: Path, fmt: str | None = None) -> tuple[int, dic
     if repairs.get("error"):
         result["error"] = repairs["error"]
         return 2, result
-    fplib = write_fp_lib(pcb, source.stem)
-    drc = refill_and_drc(pcb)
     try:
         src = edasrc.read_source(source, detected)
     except Exception as exc:  # a reader's failure mustn't hide the import
         src = None
         result["source_read_error"] = f"{type(exc).__name__}: {exc}"
+    fplib = write_fp_lib(pcb, source.stem, src)
+    drc = refill_and_drc(pcb)
     board = edasrc.read_board(pcb)
     losses = [l.to_json() for l in edasrc.compare(src, board, report, log)]
     if drc.get("error"):
@@ -345,9 +351,31 @@ def do_import(source: Path, out: Path, fmt: str | None = None) -> tuple[int, dic
     if repairs.get("moved"):
         losses.insert(0, {"level": "check", "what": "importer",
                           "text": f"{repairs['moved']} items KiCad's importer put on a layer "
-                                  f"named {UNDEFINED!r} (Eagle texts, so far) were moved to "
+                                  f"named {UNDEFINED!r} (Eagle texts and Milling wires) were moved to "
                                   f"{repairs['to']}: as written, KiCad itself refuses to load "
                                   "the board ('items found on undefined layers')"})
+    if src is not None and src.slots:
+        done = fplib.get("slots") or []
+        losses.append({"level": "check" if len(done) == len(src.slots) else "lost",
+                       "what": "slots",
+                       "text": f"{len(src.slots)} slotted holes are Eagle Milling wires through a "
+                               f"pad; KiCad's importer drops them (UNDEFINED layer), leaving round "
+                               f"drills. Rebuilt as oblong drills: {len(done)} "
+                               f"({edasrc._sample(done)}). Check them against the part's drawing"})
+    if src is not None and src.milling_other:
+        losses.append({"level": "lost", "what": "milling",
+                       "text": f"{src.milling_other} Eagle Milling wires that aren't a pad's slot "
+                               "(board cut-outs?) aren't on Edge.Cuts: KiCad's importer drops them"})
+    pc = fplib.get("pad_copper") or {}
+    if pc.get("converted"):
+        losses.append({"level": "check", "what": "footprints",
+                       "text": f"{pc['converted']} copper shapes drawn in packages (Eagle merges them "
+                               "with the pad they touch; KiCad leaves them net-less, a DRC short) "
+                               "became part of their pads"})
+    if pc.get("left"):
+        losses.append({"level": "check", "what": "footprints",
+                       "text": f"{len(pc['left'])} copper shapes in packages left as drawn: "
+                               + edasrc._sample(pc["left"])})
     if fplib.get("error"):
         losses.append({"level": "check", "what": "footprints",
                        "text": f"no footprint library written: {fplib['error']}"})
