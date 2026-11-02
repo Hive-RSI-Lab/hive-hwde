@@ -11,6 +11,7 @@ Contract:
   ops.json: {"version": 1, "ops": [...]}  (op shapes: see lib/route_swig.py)
     add_track {start:[x,y], end:[x,y], width, layer, net}
     add_via   {at:[x,y], size, drill, net}          # through via
+              [kind: micro|blind|buried, top, bot]  # a span (#477)
     remove    {uuid}                                 # track or via; absent=noop
     set_net   {uuid, net}                            # worker-level (renet)
     set_width {uuid, width} / set_point {uuid, which: start|end|at, to}
@@ -107,7 +108,7 @@ from checklib import CheckError  # noqa: E402
 
 OP_FIELDS = {  # op -> (required, optional)
     "add_track": ({"start", "end", "width", "layer", "net"}, set()),
-    "add_via": ({"at", "size", "drill", "net"}, set()),
+    "add_via": ({"at", "size", "drill", "net"}, {"kind", "top", "bot"}),
     "remove": ({"uuid"}, set()),
     "set_net": ({"uuid", "net"}, set()),
 }
@@ -165,6 +166,11 @@ def validate_ops(doc: dict) -> list[dict]:
                 raise CheckError(f"ops[{i}]: {k} must be a positive number")
         if kind == "add_via" and op["drill"] >= op["size"]:
             raise CheckError(f"ops[{i}]: drill must be < size")
+        if kind == "add_via" and "kind" in op:
+            if op["kind"] not in ("through", "micro", "blind", "buried"):
+                raise CheckError(f"ops[{i}]: unknown via kind {op['kind']}")
+            if op["kind"] != "through" and not ("top" in op and "bot" in op):
+                raise CheckError(f"ops[{i}]: a {op['kind']} via needs top and bot")
         if "uuid" in op and not (isinstance(op["uuid"], str) and op["uuid"]):
             raise CheckError(f"ops[{i}]: uuid must be a non-empty string")
         for k in ("layer", "from", "pcb") + (("to",) if kind != "move_via"
@@ -421,12 +427,11 @@ def _resolve_copy_from(bg, op: dict) -> list[dict]:
             raise CheckError(f"copy_from: net '{it.net}' is not on this "
                              "board")
         if isinstance(it, geom.Via):
-            if tuple(it.layers) != tuple(bg.copper_layers):
-                raise CheckError(f"copy_from: via at {list(it.at)} is not a "
-                                 "through via - route_edit adds those only")
+            span = {} if tuple(it.layers) == tuple(bg.copper_layers) else {
+                "kind": it.kind, "top": it.layers[0], "bot": it.layers[-1]}
             out.append({"op": "add_via", "at": list(it.at),
                         "size": it.diameter, "drill": it.drill,
-                        "net": it.net})
+                        "net": it.net, **span})
             continue
         if it.layer not in bg.copper_layers:
             raise CheckError(f"copy_from: layer {it.layer} is not on this "
@@ -472,6 +477,9 @@ def _verify(staged: Path, ops: list[dict]) -> list[str]:
                 _close(want, v.at)
                 and abs(v.diameter - op["size"]) <= POS_TOL
                 and abs(v.drill - op["drill"]) <= POS_TOL
+                and v.kind == op.get("kind", "through")
+                and ("top" not in op or {op["top"], op["bot"]}
+                     == {v.layers[0], v.layers[-1]})
                 for v in bg.vias_of(net=op["net"]))
             if not found:
                 problems.append(f"ops[{i}]: via at {want} ({op['net']}) "
