@@ -381,6 +381,50 @@ def test_planar_s_matrix_removes_the_far_end_reflection(tmp_path):
         assert cols[0][m][1] == pytest.approx(cols[1][m][0], abs=0.01)
 
 
+def test_planar_s_matrix_holds_the_deck_alpha_against_probe_error(tmp_path, monkeypatch):
+    """A lossless thru whose probes carry a small amplitude error that leans
+    opposite ways in the two runs (what the live 30 mm thru does): fitted run by
+    run its alpha flips sign and reads as gain. Held at the deck's 0, S21 stays
+    passive and alpha can't flip."""
+    freqs = [1e9 + 0.25e9 * i for i in range(21)]
+    beta = [2 * math.pi * f * math.sqrt(3.0) / em.C0 for f in freqs]
+    dist = [5.0, 10.0, 15.0]
+    tt = [np.exp(-1j * bt * 0.03) for bt in beta]
+    runs = [tmp_path / "e0", tmp_path / "e1"]
+    for e, sim in enumerate(runs):
+        sim.mkdir()
+        for k in range(2):
+            a = [1.0 + 0j if k == e else 0j for _ in tt]
+            b = [0j if k == e else x for x in tt]
+            us = []
+            for j, s in enumerate(dist):
+                sm = s * 1e-3
+                # the error: a slope along the feed, the sign set by the wave's way
+                lean = 1 + (1 if k == e else -1) * 0.001 * (j - 1)
+                us.append([lean * (ai * np.exp(1j * bt * sm) + bi * np.exp(-1j * bt * sm))
+                           for ai, bi, bt in zip(a, b, beta)])
+            np.save(sim / f"us{k}.npy", np.array(us))
+    monkeypatch.setattr(em, "_feed_probes", lambda sim, k, fr: list(np.load(sim / f"us{k}.npy")))
+    where = {"ports": [{"dist": dist, "alpha": 0.0}, {"dist": dist, "alpha": 0.0}]}
+    held = em.planar_s_matrix(runs, where, freqs)
+    assert all(g.real == 0 for g in em.planar_gammas(runs, where, freqs)[0])
+    # fitted free the same error reads as gain; held it stays within the lean
+    assert max(abs(c[1]) for c in held[0]) < 1.0005
+    free = em.planar_s_matrix(runs, {"ports": [{"dist": dist}, {"dist": dist}]}, freqs)
+    assert max(abs(c[1]) for c in free[0]) > 1.0005
+
+
+def test_feed_alpha_is_the_closed_form_dielectric_loss():
+    """FR4-like, tan d 0.02 at 3 GHz on 50 ohm: Pozar's 3.198, about 1 Np/m."""
+    w, h, er, td, f = 3.06, 1.6, 4.5, 0.02, 3e9
+    kappa = 2 * math.pi * f * em.EPS0 * er * td
+    a = em._feed_alpha(w, h, er, kappa)
+    eeff = (er + 1) / 2 + (er - 1) / 2 / math.sqrt(1 + 12 / (w / h))
+    k0 = 2 * math.pi * f / em.C0
+    assert a == pytest.approx(k0 * er * (eeff - 1) * td / (2 * math.sqrt(eeff) * (er - 1)), rel=1e-3)
+    assert em._feed_alpha(w, h, er, 0.0) == 0.0
+
+
 def test_planar_waves_reject_a_silent_probe(tmp_path):
     """A probe openEMS left at zero (run stopped early) is an error, not a
     ZeroDivisionError deep in the wave fit."""

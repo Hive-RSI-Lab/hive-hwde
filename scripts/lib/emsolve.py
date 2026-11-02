@@ -452,23 +452,44 @@ def planar_deck(polys, ports, h: float, er: float, f_max: float,
                 csx.probe(f"p{k}u{j}", 0)
                 csx.box(f"p{k}u{j}", (x, py, 0), (x, py, h))
                 pr.append(abs(py - y))
-        where["ports"].append({"dist": pr})
+        where["ports"].append({"dist": pr, "alpha": _feed_alpha(w, h, er, kappa)})
     return csx, where
 
 
-def _fit_gamma(freqs, us, s):
-    """gamma(f) of a port's feed from its three probes, one smooth curve over
-    the band: gamma/f is a straight line in f (a line's delay plus its slow
-    dispersion). The feed is a uniform line whatever the circuit does, so its
-    gamma doesn't depend on the standing wave. A per-frequency solve does, and
-    blows up wherever a null sits on a probe. Don't raise the order: the
-    residual vanishes toward DC, so a higher one is free to bend there (a
+def _feed_alpha(w: float, h: float, er: float, kappa: float) -> float:
+    """Dielectric loss (Np/m) of a microstrip feed in a substrate of conductivity
+    kappa: Pozar's k0 er (eps_eff - 1) tan d / (2 sqrt(eps_eff) (er - 1)) with
+    k0 er tan d = kappa eta0, eps_eff Hammerstad's. A constant kappa makes it
+    flat in f (planar_deck's tan delta is one kappa)."""
+    if not kappa:
+        return 0.0
+    u = w / h
+    eeff = (er + 1) / 2 + (er - 1) / 2 / math.sqrt(1 + 12 / u)
+    return kappa * 376.73 * (eeff - 1) / (2 * math.sqrt(eeff) * (er - 1))
+
+
+def _fit_gamma(freqs, runs, s, alpha: float | None = None):
+    """gamma(f) of a port's feed from its three probes in every run (`runs`, a
+    list of [u0, u1, u2]), one smooth curve over the band: gamma/f is a straight
+    line in f (a line's delay plus its slow dispersion). The feed is a uniform
+    line whatever the circuit does and whichever port drives it, so its gamma
+    depends on neither the standing wave nor the run. A per-frequency solve
+    does, and blows up wherever a null sits on a probe. Don't raise the order:
+    the residual vanishes toward DC, so a higher one is free to bend there (a
     quadratic takes the 30 mm thru from sigma_max 1.0008 to 1.015).
+    `alpha` (Np/m), when the deck knows its own loss, holds the real part there
+    (0 on a lossless deck, `_feed_alpha` on a lossy one) and only the phase is
+    fitted. A real part fitted from probes is probe error more than loss: on
+    the rf-kit 30 mm lossless thru it came out about +0.7 Np/m driven one way
+    and -0.7 the other, as big as FR4's own loss, and moving the waves to the
+    plane through that read as gain, sigma_max 1.0022. With alpha held, passivity
+    says nothing about the fitted phase: check that on its own.
     Fits the exact three-probe relation (no division by a probe, spacing need
     not be even): u0 sinh(g(s2-s1)) - u1 sinh(g(s2-s0)) + u2 sinh(g(s1-s0)) = 0."""
     import numpy as np
-    f = np.asarray(freqs, dtype=float)
-    u = np.asarray(us, dtype=complex)
+    f1 = np.asarray(freqs, dtype=float)
+    f = np.tile(f1, len(runs))
+    u = np.concatenate([np.asarray(r, dtype=complex) for r in runs], axis=1)
     d21, d20, d10 = s[2] - s[1], s[2] - s[0], s[1] - s[0]
     norm = np.sqrt((abs(u) ** 2).sum(axis=0))
     if not norm.all():
@@ -481,30 +502,34 @@ def _fit_gamma(freqs, us, s):
     ok = np.isfinite(g0)
     c0 = (complex(np.median((g0[ok] / f[ok]).real), np.median((g0[ok] / f[ok]).imag))
           if ok.any() else 2j * math.pi / C0)
-    x = f / f.max()
-    order = min(len(f), 2)
-    basis = np.stack([f * x ** k for k in range(order)], axis=1)
-    c = np.zeros(order, dtype=complex)
-    c[0] = c0
+    order = min(len(f1), 2)
+    def basis(q):
+        return np.stack([q * (q / f1.max()) ** k for k in range(order)], axis=1)
+    bas = basis(f)
+    # alpha known: real unknowns c, gamma = alpha + j B c; else complex c, gamma = B c
+    held = alpha is not None
+    c = np.zeros(order, dtype=float if held else complex)
+    c[0] = c0.imag if held else c0
+    unit, re_g = (1j, alpha) if held else (1, 0.0)
     for _ in range(12):
-        g = basis @ c
+        g = re_g + unit * (bas @ c)
         r = (u[0] * np.sinh(g * d21) - u[1] * np.sinh(g * d20) + u[2] * np.sinh(g * d10)) / norm
         dr = (u[0] * d21 * np.cosh(g * d21) - u[1] * d20 * np.cosh(g * d20)
               + u[2] * d10 * np.cosh(g * d10)) / norm
-        step, *_ = np.linalg.lstsq(dr[:, None] * basis, -r, rcond=None)
+        J = unit * dr[:, None] * bas
+        if held:
+            step, *_ = np.linalg.lstsq(np.vstack([J.real, J.imag]),
+                                       -np.concatenate([r.real, r.imag]), rcond=None)
+        else:
+            step, *_ = np.linalg.lstsq(J, -r, rcond=None)
         c = c + step
-        if np.abs(step * f.max()).max() < 1e-9 * np.abs(c[0] * f.max()):
+        if np.abs(step * f1.max()).max() < 1e-9 * np.abs(c[0] * f1.max()):
             break
-    return basis @ c
+    return re_g + unit * (basis(f1) @ c)
 
 
-def planar_waves(sim: Path, where: dict, k: int, freqs) -> list[tuple[complex, complex]]:
-    """(a, b) at port k's reference plane per frequency: a the wave going
-    into the circuit, b the wave coming out, from the port's three voltage
-    probes at distances s0 < s1 < s2 from the plane. With s measured
-    outward, V(s) = a e^(gamma s) + b e^(-gamma s): gamma from _fit_gamma,
-    then (a, b) by least squares."""
-    import numpy as np
+def _feed_probes(sim: Path, k: int, freqs) -> list:
+    """The DFT of port k's three probes in one run."""
     traces = [read_probe(sim / f"p{k}u{j}") for j in range(3)]
     for j, (ts, vs) in enumerate(traces):
         # openEMS killed or stopped before the pulse arrived leaves a probe
@@ -513,9 +538,19 @@ def planar_waves(sim: Path, where: dict, k: int, freqs) -> list[tuple[complex, c
             from lib.solvers import SolverError
             raise SolverError(f"probe p{k}u{j} has no signal ({len(ts)} samples): "
                               "openEMS stopped early or the probe is off the line")
-    us = [dft(ts, vs, freqs) for ts, vs in traces]
+    return [dft(ts, vs, freqs) for ts, vs in traces]
+
+
+def planar_waves(sim: Path, where: dict, k: int, freqs, gamma=None) -> list[tuple[complex, complex]]:
+    """(a, b) at port k's reference plane per frequency: a the wave going
+    into the circuit, b the wave coming out, from the port's three voltage
+    probes at distances s0 < s1 < s2 from the plane. With s measured
+    outward, V(s) = a e^(gamma s) + b e^(-gamma s): gamma from _fit_gamma on
+    this run unless given, then (a, b) by least squares."""
+    import numpy as np
+    us = _feed_probes(sim, k, freqs)
     s = [d * 1e-3 for d in where["ports"][k]["dist"]]
-    gs = _fit_gamma(freqs, us, s)
+    gs = _fit_gamma(freqs, [us], s, where["ports"][k].get("alpha")) if gamma is None else gamma
     out = []
     for i, g in enumerate(gs):
         A = np.array([[np.exp(g * sj), np.exp(-g * sj)] for sj in s])
@@ -533,13 +568,21 @@ def planar_sparams(sim: Path, where: dict, excite: int, freqs) -> list[list[comp
             for n in range(len(freqs))]
 
 
+def planar_gammas(sims: list, where: dict, freqs) -> list:
+    """Each port's feed gamma, one curve from all the runs (`_fit_gamma`)."""
+    return [_fit_gamma(freqs, [_feed_probes(sim, k, freqs) for sim in sims],
+                       [d * 1e-3 for d in port["dist"]], port.get("alpha"))
+            for k, port in enumerate(where["ports"])]
+
+
 def planar_s_matrix(sims: list, where: dict, freqs) -> dict:
     """All of S from one run per port, as touchstone()'s columns: S = B A^-1,
     exact however much the 50 ohm ends reflect (A, B: a and b at each port,
     a column per run)."""
     import numpy as np
     n = len(where["ports"])
-    wv = [[planar_waves(sim, where, k, freqs) for k in range(n)] for sim in sims]
+    gs = planar_gammas(sims, where, freqs)
+    wv = [[planar_waves(sim, where, k, freqs, gs[k]) for k in range(n)] for sim in sims]
     cols = {j: [] for j in range(n)}
     for m in range(len(freqs)):
         A = np.array([[wv[e][k][m][0] for e in range(n)] for k in range(n)])
