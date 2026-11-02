@@ -65,6 +65,7 @@ sys.path.insert(0, str(SCRIPTS / "lib"))
 import checklib  # noqa: E402
 import env  # noqa: E402
 import geom  # noqa: E402
+import hdilib  # noqa: E402
 import kc  # noqa: E402
 import route_edit  # noqa: E402  (finish pass: rip sliver vias by uuid)
 import routelib  # noqa: E402
@@ -173,14 +174,23 @@ def _dsn_hole_rules(staged: Path, dsn: Path, bg: geom.BoardGeom) -> dict:
     margin = max(float(rules.get("min_hole_clearance") or 0.25),
                  float(rules.get("min_copper_edge_clearance") or 0.0))
     text = dsn.read_text(encoding="utf-8")
-    text, grown = routelib.dsn_hole_floor(text, h2h)
+    build, entry = hdilib.board_build(bg)
+    added: list[str] = []
+    if build:
+        caps = hdilib.load_hdi_caps()
+        spans = hdilib.spans_of(entry, bg.copper_layers, caps=caps)
+        text, added = routelib.dsn_add_spans(
+            text, [(s.i, s.j, s.size, s.drill) for s in spans])
+    text, grown = routelib.dsn_hole_floor(
+        text, h2h, float(caps["hole_to_hole_diff_net_mm"]) if build else None)
     holes = [{"at": list(p.center), "drill": list(p.drill), "angle": p.angle}
              for p in bg.npth]
     text, kept_out = routelib.dsn_npth_keepouts(text, holes, margin)
     dsn.write_text(text, encoding="utf-8")
     return {"hole_to_hole_mm": h2h, "grown": grown,
             "via_padstacks_grown": {k: list(v) for k, v in grown.items()},
-            "npth_keepouts": kept_out, "npth_margin_mm": margin}
+            "npth_keepouts": kept_out, "npth_margin_mm": margin,
+            **({"hdi_build": build, "via_spans_offered": added} if build else {})}
 
 
 def _ses_restore(ses: Path, grown: dict) -> None:

@@ -12,7 +12,10 @@ time, on a fine grid (default 0.1 mm) with 8-way moves and through vias:
 - The rules are the board's own: track width per net from the .kicad_dru
   (rules_gen's power widths), clearance from the .kicad_dru baseline or the
   netclass, per-net clearance floors, hole-to-hole, hole clearance, copper to
-  edge, rule-area keepouts. Vias match the board's most common via.
+  edge, rule-area keepouts. Vias match the board's most common through via.
+  On an HDI build (#477) a layer change may also take any span the build
+  laminates, at its own size and JLC's HDI numbers, for a share of a through
+  via's cost (SPAN_COST): a microvia is the cheap way down one layer.
 - Other-net zone fills are not walls (they refill around new copper) but cost
   more to cross, so a route only splits a pour when it must; a piece it cuts
   off is joined by the next pass.
@@ -67,6 +70,7 @@ from shapely.strtree import STRtree  # noqa: E402
 import checklib  # noqa: E402
 import env  # noqa: E402
 import geom  # noqa: E402
+import hdilib  # noqa: E402
 import kc  # noqa: E402
 import routelib  # noqa: E402
 from checklib import CheckError  # noqa: E402
@@ -91,6 +95,10 @@ class Rules:
     margin: float = 0.02
     track_floor: float = 0.1
     via_floor: tuple = (0.45, 0.2)   # the smallest via DRC passes
+    spans: list = field(default_factory=list)   # the HDI build's (#477)
+    span_hole_clearance: float = 0.15
+    span_hole_to_hole: float = 0.24
+    copper: list = field(default_factory=list)
 
     def width(self, net: str) -> float:
         w = max(self.net_width.get(net, 0.0) + 0.001, self.min_width)
@@ -131,6 +139,8 @@ def board_rules(pcb: Path, bg: geom.BoardGeom, *, min_width: float = 0.2,
         pass
     vias = {}
     for v in bg.vias_of():
+        if v.kind != "through":     # the through via is what's being sized
+            continue
         k = (round(v.diameter, 3), round(v.drill, 3))
         vias[k] = vias.get(k, 0) + 1
     common = max(vias, key=lambda k: (vias[k], k)) if vias else None
@@ -138,6 +148,14 @@ def board_rules(pcb: Path, bg: geom.BoardGeom, *, min_width: float = 0.2,
         floors["via_diameter"], base.get("via_diameter", 0.0), 0.6))
     vd = via_drill or (common[1] if common else max(
         floors["via_drill"], base.get("hole_size", 0.0), 0.3))
+    build, entry = hdilib.board_build(bg)
+    hdi: dict = {}
+    if build:
+        caps = hdilib.load_hdi_caps()
+        hdi = {"spans": hdilib.spans_of(entry, bg.copper_layers, caps=caps),
+               "span_hole_clearance": float(caps["hole_to_trace_mm"]),
+               "span_hole_to_hole": float(caps["hole_to_hole_diff_net_mm"]),
+               "copper": list(bg.copper_layers)}
     return Rules(
         clearance=base.get("clearance", floors["clearance"]),
         hole_clearance=max(base.get("hole_clearance", 0.0), float(
@@ -154,7 +172,7 @@ def board_rules(pcb: Path, bg: geom.BoardGeom, *, min_width: float = 0.2,
         via_size=vs, via_drill=vd,
         net_width=rc.dru_net_floors(dru, "track_width"),
         net_clearance=rc.dru_net_floors(dru, "clearance"),
-        margin=margin)
+        margin=margin, **hdi)
 
 
 # ---------------------------------------------------------------- islands
@@ -293,6 +311,8 @@ class Grid:
     in_b: list
     a_plane: bytes          # cell inside side A's copper on a plane layer
     b_plane: bytes
+    # #477, per k: (k2, span, its via mask, the k its via must find clear)
+    span_moves: list = field(default_factory=list)
 
     def xy(self, i: int, j: int) -> tuple[float, float]:
         return (round(self.x0 + i * self.g, 4), round(self.y0 + j * self.g, 4))
@@ -429,6 +449,7 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
         return out
 
     a, b = side(side_a, False), side(side_b, False)
+    span_moves = _span_moves(obs, rules, net, layers, win, args, K, blk, outline)
     return Grid(
         x0=x0, y0=y0, nx=nx, ny=ny, g=g, layers=list(layers),
         blk=[m.ravel().astype(np.uint8).tobytes() for m in blk],
@@ -438,7 +459,70 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
         in_a=[m.ravel().astype(np.uint8).tobytes() for m in a],
         in_b=[m.ravel().astype(np.uint8).tobytes() for m in b],
         a_plane=side(side_a, True).ravel().astype(np.uint8).tobytes(),
-        b_plane=side(side_b, True).ravel().astype(np.uint8).tobytes())
+        b_plane=side(side_b, True).ravel().astype(np.uint8).tobytes(),
+        span_moves=span_moves)
+
+
+def _span_moves(obs, rules: Rules, net: str, layers: list, win, args, K: int,
+                blk: list, outline) -> list:
+    """What an HDI build's spans add to the search (#477): per routable layer
+    k, the layers its spans reach, each with its own via mask. A span's via is
+    only there on the layers it crosses, so it is held to what is on those
+    layers, at JLC's HDI numbers rather than the through-via floors."""
+    if not rules.spans:
+        return []
+    X, Y = args[0], args[1]
+    moves: list = [[] for _ in range(K)]
+    for sp in rules.spans:
+        on = set(rules.copper[sp.i:sp.j + 1])
+        ks = [k for k, ly in enumerate(layers) if ly in on]
+        if len(ks) < 2:
+            continue
+        vr = sp.size / 2
+        m = np.zeros((args[7], args[6]), bool)
+        for it in obs.near(win):
+            if not on & set(it.layers):
+                continue
+            other = it.net != net
+            if other:
+                hit = _mask(it.shape, it.half + max(
+                    vr + rules.clr(net, it.net),
+                    sp.drill / 2 + rules.span_hole_clearance + rules.margin), *args)
+                if hit:
+                    m[hit[0]] |= hit[1]
+            if it.hole is not None and other:
+                hit = _mask(it.hole, sp.drill / 2 + rules.margin
+                            + rules.span_hole_to_hole, *args)
+                if hit:
+                    m[hit[0]] |= hit[1]
+        for ra in obs.bg.rule_areas:
+            if ra.get("flags", {}).get("vias") == "not_allowed" \
+                    and not ra["outline"].is_empty and ra["outline"].intersects(win):
+                hit = _mask(ra["outline"], vr + rules.margin, *args)
+                if hit:
+                    m[hit[0]] |= hit[1]
+        if outline is not None and not outline.is_empty:
+            m |= ~shapely.contains_xy(
+                outline.buffer(-(rules.edge_clearance + vr + rules.margin)), X, Y)
+        mask = m.ravel().astype(np.uint8).tobytes()
+        for k in ks:
+            for k2 in ks:
+                if k2 != k:
+                    moves[k].append((k2, sp, mask, ks))
+    return moves
+
+
+SPAN_COST = {"micro": 0.3, "buried": 0.6, "blind": 0.6}  # of a through via
+
+
+def span_for(gr: Grid, k: int, k2: int, c: int):
+    """The cheapest span joining layers k and k2 at cell c, or None."""
+    best = None
+    for kk, sp, mask, ks in (gr.span_moves[k] if gr.span_moves else ()):
+        if kk == k2 and not mask[c] and not any(gr.blk[q][c] for q in ks) \
+                and (best is None or SPAN_COST[sp.kind] < SPAN_COST[best.kind]):
+            best = sp
+    return best
 
 
 _MOVES = [(1, 0, 1.0), (-1, 0, 1.0), (0, 1, 1.0), (0, -1, 1.0),
@@ -451,7 +535,8 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
     """Multi-source search from side A's free cells to side B's.
 
     Nodes are (cell, k); a via (layer change, or a drop into a plane-layer
-    side) costs via_cost grid steps. Returns [(i, j, k, via_here)] from A to
+    side) costs via_cost grid steps, an HDI build's span a share of that
+    (SPAN_COST, #477). Returns [(i, j, k, via_here)] from A to
     B, where a final/initial entry with k = -1 is a via into a plane, or None.
     """
     nx, ny, K = gr.nx, gr.ny, len(gr.layers)
@@ -520,6 +605,16 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
                 dist[n2] = ng
                 prev[n2] = n
                 heapq.heappush(pq, (ng + h(c2), ng, n2))
+        if gr.span_moves:
+            for k2, sp, mask, ks in gr.span_moves[k]:
+                if mask[c] or any(gr.blk[q][c] for q in ks):
+                    continue
+                n2 = k2 * N + c
+                ng = gcost + via_cost * SPAN_COST[sp.kind]
+                if ng < dist.get(n2, 1e18):
+                    dist[n2] = ng
+                    prev[n2] = n
+                    heapq.heappush(pq, (ng + h(c), ng, n2))
         if via_ok(c):
             for k2 in range(K):
                 if k2 == k:
@@ -562,19 +657,21 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
 
 def path_to_ops(gr: Grid, path, net: str, width: float, rules: Rules) -> list:
     """Grid path -> route_edit ops: one track per straight run, a via at
-    every layer change and at a plane drop (k = -1)."""
+    every layer change and at a plane drop (k = -1). A layer change on an HDI
+    build takes the span the search priced it at (#477)."""
     ops = []
     vias = []
     runs: list[list] = []
     for i, j, k in path:
         if k == -1:
-            vias.append(gr.xy(i, j))
+            vias.append((gr.xy(i, j), None))
             continue
         if runs and runs[-1][0][2] == k:
             runs[-1].append((i, j, k))
         else:
             if runs:
-                vias.append(gr.xy(i, j))
+                vias.append((gr.xy(i, j),
+                             span_for(gr, runs[-1][0][2], k, j * gr.nx + i)))
             runs.append([(i, j, k)])
     for run in runs:
         corners = [run[0]]
@@ -591,11 +688,12 @@ def path_to_ops(gr: Grid, path, net: str, width: float, rules: Rules) -> list:
                         "end": list(gr.xy(*c1[:2])), "width": width,
                         "layer": layer, "net": net})
     seen = set()
-    for at in vias:
-        if at in seen:
+    for at, sp in vias:
+        if (at, sp) in seen:
             continue
-        seen.add(at)
-        ops.append({"op": "add_via", "at": list(at), "size": gr.via[0],
+        seen.add((at, sp))
+        ops.append(sp.as_op(at, net) if sp else
+                   {"op": "add_via", "at": list(at), "size": gr.via[0],
                     "drill": gr.via[1], "net": net})
     return ops
 
@@ -608,7 +706,10 @@ def ops_items(ops: list, conn: int, copper_layers) -> list[Item]:
                             LineString([op["start"], op["end"]]),
                             op["width"] / 2, conn=conn))
         else:
-            out.append(Item(op["net"], frozenset(copper_layers),
+            on = list(copper_layers)
+            if "top" in op:
+                on = on[on.index(op["top"]):on.index(op["bot"]) + 1]
+            out.append(Item(op["net"], frozenset(on),
                             Point(op["at"]), op["size"] / 2,
                             Point(op["at"]).buffer(op["drill"] / 2,
                                                    quad_segs=4), conn=conn))
