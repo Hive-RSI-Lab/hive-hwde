@@ -176,7 +176,8 @@ def test_planted_fault_flags_and_shortening_the_stub_clears_it(tmp_path):
     pcb = tmp_path / "usbbuck4.kicad_pcb"
     pcb.write_text(text)
     vios, _ = check_via_stubs.check(pcb, cons)
-    assert [(v["kind"], v["severity"], v["pos"]) for v in vios] == [
+    stubs_ = [v for v in vios if v["kind"] not in ("via_return_far", "via_no_return")]
+    assert [(v["kind"], v["severity"], v["pos"]) for v in stubs_] == [
         ("via_stub_resonance", "error", [141.0, 123.0])]
     old = ('(via\n\t\t(at 141 123)\n\t\t(size 0.6)\n\t\t(drill 0.3)\n'
            '\t\t(layers "F.Cu" "B.Cu")')
@@ -185,7 +186,7 @@ def test_planted_fault_flags_and_shortening_the_stub_clears_it(tmp_path):
                                 .replace('"B.Cu"', '"In1.Cu"')))
     geom.load_board.cache_clear() if hasattr(geom.load_board, "cache_clear") else None
     vios, facts = check_via_stubs.check(pcb, cons)
-    assert vios == []
+    assert [v for v in vios if v["kind"] not in ("via_return_far", "via_no_return")] == []
     assert max(s["length_mm"] for x in facts["vias"] for s in x["stubs"]) < 0.3
 
 

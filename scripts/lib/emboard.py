@@ -437,7 +437,7 @@ class _Ctx:
 
 def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None = None,
          feed_len: float | None = None, pad: float | None = None, floor: str | None = None,
-         thirds: bool = True, zcells: int = 6, extra=None):
+         thirds: bool = True, zcells: int = 6, air: float | None = None, extra=None):
     """(Csx, where) for the region of `geo` (from `extract`) with `ports`
     (Port or "X,Y,DIR[,LAYER[,W]]"), the source on port `excite`."""
     from shapely.geometry import Polygon, box as sbox
@@ -577,7 +577,7 @@ def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None 
         touches = any(abs(stack.z[l] - z0) < 1e-9 or abs(stack.z[l] - z1) < 1e-9 for l in port_layers)
         n = zcells if touches else max(2, min(5, math.ceil(h / (2 * fine))))
         zl += [z0 + h * i / n for i in range(n + 1)]
-    air = max(lam_min / 6, 10 * h_sig)
+    air = air or max(lam_min / 6, 10 * h_sig)
     fz = h_sig / zcells
     ztop = zs[-1] + air
     zl += em.graded(zs[-1], ztop, fz, coarse)

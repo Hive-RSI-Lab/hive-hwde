@@ -27,6 +27,7 @@ from geom import _kid, _kids, _nums, _strs
 C_MM_GHZ = 299.792458          # c in mm * GHz
 WARN_RATIO = 3.0               # warn when f_res < 3 x knee
 ERROR_RATIO = 1.5              # error when f_res < 1.5 x knee
+RETURN_FRAC = 0.1              # a layer change's nearest return via, in wavelengths at the knee (a rule of thumb)
 # Not a published fab figure: the wide end of the +/-0.1-0.15 mm the fab
 # guides in #478 quote. No fab profile carries a tolerance yet, so this is
 # what a board is held to until backdrill.depth_tol_mm or the profile says.
@@ -107,6 +108,23 @@ def used_layers(bg, via) -> list[str]:
             if la in via.layers and z.fill_on(la).contains(centre):
                 found.add(la)
     return [la for la in bg.copper_layers if la in found]
+
+
+def plane_nets(bg, via) -> set:
+    """Other nets with a pour on a layer the via spans: what a return via can
+    tie together."""
+    return {z.net for z in bg.zones_of() if z.net and z.net != via.net and any(la in via.layers for la in z.layers)}
+
+
+def nearest_return(bg, via, nets: set) -> tuple[float, tuple] | None:
+    """(centre distance, position) of the nearest via on one of `nets`."""
+    best = None
+    for v in bg.vias_of():
+        if v.net in nets:
+            d = math.hypot(v.at[0] - via.at[0], v.at[1] - via.at[1])
+            if best is None or d < best[0]:
+                best = (d, tuple(v.at))
+    return best
 
 
 def read_backdrills(root) -> dict:
