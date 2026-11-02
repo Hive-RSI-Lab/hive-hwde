@@ -2,6 +2,7 @@
 Palace (driven FEM), so a second solver checks the S-matrix (#616)."""
 from __future__ import annotations
 
+import cmath
 import csv
 import json
 import math
@@ -188,7 +189,6 @@ def probe_list(pinfo) -> tuple[list[dict], list]:
 
 
 def config(attrs, spec, plist, excite, freqs, order=2, tol=1e-3, solver_tol=1e-6, mesh="board.msh") -> dict:
-    df = (freqs[-1] - freqs[0]) / (len(freqs) - 1) / 1e9 if len(freqs) > 1 else 1.0
     lp = []
     for q in spec["ports"]:
         e = {"Index": q["index"], "Attributes": [attrs["ports"][str(q["index"])]],
@@ -205,8 +205,7 @@ def config(attrs, spec, plist, excite, freqs, order=2, tol=1e-3, solver_tol=1e-6
                            "Absorbing": {"Attributes": attrs["absorbing"], "Order": 1},
                            "LumpedPort": lp},
             "Solver": {"Order": order,
-                       "Driven": {"Samples": [{"Type": "Linear", "MinFreq": freqs[0] / 1e9,
-                                               "MaxFreq": freqs[-1] / 1e9, "FreqStep": df}],
+                       "Driven": {"Samples": [{"Type": "Point", "Freq": [round(f / 1e9, 9) for f in freqs]}],
                                   "AdaptiveTol": tol, "SaveStep": 0},
                        "Linear": {"Type": "Default", "KSPType": "GMRES", "Tol": solver_tol, "MaxIts": 500}}}
 
@@ -271,3 +270,170 @@ def compare(freqs, a, b, *, rms_ds=RMS_DS, notch_pct=NOTCH_PCT, names=("openEMS"
             terms[name] = t
     return {"ok": not why, "solvers": list(names), "terms": terms, "disagree": why,
             "limits": {"rms_ds": rms_ds, "notch_pct": notch_pct}}
+
+
+# ================================================================ read and run
+
+MU0 = 4e-7 * math.pi
+
+
+def read_probes(path: Path) -> tuple[list[float], dict]:
+    """(f in Hz, {(axis, probe index): complex per frequency}) from Palace's
+    probe-E.csv or probe-B.csv. Columns are found by their headers."""
+    import re
+    rows = list(csv.reader(Path(path).open()))
+    head = [h.strip() for h in rows[0]]
+    data = [[float(v) for v in r] for r in rows[1:] if r]
+    f = [r[0] * 1e9 for r in data]
+    re_c, im_c = {}, {}
+    for c, h in enumerate(head):
+        m = re.match(r"(Re|Im)\{[EB]_([xyz])\[(\d+)\]\}", h)
+        if m:
+            (re_c if m.group(1) == "Re" else im_c)["xyz".index(m.group(2)), int(m.group(3))] = c
+    return f, {k: [complex(r[re_c[k]], r[im_c[k]]) for r in data] for k in re_c}
+
+
+def read_port_s(path: Path, excite: int, n: int) -> list[list[complex]]:
+    """Palace's port-S.csv as [S(k, excite) per port k] per frequency."""
+    import re
+    rows = list(csv.reader(Path(path).open()))
+    head = [h.strip() for h in rows[0]]
+    cols = {}
+    for c, h in enumerate(head):
+        m = re.match(r"(\|S|arg\(S)\[(\d+)\]\[(\d+)\]", h)
+        if m and int(m.group(3)) == excite + 1:
+            cols.setdefault(int(m.group(2)) - 1, {})[m.group(1)[0]] = c
+    out = []
+    for r in rows[1:]:
+        if not r:
+            continue
+        v = [float(q) for q in r]
+        out.append([10 ** (v[cols[k]["|"]] / 20) * complex(math.cos(math.radians(v[cols[k]["a"]])),
+                                                           math.sin(math.radians(v[cols[k]["a"]])))
+                     for k in range(n)])
+    return out
+
+
+def feed_reads(pdir: Path, terms, freqs) -> list[tuple[list, list]]:
+    """Each port's (three voltages, two currents) per frequency, the same shape
+    as emboard.read_feed's: V from E up the column (strip to reference), I from
+    H around the strip."""
+    import numpy as np
+    fe, E = read_probes(pdir / "probe-E.csv")
+    fb, B = read_probes(pdir / "probe-B.csv")
+    if len(fe) != len(freqs) or any(abs(a - b) > 1e3 for a, b in zip(fe, freqs)):
+        raise solvers.SolverError(f"Palace wrote {len(fe)} frequencies, wanted {len(freqs)}")
+    out = []
+    for t in terms:
+        us = [sum(w * 1e-3 * np.asarray(E[ax, i]) for i, w, ax in col) for col in t["u"]]
+        ii = [sum(w * 1e-3 / MU0 * np.asarray(B[ax, i]) for i, w, ax in loop) for loop in t["i"]]
+        out.append((us, ii))
+    return out
+
+
+def _run_palace(cfg_name, work, np_, timeout):
+    import subprocess
+    argv, env = solvers.mpi_command("palace", [cfg_name], np_)
+    try:
+        p = subprocess.run(argv, cwd=work, env=env, capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired as e:
+        raise solvers.SolverError(f"Palace ran past {timeout:.0f} s") from e
+    (Path(work) / "palace.log").write_text(p.stdout + p.stderr)
+    if p.returncode:
+        raise solvers.SolverError(f"Palace exit {p.returncode}: {(p.stdout + p.stderr)[-600:]}")
+    return p
+
+
+def mesh(spec, work, timeout=1200) -> dict:
+    import subprocess
+    work = Path(work)
+    work.mkdir(parents=True, exist_ok=True)
+    (work / "spec.json").write_text(json.dumps(spec))
+    argv, env = solvers.python_command(MESH_SCRIPT, ["spec.json", "board.msh", "attrs.json"])
+    try:
+        p = subprocess.run(argv, cwd=work, env=env, capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired as e:
+        raise solvers.SolverError(f"gmsh ran past {timeout:.0f} s") from e
+    if p.returncode or not (work / "attrs.json").exists():
+        raise solvers.SolverError(f"gmsh: {(p.stdout + p.stderr)[-600:]}")
+    return json.loads((work / "attrs.json").read_text())
+
+
+def study(geo, ports, f_max, f_min=None, points=201, symmetric=False, excites=None, keep=None,
+          refine=1.0, order=2, np_=4, tol=1e-3, timeout=3600, feed_len=None, **deck_kw) -> dict:
+    """extract'ed geometry -> gmsh -> Palace run(s) -> S at the deck's port
+    planes, 50 ohm, through emboard's own feed fit, so `S` means what emboard's
+    does. keep=DIR keeps the runs. `lumped_check` is the same S from Palace's
+    own port-S.csv moved through the fitted lines: a check on the estimator
+    both solvers share."""
+    import tempfile
+    n = len(ports)
+    excites = excites if excites is not None else ([0] if (symmetric and n == 2) or n == 1 else list(range(n)))
+    f_min = f_min or f_max / 20
+    freqs = [f_min + (f_max - f_min) * i / (points - 1) for i in range(points)]
+    tmp = tempfile.TemporaryDirectory(prefix="hwde-empalace-") if not keep else None
+    work = Path(keep) if keep else Path(tmp.name)
+    work.mkdir(parents=True, exist_ok=True)
+    spec, where, pinfo = mesh_spec(geo, ports, f_max, feed_len=feed_len, refine=refine, **deck_kw)
+    t0 = time.time()
+    attrs = mesh(spec, work)
+    plist, terms = probe_list(pinfo)
+    reads, raw, info = {}, {}, []
+    for e in excites:
+        d = work / f"port{e}"
+        d.mkdir(exist_ok=True)
+        cfg = config(attrs, spec, plist, e, freqs, order=order, tol=tol, mesh="../board.msh")
+        (d / "palace.json").write_text(json.dumps(cfg, indent=1))
+        t1 = time.time()
+        _run_palace("palace.json", d, np_, timeout)
+        reads[e] = feed_reads(d / "postpro", terms, freqs)
+        raw[e] = read_port_s(d / "postpro" / "port-S.csv", e, n)
+        info.append({"excite": e, "tets": attrs["tets"], "order": order, "refine": refine,
+                     "seconds": round(time.time() - t1, 1)})
+    lines = [eb.fit_feed([reads[e][k] for e in excites], where["ports"][k]["dist"], freqs, f_max) for k in range(n)]
+    vi = {e: [eb.feed_vi(reads[e][k], where["ports"][k]["dist"], freqs, lines[k]) for k in range(n)]
+          for e in excites}
+    wv = {e: [[((vi[e][k][m]["v"] + eb.ZREF * vi[e][k][m]["i"]) / 2,
+                (vi[e][k][m]["v"] - eb.ZREF * vi[e][k][m]["i"]) / 2) for k in range(n)]
+              for m in range(len(freqs))] for e in excites}
+    S = eb.sparams(wv, n, symmetric)
+    end = [_port_end(spec, where, k) for k in range(n)]
+    lumped = eb.sparams(_shifted_waves(raw, lines, end, freqs, n), n, symmetric)
+    mid = min(range(len(freqs)), key=lambda m: abs(freqs[m] - f_max / 2))
+    if tmp:
+        tmp.cleanup()
+    return {"freqs": freqs, "S": S, "S_lumped": lumped, "ports": where["ports"], "runs": info,
+            "region": where["region"], "floor": where["floor"], "seconds": round(time.time() - t0, 1),
+            "z_feed": [round(ln["z"][mid], 2) for ln in lines],
+            "eps_eff_feed": [round(ln["eps_eff"][mid], 3) for ln in lines],
+            "feeds": [{"z_rms": round(ln["z_rms"], 3), "eps_rms": round(ln["eps_rms"], 4)} for ln in lines]}
+
+
+def _port_end(spec, where, k) -> float:
+    """How far port k's lumped end stands from its plane (mm)."""
+    p, q = where["ports"][k], spec["ports"][k]["pts"][0]
+    return abs(q[0] - p["x"]) if p["dir"][1] == "x" else abs(q[1] - p["y"])
+
+
+def _shifted_waves(raw, lines, end, freqs, n) -> dict:
+    """The waves at the planes from Palace's lumped S at the feeds' ends: V and
+    I there (a 1 W-free unit a on the driven port), carried along each fitted
+    line, which is lossless, to the plane."""
+    C0 = eb.C0
+    out = {}
+    for e, col in raw.items():
+        rows = []
+        for m, f in enumerate(freqs):
+            per = []
+            for k in range(n):
+                a_e, b_e = (1.0 if k == e else 0.0), col[m][k]
+                v = a_e + b_e
+                i = (a_e - b_e) / eb.ZREF            # into the feed's end, toward the circuit
+                z = lines[k]["z"][m]
+                bl = 2 * math.pi * f * math.sqrt(lines[k]["eps_eff"][m]) / C0 * end[k] * 1e-3
+                vp = v * cmath.cos(bl) - 1j * z * i * cmath.sin(bl)
+                ip = i * cmath.cos(bl) - 1j * v / z * cmath.sin(bl)
+                per.append(((vp + eb.ZREF * ip) / 2, (vp - eb.ZREF * ip) / 2))
+            rows.append(per)
+        out[e] = rows
+    return out
