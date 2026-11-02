@@ -274,3 +274,28 @@ def test_power_and_pour_copper_is_never_ripped(tmp_path):
     assert jobs[0]["status"] == "failed"         # SIG stays a wall
     assert "ripped_nets" not in jobs[0]
     assert rip == []
+
+
+def test_rules_facts_of_an_hdi_board_are_json():
+    """#477: route_finish crashed writing its report on an HDI build, after
+    routing, because Rules.spans holds Span objects."""
+    import json
+    from types import SimpleNamespace
+    import hdilib
+    import route_finish
+    span = hdilib.Span("micro", "F.Cu", "In1.Cu", 0, 1, 0.1, 0.25)
+    rules = SimpleNamespace(spans=[span], grid=0.1, net_width={"A": 0.2})
+    facts = route_finish._rules_facts(rules)
+    assert json.loads(json.dumps(facts))["spans"][0]["kind"] == "micro"
+    assert "net_width" not in facts
+
+
+def test_a_pass_at_the_drc_cap_counts_its_routes():
+    """KiCad reports at most 499 unconnected items: on a bigger board the total
+    stays 499 while connections close, and every pass was thrown away."""
+    from route_finish import DRC_UNCONNECTED_CAP as cap, _pass_helped
+    routed, failed = [{"status": "routed"}], [{"status": "failed"}]
+    assert _pass_helped(cap, cap, routed)
+    assert not _pass_helped(cap, cap, failed)
+    assert _pass_helped(40, 39, failed)
+    assert not _pass_helped(40, 40, routed)  # below the cap the count is real

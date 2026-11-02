@@ -49,6 +49,7 @@ finish_staged() is the importable form route_auto calls on its staged board.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import heapq
 import json
 import math
@@ -762,6 +763,20 @@ def unconnected_by_net(report: dict) -> dict[str, int]:
     return out
 
 
+# KiCad's DRC stops reporting unconnected items here, so a board with more than
+# this many shows the same total however many connections a pass closes.
+DRC_UNCONNECTED_CAP = 499
+
+
+def _pass_helped(before: int, after: int, jobs: list[dict]) -> bool:
+    """Did the unconnected count drop? At the DRC's cap the count can't show it:
+    a routed connection that DRC didn't take out is the only evidence left."""
+    if after < before:
+        return True
+    return (before >= DRC_UNCONNECTED_CAP and after >= DRC_UNCONNECTED_CAP
+            and any(j["status"] == "routed" for j in jobs))
+
+
 def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
                 layers: list[str], *, grid: float = 0.1, margin: float = 4.0,
                 max_conns: int | None = None, max_nodes: int = 3_000_000,
@@ -1128,7 +1143,9 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
                 touched.update(j.get("ripped_nets", []))
                 if board_rip and j["status"] == "routed":
                     touched.add(j["net"])
-            if a_un < b_un and not grew:
+            if b_un >= DRC_UNCONNECTED_CAP:
+                entry["unconnected_capped"] = True
+            if _pass_helped(b_un, a_un, jobs) and not grew:
                 entry["kept"] = True
                 cur = after
                 kept_any = True
@@ -1255,7 +1272,11 @@ def _error_copper(staged: Path, drc: dict) -> list[str]:
 
 
 def _rules_facts(rules: Rules) -> dict:
-    return {k: v for k, v in rules.__dict__.items() if not isinstance(v, dict)}
+    facts = {k: v for k, v in rules.__dict__.items() if not isinstance(v, dict)}
+    # An HDI board's Rules carry hdilib.Span objects; the report is JSON (#477).
+    if facts.get("spans"):
+        facts["spans"] = [dataclasses.asdict(s) for s in facts["spans"]]
+    return facts
 
 
 def run(argv: list[str] | None = None):
