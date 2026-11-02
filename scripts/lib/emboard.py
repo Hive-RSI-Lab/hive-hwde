@@ -70,6 +70,12 @@ TAIL_MAX = 1e-3         # the last tenth of a record against its peak voltage
 STEPS_MAX = 200000
 FEED_FIT_DEG = 3        # Z(f) and eps_eff(f) of a feed, across the band
 FEED_FIT_PASSES = 6
+# Mesh convergence (study_converged): two runs a mesh step apart must agree this
+# well. notch_pct is half the 1 % rf-kit's filters are tuned to; ds is the largest
+# |dS| (compare).
+CONV_TOL = {"ds": 0.05, "notch_pct": 0.5}
+REFINE_STEP = 1.5
+REFINE_MAX = 2.25
 
 
 # ================================================================ stack
@@ -949,6 +955,90 @@ def study(geo: dict, ports, f_max: float, f_min: float | None = None, points: in
             "region": where["region"], "fine": where["fine"], "floor": where["floor"],
             "feeds": [{"z_rms": round(ln["z_rms"], 3), "eps_rms": round(ln["eps_rms"], 4)}
                       for ln in lines]}
+
+
+# ================================================================ convergence
+
+def notches(freqs, s, prominence: float = 10.0) -> list[float]:
+    """Frequencies of the dips of a response (complex per frequency) at least
+    `prominence` dB below the higher of the two shoulders around them."""
+    db = [20 * math.log10(max(abs(v), 1e-12)) for v in s]
+    out = []
+    for i in range(1, len(db) - 1):
+        if db[i] > db[i - 1] or db[i] >= db[i + 1]:
+            continue
+        left, right = db[i], db[i]
+        for v in db[i - 1::-1]:
+            if v < db[i]:
+                break
+            left = max(left, v)
+        for v in db[i + 1:]:
+            if v < db[i]:
+                break
+            right = max(right, v)
+        if min(left, right) - db[i] >= prominence:
+            out.append(freqs[i])
+    return out
+
+
+def compare(freqs, a, b, f_low: float = 0.0) -> dict:
+    """How far S `a` is from S `b` (finer) over f >= f_low: the largest
+    |a_ij - b_ij| (a vector difference: 0.05 is 0.4 dB or 2.9 deg on a thru,
+    and it doesn't blow up on a notch's skirt the way dB and degrees do), and
+    the largest shift of a transmission dip (reflection on a one-port), as a
+    percentage of b's frequency. A dip that only one of them has counts as
+    100 %."""
+    n = len(b[0])
+    idx = [m for m, f in enumerate(freqs) if f >= f_low]
+    fs = [freqs[m] for m in idx]
+    worst, where = 0.0, None
+    for i in range(n):
+        for j in range(n):
+            for m in idx:
+                d = abs(complex(a[m][i][j]) - complex(b[m][i][j]))
+                if d > worst:
+                    worst, where = d, freqs[m]
+    pick = (lambda S, m: S[m][1][0]) if n > 1 else (lambda S, m: S[m][0][0])
+    na = notches(fs, [pick(a, m) for m in idx])
+    nb = notches(fs, [pick(b, m) for m in idx])
+    shifts = []
+    for f in nb:
+        near = min(na, key=lambda q: abs(q - f)) if na else None
+        shifts.append({"f": f, "was": near, "pct": 100.0 if near is None else abs(near - f) / f * 100})
+    for f in na:
+        if not nb or min(abs(f - q) for q in nb) > 0.1 * f:
+            shifts.append({"f": None, "was": f, "pct": 100.0})
+    return {"ds": round(worst, 5), "ds_at": where,
+            "notch_pct": round(max([x["pct"] for x in shifts] or [0.0]), 4), "notches": shifts}
+
+
+def study_converged(geo: dict, ports, f_max: float, f_min: float | None = None, points: int = 201,
+                    refine: float = 1.0, refine_max: float = REFINE_MAX, step: float = REFINE_STEP,
+                    tol: dict | None = None, keep=None, **kw) -> dict:
+    """`study` on a mesh refined by `step` until two runs in a row agree within
+    `tol` (CONV_TOL) or the next would pass refine_max. Returns the finest
+    run with res["convergence"] = {ok, tol, steps: [...]}; each step past the
+    first carries `compare` against the one before. A run costs about step^4
+    of the one before it."""
+    tol = {**CONV_TOL, **(tol or {})}
+    steps, prev, res, r = [], None, None, refine
+    while True:
+        k = {"keep": str(Path(keep) / f"refine{r:g}")} if keep else {}
+        res = study(geo, ports, f_max, f_min, points, refine=r, **k, **kw)
+        row = {"refine": r, "cells": res["runs"][0]["cells"], "mesh": res["runs"][0]["mesh"],
+               "seconds": round(sum(x["seconds"] for x in res["runs"]), 1)}
+        ok = False
+        if prev is not None:
+            c = compare(res["freqs"], prev, res["S"], f_max / 8)
+            ok = c["ds"] <= tol["ds"] and c["notch_pct"] <= tol["notch_pct"]
+            row["compare"] = c
+        steps.append(row)
+        prev = res["S"]
+        if ok or r * step > refine_max * (1 + 1e-9):
+            break
+        r = round(r * step, 6)
+    res["convergence"] = {"ok": ok, "tol": tol, "steps": steps, "refine": r}
+    return res
 
 
 # ================================================================ closed forms
