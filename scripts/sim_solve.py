@@ -461,6 +461,7 @@ def _features(freqs, s11, s21) -> dict:
 
 
 def planar(geo: dict, excites, f_max, f_min=None, points=201, fine=None, keep=None) -> dict:
+    from lib import emboard as eb
     n = len(geo["ports"])
     f_min = f_min or f_max / 40
     freqs = [f_min + (f_max - f_min) * i / (points - 1) for i in range(points)]
@@ -472,18 +473,30 @@ def planar(geo: dict, excites, f_max, f_min=None, points=201, fine=None, keep=No
                                     excite=e, tand=geo.get("tand", 0.0), fine=fine)
         work = Path(keep or scratch.name) / f"port{e}"
         work.mkdir(parents=True, exist_ok=True)
-        (work / "planar.xml").write_text(csx.xml())
+        # The deck sets the record, as on the board path (#606): openEMS tests
+        # its energy only every 4 s of wall clock, so load would set the length.
+        csx.fdtd["endCriteria"] = eb.RUN_ALL_STEPS
+        csx.fdtd["NumberOfTimesteps"] = eb.record_steps({a: sorted(csx.lines[a]) for a in "xyz"},
+                                                        f_max, geo["er"])
         t0 = time.time()
-        r = solvers.run("openems", ["planar.xml"], cwd=work, timeout=4 * 3600)
-        if r.returncode:
-            raise solvers.SolverError(f"openEMS exited {r.returncode} in {work}: "
-                                      f"{(r.stdout + r.stderr)[-400:]}")
-        if not (work / f"p{e}u0").exists():
-            raise solvers.SolverError(f"openEMS wrote no probes: {(r.stdout + r.stderr)[-400:]}")
+        while True:
+            (work / "planar.xml").write_text(csx.xml())
+            r = solvers.run("openems", ["planar.xml"], cwd=work, timeout=4 * 3600)
+            if r.returncode:
+                raise solvers.SolverError(f"openEMS exited {r.returncode} in {work}: "
+                                          f"{(r.stdout + r.stderr)[-400:]}")
+            if not (work / f"p{e}u0").exists():
+                raise solvers.SolverError(f"openEMS wrote no probes: {(r.stdout + r.stderr)[-400:]}")
+            tail = eb.record_tail(work, where)
+            steps = csx.fdtd["NumberOfTimesteps"]
+            if tail <= eb.TAIL_MAX or steps >= eb.STEPS_MAX:
+                break
+            csx.fdtd["NumberOfTimesteps"] = min(eb.STEPS_MAX, 2 * steps)
         if not full:
             cols[e] = em.planar_sparams(work, where, e, freqs)
         kept.append((e, work))
-        runs.append({"excite": e, "cells": where["cells"], "seconds": round(time.time() - t0, 1)})
+        runs.append({"excite": e, "cells": where["cells"], "steps": steps, "tail": tail,
+                     "seconds": round(time.time() - t0, 1)})
     if full:
         cols = em.planar_s_matrix([w for _, w in sorted(kept)], where, freqs)
     if scratch:

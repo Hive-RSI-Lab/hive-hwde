@@ -371,7 +371,7 @@ def _snap(lines, v):
 
 def planar_deck(polys, ports, h: float, er: float, f_max: float,
                 excite: int = 0, tand: float = 0.0, fine: float | None = None,
-                feed_len: float | None = None):
+                feed_len: float | None = None, probe_at=(0.25, 0.5, 0.75)):
     """The deck for a planar microstrip circuit and where its probes are.
 
     polys: the top copper, a list of [(x, y), ...] outlines (mm), drawn as
@@ -441,7 +441,7 @@ def planar_deck(polys, ports, h: float, er: float, f_max: float,
         csx.box(r, pa, pb, prio=5)
         # three probes a third of the feed apart, the first a quarter in
         pr = []
-        for j, frac in enumerate((0.25, 0.5, 0.75)):
+        for j, frac in enumerate(probe_at):
             if sx:
                 px = _snap(xl, x + sx * frac * feed_len)
                 csx.probe(f"p{k}u{j}", 0)
