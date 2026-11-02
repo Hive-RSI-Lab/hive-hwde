@@ -6,7 +6,7 @@ blind, buried and laser micro vias on JLC's HDI builds. Issue #317.
 ## Stackups
 
 `reference/stackups.yaml` holds a default lamination per layer count, JLC's
-free or general build for it, and three HDI builds:
+free or general build for it, and four HDI builds:
 
 | layers | default | outer prepreg (L1-L2) |
 |---|---|---|
@@ -24,6 +24,7 @@ free or general build for it, and three HDI builds:
 | JLCH06161HN1-1078 | 6 | through; micro F.Cu-In1, In4-B.Cu |
 | JLCH061611Y1-1078 | 6 | through; buried In1-In4; micro F.Cu-In1, In4-B.Cu |
 | JLCH081611N2-2116 | 8 | through; micro F.Cu-In1, In1-In2, In5-In6, In6-B.Cu (2nd order, stackable) |
+| JLCH101611Y2-1078L | 10 | through; buried In2-In7; micro F.Cu-In1, In1-In2, In7-In8, In8-B.Cu (2nd order, stackable; JLC's tags are empty, so it may be priced as special) |
 
 `board_init --layers 8` takes the default; `--stackup JLCH081611N2-2116`
 an HDI build. The thin outer prepreg of a 6+ layer JLC build makes
