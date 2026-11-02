@@ -103,9 +103,15 @@ import argparse
 import dataclasses
 import json
 import math
+import os
 import sys
 import tempfile
 from pathlib import Path
+
+# Hundreds of small solves: OpenBLAS's pool busy-waits on them and stalls on a
+# loaded machine (see lib/solvers.py), and one thread costs nothing here.
+for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
+    os.environ.setdefault(_v, "1")
 
 import numpy as np
 import shapely
