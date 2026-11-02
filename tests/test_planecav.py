@@ -385,3 +385,58 @@ def test_live_palace_agrees_with_segmentation_on_an_l(tmp_path):
     seg = [f * 1e-9 for f in cav.mode_freqs(4)]
     got = sim_solve.palace_plane_modes(tmp_path, L_POLY, 1.0, 4, seg[0], 6.0)
     assert max(errs(seg, got["f_ghz"])) < 0.02
+
+
+# ---------------------------------------------------------------- --palace-check
+
+def _palace_run(tmp_path, monkeypatch, result):
+    def fake(_work, _poly, _er, _n, _f1, _size, **_k):
+        if isinstance(result, Exception):
+            raise result
+        return {"f_ghz": result(_f1, _n), "seconds": 1.0, "size_mm": _size,
+                "order": 2}
+    monkeypatch.setattr(sim_solve, "palace_plane_modes", fake)
+    body = (_zone("GND", "In1.Cu", L_ZONE) + _zone("PWR", "In2.Cu", L_ZONE)
+            + _parts((("C1", 15, 30),)))
+    pcb = _write_board(tmp_path, "b", body, four=True, w=61, h=51)
+    return check_pdn_z.run(["--pcb", str(pcb), "--palace-check", "--metadata",
+                            str(_meta(tmp_path, [("C1", "100nF")]))])[0]
+
+
+def _kinds(p):
+    return [v.get("kind") for v in p["violations"]]
+
+
+def _modes_of(p):
+    return [m["f_hz"] * 1e-9 for m in p["pairs"][0]["cavity_modes"]]
+
+
+def test_palace_check_that_agrees_is_quiet(tmp_path, monkeypatch):
+    seen = {}
+    def same(_f1, n):
+        return seen["modes"][:n]
+    body = (_zone("GND", "In1.Cu", L_ZONE) + _zone("PWR", "In2.Cu", L_ZONE)
+            + _parts((("C1", 15, 30),)))
+    pcb = _write_board(tmp_path, "a", body, four=True, w=61, h=51)
+    seen["modes"] = _modes_of(check_pdn_z.run(
+        ["--pcb", str(pcb), "--metadata",
+         str(_meta(tmp_path, [("C1", "100nF")]))])[0])
+    p = _palace_run(tmp_path, monkeypatch, same)
+    assert p["pairs"][0]["palace"]["status"] == "run"
+    assert "palace_disagrees" not in _kinds(p)
+
+
+def test_palace_check_that_disagrees_warns(tmp_path, monkeypatch):
+    p = _palace_run(tmp_path, monkeypatch, lambda f1, n: [f1 * 1.2] * n)
+    assert "palace_disagrees" in _kinds(p)
+
+
+def test_palace_check_short_of_modes_warns(tmp_path, monkeypatch):
+    p = _palace_run(tmp_path, monkeypatch, lambda f1, n: [f1])
+    assert "palace_disagrees" in _kinds(p)
+
+
+def test_palace_that_cannot_run_says_so(tmp_path, monkeypatch):
+    p = _palace_run(tmp_path, monkeypatch, sim_solve.solvers.SolverError("no tree"))
+    assert p["pairs"][0]["palace"]["status"] == "not_run"
+    assert "palace_not_run" in _kinds(p)

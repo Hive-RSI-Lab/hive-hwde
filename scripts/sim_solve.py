@@ -644,11 +644,15 @@ def palace_plane_modes(work: Path, poly, eps_r: float, n: int, f1_ghz: float,
 
 def case_palace_lshape(work: Path) -> dict:
     ref = dauge_l_ghz()
-    got = palace_plane_modes(work, l_polygon(), 1.0, len(ref), ref[0], 6.0)
+    coarse = palace_plane_modes(work / "a", l_polygon(), 1.0, len(ref), ref[0], 6.0)
+    got = palace_plane_modes(work / "b", l_polygon(), 1.0, len(ref), ref[0], 3.0)
+    if len(got["f_ghz"]) < len(ref):
+        raise ValueError(f"Palace found {len(got['f_ghz'])} of {len(ref)} modes")
     return _worst("palace_lshape", "palace", "eigenfrequency (GHz)",
                   list(zip(got["f_ghz"], ref)), 2.0,
                   "L-shaped plane cavity, PMC edges: Dauge benchmark 2DomA",
-                  seconds=got["seconds"])
+                  seconds=got["seconds"], mesh_coarse_ghz=coarse["f_ghz"],
+                  mesh_mm=[coarse["size_mm"], got["size_mm"]])
 
 
 # ---------------------------------------------------------------- extraction

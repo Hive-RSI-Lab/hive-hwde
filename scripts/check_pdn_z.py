@@ -520,8 +520,9 @@ def mode_facts(cav, pair: dict, ports, obs, decaps) -> list[dict]:
 def palace_facts(piece, pair: dict, cav, modes) -> tuple[dict, list[dict]]:
     """Palace eigenmode on the true polygon against the segmented modes."""
     import sim_solve  # noqa: PLC0415
-    import solvers  # noqa: PLC0415
-    clean = planecav.outline(piece, max(pair["a_mm"], pair["b_mm"]) / SEG_CELLS)
+    from lib import solvers  # noqa: PLC0415   (the class sim_solve raises)
+    cell = max(pair["a_mm"], pair["b_mm"]) / SEG_CELLS
+    clean = planecav.outline(piece, cell, tol=cell / 4)
     n = min(4, len(modes))
     f_seg = [m["f_hz"] * 1e-9 for m in modes[:n]]
     lam_mm = (planecav.C0 / (f_seg[-1] * 1e9 * math.sqrt(pair["eps_r"]))) * 1e3
