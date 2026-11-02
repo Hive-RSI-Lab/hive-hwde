@@ -77,6 +77,9 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    **CPL placement per part** (`scripts/cpl_verify.py` inside dfm_check,
    on the fab dir's CPL.csv): pin 1 of each part's LCSC model must land on
    the board's pad 1, and a diode/LED/polarised cap's K/+ on the board's.
+   A crop titled "judge K/+, not pin 1" is a polar part whose model numbers its
+   pins the other way from the board: judge the K or + labels, and mark `pin1`
+   as `match` when they agree, since the red dot sits on the other pad.
    Bottom parts are fitted mirrored and read from below, and the images draw
    them that way (title "BOTTOM, from below"). That rule isn't JLC's own
    (`reference/jlc_bottom_cpl.md`), so `cpl_bottom_preview` stays as a warning:

@@ -17,7 +17,10 @@ label on the board's). A bottom-side part's crop is drawn as seen from below,
 with the board turned about its y axis (x runs right to left) and the model
 turned in that view, as cpl_verify.py reads the CPL; its title says "BOTTOM,
 from below". That view is the exporters' rule, not JLC's own preview, so a match
-here doesn't replace the check in JLC's preview. Parts go several to an image (--per-image, default 9),
+here doesn't replace the check in JLC's preview. Where a polar part's model
+numbers its pins the other way from the board (C2286's K is its pin 2), the red
+dot rightly sits off pad 1: its title says "judge K/+, not pin 1" and the index
+has "judge_by": "role". Parts go several to an image (--per-image, default 9),
 one titled crop each. A part with no model is drawn with the board only and a
 "NO LCSC MODEL" title, so the image pass sees it as unverifiable. A part whose
 model fetch failed (an EasyEDA 403/429 or a network error) is a separate case:
@@ -156,9 +159,11 @@ def render(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
             if polar:
                 num, r = _role_pad(cv.board_roles(fp, model) or {"1": "K"})
                 for p in b["pads"]:
-                    if p["number"] == num and num != "1":
+                    if p["number"] == num:
                         ax.annotate(r, p["center"], color="cyan", fontsize=9,
-                                    ha="center", va="center", zorder=6)
+                                    ha="center",
+                                    va="center" if num != "1" else "bottom",
+                                    zorder=6)
             below = fp.side != "top"
             where = "  BOTTOM, from below" if below else ""
             title = f"{ref}  {lcsc.get(ref) or 'no LCSC'}  CPL {c['rot']:g}{where}"
@@ -168,6 +173,9 @@ def render(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
                 title = f"{ref}  NO LCSC MODEL{where}"
             else:
                 m = model_shapes(model, c, fp.side)
+                if cv.analyse(fp, model).get("number_corrections"):
+                    title += "  judge K/+, not pin 1"
+                    index["parts"][ref]["judge_by"] = "role"
                 ax.add_patch(Polygon(m["body"], closed=True, fc="#80808040",
                                      ec="#b0b0b0", lw=1.0, zorder=4))
                 for p in m["pads"]:

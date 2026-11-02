@@ -145,6 +145,11 @@ def test_polarity_uses_pin_roles_not_numbers(ws):
     assert v["D1"]["verdict"] == "wrong_polarity"
     assert v["D1"]["corrections"] == [180.0]
     assert v["D1"]["number_corrections"] == [0.0]
+    assert "cathode" in v["D1"]["why"]
+    v, _ = _verdicts(pcb, cache, _cpl(D1=180))
+    assert v["D1"]["verdict"] == "ok"
+    v, _ = _verdicts(pcb, cache, _cpl(D1=90))
+    assert v["D1"]["verdict"] == "wrong_rotation"
 
 
 def test_nonpolar_two_pad_part_either_way_round(ws):
@@ -212,9 +217,11 @@ def test_bottom_polar_part_wrong_polarity(ws):
     """The LED model's pad 1 is its anode, KiCad's the cathode: the role fit
     decides, on the bottom as on the top (test_polarity_uses_pin_roles...)."""
     pcb, cache = ws
-    v, _ = _verdicts(pcb, cache, _cpl(D2=0))
+    v, _ = _verdicts(pcb, cache, _cpl(D2=180))
     assert v["D2"]["verdict"] == "wrong_polarity"
     assert v["D2"]["expected_rot"] == [0.0]
+    v, _ = _verdicts(pcb, cache, _cpl(D2=0))
+    assert v["D2"]["verdict"] == "ok"
     pads = [("1", -0.7875, 0.0), ("2", 0.7875, 0.0)]
     # no roles in this model, so polarity goes by number: 180 only, never 0
     named = _model(pads, package="LED0603")
@@ -976,3 +983,63 @@ def test_a_declared_panel_is_accepted(tmp_path, sub):
     assert "rails" in _pcba_kinds(bg, cpl)[0]["msg"]
     (d / "panel.json").write_text(json.dumps({**good, "fiducials": []}))
     assert "0 fiducials" in _pcba_kinds(bg, cpl)[0]["msg"]
+
+
+# ---------------------------------------- an LED* footprint, K on pad 1 (C2286)
+
+# boards/twin-side/parts/easyeda/C2286.json on hw-lab h2/twin-side-route:
+# KT-0603R, pad 2 = K west, pad 1 = A east, as the LCSC model has it.
+C2286 = {"lcsc": "C2286", "title": "KT-0603R",
+         "package": "LED-SMD_L1.6-W0.8-R-RD", "origin": [4000.8828, 3003.1398],
+         "pads": ["PAD~RECT~3997.93~3003.14~3.1496~3.1496~1~~2~0~~0~gge5",
+                  "PAD~RECT~4003.836~3003.14~3.1496~3.1496~1~~1~0~~0~gge15"],
+         "silk": [],
+         "pins": ["P~show~0~2~-20~-5~180~gge28~0^^-20~-5^^M -20 -5 h 15~#800"
+                  "^^0~-1~-5~0~K~start~~~#800^^0~-9~-9~0~2~end~~~#800",
+                  "P~show~0~1~20~-5~0~gge37~0^^20~-5^^M 20 -5 h -15~#800"
+                  "^^0~1~-5~0~A~end~~~#800^^0~9~-9~0~1~start~~~#800"]}
+PASSIVES_LED = [("1", -0.7875, 0.0), ("2", 0.7875, 0.0)]
+
+
+def test_led_footprint_is_k_on_pad_1_and_the_model_turns_to_match():
+    """Device:LED on passives:LED0603, no pinfunctions: pad 1 = K on the west,
+    as the model's K is. Correction 0. The number fit (180) put it on backwards
+    with verdict ok."""
+    model = easyeda.parse(C2286)
+    fp = _kfp("D102", PASSIVES_LED, name="passives:LED0603")
+    a = cv.analyse(fp, model)
+    assert a["verdict"] == "ok" and a["corrections"] == [0.0]
+    assert a["basis"].startswith("pin role")
+    assert a["number_corrections"] == [180.0]
+    assert cv.derive_rotation(fp, model) == 0.0
+    row = cv.check_part(fp, model, {"x": 10.0, "y": 10.0, "rot": 180.0})
+    assert row["verdict"] == "wrong_polarity"
+    assert cv.check_part(fp, model, {"x": 10.0, "y": 10.0, "rot": 0.0})["verdict"] == "ok"
+
+
+def test_led_footprint_on_the_bottom_follows_the_bottom_rule():
+    model = easyeda.parse(C2286)
+    fp = _kfp("D301", [(n, x, -y) for n, x, y in PASSIVES_LED], rot=-90.0,
+              name="passives:LED0603")
+    fp.side = "bottom"
+    assert cv.analyse(fp, model)["corrections"] == [0.0]
+    assert cv.derive_rotation(fp, model) == 270.0     # 180 + 90 + 0
+
+
+def test_imported_led_footprint_keeps_its_models_numbering():
+    """The LED rule mustn't reach a footprint pulled from the part itself."""
+    model = easyeda.parse(C2286)
+    pads = [("2", -0.75, 0.0), ("1", 0.75, 0.0)]
+    fp = _kfp("D1", pads, name="mcu:LED-SMD_L1.6-W0.8-R-RD")
+    assert cv.board_roles(fp, model) == {"2": "K", "1": "A"}
+    a = cv.analyse(fp, model)
+    assert a["corrections"] == [0.0] and "number_corrections" not in a
+
+
+@pytest.mark.parametrize("ref,pads,name", [
+    ("U1", PASSIVES_LED, "passives:LED0603"),                  # not a D/LED ref
+    ("D1", PASSIVES_LED + [("3", 0.0, 1.0)], "x:LED-RGB"),     # not two pads
+    ("D1", PASSIVES_LED, "passives:D0603"),                    # not LED*
+])
+def test_led_rule_stays_narrow(ref, pads, name):
+    assert cv.board_roles(_kfp(ref, pads, name=name), None) == {}

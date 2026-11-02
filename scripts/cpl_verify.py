@@ -21,8 +21,11 @@ per LCSC number) and fits it onto the board footprint:
             board's cathode / + pad (the pad's pinfunction, else the KiCad
             library convention: D_/LED_ pad 1 = K, CP_ pad 1 = +, else - for
             a footprint pulled from the same LCSC part - the model's own
-            numbering). A role fit that disagrees with the number fit is
-            `wrong_polarity`. With no K/A or +/- names on one side (LCSC
+            numbering, else a two-pad LED* footprint on a D/LED refdes, pad
+            1 = K as KiCad's Device:LED numbers it). Where roles are named on
+            both sides they decide the rotation, even when the numbers fit
+            another way (C2286's pad 2 is its K, so pin 1 goes on pad 2): a
+            CPL at that number fit puts K on A and is `wrong_polarity`. With no K/A or +/- names on one side (LCSC
             symbols for polarised caps say "1"/"2"), polarity is checked by
             pad number, and a 180-degree turn is never accepted for it.
   no data   No LCSC number, no cached or fetchable model, fewer than two
@@ -295,6 +298,10 @@ def board_roles(fp: Footprint, model) -> dict[str, str]:
         return {"1": "+", "2": "-"}
     if model is not None and model.package and model.package in n:
         return model_roles(model)
+    # After the check above: an imported footprint keeps its model's numbering.
+    if n.upper().startswith("LED") and _POLAR_REF.match(fp.ref) \
+            and {p.number for p in fp.pads if p.number} == {"1", "2"}:
+        return {"1": "K", "2": "A"}
     return {}
 
 
@@ -376,11 +383,9 @@ def analyse(fp: Footprint, model) -> dict:
             if rc:
                 out["basis"] = "pin role (K/A, +/-)"
                 if corr and not set(rc) & set(corr):
-                    out.update(verdict="wrong_polarity", corrections=rc,
-                               number_corrections=corr,
-                               why="the LCSC model's numbering puts its "
-                                   "cathode/+ pin on the board's anode/- pad")
-                    return out
+                    # the numbers differ, the part doesn't: check_part fails
+                    # a CPL that follows them
+                    out["number_corrections"] = corr
                 corr = rc
         else:
             # LCSC symbols for polarised caps are usually pins "1"/"2" with
@@ -461,9 +466,17 @@ def check_part(fp: Footprint, model, cpl: dict) -> dict:
     row["expected_rot"] = want
     row["side"] = fp.side
     if not any(_ang_eq(cpl["rot"], w) for w in want):
-        row["verdict"] = "wrong_rotation"
-        row["why"] = (f"CPL rotation {cpl['rot']:g} puts pin 1 off pad 1; the "
-                      f"LCSC model needs {want[0]:g}")
+        by_number = [cpl_rotation(fp.side, fp.rot, c)
+                     for c in a.get("number_corrections", [])]
+        if any(_ang_eq(cpl["rot"], w) for w in by_number):
+            row["verdict"] = "wrong_polarity"
+            row["why"] = (f"CPL rotation {cpl['rot']:g} follows the pad numbers, "
+                          f"which puts the LCSC model's cathode/+ pin on the "
+                          f"board's anode/- pad; it needs {want[0]:g}")
+        else:
+            row["verdict"] = "wrong_rotation"
+            row["why"] = (f"CPL rotation {cpl['rot']:g} puts pin 1 off pad 1; "
+                          f"the LCSC model needs {want[0]:g}")
     # Offset: model pad centre vs board pad centre, both placed.
     dx, dy = _centre_delta(fp, model, cpl["rot"])
     row["offset_mm"] = round(math.hypot(cpl["x"] - fp.x - dx,
@@ -548,8 +561,8 @@ def verify(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
 
 
 # A footprint whose pads land on the LCSC model by number is the part's land
-# pattern whatever the CPL turn says (a wrong rotation is the CPL's fault).
-FOOTPRINT_OK = ("ok", "wrong_rotation")
+# pattern whatever the CPL turn says (a wrong rotation or a K on A is the CPL's fault).
+FOOTPRINT_OK = ("ok", "wrong_rotation", "wrong_polarity")
 
 
 def record_footprints(pcb: Path, rows: list[dict],
@@ -566,7 +579,7 @@ def record_footprints(pcb: Path, rows: list[dict],
         code = lcsc.get(r["ref"], "")
         v = r.get("verdict")
         st = ("verified" if v in FOOTPRINT_OK else
-              "failed" if v in ("no_fit", "wrong_polarity") else "unknown")
+              "failed" if v == "no_fit" else "unknown")
         facts.append({
             "subject": r["ref"], "kind": "footprint", "status": st,
             "lcsc": code,
