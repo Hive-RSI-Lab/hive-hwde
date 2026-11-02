@@ -115,6 +115,13 @@ own floors in place of the through-via ones (`A.Via_Type`), and 3 mil track and
 clearance for what touches the field's courtyard. KiCad warns `holes_co_located`
 on a microvia stacked on a buried via: a warning, and the stack is intended.
 
+`dfm_check` holds a board on an HDI build to JLC's HDI line (3 mil track and
+clearance, the laser's hole and ring). It measures a span's ring only on the
+layers its hole crosses, and leaves hole-to-hole with a span to check_vias.
+`fab_export` ships one Excellon per span (`<board>-front-in1.drl`,
+`-in2-in7.drl`, ...) and all of them in the zip; KiCad writes them, and a test
+holds the hits and the zip to the board's vias.
+
 ## Not done yet
 
 - (Done, #323) rules_gen sizes inner stripline: an inner layer with a pour

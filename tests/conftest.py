@@ -83,6 +83,7 @@ SLOW = {
     "tests/test_netlist_compare.py::test_pinned_board_ships_a_netlist_its_gerbers_match": "exports the pinned lite-main/core fab packages with kicad-cli",
     "tests/test_hdi_route.py::test_live_every_ball_escaped": "escapes a ball field and runs kicad-cli DRC",
     "tests/test_hdi_route.py::test_live_escape_rotated_and_on_the_back": "escapes a ball field and runs kicad-cli DRC",
+    "tests/test_hdi_route.py::test_live_fab_package_ships_a_drill_file_per_span_and_passes_dfm": "escape, DRC, fab_export and dfm_check on a ball field",
     "tests/test_hdi_route.py::test_live_plane_balls_join_through_the_stack": "escapes a ball field, refills and runs kicad-cli DRC",
     "tests/test_route_escape.py::test_live_escape_synthetic_bga": "runs KRT bga_fanout and kicad-cli DRC on a synthetic BGA",
     "tests/test_zroute.py::test_live_route_critical_pair_l1_l3_drc_clean": "runs KRT route_diff/route and kicad-cli DRC on a synthetic 6-layer board",

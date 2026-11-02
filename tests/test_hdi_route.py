@@ -23,7 +23,9 @@ sys.path.insert(0, str(SCRIPTS / "lib"))
 import bgalib  # noqa: E402
 import board_init  # noqa: E402
 import check_vias  # noqa: E402
+import dfm_check  # noqa: E402
 import env  # noqa: E402
+import fab_export  # noqa: E402
 import geom  # noqa: E402
 import hdilib  # noqa: E402
 import jlcstack  # noqa: E402
@@ -74,7 +76,7 @@ def make_board(tmp: Path, balls, pad, *, stackup=TEN, zones=(), rot=0, back=Fals
 (layers
 {layers}
 (1 "F.Mask" user) (3 "B.Mask" user) (13 "F.Paste" user) (15 "B.Paste" user)
-(5 "F.SilkS" user "F.Silkscreen") (31 "F.CrtYd" user "F.Courtyard")
+(5 "F.SilkS" user "F.Silkscreen") (7 "B.SilkS" user "B.Silkscreen") (31 "F.CrtYd" user "F.Courtyard")
 (29 "B.CrtYd" user "B.Courtyard") (25 "Edge.Cuts" user))
 (setup {board_init.build_stackup_block(s)})
 (gr_rect (start 5 5) (end 45 45) (stroke (width 0.1)) (fill no) (layer "Edge.Cuts"))
@@ -272,6 +274,17 @@ def test_route_edit_validates_a_via_span():
 
 # ------------------------------------------------------------ live
 
+def test_dfm_rules_take_the_hdi_line_floors():
+    caps = dfm_check.load_capabilities(dfm_check.CAPABILITIES)
+    row = caps["design_rules"]["10layer_1oz"]
+    out = dfm_check.hdi_rules(row, caps["hdi"])
+    assert out["min_trace_width_mm"] == 0.0762 and out["min_clearance_mm"] == 0.0762
+    assert out["min_hole_diameter_mm"] == 0.075
+    assert out["min_annular_ring_mm"] == 0.075
+    assert "abs_min_hole_diameter_mm" not in out
+    assert row["min_trace_width_mm"] > 0.0762      # the row itself is untouched
+
+
 def _walk_to_stub(bg, pad, bbox) -> bool:
     """Independent of the planner: from the ball through the saved tracks and
     vias of its net, does copper reach past the ball field?"""
@@ -371,3 +384,38 @@ def test_live_plane_balls_join_through_the_stack(tmp_path):
     assert f["hdi"]["plane_balls"] > 0
     report = kc.run_drc(env.find_kicad_cli(), p, refill=True, all_track_errors=True)
     assert not [v for v in report["violations"] if v.get("source") == "unconnected"]
+
+
+def test_live_fab_package_ships_a_drill_file_per_span_and_passes_dfm(tmp_path):
+    """Through check_vias and DRC, then the exported files: one Excellon per
+    span with the right hits, all of them in the zip, and dfm_check against
+    the HDI line's floors."""
+    _need_tools()
+    import zipfile
+
+    def net(r, c):
+        return "GND" if (r + c) % 5 == 0 else None
+    p = make_board(tmp_path, grid(8, 0.5, net=net), 0.28,
+                   zones=[("GND", "In3.Cu"), ("GND", "In6.Cu")])
+    _, bg = _grade(p, expect_stubs=False)
+    out = tmp_path / "fab"
+    assert fab_export.main(["--pcb", str(p), "--out-dir", str(out),
+                            "--out", str(tmp_path / "fe.json")]) == 0
+    drills = {f.name: f for f in (out / "gerbers").glob("*.drl")}
+    want = {}
+    for v in bg.vias_of():
+        want[(v.layers[0], v.layers[-1])] = want.get((v.layers[0], v.layers[-1]), 0) + 1
+    def word(ly):
+        return {"F.Cu": "front", "B.Cu": "back"}.get(ly, ly.split(".")[0].lower())
+    assert ("In2.Cu", "In7.Cu") in want
+    for span, hits in want.items():
+        text = drills[f"b-{word(span[0])}-{word(span[1])}.drl"].read_text("utf-8")
+        assert sum(ln.startswith("X") for ln in text.splitlines()) == hits, span
+    zipped = zipfile.ZipFile(next(out.glob("*.zip"))).namelist()
+    assert set(drills) <= set(zipped)
+    report = tmp_path / "dfm.json"
+    dfm_check.main(["--pcb", str(p), "--fab-dir", str(out), "--offline",
+                    "--out", str(report)])
+    doc = json.loads(report.read_text("utf-8"))
+    bad = [v for v in doc["violations"] if v["severity"] == "error"]
+    assert bad == [], [(v["kind"], v["msg"]) for v in bad[:6]]
