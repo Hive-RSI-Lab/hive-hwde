@@ -53,6 +53,7 @@ ZREF = 50.0
 PML_CELLS = 8
 NF2FF_INSET = 4         # cells between the PML and the NF2FF box
 RECORD_TRANSITS = 3     # corner-to-corner trips of the domain after the pulse
+MERGE = 0.6             # mesh lines nearer than this many `fine` merge: the time step follows the least cell
 TAIL_MAX = 1e-3         # the last tenth of a record against its peak
 STEPS_MAX = 600000
 FACES = ("xn", "xp", "yn", "yp", "zn", "zp")
@@ -337,7 +338,7 @@ def deck(geo: dict, feed, f0: float, fc: float, pattern=(), *, fine: float | Non
     for a in "xy":
         lo, hi = dom[a]
         fixed = [v for v in m.fixed[a] if lo < v < hi]
-        lines[a] = eb.mesh_axis(fixed, m.zones[a], lo, hi, fine, coarse, m.pinned[a])
+        lines[a] = eb.mesh_axis(fixed, m.zones[a], lo, hi, fine, coarse, m.pinned[a], min_step=MERGE * fine)
     zfix = sorted(set(round(v, 6) for v in zl))
     zmin, zmax = zlo - out, zhi + out
     zgrow = eb.smooth_lines(eb.merge_lines(zfix + [zmin, zmax], fz / 1.6, zs), coarse)

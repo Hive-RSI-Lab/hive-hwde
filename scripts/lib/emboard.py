@@ -280,10 +280,10 @@ def smooth_lines(lines, max_step: float, ratio: float = 1.4) -> list[float]:
     return [round(v, 6) for v in out]
 
 
-def mesh_axis(fixed, fine_zones, lo, hi, fine, coarse, pinned=(), edges=()) -> list[float]:
+def mesh_axis(fixed, fine_zones, lo, hi, fine, coarse, pinned=(), edges=(), min_step=None) -> list[float]:
     """One axis: the fixed lines, uniform `fine` lines inside each fine
-    zone (a, b), the domain ends, merged at fine/3 (pinned lines kept) and
-    smoothed out to `coarse`. `edges` are the (a, b) cells of the thirds
+    zone (a, b), the domain ends, merged at min_step (default fine/3; pinned
+    lines kept) and smoothed out to `coarse`. `edges` are the (a, b) cells of the thirds
     rule: a line inside one would put the conductor's edge in a cell of the
     wrong size, and the sheet takes the whole cell it starts in, so nothing
     is added there."""
@@ -295,7 +295,7 @@ def mesh_axis(fixed, fine_zones, lo, hi, fine, coarse, pinned=(), edges=()) -> l
     vals = [v for v in vals if lo - 1e-9 <= v <= hi + 1e-9]
     pins = [p for p in pinned if lo - 1e-9 <= p <= hi + 1e-9]
     keep = sorted({round(v, 6) for ab in edges for v in ab if lo - 1e-9 <= v <= hi + 1e-9})
-    ls = merge_lines(vals, fine / 3, pins + keep)
+    ls = merge_lines(vals, min_step or fine / 3, pins + keep)
 
     def clear(lines):
         pset = {round(p, 6) for p in pins}
