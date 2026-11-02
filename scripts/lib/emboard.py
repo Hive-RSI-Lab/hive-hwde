@@ -70,6 +70,8 @@ TAIL_MAX = 1e-3         # the last tenth of a record against its peak voltage
 STEPS_MAX = 200000
 FEED_FIT_DEG = 3        # Z(f) and eps_eff(f) of a feed, across the band
 FEED_FIT_PASSES = 6
+FEED_SIGNAL = 0.1       # feed_lines: a run carries the line where its fit weight is this much of the feed's peak
+FEED_COVER = 0.5        # and it can name the line alone if it does so over this much of the band
 # Mesh convergence (study_converged): two runs a mesh step apart must agree this
 # well. notch_pct is half the 1 % rf-kit's filters are tuned to; ds is the largest
 # |dS| (compare).
@@ -734,6 +736,15 @@ def read_feed(sim: Path, k: int, freqs) -> tuple[list, list]:
             [em.dft(*em.read_probe(sim / f"p{k}i{j}"), freqs) for j in range(2)])
 
 
+def _feed_weight(read):
+    """Per frequency, the smallest term fit_feed's ratios divide by."""
+    import numpy as np
+    us, ii = read
+    u1, u2, u3 = (np.asarray(v) for v in us)
+    i1, i2 = (np.asarray(v) for v in ii)
+    return np.minimum.reduce([np.abs(u2), np.abs(u1 - u3), ZREF * np.abs(i1 - i2), ZREF * np.abs(i1 + i2)])
+
+
 def fit_feed(reads, dist, freqs, f_max: float, deg: int = FEED_FIT_DEG) -> dict:
     """One port's feed as a line: Z(f) and eps_eff(f) over the band, from the
     probes of every run (`reads`: read_feed's per run), for `feed_vi`.
@@ -760,8 +771,7 @@ def fit_feed(reads, dist, freqs, f_max: float, deg: int = FEED_FIT_DEG) -> dict:
             g = 2 * np.arcsinh(np.sqrt((u1 - u3) * (i1 - i2) / ((i1 + i2) * u2)) / 2) / d
         fz.append(np.abs(z.real))
         fe.append((np.abs(g.imag) * C0 / (2 * np.pi * f)) ** 2)
-        fw.append(np.minimum.reduce([np.abs(u2), np.abs(u1 - u3), ZREF * np.abs(i1 - i2),
-                                     ZREF * np.abs(i1 + i2)]))
+        fw.append(_feed_weight((us, ii)))
         fx.append(f / f_max)
     x, z, e, w0 = (np.concatenate(v) for v in (fx, fz, fe, fw))
     ok = np.isfinite(z) & np.isfinite(e) & (x >= 1 / 8)
@@ -776,6 +786,38 @@ def fit_feed(reads, dist, freqs, f_max: float, deg: int = FEED_FIT_DEG) -> dict:
     return {"z": np.polyval(pz, xh).tolist(), "eps_eff": np.polyval(pe, xh).tolist(),
             "z_rms": float(np.sqrt(np.average((z - np.polyval(pz, x)) ** 2, weights=w))),
             "eps_rms": float(np.sqrt(np.average((e - np.polyval(pe, x)) ** 2, weights=w)))}
+
+
+def feed_lines(reads: dict, dists, freqs, f_max: float, symmetric: bool = False) -> list[dict]:
+    """Each port's line from `reads` ({excited port: read_feed per port}).
+
+    A driven feed carries a standing wave, and its large terms near a stopband
+    pull the fit: on rf-kit F5, openEMS's driven feed fitted 52.1 ohm at 0.6 GHz
+    against 51.4 undriven, and Palace's 41 against 50. So a port's line comes
+    from the runs that don't drive it, but only where they carry the line over
+    most of the band: the far feed of a filter or an isolated port is noise or
+    a sliver, and a cubic through that says nothing about the rest, so there
+    every run's probes go in. A mirror 2-port excited once has one line, and
+    port 0's undriven read is its mirror's (two different lines read sigma_max
+    1.003 on F5, one 1.0006)."""
+    import numpy as np
+    f = np.asarray(freqs, dtype=float)
+    band = f / f_max >= 1 / 8
+    n = len(dists)
+    mirror = symmetric and n == 2 and len(reads) == 1
+    lines = []
+    for k in range(n):
+        driven = [r[k] for e, r in reads.items() if e == k]
+        quiet = [r[k] for e, r in reads.items() if e != k]
+        if mirror:
+            quiet = [r[1 - e] for e, r in reads.items()]
+            driven = [r[e] for e, r in reads.items()]
+        peak = max(float(_feed_weight(r)[band].max(initial=0.0)) for r in quiet + driven)
+        cover = (np.mean(np.max([_feed_weight(r)[band] for r in quiet], axis=0) >= FEED_SIGNAL * peak)
+                 if quiet else 0.0)
+        use = quiet if cover >= FEED_COVER else quiet + driven
+        lines.append(fit_feed(use, dists[k], freqs, f_max))
+    return lines
 
 
 def feed_vi(read, dist, freqs, line: dict) -> list[dict]:
@@ -939,8 +981,7 @@ def study(geo: dict, ports, f_max: float, f_min: float | None = None, points: in
                      "seconds": round(time.time() - t0, 1)})
         if ctx:
             ctx.cleanup()
-    lines = [fit_feed([reads[e][k] for e in excites], where["ports"][k]["dist"], freqs, f_max)
-             for k in range(n)]
+    lines = feed_lines(reads, [p["dist"] for p in where["ports"]], freqs, f_max, symmetric)
     vi = {e: [feed_vi(reads[e][k], where["ports"][k]["dist"], freqs, lines[k]) for k in range(n)]
           for e in excites}
     runs = {e: [[((vi[e][k][m]["v"] + ZREF * vi[e][k][m]["i"]) / 2,

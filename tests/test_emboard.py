@@ -430,6 +430,49 @@ def test_fit_feed_is_not_moved_by_a_null():
     assert max(abs(v - 3.6) for v in line["eps_eff"][40:]) < 0.05
 
 
+def _driven_and_far(far_gain):
+    """A feed on a 52 ohm line. Driven it stands near a stopband, its ratios
+    reading a different line; `far_gain(f)` is the wave reaching the far feed."""
+    freqs = [0.625e9 + 0.025e9 * k for k in range(176)]
+    dist = [6.0, 9.0, 12.0]
+    driven = _probes_on_a_line(38.0, 3.0, dist, freqs, [1.0 + 0j] * 176, [0.7 + 0j] * 176)
+    far = _probes_on_a_line(52.0, 3.5, dist, freqs, [0j] * 176, [far_gain(f) + 0j for f in freqs])
+    return freqs, dist, driven, far
+
+
+def test_feed_lines_prefers_the_undriven_run():
+    freqs, dist, driven, far = _driven_and_far(lambda f: 1.0)
+    lines = eb.feed_lines({0: [driven, far], 1: [far, driven]}, [dist, dist], freqs, freqs[-1])
+    for ln in lines:
+        assert ln["z"] == pytest.approx([52.0] * 176, rel=1e-3)
+        assert ln["eps_eff"] == pytest.approx([3.5] * 176, rel=1e-3)
+
+
+def test_feed_lines_gives_a_mirror_one_line():
+    freqs, dist, driven, far = _driven_and_far(lambda f: 1.0)
+    a, b = eb.feed_lines({0: [driven, far]}, [dist, dist], freqs, freqs[-1], symmetric=True)
+    assert a["z"] == pytest.approx([52.0] * 176, rel=1e-3)
+    assert b["z"] == a["z"]
+
+
+def test_feed_lines_excited_once_without_a_mirror_keeps_each_ports_own_read():
+    """Not symmetric: the feeds may differ, so the far line can't serve port 0."""
+    freqs, dist, driven, far = _driven_and_far(lambda f: 1.0)
+    a, b = eb.feed_lines({0: [driven, far]}, [dist, dist], freqs, freqs[-1])
+    assert a["z"] == pytest.approx([38.0] * 176, rel=1e-3)
+    assert b["z"] == pytest.approx([52.0] * 176, rel=1e-3)
+
+
+def test_feed_lines_does_not_trust_a_far_feed_with_a_sliver_of_band():
+    """A bandpass: the far feed only sees the line over 10 % of the band, so
+    its fit can't stand alone. All runs go in, as fit_feed would take them."""
+    freqs, dist, driven, far = _driven_and_far(lambda f: 1.0 if 2.5e9 < f < 3.0e9 else 1e-5)
+    lines = eb.feed_lines({0: [driven, far], 1: [far, driven]}, [dist, dist], freqs, freqs[-1])
+    want = eb.fit_feed([far, driven], dist, freqs, freqs[-1])
+    assert lines[0]["z"] == pytest.approx(want["z"])
+    assert lines[1]["z"] == pytest.approx(want["z"])
+
+
 def _notch_s(freqs, f0):
     s21 = [(f - f0) / (f - f0 + 0.1e9j) for f in freqs]
     s11 = [v - 1 for v in s21]
