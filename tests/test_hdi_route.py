@@ -32,6 +32,8 @@ import jlcstack  # noqa: E402
 import kc  # noqa: E402
 import route_edit  # noqa: E402
 import route_escape  # noqa: E402
+import route_finish as rf  # noqa: E402
+import routelib  # noqa: E402
 import rules_gen  # noqa: E402
 from checklib import CheckError  # noqa: E402
 
@@ -283,6 +285,161 @@ def test_dfm_rules_take_the_hdi_line_floors():
     assert out["min_annular_ring_mm"] == 0.075
     assert "abs_min_hole_diameter_mm" not in out
     assert row["min_trace_width_mm"] > 0.0762      # the row itself is untouched
+
+
+# ------------------------------------------------------------ DSN and SES
+
+KICAD_DSN = """(pcb a.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer In1.Cu
+      (type signal)
+      (property
+        (index 1)
+      )
+    )
+    (layer In2.Cu
+      (type signal)
+      (property
+        (index 2)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 3)
+      )
+    )
+    (via "Via[0-3]_450:200_um" "Via[0-1]_250:100_um")
+    (rule
+      (width 200)
+      (clearance 125)
+    )
+  )
+  (library
+    (padstack "Via[0-3]_450:200_um"
+      (shape (circle F.Cu 450))
+      (shape (circle In1.Cu 450))
+      (shape (circle In2.Cu 450))
+      (shape (circle B.Cu 450))
+      (attach off)
+    )
+    (padstack "Via[0-1]_250:100_um"
+      (shape (circle F.Cu 250))
+      (shape (circle In1.Cu 250))
+      (attach off)
+    )
+  )
+  (network
+    (class kicad_default A
+      (circuit
+        (use_via "Via[0-3]_450:200_um")
+      )
+      (rule
+        (width 200)
+        (clearance 125)
+      )
+    )
+  )
+)
+"""
+
+
+def test_dsn_add_spans_declares_each_span_once():
+    assert routelib.dsn_layer_names(KICAD_DSN) == ["F.Cu", "In1.Cu", "In2.Cu", "B.Cu"]
+    text, added = routelib.dsn_add_spans(
+        KICAD_DSN, [(0, 1, 0.25, 0.1), (1, 2, 0.25, 0.1), (2, 3, 0.25, 0.1)])
+    assert added == ["Via[1-2]_250:100_um", "Via[2-3]_250:100_um"]
+    assert text.count('(padstack "Via[0-1]_250:100_um"') == 1
+    block = text[text.index('(padstack "Via[1-2]_250:100_um"'):]
+    block = block[:block.index("(attach off)")]
+    assert "In1.Cu" in block and "In2.Cu" in block and "F.Cu" not in block
+    via = next(ln for ln in text.splitlines() if ln.strip().startswith('(via "'))
+    use = next(ln for ln in text.splitlines() if "(use_via" in ln)
+    for line in (via, use):
+        assert '"Via[0-3]_450:200_um"' in line       # the class's own stays
+        assert '"Via[2-3]_250:100_um"' in line
+    assert routelib.dsn_add_spans(text, [(1, 2, 0.25, 0.1)])[1] == []
+
+
+def test_hole_floor_leaves_a_laser_via_at_its_own_size():
+    """Grown to the through-via 0.5 mm floor, a microvia would wall off the
+    channels it escapes through."""
+    text, _ = routelib.dsn_add_spans(KICAD_DSN, [(1, 2, 0.25, 0.1)])
+    _, plain = routelib.dsn_hole_floor(text, 0.5)
+    assert "Via[1-2]_250:100_um" in plain
+    _, grown = routelib.dsn_hole_floor(text, 0.5, 0.24)
+    assert "Via[0-3]_450:200_um" in grown
+    assert grown.get("Via[1-2]_250:100_um", (0, 0))[1] <= 0.24 * 1000 + 100 - 125 + 1
+
+
+# ------------------------------------------------------------ the maze
+
+def _maze_board(tmp_path, stackup):
+    """A wall on F.Cu between two pads: the net must change layer."""
+    p = make_board(tmp_path, grid(3, 1.0, net=lambda r, c: f"/X{r}{c}"), 0.5,
+                   stackup=stackup)
+    text = p.read_text("utf-8")
+    add = ('(footprint "t:U2" (layer "F.Cu") (at 10 25) '
+           '(property "Reference" "U2" (at 0 0 0) (layer "F.SilkS"))\n'
+           '(pad "1" smd rect (at 0 0) (size 1 1) (layers "F.Cu" "F.Mask") (net "SIG") '
+           '(uuid "00000000-0000-0000-0003-000000000001")))\n'
+           '(footprint "t:U3" (layer "F.Cu") (at 16 25) '
+           '(property "Reference" "U3" (at 0 0 0) (layer "F.SilkS"))\n'
+           '(pad "1" smd rect (at 0 0) (size 1 1) (layers "F.Cu" "F.Mask") (net "SIG") '
+           '(uuid "00000000-0000-0000-0003-000000000002")))\n'
+           '(segment (start 13 5.5) (end 13 44.5) (width 0.3) (layer "F.Cu") (net "W") '
+           '(uuid "00000000-0000-0000-0003-000000000003"))\n')
+    p.write_text(text.replace('(footprint "t:U1"', add + '(footprint "t:U1"', 1), "utf-8")
+    p.with_suffix(".kicad_dru").write_text('(version 1)\n', "utf-8")
+    return p
+
+
+def _maze_vias(pcb):
+    bg = geom.BoardGeom.from_file(pcb)
+    rules = rf.board_rules(pcb, bg, min_width=0.1)
+    pair = {"net": "SIG", "a": {"pos": [10, 25], "msg": "Pad 1 [SIG] of U2 on F.Cu"},
+            "b": {"pos": [16, 25], "msg": "Pad 1 [SIG] of U3 on F.Cu"}}
+    jobs = rf.plan_routes(bg, rules, [pair], bg.copper_layers)
+    assert jobs[0]["status"] == "routed", jobs[0]
+    return rules, [op for op in jobs[0]["ops"] if op["op"] == "add_via"]
+
+
+def test_maze_takes_microvias_on_an_hdi_build(tmp_path):
+    _, vias = _maze_vias(_maze_board(tmp_path, TEN))
+    assert len(vias) == 2
+    for v in vias:
+        assert (v["kind"], v["top"], v["bot"], v["drill"], v["size"]) == (
+            "micro", "F.Cu", "In1.Cu", 0.1, 0.25)
+
+
+def test_maze_stays_on_through_vias_on_a_standard_build(tmp_path):
+    rules, vias = _maze_vias(_maze_board(tmp_path, "JLC10161H-2116"))
+    assert rules.spans == [] and len(vias) == 2
+    assert all("kind" not in v for v in vias)
+
+
+def test_maze_sizes_its_through_via_from_through_vias_only(tmp_path):
+    """A board full of microvias must not make 0.25/0.1 its through via."""
+    p = _maze_board(tmp_path, TEN)
+    text = p.read_text("utf-8").rstrip()[:-1]
+    text += "".join(f'(via micro (at {7 + i} 8) (size 0.25) (drill 0.1) (layers "F.Cu" "In1.Cu") '
+                    f'(net "M{i}"))\n' for i in range(4))
+    text += '(via (at 7 42) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net "T"))\n)\n'
+    p.write_text(text, "utf-8")
+    rules = rf.board_rules(p, geom.BoardGeom.from_file(p), min_width=0.1)
+    assert (rules.via_size, rules.via_drill) == (0.6, 0.3)
 
 
 def _walk_to_stub(bg, pad, bbox) -> bool:
