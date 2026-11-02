@@ -32,6 +32,9 @@ from lib import emsolve as em  # noqa: E402
 from lib import geom as G  # noqa: E402
 from lib import solvers  # noqa: E402
 
+sys.path.insert(0, str(ROOT / "tests"))
+import test_emboard as te  # noqa: E402
+
 live = pytest.mark.skipif(solvers.toolchain_root() is None, reason="no IIC-OSIC-TOOLS tree")
 
 
@@ -417,3 +420,62 @@ def test_live_r_of_a_strip_over_ground_vs_fasthenry(tmp_path):
     for f in (10 ** 7, 10 ** 8):
         want = L.series_z(np.array([float(f)]), s["rdc"], s["g_per_m"], "smooth")[0].real
         assert got[f] == pytest.approx(want, rel=0.15)
+
+
+def _coupon_run(tmp_path, name, refine=1.0, **kw):
+    pcb = tmp_path / f"{name}.kicad_pcb"
+    reg = te.coupon(pcb)
+    geo = eb.extract(pcb, reg)
+    res = eb.study(geo, ["0,10,-x", "30,10,+x"], 6e9, 3e8, 51, symmetric=True, refine=refine, **kw)
+    return np.array(res["freqs"]), np.array(res["S"])
+
+
+def _poles_deck(csx, i, er):
+    return L.dielectric_props(csx, f"slab{i}", L.DS(er, 0.02), 3e8, 6e9)
+
+
+@live
+@pytest.mark.parametrize("refine", [1.0, 1.5])
+def test_live_loss_in_the_deck_vs_on_the_line(tmp_path, refine):
+    """#553's two ways. 30 mm thru, tan d 0.02 at 1 GHz: Lorentz poles in the deck against
+    add_line_loss on the same deck run lossless, at two meshes. Each one's extra dB within
+    8% (0.3-6 GHz: the deck reads about 6% over at 6 GHz; the pole fit is 1.3% of that), and
+    the poles keep the run stable. A conductivity at 3 GHz agrees only at 3 GHz: it is flat,
+    which is why the deck is lossless by default."""
+    f, none = _coupon_run(tmp_path, "none", refine)
+    _, deck = _coupon_run(tmp_path, "deck", refine, dielectric=_poles_deck)
+    sec = L.section(te.W50, te.H, te.ER, 0.02, t=1e-4, foil="smooth", length=15.0)
+    line = L.add_line_loss(none, f, [sec, sec], conductor=False)
+    db = lambda s: -20 * np.log10(np.abs(s[:, 1, 0]))
+    assert db(deck) - db(none) == pytest.approx(db(line) - db(none), rel=0.08)
+    assert (np.abs(deck[:, 1, 0]) < 1).all() and (db(deck) < 1.0).all()
+
+    def kappa(csx, i, er):
+        return csx.material(f"slab{i}", er, 2 * math.pi * 3e9 * L.EPS0 * er * 0.02)
+    _, flat = _coupon_run(tmp_path, "kappa", refine, dielectric=kappa)
+    extra = db(flat) - db(none)
+    k3 = int(np.argmin(np.abs(f - 3e9)))
+    assert extra[k3] == pytest.approx((db(line) - db(none))[k3], rel=0.03)  # right at its frequency
+    assert extra[0] > 5 * (db(line) - db(none))[0]                          # 10x too much at 300 MHz
+
+
+@live
+def test_live_board_touchstone_carries_loss_and_passes_sparam_check(tmp_path):
+    """End to end: `sim_solve board` writes the loss, says so, and its own
+    P370 check still passes, passivity margin and causality included."""
+    pcb = tmp_path / "t.kicad_pcb"
+    reg = te.coupon(pcb)
+    base = ["board", "--pcb", str(pcb), "--region", ",".join(map(str, reg)), "--port", "0,10,-x",
+            "--port", "30,10,+x", "--symmetric", "--no-converge", "--f-min", "3e8", "--points", "101"]
+    out = {}
+    for mode in ("line", "none"):
+        ts, js = tmp_path / f"{mode}.s2p", tmp_path / f"{mode}.json"
+        assert sim_solve.main(base + ["--loss", mode, "--touchstone", str(ts), "--out", str(js)]) == 0
+        out[mode] = json.loads(js.read_text())
+    assert out["line"]["quality"]["ok"] and out["line"]["quality"]["levels"]["causality"] == "good"
+    assert "Djordjevic-Sarkar" in (tmp_path / "line.s2p").read_text()
+    assert "Djordjevic-Sarkar" not in (tmp_path / "none.s2p").read_text()
+    db = lambda r, k: 20 * math.log10(abs(complex(*r["s"]["S21"][k])))
+    # the coupon's block has no loss_tangent, so 0.02 is assumed and said; 30 mm, rough copper
+    assert any("0.02 assumed" in w for w in out["line"]["loss"]["warnings"])
+    assert db(out["none"], -1) - db(out["line"], -1) == pytest.approx(0.54 + 0.12, abs=0.2)
