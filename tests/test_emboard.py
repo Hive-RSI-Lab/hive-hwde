@@ -73,6 +73,24 @@ def coupon(path: Path, w=W50, length=30.0, stub=None, ymid=10.0, extra="") -> li
     return [0, 0, length, y1]
 
 
+def stub_coupon(path: Path, w=2.853, h=1.53, er=4.5, length=10.0, stub=16.07) -> list:
+    """A square-ended open stub `stub` mm from the line's edge, as rf-kit's F5
+    is drawn: a line `length` long on another laminate, the stub a filled zone
+    of the line's net (a track's round end would add w/2 of arc)."""
+    global H, ER
+    keep = H, ER
+    H, ER = h, er
+    x0, x1, y0, y1 = length / 2 - w / 2, length / 2 + w / 2, 10 + w / 2, 10 + w / 2 + stub
+    pts = f'(pts (xy {x0} {y0}) (xy {x1} {y0}) (xy {x1} {y1}) (xy {x0} {y1}))'
+    extra = (f'(zone (net 1) (net_name "RF") (layer "F.Cu") (hatch edge 0.5) (fill yes) (polygon {pts}) '
+             f'(filled_polygon (layer "F.Cu") {pts}))')
+    try:
+        reg = coupon(path, w=w, length=length, extra=extra)
+    finally:
+        H, ER = keep
+    return [reg[0], reg[1], reg[2], y1 + 6]
+
+
 CPWG4 = '''(kicad_pcb (version 20240108) (generator test)
   (general (thickness 1.6))
   (layers (0 "F.Cu" signal) (1 "In1.Cu" signal) (2 "In2.Cu" signal) (31 "B.Cu" signal)
@@ -322,14 +340,134 @@ def test_study_doubles_a_record_that_is_still_ringing(tmp_path, monkeypatch):
     class Done(Exception):
         pass
 
-    def waves(*a, **k):
+    def read_feed(*a, **k):
         raise Done
 
     monkeypatch.setattr(solvers, "run", run)
-    monkeypatch.setattr(eb, "waves", waves)
+    monkeypatch.setattr(eb, "read_feed", read_feed)
     with pytest.raises(Done):
         eb.study(geo, ["0,10,-x", "30,10,+x"], 6e9, 0.6e9, 3, symmetric=True)
     assert seen == [seen[0], 2 * seen[0]]
+
+
+def _stubdeck(tmp_path, **kw):
+    pcb = tmp_path / "s.kicad_pcb"
+    geo = eb.extract(pcb, stub_coupon(pcb))
+    return eb.deck(geo, ["0,10,-x", "10,10,+x"], 5e9, **kw), geo
+
+
+def test_no_line_inside_a_thirds_cell(tmp_path):
+    """#616: a line inside the cell around a conductor's edge widens the sheet
+    (rf-kit's F5 notch read 2.319 GHz for 2.49)."""
+    for r in (1.0, 1.5, 2.25):
+        (csx, where), _ = _stubdeck(tmp_path, refine=r)
+        f = where["fine"]
+        ys = sorted(csx.lines["y"])
+        for edge, s_in in ((10 - 2.853 / 2, 1), (10 + 2.853 / 2, -1), (10 + 2.853 / 2 + 16.07, -1)):
+            a, b = sorted((edge + s_in * f / 3, edge - s_in * 2 * f / 3))
+            assert any(abs(v - a) < 2e-6 for v in ys) and any(abs(v - b) < 2e-6 for v in ys), (r, edge)
+            assert not [v for v in ys if a + 1e-5 < v < b - 1e-5], (r, edge)
+
+
+def test_refine_refines_every_axis(tmp_path):
+    (_, base), geo = _stubdeck(tmp_path)
+    prev = base["mesh"]
+    for r in (1.5, 2.25):
+        _, w = eb.deck(geo, ["0,10,-x", "10,10,+x"], 5e9, refine=r)
+        assert all(q > p for q, p in zip(w["mesh"], prev)), (r, w["mesh"], prev)
+        assert w["fine"] == pytest.approx(base["fine"] / r)
+        prev = w["mesh"]
+    assert 5 < prev[0] * prev[1] * prev[2] / (base["mesh"][0] * base["mesh"][1] * base["mesh"][2]) < 20
+
+
+def _probes_on_a_line(z0, ee, dist, freqs, a, b, sg=1.0):
+    """What a feed's probes read of waves a (in) and b (out) at its plane."""
+    s = [q * 1e-3 for q in dist]
+    si = [(s[0] + s[1]) / 2, (s[1] + s[2]) / 2]
+    us = [[], [], []]
+    ii = [[], []]
+    for n, f in enumerate(freqs):
+        g = 1j * 2 * math.pi * f * math.sqrt(ee) / em.C0
+        for j, q in enumerate(s):
+            us[j].append(a[n] * cmath.exp(g * q) + b[n] * cmath.exp(-g * q))
+        for j, q in enumerate(si):
+            ii[j].append(sg * (a[n] * cmath.exp(g * q) - b[n] * cmath.exp(-g * q)) / z0)
+    return us, ii
+
+
+@pytest.mark.parametrize("sg", [1.0, -1.0])
+def test_fit_feed_and_feed_vi_recover_the_line_and_its_waves(sg):
+    freqs = [0.1e9 + 0.05e9 * k for k in range(100)]
+    dist = [6.0, 9.0, 12.0]
+    a = [1.0 + 0.1j] * 100
+    b = [0.3 * cmath.exp(0.4j * k) for k in range(100)]
+    read = _probes_on_a_line(52.0, 3.5, dist, freqs, a, b, sg)
+    line = eb.fit_feed([read], dist, freqs, freqs[-1])
+    assert line["z"] == pytest.approx([52.0] * 100, rel=1e-3)
+    assert line["eps_eff"] == pytest.approx([3.5] * 100, rel=1e-3)
+    vi = eb.feed_vi(read, dist, freqs, line)
+    for n in (20, 50, 90):
+        assert vi[n]["v"] == pytest.approx(a[n] + b[n], rel=1e-2)
+        assert vi[n]["i"] == pytest.approx((a[n] - b[n]) / 52.0, rel=1e-2)
+
+
+def test_fit_feed_is_not_moved_by_a_null():
+    """#616: the far port at a notch. The wave nearly vanishes over a band and
+    what is left is not the line; the per-frequency ratios read nonsense
+    there, and the fit must not follow them."""
+    import random
+    rnd = random.Random(1)
+    freqs = [0.1e9 + 0.025e9 * k for k in range(200)]
+    dist = [6.0, 9.0, 12.0]
+    a = [0j] * 200
+    b = [1.0 - 0.999 * math.exp(-(((f - 2.5e9) / 0.2e9) ** 2)) + 0j for f in freqs]
+    us, ii = _probes_on_a_line(50.0, 3.6, dist, freqs, a, b)
+    noise = lambda: 3e-3 * complex(rnd.gauss(0, 1), rnd.gauss(0, 1))
+    us = [[v + noise() for v in u] for u in us]
+    ii = [[v + noise() / 50 for v in i] for i in ii]
+    line = eb.fit_feed([(us, ii)], dist, freqs, freqs[-1])
+    assert max(abs(v - 50.0) for v in line["z"][40:]) < 1.0
+    assert max(abs(v - 3.6) for v in line["eps_eff"][40:]) < 0.05
+
+
+def _notch_s(freqs, f0):
+    s21 = [(f - f0) / (f - f0 + 0.1e9j) for f in freqs]
+    s11 = [v - 1 for v in s21]
+    return [[[a, b], [b, a]] for a, b in zip(s11, s21)]
+
+
+def test_compare_and_notches_known_answers():
+    freqs = [1e9 + 1e7 * k for k in range(301)]
+    a = _notch_s(freqs, 2.4e9)
+    assert eb.notches(freqs, [s[1][0] for s in a]) == pytest.approx([2.4e9])
+    same = eb.compare(freqs, a, a)
+    assert (same["ds"], same["notch_pct"]) == (0.0, 0.0)
+    moved = eb.compare(freqs, _notch_s(freqs, 2.3e9), a)
+    assert moved["notch_pct"] == pytest.approx(100 * 0.1 / 2.4, rel=1e-4)
+    gone = [[[0j, 1 + 0j], [1 + 0j, 0j]] for _ in freqs]
+    assert eb.compare(freqs, gone, a)["notch_pct"] == 100.0
+    assert eb.compare(freqs, a, gone)["notch_pct"] == 100.0
+
+
+def test_study_converged_stops_when_two_runs_agree_and_fails_when_they_do_not(monkeypatch):
+    freqs = [1e9 + 1e7 * k for k in range(301)]
+    f0 = {1.0: 2.3e9, 1.5: 2.40e9, 2.25: 2.401e9, 3.375: 2.45e9}
+    calls = []
+
+    def study(geo, ports, f_max, f_min, points, refine=1.0, **kw):
+        calls.append(refine)
+        return {"freqs": freqs, "S": _notch_s(freqs, f0[refine]),
+                "runs": [{"cells": int(1000 * refine ** 3), "mesh": [1, 1, 1], "seconds": 1.0}]}
+    monkeypatch.setattr(eb, "study", study)
+    res = eb.study_converged({}, [], 5e9)
+    assert calls == [1.0, 1.5, 2.25]
+    assert res["convergence"]["ok"] and res["S"] == _notch_s(freqs, 2.401e9)
+    calls.clear()
+    res = eb.study_converged({}, [], 5e9, refine_max=1.5)
+    assert calls == [1.0, 1.5] and not res["convergence"]["ok"]
+    calls.clear()
+    res = eb.study_converged({}, [], 5e9, refine=2.25, refine_max=3.375)
+    assert calls == [2.25, 3.375] and not res["convergence"]["ok"]
 
 
 def test_sparams_from_waves_full_and_symmetric():
@@ -461,6 +599,27 @@ def test_live_board_open_stub_notch(tmp_path):
     f = res["freqs"][d.index(min(d))]
     assert min(d) < -20
     assert f == pytest.approx(want, rel=0.02), (f, want)
+
+
+@live
+def test_live_board_stub_settles_under_refinement(tmp_path):
+    """#616's close: on a thick wide stub like rf-kit's F5 (w/L is large, so the
+    closed form is no help past +-5 %), the notch settles on a mesh refined in
+    steps, and the S is passive at each one."""
+    from lib import sparam
+    pcb = tmp_path / "f5.kicad_pcb"
+    w, h, er, L = 2.853, 1.53, 4.5, 16.07
+    geo = eb.extract(pcb, stub_coupon(pcb, w, h, er, 10.0, L))
+    res = eb.study_converged(geo, ["0,10,-x", "10,10,+x"], 5e9, 1.25e8, 401)
+    conv = res["convergence"]
+    assert conv["ok"], conv["steps"]
+    assert sparam.check(res["freqs"], res["S"])["ok"]
+    qs = imp.field_microstrip(w, h, 1e-4, er, mask=None)
+    dl = eb.open_end_dl(w, h, qs["eps_eff"])
+    lo = eb.notch_f(L + w / 2 + dl, qs["eps_eff"])   # the stub measured from the line's centre
+    hi = eb.notch_f(L + dl, qs["eps_eff"])           # and from its edge
+    found = conv["steps"][-1]["compare"]["notches"][0]["f"]
+    assert lo < found < 1.04 * hi, (lo, found, hi)
 
 
 @live
