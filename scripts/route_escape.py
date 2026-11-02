@@ -71,6 +71,13 @@ than the default (U100's DDR balls are in its bottom-right corner, U200 is
 up-left: forcing 48 nets out left/up loses most of them); it pays where a
 field's balls already face their partner.
 
+HDI builds (#477): on a board whose stack is an HDI build of stackups.yaml,
+every field escapes through lib/hdilib.py instead of KRT: a microvia in the
+pad, stacked and buried down to the next free layer (--hdi auto; --hdi off
+keeps KRT's through-via dog-bones; a standard build never gets them). The
+routers' rules come with it (hdilib via_type_rules, field_rules), and a power
+ball whose net has an inner plane gets a stack to that plane.
+
 Power and ground balls are not fanned (KRT treats them as plane balls: they
 want one via straight to their plane - stitch_vias' job).
 
@@ -95,6 +102,7 @@ from shapely.geometry import Point, box  # noqa: E402
 import bgalib  # noqa: E402
 import checklib  # noqa: E402
 import geom  # noqa: E402
+import hdilib  # noqa: E402
 import kc  # noqa: E402
 import route_critical as rc  # noqa: E402  (KRT staging, floors, DRC delta, rip)
 import routelib  # noqa: E402
@@ -424,6 +432,51 @@ def footprint_moves(before, after, refs: set[str] | None = None) -> list[dict]:
     return out
 
 
+# ------------------------------------------------------------ HDI builds
+
+def hdi_geometry(pitch: float, pad: float, caps: dict) -> tuple[float, float]:
+    """(track, clearance) in the field: JLC's HDI floors (3 mil / 3 mil). They
+    are what fits between via pads at 0.5 mm, and the field keeps them for
+    every pitch so one rule covers it."""
+    return (float(caps["min_trace_width_mm"]), float(caps["min_clearance_mm"]))
+
+
+def planes_of(bg, bga: bgalib.Bga, planes: list[str]) -> dict[str, str]:
+    """net -> the nearest inner plane under the field carrying it."""
+    cu = bg.copper_layers
+    start = cu.index(bga.layer)
+    out: dict[str, str] = {}
+    for ly in sorted(planes, key=lambda x: abs(cu.index(x) - start)):
+        for z in bg.zones_of(layer=ly):
+            if z.net and z.net not in out:
+                out[z.net] = ly
+    return out
+
+
+def hdi_plan(bg, p: dict, spans: list, caps: dict, floors: dict,
+             wide: dict[str, float]) -> hdilib.FieldPlan:
+    b = p["bga"]
+    track, clearance = hdi_geometry(b.pitch, b.pad_d, caps)
+    fp = bg.footprints.get(b.ref, {})
+    balls = bgalib._ball_pads([x for x in bg.pads_of(ref=b.ref)
+                               if x.kind == "smd" and len(x.layers) == 1])
+    _, held = fanout_nets(b, wide, track, plane_min=10 ** 6)
+    region = field_region(b)
+    return hdilib.plan_field(
+        b, balls, fp.get("at"), fp.get("angle", 0.0) or 0.0, bg.copper_layers,
+        spans, p["layers"], track=track, clearance=clearance,
+        hole_clearance=float(caps["hole_to_trace_mm"]),
+        plane_of=planes_of(bg, b, p["planes"]), held=set(held),
+        existing=hdilib.obstacles_from_board(bg, region, b.ref))
+
+
+def hdi_result(plan: hdilib.FieldPlan) -> dict:
+    """The per-field record route_escape reports, in KRT's terms."""
+    want = {b.net for b in plan.balls if b.net and b.role == "signal"}
+    return {"requested": len(want), "escaped": len(want) - len(plan.left),
+            "failed": len(plan.left), "unescaped_nets": plan.left}
+
+
 # ------------------------------------------------------------ KRT steps
 
 def _run(krt: Path, script: str, args: list[str], timeout_s: int,
@@ -530,6 +583,13 @@ def run(argv: list[str] | None = None):
                     help="escape the constraints' diff-pair and length_groups "
                          "nets out of the field sides facing the part each "
                          "one goes to (#547)")
+    ap.add_argument("--hdi", choices=["auto", "on", "off"], default="auto",
+                    help="auto (default): microvia-in-pad escape when the "
+                         "board's stack is an HDI build; on: refuse a board "
+                         "that isn't; off: KRT's through-via dog-bones")
+    ap.add_argument("--stackup", default=None,
+                    help="stackups.yaml entry (default: the one the board's "
+                         "stack block matches)")
     ap.add_argument("--plan", action="store_true",
                     help="no routing: report the BGAs, geometry and budget")
     ap.add_argument("--grid-step", type=float, default=DEFAULT_GRID)
@@ -566,6 +626,13 @@ def run(argv: list[str] | None = None):
         raise CheckError("--toward-partner needs constraints.json (its diff "
                          "pairs and length_groups name the nets)")
     geo = zrules.board_layer_geometry(pcb)
+    build, entry = (None, None) if args.hdi == "off" \
+        else hdilib.board_build(bg0, args.stackup)
+    if args.hdi == "on" and not build:
+        raise CheckError("--hdi on: this board's stack is not an HDI build "
+                         "of stackups.yaml, which drills through vias only")
+    hdi_caps = hdilib.load_hdi_caps()
+    spans = hdilib.spans_of(entry, bg0.copper_layers, caps=hdi_caps) if build else []
     plans = []
     for b in bgas:
         ep = bgalib.escape_params(b, floors)
@@ -582,11 +649,18 @@ def run(argv: list[str] | None = None):
             "why", "budget")}, "layers": p["layers"],
             "plane_layers": p["planes"],
             **({"pairs": p["pairs"], "pair_gap_mm": p["pair_gap"]}
-               if p["pairs"] else {})}
+               if p["pairs"] else {}),
+            **({"hdi_build": build} if build else {})}
 
     if args.plan or not bgas:
+        facts = [_plan_fact(p) for p in plans]
+        if build:
+            for f, p in zip(facts, plans):
+                pl = hdi_plan(bg0, p, spans, hdi_caps, floors, {})
+                f["method"] = "hdi"
+                f["hdi"] = pl.fact()
         payload = checklib.report(SCRIPT, str(pcb), [], facts={
-            "bgas": [_plan_fact(p) for p in plans], "floors": floors,
+            "bgas": facts, "floors": floors,
             "board_updated": False,
             "note": "plan only" if bgas else "no ball grid on this board"})
         return payload, args.out_report
@@ -622,6 +696,18 @@ def run(argv: list[str] | None = None):
     results = []
     for p in plans:
         b, ep = p["bga"], p["ep"]
+        if build:
+            bg_now = geom.BoardGeom.from_file(staged)
+            pl = hdi_plan(bg_now, p, spans, hdi_caps, floors, wide)
+            if pl.ops:
+                rc.route_edit.apply_ops(staged, pl.ops)
+            results.append({
+                **_plan_fact(p), "method": "hdi", "hdi": pl.fact(),
+                "krt": hdi_result(pl),
+                **({"held_wide": pl.held} if pl.held else {}),
+                "via_in_pad": {"nets": 0, "vias": 0, "kept": True},
+                "_vip": set(), "_lost": set(pl.held)})
+            continue
         allowed, held = fanout_nets(b, wide, ep["track_width"])
         only = allowed if held else None    # None: KRT's own net choice
         aset = set(allowed)
@@ -663,7 +749,7 @@ def run(argv: list[str] | None = None):
         results.append(r)
 
     moved = []
-    if not args.no_cap_nudge:
+    if not args.no_cap_nudge and not build:
         clr = min(p["ep"]["clearance"] for p in plans)
         moved = nudge_caps(ctx, clr)
 
