@@ -1,0 +1,8 @@
+# check_kelvin: what a current-sense amplifier reads on top of its shunt, from a DC
+# solve of each shunt net's real copper with the shunt pad as the sink. A tap past a
+# neck or on a plane reads the copper as shunt (hc-power R104 46 % high, R132 23 %;
+# iso-io R220 60 %), and nets being connected is all any other check asks.
+name: check_kelvin
+needs: []
+optional:
+  constraints: [--constraints, "{constraints}"]

@@ -40,6 +40,17 @@ declares no contract, at 3 A (USB-C's ceiling without an e-marked 5 A
 cable), as a derived warning. A budget written low (0.5 A on a 5 A VBUS)
 is exactly what this is for.
 
+A declared power_paths current also flows through the series part at the
+path's end: a shunt, inductor, fuse or bead has the same current on its other
+net, whether or not the list names that net (hc-power: "+12V from R104", and
+IL_A from L10 to R104 was 0.2 mm at 12.5 A). So the path carries on to the next
+part while the other net has exactly one more power part, and each hop is
+judged as a declared path (origin "series from ..."). Parts in parallel between
+the same two nets split the current. Where the net fans out to several power
+parts the walk stops: the share of each is not known. A budget in "power" does
+not carry on: it is the whole rail's, not what one branch passes. Pass
+--no-series to judge the list alone.
+
 Findings (kind; severity):
   path_capacity   the path carries less than its current (error; a warning
                   when the current was derived, not declared), or less than
@@ -414,7 +425,63 @@ def vbus_entries(bg: geom.BoardGeom) -> list[tuple[str, str]]:
     return out
 
 
-def planned_paths(bg, cons: dict, extra: list[str], dt: float) -> list[dict]:
+def _is_series(bg, ref: str) -> bool:
+    """A part whose current on one net is its current on the other: two
+    nets, and an inductor, bead, fuse or shunt (<= SHUNT_OHMS)."""
+    k = _kind(ref)
+    if k == "R":
+        v = engcalc.parse_value((bg.footprints.get(ref) or {})
+                                .get("value") or "")
+        if v is None or v > SHUNT_OHMS:
+            return False
+    elif k not in ("L", "FB", "F"):
+        return False
+    return len({p.net for p in bg.pads_of(ref=ref)} - {None}) == 2
+
+
+def _leads_on(bg, ref: str, net: str) -> bool:
+    """Is there a power part past `ref` on its other net?"""
+    far = {p.net for p in bg.pads_of(ref=ref)} - {None, net}
+    return any(r != ref for n in far for r in power_parts(bg, n))
+
+
+def series_paths(bg, declared: list[dict]) -> list[dict]:
+    """The hops a declared current must also pass, past the series part at
+    either end of a declared path. Nets the list already names are left to
+    the list; a fan-out ends the walk (see the module docstring)."""
+    named = {p["net"] for p in declared}
+    out, seen = [], set()
+    todo = [(p, end) for p in declared for end in (p["from"], p["to"])]
+    while todo:
+        p, ref = todo.pop(0)
+        if ref not in bg.footprints or not _is_series(bg, ref):
+            continue
+        nets = {q.net for q in bg.pads_of(ref=ref)} - {None}
+        for net in sorted(nets - {p["net"]}):
+            if net in named or net in seen:
+                continue
+            seen.add(net)
+            parts = power_parts(bg, net)
+            twins = [r for r in parts if _is_series(bg, r) and {
+                q.net for q in bg.pads_of(ref=r)} - {None} == nets]
+            # a 0R out to a net with no other power part is a sense tap
+            # (hc-power R105), not the path
+            nxt = [r for r in parts if r not in twins and not (
+                _kind(r) == "R" and not _leads_on(bg, r, net))]
+            if len(nxt) != 1:
+                continue
+            amps = p["current_a"] / max(len(twins), 1)
+            hop = {"net": net, "from": ref, "to": nxt[0], "current_a": amps,
+                   "dt_c": p["dt_c"], "derived": False,
+                   "origin": f"series from {p['net']} {p['from']} -> "
+                             f"{p['to']} through {ref}"}
+            out.append(hop)
+            todo.append((hop, nxt[0]))
+    return out
+
+
+def planned_paths(bg, cons: dict, extra: list[str], dt: float,
+                  series: bool = True) -> list[dict]:
     out = []
     for p in cons.get("power_paths") or []:
         out.append({"net": p["net"], "from": p["from"], "to": p["to"],
@@ -428,6 +495,8 @@ def planned_paths(bg, cons: dict, extra: list[str], dt: float) -> list[dict]:
         out.append({"net": parts[0], "from": parts[1], "to": parts[2],
                     "current_a": float(parts[3]), "dt_c": dt,
                     "origin": "--path", "derived": False})
+    if series:
+        out += series_paths(bg, out)
     named = {p["net"] for p in out}
     for e in cons.get("power") or []:
         net = e.get("net")
@@ -476,7 +545,7 @@ def run(argv=None):
     bg = geom.load_board(Path(a.pcb))
     cons = checklib.load_json(a.constraints, "constraints") \
         if a.constraints else {}
-    paths = planned_paths(bg, cons, a.path, a.dt)
+    paths = planned_paths(bg, cons, a.path, a.dt, series=a.series)
     vios, facts = [], []
     for p in paths:
         if p["net"] not in bg.nets:
@@ -535,6 +604,9 @@ def _parser() -> argparse.ArgumentParser:
     ap.add_argument("--plating-mm", type=float, default=PLATING_MM)
     ap.add_argument("--dt", type=float, default=DT_DEFAULT)
     ap.add_argument("--margin", type=float, default=MARGIN)
+    ap.add_argument("--no-series", dest="series", action="store_false",
+                    help="judge the declared paths only, not the hops past "
+                         "their series parts")
     ap.add_argument("--out")
     return ap
 

@@ -1,0 +1,13 @@
+# Seeded fault for check_kelvin (hc-power cold review 2, R2).
+mutants:
+  kelvin-tap-past-neck:
+    board: blinky2
+    script: mutations/kelvin_tap_past_neck.py
+    check: check_kelvin
+    defect: >-
+      MEASUREMENT fault: a current-sense amplifier's tap joins at the inductor's pad,
+      past 6 mm of 0.5 mm track from a 10 mOhm shunt, so it reads the copper as
+      shunt. Nets connect and widths are legal, so nothing else sees it
+    expect:
+      kind: kelvin_error
+      refs: [R901, U901]
