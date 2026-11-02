@@ -170,12 +170,41 @@ machine.
   ε_eff where βl is small (under ~70°).
   The default cell is min(w/5, h/2.5, λ/40) across the signal: at h/1.5 a
   w/h = 3.8 line read ε_eff 4.1 against 3.55, at h/2.5 3.60.
+  **Mesh convergence (#616).** `sim_solve board` refines the mesh by 1.5 until
+  two runs in a row agree (`emboard.study_converged`): largest |dS| 0.05, a
+  transmission dip within 0.5 %, from f_max/8 up. It stops at `--refine-max`
+  (2.25 by default) and exits 1 if they still disagree. `--refine R` starts
+  finer; `--no-converge` runs one mesh and says so on stderr, and a result
+  from it hasn't been shown to settle. Each step costs about 5x the one before.
+  `refine` divides every cell in all three axes; `--fine` moves only the
+  cells at the signal's edges, so don't use it to judge convergence.
+  Two traps this found, on rf-kit's F5 (2.853 mm stub on 1.53 mm of FR4):
+  1. A mesh line inside a thirds-rule cell widens the sheet, which takes the
+     whole cell it starts in: the notch read 2.319 GHz at the default mesh.
+     Those cells are now kept clear (`mesh_axis(edges=)`):
+     | refine | cells | notch | sigma_max | feed Z, eps_eff at 2.5 GHz |
+     |---|---|---|---|---|
+     | 1 | 125k | 2.489 GHz | 1.0007 | 51.8, 3.45 |
+     | 1.5 | 284k | 2.489 GHz | 1.0007 | 51.6, 3.45 |
+  2. Per-frequency Z and gamma on a feed are noise where its probes see no
+     wave (the far port at a notch read 58 ohm, eps_eff 3.3 for 3.65, and a
+     real gamma of 1.3 Np/m on a lossless line, which read as sigma_max 1.006).
+     `fit_feed` fits Z(f) and eps_eff(f) over the band with gamma imaginary, and
+     `feed_vi` solves (a, b) over all five probes. With gamma imaginary, passivity
+     says nothing about the fitted phase, so eps_eff was checked on its own: a
+     30 mm thru's probe-to-probe phase over the long baseline averages within
+     about 1 % of the fit (it ripples, on a 51-53 ohm line in a 50 ohm system).
+  The stub's answer is not a closed form: 2.24 to 2.44 GHz depending on
+  whether L runs from the line's centre or edge, since a T-junction this wide
+  is in neither. Settled is not the same as right: the check on 2.49 GHz is the
+  Palace cross-check.
   `impedance.field_cpwg(w, g, h, t, er, ground_w)` is the public CPWG
   solve (vna-verify's 0.43/0.25 on 0.2444 mm of 3.91: 53.05 Ω bare).
   Hooks for 3D studies (#479, #481): `deck(..., extra=fn)` gets the Csx
   and a context (stack, ports, fixed/pinned mesh lines) before the mesh
   is smoothed. Limits: ports must be axis-aligned on the region's edge;
   connector bodies (SMA) are not modelled (#479); no loss.
+  `waves` and `port_vi` still read per frequency; `study` doesn't use them.
 
 ## S-parameter files: quality and macromodel (#483)
 
