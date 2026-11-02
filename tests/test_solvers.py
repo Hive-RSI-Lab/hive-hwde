@@ -485,3 +485,9 @@ def test_live_planar_thru_line_is_transparent(tmp_path):
     q = res["quality"]
     assert q["ok"], q["errors"]
     assert q["levels"]["causality"] == "good"
+    # With alpha held, passivity says nothing about the fitted phase, so check it
+    # on its own: eps_eff at 3.5 GHz against Kirschning-Jansen's 3.47. A probe
+    # 3.8 mm from the lumped port read 3.646 here and still passed everything above.
+    mid = res["freqs"].index(3.5e9)
+    for port in res["feed_eps_eff"]:
+        assert port[mid] == pytest.approx(3.47, rel=0.02)

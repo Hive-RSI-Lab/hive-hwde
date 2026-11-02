@@ -371,7 +371,7 @@ def _snap(lines, v):
 
 def planar_deck(polys, ports, h: float, er: float, f_max: float,
                 excite: int = 0, tand: float = 0.0, fine: float | None = None,
-                feed_len: float | None = None, probe_at=(0.25, 0.5, 0.75)):
+                feed_len: float | None = None, probe_at=(0.125, 0.25, 0.375)):
     """The deck for a planar microstrip circuit and where its probes are.
 
     polys: the top copper, a list of [(x, y), ...] outlines (mm), drawn as
@@ -386,7 +386,11 @@ def planar_deck(polys, ports, h: float, er: float, f_max: float,
     run straight out of the circuit for feed_len (the deck adds that copper,
     so the circuit should stop at its planes)."""
     lam_min = C0 / f_max * 1e3 / math.sqrt(er)
-    feed_len = feed_len or max(lam_min / 2, 10 * h)
+    # Twice what the probes need, so they stay in the half nearer the circuit:
+    # the lumped port's near field reads as phase. 30 mm thru, FR4, 3.5 GHz,
+    # against Kirschning-Jansen's 3.47: nearest probe 3.8 mm from the port 3.646,
+    # 7.6 mm 3.515, 19 mm 3.499, with S11 -35 dB at 3.8 mm and -44 dB at 19 mm.
+    feed_len = feed_len or 2 * max(lam_min / 2, 10 * h)
     ws = [p["w"] for p in ports]
     fine = fine or min(min(ws) / 6, lam_min / 40, h / 2)
     coarse = min(lam_min / 15, 3.0)
@@ -439,7 +443,7 @@ def planar_deck(polys, ports, h: float, er: float, f_max: float,
             csx.box(e, pa, pb, prio=5)
         r = csx.lumped(f"port{k}", 2, 50.0)
         csx.box(r, pa, pb, prio=5)
-        # three probes a third of the feed apart, the first a quarter in
+        # three probes evenly along the feed's half nearer the circuit (probe_at)
         pr = []
         for j, frac in enumerate(probe_at):
             if sx:

@@ -498,7 +498,11 @@ def planar(geo: dict, excites, f_max, f_min=None, points=201, fine=None, keep=No
         runs.append({"excite": e, "cells": where["cells"], "steps": steps, "tail": tail,
                      "seconds": round(time.time() - t0, 1)})
     if full:
-        cols = em.planar_s_matrix([w for _, w in sorted(kept)], where, freqs)
+        sims = [w for _, w in sorted(kept)]
+        cols = em.planar_s_matrix(sims, where, freqs)
+        # the fitted feed phase: passivity can't see it with alpha held
+        feed_eps = [[round((g.imag * em.C0 / (2 * math.pi * f)) ** 2, 4) for g, f in zip(gam, freqs)]
+                    for gam in em.planar_gammas(sims, where, freqs)]
     if scratch:
         scratch.cleanup()
     e0 = excites[0]
@@ -511,6 +515,8 @@ def planar(geo: dict, excites, f_max, f_min=None, points=201, fine=None, keep=No
            "features": _features(freqs, s11, s21),
            "quality": _quality(freqs, cols, n),
            "_touchstone": em.touchstone(freqs, cols, n)}
+    if full:
+        res["feed_eps_eff"] = feed_eps  # per port, per frequency
     return res
 
 
