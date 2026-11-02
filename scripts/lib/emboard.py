@@ -68,6 +68,8 @@ RUN_ALL_STEPS = "1e-300"
 RECORD_TRANSITS = 6     # corner-to-corner trips of the domain after the pulse
 TAIL_MAX = 1e-3         # the last tenth of a record against its peak voltage
 STEPS_MAX = 200000
+FEED_FIT_DEG = 3        # Z(f) and eps_eff(f) of a feed, across the band
+FEED_FIT_PASSES = 6
 
 
 # ================================================================ stack
@@ -269,18 +271,28 @@ def smooth_lines(lines, max_step: float, ratio: float = 1.4) -> list[float]:
     return [round(v, 6) for v in out]
 
 
-def mesh_axis(fixed, fine_zones, lo, hi, fine, coarse, pinned=()) -> list[float]:
+def mesh_axis(fixed, fine_zones, lo, hi, fine, coarse, pinned=(), edges=()) -> list[float]:
     """One axis: the fixed lines, uniform `fine` lines inside each fine
     zone (a, b), the domain ends, merged at fine/3 (pinned lines kept) and
-    smoothed out to `coarse`."""
+    smoothed out to `coarse`. `edges` are the (a, b) cells of the thirds
+    rule: a line inside one would put the conductor's edge in a cell of the
+    wrong size, and the sheet takes the whole cell it starts in, so nothing
+    is added there."""
     vals = list(fixed) + [lo, hi]
     for a, b in fine_zones:
         a, b = max(a, lo), min(b, hi)
         n = max(1, math.ceil((b - a) / fine))
         vals += [a + (b - a) * i / n for i in range(n + 1)]
     vals = [v for v in vals if lo - 1e-9 <= v <= hi + 1e-9]
-    ls = merge_lines(vals, fine / 3, [p for p in pinned if lo - 1e-9 <= p <= hi + 1e-9])
-    return smooth_lines(ls, coarse)
+    pins = [p for p in pinned if lo - 1e-9 <= p <= hi + 1e-9]
+    keep = sorted({round(v, 6) for ab in edges for v in ab if lo - 1e-9 <= v <= hi + 1e-9})
+    ls = merge_lines(vals, fine / 3, pins + keep)
+
+    def clear(lines):
+        pset = {round(p, 6) for p in pins}
+        return [v for v in lines if round(v, 6) in pset
+                or not any(a + 1e-6 < v < b - 1e-6 for a, b in edges)]
+    return clear(smooth_lines(clear(ls), coarse))
 
 
 def _zones(vals, half) -> list[tuple[float, float]]:
@@ -395,7 +407,8 @@ def _thirds(g, fine, region):
     no line on an axis-aligned edge, one fine/3 inside it and one 2 fine/3
     outside (a line on the edge overstates a sheet's width: a 50 ohm line
     read 48 ohm). Edges on the region's boundary (the port planes) are not
-    edges. Returns (x lines, y lines, vertices of the other edges)."""
+    edges. Returns (x cells, y cells, vertices of the other edges), a cell
+    being the (low, high) lines around one edge."""
     from shapely.geometry import Point
     ex, ey, other = [], [], []
     rx, ry = (region[0], region[2]), (region[1], region[3])
@@ -410,12 +423,12 @@ def _thirds(g, fine, region):
                 if any(abs(x0 - r) < 1e-6 for r in rx):
                     continue
                 s_in = 1 if g.contains(Point(x0 + d, (y0 + y1) / 2)) else -1
-                ex += [x0 + s_in * fine / 3, x0 - s_in * 2 * fine / 3]
+                ex.append(tuple(sorted((x0 + s_in * fine / 3, x0 - s_in * 2 * fine / 3))))
             elif abs(y1 - y0) < 1e-6 and abs(x1 - x0) > fine / 2:
                 if any(abs(y0 - r) < 1e-6 for r in ry):
                     continue
                 s_in = 1 if g.contains(Point((x0 + x1) / 2, y0 + d)) else -1
-                ey += [y0 + s_in * fine / 3, y0 - s_in * 2 * fine / 3]
+                ey.append(tuple(sorted((y0 + s_in * fine / 3, y0 - s_in * 2 * fine / 3))))
             elif abs(x1 - x0) > 1e-6 and abs(y1 - y0) > 1e-6:
                 other += [(x0, y0), (x1, y1)]
     return ex, ey, other
@@ -433,13 +446,17 @@ class _Ctx:
     fixed: dict = field(default_factory=lambda: {"x": [], "y": [], "z": []})
     zones: dict = field(default_factory=lambda: {"x": [], "y": []})
     pinned: dict = field(default_factory=lambda: {"x": [], "y": [], "z": []})
+    edges: dict = field(default_factory=lambda: {"x": [], "y": []})  # thirds-rule cells
 
 
 def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None = None,
          feed_len: float | None = None, pad: float | None = None, floor: str | None = None,
-         thirds: bool = True, zcells: int = 6, extra=None):
+         thirds: bool = True, zcells: int = 6, extra=None, refine: float = 1.0, coarse: float | None = None):
     """(Csx, where) for the region of `geo` (from `extract`) with `ports`
-    (Port or "X,Y,DIR[,LAYER[,W]]"), the source on port `excite`."""
+    (Port or "X,Y,DIR[,LAYER[,W]]"), the source on port `excite`. refine
+    divides every cell of the mesh, in all three axes, by that factor: it
+    is the knob a convergence study turns, where `fine` only moves the cells
+    at the signal's edges."""
     from shapely.geometry import Polygon, box as sbox
     from shapely.ops import unary_union
     ports = [p if isinstance(p, Port) else Port.parse(p) for p in ports]
@@ -489,15 +506,16 @@ def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None 
             p.ref = min(cands, key=lambda l: stack.gap(l, p.layer))
     h_sig = min(stack.gap(p.layer, p.ref) for p in ports)
     w_min = min(p.w for p in ports)
-    fine = fine or min(w_min / 5, h_sig / 2.5, lam_min / 40)
-    coarse = min(lam_min / 20, 3.0)
+    fine = (fine or min(w_min / 5, h_sig / 2.5, lam_min / 40)) / refine
+    coarse = (coarse or min(lam_min / 20, 3.0)) / refine
+    zcells = math.ceil(zcells * refine - 1e-9)
     feed_len = feed_len or max(lam_min / 2, 12 * h_sig)
     ctx = _Ctx(stack, region, ports, fine, coarse, lam_min)
 
     # feeds: every layer's copper crossing each port's edge, carried out
     feeds = []          # (layer, rect polygon) added copper
     stitch = []         # (x, y, top, bot) PEC posts along the feed's coplanar ground
-    dfeed = min(coarse, lam_min / 30, feed_len / 24)
+    dfeed = min(coarse, lam_min / 30 / refine, feed_len / 24 / refine)
     for k, p in enumerate(ports):
         window = max(6 * p.w, 10 * stack.gap(p.layer, p.ref), 3.0)
         e, s = p.plane, p.sign
@@ -521,9 +539,11 @@ def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None 
                     if not (layer == p.layer and net == p.net):
                         ctx.fixed["xy"[1 - p.axis]] += [lo, hi]
         ctx.pinned["xy"[p.axis]] += [e + s * dfeed * j for j in range(0, int(feed_len / dfeed) + 1)]
-        ctx.pinned["xy"[1 - p.axis]] += ([p.lo + fine / 3, p.lo - 2 * fine / 3,
-                                          p.hi - fine / 3, p.hi + 2 * fine / 3]
-                                         if thirds else [p.lo, p.hi])
+        if thirds:
+            ctx.edges["xy"[1 - p.axis]] += [(p.lo - 2 * fine / 3, p.lo + fine / 3),
+                                            (p.hi - fine / 3, p.hi + 2 * fine / 3)]
+        else:
+            ctx.pinned["xy"[1 - p.axis]] += [p.lo, p.hi]
         ctx.zones["xy"[1 - p.axis]] += _zones([p.lo, p.hi], 2.5 * fine)
 
     # mesh: copper edges near the signal nets, fine around them
@@ -546,7 +566,11 @@ def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None 
                     pts += list(part.coords)
             ex, ey = [], []
             if is_sig and thirds:
-                ex, ey, pts = _thirds(g, fine, region)
+                cx, cy, pts = _thirds(g, fine, region)
+                ctx.edges["x"] += cx
+                ctx.edges["y"] += cy
+                ex += [v for c in cx for v in c]
+                ey += [v for c in cy for v in c]
             ex += [q[0] for q in pts]
             ey += [q[1] for q in pts]
             ctx.fixed["x"] += ex
@@ -575,7 +599,7 @@ def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None 
     for z0, z1, er in stack.slabs:
         h = z1 - z0
         touches = any(abs(stack.z[l] - z0) < 1e-9 or abs(stack.z[l] - z1) < 1e-9 for l in port_layers)
-        n = zcells if touches else max(2, min(5, math.ceil(h / (2 * fine))))
+        n = zcells if touches else max(2, min(math.ceil(5 * refine), math.ceil(h / (2 * fine))))
         zl += [z0 + h * i / n for i in range(n + 1)]
     air = max(lam_min / 6, 10 * h_sig)
     fz = h_sig / zcells
@@ -633,7 +657,7 @@ def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None 
     lines = {}
     for a, (lo, hi) in (("x", (dom[0], dom[2])), ("y", (dom[1], dom[3]))):
         lines[a] = mesh_axis(ctx.fixed[a] + list(region[0::2] if a == "x" else region[1::2]),
-                             ctx.zones[a], lo, hi, fine, coarse, ctx.pinned[a])
+                             ctx.zones[a], lo, hi, fine, coarse, ctx.pinned[a], ctx.edges[a])
     zfix = [v for v in zl + ctx.fixed["z"] if zbot - 1e-9 <= v <= ztop + 1e-9]
     lines["z"] = smooth_lines(merge_lines(zfix + [zbot, ztop], fz / 1.6, ctx.pinned["z"]), coarse)
     for a in "xyz":
@@ -698,6 +722,81 @@ def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None 
 
 # ================================================================ readers
 
+def read_feed(sim: Path, k: int, freqs) -> tuple[list, list]:
+    """The DFT of port k's three voltage and two current probes."""
+    return ([em.dft(*em.read_probe(sim / f"p{k}u{j}"), freqs) for j in range(3)],
+            [em.dft(*em.read_probe(sim / f"p{k}i{j}"), freqs) for j in range(2)])
+
+
+def fit_feed(reads, dist, freqs, f_max: float, deg: int = FEED_FIT_DEG) -> dict:
+    """One port's feed as a line: Z(f) and eps_eff(f) over the band, from the
+    probes of every run (`reads`: read_feed's per run), for `feed_vi`.
+
+    The telegrapher ratios give Z and gamma at each frequency, but a feed is
+    only that line where its probes see a wave well above whatever else is
+    there. On the far side of a notch, or at a standing-wave null, the ratios
+    divide noise by noise: an rf-kit stub read 3.30 for a 3.65 eps_eff, 58 ohm
+    for 51, and a real gamma of 1.3 Np/m on a lossless line, and moving V and I
+    back to the plane through those read as sigma_max 1.006. A uniform lossless
+    line's Z and eps_eff are smooth in f and its gamma has no real part, so
+    they are fitted across the band, each frequency weighted by the smallest
+    term its ratios divide by. Under f_max/8 the pulse has little energy, the
+    fit holds its value there."""
+    import numpy as np
+    f = np.asarray(freqs, dtype=float)
+    d = (dist[2] - dist[0]) * 1e-3 / 2
+    fz, fe, fw, fx = [], [], [], []
+    for us, ii in reads:
+        u1, u2, u3 = (np.asarray(v) for v in us)
+        i1, i2 = (np.asarray(v) for v in ii)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            z = np.sqrt(u2 * (u1 - u3) / (i1 * i1 - i2 * i2))
+            g = 2 * np.arcsinh(np.sqrt((u1 - u3) * (i1 - i2) / ((i1 + i2) * u2)) / 2) / d
+        fz.append(np.abs(z.real))
+        fe.append((np.abs(g.imag) * C0 / (2 * np.pi * f)) ** 2)
+        fw.append(np.minimum.reduce([np.abs(u2), np.abs(u1 - u3), ZREF * np.abs(i1 - i2),
+                                     ZREF * np.abs(i1 + i2)]))
+        fx.append(f / f_max)
+    x, z, e, w0 = (np.concatenate(v) for v in (fx, fz, fe, fw))
+    ok = np.isfinite(z) & np.isfinite(e) & (x >= 1 / 8)
+    w0 = np.where(ok, w0, 0.0)
+    z, e = np.where(ok, z, 0.0), np.where(ok, e, 0.0)
+    w = w0 / w0.max()
+    for _ in range(FEED_FIT_PASSES):   # what is far from the line isn't the line
+        pz, pe = np.polyfit(x, z, deg, w=w), np.polyfit(x, e, deg, w=w)
+        rz, re_ = np.abs(z - np.polyval(pz, x)), np.abs(e - np.polyval(pe, x))
+        w = w0 / w0.max() * ((rz <= 3 * np.median(rz[ok]) + 1e-9) & (re_ <= 3 * np.median(re_[ok]) + 1e-9))
+    xh = np.maximum(f / f_max, 1 / 8)
+    return {"z": np.polyval(pz, xh).tolist(), "eps_eff": np.polyval(pe, xh).tolist(),
+            "z_rms": float(np.sqrt(np.average((z - np.polyval(pz, x)) ** 2, weights=w))),
+            "eps_rms": float(np.sqrt(np.average((e - np.polyval(pe, x)) ** 2, weights=w)))}
+
+
+def feed_vi(read, dist, freqs, line: dict) -> list[dict]:
+    """V and I (into the circuit) at the port's plane, from one run's probes
+    on a feed that `fit_feed` has named: (a, b) by least squares over all
+    five probes. The current probes' sign is read from the probes."""
+    import numpy as np
+    us, ii = read
+    s = [q * 1e-3 for q in dist]
+    si = [(s[0] + s[1]) / 2, (s[1] + s[2]) / 2]
+    u = [np.asarray(v) for v in us]
+    i = [np.asarray(v) for v in ii]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        q = ((u[0] - u[2]) / (i[0] + i[1])).imag
+    sg = -1.0 if np.nanmedian(q) > 0 else 1.0     # + j beta d Z on a current going out
+    out = []
+    for n, f in enumerate(freqs):
+        g = 1j * 2 * math.pi * f * math.sqrt(line["eps_eff"][n]) / C0
+        z = line["z"][n]
+        A = [[cmath.exp(g * q), cmath.exp(-g * q)] for q in s]
+        A += [[sg * ZREF / z * cmath.exp(g * q), -sg * ZREF / z * cmath.exp(-g * q)] for q in si]
+        y = [u[0][n], u[1][n], u[2][n], ZREF * i[0][n], ZREF * i[1][n]]
+        (a, b), *_ = np.linalg.lstsq(np.array(A), np.array(y), rcond=None)
+        out.append({"v": complex(a + b), "i": complex((a - b) / z), "z": complex(z), "gamma": g})
+    return out
+
+
 def port_vi(sim: Path, where: dict, k: int, freqs) -> list[dict]:
     """V and I (into the circuit) at port k's plane, and the feed's own Z
     and gamma, per frequency. With s the distance out from the plane,
@@ -711,8 +810,7 @@ def port_vi(sim: Path, where: dict, k: int, freqs) -> list[dict]:
     a -130 dB tail then read as sigma_max 1.002 on a lossless thru, #585)
     where this multiplies it by 1 / (beta d)."""
     import numpy as np
-    us = [em.dft(*em.read_probe(sim / f"p{k}u{j}"), freqs) for j in range(3)]
-    ii = [em.dft(*em.read_probe(sim / f"p{k}i{j}"), freqs) for j in range(2)]
+    us, ii = read_feed(sim, k, freqs)
     s = [d * 1e-3 for d in where["ports"][k]["dist"]]
     d = (s[2] - s[0]) / 2
     out = []
@@ -808,7 +906,7 @@ def study(geo: dict, ports, f_max: float, f_min: float | None = None, points: in
                                                    else list(range(n)))
     f_min = f_min or f_max / 20
     freqs = [f_min + (f_max - f_min) * i / (points - 1) for i in range(points)]
-    runs, info, where = {}, [], None
+    runs, info, where, reads = {}, [], None, {}
     for e in excites:
         csx, where = deck(geo, ports, f_max, e, **kw)
         ctx = tempfile.TemporaryDirectory(prefix="hwde-emboard-") if not keep else None
@@ -829,16 +927,28 @@ def study(geo: dict, ports, f_max: float, f_min: float | None = None, points: in
             if tail <= TAIL_MAX or steps >= STEPS_MAX:
                 break
             csx.fdtd["NumberOfTimesteps"] = min(STEPS_MAX, 2 * steps)
-        runs[e] = waves(work, where, freqs)
-        zf = [abs(port_vi(work, where, k, [f_max / 2])[0]["z"]) for k in range(n)]
+        reads[e] = [read_feed(work, k, freqs) for k in range(n)]
         info.append({"excite": e, "cells": where["cells"], "mesh": where["mesh"],
                      "steps": csx.fdtd["NumberOfTimesteps"], "tail": tail,
-                     "seconds": round(time.time() - t0, 1), "z_feed": [round(z, 2) for z in zf]})
+                     "seconds": round(time.time() - t0, 1)})
         if ctx:
             ctx.cleanup()
+    lines = [fit_feed([reads[e][k] for e in excites], where["ports"][k]["dist"], freqs, f_max)
+             for k in range(n)]
+    vi = {e: [feed_vi(reads[e][k], where["ports"][k]["dist"], freqs, lines[k]) for k in range(n)]
+          for e in excites}
+    runs = {e: [[((vi[e][k][m]["v"] + ZREF * vi[e][k][m]["i"]) / 2,
+                  (vi[e][k][m]["v"] - ZREF * vi[e][k][m]["i"]) / 2) for k in range(n)]
+                for m in range(len(freqs))] for e in excites}
+    mid = min(range(len(freqs)), key=lambda m: abs(freqs[m] - f_max / 2))
+    for r in info:
+        r["z_feed"] = [round(ln["z"][mid], 2) for ln in lines]
+        r["eps_eff_feed"] = [round(ln["eps_eff"][mid], 3) for ln in lines]
     S = sparams(runs, n, symmetric)
     return {"freqs": freqs, "S": S, "ports": where["ports"], "runs": info,
-            "region": where["region"], "fine": where["fine"], "floor": where["floor"]}
+            "region": where["region"], "fine": where["fine"], "floor": where["floor"],
+            "feeds": [{"z_rms": round(ln["z_rms"], 3), "eps_rms": round(ln["eps_rms"], 4)}
+                      for ln in lines]}
 
 
 # ================================================================ closed forms
