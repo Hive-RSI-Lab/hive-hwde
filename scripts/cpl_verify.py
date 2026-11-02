@@ -316,7 +316,8 @@ def analyse(fp: Footprint, model) -> dict:
         return {"verdict": "no_model",
                 "why": "no LCSC footprint model (no LCSC number, or EasyEDA "
                        "had no data and nothing is cached)"}
-    kpads = [p for p in fp.pads if p.w > 0]
+    # a pad with no number is paste or mask only (a 0201's reduced paste): nothing lands on it
+    kpads = [p for p in fp.pads if p.w > 0 and p.number]
     # A fit holds when every model pad is nearer its own board pad than any
     # other: half the smallest gap between two numbered board pad centres.
     # Land patterns of one package differ in toe length (an SO-8 model's
