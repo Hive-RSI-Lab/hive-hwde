@@ -147,18 +147,34 @@ fi
 HWDE_BOARDS_ROOT=${HWDE_BOARDS_ROOT:-$PWD/boards}
 
 # A published copy's own python (an explicit HWDE_VENV still wins); else the
-# venv in HOME, built when missing or older than the lock.
+# venv in HOME, built when missing and updated when the lock's contents change.
+# The stamp holds a copy of the lock it was built from. A new clone's lock has
+# a new mtime and the same contents, and the venv is shared by every running
+# job, so mtime alone must not touch it, and an update must not --clear it.
 py=
 [ -z "${HWDE_VENV:-}" ] && py=$(ls -d "$pub"/python/cpython-3.14.*/bin/python3.14 2>/dev/null | sort -V | tail -n 1)
 own=$py
 [ -n "$py" ] || py=$venv/bin/python
-if [ -z "$own" ] && { [ ! -x "$py" ] || [ "$here/requirements.lock" -nt "$venv/.hwde-lock" ]; }; then
+venv_stale() {
+	[ ! -x "$py" ] || [ ! -f "$venv/.hwde-lock" ] || {
+		[ "$here/requirements.lock" -nt "$venv/.hwde-lock" ] && ! cmp -s "$here/requirements.lock" "$venv/.hwde-lock"
+	}
+}
+if [ -z "$own" ] && venv_stale; then
 	finduv
 	mkdir -p "$state"
-	grep -v '^pywin32==' "$here/requirements.lock" >"$state/requirements.txt"
-	"$uv" venv -q --clear --python 3.14 "$venv" >&2
-	VIRTUAL_ENV=$venv "$uv" pip install -q -r "$state/requirements.txt" >&2
-	touch "$venv/.hwde-lock"
+	(
+		# Two first uses at once: the second waits here, then finds it built.
+		if command -v flock >/dev/null; then flock 9; fi
+		venv_stale || exit 0
+		req=$(mktemp "$state/requirements.XXXXXX")
+		trap 'rm -f "$req"' EXIT
+		grep -v '^pywin32==' "$here/requirements.lock" >"$req"
+		[ -x "$py" ] || "$uv" venv -q --clear --python 3.14 "$venv" >&2
+		VIRTUAL_ENV=$venv "$uv" pip install -q -r "$req" >&2
+		cp "$here/requirements.lock" "$venv/.hwde-lock.new"
+		mv "$venv/.hwde-lock.new" "$venv/.hwde-lock"
+	) 9>"$state/venv-build.lock"
 fi
 
 # HWDE_PY lets a script tell the runner's venv from another python (partslib's hint).
