@@ -1,0 +1,26 @@
+# PCB antennas a board copies, for check_antenna's `pcb_antennas` reference (#371).
+# polys: copper in mm (y down, as KiCad), radiator and short, down to the ground
+# edge. anchor: the feed arm's centre on the ground edge. ground_mm: the ground
+# the reference was tuned on.
+antennas:
+  ti-an043:
+    source: "TI AN043 (SWRA117D) meandered IFA, 2.4 GHz"
+    verified: true    # table 1 and figure 3 re-read from swra117d.pdf, 2026-11-02 (a3f48)
+    note: "TI asks for the same PCB thickness and material; the note does not state them (readme in the CC2511 reference design)"
+    band_hz: [2.4e9, 2.4835e9]
+    ground_mm: [15.2, 30.0]
+    anchor: [3.05, 5.7]
+    polys: [
+      [[0.5, 0.3], [5.5, 0.3], [5.5, 0.8], [0.5, 0.8]],
+      [[2.8, 0.3], [3.3, 0.3], [3.3, 5.7], [2.8, 5.7]],
+      [[5.0, 0.3], [5.5, 0.3], [5.5, 3.44], [5.0, 3.44]],
+      [[5.0, 2.94], [8.0, 2.94], [8.0, 3.44], [5.0, 3.44]],
+      [[7.5, 0.3], [8.0, 0.3], [8.0, 3.44], [7.5, 3.44]],
+      [[7.5, 0.3], [10.2, 0.3], [10.2, 0.8], [7.5, 0.8]],
+      [[9.7, 0.3], [10.2, 0.3], [10.2, 3.44], [9.7, 3.44]],
+      [[9.7, 2.94], [12.7, 2.94], [12.7, 3.44], [9.7, 3.44]],
+      [[12.2, 0.3], [12.7, 0.3], [12.7, 3.44], [12.2, 3.44]],
+      [[12.2, 0.3], [14.9, 0.3], [14.9, 0.8], [12.2, 0.8]],
+      [[14.4, 0.3], [14.9, 0.3], [14.9, 4.74], [14.4, 4.74]],
+      [[0.5, 0.3], [1.4, 0.3], [1.4, 5.7], [0.5, 5.7]]
+    ]

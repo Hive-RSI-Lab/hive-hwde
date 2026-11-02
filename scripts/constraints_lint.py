@@ -188,7 +188,7 @@ ENCLOSURE = {"box_mm": "num_list", "stl": "str_or_list", "wall_mm": "num",
              "room_c": "num", "other_w": "num", "inlet_mm2": "num",
              "riser_mm2": "num", "outlet_mm2": "num", "stack_mm": "num",
              "floor": "str"}
-SCHEMA_TOP_KEYS = set(SECTIONS) | {"placement", "coating", "antennas", "si",
+SCHEMA_TOP_KEYS = set(SECTIONS) | {"placement", "coating", "antennas", "pcb_antennas", "si",
                                    "enclosure", "ambient_c", "ambient_min_c",
                                    "cable_pf", "pin_modes", "ddr",
                                    "testpoints", "rf_match", "surge", "isolation",

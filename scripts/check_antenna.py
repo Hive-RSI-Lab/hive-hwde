@@ -28,6 +28,24 @@ Findings, per module (Espressif ESP32 Hardware Design Guidelines §1.4.8):
   antenna_unknown_end       warning: a PCB-antenna module whose antenna end
                             can't be told from its footprint
 
+A board's own antenna copper (IFA, meander, patch, chip antenna: #371) is
+declared in constraints `pcb_antennas` [{name, nets | refs | poly, ...},
+reference/constraints_schema.md]. There is no footprint to read it from, so
+the row says what the copper is and what it copied. Findings:
+  pcb_antenna_copper        error: other copper in its keep-out on any layer,
+                            ground included (the short's own contact excepted)
+  pcb_antenna_feed          error: the feed or short point is not on the
+                            antenna's copper, or the short does not reach ground
+  pcb_antenna_ground_edge   warning: radiator to ground edge off its height
+  pcb_antenna_ground_small  warning: less ground than the reference assumed
+  pcb_antenna_inboard       warning: radiator further from the board edge than
+                            edge_max_mm
+  pcb_antenna_geometry      error: the copper differs from the copied reference
+  pcb_antenna_missing       error: the row names no copper on this board
+  pcb_antenna_detuned, pcb_antenna_low_efficiency, pcb_antenna_sim_unconverged
+                            warning: the row's `sim` (sim_solve antenna --out)
+                            is off its band, under its floor, or not converged
+
 CLI: --pcb board.kicad_pcb [--constraints c.json] [--out report.json]
      exit 0 pass / 1 violations / 2 error, per SPEC section 6.
 """
@@ -40,7 +58,7 @@ from pathlib import Path
 
 import yaml
 from shapely import affinity
-from shapely.geometry import box
+from shapely.geometry import Point, Polygon, box
 from shapely.ops import unary_union
 
 HERE = Path(__file__).resolve().parent
@@ -53,6 +71,7 @@ import placelib  # noqa: E402
 SCRIPT = "check_antenna"
 SOURCE = SCRIPT  # verify_all, gate and the scorecard match a finding to its check by source
 MODULES_YAML = HERE.parent / "reference" / "rf_modules.yaml"
+ANTENNAS_YAML = HERE.parent / "reference" / "pcb_antennas.yaml"
 EDGE_MM = 1.0       # antenna end at most this far inside the board edge
 SIDE_MM = 15.0      # copper-free beside the antenna along the board
 # the antenna end must be a pad-free run at least this long (mm): the
@@ -286,6 +305,303 @@ def check(pcb: Path, constraints: dict | None = None,
     return viols, {"modules": seen}
 
 
+# ------------------------------------------------- a board's own antenna copper
+
+def _row_copper(bg, row: dict, layer: str):
+    """The antenna's copper on `layer`: its nets, its footprints' pads, and
+    whatever copper a poly touches."""
+    nets, refs = set(row.get("nets") or ()), set(row.get("refs") or ())
+    poly = Polygon(row["poly"]) if row.get("poly") else None
+    out = []
+
+    def take(net, ref, g):
+        if g is None or g.is_empty:
+            return
+        if net in nets or ref in refs:
+            out.append(g)
+        elif poly is not None and poly.intersects(g):
+            out.append(g.intersection(poly))
+    for t in bg.tracks_of(layer=layer):
+        take(t.net, None, t.poly)
+    for v in bg.vias_of(layer=layer):
+        take(v.net, None, v.poly)
+    for p in bg.pads_of(layer=layer):
+        take(p.net, p.ref, p.poly)
+    for z in bg.zones_of(layer=layer):
+        take(z.net, None, z.fill_on(layer))
+    return unary_union(out) if out else None
+
+
+def _ground(bg, nets, layers):
+    out = {}
+    for layer in layers:
+        items = [t.poly for t in bg.tracks_of(layer=layer) if t.net in nets]
+        items += [p.poly for p in bg.pads_of(layer=layer) if p.net in nets]
+        items += [v.poly for v in bg.vias_of(layer=layer) if v.net in nets]
+        items += [z.fill_on(layer) for z in bg.zones_of(layer=layer) if z.net in nets]
+        items = [g for g in items if g is not None and not g.is_empty]
+        if items:
+            out[layer] = unary_union(items)
+    return out
+
+
+def _vertices(g):
+    pts = []
+    for part in (g.geoms if hasattr(g, "geoms") else [g]):
+        pts += list(part.exterior.coords)
+    return pts
+
+
+def _reference_row(ref):
+    """A reference given inline, or by name from reference/pcb_antennas.yaml."""
+    if isinstance(ref, dict):
+        return ref
+    doc = yaml.safe_load(ANTENNAS_YAML.read_text(encoding="utf-8")) or {}
+    rows = doc.get("antennas") or {}
+    if ref not in rows:
+        raise checklib.CheckError(f"pcb_antennas reference {ref!r}: not in {ANTENNAS_YAML.name} "
+                                  f"(has {', '.join(sorted(rows))})")
+    return rows[ref]
+
+
+def _placed(ref: dict, row: dict):
+    """The reference's copper in board coordinates: rotated about its anchor
+    (rot, degrees), the anchor put on the row's feed."""
+    pieces = [Polygon(p) for p in ref["polys"]]
+    g = unary_union([p.buffer(0) for p in pieces])
+    ax, ay = ref.get("anchor") or (0.0, 0.0)
+    g = affinity.translate(g, -ax, -ay)
+    g = affinity.rotate(g, float(row.get("rot") or 0.0), origin=(0, 0))
+    return affinity.translate(g, *row["feed"])
+
+
+def _sim_findings(row: dict, base: Path, name: str, at, viols: list, fact: dict, not_judged: list) -> None:
+    sim = row.get("sim")
+    if not sim:
+        not_judged.append(f"{name}: no sim_solve antenna result (`sim`), so its tuning is not judged")
+        return
+    path = Path(sim) if Path(sim).is_absolute() else base / sim
+    if not path.is_file():
+        not_judged.append(f"{name}: {sim} not found, so its tuning is not judged")
+        return
+    r = checklib.load_json(str(path), "sim")
+    ft = r.get("features") or {}
+    band = row.get("band_hz") or r.get("band")
+    fact["sim"] = {"f_res": ft.get("f_res"), "s11_db": ft.get("s11_db"), "bw_10db": ft.get("bw_10db")}
+    if band and ft.get("f_res"):
+        bw = ft.get("bw_10db") or [ft["f_res"], ft["f_res"]]
+        width = max(bw[1] - bw[0], 0.0)
+        mid, half = (band[0] + band[1]) / 2, (band[1] - band[0]) / 2
+        off = abs(ft["f_res"] - mid) - half
+        if off > width or (ft.get("s11_db") or 0) > -10:
+            viols.append(checklib.violation(
+                SCRIPT, "warning", at, row.get("layer"), None, row.get("refs") or [],
+                f"{name}: resonates at {ft['f_res'] / 1e9:.3f} GHz (S11 {ft.get('s11_db')} dB, "
+                f"-10 dB width {width / 1e6:.0f} MHz) against the band "
+                f"{band[0] / 1e9:.3f}-{band[1] / 1e9:.3f} GHz: retune it or fit a match",
+                SOURCE, kind="pcb_antenna_detuned", f_res=ft["f_res"], band_hz=band))
+    floor = row.get("min_efficiency")
+    far = r.get("at_band") or {}
+    if floor is not None and far.get("efficiency") is not None and far["efficiency"] < floor:
+        viols.append(checklib.violation(
+            SCRIPT, "warning", at, row.get("layer"), None, row.get("refs") or [],
+            f"{name}: radiation efficiency {far['efficiency']:.2f} under the stated {floor:g}",
+            SOURCE, kind="pcb_antenna_low_efficiency", efficiency=far["efficiency"]))
+    conv = r.get("convergence")
+    if not conv or not conv.get("converged"):
+        viols.append(checklib.violation(
+            SCRIPT, "warning", at, row.get("layer"), None, row.get("refs") or [],
+            f"{name}: {sim} has no converged mesh study (run sim_solve antenna --converge), "
+            "so its numbers are not to be relied on",
+            SOURCE, kind="pcb_antenna_sim_unconverged"))
+
+
+def check_pcb_antennas(pcb: Path, bg, board, rows: list[dict]) -> tuple[list[dict], list[dict], list[str]]:
+    viols, facts, not_judged = [], [], []
+    for row in rows:
+        name = row.get("name") or "?"
+        if not (row.get("nets") or row.get("refs") or row.get("poly")):
+            raise checklib.CheckError(f"pcb_antennas {name}: needs nets, refs or poly")
+        layers = [row["layer"]] if row.get("layer") else list(bg.copper_layers)
+        radiator = {l: _row_copper(bg, row, l) for l in bg.copper_layers}
+        radiator = {l: g for l, g in radiator.items() if g is not None and not g.is_empty and g.area > TOL_MM2}
+        rad_all = unary_union(list(radiator.values())) if radiator else None
+        fact = {"name": name, "layers": sorted(radiator)}
+        facts.append(fact)
+        if rad_all is None:
+            viols.append(checklib.violation(
+                SCRIPT, "error", None, None, None, row.get("refs") or [],
+                f"{name}: names no copper on this board ({layers})", SOURCE,
+                kind="pcb_antenna_missing"))
+            continue
+        c = rad_all.centroid
+        at = (c.x, c.y)
+        fact["bbox"] = [checklib.rnd(v, 3) for v in rad_all.bounds]
+        ground_nets = set(row.get("ground_nets") or ["GND"])
+        ground = _ground(bg, ground_nets, bg.copper_layers)
+        gnd_all = unary_union(list(ground.values())) if ground else None
+
+        # keep-out: the row's poly, else the radiator's box grown by keepout_mm,
+        # on every layer. The arms land on the ground, so a box drawn from
+        # the copper overlaps it: with a feed and a short side by side the box
+        # stops short_contact_mm before their line. over_ground (a patch):
+        # ground under it is the design.
+        margin = float(row.get("keepout_mm", 0.0))
+        keep = (Polygon(row["keepout"]) if row.get("keepout") else box(*rad_all.bounds).buffer(margin, join_style=2))
+        if not row.get("keepout") and row.get("feed") and row.get("short"):
+            keep = _trim_at_contacts(keep, rad_all, row["feed"], row["short"],
+                                     float(row.get("short_contact_mm", 1.5)))
+        keep = keep.intersection(board)
+        own_nets = set(row.get("nets") or ())
+        own_refs = set(row.get("refs") or ())
+        if row.get("over_ground"):
+            own_nets = own_nets | ground_nets
+        for layer in bg.copper_layers:
+            found = _foreign_copper(bg, keep, layer, own_nets, own_refs, radiator.get(layer))
+            found = [g for g in found if not g.is_empty and g.area > TOL_MM2]
+            if not found:
+                continue
+            hit = unary_union(found)
+            if hit.area <= TOL_MM2:
+                continue
+            ct = hit.centroid
+            viols.append(checklib.violation(
+                SCRIPT, "error", (ct.x, ct.y), layer, None, sorted(own_refs),
+                f"{name}: {hit.area:.1f} mm2 of other copper on {layer} in its keep-out "
+                f"{[checklib.rnd(v, 2) for v in keep.bounds]}: an antenna's near field "
+                "lands on it and detunes it. Clear it on every layer, or declare a "
+                "smaller `keepout` if the reference design has it there",
+                SOURCE, kind="pcb_antenna_copper", area_mm2=checklib.rnd(hit.area, 2)))
+
+        # the feed and the short
+        rad_b = rad_all.buffer(0.01)
+        if row.get("feed"):
+            pt = Point(row["feed"])
+            if not rad_b.contains(pt):
+                viols.append(checklib.violation(
+                    SCRIPT, "error", tuple(row["feed"]), None, None, sorted(own_refs),
+                    f"{name}: the feed point {row['feed']} is not on the antenna's copper "
+                    f"({checklib.rnd(rad_all.distance(pt), 3)} mm off)",
+                    SOURCE, kind="pcb_antenna_feed"))
+        else:
+            not_judged.append(f"{name}: no `feed` point")
+        if row.get("short"):
+            pt = Point(row["short"])
+            if not rad_b.contains(pt):
+                viols.append(checklib.violation(
+                    SCRIPT, "error", tuple(row["short"]), None, None, sorted(own_refs),
+                    f"{name}: the short point {row['short']} is not on the antenna's copper",
+                    SOURCE, kind="pcb_antenna_feed"))
+            elif gnd_all is None or gnd_all.distance(pt) > float(row.get("short_reach_mm", 1.5)):
+                dist = checklib.rnd(gnd_all.distance(pt), 3) if gnd_all is not None else None
+                viols.append(checklib.violation(
+                    SCRIPT, "error", tuple(row["short"]), None, None, sorted(own_refs),
+                    f"{name}: the short does not reach ground {sorted(ground_nets)} "
+                    f"(nearest {dist} mm): an open IFA is another antenna",
+                    SOURCE, kind="pcb_antenna_feed", distance_mm=dist))
+
+        # the ground edge: the radiator's farthest copper from the nearest ground
+        ge = row.get("ground_edge") or {}
+        if gnd_all is not None:
+            height = max(gnd_all.distance(Point(p)) for p in _vertices(rad_all))
+            fact["height_mm"] = checklib.rnd(height, 3)
+            if ge.get("height_mm") is not None:
+                tol = float(ge.get("tol_mm", 0.25))
+                if abs(height - ge["height_mm"]) > tol:
+                    viols.append(checklib.violation(
+                        SCRIPT, "warning", at, None, None, sorted(own_refs),
+                        f"{name}: its copper reaches {height:.2f} mm from the ground edge, "
+                        f"the design says {ge['height_mm']:g} +- {tol:g} mm",
+                        SOURCE, kind="pcb_antenna_ground_edge", height_mm=checklib.rnd(height, 3)))
+        elif ge:
+            not_judged.append(f"{name}: no copper on ground nets {sorted(ground_nets)}, so no ground edge")
+
+        # the board edge
+        if row.get("edge_max_mm") is not None:
+            ring = board.exterior
+            d = min(ring.distance(Point(p)) for p in _vertices(rad_all))
+            fact["edge_mm"] = checklib.rnd(d, 3)
+            if d > float(row["edge_max_mm"]):
+                viols.append(checklib.violation(
+                    SCRIPT, "warning", at, None, None, sorted(own_refs),
+                    f"{name}: its copper comes no closer than {d:.1f} mm to the board edge "
+                    f"(at most {row['edge_max_mm']:g} mm): the board around it loads it",
+                    SOURCE, kind="pcb_antenna_inboard", edge_mm=checklib.rnd(d, 3)))
+
+        # the copied reference
+        if row.get("reference"):
+            ref = _reference_row(row["reference"])
+            fact["reference"] = ref.get("source") or row["reference"]
+            gsize = ref.get("ground_mm")
+            if gsize and gnd_all is not None:
+                bx = gnd_all.bounds
+                dims = sorted((bx[2] - bx[0], bx[3] - bx[1]))
+                fact["ground_mm"] = [checklib.rnd(v, 2) for v in dims]
+                if dims[0] < min(gsize) - 0.5 or dims[1] < max(gsize) - 0.5:
+                    viols.append(checklib.violation(
+                        SCRIPT, "warning", at, None, None, sorted(own_refs),
+                        f"{name}: the ground is {dims[0]:.1f} x {dims[1]:.1f} mm, "
+                        f"{ref.get('source') or 'the reference'} assumed {gsize}: its tuning "
+                        "does not carry over without a solve (sim_solve antenna)",
+                        SOURCE, kind="pcb_antenna_ground_small", ground_mm=[checklib.rnd(v, 2) for v in dims]))
+            if ref.get("polys"):
+                if not row.get("feed"):
+                    not_judged.append(f"{name}: reference geometry needs a `feed` point to anchor on")
+                else:
+                    want = _placed(ref, row)
+                    diff = want.symmetric_difference(rad_all)
+                    pct = 100 * diff.area / want.area if want.area else 100.0
+                    tol_pct = float(row.get("geometry_tol_pct", ref.get("area_tol_pct", 5.0)))
+                    fact["geometry_diff_pct"] = checklib.rnd(pct, 2)
+                    if pct > tol_pct:
+                        ct = diff.centroid
+                        viols.append(checklib.violation(
+                            SCRIPT, "error", (ct.x, ct.y), None, None, sorted(own_refs),
+                            f"{name}: the copper differs from {ref.get('source') or 'the reference'} "
+                            f"by {pct:.1f}% of its area (limit {tol_pct:g}%; {diff.area:.1f} mm2): "
+                            "a copied antenna keeps its tuning only if it is the same copper",
+                            SOURCE, kind="pcb_antenna_geometry", diff_pct=checklib.rnd(pct, 2)))
+        _sim_findings(row, Path(pcb).parent, name, at, viols, fact, not_judged)
+    return viols, facts, not_judged
+
+
+def _trim_at_contacts(keep, rad, feed, short, margin):
+    """The keep-out cut at the line through feed and short, less margin, on the
+    side with more of the radiator. Only when they sit on an axis."""
+    dx, dy = abs(feed[0] - short[0]), abs(feed[1] - short[1])
+    x0, y0, x1, y1 = keep.bounds
+    if dy <= 1e-3 < dx:
+        c = (feed[1] + short[1]) / 2
+        lo, hi = box(x0, y0, x1, c - margin), box(x0, c + margin, x1, y1)
+    elif dx <= 1e-3 < dy:
+        c = (feed[0] + short[0]) / 2
+        lo, hi = box(x0, y0, c - margin, y1), box(c + margin, y0, x1, y1)
+    else:
+        return keep
+    side = lo if rad.intersection(lo).area >= rad.intersection(hi).area else hi
+    return keep.intersection(side)
+
+
+def _foreign_copper(bg, region, layer: str, own_nets, own_refs, rad) -> list:
+    """Copper on `layer` in `region` that isn't the antenna's own."""
+    out = []
+    if region.is_empty:
+        return out
+    items = [(t.net, None, t.poly) for t in bg.tracks_of(layer=layer)]
+    items += [(v.net, None, v.poly) for v in bg.vias_of(layer=layer)]
+    items += [(p.net, p.ref, p.poly) for p in bg.pads_of(layer=layer)]
+    items += [(z.net, None, z.fill_on(layer)) for z in bg.zones_of(layer=layer)]
+    for net, ref, g in items:
+        if g is None or g.is_empty or net in own_nets or ref in own_refs:
+            continue
+        hit = g.intersection(region)
+        if rad is not None:
+            hit = hit.difference(rad)
+        if not hit.is_empty:
+            out.append(hit)
+    return out
+
+
 def run(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--pcb", required=True)
@@ -298,10 +614,16 @@ def run(argv=None):
     cons = (checklib.load_json(args.constraints, "constraints")
             if args.constraints else None)
     viols, seen = check(pcb, cons)
+    rows = (cons or {}).get("pcb_antennas") or []
+    not_judged = []
+    if rows:
+        bg = geom.load_board(pcb)
+        more, seen["pcb_antennas"], not_judged = check_pcb_antennas(pcb, bg, board_area(bg), rows)
+        viols += more
     return checklib.report(SCRIPT, pcb, viols, checked=[seen],
-                           nothing_to_judge=None if seen.get("modules") else
-                           "no module reference/rf_modules.yaml knows"
-                           ), args.out
+                           nothing_to_judge=None if seen.get("modules") or rows else
+                           "no module reference/rf_modules.yaml knows, and no pcb_antennas row",
+                           not_judged=not_judged), args.out
 
 
 def main(argv=None) -> int:
