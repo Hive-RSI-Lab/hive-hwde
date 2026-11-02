@@ -1,7 +1,8 @@
 # JLCPCB CPL (pick-and-place) rotation corrections.
 # The value is ADDED to the KiCad footprint rotation to produce JLC's expected
 # 0-degree orientation (KiCad and JLC disagree on the 0-deg reference for many
-# packages). Consumed by bom_cpl.py (S12). Applied by regex-matching the KiCad
+# packages); on the bottom it is added to (180 - KiCad rotation), see
+# jlc_bottom_cpl.md. Consumed by bom_cpl.py (S12). Applied by regex-matching the KiCad
 # footprint NAME (the part after the library colon).
 #
 # Vendored from the community-maintained rotation databases:

@@ -419,8 +419,9 @@ def test_dfm_warns_an_assembled_small_castellated_board_needs_a_panel(tmp_path):
     import dfm_check
     bg = geom.load_board(_slotted_board(tmp_path))     # 60 mm: under 70
     vios = []
-    dfm_check._castellated_pcba(bg, tmp_path, vios)    # no CPL: a bare-board order
+    cpl = tmp_path / "CPL.csv"
+    dfm_check._standard_pcba(bg, cpl, vios)            # no CPL: a bare-board order
     assert vios == []
-    (tmp_path / "CPL.csv").write_text("Designator\n")
-    dfm_check._castellated_pcba(bg, tmp_path, vios)
+    cpl.write_text("Designator\n")
+    dfm_check._standard_pcba(bg, cpl, vios)
     assert [(v["kind"], v["severity"]) for v in vios] == [("castellated_needs_panel", "warning")]

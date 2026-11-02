@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import csv
 import json
+import math
 import shutil
 import sys
 from pathlib import Path
@@ -39,6 +40,9 @@ KICAD_SOT236 = [("1", -1.1375, -0.95), ("2", -1.1375, 0.0),
 
 
 def _fp(ref, fpid, x, y, r, pads, size=(1.1, 0.6), layer="F.Cu"):
+    if layer == "B.Cu":
+        # KiCad's flip: a bottom footprint's local pads are stored mirrored in y
+        pads = [(n, px, -py) for n, px, py in pads]
     pad_txt = "".join(
         f'(pad "{n}" smd rect (at {px} {py} {r}) (size {size[0]} {size[1]}) '
         f'(layers "{layer}"))' for n, px, py in pads)
@@ -165,42 +169,234 @@ def test_polar_cap_is_strict_about_180(ws):
 
 def test_no_data_fails_loudly(ws):
     pcb, cache = ws
-    v, rep = _verdicts(pcb, cache, _cpl(X1=0, U3=0, U1=90))
+    v, rep = _verdicts(pcb, cache, _cpl(X1=0, U3=180, U1=90))
     assert v["X1"]["verdict"] == "no_model"
-    assert v["U3"]["verdict"] == "bottom_unverified"
+    assert v["U3"]["verdict"] == "ok"    # read from below, 180 - 0 + 0
     assert v["U1"]["verdict"] == "ok"
-    assert sorted(rep["failed"]) == ["U3", "X1"]
+    assert sorted(rep["failed"]) == ["X1"]
 
 
-def test_bottom_two_pad_part_checks_its_axis(ws):
-    """JLC's bottom mirror is not modelled, but a non-polar two-pad part at
-    0/90 deg has an axis no mirror changes: that axis is checked."""
+def test_bottom_two_pad_part_either_way_round(ws):
+    """C3 at KiCad 90: 180 - 90 + 0 = 90, a non-polar part also at 270."""
     pcb, cache = ws
     for r in (90, 270):
         v, _ = _verdicts(pcb, cache, _cpl(C3=r))
         assert v["C3"]["verdict"] == "ok", r
-        assert v["C3"]["basis"].startswith("pad axis")
     v, _ = _verdicts(pcb, cache, _cpl(C3=0))
     assert v["C3"]["verdict"] == "wrong_rotation"
     assert sorted(v["C3"]["expected_rot"]) == [90.0, 270.0]
 
 
-def test_bottom_two_pad_part_with_paste_pads_checks_its_axis(ws):
+def test_bottom_two_pad_part_with_paste_pads(ws):
     """Unnumbered paste-only pads aren't pads a lead lands on: still two pads."""
     pcb, cache = ws
     v, _ = _verdicts(pcb, cache, _cpl(C5=90))
     assert v["C5"]["verdict"] == "ok", v["C5"]
-    assert v["C5"]["basis"].startswith("pad axis")
 
 
-def test_bottom_part_the_mirror_decides_stays_unverified(ws):
-    """Polarity, more than two pads or an axis off 0/90 deg depend on the
-    mirror: never passed."""
+def test_bottom_multi_pad_part_gets_real_verdicts(ws):
+    """twin-side's R1: a bottom IC at KiCad 0 goes in at 180. At 0 it's wrong."""
     pcb, cache = ws
-    for rot in (0, 45, 90, 180):
-        v, _ = _verdicts(pcb, cache, _cpl(D2=rot, C4=rot, U3=rot))
-        for ref in ("D2", "C4", "U3"):
-            assert v[ref]["verdict"] == "bottom_unverified", (ref, rot)
+    v, rep = _verdicts(pcb, cache, _cpl(U3=180))
+    assert v["U3"]["verdict"] == "ok" and v["U3"]["expected_rot"] == [180.0]
+    assert rep["bottom_preview"]["refs"] == ["U3"]
+    assert "preview" in rep["bottom_preview"]["note"]
+    assert "not from a JLC statement" in rep["bottom_preview"]["note"]
+    v, rep = _verdicts(pcb, cache, _cpl(U3=0))
+    assert v["U3"]["verdict"] == "wrong_rotation"
+    assert "needs 180" in v["U3"]["why"]
+    assert rep["bottom_preview"] is None
+
+
+def test_bottom_polar_part_wrong_polarity(ws):
+    """The LED model's pad 1 is its anode, KiCad's the cathode: the role fit
+    decides, on the bottom as on the top (test_polarity_uses_pin_roles...)."""
+    pcb, cache = ws
+    v, _ = _verdicts(pcb, cache, _cpl(D2=0))
+    assert v["D2"]["verdict"] == "wrong_polarity"
+    assert v["D2"]["expected_rot"] == [0.0]
+    pads = [("1", -0.7875, 0.0), ("2", 0.7875, 0.0)]
+    # no roles in this model, so polarity goes by number: 180 only, never 0
+    named = _model(pads, package="LED0603")
+    fp = _kfp("D3", [(n, x, -y) for n, x, y in pads], name="aiee:LED0603")
+    fp.side = "bottom"
+    a = cv.analyse(fp, named)
+    assert a["verdict"] == "ok" and a["corrections"] == [0.0]
+    assert cv.derive_rotation(fp, named) == 180.0
+
+
+def test_top_regression_formula_has_no_bottom_term(ws):
+    pcb, cache = ws
+    fps = cv.board_footprints(pcb)
+    model = easyeda.get("C116592", cache, fetch=False)
+    assert cv.derive_rotation(fps["U1"], model) == 90.0   # KiCad 90 + 0
+    assert cv.derive_rotation(fps["U2"], model) == 180.0  # KiCad 0 + 180
+    v, rep = _verdicts(pcb, cache, _cpl(U1=90, U2=180))
+    assert v["U1"]["verdict"] == v["U2"]["verdict"] == "ok"
+    assert rep["bottom_preview"] is None
+    assert cv.cpl_rotation("top", 90.0, 180.0) == 270.0
+    assert cv.cpl_rotation("bottom", 90.0, 180.0) == 270.0
+    assert cv.cpl_rotation("bottom", 0.0, 90.0) == 270.0
+    assert cv.cpl_rotation("bottom", 30.0, 0.0) == 150.0
+
+
+ASYM = [("1", -1.0, -0.65), ("2", -1.0, 0.65), ("3", 1.0, 0.65),
+        ("4", 1.0, 0.0), ("5", 1.0, -0.65)]
+
+
+def _flipped_fp(r, c=0.0):
+    """ASYM's land pattern (the model turned by c), flipped to the bottom as
+    KiCad does it, at KiCad rotation r."""
+    land = [(n, *cv.rot(x, y, c)) for n, x, y in ASYM]
+    fp = _kfp("U9", [(n, x, -y) for n, x, y in land], rot=float(r))
+    fp.side = "bottom"
+    return fp
+
+
+@pytest.mark.parametrize("r", [0, 45, 90, 135, 180, 270, 315])
+@pytest.mark.parametrize("c", [0, 90, 180, 270])
+def test_bottom_rotation_lands_every_pin_seen_from_below(r, c):
+    """The oracle doesn't use the fit: board pads from the footprint's own
+    transform, mirrored (x -> -x), against the model turned by what the check
+    says. Every pin lands on its own pad, and no other turn lands them."""
+    model = _model(ASYM)
+    fp = _flipped_fp(r, c)
+    assert cv.analyse(fp, model)["corrections"] == [float(c)]
+    got = cv.derive_rotation(fp, model)
+    assert got == (180 - r + c) % 360
+    board = {p.number: cv.rot(p.x, p.y, fp.rot) for p in fp.pads}
+    below = {n: (-x, y) for n, (x, y) in board.items()}
+    for th in range(0, 360, 45):
+        err = max(math.hypot(cv.rot(p.x, p.y, th)[0] - below[p.number][0],
+                             cv.rot(p.x, p.y, th)[1] - below[p.number][1])
+                  for p in model.pads)
+        assert (err < 1e-6) == (th == got), (th, got, err)
+
+
+def test_bottom_footprint_not_flipped_has_no_fit():
+    """A land pattern stored unmirrored on the bottom is the part's mirror
+    image. No turn seats it, so it's never passed."""
+    fp = _kfp("U9", ASYM)
+    fp.side = "bottom"
+    assert cv.analyse(fp, _model(ASYM))["verdict"] == "no_fit"
+
+
+def test_bottom_placement_offset_mirrors_the_model_centre():
+    """A footprint origin off the part's centre on the bottom. The model's
+    centre comes back from the view below with x negated, and the offset that
+    results puts its pads on the board's."""
+    pads = [("1", -1.5, -1.0), ("2", 1.5, -1.0), ("3", -1.5, 1.0), ("4", 1.0, 1.0)]
+    model = _model(pads)
+    # the land pattern sits 1.87 mm down the footprint's y, and 1.2 across,
+    # flipped, then turned 90
+    fp = _kfp("J2", [(n, x + 1.2, -(y + 1.87)) for n, x, y in pads], rot=90.0)
+    fp.side = "bottom"
+    want = cv.derive_rotation(fp, model)
+    assert want == 90.0
+    dx, dy = cv.placement_offset(fp, model, want)
+    mc = [sum(p.x for p in model.pads) / 4, sum(p.y for p in model.pads) / 4]
+    ex, ey = cv.rot(*mc, want)
+    kc = [sum(p.x for p in fp.pads) / 4, sum(p.y for p in fp.pads) / 4]
+    kx, ky = cv.rot(*kc, fp.rot)
+    assert abs((dx - ex) - kx) < 1e-6 and abs((dy + 0) - (ky - ey)) < 1e-6
+    # at the moved position the check reads no offset
+    row = cv.check_part(fp, model, {"x": fp.x + dx, "y": fp.y + dy, "rot": want})
+    assert row["verdict"] == "ok" and row["offset_mm"] == 0.0
+    # at the footprint origin it reads the whole offset
+    row = cv.check_part(fp, model, {"x": fp.x, "y": fp.y, "rot": want})
+    assert row["offset_mm"] == pytest.approx(math.hypot(dx, dy), abs=1e-3)
+
+
+def test_bom_cpl_bottom_rows_pass_cpl_verify_and_use_the_table_term(ws, tmp_path):
+    """bom_cpl writes, cpl_verify agrees; a part with no model takes the
+    package table's correction on the 180 - r base."""
+    pcb, cache = ws
+    parts = [{"ref": "U3", "package": "x", "x": 70.0, "y": -10.0, "rot": 0.0,
+              "side": "bottom"},
+             {"ref": "C3", "package": "x", "x": 80.0, "y": -10.0, "rot": 90.0,
+              "side": "bottom"},
+             {"ref": "Q1", "package": "SOT-223", "x": 1.0, "y": 1.0, "rot": 90.0,
+              "side": "bottom"},
+             {"ref": "Q2", "package": "SOT-223", "x": 1.0, "y": 1.0, "rot": 90.0,
+              "side": "top"}]
+    derive = bom_cpl.model_deriver(pcb, {r: {"lcsc": c} for r, c in LCSC.items()},
+                                   cache, False)
+    rules = [(__import__("re").compile("SOT-223"), 180.0)]
+    rows, audit = bom_cpl.build_cpl(parts, rules, derive)
+    by = {r["Designator"]: r for r in rows}
+    assert float(by["U3"]["Rotation"]) == 180.0
+    assert float(by["C3"]["Rotation"]) == 90.0
+    assert float(by["Q1"]["Rotation"]) == (180 - 90 + 180) % 360
+    assert float(by["Q2"]["Rotation"]) == (90 + 180) % 360
+    aud = {a["ref"]: a for a in audit}
+    assert aud["U3"]["correction"] == 0.0 and aud["U3"]["source"] == "lcsc_model"
+    assert aud["Q1"]["correction"] == 180.0 and aud["Q1"]["source"] == "table"
+    v, _ = _verdicts(pcb, cache, {r: {"x": float(by[r]["Mid X"]),
+                                      "y": -float(by[r]["Mid Y"]),
+                                      "rot": float(by[r]["Rotation"]),
+                                      "layer": "Bottom"} for r in ("U3", "C3")})
+    assert v["U3"]["verdict"] == v["C3"]["verdict"] == "ok"
+    assert v["U3"]["offset_mm"] < 0.5
+
+
+def test_dfm_bottom_verdicts_and_preview_warning(ws, tmp_path):
+    pcb, cache = ws
+    cpl = tmp_path / "CPL.csv"
+    _cpl_csv(cpl, [("U3", 70, 180), ("U1", 10, 90)])
+    pj = tmp_path / "parts.json"
+    pj.write_text(json.dumps({"U3": {"lcsc": "C116592"}, "U1": {"lcsc": "C116592"}}))
+    vios: list = []
+    dfm_check.check_placement(pcb, cpl, pj, None, cache, False, vios)
+    prev = [v for v in vios if v["kind"] == "cpl_bottom_preview"]
+    assert len(prev) == 1 and prev[0]["severity"] == "warning"
+    assert prev[0]["refs"] == ["U3"] and "order preview" in prev[0]["msg"]
+    assert not [v for v in vios if v["severity"] == "error"]
+
+    _cpl_csv(cpl, [("U3", 70, 0)])
+    vios = []
+    dfm_check.check_placement(pcb, cpl, pj, None, cache, False, vios)
+    assert [(v["kind"], v["severity"]) for v in vios] == [("cpl_rotation", "error")]
+
+
+def test_render_draws_a_bottom_part_mirrored(ws, tmp_path):
+    pcb, cache = ws
+    fp = cv.board_footprints(pcb)["U3"]
+    model = easyeda.get("C116592", cache, fetch=False)
+    pad1 = next(p for p in cpl_render.board_shapes(fp)["pads"]
+                if p["number"] == "1")["center"]
+    right = cpl_render.model_shapes(model, _cpl(U3=180)["U3"], "bottom")
+    wrong = cpl_render.model_shapes(model, _cpl(U3=0)["U3"], "bottom")
+    assert math.hypot(right["pin1"][0] - pad1[0], right["pin1"][1] - pad1[1]) < 0.05
+    assert math.hypot(wrong["pin1"][0] - pad1[0], wrong["pin1"][1] - pad1[1]) > 1.0
+    # every model pad on its own number, not just pin 1
+    board = {p["number"]: p["center"] for p in cpl_render.board_shapes(fp)["pads"]}
+    for p in right["pads"]:
+        assert math.hypot(p["center"][0] - board[p["number"]][0],
+                          p["center"][1] - board[p["number"]][1]) < 0.3
+
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    seen = {}
+    real_close = plt.close
+
+    def close(fig=None):
+        for ax in fig.axes:
+            if ax.get_title():
+                seen[ax.get_title().split()[0]] = (ax.get_title(), ax.get_xlim())
+        real_close(fig)
+    plt.close = close
+    try:
+        idx = cpl_render.render(pcb, _cpl(U3=180, U1=90), LCSC, cache,
+                                tmp_path / "r", fetch=False)
+    finally:
+        plt.close = real_close
+    assert idx["parts"]["U3"]["side"] == "bottom"
+    assert idx["parts"]["U1"]["side"] == "top"
+    assert "BOTTOM, from below" in seen["U3"][0]
+    assert "BOTTOM" not in seen["U1"][0]
+    assert seen["U3"][1][0] > seen["U3"][1][1]   # x runs right to left
+    assert seen["U1"][1][0] < seen["U1"][1][1]
 
 
 def test_cache_is_read_without_network(ws, monkeypatch):
@@ -683,3 +879,100 @@ def test_placement_offset_when_origin_isnt_the_part_centre():
     assert abs(dx) < 1e-6 and abs(dy - 1.87) < 1e-6
     near = [(n, x, y - 1.87 + 0.1) for n, x, y in pads]
     assert cv.placement_offset(_kfp("J2", near), model, 0.0) is None
+
+
+# ------------------------------------------- Standard PCBA for parts on both sides
+
+def _pcba_board(tmp_path, w, h, fiducials=0, margin=8.0):
+    """A w x h board with two pads `margin` in from the edges, and fiducials
+    in the margin."""
+    edges = "".join(
+        f'(gr_line (start {a} {b}) (end {c} {d}) (layer "Edge.Cuts") '
+        '(stroke (width 0.1) (type solid)))'
+        for a, b, c, d in ((0, 0, w, 0), (w, 0, w, h), (w, h, 0, h), (0, h, 0, 0)))
+    pad = ('(footprint "t:R" (layer "F.Cu") (at {x} {y}) (property "Reference" '
+           '"{r}" (at 0 0) (layer "F.SilkS")) (pad "1" smd rect (at 0 0) '
+           '(size 1 1) (layers "F.Cu")))')
+    body = pad.format(x=margin, y=margin, r="R1") \
+        + pad.format(x=w - margin, y=h - margin, r="R2")
+    for i in range(fiducials):
+        body += ('(footprint "Fiducial:Fiducial_1mm" (layer "F.Cu") '
+                 f'(at {2 + i} 2) (property "Reference" "FID{i}" (at 0 0) '
+                 '(layer "F.SilkS")) (pad "" smd circle (at 0 0) (size 1 1) '
+                 '(layers "F.Cu")))')
+    f = tmp_path / "b.kicad_pcb"
+    f.write_text('(kicad_pcb (version 20240108) (generator "t")'
+                 '(layers (0 "F.Cu" signal) (31 "B.Cu" signal) '
+                 '(44 "Edge.Cuts" user))' + edges + body + ")")
+    import geom
+    return geom.load_board(f)
+
+
+def _layers_csv(tmp_path, *layers):
+    cpl = tmp_path / "CPL.csv"
+    with cpl.open("w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["Designator", "Mid X", "Mid Y", "Layer", "Rotation"])
+        for i, lay in enumerate(layers):
+            w.writerow([f"R{i}", 1, -1, lay, 0])
+    return cpl
+
+
+def _pcba_kinds(bg, cpl):
+    vios: list = []
+    dfm_check._standard_pcba(bg, cpl, vios)
+    return vios
+
+
+def test_both_sides_small_board_warns_with_what_it_lacks(tmp_path):
+    """twin-side's R2: 70 x 58, no fiducials, no rails. Warns, never fails."""
+    bg = _pcba_board(tmp_path, 70, 58, margin=2.0)
+    v = _pcba_kinds(bg, _layers_csv(tmp_path, "Top", "Bottom"))
+    assert [(x["kind"], x["severity"]) for x in v] == [
+        ("both_sides_needs_panel", "warning")]
+    for word in ("70.0 x 58.0", "rails", "0 fiducials", "Standard"):
+        assert word in v[0]["msg"], word
+
+
+def test_one_sided_or_no_cpl_says_nothing(tmp_path):
+    bg = _pcba_board(tmp_path, 40, 40)
+    assert _pcba_kinds(bg, _layers_csv(tmp_path, "Top", "Top")) == []
+    assert _pcba_kinds(bg, _layers_csv(tmp_path, "Bottom")) == []
+    assert _pcba_kinds(bg, tmp_path / "missing.csv") == []
+    assert _pcba_kinds(bg, None) == []
+
+
+def test_both_sides_board_that_is_its_own_panel_passes(tmp_path):
+    bg = _pcba_board(tmp_path, 80, 70, fiducials=3)
+    assert _pcba_kinds(bg, _layers_csv(tmp_path, "Top", "Bottom")) == []
+    # each thing on its own is still missed
+    for kw, word in (({"fiducials": 2}, "2 fiducials"),
+                     ({"fiducials": 3, "margin": 2.0}, "rails")):
+        bg = _pcba_board(tmp_path, 80, 70, **kw)
+        v = _pcba_kinds(bg, _layers_csv(tmp_path, "Top", "Bottom"))
+        assert len(v) == 1 and word in v[0]["msg"]
+    bg = _pcba_board(tmp_path, 80, 60, fiducials=3)
+    v = _pcba_kinds(bg, _layers_csv(tmp_path, "Top", "Bottom"))
+    assert len(v) == 1 and "under 70 mm" in v[0]["msg"]
+
+
+@pytest.mark.parametrize("sub", ["panel", "."])
+def test_a_declared_panel_is_accepted(tmp_path, sub):
+    """panel.json as eda-crossover's panel generator writes it, under fab/panel
+    or beside the CPL, stands in for the small board."""
+    bg = _pcba_board(tmp_path, 70, 58, margin=2.0)
+    cpl = _layers_csv(tmp_path, "Top", "Bottom")
+    d = tmp_path / sub
+    d.mkdir(exist_ok=True)
+    good = {"width_mm": 70.0, "height_mm": 128.0,
+            "rail_mm": {"sides": 5.0, "top_bottom": 5.0},
+            "fiducials": [[10, 3.85], [60, 3.85], [15, 124.15]]}
+    (d / "panel.json").write_text(json.dumps(good))
+    assert _pcba_kinds(bg, cpl) == []
+    (d / "panel.json").write_text(json.dumps({**good, "height_mm": 60.0}))
+    v = _pcba_kinds(bg, cpl)
+    assert len(v) == 1 and "panel.json" in v[0]["msg"] and "under 70" in v[0]["msg"]
+    (d / "panel.json").write_text(json.dumps({**good, "rail_mm": 0}))
+    assert "rails" in _pcba_kinds(bg, cpl)[0]["msg"]
+    (d / "panel.json").write_text(json.dumps({**good, "fiducials": []}))
+    assert "0 fiducials" in _pcba_kinds(bg, cpl)[0]["msg"]

@@ -77,8 +77,14 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    **CPL placement per part** (`scripts/cpl_verify.py` inside dfm_check,
    on the fab dir's CPL.csv): pin 1 of each part's LCSC model must land on
    the board's pad 1, and a diode/LED/polarised cap's K/+ on the board's.
-   A wrong part (`cpl_rotation`), a part with no model, no fit or on the
-   bottom side (`cpl_no_model`), parts whose model fetch failed (one
+   Bottom parts are fitted mirrored and read from below, and the images draw
+   them that way (title "BOTTOM, from below"). That rule isn't JLC's own
+   (`reference/jlc_bottom_cpl.md`), so `cpl_bottom_preview` stays as a warning:
+   report it, and have those parts checked in JLC's order preview.
+   `both_sides_needs_panel` warns that parts on both sides need Standard PCBA's
+   rails, fiducials and 70 x 70 mm, on the board or on a panel.
+   A wrong part (`cpl_rotation`), a part with no model or no fit
+   (`cpl_no_model`), parts whose model fetch failed (one
    `cpl_fetch_failed` for the run, with the reason - rerun later, it is not
    a pin-1 result), and a part the script and
    `fab/cpl_visual.json` disagree on or the image pass left out

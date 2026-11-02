@@ -13,7 +13,11 @@ For every part in the CPL it draws, in board coordinates:
             K or + pad labelled in red.
 
 A part is right when the red pin-1 dot sits on the cyan pad 1 (and the red K/+
-label on the board's). Parts go several to an image (--per-image, default 9),
+label on the board's). A bottom-side part's crop is drawn as seen from below,
+with the board turned about its y axis (x runs right to left) and the model
+turned in that view, as cpl_verify.py reads the CPL; its title says "BOTTOM,
+from below". That view is the exporters' rule, not JLC's own preview, so a match
+here doesn't replace the check in JLC's preview. Parts go several to an image (--per-image, default 9),
 one titled crop each. A part with no model is drawn with the board only and a
 "NO LCSC MODEL" title, so the image pass sees it as unverifiable. A part whose
 model fetch failed (an EasyEDA 403/429 or a network error) is a separate case:
@@ -29,7 +33,7 @@ CLI:
                 [--parts parts.json] [--cache-dir DIR] [--offline]
                 [--per-image N] [--out index.json]
 Writes cpl_render_<n>.png and index.json ({"images": [{"file", "refs"}],
-"parts": {ref: {"lcsc", "cpl_rot", "polar", "has_model"[, "fetch_error"]}}}
+"parts": {ref: {"lcsc", "cpl_rot", "polar", "has_model", "side"[, "fetch_error"]}}}
 plus "fetch_failed" [refs], "rate_limited" and a rerun "note" when a fetch
 failed). "polar" is null for a part whose fetch failed, since it can't be judged
 without the model.
@@ -70,16 +74,21 @@ def board_shapes(fp: cv.Footprint) -> dict:
     return {"pads": pads, "silk": silk}
 
 
-def model_shapes(model, cpl: dict) -> dict:
-    """The LCSC model placed at the CPL position and rotation."""
+def model_shapes(model, cpl: dict, side: str = "top") -> dict:
+    """The LCSC model placed at the CPL position and rotation, in board
+    coordinates. On the bottom the rotation is read from below, so the turned
+    model comes back to the board frame with x negated."""
+    sx = 1.0 if side == "top" else -1.0
+
     def place(x, y):
         dx, dy = cv.rot(x, y, cpl["rot"])
-        return cpl["x"] + dx, cpl["y"] + dy
+        return cpl["x"] + sx * dx, cpl["y"] + dy
     pads = []
     for p in model.pads:
         cx, cy = place(p.x, p.y)
-        pads.append({"number": p.number, "center": (cx, cy),
-                     "poly": _rect(cx, cy, p.w, p.h, cpl["rot"] - p.rot)})
+        poly = [(cx + sx * x, cy + y)
+                for x, y in _rect(0.0, 0.0, p.w, p.h, cpl["rot"] - p.rot)]
+        pads.append({"number": p.number, "center": (cx, cy), "poly": poly})
     xs = [x for p in model.pads for x in (p.x - p.w / 2, p.x + p.w / 2)]
     ys = [y for p in model.pads for y in (p.y - p.h / 2, p.y + p.h / 2)]
     body = [place(x, y) for x, y in ((min(xs), min(ys)), (max(xs), min(ys)),
@@ -123,7 +132,8 @@ def render(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
             polar = cv.is_polar(fp, model)
             index["parts"][ref] = {"lcsc": lcsc.get(ref), "cpl_rot": c["rot"],
                                    "polar": polar,
-                                   "has_model": model is not None}
+                                   "has_model": model is not None,
+                                   "side": fp.side}
             failed = model is None and bool(errors)
             if failed:
                 index["parts"][ref]["polar"] = None
@@ -149,13 +159,15 @@ def render(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
                     if p["number"] == num and num != "1":
                         ax.annotate(r, p["center"], color="cyan", fontsize=9,
                                     ha="center", va="center", zorder=6)
-            title = f"{ref}  {lcsc.get(ref) or 'no LCSC'}  CPL {c['rot']:g}"
+            below = fp.side != "top"
+            where = "  BOTTOM, from below" if below else ""
+            title = f"{ref}  {lcsc.get(ref) or 'no LCSC'}  CPL {c['rot']:g}{where}"
             if failed:
-                title = f"{ref}  FETCH FAILED"
+                title = f"{ref}  FETCH FAILED{where}"
             elif model is None:
-                title = f"{ref}  NO LCSC MODEL"
+                title = f"{ref}  NO LCSC MODEL{where}"
             else:
-                m = model_shapes(model, c)
+                m = model_shapes(model, c, fp.side)
                 ax.add_patch(Polygon(m["body"], closed=True, fc="#80808040",
                                      ec="#b0b0b0", lw=1.0, zorder=4))
                 for p in m["pads"]:
@@ -176,7 +188,9 @@ def render(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
             ys = [q[1] for p in b["pads"] for q in p["poly"]] or [fp.y]
             half = max(max(xs) - min(xs), max(ys) - min(ys)) / 2 + 1.0
             cx, cy = (max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2
-            ax.set_xlim(cx - half, cx + half)
+            # from below, the board's x runs right to left
+            ax.set_xlim(*((cx + half, cx - half) if below
+                          else (cx - half, cx + half)))
             ax.set_ylim(cy + half, cy - half)  # board y points down
             ax.set_aspect("equal")
             ax.set_axis_on()
@@ -185,7 +199,8 @@ def render(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
             ax.set_title(title, fontsize=9)
         name = f"cpl_render_{start // per_image + 1}.png"
         fig.suptitle("red dot = LCSC pin 1 as JLC places it;  cyan = board "
-                     "pad 1 / K / +", fontsize=9)
+                     "pad 1 / K / +;  BOTTOM crops are mirrored, seen from "
+                     "below", fontsize=9)
         fig.tight_layout()
         fig.savefig(out_dir / name, dpi=110)
         plt.close(fig)
