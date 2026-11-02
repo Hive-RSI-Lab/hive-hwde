@@ -235,7 +235,7 @@ def _edge_crossings(bg, net: str, region) -> tuple[list[eb.Port], str]:
 
 # ================================================================ mesh
 
-def mesh_hook(geo: dict, zone: float, zstep: float, feed_len: float, then=None):
+def mesh_hook(geo: dict, zone: float, zstep: float, feed_len: float, then=None, refine: float = 1.0):
     """The `extra` for emboard.deck: see the module's docstring."""
     via = geo["via"]
     drills = geo.get("drills", [])
@@ -250,15 +250,15 @@ def mesh_hook(geo: dict, zone: float, zstep: float, feed_len: float, then=None):
                 half = d["d"] * math.sqrt(math.pi) / 4
                 ctx.fixed[axis] += ([d[axis] - half, d[axis] + half] if 2 * half > fine else [d[axis]])
         for z0, z1, _ in ctx.stack.slabs:
-            n = max(1, math.ceil((z1 - z0) / zstep))
+            n = max(1, math.ceil((z1 - z0) * refine / zstep))
             ctx.fixed["z"] += [z0 + (z1 - z0) * i / n for i in range(n + 1)]
-        plane_stitch(csx, ctx, feed_len)
+        plane_stitch(csx, ctx, feed_len, refine)
         if then:
             then(csx, ctx)
     return hook
 
 
-def plane_stitch(csx, ctx, feed_len: float) -> int:
+def plane_stitch(csx, ctx, feed_len: float, refine: float = 1.0) -> int:
     """Posts between the planes along each feed where a line has planes on both
     sides. Pinned on the feed's own lines, at the edge of its plane copper."""
     n = 0
@@ -270,7 +270,7 @@ def plane_stitch(csx, ctx, feed_len: float) -> int:
         if not above or not below:
             continue
         a, b = above[-1], below[0]
-        dfeed = min(ctx.coarse, ctx.lam_min / 30, feed_len / 24)
+        dfeed = min(ctx.coarse, ctx.lam_min / 30 / refine, feed_len / 24 / refine)     # deck()'s
         off = p.hi - p.lo + 4 * max(ctx.stack.gap(p.layer, a), ctx.stack.gap(p.layer, b))
         off = round(off, 6)
         name = f"feed_posts{k}"
@@ -332,14 +332,16 @@ def _nearest(st, layer: str) -> str:
     return min((l for l in st.layers if l != layer), key=lambda l: st.gap(l, layer))
 
 
-def build(geo, ports, f_max: float, excite: int = 0, *, fine=None, zstep=None, then=None):
-    """(Csx, where, stats) for one excited port."""
+def build(geo, ports, f_max: float, excite: int = 0, *, fine=None, zstep=None, then=None, refine: float = 1.0):
+    """(Csx, where, stats) for one excited port. refine divides every cell
+    (emboard.deck's knob); `fine` sets the cell it divides."""
     d = _deck_defaults(geo, ports, f_max, fine, zstep)
-    hook = mesh_hook(geo, d["zone"], d["zstep"], d["feed_len"], then)
+    hook = mesh_hook(geo, d["zone"], d["zstep"], d["feed_len"], then, refine)
     csx, where = eb.deck(geo, ports, f_max, excite, fine=d["fine"], feed_len=d["feed_len"], pad=d["pad"],
-                         floor="open", zcells=d["zcells"], extra=hook)
-    stats = mesh_stats(csx, d["fine"])
-    stats.update(fine=round(d["fine"], 5), zstep=round(d["zstep"], 5), zone=round(d["zone"], 4))
+                         floor="open", zcells=d["zcells"], extra=hook, refine=refine)
+    stats = mesh_stats(csx, d["fine"] / refine)
+    stats.update(fine=round(d["fine"] / refine, 5), refine=refine, zstep=round(d["zstep"] / refine, 5),
+                 zone=round(d["zone"], 4))
     return csx, where, stats
 
 
@@ -363,77 +365,74 @@ def _run_to_tail(csx, where, work: Path, timeout: float, threads: int) -> dict:
             "seconds": round(time.time() - t0, 1), "dt_log_s": _dt_from_log(r.stdout + r.stderr)}
 
 
-def _shifted(where: dict, shift) -> dict:
-    """`where` with each port's plane moved `shift` mm further in (past the
-    line's end into the circuit): S then omits that much of an ideal feed."""
-    out = dict(where)
-    out["ports"] = [{**p, "dist": [d + s for d in p["dist"]]} for p, s in zip(where["ports"], shift)]
-    return out
-
-
 def freq_grid(f_max: float, f_min: float | None, points: int) -> list[float]:
     f_min = f_min or f_max / 20
     return [f_min + (f_max - f_min) * i / (points - 1) for i in range(points)]
 
 
-def study(geo, ports, f_max: float, f_min=None, points: int = 201, *, fine=None, zstep=None,
+def _waves_from(vi, n_f, n_p):
+    return [[((vi[k][m]["v"] + eb.ZREF * vi[k][m]["i"]) / 2, (vi[k][m]["v"] - eb.ZREF * vi[k][m]["i"]) / 2)
+             for k in range(n_p)] for m in range(n_f)]
+
+
+def _solve_feeds(reads: dict, where: dict, freqs, f_max: float, shift=None):
+    """emboard's fitted feeds (fit_feed, feed_vi: one line per port over the
+    band and all its runs) -> {run: waves}, and with shift=[mm per port] the
+    waves at planes that far further in. Also each feed's Z and gamma."""
+    n = len(where["ports"])
+    keys = list(reads)
+    lines = [eb.fit_feed([reads[e][k] for e in keys], where["ports"][k]["dist"], freqs, f_max) for k in range(n)]
+    runs, runs_c = {}, {}
+    vi0 = None
+    for e in keys:
+        vi = [eb.feed_vi(reads[e][k], where["ports"][k]["dist"], freqs, lines[k]) for k in range(n)]
+        vi0 = vi0 or vi
+        runs[e] = _waves_from(vi, len(freqs), n)
+        if shift:
+            vs = [eb.feed_vi(reads[e][k], [d + shift[k] for d in where["ports"][k]["dist"]], freqs, lines[k])
+                  for k in range(n)]
+            runs_c[e] = _waves_from(vs, len(freqs), n)
+    return runs, runs_c, vi0, lines
+
+
+def study(geo, ports, f_max: float, f_min=None, points: int = 201, *, fine=None, zstep=None, refine: float = 1.0,
           symmetric=False, shift=None, keep=None, timeout: float = 3600, threads: int = 4) -> dict:
     """S at the port planes (and, with shift=[mm, mm], at planes moved that
     far in), cells, dt, each feed's Z and gamma, each run's ring-down."""
     import tempfile
     freqs = freq_grid(f_max, f_min, points)
     excites = [0] if symmetric else [0, 1]
-    runs, runs_c, info, where, stats = {}, {}, [], None, None
-    feed = []
+    reads, info, where, stats = {}, [], None, None
     for e in excites:
-        csx, where, stats = build(geo, ports, f_max, e, fine=fine, zstep=zstep)
+        csx, where, stats = build(geo, ports, f_max, e, fine=fine, zstep=zstep, refine=refine)
         ctx = tempfile.TemporaryDirectory(prefix="hwde-emvia-") if not keep else None
         work = Path(keep) / f"port{e}" if keep else Path(ctx.name)
         rec = _run_to_tail(csx, where, work, timeout, threads)
-        runs[e] = eb.waves(work, where, freqs)
-        if shift:
-            runs_c[e] = eb.waves(work, _shifted(where, shift), freqs)
-        if not feed:
-            feed = [eb.port_vi(work, where, k, freqs) for k in range(2)]
+        reads[e] = [eb.read_feed(work, k, freqs) for k in range(2)]
         info.append({"excite": e, **rec})
         if ctx:
             ctx.cleanup()
+    runs, runs_c, vi, lines = _solve_feeds(reads, where, freqs, f_max, shift)
     return {"freqs": freqs, "S": eb.sparams(runs, 2, symmetric), "ports": where["ports"], "runs": info,
             "stats": stats, "region": where["region"], "fine": where["fine"],
             "S_shifted": eb.sparams(runs_c, 2, symmetric) if shift else None,
-            "z_feed": [[complex(r["z"]) for r in f] for f in feed],
-            "gamma_feed": [[complex(r["gamma"]) for r in f] for f in feed]}
+            "feeds": [{"z_rms": round(ln["z_rms"], 3), "eps_rms": round(ln["eps_rms"], 4)} for ln in lines],
+            "z_feed": [[complex(r["z"]) for r in f] for f in vi],
+            "gamma_feed": [[complex(r["gamma"]) for r in f] for f in vi]}
 
 
-def compare_runs(a: dict, b: dict) -> dict:
-    """What changed between two meshes on one frequency grid: the largest move
-    in |S21| and |S11| (dB, |S11| only where it is above -30 dB, since under that
-    it is the feed's floor) and the notch's shift in %."""
-    if a["freqs"] != b["freqs"]:
-        raise ValueError("compare_runs: the two runs have different frequency grids")
-    na, nb = find_notch(a["freqs"], a["S"]), find_notch(b["freqs"], b["S"])
-    # a notch's depth is a mesh and record detail: step around it, not through
-    skip = [n["f_hz"] for n in (na, nb) if n]
-    width = 0.05 * (a["freqs"][-1])
-
-    def clear(f):
-        return all(abs(f - q) > width for q in skip)
-    d21 = max((abs(x - y) for f, x, y in zip(a["freqs"], s21_db(a["S"]), s21_db(b["S"])) if clear(f)), default=0.0)
-    s11a = [20 * math.log10(max(abs(s[0][0]), 1e-12)) for s in a["S"]]
-    s11b = [20 * math.log10(max(abs(s[0][0]), 1e-12)) for s in b["S"]]
-    d11 = max((abs(x - y) for f, x, y in zip(a["freqs"], s11a, s11b) if clear(f) and max(x, y) > -30), default=0.0)
-    shift = None
-    if na and nb:
-        shift = abs(na["f_hz"] - nb["f_hz"]) / nb["f_hz"] * 100
-    return {"d_s21_db": round(d21, 3), "d_s11_db": round(d11, 3), "notch_shift_pct": None if shift is None else round(shift, 3),
-            "notch_found_both": bool(na) == bool(nb)}
-
-
-def converged(cmp: dict, s21_db_tol: float = 0.3, s11_db_tol: float = 3.0, notch_pct: float = 1.0) -> bool:
-    """The refinement gate: |S21| and the notch settled. |S11| is looser because
-    it is the small difference of two waves."""
-    return (cmp["notch_found_both"] and cmp["d_s21_db"] <= s21_db_tol and cmp["d_s11_db"] <= s11_db_tol
-            and (cmp["notch_shift_pct"] is None or cmp["notch_shift_pct"] <= notch_pct))
+def refined(run, f_max: float, step: float = eb.REFINE_STEP, refine: float = 1.0) -> dict:
+    """run(refine) -> a study's dict; once at `refine`, once a mesh step finer.
+    The coarser run with `refine` = {emboard.compare's ds, notch_pct, ok,
+    cells, dt}, ok against emboard.CONV_TOL. A run costs about step^4 of the last."""
+    a = run(refine)
+    b = run(refine * step)
+    c = eb.compare(a["freqs"], a["S"], b["S"], f_max / 8)
+    a["refine"] = {"ds": c["ds"], "ds_at": c["ds_at"], "notch_pct": c["notch_pct"], "step": step,
+                   "converged": c["ds"] <= eb.CONV_TOL["ds"] and c["notch_pct"] <= eb.CONV_TOL["notch_pct"],
+                   "cells": b["stats"]["cells"], "dt_courant_s": b["stats"]["dt_courant_s"],
+                   "notch_ghz": None if not find_notch(b["freqs"], b["S"]) else round(find_notch(b["freqs"], b["S"])["f_hz"] / 1e9, 3)}
+    return a
 
 
 def stub_info(geo: dict) -> dict:
@@ -773,16 +772,16 @@ def _coax_probes(csx, where: dict, spec: LaunchSpec, xs: list[float], z_ax: floa
 
 
 def launch_build(spec: LaunchSpec, f_max: float, *, shorted: bool = False, fine=None, zstep=None,
-                 dx: float | None = None, fc: float | None = None):
+                 dx: float | None = None, fc: float | None = None, refine: float = 1.0):
     """(Csx, where, stats). shorted: the coax's far end is a PEC plate."""
     geo, port = launch_synth(spec)
     st = eb.Stack.from_dict(spec.stack)
     lam = C0 / f_max * 1e3 / math.sqrt(st.er_max())
     h = st.gap(spec.layer, _nearest(st, spec.layer))
     fine = fine or min(spec.w / 5, h / 2.5, lam / 40)
-    zstep = zstep or max(fine, h / 4)
-    fc = fc or max(fine, 0.1)
-    dx = dx or min(0.2, lam / 30)
+    zstep = (zstep or max(fine, h / 4)) / refine
+    fc = (fc or max(fine, 0.1)) / refine
+    dx = (dx or min(0.2, lam / 30)) / refine
     x_end = geo["region"][0]
     pad = 1.0
     feed_len = max(lam / 2, 12 * h)
@@ -796,39 +795,38 @@ def launch_build(spec: LaunchSpec, f_max: float, *, shorted: bool = False, fine=
             ctx.fixed["z"] += [z0 + (z1 - z0) * i / k for i in range(k + 1)]
         hook(csx, ctx)
     csx, where = eb.deck(geo, [port], f_max, 0, fine=fine, feed_len=feed_len, pad=pad, floor="pec",
-                         zcells=max(4, math.ceil(h / zstep)), air=air, extra=extra)
+                         zcells=max(4, math.ceil(h * refine / (zstep * refine))), air=air, extra=extra, refine=refine)
     # three cells apart, an odd count, so the current probes fall on dual lines
     x_mid = -(spec.sma["flange"] + 1.0)
     i_mid = round((x_mid - (x_end - pad)) / dx)
     x_mid = x_end - pad + i_mid * dx
     xs = [x_mid + 3 * dx, x_mid, x_mid - 3 * dx]
     _coax_probes(csx, where, spec, xs, z_ax, r_i, -spec.sma["body"])
-    stats = mesh_stats(csx, fine)
-    stats.update(fine=round(fine, 5), zstep=round(zstep, 5), z_top=z_top, x_end=x_end - pad)
+    stats = mesh_stats(csx, fine / refine)
+    stats.update(fine=round(fine / refine, 5), refine=refine, zstep=round(zstep, 5), z_top=z_top, x_end=x_end - pad)
     return csx, where, stats
 
 
 def launch_study(spec: LaunchSpec, f_max: float, f_min=None, points: int = 201, *, fine=None, zstep=None,
-                 keep=None, timeout: float = 3600, threads: int = 4) -> dict:
+                 refine: float = 1.0, keep=None, timeout: float = 3600, threads: int = 4) -> dict:
     """S referred to the line's plane (port 1 here is index 0) and the jack's
     mating face (index 1), from the coax absorbing and then shorted."""
     import tempfile
     freqs = freq_grid(f_max, f_min, points)
-    runs, info, where, stats = {}, [], None, None
-    z_coax = None
+    reads, info, where, stats = {}, [], None, None
     for e, shorted in enumerate((False, True)):
-        csx, where, stats = launch_build(spec, f_max, shorted=shorted, fine=fine, zstep=zstep)
+        csx, where, stats = launch_build(spec, f_max, shorted=shorted, fine=fine, zstep=zstep, refine=refine)
         ctx = tempfile.TemporaryDirectory(prefix="hwde-emlaunch-") if not keep else None
         work = Path(keep) / ("short" if shorted else "match") if keep else Path(ctx.name)
         rec = _run_to_tail(csx, where, work, timeout, threads)
-        runs[e] = eb.waves(work, where, freqs)
-        if z_coax is None:
-            z_coax = [complex(r["z"]) for r in eb.port_vi(work, where, 1, freqs)]
+        reads[e] = [eb.read_feed(work, k, freqs) for k in range(2)]
         info.append({"coax_end": "short" if shorted else "absorbing", **rec})
         if ctx:
             ctx.cleanup()
+    runs, _, vi, lines = _solve_feeds(reads, where, freqs, f_max)
     return {"freqs": freqs, "S": eb.sparams(runs, 2), "ports": where["ports"], "runs": info,
-            "stats": stats, "fine": where["fine"], "z_coax": z_coax}
+            "stats": stats, "fine": where["fine"], "z_coax": [complex(r["z"]) for r in vi[1]],
+            "feeds": [{"z_rms": round(ln["z_rms"], 3), "eps_rms": round(ln["eps_rms"], 4)} for ln in lines]}
 
 
 def cascade(s_a, s_b, zref: float = eb.ZREF):

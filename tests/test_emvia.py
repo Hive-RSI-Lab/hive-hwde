@@ -262,15 +262,29 @@ def test_two_load_runs_recover_s_exactly():
             assert abs(got[i][j] - s[i][j]) < 1e-9
 
 
-def test_compare_and_the_gate():
+def test_refined_runs_twice_and_gates_on_emboards_tolerance():
     f = _freqs(201)
-    a = {"freqs": f, "S": _stub_s(f, 50, 2.4, 4.3)}
-    same = ev.compare_runs(a, {"freqs": f, "S": _stub_s(f, 50, 2.4, 4.3)})
-    assert ev.converged(same) and same["notch_shift_pct"] == 0
-    moved = ev.compare_runs(a, {"freqs": f, "S": _stub_s(f, 50, 2.6, 4.3)})
-    assert moved["notch_shift_pct"] > 5 and not ev.converged(moved)
-    gone = ev.compare_runs(a, {"freqs": f, "S": eb.line_s(f, 50, 3.3, 10)})
-    assert not gone["notch_found_both"] and not ev.converged(gone)
+    calls = []
+
+    def run(length):
+        def go(refine):
+            calls.append(refine)
+            ln = 2.4 if refine == 1.0 else length
+            return {"freqs": f, "S": _stub_s(f, 50, ln, 4.3), "stats": {"cells": 10, "dt_courant_s": 1e-13}}
+        return go
+    good = ev.refined(run(2.4), 30e9)
+    assert calls == [1.0, 1.5] and good["refine"]["converged"] and good["refine"]["ds"] == 0
+    assert not ev.refined(run(2.6), 30e9)["refine"]["converged"]
+
+
+def test_refine_divides_every_cell_of_a_via_deck():
+    geo, ports = ev.synth(coax_spec())
+    a = ev.build(geo, ports, 20e9, 0, fine=0.1)[2]
+    b = ev.build(geo, ports, 20e9, 0, fine=0.1, refine=1.5)[2]
+    assert b["fine"] == pytest.approx(0.1 / 1.5, abs=1e-4)
+    for i in range(3):
+        assert b["mesh"][i] > a["mesh"][i]
+    assert b["dt_courant_s"] < a["dt_courant_s"]
 
 
 # ---------------------------------------------------------------- closed forms, the rule

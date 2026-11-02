@@ -42,7 +42,8 @@ right, and the board-facing studies built on them.
         custom pads as drawn) into a GEOM.json for `planar`; h/er default
         to the board's own stackup (dielectric under the layer).
 
-    hwde sim_solve board --pcb BOARD --region X0,Y0,X1,Y1
+    hwde sim_solve board --pcb BOARD --region X0,Y0,X1,Y1 [--refine R]
+                         [--refine-max R] [--no-converge]
                          --port X,Y,DIR[,LAYER[,W]] [--port ...]
                          [--part REF=OHMS ...] [--f-max HZ] [--f-min HZ]
                          [--points N] [--symmetric] [--fine MM]
@@ -93,8 +94,8 @@ The cases (docs/solvers.md has the measured errors):
         A via with its pads, antipads, return vias and stub as an openEMS 3D
         deck (lib/emvia, #479): S at the ports, its L, C and TDR Z, the stub's
         notch against c / (4 L sqrt(er)) (the ratio is the pads' loading), cells
-        and dt. --refine runs a second mesh at fine / sqrt(2) and exits 1 if
-        |S21| or the notch moved past the gate. --knee-ghz judges the rule: a
+        and dt. --refine runs a second mesh a step finer (every cell / 1.5) and
+        exits 1 if S or the notch moved past emboard.CONV_TOL. --knee-ghz judges the rule: a
         notch under 2 x it, the nearest return via past lambda/10 at it.
     hwde sim_solve launch --stackup NAME --w W --pad-w W --pad-l L --pad-in D
                        --gap G --antipad A --gnd-y Y [--cut-in2] [--run L]
@@ -512,8 +513,10 @@ def planar(geo: dict, excites, f_max, f_min=None, points=201, fine=None, keep=No
 
 
 def board_study(pcb, region, ports, parts=None, f_max=6e9, f_min=None, points=201,
-                symmetric=False, fine=None, keep=None, deck_only=None) -> dict:
-    """`hwde sim_solve board`: extract -> deck -> openEMS -> S (lib/emboard)."""
+                symmetric=False, fine=None, keep=None, deck_only=None,
+                refine=1.0, refine_max=None, converge=True) -> dict:
+    """`hwde sim_solve board`: extract -> deck -> openEMS -> S (lib/emboard),
+    refining the mesh until two runs agree unless converge is False."""
     from lib import emboard as eb
     geo = eb.extract(pcb, region, parts)
     if deck_only:
@@ -522,14 +525,20 @@ def board_study(pcb, region, ports, parts=None, f_max=6e9, f_min=None, points=20
         n = len(ports)
         decks = []
         for e in ([0] if symmetric and n == 2 else range(n)):
-            csx, where = eb.deck(geo, ports, f_max, e, fine=fine)
+            csx, where = eb.deck(geo, ports, f_max, e, fine=fine, refine=refine)
             d = out / f"port{e}"
             d.mkdir(exist_ok=True)
             (d / "deck.xml").write_text(csx.xml())
             (d / "where.json").write_text(json.dumps(where, indent=1) + "\n")
             decks.append({"excite": e, "dir": str(d), "cells": where["cells"], "mesh": where["mesh"]})
         return {"script": SCRIPT, "cmd": "board", "decks": decks, "ports": where["ports"]}
-    res = eb.study(geo, ports, f_max, f_min, points, symmetric=symmetric, keep=keep, fine=fine)
+    if converge:
+        res = eb.study_converged(geo, ports, f_max, f_min, points, refine=refine,
+                                 refine_max=refine_max or eb.REFINE_MAX, keep=keep,
+                                 symmetric=symmetric, fine=fine)
+    else:
+        res = eb.study(geo, ports, f_max, f_min, points, symmetric=symmetric, keep=keep,
+                       fine=fine, refine=refine)
     S, freqs = res.pop("S"), res["freqs"]
     n = len(res["ports"])
     res["s"] = {f"S{i + 1}{j + 1}": [[round(s[i][j].real, 6), round(s[i][j].imag, 6)] for s in S]
@@ -630,15 +639,12 @@ def _via_cmd(args, ap) -> int:
             decks.append({"excite": e, "dir": str(d), **stats})
         print(json.dumps({"script": SCRIPT, "cmd": "via", "decks": decks, "ports": where["ports"]}, indent=1))
         return 0
-    res = ev.study(geo, ports, f_max, args.f_min, args.points, fine=args.fine, shift=shift, keep=args.keep,
-                   timeout=args.timeout)
+    def run(refine):
+        return ev.study(geo, ports, f_max, args.f_min, args.points, fine=args.fine, refine=refine, shift=shift,
+                        keep=args.keep and f"{args.keep}/refine{refine:g}", timeout=args.timeout)
+    res = ev.refined(run, f_max) if args.refine else run(1.0)
     res["report"] = ev.report(res, geo, args.knee_ghz)
     res["quality"] = _s2p_quality(res)
-    if args.refine:
-        finer = res["stats"]["fine"] / math.sqrt(2)
-        res2 = ev.study(geo, ports, f_max, args.f_min, args.points, fine=finer, timeout=args.timeout)
-        cmp_ = ev.compare_runs(res, res2)
-        res["refine"] = {**cmp_, "fine": finer, "cells": res2["stats"]["cells"], "converged": ev.converged(cmp_)}
     res.update(script=SCRIPT, cmd="via", source=label, via=geo["via"])
     return _finish_em(res, args, [f"hwde sim_solve via, openEMS: {label}"])
 
@@ -661,16 +667,31 @@ def _launch_cmd(args) -> int:
             decks.append({"coax_end": d.name, "dir": str(d), **stats})
         print(json.dumps({"script": SCRIPT, "cmd": "launch", "decks": decks, "ports": where["ports"]}, indent=1))
         return 0
-    res = ev.launch_study(spec, f_max, args.f_min, args.points, fine=args.fine, keep=args.keep, timeout=args.timeout)
+    def run(refine):
+        return ev.launch_study(spec, f_max, args.f_min, args.points, fine=args.fine, refine=refine,
+                               keep=args.keep and f"{args.keep}/refine{refine:g}", timeout=args.timeout)
+    res = ev.refined(run, f_max) if args.refine else run(1.0)
     res["quality"] = _s2p_quality(res)
-    if args.refine:
-        finer = res["stats"]["fine"] / math.sqrt(2)
-        res2 = ev.launch_study(spec, f_max, args.f_min, args.points, fine=finer, timeout=args.timeout)
-        cmp_ = ev.compare_runs(res, res2)
-        res["refine"] = {**cmp_, "fine": finer, "cells": res2["stats"]["cells"], "converged": ev.converged(cmp_)}
     res.update(script=SCRIPT, cmd="launch", source=args.stackup)
     return _finish_em(res, args, [f"hwde sim_solve launch, openEMS: edge SMA on {args.stackup}, port 1 the line, port 2 the jack face",
                                   "the connector's pin and body are assumed (KU-VV-1)"])
+
+def _convergence_summary(conv: dict) -> str:
+    """The convergence table, and the verdict against its tolerances."""
+    t = conv["tol"]
+    out = [f"mesh convergence: {'ok' if conv['ok'] else 'FAIL'} (limits |dS| {t['ds']}, "
+           f"notch {t['notch_pct']} %, against the previous mesh)"]
+    for r in conv["steps"]:
+        line = f"  refine {r['refine']:g}: {r['cells']} cells, {r['seconds']} s"
+        c = r.get("compare")
+        if c:
+            line += f": |dS| {c['ds']}, notch {c['notch_pct']} %"
+            line += "".join(f" [{n['was'] / 1e9:.4f} -> {n['f'] / 1e9:.4f} GHz]"
+                            for n in c["notches"] if n["was"] and n["f"])
+        out.append(line)
+    if not conv["ok"]:
+        out.append("  this S has not settled; raise --refine-max, or find what the mesh misses")
+    return "\n".join(out)
 
 
 def _quality(freqs, cols: dict, n: int) -> dict:
@@ -946,6 +967,9 @@ def main(argv=None) -> int:
     bd.add_argument("--points", type=int, default=201)
     bd.add_argument("--symmetric", action="store_true")
     bd.add_argument("--fine", type=float)
+    bd.add_argument("--refine", type=float, default=1.0)
+    bd.add_argument("--refine-max", type=float)
+    bd.add_argument("--no-converge", action="store_true")
     bd.add_argument("--touchstone")
     bd.add_argument("--out")
     bd.add_argument("--keep")
@@ -999,7 +1023,8 @@ def main(argv=None) -> int:
             parts[ref] = float(ohm)
         res = board_study(args.pcb, [float(v) for v in args.region.split(",")], args.port, parts,
                           args.f_max, args.f_min, args.points, args.symmetric, args.fine,
-                          args.keep, args.deck_only)
+                          args.keep, args.deck_only, args.refine, args.refine_max,
+                          not args.no_converge)
         ts = res.pop("_touchstone", None)
         if args.touchstone and ts:
             Path(args.touchstone).write_text(ts)
@@ -1025,7 +1050,14 @@ def main(argv=None) -> int:
         if not args.json or not q["ok"]:
             print(sparam.summary({**q, "file": args.touchstone or "board"}),
                   file=sys.stdout if q["ok"] else sys.stderr)
-        return 0 if q["ok"] else 1
+        conv = res.get("convergence")
+        if conv is None:
+            print("mesh convergence: not run (--no-converge): this S has not been shown to "
+                  "settle under refinement", file=sys.stderr)
+            return 0 if q["ok"] else 1
+        if not args.json or not conv["ok"]:
+            print(_convergence_summary(conv), file=sys.stdout if conv["ok"] else sys.stderr)
+        return 0 if q["ok"] and conv["ok"] else 1
 
     if args.cmd == "via":
         return _via_cmd(args, ap)
