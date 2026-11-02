@@ -36,6 +36,7 @@ Measured on this machine, 2026-10-30:
 | circuit_xspice_kicad | KiCad 10.0.6's libngspice (sim_run's engine) | the circuit_xspice decks + the OSDI divider from `.va` source | as circuit_xspice | 0.5% |
 | openems_microstrip | openEMS | Hammerstad-Jensen Z0 and ε_eff, 1.5 mm on 0.8 mm of εr 4, 1–2 GHz | −0.1% (Z0), +0.13% (ε_eff) | 2% |
 | palace_cavity | Palace + gmsh | closed 40×30×20 mm PEC box, first four modes | +0.025% worst | 0.5% |
+| palace_lshape | Palace + gmsh | L-shaped plane cavity, PEC planes, PMC edges, first four modes: Dauge benchmark 2DomA | +0.037% worst | 2% |
 | fasthenry_bar | FastHenry | 10×1×0.035 mm Cu bar: R = l/(σwt); L by Ruehli's partial self-inductance | +0.25% (L), 0.00% (R) | 2% |
 | fastercap_cube | FasterCap | isolated cube, C = 0.66067813·4πε0·a | −0.10% | 1.5% |
 | thermal_fin | thermalfv | 1D fin, θ(tip)/θ0 = cosh(m·dx/2)/cosh(mL) | +0.001% | 0.5% |
@@ -295,6 +296,32 @@ the check fails. Excite every port (its default): S = B A^-1 and the 30 mm
 thru passes (sigma_max 1.0008, no failing point, 0.125-5 GHz, tests/
 test_solvers.py). One column leaves the far 50 ohm end's reflection in it,
 about -19 dB on a thru, and that fails.
+
+## Plane cavities on real shapes (#498)
+
+`check_pdn_z` keeps the closed form on a plane that fills its bounding box and
+cuts any other shape into rectangles, joined by segmentation
+(`scripts/lib/planecav.py`). Mode frequencies come from a count of modes below a
+frequency, so a degenerate pair or a mode with a node on every port is not
+missed. `--palace-check` runs Palace eigenmode on the true polygon, with PEC
+planes and PMC open edges, which is the same physics as the modal sum.
+
+| case | reference | measured error |
+|---|---|---|
+| one rectangle, modes | closed form | under 0.001% |
+| rectangle cut in 2, then 4 off-centre, first six modes | the rectangle whole | under 0.5% at 2 and 1 mm strips |
+| L, first four modes, 50 mm squares | Dauge's benchmark 2DomA | 0.77%, 0.48%, 0.27%, 0.15% worst at 12.5, 6.25, 3.1, 1.6 mm strips |
+| right triangle, first four modes, staircase | exact sqrt(m^2 + n^2) | 2.3%, 0.8%, 0.4% worst at 16, 32, 64 cells |
+| Z12 across a join, 10 kHz to 200 MHz | `cavity_z` on the whole rectangle | under 1% (Z11 under 2%) |
+| Palace L, first four modes | Dauge's benchmark 2DomA | +0.088% worst at 6 mm mesh, +0.037% at 3 mm |
+| segmentation on network-switch's `+3V3/GND` polygons, first four modes | Palace eigenmode, 6.8 mm mesh, one mesh only | 1.4% worst |
+
+What it does not model: fringing at open edges (PMC, like the closed form); vias
+or stitching between the planes; antipad fields, which only count if they empty
+half a raster cell. Each pair's `shape.convergence` compares a run with cells and
+strips halved. A ragged pour cut up by traces does not settle: on hi-fi `core`
+the first mode of `+3V3/GND In2/B.Cu` moves 14% (warning
+segmentation_unconverged). Treat a plane like that as not yet modelled.
 
 ## What is not here yet
 

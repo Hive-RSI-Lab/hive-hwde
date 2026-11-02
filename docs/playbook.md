@@ -463,7 +463,8 @@ substitution in the spawn ledger. Never silently drop to a weaker tier.
   source behind 25 ohm, its discretes generic models (LED Vf from
   parts.json or a colour table, BJT BF=100, MOSFET level 1 at the
   part's threshold); check_irdrop injection is worst-case unless source_ref/sinks
-  declared; check_pdn_z uses bounding-rect plane geometry; its VRM and
+  declared; check_pdn_z's segmented planes (#498) leave out fringing and vias between
+  the planes, and a ragged pour may not converge (it warns); its VRM and
   package/die models are class defaults (flagged `assumed`) unless the
   constraints power entry gives `vrm` / `package` or reference/pkg_pdn.yaml
   has a verified row.
