@@ -17,7 +17,8 @@ The model:
   - the dielectric is each gap's slab (er from the stackup), lossless: a
     conductivity is a loss tangent at one frequency only, which makes a
     frequency-flat loss (0.3 dB on 50 mm at 100 MHz on vna-verify). Add
-    dielectric and conductor loss in the circuit model, not here;
+    dielectric and conductor loss with lib/emloss (`sim_solve board` does), not
+    here, or pass deck(dielectric=) for wideband poles in the deck;
   - barrels are PEC posts (square, the drill's area) between the layers
     they span;
   - a port sits on the region's edge (the region is cut at its plane): the
@@ -459,12 +460,13 @@ class _Ctx:
 
 def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None = None,
          feed_len: float | None = None, pad: float | None = None, floor: str | None = None,
-         thirds: bool = True, zcells: int = 6, extra=None, refine: float = 1.0):
+         thirds: bool = True, zcells: int = 6, extra=None, refine: float = 1.0, dielectric=None):
     """(Csx, where) for the region of `geo` (from `extract`) with `ports`
     (Port or "X,Y,DIR[,LAYER[,W]]"), the source on port `excite`. refine
     divides every cell of the mesh, in all three axes, by that factor: it
     is the knob a convergence study turns, where `fine` only moves the cells
-    at the signal's edges."""
+    at the signal's edges. dielectric(csx, i, er) -> a material name for slab
+    i (lib/emloss dielectric_props), in place of the lossless one."""
     from shapely.geometry import Polygon, box as sbox
     from shapely.ops import unary_union
     ports = [p if isinstance(p, Port) else Port.parse(p) for p in ports]
@@ -631,7 +633,7 @@ def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None 
     csx.bc = ["MUR", "MUR", "MUR", "MUR", "PEC" if floor == "pec" else "MUR", "MUR"]
     csx.fdtd["endCriteria"] = RUN_ALL_STEPS
     for i, (z0, z1, er) in enumerate(stack.slabs):
-        m = csx.material(f"slab{i}", er)
+        m = dielectric(csx, i, er) if dielectric else csx.material(f"slab{i}", er)
         csx.box(m, (dom[0], dom[1], z0), (dom[2], dom[3], z1))
     cuprop = csx.metal("copper")
     added: dict[str, list] = {}
