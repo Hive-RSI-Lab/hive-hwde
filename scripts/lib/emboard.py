@@ -457,7 +457,7 @@ class _Ctx:
 
 def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None = None,
          feed_len: float | None = None, pad: float | None = None, floor: str | None = None,
-         thirds: bool = True, zcells: int = 6, extra=None, refine: float = 1.0, coarse: float | None = None):
+         thirds: bool = True, zcells: int = 6, extra=None, refine: float = 1.0):
     """(Csx, where) for the region of `geo` (from `extract`) with `ports`
     (Port or "X,Y,DIR[,LAYER[,W]]"), the source on port `excite`. refine
     divides every cell of the mesh, in all three axes, by that factor: it
@@ -513,7 +513,7 @@ def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None 
     h_sig = min(stack.gap(p.layer, p.ref) for p in ports)
     w_min = min(p.w for p in ports)
     fine = (fine or min(w_min / 5, h_sig / 2.5, lam_min / 40)) / refine
-    coarse = (coarse or min(lam_min / 20, 3.0)) / refine
+    coarse = min(lam_min / 20, 3.0) / refine
     zcells = math.ceil(zcells * refine - 1e-9)
     feed_len = feed_len or max(lam_min / 2, 12 * h_sig)
     ctx = _Ctx(stack, region, ports, fine, coarse, lam_min)
