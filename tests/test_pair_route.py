@@ -230,6 +230,32 @@ def test_every_rung_rejected_keeps_nothing(tmp_path, monkeypatch):
     assert staged.read_text() == before
 
 
+def test_krt_timeout_fails_only_that_pair(tmp_path, monkeypatch):
+    ctx, staged, calls = _ladder_ctx(tmp_path, monkeypatch, [])
+    before = staged.read_text()
+
+    def timed_out(*a, **k):
+        raise rc.KrtTimeout("KRT route_diff.py timed out after 10s")
+
+    monkeypatch.setattr(rc, "run_krt", timed_out)
+    fact, v = rc.route_diff_item(ctx, {"p": "/A_P", "n": "/A_N",
+                                       "impedance_ohm": 100})
+    assert fact is None and v["kind"] == "critical_route_failed"
+    assert v["reason"] == "krt-timeout"
+    assert staged.read_text() == before
+
+
+def test_run_krt_timeout_raises_krt_timeout(tmp_path, monkeypatch):
+    def fake_run(args, **kw):
+        raise rc.subprocess.TimeoutExpired(args, 1)
+
+    monkeypatch.setattr(rc.subprocess, "run", fake_run)
+    with pytest.raises(rc.KrtTimeout):
+        rc.run_krt(tmp_path, "route.py", tmp_path / "b.kicad_pcb",
+                   tmp_path / "o.kicad_pcb", [], dict(rc.KICAD_DEFAULTS),
+                   tmp_path / "f", 0.05, 1)
+
+
 # ------------------------------------------------------------ check_diffpair
 
 def _breakout_board(tmp_path):
