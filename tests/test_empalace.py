@@ -200,7 +200,7 @@ def test_cli_exits_1_when_the_solvers_disagree(tmp_path, monkeypatch):
                     "eps_eff_feed": [3.3, 3.3], "seconds": 1}
         return f
     args = ["board", "--pcb", str(pcb), "--region", ",".join(map(str, reg)), "--port", PORTS[0], "--port", PORTS[1],
-            "--symmetric", "--points", "3", "--cross-check", "palace"]
+            "--symmetric", "--points", "3", "--no-converge", "--cross-check", "palace"]
     monkeypatch.setattr(eb, "study", fake_eb)
     monkeypatch.setattr(ep, "study", fake_pal(S))
     assert sim_solve.main(args) == 0

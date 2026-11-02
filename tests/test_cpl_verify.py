@@ -68,6 +68,10 @@ BOARD = "(kicad_pcb (version 20240108) " + " ".join([
     _fp("D2", "LED_SMD:LED_0603_1608Metric", 100, 10, 0,
         [("1", -0.7875, 0), ("2", 0.7875, 0)], size=(0.875, 0.95),
         layer="B.Cu"),
+    # a 0201-style land: two unnumbered paste-only pads beside the copper ones
+    _fp("C5", "aiee:C0603", 110, 10, 90,
+        [("", -0.72, 0), ("", 0.72, 0), ("1", -0.7, 0), ("2", 0.7, 0)],
+        size=(0.8, 0.9), layer="B.Cu"),
 ]) + ")"
 
 # A synthetic LED whose pad 1 is the ANODE (KiCad's LED pad 1 is the cathode).
@@ -82,7 +86,7 @@ LED_MODEL = {"lcsc": "C900001", "title": "TEST-LED", "package": "LED0603",
                       "^^0~17~3~0~K~end~~~#0000FF^^0~21~-1~0~2~start"]}
 
 LCSC = {"U1": "C116592", "U2": "C116592", "D1": "C900001", "C1": "C106245",
-        "C2": "C106675", "U3": "C116592", "C3": "C106245", "C4": "C106245",
+        "C2": "C106675", "U3": "C116592", "C3": "C106245", "C4": "C106245", "C5": "C106245",
         "D2": "C900001"}
 
 
@@ -99,7 +103,7 @@ def ws(tmp_path):
 def _cpl(**rots):
     """CPL rows at each footprint's own position (board y down -> CPL y up)."""
     pos = {"U1": 10, "U2": 20, "D1": 30, "C1": 40, "C2": 50, "X1": 60,
-           "U3": 70, "C3": 80, "C4": 90, "D2": 100}
+           "U3": 70, "C3": 80, "C4": 90, "D2": 100, "C5": 110}
     return {r: {"x": pos[r], "y": 10.0, "rot": float(v), "layer": "Top"}
             for r, v in rots.items()}
 
@@ -179,6 +183,14 @@ def test_bottom_two_pad_part_checks_its_axis(ws):
     v, _ = _verdicts(pcb, cache, _cpl(C3=0))
     assert v["C3"]["verdict"] == "wrong_rotation"
     assert sorted(v["C3"]["expected_rot"]) == [90.0, 270.0]
+
+
+def test_bottom_two_pad_part_with_paste_pads_checks_its_axis(ws):
+    """Unnumbered paste-only pads aren't pads a lead lands on: still two pads."""
+    pcb, cache = ws
+    v, _ = _verdicts(pcb, cache, _cpl(C5=90))
+    assert v["C5"]["verdict"] == "ok", v["C5"]
+    assert v["C5"]["basis"].startswith("pad axis")
 
 
 def test_bottom_part_the_mirror_decides_stays_unverified(ws):

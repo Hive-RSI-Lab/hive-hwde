@@ -22,7 +22,7 @@ right, and the board-facing studies built on them.
         two ways: a disagreement past 3% means one of them is wrong for
         this geometry. --z-target adds the error against the target.
 
-    hwde sim_solve planar --geom GEOM.json [--excite 0,1] [--f-max HZ]
+    hwde sim_solve planar --geom GEOM.json [--excite all|0,1] [--f-max HZ]
                           [--f-min HZ] [--points N] [--fine MM]
                           [--out RES.json] [--touchstone FILE] [--keep DIR]
         full-wave (openEMS) S-parameters of a planar microstrip circuit:
@@ -31,7 +31,10 @@ right, and the board-facing studies built on them.
         three voltage probes per feed. GEOM.json: {"h", "er", "tand"?,
         "polys": [[[x, y], ...], ...], "ports": [{"x", "y", "dir", "w"}]}
         (mm; dir "+x"|"-x"|"+y"|"-y", pointing out of the circuit). One
-        openEMS run per excited port, one at a time. The S it writes is
+        openEMS run per excited port, one at a time. Every port excited
+        (the default) gives S = B A^-1, exact whatever the 50 ohm ends
+        reflect; fewer gives those columns with the ends' reflection left
+        in. The S it writes is
         checked by lib/sparam (IEEE P370 passivity/reciprocity/causality,
         failing points; `quality` in the result): exit 1 when it fails.
 
@@ -42,7 +45,8 @@ right, and the board-facing studies built on them.
         custom pads as drawn) into a GEOM.json for `planar`; h/er default
         to the board's own stackup (dielectric under the layer).
 
-    hwde sim_solve board --pcb BOARD --region X0,Y0,X1,Y1
+    hwde sim_solve board --pcb BOARD --region X0,Y0,X1,Y1 [--refine R]
+                         [--refine-max R] [--no-converge]
                          --port X,Y,DIR[,LAYER[,W]] [--port ...]
                          [--part REF=OHMS ...] [--f-max HZ] [--f-min HZ]
                          [--points N] [--symmetric] [--fine MM]
@@ -463,28 +467,50 @@ def _features(freqs, s11, s21) -> dict:
 
 
 def planar(geo: dict, excites, f_max, f_min=None, points=201, fine=None, keep=None) -> dict:
+    from lib import emboard as eb
     n = len(geo["ports"])
     f_min = f_min or f_max / 40
     freqs = [f_min + (f_max - f_min) * i / (points - 1) for i in range(points)]
-    cols, runs = {}, []
+    cols, runs, kept = {}, [], []
+    scratch = tempfile.TemporaryDirectory(prefix="hwde-planar-") if not keep else None
+    full = sorted(excites) == list(range(n))
     for e in excites:
         csx, where = em.planar_deck(geo["polys"], geo["ports"], geo["h"], geo["er"], f_max,
                                     excite=e, tand=geo.get("tand", 0.0), fine=fine)
-        ctx = tempfile.TemporaryDirectory(prefix="hwde-planar-") if not keep else None
-        work = Path(keep) / f"port{e}" if keep else Path(ctx.name)
+        work = Path(keep or scratch.name) / f"port{e}"
         work.mkdir(parents=True, exist_ok=True)
-        (work / "planar.xml").write_text(csx.xml())
+        # The deck sets the record, as on the board path (#606): openEMS tests
+        # its energy only every 4 s of wall clock, so load would set the length.
+        csx.fdtd["endCriteria"] = eb.RUN_ALL_STEPS
+        csx.fdtd["NumberOfTimesteps"] = eb.record_steps({a: sorted(csx.lines[a]) for a in "xyz"},
+                                                        f_max, geo["er"])
         t0 = time.time()
-        r = solvers.run("openems", ["planar.xml"], cwd=work, timeout=4 * 3600)
-        if r.returncode:
-            raise solvers.SolverError(f"openEMS exited {r.returncode} in {work}: "
-                                      f"{(r.stdout + r.stderr)[-400:]}")
-        if not (work / f"p{e}u0").exists():
-            raise solvers.SolverError(f"openEMS wrote no probes: {(r.stdout + r.stderr)[-400:]}")
-        cols[e] = em.planar_sparams(work, where, e, freqs)
-        runs.append({"excite": e, "cells": where["cells"], "seconds": round(time.time() - t0, 1)})
-        if ctx:
-            ctx.cleanup()
+        while True:
+            (work / "planar.xml").write_text(csx.xml())
+            r = solvers.run("openems", ["planar.xml"], cwd=work, timeout=4 * 3600)
+            if r.returncode:
+                raise solvers.SolverError(f"openEMS exited {r.returncode} in {work}: "
+                                          f"{(r.stdout + r.stderr)[-400:]}")
+            if not (work / f"p{e}u0").exists():
+                raise solvers.SolverError(f"openEMS wrote no probes: {(r.stdout + r.stderr)[-400:]}")
+            tail = eb.record_tail(work, where)
+            steps = csx.fdtd["NumberOfTimesteps"]
+            if tail <= eb.TAIL_MAX or steps >= eb.STEPS_MAX:
+                break
+            csx.fdtd["NumberOfTimesteps"] = min(eb.STEPS_MAX, 2 * steps)
+        if not full:
+            cols[e] = em.planar_sparams(work, where, e, freqs)
+        kept.append((e, work))
+        runs.append({"excite": e, "cells": where["cells"], "steps": steps, "tail": tail,
+                     "seconds": round(time.time() - t0, 1)})
+    if full:
+        sims = [w for _, w in sorted(kept)]
+        cols = em.planar_s_matrix(sims, where, freqs)
+        # the fitted feed phase: passivity can't see it with alpha held
+        feed_eps = [[round((g.imag * em.C0 / (2 * math.pi * f)) ** 2, 4) for g, f in zip(gam, freqs)]
+                    for gam in em.planar_gammas(sims, where, freqs)]
+    if scratch:
+        scratch.cleanup()
     e0 = excites[0]
     s11 = [c[e0] for c in cols[e0]]
     s21 = [c[1 - e0] for c in cols[e0]] if n == 2 else None
@@ -495,13 +521,17 @@ def planar(geo: dict, excites, f_max, f_min=None, points=201, fine=None, keep=No
            "features": _features(freqs, s11, s21),
            "quality": _quality(freqs, cols, n),
            "_touchstone": em.touchstone(freqs, cols, n)}
+    if full:
+        res["feed_eps_eff"] = feed_eps  # per port, per frequency
     return res
 
 
 def board_study(pcb, region, ports, parts=None, f_max=6e9, f_min=None, points=201,
-                symmetric=False, fine=None, keep=None, deck_only=None, cross_check=None,
+                symmetric=False, fine=None, keep=None, deck_only=None,
+                refine=1.0, refine_max=None, converge=True, cross_check=None,
                 cross_refine=1.0, cross_order=2, cross_np=4, cross_timeout=3600) -> dict:
-    """`hwde sim_solve board`: extract -> deck -> openEMS -> S (lib/emboard).
+    """`hwde sim_solve board`: extract -> deck -> openEMS -> S (lib/emboard),
+    refining the mesh until two runs agree unless converge is False.
     cross_check="palace" solves the same deck's geometry by FEM (lib/empalace)
     and adds the verdict as res["cross_check"]."""
     from lib import emboard as eb
@@ -512,14 +542,20 @@ def board_study(pcb, region, ports, parts=None, f_max=6e9, f_min=None, points=20
         n = len(ports)
         decks = []
         for e in ([0] if symmetric and n == 2 else range(n)):
-            csx, where = eb.deck(geo, ports, f_max, e, fine=fine)
+            csx, where = eb.deck(geo, ports, f_max, e, fine=fine, refine=refine)
             d = out / f"port{e}"
             d.mkdir(exist_ok=True)
             (d / "deck.xml").write_text(csx.xml())
             (d / "where.json").write_text(json.dumps(where, indent=1) + "\n")
             decks.append({"excite": e, "dir": str(d), "cells": where["cells"], "mesh": where["mesh"]})
         return {"script": SCRIPT, "cmd": "board", "decks": decks, "ports": where["ports"]}
-    res = eb.study(geo, ports, f_max, f_min, points, symmetric=symmetric, keep=keep, fine=fine)
+    if converge:
+        res = eb.study_converged(geo, ports, f_max, f_min, points, refine=refine,
+                                 refine_max=refine_max or eb.REFINE_MAX, keep=keep,
+                                 symmetric=symmetric, fine=fine)
+    else:
+        res = eb.study(geo, ports, f_max, f_min, points, symmetric=symmetric, keep=keep,
+                       fine=fine, refine=refine)
     S, freqs = res.pop("S"), res["freqs"]
     n = len(res["ports"])
     res["s"] = {f"S{i + 1}{j + 1}": [[round(s[i][j].real, 6), round(s[i][j].imag, 6)] for s in S]
@@ -544,6 +580,24 @@ def board_study(pcb, region, ports, parts=None, f_max=6e9, f_min=None, points=20
                                                       names=("Palace lumped", "openEMS"))["terms"]
         res["cross_check"] = verdict
     return res
+
+
+def _convergence_summary(conv: dict) -> str:
+    """The convergence table, and the verdict against its tolerances."""
+    t = conv["tol"]
+    out = [f"mesh convergence: {'ok' if conv['ok'] else 'FAIL'} (limits |dS| {t['ds']}, "
+           f"notch {t['notch_pct']} %, against the previous mesh)"]
+    for r in conv["steps"]:
+        line = f"  refine {r['refine']:g}: {r['cells']} cells, {r['seconds']} s"
+        c = r.get("compare")
+        if c:
+            line += f": |dS| {c['ds']}, notch {c['notch_pct']} %"
+            line += "".join(f" [{n['was'] / 1e9:.4f} -> {n['f'] / 1e9:.4f} GHz]"
+                            for n in c["notches"] if n["was"] and n["f"])
+        out.append(line)
+    if not conv["ok"]:
+        out.append("  this S has not settled; raise --refine-max, or find what the mesh misses")
+    return "\n".join(out)
 
 
 def _quality(freqs, cols: dict, n: int) -> dict:
@@ -791,7 +845,7 @@ def main(argv=None) -> int:
     ln.add_argument("--json", action="store_true")
     pl = sub.add_parser("planar")
     pl.add_argument("--geom", required=True)
-    pl.add_argument("--excite", default="0")
+    pl.add_argument("--excite", default="all")
     pl.add_argument("--f-max", type=float, default=6e9)
     pl.add_argument("--f-min", type=float)
     pl.add_argument("--points", type=int, default=201)
@@ -819,6 +873,9 @@ def main(argv=None) -> int:
     bd.add_argument("--points", type=int, default=201)
     bd.add_argument("--symmetric", action="store_true")
     bd.add_argument("--fine", type=float)
+    bd.add_argument("--refine", type=float, default=1.0)
+    bd.add_argument("--refine-max", type=float)
+    bd.add_argument("--no-converge", action="store_true")
     bd.add_argument("--touchstone")
     bd.add_argument("--out")
     bd.add_argument("--keep")
@@ -839,7 +896,8 @@ def main(argv=None) -> int:
             parts[ref] = float(ohm)
         res = board_study(args.pcb, [float(v) for v in args.region.split(",")], args.port, parts,
                           args.f_max, args.f_min, args.points, args.symmetric, args.fine,
-                          args.keep, args.deck_only, args.cross_check, args.cross_refine,
+                          args.keep, args.deck_only, args.refine, args.refine_max,
+                          not args.no_converge, args.cross_check, args.cross_refine,
                           args.cross_order, args.cross_np, args.cross_timeout)
         ts = res.pop("_touchstone", None)
         if args.touchstone and ts:
@@ -877,11 +935,21 @@ def main(argv=None) -> int:
                 print(f"  {name}: rms |dS| {t.get('rms_ds_off_notch', t['rms_ds'])}, worst {t['max_ds']}{extra}")
         for why in (cc or {}).get("disagree", []):
             print(f"cross-check: {why}", file=sys.stderr)
-        return 0 if q["ok"] and (not cc or cc["ok"]) else 1
+        ok = q["ok"] and (not cc or cc["ok"])
+        conv = res.get("convergence")
+        if conv is None:
+            print("mesh convergence: not run (--no-converge): this S has not been shown to "
+                  "settle under refinement", file=sys.stderr)
+            return 0 if ok else 1
+        if not args.json or not conv["ok"]:
+            print(_convergence_summary(conv), file=sys.stdout if conv["ok"] else sys.stderr)
+        return 0 if ok and conv["ok"] else 1
 
     if args.cmd == "planar":
         geo = json.loads(Path(args.geom).read_text())
-        res = planar(geo, [int(k) for k in args.excite.split(",")], args.f_max,
+        excites = (list(range(len(geo["ports"]))) if args.excite == "all"
+                   else [int(k) for k in args.excite.split(",")])
+        res = planar(geo, excites, args.f_max,
                      args.f_min, args.points, args.fine, args.keep)
         if args.touchstone:
             Path(args.touchstone).write_text(res.pop("_touchstone"))
