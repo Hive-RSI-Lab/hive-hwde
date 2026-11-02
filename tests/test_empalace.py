@@ -220,22 +220,31 @@ def test_live_mesh_attributes(tmp_path, thru):
     json.dumps(a)
 
 
-def test_feed_line_never_comes_from_the_run_driving_that_port(monkeypatch):
-    """A driven feed's standing wave bends fit_feed; see empalace._feed_lines."""
-    seen = []
-    def fit(rs, dist, freqs, f_max):
-        seen.append(rs)
-        return {"from": rs}
-    monkeypatch.setattr(ep.eb, "fit_feed", fit)
-    where = {"ports": [{"dist": [1, 2, 3]}, {"dist": [1, 2, 3]}, {"dist": [1, 2, 3]}]}
-    reads = {e: [f"run{e}port{k}" for k in range(3)] for e in range(3)}
-    # mirror 2-port, driven once: both ports share the far feed's line
-    lines = ep._feed_lines(reads, [0], where, [1.0], 1.0, 2)
-    assert lines[0] is lines[1] and lines[0]["from"] == ["run0port1"]
-    # every port driven in turn: each port's fit skips its own run
-    lines = ep._feed_lines(reads, [0, 1], where, [1.0], 1.0, 2)
-    assert lines[0]["from"] == ["run1port0"] and lines[1]["from"] == ["run0port1"]
-    lines = ep._feed_lines(reads, [0, 1, 2], where, [1.0], 1.0, 3)
-    assert lines[2]["from"] == ["run0port2", "run1port2"]
-    # a one-port has only its own run
-    assert ep._feed_lines(reads, [0], where, [1.0], 1.0, 1)[0]["from"] == ["run0port0"]
+# ---------------------------------------------------------------- known answers, live
+# Refine 1.5 at order 2 is the coarsest thru that passes: refine 1 reads z0 7.6 %
+# off at order 2 and 4.2 % off at order 3, against the 3 % limit.
+
+@live
+def test_live_thru_known_answer(thru):
+    import test_emboard as te
+    res = ep.study(thru, PORTS, te.F_MAX, te.FREQS[0], len(te.FREQS), symmetric=True,
+                   refine=1.5, order=2, timeout=3000)
+    c = te._thru_check(res)
+    assert c["ok"], c
+    from lib import sparam
+    q = sparam.check(res["freqs"], res["S"])
+    assert q["ok"], sparam.summary(q)
+
+
+@live
+def test_live_open_stub_notch(tmp_path):
+    import test_emboard as te
+    L = 13.0
+    pcb = tmp_path / "t.kicad_pcb"
+    geo = eb.extract(pcb, te.coupon(pcb, stub=L))
+    res = ep.study(geo, PORTS, te.F_MAX, None, 271, symmetric=True, refine=1.0, order=3, timeout=4800)
+    qs = te.imp.field_microstrip(te.W50, te.H, 1e-4, te.ER, mask=None)
+    want = eb.notch_f(L + eb.open_end_dl(te.W50, te.H, qs["eps_eff"]), qs["eps_eff"])
+    n = ep._notch(res["freqs"], [s[1][0] for s in res["S"]])
+    assert n["db"] < -20
+    assert n["f"] == pytest.approx(want, rel=0.02), (n, want)

@@ -529,7 +529,7 @@ def planar(geo: dict, excites, f_max, f_min=None, points=201, fine=None, keep=No
 def board_study(pcb, region, ports, parts=None, f_max=6e9, f_min=None, points=201,
                 symmetric=False, fine=None, keep=None, deck_only=None,
                 refine=1.0, refine_max=None, converge=True, cross_check=None,
-                cross_refine=1.0, cross_order=2, cross_np=4, cross_timeout=3600) -> dict:
+                cross_refine=1.0, cross_order=3, cross_np=4, cross_timeout=3600) -> dict:
     """`hwde sim_solve board`: extract -> deck -> openEMS -> S (lib/emboard),
     refining the mesh until two runs agree unless converge is False.
     cross_check="palace" solves the same deck's geometry by FEM (lib/empalace)
@@ -883,7 +883,7 @@ def main(argv=None) -> int:
     bd.add_argument("--cross-check", choices=["palace"],
                     help="solve it by a second solver too; exit 1 when they disagree")
     bd.add_argument("--cross-refine", type=float, default=1.0)
-    bd.add_argument("--cross-order", type=int, default=2)
+    bd.add_argument("--cross-order", type=int, default=3)
     bd.add_argument("--cross-np", type=int, default=4)
     bd.add_argument("--cross-timeout", type=float, default=3600)
     bd.add_argument("--json", action="store_true")
