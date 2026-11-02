@@ -150,8 +150,8 @@ machine.
   2. MUR walls, never PML_8 (it grew without bound there);
   3. a derivative-of-Gaussian pulse (`Csx.dgauss`: no DC, f0 = f_max as
      the probe sampling rate).
-  The dielectric is lossless, because a conductivity is a loss tangent at
-  one frequency only; add dielectric and copper loss in the circuit model.
+  The deck's dielectric is lossless, because a conductivity is a loss
+  tangent at one frequency only; the loss goes on afterwards (below).
   The mesh uses openEMS's thirds rule on the signal's edges: a line on the
   edge read 48.2 Ω for a 50 Ω line, the thirds rule reads 50.6–51.1 Ω.
   Known answers (tests/test_emboard.py, test-slow; synthetic 2-layer
@@ -221,8 +221,45 @@ machine.
   Hooks for 3D studies (#479, #481): `deck(..., extra=fn)` gets the Csx
   and a context (stack, ports, fixed/pinned mesh lines) before the mesh
   is smoothed. Limits: ports must be axis-aligned on the region's edge;
-  connector bodies (SMA) are not modelled (#479); no loss.
+  connector bodies (SMA) are not modelled (#479).
   `waves` and `port_vi` still read per frequency; `study` doesn't use them.
+
+- **Loss on `planar` and `board` (#553, `lib/emloss.py`).** Both Touchstones
+  now carry loss by default. `--loss line` adds it per port's uniform section,
+  `--loss none` gives the old lossless S, and `board --loss deck` puts the
+  dielectric in the deck as overdamped Lorentz poles fitted to the model, so
+  stubs and resonators lose too (the conductor still goes on per section).
+  `--foil std|rtf|vlp|hvlp|smooth`, `--roughness hammerstad|huray`,
+  `--loss-length L1,L2`. The result's `loss` and the Touchstone's comments say
+  what went on.
+  - Dielectric: Djordjevic-Sarkar from er and tan δ at one frequency (`DS`);
+    tan δ comes from the board's stackup block, by height across a gap, at
+    1 GHz, or 10 GHz for Rogers (`df_ref_hz`). No value in the block: 0.02,
+    with a warning.
+  - Conductor: `Rdc sqrt(1 + j f/fc)` with Wheeler's incremental-inductance
+    factor from the field solver; roughness multiplies R and the reactance
+    that goes with it comes from a Kramers-Kronig integral (`causal_x`).
+  - Applied as lossy(l) · lossless(l)⁻¹ at each port, with a through path split
+    l/2, l/2 (measured on the copper). On a uniform line that is exactly the
+    lossy line. **Copper off the through path keeps its lossless Q** in `line`
+    mode (a warning says how much): a notch or filter's depth is still
+    overstated by the conductor, and by the dielectric unless `--loss deck`.
+  - **Assumed, not measured:** no fab here publishes its foil, so `std` (rms
+    2 µm) is a typical value and `foil_assumed` says so; FR-4's tan δ 0.02 in
+    stackups.yaml is also assumed. Not modelled: solder mask, roughness per
+    surface, return-current crowding in the plane below about 3 MHz (up to 40%
+    of a 0.2 Ω/m R, nothing at RF).
+  Known answers (tests/test_emloss.py):
+  | case | measured | tolerance |
+  |---|---|---|
+  | DS from FR408HR's 3.68 / 0.0092 at 2 GHz vs its table at 0.1–10 GHz (Isola's values as listed on Knowde, a secondary source) | Dk within 0.7%; Df within 7% from 1 GHz (at 100 MHz 26%: the laminate's Df falls, DS's does not) | 1%, 7%, 30% |
+  | Kramers-Kronig on DS, 10 MHz–60 GHz | ε′ within 2e-3 (7e-5 at 0.1–10 GHz) | 2e-3 |
+  | α_d, 3.06 mm on 1.6 mm of 4.4, tan δ 0.02 at 1 GHz | 2.98 dB/m vs Pozar's 3.01 (field solver's true filling factor vs the secant) | 2% |
+  | smooth α_c vs Wheeler on Hammerstad-Jensen's closed form with thickness, 4 geometries | within 4% | 10% |
+  | series R vs FastHenry (live) | 1 kHz: the two Rdc's exactly; 10 MHz +2%, 100 MHz −10% | 1%, 15% |
+  | vna-verify thru, dielectric vs its bands.py (no openEMS) | within 0.6%; rough copper adds 0.27 dB to 0.47 dB at 4.4 GHz on 40 mm | 2% |
+  | add_line_loss on a lossless line's S vs the lossy line's | 1e-15 | 1e-12 |
+  | planted tan δ ×10 | 10× the dielectric dB | 3% |
 
 ## S-parameter files: quality and macromodel (#483)
 

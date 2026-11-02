@@ -196,6 +196,26 @@ def test_100mm_of_fr4_at_6ghz_is_the_issues_loss():
     assert 1.0 < -20 * math.log10(abs(got[0, 1, 0])) < 3.0
 
 
+def test_vna_verify_thru_vs_its_circuit_model():
+    """hw-lab vna-verify's bands.py: 40 mm CPWG 0.43/0.25 on 0.2444 mm of 3.91
+    (JLC04161H-1080B), Z0 53.05, eps_eff 2.851, alpha = pi f sqrt(ee)/c q tand with
+    a flat tan d 0.02 and no conductor. DS's Df is about flat over this
+    band, so the dielectric parts agree; the copper is what that model lacks."""
+    z_ref, ee_ref, er, tand, l_m = 53.05, 2.851, 3.91, 0.02, 0.04
+    s = L.section(0.43, 0.2444, er, tand, g=0.25, foil="std", t=0.035)
+    s0 = L.section(0.43, 0.2444, er, tand, g=0.25, t=1e-4, foil="smooth")
+    assert s0["z0"] == pytest.approx(z_ref, abs=0.1)
+    assert s0["eps_eff"] == pytest.approx(ee_ref, abs=0.01)
+    q = er * (ee_ref - 1) / (ee_ref * (er - 1))
+    f = np.array([5e8, 1e9, 2e9, 4.4e9])
+    bands = L.NP_TO_DB * np.pi * f * math.sqrt(ee_ref) / L.C0 * q * tand * l_m
+    assert L.alpha_db_per_m(s0, f, True, False) * l_m == pytest.approx(bands, rel=0.02)
+    copper = L.alpha_db_per_m(s, f, False, True) * l_m
+    assert (copper > 0.1 * bands).all()     # a real part of the loss that model lacks
+    # 0.47 dB dielectric + 0.27 dB rough copper at 4.4 GHz
+    assert L.alpha_db_per_m(s, [4.4e9])[0] * l_m == pytest.approx(0.72, abs=0.05)
+
+
 def test_planted_tan_d_x10_gives_the_matching_extra_db():
     f = np.array([1e9, 6e9])
     one, ten = [L.alpha_db_per_m(L.section(0.96, 0.5, 4.4, t_, foil="smooth"), f, True, False)
