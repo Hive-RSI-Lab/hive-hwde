@@ -545,6 +545,45 @@ def palace_eigen_config(mesh: str, n: int, target_ghz: float,
     }
 
 
+def plane_slab_geo(rings, d: float, size: float) -> str:
+    """A gmsh .geo for one plane-pair cavity: the polygon `rings` (exterior,
+    then holes, each [(x, y), ...] in mm, not closed) extruded through d in one
+    layer of prisms. Volume 1; the two planes 2; the open edges 3. Hole edges
+    are open edges too, since a cut-out in a plane is a magnetic wall."""
+    out, pt, ln, loops = ['SetFactory("Built-in");'], 1, 1, []
+    for k, ring in enumerate(rings):
+        first_pt, first_ln = pt, ln
+        for x, y in ring:
+            out.append(f"Point({pt}) = {{{x!r}, {y!r}, 0, {size!r}}};")
+            pt += 1
+        count = len(ring)
+        for i in range(count):
+            out.append(f"Line({ln}) = {{{first_pt + i}, "
+                       f"{first_pt + (i + 1) % count}}};")
+            ln += 1
+        ids = ", ".join(str(first_ln + i) for i in range(count))
+        out.append(f"Curve Loop({k + 1}) = {{{ids}}};")
+        loops.append(k + 1)
+    out.append(f"Plane Surface(1) = {{{', '.join(map(str, loops))}}};")
+    out.append(f"out[] = Extrude {{0, 0, {d!r}}} "
+               "{ Surface{1}; Layers{1}; Recombine; };")
+    out += ['Physical Volume("dielectric", 1) = {out[1]};',
+            'Physical Surface("planes", 2) = {1, out[0]};',
+            'Physical Surface("edges", 3) = {out[{2:#out[]-1}]};',
+            f"Mesh.MeshSizeMax = {size!r};", "Mesh.ElementOrder = 1;",
+            "Mesh.MshFileVersion = 2.2;"]
+    return "\n".join(out) + "\n"
+
+
+def palace_plane_config(mesh: str, n: int, target_ghz: float, eps_r: float,
+                        order: int = 2) -> dict:
+    """The closed plane cavity: PEC planes, PMC open edges, as in the modal
+    sum of lib/planecav.py."""
+    cfg = palace_eigen_config(mesh, n, target_ghz, eps_r, order)
+    cfg["Boundaries"] = {"PEC": {"Attributes": [2]}, "PMC": {"Attributes": [3]}}
+    return cfg
+
+
 def palace_eigs(postpro: Path) -> list[float]:
     """Re{f} in GHz from Palace's postpro/eig.csv, ascending."""
     rows = Path(postpro, "eig.csv").read_text().splitlines()

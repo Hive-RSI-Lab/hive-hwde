@@ -73,6 +73,8 @@ The cases (docs/solvers.md has the measured errors):
                         Hammerstad-Jensen), 1.5 mm on 0.8 mm of er 4
     palace_cavity       Palace eigenmodes of a 40x30x20 mm PEC box vs
                         f = c/2 sqrt((m/a)^2 + (n/b)^2 + (p/d)^2)
+    palace_lshape       Palace eigenmodes of an L-shaped plane cavity (PEC
+                        planes, PMC edges) vs Dauge's published benchmark
     fasthenry_bar       a 10 x 1 x 0.035 mm copper bar: R = l/(sigma w t),
                         L vs Ruehli's partial self-inductance
     fasthenry_pair      two parallel 10 x 0.2 x 0.035 mm bars 0.2 mm apart:
@@ -595,6 +597,60 @@ def case_palace_cavity(work: Path) -> dict:
                   seconds=round(time.time() - t0, 1))
 
 
+# Neumann eigenvalues of the L of three unit squares, corners (0,0) (1,0) (1,1)
+# (-1,1) (-1,-1) (0,-1): Dauge's Maxwell benchmark, domain 2DomA
+# (dauge.pages.math.cnrs.fr/benchmax.html), 11 digits claimed. The third and
+# fourth are pi^2 exactly.
+DAUGE_L = (1.47562182408, 3.53403136678, 9.86960440109, 9.86960440109)
+L_SIDE_MM = 50.0
+
+
+def dauge_l_ghz(side_mm: float = L_SIDE_MM, eps_r: float = 1.0) -> list[float]:
+    return [math.sqrt(v) / (side_mm * 1e-3) * em.C0 / (2 * math.pi)
+            / math.sqrt(eps_r) * 1e-9 for v in DAUGE_L]
+
+
+def l_polygon(side_mm: float = L_SIDE_MM):
+    from shapely.geometry import Polygon  # noqa: PLC0415
+    s = side_mm
+    return Polygon([(0, 0), (2 * s, 0), (2 * s, s), (s, s), (s, 2 * s), (0, 2 * s)])
+
+
+def palace_plane_modes(work: Path, poly, eps_r: float, n: int, f1_ghz: float,
+                       size: float, order: int = 2, timeout: int = 1800) -> dict:
+    """Palace eigenmodes of one plane cavity: {f_ghz, seconds, size, order}.
+    The slab is one mesh cell thick: its modes are uniform in z, so they do not
+    depend on the thickness, and a real 0.2 mm gap only spoils the elements."""
+    work.mkdir(parents=True, exist_ok=True)
+    rings = [list(poly.exterior.coords)[:-1]] + [list(r.coords)[:-1]
+                                                 for r in poly.interiors]
+    (work / "plane.geo").write_text(em.plane_slab_geo(rings, size, size))
+    r = solvers.run("gmsh", ["plane.geo", "-3", "-o", "plane.msh"], cwd=work,
+                    timeout=min(timeout, 600))
+    if not (work / "plane.msh").exists():
+        raise solvers.SolverError(f"gmsh: {(r.stdout + r.stderr)[-300:]}")
+    (work / "plane.json").write_text(json.dumps(
+        em.palace_plane_config("plane.msh", n + 1, f1_ghz * 0.8, eps_r, order),
+        indent=1))
+    t0 = time.time()
+    r = solvers.run("palace", ["plane.json"], cwd=work, timeout=timeout)
+    if not (work / "postpro" / "eig.csv").exists():
+        raise solvers.SolverError(f"Palace: {(r.stdout + r.stderr)[-400:]}")
+    # The uniform E_z mode sits at 0 and may come back: it is not one of ours.
+    got = [f for f in em.palace_eigs(work / "postpro") if f > 0.3 * f1_ghz][:n]
+    return {"f_ghz": got, "seconds": round(time.time() - t0, 1),
+            "size_mm": size, "order": order}
+
+
+def case_palace_lshape(work: Path) -> dict:
+    ref = dauge_l_ghz()
+    got = palace_plane_modes(work, l_polygon(), 1.0, len(ref), ref[0], 6.0)
+    return _worst("palace_lshape", "palace", "eigenfrequency (GHz)",
+                  list(zip(got["f_ghz"], ref)), 2.0,
+                  "L-shaped plane cavity, PMC edges: Dauge benchmark 2DomA",
+                  seconds=got["seconds"])
+
+
 # ---------------------------------------------------------------- extraction
 
 BAR = (10.0, 1.0, 0.035)
@@ -704,6 +760,7 @@ CASES = {
     "circuit_xspice_kicad": (None, case_circuit_xspice_kicad),
     "openems_microstrip": ("openems", case_openems_microstrip),
     "palace_cavity": ("palace", case_palace_cavity),
+    "palace_lshape": ("palace", case_palace_lshape),
     "fasthenry_bar": ("fasthenry", case_fasthenry_bar),
     "fasthenry_pair": ("fasthenry", case_fasthenry_pair),
     "fastercap_cube": ("fastercap", case_fastercap_cube),
@@ -711,7 +768,7 @@ CASES = {
     "thermal_point": (None, case_thermal_point),
     "electrothermal": (None, case_electrothermal),
 }
-NEEDS = {"palace_cavity": ("gmsh",), "circuit_osdi": ("ngspice",)}
+NEEDS = {"palace_cavity": ("gmsh",), "palace_lshape": ("gmsh",), "circuit_osdi": ("ngspice",)}
 
 
 def validate(only=None, strict=False) -> dict:
