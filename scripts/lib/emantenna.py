@@ -27,8 +27,8 @@ The model:
   - the NF2FF box sits 4 cells inside the PML, in the air, around everything.
     The dump is in the frequency domain at the `pattern` frequencies;
   - steps are set by the deck, not by the energy criterion (openEMS tests that
-    only at its wall-clock progress report, #585), and doubled until the
-    probes have rung down.
+    only at its wall-clock progress report, #585). A record that has not rung
+    down is rerun with the steps its own decay says it needs (`_steps_needed`).
 
 The mesh's `fine` is the real cell over the whole of the antenna's own copper
 (not only near its edges), with openEMS's thirds rule on its axis-aligned
@@ -52,7 +52,7 @@ C0 = em.C0
 ZREF = 50.0
 PML_CELLS = 8
 NF2FF_INSET = 4         # cells between the PML and the NF2FF box
-RECORD_TRANSITS = 8     # corner-to-corner trips of the domain after the pulse
+RECORD_TRANSITS = 3     # corner-to-corner trips of the domain after the pulse
 TAIL_MAX = 1e-3         # the last tenth of a record against its peak
 STEPS_MAX = 600000
 FACES = ("xn", "xp", "yn", "yp", "zn", "zp")
@@ -482,6 +482,28 @@ def record_tail(sim: Path) -> float:
     return worst
 
 
+def _steps_needed(sim: Path, steps: int) -> int:
+    """Steps for the last tenth of the record to reach TAIL_MAX, from the decay
+    of the feed's envelope over the record's second half, with a margin. Between
+    1.25 and 4 times `steps`; twice `steps` if the record has no decay to read."""
+    import numpy as np
+    need = 0.0
+    for name in ("ut", "it"):
+        v = np.abs(em.read_probe(sim / name)[1])
+        n = v.size // 10
+        pk = float(v.max()) if v.size else 0.0
+        if not n or not pk:
+            return 2 * steps
+        late, early = float(v[-n:].max()), float(v[-5 * n:-4 * n].max())
+        if late <= TAIL_MAX * pk:
+            continue
+        if not 0 < late < early:
+            return 2 * steps
+        per_step = math.log(early / late) / (0.4 * steps)
+        need = max(need, steps + math.log(late / (TAIL_MAX * pk)) / per_step)
+    return math.ceil(max(1.25 * steps, min(4 * steps, 1.2 * need)))
+
+
 def nf2ff_xml(where: dict, freqs, dtheta: float = 5.0, dphi: float = 5.0) -> str:
     """The nf2ff tool's input: every plane found by name, theta and phi in
     radians, phase centre in metres."""
@@ -639,7 +661,7 @@ def study(geo: dict, feed, band, *, f_points: int = 401, pattern=None, fine=None
         if tail <= TAIL_MAX or steps >= STEPS_MAX:
             break
         prev = tail
-        csx.fdtd["NumberOfTimesteps"] = min(STEPS_MAX, 2 * steps)
+        csx.fdtd["NumberOfTimesteps"] = min(STEPS_MAX, _steps_needed(work, steps))
     (work / "nf2ff_in.xml").write_text(nf2ff_xml(where, pat))
     r = solvers.run("nf2ff", ["nf2ff_in.xml"], cwd=work, timeout=1800)
     if not (work / "nf2ff.h5").exists():

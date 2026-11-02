@@ -119,6 +119,27 @@ def test_cell_limit():
         ea.deck(geo, feed, F, F / 2, [F], fine=0.5, max_cells=1000)
 
 
+def _write_probe(path, values):
+    path.write_text("".join(f"{i * 1e-11:.6e}\t{v:.6e}\n" for i, v in enumerate(values)))
+
+
+def test_steps_needed_reads_the_decay_of_the_record(tmp_path):
+    """e^-(i/50) over 400 samples ends at 3.4e-4 of its peak: already rung
+    down, or nearly, in a short record it takes the decay's own steps."""
+    vals = [math.exp(-i / 50) for i in range(200)]     # last tenth starts at 3.4e-2 ... 1.8e-2
+    _write_probe(tmp_path / "ut", vals)
+    _write_probe(tmp_path / "it", vals)
+    # 200 samples for 2000 steps: 1/e per 500 steps; 3.4e-2 -> 1e-3 is 3.5 e-folds
+    got = ea._steps_needed(tmp_path, 2000)
+    assert 2000 + 3.5 * 500 < got < 1.3 * (2000 + 3.6 * 500)
+
+
+def test_steps_needed_with_nothing_to_read_doubles(tmp_path):
+    _write_probe(tmp_path / "ut", [1.0] * 200)
+    _write_probe(tmp_path / "it", [1.0] * 200)
+    assert ea._steps_needed(tmp_path, 2000) == 4000
+
+
 def test_nf2ff_input_names_all_faces_in_radians():
     text = ea.nf2ff_xml({"nf2ff_center": [0.0, 0.0, 0.0]}, [1e9], 45, 90)
     assert text.count("<Planes") == 6 and 'freq="1000000000.0"' in text
