@@ -730,7 +730,10 @@ def dsn_add_spans(dsn_text: str, spans: list[tuple[int, int, float, float]]
     the netclass's through via and the vias already on the board, so each span
     (i, j, size mm, drill mm) gets a padstack in the library, a place in the
     structure's (via ...) list and in each class's use_via. Returns (text,
-    padstack names added). The class's own via stays first and usable."""
+    padstack names added). The spans go ahead of the through via: Freerouting
+    2.2.4 takes these lists in order, and with the spans behind it placed no
+    span at all (UFBGA-64 fixture: 0 of 32 vias; ahead, 14 of 44 and six fewer
+    nets left unrouted). The class's own via stays usable, last."""
     layers = dsn_layer_names(dsn_text)
     if not layers or "(unit um)" not in dsn_text:
         return dsn_text, []
@@ -754,8 +757,8 @@ def dsn_add_spans(dsn_text: str, spans: list[tuple[int, int, float, float]]
 
     def extend(m):
         got = re.findall(r'"([^"]+)"', m.group(2))
-        more = [n for n in every if n not in got]
-        return m.group(1) + m.group(2) + "".join(f' "{n}"' for n in more) + m.group(3)
+        rest = [n for n in got if n not in every]
+        return m.group(1) + " ".join(f'"{n}"' for n in every + rest) + m.group(3)
 
     text = re.sub(r'(\(via\s+)("[^"]*_um"(?:\s+"[^"]*_um")*)(\s*\))', extend, text, count=1)
     text = re.sub(r'(\(use_via\s+)("[^"]*_um"(?:\s+"[^"]*_um")*)(\s*\))', extend, text)
