@@ -390,15 +390,8 @@ def study(geo, ports, f_max, f_min=None, points=201, symmetric=False, excites=No
         raw[e] = read_port_s(d / "postpro" / "port-S.csv", e, n)
         info.append({"excite": e, "tets": attrs["tets"], "order": order, "refine": refine,
                      "seconds": round(time.time() - t1, 1)})
-    lines = [eb.fit_feed([reads[e][k] for e in excites], where["ports"][k]["dist"], freqs, f_max) for k in range(n)]
-    vi = {e: [eb.feed_vi(reads[e][k], where["ports"][k]["dist"], freqs, lines[k]) for k in range(n)]
-          for e in excites}
-    wv = {e: [[((vi[e][k][m]["v"] + eb.ZREF * vi[e][k][m]["i"]) / 2,
-                (vi[e][k][m]["v"] - eb.ZREF * vi[e][k][m]["i"]) / 2) for k in range(n)]
-              for m in range(len(freqs))] for e in excites}
-    S = eb.sparams(wv, n, symmetric)
-    end = [_port_end(spec, where, k) for k in range(n)]
-    lumped = eb.sparams(_shifted_waves(raw, lines, end, freqs, n), n, symmetric)
+    post = _post(reads, raw, spec, where, excites, freqs, f_max, n, symmetric)
+    lines, S, lumped = post["lines"], post["S"], post["S_lumped"]
     mid = min(range(len(freqs)), key=lambda m: abs(freqs[m] - f_max / 2))
     if tmp:
         tmp.cleanup()
@@ -407,6 +400,35 @@ def study(geo, ports, f_max, f_min=None, points=201, symmetric=False, excites=No
             "z_feed": [round(ln["z"][mid], 2) for ln in lines],
             "eps_eff_feed": [round(ln["eps_eff"][mid], 3) for ln in lines],
             "feeds": [{"z_rms": round(ln["z_rms"], 3), "eps_rms": round(ln["eps_rms"], 4)} for ln in lines]}
+
+
+def _feed_lines(reads, excites, where, freqs, f_max, n) -> list[dict]:
+    """Each port's fitted feed line, from the runs that don't drive that port.
+    A driven feed carries a standing wave, and its large terms near a stopband
+    pull fit_feed's polynomial: on F5 refine 1.5, port 0 read 49.9 ohm raw at
+    0.82 GHz and fitted to 40.7, which broke S11/S21 quadrature by 8 degrees at
+    1 GHz and read as sigma_max 1.037 on a passive solve. A 2-port excited once
+    (symmetric) has no such run for the driven port: the mirror's line serves."""
+    lines = [None] * n
+    for k in range(n):
+        runs = [e for e in excites if e != k] or ([k] if n == 1 else [])
+        if runs:
+            lines[k] = eb.fit_feed([reads[e][k] for e in runs], where["ports"][k]["dist"], freqs, f_max)
+    return [ln if ln is not None else next(m for m in lines if m is not None) for ln in lines]
+
+
+def _post(reads, raw, spec, where, excites, freqs, f_max, n, symmetric) -> dict:
+    """Palace's probes and port-S to S at the planes, both ways. No solve, so a
+    kept run can be read again."""
+    lines = _feed_lines(reads, excites, where, freqs, f_max, n)
+    vi = {e: [eb.feed_vi(reads[e][k], where["ports"][k]["dist"], freqs, lines[k]) for k in range(n)]
+          for e in excites}
+    wv = {e: [[((vi[e][k][m]["v"] + eb.ZREF * vi[e][k][m]["i"]) / 2,
+                (vi[e][k][m]["v"] - eb.ZREF * vi[e][k][m]["i"]) / 2) for k in range(n)]
+              for m in range(len(freqs))] for e in excites}
+    end = [_port_end(spec, where, k) for k in range(n)]
+    return {"lines": lines, "S": eb.sparams(wv, n, symmetric),
+            "S_lumped": eb.sparams(_shifted_waves(raw, lines, end, freqs, n), n, symmetric)}
 
 
 def _port_end(spec, where, k) -> float:

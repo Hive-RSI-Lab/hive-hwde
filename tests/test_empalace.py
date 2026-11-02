@@ -218,3 +218,24 @@ def test_live_mesh_attributes(tmp_path, thru):
     assert [m["er"] for m in a["materials"]] == [1.0, ER]
     assert (tmp_path / "board.msh").stat().st_size > 1000
     json.dumps(a)
+
+
+def test_feed_line_never_comes_from_the_run_driving_that_port(monkeypatch):
+    """A driven feed's standing wave bends fit_feed; see empalace._feed_lines."""
+    seen = []
+    def fit(rs, dist, freqs, f_max):
+        seen.append(rs)
+        return {"from": rs}
+    monkeypatch.setattr(ep.eb, "fit_feed", fit)
+    where = {"ports": [{"dist": [1, 2, 3]}, {"dist": [1, 2, 3]}, {"dist": [1, 2, 3]}]}
+    reads = {e: [f"run{e}port{k}" for k in range(3)] for e in range(3)}
+    # mirror 2-port, driven once: both ports share the far feed's line
+    lines = ep._feed_lines(reads, [0], where, [1.0], 1.0, 2)
+    assert lines[0] is lines[1] and lines[0]["from"] == ["run0port1"]
+    # every port driven in turn: each port's fit skips its own run
+    lines = ep._feed_lines(reads, [0, 1], where, [1.0], 1.0, 2)
+    assert lines[0]["from"] == ["run1port0"] and lines[1]["from"] == ["run0port1"]
+    lines = ep._feed_lines(reads, [0, 1, 2], where, [1.0], 1.0, 3)
+    assert lines[2]["from"] == ["run0port2", "run1port2"]
+    # a one-port has only its own run
+    assert ep._feed_lines(reads, [0], where, [1.0], 1.0, 1)[0]["from"] == ["run0port0"]
