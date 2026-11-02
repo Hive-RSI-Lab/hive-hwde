@@ -161,6 +161,11 @@ def _pro_rules(staged: Path) -> dict:
                 .get("rules") or {})
 
 
+# --offer-spans (#477): give Freerouting the HDI build's spans. Off until a run
+# shows Freerouting uses them and SES import restores their type.
+OFFER_SPANS = False
+
+
 def _dsn_hole_rules(staged: Path, dsn: Path, bg: geom.BoardGeom) -> dict:
     """Carry the board's hole rules, which KiCad's DSN export drops, into
     the DSN: via padstacks grown so copper clearance keeps different-net
@@ -178,6 +183,7 @@ def _dsn_hole_rules(staged: Path, dsn: Path, bg: geom.BoardGeom) -> dict:
     added: list[str] = []
     if build:
         caps = hdilib.load_hdi_caps()
+    if build and OFFER_SPANS:
         spans = hdilib.spans_of(entry, bg.copper_layers, caps=caps)
         text, added = routelib.dsn_add_spans(
             text, [(s.i, s.j, s.size, s.drill) for s in spans])
@@ -481,11 +487,15 @@ def run(argv: list[str] | None = None):
                          "component/net order, import every result on its "
                          "own copy and keep the one DRC grades best (facts "
                          "tries, graded, variance); 1 = the ladder only")
+    ap.add_argument("--offer-spans", action="store_true",
+                    help="HDI build: offer Freerouting each via span (#477)")
     ap.add_argument("--no-krt-finish", action="store_true",
                     help="skip the KRT mop-up pass after the ladder")
     ap.add_argument("--no-maze-finish", action="store_true",
                     help="skip route_finish's maze pass after KRT")
     args = ap.parse_args(argv)
+    global OFFER_SPANS
+    OFFER_SPANS = args.offer_spans
 
     pcb = Path(args.pcb).resolve()
     if not pcb.is_file():

@@ -135,5 +135,7 @@ holds the hits and the zip to the board's vias.
   keep the disallow guard. Not yet: the routers (DSN export, KRT) draw with
   the netclass (outer) width, so an inner run needs route_edit set_width or
   a DRC-led fix until the router reads the per-layer widths.
-- route_auto and planes_gen don't place blind or micro vias themselves
-  (#477 next): only route_escape does.
+- planes_gen doesn't place blind or micro vias. route_auto offers Freerouting
+  the build's spans only with `--offer-spans`, off until a run shows Freerouting
+  uses them and SES import restores their type (#477). route_finish's maze takes
+  them, at 0.3 (micro) and 0.6 (buried) of a through via's cost.
