@@ -508,3 +508,21 @@ def test_planted_victim_beside_a_fast_clock(tmp_path):
     far = run(25.0)
     assert not [v for v in far["violations"] if v["kind"].startswith("si_crosstalk")
                 and v["net"] == "/AUDIO_TAP"]
+
+
+def test_pair_target_takes_stats_from_coupling_stats_tuple(monkeypatch):
+    """coupling_stats returns (unc_p, unc_n, stats): a routed pair must not crash check_si."""
+    import check_diffpair
+    import check_si
+
+    seen = {}
+
+    def impedance(bg, p, n, gap):
+        seen["gap"] = gap
+        return {"zdiff_ohm": 90.0}
+
+    monkeypatch.setattr(check_diffpair, "coupling_stats",
+                        lambda bg, p, n, m, breakout=None: ([], [], {"nominal_gap_mm": 0.2}))
+    monkeypatch.setattr(check_diffpair, "pair_impedance", impedance)
+    assert check_si.pair_target(None, "P", "N", {"zdiff": 90}, {}, [0, 0]) == []
+    assert seen["gap"] == 0.2
