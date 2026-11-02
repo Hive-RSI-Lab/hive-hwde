@@ -194,6 +194,23 @@ machine.
      says nothing about the fitted phase, so eps_eff was checked on its own: a
      30 mm thru's probe-to-probe phase over the long baseline averages within
      about 1 % of the fit (it ripples, on a 51-53 ohm line in a 50 ohm system).
+  3. A driven feed's standing wave near a stopband pulls that fit too.
+     `feed_lines` fits a port's line from the runs that don't drive it, if they
+     carry the line over at least half the band (fit weight at least a tenth of
+     the feed's peak; F5's far feed covers 91 %). Otherwise, as on a filter's or
+     an isolated port's far feed, every run's probes go in. A mirror 2-port
+     excited once uses its far feed's read for both ports. Replayed on F5 at
+     refine 1, with no new solve:
+     | excitation | fit from | Z at 0.6 / 1.5 / 5 GHz | sigma_max | points over 1.001 |
+     |---|---|---|---|---|
+     | two runs | all runs (was) | 51.95 / 51.30 / 52.70 | 1.0007 | 0 |
+     | two runs | undriven (now) | 51.41 / 51.61 / 53.34 | 1.0007 | 0 |
+     | one, `--symmetric` | each port's own read (was) | port 0 driven: 52.14 / 51.08 / 51.58 | 1.0032 | 50 |
+     | one, `--symmetric` | far feed for both (now) | 51.41 / 51.61 / 53.34 | 1.0006 | 0 |
+     The notch stays at 2.4894 GHz: this moves S phase and the band edge
+     (two runs, was against now: rms |dS| 0.0065, max 0.029 at 5 GHz), not a dip.
+     The bandpass fallback is tested on synthetic probes only, not on a solved
+     filter.
   The stub's answer is not a closed form: 2.24 to 2.44 GHz depending on
   whether L runs from the line's centre or edge, since a T-junction this wide
   is in neither. Settled is not the same as right: the check on 2.49 GHz is the
