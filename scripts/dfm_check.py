@@ -133,6 +133,7 @@ import fabmaterial  # noqa: E402
 import checklib  # noqa: E402
 import gerblib  # noqa: E402
 import geom  # noqa: E402
+import hdilib  # noqa: E402
 from checklib import CheckError  # noqa: E402
 
 SOURCE = "check.dfm"
@@ -473,9 +474,27 @@ def check_copper_to_edge(fab, rules, vios: list, cast=()) -> None:
 
 # ------------------------------------------------------------- drill checks
 
+def hdi_rules(rules: dict, hdi: dict) -> dict:
+    """A capability row with the HDI line's floors in place of the standard
+    line's (jlc_capabilities.yaml `hdi:`). The hole floor is the laser's: the
+    through vias keep theirs in check_via_sizes, and check_vias holds each
+    span to its own."""
+    out = dict(rules)
+    for key, value in (("min_trace_width_mm", hdi["min_trace_width_mm"]),
+                       ("min_clearance_mm", hdi["min_clearance_mm"]),
+                       ("min_hole_diameter_mm", hdi["laser_drill_mm"][0]),
+                       ("min_annular_ring_mm", hdi["laser_pad_over_drill_mm"] / 2)):
+        out[key] = float(value)
+        out.pop("abs_" + key, None)
+    return out
+
+
 def check_holes(fab, rules, vios: list, cast=(), bg=None,
                 cast_hh: float | None = None,
-                cast_abs: float | None = None) -> None:
+                cast_abs: float | None = None, spans=None) -> None:
+    """spans: centres of the board's blind, buried and micro vias. Their
+    holes are drilled at different stages, stacked ones on one centre, so a
+    pair with one of them is check_vias' to judge (#477)."""
     is_via = _via_matcher(bg)
     holes = fab.holes
     hard_d, lo_d = _floors(rules, "min_hole_diameter_mm")
@@ -520,6 +539,9 @@ def check_holes(fab, rules, vios: list, cast=(), bg=None,
             ci = _castellated_at(cast, holes[i].x, holes[i].y)
             cj = _castellated_at(cast, holes[j].x, holes[j].y)
             if ci and cj:
+                continue
+            if spans and ((round(holes[i].x, 3), round(holes[i].y, 3)) in spans
+                          or (round(holes[j].x, 3), round(holes[j].y, 3)) in spans):
                 continue
             both = via[i] and via[j]
             hard, lo = (hard_vv, lo_vv) if both else (hard_hh, lo_hh)
@@ -683,7 +705,8 @@ def check_via_sizes(rules, vios: list, bg) -> None:
         vios.append(v)
 
 
-def check_annular_ring(fab, rules, vios: list, cast=(), bg=None) -> None:
+def check_annular_ring(fab, rules, vios: list, cast=(), bg=None,
+                       spans=None) -> None:
     """Radial copper around each plated hole, on every copper layer that has
     a pad on it: the thinnest ring counts. A via is held to the via ring
     (min_annular_ring_mm), every other plated hole to the PTH component ring
@@ -693,7 +716,12 @@ def check_annular_ring(fab, rules, vios: list, cast=(), bg=None) -> None:
     Inner layers count (#590): a footprint with an SMD pad over its hole on
     both outer layers reads a wide ring there while the barrel's inner pads
     keep the thin one (eda-crossover J3/J4: 0.35 mm outer, 0.083 mm inner).
-    An inner pad sitting in a pour wide enough to carry the ring is fine."""
+    An inner pad sitting in a pour wide enough to carry the ring is fine.
+
+    spans (#477): {centre: {drill: copper layers}} of the blind, buried and
+    micro vias. Their holes count only on the layers they cross: a 0.15 mm
+    buried hole under a stacked 0.25 mm microvia has no ring on the microvia's
+    layer, because it doesn't reach it."""
     hard_via, lo_via = _floors(rules, "min_annular_ring_mm")
     lo_pth = rules.get("min_pth_annular_ring_mm", lo_via)
     if lo_via is None and lo_pth is None:
@@ -723,8 +751,10 @@ def check_annular_ring(fab, rules, vios: list, cast=(), bg=None) -> None:
         via = is_via(h)
         need = (lo_via if via else lo_pth) or 0.0
         best = None
+        crosses = ((spans or {}).get((round(h.x, 3), round(h.y, 3))) or {}
+                   ).get(round(h.diameter, 3))
         for name, (polys, tree) in pads_by_layer.items():
-            if tree is None:
+            if tree is None or (crosses and name not in crosses):
                 continue
             # ALL flashes containing the hole center, UNIONED: overlapping
             # copper only ever ADDS ring. Measuring against each flash alone
@@ -1421,6 +1451,18 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
 
         bg = geom.load_board(pcb)
         facts: dict = {}
+        # a board on an HDI build goes down JLC's HDI line (#477): its own
+        # floors, which check_vias already holds each via span to
+        build, hdi_stack = None, {}
+        if caps.get("hdi"):
+            build = hdilib.board_build(bg)[0]
+        if build:
+            rules = hdi_rules(rules, caps["hdi"])
+            for v in bg.vias_of():
+                if v.kind != "through":
+                    hdi_stack.setdefault((round(v.at[0], 3), round(v.at[1], 3)),
+                                         {})[round(v.drill, 3)] = set(v.layers)
+            facts["hdi_build"] = build
         if not mat_refusal and material != fabmaterial.FR4:
             # what the material's product allows, from the board alone
             # (finish/colour/thickness are order options: order_submit)
@@ -1443,12 +1485,12 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
         if "zone_fill" not in skip:
             zone_fill_skipped = check_zone_fill(bg, vios)
         if "drill" not in skip:
-            check_holes(fab, rules, vios, cast, bg=bg,
+            check_holes(fab, rules, vios, cast, bg=bg, spans=hdi_stack,
                         cast_hh=(caps.get("castellated") or {}).get(
                             "min_hole_to_hole_mm"),
                         cast_abs=(caps.get("castellated") or {}).get(
                             "abs_min_hole_to_hole_mm"))
-            check_annular_ring(fab, rules, vios, cast, bg=bg)
+            check_annular_ring(fab, rules, vios, cast, bg=bg, spans=hdi_stack)
             check_via_sizes(rules, vios, bg)
         if "teardrop" not in skip:
             facts["teardrop"] = check_teardrops(pcb, caps, vios)
