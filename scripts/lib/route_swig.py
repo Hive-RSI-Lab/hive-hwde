@@ -36,6 +36,7 @@ job JSON: {"verb": ..., "result": out.json, ...} with verbs:
         {"op": "add_track", "start": [x,y], "end": [x,y], "width": mm,
          "layer": "F.Cu", "net": "NAME"}
         {"op": "add_via", "at": [x,y], "size": mm, "drill": mm, "net": "NAME"}
+            # optional, a span (#477): "kind": micro|blind|buried, "top", "bot"
         {"op": "remove", "uuid": "..."}        # track or via; absent = no-op
         {"op": "set_net", "uuid": "...", "net": "NAME"}   # renet one item
         {"op": "set_width", "uuid": "...", "width": mm}   # a track or arc
@@ -154,6 +155,12 @@ def _track_key(t):
     return (a, b, t.GetWidth(), t.GetLayer(), t.GetNetname())
 
 
+VIA_TYPES = {"through": lambda p: p.VIATYPE_THROUGH,
+             "micro": lambda p: p.VIATYPE_MICROVIA,
+             "blind": lambda p: p.VIATYPE_BLIND,
+             "buried": lambda p: p.VIATYPE_BURIED}
+
+
 def verb_apply_ops(job):
     import pcbnew
 
@@ -167,7 +174,8 @@ def verb_apply_ops(job):
     via_index = {}
     for v in vias:
         p = v.GetPosition()
-        via_index.setdefault((p.x, p.y, v.GetNetname()), v)
+        via_index.setdefault((p.x, p.y, v.GetNetname(), v.TopLayer(),
+                              v.BottomLayer()), v)
     by_uuid = {}
     for t in board.GetTracks():
         by_uuid[t.m_Uuid.AsString()] = t
@@ -201,10 +209,14 @@ def verb_apply_ops(job):
         elif kind == "add_via":
             at = pcbnew.VECTOR2I(iu(op["at"][0]), iu(op["at"][1]))
             net = _net(board, op["net"])
+            # a span (#477): stacked vias share a centre and a net, so the
+            # layers are part of what makes a via already there
+            top = _layer_id(board, op.get("top", "F.Cu"))
+            bot = _layer_id(board, op.get("bot", "B.Cu"))
             hit = None
-            for (vx, vy, vn), v in via_index.items():
-                if vn == op["net"] and abs(vx - at.x) <= tol \
-                        and abs(vy - at.y) <= tol:
+            for (vx, vy, vn, vt, vb), v in via_index.items():
+                if vn == op["net"] and vt == top and vb == bot \
+                        and abs(vx - at.x) <= tol and abs(vy - at.y) <= tol:
                     hit = v
                     break
             if hit is not None:
@@ -214,11 +226,11 @@ def verb_apply_ops(job):
             v.SetPosition(at)
             v.SetWidth(iu(op["size"]))
             v.SetDrill(iu(op["drill"]))
-            v.SetViaType(pcbnew.VIATYPE_THROUGH)
-            v.SetLayerPair(pcbnew.F_Cu, pcbnew.B_Cu)
+            v.SetViaType(VIA_TYPES[op.get("kind", "through")](pcbnew))
+            v.SetLayerPair(top, bot)
             v.SetNet(net)
             board.Add(v)
-            via_index[(at.x, at.y, op["net"])] = v
+            via_index[(at.x, at.y, op["net"], top, bot)] = v
             results.append({"op": kind, "status": "added",
                             "uuid": v.m_Uuid.AsString()})
         elif kind == "set_net":

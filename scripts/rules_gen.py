@@ -248,13 +248,17 @@ def _bga_refs(bg) -> list[str]:
     return [b.ref.replace("'", "") for b in bgalib.find_bgas(bg)]
 
 
-def bga_rules(bg, cap: dict) -> tuple[list[Rule], list[dict]]:
+def bga_rules(bg, cap: dict, stackup: dict | None = None
+              ) -> tuple[list[Rule], list[dict]]:
     """The escape clearance inside each ball grid's courtyard (#325): the
     netclass clearance (hole clearance less the class via's ring) is wider
     than a 0.8 mm field's streets allow. Same geometry and rule text as
-    route_escape (lib/bgalib) - one writer's rule is the other's."""
+    route_escape (lib/bgalib) - one writer's rule is the other's. On an HDI
+    build (#477) the via types' own floors come too, and each field gets the
+    HDI line's track and clearance (lib/hdilib)."""
     sys.path.insert(0, str(SCRIPTS / "lib"))
     import bgalib
+    import hdilib
     floors = {"track_width": cap["min_trace_width_mm"],
               "clearance": cap["min_clearance_mm"],
               "via_diameter": cap["min_via_diameter_mm"],
@@ -263,11 +267,25 @@ def bga_rules(bg, cap: dict) -> tuple[list[Rule], list[dict]]:
               "hole_clearance": KICAD_HOLE_CLEARANCE_MM}
     rules: list[Rule] = []
     facts: list[dict] = []
+    hdi = hdilib.is_hdi(stackup)
+    caps = hdilib.load_hdi_caps() if hdi else {}
+
+    def add_hdi(rows):
+        for nm, constraint, value, cond in rows:
+            rules.append(Rule(hdilib.HDI_RULE_PREFIX + nm, constraint, value,
+                              condition=cond))
+
+    if hdi:
+        add_hdi(hdilib.via_type_rules(stackup, caps))
     for b in bgalib.find_bgas(bg):
         ep = bgalib.escape_params(b, floors)
         name = bgalib.rule_name(b.ref)
-        rules.append(Rule(name, "clearance", ep["clearance"],
+        clr = float(caps["min_clearance_mm"]) if hdi else ep["clearance"]
+        rules.append(Rule(name, "clearance", clr,
                           condition=bgalib.rule_condition(b.ref)))
+        if hdi:
+            add_hdi(hdilib.field_rules(b.ref, float(caps["min_trace_width_mm"]),
+                                       clr, bgalib.rule_condition(b.ref)))
         facts.append({"ref": b.ref, "pitch_mm": b.pitch,
                       "clearance_mm": ep["clearance"],
                       "via_mm": [ep["via_size"], ep["via_drill"]],
@@ -1039,7 +1057,7 @@ def build(constraints: dict, cap: dict, stackup: dict, baseline_only: bool,
         zr, zf = impedance_rules(constraints, stackup, pairs, floor, bga_refs)
         hr, hf = voltage_rules(constraints, cap)
         kr, kf = package_rules(constraints)
-        br, bf = bga_rules(bg, cap) if bg is not None else ([], [])
+        br, bf = bga_rules(bg, cap, stackup) if bg is not None else ([], [])
         # HV and package-rating clearances stay last: KiCad's later rule
         # wins, and a courtyard's escape clearance must never undercut them
         ir, if_ = isolation_rules(constraints, cap, stackup, hf, bg)
