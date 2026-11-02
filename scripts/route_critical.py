@@ -801,6 +801,11 @@ def write_fab_overrides(work: Path, floors: dict) -> Path:
     return p
 
 
+class KrtTimeout(CheckError):
+    """One KRT run hit its process timeout. Pair routing treats it as that
+    pair failing, so the pairs already on the staged board still get reported."""
+
+
 def run_krt(krt_dir: Path, script: str, staged: Path, out: Path,
             extra: list[str], floors: dict, fab_file: Path,
             grid_step: float, timeout_s: int,
@@ -845,7 +850,7 @@ def run_krt(krt_dir: Path, script: str, staged: Path, out: Path,
                             text=True, encoding="utf-8", errors="replace",
                             timeout=timeout_s)
     except subprocess.TimeoutExpired as exc:
-        raise CheckError(f"KRT {script} timed out after {timeout_s}s") from exc
+        raise KrtTimeout(f"KRT {script} timed out after {timeout_s}s") from exc
     if stdout_sink is not None:
         stdout_sink.append(cp.stdout or "")
     summary = parse_summary(cp.stdout or "")
@@ -1116,17 +1121,21 @@ def route_diff_item(ctx: dict, spec: dict) -> tuple[dict | None, dict | None]:
             if pinned:
                 use_layers = pinned
                 use_costs = ["1"] + [PINNED_ESCAPE_COST] * (len(pinned) - 1)
-            summary = run_krt(
-                ctx["krt"], "route_diff.py", staged, out,
-                ["--nets", p, n,
-                 "--layers", *use_layers,
-                 "--layer-costs", *use_costs,
-                 "--track-width", f"{rw:g}", "--diff-pair-gap", f"{rg:g}",
-                 "--via-size", f"{pair_via_size(ctx['floors']):g}"],
-                ctx["floors"], ctx["fab_file"], ctx["grid_step"],
-                ctx["timeout_s"],
-                net_clearances=ctx.get("net_clearances"),
-                layer_widths=lplan["layer_widths"] if lplan else None)
+            try:
+                summary = run_krt(
+                    ctx["krt"], "route_diff.py", staged, out,
+                    ["--nets", p, n,
+                     "--layers", *use_layers,
+                     "--layer-costs", *use_costs,
+                     "--track-width", f"{rw:g}", "--diff-pair-gap", f"{rg:g}",
+                     "--via-size", f"{pair_via_size(ctx['floors']):g}"],
+                    ctx["floors"], ctx["fab_file"], ctx["grid_step"],
+                    ctx["timeout_s"],
+                    net_clearances=ctx.get("net_clearances"),
+                    layer_widths=lplan["layer_widths"] if lplan else None)
+            except KrtTimeout:
+                last_reason = "krt-timeout"
+                continue
             if summary.get("already_routed"):
                 # idempotent re-run: both nets already fully connected; the
                 # post-run check_diffpair pass still validates coupling.
