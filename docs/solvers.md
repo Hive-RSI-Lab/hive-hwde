@@ -175,25 +175,42 @@ machine.
   and planes by Palace FEM (`lib/empalace.py`, `lib/empalace_mesh.py`) with
   lumped ports at the deck's feed ends, reading V and I at the deck's own probe
   planes through `emboard.feed_lines` and `feed_vi`. It exits 1 on rms |dS| over
-  0.05 off a notch, or any dip more than 1 % apart. Both solves are lossless:
-  the verdict reads openEMS's S from before the added loss, and `--loss deck`
-  with a cross-check is refused. The default is refine 1.5, order 3, the first
-  setting with F5 shown settled; it took 4.5 GB and 21 min at 4 ranks, and two
-  such runs were killed when all `heavy` jobs together hit their shared 12 GB
-  cap, so expect to retry. rf-kit F5, against openEMS's 2.4891 GHz:
-  | Palace | S21 notch | S11 dip off | rms abs(dS) S11 / S21 | verdict |
-  |---|---|---|---|---|
-  | refine 1.5, order 2 | 2.4721 | 1.32 % | 0.022 / 0.018 | DISAGREE |
-  | refine 2, order 2 | 2.4860 | 1.10 % | 0.019 / 0.014 | DISAGREE |
-  | refine 1, order 3 | 2.4869 | 0.64 % | 0.016 / 0.012 | AGREE |
-  | refine 1.5, order 3 | 2.4874 | 0.78 % | 0.016 / 0.012 | AGREE |
+  0.05 (off a notch on transmission terms), a transmission notch more than 1 %
+  apart or seen by one solver only (unless within 1 % of the band's edge), or a
+  feed Z more than 3 % apart at mid band. A reflection dip is printed, not judged:
+  a reflection zero moves with the port reference and a transmission zero doesn't.
+  On one openEMS S for F5, S11's dip reads 5.00, 4.95 and 4.83 GHz at a 50 ohm,
+  51 ohm and own-line reference, while S21's notch stays at 2.4891 GHz. Both solves
+  are lossless: the verdict reads openEMS's S from before the added loss, and
+  `--loss deck` with a cross-check is refused. The default is refine 1.5, order 3,
+  the first setting with F5 shown settled; it took 4.5 GB and 21 to 30 min at 4
+  ranks, and two such runs were killed when all `heavy` jobs together hit their
+  shared 12 GB cap, so expect to retry.
+  Live on rf-kit F5, the full command with `--symmetric` (0.125-5 GHz): S21 notch
+  2.4891 (openEMS) / 2.4874 GHz (Palace), rms |dS| S11 0.017, S21 0.011, feed Z
+  51.89 / 50.82 ohm (2.1 %), S11 dip beyond the band / 4.92 GHz. The first such
+  run judged S11's dip and exited 1 on it; this reading of it is a replay of that
+  run's kept output under the rule above, not a second solve, and the rule was
+  changed after seeing that result. It is the same rule the mesh gate already
+  used (transmission dips only). The same Palace S replayed at a planted
+  reference: 52 ohm still agrees, 55 and 60 ohm disagree.
+  Palace's own notch, against refinement: 2.4721 (refine 1.5, order 2), 2.4860
+  (refine 2, order 2), 2.4869 (refine 1, order 3), 2.4874 GHz (refine 1.5, order 3).
   The thru passes its limits at refine 1.5 and fails Z0 at refine 1 (4.2 % at
-  order 3). Known gaps: Palace's feed Z on the thru reads low and rises with
-  refinement (48.4, 48.8, 49.3 ohm at order 2, against 50 quasi-static), about
-  half of F5's S11 |dS| goes when each solver is renormalised to its own line Z,
-  and the F5 run at the default fails `sparam check` slightly (sigma_max 1.0023
-  under 0.63 GHz, where `fit_feed` holds its value) while Palace's own lumped S
-  passes. The output prints that check beside the verdict.
+  order 3). The 13 mm stub is 1.90 % off with a 2 % limit, and isn't moving toward
+  the closed form.
+  Known gaps: the two solvers' line Z differs by about 1 ohm and which is right is
+  open: Palace's feed Z on the thru reads low and rises with refinement (48.4,
+  48.8, 49.3 ohm at order 2, against 50 quasi-static). The F5 run at the default
+  fails `sparam check` slightly (sigma_max 1.0023 under 0.63 GHz) while Palace's
+  own lumped S passes. Lowering the feed fit's f_max/8 hold doesn't change it, and
+  the far and driven probes' power differs by about 0.2 % there with a sign that
+  changes with the mesh, so read it as probe accuracy; the output prints that
+  check beside the verdict. `estimator_check` in the JSON (Palace's lumped S
+  shifted to the planes) agrees on the notch and passivity only: its S21 runs a
+  constant extra delay, about 1 mm per port on F5, so don't read its rms |dS|. The
+  cause isn't traced; the port's end discontinuity is a guess. Checked on 2-layer
+  microstrip only.
 
   **Mesh convergence (#616).** `sim_solve board` refines the mesh by 1.5 until
   two runs in a row agree (`emboard.study_converged`): largest |dS| 0.05, a

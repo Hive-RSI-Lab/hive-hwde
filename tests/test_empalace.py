@@ -174,6 +174,39 @@ def test_a_notch_only_one_solver_sees_disagrees():
     assert not v["ok"] and any("only openEMS" in w for w in v["disagree"])
 
 
+def test_a_reflection_dip_is_reported_not_judged():
+    """S11 zeros move with the port reference, S21 zeros don't: one network read
+    at 50 and at 53 ohm has one S21 notch and two S11 dips."""
+    def s_at(f0, dip):
+        out = []
+        for f in FR:
+            s11 = 0.03 * (f - dip) / dip + 0.002
+            out.append([[s11, _notched(f0)[FR.index(f)][1][0]], [_notched(f0)[FR.index(f)][1][0], s11]])
+        return out
+    v = ep.compare(FR, s_at(2.5e9, 2.0e9), s_at(2.5e9, 3.0e9))
+    assert v["ok"], v["disagree"]
+    assert set(v["terms"]["S11"]["dip"]) == {"openEMS", "Palace"}
+    assert "notch" not in v["terms"]["S11"]
+
+
+def test_a_transmission_notch_at_the_band_edge_is_not_a_missing_one():
+    edge = FR[-3]
+    flat = [[[0.0, 1.0], [1.0, 0.0]] for _ in FR]
+    v = ep.compare(FR, _notched(edge), flat, rms_ds=2.0, notch_pct=5.0)
+    assert v["terms"]["S21"]["notch"]["at_band_edge"] and not any("only" in w for w in v["disagree"])
+    v = ep.compare(FR, _notched(2.5e9), flat, rms_ds=2.0, notch_pct=5.0)
+    assert not v["terms"]["S21"]["notch"]["at_band_edge"] and any("only" in w for w in v["disagree"])
+
+
+def test_feed_z_gap_is_judged_when_given():
+    s = _notched(2.5e9)
+    assert ep.compare(FR, s, s, z_feed=([51.9, 51.9], [50.8, 50.8]))["ok"]
+    v = ep.compare(FR, s, s, z_feed=([53.0, 51.9], [50.8, 50.8]))
+    assert not v["ok"] and v["z_feed"]["gap_pct"][0] > ep.Z_PCT
+    assert any("port 1 feed Z" in w for w in v["disagree"]) and not any("port 2" in w for w in v["disagree"])
+    assert v["limits"]["z_pct"] == ep.Z_PCT
+
+
 def test_a_different_line_disagrees():
     a, b = eb.line_s(FR, 50.0, 3.3, 30.0), eb.line_s(FR, 50.0, 3.6, 30.0)
     v = ep.compare(FR, a, b)
