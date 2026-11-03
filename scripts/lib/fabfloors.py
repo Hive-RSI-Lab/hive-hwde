@@ -97,6 +97,18 @@ DRU_FLOOR_KEYS = {
 }
 
 
+# A row's outer-layer spacing, where its outer copper is heavier than its inner
+# copper and the fab's figure is for the heavy copper (JLC 2 oz, #627). Emitted
+# as (layer outer) by rules_gen and held by check_dru only on rows carrying it.
+OUTER_CLEARANCE_RULE = "aiee_outer_clearance_floor"
+OUTER_CLEARANCE_KEY = "min_outer_clearance_mm"
+
+
+def outer_clearance(cap: dict) -> float:
+    """The clearance F.Cu and B.Cu are held to on this capability row."""
+    return float(cap.get(OUTER_CLEARANCE_KEY, cap["min_clearance_mm"]))
+
+
 def load_capabilities(cap_file: Path | None = None) -> dict:
     path = Path(cap_file) if cap_file else CAP_FILE
     try:
@@ -279,4 +291,14 @@ def check_dru(dru_text: str, cap: dict) -> list[str]:
         elif float(m.group(1)) < want - 1e-9:
             bad.append(f'rule "{name}" min {float(m.group(1)):g} mm is BELOW '
                        f"the fab floor {want:g} mm")
+    if OUTER_CLEARANCE_KEY in cap:
+        want = outer_clearance(cap)
+        block = _rule_block(dru_text, OUTER_CLEARANCE_RULE)
+        m = re.search(r"\(min\s+([0-9.]+)mm\)", block) if block else None
+        if m is None:
+            bad.append(f'rule "{OUTER_CLEARANCE_RULE}" missing or has no (min ...) '
+                       f"(outer-layer fab floor {want:g} mm)")
+        elif float(m.group(1)) < want - 1e-9 or "(layer outer)" not in block:
+            bad.append(f'rule "{OUTER_CLEARANCE_RULE}" is not (layer outer) at '
+                       f">= the outer-layer fab floor {want:g} mm")
     return bad

@@ -1848,3 +1848,43 @@ def test_board_init_retry_keeps_project_settings(tmp_path, monkeypatch):
     assert rc == 0
     assert runs == [False, True]
     assert seen == ["ignore", "ignore"]
+
+
+def test_2oz_multilayer_outer_spacing_is_a_dru_rule_on_outer_layers_only():
+    """JLC 2 oz multilayer 0.15/0.15 holds the 2 oz copper; 0.5 oz inner keeps
+    the row's floor (#627). A 1 oz row writes no such rule."""
+    cap = _cap("4layer_2oz")
+    assert cap["min_clearance_mm"] == 0.1016
+    assert fabfloors.outer_clearance(cap) == 0.15
+    rule = {r.name: r for r in rules_gen.baseline_rules(cap)}[
+        fabfloors.OUTER_CLEARANCE_RULE]
+    assert (rule.constraint, rule.minv, rule.layer) == ("clearance", 0.15, "outer")
+    assert fabfloors.OUTER_CLEARANCE_RULE not in {
+        r.name for r in rules_gen.baseline_rules(_cap("4layer_1oz"))}
+    assert rules_gen.default_class(cap)["clearance"] == 0.15
+    # the row is shared by every multilayer 2 oz count
+    assert fabfloors.outer_clearance(_cap("6layer_2oz")) == 0.15
+    # 2-layer 2 oz has only outer copper: JLC's 0.16 is the row itself
+    assert _cap("2layer_2oz")["min_clearance_mm"] == 0.16
+    assert fabfloors.outer_clearance(_cap("2layer_2oz")) == 0.16
+
+
+def test_check_dru_holds_the_outer_floor_only_where_the_row_has_one():
+    cap = _cap("4layer_2oz")
+    dru = "(version 1)\n" + "\n".join(
+        r.render() for r in rules_gen.baseline_rules(cap))
+    assert fabfloors.check_dru(dru, cap) == []
+    gone = dru.replace(f'"{fabfloors.OUTER_CLEARANCE_RULE}"', '"renamed"')
+    assert any(fabfloors.OUTER_CLEARANCE_RULE in m
+               for m in fabfloors.check_dru(gone, cap))
+    low = dru.replace("(constraint clearance (min 0.1500mm))",
+                      "(constraint clearance (min 0.1016mm))")
+    assert any(fabfloors.OUTER_CLEARANCE_RULE in m
+               for m in fabfloors.check_dru(low, cap))
+    every_layer = dru.replace("\t(layer outer)\n", "")
+    assert any(fabfloors.OUTER_CLEARANCE_RULE in m
+               for m in fabfloors.check_dru(every_layer, cap))
+    one_oz = _cap("4layer_1oz")
+    dru1 = "(version 1)\n" + "\n".join(
+        r.render() for r in rules_gen.baseline_rules(one_oz))
+    assert fabfloors.check_dru(dru1, one_oz) == []
