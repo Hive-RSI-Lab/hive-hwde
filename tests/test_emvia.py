@@ -13,6 +13,7 @@ synthetic vias. Tolerances are from the refinement study in docs/solvers.md:
 """
 from __future__ import annotations
 
+import cmath
 import re
 import json
 import math
@@ -175,9 +176,13 @@ def test_launch_deck_has_the_coax_probes_and_two_states():
     m_csx, where, st = ev.launch_build(spec, 6e9, fine=0.15)
     s_csx, _, _ = ev.launch_build(spec, 6e9, fine=0.15, shorted=True)
     assert [p["layer"] for p in where["ports"]] == ["F.Cu", "coax"]
-    assert where["ports"][1]["dist"][0] > where["ports"][1]["dist"][2] or where["ports"][1]["dist"][0] != where["ports"][1]["dist"][1]
     d = where["ports"][1]["dist"]
-    assert d[0] - d[1] == pytest.approx(d[1] - d[2])    # equal spacing: port_vi's formula needs it
+    assert d[1] - d[0] == pytest.approx(d[2] - d[1])    # equal spacing: port_vi's formula needs it
+    assert d[0] < d[1] < d[2] < 0                       # out from the face: the probes are on the board's side of it
+    box = {a["Name"]: b for _, a, _, b in m_csx.props}
+    for j in range(3):
+        x = box[f"p1u{j}"][0][1][0]
+        assert d[j] == pytest.approx(where["ports"][1]["x"] - x)     # the jack's outside is toward -x
     names = {a["Name"] for _, a, _, _ in m_csx.props}
     assert {"p1u0", "p1u1", "p1u2", "p1i0", "p1i1", "ptfe", "sma"} <= names
     box_count = lambda c: sum(len(b) for _, a, _, b in c.props if a["Name"] == "sma")
@@ -264,6 +269,54 @@ def test_two_load_runs_recover_s_exactly():
     for i in range(2):
         for j in range(2):
             assert abs(got[i][j] - s[i][j]) < 1e-9
+
+
+def test_a_launch_reads_s_at_the_jack_face_from_probes_on_the_board_side():
+    """A known reciprocal S at the two planes; a line's probes outside its plane
+    and a coax's inside its. Two loads on the coax, as launch_study has them."""
+    import numpy as np
+    freqs = [1e9 * i for i in range(1, 7)]
+    f_max = 6e9
+    z = [54.0, 50.6]
+    eps = [3.0, 2.16]
+    dist = [[4.5, 6.0, 7.5], [-5.8, -5.2, -4.6]]
+    where = {"ports": [{"dist": dist[0]}, {"dist": dist[1]}]}
+
+    def beta(k, f):
+        return 2 * math.pi * f * math.sqrt(eps[k]) / eb.C0
+
+    def s_of(f):
+        p = 0.8 * np.exp(-1j * f * 2e-10)
+        return [[0.2 + 0.1j, p], [p, -0.1 + 0.05j]]
+
+    def read(g2):
+        out = [([], []), ([], [])]
+        for f in freqs:
+            s = s_of(f)
+            b2 = s[1][0] / (1 - s[1][1] * g2)      # a1 = 1 at 50 ohm
+            a2 = g2 * b2
+            waves = [(1.0, s[0][0] + s[0][1] * a2), (a2, b2)]
+            for k, (a50, b50) in enumerate(waves):
+                v0, i0 = a50 + b50, (a50 - b50) / 50.0
+                ain, aout = (v0 + z[k] * i0) / 2, (v0 - z[k] * i0) / 2    # going in; coming out
+                g = 1j * beta(k, f)
+                dk = [q * 1e-3 for q in dist[k]]
+                mids = [(dk[0] + dk[1]) / 2, (dk[1] + dk[2]) / 2]
+                u = [ain * cmath.exp(g * q) + aout * cmath.exp(-g * q) for q in dk]
+                c = [(ain * cmath.exp(g * q) - aout * cmath.exp(-g * q)) / z[k] for q in mids]
+                out[k][0].append(u)
+                out[k][1].append(c)
+        return [tuple([[row[j] for row in rows] for j in range(n)] for rows, n in ((o[0], 3), (o[1], 2))) for o in out]
+    reads = {0: read(0.02), 1: read(-0.95)}
+    runs, _, _, _ = ev._solve_feeds(reads, where, freqs, f_max, every_run=True)
+    got = eb.sparams(runs, 2)
+    for m, f in enumerate(freqs):
+        s = s_of(f)
+        for i in range(2):
+            for j in range(2):
+                assert abs(got[m][i][j] - s[i][j]) < 2e-3, f"{f} S{i + 1}{j + 1}"
+    with pytest.raises(ValueError, match="rise"):
+        eb.feed_vi(reads[0][1], dist[1][::-1], freqs, {"z": [z[1]] * 6, "eps_eff": [eps[1]] * 6})
 
 
 def test_refined_runs_twice_and_gates_on_emboards_tolerance():
@@ -471,7 +524,7 @@ def test_live_launch_reads_a_matched_coax_and_a_passive_launch():
     assert all(r["unused_prims"] == 0 for r in res["runs"])
     for z in res["z_coax"][len(res["z_coax"]) // 4:]:
         assert z.real == pytest.approx(50.0, rel=0.05)
-    assert res["imbalance"] < 0.05                           # the port-scale error balance() took out
+    assert res["imbalance"] < 0.01                           # what balance() took out
     assert ev.power_lost(res["freqs"], res["S"])["worst"] < 0.03     # 1.2 % per launch at 6 GHz, any mesh
     for f, s in zip(res["freqs"], res["S"]):
         assert abs(s[1][0]) ** 2 + abs(s[0][0]) ** 2 < 1.005, f"{f / 1e9} GHz"      # passive

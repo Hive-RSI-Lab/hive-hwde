@@ -593,9 +593,8 @@ def power_lost(freqs, S) -> dict:
 
 def balance(S) -> tuple[list, float]:
     """(S with S21 = S12 = sqrt(S21 S12), the worst |S21/S12| - 1 taken out).
-    A launch's ports are a coax and a line, read by different probes, so a
-    scale error between them is D S D^-1: it leaves S11 and S22 alone and takes
-    k from S12 to give to S21. The structure is reciprocal, so the mean is it."""
+    The structure is reciprocal, so the mean is it. A launch keeps a small
+    error here that falls with the mesh, cause not found: 0.4 to 0.5% at 6 GHz."""
     import cmath
     out, worst = [], 0.0
     for m in S:
@@ -876,7 +875,9 @@ def _coax_hook(spec: LaunchSpec, x_end: float, dx: float, fc: float, shorted: bo
 
 
 def _coax_probes(csx, where: dict, spec: LaunchSpec, xs: list[float], z_ax: float, r_i: float, x_face: float) -> None:
-    """Probes named as a feed's (p1u*, p1i*), so emboard.port_vi reads them."""
+    """Probes named as a feed's (p1u*, p1i*), so emboard.port_vi reads them.
+    A feed's dist is how far out from its plane each probe sits, away from the
+    circuit. These sit between the board and the jack's face, so it is negative."""
     r_o = spec.sma["r_o"]
     ys = sorted(csx.lines["y"])
     zs = sorted(csx.lines["z"])
@@ -895,7 +896,7 @@ def _coax_probes(csx, where: dict, spec: LaunchSpec, xs: list[float], z_ax: floa
         csx.probe(f"p1i{j}", 1)
         csx.box(f"p1i{j}", (x, ya, za), (x, yb, zb))
     where["ports"].append({"x": x_face, "y": 0.0, "dir": "-x", "layer": "coax", "ref": "coax", "net": "SIG",
-                           "w": 2 * r_i, "dist": [abs(x - x_face) for x in xs], "h": r_o - r_i, "er": spec.sma["er"]})
+                           "w": 2 * r_i, "dist": [x_face - x for x in xs], "h": r_o - r_i, "er": spec.sma["er"]})
 
 
 def launch_build(spec: LaunchSpec, f_max: float, *, shorted: bool = False, fine=None, zstep=None,

@@ -512,16 +512,23 @@ Read these before relying on a number:
   low, and falls as the square root of the cell: zcoupon's deck reads 50 on a 0.08 mm
   grid, where a static 2D solve of its section gives 49.9 (53.1 at 0.005 mm). A line
   that reads the real board's figure without mask is a warning, not a pass.
-- A launch's extracted S is not reciprocal in magnitude: |S21| .984 and |S12| 1.002
-  at 4.4 GHz on the coarse mesh; the ratio goes .982, .988, .991 with refinement, and
-  the phases agree to 0.04 degrees. That is a scale error between the coax's probes
-  and the line's, not the structure, and its cause is not found. |S21|^2 alone read it as 2.5% lost. So
-  `launch_study` returns S21 = S12 = sqrt(S21 S12) and says how much that took out
-  (`imbalance`), and power lost uses the product, which holds across meshes (table). A via's
-  two ports are alike and its S is reciprocal to the digit, so neither changes it.
+- A launch's extracted |S21| and |S12| differ by a little, and it is not the structure:
+  S21/S12 is .99752, .9977, .99811 at 4.4 GHz with refinement, about f^2, and worst
+  .50, .47, .39% to 6 GHz. It is in the raw probes (the reciprocity products of the two
+  runs, with no reference plane in them), it shrinks with the mesh, and its cause is not
+  found. It was 1.8% before the coax's probes got their distance's sign: they sit on the
+  board side of the mating face, so a positive distance put the plane 10.4 mm off the face
+  and fitted nearly as well. Every launch S from before that fix has the wrong phase in
+  S21 and S22, and S21 and S11 about 0.01 and 1.5 dB off. `launch_study` still returns
+  S21 = S12 = sqrt(S21 S12) and says how much that took out (`imbalance`), and power lost
+  uses the product. A via's two ports are alike and its S is reciprocal to the digit, so
+  neither changes it.
 - A thru's S11 at 50 ohm hangs on what the deck's line reads, more than on the launch.
-  Two launches and 6 mm of ideal line read -19.8 dB worst at Z 54, -24 at Z 50.
-  Compare launches through the excess against the deck's own Zc.
+  Two launches and 6 mm of ideal line read -21 dB worst to 4.4 GHz at Z 54, -25 at Z 50.
+- The excess against the deck's own Zc depends on the jack's plane when that Zc is not
+  50 ohm. From the face, 54 ohm runs through 9.4 mm of 50.6 ohm coax, which alone can read
+  -22 dB against 54 (-20.1 dB at 4.4 GHz here), so move the plane to the board edge first
+  (table). Power lost does not move with either plane.
 - Region radius matters: 3 mm kept two of a coupon via's returns and read 4x the
   loss, so the default is 6 mm.
 - The walls absorb what a real board's plane edges reflect. A one-via figure is
@@ -537,7 +544,7 @@ fast: the z mesh and small features are where the timestep goes.
 | #599, 1.15 mm stub | 1 / 1.3 / 1.69 / 2.2 | 962k / 1.73M / 3.48M / 7.34M | 37.6 / 27.5 / 20.2 / 14.9 | 1182 / 966 / 2065 / 3453 | notch 21.24 / 21.73 / 21.94 / 22.36 GHz, closed form 31.43 |
 | #599 blind twin | 1 / 1.3 | 962k / 1.73M | 37.6 / 27.5 | 1411 / 884 | no notch to 40 GHz |
 | zcoupon VIA2X via | 1 / 1.5 | 540k / 1.29M | 63.5 / 38.5 | 542 / 1081 | power lost -0.015 / -0.014 dB at 4.4 GHz, -0.048 at 8 |
-| zcoupon SMA launch | 1 / 1.25 / 1.5 | 790k / 1.37M / 2.37M | 69.4 / 54.6 / 38.4 | 451 / 912 / 2711 | at 4.4 GHz S21 -0.063 / -0.060 / -0.061 dB, S11 -21.5 / -21.9 / -21.7 dB, lost 0.72 / 0.73 / 0.72%; excess against the deck's own line -29.6 / -29.1 / -29.2 dB |
+| zcoupon SMA launch | 1 / 1.25 / 1.5 | 790k / 1.37M / 2.37M | 69.4 / 54.6 / 38.4 | 278 / 486 / 1765 | at 4.4 GHz S21 -0.053 / -0.052 / -0.054 dB, S11 -23.0 / -23.5 / -22.8 dB, lost 0.72 / 0.73 / 0.72%; excess against the deck's own line, jack plane at the board edge, -28.4 / -28.2 / -28.6 dB |
 
 The coax via's closed form (cage, `cage_lc`) is 54.2 ohm and 16.6 ps; the converged
 deck is 10% low in Z and 7% low in delay, the pads' capacitance. Palace (driven,
@@ -556,7 +563,11 @@ spread. Add the pads as 0.36 to 0.47 mm of stub; `EM_LOAD_MM`, 0.45, is near the
 The launch's other reference is a second openEMS deck, not a second solver: zcoupon's
 own (`boards/zcoupon/sim/ems.py` in hw-lab; PML ends, PEC side walls, stitching vias,
 line reading 50.5 ohm off its grid) gives a launch excess of -38.9, -33.0, -29.7 dB at 2, 3, 4.4 GHz
-against -39.8, -34.4, -29.6 here, each against its deck's own line. It loses 0.40% per
+against -49.6, -38.9, -28.4 here, each against its deck's own line, here with the jack's plane
+at the board edge. The figures agree at 4.4 GHz and not below. An earlier, closer match at all
+three (-39.8, -34.4, -29.6) was read at the wrong plane, 1 mm into the board. That deck's own
+plane is not checked here, and at 54 ohm the low figures swing with where the plane sits.
+It loses 0.40% per
 launch at 4.4 GHz with conductor loss in, against 0.72% here with none; the walls differ,
 and which one is right is not settled.
 
