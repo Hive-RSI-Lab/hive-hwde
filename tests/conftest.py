@@ -97,6 +97,7 @@ SLOW = {
     "tests/test_emvia.py::test_live_coax_via_matches_the_cage_closed_form": "runs an openEMS via deck",
     "tests/test_emvia.py::test_live_stub_notch_and_its_blind_twin": "runs two openEMS via decks",
     "tests/test_emvia.py::test_live_palace_driven_agrees_with_openems": "runs gmsh, Palace and openEMS on one via",
+    "tests/test_emvia.py::test_live_launch_reads_a_matched_coax_and_a_passive_launch": "runs two openEMS launch decks",
     "tests/test_emloss.py::test_live_r_of_a_strip_over_ground_vs_fasthenry": "runs FastHenry on a 600-filament strip over plane",
     "tests/test_emloss.py::test_live_loss_in_the_deck_vs_on_the_line": "runs openEMS with Lorentz poles at two meshes",
     "tests/test_emloss.py::test_live_board_touchstone_carries_loss_and_passes_sparam_check": "runs an openEMS board S-parameter solve",
