@@ -157,6 +157,15 @@ def test_rip_up_doesnt_shrink_on_a_rejected_group(tmp_path):
     assert state["conns"] == 12
 
 
+def test_a_rip_up_run_undone_at_its_end_sets_its_routes_aside(tmp_path):
+    pcb = _setup(tmp_path, {"a:x": "ripundone"})
+    p, f = _run(tmp_path, pcb, "--rip-board", "always")
+    assert f["stop_reason"] == "no_progress"
+    assert f["routed"] == 0
+    assert "undone" in next(iter(f["failed_nets"]["a"]["reasons"]))
+    assert f["chunks"] <= 4
+
+
 def test_a_chunk_that_changes_nothing_stops_the_run(tmp_path):
     pcb = _setup(tmp_path, {"a:x": "overtime"})
     p, f = _run(tmp_path, pcb)

@@ -170,6 +170,8 @@ def read_chunk(facts: dict) -> dict:
            "cut": [], "over_limit": False, "last_applied": False}
     passes = [p for p in facts.get("passes", []) if "connections" in p]
     undone = bool(facts.get("provisional_undone"))
+    # a rip-up run that didn't leave the board better undoes every pass
+    all_undone = not facts.get("kept")
     for i, p in enumerate(passes):
         last = i == len(passes) - 1
         for c in p["connections"]:
@@ -177,7 +179,7 @@ def read_chunk(facts: dict) -> dict:
             if st in ("failed", "rolled_back"):
                 res["failed"].append(c)
             elif st == "routed":
-                bad = p.get("kept") is False or (
+                bad = all_undone or p.get("kept") is False or (
                     undone and p.get("kept") == "provisional")
                 res["rejected" if bad else "routed"].append(c)
             elif st == "skipped":

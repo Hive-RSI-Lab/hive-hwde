@@ -12,6 +12,7 @@ Kinds:
   lose    routes, and takes the board's first track with it
   grabs   routes, and adds a track on net PAIR_P
   riponly routes only without --no-rip-board
+  ripundone routes in a kept pass, then the whole rip-up run is undone
   overtime is out of time before its search
   chain   is undone along with a second route (a neighbour it ripped)
   cut     its search runs into the deadline
@@ -75,7 +76,7 @@ def main():
     trace = Path(arg(argv, "--trace"))
     jobs, routed = [], []
     tried = 0
-    poison = lose = grabs = False
+    poison = lose = grabs = undone_after = False
     for cid in sorted(opened):
         kind = world.get(cid, "ok")
         job = conn(cid)
@@ -109,6 +110,7 @@ def main():
             jobs.append({**job, "status": "routed"})
             routed.append(cid)
             poison |= kind == "poison"
+            undone_after |= kind == "ripundone"
             lose |= kind == "lose"
             grabs |= kind == "grabs"
             if kind == "chain":
@@ -118,6 +120,10 @@ def main():
     entry = {"pass": 1, "pairs": len(jobs), "connections": jobs}
     if routed:
         entry["unconnected_after"] = len(opened) - len(routed)
+    if undone_after:
+        entry["kept"] = True
+        return emit(opened, {"kept": False, "rip_kept": False,
+                             "passes": [entry]})
     if poison:
         entry["kept"] = False
         return emit(opened, {"kept": False, "passes": [entry]})
