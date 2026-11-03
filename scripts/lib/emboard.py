@@ -837,7 +837,8 @@ def feed_vi(read, dist, freqs, line: dict) -> list[dict]:
     sg = -1.0 if np.nanmedian(q) > 0 else 1.0     # + j beta d Z on a current going out
     out = []
     for n, f in enumerate(freqs):
-        g = 1j * 2 * math.pi * f * math.sqrt(line["eps_eff"][n]) / C0
+        alpha = line["alpha"][n] if line.get("alpha") is not None else 0.0
+        g = complex(alpha, 2 * math.pi * f * math.sqrt(line["eps_eff"][n]) / C0)
         z = line["z"][n]
         A = [[cmath.exp(g * q), cmath.exp(-g * q)] for q in s]
         A += [[sg * ZREF / z * cmath.exp(g * q), -sg * ZREF / z * cmath.exp(-g * q)] for q in si]
@@ -945,9 +946,12 @@ def touchstone(freqs, S, comments=()) -> str:
 # ================================================================ run
 
 def study(geo: dict, ports, f_max: float, f_min: float | None = None, points: int = 201,
-          symmetric: bool = False, excites=None, keep=None, run=None, **kw) -> dict:
+          symmetric: bool = False, excites=None, keep=None, run=None, feed_alpha=None, **kw) -> dict:
     """extract'ed geometry -> openEMS run(s) -> S. run(csx, where, work)
-    is the runner (default lib/solvers openEMS); keep=DIR keeps each run."""
+    is the runner (default lib/solvers openEMS); keep=DIR keeps each run.
+    feed_alpha(ports, freqs) -> each port's alpha (Np/m per frequency) for a
+    lossy deck: the feed fit holds gamma imaginary, so without it each feed's
+    length between plane and probes stays in S as extra loss (#553)."""
     import tempfile
     import time
     from . import solvers
@@ -984,6 +988,9 @@ def study(geo: dict, ports, f_max: float, f_min: float | None = None, points: in
         if ctx:
             ctx.cleanup()
     lines = feed_lines(reads, [p["dist"] for p in where["ports"]], freqs, f_max, symmetric)
+    if feed_alpha:
+        for ln, a in zip(lines, feed_alpha(where["ports"], freqs)):
+            ln["alpha"] = [float(v) for v in a]
     vi = {e: [feed_vi(reads[e][k], where["ports"][k]["dist"], freqs, lines[k]) for k in range(n)]
           for e in excites}
     runs = {e: [[((vi[e][k][m]["v"] + ZREF * vi[e][k][m]["i"]) / 2,

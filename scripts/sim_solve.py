@@ -603,6 +603,17 @@ def board_dielectric(pcb, f_lo, f_hi):
     return hook
 
 
+def board_feed_alpha(pcb, geo):
+    """study(feed_alpha=): the dielectric alpha of each port's feed, known from DS."""
+    from lib import geom as G
+    st = G.load_board(pcb).stackup
+
+    def alpha(ports, freqs):
+        secs = emloss.sections_for_ports(geo, ports, st, lengths=[0.0] * len(ports))["sections"]
+        return [emloss.line_gamma_z(s, freqs, True, False)[0].real for s in secs]
+    return alpha
+
+
 def board_study(pcb, region, ports, parts=None, f_max=6e9, f_min=None, points=201,
                 symmetric=False, fine=None, keep=None, deck_only=None,
                 refine=1.0, refine_max=None, converge=True, loss="line",
@@ -614,7 +625,10 @@ def board_study(pcb, region, ports, parts=None, f_max=6e9, f_min=None, points=20
     lose too), the conductor added per section; none."""
     from lib import emboard as eb
     geo = eb.extract(pcb, region, parts)
-    kw = {"dielectric": board_dielectric(pcb, f_min or f_max / 20, f_max)} if loss == "deck" else {}
+    kw = {}
+    if loss == "deck":
+        kw = {"dielectric": board_dielectric(pcb, f_min or f_max / 20, f_max),
+              "feed_alpha": board_feed_alpha(pcb, geo)}
     if deck_only:
         out = Path(deck_only)
         out.mkdir(parents=True, exist_ok=True)
