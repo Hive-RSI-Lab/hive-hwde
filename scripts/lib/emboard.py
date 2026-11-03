@@ -543,7 +543,10 @@ def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None 
                                 else near + min(0.4, (hi - lo) / 2))
                         n = max(2, int(feed_len / max(lam_min / 10, 1.0)))
                         for j in range(n):
-                            along = e + s * feed_len * (j + 0.5) / n
+                            # on a pinned feed line: a post between two lines has
+                            # no vertical edge, and openEMS says nothing about it
+                            k_line = min(round(feed_len * (j + 0.5) / n / dfeed), int(feed_len / dfeed))
+                            along = e + s * dfeed * k_line
                             stitch.append(((along, cpos) if p.axis == 0 else (cpos, along),
                                            p.layer, p.ref, k))
                     if not (layer == p.layer and net == p.net):
