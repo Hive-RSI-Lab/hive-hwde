@@ -818,6 +818,7 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
                 max_conns: int | None = None, max_nodes: int = 3_000_000,
                 via_cost_mm: float = 1.5, rip_board: bool = False,
                 rip_board_nets: int = 4, ripped_out: list | None = None,
+                keep_nets_extra: set | None = None,
                 log=None) -> list[dict]:
     """Find a route for each pair, shortest first; each found route is an
     obstacle for the ones after it. Returns [{net, ops, status, ...}]."""
@@ -913,7 +914,9 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
         obs.added.extend(ops_items(ops, n, bg.copper_layers))
 
     # power and pour nets are never ripped: their copper is sized by rule
+    # nor are constraints diff pairs: a pair ripped here comes back single-ended (#613)
     keep_nets = {z.net for z in bg.zones_of()} | set(rules.net_width) | {""}
+    keep_nets |= keep_nets_extra or set()
     queue = list(range(len(todo)))
     ripped_once: set[int] = set()
     ripped_board: set[int] = set()
@@ -1036,7 +1039,8 @@ def _one_pass(cli, staged, drc, opts, *, parity, refill, log):
     rip: list = []
     jobs = plan_routes(bg, rules, pairs, lays, grid=opts["grid"],
                        margin=opts["margin"], max_conns=opts["max_conns"],
-                       rip_board=opts["rip_board"], ripped_out=rip, log=log)
+                       rip_board=opts["rip_board"], ripped_out=rip,
+                       keep_nets_extra=opts.get("keep_nets"), log=log)
     all_ops, op_conn = [], []
     for c, j in enumerate(jobs):
         if j["status"] == "routed":
@@ -1082,7 +1086,7 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
                   via_drill=None, max_conns=None, parity: bool = False,
                   refill: bool = True, dry_run: bool = False,
                   passes: int = 6, rip_errors: bool = False,
-                  rip_board: bool = True,
+                  rip_board: bool = True, keep_nets: set | None = None,
                   log=None) -> dict:
     """Route the staged board's unconnected pairs in place, in passes: a
     route can split another net's pour, and the next pass joins the piece.
@@ -1095,7 +1099,7 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
                 margin=margin, min_width=min_width,
                 clearance_margin=clearance_margin, via_size=via_size,
                 via_drill=via_drill, max_conns=max_conns,
-                rip_board=rip_board)
+                rip_board=rip_board, keep_nets=keep_nets)
     start_un = sum(unconnected_by_net(drc).values())
     facts: dict = {"unconnected_before": start_un,
                    "errors_before": err_counts(drc), "passes": []}
@@ -1107,7 +1111,8 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
         lays = routable_layers(bg, layers)
         jobs = plan_routes(bg, rules, unconnected_pairs(drc, opts["nets"]),
                            lays, grid=grid, margin=margin,
-                           max_conns=max_conns, rip_board=rip_board, log=log)
+                           max_conns=max_conns, rip_board=rip_board,
+                           keep_nets_extra=keep_nets, log=log)
         facts.update(kept=False, rules=_rules_facts(rules), layers=lays,
                      connections=jobs,
                      routed=sum(j["status"] == "routed" for j in jobs))
@@ -1366,7 +1371,7 @@ def run(argv: list[str] | None = None):
         via_size=args.via_size, via_drill=args.via_drill,
         max_conns=args.max_conns, parity=parity, refill=has_zones,
         dry_run=args.dry_run, rip_errors=args.rip_errors,
-        rip_board=not args.no_rip_board, log=log)
+        rip_board=not args.no_rip_board, keep_nets=pair_nets(pcb), log=log)
     final = facts.pop("drc", None) or drc
     if facts.get("kept") and not args.dry_run:
         routelib.swap_in(staged, pcb)
@@ -1378,6 +1383,15 @@ def run(argv: list[str] | None = None):
                "facts": {**facts, "unconnected_left": len(left),
                          "work_dir": str(work)}}
     return payload, args.out_report
+
+
+def pair_nets(pcb) -> set:
+    """Nets of the diff pairs in the constraints.json beside the board."""
+    path = Path(pcb).parent / "constraints.json"
+    if not path.exists():
+        return set()
+    pairs = json.loads(path.read_text()).get("diff_pairs", [])
+    return {p[k] for p in pairs for k in ("p", "n")}
 
 
 def main(argv: list[str] | None = None) -> int:
