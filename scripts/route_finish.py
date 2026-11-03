@@ -78,6 +78,7 @@ from checklib import CheckError  # noqa: E402
 
 KICAD_HOLE_CLEARANCE = 0.25   # board setup default min hole clearance
 KICAD_HOLE_TO_HOLE = 0.25     # board setup default min hole to hole
+SAME_NET_HOLE_MM = 0.13       # JLC HDI, one net, edge to edge (jlc_capabilities hdi)
 
 
 # ------------------------------------------------------------------ rules
@@ -496,6 +497,14 @@ def _span_moves(obs, rules: Rules, net: str, layers: list, win, args, K: int,
                             + rules.span_hole_to_hole, *args)
                 if hit:
                     m[hit[0]] |= hit[1]
+            if it.hole is not None and not other:
+                # one net's vias: an exact stack, or JLC's same-net spacing.
+                # KiCad's DRC doesn't always report a miss (hw-lab hdi-bga).
+                hit = _mask(it.hole, sp.drill / 2 + rules.margin
+                            + SAME_NET_HOLE_MM, *args)
+                if hit:
+                    stack = shapely.dwithin(it.hole.centroid, args[2][hit[0]], 0.01)
+                    m[hit[0]] |= hit[1] & ~stack
         for ra in obs.bg.rule_areas:
             if ra.get("flags", {}).get("vias") == "not_allowed" \
                     and not ra["outline"].is_empty and ra["outline"].intersects(win):
@@ -656,10 +665,37 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
     return path
 
 
+def merge_close_vias(path: list, min_cells: float) -> list:
+    """A short run between two layer changes puts two vias of one net too close
+    together for JLC's same-net hole spacing, and KiCad's DRC doesn't always say
+    so. Take both layer changes at the run's start and carry the jog on the next
+    layer. DRC still judges the moved copper."""
+    if any(q[2] == -1 for q in path):
+        return path
+    runs: list[list] = []
+    for q in path:
+        if runs and runs[-1][0][2] == q[2]:
+            runs[-1].append(q)
+        else:
+            runs.append([q])
+    n = 1
+    while n < len(runs) - 1:
+        run = runs[n]
+        if math.dist(run[0][:2], run[-1][:2]) < min_cells and run[0][:2] != run[-1][:2]:
+            nxt = runs[n + 1][0][2]
+            runs[n + 1] = [(q[0], q[1], nxt) for q in run] + runs[n + 1]
+            runs[n] = [run[0]]
+        n += 1
+    return [q for run in runs for q in run]
+
+
 def path_to_ops(gr: Grid, path, net: str, width: float, rules: Rules) -> list:
     """Grid path -> route_edit ops: one track per straight run, a via at
     every layer change and at a plane drop (k = -1). A layer change on an HDI
     build takes the span the search priced it at (#477)."""
+    if rules.spans:
+        path = merge_close_vias(
+            path, (SAME_NET_HOLE_MM + rules.via_floor[1]) / gr.g)
     ops = []
     vias = []
     runs: list[list] = []

@@ -299,3 +299,18 @@ def test_a_pass_at_the_drc_cap_counts_its_routes():
     assert not _pass_helped(cap, cap, failed)
     assert _pass_helped(40, 39, failed)
     assert not _pass_helped(40, 40, routed)  # below the cap the count is real
+
+
+def test_a_short_run_between_vias_moves_to_the_next_layer():
+    """hw-lab hdi-bga: a buried via and a microvia 0.14 mm apart on one net, under
+    JLC's 0.13 mm hole spacing, which KiCad's DRC reported only some of the time."""
+    from route_finish import merge_close_vias
+    path = [(0, 0, 0), (5, 0, 0), (5, 0, 1), (6, 1, 1), (6, 1, 2), (9, 1, 2)]
+    out = merge_close_vias(path, 3.0)
+    assert [q for q in out if q[2] == 1] == [(5, 0, 1)]
+    assert out[out.index((5, 0, 1)) + 1:] == [(5, 0, 2), (6, 1, 2), (6, 1, 2), (9, 1, 2)]
+    # long runs, plane drops and the ends of the path stay as they are
+    long = [(0, 0, 0), (0, 0, 1), (9, 0, 1), (9, 0, 2)]
+    assert merge_close_vias(long, 3.0) == long
+    drop = [(0, 0, 0), (0, 0, -1)]
+    assert merge_close_vias(drop, 3.0) == drop
