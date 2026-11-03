@@ -850,10 +850,16 @@ Mesh.MshFileVersion = 2.2;
 """
 
 
-def palace_patch(work, W=38.0, L=29.5, h=1.6, er=4.4, G=70.0, A=40.0, *, lc=1.2, order=2,
-                 target_ghz=2.0, n=3, timeout=3000.0) -> dict:
+def patch_tm010(modes, lo=1.9, hi=2.8) -> tuple[float, float]:
+    """(GHz, Q) of the highest-Q mode in lo..hi GHz."""
+    return max((m for m in modes if lo <= m[0] <= hi), key=lambda m: m[1])
+
+
+def palace_patch(work, W=38.0, L=29.5, h=1.6, er=4.4, G=70.0, A=40.0, *, lc=1.6, order=2,
+                 target_ghz=2.1, n=3, timeout=3000.0) -> dict:
     """Palace eigenmode on the quarter patch: {modes: [(GHz, Q)], tets, seconds}.
-    TM010 is the mode with the highest Q near the patch's cavity estimate."""
+    TM010 is the mode with the highest Q near the patch's cavity estimate
+    (`patch_tm010`): the absorbing wall adds box modes of Q about 1."""
     import csv
     import json as _json
     import time

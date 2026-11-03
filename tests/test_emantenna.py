@@ -140,6 +140,11 @@ def test_steps_needed_with_nothing_to_read_doubles(tmp_path):
     assert ea._steps_needed(tmp_path, 2000) == 4000
 
 
+def test_patch_tm010_skips_the_low_q_box_modes():
+    modes = [(2.19, 0.8), (2.30, 55.0), (3.5, 0.8), (4.4, 226.0)]
+    assert ea.patch_tm010(modes) == (2.30, 55.0)
+
+
 def test_nf2ff_input_names_all_faces_in_radians():
     text = ea.nf2ff_xml({"nf2ff_center": [0.0, 0.0, 0.0]}, [1e9], 45, 90)
     assert text.count("<Planes") == 6 and 'freq="1000000000.0"' in text
@@ -332,30 +337,47 @@ def test_modules_still_work_and_nothing_to_judge_names_both(tmp_path):
 @needs_openems
 @pytest.mark.slow
 def test_live_half_wave_dipole_directivity_and_z(tmp_path):
-    """Half-wave strip dipole, w 2 mm (a = w/4 = 0.5 mm), in free space: the
-    far field D 2.15 dBi; Zin near 73 + j42 ohm (induced EMF, thin wire); a
-    lossless deck radiates what it accepts, which is the check on the boundary
-    and on the NF2FF scale together."""
+    """Half-wave strip dipole, w 2 mm (a = w/4 = 0.5 mm), in free space. Read
+    at resonance, where a dipole this thick has about 70 ohm at L a little under
+    lam/2; at L = lam/2 it is 90 + j50, not the thin wire's 73 + j42. D 2.15 dBi.
+    A lossless deck radiates what it accepts, which is the check on the boundary
+    and on the NF2FF scale together. Runs in 3 min on the loaded tower: 2 mm
+    936.1 MHz, 70.4 ohm; 1 mm 939.1 MHz, 70.3 ohm, D within 0.01 dB."""
     geo, feed = dipole_geo()
-    r = ea.study(geo, feed, (0.8e9, 1.2e9), pattern=[1e9], fine=1.0)
+    r = ea.study(geo, feed, (0.8e9, 1.2e9), pattern=[0.95e9], fine=2.0)
     assert r["rung_down"]
     row = r["far"][0]
-    assert row["dmax_dbi"] == pytest.approx(2.15, abs=0.15)
-    assert row["efficiency"] == pytest.approx(1.0, abs=0.05)
-    i = min(range(len(r["freqs"])), key=lambda k: abs(r["freqs"][k] - F))
-    assert r["z"][i].real == pytest.approx(73.0, rel=0.2)
-    assert r["z"][i].imag == pytest.approx(42.0, abs=20.0)
+    assert row["dmax_dbi"] == pytest.approx(2.15, abs=0.1)
+    assert row["efficiency"] == pytest.approx(1.0, abs=0.02)
+    ft = r["features"]
+    assert ft["z_res"][0] == pytest.approx(73.0, rel=0.1)
+    assert abs(ft["z_res"][1]) < 15
+    assert ft["x_zero_up"][0] == pytest.approx(0.94e9, rel=0.015)
 
 
 @needs_openems
 @pytest.mark.slow
 def test_live_patch_tm010_against_the_cavity_formula_and_mesh(tmp_path):
     """kb/em-solvers.md's patch: 2.394 GHz by cavity + Hammerstad, 2.328 by
-    its own openEMS run. Refining the mesh must not move it."""
+    its own openEMS run. 2 mm and 1 mm land on the same frequency sample,
+    2.332 GHz, S11 -15 dB. Before the thirds cells were kept clear (#622) these
+    meshes read 2.226 and 2.274 GHz, so this is the test of that too."""
     geo, feed = patch_geo()
-    r = ea.converge(geo, feed, (2.1e9, 2.6e9), fine=1.0, pattern=[2.3e9, 2.35e9, 2.4e9])
+    r = ea.converge(geo, feed, (2.1e9, 2.6e9), fine=2.0, ratio=2.0, pattern=[2.3e9, 2.35e9, 2.4e9])
     f = r["features"]["f_res"]
     assert f == pytest.approx(2.394e9, rel=0.04)
-    assert f == pytest.approx(2.328e9, rel=0.015)
+    assert f == pytest.approx(2.328e9, rel=0.01)
     assert r["convergence"]["converged"], r["convergence"]
-    assert 5.0 < r["at_band"]["dmax_dbi"] if "at_band" in r else ea.at_band(r)["dmax_dbi"] > 5.0
+    assert ea.at_band(r)["dmax_dbi"] > 5.0
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(solvers.tool_path("palace") is None or solvers.tool_path("gmsh") is None,
+                    reason="no Palace or gmsh")
+def test_live_palace_patch_is_a_second_solver(tmp_path):
+    """Palace eigenmode on the quarter patch, order 2: 2.293 GHz, Q 55 at 2.5 mm,
+    2.302 GHz, Q 55 at 1.6 mm, within 1.3 % of openEMS's 2.332 GHz S11 dip."""
+    r = ea.palace_patch(tmp_path, lc=2.5)
+    f, q = ea.patch_tm010(r["modes"])
+    assert f == pytest.approx(2.332, rel=0.025)
+    assert 30 < q < 100
