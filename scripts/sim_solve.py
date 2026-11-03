@@ -1249,7 +1249,81 @@ def main(argv=None) -> int:
         q.add_argument("--deck-only")
         q.add_argument("--timeout", type=float, default=7200)
         q.add_argument("--json", action="store_true")
+    an = sub.add_parser("antenna", help="a board's PCB antenna: S11, Zin, gain pattern, efficiency (#481)")
+    an.add_argument("--pcb", required=True)
+    an.add_argument("--feed", required=True, help="X,Y[,LAYER[,REF]] between layers, "
+                    "or X,Y,X2,Y2[,LAYER[,W]] across a gap")
+    an.add_argument("--band", required=True, help="F_LO,F_HI in Hz: where the answer is read")
+    an.add_argument("--region", help="X0,Y0,X1,Y1: the antenna's own copper; ground nets stay whole")
+    an.add_argument("--ground", default="GND", help="ground nets, comma-separated")
+    an.add_argument("--outline", help="X0,Y0,X1,Y1: stop the board here (one coupon of a panel)")
+    an.add_argument("--deck-only", help="write the deck here and stop")
+    an.add_argument("--cut", action="append", default=[],
+                    help="X0,Y0,X1,Y1[,LAYER]: drop non-ground copper here (what lies behind the feed)")
+    an.add_argument("--short", action="append", default=[],
+                    help="X0,Y0,X1,Y1,LAYER: add copper here (a 0 ohm part, a net tie's join)")
+    an.add_argument("--fine", type=float, help="the cell over the antenna's copper, mm")
+    an.add_argument("--air", type=float, help="air gap to the NF2FF box, mm (default lambda/4)")
+    an.add_argument("--loss", action="store_true", help="copper and dielectric loss at the band's centre")
+    an.add_argument("--tand", type=float, help="loss tangent over the stackup's")
+    an.add_argument("--converge", action="store_true", help="also solve on a finer mesh and say what moved")
+    an.add_argument("--min-efficiency", type=float)
+    an.add_argument("--max-cells", type=int, default=8_000_000)
+    an.add_argument("--threads", type=int, default=4, help="openEMS threads (it would take every core)")
+    an.add_argument("--out", default=".", help="directory: result.json, antenna.s1p, pattern.csv, pattern.png")
+    an.add_argument("--keep", help="keep the runs here")
+    an.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
+
+    if args.cmd == "antenna":
+        from lib import emantenna as ea
+        band = tuple(float(v) for v in args.band.split(","))
+        region = [float(v) for v in args.region.split(",")] if args.region else None
+
+        def box_arg(t):
+            f = t.split(",")
+            return [float(v) for v in f[:4]] + f[4:]
+        outline = [float(v) for v in args.outline.split(",")] if args.outline else None
+        geo = ea.board_geo(args.pcb, region, tuple(args.ground.split(",")),
+                           [box_arg(t) for t in args.cut], [box_arg(t) for t in args.short], outline)
+        loss = ea.Loss(tand=args.tand) if args.loss else None
+        if args.deck_only:
+            f0 = sum(band) / 2
+            csx, where = ea.deck(geo, args.feed, f0, f0 / 2, [f0], fine=args.fine, air=args.air, loss=loss,
+                                 max_cells=args.max_cells)
+            d = Path(args.deck_only)
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "deck.xml").write_text(csx.xml())
+            (d / "where.json").write_text(json.dumps(where, indent=1) + "\n")
+            print(f"{where['cells']} cells {where['mesh']}, fine {where['fine']}, min cell {where['min_cell']} -> {d}")
+            return 0
+        kw = {"air": args.air, "loss": loss, "max_cells": args.max_cells, "threads": args.threads}
+        if args.converge:
+            res = ea.converge(geo, args.feed, band, fine=args.fine, keep=args.keep, **kw)
+        else:
+            res = ea.study(geo, args.feed, band, fine=args.fine, keep=args.keep, **kw)
+        found = ea.findings(res, band, args.min_efficiency)
+        res["findings"] = found
+        rep = ea.write_outputs(res, Path(args.out), Path(args.pcb).stem)
+        if args.json:
+            print(json.dumps(rep, indent=1))
+        else:
+            ft, far = rep["features"], rep["at_band"]
+            print(f"{rep['where']['cells']} cells {rep['where']['mesh']}, fine {rep['where']['fine']} mm, "
+                  f"{rep['steps']} steps, {rep['seconds']} s")
+            print(f"resonance {ft['f_res'] / 1e9:.4f} GHz, S11 {ft['s11_db']} dB, Z {ft['z_res']} ohm, "
+                  f"-10 dB {ft['bw_10db']}")
+            print(f"at {far['f'] / 1e9:.4f} GHz: D {far['dmax_dbi']} dBi, efficiency {far['efficiency']}, "
+                  f"gain {far['gain_dbi']} dBi, realized {far['realized_gain_dbi']} dBi"
+                  + ("" if loss else " (lossless deck: efficiency is a check on the NF2FF, not a prediction)"))
+            if rep.get("convergence"):
+                print(f"mesh study: {rep['convergence']['moved']} -> "
+                      f"{'converged' if rep['convergence']['converged'] else 'NOT converged'}")
+            else:
+                print("mesh study: not run (--converge)")
+            for f_ in found:
+                print(f"  {f_['kind']}: {f_['message']}")
+        return 1 if found else 0
 
     if args.cmd == "board":
         parts = {}

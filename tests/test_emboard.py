@@ -180,6 +180,35 @@ def test_deck_pins_every_sheet_plane_and_refuses_one_off_the_mesh(cpwg4):
         csx.xml()
 
 
+def test_every_post_holds_a_mesh_line_at_any_feed_spacing(cpwg4):
+    # at 5 GHz the feed's lines are 0.6 mm apart and a post is 0.3 mm wide: 8 of
+    # the 20 fell between lines, with no vertical edge and no openEMS warning
+    g = eb.extract(cpwg4, [0, 0, 20, 10], parts={"R1": 49.9})
+    for f_max in (5e9, 6e9, 10e9):
+        for refine in (1.0, 1.5):
+            csx, _ = eb.deck(g, ["0,5,-x", "20,5,+x"], f_max, refine=refine)
+            assert csx.sheets_off_mesh() == []
+
+
+def test_a_solid_box_between_mesh_lines_is_refused(cpwg4):
+    csx, _ = _deck(cpwg4)
+    xs = sorted(csx.lines["x"])
+    gap = max(zip(xs, xs[1:]), key=lambda ab: ab[1] - ab[0])
+    mid = sum(gap) / 2
+    csx.box("barrels", (mid - 1e-3, 1.0, 0.0), (mid + 1e-3, 1.1, 1.4), prio=20)
+    assert ("barrels", "x", pytest.approx(mid - 1e-3)) in csx.sheets_off_mesh()
+    with pytest.raises(ValueError, match="off every mesh line"):
+        csx.xml()
+
+
+def test_a_wire_a_hair_off_its_line_is_refused(cpwg4):
+    # a wire 1e-7 off a line is dropped by CSXCAD (thread em-tools)
+    csx, _ = _deck(cpwg4)
+    x = sorted(csx.lines["x"])[3] + 1e-7
+    csx.box("barrels", (x, 1.0, 0.0), (x, 1.1, 1.4), prio=20)
+    assert ("barrels", "x", pytest.approx(x)) in csx.sheets_off_mesh()
+
+
 def test_deck_uses_mur_and_a_pulse_without_dc(cpwg4):
     csx, _ = _deck(cpwg4)
     root = ET.fromstring(csx.xml())
@@ -367,6 +396,36 @@ def test_no_line_inside_a_thirds_cell(tmp_path):
             a, b = sorted((edge + s_in * f / 3, edge - s_in * 2 * f / 3))
             assert any(abs(v - a) < 2e-6 for v in ys) and any(abs(v - b) < 2e-6 for v in ys), (r, edge)
             assert not [v for v in ys if a + 1e-5 < v < b - 1e-5], (r, edge)
+
+
+def test_overlapping_thirds_cells_keep_their_lines():
+    """A width step closer than one cell: clearing every line inside every cell
+    left one wide cell holding both edges, and RO F2's straight feed read
+    eps_eff 3.93 for 2.9. Each edge keeps a line on its inner side."""
+    f = 0.6
+    e1, e2 = 10.0, 10.3                                # both with copper above
+    cells = [(e - 2 * f / 3, e + f / 3) for e in (e1, e2)]
+    ys = eb.mesh_axis([v for c in cells for v in c], [], 0.0, 20.0, f, 3.0, edges=cells, cu_edges=[e1, e2])
+    near = [v for v in ys if 9.0 < v < 11.0]
+    assert any(abs(v - (e1 + f / 3)) < 2e-6 for v in near), near
+    gaps = [b - a for a, b in zip(near, near[1:])]
+    assert all(min(abs(v - e) for e in (e1, e2)) >= f / 6 - 1e-6 for v in near), near
+    below = [v for v in ys if v < e1][-1]
+    above = [v for v in ys if v > e1][0]
+    assert above - below < 1.1 * f, (below, above, gaps)
+
+
+def test_a_tight_bunch_of_edges_is_not_left_in_one_wide_cell():
+    """RO F2's top feed edge shares 0.4 mm with three other edges, every thirds
+    line lands within fine/6 of one of them; the cell must still get split."""
+    f = 0.6
+    es = [10.0, 10.1, 10.35, 10.39]
+    cells = [(e - 2 * f / 3, e + f / 3) for e in es]
+    ys = eb.mesh_axis([v for c in cells for v in c], [], 0.0, 20.0, f, 3.0, edges=cells, cu_edges=es)
+    for e in es:
+        below, above = [v for v in ys if v < e][-1], [v for v in ys if v > e][0]
+        assert above - below <= 1.1 * f, (e, below, above)
+    assert all(min(abs(v - e) for e in es) >= f / 6 - 1e-6 for v in ys if 9.5 < v < 11)
 
 
 def test_refine_refines_every_axis(tmp_path):
@@ -669,3 +728,12 @@ def test_live_board_stub_settles_under_refinement(tmp_path):
 def test_live_board_mutant_wrong_width_misses_z0(tmp_path):
     c = _thru_check(_run(tmp_path, "mutant", w=2 * W50))
     assert not c["ok"] and c["z0_pct"] > 20, c
+
+
+def test_a_split_keeps_the_merge_step():
+    """An antenna merges lines nearer than 0.6 fine, because the least cell sets
+    the time step, and a split must leave that too. These are AN043's y lines at
+    0.25 mm, which went from 28164 to 38918 steps on one line 0.083 mm from the next."""
+    ls = eb.mesh_axis([5.7, 6.0], [(-0.2, 6.2)], -5.0, 12.0, 0.25, 2.0, pinned=[5.4, 5.7],
+                      edges=[(5.316667, 5.566667), (5.616667, 5.866667)], min_step=0.15, cu_edges=[5.4, 5.7])
+    assert min(b - a for a, b in zip(ls[:-1], ls[1:])) >= 0.15 - 1e-6

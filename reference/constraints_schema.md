@@ -259,6 +259,27 @@ Consumers per key (script -> phase):
   // "external" (u.FL / IPEX) skips it.
   "antennas": {"U7": "pcb"},
 
+  // check_antenna (P8, #371): a board's own antenna copper (IFA, meander,
+  // patch, chip antenna). No footprint says where it is, so the row does.
+  // nets, refs or poly name the copper (a poly takes what it touches).
+  // keepout (poly) or keepout_mm (around the copper's box): no other copper
+  // on any layer, ground included. With a feed and a short side by side the
+  // box stops short_contact_mm (1.5) before their line, since the arms land on
+  // the ground; over_ground: true (a patch) exempts the ground nets.
+  // feed and short [x, y] must be on the copper; the short must reach
+  // ground_nets within short_reach_mm. ground_edge: farthest copper to ground.
+  // edge_max_mm: to the board edge. reference: a name in
+  // reference/pcb_antennas.yaml or {source, polys, anchor, ground_mm}; rot
+  // degrees about the anchor, the anchor put on feed, compared by area
+  // (geometry_tol_pct). sim: `sim_solve antenna --out`'s result.json, judged
+  // against band_hz and min_efficiency.
+  "pcb_antennas": [{"name": "A4", "refs": ["AE1"], "ground_nets": ["GND_A4"],
+                    "keepout_mm": 2.0, "feed": [12.0, 3.0], "short": [10.2, 3.0],
+                    "ground_edge": {"height_mm": 5.6, "tol_mm": 0.3},
+                    "edge_max_mm": 1.0, "reference": "ti-an043", "rot": 0,
+                    "band_hz": [2.4e9, 2.5e9], "min_efficiency": 0.5,
+                    "sim": "reports/antenna_a4/result.json"}],
+
   // check_rf_match (P8, #488): a matching network's populated values vs
   // the load it feeds. load (a ref; or net, the feed) and zin "R+jX@f"
   // (datasheet / measured) or s1p (Touchstone one-port, relative to this

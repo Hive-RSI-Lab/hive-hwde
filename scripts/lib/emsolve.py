@@ -62,6 +62,7 @@ class Csx:
         self.fdtd = {"NumberOfTimesteps": 200000, "endCriteria": 1e-5}
         self.exc = {"Type": 0, "f0": 1e9, "fc": 1e9}
         self.bc = ["PEC"] * 6
+        self.fd_samples: dict[str, list[float]] = {}
 
     def prop(self, kind: str, name: str, attrs: dict | None = None,
              inner: dict | None = None) -> str:
@@ -92,8 +93,32 @@ class Csx:
                 return
         raise KeyError(name)
 
+    def linpoly(self, name: str, pts, z: float, length: float, prio: int = 0) -> None:
+        """A polygon in the plane z extruded by `length` along +z (a board's
+        dielectric cut to its outline)."""
+        for kind, attrs, inner, boxes in self.props:
+            if attrs["Name"] == name:
+                boxes.append(("linpoly", prio, float(z), [(float(x), float(y)) for x, y in pts],
+                              float(length)))
+                return
+        raise KeyError(name)
+
     def metal(self, name):
         return self.prop("Metal", name)
+
+    def sheet(self, name, conductivity: float, thickness_m: float):
+        """A lossy zero-thickness conductor (CSXCAD's ConductingSheet: a
+        ladder fit of skin effect in a sheet of that conductivity and
+        thickness), drawn with polygon() or box() like a Metal."""
+        return self.prop("ConductingSheet", name,
+                         {"Conductivity": conductivity, "Thickness": thickness_m})
+
+    def dump(self, name, dump_type: int, freqs, dump_mode: int = 1):
+        """A field dump to HDF5 (<name>.h5): DumpType 10 E, 11 H in the
+        frequency domain at `freqs`, cell-interpolated."""
+        self.prop("DumpBox", name, {"DumpType": dump_type, "DumpMode": dump_mode, "FileType": 1})
+        self.fd_samples[name] = [float(f) for f in freqs]
+        return name
 
     def material(self, name, eps_r=1.0, kappa=0.0):
         inner = {"Epsilon": eps_r}
@@ -139,13 +164,17 @@ class Csx:
         plane is not a mesh line: CSXCAD prints 'Unused primitive' and runs
         without it, so a ground plane silently vanishes (hw-lab vna-verify:
         merged mesh lines moved z=0, In1 was dropped and a 50 ohm CPWG read
-        65 ohm; #455 trap 1). [(property, axis, value)]."""
+        65 ohm; #455 trap 1). A solid box with no line inside it on some axis
+        goes too, and quietly: its edges are gone, but a sample between lines
+        can still land in it, so CSXCAD counts it as used and prints nothing
+        (a via's post, thread em-tools). [(property, axis, value)]."""
         ax = "xyz"
         lines = {a: sorted(self.lines[a]) for a in ax}
 
         def on(a, v):
             ls = lines[a]
-            return any(abs(q - v) < 1e-6 for q in ls)
+            # add_lines rounds to 1e-9; a wire 1e-7 off is already dropped (thread em-tools)
+            return any(abs(q - v) < 1e-9 for q in ls)
         out = []
         for kind, attrs, inner, boxes in self.props:
             if kind not in ("Metal", "ConductingSheet"):
@@ -157,16 +186,22 @@ class Csx:
                     if not on("z", prim[2]):
                         out.append((attrs["Name"], "z", prim[2]))
                     continue
+                if prim[0] == "linpoly":
+                    continue
                 _, p1, p2 = prim
                 for i, a in enumerate(ax):
-                    if abs(p1[i] - p2[i]) < 1e-9 and not on(a, p1[i]):
-                        out.append((attrs["Name"], a, p1[i]))
+                    lo, hi = sorted((p1[i], p2[i]))
+                    if hi - lo < 1e-9:
+                        if not on(a, lo):
+                            out.append((attrs["Name"], a, lo))
+                    elif not any(lo - 1e-6 <= q <= hi + 1e-6 for q in lines[a]):
+                        out.append((attrs["Name"], a, lo))
         return out
 
     def xml(self) -> str:
         off = self.sheets_off_mesh()
         if off:
-            raise ValueError("zero-thickness metal off every mesh line (CSXCAD would drop it): "
+            raise ValueError("metal off every mesh line (CSXCAD would drop it): "
                              + ", ".join(f"{n} {a}={v:g}" for n, a, v in off[:6]))
         bcn = ["xmin", "xmax", "ymin", "ymax", "zmin", "zmax"]
         out = ['<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>', "<openEMS>"]
@@ -199,11 +234,20 @@ class Csx:
                                f'<P1 X="{_fmt(p1[0])}" Y="{_fmt(p1[1])}" Z="{_fmt(p1[2])}"/>'
                                f'<P2 X="{_fmt(p2[0])}" Y="{_fmt(p2[1])}" Z="{_fmt(p2[2])}"/></Cylinder>')
                     continue
+                if prim[0] == "linpoly":
+                    _, prio, z, pts, length = prim
+                    vs = "".join(f'<Vertex X1="{_fmt(x)}" X2="{_fmt(y)}"/>' for x, y in pts)
+                    out.append(f'          <LinPoly Priority="{prio}" NormDir="2" Elevation="{_fmt(z)}"'
+                               f' Length="{_fmt(length)}" QtyVertices="{len(pts)}">{vs}</LinPoly>')
+                    continue
                 prio, p1, p2 = prim
                 out.append(f'          <Box Priority="{prio}">'
                            f'<P1 X="{_fmt(p1[0])}" Y="{_fmt(p1[1])}" Z="{_fmt(p1[2])}"/>'
                            f'<P2 X="{_fmt(p2[0])}" Y="{_fmt(p2[1])}" Z="{_fmt(p2[2])}"/></Box>')
             out.append("        </Primitives>")
+            if attrs["Name"] in self.fd_samples:
+                fd = ",".join(repr(f) for f in self.fd_samples[attrs["Name"]])
+                out.append(f"        <FD_Samples>{fd}</FD_Samples>")
             out.append(f"      </{kind}>")
         out.append("    </Properties>")
         out.append(f'    <RectilinearGrid DeltaUnit="{self.unit}" CoordSystem="0">')

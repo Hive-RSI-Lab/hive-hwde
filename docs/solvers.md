@@ -410,11 +410,85 @@ strips halved. A ragged pour cut up by traces does not settle: on hi-fi `core`
 the first mode of `+3V3/GND In2/B.Cu` moves 14% (warning
 segmentation_unconverged). Treat a plane like that as not yet modelled.
 
+## PCB antennas (#481, #371)
+
+`hwde sim_solve antenna` solves a board's own antenna copper in openEMS on its
+finite ground, with a PML_8 box and NF2FF: S11, Zin, gain pattern, directivity,
+radiation efficiency (`scripts/lib/emantenna.py`). The port is lumped, in the
+plane across a gap or between layers:
+
+```
+hwde sim_solve antenna --pcb B --feed X,Y,F.Cu,B.Cu --band 2.3e9,2.6e9 \
+    --region X0,Y0,X1,Y1 --ground GND_A9 [--outline X0,Y0,X1,Y1] [--cut BOX] \
+    [--short BOX] [--fine MM] [--loss] [--converge] [--threads 4] --out DIR
+```
+
+`--region` is the antenna's own copper: other nets stop there, ground nets stay
+whole. `--outline` cuts one coupon out of a panel. A ground net matches with or
+without KiCad's sheet slash, and one with no copper is an error (a deck without
+its ground plane still runs and looks like an answer). `--deck-only DIR` writes
+the deck and prints its size. Run `--deck-only` under `heavy --quick` first.
+
+Known answers, new mesh (#622), 2026-11-02, lossless decks:
+
+| case | reference | measured | moved under refinement |
+|---|---|---|---|
+| dipole, X = 0 | none, strip dipole: reported, not judged | 936.1 / 939.1 MHz at 2 / 1 mm | 0.3% |
+| dipole, R at X = 0 | about 70 ohm, the thin-wire 73 less the shortening | 70.4 / 70.3 ohm | 0.1% |
+| dipole, directivity at 0.95 GHz | 2.15 dBi | 2.184 / 2.176 dBi | 0.008 dB |
+| dipole, efficiency | 1 | 0.995 or better | |
+| patch 38 x 29.5 mm, TM010 | 2.328 GHz (earlier openEMS, kb/em-solvers.md); 2.394 GHz (cavity + Hammerstad, usual error a few %) | 2.332 / 2.332 GHz at 2 / 1 mm | under 0.1% |
+| patch, Dmax at 2.35 GHz | none, 6.85 is reported | 6.854 / 6.856 dBi | 0.002 dB |
+| patch TM010, Palace eigenmode on a quarter patch, order 2 | openEMS 2.332 GHz | 2.293 / 2.302 GHz, Q 55 / 54.8, at 2.5 / 1.6 mm mesh | rising, not converged; 1.3% low |
+
+The dipole at 1 GHz reads about 90+j50 ohm against the thin wire's 73+j42. A strip
+is a thick dipole, which is the likely reason; that is reasoned, not checked
+against a table. Efficiency reads 1 on these decks because they have no loss. No
+known answer has checked `--loss`'s efficiency on an antenna.
+
+Three things decided the numbers:
+
+- **The boundary.** `emboard` uses MUR because PML_8 grew on vna-verify. Here
+  PML_8 is stable on the dipole and tracks MUR, so antennas use it.
+- **The mesh.** Without #622's clear thirds cells the patch read 2.226 GHz at 2 mm
+  and 2.274 at 1 mm. Lines nearer than 0.6 of `fine` merge, because the time step
+  follows the least cell: the 1 mm dipole went from about 16e9 to 5e9 cell-steps.
+- **The record.** Three corner-to-corner trips of the domain after the pulse. A
+  run whose last tenth is over 1e-3 of its peak reruns for a length extrapolated
+  from its decay.
+
+**TI's AN043 IFA tunes only on a thinner board.** Same copper, TI's 15.2 x 30 mm
+ground, er 4.4, lossless, against TI's match across 2.4-2.48 GHz:
+
+| board | mesh | S11 minimum | -10 dB band |
+|---|---|---|---|
+| 1.6 mm | 0.25 / 0.17 mm | -7.4 dB at 2.291 GHz / -8.2 dB at 2.309 GHz | none |
+| 1.0 mm | 0.25 mm | -10.4 dB at 2.389 GHz | 2.377-2.413 GHz |
+| 0.8 mm | 0.25 / 0.17 mm | -12.7 dB at 2.438 GHz / -14.4 dB at 2.456 GHz | 2.395-2.487 / 2.401-2.517 GHz |
+
+This is a fit, not a passed known answer: AN043 states no thickness, 0.8 mm is
+the value tried that works, and the search for TI's real board found none. TI's
+dongle is described as 4-layer, so its ground may also not sit a full board below
+the antenna. The tuning still moves about 0.7% between these meshes, so read it
+to about 20 MHz. Copying this antenna onto a plain 1.6 mm board puts it well below
+the band, which is what rf-kit's A9 coupon is there to measure.
+
+Real board, rf-kit A9 (`--feed` between the feed and B.Cu, past the ground edge,
+with loss, 1.53 mm, er 4.5, tan d 0.02): 2.260 / 2.248 GHz at 0.25 / 0.17 mm (0.5%,
+converged), S11 -9.8 dB, efficiency 0.85 and Dmax 2.14 dBi at 2.45 GHz. A prediction
+until the coupon is measured; nothing has compared it with hardware.
+
+`check_antenna`'s `pcb_antennas` row (`reference/constraints_schema.md`) judges
+the copper itself: keep-out on every layer, feed and short on the copper, ground
+edge, the copy against `reference/pcb_antennas.yaml`, and a `sim` result against
+its band. The `feed` of a row with a reference is where the reference's anchor
+goes, so it sits on the ground edge: 0.08 mm off reads as a 10% copper difference.
+
 ## What is not here yet
 
-- Antennas in openEMS (radiation boundary, NF2FF: #481); connector
-  bodies and launches (the SMA's coax and pin: #479; `sim_solve board`
-  already has the vias and plane cut-outs); Palace for the same decks.
+- Connector bodies and launches (the SMA's coax and pin: #479; `sim_solve
+  board` already has the vias and plane cut-outs); Palace for the same decks.
+  Palace on a board's own antenna: only the bare patch has been run.
 - `thermalfv` on a board's real copper. check_irdrop already rasterises a
   net into a grid; feeding its grid and current into `thermalfv.joule`
   gives the self-heated trace and neck temperatures check_thermal's

@@ -371,3 +371,6 @@ def test_a_short_run_between_vias_moves_to_the_next_layer():
     assert merge_close_vias(long, 3.0) == long
     drop = [(0, 0, 0), (0, 0, -1)]
     assert merge_close_vias(drop, 3.0) == drop
+    # hw-lab hdi-bga: the search never looked at the moved via's cell. With no span
+    # there, the move fell back to a through via on the heater and a coupon via.
+    assert merge_close_vias(path, 3.0, lambda run, k2: False) == path
