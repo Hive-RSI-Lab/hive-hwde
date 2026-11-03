@@ -231,8 +231,8 @@ def test_build_cpl_layer_and_rotation():
     by_ref = {r["Designator"]: r for r in cpl}
     assert by_ref["D1"]["Layer"] == "Bottom"
     assert by_ref["C1"]["Layer"] == "Top"
-    # LED_0805 carries a 180 correction: 180 + 180 = 360 -> 0
-    assert float(by_ref["D1"]["Rotation"]) == pytest.approx(0.0)
+    # bottom: 180 - kicad 180 = 0, then LED_0805's 180 correction
+    assert float(by_ref["D1"]["Rotation"]) == pytest.approx(180.0)
     assert by_ref["C1"]["Mid X"] == "1.0000"
     assert {a["ref"] for a in audit} == {"C1", "C2", "D1"}
 
@@ -1421,3 +1421,33 @@ def test_mouse_bite_rows_are_not_hole_pairs():
     assert not pair(bite, H(plated=True, diameter=0.5))
     assert not pair(bite, H(plated=False, diameter=0.6))
     assert not pair(H(plated=False, diameter=0.4), H(plated=False, diameter=0.4))
+
+
+def test_dfm_2oz_outer_floor_holds_outer_copper_only(tmp_path):
+    """#627: JLC's 2 oz figure holds F.Cu/B.Cu; a 0.5 oz inner layer at the same
+    gap passes on the row's own floor."""
+    from shapely.geometry import box
+
+    class Layer:
+        def __init__(self):
+            self.gap = 0.12
+
+        def components(self):
+            return [box(0, 0, 5, 1), box(0, 1 + self.gap, 5, 2)]
+
+    class Fab:
+        def copper_layer_names(self):
+            return ["F.Cu", "In1.Cu", "In2.Cu", "B.Cu"]
+
+        def copper(self, name):
+            return Layer()
+
+    rows = yaml.safe_load((REFERENCE / "jlc_capabilities.yaml").read_text(
+        encoding="utf-8"))["design_rules"]
+    vios: list = []
+    dfm_check.check_clearance(Fab(), rows["4layer_2oz"], vios)
+    assert sorted(v["layer"] for v in vios) == ["B.Cu", "F.Cu"]
+    assert {v["min_mm"] for v in vios} == {0.15}
+    vios = []
+    dfm_check.check_clearance(Fab(), rows["4layer_1oz"], vios)
+    assert vios == []

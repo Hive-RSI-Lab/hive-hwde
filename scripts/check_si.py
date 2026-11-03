@@ -777,7 +777,7 @@ def auto_groups(specs) -> list[dict]:
 def pair_target(bg, p, n, spec, common, pos) -> list[dict]:
     """A transmission-line differential pair against its standard Zdiff."""
     import check_diffpair
-    stats = check_diffpair.coupling_stats(bg, p, n, 1.0)
+    _, _, stats = check_diffpair.coupling_stats(bg, p, n, 1.0)
     gap = stats.get("nominal_gap_mm")
     imp = check_diffpair.pair_impedance(bg, p, n, gap)
     z = imp.get("zdiff_ohm")

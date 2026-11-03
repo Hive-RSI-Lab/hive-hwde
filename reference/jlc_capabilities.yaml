@@ -37,6 +37,13 @@
 #     (castellated holes: the castellated block). A pair of board vias is
 #     held to the via figure, any pair with a pad hole to the pad figure.
 #
+# 2 oz spacing (#627; JLC page read 2026-11-03): 'Min. track width and spacing
+# (2 oz) 2-layer: 0.16 / 0.16 mm; Multilayer: 0.15 / 0.15 mm'. It is a rule of
+# the 2 oz copper, so on a multilayer row with thin inner layers
+# min_outer_clearance_mm holds F.Cu and B.Cu and min_clearance_mm holds the
+# inner layers. fabfloors.outer_clearance reads it with min_clearance_mm as the
+# fallback, for every row without the key.
+#
 # COVERAGE BOUNDARY - a key's presence here does NOT imply a local check reads
 # it. Verified consumption (T6):
 #   dfm_check-enforced (gerber-level): min_trace_width_mm, min_clearance_mm,
@@ -101,9 +108,16 @@ board:
 # Assembling them (jlcpcb.com/capabilities/pcb-assembly-capabilities, read
 # 2026-11-01): Economic PCBA "Not Support"; Standard PCBA supports them, edge
 # rails and fiducials "Necessary", single PCB or panel at least 70 x 70 mm.
+# The same page gives Economic as "Single sided placement", so parts on both
+# sides are held to this block too (dfm_check both_sides_needs_panel, read
+# 2026-11-02). The page gives no rail width or fiducial count: 5 mm and 3 are
+# what eda-crossover's panel generator built to, from pcb-capabilities' "Mouse
+# bites Panel", and a warning at most.
 castellated_assembly:
   service: standard
   min_panel_mm: 70
+  rail_min_mm: 5
+  min_fiducials: 3
   source: https://jlcpcb.com/capabilities/pcb-assembly-capabilities
 
 castellated:
@@ -154,8 +168,8 @@ design_rules:
     inner_copper_oz: 0.0
 
   2layer_2oz:
-    min_trace_width_mm: 0.1524       # 6 mil (2 oz)
-    min_clearance_mm: 0.1524         # 6 mil (2 oz)
+    min_trace_width_mm: 0.16         # JLC 2 oz 2-layer 0.16/0.16 (2026-11-03, #627)
+    min_clearance_mm: 0.16           # was 0.1524 (6 mil): JLC says 6.5 mil here
     min_via_drill_mm: 0.3
     min_via_diameter_mm: 0.6
     min_annular_ring_mm: 0.15            # VIA ring; via dia >= hole + 0.1 (JLC; 0.15 preferred)
@@ -211,7 +225,8 @@ design_rules:
 
   4layer_2oz: &multilayer_2oz
     min_trace_width_mm: 0.1524       # 6 mil outer (2 oz)
-    min_clearance_mm: 0.1016         # 4 mil
+    min_clearance_mm: 0.1016         # 4 mil: 0.5 oz inner layers (#627)
+    min_outer_clearance_mm: 0.15     # JLC 2 oz multilayer 0.15/0.15, outer layers (#627)
     min_via_drill_mm: 0.2
     min_via_diameter_mm: 0.45
     min_annular_ring_mm: 0.1             # VIA ring; via dia >= hole + 0.1 (JLC; 0.15 preferred)

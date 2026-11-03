@@ -12,7 +12,10 @@ time, on a fine grid (default 0.1 mm) with 8-way moves and through vias:
 - The rules are the board's own: track width per net from the .kicad_dru
   (rules_gen's power widths), clearance from the .kicad_dru baseline or the
   netclass, per-net clearance floors, hole-to-hole, hole clearance, copper to
-  edge, rule-area keepouts. Vias match the board's most common via.
+  edge, rule-area keepouts. Vias match the board's most common through via.
+  On an HDI build (#477) a layer change may also take any span the build
+  laminates, at its own size and JLC's HDI numbers, for a share of a through
+  via's cost (SPAN_COST): a microvia is the cheap way down one layer.
 - Other-net zone fills are not walls (they refill around new copper) but cost
   more to cross, so a route only splits a pour when it must; a piece it cuts
   off is joined by the next pass.
@@ -38,19 +41,29 @@ Contract:
       [--grid 0.1] [--margin 4] [--min-width 0.2] [--clearance-margin 0.02]
       [--via-size MM --via-drill MM] [--max-conns N] [--rip-errors]
       [--no-rip-board] [--dry-run] [--work-dir DIR] [--out-report r.json]
+      [--skip-conns c.json] [--protect-nets A,B] [--plan-seconds S]
+      [--start-report r.json] [--trace t.jsonl] [--measure-only]
   exit 0 = nothing left unconnected and DRC clean; 1 = some remain or other
   violations (board updated with what was kept); 2 = error (board untouched).
 
 finish_staged() is the importable form route_auto calls on its staged board.
+
+The last group of flags is what route_close (the chunked driver) runs a chunk
+with: connections to leave out, nets never to rip, when to stop searching so
+the chunk still reports, the report the last chunk left so this one needn't
+repeat its DRC, and a file naming the connection being searched, so a chunk
+that dies can be blamed on it.
 """
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import heapq
 import json
 import math
 import re
 import sys
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -67,12 +80,14 @@ from shapely.strtree import STRtree  # noqa: E402
 import checklib  # noqa: E402
 import env  # noqa: E402
 import geom  # noqa: E402
+import hdilib  # noqa: E402
 import kc  # noqa: E402
 import routelib  # noqa: E402
 from checklib import CheckError  # noqa: E402
 
 KICAD_HOLE_CLEARANCE = 0.25   # board setup default min hole clearance
 KICAD_HOLE_TO_HOLE = 0.25     # board setup default min hole to hole
+SAME_NET_HOLE_MM = 0.13       # JLC HDI, one net, edge to edge (jlc_capabilities hdi)
 
 
 # ------------------------------------------------------------------ rules
@@ -91,6 +106,10 @@ class Rules:
     margin: float = 0.02
     track_floor: float = 0.1
     via_floor: tuple = (0.45, 0.2)   # the smallest via DRC passes
+    spans: list = field(default_factory=list)   # the HDI build's (#477)
+    span_hole_clearance: float = 0.15
+    span_hole_to_hole: float = 0.24
+    copper: list = field(default_factory=list)
 
     def width(self, net: str) -> float:
         w = max(self.net_width.get(net, 0.0) + 0.001, self.min_width)
@@ -131,6 +150,8 @@ def board_rules(pcb: Path, bg: geom.BoardGeom, *, min_width: float = 0.2,
         pass
     vias = {}
     for v in bg.vias_of():
+        if v.kind != "through":     # the through via is what's being sized
+            continue
         k = (round(v.diameter, 3), round(v.drill, 3))
         vias[k] = vias.get(k, 0) + 1
     common = max(vias, key=lambda k: (vias[k], k)) if vias else None
@@ -138,6 +159,14 @@ def board_rules(pcb: Path, bg: geom.BoardGeom, *, min_width: float = 0.2,
         floors["via_diameter"], base.get("via_diameter", 0.0), 0.6))
     vd = via_drill or (common[1] if common else max(
         floors["via_drill"], base.get("hole_size", 0.0), 0.3))
+    build, entry = hdilib.board_build(bg)
+    hdi: dict = {}
+    if build:
+        caps = hdilib.load_hdi_caps()
+        hdi = {"spans": hdilib.spans_of(entry, bg.copper_layers, caps=caps),
+               "span_hole_clearance": float(caps["hole_to_trace_mm"]),
+               "span_hole_to_hole": float(caps["hole_to_hole_diff_net_mm"]),
+               "copper": list(bg.copper_layers)}
     return Rules(
         clearance=base.get("clearance", floors["clearance"]),
         hole_clearance=max(base.get("hole_clearance", 0.0), float(
@@ -154,7 +183,7 @@ def board_rules(pcb: Path, bg: geom.BoardGeom, *, min_width: float = 0.2,
         via_size=vs, via_drill=vd,
         net_width=rc.dru_net_floors(dru, "track_width"),
         net_clearance=rc.dru_net_floors(dru, "clearance"),
-        margin=margin)
+        margin=margin, **hdi)
 
 
 # ---------------------------------------------------------------- islands
@@ -226,6 +255,7 @@ class Item:
     hole: object = None    # drill extent polygon, or None
     conn: int = -1         # route_finish connection that added it
     uuid: str | None = None  # a board track or via route_finish may rip
+    tied: frozenset = frozenset()  # nets this copper may touch (a net tie's)
 
 
 class Obstacles:
@@ -248,6 +278,10 @@ class Obstacles:
             items.append(Item(p.net or "", frozenset(p.layers) & cu, p.poly,
                               0.0, dp if dp is not None and not dp.is_empty
                               else None))
+        # DRC sees this copper as netless, so a track through it is a short
+        for c in bg.fp_copper:
+            items.append(Item("", frozenset({c["layer"]}), c["shape"], 0.0,
+                              tied=c["nets"]))
         self.items = items
         self.tree = STRtree([shapely.envelope(
             it.shape if it.hole is None else shapely.union(it.shape, it.hole))
@@ -293,6 +327,8 @@ class Grid:
     in_b: list
     a_plane: bytes          # cell inside side A's copper on a plane layer
     b_plane: bytes
+    # #477, per k: (k2, span, its via mask, the k its via must find clear)
+    span_moves: list = field(default_factory=list)
 
     def xy(self, i: int, j: int) -> tuple[float, float]:
         return (round(self.x0 + i * self.g, 4), round(self.y0 + j * self.g, 4))
@@ -339,7 +375,7 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
 
     soft = obs.soft_board
     for it in obs.near(win):
-        other = it.net != net
+        other = it.net != net and net not in it.tied
         if other and soft is not None and it.uuid and it.net not in soft:
             # crossing it means ripping it: passable, at a price
             on = [k for k, layer in enumerate(layers) if layer in it.layers]
@@ -429,6 +465,7 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
         return out
 
     a, b = side(side_a, False), side(side_b, False)
+    span_moves = _span_moves(obs, rules, net, layers, win, args, K, blk, outline)
     return Grid(
         x0=x0, y0=y0, nx=nx, ny=ny, g=g, layers=list(layers),
         blk=[m.ravel().astype(np.uint8).tobytes() for m in blk],
@@ -438,7 +475,78 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
         in_a=[m.ravel().astype(np.uint8).tobytes() for m in a],
         in_b=[m.ravel().astype(np.uint8).tobytes() for m in b],
         a_plane=side(side_a, True).ravel().astype(np.uint8).tobytes(),
-        b_plane=side(side_b, True).ravel().astype(np.uint8).tobytes())
+        b_plane=side(side_b, True).ravel().astype(np.uint8).tobytes(),
+        span_moves=span_moves)
+
+
+def _span_moves(obs, rules: Rules, net: str, layers: list, win, args, K: int,
+                blk: list, outline) -> list:
+    """What an HDI build's spans add to the search (#477): per routable layer
+    k, the layers its spans reach, each with its own via mask. A span's via is
+    only there on the layers it crosses, so it is held to what is on those
+    layers, at JLC's HDI numbers rather than the through-via floors."""
+    if not rules.spans:
+        return []
+    X, Y = args[0], args[1]
+    moves: list = [[] for _ in range(K)]
+    for sp in rules.spans:
+        on = set(rules.copper[sp.i:sp.j + 1])
+        ks = [k for k, ly in enumerate(layers) if ly in on]
+        if len(ks) < 2:
+            continue
+        vr = sp.size / 2
+        m = np.zeros((args[7], args[6]), bool)
+        for it in obs.near(win):
+            if not on & set(it.layers):
+                continue
+            other = it.net != net and net not in it.tied
+            if other:
+                hit = _mask(it.shape, it.half + max(
+                    vr + rules.clr(net, it.net),
+                    sp.drill / 2 + rules.span_hole_clearance + rules.margin), *args)
+                if hit:
+                    m[hit[0]] |= hit[1]
+            if it.hole is not None and other:
+                hit = _mask(it.hole, sp.drill / 2 + rules.margin
+                            + rules.span_hole_to_hole, *args)
+                if hit:
+                    m[hit[0]] |= hit[1]
+            if it.hole is not None and not other:
+                # one net's vias: an exact stack, or JLC's same-net spacing.
+                # KiCad's DRC doesn't always report a miss (hw-lab hdi-bga).
+                hit = _mask(it.hole, sp.drill / 2 + rules.margin
+                            + SAME_NET_HOLE_MM, *args)
+                if hit:
+                    stack = shapely.dwithin(it.hole.centroid, args[2][hit[0]], 0.01)
+                    m[hit[0]] |= hit[1] & ~stack
+        for ra in obs.bg.rule_areas:
+            if ra.get("flags", {}).get("vias") == "not_allowed" \
+                    and not ra["outline"].is_empty and ra["outline"].intersects(win):
+                hit = _mask(ra["outline"], vr + rules.margin, *args)
+                if hit:
+                    m[hit[0]] |= hit[1]
+        if outline is not None and not outline.is_empty:
+            m |= ~shapely.contains_xy(
+                outline.buffer(-(rules.edge_clearance + vr + rules.margin)), X, Y)
+        mask = m.ravel().astype(np.uint8).tobytes()
+        for k in ks:
+            for k2 in ks:
+                if k2 != k:
+                    moves[k].append((k2, sp, mask, ks))
+    return moves
+
+
+SPAN_COST = {"micro": 0.3, "buried": 0.6, "blind": 0.6}  # of a through via
+
+
+def span_for(gr: Grid, k: int, k2: int, c: int):
+    """The cheapest span joining layers k and k2 at cell c, or None."""
+    best = None
+    for kk, sp, mask, ks in (gr.span_moves[k] if gr.span_moves else ()):
+        if kk == k2 and not mask[c] and not any(gr.blk[q][c] for q in ks) \
+                and (best is None or SPAN_COST[sp.kind] < SPAN_COST[best.kind]):
+            best = sp
+    return best
 
 
 _MOVES = [(1, 0, 1.0), (-1, 0, 1.0), (0, 1, 1.0), (0, -1, 1.0),
@@ -447,11 +555,12 @@ _MOVES = [(1, 0, 1.0), (-1, 0, 1.0), (0, 1, 1.0), (0, -1, 1.0),
 
 
 def astar(gr: Grid, target, via_cost: float = 15.0,
-          max_nodes: int = 3_000_000):
+          max_nodes: int = 3_000_000, deadline: float | None = None):
     """Multi-source search from side A's free cells to side B's.
 
     Nodes are (cell, k); a via (layer change, or a drop into a plane-layer
-    side) costs via_cost grid steps. Returns [(i, j, k, via_here)] from A to
+    side) costs via_cost grid steps, an HDI build's span a share of that
+    (SPAN_COST, #477). Returns [(i, j, k, via_here)] from A to
     B, where a final/initial entry with k = -1 is a via into a plane, or None.
     """
     nx, ny, K = gr.nx, gr.ny, len(gr.layers)
@@ -503,6 +612,9 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
         expanded += 1
         if expanded > max_nodes:
             break
+        if deadline is not None and not expanded & 0x3FFF \
+                and time.monotonic() >= deadline:
+            break
         i, j = c % nx, c // nx
         blk, cost = gr.blk[k], gr.cost[k]
         for di, dj, step in _MOVES:
@@ -520,6 +632,16 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
                 dist[n2] = ng
                 prev[n2] = n
                 heapq.heappush(pq, (ng + h(c2), ng, n2))
+        if gr.span_moves:
+            for k2, sp, mask, ks in gr.span_moves[k]:
+                if mask[c] or any(gr.blk[q][c] for q in ks):
+                    continue
+                n2 = k2 * N + c
+                ng = gcost + via_cost * SPAN_COST[sp.kind]
+                if ng < dist.get(n2, 1e18):
+                    dist[n2] = ng
+                    prev[n2] = n
+                    heapq.heappush(pq, (ng + h(c), ng, n2))
         if via_ok(c):
             for k2 in range(K):
                 if k2 == k:
@@ -560,21 +682,50 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
     return path
 
 
+def merge_close_vias(path: list, min_cells: float) -> list:
+    """A short run between two layer changes puts two vias of one net too close
+    together for JLC's same-net hole spacing, and KiCad's DRC doesn't always say
+    so. Take both layer changes at the run's start and carry the jog on the next
+    layer. DRC still judges the moved copper."""
+    if any(q[2] == -1 for q in path):
+        return path
+    runs: list[list] = []
+    for q in path:
+        if runs and runs[-1][0][2] == q[2]:
+            runs[-1].append(q)
+        else:
+            runs.append([q])
+    n = 1
+    while n < len(runs) - 1:
+        run = runs[n]
+        if math.dist(run[0][:2], run[-1][:2]) < min_cells and run[0][:2] != run[-1][:2]:
+            nxt = runs[n + 1][0][2]
+            runs[n + 1] = [(q[0], q[1], nxt) for q in run] + runs[n + 1]
+            runs[n] = [run[0]]
+        n += 1
+    return [q for run in runs for q in run]
+
+
 def path_to_ops(gr: Grid, path, net: str, width: float, rules: Rules) -> list:
     """Grid path -> route_edit ops: one track per straight run, a via at
-    every layer change and at a plane drop (k = -1)."""
+    every layer change and at a plane drop (k = -1). A layer change on an HDI
+    build takes the span the search priced it at (#477)."""
+    if rules.spans:
+        path = merge_close_vias(
+            path, (SAME_NET_HOLE_MM + rules.via_floor[1]) / gr.g)
     ops = []
     vias = []
     runs: list[list] = []
     for i, j, k in path:
         if k == -1:
-            vias.append(gr.xy(i, j))
+            vias.append((gr.xy(i, j), None))
             continue
         if runs and runs[-1][0][2] == k:
             runs[-1].append((i, j, k))
         else:
             if runs:
-                vias.append(gr.xy(i, j))
+                vias.append((gr.xy(i, j),
+                             span_for(gr, runs[-1][0][2], k, j * gr.nx + i)))
             runs.append([(i, j, k)])
     for run in runs:
         corners = [run[0]]
@@ -591,11 +742,12 @@ def path_to_ops(gr: Grid, path, net: str, width: float, rules: Rules) -> list:
                         "end": list(gr.xy(*c1[:2])), "width": width,
                         "layer": layer, "net": net})
     seen = set()
-    for at in vias:
-        if at in seen:
+    for at, sp in vias:
+        if (at, sp) in seen:
             continue
-        seen.add(at)
-        ops.append({"op": "add_via", "at": list(at), "size": gr.via[0],
+        seen.add((at, sp))
+        ops.append(sp.as_op(at, net) if sp else
+                   {"op": "add_via", "at": list(at), "size": gr.via[0],
                     "drill": gr.via[1], "net": net})
     return ops
 
@@ -608,7 +760,10 @@ def ops_items(ops: list, conn: int, copper_layers) -> list[Item]:
                             LineString([op["start"], op["end"]]),
                             op["width"] / 2, conn=conn))
         else:
-            out.append(Item(op["net"], frozenset(copper_layers),
+            on = list(copper_layers)
+            if "top" in op:
+                on = on[on.index(op["top"]):on.index(op["bot"]) + 1]
+            out.append(Item(op["net"], frozenset(on),
                             Point(op["at"]), op["size"] / 2,
                             Point(op["at"]).buffer(op["drill"] / 2,
                                                    quad_segs=4), conn=conn))
@@ -661,14 +816,43 @@ def unconnected_by_net(report: dict) -> dict[str, int]:
     return out
 
 
+# KiCad's DRC stops reporting unconnected items here, so a board with more than
+# this many shows the same total however many connections a pass closes.
+DRC_UNCONNECTED_CAP = 499
+
+
+def _pass_helped(before: int, after: int, jobs: list[dict]) -> bool:
+    """Did the unconnected count drop? At the DRC's cap the count can't show it:
+    a routed connection that DRC didn't take out is the only evidence left."""
+    if after < before:
+        return True
+    return (before >= DRC_UNCONNECTED_CAP and after >= DRC_UNCONNECTED_CAP
+            and any(j["status"] == "routed" for j in jobs))
+
+
+def conn_key(net: str, a, b) -> tuple:
+    """A connection's name across runs: its net and the two points the plan
+    joins. It stays the same until one of the net's two islands changes, and
+    then it is a different connection and worth a new try."""
+    return (net, *sorted((tuple(a), tuple(b))))
+
+
 def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
                 layers: list[str], *, grid: float = 0.1, margin: float = 4.0,
                 max_conns: int | None = None, max_nodes: int = 3_000_000,
                 via_cost_mm: float = 1.5, rip_board: bool = False,
                 rip_board_nets: int = 4, ripped_out: list | None = None,
-                log=None) -> list[dict]:
+                log=None, skip: set | None = None,
+                keep_nets_extra=(), deadline: float | None = None,
+                on_try=None) -> list[dict]:
     """Find a route for each pair, shortest first; each found route is an
-    obstacle for the ones after it. Returns [{net, ops, status, ...}]."""
+    obstacle for the ones after it. Returns [{net, ops, status, ...}].
+
+    skip: conn_key()s to leave out, so they don't use up max_conns.
+    keep_nets_extra: nets never ripped, like pour nets. deadline
+    (time.monotonic()): start no search after it and cut the one running;
+    what was found so far still comes back. on_try(job): called before each
+    connection's search."""
     obs = Obstacles(bg)
     isl_cache: dict[str, list] = {}
     jobs = []
@@ -717,6 +901,14 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
             if i != main:
                 add_job(net, isl, i, main, None, None)
     todo = sorted((j for j in jobs if "side_a" in j), key=lambda j: j["dist"])
+    if skip:
+        kept_todo = []
+        for j in todo:
+            if conn_key(j["net"], j["a"], j["b"]) in skip:
+                j.update(status="skipped", reason="set aside")
+            else:
+                kept_todo.append(j)
+        todo = kept_todo
     if max_conns is not None:
         for j in todo[max_conns:]:
             j.update(status="skipped", reason="over --max-conns")
@@ -746,7 +938,7 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
                 target = (int(round((bx - gr.x0) / g)),
                           int(round((by - gr.y0) / g)))
                 path = astar(gr, target, via_cost=via_cost_mm / g,
-                             max_nodes=max_nodes)
+                             max_nodes=max_nodes, deadline=deadline)
                 if path:
                     return path, gr, w
         finally:
@@ -761,15 +953,27 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
         obs.added.extend(ops_items(ops, n, bg.copper_layers))
 
     # power and pour nets are never ripped: their copper is sized by rule
+    # nor are constraints diff pairs: a pair ripped here comes back single-ended (#613)
     keep_nets = {z.net for z in bg.zones_of()} | set(rules.net_width) | {""}
+    keep_nets |= set(keep_nets_extra or ())
+
+    def expired():
+        return deadline is not None and time.monotonic() >= deadline
+
     queue = list(range(len(todo)))
     ripped_once: set[int] = set()
     ripped_board: set[int] = set()
     steps = 0
     while queue:
+        if expired():
+            for n in queue:
+                todo[n].update(status="skipped", reason="over the deadline")
+            break
         n = queue.pop(0)
         job = todo[n]
         steps += 1
+        if on_try:
+            on_try(job)
         path, gr, w = search(job)
         if path:
             commit(n, job, path, gr, w)
@@ -845,7 +1049,10 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
                     job["rip_uuids"] = sorted(set(board_rip))
                     job["ripped_nets"] = sorted(nets)
         if job.get("status") not in ("routed",):
-            job.update(status="failed", reason="no path on the grid")
+            if expired():
+                job.update(status="skipped", reason="cut by the deadline")
+            else:
+                job.update(status="failed", reason="no path on the grid")
         if log:
             log(f"{steps} {job['net']}: {job['status']}")
     for j in jobs:
@@ -884,7 +1091,14 @@ def _one_pass(cli, staged, drc, opts, *, parity, refill, log):
     rip: list = []
     jobs = plan_routes(bg, rules, pairs, lays, grid=opts["grid"],
                        margin=opts["margin"], max_conns=opts["max_conns"],
-                       rip_board=opts["rip_board"], ripped_out=rip, log=log)
+                       rip_board=opts["rip_board"], ripped_out=rip, log=log,
+                       skip=opts["skip"], keep_nets_extra=opts["keep_nets"],
+                       deadline=opts["deadline"], on_try=opts["on_try"])
+    if opts["skip"] is not None:
+        # a chunk of route_close: it tries these again next round, so the
+        # chunk's later passes don't spend their time on them
+        opts["skip"].update(conn_key(j["net"], j["a"], j["b"]) for j in jobs
+                            if j["status"] == "failed")
     all_ops, op_conn = [], []
     for c, j in enumerate(jobs):
         if j["status"] == "routed":
@@ -902,9 +1116,11 @@ def _one_pass(cli, staged, drc, opts, *, parity, refill, log):
             conn_uuids.setdefault(c, []).append(r["uuid"])
     after = None
     for _ in range(3):
+        t0 = time.monotonic()
         if refill:
             kc.run_drc(cli, staged, refill=True, save_board=True)
         after = kc.run_drc(cli, staged, parity=parity, all_track_errors=True)
+        opts["drc_s"] = max(opts["drc_s"], time.monotonic() - t0)
         bad = _named_conns(after, uuid_conn)
         if not bad:
             break
@@ -920,6 +1136,9 @@ def _one_pass(cli, staged, drc, opts, *, parity, refill, log):
         if refill:
             kc.run_drc(cli, staged, refill=True, save_board=True)
         after = kc.run_drc(cli, staged, parity=parity, all_track_errors=True)
+    if opts["skip"] is not None:
+        opts["skip"].update(conn_key(j["net"], j["a"], j["b"]) for j in jobs
+                            if j["status"] == "rolled_back")
     return jobs, after, rules, lays
 
 
@@ -930,8 +1149,9 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
                   via_drill=None, max_conns=None, parity: bool = False,
                   refill: bool = True, dry_run: bool = False,
                   passes: int = 6, rip_errors: bool = False,
-                  rip_board: bool = True,
-                  log=None) -> dict:
+                  rip_board: bool = True, keep_nets: set | None = None,
+                  log=None, skip_conns=None,
+                  deadline: float | None = None, on_try=None) -> dict:
     """Route the staged board's unconnected pairs in place, in passes: a
     route can split another net's pour, and the next pass joins the piece.
     A pass is kept only when the unconnected count drops and no error type
@@ -943,7 +1163,9 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
                 margin=margin, min_width=min_width,
                 clearance_margin=clearance_margin, via_size=via_size,
                 via_drill=via_drill, max_conns=max_conns,
-                rip_board=rip_board)
+                rip_board=rip_board, drc_s=0.0, deadline=deadline,
+                skip=None if skip_conns is None else set(skip_conns),
+                keep_nets=keep_nets, on_try=on_try)
     start_un = sum(unconnected_by_net(drc).values())
     facts: dict = {"unconnected_before": start_un,
                    "errors_before": err_counts(drc), "passes": []}
@@ -955,7 +1177,8 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
         lays = routable_layers(bg, layers)
         jobs = plan_routes(bg, rules, unconnected_pairs(drc, opts["nets"]),
                            lays, grid=grid, margin=margin,
-                           max_conns=max_conns, rip_board=rip_board, log=log)
+                           max_conns=max_conns, rip_board=rip_board, log=log,
+                           skip=opts["skip"], keep_nets_extra=keep_nets)
         facts.update(kept=False, rules=_rules_facts(rules), layers=lays,
                      connections=jobs,
                      routed=sum(j["status"] == "routed" for j in jobs))
@@ -995,6 +1218,8 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
         for n in range(passes):
             if not unconnected_pairs(cur, opts["nets"]):
                 break
+            if n and deadline is not None and time.monotonic() >= deadline:
+                break
             shutil.copy2(staged, backup)
             try:
                 jobs, after, rules, lays = _one_pass(
@@ -1027,7 +1252,9 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
                 touched.update(j.get("ripped_nets", []))
                 if board_rip and j["status"] == "routed":
                     touched.add(j["net"])
-            if a_un < b_un and not grew:
+            if b_un >= DRC_UNCONNECTED_CAP:
+                entry["unconnected_capped"] = True
+            if _pass_helped(b_un, a_un, jobs) and not grew:
                 entry["kept"] = True
                 cur = after
                 kept_any = True
@@ -1076,7 +1303,7 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
             kept_any = True
             facts["rip_kept"] = True
         origin.unlink(missing_ok=True)
-    facts.update(kept=kept_any,
+    facts.update(kept=kept_any, drc_s=round(opts["drc_s"], 1),
                  unconnected_after=sum(unconnected_by_net(cur).values()),
                  errors_after=err_counts(cur))
     if kept_any:
@@ -1154,12 +1381,15 @@ def _error_copper(staged: Path, drc: dict) -> list[str]:
 
 
 def _rules_facts(rules: Rules) -> dict:
-    return {k: v for k, v in rules.__dict__.items() if not isinstance(v, dict)}
+    facts = {k: v for k, v in rules.__dict__.items() if not isinstance(v, dict)}
+    # An HDI board's Rules carry hdilib.Span objects; the report is JSON (#477).
+    if facts.get("spans"):
+        facts["spans"] = [dataclasses.asdict(s) for s in facts["spans"]]
+    return facts
 
 
-def run(argv: list[str] | None = None):
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--pcb", required=True)
+def add_routing_args(ap: argparse.ArgumentParser) -> None:
+    """The options that say how to route, shared with route_close."""
     ap.add_argument("--nets", default=None, help="only these nets (comma list)")
     ap.add_argument("--layers", default="auto")
     ap.add_argument("--grid", type=float, default=0.1)
@@ -1169,6 +1399,17 @@ def run(argv: list[str] | None = None):
     ap.add_argument("--clearance-margin", type=float, default=0.02)
     ap.add_argument("--via-size", type=float, default=None)
     ap.add_argument("--via-drill", type=float, default=None)
+
+
+ROUTING_FLAGS = ("nets", "layers", "grid", "margin", "min_width",
+                 "clearance_margin", "via_size", "via_drill")
+
+
+def run(argv: list[str] | None = None):
+    started = time.monotonic()
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--pcb", required=True)
+    add_routing_args(ap)
     ap.add_argument("--max-conns", type=int, default=None)
     ap.add_argument("--rip-errors", action="store_true",
                     help="first take out the tracks/vias DRC names in a short,"
@@ -1177,6 +1418,23 @@ def run(argv: list[str] | None = None):
     ap.add_argument("--no-rip-board", action="store_true",
                     help="never rip other nets' existing tracks/vias to free"
                          " a walled-in pad (only this run's own routes)")
+    ap.add_argument("--skip-conns", default=None,
+                    help="JSON list of connections to leave out, each"
+                         " [net, [ax, ay], [bx, by]] as a report's connections"
+                         " name them; a connection that fails is also left out"
+                         " of this run's later passes")
+    ap.add_argument("--protect-nets", default=None,
+                    help="never rip these nets' copper (comma list)")
+    ap.add_argument("--plan-seconds", type=float, default=None,
+                    help="stop searching this long after the start and apply"
+                         " what was found; the rest come back skipped")
+    ap.add_argument("--start-report", default=None,
+                    help="a report of this board as it is now, with its zones"
+                         " filled: skips the first refill and DRC")
+    ap.add_argument("--trace", default=None,
+                    help="append one JSON line per connection before searching")
+    ap.add_argument("--measure-only", action="store_true",
+                    help="refill, save and report; route nothing")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--work-dir", default=None)
     ap.add_argument("--out-report", default=None)
@@ -1196,10 +1454,37 @@ def run(argv: list[str] | None = None):
     staged = route_auto._stage_board(pcb, work)
     parity = staged.with_suffix(".kicad_sch").is_file()
     has_zones = bool(geom.BoardGeom.from_file(staged).zones_of())
-    if has_zones:
-        kc.run_drc(cli, staged, refill=True, save_board=True)
-    drc = kc.run_drc(cli, staged, parity=parity, all_track_errors=True)
+    t0 = time.monotonic()
+    if args.start_report:
+        drc = checklib.load_json(Path(args.start_report), "start report")
+    else:
+        if has_zones:
+            kc.run_drc(cli, staged, refill=True, save_board=True)
+        drc = kc.run_drc(cli, staged, parity=parity, all_track_errors=True)
+    drc_s = time.monotonic() - t0
     log = (lambda s: print(s, file=sys.stderr)) if args.verbose else None
+    if args.measure_only:
+        routelib.swap_in(staged, pcb)
+        left = unconnected_pairs(drc)
+        return ({"script": "route_finish",
+                 "status": "pass" if drc["counts"]["total"] == 0
+                 else "violations",
+                 "board": str(pcb), "counts": drc["counts"],
+                 "violations": drc["violations"],
+                 "facts": {"kept": False, "drc_s": round(drc_s, 1), "passes": [],
+                           "unconnected_left": len(left),
+                           "work_dir": str(work)}}, args.out_report)
+    on_try = None
+    if args.trace:
+        trace = Path(args.trace)
+
+        def on_try(job):
+            with trace.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps([job["net"], job["a"], job["b"]]) + "\n")
+    skip = None
+    if args.skip_conns is not None:
+        skip = {conn_key(*c) for c in
+                checklib.load_json(Path(args.skip_conns), "skip list")}
     facts = finish_staged(
         cli, staged, drc,
         nets=args.nets.split(",") if args.nets else None,
@@ -1208,7 +1493,12 @@ def run(argv: list[str] | None = None):
         via_size=args.via_size, via_drill=args.via_drill,
         max_conns=args.max_conns, parity=parity, refill=has_zones,
         dry_run=args.dry_run, rip_errors=args.rip_errors,
-        rip_board=not args.no_rip_board, log=log)
+        rip_board=not args.no_rip_board, log=log, skip_conns=skip,
+        keep_nets=pair_nets(pcb) | set(filter(None,
+                                              (args.protect_nets or "").split(","))),
+        deadline=(None if args.plan_seconds is None
+                  else started + args.plan_seconds),
+        on_try=on_try)
     final = facts.pop("drc", None) or drc
     if facts.get("kept") and not args.dry_run:
         routelib.swap_in(staged, pcb)
@@ -1220,6 +1510,15 @@ def run(argv: list[str] | None = None):
                "facts": {**facts, "unconnected_left": len(left),
                          "work_dir": str(work)}}
     return payload, args.out_report
+
+
+def pair_nets(pcb) -> set:
+    """Nets of the diff pairs in the constraints.json beside the board."""
+    path = Path(pcb).parent / "constraints.json"
+    if not path.exists():
+        return set()
+    pairs = json.loads(path.read_text()).get("diff_pairs", [])
+    return {p[k] for p in pairs for k in ("p", "n")}
 
 
 def main(argv: list[str] | None = None) -> int:

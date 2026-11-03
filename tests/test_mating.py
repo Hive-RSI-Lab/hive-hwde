@@ -459,3 +459,53 @@ def test_gan_rf_inverter_smas_face_their_edges_with_models_turned_round():
     assert reversed_ == {r for r, f in smas.items()
                          if f["model_span_mm"] and f["model_span_mm"][1] < 1}
     assert all(f["model_span_mm"] is not None for f in smas.values())
+
+
+def _xt60(ref, x, y, angle=0.0):
+    """Amass XT60PW-M as hw-lab's boards carry it: power pins at the rear, legs
+    toward the mouth, the body running -x from the pins."""
+    tht = 'thru_hole circle'
+    lay = '"*.Cu"'
+    pads = (_pad("1", 3, 3.6, 3.8, 3.8, tht, lay).replace(" (layers", " (drill 2) (layers")
+            + _pad("2", 3, -3.6, 3.8, 3.8, tht, lay).replace(" (layers", " (drill 2) (layers")
+            + _pad("3", -3, -6.8, 1.4, 1.4, tht, lay).replace(" (layers", " (drill 1) (layers")
+            + _pad("4", -3, 6.8, 1.4, 1.4, tht, lay).replace(" (layers", " (drill 1) (layers"))
+    return _fp(ref, "CONN-TH_XT60PW-M", x, y, angle, pads, cy=(-13.2, -7.8, 5.2, 7.8))
+
+
+def test_xt60_is_a_mating_connector(tmp_path):
+    """hc-power J1: rot 90 put the mouth into the board, and the check passed it
+    because no family knew the part."""
+    table = matinglib.load_table()
+    for name in ("CONN-TH_XT60PW-M", "TH_2P-XT60PW-F", "CONN-TH_XT30PW-M",
+                 "AMASS_XT30PW-M_1x02_P2.50mm_Horizontal", "CONN-TH_MR60PW"):
+        assert matinglib.family_of("x:" + name, table)["family"] == "xt_power"
+    assert matinglib.family_of("x:CONN-TH_BNC-KWE-6", table)["family"] == "bnc_right_angle"
+    assert matinglib.family_of("x:CONN-TH_3P-P3.81_KF2EDGR-3.81-3P", table)[
+        "family"] == "pluggable_terminal"
+    bad = _board(tmp_path, _xt60("J1", 20, 20, 90), w=60, h=60)
+    kinds = {v["kind"] for v in _run(bad)[0]}
+    assert "mating_faces_inward" in kinds
+    good = _board(tmp_path, _xt60("J1", 13.2, 20), w=60, h=60)
+    assert not _run(good)[0]
+
+
+def test_4mm_jack_is_judged_with_its_mouth_from_the_table(tmp_path):
+    """emc-lab LISN J2/J4 and emc-ref J5/J6: the 24.243 jack matched no family,
+    so its mouth into the board passed. Its pads don't show the mouth: the model's
+    bore is at local +x."""
+    table = matinglib.load_table()
+    for name in ("CONN-TH_24.243.1_RED", "CONN-TH_24.243.2"):
+        assert matinglib.family_of("x:" + name, table)["family"] == "jack_4mm"
+    tht = 'thru_hole circle'
+    lay = '"*.Cu"'
+    pads = (_pad("1", -3, 0, 3, 3, tht, lay).replace(" (layers", " (drill 2) (layers")
+            + _pad("2", 3, 0, 3, 3, tht, lay).replace(" (layers", " (drill 2) (layers"))
+    jack = lambda x, y, a: _fp("J1", "CONN-TH_24.243.1_RED", x, y, a, pads,
+                               cy=(-20, -6, 6, 6))
+    # rot 90 points the mouth at -y: nearest edge is +y, so it faces into the board
+    inward = _board(tmp_path, jack(15, 60, 90), w=90, h=70)
+    assert "mating_faces_inward" in {v["kind"] for v in _run(inward)[0]}
+    # the bore is 7.5 mm up, so a nose a few mm behind the edge still mates
+    good = _board(tmp_path, jack(15, 10, 90), w=90, h=70)
+    assert not _run(good)[0]

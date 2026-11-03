@@ -36,6 +36,7 @@ Measured on this machine, 2026-10-30:
 | circuit_xspice_kicad | KiCad 10.0.6's libngspice (sim_run's engine) | the circuit_xspice decks + the OSDI divider from `.va` source | as circuit_xspice | 0.5% |
 | openems_microstrip | openEMS | Hammerstad-Jensen Z0 and ε_eff, 1.5 mm on 0.8 mm of εr 4, 1–2 GHz | −0.1% (Z0), +0.13% (ε_eff) | 2% |
 | palace_cavity | Palace + gmsh | closed 40×30×20 mm PEC box, first four modes | +0.025% worst | 0.5% |
+| palace_lshape | Palace + gmsh | L-shaped plane cavity, PEC planes, PMC edges, first four modes: Dauge benchmark 2DomA | +0.037% worst | 2% |
 | fasthenry_bar | FastHenry | 10×1×0.035 mm Cu bar: R = l/(σwt); L by Ruehli's partial self-inductance | +0.25% (L), 0.00% (R) | 2% |
 | fastercap_cube | FasterCap | isolated cube, C = 0.66067813·4πε0·a | −0.10% | 1.5% |
 | thermal_fin | thermalfv | 1D fin, θ(tip)/θ0 = cosh(m·dx/2)/cosh(mL) | +0.001% | 0.5% |
@@ -106,7 +107,7 @@ machine.
   impedance before the fab's calculator is trusted.
 
 - `hwde sim_solve planar-geom --pcb B --region X0,Y0,X1,Y1 --port X,Y,DIR,W ...`
-  then `hwde sim_solve planar --geom G.json [--excite 0,1] [--touchstone F.s2p]`:
+  then `hwde sim_solve planar --geom G.json [--excite all|0,1] [--touchstone F.s2p]`:
   S-parameters of a planar microstrip circuit cut from a board. planar-geom
   takes every copper item on one layer in the region (any net; custom pads
   as drawn, via geom.py's new `_custom_pad`; NPTH skipped; holes split since
@@ -114,15 +115,15 @@ machine.
   stackup. planar draws the copper as PEC polygons over an infinite ground,
   adds a straight feed per port (half a wavelength) ending in a 50 Ω lumped
   port, and splits each feed's three voltage probes into the wave going in
-  and the wave coming out, moved to the reference plane. One openEMS run per
-  excited port. Measured on a 30 mm 50 Ω thru (FR4 1.53 mm, 6 GHz): |S21|
+  and the wave coming out, moved to the reference plane, with the feed's gamma
+  fitted over the band so a standing-wave null can't upset it. One openEMS run
+  per excited port. Measured on a 30 mm 50 Ω thru (FR4 1.53 mm, 6 GHz): |S21|
   within 0.04 dB from 1 to 6 GHz, |S11| below −19 dB (the probe split's
   floor), phase within 2% of the quasi-static line; 80 s, 44 MB. hw-lab
   rf-kit's F5 open-stub notch (designed for 2.45 GHz): notch at 2.466 GHz,
   −56 dB, 3 min. Below f_max/8 the pulse carries little energy and the
   answer is noise. Limits: infinite ground (so not antennas, nor a coupon's
-  finite ground), ports must leave the circuit straight, the other ports'
-  50 Ω ends reflect a little (error ~|S_ii·Γ|).
+  finite ground), ports must leave the circuit straight.
 
 - `hwde sim_solve board --pcb B --region X0,Y0,X1,Y1 --port X,Y,DIR[,LAYER[,W]] ...
   [--part REF=OHMS] [--symmetric] [--touchstone F.s2p] [--deck-only DIR]`
@@ -149,8 +150,8 @@ machine.
   2. MUR walls, never PML_8 (it grew without bound there);
   3. a derivative-of-Gaussian pulse (`Csx.dgauss`: no DC, f0 = f_max as
      the probe sampling rate).
-  The dielectric is lossless, because a conductivity is a loss tangent at
-  one frequency only; add dielectric and copper loss in the circuit model.
+  The deck's dielectric is lossless, because a conductivity is a loss
+  tangent at one frequency only; the loss goes on afterwards (below).
   The mesh uses openEMS's thirds rule on the signal's edges: a line on the
   edge read 48.2 Ω for a 50 Ω line, the thirds rule reads 50.6–51.1 Ω.
   Known answers (tests/test_emboard.py, test-slow; synthetic 2-layer
@@ -170,12 +171,145 @@ machine.
   ε_eff where βl is small (under ~70°).
   The default cell is min(w/5, h/2.5, λ/40) across the signal: at h/1.5 a
   w/h = 3.8 line read ε_eff 4.1 against 3.55, at h/2.5 3.60.
+  **Second solver (#616).** `--cross-check palace` solves the same geometry
+  and planes by Palace FEM (`lib/empalace.py`, `lib/empalace_mesh.py`) with
+  lumped ports at the deck's feed ends, reading V and I at the deck's own probe
+  planes through `emboard.feed_lines` and `feed_vi`. It exits 1 on rms |dS| over
+  0.05 (off a notch on transmission terms), a transmission notch more than 1 %
+  apart or seen by one solver only (unless within 1 % of the band's edge), or a
+  feed Z more than 3 % apart at mid band. A reflection dip is printed, not judged:
+  a reflection zero moves with the port reference and a transmission zero doesn't.
+  On one openEMS S for F5, S11's dip reads 5.00, 4.95 and 4.83 GHz at a 50 ohm,
+  51 ohm and own-line reference, while S21's notch stays at 2.4891 GHz. Both solves
+  are lossless: the verdict reads openEMS's S from before the added loss, and
+  `--loss deck` with a cross-check is refused. The default is refine 1.5, order 3,
+  the first setting with F5 shown settled; it took 4.5 GB and 21 to 30 min at 4
+  ranks, and two such runs were killed when all `heavy` jobs together hit their
+  shared 12 GB cap, so expect to retry.
+  Live on rf-kit F5, the full command with `--symmetric` (0.125-5 GHz): S21 notch
+  2.4891 (openEMS) / 2.4874 GHz (Palace), rms |dS| S11 0.017, S21 0.011, feed Z
+  51.89 / 50.82 ohm (2.1 %), S11 dip beyond the band / 4.92 GHz. The first such
+  run judged S11's dip and exited 1 on it; this reading of it is a replay of that
+  run's kept output under the rule above, not a second solve, and the rule was
+  changed after seeing that result. It is the same rule the mesh gate already
+  used (transmission dips only). The same Palace S replayed at a planted
+  reference: 52 ohm still agrees, 55 and 60 ohm disagree.
+  Palace's own notch, against refinement: 2.4721 (refine 1.5, order 2), 2.4860
+  (refine 2, order 2), 2.4869 (refine 1, order 3), 2.4874 GHz (refine 1.5, order 3).
+  The thru passes its limits at refine 1.5 and fails Z0 at refine 1 (4.2 % at
+  order 3). The 13 mm stub is 1.90 % off with a 2 % limit, and isn't moving toward
+  the closed form.
+  Known gaps: the two solvers' line Z differs by about 1 ohm and which is right is
+  open: Palace's feed Z on the thru reads low and rises with refinement (48.4,
+  48.8, 49.3 ohm at order 2, against 50 quasi-static). The F5 run at the default
+  fails `sparam check` slightly (sigma_max 1.0023 under 0.63 GHz) while Palace's
+  own lumped S passes. Lowering the feed fit's f_max/8 hold doesn't change it, and
+  the far and driven probes' power differs by about 0.2 % there with a sign that
+  changes with the mesh, so read it as probe accuracy; the output prints that
+  check beside the verdict. `estimator_check` in the JSON (Palace's lumped S
+  shifted to the planes) agrees on the notch and passivity only: its S21 runs a
+  constant extra delay, about 1 mm per port on F5, so don't read its rms |dS|. The
+  cause isn't traced; the port's end discontinuity is a guess. Checked on 2-layer
+  microstrip only.
+
+  **Mesh convergence (#616).** `sim_solve board` refines the mesh by 1.5 until
+  two runs in a row agree (`emboard.study_converged`): largest |dS| 0.05, a
+  transmission dip within 0.5 %, from f_max/8 up. It stops at `--refine-max`
+  (2.25 by default) and exits 1 if they still disagree. `--refine R` starts
+  finer; `--no-converge` runs one mesh and says so on stderr, and a result
+  from it hasn't been shown to settle. Each step costs about 5x the one before.
+  `refine` divides every cell in all three axes; `--fine` moves only the
+  cells at the signal's edges, so don't use it to judge convergence.
+  Two traps this found, on rf-kit's F5 (2.853 mm stub on 1.53 mm of FR4):
+  1. A mesh line inside a thirds-rule cell widens the sheet, which takes the
+     whole cell it starts in: the notch read 2.319 GHz at the default mesh.
+     Those cells are now kept clear (`mesh_axis(edges=)`):
+     | refine | cells | notch | sigma_max | feed Z, eps_eff at 2.5 GHz |
+     |---|---|---|---|---|
+     | 1 | 125k | 2.489 GHz | 1.0007 | 51.8, 3.45 |
+     | 1.5 | 284k | 2.489 GHz | 1.0007 | 51.6, 3.45 |
+  2. Per-frequency Z and gamma on a feed are noise where its probes see no
+     wave (the far port at a notch read 58 ohm, eps_eff 3.3 for 3.65, and a
+     real gamma of 1.3 Np/m on a lossless line, which read as sigma_max 1.006).
+     `fit_feed` fits Z(f) and eps_eff(f) over the band with gamma imaginary, and
+     `feed_vi` solves (a, b) over all five probes. With gamma imaginary, passivity
+     says nothing about the fitted phase, so eps_eff was checked on its own: a
+     30 mm thru's probe-to-probe phase over the long baseline averages within
+     about 1 % of the fit (it ripples, on a 51-53 ohm line in a 50 ohm system).
+  3. A driven feed's standing wave near a stopband pulls that fit too.
+     `feed_lines` fits a port's line from the runs that don't drive it, if they
+     carry the line over at least half the band (fit weight at least a tenth of
+     the feed's peak; F5's far feed covers 91 %). Otherwise, as on a filter's or
+     an isolated port's far feed, every run's probes go in. A mirror 2-port
+     excited once uses its far feed's read for both ports. Replayed on F5 at
+     refine 1, with no new solve:
+     | excitation | fit from | Z at 0.6 / 1.5 / 5 GHz | sigma_max | points over 1.001 |
+     |---|---|---|---|---|
+     | two runs | all runs (was) | 51.95 / 51.30 / 52.70 | 1.0007 | 0 |
+     | two runs | undriven (now) | 51.41 / 51.61 / 53.34 | 1.0007 | 0 |
+     | one, `--symmetric` | each port's own read (was) | port 0 driven: 52.14 / 51.08 / 51.58 | 1.0032 | 50 |
+     | one, `--symmetric` | far feed for both (now) | 51.41 / 51.61 / 53.34 | 1.0006 | 0 |
+     The notch stays at 2.4894 GHz: this moves S phase and the band edge
+     (two runs, was against now: rms |dS| 0.0065, max 0.029 at 5 GHz), not a dip.
+     The bandpass fallback is tested on synthetic probes only, not on a solved
+     filter.
+  The stub's answer is not a closed form: 2.24 to 2.44 GHz depending on
+  whether L runs from the line's centre or edge, since a T-junction this wide
+  is in neither. Settled is not the same as right: the check on 2.49 GHz is the
+  Palace cross-check.
   `impedance.field_cpwg(w, g, h, t, er, ground_w)` is the public CPWG
   solve (vna-verify's 0.43/0.25 on 0.2444 mm of 3.91: 53.05 Ω bare).
   Hooks for 3D studies (#479, #481): `deck(..., extra=fn)` gets the Csx
   and a context (stack, ports, fixed/pinned mesh lines) before the mesh
   is smoothed. Limits: ports must be axis-aligned on the region's edge;
-  connector bodies (SMA) are not modelled (#479); no loss.
+  connector bodies (SMA) are not modelled (#479).
+  `waves` and `port_vi` still read per frequency; `study` doesn't use them.
+
+- **Loss on `planar` and `board` (#553, `lib/emloss.py`).** Both Touchstones
+  now carry loss by default. `--loss line` adds it per port's uniform section,
+  `--loss none` gives the old lossless S, and `board --loss deck` puts the
+  dielectric in the deck as overdamped Lorentz poles fitted to the model, so
+  stubs and resonators lose too (the conductor still goes on per section).
+  `--foil std|rtf|vlp|hvlp|smooth`, `--roughness hammerstad|huray`,
+  `--loss-length L1,L2`. The result's `loss` and the Touchstone's comments say
+  what went on.
+  - Dielectric: Djordjevic-Sarkar from er and tan δ at one frequency (`DS`);
+    tan δ comes from the board's stackup block, by height across a gap, at
+    1 GHz, or 10 GHz for Rogers (`df_ref_hz`). No value in the block: 0.02,
+    with a warning.
+  - Conductor: `Rdc sqrt(1 + j f/fc)` with Wheeler's incremental-inductance
+    factor from the field solver; roughness multiplies R and the reactance
+    that goes with it comes from a Kramers-Kronig integral (`causal_x`).
+  - Applied as lossy(l) · lossless(l)⁻¹ at each port, with a through path split
+    l/2, l/2 (measured on the copper). On a uniform line that is exactly the
+    lossy line. **Copper off the through path keeps its lossless Q** in `line`
+    mode (a warning says how much): a notch or filter's depth is still
+    overstated by the conductor, and by the dielectric unless `--loss deck`.
+  - **Assumed, not measured:** no fab here publishes its foil, so `std` (rms
+    2 µm) is a typical value and `foil_assumed` says so; FR-4's tan δ 0.02 in
+    stackups.yaml is also assumed. Not modelled: solder mask, roughness per
+    surface, return-current crowding in the plane below about 3 MHz (up to 40%
+    of a 0.2 Ω/m R, nothing at RF).
+  Known answers (tests/test_emloss.py):
+  | case | measured | tolerance |
+  |---|---|---|
+  | DS from FR408HR's 3.68 / 0.0092 at 2 GHz vs its table at 0.1–10 GHz (Isola's values as listed on Knowde, a secondary source) | Dk within 0.7%; Df within 7% from 1 GHz (at 100 MHz 26%: the laminate's Df falls, DS's does not) | 1%, 7%, 30% |
+  | Kramers-Kronig on DS, 10 MHz–60 GHz | ε′ within 2e-3 (7e-5 at 0.1–10 GHz) | 2e-3 |
+  | α_d, 3.06 mm on 1.6 mm of 4.4, tan δ 0.02 at 1 GHz | 2.98 dB/m vs Pozar's 3.01 (field solver's true filling factor vs the secant) | 2% |
+  | smooth α_c vs Wheeler on Hammerstad-Jensen's closed form with thickness, 4 geometries | within 4% | 10% |
+  | series R vs FastHenry (live) | 1 kHz: the two Rdc's exactly; 10 MHz +2%, 100 MHz −10% | 1%, 15% |
+  | vna-verify thru, dielectric vs its bands.py (no openEMS) | within 0.6%; rough copper adds 0.27 dB to 0.47 dB at 4.4 GHz on 40 mm | 2% |
+  | add_line_loss on a lossless line's S vs the lossy line's | 1e-15 | 1e-12 |
+  | the two ways on a 30 mm openEMS thru, tan δ 0.02, 0.3–6 GHz (live): poles in the deck vs add_line_loss | +8.2% at 6 GHz (0.04 dB), the worst point; 49 of 51 points within 8%; the pole fit is about 1% of it, the rest isn't traced | 10% |
+  | a conductivity in the same deck at 3 GHz (live) | matches the line at 3 GHz; flat, so about 10× too much at 300 MHz (0.26 vs 0.027 dB) | 5% |
+  | `sim_solve board` end to end on that thru (live) | `sparam check` passes with the loss on; 0.66 dB at 6 GHz | must pass |
+  | kb/em-solvers' 3.46 dB/m, same deck rerun with and without tan δ | 0.243 dB at 1 GHz = 3.04 dB/m over the 80 mm between its planes vs 3.01; the 3.46 divided by 70 mm | explained |
+  A lossy deck must tell the feed fit its alpha (`study(feed_alpha=)`; `--loss deck`
+  does): it holds γ imaginary, so otherwise the feeds' length between plane and
+  probes stays in S (12 mm on a 30 mm thru read +40%).
+  Not run: a real board with loss, a stub's depth in `--loss deck` against a
+  closed form, Palace as the second solver for loss, vna-verify's measured S21.
+  | planted tan δ ×10 | 10× the dielectric dB | 3% |
 
 ## S-parameter files: quality and macromodel (#483)
 
@@ -245,13 +379,36 @@ pretending.
 `sim_solve planar` runs check on its own S. It judges only the excited
 columns: passivity per column, and reciprocity once both S_ij and S_ji
 ran. The result is `quality` in the output, and the command exits 1 when
-the check fails. It does fail on the 30 mm thru above (both ports, 41
-points, 1-6 GHz): reciprocity and causality are 100 %, but passivity is
-62.6 % (poor), with sigma_max 1.11 at 5.9 GHz. The probe split's
-\|S11\| floor of about -19 dB sits on top of \|S21\| = 1. Until that
-floor comes down, planar S is fit for frequency-domain reading, not for a
-transient. `sim_solve board`'s thru (tests/test_emboard.py, S = B A^-1
-from V+I probes) passes the same check.
+the check fails. Excite every port (its default): S = B A^-1 and the 30 mm
+thru passes (sigma_max 1.0008, no failing point, 0.125-5 GHz, tests/
+test_solvers.py). One column leaves the far 50 ohm end's reflection in it,
+about -19 dB on a thru, and that fails.
+
+## Plane cavities on real shapes (#498)
+
+`check_pdn_z` keeps the closed form on a plane that fills its bounding box and
+cuts any other shape into rectangles, joined by segmentation
+(`scripts/lib/planecav.py`). Mode frequencies come from a count of modes below a
+frequency, so a degenerate pair or a mode with a node on every port is not
+missed. `--palace-check` runs Palace eigenmode on the true polygon, with PEC
+planes and PMC open edges, which is the same physics as the modal sum.
+
+| case | reference | measured error |
+|---|---|---|
+| one rectangle, modes | closed form | under 0.001% |
+| rectangle cut in 2, then 4 off-centre, first six modes | the rectangle whole | under 0.5% at 2 and 1 mm strips |
+| L, first four modes, 50 mm squares | Dauge's benchmark 2DomA | 0.77%, 0.48%, 0.27%, 0.15% worst at 12.5, 6.25, 3.1, 1.6 mm strips |
+| right triangle, first four modes, staircase | exact sqrt(m^2 + n^2) | 2.3%, 0.8%, 0.4% worst at 16, 32, 64 cells |
+| Z12 across a join, 10 kHz to 200 MHz | `cavity_z` on the whole rectangle | under 1% (Z11 under 2%) |
+| Palace L, first four modes | Dauge's benchmark 2DomA | +0.088% worst at 6 mm mesh, +0.037% at 3 mm |
+| segmentation on network-switch's `+3V3/GND` polygons, first four modes | Palace eigenmode, 6.8 mm mesh, one mesh only | 1.4% worst |
+
+What it does not model: fringing at open edges (PMC, like the closed form); vias
+or stitching between the planes; antipad fields, which only count if they empty
+half a raster cell. Each pair's `shape.convergence` compares a run with cells and
+strips halved. A ragged pour cut up by traces does not settle: on hi-fi `core`
+the first mode of `+3V3/GND In2/B.Cu` moves 14% (warning
+segmentation_unconverged). Treat a plane like that as not yet modelled.
 
 ## What is not here yet
 

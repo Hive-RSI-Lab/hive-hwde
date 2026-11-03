@@ -47,7 +47,10 @@
 # `epsilon_r_source: jlc_calculator_template`; the rest keep ASSUMED FR4
 # values (`epsilon_r_assumed: true`). loss_tangent is assumed on every FR-4
 # entry; the Rogers entries carry the datasheet's (RO4350B 0.0037 at 10 GHz)
-# and Rogers' design Dk (`epsilon_r_source: rogers_design_dk`).
+# and Rogers' design Dk (`epsilon_r_source: rogers_design_dk`). Every dielectric
+# row has a numeric loss_tangent, at 1 GHz except Rogers' at 10 GHz; KiCad's
+# stackup block has no field for the frequency, so lib/emloss.df_ref_hz reads
+# it from the material name. sim_solve's Djordjevic-Sarkar loss starts from it.
 #
 # CONTROLLED-IMPEDANCE geometry (width_mm / gap_mm) is COMPUTED from the
 # physical stackup by scripts/lib/impedance.py's 2D field solver (coated
@@ -3486,5 +3489,202 @@ stackups:
       gap_mm: 0.13
       closed_form:
         width_mm: 0.112
+        gap_mm: 0.13
+      note: Ethernet / LVDS / general 100R
+
+  JLCH101611Y2-1078L:
+    description: 'JLCPCB 10-layer HDI, 1.6 mm nominal, 1 oz outer / 1 oz inner. JLC''s own name: JLCH101611Y2-1078L(成品板厚1.58mm±10%）.'
+    available: true
+    provenance:
+      method: jlc_calculator_template
+      endpoint: https://jlcpcb.com/api/jlcTools/impedance/selectPageImpedanceDefaultTemplate
+      request:
+        appointName: JLCH101611Y2-1078L
+      template_name: JLCH101611Y2-1078L
+      template_access_id: bc28f780261e459eb5da5bacd2d78ed7
+      display_name: JLCH101611Y2-1078L(成品板厚1.58mm±10%）
+      jlc_tags: []
+      live_verified: true
+      order_api_verified: false
+      verified: '2026-11-02'
+      note: 'Every thickness and epsilon_r is JLC''s calculator template''s; a gap of several plies carries
+        their series epsilon_r. Not yet read back from the order API (no JLC account in the Hive): re-verify
+        before ordering controlled impedance.'
+    layers: 10
+    thickness_mm: 1.6
+    stack_total_mm: 1.582
+    copper_finish: ENIG
+    dielectric_constraints: true
+    epsilon_r_assumed: false
+    epsilon_r_source: jlc_calculator_template
+    stack:
+    - name: F.Cu
+      type: copper
+      thickness_mm: 0.035
+      copper_oz: 1.0
+    - name: dielectric 1
+      type: prepreg
+      thickness_mm: 0.071
+      material: FR4 1078
+      epsilon_r: 3.99
+      loss_tangent: 0.02
+      plies: 1078 0.071
+    - name: In1.Cu
+      type: copper
+      thickness_mm: 0.03
+      copper_oz: 1.0
+    - name: dielectric 2
+      type: prepreg
+      thickness_mm: 0.071
+      material: FR4 1078
+      epsilon_r: 3.99
+      loss_tangent: 0.02
+      plies: 1078 0.071
+    - name: In2.Cu
+      type: copper
+      thickness_mm: 0.03
+      copper_oz: 1.0
+    - name: dielectric 3
+      type: prepreg
+      thickness_mm: 0.201
+      material: FR4 7628
+      epsilon_r: 4.46
+      loss_tangent: 0.02
+      plies: 7628 0.201
+    - name: In3.Cu
+      type: copper
+      thickness_mm: 0.03
+      copper_oz: 1.0
+    - name: dielectric 4
+      type: core
+      thickness_mm: 0.2
+      material: FR4 core 0.20mm
+      epsilon_r: 4.42
+      loss_tangent: 0.02
+    - name: In4.Cu
+      type: copper
+      thickness_mm: 0.03
+      copper_oz: 1.0
+    - name: dielectric 5
+      type: prepreg
+      thickness_mm: 0.186
+      material: FR4 7628
+      epsilon_r: 4.46
+      loss_tangent: 0.02
+      plies: 7628 0.186
+    - name: In5.Cu
+      type: copper
+      thickness_mm: 0.03
+      copper_oz: 1.0
+    - name: dielectric 6
+      type: core
+      thickness_mm: 0.2
+      material: FR4 core 0.20mm
+      epsilon_r: 4.42
+      loss_tangent: 0.02
+    - name: In6.Cu
+      type: copper
+      thickness_mm: 0.03
+      copper_oz: 1.0
+    - name: dielectric 7
+      type: prepreg
+      thickness_mm: 0.201
+      material: FR4 7628
+      epsilon_r: 4.46
+      loss_tangent: 0.02
+      plies: 7628 0.201
+    - name: In7.Cu
+      type: copper
+      thickness_mm: 0.03
+      copper_oz: 1.0
+    - name: dielectric 8
+      type: prepreg
+      thickness_mm: 0.071
+      material: FR4 1078
+      epsilon_r: 3.99
+      loss_tangent: 0.02
+      plies: 1078 0.071
+    - name: In8.Cu
+      type: copper
+      thickness_mm: 0.03
+      copper_oz: 1.0
+    - name: dielectric 9
+      type: prepreg
+      thickness_mm: 0.071
+      material: FR4 1078
+      epsilon_r: 3.99
+      loss_tangent: 0.02
+      plies: 1078 0.071
+    - name: B.Cu
+      type: copper
+      thickness_mm: 0.035
+      copper_oz: 1.0
+    finished_thickness_mm: 1.58
+    vias:
+    - kind: through
+      from: F.Cu
+      to: B.Cu
+    - kind: buried
+      from: In2.Cu
+      to: In7.Cu
+    - kind: micro
+      from: F.Cu
+      to: In1.Cu
+      order: 2
+    - kind: micro
+      from: In1.Cu
+      to: In2.Cu
+      order: 1
+    - kind: micro
+      from: In7.Cu
+      to: In8.Cu
+      order: 1
+    - kind: micro
+      from: In8.Cu
+      to: B.Cu
+      order: 2
+    laminations:
+    - cycle: 1
+      from: In2.Cu
+      to: In7.Cu
+      thickness_mm: 1.111
+    - cycle: 2
+      from: In1.Cu
+      to: In8.Cu
+      thickness_mm: 1.318
+    - cycle: 3
+      from: F.Cu
+      to: B.Cu
+      thickness_mm: 1.525
+    hdi_order: 2
+    controlled_impedance:
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.1049
+      closed_form:
+        width_mm: 0.0959
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.0957
+      gap_mm: 0.13
+      closed_form:
+        width_mm: 0.0994
+        gap_mm: 0.13
+      note: USB 2.0 / ULPI
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.0714
+      gap_mm: 0.13
+      closed_form:
+        width_mm: 0.08
         gap_mm: 0.13
       note: Ethernet / LVDS / general 100R

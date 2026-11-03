@@ -23,6 +23,7 @@ job JSON: {"verb": ..., "result": out.json, ...} with verbs:
       the board file is not saved by this verb.
 
   import_ses: {"board": pcb, "ses": in.ses, "out": out_pcb}
+  retype_vias: {"board": pcb, "spans": [[top, bot, kind], ...], "out": out_pcb}
       Specctra SES import (adds copper only; footprints/zones untouched) then
       Save(out). Save may drop a default .kicad_pro next to `out` - drivers
       stage in a scratch dir and move only the .kicad_pcb back.
@@ -36,6 +37,7 @@ job JSON: {"verb": ..., "result": out.json, ...} with verbs:
         {"op": "add_track", "start": [x,y], "end": [x,y], "width": mm,
          "layer": "F.Cu", "net": "NAME"}
         {"op": "add_via", "at": [x,y], "size": mm, "drill": mm, "net": "NAME"}
+            # optional, a span (#477): "kind": micro|blind|buried, "top", "bot"
         {"op": "remove", "uuid": "..."}        # track or via; absent = no-op
         {"op": "set_net", "uuid": "...", "net": "NAME"}   # renet one item
         {"op": "set_width", "uuid": "...", "width": mm}   # a track or arc
@@ -144,6 +146,34 @@ def verb_import_ses(job):
     return {"tracks_before": before, "tracks_after": after, "out": job["out"]}
 
 
+def verb_retype_vias(job):
+    """KiCad's SES import calls every via that isn't through "buried", even a
+    microvia from an outer layer (#477). Give each the type of the build's
+    span it runs: job["spans"] is [[top layer, bottom layer, kind], ...]. A
+    via on no listed span is left alone and counted."""
+    import pcbnew
+
+    _wx_quiet()
+    board = pcbnew.LoadBoard(job["board"])
+    kinds = {(a, b): k for a, b, k in job["spans"]}
+    done, off = 0, 0
+    for t in board.GetTracks():
+        if t.GetClass() != "PCB_VIA" or t.GetViaType() == pcbnew.VIATYPE_THROUGH:
+            continue
+        span = (board.GetLayerName(t.TopLayer()), board.GetLayerName(t.BottomLayer()))
+        kind = kinds.get(span)
+        if kind is None:
+            off += 1
+            continue
+        want = VIA_TYPES[kind](pcbnew)
+        if t.GetViaType() != want:
+            t.SetViaType(want)
+            done += 1
+    if not board.Save(job["out"]):
+        raise RuntimeError("board.Save failed: %s" % job["out"])
+    return {"retyped": done, "off_span": off, "out": job["out"]}
+
+
 def _track_key(t):
     import pcbnew
 
@@ -152,6 +182,12 @@ def _track_key(t):
     if b < a:
         a, b = b, a
     return (a, b, t.GetWidth(), t.GetLayer(), t.GetNetname())
+
+
+VIA_TYPES = {"through": lambda p: p.VIATYPE_THROUGH,
+             "micro": lambda p: p.VIATYPE_MICROVIA,
+             "blind": lambda p: p.VIATYPE_BLIND,
+             "buried": lambda p: p.VIATYPE_BURIED}
 
 
 def verb_apply_ops(job):
@@ -167,7 +203,8 @@ def verb_apply_ops(job):
     via_index = {}
     for v in vias:
         p = v.GetPosition()
-        via_index.setdefault((p.x, p.y, v.GetNetname()), v)
+        via_index.setdefault((p.x, p.y, v.GetNetname(), v.TopLayer(),
+                              v.BottomLayer()), v)
     by_uuid = {}
     for t in board.GetTracks():
         by_uuid[t.m_Uuid.AsString()] = t
@@ -201,10 +238,14 @@ def verb_apply_ops(job):
         elif kind == "add_via":
             at = pcbnew.VECTOR2I(iu(op["at"][0]), iu(op["at"][1]))
             net = _net(board, op["net"])
+            # a span (#477): stacked vias share a centre and a net, so the
+            # layers are part of what makes a via already there
+            top = _layer_id(board, op.get("top", "F.Cu"))
+            bot = _layer_id(board, op.get("bot", "B.Cu"))
             hit = None
-            for (vx, vy, vn), v in via_index.items():
-                if vn == op["net"] and abs(vx - at.x) <= tol \
-                        and abs(vy - at.y) <= tol:
+            for (vx, vy, vn, vt, vb), v in via_index.items():
+                if vn == op["net"] and vt == top and vb == bot \
+                        and abs(vx - at.x) <= tol and abs(vy - at.y) <= tol:
                     hit = v
                     break
             if hit is not None:
@@ -214,11 +255,11 @@ def verb_apply_ops(job):
             v.SetPosition(at)
             v.SetWidth(iu(op["size"]))
             v.SetDrill(iu(op["drill"]))
-            v.SetViaType(pcbnew.VIATYPE_THROUGH)
-            v.SetLayerPair(pcbnew.F_Cu, pcbnew.B_Cu)
+            v.SetViaType(VIA_TYPES[op.get("kind", "through")](pcbnew))
+            v.SetLayerPair(top, bot)
             v.SetNet(net)
             board.Add(v)
-            via_index[(at.x, at.y, op["net"])] = v
+            via_index[(at.x, at.y, op["net"], top, bot)] = v
             results.append({"op": kind, "status": "added",
                             "uuid": v.m_Uuid.AsString()})
         elif kind == "set_net":
@@ -416,6 +457,7 @@ def verb_dedup_copper(job):
 VERBS = {
     "export_dsn": verb_export_dsn,
     "import_ses": verb_import_ses,
+    "retype_vias": verb_retype_vias,
     "apply_ops": verb_apply_ops,
     "add_zones": verb_add_zones,
     "dedup_copper": verb_dedup_copper,

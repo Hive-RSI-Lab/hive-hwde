@@ -17,7 +17,8 @@ The model:
   - the dielectric is each gap's slab (er from the stackup), lossless: a
     conductivity is a loss tangent at one frequency only, which makes a
     frequency-flat loss (0.3 dB on 50 mm at 100 MHz on vna-verify). Add
-    dielectric and conductor loss in the circuit model, not here;
+    dielectric and conductor loss with lib/emloss (`sim_solve board` does), not
+    here, or pass deck(dielectric=) for wideband poles in the deck;
   - barrels are PEC posts (square, the drill's area) between the layers
     they span;
   - a port sits on the region's edge (the region is cut at its plane): the
@@ -70,6 +71,8 @@ TAIL_MAX = 1e-3         # the last tenth of a record against its peak voltage
 STEPS_MAX = 200000
 FEED_FIT_DEG = 3        # Z(f) and eps_eff(f) of a feed, across the band
 FEED_FIT_PASSES = 6
+FEED_SIGNAL = 0.1       # feed_lines: a run carries the line where its fit weight is this much of the feed's peak
+FEED_COVER = 0.5        # and it can name the line alone if it does so over this much of the band
 # Mesh convergence (study_converged): two runs a mesh step apart must agree this
 # well. notch_pct is half the 1 % rf-kit's filters are tuned to; ds is the largest
 # |dS| (compare).
@@ -458,12 +461,13 @@ class _Ctx:
 def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None = None,
          feed_len: float | None = None, pad: float | None = None, floor: str | None = None,
          thirds: bool = True, zcells: int = 6, air: float | None = None, extra=None, refine: float = 1.0,
-         coarse: float | None = None):
+         coarse: float | None = None, dielectric=None):
     """(Csx, where) for the region of `geo` (from `extract`) with `ports`
     (Port or "X,Y,DIR[,LAYER[,W]]"), the source on port `excite`. refine
     divides every cell of the mesh, in all three axes, by that factor: it
     is the knob a convergence study turns, where `fine` only moves the cells
-    at the signal's edges."""
+    at the signal's edges. dielectric(csx, i, er) -> a material name for slab
+    i (lib/emloss dielectric_props), in place of the lossless one."""
     from shapely.geometry import Polygon, box as sbox
     from shapely.ops import unary_union
     ports = [p if isinstance(p, Port) else Port.parse(p) for p in ports]
@@ -630,7 +634,7 @@ def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None 
     csx.bc = ["MUR", "MUR", "MUR", "MUR", "PEC" if floor == "pec" else "MUR", "MUR"]
     csx.fdtd["endCriteria"] = RUN_ALL_STEPS
     for i, (z0, z1, er) in enumerate(stack.slabs):
-        m = csx.material(f"slab{i}", er)
+        m = dielectric(csx, i, er) if dielectric else csx.material(f"slab{i}", er)
         csx.box(m, (dom[0], dom[1], z0), (dom[2], dom[3], z1))
     cuprop = csx.metal("copper")
     added: dict[str, list] = {}
@@ -735,6 +739,15 @@ def read_feed(sim: Path, k: int, freqs) -> tuple[list, list]:
             [em.dft(*em.read_probe(sim / f"p{k}i{j}"), freqs) for j in range(2)])
 
 
+def _feed_weight(read):
+    """Per frequency, the smallest term fit_feed's ratios divide by."""
+    import numpy as np
+    us, ii = read
+    u1, u2, u3 = (np.asarray(v) for v in us)
+    i1, i2 = (np.asarray(v) for v in ii)
+    return np.minimum.reduce([np.abs(u2), np.abs(u1 - u3), ZREF * np.abs(i1 - i2), ZREF * np.abs(i1 + i2)])
+
+
 def fit_feed(reads, dist, freqs, f_max: float, deg: int = FEED_FIT_DEG) -> dict:
     """One port's feed as a line: Z(f) and eps_eff(f) over the band, from the
     probes of every run (`reads`: read_feed's per run), for `feed_vi`.
@@ -761,8 +774,7 @@ def fit_feed(reads, dist, freqs, f_max: float, deg: int = FEED_FIT_DEG) -> dict:
             g = 2 * np.arcsinh(np.sqrt((u1 - u3) * (i1 - i2) / ((i1 + i2) * u2)) / 2) / d
         fz.append(np.abs(z.real))
         fe.append((np.abs(g.imag) * C0 / (2 * np.pi * f)) ** 2)
-        fw.append(np.minimum.reduce([np.abs(u2), np.abs(u1 - u3), ZREF * np.abs(i1 - i2),
-                                     ZREF * np.abs(i1 + i2)]))
+        fw.append(_feed_weight((us, ii)))
         fx.append(f / f_max)
     x, z, e, w0 = (np.concatenate(v) for v in (fx, fz, fe, fw))
     ok = np.isfinite(z) & np.isfinite(e) & (x >= 1 / 8)
@@ -777,6 +789,38 @@ def fit_feed(reads, dist, freqs, f_max: float, deg: int = FEED_FIT_DEG) -> dict:
     return {"z": np.polyval(pz, xh).tolist(), "eps_eff": np.polyval(pe, xh).tolist(),
             "z_rms": float(np.sqrt(np.average((z - np.polyval(pz, x)) ** 2, weights=w))),
             "eps_rms": float(np.sqrt(np.average((e - np.polyval(pe, x)) ** 2, weights=w)))}
+
+
+def feed_lines(reads: dict, dists, freqs, f_max: float, symmetric: bool = False) -> list[dict]:
+    """Each port's line from `reads` ({excited port: read_feed per port}).
+
+    A driven feed carries a standing wave, and its large terms near a stopband
+    pull the fit: on rf-kit F5, openEMS's driven feed fitted 52.1 ohm at 0.6 GHz
+    against 51.4 undriven, and Palace's 41 against 50. So a port's line comes
+    from the runs that don't drive it, but only where they carry the line over
+    most of the band: the far feed of a filter or an isolated port is noise or
+    a sliver, and a cubic through that says nothing about the rest, so there
+    every run's probes go in. A mirror 2-port excited once has one line, and
+    port 0's undriven read is its mirror's (two different lines read sigma_max
+    1.003 on F5, one 1.0006)."""
+    import numpy as np
+    f = np.asarray(freqs, dtype=float)
+    band = f / f_max >= 1 / 8
+    n = len(dists)
+    mirror = symmetric and n == 2 and len(reads) == 1
+    lines = []
+    for k in range(n):
+        driven = [r[k] for e, r in reads.items() if e == k]
+        quiet = [r[k] for e, r in reads.items() if e != k]
+        if mirror:
+            quiet = [r[1 - e] for e, r in reads.items()]
+            driven = [r[e] for e, r in reads.items()]
+        peak = max(float(_feed_weight(r)[band].max(initial=0.0)) for r in quiet + driven)
+        cover = (np.mean(np.max([_feed_weight(r)[band] for r in quiet], axis=0) >= FEED_SIGNAL * peak)
+                 if quiet else 0.0)
+        use = quiet if cover >= FEED_COVER else quiet + driven
+        lines.append(fit_feed(use, dists[k], freqs, f_max))
+    return lines
 
 
 def feed_vi(read, dist, freqs, line: dict) -> list[dict]:
@@ -794,7 +838,8 @@ def feed_vi(read, dist, freqs, line: dict) -> list[dict]:
     sg = -1.0 if np.nanmedian(q) > 0 else 1.0     # + j beta d Z on a current going out
     out = []
     for n, f in enumerate(freqs):
-        g = 1j * 2 * math.pi * f * math.sqrt(line["eps_eff"][n]) / C0
+        alpha = line["alpha"][n] if line.get("alpha") is not None else 0.0
+        g = complex(alpha, 2 * math.pi * f * math.sqrt(line["eps_eff"][n]) / C0)
         z = line["z"][n]
         A = [[cmath.exp(g * q), cmath.exp(-g * q)] for q in s]
         A += [[sg * ZREF / z * cmath.exp(g * q), -sg * ZREF / z * cmath.exp(-g * q)] for q in si]
@@ -902,9 +947,12 @@ def touchstone(freqs, S, comments=()) -> str:
 # ================================================================ run
 
 def study(geo: dict, ports, f_max: float, f_min: float | None = None, points: int = 201,
-          symmetric: bool = False, excites=None, keep=None, run=None, **kw) -> dict:
+          symmetric: bool = False, excites=None, keep=None, run=None, feed_alpha=None, **kw) -> dict:
     """extract'ed geometry -> openEMS run(s) -> S. run(csx, where, work)
-    is the runner (default lib/solvers openEMS); keep=DIR keeps each run."""
+    is the runner (default lib/solvers openEMS); keep=DIR keeps each run.
+    feed_alpha(ports, freqs) -> each port's alpha (Np/m per frequency) for a
+    lossy deck: the feed fit holds gamma imaginary, so without it each feed's
+    length between plane and probes stays in S as extra loss (#553)."""
     import tempfile
     import time
     from . import solvers
@@ -940,8 +988,10 @@ def study(geo: dict, ports, f_max: float, f_min: float | None = None, points: in
                      "seconds": round(time.time() - t0, 1)})
         if ctx:
             ctx.cleanup()
-    lines = [fit_feed([reads[e][k] for e in excites], where["ports"][k]["dist"], freqs, f_max)
-             for k in range(n)]
+    lines = feed_lines(reads, [p["dist"] for p in where["ports"]], freqs, f_max, symmetric)
+    if feed_alpha:
+        for ln, a in zip(lines, feed_alpha(where["ports"], freqs)):
+            ln["alpha"] = [float(v) for v in a]
     vi = {e: [feed_vi(reads[e][k], where["ports"][k]["dist"], freqs, lines[k]) for k in range(n)]
           for e in excites}
     runs = {e: [[((vi[e][k][m]["v"] + ZREF * vi[e][k][m]["i"]) / 2,

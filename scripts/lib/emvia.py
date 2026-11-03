@@ -376,12 +376,12 @@ def _waves_from(vi, n_f, n_p):
 
 
 def _solve_feeds(reads: dict, where: dict, freqs, f_max: float, shift=None):
-    """emboard's fitted feeds (fit_feed, feed_vi: one line per port over the
-    band and all its runs) -> {run: waves}, and with shift=[mm per port] the
+    """emboard's fitted feeds (feed_lines, feed_vi: one line per port over the
+    band) -> {run: waves}, and with shift=[mm per port] the
     waves at planes that far further in. Also each feed's Z and gamma."""
     n = len(where["ports"])
     keys = list(reads)
-    lines = [eb.fit_feed([reads[e][k] for e in keys], where["ports"][k]["dist"], freqs, f_max) for k in range(n)]
+    lines = eb.feed_lines(reads, [p["dist"] for p in where["ports"]], freqs, f_max, len(keys) == 1)
     runs, runs_c = {}, {}
     vi0 = None
     for e in keys:

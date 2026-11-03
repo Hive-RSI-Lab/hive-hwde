@@ -150,6 +150,9 @@ def baseline_rules(cap: dict) -> list[Rule]:
     r.append(Rule("aiee_silk_width_floor", "text_thickness", floor("aiee_silk_width_floor"),
                   condition="A.Type == 'text' && (A.Layer == 'F.Silkscreen' || A.Layer == 'B.Silkscreen')"))
     assert {x.name for x in r} == set(fabfloors.DRU_FLOOR_KEYS)
+    if fabfloors.OUTER_CLEARANCE_KEY in cap:
+        r.append(Rule(fabfloors.OUTER_CLEARANCE_RULE, "clearance",
+                      fabfloors.outer_clearance(cap), layer="outer"))
     return r
 
 
@@ -248,26 +251,44 @@ def _bga_refs(bg) -> list[str]:
     return [b.ref.replace("'", "") for b in bgalib.find_bgas(bg)]
 
 
-def bga_rules(bg, cap: dict) -> tuple[list[Rule], list[dict]]:
+def bga_rules(bg, cap: dict, stackup: dict | None = None
+              ) -> tuple[list[Rule], list[dict]]:
     """The escape clearance inside each ball grid's courtyard (#325): the
     netclass clearance (hole clearance less the class via's ring) is wider
     than a 0.8 mm field's streets allow. Same geometry and rule text as
-    route_escape (lib/bgalib) - one writer's rule is the other's."""
+    route_escape (lib/bgalib) - one writer's rule is the other's. On an HDI
+    build (#477) the via types' own floors come too, and each field gets the
+    HDI line's track and clearance (lib/hdilib)."""
     sys.path.insert(0, str(SCRIPTS / "lib"))
     import bgalib
+    import hdilib
     floors = {"track_width": cap["min_trace_width_mm"],
-              "clearance": cap["min_clearance_mm"],
+              "clearance": fabfloors.outer_clearance(cap),
               "via_diameter": cap["min_via_diameter_mm"],
               "via_drill": cap["min_via_drill_mm"],
               "annular": cap.get("min_annular_ring_mm", 0.0),
               "hole_clearance": KICAD_HOLE_CLEARANCE_MM}
     rules: list[Rule] = []
     facts: list[dict] = []
+    hdi = hdilib.is_hdi(stackup)
+    caps = hdilib.load_hdi_caps() if hdi else {}
+
+    def add_hdi(rows):
+        for nm, constraint, value, cond in rows:
+            rules.append(Rule(hdilib.HDI_RULE_PREFIX + nm, constraint, value,
+                              condition=cond))
+
+    if hdi:
+        add_hdi(hdilib.via_type_rules(stackup, caps))
     for b in bgalib.find_bgas(bg):
         ep = bgalib.escape_params(b, floors)
         name = bgalib.rule_name(b.ref)
-        rules.append(Rule(name, "clearance", ep["clearance"],
+        clr = float(caps["min_clearance_mm"]) if hdi else ep["clearance"]
+        rules.append(Rule(name, "clearance", clr,
                           condition=bgalib.rule_condition(b.ref)))
+        if hdi:
+            add_hdi(hdilib.field_rules(b.ref, float(caps["min_trace_width_mm"]),
+                                       clr, bgalib.rule_condition(b.ref)))
         facts.append({"ref": b.ref, "pitch_mm": b.pitch,
                       "clearance_mm": ep["clearance"],
                       "via_mm": [ep["via_size"], ep["via_drill"]],
@@ -607,7 +628,7 @@ def voltage_rules(constraints: dict, cap: dict) -> tuple[list[Rule], list[dict]]
         elif a in hv_nets or b in hv_nets:
             # explicit sub-threshold pair between derived-HV nets = waiver:
             # restore the fab-floor clearance for exactly this pair
-            clr = float(cap["min_clearance_mm"])
+            clr = fabfloors.outer_clearance(cap)
             name = f"aiee_hv_waived_{_safe(a)}__{_safe(b)}"
             waiver = True
         else:
@@ -785,7 +806,7 @@ def isolation_rules(constraints: dict, cap: dict, stackup: dict | None,
             if short:
                 fact.setdefault("parts_refused", []).append({"ref": ref, "shortfalls": short})
                 continue
-            floor = _mm_up(float(cap["min_clearance_mm"]))
+            floor = _mm_up(fabfloors.outer_clearance(cap))
             name = f"aiee_iso_part_{_safe(ref)}_{tag}"
             part_rules.append(Rule(
                 name, "clearance", floor,
@@ -874,7 +895,7 @@ def net_classes(constraints: dict, power_facts: list[dict],
             # fine-pitch part (CH224Q VBUS, 0.176 mm between pads) cannot
             # meet 0.2 at its own pads. Spacing a voltage needs comes from
             # voltages/voltage_pairs (the _HV_ variants below).
-            classes.append(base_class(cname, w, cap["min_clearance_mm"]))
+            classes.append(base_class(cname, w, fabfloors.outer_clearance(cap)))
         for f in buckets[w]:
             f["netclass"] = cname       # traceability in the JSON report
             f["class_width_mm"] = w
@@ -882,7 +903,7 @@ def net_classes(constraints: dict, power_facts: list[dict],
     for f in diff_facts:
         cname = f"Diff{f['impedance_ohm']}"
         if not any(c["name"] == cname for c in classes):
-            classes.append(base_class(cname, f["width_mm"], cap["min_clearance_mm"],
+            classes.append(base_class(cname, f["width_mm"], fabfloors.outer_clearance(cap),
                                       dpw=f["width_mm"], dpg=f["gap_mm"]))
         for n in f["pair"]:
             patterns.append({"netclass": cname, "pattern": n})
@@ -937,7 +958,7 @@ def hole_clearance_floor(cls: dict, hole_clearance: float) -> float:
 
 def default_class(cap: dict) -> dict:
     return {
-        "name": "Default", "clearance": cap["min_clearance_mm"],
+        "name": "Default", "clearance": fabfloors.outer_clearance(cap),
         "track_width": max(cap["min_trace_width_mm"], 0.2),
         "via_diameter": cap["min_via_diameter_mm"], "via_drill": cap["min_via_drill_mm"],
         "diff_pair_width": 0.2, "diff_pair_gap": 0.25, "diff_pair_via_gap": 0.25,
@@ -1039,7 +1060,7 @@ def build(constraints: dict, cap: dict, stackup: dict, baseline_only: bool,
         zr, zf = impedance_rules(constraints, stackup, pairs, floor, bga_refs)
         hr, hf = voltage_rules(constraints, cap)
         kr, kf = package_rules(constraints)
-        br, bf = bga_rules(bg, cap) if bg is not None else ([], [])
+        br, bf = bga_rules(bg, cap, stackup) if bg is not None else ([], [])
         # HV and package-rating clearances stay last: KiCad's later rule
         # wins, and a courtyard's escape clearance must never undercut them
         ir, if_ = isolation_rules(constraints, cap, stackup, hf, bg)

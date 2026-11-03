@@ -65,6 +65,7 @@ sys.path.insert(0, str(SCRIPTS / "lib"))
 import checklib  # noqa: E402
 import env  # noqa: E402
 import geom  # noqa: E402
+import hdilib  # noqa: E402
 import kc  # noqa: E402
 import route_edit  # noqa: E402  (finish pass: rip sliver vias by uuid)
 import routelib  # noqa: E402
@@ -160,6 +161,11 @@ def _pro_rules(staged: Path) -> dict:
                 .get("rules") or {})
 
 
+# --offer-spans (#477): give Freerouting the HDI build's spans. Off until a run
+# shows Freerouting uses them and SES import restores their type.
+OFFER_SPANS = False
+
+
 def _dsn_hole_rules(staged: Path, dsn: Path, bg: geom.BoardGeom) -> dict:
     """Carry the board's hole rules, which KiCad's DSN export drops, into
     the DSN: via padstacks grown so copper clearance keeps different-net
@@ -173,14 +179,24 @@ def _dsn_hole_rules(staged: Path, dsn: Path, bg: geom.BoardGeom) -> dict:
     margin = max(float(rules.get("min_hole_clearance") or 0.25),
                  float(rules.get("min_copper_edge_clearance") or 0.0))
     text = dsn.read_text(encoding="utf-8")
-    text, grown = routelib.dsn_hole_floor(text, h2h)
+    build, entry = hdilib.board_build(bg)
+    added: list[str] = []
+    if build:
+        caps = hdilib.load_hdi_caps()
+    if build and OFFER_SPANS:
+        spans = hdilib.spans_of(entry, bg.copper_layers, caps=caps)
+        text, added = routelib.dsn_add_spans(
+            text, [(s.i, s.j, s.size, s.drill) for s in spans])
+    text, grown = routelib.dsn_hole_floor(
+        text, h2h, float(caps["hole_to_hole_diff_net_mm"]) if build else None)
     holes = [{"at": list(p.center), "drill": list(p.drill), "angle": p.angle}
              for p in bg.npth]
     text, kept_out = routelib.dsn_npth_keepouts(text, holes, margin)
     dsn.write_text(text, encoding="utf-8")
     return {"hole_to_hole_mm": h2h, "grown": grown,
             "via_padstacks_grown": {k: list(v) for k, v in grown.items()},
-            "npth_keepouts": kept_out, "npth_margin_mm": margin}
+            "npth_keepouts": kept_out, "npth_margin_mm": margin,
+            **({"hdi_build": build, "via_spans_offered": added} if build else {})}
 
 
 def _ses_restore(ses: Path, grown: dict) -> None:
@@ -471,11 +487,15 @@ def run(argv: list[str] | None = None):
                          "component/net order, import every result on its "
                          "own copy and keep the one DRC grades best (facts "
                          "tries, graded, variance); 1 = the ladder only")
+    ap.add_argument("--offer-spans", action="store_true",
+                    help="HDI build: offer Freerouting each via span (#477)")
     ap.add_argument("--no-krt-finish", action="store_true",
                     help="skip the KRT mop-up pass after the ladder")
     ap.add_argument("--no-maze-finish", action="store_true",
                     help="skip route_finish's maze pass after KRT")
     args = ap.parse_args(argv)
+    global OFFER_SPANS
+    OFFER_SPANS = args.offer_spans
 
     pcb = Path(args.pcb).resolve()
     if not pcb.is_file():
@@ -632,6 +652,16 @@ def run(argv: list[str] | None = None):
                 if f"try{e['try']}" == i:
                     e["ses_import_failed"] = True
             continue
+        # 4a. KiCad's import calls every non-through via "buried"; an HDI
+        # board's vias get their span's real type back (#477).
+        hdi_build, hdi_entry = hdilib.board_build(bg)
+        if hdi_build:
+            spans = hdilib.spans_of(hdi_entry, bg.copper_layers,
+                                    caps=hdilib.load_hdi_caps())
+            routelib.run_worker(bp, {
+                "verb": "retype_vias", "board": str(trial), "out": str(trial),
+                "spans": [[s.top, s.bot, s.kind] for s in spans]},
+                work, timeout=300)
         # 4b. dedup: the SES echoes pre-session guide-wire copper (critical-
         # net trunks) back through ImportSpecctraSES as EXACT same-net
         # duplicates - invisible to DRC/gerbers (S14: run (a) shipped 45

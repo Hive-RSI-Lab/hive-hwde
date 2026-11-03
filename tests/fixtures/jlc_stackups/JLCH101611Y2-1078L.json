@@ -1,0 +1,234 @@
+{
+ "appointName": "JLCH101611Y2-1078L",
+ "plateLayerNumber": 10,
+ "plateThickness": 1.6,
+ "cuprumThickness": 1.0,
+ "innerCopperThickness": 1.0,
+ "receptionDisplayName": "JLCH101611Y2-1078L(成品板厚1.58mm±10%）",
+ "impedanceDefaultTemplateAccessId": "bc28f780261e459eb5da5bacd2d78ed7",
+ "laminationType": 2,
+ "basicDataList": [
+  {
+   "materialType": 1,
+   "material": "铜箔",
+   "materialName": "1oz",
+   "dielectricConstant": 4.2,
+   "dielectricThick": 0.0,
+   "topConductorThick": 0.035,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 0,
+   "material": "PP",
+   "materialName": "1078RC69%3.39mil",
+   "dielectricConstant": 3.99,
+   "dielectricThick": 0.071,
+   "topConductorThick": 0.0,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 1,
+   "material": "铜箔",
+   "materialName": "1oz",
+   "dielectricConstant": 4.2,
+   "dielectricThick": 0,
+   "topConductorThick": 0.03,
+   "botConductorThick": 0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 0,
+   "material": "PP",
+   "materialName": "1078RC69%3.39mil",
+   "dielectricConstant": 3.99,
+   "dielectricThick": 0.071,
+   "topConductorThick": 0.0,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 1,
+   "material": "铜箔",
+   "materialName": "1oz",
+   "dielectricConstant": 4.2,
+   "dielectricThick": 0,
+   "topConductorThick": 0.03,
+   "botConductorThick": 0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 0,
+   "material": "PP",
+   "materialName": "7628RC50%8.5mil",
+   "dielectricConstant": 4.46,
+   "dielectricThick": 0.201,
+   "topConductorThick": 0.0,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 2,
+   "material": "芯板",
+   "materialName": "0.20mm 1/1OZ 不含铜",
+   "dielectricConstant": 4.42,
+   "dielectricThick": 0.2,
+   "topConductorThick": 0.03,
+   "botConductorThick": 0.03,
+   "copperThickness": "1/1"
+  },
+  {
+   "materialType": 0,
+   "material": "PP",
+   "materialName": "7628RC50%8.5mil",
+   "dielectricConstant": 4.46,
+   "dielectricThick": 0.186,
+   "topConductorThick": 0.0,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 2,
+   "material": "芯板",
+   "materialName": "0.20mm 1/1OZ 不含铜",
+   "dielectricConstant": 4.42,
+   "dielectricThick": 0.2,
+   "topConductorThick": 0.03,
+   "botConductorThick": 0.03,
+   "copperThickness": "1/1"
+  },
+  {
+   "materialType": 0,
+   "material": "PP",
+   "materialName": "7628RC50%8.5mil",
+   "dielectricConstant": 4.46,
+   "dielectricThick": 0.201,
+   "topConductorThick": 0.0,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 1,
+   "material": "铜箔",
+   "materialName": "1oz",
+   "dielectricConstant": 4.2,
+   "dielectricThick": 0,
+   "topConductorThick": 0.03,
+   "botConductorThick": 0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 0,
+   "material": "PP",
+   "materialName": "1078RC69%3.39mil",
+   "dielectricConstant": 3.99,
+   "dielectricThick": 0.071,
+   "topConductorThick": 0.0,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 1,
+   "material": "铜箔",
+   "materialName": "1oz",
+   "dielectricConstant": 4.2,
+   "dielectricThick": 0,
+   "topConductorThick": 0.03,
+   "botConductorThick": 0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 0,
+   "material": "PP",
+   "materialName": "1078RC69%3.39mil",
+   "dielectricConstant": 3.99,
+   "dielectricThick": 0.071,
+   "topConductorThick": 0.0,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  },
+  {
+   "materialType": 1,
+   "material": "铜箔",
+   "materialName": "1oz",
+   "dielectricConstant": 4.2,
+   "dielectricThick": 0.0,
+   "topConductorThick": 0.035,
+   "botConductorThick": 0.0,
+   "copperThickness": ""
+  }
+ ],
+ "impedanceComponentStructResVO": {
+  "viaHoleInfoList": [
+   {
+    "viaHoleType": 3,
+    "startPosition": 1,
+    "endPosition": 10,
+    "viaStages": 0,
+    "viaHoleRadius": 0.0,
+    "adornBestrow": ""
+   },
+   {
+    "viaHoleType": 1,
+    "startPosition": 1,
+    "endPosition": 2,
+    "viaStages": 2,
+    "viaHoleRadius": 0.0,
+    "adornBestrow": ""
+   },
+   {
+    "viaHoleType": 1,
+    "startPosition": 2,
+    "endPosition": 3,
+    "viaStages": 1,
+    "viaHoleRadius": 0.0,
+    "adornBestrow": ""
+   },
+   {
+    "viaHoleType": 2,
+    "startPosition": 3,
+    "endPosition": 8,
+    "viaStages": 0,
+    "viaHoleRadius": 0.0,
+    "adornBestrow": ""
+   },
+   {
+    "viaHoleType": 1,
+    "startPosition": 8,
+    "endPosition": 9,
+    "viaStages": 1,
+    "viaHoleRadius": 0.0,
+    "adornBestrow": ""
+   },
+   {
+    "viaHoleType": 1,
+    "startPosition": 9,
+    "endPosition": 10,
+    "viaStages": 2,
+    "viaHoleRadius": 0.0,
+    "adornBestrow": ""
+   }
+  ],
+  "massLaminationList": [
+   {
+    "massLaminationNo": 1,
+    "startPosition": 3,
+    "endPosition": 8,
+    "massLaminationThickness": 1.111
+   },
+   {
+    "massLaminationNo": 2,
+    "startPosition": 2,
+    "endPosition": 9,
+    "massLaminationThickness": 1.318
+   },
+   {
+    "massLaminationNo": 3,
+    "startPosition": 1,
+    "endPosition": 10,
+    "massLaminationThickness": 1.525
+   }
+  ]
+ }
+}

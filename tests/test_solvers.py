@@ -16,6 +16,7 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -325,6 +326,105 @@ def test_planar_waves_recover_a_and_b(tmp_path):
     assert abs(gb / ga - b / a) < 1e-3
 
 
+def _write_probes(path, port, dist, a, b, beta, f):
+    import numpy as np
+    t = np.arange(0, 100e-9, 2e-12)
+    for j, s in enumerate(dist):
+        sm = s * 1e-3
+        v = 0
+        for fi, ai, bi, bti in zip(f, a, b, beta):
+            ph = ai * np.exp(1j * bti * sm) + bi * np.exp(-1j * bti * sm)
+            v = v + np.real(ph * np.exp(2j * math.pi * fi * t))
+        v = v * np.hanning(t.size)
+        (path / f"p{port}u{j}").write_text("% t v\n" + "\n".join(f"{x:.6e}\t{y:.9e}" for x, y in zip(t, v)))
+
+
+def test_planar_waves_survive_a_null_on_the_middle_probe(tmp_path):
+    """Everything reflected (an open), with a null on the middle probe at one
+    frequency: the old per-frequency gamma divided by that probe and read
+    |S11| of 1.19 on rf-kit's ring. The band's fit stays at the true value."""
+    freqs = [1e9, 1.5e9, 2e9, 2.5e9, 3e9, 3.5e9, 4e9]
+    beta = [2 * math.pi * f * math.sqrt(3.0) / em.C0 for f in freqs]
+    dist = [5.0, 10.0, 15.0]
+    # V(s) = a e^(jbs) + b e^(-jbs) = 0 at s1 for the middle frequency
+    a = [1.0 + 0j] * len(freqs)
+    b = [np.exp(1j * (math.pi + 2 * bt * dist[1] * 1e-3)) if i == 3 else 1.0 + 0j
+         for i, bt in enumerate(beta)]
+    _write_probes(tmp_path, 0, dist, a, b, beta, freqs)
+    got = em.planar_waves(tmp_path, {"ports": [{"dist": dist}]}, 0, freqs)
+    for (ga, gb), want_a, want_b in zip(got, a, b):
+        assert abs(gb / ga - want_b / want_a) < 5e-3
+
+
+def test_planar_s_matrix_removes_the_far_end_reflection(tmp_path):
+    """A matched thru with both 50 ohm ends reflecting G: one column reads
+    |S11| = |G|, S = B A^-1 reads the thru."""
+    freqs = [1e9, 2e9, 3e9, 4e9]
+    beta = [2 * math.pi * f * math.sqrt(3.0) / em.C0 for f in freqs]
+    dist = [5.0, 10.0, 15.0]
+    where = {"ports": [{"dist": dist}, {"dist": dist}]}
+    gam, tt = 0.15, [np.exp(-1j * bt * 0.03) for bt in beta]
+    runs = [tmp_path / "e0", tmp_path / "e1"]
+    for e, sim in enumerate(runs):
+        sim.mkdir()
+        # the source's wave crosses, the far end sends G of it back, ignoring
+        # the second bounce: a_e = 1, b_far = t, a_far = G t, b_e = G t^2
+        for k in range(2):
+            a = [1.0 + 0j if k == e else gam * x for x in tt]
+            b = [gam * x * x if k == e else x for x in tt]
+            _write_probes(sim, k, dist, a, b, beta, freqs)
+    one = em.planar_sparams(runs[0], where, 0, freqs)
+    assert abs(one[1][0]) == pytest.approx(gam, abs=0.01)
+    cols = em.planar_s_matrix(runs, where, freqs)
+    for m in range(len(freqs)):
+        assert abs(cols[0][m][0]) < 0.01 and abs(cols[0][m][1]) == pytest.approx(1.0, abs=0.01)
+        assert cols[0][m][1] == pytest.approx(cols[1][m][0], abs=0.01)
+
+
+def test_planar_s_matrix_holds_the_deck_alpha_against_probe_error(tmp_path, monkeypatch):
+    """A lossless thru whose probes carry a small amplitude error that leans
+    opposite ways in the two runs (what the live 30 mm thru does): fitted run by
+    run its alpha flips sign and reads as gain. Held at the deck's 0, S21 stays
+    passive and alpha can't flip."""
+    freqs = [1e9 + 0.25e9 * i for i in range(21)]
+    beta = [2 * math.pi * f * math.sqrt(3.0) / em.C0 for f in freqs]
+    dist = [5.0, 10.0, 15.0]
+    tt = [np.exp(-1j * bt * 0.03) for bt in beta]
+    runs = [tmp_path / "e0", tmp_path / "e1"]
+    for e, sim in enumerate(runs):
+        sim.mkdir()
+        for k in range(2):
+            a = [1.0 + 0j if k == e else 0j for _ in tt]
+            b = [0j if k == e else x for x in tt]
+            us = []
+            for j, s in enumerate(dist):
+                sm = s * 1e-3
+                # the error: a slope along the feed, the sign set by the wave's way
+                lean = 1 + (1 if k == e else -1) * 0.001 * (j - 1)
+                us.append([lean * (ai * np.exp(1j * bt * sm) + bi * np.exp(-1j * bt * sm))
+                           for ai, bi, bt in zip(a, b, beta)])
+            np.save(sim / f"us{k}.npy", np.array(us))
+    monkeypatch.setattr(em, "_feed_probes", lambda sim, k, fr: list(np.load(sim / f"us{k}.npy")))
+    where = {"ports": [{"dist": dist, "alpha": 0.0}, {"dist": dist, "alpha": 0.0}]}
+    held = em.planar_s_matrix(runs, where, freqs)
+    assert all(g.real == 0 for g in em.planar_gammas(runs, where, freqs)[0])
+    # fitted free the same error reads as gain; held it stays within the lean
+    assert max(abs(c[1]) for c in held[0]) < 1.0005
+    free = em.planar_s_matrix(runs, {"ports": [{"dist": dist}, {"dist": dist}]}, freqs)
+    assert max(abs(c[1]) for c in free[0]) > 1.0005
+
+
+def test_feed_alpha_is_the_closed_form_dielectric_loss():
+    """FR4-like, tan d 0.02 at 3 GHz on 50 ohm: Pozar's 3.198, about 1 Np/m."""
+    w, h, er, td, f = 3.06, 1.6, 4.5, 0.02, 3e9
+    kappa = 2 * math.pi * f * em.EPS0 * er * td
+    a = em._feed_alpha(w, h, er, kappa)
+    eeff = (er + 1) / 2 + (er - 1) / 2 / math.sqrt(1 + 12 / (w / h))
+    k0 = 2 * math.pi * f / em.C0
+    assert a == pytest.approx(k0 * er * (eeff - 1) * td / (2 * math.sqrt(eeff) * (er - 1)), rel=1e-3)
+    assert em._feed_alpha(w, h, er, 0.0) == 0.0
+
+
 def test_planar_waves_reject_a_silent_probe(tmp_path):
     """A probe openEMS left at zero (run stopped early) is an error, not a
     ZeroDivisionError deep in the wave fit."""
@@ -377,12 +477,17 @@ def test_no_holes_splits_a_ring():
 def test_live_planar_thru_line_is_transparent(tmp_path):
     geo = {"h": 1.53, "er": 4.5, "polys": [[[0, -1.4265], [30, -1.4265], [30, 1.4265], [0, 1.4265]]],
            "ports": [{"x": 0, "y": 0, "dir": "-x", "w": 2.853}, {"x": 30, "y": 0, "dir": "+x", "w": 2.853}]}
-    res = sim_solve.planar(geo, [0], 6e9, f_min=1e9, points=11)
+    res = sim_solve.planar(geo, [0, 1], 6e9, f_min=1e9, points=41, loss="none")
     for s11, s21 in zip(res["s"]["S11"], res["s"]["S21"]):
         assert abs(complex(*s21)) == pytest.approx(1.0, abs=0.02)
-        assert abs(complex(*s11)) < 0.12        # -18 dB: the probe split's floor
-    # #483: the solve checks its own S. That floor on a |S21| = 1 line makes
-    # column 1 non-passive (sigma 1.11 at 5.9 GHz, 41 points): reported, not hidden
+        assert abs(complex(*s11)) < 0.056       # -25 dB (was -19 from one excitation)
+    # #483 checks the solve's own S; #565: this thru has to pass it
     q = res["quality"]
-    assert q["terms"] == ["S11", "S21"] and q["sigma_max"] is not None
+    assert q["ok"], q["errors"]
     assert q["levels"]["causality"] == "good"
+    # With alpha held, passivity says nothing about the fitted phase, so check it
+    # on its own: eps_eff at 3.5 GHz against Kirschning-Jansen's 3.47. A probe
+    # 3.8 mm from the lumped port read 3.646 here and still passed everything above.
+    mid = res["freqs"].index(3.5e9)
+    for port in res["feed_eps_eff"]:
+        assert port[mid] == pytest.approx(3.47, rel=0.02)

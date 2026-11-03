@@ -6,6 +6,7 @@ import math
 import sys
 from pathlib import Path
 
+import pytest
 from shapely.geometry import LineString, Point
 
 REPO = Path(__file__).resolve().parents[1]
@@ -127,6 +128,42 @@ def test_routes_around_a_wall_on_one_layer(tmp_path):
         ang = math.degrees(math.atan2(dy, dx)) % 45
         assert min(ang, 45 - ang) < 1e-6            # 0/45/90 only
     route_edit.validate_ops({"version": 1, "ops": job["ops"]})
+
+
+def _tie(ref, at, n1, n2):
+    """A net tie whose bridge runs 10 mm either side of it, along local x."""
+    return (f'  (footprint "t:{ref}" (layer "F.Cu") (at {at})\n'
+            f'    (property "Reference" "{ref}" (at 0 0 0))\n'
+            '    (fp_poly (pts (xy -10 -0.25) (xy 10 -0.25) (xy 10 0.25) (xy -10 0.25))\n'
+            '      (stroke (width 0) (type solid)) (fill yes) (layer "F.Cu"))\n'
+            f'    (pad "1" smd circle (at -10 0) (size 0.5 0.5) (layers "F.Cu") (net "{n1}"))\n'
+            f'    (pad "2" smd circle (at 10 0) (size 0.5 0.5) (layers "F.Cu") (net "{n2}")))\n')
+
+
+def test_a_net_tie_bridge_is_a_wall_to_other_nets(tmp_path):
+    # rotated 90: the bridge stands across the straight line from U1 to U2
+    body = _pad("U1", 5, 15, "SIG") + _pad("U2", 25, 15, "SIG")
+    body += _tie("NT1", "15 11 90", "GND", "+3V3")
+    pcb = _board(tmp_path, body)
+    bg = geom.BoardGeom.from_file(pcb)
+    wall = bg.fp_copper[0]["shape"]
+    assert wall.bounds == pytest.approx((14.75, 1, 15.25, 21))
+    _, jobs = _plan(pcb, [_pair("SIG", (5, 15), (25, 15))], via_cost_mm=30, margin=8)
+    job = jobs[0]
+    assert job["status"] == "routed"
+    for op in _tracks(job, "F.Cu"):
+        seg = LineString([op["start"], op["end"]])
+        assert seg.distance(wall) >= op["width"] / 2 + 0.15 - 1e-6
+
+
+def test_a_net_tie_bridge_does_not_block_its_own_nets(tmp_path):
+    body = _pad("U1", 5, 15, "SIG") + _pad("U2", 25, 15, "SIG")
+    body += _tie("NT1", "15 11 90", "SIG", "GND")
+    pcb = _board(tmp_path, body)
+    _, jobs = _plan(pcb, [_pair("SIG", (5, 15), (25, 15))], via_cost_mm=30, margin=8)
+    assert jobs[0]["status"] == "routed"
+    assert jobs[0]["vias"] == 0
+    assert sum(math.dist(op["start"], op["end"]) for op in _tracks(jobs[0])) < 21
 
 
 def test_vias_under_a_full_wall(tmp_path):
@@ -274,3 +311,63 @@ def test_power_and_pour_copper_is_never_ripped(tmp_path):
     assert jobs[0]["status"] == "failed"         # SIG stays a wall
     assert "ripped_nets" not in jobs[0]
     assert rip == []
+
+
+def test_a_diff_pair_is_never_ripped(tmp_path):
+    """#613: a rip-up took pair copper and rerouted it single-ended, DRC clean."""
+    body = _pad("U1", 5, 15, "A") + _pad("U2", 25, 15, "A")
+    body += _seg(15, 0.1, 15, 29.9, 0.2, "F.Cu", "D_P", "u-wf")
+    body += _seg(15, 0.1, 15, 29.9, 0.2, "B.Cu", "D_P", "u-wb")
+    pcb = _board(tmp_path, body)
+    (pcb.parent / "constraints.json").write_text(
+        '{"diff_pairs": [{"p": "D_P", "n": "D_N"}]}')
+    assert rf.pair_nets(pcb) == {"D_P", "D_N"}
+    rip: list = []
+    _, jobs = _plan(pcb, [_pair("A", (5, 15), (25, 15),
+                                "Pad 1 [A] of U1 on F.Cu",
+                                "Pad 1 [A] of U2 on F.Cu")],
+                    rip_board=True, ripped_out=rip,
+                    keep_nets_extra=rf.pair_nets(pcb))
+    assert jobs[0]["status"] == "failed"
+    assert "ripped_nets" not in jobs[0]
+    assert rip == []
+
+
+def test_rules_facts_of_an_hdi_board_are_json():
+    """#477: route_finish crashed writing its report on an HDI build, after
+    routing, because Rules.spans holds Span objects."""
+    import json
+    from types import SimpleNamespace
+    import hdilib
+    import route_finish
+    span = hdilib.Span("micro", "F.Cu", "In1.Cu", 0, 1, 0.1, 0.25)
+    rules = SimpleNamespace(spans=[span], grid=0.1, net_width={"A": 0.2})
+    facts = route_finish._rules_facts(rules)
+    assert json.loads(json.dumps(facts))["spans"][0]["kind"] == "micro"
+    assert "net_width" not in facts
+
+
+def test_a_pass_at_the_drc_cap_counts_its_routes():
+    """KiCad reports at most 499 unconnected items: on a bigger board the total
+    stays 499 while connections close, and every pass was thrown away."""
+    from route_finish import DRC_UNCONNECTED_CAP as cap, _pass_helped
+    routed, failed = [{"status": "routed"}], [{"status": "failed"}]
+    assert _pass_helped(cap, cap, routed)
+    assert not _pass_helped(cap, cap, failed)
+    assert _pass_helped(40, 39, failed)
+    assert not _pass_helped(40, 40, routed)  # below the cap the count is real
+
+
+def test_a_short_run_between_vias_moves_to_the_next_layer():
+    """hw-lab hdi-bga: a buried via and a microvia 0.14 mm apart on one net, under
+    JLC's 0.13 mm hole spacing, which KiCad's DRC reported only some of the time."""
+    from route_finish import merge_close_vias
+    path = [(0, 0, 0), (5, 0, 0), (5, 0, 1), (6, 1, 1), (6, 1, 2), (9, 1, 2)]
+    out = merge_close_vias(path, 3.0)
+    assert [q for q in out if q[2] == 1] == [(5, 0, 1)]
+    assert out[out.index((5, 0, 1)) + 1:] == [(5, 0, 2), (6, 1, 2), (6, 1, 2), (9, 1, 2)]
+    # long runs, plane drops and the ends of the path stay as they are
+    long = [(0, 0, 0), (0, 0, 1), (9, 0, 1), (9, 0, 2)]
+    assert merge_close_vias(long, 3.0) == long
+    drop = [(0, 0, 0), (0, 0, -1)]
+    assert merge_close_vias(drop, 3.0) == drop

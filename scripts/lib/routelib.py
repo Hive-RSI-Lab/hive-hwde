@@ -708,7 +708,65 @@ def dsn_class_clearances(dsn_text: str) -> list[float]:
             re.finditer(r"\(clearance\s+([\d.]+)\s*\)", dsn_text)]
 
 
-def dsn_hole_floor(dsn_text: str, hole_to_hole_mm: float
+def dsn_layer_names(dsn_text: str) -> list[str]:
+    """Copper layers of a DSN, in stack order."""
+    scan = _parser_blanked(dsn_text)
+    span = _structure_span(scan)
+    if span is None:
+        return []
+    return re.findall(r'\(layer\s+"?([^\s")]+)"?\s*\n?\s*\(type',
+                      scan[span[0]:span[1]])
+
+
+def span_padstack(i: int, j: int, size_mm: float, drill_mm: float) -> str:
+    """KiCad's DSN name for a via on copper i..j: its SES import reads the
+    span from the shapes and the drill from this name."""
+    return f"Via[{i}-{j}]_{size_mm * 1000:.6g}:{drill_mm * 1000:.6g}_um"
+
+
+def dsn_add_spans(dsn_text: str, spans: list[tuple[int, int, float, float]]
+                  ) -> tuple[str, list[str]]:
+    """Offer the router an HDI build's via spans (#477). KiCad's DSN declares
+    the netclass's through via and the vias already on the board, so each span
+    (i, j, size mm, drill mm) gets a padstack in the library, a place in the
+    structure's (via ...) list and in each class's use_via. Returns (text,
+    padstack names added). The spans go ahead of the through via: Freerouting
+    2.2.4 takes these lists in order, and with the spans behind it placed no
+    span at all (UFBGA-64 fixture: 0 of 32 vias; ahead, 14 of 44 and six fewer
+    nets left unrouted). The class's own via stays usable, last."""
+    layers = dsn_layer_names(dsn_text)
+    if not layers or "(unit um)" not in dsn_text:
+        return dsn_text, []
+    names, blocks = [], []
+    have = set(re.findall(r'\(padstack\s+"?(Via\[[^\]]*\]_[\d.]+:[\d.]+_um)"?',
+                          dsn_text))
+    every = []
+    for i, j, size, drill in spans:
+        name = span_padstack(i, j, size, drill)
+        every.append(name)
+        if name in have:
+            continue
+        names.append(name)
+        shapes = "".join(f"      (shape (circle {layers[k]} {size * 1000:.6g}))\n"
+                         for k in range(i, j + 1))
+        blocks.append(f'    (padstack "{name}"\n{shapes}      (attach off)\n    )\n')
+    lib = re.search(r'\(library\s*\n', dsn_text)
+    if lib is None:
+        return dsn_text, []
+    text = dsn_text[:lib.end()] + "".join(blocks) + dsn_text[lib.end():]
+
+    def extend(m):
+        got = re.findall(r'"([^"]+)"', m.group(2))
+        rest = [n for n in got if n not in every]
+        return m.group(1) + " ".join(f'"{n}"' for n in every + rest) + m.group(3)
+
+    text = re.sub(r'(\(via\s+)("[^"]*_um"(?:\s+"[^"]*_um")*)(\s*\))', extend, text, count=1)
+    text = re.sub(r'(\(use_via\s+)("[^"]*_um"(?:\s+"[^"]*_um")*)(\s*\))', extend, text)
+    return text, names
+
+
+def dsn_hole_floor(dsn_text: str, hole_to_hole_mm: float,
+                   span_floor_mm: float | None = None
                    ) -> tuple[str, dict[str, tuple[float, float]]]:
     """Make Freerouting keep vias of different nets JLC's hole-to-hole
     floor apart. Freerouting spaces vias by copper clearance only, so two
@@ -720,7 +778,9 @@ def dsn_hole_floor(dsn_text: str, hole_to_hole_mm: float
     alone keeps the drills apart. The padstack name keeps the real sizes;
     ses_restore_vias puts the real diameter back before import. Returns
     (text, {padstack: (real_um, grown_um)}); anything not in um comes back
-    unchanged."""
+    unchanged. span_floor_mm: on an HDI build, the floor for a padstack that
+    isn't through (a laser hole isn't drilled with the through vias, #477);
+    None leaves every padstack on hole_to_hole_mm."""
     if not re.search(r"\(resolution\s+um\s+\d+\)", dsn_text) \
             or not re.search(r"\(unit\s+um\)", dsn_text):
         return dsn_text, {}
@@ -730,9 +790,13 @@ def dsn_hole_floor(dsn_text: str, hole_to_hole_mm: float
     c_min = min(clrs)
     grown: dict[str, tuple[float, float]] = {}
     out, pos = [], 0
+    through = f"Via[0-{len(dsn_layer_names(dsn_text)) - 1}]_"
     for m in _VIA_PADSTACK_RE.finditer(dsn_text):
         name, dia, drill = m.group(1), float(m.group(2)), float(m.group(3))
-        want = round(hole_to_hole_mm * 1000.0 + drill - c_min, 1)
+        floor = hole_to_hole_mm
+        if span_floor_mm is not None and not name.startswith(through):
+            floor = span_floor_mm
+        want = round(floor * 1000.0 + drill - c_min, 1)
         if want <= dia + 1e-6:
             continue
         end = _sexp_end(dsn_text, m.start())

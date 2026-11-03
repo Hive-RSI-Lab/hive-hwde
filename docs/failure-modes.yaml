@@ -1084,7 +1084,7 @@ modes:
     rule: '-'
     level: L1
   target_level: L2
-  gap: not in verify; band-edge model
+  gap: not in verify; ragged pours may not converge on the segmented model
   hit_on:
   - usbbuck4
   sources:

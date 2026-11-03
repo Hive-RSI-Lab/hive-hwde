@@ -22,7 +22,7 @@ right, and the board-facing studies built on them.
         two ways: a disagreement past 3% means one of them is wrong for
         this geometry. --z-target adds the error against the target.
 
-    hwde sim_solve planar --geom GEOM.json [--excite 0,1] [--f-max HZ]
+    hwde sim_solve planar --geom GEOM.json [--excite all|0,1] [--f-max HZ]
                           [--f-min HZ] [--points N] [--fine MM]
                           [--out RES.json] [--touchstone FILE] [--keep DIR]
         full-wave (openEMS) S-parameters of a planar microstrip circuit:
@@ -31,7 +31,10 @@ right, and the board-facing studies built on them.
         three voltage probes per feed. GEOM.json: {"h", "er", "tand"?,
         "polys": [[[x, y], ...], ...], "ports": [{"x", "y", "dir", "w"}]}
         (mm; dir "+x"|"-x"|"+y"|"-y", pointing out of the circuit). One
-        openEMS run per excited port, one at a time. The S it writes is
+        openEMS run per excited port, one at a time. Every port excited
+        (the default) gives S = B A^-1, exact whatever the 50 ohm ends
+        reflect; fewer gives those columns with the ends' reflection left
+        in. The S it writes is
         checked by lib/sparam (IEEE P370 passivity/reciprocity/causality,
         failing points; `quality` in the result): exit 1 when it fails.
 
@@ -42,6 +45,14 @@ right, and the board-facing studies built on them.
         custom pads as drawn) into a GEOM.json for `planar`; h/er default
         to the board's own stackup (dielectric under the layer).
 
+    planar and board carry loss by default (lib/emloss, #553): [--loss line|none]
+    (board also deck: dielectric poles in the deck) [--foil std|rtf|vlp|hvlp|smooth]
+    [--roughness hammerstad|huray] [--loss-length L1,L2 mm per port]. `line` adds
+    each port's uniform section's dielectric (Djordjevic-Sarkar from er and tan d)
+    and conductor (skin, roughness) loss to the lossless S; `loss` in the result
+    and the Touchstone's comments say what went on, and warn about copper off
+    the through path, which keeps its lossless Q.
+
     hwde sim_solve board --pcb BOARD --region X0,Y0,X1,Y1 [--refine R]
                          [--refine-max R] [--no-converge]
                          --port X,Y,DIR[,LAYER[,W]] [--port ...]
@@ -49,6 +60,8 @@ right, and the board-facing studies built on them.
                          [--points N] [--symmetric] [--fine MM]
                          [--touchstone FILE] [--out RES.json] [--keep DIR]
                          [--deck-only DIR] [--json]
+                         [--cross-check palace [--cross-refine K] [--cross-order P]
+                          [--cross-np N] [--cross-timeout S]]
         full-wave (openEMS) S-parameters of a region of a board with every
         copper layer of its stackup (lib/emboard.py): CPWG and coplanar
         ground, reference-plane cut-outs, via fences and plated holes as
@@ -59,6 +72,10 @@ right, and the board-facing studies built on them.
         --symmetric: a mirror-symmetric 2-port is excited once. --deck-only
         writes the deck(s) and the probe map without running. Its S is
         checked by lib/sparam like planar's (`quality`; exit 1 on a fail).
+        --cross-check palace solves the same geometry and planes by FEM
+        (lib/empalace.py) and exits 1 when the S-matrices disagree: rms
+        |dS| over 0.05, a transmission notch more than 1% apart, or a feed
+        Z more than 3% apart. A reflection dip is printed, not judged.
 
 The cases (docs/solvers.md has the measured errors):
 
@@ -74,6 +91,8 @@ The cases (docs/solvers.md has the measured errors):
                         Hammerstad-Jensen), 1.5 mm on 0.8 mm of er 4
     palace_cavity       Palace eigenmodes of a 40x30x20 mm PEC box vs
                         f = c/2 sqrt((m/a)^2 + (n/b)^2 + (p/d)^2)
+    palace_lshape       Palace eigenmodes of an L-shaped plane cavity (PEC
+                        planes, PMC edges) vs Dauge's published benchmark
     fasthenry_bar       a 10 x 1 x 0.035 mm copper bar: R = l/(sigma w t),
                         L vs Ruehli's partial self-inductance
     fasthenry_pair      two parallel 10 x 0.2 x 0.035 mm bars 0.2 mm apart:
@@ -119,6 +138,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
 
+from lib import emloss  # noqa: E402
 from lib import emsolve as em  # noqa: E402
 from lib import solvers  # noqa: E402
 
@@ -395,6 +415,17 @@ def openems_line(work: Path, w, h, er, t=0.0, f_max=4e9, freqs=None) -> dict:
             "eps_eff": sum(r_["eps_eff"] for r_ in rows) / len(rows)}
 
 
+def _loss_args(p, modes) -> None:
+    p.add_argument("--loss", choices=modes, default="line")
+    p.add_argument("--foil", choices=sorted(emloss.FOILS), default=emloss.FOIL_DEFAULT)
+    p.add_argument("--roughness", choices=("hammerstad", "huray"), default="hammerstad")
+    p.add_argument("--loss-length", help="mm per port, comma separated, in place of the measured path")
+
+
+def _lengths(s):
+    return [float(v) for v in s.split(",")] if s else None
+
+
 def _port_arg(s: str) -> dict:
     x, y, d, w = s.split(",")
     if d not in ("+x", "-x", "+y", "-y"):
@@ -439,21 +470,22 @@ def planar_geom(pcb, region, ports, layer="F.Cu", h=None, er=None, tand=None) ->
             continue
         for piece in _no_holes(g.simplify(0.005)):
             polys.append([[round(x, 4), round(y, 4)] for x, y in list(piece.exterior.coords)[:-1]])
-    if h is None or er is None:
-        st = bg.stackup
-        above, below = st.adjacent(layer)
-        other = below or above
-        if other:
-            h = h if h is not None else st.height_between(layer, other)
-            er = er if er is not None else st.epsilon_between(layer, other)
-            if tand is None:
-                i, j = sorted((st.index(layer), st.index(other)))
-                ts = [d.get("loss_tangent") for d in st.dielectrics[i:j] if d.get("loss_tangent")]
-                tand = sum(ts) / len(ts) if ts else None
+    st = bg.stackup
+    above, below = st.adjacent(layer)
+    other = below or above
+    f_ref = None
+    if other:
+        h = h if h is not None else st.height_between(layer, other)
+        er = er if er is not None else st.epsilon_between(layer, other)
+        board_tand, material = st.tand_between(layer, other)
+        if tand is None:
+            tand = board_tand
+            f_ref = emloss.df_ref_hz(material)
     if h is None or er is None:
         raise SystemExit("planar-geom: no dielectric found under the layer; pass --h and --er")
     return {"source": str(pcb), "layer": layer, "region": region, "h": h, "er": er,
-            "tand": tand or 0.0, "polys": polys, "ports": ports}
+            "tand": tand, "f_ref": f_ref or emloss.DF_F_REF,
+            "t": st.copper_thickness.get(layer, 0.035), "polys": polys, "ports": ports}
 
 
 def _features(freqs, s11, s21) -> dict:
@@ -476,29 +508,96 @@ def _features(freqs, s11, s21) -> dict:
     return out
 
 
-def planar(geo: dict, excites, f_max, f_min=None, points=201, fine=None, keep=None) -> dict:
+def _loss_note(sections, warnings, freqs) -> dict:
+    return {"model": "Djordjevic-Sarkar dielectric, skin + roughness conductor (lib/emloss)",
+            "ports": emloss.summary(sections, freqs), "warnings": warnings}
+
+
+def _loss_comments(loss: dict) -> list[str]:
+    """Touchstone comment lines: what loss this file carries."""
+    out = [f"loss: {loss['model']}"]
+    for k, p in enumerate(loss.get("ports") or []):
+        if p:
+            out.append(f"loss port {k + 1}: {p['kind']} {p['length_mm']} mm, er {p['er']}, tan d "
+                       f"{p['tand']} at {p['f_ref']:.3g} Hz, foil {p['foil']} (assumed), "
+                       f"{p['roughness']}")
+    return out + [f"loss warning: {w}" for w in loss.get("warnings", [])]
+
+
+def planar_with_loss(geo, freqs, cols, foil, roughness, lengths):
+    """cols with lib/emloss's line loss on, and what was done. A column not
+    run takes reciprocity and the excited port's reflection for its terms in
+    the cascade's denominators; only the columns run come back."""
+    import numpy as np
+    n = len(geo["ports"])
+    got = emloss.sections_for_planar(geo, foil=foil, roughness=roughness, lengths=lengths)
+    s = np.zeros((len(freqs), n, n), dtype=complex)
+    for j, col in cols.items():
+        for m, row in enumerate(col):
+            s[m, :, j] = row
+    for j in range(n):
+        if j not in cols:
+            e = next(iter(cols))
+            s[:, j, j] = s[:, e, e]
+            for i in cols:
+                s[:, i, j] = s[:, j, i]
+    zref = float(np.mean([x["z0"] for x in got["sections"]]))
+    s = emloss.add_line_loss(s, freqs, got["sections"], zref=zref)
+    out = {j: [[complex(s[m, i, j]) for i in range(n)] for m in range(len(freqs))] for j in cols}
+    return out, _loss_note(got["sections"], got["warnings"], freqs)
+
+
+def planar(geo: dict, excites, f_max, f_min=None, points=201, fine=None, keep=None,
+           loss="line", foil=emloss.FOIL_DEFAULT, roughness="hammerstad", lengths=None) -> dict:
+    from lib import emboard as eb
     n = len(geo["ports"])
     f_min = f_min or f_max / 40
     freqs = [f_min + (f_max - f_min) * i / (points - 1) for i in range(points)]
-    cols, runs = {}, []
+    cols, runs, kept = {}, [], []
+    scratch = tempfile.TemporaryDirectory(prefix="hwde-planar-") if not keep else None
+    full = sorted(excites) == list(range(n))
     for e in excites:
+        # the deck's own tand is a conductivity, flat in frequency (#553):
+        # the loss goes on afterwards
         csx, where = em.planar_deck(geo["polys"], geo["ports"], geo["h"], geo["er"], f_max,
-                                    excite=e, tand=geo.get("tand", 0.0), fine=fine)
-        ctx = tempfile.TemporaryDirectory(prefix="hwde-planar-") if not keep else None
-        work = Path(keep) / f"port{e}" if keep else Path(ctx.name)
+                                    excite=e, tand=0.0, fine=fine)
+        work = Path(keep or scratch.name) / f"port{e}"
         work.mkdir(parents=True, exist_ok=True)
-        (work / "planar.xml").write_text(csx.xml())
+        # The deck sets the record, as on the board path (#606): openEMS tests
+        # its energy only every 4 s of wall clock, so load would set the length.
+        csx.fdtd["endCriteria"] = eb.RUN_ALL_STEPS
+        csx.fdtd["NumberOfTimesteps"] = eb.record_steps({a: sorted(csx.lines[a]) for a in "xyz"},
+                                                        f_max, geo["er"])
         t0 = time.time()
-        r = solvers.run("openems", ["planar.xml"], cwd=work, timeout=4 * 3600)
-        if r.returncode:
-            raise solvers.SolverError(f"openEMS exited {r.returncode} in {work}: "
-                                      f"{(r.stdout + r.stderr)[-400:]}")
-        if not (work / f"p{e}u0").exists():
-            raise solvers.SolverError(f"openEMS wrote no probes: {(r.stdout + r.stderr)[-400:]}")
-        cols[e] = em.planar_sparams(work, where, e, freqs)
-        runs.append({"excite": e, "cells": where["cells"], "seconds": round(time.time() - t0, 1)})
-        if ctx:
-            ctx.cleanup()
+        while True:
+            (work / "planar.xml").write_text(csx.xml())
+            r = solvers.run("openems", ["planar.xml"], cwd=work, timeout=4 * 3600)
+            if r.returncode:
+                raise solvers.SolverError(f"openEMS exited {r.returncode} in {work}: "
+                                          f"{(r.stdout + r.stderr)[-400:]}")
+            if not (work / f"p{e}u0").exists():
+                raise solvers.SolverError(f"openEMS wrote no probes: {(r.stdout + r.stderr)[-400:]}")
+            tail = eb.record_tail(work, where)
+            steps = csx.fdtd["NumberOfTimesteps"]
+            if tail <= eb.TAIL_MAX or steps >= eb.STEPS_MAX:
+                break
+            csx.fdtd["NumberOfTimesteps"] = min(eb.STEPS_MAX, 2 * steps)
+        if not full:
+            cols[e] = em.planar_sparams(work, where, e, freqs)
+        kept.append((e, work))
+        runs.append({"excite": e, "cells": where["cells"], "steps": steps, "tail": tail,
+                     "seconds": round(time.time() - t0, 1)})
+    if full:
+        sims = [w for _, w in sorted(kept)]
+        cols = em.planar_s_matrix(sims, where, freqs)
+        # the fitted feed phase: passivity can't see it with alpha held
+        feed_eps = [[round((g.imag * em.C0 / (2 * math.pi * f)) ** 2, 4) for g, f in zip(gam, freqs)]
+                    for gam in em.planar_gammas(sims, where, freqs)]
+    if scratch:
+        scratch.cleanup()
+    loss_note = {"model": "none (--loss none): the S of lossless metal and dielectric"}
+    if loss == "line":
+        cols, loss_note = planar_with_loss(geo, freqs, cols, foil, roughness, lengths)
     e0 = excites[0]
     s11 = [c[e0] for c in cols[e0]]
     s21 = [c[1 - e0] for c in cols[e0]] if n == 2 else None
@@ -507,25 +606,68 @@ def planar(geo: dict, excites, f_max, f_min=None, points=201, fine=None, keep=No
                                        for m in range(len(freqs))]
                  for j in cols for i in range(n)},
            "features": _features(freqs, s11, s21),
-           "quality": _quality(freqs, cols, n),
-           "_touchstone": em.touchstone(freqs, cols, n)}
+           "quality": _quality(freqs, cols, n), "loss": loss_note,
+           "_touchstone": "".join(f"! {c}\n" for c in _loss_comments(loss_note))
+           + em.touchstone(freqs, cols, n)}
+    if full:
+        res["feed_eps_eff"] = feed_eps  # per port, per frequency
     return res
+
+
+def board_dielectric(pcb, f_lo, f_hi):
+    """deck(dielectric=): each slab's DS as poles in the deck (--loss deck)."""
+    from lib import geom as G
+    st = G.load_board(pcb).stackup
+
+    def hook(csx, i, er):
+        d = st.dielectrics[i]
+        tand = d.get("loss_tangent")
+        ds = emloss.DS(er, 0.02 if tand is None else tand, emloss.df_ref_hz(d.get("material")))
+        return emloss.dielectric_props(csx, f"slab{i}", ds, f_lo, f_hi)
+    return hook
+
+
+def board_feed_alpha(pcb, geo):
+    """study(feed_alpha=): the dielectric alpha of each port's feed, known from DS."""
+    from lib import geom as G
+    st = G.load_board(pcb).stackup
+
+    def alpha(ports, freqs):
+        secs = emloss.sections_for_ports(geo, ports, st, lengths=[0.0] * len(ports))["sections"]
+        return [emloss.line_gamma_z(s, freqs, True, False)[0].real for s in secs]
+    return alpha
 
 
 def board_study(pcb, region, ports, parts=None, f_max=6e9, f_min=None, points=201,
                 symmetric=False, fine=None, keep=None, deck_only=None,
-                refine=1.0, refine_max=None, converge=True) -> dict:
+                refine=1.0, refine_max=None, converge=True, loss="line",
+                foil=emloss.FOIL_DEFAULT, roughness="hammerstad", lengths=None, cross_check=None,
+                cross_refine=1.5, cross_order=3, cross_np=4, cross_timeout=3600) -> dict:
     """`hwde sim_solve board`: extract -> deck -> openEMS -> S (lib/emboard),
-    refining the mesh until two runs agree unless converge is False."""
+    refining the mesh until two runs agree unless converge is False, then the
+    loss (lib/emloss). loss: line = dielectric and conductor added per port's
+    uniform section; deck = dielectric poles in the deck (stubs and resonators
+    lose too), the conductor added per section; none.
+    cross_check="palace" solves the same deck's geometry by FEM (lib/empalace)
+    and adds the verdict as res["cross_check"]. Palace's deck is lossless, so
+    the verdict reads openEMS's S from before the loss; a deck with dielectric
+    poles has no such S, so loss="deck" with a cross-check is refused."""
+    if cross_check and loss == "deck":
+        raise ValueError("--cross-check compares lossless solves; --loss deck puts loss "
+                         "in the openEMS deck: use --loss line or none")
     from lib import emboard as eb
     geo = eb.extract(pcb, region, parts)
+    kw = {}
+    if loss == "deck":
+        kw = {"dielectric": board_dielectric(pcb, f_min or f_max / 20, f_max),
+              "feed_alpha": board_feed_alpha(pcb, geo)}
     if deck_only:
         out = Path(deck_only)
         out.mkdir(parents=True, exist_ok=True)
         n = len(ports)
         decks = []
         for e in ([0] if symmetric and n == 2 else range(n)):
-            csx, where = eb.deck(geo, ports, f_max, e, fine=fine, refine=refine)
+            csx, where = eb.deck(geo, ports, f_max, e, fine=fine, refine=refine, **kw)
             d = out / f"port{e}"
             d.mkdir(exist_ok=True)
             (d / "deck.xml").write_text(csx.xml())
@@ -535,21 +677,47 @@ def board_study(pcb, region, ports, parts=None, f_max=6e9, f_min=None, points=20
     if converge:
         res = eb.study_converged(geo, ports, f_max, f_min, points, refine=refine,
                                  refine_max=refine_max or eb.REFINE_MAX, keep=keep,
-                                 symmetric=symmetric, fine=fine)
+                                 symmetric=symmetric, fine=fine, **kw)
     else:
         res = eb.study(geo, ports, f_max, f_min, points, symmetric=symmetric, keep=keep,
-                       fine=fine, refine=refine)
+                       fine=fine, refine=refine, **kw)
     S, freqs = res.pop("S"), res["freqs"]
     n = len(res["ports"])
+    lossless = S
+    res["loss"] = {"model": "none (--loss none): the S of lossless metal and dielectric"}
+    if loss != "none":
+        from lib import geom as G
+        got = emloss.sections_for_ports(geo, res["ports"], G.load_board(pcb).stackup, foil=foil,
+                                        roughness=roughness, lengths=lengths)
+        S = emloss.add_line_loss(S, freqs, got["sections"], dielectric=loss == "line").tolist()
+        res["loss"] = _loss_note(got["sections"], got["warnings"], freqs)
+        res["loss"]["mode"] = loss
     res["s"] = {f"S{i + 1}{j + 1}": [[round(s[i][j].real, 6), round(s[i][j].imag, 6)] for s in S]
                 for i in range(n) for j in range(n)}
     res["features"] = _features(freqs, [s[0][0] for s in S], [s[1][0] for s in S] if n > 1 else None)
     res["_touchstone"] = eb.touchstone(freqs, S, [f"hwde sim_solve board, openEMS: {pcb} region {region}",
                                                   "ports: " + "; ".join(
                                                       f"{p['x']},{p['y']},{p['dir']} {p['layer']} ref {p['ref']} "
-                                                      f"net {p['net']} w {p['w']}" for p in res["ports"])])
+                                                      f"net {p['net']} w {p['w']}" for p in res["ports"])]
+                                       + _loss_comments(res["loss"]))
     res["quality"] = _quality(freqs, {j: [[s[i][j] for i in range(n)] for s in S] for j in range(n)}, n)
     res.update(script=SCRIPT, cmd="board", source=str(pcb))
+    if cross_check:
+        from lib import empalace, sparam
+        kw = {"fine": fine} if fine else {}
+        other = empalace.study(geo, ports, f_max, f_min, points, symmetric=symmetric,
+                               keep=str(Path(keep) / "palace") if keep else None, refine=cross_refine,
+                               order=cross_order, np_=cross_np, timeout=cross_timeout, **kw)
+        cols = [r["excite"] for r in other["runs"]]
+        pal_q = sparam.check(freqs, other["S"])
+        verdict = empalace.compare(freqs, lossless, other.pop("S"), columns=None if symmetric else cols,
+                                   z_feed=(res["runs"][0]["z_feed"], other["z_feed"]))
+        verdict["setting"] = {"refine": cross_refine, "order": cross_order, "compared": "lossless S, before any added loss"}
+        verdict["palace"] = {k: other[k] for k in ("runs", "z_feed", "eps_eff_feed", "seconds")}
+        verdict["palace"]["quality_ok"] = pal_q["ok"]
+        verdict["estimator_check"] = empalace.compare(freqs, other.pop("S_lumped"), lossless,
+                                                      names=("Palace lumped", "openEMS"))["terms"]
+        res["cross_check"] = verdict
     return res
 
 
@@ -763,6 +931,64 @@ def case_palace_cavity(work: Path) -> dict:
                   seconds=round(time.time() - t0, 1))
 
 
+# Neumann eigenvalues of the L of three unit squares, corners (0,0) (1,0) (1,1)
+# (-1,1) (-1,-1) (0,-1): Dauge's Maxwell benchmark, domain 2DomA
+# (dauge.pages.math.cnrs.fr/benchmax.html), 11 digits claimed. The third and
+# fourth are pi^2 exactly.
+DAUGE_L = (1.47562182408, 3.53403136678, 9.86960440109, 9.86960440109)
+L_SIDE_MM = 50.0
+
+
+def dauge_l_ghz(side_mm: float = L_SIDE_MM, eps_r: float = 1.0) -> list[float]:
+    return [math.sqrt(v) / (side_mm * 1e-3) * em.C0 / (2 * math.pi)
+            / math.sqrt(eps_r) * 1e-9 for v in DAUGE_L]
+
+
+def l_polygon(side_mm: float = L_SIDE_MM):
+    from shapely.geometry import Polygon  # noqa: PLC0415
+    s = side_mm
+    return Polygon([(0, 0), (2 * s, 0), (2 * s, s), (s, s), (s, 2 * s), (0, 2 * s)])
+
+
+def palace_plane_modes(work: Path, poly, eps_r: float, n: int, f1_ghz: float,
+                       size: float, order: int = 2, timeout: int = 1800) -> dict:
+    """Palace eigenmodes of one plane cavity: {f_ghz, seconds, size, order}.
+    The slab is one mesh cell thick: its modes are uniform in z, so they do not
+    depend on the thickness, and a real 0.2 mm gap only spoils the elements."""
+    work.mkdir(parents=True, exist_ok=True)
+    rings = [list(poly.exterior.coords)[:-1]] + [list(r.coords)[:-1]
+                                                 for r in poly.interiors]
+    (work / "plane.geo").write_text(em.plane_slab_geo(rings, size, size))
+    r = solvers.run("gmsh", ["plane.geo", "-3", "-o", "plane.msh"], cwd=work,
+                    timeout=min(timeout, 600))
+    if not (work / "plane.msh").exists():
+        raise solvers.SolverError(f"gmsh: {(r.stdout + r.stderr)[-300:]}")
+    (work / "plane.json").write_text(json.dumps(
+        em.palace_plane_config("plane.msh", n + 1, f1_ghz * 0.8, eps_r, order),
+        indent=1))
+    t0 = time.time()
+    r = solvers.run("palace", ["plane.json"], cwd=work, timeout=timeout)
+    if not (work / "postpro" / "eig.csv").exists():
+        raise solvers.SolverError(f"Palace: {(r.stdout + r.stderr)[-400:]}")
+    # The uniform E_z mode sits at 0 and may come back: it is not one of ours.
+    got = [f for f in em.palace_eigs(work / "postpro") if f > 0.3 * f1_ghz][:n]
+    return {"f_ghz": got, "seconds": round(time.time() - t0, 1),
+            "size_mm": size, "order": order}
+
+
+def case_palace_lshape(work: Path) -> dict:
+    ref = dauge_l_ghz()
+    coarse = palace_plane_modes(work / "a", l_polygon(), 1.0, len(ref), ref[0], 6.0)
+    got = palace_plane_modes(work / "b", l_polygon(), 1.0, len(ref), ref[0], 3.0)
+    if len(got["f_ghz"]) < len(ref):
+        raise ValueError(f"Palace found {len(got['f_ghz'])} of {len(ref)} modes")
+    return _worst("palace_lshape", "palace", "eigenfrequency (GHz)",
+                  list(zip(got["f_ghz"], ref)), 2.0,
+                  "L-shaped plane cavity, PMC edges: Dauge benchmark 2DomA",
+                  seconds=got["seconds"], mesh_coarse_ghz=coarse["f_ghz"],
+                  mesh_mm=[coarse["size_mm"], got["size_mm"]])
+
+
 # ---------------------------------------------------------------- extraction
 
 BAR = (10.0, 1.0, 0.035)
@@ -872,6 +1098,7 @@ CASES = {
     "circuit_xspice_kicad": (None, case_circuit_xspice_kicad),
     "openems_microstrip": ("openems", case_openems_microstrip),
     "palace_cavity": ("palace", case_palace_cavity),
+    "palace_lshape": ("palace", case_palace_lshape),
     "fasthenry_bar": ("fasthenry", case_fasthenry_bar),
     "fasthenry_pair": ("fasthenry", case_fasthenry_pair),
     "fastercap_cube": ("fastercap", case_fastercap_cube),
@@ -879,7 +1106,7 @@ CASES = {
     "thermal_point": (None, case_thermal_point),
     "electrothermal": (None, case_electrothermal),
 }
-NEEDS = {"palace_cavity": ("gmsh",), "circuit_osdi": ("ngspice",)}
+NEEDS = {"palace_cavity": ("gmsh",), "palace_lshape": ("gmsh",), "circuit_osdi": ("ngspice",)}
 
 
 def validate(only=None, strict=False) -> dict:
@@ -939,7 +1166,7 @@ def main(argv=None) -> int:
     ln.add_argument("--json", action="store_true")
     pl = sub.add_parser("planar")
     pl.add_argument("--geom", required=True)
-    pl.add_argument("--excite", default="0")
+    pl.add_argument("--excite", default="all")
     pl.add_argument("--f-max", type=float, default=6e9)
     pl.add_argument("--f-min", type=float)
     pl.add_argument("--points", type=int, default=201)
@@ -948,6 +1175,7 @@ def main(argv=None) -> int:
     pl.add_argument("--touchstone")
     pl.add_argument("--keep")
     pl.add_argument("--json", action="store_true")
+    _loss_args(pl, ("line", "none"))
     pg = sub.add_parser("planar-geom")
     pg.add_argument("--pcb", required=True)
     pg.add_argument("--region", required=True)
@@ -974,7 +1202,14 @@ def main(argv=None) -> int:
     bd.add_argument("--out")
     bd.add_argument("--keep")
     bd.add_argument("--deck-only")
+    bd.add_argument("--cross-check", choices=["palace"],
+                    help="solve it by a second solver too; exit 1 when they disagree")
+    bd.add_argument("--cross-refine", type=float, default=1.5)
+    bd.add_argument("--cross-order", type=int, default=3)
+    bd.add_argument("--cross-np", type=int, default=4)
+    bd.add_argument("--cross-timeout", type=float, default=3600)
     bd.add_argument("--json", action="store_true")
+    _loss_args(bd, ("line", "deck", "none"))
     vi = sub.add_parser("via")
     vi.add_argument("--pcb")
     vi.add_argument("--via")
@@ -1024,7 +1259,9 @@ def main(argv=None) -> int:
         res = board_study(args.pcb, [float(v) for v in args.region.split(",")], args.port, parts,
                           args.f_max, args.f_min, args.points, args.symmetric, args.fine,
                           args.keep, args.deck_only, args.refine, args.refine_max,
-                          not args.no_converge)
+                          not args.no_converge, args.loss, args.foil, args.roughness,
+                          _lengths(args.loss_length), args.cross_check, args.cross_refine,
+                          args.cross_order, args.cross_np, args.cross_timeout)
         ts = res.pop("_touchstone", None)
         if args.touchstone and ts:
             Path(args.touchstone).write_text(ts)
@@ -1038,6 +1275,8 @@ def main(argv=None) -> int:
                       f"(h {p['h']}, er {p['er']}), net {p['net']}, w {p['w']}")
             for d in res.get("decks", []):
                 print(f"deck port{d['excite']}: {d['cells']} cells {d['mesh']} -> {d['dir']}")
+            for w_ in res.get("loss", {}).get("warnings", []):
+                print(f"loss warning: {w_}")
             for r_ in res.get("runs", []):
                 print(f"run port{r_['excite']}: {r_['cells']} cells, {r_['seconds']} s, "
                       f"feed Z {r_['z_feed']} ohm")
@@ -1050,14 +1289,34 @@ def main(argv=None) -> int:
         if not args.json or not q["ok"]:
             print(sparam.summary({**q, "file": args.touchstone or "board"}),
                   file=sys.stdout if q["ok"] else sys.stderr)
+        cc = res.get("cross_check")
+        if cc and not args.json:
+            print(f"cross-check {' against '.join(cc['solvers'])}: {'AGREE' if cc['ok'] else 'DISAGREE'} "
+                  f"(limits: rms |dS| {cc['limits']['rms_ds']}, S21-type notch {cc['limits']['notch_pct']}%, "
+                  f"feed Z {cc['limits'].get('z_pct', '-')}%; "
+                  f"Palace refine {cc['setting']['refine']:g} order {cc['setting']['order']}; lossless S; "
+                  f"Palace's own sparam check {'ok' if cc['palace']['quality_ok'] else 'FAILS'})")
+            ghz = lambda hit: f"{hit['f'] / 1e9:.4f}" if hit else "none in band"  # noqa: E731
+            if cc.get("z_feed"):
+                z = cc["z_feed"]
+                print(f"  feed Z mid band: {z[cc['solvers'][0]]} / {z[cc['solvers'][1]]} ohm, {z['gap_pct']}% apart")
+            for name, t in cc["terms"].items():
+                nt, dp = t.get("notch"), t.get("dip")
+                a, b = cc["solvers"]
+                extra = (f", notch {ghz(nt.get(a))} / {ghz(nt.get(b))} GHz" if nt else
+                         f", dip {ghz(dp.get(a))} / {ghz(dp.get(b))} GHz (not judged)" if dp else "")
+                print(f"  {name}: rms |dS| {t.get('rms_ds_off_notch', t['rms_ds'])}, worst {t['max_ds']}{extra}")
+        for why in (cc or {}).get("disagree", []):
+            print(f"cross-check: {why}", file=sys.stderr)
+        ok = q["ok"] and (not cc or cc["ok"])
         conv = res.get("convergence")
         if conv is None:
             print("mesh convergence: not run (--no-converge): this S has not been shown to "
                   "settle under refinement", file=sys.stderr)
-            return 0 if q["ok"] else 1
+            return 0 if ok else 1
         if not args.json or not conv["ok"]:
             print(_convergence_summary(conv), file=sys.stdout if conv["ok"] else sys.stderr)
-        return 0 if q["ok"] and conv["ok"] else 1
+        return 0 if ok and conv["ok"] else 1
 
     if args.cmd == "via":
         return _via_cmd(args, ap)
@@ -1066,8 +1325,11 @@ def main(argv=None) -> int:
 
     if args.cmd == "planar":
         geo = json.loads(Path(args.geom).read_text())
-        res = planar(geo, [int(k) for k in args.excite.split(",")], args.f_max,
-                     args.f_min, args.points, args.fine, args.keep)
+        excites = (list(range(len(geo["ports"]))) if args.excite == "all"
+                   else [int(k) for k in args.excite.split(",")])
+        res = planar(geo, excites, args.f_max,
+                     args.f_min, args.points, args.fine, args.keep, args.loss, args.foil,
+                     args.roughness, _lengths(args.loss_length))
         if args.touchstone:
             Path(args.touchstone).write_text(res.pop("_touchstone"))
         else:
