@@ -20,7 +20,8 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from types import SimpleNamespace
-from pathlib import Path
+
+from shapely.geometry import Polygon
 
 import pytest
 
@@ -526,6 +527,38 @@ def test_launch_planes_bleed_at_the_sides_but_not_at_the_board_edge():
     assert boxes
     assert not [b for b in boxes if min(b[1][0], b[2][0]) < -1e-6 and abs(b[1][1]) < spec.half_y and abs(b[2][1]) < spec.half_y]
     assert any(max(b[1][0], b[2][0]) > spec.run for b in boxes)
+
+
+def test_launch_short_is_a_plate_inside_the_domain_not_a_sheet_on_its_face():
+    # On the MUR face the plate does nothing: both runs read the same, and S = B A^-1 is singular.
+    spec = ev.LaunchSpec(stack=stack4(), layer="F.Cu", w=0.4, pad_w=1.2, pad_l=4.8, pad_in=2.7, gap=0.6,
+                         antipad=0.35, gnd_y=2.55)
+    ctx = ev.launch_build(spec, 6e9, shorted=True, refine=0.5)
+    csx = ctx[0]
+    xs = sorted(csx.lines["x"])
+    plate = [b for kind, attrs, inner, boxes in csx.props for b in boxes if b[0] == 70]
+    assert len(plate) == 1
+    a, b = sorted((plate[0][1][0], plate[0][2][0]))
+    assert a == pytest.approx(xs[0]) and b == pytest.approx(xs[1], abs=1e-6)
+    open_csx = ev.launch_build(spec, 6e9, shorted=False, refine=0.5)[0]
+    assert not [b for kind, attrs, inner, boxes in open_csx.props for b in boxes if b[0] == 70]
+
+
+def test_a_line_drawn_as_a_zone_is_a_port():
+    # zcoupon draws its lines as zones, not tracks: 0 tracks, and from_board saw no line.
+    from shapely.geometry import box
+    strip = SimpleNamespace(fills={"F.Cu": [box(-20, -0.2272, 0.3, 0.2272)]})
+    back = SimpleNamespace(fills={"B.Cu": [box(-0.3, -0.2272, 20, 0.2272)]})
+    bg = SimpleNamespace(tracks_of=lambda net: [], zones_of=lambda net: [strip, back])
+    ports, why = ev._edge_crossings(bg, "/L", (-3, -3, 3, 3))
+    assert why == ""
+    assert sorted((p.dir, p.layer, p.x, p.y, p.w) for p in ports) == [
+        ("+x", "B.Cu", 3, 0, 0.4544), ("-x", "F.Cu", -3, 0, 0.4544)]
+    # A taper at the edge is no line to feed: refused, and says so.
+    taper = SimpleNamespace(fills={"F.Cu": [Polygon([(-20, -1), (-3, -.2), (0, -.2), (0, .2), (-3, .2), (-20, 1)])]})
+    bg = SimpleNamespace(tracks_of=lambda net: [], zones_of=lambda net: [taper, back])
+    ports, why = ev._edge_crossings(bg, "/L", (-3, -3, 3, 3))
+    assert ports == [] and "straight" in why
 
 
 def test_palace_sheets_cannot_take_a_tag_occ_gave_a_volume_face():

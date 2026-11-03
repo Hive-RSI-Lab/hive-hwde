@@ -208,6 +208,43 @@ def from_board(pcb, x: float, y: float, radius: float = 3.0, grow_to: float = 8.
     return geo, ports
 
 
+def _zone_crossings(bg, net: str, region) -> list:
+    """Where the net's zone fills cross the region's edge: Ports, or a string
+    saying why one can't be a port. A coupon draws its lines as zones (zcoupon
+    does), so tracks alone see no line at all. A port wants the strip's section
+    the same a little either side of the edge, or its feed is no line."""
+    from shapely.geometry import LineString
+    x0, y0, x1, y1 = region
+    step = 0.1
+
+    def section(poly, fixed, lo, hi, axis):
+        ends = ((fixed, lo), (fixed, hi)) if axis == 0 else ((lo, fixed), (hi, fixed))
+        cut = poly.intersection(LineString(ends))
+        return None if cut.is_empty or cut.geom_type != "LineString" else cut
+
+    out = []
+    for z in bg.zones_of(net):
+        for layer, polys in z.fills.items():
+            for poly in polys:
+                for fixed, lo, hi, dirs, axis, inward in (
+                        (x0, y0, y1, "-x", 0, 1), (x1, y0, y1, "+x", 0, -1),
+                        (y0, x0, x1, "-y", 1, 1), (y1, x0, x1, "+y", 1, -1)):
+                    cut = section(poly, fixed, lo, hi, axis)
+                    if cut is None:
+                        if not poly.intersection(LineString(
+                                ((fixed, lo), (fixed, hi)) if axis == 0 else ((lo, fixed), (hi, fixed)))).is_empty:
+                            out.append(f"{layer} zone crosses {dirs} in more than one piece")
+                        continue
+                    sides = [section(poly, fixed + d * step, lo, hi, axis) for d in (inward, -inward)]
+                    u = (lambda c: (c.bounds[1] + c.bounds[3]) / 2 if axis == 0 else (c.bounds[0] + c.bounds[2]) / 2)
+                    if any(c is None or abs(c.length - cut.length) > 1e-3 or abs(u(c) - u(cut)) > 1e-3 for c in sides):
+                        out.append(f"{layer} zone isn't a straight strip across {dirs}")
+                        continue
+                    px, py = (fixed, u(cut)) if axis == 0 else (u(cut), fixed)
+                    out.append(eb.Port(round(px, 4), round(py, 4), dirs, layer, round(cut.length, 4)))
+    return out
+
+
 def _edge_crossings(bg, net: str, region) -> tuple[list[eb.Port], str]:
     x0, y0, x1, y1 = region
     found = []
@@ -226,6 +263,12 @@ def _edge_crossings(bg, net: str, region) -> tuple[list[eb.Port], str]:
                 return [], f"{t.layer} track crosses {dirs} at an angle"
             px, py = (fixed, u) if axis == 0 else (u, fixed)
             found.append(eb.Port(round(px, 4), round(py, 4), dirs, t.layer, t.width))
+    for port in _zone_crossings(bg, net, region):
+        if isinstance(port, str):
+            return [], port
+        if not any(f.layer == port.layer and f.dir == port.dir and math.hypot(f.x - port.x, f.y - port.y) < f.w
+                   for f in found):
+            found.append(port)
     if len(found) != 2:
         return [], f"{len(found)} crossing(s)"
     if found[0].dir == found[1].dir:
@@ -784,7 +827,8 @@ def _coax_hook(spec: LaunchSpec, x_end: float, dx: float, fc: float, shorted: bo
         csx.box(pec, (x_end, -wall, z_ax + r_o), (-0.3, wall, z_ax + wall), prio=60)
         # cut the square wall's corners back to round: PTFE over PEC inside r_o is above
         if shorted:
-            csx.box(pec, (x_dom, -wall, z_ax - wall), (x_end, wall, z_ax + wall), prio=70)
+            # a cell thick and inside: a sheet on the domain's face is MUR's, and the run reads as if absorbing
+            csx.box(pec, (x_end, -wall, z_ax - wall), (x_end + dx, wall, z_ax + wall), prio=70)
         # mesh: uniform across the coax, pinned where the probes read
         n = int(round(abs(x_end) / dx))
         ctx.pinned["x"] += [x_end + i * dx for i in range(n + 1)]
