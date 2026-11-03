@@ -138,6 +138,33 @@ def test_a_rejected_group_is_halved_until_the_culprit_is_alone(tmp_path):
     assert f["routed"] == 6
 
 
+def test_a_size_one_chunk_rejecting_two_routes_doesnt_repeat(tmp_path):
+    pcb = _setup(tmp_path, {"a:x": "chain", "b:x": "ok"})
+    p, f = _run(tmp_path, pcb, chunk_conns=1)
+    assert _open(pcb) == ["a:x"]
+    assert f["stop_reason"] == "no_progress"
+    assert f["chunks"] < 8
+
+
+def test_rip_up_doesnt_shrink_on_a_rejected_group(tmp_path):
+    world = {f"a{i}:x": "chain" for i in range(6)}
+    world["b:x"] = "ok"
+    pcb = _setup(tmp_path, world)
+    p, f = _run(tmp_path, pcb, "--rip-board", "always", chunk_conns=12)
+    assert f["stop_reason"] == "no_progress"
+    assert f["chunks"] < 8
+    state = json.loads((Path(f["state_dir"]) / "state.json").read_text())
+    assert state["conns"] == 12
+
+
+def test_a_chunk_that_changes_nothing_stops_the_run(tmp_path):
+    pcb = _setup(tmp_path, {"a:x": "overtime"})
+    p, f = _run(tmp_path, pcb)
+    assert f["stop_reason"] == "chunks_dying"
+    assert "--chunk-timeout" in f["died_why"]
+    assert f["chunks"] <= 5
+
+
 def test_resumes_after_being_killed(tmp_path):
     world = {f"n{i}:x": "ok" for i in range(8)}
     world["kill_at"] = 3
@@ -394,7 +421,7 @@ def test_protect_nets_are_not_ripped(tmp_path):
     assert jobs[0]["status"] == "routed"
     _, jobs = trf._plan(pcb, pairs, rip_board=True, keep_nets_extra={"+3V3"})
     assert jobs[0]["status"] == "failed"
-    assert jobs[0]["rip_refused"] == ["+3V3"]
+    assert "rip_uuids" not in jobs[0]
 
 
 def test_routing_flags_match_the_parser():

@@ -75,6 +75,11 @@ rules as routing constraints; cite the record id when you apply one.
    lay (`failed`: no path at the board's rules, even at the floor width
    and a finer grid) - those are placement or topology, not a script to
    write.
+   If one run can't finish in the time allowed, or stalls on the same
+   failures, use `scripts/route_close.py --pcb <board> --budget S` with the
+   same options, not a loop of your own: chunks that each save, every open
+   connection tried each round, resume by rerunning, diff pairs protected.
+   Read `facts.stop_reason`, `facts.still_failing` and `facts.next`.
 4. `scripts/plane_repair.py --pcb <board>` - detects electrically-split
    pours and repairs (bridge/jumper ladder). Mutates in place; on exit 1
    restore the pre-step snapshot (orchestrator has one) and report.

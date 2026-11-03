@@ -12,6 +12,8 @@ Kinds:
   lose    routes, and takes the board's first track with it
   grabs   routes, and adds a track on net PAIR_P
   riponly routes only without --no-rip-board
+  overtime is out of time before its search
+  chain   is undone along with a second route (a neighbour it ripped)
   cut     its search runs into the deadline
 A world key "kill_at" SIGKILLs route_close at that chunk number. Every call is
 appended to $FAKE_CALLS.
@@ -92,6 +94,10 @@ def main():
             fh.write(json.dumps([job["net"], job["a"], job["b"]]) + "\n")
         if kind == "die":
             os._exit(137)
+        if kind == "overtime":
+            jobs.append({**job, "status": "skipped",
+                         "reason": "over the deadline"})
+            continue
         if kind == "cut":
             jobs.append({**job, "status": "skipped",
                          "reason": "cut by the deadline"})
@@ -105,6 +111,10 @@ def main():
             poison |= kind == "poison"
             lose |= kind == "lose"
             grabs |= kind == "grabs"
+            if kind == "chain":
+                poison = True
+                jobs.append({**job, "net": job["net"] + "_ripped",
+                             "status": "routed"})
     entry = {"pass": 1, "pairs": len(jobs), "connections": jobs}
     if routed:
         entry["unconnected_after"] = len(opened) - len(routed)

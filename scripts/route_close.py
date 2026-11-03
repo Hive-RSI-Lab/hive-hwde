@@ -15,7 +15,8 @@ runs route_finish in small chunks and keeps each good one:
 - The chunk stops searching in time to report (--plan-seconds, from the DRC
   time it has measured). If it dies anyway, the connection it was searching is
   set aside and the chunk size halves. A chunk whose routes are rejected as a
-  group halves too, until the one route at fault is found and set aside. Clean
+  group halves too, until the one route at fault is found and set aside (with
+  rip-up, a route and what it ripped can't be split: all are set aside). Clean
   chunks double the size back up to --chunk-conns.
 - State is on disk after every step: run the same command again to resume.
   A board that changed since (someone edited it) is measured again, not trusted.
@@ -517,14 +518,7 @@ class Closer:
     def judge(self, res: dict, conns: int, nets: list[str]) -> bool:
         facts = res["report"]["facts"]
         seen = read_chunk(facts)
-        if seen["over_limit"] and not (seen["routed"] or seen["failed"]
-                                       or seen["rejected"] or seen["cut"]):
-            # out of time before its first search: the same would happen again
-            self.st["dead"] += 1
-            self.st["died_why"] = ("a chunk ran out of time before its first"
-                                   " search: raise --chunk-timeout")
-        else:
-            self.st["dead"] = 0
+        aside_before = len(self.st["skip"])
         self.st["drc_s"] = facts.get("drc_s") or self.st["drc_s"]
         for c in seen["failed"]:
             self.set_aside(c, c.get("reason", c.get("status", "failed")))
@@ -550,6 +544,17 @@ class Closer:
                            + ("it hurt protected copper" if undo else
                               "the pass didn't lower the open count, or an"
                               " error type grew"))
+        elif suspects and (conns == 1 or self.st["ripping"]):
+            # can't be split further: a size-1 chunk rejects several routes
+            # when its passes moved on, and with rip-up a route and the
+            # neighbours it ripped stand or fall together, so a smaller
+            # chunk would only repeat them
+            for c in suspects:
+                self.set_aside(c, "its route was undone: "
+                               + ("it hurt protected copper" if undo else
+                                  "the pass didn't lower the open count, or"
+                                  " an error type grew"))
+            retry = True
         elif suspects:
             # one of them is at fault, not all: halve until it's alone
             self.st["conns"] = min(self.st["conns"], max(1, len(suspects) // 2))
@@ -559,8 +564,6 @@ class Closer:
             conn = self.last_try(res["trace"])
             if conn is not None and key_of(conn) not in self.st["skip"]:
                 self.set_aside(conn, f"route_finish error: {err[:120]}")
-            elif self.st["conns"] == 1:
-                self.st["dead"] += 1
             self.shrink()
             retry = True
         for c in seen["cut"]:
@@ -569,6 +572,18 @@ class Closer:
             if not (seen["routed"] or seen["failed"] or suspects):
                 self.set_aside(c, "its search outlasted the chunk's time")
                 break
+        # a chunk that changed nothing would run again just the same
+        if kept or len(self.st["skip"]) > aside_before \
+                or self.st["conns"] < conns:
+            self.st["dead"] = 0
+        else:
+            self.st["dead"] += 1
+            self.st["died_why"] = (
+                "a chunk ran out of time before its first search: raise"
+                " --chunk-timeout" if seen["over_limit"] and not (
+                    seen["routed"] or seen["failed"] or seen["rejected"]
+                    or seen["cut"])
+                else "chunks kept nothing and set nothing aside")
         if not suspects and not err and conns >= self.st["conns"]:
             self.grow()
         self.log(chunk=self.st["chunk"], round=self.st["round"], s=res["s"],
