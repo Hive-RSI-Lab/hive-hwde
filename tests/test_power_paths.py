@@ -207,6 +207,92 @@ def test_power_path_cli_judges_budget_and_paths(tmp_path):
     assert {t["width_mm"] for t in v["neck_tracks"]} == {0.25}
 
 
+def _fp(ref, val, x, y, *pads):
+    rows = "".join(f'    (pad "{n}" smd rect (at {dx} 0) (size 2 2) (layers "F.Cu") '
+                   f'(net "{net}"))\n' for n, dx, net in pads)
+    return (f'  (footprint "t:X" (at {x} {y}) (layer "F.Cu")\n'
+            f'    (property "Reference" "{ref}" (at 0 0 0)) '
+            f'(property "Value" "{val}" (at 0 0 0))\n{rows}  )\n')
+
+
+def _track(net, x0, x1, w):
+    return (f'  (segment (start {x0} 5) (end {x1} 5) (width {w}) '
+            f'(layer "F.Cu") (net "{net}"))\n')
+
+
+def _series_board(tmp_path, extra="", neck=0.2):
+    # J2 =wide= R1 (2m) =neck= L1 (the list only names the J2 -> R1 side)
+    p = tmp_path / "s.kicad_pcb"
+    p.write_text(f"""(kicad_pcb
+  (version 20260206) (generator "test")
+  (general (thickness 1.6))
+  (layers (0 "F.Cu" signal) (2 "B.Cu" signal) (25 "Edge.Cuts" user))
+  (setup)
+  (gr_rect (start 0 0) (end 60 20) (stroke (width 0.1)) (fill no)
+    (layer "Edge.Cuts"))
+{_fp("J2", "XT60", 4, 5, ("1", 0, "OUT"))}
+{_fp("R1", "2m", 20, 5, ("1", -2, "OUT"), ("2", 2, "IL"))}
+{_fp("L1", "4.7uH", 34, 5, ("1", -2, "IL"), ("2", 2, "SW"))}
+{_track("OUT", 4, 18, 14)}{_track("IL", 22, 32, neck)}
+{extra})
+""", encoding="utf-8")
+    return p
+
+
+def _plan(pcb, paths=None, power=None):
+    bg = geom.BoardGeom.from_file(pcb)
+    cons = {"power_paths": paths or [{"net": "OUT", "from": "J2", "to": "R1",
+                                      "current_a": 12.5}],
+            "power": power or []}
+    return bg, check_power_path.planned_paths(bg, cons, [], 30.0)
+
+
+def test_declared_current_carries_on_through_a_series_part(tmp_path):
+    """hc-power: "+12V from R104", and IL_A from L10 to R104 was 0.2 mm at 12.5 A."""
+    pcb = _series_board(tmp_path)
+    _, plan = _plan(pcb)
+    hop = [p for p in plan if p["origin"].startswith("series")]
+    assert [(p["net"], p["from"], p["to"], p["current_a"]) for p in hop] == [
+        ("IL", "R1", "L1", 12.5)]
+    assert not hop[0]["derived"]
+    cons = pcb.parent / "c.json"
+    cons.write_text(json.dumps({"power_paths": [
+        {"net": "OUT", "from": "J2", "to": "R1", "current_a": 12.5, "dt_c": 30}]}))
+    rc, rep = _cli("check_power_path.py", "--pcb", str(pcb), "--constraints", str(cons))
+    assert rc == 1, rep
+    (v,) = [v for v in rep["violations"] if v["net"] == "IL"]
+    assert v["severity"] == "error" and {t["width_mm"] for t in v["neck_tracks"]} == {0.2}
+    rc, rep = _cli("check_power_path.py", "--pcb", str(pcb), "--constraints", str(cons),
+                   "--no-series")
+    assert rc == 0, rep
+
+
+def test_a_sense_tap_does_not_end_the_walk(tmp_path):
+    tap = _fp("R2", "0R", 26, 12, ("1", -2, "IL"), ("2", 2, "IL_K")) \
+        + _fp("U1", "INA240", 34, 12, ("1", 0, "IL_K"))
+    _, plan = _plan(_series_board(tmp_path, tap))
+    assert [(p["net"], p["to"]) for p in plan if p["origin"].startswith("series")] \
+        == [("IL", "L1")]
+
+
+def test_fan_out_stops_the_walk_and_a_twin_shares_the_current(tmp_path):
+    fan = _fp("L2", "4.7uH", 26, 12, ("1", -2, "IL"), ("2", 2, "SW2"))
+    _, plan = _plan(_series_board(tmp_path, fan))
+    assert not [p for p in plan if p["origin"].startswith("series")]
+    twin = _fp("R3", "2m", 20, 12, ("1", -2, "OUT"), ("2", 2, "IL"))
+    _, plan = _plan(_series_board(tmp_path, twin))
+    assert [(p["net"], p["current_a"]) for p in plan
+            if p["origin"].startswith("series")] == [("IL", 6.25)]
+
+
+def test_a_rail_budget_does_not_carry_on(tmp_path):
+    """A budget is the whole rail's, not what one branch passes."""
+    bg = geom.BoardGeom.from_file(_series_board(tmp_path))
+    plan = check_power_path.planned_paths(
+        bg, {"power": [{"net": "OUT", "current_a": 12.5}]}, [], 30.0)
+    assert plan and not [p for p in plan if p["origin"].startswith("series")]
+
+
 def test_power_path_vias_and_overlapping_pours(tmp_path):
     # J1 -> F.Cu pour -> 1 via -> two overlapping B.Cu pours -> via -> Q1
     body = """  (zone (net "VBUS") (layer "F.Cu")

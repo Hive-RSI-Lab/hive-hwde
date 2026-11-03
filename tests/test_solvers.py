@@ -477,7 +477,7 @@ def test_no_holes_splits_a_ring():
 def test_live_planar_thru_line_is_transparent(tmp_path):
     geo = {"h": 1.53, "er": 4.5, "polys": [[[0, -1.4265], [30, -1.4265], [30, 1.4265], [0, 1.4265]]],
            "ports": [{"x": 0, "y": 0, "dir": "-x", "w": 2.853}, {"x": 30, "y": 0, "dir": "+x", "w": 2.853}]}
-    res = sim_solve.planar(geo, [0, 1], 6e9, f_min=1e9, points=41)
+    res = sim_solve.planar(geo, [0, 1], 6e9, f_min=1e9, points=41, loss="none")
     for s11, s21 in zip(res["s"]["S11"], res["s"]["S21"]):
         assert abs(complex(*s21)) == pytest.approx(1.0, abs=0.02)
         assert abs(complex(*s11)) < 0.056       # -25 dB (was -19 from one excitation)

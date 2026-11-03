@@ -101,9 +101,16 @@ board:
 # Assembling them (jlcpcb.com/capabilities/pcb-assembly-capabilities, read
 # 2026-11-01): Economic PCBA "Not Support"; Standard PCBA supports them, edge
 # rails and fiducials "Necessary", single PCB or panel at least 70 x 70 mm.
+# The same page gives Economic as "Single sided placement", so parts on both
+# sides are held to this block too (dfm_check both_sides_needs_panel, read
+# 2026-11-02). The page gives no rail width or fiducial count: 5 mm and 3 are
+# what eda-crossover's panel generator built to, from pcb-capabilities' "Mouse
+# bites Panel", and a warning at most.
 castellated_assembly:
   service: standard
   min_panel_mm: 70
+  rail_min_mm: 5
+  min_fiducials: 3
   source: https://jlcpcb.com/capabilities/pcb-assembly-capabilities
 
 castellated:

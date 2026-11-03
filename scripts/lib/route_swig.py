@@ -23,6 +23,7 @@ job JSON: {"verb": ..., "result": out.json, ...} with verbs:
       the board file is not saved by this verb.
 
   import_ses: {"board": pcb, "ses": in.ses, "out": out_pcb}
+  retype_vias: {"board": pcb, "spans": [[top, bot, kind], ...], "out": out_pcb}
       Specctra SES import (adds copper only; footprints/zones untouched) then
       Save(out). Save may drop a default .kicad_pro next to `out` - drivers
       stage in a scratch dir and move only the .kicad_pcb back.
@@ -143,6 +144,34 @@ def verb_import_ses(job):
     if not board.Save(job["out"]):
         raise RuntimeError("board.Save failed: %s" % job["out"])
     return {"tracks_before": before, "tracks_after": after, "out": job["out"]}
+
+
+def verb_retype_vias(job):
+    """KiCad's SES import calls every via that isn't through "buried", even a
+    microvia from an outer layer (#477). Give each the type of the build's
+    span it runs: job["spans"] is [[top layer, bottom layer, kind], ...]. A
+    via on no listed span is left alone and counted."""
+    import pcbnew
+
+    _wx_quiet()
+    board = pcbnew.LoadBoard(job["board"])
+    kinds = {(a, b): k for a, b, k in job["spans"]}
+    done, off = 0, 0
+    for t in board.GetTracks():
+        if t.GetClass() != "PCB_VIA" or t.GetViaType() == pcbnew.VIATYPE_THROUGH:
+            continue
+        span = (board.GetLayerName(t.TopLayer()), board.GetLayerName(t.BottomLayer()))
+        kind = kinds.get(span)
+        if kind is None:
+            off += 1
+            continue
+        want = VIA_TYPES[kind](pcbnew)
+        if t.GetViaType() != want:
+            t.SetViaType(want)
+            done += 1
+    if not board.Save(job["out"]):
+        raise RuntimeError("board.Save failed: %s" % job["out"])
+    return {"retyped": done, "off_span": off, "out": job["out"]}
 
 
 def _track_key(t):
@@ -428,6 +457,7 @@ def verb_dedup_copper(job):
 VERBS = {
     "export_dsn": verb_export_dsn,
     "import_ses": verb_import_ses,
+    "retype_vias": verb_retype_vias,
     "apply_ops": verb_apply_ops,
     "add_zones": verb_add_zones,
     "dedup_copper": verb_dedup_copper,

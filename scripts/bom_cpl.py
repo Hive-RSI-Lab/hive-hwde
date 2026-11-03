@@ -23,7 +23,12 @@ contain" (codex H1). These files come out of one run:
   CPL.csv       Designator, Mid X, Mid Y, Layer, Rotation - `smt_placed` and
                 `tht` only.
                 Mid X/Y in mm from the pos file; Layer Top/Bottom; Rotation =
-                (kicad rotation + JLC correction) mod 360. The correction comes
+                (kicad rotation + JLC correction) mod 360 on the top and
+                (180 - kicad rotation + JLC correction) mod 360 on the bottom,
+                read from below (cpl_verify.py has the derivation; the bottom
+                term is from two community exporters plus the geometry, not
+                from JLC, so the report's `bottom_preview` asks for a check
+                in JLC's order preview). The correction comes
                 from the part's OWN LCSC footprint model (cpl_verify.py fits it
                 onto the board footprint, pin 1 on pad 1; models cached per
                 LCSC number, see --easyeda-cache). Only a part with no model
@@ -192,7 +197,8 @@ def correct_rotation(package: str, base_deg: float,
                      rules: list[tuple[re.Pattern, float]]
                      ) -> tuple[float, float, str | None]:
     """(final_rotation, correction_applied, matched_pattern|None).
-    final = (base + correction) mod 360."""
+    final = (base + correction) mod 360. `base_deg` is already the side's
+    base (cpl_verify.cpl_rotation(side, kicad_rot, 0))."""
     name = footprint_name(package)
     for pat, deg in rules:
         if pat.search(name):
@@ -634,23 +640,28 @@ def build_cpl(parts: list[dict], rules, derive=None
     """CPL rows + a parallel rotation-correction audit trail. `derive(ref)`
     gives the rotation the part's own LCSC model needs, or None - then the
     package table decides. A `derive.errors[ref]` (the model fetch failed)
-    makes the source `fetch_failed`, whatever the table did."""
+    makes the source `fetch_failed`, whatever the table did. `correction` in
+    the audit is on the side's base: kicad rotation on the top, 180 - it on the
+    bottom."""
+    from cpl_verify import cpl_rotation
     cpl, audit = [], []
     fetch_errors = getattr(derive, "errors", {})
     for p in sorted(parts, key=lambda q: _natural_key(q["ref"])):
         model_rot = derive(p["ref"]) if derive else None
         fetch_error = None
+        bottom = p["side"] in ("bottom", "back")
+        base = cpl_rotation("bottom" if bottom else "top", p["rot"], 0.0)
         if model_rot is None:
-            final, corr, pat = correct_rotation(p["package"], p["rot"], rules)
+            final, corr, pat = correct_rotation(p["package"], base, rules)
             source = "table" if pat else "none"
             fetch_error = fetch_errors.get(p["ref"])
             if fetch_error:
                 source = "fetch_failed"
         else:
             final = model_rot % 360.0
-            corr = round((final - p["rot"]) % 360.0, 4)
+            corr = round((final - base) % 360.0, 4)
             pat, source = None, "lcsc_model"
-        layer = "Bottom" if p["side"] in ("bottom", "back") else "Top"
+        layer = "Bottom" if bottom else "Top"
         # the part's centre where the footprint's origin isn't it (from the
         # LCSC model; the pos file's y is up, the board's down)
         off = derive.offset(p["ref"], final) if model_rot is not None and hasattr(derive, "offset") else None
@@ -897,6 +908,9 @@ def run(pcb: Path, out_dir: Path, pos: Path | None = None,
                      if board_fields[r].get("attr_mismatch")]
 
     corrected = [a for a in audit if a["correction"] != 0.0]
+    below = [a["ref"] for a in audit if a["layer"] == "Bottom"]
+    bottom_preview = ({"refs": below, "note": cpl_verify.BOTTOM_PREVIEW_NOTE}
+                      if below else None)
     import castellation
     # None = not known (no board file beside a supplied pos file)
     has_board = Path(pcb).is_file()
@@ -922,6 +936,7 @@ def run(pcb: Path, out_dir: Path, pos: Path | None = None,
         "class_counts": class_counts,
         "not_placed": not_placed,
         "rotation_audit": audit,
+        "bottom_preview": bottom_preview,
         "n_rotation_corrections": len(corrected),
         "rotation_from_table": [a["ref"] for a in audit
                                 if a["source"] != "lcsc_model"],

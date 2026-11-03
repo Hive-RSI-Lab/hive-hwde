@@ -17,7 +17,8 @@ The model:
   - the dielectric is each gap's slab (er from the stackup), lossless: a
     conductivity is a loss tangent at one frequency only, which makes a
     frequency-flat loss (0.3 dB on 50 mm at 100 MHz on vna-verify). Add
-    dielectric and conductor loss in the circuit model, not here;
+    dielectric and conductor loss with lib/emloss (`sim_solve board` does), not
+    here, or pass deck(dielectric=) for wideband poles in the deck;
   - barrels are PEC posts (square, the drill's area) between the layers
     they span;
   - a port sits on the region's edge (the region is cut at its plane): the
@@ -459,12 +460,13 @@ class _Ctx:
 
 def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None = None,
          feed_len: float | None = None, pad: float | None = None, floor: str | None = None,
-         thirds: bool = True, zcells: int = 6, extra=None, refine: float = 1.0):
+         thirds: bool = True, zcells: int = 6, extra=None, refine: float = 1.0, dielectric=None):
     """(Csx, where) for the region of `geo` (from `extract`) with `ports`
     (Port or "X,Y,DIR[,LAYER[,W]]"), the source on port `excite`. refine
     divides every cell of the mesh, in all three axes, by that factor: it
     is the knob a convergence study turns, where `fine` only moves the cells
-    at the signal's edges."""
+    at the signal's edges. dielectric(csx, i, er) -> a material name for slab
+    i (lib/emloss dielectric_props), in place of the lossless one."""
     from shapely.geometry import Polygon, box as sbox
     from shapely.ops import unary_union
     ports = [p if isinstance(p, Port) else Port.parse(p) for p in ports]
@@ -631,7 +633,7 @@ def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None 
     csx.bc = ["MUR", "MUR", "MUR", "MUR", "PEC" if floor == "pec" else "MUR", "MUR"]
     csx.fdtd["endCriteria"] = RUN_ALL_STEPS
     for i, (z0, z1, er) in enumerate(stack.slabs):
-        m = csx.material(f"slab{i}", er)
+        m = dielectric(csx, i, er) if dielectric else csx.material(f"slab{i}", er)
         csx.box(m, (dom[0], dom[1], z0), (dom[2], dom[3], z1))
     cuprop = csx.metal("copper")
     added: dict[str, list] = {}
@@ -835,7 +837,8 @@ def feed_vi(read, dist, freqs, line: dict) -> list[dict]:
     sg = -1.0 if np.nanmedian(q) > 0 else 1.0     # + j beta d Z on a current going out
     out = []
     for n, f in enumerate(freqs):
-        g = 1j * 2 * math.pi * f * math.sqrt(line["eps_eff"][n]) / C0
+        alpha = line["alpha"][n] if line.get("alpha") is not None else 0.0
+        g = complex(alpha, 2 * math.pi * f * math.sqrt(line["eps_eff"][n]) / C0)
         z = line["z"][n]
         A = [[cmath.exp(g * q), cmath.exp(-g * q)] for q in s]
         A += [[sg * ZREF / z * cmath.exp(g * q), -sg * ZREF / z * cmath.exp(-g * q)] for q in si]
@@ -943,9 +946,12 @@ def touchstone(freqs, S, comments=()) -> str:
 # ================================================================ run
 
 def study(geo: dict, ports, f_max: float, f_min: float | None = None, points: int = 201,
-          symmetric: bool = False, excites=None, keep=None, run=None, **kw) -> dict:
+          symmetric: bool = False, excites=None, keep=None, run=None, feed_alpha=None, **kw) -> dict:
     """extract'ed geometry -> openEMS run(s) -> S. run(csx, where, work)
-    is the runner (default lib/solvers openEMS); keep=DIR keeps each run."""
+    is the runner (default lib/solvers openEMS); keep=DIR keeps each run.
+    feed_alpha(ports, freqs) -> each port's alpha (Np/m per frequency) for a
+    lossy deck: the feed fit holds gamma imaginary, so without it each feed's
+    length between plane and probes stays in S as extra loss (#553)."""
     import tempfile
     import time
     from . import solvers
@@ -982,6 +988,9 @@ def study(geo: dict, ports, f_max: float, f_min: float | None = None, points: in
         if ctx:
             ctx.cleanup()
     lines = feed_lines(reads, [p["dist"] for p in where["ports"]], freqs, f_max, symmetric)
+    if feed_alpha:
+        for ln, a in zip(lines, feed_alpha(where["ports"], freqs)):
+            ln["alpha"] = [float(v) for v in a]
     vi = {e: [feed_vi(reads[e][k], where["ports"][k]["dist"], freqs, lines[k]) for k in range(n)]
           for e in excites}
     runs = {e: [[((vi[e][k][m]["v"] + ZREF * vi[e][k][m]["i"]) / 2,

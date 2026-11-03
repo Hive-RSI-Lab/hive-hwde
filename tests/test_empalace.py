@@ -181,6 +181,36 @@ def test_a_different_line_disagrees():
     assert v["limits"] == {"rms_ds": ep.RMS_DS, "notch_pct": ep.NOTCH_PCT}
 
 
+def test_compare_reads_the_lossless_s_and_deck_loss_is_refused(tmp_path, monkeypatch):
+    pcb = tmp_path / "t.kicad_pcb"
+    reg = coupon(pcb)
+    freqs = [1e9, 2e9, 3e9]
+    S = eb.line_s(freqs, 50.0, 3.3, 30.0)
+    monkeypatch.setattr(eb, "study", lambda *a, **k: {
+        "freqs": freqs, "S": S, "ports": [{"x": 0, "y": 10, "dir": "-x", "layer": "F.Cu", "ref": "B.Cu",
+                                          "net": "RF", "w": W50, "h": H, "er": ER}] * 2,
+        "runs": [{"excite": 0, "cells": 1, "seconds": 1, "z_feed": [50, 50]}], "region": reg,
+        "fine": 0.1, "floor": "pec", "feeds": []})
+    monkeypatch.setattr(ep, "study", lambda *a, **k: {
+        "S": S, "S_lumped": S, "runs": [{"excite": 0}], "z_feed": [50, 50], "eps_eff_feed": [3.3, 3.3], "seconds": 1})
+    seen = []
+    real = ep.compare
+    monkeypatch.setattr(ep, "compare", lambda fr, a, b, **k: (seen.append(a), real(fr, a, b, **k))[1])
+    from lib import emloss
+    monkeypatch.setattr(emloss, "sections_for_ports", lambda *a, **k: {"sections": [], "warnings": []})
+    monkeypatch.setattr(emloss, "add_line_loss", lambda s, *a, **k: [[[v * 0.5 for v in r] for r in m] for m in s])
+    monkeypatch.setattr(sim_solve, "_loss_note", lambda *a, **k: {"model": "fake"})
+    monkeypatch.setattr(sim_solve, "_loss_comments", lambda *a, **k: [])
+    ports = PORTS
+    res = sim_solve.board_study(pcb, reg, ports, f_max=3e9, points=3, symmetric=True, converge=False,
+                                cross_check="palace")
+    assert seen and all(a == S for a in seen)
+    assert res["cross_check"]["ok"]
+    assert res["s"]["S21"][0][0] == pytest.approx(round(S[0][1][0].real * 0.5, 6))   # what's reported keeps the loss
+    with pytest.raises(ValueError, match="loss deck"):
+        sim_solve.board_study(pcb, reg, ports, loss="deck", cross_check="palace", converge=False)
+
+
 def test_cli_exits_1_when_the_solvers_disagree(tmp_path, monkeypatch):
     pcb = tmp_path / "t.kicad_pcb"
     reg = coupon(pcb)
@@ -224,6 +254,7 @@ def test_live_mesh_attributes(tmp_path, thru):
 # Refine 1.5 at order 2 is the coarsest thru that passes: refine 1 reads z0 7.6 %
 # off at order 2 and 4.2 % off at order 3, against the 3 % limit.
 
+@pytest.mark.slow
 @live
 def test_live_thru_known_answer(thru):
     import test_emboard as te
@@ -236,6 +267,7 @@ def test_live_thru_known_answer(thru):
     assert q["ok"], sparam.summary(q)
 
 
+@pytest.mark.slow
 @live
 def test_live_open_stub_notch(tmp_path):
     import test_emboard as te

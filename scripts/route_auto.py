@@ -652,6 +652,16 @@ def run(argv: list[str] | None = None):
                 if f"try{e['try']}" == i:
                     e["ses_import_failed"] = True
             continue
+        # 4a. KiCad's import calls every non-through via "buried"; an HDI
+        # board's vias get their span's real type back (#477).
+        hdi_build, hdi_entry = hdilib.board_build(bg)
+        if hdi_build:
+            spans = hdilib.spans_of(hdi_entry, bg.copper_layers,
+                                    caps=hdilib.load_hdi_caps())
+            routelib.run_worker(bp, {
+                "verb": "retype_vias", "board": str(trial), "out": str(trial),
+                "spans": [[s.top, s.bot, s.kind] for s in spans]},
+                work, timeout=300)
         # 4b. dedup: the SES echoes pre-session guide-wire copper (critical-
         # net trunks) back through ImportSpecctraSES as EXACT same-net
         # duplicates - invisible to DRC/gerbers (S14: run (a) shipped 45

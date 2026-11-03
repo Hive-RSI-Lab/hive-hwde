@@ -39,8 +39,12 @@ Checks (all thresholds from reference/jlc_capabilities.yaml, keyed
            cap's cathode/+ on the board's, with the shipped CPL (fab dir's
            CPL.csv, else this run's). A wrong part, and a part with no model
            or no fit, is an ERROR (cpl_rotation / cpl_no_model); a model
-           centre off the board's by > 0.5 mm is a warning (cpl_offset). A
-           model fetch that FAILED (EasyEDA 403/429 rate limit, other HTTP
+           centre off the board's by > 0.5 mm is a warning (cpl_offset). Parts
+           on the bottom are fitted mirrored and read from below; the rule is
+           the community exporters' plus the geometry, not JLC's, so any bottom
+           part that passes also raises one warning for the run,
+           cpl_bottom_preview: confirm them in JLC's order preview
+           (reference/jlc_bottom_cpl.md). A model fetch that FAILED (EasyEDA 403/429 rate limit, other HTTP
            status, network) is one finding for the run, cpl_fetch_failed,
            listing the parts and the reason - never cpl_no_model. When it is
            the run's only error the run is UNVERIFIED, not failed: status
@@ -53,6 +57,11 @@ Checks (all thresholds from reference/jlc_capabilities.yaml, keyed
            beside it: a part the two disagree on, or one the image pass left
            out, is an ERROR (cpl_visual_disagree); no image pass at all is a
            coverage hole (family placement_visual) that --strict refuses.
+           A CPL with rows on both sides at JLC only goes as Standard PCBA:
+           under its rails, fiducials or 70 x 70 mm is a warning
+           (both_sides_needs_panel, castellated_needs_panel for a castellated
+           board). A panel counts: panel.json in <CPL dir>/panel/ or beside the
+           CPL, or a board file that has them itself.
   zone_fill  the BOARD's saved zone fills against a fresh refill: a board
            saved without a refill passes DRC (it checks the netclass floor,
            not the zone's rule) and the Gerbers carry the stale copper
@@ -627,23 +636,95 @@ def _mouse_bite_pair(a, b) -> bool:
             <= MOUSE_BITE_DRILL[1] + GEOM_TOL_MM)
 
 
-def _castellated_pcba(bg, fab_dir, vios: list) -> None:
-    """An assembled castellated board has to go as Standard PCBA, with rails
-    and fiducials, at least 70 x 70 mm: under that it needs a panel. A warning:
-    the board itself is fine, and a bare-board order is too."""
-    if bg is None or bg.outline.is_empty or not castellation.pads(bg) \
-            or fab_dir is None or not (Path(fab_dir) / "CPL.csv").exists():
+def _cpl_sides(cpl: Path) -> set[str]:
+    """The sides a CPL places parts on: {"top", "bottom"} or part of it."""
+    with Path(cpl).open(newline="", encoding="utf-8") as fh:
+        return {(r.get("Layer") or "").strip().lower()
+                for r in csv.DictReader(fh)} & {"top", "bottom"}
+
+
+def _panel_gaps(need: dict, width: float, height: float, rails: bool,
+                n_fiducials: int) -> list[str]:
+    """What a board or panel lacks for Standard PCBA."""
+    gaps = []
+    if min(width, height) < need["min_panel_mm"] - 1e-6:
+        gaps.append(f"{width:.1f} x {height:.1f} mm is under "
+                    f"{need['min_panel_mm']:g} mm a side")
+    if not rails:
+        gaps.append(f"no {need['rail_min_mm']:g} mm edge rails")
+    if n_fiducials < need["min_fiducials"]:
+        gaps.append(f"{n_fiducials} fiducials, wants {need['min_fiducials']}")
+    return gaps
+
+
+def _board_pcba_gaps(bg, need: dict) -> list[str]:
+    """The board file taken as what gets assembled. Rails are read from the
+    copper: two opposite edges with nothing but fiducials within a rail's width
+    (so a panel board passes, and a board that merely has room passes too)."""
+    x0, y0, x1, y1 = bg.outline.bounds
+    fids = {r for r, f in bg.footprints.items()
+            if r.upper().startswith("FID") or "fiducial" in f["lib"].lower()}
+    pads = [p.center for p in bg.pads_of() if p.ref not in fids]
+    rail = need["rail_min_mm"]
+    if pads:
+        xs, ys = [c[0] for c in pads], [c[1] for c in pads]
+        rails = (min(xs) - x0 >= rail and x1 - max(xs) >= rail) \
+            or (min(ys) - y0 >= rail and y1 - max(ys) >= rail)
+    else:
+        rails = False
+    return _panel_gaps(need, x1 - x0, y1 - y0, rails, len(fids))
+
+
+def _declared_panel_gaps(panel: Path, need: dict) -> list[str]:
+    """A panel generated beside the CPL (panel.json: width_mm, height_mm,
+    rail_mm, fiducials), as boards/*/kicad/gen/panel.py writes it."""
+    d = json.loads(panel.read_text(encoding="utf-8"))
+    rail = d.get("rail_mm") or {}
+    widths = rail.values() if isinstance(rail, dict) else [rail]
+    return _panel_gaps(need, float(d.get("width_mm") or 0),
+                       float(d.get("height_mm") or 0),
+                       any(float(w or 0) >= need["rail_min_mm"] for w in widths),
+                       len(d.get("fiducials") or []))
+
+
+def _standard_pcba(bg, cpl: Path | None, vios: list, castellated: bool = True,
+                   both_sides: bool = True) -> None:
+    """A castellated board, or parts on both sides, go only as Standard PCBA at
+    JLC, with rails and fiducials, at least 70 x 70 mm: anything less needs a
+    panel. A warning: the board itself is fine, and a bare-board order is too
+    (so it needs a CPL)."""
+    if bg is None or bg.outline.is_empty or cpl is None \
+            or not Path(cpl).exists():
+        return
+    castellated = castellated and bool(castellation.pads(bg))
+    both_sides = both_sides and len(_cpl_sides(Path(cpl))) == 2
+    if not (castellated or both_sides):
         return
     x0, y0, x1, y1 = bg.outline.bounds
     need = castellation.needs_standard_pcba(x1 - x0, y1 - y0)
-    if need["panel_needed"]:
+    panels = [p for d in (Path(cpl).parent / "panel", Path(cpl).parent)
+              if (p := d / "panel.json").is_file()]
+    gaps = (_declared_panel_gaps(panels[0], need) if panels
+            else _board_pcba_gaps(bg, need))
+    if not gaps:
+        return
+    what = (f"{panels[0]}: " if panels else "")
+    if castellated:
         vios.append(checklib.violation(
             CHECK, "warning", (x0, y0), None, None, [],
-            f"castellated board with a CPL, {x1 - x0:.1f} x {y1 - y0:.1f} mm: "
-            "JLC's Economic PCBA doesn't build castellated holes, and Standard "
-            f"PCBA needs rails, fiducials and {need['min_panel_mm']:g} mm a "
-            "side, so assembly needs a panel", "castellation",
+            f"castellated board with a CPL, {what}{'; '.join(gaps)}: JLC's "
+            "Economic PCBA doesn't build castellated holes, and Standard PCBA "
+            f"needs rails, fiducials and {need['min_panel_mm']:g} mm a side, "
+            "so assembly needs a panel", "castellation",
             kind="castellated_needs_panel"))
+    else:
+        vios.append(checklib.violation(
+            CHECK, "warning", (x0, y0), None, None, [],
+            f"CPL places parts on both sides, {what}{'; '.join(gaps)}: JLC's "
+            "Economic PCBA is single sided, and Standard PCBA needs rails, "
+            f"fiducials and {need['min_panel_mm']:g} mm a side, so assembly "
+            "needs a panel", need.get("source") or SOURCE,
+            kind="both_sides_needs_panel"))
 
 
 # JLC's via price tiers (pcb-capabilities, 2026-11-01): a hole under 0.2
@@ -1076,13 +1157,18 @@ def check_placement(pcb: Path, cpl: Path, parts: Path | None,
             f"minutes) to fill {rep['cache_dir']}", SOURCE,
             kind="cpl_fetch_failed", reason=why,
             rate_limited=bool(easyeda.rate_limited())))
+    if rep.get("bottom_preview"):
+        refs = rep["bottom_preview"]["refs"]
+        vios.append(checklib.violation(
+            CHECK, "warning", None, None, None, refs,
+            f"{len(refs)} bottom part(s): {rep['bottom_preview']['note']}",
+            SOURCE, kind="cpl_bottom_preview"))
     for r in rows:
         where = None
         if r["verdict"] == "fetch_failed":
             pass
         elif r["verdict"] in cpl_verify.FAIL_VERDICTS:
-            kind = ("cpl_no_model" if r["verdict"] in
-                    ("no_model", "no_fit", "bottom_unverified")
+            kind = ("cpl_no_model" if r["verdict"] in ("no_model", "no_fit")
                     else "cpl_rotation")
             vios.append(checklib.violation(
                 CHECK, "error", where, None, None, [r["ref"]],
@@ -1351,7 +1437,8 @@ DFM_FAMILIES = {
              "dfm_pad_tented"),
     "polarity": ("cpl_polarity",),
     "placement": ("cpl_rotation", "cpl_no_model", "cpl_fetch_failed",
-                  "cpl_offset"),
+                  "cpl_offset", "cpl_bottom_preview",
+                  "both_sides_needs_panel"),
     "placement_visual": ("cpl_visual_disagree",),
     "bom": ("dfm_bom_incomplete", "dfm_assembly_unplaced_smt",
             "dfm_assembly_qty_mismatch", "dfm_unplaced_in_package"),
@@ -1511,7 +1598,6 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
                 bg.stackup.total_thickness or None)
             vios.extend(cvios)
             facts.update(cfacts)
-            _castellated_pcba(bg, fab_dir, vios)
         if "silk" not in skip:
             check_silk(fab, rules, vios, bg=bg)
             check_mask_dam(fab, rules, vios)
@@ -1543,6 +1629,16 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
                 pcb, Path(cpl_path), parts, vis, easyeda_cache,
                 (not cpl_verify.offline()) if fetch_models is None
                 else fetch_models, vios)
+
+        # JLC's Standard PCBA rule, on the CPL that ships
+        pcba_cpl = (cpl or _shipped_file(Path(fab_dir) if fab_dir else None,
+                                         "CPL.csv")
+                    or (parts_report or {}).get("cpl"))
+        _standard_pcba(bg, pcba_cpl, vios,
+                       castellated=("castellation" not in skip
+                                    and "castellated" in caps),
+                       both_sides=("placement" not in skip
+                                   and fab_name == "JLC"))
 
         if polarity:
             nl, reason = _resolve_netlist(pcb, schematic, netlist, tmp)

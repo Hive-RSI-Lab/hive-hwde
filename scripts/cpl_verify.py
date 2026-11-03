@@ -12,29 +12,49 @@ per LCSC number) and fits it onto the board footprint:
             45 deg) that puts every shared pad number on its board pad, after
             centring both pad sets (each model pad nearer its own board pad
             than any other). The CPL must say (board rotation + c) mod
-            360; anything else is `wrong_rotation`, with the rotation it needs.
-            A two-pad part that is not polarised may also sit at c + 180.
+            360 on the top and (180 - board rotation + c) mod 360 on the
+            bottom (see "bottom side"); anything else is `wrong_rotation`,
+            with the rotation it needs. A two-pad part that is not polarised
+            may also sit at c + 180.
   polarity  Diodes, LEDs and polarised caps are also matched BY ROLE: the
             model's cathode / + pin (its symbol pin names) must land on the
             board's cathode / + pad (the pad's pinfunction, else the KiCad
             library convention: D_/LED_ pad 1 = K, CP_ pad 1 = +, else - for
             a footprint pulled from the same LCSC part - the model's own
-            numbering). A role fit that disagrees with the number fit is
-            `wrong_polarity`. With no K/A or +/- names on one side (LCSC
+            numbering, else a two-pad LED* footprint on a D/LED refdes, pad
+            1 = K as KiCad's Device:LED numbers it). Where roles are named on
+            both sides they decide the rotation, even when the numbers fit
+            another way (C2286's pad 2 is its K, so pin 1 goes on pad 2): a
+            CPL at that number fit puts K on A and is `wrong_polarity`. With no K/A or +/- names on one side (LCSC
             symbols for polarised caps say "1"/"2"), polarity is checked by
             pad number, and a 180-degree turn is never accepted for it.
   no data   No LCSC number, no cached or fetchable model, fewer than two
-            shared pad numbers, no turn that fits, or a bottom-side part
-            whose orientation hangs on JLC's bottom convention (not
-            modelled: anything but a non-polar two-pad part with its pad
-            axis at 0/90 deg, whose axis no mirror changes) is a FAILURE, never a
-            pass - `no_model`, `no_fit` or `bottom_unverified`. A model
-            fetch that errored (network, HTTP status) is `fetch_failed`,
+            shared pad numbers or no turn that fits is a FAILURE, never a
+            pass - `no_model` or `no_fit`. A model fetch that errored (network, HTTP status) is `fetch_failed`,
             never `no_model`: it says nothing about the part or its pin 1.
             A 403/429 is EasyEDA's rate limit: later parts are not fetched
             (also `fetch_failed`) and the report's `rate_limited` says why.
   offset    The model's pad centre vs the board's, both placed, is reported
             (`offset_mm`); over OFFSET_WARN_MM it is a warning only.
+
+Bottom side. The board is viewed from below, turned about its y axis (x -> -x,
+as a page is turned), with the part read from its own side. Writing R(a) for a
+turn and M for KiCad's flip (local y -> -y, which the board file already holds
+in a flipped footprint's pads), the pads sit at R(r) M L, with L the unflipped
+land pattern and the model fitting it as R(c) model = L. The view from below is
+V = diag(-1, 1), and V R(r) M R(c) = R(180 - r + c). So the part is fitted
+against the pads un-flipped, and the CPL rotation is (180 - r + c) mod 360. A
+flip about the x axis instead would give (-r + c): that 180 degrees is exactly
+what the choice of view decides, and geometry alone can't choose it.
+
+The choice comes from two community exporters, not from JLC: Bouni
+kicad-jlcpcb-tools (fabrication.py, "bottom angles need to be mirrored on
+Y-axis": (180 - rotation) % 360, correction added after) and bennymeg
+Fabrication-Toolkit (process.py, "JLC expect 'Rotation' to be 'as viewed from
+above component'": 180.0 - rotation, offsets added after). JLC's order preview
+is what settles it, so a passing bottom part still gets `bottom_preview` in the
+report and a dfm warning (cpl_bottom_preview). reference/jlc_bottom_cpl.md has
+the record; add what a preview or a built board shows there.
 
 `derive_rotation()` is what bom_cpl.py uses to WRITE the CPL; the package table
 is only its fallback when this check has no model. `merge_visual()` puts the
@@ -60,11 +80,12 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+from collections import Counter
 import math
 import os
 import re
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parent
@@ -78,7 +99,11 @@ import easyeda  # noqa: E402
 OFFSET_WARN_MM = 0.5
 ROT_TOL_DEG = 1.0
 FAIL_VERDICTS = ("wrong_rotation", "wrong_polarity", "no_model", "no_fit",
-                 "bottom_unverified", "fetch_failed")
+                 "fetch_failed")
+BOTTOM_PREVIEW_NOTE = (
+    "bottom-side rotations follow (180 - kicad + correction), from two "
+    "community exporters and the geometry, not from a JLC statement: check "
+    "these parts' pin 1 in JLC's order preview before ordering")
 
 # ------------------------------------------------------------ board side
 
@@ -194,6 +219,13 @@ def rot(x: float, y: float, deg: float) -> tuple[float, float]:
     return (x * c + y * s, -x * s + y * c)
 
 
+def cpl_rotation(side: str, board_rot: float, correction: float) -> float:
+    """The CPL rotation for a part with this KiCad rotation and model (or
+    table) correction; the bottom's term is derived in the module docstring."""
+    base = board_rot if side == "top" else 180.0 - board_rot
+    return (base + correction) % 360.0
+
+
 def _centres(pads, key) -> dict[str, tuple[float, float]]:
     acc: dict[str, list] = {}
     for p in pads:
@@ -267,6 +299,10 @@ def board_roles(fp: Footprint, model) -> dict[str, str]:
         return {"1": "+", "2": "-"}
     if model is not None and model.package and model.package in n:
         return model_roles(model)
+    # After the check above: an imported footprint keeps its model's numbering.
+    if n.upper().startswith("LED") and _POLAR_REF.match(fp.ref) \
+            and {p.number for p in fp.pads if p.number} == {"1", "2"}:
+        return {"1": "K", "2": "A"}
     return {}
 
 
@@ -318,6 +354,10 @@ def analyse(fp: Footprint, model) -> dict:
                        "had no data and nothing is cached)"}
     # a pad with no number is paste or mask only (a 0201's reduced paste): nothing lands on it
     kpads = [p for p in fp.pads if p.w > 0 and p.number]
+    if fp.side != "top":
+        # a flipped footprint's local pads are mirrored in y: undo it, so the
+        # fit is the part as read from its own side
+        kpads = [replace(p, y=-p.y) for p in kpads]
     # A fit holds when every model pad is nearer its own board pad than any
     # other: half the smallest gap between two numbered board pad centres.
     # Land patterns of one package differ in toe length (an SO-8 model's
@@ -331,8 +371,6 @@ def analyse(fp: Footprint, model) -> dict:
     polar = is_polar(fp, model)
     out = {"polar": polar, "tol_mm": round(tol, 3), "basis": "pad number"}
     corr = [c for c, _ in num_fit]
-    if fp.side != "top":
-        return _bottom(fp, model, kpads, polar, corr, out)
     if polar:
         mr, br = model_roles(model), board_roles(fp, model)
         shared = set(mr.values()) & set(br.values())
@@ -346,11 +384,9 @@ def analyse(fp: Footprint, model) -> dict:
             if rc:
                 out["basis"] = "pin role (K/A, +/-)"
                 if corr and not set(rc) & set(corr):
-                    out.update(verdict="wrong_polarity", corrections=rc,
-                               number_corrections=corr,
-                               why="the LCSC model's numbering puts its "
-                                   "cathode/+ pin on the board's anode/- pad")
-                    return out
+                    # the numbers differ, the part doesn't: check_part fails
+                    # a CPL that follows them
+                    out["number_corrections"] = corr
                 corr = rc
         else:
             # LCSC symbols for polarised caps are usually pins "1"/"2" with
@@ -382,52 +418,39 @@ def analyse(fp: Footprint, model) -> dict:
     return out
 
 
-def _bottom(fp: Footprint, model, kpads, polar, corr, out) -> dict:
-    """A bottom-side part. JLC's bottom convention (which way the board is
-    mirrored, which way a rotation turns seen from below) is not modelled,
-    so only what no convention changes is checked: a non-polar two-pad part
-    whose pad axis lies at 0 or 90 deg. A mirror about either board axis
-    keeps such an axis, and a turn by a multiple of 90 deg reads the same
-    clockwise or counter-clockwise modulo 180, so the CPL rotation's axis is
-    right under every convention. Anything else stays bottom_unverified."""
-    why = None
-    if polar:
-        why = "a polarised part's pin 1 depends on the mirror"
-    elif not (len(model.pads) == 2 and len(kpads) == 2):
-        why = "a part with more than two pads depends on the mirror"
-    elif not corr:
-        why = ("the LCSC model's pads do not land on the board footprint's "
-               "pads at any 45-degree turn")
-    elif any(c % 90 for c in corr) or not _ang_eq(fp.rot % 90.0, 0.0) \
-            and not _ang_eq(fp.rot % 90.0, 90.0):
-        why = "a pad axis off 0/90 deg reads differently under each mirror"
-    if why:
-        out.update(verdict="bottom_unverified",
-                   why=f"bottom-side part: JLC's bottom placement convention "
-                       f"is not modelled, and {why} - confirm it in JLC's "
-                       f"preview")
-        return out
-    corr = sorted({c % 360 for c in corr} | {(c + 180) % 360 for c in corr})
-    out.update(verdict="ok", corrections=corr, side="bottom",
-               basis="pad axis (bottom side: a 0/90-deg axis of a non-polar "
-                     "two-pad part is the same under any mirror)")
-    return out
-
-
 def derive_rotation(fp: Footprint, model) -> float | None:
     """The CPL rotation the model says this part needs, or None."""
     a = analyse(fp, model)
     if a["verdict"] != "ok":
         return None
-    return (fp.rot + a["corrections"][0]) % 360.0
+    return cpl_rotation(fp.side, fp.rot, a["corrections"][0])
+
+
+def _offset_pads(fp: Footprint, model) -> tuple[list, list]:
+    """The pads to compare for an offset: numbers with as many entries on the
+    board as in the model. A thermal pad is drawn as 21 entries here and 9 there
+    (ESP32-S3-WROOM-1), which pulls a plain mean of all entries off the centre
+    by about 0.6 mm for a part that sits exactly on its footprint. Every pad if
+    the two sides share no such number."""
+    count = lambda pads: Counter(p.number for p in pads)
+    mc, kc = count(model.pads), count(fp.pads)
+    same = {n for n, c in mc.items() if kc.get(n) == c}
+    em = [p for p in model.pads if p.number in same]
+    km = [p for p in fp.pads if p.number in same]
+    return (em, km) if em else (list(model.pads), list(fp.pads))
 
 
 def _centre_delta(fp: Footprint, model, cpl_rot: float) -> tuple[float, float]:
     """Board pad centre minus model pad centre, both turned, in the board frame
-    (y down), with the part's position taken as the footprint origin."""
-    em = [(p.x, p.y) for p in model.pads]
-    km = [(p.x, p.y) for p in fp.pads]
+    (y down), with the part's position taken as the footprint origin. On the
+    bottom the model turns in the view from below, so its x comes back negated
+    (the same mirror Bouni's exporter applies to a position offset)."""
+    mp, bp = _offset_pads(fp, model)
+    em = [(p.x, p.y) for p in mp]
+    km = [(p.x, p.y) for p in bp]
     ec = rot(sum(x for x, _ in em) / len(em), sum(y for _, y in em) / len(em), cpl_rot)
+    if fp.side != "top":
+        ec = (-ec[0], ec[1])
     kc = rot(sum(x for x, _ in km) / len(km), sum(y for _, y in km) / len(km), fp.rot)
     return kc[0] - ec[0], kc[1] - ec[1]
 
@@ -436,9 +459,8 @@ def placement_offset(fp: Footprint, model, cpl_rot: float) -> tuple[float, float
     """How far the CPL position must move off the footprint origin for the
     part's own pads to land on the board's, when that is over OFFSET_WARN_MM:
     a footprint whose origin isn't the part's centre (SparkFun's USB-C and
-    Qwiic: 2.8 and 1.9 mm) would otherwise be placed off its pads. Top side
-    only: the bottom's coordinate mirror isn't modelled."""
-    if fp.side != "top" or model is None or analyse(fp, model)["verdict"] != "ok":
+    Qwiic: 2.8 and 1.9 mm) would otherwise be placed off its pads."""
+    if model is None or analyse(fp, model)["verdict"] != "ok":
         return None
     dx, dy = _centre_delta(fp, model, cpl_rot)
     return (dx, dy) if math.hypot(dx, dy) > OFFSET_WARN_MM else None
@@ -453,25 +475,28 @@ def check_part(fp: Footprint, model, cpl: dict) -> dict:
            "cpl_rot": cpl["rot"], **a}
     if a["verdict"] != "ok":
         if "corrections" in a:
-            row["expected_rot"] = [(fp.rot + c) % 360.0 for c in a["corrections"]]
+            row["expected_rot"] = [cpl_rotation(fp.side, fp.rot, c)
+                                   for c in a["corrections"]]
         return row
-    want = [(fp.rot + c) % 360.0 for c in a["corrections"]]
+    want = [cpl_rotation(fp.side, fp.rot, c) for c in a["corrections"]]
     row["expected_rot"] = want
+    row["side"] = fp.side
     if not any(_ang_eq(cpl["rot"], w) for w in want):
-        row["verdict"] = "wrong_rotation"
-        row["why"] = (f"CPL rotation {cpl['rot']:g} puts pin 1 off pad 1; the "
-                      f"LCSC model needs {want[0]:g}")
-    if fp.side != "top":
-        return row   # the bottom's coordinate mirror is not modelled either
+        by_number = [cpl_rotation(fp.side, fp.rot, c)
+                     for c in a.get("number_corrections", [])]
+        if any(_ang_eq(cpl["rot"], w) for w in by_number):
+            row["verdict"] = "wrong_polarity"
+            row["why"] = (f"CPL rotation {cpl['rot']:g} follows the pad numbers, "
+                          f"which puts the LCSC model's cathode/+ pin on the "
+                          f"board's anode/- pad; it needs {want[0]:g}")
+        else:
+            row["verdict"] = "wrong_rotation"
+            row["why"] = (f"CPL rotation {cpl['rot']:g} puts pin 1 off pad 1; "
+                          f"the LCSC model needs {want[0]:g}")
     # Offset: model pad centre vs board pad centre, both placed.
-    em = [(p.x, p.y) for p in model.pads]
-    km = [(p.x, p.y) for p in fp.pads]
-    ec = rot(sum(x for x, _ in em) / len(em), sum(y for _, y in em) / len(em),
-             cpl["rot"])
-    kcx, kcy = rot(sum(x for x, _ in km) / len(km),
-                   sum(y for _, y in km) / len(km), fp.rot)
-    row["offset_mm"] = round(math.hypot(cpl["x"] + ec[0] - (fp.x + kcx),
-                                        cpl["y"] + ec[1] - (fp.y + kcy)), 3)
+    dx, dy = _centre_delta(fp, model, cpl["rot"])
+    row["offset_mm"] = round(math.hypot(cpl["x"] - fp.x - dx,
+                                        cpl["y"] - fp.y - dy), 3)
     return row
 
 
@@ -532,12 +557,16 @@ def verify(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
                           f"{cache_dir} - this is not a pin-1 result")
         rows.append(row)
     bad = [r for r in rows if r["verdict"] in FAIL_VERDICTS]
+    below = [r["ref"] for r in rows if r.get("side") == "bottom"
+             and r["verdict"] not in FAIL_VERDICTS]
     led = record_footprints(pcb, rows, lcsc)
     return {"script": "cpl_verify", "board": Path(pcb).name,
             "ledger": led,
             "status": "violations" if bad else "pass",
             "n_checked": len(rows), "n_failed": len(bad),
             "failed": [r["ref"] for r in bad],
+            "bottom_preview": ({"refs": below, "note": BOTTOM_PREVIEW_NOTE}
+                               if below else None),
             "offset_warnings": [r["ref"] for r in rows
                                 if r.get("offset_mm", 0) > OFFSET_WARN_MM],
             "fetch_failed": [r["ref"] for r in rows
@@ -548,8 +577,8 @@ def verify(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
 
 
 # A footprint whose pads land on the LCSC model by number is the part's land
-# pattern whatever the CPL turn says (a wrong rotation is the CPL's fault).
-FOOTPRINT_OK = ("ok", "wrong_rotation")
+# pattern whatever the CPL turn says (a wrong rotation or a K on A is the CPL's fault).
+FOOTPRINT_OK = ("ok", "wrong_rotation", "wrong_polarity")
 
 
 def record_footprints(pcb: Path, rows: list[dict],
@@ -566,7 +595,7 @@ def record_footprints(pcb: Path, rows: list[dict],
         code = lcsc.get(r["ref"], "")
         v = r.get("verdict")
         st = ("verified" if v in FOOTPRINT_OK else
-              "failed" if v in ("no_fit", "wrong_polarity") else "unknown")
+              "failed" if v == "no_fit" else "unknown")
         facts.append({
             "subject": r["ref"], "kind": "footprint", "status": st,
             "lcsc": code,

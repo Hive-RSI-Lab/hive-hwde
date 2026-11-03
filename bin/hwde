@@ -261,6 +261,8 @@ test | test-slow)
 	shift
 	export HWDE_BIN="$here/bin/hwde" HWDE_STATE="$state"
 	export HWDE_NO_FSYNC=1
+	# OpenBLAS busy-waits under load: a run stalled for over 45 min with it (#498).
+	export OPENBLAS_NUM_THREADS="${OPENBLAS_NUM_THREADS:-1}"
 	base=${TMPDIR:-/tmp}
 	shm=$(df -Pk /dev/shm 2>/dev/null | awk 'NR==2 {print $4}')
 	[ -w /dev/shm ] && [ "${shm:-0}" -ge 524288 ] && base=/dev/shm

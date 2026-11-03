@@ -29,8 +29,22 @@ cavity_unconverged above 5%).
 
 PLANE PAIRS (v1): adjacent copper layers where two DIFFERENT nets both carry
 zone fills >= 15% of the board outline area; one of them must be a rail named
-in decoupling.json. Geometry = bounding rectangle of the overlapping fill,
-flagged `"geometry": "bounding_rect_assumed"`; a x b x d from geom's stackup.
+in decoupling.json. a x b x d from geom's stackup.
+
+REAL SHAPES (#498, lib/planecav.py). A pair whose overlap fills its bounding
+box (planecav.RECT_FILL, on a raster that ignores antipads) keeps the closed
+form above: `"geometry": "bounding_rect_assumed"`, same numbers as before. Any
+other (an L, a cut-out, a split) is cut into rectangles and joined by
+segmentation, on the separate piece of the overlap under the observation port:
+`"geometry": "segmented"`. A decap off that piece joins at its nearest point
+through SPREAD_NH_PER_MM of path. Such a pair also reports `bounding_rect`,
+what the old model says, and a verdict that moves gets a warning,
+pdn_verdict_moved, so it never moves silently. `shape.convergence` compares
+against a run with half the cells and strips and twice the modes (warning
+segmentation_unconverged). Every pair reports `cavity_modes`: frequency,
+antinode, and |V| at the observation port and decaps relative to the antinode.
+`--palace-check` also runs Palace eigenmode on the true polygon of each
+segmented pair (slow; warning palace_disagrees over PALACE_TOL_PCT).
 
 PORTS: port 0 = the observation port at the served IC (the most-associated IC
 for the rail in decoupling.json; position = centroid of its associated rail
@@ -86,18 +100,29 @@ CLI: --pcb board.kicad_pcb --metadata decoupling.json
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import math
+import os
 import sys
+import tempfile
 from pathlib import Path
 
+# Hundreds of small solves: OpenBLAS's pool busy-waits on them and stalls on a
+# loaded machine (see lib/solvers.py), and one thread costs nothing here.
+for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
+    os.environ.setdefault(_v, "1")
+
 import numpy as np
+import shapely
+import shapely.affinity
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import checklib  # noqa: E402
 import geom  # noqa: E402
 import pdnlib  # noqa: E402
+import planecav  # noqa: E402
 from check_decoupling import (NH_PER_MM, NH_PER_VIA, nearest_via_mm,  # noqa: E402
                               parse_farads)
 from checklib import CheckError, violation  # noqa: E402
@@ -116,6 +141,13 @@ LARGE_FILL_FRAC = 0.15      # "large fill" = this fraction of outline area
 M_FLOOR = 30                # truncation floor per the contract recipe
 COVERAGE_MARGIN = 2.5       # mode-coverage margin over f_max
 FMIN_SHIFT_WARN = 0.05      # first-minimum shift gate on the 2M check
+N_MODES = 6                 # cavity modes reported per pair
+SEG_CELLS = 32              # raster cells on a segmented plane's long side
+SEG_F_STEP = 10             # of the sweep, every this point in the 2x check
+SNAP_MM = 1.0               # a port this far off the plane gets a path L
+SLIVER_FRAC = 0.01          # overlap pieces under this share are not islands
+MODE_SHIFT_WARN = 0.02      # first-mode shift gate on the 2x check
+PALACE_TOL_PCT = 2.0        # segmentation vs Palace, per the issue
 
 
 # ============================================================ cavity model
@@ -254,7 +286,7 @@ def find_pairs(bg: geom.BoardGeom, rails: set[str]) -> list[dict]:
                 if maxx - minx < 1.0 or maxy - miny < 1.0:
                     continue
                 pairs.append({
-                    "rail": rail, "reference": ref,
+                    "rail": rail, "reference": ref, "poly": inter,
                     "rail_layer": rail_layer, "ref_layer": ref_layer,
                     "origin": (minx, miny),
                     "a_mm": maxx - minx, "b_mm": maxy - miny,
@@ -382,16 +414,149 @@ def build_ports(bg: geom.BoardGeom, pair: dict, assocs: list[dict],
 
 # ============================================================ analysis
 
-def _zin(freqs, pair, ports, caps, m, n) -> tuple[np.ndarray, np.ndarray]:
-    """(Z_loaded, Z_bare) at the observation port, complex ohm."""
-    z = cavity_z(freqs, pair["a_mm"] * 1e-3, pair["b_mm"] * 1e-3,
-                 pair["d_mm"] * 1e-3, pair["eps_r"], ports, m, n,
-                 t_cu_m=pair["t_cu_mm"] * 1e-3)
+def _load(freqs, z, ports, caps) -> tuple[np.ndarray, np.ndarray]:
     y = np.zeros((len(freqs), len(ports)), dtype=complex)
     for k, c in enumerate(caps):
         y[:, k + 1] = 1.0 / c.z(freqs)
     zl = load_decaps(z, y)
     return zl[:, 0, 0], z[:, 0, 0]
+
+
+def _zin(freqs, pair, ports, caps, m, n) -> tuple[np.ndarray, np.ndarray]:
+    """(Z_loaded, Z_bare) at the observation port, complex ohm."""
+    z = cavity_z(freqs, pair["a_mm"] * 1e-3, pair["b_mm"] * 1e-3,
+                 pair["d_mm"] * 1e-3, pair["eps_r"], ports, m, n,
+                 t_cu_m=pair["t_cu_mm"] * 1e-3)
+    return _load(freqs, z, ports, caps)
+
+
+def _zin_cav(freqs, pair, cav, ports, caps,
+             sweep: bool = True) -> tuple[np.ndarray, np.ndarray]:
+    """As _zin, on a segmented cavity. `sweep` interpolates under the first
+    mode: for a fine log grid only, so never on the 2x run's coarse one."""
+    d_m, t_m = pair["d_mm"] * 1e-3, pair["t_cu_mm"] * 1e-3
+    solve = cav.z_sweep if sweep else cav.z
+    z = solve(freqs, ports,
+              lossy_k=lambda w: lossy_k(w, pair["eps_r"], d_m, t_m))
+    return _load(freqs, z, ports, caps)
+
+
+def plane_shape(pair: dict, obs_xy) -> dict | None:
+    """The piece of the overlap to analyse, in the pair's frame (mm from its
+    origin), or None when the bounding rectangle is the shape.
+    `obs_xy` is the observation port in that frame, in mm."""
+    poly = pair.get("poly")
+    if poly is None:
+        return None
+    frame = shapely.affinity.translate(poly, -pair["origin"][0],
+                                       -pair["origin"][1])
+    pieces = planecav.components(frame)
+    total = sum(p.area for p in pieces)
+    real = [p for p in pieces if p.area >= SLIVER_FRAC * total]
+    if not real:
+        return None
+    obs = shapely.Point(obs_xy)
+    piece = min(real, key=lambda p: (p.distance(obs), -p.area))
+    facts = planecav.decompose(piece, max(pair["a_mm"], pair["b_mm"]) / SEG_CELLS)
+    if len(real) == 1 and facts["fill"] >= planecav.RECT_FILL:
+        return None
+    return {"piece": piece, "others": [p for p in real if p is not piece]}
+
+
+def segment_ports(cav, piece, ports, obs, decaps, caps):
+    """Ports put on the plane: unclamped from the board positions and moved to
+    the model's nearest copper. A decap off the true copper (a raster cell
+    is not copper) gets the path as series L."""
+    ports_out, caps_out = [], []
+    for k, port in enumerate(ports):
+        x, y, _ = cav.snap(port[0], port[1])
+        moved = piece.distance(shapely.Point(port[0] * 1e3, port[1] * 1e3)) * 1e-3
+        ports_out.append((x, y, port[2], port[3]))
+        if k == 0:
+            if moved * 1e3 > SNAP_MM:
+                obs["off_plane_mm"] = checklib.rnd(moved * 1e3)
+            continue
+        cap, fact = caps[k - 1], decaps[k - 1]
+        if moved * 1e3 > SNAP_MM:
+            extra = pdnlib.SPREAD_NH_PER_MM * moved * 1e3 * 1e-9
+            cap = dataclasses.replace(cap, l_mount_h=cap.l_mount_h + extra)
+            fact["off_plane_mm"] = checklib.rnd(moved * 1e3)
+            fact["l_path_nh"] = checklib.rnd(extra * 1e9)
+        caps_out.append(cap)
+    return ports_out, caps_out
+
+
+def board_ports(pair: dict, ports, obs, decaps):
+    """Ports in the pair's frame without build_ports' clamp to the rectangle:
+    a real shape needs to know how far off the copper a pad really is."""
+    ox, oy = pair["origin"]
+    out = [((obs["pos"][0] - ox) * 1e-3, (obs["pos"][1] - oy) * 1e-3,
+            ports[0][2], ports[0][3])]
+    for port, fact in zip(ports[1:], decaps):
+        out.append(((fact["pos"][0] - ox) * 1e-3, (fact["pos"][1] - oy) * 1e-3,
+                    port[2], port[3]))
+    return out
+
+
+def mode_facts(cav, pair: dict, ports, obs, decaps) -> list[dict]:
+    """The cavity's modes against where the decaps sit."""
+    ox, oy = pair["origin"]
+    marks = [(p[0], p[1]) for p in ports]
+    out = []
+    for md in cav.mode_report(N_MODES, marks):
+        ax, ay = md["antinode"]
+        v = md["v_marks"]
+        entry = {"f_hz": checklib.rnd(md["f_hz"], 1),
+                 "in_band": md["f_hz"] <= F_MAX_HZ,
+                 "antinode": [checklib.rnd(ax * 1e3 + ox),
+                              checklib.rnd(ay * 1e3 + oy)],
+                 "v_obs": checklib.rnd(v[0], 3)}
+        if decaps:
+            dist = [math.hypot(p[0] - ax, p[1] - ay) * 1e3 for p in ports[1:]]
+            near = int(np.argmin(dist))
+            best = int(np.argmax(v[1:]))
+            entry["nearest_decap"] = {"cap": decaps[near]["cap"],
+                                      "mm": checklib.rnd(dist[near])}
+            entry["best_coupled_decap"] = {"cap": decaps[best]["cap"],
+                                           "v": checklib.rnd(v[best + 1], 3)}
+        out.append(entry)
+    return out
+
+
+def palace_facts(piece, pair: dict, cav, modes) -> tuple[dict, list[dict]]:
+    """Palace eigenmode on the true polygon against the segmented modes."""
+    import sim_solve  # noqa: PLC0415
+    from lib import solvers  # noqa: PLC0415   (the class sim_solve raises)
+    cell = max(pair["a_mm"], pair["b_mm"]) / SEG_CELLS
+    clean = planecav.outline(piece, cell, tol=cell / 4)
+    n = min(4, len(modes))
+    f_seg = [m["f_hz"] * 1e-9 for m in modes[:n]]
+    lam_mm = (planecav.C0 / (f_seg[-1] * 1e9 * math.sqrt(pair["eps_r"]))) * 1e3
+    size = min(lam_mm / 8, max(pair["a_mm"], pair["b_mm"]) / 16)
+    rail = pair["rail"]
+    try:
+        with tempfile.TemporaryDirectory(prefix="hwde-pdn-palace-") as d:
+            got = sim_solve.palace_plane_modes(Path(d), clean, pair["eps_r"], n,
+                                               f_seg[0], size)
+    except (solvers.SolverError, OSError, ValueError) as e:
+        return {"status": "not_run", "why": str(e)[-200:]}, [
+            violation(SCRIPT, "warning", None, pair["rail_layer"], rail, [],
+                      f"{rail}: Palace cross-check did not run: {e}"[:240],
+                      SCRIPT, kind="palace_not_run")]
+    errs = [(s / p - 1) * 100 for s, p in zip(f_seg, got["f_ghz"])]
+    facts = {"status": "run", "f_ghz": [checklib.rnd(f, 5) for f in got["f_ghz"]],
+             "err_pct": [checklib.rnd(e, 3) for e in errs],
+             "size_mm": checklib.rnd(got["size_mm"]), "order": got["order"],
+             "seconds": got["seconds"]}
+    worst = max((abs(e) for e in errs), default=0.0)
+    if worst > PALACE_TOL_PCT or len(errs) < n:
+        return facts, [violation(
+            SCRIPT, "warning", None, pair["rail_layer"], rail, [],
+            f"{rail}: segmented cavity modes differ from Palace by "
+            f"{worst:.1f}% (limit {PALACE_TOL_PCT}%, {len(errs)} of {n} modes "
+            "found)", SCRIPT, kind="palace_disagrees",
+            err_pct=checklib.rnd(worst))]
+    return facts, []
 
 
 def _zin_mohm(freqs, pair, ports, caps, m, n) -> tuple[np.ndarray, np.ndarray]:
@@ -488,8 +653,24 @@ def judge_mask(freqs, z_board, z_die, target: dict, rail: str, where,
     return facts, vs
 
 
+def mask_verdict(freqs, zl_c, spec_target, vrm, pkg) -> dict:
+    """Over or under a derived target, for a loaded cavity."""
+    ch = pdnlib.chain_z(freqs, vrm=vrm, pkg=pkg, extra_board=[zl_c])
+    mm = pdnlib.mask_margin(freqs, ch["board"], spec_target["z_t_mohm"] * 1e-3,
+                            F_MIN_HZ, spec_target["f_hi_hz"])
+    return {"worst_ratio": checklib.rnd(mm["worst_ratio"], 4),
+            "f_worst_hz": checklib.rnd(mm["f_worst_hz"], 1),
+            "over": bool(mm["over"])}
+
+
+def _peak_facts(freqs, zmag):
+    return [{"f_hz": checklib.rnd(freqs[i], 1), "z_mohm": checklib.rnd(zmag[i])}
+            for i in local_maxima(zmag)][:8]
+
+
 def analyze_pair(bg: geom.BoardGeom, pair: dict, assocs: list[dict],
-                 target_mohm, spec: dict | None = None):
+                 target_mohm, spec: dict | None = None,
+                 palace_check: bool = False):
     """(facts, violations, curve) for one plane pair; facts is None when the
     pair has no observation port (no associations for its rail).
     `target_mohm` alone = the legacy peaks-only gate; a derived `spec`
@@ -502,31 +683,81 @@ def analyze_pair(bg: geom.BoardGeom, pair: dict, assocs: list[dict],
     m = mode_count(pair["a_mm"] * 1e-3, pair["eps_r"], F_MAX_HZ)
     n = mode_count(pair["b_mm"] * 1e-3, pair["eps_r"], F_MAX_HZ)
     zl_c, zb_c = _zin(freqs, pair, ports, caps, m, n)
+    k_cut = max(m * math.pi / (pair["a_mm"] * 1e-3),
+                n * math.pi / (pair["b_mm"] * 1e-3))
+    raw = board_ports(pair, ports, obs, decaps)
+    shape = plane_shape(pair, (raw[0][0] * 1e3, raw[0][1] * 1e3))
+    rect_zl = seg = None
+    if shape is None:
+        zin2, _ = _zin_mohm(freqs, pair, ports, caps, 2 * m, 2 * n)
+        cav = planecav.Cavity([planecav.Rect(0.0, 0.0, pair["a_mm"] * 1e-3,
+                                             pair["b_mm"] * 1e-3)],
+                              pair["d_mm"] * 1e-3, pair["eps_r"],
+                              1.0, k_cut)
+        modes_at = ports
+    else:
+        rect_zl = zl_c
+        d_m = pair["d_mm"] * 1e-3
+        cav, raster = planecav.from_polygon(shape["piece"], d_m, pair["eps_r"],
+                                            F_MAX_HZ, SEG_CELLS, 1, k_cut)
+        ports, caps = segment_ports(cav, shape["piece"], raw, obs,
+                                    decaps, caps)
+        modes_at = ports
+        zl_c, zb_c = _zin_cav(freqs, pair, cav, ports, caps)
+        fine, _ = planecav.from_polygon(shape["piece"], d_m, pair["eps_r"],
+                                        F_MAX_HZ, SEG_CELLS, 2, 2 * k_cut)
+        sub = freqs[::SEG_F_STEP]
+        z_fine, _ = _zin_cav(sub, pair, fine, ports, caps, sweep=False)
+        z_here = zl_c[::SEG_F_STEP]
+        f1, f1_fine = cav.mode_freqs(1)[0], fine.mode_freqs(1)[0]
+        seg = {"raster": raster, "n_rect": len(cav.rects),
+               "n_strips": len(cav.joins),
+               "z_shift_max": float(np.max(np.abs(np.abs(z_fine)
+                                                  / np.abs(z_here) - 1))),
+               "f1_shift": abs(f1_fine - f1) / f1,
+               "z_here": z_here, "z_fine": z_fine, "sub": sub}
     zin, zbare = np.abs(zl_c) * 1e3, np.abs(zb_c) * 1e3
-    zin2, _ = _zin_mohm(freqs, pair, ports, caps, 2 * m, 2 * n)
 
     i_min = first_local_min(zin)
-    i_min2 = first_local_min(zin2)
+    # The 2x run of a segmented plane has a coarser sweep: read both on it.
+    if seg is None:
+        check_f, check_a, check_b = freqs, zin, zin2
+    else:
+        check_f = seg["sub"]
+        check_a = np.abs(seg["z_here"]) * 1e3
+        check_b = np.abs(seg["z_fine"]) * 1e3
+    i_a, i_min2 = first_local_min(check_a), first_local_min(check_b)
     shift = None
-    if i_min is not None and i_min2 is not None:
-        shift = abs(freqs[i_min2] - freqs[i_min]) / freqs[i_min]
-    peaks = [{"f_hz": checklib.rnd(freqs[i], 1),
-              "z_mohm": checklib.rnd(zin[i])}
-             for i in local_maxima(zin)][:8]
+    if i_a is not None and i_min2 is not None:
+        shift = abs(check_f[i_min2] - check_f[i_a]) / check_f[i_a]
+    peaks = _peak_facts(freqs, zin)
     i_worst = int(np.argmax(zin))
     c00 = c00_farads(pair["a_mm"] * 1e-3, pair["b_mm"] * 1e-3,
                      pair["d_mm"] * 1e-3, pair["eps_r"])
+    if seg is not None:
+        c00 = EPS0 * pair["eps_r"] * cav.area / (pair["d_mm"] * 1e-3)
 
     violations: list[dict] = []
     if shift is not None and shift > FMIN_SHIFT_WARN:
         violations.append(violation(
             SCRIPT, "warning", None, None, pair["rail"], [],
             f"{pair['rail']}/{pair['reference']} cavity sum not converged: "
-            f"first |Z| minimum moved {shift:.1%} between M={m} and M={2 * m}",
+            f"first |Z| minimum moved {shift:.1%} between M={m} and M={2 * m}"
+            if seg is None else
+            f"first |Z| minimum moved {shift:.1%} with cells, strips and modes "
+            "doubled",
             SCRIPT, kind="cavity_unconverged",
             shift=checklib.rnd(shift)))
+    if seg is not None and seg["f1_shift"] > MODE_SHIFT_WARN:
+        violations.append(violation(
+            SCRIPT, "warning", None, None, pair["rail"], [],
+            f"{pair['rail']}/{pair['reference']} segmented cavity not "
+            f"converged: first mode moved {seg['f1_shift']:.1%} with cells and "
+            "strips doubled", SCRIPT, kind="segmentation_unconverged",
+            shift=checklib.rnd(seg["f1_shift"])))
     target = mask = None
     z_chain = None
+    before = None
     if spec and spec["derived"]:
         target, vrm, pkg = derive_target(spec, bg, obs["ic"])
         if vrm is None:
@@ -543,6 +774,12 @@ def analyze_pair(bg: geom.BoardGeom, pair: dict, assocs: list[dict],
                                   f"cavity {pair['rail_layer']}/"
                                   f"{pair['ref_layer']} + VRM")
             violations.extend(vs)
+            if rect_zl is not None:
+                before = mask_verdict(freqs, rect_zl, target, vrm, pkg)
+                after_over = bool(mask["over"])
+                if before["over"] != after_over:
+                    violations.append(moved_warning(
+                        pair, obs, "mask", before["over"], after_over))
     # Legacy (pdn_target_mohm with no transient_a): the target gates the
     # modeled ANTIRESONANCE PEAKS only: with no VRM branch (low end) and no
     # package/die capacitance (high end), the band-max always sits at a band
@@ -560,11 +797,20 @@ def analyze_pair(bg: geom.BoardGeom, pair: dict, assocs: list[dict],
                     f"{len(decaps)} decaps)", SCRIPT,
                     kind="pdn_z_excess", z_mohm=pk["z_mohm"],
                     f_hz=pk["f_hz"], target_mohm=float(target_mohm)))
+        if rect_zl is not None:
+            old_peaks = _peak_facts(freqs, np.abs(rect_zl) * 1e3)
+            before = {"over": any(p["z_mohm"] > float(target_mohm)
+                                  for p in old_peaks)}
+            after_over = any(p["z_mohm"] > float(target_mohm) for p in peaks)
+            if before["over"] != after_over:
+                violations.append(moved_warning(
+                    pair, obs, "peaks", before["over"], after_over))
 
+    cavity_modes = mode_facts(cav, pair, modes_at, obs, decaps)
     facts = {
         "rail": pair["rail"], "reference": pair["reference"],
         "layers": [pair["rail_layer"], pair["ref_layer"]],
-        "geometry": "bounding_rect_assumed",
+        "geometry": "bounding_rect_assumed" if seg is None else "segmented",
         "origin": [checklib.rnd(pair["origin"][0]),
                    checklib.rnd(pair["origin"][1])],
         "a_mm": checklib.rnd(pair["a_mm"]), "b_mm": checklib.rnd(pair["b_mm"]),
@@ -577,10 +823,11 @@ def analyze_pair(bg: geom.BoardGeom, pair: dict, assocs: list[dict],
                   {"f_hz": checklib.rnd(freqs[i_min], 1),
                    "z_mohm": checklib.rnd(zin[i_min])},
                   "first_min_check": None if i_min2 is None else
-                  {"f_hz": checklib.rnd(freqs[i_min2], 1),
-                   "z_mohm": checklib.rnd(zin2[i_min2])},
+                  {"f_hz": checklib.rnd(check_f[i_min2], 1),
+                   "z_mohm": checklib.rnd(check_b[i_min2])},
                   "first_min_shift": None if shift is None
                   else checklib.rnd(shift)},
+        "cavity_modes": cavity_modes,
         "obs": obs,
         "v_rail": v_rail,
         "decaps": decaps,
@@ -595,6 +842,29 @@ def analyze_pair(bg: geom.BoardGeom, pair: dict, assocs: list[dict],
     if target is not None:
         facts["target"] = target
         facts["mask"] = mask
+    if seg is not None:
+        rmag = np.abs(rect_zl) * 1e3
+        i_r = int(np.argmax(rmag))
+        facts["shape"] = {
+            "n_rect": seg["n_rect"], "n_strips": seg["n_strips"],
+            "area_true_mm2": checklib.rnd(seg["raster"]["area_true_mm2"]),
+            "area_model_mm2": checklib.rnd(seg["raster"]["area_model_mm2"]),
+            "other_islands_mm2": [checklib.rnd(p.area) for p in shape["others"]],
+            "convergence": {"z_shift_max": checklib.rnd(seg["z_shift_max"], 4),
+                            "f1_shift": checklib.rnd(seg["f1_shift"], 4)}}
+        facts["bounding_rect"] = {
+            "a_mm": checklib.rnd(pair["a_mm"]), "b_mm": checklib.rnd(pair["b_mm"]),
+            "c00_nf": checklib.rnd(c00_farads(
+                pair["a_mm"] * 1e-3, pair["b_mm"] * 1e-3,
+                pair["d_mm"] * 1e-3, pair["eps_r"]) * 1e9, 5),
+            "peaks": _peak_facts(freqs, rmag),
+            "z_max": {"mohm": checklib.rnd(rmag[i_r]),
+                      "f_hz": checklib.rnd(freqs[i_r], 1)},
+            "verdict": before}
+        if palace_check:
+            facts["palace"], vs = palace_facts(shape["piece"], pair, cav,
+                                               cavity_modes)
+            violations.extend(vs)
     curve = {
         "rail": pair["rail"], "reference": pair["reference"],
         "layers": [pair["rail_layer"], pair["ref_layer"]],
@@ -606,6 +876,17 @@ def analyze_pair(bg: geom.BoardGeom, pair: dict, assocs: list[dict],
         curve["z_chain_mohm"] = [checklib.rnd(v)
                                  for v in np.abs(z_chain) * 1e3]
     return facts, violations, curve
+
+
+def moved_warning(pair, obs, what, was_over, now_over):
+    word = {True: "fails", False: "passes"}
+    return violation(
+        SCRIPT, "warning", tuple(obs["pos"]), pair["rail_layer"], pair["rail"],
+        [obs["ic"]],
+        f"{pair['rail']} {word[was_over]} its PDN {what} on the bounding "
+        f"rectangle and {word[now_over]} on the real plane shape; the real "
+        "shape is the verdict (see `bounding_rect` in this pair's facts)",
+        SCRIPT, kind="pdn_verdict_moved", was_over=was_over, now_over=now_over)
 
 
 def analyze_lumped(bg: geom.BoardGeom, spec: dict, assocs: list[dict]):
@@ -687,6 +968,9 @@ def run(argv=None):
                          " vrm, package, edge_ns; or pdn_target_mohm)")
     ap.add_argument("--curve-out",
                     help="write the |Z|(f) curves to this sidecar JSON")
+    ap.add_argument("--palace-check", action="store_true",
+                    help="cross-check each segmented plane's modes with Palace "
+                         "eigenmode on the true polygon (slow)")
     ap.add_argument("--out", help="write JSON report here instead of stdout")
     args = ap.parse_args(argv)
 
@@ -728,7 +1012,7 @@ def run(argv=None):
             spec = {**spec, "derived": False}
         facts, vs, curve = analyze_pair(
             bg, pair, assocs,
-            spec["override_mohm"] if spec else None, spec)
+            spec["override_mohm"] if spec else None, spec, args.palace_check)
         if facts is None:
             skipped_pairs.append({"rail": pair["rail"],
                                   "reference": pair["reference"],
@@ -766,8 +1050,9 @@ def run(argv=None):
         skipped_pairs=skipped_pairs, skipped_rails=skipped_rails,
         targets_missing=sorted(set(missing)),
         stackup_assumed=bg.stackup.assumed,
-        model={"kind": "rectangular plane-pair cavity sum; lumped ladder "
-                       "(pdnlib) for target rails with no plane pair",
+        model={"kind": "plane-pair cavity sum: closed form on a filled "
+                       "rectangle, segmentation on any other shape; lumped "
+                       "ladder (pdnlib) for target rails with no plane pair",
                "tan_delta": TAN_DELTA, "sigma_cu_s_per_m": SIGMA_CU,
                "esr": "pdnlib class table by capacitance",
                "spread_nh_per_mm": pdnlib.SPREAD_NH_PER_MM,

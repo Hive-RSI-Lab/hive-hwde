@@ -21,6 +21,7 @@ SCRIPTS = REPO / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 import bgalib  # noqa: E402
+import checklib  # noqa: E402
 import board_init  # noqa: E402
 import check_vias  # noqa: E402
 import dfm_check  # noqa: E402
@@ -370,6 +371,8 @@ def test_dsn_add_spans_declares_each_span_once():
     for line in (via, use):
         assert '"Via[0-3]_450:200_um"' in line       # the class's own stays
         assert '"Via[2-3]_250:100_um"' in line
+        # Freerouting takes them in order: behind the through via it places none
+        assert line.index('"Via[2-3]_250:100_um"') < line.index('"Via[0-3]_450:200_um"')
     assert routelib.dsn_add_spans(text, [(1, 2, 0.25, 0.1)])[1] == []
 
 
@@ -382,6 +385,36 @@ def test_hole_floor_leaves_a_laser_via_at_its_own_size():
     _, grown = routelib.dsn_hole_floor(text, 0.5, 0.24)
     assert "Via[0-3]_450:200_um" in grown
     assert grown.get("Via[1-2]_250:100_um", (0, 0))[1] <= 0.24 * 1000 + 100 - 125 + 1
+
+
+def test_live_retype_vias_gives_an_imported_via_its_span(tmp_path):
+    """KiCad's SES import calls a microvia from an outer layer "buried", which
+    check_vias rejects; retype_vias gives it the span's type back."""
+    cli = env.find_kicad_cli()
+    if cli is None:
+        pytest.skip("needs kicad-cli")
+    bp = env.find_kicad_python(cli)
+    pcb = make_board(tmp_path, grid(3, 1.0, net=lambda r, c: f"/X{r}{c}"), 0.5)
+    via = ('(via buried (at 10 10) (size 0.25) (drill 0.1) '
+           '(layers "F.Cu" "In1.Cu") (net "/X00") '
+           '(uuid "00000000-0000-0000-0002-000000000001"))\n')
+    off = ('(via buried (at 12 12) (size 0.25) (drill 0.1) '
+           '(layers "In3.Cu" "In5.Cu") (net "/X01") '
+           '(uuid "00000000-0000-0000-0002-000000000002"))\n')
+    text = pcb.read_text("utf-8").rstrip()
+    assert text.endswith(")")
+    pcb.write_text(text[:-1] + via + off + ")\n", "utf-8")
+    try:
+        got = routelib.run_worker(bp, {
+            "verb": "retype_vias", "board": str(pcb), "out": str(pcb),
+            "spans": [["F.Cu", "In1.Cu", "micro"]]}, tmp_path)
+    except checklib.CheckError as e:
+        if "wxEntryStart" in str(e) or "X Display" in str(e):
+            pytest.skip("route_swig couldn't start wx on this machine's Xvfb")
+        raise
+    assert got["retyped"] == 1 and got["off_span"] == 1
+    kinds = {round(v.at[0]): v.kind for v in geom.BoardGeom.from_file(pcb).vias_of()}
+    assert kinds == {10: "micro", 12: "buried"}
 
 
 # ------------------------------------------------------------ the maze
