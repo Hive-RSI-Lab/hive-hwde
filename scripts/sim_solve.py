@@ -60,6 +60,8 @@ right, and the board-facing studies built on them.
                          [--points N] [--symmetric] [--fine MM]
                          [--touchstone FILE] [--out RES.json] [--keep DIR]
                          [--deck-only DIR] [--json]
+                         [--cross-check palace [--cross-refine K] [--cross-order P]
+                          [--cross-np N] [--cross-timeout S]]
         full-wave (openEMS) S-parameters of a region of a board with every
         copper layer of its stackup (lib/emboard.py): CPWG and coplanar
         ground, reference-plane cut-outs, via fences and plated holes as
@@ -70,6 +72,9 @@ right, and the board-facing studies built on them.
         --symmetric: a mirror-symmetric 2-port is excited once. --deck-only
         writes the deck(s) and the probe map without running. Its S is
         checked by lib/sparam like planar's (`quality`; exit 1 on a fail).
+        --cross-check palace solves the same geometry and planes by FEM
+        (lib/empalace.py) and exits 1 when the S-matrices disagree: rms
+        |dS| over 0.05 off any notch, or a notch more than 1% apart.
 
 The cases (docs/solvers.md has the measured errors):
 
@@ -617,12 +622,20 @@ def board_feed_alpha(pcb, geo):
 def board_study(pcb, region, ports, parts=None, f_max=6e9, f_min=None, points=201,
                 symmetric=False, fine=None, keep=None, deck_only=None,
                 refine=1.0, refine_max=None, converge=True, loss="line",
-                foil=emloss.FOIL_DEFAULT, roughness="hammerstad", lengths=None) -> dict:
+                foil=emloss.FOIL_DEFAULT, roughness="hammerstad", lengths=None, cross_check=None,
+                cross_refine=1.5, cross_order=3, cross_np=4, cross_timeout=3600) -> dict:
     """`hwde sim_solve board`: extract -> deck -> openEMS -> S (lib/emboard),
     refining the mesh until two runs agree unless converge is False, then the
     loss (lib/emloss). loss: line = dielectric and conductor added per port's
     uniform section; deck = dielectric poles in the deck (stubs and resonators
-    lose too), the conductor added per section; none."""
+    lose too), the conductor added per section; none.
+    cross_check="palace" solves the same deck's geometry by FEM (lib/empalace)
+    and adds the verdict as res["cross_check"]. Palace's deck is lossless, so
+    the verdict reads openEMS's S from before the loss; a deck with dielectric
+    poles has no such S, so loss="deck" with a cross-check is refused."""
+    if cross_check and loss == "deck":
+        raise ValueError("--cross-check compares lossless solves; --loss deck puts loss "
+                         "in the openEMS deck: use --loss line or none")
     from lib import emboard as eb
     geo = eb.extract(pcb, region, parts)
     kw = {}
@@ -651,6 +664,7 @@ def board_study(pcb, region, ports, parts=None, f_max=6e9, f_min=None, points=20
                        fine=fine, refine=refine, **kw)
     S, freqs = res.pop("S"), res["freqs"]
     n = len(res["ports"])
+    lossless = S
     res["loss"] = {"model": "none (--loss none): the S of lossless metal and dielectric"}
     if loss != "none":
         from lib import geom as G
@@ -669,6 +683,21 @@ def board_study(pcb, region, ports, parts=None, f_max=6e9, f_min=None, points=20
                                        + _loss_comments(res["loss"]))
     res["quality"] = _quality(freqs, {j: [[s[i][j] for i in range(n)] for s in S] for j in range(n)}, n)
     res.update(script=SCRIPT, cmd="board", source=str(pcb))
+    if cross_check:
+        from lib import empalace, sparam
+        kw = {"fine": fine} if fine else {}
+        other = empalace.study(geo, ports, f_max, f_min, points, symmetric=symmetric,
+                               keep=str(Path(keep) / "palace") if keep else None, refine=cross_refine,
+                               order=cross_order, np_=cross_np, timeout=cross_timeout, **kw)
+        cols = [r["excite"] for r in other["runs"]]
+        pal_q = sparam.check(freqs, other["S"])
+        verdict = empalace.compare(freqs, lossless, other.pop("S"), columns=None if symmetric else cols)
+        verdict["setting"] = {"refine": cross_refine, "order": cross_order, "compared": "lossless S, before any added loss"}
+        verdict["palace"] = {k: other[k] for k in ("runs", "z_feed", "eps_eff_feed", "seconds")}
+        verdict["palace"]["quality_ok"] = pal_q["ok"]
+        verdict["estimator_check"] = empalace.compare(freqs, other.pop("S_lumped"), lossless,
+                                                      names=("Palace lumped", "openEMS"))["terms"]
+        res["cross_check"] = verdict
     return res
 
 
@@ -1030,6 +1059,12 @@ def main(argv=None) -> int:
     bd.add_argument("--out")
     bd.add_argument("--keep")
     bd.add_argument("--deck-only")
+    bd.add_argument("--cross-check", choices=["palace"],
+                    help="solve it by a second solver too; exit 1 when they disagree")
+    bd.add_argument("--cross-refine", type=float, default=1.5)
+    bd.add_argument("--cross-order", type=int, default=3)
+    bd.add_argument("--cross-np", type=int, default=4)
+    bd.add_argument("--cross-timeout", type=float, default=3600)
     bd.add_argument("--json", action="store_true")
     _loss_args(bd, ("line", "deck", "none"))
     args = ap.parse_args(argv)
@@ -1043,7 +1078,8 @@ def main(argv=None) -> int:
                           args.f_max, args.f_min, args.points, args.symmetric, args.fine,
                           args.keep, args.deck_only, args.refine, args.refine_max,
                           not args.no_converge, args.loss, args.foil, args.roughness,
-                          _lengths(args.loss_length))
+                          _lengths(args.loss_length), args.cross_check, args.cross_refine,
+                          args.cross_order, args.cross_np, args.cross_timeout)
         ts = res.pop("_touchstone", None)
         if args.touchstone and ts:
             Path(args.touchstone).write_text(ts)
@@ -1071,14 +1107,28 @@ def main(argv=None) -> int:
         if not args.json or not q["ok"]:
             print(sparam.summary({**q, "file": args.touchstone or "board"}),
                   file=sys.stdout if q["ok"] else sys.stderr)
+        cc = res.get("cross_check")
+        if cc and not args.json:
+            print(f"cross-check {' against '.join(cc['solvers'])}: {'AGREE' if cc['ok'] else 'DISAGREE'} "
+                  f"(limits: rms |dS| {cc['limits']['rms_ds']}, notch {cc['limits']['notch_pct']}%; "
+                  f"Palace refine {cc['setting']['refine']:g} order {cc['setting']['order']}; lossless S; "
+                  f"Palace's own sparam check {'ok' if cc['palace']['quality_ok'] else 'FAILS'})")
+            for name, t in cc["terms"].items():
+                nt = t.get("notch")
+                extra = (f", notch {nt[cc['solvers'][0]]['f'] / 1e9:.4f} / {nt[cc['solvers'][1]]['f'] / 1e9:.4f} GHz"
+                         if nt else "")
+                print(f"  {name}: rms |dS| {t.get('rms_ds_off_notch', t['rms_ds'])}, worst {t['max_ds']}{extra}")
+        for why in (cc or {}).get("disagree", []):
+            print(f"cross-check: {why}", file=sys.stderr)
+        ok = q["ok"] and (not cc or cc["ok"])
         conv = res.get("convergence")
         if conv is None:
             print("mesh convergence: not run (--no-converge): this S has not been shown to "
                   "settle under refinement", file=sys.stderr)
-            return 0 if q["ok"] else 1
+            return 0 if ok else 1
         if not args.json or not conv["ok"]:
             print(_convergence_summary(conv), file=sys.stdout if conv["ok"] else sys.stderr)
-        return 0 if q["ok"] and conv["ok"] else 1
+        return 0 if ok and conv["ok"] else 1
 
     if args.cmd == "planar":
         geo = json.loads(Path(args.geom).read_text())

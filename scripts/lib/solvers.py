@@ -159,6 +159,36 @@ def command(tool: str, args: list[str], root: Path | None = None) -> tuple[list[
     return [str(ld), "--library-path", _libpath(t), str(exe), *args], env
 
 
+def python_command(script, args, root: Path | None = None) -> tuple[list[str], dict]:
+    """argv and environment that run a script under the tree's own python
+    (3.12, with gmsh's Python API, which hwde's venv doesn't carry). The script
+    finds libgmsh through HWDE_GMSH_LIBDIR: gmsh.py's own search can't, through
+    the loader."""
+    t = root or toolchain_root()
+    if t is None:
+        raise SolverError("no IIC-OSIC-TOOLS tree (set HWDE_EDA_TOOLCHAIN)")
+    env = dict(os.environ)
+    env.update({"PYTHONHOME": str(t / "usr"), "PYTHONPATH": str(t / "usr/lib/python3/dist-packages"),
+                "HWDE_GMSH_LIBDIR": str(t / "usr/lib/x86_64-linux-gnu"), "PYTHONNOUSERSITE": "1"})
+    ld = t / "lib64/ld-linux-x86-64.so.2"
+    return [str(ld), "--library-path", _libpath(t), str(t / "usr/bin/python3"), str(script), *map(str, args)], env
+
+
+def mpi_command(tool: str, args: list[str], np: int, root: Path | None = None) -> tuple[list[str], dict]:
+    """argv and environment for `np` ranks of `tool`, each started through the
+    image's loader, by the image's mpirun (itself through the loader)."""
+    t = root or toolchain_root()
+    argv, env = command(tool, args, t)
+    for k in ("OMPI_MCA_ess_singleton_isolated", "OMPI_MCA_plm"):
+        env.pop(k, None)
+    env["OMPI_MCA_rmaps_base_oversubscribe"] = "1"
+    env["OMPI_MCA_hwloc_base_binding_policy"] = "none"
+    env["OMP_NUM_THREADS"] = "1"
+    ld = t / "lib64/ld-linux-x86-64.so.2"
+    return [str(ld), "--library-path", _libpath(t), str(t / "usr/bin/orterun"), "-np", str(np),
+            "--oversubscribe", *argv], env
+
+
 def codemodels(root: Path | None = None) -> list[Path]:
     """The XSPICE code model libraries (*.cm) in the tree's ngspice."""
     t = root or toolchain_root()

@@ -171,6 +171,30 @@ machine.
   ε_eff where βl is small (under ~70°).
   The default cell is min(w/5, h/2.5, λ/40) across the signal: at h/1.5 a
   w/h = 3.8 line read ε_eff 4.1 against 3.55, at h/2.5 3.60.
+  **Second solver (#616).** `--cross-check palace` solves the same geometry
+  and planes by Palace FEM (`lib/empalace.py`, `lib/empalace_mesh.py`) with
+  lumped ports at the deck's feed ends, reading V and I at the deck's own probe
+  planes through `emboard.feed_lines` and `feed_vi`. It exits 1 on rms |dS| over
+  0.05 off a notch, or any dip more than 1 % apart. Both solves are lossless:
+  the verdict reads openEMS's S from before the added loss, and `--loss deck`
+  with a cross-check is refused. The default is refine 1.5, order 3, the first
+  setting with F5 shown settled; it took 4.5 GB and 21 min at 4 ranks, and two
+  such runs were killed when all `heavy` jobs together hit their shared 12 GB
+  cap, so expect to retry. rf-kit F5, against openEMS's 2.4891 GHz:
+  | Palace | S21 notch | S11 dip off | rms abs(dS) S11 / S21 | verdict |
+  |---|---|---|---|---|
+  | refine 1.5, order 2 | 2.4721 | 1.32 % | 0.022 / 0.018 | DISAGREE |
+  | refine 2, order 2 | 2.4860 | 1.10 % | 0.019 / 0.014 | DISAGREE |
+  | refine 1, order 3 | 2.4869 | 0.64 % | 0.016 / 0.012 | AGREE |
+  | refine 1.5, order 3 | 2.4874 | 0.78 % | 0.016 / 0.012 | AGREE |
+  The thru passes its limits at refine 1.5 and fails Z0 at refine 1 (4.2 % at
+  order 3). Known gaps: Palace's feed Z on the thru reads low and rises with
+  refinement (48.4, 48.8, 49.3 ohm at order 2, against 50 quasi-static), about
+  half of F5's S11 |dS| goes when each solver is renormalised to its own line Z,
+  and the F5 run at the default fails `sparam check` slightly (sigma_max 1.0023
+  under 0.63 GHz, where `fit_feed` holds its value) while Palace's own lumped S
+  passes. The output prints that check beside the verdict.
+
   **Mesh convergence (#616).** `sim_solve board` refines the mesh by 1.5 until
   two runs in a row agree (`emboard.study_converged`): largest |dS| 0.05, a
   transmission dip within 0.5 %, from f_max/8 up. It stops at `--refine-max`
