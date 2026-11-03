@@ -501,3 +501,14 @@ def test_run_to_tail_stops_when_the_next_pass_wont_fit(monkeypatch, tmp_path):
     rec = ev._run_to_tail(C(), {}, tmp_path, 300.0, 1)
     assert not rec["rang_down"]
     assert 1 <= len(calls) <= 4 and all(t <= 300.0 for t in calls)
+
+
+def test_feed_posts_sit_exactly_on_mesh_lines():
+    """A zero-width wire even 1e-7 mm off a line is an "unused primitive" in
+    openEMS: the post silently isn't there."""
+    csx, _, _ = ev.build(*ev.synth(stub_spec()), 25e9, 0, fine=0.12)
+    posts = [b for _, attrs, _, boxes in csx.props if "feed_posts" in str(attrs) for b in boxes]
+    assert len(posts) > 2
+    for _, p1, p2 in posts:
+        assert p1[0] in csx.lines["x"] and p1[1] in csx.lines["y"]
+        assert p1[2] in csx.lines["z"] and p2[2] in csx.lines["z"]

@@ -319,7 +319,7 @@ def plane_stitch(csx, ctx, feed_len: float, refine: float = 1.0) -> int:
         step = max(1, int(max(ctx.lam_min / 12, 0.5) / dfeed))
         j = 0
         while j * dfeed * step <= feed_len + 1e-9:
-            along = p.plane + p.sign * j * dfeed * step
+            along = round(p.plane + p.sign * j * dfeed * step, 6)      # merge_lines rounds; openEMS drops a wire 1e-7 off a line
             for side in (-1, 1):
                 acr = p.across + side * off
                 ctx.pinned["xy"[1 - p.axis]].append(acr)
