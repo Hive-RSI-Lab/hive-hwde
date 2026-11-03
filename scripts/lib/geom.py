@@ -402,6 +402,49 @@ def _pad_polygon(shape: str, w: float, h: float, rratio: float,
     return affinity.translate(g, center[0], center[1])
 
 
+def _copper_prim(n):
+    """One copper graphic's shape in its own frame: a pad primitive (gr_*) or a
+    footprint graphic (fp_*), filled or stroked. None when it isn't one."""
+    kind = _head(n)[3:]
+    wn = _kid(n, "width")
+    st = _kid(n, "stroke")
+    if wn is None and st is not None:
+        wn = _kid(st, "width")
+    sw = _nums(wn)[0] if wn is not None and _nums(wn) else 0.0
+    fill = _kid(n, "fill")
+    filled = fill is not None and any(_tok(x) in ("yes", "solid", "true") for x in fill[1:])
+    try:
+        if kind == "poly":
+            pts = _pts(_kid(n, "pts"))
+            if len(pts) >= 3:
+                g = Polygon(pts)
+                if not g.is_valid:
+                    g = g.buffer(0)
+                if filled or sw <= 0:
+                    return g.buffer(sw / 2.0) if sw > 0 else g
+                return g.exterior.buffer(sw / 2.0)
+        elif kind == "rect":
+            a, b = _nums(_kid(n, "start")), _nums(_kid(n, "end"))
+            g = box(min(a[0], b[0]), min(a[1], b[1]), max(a[0], b[0]), max(a[1], b[1]))
+            return g.buffer(sw / 2.0, join_style="mitre") if filled or sw <= 0 \
+                else g.exterior.buffer(sw / 2.0)
+        elif kind == "circle":
+            c, e = _nums(_kid(n, "center")), _nums(_kid(n, "end"))
+            r = math.hypot(e[0] - c[0], e[1] - c[1])
+            g = Point(c[0], c[1]).buffer(r, quad_segs=_QUAD_SEGS)
+            return g.buffer(sw / 2.0) if filled or sw <= 0 else g.exterior.buffer(sw / 2.0)
+        elif kind == "line":
+            a, b = _nums(_kid(n, "start")), _nums(_kid(n, "end"))
+            return LineString([a[:2], b[:2]]).buffer(max(sw, 1e-3) / 2.0)
+        elif kind == "arc":
+            a, m, b = (_nums(_kid(n, k)) for k in ("start", "mid", "end"))
+            return LineString(_arc_points(tuple(a[:2]), tuple(m[:2]), tuple(b[:2]))) \
+                .buffer(max(sw, 1e-3) / 2.0)
+    except (TypeError, IndexError, ValueError):
+        pass
+    return None
+
+
 def _custom_pad(pad, w: float, h: float):
     """A custom pad's copper in its own frame: the anchor (rect or circle,
     `size`) unioned with its primitives - gr_poly (filled, or its outline
@@ -417,46 +460,8 @@ def _custom_pad(pad, w: float, h: float):
     parts = [Point(0, 0).buffer(w / 2.0, quad_segs=_QUAD_SEGS) if anchor == "circle"
              else box(-w / 2, -h / 2, w / 2, h / 2)]
     for n in prims[1:]:
-        if not _is_node(n):
-            continue
-        kind = _head(n)
-        wn = _kid(n, "width")
-        st = _kid(n, "stroke")
-        if wn is None and st is not None:
-            wn = _kid(st, "width")
-        sw = _nums(wn)[0] if wn is not None and _nums(wn) else 0.0
-        fill = _kid(n, "fill")
-        filled = fill is not None and any(_tok(x) in ("yes", "solid", "true") for x in fill[1:])
-        try:
-            if kind == "gr_poly":
-                pts = _pts(_kid(n, "pts"))
-                if len(pts) >= 3:
-                    g = Polygon(pts)
-                    if not g.is_valid:
-                        g = g.buffer(0)
-                    if filled or sw <= 0:
-                        parts.append(g.buffer(sw / 2.0) if sw > 0 else g)
-                    else:
-                        parts.append(g.exterior.buffer(sw / 2.0))
-            elif kind == "gr_rect":
-                a, b = _nums(_kid(n, "start")), _nums(_kid(n, "end"))
-                g = box(min(a[0], b[0]), min(a[1], b[1]), max(a[0], b[0]), max(a[1], b[1]))
-                parts.append(g.buffer(sw / 2.0, join_style="mitre") if filled or sw <= 0
-                             else g.exterior.buffer(sw / 2.0))
-            elif kind == "gr_circle":
-                c, e = _nums(_kid(n, "center")), _nums(_kid(n, "end"))
-                r = math.hypot(e[0] - c[0], e[1] - c[1])
-                g = Point(c[0], c[1]).buffer(r, quad_segs=_QUAD_SEGS)
-                parts.append(g.buffer(sw / 2.0) if filled or sw <= 0 else g.exterior.buffer(sw / 2.0))
-            elif kind == "gr_line":
-                a, b = _nums(_kid(n, "start")), _nums(_kid(n, "end"))
-                parts.append(LineString([a[:2], b[:2]]).buffer(max(sw, 1e-3) / 2.0))
-            elif kind == "gr_arc":
-                a, m, b = (_nums(_kid(n, k)) for k in ("start", "mid", "end"))
-                parts.append(LineString(_arc_points(tuple(a[:2]), tuple(m[:2]), tuple(b[:2])))
-                             .buffer(max(sw, 1e-3) / 2.0))
-        except (TypeError, IndexError, ValueError):
-            continue
+        if _is_node(n):
+            parts.append(_copper_prim(n))
     return _union(parts)
 
 
@@ -662,6 +667,9 @@ class BoardGeom:
         # none is not in _pads): route_auto keeps the router off them and
         # stitch_vias keeps its drills hole-to-hole clear of them
         self.npth: list[Pad] = []
+        # copper a footprint draws outside its pads, e.g. a net tie's bridge:
+        # {"ref", "layer", "shape", "nets"}, nets being those of its pads
+        self.fp_copper: list[dict] = []
         self.footprints: dict[str, dict] = {}  # ref -> {"lib", "value", "props"}
         self._parse_tracks(root)
         self._parse_vias(root)
@@ -808,8 +816,25 @@ class BoardGeom:
             # its LCSC/MPN props); the last duplicate ref wins
             self.footprints[ref] = {"lib": lib, "value": value, "props": props,
                                     "at": (fx, fy), "angle": fangle}
+            first_pad = len(self._pads)
             for pad in _kids(fp, "pad"):
                 self._add_pad(pad, fx, fy, fangle, ref)
+            nets = frozenset(p.net for p in self._pads[first_pad:] if p.net)
+            self._add_fp_copper(fp, fx, fy, fangle, ref, nets)
+
+    def _add_fp_copper(self, fp, fx, fy, fangle, ref, nets):
+        c, s = _rot(1.0, 0.0, -fangle)
+        for kind in ("fp_poly", "fp_rect", "fp_circle", "fp_line", "fp_arc"):
+            for n in _kids(fp, kind):
+                layer = _kid(n, "layer")
+                ln = _strs(layer)[0] if layer is not None and _strs(layer) else None
+                if ln not in self._copper_set:
+                    continue
+                g = _copper_prim(n)
+                if g is not None and not g.is_empty:
+                    self.fp_copper.append({
+                        "ref": ref, "layer": ln, "nets": nets,
+                        "shape": affinity.affine_transform(g, [c, -s, s, c, fx, fy])})
 
     def _add_pad(self, pad, fx, fy, fangle, ref):
         """Back-side (flipped) footprints need NO special handling: pcbnew

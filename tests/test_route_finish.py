@@ -6,6 +6,7 @@ import math
 import sys
 from pathlib import Path
 
+import pytest
 from shapely.geometry import LineString, Point
 
 REPO = Path(__file__).resolve().parents[1]
@@ -127,6 +128,42 @@ def test_routes_around_a_wall_on_one_layer(tmp_path):
         ang = math.degrees(math.atan2(dy, dx)) % 45
         assert min(ang, 45 - ang) < 1e-6            # 0/45/90 only
     route_edit.validate_ops({"version": 1, "ops": job["ops"]})
+
+
+def _tie(ref, at, n1, n2):
+    """A net tie whose bridge runs 10 mm either side of it, along local x."""
+    return (f'  (footprint "t:{ref}" (layer "F.Cu") (at {at})\n'
+            f'    (property "Reference" "{ref}" (at 0 0 0))\n'
+            '    (fp_poly (pts (xy -10 -0.25) (xy 10 -0.25) (xy 10 0.25) (xy -10 0.25))\n'
+            '      (stroke (width 0) (type solid)) (fill yes) (layer "F.Cu"))\n'
+            f'    (pad "1" smd circle (at -10 0) (size 0.5 0.5) (layers "F.Cu") (net "{n1}"))\n'
+            f'    (pad "2" smd circle (at 10 0) (size 0.5 0.5) (layers "F.Cu") (net "{n2}")))\n')
+
+
+def test_a_net_tie_bridge_is_a_wall_to_other_nets(tmp_path):
+    # rotated 90: the bridge stands across the straight line from U1 to U2
+    body = _pad("U1", 5, 15, "SIG") + _pad("U2", 25, 15, "SIG")
+    body += _tie("NT1", "15 11 90", "GND", "+3V3")
+    pcb = _board(tmp_path, body)
+    bg = geom.BoardGeom.from_file(pcb)
+    wall = bg.fp_copper[0]["shape"]
+    assert wall.bounds == pytest.approx((14.75, 1, 15.25, 21))
+    _, jobs = _plan(pcb, [_pair("SIG", (5, 15), (25, 15))], via_cost_mm=30, margin=8)
+    job = jobs[0]
+    assert job["status"] == "routed"
+    for op in _tracks(job, "F.Cu"):
+        seg = LineString([op["start"], op["end"]])
+        assert seg.distance(wall) >= op["width"] / 2 + 0.15 - 1e-6
+
+
+def test_a_net_tie_bridge_does_not_block_its_own_nets(tmp_path):
+    body = _pad("U1", 5, 15, "SIG") + _pad("U2", 25, 15, "SIG")
+    body += _tie("NT1", "15 11 90", "SIG", "GND")
+    pcb = _board(tmp_path, body)
+    _, jobs = _plan(pcb, [_pair("SIG", (5, 15), (25, 15))], via_cost_mm=30, margin=8)
+    assert jobs[0]["status"] == "routed"
+    assert jobs[0]["vias"] == 0
+    assert sum(math.dist(op["start"], op["end"]) for op in _tracks(jobs[0])) < 21
 
 
 def test_vias_under_a_full_wall(tmp_path):
