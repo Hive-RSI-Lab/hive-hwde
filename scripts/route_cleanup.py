@@ -313,10 +313,12 @@ def _endpoint_free(seg: Seg, p, segs, vias, pads, fillfn, arcs, tol) -> bool:
     return not _fill_touches(fillfn, seg.net, seg.layer, p, tol)
 
 
-def _via_keep(v: ViaItem, segs, pads, fillfn, tol) -> bool:
+def _via_keep(v: ViaItem, segs, pads, fillfn, tol, vias=()) -> bool:
     """Keep a via if it sits in same-net fill on any spanned layer or joins
-    2+ same-net items (tracks/pads); otherwise it has a free end. Track
-    contact is copper overlap (barrel + track half-width, T6/V13 fix)."""
+    2+ same-net items (tracks/pads/vias); otherwise it has a free end. Track
+    contact is copper overlap (barrel + track half-width, T6/V13 fix). An
+    HDI stack is several vias at one spot, each touching one track at most,
+    so a via sharing a layer with this one counts as an item it joins."""
     for layer in v.layers:
         if _fill_touches(fillfn, v.net, layer, v.at, tol):
             return True
@@ -332,6 +334,12 @@ def _via_keep(v: ViaItem, segs, pads, fillfn, tol) -> bool:
     for pd in pads:
         if (pd.net == v.net and set(pd.layers) & set(v.layers)
                 and pd.poly.distance(pt) <= r):
+            contacts += 1
+            if contacts >= 2:
+                return True
+    for o in vias:
+        if (o is not v and o.net == v.net and set(o.layers) & set(v.layers)
+                and math.dist(o.at, v.at) <= r + o.size / 2.0):
             contacts += 1
             if contacts >= 2:
                 return True
@@ -353,7 +361,8 @@ def find_dangling(segs, vias, pads, fillfn, arcs=(), tol=TOL,
             or _endpoint_free(s, s.b, alive_s, alive_v, pads, fillfn, arcs,
                               tol))]
         drop_v = [v for v in alive_v
-                  if v.uuid and not _via_keep(v, alive_s, pads, fillfn, tol)]
+                  if v.uuid and not _via_keep(v, alive_s, pads, fillfn, tol,
+                                              alive_v)]
         if not drop_s and not drop_v:
             break
         ds = {id(x) for x in drop_s}

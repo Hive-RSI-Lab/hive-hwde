@@ -114,6 +114,26 @@ def test_via_joining_two_track_layers_kept():
     assert gone_s == [] and gone_v == []
 
 
+def test_stacked_vias_joining_two_track_layers_kept():
+    # HDI stack: F.Cu track, F-In1 and In1-In2 micro vias, In2 track
+    pads = [PD((0, 0), layers=("F.Cu",)), PD((4, 0), layers=("In2.Cu",))]
+    segs = [S("sf", (0, 0), (2, 0), layer="F.Cu"),
+            S("si", (2, 0), (4, 0), layer="In2.Cu")]
+    vias = [V("v1", (2, 0), layers=("F.Cu", "In1.Cu")),
+            V("v2", (2, 0), layers=("In1.Cu", "In2.Cu"))]
+    gone_s, gone_v = rcl.find_dangling(segs, vias, pads, EMPTY)
+    assert gone_s == [] and gone_v == []
+
+
+def test_stack_with_a_free_end_is_removed():
+    pads = [PD((0, 0), layers=("F.Cu",))]
+    segs = [S("sf", (0, 0), (2, 0), layer="F.Cu")]
+    vias = [V("v1", (2, 0), layers=("F.Cu", "In1.Cu")),
+            V("v2", (2, 0), layers=("In1.Cu", "In2.Cu"))]
+    gone_s, gone_v = rcl.find_dangling(segs, vias, pads, EMPTY)
+    assert sorted(gone_v) == ["v1", "v2"] and gone_s == ["sf"]
+
+
 def test_via_with_single_track_and_no_fill_removed():
     pads = [PD((0, 0))]
     segs = [S("s1", (0, 0), (2, 0))]
