@@ -259,7 +259,7 @@ machine.
   | series R vs FastHenry (live) | 1 kHz: the two Rdc's exactly; 10 MHz +2%, 100 MHz −10% | 1%, 15% |
   | vna-verify thru, dielectric vs its bands.py (no openEMS) | within 0.6%; rough copper adds 0.27 dB to 0.47 dB at 4.4 GHz on 40 mm | 2% |
   | add_line_loss on a lossless line's S vs the lossy line's | 1e-15 | 1e-12 |
-  | the two ways on a 30 mm openEMS thru, tan δ 0.02, 0.3–6 GHz (live): poles in the deck vs add_line_loss | within 3% to about 3 GHz, +8.2% at 6 GHz (0.04 dB); the pole fit is about 1% of it, the rest isn't traced | 10% |
+  | the two ways on a 30 mm openEMS thru, tan δ 0.02, 0.3–6 GHz (live): poles in the deck vs add_line_loss | +8.2% at 6 GHz (0.04 dB), the worst point; 49 of 51 points within 8%; the pole fit is about 1% of it, the rest isn't traced | 10% |
   | a conductivity in the same deck at 3 GHz (live) | matches the line at 3 GHz; flat, so about 10× too much at 300 MHz (0.26 vs 0.027 dB) | 5% |
   | `sim_solve board` end to end on that thru (live) | `sparam check` passes with the loss on; 0.66 dB at 6 GHz | must pass |
   | kb/em-solvers' 3.46 dB/m, same deck rerun with and without tan δ | 0.243 dB at 1 GHz = 3.04 dB/m over the 80 mm between its planes vs 3.01; the 3.46 divided by 70 mm | explained |
