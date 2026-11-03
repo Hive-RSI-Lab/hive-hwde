@@ -246,6 +246,7 @@ class Item:
     hole: object = None    # drill extent polygon, or None
     conn: int = -1         # route_finish connection that added it
     uuid: str | None = None  # a board track or via route_finish may rip
+    tied: frozenset = frozenset()  # nets this copper may touch (a net tie's)
 
 
 class Obstacles:
@@ -268,6 +269,10 @@ class Obstacles:
             items.append(Item(p.net or "", frozenset(p.layers) & cu, p.poly,
                               0.0, dp if dp is not None and not dp.is_empty
                               else None))
+        # DRC sees this copper as netless, so a track through it is a short
+        for c in bg.fp_copper:
+            items.append(Item("", frozenset({c["layer"]}), c["shape"], 0.0,
+                              tied=c["nets"]))
         self.items = items
         self.tree = STRtree([shapely.envelope(
             it.shape if it.hole is None else shapely.union(it.shape, it.hole))
@@ -361,7 +366,7 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
 
     soft = obs.soft_board
     for it in obs.near(win):
-        other = it.net != net
+        other = it.net != net and net not in it.tied
         if other and soft is not None and it.uuid and it.net not in soft:
             # crossing it means ripping it: passable, at a price
             on = [k for k, layer in enumerate(layers) if layer in it.layers]
@@ -485,7 +490,7 @@ def _span_moves(obs, rules: Rules, net: str, layers: list, win, args, K: int,
         for it in obs.near(win):
             if not on & set(it.layers):
                 continue
-            other = it.net != net
+            other = it.net != net and net not in it.tied
             if other:
                 hit = _mask(it.shape, it.half + max(
                     vr + rules.clr(net, it.net),
