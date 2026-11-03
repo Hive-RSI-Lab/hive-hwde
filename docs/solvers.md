@@ -457,12 +457,26 @@ Three things decided the numbers:
   run whose last tenth is over 1e-3 of its peak reruns for a length extrapolated
   from its decay.
 
-**Not reproduced: TI's AN043 IFA.** On TI's 15.2 x 30 mm ground, 1.6 mm FR4, er
-4.4, S11 bottoms at -7.4 dB at 2.291 GHz (0.25 mm mesh), -8.2 dB at 2.309 GHz
-(0.17 mm), and is -5.5 dB (16+j10.5 ohm) at 2.40 GHz, against TI's match across
-2.4-2.48 GHz. An independent deck landed at 2.295 GHz, which points to the
-assumptions over the code: AN043 states no thickness. Not shown either way. Do
-not read this deck's IFA tuning as a calibrated number yet.
+**TI's AN043 IFA tunes only on a thinner board.** Same copper, TI's 15.2 x 30 mm
+ground, er 4.4, lossless, against TI's match across 2.4-2.48 GHz:
+
+| board | mesh | S11 minimum | -10 dB band |
+|---|---|---|---|
+| 1.6 mm | 0.25 / 0.17 mm | -7.4 dB at 2.291 GHz / -8.2 dB at 2.309 GHz | none |
+| 1.0 mm | 0.25 mm | -10.4 dB at 2.389 GHz | 2.377-2.413 GHz |
+| 0.8 mm | 0.25 / 0.17 mm | -12.7 dB at 2.438 GHz / -14.4 dB at 2.456 GHz | 2.395-2.487 / 2.401-2.517 GHz |
+
+This is a fit, not a passed known answer: AN043 states no thickness, 0.8 mm is
+the value tried that works, and the search for TI's real board found none. TI's
+dongle is described as 4-layer, so its ground may also not sit a full board below
+the antenna. The tuning still moves about 0.7% between these meshes, so read it
+to about 20 MHz. Copying this antenna onto a plain 1.6 mm board puts it well below
+the band, which is what rf-kit's A9 coupon is there to measure.
+
+Real board, rf-kit A9 (`--feed` between the feed and B.Cu, past the ground edge,
+with loss, 1.53 mm, er 4.5, tan d 0.02): 2.260 / 2.248 GHz at 0.25 / 0.17 mm (0.5%,
+converged), S11 -9.8 dB, efficiency 0.85 and Dmax 2.14 dBi at 2.45 GHz. A prediction
+until the coupon is measured; nothing has compared it with hardware.
 
 `check_antenna`'s `pcb_antennas` row (`reference/constraints_schema.md`) judges
 the copper itself: keep-out on every layer, feed and short on the copper, ground

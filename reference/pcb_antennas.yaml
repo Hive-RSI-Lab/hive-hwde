@@ -6,7 +6,7 @@ antennas:
   ti-an043:
     source: "TI AN043 (SWRA117D) meandered IFA, 2.4 GHz"
     verified: true    # table 1 and figure 3 re-read from swra117d.pdf, 2026-11-02 (a3f48)
-    note: "TI asks for the same PCB thickness and material; the note does not state them (readme in the CC2511 reference design)"
+    note: "TI asks for the same PCB thickness and material; the note does not state them (readme in the CC2511 reference design). sim_solve antenna tunes it to the band at 0.8 mm FR4 and about 140 MHz low at 1.6 mm (docs/solvers.md)"
     band_hz: [2.4e9, 2.4835e9]
     ground_mm: [15.2, 30.0]
     anchor: [3.05, 5.7]
