@@ -462,6 +462,22 @@ def test_live_palace_driven_agrees_with_openems(tmp_path):
             assert abs(pal["s21_db"][i] - a[i]) < 1.0, f"{f} GHz"
 
 
+@live
+def test_live_launch_reads_a_matched_coax_and_a_passive_launch():
+    spec = ev.LaunchSpec(stack=ev.stack_named("JLC04161H-1080B"), layer="F.Cu", w=0.4544, pad_w=1.2, pad_l=4.8, pad_in=2.7,
+                         gap=0.6, antipad=0.35, gnd_y=2.55, run=7.0)
+    res = ev.launch_study(spec, 6e9, f_min=2e8, points=59, threads=3, timeout=1800)
+    assert all(r["rang_down"] for r in res["runs"])
+    assert all(r["unused_prims"] == 0 for r in res["runs"])
+    for z in res["z_coax"][len(res["z_coax"]) // 4:]:
+        assert z.real == pytest.approx(50.0, rel=0.15)      # nominal; its staircase reads high
+    for f, s in zip(res["freqs"], res["S"]):
+        lost = 1 - abs(s[0][0]) ** 2 - abs(s[1][0]) ** 2
+        assert -0.02 < lost < 0.1, f"{f / 1e9} GHz"          # passive, and little leaves the walls
+        assert abs(s[1][0]) > 0.9, f"{f / 1e9} GHz"
+        assert abs(s[0][0]) < 0.2, f"{f / 1e9} GHz"
+
+
 def test_planes_run_into_the_boundary_but_a_board_edge_stays_open():
     # A plane that ends in open edges a few mm from the via is a patch
     # resonator: the deck rang for ns at a frequency set by its own region.
