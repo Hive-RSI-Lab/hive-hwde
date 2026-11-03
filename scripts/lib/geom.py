@@ -311,7 +311,8 @@ class Stackup:
     (stackup) block when present, else documented FR4 defaults (assumed=True)."""
     copper_layers: list[str]
     total_thickness: float
-    dielectrics: list[dict]  # per gap: {above, below, height, epsilon_r}
+    dielectrics: list[dict]  # per gap: {above, below, height, epsilon_r, kind,
+                             # loss_tangent (None: not in the block), material}
     copper_thickness: dict[str, float]
     assumed: bool
     source: str
@@ -337,6 +338,17 @@ class Stackup:
         i, j = sorted((self.index(a), self.index(b)))
         gaps = self.dielectrics[i:j] or self.dielectrics
         return sum(d["epsilon_r"] for d in gaps) / len(gaps)
+
+    def tand_between(self, a: str, b: str) -> tuple[Optional[float], str]:
+        """(tan d, material) of the dielectric between two copper layers. tan d
+        is weighted by height, None when no gap carries one."""
+        i, j = sorted((self.index(a), self.index(b)))
+        gaps = [d for d in self.dielectrics[i:j] if d.get("loss_tangent") is not None]
+        h = sum(d["height"] for d in gaps)
+        if not gaps or h <= 0:
+            return None, ""
+        return (sum(d["height"] * d["loss_tangent"] for d in gaps) / h,
+                gaps[0].get("material") or "")
 
     def as_dict(self) -> dict:
         return {
@@ -528,10 +540,14 @@ def _build_stackup(root, copper_layers: list[str], total_thickness: float) -> St
             th = _kid(layer, "thickness")
             er = _kid(layer, "epsilon_r")
             ty = _kid(layer, "type")
+            lt = _kid(layer, "loss_tangent")
+            mat = _kid(layer, "material")
             entry = {
                 "height": _nums(th)[0] if th is not None and _nums(th) else 0.0,
                 "epsilon_r": _nums(er)[0] if er is not None and _nums(er) else _FR4_ER,
                 "type": (_strs(ty)[0] if ty is not None and _strs(ty) else ""),
+                "loss_tangent": _nums(lt)[0] if lt is not None and _nums(lt) else None,
+                "material": (_strs(mat)[0] if mat is not None and _strs(mat) else ""),
             }
             order.append((name, entry))
         # Walk copper-to-copper, summing dielectric sublayers between them.
@@ -540,6 +556,8 @@ def _build_stackup(root, copper_layers: list[str], total_thickness: float) -> St
         acc_h = 0.0
         acc_er: list[float] = []
         acc_ty: list[str] = []
+        acc_lt: list[tuple[float, float]] = []
+        acc_mat = ""
         for name, entry in order:
             if name in cu_names:
                 if cur is not None:
@@ -550,9 +568,12 @@ def _build_stackup(root, copper_layers: list[str], total_thickness: float) -> St
                         # is pressed, not a laminate bought whole)
                         "kind": ("core" if acc_ty and set(acc_ty) == {"core"}
                                  else "prepreg" if acc_ty else ""),
+                        "loss_tangent": (sum(h * v for h, v in acc_lt) / sum(h for h, _ in acc_lt)
+                                         if acc_lt and sum(h for h, _ in acc_lt) > 0 else None),
+                        "material": acc_mat,
                     })
                 cur = name
-                acc_h, acc_er, acc_ty = 0.0, [], []
+                acc_h, acc_er, acc_ty, acc_lt, acc_mat = 0.0, [], [], [], ""
                 if entry["height"] > 0:  # copper thickness from the block
                     cu_th[name] = entry["height"]
             else:
@@ -561,6 +582,9 @@ def _build_stackup(root, copper_layers: list[str], total_thickness: float) -> St
                     acc_er.append(entry["epsilon_r"])
                 if entry["type"] in ("core", "prepreg"):
                     acc_ty.append(entry["type"])
+                if entry["loss_tangent"] is not None:
+                    acc_lt.append((entry["height"], entry["loss_tangent"]))
+                acc_mat = acc_mat or entry["material"]
         if len(dielectrics) == n - 1:
             return Stackup(copper_layers, total_thickness, dielectrics, cu_th,
                            assumed=False, source="board (stackup)")

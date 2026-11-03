@@ -47,7 +47,10 @@
 # `epsilon_r_source: jlc_calculator_template`; the rest keep ASSUMED FR4
 # values (`epsilon_r_assumed: true`). loss_tangent is assumed on every FR-4
 # entry; the Rogers entries carry the datasheet's (RO4350B 0.0037 at 10 GHz)
-# and Rogers' design Dk (`epsilon_r_source: rogers_design_dk`).
+# and Rogers' design Dk (`epsilon_r_source: rogers_design_dk`). Every dielectric
+# row has a numeric loss_tangent, at 1 GHz except Rogers' at 10 GHz; KiCad's
+# stackup block has no field for the frequency, so lib/emloss.df_ref_hz reads
+# it from the material name. sim_solve's Djordjevic-Sarkar loss starts from it.
 #
 # CONTROLLED-IMPEDANCE geometry (width_mm / gap_mm) is COMPUTED from the
 # physical stackup by scripts/lib/impedance.py's 2D field solver (coated
