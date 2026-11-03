@@ -87,6 +87,11 @@ families:
   # from the side away from the pins
   - {family: pluggable_terminal, entry: horizontal, plug_mm: 15.0,
      match: '(KF2?|15)EDGR'}
+  # Staeubli 24.243 4 mm safety jack lying on the board: the bore is 7.5 mm up, so
+  # low parts don't block a plug, but a 4 mm plug and its lead still need a clear
+  # run (emc-lab LISN J2/J4 pointed 40 mm across the board at J1/J3).
+  - {family: jack_4mm, entry: horizontal, plug_mm: 40.0, mouth_tol_mm: 8.0,
+     match: '24\.243'}
   # vertical
   - {family: wire_to_board_top, entry: vertical,
      match: '(^|[^A-Z])BM?\d+B-|JST_.*VERTICAL|MOLEX_.*VERTICAL'}
@@ -101,4 +106,6 @@ families:
      match: 'CONSMA|SMA-SMD|SMA-TH_|BWSMA|SMA[-_](JACK|CONN|VERT)|COAXIAL'}
 
 # footprint-name regex -> mouth direction in the footprint's local frame
-mouth: {}
+mouth:
+  # the pads don't show it; the 3D model's bore is at local +X (LISN review B1)
+  '24\.243': '+x'

@@ -488,3 +488,24 @@ def test_xt60_is_a_mating_connector(tmp_path):
     assert "mating_faces_inward" in kinds
     good = _board(tmp_path, _xt60("J1", 13.2, 20), w=60, h=60)
     assert not _run(good)[0]
+
+
+def test_4mm_jack_is_judged_with_its_mouth_from_the_table(tmp_path):
+    """emc-lab LISN J2/J4 and emc-ref J5/J6: the 24.243 jack matched no family,
+    so its mouth into the board passed. Its pads don't show the mouth: the model's
+    bore is at local +x."""
+    table = matinglib.load_table()
+    for name in ("CONN-TH_24.243.1_RED", "CONN-TH_24.243.2"):
+        assert matinglib.family_of("x:" + name, table)["family"] == "jack_4mm"
+    tht = 'thru_hole circle'
+    lay = '"*.Cu"'
+    pads = (_pad("1", -3, 0, 3, 3, tht, lay).replace(" (layers", " (drill 2) (layers")
+            + _pad("2", 3, 0, 3, 3, tht, lay).replace(" (layers", " (drill 2) (layers"))
+    jack = lambda x, y, a: _fp("J1", "CONN-TH_24.243.1_RED", x, y, a, pads,
+                               cy=(-20, -6, 6, 6))
+    # rot 90 points the mouth at -y: nearest edge is +y, so it faces into the board
+    inward = _board(tmp_path, jack(15, 60, 90), w=90, h=70)
+    assert "mating_faces_inward" in {v["kind"] for v in _run(inward)[0]}
+    # the bore is 7.5 mm up, so a nose a few mm behind the edge still mates
+    good = _board(tmp_path, jack(15, 10, 90), w=90, h=70)
+    assert not _run(good)[0]
