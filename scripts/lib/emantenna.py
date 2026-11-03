@@ -286,10 +286,13 @@ def deck(geo: dict, feed, f0: float, fc: float, pattern=(), *, fine: float | Non
         zone = sbox(feed.x, feed.y, feed.x, feed.y).buffer(5 * fine)
     else:
         zone = allsig
+    cu = {"x": [], "y": []}
     for l, g in sig.items():
-        ex, ey, other = eb._thirds(g, fine, domain_box)
+        ex, ey, other, (kx, ky) = eb._thirds(g, fine, domain_box)
         m.edges["x"] += ex
         m.edges["y"] += ey
+        cu["x"] += kx
+        cu["y"] += ky
         m.fixed["x"] += [q[0] for q in other]
         m.fixed["y"] += [q[1] for q in other]
     zb = zone.bounds
@@ -357,7 +360,7 @@ def deck(geo: dict, feed, f0: float, fc: float, pattern=(), *, fine: float | Non
         lo, hi = dom[a]
         fixed = [v for v in m.fixed[a] if lo < v < hi]
         lines[a] = eb.mesh_axis(fixed, m.zones[a], lo, hi, fine, coarse, m.pinned[a], m.edges[a],
-                                min_step=MERGE * fine)
+                                min_step=MERGE * fine, cu_edges=sorted({round(e, 6) for e in cu[a]}))
     zfix = sorted(set(round(v, 6) for v in zl))
     zmin, zmax = zlo - out, zhi + out
     zgrow = eb.smooth_lines(eb.merge_lines(zfix + [zmin, zmax], fz / 1.6, zs), coarse)

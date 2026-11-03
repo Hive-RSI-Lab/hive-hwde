@@ -280,13 +280,20 @@ def smooth_lines(lines, max_step: float, ratio: float = 1.4) -> list[float]:
     return [round(v, 6) for v in out]
 
 
-def mesh_axis(fixed, fine_zones, lo, hi, fine, coarse, pinned=(), edges=(), min_step=None) -> list[float]:
+def mesh_axis(fixed, fine_zones, lo, hi, fine, coarse, pinned=(), edges=(), min_step=None, cu_edges=()) -> list[float]:
     """One axis: the fixed lines, uniform `fine` lines inside each fine
     zone (a, b), the domain ends, merged at min_step (default fine/3; pinned
     lines kept) and smoothed out to `coarse`. `edges` are the (a, b) cells of the thirds
     rule: a line inside one would put the conductor's edge in a cell of the
     wrong size, and the sheet takes the whole cell it starts in, so nothing
-    is added there."""
+    is added there. `cu_edges` are the conductor edges themselves. Where two
+    cells overlap (a width step closer than one cell), each one's lines fall
+    inside the other, and clearing both leaves one wide cell holding both
+    edges: a straight 50 ohm line on that mesh read eps_eff 3.9 instead of
+    2.9. So a cell's own line survives another cell unless it sits within
+    fine/6 of a conductor edge, and a cell still wider than `fine` with edges
+    in it is split at the middle of its widest stretch free of edges, if that
+    leaves min_step each side (the least cell sets the time step)."""
     vals = list(fixed) + [lo, hi]
     for a, b in fine_zones:
         a, b = max(a, lo), min(b, hi)
@@ -299,9 +306,26 @@ def mesh_axis(fixed, fine_zones, lo, hi, fine, coarse, pinned=(), edges=(), min_
 
     def clear(lines):
         pset = {round(p, 6) for p in pins}
-        return [v for v in lines if round(v, 6) in pset
+        spared = {v for v in keep if all(abs(v - e) >= fine / 6 for e in cu_edges)}
+        return [v for v in lines if round(v, 6) in pset or round(v, 6) in spared
                 or not any(a + 1e-6 < v < b - 1e-6 for a, b in edges)]
-    return clear(smooth_lines(clear(ls), coarse))
+
+    def split(lines):
+        out = sorted(lines)
+        for _ in range(1000):
+            for a, b in zip(out[:-1], out[1:]):
+                inside = sorted(e for e in cu_edges if a < e < b)
+                if not inside or b - a <= 1.1 * fine:
+                    continue
+                stops = [a] + inside + [b]
+                p, q = max(zip(stops[:-1], stops[1:]), key=lambda s: s[1] - s[0])
+                if q - p >= (2 * min_step if min_step else fine / 3):
+                    out = sorted(out + [round((p + q) / 2, 6)])
+                    break
+            else:
+                return out
+        return out
+    return split(clear(smooth_lines(clear(ls), coarse)))
 
 
 def _zones(vals, half) -> list[tuple[float, float]]:
@@ -411,15 +435,16 @@ def record_steps(lines: dict, f_max: float, er_max: float) -> int:
     return min(STEPS_MAX, math.ceil((pulse + RECORD_TRANSITS * trip) / dt))
 
 
-def _thirds(g, fine, region):
+def _thirds(g, fine, region, near=None):
     """Mesh lines for a signal conductor's edges by openEMS's thirds rule:
     no line on an axis-aligned edge, one fine/3 inside it and one 2 fine/3
     outside (a line on the edge overstates a sheet's width: a 50 ohm line
     read 48 ohm). Edges on the region's boundary (the port planes) are not
-    edges. Returns (x cells, y cells, vertices of the other edges), a cell
+    edges. With `near`, an edge outside that area is left out. Returns (x
+    cells, y cells, vertices of the other edges, (x edges, y edges)), a cell
     being the (low, high) lines around one edge."""
-    from shapely.geometry import Point
-    ex, ey, other = [], [], []
+    from shapely.geometry import LineString, Point
+    ex, ey, other, kx, ky = [], [], [], [], []
     rx, ry = (region[0], region[2]), (region[1], region[3])
     rings = []
     for part in (g.geoms if hasattr(g, "geoms") else [g]):
@@ -428,19 +453,23 @@ def _thirds(g, fine, region):
     d = min(fine / 10, 1e-3)
     for ring in rings:
         for (x0, y0), (x1, y1) in zip(ring[:-1], ring[1:]):
+            if near is not None and not near.intersects(LineString([(x0, y0), (x1, y1)])):
+                continue
             if abs(x1 - x0) < 1e-6 and abs(y1 - y0) > fine / 2:
                 if any(abs(x0 - r) < 1e-6 for r in rx):
                     continue
                 s_in = 1 if g.contains(Point(x0 + d, (y0 + y1) / 2)) else -1
                 ex.append(tuple(sorted((x0 + s_in * fine / 3, x0 - s_in * 2 * fine / 3))))
+                kx.append(x0)
             elif abs(y1 - y0) < 1e-6 and abs(x1 - x0) > fine / 2:
                 if any(abs(y0 - r) < 1e-6 for r in ry):
                     continue
                 s_in = 1 if g.contains(Point((x0 + x1) / 2, y0 + d)) else -1
                 ey.append(tuple(sorted((y0 + s_in * fine / 3, y0 - s_in * 2 * fine / 3))))
+                ky.append(y0)
             elif abs(x1 - x0) > 1e-6 and abs(y1 - y0) > 1e-6:
                 other += [(x0, y0), (x1, y1)]
-    return ex, ey, other
+    return ex, ey, other, (kx, ky)
 
 
 @dataclass
@@ -456,6 +485,7 @@ class _Ctx:
     zones: dict = field(default_factory=lambda: {"x": [], "y": []})
     pinned: dict = field(default_factory=lambda: {"x": [], "y": [], "z": []})
     edges: dict = field(default_factory=lambda: {"x": [], "y": []})  # thirds-rule cells
+    cu_edges: dict = field(default_factory=lambda: {"x": [], "y": []})  # the edges they hold
 
 
 def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None = None,
@@ -555,6 +585,7 @@ def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None 
         if thirds:
             ctx.edges["xy"[1 - p.axis]] += [(p.lo - 2 * fine / 3, p.lo + fine / 3),
                                             (p.hi - fine / 3, p.hi + 2 * fine / 3)]
+            ctx.cu_edges["xy"[1 - p.axis]] += [p.lo, p.hi]
         else:
             ctx.pinned["xy"[1 - p.axis]] += [p.lo, p.hi]
         ctx.zones["xy"[1 - p.axis]] += _zones([p.lo, p.hi], 2.5 * fine)
@@ -563,6 +594,7 @@ def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None 
     sig = unary_union([g for l, d in cu.items() for n, g in d.items()
                        if any(n == p.net and l == p.layer for p in ports)])
     near = sig.buffer(max(1.0, 4 * h_sig))
+    sig_layers = {p.layer for p in ports}
     for layer, nets in cu.items():
         for net, g in nets.items():
             is_sig = any(net == p.net and layer == p.layer for p in ports)
@@ -578,10 +610,14 @@ def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None 
                 elif hasattr(part, "coords"):
                     pts += list(part.coords)
             ex, ey = [], []
-            if is_sig and thirds:
-                cx, cy, pts = _thirds(g, fine, region)
+            # floating copper on a signal layer (a coupled resonator) gets the
+            # same rule: a line on its edge overstates its width and closes its gap
+            if thirds and (is_sig or (layer in sig_layers and sum(net in d for d in cu.values()) == 1)):
+                cx, cy, pts, (kx, ky) = _thirds(g, fine, region, None if is_sig else near)
                 ctx.edges["x"] += cx
                 ctx.edges["y"] += cy
+                ctx.cu_edges["x"] += kx
+                ctx.cu_edges["y"] += ky
                 ex += [v for c in cx for v in c]
                 ey += [v for c in cy for v in c]
             ex += [q[0] for q in pts]
@@ -670,7 +706,8 @@ def deck(geo: dict, ports, f_max: float, excite: int = 0, *, fine: float | None 
     lines = {}
     for a, (lo, hi) in (("x", (dom[0], dom[2])), ("y", (dom[1], dom[3]))):
         lines[a] = mesh_axis(ctx.fixed[a] + list(region[0::2] if a == "x" else region[1::2]),
-                             ctx.zones[a], lo, hi, fine, coarse, ctx.pinned[a], ctx.edges[a])
+                             ctx.zones[a], lo, hi, fine, coarse, ctx.pinned[a], ctx.edges[a],
+                             cu_edges=sorted({round(e, 6) for e in ctx.cu_edges[a]}))
     zfix = [v for v in zl + ctx.fixed["z"] if zbot - 1e-9 <= v <= ztop + 1e-9]
     lines["z"] = smooth_lines(merge_lines(zfix + [zbot, ztop], fz / 1.6, ctx.pinned["z"]), coarse)
     for a in "xyz":
