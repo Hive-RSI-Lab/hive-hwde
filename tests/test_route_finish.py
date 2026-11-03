@@ -276,6 +276,26 @@ def test_power_and_pour_copper_is_never_ripped(tmp_path):
     assert rip == []
 
 
+def test_a_diff_pair_is_never_ripped(tmp_path):
+    """#613: a rip-up took pair copper and rerouted it single-ended, DRC clean."""
+    body = _pad("U1", 5, 15, "A") + _pad("U2", 25, 15, "A")
+    body += _seg(15, 0.1, 15, 29.9, 0.2, "F.Cu", "D_P", "u-wf")
+    body += _seg(15, 0.1, 15, 29.9, 0.2, "B.Cu", "D_P", "u-wb")
+    pcb = _board(tmp_path, body)
+    (pcb.parent / "constraints.json").write_text(
+        '{"diff_pairs": [{"p": "D_P", "n": "D_N"}]}')
+    assert rf.pair_nets(pcb) == {"D_P", "D_N"}
+    rip: list = []
+    _, jobs = _plan(pcb, [_pair("A", (5, 15), (25, 15),
+                                "Pad 1 [A] of U1 on F.Cu",
+                                "Pad 1 [A] of U2 on F.Cu")],
+                    rip_board=True, ripped_out=rip,
+                    keep_nets_extra=rf.pair_nets(pcb))
+    assert jobs[0]["status"] == "failed"
+    assert "ripped_nets" not in jobs[0]
+    assert rip == []
+
+
 def test_rules_facts_of_an_hdi_board_are_json():
     """#477: route_finish crashed writing its report on an HDI build, after
     routing, because Rules.spans holds Span objects."""
