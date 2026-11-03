@@ -609,3 +609,16 @@ def test_live_fab_package_ships_a_drill_file_per_span_and_passes_dfm(tmp_path):
     doc = json.loads(report.read_text("utf-8"))
     bad = [v for v in doc["violations"] if v["severity"] == "error"]
     assert bad == [], [(v["kind"], v["msg"]) for v in bad[:6]]
+
+
+def test_a_microvia_gets_the_hdi_hole_spacing():
+    """The maze spaces span vias at JLC's HDI figure; without this rule DRC held
+    a microvia to the 0.5 mm through-via floor and rolled the route back (#477,
+    hw-lab hdi-bga: 94 rollbacks)."""
+    import hdilib
+    caps = hdilib.load_hdi_caps()
+    rules = hdilib.via_type_rules({"vias": [{"kind": "micro"}]}, caps)
+    by_name = {r[0]: r for r in rules}
+    assert by_name["micro_hole_to_hole"][1:3] == (
+        "hole_to_hole", caps["hole_to_hole_diff_net_mm"])
+    assert "B.Via_Type == 'Micro'" in by_name["micro_hole_to_hole"][3]

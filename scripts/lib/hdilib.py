@@ -423,6 +423,8 @@ def via_type_rules(entry: dict, caps: dict | None = None) -> list[tuple[str, str
                 ("micro_dia", "via_diameter", d + caps["laser_pad_over_drill_mm"], c),
                 ("micro_ring", "annular_width", ring, c),
                 ("micro_hole_clearance", "hole_clearance", caps["hole_to_trace_mm"],
+                 a_or_b.format("Micro")),
+                ("micro_hole_to_hole", "hole_to_hole", caps["hole_to_hole_diff_net_mm"],
                  a_or_b.format("Micro"))]
     for kind, word in (("buried", "Buried"), ("blind", "Blind")):
         if kind not in kinds:
