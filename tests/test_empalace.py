@@ -198,7 +198,7 @@ def test_compare_reads_the_lossless_s_and_deck_loss_is_refused(tmp_path, monkeyp
     monkeypatch.setattr(ep, "compare", lambda fr, a, b, **k: (seen.append(a), real(fr, a, b, **k))[1])
     from lib import emloss
     monkeypatch.setattr(emloss, "sections_for_ports", lambda *a, **k: {"sections": [], "warnings": []})
-    monkeypatch.setattr(emloss, "add_line_loss", lambda s, *a, **k: [[[v * 0.5 for v in r] for r in m] for m in s])
+    monkeypatch.setattr(emloss, "add_line_loss", lambda s, *a, **k: __import__("numpy").asarray(s) * 0.5)
     monkeypatch.setattr(sim_solve, "_loss_note", lambda *a, **k: {"model": "fake"})
     monkeypatch.setattr(sim_solve, "_loss_comments", lambda *a, **k: [])
     ports = PORTS
