@@ -185,6 +185,7 @@ class _Mesh:
     fixed: dict = field(default_factory=lambda: {"x": [], "y": []})
     zones: dict = field(default_factory=lambda: {"x": [], "y": []})
     pinned: dict = field(default_factory=lambda: {"x": [], "y": [], "z": []})
+    edges: dict = field(default_factory=lambda: {"x": [], "y": []})     # thirds-rule cells
 
 
 def default_fine(geo, feed: Feed, f_max: float) -> float:
@@ -272,8 +273,10 @@ def deck(geo: dict, feed, f0: float, fc: float, pattern=(), *, fine: float | Non
         zone = allsig
     for l, g in sig.items():
         ex, ey, other = eb._thirds(g, fine, domain_box)
-        m.fixed["x"] += ex + [q[0] for q in other]
-        m.fixed["y"] += ey + [q[1] for q in other]
+        m.edges["x"] += ex
+        m.edges["y"] += ey
+        m.fixed["x"] += [q[0] for q in other]
+        m.fixed["y"] += [q[1] for q in other]
     zb = zone.bounds
     pad = 2 * fine
     m.zones["x"].append((zb[0] - pad, zb[2] + pad))
@@ -338,7 +341,8 @@ def deck(geo: dict, feed, f0: float, fc: float, pattern=(), *, fine: float | Non
     for a in "xy":
         lo, hi = dom[a]
         fixed = [v for v in m.fixed[a] if lo < v < hi]
-        lines[a] = eb.mesh_axis(fixed, m.zones[a], lo, hi, fine, coarse, m.pinned[a], min_step=MERGE * fine)
+        lines[a] = eb.mesh_axis(fixed, m.zones[a], lo, hi, fine, coarse, m.pinned[a], m.edges[a],
+                                min_step=MERGE * fine)
     zfix = sorted(set(round(v, 6) for v in zl))
     zmin, zmax = zlo - out, zhi + out
     zgrow = eb.smooth_lines(eb.merge_lines(zfix + [zmin, zmax], fz / 1.6, zs), coarse)
