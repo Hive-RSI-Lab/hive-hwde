@@ -36,6 +36,13 @@ DEFAULT_OVERSIZE_MM = 0.2
 REFERENCE = Path(__file__).resolve().parents[2] / "reference"
 
 
+# The pads' loading as added stub length, from sim_solve via (#479, #599): a
+# 2.4 mm stub's EM notch reads as 2.8 mm and a 1.15 mm stub's as 1.63 mm, so
+# 0.4 to 0.5 mm over 0.6 mm pads. Two stacks, so a figure to read beside the
+# bound, not one the check's ratios use.
+EM_LOAD_MM = 0.45
+
+
 def f_res_ghz(length_mm: float, eps: float) -> float | None:
     """Quarter-wave resonance of an open stub; None for no stub."""
     if length_mm <= 0:

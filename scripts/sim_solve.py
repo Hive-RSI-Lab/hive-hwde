@@ -1213,7 +1213,7 @@ def main(argv=None) -> int:
     vi = sub.add_parser("via")
     vi.add_argument("--pcb")
     vi.add_argument("--via")
-    vi.add_argument("--radius", type=float, default=3.0)
+    vi.add_argument("--radius", type=float, default=6.0, help="region half-size, mm: 3 mm kept only two of a coupon via's returns and read 4x the loss")
     vi.add_argument("--stackup")
     vi.add_argument("--in-layer", default="F.Cu")
     vi.add_argument("--out-layer", default="B.Cu")

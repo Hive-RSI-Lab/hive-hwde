@@ -232,6 +232,8 @@ def judge(vios, st, v, used, row, knee, entry, tol, here) -> None:
             kind="backdrill_stub_long", worst_mm=row["worst_mm"], max_mm=limit))
     f = viastub.f_res_ghz(row["worst_mm"], row["eps"])
     row["f_res_ghz"] = None if f is None else round(f, 3)
+    if f is not None:
+        row["f_em_est_ghz"] = round(viastub.f_res_ghz(row["worst_mm"] + viastub.EM_LOAD_MM, row["eps"]), 3)
     if f is None or knee is None:
         return
     ratio = f / knee

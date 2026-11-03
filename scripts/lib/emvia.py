@@ -172,7 +172,7 @@ def stack_named(name: str) -> dict:
     return {"layers": cu, "z": z, "slabs": slabs}
 
 
-def from_board(pcb, x: float, y: float, radius: float = 3.0, grow_to: float = 8.0) -> tuple[dict, list[eb.Port]]:
+def from_board(pcb, x: float, y: float, radius: float = 6.0, grow_to: float = 8.0) -> tuple[dict, list[eb.Port]]:
     """(geo, ports) for the via at (x, y) on a board: the region is a square
     round it, grown until the via's net crosses the edge exactly twice, on
     straight axis-aligned tracks. Refuses (and says why) when it never does."""
@@ -559,6 +559,7 @@ def report(res: dict, geo: dict, knee_ghz: float | None = None, frac: float = RE
     if res.get("S_shifted"):
         out["lc"] = {k: None if v is None else round(v, 4)
                      for k, v in lc_from_s(freqs, res["S_shifted"], freqs[-1] / 4).items()}
+    out["leak"] = power_lost(freqs, S)
     t = tdr(freqs, S)
     r_all = max(abs(p["dist"][1]) for p in res["ports"])
     out["tdr_rise_ps"] = round(t["rise_ps"], 1)
@@ -573,6 +574,20 @@ def report(res: dict, geo: dict, knee_ghz: float | None = None, frac: float = RE
 
 
 # ================================================================ readers
+
+def power_lost(freqs, S) -> dict:
+    """1 - |S11|^2 - |S21|^2 at its worst below the top of the band. Metal and
+    dielectric are lossless in these decks, so what's missing from the two
+    ports left through the domain's walls: the parallel-plate mode a via with
+    few returns in its region launches. The rest of the real board may send
+    that back, so a large figure says S21 depends on the region drawn."""
+    worst, at = 0.0, None
+    for f, m in zip(freqs, S):
+        lost = 1.0 - abs(m[0][0]) ** 2 - abs(m[1][0]) ** 2
+        if lost > worst:
+            worst, at = lost, f
+    return {"worst": round(worst, 4), "ghz": None if at is None else round(at / 1e9, 3)}
+
 
 def s21_db(S) -> list[float]:
     return [20 * math.log10(max(abs(s[1][0]), 1e-12)) for s in S]

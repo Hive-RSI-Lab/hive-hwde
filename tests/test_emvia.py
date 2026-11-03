@@ -588,3 +588,11 @@ def test_palace_return_pad_keeps_out_of_a_barrel_running_through_it():
     geo = ev.palace_geo(spec)
     x, y = spec.returns[0][:2]
     assert re.search(rf"Disk\(\d+\) = \{{{x},{y},{spec.stack['z'][spec.out_layer]},{spec.ret_drill / 2}\}};", geo)
+
+
+def test_power_lost_is_what_the_two_ports_do_not_account_for():
+    from lib import emvia as ev
+    a = ev.power_lost([1e9, 2e9], [[[0.1, 0], [0.99, 0]], [[0.3, 0], [0.8, 0]]])
+    assert a["ghz"] == 2.0
+    assert abs(a["worst"] - (1 - 0.09 - 0.64)) < 1e-4
+    assert ev.power_lost([1e9], [[[0.6, 0], [0.8, 0]]])["worst"] == 0.0
