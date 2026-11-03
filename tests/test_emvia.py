@@ -512,3 +512,14 @@ def test_feed_posts_sit_exactly_on_mesh_lines():
     for _, p1, p2 in posts:
         assert p1[0] in csx.lines["x"] and p1[1] in csx.lines["y"]
         assert p1[2] in csx.lines["z"] and p2[2] in csx.lines["z"]
+
+
+def test_launch_planes_bleed_at_the_sides_but_not_at_the_board_edge():
+    """Tied only at two launch vias, planes ending inside the domain ring for ns and grow under MUR."""
+    spec = ev.LaunchSpec(stack=stack4(), layer="F.Cu", w=0.45, pad_w=1.2, pad_l=4.8, pad_in=2.7, gap=0.6,
+                         antipad=0.35, gnd_y=2.55, run=7.0)
+    csx, _, _ = ev.launch_build(spec, 6e9)
+    boxes = next(b for kind, attrs, inner, b in csx.props if attrs["Name"] == "plane_bleed")
+    assert boxes
+    assert not [b for b in boxes if min(b[1][0], b[2][0]) < -1e-6 and abs(b[1][1]) < spec.half_y and abs(b[2][1]) < spec.half_y]
+    assert any(max(b[1][0], b[2][0]) > spec.run for b in boxes)

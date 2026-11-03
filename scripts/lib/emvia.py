@@ -407,8 +407,9 @@ def _run_to_tail(csx, where, work: Path, timeout: float, threads: int) -> dict:
         if tail <= eb.TAIL_MAX or steps >= eb.STEPS_MAX or time.time() - t0 + 2.2 * spent > timeout:
             break
         csx.fdtd["NumberOfTimesteps"] = min(eb.STEPS_MAX, 2 * steps)
-    return {"steps": steps, "tail": tail, "rang_down": tail <= eb.TAIL_MAX,
-            "seconds": round(time.time() - t0, 1), "dt_log_s": _dt_from_log(r.stdout + r.stderr)}
+    log = r.stdout + r.stderr
+    return {"steps": steps, "tail": tail, "rang_down": tail <= eb.TAIL_MAX, "seconds": round(time.time() - t0, 1),
+            "dt_log_s": _dt_from_log(log), "unused_prims": log.count("Unused primitive")}
 
 
 def freq_grid(f_max: float, f_min: float | None, points: int) -> list[float]:
@@ -846,6 +847,8 @@ def launch_build(spec: LaunchSpec, f_max: float, *, shorted: bool = False, fine=
             k = max(1, math.ceil((z1 - z0) / zstep))
             ctx.fixed["z"] += [z0 + (z1 - z0) * i / k for i in range(k + 1)]
         hook(csx, ctx)
+        # planes tied only at two launch vias ring like the patch plane_bleed names; the edge at x = 0 stays open
+        plane_bleed(csx, geo)
     csx, where = eb.deck(geo, [port], f_max, 0, fine=fine, feed_len=feed_len, pad=pad, floor="pec",
                          zcells=max(4, math.ceil(h * refine / (zstep * refine))), air=air, extra=extra, refine=refine)
     # three cells apart, an odd count, so the current probes fall on dual lines
