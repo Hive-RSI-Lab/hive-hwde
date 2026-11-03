@@ -41,10 +41,18 @@ Contract:
       [--grid 0.1] [--margin 4] [--min-width 0.2] [--clearance-margin 0.02]
       [--via-size MM --via-drill MM] [--max-conns N] [--rip-errors]
       [--no-rip-board] [--dry-run] [--work-dir DIR] [--out-report r.json]
+      [--skip-conns c.json] [--protect-nets A,B] [--plan-seconds S]
+      [--start-report r.json] [--trace t.jsonl] [--measure-only]
   exit 0 = nothing left unconnected and DRC clean; 1 = some remain or other
   violations (board updated with what was kept); 2 = error (board untouched).
 
 finish_staged() is the importable form route_auto calls on its staged board.
+
+The last group of flags is what route_close (the chunked driver) runs a chunk
+with: connections to leave out, nets never to rip, when to stop searching so
+the chunk still reports, the report the last chunk left so this one needn't
+repeat its DRC, and a file naming the connection being searched, so a chunk
+that dies can be blamed on it.
 """
 from __future__ import annotations
 
@@ -55,6 +63,7 @@ import json
 import math
 import re
 import sys
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -546,7 +555,7 @@ _MOVES = [(1, 0, 1.0), (-1, 0, 1.0), (0, 1, 1.0), (0, -1, 1.0),
 
 
 def astar(gr: Grid, target, via_cost: float = 15.0,
-          max_nodes: int = 3_000_000):
+          max_nodes: int = 3_000_000, deadline: float | None = None):
     """Multi-source search from side A's free cells to side B's.
 
     Nodes are (cell, k); a via (layer change, or a drop into a plane-layer
@@ -602,6 +611,9 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
             break
         expanded += 1
         if expanded > max_nodes:
+            break
+        if deadline is not None and not expanded & 0x3FFF \
+                and time.monotonic() >= deadline:
             break
         i, j = c % nx, c // nx
         blk, cost = gr.blk[k], gr.cost[k]
@@ -818,15 +830,29 @@ def _pass_helped(before: int, after: int, jobs: list[dict]) -> bool:
             and any(j["status"] == "routed" for j in jobs))
 
 
+def conn_key(net: str, a, b) -> tuple:
+    """A connection's name across runs: its net and the two points the plan
+    joins. It stays the same until one of the net's two islands changes, and
+    then it is a different connection and worth a new try."""
+    return (net, *sorted((tuple(a), tuple(b))))
+
+
 def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
                 layers: list[str], *, grid: float = 0.1, margin: float = 4.0,
                 max_conns: int | None = None, max_nodes: int = 3_000_000,
                 via_cost_mm: float = 1.5, rip_board: bool = False,
                 rip_board_nets: int = 4, ripped_out: list | None = None,
-                keep_nets_extra: set | None = None,
-                log=None) -> list[dict]:
+                log=None, skip: set | None = None,
+                keep_nets_extra=(), deadline: float | None = None,
+                on_try=None) -> list[dict]:
     """Find a route for each pair, shortest first; each found route is an
-    obstacle for the ones after it. Returns [{net, ops, status, ...}]."""
+    obstacle for the ones after it. Returns [{net, ops, status, ...}].
+
+    skip: conn_key()s to leave out, so they don't use up max_conns.
+    keep_nets_extra: nets never ripped, like pour nets. deadline
+    (time.monotonic()): start no search after it and cut the one running;
+    what was found so far still comes back. on_try(job): called before each
+    connection's search."""
     obs = Obstacles(bg)
     isl_cache: dict[str, list] = {}
     jobs = []
@@ -875,6 +901,14 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
             if i != main:
                 add_job(net, isl, i, main, None, None)
     todo = sorted((j for j in jobs if "side_a" in j), key=lambda j: j["dist"])
+    if skip:
+        kept_todo = []
+        for j in todo:
+            if conn_key(j["net"], j["a"], j["b"]) in skip:
+                j.update(status="skipped", reason="set aside")
+            else:
+                kept_todo.append(j)
+        todo = kept_todo
     if max_conns is not None:
         for j in todo[max_conns:]:
             j.update(status="skipped", reason="over --max-conns")
@@ -904,7 +938,7 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
                 target = (int(round((bx - gr.x0) / g)),
                           int(round((by - gr.y0) / g)))
                 path = astar(gr, target, via_cost=via_cost_mm / g,
-                             max_nodes=max_nodes)
+                             max_nodes=max_nodes, deadline=deadline)
                 if path:
                     return path, gr, w
         finally:
@@ -921,15 +955,25 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
     # power and pour nets are never ripped: their copper is sized by rule
     # nor are constraints diff pairs: a pair ripped here comes back single-ended (#613)
     keep_nets = {z.net for z in bg.zones_of()} | set(rules.net_width) | {""}
-    keep_nets |= keep_nets_extra or set()
+    keep_nets |= set(keep_nets_extra or ())
+
+    def expired():
+        return deadline is not None and time.monotonic() >= deadline
+
     queue = list(range(len(todo)))
     ripped_once: set[int] = set()
     ripped_board: set[int] = set()
     steps = 0
     while queue:
+        if expired():
+            for n in queue:
+                todo[n].update(status="skipped", reason="over the deadline")
+            break
         n = queue.pop(0)
         job = todo[n]
         steps += 1
+        if on_try:
+            on_try(job)
         path, gr, w = search(job)
         if path:
             commit(n, job, path, gr, w)
@@ -1005,7 +1049,10 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
                     job["rip_uuids"] = sorted(set(board_rip))
                     job["ripped_nets"] = sorted(nets)
         if job.get("status") not in ("routed",):
-            job.update(status="failed", reason="no path on the grid")
+            if expired():
+                job.update(status="skipped", reason="cut by the deadline")
+            else:
+                job.update(status="failed", reason="no path on the grid")
         if log:
             log(f"{steps} {job['net']}: {job['status']}")
     for j in jobs:
@@ -1044,8 +1091,14 @@ def _one_pass(cli, staged, drc, opts, *, parity, refill, log):
     rip: list = []
     jobs = plan_routes(bg, rules, pairs, lays, grid=opts["grid"],
                        margin=opts["margin"], max_conns=opts["max_conns"],
-                       rip_board=opts["rip_board"], ripped_out=rip,
-                       keep_nets_extra=opts.get("keep_nets"), log=log)
+                       rip_board=opts["rip_board"], ripped_out=rip, log=log,
+                       skip=opts["skip"], keep_nets_extra=opts["keep_nets"],
+                       deadline=opts["deadline"], on_try=opts["on_try"])
+    if opts["skip"] is not None:
+        # a chunk of route_close: it tries these again next round, so the
+        # chunk's later passes don't spend their time on them
+        opts["skip"].update(conn_key(j["net"], j["a"], j["b"]) for j in jobs
+                            if j["status"] == "failed")
     all_ops, op_conn = [], []
     for c, j in enumerate(jobs):
         if j["status"] == "routed":
@@ -1063,9 +1116,11 @@ def _one_pass(cli, staged, drc, opts, *, parity, refill, log):
             conn_uuids.setdefault(c, []).append(r["uuid"])
     after = None
     for _ in range(3):
+        t0 = time.monotonic()
         if refill:
             kc.run_drc(cli, staged, refill=True, save_board=True)
         after = kc.run_drc(cli, staged, parity=parity, all_track_errors=True)
+        opts["drc_s"] = max(opts["drc_s"], time.monotonic() - t0)
         bad = _named_conns(after, uuid_conn)
         if not bad:
             break
@@ -1081,6 +1136,9 @@ def _one_pass(cli, staged, drc, opts, *, parity, refill, log):
         if refill:
             kc.run_drc(cli, staged, refill=True, save_board=True)
         after = kc.run_drc(cli, staged, parity=parity, all_track_errors=True)
+    if opts["skip"] is not None:
+        opts["skip"].update(conn_key(j["net"], j["a"], j["b"]) for j in jobs
+                            if j["status"] == "rolled_back")
     return jobs, after, rules, lays
 
 
@@ -1092,7 +1150,8 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
                   refill: bool = True, dry_run: bool = False,
                   passes: int = 6, rip_errors: bool = False,
                   rip_board: bool = True, keep_nets: set | None = None,
-                  log=None) -> dict:
+                  log=None, skip_conns=None,
+                  deadline: float | None = None, on_try=None) -> dict:
     """Route the staged board's unconnected pairs in place, in passes: a
     route can split another net's pour, and the next pass joins the piece.
     A pass is kept only when the unconnected count drops and no error type
@@ -1104,7 +1163,9 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
                 margin=margin, min_width=min_width,
                 clearance_margin=clearance_margin, via_size=via_size,
                 via_drill=via_drill, max_conns=max_conns,
-                rip_board=rip_board, keep_nets=keep_nets)
+                rip_board=rip_board, drc_s=0.0, deadline=deadline,
+                skip=None if skip_conns is None else set(skip_conns),
+                keep_nets=keep_nets, on_try=on_try)
     start_un = sum(unconnected_by_net(drc).values())
     facts: dict = {"unconnected_before": start_un,
                    "errors_before": err_counts(drc), "passes": []}
@@ -1116,8 +1177,8 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
         lays = routable_layers(bg, layers)
         jobs = plan_routes(bg, rules, unconnected_pairs(drc, opts["nets"]),
                            lays, grid=grid, margin=margin,
-                           max_conns=max_conns, rip_board=rip_board,
-                           keep_nets_extra=keep_nets, log=log)
+                           max_conns=max_conns, rip_board=rip_board, log=log,
+                           skip=opts["skip"], keep_nets_extra=keep_nets)
         facts.update(kept=False, rules=_rules_facts(rules), layers=lays,
                      connections=jobs,
                      routed=sum(j["status"] == "routed" for j in jobs))
@@ -1156,6 +1217,8 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
     try:
         for n in range(passes):
             if not unconnected_pairs(cur, opts["nets"]):
+                break
+            if n and deadline is not None and time.monotonic() >= deadline:
                 break
             shutil.copy2(staged, backup)
             try:
@@ -1240,7 +1303,7 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
             kept_any = True
             facts["rip_kept"] = True
         origin.unlink(missing_ok=True)
-    facts.update(kept=kept_any,
+    facts.update(kept=kept_any, drc_s=round(opts["drc_s"], 1),
                  unconnected_after=sum(unconnected_by_net(cur).values()),
                  errors_after=err_counts(cur))
     if kept_any:
@@ -1325,9 +1388,8 @@ def _rules_facts(rules: Rules) -> dict:
     return facts
 
 
-def run(argv: list[str] | None = None):
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--pcb", required=True)
+def add_routing_args(ap: argparse.ArgumentParser) -> None:
+    """The options that say how to route, shared with route_close."""
     ap.add_argument("--nets", default=None, help="only these nets (comma list)")
     ap.add_argument("--layers", default="auto")
     ap.add_argument("--grid", type=float, default=0.1)
@@ -1337,6 +1399,17 @@ def run(argv: list[str] | None = None):
     ap.add_argument("--clearance-margin", type=float, default=0.02)
     ap.add_argument("--via-size", type=float, default=None)
     ap.add_argument("--via-drill", type=float, default=None)
+
+
+ROUTING_FLAGS = ("nets", "layers", "grid", "margin", "min_width",
+                 "clearance_margin", "via_size", "via_drill")
+
+
+def run(argv: list[str] | None = None):
+    started = time.monotonic()
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--pcb", required=True)
+    add_routing_args(ap)
     ap.add_argument("--max-conns", type=int, default=None)
     ap.add_argument("--rip-errors", action="store_true",
                     help="first take out the tracks/vias DRC names in a short,"
@@ -1345,6 +1418,23 @@ def run(argv: list[str] | None = None):
     ap.add_argument("--no-rip-board", action="store_true",
                     help="never rip other nets' existing tracks/vias to free"
                          " a walled-in pad (only this run's own routes)")
+    ap.add_argument("--skip-conns", default=None,
+                    help="JSON list of connections to leave out, each"
+                         " [net, [ax, ay], [bx, by]] as a report's connections"
+                         " name them; a connection that fails is also left out"
+                         " of this run's later passes")
+    ap.add_argument("--protect-nets", default=None,
+                    help="never rip these nets' copper (comma list)")
+    ap.add_argument("--plan-seconds", type=float, default=None,
+                    help="stop searching this long after the start and apply"
+                         " what was found; the rest come back skipped")
+    ap.add_argument("--start-report", default=None,
+                    help="a report of this board as it is now, with its zones"
+                         " filled: skips the first refill and DRC")
+    ap.add_argument("--trace", default=None,
+                    help="append one JSON line per connection before searching")
+    ap.add_argument("--measure-only", action="store_true",
+                    help="refill, save and report; route nothing")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--work-dir", default=None)
     ap.add_argument("--out-report", default=None)
@@ -1364,10 +1454,37 @@ def run(argv: list[str] | None = None):
     staged = route_auto._stage_board(pcb, work)
     parity = staged.with_suffix(".kicad_sch").is_file()
     has_zones = bool(geom.BoardGeom.from_file(staged).zones_of())
-    if has_zones:
-        kc.run_drc(cli, staged, refill=True, save_board=True)
-    drc = kc.run_drc(cli, staged, parity=parity, all_track_errors=True)
+    t0 = time.monotonic()
+    if args.start_report:
+        drc = checklib.load_json(Path(args.start_report), "start report")
+    else:
+        if has_zones:
+            kc.run_drc(cli, staged, refill=True, save_board=True)
+        drc = kc.run_drc(cli, staged, parity=parity, all_track_errors=True)
+    drc_s = time.monotonic() - t0
     log = (lambda s: print(s, file=sys.stderr)) if args.verbose else None
+    if args.measure_only:
+        routelib.swap_in(staged, pcb)
+        left = unconnected_pairs(drc)
+        return ({"script": "route_finish",
+                 "status": "pass" if drc["counts"]["total"] == 0
+                 else "violations",
+                 "board": str(pcb), "counts": drc["counts"],
+                 "violations": drc["violations"],
+                 "facts": {"kept": False, "drc_s": round(drc_s, 1), "passes": [],
+                           "unconnected_left": len(left),
+                           "work_dir": str(work)}}, args.out_report)
+    on_try = None
+    if args.trace:
+        trace = Path(args.trace)
+
+        def on_try(job):
+            with trace.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps([job["net"], job["a"], job["b"]]) + "\n")
+    skip = None
+    if args.skip_conns is not None:
+        skip = {conn_key(*c) for c in
+                checklib.load_json(Path(args.skip_conns), "skip list")}
     facts = finish_staged(
         cli, staged, drc,
         nets=args.nets.split(",") if args.nets else None,
@@ -1376,7 +1493,12 @@ def run(argv: list[str] | None = None):
         via_size=args.via_size, via_drill=args.via_drill,
         max_conns=args.max_conns, parity=parity, refill=has_zones,
         dry_run=args.dry_run, rip_errors=args.rip_errors,
-        rip_board=not args.no_rip_board, keep_nets=pair_nets(pcb), log=log)
+        rip_board=not args.no_rip_board, log=log, skip_conns=skip,
+        keep_nets=pair_nets(pcb) | set(filter(None,
+                                              (args.protect_nets or "").split(","))),
+        deadline=(None if args.plan_seconds is None
+                  else started + args.plan_seconds),
+        on_try=on_try)
     final = facts.pop("drc", None) or drc
     if facts.get("kept") and not args.dry_run:
         routelib.swap_in(staged, pcb)

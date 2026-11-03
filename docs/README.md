@@ -601,6 +601,17 @@ Run it alone on any routed board (`hwde route_finish --pcb ... --dry-run`
 first). Its `failed` connections have no path at the rules, which makes
 them a placement or topology finding.
 
+When a single `route_finish` run can't finish in the time you have, or stalls
+on the same failures, use `hwde route_close --pcb ... --budget 3600` with the
+same routing options, and no loop of your own. It runs `route_finish` in chunks
+and keeps each good one, and every open connection gets a try each round. It
+resumes from its state on disk if run again, undoes a chunk that changes
+protected copper (`constraints.json` diff pairs by default), and stops when a
+round closes nothing. Its `facts` give the count left, the failing connections
+and nets, and what to try next, so there is no chunk log to read. Each chunk
+goes through `--runner` (`heavy --quick` where `heavy` exists, else run
+directly).
+
 On hifi-receiver-2's core (278 parts, 4 layers), with every signal track
 ripped, one Freerouting rung left 54 unconnected and 16 DRC errors.
 `route_auto` with `route_finish` then took it to a handful unconnected with
