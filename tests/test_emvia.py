@@ -470,10 +470,11 @@ def test_live_launch_reads_a_matched_coax_and_a_passive_launch():
     assert all(r["rang_down"] for r in res["runs"])
     assert all(r["unused_prims"] == 0 for r in res["runs"])
     for z in res["z_coax"][len(res["z_coax"]) // 4:]:
-        assert z.real == pytest.approx(50.0, rel=0.15)      # nominal; its staircase reads high
+        assert z.real == pytest.approx(50.0, rel=0.05)
+    assert res["imbalance"] < 0.05                           # the port-scale error balance() took out
+    assert ev.power_lost(res["freqs"], res["S"])["worst"] < 0.03     # 1.2 % per launch at 6 GHz, any mesh
     for f, s in zip(res["freqs"], res["S"]):
-        lost = 1 - abs(s[0][0]) ** 2 - abs(s[1][0]) ** 2
-        assert -0.02 < lost < 0.1, f"{f / 1e9} GHz"          # passive, and little leaves the walls
+        assert abs(s[1][0]) ** 2 + abs(s[0][0]) ** 2 < 1.005, f"{f / 1e9} GHz"      # passive
         assert abs(s[1][0]) > 0.9, f"{f / 1e9} GHz"
         assert abs(s[0][0]) < 0.2, f"{f / 1e9} GHz"
 
@@ -532,6 +533,23 @@ def test_feed_posts_sit_exactly_on_mesh_lines():
     for _, p1, p2 in posts:
         assert p1[0] in csx.lines["x"] and p1[1] in csx.lines["y"]
         assert p1[2] in csx.lines["z"] and p2[2] in csx.lines["z"]
+
+
+def test_launch_coax_bore_is_round_with_no_air_in_its_corners():
+    """A square bore read 55 ohm at every mesh, against the 50 its radii give."""
+    spec = ev.LaunchSpec(stack=ev.stack_named("JLC04161H-1080B"), layer="F.Cu", w=0.4544, pad_w=1.2, pad_l=4.8, pad_in=2.7,
+                         gap=0.6, antipad=0.35, gnd_y=2.55, run=7.0)
+    csx, _, st = ev.launch_build(spec, 6e9, refine=0.5)
+    r_o, x_end = spec.sma["r_o"], st["x_end"]
+    z_ax = st["z_top"] + spec.sma["pin_r"]
+    boxes = next(q for _, n, _, q in csx.props if n["Name"] == "sma")
+    def inside(p, x, y, z):
+        lo, hi = p[1], p[2]
+        return all(min(a, b) <= v <= max(a, b) for a, b, v in zip(lo, hi, (x, y, z)))
+    # the square's corner, outside r_o, inside the bore a tube would leave
+    c = 0.9 * r_o
+    assert math.hypot(c, c) > r_o
+    assert any(inside(p, x_end / 2, c, z_ax + c) for p in boxes if p[0] != "cyl")
 
 
 def test_launch_planes_bleed_at_the_sides_but_not_at_the_board_edge():
@@ -608,7 +626,26 @@ def test_palace_return_pad_keeps_out_of_a_barrel_running_through_it():
 
 def test_power_lost_is_what_the_two_ports_do_not_account_for():
     from lib import emvia as ev
-    a = ev.power_lost([1e9, 2e9], [[[0.1, 0], [0.99, 0]], [[0.3, 0], [0.8, 0]]])
+    a = ev.power_lost([1e9, 2e9], [[[0.1, 0.99], [0.99, 0.1]], [[0.3, 0.8], [0.8, 0.3]]])
     assert a["ghz"] == 2.0
     assert abs(a["worst"] - (1 - 0.09 - 0.64)) < 1e-4
-    assert ev.power_lost([1e9], [[[0.6, 0], [0.8, 0]]])["worst"] == 0.0
+    assert ev.power_lost([1e9], [[[0.6, 0.8], [0.8, 0.6]]])["worst"] == 0.0
+
+
+def test_power_lost_and_balance_see_through_a_scale_error_between_two_ports():
+    # Measured on the launch: |S21| .984, |S12| 1.002 at 4.4 GHz, and |S21|^2 read
+    # that as 2.5 % lost on one mesh and 1.65 % on the next; the product held .72 %.
+    from lib import emvia as ev
+    th = 0.3
+    s21 = complex(math.cos(th), -math.sin(th)) * 0.99
+    true = [[0.1 + 0j, s21], [s21, 0.1j]]
+    k = 0.98
+    bent = [[true[0][0], s21 / k], [s21 * k, true[1][1]]]
+    want = ev.power_lost([1e9], [true])["worst"]
+    assert ev.power_lost([1e9], [bent])["worst"] == pytest.approx(want, abs=1e-4)
+    fixed, off = ev.balance([bent])
+    assert fixed[0][1][0] == pytest.approx(s21) and fixed[0][0][1] == pytest.approx(s21)
+    assert off == pytest.approx(k * k - 1, abs=1e-6) or off == pytest.approx(1 - k * k, abs=1e-6)
+    # and the branch of the root follows S21 when its phase is past 90 degrees
+    s21 = complex(-0.8, -0.5)
+    assert ev.balance([[[0j, s21 / k], [s21 * k, 0j]]])[0][0][1][0] == pytest.approx(s21)

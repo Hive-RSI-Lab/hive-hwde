@@ -576,17 +576,35 @@ def report(res: dict, geo: dict, knee_ghz: float | None = None, frac: float = RE
 # ================================================================ readers
 
 def power_lost(freqs, S) -> dict:
-    """1 - |S11|^2 - |S21|^2 at its worst below the top of the band. Metal and
-    dielectric are lossless in these decks, so what's missing from the two
-    ports left through the domain's walls: the parallel-plate mode a via with
-    few returns in its region launches. The rest of the real board may send
-    that back, so a large figure says S21 depends on the region drawn."""
+    """1 - (|S11|^2 + |S22|^2)/2 - |S21 S12| at its worst below the top of the
+    band. Metal and dielectric are lossless in these decks, so what's missing
+    from the two ports left through the domain's walls: the parallel-plate mode
+    a via with few returns in its region launches. The rest of the real board
+    may send that back, so a large figure says S21 depends on the region drawn.
+    The product, not |S21|^2: a scale error between two different ports moves
+    S21 and S12 opposite ways (`balance`), and |S21|^2 reads it as loss."""
     worst, at = 0.0, None
     for f, m in zip(freqs, S):
-        lost = 1.0 - abs(m[0][0]) ** 2 - abs(m[1][0]) ** 2
+        lost = 1.0 - (abs(m[0][0]) ** 2 + abs(m[1][1]) ** 2) / 2 - abs(m[1][0] * m[0][1])
         if lost > worst:
             worst, at = lost, f
     return {"worst": round(worst, 4), "ghz": None if at is None else round(at / 1e9, 3)}
+
+
+def balance(S) -> tuple[list, float]:
+    """(S with S21 = S12 = sqrt(S21 S12), the worst |S21/S12| - 1 taken out).
+    A launch's ports are a coax and a line, read by different probes, so a
+    scale error between them is D S D^-1: it leaves S11 and S22 alone and takes
+    k from S12 to give to S21. The structure is reciprocal, so the mean is it."""
+    import cmath
+    out, worst = [], 0.0
+    for m in S:
+        root = cmath.sqrt(m[1][0] * m[0][1])
+        if (root * m[1][0].conjugate()).real < 0:
+            root = -root
+        worst = max(worst, abs(abs(m[1][0]) / max(abs(m[0][1]), 1e-12) - 1.0))
+        out.append([[m[0][0], root], [root, m[1][1]]])
+    return out, worst
 
 
 def s21_db(S) -> list[float]:
@@ -835,12 +853,9 @@ def _coax_hook(spec: LaunchSpec, x_end: float, dx: float, fc: float, shorted: bo
         # the coax out of the flange, into the wall
         csx.cylinder(ptfe, (x_end, 0, z_ax), (-0.3, 0, z_ax), r_o, prio=61)
         csx.cylinder(pec, (x_end, 0, z_ax), (-0.3, 0, z_ax), r_i, prio=62)
+        # solid, the PTFE cut through it: a tube with a square bore leaves air in the corners and reads 55 ohm
         wall = r_o + 0.3
-        csx.box(pec, (x_end, -wall, z_ax - wall), (-0.3, -r_o, z_ax + wall), prio=60)
-        csx.box(pec, (x_end, r_o, z_ax - wall), (-0.3, wall, z_ax + wall), prio=60)
-        csx.box(pec, (x_end, -wall, z_ax - wall), (-0.3, wall, z_ax - r_o), prio=60)
-        csx.box(pec, (x_end, -wall, z_ax + r_o), (-0.3, wall, z_ax + wall), prio=60)
-        # cut the square wall's corners back to round: PTFE over PEC inside r_o is above
+        csx.box(pec, (x_end, -wall, z_ax - wall), (-0.3, wall, z_ax + wall), prio=60)
         if shorted:
             # a cell thick and inside: a sheet on the domain's face is MUR's, and the run reads as if absorbing
             csx.box(pec, (x_end, -wall, z_ax - wall), (x_end + dx, wall, z_ax + wall), prio=70)
@@ -924,7 +939,8 @@ def launch_build(spec: LaunchSpec, f_max: float, *, shorted: bool = False, fine=
 def launch_study(spec: LaunchSpec, f_max: float, f_min=None, points: int = 201, *, fine=None, zstep=None,
                  refine: float = 1.0, keep=None, timeout: float = 3600, threads: int = 4) -> dict:
     """S referred to the line's plane (port 1 here is index 0) and the jack's
-    mating face (index 1), from the coax absorbing and then shorted."""
+    mating face (index 1), from the coax absorbing and then shorted. S is
+    `balance`d, and "imbalance" says how much that took out."""
     import tempfile
     freqs = freq_grid(f_max, f_min, points)
     reads, info, where, stats = {}, [], None, None
@@ -938,7 +954,8 @@ def launch_study(spec: LaunchSpec, f_max: float, f_min=None, points: int = 201, 
         if ctx:
             ctx.cleanup()
     runs, _, vi, lines = _solve_feeds(reads, where, freqs, f_max, every_run=True)
-    return {"freqs": freqs, "S": eb.sparams(runs, 2), "ports": where["ports"], "runs": info,
+    S, imbalance = balance(eb.sparams(runs, 2))
+    return {"freqs": freqs, "S": S, "imbalance": round(imbalance, 4), "ports": where["ports"], "runs": info,
             "stats": stats, "fine": where["fine"], "z_coax": [complex(r["z"]) for r in vi[1]],
             "feeds": [{"z_rms": round(ln["z_rms"], 3), "eps_rms": round(ln["eps_rms"], 4)} for ln in lines]}
 
