@@ -74,7 +74,8 @@ right, and the board-facing studies built on them.
         checked by lib/sparam like planar's (`quality`; exit 1 on a fail).
         --cross-check palace solves the same geometry and planes by FEM
         (lib/empalace.py) and exits 1 when the S-matrices disagree: rms
-        |dS| over 0.05 off any notch, or a notch more than 1% apart.
+        |dS| over 0.05, a transmission notch more than 1% apart, or a feed
+        Z more than 3% apart. A reflection dip is printed, not judged.
 
 The cases (docs/solvers.md has the measured errors):
 
@@ -691,7 +692,8 @@ def board_study(pcb, region, ports, parts=None, f_max=6e9, f_min=None, points=20
                                order=cross_order, np_=cross_np, timeout=cross_timeout, **kw)
         cols = [r["excite"] for r in other["runs"]]
         pal_q = sparam.check(freqs, other["S"])
-        verdict = empalace.compare(freqs, lossless, other.pop("S"), columns=None if symmetric else cols)
+        verdict = empalace.compare(freqs, lossless, other.pop("S"), columns=None if symmetric else cols,
+                                   z_feed=(res["runs"][0]["z_feed"], other["z_feed"]))
         verdict["setting"] = {"refine": cross_refine, "order": cross_order, "compared": "lossless S, before any added loss"}
         verdict["palace"] = {k: other[k] for k in ("runs", "z_feed", "eps_eff_feed", "seconds")}
         verdict["palace"]["quality_ok"] = pal_q["ok"]
@@ -1110,13 +1112,19 @@ def main(argv=None) -> int:
         cc = res.get("cross_check")
         if cc and not args.json:
             print(f"cross-check {' against '.join(cc['solvers'])}: {'AGREE' if cc['ok'] else 'DISAGREE'} "
-                  f"(limits: rms |dS| {cc['limits']['rms_ds']}, notch {cc['limits']['notch_pct']}%; "
+                  f"(limits: rms |dS| {cc['limits']['rms_ds']}, S21-type notch {cc['limits']['notch_pct']}%, "
+                  f"feed Z {cc['limits'].get('z_pct', '-')}%; "
                   f"Palace refine {cc['setting']['refine']:g} order {cc['setting']['order']}; lossless S; "
                   f"Palace's own sparam check {'ok' if cc['palace']['quality_ok'] else 'FAILS'})")
+            ghz = lambda hit: f"{hit['f'] / 1e9:.4f}" if hit else "none in band"  # noqa: E731
+            if cc.get("z_feed"):
+                z = cc["z_feed"]
+                print(f"  feed Z mid band: {z[cc['solvers'][0]]} / {z[cc['solvers'][1]]} ohm, {z['gap_pct']}% apart")
             for name, t in cc["terms"].items():
-                nt = t.get("notch")
-                extra = (f", notch {nt[cc['solvers'][0]]['f'] / 1e9:.4f} / {nt[cc['solvers'][1]]['f'] / 1e9:.4f} GHz"
-                         if nt else "")
+                nt, dp = t.get("notch"), t.get("dip")
+                a, b = cc["solvers"]
+                extra = (f", notch {ghz(nt.get(a))} / {ghz(nt.get(b))} GHz" if nt else
+                         f", dip {ghz(dp.get(a))} / {ghz(dp.get(b))} GHz (not judged)" if dp else "")
                 print(f"  {name}: rms |dS| {t.get('rms_ds_off_notch', t['rms_ds'])}, worst {t['max_ds']}{extra}")
         for why in (cc or {}).get("disagree", []):
             print(f"cross-check: {why}", file=sys.stderr)

@@ -296,13 +296,16 @@ def _pairs_within(polys, limit):
 
 
 def check_clearance(fab, rules, vios: list) -> None:
-    lo = rules.get("min_clearance_mm")
-    if lo is None:
+    inner = rules.get("min_clearance_mm")
+    if inner is None:
         return
     for name in fab.copper_layer_names():
         lg = fab.copper(name)
         if lg is None:
             continue
+        # JLC's 2 oz spacing holds the 2 oz outer copper only (#627)
+        lo = (rules.get("min_outer_clearance_mm", inner)
+              if name in ("F.Cu", "B.Cu") else inner)
         comps = lg.components()
         for i, j in _pairs_within(comps, lo):
             d = comps[i].distance(comps[j])

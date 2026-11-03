@@ -153,7 +153,7 @@ def routing(extract: dict | None, cap: dict) -> dict | None:
         return None
     pad_w = min(size)
     gap = pitch - pad_w
-    need = cap["min_trace_width_mm"] + 2 * cap["min_clearance_mm"]
+    need = cap["min_trace_width_mm"] + 2 * fabfloors.outer_clearance(cap)
     return {"pitch_mm": pitch, "pad_w_mm": pad_w, "gap_mm": round(gap, 3),
             "track_between_pads": gap >= need,
             "max_stub_width_mm": pad_w,

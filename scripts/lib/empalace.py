@@ -219,6 +219,7 @@ def config(attrs, spec, plist, excite, freqs, order=2, tol=1e-3, solver_tol=1e-6
 # difference at a few points: that is judged by the notch's own frequency.
 RMS_DS = 0.05
 NOTCH_PCT = 1.0
+Z_PCT = 3.0        # the thru's Z0 limit: the two solvers' line, mid band
 NOTCH_DEPTH_DB = -10.0      # shallower than this isn't a feature to compare
 
 
@@ -234,10 +235,17 @@ def _notch(freqs, col) -> dict | None:
     return {"f": freqs[m] + d * (freqs[m + 1] - freqs[m]), "db": y1}
 
 
-def compare(freqs, a, b, *, rms_ds=RMS_DS, notch_pct=NOTCH_PCT, names=("openEMS", "Palace"), columns=None) -> dict:
-    """A verdict on two S-matrices on one frequency list: per term, the rms
-    and worst vector difference and any notch's shift. columns: the excited
-    ports to judge (default all)."""
+def compare(freqs, a, b, *, rms_ds=RMS_DS, notch_pct=NOTCH_PCT, names=("openEMS", "Palace"), columns=None,
+            z_feed=None, z_pct=Z_PCT) -> dict:
+    """A verdict on two S-matrices on one frequency list: per term, the rms and
+    worst vector difference, and a transmission notch's shift. columns: the
+    excited ports to judge (default all). z_feed: each solver's feed Z per port.
+
+    Only transmission zeros are judged by position. They don't move with the
+    port reference, a reflection zero does: rf-kit F5's S11 dip reads 5.00, 4.95
+    or 4.83 GHz for one openEMS S at a 50 ohm, 51 ohm or its own line's reference,
+    while its S21 notch stays at 2.4891 GHz. So a reflection dip is reported, and
+    what moves it is judged as itself: rms |dS|, and the line Z (z_feed)."""
     n = len(a[0])
     cols = list(columns) if columns is not None else list(range(n))
     terms, why = {}, []
@@ -251,7 +259,10 @@ def compare(freqs, a, b, *, rms_ds=RMS_DS, notch_pct=NOTCH_PCT, names=("openEMS"
             t = {"rms_ds": round(rms, 5), "max_ds": round(d[m], 5), "at_hz": freqs[m]}
             na, nb = _notch(freqs, xs), _notch(freqs, ys)
             name = f"S{i + 1}{j + 1}"
-            if na and nb:
+            if i == j:
+                if na or nb:
+                    t["dip"] = {names[0]: na, names[1]: nb}
+            elif na and nb:
                 shift = abs(na["f"] - nb["f"]) / na["f"] * 100
                 t["notch"] = {names[0]: na, names[1]: nb, "shift_pct": round(shift, 3)}
                 if shift > notch_pct:
@@ -264,12 +275,26 @@ def compare(freqs, a, b, *, rms_ds=RMS_DS, notch_pct=NOTCH_PCT, names=("openEMS"
                 t["rms_ds_off_notch"] = round(rms, 5)
             elif na or nb:
                 who, hit = (names[0], na) if na else (names[1], nb)
-                why.append(f"{name}: only {who} has a notch ({hit['f'] / 1e9:.4f} GHz, {hit['db']:.1f} dB)")
+                # by the band's edge the other's may simply be just outside it
+                edge = min(hit["f"] - freqs[0], freqs[-1] - hit["f"]) / hit["f"] * 100
+                t["notch"] = {who: hit, "at_band_edge": edge <= notch_pct}
+                if edge > notch_pct:
+                    why.append(f"{name}: only {who} has a notch ({hit['f'] / 1e9:.4f} GHz, {hit['db']:.1f} dB)")
             if rms > rms_ds:
                 why.append(f"{name} rms |dS| {rms:.3f} over {rms_ds}, worst {d[m]:.3f} at {freqs[m] / 1e9:.3f} GHz")
             terms[name] = t
-    return {"ok": not why, "solvers": list(names), "terms": terms, "disagree": why,
-            "limits": {"rms_ds": rms_ds, "notch_pct": notch_pct}}
+    out = {"ok": False, "solvers": list(names), "terms": terms, "disagree": why,
+           "limits": {"rms_ds": rms_ds, "notch_pct": notch_pct}}
+    if z_feed:
+        gaps = [abs(x - y) / y * 100 for x, y in zip(*z_feed)]
+        out["z_feed"] = {names[0]: list(z_feed[0]), names[1]: list(z_feed[1]), "gap_pct": [round(g, 2) for g in gaps]}
+        out["limits"]["z_pct"] = z_pct
+        for k, g in enumerate(gaps):
+            if g > z_pct:
+                why.append(f"port {k + 1} feed Z {z_feed[0][k]} ohm ({names[0]}) against "
+                           f"{z_feed[1][k]} ohm ({names[1]}): {g:.1f}% over {z_pct}%")
+    out["ok"] = not why
+    return out
 
 
 # ================================================================ read and run
