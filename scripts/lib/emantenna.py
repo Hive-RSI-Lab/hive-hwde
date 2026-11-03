@@ -134,6 +134,18 @@ def _rect(x0, y0, x1, y1):
     return [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
 
 
+def _resolve_grounds(grounds, nets) -> tuple:
+    """The board's own names for `grounds`, with or without KiCad's "/"."""
+    out = []
+    for g in grounds:
+        hits = [n for n in nets if n == g or n.lstrip("/") == g.lstrip("/")]
+        if not hits:
+            raise ValueError(f"ground net {g!r} has no copper on this board "
+                             f"(nets: {sorted(n for n in nets if 'GND' in n.upper())[:20]})")
+        out += hits
+    return tuple(out)
+
+
 def board_geo(pcb, region=None, grounds=("GND",), cut=(), shorts=(), outline=None) -> dict:
     """The board's copper for `deck`. region (x0, y0, x1, y1): the antenna's
     own copper; other nets outside it are dropped, ground nets are kept on the
@@ -142,12 +154,15 @@ def board_geo(pcb, region=None, grounds=("GND",), cut=(), shorts=(), outline=Non
     shorts: boxes (x0, y0, x1, y1, layer) of copper to add, to close a 0 ohm
     part or a net tie drawn only on the fab layers. outline (x0, y0, x1, y1):
     the dielectric and every net stop there (one coupon of a panel; its ground
-    net is then only what lies inside)."""
+    net is then only what lies inside). A ground may be named without KiCad's
+    sheet slash (GND_A9 for /GND_A9); one that matches no copper is an error,
+    since the deck would otherwise run with no ground plane at all."""
     from shapely.geometry import box as sbox
     from . import geom as G
     bg = G.load_board(pcb)
     x0, y0, x1, y1 = bg.outline.bounds
     geo = eb.extract(pcb, (x0 - 1, y0 - 1, x1 + 1, y1 + 1))
+    grounds = _resolve_grounds(grounds, {item["net"] for item in geo["copper"]})
     clip = sbox(*region) if region else None
     board = bg.outline if outline is None else bg.outline.intersection(sbox(*outline))
     if board.is_empty or board.geom_type != "Polygon":

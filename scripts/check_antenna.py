@@ -307,10 +307,16 @@ def check(pcb: Path, constraints: dict | None = None,
 
 # ------------------------------------------------- a board's own antenna copper
 
+def _aliases(names) -> set:
+    """Net names as a row may write them: KiCad's sheet slash is optional."""
+    names = {str(n) for n in names or ()}
+    return names | {n.lstrip("/") for n in names} | {"/" + n.lstrip("/") for n in names}
+
+
 def _row_copper(bg, row: dict, layer: str):
     """The antenna's copper on `layer`: its nets, its footprints' pads, and
     whatever copper a poly touches."""
-    nets, refs = set(row.get("nets") or ()), set(row.get("refs") or ())
+    nets, refs = _aliases(row.get("nets")), set(row.get("refs") or ())
     poly = Polygon(row["poly"]) if row.get("poly") else None
     out = []
 
@@ -320,7 +326,7 @@ def _row_copper(bg, row: dict, layer: str):
         if net in nets or ref in refs:
             out.append(g)
         elif poly is not None and poly.intersects(g):
-            out.append(g.intersection(poly))
+            out.append(_areal(g.intersection(poly)))
     for t in bg.tracks_of(layer=layer):
         take(t.net, None, t.poly)
     for v in bg.vias_of(layer=layer):
@@ -329,6 +335,7 @@ def _row_copper(bg, row: dict, layer: str):
         take(p.net, p.ref, p.poly)
     for z in bg.zones_of(layer=layer):
         take(z.net, None, z.fill_on(layer))
+    out = [g for g in out if not g.is_empty and g.area > 0]
     return unary_union(out) if out else None
 
 
@@ -437,7 +444,7 @@ def check_pcb_antennas(pcb: Path, bg, board, rows: list[dict]) -> tuple[list[dic
         c = rad_all.centroid
         at = (c.x, c.y)
         fact["bbox"] = [checklib.rnd(v, 3) for v in rad_all.bounds]
-        ground_nets = set(row.get("ground_nets") or ["GND"])
+        ground_nets = _aliases(row.get("ground_nets") or ["GND"])
         ground = _ground(bg, ground_nets, bg.copper_layers)
         gnd_all = unary_union(list(ground.values())) if ground else None
 
@@ -452,7 +459,7 @@ def check_pcb_antennas(pcb: Path, bg, board, rows: list[dict]) -> tuple[list[dic
             keep = _trim_at_contacts(keep, rad_all, row["feed"], row["short"],
                                      float(row.get("short_contact_mm", 1.5)))
         keep = keep.intersection(board)
-        own_nets = set(row.get("nets") or ())
+        own_nets = _aliases(row.get("nets"))
         own_refs = set(row.get("refs") or ())
         if row.get("over_ground"):
             own_nets = own_nets | ground_nets
@@ -496,7 +503,7 @@ def check_pcb_antennas(pcb: Path, bg, board, rows: list[dict]) -> tuple[list[dic
                 dist = checklib.rnd(gnd_all.distance(pt), 3) if gnd_all is not None else None
                 viols.append(checklib.violation(
                     SCRIPT, "error", tuple(row["short"]), None, None, sorted(own_refs),
-                    f"{name}: the short does not reach ground {sorted(ground_nets)} "
+                    f"{name}: the short does not reach ground {row.get('ground_nets') or ['GND']} "
                     f"(nearest {dist} mm): an open IFA is another antenna",
                     SOURCE, kind="pcb_antenna_feed", distance_mm=dist))
 
@@ -514,7 +521,7 @@ def check_pcb_antennas(pcb: Path, bg, board, rows: list[dict]) -> tuple[list[dic
                         f"the design says {ge['height_mm']:g} +- {tol:g} mm",
                         SOURCE, kind="pcb_antenna_ground_edge", height_mm=checklib.rnd(height, 3)))
         elif ge:
-            not_judged.append(f"{name}: no copper on ground nets {sorted(ground_nets)}, so no ground edge")
+            not_judged.append(f"{name}: no copper on ground nets {row.get('ground_nets') or ['GND']}, so no ground edge")
 
         # the board edge
         if row.get("edge_max_mm") is not None:
@@ -582,6 +589,15 @@ def _trim_at_contacts(keep, rad, feed, short, margin):
     return keep.intersection(side)
 
 
+def _areal(g):
+    """g's parts with area: a keep-out's edge running along copper leaves a
+    mixed collection, and GEOS refuses to overlay those."""
+    parts = getattr(g, "geoms", None)
+    if g.geom_type != "GeometryCollection" or parts is None:
+        return g
+    return unary_union([p for p in parts if p.area > 0])
+
+
 def _foreign_copper(bg, region, layer: str, own_nets, own_refs, rad) -> list:
     """Copper on `layer` in `region` that isn't the antenna's own."""
     out = []
@@ -594,7 +610,7 @@ def _foreign_copper(bg, region, layer: str, own_nets, own_refs, rad) -> list:
     for net, ref, g in items:
         if g is None or g.is_empty or net in own_nets or ref in own_refs:
             continue
-        hit = g.intersection(region)
+        hit = _areal(g.intersection(region))
         if rad is not None:
             hit = hit.difference(rad)
         if not hit.is_empty:

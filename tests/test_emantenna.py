@@ -381,3 +381,17 @@ def test_live_palace_patch_is_a_second_solver(tmp_path):
     f, q = ea.patch_tm010(r["modes"])
     assert f == pytest.approx(2.332, rel=0.025)
     assert 30 < q < 100
+
+
+def test_resolve_grounds_takes_the_sheet_slash_and_refuses_a_missing_net():
+    nets = {"/GND_A9", "/A9_FEED", "GND"}
+    assert ea._resolve_grounds(("GND_A9",), nets) == ("/GND_A9",)
+    assert ea._resolve_grounds(("/GND",), nets) == ("GND",)
+    with pytest.raises(ValueError, match="no copper"):
+        ea._resolve_grounds(("GND_A8",), nets)
+
+
+def test_areal_keeps_only_the_parts_a_geos_overlay_can_take():
+    from shapely.geometry import GeometryCollection, LineString, box
+    mixed = GeometryCollection([box(0, 0, 1, 1), LineString([(2, 0), (3, 0)])])
+    assert check_antenna._areal(mixed).difference(box(0, 0, 0.5, 1)).area == pytest.approx(0.5)
