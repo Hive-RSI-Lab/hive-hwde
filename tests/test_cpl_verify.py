@@ -875,6 +875,19 @@ def test_switch_pads_fit_by_geometry_not_numbers():
     assert cv.analyse(_kfp("S1", wider), model)["verdict"] == "no_fit"
 
 
+def test_placement_offset_ignores_a_thermal_pad_split_differently():
+    """ESP32-S3-WROOM-1: pad 41 is 21 entries on the board and 9 in the LCSC
+    model, not all centred. The perimeter pads coincide, so there is no offset;
+    a plain mean called it 0.6 mm and the CPL put the module off its pads."""
+    ring = [("1", -4.0, -4.0), ("2", 4.0, -4.0), ("3", 4.0, 4.0), ("4", -4.0, 4.0)]
+    model = _model(ring + [("41", x, 0.0) for x in (-1.0, 0.0, 1.0)])
+    pads = ring + [("41", x * 0.5 + 1.0, y * 0.5 + 1.0) for x in (-1, 0, 1) for y in (-1, 0, 1)]
+    fp = _kfp("U1", pads)
+    assert cv.placement_offset(fp, model, 0.0) is None
+    row = cv.check_part(fp, model, {"rot": 0.0, "x": 10.0, "y": 10.0})
+    assert row["offset_mm"] == 0.0
+
+
 def test_placement_offset_when_origin_isnt_the_part_centre():
     """A connector whose footprint origin is off its pads' centre: the CPL has
     to carry the difference (SparkFun's Qwiic 1.87 mm), or JLC places it off

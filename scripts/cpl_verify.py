@@ -80,6 +80,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+from collections import Counter
 import math
 import os
 import re
@@ -425,13 +426,28 @@ def derive_rotation(fp: Footprint, model) -> float | None:
     return cpl_rotation(fp.side, fp.rot, a["corrections"][0])
 
 
+def _offset_pads(fp: Footprint, model) -> tuple[list, list]:
+    """The pads to compare for an offset: numbers with as many entries on the
+    board as in the model. A thermal pad is drawn as 21 entries here and 9 there
+    (ESP32-S3-WROOM-1), which pulls a plain mean of all entries off the centre
+    by about 0.6 mm for a part that sits exactly on its footprint. Every pad if
+    the two sides share no such number."""
+    count = lambda pads: Counter(p.number for p in pads)
+    mc, kc = count(model.pads), count(fp.pads)
+    same = {n for n, c in mc.items() if kc.get(n) == c}
+    em = [p for p in model.pads if p.number in same]
+    km = [p for p in fp.pads if p.number in same]
+    return (em, km) if em else (list(model.pads), list(fp.pads))
+
+
 def _centre_delta(fp: Footprint, model, cpl_rot: float) -> tuple[float, float]:
     """Board pad centre minus model pad centre, both turned, in the board frame
     (y down), with the part's position taken as the footprint origin. On the
     bottom the model turns in the view from below, so its x comes back negated
     (the same mirror Bouni's exporter applies to a position offset)."""
-    em = [(p.x, p.y) for p in model.pads]
-    km = [(p.x, p.y) for p in fp.pads]
+    mp, bp = _offset_pads(fp, model)
+    em = [(p.x, p.y) for p in mp]
+    km = [(p.x, p.y) for p in bp]
     ec = rot(sum(x for x, _ in em) / len(em), sum(y for _, y in em) / len(em), cpl_rot)
     if fp.side != "top":
         ec = (-ec[0], ec[1])
