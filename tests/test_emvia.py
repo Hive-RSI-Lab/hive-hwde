@@ -13,6 +13,7 @@ synthetic vias. Tolerances are from the refinement study in docs/solvers.md:
 """
 from __future__ import annotations
 
+import re
 import json
 import math
 import sys
@@ -523,3 +524,11 @@ def test_launch_planes_bleed_at_the_sides_but_not_at_the_board_edge():
     assert boxes
     assert not [b for b in boxes if min(b[1][0], b[2][0]) < -1e-6 and abs(b[1][1]) < spec.half_y and abs(b[2][1]) < spec.half_y]
     assert any(max(b[1][0], b[2][0]) > spec.run for b in boxes)
+
+
+def test_palace_return_pad_keeps_out_of_a_barrel_running_through_it():
+    """A sheet across a barrel's void leaves triangles on no tet: MFEM aborts in STable3D."""
+    spec = stub_spec()
+    geo = ev.palace_geo(spec)
+    x, y = spec.returns[0][:2]
+    assert re.search(rf"Disk\(\d+\) = \{{{x},{y},{spec.stack['z'][spec.out_layer]},{spec.ret_drill / 2}\}};", geo)

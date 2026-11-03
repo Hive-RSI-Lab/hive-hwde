@@ -977,7 +977,7 @@ def palace_geo(spec: ViaSpec, fine: float = 0.15, coarse: float = 1.5, air: floa
     def ret_discs(zz, layer):
         if layer in ret_span:
             for r in spec.returns:
-                disc(r[0], r[1], zz, spec.ret_pad / 2)
+                disc(r[0], r[1], zz, spec.ret_pad / 2, spec.ret_drill / 2 if layer in ret_span[1:-1] else 0.0)
     sig_span = _layers_between(st, top, bot)
 
     def through(layer):
