@@ -104,6 +104,24 @@ The cases (docs/solvers.md has the measured errors):
     electrothermal      the coupled strip (copper's R rising with T under
                         held voltage) vs its closed-form quadratic
 
+    hwde sim_solve via (--pcb BOARD --via X,Y [--radius R] | --stackup NAME
+                       --in-layer L --out-layer L --w-in W --w-out W
+                       [--drill D --pad P --antipad A --returns N --return-r R
+                        --blind]) [--f-max HZ] [--fine MM] [--points N]
+                       [--knee-ghz G] [--refine] [--touchstone F] [--out F]
+                       [--deck-only DIR]
+        A via with its pads, antipads, return vias and stub as an openEMS 3D
+        deck (lib/emvia, #479): S at the ports, its L, C and TDR Z, the stub's
+        notch against c / (4 L sqrt(er)) (the ratio is the pads' loading), cells
+        and dt. --refine runs a second mesh a step finer (every cell / 1.5) and
+        exits 1 if S or the notch moved past emboard.CONV_TOL. --knee-ghz judges the rule: a
+        notch under 2 x it, the nearest return via past lambda/10 at it.
+    hwde sim_solve launch --stackup NAME --w W --pad-w W --pad-l L --pad-in D
+                       --gap G --antipad A --gnd-y Y [--cut-in2] [--run L]
+                       [--f-max HZ] [--fine MM] [--refine] [--touchstone F]
+        An edge SMA onto a line (assumed connector model, lib/emvia): S from
+        the line's plane to the jack's mating face.
+
 Solves go through `hive heavy` (bin/hwde lists sim_solve as heavy), so a
 full-wave run never lands beside another heavy job on the machine.
 """
@@ -703,6 +721,129 @@ def board_study(pcb, region, ports, parts=None, f_max=6e9, f_min=None, points=20
     return res
 
 
+def _s2p_quality(res: dict) -> dict:
+    S, freqs = res["S"], res["freqs"]
+    return _quality(freqs, {j: [[s[i][j] for i in range(2)] for s in S] for j in range(2)}, 2)
+
+
+def _finish_em(res: dict, args, comments: list[str]) -> int:
+    """Write the s2p and the JSON, print, exit by the quality check and the gate."""
+    from lib import emboard as eb
+    from lib import sparam
+    S, freqs = res.pop("S"), res["freqs"]
+    res.pop("S_shifted", None)
+    for k in ("z_feed", "gamma_feed", "z_coax"):
+        res.pop(k, None)
+    if args.touchstone:
+        Path(args.touchstone).write_text(eb.touchstone(freqs, S, comments))
+    res["s21_db"] = [round(20 * math.log10(max(abs(s[1][0]), 1e-12)), 3) for s in S]
+    res["s11_db"] = [round(20 * math.log10(max(abs(s[0][0]), 1e-12)), 3) for s in S]
+    if args.out:
+        Path(args.out).write_text(json.dumps(res, indent=1, default=str) + "\n")
+    if args.json:
+        print(json.dumps(res, indent=1, default=str))
+    else:
+        st = res["stats"]
+        print(f"{st['cells']} cells {st['mesh']}, smallest cell {st['min_cell_mm']} mm, "
+              f"Courant dt {st['dt_courant_s']:.3g} s")
+        for r_ in res["runs"]:
+            print(f"run: {r_['steps']} steps, dt {r_['dt_log_s']}, {r_['seconds']} s, "
+                  f"tail {r_['tail']:.1e}" + ("" if r_["rang_down"] else "  NOT RUNG DOWN"))
+        rep = res.get("report") or {}
+        for k in ("stub", "notch_ghz", "notch_s21_db", "loading", "lc", "tdr_z_ohm", "return_nearest_mm"):
+            if k in rep:
+                print(f"  {k}: {rep[k]}")
+        for f in rep.get("findings", []):
+            print(f"  {f['severity']}: {f['kind']}: {f['message']}")
+        if "refine" in res:
+            print(f"  refine: {res['refine']}")
+    q = res["quality"]
+    if not args.json or not q["ok"]:
+        print(sparam.summary({**q, "file": args.touchstone or args.cmd}), file=sys.stdout if q["ok"] else sys.stderr)
+    bad = not q["ok"]
+    if "refine" in res and not res["refine"]["converged"]:
+        print(f"not converged: {res['refine']}", file=sys.stderr)
+        bad = True
+    if any(f["severity"] == "error" for f in (res.get("report") or {}).get("findings", [])):
+        bad = True
+    if not all(r_["rang_down"] for r_ in res["runs"]):
+        print("a run never rang down: STEPS_MAX reached", file=sys.stderr)
+        bad = True
+    return 1 if bad else 0
+
+
+def _via_cmd(args, ap) -> int:
+    from lib import emvia as ev
+    if bool(args.pcb) == bool(args.stackup):
+        ap.error("via: give --pcb and --via, or --stackup and the geometry")
+    if args.pcb:
+        if not args.via:
+            ap.error("via: --pcb needs --via X,Y")
+        x, y = (float(v) for v in args.via.split(","))
+        geo, ports = ev.from_board(args.pcb, x, y, args.radius)
+        shift = [abs(ports[0].plane - geo["via"]["x" if ports[0].axis == 0 else "y"]),
+                 abs(ports[1].plane - geo["via"]["x" if ports[1].axis == 0 else "y"])]
+        label = f"{args.pcb} via {args.via}"
+    else:
+        if not (args.w_in and args.w_out):
+            ap.error("via: --stackup needs --w-in and --w-out")
+        spec = ev.ViaSpec(stack=ev.stack_named(args.stackup), in_layer=args.in_layer, out_layer=args.out_layer,
+                          w_in=args.w_in, w_out=args.w_out, drill=args.drill, pad=args.pad, antipad=args.antipad,
+                          returns=ev.ring(args.returns, args.return_r, 45) if args.returns else [],
+                          barrel_bot=args.out_layer if args.blind else None)
+        geo, ports = ev.synth(spec)
+        shift = [spec.run, spec.run]
+        label = f"{args.stackup} {args.in_layer}->{args.out_layer}"
+    f_max = args.f_max or 20e9
+    if args.deck_only:
+        out = Path(args.deck_only)
+        decks = []
+        for e in (0, 1):
+            csx, where, stats = ev.build(geo, ports, f_max, e, fine=args.fine)
+            d = out / f"port{e}"
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "deck.xml").write_text(csx.xml())
+            (d / "where.json").write_text(json.dumps(where, indent=1) + "\n")
+            decks.append({"excite": e, "dir": str(d), **stats})
+        print(json.dumps({"script": SCRIPT, "cmd": "via", "decks": decks, "ports": where["ports"]}, indent=1))
+        return 0
+    def run(refine):
+        return ev.study(geo, ports, f_max, args.f_min, args.points, fine=args.fine, refine=refine, shift=shift,
+                        keep=args.keep and f"{args.keep}/refine{refine:g}", timeout=args.timeout)
+    res = ev.refined(run, f_max) if args.refine else run(1.0)
+    res["report"] = ev.report(res, geo, args.knee_ghz)
+    res["quality"] = _s2p_quality(res)
+    res.update(script=SCRIPT, cmd="via", source=label, via=geo["via"])
+    return _finish_em(res, args, [f"hwde sim_solve via, openEMS: {label}"])
+
+
+def _launch_cmd(args) -> int:
+    from lib import emvia as ev
+    spec = ev.LaunchSpec(stack=ev.stack_named(args.stackup), layer="F.Cu", w=args.w, pad_w=args.pad_w,
+                         pad_l=args.pad_l, pad_in=args.pad_in, gap=args.gap, antipad=args.antipad,
+                         gnd_y=args.gnd_y, cut_in2=args.cut_in2, run=args.run)
+    f_max = args.f_max or 6e9
+    if args.deck_only:
+        out = Path(args.deck_only)
+        decks = []
+        for shorted in (False, True):
+            csx, where, stats = ev.launch_build(spec, f_max, shorted=shorted, fine=args.fine)
+            d = out / ("short" if shorted else "match")
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "deck.xml").write_text(csx.xml())
+            (d / "where.json").write_text(json.dumps(where, indent=1) + "\n")
+            decks.append({"coax_end": d.name, "dir": str(d), **stats})
+        print(json.dumps({"script": SCRIPT, "cmd": "launch", "decks": decks, "ports": where["ports"]}, indent=1))
+        return 0
+    def run(refine):
+        return ev.launch_study(spec, f_max, args.f_min, args.points, fine=args.fine, refine=refine,
+                               keep=args.keep and f"{args.keep}/refine{refine:g}", timeout=args.timeout)
+    res = ev.refined(run, f_max) if args.refine else run(1.0)
+    res["quality"] = _s2p_quality(res)
+    res.update(script=SCRIPT, cmd="launch", source=args.stackup)
+    return _finish_em(res, args, [f"hwde sim_solve launch, openEMS: edge SMA on {args.stackup}, port 1 the line, port 2 the jack face",
+                                  "the connector's pin and body are assumed (KU-VV-1)"])
+
 def _convergence_summary(conv: dict) -> str:
     """The convergence table, and the verdict against its tolerances."""
     t = conv["tol"]
@@ -1069,6 +1210,45 @@ def main(argv=None) -> int:
     bd.add_argument("--cross-timeout", type=float, default=3600)
     bd.add_argument("--json", action="store_true")
     _loss_args(bd, ("line", "deck", "none"))
+    vi = sub.add_parser("via")
+    vi.add_argument("--pcb")
+    vi.add_argument("--via")
+    vi.add_argument("--radius", type=float, default=6.0, help="region half-size, mm: 3 mm kept only two of a coupon via's returns and read 4x the loss")
+    vi.add_argument("--stackup")
+    vi.add_argument("--in-layer", default="F.Cu")
+    vi.add_argument("--out-layer", default="B.Cu")
+    vi.add_argument("--w-in", type=float)
+    vi.add_argument("--w-out", type=float)
+    vi.add_argument("--drill", type=float, default=0.3)
+    vi.add_argument("--pad", type=float, default=0.6)
+    vi.add_argument("--antipad", type=float, default=1.0)
+    vi.add_argument("--returns", type=int, default=4)
+    vi.add_argument("--return-r", type=float, default=1.0)
+    vi.add_argument("--blind", action="store_true", help="stop the barrel at the out layer: no stub")
+    lc = sub.add_parser("launch")
+    lc.add_argument("--stackup", required=True)
+    lc.add_argument("--w", type=float, required=True)
+    lc.add_argument("--pad-w", type=float, required=True)
+    lc.add_argument("--pad-l", type=float, required=True)
+    lc.add_argument("--pad-in", type=float, required=True)
+    lc.add_argument("--gap", type=float, required=True)
+    lc.add_argument("--antipad", type=float, required=True)
+    lc.add_argument("--gnd-y", type=float, required=True)
+    lc.add_argument("--cut-in2", action="store_true")
+    lc.add_argument("--run", type=float, default=7.0)
+    for q in (vi, lc):
+        q.add_argument("--f-max", type=float, default=None)
+        q.add_argument("--f-min", type=float)
+        q.add_argument("--points", type=int, default=201)
+        q.add_argument("--fine", type=float)
+        q.add_argument("--knee-ghz", type=float)
+        q.add_argument("--refine", action="store_true")
+        q.add_argument("--touchstone")
+        q.add_argument("--out")
+        q.add_argument("--keep")
+        q.add_argument("--deck-only")
+        q.add_argument("--timeout", type=float, default=7200)
+        q.add_argument("--json", action="store_true")
     an = sub.add_parser("antenna", help="a board's PCB antenna: S11, Zin, gain pattern, efficiency (#481)")
     an.add_argument("--pcb", required=True)
     an.add_argument("--feed", required=True, help="X,Y[,LAYER[,REF]] between layers, "
@@ -1211,6 +1391,11 @@ def main(argv=None) -> int:
         if not args.json or not conv["ok"]:
             print(_convergence_summary(conv), file=sys.stdout if conv["ok"] else sys.stderr)
         return 0 if ok and conv["ok"] else 1
+
+    if args.cmd == "via":
+        return _via_cmd(args, ap)
+    if args.cmd == "launch":
+        return _launch_cmd(args)
 
     if args.cmd == "planar":
         geo = json.loads(Path(args.geom).read_text())

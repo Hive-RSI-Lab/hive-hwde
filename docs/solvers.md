@@ -484,10 +484,90 @@ edge, the copy against `reference/pcb_antennas.yaml`, and a `sim` result against
 its band. The `feed` of a row with a reference is where the reference's anchor
 goes, so it sits on the ground edge: 0.08 mm off reads as a 10% copper difference.
 
+## Vias and launches in 3D (#479, #599)
+
+`hwde sim_solve via` solves one via in openEMS, cut from a board
+(`--pcb B --via X,Y`) or from a stack (`stackups.yaml`): signal barrel, pads,
+antipads, return vias, stub. It writes an s2p and reports S, effective Z from a
+TDR of S11, the stub notch against `check_via_stubs`'s closed form, and the power
+lost, 1-(|S11|^2+|S22|^2)/2-|S21 S12|. `hwde sim_solve launch` does an edge SMA on a line: a
+coax port on the jack's face and two runs, the coax absorbing and then shorted
+(`scripts/lib/emvia.py`). The Palace cross-check on one via is
+`emvia.palace_run`, not a flag. `check_via_stubs` gains `via_return_far` and
+`via_no_return` (nearest return via over a tenth of a wavelength at the knee, a
+rule of thumb) and prints `f_em_est_ghz` beside its bound.
+
+Read these before relying on a number:
+
+- The closed form c/(4 L sqrt(er)) is an upper bound. The pads load the stub: a
+  2.4 mm stub reads as 2.8 mm, a 1.15 mm one as 1.6 mm. `viastub.EM_LOAD_MM` is
+  0.45 mm from those two stacks, a figure to read beside the bound; the check's
+  ratios do not use it.
+- Power lost is the figure to compare between decks. These decks are lossless, so
+  it is what leaves the walls as a parallel-plate mode, and it does not depend on
+  the reference. S11 and S21 at 50 ohm carry the line's own step: the deck has no
+  mask and zero-thick copper, so JLC's 50 ohm microstrip reads 54 ohm (Hammerstad on
+  the same geometry gives 53.7), a ripple up to -22 dB in S11 and 0.025 dB in S21
+  that moves with the region's length. A coarse grid under a zero-thick strip reads
+  low, and falls as the square root of the cell: zcoupon's deck reads 50 on a 0.08 mm
+  grid, where a static 2D solve of its section gives 49.9 (53.1 at 0.005 mm). A line
+  that reads the real board's figure without mask is a warning, not a pass.
+- A launch's extracted S is not reciprocal in magnitude: |S21| .984 and |S12| 1.002
+  at 4.4 GHz on the coarse mesh; the ratio goes .982, .988, .991 with refinement, and
+  the phases agree to 0.04 degrees. That is a scale error between the coax's probes
+  and the line's, not the structure, and its cause is not found. |S21|^2 alone read it as 2.5% lost. So
+  `launch_study` returns S21 = S12 = sqrt(S21 S12) and says how much that took out
+  (`imbalance`), and power lost uses the product, which holds across meshes (table). A via's
+  two ports are alike and its S is reciprocal to the digit, so neither changes it.
+- A thru's S11 at 50 ohm hangs on what the deck's line reads, more than on the launch.
+  Two launches and 6 mm of ideal line read -19.8 dB worst at Z 54, -24 at Z 50.
+  Compare launches through the excess against the deck's own Zc.
+- Region radius matters: 3 mm kept two of a coupon via's returns and read 4x the
+  loss, so the default is 6 mm.
+- The walls absorb what a real board's plane edges reflect. A one-via figure is
+  not the coupon's whole cavity.
+
+Known answers, openEMS (no loss, no mask, zero-thick copper). Cells and dt grow
+fast: the z mesh and small features are where the timestep goes.
+
+| case | refine | cells | dt, fs | wall, s | result |
+|---|---|---|---|---|---|
+| coax via, 8 returns, 2.4 mm | 1 / 1.5 / 2.25 | 276k / 769k / 2.83M | 78.1 / 49.4 / 28.0 | 94 / 471 / 903 | Z 50.6 / 49.0 / 48.7, delay 17.39 / 15.94 / 15.59 ps |
+| 2.4 mm stub, er 4.3 | 1 / 1.5 / 2.25 | 376k / 1.05M / 3.55M | 74.9 / 44.8 / 29.2 | 87 / 534 / 1808 | notch 12.44 / 12.96 / 12.85 GHz, closed form 15.06 |
+| #599, 1.15 mm stub | 1 / 1.3 / 1.69 / 2.2 | 962k / 1.73M / 3.48M / 7.34M | 37.6 / 27.5 / 20.2 / 14.9 | 1182 / 966 / 2065 / 3453 | notch 21.24 / 21.73 / 21.94 / 22.36 GHz, closed form 31.43 |
+| #599 blind twin | 1 / 1.3 | 962k / 1.73M | 37.6 / 27.5 | 1411 / 884 | no notch to 40 GHz |
+| zcoupon VIA2X via | 1 / 1.5 | 540k / 1.29M | 63.5 / 38.5 | 542 / 1081 | power lost -0.015 / -0.014 dB at 4.4 GHz, -0.048 at 8 |
+| zcoupon SMA launch | 1 / 1.25 / 1.5 | 790k / 1.37M / 2.37M | 69.4 / 54.6 / 38.4 | 451 / 912 / 2711 | at 4.4 GHz S21 -0.063 / -0.060 / -0.061 dB, S11 -21.5 / -21.9 / -21.7 dB, lost 0.72 / 0.73 / 0.72%; excess against the deck's own line -29.6 / -29.1 / -29.2 dB |
+
+The coax via's closed form (cage, `cage_lc`) is 54.2 ohm and 16.6 ps; the converged
+deck is 10% low in Z and 7% low in delay, the pads' capacitance. Palace (driven,
+`palace_run`) agrees within 1 dB of |S21| to 20 GHz on the coax via (62k elements,
+order 2, 954 s), within 0.49 dB in 2 to 10 GHz on the stub, and puts its notch at
+13.1 GHz on two meshes (76k, 98k elements), 1 to 2% above openEMS.
+
+The notches are not converged in openEMS to the 0.5% the other studies hold to. The
+stub's last step is 0.85% and not monotonic. #599 still climbs at 7.3M cells: its steps
+are 0.49, 0.21, 0.42 GHz, so a fit through the first three (22.1 GHz) was wrong. Palace
+puts #599's notch at 22.75 GHz on 79k and 101k elements (a 0.25 GHz grid; 484 s and
+674 s), 1.7% above the finest openEMS, which is climbing toward it. Take the loading
+factor as 0.71 to 0.72 for #599 and 0.85 to 0.87 for the stub, from the two solvers'
+spread. Add the pads as 0.36 to 0.47 mm of stub; `EM_LOAD_MM`, 0.45, is near the high end of that.
+
+The launch's other reference is a second openEMS deck, not a second solver: zcoupon's
+own (`boards/zcoupon/sim/ems.py` in hw-lab; PML ends, PEC side walls, stitching vias,
+line reading 50.5 ohm off its grid) gives a launch excess of -38.9, -33.0, -29.7 dB at 2, 3, 4.4 GHz
+against -39.8, -34.4, -29.6 here, each against its deck's own line. It loses 0.40% per
+launch at 4.4 GHz with conductor loss in, against 0.72% here with none; the walls differ,
+and which one is right is not settled.
+
+Not run: the launch has no second solver, and the jack is an assumed coax model, not
+a connector's real body. No loss, no mask anywhere. zcoupon's measured S21 on the
+hw-lab VNA is the reference still to come.
+
 ## What is not here yet
 
-- Connector bodies and launches (the SMA's coax and pin: #479; `sim_solve
-  board` already has the vias and plane cut-outs); Palace for the same decks.
+- A connector's real body (`sim_solve launch` has a coax model of the jack);
+  Palace for launches and for `sim_solve board` decks.
   Palace on a board's own antenna: only the bare patch has been run.
 - `thermalfv` on a board's real copper. check_irdrop already rasterises a
   net into a grid; feeding its grid and current into `thermalfv.joule`

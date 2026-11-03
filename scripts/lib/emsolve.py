@@ -85,6 +85,14 @@ class Csx:
                 return
         raise KeyError(name)
 
+    def cylinder(self, name: str, p1, p2, radius: float, prio: int = 0) -> None:
+        """CSXCAD's Cylinder between the centres of its two ends."""
+        for kind, attrs, inner, boxes in self.props:
+            if attrs["Name"] == name:
+                boxes.append(("cyl", prio, tuple(map(float, p1)), tuple(map(float, p2)), float(radius)))
+                return
+        raise KeyError(name)
+
     def linpoly(self, name: str, pts, z: float, length: float, prio: int = 0) -> None:
         """A polygon in the plane z extruded by `length` along +z (a board's
         dielectric cut to its outline)."""
@@ -172,6 +180,8 @@ class Csx:
             if kind not in ("Metal", "ConductingSheet"):
                 continue
             for prim in boxes:
+                if prim[0] == "cyl":
+                    continue
                 if prim[0] == "poly":
                     if not on("z", prim[2]):
                         out.append((attrs["Name"], "z", prim[2]))
@@ -217,6 +227,12 @@ class Csx:
                     vs = "".join(f'<Vertex X1="{_fmt(x)}" X2="{_fmt(y)}"/>' for x, y in pts)
                     out.append(f'          <Polygon Priority="{prio}" NormDir="2" Elevation="{_fmt(z)}"'
                                f' QtyVertices="{len(pts)}">{vs}</Polygon>')
+                    continue
+                if prim[0] == "cyl":
+                    _, prio, p1, p2, rad = prim
+                    out.append(f'          <Cylinder Priority="{prio}" Radius="{_fmt(rad)}">'
+                               f'<P1 X="{_fmt(p1[0])}" Y="{_fmt(p1[1])}" Z="{_fmt(p1[2])}"/>'
+                               f'<P2 X="{_fmt(p2[0])}" Y="{_fmt(p2[1])}" Z="{_fmt(p2[2])}"/></Cylinder>')
                     continue
                 if prim[0] == "linpoly":
                     _, prio, z, pts, length = prim

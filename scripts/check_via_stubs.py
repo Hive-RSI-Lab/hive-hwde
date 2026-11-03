@@ -22,6 +22,11 @@ Findings:
                       the longest stub that clears and the fixes (blind via, a
                       layer pair with a shorter stub, back-drill). A back-
                       drilled side is judged at its worst case (+ tolerance).
+  via_return_far      warning: a via that changes layer with its nearest return
+                      via (one on a net poured on a layer it spans) past
+                      lambda/10 at the knee. Rule of thumb; `sim_solve via`
+                      (#479) answers for the real geometry
+  via_no_return       warning: the same with no such via on the board
   backdrill_missing   error: a via on a net listed in `backdrill` that a drill
                       could shorten has none on the board (run via_backdrill)
   backdrill_cuts_net  error: the drill removes a layer the net uses
@@ -43,6 +48,7 @@ CLI: --pcb board.kicad_pcb [--constraints constraints.json] [--out report.json]
 from __future__ import annotations
 
 import argparse
+import math
 import sys
 from pathlib import Path
 
@@ -163,6 +169,7 @@ def check(pcb: Path, cons: dict) -> tuple[list[dict], dict]:
                              "knee_ghz": None if knee is None else round(knee, 3)})
             for row in rows:
                 judge(vios, st, v, used, row, knee, entry, tol, here)
+            judge_return(vios, bg, st, v, used, knee, vias_out[-1])
             if net in entries:
                 missing(vios, st, v, used, here, tol)
     if drilled_any or entries:
@@ -225,6 +232,8 @@ def judge(vios, st, v, used, row, knee, entry, tol, here) -> None:
             kind="backdrill_stub_long", worst_mm=row["worst_mm"], max_mm=limit))
     f = viastub.f_res_ghz(row["worst_mm"], row["eps"])
     row["f_res_ghz"] = None if f is None else round(f, 3)
+    if f is not None:
+        row["f_em_est_ghz"] = round(viastub.f_res_ghz(row["worst_mm"] + viastub.EM_LOAD_MM, row["eps"]), 3)
     if f is None or knee is None:
         return
     ratio = f / knee
@@ -243,6 +252,39 @@ def judge(vios, st, v, used, row, knee, entry, tol, here) -> None:
         knee_ghz=round(knee, 3), ratio=round(ratio, 3), max_stub_mm=round(need, 3),
         side=row["side"], exit=row["exit"]))
 
+
+
+def judge_return(vios, bg, st, v, used, knee, row) -> None:
+    """A layer change's return current needs a via near it, once there's a
+    plane to return on. Facts on any via; a finding only with a knee."""
+    if len(used) < 2:
+        return
+    nets = viastub.plane_nets(bg, v)
+    if not nets:
+        return
+    near = viastub.nearest_return(bg, v, nets)
+    row["return_via_mm"] = None if near is None else round(near[0], 3)
+    if knee is None:
+        return
+    eps = st.eps(used[0], used[-1])
+    lam = viastub.C_MM_GHZ / (knee * math.sqrt(eps))
+    limit = viastub.RETURN_FRAC * lam
+    if near is None:
+        vios.append(checklib.violation(
+            SCRIPT, "warning", v.at, used[0], v.net, [],
+            f"{v.net}: via changes layer {used[0]} to {used[-1]} with no via on "
+            f"{', '.join(sorted(nets))} anywhere: the return current has no path "
+            f"between the planes. Add one within {limit:.1f} mm "
+            f"(lambda/10 at {knee:.2f} GHz)", SOURCE, kind="via_no_return",
+            knee_ghz=round(knee, 3), limit_mm=round(limit, 3)))
+    elif near[0] > limit:
+        vios.append(checklib.violation(
+            SCRIPT, "warning", v.at, used[0], v.net, [],
+            f"{v.net}: via changes layer {used[0]} to {used[-1]} with its nearest "
+            f"return via {near[0]:.2f} mm away, past lambda/10 = {limit:.2f} mm at "
+            f"{knee:.2f} GHz. Add one nearer (hwde sim_solve via shows what it costs)",
+            SOURCE, kind="via_return_far", return_mm=round(near[0], 3),
+            limit_mm=round(limit, 3), knee_ghz=round(knee, 3)))
 
 
 def missing(vios, st, v, used, here, tol) -> None:
