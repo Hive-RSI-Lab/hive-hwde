@@ -904,6 +904,9 @@ def flip(s):
 
 # ================================================================ Palace cross-check
 
+SHEET_TAG = 100000       # palace_geo's first explicit surface tag
+
+
 def palace_geo(spec: ViaSpec, fine: float = 0.15, coarse: float = 1.5, air: float = 2.0) -> str:
     """A gmsh .geo for the same via as `synth` draws: every copper layer a
     zero-thickness internal sheet, barrels holes in the dielectric, a lumped
@@ -952,8 +955,17 @@ def palace_geo(spec: ViaSpec, fine: float = 0.15, coarse: float = 1.5, air: floa
     # mesh, but every one is fragmented in so its outline is a set of edges
     sheets = []
 
+    # far above the faces OCC numbers for itself on the volumes above: a tag
+    # that's taken loses the sheet, and gmsh goes on without it
+    sheet_tag = SHEET_TAG
+
+    def ns():
+        nonlocal sheet_tag
+        sheet_tag += 1
+        return sheet_tag
+
     def surf(kind: str, args: str) -> int:
-        s = nv()
+        s = ns()
         out.append(f"{kind}({s}) = {{{args}}};")
         sheets.append(s)
         return s
@@ -964,7 +976,7 @@ def palace_geo(spec: ViaSpec, fine: float = 0.15, coarse: float = 1.5, air: floa
         s = surf("Disk", f"{cx},{cy},{zz},{r}")
         if not hole:
             return s
-        h, d = nv(), nv()
+        h, d = ns(), ns()
         out.append(f"Disk({h}) = {{{cx},{cy},{zz},{hole}}};")
         out.append(f"BooleanDifference({d}) = {{ Surface{{{s}}}; Delete; }}{{ Surface{{{h}}}; Delete; }};")
         sheets[sheets.index(s)] = d
@@ -1003,7 +1015,7 @@ def palace_geo(spec: ViaSpec, fine: float = 0.15, coarse: float = 1.5, air: floa
     for x, layer, w in ((x0, spec.in_layer, spec.w_in), (x1, spec.out_layer, spec.w_out)):
         ref = _nearest(st_o, layer)
         za, zb = sorted((z[layer], z[ref]))
-        s = nv()
+        s = ns()
         out.append(f"Rectangle({s}) = {{{x},{-w / 2},{za},{zb - za},{w}}};")
         out.append(f"Rotate {{{{0,1,0}},{{{x},0,{za}}},-Pi/2}} {{ Surface{{{s}}}; }}")
         sheets.append(s)
@@ -1149,8 +1161,9 @@ def palace_run(spec: ViaSpec, work, f_min_ghz: float, f_max_ghz: float, step_ghz
     (work / "via.geo").write_text(palace_geo(spec, fine, coarse, air))
     t0 = time.time()
     r = solvers.run("gmsh", ["via.geo", "-3", "-o", "via.msh"], cwd=work, timeout=min(timeout, 1800))
-    if not (work / "via.msh").exists():
-        raise solvers.SolverError(f"gmsh: {(r.stdout + r.stderr)[-500:]}")
+    # gmsh writes a mesh after an Error in the .geo (a sheet it never made), and only the exit says so
+    if r.returncode or not (work / "via.msh").exists():
+        raise solvers.SolverError(f"gmsh ({r.returncode}): {(r.stdout + r.stderr)[-500:]}")
     txt = (work / "via.msh").read_text(errors="replace")
     (work / "via.json").write_text(json.dumps(palace_config("via.msh", spec, f_min_ghz, f_max_ghz, step_ghz, order), indent=1))
     r = solvers.run("palace", ["via.json"], cwd=work, timeout=timeout)

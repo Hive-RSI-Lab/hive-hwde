@@ -19,6 +19,8 @@ import math
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from types import SimpleNamespace
+from pathlib import Path
 
 import pytest
 
@@ -524,6 +526,27 @@ def test_launch_planes_bleed_at_the_sides_but_not_at_the_board_edge():
     assert boxes
     assert not [b for b in boxes if min(b[1][0], b[2][0]) < -1e-6 and abs(b[1][1]) < spec.half_y and abs(b[2][1]) < spec.half_y]
     assert any(max(b[1][0], b[2][0]) > spec.run for b in boxes)
+
+
+def test_palace_sheets_cannot_take_a_tag_occ_gave_a_volume_face():
+    """Disk(38) on a face OCC had numbered 38 was lost, and with it a port: Palace
+    then knew no attribute 11. gmsh writes the mesh anyway, exiting 1."""
+    for spec in (coax_spec(), stub_spec()):
+        geo = ev.palace_geo(spec)
+        tags = [int(t) for t in re.findall(r"^(?:Disk|Rectangle|BooleanDifference)\((\d+)\)", geo, re.M)]
+        assert tags and min(tags) > ev.SHEET_TAG
+        assert len(tags) == len(set(tags))
+
+
+def test_palace_run_refuses_a_mesh_from_a_geo_with_errors(tmp_path, monkeypatch):
+    from lib import solvers
+
+    def fake(tool, args, cwd, timeout):
+        (Path(cwd) / "via.msh").write_text("$MeshFormat")
+        return SimpleNamespace(returncode=1, stdout="Error: surface with tag 42 already exists", stderr="")
+    monkeypatch.setattr(solvers, "run", fake)
+    with pytest.raises(solvers.SolverError, match="tag 42"):
+        ev.palace_run(coax_spec(), tmp_path, 2.0, 10.0, 2.0)
 
 
 def test_palace_return_pad_keeps_out_of_a_barrel_running_through_it():
