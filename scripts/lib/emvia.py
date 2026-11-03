@@ -253,9 +253,50 @@ def mesh_hook(geo: dict, zone: float, zstep: float, feed_len: float, then=None, 
             n = max(1, math.ceil((z1 - z0) * refine / zstep))
             ctx.fixed["z"] += [z0 + (z1 - z0) * i / n for i in range(n + 1)]
         plane_stitch(csx, ctx, feed_len, refine)
+        plane_bleed(csx, geo)
         if then:
             then(csx, ctx)
     return hook
+
+
+def plane_bleed(csx, geo: dict, reach: float = 100.0, nets_skip=("SIG",)) -> int:
+    """Run the plane copper that reaches the region's edge on out through the
+    domain into the absorbing boundary. A deck's planes otherwise end in open
+    edges a few mm from the via, which a real board's don't: the pair is then a
+    patch resonator, a quarter wave from the return vias to the edge, and the
+    record rings for ns at a frequency set by the region. Copper that stops
+    short of the edge (a board outline, a launch's board edge) stays as it is."""
+    from shapely.geometry import LineString, Polygon
+    from shapely.ops import unary_union
+    x0, y0, x1, y1 = geo["region"]
+    skip = set(nets_skip) | {geo.get("via", {}).get("net")}
+    sides = (("x", x0, y0, y1, -1), ("x", x1, y0, y1, 1), ("y", y0, x0, x1, -1), ("y", y1, x0, x1, 1))
+    n = 0
+    name = "plane_bleed"
+    made = False
+    for layer in geo["stack"]["layers"]:
+        polys = [Polygon(c["pts"]) for c in geo["copper"] if c["layer"] == layer and c["net"] not in skip]
+        if not polys:
+            continue
+        cu = unary_union([p.buffer(0) for p in polys])
+        z = geo["stack"]["z"][layer]
+        for axis, at, lo, hi, sign in sides:
+            edge = LineString([(at, lo), (at, hi)] if axis == "x" else [(lo, at), (hi, at)])
+            hit = cu.buffer(1e-4).intersection(edge)
+            for seg in getattr(hit, "geoms", [hit]):
+                if seg.is_empty or seg.length < 1e-3:
+                    continue
+                a, b = seg.coords[0], seg.coords[-1]
+                if not made:
+                    csx.metal(name)
+                    made = True
+                far = at + sign * reach
+                if axis == "x":
+                    csx.box(name, (at, min(a[1], b[1]), z), (far, max(a[1], b[1]), z), prio=10)
+                else:
+                    csx.box(name, (min(a[0], b[0]), at, z), (max(a[0], b[0]), far, z), prio=10)
+                n += 1
+    return n
 
 
 def plane_stitch(csx, ctx, feed_len: float, refine: float = 1.0) -> int:
@@ -347,18 +388,23 @@ def build(geo, ports, f_max: float, excite: int = 0, *, fine=None, zstep=None, t
 
 def _run_to_tail(csx, where, work: Path, timeout: float, threads: int) -> dict:
     """openEMS until the probes have rung down: emboard.study's loop, plus the
-    log's dt. A run that hits STEPS_MAX still ringing is marked, not hidden."""
+    log's dt. Each pass reruns from zero with twice the record, so `timeout`
+    bounds the passes together: the loop stops, marked, when the next pass
+    wouldn't fit, or at STEPS_MAX. A run still ringing is marked, not hidden."""
     from . import solvers
     work.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
     while True:
         (work / "deck.xml").write_text(csx.xml())
-        r = solvers.run("openems", ["deck.xml", f"--numThreads={threads}"], cwd=work, timeout=timeout)
+        t_pass = time.time()
+        left = timeout - (t_pass - t0)
+        r = solvers.run("openems", ["deck.xml", f"--numThreads={threads}"], cwd=work, timeout=left)
         if not (work / "p0u0").exists():
             raise solvers.SolverError(f"openEMS wrote no probes: {(r.stdout + r.stderr)[-400:]}")
         tail = eb.record_tail(work, where)
         steps = csx.fdtd["NumberOfTimesteps"]
-        if tail <= eb.TAIL_MAX or steps >= eb.STEPS_MAX:
+        spent = time.time() - t_pass
+        if tail <= eb.TAIL_MAX or steps >= eb.STEPS_MAX or time.time() - t0 + 2.2 * spent > timeout:
             break
         csx.fdtd["NumberOfTimesteps"] = min(eb.STEPS_MAX, 2 * steps)
     return {"steps": steps, "tail": tail, "rang_down": tail <= eb.TAIL_MAX,
@@ -375,13 +421,19 @@ def _waves_from(vi, n_f, n_p):
              for k in range(n_p)] for m in range(n_f)]
 
 
-def _solve_feeds(reads: dict, where: dict, freqs, f_max: float, shift=None):
+def _solve_feeds(reads: dict, where: dict, freqs, f_max: float, shift=None, every_run=False):
     """emboard's fitted feeds (feed_lines, feed_vi: one line per port over the
     band) -> {run: waves}, and with shift=[mm per port] the
-    waves at planes that far further in. Also each feed's Z and gamma."""
+    waves at planes that far further in. Also each feed's Z and gamma.
+    every_run: the runs aren't one per excited port (a launch drives the same
+    port under two loads), so feed_lines' undriven read has no meaning."""
     n = len(where["ports"])
     keys = list(reads)
-    lines = eb.feed_lines(reads, [p["dist"] for p in where["ports"]], freqs, f_max, len(keys) == 1)
+    dists = [p["dist"] for p in where["ports"]]
+    if every_run:
+        lines = [eb.fit_feed([reads[e][k] for e in keys], dists[k], freqs, f_max) for k in range(n)]
+    else:
+        lines = eb.feed_lines(reads, dists, freqs, f_max, len(keys) == 1)
     runs, runs_c = {}, {}
     vi0 = None
     for e in keys:
@@ -823,7 +875,7 @@ def launch_study(spec: LaunchSpec, f_max: float, f_min=None, points: int = 201, 
         info.append({"coax_end": "short" if shorted else "absorbing", **rec})
         if ctx:
             ctx.cleanup()
-    runs, _, vi, lines = _solve_feeds(reads, where, freqs, f_max)
+    runs, _, vi, lines = _solve_feeds(reads, where, freqs, f_max, every_run=True)
     return {"freqs": freqs, "S": eb.sparams(runs, 2), "ports": where["ports"], "runs": info,
             "stats": stats, "fine": where["fine"], "z_coax": [complex(r["z"]) for r in vi[1]],
             "feeds": [{"z_rms": round(ln["z_rms"], 3), "eps_rms": round(ln["eps_rms"], 4)} for ln in lines]}

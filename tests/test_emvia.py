@@ -456,3 +456,48 @@ def test_live_palace_driven_agrees_with_openems(tmp_path):
     for i, f in enumerate(pal["f_ghz"]):
         if f <= 10.0:
             assert abs(pal["s21_db"][i] - a[i]) < 1.0, f"{f} GHz"
+
+
+def test_planes_run_into_the_boundary_but_a_board_edge_stays_open():
+    # A plane that ends in open edges a few mm from the via is a patch
+    # resonator: the deck rang for ns at a frequency set by its own region.
+    geo, _ = ev.synth(coax_spec())
+    from lib import emsolve as em
+    csx = em.Csx()
+    n = ev.plane_bleed(csx, geo)
+    assert n == 2 * 4                                 # the two inner planes, four sides each
+    boxes = next(b for kind, attrs, inner, b in csx.props if attrs["Name"] == "plane_bleed")
+    assert {p1[2] for _, p1, _ in boxes} == {geo["stack"]["z"]["In1.Cu"], geo["stack"]["z"]["In2.Cu"]}
+    # copper pulled back from the region's edge (a board outline) isn't extended
+    spec = ev.LaunchSpec(stack=stack4(), layer="F.Cu", w=0.4, pad_w=1.2, pad_l=4.8, pad_in=2.7, gap=0.6,
+                         antipad=0.35, gnd_y=2.55)
+    lg, _ = ev.launch_synth(spec)
+    csx = em.Csx()
+    ev.plane_bleed(csx, lg)
+    boxes = next(b for kind, attrs, inner, b in csx.props if attrs["Name"] == "plane_bleed")
+    assert all(max(p1[0], p2[0]) > 0 for _, p1, p2 in boxes)      # nothing goes off toward the coax
+
+
+def test_run_to_tail_stops_when_the_next_pass_wont_fit(monkeypatch, tmp_path):
+    calls = []
+
+    class R:
+        stdout = stderr = ""
+
+    def fake(tool, args, cwd, timeout):
+        calls.append(timeout)
+        (tmp_path / "p0u0").write_text("")
+        return R()
+    monkeypatch.setattr(solvers, "run", fake)
+    monkeypatch.setattr(eb, "record_tail", lambda *a: 0.04)         # never rings down
+    clock = iter(range(0, 1000000, 40))
+    monkeypatch.setattr(ev.time, "time", lambda: float(next(clock)))
+
+    class C:
+        fdtd = {"NumberOfTimesteps": 1000}
+
+        def xml(self):
+            return ""
+    rec = ev._run_to_tail(C(), {}, tmp_path, 300.0, 1)
+    assert not rec["rang_down"]
+    assert 1 <= len(calls) <= 4 and all(t <= 300.0 for t in calls)
