@@ -682,11 +682,12 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
     return path
 
 
-def merge_close_vias(path: list, min_cells: float) -> list:
+def merge_close_vias(path: list, min_cells: float, can_move=None) -> list:
     """A short run between two layer changes puts two vias of one net too close
     together for JLC's same-net hole spacing, and KiCad's DRC doesn't always say
     so. Take both layer changes at the run's start and carry the jog on the next
-    layer. DRC still judges the moved copper."""
+    layer, if can_move(run, next_layer) says that copper fits: the search never
+    looked at those cells. DRC still judges the moved copper."""
     if any(q[2] == -1 for q in path):
         return path
     runs: list[list] = []
@@ -698,12 +699,20 @@ def merge_close_vias(path: list, min_cells: float) -> list:
     n = 1
     while n < len(runs) - 1:
         run = runs[n]
-        if math.dist(run[0][:2], run[-1][:2]) < min_cells and run[0][:2] != run[-1][:2]:
-            nxt = runs[n + 1][0][2]
+        nxt = runs[n + 1][0][2]
+        if math.dist(run[0][:2], run[-1][:2]) < min_cells and run[0][:2] != run[-1][:2] \
+                and (can_move is None or can_move(run, nxt)):
             runs[n + 1] = [(q[0], q[1], nxt) for q in run] + runs[n + 1]
             runs[n] = [run[0]]
         n += 1
     return [q for run in runs for q in run]
+
+
+def _can_move_run(gr: Grid, run: list, k2: int) -> bool:
+    """A span joins the run's layer to k2 at its start, and k2 is open along it."""
+    (i, j, k) = run[0]
+    return span_for(gr, k, k2, j * gr.nx + i) is not None \
+        and not any(gr.blk[k2][y * gr.nx + x] for x, y, _ in run)
 
 
 def path_to_ops(gr: Grid, path, net: str, width: float, rules: Rules) -> list:
@@ -712,7 +721,8 @@ def path_to_ops(gr: Grid, path, net: str, width: float, rules: Rules) -> list:
     build takes the span the search priced it at (#477)."""
     if rules.spans:
         path = merge_close_vias(
-            path, (SAME_NET_HOLE_MM + rules.via_floor[1]) / gr.g)
+            path, (SAME_NET_HOLE_MM + rules.via_floor[1]) / gr.g,
+            lambda run, k2: _can_move_run(gr, run, k2))
     ops = []
     vias = []
     runs: list[list] = []
