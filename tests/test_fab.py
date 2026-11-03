@@ -231,8 +231,8 @@ def test_build_cpl_layer_and_rotation():
     by_ref = {r["Designator"]: r for r in cpl}
     assert by_ref["D1"]["Layer"] == "Bottom"
     assert by_ref["C1"]["Layer"] == "Top"
-    # LED_0805 carries a 180 correction: 180 + 180 = 360 -> 0
-    assert float(by_ref["D1"]["Rotation"]) == pytest.approx(0.0)
+    # bottom: 180 - kicad 180 = 0, then LED_0805's 180 correction
+    assert float(by_ref["D1"]["Rotation"]) == pytest.approx(180.0)
     assert by_ref["C1"]["Mid X"] == "1.0000"
     assert {a["ref"] for a in audit} == {"C1", "C2", "D1"}
 

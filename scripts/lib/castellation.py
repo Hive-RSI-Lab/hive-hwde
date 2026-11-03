@@ -66,14 +66,16 @@ def load_rules(path: Path | None = None) -> dict:
 
 
 def needs_standard_pcba(w_mm: float, h_mm: float) -> dict:
-    """What assembling a castellated board takes at JLC (assembly: block of
-    jlc_capabilities.yaml): Standard PCBA, with rails and fiducials, on a
-    board or panel at least this big."""
+    """What Standard PCBA takes at JLC, the only service for a castellated or
+    a two-sided board (castellated_assembly: block of jlc_capabilities.yaml):
+    rails and fiducials, on a board or panel at least this big."""
     a = (yaml.safe_load(CAPABILITIES.read_text("utf-8")) or {}).get(
         "castellated_assembly") or {}
     lo = float(a.get("min_panel_mm", 70.0))
     return {"service": a.get("service", "standard"), "min_panel_mm": lo,
             "rails_and_fiducials": True,
+            "rail_min_mm": float(a.get("rail_min_mm", 5.0)),
+            "min_fiducials": int(a.get("min_fiducials", 3)),
             "panel_needed": min(w_mm, h_mm) < lo - 1e-6,
             "source": a.get("source")}
 
