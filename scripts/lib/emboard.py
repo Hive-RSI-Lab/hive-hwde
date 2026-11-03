@@ -866,8 +866,14 @@ def feed_lines(reads: dict, dists, freqs, f_max: float, symmetric: bool = False)
 def feed_vi(read, dist, freqs, line: dict) -> list[dict]:
     """V and I (into the circuit) at the port's plane, from one run's probes
     on a feed that `fit_feed` has named: (a, b) by least squares over all
-    five probes. The current probes' sign is read from the probes."""
+    five probes. The current probes' sign is read from the probes, which takes
+    dist rising out from the plane: backwards, every term still fits nearly as
+    well, since the voltages barely see which way a wave runs over a short
+    span, and a launch's coax port read that way for 10 mm of false line and a
+    |S21/S12| of .98."""
     import numpy as np
+    if dist[0] >= dist[2]:
+        raise ValueError(f"feed_vi: dist must rise out from the plane, got {dist}")
     us, ii = read
     s = [q * 1e-3 for q in dist]
     si = [(s[0] + s[1]) / 2, (s[1] + s[2]) / 2]
