@@ -1089,6 +1089,7 @@ def main(argv=None) -> int:
     an.add_argument("--converge", action="store_true", help="also solve on a finer mesh and say what moved")
     an.add_argument("--min-efficiency", type=float)
     an.add_argument("--max-cells", type=int, default=8_000_000)
+    an.add_argument("--threads", type=int, default=4, help="openEMS threads (it would take every core)")
     an.add_argument("--out", default=".", help="directory: result.json, antenna.s1p, pattern.csv, pattern.png")
     an.add_argument("--keep", help="keep the runs here")
     an.add_argument("--json", action="store_true")
@@ -1116,7 +1117,7 @@ def main(argv=None) -> int:
             (d / "where.json").write_text(json.dumps(where, indent=1) + "\n")
             print(f"{where['cells']} cells {where['mesh']}, fine {where['fine']}, min cell {where['min_cell']} -> {d}")
             return 0
-        kw = {"air": args.air, "loss": loss, "max_cells": args.max_cells}
+        kw = {"air": args.air, "loss": loss, "max_cells": args.max_cells, "threads": args.threads}
         if args.converge:
             res = ea.converge(geo, args.feed, band, fine=args.fine, keep=args.keep, **kw)
         else:
