@@ -180,6 +180,35 @@ def test_deck_pins_every_sheet_plane_and_refuses_one_off_the_mesh(cpwg4):
         csx.xml()
 
 
+def test_every_post_holds_a_mesh_line_at_any_feed_spacing(cpwg4):
+    # at 5 GHz the feed's lines are 0.6 mm apart and a post is 0.3 mm wide: 8 of
+    # the 20 fell between lines, with no vertical edge and no openEMS warning
+    g = eb.extract(cpwg4, [0, 0, 20, 10], parts={"R1": 49.9})
+    for f_max in (5e9, 6e9, 10e9):
+        for refine in (1.0, 1.5):
+            csx, _ = eb.deck(g, ["0,5,-x", "20,5,+x"], f_max, refine=refine)
+            assert csx.sheets_off_mesh() == []
+
+
+def test_a_solid_box_between_mesh_lines_is_refused(cpwg4):
+    csx, _ = _deck(cpwg4)
+    xs = sorted(csx.lines["x"])
+    gap = max(zip(xs, xs[1:]), key=lambda ab: ab[1] - ab[0])
+    mid = sum(gap) / 2
+    csx.box("barrels", (mid - 1e-3, 1.0, 0.0), (mid + 1e-3, 1.1, 1.4), prio=20)
+    assert ("barrels", "x", pytest.approx(mid - 1e-3)) in csx.sheets_off_mesh()
+    with pytest.raises(ValueError, match="off every mesh line"):
+        csx.xml()
+
+
+def test_a_wire_a_hair_off_its_line_is_refused(cpwg4):
+    # a wire 1e-7 off a line is dropped by CSXCAD (thread em-tools)
+    csx, _ = _deck(cpwg4)
+    x = sorted(csx.lines["x"])[3] + 1e-7
+    csx.box("barrels", (x, 1.0, 0.0), (x, 1.1, 1.4), prio=20)
+    assert ("barrels", "x", pytest.approx(x)) in csx.sheets_off_mesh()
+
+
 def test_deck_uses_mur_and_a_pulse_without_dc(cpwg4):
     csx, _ = _deck(cpwg4)
     root = ET.fromstring(csx.xml())

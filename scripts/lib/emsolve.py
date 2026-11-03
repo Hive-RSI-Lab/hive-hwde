@@ -131,13 +131,17 @@ class Csx:
         plane is not a mesh line: CSXCAD prints 'Unused primitive' and runs
         without it, so a ground plane silently vanishes (hw-lab vna-verify:
         merged mesh lines moved z=0, In1 was dropped and a 50 ohm CPWG read
-        65 ohm; #455 trap 1). [(property, axis, value)]."""
+        65 ohm; #455 trap 1). A solid box with no line inside it on some axis
+        goes too, and quietly: its edges are gone, but a sample between lines
+        can still land in it, so CSXCAD counts it as used and prints nothing
+        (a via's post, thread em-tools). [(property, axis, value)]."""
         ax = "xyz"
         lines = {a: sorted(self.lines[a]) for a in ax}
 
         def on(a, v):
             ls = lines[a]
-            return any(abs(q - v) < 1e-6 for q in ls)
+            # add_lines rounds to 1e-9; a wire 1e-7 off is already dropped (thread em-tools)
+            return any(abs(q - v) < 1e-9 for q in ls)
         out = []
         for kind, attrs, inner, boxes in self.props:
             if kind not in ("Metal", "ConductingSheet"):
@@ -149,14 +153,18 @@ class Csx:
                     continue
                 _, p1, p2 = prim
                 for i, a in enumerate(ax):
-                    if abs(p1[i] - p2[i]) < 1e-9 and not on(a, p1[i]):
-                        out.append((attrs["Name"], a, p1[i]))
+                    lo, hi = sorted((p1[i], p2[i]))
+                    if hi - lo < 1e-9:
+                        if not on(a, lo):
+                            out.append((attrs["Name"], a, lo))
+                    elif not any(lo - 1e-6 <= q <= hi + 1e-6 for q in lines[a]):
+                        out.append((attrs["Name"], a, lo))
         return out
 
     def xml(self) -> str:
         off = self.sheets_off_mesh()
         if off:
-            raise ValueError("zero-thickness metal off every mesh line (CSXCAD would drop it): "
+            raise ValueError("metal off every mesh line (CSXCAD would drop it): "
                              + ", ".join(f"{n} {a}={v:g}" for n, a, v in off[:6]))
         bcn = ["xmin", "xmax", "ymin", "ymax", "zmin", "zmax"]
         out = ['<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>', "<openEMS>"]
