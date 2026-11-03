@@ -33,6 +33,7 @@ sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 import check_current  # noqa: E402
 import check_decoupling  # noqa: E402
+import copperpath  # noqa: E402
 import check_return_path  # noqa: E402
 import checklib  # noqa: E402
 import geom  # noqa: E402
@@ -426,6 +427,125 @@ def test_decoupling_far_cap_flagged(tmp_path_factory):
     assert v["refs"] == ["C9", "U9"] and v["pin"] == "U9.7"
 
 
+def _rail_walk(tmp_path_factory, name, extra):
+    """C9's rail pad sits 2.6 mm from U9.7 in plan. `extra` joins them."""
+    body = DECAP_BODY.format(cx=8.0, p1x=5.0, gvx=9.0).replace(
+        '(segment (start 5 5) (end 5.0 5) (width 0.25) (layer "F.Cu") (net "VDD"))\n',
+        extra)
+    return _board(tmp_path_factory, name, body)
+
+
+DETOUR = "".join(
+    f'  (segment (start {a}) (end {b}) (width 0.25) (layer "F.Cu") (net "VDD"))\n'
+    for a, b in (("5 5", "5 1"), ("5 1", "18 1"), ("18 1", "18 9"),
+                 ("18 9", "7.6 9"), ("7.6 9", "7.6 5")))
+
+
+def test_decoupling_copper_far_though_close_in_plan(tmp_path_factory):
+    """fmcw B1, netsw R1, twin W1: fine in plan, far along the rail."""
+    bg = _rail_walk(tmp_path_factory, "detour", DETOUR)
+    a = dict(META)
+    vs, facts = check_decoupling.check_association(bg, a, None, {})
+    v = next(v for v in vs if v["kind"] == "decoupler_copper")
+    assert v["severity"] == "error"                  # mid class, 15 mm
+    assert v["copper_mm"] == pytest.approx(39.4, abs=1.2)
+    assert facts["manhattan_mm"] == pytest.approx(2.6)
+    assert not [v for v in vs if v["kind"] == "decoupler_distance"]
+    # a board can declare its own number, and a plan limit doesn't touch copper
+    vs, _ = check_decoupling.check_association(
+        bg, {**a, "max_copper_mm": 50.0, "max_dist_mm": 3.0}, None, {})
+    assert not [v for v in vs if v["kind"] == "decoupler_copper"]
+
+
+def test_decoupling_short_copper_passes_and_unrouted_is_not_judged(tmp_path_factory):
+    short = '  (segment (start 5 5) (end 7.6 5) (width 0.25) (layer "F.Cu") (net "VDD"))\n'
+    bg = _rail_walk(tmp_path_factory, "shortrail", short)
+    vs, facts = check_decoupling.check_association(bg, dict(META), None, {})
+    assert vs == []
+    assert facts["copper_mm"] == pytest.approx(2.6, abs=0.5)
+    bg = _rail_walk(tmp_path_factory, "norail", "")
+    vs, facts = check_decoupling.check_association(bg, dict(META), None, {})
+    assert facts["copper_mm"] is None
+    assert not [v for v in vs if v["kind"] == "decoupler_copper"]
+
+
+def _ground_detour(tmp_path_factory, name, meta_gnd):
+    """C9.2 and U9.8 are 3 mm apart in plan, joined by 30 mm of track."""
+    return _board(tmp_path_factory, name, f"""  (footprint "t:U" (at 5 5)
+    (layer "F.Cu")
+    (property "Reference" "U9" (at 0 0 0))
+    (pad "7" smd rect (at 0 0) (size 0.5 0.5) (layers "F.Cu") (net "VDD"))
+    (pad "8" smd rect (at 0 2) (size 0.5 0.5) (layers "F.Cu") (net "{meta_gnd}")))
+  (footprint "t:C" (at 7 5)
+    (layer "F.Cu")
+    (property "Reference" "C9" (at 0 0 0))
+    (pad "1" smd rect (at -0.4 0) (size 0.5 0.5) (layers "F.Cu") (net "VDD"))
+    (pad "2" smd rect (at 0.4 0) (size 0.5 0.5) (layers "F.Cu") (net "{meta_gnd}")))
+  (segment (start 5 5) (end 6.6 5) (width 0.25) (layer "F.Cu") (net "VDD"))
+""" + "".join(
+        f'  (segment (start {a}) (end {b}) (width 0.25) (layer "F.Cu") (net "{meta_gnd}"))\n'
+        for a, b in (("7.4 5", "7.4 1"), ("7.4 1", "19 1"), ("19 1", "19 9"),
+                     ("19 9", "5 9"), ("5 9", "5 7"))))
+
+
+def test_decoupling_ground_detour_warns(tmp_path_factory):
+    """iso-io R2 S2: 80 mm of ground copper, 3 mm in plan."""
+    bg = _ground_detour(tmp_path_factory, "gnddetour", "GND")
+    vs, facts = check_decoupling.check_association(bg, dict(META), None, {})
+    v = next(v for v in vs if v["kind"] == "decoupler_ground_copper")
+    assert v["severity"] == "warning"
+    assert v["copper_mm"] > 30 and v["plan_mm"] < 4
+    assert facts["gnd_copper_mm"] == v["copper_mm"]
+    vs, _ = check_decoupling.check_association(
+        bg, {**META, "max_copper_mm": 60.0}, None, {})
+    assert not [v for v in vs if v["kind"] == "decoupler_ground_copper"]
+
+
+def test_decoupling_ground_walk_finds_a_split_ground_net(tmp_path_factory):
+    """Metadata leaves gnd at its default; the cap's other pad names the net."""
+    bg = _ground_detour(tmp_path_factory, "gndsplit", "GND_D1")
+    vs, _ = check_decoupling.check_association(bg, dict(META), None, {})
+    v = next(v for v in vs if v["kind"] == "decoupler_ground_copper")
+    assert v["net"] == "GND_D1"
+
+
+POUR = """  (zone (net "VDD") (layer "B.Cu")
+    (polygon (pts (xy 0 0) (xy 20 0) (xy 20 10) (xy 0 10)))
+{fills})
+"""
+WHOLE = """    (filled_polygon (layer "B.Cu")
+      (pts (xy 0 0) (xy 20 0) (xy 20 10) (xy 0 10)))"""
+SLOTTED = """    (filled_polygon (layer "B.Cu")
+      (pts (xy 0 0) (xy 8 0) (xy 8 10) (xy 0 10)))
+    (filled_polygon (layer "B.Cu")
+      (pts (xy 12 0) (xy 20 0) (xy 20 10) (xy 12 10)))"""
+
+
+def _pour_walk(tmp_path_factory, name, fills):
+    """Two vias 12 mm apart on one F.Cu rail gap, joined only by a pour."""
+    vias = "".join(
+        f'  (via (at {x} 5) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net "VDD"))\n'
+        for x in (4, 16))
+    fps = "".join(f"""  (footprint "t:{r}" (at {x} 5)
+    (layer "F.Cu")
+    (property "Reference" "{r}" (at 0 0 0))
+    (pad "1" smd rect (at 0 0) (size 0.5 0.5) (layers "F.Cu") (net "VDD")))
+""" for r, x in (("A1", 4), ("A2", 16)))
+    return _board(tmp_path_factory, name, fps + vias + POUR.format(fills=fills))
+
+
+def test_copperpath_pour_costs_the_line_and_a_slot_refuses_it(tmp_path_factory):
+    bg = _pour_walk(tmp_path_factory, "pour", WHOLE)
+    walk = copperpath.CopperPaths(bg, "VDD")
+    got = walk.between(("pad", "A1", "1"), ("pad", "A2", "1"))
+    assert got["mm"] == pytest.approx(12.0, abs=0.01)
+    assert got["vias"] == 2
+    # cut in two by a 4 mm slot: nothing joins the halves
+    bg = _pour_walk(tmp_path_factory, "slot", SLOTTED)
+    walk = copperpath.CopperPaths(bg, "VDD")
+    assert walk.between(("pad", "A1", "1"), ("pad", "A2", "1")) is None
+
+
 def test_decoupling_declared_limit_is_error(tmp_path_factory):
     """U20: a DECLARED per-association limit is the board's own contract -
     exceeding it is an ERROR at the limit itself, never a warning until the
@@ -536,7 +656,8 @@ def test_reg_input_carrier_known_answer():
     assert len(ri) == 1
     v = ri[0]
     assert v["pin"] == "U21.3" and v["severity"] == "error"
-    assert v["nearest_mm"] == pytest.approx(9.89, abs=0.05)
+    # along the copper; the retro's 9.89 mm was the Manhattan pad distance
+    assert v["nearest_mm"] == pytest.approx(10.29, abs=0.05)
     assert v["pos"] == pytest.approx([65.35, 112.05], abs=0.05)
     roles = {c["pin"] for c in payload["checked"]
              if c.get("role") == "reg_input"}

@@ -33,13 +33,35 @@ Per association:
  - role "reg_input" marks a SWITCHING-REGULATOR input cap (buck/boost VIN).
    Grouped per (ic, pin, rail): at least one reg_input association must be
    an HF-capable ceramic (<= 1 uF, or explicit class "hf") whose rail pad
-   sits within the hf-class error distance (7.5 mm) of the pin, else ONE
+   sits within the hf-class error distance (7.5 mm) of the pin, along rail
+   copper once it is routed, else ONE
    error (kind=reg_input_no_hf) anchored at the pin. The input loop carries
    the full trapezoidal switch current, so a lone bulk cap is not enough -
    the exact blind spot that let lumina-carrier ship U21 (TPS563201) with
    only a 22 uF at 9.89 mm (retrospective R1, rework on assembled boards).
    Individual associations keep their value-class distance/loop checks:
    declaring the bulk cap reg_input does NOT tighten its own limits.
+ - Rail copper (kind=decoupler_copper): the walk along tracks, vias and pours
+   from the cap's rail pad to the pin (lib/copperpath.py), judged against the
+   class's distance limits or a declared "max_copper_mm". A cap 2 mm away in
+   plan can feed its pin through 22 mm of copper (fmcw B1, netsw R1, twin W1).
+   max_dist_mm does not apply: it is a plan limit, and copper is always longer.
+   A bulk cap that takes a detour (DETOUR_RATIO) fails at its warning limit:
+   20 mm is fine for a reservoir out on the rail, not for one beside the pin
+   and wired the long way round (fmcw B1, 10 uF). A walk that's only long
+   because a straight line across a pour hit a slot can't be proven long, so it
+   warns at most (copperpath's floor, slots=False).
+   An association with no rail copper yet (place gate, unrouted) is skipped and
+   listed in the report as copper_mm null.
+ - Ground copper (kind=decoupler_ground_copper): the same walk from the cap's
+   ground pad to the IC's nearest ground pad, judged only when it is a detour,
+   longer than the class's error limit and DETOUR_RATIO times the plan distance between
+   those pads (iso-io R2 S2: 80 mm of copper, 3 mm in plan, a plane cut under
+   the part). A long walk with no detour is just an IC whose ground pin is far
+   from this rail pin, across a whole plane, and isn't flagged. The floor must
+   pass too, and "max_copper_mm" also overrides this limit. It warns and doesn't
+   fail: most of such a walk is pour and plane, far less inductive per mm than
+   the track the class limits were set for.
 
 CLI: --pcb board.kicad_pcb --metadata decoupling.json [--out report.json]
      exit 0/1/2 per SPEC section 6.
@@ -56,6 +78,7 @@ from shapely.geometry import Point
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
 import checklib  # noqa: E402
+import copperpath  # noqa: E402
 import geom  # noqa: E402
 from checklib import CheckError, manhattan, violation  # noqa: E402
 
@@ -63,6 +86,7 @@ SCRIPT = "check_decoupling"
 NH_PER_MM = 0.7        # trace inductance heuristic (kicad-happy DC-003)
 NH_PER_VIA = 1.0       # spec: via ~1 nH
 GND_STUB_WARN_MM = 5.0 # cap ground pad this far from any ground via -> warning
+DETOUR_RATIO = 2.0     # ground copper / plan distance that counts as a detour
 
 CLASSES = {  # value_min_f, dist warn/error mm, loop warn/error nH
     "bulk": {"min_f": 1e-6, "dist": (20.0, 30.0), "loop": (30.0, 60.0)},
@@ -143,7 +167,43 @@ def sev_for(value: float, warn: float, error: float) -> str | None:
     return None
 
 
-def check_association(bg: geom.BoardGeom, a: dict, reg_groups: dict | None = None):
+def rail_copper(bg: geom.BoardGeom, rail: str, cap_pad, pin_pad,
+                paths: dict | None) -> dict | None:
+    """{"mm", "vias"} along the rail from the cap's pad to the pin's, or None
+    when the two aren't joined yet. `paths` keeps one walker per net."""
+    if paths is None:
+        return None
+    if rail not in paths:
+        paths[rail] = copperpath.CopperPaths(bg, rail)
+    return paths[rail].between(("pad", cap_pad.ref, cap_pad.number),
+                               ("pad", pin_pad.ref, pin_pad.number))
+
+
+def ground_copper(bg: geom.BoardGeom, gnd: str, gnd_pads, ic: str,
+                  paths: dict | None, limit: float) -> tuple[float, float, float] | None:
+    """(copper mm, floor mm, plan mm) from the cap's ground pad to the IC's
+    nearest ground pad along copper, or None when they aren't joined yet."""
+    ic_pads = bg.pads_of(net=gnd, ref=ic)
+    if paths is None or not gnd_pads or not ic_pads:
+        return None
+    if gnd not in paths:
+        paths[gnd] = copperpath.CopperPaths(bg, gnd)
+    start = gnd_pads[0]
+    a = ("pad", start.ref, start.number)
+    b = {("pad", p.ref, p.number) for p in ic_pads}
+    floor = paths[gnd].between(a, b, slots=False)
+    if floor is None:
+        return None
+    floor = floor["mm"]
+    # the slot-aware walk is slow on a ground net: only a long floor needs it
+    copper = floor if floor <= limit else paths[gnd].between(a, b)["mm"]
+    plan = min(math.hypot(p.center[0] - start.center[0],
+                          p.center[1] - start.center[1]) for p in ic_pads)
+    return copper, floor, plan
+
+
+def check_association(bg: geom.BoardGeom, a: dict, reg_groups: dict | None = None,
+                      paths: dict | None = None):
     cap, ic = a.get("cap"), a.get("ic")
     pin = str(a.get("pin", ""))
     rail, gnd = a.get("rail"), a.get("gnd", "GND")
@@ -173,6 +233,9 @@ def check_association(bg: geom.BoardGeom, a: dict, reg_groups: dict | None = Non
     euclid = math.hypot(cap_pad.center[0] - pin_pad.center[0],
                         cap_pad.center[1] - pin_pad.center[1])
 
+    copper = rail_copper(bg, rail, cap_pad, pin_pad, paths)
+    copper_mm = copper["mm"] if copper else None
+
     rail_vias = 0 if same_layer_connected(bg, rail, cap_pad, pin_pad) else 2
     gnd_pads = bg.pads_of(net=gnd, ref=cap)
     gnd_leg = None
@@ -186,7 +249,8 @@ def check_association(bg: geom.BoardGeom, a: dict, reg_groups: dict | None = Non
     cls = a.get("class") or value_class(farads)
     if reg_groups is not None and a.get("role") == "reg_input":
         reg_groups.setdefault((ic, pin, rail), []).append({
-            "cap": cap, "value": value or "?", "dist": dist,
+            "cap": cap, "value": value or "?",
+            "dist": dist if copper_mm is None else copper_mm,
             "hf_capable": (a.get("class") == "hf"
                            or (farads is not None
                                and farads <= REG_INPUT_HF_MAX_F)),
@@ -226,6 +290,54 @@ def check_association(bg: geom.BoardGeom, a: dict, reg_groups: dict | None = Non
             f"({cls} class limit {loop_warn:.1f} nH: {dist:.1f} mm rail + "
             f"{gnd_leg:.1f} mm gnd + {rail_vias + 1} via)", SCRIPT,
             **{**common, "kind": "decoupler_loop", "limit_nh": loop_warn}))
+    copper_warn, copper_err = CLASSES[cls]["dist"]
+    if a.get("max_copper_mm") is not None:
+        copper_warn = copper_err = float(a["max_copper_mm"])
+    sev = None if copper_mm is None else sev_for(copper_mm, copper_warn, copper_err)
+    if sev and a.get("max_copper_mm") is None and cls == "bulk" \
+            and copper_mm > DETOUR_RATIO * dist:
+        copper_err = copper_warn
+        sev = "error"
+    if sev == "error":
+        floor = paths[rail].between(("pad", cap_pad.ref, cap_pad.number),
+                                    ("pad", pin_pad.ref, pin_pad.number),
+                                    slots=False)["mm"]
+        if floor <= copper_err:
+            sev = "warning"
+    if sev:
+        violations.append(violation(
+            SCRIPT, sev, cap_pad.center, cap_pad.layers[0], rail, [cap, ic],
+            f"{cap} ({a.get('value', '?')}) reaches {ic} pin {pin} through "
+            f"{copper_mm:.1f} mm of {rail} copper and {copper['vias']} via(s), "
+            f"{dist:.1f} mm in plan ({cls} class limit {copper_warn:.1f} mm "
+            f"warn, {copper_err:.1f} mm error). Fix: route the cap's pad to the "
+            f"pin first, or move the cap to where the rail reaches the pin",
+            SCRIPT, **{**common, "kind": "decoupler_copper",
+                       "copper_mm": checklib.rnd(copper_mm),
+                       "limit_mm": copper_err}))
+    gnd_limit = (CLASSES[cls]["dist"][1] if a.get("max_copper_mm") is None
+                 else float(a["max_copper_mm"]))
+    # metadata often leaves gnd at its default on a board with split grounds
+    return_pads = gnd_pads
+    return_net = gnd
+    if not return_pads and "gnd" not in a:
+        others = [p for p in bg.pads_of(ref=cap) if p.net and p.net != rail]
+        if others:
+            return_net = others[0].net
+            return_pads = others[:1]
+    ground = ground_copper(bg, return_net, return_pads, ic, paths, gnd_limit)
+    if (ground and ground[1] > gnd_limit
+            and ground[0] > DETOUR_RATIO * ground[2]):
+        violations.append(violation(
+            SCRIPT, "warning", return_pads[0].center, return_pads[0].layers[0],
+            return_net, [cap, ic],
+            f"{cap}'s ground pad reaches {ic} through {ground[0]:.1f} "
+            f"mm of {return_net} copper, {ground[2]:.1f} mm in plan (limit {gnd_limit:.1f} "
+            f"mm). Fix: join them on the "
+            f"cap's layer, or add ground vias at both", SCRIPT,
+            **{**common, "kind": "decoupler_ground_copper",
+               "copper_mm": checklib.rnd(ground[0]),
+               "plan_mm": checklib.rnd(ground[2]), "limit_mm": gnd_limit}))
     if gnd_pads and gnd_leg > GND_STUB_WARN_MM:
         violations.append(violation(
             SCRIPT, "warning", gnd_pads[0].center, gnd_pads[0].layers[0],
@@ -236,6 +348,8 @@ def check_association(bg: geom.BoardGeom, a: dict, reg_groups: dict | None = Non
     facts = {"cap": cap, "pin": f"{ic}.{pin}", "rail": rail, "class": cls,
              "manhattan_mm": checklib.rnd(dist),
              "euclid_mm": checklib.rnd(euclid),
+             "copper_mm": None if copper_mm is None else checklib.rnd(copper_mm),
+             "gnd_copper_mm": checklib.rnd(ground[0]) if ground else None,
              "gnd_leg_mm": checklib.rnd(gnd_leg),
              "vias_in_loop": rail_vias + 1,
              "loop_nh": checklib.rnd(loop_nh)}
@@ -261,7 +375,7 @@ def check_reg_inputs(reg_groups: dict) -> list[dict]:
             [ic] + sorted(m["cap"] for m in members),
             f"{ic} pin {pin} ({rail}) is a switching-regulator input with "
             f"no HF ceramic (<= {REG_INPUT_HF_MAX_F * 1e6:g} uF) within "
-            f"{limit:g} mm: nearest input cap {near['cap']} "
+            f"{limit:g} mm (along copper once routed): nearest input cap {near['cap']} "
             f"({near['value']}) is {near['dist']:.2f} mm away", SCRIPT,
             kind="reg_input_no_hf", pin=f"{ic}.{pin}",
             nearest_mm=checklib.rnd(near["dist"]), limit_mm=limit))
@@ -285,8 +399,9 @@ def run(argv=None):
     violations: list[dict] = []
     checked: list[dict] = []
     reg_groups: dict = {}
+    paths: dict = {}
     for a in assocs:
-        vs, facts = check_association(bg, a, reg_groups)
+        vs, facts = check_association(bg, a, reg_groups, paths)
         violations.extend(vs)
         if facts:
             checked.append(facts)
