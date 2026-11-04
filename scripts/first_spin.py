@@ -20,6 +20,7 @@ open items in front of the person. A report the agent weighs; not a gate.
                        "status": "verified|unverified|wrong", "source": "...",
                        "date": "YYYY-MM-DD", "could_stop_board": true}],
    "tools_wanted": [{"tool": "...", "checks": "...", "why": "..."}]}
+  (a bare string in tools_wanted is taken as the tool and what it checks)
 
 dispositions.json (the worker's), by finding id, either form:
   {"POWER-1": {"disposition": "fixed", "how": "..."}}
@@ -307,6 +308,10 @@ def analyze(reviews: list[dict], disp: dict, res: dict,
                           "severity": "blocker" if k.get("status") == "wrong"
                           else "major", "msg": (k.get("fact") or "")[:200]})
         for t in r.get("tools_wanted") or []:
+            if isinstance(t, str):   # a reviewer's one-line wish: name = text
+                t = {"tool": t, "checks": t}
+            if not isinstance(t, dict):
+                continue
             name = str(t.get("tool") or "").strip()
             if not name:
                 continue
