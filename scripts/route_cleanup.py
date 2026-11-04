@@ -1016,22 +1016,28 @@ def _r4(p) -> list[float]:
     return [round(p[0], 4), round(p[1], 4)]
 
 
-def find_corners(segs, vias, pads, foreign_fn, tol=TOL) -> tuple[list[dict],
-                                                                 list[dict]]:
+def find_corners(segs, vias, pads, foreign_fn, tol=TOL,
+                 attach=()) -> tuple[list[dict], list[dict]]:
     """45-deg chamfer plans for clean ~90-deg corners. foreign_fn(layer, net)
-    -> copper of every OTHER net on that layer. Returns (ops, corners)."""
+    -> copper of every OTHER net on that layer. attach: tracks planned by an
+    earlier pass (snap legs); never chamfered, but they still join a corner,
+    so an elbow they land on is a tee and stays. Returns (ops, corners)."""
     ends: dict = {}
     for s in sorted(segs, key=lambda s: s.uuid):
         if not s.uuid or not s.net:
             continue
         ends.setdefault(_node(s.layer, s.a), []).append((s, 0))
         ends.setdefault(_node(s.layer, s.b), []).append((s, 1))
+    for s in attach:
+        for k in (_node(s.layer, s.a), _node(s.layer, s.b)):
+            if k in ends:
+                ends[k].append((s, None))
     ops: list[dict] = []
     corners: list[dict] = []
     consumed: set[str] = set()
     for key in sorted(ends):
         pair = ends[key]
-        if len(pair) != 2:
+        if len(pair) != 2 or any(e is None for _, e in pair):
             continue  # only clean 2-segment elbows are smoothable
         (s1, e1), (s2, e2) = pair
         if (s1 is s2 or s1.net != s2.net
@@ -1068,7 +1074,7 @@ def find_corners(segs, vias, pads, foreign_fn, tol=TOL) -> tuple[list[dict],
         if any(o is not s1 and o is not s2
                and o.net == s1.net and o.layer == s1.layer
                and _pt_seg_dist(corner, o.a, o.b) <= c + tol
-               for o in segs):
+               for o in (*segs, *attach)):
             continue
         p1 = (c1[0] + v1[0] / la * c, c1[1] + v1[1] / la * c)
         p2 = (c2[0] + v2[0] / lb * c, c2[1] + v2[1] / lb * c)
@@ -1172,9 +1178,12 @@ def build_plan(bg: geom.BoardGeom, segs, vias, smooth: bool = True,
             base = bg.layer_copper(layer, exclude=net)
             return geom._union([base] + legs) if legs else base
 
+        planned = [Seg("", o["net"], o["layer"], o["width"],
+                       tuple(o["start"]), tuple(o["end"]))
+                   for o in snap_ops if o["op"] == "add_track"]
         corner_ops, corners = find_corners(
             [s for s in alive_s if s.uuid not in snapped], alive_v, pads,
-            foreign)
+            foreign, attach=planned)
     ops = ([{"op": "remove", "uuid": u} for u in gone_s]
            + [{"op": "remove", "uuid": u} for u in gone_v]
            + [{"op": "remove", "uuid": u} for u in loop_uuids]
