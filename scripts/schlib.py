@@ -260,7 +260,16 @@ class Sheet:
             footprint = lib_footprint(lib_id)
         if footprint:
             c.footprint = footprint
-        for key, val in (fields or {}).items():
+        fields = dict(fields or {})
+        if not any(_LCSC_FIELD.match(k.strip()) for k in fields):
+            # nor does it copy the symbol's LCSC number, so bom_cpl fell back
+            # to the footprint's: a shared footprint (lib_pull's R0603,
+            # C0603) embeds ONE part's, and every other value took it (1k
+            # parts came out as the 10k's C25804). The symbol's wins.
+            lcsc = lib_lcsc(lib_id)
+            if lcsc:
+                fields[lcsc[0]] = lcsc[1]
+        for key, val in fields.items():
             c.set_property(key, val)
         self._lib_ids[ref] = lib_id
         self._rotations[ref] = rotation
@@ -1189,6 +1198,30 @@ def lib_footprint(lib_id: str) -> str | None:
                 return None
             nick = lib_id.split(":", 1)[0]
             return val if ":" in val or not nick else f"{nick}:{val}"
+    return None
+
+
+# bom_cpl's LCSC field names: `LCSC Part` (easyeda2kicad), `LCSC`,
+# `LCSC Part #`, `LCSC#`
+_LCSC_FIELD = re.compile(r"^LCSC(?:\s*PART)?(?:\s*(?:#|NO\.?|NUMBER))?$", re.I)
+
+
+def lib_lcsc(lib_id: str) -> tuple[str, str] | None:
+    """(field name, LCSC number) of the library symbol `lib_id`'s LCSC
+    property as the kicad-sch-api cache has it, or None when it has none or
+    is unknown."""
+    try:
+        with _quiet():
+            sym = ksa.get_symbol_cache().get_symbol(lib_id)
+    except Exception:  # noqa: BLE001 - unknown lib/symbol: no default
+        return None
+    for node in (getattr(sym, "raw_kicad_data", None) or []):
+        if isinstance(node, list) and len(node) > 2 \
+                and str(node[0]) == "property" \
+                and _LCSC_FIELD.match(str(node[1]).strip()):
+            val = str(node[2]).strip()
+            if val:
+                return str(node[1]), val
     return None
 
 
