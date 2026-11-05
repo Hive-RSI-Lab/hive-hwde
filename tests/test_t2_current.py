@@ -1116,3 +1116,61 @@ def test_switch_node_cli_warns_without_constraints(tmp_path_factory):
     v = payload["violations"][0]
     assert v["inferred"] is True and v["from_part"] == "U1"
     assert "U1" in v["refs"] and "constraints.json" in v["msg"]
+
+
+# ---- per-load current: branch vias of a star (#676, #650) -------------------
+# U1 feeds a 2 mm F.Cu trunk (x=10, y 2..8); three single vias 3 mm apart each
+# drop to B.Cu and a 0.8 mm strip to one load. 3 A rail, three 1 A loads.
+
+def _star(sense_fn: str = "") -> str:
+    out = """  (segment (start 2 5) (end 10 5) (width 2.0) (layer "F.Cu") (net "PWR"))
+  (segment (start 10 2) (end 10 8) (width 2.0) (layer "F.Cu") (net "PWR"))
+  (footprint "t:U" (at 2 5)
+    (layer "F.Cu")
+    (property "Reference" "U1" (at 0 0 0))
+    (pad "1" smd rect (at 0 0) (size 1 1) (layers "F.Cu") (net "PWR")))
+"""
+    for i, y in enumerate((2, 5, 8), start=2):
+        fn = f'(pinfunction "{sense_fn}")' if sense_fn and i == 3 else ""
+        out += f"""  (via (at 10 {y}) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net "PWR"))
+  (segment (start 10 {y}) (end 14 {y}) (width 0.8) (layer "B.Cu") (net "PWR"))
+  (footprint "t:U" (at 14.5 {y})
+    (layer "B.Cu")
+    (property "Reference" "U{i}" (at 0 0 0))
+    (pad "1" smd rect (at 0 0) (size 1 1) (layers "B.Cu") (net "PWR") {fn}))
+"""
+    return out
+
+
+STAR = {"net": "PWR", "current_a": 3.0, "via_amps": 1.0}
+
+
+def test_star_branch_vias_carry_their_own_load(tmp_path_factory):
+    bg = _board(tmp_path_factory, "star", _star())
+    vs, _ = check_current.check_net(bg, STAR)
+    assert len(_kinds(vs, "insufficient_transition_vias")) == 3   # 3 A, no loads
+    loads = dict(STAR, loads={"U2": 1.0, "U3": 1.0, "U4": 1.0})
+    vs, facts = check_current.check_net(bg, loads)
+    assert _kinds(vs, "insufficient_transition_vias") == []
+    assert [b["current_a"] for b in facts["leaf_branches"]
+            if b["kind"] == "insufficient_transition_vias"] == [1.0] * 3
+    # 1 A through each via: 0.5 A/via needs two, so they still fail at 1 A
+    vs, _ = check_current.check_net(bg, dict(loads, via_amps=0.5))
+    assert [v["required"] for v in _kinds(vs, "insufficient_transition_vias")] \
+        == [2, 2, 2]
+
+
+def test_kelvin_sense_tap_via_carries_nothing(tmp_path_factory):
+    bg = _board(tmp_path_factory, "kelvin", _star("SENSE+"))
+    vs, _ = check_current.check_net(bg, dict(STAR, loads={"U2": 1.0, "U4": 1.0}))
+    assert _kinds(vs, "insufficient_transition_vias") == []
+    vs, _ = check_current.check_net(bg, STAR)    # U2/U4 undeclared: only U3 free
+    assert len(_kinds(vs, "insufficient_transition_vias")) == 2
+
+
+def test_declared_load_does_not_hide_the_real_path(tmp_path_factory):
+    """Negative: the source's own side stays judged at the budget."""
+    bg = _board(tmp_path_factory, "starneg", _star())
+    vs, _ = check_current.check_net(
+        bg, dict(STAR, loads={"U2": 3.0, "U3": 1.0, "U4": 1.0}))
+    assert len(_kinds(vs, "insufficient_transition_vias")) == 1
