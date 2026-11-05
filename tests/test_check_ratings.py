@@ -745,7 +745,7 @@ def test_6v_ldo_on_12v_blocks_naming_part_rating_and_rail(tmp_path):
 
 def test_16v_ldo_on_12v_passes_and_stays_unrated_for_its_other_pins(tmp_path):
     ws = _reg_ws(tmp_path, {"Input Voltage(Max)": "16V", "Voltage Rated": "16V"},
-                 LDO_PADS)
+                 LDO_PADS, mpn="AP2112-3.3")
     p = _run(ws)
     assert _errors(p) == []
     # only the input was judged: this does not say the part is verified
@@ -857,7 +857,12 @@ def test_output_rail_against_what_the_row_says_it_makes(
         assert out_net in found[0]["msg"] and "U4" in found[0]["msg"]
 
 
-@pytest.mark.parametrize("mpn,errs", [("AMS1117-5.0", 0), ("AMS1117-3.3", 1)])
+@pytest.mark.parametrize("mpn,errs", [
+    ("ADP7182-5.0", 0),   # a negative part: the rail's sign is what it makes
+    ("ADP7182-3.3", 1),
+    ("LT9999-5.0", 0),    # neither family: unknown sign, magnitude only
+    ("AMS1117-5.0", 1),   # a positive part can't make -5 V (#744)
+    ("AMS1117-3.3", 1)])
 def test_unextracted_output_on_a_negative_rail(tmp_path, mpn, errs):
     ws = _reg_ws(tmp_path, {"Voltage - Supply": "15V"},
                  {"1": "+12V", "2": "GND", "3": "-5V"},
@@ -1144,3 +1149,165 @@ def test_wrong_output_fails_an_extracted_regulators_ledger_fact(tmp_path):
               if f["kind"] == "rating"}
     assert rating["U4"]["status"] == "failed"
     assert "+3V3" in rating["U4"]["value"]
+
+
+# #744: a filled row and no extraction, its voltage only in the MPN's code.
+CODED_ATTRS = {"Input Voltage": "6V", "Output Current": "200mA"}
+CODED_NAMES = {"1": "IN", "3": "OUT"}
+
+
+@pytest.mark.parametrize("mpn,rail,errs", [
+    ("TLV75733PDBVR", "+1V8", 1),   # the issue's known answer
+    ("TLV75733PDBVR", "+3V3", 0),
+    ("TLV75733PDBVR", "+3V0", 0),   # exactly 10 % low
+    ("TLV75733PDBVR", "+2V9", 1),   # just past it
+    ("RT9080-33GJ5", "+1V8", 1),
+    ("XC6206P332MR-G", "+3V3", 0),
+])
+@pytest.mark.parametrize("words", ["LDO regulator", ""])
+def test_unextracted_output_from_the_mpn_code(tmp_path, mpn, rail, errs, words):
+    """The code judges with or without the row's words saying regulator."""
+    ws = _reg_ws(tmp_path, CODED_ATTRS, {"1": "+5V", "2": "GND", "3": rail},
+                 CODED_NAMES, mpn=mpn, description=words)
+    p = _run(ws)
+    found = _out_errs(p)
+    assert len(found) == errs
+    assert _unjudged(p) == []
+    if errs:
+        assert "MPN code" in found[0]["rating"] and "U4" in found[0]["msg"]
+
+
+def test_the_row_outranks_the_mpn_code(tmp_path):
+    ws = _reg_ws(tmp_path, dict(CODED_ATTRS, **{"Output Voltage": "1.8V"}),
+                 {"1": "+5V", "2": "GND", "3": "+1V8"}, CODED_NAMES,
+                 mpn="TLV75733PDBVR")
+    assert _out_errs(_run(ws)) == []
+
+
+def test_a_code_gives_the_row_its_input_check_too(tmp_path):
+    ws = _reg_ws(tmp_path, CODED_ATTRS, {"1": "+12V", "2": "GND", "3": "+3V3"},
+                 CODED_NAMES, mpn="TLV75733PDBVR", description="")
+    assert [v["kind"] for v in _errors(_run(ws))] == ["rating_over_voltage"]
+
+
+@pytest.mark.parametrize("mpn", [
+    "TPS54233",     # a buck, not in a coded family's range of parts
+    "TLV7031",      # a comparator
+    "TPS7A0201",    # the family's adjustable code
+])
+def test_an_mpn_with_no_code_and_no_words_is_no_regulator(tmp_path, mpn):
+    ws = _reg_ws(tmp_path, CODED_ATTRS, {"1": "+5V", "2": "GND", "3": "+1V8"},
+                 CODED_NAMES, mpn=mpn, description="")
+    p = _run(ws)
+    assert _out_errs(p) == [] and _unjudged(p) == []
+
+
+def test_code_does_not_name_the_rail(tmp_path):
+    """reg_out_volts stays strict: the code judges, it never sets a net."""
+    ws = _reg_ws(tmp_path, CODED_ATTRS, {"1": "+5V", "2": "GND", "3": "/RAIL"},
+                 CODED_NAMES, mpn="TLV75733PDBVR")
+    p = _run(ws)
+    assert "/RAIL" not in p["net_volts"] and _errors(p) == []
+
+
+def test_unextracted_regulator_nothing_gives_an_output_for_warns(tmp_path):
+    ws = _reg_ws(tmp_path, {"Voltage - Supply": "6V"},
+                 {"1": "+5V", "2": "GND", "3": "+1V8"}, CODED_NAMES,
+                 mpn="TPS54302DDCR", description="buck converter")
+    p = _run(ws)
+    assert [v["net"] for v in _unjudged(p)] == ["+1V8"]
+    assert _unjudged(p)[0]["severity"] == "warning"
+    assert "U4" in _unjudged(p)[0]["msg"] and _errors(p) == []
+
+
+def test_unextracted_unjudged_warning_with_no_output_pad_named(tmp_path):
+    """No pad names, or none called an output: still no voltage from anywhere,
+    so it says so rather than staying silent."""
+    ws = _reg_ws(tmp_path, {"Voltage - Supply": "6V"},
+                 {"1": "+5V", "2": "GND", "3": "/SW"},
+                 mpn="SY8089A1AAC", description="buck converter")
+    found = _unjudged(_run(ws))
+    assert [v["net"] for v in found] == [None]
+    assert "wasn't judged" in found[0]["msg"]
+
+
+@pytest.mark.parametrize("attrs,row", [
+    ({"Voltage - Supply": "6V", "Output Voltage": "3.3V"}, {}),   # the row says
+    ({"Voltage - Supply": "6V"}, {"mpn": "AP2112-3.3"}),          # the MPN says
+    ({"Voltage - Supply": "6V"}, {"mpn": "TLV75733PDBVR"}),       # the code says
+    ({"Voltage - Supply": "6V"}, {"description": "load switch regulator"}),
+    ({"Voltage - Supply": "6V"}, {"mpn": "XYZ", "description": "a thing"}),
+])
+def test_unextracted_parts_that_dont_warn(tmp_path, attrs, row):
+    ws = _reg_ws(tmp_path, attrs, {"1": "+5V", "2": "GND", "3": "+3V3"},
+                 CODED_NAMES, **row)
+    assert _unjudged(_run(ws)) == []
+
+
+@pytest.mark.parametrize("mpn,rail,errs", [
+    ("AMS1117-5.0", "-5V", 1),     # positive family on a negative rail
+    ("L7805CV", "-5V", 1),
+    ("TLV75733PDBVR", "-3V3", 1),
+    ("ADP7182-5.0", "+5V", 1),     # negative family on a positive rail
+    ("TPS72325DBVR", "+2V5", 1),   # coded like a positive TI part, but negative
+    ("TPS72325DBVR", "-2V5", 0),
+    ("LT1964-5.0", "-5V", 0),
+    ("MC7905-5.0", "-5V", 0),
+    ("LT9999-5.0", "-5V", 0),      # neither: no false block
+    ("LT9999-5.0", "+5V", 0),
+])
+def test_extracted_output_sign(tmp_path, mpn, rail, errs):
+    pads = {"1": "GND", "2": rail, "3": "+12V"}
+    ws = _ws(tmp_path, [("U4", "C9", pads)], {"C9": _fixed_ldo(mpn)})
+    found = _out_errs(_run(ws))
+    assert len(found) == errs
+    if errs:
+        assert "positive" in found[0]["msg"] or "negative" in found[0]["msg"]
+
+
+@pytest.mark.parametrize("text,rail,errs", [
+    ("Positive LDO regulator", "-5V", 1),
+    ("Negative LDO regulator", "-5V", 0),
+    ("Negative LDO regulator", "+5V", 1),
+    ("Positive and negative dual regulator", "-5V", 0),
+    ("Positive and negative dual regulator", "+5V", 0),
+])
+def test_the_words_tell_the_sign(tmp_path, text, rail, errs):
+    ext = dict(_fixed_ldo("LT9999-5.0"), description=text)
+    pads = {"1": "GND", "2": rail, "3": "+12V"}
+    assert len(_out_errs(_run(_ws(tmp_path / "e", [("U4", "C9", pads)],
+                                  {"C9": ext})))) == errs
+    ws = _reg_ws(tmp_path / "r", {"Voltage - Supply": "15V"},
+                 {"1": "+12V", "2": "GND", "3": rail}, CODED_NAMES,
+                 mpn="LT9999-5.0", description=text)
+    assert len(_out_errs(_run(ws))) == errs
+
+
+@pytest.mark.parametrize("attr,rail,errs", [
+    ({"Output Configuration": "Positive"}, "-5V", 1),
+    ({"Output Configuration": "Negative"}, "-5V", 0),
+    ({"Output Voltage": "-5V"}, "-5V", 0),
+    ({"Output Voltage": "-5V"}, "+5V", 1),
+])
+def test_the_row_attributes_tell_the_sign(tmp_path, attr, rail, errs):
+    ws = _reg_ws(tmp_path, dict({"Voltage - Supply": "15V"}, **attr),
+                 {"1": "+12V", "2": "GND", "3": rail}, CODED_NAMES,
+                 mpn="LT9999-5.0", description="LDO regulator")
+    assert len(_out_errs(_run(ws))) == errs
+
+
+def test_a_floating_positive_part_is_not_called_wrong(tmp_path):
+    """No pad on ground: its own ground is at another rail, so a positive part
+    can sit on a net below board ground on purpose."""
+    pads = {"1": "-12V", "2": "-5V", "3": "+12V"}
+    ws = _ws(tmp_path, [("U4", "C9", pads)], {"C9": AMS5})
+    assert _out_errs(_run(ws)) == []
+
+
+def test_sign_is_not_judged_on_a_rail_the_mpn_named(tmp_path):
+    """/RAIL = +5 here only because the MPN's 5.0 filled it, with no sign: that
+    can't say a negative part is on a positive rail."""
+    ws = _reg_ws(tmp_path, {"Voltage - Supply": "15V"},
+                 {"1": "+12V", "2": "GND", "3": "/RAIL"}, CODED_NAMES,
+                 mpn="ADP7182-5.0")
+    assert _errors(_run(ws)) == []

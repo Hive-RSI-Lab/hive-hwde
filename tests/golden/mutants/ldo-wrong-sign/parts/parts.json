@@ -1,0 +1,22 @@
+{
+  "parts": [
+    {
+      "ref_prefix_hint": "U",
+      "mpn": "ADP7182-3.3",
+      "lcsc": "C6190",
+      "value": "ADP7182-3.3",
+      "package": "SOT-223",
+      "attributes": [
+        {
+          "name": "Voltage - Supply",
+          "value": "15V"
+        },
+        {
+          "name": "Output Voltage",
+          "value": "3.3V"
+        }
+      ],
+      "role": "U2 LDO regulator"
+    }
+  ]
+}

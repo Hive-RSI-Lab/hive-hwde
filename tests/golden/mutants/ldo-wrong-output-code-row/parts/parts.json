@@ -1,0 +1,18 @@
+{
+  "parts": [
+    {
+      "ref_prefix_hint": "U",
+      "mpn": "TLV75750PDBVR",
+      "lcsc": "C6189",
+      "value": "TLV75750PDBVR",
+      "package": "SOT-23-5",
+      "attributes": [
+        {
+          "name": "Voltage - Supply",
+          "value": "15V"
+        }
+      ],
+      "role": "U2"
+    }
+  ]
+}

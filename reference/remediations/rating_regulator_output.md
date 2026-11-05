@@ -13,17 +13,23 @@ its name or constraints.json, and the part is never asked.
 - Judged for a part with no extraction, a filled row and a pad named OUT/VOUT/VO in the
   netlist; and for an extracted regulator's power_out pin named OUT/VOUT/VO/OUTPUT, against a
   rail whose volts come from constraints.json, the power tree or the net name. A fixed output
-  is allowed 10 % from the rail, a range or list its whole span. A rail's sign is ignored: a
-  -5.0 part on -5V passes.
-- An extracted regulator's output is read from the row, then a dotted or 78xx MPN, then the
-  extraction's `output_voltage`, a "fixed 3.3V" in its description, or a known family's MPN
-  code (RT9080-33, TLV75733, XC6206P332, HT7333, ME6211C33). If none of them says, it is
+  is allowed 10 % from the rail, a range or list its whole span.
+- A rail's sign is judged only for a part with a pad on ground, on a rail the board states,
+  when something tells its sign: a negative family (79xx, LM337, ADP718x, LT1964, TPS723xx),
+  the words "positive" or "negative" in the row or extraction, a negative Output Voltage, or a
+  positive family (78xx, x1117, a coded family below). So AMS1117-5.0 on -5V fails, and
+  ADP7182-5.0 on -5V or an unknown LT9999-5.0 on -5V passes.
+- Output is read from the row, then a dotted or 78xx MPN, then (extracted) the extraction's
+  `output_voltage` or a "fixed 3.3V" in its description, then a known family's MPN code
+  (RT9080-33, TLV75733, XC6206P332, HT7333, ME6211C33). If none of them says, it is
   rating_regulator_output_unjudged instead.
 
 ## Is it real?
 - Check the row: `Output Voltage` is what the listing says. An adjustable part listed by one
   example voltage reads as fixed; add its range to the row.
 - Read from an MPN code: check the code against the datasheet's ordering table.
+- Says the wrong sign: check the datasheet. A family listed wrongly is a fix to `_NEG_REG_RE` or
+  `_POS_REG_RE` in check_ratings.py; a part whose row words mislead needs its words corrected.
 - Check the rail's volts: a net NAME is a guess. Put the real figure in constraints.json
   `voltages`.
 

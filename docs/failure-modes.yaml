@@ -583,7 +583,9 @@ modes:
     empty (diode, fuse, regulator, cap), which blocks as rating_no_attributes;
     a filled regulator's row is judged against its rails but stays unverified,
     and an extracted regulator's output pin against a rail the board states,
-    warning as rating_regulator_output_unjudged if nothing says what it makes
+    warning as rating_regulator_output_unjudged if nothing says what it makes;
+    a known family's MPN code judges a filled row too, and a part known to be
+    positive or negative fails on a stated rail of the other sign
   hit_on:
   - all
   sources:
