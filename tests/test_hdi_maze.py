@@ -95,3 +95,19 @@ def test_live_wlcsp49_maze_stops_at_18_of_49(tmp_path):
         {"failed": 18}]
     _answers(payload, before=49, after=18, warnings={
         "track_dangling": 37, "silk_over_copper": 15, "lib_footprint_issues": 2})
+
+
+@pytest.mark.smoke
+def test_live_fbga153_maze_stops_at_83_of_153(tmp_path):
+    """Smoke, not test-slow: 4 h on the loaded tower, measured once. 45.8 % routed;
+    pass 3 gains nothing, so the maze stops there. The 83 left are real work for
+    the escape or the router, not a goal."""
+    _need_tools()
+    payload = _maze(tmp_path, "fbga153_0.5", "--no-rip-board")
+    assert [p["by_status"] for p in payload["facts"]["passes"]] == [
+        {"routed": 65, "failed": 88},
+        {"failed": 83, "routed": 5},
+        {"failed": 83}]
+    _answers(payload, before=153, after=83, warnings={
+        "track_dangling": 126, "via_dangling": 1,
+        "lib_footprint_issues": 2, "silk_over_copper": 2})
