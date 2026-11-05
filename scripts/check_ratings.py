@@ -81,7 +81,10 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
  - rating_regulator_output (error): a regulator whose output pad sits on a
    rail its row (or a fixed output in the MPN) says it can't make. Unextracted:
    a pad named in the netlist. Extracted: a power_out pin named as an output,
-   against a rail the board itself states (constraints, power tree, net name).
+   against a rail the board itself states (constraints, power tree, net name);
+   its output may also come from the extraction or a known family's MPN code.
+ - rating_regulator_output_unjudged (warning): an extracted regulator with an
+   output pin on the board where nothing says what it makes.
  - rating_over_temperature (error): the board's ambient above a part's
    operating range (parts.json "Operating Temperature", or the
    extraction's operating_temp_c), or constraints ambient_min_c below it
@@ -258,6 +261,35 @@ def reg_out_volts(mpn: str) -> float | None:
     m = re.match(r"(?:L|LM|MC|UA|KA|NCV|CJ)?78L?M?(\d{2})", mpn.upper())
     if m:
         return _78XX_DECIMAL.get(m.group(1), float(m.group(1)))
+    return None
+
+
+# A fixed regulator's output, coded in tenths of a volt inside the MPN of a
+# family known to use the code. Not reg_out_volts: that one also names rails
+# and regulators for the whole check, while these only ever judge a part whose
+# extraction already calls a pin its output (extracted_output_findings).
+_REG_CODE_RES = [re.compile(p) for p in (
+    r"RT9\d{3}[A-Z]?-(\d\d)",               # Richtek: RT9080-33GJ5
+    r"(?:TLV|TPS)7\d\d(\d\d)(?!\d)",        # TI: TLV75733P, TPS78233
+    r"TPS7[AB]\d\d(\d\d)(?!\d)",            # TI: TPS7A0233, TPS7B6950
+    r"XC62\d\d[A-Z](\d\d)\d",                # Torex: XC6206P332 (then accuracy)
+    r"HT7[1-8](\d\d)(?!\d)",                 # Holtek: HT7333-A
+    r"ME6\d{3}[A-Z](\d\d)",                  # Microne: ME6211C33M5G
+)]
+# not 01 or 00: those families' adjustable parts
+_REG_CODES = {"10", "11", "12", "15", "18", "25", "27", "28", "29", "30", "31",
+              "33", "36", "50"}
+
+
+def reg_out_code(mpn: str) -> float | None:
+    """Fixed output in a known family's MPN code: TLV75733P -> 3.3, and None
+    for an adjustable part's code or any other family (TPS54233 is a buck,
+    TLV7031 a comparator)."""
+    mpn = mpn.upper()
+    for rx in _REG_CODE_RES:
+        m = rx.match(mpn)
+        if m:
+            return int(m.group(1)) / 10 if m.group(1) in _REG_CODES else None
     return None
 
 
@@ -878,18 +910,28 @@ def bom_volts(bom: dict | None) -> float | None:
     return rated
 
 
-REG_TEXT_RE = re.compile(r"regulator|\bLDO\b|\bbuck\b|\bboost\b|DC.?DC|"
-                         r"\bPMIC\b|\bto\s+\d+(?:\.\d+)?\s*V\b", re.I)
+REG_WORDS = r"regulator|\bLDO\b|\bbuck\b|\bboost\b|DC.?DC|\bPMIC\b"
+REG_TEXT_RE = re.compile(REG_WORDS + r"|\bto\s+\d+(?:\.\d+)?\s*V\b", re.I)
+# An extraction describes the whole chip, so "USB to 3.3V UART" is no
+# regulator there. Nor do these make the rail on their output pin.
+EXT_REG_RE = re.compile(REG_WORDS, re.I)
+NOT_REG_RE = re.compile(r"e-?fuse|load.?switch|power.?(?:path|switch)|charger|"
+                        r"reference|hot.?swap|supervisor", re.I)
+EXT_FIXED_RE = re.compile(r"\bfixed\s+(\d+(?:\.\d+)?)\s*V\b|"
+                          r"\b(\d+(?:\.\d+)?)\s*V\s+fixed\b", re.I)
+
+
+REG_REF_RE = re.compile(r"^(?:U|VR|IC)\d")
+REG_ROW_TEXT = ("category", "description", "name", "value", "role")
 
 
 def is_regulator(b: dict, bom: dict | None) -> bool:
     """A U/VR part its row calls a regulator: a fixed output in the MPN, or
     the row's words ("LDO regulator", "VBUS to 5.1 V")."""
-    if not re.match(r"^(?:U|VR|IC)\d", b["ref"]):
+    if not REG_REF_RE.match(b["ref"]):
         return False
     bom = bom or {}
-    text = " ".join(str(bom.get(k) or "") for k in
-                    ("category", "description", "name", "value", "role"))
+    text = " ".join(str(bom.get(k) or "") for k in REG_ROW_TEXT)
     return reg_out_volts(str(bom.get("mpn") or "")) is not None or \
         bool(REG_TEXT_RE.search(text))
 
@@ -935,6 +977,10 @@ def reg_vin_rating(bom: dict) -> tuple[float, str] | None:
     return None
 
 
+def _fixed_range(v: float, src: str) -> tuple[float, float, str]:
+    return v * (1 - REG_OUT_TOL), v * (1 + REG_OUT_TOL), src
+
+
 def reg_out_range(bom: dict) -> tuple[float, float, str] | None:
     """(lowest, highest, where read) a regulator's row says it can make: a
     range, a list, or one fixed value widened by REG_OUT_TOL. The row's
@@ -950,7 +996,7 @@ def reg_out_range(bom: dict) -> tuple[float, float, str] | None:
     if not vs:
         return None
     if len(vs) == 1:
-        return vs[0] * (1 - REG_OUT_TOL), vs[0] * (1 + REG_OUT_TOL), src
+        return _fixed_range(vs[0], src)
     return min(vs), max(vs), src
 
 
@@ -1034,24 +1080,54 @@ def reg_out_pins(b: dict, ext: dict) -> list[str]:
             and p["pin"] in b["pads"]]
 
 
+def extraction_out_range(ext: dict) -> tuple[float, float, str] | None:
+    """What an extraction says a part makes (#729): its output_voltage, else a
+    fixed output its description names, else its MPN's code."""
+    v = ext.get("output_voltage")
+    if isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0:
+        return _fixed_range(float(v), f"extraction output_voltage = {v} V")
+    text = str(ext.get("description") or "")
+    m = EXT_FIXED_RE.search(text)
+    if m and "adjustable" not in text.lower():
+        return _fixed_range(float(m.group(1) or m.group(2)),
+                            f"extraction description: {m.group(0)}")
+    mpn = str(ext.get("mpn") or "")
+    v = reg_out_code(mpn)
+    return _fixed_range(v, f"MPN code {mpn}") if v is not None else None
+
+
 def extracted_output_findings(b: dict, ext: dict, bom: dict | None,
                               volts: dict, vsrc: dict, emit) -> None:
     """An extracted regulator's output pin against its rail (#721), read as
     regulator_findings reads a filled row: the row's output, else a fixed
-    output in the extraction's or the row's MPN. Only a rail the board itself
-    states: a pull-up's volts are a guess, and a volt set from this part's or
-    another's MPN isn't a rail to judge a part against."""
+    output in the extraction's or the row's MPN, else what the extraction says
+    (extraction_out_range). Only a rail the board itself states: a pull-up's
+    volts are a guess, and a volt set from this part's or another's MPN isn't
+    a rail to judge a part against. A regulator nothing gives an output for
+    gets a warning instead of silence (#729)."""
     bom = bom or {}
     mpn = str(ext.get("mpn") or "")
     row = dict(bom, mpn=mpn) if reg_out_volts(mpn) is not None else bom
-    made = reg_out_range(row) if is_regulator(b, row) else None
-    if not made:
+    desc = str(ext.get("description") or "")
+    from_ext = extraction_out_range(ext)
+    if not (is_regulator(b, row) or (REG_REF_RE.match(b["ref"]) and (
+            from_ext or EXT_REG_RE.search(desc)))):
         return
+    made = reg_out_range(row) or from_ext
     part = f"{b['ref']} ({mpn or bom.get('mpn') or b['lcsc']})"
-    for net in sorted({b["pads"][p] for p in reg_out_pins(b, ext)}):
-        if vsrc.get(net) in RAIL_SOURCES:
-            _output_finding(b["ref"], part, net, volts[net], b["pads"], made,
-                            emit)
+    nets = sorted({b["pads"][p] for p in reg_out_pins(b, ext)})
+    if made:
+        for net in nets:
+            if vsrc.get(net) in RAIL_SOURCES:
+                _output_finding(b["ref"], part, net, volts[net], b["pads"],
+                                made, emit)
+    elif nets and not NOT_REG_RE.search(" ".join(
+            [desc] + [str(bom.get(k) or "") for k in REG_ROW_TEXT])):
+        emit("rating_regulator_output_unjudged", "warning", b["ref"], nets[0],
+             f"{part} is a regulator, but its parts.json row, extraction and "
+             f"MPN don't say what it makes, so its output on "
+             f"{', '.join(nets)} wasn't judged. Set output_voltage in its "
+             f"extraction, or fill the row's Output Voltage")
 
 
 def no_attribute_findings(board: list[dict], bom_by_lcsc: dict, exts: dict,
