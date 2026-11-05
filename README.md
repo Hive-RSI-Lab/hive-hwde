@@ -4,6 +4,8 @@ The hwde module: KiCad hardware design for the Hive, in the Hive org like the ot
 
 An agent designs a PCB from a written brief: research, architecture, parts, schematic, placement, routing, then the checks (ERC, DRC, the verify suite, JLCPCB DFM on the exported Gerbers), ending in a fab package. The person signs off between stages. Ordering and paying are always the person's.
 
+**Where to file issues:** https://github.com/Hive-RSI-Lab/hive-hwde/issues, for a bug or for something that doesn't work on your machine (an Arm computer, another OS): say what you ran and what you saw. An agent in a Hive can draft the issue for you with `hive-report upstream draft`; you read it and press Send.
+
 - [`docs/README.md`](docs/README.md): how an agent uses it in the Hive; [`docs/playbook.md`](docs/playbook.md): the phases, gates and fix loop
 - `agents/`: the role prompts the playbook spawns; `scripts/`: the checks and tools; `reference/`: their tables, recipes, checklists and knowledge records
 - `tests/`: unit tests for the scripts (`test_env_lookups.py`: the lookups for the Hive's shared tools folder), and `tests/workarounds/`, the probes
