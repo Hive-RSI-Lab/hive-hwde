@@ -355,6 +355,17 @@ def test_corner_segment_used_only_once():
     assert len([o for o in ops if o["op"] == "remove"]) == 2
 
 
+def test_corner_keeps_tee_made_by_planned_leg():
+    # a snap removed the tee's third arm and planned a new leg from the same
+    # joint: the elbow left behind is still a tee, so no chamfer (a chamfer
+    # would move the joint and strand the planned leg)
+    leg = S("", (5, 0), (5, -5), width=0.5)
+    assert rcl.find_corners([L1, L2], [], [], EMPTY)[1], "control"
+    assert rcl.find_corners([L1, L2], [], [], EMPTY, attach=[leg])[1] == []
+    # a planned leg meeting one bare segment end is not an elbow either
+    assert rcl.find_corners([L1], [], [], EMPTY, attach=[leg])[1] == []
+
+
 # ============================================================ pure: parse + CLI
 
 def _fp(ref, x, y, pads=""):
