@@ -291,6 +291,15 @@ Record each run's wall time per stage (the `phase` events in
 `state.json` history) and the gate attempts and fix loops per gate. That way
 a later board shows whether the module got faster or cleaner.
 
+## Stackup copper
+
+`check_stackup` (verify suite, #728) reads the board's stackup block as written.
+It fails a copper layer outside 0.009 to 0.21 mm (0.25 to 6 oz) and F.Cu and B.Cu
+that differ by over 0.05 oz, the tolerance `order_submit --api-create` refuses at,
+since an order's copper weight is one value for both outer layers. A board with
+no stackup block is nothing to judge, not a pass. What a fab offers stays with
+`dfm_check`.
+
 ## Straps, reset states and the antenna
 
 Two verify checks do what the first-spin review of hifi-receiver-2's boards

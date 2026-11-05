@@ -1,0 +1,11 @@
+# Seeded fault for check_stackup (copper no fab builds, issue #728).
+mutants:
+  stackup-copper-core-thick:
+    board: blinky2
+    script: mutations/stackup_copper_core_thick.py
+    check: check_stackup
+    defect: >-
+      Stackup fault: the core's 1.524 mm also written into B.Cu (43.5 oz), as
+      rf-kit-ro4350b's generator did. KiCad's DRC doesn't read the stack
+    expect:
+      kind: copper_thickness_range

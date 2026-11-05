@@ -656,7 +656,7 @@ def _check_quote_board(man: dict, q: dict) -> None:
 # How far a quoted number may sit from the board's: order_quote rounds the
 # outline to 2 dp and prints thickness and copper to a few digits.
 _FAB_TOLERANCE = {"width": 0.011, "length": 0.011, "thickness": 0.005,
-                  "copperWeight": 0.05}
+                  "copperWeight": fabmaterial.COPPER_OZ_TOLERANCE}
 # board_init writes this on every board and KiCad keeps it, so on the board it
 # is no decision: the finish chosen in quote.json stands. Anything else is one.
 _UNDECIDED_FINISHES = ("", "HASL", "HAL SNPB", "NONE", "NOT SPECIFIED")
@@ -701,12 +701,17 @@ def board_fab_params(pcb: Path, fab_dir: Path) -> dict:
     if general:
         out["thickness"] = [float(general.group(1)), "its general thickness"]
     if facts["outer_copper_mm"]:
-        out["copperWeight"] = [round(facts["outer_copper_mm"] / 0.035, 2),
-                               "F.Cu in its stackup"]
+        out["copperWeight"] = [
+            round(facts["outer_copper_mm"] / fabmaterial.MM_PER_OZ, 2),
+            "F.Cu in its stackup"]
     else:
         oz, source = derive_copper_oz(Path(fab_dir).parent)
         if oz is not None:
             out["copperWeight"] = [float(oz), f"architecture/stackup.md: {source}"]
+    if facts["back_copper_mm"]:
+        out["copperWeightBack"] = [
+            round(facts["back_copper_mm"] / fabmaterial.MM_PER_OZ, 2),
+            "B.Cu in its stackup"]
     finish = _board_side_finish(facts)
     if finish:
         out["surfaceFinish"] = [SURFACE_FINISH_CODE.get(finish),
@@ -722,7 +727,9 @@ def _quote_fab_mismatches(man: dict, q: dict) -> list[str]:
     can't say. Finish and mask colour are the human's choice in quote.json
     unless the board decides them, and copper unless the board or stackup.md
     does; a recorded --copper-oz stays the waiver it is on an ungoverned
-    package, for the weight it recorded."""
+    package, for the weight it recorded. copperWeight is one value for both
+    outer layers, so it must hold for F.Cu and B.Cu alike; a manifest written
+    before B.Cu was recorded is judged on F.Cu."""
     spec = man["spec_snapshot"]
     pparam = (q.get("calculate_request") or {}).get("pcbParam") or {}
     board = dict(man.get("board_fab") or {})
@@ -746,8 +753,13 @@ def _quote_fab_mismatches(man: dict, q: dict) -> list[str]:
         if want is None:
             out.append(f"{field}: quote {got!r}, board not stated ({source})")
             continue
+        tol = _FAB_TOLERANCE.get(field, 0)
+        back, back_source = (board.get("copperWeightBack") or [want, source]) \
+            if field == "copperWeight" else (want, source)
+        differ = field == "copperWeight" and abs(back - float(want)) > tol
         try:
-            same = abs(float(got) - float(want)) <= _FAB_TOLERANCE.get(field, 0)
+            same = abs(float(got) - float(want)) <= tol \
+                and abs(float(got) - float(back)) <= tol
         except (TypeError, ValueError):
             same = False
         if field == "copperWeight" and not same and not governed \
@@ -756,7 +768,11 @@ def _quote_fab_mismatches(man: dict, q: dict) -> list[str]:
                 same = float(q.get("copper_weight_oz")) == float(got)
             except (TypeError, ValueError):
                 same = False
-        if not same:
+        if not same and differ:
+            out.append(f"{field}: quote {got!r}, but one weight can't order "
+                       f"both: board {want:g} oz ({source}), {back:g} oz "
+                       f"({back_source})")
+        elif not same:
             out.append(f"{field}: quote {got!r}, board {want:g} ({source})")
     return out
 
