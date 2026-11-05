@@ -31,6 +31,8 @@ sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 import checklib  # noqa: E402
 import gate  # noqa: E402
+import releaselib  # noqa: E402
+import score_checks  # noqa: E402
 import verify_all  # noqa: E402
 
 
@@ -517,6 +519,152 @@ def test_waiver_matches_is_false_for_a_bad_shape(w):
     assert gate.waiver_matches(w, _creep()) is False
 
 
+# #736: a refused entry, an unparsable file and a malformed pos
+_REFUSED = [({"reason": ""}, "lacks reason/approved"),
+            ({"approved": None}, "lacks reason/approved"),
+            ({"approved": "PENDING"}, "placeholder"),
+            ({"approved": "<who> <when>"}, "placeholder"),
+            ({"approved": True}, "is not text"),
+            ({"check": None, "kind": None}, "needs check and/or kind")]
+_BAD_POS = [5, "1,1", [1], ["a", "b"], ["1.0", "1.0"], [None, None],
+            [1, 1, 1], [True, True], {}, False, 0, [float("nan"), 1.0],
+            [1.0, float("inf")], [10 ** 400, 1.0]]
+
+
+@pytest.mark.parametrize("gate_name, level", _BOTH_GATES)
+@pytest.mark.parametrize("over, says", _REFUSED)
+def test_refused_entry_is_graded(tmp_path, capsys, gate_name, level, over,
+                                 says):
+    """These raised out of load_waivers: exit 2 and a traceback. Each now goes
+    in waivers_invalid by index and waives nothing, so the finding it would
+    have covered still fails."""
+    rep = _verify_report(_board(tmp_path), [_creep()])
+    code, res, err = _sidecar_main(
+        tmp_path, capsys, rep, {"waivers": [_entry_for(gate_name, rep,
+                                                       **over)]}, gate_name)
+    assert code == 1
+    assert res["script"] == "gate" and res["status"] == "fail"
+    assert res["failing_count"] == 1 and res["waived_count"] == 0
+    bad = res["waivers_invalid"]
+    assert [b["index"] for b in bad] == [0]
+    assert any(says in p for p in bad[0]["problems"])
+    assert "waivers_unmatched" not in res
+    assert f"{level}: waiver 0 ignored (invalid)" in err and says in err
+
+
+@pytest.mark.parametrize("over, says", _REFUSED)
+def test_refused_entry_next_to_a_good_one(tmp_path, capsys, over, says):
+    """The good waiver still applies. A lenient gate passes with a warning; a
+    strict gate fails on the refused entry even with no finding left."""
+    rep = _verify_report(_board(tmp_path), [_creep()])
+    for gate_name, want_code, want_status in (("verify", 0, "pass"),
+                                              ("verify_release", 1, "fail")):
+        code, res, _ = _sidecar_main(
+            tmp_path, capsys, rep,
+            {"waivers": [_entry_for(gate_name, rep),
+                         _entry_for(gate_name, rep, **over)]}, gate_name)
+        assert (code, res["status"]) == (want_code, want_status), gate_name
+        assert res["failing_count"] == 0 and res["waived_count"] == 1
+        assert [b["index"] for b in res["waivers_invalid"]] == [1]
+
+
+@pytest.mark.parametrize("gate_name", ["verify", "verify_release"])
+@pytest.mark.parametrize("text, says", [
+    ("{broken", "JSONDecodeError"), ("", "JSONDecodeError"),
+    (b"\xff\xfe{}", "UnicodeDecodeError")])
+def test_unparsable_file_is_one_clear_refusal(tmp_path, capsys, gate_name,
+                                              text, says):
+    rep = _verify_report(_board(tmp_path), [_creep()])
+    sidecar = tmp_path / "w.json"
+    if isinstance(text, bytes):
+        sidecar.write_bytes(text)
+    else:
+        sidecar.write_text(text, encoding="utf-8")
+    code = _gate_main(tmp_path, rep, extra_argv=("--waivers", str(sidecar)),
+                      gate_name=gate_name)
+    res = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert res["script"] == "gate" and res["status"] == "error"
+    assert "Traceback" not in res["error"] and "\n" not in res["error"]
+    assert str(sidecar) in res["error"] and says in res["error"]
+
+
+@pytest.mark.parametrize("gate_name, level", _BOTH_GATES)
+@pytest.mark.parametrize("pos", _BAD_POS)
+def test_bad_pos_is_graded(tmp_path, capsys, gate_name, level, pos):
+    """A malformed pos matched nothing and said nothing, except [1, 1, 1]
+    (matched on its first two values) and NaN (matched every position)."""
+    rep = _verify_report(_board(tmp_path), [_creep()])
+    code, res, err = _sidecar_main(
+        tmp_path, capsys, rep, {"waivers": [_entry_for(gate_name, rep,
+                                                       pos=pos)]}, gate_name)
+    assert code == 1
+    assert res["status"] == "fail"
+    assert res["failing_count"] == 1 and res["waived_count"] == 0
+    bad = res["waivers_invalid"]
+    assert [b["index"] for b in bad] == [0]
+    assert any("pos must be" in p for p in bad[0]["problems"])
+    assert "waivers_unmatched" not in res
+    assert f"{level}: waiver 0 ignored (invalid)" in err
+
+
+@pytest.mark.parametrize("gate_name", ["verify", "verify_release"])
+@pytest.mark.parametrize("pos", [None, [1.0, 1.0], [1, 1], [1.005, 1.0]])
+def test_good_pos_still_waives(tmp_path, capsys, gate_name, pos):
+    """Control: null is no pos scope, and two numbers pin the finding."""
+    rep = _verify_report(_board(tmp_path), [_creep()])
+    code, res, _ = _sidecar_main(
+        tmp_path, capsys, rep, {"waivers": [_entry_for(gate_name, rep,
+                                                       pos=pos)]}, gate_name)
+    assert code == 0 and res["waived_count"] == 1
+    assert "waivers_invalid" not in res
+
+
+@pytest.mark.parametrize("w", [
+    *({**_wv(), **over} for over, _ in _REFUSED),
+    *({**_wv(), "pos": p} for p in _BAD_POS)])
+def test_waiver_matches_is_false_for_a_refused_entry(w):
+    """score.py and bench call waiver_matches without grading the entry, so an
+    unsigned entry must waive nothing there too, and an entry with no check or
+    kind must not cover every finding on its net."""
+    assert gate.waiver_matches(w, _creep()) is False
+
+
+@pytest.mark.parametrize("doc", [
+    {"waivers": 5}, {"waivers": "x"}, {"waivers": {"a": 1}}, {"waivers": True},
+    [1], 5, None])
+def test_score_checks_wrong_shape_waives_nothing(tmp_path, doc):
+    """{"waivers": 5} raised TypeError out of the bench and job list."""
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "reports" / "verify-waivers.json").write_text(
+        json.dumps(doc), encoding="utf-8")
+    assert score_checks.load_waivers(tmp_path) == []
+
+
+def test_score_checks_keeps_only_the_good_entries(tmp_path):
+    (tmp_path / "reports").mkdir()
+    good = _wv()
+    (tmp_path / "reports" / "verify-waivers.json").write_text(json.dumps(
+        {"waivers": ["x", good, _wv(approved="TBD"), _wv(reason=""),
+                     _wv(pos=[1]), _wv(refs="U22")]}), encoding="utf-8")
+    assert score_checks.load_waivers(tmp_path) == [good]
+
+
+def test_report_names_a_refused_entry(tmp_path):
+    """The report still warns on a file with a refused entry rather than
+    listing the waivers as if they held."""
+    import report_gen
+    (tmp_path / "reports").mkdir()
+    f = tmp_path / "reports" / "verify-waivers.json"
+    (tmp_path / "state.json").write_text("{}", encoding="utf-8")
+    for w, says in ((_wv(reason=""), "waiver 0: lacks reason/approved"),
+                    (_wv(approved="TBD"), "waiver 0: 'approved'"),
+                    (_wv(pos=[1]), "waiver 0: pos must be")):
+        f.write_text(json.dumps({"waivers": [w]}), encoding="utf-8")
+        waivers, _, err = report_gen.verify_waivers(tmp_path)
+        assert waivers == [] and says in err
+
+
 # ------------------------------------------------ commit scoping (codex C4)
 
 def _tmp_repo(tmp_path):
@@ -704,16 +852,15 @@ def test_real_approval_accepted(approved):
 
 
 def test_gate_waiver_pending_refused(tmp_path):
-    p = tmp_path / "verify-waivers.json"
-    p.write_text(json.dumps({"waivers": [
-        {"kind": "creepage", "net": "V48_RTN", "reason": "r",
-         "approved": "PENDING"}]}), encoding="utf-8")
-    with pytest.raises(RuntimeError, match="placeholder"):
-        gate.load_waivers(p)
-    p.write_text(json.dumps({"waivers": [
-        {"kind": "creepage", "net": "V48_RTN", "reason": "r",
-         "approved": "H4 2026-10-28"}]}), encoding="utf-8")
-    assert len(gate.load_waivers(p)) == 1
+    """An unsigned entry reaches the gate, which grades it, and matches
+    nothing; once signed it matches."""
+    w = {"kind": "creepage", "net": "V48_RTN", "reason": "r",
+         "approved": "PENDING"}
+    assert "placeholder" in releaselib.waiver_shape_problem(w)
+    assert gate.waiver_matches(w, _creep()) is False
+    signed = {**w, "approved": "H4 2026-10-28"}
+    assert releaselib.waiver_shape_problem(signed) is None
+    assert gate.waiver_matches(signed, _creep()) is True
 
 
 def test_verify_all_na_pending_approver_refused(tmp_path):

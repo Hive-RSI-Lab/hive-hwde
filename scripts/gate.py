@@ -358,45 +358,28 @@ class WaiverFileRefused(RuntimeError):
 
 
 def load_waivers(path: Path) -> list[dict]:
-    """Load and validate a waiver sidecar. Waivers are HUMAN artifacts: every
-    entry must carry a non-empty `reason` and `approved` (who/when) that is
-    not a placeholder (checklib.approval_problem: PENDING, TBD, N/A ...),
-    and at least one of check/kind to match on - else the gate errors
-    (exit 2). So does a file whose top level isn't an object holding a
-    `waivers` list (WaiverFileRefused). An entry that isn't an object passes
-    through for evaluate() to grade, with its index, in `waivers_invalid`."""
-    data = json.loads(path.read_text(encoding="utf-8"))
+    """Read a waiver sidecar's entries. A file that isn't JSON, or whose top
+    level isn't an object holding a `waivers` list, is refused
+    (WaiverFileRefused). Every entry passes through for evaluate() to grade:
+    one releaselib.waiver_shape_problem refuses (no reason or real approval,
+    no check/kind, a bad refs or pos) goes in `waivers_invalid` by index and
+    matches nothing, so one bad entry doesn't take the good ones with it
+    (#736)."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except ValueError as exc:  # JSONDecodeError, UnicodeDecodeError
+        raise WaiverFileRefused(
+            f"{path}: not valid JSON ({type(exc).__name__}: {exc})") from exc
     waivers = data.get("waivers") if isinstance(data, dict) else None
     if not isinstance(waivers, list):
         raise WaiverFileRefused(
             f"{path}: no 'waivers' list - a waiver file is an object holding "
             f"one, got {data!r:.80}")
-    for i, w in enumerate(waivers):
-        if not isinstance(w, dict):
-            continue
-        if not str(w.get("reason") or "").strip() \
-                or not str(w.get("approved") or "").strip():
-            raise RuntimeError(
-                f"{path}: waiver {i} lacks reason/approved - waivers are "
-                "human artifacts, never agent-invented")
-        bad = checklib.approval_problem(w.get("approved"))
-        if bad:
-            raise RuntimeError(f"{path}: waiver {i}: {bad}")
-        if not (w.get("check") or w.get("kind")):
-            raise RuntimeError(f"{path}: waiver {i} needs check and/or kind")
     return waivers
 
 
-def waiver_matches(w: dict, v: dict) -> bool:
-    """Exact (check|kind) + net; refs subset when the waiver lists refs -
-    but a refs-scoped waiver NEVER matches a refs-less finding (U5/H9: the
-    empty set is a subset of everything, so any ref-scoped waiver used to
-    swallow every anonymous finding of the same kind - the rf-de-20m
-    footgun). A waiver carrying `pos` additionally requires the finding to
-    sit within releaselib.POS_TOL_MM of it. An entry of a bad shape
-    (releaselib.waiver_shape_problem) matches nothing."""
-    if releaselib.waiver_shape_problem(w):
-        return False
+def _in_scope(w: dict, v: dict) -> bool:
+    """A finding is in a well-shaped entry's scope: see waiver_matches."""
     if w.get("check") and v.get("check") != w["check"] \
             and v.get("source") != w["check"]:
         return False
@@ -410,16 +393,26 @@ def waiver_matches(w: dict, v: dict) -> bool:
             return False
     if w.get("pos") is not None:
         wp, vp = w["pos"], v.get("pos")
-        if not (isinstance(wp, (list, tuple)) and len(wp) >= 2
-                and isinstance(vp, (list, tuple)) and len(vp) >= 2):
+        if not (isinstance(vp, (list, tuple)) and len(vp) >= 2):
             return False
         try:
-            if abs(float(wp[0]) - float(vp[0])) > releaselib.POS_TOL_MM \
-                    or abs(float(wp[1]) - float(vp[1])) > releaselib.POS_TOL_MM:
+            if abs(wp[0] - float(vp[0])) > releaselib.POS_TOL_MM \
+                    or abs(wp[1] - float(vp[1])) > releaselib.POS_TOL_MM:
                 return False
         except (TypeError, ValueError):
             return False
     return True
+
+
+def waiver_matches(w: dict, v: dict) -> bool:
+    """Exact (check|kind) + net; refs subset when the waiver lists refs -
+    but a refs-scoped waiver NEVER matches a refs-less finding (U5/H9: the
+    empty set is a subset of everything, so any ref-scoped waiver used to
+    swallow every anonymous finding of the same kind - the rf-de-20m
+    footgun). A waiver carrying `pos` additionally requires the finding to
+    sit within releaselib.POS_TOL_MM of it. An entry of a bad shape
+    (releaselib.waiver_shape_problem) matches nothing."""
+    return not releaselib.waiver_shape_problem(w) and _in_scope(w, v)
 
 
 def unmatched_waiver(i: int, w: dict, violations: list[dict]) -> dict | None:
@@ -432,7 +425,7 @@ def unmatched_waiver(i: int, w: dict, violations: list[dict]) -> dict | None:
     label = " ".join(f"{k}={what[k]}" for k in what if what[k] not in (None, []))
     same = {k: w[k] for k in ("check", "kind") if w.get(k)}
     nets = sorted({str(v.get("net")) for v in violations
-                   if waiver_matches({**same, "net": v.get("net")}, v)})
+                   if _in_scope({**same, "net": v.get("net")}, v)})
     hint = (f"that check/kind fires on nets: {', '.join(nets[:8])}"
             + (f" and {len(nets) - 8} more" if len(nets) > 8 else "")
             if nets else "the report has no finding of that check/kind")
