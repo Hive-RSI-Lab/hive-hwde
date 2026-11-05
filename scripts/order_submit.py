@@ -30,7 +30,11 @@ api-reference PcbOrderCraftData table, the contract's [SDK/PDF] source):
                 castellatedHoles 1 exactly when the board has castellated
                 pads (spec_snapshot.castellated_pads, lib/castellation.py;
                 a castellated board also gets a human step naming the
-                option). Writes
+                option). viaCovering and the remark come from the board's
+                vias too (via_order_fields): a filled or capped board
+                refuses until the POFV code is known, never goes tented,
+                and unfilled via-in-pad is named in orderDetailsRemark.
+                Writes
                 fab/api_quote.json (REAL price vs our estimate, shipList,
                 achieveDateList, audit findings, the quoted gerber sha256)
                 and records the verdict in order.json's api block. NEVER
@@ -184,7 +188,20 @@ _GENERATED_STEP_PREFIXES = (
     "API quote in ",
     "API order created:",
     "IPC-D-356 NETLIST:",
+    "VIA-FILL",
+    "VIA-IN-PAD:",
 )
+
+# pcbParam.viaCovering. 1 is what every recorded calculate sent (tented).
+VIA_COVERING_TENTED = 1
+# TODO(POFV-enum): the code for epoxy filled & capped. No calculate has run it
+# and none is recorded, so a filled board refuses at the API legs instead of
+# sending a guess that buys another process. To resolve it, run one credentialed
+# calculate on a 4-layer board: the right code makes pcbCostInfo.viaCoveringMoney
+# non-zero (reference/jlc_pricing.yaml via_fill_epoxy: 17.33 at 5 x 91 x 70 mm).
+VIA_COVERING_POFV = None
+_VIA_REMARK_PREFIX = "Via-in-pad:"
+_VIA_REMARK_MAX_REFS = 6
 
 
 class ApiRefused(RuntimeError):
@@ -384,6 +401,35 @@ def _check_oz_mentions(man: dict, prior_steps, oz: float,
             "or pass an explicit --copper-oz to waive")
 
 
+def _via_remark(spec: dict) -> str:
+    """The remark line for unfilled via-in-pad, or "" when there is none."""
+    n = int(spec.get("via_in_pad_unfilled") or 0)
+    if not n:
+        return ""
+    refs = sorted(spec.get("via_in_pad_refs") or [])
+    named = ", ".join(refs[:_VIA_REMARK_MAX_REFS])
+    if len(refs) > _VIA_REMARK_MAX_REFS:
+        named += f" +{len(refs) - _VIA_REMARK_MAX_REFS} more"
+    where = f" ({named})" if named else ""
+    return (f"{_VIA_REMARK_PREFIX} {n} unfilled via{'' if n == 1 else 's'} in "
+            f"SMD pads{where}, no via fill ordered, build as designed.")
+
+
+def via_order_fields(spec: dict) -> tuple[int, str]:
+    """(viaCovering, remark line) for the board's vias, from the BOARD's own
+    fill (spec_snapshot, read by board_via_fill). A filled board must not ship
+    tented, so it refuses while the POFV code is unknown."""
+    if not spec.get("filled_vias"):
+        return VIA_COVERING_TENTED, _via_remark(spec)
+    if VIA_COVERING_POFV is None:
+        raise ApiRefused(
+            f"the board has {spec['filled_vias']} filled/capped via(s) and the "
+            "viaCovering code for epoxy filled & capped is not known yet "
+            "(POFV-enum TODO in order_submit.py), so the API would order them "
+            "tented - order on the quote page instead (see the VIA-FILL step)")
+    return VIA_COVERING_POFV, ""
+
+
 def build_pcb_param(spec: dict) -> dict:
     """calculate/create pcbParam per the hendley api-reference
     PcbOrderCraftData table (the contract's [SDK/PDF] source). Key names
@@ -420,6 +466,7 @@ def build_pcb_param(spec: dict) -> dict:
     color = str(spec.get("solder_mask_color")
                 or defaults.get("solder_mask_color") or "green").lower()
     surface = SURFACE_FINISH_CODE.get(finish, 1)
+    covering, via_remark = via_order_fields(spec)
     param = {
         "layer": int(layers),                 # table: "layer - PCB Layer"
         "width": width,                       # table: width (mm)
@@ -454,7 +501,7 @@ def build_pcb_param(spec: dict) -> dict:
         # Order Number error" (2026-07-29). They are create-side options;
         # decide them at the first gated live create.
         "plateType": 1,                       # enum: 1 = FR-4
-        "viaCovering": 1,                     # enum: 1 = tented (JLC default)
+        "viaCovering": covering,              # from the board's vias
         "needTechnics": 0,                    # table: "default value is 0"
         "edgeRounding": False,                # no edge rounding
         # calculate-example pair, verbatim
@@ -482,6 +529,9 @@ def build_pcb_param(spec: dict) -> dict:
         param["orderDetailsRemark"] = (
             f"Material: {mrow.get('label', material)}; "
             f"thickness {param['thickness']} mm; {finish}")
+    if via_remark:
+        param["orderDetailsRemark"] = "; ".join(
+            x for x in (param["orderDetailsRemark"], via_remark) if x)
     if surface == 2:
         # required when surfaceFinish is 2; create-example ENIG thickness
         param["goldThickness"] = 2
@@ -523,6 +573,30 @@ def _scope_note(man: dict) -> None:
         man["human_steps"].insert(0, note)
 
 
+def _refuse_via_problems(man: dict) -> None:
+    """Refuse an API leg when the vias can't be ordered as the board asks."""
+    if man.get("via_fill_problems"):
+        raise ApiRefused("; ".join(man["via_fill_problems"]))
+    via_order_fields(man["spec_snapshot"])
+
+
+def _check_quote_vias(man: dict, q: dict) -> None:
+    """Create sends the quote's pcbParam verbatim, and that file was priced
+    earlier: it must still order the vias the board asks for."""
+    _refuse_via_problems(man)
+    covering, line = via_order_fields(man["spec_snapshot"])
+    pparam = (q.get("calculate_request") or {}).get("pcbParam") or {}
+    remark = str(pparam.get("orderDetailsRemark") or "")
+    at = remark.find(_VIA_REMARK_PREFIX)
+    quoted_line = remark[at:] if at >= 0 else ""
+    if pparam.get("viaCovering") != covering or quoted_line != line:
+        raise ApiRefused(
+            "the quote does not order the board's vias (viaCovering "
+            f"{pparam.get('viaCovering')!r}, remark {quoted_line!r}; the board "
+            f"needs viaCovering {covering!r}, remark {line!r}) - re-run --api "
+            "to re-quote")
+
+
 def _api_quote(session, man: dict, fab_dir: Path, prior_steps=None,
                country: str | None = None,
                ship_method: str | None = None,
@@ -532,6 +606,7 @@ def _api_quote(session, man: dict, fab_dir: Path, prior_steps=None,
     if man.get("material_problems"):
         # never price (let alone create) an order on another laminate
         raise ApiRefused("; ".join(man["material_problems"]))
+    _refuse_via_problems(man)
     zip_info = man["artifacts"].get("gerber_zip")
     if not zip_info:
         man["api"].update({"verdict": "skipped",
@@ -906,6 +981,7 @@ def _api_create(session, man: dict, quote_file: Path, confirm: str,
             f"{zip_info['design_sha256'][:12]}..; this ignores export "
             "timestamps, so the copper really differs) - re-run --api to "
             "re-quote the new gerbers")
+    _check_quote_vias(man, q)
 
     # U5 (codex C1): on a governed workspace the create must also match the
     # ATTESTED package + manufacturing options - the quote binding alone
@@ -1208,6 +1284,38 @@ def _merge_prior_api(man: dict, prior: dict | None) -> None:
 
 # ------------------------------------------------------------------ manifest
 
+def board_via_fill(pcb: Path, fab_dir: Path) -> dict | None:
+    """What the board's vias ask of the fab: via_fill "epoxy" or "none",
+    filled_vias, via_in_pad_unfilled, via_in_pad_refs. The board file decides;
+    without it, fab/manifest.json (fab_export, which has board_digest since
+    #694 and via_fill only when non-zero). None when neither can say."""
+    if Path(pcb).is_file():
+        import fab_export  # pulls KiCad helpers: only when a board is at hand
+        try:
+            facts = fab_export.via_fill_facts(Path(pcb))
+        except Exception:  # noqa: BLE001 - an unreadable board is "unknown"
+            return None
+        filled = facts["filled_vias"]
+        bare = [v for v in facts["in_pad"] if not v["filled"]]
+        unfilled = len(bare)
+        refs = sorted({v["ref"] for v in bare})
+    else:
+        try:
+            fab_man = json.loads((Path(fab_dir) / "manifest.json")
+                                 .read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+        if "board_digest" not in fab_man:
+            return None
+        block = fab_man.get("via_fill") or {}
+        filled = int(block.get("filled_vias") or 0)
+        # the manifest counts all in-pad vias: with no fill they are all bare
+        unfilled = 0 if filled else int(block.get("in_pad") or 0)
+        refs = []
+    return {"via_fill": "epoxy" if filled else "none", "filled_vias": filled,
+            "via_in_pad_unfilled": unfilled, "via_in_pad_refs": refs}
+
+
 def run(pcb: Path, fab_dir: Path, quote: Path | None = None,
         qty: int | None = None, use_api: bool = False,
         order_number: str | None = None) -> dict:
@@ -1215,6 +1323,13 @@ def run(pcb: Path, fab_dir: Path, quote: Path | None = None,
         raise FileNotFoundError(f"fab directory not found: {fab_dir}")
     artifacts, missing = collect_package(fab_dir)
 
+    # the board decides the via process, as for castellation and laminate
+    vias = board_via_fill(pcb, fab_dir)
+    via_problems = []
+    if vias is None:
+        via_problems.append(
+            f"VIA-FILL UNKNOWN: neither {Path(pcb).name} nor fab/manifest.json "
+            "says what the vias need - re-run fab_export on this board")
     quote_row = None
     quote_data = None
     estimate_note = None
@@ -1229,10 +1344,23 @@ def run(pcb: Path, fab_dir: Path, quote: Path | None = None,
                 # never silently substitute another qty's estimate
                 estimate_note = f"no matching estimate row (qty {qty})"
                 rows = []
+        if not rows and estimate_note is None and quote_data.get("cheapest"):
+            rows = [quote_data["cheapest"]]
+        if rows and vias is not None:
+            # order_quote writes via_fill only when it isn't "none"
+            matched = [r for r in rows if (r.get("via_fill") or "none")
+                       == vias["via_fill"]]
+            if matched:
+                rows = matched
+            else:
+                via_problems.append(
+                    f"VIA-FILL MISMATCH: the board needs via fill "
+                    f"{vias['via_fill']} ({vias['filled_vias']} filled/capped "
+                    f"vias) but {Path(quote).name} priced "
+                    f"{rows[0].get('via_fill') or 'none'} - re-run order_quote "
+                    f"with --via-fill {vias['via_fill']}")
         if rows:
             quote_row = rows[0]
-        elif estimate_note is None:
-            quote_row = quote_data.get("cheapest")
 
     api_ok, api_note = _api_available()
     release = release_governance(fab_dir)
@@ -1266,7 +1394,7 @@ def run(pcb: Path, fab_dir: Path, quote: Path | None = None,
     refusal = fabmaterial.not_offered(board_mat)
     if refusal:
         material_problems.append(f"MATERIAL NOT OFFERED: {refusal}")
-    if material_problems:
+    if material_problems or via_problems:
         status = "not_order_ready"
 
     manifest = {
@@ -1297,6 +1425,10 @@ def run(pcb: Path, fab_dir: Path, quote: Path | None = None,
             "assembly": quote_spec.get("assembly"),
             "castellated_pads": n_cast,
             "material": board_mat,
+            "via_fill": (vias or {}).get("via_fill"),
+            "filled_vias": (vias or {}).get("filled_vias"),
+            "via_in_pad_unfilled": (vias or {}).get("via_in_pad_unfilled"),
+            "via_in_pad_refs": (vias or {}).get("via_in_pad_refs"),
         },
         "release": release,
         "api": {"attempted": bool(use_api), "available": api_ok,
@@ -1336,6 +1468,22 @@ def run(pcb: Path, fab_dir: Path, quote: Path | None = None,
             f"{'/'.join(mrow.get('solder_mask_colors') or [])} mask, and "
             "check the summary names it before paying. No impedance control "
             "is sold on it: leave that option off. See fab/ORDER-NOTES.md."))
+    if vias and vias["filled_vias"]:
+        manifest["human_steps"].insert(-1, (
+            f"VIA-FILL: the board has {vias['filled_vias']} filled/capped "
+            "via(s) - select 'Via Covering: Epoxy Filled & Capped' on the quote "
+            "page and confirm the surcharge. The API leg refuses until the "
+            "POFV code is known, so order this one on the page. See "
+            "fab/VIA-FILL.md."))
+    elif vias and vias["via_in_pad_unfilled"]:
+        manifest["human_steps"].insert(-1, (
+            f"VIA-IN-PAD: {_via_remark(vias)} The API remark carries this line; "
+            "paste drains down those barrels, so check_wicking has the detail "
+            "and fab/VIA-FILL.md the note."))
+    if via_problems:
+        manifest["via_fill_problems"] = via_problems
+        for msg in reversed(via_problems):
+            manifest["human_steps"].insert(0, msg)
     if material_problems:
         manifest["material_problems"] = material_problems
         for msg in reversed(material_problems):
