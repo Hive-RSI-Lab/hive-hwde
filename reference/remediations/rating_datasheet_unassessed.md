@@ -1,17 +1,18 @@
 # rating_datasheet_unassessed
 
-A part's datasheet has no verdict: its index.json entry is from before datasheets were assessed
-(#706), or `--assess` had no PDF to read. So nobody knows it's that part's datasheet. A warning, not
-a pass. The facts stay as they were: refusing them would block every board fetched before #706
-for lack of a file nobody kept.
+A part's datasheet can't be judged here: its index.json entry has no PDF on disk (they aren't
+committed), or there is a PDF but no MPN in index.json or parts.json to check it against. So nobody
+knows it's that part's datasheet. A warning, not a pass. The facts stay as they were: refusing them
+would block every fetched board for lack of a file nobody kept. PDFs that are on disk don't land
+here: check_ratings and the ledger judge them when they read the index (#768).
 
 - Emitted by: scripts/check_ratings.py (kind="rating_datasheet_unassessed", warning, one per board)
   Gate: verify (P8, via verify_all.py).
 - Fields: refs [every part affected]; `unassessed_datasheets` in the report lists the LCSC codes.
 
 ## Fix ladder (cheapest first)
-1. PDFs on disk: `bin/hwde datasheet_extract --assess <ws>` writes each verdict into index.json.
-2. No PDF (they aren't committed): `bin/hwde datasheet_extract --fetch <ws>` downloads and assesses.
+1. No PDF: `bin/hwde datasheet_extract --fetch <ws>` downloads and assesses.
+2. No MPN: give the parts.json line its MPN; the next read judges the PDF.
 3. Suspect after that: rating_datasheet_suspect says why.
 
 ## Do not

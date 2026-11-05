@@ -62,9 +62,11 @@ page covers how an agent runs it inside the Hive.
   committed; `index.json` beside them keeps URL and sha256). LCSC's
   wmsc.lcsc.com answers with a 140-byte script redirect, not the PDF;
   the fetch follows it, so don't curl datasheets yourself. Each entry gets a
-  status from the PDF (`--assess boards/<name>` for ones from before that): a
-  datasheet matches by naming the MPN or by an ordering table
-  (`reference/ordering_codes.yaml`) that decodes it, else it is suspect.
+  status from the PDF, written whenever `check_ratings` or the ledger reads the
+  index and again only if the PDF, the MPN or the check changed (`--assess
+  boards/<name>` forces it): a datasheet matches by naming the MPN or by an
+  ordering table (`reference/ordering_codes.yaml`) that decodes it, else it is
+  suspect. An entry with no PDF on disk stays unassessed until `--fetch`.
 - Every board with a netlist gets `hwde sim_board --workspace boards/<name>
   --out boards/<name>/reports/sim_board.json`: ngspice over the board's own
   passives and discretes (KiCad 10's bundled libngspice, found by this

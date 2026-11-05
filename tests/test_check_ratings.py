@@ -1481,9 +1481,12 @@ def test_old_index_entry_with_no_status_is_unassessed_not_ok(tmp_path):
     w = [v for v in viol if v["kind"] == "rating_datasheet_unassessed"]
     assert len(w) == 1 and w[0]["severity"] == "warning", viol
     assert w[0]["refs"] == ["U1"] and "C1" in w[0]["msg"]
-    assert "--assess" in w[0]["msg"]
+    assert "--fetch" in w[0]["msg"] and "no PDF" in w[0]["msg"]
     assert facts["unassessed_datasheets"] == ["C1"]
     assert not [v for v in viol if v["kind"] == "rating_datasheet_suspect"]
+    # a warning, and the facts stand: no file to judge is not a judgement
+    assert _u1(facts, "rating")["status"] != "unknown" \
+        or "suspect" not in _u1(facts, "rating")["value"]
 
 
 def test_unassessed_warning_is_one_line_for_the_whole_board(tmp_path):
@@ -1508,10 +1511,32 @@ def test_assessed_or_unrecorded_datasheet_is_not_unassessed(tmp_path):
                     if v["kind"] == "rating_datasheet_unassessed"]
 
 
-def test_a_pdf_on_disk_with_no_index_entry_is_unassessed(tmp_path):
-    from test_datasheet_fetch import RIGHT
+def test_a_pdf_on_disk_with_no_index_entry_is_judged_by_the_check(tmp_path):
+    # #768: nobody has to run --assess; parts.json names the part, so a wrong
+    # PDF takes its facts down at the first check
+    from test_datasheet_fetch import WRONG
     ws = _suspect_ws(tmp_path, None)
-    (ws / "parts" / "datasheets" / "C1.pdf").write_bytes(RIGHT)
-    _, facts = cr.run_check(ws / "kicad" / "board.kicad_pcb",
-                            ws / "parts", None, None)
-    assert facts["unassessed_datasheets"] == ["C1"]
+    (ws / "parts" / "parts.json").write_text(json.dumps(
+        {"parts": [{"lcsc": "C1", "mpn": "TESTMCU"}]}))
+    d = ws / "parts" / "datasheets"
+    (d / "C1.pdf").write_bytes(WRONG)
+    viol, facts = cr.run_check(ws / "kicad" / "board.kicad_pcb",
+                               ws / "parts", None, None)
+    assert facts["unassessed_datasheets"] == []
+    assert [v["kind"] for v in viol if v["kind"].startswith("rating_datasheet")
+            ] == ["rating_datasheet_suspect"]
+    assert _u1(facts, "rating")["status"] == "unknown"
+    assert json.loads((d / "index.json").read_text())["C1"]["status"] == "suspect"
+
+
+def test_old_entry_with_a_wrong_pdf_is_suspect_with_no_assess_run(tmp_path):
+    # the known answer in small: fmcw-radar's 44 verified held only because no
+    # one had run --assess
+    from test_datasheet_fetch import WRONG
+    ws = _suspect_ws(tmp_path, {"url": "u", "sha256": "s", "mpn": "TESTMCU"})
+    (ws / "parts" / "datasheets" / "C1.pdf").write_bytes(WRONG)
+    viol, facts = cr.run_check(ws / "kicad" / "board.kicad_pcb",
+                               ws / "parts", None, None)
+    assert "C1" in facts["suspect_datasheets"]
+    assert _u1(facts, "rating")["status"] == "unknown"
+    assert not [v for v in viol if v["kind"] == "rating_datasheet_unassessed"]
