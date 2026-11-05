@@ -71,6 +71,15 @@ is what settles it, so a passing bottom part still gets `bottom_preview` in the
 report and a dfm warning (cpl_bottom_preview). reference/jlc_bottom_cpl.md has
 the record; add what a preview or a built board shows there.
 
+The pin-1 silk mark: JLC places by the silkscreen when it disagrees with the
+CPL, and with no mark it can't read the polarity and confirms by email. So for
+ball grids and U/IC parts of three or more pads, `silk_mark()` finds the dots,
+small shapes and corner chamfers on the part's own side, and takes each one's
+nearest corner of the pad field. One off pin 1's corner is `silk_mark_wrong` in
+the report and fails the run; none at all is `silk_mark_missing`, a warning,
+since the email costs a delay and not a wrong part
+(reference/jlc_bga_cpl.md).
+
 `derive_rotation()` is what bom_cpl.py uses to WRITE the CPL; the package table
 is only its fallback when this check has no model. `merge_visual()` puts the
 fab step's image verdict (cpl_render.py + the playbook's vision agent, file
@@ -130,6 +139,19 @@ FOOTPRINT_BASIS_NOTE = (
     "orientation and it publishes no BGA rule, so this is not a pass: give the "
     "part an LCSC number, or confirm A1 in JLC's order preview against the "
     "part's tape spec before ordering (reference/jlc_bga_cpl.md)")
+NO_SILK_MARK_NOTE = (
+    "no pin-1 dot or chamfer found on the part's own silkscreen. JLC can't read "
+    "the polarity with no mark and confirms by email, which holds the order: "
+    "add a mark at pin 1, or answer the email (reference/jlc_bga_cpl.md)")
+# What counts as a pin-1 mark: a dot, a small drawn shape, or a line cutting
+# a corner. Sizes are from hw-lab's real marks: dots to r 0.2 mm, triangles and
+# chamfers to 0.8 mm. MSOP side notches (r 0.55, open arcs) and outlines are out.
+MARK_MAX_R_MM = 0.75
+MARK_MAX_SPAN_MM = 2.0
+CHAMFER_MAX_MM = 3.0
+CORNER_TIE_MM = 0.1
+ARC_CLOSED_MM = 0.01  # EasyEDA dots' ends miss by rounding: SOT-25 U402, 0.002 mm
+_MARK_REF = re.compile(r"^(U|IC)\d")
 
 # ------------------------------------------------------------ board side
 
@@ -156,6 +178,8 @@ class Footprint:
     pads: list[KPad] = field(default_factory=list)
     silk: list[list[tuple[float, float]]] = field(default_factory=list)
     fields: dict = field(default_factory=dict)
+    # pin-1 mark candidates (x, y) on the part's own side's silk, local frame
+    marks: list[tuple[float, float]] = field(default_factory=list)
 
     @property
     def name(self) -> str:
@@ -201,6 +225,68 @@ def _silk_shape(node) -> list[tuple[float, float]] | None:
     if head == "fp_arc":
         return [tuple(_nums(_kid(node, k))) for k in ("start", "mid", "end")]
     return None
+
+
+def _pad_field(fp: Footprint) -> tuple[float, float, float, float] | None:
+    """(x0, y0, x1, y1) of the footprint's numbered pads, local frame."""
+    pads = [p for p in fp.pads if p.number]
+    if not pads:
+        return None
+    xs, ys = [p.x for p in pads], [p.y for p in pads]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def _nearest_corners(x: float, y: float, box) -> set[int]:
+    """The pad field's corners nearest (x, y). A point mid-side has two, and
+    the centre all four: that's why this is a set."""
+    x0, y0, x1, y1 = box
+    d = [math.hypot(x - cx, y - cy)
+         for cx, cy in ((x0, y0), (x1, y0), (x1, y1), (x0, y1))]
+    return {i for i, v in enumerate(d) if v <= min(d) + CORNER_TIE_MM}
+
+
+def _cuts_a_corner(a, b, box) -> bool:
+    """A short 45 degree line square to the way out from the pad field's
+    centre, so a chamfer and not a spoke or a stroke of an outline."""
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    length = math.hypot(dx, dy)
+    if not 0 < length <= CHAMFER_MAX_MM or abs(abs(dx) - abs(dy)) > 0.3 * length:
+        return False
+    ox = (a[0] + b[0]) / 2 - (box[0] + box[2]) / 2
+    oy = (a[1] + b[1]) / 2 - (box[1] + box[3]) / 2
+    out = math.hypot(ox, oy)
+    return out > 0 and abs(dx * ox + dy * oy) / (length * out) < 0.5
+
+
+def _silk_mark(node, side: str, box) -> tuple[float, float] | None:
+    """Where this drawing marks a corner, or None if it doesn't look like a
+    mark. Only the part's own side counts: that's the silk JLC reads."""
+    lay = _kid(node, "layer")
+    if not box or not lay or str(_t(lay[1])) != ("F.SilkS" if side == "top"
+                                                 else "B.SilkS"):
+        return None
+    head, at = _t(node[0]), None
+    if head == "fp_circle":
+        (cx, cy), (ex, ey) = _nums(_kid(node, "center")), _nums(_kid(node, "end"))
+        if math.hypot(ex - cx, ey - cy) <= MARK_MAX_R_MM:
+            at = (cx, cy)
+    elif head == "fp_arc" and _kid(node, "mid"):
+        # a dot: start and end meet, so it's a full circle through mid
+        a, m, e = (_nums(_kid(node, k)) for k in ("start", "mid", "end"))
+        if (math.hypot(a[0] - e[0], a[1] - e[1]) <= ARC_CLOSED_MM
+                and math.hypot(a[0] - m[0], a[1] - m[1]) / 2 <= MARK_MAX_R_MM):
+            at = ((a[0] + m[0]) / 2, (a[1] + m[1]) / 2)
+    elif head in ("fp_poly", "fp_rect"):
+        pts = set(_silk_shape(node) or ())
+        xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+        if len(pts) > 1 and max(max(xs) - min(xs), max(ys) - min(ys)) <= MARK_MAX_SPAN_MM:
+            at = (sum(xs) / len(xs), sum(ys) / len(ys))
+    elif head == "fp_line":
+        a, b = _nums(_kid(node, "start")), _nums(_kid(node, "end"))
+        if _cuts_a_corner(a, b, box):
+            at = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+    # a mark dead centre points at no corner
+    return at if at and len(_nearest_corners(*at, box)) < 4 else None
 
 
 def _custom_copper(pad, size, local_rot: float):
@@ -250,6 +336,9 @@ def board_footprints(pcb: Path) -> dict[str, Footprint]:
                 s = _silk_shape(node)
                 if s:
                     f.silk.append(s)
+                m = _silk_mark(node, f.side, _pad_field(f)) if s else None
+                if m:
+                    f.marks.append(m)
         if ref:
             out[ref] = f
     return out
@@ -590,6 +679,29 @@ def bga_pin1(fp: Footprint) -> KPad | None:
     return min(balls, key=lambda b: (len(b[0]), b[0], b[1]))[2]
 
 
+def silk_mark(fp: Footprint) -> dict:
+    """Whether the part's pin-1 silk mark is at the board's pin 1. `state` is
+    None for parts the rule leaves alone (only ball grids and U/IC parts with
+    three or more pads and a pin 1), else "none", "wrong" (any mark off pin
+    1's corner: a second dot leaves JLC two to choose from) or "ok". Pads and
+    silk share the stored local frame, so a flip or a turn needs no transform;
+    the CPL rotation is proved against the same pad 1 by this module's fit, so
+    a mark at that pad's corner agrees with a CPL that passes."""
+    # footprint_a1, not bga_pin1 alone: a 4-layer USB-C's pads are named like
+    # balls in three rows, but they're slots and footprint_a1 knows it
+    pin = bga_pin1(fp) if footprint_a1(fp) else None
+    if pin is None and _MARK_REF.match(fp.ref) and len(
+            {p.number for p in fp.pads if p.number}) >= 3:
+        pin = next((p for p in fp.pads if p.number == "1"), None)
+    if pin is None:
+        return {"state": None}
+    box = _pad_field(fp)
+    want = _nearest_corners(pin.x, pin.y, box)
+    off = [m for m in fp.marks if not _nearest_corners(*m, box) & want]
+    return {"state": "none" if not fp.marks else "wrong" if off else "ok",
+            "pin": pin.number, "off": off}
+
+
 def _step(lines: dict) -> tuple[float, float] | None:
     """The median step per index along lines of (index, x, y). Depopulated
     gaps divide out, and a stray pad named like a ball can't move a median."""
@@ -733,21 +845,31 @@ def verify(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
         elif row["verdict"] == "no_model":
             row = _footprint_row(fp, cpl[ref], row,
                                  footprint_basis(fp, code, fetch))
+        mark = silk_mark(fp)
+        row["silk_mark"] = mark["state"]
+        if mark["state"]:
+            row["silk_pin"] = mark["pin"]
+            row["silk_off"] = mark["off"]
         rows.append(row)
     bad = [r for r in rows if r["verdict"] in FAIL_VERDICTS]
     below = [r["ref"] for r in rows if r.get("side") == "bottom"
              and r["verdict"] not in FAIL_VERDICTS]
     by_convention = [r["ref"] for r in rows if r["verdict"] == FOOTPRINT_MATCH]
+    no_mark = [r["ref"] for r in rows if r.get("silk_mark") == "none"]
+    wrong_mark = [r["ref"] for r in rows if r.get("silk_mark") == "wrong"]
     led = record_footprints(pcb, rows, lcsc)
     return {"script": "cpl_verify", "board": Path(pcb).name,
             "ledger": led,
-            "status": "violations" if bad else "pass",
+            "status": "violations" if bad or wrong_mark else "pass",
             "n_checked": len(rows), "n_failed": len(bad),
             "failed": [r["ref"] for r in bad],
             "bottom_preview": ({"refs": below, "note": BOTTOM_PREVIEW_NOTE}
                                if below else None),
             "footprint_basis": ({"refs": by_convention, "note": FOOTPRINT_BASIS_NOTE}
                                 if by_convention else None),
+            "silk_mark_wrong": wrong_mark,
+            "silk_mark_missing": ({"refs": no_mark, "note": NO_SILK_MARK_NOTE}
+                                  if no_mark else None),
             "offset_warnings": [r["ref"] for r in rows
                                 if r.get("offset_mm", 0) > r.get("offset_limit_mm", OFFSET_WARN_MM)
                                 and r["verdict"] == "ok"],

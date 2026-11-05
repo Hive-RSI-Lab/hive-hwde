@@ -58,6 +58,10 @@ Checks (all thresholds from reference/jlc_capabilities.yaml, keyed
            (cpl_rotation), and a match raises one warning for the run,
            cpl_footprint_basis, because it rests on a convention JLC doesn't
            publish, so confirm it in the preview (reference/jlc_bga_cpl.md).
+           JLC places by the silkscreen when it disagrees with the CPL, so on
+           ball grids and U/IC parts a pin-1 dot or chamfer off pin 1's corner
+           is an ERROR (cpl_silk_mark), and no mark at all raises one warning
+           for the run (cpl_no_silk_mark), since JLC emails to confirm.
            A model fetch that FAILED (EasyEDA 403/429 rate limit, other HTTP
            status, network) is one finding for the run, cpl_fetch_failed,
            listing the parts and the reason - never cpl_no_model. When it is
@@ -1421,8 +1425,24 @@ def check_placement(pcb: Path, cpl: Path, parts: Path | None,
             CHECK, "warning", None, None, None, refs,
             f"{len(refs)} ball grid part(s): {rep['footprint_basis']['note']}",
             SOURCE, kind="cpl_footprint_basis"))
+    if rep.get("silk_mark_missing"):
+        refs = rep["silk_mark_missing"]["refs"]
+        vios.append(checklib.violation(
+            CHECK, "warning", None, None, None, refs,
+            f"{len(refs)} part(s): {rep['silk_mark_missing']['note']}",
+            SOURCE, kind="cpl_no_silk_mark"))
     for r in rows:
         where = None
+        if r.get("silk_mark") == "wrong":
+            vios.append(checklib.violation(
+                CHECK, "error", where, None, None, [r["ref"]],
+                f"{r['ref']}: the pin-1 silk mark at "
+                f"{', '.join(f'({x:g}, {y:g})' for x, y in r['silk_off'])} sits "
+                f"nearest a corner other than pin {r['silk_pin']}'s. JLC places "
+                f"by the silkscreen when it disagrees with the CPL, so this "
+                f"part would go on turned: fix the footprint's mark",
+                SOURCE, kind="cpl_silk_mark", pin=r["silk_pin"],
+                marks=r["silk_off"]))
         if r["verdict"] == "fetch_failed":
             pass
         elif r["verdict"] in cpl_verify.FAIL_VERDICTS:
@@ -1454,7 +1474,7 @@ def check_placement(pcb: Path, cpl: Path, parts: Path | None,
             "parts": [{k: r.get(k) for k in
                        ("ref", "lcsc", "verdict", "basis", "board_rot",
                         "cpl_rot", "expected_rot", "offset_mm", "why",
-                        "fetch_error",
+                        "fetch_error", "silk_mark",
                         "visual", "agreement")} for r in rows]}
 
 
@@ -1733,6 +1753,7 @@ DFM_FAMILIES = {
     "polarity": ("cpl_polarity",),
     "placement": ("cpl_rotation", "cpl_no_model", "cpl_fetch_failed",
                   "cpl_offset", "cpl_bottom_preview", "cpl_footprint_basis",
+                  "cpl_silk_mark", "cpl_no_silk_mark",
                   "both_sides_needs_panel"),
     "placement_visual": ("cpl_visual_disagree",),
     "bom": ("dfm_bom_incomplete", "dfm_assembly_unplaced_smt",
