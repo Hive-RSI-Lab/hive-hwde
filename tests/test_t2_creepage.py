@@ -520,6 +520,34 @@ def test_dru_footprint_scope_layer_clause_not_honoured(tmp_path_factory,
     assert payload["dru_footprint_scopes"] == []
 
 
+def _layer_scoped(tmp_path_factory, tmp_path, name, layer):
+    bg = _board(tmp_path_factory, name, _fp("U9", 10, 2, "HV") + _GND_TRACK)
+    bg.path.with_suffix(".kicad_dru").write_text(
+        _SCOPE_RULE.format(min_mm=0.13, cond=_U9_COND).replace(
+            "\t(condition", f'\t(layer "{layer}")\n\t(condition'),
+        encoding="utf-8")
+    return _run(bg, _cons(tmp_path, _HV_PAD_VOLT))
+
+
+def test_dru_footprint_scope_on_its_own_layer_is_honoured(tmp_path_factory,
+                                                          tmp_path):
+    # rules_gen package_ratings with `layer` (hw-lab hc-power): the rating
+    # holds on the part's side only
+    payload = _layer_scoped(tmp_path_factory, tmp_path, "scope_fcu", "F.Cu")
+    v, = payload["violations"]
+    assert v["severity"] == "warning"
+    assert v["waiver_class"] == "dru_footprint_scope"
+    assert payload["dru_footprint_scopes"][0]["layer"] == "F.Cu"
+
+
+def test_dru_footprint_scope_on_the_other_layer_stays_error(tmp_path_factory,
+                                                            tmp_path):
+    payload = _layer_scoped(tmp_path_factory, tmp_path, "scope_bcu", "B.Cu")
+    v, = payload["violations"]
+    assert v["severity"] == "error"
+    assert payload["dru_footprint_scopes"][0]["layer"] == "B.Cu"
+
+
 @pytest.mark.parametrize("cond, want", [
     ("A.insideCourtyard('U301')",
      {"ref": "U301", "side": None, "courtyard": True, "both_member": False}),

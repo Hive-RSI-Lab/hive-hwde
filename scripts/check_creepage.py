@@ -32,7 +32,8 @@ rating for copper at its own pins (a 0.5 mm-pitch gate driver whose
 switch-node pin sits 0.3 mm from its grounded pad). A violating item pair
 is demoted to severity "warning" with waiver_class="dru_footprint_scope",
 dru_rule and scope_ref - again never dropped - only when ALL of these hold:
-  - the rule is a `clearance` rule with no (layer ...) clause, and its
+  - the rule is a `clearance` rule with no (layer ...) clause, or one
+    naming F.Cu or B.Cu (then it is honoured on that layer only), and its
     condition is nothing but `&&`-joined A./B. insideCourtyard,
     intersectsCourtyard, intersectsFrontCourtyard, intersectsBackCourtyard
     or memberOfFootprint terms naming one literal reference. Any other term
@@ -231,12 +232,13 @@ def dru_footprint_scopes(pcb: Path) -> list[dict]:
     rules = rc.parse_dru_rules(dru.read_text(encoding="utf-8"))
     scopes = []
     for rule in rules:
-        if rule["constraint"] != "clearance" or rule["layer"]:
+        if rule["constraint"] != "clearance" or \
+                rule["layer"] not in (None, "F.Cu", "B.Cu"):
             continue
         sc = parse_footprint_scope(rule["condition"])
         if sc is not None:
             scopes.append({**sc, "rule": rule["name"],
-                           "min_mm": rule["min_mm"]})
+                           "min_mm": rule["min_mm"], "layer": rule["layer"]})
     if not scopes:
         return []
     import placelib  # noqa: PLC0415 - only boards with a scoped rule pay
@@ -253,12 +255,15 @@ def dru_footprint_scopes(pcb: Path) -> list[dict]:
     return scopes
 
 
-def scope_for(a, b, pa, pb, scopes) -> dict | None:
+def scope_for(a, b, pa, pb, scopes, layer=None) -> dict | None:
     """The LAST (KiCad: later rule wins) footprint scope that governs this
     item pair, per the module docstring's conditions; None if none does.
-    The caller still holds the gap to the scope's own min_mm."""
+    The caller still holds the gap to the scope's own min_mm. A scope whose
+    rule names a layer governs only gaps on that `layer`."""
     hit = None
     for sc in scopes:
+        if sc.get("layer") and sc["layer"] != layer:
+            continue
         ref = sc["ref"]
         own = [it[0] == "pad" and it[3] == ref for it in (a, b)]
         foreign = any(it[0] == "pad" and it[3] != ref for it in (a, b))
@@ -304,7 +309,7 @@ def _same_fp(a, b) -> bool:
             and bool(a[3]) and a[3] == b[3])
 
 
-def _waiver(a, b, pa, pb, dist: float, scopes):
+def _waiver(a, b, pa, pb, dist: float, scopes, layer=None):
     """(waiver_class, extras, msg suffix) for one violating item pair, or
     (None, {}, "") when it stays an error. Module docstring: both classes."""
     if _same_fp(a, b):
@@ -314,7 +319,7 @@ def _waiver(a, b, pa, pb, dist: float, scopes):
                 {"same_footprint": True, "waiver_class": "land_pattern_pitch"},
                 f"; land-pattern pitch (same footprint {a[3]}) - "
                 "part-selection scope, not layout")
-    sc = scope_for(a, b, pa, pb, scopes) if scopes else None
+    sc = scope_for(a, b, pa, pb, scopes, layer) if scopes else None
     if sc is not None and dist + 1e-6 >= sc["min_mm"]:
         return ("dru_footprint_scope",
                 {"waiver_class": "dru_footprint_scope",
@@ -364,7 +369,7 @@ def sweep_pair(bg: geom.BoardGeom, prim: str, sec: str, dv: float,
                     pa, pb = nearest_points(a[1], b[1])
                     mid = ((pa.x + pb.x) / 2.0, (pa.y + pb.y) / 2.0)
                     hits.append((dist, mid, a, b, [row_a, row_b], req,
-                                 _waiver(a, b, pa, pb, dist, scopes)))
+                                 _waiver(a, b, pa, pb, dist, scopes, layer)))
         n_under = len(hits)
         # dedup: tightest pair wins within DEDUP_MM (a track inside its own
         # net's zone must not double-report the same physical gap). A kept
@@ -519,7 +524,9 @@ def run(argv=None):
                                   {"rule": s["rule"], "ref": s["ref"],
                                    "min_mm": s["min_mm"],
                                    "courtyard_found":
-                                       s["courtyard_poly"] is not None}
+                                       s["courtyard_poly"] is not None,
+                                   **({"layer": s["layer"]}
+                                      if s["layer"] else {})}
                                   for s in scopes],
                               **hint)
     return payload, args.out

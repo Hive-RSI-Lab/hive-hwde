@@ -679,7 +679,7 @@ def voltage_rules(constraints: dict, cap: dict) -> tuple[list[Rule], list[dict]]
 
 def package_rules(constraints: dict) -> tuple[list[Rule], list[dict]]:
     """Footprint-scoped clearance from constraints["package_ratings"]:
-    [{"ref": "U2", "clearance_mm": 0.1, "why": "..."}].
+    [{"ref": "U2", "clearance_mm": 0.1, "why": "...", "layer": "F.Cu"}].
 
     The owner's statement that a part is rated for its nets at its own pin
     pitch (an LM5069's 48 V pin 0.2 mm from its neighbour, a 100 V 0402's
@@ -698,10 +698,21 @@ def package_rules(constraints: dict) -> tuple[list[Rule], list[dict]]:
         # pads_only: just the part's own pads. A courtyard term also matches a
         # long track that starts inside it, and every fill it passes.
         term = "memberOfFootprint" if e.get("pads_only") else "intersectsCourtyard"
+        # layer: the part's own copper side. The courtyard term is layer-blind,
+        # so without it the rating also lowers the other outer layer under the
+        # part, below the fab's outer floor (2 oz JLC: 0.15 mm on B.Cu).
+        layer = e.get("layer")
+        if layer is not None and layer not in ("F.Cu", "B.Cu"):
+            raise ValueError(f"package_ratings {ref}: layer {layer!r} is not "
+                             "F.Cu or B.Cu")
         rules.append(Rule(name, "clearance", round(clr, 4),
-                          condition=f"A.{term}('{ref}') && B.{term}('{ref}')"))
-        facts.append({"ref": ref, "clearance_mm": round(clr, 4),
-                      "why": e.get("why", ""), "rule": name})
+                          condition=f"A.{term}('{ref}') && B.{term}('{ref}')",
+                          layer=f'"{layer}"' if layer else None))
+        fact = {"ref": ref, "clearance_mm": round(clr, 4),
+                "why": e.get("why", ""), "rule": name}
+        if layer:
+            fact["layer"] = layer
+        facts.append(fact)
     return rules, facts
 
 
