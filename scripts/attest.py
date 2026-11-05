@@ -51,6 +51,14 @@ import releaselib  # noqa: E402
 SCRIPT = "attest"
 
 
+def _orphan_note(ws: Path) -> dict:
+    """Ledger facts about parts no longer on the board: listed, never counted
+    as evidence (ledger.py prune removes them)."""
+    import ledgerlib
+    gone = sorted(ledgerlib.orphans(ws))
+    return {"orphaned_ledger_facts": gone} if gone else {}
+
+
 def run(argv=None) -> tuple[dict, str | None, int]:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -87,17 +95,19 @@ def run(argv=None) -> tuple[dict, str | None, int]:
             ws, max_report_age_h=args.max_report_age_h)
         if att is None:
             result.update(status="violations", problems=problems,
-                          attestation=None)
+                          attestation=None, **_orphan_note(ws))
             return result, args.out, 1
         if not args.force:
             existing = releaselib.verify(ws)
             if existing.get("valid"):
+                result.update(**_orphan_note(ws))
                 result.update(status="pass", action="unchanged",
                               rev=existing.get("rev"),
                               attestation_sha256=existing
                               .get("attestation_sha256"))
                 return result, args.out, 0
         path = releaselib.write_attestation(ws, att)
+        result.update(**_orphan_note(ws))
         result.update(status="pass",
                       action="reissued" if att.get("supersedes") else "issued",
                       attestation=str(path).replace("\\", "/"),

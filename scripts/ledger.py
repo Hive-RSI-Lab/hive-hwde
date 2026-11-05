@@ -14,6 +14,11 @@ and takes facts recorded by hand.
       record one fact you checked yourself; --source is required for
       verified and failed (where it came from: a datasheet page, a
       calculation, a distributor page and its date).
+  ledger.py prune --workspace WS [--apply]
+      facts about a part no longer on the board (a swapped or removed refdes
+      or LCSC code) are "orphaned": report lists them, and they never count
+      as evidence. prune lists them and, with --apply, deletes them from
+      ledger.json (dry run by default).
 """
 from __future__ import annotations
 
@@ -36,6 +41,11 @@ def run(argv=None) -> tuple[dict, str | None, int]:
     p.add_argument("--all", action="store_true",
                    help="list every fact, not only the gaps")
     p.add_argument("--out")
+    p = sub.add_parser("prune", help="drop facts of parts no longer on board")
+    p.add_argument("--workspace", required=True)
+    p.add_argument("--apply", action="store_true",
+                   help="write ledger.json (default: dry run)")
+    p.add_argument("--out")
     p = sub.add_parser("set", help="record a fact by hand")
     p.add_argument("--workspace", required=True)
     p.add_argument("--subject", required=True,
@@ -49,6 +59,14 @@ def run(argv=None) -> tuple[dict, str | None, int]:
     ws = Path(a.workspace)
     if not (ws / "state.json").is_file():
         raise SystemExit(f"{ws}: no state.json - not a board workspace")
+    if a.cmd == "prune":
+        found = ledgerlib.orphans(ws)
+        rows = [{"key": k, "status": f.get("status")}
+                for k, f in sorted(found.items())]
+        removed = ledgerlib.prune(ws, a.apply)
+        rep = {"script": SCRIPT, "status": "pass", "applied": a.apply,
+               "orphaned": rows, "removed": removed if a.apply else []}
+        return rep, a.out, 0
     if a.cmd == "set":
         if a.status != "unknown" and not a.source.strip():
             raise SystemExit("--source is required for a verified or failed "

@@ -231,7 +231,10 @@ and footprint - as verified (source and date), failed, or unknown. The checks
 write it as they run (`stock_check.py` and `bom_cpl.py`'s live run,
 `check_ratings.py` in verify, `cpl_verify.py` in dfm); a check that cannot
 tell records unknown, never a pass. `ledger.py report --workspace <ws>` lists
-the gaps; `ledger.py set ... --source` records one you checked yourself.
+the gaps; `ledger.py set ... --source` records one you checked yourself. Facts about a part that left the board
+(swapped or removed refdes or LCSC code) show as `orphaned` in the report and
+in `attest build`, never count as evidence; `ledger.py prune --workspace <ws>`
+lists them, `--apply` deletes them.
 Release refuses while any fact is not verified, and stock older than 72 h
 reads unknown, so re-run `stock_check.py --workspace <ws>` before the order.
 
