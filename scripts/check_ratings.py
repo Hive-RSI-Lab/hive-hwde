@@ -96,12 +96,12 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
    (R-REL-2). The ambient is constraints ambient_c, else the enclosure air
    check_thermal works out, else 25 C, said so in `ambient`.
  - rating_datasheet_suspect (warning): a part whose datasheet PDF is a host
-   placeholder or was marked suspect by `datasheet_extract --fetch` (index.json:
-   cut off, no text layer, nothing ties it to the MPN; #706). Its rating and pinout
-   ledger facts are unknown, never verified.
+   placeholder or was judged suspect (index.json: cut off, no text layer, nothing
+   ties it to the MPN; #706). The PDFs on disk are judged when the index is read
+   (#768). Its rating and pinout ledger facts are unknown, never verified.
  - rating_datasheet_unassessed (warning, one per board): parts whose datasheet
-   nobody has judged: an index.json entry with no status, or a PDF with no
-   entry. `datasheet_extract --assess` writes the verdict (#755).
+   can't be judged here: an index.json entry with no PDF on disk, or a PDF with
+   no MPN to check it against. `datasheet_extract --fetch` gets the PDF (#755).
 Sources and verified/disputed tags: docs/ingest/safety-components.md.
 A pin on a net of unknown voltage is not a finding (counted in facts).
 
@@ -949,11 +949,12 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
     if unassessed:
         refs = sorted(b["ref"] for b in board if b["lcsc"] in unassessed)
         emit("rating_datasheet_unassessed", "warning", refs[0], None,
-             f"{len(unassessed)} part(s) have a datasheet nobody has judged "
-             f"({', '.join(unassessed[:8])}"
-             f"{', ...' if len(unassessed) > 8 else ''}): it may be another "
-             "part's. Run `datasheet_extract --assess <ws>`, which reads the "
-             "PDFs on disk, or --fetch for those with none", pins=refs)
+             f"{len(unassessed)} part(s) have a datasheet that can't be judged "
+             f"here ({', '.join(unassessed[:8])}"
+             f"{', ...' if len(unassessed) > 8 else ''}): no PDF on disk, or no "
+             "MPN to check it against, so it may be another part's. Run "
+             "`datasheet_extract --fetch <ws>`, which downloads and judges it",
+             pins=refs)
         out[-1]["refs"] = refs
     facts = {"parts_on_board": len(board), "extractions": sorted(exts),
              "net_volts": {n: {"v": volts[n], "src": vsrc[n]}

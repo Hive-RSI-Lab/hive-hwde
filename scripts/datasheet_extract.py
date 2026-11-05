@@ -30,8 +30,11 @@ reads the PDF pages); this script owns the deterministic half:
                     refused or missing, 2 = bad workspace.
   --assess WS       re-read every index.json entry's PDF on disk (or only
                     --lcsc's) and write its status, with no download. An entry
-                    with no status and no PDF becomes status unassessed;
-                    check_ratings warns about those (#755). exit 0 = all ok,
+                    with no status and no PDF becomes status unassessed. Not
+                    needed in the ordinary way: check_ratings and the ledger
+                    judge the PDFs on disk whenever they read the index, and
+                    judge again only if the PDF, the MPN or ASSESS_VERSION
+                    changed (#768); this forces it. exit 0 = all ok,
                     1 = some suspect or unassessed, 2 = no index.
   --render DIR      with --pdf: render the image-only pages (under
                     IMAGE_ONLY_CHARS of text) and the mechanical-drawing
@@ -76,7 +79,9 @@ Contract (SPEC section 6): argparse, JSON to stdout or --out, exit 0/1/2.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -582,18 +587,51 @@ def _norm(s: str) -> str:
     return re.sub(r"[^0-9A-Z]", "", str(s or "").upper())
 
 
+# Between two characters of an MPN in running text: what a document may put
+# there without leaving the part's name. A space only where the MPN has a
+# separator of its own; colons, commas, brackets and line breaks are real breaks.
+_IN_NAME = "\\-\u00ad\u2010-\u2014_."
+_AT_SEPARATOR = _IN_NAME + "/ \t\u00a0"
+
+
+def _family_in_text(mpn: str, k: int, text: str) -> bool:
+    """Do the first `k` letters and digits of `mpn` stand in `text` as one name?
+    They start a word and cross no real break. If they cross a space they also
+    end a word, so TYPE-C is not found in "Output Type CMOS"; with no space they
+    need not (NE555 stays in NE555D, TPS25953 in TPS25953x)."""
+    pattern, sep, found = "", False, 0
+    for ch in mpn.upper():
+        if not (ch.isascii() and ch.isalnum()):
+            sep = True
+            continue
+        if found == k:
+            break
+        if found:
+            pattern += f"[{_AT_SEPARATOR if sep else _IN_NAME}]?"
+        pattern += ch
+        sep, found = False, found + 1
+    for hit in re.finditer(r"(?<![^\W_])" + pattern, text, re.I):
+        rest = text[hit.end():hit.end() + 1]
+        if not (any(c.isspace() for c in hit.group()) and rest.isalnum()):
+            return True
+    return False
+
+
 def mpn_in_text(mpn: str, text: str) -> str | None:
-    """The form of `mpn` found in `text` (both normalised: upper case, letters
-    and digits only), else None: the whole MPN, then its base family - the MPN
-    with trailing characters (package, grade and reel suffixes) cut while at
-    least 60% of it and 5 characters remain."""
+    """The form of `mpn` found in `text` (normalised: upper case, letters and
+    digits only), else None: the whole MPN anywhere in the text, then its base
+    family - the MPN with trailing characters (package, grade and reel suffixes)
+    cut while at least half of it, rounded up, and 5 characters remain, standing
+    in the text as one name (_family_in_text)."""
     m, t = _norm(mpn), _norm(text)
     if not m:
         return None
+    if m in t:
+        return m
     n = len(m)
     floor = min(n, max(5, -(-n // 2)))
-    for k in range(n, floor - 1, -1):
-        if m[:k] in t:
+    for k in range(n - 1, floor - 1, -1):
+        if m[:k] in t and _family_in_text(mpn, k, text):
             return m[:k]
     return None
 
@@ -748,7 +786,12 @@ def fetch_datasheet(url: str, dest: Path, transport=None,
 
 
 _ASSESSED = ("status", "reasons", "pages", "chars_per_page", "text_chars",
-             "match")
+             "match", "assessed")
+
+# Bump when a change to assess_pdf or match_mpn can change a verdict: the next
+# read of each index judges its PDFs again. 2: the family match keeps to words.
+ASSESS_VERSION = 2
+_VERDICTS: dict = {}    # this process's verdicts, for a tree it cannot write
 
 
 def _index(ddir: Path) -> dict:
@@ -758,12 +801,106 @@ def _index(ddir: Path) -> dict:
         return {}
 
 
+def _write_index(ddir: Path, idx: dict) -> None:
+    # whole or not at all: verify runs checks side by side
+    tmp = ddir / f".index.json.{os.getpid()}.tmp"
+    try:
+        tmp.write_text(json.dumps(idx, indent=1, ensure_ascii=True,
+                                  sort_keys=True) + "\n", encoding="utf-8")
+        os.replace(tmp, ddir / "index.json")
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
+def _parts_mpns(parts_dir: Path) -> dict:
+    try:
+        lines = json.loads((parts_dir / "parts.json").read_text(
+            encoding="utf-8")).get("parts") or []
+    except (OSError, ValueError, AttributeError):
+        return {}
+    return {str(p.get("lcsc")): p.get("mpn") for p in lines
+            if isinstance(p, dict)}
+
+
+def _stamp(sha: str, mpn: str | None) -> dict:
+    """What a verdict judged: it holds until one of these changes."""
+    return {"sha256": sha, "mpn": mpn or None, "version": ASSESS_VERSION}
+
+
+def _judge(data: bytes, sha: str, mpn: str | None) -> dict:
+    key = (sha, mpn or None, ASSESS_VERSION)
+    if key not in _VERDICTS:
+        a = assess_pdf(data, mpn)
+        why = stub_notice(data)
+        if why:
+            a.update(status="suspect", reasons=[
+                f"host placeholder, not a datasheet ({why})"])
+        elif a["status"] == "ok" and not mpn:
+            a.update(status="unassessed", reasons=[
+                "no MPN in index.json or parts.json to check this PDF against"])
+        _VERDICTS[key] = {**a, "assessed": _stamp(sha, mpn)}
+    return _VERDICTS[key]
+
+
+def _refresh(ddir: Path, idx: dict, mpns: dict, only: str | None = None,
+             force: bool = False) -> bool:
+    """Judge into `idx` each PDF on disk its stamp doesn't cover. True if any
+    entry changed. An entry with no PDF is left alone: its verdict, if any, was
+    made on a file since gone, and there is nothing here to make a new one on."""
+    changed = False
+    for pdf in sorted(ddir.glob("*.pdf")):
+        lcsc = pdf.stem
+        ent = idx.get(lcsc, {})
+        if (only and lcsc != only) or not isinstance(ent, dict):
+            continue
+        data = pdf.read_bytes()
+        sha = hashlib.sha256(data).hexdigest()
+        mpn = ent.get("mpn") or mpns.get(lcsc)
+        if not force and ent.get("assessed") == _stamp(sha, mpn):
+            continue
+        new = {k: v for k, v in ent.items() if k not in _ASSESSED}
+        if not ent:
+            new.update(file=f"parts/datasheets/{pdf.name}", sha256=sha,
+                       bytes=len(data), **({"mpn": mpn} if mpn else {}))
+        idx[lcsc] = {**new, **_judge(data, sha, mpn)}
+        changed = True
+    return changed
+
+
+def ensure_assessed(parts_dir: Path) -> dict:
+    """The index with a current verdict for every PDF on disk (#768): read it,
+    judge what its stamps don't cover, record that. Parsing 43 PDFs takes 42 s
+    once; after that a read only hashes them. A tree it cannot write still gets
+    the verdicts, and an index it cannot parse is left for a person."""
+    ddir = parts_dir / "datasheets"
+    if not ddir.is_dir():
+        return {}
+    idx: dict = {}
+    if (ddir / "index.json").exists():
+        try:
+            idx = json.loads((ddir / "index.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
+        if not isinstance(idx, dict):
+            return {}
+    try:
+        changed = _refresh(ddir, idx, _parts_mpns(parts_dir))
+    except ImportError:     # no pypdf: nothing judged, so unassessed says so
+        return idx
+    if changed:
+        try:
+            _write_index(ddir, idx)
+        except OSError:     # a read-only copy of a board
+            pass
+    return idx
+
+
 def suspect_datasheets(parts_dir: Path, lcscs) -> dict[str, str]:
     """{lcsc: why} for each part whose datasheet PDF is a placeholder or whose
-    index.json entry says suspect (truncated, no text layer, nothing ties it to
-    the MPN; #706)."""
+    verdict is suspect (truncated, no text layer, nothing ties it to the MPN;
+    #706)."""
     ddir = parts_dir / "datasheets"
-    idx = _index(ddir)
+    idx = ensure_assessed(parts_dir)
     out = {}
     for lcsc in lcscs:
         ent = idx.get(lcsc)
@@ -779,11 +916,11 @@ def suspect_datasheets(parts_dir: Path, lcscs) -> dict[str, str]:
 
 
 def unassessed_datasheets(parts_dir: Path, lcscs) -> list[str]:
-    """Parts with a datasheet nobody has judged (#755): an index.json entry
-    from before #706, one --assess had no PDF for, or a PDF with no entry. Not
-    read here: parsing 43 PDFs takes 42 s, so `--assess` writes the verdict."""
+    """Parts with a datasheet that has no verdict and cannot get one here
+    (#755, #768): an index.json entry with no PDF on disk, which takes --fetch,
+    or a PDF with no MPN to check it against."""
+    idx = ensure_assessed(parts_dir)
     ddir = parts_dir / "datasheets"
-    idx = _index(ddir)
     out = []
     for lcsc in sorted(lcscs):
         ent = idx.get(lcsc)
@@ -800,30 +937,17 @@ def do_assess(args) -> tuple[dict, int]:
     ws = Path(args.assess)
     ddir = ws / "parts" / "datasheets"
     idx = _index(ddir)
-    if not idx:
+    if not idx and not any(ddir.glob("*.pdf")):
         return {"script": "datasheet_extract", "status": "error",
                 "error": f"{ddir / 'index.json'}: no entries to assess"}, 2
-    mpns = {}
-    pj = ws / "parts" / "parts.json"
-    if pj.is_file():
-        mpns = {str(p.get("lcsc")): p.get("mpn") for p in json.loads(
-            pj.read_text(encoding="utf-8")).get("parts") or []}
+    mpns = _parts_mpns(ws / "parts")
+    _refresh(ddir, idx, mpns, only=args.lcsc, force=True)
     rows = []
     for lcsc, ent in sorted(idx.items()):
         if (args.lcsc and lcsc != args.lcsc) or not isinstance(ent, dict):
             continue
-        pdf = ddir / f"{lcsc}.pdf"
-        if pdf.is_file():
-            mpn = ent.get("mpn") or mpns.get(lcsc)
-            data = pdf.read_bytes()
-            a = assess_pdf(data, mpn)
-            why = stub_notice(data)
-            if why:
-                a.update(status="suspect", reasons=[
-                    f"host placeholder, not a datasheet ({why})"])
-            idx[lcsc] = {**{k: v for k, v in ent.items()
-                            if k not in _ASSESSED}, **a}
-        elif ent.get("status") not in ("ok", "suspect"):
+        if not (ddir / f"{lcsc}.pdf").is_file() \
+                and ent.get("status") not in ("ok", "suspect"):
             # the verdict of a PDF since gone still stands; none was ever made
             idx[lcsc] = {**ent, "status": "unassessed", "reasons": [
                 "no PDF on disk: run --fetch to read it"]}
@@ -831,9 +955,7 @@ def do_assess(args) -> tuple[dict, int]:
         rows.append({"lcsc": lcsc, "mpn": e.get("mpn") or mpns.get(lcsc),
                      "status": e["status"], "reasons": e.get("reasons") or [],
                      "match": e.get("match")})
-    (ddir / "index.json").write_text(
-        json.dumps(idx, indent=1, ensure_ascii=True, sort_keys=True) + "\n",
-        encoding="utf-8")
+    _write_index(ddir, idx)
     counts = {st: sum(r["status"] == st for r in rows)
               for st in ("ok", "suspect", "unassessed")}
     clean = counts["ok"] == len(rows)
@@ -879,9 +1001,10 @@ def do_fetch(args, transport=None) -> tuple[dict, int]:
                 old[r["lcsc"]] = {
                     **{k: r.get(k) for k in ("mpn", "file", "url",
                                              "final_url", "bytes", "sha256")},
-                    **{k: a[k] for k in _ASSESSED if k in a}}
-        idx.write_text(json.dumps(old, indent=1, ensure_ascii=True,
-                                  sort_keys=True) + "\n", encoding="utf-8")
+                    **{k: a[k] for k in _ASSESSED if k in a},
+                    **({"assessed": _stamp(r["sha256"], r["mpn"])}
+                       if r.get("mpn") else {})}
+        _write_index(ddir, old)
     return {"script": "datasheet_extract",
             "status": "pass" if ok else "violations",
             "fetched": sum(r["status"] == "fetched" for r in results),

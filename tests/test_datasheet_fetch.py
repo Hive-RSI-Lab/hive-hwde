@@ -6,6 +6,7 @@ the PDF is at that target. Part of `hwde test`.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 import tempfile
@@ -13,6 +14,7 @@ from argparse import Namespace
 from pathlib import Path
 
 import httpx
+import pytest
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
@@ -417,3 +419,259 @@ def test_assess_without_any_index_is_a_bad_workspace():
     with tempfile.TemporaryDirectory() as d:
         out, code = datasheet_extract.do_assess(Namespace(assess=d, lcsc=None))
         assert code == 2 and out["status"] == "error", out
+
+
+# ---- the family match respects words and breaks (#768) -------------------
+
+CRYSTAL = "Output Frequency  8.000000MHz\nOutput Type ： CMOS\nSupply 3.3V"
+
+
+def test_family_match_does_not_span_a_colon_between_words():
+    # the false pass of #768: 7X80000600's PDF "passed" as TYPE-C-31-M-12
+    assert datasheet_extract.mpn_in_text("TYPE-C-31-M-12", CRYSTAL) is None
+    assert not datasheet_extract.match_mpn("TYPE-C-31-M-12", [CRYSTAL])[0]
+
+
+@pytest.mark.parametrize("text", [
+    "Output Type CMOS",            # a plain space at the MPN's own hyphen
+    "Type\nCMOS",                  # a line break
+    "Type, CMOS",
+    "Type: C",
+    "Type (C)",
+])
+def test_family_match_does_not_cross_a_real_break(text):
+    assert datasheet_extract.mpn_in_text("TYPE-C-31-M-12", text) is None
+
+
+@pytest.mark.parametrize("mpn,text", [
+    ("NE555P", "XNE555 timer"),         # mid-word
+    ("NE555P", "1NE555 timer"),
+    ("TYPE-C-31-M-12", "PROTOTYPE-C board"),
+    ("ABCDE1239", "ABC DE123"),          # a space the MPN does not have
+])
+def test_family_match_starts_at_a_word_and_stays_in_one(mpn, text):
+    assert datasheet_extract.mpn_in_text(mpn, text) is None
+
+
+@pytest.mark.parametrize("mpn,text,form", [
+    ("BGT60TR13CE6327XUMA1", "the BGT60TR13C radar", "BGT60TR13C"),
+    ("BGT60TR13CE6327XUMA1", "BGT60TR13C E6327", "BGT60TR13C"),
+    ("NE555P", "NE555 timer", "NE555"),
+    ("NE555P", "(NE555) timer", "NE555"),
+    ("NE555P", "NE555D and NE555", "NE555"),     # a sibling's suffix is fine
+    ("TPS7A2036PDBVR", "TPS7A20 300 mA LDO", "TPS7A20"),
+    ("TPS259531DSGR", "TPS25953x eFuse", "TPS25953"),
+    ("SN74AVC4T774PWR", "SN74AVC4T774\nProcess", "SN74AVC4T774"),
+    ("ESP32-S3-WROOM-1-N16R8", "ESP32-S3-WROOM-1\nDatasheet",
+     "ESP32S3WROOM1"),
+    ("ESP32-S3-WROOM-1-N16R8", "ESP32 S3 WROOM 1 module", "ESP32S3WROOM1"),
+    ("TYPE-C-31-M-12", "TYPE-C connector", "TYPEC"),
+    ("TYPE-C-31-M-12", "Type C-31 receptacle", "TYPEC31"),
+    ("LM2596S-5.0", "LM2596S 5.0 V", "LM2596S50"),
+])
+def test_family_matches_that_stay(mpn, text, form):
+    assert datasheet_extract.mpn_in_text(mpn, text) == form
+
+
+def test_the_whole_mpn_and_the_half_and_five_character_floor():
+    f = datasheet_extract.mpn_in_text
+    assert f("USBLC6-2SC6", "USBLC6-2SC6 TVS") == "USBLC62SC6"
+    assert f("AB-12", "ab12") == "AB12"              # shorter than 5: whole
+    assert f("ABCDEF", "ABCDE") == "ABCDE"           # 5 of 6
+    assert f("ABCDEFG", "ABCD") is None              # below 5
+    assert f("ABCDEFGHIJKL", "ABCDEF") == "ABCDEF"   # half of 12
+    assert f("ABCDEFGHIJKL", "ABCDE") is None        # under half
+    assert f("", "anything") is None
+    assert "half" in datasheet_extract.mpn_in_text.__doc__
+    assert "60%" not in datasheet_extract.mpn_in_text.__doc__
+
+
+# ---- the assessment runs by itself where an index is read (#768) -----------
+
+def _counting_assess(monkeypatch):
+    calls = []
+    real = datasheet_extract.assess_pdf
+
+    def assess(data, mpn=None):
+        calls.append(mpn)
+        return real(data, mpn)
+    monkeypatch.setattr(datasheet_extract, "assess_pdf", assess)
+    monkeypatch.setattr(datasheet_extract, "_VERDICTS", {})
+    return calls
+
+
+def _index_of(ws):
+    return json.loads((ws / "parts/datasheets/index.json").read_text())
+
+
+OLD = {"file": "x", "url": "u", "sha256": "s", "mpn": MPN}
+
+
+def test_reading_an_index_assesses_its_pdfs_and_records_them(tmp_path):
+    ws = _assess_ws(str(tmp_path), {"C1": OLD, "C2": OLD},
+                    {"C1": RIGHT, "C2": WRONG})
+    parts = ws / "parts"
+    assert list(datasheet_extract.suspect_datasheets(parts, ["C1", "C2"])) \
+        == ["C2"]
+    idx = _index_of(ws)
+    assert idx["C1"]["status"] == "ok" and idx["C2"]["status"] == "suspect"
+    assert idx["C1"]["url"] == "u"     # the rest of the entry stays
+    assert idx["C1"]["assessed"]["sha256"] == hashlib.sha256(RIGHT).hexdigest()
+    assert datasheet_extract.unassessed_datasheets(parts, ["C1", "C2"]) == []
+
+
+def test_a_second_read_does_not_parse_or_rewrite(tmp_path, monkeypatch):
+    calls = _counting_assess(monkeypatch)
+    ws = _assess_ws(str(tmp_path), {"C1": OLD}, {"C1": RIGHT})
+    parts = ws / "parts"
+    datasheet_extract.suspect_datasheets(parts, ["C1"])
+    assert calls == [MPN]
+    index = parts / "datasheets" / "index.json"
+    written = index.stat().st_mtime_ns
+    datasheet_extract.suspect_datasheets(parts, ["C1"])
+    datasheet_extract.unassessed_datasheets(parts, ["C1"])
+    assert calls == [MPN] and index.stat().st_mtime_ns == written
+
+
+@pytest.mark.parametrize("change", ["pdf", "mpn", "version"])
+def test_a_verdict_is_redone_when_what_it_judged_changes(tmp_path, monkeypatch,
+                                                         change):
+    calls = _counting_assess(monkeypatch)
+    ws = _assess_ws(str(tmp_path), {"C1": OLD}, {"C1": RIGHT})
+    parts = ws / "parts"
+    ddir = parts / "datasheets"
+    datasheet_extract.suspect_datasheets(parts, ["C1"])
+    assert _index_of(ws)["C1"]["status"] == "ok"
+    if change == "pdf":
+        (ddir / "C1.pdf").write_bytes(WRONG)
+        want = "suspect"
+    elif change == "mpn":
+        idx = _index_of(ws)
+        idx["C1"]["mpn"] = "OTHERPART99"
+        (ddir / "index.json").write_text(json.dumps(idx))
+        want = "suspect"
+    else:
+        monkeypatch.setattr(datasheet_extract, "ASSESS_VERSION",
+                            datasheet_extract.ASSESS_VERSION + 1)
+        want = "ok"
+    datasheet_extract.suspect_datasheets(parts, ["C1"])
+    assert len(calls) == 2 and _index_of(ws)["C1"]["status"] == want
+
+
+def test_an_old_verdict_with_no_stamp_is_redone(tmp_path, monkeypatch):
+    # written by the matcher before this one: it may be the TYPEC false pass
+    calls = _counting_assess(monkeypatch)
+    ws = _assess_ws(str(tmp_path), {"C1": {**OLD, "status": "ok"}},
+                    {"C1": WRONG})
+    assert list(datasheet_extract.suspect_datasheets(ws / "parts", ["C1"])) \
+        == ["C1"]
+    assert calls == [MPN]
+
+
+def test_a_pdf_with_no_entry_gets_one_with_the_mpn_from_parts_json(tmp_path):
+    ws = _assess_ws(str(tmp_path), {}, {"C1": RIGHT, "C2": WRONG})
+    (ws / "parts/parts.json").write_text(json.dumps({"parts": [
+        {"lcsc": "C1", "mpn": MPN}, {"lcsc": "C2", "mpn": MPN}]}))
+    assert list(datasheet_extract.suspect_datasheets(ws / "parts",
+                                                     ["C1", "C2"])) == ["C2"]
+    idx = _index_of(ws)
+    assert idx["C1"]["status"] == "ok" and idx["C1"]["mpn"] == MPN
+    assert idx["C1"]["file"] == "parts/datasheets/C1.pdf"
+
+
+def test_a_pdf_with_no_mpn_anywhere_is_read_but_not_called_ok(tmp_path):
+    ws = _assess_ws(str(tmp_path), {}, {"C1": RIGHT, "C2": TRUNC})
+    parts = ws / "parts"
+    assert list(datasheet_extract.suspect_datasheets(parts, ["C1", "C2"])) \
+        == ["C2"]
+    assert datasheet_extract.unassessed_datasheets(parts, ["C1", "C2"]) \
+        == ["C1"]
+    assert "no MPN" in _index_of(ws)["C1"]["reasons"][0]
+
+
+def test_a_read_writes_nothing_when_no_pdf_is_on_disk(tmp_path):
+    # no new knowledge: a check must not dirty every committed index in a fleet
+    ws = _assess_ws(str(tmp_path), {"C1": OLD}, {})
+    index = ws / "parts/datasheets/index.json"
+    before = index.read_bytes()
+    assert datasheet_extract.suspect_datasheets(ws / "parts", ["C1"]) == {}
+    assert datasheet_extract.unassessed_datasheets(ws / "parts", ["C1"]) \
+        == ["C1"]
+    assert index.read_bytes() == before
+
+
+def test_the_verdict_of_a_pdf_since_gone_stands(tmp_path):
+    ws = _assess_ws(str(tmp_path), {"C1": OLD}, {"C1": WRONG})
+    parts = ws / "parts"
+    assert "C1" in datasheet_extract.suspect_datasheets(parts, ["C1"])
+    (parts / "datasheets/C1.pdf").unlink()
+    assert "C1" in datasheet_extract.suspect_datasheets(parts, ["C1"])
+
+
+def test_a_tree_it_cannot_write_is_still_judged_once(tmp_path, monkeypatch):
+    calls = _counting_assess(monkeypatch)
+    ws = _assess_ws(str(tmp_path), {"C1": OLD}, {"C1": WRONG})
+
+    def no_write(*_a, **_k):
+        raise OSError("read-only file system")
+    monkeypatch.setattr(datasheet_extract, "_write_index", no_write)
+    parts = ws / "parts"
+    assert "C1" in datasheet_extract.suspect_datasheets(parts, ["C1"])
+    assert datasheet_extract.unassessed_datasheets(parts, ["C1"]) == []
+    assert calls == [MPN] and "status" not in _index_of(ws)["C1"]
+
+
+def test_no_datasheets_dir_is_nothing_and_creates_nothing(tmp_path):
+    parts = tmp_path / "parts"
+    assert datasheet_extract.suspect_datasheets(parts, ["C1"]) == {}
+    assert datasheet_extract.unassessed_datasheets(parts, ["C1"]) == []
+    assert not parts.exists()
+
+
+def test_without_pypdf_a_read_records_nothing(tmp_path, monkeypatch):
+    def no_pypdf(*_a, **_k):
+        raise ImportError("pypdf")
+    monkeypatch.setattr(datasheet_extract, "assess_pdf", no_pypdf)
+    monkeypatch.setattr(datasheet_extract, "_VERDICTS", {})
+    ws = _assess_ws(str(tmp_path), {"C1": OLD}, {"C1": RIGHT})
+    assert datasheet_extract.unassessed_datasheets(ws / "parts", ["C1"]) \
+        == ["C1"]
+    assert "status" not in _index_of(ws)["C1"]
+
+
+def test_assess_and_fetch_stamp_so_the_next_read_does_not_parse(tmp_path,
+                                                                monkeypatch):
+    ws = _assess_ws(str(tmp_path), {"C1": OLD}, {"C1": RIGHT})
+    datasheet_extract.do_assess(Namespace(assess=str(ws), lcsc=None))
+    calls = _counting_assess(monkeypatch)
+    datasheet_extract.suspect_datasheets(ws / "parts", ["C1"])
+    assert calls == []
+    # --assess reads again even when nothing changed: it is the forced form
+    datasheet_extract.do_assess(Namespace(assess=str(ws), lcsc=None))
+    assert calls == [MPN]
+
+
+def test_a_fetched_verdict_is_stamped_and_not_read_again(tmp_path, monkeypatch):
+    ws = tmp_path
+    (ws / "parts").mkdir()
+    (ws / "parts/parts.json").write_text(json.dumps({"parts": [
+        {"lcsc": "C1", "mpn": MPN, "datasheet": WMSC}]}))
+
+    datasheet_extract.do_fetch(Namespace(fetch=str(ws), lcsc=None),
+                               transport=_serve(RIGHT))
+    assert _index_of(ws)["C1"]["assessed"]["mpn"] == MPN
+    calls = _counting_assess(monkeypatch)
+    datasheet_extract.suspect_datasheets(ws / "parts", ["C1"])
+    assert calls == []
+
+
+# ---- the page the warning points at (#768) ---------------------------------
+
+def test_the_suspect_remediation_page_covers_each_case():
+    page = (Path(__file__).resolve().parent.parent / "reference" / "remediations"
+            / "rating_datasheet_suspect.md").read_text(encoding="utf-8")
+    assert page.startswith("# rating_datasheet_suspect")
+    for section in ("## Is it real?", "## Fix ladder", "## Do not", "## Verify",
+                    "no text layer", "never names", "ordering table",
+                    "ordering_codes.yaml", "--force", "--fetch"):
+        assert section in page, section
