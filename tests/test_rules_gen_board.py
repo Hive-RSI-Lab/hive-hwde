@@ -174,3 +174,19 @@ def test_package_rating_pads_only_scopes_to_the_parts_own_pads():
     (r,), _ = rules_gen.package_rules({"package_ratings": [
         {"ref": "J3", "clearance_mm": 0.09, "pads_only": True}]})
     assert r.condition == "A.memberOfFootprint('J3') && B.memberOfFootprint('J3')"
+
+
+def test_package_rating_layer_keeps_the_other_side_at_its_floor():
+    """The courtyard term is layer-blind: a 0.13 rating on a top-side QFN
+    also lowered B.Cu under it below JLC's 2 oz outer 0.15 (dfm_release
+    caught it, DRC can't). `layer` scopes the rule to the part's side."""
+    (r,), (f,) = rules_gen.package_rules({"package_ratings": [
+        {"ref": "U4", "clearance_mm": 0.13, "layer": "F.Cu"}]})
+    assert '\t(layer "F.Cu")' in r.render()
+    assert f["layer"] == "F.Cu"
+    (r,), _ = rules_gen.package_rules({"package_ratings": [
+        {"ref": "U4", "clearance_mm": 0.13}]})
+    assert "(layer" not in r.render()
+    with pytest.raises(ValueError):
+        rules_gen.package_rules({"package_ratings": [
+            {"ref": "U4", "clearance_mm": 0.13, "layer": "In1.Cu"}]})

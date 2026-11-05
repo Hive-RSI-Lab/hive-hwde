@@ -228,7 +228,12 @@ Consumers per key (script -> phase):
   // 48 V controller's 0.5 mm pins, a 100 V 0402). rules_gen emits one
   // clearance rule scoped to that courtyard after the HV rules;
   // check_creepage keeps the pairs as dru_footprint_scope warnings.
-  "package_ratings": [{"ref": "U2", "clearance_mm": 0.1,
+  // layer (optional, "F.Cu" or "B.Cu"): the part's own side. The courtyard
+  // term is layer-blind, so without it the rule also lowers the other outer
+  // layer under the part, below the fab's outer floor (dfm_release flags it).
+  // pads_only: just the part's own pads (fanout tracks and fills keep the
+  // net-wide rule).
+  "package_ratings": [{"ref": "U2", "clearance_mm": 0.1, "layer": "F.Cu",
                        "why": "LM5069 VIN pin, 0.5 mm pitch"}],
 
   // check_si (P8): signal integrity of the nets that need it. Nets are
