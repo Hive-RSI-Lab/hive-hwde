@@ -1,14 +1,12 @@
 name: smoke
 # bin/hwde test-smoke: whole flows on a live KiCad, which ci.yml's per-PR suite leaves out.
-# On a schedule, not per PR, for its runtime. A scheduled failure opens an issue, or adds
-# to the open one: nobody reads a scheduled run's result otherwise (#769).
+# Every PR, about 10 min here, and daily for what changes without a PR (the tool pins'
+# downloads, the runner). A scheduled failure opens an issue, or adds to the open one:
+# nobody reads a scheduled run's result otherwise (#769).
 on:
   schedule:
     - cron: "17 6 * * *"
   pull_request:
-    paths:
-      - .github/workflows/smoke.yml
-      - .github/actions/hwde-tools/**
   workflow_dispatch:
 concurrency:
   group: smoke-${{ github.ref }}
