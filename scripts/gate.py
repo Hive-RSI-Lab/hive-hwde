@@ -442,7 +442,8 @@ def evaluate(gate_name: str, gate: dict, report: dict,
                 # a waiver whose bindings no longer hold does not match
                 # anything - surfaced, never silently applied
                 invalid_waivers.append(
-                    {"waiver": {k: w.get(k)
+                    {"index": i,
+                     "waiver": {k: w.get(k)
                                 for k in ("check", "kind", "net", "refs")},
                      "problems": probs})
             else:
@@ -827,6 +828,10 @@ def main(argv: list[str] | None = None) -> int:
           file=sys.stderr)
     for w in result.get("warnings", []):
         print(f"gate {args.gate}: warning: {w}", file=sys.stderr)
+    for iw in result.get("waivers_invalid", []):
+        for prob in iw["problems"]:
+            print(f"gate {args.gate}: warning: waiver {iw['index']} "
+                  f"ignored (invalid): {prob}", file=sys.stderr)
     for u in result.get("waivers_unmatched", []):
         print(f"gate {args.gate}: "
               f"{'FAIL' if gate.get('strict') else 'warning'}: {u['problem']}",

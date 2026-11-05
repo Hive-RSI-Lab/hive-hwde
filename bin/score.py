@@ -75,9 +75,19 @@ def read_pin(path: Path) -> Pin:
                dict(d.get("stand_in", {})), list(d.get("unclassified", [])), path)
 
 
+def _local_state(p: Path) -> bool:
+    """KiCad's per-machine files (git-ignored): kicad-cli writes a .kicad_prl
+    beside any board it opens, and an editor leaves lock/autosave files. They
+    are not the design, so they stay out of the pin digest."""
+    n = p.name
+    return (n.endswith(".kicad_prl") or n.endswith(".lck")
+            or n.startswith("_autosave-") or n == "fp-info-cache")
+
+
 def files(d: Path) -> list[str]:
     return sorted(str(p.relative_to(d)) for p in d.rglob("*")
-                  if p.is_file() and "__pycache__" not in p.parts)
+                  if p.is_file() and "__pycache__" not in p.parts
+                  and not _local_state(p))
 
 
 def scripts(d: Path) -> list[str]:
