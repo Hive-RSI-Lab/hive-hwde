@@ -117,10 +117,11 @@ The maze (`route_finish --no-rip-board`) then runs on the same boards, frozen in
 |---|---|---|---|---|---|
 | TFBGA-54 | 54 | 54, 100 % | 0 | 0 | 2 min |
 | WLCSP-49 | 49 | 31, 63.3 % | 18 | 0 | 29 to 39 min |
-| FBGA-153 | 153 | no answer yet | | | over 3 h; 109 routed and none failed at 40 min |
+| FBGA-153 | 153 | 70, 45.8 % | 83 | 0 | 4 h, one run |
 
 The maze keeps a pass only if it helps, so what it leaves is unrouted, not a
-violation in copper. WLCSP-49's 18 are work for the escape or the router.
+violation in copper. WLCSP-49's 18 and FBGA-153's 83 are work for the escape or
+the router.
 
 rules_gen and route_escape write the same rules (`aiee_hdi_*`): each via type's
 own floors in place of the through-via ones (`A.Via_Type`), and 3 mil track and
