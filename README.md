@@ -29,7 +29,9 @@ An agent designs a PCB from a written brief: research, architecture, parts, sche
   out the tests listed as `slow` in `tests/conftest.py` (`SLOW`: the live
   toolchain, whole fixture boards through bench or the gates, intake of a
   whole project); `bin/hwde test-slow` runs those, so run it too on a change
-  to the checks, bench, intake or `check_env`. The test keeps its scratch
+  to the checks, bench, intake or `check_env`. `bin/hwde test-smoke` runs the
+  `smoke` tests, whole flows on a live KiCad; CI runs them on a schedule
+  (`.github/workflows/smoke.yml`) and opens an issue when they fail. The test keeps its scratch
   files on `/dev/shm` when it has room and nothing in it fsyncs
   (`HWDE_NO_FSYNC`), because on a loaded disk the suite's file writes, not
   its CPU, set its time; it prints its time and its slowest 15 tests at

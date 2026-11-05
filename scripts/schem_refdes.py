@@ -594,9 +594,12 @@ def audit_sheet(sheet: Sheet, clearance: float = CLEARANCE) -> list[dict]:
             p = sym["props"].get(field)
             if p is None or p["hidden"] or p["at"] is None or not p["value"]:
                 continue
+            # KiCad turns a field with its symbol: 90 on a symbol at 90 or 270
+            # reads level, and text is never drawn upside down.
             fields.append((f"{sym['ref']}.{field}",
                            text_box(p["value"], p["at"], p["size"], p["thick"],
-                                    p["justify"], p["angle"])))
+                                    p["justify"],
+                                    (p["angle"] + sym["at"][2]) % 180)))
     out = []
     # A net label must read clear of every part's body and pin numbers too:
     # one left-justified on a leftward stub prints over its own pin's number.

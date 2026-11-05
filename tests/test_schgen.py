@@ -829,24 +829,47 @@ def test_smoke_label_on_foreign_wire_rejected(tmp_path):
 @pytest.mark.smoke
 def test_smoke_save_place_fields_flag(tmp_path):
     """P4-1: save() runs schem_refdes by default (clean fields, report
-    recorded); place_fields=False leaves the raw ksa output untouched."""
+    recorded); place_fields=False leaves the raw ksa output untouched. The
+    readable redraw rewrites every field after this pass, so it stays off."""
     def build():
         sh = schlib.Sheet("pf")
         sh.add_component("Device:R", "R1", "10k", at=(127.0, 63.5))
         sh.wire_pins("R1", {"1": "A", "2": "B"})
         return sh
     a = build()
-    a.save(tmp_path / "on")
+    a.save(tmp_path / "on", readable=False)
     assert a.place_report is not None and "error" not in a.place_report
     assert a.place_report["moved"] > 0 and a.place_report["residue"] == []
     import schem_refdes as sr
     assert sr.audit_sheet(sr.Sheet(tmp_path / "on" / "pf.kicad_sch")) == []
     b = build()
-    b.save(tmp_path / "off", place_fields=False)
+    b.save(tmp_path / "off", place_fields=False, readable=False)
     assert b.place_report is None
     on_text = (tmp_path / "on" / "pf.kicad_sch").read_text(encoding="utf-8")
     off_text = (tmp_path / "off" / "pf.kicad_sch").read_text(encoding="utf-8")
     assert on_text != off_text          # the placement pass really ran
+
+
+def _power_pair(path, angle):
+    """Two power symbols a pin pitch apart, Value at field angle 90, as
+    schem_layout writes them."""
+    syms = "".join(
+        f'''(symbol (lib_id "power:X") (at 10 {y} {angle})
+        (property "Reference" "#PWR{y}" (at 10 {y} 90)
+         (effects (font (size 1.27 1.27)) (hide yes)))
+        (property "Value" "+5V" (at 5 {y} 90) (effects (font (size 1.27 1.27)))))'''
+        for y in (10, 12.54))
+    path.write_text(f'(kicad_sch (lib_symbols) {syms})', encoding="utf-8")
+    return path
+
+
+def test_audit_reads_a_field_turned_with_its_symbol(tmp_path):
+    """KiCad turns a field with its symbol: 90 on a symbol at 90 reads level."""
+    import schem_refdes as sr
+    level = _power_pair(tmp_path / "level.kicad_sch", 90)
+    assert sr.audit_sheet(sr.Sheet(level)) == []
+    upright = _power_pair(tmp_path / "upright.kicad_sch", 0)
+    assert [o["field"] for o in sr.audit_sheet(sr.Sheet(upright))] == ["#PWR10.Value"]
 
 
 @pytest.mark.smoke
