@@ -143,8 +143,11 @@ def test_the_cap_is_per_piece():
     assert len(_edge(_tabs(xs), low)) == 2 * CAP
 
 
-def test_a_castellated_piece_stays_exempt():
-    assert _edge(_tabs([20, 60]), cast=[(21, 50, 1.0)]) == []
+def test_a_castellated_hole_exempts_only_its_own_place():
+    """#743; tests/test_dfm_castellated_edge.py has the rest."""
+    vios = _edge(_tabs([20, 60]), cast=[(21, 50, 1.0)])
+    assert [round(v["distance_mm"], 3) for v in vios] == [0.1]
+    assert vios[0]["pos"][0] > 50
 
 
 def test_clear_copper_gives_nothing():

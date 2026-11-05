@@ -287,6 +287,26 @@ def test_dfm_exempts_castellated_and_checks_them(tmp_path):
             "dfm_copper_to_edge"} <= kinds
 
 
+@pytest.mark.smoke
+def test_dfm_finds_a_track_at_the_edge_on_a_castellated_pads_net(tmp_path):
+    """#743, planted through real gerbers: pad 1's copper goes on to a spot
+    0.1 mm from the edge, far from any hole. It used to be exempt with the pad."""
+    import dfm_check
+    x0, y = 8.65, 1.0
+    far = (26.0, 0.225)
+    seg = ('\t(segment (start {} {}) (end {} {}) (width 0.25) (layer "F.Cu") '
+           '(net 0) (uuid "{}"))\n')
+    path = [(x0, y), (x0, 15.0), (far[0], 15.0), far]
+    add = "".join(seg.format(*a, *b, f"00000000-0000-4000-8000-00000000074{i}")
+                  for i, (a, b) in enumerate(zip(path, path[1:])))
+    planted = _mutant(tmp_path, lambda t: t.replace("\t(gr_line", add + "\t(gr_line", 1))
+    rep = dfm_check.run(planted, polarity=False)
+    edge = [v for v in rep["violations"] if v["kind"] == "dfm_copper_to_edge"]
+    assert len(edge) == 1, [v["msg"] for v in rep["violations"]]
+    assert edge[0]["distance_mm"] == pytest.approx(0.1, abs=0.01)
+    assert edge[0]["pos"][0] == pytest.approx(far[0], abs=0.2)
+
+
 # ------------------------------------------------------- quote and order
 
 def test_quote_adds_the_castellated_surcharge():
