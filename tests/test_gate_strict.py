@@ -399,6 +399,124 @@ def test_strict_gate_clean_durable_waiver_unchanged(tmp_path, capsys):
     assert "waivers_invalid" not in res and "waiver 0" not in err
 
 
+# #731: a waiver file in the wrong shape, on a lenient and a strict gate
+_BOTH_GATES = [("verify", "warning"), ("verify_release", "FAIL")]
+_NOT_OBJECTS = ["x", 1, None, True, ["U22"]]
+_BAD_REFS = [5, "U22", [["U22"]], ["U22", 5], "", 0, {}, False]
+
+
+def _sidecar_main(tmp_path, capsys, rep, doc, gate_name):
+    """Run a gate through main() on a sidecar holding doc: (exit code,
+    stdout JSON, stderr)."""
+    sidecar = tmp_path / "w.json"
+    sidecar.write_text(json.dumps(doc), encoding="utf-8")
+    code = _gate_main(tmp_path, rep, extra_argv=("--waivers", str(sidecar)),
+                      gate_name=gate_name)
+    cap = capsys.readouterr()
+    return code, json.loads(cap.out), cap.err
+
+
+def _entry_for(gate_name, rep, **over):
+    """A waiver of the V48_RTN finding that is good on this gate but for over:
+    a strict gate needs the durable fields, a lenient one doesn't."""
+    good = _wv() if gate_name == "verify" else _durable(rep, "V48_RTN")
+    return {**good, **over}
+
+
+@pytest.mark.parametrize("gate_name, level", _BOTH_GATES)
+@pytest.mark.parametrize("entry", _NOT_OBJECTS)
+def test_entry_not_an_object_is_graded(tmp_path, capsys, gate_name, level,
+                                       entry):
+    """{"waivers": ["x"]} gives the gate's normal JSON with the entry named by
+    index, on every gate. It matches nothing, so the finding still fails."""
+    rep = _verify_report(_board(tmp_path), [_creep()])
+    code, res, err = _sidecar_main(tmp_path, capsys, rep, {"waivers": [entry]},
+                                   gate_name)
+    assert code == 1
+    assert res["script"] == "gate" and res["status"] == "fail"
+    assert res["failing_count"] == 1 and res["waived_count"] == 0
+    bad = res["waivers_invalid"]
+    assert [b["index"] for b in bad] == [0]
+    assert "must be an object" in bad[0]["problems"][0]
+    assert repr(entry) in bad[0]["problems"][0]
+    assert f"{level}: waiver 0 ignored (invalid)" in err
+
+
+@pytest.mark.parametrize("gate_name, level", _BOTH_GATES)
+@pytest.mark.parametrize("refs", _BAD_REFS)
+def test_bad_refs_are_graded(tmp_path, capsys, gate_name, level, refs):
+    """refs: 5 raised and refs: "U22" read as set("U22") on a lenient gate;
+    refs: "" or 0 dropped the refs scope, so the waiver covered every ref on
+    the net. All of them are invalid and match nothing, on both gates."""
+    rep = _verify_report(_board(tmp_path), [_creep()])
+    code, res, err = _sidecar_main(
+        tmp_path, capsys, rep, {"waivers": [_entry_for(gate_name, rep,
+                                                       refs=refs)]}, gate_name)
+    assert code == 1
+    assert res["status"] == "fail"
+    assert res["failing_count"] == 1 and res["waived_count"] == 0
+    bad = res["waivers_invalid"]
+    assert [b["index"] for b in bad] == [0]
+    assert bad[0]["waiver"]["net"] == "V48_RTN"
+    assert "refs must be a list" in bad[0]["problems"][0]
+    assert "waivers_unmatched" not in res
+    assert f"{level}: waiver 0 ignored (invalid)" in err
+
+
+@pytest.mark.parametrize("bad", [
+    "x", 1, {"refs": 5}, {"refs": "U22"}])
+def test_bad_entry_next_to_a_good_one(tmp_path, capsys, bad):
+    """The good waiver still applies and the index names the bad one. A
+    lenient gate passes with a warning; a strict gate fails on the bad entry
+    even with no finding left."""
+    rep = _verify_report(_board(tmp_path), [_creep()])
+    for gate_name, want_code, want_status in (("verify", 0, "pass"),
+                                              ("verify_release", 1, "fail")):
+        entry = _entry_for(gate_name, rep, **bad) if isinstance(bad, dict) \
+            else bad
+        code, res, _ = _sidecar_main(
+            tmp_path, capsys, rep,
+            {"waivers": [_entry_for(gate_name, rep), entry]}, gate_name)
+        assert (code, res["status"]) == (want_code, want_status), gate_name
+        assert res["failing_count"] == 0 and res["waived_count"] == 1
+        assert [b["index"] for b in res["waivers_invalid"]] == [1]
+
+
+@pytest.mark.parametrize("gate_name", ["verify", "verify_release"])
+@pytest.mark.parametrize("refs", [None, []])
+def test_empty_refs_stay_an_unscoped_waiver(tmp_path, capsys, gate_name, refs):
+    """Control: null and [] are how a waiver says no refs scope."""
+    rep = _verify_report(_board(tmp_path), [_creep()])
+    code, res, _ = _sidecar_main(
+        tmp_path, capsys, rep, {"waivers": [_entry_for(gate_name, rep,
+                                                       refs=refs)]}, gate_name)
+    assert code == 0 and res["waived_count"] == 1
+    assert "waivers_invalid" not in res
+
+
+@pytest.mark.parametrize("gate_name", ["verify", "verify_release"])
+@pytest.mark.parametrize("doc", [
+    [1], [], "x", 5, None, {}, {"waivers": "x"}, {"waivers": None}])
+def test_wrong_top_level_is_one_clear_refusal(tmp_path, capsys, gate_name, doc):
+    """A file with no list of waivers can't be graded entry by entry: exit 2,
+    an error naming the file, and no traceback."""
+    rep = _verify_report(_board(tmp_path), [_creep()])
+    code, res, _ = _sidecar_main(tmp_path, capsys, rep, doc, gate_name)
+    assert code == 2
+    assert res["script"] == "gate" and res["status"] == "error"
+    assert "Traceback" not in res["error"] and "\n" not in res["error"]
+    assert str(tmp_path / "w.json") in res["error"]
+    assert "'waivers' list" in res["error"]
+
+
+@pytest.mark.parametrize("w", [
+    *_NOT_OBJECTS, *({**_wv(), "refs": r} for r in _BAD_REFS)])
+def test_waiver_matches_is_false_for_a_bad_shape(w):
+    """score.py, score_checks and bench call waiver_matches without grading
+    the entry first: a bad one waives nothing and doesn't raise."""
+    assert gate.waiver_matches(w, _creep()) is False
+
+
 # ------------------------------------------------ commit scoping (codex C4)
 
 def _tmp_repo(tmp_path):

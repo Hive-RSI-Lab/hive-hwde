@@ -387,6 +387,28 @@ def test_board_nudge_invalidates(tmp_path):
     assert any("input pcb" in p for p in v["problems"])
 
 
+@pytest.mark.parametrize("entry", [1, "expires", {"refs": 5}])
+def test_badly_shaped_waiver_is_a_problem_not_a_crash(tmp_path, entry):
+    """#731: build and verify list a bad waiver entry as a problem."""
+    ws = green_ws(tmp_path)
+    att, _ = releaselib.build(ws)
+    releaselib.write_attestation(ws, att)
+    wf = ws / "reports" / "verify-waivers.json"
+    doc = json.loads(wf.read_text(encoding="utf-8"))
+    if isinstance(entry, dict):
+        doc["waivers"][0].update(entry)
+        says = "refs must be a list"
+    else:
+        doc["waivers"].append(entry)
+        says = "must be an object"
+    wf.write_text(json.dumps(doc), encoding="utf-8")
+    _, problems = releaselib.build(ws)
+    assert any(says in p for p in problems)
+    v = releaselib.verify(ws)
+    assert not v["valid"]
+    assert any(says in p for p in v["problems"])
+
+
 def test_waiver_edit_invalidates(tmp_path):
     ws = green_ws(tmp_path)
     att, _ = releaselib.build(ws)

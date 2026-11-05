@@ -169,11 +169,28 @@ def _parse_expiry(value) -> _dt.datetime | None:
     return d
 
 
-def waiver_validity(w: dict, report: dict) -> list[str]:
-    """Durability problems for one waiver entry against the report that
-    carries the findings. Only fields the entry CARRIES are checked (lenient
-    mid-pipeline waivers may omit them); durable_problems() additionally
-    REQUIRES them for strict/release contexts.
+def waiver_shape_problem(w) -> str | None:
+    """Why a waiver entry has a shape nothing can match on, or None (#731):
+    it must be an object, and `refs`, when not null, a list of refdes strings.
+    A bare `refs: "U1"` is refused rather than read as ["U1"]: a strict gate
+    already refused it, and "U1,U2" could not be read the same way. An empty
+    "" or 0 is refused too, since treating it as no refs would widen the
+    waiver to every ref on the net."""
+    if not isinstance(w, dict):
+        return f"entry must be an object, got {w!r}"
+    refs = w.get("refs")
+    if refs is not None and not (isinstance(refs, list)
+                                 and all(isinstance(r, str) for r in refs)):
+        return f"refs must be a list of refdes strings, got {refs!r}"
+    return None
+
+
+def waiver_validity(w: dict, report: dict, i: int | None = None) -> list[str]:
+    """Problems for one waiver entry against the report that carries the
+    findings: its shape, then its durability. Only fields the entry CARRIES
+    are checked (lenient mid-pipeline waivers may omit them);
+    durable_problems() additionally REQUIRES them for strict/release contexts.
+    `i` labels an entry with no check/kind.
 
     - artifact: must equal the report's input_digest (the normalized hash of
       the artifact the findings were produced from). A changed artifact
@@ -183,7 +200,14 @@ def waiver_validity(w: dict, report: dict) -> list[str]:
     - expires: must parse and lie in the future.
     """
     problems: list[str] = []
-    label = w.get("check") or w.get("kind") or "?"
+    named = w if isinstance(w, dict) else {}
+    label = named.get("check") or named.get("kind") \
+        or ("?" if i is None else f"#{i}")
+    shape = waiver_shape_problem(w)
+    if shape:
+        problems.append(f"waiver [{label}]: {shape}")
+    if not isinstance(w, dict):
+        return problems
     if "artifact" in w:
         digest = report.get("input_digest")
         if not digest:
@@ -216,6 +240,8 @@ def waiver_validity(w: dict, report: dict) -> list[str]:
 def durable_waiver_problems(w: dict, report: dict, i: int = 0) -> list[str]:
     """durable_problems() for one entry; `i` labels an entry with no
     check/kind."""
+    if not isinstance(w, dict):
+        return waiver_validity(w, report, i)
     problems: list[str] = []
     label = w.get("check") or w.get("kind") or f"#{i}"
     missing = [f for f in DURABLE_FIELDS if f not in w]
@@ -224,12 +250,7 @@ def durable_waiver_problems(w: dict, report: dict, i: int = 0) -> list[str]:
             f"waiver [{label}]: not durable - missing "
             f"{'/'.join(missing)} (release waivers must bind the "
             "artifact hash, checker version and an expiry; H9)")
-    refs = w.get("refs")
-    if refs and not (isinstance(refs, list)
-                     and all(isinstance(r, str) for r in refs)):
-        problems.append(f"waiver [{label}]: refs must be a list of refdes "
-                        f"strings, got {refs!r}")
-    problems.extend(waiver_validity(w, report))
+    problems.extend(waiver_validity(w, report, i))
     return problems
 
 
@@ -859,7 +880,7 @@ def verify(ws: Path, att: dict | None = None) -> dict:
             problems.append(f"waivers {wv['path']}: {exc}")
             waivers = []
         for w in waivers:
-            if "expires" in w:
+            if isinstance(w, dict) and "expires" in w:
                 exp = _parse_expiry(w["expires"])
                 if exp is None or exp <= _utcnow():
                     problems.append(
