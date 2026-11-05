@@ -16,7 +16,9 @@ Checks (all thresholds from reference/jlc_capabilities.yaml, keyed
            min_copper_to_edge. The checks measure the gerbers alone; each
            finding is then looked up in the board by its `ends` (name_gaps):
            `net` is its one net or both as "A | B", `refs` the parts at it,
-           `on` what each end lies on, `same_net` a sliver of one net
+           `on` what each end lies on, `same_net` a sliver of one net.
+           A pair of islands gets one clearance finding per distinct pinch,
+           at most PINCH_CAP_PER_PAIR, the tightest first
   drill    min_hole_diameter, min_hole_to_hole, min_hole_to_edge,
            annular ring (hole vs the pad copper around it). Castellated
            holes (pad_prop_castellated) are exempt from hole/copper-to-edge
@@ -308,6 +310,67 @@ def _gap(a, b) -> tuple[tuple[float, float], list]:
              [checklib.rnd(q.x), checklib.rnd(q.y)]])
 
 
+# One pair of copper pieces can pinch in several places (#732). Minima closer
+# than the radius are one place to fix. The gap has to open by the rise between
+# two minima, so an arc's facets don't read as a row of them. The cap holds one
+# jagged pair from flooding the report; the first finding says how many it left.
+PINCH_RADIUS_MM = 1.0
+PINCH_RISE_MM = 0.01
+PINCH_CAP_PER_PAIR = 5
+
+
+def _stretches(a, b, t: float) -> list:
+    """The pieces of b that lie within t of a."""
+    near = b.intersection(a.buffer(t))
+    return [p for p in getattr(near, "geoms", [near]) if not p.is_empty]
+
+
+def _minima(a, part, t: float) -> list:
+    """Split part, all within t of a, at each place the gap opens up again.
+
+    Halves the limit until the pieces stop dividing. A piece only counts if
+    the gap inside it closes PINCH_RISE_MM below the level that cut it, so the
+    facets of an arc read as one curve and not as a row of minima.
+    """
+    d = part.distance(a)
+    tighter = (d + t) / 2
+    if tighter - d < PINCH_RISE_MM:
+        return [part]
+    parts = [p for p in _stretches(a, part, tighter)
+             if p.distance(a) <= tighter - PINCH_RISE_MM]
+    if not parts:
+        return [part]
+    return [m for p in parts for m in _minima(a, p, tighter)]
+
+
+def _pinches(a, b, lo: float) -> tuple[list, int]:
+    """Each distinct place a and b come closer than lo, and how many more.
+
+    Returns ([(d, pos, ends), ...], not_shown), tightest first. The first is
+    always _gap(a, b), so a finding a pair already had keeps its position and a
+    waiver pinned to it still matches. A parallel run ties along its whole
+    length and is one pinch, because the gap never opens within it.
+    """
+    pos, ends = _gap(a, b)
+    first = Point(ends[1])
+    near = [first]
+    others = []
+    for stretch in _stretches(a, b, lo):
+        for part in _minima(a, stretch, lo):
+            if part.distance(first) <= EPS_TOUCH:
+                near.append(part)
+            elif _below(part.distance(a), lo):
+                others.append(part)
+    kept = [(a.distance(b), pos, ends)]
+    for part in sorted(others, key=a.distance):
+        # measured between the pieces of copper, not their reported points: a
+        # flat tie reports a corner, which can sit its whole width further off
+        if all(part.distance(n) > PINCH_RADIUS_MM for n in near):
+            near.append(part)
+            kept.append((part.distance(a), *_gap(a, part)))
+    return kept[:PINCH_CAP_PER_PAIR], max(0, len(kept) - PINCH_CAP_PER_PAIR)
+
+
 def check_clearance(fab, rules, vios: list) -> None:
     inner = rules.get("min_clearance_mm")
     if inner is None:
@@ -324,12 +387,19 @@ def check_clearance(fab, rules, vios: list) -> None:
             d = comps[i].distance(comps[j])
             if d <= EPS_TOUCH or not _below(d, lo):
                 continue
-            pos, ends = _gap(comps[i], comps[j])
-            vios.append(checklib.violation(
-                CHECK, "error", pos, name, None, [],
-                f"copper clearance {d:.4f} mm below JLC minimum {lo} mm "
-                f"on {name}", SOURCE, kind="dfm_clearance",
-                clearance_mm=checklib.rnd(d), min_mm=lo, ends=ends))
+            pinches, not_shown = _pinches(comps[i], comps[j], lo)
+            for n, (gap, pos, ends) in enumerate(pinches):
+                more = {}
+                msg = (f"copper clearance {gap:.4f} mm below JLC minimum "
+                       f"{lo} mm on {name}")
+                if n == 0 and not_shown:
+                    msg += (f", and {not_shown} more between these two "
+                            "not listed")
+                    more["pinches_not_shown"] = not_shown
+                vios.append(checklib.violation(
+                    CHECK, "error", pos, name, None, [], msg, SOURCE,
+                    kind="dfm_clearance", clearance_mm=checklib.rnd(gap),
+                    min_mm=lo, ends=ends, **more))
 
 
 # A refill that moves a fill this much further from an item (mm) means the
