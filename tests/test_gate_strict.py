@@ -221,6 +221,87 @@ def test_evaluate_moves_fully_waived_check_in_coverage():
     assert report["coverage"]["failed"] == ["check_creepage"]
 
 
+# ------------------------------------- waivers that match nothing (#677)
+
+_VG = {"tool": "verify", "fail_severities": ["error"], "max_count": 0}
+
+
+def _wv(net="V48_RTN", **over):
+    return {"check": "check_creepage", "kind": "creepage", "net": net,
+            "reason": "r", "approved": "test 2026-11-05", **over}
+
+
+def test_waiver_on_missing_net_is_named():
+    """Known answer: a waiver on VBUS_TYPO against a board with no such net
+    waives nothing and says so, naming the entry and the nets that do fire."""
+    rep = {"violations": [_creep()], "counts": {"total": 1}}
+    res = gate.evaluate("verify", _VG, rep,
+                        waivers=[_wv(), _wv(net="VBUS_TYPO")])
+    assert res["status"] == "pass" and res["waived_count"] == 1
+    assert [u["index"] for u in res["waivers_unmatched"]] == [1]
+    u = res["waivers_unmatched"][0]
+    assert u["waiver"]["net"] == "VBUS_TYPO"
+    assert "waiver 1" in u["problem"] and "VBUS_TYPO" in u["problem"]
+    assert "V48_RTN" in u["problem"]       # the typo's fix is in the message
+
+
+def test_matching_waiver_gives_no_unmatched_entry():
+    rep = {"violations": [_creep()], "counts": {"total": 1}}
+    res = gate.evaluate("verify", _VG, rep, waivers=[_wv()])
+    assert res["status"] == "pass"
+    assert "waivers_unmatched" not in res
+
+
+def test_waiver_on_below_bar_finding_is_not_unmatched():
+    """A waiver covering a warning does nothing at the gate, but it matches
+    a finding and bin/score.py honours it: it is not dead."""
+    rep = {"violations": [_creep(sev="warning")], "counts": {"total": 1}}
+    res = gate.evaluate("verify", _VG, rep, waivers=[_wv()])
+    assert "waivers_unmatched" not in res
+
+
+def test_invalid_waiver_is_not_also_unmatched():
+    """A broken binding already reports through waivers_invalid."""
+    rep = {"violations": [_creep()], "counts": {"total": 1},
+           "input_digest": "sexpr_no_uuid:" + "1" * 64}
+    stale = _wv(net="VBUS_TYPO", artifact="sexpr_no_uuid:" + "0" * 64)
+    res = gate.evaluate("verify", _VG, rep, waivers=[stale])
+    assert res["waivers_invalid"] and "waivers_unmatched" not in res
+
+
+def _durable(rep, net):
+    return _wv(net=net, artifact=rep["input_digest"],
+               checker_version=rep["checker_version"], expires="2099-01-01")
+
+
+def test_strict_gate_fails_on_unmatched_waiver(tmp_path):
+    board = _board(tmp_path)
+    rep = _verify_report(board, [_creep()])
+    g = dict(_VG, strict=True)
+    res = gate.evaluate("verify_release", g, rep,
+                        waivers=[_durable(rep, "V48_RTN")])
+    assert res["status"] == "pass" and "waivers_unmatched" not in res
+    res = gate.evaluate("verify_release", g, rep,
+                        waivers=[_durable(rep, "V48_RTN"),
+                                 _durable(rep, "VBUS_TYPO")])
+    assert res["status"] == "fail" and res["failing_count"] == 0
+    assert res["waivers_unmatched"][0]["waiver"]["net"] == "VBUS_TYPO"
+
+
+def test_gate_main_warns_on_unmatched_waiver(tmp_path, capsys):
+    """Non-strict keeps grading (exit 0) and says so on stderr too."""
+    board = _board(tmp_path)
+    sidecar = tmp_path / "w.json"
+    sidecar.write_text(json.dumps({"waivers": [_wv(), _wv(net="VBUS_TYPO")]}),
+                       encoding="utf-8")
+    rep = _verify_report(board, [_creep()])
+    assert _gate_main(tmp_path, rep,
+                      extra_argv=("--waivers", str(sidecar))) == 0
+    cap = capsys.readouterr()
+    assert json.loads(cap.out)["waivers_unmatched"][0]["index"] == 1
+    assert "warning: waiver 1" in cap.err and "VBUS_TYPO" in cap.err
+
+
 # ------------------------------------------------ commit scoping (codex C4)
 
 def _tmp_repo(tmp_path):

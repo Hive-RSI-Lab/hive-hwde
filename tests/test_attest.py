@@ -804,6 +804,18 @@ def test_doctored_criteria_cannot_survive_verify(tmp_path):
     assert any("re-evaluates to 1 failing" in p for p in v["problems"])
 
 
+def test_dead_waiver_blocks_build_and_names_the_entry(tmp_path):
+    """#677: a durable waiver that matches no finding is a release problem,
+    reported as one rather than as a crash, and named."""
+    ws = green_ws(tmp_path)
+    side = ws / "reports" / "verify-waivers.json"
+    data = json.loads(side.read_text(encoding="utf-8"))
+    data["waivers"].append({**data["waivers"][0], "net": "VBUS_TYPO"})
+    side.write_text(json.dumps(data), encoding="utf-8")
+    _, problems = releaselib.build(ws)
+    assert any("waiver 1" in p and "VBUS_TYPO" in p for p in problems), problems
+
+
 def test_hold_restriction_after_attestation_blocks(tmp_path):
     """Review CRITICAL: a fab/restrictions.json HOLD recorded after the
     attestation must invalidate it and block ordering."""

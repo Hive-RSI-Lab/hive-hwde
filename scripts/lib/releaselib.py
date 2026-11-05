@@ -564,6 +564,8 @@ def build(ws: Path,
         if result.get("status") != "pass":
             problems.append(f"{gate_name}: {result.get('failing_count')} "
                             "failing after waivers")
+            problems += [f"{gate_name}: {u['problem']}"
+                         for u in result.get("waivers_unmatched") or []]
             continue
         fps = sorted(waiver_fingerprint(v) for v in result.get("waived") or [])
         waived_fps += fps
@@ -913,6 +915,8 @@ def verify(ws: Path, att: dict | None = None) -> dict:
             problems.append(f"{gate_name}: re-evaluates to "
                             f"{result.get('failing_count')} failing under "
                             "the canonical criteria")
+            problems += [f"{gate_name}: {u['problem']}"
+                         for u in result.get("waivers_unmatched") or []]
 
     # ---- fab package: REQUIRED ------------------------------------------
     fab = att.get("fab") or {}
