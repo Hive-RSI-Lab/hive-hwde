@@ -581,7 +581,8 @@ modes:
   target_level: L2
   gap: warning only, 3-18 per board, bar a rated part whose parts.json row is
     empty (diode, fuse, regulator, cap), which blocks as rating_no_attributes;
-    a filled regulator's row is judged against its rails but stays unverified
+    a filled regulator's row is judged against its rails but stays unverified,
+    and an extracted regulator's output pin against a rail the board states
   hit_on:
   - all
   sources:

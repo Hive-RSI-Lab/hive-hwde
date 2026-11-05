@@ -21,3 +21,13 @@ mutants:
     expect:
       kind: rating_regulator_output
       ref: U2
+  ldo-wrong-output-extracted:
+    board: blinky2
+    script: mutations/ldo_wrong_output_extracted.py
+    check: check_ratings
+    defect: >-
+      SIDECAR fault (+ an LCSC property on U2): parts/C6187.json is a datasheet
+      extraction of a fixed 5 V part, and its power_out pin is on +3V3
+    expect:
+      kind: rating_regulator_output
+      ref: U2

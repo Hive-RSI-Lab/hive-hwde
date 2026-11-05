@@ -10,8 +10,11 @@ its name or constraints.json, and the part is never asked.
 - Fixer domain: parts (cluster_violations.py).
 - Fields: net, refs [the part], pin, net_v (the rail's volts), limit_v (the most it makes),
   rating (the attribute or MPN it was read from).
-- Judged only for a part with no extraction, a filled row and a pad named OUT/VOUT/VO in the
-  netlist. A fixed output is allowed 10 % from the rail, a range or list its whole span.
+- Judged for a part with no extraction, a filled row and a pad named OUT/VOUT/VO in the
+  netlist; and for an extracted regulator's power_out pin named OUT/VOUT/VO/OUTPUT, against a
+  rail whose volts come from constraints.json, the power tree or the net name. A fixed output
+  is allowed 10 % from the rail, a range or list its whole span. A rail's sign is ignored: a
+  -5.0 part on -5V passes.
 
 ## Is it real?
 - Check the row: `Output Voltage` is what the listing says. An adjustable part listed by one
