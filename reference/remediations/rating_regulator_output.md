@@ -11,7 +11,8 @@ its name or constraints.json, and the part is never asked.
 - Fields: net, refs [the part], pin, net_v (the rail's volts), limit_v (the most it makes),
   rating (the attribute or MPN it was read from).
 - Judged for a part with no extraction, a filled row and a pad named OUT/VOUT/VO in the
-  netlist; and for an extracted regulator's power_out pin named OUT/VOUT/VO/OUTPUT, against a
+  netlist; and for an extracted regulator's power_out pin named OUT/VOUT/VO/OUTPUT, or a fixed
+  buck's FB pin (AP63203, AP63205; an adjustable part's FB sits on a divider), against a
   rail whose volts come from constraints.json, the power tree or the net name. A fixed output
   is allowed 10 % from the rail, a range or list its whole span.
 - A rail's sign is judged only for a part with a pad on ground, on a rail the board states,
