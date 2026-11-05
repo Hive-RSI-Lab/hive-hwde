@@ -293,18 +293,50 @@ _REG_CODE_RES = [re.compile(p) for p in (
 # not 01 or 00: those families' adjustable parts
 _REG_CODES = {"10", "11", "12", "15", "18", "25", "27", "28", "29", "30", "31",
               "33", "36", "45", "50"}
+# A fixed part whose number isn't a tenths code. Its FB pad senses the output
+# directly: the datasheet's VFB is 4.95-5.05 V on the AP63205.
+_REG_FIXED_PARTS = {"AP63203": 3.3, "AP63205": 5.0}     # Diodes AP6320x, p. 1
+
+
+def reg_fixed_part(mpn: str) -> float | None:
+    """What a fixed part in _REG_FIXED_PARTS makes: AP63205WU-7 -> 5.0."""
+    mpn = mpn.upper()
+    return next((v for p, v in _REG_FIXED_PARTS.items()
+                 if mpn.startswith(p)), None)
 
 
 def reg_out_code(mpn: str) -> float | None:
-    """Fixed output in a known family's MPN code: TLV75733P -> 3.3, and None
-    for an adjustable part's code or any other family (TPS54233 is a buck,
-    TLV7031 a comparator)."""
+    """Fixed output in a known family's MPN: TLV75733P -> 3.3, AP63205 -> 5.0,
+    and None for an adjustable part's code or any other family (TPS54233 is an
+    adjustable buck, TLV7031 a comparator)."""
     mpn = mpn.upper()
+    fixed = reg_fixed_part(mpn)
+    if fixed is not None:
+        return fixed
     for rx in _REG_CODE_RES:
         m = rx.match(mpn)
         if m:
             return int(m.group(1)) / 10 if m.group(1) in _REG_CODES else None
     return None
+
+
+# Switching regulators whose number is all a bare row says about them (#763).
+# Each family's datasheet calls it a step-down converter; none names a load
+# switch, an e-fuse or a charge pump, which share the TPS and TLV prefixes.
+_BUCK_FAMILY_RE = re.compile(
+    r"AP6320[0135]|"    # Diodes AP63200/01/03/05: 3.8-32 V, 2 A sync buck
+    r"TPS54\d{3}|"      # TI TPS54233, TPS54302, TPS54560B: step-down
+    r"TLV6256\d|"       # TI TLV62568, TLV62569: 2.5-5.5 V sync buck
+    r"LMR33\d{3}")      # TI LMR33630: sync step-down
+
+
+def reg_by_family(ref: str, mpn: str) -> bool:
+    """A U/VR/IC part whose MPN makes it a regulator, for judging its own row
+    only: a fixed output's code, or a buck family. Not is_regulator: that one
+    also names rails for the whole check."""
+    return bool(REG_REF_RE.match(ref)) and (
+        reg_out_code(mpn) is not None or
+        _BUCK_FAMILY_RE.match(mpn.upper()) is not None)
 
 
 # Families whose sign the MPN settles. Unknown is the default: a part in
@@ -1093,14 +1125,15 @@ def regulator_findings(b: dict, bom: dict | None, volts: dict, vsrc: dict,
     (its output is above its input on purpose), and the output isn't judged.
     A pull-up's volts are a guess at the pin, as in the supply rule of
     run_check, so they're not judged. A known family's MPN code also makes a
-    part a regulator and says what it makes (#744). A regulator nothing gives
-    an output for gets a warning, output pad named or not; that isn't a rating
-    check, so it doesn't count as one. True when it emitted a finding."""
+    part a regulator and says what it makes (#744), a buck family makes it one
+    too (#763), and a fixed part's FB pad is its output. A regulator nothing
+    gives an output for gets a warning, output pad named or not; that isn't a
+    rating check, so it doesn't count as one. True when it emitted a finding."""
     if not bom or not bom.get("attributes"):
         return False
     mpn = str(bom.get("mpn") or "")
     code = reg_out_code(mpn) if REG_REF_RE.match(b["ref"]) else None
-    if code is None and not is_regulator(b, bom):
+    if not reg_by_family(b["ref"], mpn) and not is_regulator(b, bom):
         return False
     ref, pads = b["ref"], b["pads"]
     known = {n: v for n, v in volts.items()
@@ -1136,7 +1169,8 @@ def regulator_findings(b: dict, bom: dict | None, volts: dict, vsrc: dict,
     if made is None and code is not None:
         made = _fixed_range(code, f"MPN code {mpn}")
     nets = sorted({pads[p] for p, n in names.items()
-                   if REG_OUT_PAD_RE.match(n)})
+                   if REG_OUT_PAD_RE.match(n) or
+                   (n == "FB" and reg_fixed_part(mpn) is not None)})
     if made:
         sign = reg_sign(mpn, bom)
         for net in nets:
@@ -1248,8 +1282,8 @@ def no_attribute_findings(board: list[dict], bom_by_lcsc: dict, exts: dict,
     nothing else rates: one blocking finding per BOM code, since that is what
     gets filled (#675). A diode, cap or regulator with an extraction is rated
     by it; a fuse is not, fuse_findings reads only attributes. A known family's
-    MPN code makes a U/VR/IC part a regulator here, as in regulator_findings
-    (#751). A part with no row at all is not here: there is nothing to fill yet
+    MPN code (#751) or buck family (#763) makes a U/VR/IC part a regulator here,
+    as in regulator_findings. A part with no row at all is not here: there is nothing to fill yet
     (the scaffold's empty parts/). This never reads the cache or the network,
     so the same board gives the same answer anywhere."""
     by_code: dict[str, tuple[list[str], set[str]]] = {}
@@ -1268,9 +1302,8 @@ def no_attribute_findings(board: list[dict], bom_by_lcsc: dict, exts: dict,
             what = "diode"
         elif re.match(r"^C\d", ref):
             what = "capacitor"
-        elif is_regulator(b, bom) or (
-                REG_REF_RE.match(ref) and
-                reg_out_code(str(bom.get("mpn") or "")) is not None):
+        elif is_regulator(b, bom) or \
+                reg_by_family(ref, str(bom.get("mpn") or "")):
             what = "regulator"
         if what:
             refs, whats = by_code.setdefault(b["lcsc"], ([], set()))

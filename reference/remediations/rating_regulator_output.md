@@ -21,8 +21,8 @@ its name or constraints.json, and the part is never asked.
   ADP7182-5.0 on -5V or an unknown LT9999-5.0 on -5V passes.
 - Output is read from the row, then a dotted or 78xx MPN, then (extracted) the extraction's
   `output_voltage` or a "fixed 3.3V" in its description, then a known family's MPN code
-  (RT9080-33, TLV75733, XC6206P332, HT7333, ME6211C33). If none of them says, it is
-  rating_regulator_output_unjudged instead.
+  (RT9080-33, TLV75733, XC6206P332, HT7333, ME6211C33, or AP63205, whose FB pad is its
+  output). If none of them says, it is rating_regulator_output_unjudged instead.
 
 ## Is it real?
 - Check the row: `Output Voltage` is what the listing says. An adjustable part listed by one

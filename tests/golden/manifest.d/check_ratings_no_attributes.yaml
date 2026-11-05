@@ -1,4 +1,4 @@
-# Seeded faults for check_ratings' rating_no_attributes (hive-hwde #675, #751).
+# Seeded faults for check_ratings' rating_no_attributes (hive-hwde #675, #751, #763).
 mutants:
   diode-no-attributes:
     board: blinky2
@@ -19,6 +19,17 @@ mutants:
       SIDECAR fault (+ an LCSC property on U2 so the parts dir finds it):
       parts/parts.json lists U2 as XC6206P332MR-G with empty attributes, and
       only the family's MPN code says it is a regulator
+    expect:
+      kind: rating_no_attributes
+      ref: U2
+  bare-buck-no-attributes:
+    board: blinky2
+    script: mutations/bare_buck_no_attributes.py
+    check: check_ratings
+    defect: >-
+      SIDECAR fault (+ an LCSC property on U2 so the parts dir finds it):
+      parts/parts.json lists U2 as TPS54560BDDAR with empty attributes, and
+      only the buck's family says it is a regulator
     expect:
       kind: rating_no_attributes
       ref: U2
