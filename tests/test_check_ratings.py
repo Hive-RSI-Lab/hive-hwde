@@ -904,6 +904,11 @@ def _out_errs(p):
     return [v for v in _errors(p) if v["kind"] == "rating_regulator_output"]
 
 
+def _unjudged(p):
+    return [v for v in p["violations"]
+            if v["kind"] == "rating_regulator_output_unjudged"]
+
+
 AMS5 = _fixed_ldo("AMS1117-5.0")
 LDO_ON_3V3 = {"1": "GND", "2": "+3V3", "3": "+5V"}
 
@@ -985,7 +990,7 @@ def test_extracted_output_read_from_the_row_when_the_mpn_has_none(tmp_path):
 
 
 @pytest.mark.parametrize("ref,mpn,row,ptype,rail", [
-    ("U4", "TLV75733PDBVR", {}, "power_out", "+5V"),   # no output known
+    ("U4", "ACME1234", {}, "power_out", "+5V"),        # no output known
     ("U4", "AMS1117-3.3", {}, "output", "+5V"),        # not a power output
     ("Q4", "AMS1117-3.3", {}, "power_out", "+5V"),     # not a regulator's ref
     ("U4", "EFUSE1",                                   # not called a regulator
@@ -1001,6 +1006,134 @@ def test_extracted_parts_whose_output_is_not_judged(
     ws = _ws(tmp_path, [(ref, "C9", {"1": "GND", "2": rail, "3": "+12V"})],
              {"C9": ext}, bom)
     assert _out_errs(_run(ws)) == []
+
+
+@pytest.mark.parametrize("mpn,volts", [
+    ("RT9080-33GJ5", 3.3), ("RT9013-18GB", 1.8), ("RT9193-50GB", 5.0),
+    ("TLV75733PDBVR", 3.3), ("TLV70018DSER", 1.8), ("TPS78233DDCR", 3.3),
+    ("TPS7A0233PDBVR", 3.3), ("TPS7B6950QDCYRQ1", 5.0),
+    ("XC6206P332MR", 3.3), ("XC6206P302MR", 3.0),
+    ("HT7333-A", 3.3), ("HT7850", 5.0), ("ME6211C33M5G", 3.3),
+])
+def test_output_code_in_a_known_regulator_family(mpn, volts):
+    assert cr.reg_out_code(mpn) == volts
+
+
+@pytest.mark.parametrize("mpn", [
+    "TPS54233DR", "TPS563201DDCR", "TPS61023DRLR",   # not an LDO family
+    "TLV7031DBVR",                                   # comparator
+    "TPS79601DCQR", "TPS7A4701RGWR", "TLV75801PDRVR",  # 01: adjustable
+    "TPS793285DBVR",                                 # 2.85 V: not a two-digit code
+    "RT9711ACBG", "HT1621B", "ME2108A33M3G",         # no code, or not this family
+    "AMS1117", "",
+])
+def test_no_output_code_is_a_guess(mpn):
+    assert cr.reg_out_code(mpn) is None
+
+
+@pytest.mark.parametrize("mpn", ["RT9080-33GJ5", "TLV75733PDBVR"])
+@pytest.mark.parametrize("rail,errs", [
+    ("+5V0", 1), ("+5V", 1), ("+3V3", 0), ("+3V0", 0), ("+2V5", 1)])
+def test_extracted_output_read_from_the_mpns_code(tmp_path, mpn, rail, errs):
+    """No row at all and no voltage in the MPN's usual forms (#729)."""
+    pads = {"1": "GND", "2": rail, "3": "+12V"}
+    p = _run(_ws(tmp_path, [("U4", "C9", pads)], {"C9": _fixed_ldo(mpn)}))
+    found = _out_errs(p)
+    assert [e["net"] for e in found] == ([rail] if errs else [])
+    assert all(mpn in e["rating"] for e in found)
+    assert _unjudged(p) == []
+
+
+@pytest.mark.parametrize("extra", [
+    {"output_voltage": 3.3},
+    {"description": "1 A low-dropout LDO, fixed 3.3V output"},
+    {"description": "Low-noise LDO, 3.3 V fixed"},
+])
+@pytest.mark.parametrize("rail,errs", [("+5V", 1), ("+3V3", 0)])
+def test_extracted_output_read_from_the_extraction(tmp_path, extra, rail, errs):
+    ext = dict(_fixed_ldo("ACME1234"), **extra)
+    pads = {"1": "GND", "2": rail, "3": "+12V"}
+    p = _run(_ws(tmp_path, [("U4", "C9", pads)], {"C9": ext}))
+    assert [e["net"] for e in _out_errs(p)] == ([rail] if errs else [])
+    assert _unjudged(p) == []
+    if errs:
+        assert "extraction" in _out_errs(p)[0]["rating"]
+
+
+def test_extractions_output_field_beats_the_mpns_code(tmp_path):
+    ext = dict(_fixed_ldo("TLV75733PDBVR"), output_voltage=5.0)
+    pads = {"1": "GND", "2": "+5V", "3": "+12V"}
+    assert _out_errs(_run(_ws(tmp_path, [("U4", "C9", pads)], {"C9": ext}))) == []
+
+
+def test_extracted_description_that_also_says_adjustable_is_no_voltage(tmp_path):
+    ext = dict(_fixed_ldo("ACME1234"),
+               description="LDO, adjustable or fixed 3.3V output")
+    pads = {"1": "GND", "2": "+5V", "3": "+12V"}
+    p = _run(_ws(tmp_path, [("U4", "C9", pads)], {"C9": ext}))
+    assert _out_errs(p) == [] and len(_unjudged(p)) == 1
+
+
+@pytest.mark.parametrize("words", [
+    {"ext": {"description": "Adjustable LDO regulator"}},
+    {"row": {"description": "LDO regulator"}},
+    {"row": {"role": "12 V to 5 V regulator"}},
+])
+def test_extracted_regulator_with_no_known_output_warns(tmp_path, words):
+    ext = dict(_fixed_ldo("ACME1234"), **words.get("ext", {}))
+    bom = [dict(words["row"], lcsc="C9", mpn="ACME1234")] \
+        if "row" in words else None
+    pads = {"1": "GND", "2": "+5V", "3": "+12V"}
+    p = _run(_ws(tmp_path, [("U4", "C9", pads)], {"C9": ext}, bom))
+    assert _out_errs(p) == []
+    got = _unjudged(p)
+    assert len(got) == 1 and got[0]["severity"] == "warning"
+    assert got[0]["refs"] == ["U4"] and got[0]["net"] == "+5V"
+    assert "wasn't judged" in got[0]["msg"] and "ACME1234" in got[0]["msg"]
+
+
+@pytest.mark.parametrize("ref,ext_words,row_words,ptype", [
+    # nothing calls these regulators, or something says they aren't one
+    ("U4", {}, None, "power_out"),
+    ("U4", {"description": "60 V eFuse"},
+     {"role": "4.5 V to 60 V eFuse / load switch"}, "power_out"),
+    ("U4", {"description": "LDO with load switch"}, None, "power_out"),
+    ("U4", {"description": "Li-ion charger with power path, DC-DC"}, None,
+     "power_out"),
+    ("U4", {"description": "Precision voltage reference"},
+     {"role": "regulator"}, "power_out"),
+    # a USB bridge's "to 3.3V" is no regulator's words, in an extraction
+    ("U4", {"description": "USB to 3.3V UART bridge"}, None, "power_out"),
+    ("Q4", {"description": "LDO regulator"}, None, "power_out"),
+    ("U4", {"description": "LDO regulator"}, None, "output"),
+])
+def test_extracted_parts_that_dont_warn(tmp_path, ref, ext_words, row_words,
+                                        ptype):
+    ext = dict(_fixed_ldo("ACME1234"), **ext_words)
+    ext["pinout"][1]["type"] = ptype
+    bom = [dict(row_words, lcsc="C9", mpn="ACME1234")] if row_words else None
+    pads = {"1": "GND", "2": "+5V", "3": "+12V"}
+    p = _run(_ws(tmp_path, [(ref, "C9", pads)], {"C9": ext}, bom))
+    assert _unjudged(p) == [] and _out_errs(p) == []
+
+
+def test_unjudged_warning_needs_the_output_pin_on_the_board(tmp_path):
+    ext = dict(_fixed_ldo("ACME1234"), description="LDO regulator")
+    pads = {"1": "GND", "3": "+12V"}
+    assert _unjudged(_run(_ws(tmp_path, [("U4", "C9", pads)], {"C9": ext}))) == []
+
+
+def test_extraction_schema_takes_an_output_voltage():
+    field = datasheet_extract.DATASHEET_SCHEMA["properties"]["output_voltage"]
+    assert field["type"] == "number" and field["exclusiveMinimum"] == 0
+
+
+def test_a_bad_output_voltage_in_an_extraction_is_no_voltage(tmp_path):
+    ext = dict(_fixed_ldo("ACME1234"), output_voltage="3.3 V",
+               description="LDO regulator")
+    pads = {"1": "GND", "2": "+5V", "3": "+12V"}
+    p = _run(_ws(tmp_path, [("U4", "C9", pads)], {"C9": ext}))
+    assert _out_errs(p) == [] and len(_unjudged(p)) == 1
 
 
 def test_wrong_output_fails_an_extracted_regulators_ledger_fact(tmp_path):
