@@ -4,7 +4,9 @@ A pin sits on a net whose voltage is above the pin's absolute-maximum rating in 
 datasheet extraction - a 3.6 V-max MCU input on a 5 V rail, an EN pin wired straight to a
 24 V input, a 6.3 V capacitor across 12 V, a chip resistor with more across it than its
 limiting element voltage (an 0402 bleeder on 60 V: Umax 50 V, D/CRCW e3), a fuse or PPTC
-whose voltage rating is under the rail it must hold off once it opens. When the bound is relative (VDD+0.3), the message
+whose voltage rating is under the rail it must hold off once it opens, a regulator with no
+extraction whose input or enable pad sits above the input rating in its parts.json row (a
+6 V LDO on +12V). When the bound is relative (VDD+0.3), the message
 says "input above supply": the pin sees more than its own supply allows. No DRC sees this;
 it is a respin.
 
@@ -28,6 +30,12 @@ it is a respin.
 - A pull-up warning through a series resistor into a clamped pin can be deliberate (a
   datasheet that allows it with an R limit). Confirm the datasheet says so, then waive it
   with the page cited.
+
+- A regulator judged from its row: the rating is the top of the row's input range
+  (`Input Voltage(Max)`, `Voltage - Supply`, `Operating Voltage`, `Voltage Rated`), quoted in
+  the msg. With no pad names in the netlist the highest-voltage net is taken as its input, and
+  the msg says so: if that net is really its output, name the pads or add the extraction,
+  which outranks the row. A row that says "boost" or "step-up" isn't judged that way.
 
 ## Fix ladder (cheapest first)
 1. Wrong rail: move the pin to the rail it was meant for (3V3, not 5V) in the schematic.

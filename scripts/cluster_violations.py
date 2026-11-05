@@ -67,7 +67,7 @@ FIXER_HINTS = {
     "rating_over_voltage": "schematic", "rating_reverse_polarity": "schematic",
     "rating_outside_recommended": "schematic",
     "rating_over_current": "parts", "rating_unrated": "parts",
-    "rating_no_attributes": "parts",
+    "rating_no_attributes": "parts", "rating_regulator_output": "parts",
     "rating_over_temperature": "parts",
     # sim gate (sim_run.py) - a failed bound is a schematic-value defect;
     # engine/measure trouble needs triage, not a copper fixer

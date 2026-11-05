@@ -1,0 +1,22 @@
+{
+  "parts": [
+    {
+      "ref_prefix_hint": "U",
+      "mpn": "AMS1117-5.0",
+      "lcsc": "C6187",
+      "value": "AMS1117-5.0",
+      "package": "SOT-223",
+      "attributes": [
+        {
+          "name": "Voltage - Supply",
+          "value": "15V"
+        },
+        {
+          "name": "Output Voltage",
+          "value": "5V"
+        }
+      ],
+      "role": "U2 LDO regulator"
+    }
+  ]
+}

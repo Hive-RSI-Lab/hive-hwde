@@ -1,0 +1,18 @@
+{
+  "parts": [
+    {
+      "ref_prefix_hint": "U",
+      "mpn": "AMS1117-3.3",
+      "lcsc": "C6186",
+      "value": "AMS1117-3.3",
+      "package": "SOT-223",
+      "attributes": [
+        {
+          "name": "Input Voltage(Max)",
+          "value": "4V"
+        }
+      ],
+      "role": "U2 LDO regulator"
+    }
+  ]
+}

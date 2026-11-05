@@ -74,7 +74,13 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
  - rating_over_voltage, also: a chip resistor's volts across it above its
    limiting element voltage (parts.json Voltage-Supply(Max), else the chip
    size's D/CRCW e3 Umax; R-RAT-1); a fuse or PPTC whose voltage rating is
-   under the rail it sits on (it must hold the rail off once open).
+   under the rail it sits on (it must hold the rail off once open); an
+   unextracted regulator whose input or enable pad sits above the input
+   rating its filled row gives (regulator_findings; no pad names: its
+   highest-voltage net, unless the part steps up).
+ - rating_regulator_output (error): an unextracted regulator whose named
+   output pad sits on a rail its row (or a fixed output in the MPN) says it
+   can't make.
  - rating_over_temperature (error): the board's ambient above a part's
    operating range (parts.json "Operating Temperature", or the
    extraction's operating_temp_c), or constraints ambient_min_c below it
@@ -641,6 +647,10 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                          limit_v=dio["vr"], rating=dio["src"])
             continue
         if ext is None:
+            if regulator_findings(b, bom_by_lcsc.get(b["lcsc"]), volts, vsrc,
+                                  netfns, emit):
+                checked_by_ref[ref] = checked_by_ref.get(ref, 0) + 1
+                continue
             if _check_unextracted(b, bom_by_lcsc.get(b["lcsc"]), volts, emit,
                                   unrated_passives):
                 checked_by_ref[ref] = checked_by_ref.get(ref, 0) + 1
@@ -879,6 +889,130 @@ def is_regulator(b: dict, bom: dict | None) -> bool:
                     ("category", "description", "name", "value", "role"))
     return reg_out_volts(str(bom.get("mpn") or "")) is not None or \
         bool(REG_TEXT_RE.search(text))
+
+
+# A regulator's input rating in its parts.json row, plainest name first. The
+# rows say it several ways, and "Voltage Rated" means the input on a regulator.
+VIN_ATTR_RES = tuple(re.compile(x, re.I) for x in (
+    r"input\s*voltage|voltage\s*-\s*input|\bvin\b",
+    r"supply\s*voltage|voltage\s*-\s*supply",
+    r"operating\s*voltage",
+    r"voltage\s*rat(?:ing|ed)|rated\s*voltage"))
+VOUT_ATTR_RE = re.compile(r"output\s*voltage|voltage\s*-\s*output", re.I)
+NOT_VIN_ATTR_RE = re.compile(r"output|dropout|reference|forward", re.I)
+STEP_UP_RE = re.compile(r"boost|step.?up|charge.?pump|sepic|inverting", re.I)
+REG_IN_PAD_RE = re.compile(r"^(?:[PA]?VIN\d?|IN\d?|INPUT|VI|[PA]?VCC|[PA]?VDD|"
+                           r"VBAT|VBUS|VS|VSUP|VSYS)$")
+REG_EN_PAD_RE = re.compile(r"^[~/!N]?(?:EN\d?|ENABLE|SHDN|SDN|SHUTDOWN|CE|RUN|"
+                           r"ON|ON/OFF)[#N]?$")
+REG_OUT_PAD_RE = re.compile(r"^(?:V?OUT\d?|VO|OUTPUT)$")
+# how far a fixed regulator's output may sit from its rail's name: a 5.1 V
+# part on +5V is that rail, a 3.3 V part on +5V is not
+REG_OUT_TOL = 0.10
+
+
+def attr_volts(value: str) -> list[float]:
+    """Every voltage in an attribute value: "500mV~5.5V" is [0.5, 5.5]."""
+    scale = {"m": 1e-3, "k": 1e3, "K": 1e3, "": 1.0}
+    return [float(n) * scale[u] for n, u in
+            re.findall(r"(\d+(?:\.\d+)?)\s*([mkK]?)V\b", str(value))]
+
+
+def reg_vin_rating(bom: dict) -> tuple[float, str] | None:
+    """(the top of a regulator's input range, where it was read), or None."""
+    atts = [a for a in bom.get("attributes") or []
+            if not NOT_VIN_ATTR_RE.search(str(a.get("name") or ""))]
+    for rx in VIN_ATTR_RES:
+        for a in atts:
+            vs = attr_volts(a.get("value"))
+            if vs and rx.search(str(a.get("name") or "")):
+                return max(vs), f"parts.json {a['name']} = {a['value']}"
+    return None
+
+
+def reg_out_range(bom: dict) -> tuple[float, float, str] | None:
+    """(lowest, highest, where read) a regulator's row says it can make: a
+    range, a list, or one fixed value widened by REG_OUT_TOL. The row's
+    attribute, else the fixed output in the MPN."""
+    for a in bom.get("attributes") or []:
+        vs = attr_volts(a.get("value"))
+        if vs and VOUT_ATTR_RE.search(str(a.get("name") or "")):
+            src = f"parts.json {a['name']} = {a['value']}"
+            break
+    else:
+        v = reg_out_volts(str(bom.get("mpn") or ""))
+        vs, src = ([v], f"MPN {bom.get('mpn')}") if v is not None else ([], "")
+    if not vs:
+        return None
+    if len(vs) == 1:
+        return vs[0] * (1 - REG_OUT_TOL), vs[0] * (1 + REG_OUT_TOL), src
+    return min(vs), max(vs), src
+
+
+def is_step_up(bom: dict, vin: float) -> bool:
+    """Its row says it steps up, or says it makes more than it can take."""
+    text = " ".join(str(bom.get(k) or "") for k in
+                    ("category", "description", "name", "value", "role"))
+    out = reg_out_range(bom)
+    return bool(STEP_UP_RE.search(text)) or \
+        (out is not None and out[1] > vin * (1 + REG_OUT_TOL))
+
+
+def regulator_findings(b: dict, bom: dict | None, volts: dict, vsrc: dict,
+                       netfns: dict, emit) -> bool:
+    """An unextracted regulator's filled row against its rails (#708): the
+    input and enable pads against the input rating, the output pad against
+    what the row says it makes. Pads are told apart by name; with no pad names
+    the highest-voltage net is taken as the input, unless the part steps up
+    (its output is above its input on purpose), and the output isn't judged.
+    A pull-up's volts are a guess at the pin, as in the supply rule of
+    run_check, so they're not judged. True when it emitted a finding."""
+    if not bom or not bom.get("attributes") or not is_regulator(b, bom):
+        return False
+    ref, pads = b["ref"], b["pads"]
+    known = {n: v for n, v in volts.items()
+             if n in pads.values() and vsrc.get(n) != "pull-up"}
+    names = {p: re.sub(r"_\d+$", "", fn.upper()) for p, fn in
+             dict(netfns.get(ref) or {}, **b.get("fns") or {}).items()
+             if p in pads}
+    part = f"{ref} ({bom.get('mpn') or b['lcsc']})"
+    found = False
+    rating = reg_vin_rating(bom)
+    if rating:
+        vin, src = rating
+        stressed = {p: n for p, n in names.items()
+                    if REG_IN_PAD_RE.match(n) or REG_EN_PAD_RE.match(n)}
+        how = ""
+        if not names and known and not is_step_up(bom, vin):
+            top = max(known, key=lambda n: known[n])
+            stressed = {p: "" for p, n in pads.items() if n == top}
+            how = "; no pad names, so its highest-voltage net is taken as " \
+                  "its input"
+        for net in sorted({pads[p] for p in stressed}):
+            if known.get(net, 0.0) <= vin + EPS:
+                continue
+            on = sorted(p for p in stressed if pads[p] == net)
+            who = "/".join(sorted({stressed[p] for p in on})) or "its input"
+            emit("rating_over_voltage", "error", ref, net,
+                 f"{part} {who} sits on {net} = {_fmt(known[net])} V, over "
+                 f"its {_fmt(vin)} V input rating [{src}{how}]",
+                 pin=f"{ref}.{on[0]}", net_v=known[net], limit_v=vin,
+                 rating=src)
+            found = True
+    made = reg_out_range(bom)
+    if made:
+        lo, hi, src = made
+        for net in sorted({pads[p] for p, n in names.items()
+                           if REG_OUT_PAD_RE.match(n)}):
+            v = known.get(net)
+            if v is not None and not lo - EPS <= v <= hi + EPS:
+                on = sorted(p for p, n in pads.items() if n == net)
+                emit("rating_regulator_output", "error", ref, net,
+                     f"{part} output sits on {net} = {_fmt(v)} V, which it "
+                     f"can't make [{src}]", pin=f"{ref}.{on[0]}", net_v=v,
+                     limit_v=hi, rating=src)
+                found = True
+    return found
 
 
 def no_attribute_findings(board: list[dict], bom_by_lcsc: dict, exts: dict,
