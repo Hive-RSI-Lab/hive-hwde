@@ -213,20 +213,28 @@ def waiver_validity(w: dict, report: dict) -> list[str]:
     return problems
 
 
+def durable_waiver_problems(w: dict, report: dict, i: int = 0) -> list[str]:
+    """durable_problems() for one entry; `i` labels an entry with no
+    check/kind."""
+    problems: list[str] = []
+    label = w.get("check") or w.get("kind") or f"#{i}"
+    missing = [f for f in DURABLE_FIELDS if f not in w]
+    if missing:
+        problems.append(
+            f"waiver [{label}]: not durable - missing "
+            f"{'/'.join(missing)} (release waivers must bind the "
+            "artifact hash, checker version and an expiry; H9)")
+    problems.extend(waiver_validity(w, report))
+    return problems
+
+
 def durable_problems(waivers: list[dict], report: dict) -> list[str]:
     """Strict/release contexts: every waiver must be a DURABLE waiver -
     it must carry artifact + checker_version + expires and all must
     validate against the report."""
     problems: list[str] = []
     for i, w in enumerate(waivers or []):
-        label = w.get("check") or w.get("kind") or f"#{i}"
-        missing = [f for f in DURABLE_FIELDS if f not in w]
-        if missing:
-            problems.append(
-                f"waiver [{label}]: not durable - missing "
-                f"{'/'.join(missing)} (release waivers must bind the "
-                "artifact hash, checker version and an expiry; H9)")
-        problems.extend(waiver_validity(w, report))
+        problems.extend(durable_waiver_problems(w, report, i))
     return problems
 
 

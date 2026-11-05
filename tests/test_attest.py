@@ -217,8 +217,8 @@ def test_expired_waiver_invalid(tmp_path):
 
 
 def test_strict_gate_requires_durable_waivers(tmp_path):
-    """verify_release refuses (exit 2) a legacy reason+approved-only waiver;
-    the lenient verify gate still accepts it (mid-pipeline compat)."""
+    """verify_release fails (exit 1, #725) on a legacy reason+approved-only
+    waiver; the lenient verify gate still accepts it (mid-pipeline compat)."""
     board = tmp_path / "b.kicad_pcb"
     board.write_text("(kicad_pcb)", encoding="utf-8")
     rep = checklib.stamp({"script": "verify_all", "status": "violations",
@@ -231,7 +231,7 @@ def test_strict_gate_requires_durable_waivers(tmp_path):
         {"kind": "creepage", "net": "V48", "refs": ["U1"],
          "reason": "r", "approved": "H4"}]}), encoding="utf-8")
     assert gate.main(["--gate", "verify_release", "--report", str(rp),
-                      "--waivers", str(wv)]) == 2
+                      "--waivers", str(wv)]) == 1
     assert gate.main(["--gate", "verify", "--report", str(rp),
                       "--waivers", str(wv)]) == 0
 
