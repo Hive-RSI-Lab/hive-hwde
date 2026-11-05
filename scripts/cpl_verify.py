@@ -182,6 +182,19 @@ def _silk_shape(node) -> list[tuple[float, float]] | None:
     return None
 
 
+def _custom_copper(pad, size, local_rot: float):
+    """(dx, dy, w, h) of a custom pad's copper: its area centroid from the
+    anchor, turned into the footprint frame, and its bounding box in the pad's
+    own frame. None when the pad has no primitives or no area."""
+    import geom  # shapely: only boards with custom pads pay for it
+    g = geom._custom_pad(pad, size[0], size[1])
+    if g is None or g.is_empty or g.area <= 0:
+        return None
+    x0, y0, x1, y1 = g.bounds
+    dx, dy = rot(g.centroid.x, g.centroid.y, local_rot)
+    return dx, dy, x1 - x0, y1 - y0
+
+
 def board_footprints(pcb: Path) -> dict[str, Footprint]:
     """{ref: Footprint} with pads and silk in the footprint's LOCAL frame."""
     tree = sexpdata.loads(Path(pcb).read_text(encoding="utf-8"))
@@ -200,8 +213,15 @@ def board_footprints(pcb: Path) -> dict[str, Footprint]:
             pat = _nums(_kid(pad, "at"))
             size = _nums(_kid(pad, "size")) or [0.0, 0.0]
             pf = _kid(pad, "pinfunction")
-            f.pads.append(KPad(number=str(_t(pad[1])), x=pat[0], y=pat[1],
-                               w=size[0], h=size[1],
+            px, py, w, h = pat[0], pat[1], size[0], size[1]
+            if len(pad) > 3 and str(_t(pad[3])) == "custom":
+                # a custom pad lands where its copper is, not at its anchor
+                # (KiCad's SOT-89 tab, a QFN's 0.005 mm corner pins)
+                cc = _custom_copper(pad, size, (pat[2] if len(pat) > 2 else 0.0) - f.rot)
+                if cc:
+                    px, py, w, h = pat[0] + cc[0], pat[1] + cc[1], cc[2], cc[3]
+            f.pads.append(KPad(number=str(_t(pad[1])), x=px, y=py,
+                               w=w, h=h,
                                function=str(_t(pf[1])) if pf else "",
                                angle=pat[2] if len(pat) > 2 else 0.0))
         for node in fp[1:]:

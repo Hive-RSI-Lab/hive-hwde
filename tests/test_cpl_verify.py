@@ -1124,3 +1124,35 @@ def test_render_marks_pin1_on_a_bga(tmp_path):
     idx = cpl_render.render(pcb, {"U9": {"x": 10, "y": 10, "rot": 0.0, "layer": "Top"}},
                             {}, tmp_path / "cache", tmp_path / "r", fetch=False)
     assert idx["parts"]["U9"]["bga_pin1"] == "A1"
+
+
+# KiCad's SOT-89-3: the collector tab is a custom pad whose anchor sits in the
+# pin row (-1.8625) while its copper reaches x = 2.0 across the body.
+SOT89_KICAD = """(kicad_pcb (version 20240108)
+(footprint "Package_TO_SOT_SMD:SOT-89-3" (layer "F.Cu") (at 10 10 0)
+ (property "Reference" "Q1")
+ (pad "1" smd roundrect (at -1.95 -1.5) (size 1.3 0.9) (layers "F.Cu"))
+ (pad "2" smd custom (at -1.8625 0) (size 1.475 0.9) (layers "F.Cu")
+  (options (clearance outline) (anchor rect))
+  (primitives (gr_poly (pts (xy 3.8625 0.8665) (xy 0.7375 0.8665)
+   (xy 0.7375 -0.8665) (xy 3.8625 -0.8665)) (width 0) (fill yes))))
+ (pad "3" smd roundrect (at -1.95 1.5) (size 1.3 0.9) (layers "F.Cu"))))
+"""
+
+
+def test_custom_pad_lands_by_its_copper_not_its_anchor(tmp_path):
+    """bms-4s Q301: LCSC's BCX56 SOT-89 (C123402, the tab an EasyEDA POLYGON)
+    on KiCad's SOT-89-3 was no_fit - both sides placed the tab by a
+    reference point 1.75 mm from where the other side's tab is."""
+    pcb = tmp_path / "q.kicad_pcb"
+    pcb.write_text(SOT89_KICAD)
+    fp = cv.board_footprints(pcb)["Q1"]
+    tab = next(p for p in fp.pads if p.number == "2")
+    assert abs(tab.x - (-0.015)) < 0.02 and abs(tab.y) < 1e-6
+    assert tab.w == pytest.approx(4.6) and tab.h == pytest.approx(1.733)
+    model = easyeda.get("C123402", FIX, fetch=False)
+    mtab = next(p for p in model.pads if p.number == "2")
+    # its PAD~ x is -1.357; the polygon's area centroid is 0.39 mm nearer the pins
+    assert mtab.x == pytest.approx(-0.966, abs=0.01) and abs(mtab.y) < 1e-3
+    out = cv.analyse(fp, model)
+    assert out["verdict"] == "ok" and out["corrections"] == [180.0]
