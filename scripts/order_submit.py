@@ -46,6 +46,10 @@ api-reference PcbOrderCraftData table, the contract's [SDK/PDF] source):
                 JLCPCB has NO sandbox or test mode: a successful create places
                 a real factory order, and payment mechanics are UNVERIFIED -
                 the platform may auto-deduct the prepaid JLC Balance. Guards:
+                  * order-readiness (order_readiness): any manifest status but
+                    ready_for_human refuses, whatever made it so - a missing
+                    artifact, a MATERIAL, CASTELLATED or VIA-FILL mismatch, an
+                    invalid release, or a status added later (a whitelist),
                   * LAYER GUARD: 4+ layer boards refuse outright - JLC's own
                     create returns an unclassifiable code 2 for them and
                     offers no way to ask whether an ambiguous create landed;
@@ -73,6 +77,9 @@ api-reference PcbOrderCraftData table, the contract's [SDK/PDF] source):
                     out against the quoted fileKey, i.e. the bytes JLC audited;
                     a harmless re-export no longer invalidates the quote, a
                     real copper change still does,
+                  * board binding: create sends the quote's pcbParam verbatim,
+                    so its plateType, material remark, castellatedHoles and via
+                    fields must still order what the board asks for,
                   * freight attestation: shipping_method must be one of the
                     QUOTED shipList options and its recorded cost must match;
                     the grand total must equal real_price + freight,
@@ -190,7 +197,19 @@ _GENERATED_STEP_PREFIXES = (
     "IPC-D-356 NETLIST:",
     "VIA-FILL",
     "VIA-IN-PAD:",
+    "MATERIAL MISMATCH:",
+    "MATERIAL NOT OFFERED:",
+    "HIGH-FREQUENCY MATERIAL:",
+    "CASTELLATED:",
+    "CASTELLATED MISMATCH:",
+    "BOARD NOT READ:",
 )
+
+# What run() found wrong with the package, by manifest key. Each one makes it
+# not_order_ready; order_readiness and the API legs read this one list.
+_PROBLEM_KEYS = ("material_problems", "castellation_problems",
+                 "via_fill_problems", "board_problems")
+ORDER_READY = "ready_for_human"
 
 # pcbParam.viaCovering. 1 is what every recorded calculate sent (tented).
 VIA_COVERING_TENTED = 1
@@ -573,11 +592,59 @@ def _scope_note(man: dict) -> None:
         man["human_steps"].insert(0, note)
 
 
+def _package_problems(man: dict) -> list[str]:
+    """What run() found wrong between the board and its quote."""
+    return [p for key in _PROBLEM_KEYS for p in man.get(key) or []]
+
+
+def order_readiness(man: dict) -> list[str]:
+    """Why this manifest can't be ordered; empty only when it can. A whitelist:
+    a status nobody here has heard of is a reason too."""
+    reasons = [f"missing {m}" for m in man.get("missing") or []]
+    reasons += _package_problems(man)
+    if man.get("status") != ORDER_READY and not reasons:
+        reasons.append(f"manifest status {man.get('status')!r}")
+    return reasons
+
+
 def _refuse_via_problems(man: dict) -> None:
     """Refuse an API leg when the vias can't be ordered as the board asks."""
     if man.get("via_fill_problems"):
         raise ApiRefused("; ".join(man["via_fill_problems"]))
     via_order_fields(man["spec_snapshot"])
+
+
+def _check_quote_board(man: dict, q: dict) -> None:
+    """Create sends the quote's pcbParam verbatim, and that file was priced
+    earlier: it must still order the laminate and castellation the board asks
+    for. The remark is what tells JLC which laminate: RO4350B and PTFE share a
+    plateType. A field the file doesn't carry refuses: every real quote does."""
+    spec = man["spec_snapshot"]
+    pparam = (q.get("calculate_request") or {}).get("pcbParam") or {}
+    material = spec.get("material") or fabmaterial.FR4
+    mrow = fabmaterial.row(material)
+    want_plate = int(mrow["plate_type"])
+    if pparam.get("plateType") != want_plate:
+        raise ApiRefused(
+            f"the quote does not order the board's laminate (plateType "
+            f"{pparam.get('plateType')!r}; {material} needs {want_plate!r}) - "
+            "re-run --api to re-quote")
+    remark = str(pparam.get("orderDetailsRemark") or "")
+    quoted = next((part for part in remark.split("; ")
+                   if part.startswith("Material: ")), "")
+    want_line = ("" if material == fabmaterial.FR4
+                 else f"Material: {mrow.get('label', material)}")
+    if quoted != want_line:
+        raise ApiRefused(
+            f"the quote does not order the board's laminate (remark {quoted!r}; "
+            f"{material} needs {want_line!r}) - re-run --api to re-quote")
+    want_holes = 1 if spec.get("castellated_pads") else 0
+    if pparam.get("castellatedHoles") != want_holes:
+        raise ApiRefused(
+            f"the quote does not order the board's edge (castellatedHoles "
+            f"{pparam.get('castellatedHoles')!r}; the board has "
+            f"{spec.get('castellated_pads') or 0} castellated pad(s), so "
+            f"{want_holes!r}) - re-run --api to re-quote")
 
 
 def _check_quote_vias(man: dict, q: dict) -> None:
@@ -603,9 +670,10 @@ def _api_quote(session, man: dict, fab_dir: Path, prior_steps=None,
                copper_oz: float | None = None) -> str:
     """uploadGerber -> audit -> calculate -> fab/api_quote.json. NEVER calls
     create. Returns the verdict recorded in man['api']."""
-    if man.get("material_problems"):
-        # never price (let alone create) an order on another laminate
-        raise ApiRefused("; ".join(man["material_problems"]))
+    problems = _package_problems(man)
+    if problems:
+        # never price (let alone create) an order the board doesn't ask for
+        raise ApiRefused("; ".join(problems))
     _refuse_via_problems(man)
     zip_info = man["artifacts"].get("gerber_zip")
     if not zip_info:
@@ -891,9 +959,10 @@ def _api_create(session, man: dict, quote_file: Path, confirm: str,
                 canonical: Path | None = None,
                 journal: Path | None = None) -> str:
     """REAL MONEY. The only caller of session.create_order, reachable only
-    past the created-latch, the ambiguous-attempt block, a fresh quote file,
-    the gerber sha binding, the freight attestation, the qty cross-check and
-    an exactly-matching grand-total confirm token."""
+    past the created-latch, the ambiguous-attempt block, an order-ready
+    manifest, a fresh quote file, the gerber sha binding, the board binding,
+    the freight attestation, the qty cross-check and an exactly-matching
+    grand-total confirm token."""
     # created-latch: one recorded order per workspace, period. Armed by
     # recorded API ids, a prior "created" verdict (a create that returned ok
     # without ids must still latch, round-3 S-2 defense-in-depth), OR a
@@ -946,6 +1015,14 @@ def _api_create(session, man: dict, quote_file: Path, confirm: str,
             "landed, manually remove the api.create_attempt block from "
             "fab/order.json to clear this refusal")
 
+    # order-readiness: the manifest is the one verdict on the package, and this
+    # is the one place money follows it. Before anything is armed, so a refused
+    # create leaves no attempt record and a fixed package can go.
+    reasons = order_readiness(man)
+    if reasons:
+        raise ApiRefused("the package is not order-ready: "
+                         + "; ".join(reasons))
+
     q = _load_fresh_quote(quote_file)
 
     # layer guard: 4+ layer create is refused by JLC itself with an
@@ -982,6 +1059,7 @@ def _api_create(session, man: dict, quote_file: Path, confirm: str,
             "timestamps, so the copper really differs) - re-run --api to "
             "re-quote the new gerbers")
     _check_quote_vias(man, q)
+    _check_quote_board(man, q)
 
     # U5 (codex C1): on a governed workspace the create must also match the
     # ATTESTED package + manufacturing options - the quote binding alone
@@ -1373,7 +1451,7 @@ def run(pcb: Path, fab_dir: Path, quote: Path | None = None,
         # record) - is not order-ready, no matter how fresh any gate is
         status = "not_order_ready"
     else:
-        status = "ready_for_human"
+        status = ORDER_READY
     quote_spec = (quote_data or {}).get("spec", {})
     # the board decides; the quote's count only stands in when the board
     # file is not at hand
@@ -1394,7 +1472,24 @@ def run(pcb: Path, fab_dir: Path, quote: Path | None = None,
     refusal = fabmaterial.not_offered(board_mat)
     if refusal:
         material_problems.append(f"MATERIAL NOT OFFERED: {refusal}")
-    if material_problems or via_problems:
+    # A castellated edge is a yes/no on the order, so the count needn't agree.
+    castellation_problems = []
+    quote_cast = int(quote_spec.get("castellated_pads") or 0)
+    if quote_data is not None and bool(quote_cast) != bool(n_cast):
+        castellation_problems.append(
+            f"CASTELLATED MISMATCH: the board has {n_cast} castellated pad(s) "
+            f"but {Path(quote).name} was quoted with {quote_cast} - re-run "
+            "order_quote on this board")
+    # The stand-ins above suit the human package. An API leg can't lean on them:
+    # the quote would only be agreeing with itself.
+    board_problems = []
+    if use_api and not Path(pcb).is_file():
+        board_problems.append(
+            f"BOARD NOT READ: {pcb} is not a file, so nothing checked the "
+            "quote's laminate or castellation against the board - pass the "
+            "real --pcb")
+    if material_problems or via_problems or castellation_problems \
+            or board_problems:
         status = "not_order_ready"
 
     manifest = {
@@ -1483,6 +1578,14 @@ def run(pcb: Path, fab_dir: Path, quote: Path | None = None,
     if via_problems:
         manifest["via_fill_problems"] = via_problems
         for msg in reversed(via_problems):
+            manifest["human_steps"].insert(0, msg)
+    if board_problems:
+        manifest["board_problems"] = board_problems
+        for msg in reversed(board_problems):
+            manifest["human_steps"].insert(0, msg)
+    if castellation_problems:
+        manifest["castellation_problems"] = castellation_problems
+        for msg in reversed(castellation_problems):
             manifest["human_steps"].insert(0, msg)
     if material_problems:
         manifest["material_problems"] = material_problems
