@@ -900,3 +900,33 @@ def test_smoke_labels_clear_of_pins_and_sheet_fitted(tmp_path):
     assert sh.fit_report["paper"] == "A5"
     assert '(paper "A5")' in sch.read_text(encoding="utf-8")
     assert _erc_total(sch) == 0
+
+
+def test_add_component_copies_lib_in_bom_no(tmp_path):
+    """A lib symbol marked (in_bom no), such as a bridged solder jumper,
+    keeps in_bom no on the placed instance; others stay in_bom yes."""
+    import schlib
+    lib = tmp_path / "t.kicad_sym"
+    pin = ('(pin passive line (at {x} 0 0) (length 1.27) '
+           '(name "~" (effects (font (size 1 1)))) '
+           '(number "{n}" (effects (font (size 1 1)))))')
+    def sym(name, flag):
+        return (f'(symbol "{name}" {flag}(property "Reference" "X" (at 0 0 0)'
+                ' (effects (font (size 1 1)))) (property "Value" "v" (at 0 0 0)'
+                ' (effects (font (size 1 1))))'
+                f' (symbol "{name}_1_1" {pin.format(x=-2.54, n=1)}'
+                f' {pin.format(x=2.54, n=2)}))')
+    lib.write_text('(kicad_symbol_lib (version 20231120) (generator t)\n'
+                   + sym("JPX", "(in_bom no) (on_board yes) ") + "\n"
+                   + sym("RX", "") + ")\n")
+    schlib.ksa.get_symbol_cache().add_library_path(str(lib))
+    assert schlib.lib_flags("t:JPX") == {"in_bom": False, "on_board": True}
+    sh = schlib.Sheet("flags")
+    sh.add_component("t:JPX", "JP1", "JP", at=(50.8, 50.8))
+    sh.add_component("t:RX", "R1", "1k", at=(76.2, 50.8))
+    text = sh.save(tmp_path).read_text()
+    def block(ref):
+        i = text.index(f'"Reference" "{ref}"')
+        return text[text.rindex("(symbol", 0, i):i]
+    assert "(in_bom no)" in block("JP1")
+    assert "(in_bom yes)" in block("R1")
