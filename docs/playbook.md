@@ -146,8 +146,10 @@ weighed like any other report:
   `attributes` (Power, Voltage Rated, Vgs, RDS(on), Vf, common mode) from
   each row's LCSC listing, keeping any value the row already has. Run it
   once the BOM has LCSC codes and before sim_board / check_ratings: without
-  it every resistor is judged at its package default and every cap rating
-  is a known unknown.
+  it every resistor is judged at its package default, and a diode, fuse,
+  regulator or cap with an empty row fails verify as `rating_no_attributes`:
+  verify reads the row and never fetches, so the same board gets the same
+  answer offline and on any machine.
 - `scripts/sim_board.py --workspace <ws>`: ngspice on the board's own
   netlist, no testbench to write. Rails are sources, ICs open, every R, C,
   L, diode, LED, zener and recognised BJT/MOSFET in place (a dual, e.g.

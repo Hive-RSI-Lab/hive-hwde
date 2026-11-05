@@ -587,3 +587,124 @@ def test_hand_verified_rating_is_kept_and_not_rewarned(tmp_path, monkeypatch):
     p = _run(ws)
     assert {e["refs"][0] for e in _errors(p)} == {"J1", "J2"}
     assert ledgerlib.load(ws)["facts"]["J1/rating"]["status"] == "failed"
+
+
+# ------------------------------------------------------------ no attributes
+# #675: a rated part whose parts.json row has no attributes and which nothing
+# else rates is not a soft warning. precision-daq's D101 and F101 only showed
+# up once the cache was filled, so verify had passed with them unjudged.
+
+def _no_attrs(p: dict) -> list[dict]:
+    return [v for v in p["violations"] if v["kind"] == "rating_no_attributes"]
+
+
+def test_bare_diode_on_a_5v_reverse_rail_blocks_and_names_itself(tmp_path):
+    bom = [{"lcsc": "C8", "mpn": "SM712", "attributes": []}]
+    ws = _ws(tmp_path, [("D101", "C8", {"1": "+5V", "2": "GND"})], {}, bom)
+    p = _run(ws)
+    found = _no_attrs(p)
+    assert [(v["severity"], v["refs"]) for v in found] == \
+        [("error", ["D101"])]
+    msg = found[0]["msg"]
+    assert "D101" in msg and "C8" in msg and "SM712" in msg
+    assert "parts_enrich" in msg and "parts_search" in msg
+
+
+def test_diode_with_attributes_judged_in_rating_does_not_block(tmp_path):
+    bom = [{"lcsc": "C8", "mpn": "SM712", "attributes": [
+        {"name": "Reverse Voltage (Vr)", "value": "7V"}]}]
+    ws = _ws(tmp_path, [("D101", "C8", {"1": "+5V", "2": "GND"})], {}, bom)
+    p = _run(ws)
+    assert _no_attrs(p) == [] and _errors(p) == []
+
+
+def test_filled_diode_over_its_rating_gets_the_real_finding(tmp_path):
+    # what filling precision-daq's cache showed: 5.25 V against a 5 V stand-off
+    bom = [{"lcsc": "C8", "mpn": "SM712", "attributes": [
+        {"name": "Reverse Voltage (Vr)", "value": "5V"}]}]
+    ws = _ws(tmp_path, [("D101", "C8", {"1": "+5V25", "2": "GND"})], {}, bom)
+    cons = tmp_path / "cons.json"
+    cons.write_text(json.dumps({"voltages": [{"net": "+5V25", "voltage": 5.25},
+                                             {"net": "GND", "voltage": 0}]}))
+    errs = _errors(_run(ws, cons))
+    assert [e["kind"] for e in errs] == ["rating_reverse_polarity"]
+
+
+def test_bare_fuse_blocks_even_with_an_extraction(tmp_path):
+    # fuse_findings reads hold current only from attributes, so an extraction
+    # does not rate it
+    bom = [{"lcsc": "C9", "mpn": "0881002", "attributes": []}]
+    ws = _ws(tmp_path, [("F101", "C9", {"1": "+5V", "2": "/OUT"})],
+             {"C9": {"mpn": "0881002", "pinout": []}}, bom)
+    assert [v["refs"] for v in _no_attrs(_run(ws))] == [["F101"]]
+    bom[0]["attributes"] = [{"name": "Hold Current", "value": "1A"}]
+    ws2 = _ws(tmp_path / "b", [("F101", "C9", {"1": "+5V", "2": "/OUT"})],
+              {}, bom)
+    assert _no_attrs(_run(ws2)) == []
+
+
+def test_bare_cap_blocks_and_one_finding_names_every_ref_on_the_code(tmp_path):
+    bom = [{"lcsc": "C1", "mpn": "CL05", "attributes": []}]
+    ws = _ws(tmp_path, [("C2", "C1", {"1": "+5V", "2": "GND"}),
+                        ("C10", "C1", {"1": "+3V3", "2": "GND"})], {}, bom)
+    found = _no_attrs(_run(ws))
+    assert len(found) == 1 and found[0]["refs"] == ["C10", "C2"]
+    bom[0]["attributes"] = [{"name": "Voltage Rated", "value": "16V"}]
+    ws2 = _ws(tmp_path / "b", [("C2", "C1", {"1": "+5V", "2": "GND"})], {},
+              bom)
+    assert _no_attrs(_run(ws2)) == []
+
+
+@pytest.mark.parametrize("row", [
+    {"mpn": "LP5907-3.3"},                                # output in the MPN
+    {"mpn": "AP2112", "description": "LDO regulator"},    # the row's words
+    {"mpn": "SY8303AIC", "role": "VBUS to 5.1 V"},        # what it converts
+])
+def test_bare_regulator_blocks_unless_extracted(tmp_path, row):
+    bom = [{"lcsc": "C3", "attributes": [], **row}]
+    pads = {"1": "+5V", "2": "GND", "3": "+3V3"}
+    ws = _ws(tmp_path, [("U4", "C3", pads)], {}, bom)
+    assert [v["refs"] for v in _no_attrs(_run(ws))] == [["U4"]]
+    ws2 = _ws(tmp_path / "b", [("U4", "C3", pads)], {"C3": MCU}, bom)
+    assert _no_attrs(_run(ws2)) == []
+
+
+@pytest.mark.parametrize("ref,lcsc,pads,row", [
+    # a chip resistor is rated from its package
+    ("R1", "C4", {"1": "+5V", "2": "GND"}, {"mpn": "0402WGF"}),
+    # attributes do not rate these, so filling them would change nothing
+    ("U1", "C4", {"1": "+5V", "2": "GND", "3": "/A"}, {"mpn": "STM32"}),
+    ("J1", "C4", {"1": "+5V", "2": "GND"}, {"mpn": "USB-C"}),
+    # one net stresses nothing
+    ("C1", "C4", {"1": "GND", "2": "GND"}, {"mpn": "CL05"}),
+])
+def test_bare_parts_that_do_not_block(tmp_path, ref, lcsc, pads, row):
+    bom = [{"lcsc": lcsc, "attributes": [], **row}]
+    assert _no_attrs(_run(_ws(tmp_path, [(ref, lcsc, pads)], {}, bom))) == []
+
+
+def test_part_with_no_row_at_all_stays_a_warning(tmp_path):
+    # the scaffold's empty parts/: nothing to fill yet, intake must still pass
+    ws = _ws(tmp_path, [("D1", "C8", {"1": "+5V", "2": "GND"})], {}, [])
+    p = _run(ws)
+    assert _no_attrs(p) == [] and _errors(p) == []
+    assert any(v["kind"] == "rating_unrated" for v in p["violations"])
+
+
+def test_rating_someone_verified_does_not_block(tmp_path):
+    bom = [{"lcsc": "C8", "mpn": "SM712", "attributes": []}]
+    ws = _ws(tmp_path, [("D101", "C8", {"1": "+5V", "2": "GND"})], {}, bom)
+    out, _ = cr.run_check(ws / "kicad" / "board.kicad_pcb", ws / "parts",
+                          None, None, trusted={"D101"})
+    assert not [v for v in out if v["kind"] == "rating_no_attributes"]
+
+
+def test_no_attributes_is_unknown_in_the_ledger_not_failed(tmp_path):
+    # nothing was found wrong with the part: its rating was never looked at
+    bom = [{"lcsc": "C8", "mpn": "SM712", "attributes": []}]
+    ws = _ws(tmp_path, [("D101", "C8", {"1": "+5V", "2": "GND"})], {}, bom)
+    _, facts = cr.run_check(ws / "kicad" / "board.kicad_pcb", ws / "parts",
+                            None, None)
+    rating = next(f for f in facts["ledger_facts"]
+                  if f["subject"] == "D101" and f["kind"] == "rating")
+    assert rating["status"] == "unknown" and "parts_enrich" in rating["value"]

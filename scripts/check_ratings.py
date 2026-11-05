@@ -66,6 +66,11 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
    pin against - no extraction, no row that names or classes the pin, or a
    relative bound whose reference supply has no known voltage. One per
    part, listing the pins. Never a silent pass.
+ - rating_no_attributes (error): a rated part (diode, fuse, regulator, cap)
+   whose parts.json row has empty `attributes` and which nothing else rates:
+   its limit was never compared, so the gate fails until the row is filled
+   (parts_enrich.py). One per BOM code, naming its refs. The check reads
+   nothing but the row: no cache, no network. Its ledger fact stays unknown.
  - rating_over_voltage, also: a chip resistor's volts across it above its
    limiting element voltage (parts.json Voltage-Supply(Max), else the chip
    size's D/CRCW e3 Umax; R-RAT-1); a fuse or PPTC whose voltage rating is
@@ -788,6 +793,7 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                                   and set(v.get("refs") or []) <= trusted
                                   and v.get("refs"))]
     lcsc_of = {b["ref"]: b["lcsc"] for b in board}
+    no_attribute_findings(board, bom_by_lcsc, exts, trusted, emit, out)
     bare = [r for r in unrated_passives
             if not (bom_by_lcsc.get(lcsc_of.get(r)) or {}).get("attributes")]
     if unrated_passives:
@@ -857,6 +863,66 @@ def bom_volts(bom: dict | None) -> float | None:
             if m:
                 rated = float(m.group(1)) * (1000 if m.group(2) else 1)
     return rated
+
+
+REG_TEXT_RE = re.compile(r"regulator|\bLDO\b|\bbuck\b|\bboost\b|DC.?DC|"
+                         r"\bPMIC\b|\bto\s+\d+(?:\.\d+)?\s*V\b", re.I)
+
+
+def is_regulator(b: dict, bom: dict | None) -> bool:
+    """A U/VR part its row calls a regulator: a fixed output in the MPN, or
+    the row's words ("LDO regulator", "VBUS to 5.1 V")."""
+    if not re.match(r"^(?:U|VR|IC)\d", b["ref"]):
+        return False
+    bom = bom or {}
+    text = " ".join(str(bom.get(k) or "") for k in
+                    ("category", "description", "name", "value", "role"))
+    return reg_out_volts(str(bom.get("mpn") or "")) is not None or \
+        bool(REG_TEXT_RE.search(text))
+
+
+def no_attribute_findings(board: list[dict], bom_by_lcsc: dict, exts: dict,
+                          trusted: set, emit, out: list[dict]) -> None:
+    """Rated parts whose parts.json row has an empty `attributes` and which
+    nothing else rates: one blocking finding per BOM code, since that is what
+    gets filled (#675). A diode, cap or regulator with an extraction is rated
+    by it; a fuse is not, fuse_findings reads only attributes. A part with no
+    row at all is not here: there is nothing to fill yet (the scaffold's empty
+    parts/). This never reads the cache or the network, so the same board
+    gives the same answer anywhere."""
+    by_code: dict[str, tuple[list[str], set[str]]] = {}
+    for b in board:
+        bom = bom_by_lcsc.get(b["lcsc"])
+        ref = b["ref"]
+        if bom is None or bom.get("attributes") or ref in trusted or \
+                len(set(b["pads"].values())) < 2:
+            continue
+        what = None
+        if is_fuse(b, bom):
+            what = "fuse"
+        elif b["lcsc"] in exts:
+            continue
+        elif re.match(r"^(?:D|LED)\d", ref):
+            what = "diode"
+        elif re.match(r"^C\d", ref):
+            what = "capacitor"
+        elif is_regulator(b, bom):
+            what = "regulator"
+        if what:
+            refs, whats = by_code.setdefault(b["lcsc"], ([], set()))
+            refs.append(ref)
+            whats.add(what)
+    for lcsc, (refs, whats) in sorted(by_code.items()):
+        refs = sorted(refs)
+        mpn = bom_by_lcsc[lcsc].get("mpn") or "no MPN"
+        emit("rating_no_attributes", "error", refs[0], None,
+             f"{', '.join(refs)}: {lcsc} ({mpn}) is a rated part "
+             f"({'/'.join(sorted(whats))}) whose parts.json row has no "
+             "attributes and nothing else rates it, so its rating was never "
+             "judged. Fill the row with scripts/parts_enrich.py --workspace "
+             "<ws> (or keep parts_search's row whole), then run verify again",
+             lcsc=lcsc, mpn=mpn)
+        out[-1]["refs"] = refs
 
 
 # --- ambient: fuses, PPTCs and every part's operating range -------------------
@@ -1218,7 +1284,10 @@ def ledger_facts(board: list[dict], exts: dict, vios: list[dict],
     unrated: dict[str, str] = {}
     for v in vios:
         for ref in v.get("refs") or []:
-            if v.get("severity") == "error":
+            if v.get("kind") == "rating_no_attributes":
+                # never judged, not judged bad
+                unrated[ref] = v.get("msg") or ""
+            elif v.get("severity") == "error":
                 failed.setdefault(ref, v.get("msg") or v.get("message", ""))
             elif v.get("kind") == "rating_unrated":
                 unrated.setdefault(ref, (
