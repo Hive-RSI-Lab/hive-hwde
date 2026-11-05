@@ -337,6 +337,9 @@ def _strict_main(tmp_path, capsys, rep, waivers):
     ({"expires": "someday"}, "unparsable expires"),
     ({"artifact": "sexpr_no_uuid:" + "0" * 64}, "approved against artifact"),
     ({"checker_version": -1}, "approved under checker_version"),
+    ({"refs": 5}, "refs must be a list"),
+    ({"refs": "U22"}, "refs must be a list"),
+    ({"refs": [["U22"]]}, "refs must be a list"),
 ])
 def test_strict_gate_grades_invalid_durable_waiver(tmp_path, capsys, over,
                                                    says):

@@ -224,6 +224,11 @@ def durable_waiver_problems(w: dict, report: dict, i: int = 0) -> list[str]:
             f"waiver [{label}]: not durable - missing "
             f"{'/'.join(missing)} (release waivers must bind the "
             "artifact hash, checker version and an expiry; H9)")
+    refs = w.get("refs")
+    if refs and not (isinstance(refs, list)
+                     and all(isinstance(r, str) for r in refs)):
+        problems.append(f"waiver [{label}]: refs must be a list of refdes "
+                        f"strings, got {refs!r}")
     problems.extend(waiver_validity(w, report))
     return problems
 
