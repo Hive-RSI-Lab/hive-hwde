@@ -855,6 +855,7 @@ def write_api_quote(fab, price=12.5, qty=5, board="b1", age_h=0.0,
          "calculate_request": {"orderType": 1, "fileKey": "FKEY1",
                                "achieveDate": 120,
                                "pcbParam": {"layer": 2, "copperWeight": "1",
+                                            "viaCovering": 1,
                                             "qty": (qty if param_qty is None
                                                     else param_qty)}}}
     if shipping:

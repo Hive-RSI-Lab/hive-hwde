@@ -76,6 +76,12 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
   options JLC doesn't sell on it, and fab_export writes `fab/ORDER-NOTES.md`
   with what to pick on the quote page. A quote priced on another laminate
   makes the package `not_order_ready` (MATERIAL MISMATCH) - re-quote.
+- The via process comes from the BOARD too (`(filling yes)`/`(capping yes)`,
+  fab_export.via_fill_facts). A quote priced on another via fill makes the
+  package `not_order_ready` (VIA-FILL MISMATCH) - re-quote with
+  `order_quote --via-fill`. A filled board has its step on the quote page: the
+  API refuses until the POFV code is known (POFV-enum TODO in order_submit.py).
+  Unfilled via-in-pad goes out tented, named in the order remark.
 - Any discrepancy (stale gerbers vs a re-run, BOM drift) = stop and report.
 
 ## Output contract (end your final message with exactly this block)
