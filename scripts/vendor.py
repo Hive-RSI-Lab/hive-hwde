@@ -313,7 +313,8 @@ def fit(pcb: Path, fab_dir: Path | None = None,
         else:
             import fab_export
             try:
-                man = fab_export.run(pcb, Path(td) / "fab", make_zip=False)
+                man = fab_export.run(pcb, Path(td) / "fab", make_zip=False,
+                                     allow_stale=True)   # scratch, not a release
                 gerbers = Path(man["gerber_dir"])
             except Exception as exc:  # noqa: BLE001
                 why_not = f"gerber export failed: {type(exc).__name__}: {exc}"

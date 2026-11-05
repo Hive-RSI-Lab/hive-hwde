@@ -48,6 +48,15 @@ def test_edited_board_is_refused(tmp_path):
         fab_export.run(pcb, tmp_path / "out")
 
 
+def test_dfm_check_audits_an_edited_board(tmp_path):
+    """Its scratch export isn't a release: refusing it would stop the dfm gate
+    from ever re-running on a board that changed since its last pass."""
+    pcb = _workspace(tmp_path)
+    pcb.write_text(pcb.read_text().replace("(width 0.25)", "(width 0.3)", 1))
+    assert fab_export.stale_gates(pcb)["stale"]
+    assert dfm_check.run(pcb)["status"]
+
+
 def test_no_workspace_is_not_checked(tmp_path):
     pcb = tmp_path / "x.kicad_pcb"
     shutil.copy(GOLD, pcb)
