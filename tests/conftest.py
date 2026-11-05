@@ -147,6 +147,23 @@ SLOW = {
 }
 
 
+# Tests that open KiCad's stock symbol libraries (kicad-sch-api reads them
+# from the install HIVE_TOOLS names): skipped, not failed, where there is none.
+HOST_SYMBOLS = {
+    "tests/test_lib_hygiene.py::test_write_preserves_lib_symbols",
+    "tests/test_schem_layout.py::test_a_changed_netlist_leaves_the_sheet_alone",
+    "tests/test_schem_layout.py::test_already_wired_sheets_are_skipped",
+    "tests/test_schem_layout.py::test_a_short_is_caught_before_the_gate",
+    "tests/test_schem_layout.py::test_only_reference_and_value_show",
+    "tests/test_schem_layout.py::test_redraw_is_the_same_every_time",
+    "tests/test_schem_layout.py::test_redraw_keeps_connectivity_and_draws_wires",
+    "tests/test_schem_layout.py::test_redrawn_board_has_no_close_wires_or_text_on_text",
+    "tests/test_schem_layout.py::test_two_nets_never_share_a_wire_end",
+    "tests/test_schem_layout.py::test_worse_erc_restores_every_sheet",
+    "tests/test_workarounds.py::test_workarounds_table_matches_its_probes",
+}
+
+
 @pytest.hookimpl(tryfirst=True)  # before -m deselects by mark
 def pytest_collection_modifyitems(config, items):
     for item in items:
@@ -155,6 +172,11 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(pytest.mark.xfail(reason=why, strict=False))
         if item.nodeid.split("[")[0] in SLOW:
             item.add_marker(pytest.mark.slow)
+    if HOST_SYMBOLS & {i.nodeid for i in items} and not _host_symbols():
+        skip_sym = pytest.mark.skip(reason="needs KiCad's stock symbol libraries, this host has none")
+        for item in items:
+            if item.nodeid in HOST_SYMBOLS:
+                item.add_marker(skip_sym)
     marked = [i for i in items if i.get_closest_marker("kicad_recorded")]
     if not marked:
         return
@@ -166,6 +188,44 @@ def pytest_collection_modifyitems(config, items):
         f"this is {have} (LEARNINGS 2026-08-27)"))
     for item in marked:
         item.add_marker(skip)
+
+
+MODELS = Path(__file__).resolve().parent / "fixtures" / "3dmodels"
+MODEL_VARS = [f"KICAD{n}_3DMODEL_DIR" for n in ("", *range(5, 12))]
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_3d_models(request, monkeypatch):
+    """${KICAD<n>_3DMODEL_DIR} points at tests/fixtures/3dmodels (box models),
+    never at the host's KiCad library: a board's models resolve the same on
+    any host, so check_body_clash judges the same bodies everywhere and a test
+    can't pass or fail by what the host happens to have installed (#757).
+
+    A test that needs the real library says so with `@pytest.mark.host_models`;
+    it is skipped where the host has none. Box models made from the stock
+    library: tests/fixtures/3dmodels/make_boxes.py."""
+    if request.node.get_closest_marker("host_models"):
+        if not _host_models():
+            pytest.skip("needs KiCad's stock 3D models, this host has none")
+        return
+    for k in MODEL_VARS:
+        monkeypatch.setenv(k, str(MODELS))
+
+
+@functools.cache
+def _host_symbols() -> bool:
+    root = Path(__file__).resolve().parents[1]
+    sys.path[:0] = [str(root / "scripts"), str(root / "scripts" / "lib")]
+    import env
+    return env.kicad_symbol_dir() is not None
+
+
+@functools.cache
+def _host_models() -> bool:
+    root = Path(__file__).resolve().parents[1]
+    sys.path[:0] = [str(root / "scripts"), str(root / "scripts" / "lib")]
+    import check_model_fit
+    return bool(check_model_fit.stock_dirs())
 
 
 @pytest.fixture(autouse=True)
