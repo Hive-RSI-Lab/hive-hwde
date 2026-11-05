@@ -15,6 +15,7 @@ meta:
   source_urls:
     - https://jlcpcb.com/capabilities/pcb-capabilities
     - https://jlcpcb.com/help/article/how-to-generate-the-bom-and-centroid-file-from-kicad
+    - https://jlcpcb.com/help/article/pcb-via-covering
     - https://jlcpcb.com/capabilities/pcb-assembly-capabilities
   verified: "2026-07-24"           # assembly: block 2026-10-31
   order: {method: web_upload, api: true,
@@ -34,6 +35,7 @@ board:
   copper_oz_outer: [1, 2]
   castellated: true
   blind_buried_vias: false
+  via_tenting: supported         # help/article/pcb-via-covering: "five via covering options available: Tented, ..."
   via_in_pad: true               # POFV on 6+ layers, free
   impedance_control: true
 

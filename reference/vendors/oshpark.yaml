@@ -40,6 +40,7 @@ board:
   solder_mask_colors: [purple]
   castellated: false
   blind_buried_vias: false
+  via_tenting: supported         # "Via Tenting Yes (filled hole and flat surface not guaranteed)"
   via_in_pad: false
 
 design_rules:

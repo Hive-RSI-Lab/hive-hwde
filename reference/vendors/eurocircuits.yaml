@@ -57,6 +57,10 @@ board:
   solder_mask_colors: [green, black, red, blue, white]
   castellated: true                         # "Plated Holes on Edge" option
   blind_buried_vias: true                   # non-pooled specials
+  # soldermask page: "Tented Via Holes ... ONLY possible in conjunction with
+  # Via Filling"; spray coating leaves "a small opening". Depends on an order
+  # option the board file doesn't carry, so fit says unknown, not pass.
+  via_tenting: unknown
 
 design_rules:
   2layer_1oz:

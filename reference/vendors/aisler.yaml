@@ -56,6 +56,7 @@ board:
   solder_mask_colors: [purple]
   castellated: true
   blind_buried_vias: null        # "Advanced Via Technologies: on demand"
+  via_tenting: not_supported     # "Buried, blind, micro or tented vias are not supported" (#742)
 
 design_rules:
   2layer_1oz:

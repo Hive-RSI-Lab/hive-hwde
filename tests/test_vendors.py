@@ -35,7 +35,7 @@ def _profile(**over) -> dict:
                  "verified": "2026-10-31"},
         "board": {"layers": [2, 4], "max_size_mm": [100, 80],
                   "min_size_mm": [5, 5], "thickness_options_mm": [1.6],
-                  "castellated": False},
+                  "castellated": False, "via_tenting": "supported"},
         "design_rules": {"2layer_1oz": {
             "min_trace_width_mm": 0.15, "min_clearance_mm": 0.15,
             "min_hole_diameter_mm": 0.3, "min_annular_ring_mm": 0.15,
@@ -87,6 +87,8 @@ def test_every_profile_is_sourced_and_usable(vid):
                                     for u in m["source_urls"])
     assert str(m["verified"])[:2] == "20"            # a date it was copied
     assert m.get("services", {}).get("pcb") is not None
+    assert prof["board"].get("via_tenting", "unknown") in (
+        "supported", "not_supported", "unknown")
     for key, row in prof["capabilities"]["design_rules"].items():
         layers, oz = key.split("layer_")
         # a non-FR-4 laminate's row carries its family (lib/fabmaterial.py):
@@ -166,7 +168,7 @@ def test_quote_only_vendor_gives_no_figure(vroot):
 
 BOARD = {"layers": 2, "copper_oz": 1.0, "width_mm": 50.0, "height_mm": 40.0,
          "thickness_mm": 1.6, "castellated_pads": 0, "blind_buried_vias": [],
-         "bottom_smd_refs": [], "min_pitch_mm": 0.65, "min_pitch_ref": "U1"}
+         "tented_vias": 0, "bottom_smd_refs": [], "min_pitch_mm": 0.65, "min_pitch_ref": "U1"}
 
 
 def _status(rows):
@@ -195,6 +197,37 @@ def test_limits_catch_what_the_vendor_cant_build(vroot, over, check, status):
     rows = vendor.limits(vendors.load("testfab"), {**BOARD, **over},
                          assembly=True)
     assert _status(rows)[check] == status
+
+
+@pytest.mark.parametrize("key,status", [
+    ("supported", "pass"), ("not_supported", "fail"), ("unknown", "unknown"),
+    (None, "unknown"),                       # left out of the profile
+])
+def test_tented_vias_are_held_to_the_vendor(vroot, key, status):
+    prof = _profile()
+    prof["board"].pop("via_tenting")
+    if key:
+        prof["board"]["via_tenting"] = key
+    (vroot / "testfab.yaml").write_text(yaml.safe_dump(prof), "utf-8")
+    prof = vendors.load("testfab")
+    rows = vendor.limits(prof, {**BOARD, "tented_vias": 3}, assembly=True)
+    assert _status(rows)["via_tenting"] == status
+    assert "via_tenting" not in _status(vendor.limits(prof, BOARD, assembly=True))
+
+
+def test_tented_vias_are_read_from_the_board(tmp_path):
+    text = LED_PCB.read_text("utf-8")
+    assert vendor.board_facts(LED_PCB)["tented_vias"] > 0   # KiCad's default
+    open_vias = tmp_path / "open.kicad_pcb"
+    open_vias.write_text(text.replace(
+        "(setup", "(setup (tenting (front no) (back no))", 1), "utf-8")
+    assert vendor.board_facts(open_vias)["tented_vias"] == 0
+
+
+def test_aisler_refuses_tented_vias():
+    rows = vendor.limits(vendors.load("aisler"),
+                         {**BOARD, "tented_vias": 1}, assembly=False)
+    assert _status(rows)["via_tenting"] == "fail"
 
 
 def test_no_assembly_service_fails_an_assembled_build(vroot):

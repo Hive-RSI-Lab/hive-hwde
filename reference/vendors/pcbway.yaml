@@ -204,6 +204,7 @@ board:
   silkscreen_colors: [white, black, yellow]
   castellated: true
   blind_buried_vias: true        # [caps] adv. HDI / [quote] "HDI(Buried/blind vias) >= 4 Layers"
+  via_tenting: supported         # [quote] "Via process: Tenting vias"
   via_in_pad: true               # [quote] advanced option "Via in pad"
   impedance_control: true        # [quote] advanced option; [caps] adv. 35 tolerance +/-10%
 
