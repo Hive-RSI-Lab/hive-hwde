@@ -150,3 +150,14 @@ def test_draft_known_adds_only_what_the_ledger_lacks(pin):
     score.known_path(pin).write_text(json.dumps({"known": known}))
     assert score.draft_known(pin, [_f(net="A"), _f(net="B"), _f(net="C")]) == 1
     assert [e["verdict"] for e in score.read_known(pin)] == ["real", "?", "?"]
+
+
+def test_digest_ignores_kicad_local_state(tmp_path):
+    """kicad-cli leaves an ignored hwde-led-test.kicad_prl (and lock/autosave
+    files) beside any board it opens; a pin's digest must not move for them."""
+    (tmp_path / "a.kicad_pcb").write_text("x", encoding="utf-8")
+    before = score.files(tmp_path)
+    for name in ("a.kicad_prl", "~a.kicad_pcb.lck", "_autosave-a.kicad_pcb",
+                 "fp-info-cache"):
+        (tmp_path / name).write_text("local", encoding="utf-8")
+    assert score.files(tmp_path) == before == ["a.kicad_pcb"]

@@ -302,6 +302,26 @@ def test_gate_main_warns_on_unmatched_waiver(tmp_path, capsys):
     assert "warning: waiver 1" in cap.err and "VBUS_TYPO" in cap.err
 
 
+def test_gate_main_prints_invalid_waiver(tmp_path, capsys):
+    """#709: a gate that throws out an expired waiver names the entry and its
+    problem on stderr, like the unmatched ones. (A strict gate refuses such a
+    waiver outright, exit 2 with the problem; this is the lenient path.)"""
+    board = _board(tmp_path)
+    rep = _verify_report(board, [_creep()])
+    sidecar = tmp_path / "w.json"
+    sidecar.write_text(json.dumps({"waivers": [
+        _durable(rep, "V48_RTN"),
+        dict(_durable(rep, "V48_RTN"), expires="2000-01-01")]}),
+        encoding="utf-8")
+    _gate_main(tmp_path, rep, extra_argv=("--waivers", str(sidecar)),
+               gate_name="verify")
+    cap = capsys.readouterr()
+    res = json.loads(cap.out)
+    assert res["waivers_invalid"][0]["index"] == 1
+    lines = [l for l in cap.err.splitlines() if "waiver 1" in l]
+    assert len(lines) == 1 and "expired" in lines[0]
+
+
 # ------------------------------------------------ commit scoping (codex C4)
 
 def _tmp_repo(tmp_path):
