@@ -271,6 +271,13 @@ class Sheet:
                 fields[lcsc[0]] = lcsc[1]
         for key, val in fields.items():
             c.set_property(key, val)
+        # nor the symbol's (in_bom no)/(on_board no): a solder jumper or
+        # test point came out in_bom yes against its footprint's
+        # exclude_from_bom, which KiCad's DRC flags as
+        # footprint_symbol_mismatch
+        for flag, on in lib_flags(lib_id).items():
+            if not on:
+                setattr(c, flag, False)
         self._lib_ids[ref] = lib_id
         self._rotations[ref] = rotation
         self._anchors[ref] = (at[0], at[1])
@@ -1223,6 +1230,23 @@ def lib_lcsc(lib_id: str) -> tuple[str, str] | None:
             if val:
                 return str(node[1]), val
     return None
+
+
+def lib_flags(lib_id: str) -> dict[str, bool]:
+    """{"in_bom": bool, "on_board": bool} for the flags the library symbol
+    `lib_id` states, as the kicad-sch-api cache has it; {} when it states
+    none or is unknown."""
+    try:
+        with _quiet():
+            sym = ksa.get_symbol_cache().get_symbol(lib_id)
+    except Exception:  # noqa: BLE001 - unknown lib/symbol: no default
+        return {}
+    out = {}
+    for node in (getattr(sym, "raw_kicad_data", None) or []):
+        if isinstance(node, list) and len(node) == 2 \
+                and str(node[0]) in ("in_bom", "on_board"):
+            out[str(node[0])] = str(node[1]) != "no"
+    return out
 
 
 def pin_table(lib_id: str, lib_paths: list | None = None) -> dict:
