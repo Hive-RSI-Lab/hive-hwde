@@ -313,6 +313,15 @@ def _aliases(names) -> set:
     return names | {n.lstrip("/") for n in names} | {"/" + n.lstrip("/") for n in names}
 
 
+def _copper_pads(bg, layer: str):
+    """The pads on `layer` that hold copper. An unplated hole no wider than
+    its pad's copper size (a mouse bite, `size 0.5` with `drill 0.5`) names the
+    copper layers yet leaves no metal round it."""
+    return [p for p in bg.pads_of(layer=layer)
+            if not (p.kind == "np_thru_hole" and p.drill
+                    and min(p.size) <= min(p.drill))]
+
+
 def _row_copper(bg, row: dict, layer: str):
     """The antenna's copper on `layer`: its nets, its footprints' pads, and
     whatever copper a poly touches."""
@@ -331,7 +340,7 @@ def _row_copper(bg, row: dict, layer: str):
         take(t.net, None, t.poly)
     for v in bg.vias_of(layer=layer):
         take(v.net, None, v.poly)
-    for p in bg.pads_of(layer=layer):
+    for p in _copper_pads(bg, layer):
         take(p.net, p.ref, p.poly)
     for z in bg.zones_of(layer=layer):
         take(z.net, None, z.fill_on(layer))
@@ -605,7 +614,7 @@ def _foreign_copper(bg, region, layer: str, own_nets, own_refs, rad) -> list:
         return out
     items = [(t.net, None, t.poly) for t in bg.tracks_of(layer=layer)]
     items += [(v.net, None, v.poly) for v in bg.vias_of(layer=layer)]
-    items += [(p.net, p.ref, p.poly) for p in bg.pads_of(layer=layer)]
+    items += [(p.net, p.ref, p.poly) for p in _copper_pads(bg, layer)]
     items += [(z.net, None, z.fill_on(layer)) for z in bg.zones_of(layer=layer)]
     for net, ref, g in items:
         if g is None or g.is_empty or net in own_nets or ref in own_refs:

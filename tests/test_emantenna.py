@@ -246,6 +246,18 @@ def test_other_copper_in_the_keepout_fails(tmp_path, body, layer):
     assert all(v["severity"] == "error" for v in pay["violations"])
 
 
+def test_a_bare_hole_in_the_keepout_is_not_copper(tmp_path):
+    """A mouse bite names the copper layers but is drilled to its pad's size;
+    a wider pad round the same hole does hold metal."""
+    def hole(size):
+        return (f'  (footprint "t:MB" (at 20 7) (layer "F.Cu")\n'
+                f'    (property "Reference" "MB1" (at 0 0 0) (layer "F.SilkS"))\n'
+                f'    (pad "" np_thru_hole circle (at 0 0) (size {size} {size}) (drill 0.5)'
+                f' (layers "*.Cu" "*.Mask")))\n')
+    assert _check(_pcb(tmp_path, IFA + _gnd() + hole(0.5)), ROW)[1] == set()
+    assert _check(_pcb(tmp_path, IFA + _gnd() + hole(1.0)), ROW)[1] == {"pcb_antenna_copper"}
+
+
 def test_keepout_margin_reaches_a_near_track(tmp_path):
     body = IFA + _gnd() + _tr(32, 2, 32, 8, 3)
     assert _check(_pcb(tmp_path, body), ROW)[1] == set()
