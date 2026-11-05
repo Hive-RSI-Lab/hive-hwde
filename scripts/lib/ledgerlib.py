@@ -27,6 +27,8 @@ Facts and who writes them:
   Any fact can also be recorded by hand, with its source:
     ledger.py set --workspace WS --subject U8 --kind pinout --status verified
                   --source "CH340 datasheet v3B p.4, pin table vs symbol"
+  A datasheet that is suspect or a placeholder can't back a verified fact:
+  set refuses it unless --force says why (the reason goes on the fact).
 
 What the board relies on (`expected`) comes from its own data: every code on
 fab/BOM.csv (else every smt_placed parts.json line), and every refdes of every
@@ -237,7 +239,8 @@ def put(ws: Path, facts: list[dict], by: str) -> Path | None:
             raise ValueError(f"bad fact {f!r}: kind one of {KINDS}, status "
                              f"one of {STATUSES}")
         ent = {k: f[k] for k in ("subject", "kind", "status", "value",
-                                 "source", "lcsc", "refs", "basis")
+                                 "source", "lcsc", "refs", "basis", "forced",
+                                 "forced_over")
                if k in f}
         ent.setdefault("value", "")
         ent.setdefault("source", "")
