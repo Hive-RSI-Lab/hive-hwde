@@ -1381,6 +1381,10 @@ def _label_spot(dr: Drawing, net: Net, name: str):
             ((c, (c[0] + 1, c[1])) in dr.wires[net.id])
         if not right:
             continue
+        # a wire rising through the text can't be read past, however clear the
+        # rest is (one at the anchor only touches the text's end)
+        if any((c[0] + i, c[1] - 1) in dr.vwires for i in range(1, need)):
+            continue
         hits = sum(1 for i in range(need) for j in (1, 2)
                    if (c[0] + i, c[1] - j) in dr.blocked
                    or (c[0] + i, c[1] - j) in dr.hwires)

@@ -1270,7 +1270,8 @@ def test_bom_cpl_on_golden(fab_dirs, tmp_path):
     # so U3 reports violations instead of the old pass-beside-bom_complete-false
     assert rep["missing_lcsc"] and not rep["bom_complete"]
     assert rep["status"] == "violations"
-    assert set(rep["class_counts"]) == {"smt_placed"}
+    # the two pin headers are through-hole, and still in the placed count
+    assert rep["class_counts"] == {"smt_placed": 15, "tht": 2}
 
 
 @pytest.mark.smoke

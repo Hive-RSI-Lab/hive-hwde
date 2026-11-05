@@ -10,6 +10,8 @@
 #                         no KiCad runs of whole boards (the per-PR test)
 #   hwde test-slow [args] the tests test leaves out as slow (tests/conftest.py
 #                         SLOW): live toolchain, whole fixture boards
+#   hwde test-smoke [args] the `smoke` tests: whole flows on a live KiCad
+#                         (.github/workflows/smoke.yml runs them on every PR and daily)
 #   hwde check-all        re-run every board's gates from a scratch copy, and
 #                         check docs/workarounds.md against its probes (slow)
 #   hwde sources          fetch the knowledge records' source PDFs into HOME
@@ -244,7 +246,7 @@ env)
 	# HWDE_SKILL is HWDE_MODULE's old name, which boards written before the move still read.
 	printf "export HWDE_MODULE='%s'\nexport HWDE_SKILL='%s'\nexport HWDE_PY='%s'\n" "$here" "$here" "$py"
 	;;
-test | test-slow)
+test | test-slow | test-smoke)
 	# tests/: upstream's unit tests (no smoke or net marks: those need a live
 	# KiCad run or the internet) and test_workarounds.py, the probes. Boards
 	# root is an empty scratch dir, so a test that wants a real board skips;
@@ -255,9 +257,11 @@ test | test-slow)
 	# suite is file-heavy, not CPU-heavy, and on the Hive's loaded disk
 	# its plain writes and fsyncs took it from ~4 to over 30 minutes. The
 	# scratch dir goes when the run ends; the run prints its time and its
-	# slowest tests. test-slow runs the `slow` ones it leaves out.
+	# slowest tests. test-slow runs the `slow` ones it leaves out, test-smoke
+	# the `smoke` ones: whole flows on a live KiCad, which CI runs on every PR and daily.
 	marks="not smoke and not net and not slow"
 	[ "$1" = test-slow ] && marks="slow and not smoke and not net"
+	[ "$1" = test-smoke ] && marks="smoke and not net"
 	shift
 	export HWDE_BIN="$here/bin/hwde" HWDE_STATE="$state"
 	export HWDE_NO_FSYNC=1

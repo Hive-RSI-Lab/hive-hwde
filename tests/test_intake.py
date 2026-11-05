@@ -471,6 +471,27 @@ def _demo_dir() -> Path | None:
     return None
 
 
+# What verify_all finds on blinky2 through intake, by check: (kind, refs). All
+# warnings, so the gates still pass. check_ratings: no datasheet extractions, so
+# the scaffold's empty parts/ leaves every part unrated, never a silent pass (#32).
+# check_connector_fit: KiCad's stock 1.0 mm header drill under IPC-2222 (#474, the
+# same known warning as test_checks_s5.GOLDEN_KNOWN_WARNINGS). check_straps: this
+# STM32F103 has no row in reference/reset_states.yaml (#591).
+GOLDEN_WARNINGS = {
+    "check_ratings": ("rating_unrated", {"C1", "D1", "J1", "J2"}),
+    "check_connector_fit": ("tht_hole_ipc2222", {"J1", "J2"}),
+    "check_straps": ("mcu_unknown", {"U1"}),
+}
+# The checks blinky2 gives nothing to judge: it has none of what they read
+# (check_reset_drive: the same missing row as check_straps above).
+GOLDEN_NOTHING_TO_JUDGE = {
+    "check_antenna", "check_cap_load", "check_ddr_timing", "check_diffpair",
+    "check_isolation", "check_kelvin", "check_length_groups",
+    "check_reset_drive", "check_rf_match", "check_stackup", "check_surge",
+    "check_usb_phy", "check_via_stubs",
+}
+
+
 @pytest.mark.smoke
 def test_intake_golden_board_runs_every_gate(tmp_path):
     """Acceptance leg 1: a golden board imports to a clean, gated workspace."""
@@ -486,17 +507,20 @@ def test_intake_golden_board_runs_every_gate(tmp_path):
     gates = payload["baseline"]["gates"]
     assert set(gates) == set(intake.BASELINE_GATES)
     assert all(g["status"] == "pass" for g in gates.values()), gates
-    # the golden ships constraints/decoupling, so every check really ran
+    # every check ran, and each says what it really did on this board
     checks = dict(payload["baseline"]["verify_checks"])
-    # ...but no datasheet extractions, so check_ratings (#32) runs on the
-    # scaffold's empty parts/ and must say every part is unrated - one
-    # rating_unrated warning per part, never an error and never a silent pass
-    assert checks.pop("check_ratings") == "violations"
-    ratings = json.loads((ws / "reports" / "checks" / "check_ratings.json")
-                         .read_text(encoding="utf-8"))["violations"]
-    assert ratings and {(v["kind"], v["severity"]) for v in ratings} == {
-        ("rating_unrated", "warning")}
-    assert set(checks.values()) == {"pass"}, checks
+    assert {n for n, s in checks.items() if s == "violations"} == set(
+        GOLDEN_WARNINGS)
+    assert {n for n, s in checks.items() if s == "nothing_to_judge"} == (
+        GOLDEN_NOTHING_TO_JUDGE)
+    assert {s for n, s in checks.items() if n not in GOLDEN_WARNINGS
+            and n not in GOLDEN_NOTHING_TO_JUDGE} == {"pass"}, checks
+    for name, want in GOLDEN_WARNINGS.items():
+        found = json.loads((ws / "reports" / "checks" / f"{name}.json")
+                           .read_text(encoding="utf-8"))["violations"]
+        assert {(v["kind"], v["severity"]) for v in found} == {(want[0],
+                                                                "warning")}
+        assert {r for v in found for r in v["refs"]} >= want[1], name
     assert payload["baseline"]["netlist_audit"]["status"] in ("pass",
                                                               "violations")
     # gate results are recorded AND hash-fresh in state v2

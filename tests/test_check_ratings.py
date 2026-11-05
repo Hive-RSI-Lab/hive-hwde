@@ -668,6 +668,9 @@ def test_bare_cap_blocks_and_one_finding_names_every_ref_on_the_code(tmp_path):
     {"mpn": "TLV62569PDDCR", "role": "5 V -> +3V3"},  # linux-computer U302
     {"mpn": "TLV62568DBVR"}, {"mpn": "TPS54233DR"}, {"mpn": "TPS54302DDCR"},
     {"mpn": "LMR33630ADDAR"}, {"mpn": "AP63203WU-7"}, {"mpn": "AP63200WU-7"},
+    # outside the first table, each named a switcher by its datasheet (#774)
+    {"mpn": "LM5017MRX/NOPB"}, {"mpn": "LM5164DDAR", "role": "aux 5 V"},
+    {"mpn": "TPS61040DBVR"}, {"mpn": "TPS61041DBVR"},
 ])
 def test_bare_regulator_blocks_unless_extracted(tmp_path, row):
     lcsc = row.get("lcsc", "C3")
@@ -681,6 +684,9 @@ def test_bare_regulator_blocks_unless_extracted(tmp_path, row):
 
 @pytest.mark.parametrize("ref,mpn", [
     ("U4", "TPS2051BDBVR"),    # a load switch
+    ("U4", "TPS61042DRBR"),    # a white-LED driver, next to the TPS61040 boost
+    ("U4", "LM51641"),         # a number that only starts with the LM5164
+    ("U4", "LM50170"),         # the same for the LM5017
     ("U4", "LM66200DRLR"),     # an ideal diode
     ("U4", "TPS26631RGER"),    # an e-fuse
     ("U4", "TPS3808G33DBVR"),  # a supervisor
@@ -829,6 +835,33 @@ def test_unnamed_step_up_is_not_judged_by_its_highest_net(tmp_path, row):
     assert _errors(_run(ws)) == []
 
 
+def test_boost_family_is_not_judged_by_its_highest_net(tmp_path):
+    """The TPS61040 takes at most 6 V and makes up to 28 V, and neither its row
+    nor a pad name has to say so: +12V here is its output (#774)."""
+    ws = _reg_ws(tmp_path, {"Voltage - Supply": "6V"},
+                 {"1": "+5V", "2": "GND", "3": "+12V"},
+                 mpn="TPS61040DBVR", description="")
+    assert _errors(_run(ws)) == []
+
+
+@pytest.mark.parametrize("mpn", ["LM5017MRX/NOPB", "LM5164DDAR"])
+def test_step_down_family_is_judged_by_its_highest_net(tmp_path, mpn):
+    """A filled row with no word saying regulator is judged once the family
+    says so (#774). The rating here is planted, not the part's own."""
+    ws = _reg_ws(tmp_path, {"Voltage - Supply": "24V"},
+                 {"1": "+48V", "2": "GND", "3": "+5V"},
+                 mpn=mpn, description="")
+    assert [(v["kind"], v["net"]) for v in _errors(_run(ws))] == \
+        [("rating_over_voltage", "+48V")]
+
+
+@pytest.mark.parametrize("mpn", ["LM5017MRX/NOPB", "LM5164DDAR", "TPS61040DBVR"])
+def test_a_family_entry_names_no_rail(mpn):
+    """It says what the part is, not what it makes."""
+    assert cr.reg_out_code(mpn) is None
+    assert cr.reg_out_volts(mpn) is None
+
+
 def test_named_pads_judge_the_input_not_the_highest_net(tmp_path):
     attrs = {"Voltage - Supply": "5.5V", "Output Voltage": "2.2V~24V"}
     pads = {"1": "+3V7", "2": "GND", "3": "+24V"}
@@ -947,8 +980,93 @@ def _fixed_ldo(mpn):
         "abs_max": [{"param": "Input voltage VIN", "value": 15, "unit": "V"}]}
 
 
+def _fixed_buck(mpn="AP63205WU-7", **over):
+    """AP6320x's real pinout: it has no output pin, FB senses the rail."""
+    return {"mpn": mpn, "description": "fixed 5.0V output", "pinout": [
+        {"pin": "1", "name": "FB", "type": "input"},
+        {"pin": "2", "name": "EN", "type": "input"},
+        {"pin": "3", "name": "VIN", "type": "power_in"},
+        {"pin": "4", "name": "GND", "type": "ground"},
+        {"pin": "5", "name": "SW", "type": "output"},
+        {"pin": "6", "name": "BST", "type": "passive"}],
+        "abs_max": [{"param": "Input voltage VIN", "value": 32, "unit": "V"}],
+        **over}
+
+
+def _buck_pads(fb):
+    return {"1": fb, "2": "+12V", "3": "+12V", "4": "GND", "5": "SW_NODE",
+            "6": "BST_NODE"}
+
+
 def _out_errs(p):
     return [v for v in _errors(p) if v["kind"] == "rating_regulator_output"]
+
+
+def test_extracted_fixed_buck_on_the_wrong_rail_blocks(tmp_path):
+    """FB is a fixed part's output, on a rail
+    the part can't make (#774)."""
+    ws = _ws(tmp_path, [("U4", "C9", _buck_pads("+3V3"))],
+             {"C9": _fixed_buck()})
+    errs = _out_errs(_run(ws))
+    assert [(v["refs"], v["net"], v["pin"]) for v in errs] == \
+        [(["U4"], "+3V3", "U4.1")]
+    assert errs[0]["net_v"] == 3.3
+
+
+def test_extracted_fixed_buck_on_its_own_rail_passes(tmp_path):
+    ws = _ws(tmp_path, [("U4", "C9", _buck_pads("+5V"))],
+             {"C9": _fixed_buck()})
+    p = _run(ws)
+    assert _out_errs(p) == [] and _unjudged(p) == []
+
+
+def test_extracted_fixed_buck_reads_its_mpn_with_no_description(tmp_path):
+    ws = _ws(tmp_path, [("U4", "C9", _buck_pads("+12V"))],
+             {"C9": _fixed_buck("AP63203WU-7", description="")})
+    assert [v["net"] for v in _out_errs(_run(ws))] == ["+12V"]
+
+
+def test_extraction_with_no_mpn_uses_the_rows_for_a_fixed_buck(tmp_path):
+    ws = _ws(tmp_path, [("U4", "C9", _buck_pads("+3V3"))],
+             {"C9": _fixed_buck("", description="")},
+             [{"lcsc": "C9", "mpn": "AP63205WU-7", "attributes": []}])
+    assert [v["net"] for v in _out_errs(_run(ws))] == ["+3V3"]
+
+
+@pytest.mark.parametrize("mpn,over", [
+    # an adjustable part's FB sits on a divider, whatever else is said
+    ("AP63200WU-7", {"description": "buck, adjustable output"}),
+    ("AP63201WU-7", {"description": "", "output_voltage": 5.0}),
+    ("TPS54560BDDAR", {"description": "", "output_voltage": 5.0}),
+    ("LM5164DDAR", {"description": "", "output_voltage": 5.0}),
+    ("LMR33630ADDAR", {"description": "fixed 5.0V output"}),
+])
+@pytest.mark.parametrize("fb", ["+3V3", "FB_DIV"])
+def test_adjustable_parts_fb_stays_out(tmp_path, mpn, over, fb):
+    ws = _ws(tmp_path, [("U4", "C9", _buck_pads(fb))],
+             {"C9": _fixed_buck(mpn, **over)})
+    p = _run(ws)
+    assert _out_errs(p) == [] and _unjudged(p) == []
+
+
+def test_fixed_buck_fb_on_a_net_with_no_stated_rail_is_not_judged(tmp_path):
+    ws = _ws(tmp_path, [("U4", "C9", _buck_pads("FB_SENSE"))],
+             {"C9": _fixed_buck()})
+    assert _out_errs(_run(ws)) == []
+
+
+def test_fixed_buck_number_on_a_non_regulator_ref_is_not_judged(tmp_path):
+    ws = _ws(tmp_path, [("Q4", "C9", _buck_pads("+3V3"))],
+             {"C9": _fixed_buck(description="")})
+    assert _out_errs(_run(ws)) == []
+
+
+def test_a_fixed_bucks_fb_does_not_name_its_rail(tmp_path):
+    """FB counts as an output only for judging: an unnamed net's volts still
+    don't come from the part's MPN."""
+    ws = _ws(tmp_path, [("U4", "C9", _buck_pads("VSENSE"))],
+             {"C9": _fixed_buck()})
+    assert "VSENSE" not in _run(ws)["net_volts"]
 
 
 def _unjudged(p):

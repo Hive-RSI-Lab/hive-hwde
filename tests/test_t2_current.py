@@ -11,6 +11,7 @@ Derived from LEARNINGS.md:
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -1174,3 +1175,340 @@ def test_declared_load_does_not_hide_the_real_path(tmp_path_factory):
     vs, _ = check_current.check_net(
         bg, dict(STAR, loads={"U2": 3.0, "U3": 1.0, "U4": 1.0}))
     assert len(_kinds(vs, "insufficient_transition_vias")) == 1
+
+
+# ---- source inference: branches of an undeclared rail (#699) ----------------
+# The star again, fed from a connector: three branch vias, one undeclared load
+# each. Each via carries its own load, not the 3 A rail, and nothing says how
+# much that is: unjudged, in the facts, not a failure at the budget.
+
+def _part(ref: str, x: float, y: float, layer: str = "F.Cu",
+          fns: tuple = ("",), net: str = "PWR") -> str:
+    pads = ""
+    for i, fn in enumerate(fns, start=1):
+        pf = f'(pinfunction "{fn}")' if fn else ""
+        pads += (f'    (pad "{i}" smd rect (at {(i - 1) * 0.6} 0) (size 0.5 1) '
+                 f'(layers "{layer}") (net "{net}") {pf})\n')
+    return (f'  (footprint "t:{ref[0]}" (at {x} {y})\n    (layer "{layer}")\n'
+            f'    (property "Reference" "{ref}" (at 0 0 0))\n{pads}  )\n')
+
+
+def _fed_star() -> str:
+    return _star().replace('"t:U" (at 2 5)', '"t:J" (at 2 5)', 1) \
+        .replace('"Reference" "U1"', '"Reference" "J1"', 1)
+
+
+def _unjudged(facts, kind):
+    return [u for u in facts.get("unjudged", []) if u["kind"] == kind]
+
+
+def test_branch_via_past_the_source_is_unjudged(tmp_path_factory):
+    bg = _board(tmp_path_factory, "fedstar", _fed_star())
+    vs, facts = check_current.check_net(bg, STAR)
+    assert _kinds(vs, "insufficient_transition_vias") == []
+    taps = _unjudged(facts, "insufficient_transition_vias")
+    assert [u["refs"] for u in taps] == [["U2"], ["U3"], ["U4"]]
+    assert [u["pos"] for u in taps] == [[10.0, 2.0], [10.0, 5.0], [10.0, 8.0]]
+
+
+def test_entry_source_names_the_source(tmp_path_factory):
+    """U1 is a one-pad part power_parts would not pick: the entry names it,
+    as a ref or a list of refs."""
+    bg = _board(tmp_path_factory, "namedstar", _star())
+    for source in ("U1", ["U1"]):
+        vs, facts = check_current.check_net(bg, dict(STAR, source=source))
+        assert _kinds(vs, "insufficient_transition_vias") == []
+        assert len(_unjudged(facts, "insufficient_transition_vias")) == 3
+
+
+def test_entry_source_not_on_the_net_is_an_error(tmp_path_factory):
+    bg = _board(tmp_path_factory, "badsource", _star())
+    with pytest.raises(check_current.CheckError, match="U99"):
+        check_current.check_net(bg, dict(STAR, source="U99"))
+
+
+def test_no_source_found_keeps_the_budget(tmp_path_factory):
+    """Nothing on the star looks like a source: every via stays judged."""
+    bg = _board(tmp_path_factory, "nosource", _star())
+    vs, facts = check_current.check_net(bg, STAR)
+    assert len(_kinds(vs, "insufficient_transition_vias")) == 3
+    assert "unjudged" not in facts
+
+
+def test_source_past_the_via_keeps_its_budget(tmp_path_factory):
+    """The source hangs off U2's via: that via carries the whole rail to U1,
+    U3 and U4, while U3's and U4's stay branches."""
+    bg = _board(tmp_path_factory, "srcbranch", _star())
+    vs, facts = check_current.check_net(bg, dict(STAR, source="U2"))
+    [v] = _kinds(vs, "insufficient_transition_vias")
+    assert v["pos"] == [10.0, 2.0] and v["required"] == 3
+    assert [u["refs"] for u in _unjudged(
+        facts, "insufficient_transition_vias")] == [["U3"], ["U4"]]
+
+
+def test_undersized_trunk_via_between_source_and_loads_warns(tmp_path_factory):
+    """Known answer, the escape to guard: one via between the connector and
+    every load on the rail is the trunk, not a branch."""
+    body = ('  (segment (start 2 5) (end 10 5) (width 2.0) (layer "F.Cu") (net "PWR"))\n'
+            '  (via (at 10 5) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net "PWR"))\n'
+            '  (segment (start 10 5) (end 16 5) (width 2.0) (layer "B.Cu") (net "PWR"))\n'
+            '  (segment (start 16 2) (end 16 8) (width 2.0) (layer "B.Cu") (net "PWR"))\n'
+            + _part("J1", 2, 5))
+    for ref, y in (("U2", 2), ("U3", 5), ("U4", 8)):
+        body += _part(ref, 16, y, "B.Cu")
+    bg = _board(tmp_path_factory, "trunkvia", body)
+    vs, facts = check_current.check_net(bg, STAR)
+    [v] = _kinds(vs, "insufficient_transition_vias")
+    assert v["required"] == 3 and v["severity"] == "error"
+    assert "unjudged" not in facts
+
+
+def test_undersized_trunk_track_between_source_and_loads_warns(tmp_path_factory):
+    """Same for a thin track, plane-fed or not: it stays at the budget."""
+    body = ('  (segment (start 2 5) (end 10 5) (width 0.2) (layer "F.Cu") (net "PWR"))\n'
+            '  (segment (start 10 2) (end 10 8) (width 2.0) (layer "F.Cu") (net "PWR"))\n'
+            + _part("J1", 2, 5))
+    for ref, y in (("U2", 2), ("U3", 5), ("U4", 8)):
+        body += _part(ref, 10, y)
+    bg = _board(tmp_path_factory, "trunktrack", body)
+    vs, facts = check_current.check_net(bg, STAR)
+    [v] = _kinds(vs, "undersized_track")
+    assert v["current_a"] == 3.0 and v["bridge"] is True
+    assert "unjudged" not in facts
+
+
+def test_two_loads_each_side_of_a_split_stay_judged(tmp_path_factory):
+    """A branch holding half the rail's loads may carry most of its current:
+    only a minority side leaves the budget."""
+    body = ('  (segment (start 2 5) (end 10 5) (width 2.0) (layer "F.Cu") (net "PWR"))\n'
+            '  (via (at 10 5) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net "PWR"))\n'
+            '  (segment (start 10 5) (end 14 5) (width 2.0) (layer "B.Cu") (net "PWR"))\n'
+            + _part("J1", 2, 5) + _part("U2", 6, 5) + _part("U3", 14, 5, "B.Cu"))
+    bg = _board(tmp_path_factory, "halfsplit", body)
+    vs, facts = check_current.check_net(bg, STAR)
+    assert len(_kinds(vs, "insufficient_transition_vias")) == 1
+    assert "unjudged" not in facts
+
+
+def test_branch_to_a_multipad_ic_stays_judged(tmp_path_factory):
+    """power_parts picks an IC with two pads on the rail as a power part (an
+    amplifier's PVDD, a regulator's VIN): not a tap to wave through."""
+    amp = _part("U2", 14.5, 2, "B.Cu", ("", ""))
+    body = re.sub(r'\(footprint "t:U" \(at 14\.5 2\).*?\(net "PWR"\) \)\)\n',
+                  lambda _m: amp, _fed_star(), count=1, flags=re.S)
+    assert '"2" smd' in body
+    bg = _board(tmp_path_factory, "amptap", body)
+    vs, facts = check_current.check_net(bg, STAR)
+    [v] = _kinds(vs, "insufficient_transition_vias")
+    assert v["pos"] == [10.0, 2.0]
+    assert [u["refs"] for u in _unjudged(
+        facts, "insufficient_transition_vias")] == [["U3"], ["U4"]]
+
+
+def _tap_with_second_pad(net: str, fn: str = "") -> str:
+    """The first tap, U2, with one more pad on another net."""
+    pf = f'(pinfunction "{fn}")' if fn else ""
+    return _fed_star().replace(
+        '"Reference" "U2" (at 0 0 0))\n',
+        '"Reference" "U2" (at 0 0 0))\n'
+        f'    (pad "2" smd rect (at 0 2) (size 1 1) (layers "B.Cu") '
+        f'(net "{net}") {pf})\n', 1)
+
+
+def test_rectifier_past_a_via_stays_judged(tmp_path_factory):
+    """Lumina's V48_RTN: power_parts picks U1, but bridge D2 is what feeds the
+    rail, so the via to it carries the rail and is no branch. Nor is a
+    transformer winding."""
+    for ref in ("D2", "T2"):
+        body = _fed_star().replace('"Reference" "U2"', f'"Reference" "{ref}"', 1)
+        bg = _board(tmp_path_factory, f"tap{ref}", body)
+        vs, facts = check_current.check_net(bg, STAR)
+        [v] = _kinds(vs, "insufficient_transition_vias")
+        assert v["pos"] == [10.0, 2.0]
+        assert [u["refs"] for u in _unjudged(
+            facts, "insufficient_transition_vias")] == [["U3"], ["U4"]]
+
+
+def test_switcher_input_past_a_via_stays_judged(tmp_path_factory):
+    """A buck's VIN is the rail's power going on (lumina V48_RAW to U20, whose
+    pins have no names): known by its switch pin, or by an inductor on its
+    switch net."""
+    choke = _part("L9", 16, 8, "B.Cu", net="/rails/BUCK5_LX")
+    for name, body in (("lxnet", _tap_with_second_pad("/rails/BUCK5_LX") + choke),
+                       ("swpin", _tap_with_second_pad("N1", "SW"))):
+        bg = _board(tmp_path_factory, name, body)
+        vs, facts = check_current.check_net(bg, STAR)
+        [v] = _kinds(vs, "insufficient_transition_vias")
+        assert v["pos"] == [10.0, 2.0], name
+        assert [u["refs"] for u in _unjudged(
+            facts, "insufficient_transition_vias")] == [["U3"], ["U4"]], name
+
+
+def test_bulk_cap_past_a_via_stays_judged(tmp_path_factory):
+    """Lumina's +12V vias to the buck's output caps (22 uF, pinned as a true
+    defect in carrier_verify): with no plane, a bulk cap's via carries the
+    rail's ripple and inrush. A decoupling cap's tap is a branch, and so is a
+    bulk cap's on a plane-fed rail (core's +3V3), where the plane feeds it."""
+    def tap(value):
+        return _fed_star().replace(
+            '"Reference" "U2" (at 0 0 0))',
+            f'"Reference" "C2" (at 0 0 0))\n    (property "Value" "{value}" '
+            '(at 0 0 0))', 1)
+
+    def positions(vs):
+        return [v["pos"] for v in _kinds(vs, "insufficient_transition_vias")]
+    for value in ("22uF 25V X5R 1206", "10uF"):
+        bg = _board(tmp_path_factory, "bulktap", tap(value))
+        vs, _ = check_current.check_net(bg, STAR)
+        assert [10.0, 2.0] in positions(vs), value
+    bg = _board(tmp_path_factory, "decoup", tap("100nF 50V X7R"))
+    vs, facts = check_current.check_net(bg, STAR)
+    assert [10.0, 2.0] not in positions(vs)
+    assert ["C2"] in [u["refs"] for u in facts["unjudged"]]
+    bg = _board(tmp_path_factory, "bulkplane", tap("22uF") + """  (zone (net "PWR") (layer "B.Cu")
+    (filled_polygon (layer "B.Cu")
+      (pts (xy 40 40) (xy 50 40) (xy 50 50) (xy 40 50))))
+""")
+    vs, facts = check_current.check_net(bg, dict(STAR, plane_fed=True))
+    assert [10.0, 2.0] not in positions(vs)
+    assert ["C2"] in [u["refs"] for u in facts["unjudged"]]
+
+
+def test_button_net_named_sw_is_still_a_branch(tmp_path_factory):
+    """Core's GPIO expander U17 has a pad on /ENC_SW: an encoder's switch, no
+    inductor, no switcher. The tap stays a branch."""
+    bg = _board(tmp_path_factory, "buttontap", _tap_with_second_pad("/ENC_SW"))
+    vs, facts = check_current.check_net(bg, STAR)
+    assert _kinds(vs, "insufficient_transition_vias") == []
+    assert len(_unjudged(facts, "insufficient_transition_vias")) == 3
+
+
+def test_regulator_output_pin_counts_as_a_source(tmp_path_factory):
+    """An LDO's single VOUT pad past the via, a two-VDD MCU on the near side:
+    the via is the trunk even though only the MCU is in power_parts."""
+    body = ('  (segment (start 2 5) (end 10 5) (width 2.0) (layer "F.Cu") (net "PWR"))\n'
+            '  (via (at 10 5) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net "PWR"))\n'
+            '  (segment (start 10 5) (end 14 5) (width 2.0) (layer "B.Cu") (net "PWR"))\n'
+            + _part("U1", 2, 5, "F.Cu", ("VDD", "VDD"))
+            + _part("U2", 4, 3, "F.Cu") + _part("U3", 6, 3, "F.Cu")
+            + _part("U4", 8, 3, "F.Cu")
+            + _part("U5", 14, 5, "B.Cu", ("VOUT",)))
+    body = body.replace('(at 4 3)', '(at 4 5)').replace('(at 6 3)', '(at 6 5)') \
+        .replace('(at 8 3)', '(at 8 5)')
+    bg = _board(tmp_path_factory, "ldopin", body)
+    vs, facts = check_current.check_net(bg, STAR)
+    assert len(_kinds(vs, "insufficient_transition_vias")) == 1
+    assert "unjudged" not in facts
+
+
+def test_declared_load_past_the_via_keeps_its_verdict(tmp_path_factory):
+    """A declared load is known: the via fails at it, it is not unjudged."""
+    bg = _board(tmp_path_factory, "fedload", _fed_star())
+    vs, facts = check_current.check_net(
+        bg, dict(STAR, loads={"U2": 3.0}))
+    [v] = _kinds(vs, "insufficient_transition_vias")
+    assert v["pos"] == [10.0, 2.0] and v["required"] == 3
+    assert [u["refs"] for u in _unjudged(
+        facts, "insufficient_transition_vias")] == [["U3"], ["U4"]]
+
+
+def test_override_region_stays_judged(tmp_path_factory):
+    """A declared per-region current is a declaration: it is enforced."""
+    bg = _board(tmp_path_factory, "fedov", _fed_star())
+    vs, facts = check_current.check_net(bg, dict(STAR, overrides=[
+        {"near": [10, 2], "radius_mm": 0.5, "current_a": 2.0}]))
+    [v] = _kinds(vs, "insufficient_transition_vias")
+    assert v["pos"] == [10.0, 2.0] and v["required"] == 2
+    assert len(_unjudged(facts, "insufficient_transition_vias")) == 2
+
+
+def test_derived_entry_is_not_inferred(tmp_path_factory):
+    """The return screen has no source: it stays as it was."""
+    bg = _board(tmp_path_factory, "fedret", _fed_star())
+    vs, facts = check_current.check_net(bg, dict(STAR, derived=True))
+    assert len(_kinds(vs, "insufficient_transition_vias")) == 3
+    assert "unjudged" not in facts
+
+
+def test_via_with_a_parallel_path_stays_judged(tmp_path_factory):
+    """A second via joins the same two strips: cutting one leaves the other,
+    so neither is a branch's only way in."""
+    body = _fed_star() + (
+        '  (via (at 13 2) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net "PWR"))\n'
+        '  (segment (start 10 2) (end 13 2) (width 2.0) (layer "F.Cu") (net "PWR"))\n')
+    bg = _board(tmp_path_factory, "fedloop", body)
+    vs, facts = check_current.check_net(bg, STAR)
+    assert {tuple(v["pos"]) for v in _kinds(vs, "insufficient_transition_vias")} \
+        == {(10.0, 2.0), (13.0, 2.0)}
+    assert [u["refs"] for u in _unjudged(
+        facts, "insufficient_transition_vias")] == [["U3"], ["U4"]]
+
+
+def test_thin_branch_track_off_a_plane_is_unjudged(tmp_path_factory):
+    """The hifi core shape: a plane, a via up, a thin track to one part."""
+    body = _TAP + _tap_part("U2", "MCU", "t:QFN")
+    for ref, x in (("J1", 15), ("U3", 12), ("U4", 18)):
+        body += _part(ref, x, 2, "B.Cu")
+    bg = _board(tmp_path_factory, "plane", body)
+    vs, facts = check_current.check_net(bg, ENTRY_PWR)
+    assert _kinds(vs, "undersized_track") == []
+    [tap] = _unjudged(facts, "undersized_track")
+    assert tap["refs"] == ["U2"] and tap["layer"] == "F.Cu"
+    assert _kinds(vs, "insufficient_transition_vias") == []
+    assert [u["refs"] for u in _unjudged(
+        facts, "insufficient_transition_vias")] == [["U2"]]
+
+
+def test_neck_to_a_branch_is_unjudged(tmp_path_factory):
+    """A pour neck with only an undeclared minority load past it."""
+    body = (_LEAF + _leaf_part("U5", "MCU", "t:QFN")
+            + _part("J1", 2, 2) + _part("U2", 2, 8) + _part("U3", 5, 2))
+    bg = _board(tmp_path_factory, "fedneck", body)
+    vs, facts = check_current.check_net(bg, ENTRY_PWR)
+    assert _kinds(vs, "pour_neckdown") == []
+    assert _unjudged(facts, "pour_neckdown")
+    assert all(u["refs"] == ["U5"] for u in _unjudged(facts, "pour_neckdown"))
+
+
+def test_neck_to_every_load_keeps_the_budget(tmp_path_factory):
+    """The neck between the source and the only load is the trunk."""
+    body = (_LEAF + _leaf_part("U5", "MCU", "t:QFN") + _part("J1", 2, 2))
+    bg = _board(tmp_path_factory, "trunkneck", body)
+    vs, facts = check_current.check_net(bg, ENTRY_PWR)
+    assert _kinds(vs, "pour_neckdown")
+    assert "unjudged" not in facts
+
+
+def test_thin_loop_past_a_branch_via_is_unjudged(tmp_path_factory):
+    """Two thin tracks in parallel past a tap via: not bridges, but they carry
+    no more than the branch does."""
+    body = _TAP + _tap_part("U2", "MCU", "t:QFN") + (
+        '  (segment (start 3 5) (end 5 7) (width 0.2) (layer "F.Cu") (net "PWR"))\n'
+        '  (segment (start 5 7) (end 7.6 5) (width 0.2) (layer "F.Cu") (net "PWR"))\n')
+    for ref, x in (("J1", 15), ("U3", 12), ("U4", 18)):
+        body += _part(ref, x, 2, "B.Cu")
+    bg = _board(tmp_path_factory, "planeloop", body)
+    vs, facts = check_current.check_net(bg, ENTRY_PWR)
+    assert _kinds(vs, "undersized_track") == []
+    assert [u["refs"] for u in _unjudged(facts, "undersized_track")] \
+        == [["U2"]] * 3
+
+
+def test_core_branch_taps_are_unjudged():
+    """Known answer: of core's 26 single-via findings at the 3V3 rail's 0.8 A,
+    21 are branches and leave the warnings with their refs. Five stay: the
+    two at J3, one each at U8 and U13, one inside the plane."""
+    kicad = REPO / "pinned" / "core" / "kicad"
+    cons = json.loads((kicad / "constraints.json").read_text(encoding="utf-8"))
+    entry = next(e for e in cons["power"] if e["net"] == "+3V3")
+    vs, facts = check_current.check_net(
+        geom.load_board(kicad / "core.kicad_pcb"), entry)
+    taps = _unjudged(facts, "insufficient_transition_vias")
+    assert len(taps) == 21 and all(u["refs"] for u in taps)
+    assert not {"J3", "U8", "U13", "L10"} & {r for u in taps for r in u["refs"]}
+    assert sorted(tuple(v["pos"]) for v in _kinds(
+        vs, "insufficient_transition_vias")) == [
+        (50.137, 214.107), (51.837, 212.307), (60.437, 215.107),
+        (85.092, 189.466), (135.708, 153.672)]
+    assert {u["kind"] for u in facts["unjudged"]} == {
+        "insufficient_transition_vias", "undersized_track"}

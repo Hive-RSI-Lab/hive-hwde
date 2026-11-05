@@ -1,9 +1,8 @@
 name: ci
 # The project's test (.hive/project.json: bin/hwde test) on GitHub's standard hosted runner
 # of this public repo, so the Hive runs no test of hwde's on its own machine (forge_tests).
-# The runner gets what the Hive's tools folder gives a check there: KiCad 10.0.6's AppImage,
-# freerouting 2.2.4 and uv, at the same layout under $HIVE_TOOLS, so bin/hwde finds them
-# as it does /hive/tools. Bump a version here with the tools folder's.
+# The runner gets what the Hive's tools folder gives a check there: see
+# .github/actions/hwde-tools, which holds the versions.
 on:
   push:
     branches: [main]
@@ -15,11 +14,6 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 permissions:
   contents: read
-env:
-  KICAD_VERSION: 10.0.6
-  KICAD_SHA256: c05fa6760be64aaf55ff476911ce81272b4efb6241f4d7e2b9fdcdc7efbf5808
-  FREEROUTING_VERSION: 2.2.4
-  FREEROUTING_SHA256: f5ed374182900ccc78e473518bbb9f6b869f4a07159495f663a76f52bb10523b
 jobs:
   # The Hive reads this job as "test (ubuntu-latest)" (forge_tests): keep it unnamed.
   test:
@@ -35,49 +29,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@v6
-        with:
-          version: "0.13.6"
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "25"
-      # KiCad's SWIG paths need an X display; bin/hwde runs them under xvfb-run.
-      - name: xvfb
-        run: sudo apt-get install -y xvfb poppler-utils
-      - name: cache KiCad's AppImage
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.temp }}/kicad.tar
-          key: kicad-${{ env.KICAD_VERSION }}-${{ env.KICAD_SHA256 }}
-      - name: KiCad and freerouting, as the Hive's tools folder has them
-        shell: bash
-        run: |
-          mkdir -p "$HIVE_TOOLS/freerouting"
-          tar="$RUNNER_TEMP/kicad.tar"
-          [ -f "$tar" ] || curl -fsSL --retry 3 -o "$tar" "https://downloads.kicad.org/kicad/linux/explore/stable/download/kicad-$KICAD_VERSION-x86_64.AppImage.tar"
-          echo "$KICAD_SHA256  $tar" | sha256sum -c -
-          cd "$RUNNER_TEMP"
-          tar xf "$tar"
-          chmod +x "kicad-$KICAD_VERSION-x86_64.AppImage"
-          "./kicad-$KICAD_VERSION-x86_64.AppImage" --appimage-extract >/dev/null
-          rm "kicad-$KICAD_VERSION-x86_64.AppImage"
-          mv "$(readlink -f squashfs-root)" "$HIVE_TOOLS/kicad-$KICAD_VERSION"
-          rm -f squashfs-root
-          jar="$HIVE_TOOLS/freerouting/freerouting-$FREEROUTING_VERSION.jar"
-          curl -fsSL --retry 3 -o "$jar" "https://github.com/freerouting/freerouting/releases/download/v$FREEROUTING_VERSION/freerouting-$FREEROUTING_VERSION.jar"
-          echo "$FREEROUTING_SHA256  $jar" | sha256sum -c -
-      # Fails the job unless bin/hwde found KiCad and freerouting, so the suite can't go
-      # green by skipping what needs them.
-      - name: bin/hwde finds its tools
-        shell: bash
-        run: |
-          bin/hwde env | tee "$RUNNER_TEMP/env.sh"
-          grep -q "^export HWDE_KICAD_CLI=" "$RUNNER_TEMP/env.sh"
-          grep -q "^export HWDE_FREEROUTING_JAR=" "$RUNNER_TEMP/env.sh"
-          grep -q "^export KICAD_SYMBOL_DIR=" "$RUNNER_TEMP/env.sh"
-          . "$RUNNER_TEMP/env.sh"
-          "$HWDE_KICAD_CLI" version | grep -x "$KICAD_VERSION"
+      - uses: ./.github/actions/hwde-tools
       - name: the suite (bin/hwde test)
         shell: bash
         run: bin/hwde test 2>&1 | tee "$RUNNER_TEMP/suite.log"

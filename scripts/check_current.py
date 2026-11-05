@@ -171,6 +171,23 @@ per switching node at P2) replaces it, at the board's real current and dT. A par
 with a pin named SW/LX/PH that no row matches is listed in the report's
 "unrated_switch_nodes" (facts only).
 
+Unjudged branches (#699; the power-integrity tools attribute current per sink
+from a source/sink definition): the rail's source is the entry's "source", else
+check_power_path.power_parts (L, Q, F, J, shunt, an IC with two pads on the
+rail) plus any part with an output pin on it (VOUT, SW, LX). A via cluster, a
+bridge track or a pour neck failing at the budget is cut. When exactly one side
+holds a source, the other sides hold no declared load and at least one
+unbounded part, and they hold under half of the rail's loads (parts neither
+capacitors nor pure sources nor bounded), they are a branch: what it draws is
+not known, so it is not judged at the budget but listed in facts "unjudged"
+with its refs, along with any thin track on a branch past such a via. Everything
+else keeps the budget: a cut with no source or a
+source on two sides (a two-pad IC may be the heavy load), a parallel path, the
+side with half or more of the loads (a trunk), a declared load, a far side
+holding a diode, a transformer or a switcher's input (known by its switch pin,
+or a switch net with an inductor), or on a rail with no plane a bulk capacitor
+(10 uF and up: its via carries ripple and inrush), an override region, and a derived or inferred entry with no "source".
+
 CLI: --pcb board.kicad_pcb --constraints constraints.json [--out report.json]
      exit 0/1/2 per SPEC section 6.
 
@@ -183,6 +200,8 @@ constraints.json["power"] entries:
      "loads": {"U402": 0.12},    # optional per-part current (A): a branch
                                  # via/track/neck is judged at the loads past
                                  # it (leaf branches); 0 for a sense tap
+     "source": "J1",             # optional ref or list of refs feeding the
+                                 # rail; else inferred (unjudged branches)
      "overrides": [              # optional per-region current attribution
         {"near": [x, y], "radius_mm": 2.0, "current_a": 0.1}]}
 Segments whose midpoint (via clusters: centroid; pour necks: reported neck
@@ -195,6 +214,7 @@ import argparse
 import math
 import re
 import sys
+from functools import partial
 from pathlib import Path
 
 import yaml
@@ -205,6 +225,7 @@ from shapely.ops import unary_union
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
 import checklib  # noqa: E402
+import engcalc  # noqa: E402
 import geom  # noqa: E402
 import netconn  # noqa: E402
 from checklib import CheckError, violation  # noqa: E402
@@ -220,6 +241,7 @@ VIA_CLUSTER_MM = 2.0           # vias within this distance share current
 WIDTH_TOL_MM = 1e-3
 RETURN_SYNTH_MIN_A = 3.0       # derive return-net coverage at/above this rail
 PLANE_HINT_SINGLE_VIA_FRAC = 0.8  # plane_fed_candidate hint threshold
+BULK_CAP_F = 9.9e-6            # 10 uF and up: bulk, not decoupling (unjudged)
 PAD_EXIT_MAX_MM = 1.0          # longest accepted pad-exit neck (docstring)
 TOUCH_MM = 1e-3                # end-to-end / end-on-pad contact tolerance
 THT_JOIN_MM = 1.0              # plated pad joins fill this far out (relief)
@@ -628,6 +650,8 @@ def _sense_only(bg: geom.BoardGeom, ref: str) -> bool:
 
 
 _NET_UNDER_TEST: list = [None]
+SOURCE_PIN = re.compile(r"V?OUT\d*|VO|SW\d*|LX\d*")  # a regulator's output
+SWITCH_NET = re.compile(r"(?:^|[/_])(?:SW|LX)\d*$")    # /pwr/SW, BUCK5_LX
 
 
 def load_bound(bg: geom.BoardGeom, ref: str) -> float | None:
@@ -715,11 +739,88 @@ def _copper_graph(bg: geom.BoardGeom, net: str, walls: dict | None = None,
     return nodes, find, hits
 
 
-def neck_leaf_bound(bg: geom.BoardGeom, net: str, layer: str, fill,
-                    required: float, others: dict | None):
-    """(amps, refs) a pour neck failing at `required` can carry at most,
-    when every side of the split but one reaches only bounded loads;
-    else None (module docstring, leaf branches)."""
+def bulk_caps(bg: geom.BoardGeom, net: str) -> set:
+    """Refs of the rail's bulk capacitors."""
+    def bulk(ref):
+        farads = engcalc.parse_value((bg.footprints.get(ref) or {}).get("value"))
+        return farads is not None and farads >= BULK_CAP_F
+    return {p.ref for p in bg.pads_of(net=net)
+            if re.fullmatch(r"C\d+", p.ref) and bulk(p.ref)}
+
+
+def entry_sources(bg: geom.BoardGeom, net: str, entry: dict, plane_fed: bool):
+    """(every ref that may source the rail, the ones that are only a source,
+    the bulk capacitors that keep the budget), or None when the entry names
+    none and none can be inferred (module docstring, unjudged branches). An IC
+    in power_parts is both: two pads on the rail may be a regulator's output or
+    an amplifier's PVDD."""
+    stiff = set() if plane_fed else bulk_caps(bg, net)
+    named = entry.get("source")
+    if named:
+        refs = {str(named)} if isinstance(named, str) else {str(r) for r in named}
+        on_net = {p.ref for p in bg.pads_of(net=net)}
+        missing = sorted(refs - on_net)
+        if missing:
+            raise CheckError(f"power entry {net!r}: source {missing} has no "
+                             f"pad on the net")
+        return refs, refs, stiff
+    if entry.get("derived") or entry.get("inferred"):
+        return None
+    import check_power_path              # it imports this module
+    parts = set(check_power_path.power_parts(bg, net))
+    pure = {r for r in parts if check_power_path._kind(r)
+            not in check_power_path.IC_KINDS}
+    pure |= {p.ref for p in bg.pads_of(net=net)
+             if SOURCE_PIN.fullmatch(pin_name(p) or "")}
+    parts |= pure
+    return (parts, pure, stiff) if parts else None
+
+
+def feeds_or_converts(bg: geom.BoardGeom, ref: str, net: str) -> bool:
+    """A part the rail's current may run through whatever power_parts picked:
+    a diode or transformer (lumina's bridge D2 feeds V48_RTN), or a switcher's
+    input, known by its switch pin or an inductor on a switch net (its U20 on
+    V48_RAW)."""
+    if re.fullmatch(r"[DT]\d+", ref):
+        return True
+    import check_power_path              # it imports this module
+    if check_power_path._kind(ref) not in check_power_path.IC_KINDS:
+        return False
+    return any(p.net != net and (
+        pin_name(p) in SWITCH_PIN_NAMES
+        or SWITCH_NET.search(p.net or "") and any(      # /ENC_SW is a button
+            check_power_path._kind(o.ref) == "L" for o in bg.pads_of(net=p.net)))
+        for p in bg.pads_of(ref=ref))
+
+
+def branch_refs(bg: geom.BoardGeom, net: str, sides: list, sources):
+    """Sorted refs past a cut whose `sides` (sets of refs) make its far side
+    a branch of unknown load, else None (module docstring, unjudged
+    branches)."""
+    every, pure, stiff = sources
+    holding = [s for s in sides if s & every]
+    if len(holding) != 1:
+        return None
+    far = set().union(*(s for s in sides if s is not holding[0]), set())
+    if not far or far & set(_DECLARED) or _loads(bg, far) is not None:
+        return None
+    if far & stiff or any(feeds_or_converts(bg, ref, net) for ref in far):
+        return None
+
+    def is_load(ref):
+        return ref not in pure and not re.fullmatch(r"C\d+", ref) and (
+            ref in _DECLARED or load_bound(bg, ref) is None)
+    rail = {p.ref for p in bg.pads_of(net=net)}
+    if 2 * sum(map(is_load, far)) >= sum(map(is_load, rail)):
+        return None                      # half the rail's loads: a trunk
+    return sorted(far)
+
+
+def _neck_sides(bg: geom.BoardGeom, net: str, layer: str, fill,
+                required: float, others: dict | None):
+    """[(refs, clean())] per side of a pour split at `required`; clean() says
+    whether the side meets the others at one joint only, and is slow on a big
+    side, so call it last. None when nothing splits."""
     vias, components = _neck_graph(bg, net, layer, fill, others)
     nodes, find, n_own = components(required / 2.0)
     roots = [{find(i) for i in range(n_own)
@@ -754,18 +855,7 @@ def neck_leaf_bound(bg: geom.BoardGeom, net: str, layer: str, fill,
         walls[k] = {l: unary_union(ps) for l, ps in by_layer.items()}
     links = bg.vias_of(net) + [p for p in bg.pads_of(net)
                                if p.drill is not None and len(p.layers) > 1]
-    mains, leaf_refs = 0, set()
-    for k, g in groups.items():
-        rest = [walls[h] for h in groups if h != k]
-        wall = {l: unary_union([w[l] for w in rest if l in w])
-                for l in {l for w in rest for l in w}}
-        cn, cfind, chits = _copper_graph(bg, net, wall)
-        start = {cfind(i) for v in g["vias"] for i in chits(v)}
-        reached = {i for i in range(len(cn)) if cfind(i) in start}
-        refs = {p.ref for p in bg.pads_of(net) if set(chits(p)) & reached}
-        if _loads(bg, refs) is None:
-            mains += 1
-            continue
+    def clean(k, reached, cn, chits):
         # where this side meets the others: same-layer edges and stitches
         touched, contacts = set(), []
         for h in groups:
@@ -785,20 +875,59 @@ def neck_leaf_bound(bg: geom.BoardGeom, net: str, layer: str, fill,
                     contacts.append(it.poly)
         joints = unary_union(contacts).buffer(required / 2.0) \
             if contacts else None
-        if len(touched) > 1 or (joints is not None and
-                                len(getattr(joints, "geoms", [joints])) > 1):
+        return not (len(touched) > 1 or (
+            joints is not None and
+            len(getattr(joints, "geoms", [joints])) > 1))
+    sides = []
+    for k, g in groups.items():
+        rest = [walls[h] for h in groups if h != k]
+        wall = {l: unary_union([w[l] for w in rest if l in w])
+                for l in {l for w in rest for l in w}}
+        cn, cfind, chits = _copper_graph(bg, net, wall)
+        start = {cfind(i) for v in g["vias"] for i in chits(v)}
+        reached = {i for i in range(len(cn)) if cfind(i) in start}
+        refs = {p.ref for p in bg.pads_of(net) if set(chits(p)) & reached}
+        sides.append((refs, partial(clean, k, reached, cn, chits)))
+    return sides
+
+
+def neck_leaf_bound(bg: geom.BoardGeom, net: str, layer: str, fill,
+                    required: float, others: dict | None):
+    """(amps, refs) a pour neck failing at `required` can carry at most,
+    when every side of the split but one reaches only bounded loads;
+    else None (module docstring, leaf branches)."""
+    sides = _neck_sides(bg, net, layer, fill, required, others)
+    if sides is None:
+        return None
+    mains, leaf_refs = 0, set()
+    for refs, clean in sides:
+        if _loads(bg, refs) is None:
+            mains += 1
+        elif not clean():
             return None                  # may bypass the neck: no bound
-        leaf_refs |= refs
+        else:
+            leaf_refs |= refs
     if mains > 1:
         return None
     return _loads(bg, leaf_refs), sorted(leaf_refs)
 
 
-def cluster_leaf_bound(bg: geom.BoardGeom, net: str, group: list):
-    """(amps, refs) a via cluster or stitch bundle (vias and plated pads)
-    can carry at most, when cutting its barrels leaves one side with
-    unbounded loads and every other side reaching it through exactly one
-    of them; else None (module docstring, leaf branches)."""
+def neck_branch(bg: geom.BoardGeom, net: str, layer: str, fill,
+                required: float, others: dict | None, sources):
+    """branch_refs for a pour neck: None if a far side may bypass the neck."""
+    sides = _neck_sides(bg, net, layer, fill, required, others)
+    if sides is None:
+        return None
+    far = branch_refs(bg, net, [refs for refs, _ in sides], sources)
+    if far is None or any(not clean() for refs, clean in sides
+                          if not refs & sources[0]):
+        return None
+    return far
+
+
+def _cut_cluster(bg: geom.BoardGeom, net: str, group: list):
+    """Cut a cluster's barrels: (ends, touched sides, side -> refs, nodes,
+    root(i))."""
     nodes, find, hits = _copper_graph(bg, net,
                                       skip=frozenset(id(b) for b in group))
     ends = [{find(i) for i in hits(v)} for v in group]
@@ -807,43 +936,70 @@ def cluster_leaf_bound(bg: geom.BoardGeom, net: str, group: list):
     for p in bg.pads_of(net):
         for c in {find(i) for i in hits(p)} & touched:
             refs_of[c].add(p.ref)
+    return ends, touched, refs_of, nodes, find
+
+
+def _single_entry(ends: list, main, rest: set) -> bool:
+    """Whether the sides in `rest` reach `main` through one barrel each, and
+    no barrel sits inside `main`."""
+    if any(e <= {main} for e in ends):
+        return False
+    parent = {c: c for c in rest}
+
+    def cfind(c):
+        while parent[c] != c:
+            c = parent[c]
+        return c
+    for e in ends:
+        side = sorted(e & rest)
+        for c in side[1:]:
+            parent[cfind(c)] = cfind(side[0])
+    into_main: dict = {}
+    for e in ends:
+        if main in e:
+            for side in {cfind(c) for c in e & rest}:
+                into_main[side] = into_main.get(side, 0) + 1
+    return not any(n > 1 for n in into_main.values())
+
+
+def cluster_branch(bg: geom.BoardGeom, net: str, group: list, sources):
+    """(branch_refs, [(layer, polygon)] of its copper) for a via cluster or
+    stitch bundle: None when a barrel sits inside the source's side or a far
+    side has a way around."""
+    ends, touched, refs_of, nodes, find = _cut_cluster(bg, net, group)
+    near = [c for c in touched if refs_of[c] & sources[0]]
+    if len(near) != 1 or not _single_entry(ends, near[0], touched - set(near)):
+        return None
+    far = branch_refs(bg, net, list(refs_of.values()), sources)
+    if far is None:
+        return None
+    return far, [n for i, n in enumerate(nodes)
+                 if find(i) in touched and find(i) != near[0]]
+
+
+def cluster_leaf_bound(bg: geom.BoardGeom, net: str, group: list):
+    """(amps, refs) a via cluster or stitch bundle (vias and plated pads)
+    can carry at most, when cutting its barrels leaves one side with
+    unbounded loads and every other side reaching it through exactly one
+    of them; else None (module docstring, leaf branches)."""
+    ends, touched, refs_of, _nodes, _find = _cut_cluster(bg, net, group)
     # a side reaching no pad is passive: it only joins the cluster's vias
     main = [c for c in touched
             if refs_of[c] and _loads(bg, refs_of[c]) is None]
     if len(main) > 1:
         return None
     rest = touched - set(main)
-    if main:
-        m = main[0]
-        if any(e <= {m} for e in ends):
-            return None                  # a via inside the main side
-        parent = {c: c for c in rest}
-
-        def cfind(c):
-            while parent[c] != c:
-                c = parent[c]
-            return c
-        for e in ends:
-            side = sorted(e & rest)
-            for c in side[1:]:
-                parent[cfind(c)] = cfind(side[0])
-        into_main: dict = {}
-        for e in ends:
-            if m in e:
-                for side in {cfind(c) for c in e & rest}:
-                    into_main[side] = into_main.get(side, 0) + 1
-        if any(n > 1 for n in into_main.values()):
-            return None                  # a side bridged twice: may bypass
+    if main and not _single_entry(ends, main[0], rest):
+        return None                      # inside the main side, or a bypass
     refs = set().union(*(refs_of[c] for c in rest))
     if not refs:
         return None                      # no known load past the cluster
     return _loads(bg, refs), sorted(refs)
 
 
-def track_leaf_bound(bg: geom.BoardGeom, net: str, track):
-    """(amps, refs) a track can carry at most, when taking it out leaves the
-    net's raw copper in two parts, one at each end, and one of them reaches
-    only bounded loads; else None (module docstring, leaf branches)."""
+def track_sides(bg: geom.BoardGeom, net: str, track):
+    """[refs, refs] when taking a track out leaves the net's raw copper in two
+    parts, one at each end; else None."""
     nodes, find, hits = _copper_graph(bg, net, drop=track)
     on = [i for i, (l, _p) in enumerate(nodes) if l == track.layer]
     coords = track.shape.coords
@@ -855,10 +1011,16 @@ def track_leaf_bound(bg: geom.BoardGeom, net: str, track):
     if (len(sides) != 2 or any(len(e) != 1 for e in ends)
             or ends[0] == ends[1]):
         return None                      # a parallel path, or a mid-track tap
+    return [{p.ref for p in bg.pads_of(net)
+             if any(find(i) == side for i in hits(p))} for side in sides]
+
+
+def track_leaf_bound(bg: geom.BoardGeom, sides: list | None):
+    """(amps, refs) a track with these track_sides can carry at most, when one
+    side reaches only bounded loads; else None (module docstring, leaf
+    branches)."""
     best = None
-    for side in sides:
-        refs = {p.ref for p in bg.pads_of(net)
-                if any(find(i) == side for i in hits(p))}
+    for refs in sides or ():
         amps = _loads(bg, refs)
         if amps is not None and (best is None or amps < best[0]):
             best = (amps, sorted(refs))
@@ -901,6 +1063,8 @@ def check_net(bg: geom.BoardGeom, entry: dict):
         plane_fed = False       # rest of the check runs at full semantics
 
     leaf_branches: list[dict] = []           # dropped: bounded leaf loads
+    unjudged: list[dict] = []                # dropped: unknown branch loads
+    sources = entry_sources(bg, net, entry, plane_fed)
 
     # ---- track segments
     min_seen: dict[str, float] = {}
@@ -965,8 +1129,19 @@ def check_net(bg: geom.BoardGeom, entry: dict):
             pour_taps = [v["pos"] for v, _ in shunted]
         # a bridge whose far side feeds only bounded loads: their sum
         for v, t in list(undersized):
-            leaf = track_leaf_bound(bg, net, t) if v["bridge"] else None
+            sides = track_sides(bg, net, t) if v["bridge"] else None
+            leaf = track_leaf_bound(bg, sides)
             if leaf is None or leaf[0] >= v["current_a"]:
+                mid = t.shape.interpolate(0.5, normalized=True).coords[0]
+                far = branch_refs(bg, net, sides, sources) if (
+                    sides and sources
+                    and region_current(entry, mid) is None) else None
+                if far:
+                    violations = [x for x in violations if x is not v]
+                    undersized.remove((v, t))
+                    unjudged.append({"kind": "undersized_track",
+                                     "layer": t.layer, "pos": v["pos"],
+                                     "refs": far})
                 continue
             amps, refs = leaf
             req = required_width_mm(amps, dt_c, cu[t.layer])
@@ -1000,6 +1175,7 @@ def check_net(bg: geom.BoardGeom, entry: dict):
             if fill.is_empty:
                 continue
             amps = budget
+            ov = None
             req = required_width_mm(budget, dt_c, cu[layer])
             neck = pour_neck(bg, net, layer, fill, req,
                              others_at(budget, layer))
@@ -1029,6 +1205,15 @@ def check_net(bg: geom.BoardGeom, entry: dict):
                         "current_a": checklib.rnd(amps), "loads": refs})
             else:
                 leaf = None
+                far = neck_branch(bg, net, layer, fill, req,
+                                  others_at(amps, layer), sources) if (
+                    neck is not None and ov is None and sources) else None
+                if far:
+                    unjudged.append({
+                        "kind": "pour_neckdown", "layer": layer,
+                        "pos": [checklib.rnd(neck[1][0]),
+                                checklib.rnd(neck[1][1])], "refs": far})
+                    neck = None
             if neck is not None:
                 width, pos = neck
                 msg = (f"{net} pour on {layer} necks to ~{width:.2f} mm "
@@ -1092,6 +1277,25 @@ def check_net(bg: geom.BoardGeom, entry: dict):
                     "current_a": checklib.rnd(amps), "loads": leaf[1]})
         else:
             leaf = None
+            branch = cluster_branch(bg, net, group, sources) if (
+                len(group) < need and ov is None and sources) else None
+            if branch:
+                far, copper = branch
+                unjudged.append({
+                    "kind": "insufficient_transition_vias",
+                    "pos": [checklib.rnd(cx), checklib.rnd(cy)], "refs": far})
+                # a thin track on that branch carries no more than it does
+                for v, t in list(undersized):
+                    mid = t.shape.interpolate(0.5, normalized=True).coords[0]
+                    if region_current(entry, mid) is None and any(
+                            l == t.layer and part.intersects(Point(mid))
+                            for l, part in copper):
+                        violations = [x for x in violations if x is not v]
+                        undersized.remove((v, t))
+                        unjudged.append({"kind": "undersized_track",
+                                         "layer": t.layer, "pos": v["pos"],
+                                         "refs": far})
+                continue
         if len(group) < need:
             advisory = plane_fed and ov is None
             if bundle:
@@ -1134,6 +1338,8 @@ def check_net(bg: geom.BoardGeom, entry: dict):
         facts["pour_taps"] = pour_taps
     if leaf_branches:
         facts["leaf_branches"] = leaf_branches
+    if unjudged:
+        facts["unjudged"] = unjudged
     if exits:
         seen = []
         for info in exits.values():
