@@ -654,8 +654,11 @@ def _check_quote_board(man: dict, q: dict) -> None:
 
 
 # How far a quoted number may sit from the board's: order_quote rounds the
-# outline to 2 dp and prints thickness and copper to a few digits.
-_FAB_TOLERANCE = {"width": 0.011, "length": 0.011, "thickness": 0.005,
+# outline to 2 dp and prints copper to a few digits. Thickness is not here: a
+# quote states the laminate's nominal (1.52 for RO4350B 60 mil, 1.6 for FR-4,
+# +-10 %), so it is held to check_stackup's fabmaterial.THICKNESS_TOLERANCE,
+# relative to the larger of the two (#753).
+_FAB_TOLERANCE = {"width": 0.011, "length": 0.011,
                   "copperWeight": fabmaterial.COPPER_OZ_TOLERANCE}
 # board_init writes this on every board and KiCad keeps it, so on the board it
 # is no decision: the finish chosen in quote.json stands. Anything else is one.
@@ -763,8 +766,12 @@ def _quote_fab_mismatches(man: dict, q: dict) -> list[str]:
             if field == "copperWeight" else (want, source)
         differ = field == "copperWeight" and abs(back - float(want)) > tol
         try:
-            same = abs(float(got) - float(want)) <= tol \
-                and abs(float(got) - float(back)) <= tol
+            if field == "thickness":
+                same = fabmaterial.thickness_gap(
+                    float(got), float(want)) <= fabmaterial.THICKNESS_TOLERANCE
+            else:
+                same = abs(float(got) - float(want)) <= tol \
+                    and abs(float(got) - float(back)) <= tol
         except (TypeError, ValueError):
             same = False
         if field == "copperWeight" and not same and not governed \

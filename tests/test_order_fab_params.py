@@ -368,3 +368,37 @@ def test_stackup_facts_read_a_kicad_save(tmp_path):
     assert fabmaterial.board_stackup_facts(pcb) == {
         "copper_finish": None, "mask_color": None, "outer_copper_mm": None,
         "back_copper_mm": None}
+
+
+# ---- the quote's thickness is held to check_stackup's tolerance (#753)
+
+
+def test_a_corrected_rf_kit_stack_against_the_nominal_quote_is_accepted(
+        tmp_path, monkeypatch, api_env, capsys):
+    """Stack 1.6 (sum 1.61), nominal quote 1.52: 5 %, inside 10 %."""
+    pcb, fab, qj = tj.make_fab(tmp_path)
+    _stack_board(pcb, core=1.53)
+    code, fake = _create(pcb, fab, qj, _api_file(fab, thickness=1.52),
+                         monkeypatch)
+    assert code == 0 and fake.names() == ["create_order"]
+
+
+def test_a_quote_far_from_the_stack_is_refused(
+        tmp_path, monkeypatch, api_env, capsys):
+    pcb, fab, qj = tj.make_fab(tmp_path)
+    _stack_board(pcb, core=1.53)
+    code, fake = _create(pcb, fab, qj, _api_file(fab, thickness=1.0),
+                         monkeypatch)
+    assert code == 2 and "create_order" not in fake.names()
+    assert "thickness: quote 1.0" in _order(fab)["api"]["note"]
+
+
+@pytest.mark.parametrize("quote,ok", [(1.45, True), (1.43, False)])
+def test_the_thickness_edge_is_the_checks_ten_percent(
+        quote, ok, tmp_path, monkeypatch, api_env, capsys):
+    """Board 1.6: 10 % of the larger is 0.16 mm, so 1.45 stands, 1.43 doesn't."""
+    pcb, fab, qj = tj.make_fab(tmp_path)
+    _stack_board(pcb, core=1.53, general=1.6)
+    code, fake = _create(pcb, fab, qj, _api_file(fab, thickness=quote),
+                         monkeypatch)
+    assert (code == 0) == ok

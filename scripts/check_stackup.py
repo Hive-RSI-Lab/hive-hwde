@@ -18,6 +18,12 @@ Findings:
                           same tolerance. Left out when either side is out of
                           range: that finding is the one to fix.
 
+  mask_thickness_range / silk_thickness_range
+                          error: a solder mask or silkscreen layer thicker
+                          than 0.05 mm or thinner than 0.005 mm (#753). The
+                          48 boards' mask is 0.01; a layer with no thickness
+                          is left out.
+
   thickness_stack_vs_general
                           error: the stackup's layers sum to a thickness
                           over 10 % off the board's (general (thickness)).
@@ -52,6 +58,10 @@ SCRIPT = "check_stackup"
 SOURCE = SCRIPT
 COPPER_MIN_MM = 0.009
 COPPER_MAX_MM = 0.21
+# Mask and silk ink: JLC's mask is 0.01 to 0.04 mm, silk about 0.01 to 0.03; KiCad
+# writes 0.01 for mask. A plausibility bound like copper's, not a capability.
+COATING_MIN_MM = 0.005
+COATING_MAX_MM = 0.05
 
 
 def _oz(mm: float) -> float:
@@ -84,6 +94,22 @@ def judge(layers: list[tuple[str, float | None]]) -> tuple[list[dict], list[str]
             f"both outer layers, so no quote can state this board", SOURCE,
             kind="outer_copper_differs", front_mm=front, back_mm=back))
     return vios, left
+
+
+def judge_coatings(layers: list[tuple[str, str, float | None]]) -> list[dict]:
+    """Mask and silk layers outside COATING_MIN_MM..COATING_MAX_MM. A layer
+    giving no thickness (KiCad leaves silk without) is nothing to judge."""
+    vios = []
+    for name, kind, mm in layers:
+        if mm is None or COATING_MIN_MM <= mm <= COATING_MAX_MM:
+            continue
+        vios.append(checklib.violation(
+            SCRIPT, "error", None, name, None, [],
+            f"{name} {kind} is {mm:g} mm thick, outside {COATING_MIN_MM:g} to "
+            f"{COATING_MAX_MM:g} mm. The stack sum, and every check that reads "
+            f"it, counts this as built; correct the stackup", SOURCE,
+            kind=f"{kind}_thickness_range", thickness_mm=mm))
+    return vios
 
 
 def judge_thickness(stack: float | None, general: float | None,
@@ -135,6 +161,7 @@ def run(argv=None) -> tuple[dict, str | None]:
         raise checklib.CheckError(f"board not found: {args.pcb}")
     layers = fabmaterial.board_copper_layers(args.pcb)
     vios, left = judge(layers)
+    vios += judge_coatings(fabmaterial.board_coating_layers(args.pcb))
     if layers:
         vios += judge_thickness(fabmaterial.board_stack_sum_mm(args.pcb),
                                 fabmaterial.board_general_mm(args.pcb),
