@@ -316,6 +316,26 @@ def test_power_path_vias_and_overlapping_pours(tmp_path):
     assert r["amps"] == 0.0                         # C1's pad is off the pours
 
 
+
+def test_power_path_stacked_vias_are_one_copper(tmp_path):
+    # J1 -> F.Cu -> microvia F.Cu-In1.Cu stacked on a buried In1.Cu-B.Cu
+    # via (same centre) -> B.Cu -> via -> Q1; the stack is the only way down
+    body = """  (segment (start 2 5) (end 10 5) (width 3) (layer "F.Cu") (net "VBUS"))
+  (via blind (at 10 5) (size 0.25) (drill 0.1) (layers "F.Cu" "In1.Cu") (net "VBUS"))
+  (via buried (at 10 5) (size 0.45) (drill 0.2) (layers "In1.Cu" "B.Cu") (net "VBUS"))
+  (segment (start 10 5) (end 20 5) (width 3) (layer "B.Cu") (net "VBUS"))
+  (via (at 20 5) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net "VBUS"))
+  (segment (start 20 5) (end 28 5) (width 3) (layer "F.Cu") (net "VBUS"))
+"""
+    pcb = _board(tmp_path, body)
+    pcb.write_text(pcb.read_text(encoding="utf-8").replace(
+        '(0 "F.Cu" signal) (2 "B.Cu" signal)',
+        '(0 "F.Cu" signal) (4 "In1.Cu" signal) (2 "B.Cu" signal)'),
+        encoding="utf-8")
+    bg = geom.BoardGeom.from_file(pcb)
+    r = check_power_path.path_flow(bg, "VBUS", "J1", "Q1", 10, 2.0, 0.02)
+    assert r["amps"] == pytest.approx(2.0)          # joined, not open
+
 # ------------------------------------------------------------ sim_inrush
 
 def write_net(path: Path, board) -> Path:
