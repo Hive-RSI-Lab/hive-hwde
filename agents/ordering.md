@@ -78,6 +78,9 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
   colour fall back to the quote.json row, and a board `copper_finish` of
   HASL counts as undecided because the board template writes it. An
   ungoverned `--copper-oz` stays a waiver for the weight it recorded.
+  copperWeight is one value for both outer layers, so F.Cu and B.Cu must both
+  match it, and outer layers that differ refuse naming both (verify's
+  `check_stackup` fails them first).
 - The laminate comes from the BOARD's stackup block (lib/fabmaterial.py).
   A RO4350B board is JLC's high-frequency product: order_quote prices it on
   that line (ENIG/green only), order_submit sends plateType 5 and refuses

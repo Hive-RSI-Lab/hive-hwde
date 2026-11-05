@@ -146,6 +146,9 @@ DATASHEET_SCHEMA: dict = {
         "lcsc": {"type": "string"},
         "package": {"type": "string"},
         "description": {"type": "string"},
+        # a fixed regulator's output, in volts: check_ratings judges its rail
+        # against it. Leave it out for an adjustable part.
+        "output_voltage": {"type": "number", "exclusiveMinimum": 0},
         "pinout": {
             "type": "array",
             "items": {

@@ -147,23 +147,47 @@ def board_dielectrics(pcb: Path) -> list[dict]:
     return out
 
 
+MM_PER_OZ = 0.035
+# Outer copper this close is one weight, to an order and to check_stackup.
+COPPER_OZ_TOLERANCE = 0.05
+
+
+def board_copper_layers(pcb: Path) -> list[tuple[str, float | None]]:
+    """(name, thickness mm) of each copper layer in a .kicad_pcb's (stackup)
+    block, in stack order, as written: a zero stays zero (geom swaps it for a
+    default) and a layer that gives no thickness is None. [] with no block."""
+    block = _stackup_block(
+        Path(pcb).read_text(encoding="utf-8", errors="replace"))
+    out = []
+    for chunk in re.split(r'(?=\(layer\s+")', block)[1:]:
+        if not re.search(r'\(type\s+"copper"\)', chunk):
+            continue
+        name = re.match(r'\(layer\s+"([^"]*)"', chunk).group(1)
+        th = re.search(r"\(thickness\s+([-+\d.eE]+)", chunk)
+        out.append((name, float(th.group(1)) if th else None))
+    return out
+
+
 def board_stackup_facts(pcb: Path) -> dict:
     """What a .kicad_pcb's (stackup) block says for an order: copper_finish,
-    mask_color (F.Mask) and outer_copper_mm (F.Cu). None for what it doesn't
-    say; all None with no block. Whitespace-agnostic, as board_dielectrics."""
+    mask_color (F.Mask), outer_copper_mm (F.Cu) and back_copper_mm (B.Cu). None
+    for what it doesn't say; all None with no block. Whitespace-agnostic, as
+    board_dielectrics."""
     block = _stackup_block(
         Path(pcb).read_text(encoding="utf-8", errors="replace"))
     finish = re.search(r'\(copper_finish\s+"([^"]*)"\)', block)
     facts = {"copper_finish": finish.group(1) if finish else None,
-             "mask_color": None, "outer_copper_mm": None}
+             "mask_color": None, "outer_copper_mm": None,
+             "back_copper_mm": None}
     for chunk in re.split(r'(?=\(layer\s+")', block)[1:]:
         name = re.match(r'\(layer\s+"([^"]*)"', chunk).group(1)
         if name == "F.Mask":
             color = re.search(r'\(color\s+"([^"]*)"\)', chunk)
             facts["mask_color"] = color.group(1) if color else None
-        elif name == "F.Cu":
+        elif name in ("F.Cu", "B.Cu"):
             th = re.search(r"\(thickness\s+([\d.]+)", chunk)
-            facts["outer_copper_mm"] = float(th.group(1)) if th else None
+            key = "outer_copper_mm" if name == "F.Cu" else "back_copper_mm"
+            facts[key] = float(th.group(1)) if th else None
     return facts
 
 

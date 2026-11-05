@@ -15,10 +15,15 @@ its name or constraints.json, and the part is never asked.
   rail whose volts come from constraints.json, the power tree or the net name. A fixed output
   is allowed 10 % from the rail, a range or list its whole span. A rail's sign is ignored: a
   -5.0 part on -5V passes.
+- An extracted regulator's output is read from the row, then a dotted or 78xx MPN, then the
+  extraction's `output_voltage`, a "fixed 3.3V" in its description, or a known family's MPN
+  code (RT9080-33, TLV75733, XC6206P332, HT7333, ME6211C33). If none of them says, it is
+  rating_regulator_output_unjudged instead.
 
 ## Is it real?
 - Check the row: `Output Voltage` is what the listing says. An adjustable part listed by one
   example voltage reads as fixed; add its range to the row.
+- Read from an MPN code: check the code against the datasheet's ordering table.
 - Check the rail's volts: a net NAME is a guess. Put the real figure in constraints.json
   `voltages`.
 

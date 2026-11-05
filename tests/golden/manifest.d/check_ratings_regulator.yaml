@@ -31,3 +31,14 @@ mutants:
     expect:
       kind: rating_regulator_output
       ref: U2
+  ldo-wrong-output-code:
+    board: blinky2
+    script: mutations/ldo_wrong_output_code.py
+    check: check_ratings
+    defect: >-
+      SIDECAR fault (+ an LCSC property on U2): parts/C6188.json is a datasheet
+      extraction of a part whose only output voltage is the 50 in its MPN, and
+      its power_out pin is on +3V3
+    expect:
+      kind: rating_regulator_output
+      ref: U2

@@ -22,14 +22,16 @@ from test_order_ready_gate import _api_file, _create, _estimate, _order, _refuse
 api_env = tj.api_env
 
 
-def _board_with_stackup(pcb: Path, oz_mm=0.035, finish="HASL", mask="") -> None:
-    """make_fab's board with a stackup block saying copper, finish and mask."""
+def _board_with_stackup(pcb: Path, oz_mm=0.035, finish="HASL", mask="",
+                        back_mm=None) -> None:
+    """make_fab's board with a stackup block saying copper, finish and mask.
+    back_mm is B.Cu when it differs from F.Cu."""
     color = f' (color "{mask}")' if mask else ""
     block = f"""(setup (stackup
     (layer "F.Mask" (type "Top Solder Mask"){color} (thickness 0.01))
     (layer "F.Cu" (type "copper") (thickness {oz_mm}))
     (layer "dielectric 1" (type "core") (thickness 1.5) (material "FR4"))
-    (layer "B.Cu" (type "copper") (thickness {oz_mm}))
+    (layer "B.Cu" (type "copper") (thickness {back_mm or oz_mm}))
     (copper_finish "{finish}")
   ))
 """
@@ -147,6 +149,71 @@ def test_copper_comes_from_the_board_stackup_first(tmp_path, monkeypatch,
     assert "copperWeight: quote '1', board 2" in _order(fab)["api"]["note"]
 
 
+def test_outer_layers_that_differ_refuse_naming_both(tmp_path, monkeypatch,
+                                                     api_env, capsys):
+    """#728: copperWeight is one value for both outer layers, so a quote that
+    matches F.Cu still misstates a B.Cu of another weight."""
+    pcb, fab, qj = tj.make_fab(tmp_path)         # the quote says 1 oz
+    _board_with_stackup(pcb, oz_mm=0.035, back_mm=0.07)
+    code, fake = _create(pcb, fab, qj, _api_file(fab), monkeypatch)
+    assert code == 2 and "create_order" not in fake.names()
+    note = _order(fab)["api"]["note"]
+    assert "copperWeight: quote '1'" in note
+    assert "1 oz (F.Cu in its stackup)" in note
+    assert "2 oz (B.Cu in its stackup)" in note
+
+
+def test_a_quote_matching_only_b_cu_refuses_too(tmp_path, monkeypatch, api_env,
+                                                capsys):
+    pcb, fab, qj = tj.make_fab(tmp_path)         # the quote says 1 oz
+    _board_with_stackup(pcb, oz_mm=0.07, back_mm=0.035)
+    code, fake = _create(pcb, fab, qj, _api_file(fab), monkeypatch)
+    assert code == 2 and "create_order" not in fake.names()
+    note = _order(fab)["api"]["note"]
+    assert "2 oz (F.Cu in its stackup)" in note
+    assert "1 oz (B.Cu in its stackup)" in note
+
+
+def test_the_rf_kit_ro4350b_b_cu_refuses(tmp_path, monkeypatch, api_env, capsys):
+    """The board that found this: a 1 oz F.Cu and a 1.524 mm B.Cu, quoted at 1 oz."""
+    pcb, fab, qj = tj.make_fab(tmp_path)
+    _board_with_stackup(pcb, oz_mm=0.035, back_mm=1.524)
+    code, fake = _create(pcb, fab, qj, _api_file(fab), monkeypatch)
+    assert code == 2 and "create_order" not in fake.names()
+    assert "43.54 oz (B.Cu in its stackup)" in _order(fab)["api"]["note"]
+
+
+def test_a_b_cu_within_the_tolerance_passes():
+    man = {"spec_snapshot": {}, "board_fab": {
+        "copperWeight": [1.0, "F.Cu in its stackup"],
+        "copperWeightBack": [1.03, "B.Cu in its stackup"]}}
+    q = {"calculate_request": {"pcbParam": {"copperWeight": "1"}}}
+    assert not [m for m in order_submit._quote_fab_mismatches(man, q)
+                if m.startswith("copperWeight")]
+
+
+def test_a_recorded_copper_oz_waives_both_layers_ungoverned_only():
+    man = {"spec_snapshot": {}, "board_fab": {
+        "copperWeight": [1.0, "F.Cu in its stackup"],
+        "copperWeightBack": [2.0, "B.Cu in its stackup"]}}
+    q = {"calculate_request": {"pcbParam": {"copperWeight": "2"}},
+         "copper_weight_oz": 2.0, "copper_weight_source": "human override"}
+    assert not [m for m in order_submit._quote_fab_mismatches(man, q)
+                if m.startswith("copperWeight")]
+    man["release"] = {"governed": True}
+    assert [m for m in order_submit._quote_fab_mismatches(man, q)
+            if m.startswith("copperWeight")]
+
+
+def test_a_manifest_from_before_728_does_not_newly_refuse():
+    """A package frozen without the B.Cu entry is judged on F.Cu, as it was."""
+    man = {"spec_snapshot": {}, "board_fab": {
+        "copperWeight": [1.0, "F.Cu in its stackup"]}}
+    q = {"calculate_request": {"pcbParam": {"copperWeight": "1"}}}
+    assert not [m for m in order_submit._quote_fab_mismatches(man, q)
+                if m.startswith("copperWeight")]
+
+
 def test_copper_falls_back_to_stackup_md(tmp_path, monkeypatch, api_env, capsys):
     pcb, fab, qj = tj.make_fab(tmp_path, stackup="JLC2313_1.6_2oz")
     code, fake = _create(pcb, fab, qj, _api_file(fab), monkeypatch)
@@ -244,7 +311,9 @@ def test_stackup_facts_read_a_kicad_save(tmp_path):
     pcb = tmp_path / "b.kicad_pcb"
     _board_with_stackup(pcb, oz_mm=0.07, finish="ENIG", mask="Blue")
     assert fabmaterial.board_stackup_facts(pcb) == {
-        "copper_finish": "ENIG", "mask_color": "Blue", "outer_copper_mm": 0.07}
+        "copper_finish": "ENIG", "mask_color": "Blue", "outer_copper_mm": 0.07,
+        "back_copper_mm": 0.07}
     pcb.write_text("(kicad_pcb)", encoding="utf-8")
     assert fabmaterial.board_stackup_facts(pcb) == {
-        "copper_finish": None, "mask_color": None, "outer_copper_mm": None}
+        "copper_finish": None, "mask_color": None, "outer_copper_mm": None,
+        "back_copper_mm": None}
