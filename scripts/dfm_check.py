@@ -18,7 +18,8 @@ Checks (all thresholds from reference/jlc_capabilities.yaml, keyed
            `net` is its one net or both as "A | B", `refs` the parts at it,
            `on` what each end lies on, `same_net` a sliver of one net.
            A pair of islands gets one clearance finding per distinct pinch,
-           at most PINCH_CAP_PER_PAIR, the tightest first
+           and a piece of copper one edge finding per place it nears the edge,
+           at most PINCH_CAP_PER_PAIR each, the tightest first
   drill    min_hole_diameter, min_hole_to_hole, min_hole_to_edge,
            annular ring (hole vs the pad copper around it). Castellated
            holes (pad_prop_castellated) are exempt from hole/copper-to-edge
@@ -310,10 +311,11 @@ def _gap(a, b) -> tuple[tuple[float, float], list]:
              [checklib.rnd(q.x), checklib.rnd(q.y)]])
 
 
-# One pair of copper pieces can pinch in several places (#732). Minima closer
-# than the radius are one place to fix. The gap has to open by the rise between
-# two minima, so an arc's facets don't read as a row of them. The cap holds one
-# jagged pair from flooding the report; the first finding says how many it left.
+# One pair of copper pieces can pinch in several places (#732), and one piece
+# can near the board edge in several (#737). Minima closer than the radius are
+# one place to fix. The gap has to open by the rise between two minima, so an
+# arc's facets don't read as a row of them. The cap holds one jagged pair or
+# piece from flooding the report; the first finding says how many it left.
 PINCH_RADIUS_MM = 1.0
 PINCH_RISE_MM = 0.01
 PINCH_CAP_PER_PAIR = 5
@@ -343,13 +345,13 @@ def _minima(a, part, t: float) -> list:
     return [m for p in parts for m in _minima(a, p, tighter)]
 
 
-def _pinches(a, b, lo: float) -> tuple[list, int]:
-    """Each distinct place a and b come closer than lo, and how many more.
+def _pinches(a, b, lo: float) -> list:
+    """Each distinct place a and b come closer than lo.
 
-    Returns ([(d, pos, ends), ...], not_shown), tightest first. The first is
-    always _gap(a, b), so a finding a pair already had keeps its position and a
-    waiver pinned to it still matches. A parallel run ties along its whole
-    length and is one pinch, because the gap never opens within it.
+    Returns [(d, pos, ends), ...], tightest first, with ends as [on a, on b].
+    The first is always _gap(a, b), so a finding a pair already had keeps its
+    position and a waiver pinned to it still matches. A parallel run ties along
+    its whole length and is one pinch, because the gap never opens within it.
     """
     pos, ends = _gap(a, b)
     first = Point(ends[1])
@@ -361,14 +363,22 @@ def _pinches(a, b, lo: float) -> tuple[list, int]:
                 near.append(part)
             elif _below(part.distance(a), lo):
                 others.append(part)
-    kept = [(a.distance(b), pos, ends)]
+    closest = a.distance(b)
+    kept = [(closest, pos, ends)]
     for part in sorted(others, key=a.distance):
         # measured between the pieces of copper, not their reported points: a
         # flat tie reports a corner, which can sit its whole width further off
         if all(part.distance(n) > PINCH_RADIUS_MM for n in near):
             near.append(part)
-            kept.append((part.distance(a), *_gap(a, part)))
-    return kept[:PINCH_CAP_PER_PAIR], max(0, len(kept) - PINCH_CAP_PER_PAIR)
+            # never under the first by rounding: it has to stay the worst
+            kept.append((max(part.distance(a), closest), *_gap(a, part)))
+    return kept
+
+
+def _capped(pinches: list) -> tuple[list, int]:
+    """The first PINCH_CAP_PER_PAIR of a list of pinches, and how many it left."""
+    return (pinches[:PINCH_CAP_PER_PAIR],
+            max(0, len(pinches) - PINCH_CAP_PER_PAIR))
 
 
 def check_clearance(fab, rules, vios: list) -> None:
@@ -387,7 +397,7 @@ def check_clearance(fab, rules, vios: list) -> None:
             d = comps[i].distance(comps[j])
             if d <= EPS_TOUCH or not _below(d, lo):
                 continue
-            pinches, not_shown = _pinches(comps[i], comps[j], lo)
+            pinches, not_shown = _capped(_pinches(comps[i], comps[j], lo))
             for n, (gap, pos, ends) in enumerate(pinches):
                 more = {}
                 msg = (f"copper clearance {gap:.4f} mm below JLC minimum "
@@ -508,9 +518,11 @@ def _floors(rules, key: str) -> tuple[float | None, float | None]:
 
 
 def _band_warning(vios: list, band: list, kind: str, what: str,
-                  hard: float, lo: float, unit: str = "distance_mm") -> None:
+                  hard: float, lo: float, unit: str = "distance_mm",
+                  not_shown: int = 0) -> None:
     """One warning for every value in [hard, lo): fab-buildable, under the
-    floor a design is held to. band: [(value, pos, layer)]."""
+    floor a design is held to. band: [(value, pos, layer)]. not_shown: places
+    the caller's cap left out of band."""
     if not band:
         return
     band.sort(key=lambda b: b[0])
@@ -518,10 +530,14 @@ def _band_warning(vios: list, band: list, kind: str, what: str,
     msg = (f"{len(band)} {what} between JLC's minimum {hard} mm and the "
            f"{lo} mm a design is held to (worst {worst:.4f} mm): JLC builds "
            "it; keep it only on purpose")
+    more = {}
+    if not_shown:
+        msg += f", and {not_shown} more not listed"
+        more["pinches_not_shown"] = not_shown
     v = checklib.violation(CHECK, "warning", pos, layer, None, [], msg,
                            SOURCE, kind=kind + "_preferred", count=len(band),
                            min_mm=hard, preferred_mm=lo,
-                           **{unit: checklib.rnd(worst)})
+                           **{unit: checklib.rnd(worst)}, **more)
     v["items"] = [{"msg": f"{what} {b[0]:.4f} mm",
                    "pos": [checklib.rnd(b[1][0]), checklib.rnd(b[1][1])]}
                   for b in band]
@@ -540,6 +556,7 @@ def check_copper_to_edge(fab, rules, vios: list, cast=()) -> None:
     if lo is None or outline.is_empty:
         return
     band: list = []
+    band_left = 0
     edge = outline.boundary    # a panel's routed slots are edges too
     disks = [Point(cx, cy).buffer(d / 2.0) for cx, cy, d in cast]
     for name in fab.copper_layer_names():
@@ -549,20 +566,31 @@ def check_copper_to_edge(fab, rules, vios: list, cast=()) -> None:
         for comp in lg.components():
             if any(comp.intersects(k) for k in disks):
                 continue  # castellated pad: on the edge by design
-            d = comp.distance(edge)
+            if not _below(comp.distance(edge), lo):
+                continue
             # Copper crossing the outline reads as distance 0; both cases are
             # the same defect (copper too close to / past the board edge).
-            if _below(d, hard):
-                pos, ends = _gap(comp, edge)
+            pinches = _pinches(comp, edge, lo)
+            errors, not_shown = _capped(
+                [p for p in pinches if _below(p[0], hard)])
+            for n, (gap, pos, ends) in enumerate(errors):
+                more = {}
+                msg = (f"copper {gap:.4f} mm from board edge, JLC minimum "
+                       f"{hard} mm on {name}")
+                if n == 0 and not_shown:
+                    msg += f", and {not_shown} more on this piece not listed"
+                    more["pinches_not_shown"] = not_shown
                 vios.append(checklib.violation(
-                    CHECK, "error", pos, name, None, [],
-                    f"copper {d:.4f} mm from board edge, JLC minimum {hard} "
-                    f"mm on {name}", SOURCE, kind="dfm_copper_to_edge",
-                    distance_mm=checklib.rnd(d), min_mm=hard, ends=ends))
-            elif _below(d, lo):
-                band.append((d, _gap(comp, edge)[0], name))
+                    CHECK, "error", pos, name, None, [], msg, SOURCE,
+                    kind="dfm_copper_to_edge", distance_mm=checklib.rnd(gap),
+                    min_mm=hard, ends=ends, **more))
+            places, left = _capped(
+                [p for p in pinches if not _below(p[0], hard)])
+            band += [(gap, pos, name) for gap, pos, _ in places]
+            band_left += left
     _band_warning(vios, band, "dfm_copper_to_edge",
-                  "copper features to the routed edge", hard, lo)
+                  "copper features to the routed edge", hard, lo,
+                  not_shown=band_left)
 
 
 # ---------------------------------------------- whose copper a gap is between
