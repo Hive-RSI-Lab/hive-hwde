@@ -254,6 +254,10 @@ def test_without_a_board_the_finding_is_what_it_was(tmp_path):
     assert v["msg"].endswith("on F.Cu")
 
 
+SIGNED = {"check": "dfm", "kind": "dfm_clearance", "reason": "r",
+          "approved": "test 2026-11-05"}
+
+
 class TestWaivers:
     """`net` is matched exactly, so naming the net is a change for waivers."""
 
@@ -265,24 +269,19 @@ class TestWaivers:
     def test_a_waiver_with_no_net_stops_matching(self, tmp_path):
         v = self._finding(tmp_path)
         # it matched while the finding had no net
-        assert gate.waiver_matches(
-            {"check": "dfm", "kind": "dfm_clearance", "pos": v["pos"]},
-            {**v, "net": None})
-        assert not gate.waiver_matches(
-            {"check": "dfm", "kind": "dfm_clearance", "pos": v["pos"]}, v)
-        assert not gate.waiver_matches(
-            {"check": "dfm", "kind": "dfm_clearance"}, v)
+        assert gate.waiver_matches({**SIGNED, "pos": v["pos"]},
+                                   {**v, "net": None})
+        assert not gate.waiver_matches({**SIGNED, "pos": v["pos"]}, v)
+        assert not gate.waiver_matches(SIGNED, v)
 
     def test_a_pos_pinned_waiver_matches_once_it_names_the_net(self, tmp_path):
         v = self._finding(tmp_path)
-        assert gate.waiver_matches(
-            {"check": "dfm", "kind": "dfm_clearance", "net": "GND",
-             "pos": v["pos"]}, v)
+        assert gate.waiver_matches({**SIGNED, "net": "GND", "pos": v["pos"]},
+                                   v)
 
     def test_a_waiver_can_scope_by_net_and_ref_without_pos(self, tmp_path):
         v = self._finding(tmp_path)
-        scoped = {"check": "dfm", "kind": "dfm_clearance", "net": "GND",
-                  "refs": ["U1"]}
+        scoped = {**SIGNED, "net": "GND", "refs": ["U1"]}
         assert gate.waiver_matches(scoped, v)
         assert not gate.waiver_matches({**scoped, "net": "+3V3"}, v)
         assert not gate.waiver_matches({**scoped, "refs": ["U2"]}, v)

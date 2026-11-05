@@ -409,6 +409,39 @@ def test_badly_shaped_waiver_is_a_problem_not_a_crash(tmp_path, entry):
     assert any(says in p for p in v["problems"])
 
 
+@pytest.mark.parametrize("over, says", [
+    ({"reason": ""}, "lacks reason/approved"),
+    ({"approved": "PENDING"}, "placeholder"),
+    ({"check": None, "kind": None}, "needs check and/or kind"),
+    ({"pos": [1]}, "pos must be")])
+def test_refused_waiver_blocks_attest(tmp_path, over, says):
+    """#736: load_waivers no longer raises on these, so durable_problems is
+    what stops them."""
+    ws = green_ws(tmp_path)
+    att, _ = releaselib.build(ws)
+    releaselib.write_attestation(ws, att)
+    wf = ws / "reports" / "verify-waivers.json"
+    doc = json.loads(wf.read_text(encoding="utf-8"))
+    doc["waivers"][0].update(over)
+    wf.write_text(json.dumps(doc), encoding="utf-8")
+    _, problems = releaselib.build(ws)
+    assert any(says in p for p in problems)
+    v = releaselib.verify(ws)
+    assert not v["valid"]
+    assert any(says in p for p in v["problems"])
+
+
+def test_unparsable_waiver_file_blocks_attest(tmp_path):
+    ws = green_ws(tmp_path)
+    att, _ = releaselib.build(ws)
+    releaselib.write_attestation(ws, att)
+    (ws / "reports" / "verify-waivers.json").write_text("{broken",
+                                                        encoding="utf-8")
+    _, problems = releaselib.build(ws)
+    assert any("not valid JSON" in p for p in problems)
+    assert not releaselib.verify(ws)["valid"]
+
+
 def test_waiver_edit_invalidates(tmp_path):
     ws = green_ws(tmp_path)
     att, _ = releaselib.build(ws)

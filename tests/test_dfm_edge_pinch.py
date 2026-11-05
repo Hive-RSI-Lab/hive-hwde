@@ -231,6 +231,7 @@ def test_each_finding_is_named_for_itself(tmp_path):
 
 def test_a_pos_waiver_of_the_first_finding_leaves_the_second_standing():
     vios = _edge(_tabs([20, 60], lambda x: 0.05 if x == 20 else 0.1))
-    waiver = {"check": "dfm", "kind": "dfm_copper_to_edge", "pos": vios[0]["pos"]}
+    waiver = {"check": "dfm", "kind": "dfm_copper_to_edge", "pos": vios[0]["pos"],
+              "reason": "r", "approved": "test 2026-11-05"}
     assert gate.waiver_matches(waiver, vios[0])
     assert not gate.waiver_matches(waiver, vios[1])

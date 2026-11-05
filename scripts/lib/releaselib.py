@@ -47,6 +47,7 @@ from __future__ import annotations
 import datetime as _dt
 import hashlib
 import json
+import math
 import re
 import subprocess
 import sys
@@ -169,20 +170,51 @@ def _parse_expiry(value) -> _dt.datetime | None:
     return d
 
 
+def _pos_problem(pos) -> str | None:
+    """Why a waiver's `pos` is not [x, y] in mm, or None. Null is no pos scope.
+    NaN would match every position: its distance compares False to the
+    tolerance. A third value was once ignored, so it is refused too."""
+    if pos is None:
+        return None
+    good = isinstance(pos, (list, tuple)) and len(pos) == 2 and all(
+        isinstance(c, (int, float)) and not isinstance(c, bool) for c in pos)
+    if good:
+        try:
+            good = all(math.isfinite(float(c)) for c in pos)
+        except OverflowError:
+            good = False
+    return None if good else f"pos must be [x, y] in mm, got {pos!r}"
+
+
 def waiver_shape_problem(w) -> str | None:
-    """Why a waiver entry has a shape nothing can match on, or None (#731):
-    it must be an object, and `refs`, when not null, a list of refdes strings.
-    A bare `refs: "U1"` is refused rather than read as ["U1"]: a strict gate
-    already refused it, and "U1,U2" could not be read the same way. An empty
-    "" or 0 is refused too, since treating it as no refs would widen the
-    waiver to every ref on the net."""
+    """Why a waiver entry can't waive anything whatever the report says, or
+    None (#731, #736). The one check of an entry's shape: gate.evaluate grades
+    it, and gate.waiver_matches, score_checks and report_gen apply it.
+
+    It must be an object with a `reason` and a real `approved` who/when
+    (checklib.approval_problem), since waivers are human artifacts, and a
+    check and/or kind to match on, or it would cover the whole net. `refs`,
+    when not null, is a list of refdes strings: a bare `refs: "U1"` is refused
+    rather than read as ["U1"], since a strict gate already refused it and
+    "U1,U2" could not be read the same way, and an empty "" or 0 is refused
+    since treating it as no refs would widen the waiver to every ref on the
+    net. `pos` is as in _pos_problem."""
     if not isinstance(w, dict):
         return f"entry must be an object, got {w!r}"
+    if not str(w.get("reason") or "").strip() \
+            or not str(w.get("approved") or "").strip():
+        return ("lacks reason/approved - waivers are human artifacts, never "
+                "agent-invented")
+    bad = checklib.approval_problem(w.get("approved"))
+    if bad:
+        return bad
+    if not (w.get("check") or w.get("kind")):
+        return "needs check and/or kind"
     refs = w.get("refs")
     if refs is not None and not (isinstance(refs, list)
                                  and all(isinstance(r, str) for r in refs)):
         return f"refs must be a list of refdes strings, got {refs!r}"
-    return None
+    return _pos_problem(w.get("pos"))
 
 
 def waiver_validity(w: dict, report: dict, i: int | None = None) -> list[str]:

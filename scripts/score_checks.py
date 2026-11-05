@@ -67,6 +67,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE / "lib"))
 import checklib  # noqa: E402
 import env  # noqa: E402
+import releaselib  # noqa: E402
 import verify_all  # noqa: E402
 
 SCRIPT = "score_checks"
@@ -223,13 +224,14 @@ def load_waivers(ws: Path) -> list[dict]:
     if not p.exists():
         return []
     try:
-        waivers = json.loads(p.read_text(encoding="utf-8")).get("waivers") \
-            or []
-    except (OSError, json.JSONDecodeError, AttributeError):
+        waivers = json.loads(p.read_text(encoding="utf-8")).get("waivers")
+    except (OSError, ValueError, AttributeError):
         return []
-    # an unsigned waiver (approved: PENDING, TBD ...) waives nothing
-    return [w for w in waivers if isinstance(w, dict)
-            and checklib.approval_problem(w.get("approved")) is None]
+    if not isinstance(waivers, list):
+        return []
+    # an entry the gate would refuse (unsigned, no check/kind ...) waives
+    # nothing
+    return [w for w in waivers if releaselib.waiver_shape_problem(w) is None]
 
 
 # ------------------------------------------------------------ corpora

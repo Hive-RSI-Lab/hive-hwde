@@ -324,21 +324,24 @@ def test_waiver_refs_subset_matching():
 
 
 def test_waiver_without_reason_is_refused(tmp_path):
+    """load_waivers passes the entry through; evaluate refuses it by index."""
     f = tmp_path / "verify-waivers.json"
-    f.write_text(json.dumps({"waivers": [
-        {"kind": "creepage", "net": "X", "reason": "", "approved": "H4"}]}),
-        encoding="utf-8")
-    with pytest.raises(RuntimeError, match="reason"):
-        gate.load_waivers(f)
-    f.write_text(json.dumps({"waivers": [
-        {"net": "X", "reason": "r", "approved": "H4"}]}), encoding="utf-8")
-    with pytest.raises(RuntimeError, match="check"):
-        gate.load_waivers(f)
+    report = {"violations": [_creep()], "counts": {"total": 1}}
+    gdef = {"fail_severities": ["error"], "max_count": 0}
+    for entry, says in (
+            ({"kind": "creepage", "net": "X", "reason": "", "approved": "H4"},
+             "reason"),
+            ({"net": "X", "reason": "r", "approved": "H4"}, "check")):
+        f.write_text(json.dumps({"waivers": [entry]}), encoding="utf-8")
+        res = gate.evaluate("g", gdef, report, waivers=gate.load_waivers(f))
+        assert [b["index"] for b in res["waivers_invalid"]] == [0]
+        assert says in res["waivers_invalid"][0]["problems"][0]
 
 
 def test_waivers_cli_exit_codes(tmp_path):
     """--report + --waivers end to end: waived residual -> exit 0; a waiver
-    file missing `approved` -> exit 2. The report must be a VALID stamped
+    missing `approved` waives nothing -> exit 1; a file that isn't JSON ->
+    exit 2. The report must be a VALID stamped
     verify_all report since U2 (gate.py --report validation, codex C4)."""
     board = tmp_path / "x.kicad_pcb"
     board.write_text("(kicad_pcb)", encoding="utf-8")
@@ -364,7 +367,17 @@ def test_waivers_cli_exit_codes(tmp_path):
         [sys.executable, str(SCRIPTS / "gate.py"), "--gate", "verify",
          "--report", str(report), "--waivers", str(wv)],
         capture_output=True, text=True, encoding="utf-8", errors="replace")
-    assert proc2.returncode == 2
+    assert proc2.returncode == 1
+    res = json.loads(proc2.stdout)
+    assert res["waived_count"] == 0
+    assert [b["index"] for b in res["waivers_invalid"]] == [0]
+    wv.write_text("{broken", encoding="utf-8")
+    proc3 = subprocess.run(
+        [sys.executable, str(SCRIPTS / "gate.py"), "--gate", "verify",
+         "--report", str(report), "--waivers", str(wv)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace")
+    assert proc3.returncode == 2
+    assert "Traceback" not in proc3.stdout + proc3.stderr
 
 
 # ------------------------------------------------------- git-commit helper
