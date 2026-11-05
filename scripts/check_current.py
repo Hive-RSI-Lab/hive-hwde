@@ -180,6 +180,9 @@ constraints.json["power"] entries:
      "dt_c": 10,                 # optional temperature rise (default 10)
      "via_amps": 0.5,            # optional per-via ampacity (default 0.5)
      "plane_fed": true,          # optional, see plane-fed semantics above
+     "loads": {"U402": 0.12},    # optional per-part current (A): a branch
+                                 # via/track/neck is judged at the loads past
+                                 # it (leaf branches); 0 for a sense tap
      "overrides": [              # optional per-region current attribution
         {"near": [x, y], "radius_mm": 2.0, "current_a": 0.1}]}
 Segments whose midpoint (via clusters: centroid; pour necks: reported neck
@@ -609,11 +612,35 @@ def parse_ohms(value) -> float | None:
     return None
 
 
+# Declared per-ref load currents of the power entry under test (entry
+# "loads": {"U402": 0.12, "U5": 0}), set by check_net; a pad on a sense pin
+# draws nothing worth judging (SENSE_PIN, a Kelvin tap carries microamps).
+_DECLARED: dict[str, float] = {}
+SENSE_PIN = re.compile(r"(SENSE|SNS|KELVIN|^FB$|^VFB$|^CS[+-]?$|^S[+-]$|"
+                       r"^ISNS|^VSNS|[+-]SENSE|SENSE[+-])")
+SENSE_BOUND_A = 0.001
+
+
+def _sense_only(bg: geom.BoardGeom, ref: str) -> bool:
+    pads = [p for p in bg.pads_of(ref=ref) if p.net == _NET_UNDER_TEST[0]]
+    return bool(pads) and all(
+        pin_name(p) and SENSE_PIN.search(pin_name(p)) for p in pads)
+
+
+_NET_UNDER_TEST: list = [None]
+
+
 def load_bound(bg: geom.BoardGeom, ref: str) -> float | None:
-    """Most current part `ref` can pass (A), or None when unknown. Only a
-    two-pad chip resistor is bounded: sqrt(P_rated / R) from its Value and
-    the imperial size in its footprint id. Every other part may draw the
-    net's whole budget."""
+    """Most current part `ref` can pass (A), or None when unknown. A ref
+    declared in the entry's "loads" is bounded at that current; a part
+    whose pads on the net are all sense pins at SENSE_BOUND_A; a two-pad
+    chip resistor at sqrt(P_rated / R) from its Value and the imperial
+    size in its footprint id. Every other part may draw the net's whole
+    budget."""
+    if ref in _DECLARED:
+        return _DECLARED[ref]
+    if _sense_only(bg, ref):
+        return SENSE_BOUND_A
     if not re.fullmatch(r"R\d+", ref) or len(bg.pads_of(ref=ref)) != 2:
         return None
     fp = bg.footprints.get(ref) or {}
@@ -853,6 +880,10 @@ def check_net(bg: geom.BoardGeom, entry: dict):
     derived = bool(entry.get("derived", False))
     cu = bg.stackup.copper_thickness
     violations: list[dict] = []
+    _DECLARED.clear()
+    _DECLARED.update({str(r): float(a)
+                      for r, a in (entry.get("loads") or {}).items()})
+    _NET_UNDER_TEST[0] = net
 
     # ---- plane-fed rail: the declared trunk must exist
     plane_fed = bool(entry.get("plane_fed", False))
