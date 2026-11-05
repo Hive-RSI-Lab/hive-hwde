@@ -135,7 +135,7 @@ sys.path.insert(0, str(SCRIPTS / "lib"))
 
 import yaml  # noqa: E402
 from shapely.geometry import Point  # noqa: E402
-from shapely.ops import unary_union  # noqa: E402
+from shapely.ops import nearest_points, unary_union  # noqa: E402
 from shapely.strtree import STRtree  # noqa: E402
 
 import castellation  # noqa: E402
@@ -296,6 +296,15 @@ def _pairs_within(polys, limit):
             yield i, j
 
 
+def _gap(a, b) -> tuple[tuple[float, float], list]:
+    """Where two geometries come closest: the midpoint, and the point on each
+    ([on a, on b]). On a pour a centroid can be many mm from the pinch (#672)."""
+    p, q = nearest_points(a, b)
+    return (((p.x + q.x) / 2.0, (p.y + q.y) / 2.0),
+            [[checklib.rnd(p.x), checklib.rnd(p.y)],
+             [checklib.rnd(q.x), checklib.rnd(q.y)]])
+
+
 def check_clearance(fab, rules, vios: list) -> None:
     inner = rules.get("min_clearance_mm")
     if inner is None:
@@ -312,14 +321,12 @@ def check_clearance(fab, rules, vios: list) -> None:
             d = comps[i].distance(comps[j])
             if d <= EPS_TOUCH or not _below(d, lo):
                 continue
-            a, b = comps[i], comps[j]
-            p1, p2 = a.exterior.interpolate(a.exterior.project(
-                Point(b.centroid))), b.centroid
+            pos, ends = _gap(comps[i], comps[j])
             vios.append(checklib.violation(
-                CHECK, "error", (p1.x, p1.y), name, None, [],
+                CHECK, "error", pos, name, None, [],
                 f"copper clearance {d:.4f} mm below JLC minimum {lo} mm "
                 f"on {name}", SOURCE, kind="dfm_clearance",
-                clearance_mm=checklib.rnd(d), min_mm=lo))
+                clearance_mm=checklib.rnd(d), min_mm=lo, ends=ends))
 
 
 # A refill that moves a fill this much further from an item (mm) means the
@@ -472,15 +479,15 @@ def check_copper_to_edge(fab, rules, vios: list, cast=()) -> None:
             d = comp.distance(edge)
             # Copper crossing the outline reads as distance 0; both cases are
             # the same defect (copper too close to / past the board edge).
-            p = comp.centroid
             if _below(d, hard):
+                pos, ends = _gap(comp, edge)
                 vios.append(checklib.violation(
-                    CHECK, "error", (p.x, p.y), name, None, [],
+                    CHECK, "error", pos, name, None, [],
                     f"copper {d:.4f} mm from board edge, JLC minimum {hard} "
                     f"mm on {name}", SOURCE, kind="dfm_copper_to_edge",
-                    distance_mm=checklib.rnd(d), min_mm=hard))
+                    distance_mm=checklib.rnd(d), min_mm=hard, ends=ends))
             elif _below(d, lo):
-                band.append((d, (p.x, p.y), name))
+                band.append((d, _gap(comp, edge)[0], name))
     _band_warning(vios, band, "dfm_copper_to_edge",
                   "copper features to the routed edge", hard, lo)
 
