@@ -79,12 +79,15 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
    rating its filled row gives (regulator_findings; no pad names: its
    highest-voltage net, unless the part steps up).
  - rating_regulator_output (error): a regulator whose output pad sits on a
-   rail its row (or a fixed output in the MPN) says it can't make. Unextracted:
-   a pad named in the netlist. Extracted: a power_out pin named as an output,
-   against a rail the board itself states (constraints, power tree, net name);
-   its output may also come from the extraction or a known family's MPN code.
- - rating_regulator_output_unjudged (warning): an extracted regulator with an
-   output pin on the board where nothing says what it makes.
+   rail its row (or a fixed output in the MPN, or a known family's MPN code)
+   says it can't make, or on a stated rail of the wrong sign for a part its
+   family or words call positive or negative. Unextracted: a pad named in the
+   netlist. Extracted: a power_out pin named as an output, against a rail the
+   board itself states (constraints, power tree, net name); its output may
+   also come from the extraction.
+ - rating_regulator_output_unjudged (warning): a regulator where nothing says
+   what it makes. Extracted: with an output pin on the board. Unextracted:
+   with a filled row.
  - rating_over_temperature (error): the board's ambient above a part's
    operating range (parts.json "Operating Temperature", or the
    extraction's operating_temp_c), or constraints ambient_min_c below it
@@ -266,8 +269,8 @@ def reg_out_volts(mpn: str) -> float | None:
 
 # A fixed regulator's output, coded in tenths of a volt inside the MPN of a
 # family known to use the code. Not reg_out_volts: that one also names rails
-# and regulators for the whole check, while these only ever judge a part whose
-# extraction already calls a pin its output (extracted_output_findings).
+# and regulators for the whole check, while these only ever judge a part's
+# output pin (extracted_output_findings, regulator_findings).
 _REG_CODE_RES = [re.compile(p) for p in (
     r"RT9\d{3}[A-Z]?-(\d\d)",               # Richtek: RT9080-33GJ5
     r"(?:TLV|TPS)7\d\d(\d\d)(?!\d)",        # TI: TLV75733P, TPS78233
@@ -290,6 +293,44 @@ def reg_out_code(mpn: str) -> float | None:
         m = rx.match(mpn)
         if m:
             return int(m.group(1)) / 10 if m.group(1) in _REG_CODES else None
+    return None
+
+
+# Families whose sign the MPN settles. Unknown is the default: a part in
+# neither list is compared by magnitude only. Negative is asked first, since
+# TPS72325 reads as a positive TI code.
+_NEG_REG_RE = re.compile(
+    r"(?:L|LM|MC|UA|KA|NCV|CJ)?79L?M?\d\d|LM337|LM299[01]|ADP718[235]|"
+    r"LT(?:1033|1175|1964|3015|309[0134])|TPS7A3[034]|TPS723\d\d|"
+    r"MIC527[01]|MAX1735")
+_POS_REG_RE = re.compile(
+    r"(?:L|LM|MC|UA|KA|NCV|CJ)?78L?M?\d\d|[A-Z]{0,4}1117|AP2112|LP5907|"
+    r"LP2985|MIC5219")
+_POLARITY_ATTR_RE = re.compile(r"polarity|output config|topology", re.I)
+
+
+def reg_sign(mpn: str, bom: dict, desc: str = "") -> tuple[int, str] | None:
+    """(+1 or -1, what says so) for a regulator, or None when nothing does or
+    the words say both (a dual). The MPN's negative families, then the row's
+    and the extraction's words, a negative Output Voltage, then the positive
+    families."""
+    mpn = mpn.upper()
+    if _NEG_REG_RE.match(mpn):
+        return -1, f"its family, {mpn}"
+    atts = bom.get("attributes") or []
+    text = " ".join([desc] + [str(bom.get(k) or "") for k in REG_ROW_TEXT] + [
+        str(a.get("value") or "") for a in atts
+        if _POLARITY_ATTR_RE.search(str(a.get("name") or ""))])
+    neg = re.search(r"\bnegative\b", text, re.I) or any(
+        VOUT_ATTR_RE.search(str(a.get("name") or "")) and
+        re.match(r"\s*-\s*\d", str(a.get("value") or "")) for a in atts)
+    pos = re.search(r"\bpositive\b", text, re.I)
+    if neg or pos:
+        if neg and pos:
+            return None
+        return (-1, "its description") if neg else (1, "its description")
+    if _POS_REG_RE.match(mpn) or reg_out_code(mpn) is not None:
+        return 1, f"its family, {mpn}"
     return None
 
 
@@ -1017,8 +1058,15 @@ def regulator_findings(b: dict, bom: dict | None, volts: dict, vsrc: dict,
     the highest-voltage net is taken as the input, unless the part steps up
     (its output is above its input on purpose), and the output isn't judged.
     A pull-up's volts are a guess at the pin, as in the supply rule of
-    run_check, so they're not judged. True when it emitted a finding."""
-    if not bom or not bom.get("attributes") or not is_regulator(b, bom):
+    run_check, so they're not judged. A known family's MPN code also makes a
+    part a regulator and says what it makes (#744). A regulator nothing gives
+    an output for gets a warning, output pad named or not; that isn't a rating
+    check, so it doesn't count as one. True when it emitted a finding."""
+    if not bom or not bom.get("attributes"):
+        return False
+    mpn = str(bom.get("mpn") or "")
+    code = reg_out_code(mpn) if REG_REF_RE.match(b["ref"]) else None
+    if code is None and not is_regulator(b, bom):
         return False
     ref, pads = b["ref"], b["pads"]
     known = {n: v for n, v in volts.items()
@@ -1051,22 +1099,51 @@ def regulator_findings(b: dict, bom: dict | None, volts: dict, vsrc: dict,
                  rating=src)
             found = True
     made = reg_out_range(bom)
+    if made is None and code is not None:
+        made = _fixed_range(code, f"MPN code {mpn}")
+    nets = sorted({pads[p] for p, n in names.items()
+                   if REG_OUT_PAD_RE.match(n)})
     if made:
-        for net in sorted({pads[p] for p, n in names.items()
-                           if REG_OUT_PAD_RE.match(n)}):
-            found |= _output_finding(ref, part, net, known.get(net), pads,
-                                     made, emit)
+        sign = reg_sign(mpn, bom)
+        for net in nets:
+            # only a rail the board states: the MPN's own volts have no sign
+            found |= _output_finding(
+                ref, part, net, known.get(net), pads, made, emit,
+                sign if vsrc.get(net) in RAIL_SOURCES else None)
+    elif not NOT_REG_RE.search(" ".join(str(bom.get(k) or "")
+                                        for k in REG_ROW_TEXT)):
+        on = f"on {', '.join(nets)} " if nets else ""
+        emit("rating_regulator_output_unjudged", "warning", ref,
+             nets[0] if nets else None,
+             f"{part} is a regulator, but its parts.json row and MPN don't "
+             f"say what it makes, so its output {on}wasn't judged. Fill the "
+             f"row's Output Voltage, or give it an extraction with "
+             f"output_voltage")
     return found
 
 
 def _output_finding(ref: str, part: str, net: str, v: float | None,
-                    pads: dict, made: tuple, emit) -> bool:
-    """A rail outside what the part makes. The sign is the rail's: neither
-    an MPN nor attr_volts carries one, so -5 V is what a -5.0 part makes."""
+                    pads: dict, made: tuple, emit,
+                    sign: tuple[int, str] | None = None) -> bool:
+    """A rail outside what the part makes. Neither an MPN nor attr_volts
+    carries a sign, so the magnitude is compared and -5 V is what a -5.0 part
+    makes. sign (reg_sign) then adds what the part can't do whatever its
+    magnitude (#744), given a pad on ground: with none its own ground is at
+    another rail, and a positive part may sit below board ground on purpose."""
     lo, hi, src = made
-    if v is None or lo - EPS <= abs(v) <= hi + EPS:
+    if v is None:
         return False
     on = sorted(p for p, n in pads.items() if n == net)
+    if lo - EPS <= abs(v) <= hi + EPS:
+        if not sign or sign[0] * v >= 0 or \
+                not any(is_ground(n) for n in pads.values()):
+            return False
+        emit("rating_regulator_output", "error", ref, net,
+             f"{part} output sits on {net} = {_fmt(v)} V, but it is a "
+             f"{'positive' if sign[0] > 0 else 'negative'} regulator "
+             f"[{sign[1]}; {src}]",
+             pin=f"{ref}.{on[0]}", net_v=v, limit_v=hi, rating=src)
+        return True
     emit("rating_regulator_output", "error", ref, net,
          f"{part} output sits on {net} = {_fmt(v)} V, which it can't make "
          f"[{src}]", pin=f"{ref}.{on[0]}", net_v=v, limit_v=hi, rating=src)
@@ -1117,10 +1194,11 @@ def extracted_output_findings(b: dict, ext: dict, bom: dict | None,
     part = f"{b['ref']} ({mpn or bom.get('mpn') or b['lcsc']})"
     nets = sorted({b["pads"][p] for p in reg_out_pins(b, ext)})
     if made:
+        sign = reg_sign(mpn or str(bom.get("mpn") or ""), bom, desc)
         for net in nets:
             if vsrc.get(net) in RAIL_SOURCES:
                 _output_finding(b["ref"], part, net, volts[net], b["pads"],
-                                made, emit)
+                                made, emit, sign)
     elif nets and not NOT_REG_RE.search(" ".join(
             [desc] + [str(bom.get(k) or "") for k in REG_ROW_TEXT])):
         emit("rating_regulator_output_unjudged", "warning", b["ref"], nets[0],

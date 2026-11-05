@@ -42,3 +42,25 @@ mutants:
     expect:
       kind: rating_regulator_output
       ref: U2
+  ldo-wrong-output-code-row:
+    board: blinky2
+    script: mutations/ldo_wrong_output_code_row.py
+    check: check_ratings
+    defect: >-
+      SIDECAR fault (+ an LCSC property on U2, + a netlist naming its pads):
+      parts/parts.json has a filled row and no extraction, the only output
+      voltage is the 50 in its MPN, and its OUT pad is on +3V3
+    expect:
+      kind: rating_regulator_output
+      ref: U2
+  ldo-wrong-sign:
+    board: blinky2
+    script: mutations/ldo_wrong_sign.py
+    check: check_ratings
+    defect: >-
+      SIDECAR fault (+ an LCSC property on U2, + a netlist naming its pads):
+      parts/parts.json says U2 is an ADP7182-3.3, a negative regulator, and its
+      OUT pad is on +3V3: right magnitude, wrong sign
+    expect:
+      kind: rating_regulator_output
+      ref: U2
