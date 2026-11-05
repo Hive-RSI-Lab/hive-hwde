@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import fnmatch
 import json
+import os
 import re
 import subprocess
 import uuid
@@ -49,6 +50,14 @@ WORKER = Path(__file__).resolve().parent / "route_swig.py"
 # Deterministic / safe base flags (order: options first, then -de/-do).
 FR_BASE_FLAGS = ["--gui.enabled=false", "-mt", "1", "-is", "sequential",
                  "-da", "--logging.file.enabled=false"]
+
+# Freerouting 2.2.4 hangs when a routed trace lies along a fixed wire
+# (BasicBoard.normalize_traces never ends; #477, #657, #665). This folder holds
+# that one class with the loop bounded, ahead of the jar on the classpath; its
+# README says how it was built. A later jar gets no overlay: 2.5.0 has its own cap.
+FR_OVERLAY = Path(__file__).resolve().parent / "freerouting_2_2_4"
+FR_OVERLAY_JAR = "freerouting-2.2.4.jar"
+FR_MAIN_CLASS = "app.freerouting.Freerouting"
 
 # Escalation ladder for route_auto: each rung re-runs Freerouting on the same
 # DSN with more effort. mp = max passes; oit = optimizer improvement threshold
@@ -145,7 +154,11 @@ def run_worker(bundled_python: Path, job: dict, stage: Path,
 def build_fr_cmd(java: Path, jar: Path, dsn: Path, ses: Path,
                  rung: dict | None = None) -> list[str]:
     rung = rung or {}
-    cmd = [str(java), "-jar", str(jar)] + FR_BASE_FLAGS
+    if jar.name == FR_OVERLAY_JAR:
+        launch = ["-cp", os.pathsep.join((str(FR_OVERLAY), str(jar))), FR_MAIN_CLASS]
+    else:
+        launch = ["-jar", str(jar)]
+    cmd = [str(java)] + launch + FR_BASE_FLAGS
     cmd += ["-mp", str(rung.get("mp", 20))]
     if rung.get("oit") is not None:
         cmd += ["-oit", str(rung["oit"])]

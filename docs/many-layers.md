@@ -138,8 +138,9 @@ holds the hits and the zip to the board's vias.
 - planes_gen doesn't place blind or micro vias. route_auto offers Freerouting
   the build's spans only with `--offer-spans`, ahead of the through via because
   Freerouting takes them in order. KiCad's SES import calls each one buried, and
-  route_auto puts the span's type back (`retype_vias`). Off by default because a
-  board with `route_escape`'s stubs on it gets no Freerouting pass done (#477):
-  on a UFBGA-64 fixture no pass ended in 270 s with stubs, and passes took 1-2 min
-  without. On an escaped board use route_finish's maze, which takes the spans at
+  route_auto puts the span's type back (`retype_vias`). Off by default because
+  stubs slow Freerouting: on a UFBGA-64 fixture passes take 1-2 min without them.
+  Stock 2.2.4 hung outright on stubs and on locked wires (#477, #657, #665); hwde
+  now runs it with that loop bounded (`scripts/lib/freerouting_2_2_4/README.md`).
+  On an escaped board use route_finish's maze, which takes the spans at
   0.3 (micro) and 0.6 (buried) of a through via's cost.
