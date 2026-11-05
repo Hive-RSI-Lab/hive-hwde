@@ -34,6 +34,17 @@ per LCSC number) and fits it onto the board footprint:
             never `no_model`: it says nothing about the part or its pin 1.
             A 403/429 is EasyEDA's rate limit: later parts are not fetched
             (also `fetch_failed`) and the report's `rate_limited` says why.
+  footprint A ball grid with no model (no LCSC number, or EasyEDA has none) is
+            checked against the package's own A1 corner, read from its ball
+            names: CPL = board rotation + the turn from a part with A1 upper
+            left, columns running right (IPC-7351 Level A). `basis: footprint`.
+            A match is `footprint_match`, a warning and never a pass: JLC's
+            zero is the part's tape orientation and it publishes no BGA rule
+            (reference/jlc_bga_cpl.md). A mismatch is `wrong_rotation`. Names
+            that give no A1 (a mirrored land pattern, a skewed grid) stay
+            `no_model`. A fetch that failed, or an LCSC number not yet fetched
+            under --offline, gets no footprint verdict: the model can answer.
+            Position isn't checked on this basis.
   offset    The model's pad centre vs the board's, both placed, is reported
             (`offset_mm`); over OFFSET_WARN_MM it is a warning only. The
             limit shrinks with the pad pitch (`offset_limit_mm`: 0.4 x the
@@ -88,6 +99,7 @@ from collections import Counter
 import math
 import os
 import re
+import statistics
 import sys
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -98,6 +110,7 @@ sys.path.insert(0, str(SCRIPTS / "lib"))
 
 import sexpdata  # noqa: E402
 
+import bgalib  # noqa: E402
 import easyeda  # noqa: E402
 
 OFFSET_WARN_MM = 0.5
@@ -105,10 +118,18 @@ OFFSET_PITCH_FRAC = 0.4   # an offset past this share of the pad pitch is a fail
 ROT_TOL_DEG = 1.0
 FAIL_VERDICTS = ("wrong_rotation", "wrong_polarity", "no_model", "no_fit",
                  "fetch_failed", "wrong_offset")
+# Not in FAIL_VERDICTS, and not "ok": the CPL meets a convention, not a model.
+FOOTPRINT_MATCH = "footprint_match"
 BOTTOM_PREVIEW_NOTE = (
     "bottom-side rotations follow (180 - kicad + correction), from two "
     "community exporters and the geometry, not from a JLC statement: check "
     "these parts' pin 1 in JLC's order preview before ordering")
+FOOTPRINT_BASIS_NOTE = (
+    "no LCSC model, so the CPL rotation was checked only against the package's "
+    "IPC-7351 A1 corner, and position not at all. JLC's zero is the part's tape "
+    "orientation and it publishes no BGA rule, so this is not a pass: give the "
+    "part an LCSC number, or confirm A1 in JLC's order preview against the "
+    "part's tape spec before ordering (reference/jlc_bga_cpl.md)")
 
 # ------------------------------------------------------------ board side
 
@@ -544,6 +565,116 @@ def check_part(fp: Footprint, model, cpl: dict) -> dict:
     return row
 
 
+# ---------------------------------------- ball grid with no model (basis footprint)
+
+_BALL = re.compile(r"^([A-Z]+)(\d+)$")
+_SQUARE_TOL = math.sin(math.radians(ROT_TOL_DEG))
+
+
+def _balls(fp: Footprint) -> list[tuple[str, int, KPad]]:
+    return [(m.group(1), int(m.group(2)), p) for p in fp.pads
+            if (m := _BALL.match(p.number or ""))]
+
+
+def bga_pin1(fp: Footprint) -> KPad | None:
+    """The board's BGA pin 1: the pad named A1, else the lowest row letter and
+    then the lowest column number among ball-named pads. None when the
+    footprint has no ball grid (three or more rows of ball names)."""
+    balls = _balls(fp)
+    # a USB-C (A1..A12, B1..B12) is two rows of pins, not a ball grid
+    if len(balls) < 6 or len({b[0] for b in balls}) < 3:
+        return None
+    for row, col, p in balls:
+        if (row, col) == ("A", 1):
+            return p
+    return min(balls, key=lambda b: (len(b[0]), b[0], b[1]))[2]
+
+
+def _step(lines: dict) -> tuple[float, float] | None:
+    """The median step per index along lines of (index, x, y). Depopulated
+    gaps divide out, and a stray pad named like a ball can't move a median."""
+    steps = []
+    for line in lines.values():
+        line = sorted(line)
+        steps += [((x1 - x0) / (j - i), (y1 - y0) / (j - i))
+                  for (i, x0, y0), (j, x1, y1) in zip(line, line[1:]) if j != i]
+    if not steps:
+        return None
+    return (statistics.median(s[0] for s in steps),
+            statistics.median(s[1] for s in steps))
+
+
+def footprint_a1(fp: Footprint) -> dict | None:
+    """Where a standard part's A1 goes, from the footprint's ball names alone.
+
+    The standard part has A1 upper left, columns running +x and rows +y (y
+    down). The turn that brings its column axis onto the footprint's is the
+    correction. Reading the axes, not the A1 ball's corner, handles a missing
+    A1, a depopulated centre and a rectangular body. Returns None for anything
+    but a ball grid, {"why"} when the names give no A1, else {"correction",
+    "pin", "at"}, with `at` the pin 1 ball in the standard part's frame."""
+    pin = bga_pin1(fp)
+    if pin is None:
+        return None
+    balls = _balls(fp)
+    aspects = [max(p.w, p.h) / max(min(p.w, p.h), 1e-9) for _, _, p in balls]
+    if statistics.median(aspects) > bgalib.MAX_BALL_ASPECT:
+        return None
+    flip = 1.0 if fp.side == "top" else -1.0  # a bottom footprint is stored mirrored
+    ranks = {r: i for i, r in enumerate(sorted({b[0] for b in balls},
+                                               key=lambda r: (len(r), r)))}
+    by_row: dict = {}
+    by_col: dict = {}
+    for row, col, p in balls:
+        by_row.setdefault(row, []).append((col, p.x, flip * p.y))
+        by_col.setdefault(col, []).append((ranks[row], p.x, flip * p.y))
+    across, down = _step(by_row), _step(by_col)
+    if across is None or down is None:
+        return None
+    la, ld = math.hypot(*across), math.hypot(*down)
+    if min(la, ld) <= 0 or max(la, ld) > bgalib.MAX_PITCH + 1e-9:
+        return None
+    dot = (across[0] * down[0] + across[1] * down[1]) / (la * ld)
+    cross = (across[0] * down[1] - across[1] * down[0]) / (la * ld)
+    if abs(dot) > _SQUARE_TOL:
+        return {"why": "its ball rows and columns aren't square to each other, "
+                       "so the names give no A1 corner"}
+    if cross < 0:
+        return {"why": "its ball names run mirrored (drawn in bottom view?), so "
+                       "no turn puts a standard part on it"}
+    c = round(math.degrees(math.atan2(-across[1], across[0])), 3) % 360.0
+    return {"correction": c, "pin": pin.number,
+            "at": rot(pin.x, flip * pin.y, -c)}
+
+
+def footprint_basis(fp: Footprint, code: str, fetch: bool) -> dict | None:
+    """footprint_a1 for a part with no model, unless a fetch could still get
+    one: an LCSC number left uncached under --offline keeps `no_model`."""
+    return footprint_a1(fp) if fetch or not code else None
+
+
+def _footprint_row(fp: Footprint, cpl: dict, row: dict, a1: dict | None) -> dict:
+    """A `no_model` row with the verdict the footprint's own A1 gives."""
+    if a1 is None:
+        return row
+    if "why" in a1:
+        return {**row, "why": f"no LCSC model, and {a1['why']}"}
+    want = cpl_rotation(fp.side, fp.rot, a1["correction"])
+    row = {**row, "basis": "footprint", "side": fp.side, "pin1": a1["pin"],
+           "corrections": [a1["correction"]], "expected_rot": [want]}
+    if _ang_eq(cpl["rot"], want):
+        row["verdict"] = FOOTPRINT_MATCH
+        row["why"] = (f"no LCSC model: CPL rotation {cpl['rot']:g} puts a standard "
+                      f"part's {a1['pin']} on the footprint's, by convention only")
+    else:
+        row["verdict"] = "wrong_rotation"
+        row["why"] = (f"no LCSC model: CPL rotation {cpl['rot']:g} puts a standard "
+                      f"part's A1 corner off the footprint's {a1['pin']}; it needs "
+                      f"{want:g}. Give the part an LCSC number or a "
+                      f"jlc_rotations.csv row and rerun bom_cpl")
+    return row
+
+
 # ------------------------------------------------------------------- run
 
 def read_cpl(path: Path) -> dict[str, dict]:
@@ -599,10 +730,14 @@ def verify(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
             row["why"] = (f"could not fetch the LCSC model for {code} "
                           f"({row['fetch_error']}); cache dir "
                           f"{cache_dir} - this is not a pin-1 result")
+        elif row["verdict"] == "no_model":
+            row = _footprint_row(fp, cpl[ref], row,
+                                 footprint_basis(fp, code, fetch))
         rows.append(row)
     bad = [r for r in rows if r["verdict"] in FAIL_VERDICTS]
     below = [r["ref"] for r in rows if r.get("side") == "bottom"
              and r["verdict"] not in FAIL_VERDICTS]
+    by_convention = [r["ref"] for r in rows if r["verdict"] == FOOTPRINT_MATCH]
     led = record_footprints(pcb, rows, lcsc)
     return {"script": "cpl_verify", "board": Path(pcb).name,
             "ledger": led,
@@ -611,6 +746,8 @@ def verify(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
             "failed": [r["ref"] for r in bad],
             "bottom_preview": ({"refs": below, "note": BOTTOM_PREVIEW_NOTE}
                                if below else None),
+            "footprint_basis": ({"refs": by_convention, "note": FOOTPRINT_BASIS_NOTE}
+                                if by_convention else None),
             "offset_warnings": [r["ref"] for r in rows
                                 if r.get("offset_mm", 0) > r.get("offset_limit_mm", OFFSET_WARN_MM)
                                 and r["verdict"] == "ok"],
@@ -639,7 +776,8 @@ def record_footprints(pcb: Path, rows: list[dict],
     for r in rows:
         code = lcsc.get(r["ref"], "")
         v = r.get("verdict")
-        st = ("verified" if v in FOOTPRINT_OK else
+        # footprint basis: there was no model for the pads to land on
+        st = ("verified" if v in FOOTPRINT_OK and r.get("basis") != "footprint" else
               "failed" if v == "no_fit" else "unknown")
         facts.append({
             "subject": r["ref"], "kind": "footprint", "status": st,
@@ -689,7 +827,7 @@ def merge_visual(parts: list[dict], visual: dict | None) -> list[dict]:
                 r["agreement"] = "unclear"
             else:
                 vis_ok = all(m in (VISUAL_OK, "n/a", None) for m in marks)
-                scr_ok = r["verdict"] == "ok"
+                scr_ok = r["verdict"] in ("ok", FOOTPRINT_MATCH)
                 r["agreement"] = "agree" if vis_ok == scr_ok else "disagree"
         out.append(r)
     return out
