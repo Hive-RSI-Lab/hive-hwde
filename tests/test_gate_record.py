@@ -104,6 +104,25 @@ def test_gate_records_itself_with_input_hashes(tmp_path):
         .freshness()["gates"]["verify"]["fresh"] is True
 
 
+def test_strict_gate_records_invalid_waiver_as_fail(tmp_path, capsys):
+    """#725: a broken durable waiver is a recorded fail with the finding it
+    no longer covers (the old refusal left no result and no state.json entry)."""
+    ws = make_ws(tmp_path)
+    board = ws / "kicad" / f"{BOARD}.kicad_pcb"
+    rep = verify_report(board, [_err()])
+    (ws / "reports" / "verify-waivers.json").write_text(json.dumps(
+        {"waivers": [{"check": "check_creepage", "net": "V48",
+                      "artifact": rep["input_digest"],
+                      "checker_version": rep["checker_version"],
+                      "expires": "2000-01-01", "reason": "r",
+                      "approved": "test 2026-11-05"}]}), encoding="utf-8")
+    assert run_gate(ws, rep, gate_name="verify_release",
+                    extra=["--workspace", str(ws), str(board)]) == 1
+    out = json.loads(capsys.readouterr().out)
+    assert out["record_result"]["ok"] and out["waivers_invalid"]
+    assert load(ws)["gates"]["verify_release"]["status"] == "fail"
+
+
 def test_explicit_workspace_flag_records(tmp_path, capsys):
     ws = make_ws(tmp_path)
     board = ws / "kicad" / f"{BOARD}.kicad_pcb"

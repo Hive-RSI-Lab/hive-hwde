@@ -304,8 +304,8 @@ def test_gate_main_warns_on_unmatched_waiver(tmp_path, capsys):
 
 def test_gate_main_prints_invalid_waiver(tmp_path, capsys):
     """#709: a gate that throws out an expired waiver names the entry and its
-    problem on stderr, like the unmatched ones. (A strict gate refuses such a
-    waiver outright, exit 2 with the problem; this is the lenient path.)"""
+    problem on stderr, like the unmatched ones. This is the lenient path, which
+    keeps grading on what is left; a strict gate fails on it (#725)."""
     board = _board(tmp_path)
     rep = _verify_report(board, [_creep()])
     sidecar = tmp_path / "w.json"
@@ -320,6 +320,83 @@ def test_gate_main_prints_invalid_waiver(tmp_path, capsys):
     assert res["waivers_invalid"][0]["index"] == 1
     lines = [l for l in cap.err.splitlines() if "waiver 1" in l]
     assert len(lines) == 1 and "expired" in lines[0]
+
+
+def _strict_main(tmp_path, capsys, rep, waivers):
+    """Run the strict gate through main(): (exit code, result, stderr)."""
+    sidecar = tmp_path / "w.json"
+    sidecar.write_text(json.dumps({"waivers": waivers}), encoding="utf-8")
+    code = _gate_main(tmp_path, rep, extra_argv=("--waivers", str(sidecar)),
+                      gate_name="verify_release")
+    cap = capsys.readouterr()
+    return code, json.loads(cap.out), cap.err
+
+
+@pytest.mark.parametrize("over, says", [
+    ({"expires": "2000-01-01"}, "expired"),
+    ({"expires": "someday"}, "unparsable expires"),
+    ({"artifact": "sexpr_no_uuid:" + "0" * 64}, "approved against artifact"),
+    ({"checker_version": -1}, "approved under checker_version"),
+    ({"refs": 5}, "refs must be a list"),
+    ({"refs": "U22"}, "refs must be a list"),
+    ({"refs": [["U22"]]}, "refs must be a list"),
+])
+def test_strict_gate_grades_invalid_durable_waiver(tmp_path, capsys, over,
+                                                   says):
+    """#725 known answer: a strict gate with one broken durable waiver gives
+    a graded result (exit 1, not a traceback), the waiver named in
+    waivers_invalid and not applied, so its finding still fails."""
+    board = _board(tmp_path)
+    rep = _verify_report(board, [_creep()])
+    code, res, err = _strict_main(tmp_path, capsys, rep,
+                                  [dict(_durable(rep, "V48_RTN"), **over)])
+    assert code == 1
+    assert res["script"] == "gate" and res["status"] == "fail"
+    assert res["failing_count"] == 1 and res["waived_count"] == 0
+    bad = res["waivers_invalid"]
+    assert [b["index"] for b in bad] == [0]
+    assert bad[0]["waiver"]["net"] == "V48_RTN"
+    assert says in bad[0]["problems"][0]
+    assert "waivers_unmatched" not in res
+    assert "FAIL: waiver 0" in err and says in err
+
+
+def test_strict_gate_grades_waiver_missing_durable_fields(tmp_path, capsys):
+    """#725: a legacy reason+approved waiver lands the same way, naming each
+    missing binding."""
+    board = _board(tmp_path)
+    rep = _verify_report(board, [_creep()])
+    code, res, err = _strict_main(tmp_path, capsys, rep, [_wv()])
+    assert code == 1 and res["status"] == "fail" and res["failing_count"] == 1
+    probs = res["waivers_invalid"][0]["problems"]
+    assert len(probs) == 1 and "not durable" in probs[0]
+    assert "artifact/checker_version/expires" in probs[0]
+    assert "FAIL: waiver 0" in err and "not durable" in err
+
+
+def test_strict_gate_invalid_waiver_blocks_even_with_no_finding_left(
+        tmp_path, capsys):
+    """#725: only one entry is broken and the good one covers the finding.
+    Nothing is left failing, but a release gate still blocks on a dead
+    waiver, as it does on an unmatched one."""
+    board = _board(tmp_path)
+    rep = _verify_report(board, [_creep()])
+    code, res, _ = _strict_main(tmp_path, capsys, rep, [
+        _durable(rep, "V48_RTN"),
+        dict(_durable(rep, "VBUS"), expires="2000-01-01")])
+    assert code == 1 and res["status"] == "fail"
+    assert res["failing_count"] == 0 and res["waived_count"] == 1
+    assert [b["index"] for b in res["waivers_invalid"]] == [1]
+
+
+def test_strict_gate_clean_durable_waiver_unchanged(tmp_path, capsys):
+    """Control: a good durable waiver still waives, exit 0, no invalid list."""
+    board = _board(tmp_path)
+    rep = _verify_report(board, [_creep()])
+    code, res, err = _strict_main(tmp_path, capsys, rep,
+                                  [_durable(rep, "V48_RTN")])
+    assert code == 0 and res["status"] == "pass" and res["waived_count"] == 1
+    assert "waivers_invalid" not in res and "waiver 0" not in err
 
 
 # ------------------------------------------------ commit scoping (codex C4)

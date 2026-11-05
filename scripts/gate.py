@@ -67,8 +67,12 @@ U5 additions (codex H9 - durable waivers):
    stamp) and `expires` (ISO date). When present they are validated against
    the report; a waiver whose binding no longer holds matches NOTHING and
    is surfaced in the result as `waivers_invalid`.
- - strict gates REQUIRE full durability on every waiver entry (exit 2
-   otherwise) - release waivers are evidence, not conveniences.
+ - strict gates REQUIRE full durability on every waiver entry - release
+   waivers are evidence, not conveniences. #725: an entry that lacks it, or
+   whose binding no longer holds, goes in `waivers_invalid` and on stderr,
+   matches nothing, and fails the gate (exit 1, recorded like any fail). It
+   used to refuse with exit 2 and a traceback, so nothing was graded or
+   recorded.
  - the default verify sidecar resolution now also checks the board
    WORKSPACE reports/ dir (releaselib.waivers_for_input; LEARNINGS
    2026-08-08 - a waiver file in the obvious place was silently ignored).
@@ -425,19 +429,15 @@ def evaluate(gate_name: str, gate: dict, report: dict,
     waived = []
     invalid_waivers = []
     unmatched_waivers = []
+    strict = gate.get("strict")
     if waivers:
-        if gate.get("strict"):
-            # U5/H9: release contexts accept DURABLE waivers only - every
-            # entry must bind artifact hash + checker version + expiry and
-            # all must validate against this report. Refuse, never grade.
-            dp = releaselib.durable_problems(waivers, report)
-            if dp:
-                raise RuntimeError(
-                    "strict gate refuses non-durable waivers: "
-                    + "; ".join(dp))
         usable = []
         for i, w in enumerate(waivers):
-            probs = releaselib.waiver_validity(w, report)
+            # U5/H9: release contexts accept DURABLE waivers only - every
+            # entry must bind artifact hash + checker version + expiry and
+            # all must validate against this report.
+            probs = releaselib.durable_waiver_problems(w, report, i) \
+                if strict else releaselib.waiver_validity(w, report)
             if probs:
                 # a waiver whose bindings no longer hold does not match
                 # anything - surfaced, never silently applied
@@ -459,7 +459,7 @@ def evaluate(gate_name: str, gate: dict, report: dict,
                 still.append(v)
         failing = still
     passed = len(failing) <= max_count \
-        and not (unmatched_waivers and gate.get("strict"))
+        and not ((unmatched_waivers or invalid_waivers) and strict)
     result = {
         "script": "gate",
         "gate": gate_name,
@@ -830,8 +830,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"gate {args.gate}: warning: {w}", file=sys.stderr)
     for iw in result.get("waivers_invalid", []):
         for prob in iw["problems"]:
-            print(f"gate {args.gate}: warning: waiver {iw['index']} "
-                  f"ignored (invalid): {prob}", file=sys.stderr)
+            print(f"gate {args.gate}: "
+                  f"{'FAIL' if gate.get('strict') else 'warning'}: waiver "
+                  f"{iw['index']} ignored (invalid): {prob}", file=sys.stderr)
     for u in result.get("waivers_unmatched", []):
         print(f"gate {args.gate}: "
               f"{'FAIL' if gate.get('strict') else 'warning'}: {u['problem']}",
