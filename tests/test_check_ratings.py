@@ -662,6 +662,12 @@ def test_bare_cap_blocks_and_one_finding_names_every_ref_on_the_code(tmp_path):
     # the family's code, and no word says regulator (#751, linux-computer U603)
     {"mpn": "XC6206P332MR-G", "lcsc": "C5446"},
     {"mpn": "TLV75733PDBVR", "description": "", "category": ""},
+    # a switching family, and no word or code says regulator (#763)
+    {"mpn": "AP63205WU-7", "role": "5V"},             # rf-plasma U102
+    {"mpn": "TPS54560BDDAR", "role": "+12V_BUCK"},    # rf-plasma U201/U202
+    {"mpn": "TLV62569PDDCR", "role": "5 V -> +3V3"},  # linux-computer U302
+    {"mpn": "TLV62568DBVR"}, {"mpn": "TPS54233DR"}, {"mpn": "TPS54302DDCR"},
+    {"mpn": "LMR33630ADDAR"}, {"mpn": "AP63203WU-7"}, {"mpn": "AP63200WU-7"},
 ])
 def test_bare_regulator_blocks_unless_extracted(tmp_path, row):
     lcsc = row.get("lcsc", "C3")
@@ -674,8 +680,15 @@ def test_bare_regulator_blocks_unless_extracted(tmp_path, row):
 
 
 @pytest.mark.parametrize("ref,mpn", [
-    ("U4", "TPS54233DR"),      # a buck, not in a coded family's range of parts
+    ("U4", "TPS2051BDBVR"),    # a load switch
+    ("U4", "LM66200DRLR"),     # an ideal diode
+    ("U4", "TPS26631RGER"),    # an e-fuse
+    ("U4", "TPS3808G33DBVR"),  # a supervisor
+    ("U4", "TPS60403DBVR"),    # a charge pump
+    ("U4", "TPS92515DGQR"),    # an LED driver
+    ("U4", "TLV3501AIDBVR"),   # a comparator
     ("U4", "TLV7031DBVR"),     # a comparator
+    ("Q4", "TPS54560BDDAR"),   # a family counts on a U/VR/IC part only
     ("U4", "TPS7A0201PDBVR"),  # the family's adjustable code
     ("Q4", "XC6206P332MR-G"),  # a code counts on a U/VR/IC part only
 ])
@@ -1042,6 +1055,27 @@ def test_extracted_parts_whose_output_is_not_judged(
     assert _out_errs(_run(ws)) == []
 
 
+def test_bare_buck_stays_unknown_and_names_no_rail(tmp_path):
+    """As for a code: is_regulator and reg_out_volts stay strict (#763)."""
+    bom = [{"lcsc": "C3", "mpn": "AP63205WU-7", "attributes": []}]
+    pads = {"1": "+24V", "2": "GND", "3": "/RAIL"}
+    ws = _ws(tmp_path, [("U4", "C3", pads)], {}, bom)
+    p = _run(ws)
+    assert [v["refs"] for v in _no_attrs(p)] == [["U4"]]
+    assert "/RAIL" not in p["net_volts"]
+    assert not cr.is_regulator({"ref": "U4"}, bom[0])
+
+
+def test_bare_buck_blocks_once_per_bom_code(tmp_path):
+    """linux-computer U302-U304: three parts, one row to fill (#763)."""
+    bom = [{"lcsc": "C3", "mpn": "TLV62569PDDCR", "attributes": [],
+            "role": "5 V -> +3V3"}]
+    board = [(f"U{n}", "C3", {"1": "+5V", "2": "GND", "3": "+3V3"})
+             for n in (302, 303, 304)]
+    found = _no_attrs(_run(_ws(tmp_path, board, {}, bom)))
+    assert [v["refs"] for v in found] == [["U302", "U303", "U304"]]
+
+
 @pytest.mark.parametrize("mpn,volts", [
     ("RT9080-33GJ5", 3.3), ("RT9013-18GB", 1.8), ("RT9193-50GB", 5.0),
     ("TLV75733PDBVR", 3.3), ("TLV70018DSER", 1.8), ("TPS78233DDCR", 3.3),
@@ -1049,6 +1083,8 @@ def test_extracted_parts_whose_output_is_not_judged(
     ("TPS7A2045PDBVR", 4.5),   # TPS7A20 datasheet rev H, Table 8-1
     ("XC6206P332MR", 3.3), ("XC6206P302MR", 3.0),
     ("HT7333-A", 3.3), ("HT7850", 5.0), ("ME6211C33M5G", 3.3),
+    # a whole part number, not a tenths code (Diodes AP63200 datasheet, p. 1)
+    ("AP63203WU-7", 3.3), ("AP63205WU-7", 5.0),
 ])
 def test_output_code_in_a_known_regulator_family(mpn, volts):
     assert cr.reg_out_code(mpn) == volts
@@ -1060,7 +1096,7 @@ def test_output_code_in_a_known_regulator_family(mpn, volts):
     "TPS79601DCQR", "TPS7A4701RGWR", "TLV75801PDRVR",  # 01: adjustable
     "TPS793285DBVR",                                 # 2.85 V: not a two-digit code
     "RT9711ACBG", "HT1621B", "ME2108A33M3G",         # no code, or not this family
-    "AMS1117", "",
+    "AMS1117", "AP63200WU-7", "AP63201WU-7", "",     # AP6320[01]: adjustable
 ])
 def test_no_output_code_is_a_guess(mpn):
     assert cr.reg_out_code(mpn) is None
@@ -1221,7 +1257,7 @@ def test_a_code_gives_the_row_its_input_check_too(tmp_path):
 
 
 @pytest.mark.parametrize("mpn", [
-    "TPS54233",     # a buck, not in a coded family's range of parts
+    "TPS2051B",     # a load switch
     "TLV7031",      # a comparator
     "TPS7A0201",    # the family's adjustable code
 ])
@@ -1230,6 +1266,48 @@ def test_an_mpn_with_no_code_and_no_words_is_no_regulator(tmp_path, mpn):
                  CODED_NAMES, mpn=mpn, description="")
     p = _run(ws)
     assert _out_errs(p) == [] and _unjudged(p) == []
+
+
+BUCK_ATTRS = {"Input Voltage": "4.5V~32V", "Output Current": "2A"}
+BUCK_NAMES = {"1": "VIN", "3": "FB"}
+
+
+@pytest.mark.parametrize("mpn,vin,rail,kinds", [
+    ("AP63205WU-7", "3.8V~32V", "+5V", []),
+    ("AP63205WU-7", "3.8V~32V", "+3V3", ["rating_regulator_output"]),
+    ("AP63203WU-7", "3.8V~32V", "+3V3", []),
+    ("AP63203WU-7", "3.8V~32V", "+5V", ["rating_regulator_output"]),
+    ("AP63205WU-7", "3.8V~18V", "+5V", ["rating_over_voltage"]),
+    ("TLV62569PDDCR", "2.5V~5.5V", "+3V3", ["rating_over_voltage"]),
+    ("TPS54560BDDAR", "4.5V~60V", "+5V", []),
+])
+def test_filled_buck_is_compared(tmp_path, mpn, vin, rail, kinds):
+    """A fixed part's FB is its output (the AP63205 datasheet's VFB is 4.95-5.05
+    V), so its rail is judged by what it makes; the row's limit judges VIN."""
+    ws = _reg_ws(tmp_path, {"Input Voltage": vin, "Output Current": "2A"},
+                 {"1": "+24V", "2": "GND", "3": rail}, BUCK_NAMES, mpn=mpn,
+                 description="")
+    p = _run(ws)
+    assert _no_attrs(p) == []
+    assert [v["kind"] for v in _errors(p)] == kinds
+
+
+@pytest.mark.parametrize("mpn", ["TPS54560BDDAR", "AP63200WU-7"])
+def test_an_adjustable_bucks_fb_is_not_its_output(tmp_path, mpn):
+    """An adjustable part's FB sits on a divider, not on the rail: a stated
+    Output Voltage says nothing about it."""
+    ws = _reg_ws(tmp_path, {"Input Voltage": "4.5V~32V",
+                            "Output Voltage": "5V"},
+                 {"1": "+12V", "2": "GND", "3": "+3V3"}, BUCK_NAMES, mpn=mpn,
+                 description="")
+    assert _out_errs(_run(ws)) == []
+
+
+def test_filled_adjustable_buck_says_its_output_is_unjudged(tmp_path):
+    ws = _reg_ws(tmp_path, BUCK_ATTRS, {"1": "+12V", "2": "GND", "3": "/FB"},
+                 BUCK_NAMES, mpn="TPS54560BDDAR", description="")
+    p = _run(ws)
+    assert _errors(p) == [] and len(_unjudged(p)) == 1
 
 
 def test_code_does_not_name_the_rail(tmp_path):

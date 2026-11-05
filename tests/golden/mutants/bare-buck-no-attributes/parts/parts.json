@@ -1,0 +1,13 @@
+{
+  "parts": [
+    {
+      "ref_prefix_hint": "U",
+      "mpn": "TPS54560BDDAR",
+      "lcsc": "C1850354",
+      "value": "TPS54560BDDAR",
+      "package": "HSOP-8",
+      "attributes": [],
+      "role": "U2"
+    }
+  ]
+}
