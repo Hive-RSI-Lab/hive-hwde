@@ -45,7 +45,8 @@ attestation confers order-ready, and ordering consumes ONLY that attestation.
 4. `order_submit.py` - assembles the manifest, the fab package paths, and the
    `human_steps` list. A governed workspace (state.json present) whose
    attestation is missing/invalid gets `not_order_ready` and the API legs
-   refuse before any network call. With `HWDE_JLCPCB_*` credentials, `--api`
+   refuse before any network call; `--api-create` refuses anything but
+   `ready_for_human`, whatever the reason. With `HWDE_JLCPCB_*` credentials, `--api`
    adds upload + the API's own DFM audit + a real `calculate` (a
    `scope_pending` response is normal) - at the ATTESTED manufacturing
    options. A `--copper-oz` that contradicts the attested value REFUSES
