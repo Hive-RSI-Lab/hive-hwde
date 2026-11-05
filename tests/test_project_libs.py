@@ -116,3 +116,29 @@ def test_placed_part_takes_its_library_footprint(tmp_path):
         """, b / "kicad" / "gen" / "root.py", cwd=Path("/"))
     assert cp.returncode == 0, cp.stderr[-800:]
     assert "fp tlib:SOT-23-6_X tlib:OTHER" in cp.stdout
+
+
+def test_placed_part_takes_its_library_lcsc(tmp_path):
+    """A shared footprint (lib_pull's R0603) embeds ONE part's LCSC number,
+    and bom_cpl took it for every instance with no LCSC field of its own:
+    Hive Pulse's 1k resistors came out as the 10k's C25804. schlib copies
+    the library symbol's LCSC property like its Footprint; a caller's field
+    (any LCSC spelling) still wins."""
+    b = _board(tmp_path)
+    sym = b / "lib" / "tlib.kicad_sym"
+    sym.write_text(sym.read_text().replace(
+        '(property "Value" "PART1"',
+        '(property "LCSC Part" "C21190" (id 4) (at 0 0 0) '
+        '(effects (font (size 1.27 1.27)) hide))\n'
+        '        (property "Value" "PART1"'))
+    cp = _run("""
+        import schlib
+        s = schlib.Sheet("t")
+        a = s.add_component("tlib:PART1", "U1", "x", (50.8, 50.8))
+        b = s.add_component("tlib:PART1", "U2", "x", (76.2, 50.8),
+                            fields={"LCSC": "C99999"})
+        print("lcsc", a.get_property("LCSC Part"), b.get_property("LCSC"),
+              b.get_property("LCSC Part"))
+        """, b / "kicad" / "gen" / "root.py", cwd=Path("/"))
+    assert cp.returncode == 0, cp.stderr[-800:]
+    assert "lcsc C21190 C99999 None" in cp.stdout
