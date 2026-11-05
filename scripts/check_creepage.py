@@ -35,9 +35,11 @@ dru_rule and scope_ref - again never dropped - only when ALL of these hold:
   - the rule is a `clearance` rule with no (layer ...) clause, and its
     condition is nothing but `&&`-joined A./B. insideCourtyard,
     intersectsCourtyard, intersectsFrontCourtyard, intersectsBackCourtyard
-    or memberOfFootprint terms naming one literal reference. Any other term
-    (net names, ||, !, wildcards) makes the rule unreadable here, so it is
-    not honoured and the IPC verdict stands;
+    or memberOfFootprint terms naming one literal reference, plus optional
+    `A.Type != 'Zone'` / `B.Type != 'Zone'` terms (then a zone fill never
+    takes the scope). Any other term (net names, ||, other !, wildcards)
+    makes the rule unreadable here, so it is not honoured and the IPC
+    verdict stands;
   - one item is a pad of that footprint, and the other is that
     footprint's pad or a track, via or zone - never another footprint's
     pad, so part-to-part spacing keeps the full IPC requirement;
@@ -178,6 +180,9 @@ def voltage_pair_list(cons: dict) -> list[tuple[str, str, float]]:
 _SCOPE_TERM_RE = re.compile(
     r"^([AB])\.(insideCourtyard|intersectsCourtyard|intersectsFrontCourtyard|"
     r"intersectsBackCourtyard|memberOfFootprint)\(\s*'([^'*?]+)'\s*\)$")
+# the one other term honoured: the rule leaves zone fills out (rules_gen's
+# courtyard-scoped package ratings carry it on either side)
+_NO_ZONE_RE = re.compile(r"^([AB])\.Type\s*!=\s*'Zone'$")
 _SCOPE_SIDE = {"intersectsFrontCourtyard": "front",
                "intersectsBackCourtyard": "back"}
 
@@ -199,10 +204,15 @@ def _strip_parens(s: str) -> str:
 def parse_footprint_scope(condition: str | None) -> dict | None:
     """A DRU condition that ONLY scopes to one footprint -> {ref, sides,
     courtyard, both_member}; anything else -> None (not honoured)."""
-    if not condition or "||" in condition or "!" in condition:
+    if not condition or "||" in condition:
         return None
     refs, sides, fns, member_ab = set(), set(), set(), set()
+    no_zone = set()
     for term in _strip_parens(condition).split("&&"):
+        z = _NO_ZONE_RE.match(_strip_parens(term))
+        if z:
+            no_zone.add(z.group(1))
+            continue
         m = _SCOPE_TERM_RE.match(_strip_parens(term))
         if not m:
             return None
@@ -217,7 +227,8 @@ def parse_footprint_scope(condition: str | None) -> dict | None:
         return None
     return {"ref": refs.pop(), "side": sides.pop() if sides else None,
             "courtyard": any(f != "memberOfFootprint" for f in fns),
-            "both_member": member_ab == {"A", "B"}}
+            "both_member": member_ab == {"A", "B"},
+            "no_zone": bool(no_zone)}
 
 
 def dru_footprint_scopes(pcb: Path) -> list[dict]:
@@ -265,6 +276,8 @@ def scope_for(a, b, pa, pb, scopes) -> dict | None:
         if not any(own) or foreign:
             continue
         if sc["both_member"] and not all(own):
+            continue
+        if sc.get("no_zone") and any(it[0] == "zone" for it in (a, b)):
             continue
         if sc["courtyard"]:
             cy = sc.get("courtyard_poly")

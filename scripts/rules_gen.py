@@ -660,10 +660,15 @@ def package_rules(constraints: dict) -> tuple[list[Rule], list[dict]]:
         clr = float(e["clearance_mm"])
         name = f"aiee_pkg_rating_{_safe(ref)}"
         # pads_only: just the part's own pads. A courtyard term also matches a
-        # long track that starts inside it, and every fill it passes.
-        term = "memberOfFootprint" if e.get("pads_only") else "intersectsCourtyard"
-        rules.append(Rule(name, "clearance", round(clr, 4),
-                          condition=f"A.{term}('{ref}') && B.{term}('{ref}')"))
+        # long track that starts inside it, and every fill that reaches it: a
+        # pour then fills to the rating, past the outer-copper floor and the
+        # HV rules, and DRC passes it. So the courtyard form never takes zones.
+        if e.get("pads_only"):
+            cond = f"A.memberOfFootprint('{ref}') && B.memberOfFootprint('{ref}')"
+        else:
+            cond = (f"A.intersectsCourtyard('{ref}') && B.intersectsCourtyard('{ref}')"
+                    " && A.Type != 'Zone' && B.Type != 'Zone'")
+        rules.append(Rule(name, "clearance", round(clr, 4), condition=cond))
         facts.append({"ref": ref, "clearance_mm": round(clr, 4),
                       "why": e.get("why", ""), "rule": name})
     return rules, facts

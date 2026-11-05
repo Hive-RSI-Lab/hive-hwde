@@ -151,11 +151,25 @@ def test_package_ratings_emit_a_footprint_scoped_clearance_after_hv():
     r = rules[pkg]
     assert r.constraint == "clearance" and r.minv == 0.1
     assert r.condition == ("A.intersectsCourtyard('U2') && "
-                           "B.intersectsCourtyard('U2')")
+                           "B.intersectsCourtyard('U2') && "
+                           "A.Type != 'Zone' && B.Type != 'Zone'")
     assert report["package_rules"][0]["why"].startswith("LM5069")
-    # check_creepage can read the scope back
-    for term in r.condition.split(" && "):
-        assert cc._SCOPE_TERM_RE.match(term)
+    # check_creepage can read the scope back, zones left out
+    sc = cc.parse_footprint_scope(r.condition)
+    assert sc["ref"] == "U2" and sc["courtyard"] and sc["no_zone"]
+    pad = ("pad", None, {}, "U2")
+    zone = ("zone", None, {}, None)
+    track = ("track", None, {}, None)
+    from shapely.geometry import Point, box
+    sc["courtyard_poly"], sc["rule"], sc["min_mm"] = box(0, 0, 2, 2), r.name, 0.1
+    assert cc.scope_for(pad, track, Point(1, 1), Point(1.2, 1), [sc]) is sc
+    assert cc.scope_for(pad, zone, Point(1, 1), Point(1.2, 1), [sc]) is None
+
+
+def test_scope_parser_refuses_other_negations():
+    import check_creepage as cc
+    assert cc.parse_footprint_scope(
+        "A.intersectsCourtyard('U2') && A.NetName != 'GND'") is None
 
 
 def test_package_ratings_reject_a_wildcard_ref():
