@@ -573,6 +573,16 @@ def hv_clearance_mm(dv: float, coating: str) -> float:
     return max(cc.row_clearance_mm(dv, r) for r in rows)
 
 
+def hv_row_split_mm(dv: float, coating: str) -> tuple[float, float]:
+    """(track/via/zone row, exposed-land row) outer IPC-2221 spacing for a
+    dv-volt difference under `coating` - the two values check_creepage
+    picks between per item pair. Inner layers use B1, never larger than
+    either outer row, so the outer track row covers them."""
+    import check_creepage as cc
+    return (cc.row_clearance_mm(dv, cc.item_row("track", True, coating)),
+            cc.row_clearance_mm(dv, cc.item_row("pad", True, coating)))
+
+
 def voltage_rules(constraints: dict, cap: dict) -> tuple[list[Rule], list[dict]]:
     """HV clearance DRU rules from constraints voltages/voltage_pairs (T6
     P5-3 == P2-4, ladder rows 117/118 context).
@@ -585,7 +595,12 @@ def voltage_rules(constraints: dict, cap: dict) -> tuple[list[Rule], list[dict]]
         pairwise, so a single-net condition enforces the net against
         everything - the shape carrier hand-wrote as HV_48V_clearance);
         sorted ascending by clearance so a pair matching two HV rules
-        resolves to the LARGER value (later rule wins).
+        resolves to the LARGER value (later rule wins). When the
+        exposed-land row is the larger one (soldermask: B4 tracks vs A6
+        lands) the net rule carries the track row (fab floor at least)
+        and an outer-layer `<rule>_land` carries the land row for gaps
+        with a pad on either side - check_creepage's per-item split, so
+        tented track gaps are not held to a pad's spacing.
       - one pair-scoped rule per explicit voltage_pairs entry (emitted
         last: an explicit pair OVERRIDES the derived per-net value, same
         semantics as check_creepage). A pair declared at or under the
@@ -610,15 +625,36 @@ def voltage_rules(constraints: dict, cap: dict) -> tuple[list[Rule], list[dict]]
         dv = abs(vmap[net])
         clr = hv_clearance_mm(dv, coating)
         name = f"aiee_hv_{_vtag(dv)}v_{_safe(net)}"
-        rule = Rule(name, "clearance", round(clr, 4),
-                    condition=f"A.NetName == '{net}'")
-        net_rules.append((clr, rule, {"net": net, "voltage": vmap[net],
-                                      "clearance_mm": round(clr, 4),
-                                      "coating": coating, "rule": name}))
+        track_clr, land_clr = hv_row_split_mm(dv, coating)
+        fact = {"net": net, "voltage": vmap[net],
+                "clearance_mm": round(clr, 4),
+                "coating": coating, "rule": name}
+        if land_clr > track_clr:
+            # the exposed-land row (A6) is the larger one, so the net-wide
+            # value would hold every tented track/via/zone gap to a pad's
+            # number. Split it the way check_creepage adjudicates: the
+            # net-wide rule at the track row (never under the fab floor),
+            # plus an outer-layer rule at the land row for any gap with a
+            # pad on either side.
+            base = max(track_clr, fabfloors.outer_clearance(cap))
+            land = f"{name}_land"
+            net_rules.append((base, Rule(name, "clearance", round(base, 4),
+                                         condition=f"A.NetName == '{net}'"),
+                              {**fact, "track_clearance_mm": round(base, 4),
+                               "land_rule": land}))
+            net_rules.append((land_clr, Rule(
+                land, "clearance", round(land_clr, 4), layer="outer",
+                condition=(f"A.NetName == '{net}' && "
+                           "(A.Type == 'Pad' || B.Type == 'Pad')")), None))
+        else:
+            net_rules.append((clr, Rule(name, "clearance", round(clr, 4),
+                                        condition=f"A.NetName == '{net}'"),
+                              fact))
         hv_nets.add(net)
     for clr, rule, fact in sorted(net_rules, key=lambda t: (t[0], t[1].name)):
         rules.append(rule)
-        facts.append(fact)
+        if fact is not None:
+            facts.append(fact)
 
     for a, b, pv in cc.voltage_pair_list(constraints):
         if pv > threshold:

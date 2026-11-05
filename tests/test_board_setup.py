@@ -1888,3 +1888,28 @@ def test_check_dru_holds_the_outer_floor_only_where_the_row_has_one():
     dru1 = "(version 1)\n" + "\n".join(
         r.render() for r in rules_gen.baseline_rules(one_oz))
     assert fabfloors.check_dru(dru1, one_oz) == []
+
+
+def test_voltage_rules_soldermask_splits_track_and_land_rows():
+    """soldermask at 54 V: tented tracks sit on B4 (0.13 mm, floored to the
+    fab clearance) and only a gap with an exposed land needs A6 (0.50 mm).
+    The net-wide rule carries the track row and an outer-layer _land rule
+    after it carries the land row, the split check_creepage adjudicates;
+    the fact (netclass, isolation floors) keeps the conservative max."""
+    cons = {"coating": "soldermask",
+            "voltages": [{"net": "/SW", "voltage": 54}]}
+    cap = _cap("2layer_2oz")
+    rules, report = rules_gen.build(cons, cap, _stackup("JLC2313_1.6_2oz"), False)
+    byname = {r.name: r for r in rules}
+    base, land = byname["aiee_hv_54v_SW"], byname["aiee_hv_54v_SW_land"]
+    floor = rules_gen.fabfloors.outer_clearance(cap)
+    assert base.minv == pytest.approx(max(0.13, floor))
+    assert base.condition == "A.NetName == '/SW'"
+    assert land.minv == pytest.approx(0.50) and land.layer == "outer"
+    assert land.condition == ("A.NetName == '/SW' && "
+                              "(A.Type == 'Pad' || B.Type == 'Pad')")
+    names = [r.name for r in rules]
+    assert names.index("aiee_hv_54v_SW_land") > names.index("aiee_hv_54v_SW")
+    (fact,) = report["hv_rules"]
+    assert fact["clearance_mm"] == pytest.approx(0.50)
+    assert fact["land_rule"] == "aiee_hv_54v_SW_land"
