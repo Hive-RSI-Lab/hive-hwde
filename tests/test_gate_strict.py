@@ -922,15 +922,15 @@ def test_verify_all_strict_missing_inputs_fail(tmp_path):
 
 
 @pytest.mark.parametrize("no_models", [False, True],
-                         ids=["host_tools", "no_3d_models"])
+                         ids=["host_tools", "no_tools"])
 def test_verify_all_strict_with_declared_na_passes(tmp_path, monkeypatch,
                                                    no_models):
     """Strict + properly declared not_applicable (reason + approver) is the
     sanctioned way to narrow coverage - and it is visible in the matrix.
 
-    check_body_clash is declared N/A too: it warns body_unjudged when this
-    host has no KiCad 3D models, which made this count 3 instead of 2. It has
-    its own tests. The no_3d_models run is that host, wherever this runs."""
+    The no_tools run is a host with no KiCad install or tool dir. The 3D
+    models resolve to tests/fixtures/3dmodels either way (conftest.py), so
+    check_body_clash runs on blinky2 and the count is 2 on every host."""
     if no_models:
         tools = tmp_path / "no-tools"
         tools.mkdir()
@@ -938,12 +938,10 @@ def test_verify_all_strict_with_declared_na_passes(tmp_path, monkeypatch,
         monkeypatch.setenv("HWDE_TOOLS_DIR", str(tools))
         for k in ("HWDE_KICAD_CLI", "AIEE_KICAD_CLI"):
             monkeypatch.delenv(k, raising=False)
-        for k in [k for k in os.environ if k.endswith("_3DMODEL_DIR")]:
-            monkeypatch.delenv(k)
         monkeypatch.setenv("PATH", os.pathsep.join(
             d for d in os.environ["PATH"].split(os.pathsep)
             if not shutil.which("kicad-cli", path=d)))
-    na = [*CONSTRAINT_NEEDING, "check_body_clash"]
+    na = list(CONSTRAINT_NEEDING)
     cpath = tmp_path / "constraints.json"
     cpath.write_text(json.dumps({"verification": {"not_applicable": {
         n: {"reason": "no such nets on this board", "approved": "test 2026"}
@@ -969,7 +967,7 @@ def test_verify_all_strict_with_declared_na_passes(tmp_path, monkeypatch,
                   "check_testpoints", "check_rf_match", "check_surge",
                   "check_via_stubs", "check_isolation",
                   "check_kelvin",
-                  "check_stackup"]
+                  "check_stackup", "check_body_clash"]
     assert sorted(cov["required"]) == sorted(board_only)
     assert sorted(cov["ran"]) == sorted(board_only)
     assert cov["skipped_error"] == {}
