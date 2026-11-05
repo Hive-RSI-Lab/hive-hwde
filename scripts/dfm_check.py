@@ -1778,7 +1778,9 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
     with tempfile.TemporaryDirectory(prefix="aiee_dfm_") as td:
         tmp = Path(td)
         if fab_dir is None:
-            man = fab_export.run(pcb, tmp / "fab", make_zip=False)
+            # A scratch package to audit, not a release: the gates that want
+            # this board fresh are the ones running this check.
+            man = fab_export.run(pcb, tmp / "fab", make_zip=False, allow_stale=True)
             gdir = Path(man["gerber_dir"])
         else:
             gdir = Path(fab_dir)
