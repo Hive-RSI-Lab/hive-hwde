@@ -93,6 +93,10 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
    extraction's operating_temp_c), or constraints ambient_min_c below it
    (R-REL-2). The ambient is constraints ambient_c, else the enclosure air
    check_thermal works out, else 25 C, said so in `ambient`.
+ - rating_datasheet_suspect (warning): a part whose datasheet PDF is a host
+   placeholder or was marked suspect by `datasheet_extract --fetch` (index.json:
+   cut off, no text layer, MPN not in pages 1-2; #706). Its rating and pinout
+   ledger facts are unknown, never verified.
 Sources and verified/disputed tags: docs/ingest/safety-components.md.
 A pin on a net of unknown voltage is not a finding (counted in facts).
 
@@ -110,6 +114,7 @@ Exit 0 pass / 1 findings / 2 error (SPEC 6 contract).
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
@@ -891,6 +896,15 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                 "attributes - keep parts_search's row whole)" if bare else ""),
              pins=unrated_passives)
         out[-1]["refs"] = sorted(unrated_passives)
+    suspect = suspect_datasheets(parts_dir, {b["lcsc"] for b in board
+                                             if b["lcsc"]})
+    for lcsc, why in sorted(suspect.items()):
+        refs = sorted(b["ref"] for b in board if b["lcsc"] == lcsc)
+        emit("rating_datasheet_suspect", "warning", refs[0] if refs else None,
+             None, f"{', '.join(refs)} ({lcsc}): the datasheet PDF is suspect "
+             f"({why}); its facts are not counted as verified - fetch "
+             "another datasheet or check by eye", pins=refs)
+        out[-1]["refs"] = refs
     facts = {"parts_on_board": len(board), "extractions": sorted(exts),
              "net_volts": {n: {"v": volts[n], "src": vsrc[n]}
                            for n in sorted(volts)},
@@ -899,8 +913,9 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
              "pins_on_unknown_nets": unknown_net_pins,
              "ambient": amb, "fuses": fuse_facts,
              "operating_range": temp_facts,
+             "suspect_datasheets": suspect,
              "ledger_facts": ledger_facts(board, exts, out, checked_by_ref,
-                                          bom_by_lcsc)}
+                                          bom_by_lcsc, suspect)}
     return out, facts
 
 
@@ -1604,9 +1619,37 @@ def pinout_fact(b: dict, ext: dict | None) -> tuple[str, str]:
                         + (f", {named} named alike" if named else ""))
 
 
+def suspect_datasheets(parts_dir: Path, lcscs) -> dict[str, str]:
+    """{lcsc: why} for each part whose datasheet PDF is a placeholder or was
+    marked suspect by `datasheet_extract --fetch` (index.json: truncated, no
+    text layer, MPN absent from pages 1-2; #706). An index entry written
+    before that has no status and says nothing."""
+    ddir = parts_dir / "datasheets"
+    try:
+        idx = json.loads((ddir / "index.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        idx = {}
+    out = {}
+    for lcsc in lcscs:
+        ent = idx.get(lcsc)
+        if isinstance(ent, dict) and ent.get("status") == "suspect":
+            out[lcsc] = "; ".join(ent.get("reasons") or ["marked suspect"])
+            continue
+        pdf = ddir / f"{lcsc}.pdf"
+        if pdf.is_file():
+            import datasheet_extract
+            why = datasheet_extract.stub_notice(pdf.read_bytes())
+            if why:
+                out[lcsc] = f"host placeholder, not a datasheet ({why})"
+    return out
+
+
 def ledger_facts(board: list[dict], exts: dict, vios: list[dict],
-                 checked: dict[str, int], bom_by_lcsc: dict) -> list[dict]:
-    """rating and pinout facts per refdes (lib/ledgerlib.py)."""
+                 checked: dict[str, int], bom_by_lcsc: dict,
+                 suspect: dict[str, str] | None = None) -> list[dict]:
+    """rating and pinout facts per refdes (lib/ledgerlib.py). A part whose
+    datasheet is suspect is at best unknown: its facts are not verified."""
+    suspect = suspect or {}
     failed: dict[str, str] = {}
     unrated: dict[str, str] = {}
     for v in vios:
@@ -1639,10 +1682,15 @@ def ledger_facts(board: list[dict], exts: dict, vios: list[dict],
         else:
             st, val = "unknown", ("no pin of it sits on a net of known "
                                   "voltage" if b["pads"] else "no connected pad")
+        sus = suspect.get(b["lcsc"])
+        if sus and st == "verified":
+            st, val = "unknown", f"datasheet suspect, not verified: {sus}"
         out.append({"subject": ref, "kind": "rating", "status": st,
                     "value": val, "source": src if st != "unknown" else "",
                     "lcsc": b["lcsc"]})
         pst, pval = pinout_fact(b, ext)
+        if sus and pst == "verified":
+            pst, pval = "unknown", f"datasheet suspect, not verified: {sus}"
         out.append({"subject": ref, "kind": "pinout", "status": pst,
                     "value": pval, "lcsc": b["lcsc"],
                     "source": src if pst != "unknown" else ""})

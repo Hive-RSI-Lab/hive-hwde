@@ -21,7 +21,12 @@ reads the PDF pages); this script owns the deterministic half:
                     must be on the research allowlist; LCSC's HTML redirect
                     stubs (wmsc.lcsc.com answers one) are followed, and
                     anything that isn't a PDF in the end is refused, never
-                    written. exit 0 = every datasheet fetched, 1 = some
+                    written. index.json records pages, text chars per page
+                    and status ok|suspect (+ reasons): suspect = the file is
+                    cut off, has no text layer, or pages 1-2 never name the
+                    MPN or its base family (#706); a suspect PDF is kept but
+                    check_ratings and the ledger never count it verified.
+                    exit 0 = every datasheet fetched, 1 = some suspect,
                     refused or missing, 2 = bad workspace.
   --render DIR      with --pdf: render the image-only pages (under
                     IMAGE_ONLY_CHARS of text) and the mechanical-drawing
@@ -67,6 +72,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -567,9 +573,74 @@ def stub_notice(data: bytes) -> str | None:
     return None
 
 
+def _norm(s: str) -> str:
+    return re.sub(r"[^0-9A-Z]", "", str(s or "").upper())
+
+
+def mpn_in_text(mpn: str, text: str) -> str | None:
+    """The form of `mpn` found in `text` (both normalised: upper case, letters
+    and digits only), else None: the whole MPN, then its base family - the MPN
+    with trailing characters (package, grade and reel suffixes) cut while at
+    least 60% of it and 5 characters remain."""
+    m, t = _norm(mpn), _norm(text)
+    if not m:
+        return None
+    n = len(m)
+    floor = min(n, max(5, -(-n // 2)))
+    for k in range(n, floor - 1, -1):
+        if m[:k] in t:
+            return m[:k]
+    return None
+
+
+# Fewer text characters per page than this on average = a scan, not a datasheet.
+MIN_CHARS_PER_PAGE = 20
+
+
+def assess_pdf(data: bytes, mpn: str | None = None) -> dict:
+    """Is `data` a usable datasheet for `mpn` (#706)? {status: ok|suspect,
+    reasons, pages, chars_per_page, text_chars}. Suspect when the file is cut
+    off (no %%EOF) or does not parse, has no text layer (a scan: nothing to
+    read facts from), or its first two pages never name the MPN or its base
+    family (probably another part's datasheet). With no `mpn` the name check
+    is skipped. A suspect file is kept for a person to look at; no fact read
+    from it counts as verified."""
+    import logging
+    from io import BytesIO
+    logging.getLogger("pypdf").setLevel(logging.ERROR)   # repair chatter
+    reasons: list[str] = []
+    out = {"pages": None, "chars_per_page": [], "text_chars": 0}
+    if b"%%EOF" not in data[-2048:]:
+        reasons.append("truncated: no %%EOF marker at the end of the file")
+    texts: list[str] = []
+    try:
+        from pypdf import PdfReader
+        pages = PdfReader(BytesIO(data)).pages
+        out["pages"] = len(pages)
+        for pg in pages:
+            try:
+                texts.append(pg.extract_text() or "")
+            except Exception:  # noqa: BLE001 - one bad page, not a bad file
+                texts.append("")
+    except ImportError:
+        raise
+    except Exception as exc:  # noqa: BLE001 - unparseable is a verdict
+        reasons.append(f"does not parse: {type(exc).__name__}: {exc}"[:160])
+    out["chars_per_page"] = [len(t.strip()) for t in texts]
+    out["text_chars"] = sum(out["chars_per_page"])
+    if out["pages"] and out["text_chars"] < MIN_CHARS_PER_PAGE * out["pages"]:
+        reasons.append(f"no text layer: {out['text_chars']} characters on "
+                       f"{out['pages']} page(s), a scan or an image PDF")
+    elif mpn and texts and not mpn_in_text(mpn, " ".join(texts[:2])):
+        reasons.append(f"MPN {mpn} (or its base family) is not in the text "
+                       "of pages 1-2: probably another part's datasheet")
+    return {"status": "suspect" if reasons else "ok", "reasons": reasons,
+            **out}
+
+
 def fetch_datasheet(url: str, dest: Path, transport=None,
-                    domains: dict | None = None) -> dict:
-    """GET one datasheet into dest: {status: fetched|missing|refused|error, ...}.
+                    domains: dict | None = None, mpn: str | None = None) -> dict:
+    """GET one datasheet into dest: {status: fetched|suspect|missing|refused|error, ...}.
     transport is researchlib.http_transport unless injected (tests)."""
     researchlib = _lib("researchlib")
     partslib = _lib("partslib")
@@ -609,7 +680,9 @@ def fetch_datasheet(url: str, dest: Path, transport=None,
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_bytes(data)
     import hashlib
-    return {**out, "status": "fetched", "file": str(dest),
+    ass = assess_pdf(data, mpn)
+    return {**out, "status": "fetched" if ass["status"] == "ok" else "suspect",
+            "assessment": ass, "file": str(dest),
             "final_url": resp.get("final_url") or url, "bytes": len(data),
             "sha256": hashlib.sha256(data).hexdigest()}
 
@@ -633,7 +706,7 @@ def do_fetch(args, transport=None) -> tuple[dict, int]:
                             "error": "no lcsc or no datasheet URL"})
             continue
         r = fetch_datasheet(line["datasheet"], ddir / f"{lcsc}.pdf",
-                            transport=transport)
+                            transport=transport, mpn=line.get("mpn"))
         if r.get("file"):
             r["file"] = Path(r["file"]).relative_to(ws).as_posix()
         results.append({"lcsc": lcsc, "mpn": line.get("mpn"), **r})
@@ -641,20 +714,24 @@ def do_fetch(args, transport=None) -> tuple[dict, int]:
         return {"script": "datasheet_extract", "status": "error",
                 "error": f"{args.lcsc} is not in {pj}"}, 2
     ok = all(r["status"] == "fetched" for r in results)
-    if any(r["status"] == "fetched" for r in results):
+    if any(r.get("file") for r in results):
         idx = ddir / "index.json"
         old = (json.loads(idx.read_text(encoding="utf-8"))
                if idx.is_file() else {})
         for r in results:
-            if r["status"] == "fetched":
-                old[r["lcsc"]] = {k: r.get(k) for k in
-                                  ("mpn", "file", "url", "final_url",
-                                   "bytes", "sha256")}
+            if r.get("file"):
+                a = r["assessment"]
+                old[r["lcsc"]] = {
+                    **{k: r.get(k) for k in ("mpn", "file", "url",
+                                             "final_url", "bytes", "sha256")},
+                    **{k: a[k] for k in ("status", "reasons", "pages",
+                                         "chars_per_page", "text_chars")}}
         idx.write_text(json.dumps(old, indent=1, ensure_ascii=True,
                                   sort_keys=True) + "\n", encoding="utf-8")
     return {"script": "datasheet_extract",
             "status": "pass" if ok else "violations",
             "fetched": sum(r["status"] == "fetched" for r in results),
+            "suspect": sum(r["status"] == "suspect" for r in results),
             "of": len(results), "datasheets": results,
             "next": ("datasheet_extract.py --pdf parts/datasheets/<lcsc>.pdf "
                      "--lcsc <lcsc> --out parts/<lcsc>.grounding.json")}, \
