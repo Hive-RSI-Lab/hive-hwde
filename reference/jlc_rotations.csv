@@ -18,7 +18,8 @@ regex,rotation
 # The table is now only the FALLBACK: bom_cpl.py takes each part's rotation
 # from its own LCSC footprint model (cpl_verify.py) and comes here only when
 # no model is cached or fetchable - dfm_check then fails that part as
-# unverified (cpl_no_model), so a table guess never ships unchecked.
+# unverified (cpl_no_model), so a table guess never ships unchecked. A ball
+# grid is checked against its own A1 corner instead (jlc_bga_cpl.md).
 #
 # --- Footprints pulled by easyeda2kicad (lib_pull.py) ---
 # Their names carry EasyEDA's dimensions (SOT-23-6_L2.9-W1.6-P0.95-LS2.8-BL,

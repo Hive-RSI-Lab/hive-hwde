@@ -53,7 +53,12 @@ Checks (all thresholds from reference/jlc_capabilities.yaml, keyed
            the community exporters' plus the geometry, not JLC's, so any bottom
            part that passes also raises one warning for the run,
            cpl_bottom_preview: confirm them in JLC's order preview
-           (reference/jlc_bottom_cpl.md). A model fetch that FAILED (EasyEDA 403/429 rate limit, other HTTP
+           (reference/jlc_bottom_cpl.md). A ball grid with no model is checked
+           against its footprint's own A1 corner: a turned CPL row is an ERROR
+           (cpl_rotation), and a match raises one warning for the run,
+           cpl_footprint_basis, because it rests on a convention JLC doesn't
+           publish, so confirm it in the preview (reference/jlc_bga_cpl.md).
+           A model fetch that FAILED (EasyEDA 403/429 rate limit, other HTTP
            status, network) is one finding for the run, cpl_fetch_failed,
            listing the parts and the reason - never cpl_no_model. When it is
            the run's only error the run is UNVERIFIED, not failed: status
@@ -1410,6 +1415,12 @@ def check_placement(pcb: Path, cpl: Path, parts: Path | None,
             CHECK, "warning", None, None, None, refs,
             f"{len(refs)} bottom part(s): {rep['bottom_preview']['note']}",
             SOURCE, kind="cpl_bottom_preview"))
+    if rep.get("footprint_basis"):
+        refs = rep["footprint_basis"]["refs"]
+        vios.append(checklib.violation(
+            CHECK, "warning", None, None, None, refs,
+            f"{len(refs)} ball grid part(s): {rep['footprint_basis']['note']}",
+            SOURCE, kind="cpl_footprint_basis"))
     for r in rows:
         where = None
         if r["verdict"] == "fetch_failed":
@@ -1721,7 +1732,7 @@ DFM_FAMILIES = {
              "dfm_pad_tented"),
     "polarity": ("cpl_polarity",),
     "placement": ("cpl_rotation", "cpl_no_model", "cpl_fetch_failed",
-                  "cpl_offset", "cpl_bottom_preview",
+                  "cpl_offset", "cpl_bottom_preview", "cpl_footprint_basis",
                   "both_sides_needs_panel"),
     "placement_visual": ("cpl_visual_disagree",),
     "bom": ("dfm_bom_incomplete", "dfm_assembly_unplaced_smt",

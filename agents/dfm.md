@@ -64,7 +64,9 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    output. It writes `fab/cpl_visual.json`: `{"model":
    "claude-sonnet-5-5", "parts": {"U3": {"pin1": "match", "polarity":
    "n/a", "note": ""}, ...}}`, one line for EVERY designator in index.json;
-   a "NO LCSC MODEL" crop is "unclear"; a "FETCH FAILED" crop (script
+   a "NO LCSC MODEL" crop is "unclear"; on a "NO MODEL, A1 from footprint"
+   crop, judge the orange dot on the cyan pin 1 ("match" there still isn't a
+   pass, see `cpl_footprint_basis` below); a "FETCH FAILED" crop (script
    exits 1, index.json note) is "unclear" too, and the fix is to rerun
    cpl_render in a few minutes, not to treat it as no model. Do not edit
    its verdicts -
@@ -84,6 +86,11 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    them that way (title "BOTTOM, from below"). That rule isn't JLC's own
    (`reference/jlc_bottom_cpl.md`), so `cpl_bottom_preview` stays as a warning:
    report it, and have those parts checked in JLC's order preview.
+   A ball grid with no LCSC model is checked against its footprint's own A1
+   corner (`reference/jlc_bga_cpl.md`). A turned row is `cpl_rotation`. A match
+   is the warning `cpl_footprint_basis`, because JLC's zero is the part's tape
+   orientation and it publishes no BGA rule: report it, and give the part an
+   LCSC number or have A1 checked in JLC's preview against the part's tape spec.
    `both_sides_needs_panel` warns that parts on both sides need Standard PCBA's
    rails, fiducials and 70 x 70 mm, on the board or on a panel.
    A wrong part (`cpl_rotation`), a part with no model or no fit

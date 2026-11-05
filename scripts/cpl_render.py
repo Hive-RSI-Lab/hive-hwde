@@ -25,7 +25,9 @@ one titled crop each. A part with no model is drawn with the board only and a
 "NO LCSC MODEL" title, so the image pass sees it as unverifiable. A part whose
 model fetch failed (an EasyEDA 403/429 or a network error) is a separate case:
 it is titled "FETCH FAILED", and the fix is to rerun, not to treat it as no
-model.
+model. A ball grid with no model gets an orange dot where the CPL rotation puts
+a standard part's A1 (cpl_verify.footprint_a1), and the title says so: the dot
+should sit on the board's pin 1, and that is a convention, not the part's model.
 
 The images feed the fab step's vision agent (agents/dfm.md), which writes
 cpl_visual.json; cpl_verify.merge_visual / dfm_check put that beside the
@@ -36,7 +38,8 @@ CLI:
                 [--parts parts.json] [--cache-dir DIR] [--offline]
                 [--per-image N] [--out index.json]
 Writes cpl_render_<n>.png and index.json ({"images": [{"file", "refs"}],
-"parts": {ref: {"lcsc", "cpl_rot", "polar", "has_model", "side"[, "fetch_error"]}}}
+"parts": {ref: {"lcsc", "cpl_rot", "polar", "has_model", "side"[, "fetch_error"]
+[, "expected_pin1": {"basis": "footprint", "pin", "at": [x, y]}]}}}
 plus "fetch_failed" [refs], "rate_limited" and a rerun "note" when a fetch
 failed). "polar" is null for a part whose fetch failed, since it can't be judged
 without the model.
@@ -47,7 +50,6 @@ from __future__ import annotations
 import argparse
 import json
 import math
-import re
 import sys
 from pathlib import Path
 
@@ -78,18 +80,24 @@ def board_shapes(fp: cv.Footprint) -> dict:
     return {"pads": pads, "silk": silk}
 
 
-_BALL = re.compile(r"^([A-Z]+)(\d+)$")
+_BALL = cv._BALL
+bga_pin1 = cv.bga_pin1
+
+
+def _placed(xy, cpl: dict, side: str) -> tuple[float, float]:
+    """A point of the part at the CPL position and rotation, in board
+    coordinates. On the bottom the rotation is read from below, so the turned
+    part comes back to the board frame with x negated."""
+    dx, dy = cv.rot(xy[0], xy[1], cpl["rot"])
+    return cpl["x"] + (dx if side == "top" else -dx), cpl["y"] + dy
 
 
 def model_shapes(model, cpl: dict, side: str = "top") -> dict:
-    """The LCSC model placed at the CPL position and rotation, in board
-    coordinates. On the bottom the rotation is read from below, so the turned
-    model comes back to the board frame with x negated."""
+    """The LCSC model placed at the CPL position and rotation (see _placed)."""
     sx = 1.0 if side == "top" else -1.0
 
     def place(x, y):
-        dx, dy = cv.rot(x, y, cpl["rot"])
-        return cpl["x"] + sx * dx, cpl["y"] + dy
+        return _placed((x, y), cpl, side)
     pads = []
     for p in model.pads:
         cx, cy = place(p.x, p.y)
@@ -115,21 +123,6 @@ def _role_pad(roles: dict[str, str], want=("K", "+")):
         if r in want:
             return num, r
     return None, None
-
-
-def bga_pin1(fp: cv.Footprint):
-    """The board's BGA pin 1: the pad named A1, else the lowest row letter and
-    then the lowest column number among ball-named pads. None when the
-    footprint has no ball grid (three or more rows of ball names)."""
-    balls = [(m.group(1), int(m.group(2)), p) for p in fp.pads
-             if (m := _BALL.match(p.number or ""))]
-    # a USB-C (A1..A12, B1..B12) is two rows of pins, not a ball grid
-    if len(balls) < 6 or len({b[0] for b in balls}) < 3:
-        return None
-    for row, col, p in balls:
-        if (row, col) == ("A", 1):
-            return p
-    return min(balls, key=lambda b: (len(b[0]), b[0], b[1]))[2]
 
 
 def polar_label(roles: dict[str, str], fp: cv.Footprint | None = None):
@@ -213,6 +206,14 @@ def render(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
                 title = f"{ref}  FETCH FAILED{where}"
             elif model is None:
                 title = f"{ref}  NO LCSC MODEL{where}"
+                a1 = cv.footprint_basis(fp, lcsc.get(ref, ""), fetch)
+                if a1 and "at" in a1:
+                    at = _placed(a1["at"], c, fp.side)
+                    ax.plot(*at, "o", color="orange", ms=7, zorder=7)
+                    title = (f"{ref}  NO MODEL, A1 from footprint  "
+                             f"CPL {c['rot']:g}{where}")
+                    index["parts"][ref]["expected_pin1"] = {
+                        "basis": "footprint", "pin": a1["pin"], "at": list(at)}
             else:
                 m = model_shapes(model, c, fp.side)
                 if cv.analyse(fp, model).get("number_corrections"):
@@ -248,8 +249,8 @@ def render(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
             ax.set_title(title, fontsize=9)
         name = f"cpl_render_{start // per_image + 1}.png"
         fig.suptitle("red dot = LCSC pin 1 as JLC places it;  cyan = board "
-                     "pad 1 / K / +;  BOTTOM crops are mirrored, seen from "
-                     "below", fontsize=9)
+                     "pad 1 / K / +;  orange = expected A1, no model;  BOTTOM "
+                     "crops are mirrored, seen from below", fontsize=9)
         fig.tight_layout()
         fig.savefig(out_dir / name, dpi=110)
         plt.close(fig)

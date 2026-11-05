@@ -12,6 +12,7 @@ import json
 import math
 import shutil
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -1124,6 +1125,290 @@ def test_render_marks_pin1_on_a_bga(tmp_path):
     idx = cpl_render.render(pcb, {"U9": {"x": 10, "y": 10, "rot": 0.0, "layer": "Top"}},
                             {}, tmp_path / "cache", tmp_path / "r", fetch=False)
     assert idx["parts"]["U9"]["bga_pin1"] == "A1"
+
+
+# ------------------------- a ball grid with no model: basis footprint (#698)
+
+# The real hdi-bga packages: WLCSP-49, UFBGA-64, TFBGA-54, FBGA-153.
+HDI = json.loads((REPO / "tests/fixtures/hdi_bga_balls.json").read_text())
+HDI_REFS = ("U401", "U402", "U403", "U404")
+
+
+def _hdi_pcb(tmp_path, rots=None, layer="F.Cu"):
+    """A board with the four hdi-bga packages and an empty parts map."""
+    rots = rots or {}
+    body = "".join(
+        _fp(r, HDI[r]["footprint"], 20.0 * i, 20.0, rots.get(r, 0),
+            [tuple(p) for p in HDI[r]["pads"]],
+            size=(HDI[r]["size"], HDI[r]["size"]), layer=layer)
+        for i, r in enumerate(HDI_REFS))
+    pcb = tmp_path / "hdi.kicad_pcb"
+    pcb.write_text("(kicad_pcb (version 20240108) " + body + ")")
+    return pcb
+
+
+def _hdi_cpl(rots=None, layer="Top"):
+    rots = rots or {}
+    return {r: {"x": 20.0 * i, "y": 20.0, "rot": float(rots.get(r, 0)), "layer": layer}
+            for i, r in enumerate(HDI_REFS)}
+
+
+def _ball_fp(c=0.0, n=4, m=3, side="top", ref="U1", board_rot=0.0):
+    """A standard grid (A1 upper left, columns to the right, rows downward)
+    turned by `c` on the footprint, m rows of n columns. On the bottom its
+    local pads are mirrored in y, as a flipped KiCad footprint's are."""
+    pads = []
+    for r in range(m):
+        for k in range(n):
+            x, y = cv.rot((k - (n - 1) / 2) * 0.8, (r - (m - 1) / 2) * 0.8, c)
+            pads.append(cv.KPad(f"{chr(65 + r)}{k + 1}", x,
+                                y if side == "top" else -y, 0.3, 0.3))
+    return cv.Footprint(ref, "X:BGA", 10.0, 10.0, board_rot, side, pads)
+
+
+def _footprint_row(fp, rot):
+    return cv.verify(Path("nowhere.kicad_pcb"),
+                     {fp.ref: {"x": fp.x, "y": fp.y, "rot": float(rot), "layer": "Top"}},
+                     {}, Path("/nonexistent"), fetch=False, fps={fp.ref: fp})
+
+
+@pytest.mark.parametrize("ref", HDI_REFS)
+def test_hdi_bga_gets_a_rotation_verdict_not_no_model(ref, tmp_path):
+    """Known answer (#698): every package has A1 upper left, so CPL 0."""
+    rep = cv.verify(_hdi_pcb(tmp_path), _hdi_cpl(), {}, tmp_path / "c", fetch=False)
+    row = {r["ref"]: r for r in rep["parts"]}[ref]
+    assert row["verdict"] == cv.FOOTPRINT_MATCH
+    assert row["basis"] == "footprint" and row["expected_rot"] == [0.0]
+    assert row["verdict"] not in cv.FAIL_VERDICTS and row["verdict"] != "ok"
+    assert ref in rep["footprint_basis"]["refs"]
+    assert "tape" in rep["footprint_basis"]["note"]
+
+
+def test_turned_u404_row_fails(tmp_path):
+    """Known answer (#698): a deliberately turned CPL row fails, alone."""
+    rep = cv.verify(_hdi_pcb(tmp_path), _hdi_cpl({"U404": 90}), {},
+                    tmp_path / "c", fetch=False)
+    row = {r["ref"]: r for r in rep["parts"]}["U404"]
+    assert row["verdict"] == "wrong_rotation" and row["basis"] == "footprint"
+    assert row["expected_rot"] == [0.0] and "A1" in row["why"]
+    assert rep["failed"] == ["U404"] and rep["status"] == "violations"
+    assert "U404" not in rep["footprint_basis"]["refs"]
+
+
+@pytest.mark.parametrize("turn", [90, 180, 270])
+def test_every_wrong_quarter_turn_of_u404_fails(turn, tmp_path):
+    rep = cv.verify(_hdi_pcb(tmp_path), _hdi_cpl({"U404": turn}), {},
+                    tmp_path / "c", fetch=False)
+    assert rep["failed"] == ["U404"]
+
+
+@pytest.mark.parametrize("c", [0.0, 90.0, 180.0, 270.0])
+@pytest.mark.parametrize("side", ["top", "bottom"])
+def test_footprint_correction_equals_the_model_fit(c, side):
+    """An independent answer: a real model of the standard part, fitted by
+    pad number, must give the correction read from the footprint alone."""
+    fp = _ball_fp(c, side=side)
+    std = _model([(p.number, *cv.rot(p.x, p.y if side == "top" else -p.y, -c))
+                  for p in fp.pads])
+    fitted = cv.analyse(fp, std)["corrections"]
+    assert fitted == pytest.approx([c], abs=1e-6)
+    assert cv.footprint_a1(fp)["correction"] == pytest.approx(c, abs=1e-6)
+
+
+@pytest.mark.parametrize("side,board_rot,want", [
+    ("top", 0.0, 0.0), ("top", 90.0, 90.0), ("top", 270.0, 270.0),
+    ("bottom", 0.0, 180.0), ("bottom", 90.0, 90.0), ("bottom", 180.0, 0.0)])
+def test_expected_rotation_follows_the_side_rule(side, board_rot, want):
+    """Top: board + c. Bottom: 180 - board + c, read from below."""
+    fp = _ball_fp(side=side, board_rot=board_rot)
+    row = _footprint_row(fp, want)["parts"][0]
+    assert row["verdict"] == cv.FOOTPRINT_MATCH and row["expected_rot"] == [want]
+    assert _footprint_row(fp, want + 90)["parts"][0]["verdict"] == "wrong_rotation"
+
+
+def test_bottom_footprint_basis_also_asks_for_the_bottom_preview():
+    rep = _footprint_row(_ball_fp(side="bottom"), 180.0)
+    assert rep["bottom_preview"]["refs"] == ["U1"]
+
+
+def test_a1_turned_in_the_footprint_moves_the_expected_rotation():
+    """A library footprint with A1 lower right needs CPL 180 at board rot 0."""
+    fp = _ball_fp(180.0)
+    assert _footprint_row(fp, 180.0)["parts"][0]["verdict"] == cv.FOOTPRINT_MATCH
+    assert _footprint_row(fp, 0.0)["parts"][0]["verdict"] == "wrong_rotation"
+
+
+def test_depopulated_grid_reads_the_axes_not_the_a1_ball():
+    """No ball A1, and a centre-only row A (FBGA-153 style)."""
+    fp = _ball_fp(90.0, n=6, m=5)
+    fp = replace(fp, pads=[p for p in fp.pads
+                           if p.number not in ("A1", "A2", "A5", "A6")])
+    got = cv.footprint_a1(fp)
+    assert got["correction"] == pytest.approx(90.0) and got["pin"] == "A3"
+
+
+def test_mirrored_land_pattern_stays_no_model():
+    """Drawn in bottom view: no turn puts a standard part on it, so it blocks."""
+    fp = _ball_fp()
+    fp = replace(fp, pads=[replace(p, x=-p.x) for p in fp.pads])
+    assert "mirror" in cv.footprint_a1(fp)["why"]
+    row = _footprint_row(fp, 0.0)["parts"][0]
+    assert row["verdict"] == "no_model" and "mirror" in row["why"]
+    assert row["verdict"] in cv.FAIL_VERDICTS
+
+
+@pytest.mark.parametrize("pads", [
+    [("1", -1.5, 0), ("2", 1.5, 0)],                               # a resistor
+    [(f"{a}{k}", (k - 6) * 0.5, y) for a, y in (("A", -1), ("B", 1))
+     for k in range(1, 13)],                                       # a USB-C
+    [(f"{a}{k}", (k - 16) * 2.54, y) for a, y in (("A", -2.54), ("B", 0), ("C", 2.54))
+     for k in range(1, 33)],                                       # a DIN 41612
+])
+def test_not_a_ball_grid_stays_no_model(pads):
+    fp = cv.Footprint("J1", "X:J", 0, 0, 0, "top",
+                      [cv.KPad(n, x, y, 0.3, 0.3) for n, x, y in pads])
+    assert cv.footprint_a1(fp) is None
+    assert _footprint_row(fp, 0.0)["parts"][0]["verdict"] == "no_model"
+
+
+def test_sliver_lands_named_like_balls_are_not_a_ball_grid():
+    """A fine-pitch connector's long leads aren't balls."""
+    fp = cv.Footprint("J1", "X:J", 0, 0, 0, "top",
+                      [cv.KPad(f"{a}{k}", k * 0.5, y, 0.25, 1.2)
+                       for a, y in (("A", -2), ("B", 0), ("C", 2))
+                       for k in range(1, 9)])
+    assert cv.footprint_a1(fp) is None
+
+
+def test_fetch_failure_on_a_bga_stays_fetch_failed(tmp_path, monkeypatch):
+    """A failed fetch says nothing, and the real model may yet answer."""
+    def boom(lcsc, cache_dir=None, fetch=True, pace_s=0.0, fetcher=None, errors=None):
+        errors[lcsc] = "HTTP 403"
+        return None
+    monkeypatch.setattr(easyeda, "get", boom)
+    fp = _ball_fp()
+    rep = cv.verify(Path("x.kicad_pcb"), {"U1": {"x": 10.0, "y": 10.0, "rot": 0.0}},
+                    {"U1": "C1"}, tmp_path, fps={"U1": fp})
+    assert rep["parts"][0]["verdict"] == "fetch_failed"
+    assert rep["footprint_basis"] is None
+
+
+def test_offline_bga_with_an_uncached_lcsc_number_stays_no_model(tmp_path):
+    """One fetch away from the real model: a convention must not stand in."""
+    fp = _ball_fp()
+    rep = cv.verify(Path("x.kicad_pcb"), {"U1": {"x": 10.0, "y": 10.0, "rot": 0.0}},
+                    {"U1": "C999999"}, tmp_path, fetch=False, fps={"U1": fp})
+    assert rep["parts"][0]["verdict"] == "no_model"
+
+
+def test_bga_the_api_has_no_model_for_gets_footprint_basis(tmp_path, monkeypatch):
+    monkeypatch.setattr(easyeda, "get", lambda *a, **k: None)
+    fp = _ball_fp()
+    rep = cv.verify(Path("x.kicad_pcb"), {"U1": {"x": 10.0, "y": 10.0, "rot": 0.0}},
+                    {"U1": "C999999"}, tmp_path, fetch=True, fps={"U1": fp})
+    assert rep["parts"][0]["verdict"] == cv.FOOTPRINT_MATCH
+
+
+def test_model_still_wins_over_the_footprint(tmp_path):
+    """A model that says otherwise decides: the convention is only a fallback."""
+    fp = _ball_fp(0.0, n=4, m=3)
+    turned = _model([(p.number, *cv.rot(p.x, p.y, -90.0)) for p in fp.pads])
+    row = cv.check_part(fp, turned, {"x": 10.0, "y": 10.0, "rot": 90.0})
+    assert row["verdict"] == "ok" and row["basis"] != "footprint"
+
+
+def test_derive_rotation_does_not_use_the_footprint_convention():
+    """bom_cpl writes a CPL from a real model or the table, never this."""
+    assert cv.derive_rotation(_ball_fp(180.0), None) is None
+    assert cv.analyse(_ball_fp(180.0), None)["verdict"] == "no_model"
+
+
+@pytest.mark.parametrize("rot,want", [(0.0, "unknown"), (90.0, "unknown")])
+def test_footprint_basis_never_verifies_the_ledger_fact(rot, want, tmp_path):
+    """`verified` means the pads landed on the LCSC model. No model, no claim,
+    whether the row matched (0) or failed (90)."""
+    ws = tmp_path / "w"
+    (ws / "kicad").mkdir(parents=True)
+    (ws / "state.json").write_text("{}")
+    pcb = ws / "kicad" / "b.kicad_pcb"
+    pcb.write_text("(kicad_pcb (version 20240108) " + _fp(
+        "U1", "X:BGA", 10, 10, 0, _grid(0.5), size=(0.3, 0.3)) + ")")
+    import ledgerlib
+    seen = {}
+    real_put = ledgerlib.put
+    orig = (ledgerlib.writable, ledgerlib.expected)
+    ledgerlib.writable = lambda w: True
+    ledgerlib.expected = lambda w: {ledgerlib.key("U1", "footprint")}
+    ledgerlib.put = lambda w, facts, who: seen.update(f=facts) or None
+    try:
+        cv.verify(pcb, {"U1": {"x": 10, "y": 10, "rot": rot, "layer": "Top"}},
+                  {}, tmp_path / "c", fetch=False)
+    finally:
+        ledgerlib.writable, ledgerlib.expected = orig
+        ledgerlib.put = real_put
+    assert seen["f"][0]["status"] == want and seen["f"][0]["source"] == ""
+
+
+def test_image_match_agrees_with_a_footprint_match():
+    vis = {"parts": {"U1": {"pin1": "match", "polarity": "n/a"}}}
+    row = {"ref": "U1", "verdict": cv.FOOTPRINT_MATCH}
+    assert cv.merge_visual([row], vis)[0]["agreement"] == "agree"
+    vis["parts"]["U1"]["pin1"] = "mismatch"
+    assert cv.merge_visual([row], vis)[0]["agreement"] == "disagree"
+
+
+def test_dfm_warns_on_a_footprint_match_and_errors_on_a_turned_row(tmp_path):
+    fab = tmp_path / "CPL.csv"
+    rows = ["Designator,Mid X,Mid Y,Layer,Rotation"]
+    for r, c in _hdi_cpl().items():
+        rows.append(f"{r},{c['x']},{-c['y']},Top,{90 if r == 'U404' else 0}")
+    fab.write_text("\n".join(rows) + "\n")
+    vios: list = []
+    dfm_check.check_placement(_hdi_pcb(tmp_path), fab, None, None, tmp_path / "c",
+                              False, vios)
+    by = {v["kind"]: v for v in vios}
+    assert by["cpl_footprint_basis"]["severity"] == "warning"
+    assert by["cpl_footprint_basis"]["refs"] == ["U401", "U402", "U403"]
+    assert by["cpl_rotation"]["severity"] == "error"
+    assert by["cpl_rotation"]["refs"] == ["U404"]
+    assert not [v for v in vios if v["kind"] == "cpl_no_model"]
+
+
+def _index_for(tmp_path, rot, c_rot, layer):
+    pcb = tmp_path / "b.kicad_pcb"
+    pcb.write_text("(kicad_pcb (version 20240108) " + _fp(
+        "U9", "X:BGA", 10, 10, rot, _grid(0.5, 4), size=(0.3, 0.3), layer=layer) + ")")
+    return pcb, cpl_render.render(
+        pcb, {"U9": {"x": 10, "y": 10, "rot": c_rot, "layer": "Top"}},
+        {}, tmp_path / "cache", tmp_path / "r", fetch=False)
+
+
+@pytest.mark.parametrize("layer,rot,c_rot", [
+    ("F.Cu", 0, 0.0), ("F.Cu", 90, 90.0), ("B.Cu", 0, 180.0), ("B.Cu", 90, 90.0)])
+def test_render_draws_the_expected_dot_on_the_boards_a1(layer, rot, c_rot, tmp_path):
+    pcb, idx = _index_for(tmp_path, rot, c_rot, layer)
+    part = idx["parts"]["U9"]
+    assert part["expected_pin1"]["basis"] == "footprint"
+    assert part["expected_pin1"]["pin"] == "A1"
+    a1 = next(p for p in cpl_render.board_shapes(cv.board_footprints(pcb)["U9"])["pads"]
+              if p["number"] == "A1")
+    assert part["expected_pin1"]["at"] == pytest.approx(list(a1["center"]), abs=1e-6)
+
+
+def test_render_dot_leaves_the_boards_a1_when_the_row_is_turned(tmp_path):
+    pcb, idx = _index_for(tmp_path, 0, 90.0, "F.Cu")
+    a1 = next(p for p in cpl_render.board_shapes(cv.board_footprints(pcb)["U9"])["pads"]
+              if p["number"] == "A1")
+    at = idx["parts"]["U9"]["expected_pin1"]["at"]
+    assert math.hypot(at[0] - a1["center"][0], at[1] - a1["center"][1]) > 0.5
+
+
+def test_render_draws_no_expected_dot_for_a_plain_part_or_with_a_model(ws, tmp_path):
+    pcb, cache = ws
+    idx = cpl_render.render(pcb, _cpl(X1=0, U1=90), LCSC, cache, tmp_path / "r",
+                            fetch=False)
+    assert "expected_pin1" not in idx["parts"]["X1"]
+    assert "expected_pin1" not in idx["parts"]["U1"]
 
 
 # KiCad's SOT-89-3: the collector tab is a custom pad whose anchor sits in the
