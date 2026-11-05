@@ -773,7 +773,8 @@ def build(ws: Path,
 
     # ---- the fact ledger: nothing critical unknown -----------------------
     # Every fact the board relies on (stock, part match, lifecycle, ratings,
-    # pinouts, footprints - lib/ledgerlib.py) must read verified now: a
+    # pinouts, footprints - lib/ledgerlib.py) must read neither failed nor
+    # unknown now (a rating read off a distributor's listing does pass): a
     # board with a part JLC cannot place or a pin map nobody checked is not
     # ready to order, however green its gates.
     import ledgerlib
@@ -851,8 +852,8 @@ def verify(ws: Path, att: dict | None = None) -> dict:
     under durable waivers, the fab package bound, checkpoint 4 not rejected,
     checker currency, restrictions unchanged with no hold, no artifact
     stale marks, no live issues, no recorded rejection anywhere, and every
-    fact in the board's ledger verified as it reads now (stale stock reads
-    unknown).
+    fact in the board's ledger neither failed nor unknown as it reads now
+    (stale stock reads unknown).
 
     NOT invalidated by: report age (bounded at build), history appends, or
     a gate re-run that still passes on identical inputs."""

@@ -51,12 +51,16 @@ import releaselib  # noqa: E402
 SCRIPT = "attest"
 
 
-def _orphan_note(ws: Path) -> dict:
-    """Ledger facts about parts no longer on the board: listed, never counted
-    as evidence (ledger.py prune removes them)."""
+def _ledger_notes(ws: Path) -> dict:
+    """What a pass doesn't say about the ledger. Facts about parts no longer
+    on the board: never counted as evidence (ledger.py prune removes them).
+    Ratings no datasheet backs: they don't refuse, and the result names them
+    (#781, lib/ledgerlib.py)."""
     import ledgerlib
     gone = sorted(ledgerlib.orphans(ws))
-    return {"orphaned_ledger_facts": gone} if gone else {}
+    listed = sorted(r["key"] for r in ledgerlib.report(ws)["listed"])
+    return {**({"orphaned_ledger_facts": gone} if gone else {}),
+            **({"listed_ledger_facts": listed} if listed else {})}
 
 
 def run(argv=None) -> tuple[dict, str | None, int]:
@@ -95,19 +99,19 @@ def run(argv=None) -> tuple[dict, str | None, int]:
             ws, max_report_age_h=args.max_report_age_h)
         if att is None:
             result.update(status="violations", problems=problems,
-                          attestation=None, **_orphan_note(ws))
+                          attestation=None, **_ledger_notes(ws))
             return result, args.out, 1
         if not args.force:
             existing = releaselib.verify(ws)
             if existing.get("valid"):
-                result.update(**_orphan_note(ws))
+                result.update(**_ledger_notes(ws))
                 result.update(status="pass", action="unchanged",
                               rev=existing.get("rev"),
                               attestation_sha256=existing
                               .get("attestation_sha256"))
                 return result, args.out, 0
         path = releaselib.write_attestation(ws, att)
-        result.update(**_orphan_note(ws))
+        result.update(**_ledger_notes(ws))
         result.update(status="pass",
                       action="reissued" if att.get("supersedes") else "issued",
                       attestation=str(path).replace("\\", "/"),
@@ -118,7 +122,8 @@ def run(argv=None) -> tuple[dict, str | None, int]:
 
     if args.cmd == "verify":
         v = releaselib.verify(ws)
-        result.update(status="pass" if v["valid"] else "violations", **v)
+        result.update(status="pass" if v["valid"] else "violations", **v,
+                      **_ledger_notes(ws))
         return result, args.out, 0 if v["valid"] else 1
 
     # disposition

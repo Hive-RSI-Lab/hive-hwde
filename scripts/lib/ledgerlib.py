@@ -2,9 +2,11 @@
 
 The person, 10-28: "we need to catch stuff like this. know what we dont
 know". A board workspace keeps `ledger.json`: one entry per fact the design
-relies on, each `verified` (with its source and when), `failed` (a check
-found it false) or `unknown` (nothing has checked it - including a check that
-ran and could not tell). Checks write to it as they run; nothing is assumed.
+relies on, each `verified` (with its source and when), `listed` (a rating
+compared and held, on a number no datasheet read backs; see below), `failed`
+(a check found it false) or `unknown` (nothing has checked it - including a
+check that ran and could not tell). Checks write to it as they run; nothing is
+assumed.
 
 Facts and who writes them:
   stock       per LCSC code on BOM.csv: JLC can sell what the build needs
@@ -13,7 +15,10 @@ Facts and who writes them:
               (stock_check.py)
   lifecycle   per LCSC code: JLC sells the code, nothing substitutes it
               (stock_check.py)
-  rating      per refdes: every connected pin within its datasheet rating
+  rating      per refdes: every connected pin within its rating, verified
+              when the rating was read from a datasheet, listed when it was
+              not; rated_from says which: datasheet, distributor (parts.json
+              attributes) or package (a generic table)
               (check_ratings.py, run by the verify gate)
   pinout      per refdes with more than two pins: the board's pad numbers
               and names agree with the datasheet extraction's pinout
@@ -46,8 +51,16 @@ A fact expected but never written reads `unknown`. A recorded fact reads
 fact about a refdes whose LCSC code has since changed.
 
 Every kind is critical: release (attest.py build, and order-ready, which
-re-verifies) refuses while any expected fact is not `verified`
+re-verifies) refuses while any expected fact is `failed` or `unknown`
 (`blockers()`); `ledger.py report` lists them.
+
+`listed` does not refuse (#781). A listed number was compared and held, which
+an unknown wasn't, and refusing it would stop nearly every rating on the fleet
+with no case of a listing disagreeing with its datasheet to justify that. But
+it is not called verified: `report()` lists them, attest.py names them in its
+result, and check_ratings warns once per board with the way to verified
+(`datasheet_extract --fetch`, then extraction). A ledger from before the tier
+reads listed too (`effective`), until check_ratings next writes it.
 
 Writers only write into a real workspace (a state.json beside the board
 folder) and never when HWDE_LEDGER_WRITE=0 (the test suite's default).
@@ -68,8 +81,9 @@ KINDS = ("stock", "part_match", "lifecycle", "rating", "pinout", "footprint",
 PART_KINDS = ("stock", "part_match", "lifecycle")   # subject: LCSC code
 REF_KINDS = ("rating", "pinout", "footprint")       # subject: refdes
 VENDOR_KINDS = ("vendor",)                          # subject: vendor id
-STATUSES = ("verified", "failed", "unknown")
+STATUSES = ("verified", "listed", "failed", "unknown")
 STOCK_MAX_AGE_H = 72.0
+ATTRIBUTE_SOURCE = "parts.json attributes of"
 UNBOUGHT = ("dnp", "board_feature", "customer_supplied")
 # the classes the assembler fits from the upload (bom_cpl.ASSEMBLED_CLASSES)
 ASSEMBLED = ("smt_placed", "tht")
@@ -283,7 +297,7 @@ def put(ws: Path, facts: list[dict], by: str) -> Path | None:
                              f"one of {STATUSES}")
         ent = {k: f[k] for k in ("subject", "kind", "status", "value",
                                  "source", "lcsc", "refs", "basis", "forced",
-                                 "forced_over")
+                                 "forced_over", "rated_from")
                if k in f}
         ent.setdefault("value", "")
         ent.setdefault("source", "")
@@ -391,6 +405,13 @@ def effective(fact: dict | None, exp: dict | None, at=None) -> dict:
                        why=f"stale: checked {fact.get('checked_at')}, stock "
                            f"is only good for {STOCK_MAX_AGE_H:.0f} h - "
                            "rerun stock_check.py")
+    if out.get("status") == "verified" and out.get("kind") == "rating" \
+            and out.get("by") == "check_ratings" \
+            and str(out.get("source") or "").startswith(ATTRIBUTE_SOURCE):
+        out.update(status="listed", rated_from="distributor",
+                   value="rated from parts.json, no datasheet read",
+                   why="written before #781 called this verified; rerun "
+                       "check_ratings")
     return out
 
 
@@ -463,6 +484,7 @@ def report(ws: Path, at=None) -> dict:
         d[r["status"]] = d.get(r["status"], 0) + 1
     failed = [r for r in rows if r["status"] == "failed"]
     unknown = [r for r in rows if r["status"] == "unknown"]
+    listed = [r for r in rows if r["status"] == "listed"]
     orphaned = [{"key": k, "subject": f.get("subject"), "kind": f.get("kind"),
                  "status": f.get("status")}
                 for k, f in sorted(orphans(ws).items())]
@@ -470,11 +492,12 @@ def report(ws: Path, at=None) -> dict:
             "orphaned": orphaned,
             "ready": not failed and not unknown, "counts": counts,
             "by_kind": by_kind, "failed": failed, "unknown": unknown,
-            "facts": rows}
+            "listed": listed, "facts": rows}
 
 
 def blockers(ws: Path, at=None, limit: int = 12) -> list[str]:
-    """Release problems: every critical fact not verified, summarised."""
+    """Release problems: every critical fact failed or unknown, summarised.
+    A listed one is not a problem: see the module docstring."""
     rep = report(ws, at)
     out = []
     for status in ("failed", "unknown"):

@@ -102,7 +102,7 @@ gates:
     description: >-
       P8 verification suite (verify_all.py): return path, current, decoupling,
       diff pairs, creepage, thermal, silk, PDN, pin ratings (check_ratings:
-      every pin's datasheet rating against its net's voltage; needs the
+      every pin's rating (its datasheet's, else the distributor's) against its net's voltage; needs the
       workspace parts dir, so it can run from P4 on), routing style
       (check_route_style: arcs and off-45 segments are errors - the owner's
       straight-and-45 rule; needless jogs are warnings; an RF or

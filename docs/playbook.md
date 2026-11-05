@@ -229,7 +229,9 @@ recorded at `fab/attestation.json`) and `state.py resume` reports the derived
 **Know what the board does not know.** Each workspace keeps `ledger.json`
 (`scripts/lib/ledgerlib.py`): every fact the design relies on - per BOM code
 its stock, part match and lifecycle at JLC; per part its pin ratings, pinout
-and footprint - as verified (source and date), failed, or unknown. The checks
+and footprint - as verified (source and date), failed, or unknown, and a rating
+whose number came from the distributor or a package table, with no datasheet
+read, as listed (`rated_from` says which). The checks
 write it as they run (`stock_check.py` and `bom_cpl.py`'s live run,
 `check_ratings.py` in verify, `cpl_verify.py` in dfm); a check that cannot
 tell records unknown, never a pass. `ledger.py report --workspace <ws>` lists
@@ -238,8 +240,9 @@ over a suspect datasheet). Facts about a part that left the board
 (swapped or removed refdes or LCSC code) show as `orphaned` in the report and
 in `attest build`, never count as evidence; `ledger.py prune --workspace <ws>`
 lists them, `--apply` deletes them.
-Release refuses while any fact is not verified, and stock older than 72 h
-reads unknown, so re-run `stock_check.py --workspace <ws>` before the order.
+Release refuses while any fact is failed or unknown. A listed fact passes and
+`attest` names it, with a `rating_no_datasheet_read` warning saying how to read
+the datasheet. Stock older than 72 h reads unknown, so re-run `stock_check.py --workspace <ws>` before the order.
 
 ## Works first time, watches itself, brought up unattended
 

@@ -168,7 +168,8 @@ release until reworked).
 Every board keeps `ledger.json`: each fact its design relies on (per BOM code:
 JLC stock, the part JLC will really place, whether JLC still sells it; per
 part: pin ratings, pinout, footprint), verified with its source and date,
-failed, or unknown. The checks fill it in as they run, and one that can't
+failed, or unknown. A rating compared with a distributor's or a package table's
+number, no datasheet read, is listed, and that doesn't stop an order. The checks fill it in as they run, and one that can't
 tell writes unknown. `bin/hwde ledger report --workspace <ws>` lists the gaps.
 `bin/hwde ledger set ... --source "..."` records a fact you checked yourself;
 verified is refused over a suspect or placeholder datasheet unless

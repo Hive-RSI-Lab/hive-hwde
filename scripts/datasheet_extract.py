@@ -25,7 +25,8 @@ reads the PDF pages); this script owns the deterministic half:
                     and status ok|suspect (+ reasons): suspect = the file is
                     cut off, has no text layer, or nothing ties it to the MPN
                     (#706, #755: see assess_pdf); a suspect PDF is kept but
-                    check_ratings and the ledger never count it verified.
+                    check_ratings and the ledger never count what was read
+                    from it verified.
                     exit 0 = every datasheet fetched, 1 = some suspect,
                     refused or missing, 2 = bad workspace.
   --assess WS       re-read every index.json entry's PDF on disk (or only
