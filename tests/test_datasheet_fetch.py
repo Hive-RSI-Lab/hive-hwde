@@ -134,6 +134,7 @@ def _pdf(pages: list[str]) -> bytes:
 
 
 NOTICE = _pdf(["LCSC Datasheet Notice - Datasheet temporarily unavailable"])
+PDF = _pdf([f"KT-0603G datasheet page {i} " + "x" * 300 for i in range(1, 4)])  # a whole one (#706)
 REAL = _pdf([f"Page {i} absolute maximum ratings VCC 5.5 V " + "x" * 300
              for i in range(1, 9)])
 
@@ -180,3 +181,63 @@ def test_pdf_mode_refuses_a_stub_on_disk():
         assert pdf is None and "placeholder" in err["error"], err
         f.write_bytes(REAL)
         assert datasheet_extract._checked_pdf(str(f))[1] is None
+
+
+# ---------------------------------------------- suspect datasheets (#706)
+
+RIGHT = _pdf([f"TESTPART123 datasheet page {i} " + "x" * 300 for i in range(1, 5)])
+WRONG = _pdf([f"OTHERCHIP999 datasheet page {i} " + "x" * 300 for i in range(1, 5)])
+TRUNC = RIGHT[:len(RIGHT) * 2 // 3]
+NOTEXT = _pdf([""] * 4)
+MPN = "TESTPART123-QFN"     # the orderable code; the family is TESTPART123
+
+
+def test_assess_right_part_is_ok_with_page_and_text_counts():
+    a = datasheet_extract.assess_pdf(RIGHT, MPN)
+    assert a["status"] == "ok" and a["reasons"] == [], a
+    assert a["pages"] == 4 and len(a["chars_per_page"]) == 4
+    assert all(c > 300 for c in a["chars_per_page"]) and a["text_chars"] > 1200
+
+
+def test_assess_wrong_part_is_suspect():
+    a = datasheet_extract.assess_pdf(WRONG, MPN)
+    assert a["status"] == "suspect" and a["pages"] == 4, a
+    assert any("TESTPART123" in r and "pages 1-2" in r for r in a["reasons"]), a
+
+
+def test_assess_truncated_file_is_suspect():
+    a = datasheet_extract.assess_pdf(TRUNC, MPN)
+    assert a["status"] == "suspect", a
+    assert any("truncated" in r for r in a["reasons"]), a
+
+
+def test_assess_no_text_layer_is_suspect():
+    a = datasheet_extract.assess_pdf(NOTEXT, MPN)
+    assert a["status"] == "suspect" and a["text_chars"] == 0, a
+    assert any("no text layer" in r for r in a["reasons"]), a
+
+
+def test_assess_without_an_mpn_skips_only_the_name_check():
+    assert datasheet_extract.assess_pdf(WRONG, None)["status"] == "ok"
+    assert datasheet_extract.assess_pdf(NOTEXT, None)["status"] == "suspect"
+
+
+def test_fetch_suspect_is_not_fetched_but_is_kept_and_indexed():
+    with tempfile.TemporaryDirectory() as d:
+        ws = Path(d)
+        (ws / "parts").mkdir()
+        (ws / "parts" / "parts.json").write_text(json.dumps({"parts": [
+            {"lcsc": "C1", "mpn": MPN, "datasheet": WMSC},
+            {"lcsc": "C2", "mpn": MPN, "datasheet": WMSC}]}))
+        bodies = {"C1": WRONG, "C2": RIGHT}
+        for lcsc, body in bodies.items():
+            out, code = datasheet_extract.do_fetch(
+                Namespace(fetch=str(ws), lcsc=lcsc), transport=_serve(body))
+            r = out["datasheets"][0]
+            assert r["status"] == ("suspect" if body is WRONG else "fetched"), r
+            assert (ws / f"parts/datasheets/{lcsc}.pdf").is_file()
+            assert code == (1 if body is WRONG else 0), out
+        idx = json.loads((ws / "parts/datasheets/index.json").read_text())
+        assert idx["C1"]["status"] == "suspect" and idx["C1"]["reasons"], idx
+        assert idx["C1"]["pages"] == 4 and len(idx["C1"]["chars_per_page"]) == 4
+        assert idx["C2"]["status"] == "ok" and idx["C2"]["reasons"] == [], idx

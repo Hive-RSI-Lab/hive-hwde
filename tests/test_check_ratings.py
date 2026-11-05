@@ -1311,3 +1311,54 @@ def test_sign_is_not_judged_on_a_rail_the_mpn_named(tmp_path):
                  {"1": "+12V", "2": "GND", "3": "/RAIL"}, CODED_NAMES,
                  mpn="ADP7182-5.0")
     assert _errors(_run(ws)) == []
+
+
+# ---------------------------------------------- suspect datasheets (#706)
+
+def _suspect_ws(tmp_path, index):
+    ws = _ws(tmp_path, [("U1", "C1", {"1": "+3V3", "2": "GND", "3": "+3V3"})],
+             {"C1": MCU})
+    d = ws / "parts" / "datasheets"
+    d.mkdir()
+    if index is not None:
+        (d / "index.json").write_text(json.dumps({"C1": index}))
+    return ws
+
+
+def _u1(p, kind):
+    return next(f for f in p["ledger_facts"] if f["subject"] == "U1"
+                and f["kind"] == kind)
+
+
+def test_suspect_datasheet_facts_are_not_verified(tmp_path):
+    ws = _suspect_ws(tmp_path, {"status": "suspect", "reasons": [
+        "MPN TESTMCU not in the text of pages 1-2"]})
+    viol, facts = cr.run_check(ws / "kicad" / "board.kicad_pcb",
+                               ws / "parts", None, None)
+    for kind in ("rating", "pinout"):
+        f = _u1(facts, kind)
+        assert f["status"] == "unknown" and "suspect" in f["value"], f
+        assert f["source"] == ""
+    w = [v for v in viol if v["kind"] == "rating_datasheet_suspect"]
+    assert len(w) == 1 and w[0]["severity"] == "warning", viol
+    assert "TESTMCU not in the text" in w[0]["msg"] and w[0]["refs"] == ["U1"]
+    assert not _errors({"violations": viol})
+
+
+def test_ok_datasheet_index_still_verifies(tmp_path):
+    ws = _suspect_ws(tmp_path, {"status": "ok", "reasons": []})
+    viol, facts = cr.run_check(ws / "kicad" / "board.kicad_pcb",
+                               ws / "parts", None, None)
+    assert _u1(facts, "rating")["status"] == "verified"
+    assert _u1(facts, "pinout")["status"] == "verified"
+    assert not [v for v in viol if v["kind"] == "rating_datasheet_suspect"]
+
+
+def test_notice_pdf_on_disk_is_suspect_even_without_an_index(tmp_path):
+    from test_datasheet_fetch import NOTICE
+    ws = _suspect_ws(tmp_path, None)
+    (ws / "parts" / "datasheets" / "C1.pdf").write_bytes(NOTICE)
+    viol, facts = cr.run_check(ws / "kicad" / "board.kicad_pcb",
+                               ws / "parts", None, None)
+    assert _u1(facts, "rating")["status"] == "unknown"
+    assert [v for v in viol if v["kind"] == "rating_datasheet_suspect"]

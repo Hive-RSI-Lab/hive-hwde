@@ -697,9 +697,14 @@ def board_fab_params(pcb: Path, fab_dir: Path) -> dict:
         out["length"] = [round(height, 2), "its outline"]
     except Exception:  # noqa: BLE001 - a board with no outline says nothing
         pass
-    general = re.search(r"\(general\b[^()]*\(thickness\s+([\d.]+)", text)
-    if general:
-        out["thickness"] = [float(general.group(1)), "its general thickness"]
+    general = fabmaterial.board_general_mm(pcb)
+    stack = fabmaterial.board_stack_sum_mm(pcb)
+    if stack is not None and general is not None and fabmaterial.thickness_gap(
+            stack, general) > fabmaterial.THICKNESS_TOLERANCE:
+        # The layers are what gets built; check_stackup flags the disagreement.
+        out["thickness"] = [stack, "its stackup layer sum"]
+    elif general is not None:
+        out["thickness"] = [general, "its general thickness"]
     if facts["outer_copper_mm"]:
         out["copperWeight"] = [
             round(facts["outer_copper_mm"] / fabmaterial.MM_PER_OZ, 2),
