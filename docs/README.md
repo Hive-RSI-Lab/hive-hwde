@@ -312,6 +312,13 @@ spread of 47 of 48 boards (4.4 %: mask and silk make the sum 1.674 against 1.6).
 `order_submit --api-create` takes the stack sum as the board's thickness when it
 and the general thickness are over that apart, since the layers are what is built.
 
+`--api-create` holds the quote's `thickness` to the same rule: within 10 % of the
+larger of quote and board, not 0.005 mm. A fab quotes the laminate's nominal
+(1.52 for RO4350B 60 mil, 1.6 for FR-4, about +-10 %), so a corrected
+rf-kit-ro4350b (stack 1.6, quote 1.52) orders, and a quote of 1.0 against 1.6
+is refused (#753). Mask and silk layers must be 0.005 to 0.05 mm
+(`mask_thickness_range`, `silk_thickness_range`); the 48 boards' mask is 0.01.
+
 ## Straps, reset states and the antenna
 
 Two verify checks do what the first-spin review of hifi-receiver-2's boards

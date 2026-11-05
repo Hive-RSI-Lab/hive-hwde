@@ -659,14 +659,43 @@ def test_bare_cap_blocks_and_one_finding_names_every_ref_on_the_code(tmp_path):
     {"mpn": "LP5907-3.3"},                                # output in the MPN
     {"mpn": "AP2112", "description": "LDO regulator"},    # the row's words
     {"mpn": "SY8303AIC", "role": "VBUS to 5.1 V"},        # what it converts
+    # the family's code, and no word says regulator (#751, linux-computer U603)
+    {"mpn": "XC6206P332MR-G", "lcsc": "C5446"},
+    {"mpn": "TLV75733PDBVR", "description": "", "category": ""},
 ])
 def test_bare_regulator_blocks_unless_extracted(tmp_path, row):
+    lcsc = row.get("lcsc", "C3")
     bom = [{"lcsc": "C3", "attributes": [], **row}]
     pads = {"1": "+5V", "2": "GND", "3": "+3V3"}
-    ws = _ws(tmp_path, [("U4", "C3", pads)], {}, bom)
+    ws = _ws(tmp_path, [("U4", lcsc, pads)], {}, bom)
     assert [v["refs"] for v in _no_attrs(_run(ws))] == [["U4"]]
-    ws2 = _ws(tmp_path / "b", [("U4", "C3", pads)], {"C3": MCU}, bom)
+    ws2 = _ws(tmp_path / "b", [("U4", lcsc, pads)], {lcsc: MCU}, bom)
     assert _no_attrs(_run(ws2)) == []
+
+
+@pytest.mark.parametrize("ref,mpn", [
+    ("U4", "TPS54233DR"),      # a buck, not in a coded family's range of parts
+    ("U4", "TLV7031DBVR"),     # a comparator
+    ("U4", "TPS7A0201PDBVR"),  # the family's adjustable code
+    ("Q4", "XC6206P332MR-G"),  # a code counts on a U/VR/IC part only
+])
+def test_bare_part_with_no_usable_code_does_not_block(tmp_path, ref, mpn):
+    bom = [{"lcsc": "C3", "mpn": mpn, "attributes": []}]
+    pads = {"1": "+5V", "2": "GND", "3": "+3V3"}
+    ws = _ws(tmp_path, [(ref, "C3", pads)], {}, bom)
+    assert _no_attrs(_run(ws)) == []
+
+
+def test_bare_coded_regulator_stays_unknown_and_names_no_rail(tmp_path):
+    """The code only makes it a regulator for this finding: is_regulator and
+    reg_out_volts stay strict, so no rail gets its volts from the code."""
+    bom = [{"lcsc": "C3", "mpn": "XC6206P332MR-G", "attributes": []}]
+    pads = {"1": "+5V", "2": "GND", "3": "/RAIL"}
+    ws = _ws(tmp_path, [("U4", "C3", pads)], {}, bom)
+    p = _run(ws)
+    assert [v["refs"] for v in _no_attrs(p)] == [["U4"]]
+    assert "/RAIL" not in p["net_volts"]
+    assert not cr.is_regulator({"ref": "U4"}, bom[0])
 
 
 @pytest.mark.parametrize("ref,lcsc,pads,row", [
@@ -1017,6 +1046,7 @@ def test_extracted_parts_whose_output_is_not_judged(
     ("RT9080-33GJ5", 3.3), ("RT9013-18GB", 1.8), ("RT9193-50GB", 5.0),
     ("TLV75733PDBVR", 3.3), ("TLV70018DSER", 1.8), ("TPS78233DDCR", 3.3),
     ("TPS7A0233PDBVR", 3.3), ("TPS7B6950QDCYRQ1", 5.0),
+    ("TPS7A2045PDBVR", 4.5),   # TPS7A20 datasheet rev H, Table 8-1
     ("XC6206P332MR", 3.3), ("XC6206P302MR", 3.0),
     ("HT7333-A", 3.3), ("HT7850", 5.0), ("ME6211C33M5G", 3.3),
 ])

@@ -12,6 +12,7 @@ gerbers). No kicad-cli.
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -650,6 +651,136 @@ def test_score_checks_keeps_only_the_good_entries(tmp_path):
     assert score_checks.load_waivers(tmp_path) == [good]
 
 
+# #748: a waiver path that can't be read; check, kind and net that aren't text
+def _deep(depth=200_000):
+    return "[" * depth + "]" * depth
+
+
+# Deep enough that json.loads raises, and deep enough to load but not to repr
+_TOO_DEEP = [_deep(), _deep(50_000), '{"waivers": %s}' % _deep(50_000),
+             '{"waivers": [{"reason": %s}]}' % _deep(50_000), _deep(33)]
+_TOO_DEEP_IDS = ["no_parse", "no_repr", "entry", "reason", "past_the_limit"]
+
+
+@pytest.mark.parametrize("gate_name", ["verify", "verify_release"])
+@pytest.mark.parametrize("how, says", [
+    ("missing", "FileNotFoundError"), ("directory", "IsADirectoryError")])
+def test_unreadable_path_is_one_clear_refusal(tmp_path, capsys, gate_name, how,
+                                              says):
+    rep = _verify_report(_board(tmp_path), [_creep()])
+    path = tmp_path / "w.json"
+    if how == "directory":
+        path.mkdir()
+    code = _gate_main(tmp_path, rep, extra_argv=("--waivers", str(path)),
+                      gate_name=gate_name)
+    res = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert res["script"] == "gate" and res["status"] == "error"
+    assert "Traceback" not in res["error"] and "\n" not in res["error"]
+    assert str(path) in res["error"] and says in res["error"]
+
+
+@pytest.mark.parametrize("gate_name", ["verify", "verify_release"])
+@pytest.mark.parametrize("text", _TOO_DEEP, ids=_TOO_DEEP_IDS)
+def test_too_deep_file_is_one_clear_refusal(tmp_path, capsys, gate_name, text):
+    rep = _verify_report(_board(tmp_path), [_creep()])
+    path = tmp_path / "w.json"
+    path.write_text(text, encoding="utf-8")
+    code = _gate_main(tmp_path, rep, extra_argv=("--waivers", str(path)),
+                      gate_name=gate_name)
+    res = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert res["script"] == "gate" and res["status"] == "error"
+    assert "Traceback" not in res["error"] and "\n" not in res["error"]
+    assert str(path) in res["error"] and "nested too deeply" in res["error"]
+
+
+def test_too_deep_limit_known_answer():
+    assert releaselib.too_deep(json.loads(_deep(32))) is False
+    assert releaselib.too_deep(json.loads(_deep(33))) is True
+    assert releaselib.too_deep({"waivers": [_wv(pos=[1.0, 2.0])]}) is False
+    assert releaselib.too_deep("flat") is False
+
+
+@pytest.mark.parametrize("text", _TOO_DEEP, ids=_TOO_DEEP_IDS)
+def test_score_checks_too_deep_waives_nothing(tmp_path, text):
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "reports" / "verify-waivers.json").write_text(
+        text, encoding="utf-8")
+    assert score_checks.load_waivers(tmp_path) == []
+
+
+def test_score_checks_directory_waives_nothing(tmp_path):
+    (tmp_path / "reports" / "verify-waivers.json").mkdir(parents=True)
+    assert score_checks.load_waivers(tmp_path) == []
+
+
+_NOT_TEXT = [({"check": 5, "kind": None}, "check must be a string"),
+             ({"check": ["check_creepage"], "kind": None},
+              "check must be a string"),
+             ({"check": True, "kind": None}, "check must be a string"),
+             ({"kind": {"a": 1}, "check": None}, "kind must be a string"),
+             ({"kind": ["creepage"], "check": None}, "kind must be a string"),
+             ({"net": 7}, "net must be a string"),
+             ({"net": ["V48_RTN"]}, "net must be a string"),
+             ({"net": 0}, "net must be a string"),
+             ({"net": False}, "net must be a string"),
+             # falsy, so matching skipped the field: this one waived the
+             # finding on its kind alone
+             ({"check": 0}, "check must be a string"),
+             ({"check": False}, "check must be a string"),
+             ({"check": []}, "check must be a string"),
+             ({"kind": 0}, "kind must be a string"),
+             ({"kind": {}}, "kind must be a string")]
+
+
+@pytest.mark.parametrize("gate_name, level", _BOTH_GATES)
+@pytest.mark.parametrize("over, says", _NOT_TEXT)
+def test_non_string_field_is_graded(tmp_path, capsys, gate_name, level, over,
+                                    says):
+    """It waives nothing and goes in waivers_invalid by index, so a typo reads
+    as a typo and not as a waiver with nothing to match."""
+    rep = _verify_report(_board(tmp_path), [_creep()])
+    code, res, err = _sidecar_main(
+        tmp_path, capsys, rep, {"waivers": [_entry_for(gate_name, rep,
+                                                       **over)]}, gate_name)
+    assert code == 1
+    assert res["status"] == "fail" and res["failing_count"] == 1
+    assert res["waived_count"] == 0
+    assert [b["index"] for b in res["waivers_invalid"]] == [0]
+    assert says in res["waivers_invalid"][0]["problems"][0]
+    assert "waivers_unmatched" not in res
+    assert f"{level}: waiver 0 ignored (invalid)" in err
+
+
+@pytest.mark.parametrize("over, says", _NOT_TEXT)
+def test_non_string_field_matches_nothing(over, says):
+    w = _wv(**over)
+    assert says in releaselib.waiver_shape_problem(w)
+    assert gate.waiver_matches(w, _creep()) is False
+
+
+@pytest.mark.parametrize("over", [{"check": None}, {"kind": None}])
+def test_null_check_or_kind_still_waives(over):
+    assert releaselib.waiver_shape_problem(_wv(**over)) is None
+    assert gate.waiver_matches(_wv(**over), _creep()) is True
+
+
+def test_null_net_still_matches_a_netless_finding():
+    assert gate.waiver_matches(_wv(net=None), _creep(net=None)) is True
+
+
+def test_report_names_a_too_deep_file(tmp_path):
+    import report_gen
+    (tmp_path / "state.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "reports" / "verify-waivers.json").write_text(
+        _deep(), encoding="utf-8")
+    waivers, rel, problem = report_gen.verify_waivers(tmp_path)
+    assert waivers == [] and rel == "reports/verify-waivers.json"
+    assert problem and "\n" not in problem
+
+
 def test_report_names_a_refused_entry(tmp_path):
     """The report still warns on a file with a refused entry rather than
     listing the waivers as if they held."""
@@ -790,13 +921,33 @@ def test_verify_all_strict_missing_inputs_fail(tmp_path):
         == sorted(CONSTRAINT_NEEDING)
 
 
-def test_verify_all_strict_with_declared_na_passes(tmp_path):
+@pytest.mark.parametrize("no_models", [False, True],
+                         ids=["host_tools", "no_3d_models"])
+def test_verify_all_strict_with_declared_na_passes(tmp_path, monkeypatch,
+                                                   no_models):
     """Strict + properly declared not_applicable (reason + approver) is the
-    sanctioned way to narrow coverage - and it is visible in the matrix."""
+    sanctioned way to narrow coverage - and it is visible in the matrix.
+
+    check_body_clash is declared N/A too: it warns body_unjudged when this
+    host has no KiCad 3D models, which made this count 3 instead of 2. It has
+    its own tests. The no_3d_models run is that host, wherever this runs."""
+    if no_models:
+        tools = tmp_path / "no-tools"
+        tools.mkdir()
+        monkeypatch.setenv("HIVE_TOOLS", str(tools))
+        monkeypatch.setenv("HWDE_TOOLS_DIR", str(tools))
+        for k in ("HWDE_KICAD_CLI", "AIEE_KICAD_CLI"):
+            monkeypatch.delenv(k, raising=False)
+        for k in [k for k in os.environ if k.endswith("_3DMODEL_DIR")]:
+            monkeypatch.delenv(k)
+        monkeypatch.setenv("PATH", os.pathsep.join(
+            d for d in os.environ["PATH"].split(os.pathsep)
+            if not shutil.which("kicad-cli", path=d)))
+    na = [*CONSTRAINT_NEEDING, "check_body_clash"]
     cpath = tmp_path / "constraints.json"
     cpath.write_text(json.dumps({"verification": {"not_applicable": {
         n: {"reason": "no such nets on this board", "approved": "test 2026"}
-        for n in CONSTRAINT_NEEDING}}}), encoding="utf-8")
+        for n in na}}}), encoding="utf-8")
     summary, _ = verify_all.run(["--pcb", str(BLINKY), "--strict",
                                  "--constraints", str(cpath),
                                  "--reports-dir", str(tmp_path / "rep")])
@@ -817,12 +968,12 @@ def test_verify_all_strict_with_declared_na_passes(tmp_path):
                   "check_wicking", "check_ddr_timing",
                   "check_testpoints", "check_rf_match", "check_surge",
                   "check_via_stubs", "check_isolation",
-                  "check_body_clash", "check_kelvin",
+                  "check_kelvin",
                   "check_stackup"]
     assert sorted(cov["required"]) == sorted(board_only)
     assert sorted(cov["ran"]) == sorted(board_only)
     assert cov["skipped_error"] == {}
-    assert set(cov["not_applicable"]) == set(CONSTRAINT_NEEDING)
+    assert set(cov["not_applicable"]) == set(na)
     for e in cov["not_applicable"].values():
         assert e["reason"] and e["approved"]
 

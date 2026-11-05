@@ -224,8 +224,11 @@ def load_waivers(ws: Path) -> list[dict]:
     if not p.exists():
         return []
     try:
-        waivers = json.loads(p.read_text(encoding="utf-8")).get("waivers")
-    except (OSError, ValueError, AttributeError):
+        data = json.loads(p.read_text(encoding="utf-8"))
+        if releaselib.too_deep(data):
+            return []
+        waivers = data.get("waivers")
+    except (OSError, ValueError, RecursionError, AttributeError):
         return []
     if not isinstance(waivers, list):
         return []
