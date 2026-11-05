@@ -320,3 +320,30 @@ def test_hand_written_steps_survive(tmp_path, capsys):
     _estimate(qj, pcb)
     assert order_submit.main(tj.submit_argv(pcb, fab, qj)) == 0
     assert note in _order(fab)["human_steps"]
+
+
+# --- a board nobody read proves nothing --------------------------------------
+
+def test_mistyped_board_path_never_reaches_create(tmp_path, monkeypatch,
+                                                  api_env, capsys):
+    """With the board file gone its laminate falls back to the quote's, so the
+    quote would agree with itself. A fab manifest keeps the via check quiet."""
+    pcb, fab, qj = tj.make_fab(tmp_path)
+    _rogers(tmp_path, pcb)
+    (fab / "manifest.json").write_text(json.dumps(
+        {"board_digest": "x", "via_fill": {"filled_vias": 0, "in_pad": 0}}),
+        encoding="utf-8")
+    code, fake = _create(tmp_path / "typo.kicad_pcb", fab, qj,
+                         _api_file(fab), monkeypatch)
+    _refused(code, fake, fab, capsys, "BOARD NOT READ")
+
+
+def test_package_only_run_without_the_board_stays_as_it_was(tmp_path, capsys):
+    """The stand-in is deliberate for the human package: no API leg, no refusal."""
+    pcb, fab, qj = tj.make_fab(tmp_path)
+    (fab / "manifest.json").write_text(json.dumps(
+        {"board_digest": "x", "via_fill": {"filled_vias": 0, "in_pad": 0}}),
+        encoding="utf-8")
+    man = order_submit.run(tmp_path / "typo.kicad_pcb", fab, quote=qj, qty=5)
+    assert man["status"] == order_submit.ORDER_READY
+    assert not man.get("board_problems")

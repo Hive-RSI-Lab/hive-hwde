@@ -202,12 +202,13 @@ _GENERATED_STEP_PREFIXES = (
     "HIGH-FREQUENCY MATERIAL:",
     "CASTELLATED:",
     "CASTELLATED MISMATCH:",
+    "BOARD NOT READ:",
 )
 
 # What run() found wrong with the package, by manifest key. Each one makes it
 # not_order_ready; order_readiness and the API legs read this one list.
 _PROBLEM_KEYS = ("material_problems", "castellation_problems",
-                 "via_fill_problems")
+                 "via_fill_problems", "board_problems")
 ORDER_READY = "ready_for_human"
 
 # pcbParam.viaCovering. 1 is what every recorded calculate sent (tented).
@@ -1479,7 +1480,16 @@ def run(pcb: Path, fab_dir: Path, quote: Path | None = None,
             f"CASTELLATED MISMATCH: the board has {n_cast} castellated pad(s) "
             f"but {Path(quote).name} was quoted with {quote_cast} - re-run "
             "order_quote on this board")
-    if material_problems or via_problems or castellation_problems:
+    # The stand-ins above suit the human package. An API leg can't lean on them:
+    # the quote would only be agreeing with itself.
+    board_problems = []
+    if use_api and not Path(pcb).is_file():
+        board_problems.append(
+            f"BOARD NOT READ: {pcb} is not a file, so nothing checked the "
+            "quote's laminate or castellation against the board - pass the "
+            "real --pcb")
+    if material_problems or via_problems or castellation_problems \
+            or board_problems:
         status = "not_order_ready"
 
     manifest = {
@@ -1568,6 +1578,10 @@ def run(pcb: Path, fab_dir: Path, quote: Path | None = None,
     if via_problems:
         manifest["via_fill_problems"] = via_problems
         for msg in reversed(via_problems):
+            manifest["human_steps"].insert(0, msg)
+    if board_problems:
+        manifest["board_problems"] = board_problems
+        for msg in reversed(board_problems):
             manifest["human_steps"].insert(0, msg)
     if castellation_problems:
         manifest["castellation_problems"] = castellation_problems

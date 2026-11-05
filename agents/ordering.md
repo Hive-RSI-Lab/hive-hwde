@@ -87,7 +87,8 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
 - `--api-create` refuses (exit 2) any package that isn't `ready_for_human`, for
   any reason, and any api_quote.json whose laminate, castellation or vias no
   longer match the board. Re-run `order_quote`, then `--api`; never edit the
-  manifest or the quote file to get past it.
+  manifest or the quote file to get past it. An API leg also refuses a `--pcb`
+  that isn't a file (BOARD NOT READ): nothing could check the quote against it.
 - Any discrepancy (stale gerbers vs a re-run, BOM drift) = stop and report.
 
 ## Output contract (end your final message with exactly this block)
