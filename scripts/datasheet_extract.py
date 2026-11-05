@@ -389,6 +389,12 @@ def _checked_pdf(path: str) -> tuple[Path | None, dict | None]:
                                 "stub - download it with "
                                 "`datasheet_extract.py --fetch <ws>`, which "
                                 "follows the stub")}
+    why = stub_notice(pdf.read_bytes())
+    if why:
+        return None, {"script": "datasheet_extract", "status": "error",
+                      "error": f"{pdf} is a host placeholder, not a "
+                               f"datasheet ({why}); no facts can be read "
+                               "from it - delete it and find another source"}
     return pdf, None
 
 
@@ -526,9 +532,41 @@ def _lib(name: str):
     return __import__(name)
 
 
+# LCSC answers a datasheet it no longer serves with a ~7 KB one-page PDF
+# ("LCSC Datasheet Notice ... Datasheet temporarily unavailable"). It is a
+# valid PDF, so it must be caught by content, not by the %PDF magic.
+_STUB_TEXT = ("datasheet temporarily unavailable", "lcsc datasheet notice")
+_STUB_MAX_BYTES = 12_000
+
+
+def stub_notice(data: bytes) -> str | None:
+    """Why `data` is a host's placeholder instead of a datasheet, else None.
+    Notice text first (page text via pypdf, raw bytes when pypdf is absent or
+    the text is in a compressed stream it cannot read); size plus page count
+    (one page, under 12 KB) is only the backstop for a reworded notice."""
+    from io import BytesIO
+    npages, text = None, ""
+    try:
+        from pypdf import PdfReader
+        pages = PdfReader(BytesIO(data)).pages
+        npages = len(pages)
+        text = " ".join((pg.extract_text() or "") for pg in pages[:3])
+    except Exception:  # noqa: BLE001 - unreadable PDF: fall back to raw bytes
+        pass
+    low = (text + " " + data[:_STUB_MAX_BYTES * 4].decode("latin-1")).lower()
+    low = " ".join(low.split())
+    for needle in _STUB_TEXT:
+        if needle in low:
+            return f"host notice text {needle!r}"
+    if len(data) <= _STUB_MAX_BYTES and npages == 1 and len(text.strip()) < 400 \
+            and "unavailable" in low:
+        return f"{len(data)}-byte single-page PDF saying 'unavailable'"
+    return None
+
+
 def fetch_datasheet(url: str, dest: Path, transport=None,
                     domains: dict | None = None) -> dict:
-    """GET one datasheet into dest: {status: fetched|refused|error, ...}.
+    """GET one datasheet into dest: {status: fetched|missing|refused|error, ...}.
     transport is researchlib.http_transport unless injected (tests)."""
     researchlib = _lib("researchlib")
     partslib = _lib("partslib")
@@ -561,6 +599,10 @@ def fetch_datasheet(url: str, dest: Path, transport=None,
         return {**out, "status": "refused",
                 "error": (f"not a PDF after {len(out['hops'])} hop(s): "
                           f"{len(data)} bytes starting {data[:60]!r}")}
+    why = stub_notice(data)
+    if why:
+        return {**out, "status": "missing", "stub": True, "bytes": len(data),
+                "error": f"host served a placeholder, not a datasheet: {why}"}
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_bytes(data)
     import hashlib
