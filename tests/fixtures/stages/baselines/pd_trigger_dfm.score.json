@@ -4,10 +4,10 @@
  "fixture": "pd_trigger_dfm",
  "board": "pd-trigger",
  "metrics": {
-  "errors": 37,
+  "errors": 47,
   "warnings": 21,
   "by_kind": {
-   "dfm_clearance": 37,
+   "dfm_clearance": 47,
    "dfm_silk_over_pad": 19,
    "dfm_silk_width": 1,
    "dfm_via_fill_note_missing": 1
@@ -17,12 +17,12 @@
  },
  "metrics_live": null,
  "penalties": {
-  "errors": 37.0,
+  "errors": 47.0,
   "warnings": 21.0,
   "known_answer_missed": 0.0,
   "forbidden_errors": 0.0
  },
- "composite": 79.4,
+ "composite": 74.4,
  "composite_inputs": "full",
  "known_answer": null,
  "e2e": null,
