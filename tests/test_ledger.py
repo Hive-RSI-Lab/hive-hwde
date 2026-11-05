@@ -252,6 +252,82 @@ def test_release_refuses_on_ledger_gaps(tmp_path, monkeypatch):
     assert any("stock fact(s) unknown" in p for p in v["problems"])
 
 
+# ------------------------------------------- listed: no datasheet read (#781)
+
+def _listed(e):
+    return {**e, "status": "listed", "source": "parts.json attributes of C1",
+            "rated_from": "distributor"}
+
+
+def test_listed_is_kept_and_does_not_block(ws):
+    exp = ledgerlib.expected(ws)
+    ledgerlib.put(ws, [_listed(e) if e["kind"] == "rating"
+                       else {**e, "status": "verified", "source": "test"}
+                       for e in exp.values()], "check_ratings")
+    rep = ledgerlib.report(ws)
+    assert rep["ready"] is True and ledgerlib.blockers(ws) == []
+    rows = {r["subject"]: r for r in rep["listed"]}
+    assert "U8" in rows and rows["U8"]["rated_from"] == "distributor"
+    assert rep["by_kind"]["rating"].get("verified") is None
+
+
+def test_listed_still_goes_unknown_when_the_part_changes(ws):
+    e = ledgerlib.expected(ws)["U8/rating"]
+    ledgerlib.put(ws, [{**_listed(e), "lcsc": "C999"}], "check_ratings")
+    assert ledgerlib.report(ws)["by_kind"]["rating"].get("listed") is None
+    assert any("U8" in b for b in ledgerlib.blockers(ws))
+
+
+@pytest.mark.parametrize("by,source,reads", [
+    ("check_ratings", "parts.json attributes of C84681", "listed"),
+    ("check_ratings", "parts/C84681.pdf", "verified"),
+    ("hand", "parts.json attributes of C84681", "verified")])
+def test_a_ledger_written_before_the_tier_reads_honestly(ws, by, source, reads):
+    """A ledger on disk is not rewritten until check_ratings runs again, and
+    until then what it says about an attribute number must not stand."""
+    e = ledgerlib.expected(ws)["U8/rating"]
+    ledgerlib.put(ws, [{**e, "status": "verified", "source": source}], by)
+    row = next(r for r in ledgerlib.report(ws)["facts"]
+               if r["key"] == "U8/rating")
+    assert row["status"] == reads, row
+    if reads == "listed":
+        assert row["rated_from"] == "distributor" and "#781" in row["why"]
+
+
+def test_attest_issues_over_listed_and_says_which(tmp_path, monkeypatch):
+    """Release: listed doesn't refuse, and the result names the facts."""
+    import attest
+    import releaselib
+    from test_attest import green_ws
+    monkeypatch.setenv("HWDE_LEDGER_WRITE", "1")
+    w = green_ws(tmp_path)
+    (w / "parts").mkdir(exist_ok=True)
+    (w / "parts" / "parts.json").write_text(json.dumps({"parts": [
+        {"refdes": ["U8"], "lcsc": "C84681", "mpn": "CH340C"}]}))
+    (w / "fab" / "BOM.csv").write_text(
+        "Comment,Designator,Footprint,LCSC Part #\nCH340C,U8,SOP-16,C84681\n")
+    ledgerlib.put(w, [_listed(e) if e["kind"] == "rating"
+                      else {**e, "status": "verified", "source": "test"}
+                      for e in ledgerlib.expected(w).values()], "check_ratings")
+    att, problems = releaselib.build(w)
+    assert att is not None, problems
+    res, _, code = attest.run(["build", "--workspace", str(w)])
+    assert code == 0 and res["status"] == "pass", res
+    assert res["listed_ledger_facts"] == ["U8/rating"]
+    v, _, _ = attest.run(["verify", "--workspace", str(w)])
+    assert v.get("listed_ledger_facts") == ["U8/rating"]
+
+
+def test_cli_report_lists_listed_and_set_takes_it(ws, capsys):
+    assert ledger_cli.main([
+        "set", "--workspace", str(ws), "--subject", "U8", "--kind", "rating",
+        "--status", "listed", "--source", "LCSC listing"]) == 0
+    capsys.readouterr()
+    ledger_cli.main(["report", "--workspace", str(ws)])
+    rep = json.loads(capsys.readouterr().out)
+    assert [r["subject"] for r in rep["listed"]] == ["U8"]
+
+
 # ------------------------------------------------- check_ratings' facts
 
 def test_pinout_fact():
@@ -281,7 +357,9 @@ def test_rating_facts_from_findings():
     facts = {f["subject"]: f for f in check_ratings.ledger_facts(
         board, {}, vios, {"U2": 1}, {}) if f["kind"] == "rating"}
     assert facts["U1"]["status"] == "failed"
-    assert facts["U2"]["status"] == "verified" and facts["U2"]["source"]
+    # no extraction: the number can only be the distributor's (#781)
+    assert facts["U2"]["status"] == "listed" and facts["U2"]["source"]
+    assert facts["U2"]["rated_from"] == "distributor"
     assert facts["R1"]["status"] == "unknown"
     assert facts["U3"]["status"] == "unknown"
 

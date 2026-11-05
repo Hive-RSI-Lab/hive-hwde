@@ -36,6 +36,13 @@ def _run(ws: Path, constraints: Path | None = None) -> dict:
     return payload
 
 
+def _findings(p):
+    """Everything but the note that a rating was compared with no datasheet
+    read, which any attribute-rated part draws (#781)."""
+    return [v for v in p["violations"]
+            if v["kind"] != "rating_no_datasheet_read"]
+
+
 def _errors(p: dict) -> list[dict]:
     return [v for v in p["violations"] if v["severity"] == "error"]
 
@@ -250,7 +257,7 @@ def test_capacitor_voltage_attribute(tmp_path):
         [("rating_over_voltage", ["C1"])]
     ws2 = _ws(tmp_path / "b", [("C1", "C9", {"1": "+5V", "2": "GND"})],
               {}, bom)
-    assert _run(ws2)["violations"] == []
+    assert _findings(_run(ws2)) == []
 
 
 def test_constraints_and_power_tree_outrank_net_names(tmp_path):
@@ -431,7 +438,7 @@ def test_resistor_limiting_element_voltage_by_chip_size(tmp_path):
     # the same part as an 0805 (150 V) holds, and is no longer unrated
     ws2 = _ws(tmp_path / "b", [("R1", "C25", {"1": "+60V", "2": "GND"},
                                 "Resistor_SMD:R_0805_2012Metric")], {}, bom)
-    assert _run(ws2)["violations"] == []
+    assert _findings(_run(ws2)) == []
 
 
 PPTC_BOM = [{"lcsc": "C70069", "mpn": "SMD1206P110TF", "category": "PTC "
@@ -490,7 +497,7 @@ def test_fuse_runs_at_75_percent_of_its_rerated_current(tmp_path):
         c = _cons(d, ambient_c=70, power=[{"net": "/V12F",
                                            "current_a": iop}])
         return [(v["kind"], v["severity"]) for v in
-                _run(_ws(d, fps, {}, bom(amps)), c)["violations"]]
+                _findings(_run(_ws(d, fps, {}, bom(amps)), c))]
     assert kinds(2, 1.5, "a") == [("rating_over_current", "warning")]
     assert kinds(2.5, 1.5, "b") == []
     assert kinds(2, 1.9, "c") == [("rating_over_current", "error")]
@@ -1588,6 +1595,196 @@ def test_notice_pdf_on_disk_is_suspect_even_without_an_index(tmp_path):
                                ws / "parts", None, None)
     assert _u1(facts, "rating")["status"] == "unknown"
     assert [v for v in viol if v["kind"] == "rating_datasheet_suspect"]
+
+
+# ------------------------------ where a rating's number came from (#781)
+
+CAP50 = {"lcsc": "C9", "mpn": "CAP", "attributes": [
+    {"name": "Voltage Rated", "value": "50V"}]}
+RES = {"lcsc": "C8", "mpn": "RES", "attributes": [
+    {"name": "Resistance", "value": "10k"}]}
+DIODE = {"lcsc": "C7", "mpn": "D", "attributes": [
+    {"name": "Reverse Voltage (Vr)", "value": "40V"}]}
+FUSE = {"lcsc": "C6", "mpn": "0881002", "attributes": [
+    {"name": "Current Rating", "value": "2A"},
+    {"name": "Voltage Rating (DC)", "value": "63V"}]}
+
+
+def _fact(ws, ref, kind="rating"):
+    _, facts = cr.run_check(ws / "kicad" / "board.kicad_pcb", ws / "parts",
+                            None, None)
+    return next(f for f in facts["ledger_facts"]
+                if f["subject"] == ref and f["kind"] == kind)
+
+
+def _index(ws, **entries):
+    d = ws / "parts" / "datasheets"
+    d.mkdir(exist_ok=True)
+    (d / "index.json").write_text(json.dumps(entries))
+
+
+BAD = {"status": "suspect", "reasons": ["no text layer"]}
+GOOD = {"status": "ok", "reasons": []}
+
+
+def test_attribute_rating_is_listed_and_says_distributor(tmp_path):
+    ws = _ws(tmp_path, [("C1", "C9", {"1": "+5V", "2": "GND"})], {}, [CAP50])
+    f = _fact(ws, "C1")
+    assert f["status"] == "listed" and f["rated_from"] == "distributor"
+    assert "distributor" in f["value"] and "datasheet rating" not in f["value"]
+    assert f["source"] == "parts.json attributes of C9"
+
+
+def test_diode_attribute_rating_is_listed(tmp_path):
+    ws = _ws(tmp_path, [("D1", "C7", {"1": "GND", "2": "+5V"})], {}, [DIODE])
+    f = _fact(ws, "D1")
+    assert (f["status"], f["rated_from"]) == ("listed", "distributor")
+
+
+def test_fuse_attribute_rating_is_listed(tmp_path):
+    ws = _ws(tmp_path, [("F1", "C6", {"1": "+12V", "2": "/OUT"})], {}, [FUSE])
+    f = _fact(ws, "F1")
+    assert (f["status"], f["rated_from"]) == ("listed", "distributor")
+
+
+def test_package_table_resistor_is_not_called_the_distributors(tmp_path):
+    ws = _ws(tmp_path, [("R1", "C8", {"1": "+5V", "2": "GND"},
+                         "Resistor_SMD:R_0402_1005Metric")], {}, [RES])
+    f = _fact(ws, "R1")
+    assert f["status"] == "listed" and f["rated_from"] == "package"
+    assert "package" in f["value"] and "distributor" not in \
+        f["value"].replace("no datasheet or distributor", "")
+    assert "D/CRCW" in f["source"] and "parts.json" not in f["source"]
+
+
+def test_extracted_rating_stays_verified_and_says_datasheet(tmp_path):
+    ws = _suspect_ws(tmp_path, None)
+    f = _fact(ws, "U1")
+    assert f["status"] == "verified" and f["rated_from"] == "datasheet"
+    assert "datasheet rating" in f["value"]
+
+
+def test_a_failed_attribute_fact_stays_failed(tmp_path):
+    bom = [{**CAP50, "attributes": [{"name": "Voltage Rated", "value": "6.3V"}]}]
+    ws = _ws(tmp_path, [("C1", "C9", {"1": "+12V", "2": "GND"})], {}, bom)
+    f = _fact(ws, "C1")
+    assert f["status"] == "failed"
+    assert f["source"] == "parts.json attributes of C9"
+
+
+def test_extraction_plus_attribute_takes_the_weaker_tier(tmp_path):
+    """A fuse's voltage and hold current come from the row even with an
+    extraction: the pin comparison alone doesn't make the fact read."""
+    ext = {"mpn": "0881002", "pinout": [
+        {"pin": "1", "name": "VIN", "type": "power_in"},
+        {"pin": "2", "name": "VOUT", "type": "nc"}],
+        "abs_max": [{"param": "VIN voltage", "value": "-0.3 to 80",
+                     "unit": "V"}]}
+    ws = _ws(tmp_path, [("F1", "C6", {"1": "+12V", "2": "/OUT"})], {"C6": ext},
+             [FUSE])
+    f = _fact(ws, "F1")
+    assert (f["status"], f["rated_from"]) == ("listed", "distributor")
+
+
+# a suspect PDF holds back only what was read from it
+
+def test_suspect_pdf_leaves_an_unextracted_part_listed(tmp_path):
+    """fmcw-radar's D1, SW1, SW2: an image-only PDF sits beside them and no
+    number of theirs came from it."""
+    ws = _ws(tmp_path, [("C1", "C9", {"1": "+5V", "2": "GND"})], {}, [CAP50])
+    _index(ws, C9=BAD)
+    viol, facts = cr.run_check(ws / "kicad" / "board.kicad_pcb", ws / "parts",
+                               None, None)
+    f = next(x for x in facts["ledger_facts"]
+             if x["subject"] == "C1" and x["kind"] == "rating")
+    assert (f["status"], f["rated_from"]) == ("listed", "distributor")
+    assert f["source"] == "parts.json attributes of C9"
+    w = [v for v in viol if v["kind"] == "rating_datasheet_suspect"]
+    assert w and w[0]["refs"] == ["C1"]      # the PDF is still suspect
+    assert "read from it" in w[0]["msg"]
+
+
+def test_suspect_pdf_holds_only_the_pinout_when_the_rating_is_the_row(tmp_path):
+    """An extraction exists, but the fuse's rating came from attributes: the
+    PDF sourced the pinout and nothing else."""
+    ext = {"mpn": "0881002", "pinout": [{"pin": "1", "name": "A", "type": "nc"},
+                                        {"pin": "2", "name": "B", "type": "nc"}]}
+    ws = _ws(tmp_path, [("F1", "C6", {"1": "+12V", "2": "/OUT"})], {"C6": ext},
+             [FUSE])
+    assert _fact(ws, "F1", "pinout")["status"] == "verified"
+    _index(ws, C6=BAD)
+    assert (_fact(ws, "F1")["status"], _fact(ws, "F1")["rated_from"]) == \
+        ("listed", "distributor")
+    assert _fact(ws, "F1", "pinout")["status"] == "unknown"
+
+
+def test_extraction_read_from_another_good_pdf_stays_verified(tmp_path):
+    ws = _ws(tmp_path, [("U1", "C1", {"1": "+3V3", "2": "GND", "3": "+3V3"})],
+             {"C1": {**MCU, "source_pdf": "parts/C99_testmcu.pdf"}})
+    _index(ws, C1=BAD, C99=GOOD)
+    assert _fact(ws, "U1")["status"] == "verified"
+    assert _fact(ws, "U1", "pinout")["status"] == "verified"
+
+
+def test_extraction_read_from_another_suspect_pdf_is_held(tmp_path):
+    ws = _ws(tmp_path, [("U1", "C1", {"1": "+3V3", "2": "GND", "3": "+3V3"})],
+             {"C1": {**MCU, "source_pdf": "parts/C99_testmcu.pdf"}})
+    _index(ws, C1=GOOD, C99=BAD)
+    viol, facts = cr.run_check(ws / "kicad" / "board.kicad_pcb", ws / "parts",
+                               None, None)
+    f = _u1(facts, "rating")
+    assert f["status"] == "unknown" and "no text layer" in f["value"]
+    # C99 isn't on the board: nothing to warn about by refdes
+    assert facts["suspect_datasheets"] == {}
+    assert not [v for v in viol if v["kind"] == "rating_datasheet_suspect"]
+
+
+@pytest.mark.parametrize("source_pdf,own", [
+    (None, True),
+    ("parts/C1.pdf", True),
+    ("parts/U1_esp32-c3-mini-1_datasheet_en.pdf", True),   # can't tell: own
+    ("boards/C5/parts/U1_datasheet.pdf", True),            # a folder, not a PDF
+    ("boards/x/parts/C1.pdf (W5500 Datasheet, C2 errata, 2013)", True),
+    ("boards\\x\\parts\\C2913198.pdf", False),
+    ("boards/x/parts/U2_MCP73831T-2ACI-OT_C424093.pdf", False),
+    ("parts/C970725_CH224K.pdf", False),
+])
+def test_which_pdf_an_extraction_was_read_from(source_pdf, own):
+    got = cr.extraction_pdf({"source_pdf": source_pdf}, "C1")
+    assert (got == "C1") is own, got
+
+
+# the warning that tells a board what to do about it
+
+def _no_read(viol):
+    return [v for v in viol if v["kind"] == "rating_no_datasheet_read"]
+
+
+def test_one_warning_names_every_listed_part_and_the_way_out(tmp_path):
+    ws = _ws(tmp_path, [("C1", "C9", {"1": "+5V", "2": "GND"}),
+                        ("C2", "C9", {"1": "+5V", "2": "GND"}),
+                        ("R1", "C8", {"1": "+5V", "2": "GND"},
+                         "Resistor_SMD:R_0402_1005Metric")], {}, [CAP50, RES])
+    viol, _ = cr.run_check(ws / "kicad" / "board.kicad_pcb", ws / "parts",
+                           None, None)
+    w = _no_read(viol)
+    assert len(w) == 1 and w[0]["severity"] == "warning"
+    assert w[0]["refs"] == ["C1", "C2", "R1"]
+    assert "datasheet_extract" in w[0]["msg"] and "3" in w[0]["msg"]
+
+
+def test_no_warning_when_every_rating_was_read(tmp_path):
+    ws = _suspect_ws(tmp_path, None)
+    viol, _ = cr.run_check(ws / "kicad" / "board.kicad_pcb", ws / "parts",
+                           None, None)
+    assert _no_read(viol) == []
+
+
+def test_a_rating_a_person_checked_is_not_warned_about(tmp_path):
+    ws = _ws(tmp_path, [("C1", "C9", {"1": "+5V", "2": "GND"})], {}, [CAP50])
+    viol, _ = cr.run_check(ws / "kicad" / "board.kicad_pcb", ws / "parts",
+                           None, None, trusted={"C1"})
+    assert _no_read(viol) == []
 
 
 # ------------------------------------ unassessed datasheets (#755)

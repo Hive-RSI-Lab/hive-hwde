@@ -588,7 +588,9 @@ modes:
     makes an empty one block, a fixed buck's FB pad counting as its output,
     filled or extracted, and a
     part known to be positive or negative fails on a stated rail of the other
-    sign
+    sign; a rating with no datasheet read is listed, not verified, and passes
+    release, so a distributor's listing that disagrees with its datasheet goes
+    unseen until the part is extracted
   hit_on:
   - all
   sources:

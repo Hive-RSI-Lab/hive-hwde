@@ -7,13 +7,14 @@ and takes facts recorded by hand.
   ledger.py report --workspace WS [--all] [--out FILE]
       every fact the board relies on as it reads now (stale stock and facts
       about a since-changed part read unknown), with counts per kind and the
-      failed and unknown ones listed. Exit 0 ready (every fact verified) /
-      1 not ready / 2 error. Release (attest.py) refuses on the same list.
+      failed, unknown and listed ones shown. Exit 0 ready (none failed or
+      unknown) / 1 not ready / 2 error. Release (attest.py) refuses on the
+      same failed and unknown list.
   ledger.py set --workspace WS --subject U8 --kind pinout
-                --status verified|failed|unknown --source "..." [--value ".."]
+                --status verified|listed|failed|unknown --source "..." [--value ".."]
                 [--force "why"]
       record one fact you checked yourself; --source is required for
-      verified and failed (where it came from: a datasheet page, a
+      all but unknown (where it came from: a datasheet page, a
       calculation, a distributor page and its date). verified is refused
       (exit 2) when its datasheet PDF is suspect or a host placeholder: the
       part's own for rating and pinout, the extraction's source_pdf, any
@@ -96,8 +97,8 @@ def run(argv=None) -> tuple[dict, str | None, int]:
         return rep, a.out, 0
     if a.cmd == "set":
         if a.status != "unknown" and not a.source.strip():
-            raise SystemExit("--source is required for a verified or failed "
-                             "fact: where does it come from?")
+            raise SystemExit("--source is required for a verified, listed or "
+                             "failed fact: where does it come from?")
         exp = ledgerlib.expected(ws).get(ledgerlib.key(a.subject, a.kind))
         fact = {"subject": a.subject, "kind": a.kind, "status": a.status,
                 "source": a.source, "value": a.value}

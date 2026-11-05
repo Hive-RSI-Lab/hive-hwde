@@ -1,7 +1,9 @@
 # rating_datasheet_suspect
 
-The PDF on disk for this part isn't shown to be its datasheet, so its rating and pinout ledger facts
-are unknown, never verified, and `ledger.py set` refuses to rest on it. check_ratings and the ledger
+The PDF on disk for this part isn't shown to be its datasheet, so the ledger facts read from it (the
+extraction's `source_pdf` says which PDF that was) are unknown, never verified, and `ledger.py set`
+refuses to rest on it. A part with no extraction read nothing from it: its rating came from the
+distributor or a package table and stays `listed` (#781). check_ratings and the ledger
 judge each PDF on disk when they read index.json, so nobody has to ask for the verdict (#768). The
 reason in the message says which case below it is.
 

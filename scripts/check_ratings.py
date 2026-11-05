@@ -98,16 +98,23 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
  - rating_datasheet_suspect (warning): a part whose datasheet PDF is a host
    placeholder or was judged suspect (index.json: cut off, no text layer, nothing
    ties it to the MPN; #706). The PDFs on disk are judged when the index is read
-   (#768). Its rating and pinout ledger facts are unknown, never verified.
+   (#768). The ledger facts read from that PDF (the extraction's source_pdf
+   says which one) are unknown, never verified; a rating that came from the
+   distributor or a package table was not read from it and is untouched (#781).
  - rating_datasheet_unassessed (warning, one per board): parts whose datasheet
    can't be judged here: an index.json entry with no PDF on disk, or a PDF with
    no MPN to check it against. `datasheet_extract --fetch` gets the PDF (#755).
+ - rating_no_datasheet_read (warning, one per board): parts whose rating fact
+   is `listed`, a number compared with no datasheet behind it (#781). It names
+   the way to `verified`: `datasheet_extract --fetch`, then extraction.
 Sources and verified/disputed tags: docs/ingest/safety-components.md.
 A pin on a net of unknown voltage is not a finding (counted in facts).
 
-The fact ledger (lib/ledgerlib.py): each refdes gets a `rating` fact
-(verified when a rating was compared with known volts and held, failed on an
-error finding, unknown when unrated or nothing could be compared) and a
+The fact ledger (lib/ledgerlib.py): each refdes gets a `rating` fact (verified
+when a datasheet's rating was compared with known volts and held, listed when
+the number was the distributor's or a package table's, `rated_from` says which;
+failed on an error finding, unknown when unrated or nothing could be compared)
+and a
 `pinout` fact (pinout_fact: the board's pad numbers and names against the
 extraction's pinout; no extraction is unknown). Written into <ws>/ledger.json
 when the board sits in a workspace; `ledger_counts` in the report.
@@ -743,6 +750,13 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
 
     unrated_passives: list[str] = []
     checked_by_ref: dict[str, int] = {}
+    rated_by_ref: dict[str, set[str]] = {}
+
+    def compared(ref: str, tier: str) -> None:
+        """A rating of ref held a number from this tier against known volts."""
+        checked_by_ref[ref] = checked_by_ref.get(ref, 0) + 1
+        rated_by_ref.setdefault(ref, set()).add(tier)
+
     netfns = net_pinfunctions(pcb)
     diodes = {b["ref"]: d for b in board
               if (d := diode_reverse(b, exts.get(b["lcsc"]),
@@ -758,7 +772,7 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
         if ext is None and dio:
             vk, va = volts.get(pads[dio["k"]]), volts.get(pads[dio["a"]])
             if vk is not None and va is not None:
-                checked_by_ref[ref] = checked_by_ref.get(ref, 0) + 1
+                compared(ref, "distributor")
                 if vk - va > dio["vr"] + EPS:
                     emit("rating_reverse_polarity", "error", ref,
                          pads[dio["k"]],
@@ -772,11 +786,13 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
         if ext is None:
             if regulator_findings(b, bom_by_lcsc.get(b["lcsc"]), volts, vsrc,
                                   netfns, emit):
-                checked_by_ref[ref] = checked_by_ref.get(ref, 0) + 1
+                compared(ref, "distributor")
                 continue
             if _check_unextracted(b, bom_by_lcsc.get(b["lcsc"]), volts, emit,
                                   unrated_passives):
-                checked_by_ref[ref] = checked_by_ref.get(ref, 0) + 1
+                compared(ref, "distributor"
+                         if bom_volts(bom_by_lcsc.get(b["lcsc"])) is not None
+                         else "package")
             continue
         extracted_output_findings(b, ext, bom_by_lcsc.get(b["lcsc"]), volts,
                                   vsrc, emit)
@@ -843,7 +859,7 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                 unknown_net_pins += 1
                 continue
             checked_pins += 1
-            checked_by_ref[ref] = checked_by_ref.get(ref, 0) + 1
+            compared(ref, "datasheet")
             hit_abs = False
             for level, lst in (("abs", vabs), ("rec", vrec)):
                 for r in lst:
@@ -920,8 +936,12 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                  limit_v=dio["vr"], rating=dio["src"],
                  scenario=f"{conn['ref']} reversed")
     amb = ambient(constraints, cons_dir)
+    before_fuses = dict(checked_by_ref)
     fuse_facts = fuse_findings(board, bom_by_lcsc, volts, vsrc, currents,
                                amb, emit, checked_by_ref, unrated_passives)
+    for ref, n in checked_by_ref.items():
+        if n > before_fuses.get(ref, 0):    # a fuse is rated off its parts.json row
+            rated_by_ref.setdefault(ref, set()).add("distributor")
     temp_facts = temperature_findings(board, bom_by_lcsc, exts, amb, emit)
     unrated_passives = [r for r in unrated_passives if r not in trusted]
     out = [v for v in out if not (v.get("kind") == "rating_unrated"
@@ -947,8 +967,9 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
         refs = sorted(b["ref"] for b in board if b["lcsc"] == lcsc)
         emit("rating_datasheet_suspect", "warning", refs[0] if refs else None,
              None, f"{', '.join(refs)} ({lcsc}): the datasheet PDF is suspect "
-             f"({why}); its facts are not counted as verified - fetch "
-             "another datasheet or check by eye", pins=refs)
+             f"({why}); what was read from it is not counted as verified, "
+             "and a rating that came from the distributor stays listed - "
+             "fetch another datasheet or check by eye", pins=refs)
         out[-1]["refs"] = refs
     unassessed = [c for c in datasheet_extract.unassessed_datasheets(
         parts_dir, lcscs) if c not in suspect]
@@ -962,6 +983,25 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
              "`datasheet_extract --fetch <ws>`, which downloads and judges it",
              pins=refs)
         out[-1]["refs"] = refs
+    # what an extraction was read from may be another part's PDF, off this
+    # board: it holds that fact back without being this board's to warn about
+    read_from = {c: extraction_pdf(e, c) for c, e in exts.items()}
+    held_back = {**suspect, **datasheet_extract.suspect_datasheets(
+        parts_dir, set(read_from.values()) - lcscs)}
+    lfacts = ledger_facts(board, exts, out, checked_by_ref, bom_by_lcsc,
+                          held_back, rated_by_ref)
+    unread = sorted(f["subject"] for f in lfacts if f["kind"] == "rating"
+                    and f["status"] == "listed"
+                    and f["subject"] not in trusted)
+    if unread:
+        emit("rating_no_datasheet_read", "warning", unread[0], None,
+             f"{len(unread)} part(s) were rated from a distributor's attribute "
+             f"or a package table, with no datasheet read ({', '.join(unread[:8])}"
+             f"{', ...' if len(unread) > 8 else ''}). This doesn't block "
+             "release. To make them verified: run `datasheet_extract --fetch "
+             "<ws>` and extract each PDF. A part with no number at all: "
+             "`parts_enrich`", pins=unread)
+        out[-1]["refs"] = unread
     facts = {"parts_on_board": len(board), "extractions": sorted(exts),
              "net_volts": {n: {"v": volts[n], "src": vsrc[n]}
                            for n in sorted(volts)},
@@ -972,8 +1012,7 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
              "operating_range": temp_facts,
              "suspect_datasheets": suspect,
              "unassessed_datasheets": unassessed,
-             "ledger_facts": ledger_facts(board, exts, out, checked_by_ref,
-                                          bom_by_lcsc, suspect)}
+             "ledger_facts": lfacts}
     return out, facts
 
 
@@ -989,8 +1028,7 @@ def _check_unextracted(b: dict, bom: dict | None, volts: dict, emit,
     src = "parts.json"
     if rated is None and len(nets) == 2 and re.match(r"^R\d", ref):
         rated = engcalc.resistor_umax_v(b.get("footprint"))
-        src = (f"{engcalc.package_code(b.get('footprint'))} limiting element "
-               "voltage, D/CRCW e3 table")
+        src = _package_src(b.get("footprint"))
     if rated is not None and len(nets) == 2:
         va, vb = volts.get(nets[0]), volts.get(nets[1])
         if va is None or vb is None:
@@ -1011,6 +1049,12 @@ def _check_unextracted(b: dict, bom: dict | None, volts: dict, emit,
     emit("rating_unrated", "warning", ref, None,
          f"{ref} ({b['lcsc'] or 'no LCSC'}): {why}", pins=[why])
     return False
+
+
+def _package_src(footprint: str | None) -> str:
+    """Where a resistor's rating comes from when nothing names one for it."""
+    return (f"{engcalc.package_code(footprint)} limiting element voltage, "
+            "D/CRCW e3 table")
 
 
 def bom_volts(bom: dict | None) -> float | None:
@@ -1701,11 +1745,53 @@ def pinout_fact(b: dict, ext: dict | None) -> tuple[str, str]:
                         + (f", {named} named alike" if named else ""))
 
 
+PDF_NAME_RE = re.compile(r"[^/\\\s]+\.pdf", re.I)
+LCSC_CODE_RE = re.compile(r"(?<![A-Za-z0-9])C\d+(?![A-Za-z0-9])")
+
+
+def extraction_pdf(ext: dict, lcsc: str) -> str:
+    """The LCSC code whose PDF an extraction was read from: the one its
+    source_pdf file name gives, else its own. source_pdf is free text, so only
+    the first PDF's file name counts, not its folders or a note after it."""
+    name = PDF_NAME_RE.search(str(ext.get("source_pdf") or ""))
+    codes = LCSC_CODE_RE.findall(name.group(0)) if name else []
+    return lcsc if not codes or lcsc in codes else codes[0]
+
+
+def _rating_wording(tiers: set[str], n: int) -> str:
+    pins = f"{n} connected pin(s) within "
+    rails = " at the board's rail voltages"
+    if tiers == {"datasheet"}:
+        return f"{pins}their datasheet rating{rails}"
+    if "package" in tiers:
+        return (f"{pins}the generic limiting voltage for its package{rails}; "
+                "no datasheet or distributor rating")
+    if "datasheet" in tiers:
+        return (f"{pins}their datasheet rating or the distributor's listed "
+                f"rating{rails}; not all of it read from a datasheet")
+    return f"{pins}the distributor's listed rating{rails}; no datasheet read"
+
+
+def _rating_source(tiers: set[str], b: dict, src: str) -> str:
+    """Where the numbers of a rating fact came from; src is the extraction's."""
+    listing = f"parts.json attributes of {b['lcsc']}"
+    if "package" in tiers:
+        return _package_src(b.get("footprint"))
+    if "distributor" not in tiers:
+        return src
+    return f"{src}; {listing}" if "datasheet" in tiers else listing
+
+
 def ledger_facts(board: list[dict], exts: dict, vios: list[dict],
                  checked: dict[str, int], bom_by_lcsc: dict,
-                 suspect: dict[str, str] | None = None) -> list[dict]:
-    """rating and pinout facts per refdes (lib/ledgerlib.py). A part whose
-    datasheet is suspect is at best unknown: its facts are not verified."""
+                 suspect: dict[str, str] | None = None,
+                 rated: dict[str, set[str]] | None = None) -> list[dict]:
+    """rating and pinout facts per refdes (lib/ledgerlib.py). rated says where
+    each compared number came from (datasheet, distributor, package; with no
+    such record, an extraction's or else the distributor's), and only a
+    rating read wholly from a datasheet is verified. A suspect PDF holds back
+    what was read from it, and nothing else: suspect is keyed by the code
+    whose PDF it is (extraction_pdf)."""
     suspect = suspect or {}
     failed: dict[str, str] = {}
     unrated: dict[str, str] = {}
@@ -1728,23 +1814,29 @@ def ledger_facts(board: list[dict], exts: dict, vios: list[dict],
         src = ((ext or {}).get("source_pdf")
                or (f"parts/{b['lcsc']}.json (datasheet extraction)"
                    if ext else f"parts.json attributes of {b['lcsc']}"))
+        tiers = ((rated or {}).get(ref)
+                 or {"datasheet" if ext else "distributor"})
+        sus = suspect.get(extraction_pdf(ext, b["lcsc"])) if ext else None
         if ref in failed:
             st, val = "failed", failed[ref]
         elif ref in unrated:
             st, val = "unknown", unrated[ref]
         elif checked.get(ref):
-            st, val = "verified", (f"{checked[ref]} connected pin(s) within "
-                                   "their datasheet rating at the board's "
-                                   "rail voltages")
+            st = "verified" if tiers == {"datasheet"} else "listed"
+            val = _rating_wording(tiers, checked[ref])
         else:
             st, val = "unknown", ("no pin of it sits on a net of known "
                                   "voltage" if b["pads"] else "no connected pad")
-        sus = suspect.get(b["lcsc"])
-        if sus and st == "verified":
+        if sus and st in ("verified", "listed") and "datasheet" in tiers:
             st, val = "unknown", f"datasheet suspect, not verified: {sus}"
-        out.append({"subject": ref, "kind": "rating", "status": st,
-                    "value": val, "source": src if st != "unknown" else "",
-                    "lcsc": b["lcsc"]})
+        fact = {"subject": ref, "kind": "rating", "status": st, "value": val,
+                "source": "", "lcsc": b["lcsc"]}
+        if st != "unknown":
+            weakest = next(t for t in ("package", "distributor", "datasheet")
+                           if t in tiers)
+            fact.update(source=_rating_source(tiers, b, src),
+                        rated_from=weakest)
+        out.append(fact)
         pst, pval = pinout_fact(b, ext)
         if sus and pst == "verified":
             pst, pval = "unknown", f"datasheet suspect, not verified: {sus}"
@@ -1792,6 +1884,7 @@ def run(argv=None):
         if h is not None and f["status"] != "failed":
             f.update(status="verified", value=h.get("value", ""),
                      source=h.get("source", ""), held_by=h.get("by"))
+            f.pop("rated_from", None)
     facts["held_verified"] = sorted(held)
     if ledgerlib.writable(ws):
         exp = ledgerlib.expected(ws)
