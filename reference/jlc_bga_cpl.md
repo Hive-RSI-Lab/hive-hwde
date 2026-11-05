@@ -20,3 +20,16 @@
 - hw-lab hdi-bga U401-U404 (WLCSP-49, UFBGA-64, TFBGA-54, FBGA-153): the rotation this rule gives equals the LCSC model fit on all four. This shows the convention and those four models agree. It doesn't show what JLC does.
 - JLC preview: none recorded yet.
 - Built board: none yet.
+
+## The pin-1 silk mark (#787)
+
+**JLC's words** (PCB assembly FAQ): "we will make the placement according to the silkscreen layer by default". With no mark, "we cannot recognize the correct polarity", and they confirm by email.
+
+**What hwde does:** `silk_mark()` in `scripts/cpl_verify.py` covers ball grids and U/IC parts with three or more pads. It reads dots, small shapes and corner chamfers on the part's own side, and takes each one's nearest corner of the pad field.
+
+- **A mark off pin 1's corner is the error `cpl_silk_mark`.** JLC would follow the silk over the CPL, so the part goes on turned. Fix the footprint's mark, not the CPL. This includes a second dot beside a right one, since JLC then has two to choose from.
+- **No mark is the warning `cpl_no_silk_mark`.** The email holds the order but places nothing wrong.
+
+Agreement with the CPL follows from the rotation check: that check proves the CPL puts the part's pin 1 on board pad 1, and this one puts the mark at the same pad.
+
+**Not read:** text such as a "1" beside the pin, marks drawn on the board rather than in the footprint, and a long outline stroke beside pin 1 (these warn as no mark). 2-pad polar parts aren't covered.

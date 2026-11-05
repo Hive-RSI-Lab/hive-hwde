@@ -91,6 +91,10 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    is the warning `cpl_footprint_basis`, because JLC's zero is the part's tape
    orientation and it publishes no BGA rule: report it, and give the part an
    LCSC number or have A1 checked in JLC's preview against the part's tape spec.
+   JLC places by the silkscreen when it disagrees with the CPL. On ball grids
+   and U/IC parts, a pin-1 dot or chamfer off pin 1's corner is the error
+   `cpl_silk_mark`: fix the footprint's mark, not the CPL. No mark at all is the
+   warning `cpl_no_silk_mark`, because JLC emails to confirm: report it.
    `both_sides_needs_panel` warns that parts on both sides need Standard PCBA's
    rails, fiducials and 70 x 70 mm, on the board or on a panel.
    A wrong part (`cpl_rotation`), a part with no model or no fit

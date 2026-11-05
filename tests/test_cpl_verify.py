@@ -40,14 +40,14 @@ KICAD_SOT236 = [("1", -1.1375, -0.95), ("2", -1.1375, 0.0),
                 ("6", 1.1375, -0.95)]
 
 
-def _fp(ref, fpid, x, y, r, pads, size=(1.1, 0.6), layer="F.Cu"):
+def _fp(ref, fpid, x, y, r, pads, size=(1.1, 0.6), layer="F.Cu", silk=None):
     if layer == "B.Cu":
         # KiCad's flip: a bottom footprint's local pads are stored mirrored in y
         pads = [(n, px, -py) for n, px, py in pads]
     pad_txt = "".join(
         f'(pad "{n}" smd rect (at {px} {py} {r}) (size {size[0]} {size[1]}) '
         f'(layers "{layer}"))' for n, px, py in pads)
-    silk = '(fp_line (start -1 -1) (end 1 -1) (layer "F.SilkS"))'
+    silk = silk or '(fp_line (start -1 -1) (end 1 -1) (layer "F.SilkS"))'
     return (f'(footprint "{fpid}" (layer "{layer}") (at {x} {y} {r}) '
             f'(property "Reference" "{ref}") {silk} {pad_txt})')
 
@@ -111,6 +111,11 @@ def _cpl(**rots):
            "U3": 70, "C3": 80, "C4": 90, "D2": 100, "C5": 110}
     return {r: {"x": pos[r], "y": 10.0, "rot": float(v), "layer": "Top"}
             for r, v in rots.items()}
+
+
+def _no_mark_warning_aside(vios):
+    """The vios other than the no-mark warning: BOARD's parts carry no dot."""
+    return [v for v in vios if v["kind"] != "cpl_no_silk_mark"]
 
 
 def _verdicts(pcb, cache, cpl):
@@ -363,7 +368,8 @@ def test_dfm_bottom_verdicts_and_preview_warning(ws, tmp_path):
     _cpl_csv(cpl, [("U3", 70, 0)])
     vios = []
     dfm_check.check_placement(pcb, cpl, pj, None, cache, False, vios)
-    assert [(v["kind"], v["severity"]) for v in vios] == [("cpl_rotation", "error")]
+    assert [(v["kind"], v["severity"]) for v in _no_mark_warning_aside(vios)] == [
+        ("cpl_rotation", "error")]
 
 
 def test_render_draws_a_bottom_part_mirrored(ws, tmp_path):
@@ -491,6 +497,7 @@ def test_dfm_placement_errors_and_visual_disagreement(ws, tmp_path):
                               "U2": {"lcsc": "C116592"}}))
     vios: list = []
     facts = dfm_check.check_placement(pcb, cpl, pj, vis, cache, False, vios)
+    vios = _no_mark_warning_aside(vios)
     kinds = sorted((v["kind"], v["refs"][0]) for v in vios)
     assert kinds == [("cpl_rotation", "U1"), ("cpl_visual_disagree", "U2")]
     assert all(v["severity"] == "error" for v in vios)
@@ -664,6 +671,7 @@ def test_dfm_reports_a_refused_fetch_once_never_as_no_model(ws, tmp_path,
     vios: list = []
     facts = dfm_check.check_placement(pcb, cpl, pj, None, tmp_path / "empty",
                                       True, vios)
+    vios = _no_mark_warning_aside(vios)
     assert [v["kind"] for v in vios] == ["cpl_fetch_failed"]
     v = vios[0]
     assert v["severity"] == "error" and sorted(v["refs"]) == ["C1", "U1"]
@@ -824,7 +832,7 @@ def test_dfm_rotation_mismatch_from_the_cache_still_fails(ws, tmp_path,
     pj.write_text(json.dumps({"U1": {"lcsc": "C116592"}}))
     vios: list = []
     dfm_check.check_placement(pcb, cpl, pj, None, cache, True, vios)
-    assert [v["kind"] for v in vios] == ["cpl_rotation"]
+    assert [v["kind"] for v in _no_mark_warning_aside(vios)] == ["cpl_rotation"]
     assert dfm_check.grade(vios) == {"status": "violations"}
     assert easyeda.rate_limited() is None   # never asked
 
@@ -1441,3 +1449,245 @@ def test_custom_pad_lands_by_its_copper_not_its_anchor(tmp_path):
     assert mtab.x == pytest.approx(-0.966, abs=0.01) and abs(mtab.y) < 1e-3
     out = cv.analyse(fp, model)
     assert out["verdict"] == "ok" and out["corrections"] == [180.0]
+
+
+# ------------------------------------------------- the pin-1 silk mark (#787)
+# Real marks from hw-lab boards, local mm. U401 is hdi-bga's WLCSP-49: its A1 is
+# upper left, and both its dots are there.
+U401_DOTS = ((-2.03, -1.52, 0.10), (-1.5, -1.6, 0.03))
+U401_OUTLINE = "".join(
+    f'(fp_line (start {a} {b}) (end {c} {d}) (layer "F.SilkS"))'
+    for a, b, c, d in ((-1.5, -1.6, 1.5, -1.6), (1.5, -1.6, 1.5, 1.6),
+                       (1.5, 1.6, -1.5, 1.6), (-1.5, 1.6, -1.5, -1.6)))
+
+
+def _dot(x, y, r=0.1, layer="F.SilkS"):
+    return f'(fp_circle (center {x} {y}) (end {x + r} {y}) (layer "{layer}"))'
+
+
+def _u401_silk(sx=1, sy=1, layer="F.SilkS"):
+    """U401's real silk, its dots moved to the corner (sx, sy) from A1's."""
+    return U401_OUTLINE + "".join(_dot(sx * x, sy * y, r, layer)
+                                  for x, y, r in U401_DOTS)
+
+
+def _u401_board(tmp_path, silk, layer="F.Cu", r=0, x=20.0):
+    pads = [tuple(p) for p in HDI["U401"]["pads"]]
+    body = _fp("U401", HDI["U401"]["footprint"], x, 20.0, r, pads,
+               size=(0.25, 0.25), layer=layer, silk=silk)
+    pcb = tmp_path / "u401.kicad_pcb"
+    pcb.write_text("(kicad_pcb (version 20240108) " + body + ")")
+    return pcb
+
+
+def _mark_row(pcb, ref="U401", rot=0.0, layer="Top"):
+    rep = cv.verify(pcb, {ref: {"x": 20.0, "y": 20.0, "rot": rot, "layer": layer}},
+                    {}, pcb.parent / "c", fetch=False)
+    return {p["ref"]: p for p in rep["parts"]}[ref], rep
+
+
+def test_u401_with_its_dot_near_a1_passes(tmp_path):
+    """Known answer (#787): the real footprint's dots are at A1."""
+    row, rep = _mark_row(_u401_board(tmp_path, _u401_silk()))
+    assert row["silk_mark"] == "ok" and row["silk_pin"] == "A1"
+    assert rep["silk_mark_wrong"] == [] and rep["silk_mark_missing"] is None
+    assert rep["status"] == "pass"
+
+
+@pytest.mark.parametrize("sx,sy", [(-1, -1), (1, -1), (-1, 1)])
+def test_u401_with_its_dot_moved_to_another_corner_fails(sx, sy, tmp_path):
+    """Known answer (#787): JLC would place by this dot, so a wrong part."""
+    row, rep = _mark_row(_u401_board(tmp_path, _u401_silk(sx, sy)))
+    assert row["silk_mark"] == "wrong"
+    assert rep["silk_mark_wrong"] == ["U401"] and rep["status"] == "violations"
+    # The CPL itself is still right: this isn't a rotation failure.
+    assert row["verdict"] == cv.FOOTPRINT_MATCH and rep["failed"] == []
+
+
+def test_u401_with_its_dot_removed_warns(tmp_path):
+    """Known answer (#787): no mark is JLC's email, not a wrong part."""
+    row, rep = _mark_row(_u401_board(tmp_path, U401_OUTLINE))
+    assert row["silk_mark"] == "none"
+    assert rep["silk_mark_wrong"] == [] and rep["status"] == "pass"
+    assert rep["silk_mark_missing"]["refs"] == ["U401"]
+    assert "silkscreen" in rep["silk_mark_missing"]["note"]
+
+
+def _dfm_kinds(pcb, tmp_path, ref="U401", rot=0):
+    cpl = tmp_path / "CPL.csv"
+    _cpl_csv(cpl, [(ref, 20, rot)])
+    vios: list = []
+    facts = dfm_check.check_placement(pcb, cpl, None, None, tmp_path / "c",
+                                      False, vios)
+    marks = [v for v in vios if v["kind"].startswith(("cpl_silk_mark",
+                                                      "cpl_no_silk_mark"))]
+    return marks, facts
+
+
+def test_planted_mutant_dot_moved_reaches_the_dfm_gate(tmp_path):
+    """Plant the mutant in a good board's text: the same gate that was silent
+    must raise an error naming the part, and only the dots may differ."""
+    good = _u401_board(tmp_path, _u401_silk())
+    marks, facts = _dfm_kinds(good, tmp_path)
+    assert marks == []
+    assert {p["ref"]: p["silk_mark"] for p in facts["parts"]} == {"U401": "ok"}
+
+    text = good.read_text()
+    bad_text = text
+    for x, y, r in U401_DOTS:
+        bad_text = bad_text.replace(_dot(x, y, r), _dot(-x, -y, r))
+    assert bad_text != text
+    good.write_text(bad_text)
+    marks, _ = _dfm_kinds(good, tmp_path)
+    assert [(m["kind"], m["severity"], m["refs"]) for m in marks] == [
+        ("cpl_silk_mark", "error", ["U401"])]
+    assert "silkscreen" in marks[0]["msg"] and "A1" in marks[0]["msg"]
+
+
+def test_missing_mark_is_one_warning_for_the_run(tmp_path):
+    marks, _ = _dfm_kinds(_u401_board(tmp_path, U401_OUTLINE), tmp_path)
+    assert [(m["kind"], m["severity"], m["refs"]) for m in marks] == [
+        ("cpl_no_silk_mark", "warning", ["U401"])]
+
+
+def test_new_kinds_are_in_the_placement_check_list():
+    """check_placement's kinds count only if the report's table names them."""
+    src = (REPO / "scripts/dfm_check.py").read_text()
+    table = src[src.index('"placement": ("cpl_rotation"'):]
+    table = table[:table.index(")")]
+    assert '"cpl_silk_mark"' in table and '"cpl_no_silk_mark"' in table
+
+
+@pytest.mark.parametrize("r", [0, 90, 180, 270])
+def test_the_mark_is_read_in_the_footprints_own_frame(r, tmp_path):
+    """Turning the whole footprint turns the dot with it: still A1."""
+    row, _ = _mark_row(_u401_board(tmp_path, _u401_silk(), r=r), rot=float(r))
+    assert row["silk_mark"] == "ok"
+
+
+def _flipped(sx=1, sy=1):
+    # KiCad's flip stores silk mirrored in y, on the back layer, like the pads.
+    return "".join(_dot(sx * x, -sy * y, r, "B.SilkS") for x, y, r in U401_DOTS)
+
+
+def test_bottom_part_mark_is_read_on_its_own_side(tmp_path):
+    row, _ = _mark_row(_u401_board(tmp_path, _flipped(), layer="B.Cu"),
+                       rot=180.0, layer="Bottom")
+    assert row["silk_mark"] == "ok"
+    row, rep = _mark_row(_u401_board(tmp_path, _flipped(-1, -1), layer="B.Cu"),
+                         rot=180.0, layer="Bottom")
+    assert row["silk_mark"] == "wrong" and rep["silk_mark_wrong"] == ["U401"]
+
+
+def test_a_dot_on_the_far_sides_silk_is_not_a_mark(tmp_path):
+    """Top part, dot only on B.SilkS: nothing on the side JLC looks at."""
+    row, _ = _mark_row(_u401_board(tmp_path, _u401_silk(layer="B.SilkS")))
+    assert row["silk_mark"] == "none"
+
+
+# Each form as hw-lab boards draw it, with pin 1 where that board has it.
+QUAD = [("1", -1.0, 1.3), ("2", -1.0, -1.3), ("3", 1.0, -1.3), ("4", 1.0, 1.3)]
+MARK_FORMS = {
+    # SOT-25 U402: an arc whose ends meet, as drawn: they miss by 0.002 mm
+    "closed_arc": '(fp_arc (start -1.78245 1.519975) (mid -1.778775 1.280006) '
+                  '(end -1.78 1.52) (layer "F.SilkS"))',
+    # TSOT-23-5 U104: a filled triangle, turned to this pin 1's corner
+    "triangle": '(fp_poly (pts (xy -1.45 1.51) (xy -1.69 1.84) (xy -1.21 1.84)) '
+                '(layer "F.SilkS") (fill solid))',
+    # MSOP-10 U203: a poly of two points drawn out and back
+    "out_and_back_poly": '(fp_poly (pts (xy -1.24 1.0) (xy -0.76 1.0) (xy -1.24 1.0)) '
+                         '(layer "F.SilkS"))',
+    # QFN-16 U701: a chamfer line across the corner
+    "chamfer_line": '(fp_line (start -1.08 1.58) (end -1.58 1.08) (layer "F.SilkS"))',
+    "filled_circle": '(fp_circle (center -0.95 0.45) (end -0.8 0.45) (layer "F.SilkS") '
+                     '(fill solid))',
+}
+
+
+def _quad_row(tmp_path, silk, pads=None, ref="U1", fpid="X:IC"):
+    body = _fp(ref, fpid, 20.0, 20.0, 0, pads or QUAD, silk=silk)
+    pcb = tmp_path / "q.kicad_pcb"
+    pcb.write_text("(kicad_pcb (version 20240108) " + body + ")")
+    return _mark_row(pcb, ref)[0]
+
+
+@pytest.mark.parametrize("form", MARK_FORMS)
+def test_each_mark_form_is_seen_at_pin_1(form, tmp_path):
+    assert _quad_row(tmp_path, MARK_FORMS[form])["silk_mark"] == "ok"
+
+
+@pytest.mark.parametrize("form", MARK_FORMS)
+def test_each_mark_form_is_seen_at_the_wrong_corner(form, tmp_path):
+    """The same marks with pin 1 at the opposite corner of the pad field."""
+    far = [("1", 1.0, -1.3), ("2", 1.0, 1.3), ("3", -1.0, 1.3), ("4", -1.0, -1.3)]
+    assert _quad_row(tmp_path, MARK_FORMS[form], far)["silk_mark"] == "wrong"
+
+
+@pytest.mark.parametrize("silk", [
+    # MSOP-10 U203's side notch marks an end, not a corner
+    '(fp_arc (start -1.52 -0.55) (mid -0.97 -0.01) (end -1.5 0.55) (layer "F.SilkS"))',
+    # an outline: square, long, or a big circle round the body
+    '(fp_line (start -1 -1.6) (end 1 -1.6) (layer "F.SilkS"))',
+    '(fp_circle (center -0.5 0.5) (end 1.5 0.5) (layer "F.SilkS"))',
+    # a dead-centre dot points at no corner
+    '(fp_circle (center 0 0) (end 0.1 0) (layer "F.SilkS"))',
+    # a diagonal running out from the centre doesn't cut a corner
+    '(fp_line (start -0.5 0.65) (end -1 1.3) (layer "F.SilkS"))',
+], ids=["notch", "outline", "big_circle", "centre_dot", "radial_line"])
+def test_shapes_that_arent_a_mark(silk, tmp_path):
+    assert _quad_row(tmp_path, silk)["silk_mark"] == "none"
+
+
+def test_a_second_dot_off_pin_1_is_wrong_and_named(tmp_path):
+    """One dot right and one wrong leaves JLC two to choose from."""
+    row = _quad_row(tmp_path, _dot(-0.95, 0.45) + _dot(0.95, -0.45))
+    assert row["silk_mark"] == "wrong" and row["silk_off"] == [(0.95, -0.45)]
+
+
+def test_a_usb_c_named_like_balls_is_left_alone(tmp_path):
+    """eda-crossover J5: pads in rows A, B and C, but slots and not balls."""
+    pads = [f'(pad "{r}{k}" smd rect (at {k * 0.5 - 2} {i * 2.0}) (size 0.3 1.1) '
+            f'(layers "F.Cu"))' for i, r in enumerate("ABC") for k in range(1, 7)]
+    pcb = tmp_path / "j.kicad_pcb"
+    pcb.write_text('(kicad_pcb (version 20240108) (footprint "X:USB-C" (layer "F.Cu") '
+                   '(at 20 20 0) (property "Reference" "J5") ' + "".join(pads) + "))")
+    assert _mark_row(pcb, "J5")[0]["silk_mark"] is None
+
+
+def test_pin_1_mid_side_accepts_either_corner_of_that_side(tmp_path):
+    """A PLCC's pin 1 sits mid-side, so it has no one corner: either end of
+    its side is that pin's, and the far side is still wrong."""
+    plcc = [("1", 0.0, 2.0), ("2", -2.0, 0.0), ("3", 0.0, -2.0), ("4", 2.0, 0.0)]
+    assert _quad_row(tmp_path, _dot(-1.5, 1.8), plcc)["silk_mark"] == "ok"
+    assert _quad_row(tmp_path, _dot(1.5, 1.8), plcc)["silk_mark"] == "ok"
+    assert _quad_row(tmp_path, _dot(1.5, -1.8), plcc)["silk_mark"] == "wrong"
+
+
+@pytest.mark.parametrize("ref,fpid,pads", [
+    ("R1", "Resistor_SMD:R_0603", [("1", -0.8, 0), ("2", 0.8, 0)]),
+    ("C1", "Capacitor_SMD:C_0603", [("1", -0.8, 0), ("2", 0.8, 0)]),
+    ("D1", "Diode_SMD:D_SOD-123", [("1", -1.6, 0), ("2", 1.6, 0)]),
+    # no polarity here and no pin-1 convention we read
+    ("J1", "Conn:Header_1x04", [(str(i + 1), i * 1.0, 0) for i in range(4)]),
+    ("Q1", "Package_TO_SOT_SMD:SOT-23", [("1", -1, 1), ("2", 1, 1), ("3", 0, -1)]),
+    # an IC ref, but 2-pad or with no pad 1 to compare
+    ("U9", "X:TWO", [("1", -0.8, 0), ("2", 0.8, 0)]),
+    ("U9", "X:NAMED", [("VIN", -1, 1), ("GND", 1, 1), ("SW", 0, -1)]),
+])
+@pytest.mark.parametrize("silk", ["", _dot(1.5, 1.5)], ids=["no_dot", "any_dot"])
+def test_parts_outside_the_rule_are_left_alone(ref, fpid, pads, silk, tmp_path):
+    body = _fp(ref, fpid, 20.0, 20.0, 0, pads, silk=silk)
+    pcb = tmp_path / "p.kicad_pcb"
+    pcb.write_text("(kicad_pcb (version 20240108) " + body + ")")
+    row, rep = _mark_row(pcb, ref)
+    assert row["silk_mark"] is None
+    assert rep["silk_mark_wrong"] == [] and rep["silk_mark_missing"] is None
+
+
+def test_a_ball_grid_is_judged_whatever_its_ref(tmp_path):
+    pads = [tuple(p) for p in HDI["U401"]["pads"]]
+    body = _fp("M1", "X:BGA", 20.0, 20.0, 0, pads, size=(0.25, 0.25),
+               silk=_u401_silk(-1, -1))
+    pcb = tmp_path / "m.kicad_pcb"
+    pcb.write_text("(kicad_pcb (version 20240108) " + body + ")")
+    assert _mark_row(pcb, "M1")[0]["silk_mark"] == "wrong"
