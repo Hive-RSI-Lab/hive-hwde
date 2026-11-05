@@ -70,6 +70,14 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
   and now REFUSES rather than defaulting to 1 oz. If it refuses, fix the doc
   (name a stackup from `reference/stackups.yaml`) - do not paper over it
   with `--copper-oz` unless the human decided the weight.
+- `--api-create` compares the quote's layer, width, length, thickness,
+  copperWeight, surfaceFinish and pcbColor with the board on every package,
+  attested or not, and refuses naming the field and both values. The board
+  (or fab/manifest.json for layers) decides; a field that can't be compared
+  refuses. Copper falls back to stackup.md, then quote.json. Finish and
+  colour fall back to the quote.json row, and a board `copper_finish` of
+  HASL counts as undecided because the board template writes it. An
+  ungoverned `--copper-oz` stays a waiver for the weight it recorded.
 - The laminate comes from the BOARD's stackup block (lib/fabmaterial.py).
   A RO4350B board is JLC's high-frequency product: order_quote prices it on
   that line (ENIG/green only), order_submit sends plateType 5 and refuses

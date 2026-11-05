@@ -40,12 +40,14 @@ from _boards import copy_board, real_board  # noqa: E402
 
 BOARD = "attboard"
 PCB_TEXT = """(kicad_pcb (version 20260101) (generator "test")
+  (general (thickness 1.6))
   (layers
     (0 "F.Cu" signal)
     (2 "B.Cu" signal)
     (25 "Edge.Cuts" user)
   )
   (net 0 "")
+  (gr_rect (start 0 0) (end 20 25) (layer "Edge.Cuts"))
   (segment (start 1 1) (end 2 2) (width 0.25) (layer "F.Cu") (net 0))
 )
 """
@@ -965,6 +967,16 @@ def test_create_payload_manufacturing_binding(tmp_path, monkeypatch,
         "--confirm", confirm))
     assert code == 2
     assert fake2.calls == []                     # refused before transport
+    man = json.loads((ws / "fab" / "order.json").read_text(encoding="utf-8"))
+    # the board compare (#716) sees the doctored weight first
+    assert "copperWeight: quote '2', board 1" in man["api"]["note"]
+    # the attestation binding still holds behind it
+    monkeypatch.setattr(order_submit, "_quote_fab_mismatches", lambda m, q: [])
+    code = order_submit.main(_submit_argv(
+        ws, "--api-create", "--api-quote-file", str(aq),
+        "--confirm", confirm))
+    assert code == 2
+    assert fake2.calls == []
     man = json.loads((ws / "fab" / "order.json").read_text(encoding="utf-8"))
     assert "pcbParam.copperWeight" in man["api"]["note"]
 

@@ -643,6 +643,16 @@ def api_env(monkeypatch):
     monkeypatch.setenv("HWDE_JLCPCB_SECRET", "SECRET")
 
 
+# The smallest board that says what an order needs: 2 layers, 1.6 mm, 20 x 25.
+# It has no stackup block, so copper weight comes from architecture/stackup.md.
+BOARD_20X25 = """(kicad_pcb
+  (general (thickness 1.6))
+  (layers (0 "F.Cu" signal) (31 "B.Cu" signal) (44 "Edge.Cuts" user))
+  (gr_rect (start 0 0) (end 20 25) (layer "Edge.Cuts"))
+)
+"""
+
+
 def make_fab(tmp_path, stackup="JLC2313_1.6"):
     fab = tmp_path / "fab"
     fab.mkdir()
@@ -665,7 +675,7 @@ def make_fab(tmp_path, stackup="JLC2313_1.6"):
     qj = tmp_path / "quote.json"
     qj.write_text(json.dumps(quote), encoding="utf-8")
     pcb = tmp_path / "b1.kicad_pcb"
-    pcb.write_text("(kicad_pcb)", encoding="utf-8")
+    pcb.write_text(BOARD_20X25, encoding="utf-8")
     return pcb, fab, qj
 
 
@@ -855,6 +865,9 @@ def write_api_quote(fab, price=12.5, qty=5, board="b1", age_h=0.0,
          "calculate_request": {"orderType": 1, "fileKey": "FKEY1",
                                "achieveDate": 120,
                                "pcbParam": {"layer": 2, "copperWeight": "1",
+                                            "width": 20.0, "length": 25.0,
+                                            "thickness": 1.6,
+                                            "surfaceFinish": 1, "pcbColor": 0,
                                             "viaCovering": 1, "plateType": 1,
                                             "castellatedHoles": 0,
                                             "qty": (qty if param_qty is None
