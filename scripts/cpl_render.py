@@ -47,6 +47,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import sys
 from pathlib import Path
 
@@ -77,6 +78,9 @@ def board_shapes(fp: cv.Footprint) -> dict:
     return {"pads": pads, "silk": silk}
 
 
+_BALL = re.compile(r"^([A-Z]+)(\d+)$")
+
+
 def model_shapes(model, cpl: dict, side: str = "top") -> dict:
     """The LCSC model placed at the CPL position and rotation, in board
     coordinates. On the bottom the rotation is read from below, so the turned
@@ -97,6 +101,12 @@ def model_shapes(model, cpl: dict, side: str = "top") -> dict:
     body = [place(x, y) for x, y in ((min(xs), min(ys)), (max(xs), min(ys)),
                                      (max(xs), max(ys)), (min(xs), max(ys)))]
     pin1 = next((p["center"] for p in pads if p["number"] == "1"), None)
+    if pin1 is None:
+        balls = [(m.group(1), int(m.group(2)), p["center"]) for p in pads
+                 if (m := _BALL.match(p["number"] or ""))]
+        if len(balls) >= 4:
+            pin1 = min(balls, key=lambda b: ((b[0], b[1]) != ("A", 1), len(b[0]),
+                                             b[0], b[1]))[2]
     return {"pads": pads, "body": body, "pin1": pin1}
 
 
@@ -105,6 +115,28 @@ def _role_pad(roles: dict[str, str], want=("K", "+")):
         if r in want:
             return num, r
     return None, None
+
+
+def bga_pin1(fp: cv.Footprint):
+    """The board's BGA pin 1: the pad named A1, else the lowest row letter and
+    then the lowest column number among ball-named pads. None when the
+    footprint has no ball grid (three or more rows of ball names)."""
+    balls = [(m.group(1), int(m.group(2)), p) for p in fp.pads
+             if (m := _BALL.match(p.number or ""))]
+    # a USB-C (A1..A12, B1..B12) is two rows of pins, not a ball grid
+    if len(balls) < 6 or len({b[0] for b in balls}) < 3:
+        return None
+    for row, col, p in balls:
+        if (row, col) == ("A", 1):
+            return p
+    return min(balls, key=lambda b: (len(b[0]), b[0], b[1]))[2]
+
+
+def polar_label(roles: dict[str, str], fp: cv.Footprint | None = None):
+    """(pad number, label) for a polar part's K/+ mark. With no pin roles known
+    nothing says which pad is the cathode, so pad 1 is marked "?", not "K"."""
+    num, r = _role_pad(roles)
+    return (num, r) if num else ("1", "?")
 
 
 def render(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
@@ -156,8 +188,18 @@ def render(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
                                          ec="cyan", lw=2.0, zorder=3))
                     ax.annotate("1", p["center"], color="cyan", fontsize=9,
                                 ha="center", va="center", zorder=6)
+            pb = bga_pin1(fp)
+            if pb is not None:
+                # BGA: mark pin 1 whatever it is named (A1 is not "1")
+                pc = next(q["center"] for q in b["pads"] if q["number"] == pb.number)
+                ax.annotate("\u25e4", pc, color="cyan", fontsize=14, ha="center",
+                            va="center", zorder=6)
+                ax.annotate(f"pin 1 = {pb.number}", pc, color="cyan", fontsize=7,
+                            xytext=(0, 9), textcoords="offset points",
+                            ha="center", zorder=6)
+                index["parts"][ref]["bga_pin1"] = pb.number
             if polar:
-                num, r = _role_pad(cv.board_roles(fp, model) or {"1": "K"})
+                num, r = polar_label(cv.board_roles(fp, model), fp)
                 for p in b["pads"]:
                     if p["number"] == num:
                         ax.annotate(r, p["center"], color="cyan", fontsize=9,
@@ -185,8 +227,7 @@ def render(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
                 if m["pin1"]:
                     ax.plot(*m["pin1"], "o", color="red", ms=7, zorder=7)
                 if polar:
-                    num, r = _role_pad(cv.model_roles(model) or {"1": "+"
-                                       if fp.ref.startswith("C") else "K"})
+                    num, r = polar_label(cv.model_roles(model), fp)
                     for p in m["pads"]:
                         if p["number"] == num:
                             ax.annotate(r, p["center"], color="red",

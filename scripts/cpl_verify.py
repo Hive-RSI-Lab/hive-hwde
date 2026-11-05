@@ -35,7 +35,11 @@ per LCSC number) and fits it onto the board footprint:
             A 403/429 is EasyEDA's rate limit: later parts are not fetched
             (also `fetch_failed`) and the report's `rate_limited` says why.
   offset    The model's pad centre vs the board's, both placed, is reported
-            (`offset_mm`); over OFFSET_WARN_MM it is a warning only.
+            (`offset_mm`); over OFFSET_WARN_MM it is a warning only. The
+            limit shrinks with the pad pitch (`offset_limit_mm`: 0.4 x the
+            closest pad centres, never over OFFSET_WARN_MM): a part whose
+            limit is below that (a 0.5 mm BGA: 0.2 mm) is `wrong_offset`, a
+            failure, because the offset alone leaves its balls half off.
 
 Bottom side. The board is viewed from below, turned about its y axis (x -> -x,
 as a page is turned), with the part read from its own side. Writing R(a) for a
@@ -97,9 +101,10 @@ import sexpdata  # noqa: E402
 import easyeda  # noqa: E402
 
 OFFSET_WARN_MM = 0.5
+OFFSET_PITCH_FRAC = 0.4   # an offset past this share of the pad pitch is a failure
 ROT_TOL_DEG = 1.0
 FAIL_VERDICTS = ("wrong_rotation", "wrong_polarity", "no_model", "no_fit",
-                 "fetch_failed")
+                 "fetch_failed", "wrong_offset")
 BOTTOM_PREVIEW_NOTE = (
     "bottom-side rotations follow (180 - kicad + correction), from two "
     "community exporters and the geometry, not from a JLC statement: check "
@@ -440,6 +445,18 @@ def _offset_pads(fp: Footprint, model) -> tuple[list, list]:
     return (em, km) if em else (list(model.pads), list(fp.pads))
 
 
+def offset_limit_mm(fp: Footprint) -> float:
+    """The placement offset a part may have: OFFSET_PITCH_FRAC of its closest
+    pad centres, at most OFFSET_WARN_MM. A 1206's pads are 3 mm apart, a 0.5 mm
+    BGA's 0.5, and 0.24 mm off lands the first on its pads and the second not."""
+    pts = [(p.x, p.y) for p in fp.pads]
+    gaps = [d for i, a in enumerate(pts) for b in pts[i + 1:]
+            if (d := math.hypot(a[0] - b[0], a[1] - b[1])) > 1e-6]
+    if not gaps:
+        return OFFSET_WARN_MM
+    return min(OFFSET_WARN_MM, OFFSET_PITCH_FRAC * min(gaps))
+
+
 def _centre_delta(fp: Footprint, model, cpl_rot: float) -> tuple[float, float]:
     """Board pad centre minus model pad centre, both turned, in the board frame
     (y down), with the part's position taken as the footprint origin. On the
@@ -457,13 +474,13 @@ def _centre_delta(fp: Footprint, model, cpl_rot: float) -> tuple[float, float]:
 
 def placement_offset(fp: Footprint, model, cpl_rot: float) -> tuple[float, float] | None:
     """How far the CPL position must move off the footprint origin for the
-    part's own pads to land on the board's, when that is over OFFSET_WARN_MM:
+    part's own pads to land on the board's, when that is over offset_limit_mm:
     a footprint whose origin isn't the part's centre (SparkFun's USB-C and
     Qwiic: 2.8 and 1.9 mm) would otherwise be placed off its pads."""
     if model is None or analyse(fp, model)["verdict"] != "ok":
         return None
     dx, dy = _centre_delta(fp, model, cpl_rot)
-    return (dx, dy) if math.hypot(dx, dy) > OFFSET_WARN_MM else None
+    return (dx, dy) if math.hypot(dx, dy) > offset_limit_mm(fp) else None
 
 
 def check_part(fp: Footprint, model, cpl: dict) -> dict:
@@ -497,6 +514,13 @@ def check_part(fp: Footprint, model, cpl: dict) -> dict:
     dx, dy = _centre_delta(fp, model, cpl["rot"])
     row["offset_mm"] = round(math.hypot(cpl["x"] - fp.x - dx,
                                         cpl["y"] - fp.y - dy), 3)
+    row["offset_limit_mm"] = round(offset_limit_mm(fp), 3)
+    if row["verdict"] == "ok" and row["offset_limit_mm"] < OFFSET_WARN_MM \
+            and row["offset_mm"] > row["offset_limit_mm"]:
+        row["verdict"] = "wrong_offset"
+        row["why"] = (f"the CPL position is {row['offset_mm']} mm off where the "
+                      f"model's pads meet the board's; this pad pitch allows "
+                      f"{row['offset_limit_mm']} mm")
     return row
 
 
@@ -568,7 +592,8 @@ def verify(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
             "bottom_preview": ({"refs": below, "note": BOTTOM_PREVIEW_NOTE}
                                if below else None),
             "offset_warnings": [r["ref"] for r in rows
-                                if r.get("offset_mm", 0) > OFFSET_WARN_MM],
+                                if r.get("offset_mm", 0) > r.get("offset_limit_mm", OFFSET_WARN_MM)
+                                and r["verdict"] == "ok"],
             "fetch_failed": [r["ref"] for r in rows
                              if r["verdict"] == "fetch_failed"],
             "rate_limited": easyeda.rate_limited(),
@@ -578,7 +603,7 @@ def verify(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
 
 # A footprint whose pads land on the LCSC model by number is the part's land
 # pattern whatever the CPL turn says (a wrong rotation or a K on A is the CPL's fault).
-FOOTPRINT_OK = ("ok", "wrong_rotation", "wrong_polarity")
+FOOTPRINT_OK = ("ok", "wrong_rotation", "wrong_polarity", "wrong_offset")
 
 
 def record_footprints(pcb: Path, rows: list[dict],
