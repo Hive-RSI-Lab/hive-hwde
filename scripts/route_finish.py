@@ -329,6 +329,7 @@ class Grid:
     b_plane: bytes
     # #477, per k: (k2, span, its via mask, the k its via must find clear)
     span_moves: list = field(default_factory=list)
+    gave_up: bool = False   # astar stopped at max_nodes, not out of cells
 
     def xy(self, i: int, j: int) -> tuple[float, float]:
         return (round(self.x0 + i * self.g, 4), round(self.y0 + j * self.g, 4))
@@ -555,13 +556,18 @@ _MOVES = [(1, 0, 1.0), (-1, 0, 1.0), (0, 1, 1.0), (0, -1, 1.0),
 
 
 def astar(gr: Grid, target, via_cost: float = 15.0,
-          max_nodes: int = 3_000_000, deadline: float | None = None):
+          max_nodes: int = 3_000_000, deadline: float | None = None,
+          search_weight: float = 1.0):
     """Multi-source search from side A's free cells to side B's.
 
     Nodes are (cell, k); a via (layer change, or a drop into a plane-layer
     side) costs via_cost grid steps, an HDI build's span a share of that
     (SPAN_COST, #477). Returns [(i, j, k, via_here)] from A to
     B, where a final/initial entry with k = -1 is a via into a plane, or None.
+    None after max_nodes sets gr.gave_up: a path may still exist.
+    search_weight > 1 inflates the distance estimate: far fewer nodes on a
+    long route across pours (each step there costs several times the
+    estimate), for a route that may not be the shortest.
     """
     nx, ny, K = gr.nx, gr.ny, len(gr.layers)
     N = nx * ny
@@ -572,7 +578,7 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
 
     def h(c):
         di, dj = abs(c % nx - ti), abs(c // nx - tj)
-        return max(di, dj) + (math.sqrt(2) - 1) * min(di, dj)
+        return search_weight * (max(di, dj) + (math.sqrt(2) - 1) * min(di, dj))
 
     def via_ok(c):
         if gr.vblk[c]:
@@ -611,6 +617,7 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
             break
         expanded += 1
         if expanded > max_nodes:
+            gr.gave_up = True
             break
         if deadline is not None and not expanded & 0x3FFF \
                 and time.monotonic() >= deadline:
@@ -850,6 +857,7 @@ def conn_key(net: str, a, b) -> tuple:
 def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
                 layers: list[str], *, grid: float = 0.1, margin: float = 4.0,
                 max_conns: int | None = None, max_nodes: int = 3_000_000,
+                search_weight: float = 1.0,
                 via_cost_mm: float = 1.5, rip_board: bool = False,
                 rip_board_nets: int = 4, ripped_out: list | None = None,
                 log=None, skip: set | None = None,
@@ -948,9 +956,11 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
                 target = (int(round((bx - gr.x0) / g)),
                           int(round((by - gr.y0) / g)))
                 path = astar(gr, target, via_cost=via_cost_mm / g,
-                             max_nodes=max_nodes, deadline=deadline)
+                             max_nodes=max_nodes, deadline=deadline,
+                             search_weight=search_weight)
                 if path:
                     return path, gr, w
+                job["gave_up"] = job.get("gave_up") or gr.gave_up
         finally:
             obs.added = held
             obs.soft_board = None
@@ -1062,7 +1072,9 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
             if expired():
                 job.update(status="skipped", reason="cut by the deadline")
             else:
-                job.update(status="failed", reason="no path on the grid")
+                job.update(status="failed", reason=(
+                    "search stopped at --max-nodes; a path may exist"
+                    if job.get("gave_up") else "no path on the grid"))
         if log:
             log(f"{steps} {job['net']}: {job['status']}")
     for j in jobs:
@@ -1103,7 +1115,9 @@ def _one_pass(cli, staged, drc, opts, *, parity, refill, log):
                        margin=opts["margin"], max_conns=opts["max_conns"],
                        rip_board=opts["rip_board"], ripped_out=rip, log=log,
                        skip=opts["skip"], keep_nets_extra=opts["keep_nets"],
-                       deadline=opts["deadline"], on_try=opts["on_try"])
+                       deadline=opts["deadline"], on_try=opts["on_try"],
+                       max_nodes=opts["max_nodes"],
+                       search_weight=opts["search_weight"])
     if opts["skip"] is not None:
         # a chunk of route_close: it tries these again next round, so the
         # chunk's later passes don't spend their time on them
@@ -1161,7 +1175,9 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
                   passes: int = 6, rip_errors: bool = False,
                   rip_board: bool = True, keep_nets: set | None = None,
                   log=None, skip_conns=None,
-                  deadline: float | None = None, on_try=None) -> dict:
+                  deadline: float | None = None, on_try=None,
+                  max_nodes: int = 3_000_000,
+                  search_weight: float = 1.0) -> dict:
     """Route the staged board's unconnected pairs in place, in passes: a
     route can split another net's pour, and the next pass joins the piece.
     A pass is kept only when the unconnected count drops and no error type
@@ -1175,7 +1191,8 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
                 via_drill=via_drill, max_conns=max_conns,
                 rip_board=rip_board, drc_s=0.0, deadline=deadline,
                 skip=None if skip_conns is None else set(skip_conns),
-                keep_nets=keep_nets, on_try=on_try)
+                keep_nets=keep_nets, on_try=on_try, max_nodes=max_nodes,
+                search_weight=search_weight)
     start_un = sum(unconnected_by_net(drc).values())
     facts: dict = {"unconnected_before": start_un,
                    "errors_before": err_counts(drc), "passes": []}
@@ -1188,7 +1205,8 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
         jobs = plan_routes(bg, rules, unconnected_pairs(drc, opts["nets"]),
                            lays, grid=grid, margin=margin,
                            max_conns=max_conns, rip_board=rip_board, log=log,
-                           skip=opts["skip"], keep_nets_extra=keep_nets)
+                           skip=opts["skip"], keep_nets_extra=keep_nets,
+                           max_nodes=max_nodes, search_weight=search_weight)
         facts.update(kept=False, rules=_rules_facts(rules), layers=lays,
                      connections=jobs,
                      routed=sum(j["status"] == "routed" for j in jobs))
@@ -1409,10 +1427,16 @@ def add_routing_args(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--clearance-margin", type=float, default=0.02)
     ap.add_argument("--via-size", type=float, default=None)
     ap.add_argument("--via-drill", type=float, default=None)
+    ap.add_argument("--max-nodes", type=int, default=3_000_000,
+                    help="nodes one search may expand before it gives up")
+    ap.add_argument("--search-weight", type=float, default=1.0,
+                    help="inflate the search's distance estimate: above 1, "
+                         "far fewer nodes on long routes, not always shortest")
 
 
 ROUTING_FLAGS = ("nets", "layers", "grid", "margin", "min_width",
-                 "clearance_margin", "via_size", "via_drill")
+                 "clearance_margin", "via_size", "via_drill", "max_nodes",
+                 "search_weight")
 
 
 def run(argv: list[str] | None = None):
@@ -1508,7 +1532,8 @@ def run(argv: list[str] | None = None):
                                               (args.protect_nets or "").split(","))),
         deadline=(None if args.plan_seconds is None
                   else started + args.plan_seconds),
-        on_try=on_try)
+        on_try=on_try, max_nodes=args.max_nodes,
+        search_weight=args.search_weight)
     final = facts.pop("drc", None) or drc
     if facts.get("kept") and not args.dry_run:
         routelib.swap_in(staged, pcb)

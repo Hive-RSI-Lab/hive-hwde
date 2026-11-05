@@ -627,7 +627,10 @@ a via into the plane), and frees a walled-in pad by ripping the fewest
 signal nets in the way. It never rips pour nets or nets with a width rule.
 Run it alone on any routed board (`hwde route_finish --pcb ... --dry-run`
 first). Its `failed` connections have no path at the rules, which makes
-them a placement or topology finding.
+them a placement or topology finding, unless the reason names `--max-nodes`:
+then the search ran out of nodes, so raise that, or set `--search-weight`
+(2 to 3 reaches far ends across pours with far fewer nodes, not always by the
+shortest route). Allow about 200 MB per million nodes.
 
 When a single `route_finish` run can't finish in the time you have, or stalls
 on the same failures, use `hwde route_close --pcb ... --budget 3600` with the
