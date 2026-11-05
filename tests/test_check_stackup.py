@@ -4,6 +4,7 @@ block among them."""
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -17,19 +18,32 @@ import check_stackup  # noqa: E402
 import fabmaterial  # noqa: E402
 
 
-def _board(tmp_path, f_cu=0.035, b_cu=0.035, inner=(), block=True) -> Path:
-    """A board whose stackup says these copper thicknesses (None: says none)."""
+def _board(tmp_path, f_cu=0.035, b_cu=0.035, inner=(), block=True, core=1.5,
+           general="sum", quote=None) -> Path:
+    """A board whose stackup says these copper thicknesses (None: says none).
+    core is the dielectric 1 thickness, general the (general (thickness)) and
+    quote the fab/quote.json spec thickness_mm, when there is one."""
     def cu(name, mm):
         th = "" if mm is None else f" (thickness {mm})"
         return f'(layer "{name}" (type "copper"){th})'
-    rows = [cu("F.Cu", f_cu), '(layer "dielectric 1" (type "core") (thickness 1.5))']
+    rows = [cu("F.Cu", f_cu),
+            f'(layer "dielectric 1" (type "core") (thickness {core}))']
     for i, mm in enumerate(inner, 1):
         rows += [cu(f"In{i}.Cu", mm),
                  f'(layer "dielectric {i + 1}" (type "prepreg") (thickness 0.1))']
     rows.append(cu("B.Cu", b_cu))
     stack = "(setup (stackup\n  " + "\n  ".join(rows) + '\n  (copper_finish "ENIG")\n))\n'
-    pcb = tmp_path / "b.kicad_pcb"
-    pcb.write_text("(kicad_pcb\n(general (thickness 1.6))\n"
+    (tmp_path / "kicad").mkdir(exist_ok=True)
+    pcb = tmp_path / "kicad" / "b.kicad_pcb"
+    if quote is not None:
+        (tmp_path / "fab").mkdir(exist_ok=True)
+        (tmp_path / "fab" / "quote.json").write_text(
+            json.dumps({"spec": {"thickness_mm": quote}}), encoding="utf-8")
+    if general == "sum":  # a board that agrees with itself
+        general = round(sum(float(x) for x in re.findall(
+            r"thickness ([\d.]+)", stack)), 4)
+    gen = "" if general is None else f"(general (thickness {general}))\n"
+    pcb.write_text("(kicad_pcb\n" + gen
                    + (stack if block else "(setup)\n") + ")\n", encoding="utf-8")
     return pcb
 
@@ -119,3 +133,51 @@ def test_the_cli_writes_its_report(tmp_path, capsys):
                                "--out", str(out)])
     assert code == 1
     assert json.loads(out.read_text())["counts"]["by_severity"] == {"error": 1}
+
+
+# ---- the three thicknesses: stack sum, general, the quote's (#745)
+# The 48-board spread: 47 sit within 4.4 % of each other (stack sum 1.6742 with
+# the mask against 1.6 general); rf-kit-ro4350b is 4.617 against 1.6.
+
+
+def test_the_rf_kit_ro4350b_stack_sum_against_general_is_an_error(tmp_path):
+    """4.6 mm of stack against a 1.6 mm board: the issue's known answer."""
+    # 4.547 + 2 * 0.035 = 4.617
+    payload = _run(_board(tmp_path, core=4.547, general=1.6))
+    assert _kinds(payload) == [("error", "thickness_stack_vs_general", None)]
+    msg = payload["violations"][0]["msg"]
+    assert "4.617" in msg and "1.6" in msg and "10%" in msg
+
+
+def test_the_quote_against_the_stack_sum_is_an_error(tmp_path):
+    payload = _run(_board(tmp_path, general=1.57, quote=0.8))
+    assert _kinds(payload) == [("error", "thickness_quote_differs", None)] * 2
+    msgs = " ".join(v["msg"] for v in payload["violations"])
+    assert "0.8" in msgs and "1.57" in msgs
+
+
+def test_the_general_against_the_quote_alone_is_named(tmp_path):
+    """Stack and quote agree, general is the odd one out."""
+    payload = _run(_board(tmp_path, core=0.73, general=1.6, quote=0.8))
+    assert sorted(k for _, k, _ in _kinds(payload)) == [
+        "thickness_quote_differs", "thickness_stack_vs_general"]
+
+
+@pytest.mark.parametrize("core,ok", [
+    (1.5, True),         # 1.57 against 1.6
+    (1.6042, True),      # 1.6742 with the mask: the worst of the 47
+    (1.70, True),        # 1.77 against 1.6: 9.6 %
+    (1.73, False),       # 1.80 against 1.6: 11.1 %
+    (0.9, False)])
+def test_the_tolerance_edge(tmp_path, core, ok):
+    kinds = [k for _, k, _ in _kinds(_run(_board(tmp_path, core=core, general=1.6)))]
+    assert (kinds == []) == ok
+
+
+def test_the_rf_kit_ro4350b_corrected_passes(tmp_path):
+    """Corrected stack 1.6, quote the nominal 1.52 core: 5 %, within."""
+    assert _kinds(_run(_board(tmp_path, core=1.53, general=1.6, quote=1.52))) == []
+
+
+def test_no_quote_or_no_general_is_not_a_finding(tmp_path):
+    assert _kinds(_run(_board(tmp_path, general=None))) == []

@@ -18,6 +18,17 @@ Findings:
                           same tolerance. Left out when either side is out of
                           range: that finding is the one to fix.
 
+  thickness_stack_vs_general
+                          error: the stackup's layers sum to a thickness
+                          over 10 % off the board's (general (thickness)).
+  thickness_quote_differs error: fab/quote.json's spec thickness_mm is over
+                          10 % off the stack sum or the general thickness
+                          (#745). 10 % is over twice the 4.4 % spread of 47 of
+                          48 boards (mask and silk make the sum 1.674 against
+                          1.6); the 48th, rf-kit-ro4350b, is 4.617 against 1.6.
+                          No quote beside the board, or no general thickness,
+                          is left out.
+
 Reads the block as written (fabmaterial.board_copper_layers), since geom swaps
 a zero for its default. No block is nothing_to_judge; a copper layer that gives
 no thickness is listed in not_judged.
@@ -28,6 +39,7 @@ Exit: 0 pass, 1 findings, 2 error.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -74,6 +86,46 @@ def judge(layers: list[tuple[str, float | None]]) -> tuple[list[dict], list[str]
     return vios, left
 
 
+def judge_thickness(stack: float | None, general: float | None,
+                    quote: float | None) -> list[dict]:
+    """Each pair of the three thicknesses that sits over the tolerance."""
+    tol = fabmaterial.THICKNESS_TOLERANCE
+    vios = []
+
+    def gap(a, b):
+        return a is not None and b is not None \
+            and fabmaterial.thickness_gap(a, b) > tol
+
+    if gap(stack, general):
+        vios.append(checklib.violation(
+            SCRIPT, "error", None, None, None, [],
+            f"the stackup's layers sum to {stack:g} mm and the board's general "
+            f"thickness is {general:g} mm: over {tol:.0%} apart. One of them "
+            f"is wrong, and checks read both", SOURCE,
+            kind="thickness_stack_vs_general", stack_mm=stack,
+            general_mm=general))
+    for name, other in (("stack sum", stack), ("general thickness", general)):
+        if gap(quote, other):
+            vios.append(checklib.violation(
+                SCRIPT, "error", None, None, None, [],
+                f"the quote's thickness is {quote:g} mm and the board's "
+                f"{name} is {other:g} mm: over {tol:.0%} apart. Order and "
+                f"board must state one thickness", SOURCE,
+                kind="thickness_quote_differs", quote_mm=quote,
+                against=name, other_mm=other))
+    return vios
+
+
+def _quote_thickness(pcb: Path) -> float | None:
+    """spec.thickness_mm of the workspace's fab/quote.json, if there is one."""
+    try:
+        spec = json.loads((pcb.resolve().parent.parent / "fab" / "quote.json")
+                          .read_text(encoding="utf-8")).get("spec") or {}
+        return float(spec["thickness_mm"])
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return None
+
+
 def run(argv=None) -> tuple[dict, str | None]:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--pcb", required=True, type=Path)
@@ -83,6 +135,10 @@ def run(argv=None) -> tuple[dict, str | None]:
         raise checklib.CheckError(f"board not found: {args.pcb}")
     layers = fabmaterial.board_copper_layers(args.pcb)
     vios, left = judge(layers)
+    if layers:
+        vios += judge_thickness(fabmaterial.board_stack_sum_mm(args.pcb),
+                                fabmaterial.board_general_mm(args.pcb),
+                                _quote_thickness(args.pcb))
     return checklib.report(
         SCRIPT, args.pcb, vios, copper_mm=dict(layers), not_judged=left,
         nothing_to_judge=None if layers else

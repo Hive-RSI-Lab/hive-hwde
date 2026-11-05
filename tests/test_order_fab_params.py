@@ -107,6 +107,57 @@ def test_size_rounding_of_the_quote_is_not_a_mismatch(tmp_path, monkeypatch,
     assert code == 0 and fake.names() == ["create_order"]
 
 
+# ---- thickness: the stack sum when it and the general thickness disagree (#745)
+
+
+def _stack_board(pcb: Path, core: float, general: float = 1.6) -> None:
+    """tj.BOARD_20X25 with this general thickness and a stack of F.Mask 0.01,
+    F.Cu 0.035, one core, B.Cu 0.035."""
+    text = tj.BOARD_20X25.replace("(general (thickness 1.6))",
+                                  f"(general (thickness {general}))")
+    block = f"""(setup (stackup
+    (layer "F.Mask" (type "Top Solder Mask") (thickness 0.01))
+    (layer "F.Cu" (type "copper") (thickness 0.035))
+    (layer "dielectric 1" (type "core") (thickness {core}) (material "FR4"))
+    (layer "B.Cu" (type "copper") (thickness 0.035))
+    (copper_finish "HASL")
+  ))
+"""
+    pcb.write_text(text.replace("  (gr_rect", block + "  (gr_rect"),
+                   encoding="utf-8")
+
+
+def test_the_stack_sum_is_the_thickness_when_it_disagrees_with_general(
+        tmp_path, monkeypatch, api_env, capsys):
+    """General says 1.6, the layers sum to 0.88: the order is for the stack, so
+    a quote of 0.88 matches and 1.6 is the one refused."""
+    pcb, fab, qj = tj.make_fab(tmp_path)
+    _stack_board(pcb, core=0.8)
+    fields = order_submit.board_fab_params(pcb, fab)
+    assert fields["thickness"] == [0.88, "its stackup layer sum"]
+    code, fake = _create(pcb, fab, qj, _api_file(fab, thickness=0.88),
+                         monkeypatch)
+    assert code == 0 and fake.names() == ["create_order"]
+
+
+def test_general_thickness_is_refused_when_the_stack_disagrees(
+        tmp_path, monkeypatch, api_env, capsys):
+    pcb, fab, qj = tj.make_fab(tmp_path)
+    _stack_board(pcb, core=0.8)
+    code, fake = _create(pcb, fab, qj, _api_file(fab), monkeypatch)  # 1.6
+    assert code == 2 and "create_order" not in fake.names()
+    assert "thickness: quote 1.6, board 0.88 (its stackup layer sum)" \
+        in _order(fab)["api"]["note"]
+
+
+def test_a_stack_within_the_tolerance_leaves_general_in_charge(tmp_path):
+    """1.5 core: the sum is 1.58, 1.3 % under general: general stays."""
+    pcb, fab, _ = tj.make_fab(tmp_path)
+    _stack_board(pcb, core=1.5)
+    assert order_submit.board_fab_params(pcb, fab)["thickness"] \
+        == [1.6, "its general thickness"]
+
+
 # ---- what the board can't say refuses, or falls to the human's choice
 
 

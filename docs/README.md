@@ -300,6 +300,13 @@ since an order's copper weight is one value for both outer layers. A board with
 no stackup block is nothing to judge, not a pass. What a fab offers stays with
 `dfm_check`.
 
+It also compares the three thicknesses a board carries (#745): the stackup's
+layer sum, `(general (thickness))` and `fab/quote.json`'s `spec.thickness_mm`.
+Any pair over 10 % apart (of the larger) is an error. 10 % is over twice the
+spread of 47 of 48 boards (4.4 %: mask and silk make the sum 1.674 against 1.6).
+`order_submit --api-create` takes the stack sum as the board's thickness when it
+and the general thickness are over that apart, since the layers are what is built.
+
 ## Straps, reset states and the antenna
 
 Two verify checks do what the first-spin review of hifi-receiver-2's boards

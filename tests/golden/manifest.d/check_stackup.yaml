@@ -9,3 +9,13 @@ mutants:
       rf-kit-ro4350b's generator did. KiCad's DRC doesn't read the stack
     expect:
       kind: copper_thickness_range
+  stackup-thickness-general:
+    board: blinky2
+    script: mutations/stackup_thickness_general.py
+    check: check_stackup
+    defect: >-
+      Stackup fault: sane copper on a 4.5 mm core, so the layers sum to
+      4.57 mm against the board's general thickness (rf-kit-ro4350b: 4.617
+      against 1.6). KiCad's DRC doesn't read the stack
+    expect:
+      kind: thickness_stack_vs_general
