@@ -73,6 +73,13 @@ U5 additions (codex H9 - durable waivers):
    WORKSPACE reports/ dir (releaselib.waivers_for_input; LEARNINGS
    2026-08-08 - a waiver file in the obvious place was silently ignored).
 
+#677: a valid waiver that matches no finding in the report (a mistyped or
+renamed net, a finding since fixed) used to do nothing and say nothing. It is
+now named in the result as `waivers_unmatched` and on stderr; the grade does
+not change, except that a strict gate fails on one (exit 1, recorded like any
+fail): a release waiver must describe a finding the board has. Findings below
+the fail bar count as matches, since bin/score.py applies waivers to them.
+
 2026-10-05: the place gate applies <workspace>/reports/place-waivers.json by
 default too (WAIVER_SIDECARS). Before, only the verify tool looked for a
 sidecar, so PCB-0018-A's 14 documented place waivers were never read and its
@@ -391,6 +398,24 @@ def waiver_matches(w: dict, v: dict) -> bool:
     return True
 
 
+def unmatched_waiver(i: int, w: dict, violations: list[dict]) -> dict | None:
+    """An entry for waiver number i of its file if it matches none of the
+    report's findings, with the nets its check/kind does fire on (a typo's
+    fix is usually among them); None when it matches one."""
+    if any(waiver_matches(w, v) for v in violations):
+        return None
+    what = {k: w.get(k) for k in ("check", "kind", "net", "refs", "pos")}
+    label = " ".join(f"{k}={what[k]}" for k in what if what[k] not in (None, []))
+    same = {k: w[k] for k in ("check", "kind") if w.get(k)}
+    nets = sorted({str(v.get("net")) for v in violations
+                   if waiver_matches({**same, "net": v.get("net")}, v)})
+    hint = (f"that check/kind fires on nets: {', '.join(nets[:8])}"
+            + (f" and {len(nets) - 8} more" if len(nets) > 8 else "")
+            if nets else "the report has no finding of that check/kind")
+    return {"index": i, "waiver": what,
+            "problem": f"waiver {i} [{label}] matches no finding; {hint}"}
+
+
 def evaluate(gate_name: str, gate: dict, report: dict,
              waivers: list[dict] | None = None) -> dict:
     fail_sev = set(gate.get("fail_severities") or ["error"])
@@ -399,6 +424,7 @@ def evaluate(gate_name: str, gate: dict, report: dict,
     failing = [v for v in violations if v.get("severity") in fail_sev]
     waived = []
     invalid_waivers = []
+    unmatched_waivers = []
     if waivers:
         if gate.get("strict"):
             # U5/H9: release contexts accept DURABLE waivers only - every
@@ -410,7 +436,7 @@ def evaluate(gate_name: str, gate: dict, report: dict,
                     "strict gate refuses non-durable waivers: "
                     + "; ".join(dp))
         usable = []
-        for w in waivers:
+        for i, w in enumerate(waivers):
             probs = releaselib.waiver_validity(w, report)
             if probs:
                 # a waiver whose bindings no longer hold does not match
@@ -421,6 +447,9 @@ def evaluate(gate_name: str, gate: dict, report: dict,
                      "problems": probs})
             else:
                 usable.append(w)
+                dead = unmatched_waiver(i, w, violations)
+                if dead:
+                    unmatched_waivers.append(dead)
         still = []
         for v in failing:
             if any(waiver_matches(w, v) for w in usable):
@@ -428,7 +457,8 @@ def evaluate(gate_name: str, gate: dict, report: dict,
             else:
                 still.append(v)
         failing = still
-    passed = len(failing) <= max_count
+    passed = len(failing) <= max_count \
+        and not (unmatched_waivers and gate.get("strict"))
     result = {
         "script": "gate",
         "gate": gate_name,
@@ -460,6 +490,8 @@ def evaluate(gate_name: str, gate: dict, report: dict,
         result["waived"] = waived
         if invalid_waivers:
             result["waivers_invalid"] = invalid_waivers
+        if unmatched_waivers:
+            result["waivers_unmatched"] = unmatched_waivers
     cov = report.get("coverage")
     if cov is not None:
         # Deep-copy so the report object is never mutated. A check whose
@@ -795,6 +827,10 @@ def main(argv: list[str] | None = None) -> int:
           file=sys.stderr)
     for w in result.get("warnings", []):
         print(f"gate {args.gate}: warning: {w}", file=sys.stderr)
+    for u in result.get("waivers_unmatched", []):
+        print(f"gate {args.gate}: "
+              f"{'FAIL' if gate.get('strict') else 'warning'}: {u['problem']}",
+              file=sys.stderr)
     rr = result.get("record_result")
     if rr is not None and not rr.get("ok"):
         # U16: evidence that did not reach state.json is evidence that does

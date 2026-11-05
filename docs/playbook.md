@@ -127,7 +127,7 @@ Machine gates (defined in `reference/gates.yaml`, run via
 | verify | P8 | .kicad_pcb | 8-check suite, error-severity = 0 |
 | sim | P8 | kicad/sims | every bench inside its bounds sidecar |
 | dfm | P9 | .kicad_pcb | exported-gerber DFM, error-severity = 0 |
-| verify_release / dfm_release | P10 | .kicad_pcb | strict: every applicable check must RUN; durable waivers only |
+| verify_release / dfm_release | P10 | .kicad_pcb | strict: every applicable check must RUN; durable waivers only, each matching a finding |
 
 Tools that are not gates, run from P4 on (every exported netlist) and
 weighed like any other report:

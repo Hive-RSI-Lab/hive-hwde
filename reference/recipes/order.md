@@ -32,7 +32,7 @@ attestation confers order-ready, and ordering consumes ONLY that attestation.
    dfm_check --strict, saved to reports/verify_release.json and
    reports/dfm_release.json) are stamped, current against the pcb, and pass
    under DURABLE waivers (each waiver binds artifact hash + checker version +
-   expiry); the fab package (zip, BOM, CPL, BOM-full) is present; and the
+   expiry, and matches a finding in the report); the fab package (zip, BOM, CPL, BOM-full) is present; and the
    copper weight derives from architecture/stackup.md; and every fact in the
    board's ledger (`ledger.json`: stock, part match and lifecycle per BOM
    code, rating, pinout and footprint per part) reads verified now - run
