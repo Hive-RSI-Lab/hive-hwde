@@ -283,6 +283,23 @@ def test_live_mesh_attributes(tmp_path, thru):
     json.dumps(a)
 
 
+def _ring_spec(pcb, winding):
+    """The thru's spec plus a floating ring whose hole winds as `winding` says
+    against its outer loop: shapely hands back the opposite winding."""
+    spec, _, _ = ep.mesh_spec(eb.extract(pcb, coupon(pcb)), PORTS, 6e9, refine=0.5)
+    circle = [[15 + 4 * math.cos(2 * math.pi * k / 24), 17 + 4 * math.sin(2 * math.pi * k / 24)] for k in range(24)]
+    hole = [[15 + 0.6 * (x - 15), 17 + 0.6 * (y - 17)] for x, y in circle]
+    spec["sheets"].append({"z": H, "signal": False, "outer": circle, "holes": [hole[::winding]]})
+    return spec
+
+
+@live
+@pytest.mark.parametrize("winding", [1, -1])
+def test_live_a_ring_keeps_the_solid_under_it_however_it_winds(tmp_path, winding):
+    pcb = tmp_path / "r.kicad_pcb"
+    assert ep.mesh(_ring_spec(pcb, winding), tmp_path / "m")["tets"] > 500      # mesh() refuses a lost solid
+
+
 # ---------------------------------------------------------------- known answers, live
 # Refine 1.5 at order 2 is the coarsest thru that passes: refine 1 reads z0 7.6 %
 # off at order 2 and 4.2 % off at order 3, against the 3 % limit.

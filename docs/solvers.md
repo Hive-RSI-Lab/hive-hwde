@@ -211,6 +211,11 @@ machine.
   constant extra delay, about 1 mm per port on F5, so don't read its rms |dS|. The
   cause isn't traced; the port's end discontinuity is a guess. Checked on 2-layer
   microstrip only.
+  A sheet with a hole (rf-kit's S3 ring) needs the hole wound the same way as
+  its outer loop: wound the other way, as shapely gives it, OCC's fragment with
+  a port face returns the solid under the sheet with no faces, the floor gets no
+  boundary condition, and the run still solves (S21 about -500 dB). `surface()`
+  now winds it right, and `physical()` refuses any volume left with no faces.
 
   **Mesh convergence (#616).** `sim_solve board` refines the mesh by 1.5 until
   two runs in a row agree (`emboard.study_converged`): largest |dS| 0.05, a
