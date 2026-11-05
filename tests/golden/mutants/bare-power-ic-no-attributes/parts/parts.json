@@ -1,0 +1,13 @@
+{
+  "parts": [
+    {
+      "ref_prefix_hint": "U",
+      "mpn": "TPS60403DBVR",
+      "lcsc": "C11338",
+      "value": "TPS60403DBVR",
+      "package": "SOT-23-5",
+      "attributes": [],
+      "role": "U2"
+    }
+  ]
+}

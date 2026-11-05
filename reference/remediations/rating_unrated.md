@@ -4,8 +4,8 @@ A part has connected pins that check_ratings could not check against any rating:
 datasheet extraction, no abs_max row that names or classes the pin, or a bound relative to a
 supply whose net has no known voltage. Two-terminal parts with no extraction and no
 voltage-rated attribute in parts.json are listed together in one finding. This is the
-explicit form of "unknown": the check never passes a pin silently. A diode, fuse, regulator
-or cap whose parts.json row is empty is also blocked: see rating_no_attributes.md.
+explicit form of "unknown": the check never passes a pin silently. A diode, fuse, regulator,
+cap or power IC known by its family whose parts.json row is empty is also blocked: see rating_no_attributes.md.
 
 - Emitted by: scripts/check_ratings.py (kind="rating_unrated")   Gate: verify (warning; it
   does not fail the gate).

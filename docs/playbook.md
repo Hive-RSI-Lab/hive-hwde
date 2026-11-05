@@ -147,7 +147,7 @@ weighed like any other report:
   each row's LCSC listing, keeping any value the row already has. Run it
   once the BOM has LCSC codes and before sim_board / check_ratings: without
   it every resistor is judged at its package default, and a diode, fuse,
-  regulator or cap with an empty row fails verify as `rating_no_attributes`:
+  regulator, cap or known power IC with an empty row fails verify as `rating_no_attributes`:
   verify reads the row and never fetches, so the same board gets the same
   answer offline and on any machine.
 - `scripts/sim_board.py --workspace <ws>`: ngspice on the board's own
