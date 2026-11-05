@@ -669,7 +669,8 @@ def test_verify_all_strict_with_declared_na_passes(tmp_path):
                   "check_wicking", "check_ddr_timing",
                   "check_testpoints", "check_rf_match", "check_surge",
                   "check_via_stubs", "check_isolation",
-                  "check_body_clash", "check_kelvin"]
+                  "check_body_clash", "check_kelvin",
+                  "check_stackup"]
     assert sorted(cov["required"]) == sorted(board_only)
     assert sorted(cov["ran"]) == sorted(board_only)
     assert cov["skipped_error"] == {}
