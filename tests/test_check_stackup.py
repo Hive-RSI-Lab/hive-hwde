@@ -19,14 +19,16 @@ import fabmaterial  # noqa: E402
 
 
 def _board(tmp_path, f_cu=0.035, b_cu=0.035, inner=(), block=True, core=1.5,
-           general="sum", quote=None) -> Path:
+           general="sum", quote=None, mask=None, silk=None) -> Path:
     """A board whose stackup says these copper thicknesses (None: says none).
     core is the dielectric 1 thickness, general the (general (thickness)) and
     quote the fab/quote.json spec thickness_mm, when there is one."""
     def cu(name, mm):
         th = "" if mm is None else f" (thickness {mm})"
         return f'(layer "{name}" (type "copper"){th})'
-    rows = [cu("F.Cu", f_cu),
+    rows = ([f'(layer "F.Mask" (type "Top Solder Mask") (thickness {mask}))'] if mask is not None else [])
+    rows += ([f'(layer "F.SilkS" (type "Top Silk Screen") (thickness {silk}))'] if silk is not None else [])
+    rows += [cu("F.Cu", f_cu),
             f'(layer "dielectric 1" (type "core") (thickness {core}))']
     for i, mm in enumerate(inner, 1):
         rows += [cu(f"In{i}.Cu", mm),
@@ -181,3 +183,29 @@ def test_the_rf_kit_ro4350b_corrected_passes(tmp_path):
 
 def test_no_quote_or_no_general_is_not_a_finding(tmp_path):
     assert _kinds(_run(_board(tmp_path, general=None))) == []
+
+
+# ---- mask and silk thickness range (#753)
+
+
+def test_mask_at_the_laminate_thickness_is_an_error(tmp_path):
+    """The rf-kit generator's 1.524 mm in a mask layer: the issue's known answer."""
+    payload = _run(_board(tmp_path, mask=1.524, core=0.1, general=1.6))
+    assert ("error", "mask_thickness_range", "F.Mask") in _kinds(payload)
+
+
+def test_silk_out_of_range_is_an_error(tmp_path):
+    payload = _run(_board(tmp_path, silk=0.5, core=1.0, general=1.6))
+    assert ("error", "silk_thickness_range", "F.SilkS") in _kinds(payload)
+
+
+@pytest.mark.parametrize("mm,ok", [(0.01, True), (0.005, True), (0.05, True),
+                                   (0.004, False), (0.051, False), (0, False)])
+def test_the_mask_range_edges(tmp_path, mm, ok):
+    p = _board(tmp_path, mask=mm)
+    kinds = [k for _, k, _ in _kinds(_run(p)) if k == "mask_thickness_range"]
+    assert (kinds == []) == ok
+
+
+def test_a_normal_mask_and_silk_pass(tmp_path):
+    assert _kinds(_run(_board(tmp_path, mask=0.01, silk=0.02))) == []

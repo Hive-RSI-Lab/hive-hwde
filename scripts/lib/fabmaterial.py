@@ -168,6 +168,26 @@ def board_copper_layers(pcb: Path) -> list[tuple[str, float | None]]:
     return out
 
 
+def board_coating_layers(pcb: Path) -> list[tuple[str, str, float | None]]:
+    """(name, kind, thickness mm) of each solder mask and silkscreen layer in a
+    .kicad_pcb's (stackup) block, kind "mask" or "silk"; None when it gives no
+    thickness (KiCad leaves silk without one). [] with no block."""
+    block = _stackup_block(
+        Path(pcb).read_text(encoding="utf-8", errors="replace"))
+    out = []
+    for chunk in re.split(r'(?=\(layer\s+")', block)[1:]:
+        typ = re.search(r'\(type\s+"([^"]*)"\)', chunk)
+        low = typ.group(1).lower() if typ else ""
+        kind = "mask" if "solder mask" in low else \
+            "silk" if "silk" in low else None
+        if kind is None:
+            continue
+        name = re.match(r'\(layer\s+"([^"]*)"', chunk).group(1)
+        th = re.search(r"\(thickness\s+([-+\d.eE]+)", chunk)
+        out.append((name, kind, float(th.group(1)) if th else None))
+    return out
+
+
 # How far apart the board's three thicknesses (stack sum, general, the quote's)
 # may be, as a share of the larger. Across 48 boards (hw-lab, hwde-boards,
 # pinned) 47 sit within 4.4 % (stack 1.6742 with mask and silk against 1.6
