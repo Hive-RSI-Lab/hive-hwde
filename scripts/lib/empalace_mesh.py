@@ -37,7 +37,18 @@ import gmsh  # noqa: E402
 TOL = 1e-4      # gmsh's bounding boxes carry about 1e-7 of slack
 
 
+def _area(pts):
+    """Signed area in plan: positive when the points wind counterclockwise."""
+    return sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(pts, pts[1:] + pts[:1])) / 2
+
+
 def surface(occ, outer, holes=()):
+    """A plane surface. A hole must wind the same way as its outer loop: wound the
+    other way, as shapely gives it, OCC's fragment with a port face loses the solid
+    under the sheet (see physical()), and that takes the floor's PEC with it."""
+    outer = list(outer)
+    holes = [list(h)[::-1] if _area(list(h)) * _area(outer) < 0 else list(h) for h in holes]
+
     def loop(pts):
         ps = [occ.addPoint(x, y, z) for x, y, z in pts]
         ls = [occ.addLine(ps[i], ps[(i + 1) % len(ps)]) for i in range(len(ps))]
@@ -89,6 +100,9 @@ def physical(spec, sheet_parts, port_parts):
     x0, y0, x1, y1 = spec["dom"]
     ztop, zbot = spec["layers"][-1][1], spec["layers"][0][0]
     vols = [t for _, t in gmsh.model.getEntities(3)]
+    for v in vols:
+        if not gmsh.model.getBoundary([(3, v)], combined=False, oriented=False):
+            raise SystemExit(f"volume {v} has no faces after the fragment: its boundary conditions would be lost")
     attrs = {"materials": [], "pec": [], "absorbing": [], "ports": {}}
     attr = 1
     by_eps = {}
