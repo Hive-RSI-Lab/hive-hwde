@@ -99,6 +99,22 @@ def _silk_layer(s: str) -> str:
     return ""
 
 
+def _poly_centroid(points: str, default: tuple[float, float]) -> tuple[float, float]:
+    """Area centroid of an EasyEDA "x1 y1 x2 y2 ..." outline; `default` when
+    it has no area."""
+    v = [_f(t) for t in points.split()]
+    pts = list(zip(v[0::2], v[1::2]))
+    a = cx = cy = 0.0
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:] + pts[:1]):
+        k = x0 * y1 - x1 * y0
+        a += k
+        cx += (x0 + x1) * k
+        cy += (y0 + y1) * k
+    if abs(a) < 1e-9:
+        return default
+    return cx / (3 * a), cy / (3 * a)
+
+
 def parse(cached: dict) -> Model:
     ox, oy = cached["origin"]
     pads = []
@@ -107,9 +123,14 @@ def parse(cached: dict) -> Model:
         # PAD~shape~x~y~w~h~layer~net~number~...
         if f[6] not in PAD_LAYERS:
             continue
+        cx, cy = _f(f[2]), _f(f[3])
+        if f[1] == "POLYGON" and len(f) > 10:
+            # its x, y is a reference point, not the copper's middle (an
+            # SOT-89 tab's sits 1.4 mm off it): take the area centroid
+            cx, cy = _poly_centroid(f[10], (cx, cy))
         pads.append(Pad(number=f[8].strip(),
-                        x=(_f(f[2]) - ox) * UNIT_MM,
-                        y=(_f(f[3]) - oy) * UNIT_MM,
+                        x=(cx - ox) * UNIT_MM,
+                        y=(cy - oy) * UNIT_MM,
                         w=_f(f[4]) * UNIT_MM, h=_f(f[5]) * UNIT_MM,
                         shape=f[1],
                         rot=_f(f[11]) if len(f) > 11 else 0.0))
