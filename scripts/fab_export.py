@@ -139,6 +139,59 @@ def write_order_notes(pcb: Path, out_dir: Path) -> Path | None:
     return path
 
 
+def via_fill_facts(pcb: Path) -> dict:
+    """What the board asks of the via process: vias with filling/capping set
+    (board default or per via) and vias landing inside an SMD pad
+    (via-in-pad, whose barrel drains paste unless filled). Reuses
+    check_wicking's reader."""
+    import sexpdata
+    import check_wicking as cw
+    root = sexpdata.loads(pcb.read_text(encoding="utf-8"))
+    dflt = cw.board_defaults(root)
+    lyr = cw._kid(root, "layers")
+    cu = [str(cw._tok(n[1])) for n in (lyr[1:] if lyr is not None else [])
+          if cw.geom._is_node(n) and len(n) > 1 and str(cw._tok(n[1])).endswith(".Cu")]
+    cu = sorted(set(cu) | {"F.Cu", "B.Cu"},
+                key=lambda n: (0 if n == "F.Cu" else 2 if n == "B.Cu" else 1,
+                               int(n[2:-3]) if n.startswith("In") else 0))
+    vias = cw.read_vias(root, dflt, cu)
+    pads = [p for ps in cw.read_pads(root, dflt).values() for p in ps
+            if p["kind"] == "smd"]
+    in_pad = []
+    for v in vias:
+        pt = cw.Point(v["at"])
+        for p in pads:
+            if p["copper"].contains(pt):
+                in_pad.append({"ref": p["ref"], "pad": p["number"],
+                               "at": [round(v["at"][0], 3), round(v["at"][1], 3)],
+                               "filled": bool(v["filled"] or v["capped"])})
+                break
+    return {"filled_vias": sum(1 for v in vias if v["filled"] or v["capped"]),
+            "in_pad": in_pad}
+
+
+def write_via_fill_note(pcb: Path, out_dir: Path) -> tuple[Path, dict] | None:
+    """fab/VIA-FILL.md when the board has filled/capped or via-in-pad vias:
+    the gerber job file carries no via-fill field, so the request would be
+    lost at order time (#684). dfm_check requires this note in the package."""
+    f = via_fill_facts(pcb)
+    if not f["filled_vias"] and not f["in_pad"]:
+        return None
+    lines = [f"# Via process for {pcb.stem}", "",
+             f"- Vias with filling/capping requested: {f['filled_vias']}",
+             f"- Vias inside SMD pads (via-in-pad): {len(f['in_pad'])}", "",
+             "Order option: select **via fill / plugged vias (epoxy filled, "
+             "capped)** on the quote page. Standard tented vias drain paste "
+             "from these joints.", ""]
+    if f["in_pad"]:
+        lines += ["| Ref | Pad | x (mm) | y (mm) | Filled in board |", "|---|---|---|---|---|"]
+        lines += [f"| {e['ref']} | {e['pad']} | {e['at'][0]} | {e['at'][1]} | "
+                  f"{'yes' if e['filled'] else 'NO'} |" for e in f["in_pad"]]
+    path = out_dir / "VIA-FILL.md"
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path, {"filled_vias": f["filled_vias"], "in_pad": len(f["in_pad"])}
+
+
 def aux_origin(pcb: Path) -> tuple[float, float] | None:
     """The board's aux axis (drill/place) origin, when it isn't (0, 0)."""
     m = re.search(r"\(aux_axis_origin ([-\d.]+) ([-\d.]+)\)", pcb.read_text(encoding="utf-8"))
@@ -238,10 +291,54 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
+# Gates whose recorded `pcb` digest must still match the board being exported.
+# `place`/`drc` are earlier-stage gates that a routed board legitimately
+# outgrows (drc_routed supersedes drc).
+RELEASE_GATES = ("drc_routed", "verify", "dfm", "verify_release", "dfm_release")
+
+
+class StaleBoardError(RuntimeError):
+    """The board changed after the gates passed (#684)."""
+
+
+def stale_gates(pcb: Path) -> dict:
+    """{board_digest, workspace, checked, stale} for `pcb`. Compares the pcb
+    digest each passed release gate recorded in the workspace's state.json
+    with the board on disk. No workspace above the board (a corpus board, a
+    scratch export) or no state.json gate record = nothing to compare."""
+    import statelib
+    ws = statelib.find_workspace(pcb)
+    out = {"board_digest": statelib.hash_artifact(pcb, statelib.norm_for_path(pcb)),
+           "workspace": str(ws) if ws else None, "checked": [], "stale": {}}
+    if ws is None:
+        return out
+    try:
+        data = json.loads((ws / "state.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return out
+    for g in RELEASE_GATES:
+        entry = (data.get("gates") or {}).get(g) or {}
+        last = entry.get("last") or {}
+        rec = (last.get("inputs") or {}).get("pcb")
+        if entry.get("status") != "pass" or not rec:
+            continue
+        out["checked"].append(g)
+        if rec != out["board_digest"]:
+            out["stale"][g] = rec
+    return out
+
+
 def run(pcb: Path, out_dir: Path, name: str | None = None,
-        layers: list[str] | None = None, make_zip: bool = True) -> dict:
+        layers: list[str] | None = None, make_zip: bool = True,
+        allow_stale: bool = False) -> dict:
     if not pcb.exists():
         raise FileNotFoundError(f"board not found: {pcb}")
+    fresh = stale_gates(pcb)
+    if fresh["stale"] and not allow_stale:
+        raise StaleBoardError(
+            f"{pcb.name} changed after gate(s) {', '.join(sorted(fresh['stale']))} "
+            f"passed (recorded pcb digest differs from the board on disk): "
+            f"re-run those gates, or pass --allow-stale to export anyway")
     cli = kc.resolve_cli()
     name = name or pcb.stem
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -281,6 +378,7 @@ def run(pcb: Path, out_dir: Path, name: str | None = None,
     # Files that belong in the fab zip: everything in gerber_dir (gerbers +
     # job + drill) - NOT the pos file (CPL is a separate JLC upload).
     notes = write_order_notes(pcb, out_dir)
+    via_fill = write_via_fill_note(pcb, out_dir)
 
     fab_files = sorted(f for f in gerber_dir.iterdir() if f.is_file())
     files_meta = [{"name": f.name, "sha256": sha256(f), "bytes": f.stat().st_size}
@@ -310,7 +408,12 @@ def run(pcb: Path, out_dir: Path, name: str | None = None,
         "files": files_meta,
         "gerber_zip": str(zip_path) if zip_path else None,
         "gerber_zip_sha256": zip_sha,
+        "board_digest": fresh["board_digest"],
+        "gates_checked": fresh["checked"],
+        **({"stale_gates": sorted(fresh["stale"])} if fresh["stale"] else {}),
         **({"order_notes": str(notes)} if notes else {}),
+        **({"via_fill": {"note": via_fill[0].name, **via_fill[1]}}
+           if via_fill else {}),
         **({"backdrill": {"files": [p.name for p in backdrill_files],
                           "note": backdrill_note.name}}
            if backdrill_files else {}),
@@ -326,13 +429,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--name", help="basename for pos/zip (default: board stem)")
     ap.add_argument("--layers", help="override the JLC layer set (comma list)")
     ap.add_argument("--no-zip", action="store_true", help="skip the gerber zip")
+    ap.add_argument("--allow-stale", action="store_true",
+                    help="export even if a passed gate recorded a different "
+                         "board digest (the manifest lists stale_gates)")
     ap.add_argument("--out", help="write JSON manifest here instead of stdout")
     args = ap.parse_args(argv)
 
     try:
         rep = run(Path(args.pcb), Path(args.out_dir), name=args.name,
                   layers=args.layers.split(",") if args.layers else None,
-                  make_zip=not args.no_zip)
+                  make_zip=not args.no_zip, allow_stale=args.allow_stale)
     except Exception as exc:  # noqa: BLE001 (SPEC: any error -> exit 2)
         err = {"script": "fab_export", "status": "error",
                "error": f"{type(exc).__name__}: {exc}"}

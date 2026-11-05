@@ -1345,6 +1345,42 @@ def check_release(fab, expected_cu: list[str], vios: list,
     return facts
 
 
+def check_via_fill_note(pcb: Path, fab_dir: Path, vios: list) -> dict:
+    """The gerber job file has no via-fill field, so a board that asks for
+    filled/capped vias, or lands vias in SMD pads, needs a note in the shipped
+    package naming the via process (fab_export writes VIA-FILL.md) (#684).
+    Missing note: error when the board requests filling/capping, else warning
+    (unfilled via-in-pad: paste drains, check_wicking has the detail)."""
+    import fab_export
+    f = fab_export.via_fill_facts(pcb)
+    facts = {"via_fill": {"filled_vias": f["filled_vias"],
+                          "in_pad": len(f["in_pad"])}}
+    if not f["filled_vias"] and not f["in_pad"]:
+        return facts
+    fab_dir = Path(fab_dir)
+    notes = [fab_dir / "VIA-FILL.md", fab_dir / "ORDER-NOTES.md",
+             fab_dir.parent / "fab" / "VIA-FILL.md"]
+    ok = any(n.is_file() and re.search(r"fill|epoxy|plug|cap",
+                                       n.read_text(errors="replace"), re.I)
+             for n in notes)
+    facts["via_fill"]["note_found"] = ok
+    if not ok:
+        what = (f"{f['filled_vias']} via(s) ask for filling/capping"
+                if f["filled_vias"] else "")
+        if f["in_pad"]:
+            what += (" and " if what else "") + \
+                f"{len(f['in_pad'])} via(s) sit inside SMD pads"
+        vios.append(checklib.violation(
+            CHECK, "error" if f["filled_vias"] else "warning",
+            None, None, None, sorted({e["ref"] for e in f["in_pad"]}),
+            f"{what}, but the fab package has no via-fill order note "
+            f"(fab/VIA-FILL.md or ORDER-NOTES.md naming the via process): "
+            f"the gerber job carries no via-fill field, so the request is "
+            f"lost at order time", SOURCE, kind="dfm_via_fill_note_missing",
+            filled_vias=f["filled_vias"], in_pad=len(f["in_pad"])))
+    return facts
+
+
 # ------------------------------------------------------------- netlist
 
 def _shipped_netlist(gdir: Path) -> Path | None:
@@ -1623,6 +1659,8 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
                                        stock=False)
         facts.update(check_release(fab, expected_cu, vios, parts_report,
                                    fab_dir=Path(fab_dir) if fab_dir else None))
+        if fab_dir is not None:
+            facts.update(check_via_fill_note(pcb, Path(fab_dir), vios))
 
         if parts_report is not None and "placement" not in skip:
             import cpl_verify
