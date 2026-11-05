@@ -147,6 +147,26 @@ def board_dielectrics(pcb: Path) -> list[dict]:
     return out
 
 
+def board_stackup_facts(pcb: Path) -> dict:
+    """What a .kicad_pcb's (stackup) block says for an order: copper_finish,
+    mask_color (F.Mask) and outer_copper_mm (F.Cu). None for what it doesn't
+    say; all None with no block. Whitespace-agnostic, as board_dielectrics."""
+    block = _stackup_block(
+        Path(pcb).read_text(encoding="utf-8", errors="replace"))
+    finish = re.search(r'\(copper_finish\s+"([^"]*)"\)', block)
+    facts = {"copper_finish": finish.group(1) if finish else None,
+             "mask_color": None, "outer_copper_mm": None}
+    for chunk in re.split(r'(?=\(layer\s+")', block)[1:]:
+        name = re.match(r'\(layer\s+"([^"]*)"', chunk).group(1)
+        if name == "F.Mask":
+            color = re.search(r'\(color\s+"([^"]*)"\)', chunk)
+            facts["mask_color"] = color.group(1) if color else None
+        elif name == "F.Cu":
+            th = re.search(r"\(thickness\s+([\d.]+)", chunk)
+            facts["outer_copper_mm"] = float(th.group(1)) if th else None
+    return facts
+
+
 def board_materials(pcb: Path) -> list[str]:
     """Dielectric material names in a .kicad_pcb's (stackup) block, in
     order. [] when the board has no stackup block."""

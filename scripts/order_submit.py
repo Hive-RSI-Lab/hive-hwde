@@ -616,8 +616,8 @@ def _refuse_via_problems(man: dict) -> None:
 
 def _check_quote_board(man: dict, q: dict) -> None:
     """Create sends the quote's pcbParam verbatim, and that file was priced
-    earlier: it must still order the laminate and castellation the board asks
-    for. The remark is what tells JLC which laminate: RO4350B and PTFE share a
+    earlier: it must still order the laminate, castellation and fab parameters
+    the board asks for, on every package, governed or not. The remark is what tells JLC which laminate: RO4350B and PTFE share a
     plateType. A field the file doesn't carry refuses: every real quote does."""
     spec = man["spec_snapshot"]
     pparam = (q.get("calculate_request") or {}).get("pcbParam") or {}
@@ -645,6 +645,120 @@ def _check_quote_board(man: dict, q: dict) -> None:
             f"{pparam.get('castellatedHoles')!r}; the board has "
             f"{spec.get('castellated_pads') or 0} castellated pad(s), so "
             f"{want_holes!r}) - re-run --api to re-quote")
+    mismatches = _quote_fab_mismatches(man, q)
+    if mismatches:
+        raise ApiRefused(
+            "the quote does not match the board: " + "; ".join(mismatches)
+            + " - fix whichever is wrong, then re-run order_quote and --api "
+            "to re-quote")
+
+
+# How far a quoted number may sit from the board's: order_quote rounds the
+# outline to 2 dp and prints thickness and copper to a few digits.
+_FAB_TOLERANCE = {"width": 0.011, "length": 0.011, "thickness": 0.005,
+                  "copperWeight": 0.05}
+# board_init writes this on every board and KiCad keeps it, so on the board it
+# is no decision: the finish chosen in quote.json stands. Anything else is one.
+_UNDECIDED_FINISHES = ("", "HASL", "HAL SNPB", "NONE", "NOT SPECIFIED")
+
+
+def _board_side_finish(facts: dict) -> str | None:
+    finish = str(facts.get("copper_finish") or "").strip().upper()
+    return None if finish in _UNDECIDED_FINISHES else finish
+
+
+def board_fab_params(pcb: Path, fab_dir: Path) -> dict:
+    """What the board says for each pcbParam field, as {field: [value, source]}
+    in the order's own units and codes. A field it can't say stays out, and
+    fab/manifest.json answers for the layer count alone: it carries no other."""
+    import fab_export  # pulls KiCad helpers: only when a board is at hand
+    import order_quote  # noqa: PLC0415 - same reason
+    out: dict = {}
+    pcb = Path(pcb)
+    try:
+        text = pcb.read_text(encoding="utf-8", errors="replace")
+        facts = fabmaterial.board_stackup_facts(pcb)
+    except OSError:
+        return out
+    # copper_layers assumes 2 when the board names none: that isn't the board
+    if re.search(r'\(\d+\s+"[^"]+\.Cu"', text):
+        out["layer"] = [len(fab_export.copper_layers(pcb)), "its layers block"]
+    else:
+        try:
+            count = json.loads((Path(fab_dir) / "manifest.json")
+                               .read_text(encoding="utf-8")).get("layer_count")
+        except (OSError, ValueError):
+            count = None
+        if count:
+            out["layer"] = [int(count), "fab/manifest.json layer_count"]
+    try:
+        width, height, _area = order_quote.board_size(pcb)
+        out["width"] = [round(width, 2), "its outline"]
+        out["length"] = [round(height, 2), "its outline"]
+    except Exception:  # noqa: BLE001 - a board with no outline says nothing
+        pass
+    general = re.search(r"\(general\b[^()]*\(thickness\s+([\d.]+)", text)
+    if general:
+        out["thickness"] = [float(general.group(1)), "its general thickness"]
+    if facts["outer_copper_mm"]:
+        out["copperWeight"] = [round(facts["outer_copper_mm"] / 0.035, 2),
+                               "F.Cu in its stackup"]
+    else:
+        oz, source = derive_copper_oz(Path(fab_dir).parent)
+        if oz is not None:
+            out["copperWeight"] = [float(oz), f"architecture/stackup.md: {source}"]
+    finish = _board_side_finish(facts)
+    if finish:
+        out["surfaceFinish"] = [SURFACE_FINISH_CODE.get(finish),
+                                f"its copper_finish {finish}"]
+    color = str(facts.get("mask_color") or "").strip().lower()
+    if color in PCB_COLOR_CODE:
+        out["pcbColor"] = [PCB_COLOR_CODE[color], f"its F.Mask colour {color}"]
+    return out
+
+
+def _quote_fab_mismatches(man: dict, q: dict) -> list[str]:
+    """Each pcbParam field that differs from the board, or that either side
+    can't say. Finish and mask colour are the human's choice in quote.json
+    unless the board decides them, and copper unless the board or stackup.md
+    does; a recorded --copper-oz stays the waiver it is on an ungoverned
+    package, for the weight it recorded."""
+    spec = man["spec_snapshot"]
+    pparam = (q.get("calculate_request") or {}).get("pcbParam") or {}
+    board = dict(man.get("board_fab") or {})
+    finish = spec.get("surface_finish")
+    if "surfaceFinish" not in board and finish:
+        board["surfaceFinish"] = [
+            SURFACE_FINISH_CODE.get(str(finish).upper()), f"quote.json {finish}"]
+    color = spec.get("solder_mask_color")
+    if "pcbColor" not in board and color:
+        board["pcbColor"] = [
+            PCB_COLOR_CODE.get(str(color).lower()), f"quote.json {color}"]
+    if "copperWeight" not in board and spec.get("copper_weight_oz"):
+        board["copperWeight"] = [float(spec["copper_weight_oz"]),
+                                 "quote.json copper_weight_oz"]
+    governed = (man.get("release") or {}).get("governed")
+    out = []
+    for field in ("layer", "width", "length", "thickness", "copperWeight",
+                  "surfaceFinish", "pcbColor"):
+        got = pparam.get(field)
+        want, source = board.get(field) or [None, "no source"]
+        if want is None:
+            out.append(f"{field}: quote {got!r}, board not stated ({source})")
+            continue
+        try:
+            same = abs(float(got) - float(want)) <= _FAB_TOLERANCE.get(field, 0)
+        except (TypeError, ValueError):
+            same = False
+        if field == "copperWeight" and not same and not governed \
+                and "human override" in str(q.get("copper_weight_source")):
+            try:
+                same = float(q.get("copper_weight_oz")) == float(got)
+            except (TypeError, ValueError):
+                same = False
+        if not same:
+            out.append(f"{field}: quote {got!r}, board {want:g} ({source})")
+    return out
 
 
 def _check_quote_vias(man: dict, q: dict) -> None:
@@ -1498,6 +1612,8 @@ def run(pcb: Path, fab_dir: Path, quote: Path | None = None,
         "board": pcb.name,
         "generated": _dt.datetime.now().astimezone().isoformat(timespec="seconds"),
         "order_number": order_number,
+        "board_fab": (board_fab_params(pcb, fab_dir)
+                      if use_api and Path(pcb).is_file() else {}),
         "payment": "HUMAN - this script never submits payment (SPEC P10)",
         "artifacts": artifacts,
         "missing": missing,

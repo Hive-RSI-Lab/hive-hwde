@@ -97,7 +97,8 @@ def test_plain_ready_board_reaches_create(tmp_path, monkeypatch, api_env,
                                           capsys):
     pcb, fab, qj = tj.make_fab(tmp_path)
     shutil.copy(PLAIN, pcb)
-    code, fake = _create(pcb, fab, qj, _api_file(fab), monkeypatch)
+    code, fake = _create(pcb, fab, qj, _api_file(fab, width=26.0, length=20.0),
+                         monkeypatch)
     assert code == 0
     assert fake.names() == ["create_order"]
     assert _order(fab)["status"] == "ready_for_human"
@@ -108,7 +109,8 @@ def test_rogers_board_on_a_rogers_quote_reaches_create(tmp_path, monkeypatch,
     pcb, fab, qj = tj.make_fab(tmp_path)
     _rogers(tmp_path, pcb)
     _estimate(qj, pcb)
-    aq = _api_file(fab, plateType=5,
+    aq = _api_file(fab, plateType=5, width=53.9, length=38.76, thickness=0.65,
+                   surfaceFinish=2,
                    orderDetailsRemark=f"Material: {RO_LABEL}; thickness 0.65 mm; ENIG")
     code, fake = _create(pcb, fab, qj, aq, monkeypatch)
     assert code == 0
@@ -120,7 +122,8 @@ def test_castellated_board_on_a_castellated_quote_reaches_create(
     pcb, fab, qj = tj.make_fab(tmp_path)
     shutil.copy(CASTELLATED, pcb)
     _estimate(qj, pcb)
-    code, fake = _create(pcb, fab, qj, _api_file(fab, castellatedHoles=1),
+    code, fake = _create(pcb, fab, qj, _api_file(fab, castellatedHoles=1, width=30.0,
+                                                 length=20.0, surfaceFinish=2),
                          monkeypatch)
     assert code == 0
     assert fake.names() == ["create_order"]
