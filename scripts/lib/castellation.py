@@ -9,8 +9,9 @@ it would be ordered without JLC's castellated process.
 Rules come from the `castellated:` block of reference/jlc_capabilities.yaml,
 which cites JLC's two published sources. Consumers:
   dfm_check.py     the `castellation` family (check()), and the exemption of
-                   castellated holes from the ordinary hole/copper-to-edge and
-                   annular-ring checks (holes())
+                   castellated holes from the ordinary hole-to-edge and
+                   annular-ring checks (holes()) and of their pads' copper from
+                   copper-to-edge (edge_copper())
   castellated_fp.py  footprint sizing (load_rules())
   order_quote.py  needs_standard_pcba() - Economic PCBA can't build them
   order_quote.py / order_submit.py / bom_cpl.py  count() / refs() - the
@@ -116,6 +117,13 @@ def _hole(p) -> tuple[float, float, float]:
 def holes(bg) -> list[tuple[float, float, float]]:
     """(x, y, diameter) of every castellated drill, for dfm_check's exemptions."""
     return [_hole(p) for p in pads(bg) if p.drill is not None]
+
+
+def edge_copper(bg) -> list:
+    """(drill, drill + pad copper) polygons of every castellated pad with a
+    drill: what dfm_check's copper-to-edge exempts, as the pad's own shape."""
+    return [(p.drill_poly, p.drill_poly.union(p.poly))
+            for p in pads(bg) if p.drill is not None]
 
 
 def _turns(pts) -> list[float]:

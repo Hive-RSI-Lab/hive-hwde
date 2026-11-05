@@ -14,7 +14,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from shapely.geometry import box
+from shapely.geometry import Point, box
 from shapely.ops import unary_union
 
 REPO = Path(__file__).resolve().parents[1]
@@ -39,10 +39,11 @@ def _fab(*polys, outline=OUTLINE):
                            copper=lambda name: layer, outline=outline)
 
 
-def _edge(*polys, rules=None, outline=OUTLINE, cast=()):
+def _edge(*polys, rules=None, outline=OUTLINE, cast_pads=()):
     vios: list = []
     dfm_check.check_copper_to_edge(_fab(*polys, outline=outline),
-                                   RULES if rules is None else rules, vios, cast)
+                                   RULES if rules is None else rules, vios,
+                                   cast_pads)
     return vios
 
 
@@ -145,7 +146,8 @@ def test_the_cap_is_per_piece():
 
 def test_a_castellated_hole_exempts_only_its_own_place():
     """#743; tests/test_dfm_castellated_edge.py has the rest."""
-    vios = _edge(_tabs([20, 60]), cast=[(21, 50, 1.0)])
+    drill = Point(21, 50).buffer(0.5)
+    vios = _edge(_tabs([20, 60]), cast_pads=[(drill, drill.buffer(0.25))])
     assert [round(v["distance_mm"], 3) for v in vios] == [0.1]
     assert vios[0]["pos"][0] > 50
 
