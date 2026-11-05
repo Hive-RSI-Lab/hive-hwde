@@ -186,6 +186,23 @@ def _pos_problem(pos) -> str | None:
     return None if good else f"pos must be [x, y] in mm, got {pos!r}"
 
 
+# An entry's deepest field is pos, four levels in; this leaves room for a note.
+# Far deeper, repr and str raise RecursionError where the file loaded fine (#748)
+WAIVER_MAX_DEPTH = 32
+
+
+def too_deep(data, limit: int = WAIVER_MAX_DEPTH) -> bool:
+    """Whether parsed JSON nests past `limit`. Walks without recursing, so it
+    answers for a value too deep to repr."""
+    level = [data]
+    for _ in range(limit):
+        level = [c for v in level if isinstance(v, (dict, list))
+                 for c in (v.values() if isinstance(v, dict) else v)]
+        if not level:
+            return False
+    return any(isinstance(v, (dict, list)) for v in level)
+
+
 def waiver_shape_problem(w) -> str | None:
     """Why a waiver entry can't waive anything whatever the report says, or
     None (#731, #736). The one check of an entry's shape: gate.evaluate grades
@@ -193,8 +210,10 @@ def waiver_shape_problem(w) -> str | None:
 
     It must be an object with a `reason` and a real `approved` who/when
     (checklib.approval_problem), since waivers are human artifacts, and a
-    check and/or kind to match on, or it would cover the whole net. `refs`,
-    when not null, is a list of refdes strings: a bare `refs: "U1"` is refused
+    check and/or kind to match on, or it would cover the whole net. `check`,
+    `kind` and `net` are each null or a string: matching skips a falsy check
+    or kind, so a `check: 0` beside a good kind would widen the waiver, and any
+    other non-string can match nothing (#748). `refs`, when not null, is a list of refdes strings: a bare `refs: "U1"` is refused
     rather than read as ["U1"], since a strict gate already refused it and
     "U1,U2" could not be read the same way, and an empty "" or 0 is refused
     since treating it as no refs would widen the waiver to every ref on the
@@ -208,6 +227,10 @@ def waiver_shape_problem(w) -> str | None:
     bad = checklib.approval_problem(w.get("approved"))
     if bad:
         return bad
+    for key in ("check", "kind", "net"):
+        v = w.get(key)
+        if v is not None and not isinstance(v, str):
+            return f"{key} must be a string, got {v!r}"
     if not (w.get("check") or w.get("kind")):
         return "needs check and/or kind"
     refs = w.get("refs")
