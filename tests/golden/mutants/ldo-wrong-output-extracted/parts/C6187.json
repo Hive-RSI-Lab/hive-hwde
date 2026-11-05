@@ -1,0 +1,27 @@
+{
+  "mpn": "AMS1117-5.0",
+  "pinout": [
+    {
+      "pin": "1",
+      "name": "GND",
+      "type": "ground"
+    },
+    {
+      "pin": "2",
+      "name": "VOUT",
+      "type": "power_out"
+    },
+    {
+      "pin": "3",
+      "name": "VIN",
+      "type": "power_in"
+    }
+  ],
+  "abs_max": [
+    {
+      "param": "Input voltage VIN",
+      "value": 15,
+      "unit": "V"
+    }
+  ]
+}

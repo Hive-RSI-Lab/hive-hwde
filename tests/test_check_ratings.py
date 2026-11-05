@@ -857,6 +857,15 @@ def test_output_rail_against_what_the_row_says_it_makes(
         assert out_net in found[0]["msg"] and "U4" in found[0]["msg"]
 
 
+@pytest.mark.parametrize("mpn,errs", [("AMS1117-5.0", 0), ("AMS1117-3.3", 1)])
+def test_unextracted_output_on_a_negative_rail(tmp_path, mpn, errs):
+    ws = _reg_ws(tmp_path, {"Voltage - Supply": "15V"},
+                 {"1": "+12V", "2": "GND", "3": "-5V"},
+                 {"1": "IN", "3": "OUT"}, mpn=mpn)
+    assert len([v for v in _errors(_run(ws))
+                if v["kind"] == "rating_regulator_output"]) == errs
+
+
 def test_output_needs_a_named_pad(tmp_path):
     """No pad names: nothing says which net it drives, so it isn't judged."""
     ws = _reg_ws(tmp_path, {"Voltage - Supply": "6V", "Output Voltage": "3.3V"},
@@ -879,3 +888,126 @@ def test_over_rated_regulator_fails_its_ledger_fact(tmp_path):
               if f["kind"] == "rating"}
     assert rating["U4"]["status"] == "failed"
     assert "+12V" in rating["U4"]["value"]
+
+
+# ------------------------------------- an extracted regulator's output (#721)
+
+def _fixed_ldo(mpn):
+    return {"mpn": mpn, "pinout": [
+        {"pin": "1", "name": "GND", "type": "ground"},
+        {"pin": "2", "name": "VOUT", "type": "power_out"},
+        {"pin": "3", "name": "VIN", "type": "power_in"}],
+        "abs_max": [{"param": "Input voltage VIN", "value": 15, "unit": "V"}]}
+
+
+def _out_errs(p):
+    return [v for v in _errors(p) if v["kind"] == "rating_regulator_output"]
+
+
+AMS5 = _fixed_ldo("AMS1117-5.0")
+LDO_ON_3V3 = {"1": "GND", "2": "+3V3", "3": "+5V"}
+
+
+def test_extracted_5v_ldo_on_a_3v3_rail_blocks(tmp_path):
+    p = _run(_ws(tmp_path, [("U4", "C9", LDO_ON_3V3)], {"C9": AMS5}))
+    errs = _out_errs(p)
+    assert [(e["pin"], e["net"], e["net_v"]) for e in errs] == \
+        [("U4.2", "+3V3", 3.3)]
+    assert "AMS1117-5.0" in errs[0]["msg"]
+    assert len(_errors(p)) == 1
+
+
+def test_extracted_3v3_ldo_on_a_3v3_rail_passes(tmp_path):
+    ws = _ws(tmp_path, [("U4", "C9", LDO_ON_3V3)],
+             {"C9": _fixed_ldo("AMS1117-3.3")})
+    assert _errors(_run(ws)) == []
+
+
+def test_a_cap_on_the_rail_is_judged_at_the_rail_not_the_mpn(tmp_path):
+    """The MPN's 5 V must not replace the board's 3.3 V: a 3.3 V cap on +3V3
+    holds, whatever wrong part drives it, and only the LDO is flagged."""
+    bom = [{"lcsc": "C7", "mpn": "CAP",
+            "attributes": [{"name": "Voltage Rated", "value": "3.3V"}]}]
+    ws = _ws(tmp_path, [("U4", "C9", LDO_ON_3V3),
+                        ("C1", "C7", {"1": "+3V3", "2": "GND"})],
+             {"C9": AMS5}, bom)
+    p = _run(ws)
+    assert p["net_volts"]["+3V3"] == {"v": 3.3, "src": "net name"}
+    assert [e["kind"] for e in _errors(p)] == ["rating_regulator_output"]
+
+
+def test_extracted_output_is_judged_against_constraints_and_power_tree(
+        tmp_path):
+    tree = "| Rail | Nom V |\n|---|---|\n| /VA | 3.3 |\n"
+    pads = {"1": "GND", "2": "/VA", "3": "+5V"}
+    p = _run(_ws(tmp_path, [("U4", "C9", pads)], {"C9": AMS5}, tree=tree))
+    assert [e["net"] for e in _out_errs(p)] == ["/VA"]
+    c = tmp_path / "c.json"
+    c.write_text(json.dumps({"voltages": [{"net": "+3V3", "voltage": 5}]}))
+    p = _run(_ws(tmp_path / "b", [("U4", "C9", LDO_ON_3V3)], {"C9": AMS5}), c)
+    assert _errors(p) == []  # constraints say +3V3 is really 5 V here
+
+
+@pytest.mark.parametrize("mpn,rail,errs", [
+    ("AMS1117-5.0", "+5V", 0),
+    ("AMS1117-3.3", "+3V0", 0),   # exactly 10 % low
+    ("AMS1117-5.0", "+4V4", 1),   # just past it
+    ("AMS1117-5.0", "+5V6", 1),
+    ("ADP7182-5.0", "-5V", 0),    # a negative part: the MPN has no sign
+    ("ADP7182-5.0", "-3V3", 1),
+])
+def test_extracted_output_tolerance(tmp_path, mpn, rail, errs):
+    pads = {"1": "GND", "2": rail, "3": "+12V"}
+    ws = _ws(tmp_path, [("U4", "C9", pads)], {"C9": _fixed_ldo(mpn)})
+    assert len(_out_errs(_run(ws))) == errs
+
+
+def test_unnamed_rail_takes_the_mpn_and_is_not_judged_by_it(tmp_path):
+    """Nothing but the MPN says what /RAIL is: it fills the net, and a second
+    regulator isn't judged against the first one's MPN."""
+    pads = {"1": "GND", "2": "/RAIL", "3": "+12V"}
+    ws = _ws(tmp_path, [("U4", "C9", pads), ("U5", "C8", pads)],
+             {"C9": AMS5, "C8": _fixed_ldo("AMS1117-3.3")})
+    p = _run(ws)
+    assert p["net_volts"]["/RAIL"] == {"v": 5.0, "src": "regulator U4"}
+    assert _out_errs(p) == []
+
+
+def test_extracted_output_read_from_the_row_when_the_mpn_has_none(tmp_path):
+    """TLV75733-style: no decimal in the MPN, the row says 3.3 V."""
+    bom = [{"lcsc": "C9", "mpn": "TLV75733PDBVR", "description": "LDO regulator",
+            "attributes": [{"name": "Output Voltage", "value": "3.3V"}]}]
+    pads = {"1": "GND", "2": "+5V", "3": "+12V"}
+    p = _run(_ws(tmp_path, [("U4", "C9", pads)],
+                 {"C9": _fixed_ldo("TLV75733PDBVR")}, bom))
+    assert [e["net"] for e in _out_errs(p)] == ["+5V"]
+    assert "3.3V" in _out_errs(p)[0]["rating"]
+
+
+@pytest.mark.parametrize("ref,mpn,row,ptype,rail", [
+    ("U4", "TLV75733PDBVR", {}, "power_out", "+5V"),   # no output known
+    ("U4", "AMS1117-3.3", {}, "output", "+5V"),        # not a power output
+    ("Q4", "AMS1117-3.3", {}, "power_out", "+5V"),     # not a regulator's ref
+    ("U4", "EFUSE1",                                   # not called a regulator
+     {"description": "eFuse",
+      "attributes": [{"name": "Output Voltage", "value": "3.3V"}]},
+     "power_out", "+5V"),
+])
+def test_extracted_parts_whose_output_is_not_judged(
+        tmp_path, ref, mpn, row, ptype, rail):
+    ext = _fixed_ldo(mpn)
+    ext["pinout"][1]["type"] = ptype
+    bom = [dict(row, lcsc="C9", mpn=mpn)] if row else None
+    ws = _ws(tmp_path, [(ref, "C9", {"1": "GND", "2": rail, "3": "+12V"})],
+             {"C9": ext}, bom)
+    assert _out_errs(_run(ws)) == []
+
+
+def test_wrong_output_fails_an_extracted_regulators_ledger_fact(tmp_path):
+    ws = _ws(tmp_path, [("U4", "C9", LDO_ON_3V3)], {"C9": AMS5})
+    _, got = cr.run_check(ws / "kicad" / "board.kicad_pcb", ws / "parts",
+                          None, None)
+    rating = {f["subject"]: f for f in got["ledger_facts"]
+              if f["kind"] == "rating"}
+    assert rating["U4"]["status"] == "failed"
+    assert "+3V3" in rating["U4"]["value"]

@@ -78,9 +78,10 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
    unextracted regulator whose input or enable pad sits above the input
    rating its filled row gives (regulator_findings; no pad names: its
    highest-voltage net, unless the part steps up).
- - rating_regulator_output (error): an unextracted regulator whose named
-   output pad sits on a rail its row (or a fixed output in the MPN) says it
-   can't make.
+ - rating_regulator_output (error): a regulator whose output pad sits on a
+   rail its row (or a fixed output in the MPN) says it can't make. Unextracted:
+   a pad named in the netlist. Extracted: a power_out pin named as an output,
+   against a rail the board itself states (constraints, power tree, net name).
  - rating_over_temperature (error): the board's ambient above a part's
    operating range (parts.json "Operating Temperature", or the
    extraction's operating_temp_c), or constraints ambient_min_c below it
@@ -577,17 +578,17 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
         setv(e.get("net"), e.get("voltage"), "constraints")
     for net, v in power_tree_volts(power_tree, nets).items():
         setv(net, v, "power_tree")
+    for net in nets:
+        setv(net, volts_from_name(net), "net name")
+    # after the name: the board says what a rail is, the part is judged
+    # against it (#721). The MPN only fills in a rail nothing else names.
     for b in board:
         ext = exts.get(b["lcsc"])
         v = reg_out_volts(str(ext.get("mpn") or "")) if ext else None
         if v is None:
             continue
-        for p in ext.get("pinout") or []:
-            if p["type"] == "power_out" and \
-                    aliases(p["name"]) & REG_OUT_NAMES and p["pin"] in b["pads"]:
-                setv(b["pads"][p["pin"]], v, f"regulator {b['ref']}")
-    for net in nets:
-        setv(net, volts_from_name(net), "net name")
+        for pin in reg_out_pins(b, ext):
+            setv(b["pads"][pin], v, f"regulator {b['ref']}")
     # pull-ups: a 2-pad resistor from an unknown net to a known rail. A net
     # that also has a resistor to ground or to another unknown net is a
     # divider or a series path - its voltage stays unknown.
@@ -655,6 +656,8 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                                   unrated_passives):
                 checked_by_ref[ref] = checked_by_ref.get(ref, 0) + 1
             continue
+        extracted_output_findings(b, ext, bom_by_lcsc.get(b["lcsc"]), volts,
+                                  vsrc, emit)
         ratings = part_ratings(ext)
         name_of = {p["pin"]: p for p in ext.get("pinout") or []}
         pair_refs = {r["ref"] for rows in ratings.values()
@@ -909,6 +912,8 @@ REG_OUT_PAD_RE = re.compile(r"^(?:V?OUT\d?|VO|OUTPUT)$")
 # how far a fixed regulator's output may sit from its rail's name: a 5.1 V
 # part on +5V is that rail, a 3.3 V part on +5V is not
 REG_OUT_TOL = 0.10
+# where a rail's volts come from when the board itself says what it is
+RAIL_SOURCES = {"constraints", "power_tree", "net name"}
 
 
 def attr_volts(value: str) -> list[float]:
@@ -1001,18 +1006,52 @@ def regulator_findings(b: dict, bom: dict | None, volts: dict, vsrc: dict,
             found = True
     made = reg_out_range(bom)
     if made:
-        lo, hi, src = made
         for net in sorted({pads[p] for p, n in names.items()
                            if REG_OUT_PAD_RE.match(n)}):
-            v = known.get(net)
-            if v is not None and not lo - EPS <= v <= hi + EPS:
-                on = sorted(p for p, n in pads.items() if n == net)
-                emit("rating_regulator_output", "error", ref, net,
-                     f"{part} output sits on {net} = {_fmt(v)} V, which it "
-                     f"can't make [{src}]", pin=f"{ref}.{on[0]}", net_v=v,
-                     limit_v=hi, rating=src)
-                found = True
+            found |= _output_finding(ref, part, net, known.get(net), pads,
+                                     made, emit)
     return found
+
+
+def _output_finding(ref: str, part: str, net: str, v: float | None,
+                    pads: dict, made: tuple, emit) -> bool:
+    """A rail outside what the part makes. The sign is the rail's: neither
+    an MPN nor attr_volts carries one, so -5 V is what a -5.0 part makes."""
+    lo, hi, src = made
+    if v is None or lo - EPS <= abs(v) <= hi + EPS:
+        return False
+    on = sorted(p for p, n in pads.items() if n == net)
+    emit("rating_regulator_output", "error", ref, net,
+         f"{part} output sits on {net} = {_fmt(v)} V, which it can't make "
+         f"[{src}]", pin=f"{ref}.{on[0]}", net_v=v, limit_v=hi, rating=src)
+    return True
+
+
+def reg_out_pins(b: dict, ext: dict) -> list[str]:
+    """The board's pads an extraction calls a regulator's output."""
+    return [p["pin"] for p in ext.get("pinout") or []
+            if p["type"] == "power_out" and aliases(p["name"]) & REG_OUT_NAMES
+            and p["pin"] in b["pads"]]
+
+
+def extracted_output_findings(b: dict, ext: dict, bom: dict | None,
+                              volts: dict, vsrc: dict, emit) -> None:
+    """An extracted regulator's output pin against its rail (#721), read as
+    regulator_findings reads a filled row: the row's output, else a fixed
+    output in the extraction's or the row's MPN. Only a rail the board itself
+    states: a pull-up's volts are a guess, and a volt set from this part's or
+    another's MPN isn't a rail to judge a part against."""
+    bom = bom or {}
+    mpn = str(ext.get("mpn") or "")
+    row = dict(bom, mpn=mpn) if reg_out_volts(mpn) is not None else bom
+    made = reg_out_range(row) if is_regulator(b, row) else None
+    if not made:
+        return
+    part = f"{b['ref']} ({mpn or bom.get('mpn') or b['lcsc']})"
+    for net in sorted({b["pads"][p] for p in reg_out_pins(b, ext)}):
+        if vsrc.get(net) in RAIL_SOURCES:
+            _output_finding(b["ref"], part, net, volts[net], b["pads"], made,
+                            emit)
 
 
 def no_attribute_findings(board: list[dict], bom_by_lcsc: dict, exts: dict,
