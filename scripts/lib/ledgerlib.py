@@ -33,6 +33,12 @@ Facts and who writes them:
 What the board relies on (`expected`) comes from its own data: every code on
 fab/BOM.csv (else every smt_placed parts.json line), and every refdes of every
 parts.json line that is bought (not dnp, board_feature or customer_supplied).
+Parts that need no LCSC code (a hole, test point or fiducial, or a DNP or
+otherwise unbought line) get no `(no LCSC: REF)` facts; a real part with no
+code gets one (`stock`, unknown: "no LCSC code"), which blocks. Recording
+stock (`record_stock`, so stock_check and bom_cpl's live run) also prunes the
+orphaned facts (`prune`): a gone part, a placeholder that gained a code, a
+vendor no longer chosen.
 A fact expected but never written reads `unknown`. A recorded fact reads
 `unknown` again when it went stale: stock older than STOCK_MAX_AGE_H, or a
 fact about a refdes whose LCSC code has since changed.
@@ -69,6 +75,9 @@ ASSEMBLED = ("smt_placed", "tht")
 # passives, LEDs and diodes have no pinout beyond polarity, which
 # cpl_verify and dfm's polarity check cover)
 TWO_PIN = re.compile(r"^(R|C|L|FB|D|LED|F|TP|H|MH|FID)\d", re.I)
+# refdes prefixes of parts that are never on the BOM or the assembly line:
+# mounting holes, test points, fiducials. With no LCSC code they need none.
+NO_CODE_REF = re.compile(r"^(TP|MH|H|FID|FD)\d", re.I)
 STOCK_SOURCE = ("JLC parts library record (jlcpcb.com smtGood search) and "
                 "LCSC product detail (wmsc.lcsc.com)")
 
@@ -142,16 +151,40 @@ def _class(line: dict, ref: str) -> str:
     return line.get("assembly_class") or "smt_placed"
 
 
+def needs_no_code(ref: str, cls: str) -> bool:
+    """A part with no LCSC code that needs none: DNP or otherwise unbought,
+    or a hole, test point or fiducial (no BOM or assembly line)."""
+    return cls in UNBOUGHT or bool(NO_CODE_REF.match(ref))
+
+
+def _class_of(ws: Path) -> dict[str, str]:
+    out: dict[str, str] = {}
+    for ln in _parts(ws):
+        for ref in _refs(ln):
+            out[ref] = _class(ln, ref)
+    return out
+
+
+def codeless_needed(ws: Path, refs: list[str]) -> list[str]:
+    """The refs of a code-less line that do need a code (a real part)."""
+    cls = _class_of(ws)
+    return [r for r in refs if not needs_no_code(r, cls.get(r, "smt_placed"))]
+
+
 def _bom_codes(ws: Path) -> dict[str, list[str]] | None:
     bom = Path(ws) / "fab" / "BOM.csv"
     if not bom.is_file():
         return None
     out: dict[str, list[str]] = {}
+    cls = _class_of(ws)
     with bom.open(newline="", encoding="utf-8") as fh:
         for r in csv.DictReader(fh):
             code = (r.get("LCSC Part #") or r.get("LCSC") or "").strip()
             refs = [x.strip() for x in str(r.get("Designator") or "")
                     .split(",") if x.strip()]
+            if not code:
+                refs = [x for x in refs
+                        if not needs_no_code(x, cls.get(x, "smt_placed"))]
             if refs:
                 out.setdefault(code or f"(no LCSC: {refs[0]})", []).extend(refs)
     return out
@@ -167,13 +200,16 @@ def expected(ws: Path) -> dict[str, dict]:
     if codes is None:
         codes = {}
         for ln in lines:
-            placed = [r for r in _refs(ln) if _class(ln, r) in ASSEMBLED]
             code = str(ln.get("lcsc") or "").strip()
+            placed = [r for r in _refs(ln) if _class(ln, r) in ASSEMBLED
+                      and (code or not needs_no_code(r, "smt_placed"))]
             if placed:
                 codes.setdefault(code or f"(no LCSC: {placed[0]})",
                                  []).extend(placed)
     for code, refs in codes.items():
-        for kind in PART_KINDS:
+        # a real part with no code is one item: JLC has nothing to look up
+        for kind in (PART_KINDS if not code.startswith("(no LCSC: ")
+                     else ("stock",)):
             out[key(code, kind)] = {"subject": code, "kind": kind,
                                     "refs": refs, "lcsc": code}
     for ln in lines:
@@ -269,6 +305,10 @@ def stock_facts(result: dict) -> list[dict]:
         base = {"subject": code, "lcsc": code, "refs": r.get("refs") or [],
                 "source": STOCK_SOURCE, "checked_at": r.get("checked_at")}
         jlc = r.get("jlc")
+        if not r.get("lcsc"):                  # no code: the one item
+            out.append({**base, "kind": "stock", "status": "unknown",
+                        "value": r.get("why") or "no LCSC code"})
+            continue
         if r["status"] == "unknown" and jlc is None:
             for kind in PART_KINDS:
                 out.append({**base, "kind": kind, "status": "unknown",
@@ -299,7 +339,21 @@ def stock_facts(result: dict) -> list[dict]:
 
 
 def record_stock(ws: Path, result: dict) -> Path | None:
-    return put(ws, stock_facts(result), "stock_check")
+    """Record stock_check's rows, then drop the facts of anything no longer
+    on the board (placeholders that gained a code or left the BOM, a vendor
+    no longer chosen)."""
+    rows = []
+    for r in result.get("rows") or []:
+        if not r.get("lcsc"):
+            refs = codeless_needed(ws, r.get("refs") or [])
+            if r.get("refs") and not refs:
+                continue                       # holes, test points, DNP
+            r = {**r, "refs": refs or r.get("refs")}
+        rows.append(r)
+    out = put(ws, stock_facts({**result, "rows": rows}), "stock_check")
+    if out is not None:
+        prune(ws, apply=True)
+    return out
 
 
 # ----------------------------------------------------------------- reading

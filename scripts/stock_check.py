@@ -46,7 +46,9 @@ DEFAULT_BOARDS = 5   # bom_cpl's DEFAULT_BUILD_QTY: JLC's smallest PCBA order
 LCSC_COLS = ("LCSC Part #", "LCSC", "JLCPCB Part #", "LCSC Part")
 
 
-def read_bom(path: Path) -> list[dict]:
+def read_bom(path: Path, ws: Path | None = None) -> list[dict]:
+    """The BOM's rows; with ws, a code-less row's holes, test points,
+    fiducials and DNP refs are dropped (they need no LCSC code)."""
     with Path(path).open(newline="", encoding="utf-8") as fh:
         rows = list(csv.DictReader(fh))
     out = []
@@ -57,6 +59,12 @@ def read_bom(path: Path) -> list[dict]:
                              f"{', '.join(LCSC_COLS)})")
         refs = [x.strip() for x in str(r.get("Designator") or "").split(",")
                 if x.strip()]
+        if ws is not None and not (r.get(col) or "").strip():
+            import ledgerlib
+            kept = ledgerlib.codeless_needed(ws, refs)
+            if refs and not kept:
+                continue
+            refs = kept
         out.append({"Comment": r.get("Comment", ""),
                     "Designator": r.get("Designator", ""),
                     "Footprint": r.get("Footprint", ""),
@@ -136,7 +144,7 @@ def main(argv: list[str] | None = None) -> int:
                                     "--workspace)")
         parts = Path(args.parts) if args.parts else (
             ws / "parts" if ws else bom.resolve().parent.parent / "parts")
-        res = check_rows(read_bom(bom), boards=args.boards,
+        res = check_rows(read_bom(bom, ws), boards=args.boards,
                          mpns=mpn_index(parts), jobs=args.jobs)
         res = {"script": SCRIPT, "bom": str(bom), **res}
         if ws is not None:

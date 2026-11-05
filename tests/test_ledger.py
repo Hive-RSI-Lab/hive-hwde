@@ -345,3 +345,72 @@ def test_prune_dry_run_then_apply_keeps_present_facts(ws, capsys):
     assert ledgerlib.orphans(ws) == {}
     assert after["U8/pinout"] == before["U8/pinout"]       # present: untouched
     assert "Q201/rating" not in after and "C15195/stock" not in after
+
+
+# -------------------------------- #713: parts that need no LCSC code (placeholders)
+
+def _placeholder_ws(ws, bom_rows=True):
+    """The board gains H1 (hole), TP201, FID1, a DNP U9 and a placed R7, none
+    with a code."""
+    pj = ws / "parts" / "parts.json"
+    d = json.loads(pj.read_text(encoding="utf-8"))
+    d["parts"] += [
+        {"refdes": ["H1"], "value": "MountingHole"},
+        {"refdes": ["TP201"], "value": "GND"},
+        {"refdes": ["FID1"], "value": "fid"},
+        {"refdes": ["U9"], "value": "spare", "assembly_class": "dnp"},
+        {"refdes": ["R7"], "value": "10k"}]
+    pj.write_text(json.dumps(d), encoding="utf-8")
+    if bom_rows:
+        bom = ws / "fab" / "BOM.csv"
+        bom.write_text(bom.read_text(encoding="utf-8") +
+                       'MountingHole,H1,MH,\nGND,TP201,TP,\nfid,FID1,F,\n'
+                       'spare,U9,SOP,\n10k,R7,R0402,\n', encoding="utf-8")
+
+
+@pytest.mark.parametrize("bom_rows", [True, False])
+def test_placeholders_need_no_lcsc_facts(ws, bom_rows):
+    _placeholder_ws(ws, bom_rows)
+    if not bom_rows:
+        (ws / "fab" / "BOM.csv").unlink()
+    subj = {e["subject"] for e in ledgerlib.expected(ws).values()}
+    for gone in ("(no LCSC: H1)", "(no LCSC: TP201)", "(no LCSC: FID1)",
+                 "(no LCSC: U9)"):
+        assert gone not in subj
+    # a placed resistor with no code: one clear item, and it blocks
+    r7 = [e["kind"] for e in ledgerlib.expected(ws).values()
+          if e["subject"] == "(no LCSC: R7)"]
+    assert r7 == ["stock"]
+    assert any("(no LCSC: R7)" in b for b in ledgerlib.blockers(ws))
+    assert not any("(no LCSC: H1)" in b or "(no LCSC: TP201)" in b
+                   for b in ledgerlib.blockers(ws))
+
+
+def test_stock_check_apply_prunes_orphans_and_writes_no_placeholder(ws):
+    _placeholder_ws(ws)
+    # facts left by an older run: placeholder triples, a gone vendor
+    old = [{"subject": f"(no LCSC: {r})", "kind": k, "status": "unknown",
+            "lcsc": f"(no LCSC: {r})", "refs": [r]}
+           for r in ("H1", "TP201") for k in ledgerlib.PART_KINDS]
+    old.append({"subject": "oshpark", "kind": "vendor", "status": "verified",
+                "source": "t"})
+    ledgerlib.put(ws, old, "test")
+    assert len(ledgerlib.orphans(ws)) == 7
+    res = stock_check.check_rows(
+        stock_check.read_bom(ws / "fab" / "BOM.csv"),
+        fetch=fake_fetch())
+    ledgerlib.record_stock(ws, res)
+    keys = set(ledgerlib.load(ws)["facts"])
+    assert not [k for k in keys if k.startswith("(no LCSC: ") and "R7" not in k]
+    assert "oshpark/vendor" not in keys
+    assert ledgerlib.orphans(ws) == {}
+    assert "(no LCSC: R7)/stock" in keys
+    assert "(no LCSC: R7)/lifecycle" not in keys
+
+
+def test_stock_check_rows_skip_placeholders(ws):
+    _placeholder_ws(ws)
+    rows = stock_check.read_bom(ws / "fab" / "BOM.csv", ws=ws)
+    refs = sorted(r for row in rows for r in row["refs"])
+    assert "H1" not in refs and "TP201" not in refs and "U9" not in refs
+    assert "R7" in refs
