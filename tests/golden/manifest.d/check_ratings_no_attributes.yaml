@@ -1,0 +1,13 @@
+# Seeded fault for check_ratings' rating_no_attributes (hive-hwde #675).
+mutants:
+  diode-no-attributes:
+    board: blinky2
+    script: mutations/diode_no_attributes.py
+    check: check_ratings
+    defect: >-
+      SIDECAR fault (+ an LCSC property on D1 so the parts dir finds it):
+      parts/parts.json lists D1's code with an empty attributes, so nothing
+      rates the diode and verify must fail rather than warn
+    expect:
+      kind: rating_no_attributes
+      ref: D1

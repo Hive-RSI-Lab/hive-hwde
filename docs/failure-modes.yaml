@@ -579,7 +579,8 @@ modes:
     rule: rating_unrated
     level: L1
   target_level: L2
-  gap: warning only; 3-18 per board
+  gap: warning only, 3-18 per board, bar a rated part whose parts.json row is
+    empty (diode, fuse, regulator, cap), which blocks as rating_no_attributes
   hit_on:
   - all
   sources:
