@@ -222,6 +222,26 @@ def test_first_spin_all_answered_writes_the_table(tmp_path):
     assert "## Tools wanted" in text
 
 
+def test_tools_wanted_as_bare_strings(tmp_path):
+    """A reviewer who lists tools_wanted as one-line strings (Hive Pulse's
+    board review did) must not crash the report: the string is the tool."""
+    d = review_dir(tmp_path, disp={"POWER-1": ["fixed", "8 vias"],
+                                   "POWER-2": ["fixed", "x"],
+                                   "THERMAL-1": ["fixed", "lid"]})
+    rev = dict(POWER, domain="board",
+               findings=[], known_unknowns=[],
+               tools_wanted=["pad-pairing check from the datasheet",
+                             {"tool": "soa_check", "checks": "x"}, 7])
+    (d / "board.json").write_text(json.dumps(rev), encoding="utf-8")
+    md = tmp_path / "d.md"
+    code, rep = fs(tmp_path, "--md", str(md))
+    assert rep["status"] != "error", rep
+    tools = {t["tool"]: t["domains"] for t in rep["tools_wanted"]}
+    assert tools["pad-pairing check from the datasheet"] == ["board"]
+    assert sorted(tools["soa_check"]) == ["board", "power", "thermal"]
+    assert "pad-pairing check" in md.read_text(encoding="utf-8")
+
+
 def test_first_spin_bad_disposition_and_errors(tmp_path):
     review_dir(tmp_path, disp={"POWER-1": ["ignored", "meh"]})
     code, rep = fs(tmp_path)
