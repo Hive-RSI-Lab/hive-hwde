@@ -414,3 +414,38 @@ def test_stock_check_rows_skip_placeholders(ws):
     refs = sorted(r for row in rows for r in row["refs"])
     assert "H1" not in refs and "TP201" not in refs and "U9" not in refs
     assert "R7" in refs
+
+
+# ---------------- #789: holes, test points, fiducials get no rating/footprint facts
+
+@pytest.mark.parametrize("bom_rows", [True, False])
+def test_placeholders_get_no_ref_facts(ws, bom_rows):
+    _placeholder_ws(ws, bom_rows)
+    if not bom_rows:
+        (ws / "fab" / "BOM.csv").unlink()
+    exp = ledgerlib.expected(ws)
+    for ref in ("H1", "TP201", "FID1", "U9"):
+        assert [k for k, e in exp.items() if e["subject"] == ref] == []
+    # a placed resistor keeps all its facts
+    assert sorted(e["kind"] for e in exp.values()
+                  if e["subject"] == "R7") == ["footprint", "rating"]
+    assert not any(b.startswith(("H1/", "TP201/", "FID1/"))
+                   for b in ledgerlib.blockers(ws))
+
+
+def test_a_test_point_with_a_code_keeps_only_its_footprint(ws):
+    """A bought test-point part has an LCSC model to land on, but no rating."""
+    pj = ws / "parts" / "parts.json"
+    d = json.loads(pj.read_text(encoding="utf-8"))
+    d["parts"] += [{"refdes": ["TP5"], "lcsc": "C238128", "value": "TP"}]
+    pj.write_text(json.dumps(d), encoding="utf-8")
+    exp = ledgerlib.expected(ws)
+    assert [e["kind"] for e in exp.values() if e["subject"] == "TP5"] == \
+        ["footprint"]
+
+
+def test_stale_placeholder_ref_facts_are_orphans(ws):
+    _placeholder_ws(ws)
+    ledgerlib.put(ws, [{"subject": "H1", "kind": "rating",
+                        "status": "unknown"}], "test")
+    assert "H1/rating" in ledgerlib.orphans(ws)

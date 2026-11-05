@@ -33,7 +33,9 @@ Facts and who writes them:
 What the board relies on (`expected`) comes from its own data: every code on
 fab/BOM.csv (else every smt_placed parts.json line), and every refdes of every
 parts.json line that is bought (not dnp, board_feature or customer_supplied).
-Parts that need no LCSC code (a hole, test point or fiducial, or a DNP or
+A hole, test point or fiducial gets no rating or pinout fact (no datasheet
+answers one), and a footprint fact only when it has an LCSC code (a model to
+land on). Parts that need no LCSC code (those, or a DNP or
 otherwise unbought line) get no `(no LCSC: REF)` facts; a real part with no
 code gets one (`stock`, unknown: "no LCSC code"), which blocks. Recording
 stock (`record_stock`, so stock_check and bom_cpl's live run) also prunes the
@@ -219,11 +221,16 @@ def expected(ws: Path) -> dict[str, dict]:
             if cls in UNBOUGHT:
                 continue
             lcsc_of[ref] = code
-            kinds = ["rating"]
-            if not TWO_PIN.match(ref):
-                kinds.append("pinout")
-            if cls in ASSEMBLED:
-                kinds.append("footprint")
+            if NO_CODE_REF.match(ref):
+                # a hole, test point or fiducial has no rating or pinout;
+                # only a bought one (it has a code) has a model to land on
+                kinds = (["footprint"] if code and cls in ASSEMBLED else [])
+            else:
+                kinds = ["rating"]
+                if not TWO_PIN.match(ref):
+                    kinds.append("pinout")
+                if cls in ASSEMBLED:
+                    kinds.append("footprint")
             for kind in kinds:
                 out[key(ref, kind)] = {"subject": ref, "kind": kind,
                                        "refs": [ref], "lcsc": code}
@@ -407,8 +414,17 @@ def orphans(ws: Path) -> dict[str, dict]:
     """key -> fact, for facts whose subject (refdes, LCSC code or vendor) is
     no longer on the board: a swapped or removed part's leftovers."""
     present = present_subjects(ws)
-    return {k: f for k, f in load(ws)["facts"].items()
-            if (f.get("subject") or k.rsplit("/", 1)[0]) not in present}
+    exp = expected(ws)
+    out = {}
+    for k, f in load(ws)["facts"].items():
+        subj = f.get("subject") or k.rsplit("/", 1)[0]
+        # a hole, test point or fiducial's unknown rating/footprint fact from
+        # before #789: the part is present, the fact is no longer expected
+        stale = (k not in exp and NO_CODE_REF.match(subj)
+                 and f.get("kind") in REF_KINDS and f.get("status") == "unknown")
+        if subj not in present or stale:
+            out[k] = f
+    return out
 
 
 def prune(ws: Path, apply: bool = False) -> list[str]:
