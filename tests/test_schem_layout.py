@@ -186,6 +186,22 @@ def test_redrawn_board_has_no_close_wires_or_text_on_text(tmp_path):
     assert res["text_text"] == 0, res["examples"]["text_text"]
 
 
+def _label_spot_with(*paths):
+    dr = sl.Drawing(None, 0)
+    net = sl.Net(1)
+    for cells in paths:
+        dr.add_path(net, cells)
+    return sl._label_spot(dr, net, "LED_K")
+
+
+def test_a_label_on_a_level_wire_stays_off_a_wire_rising_through_it():
+    level = [(x, 10) for x in range(10, 13)]
+    assert _label_spot_with(level) == (10, 10)
+    assert _label_spot_with(level, [(12, 9), (12, 10)]) is None
+    # one rising from the label's own anchor only meets the end of the text
+    assert _label_spot_with(level, [(10, 9), (10, 10)]) == (10, 10)
+
+
 def test_a_part_text_goes_round_what_is_already_there():
     box = sl.Boxes()
     box.add((0.0, 0.0, 10.0, 2.0))
