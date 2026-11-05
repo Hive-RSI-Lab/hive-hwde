@@ -168,6 +168,35 @@ def board_copper_layers(pcb: Path) -> list[tuple[str, float | None]]:
     return out
 
 
+# How far apart the board's three thicknesses (stack sum, general, the quote's)
+# may be, as a share of the larger. Across 48 boards (hw-lab, hwde-boards,
+# pinned) 47 sit within 4.4 % (stack 1.6742 with mask and silk against 1.6
+# general); rf-kit-ro4350b is 189 % off. 10 % is over twice the observed spread
+# and under a 1.6 mm board's 0.2 mm laminate step.
+THICKNESS_TOLERANCE = 0.10
+
+
+def thickness_gap(a: float, b: float) -> float:
+    """|a - b| as a share of the larger."""
+    return abs(a - b) / max(a, b) if max(a, b) > 0 else 0.0
+
+
+def board_stack_sum_mm(pcb: Path) -> float | None:
+    """Sum of every thickness in a .kicad_pcb's (stackup) block (copper,
+    dielectric, mask, silk), None with no block or no thickness in it."""
+    block = _stackup_block(
+        Path(pcb).read_text(encoding="utf-8", errors="replace"))
+    vals = [float(v) for v in re.findall(r"\(thickness\s+([\d.]+)", block)]
+    return round(sum(vals), 4) if vals else None
+
+
+def board_general_mm(pcb: Path) -> float | None:
+    """The board's (general (thickness)), None when it gives none."""
+    m = re.search(r"\(general\b[^()]*\(thickness\s+([\d.]+)",
+                  Path(pcb).read_text(encoding="utf-8", errors="replace"))
+    return float(m.group(1)) if m else None
+
+
 def board_stackup_facts(pcb: Path) -> dict:
     """What a .kicad_pcb's (stackup) block says for an order: copper_finish,
     mask_color (F.Mask), outer_copper_mm (F.Cu) and back_copper_mm (B.Cu). None
