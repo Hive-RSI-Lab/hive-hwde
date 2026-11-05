@@ -1,0 +1,64 @@
+# Ordering-code schemes for datasheet_extract.assess_pdf (#755).
+#
+# A passive's datasheet covers a series and never prints the orderable code,
+# so "the MPN is on page 1" calls the right document suspect. A scheme lets the
+# document's own ordering table decode the MPN instead:
+#
+#   mpn      regex on the MPN (upper case, letters and digits only) with one
+#            named group per field. No match: the scheme says nothing.
+#   series   regexes that must all be in the document's text (whitespace
+#            collapsed): it names this series and has its ordering table.
+#   fields   per field, a regex with {v} standing for the MPN's value of that
+#            field; every one must be in the text. A field not listed here
+#            (a capacitance code) is formatted, not tabulated: its value is
+#            recorded, not checked.
+#
+# Every scheme is written from a real PDF (`source`) and tested against it: add
+# one only with its PDF in hand, so a guess never turns a wrong document ok.
+# All fields must decode, so a wrong-family PDF, a document for another
+# dielectric or a size the table lacks stays suspect.
+schemes:
+  samsung_cl:
+    source: "Samsung Electro-Mechanics MLCC catalogue, Part Numbering System (fmcw-radar C1525, C19702)"
+    mpn: '^CL(?P<size>\d\d)(?P<dielectric>[A-Z])(?P<value>\d{3})(?P<tolerance>[A-Z])(?P<voltage>[A-Z])'
+    series:
+      - 'Part\s*Numbering\s*System'
+      - 'CL\s*=\s*Multi\s*layer\s*Ceramic'
+    fields:
+      size: '\b{v}\s*=\s*\d{4,5}\s*\('
+      dielectric: '\b{v}\s*=\s*(?:C0G|[XYZ]\d[A-Z])'
+      tolerance: '\b{v}\s*=\s*\D{0,3}[\d.]+\s*(?:%|pF)'
+      voltage: '\b{v}\s*=\s*[\d.]+\s*V'
+  yageo_rt:
+    source: "Yageo RT series thin film chip resistors, Ordering Information (fmcw-radar C784579)"
+    mpn: '^RT(?P<size>\d{4})(?P<tolerance>[A-Z])(?P<packing>[A-Z])(?P<tcr>[A-Z])(?P<reel>\d\d|7W)(?P<value>[0-9RKM]+)L$'
+    series:
+      - 'RT\s+series'
+      - 'RT\s+XXXX'
+    fields:
+      size: 'RT\s*(?:\d{4}\s*/\s*)*{v}\b'
+      tolerance: '\b{v}\s*=\s*\D{0,3}[\d.]+\s*%'
+      packing: '\b{v}\s*=\s*\w*\s*(?:Paper|Embossed)'
+      tcr: '\b{v}\s*=\s*\D{0,3}\d+\s*ppm'
+      reel: '\b{v}\s*=\s*\d+\s*inch'
+  yageo_cc:
+    source: "Yageo CC series general purpose MLCC, one document per dielectric, Ordering Information (fmcw-radar C106255)"
+    mpn: '^CC(?P<size>\d{4})(?P<tolerance>[A-Z])(?P<packing>[A-Z])(?P<tc>X\d[A-Z]|NP0|Y5V)(?P<voltage>\d)BB(?P<value>\d{3})$'
+    series:
+      - 'CC\s+XXXX'
+    fields:
+      size: '\b{v}\s*\(\d{4}\)'
+      tolerance: '\b{v}\s*=\s*\D{0,3}[\d.]+\s*%'
+      packing: '\b{v}\s*=\s*\w*\s*(?:Paper|Blister|Embossed)'
+      tc: 'CC\s+XXXX\s+X\s+X\s+{v}\b'
+      voltage: '\b{v}\s*=\s*[\d.]+\s*V'
+  uniroyal:
+    source: "Uni-Royal thick film chip resistors, Explanation of Part No. System (fmcw-radar C11702)"
+    mpn: '^(?P<size>\d{4,5})(?P<power>[0-9A-Z]{2})(?P<tolerance>[A-Z])(?P<value>[0-9A-Z]{4})T[0-9A-Z]{2}$'
+    series:
+      - 'Thick\s+Film\s+Chip\s+Resistors'
+      - 'Explanation\s+of\s+Part\s+No'
+    fields:
+      size: '(?:^|[\s/]){v}(?:[\s/]|$)'
+      power: 'Normal\s+Size\s+(?:\w\w\s+)*{v}\b'
+      tolerance: '\b{v}\s*=\s*\D{0,3}[\d.]+\s*%'

@@ -11,9 +11,14 @@ and takes facts recorded by hand.
       1 not ready / 2 error. Release (attest.py) refuses on the same list.
   ledger.py set --workspace WS --subject U8 --kind pinout
                 --status verified|failed|unknown --source "..." [--value ".."]
+                [--force "why"]
       record one fact you checked yourself; --source is required for
       verified and failed (where it came from: a datasheet page, a
-      calculation, a distributor page and its date).
+      calculation, a distributor page and its date). verified is refused
+      (exit 2) when its datasheet PDF is suspect or a host placeholder: the
+      part's own for rating and pinout, the extraction's source_pdf, any
+      parts/datasheets/*.pdf --source names. --force with a reason records it
+      anyway, reason on the fact.
   ledger.py prune --workspace WS [--apply]
       facts about a part no longer on the board (a swapped or removed refdes
       or LCSC code) are "orphaned": report lists them, and they never count
@@ -24,13 +29,33 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
+import datasheet_extract  # noqa: E402
 import ledgerlib  # noqa: E402
 
 SCRIPT = "ledger"
+
+
+def doubted_datasheets(ws: Path, kind: str, lcsc: str | None,
+                       source: str) -> dict[str, str]:
+    """{datasheet: why} for the suspect or placeholder PDFs a fact would rest
+    on: the part's own for rating and pinout (and the source_pdf its extraction
+    was read from), and any PDF in the workspace that --source names."""
+    names = set(re.findall(r"datasheets/([^/\s]+)\.pdf", source))
+    if kind in ("rating", "pinout") and lcsc:
+        names.add(lcsc)
+        try:
+            ext = json.loads((ws / "parts" / f"{lcsc}.json").read_text(
+                encoding="utf-8"))
+            names.add(Path(str(ext.get("source_pdf") or lcsc)).stem)
+        except (OSError, ValueError, AttributeError):
+            pass
+    return datasheet_extract.suspect_datasheets(ws / "parts", names)
 
 
 def run(argv=None) -> tuple[dict, str | None, int]:
@@ -54,6 +79,8 @@ def run(argv=None) -> tuple[dict, str | None, int]:
     p.add_argument("--status", required=True, choices=ledgerlib.STATUSES)
     p.add_argument("--source", default="")
     p.add_argument("--value", default="")
+    p.add_argument("--force", metavar="REASON",
+                   help="record verified over a suspect datasheet, and why")
     p.add_argument("--out")
     a = ap.parse_args(argv)
     ws = Path(a.workspace)
@@ -76,6 +103,19 @@ def run(argv=None) -> tuple[dict, str | None, int]:
                 "source": a.source, "value": a.value}
         if exp:
             fact.update(lcsc=exp.get("lcsc"), refs=exp.get("refs"))
+        if a.status == "verified":
+            doubt = doubted_datasheets(ws, a.kind, (exp or {}).get("lcsc"),
+                                       a.source)
+            if doubt and not (a.force or "").strip():
+                raise SystemExit(
+                    "refused: the datasheet this rests on is suspect ("
+                    + "; ".join(f"{c}: {w}" for c, w in sorted(doubt.items()))
+                    + "). Fetch another, or read it by eye and pass "
+                    '--force "why" to record it')
+            if doubt:
+                fact.update(forced=a.force.strip(),
+                            forced_over="; ".join(
+                                f"{c}: {w}" for c, w in sorted(doubt.items())))
         ledgerlib.put(ws, [fact], "hand")
         rep = {"script": SCRIPT, "status": "pass", "recorded": fact,
                "expected": exp is not None}

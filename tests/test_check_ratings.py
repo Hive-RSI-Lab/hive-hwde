@@ -1392,3 +1392,48 @@ def test_notice_pdf_on_disk_is_suspect_even_without_an_index(tmp_path):
                                ws / "parts", None, None)
     assert _u1(facts, "rating")["status"] == "unknown"
     assert [v for v in viol if v["kind"] == "rating_datasheet_suspect"]
+
+
+# ------------------------------------ unassessed datasheets (#755)
+
+def test_old_index_entry_with_no_status_is_unassessed_not_ok(tmp_path):
+    ws = _suspect_ws(tmp_path, {"url": "u", "sha256": "s", "mpn": "TESTMCU"})
+    viol, facts = cr.run_check(ws / "kicad" / "board.kicad_pcb",
+                               ws / "parts", None, None)
+    w = [v for v in viol if v["kind"] == "rating_datasheet_unassessed"]
+    assert len(w) == 1 and w[0]["severity"] == "warning", viol
+    assert w[0]["refs"] == ["U1"] and "C1" in w[0]["msg"]
+    assert "--assess" in w[0]["msg"]
+    assert facts["unassessed_datasheets"] == ["C1"]
+    assert not [v for v in viol if v["kind"] == "rating_datasheet_suspect"]
+
+
+def test_unassessed_warning_is_one_line_for_the_whole_board(tmp_path):
+    ws = _suspect_ws(tmp_path, {"url": "u"})
+    d = ws / "parts" / "datasheets"
+    (d / "index.json").write_text(json.dumps({"C1": {"status": "unassessed",
+                                                     "reasons": ["no PDF"]}}))
+    viol, facts = cr.run_check(ws / "kicad" / "board.kicad_pcb",
+                               ws / "parts", None, None)
+    assert len([v for v in viol
+                if v["kind"] == "rating_datasheet_unassessed"]) == 1
+    assert facts["unassessed_datasheets"] == ["C1"]
+
+
+def test_assessed_or_unrecorded_datasheet_is_not_unassessed(tmp_path):
+    for index in ({"status": "ok", "reasons": []}, None):
+        ws = _suspect_ws(tmp_path / str(bool(index)), index)
+        viol, facts = cr.run_check(ws / "kicad" / "board.kicad_pcb",
+                                   ws / "parts", None, None)
+        assert facts["unassessed_datasheets"] == []
+        assert not [v for v in viol
+                    if v["kind"] == "rating_datasheet_unassessed"]
+
+
+def test_a_pdf_on_disk_with_no_index_entry_is_unassessed(tmp_path):
+    from test_datasheet_fetch import RIGHT
+    ws = _suspect_ws(tmp_path, None)
+    (ws / "parts" / "datasheets" / "C1.pdf").write_bytes(RIGHT)
+    _, facts = cr.run_check(ws / "kicad" / "board.kicad_pcb",
+                            ws / "parts", None, None)
+    assert facts["unassessed_datasheets"] == ["C1"]

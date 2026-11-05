@@ -97,8 +97,11 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
    check_thermal works out, else 25 C, said so in `ambient`.
  - rating_datasheet_suspect (warning): a part whose datasheet PDF is a host
    placeholder or was marked suspect by `datasheet_extract --fetch` (index.json:
-   cut off, no text layer, MPN not in pages 1-2; #706). Its rating and pinout
+   cut off, no text layer, nothing ties it to the MPN; #706). Its rating and pinout
    ledger facts are unknown, never verified.
+ - rating_datasheet_unassessed (warning, one per board): parts whose datasheet
+   nobody has judged: an index.json entry with no status, or a PDF with no
+   entry. `datasheet_extract --assess` writes the verdict (#755).
 Sources and verified/disputed tags: docs/ingest/safety-components.md.
 A pin on a net of unknown voltage is not a finding (counted in facts).
 
@@ -899,14 +902,26 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                 "attributes - keep parts_search's row whole)" if bare else ""),
              pins=unrated_passives)
         out[-1]["refs"] = sorted(unrated_passives)
-    suspect = suspect_datasheets(parts_dir, {b["lcsc"] for b in board
-                                             if b["lcsc"]})
+    import datasheet_extract
+    lcscs = {b["lcsc"] for b in board if b["lcsc"]}
+    suspect = datasheet_extract.suspect_datasheets(parts_dir, lcscs)
     for lcsc, why in sorted(suspect.items()):
         refs = sorted(b["ref"] for b in board if b["lcsc"] == lcsc)
         emit("rating_datasheet_suspect", "warning", refs[0] if refs else None,
              None, f"{', '.join(refs)} ({lcsc}): the datasheet PDF is suspect "
              f"({why}); its facts are not counted as verified - fetch "
              "another datasheet or check by eye", pins=refs)
+        out[-1]["refs"] = refs
+    unassessed = [c for c in datasheet_extract.unassessed_datasheets(
+        parts_dir, lcscs) if c not in suspect]
+    if unassessed:
+        refs = sorted(b["ref"] for b in board if b["lcsc"] in unassessed)
+        emit("rating_datasheet_unassessed", "warning", refs[0], None,
+             f"{len(unassessed)} part(s) have a datasheet nobody has judged "
+             f"({', '.join(unassessed[:8])}"
+             f"{', ...' if len(unassessed) > 8 else ''}): it may be another "
+             "part's. Run `datasheet_extract --assess <ws>`, which reads the "
+             "PDFs on disk, or --fetch for those with none", pins=refs)
         out[-1]["refs"] = refs
     facts = {"parts_on_board": len(board), "extractions": sorted(exts),
              "net_volts": {n: {"v": volts[n], "src": vsrc[n]}
@@ -917,6 +932,7 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
              "ambient": amb, "fuses": fuse_facts,
              "operating_range": temp_facts,
              "suspect_datasheets": suspect,
+             "unassessed_datasheets": unassessed,
              "ledger_facts": ledger_facts(board, exts, out, checked_by_ref,
                                           bom_by_lcsc, suspect)}
     return out, facts
@@ -1623,31 +1639,6 @@ def pinout_fact(b: dict, ext: dict | None) -> tuple[str, str]:
     named = sum(1 for n in nums if (b.get("fns") or {}).get(n))
     return "verified", (f"{len(nums)} pads are pins of the extraction"
                         + (f", {named} named alike" if named else ""))
-
-
-def suspect_datasheets(parts_dir: Path, lcscs) -> dict[str, str]:
-    """{lcsc: why} for each part whose datasheet PDF is a placeholder or was
-    marked suspect by `datasheet_extract --fetch` (index.json: truncated, no
-    text layer, MPN absent from pages 1-2; #706). An index entry written
-    before that has no status and says nothing."""
-    ddir = parts_dir / "datasheets"
-    try:
-        idx = json.loads((ddir / "index.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        idx = {}
-    out = {}
-    for lcsc in lcscs:
-        ent = idx.get(lcsc)
-        if isinstance(ent, dict) and ent.get("status") == "suspect":
-            out[lcsc] = "; ".join(ent.get("reasons") or ["marked suspect"])
-            continue
-        pdf = ddir / f"{lcsc}.pdf"
-        if pdf.is_file():
-            import datasheet_extract
-            why = datasheet_extract.stub_notice(pdf.read_bytes())
-            if why:
-                out[lcsc] = f"host placeholder, not a datasheet ({why})"
-    return out
 
 
 def ledger_facts(board: list[dict], exts: dict, vios: list[dict],

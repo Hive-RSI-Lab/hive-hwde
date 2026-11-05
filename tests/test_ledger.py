@@ -125,6 +125,82 @@ def test_cli_set_needs_a_source_and_report_exits_on_gaps(ws, capsys):
     assert rep["by_kind"]["pinout"]["verified"] == 1
 
 
+def _ds_ws(ws, entry=None, pdf=None):
+    """U8's part (its fixture LCSC) with a datasheet index entry and PDF."""
+    lcsc = ledgerlib.expected(ws)["U8/pinout"]["lcsc"]
+    d = ws / "parts" / "datasheets"
+    d.mkdir(parents=True, exist_ok=True)
+    if entry is not None:
+        (d / "index.json").write_text(json.dumps({lcsc: entry}))
+    if pdf is not None:
+        (d / f"{lcsc}.pdf").write_bytes(pdf)
+    return lcsc
+
+
+_SET = ["set", "--subject", "U8", "--kind", "pinout", "--status", "verified",
+        "--source", "CH340 datasheet v3B p.4"]
+
+
+def _set(ws, *extra):
+    return ledger_cli.main([_SET[0], "--workspace", str(ws), *_SET[1:], *extra])
+
+
+def test_cli_set_refuses_verified_on_a_suspect_datasheet(ws, capsys):
+    lcsc = _ds_ws(ws, {"status": "suspect", "reasons": ["no text layer"]})
+    assert _set(ws) == 2
+    err = json.loads(capsys.readouterr().out)["error"]
+    assert lcsc in err and "no text layer" in err and "--force" in err
+    assert "U8/pinout" not in {k for k, f in ledgerlib.load(ws)["facts"].items()
+                               if f.get("status") == "verified"}
+
+
+def test_cli_set_refuses_verified_on_a_stub_datasheet(ws, capsys):
+    from test_datasheet_fetch import NOTICE
+    _ds_ws(ws, None, NOTICE)
+    assert _set(ws) == 2
+    assert "placeholder" in json.loads(capsys.readouterr().out)["error"]
+
+
+def test_cli_set_force_needs_a_reason_and_records_it(ws, capsys):
+    _ds_ws(ws, {"status": "suspect", "reasons": ["no text layer"]})
+    assert _set(ws, "--force", "  ") == 2
+    capsys.readouterr()
+    assert _set(ws, "--force", "read the scan by eye, p.4") == 0
+    f = ledgerlib.load(ws)["facts"]["U8/pinout"]
+    assert f["status"] == "verified"
+    assert f["forced"] == "read the scan by eye, p.4"
+    assert "no text layer" in f["forced_over"]
+
+
+def test_cli_set_allows_failed_unknown_and_other_kinds_on_a_suspect_datasheet(ws):
+    lcsc = _ds_ws(ws, {"status": "suspect", "reasons": ["no text layer"]})
+    base = ["set", "--workspace", str(ws), "--subject", "U8", "--kind", "pinout"]
+    assert ledger_cli.main([*base, "--status", "failed", "--source", "p.4"]) == 0
+    assert ledger_cli.main([*base, "--status", "unknown"]) == 0
+    # a stock count does not come from the datasheet
+    assert ledger_cli.main(["set", "--workspace", str(ws), "--subject", lcsc,
+                            "--kind", "stock", "--status", "verified",
+                            "--source", "JLC page 2026-11-05"]) == 0
+
+
+def test_cli_set_allows_verified_on_an_ok_or_unlisted_datasheet(ws):
+    _ds_ws(ws, {"status": "ok", "reasons": []})
+    assert _set(ws) == 0
+    (ws / "parts" / "datasheets" / "index.json").unlink()
+    assert _set(ws) == 0
+
+
+def test_cli_set_refuses_a_source_naming_a_suspect_pdf(ws, capsys):
+    from test_datasheet_fetch import NOTICE
+    d = ws / "parts" / "datasheets"
+    d.mkdir(parents=True)
+    (d / "C999.pdf").write_bytes(NOTICE)
+    assert ledger_cli.main(["set", "--workspace", str(ws), "--subject", "U8",
+                            "--kind", "footprint", "--status", "verified",
+                            "--source", "parts/datasheets/C999.pdf p.2"]) == 2
+    assert "C999" in json.loads(capsys.readouterr().out)["error"]
+
+
 def test_every_fact_verified_is_ready(ws):
     facts = [{**e, "status": "verified", "source": "test"}
              for e in ledgerlib.expected(ws).values()]

@@ -61,7 +61,10 @@ page covers how an agent runs it inside the Hive.
   each parts.json line's PDF in `parts/datasheets/<lcsc>.pdf` (not
   committed; `index.json` beside them keeps URL and sha256). LCSC's
   wmsc.lcsc.com answers with a 140-byte script redirect, not the PDF;
-  the fetch follows it, so don't curl datasheets yourself.
+  the fetch follows it, so don't curl datasheets yourself. Each entry gets a
+  status from the PDF (`--assess boards/<name>` for ones from before that): a
+  datasheet matches by naming the MPN or by an ordering table
+  (`reference/ordering_codes.yaml`) that decodes it, else it is suspect.
 - Every board with a netlist gets `hwde sim_board --workspace boards/<name>
   --out boards/<name>/reports/sim_board.json`: ngspice over the board's own
   passives and discretes (KiCad 10's bundled libngspice, found by this
@@ -165,7 +168,9 @@ JLC stock, the part JLC will really place, whether JLC still sells it; per
 part: pin ratings, pinout, footprint), verified with its source and date,
 failed, or unknown. The checks fill it in as they run, and one that can't
 tell writes unknown. `bin/hwde ledger report --workspace <ws>` lists the gaps.
-`bin/hwde ledger set ... --source "..."` records a fact you checked yourself.
+`bin/hwde ledger set ... --source "..."` records a fact you checked yourself;
+verified is refused over a suspect or placeholder datasheet unless
+`--force "why"` says why.
 A board isn't ready to order (attest refuses, order-ready drops) while any
 fact is failed or unknown. Stock is good for 72 hours, so run
 `bin/hwde stock_check --workspace <ws>` right before the order packet; the

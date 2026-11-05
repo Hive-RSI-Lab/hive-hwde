@@ -241,3 +241,179 @@ def test_fetch_suspect_is_not_fetched_but_is_kept_and_indexed():
         assert idx["C1"]["status"] == "suspect" and idx["C1"]["reasons"], idx
         assert idx["C1"]["pages"] == 4 and len(idx["C1"]["chars_per_page"]) == 4
         assert idx["C2"]["status"] == "ok" and idx["C2"]["reasons"] == [], idx
+
+
+# ------------------------------------- series datasheets (#755)
+#
+# A passive's datasheet covers a series and never prints the orderable code.
+# These are the ordering-code sections of the real PDFs (fmcw-radar, 2026-11),
+# cut to what reference/ordering_codes.yaml reads.
+
+JUNK = "November 2015 1.86g MLCC " + "x" * 200
+SAMSUNG = ("Part Numbering System CL 10 A 106 M P 8 N N N C "
+           "1. SERIES CODE CL = Multi layer Ceramic Capacitors "
+           "2. SIZE CODE 02 = 01005(0402) 21 = 0805(2012) 43 = 1812(4532) "
+           "05 = 0402(1005) 32 = 1210(3225) 10 = 0603(1608) 42 = 1808(4520) "
+           "3. DIELECTRIC CODE C = C0G A = X5R F = Y5V B = X7R X = X6S "
+           "4. CAPACITANCE CODE 5. TOLERANCE CODE K = 10% M = 20% "
+           "6. RATED VOLTAGE CODE R = 4V O = 16V B = 50V Q = 6.3V A = 25V "
+           "P = 10V L = 35V")
+YAGEO_RT = ("THIN FILM CHIP RESISTORS RT series ORDERING INFORMATION - GLOBAL "
+            "PART NUMBER RT XXXX F X X XX XXXX L (1) SIZE "
+            "RT0100 / 0201 / 0402 / 0603 / 0805 / 1206 (2) TOLERANCE "
+            "L = 0.01% B = 0.1% D = 0.5% F = 1% (3) PACKAGING TYPE "
+            "R = Paper/PE taping reel (4) TEMPERATURE COEFFICIENT "
+            "A = 5 ppm/C D = 25 ppm/C (5) TAPING REEL 07 = 7 inch dia. Reel "
+            "(6) RESISTANCE VALUE")
+YAGEO_CC = ("Class 2, X5R 4 V TO 50 V ORDERING INFORMATION - GLOBAL PART "
+            "NUMBER CC XXXX X X X5R X BB XXX (1) SIZE - INCH BASED (METRIC) "
+            "0201 (0603) 0402 (1005) 0603 (1608) (2) TOLERANCE K = 10% "
+            "M = 20% (3) PACKING STYLE R = Paper/PE taping reel "
+            "(4) RATED VOLTAGE 4 = 4 V 5 = 6.3 V 6 = 10 V 7 = 16 V "
+            "(5) CAPACITANCE VALUE")
+UNIROYAL = ("Thick Film Chip Resistors Part Name 01005/0201/0402/0603/0805/"
+            "1206/2512 Series 2. Explanation of Part No. System Part No. "
+            "includes 14 codes 2.1 1st~4th codes: Part name 2.2 5th~6th "
+            "codes: Power rating Normal Size WH 07 W2 W3 W4 W8 WA WG WM 1W "
+            "2.3 7th code: Tolerance. D=0.5% F=1% G=2% J=5% 2.4 8th~11th "
+            "codes: Resistance Value 12th code T=Tape/Reel")
+JST = ("SH CONNECTOR Model No. BM06B-SRSS-TB BM07B-SRSS-TB "
+       "SM05B-SRSS-TB SM06B-SRSS-TB SM07B-SRSS-TB")
+FAMILY_DOCS = {"samsung": SAMSUNG, "yageo_rt": YAGEO_RT, "yageo_cc": YAGEO_CC,
+               "uniroyal": UNIROYAL, "jst": JST}
+FAMILY_MPNS = {"samsung": ["CL05B104KO5NNNC", "CL10A106KP8NNNC"],
+               "yageo_rt": ["RT0402BRD0712KL"],
+               "yageo_cc": ["CC0402KRX5R6BB474"],
+               "uniroyal": ["0402WGF1001TCE", "0603WAF100JT5E"],
+               "jst": ["SM06B-SRSS-TB"]}
+
+
+def _doc(section: str) -> bytes:
+    """Page 1-2 junk (as the real ones are), the ordering section after."""
+    return _pdf([JUNK, JUNK, section, JUNK])
+
+
+def test_series_datasheet_decodes_each_known_family():
+    for family, mpns in FAMILY_MPNS.items():
+        for mpn in mpns:
+            a = datasheet_extract.assess_pdf(_doc(FAMILY_DOCS[family]), mpn)
+            assert a["status"] == "ok" and a["reasons"] == [], (mpn, a)
+
+
+def test_cl_series_datasheet_for_c1525_says_how_it_matched():
+    a = datasheet_extract.assess_pdf(_doc(SAMSUNG), "CL05B104KO5NNNC")
+    assert a["match"]["how"] == "series" and a["match"]["scheme"] == "samsung_cl"
+    assert a["match"]["fields"]["size"] == "05"
+    assert a["match"]["fields"]["dielectric"] == "B"
+    assert a["match"]["fields"]["voltage"] == "O"
+
+
+def test_named_datasheet_says_how_it_matched():
+    assert datasheet_extract.assess_pdf(RIGHT, MPN)["match"]["how"] == "family"
+    whole = _pdf([f"{MPN} datasheet " + "x" * 300])
+    assert datasheet_extract.assess_pdf(whole, MPN)["match"]["how"] == "whole"
+    a = datasheet_extract.assess_pdf(_doc(JST), "SM06B-SRSS-TB")
+    assert a["match"]["how"] == "document" and a["match"]["page"] == 3
+
+
+def test_wrong_family_stays_suspect_for_every_pair():
+    for doc_family, doc in FAMILY_DOCS.items():
+        for family, mpns in FAMILY_MPNS.items():
+            if family == doc_family:
+                continue
+            for mpn in mpns:
+                a = datasheet_extract.assess_pdf(_doc(doc), mpn)
+                assert a["status"] == "suspect", (mpn, doc_family, a)
+                assert "match" not in a, a
+
+
+def test_the_right_series_with_a_field_it_cannot_decode_stays_suspect():
+    for mpn, doc in [("CL77B104KO5NNNC", SAMSUNG),      # no size 77
+                     ("CL05G104KO5NNNC", SAMSUNG),      # no dielectric G
+                     ("CL05B104KZ5NNNC", SAMSUNG),      # no voltage Z
+                     ("CC0402KRX7R6BB474", YAGEO_CC),   # the X5R-only document
+                     ("CC9999KRX5R6BB474", YAGEO_CC),
+                     ("RT9999BRD0712KL", YAGEO_RT),
+                     ("0402WZF1001TCE", UNIROYAL)]:     # no power code WZ
+        a = datasheet_extract.assess_pdf(_doc(doc), mpn)
+        assert a["status"] == "suspect", (mpn, a)
+        assert any(mpn in r for r in a["reasons"]), a
+
+
+def test_a_series_name_alone_decodes_nothing():
+    # names the series word, has no ordering table
+    prose = "CL = Multi layer Ceramic Capacitors, RT series, general catalog"
+    for mpn in ("CL05B104KO5NNNC", "RT0402BRD0712KL"):
+        assert datasheet_extract.assess_pdf(_doc(prose), mpn)["status"] == "suspect"
+
+
+def test_the_whole_mpn_deep_in_another_parts_datasheet_stays_suspect():
+    # another part's document naming this one in passing: no ordering words
+    # on that page. The base family deep in a document never counts.
+    aside = "Decouple the rail with one USBLC6-2SC6 on each input"
+    a = datasheet_extract.assess_pdf(_doc(aside), "USBLC6-2SC6")
+    assert a["status"] == "suspect", a
+    table = "Model No. USBLC6-2SC6X"
+    a = datasheet_extract.assess_pdf(_doc(table), "USBLC6-2P6")
+    assert a["status"] == "suspect", a
+
+
+def test_series_match_is_in_the_index_after_a_fetch():
+    with tempfile.TemporaryDirectory() as d:
+        ws = Path(d)
+        (ws / "parts").mkdir()
+        (ws / "parts" / "parts.json").write_text(json.dumps({"parts": [
+            {"lcsc": "C1525", "mpn": "CL05B104KO5NNNC", "datasheet": WMSC}]}))
+        out, code = datasheet_extract.do_fetch(
+            Namespace(fetch=str(ws), lcsc=None), transport=_serve(_doc(SAMSUNG)))
+        assert code == 0, out
+        idx = json.loads((ws / "parts/datasheets/index.json").read_text())
+        assert idx["C1525"]["status"] == "ok"
+        assert idx["C1525"]["match"]["scheme"] == "samsung_cl"
+
+
+def _assess_ws(d: str, index: dict, pdfs: dict[str, bytes]) -> Path:
+    ws = Path(d)
+    ddir = ws / "parts" / "datasheets"
+    ddir.mkdir(parents=True)
+    (ddir / "index.json").write_text(json.dumps(index))
+    for lcsc, body in pdfs.items():
+        (ddir / f"{lcsc}.pdf").write_bytes(body)
+    return ws
+
+
+def test_assess_writes_a_status_into_old_entries_and_keeps_the_rest():
+    old = {"file": "parts/datasheets/x.pdf", "url": "u", "sha256": "s"}
+    with tempfile.TemporaryDirectory() as d:
+        ws = _assess_ws(d, {
+            "C1525": {**old, "mpn": "CL05B104KO5NNNC"},
+            "C2": {**old, "mpn": "CL05B104KO5NNNC"},
+            "C3": {**old, "mpn": "CL05B104KO5NNNC"}},
+            {"C1525": _doc(SAMSUNG), "C2": _doc(YAGEO_RT)})
+        out, code = datasheet_extract.do_assess(Namespace(assess=str(ws),
+                                                          lcsc=None))
+        assert code == 1, out
+        assert (out["ok"], out["suspect"], out["unassessed"]) == (1, 1, 1), out
+        idx = json.loads((ws / "parts/datasheets/index.json").read_text())
+        assert idx["C1525"]["status"] == "ok" and idx["C1525"]["url"] == "u"
+        assert idx["C2"]["status"] == "suspect" and idx["C2"]["reasons"]
+        # no PDF to read: stays unassessed, never ok
+        assert idx["C3"]["status"] == "unassessed" and idx["C3"]["reasons"]
+
+
+def test_assess_takes_the_mpn_from_parts_json_for_an_entry_without_one():
+    with tempfile.TemporaryDirectory() as d:
+        ws = _assess_ws(d, {"C1525": {"url": "u"}}, {"C1525": _doc(SAMSUNG)})
+        (ws / "parts" / "parts.json").write_text(json.dumps({"parts": [
+            {"lcsc": "C1525", "mpn": "CL05B104KO5NNNC"}]}))
+        out, code = datasheet_extract.do_assess(Namespace(assess=str(ws),
+                                                          lcsc=None))
+        assert code == 0, out
+        idx = json.loads((ws / "parts/datasheets/index.json").read_text())
+        assert idx["C1525"]["status"] == "ok"
+
+
+def test_assess_without_any_index_is_a_bad_workspace():
+    with tempfile.TemporaryDirectory() as d:
+        out, code = datasheet_extract.do_assess(Namespace(assess=d, lcsc=None))
+        assert code == 2 and out["status"] == "error", out

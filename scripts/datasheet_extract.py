@@ -23,11 +23,16 @@ reads the PDF pages); this script owns the deterministic half:
                     anything that isn't a PDF in the end is refused, never
                     written. index.json records pages, text chars per page
                     and status ok|suspect (+ reasons): suspect = the file is
-                    cut off, has no text layer, or pages 1-2 never name the
-                    MPN or its base family (#706); a suspect PDF is kept but
+                    cut off, has no text layer, or nothing ties it to the MPN
+                    (#706, #755: see assess_pdf); a suspect PDF is kept but
                     check_ratings and the ledger never count it verified.
                     exit 0 = every datasheet fetched, 1 = some suspect,
                     refused or missing, 2 = bad workspace.
+  --assess WS       re-read every index.json entry's PDF on disk (or only
+                    --lcsc's) and write its status, with no download. An entry
+                    with no status and no PDF becomes status unassessed;
+                    check_ratings warns about those (#755). exit 0 = all ok,
+                    1 = some suspect or unassessed, 2 = no index.
   --render DIR      with --pdf: render the image-only pages (under
                     IMAGE_ONLY_CHARS of text) and the mechanical-drawing
                     pages to DIR/page-NNN.png with pdftoppm, OCR the
@@ -597,14 +602,63 @@ def mpn_in_text(mpn: str, text: str) -> str | None:
 MIN_CHARS_PER_PAGE = 20
 
 
+# Words on a page that make an MPN found there an entry in a list of parts, not
+# one part named in passing by another part's datasheet.
+_PART_LIST = re.compile(r"part\s*(?:number|no\b)|ordering|model\s*no|type\s*no"
+                        r"|product\s*(?:name|number)", re.I)
+MIN_DOCUMENT_MPN = 6
+
+
+def _ordering_schemes() -> dict:
+    import yaml
+    path = Path(__file__).resolve().parents[1] / "reference" / "ordering_codes.yaml"
+    return yaml.safe_load(path.read_text(encoding="utf-8"))["schemes"]
+
+
+def series_match(mpn: str, text: str) -> tuple[dict | None, str | None]:
+    """(match, None) when `text` names the series of `mpn` and its ordering
+    table decodes every field (reference/ordering_codes.yaml); (None, why) when
+    the series is here but a field is not; (None, None) when no scheme applies."""
+    m_norm, flat = _norm(mpn), re.sub(r"\s+", " ", text)
+    for name, sch in _ordering_schemes().items():
+        m = re.search(sch["mpn"], m_norm)
+        if not m or not all(re.search(r, flat) for r in sch["series"]):
+            continue
+        fields = m.groupdict()
+        lost = [f"{f}={fields[f]}" for f, r in sch["fields"].items()
+                if not re.search(r.replace("{v}", re.escape(fields[f])), flat)]
+        if lost:
+            return None, f"its {name} ordering table has no {', '.join(lost)}"
+        return {"how": "series", "scheme": name, "fields": fields}, None
+    return None, None
+
+
+def match_mpn(mpn: str, texts: list[str]) -> tuple[dict | None, str | None]:
+    """How `texts` (one per page) tie to `mpn`, strongest first: the whole MPN
+    or its base family on pages 1-2; the whole MPN on a later page that lists
+    parts; the series' ordering table decoding it (#755). A base family deeper
+    in the document never counts: other parts' datasheets cite families.
+    Returns (match, why not)."""
+    form = mpn_in_text(mpn, " ".join(texts[:2]))
+    if form:
+        return {"how": "whole" if form == _norm(mpn) else "family",
+                "form": form}, None
+    whole = _norm(mpn)
+    if len(whole) >= MIN_DOCUMENT_MPN:
+        for n, t in enumerate(texts, 1):
+            if whole in _norm(t) and _PART_LIST.search(t):
+                return {"how": "document", "form": whole, "page": n}, None
+    return series_match(mpn, " ".join(texts))
+
+
 def assess_pdf(data: bytes, mpn: str | None = None) -> dict:
     """Is `data` a usable datasheet for `mpn` (#706)? {status: ok|suspect,
-    reasons, pages, chars_per_page, text_chars}. Suspect when the file is cut
-    off (no %%EOF) or does not parse, has no text layer (a scan: nothing to
-    read facts from), or its first two pages never name the MPN or its base
-    family (probably another part's datasheet). With no `mpn` the name check
-    is skipped. A suspect file is kept for a person to look at; no fact read
-    from it counts as verified."""
+    reasons, pages, chars_per_page, text_chars[, match]}. Suspect when the file
+    is cut off (no %%EOF) or does not parse, has no text layer (a scan: nothing
+    to read facts from), or nothing ties it to the MPN (match_mpn: probably
+    another part's datasheet). `match` says what did. With no `mpn` the name
+    check is skipped. A suspect file is kept for a person to look at; no fact
+    read from it counts as verified."""
     import logging
     from io import BytesIO
     logging.getLogger("pypdf").setLevel(logging.ERROR)   # repair chatter
@@ -631,9 +685,15 @@ def assess_pdf(data: bytes, mpn: str | None = None) -> dict:
     if out["pages"] and out["text_chars"] < MIN_CHARS_PER_PAGE * out["pages"]:
         reasons.append(f"no text layer: {out['text_chars']} characters on "
                        f"{out['pages']} page(s), a scan or an image PDF")
-    elif mpn and texts and not mpn_in_text(mpn, " ".join(texts[:2])):
-        reasons.append(f"MPN {mpn} (or its base family) is not in the text "
-                       "of pages 1-2: probably another part's datasheet")
+    elif mpn and texts:
+        match, why = match_mpn(mpn, texts)
+        if match:
+            out["match"] = match
+        else:
+            reasons.append(f"MPN {mpn} (or its base family) is not in the text "
+                           "of pages 1-2 and no ordering table here decodes it"
+                           f"{f' ({why})' if why else ''}: probably another "
+                           "part's datasheet")
     return {"status": "suspect" if reasons else "ok", "reasons": reasons,
             **out}
 
@@ -687,6 +747,101 @@ def fetch_datasheet(url: str, dest: Path, transport=None,
             "sha256": hashlib.sha256(data).hexdigest()}
 
 
+_ASSESSED = ("status", "reasons", "pages", "chars_per_page", "text_chars",
+             "match")
+
+
+def _index(ddir: Path) -> dict:
+    try:
+        return json.loads((ddir / "index.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def suspect_datasheets(parts_dir: Path, lcscs) -> dict[str, str]:
+    """{lcsc: why} for each part whose datasheet PDF is a placeholder or whose
+    index.json entry says suspect (truncated, no text layer, nothing ties it to
+    the MPN; #706)."""
+    ddir = parts_dir / "datasheets"
+    idx = _index(ddir)
+    out = {}
+    for lcsc in lcscs:
+        ent = idx.get(lcsc)
+        if isinstance(ent, dict) and ent.get("status") == "suspect":
+            out[lcsc] = "; ".join(ent.get("reasons") or ["marked suspect"])
+            continue
+        pdf = ddir / f"{lcsc}.pdf"
+        if pdf.is_file():
+            why = stub_notice(pdf.read_bytes())
+            if why:
+                out[lcsc] = f"host placeholder, not a datasheet ({why})"
+    return out
+
+
+def unassessed_datasheets(parts_dir: Path, lcscs) -> list[str]:
+    """Parts with a datasheet nobody has judged (#755): an index.json entry
+    from before #706, one --assess had no PDF for, or a PDF with no entry. Not
+    read here: parsing 43 PDFs takes 42 s, so `--assess` writes the verdict."""
+    ddir = parts_dir / "datasheets"
+    idx = _index(ddir)
+    out = []
+    for lcsc in sorted(lcscs):
+        ent = idx.get(lcsc)
+        if ent is None:
+            if (ddir / f"{lcsc}.pdf").is_file():
+                out.append(lcsc)
+        elif not isinstance(ent, dict) \
+                or ent.get("status") not in ("ok", "suspect"):
+            out.append(lcsc)
+    return out
+
+
+def do_assess(args) -> tuple[dict, int]:
+    ws = Path(args.assess)
+    ddir = ws / "parts" / "datasheets"
+    idx = _index(ddir)
+    if not idx:
+        return {"script": "datasheet_extract", "status": "error",
+                "error": f"{ddir / 'index.json'}: no entries to assess"}, 2
+    mpns = {}
+    pj = ws / "parts" / "parts.json"
+    if pj.is_file():
+        mpns = {str(p.get("lcsc")): p.get("mpn") for p in json.loads(
+            pj.read_text(encoding="utf-8")).get("parts") or []}
+    rows = []
+    for lcsc, ent in sorted(idx.items()):
+        if (args.lcsc and lcsc != args.lcsc) or not isinstance(ent, dict):
+            continue
+        pdf = ddir / f"{lcsc}.pdf"
+        if pdf.is_file():
+            mpn = ent.get("mpn") or mpns.get(lcsc)
+            data = pdf.read_bytes()
+            a = assess_pdf(data, mpn)
+            why = stub_notice(data)
+            if why:
+                a.update(status="suspect", reasons=[
+                    f"host placeholder, not a datasheet ({why})"])
+            idx[lcsc] = {**{k: v for k, v in ent.items()
+                            if k not in _ASSESSED}, **a}
+        elif ent.get("status") not in ("ok", "suspect"):
+            # the verdict of a PDF since gone still stands; none was ever made
+            idx[lcsc] = {**ent, "status": "unassessed", "reasons": [
+                "no PDF on disk: run --fetch to read it"]}
+        e = idx[lcsc]
+        rows.append({"lcsc": lcsc, "mpn": e.get("mpn") or mpns.get(lcsc),
+                     "status": e["status"], "reasons": e.get("reasons") or [],
+                     "match": e.get("match")})
+    (ddir / "index.json").write_text(
+        json.dumps(idx, indent=1, ensure_ascii=True, sort_keys=True) + "\n",
+        encoding="utf-8")
+    counts = {st: sum(r["status"] == st for r in rows)
+              for st in ("ok", "suspect", "unassessed")}
+    clean = counts["ok"] == len(rows)
+    return {"script": "datasheet_extract",
+            "status": "pass" if clean else "violations", **counts,
+            "of": len(rows), "datasheets": rows}, 0 if clean else 1
+
+
 def do_fetch(args, transport=None) -> tuple[dict, int]:
     ws = Path(args.fetch)
     pj = ws / "parts" / "parts.json"
@@ -724,8 +879,7 @@ def do_fetch(args, transport=None) -> tuple[dict, int]:
                 old[r["lcsc"]] = {
                     **{k: r.get(k) for k in ("mpn", "file", "url",
                                              "final_url", "bytes", "sha256")},
-                    **{k: a[k] for k in ("status", "reasons", "pages",
-                                         "chars_per_page", "text_chars")}}
+                    **{k: a[k] for k in _ASSESSED if k in a}}
         idx.write_text(json.dumps(old, indent=1, ensure_ascii=True,
                                   sort_keys=True) + "\n", encoding="utf-8")
     return {"script": "datasheet_extract",
@@ -824,6 +978,9 @@ def main(argv: list[str] | None = None) -> int:
     mode.add_argument("--fetch", metavar="WS",
                       help="download parts.json datasheets into "
                            "WS/parts/datasheets/")
+    mode.add_argument("--assess", metavar="WS",
+                      help="write a status into WS/parts/datasheets/index.json "
+                           "from the PDFs on disk")
     mode.add_argument("--validate", help="validate a candidate extraction JSON")
     mode.add_argument("--schema", action="store_true", help="print the JSON schema")
     mode.add_argument("--app-note", help="extract text + emit a KNOWLEDGE "
@@ -839,7 +996,7 @@ def main(argv: list[str] | None = None) -> int:
                     help="jlc_capabilities design_rules row")
     ap.add_argument("--needs", help="--implications: JSON needs object")
     ap.add_argument("--lcsc", help="tag the output with this LCSC id (--pdf); "
-                                   "fetch only this part (--fetch)")
+                                   "fetch or assess only this part (--fetch, --assess)")
     ap.add_argument("--render", metavar="DIR",
                     help="--pdf: render image-only and drawing pages to "
                          "PNGs in DIR (pdftoppm), OCR the image-only ones "
@@ -857,6 +1014,8 @@ def main(argv: list[str] | None = None) -> int:
             payload, code = do_pdf(args)
         elif args.fetch:
             payload, code = do_fetch(args)
+        elif args.assess:
+            payload, code = do_assess(args)
         elif args.app_note:
             payload, code = do_app_note(args)
         elif args.screen:
