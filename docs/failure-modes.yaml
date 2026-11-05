@@ -547,7 +547,7 @@ modes:
   catch: extracted ratings vs net voltage and current
   coverage:
     script: check_ratings
-    rule: rating_over_voltage,rating_over_current
+    rule: rating_over_voltage,rating_over_current,rating_regulator_output
     level: L2
   target_level: L2
   gap: only parts with extraction
@@ -580,7 +580,8 @@ modes:
     level: L1
   target_level: L2
   gap: warning only, 3-18 per board, bar a rated part whose parts.json row is
-    empty (diode, fuse, regulator, cap), which blocks as rating_no_attributes
+    empty (diode, fuse, regulator, cap), which blocks as rating_no_attributes;
+    a filled regulator's row is judged against its rails but stays unverified
   hit_on:
   - all
   sources:

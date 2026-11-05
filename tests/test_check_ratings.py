@@ -708,3 +708,174 @@ def test_no_attributes_is_unknown_in_the_ledger_not_failed(tmp_path):
     rating = next(f for f in facts["ledger_facts"]
                   if f["subject"] == "D101" and f["kind"] == "rating")
     assert rating["status"] == "unknown" and "parts_enrich" in rating["value"]
+
+
+# ------------------------------------------- regulator input and output (#708)
+
+def _reg_ws(tmp_path, attrs, pads, names=None, ext=None, **row):
+    """A regulator U4 (C9) whose row holds attrs ({name: value}); names:
+    {pad: pad name} in a netlist beside the board."""
+    bom = [{"lcsc": "C9", "mpn": row.pop("mpn", "AP2112"),
+            "attributes": [{"name": k, "value": v} for k, v in attrs.items()],
+            "description": "LDO regulator", **row}]
+    ws = _ws(tmp_path, [("U4", "C9", pads)], {"C9": ext} if ext else {}, bom)
+    if names:
+        nodes = " ".join(
+            f'(net (name "{pads[p]}") (node (ref "U4") (pin "{p}") '
+            f'(pinfunction "{n}")))' for p, n in names.items())
+        (ws / "kicad" / "board.net").write_text(f"(export (nets {nodes}))")
+    return ws
+
+
+LDO_PADS = {"1": "+12V", "2": "GND", "3": "+3V3"}
+
+
+def test_6v_ldo_on_12v_blocks_naming_part_rating_and_rail(tmp_path):
+    """The known answer of #708: its row says 6 V, its rail says 12 V."""
+    ws = _reg_ws(tmp_path, {"Input Voltage(Max)": "6V", "Voltage Rated": "6V"},
+                 LDO_PADS)
+    errs = _errors(_run(ws))
+    assert len(errs) == 1
+    v = errs[0]
+    assert v["kind"] == "rating_over_voltage" and v["refs"] == ["U4"]
+    assert v["net"] == "+12V" and v["limit_v"] == 6 and v["net_v"] == 12
+    for word in ("U4", "AP2112", "6 V", "+12V", "12 V", "Input Voltage(Max)"):
+        assert word in v["msg"]
+
+
+def test_16v_ldo_on_12v_passes_and_stays_unrated_for_its_other_pins(tmp_path):
+    ws = _reg_ws(tmp_path, {"Input Voltage(Max)": "16V", "Voltage Rated": "16V"},
+                 LDO_PADS)
+    p = _run(ws)
+    assert _errors(p) == []
+    # only the input was judged: this does not say the part is verified
+    assert [v["kind"] for v in p["violations"]] == ["rating_unrated"]
+
+
+@pytest.mark.parametrize("name,value,errs", [
+    ("Voltage - Supply", "2.5V~5.5V", 1),    # the top of a range rates it
+    ("Voltage - Supply", "4.5V~28V", 0),
+    ("Voltage - Supply", "500mV~5.5V", 1),   # not 500 V
+    ("Voltage - Input(DC)", "5.5V~65V", 0),
+    ("Operating Voltage", "5.7V", 1),
+    ("Voltage Rating", "4.5V~60V", 0),
+    ("Output Voltage", "3.3V", 0),           # not an input rating
+    ("Dropout Voltage", "250mV", 0),
+])
+def test_input_rating_read_from_the_names_real_rows_use(
+        tmp_path, name, value, errs):
+    ws = _reg_ws(tmp_path, {name: value}, LDO_PADS)
+    assert len(_errors(_run(ws))) == errs
+
+
+def test_input_rating_prefers_the_input_row_over_a_generic_one(tmp_path):
+    ws = _reg_ws(tmp_path, {"Voltage Rated": "40V",
+                            "Input Voltage(Max)": "6V"}, LDO_PADS)
+    assert [v["limit_v"] for v in _errors(_run(ws))] == [6]
+
+
+@pytest.mark.parametrize("row", [
+    {"mpn": "XYZ1", "description": "boost converter"},
+    {"mpn": "XYZ2", "description": "step-up DC-DC"},
+    {"mpn": "XYZ3", "description": "DC-DC", "extra": {"Output Voltage": "24V"}},
+])
+def test_unnamed_step_up_is_not_judged_by_its_highest_net(tmp_path, row):
+    """Its output rail is above its input rating on purpose, and with no pad
+    names nothing says which net feeds it."""
+    attrs = {"Voltage - Supply": "5.5V", **row.pop("extra", {})}
+    ws = _reg_ws(tmp_path, attrs, {"1": "+3V7", "2": "GND", "3": "+24V"}, **row)
+    assert _errors(_run(ws)) == []
+
+
+def test_named_pads_judge_the_input_not_the_highest_net(tmp_path):
+    attrs = {"Voltage - Supply": "5.5V", "Output Voltage": "2.2V~24V"}
+    pads = {"1": "+3V7", "2": "GND", "3": "+24V"}
+    names = {"1": "VIN_1", "2": "GND_2", "3": "VOUT_3"}
+    ws = _reg_ws(tmp_path, attrs, pads, names, description="boost converter")
+    assert _errors(_run(ws)) == []
+    ws2 = _reg_ws(tmp_path / "b", attrs, {**pads, "1": "+12V"}, names,
+                  description="boost converter")
+    assert [(v["net"], v["pin"]) for v in _errors(_run(ws2))] == \
+        [("+12V", "U4.1")]
+
+
+def test_enable_pin_above_the_input_rating_blocks(tmp_path):
+    pads = {"1": "+5V", "2": "GND", "3": "+12V", "5": "+3V3"}
+    names = {"1": "IN_1", "2": "GND_2", "3": "EN_3", "5": "OUT_5"}
+    ws = _reg_ws(tmp_path, {"Voltage - Supply": "6V"}, pads, names)
+    errs = _errors(_run(ws))
+    assert [(v["net"], v["pin"]) for v in errs] == [("+12V", "U4.3")]
+    assert "EN" in errs[0]["msg"]
+
+
+def test_enable_tied_to_an_over_rated_input_is_one_finding(tmp_path):
+    pads = {"1": "+12V", "2": "GND", "3": "+12V", "5": "+3V3"}
+    names = {"1": "IN_1", "2": "GND_2", "3": "EN_3", "5": "OUT_5"}
+    ws = _reg_ws(tmp_path, {"Voltage - Supply": "6V"}, pads, names)
+    assert len(_errors(_run(ws))) == 1
+
+
+def test_enable_through_a_resistor_is_not_held_to_the_rail(tmp_path):
+    """A pull-up's volts are a guess at the pin: the supply rule in run_check
+    says the same."""
+    bom = [{"lcsc": "C9", "mpn": "AP2112", "description": "LDO regulator",
+            "attributes": [{"name": "Voltage - Supply", "value": "6V"}]}]
+    pads = {"1": "+5V", "2": "GND", "3": "/EN", "5": "+3V3"}
+    ws = _ws(tmp_path, [("U4", "C9", pads),
+                        ("R1", "", {"1": "/EN", "2": "+12V"}, "R_0402")],
+             {}, bom)
+    (ws / "kicad" / "board.net").write_text(
+        '(export (nets (net (name "/EN") (node (ref "U4") (pin "3") '
+        '(pinfunction "EN_3")))))')
+    assert [v for v in _errors(_run(ws)) if v["refs"] == ["U4"]] == []
+
+
+@pytest.mark.parametrize("attrs,mpn,out_net,errs", [
+    ({"Voltage - Supply": "6V", "Output Voltage": "3.3V"}, "AP2112", "+5V", 1),
+    ({"Voltage - Supply": "6V", "Output Voltage": "3.3V"}, "AP2112", "+1V8", 1),
+    ({"Voltage - Supply": "6V", "Output Voltage": "3.3V"}, "AP2112", "+3V3", 0),
+    # the MPN says it when the row doesn't
+    ({"Voltage - Supply": "6V"}, "LP5907-3.3", "+5V", 1),
+    ({"Voltage - Supply": "6V"}, "LP5907-3.3", "+3V3", 0),
+    # an adjustable part reaches anything in its range
+    ({"Voltage - Supply": "28V", "Output Voltage": "768mV~7V"}, "T1", "+5V", 0),
+    ({"Voltage - Supply": "28V", "Output Voltage": "768mV~7V"}, "T1", "+12V", 1),
+    ({"Voltage - Supply": "28V"}, "T1", "+5V", 0),
+])
+def test_output_rail_against_what_the_row_says_it_makes(
+        tmp_path, attrs, mpn, out_net, errs):
+    pads = {"1": "+24V" if "28V" in attrs["Voltage - Supply"] else "+5V",
+            "2": "GND", "3": out_net}
+    names = {"1": "IN_1", "2": "GND_2", "3": "OUT_3"}
+    if out_net == pads["1"]:
+        pads["1"] = "+5V0"
+    ws = _reg_ws(tmp_path, attrs, pads, names, mpn=mpn)
+    found = [v for v in _errors(_run(ws))
+             if v["kind"] == "rating_regulator_output"]
+    assert len(found) == errs
+    if errs:
+        assert out_net in found[0]["msg"] and "U4" in found[0]["msg"]
+
+
+def test_output_needs_a_named_pad(tmp_path):
+    """No pad names: nothing says which net it drives, so it isn't judged."""
+    ws = _reg_ws(tmp_path, {"Voltage - Supply": "6V", "Output Voltage": "3.3V"},
+                 {"1": "+5V", "2": "GND", "3": "+1V8"})
+    assert _errors(_run(ws)) == []
+
+
+def test_extraction_outranks_the_attribute(tmp_path):
+    """Extracted parts are judged pin by pin from the datasheet's rows."""
+    ws = _reg_ws(tmp_path, {"Voltage - Supply": "6V"},
+                 {"1": "+3V3", "2": "GND", "3": "/A"}, ext=MCU)
+    assert _errors(_run(ws)) == []
+
+
+def test_over_rated_regulator_fails_its_ledger_fact(tmp_path):
+    ws = _reg_ws(tmp_path, {"Input Voltage(Max)": "6V"}, LDO_PADS)
+    _, got = cr.run_check(ws / "kicad" / "board.kicad_pcb", ws / "parts",
+                          None, None)
+    rating = {f["subject"]: f for f in got["ledger_facts"]
+              if f["kind"] == "rating"}
+    assert rating["U4"]["status"] == "failed"
+    assert "+12V" in rating["U4"]["value"]
