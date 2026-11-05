@@ -23,6 +23,9 @@ reproducible, and redistributed under their owners' own terms, not under MIT:
 - Footprints and symbols under `<board>/lib/aiee.pretty/` and `<board>/lib/*.kicad_sym`
   in the boards repo that were pulled from LCSC/EasyEDA - derived from manufacturer
   and EasyEDA data.
+- `scripts/lib/freerouting_2_2_4/`: one source file of Freerouting 2.2.4, changed by
+  this project, and its compiled class - GPL-3.0, Freerouting's own licence
+  (https://github.com/freerouting/freerouting). Its README says what changed.
 
 Rights holders: to have any of this material removed, open an issue on the repository;
 it will be taken down promptly.
