@@ -39,7 +39,8 @@ Checks (all thresholds from reference/jlc_capabilities.yaml, keyed
            cap's cathode/+ on the board's, with the shipped CPL (fab dir's
            CPL.csv, else this run's). A wrong part, and a part with no model
            or no fit, is an ERROR (cpl_rotation / cpl_no_model); a model
-           centre off the board's by > 0.5 mm is a warning (cpl_offset). Parts
+           centre off the board's by > 0.5 mm is a warning (cpl_offset); over 0.4 x
+           the pad pitch on a fine-pitch part (0.5 mm BGA: 0.2 mm) an ERROR. Parts
            on the bottom are fitted mirrored and read from below; the rule is
            the community exporters' plus the geometry, not JLC's, so any bottom
            part that passes also raises one warning for the run,
@@ -1172,13 +1173,14 @@ def check_placement(pcb: Path, cpl: Path, parts: Path | None,
             pass
         elif r["verdict"] in cpl_verify.FAIL_VERDICTS:
             kind = ("cpl_no_model" if r["verdict"] in ("no_model", "no_fit")
+                    else "cpl_offset" if r["verdict"] == "wrong_offset"
                     else "cpl_rotation")
             vios.append(checklib.violation(
                 CHECK, "error", where, None, None, [r["ref"]],
                 f"{r['ref']} {r['verdict']}: {r.get('why', '')}", SOURCE,
                 kind=kind, verdict=r["verdict"], lcsc=r.get("lcsc"),
                 cpl_rot=r.get("cpl_rot"), expected_rot=r.get("expected_rot")))
-        elif r.get("offset_mm", 0) > cpl_verify.OFFSET_WARN_MM:
+        elif r.get("offset_mm", 0) > r.get("offset_limit_mm", cpl_verify.OFFSET_WARN_MM):
             vios.append(checklib.violation(
                 CHECK, "warning", where, None, None, [r["ref"]],
                 f"{r['ref']}: the LCSC model's pad centre sits "

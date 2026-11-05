@@ -1056,3 +1056,71 @@ def test_imported_led_footprint_keeps_its_models_numbering():
 ])
 def test_led_rule_stays_narrow(ref, pads, name):
     assert cv.board_roles(_kfp(ref, pads, name=name), None) == {}
+
+
+# ------------------------------------- offset limit scales with pad pitch (#683)
+
+def _grid(pitch, n=3, first="A1"):
+    """An n x n ball grid at `pitch`, centred, balls named A1.."""
+    c = (n - 1) / 2
+    return [(f"{chr(65 + r)}{k + 1}", (k - c) * pitch, (r - c) * pitch)
+            for r in range(n) for k in range(n)]
+
+
+def _row_at(pads, off, ref="U1"):
+    """check_part with the CPL `off` mm (in x) from the footprint origin; the
+    model's pads are the board's, so only the offset can fail."""
+    fp = cv.Footprint(ref, "X:PART", 10.0, 10.0, 0.0, "top",
+                      [cv.KPad(n, x, y, 0.3, 0.3) for n, x, y in pads])
+    return cv.check_part(fp, _model(pads), {"rot": 0.0, "x": 10.0 + off, "y": 10.0})
+
+
+def test_offset_limit_scales_with_pad_pitch():
+    """A 0.5 mm BGA 0.24 mm off its balls fails; a 1206 0.24 mm off may pass."""
+    assert cv.offset_limit_mm(_kfp("U1", _grid(0.5))) == pytest.approx(0.2)
+    assert cv.offset_limit_mm(_kfp("U1", _grid(0.8))) == pytest.approx(0.32)
+    assert cv.offset_limit_mm(_kfp("R1", [("1", -1.5, 0), ("2", 1.5, 0)])) == cv.OFFSET_WARN_MM
+    bga = _row_at(_grid(0.5), 0.24)
+    assert bga["offset_mm"] == pytest.approx(0.24, abs=1e-3)
+    assert bga["verdict"] == "wrong_offset" and bga["verdict"] in cv.FAIL_VERDICTS
+    assert _row_at(_grid(0.5), 0.15)["verdict"] == "ok"
+    r1206 = _row_at([("1", -1.5, 0), ("2", 1.5, 0)], 0.24, "R1")
+    assert r1206["verdict"] == "ok" and r1206["offset_mm"] == pytest.approx(0.24, abs=1e-3)
+    # past the flat limit a coarse part is still only a warning
+    assert _row_at([("1", -1.5, 0), ("2", 1.5, 0)], 0.6, "R1")["verdict"] == "ok"
+
+
+def test_fine_pitch_row_carries_its_limit():
+    row = _row_at(_grid(0.5), 0.24)
+    assert row["offset_limit_mm"] == pytest.approx(0.2)
+
+
+# ------------------------------- render: BGA pin-1 marker, no invented K (#683, #673)
+
+def test_bga_pin1_is_a1_else_lowest_row_then_column():
+    mk = lambda pads: cv.Footprint("U1", "X:BGA", 0, 0, 0, "top",
+                                   [cv.KPad(n, x, y, 0.3, 0.3) for n, x, y in pads])
+    assert cpl_render.bga_pin1(mk(_grid(0.5))).number == "A1"
+    no_a1 = [p for p in _grid(0.5) if p[0] != "A1"]
+    assert cpl_render.bga_pin1(mk(no_a1)).number == "A2"
+    no_row_a = [p for p in _grid(0.5, 4) if p[0][0] != "A"]
+    assert cpl_render.bga_pin1(mk(no_row_a)).number == "B1"
+    assert cpl_render.bga_pin1(mk([("1", 0, 0), ("2", 1, 0)])) is None
+
+
+def test_polar_without_roles_is_unknown_not_k(ws, tmp_path):
+    pcb, cache = ws
+    idx = cpl_render.render(pcb, _cpl(U1=90, U2=180, D1=0), LCSC, cache,
+                            tmp_path / "r", fetch=False)
+
+    fp = cv.board_footprints(pcb)["U1"]
+    assert cpl_render.polar_label({}, fp) == ("1", "?")
+
+
+def test_render_marks_pin1_on_a_bga(tmp_path):
+    pcb = tmp_path / "b.kicad_pcb"
+    pcb.write_text("(kicad_pcb (version 20240108) " + _fp(
+        "U9", "Package_BGA:BGA-9", 10, 10, 0, _grid(0.5), size=(0.3, 0.3)) + ")")
+    idx = cpl_render.render(pcb, {"U9": {"x": 10, "y": 10, "rot": 0.0, "layer": "Top"}},
+                            {}, tmp_path / "cache", tmp_path / "r", fetch=False)
+    assert idx["parts"]["U9"]["bga_pin1"] == "A1"
