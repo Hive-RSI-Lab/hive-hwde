@@ -105,73 +105,8 @@
    "net": "+3V3",
    "refs": [],
    "pos": [
-    65.885,
-    202.947
-   ],
-   "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
     59.487,
     214.457
-   ],
-   "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    138.387,
-    153.852
-   ],
-   "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    78.098,
-    195.143
-   ],
-   "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    92.564,
-    180.695
-   ],
-   "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    123.742,
-    142.317
    ],
    "kind": "undersized_track",
    "verdict": "?",
@@ -209,60 +144,8 @@
    "net": "+3V3",
    "refs": [],
    "pos": [
-    108.807,
-    179.467
-   ],
-   "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
     99.88,
     142.65
-   ],
-   "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    108.425,
-    142.6
-   ],
-   "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    67.0,
-    198.815
-   ],
-   "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    115.733,
-    152.469
    ],
    "kind": "undersized_track",
    "verdict": "?",
@@ -287,45 +170,6 @@
    "net": "+3V3",
    "refs": [],
    "pos": [
-    50.537,
-    185.792
-   ],
-   "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    106.673,
-    143.823
-   ],
-   "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    107.033,
-    180.673
-   ],
-   "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
     59.687,
     214.407
    ],
@@ -339,34 +183,8 @@
    "net": "+3V3",
    "refs": [],
    "pos": [
-    134.364,
-    155.229
-   ],
-   "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
     78.541,
     193.323
-   ],
-   "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    149.49,
-    188.97
    ],
    "kind": "undersized_track",
    "verdict": "?",
@@ -404,34 +222,8 @@
    "net": "+3V3",
    "refs": [],
    "pos": [
-    48.721,
-    184.863
-   ],
-   "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
     60.037,
     214.607
-   ],
-   "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    146.109,
-    135.053
    ],
    "kind": "undersized_track",
    "verdict": "?",
@@ -469,190 +261,8 @@
    "net": "+3V3",
    "refs": [],
    "pos": [
-    107.033,
-    180.998
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    108.193,
-    142.372
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    147.374,
-    191.048
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    149.49,
-    189.2
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    108.521,
-    179.257
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    115.733,
-    152.794
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    49.073,
-    184.68
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    145.784,
-    135.053
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    67.0,
-    199.14
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    91.425,
-    170.433
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    118.979,
-    144.483
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
     50.137,
     214.107
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    144.097,
-    188.584
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    120.587,
-    147.297
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    123.417,
-    142.317
    ],
    "kind": "insufficient_transition_vias",
    "verdict": "?",
@@ -692,97 +302,6 @@
    "pos": [
     60.437,
     215.107
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    92.564,
-    181.02
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    50.537,
-    186.117
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    118.979,
-    141.911
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    106.673,
-    144.148
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    68.979,
-    197.411
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    138.387,
-    154.177
-   ],
-   "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
-  },
-  {
-   "gate": "verify",
-   "check": "check_current",
-   "net": "+3V3",
-   "refs": [],
-   "pos": [
-    94.48,
-    171.789
    ],
    "kind": "insufficient_transition_vias",
    "verdict": "?",
