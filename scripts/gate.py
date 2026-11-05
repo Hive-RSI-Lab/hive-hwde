@@ -77,6 +77,12 @@ U5 additions (codex H9 - durable waivers):
    WORKSPACE reports/ dir (releaselib.waivers_for_input; LEARNINGS
    2026-08-08 - a waiver file in the obvious place was silently ignored).
 
+#731: a waiver file of the wrong shape never ends in a traceback. An entry
+that isn't an object, or whose `refs` isn't a list of strings ("U1" included),
+goes in `waivers_invalid` by index and matches nothing, on every gate; a strict
+gate fails on it. A file with no list of waivers is refused (exit 2) with one
+message.
+
 #677: a valid waiver that matches no finding in the report (a mistyped or
 renamed net, a finding since fixed) used to do nothing and say nothing. It is
 now named in the result as `waivers_unmatched` and on stderr; the grade does
@@ -346,17 +352,28 @@ def run_verify(board: Path, strict: bool = False) -> dict:
     return summary
 
 
+class WaiverFileRefused(RuntimeError):
+    """A sidecar with no list of waivers to grade. main() reports the message
+    alone: the file is what's wrong, so a traceback says nothing (#731)."""
+
+
 def load_waivers(path: Path) -> list[dict]:
     """Load and validate a waiver sidecar. Waivers are HUMAN artifacts: every
     entry must carry a non-empty `reason` and `approved` (who/when) that is
     not a placeholder (checklib.approval_problem: PENDING, TBD, N/A ...),
     and at least one of check/kind to match on - else the gate errors
-    (exit 2)."""
+    (exit 2). So does a file whose top level isn't an object holding a
+    `waivers` list (WaiverFileRefused). An entry that isn't an object passes
+    through for evaluate() to grade, with its index, in `waivers_invalid`."""
     data = json.loads(path.read_text(encoding="utf-8"))
-    waivers = data.get("waivers")
+    waivers = data.get("waivers") if isinstance(data, dict) else None
     if not isinstance(waivers, list):
-        raise RuntimeError(f"{path}: no 'waivers' list")
+        raise WaiverFileRefused(
+            f"{path}: no 'waivers' list - a waiver file is an object holding "
+            f"one, got {data!r:.80}")
     for i, w in enumerate(waivers):
+        if not isinstance(w, dict):
+            continue
         if not str(w.get("reason") or "").strip() \
                 or not str(w.get("approved") or "").strip():
             raise RuntimeError(
@@ -376,7 +393,10 @@ def waiver_matches(w: dict, v: dict) -> bool:
     empty set is a subset of everything, so any ref-scoped waiver used to
     swallow every anonymous finding of the same kind - the rf-de-20m
     footgun). A waiver carrying `pos` additionally requires the finding to
-    sit within releaselib.POS_TOL_MM of it."""
+    sit within releaselib.POS_TOL_MM of it. An entry of a bad shape
+    (releaselib.waiver_shape_problem) matches nothing."""
+    if releaselib.waiver_shape_problem(w):
+        return False
     if w.get("check") and v.get("check") != w["check"] \
             and v.get("source") != w["check"]:
         return False
@@ -437,13 +457,14 @@ def evaluate(gate_name: str, gate: dict, report: dict,
             # entry must bind artifact hash + checker version + expiry and
             # all must validate against this report.
             probs = releaselib.durable_waiver_problems(w, report, i) \
-                if strict else releaselib.waiver_validity(w, report)
+                if strict else releaselib.waiver_validity(w, report, i)
             if probs:
                 # a waiver whose bindings no longer hold does not match
                 # anything - surfaced, never silently applied
+                named = w if isinstance(w, dict) else {}
                 invalid_waivers.append(
                     {"index": i,
-                     "waiver": {k: w.get(k)
+                     "waiver": {k: named.get(k)
                                 for k in ("check", "kind", "net", "refs")},
                      "problems": probs})
             else:
@@ -808,6 +829,10 @@ def main(argv: list[str] | None = None) -> int:
         if result["status"] == "pass" and args.commit:
             result["commit_result"] = git_commit_on_pass(
                 args.commit, commit_repo(eff_input), input_file=eff_input)
+    except WaiverFileRefused as exc:
+        print(json.dumps({"script": "gate", "status": "error",
+                          "error": str(exc)}))
+        return 2
     except Exception:
         print(json.dumps({"script": "gate", "status": "error",
                           "error": traceback.format_exc()}))

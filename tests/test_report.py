@@ -1323,6 +1323,18 @@ def test_verify_waivers_the_gate_refuses_are_a_warning(tmp_path, capsys):
     assert any("JSONDecodeError" in w for w in payload["warnings"])
 
 
+def test_verify_waiver_entry_not_an_object_is_a_warning(tmp_path, capsys):
+    """#731: the gate grades this entry instead of refusing the file; the
+    report still says the file can't be read rather than raising."""
+    ws = make_workspace(tmp_path)
+    _waivers(ws, ["x"])
+    code, payload, text = _tex(tmp_path, capsys, ws)
+    assert code == 0
+    assert any("reports/verify-waivers.json could not be read" in w
+               and "waiver 0" in w for w in payload["warnings"])
+    assert r"\emph{reports/verify-waivers.json could not be read" in text
+
+
 def test_highlight_flags_verify_waivers_with_a_cut_reason(tmp_path, capsys):
     ws = make_workspace(tmp_path)
     long = dict(FULL_WAIVER, reason="word " * 100)

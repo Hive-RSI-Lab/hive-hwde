@@ -505,7 +505,8 @@ def verify_waivers(ws: Path) -> tuple[list[dict], str | None, str | None]:
     parent of state.json holding state.json is the workspace itself), loaded
     and checked by gate.load_waivers. Returns (waivers, the file's path
     relative to the workspace, None); ([], path, error) for a file the gate
-    would refuse; ([], None, None) for a board with none."""
+    would refuse or with an entry that isn't an object; ([], None, None) for a
+    board with none."""
     from lib import releaselib
     path = releaselib.waivers_for_input(ws / "state.json", VERIFY_WAIVERS)
     if path is None:
@@ -516,9 +517,13 @@ def verify_waivers(ws: Path) -> tuple[list[dict], str | None, str | None]:
         rel = str(path)
     import gate  # sibling script, loaded only for a board with waivers
     try:
-        return gate.load_waivers(path), rel, None
-    except (OSError, ValueError, RuntimeError, AttributeError) as exc:
+        waivers = gate.load_waivers(path)
+    except (OSError, ValueError, RuntimeError) as exc:
         return [], rel, f"{type(exc).__name__}: {exc}"
+    for i, w in enumerate(waivers):
+        if not isinstance(w, dict):
+            return [], rel, f"waiver {i}: entry must be an object, got {w!r}"
+    return waivers, rel, None
 
 
 def waiver_item(w: dict, reason_cap: int | None = None) -> str:
