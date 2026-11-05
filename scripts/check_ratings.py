@@ -69,7 +69,9 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
  - rating_no_attributes (error): a rated part (diode, fuse, regulator, cap)
    whose parts.json row has empty `attributes` and which nothing else rates:
    its limit was never compared, so the gate fails until the row is filled
-   (parts_enrich.py). One per BOM code, naming its refs. The check reads
+   (parts_enrich.py). A U/VR/IC part whose MPN carries a known family's output
+   code counts as a regulator here, whatever its words. One per BOM code,
+   naming its refs. The check reads
    nothing but the row: no cache, no network. Its ledger fact stays unknown.
  - rating_over_voltage, also: a chip resistor's volts across it above its
    limiting element voltage (parts.json Voltage-Supply(Max), else the chip
@@ -275,7 +277,8 @@ def reg_out_volts(mpn: str) -> float | None:
 # A fixed regulator's output, coded in tenths of a volt inside the MPN of a
 # family known to use the code. Not reg_out_volts: that one also names rails
 # and regulators for the whole check, while these only ever judge a part's
-# output pin (extracted_output_findings, regulator_findings).
+# output pin (extracted_output_findings, regulator_findings) or say a bare
+# row needs filling (no_attribute_findings).
 _REG_CODE_RES = [re.compile(p) for p in (
     r"RT9\d{3}[A-Z]?-(\d\d)",               # Richtek: RT9080-33GJ5
     r"(?:TLV|TPS)7\d\d(\d\d)(?!\d)",        # TI: TLV75733P, TPS78233
@@ -286,7 +289,7 @@ _REG_CODE_RES = [re.compile(p) for p in (
 )]
 # not 01 or 00: those families' adjustable parts
 _REG_CODES = {"10", "11", "12", "15", "18", "25", "27", "28", "29", "30", "31",
-              "33", "36", "50"}
+              "33", "36", "45", "50"}
 
 
 def reg_out_code(mpn: str) -> float | None:
@@ -1228,10 +1231,11 @@ def no_attribute_findings(board: list[dict], bom_by_lcsc: dict, exts: dict,
     """Rated parts whose parts.json row has an empty `attributes` and which
     nothing else rates: one blocking finding per BOM code, since that is what
     gets filled (#675). A diode, cap or regulator with an extraction is rated
-    by it; a fuse is not, fuse_findings reads only attributes. A part with no
-    row at all is not here: there is nothing to fill yet (the scaffold's empty
-    parts/). This never reads the cache or the network, so the same board
-    gives the same answer anywhere."""
+    by it; a fuse is not, fuse_findings reads only attributes. A known family's
+    MPN code makes a U/VR/IC part a regulator here, as in regulator_findings
+    (#751). A part with no row at all is not here: there is nothing to fill yet
+    (the scaffold's empty parts/). This never reads the cache or the network,
+    so the same board gives the same answer anywhere."""
     by_code: dict[str, tuple[list[str], set[str]]] = {}
     for b in board:
         bom = bom_by_lcsc.get(b["lcsc"])
@@ -1248,7 +1252,9 @@ def no_attribute_findings(board: list[dict], bom_by_lcsc: dict, exts: dict,
             what = "diode"
         elif re.match(r"^C\d", ref):
             what = "capacitor"
-        elif is_regulator(b, bom):
+        elif is_regulator(b, bom) or (
+                REG_REF_RE.match(ref) and
+                reg_out_code(str(bom.get("mpn") or "")) is not None):
             what = "regulator"
         if what:
             refs, whats = by_code.setdefault(b["lcsc"], ([], set()))
