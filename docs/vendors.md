@@ -7,7 +7,7 @@ to:
 
 - **list / show**: what each vendor builds, and where its numbers come from.
 - **fit**: whether this board can be built there. It checks the board's
-  layers, size, copper, castellations, bottom-side parts and component pitch
+  layers, size, copper, castellations, tented vias, bottom-side parts and component pitch
   against the vendor's limits. With gerbers, it also runs the same
   gerber-level `dfm_check` against that vendor's minimums. Then it gives a
   price estimate when the vendor publishes prices. It compares every vendor
@@ -81,6 +81,8 @@ board:
   solder_mask_colors: [green]
   castellated: true               # offered at all
   blind_buried_vias: true
+  via_tenting: supported          # supported | not_supported | unknown; a
+                                  # missing key is unknown too
   via_in_pad: true
   impedance_control: true
 

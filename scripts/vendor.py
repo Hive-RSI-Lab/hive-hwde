@@ -106,10 +106,21 @@ def board_facts(pcb: Path) -> dict:
             "thickness_mm": round(float(thick), 3),
             "castellated_pads": castellation.count(pcb),
             "blind_buried_vias": blind,
+            "tented_vias": _tented_vias(pcb, cu),
             "bottom_smd_refs": sorted(bottom),
             "min_pitch_mm": round(pitch, 3) if pitch else None,
             "min_pitch_ref": pitch_ref,
             "refs_without_mpn": no_mpn}
+
+
+def _tented_vias(pcb: Path, cu: list[str]) -> int:
+    """Vias with mask over them on an outer side they reach. Most boards state
+    no tenting at all and get KiCad's default, which is tented."""
+    import check_wicking
+    import sexpdata
+    root = sexpdata.loads(Path(pcb).read_text(encoding="utf-8"))
+    vias = check_wicking.read_vias(root, check_wicking.board_defaults(root), cu)
+    return sum(1 for v in vias if any(v["tent"][s] for s in v["sides"]))
 
 
 _FP = re.compile(r"\(footprint\s")
@@ -196,6 +207,15 @@ def limits(prof: dict, bf: dict, assembly: bool) -> list[dict]:
         rows.append(_row("blind_buried_vias", "unknown" if c is None else
                          "pass" if c else "fail",
                          f"vias spanning {bf['blind_buried_vias']}"))
+    if bf["tented_vias"]:
+        c = board.get("via_tenting")
+        n = f"{bf['tented_vias']} tented via(s)"
+        rows.append(
+            _row("via_tenting", "pass", n) if c == "supported" else
+            _row("via_tenting", "fail", f"{n}; vendor doesn't tent vias: "
+                 "open them in the board setup") if c == "not_supported" else
+            _row("via_tenting", "unknown",
+                 f"{n}; whether this vendor tents them is not settled"))
     if not assembly:
         return rows
     asm = prof.get("assembly")
