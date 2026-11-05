@@ -189,6 +189,21 @@ def test_no_path_is_reported_not_forced(tmp_path):
     assert "ops" not in jobs[0]
 
 
+def test_search_stopped_by_node_limit_says_so(tmp_path):
+    body = _pad("U1", 5, 15, "SIG") + _pad("U2", 25, 15, "SIG")
+    pcb = _board(tmp_path, body)
+    _, jobs = _plan(pcb, [_pair("SIG", (5, 15), (25, 15))], max_nodes=5)
+    assert jobs[0]["status"] == "failed"
+    assert "--max-nodes" in jobs[0]["reason"]
+
+
+def test_search_weight_still_finds_the_route(tmp_path):
+    body = _pad("U1", 5, 15, "SIG") + _pad("U2", 25, 15, "SIG")
+    pcb = _board(tmp_path, body)
+    _, jobs = _plan(pcb, [_pair("SIG", (5, 15), (25, 15))], search_weight=3.0)
+    assert jobs[0]["status"] == "routed"
+
+
 def test_later_routes_keep_clear_of_earlier_ones(tmp_path):
     body = _pad("U1", 5, 15, "SIG") + _pad("U2", 25, 15, "SIG")
     body += _pad("U3", 15, 5, "GND") + _pad("U4", 15, 25, "GND")
