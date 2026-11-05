@@ -29,7 +29,7 @@ jobs:
       - uses: ./.github/actions/hwde-tools
       - name: the smoke tests (bin/hwde test-smoke)
         shell: bash
-        run: bin/hwde test-smoke 2>&1 | tee "$RUNNER_TEMP/smoke.log"
+        run: bin/hwde test-smoke -rs 2>&1 | tee "$RUNNER_TEMP/smoke.log"
         env:
           GIT_AUTHOR_NAME: ci
           GIT_AUTHOR_EMAIL: ci@localhost
