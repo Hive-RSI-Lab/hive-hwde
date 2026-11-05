@@ -643,6 +643,29 @@ def test_silk_beside_pad_clean(tmp_path_factory):
     assert [v for v in vs if v["kind"] == "silk_over_pad"] == []
 
 
+def _rect_silk(tmp_path_factory, name, fill):
+    body = ('  (footprint "t:J" (at 10 6) (layer "F.Cu")\n'
+            '    (property "Reference" "J1" (at 0 -4 0) (layer "F.SilkS"))\n'
+            '    (fp_rect (start -2 -2) (end 2 2) (stroke (width 0.12) (type solid))'
+            f' (fill {fill}) (layer "F.SilkS"))\n'
+            '    (pad "1" thru_hole circle (at 0 0) (size 1.7 1.7) (drill 1) '
+            '(layers "*.Cu" "*.Mask") (net "K")))\n')
+    bg = _board(tmp_path_factory, name, body)
+    root = __import__("sexpdata").loads(bg.path.read_text(encoding="utf-8"))
+    vs = check_silk.run_checks(bg, check_silk.parse_silk(root))
+    return [v for v in vs if v["kind"] == "silk_over_pad"]
+
+
+def test_silk_unfilled_rect_ringing_pad_clean(tmp_path_factory):
+    """A connector body outline drawn as an unfilled fp_rect around its pins
+    (the bms-4s JST XH J2 case) is a stroke, not a solid box over the pads."""
+    assert _rect_silk(tmp_path_factory, "silkrectno", "no") == []
+
+
+def test_silk_filled_rect_over_pad_caught(tmp_path_factory):
+    assert _rect_silk(tmp_path_factory, "silkrectyes", "solid")
+
+
 def test_silk_legibility(tmp_path_factory):
     body = ('  (gr_text "tiny" (at 10 6 0) (layer "F.SilkS") '
             '(effects (font (size 0.5 0.5) (thickness 0.15))))\n')

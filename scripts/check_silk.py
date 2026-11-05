@@ -164,9 +164,8 @@ def _is_filled(node) -> bool:
 
     KiCad writes `(fill no)` / `(fill yes)` / `(fill solid)`; an absent fill
     node means unfilled for the shapes this module draws. Only `circle` acts
-    on this today - `rect`/`poly` are still buffered as solid, which is
-    conservative (over-reports) rather than unsafe, but is the same latent
-    false-positive class if an unfilled box ever rings a pad.
+    on this for `circle` and `rect`; `poly` is still buffered as solid, which
+    is conservative (over-reports) rather than unsafe.
     """
     f = _kid(node, "fill")
     if f is None:
@@ -192,6 +191,11 @@ def _shape_geom(node, kind, width, fx, fy, fangle):
         if len(s) < 2 or len(e) < 2:
             return None
         pts = [xf((s[0], s[1])), xf((e[0], s[1])), xf((e[0], e[1])), xf((s[0], e[1]))]
+        # An UNFILLED rect is its outline stroke, not a solid box: a stock
+        # connector body outline (JST XH fp_rect around all five pins) was
+        # reported as covering every pad it encloses.
+        if not _is_filled(node):
+            return LineString(pts + [pts[0]]).buffer(w2)
         return Polygon(pts).buffer(w2)
     if kind.endswith("circle"):
         c, e = _nums(_kid(node, "center")), _nums(_kid(node, "end"))
