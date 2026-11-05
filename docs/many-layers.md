@@ -110,6 +110,18 @@ check_vias 0, DRC 0 errors):
 | FBGA-153 eMMC, 0.25 land | 0.5 mm | F 100, In1 53 |
 | TFBGA-54 | 0.8 mm | F 50, In1 4 |
 
+The maze (`route_finish --no-rip-board`) then runs on the same boards, frozen in
+`tests/fixtures/hdi_maze` (every net open, `tests/test_hdi_maze.py`):
+
+| part | nets | routed | left unrouted | DRC errors | run time on the loaded tower |
+|---|---|---|---|---|---|
+| TFBGA-54 | 54 | 54, 100 % | 0 | 0 | 2 min |
+| WLCSP-49 | 49 | 31, 63.3 % | 18 | 0 | 29 to 39 min |
+| FBGA-153 | 153 | no answer yet | | | over 3 h; 109 routed and none failed at 40 min |
+
+The maze keeps a pass only if it helps, so what it leaves is unrouted, not a
+violation in copper. WLCSP-49's 18 are work for the escape or the router.
+
 rules_gen and route_escape write the same rules (`aiee_hdi_*`): each via type's
 own floors in place of the through-via ones (`A.Via_Type`), and 3 mil track and
 clearance for what touches the field's courtyard. KiCad warns `holes_co_located`
