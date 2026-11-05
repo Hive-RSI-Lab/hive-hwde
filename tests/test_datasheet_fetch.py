@@ -108,3 +108,75 @@ def test_html_is_never_written():
         assert r["status"] == "refused" and "not a PDF" in r["error"], r
         assert not dest.exists()
 
+
+
+def _pdf(pages: list[str]) -> bytes:
+    """Minimal text PDF, one uncompressed content stream per page."""
+    objs, kids = [], []
+    for i, t in enumerate(pages):
+        kids.append(f"{4 + 2 * i} 0 R")
+    objs.append(b"<< /Type /Catalog /Pages 2 0 R >>")
+    objs.append(f"<< /Type /Pages /Kids [{' '.join(kids)}] /Count {len(pages)} >>".encode())
+    objs.append(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+    for i, t in enumerate(pages):
+        c = f"BT /F1 12 Tf 72 700 Td ({t}) Tj ET".encode()
+        objs.append(f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+                    f"/Contents {5 + 2 * i} 0 R /Resources << /Font << /F1 3 0 R >> >> >>".encode())
+        objs.append(b"<< /Length %d >>\nstream\n" % len(c) + c + b"\nendstream")
+    out, offs = b"%PDF-1.4\n", []
+    for n, o in enumerate(objs, 1):
+        offs.append(len(out))
+        out += b"%d 0 obj\n" % n + o + b"\nendobj\n"
+    x = len(out)
+    out += b"xref\n0 %d\n0000000000 65535 f \n" % (len(objs) + 1)
+    out += b"".join(b"%010d 00000 n \n" % o for o in offs)
+    return out + b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (len(objs) + 1, x)
+
+
+NOTICE = _pdf(["LCSC Datasheet Notice - Datasheet temporarily unavailable"])
+REAL = _pdf([f"Page {i} absolute maximum ratings VCC 5.5 V " + "x" * 300
+             for i in range(1, 9)])
+
+
+def _serve(body: bytes):
+    return lambda u: {"status": 200, "final_url": u, "hops": [u], "body": body}
+
+
+def test_lcsc_notice_pdf_is_missing_not_fetched():
+    with tempfile.TemporaryDirectory() as d:
+        dest = Path(d) / "x.pdf"
+        r = datasheet_extract.fetch_datasheet(WMSC, dest, transport=_serve(NOTICE))
+        assert r["status"] == "missing" and r["stub"] is True, r
+        assert not dest.exists()
+        r = datasheet_extract.fetch_datasheet(WMSC, dest, transport=_serve(REAL))
+        assert r["status"] == "fetched" and dest.read_bytes() == REAL, r
+
+
+def test_notice_reworded_hits_size_backstop():
+    reworded = _pdf(["Sorry, this datasheet is currently unavailable."])
+    assert datasheet_extract.stub_notice(reworded)
+    assert datasheet_extract.stub_notice(REAL) is None
+
+
+def test_fetch_workspace_reports_stub_as_missing():
+    with tempfile.TemporaryDirectory() as d:
+        ws = Path(d)
+        (ws / "parts").mkdir()
+        (ws / "parts" / "parts.json").write_text(json.dumps({"parts": [
+            {"lcsc": "C194022", "mpn": "X", "datasheet": WMSC}]}))
+        out, code = datasheet_extract.do_fetch(
+            Namespace(fetch=str(ws), lcsc=None), transport=_serve(NOTICE))
+        assert code == 1 and out["fetched"] == 0, out
+        assert out["datasheets"][0]["status"] == "missing"
+        assert not (ws / "parts/datasheets/C194022.pdf").exists()
+        assert not (ws / "parts/datasheets/index.json").exists()
+
+
+def test_pdf_mode_refuses_a_stub_on_disk():
+    with tempfile.TemporaryDirectory() as d:
+        f = Path(d) / "C1.pdf"
+        f.write_bytes(NOTICE)
+        pdf, err = datasheet_extract._checked_pdf(str(f))
+        assert pdf is None and "placeholder" in err["error"], err
+        f.write_bytes(REAL)
+        assert datasheet_extract._checked_pdf(str(f))[1] is None
