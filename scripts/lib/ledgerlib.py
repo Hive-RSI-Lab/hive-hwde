@@ -330,6 +330,46 @@ def effective(fact: dict | None, exp: dict | None, at=None) -> dict:
     return out
 
 
+def present_subjects(ws: Path) -> set[str]:
+    """Every refdes, LCSC code and vendor the board still has: the subjects a
+    fact may be about. DNP and unbought lines count (they are on the board)."""
+    ws = Path(ws)
+    out = {e["subject"] for e in expected(ws).values()}
+    for ln in _parts(ws):
+        out.update(_refs(ln))
+        code = str(ln.get("lcsc") or "").strip()
+        if code:
+            out.add(code)
+    for code, refs in (_bom_codes(ws) or {}).items():
+        out.add(code)
+        out.update(refs)
+    return out
+
+
+def orphans(ws: Path) -> dict[str, dict]:
+    """key -> fact, for facts whose subject (refdes, LCSC code or vendor) is
+    no longer on the board: a swapped or removed part's leftovers."""
+    present = present_subjects(ws)
+    return {k: f for k, f in load(ws)["facts"].items()
+            if (f.get("subject") or k.rsplit("/", 1)[0]) not in present}
+
+
+def prune(ws: Path, apply: bool = False) -> list[str]:
+    """Remove the orphaned facts (only written when apply and writable)."""
+    gone = sorted(orphans(ws))
+    if apply and gone and writable(ws):
+        data = load(ws)
+        for k in gone:
+            data["facts"].pop(k, None)
+        data["updated"] = now()
+        p = path(ws)
+        tmp = p.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(data, indent=1, sort_keys=True,
+                                  ensure_ascii=False), encoding="utf-8")
+        tmp.replace(p)
+    return gone
+
+
 def report(ws: Path, at=None) -> dict:
     """Every expected fact as it reads now, the gaps, and `ready`."""
     ws = Path(ws)
@@ -350,7 +390,11 @@ def report(ws: Path, at=None) -> dict:
         d[r["status"]] = d.get(r["status"], 0) + 1
     failed = [r for r in rows if r["status"] == "failed"]
     unknown = [r for r in rows if r["status"] == "unknown"]
+    orphaned = [{"key": k, "subject": f.get("subject"), "kind": f.get("kind"),
+                 "status": f.get("status")}
+                for k, f in sorted(orphans(ws).items())]
     return {"ledger": str(path(ws)), "exists": path(ws).is_file(),
+            "orphaned": orphaned,
             "ready": not failed and not unknown, "counts": counts,
             "by_kind": by_kind, "failed": failed, "unknown": unknown,
             "facts": rows}

@@ -224,3 +224,48 @@ def test_cpl_verify_records_footprints(ws, tmp_path):
     assert f["U8/footprint"]["status"] == "verified"
     assert f["J1/footprint"]["status"] == "failed"
     assert f["C1/footprint"]["status"] == "unknown"
+
+
+# ------------------------------------------------- orphans: facts of gone parts
+
+def _orphan_ws(ws):
+    """Verified facts for U8 (still on the board) and Q201 + C15195 (left)."""
+    facts = [{**e, "status": "verified", "source": "test"}
+             for e in ledgerlib.expected(ws).values()
+             if e["subject"] in ("U8", "C84681")]
+    facts += [{"subject": "Q201", "kind": "rating", "status": "verified",
+               "source": "test", "lcsc": "C15195", "refs": ["Q201"]},
+              {"subject": "C15195", "kind": "stock", "status": "verified",
+               "source": "test", "lcsc": "C15195", "refs": ["Q201"]}]
+    ledgerlib.put(ws, facts, "test")
+
+
+def test_orphans_listed_and_not_evidence(ws):
+    _orphan_ws(ws)
+    assert sorted(ledgerlib.orphans(ws)) == ["C15195/stock", "Q201/rating"]
+    rep = ledgerlib.report(ws)
+    assert sorted(o["key"] for o in rep["orphaned"]) == [
+        "C15195/stock", "Q201/rating"]
+    assert all(r["subject"] not in ("Q201", "C15195") for r in rep["facts"])
+    # a hand-set fact for a gone part does not satisfy anything on the board
+    every = [{**e, "status": "verified", "source": "t"}
+             for e in ledgerlib.expected(ws).values()]
+    ledgerlib.put(ws, every, "test")
+    assert ledgerlib.report(ws)["ready"] is True       # orphans never block
+    assert ledgerlib.blockers(ws) == []
+
+
+def test_prune_dry_run_then_apply_keeps_present_facts(ws, capsys):
+    _orphan_ws(ws)
+    before = ledgerlib.load(ws)["facts"]
+    assert ledger_cli.main(["prune", "--workspace", str(ws)]) == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["applied"] is False and len(out["orphaned"]) == 2
+    assert ledgerlib.load(ws)["facts"] == before          # dry run writes nothing
+    assert ledger_cli.main(["prune", "--workspace", str(ws), "--apply"]) == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["applied"] is True and len(out["removed"]) == 2
+    after = ledgerlib.load(ws)["facts"]
+    assert ledgerlib.orphans(ws) == {}
+    assert after["U8/pinout"] == before["U8/pinout"]       # present: untouched
+    assert "Q201/rating" not in after and "C15195/stock" not in after
