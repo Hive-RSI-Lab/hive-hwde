@@ -358,18 +358,29 @@ class WaiverFileRefused(RuntimeError):
 
 
 def load_waivers(path: Path) -> list[dict]:
-    """Read a waiver sidecar's entries. A file that isn't JSON, or whose top
-    level isn't an object holding a `waivers` list, is refused
-    (WaiverFileRefused). Every entry passes through for evaluate() to grade:
-    one releaselib.waiver_shape_problem refuses (no reason or real approval,
-    no check/kind, a bad refs or pos) goes in `waivers_invalid` by index and
-    matches nothing, so one bad entry doesn't take the good ones with it
-    (#736)."""
+    """Read a waiver sidecar's entries. A path that can't be read (#748), a
+    file that isn't JSON or is nested deeper than any waiver file needs
+    (#748), or whose top level isn't an object holding a `waivers` list, is
+    refused (WaiverFileRefused). Every entry passes through for evaluate() to
+    grade: one releaselib.waiver_shape_problem refuses (no reason or real
+    approval, no check/kind, a check, kind or net that isn't a string, a bad
+    refs or pos) goes in `waivers_invalid` by index and matches nothing, so
+    one bad entry doesn't take the good ones with it (#736)."""
+    too_deep = (f"{path}: nested too deeply - a waiver file needs at most "
+                f"{releaselib.WAIVER_MAX_DEPTH} levels")
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:  # missing, a directory, no permission
+        raise WaiverFileRefused(
+            f"{path}: can't be read "
+            f"({type(exc).__name__}: {exc.strerror or exc})") from exc
+    except RecursionError as exc:
+        raise WaiverFileRefused(too_deep) from exc
     except ValueError as exc:  # JSONDecodeError, UnicodeDecodeError
         raise WaiverFileRefused(
             f"{path}: not valid JSON ({type(exc).__name__}: {exc})") from exc
+    if releaselib.too_deep(data):
+        raise WaiverFileRefused(too_deep)
     waivers = data.get("waivers") if isinstance(data, dict) else None
     if not isinstance(waivers, list):
         raise WaiverFileRefused(
