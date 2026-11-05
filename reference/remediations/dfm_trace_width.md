@@ -26,6 +26,7 @@ A conductor on an exported copper gerber is narrower than the fab profile's
 - Do not raw-edit widths in the .kicad_pcb. route_edit is the pipeline's only routing writer and it verifies every add to 1e-3 mm before the atomic swap (route_edit.py:16-22).
 - Do not match `pos` against segment endpoints - it is the midpoint of the gerber line.
 - Do not silence this with `dfm_check.py --skip copper`: that also disables `dfm_clearance` and `dfm_copper_to_edge`.
+  Unlike this finding, those two do name their copper: dfm_check looks each `ends` point up in the board, so `net` is the one net or `"A | B"`, `refs` the parts at it, `on` what each end lies on and `same_net` marks a sliver of one net. `net` stays null if an end is not on any board item. Waivers match `net` exactly, so a waiver of these kinds has to name it (#722).
 - Do not re-verify with a cached `--fab-dir`. The gate re-exports gerbers to a scratch dir every run (dfm_check.py:557); a stale dir measures pre-fix copper.
 - Do not hand-write a `.kicad_dru` that REPLACES rules_gen's output - that is how the fab floors went missing here in the first place (LEARNINGS line 1808).
 - Do not size a track off its netclass without reading the board's own `.kicad_pro`/`.kicad_dru` first: boards generated before the T1 netclass split carry ONE flattened `Power` class at the WIDEST width, so netclass-sizing a 20 mA net gives it a 5 A width and breaks its pad fan-in (LEARNINGS 2026-07-28 [routing][rules_gen][freerouting], line 798). Size from the segment's own required width, not from the class.

@@ -13,7 +13,10 @@ Checks (all thresholds from reference/jlc_capabilities.yaml, keyed
   copper   min_trace_width, min_clearance (gap between distinct copper
            islands - gerbers carry no nets, so "touching = one conductor",
            which is exactly what the fab's own DFM engine sees),
-           min_copper_to_edge
+           min_copper_to_edge. The checks measure the gerbers alone; each
+           finding is then looked up in the board by its `ends` (name_gaps):
+           `net` is its one net or both as "A | B", `refs` the parts at it,
+           `on` what each end lies on, `same_net` a sliver of one net
   drill    min_hole_diameter, min_hole_to_hole, min_hole_to_edge,
            annular ring (hole vs the pad copper around it). Castellated
            holes (pad_prop_castellated) are exempt from hole/copper-to-edge
@@ -490,6 +493,128 @@ def check_copper_to_edge(fab, rules, vios: list, cast=()) -> None:
                 band.append((d, _gap(comp, edge)[0], name))
     _band_warning(vios, band, "dfm_copper_to_edge",
                   "copper features to the routed edge", hard, lo)
+
+
+# ---------------------------------------------- whose copper a gap is between
+
+# How far off a board item an end of a gap may lie and still be on it (mm): a
+# gerber's aperture and its arcs differ from the board's by microns. Past this
+# the gerbers and the board disagree, and the end stays unknown.
+GAP_END_TOL_MM = 0.02
+# A pour has no name of its own, so the pads closest to a pinch on one locate
+# it, as far as this (mm) and this many for each end.
+GAP_NEAR_PAD_MM = 0.5
+GAP_NEAR_PADS = 2
+# The two nets of one finding. Not "/": net names are full of them.
+NET_JOIN = " | "
+# The item an end is named for when it lies on several: a pad flooded into its
+# own pour is the pad.
+_GAP_ITEM_RANK = {"pad": 0, "via": 1, "track": 2, "footprint": 3, "zone": 4}
+
+
+def _pad_name(pad) -> str:
+    return f"{pad.ref}.{pad.number}"
+
+
+class _LayerCopper:
+    """One layer of a board's copper, for looking up the ends of a gap."""
+
+    def __init__(self, bg, layer: str):
+        self.pads = bg.pads_of(layer=layer)
+        self.pad_tree = STRtree([p.poly for p in self.pads])
+        items = [(p.poly, {"net": p.net, "item": "pad", "ref": p.ref,
+                           "pad": str(p.number)}) for p in self.pads]
+        items += [(v.poly, {"net": v.net, "item": "via"})
+                  for v in bg.vias_of(layer=layer)]
+        items += [(t.poly, {"net": t.net, "item": "track"})
+                  for t in bg.tracks_of(layer=layer)]
+        for c in bg.fp_copper:
+            if c["layer"] == layer:
+                nets = sorted(n for n in c["nets"] if n)
+                items.append((c["shape"], {
+                    "net": nets[0] if len(nets) == 1 else None,
+                    "item": "footprint", "ref": c["ref"]}))
+        items += [(poly, {"net": z.net, "item": "zone"})
+                  for z in bg.zones_of(layer=layer)
+                  for poly in z.fills.get(layer, [])]
+        self.items = [i for i in items if not i[0].is_empty]
+        self.tree = STRtree([i[0] for i in self.items])
+
+    def _near_pads(self, pt) -> list[str]:
+        found = []
+        for i in self.pad_tree.query(pt, predicate="dwithin",
+                                     distance=GAP_NEAR_PAD_MM):
+            pad = self.pads[int(i)]
+            if pad.ref:
+                found.append((round(pad.poly.distance(pt), 3), _pad_name(pad)))
+        return [name for _, name in sorted(found)[:GAP_NEAR_PADS]]
+
+    def at(self, xy) -> dict:
+        """What one end lies on: {net, item, ...}, both None when nothing is."""
+        pt = Point(xy)
+        hits = [(self.items[int(i)][0].distance(pt), self.items[int(i)][1])
+                for i in self.tree.query(pt, predicate="dwithin",
+                                         distance=GAP_END_TOL_MM)]
+        if not hits:
+            return {"net": None, "item": None}
+        closest = min(d for d, _ in hits)
+        item = min((h for h in hits if h[0] <= closest + GEOM_TOL_MM),
+                   key=lambda h: (_GAP_ITEM_RANK[h[1]["item"]], h[0]))[1]
+        out = {**item, "net": item["net"] or None}
+        if out["item"] == "zone":
+            near = self._near_pads(pt)
+            if near:
+                out["near"] = near
+        return out
+
+
+def _describe_end(end: dict) -> str:
+    net, item = end["net"], end["item"]
+    if item == "pad":
+        return f"{end['ref']}.{end['pad']} ({net or 'no net'})"
+    if item == "footprint":
+        return f"{end['ref']} copper ({net or 'no net'})"
+    return f"{net} {item}" if item else "unknown copper"
+
+
+def name_gaps(bg, vios: list) -> None:
+    """Name the copper at the ends of each clearance and edge finding, from
+    the board: the gerbers the checks measure carry no nets (#722).
+
+    Fills `net` (one net, or both joined by NET_JOIN in sorted order; None
+    unless every end's net is known), `refs`, `on` (what each copper end lies
+    on, in the order of `ends`), `same_net` on a clearance when both nets are
+    known, and adds the names to the message. An edge finding's second end is
+    the edge. An end no board item is at stays unknown rather than guessed: a
+    fill the gerbers and the board disagree about reads as nothing here."""
+    layers: dict = {}
+    for v in vios:
+        kind = v.get("kind")
+        if kind not in ("dfm_clearance", "dfm_copper_to_edge") or not v.get("ends"):
+            continue
+        layer = v["layer"]
+        if layer not in layers:
+            layers[layer] = _LayerCopper(bg, layer)
+        copper_ends = v["ends"] if kind == "dfm_clearance" else v["ends"][:1]
+        on = [layers[layer].at(xy) for xy in copper_ends]
+        v["on"] = on
+        nets = {e["net"] for e in on}
+        if None not in nets:
+            v["net"] = NET_JOIN.join(sorted(nets))
+            if kind == "dfm_clearance":
+                v["same_net"] = len(nets) == 1
+        near = sorted({n for e in on for n in e.get("near", ())})
+        v["refs"] = sorted({e["ref"] for e in on if e.get("ref")}
+                           | {n.rsplit(".", 1)[0] for n in near})
+        if not any(e["item"] for e in on):
+            continue
+        said = " to ".join(sorted(_describe_end(e) for e in on))
+        if v.get("same_net"):
+            said += ", same net"
+        if near:
+            said += ", near " + ", ".join(near)
+        v["msg"] = f"{v['msg']}: {said}"
+        v["items"][0]["msg"] = v["msg"]
 
 
 # ------------------------------------------------------------- drill checks
@@ -1616,6 +1741,7 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
             check_trace_width(fab, rules, vios)
             check_clearance(fab, rules, vios)
             check_copper_to_edge(fab, rules, vios, cast)
+            name_gaps(bg, vios)
         zone_fill_skipped = None
         if "zone_fill" not in skip:
             zone_fill_skipped = check_zone_fill(bg, vios)
