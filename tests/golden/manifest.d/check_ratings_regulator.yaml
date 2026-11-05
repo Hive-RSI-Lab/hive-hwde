@@ -11,6 +11,17 @@ mutants:
     expect:
       kind: rating_over_voltage
       ref: U2
+  fixed-buck-wrong-output-extracted:
+    board: blinky2
+    script: mutations/fixed_buck_wrong_output_extracted.py
+    check: check_ratings
+    defect: >-
+      SIDECAR fault (+ an LCSC property on U2 so the parts dir finds it):
+      a datasheet extraction of the fixed 5 V AP63205 has its FB pin on +3V3;
+      the part has no output pin, so only FB says where its output goes
+    expect:
+      kind: rating_regulator_output
+      ref: U2
   ldo-wrong-output:
     board: blinky2
     script: mutations/ldo_wrong_output.py
