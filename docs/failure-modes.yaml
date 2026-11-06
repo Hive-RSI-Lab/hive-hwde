@@ -591,8 +591,8 @@ modes:
     filled or extracted, and a
     part known to be positive or negative fails on a stated rail of the other
     sign; a rating with no datasheet read is listed, not verified, and passes
-    release, so a distributor's listing that disagrees with its datasheet goes
-    unseen until the part is extracted
+    release; a listing that disagrees with its datasheet warns as
+    rating_listing_disagrees once the part is extracted, and goes unseen until then
   hit_on:
   - all
   sources:

@@ -1,0 +1,10 @@
+{
+  "mpn": "D-TEST",
+  "abs_max": [
+    {
+      "param": "VR reverse voltage",
+      "value": 25,
+      "unit": "V"
+    }
+  ]
+}

@@ -242,7 +242,9 @@ in `attest build`, never count as evidence; `ledger.py prune --workspace <ws>`
 lists them, `--apply` deletes them.
 Release refuses while any fact is failed or unknown. A listed fact passes and
 `attest` names it, with a `rating_no_datasheet_read` warning saying how to read
-the datasheet. Stock older than 72 h reads unknown, so re-run `stock_check.py --workspace <ws>` before the order.
+the datasheet. Where a part has both, a listing that differs from the datasheet
+by over 10 % gets a `rating_listing_disagrees` warning that says which number the
+check used; `listing_survey.py <boards>` measures the rate by part class. Stock older than 72 h reads unknown, so re-run `stock_check.py --workspace <ws>` before the order.
 
 ## Works first time, watches itself, brought up unattended
 
