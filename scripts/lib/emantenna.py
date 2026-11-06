@@ -474,7 +474,7 @@ def deck(geo: dict, feed, f0: float, fc: float, pattern=(), *, fine: float | Non
     where = {"fine": fine, "coarse": round(coarse, 4), "air": round(air, 3), "board_cell": round(board_cell, 4),
              "mesh": [len(lines[a]) for a in "xyz"], "cells": cells, "boundary": boundary,
              "min_cell": [round(v, 5) for v in least], "feed_ref": feed.ref,
-             "nf2ff_center": [round((a + b) / 2 * 1e-3, 6) for a, b in zip(box_lo, box_hi)],
+             "dt": dt, "nf2ff_center": [round((a + b) / 2 * 1e-3, 6) for a, b in zip(box_lo, box_hi)],
              "pattern": [float(f) for f in pattern], "loss": loss is not None,
              "bounds": [bx0, by0, bx1, by1]}
     return csx, where
@@ -650,10 +650,12 @@ def write_pattern_png(rows, path: Path, title: str) -> None:
 def study(geo: dict, feed, band, *, f_points: int = 401, pattern=None, fine=None, air=None,
           boundary="PML_8", loss: Loss | None = None, keep=None, timeout: float = 3 * 3600,
           f0: float | None = None, fc: float | None = None, max_cells: int = 8_000_000,
-          threads: int | None = None) -> dict:
+          threads: int | None = None, record: float | None = None) -> dict:
     """geometry -> openEMS -> nf2ff -> Zin, S11, Dmax, gain, efficiency.
     band (f_lo, f_hi): where the answer is read. pattern: NF2FF frequencies
-    (default five across the band)."""
+    (default five across the band). record: seconds of simulated time to start
+    with, when that's known to be longer than the deck's own first guess: a pass
+    that stops short is rerun from zero, so a good start saves all of it."""
     import tempfile
     import time
     from . import solvers
@@ -666,6 +668,9 @@ def study(geo: dict, feed, band, *, f_points: int = 401, pattern=None, fine=None
     freqs = [span_lo + (span_hi - span_lo) * i / (f_points - 1) for i in range(f_points)]
     csx, where = deck(geo, feed, f0, fc, pat, fine=fine, air=air, boundary=boundary, loss=loss,
                       max_cells=max_cells)
+    if record:
+        csx.fdtd["NumberOfTimesteps"] = min(STEPS_MAX, max(csx.fdtd["NumberOfTimesteps"],
+                                                           math.ceil(record / where["dt"])))
     tmp = tempfile.TemporaryDirectory(prefix="hwde-emantenna-") if not keep else None
     work = Path(keep) if keep else Path(tmp.name)
     work.mkdir(parents=True, exist_ok=True)
@@ -708,7 +713,8 @@ def study(geo: dict, feed, band, *, f_points: int = 401, pattern=None, fine=None
     if inb:
         feat["band_worst_s11_db"] = round(20 * math.log10(max(max(inb), 1e-9)), 2)
     res = {"freqs": freqs, "z": z, "features": feat, "far": rows, "where": where,
-           "steps": csx.fdtd["NumberOfTimesteps"], "tail": tail, "rung_down": tail <= TAIL_MAX,
+           "steps": csx.fdtd["NumberOfTimesteps"], "record_s": csx.fdtd["NumberOfTimesteps"] * where["dt"],
+           "tail": tail, "rung_down": tail <= TAIL_MAX,
            "seconds": round(time.time() - t0, 1), "_ff": ff, "band": list(band)}
     if tmp:
         tmp.cleanup()
@@ -733,7 +739,9 @@ CONV_ETA = 0.05         # efficiency
 def converge(geo: dict, feed, band, *, fine=None, ratio: float = 1.5, keep=None, **kw) -> dict:
     """study() at `fine` and at fine/ratio. The finer run is the answer and
     `convergence` says what moved. The first run's fine defaults by the rule
-    in default_fine, on f_max of the same pulse."""
+    in default_fine, on f_max of the same pulse. The finer run starts on the
+    record the first one ended with: the same antenna rings as long on either
+    mesh, and a pass that stops short costs its whole time."""
     feed = feed if isinstance(feed, Feed) else Feed.parse(feed)
     lo, hi = band
     f0 = kw.get("f0") or (lo + hi) / 2
@@ -742,6 +750,7 @@ def converge(geo: dict, feed, band, *, fine=None, ratio: float = 1.5, keep=None,
     k1 = Path(keep) / "coarse" if keep else None
     k2 = Path(keep) / "fine" if keep else None
     a = study(geo, feed, band, fine=fine, keep=k1, **kw)
+    kw["record"] = max(a["record_s"], kw.get("record") or 0)
     b = study(geo, feed, band, fine=round(fine / ratio, 5), keep=k2, **kw)
     fa, fb = a["features"], b["features"]
     rb = at_band(b)

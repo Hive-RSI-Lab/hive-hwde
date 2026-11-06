@@ -75,7 +75,8 @@ machine.
 - **Load.** Xyce loads Trilinos's large shared libraries. With the disk
   saturated (load 244, 10-30) its 4 s RC deck took 290 s, almost all of it
   spent waiting, not computing. Each case allows 20 minutes, and OpenBLAS runs one
-  thread (its pool busy-waits). The live-solver tests are in test-slow.
+  thread (its pool busy-waits). The live-solver tests are in test-slow, the long
+  full-wave ones in test-em.
 - **XSPICE and OSDI (#499).** The tree's own `spinit` names
   `/foss/tools/...` for its code models, which isn't here, so `solvers.command`
   points ngspice's `SPICE_SCRIPTS` at hwde's spinit
@@ -459,8 +460,10 @@ Three things decided the numbers:
   and 2.274 at 1 mm. Lines nearer than 0.6 of `fine` merge, because the time step
   follows the least cell: the 1 mm dipole went from about 16e9 to 5e9 cell-steps.
 - **The record.** Three corner-to-corner trips of the domain after the pulse. A
-  run whose last tenth is over 1e-3 of its peak reruns for a length extrapolated
-  from its decay.
+  run whose last tenth is over 1e-3 of its peak reruns from zero for a length
+  extrapolated from its decay. So `converge` starts the finer mesh on the record
+  the coarser one ended with, and `record=` sets the first one when it's known
+  (the patch: 26 ns, against a first guess of 10).
 
 **TI's AN043 IFA tunes only on a thinner board.** Same copper, TI's 15.2 x 30 mm
 ground, er 4.4, lossless, against TI's match across 2.4-2.48 GHz:

@@ -1,11 +1,12 @@
 """#481 antenna decks and #371 check_antenna for a board's own antenna copper.
 
 The fast half is the deck and readers, on hand-written files. The live half
-(test-slow, @pytest.mark.slow) runs openEMS and nf2ff on the known answers."""
+(test-em, tests/conftest.py EM) runs openEMS and nf2ff on the known answers."""
 from __future__ import annotations
 
 import json
 import math
+import re
 import sys
 from pathlib import Path
 
@@ -138,6 +139,47 @@ def test_steps_needed_with_nothing_to_read_doubles(tmp_path):
     _write_probe(tmp_path / "ut", [1.0] * 200)
     _write_probe(tmp_path / "it", [1.0] * 200)
     assert ea._steps_needed(tmp_path, 2000) == 4000
+
+
+def _first_steps(monkeypatch, tmp_path, **kw):
+    """The record study() hands openEMS on its first pass, and the deck's dt."""
+    class Stop(Exception):
+        pass
+
+    def run(*a, **k):
+        raise Stop
+    monkeypatch.setattr(solvers, "run", run)
+    geo, feed = patch_geo()
+    with pytest.raises(Stop):
+        ea.study(geo, feed, (2.1e9, 2.6e9), fine=2.0, keep=tmp_path, **kw)
+    return int(re.search(r'NumberOfTimesteps="(\d+)"', (tmp_path / "deck.xml").read_text()).group(1))
+
+
+def test_record_lengthens_the_first_pass_and_never_shortens_it(monkeypatch, tmp_path):
+    own = _first_steps(monkeypatch, tmp_path)
+    assert _first_steps(monkeypatch, tmp_path, record=1e-12) == own
+    longer = _first_steps(monkeypatch, tmp_path, record=27e-9)
+    assert 2 * own < longer <= ea.STEPS_MAX
+    assert _first_steps(monkeypatch, tmp_path, record=1.0) == ea.STEPS_MAX
+
+
+def test_converge_starts_the_finer_mesh_on_the_coarser_ones_record(monkeypatch):
+    """A pass that stops short is rerun from zero, and on the finer mesh that
+    was the dearest pass of test_live_patch: 265 s of its 1320 (#801)."""
+    asked = []
+
+    def study(geo, feed, band, *, fine, keep, **kw):
+        asked.append((fine, kw.get("record")))
+        return {"features": {"f_res": 2.33e9, "s11_db": -15.0}, "where": {"fine": fine, "cells": 1},
+                "far": [{"f": 2.33e9, "dmax_dbi": 7.0, "efficiency": 0.9}], "band": list(band),
+                "rung_down": True, "seconds": 1.0, "record_s": 26e-9 / fine}
+    monkeypatch.setattr(ea, "study", study)
+    geo, feed = patch_geo()
+    assert ea.converge(geo, feed, (2.1e9, 2.6e9), fine=2.0, ratio=2.0)["convergence"]["converged"]
+    assert asked == [(2.0, None), (1.0, 13e-9)]
+    asked.clear()
+    ea.converge(geo, feed, (2.1e9, 2.6e9), fine=2.0, ratio=2.0, record=20e-9)
+    assert asked == [(2.0, 20e-9), (1.0, 20e-9)]
 
 
 def test_patch_tm010_skips_the_low_q_box_modes():
@@ -373,9 +415,12 @@ def test_live_patch_tm010_against_the_cavity_formula_and_mesh(tmp_path):
     """kb/em-solvers.md's patch: 2.394 GHz by cavity + Hammerstad, 2.328 by
     its own openEMS run. 2 mm and 1 mm land on the same frequency sample,
     2.332 GHz, S11 -15 dB. Before the thirds cells were kept clear (#622) these
-    meshes read 2.226 and 2.274 GHz, so this is the test of that too."""
+    meshes read 2.226 and 2.274 GHz, so this is the test of that too. It rings
+    down in 26 ns, and record= keeps the deck's short first guess from costing
+    a pass (#801)."""
     geo, feed = patch_geo()
-    r = ea.converge(geo, feed, (2.1e9, 2.6e9), fine=2.0, ratio=2.0, pattern=[2.3e9, 2.35e9, 2.4e9])
+    r = ea.converge(geo, feed, (2.1e9, 2.6e9), fine=2.0, ratio=2.0, pattern=[2.3e9, 2.35e9, 2.4e9],
+                    record=27e-9)
     f = r["features"]["f_res"]
     assert f == pytest.approx(2.394e9, rel=0.04)
     assert f == pytest.approx(2.328e9, rel=0.01)
