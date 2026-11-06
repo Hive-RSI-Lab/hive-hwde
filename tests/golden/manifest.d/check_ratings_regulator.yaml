@@ -75,6 +75,18 @@ mutants:
     expect:
       kind: rating_regulator_output
       ref: U2
+  supervisor-over-vdd:
+    board: blinky2
+    script: mutations/supervisor_over_vdd.py
+    check: check_ratings
+    defect: >-
+      SIDECAR fault (+ an LCSC property on U2 so the parts dir finds it, and its
+      +5V pad renumbered 5): parts/parts.json lists U2 as a TPS3823-33 rating its
+      supply at 4 V, with no extraction and no regulator word; the family table's
+      VDD is pad 5, on +5V, so only the table and the row can judge it
+    expect:
+      kind: rating_over_voltage
+      ref: U2
   power-ic-over-input:
     board: blinky2
     script: mutations/power_ic_over_input.py

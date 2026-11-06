@@ -82,8 +82,8 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
    rating its filled row gives (regulator_findings; no pad names: its
    highest-voltage net, unless the part steps up); an unextracted power IC
    whose input pad, from its family's datasheet table (POWER_IC_FAMILIES),
-   sits above the top of its filled row's input range, which is the
-   recommended maximum on every family in the table (power_ic_findings). Its
+   sits above the top of its filled row's input range, the row's figure and
+   not the datasheet's absolute maximum (power_ic_findings). Its
    rating_unrated says what became of the inputs: an input it can't compare, or
    else that they are within the row (power_ic_why_unrated).
  - rating_regulator_output (error): a regulator whose output pad sits on a
@@ -371,9 +371,15 @@ def reg_by_family(ref: str, mpn: str) -> bool:
 # the package, exposed pad included (#805). A part sold in several packages gets
 # a row per package, picked by the code in its MPN, since its input moves (#807).
 # The table holds no rating and names no rail: the limit is the filled row's
-# alone. On all six families that top is the datasheet's recommended maximum, not
-# its absolute maximum, and it stays the bound: a rail between the two is outside
-# what the part is specified to run on.
+# alone. A filled row's top is the datasheet's recommended maximum, not its
+# absolute maximum, and it stays the bound: a rail between the two is outside
+# what the part is specified to run on. One row reads lower still: a TPS3823-33's
+# listing gives its threshold options ("2.5V、3V、3.3V、5V"), so its top is 5 V
+# under the datasheet's 5.5 V. A rail between them is a finding an extraction or a
+# hand-verified rating answers.
+# A row suits a part with one supply. Parts whose pins have limits of their own
+# (current monitors, gate drivers, SN6505B) get an extraction with pin_ratings
+# instead (#815).
 POWER_IC_FAMILIES = (
     {"mpn": re.compile(r"TPS6040[0-3](?!\d)"),
      # "Unregulated 60-mA Charge Pump Voltage Inverter"
@@ -394,6 +400,23 @@ POWER_IC_FAMILIES = (
     {"mpn": re.compile(r"TPS2051BD(?:GN|R|$)"),
      "input": {"IN": "2 3"}, "pins": 9,
      "datasheet": "TI SLVS514Q Table 5-1, SOIC and DGN"},
+    {"mpn": re.compile(r"TPS2051CDBV"),
+     # "TPS20xxC and TPS20xxC-2 Current Limited, Power-Distribution Switches"
+     "input": {"IN": "5"}, "pins": 5,
+     "datasheet": "TI SLVSAU6I Table 5-2, DBV"},
+    {"mpn": re.compile(r"SY6280AAC"),
+     # "SY6280/SY6280A, 5.5V, 2A Low Loss Power Distribution Switch"
+     "input": {"IN": "5"}, "pins": 5,
+     "datasheet": "Silergy SY6280 application note, Pin Description, SOT23-5"},
+    {"mpn": re.compile(r"TPS3808G01DBV"),
+     # "TPS3808 Low-Quiescent-Current, Programmable-Delay Supervisory Circuit";
+     # SENSE watches a rail of its own and isn't an input here
+     "input": {"VDD": "6"}, "pins": 6,
+     "datasheet": "TI SBVS050N Table 5-1, SOT-23"},
+    {"mpn": re.compile(r"TPS3823-33DBV"),
+     # "TPS382x Voltage Monitor With Watchdog Timer"
+     "input": {"VDD": "5"}, "pins": 5,
+     "datasheet": "TI SLVS165O Table 5-1, TPS3823 DBV"},
     {"mpn": re.compile(r"TPS22918DBV"),
      # "TPS22918 5.5-V, 2-A, 52-mΩ On-Resistance Load Switch"
      "input": {"VIN": "1"}, "pins": 6,

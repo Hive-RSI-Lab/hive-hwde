@@ -690,12 +690,12 @@ def test_bare_regulator_blocks_unless_extracted(tmp_path, row):
 
 
 @pytest.mark.parametrize("ref,mpn", [
-    ("U4", "TPS2051CDBVR"),    # a load switch outside the TPS2051B row
+    ("U4", "TPS2051CDGNR"),    # a package of the TPS2051C with no row
     ("U4", "TPS61042DRBR"),    # a white-LED driver, next to the TPS61040 boost
     ("U4", "LM51641"),         # a number that only starts with the LM5164
     ("U4", "LM50170"),         # the same for the LM5017
     ("U4", "TPS26630RGER"),    # an e-fuse outside the TPS26631 rows
-    ("U4", "TPS3808G33DBVR"),  # a supervisor
+    ("U4", "TPS3808G33DBVR"),  # a supervisor outside the TPS3808G01 row
     ("U4", "TPS92515DGQR"),    # an LED driver
     ("U4", "TLV3501AIDBVR"),   # a comparator
     ("U4", "TLV7031DBVR"),     # a comparator
@@ -719,6 +719,10 @@ POWER_ICS = [
     ("TPS2051BDBVR", "USB-A power switch"),       # linux-computer U607, C24593
     ("TPS22918DBVR", "load switch"),              # hc-power U6, C131941
     ("TPS26631RGER", "eFuse"),                    # rf-plasma U101, C1850273
+    ("TPS2051CDBVR", "port 2 VBUS switch"),       # twin-side U113, C129581
+    ("SY6280AAC", "load_switch"),                 # flex-link, C55136
+    ("TPS3808G01DBVR", "reset supervisor"),       # linux-computer, C19653
+    ("TPS3823-33DBVR", "watchdog supervisor"),    # rf-plasma, C7719
 ]
 
 
@@ -823,6 +827,31 @@ def _tps22918_pads(rail):
             "6": "/VOUT"}
 
 
+# #815: the rows are the boards' own where filled (linux-computer's TPS3808,
+# rf-plasma's TPS3823) and the datasheets' recommended range where the board's
+# row is empty (twin-side's TPS2051C, flex-link's SY6280). The pads are the
+# datasheets' (SLVSAU6I, the SY6280/SY6280A application note, TPS3808 Table 5-1,
+# SLVS165O). rf-plasma's TPS3823 row lists its threshold options, so its top is
+# 5 V, under the datasheet's 5.5 V: the row's figure is still the bound.
+TPS2051C_ROW = [{"name": "Voltage - Supply", "value": "4.5V~5.5V"}]
+SY6280_ROW = [{"name": "Voltage - Supply", "value": "2.4V~5.5V"}]
+TPS3808_ROW = [{"name": "Voltage - Supply", "value": "1.7V~6.5V"}]
+TPS3823_ROW = [{"name": "Voltage - Supply", "value": "2.5V、3V、3.3V、5V"}]
+
+
+def _sy6280_pads(rail):
+    return {"1": "/VOUT", "2": "GND", "3": "/ISET", "4": "/EN", "5": rail}
+
+
+def _tps3808_pads(rail, sense=None):
+    return {"1": "/RESET", "2": "GND", "3": "/MR", "4": "/CT",
+            "5": sense or rail, "6": rail}
+
+
+def _tps3823_pads(rail):
+    return {"1": "/RESET", "2": "GND", "3": "/MR", "4": "/WDI", "5": rail}
+
+
 def _tps26631_pads(rail, in_sys=None):
     return {"1": rail, "2": rail, "5": in_sys or rail, "6": "/UVLO", "7": "/OVP",
             "8": "GND", "9": "/DVDT", "10": "/ILIM", "15": "GND", "17": "/VOUT",
@@ -902,6 +931,11 @@ def test_lm5069_vin_against_its_row(tmp_path, rail, errs):
     ("TPS2051BDBVR", TPS2051B_ROW, _tps2051b_pads("+5V") | {"1": "+12V"}),
     ("TPS22918DBVR", TPS22918_ROW, _tps22918_pads("+5V") | {"6": "+12V"}),
     ("TPS26631RGER", TPS26631_ROW, _tps26631_pads("+48V") | {"17": "+100V"}),
+    ("TPS2051CDBVR", TPS2051C_ROW, _tps2051b_pads("+5V") | {"1": "+12V"}),
+    ("SY6280AAC", SY6280_ROW, _sy6280_pads("+5V") | {"1": "+12V"}),
+    # a supervisor's SENSE watches a rail of its own, and the table doesn't judge it
+    ("TPS3808G01DBVR", TPS3808_ROW, _tps3808_pads("+3V3", sense="+12V")),
+    ("TPS3823-33DBVR", TPS3823_ROW, _tps3823_pads("+3V3") | {"1": "+12V"}),
 ])
 def test_power_ic_is_judged_at_its_input_not_its_highest_net(
         tmp_path, mpn, attrs, pads):
@@ -913,6 +947,11 @@ def test_power_ic_is_judged_at_its_input_not_its_highest_net(
     ("TPS2051BDBVR", TPS2051B_ROW, _tps2051b_pads("+12V"), "+12V", "U4.5", 5.5),
     ("TPS22918DBVR", TPS22918_ROW, _tps22918_pads("+12V"), "+12V", "U4.1", 5.5),
     ("TPS26631RGER", TPS26631_ROW, _tps26631_pads("+100V"), "+100V", "U4.1", 60),
+    ("TPS2051CDBVR", TPS2051C_ROW, _tps2051b_pads("+12V"), "+12V", "U4.5", 5.5),
+    ("SY6280AAC", SY6280_ROW, _sy6280_pads("+12V"), "+12V", "U4.5", 5.5),
+    ("TPS3808G01DBVR", TPS3808_ROW, _tps3808_pads("+12V", sense="+3V3"),
+     "+12V", "U4.6", 6.5),
+    ("TPS3823-33DBVR", TPS3823_ROW, _tps3823_pads("+12V"), "+12V", "U4.5", 5),
 ])
 def test_new_power_ic_over_its_input_is_an_error_naming_ref_rail_and_limit(
         tmp_path, mpn, attrs, pads, net, pin, limit):
@@ -932,6 +971,10 @@ def test_new_power_ic_over_its_input_is_an_error_naming_ref_rail_and_limit(
     ("TPS2051BDBVR", TPS2051B_ROW, _tps2051b_pads("+5V5")),
     ("TPS22918DBVR", TPS22918_ROW, _tps22918_pads("+5V5")),
     ("TPS26631RGER", TPS26631_ROW, _tps26631_pads("+60V")),
+    ("TPS2051CDBVR", TPS2051C_ROW, _tps2051b_pads("+5V5")),
+    ("SY6280AAC", SY6280_ROW, _sy6280_pads("+5V5")),
+    ("TPS3808G01DBVR", TPS3808_ROW, _tps3808_pads("+6V5")),
+    ("TPS3823-33DBVR", TPS3823_ROW, _tps3823_pads("+5V")),
 ])
 def test_new_power_ic_within_its_input_passes_and_is_compared(
         tmp_path, mpn, attrs, pads):
@@ -945,6 +988,11 @@ def test_new_power_ic_within_its_input_passes_and_is_compared(
     ("TPS2051BDBVR", TPS2051B_ROW, _tps2051b_pads("+5V8"), "+5V8", 5.5),
     ("TPS22918DBVR", TPS22918_ROW, _tps22918_pads("+5V8"), "+5V8", 5.5),
     ("TPS26631RGER", TPS26631_ROW, _tps26631_pads("+65V"), "+65V", 60),
+    ("TPS2051CDBVR", TPS2051C_ROW, _tps2051b_pads("+5V8"), "+5V8", 5.5),
+    ("TPS3808G01DBVR", TPS3808_ROW, _tps3808_pads("+6V8", sense="+3V3"),
+     "+6V8", 6.5),
+    # the listing's 5 V, not the datasheet's 5.5 V recommended or 6 V absolute
+    ("TPS3823-33DBVR", TPS3823_ROW, _tps3823_pads("+5V4"), "+5V4", 5),
     # 5.25 V and 80 V rows against 5.5 V and 100 V absolute maxima
     ("TPS60403DBVR", TPS_ROW, _tps_pads("+5V4"), "+5V4", 5.25),
     ("LM5069MM-2/NOPB", LM5069_ROW, _lm5069_pads("+90V"), "+90V", 80),
@@ -998,7 +1046,15 @@ def test_power_ic_other_packages_pads_are_not_its_input(
 
 
 @pytest.mark.parametrize("mpn", [
-    "TPS2051CDBVR",    # twin-side U113: a different part, no row of its own
+    "TPS2051CDGNR",    # a package no board uses, its input on other pads
+    "TPS3808G01DRVR",  # the WSON: VDD is pad 1, not 6
+    "TPS3808G33DBVR",  # read only for G01
+    "TPS3823-50DBVR",  # read only for -33
+    "TPS3824-33DBVR",  # a sibling with its own pinout
+    "SY6280AAAC",      # the SY6280A, which no board uses
+    # one input bound is the wrong shape for these: an extraction judges them
+    "INA226AIDGSR", "INA237AIDGSR", "INA240A2DR", "INA3221AIRGVR",
+    "UCC27524ADR", "UCC27611DRVR", "SN6505BDBVR",
     "TPS2051BQDBVRQ1", # the automotive part has its own datasheet
     "TPS2051DBVR",     # no B, an older part
     "TPS26630RGER",    # read only for TPS26631
@@ -1046,6 +1102,14 @@ def test_power_ic_input_with_no_volts_says_it_is_unjudged_and_why(
      "IN_SYS at 12 V, IN at 24 V within the 60 V row; other pins unrated"),
     ("TPS2051BDBVR", TPS2051B_ROW, _tps2051b_pads("+5V"),
      "IN at 5 V within the 5.5 V row; other pins unrated"),
+    ("TPS2051CDBVR", TPS2051C_ROW, _tps2051b_pads("+5V"),
+     "IN at 5 V within the 5.5 V row; other pins unrated"),
+    ("SY6280AAC", SY6280_ROW, _sy6280_pads("+5V"),
+     "IN at 5 V within the 5.5 V row; other pins unrated"),
+    ("TPS3808G01DBVR", TPS3808_ROW, _tps3808_pads("+3V3"),
+     "VDD at 3.3 V within the 6.5 V row; other pins unrated"),
+    ("TPS3823-33DBVR", TPS3823_ROW, _tps3823_pads("+3V3"),
+     "VDD at 3.3 V within the 5 V row; other pins unrated"),
     ("LM66200DRLR", LM66200_ROW, _lm66200_pads("+5V", "+5V"),
      "VIN1/VIN2 at 5 V within the 5.5 V row; other pins unrated"),
 ])
@@ -1059,6 +1123,50 @@ def test_power_ic_input_within_its_row_says_so_and_stays_unrated(
     assert "no datasheet extraction" not in v["msg"]
     assert v["severity"] == "warning" and _errors(p) == []
     assert _fact(ws, "U4")["status"] == "unknown"
+
+
+# #815: a monitor's shunt pins take the bus and its VS takes a logic supply, so
+# one input bound can't judge it. An extraction with per-pin limits can, and needs
+# no table row. Limits and pads: TI SBOS547C section 5.1 and Pin Functions, DGS.
+INA226_EXT = {
+    "mpn": "INA226AIDGSR",
+    "pinout": [{"pin": p, "name": n, "type": t} for p, n, t in [
+        ("1", "A1", "input"), ("2", "A0", "input"), ("3", "ALERT", "output"),
+        ("4", "SDA", "bidirectional"), ("5", "SCL", "input"),
+        ("6", "VS", "power_in"), ("7", "GND", "ground"), ("8", "VBUS", "input"),
+        ("9", "IN-", "input"), ("10", "IN+", "input")]],
+    "pin_ratings": [
+        {"pins": ["VS"], "kind": "voltage", "level": "abs_max", "max": 6,
+         "source": "SBOS547C 5.1"},
+        {"pins": ["IN+", "IN-", "VBUS"], "kind": "voltage", "level": "abs_max",
+         "min": -0.3, "max": 40, "source": "SBOS547C 5.1"}]}
+
+
+def _ina226_pads(vs, bus):
+    return {"1": "GND", "2": "GND", "3": "/ALERT", "4": "/SDA", "5": "/SCL",
+            "6": vs, "7": "GND", "8": bus, "9": bus, "10": bus}
+
+
+def test_monitor_extraction_judges_sense_pins_and_supply_apart(tmp_path):
+    jsonschema.validate(INA226_EXT, datasheet_extract.DATASHEET_SCHEMA)
+    ws = _power_ic(tmp_path, "INA226AIDGSR", [], _ina226_pads("+3V3", "+24V"),
+                   ext=INA226_EXT)
+    assert _errors(_run(ws)) == []
+    assert _fact(ws, "U4")["status"] != "failed"
+
+
+@pytest.mark.parametrize("vs,bus,net,pins,limit", [
+    # 24 V is fine at IN+, and would burn VS
+    ("+24V", "+24V", "+24V", {"U4.6"}, 6),
+    ("+3V3", "+48V", "+48V", {"U4.8", "U4.9", "U4.10"}, 40),
+])
+def test_monitor_extraction_over_a_pin_limit_names_that_pin(
+        tmp_path, vs, bus, net, pins, limit):
+    errs = _errors(_run(_power_ic(tmp_path, "INA226AIDGSR", [],
+                                  _ina226_pads(vs, bus), ext=INA226_EXT)))
+    assert {v["pin"] for v in errs} == pins
+    assert {(v["kind"], v["net"], v["limit_v"]) for v in errs} == {
+        ("rating_over_voltage", net, limit)}
 
 
 def test_power_ic_names_only_the_input_with_no_volts(tmp_path):
@@ -1202,6 +1310,10 @@ def test_near_miss_of_a_power_ic_family_is_not_judged_by_its_table(
     ("TPS22918DBV", {"VIN": "1"}),
     ("TPS26631RGE", {"IN": "1 2", "IN_SYS": "5"}),
     ("TPS26631PWP", {"IN": "1 2 3", "IN_SYS": "6"}),
+    ("TPS2051CDBV", {"IN": "5"}),
+    ("SY6280AAC", {"IN": "5"}),
+    ("TPS3808G01DBV", {"VDD": "6"}),
+    ("TPS3823-33DBV", {"VDD": "5"}),
 ])
 def test_power_ic_table_gives_each_family_its_datasheet_pads(family, pins):
     row = cr.power_ic_row(family + "XYZ")

@@ -5,8 +5,8 @@ was never compared with the board. Rated here means a diode (D*, LED*), a fuse (
 cap (C*), a regulator (U*, VR*, IC* with a fixed output in the MPN, a known family's MPN code
 such as XC6206P332, a switcher family such as TPS54560B or TPS61040, or a row that says
 so) or a power IC known by its family (U*, VR*, IC*: charge pump TPS60400-03, ideal diode
-LM66200, hot-swap controller LM5069, power switch TPS2051B, load switch TPS22918, eFuse
-TPS26631).
+LM66200, hot-swap controller LM5069, power switch TPS2051B, TPS2051C or SY6280, load switch
+TPS22918, eFuse TPS26631, supervisor TPS3808G01 or TPS3823-33).
 On precision-daq, filling these rows showed D101 reversed by 5.25 V over its 5 V stand-off,
 and F101's hold current against the 0.6 A rail (#675).
 

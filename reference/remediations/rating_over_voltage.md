@@ -38,10 +38,11 @@ it is a respin.
   the msg says so: if that net is really its output, name the pads or add the extraction,
   which outranks the row. A row that says "boost" or "step-up" isn't judged that way.
 - A power IC judged from its row: the limit is the row's too, and the msg cites the datasheet
-  page its input pad came from (POWER_IC_FAMILIES). On every family there the row's top is the
-  recommended maximum, below the absolute one (TPS60403: 5.25 V listed, 5.5 V abs max), and it
-  stays the bound (#807): a rail between them is outside what the part is specified for, so it
-  fails. Check the page before accepting one, and add the extraction, which outranks the row.
+  page its input pad came from (POWER_IC_FAMILIES). A filled row's top is the recommended
+  maximum, below the absolute one (TPS60403: 5.25 V listed, 5.5 V abs max), and it stays the
+  bound (#807): a rail between them is outside what the part is specified for, so it fails. A
+  TPS3823-33's row lists its threshold options, so its top is 5 V, under the datasheet's 5.5 V
+  (#815). Check the page before accepting one, and add the extraction, which outranks the row.
 
 ## Fix ladder (cheapest first)
 1. Wrong rail: move the pin to the rail it was meant for (3V3, not 5V) in the schematic.

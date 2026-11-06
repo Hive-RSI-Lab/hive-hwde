@@ -26,6 +26,10 @@ cap or power IC known by its family whose parts.json row is empty is also blocke
 - A power IC that says "IN at 24 V within the 60 V row; other pins unrated" was judged at its
   inputs and passed. The warning stands for the pins the row doesn't cover: an extraction
   (below) is what rates those.
+- A current monitor (INA226, INA237, INA240, INA3221), gate driver (UCC27524A, UCC27611) or
+  SN6505B has no table row, because one input bound is the wrong shape: its sense, bus, gate or
+  drain pins take rails its supply can't (#815). An extraction whose `pin_ratings` gives each
+  pin its limit judges them apart, with no table row.
 
 ## Fix ladder (cheapest first)
 1. Rail voltage missing: add it to constraints.json `voltages`.
