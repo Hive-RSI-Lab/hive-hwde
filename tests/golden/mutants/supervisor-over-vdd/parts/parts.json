@@ -1,0 +1,18 @@
+{
+  "parts": [
+    {
+      "ref_prefix_hint": "U",
+      "mpn": "TPS3823-33DBVR",
+      "lcsc": "C7719",
+      "value": "TPS3823-33DBVR",
+      "package": "SOT-23-5",
+      "attributes": [
+        {
+          "name": "Voltage - Supply",
+          "value": "1.1V~4V"
+        }
+      ],
+      "role": "U2 watchdog supervisor"
+    }
+  ]
+}

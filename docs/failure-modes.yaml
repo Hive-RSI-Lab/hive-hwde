@@ -581,7 +581,7 @@ modes:
   target_level: L2
   gap: warning only, 3-18 per board, bar a rated part whose parts.json row is
     empty (diode, fuse, regulator, cap, a charge pump, ideal diode, hot-swap,
-    power switch, load switch or eFuse family), which blocks as rating_no_attributes;
+    power switch, load switch, eFuse or supervisor family), which blocks as rating_no_attributes;
     a filled regulator's row is judged against its rails but stays unverified,
     a known power-IC family's against the rail on the input pad its datasheet names,
     saying so by name when that rail has no volts, and that it is within the row when not,
