@@ -348,8 +348,9 @@ class Grid:
         return (round(self.x0 + i * self.g, 4), round(self.y0 + j * self.g, 4))
 
 
-def _mask(shape, r, X, Y, P, x0, y0, g, nx, ny):
-    """Bool mask of grid points within r of shape (sub-window only)."""
+def _mask(shape, r, X, Y, x0, y0, g, nx, ny):
+    """Bool mask of grid points within r of shape (sub-window only). Its points
+    are made here: all of a whole-board grid's as shapely objects is ~6 GB."""
     b = shape.bounds
     i0 = max(0, int(math.floor((b[0] - r - x0) / g)))
     i1 = min(nx - 1, int(math.ceil((b[2] + r - x0) / g)))
@@ -357,8 +358,8 @@ def _mask(shape, r, X, Y, P, x0, y0, g, nx, ny):
     j1 = min(ny - 1, int(math.ceil((b[3] + r - y0) / g)))
     if i0 > i1 or j0 > j1:
         return None
-    sub = P[j0:j1 + 1, i0:i1 + 1]
-    return (slice(j0, j1 + 1), slice(i0, i1 + 1)), shapely.dwithin(shape, sub, r)
+    at = (slice(j0, j1 + 1), slice(i0, i1 + 1))
+    return at, shapely.dwithin(shape, shapely.points(X[at], Y[at]), r)
 
 
 def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
@@ -375,7 +376,6 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
     xs = x0 + np.arange(nx) * g
     ys = y0 + np.arange(ny) * g
     X, Y = np.meshgrid(xs, ys)
-    P = shapely.points(X, Y)
     win = box(x0 - 1, y0 - 1, x0 + nx * g + 1, y0 + ny * g + 1)
     w = rules.width(net) if width is None else width
     via_size, via_drill = via or (rules.via_size, rules.via_drill)
@@ -385,7 +385,7 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
     vblk = np.zeros((ny, nx), bool)
     cost = [np.full((ny, nx), inner_cost if layer not in (
         bg.copper_layers[0], bg.copper_layers[-1]) else 1.0) for layer in layers]
-    args = (X, Y, P, x0, y0, g, nx, ny)
+    args = (X, Y, x0, y0, g, nx, ny)
 
     soft = obs.soft_board
     for it in obs.near(win):
@@ -509,7 +509,7 @@ def _span_moves(obs, rules: Rules, net: str, layers: list, win, args, K: int,
         if len(ks) < 2:
             continue
         vr = sp.size / 2
-        m = np.zeros((args[7], args[6]), bool)
+        m = np.zeros((args[6], args[5]), bool)
         for it in obs.near(win):
             if not on & set(it.layers):
                 continue
@@ -531,7 +531,8 @@ def _span_moves(obs, rules: Rules, net: str, layers: list, win, args, K: int,
                 hit = _mask(it.hole, sp.drill / 2 + rules.margin
                             + SAME_NET_HOLE_MM, *args)
                 if hit:
-                    stack = shapely.dwithin(it.hole.centroid, args[2][hit[0]], 0.01)
+                    stack = shapely.dwithin(
+                        it.hole.centroid, shapely.points(X[hit[0]], Y[hit[0]]), 0.01)
                     m[hit[0]] |= hit[1] & ~stack
         for ra in obs.bg.rule_areas:
             if ra.get("flags", {}).get("vias") == "not_allowed" \
