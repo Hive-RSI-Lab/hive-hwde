@@ -208,6 +208,16 @@ takes the rail's converter, read from the board and constraints.json, RMS:
     the same rail, the two add in RSS. A bus block with no bus_net leaves every
     rail it could be on unjudged (any rail not declared below its vin_v): the
     rail's other converters alone would understate what its caps carry.
+  declared bus figure (#816): a bus block's bus_irms_a, with bus_irms_source
+    saying where the design states it, wins over the duty shape, since a
+    three-phase bridge's bus is not one duty. It reads as declared, never as
+    computed, and "declared_bus" in facts says what the duty shape would have
+    given. A figure that isn't above 0, is above the block's iout_a, or cites
+    nothing leaves the cap unjudged and says why.
+  return side (#816): a cap's current goes in one pad and out the other, so a
+    cap on a return net (declared 0 V, or undeclared with a ground name) takes
+    the figure of the rail on its other pad. Bulk caps of several rails on one
+    branch add in RSS; a decoupling cap's rail adds nothing.
 Sources: Freescale/NXP AN4067 rev 1.0 (2010), "Selecting L and C Components in
 the Power Stage of the MC34700 Switching Regulators": section 2.2, output RMS
 dI / sqrt(12); section 3, input RMS Iout * sqrt(D - D^2). dI is the same
@@ -281,6 +291,7 @@ SWITCH_NODES_YAML = (Path(__file__).resolve().parent.parent / "reference"
                      / "switch_nodes.yaml")
 CONVERTER_FSW_YAML = SWITCH_NODES_YAML.with_name("converter_fsw.yaml")
 BUS_TOPOLOGIES = {"class-d-amp", "half-bridge-inverter"}
+RETURN_NET = re.compile(r"(?:[ADPSC]?GND\w*|VSS\w*|0V)", re.I)
 AN4067 = "NXP AN4067"
 INFERRED_DT_C = 60.0           # switch-node screen without constraints
 SWITCH_PIN_NAMES = {"SW", "LX", "PH"}  # unrated-part facts (switch_nodes.yaml)
@@ -971,6 +982,35 @@ def _buck_input(bg, net: str, ic: str, volts: dict, cons: dict):
                        "vout_v": vout, "out_net": out}}
 
 
+def _declared_bus_term(topology: str, name: str, op: dict):
+    """The term of a block's declared bus ripple (module docstring), or a string
+    saying why it can't be used."""
+    amps, iout = op["bus_irms_a"], op.get("iout_a")
+    source = op.get("bus_irms_source")
+    who = f"{topology} block {name}"
+    if isinstance(amps, bool) or not isinstance(amps, (int, float)):
+        return f"{who} has bus_irms_a {amps!r}, which is not a number"
+    if iout is None:
+        return f"{who} needs iout_a to bound its bus_irms_a"
+    if not isinstance(source, str) or not source.strip():
+        return f"{who} declares bus_irms_a with no bus_irms_source to cite"
+    if amps < 0:
+        return f"{who} has a negative bus_irms_a {amps}"
+    if amps == 0:
+        return f"{who} has bus_irms_a 0: a figure must be above 0"
+    if amps > float(iout):
+        return (f"{who} has bus_irms_a {amps} above iout_a {iout}: the bus "
+                f"can't ripple more than the phase current")
+    term = {"from": name, "amps": float(amps), "declared": True, "source": source,
+            "formula": f"declared ({source})",
+            "inputs": {"bus_irms_a": float(amps), "iout_a": float(iout)}}
+    duty = op.get("duty")
+    if duty is not None and 0 <= float(duty) <= 1:
+        term["duty_formula_a"] = float(iout) * math.sqrt(
+            float(duty) * (1 - float(duty)))
+    return term
+
+
 def _bus_terms(net: str, blocks: list):
     """Ripple terms of the class-D or half-bridge blocks declaring this bus, or
     a string saying what can't be read."""
@@ -981,6 +1021,12 @@ def _bus_terms(net: str, blocks: list):
             continue
         name = b.get("block") or b.get("name") or b["topology"]
         duty, iout = op.get("duty"), op.get("iout_a")
+        if op.get("bus_irms_a") is not None:
+            term = _declared_bus_term(b["topology"], name, op)
+            if isinstance(term, str):
+                return term
+            terms.append(term)
+            continue
         if duty is None or iout is None:
             return (f"{b['topology']} block {name} needs iout_a and duty in its "
                     f"operating_point")
@@ -993,6 +1039,41 @@ def _bus_terms(net: str, blocks: list):
     return terms
 
 
+def _is_return(net: str, volts: dict) -> bool:
+    """A return net: declared 0 V, or undeclared with a ground name."""
+    if net in volts:
+        return volts[net] == 0
+    return bool(RETURN_NET.fullmatch(net.lstrip("/")))
+
+
+def _return_rails(bg: geom.BoardGeom, net: str, far: list, volts: dict) -> dict:
+    """{rail: [refs]}: the rail on the other pad of each bulk cap of `far`."""
+    rails: dict = {}
+    for ref in far:
+        value = _farads(bg, ref)
+        if value is None or value <= DECOUPLING_MAX_F:
+            continue
+        for rail in set(_other_nets(bg, ref, net)):
+            if not _is_return(rail, volts):
+                rails.setdefault(rail, []).append(ref)
+    return rails
+
+
+def _return_ripple(bg: geom.BoardGeom, net: str, far: list, cons: dict,
+                   volts: dict) -> dict:
+    """cap_ripple for caps on a return net: the figures of their rails."""
+    rails = _return_rails(bg, net, far, volts)
+    if not rails:
+        return {"why": f"no converter to read on {net}"}
+    terms = []
+    for rail in sorted(rails):
+        rip = cap_ripple(bg, rail, rails[rail], cons)
+        if "why" in rip:
+            return {"why": f"return of {rail}: {rip['why']}"}
+        terms += [dict(t, rail=rail) for t in rip["terms"]]
+    return {"amps": math.sqrt(sum(t["amps"] ** 2 for t in terms)), "terms": terms}
+
+
 def _may_draw_from(block: dict, net: str, volts: dict) -> bool:
     """A class-D or half-bridge block with no bus_net could be on this rail,
     unless the rail is declared below the block's own input."""
@@ -1001,6 +1082,12 @@ def _may_draw_from(block: dict, net: str, volts: dict) -> bool:
         return False
     vin, rail = op.get("vin_v"), volts.get(net)
     return vin is None or rail is None or rail >= float(vin)
+
+
+def _declared_volts(cons: dict | None) -> dict:
+    return {row["net"]: float(row["voltage"])
+            for row in (cons or {}).get("voltages") or []
+            if row.get("net") and row.get("voltage") is not None}
 
 
 def cap_ripple(bg: geom.BoardGeom, net: str, far: list, cons: dict | None):
@@ -1015,10 +1102,9 @@ def cap_ripple(bg: geom.BoardGeom, net: str, far: list, cons: dict | None):
             v is not None for v in values) else "capacitor value not readable"}
     cons = cons or {}
     blocks = cons.get("blocks") or []
-    volts = {}
-    for row in cons.get("voltages") or []:
-        if row.get("net") and row.get("voltage") is not None:
-            volts[row["net"]] = float(row["voltage"])
+    volts = _declared_volts(cons)
+    if _is_return(net, volts):
+        return _return_ripple(bg, net, far, cons, volts)
     buses = _bus_terms(net, blocks)
     if isinstance(buses, str):
         return {"why": buses}
@@ -1038,7 +1124,7 @@ def cap_ripple(bg: geom.BoardGeom, net: str, far: list, cons: dict | None):
                     return {"why": term}
                 outputs.append(term)
     terms = buses + outputs
-    if not terms and volts.get(net) != 0:
+    if not terms:
         for ic in sorted({p.ref for p in bg.pads_of(net=net) if _is_ic(p.ref)
                           and feeds_or_converts(bg, p.ref, net)}):
             term = _buck_input(bg, net, ic, volts, cons)
@@ -1059,18 +1145,29 @@ def rail_ripple(bg: geom.BoardGeom, net: str, cons: dict | None) -> float:
     can be read. It can pass the rail's budget (a buck's input carries more
     RMS than DC below D = 0.5), so copper that meets the budget is held to it
     too once it proves a capacitor branch."""
-    caps = bulk_caps(bg, net)
-    rip = cap_ripple(bg, net, sorted(caps)[:1], cons) if caps else None
-    return rip["amps"] if rip and "amps" in rip else 0.0
+    caps = sorted(bulk_caps(bg, net))
+    groups = [caps[:1]] if caps else []
+    volts = _declared_volts(cons)
+    if _is_return(net, volts):       # any one rail's cap has that rail's figure
+        groups = [refs[:1] for refs in
+                  _return_rails(bg, net, caps, volts).values()]
+    rips = [cap_ripple(bg, net, refs, cons) for refs in groups]
+    return max((r["amps"] for r in rips if r and "amps" in r), default=0.0)
 
 
 def ripple_text(rip: dict) -> str:
     """The figure and its inputs, for a finding's message."""
     parts = []
     for t in rip["terms"]:
+        back = f"return of {t['rail']}: " if t.get("rail") else ""
+        if t.get("declared"):
+            parts.append(f"{back}{t['from']} bus ripple {t['amps']:g} A RMS "
+                         f"declared ({t['source']})")
+            continue
         args = ", ".join(f"{k}={v:.4g}" if isinstance(v, float) else f"{k}={v}"
                          for k, v in t["inputs"].items())
-        parts.append(f"{t['from']} {t['amps']:.3f} A = {t['formula']} with {args}")
+        parts.append(f"{back}{t['from']} {t['amps']:.3f} A = {t['formula']} "
+                     f"with {args}")
     return f"capacitor branch judged at its ripple {rip['amps']:.2f} A RMS: " + \
         "; ".join(parts)
 
@@ -1700,6 +1797,9 @@ def check_net(bg: geom.BoardGeom, entry: dict, cons: dict | None = None):
         facts["unjudged"] = unjudged
     if ripple_caps:
         facts["ripple_caps"] = ripple_caps
+    declared = _bus_terms(net, (cons or {}).get("blocks") or [])
+    if not isinstance(declared, str) and any(t.get("declared") for t in declared):
+        facts["declared_bus"] = [t for t in declared if t.get("declared")]
     if exits:
         seen = []
         for info in exits.values():

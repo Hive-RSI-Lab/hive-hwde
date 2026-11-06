@@ -440,6 +440,9 @@ Consumers per key (script -> phase):
   // half-bridge-inverter block declares bus_net (the net its bus cap is on),
   // iout_a and duty; without them the cap stays unjudged and says why. A block
   // with no bus_net leaves every rail not declared below its vin_v unjudged.
+  // #816: where the bus isn't one duty (a three-phase bridge), declare bus_irms_a
+  // and bus_irms_source (where the design states it, e.g.
+  // "research/power.md:91") instead; it wins over duty and must not pass iout_a.
   "blocks": [{"topology": "buck", "block": "B3", "name": "U1 AP64350 class",
               "operating_point": {"vin_v": 12, "vout_v": 5, "iout_a": 3,
                                   "pdiss_w": 0.8, "board_layers": 4,
