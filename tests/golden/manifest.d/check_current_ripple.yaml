@@ -18,8 +18,8 @@ mutants:
     script: mutations/inverter_bus_cap_single_via.py
     check: check_current
     defect: >-
-      SIDECAR fault: an inverter on VBUS declares 1.2 A RMS of bus ripple, so
-      C13's one via at 0.5 A falls short. The buck U2 alone gives C13 0.19 A, so
+      SIDECAR fault: an inverter on VBUS declares 1.2 A RMS of bus ripple, and C13's
+      even share of it, 0.6 A across two bus caps, is over its one via's 0.5 A. The buck U2 alone gives C13 0.19 A, so
       only the inverter's term can catch it.
     expect:
       kind: insufficient_transition_vias

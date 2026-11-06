@@ -443,6 +443,10 @@ Consumers per key (script -> phase):
   // #816: where the bus isn't one duty (a three-phase bridge), declare bus_irms_a
   // and bus_irms_source (where the design states it, e.g.
   // "research/power.md:91") instead; it wins over duty and must not pass iout_a.
+  // A bus figure is the whole bus's, shared evenly among the net's bus caps
+  // (facts "bus_share"). Where the design states a per-cap figure, add
+  // bus_cap_irms_a, bus_cap_irms_source and bus_cap_refs (the caps it applies
+  // to): it wins for those caps and must not pass the whole figure.
   "blocks": [{"topology": "buck", "block": "B3", "name": "U1 AP64350 class",
               "operating_point": {"vin_v": 12, "vout_v": 5, "iout_a": 3,
                                   "pdiss_w": 0.8, "board_layers": 4,

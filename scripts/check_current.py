@@ -195,7 +195,8 @@ decoupling (check_decoupling's), listed in "unjudged" with a "why". A bigger one
 takes the rail's converter, read from the board and constraints.json, RMS:
   buck output: dI / sqrt(12), dI = Vout * (1 - D) / (L * fsw), D = Vout / Vin;
     the inductor from the rail to a switch node, Vin the higher declared rail on
-    the switcher, fsw from reference/converter_fsw.yaml or the buck block's
+    the switcher (a net a capacitor ties to the switch node is its bootstrap,
+    not a rail), fsw from reference/converter_fsw.yaml or the buck block's
     fsw_khz. It alone is counted when the rail also feeds a switcher.
   buck input: Iout * sqrt(D * (1 - D)), D = Vout / Vin, Iout = the power entry
     of the rail past the switcher's inductor; several converters add in RSS,
@@ -222,8 +223,20 @@ Sources: Freescale/NXP AN4067 rev 1.0 (2010), "Selecting L and C Components in
 the Power Stage of the MC34700 Switching Regulators": section 2.2, output RMS
 dI / sqrt(12); section 3, input RMS Iout * sqrt(D - D^2). dI is the same
 inductor ripple as TI SLVA477C, "Basic Calculation of a Buck Converter's Power
-Stage". The whole figure goes on each capacitor's copper, not shared among
-parallel ones: an upper bound. Copper that carries it passes, with the figure
+Stage".
+
+A bus figure, declared or from duty, is the whole bus's, so it is shared among
+the net's bus caps: evenly, facts "bus_share" method "even", since which cap sits
+nearest which switch isn't modelled, so a cap beside a switch may carry more than
+its share. A branch of several adds their shares, in phase, up to the whole. A
+block can declare a cited per-cap figure, bus_cap_irms_a with bus_cap_irms_source
+and bus_cap_refs: it wins for those caps ("declared"), and the others keep the even
+share. A bulk cap the bus doesn't feed is left out: one not listed in bus_cap_refs
+whose nearest switch, pad to pad, is a readable buck on the net, not a bus switch (a
+Q part or another IC on it), takes that buck's input term ("buck_input_caps").
+With no bus switch on the net, nearest says nothing and every cap stays a bus cap.
+Other rails aren't shared: a buck's input or output term stays whole on each
+capacitor's copper, an upper bound. Copper that carries it passes, with the figure
 and its inputs in facts "ripple_caps"; copper that doesn't fails as an error
 with both in the finding, plane-fed or not. A boost, or a figure with any input
 missing, stays in "unjudged" and its "why" says what is missing: no default is
@@ -893,15 +906,32 @@ def _switchers_on(bg: geom.BoardGeom, node: str) -> list[str]:
         pin_name(p) in SWITCH_PIN_NAMES or SWITCH_NET.search(node))})
 
 
+def _bootstrap_nets(bg: geom.BoardGeom, node: str) -> set:
+    """Nets a capacitor ties to switch node `node`. It rides on the node, so it
+    is a bootstrap rail, whatever is declared for it, and no switcher's input."""
+    return {n for p in bg.pads_of(net=node) if re.fullmatch(r"C\d+", p.ref)
+            for n in _other_nets(bg, p.ref, node)}
+
+
+def _boost_block_on(blocks: list, vin: float, above: dict) -> bool:
+    """A boost block runs from `vin` to the rail the switcher has above it, or
+    the switcher has none. Another block's input is no word on this one: PCB-0018's
+    U202 boosts from +5V, and U201 on VM bucks into it."""
+    for b in blocks:
+        op = b.get("operating_point") or {}
+        if "boost" in str(b.get("topology", "")) and op.get("vin_v") == vin and (
+                not above or op.get("vout_v") is None
+                or float(op["vout_v"]) in above.values()):
+            return True
+    return False
+
+
 def _buck_output(bg, net: str, ind: str, node: str, volts: dict, blocks: list):
     """The ripple term of inductor `ind` from `net` to switch node `node`, or a
     string saying what can't be read."""
     vout = volts.get(net)
     if vout is None:
         return f"{net} has no declared voltage for {ind}'s ripple"
-    if any("boost" in str(b.get("topology", "")) and (
-            b.get("operating_point") or {}).get("vin_v") == vout for b in blocks):
-        return f"{ind} is a boost's inductor; only a buck's ripple is read"
     for pad in bg.pads_of(net=node):
         if re.fullmatch(r"D\d+", pad.ref) and any(
                 volts.get(n, -math.inf) > vout
@@ -912,11 +942,15 @@ def _buck_output(bg, net: str, ind: str, node: str, volts: dict, blocks: list):
         return f"{node} has {len(ics)} switcher ICs; can't read {ind}'s input"
     ic = ics[0]
     above = {}
+    boot = _bootstrap_nets(bg, node)
     for p in bg.pads_of(ref=ic):
-        if p.net and p.net != node and volts.get(p.net, -math.inf) > vout:
+        if p.net and p.net != node and p.net not in boot and (
+                volts.get(p.net, -math.inf) > vout):
             if SOURCE_PIN.fullmatch(pin_name(p) or ""):
                 return f"{ind} is a boost's inductor; only a buck's ripple is read"
             above[p.net] = volts[p.net]
+    if _boost_block_on(blocks, vout, above):
+        return f"{ind} is a boost's inductor; only a buck's ripple is read"
     if len(above) != 1:
         return (f"{ic} has {len(above)} declared rails above {net}; can't read "
                 f"its input voltage")
@@ -1011,9 +1045,33 @@ def _declared_bus_term(topology: str, name: str, op: dict):
     return term
 
 
+def _per_cap_figure(topology: str, name: str, op: dict, whole: float):
+    """The block's declared per-cap figure as a dict, None if it has none, or a
+    string saying why it can't be used."""
+    amps, refs = op.get("bus_cap_irms_a"), op.get("bus_cap_refs")
+    source = op.get("bus_cap_irms_source")
+    if amps is None and refs is None and source is None:
+        return None
+    who = f"{topology} block {name}"
+    if isinstance(amps, bool) or not isinstance(amps, (int, float)):
+        return f"{who} has bus_cap_irms_a {amps!r}, which is not a number"
+    if not isinstance(source, str) or not source.strip():
+        return f"{who} declares bus_cap_irms_a with no bus_cap_irms_source to cite"
+    if not isinstance(refs, list) or not refs:
+        return f"{who} declares bus_cap_irms_a with no bus_cap_refs list to apply to"
+    if amps < 0:
+        return f"{who} has a negative bus_cap_irms_a {amps}"
+    if amps == 0:
+        return f"{who} has bus_cap_irms_a 0: a figure must be above 0"
+    if amps > whole:
+        return (f"{who} has bus_cap_irms_a {amps} above the whole bus figure "
+                f"{whole:g}")
+    return {"amps": float(amps), "source": source, "refs": [str(r) for r in refs]}
+
+
 def _bus_terms(net: str, blocks: list):
-    """Ripple terms of the class-D or half-bridge blocks declaring this bus, or
-    a string saying what can't be read."""
+    """Ripple terms of the class-D or half-bridge blocks declaring this bus, each
+    with the whole bus's figure, or a string saying what can't be read."""
     terms = []
     for b in blocks:
         op = b.get("operating_point") or {}
@@ -1025,6 +1083,11 @@ def _bus_terms(net: str, blocks: list):
             term = _declared_bus_term(b["topology"], name, op)
             if isinstance(term, str):
                 return term
+            per_cap = _per_cap_figure(b["topology"], name, op, term["amps"])
+            if isinstance(per_cap, str):
+                return per_cap
+            if per_cap:
+                term["per_cap"] = per_cap
             terms.append(term)
             continue
         if duty is None or iout is None:
@@ -1032,11 +1095,87 @@ def _bus_terms(net: str, blocks: list):
                     f"operating_point")
         if not 0 <= float(duty) <= 1:
             return f"{b['topology']} block {name} has duty {duty} outside 0..1"
-        terms.append({"from": name,
-                      "amps": float(iout) * math.sqrt(duty * (1 - float(duty))),
-                      "formula": f"Iout * sqrt(D * (1 - D)) (#798; {AN4067} 3)",
-                      "inputs": {"iout_a": float(iout), "duty": float(duty)}})
+        term = {"from": name,
+                "amps": float(iout) * math.sqrt(duty * (1 - float(duty))),
+                "formula": f"Iout * sqrt(D * (1 - D)) (#798; {AN4067} 3)",
+                "inputs": {"iout_a": float(iout), "duty": float(duty)}}
+        per_cap = _per_cap_figure(b["topology"], name, op, term["amps"])
+        if isinstance(per_cap, str):
+            return per_cap
+        if per_cap:
+            term["per_cap"] = per_cap
+        terms.append(term)
     return terms
+
+
+def _split_bus_caps(bg: geom.BoardGeom, net: str, buses: list, volts: dict,
+                    cons: dict):
+    """(the caps sharing the bus, {cap: its buck's input term}) by the switch each
+    is nearest (module docstring), or a string saying what can't be read."""
+    caps = bulk_caps(bg, net)
+    named = {r for t in buses for r in (t.get("per_cap") or {}).get("refs", ())}
+    missing = sorted(named - caps)
+    if missing:
+        return f"bus_cap_refs names {missing}, not bulk capacitors on {net}"
+    pads = bg.pads_of(net=net)
+    ics = {p.ref for p in pads if _is_ic(p.ref)}
+    bucks = {}
+    for ic in sorted(ics):
+        term = _buck_input(bg, net, ic, volts, cons) if feeds_or_converts(
+            bg, ic, net) else None
+        if isinstance(term, dict):
+            bucks[ic] = term
+    switches = {p.ref: [] for p in pads if p.ref in ics
+                or re.fullmatch(r"Q\d+", p.ref)}
+    if not bucks or len(switches) == len(bucks):
+        return sorted(caps), {}
+    for p in pads:
+        if p.ref in switches:
+            switches[p.ref].append(p.center)
+    inputs = {}
+    for cap in caps - named:
+        at = [p.center for p in pads if p.ref == cap]
+        _, nearest = min((min(math.dist(a, c) for a in at for c in centers), ref)
+                         for ref, centers in switches.items())
+        if nearest in bucks:
+            inputs[cap] = dict(bucks[nearest], nearest_switch=nearest)
+    return sorted(caps - set(inputs)), inputs
+
+
+def _bus_share(term: dict, far: list, shared: list) -> dict:
+    """Bus term `term` as branch `far` of the bus caps `shared` carries it: what
+    each cap has, added up (one waveform, in phase), never past the whole."""
+    whole, each = term["amps"], term["amps"] / len(shared)
+    per_cap = term.get("per_cap")
+    listed = [r for r in far if per_cap and r in per_cap["refs"]]
+    amps = len(far) * each
+    share = {"method": "sole" if len(shared) == 1 else "even", "caps": len(shared),
+             "of_a": whole, "refs": shared}
+    out = {k: v for k, v in term.items() if k != "per_cap"}
+    if listed:
+        amps = min(whole, len(listed) * per_cap["amps"]
+                   + (len(far) - len(listed)) * each)
+        share.update(method="declared" if len(listed) == len(far)
+                     else "declared+even", declared_refs=listed,
+                     each_declared_a=per_cap["amps"], even_a=each)
+        if out.get("source"):
+            share["of_source"] = out["source"]
+        out.update(declared=True, source=per_cap["source"])
+    if len(far) > 1:
+        share["branch_caps"] = len(far)
+    return dict(out, amps=amps, share=share)
+
+
+def _bus_share_fact(term: dict, shared: list) -> dict:
+    """For facts: how a whole bus figure is split, and between which caps."""
+    fact = {"from": term["from"], "caps": len(shared), "refs": shared,
+            "method": "sole" if len(shared) == 1 else "even",
+            "of_a": term["amps"], "each_a": term["amps"] / len(shared)}
+    per_cap = term.get("per_cap")
+    if per_cap:
+        fact.update(method="declared", declared_refs=per_cap["refs"],
+                    each_declared_a=per_cap["amps"], source=per_cap["source"])
+    return fact
 
 
 def _is_return(net: str, volts: dict) -> bool:
@@ -1123,7 +1262,21 @@ def cap_ripple(bg: geom.BoardGeom, net: str, far: list, cons: dict | None):
                 if isinstance(term, str):
                     return {"why": term}
                 outputs.append(term)
-    terms = buses + outputs
+    shares = []
+    if buses:
+        split = _split_bus_caps(bg, net, buses, volts, cons)
+        if isinstance(split, str):
+            return {"why": split}
+        shared, inputs = split
+        on_bus = [ref for ref in far if ref in shared]
+        if on_bus:
+            shares = [_bus_share(t, on_bus, shared) for t in buses]
+        seen = {}
+        for ref in far:
+            if ref in inputs:
+                seen.setdefault(inputs[ref]["from"], inputs[ref])
+        shares += list(seen.values())
+    terms = shares + outputs
     if not terms:
         for ic in sorted({p.ref for p in bg.pads_of(net=net) if _is_ic(p.ref)
                           and feeds_or_converts(bg, p.ref, net)}):
@@ -1146,11 +1299,15 @@ def rail_ripple(bg: geom.BoardGeom, net: str, cons: dict | None) -> float:
     RMS than DC below D = 0.5), so copper that meets the budget is held to it
     too once it proves a capacitor branch."""
     caps = sorted(bulk_caps(bg, net))
-    groups = [caps[:1]] if caps else []
     volts = _declared_volts(cons)
-    if _is_return(net, volts):       # any one rail's cap has that rail's figure
-        groups = [refs[:1] for refs in
-                  _return_rails(bg, net, caps, volts).values()]
+    blocks = (cons or {}).get("blocks") or []
+
+    def groups_of(rail, refs):       # only a bus's caps differ from one another
+        return [[r] for r in refs] if _bus_terms(rail, blocks) else [refs[:1]]
+    groups = groups_of(net, caps) if caps else []
+    if _is_return(net, volts):
+        groups = [g for rail, refs in _return_rails(bg, net, caps, volts).items()
+                  for g in groups_of(rail, refs)]
     rips = [cap_ripple(bg, net, refs, cons) for refs in groups]
     return max((r["amps"] for r in rips if r and "amps" in r), default=0.0)
 
@@ -1160,14 +1317,29 @@ def ripple_text(rip: dict) -> str:
     parts = []
     for t in rip["terms"]:
         back = f"return of {t['rail']}: " if t.get("rail") else ""
+        share = t.get("share") or {}
+        n, branch = share.get("caps"), share.get("branch_caps", 1)
+        of = f" for {branch} caps" if branch > 1 else ""
+        if share.get("method") in ("declared", "declared+even"):
+            each = f"{share['each_declared_a']:.3g} A RMS per cap declared ({t['source']})"
+            mixed = (f", the rest an even share across {n} bus caps of "
+                     f"{share['of_a']:.3g} A RMS" if "even" in share["method"] else "")
+            head = "" if not of else f"{t['amps']:.3g} A RMS{of} at "
+            parts.append(f"{back}{t['from']} bus ripple {head}{each}{mixed}")
+            continue
+        split = (f", even share{of} across {n} bus caps of {share['of_a']:.3g}"
+                 if share.get("method") == "even" else "")
         if t.get("declared"):
-            parts.append(f"{back}{t['from']} bus ripple {t['amps']:g} A RMS "
+            whole = f"{split} A RMS" if split else " A RMS"
+            amps = f"{t['amps']:.3g}" + (" A RMS" if split else "")
+            parts.append(f"{back}{t['from']} bus ripple {amps}{whole} "
                          f"declared ({t['source']})")
             continue
         args = ", ".join(f"{k}={v:.4g}" if isinstance(v, float) else f"{k}={v}"
                          for k, v in t["inputs"].items())
-        parts.append(f"{back}{t['from']} {t['amps']:.3f} A = {t['formula']} "
-                     f"with {args}")
+        near = f" (nearest switch to it)" if t.get("nearest_switch") else ""
+        parts.append(f"{back}{t['from']}{near} {t['amps']:.3f} A"
+                     f"{split + ' A' if split else ''} = {t['formula']} with {args}")
     return f"capacitor branch judged at its ripple {rip['amps']:.2f} A RMS: " + \
         "; ".join(parts)
 
@@ -1800,6 +1972,15 @@ def check_net(bg: geom.BoardGeom, entry: dict, cons: dict | None = None):
     declared = _bus_terms(net, (cons or {}).get("blocks") or [])
     if not isinstance(declared, str) and any(t.get("declared") for t in declared):
         facts["declared_bus"] = [t for t in declared if t.get("declared")]
+    if declared and not isinstance(declared, str):
+        split = _split_bus_caps(bg, net, declared, _declared_volts(cons), cons)
+        if not isinstance(split, str):
+            shared, inputs = split
+            if shared:
+                facts["bus_share"] = [_bus_share_fact(t, shared) for t in declared]
+            if inputs:
+                facts["buck_input_caps"] = {
+                    ref: inputs[ref]["from"] for ref in sorted(inputs)}
     if exits:
         seen = []
         for info in exits.values():

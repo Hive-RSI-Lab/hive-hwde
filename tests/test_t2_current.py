@@ -1523,13 +1523,14 @@ CORE_KICAD = REPO / "pinned" / "core" / "kicad"
 C7_TAP = (90.987, 172.849)        # core: PVDD's one-via tap to C7, 10 uF
 
 
-def _core_pvdd(pcb=CORE_KICAD / "core.kicad_pcb", current_a=None):
-    """core's PVDD at the bus ripple of a class-D stage: 1.5 A at D = 0.5 is
-    0.75 A RMS, so one via at 0.5 A falls short and two carry it."""
+def _core_pvdd(pcb=CORE_KICAD / "core.kicad_pcb", current_a=None, iout_a=6.0):
+    """core's PVDD at the bus ripple of a class-D stage: 6 A at D = 0.5 is 3 A
+    RMS, 0.75 A each across its four bulk caps, so one via at 0.5 A falls short
+    and two carry it."""
     cons = json.loads((CORE_KICAD / "constraints.json").read_text(
         encoding="utf-8"))
     cons["blocks"] = [{"topology": "class-d-amp", "block": "B1", "name": "t",
-                       "operating_point": {"bus_net": "PVDD", "iout_a": 1.5,
+                       "operating_point": {"bus_net": "PVDD", "iout_a": iout_a,
                                            "duty": 0.5}}]
     entry = next(e for e in cons["power"] if e["net"] == "PVDD")
     if current_a is not None:
@@ -1593,9 +1594,9 @@ def test_ripple_finding_shows_its_inputs():
     """a777e's condition 2: a reader of a finding can check the number."""
     vs, _ = _core_pvdd()
     msg = _at(vs, C7_TAP)[0]["msg"]
-    assert "iout_a=1.5" in msg and "duty=0.5" in msg and "AN4067" in msg
+    assert "iout_a=6" in msg and "duty=0.5" in msg and "AN4067" in msg
     assert _at(vs, C7_TAP)[0]["ripple"]["terms"][0]["inputs"] == {
-        "iout_a": 1.5, "duty": 0.5}
+        "iout_a": 6.0, "duty": 0.5}
 
 
 def test_core_c7_tap_fails_at_its_ripple():
@@ -1608,6 +1609,17 @@ def test_core_c7_tap_fails_at_its_ripple():
     assert found[0]["refs"] == ["C7"]
     assert "0.75 A" in found[0]["msg"] and "ripple" in found[0]["msg"]
     assert list(C7_TAP) not in [u["pos"] for u in facts.get("unjudged", [])]
+
+
+def test_core_c7_even_share_is_not_its_real_share():
+    """The limit of an even share, pinned so nobody reads it as more. At 1.5 A, C7
+    is given a quarter of 0.75 A, and its one via passes, though a 10 uF at the
+    IC's input takes more than a 470 uF can 16 mm away (hifi review 2, thermal).
+    The facts say even, and a cited bus_cap_irms_a is how to say otherwise."""
+    vs, facts = _core_pvdd(iout_a=1.5)
+    assert _at(vs, C7_TAP) == []
+    assert facts["bus_share"][0]["method"] == "even"
+    assert facts["bus_share"][0]["each_a"] == pytest.approx(0.1875)
 
 
 def test_core_c7_with_vias_that_carry_it_passes(tmp_path):
@@ -1944,7 +1956,8 @@ def test_return_net_with_no_declared_voltage_draws_nothing(tmp_path_factory):
 
 def test_planted_inverter_bus_cap_fails(monkeypatch):
     """Known answer (c), #816: on the mutant, only the inverter's term can catch
-    C13's one via. usbbuck4's own buck gives it 0.19 A, which one via carries,
+    C13's one via, at half the declared 1.2 A with C13 one of two bus caps.
+    usbbuck4's own buck gives it 0.19 A, which one via carries,
     so dropping that term from the check loses the finding."""
     mutant = REPO / "tests" / "golden" / "mutants" / "inverter-bus-cap-single-via"
     cons = json.loads((mutant / "constraints.json").read_text(encoding="utf-8"))
@@ -1952,7 +1965,7 @@ def test_planted_inverter_bus_cap_fails(monkeypatch):
     bg = geom.load_board(mutant / "usbbuck4.kicad_pcb")
     vs, _ = check_current.check_net(bg, entry, cons=cons)
     found, = _at(vs, (104.0, 124.4))
-    assert found["refs"] == ["C13"] and "1.20 A" in found["msg"]
+    assert found["refs"] == ["C13"] and "0.60 A" in found["msg"]
     monkeypatch.setattr(check_current, "_bus_terms", lambda net, blocks: [])
     vs, _ = check_current.check_net(bg, entry, cons=cons)
     assert _at(vs, (104.0, 124.4)) == []
@@ -1971,19 +1984,309 @@ def _bldc():
 
 
 def test_pcb0018_vm_caps_read_the_inverter_not_u201():
-    """Known answer (a), #816: the bus caps are judged at the inverter's 6.5 A,
-    the design's own figure, not at U201's input ripple."""
+    """Known answer (a), #816: the bus caps take an even share of the inverter's
+    6.5 A, the design's own figure, not U201's input ripple. Eleven share it:
+    C101, C104 and the nine 10 uF of research/power.md:95."""
     bg, cons = _bldc()
     for ref in ("C401", "C410"):
         rip = check_current.cap_ripple(bg, "VM", [ref], cons)
-        assert rip["amps"] == 6.5, ref
+        assert rip["amps"] == pytest.approx(6.5 / 11), ref
         assert [t["from"] for t in rip["terms"]] == ["power_stage"]
         assert "U201" not in str(rip["terms"])
+        share = rip["terms"][0]["share"]
+        assert share["method"] == "even" and share["caps"] == 11
+        assert share["of_a"] == 6.5 and "C204" not in share["refs"]
+
+
+def test_pcb0018_c204_keeps_u201s_own_term():
+    """C204 sits 5.5 mm from U201 and 39.5 mm from the nearest bridge FET: it is
+    the buck's input cap, at about 0.25 A, and isn't counted among the bus caps."""
+    bg, cons = _bldc()
+    rip = check_current.cap_ripple(bg, "VM", ["C204"], cons)
+    assert [t["from"] for t in rip["terms"]] == ["U201"]
+    assert rip["amps"] == pytest.approx(0.65 * (5 / 28 * 23 / 28) ** 0.5)
+    assert rip["terms"][0]["nearest_switch"] == "U201"
+
+
+def test_pcb0018_per_cap_figure_from_the_design_wins():
+    """research/power.md:96's ~2 A per MLCC, once declared, holds for those caps;
+    the electrolytics it doesn't name keep their even share."""
+    bg, cons = _bldc()
+    block = next(b for b in cons["blocks"] if b.get("block") == "power_stage")
+    block["operating_point"].update(
+        bus_cap_irms_a=2.0, bus_cap_irms_source="research/power.md:96",
+        bus_cap_refs=["C401", "C402", "C403", "C405", "C406", "C407",
+                      "C409", "C410", "C411"])
+    rip = check_current.cap_ripple(bg, "VM", ["C401"], cons)
+    assert rip["amps"] == 2.0
+    assert rip["terms"][0]["source"] == "research/power.md:96"
+    assert rip["terms"][0]["share"]["method"] == "declared"
+    assert check_current.cap_ripple(bg, "VM", ["C101"], cons)[
+        "amps"] == pytest.approx(6.5 / 11)
+
+
+def test_pcb0018_l201_is_a_buck_and_l202_a_boost():
+    """U202's boost block has vin_v 5, which made U201's L201 "a boost's inductor".
+    L201 reads U201 at the buck block's 400 kHz; L202 really is one, so +5V's bulk
+    caps stay unjudged, with that as the reason."""
+    board = _boards.real_board("PCB-0018-A_bldc-motor-driver")
+    cons = json.loads((board / "kicad" / "constraints.json").read_text(
+        encoding="utf-8"))
+    bg = geom.load_board(next((board / "kicad").glob("*.kicad_pcb")))
+    volts = check_current._declared_volts(cons)
+    term = check_current._buck_output(bg, "+5V", "L201", "/regulators/BUCK_SW",
+                                      volts, cons["blocks"])
+    assert term["from"] == "U201" and term["inputs"]["fsw_hz"] == 400e3
+    rip = check_current.cap_ripple(bg, "+5V", ["C202"], cons)
+    assert rip["why"].startswith("L202 is a boost's inductor")
 
 
 def test_pcb0018_gnd_return_of_a_bus_cap_reads_the_inverter():
     """Known answer (b) on the real board: C401's GND side takes VM's figure."""
     bg, cons = _bldc()
     rip = check_current.cap_ripple(bg, "GND", ["C401"], cons)
-    assert rip["amps"] == 6.5
+    assert rip["amps"] == pytest.approx(6.5 / 11)
     assert rip["terms"][0]["rail"] == "VM"
+
+
+# ---- #816: a bus figure is shared among the bus's parallel caps
+
+def _sized(ref, x, net1, net2, value=None, fn2=""):
+    """_two_pad with a value, at y = 8 and x along the board."""
+    text = _two_pad(ref, x, net1, net2, fn2)
+    if value is None:
+        return text
+    return text.replace(f'"Reference" "{ref}" (at 0 0 0))',
+                        f'"Reference" "{ref}" (at 0 0 0))\n    (property "Value" '
+                        f'"{value}" (at 0 0 0))', 1)
+
+
+def _bus_cap(ref, x):
+    return _sized(ref, x, "PWR", "GND", "22uF")
+
+
+def _shared(*names, **op):
+    block = dict(DECLARED, operating_point=dict(DECLARED["operating_point"], **op))
+    return {"voltages": [{"net": "PWR", "voltage": 45},
+                         {"net": "OUT", "voltage": 5},
+                         {"net": "GND", "voltage": 0}],
+            "power": [{"net": "OUT", "current_a": 0.65}],
+            "blocks": [block, *names]}
+
+
+def test_bus_figure_is_shared_evenly_and_says_so(tmp_path_factory):
+    """Item 1: two bus caps carry half of 6.5 A each; a third of it with three.
+    The finding gives the via, the share and the limit, and shows the figure as
+    declared with its source, never as computed."""
+    two = _board(tmp_path_factory, "share2", _cap_tap("22uF") + _bus_cap("C3", 40))
+    vs, facts = check_current.check_net(two, STAR, cons=_shared())
+    found, = _at(vs, (10.0, 2.0))
+    assert "(10.00, 2.00)" in found["msg"] and "3.25 A needs 4" in found["msg"]
+    assert "1 A" in found["msg"] or "1.0 A" in found["msg"]
+    assert ("bridge bus ripple 3.25 A RMS, even share across 2 bus caps of "
+            "6.5 A RMS declared (research/power.md:91)") in found["msg"]
+    assert "computed" not in found["msg"]
+    term = found["ripple"]["terms"][0]
+    assert term["amps"] == 3.25 and term["declared"] is True
+    assert term["share"] == {"method": "even", "caps": 2, "of_a": 6.5,
+                             "refs": ["C2", "C3"]}
+    share, = facts["bus_share"]
+    assert share["from"] == "bridge" and share["method"] == "even"
+    assert share["caps"] == 2 and share["each_a"] == 3.25
+    three = _board(tmp_path_factory, "share3", _cap_tap("22uF")
+                   + _bus_cap("C3", 40) + _bus_cap("C4", 44))
+    rip = check_current.cap_ripple(three, "PWR", ["C2"], _shared())
+    assert rip["amps"] == pytest.approx(6.5 / 3)
+
+
+def test_only_cap_on_a_bus_takes_the_whole_figure(tmp_path_factory):
+    bg = _board(tmp_path_factory, "sole", _cap_tap("22uF"))
+    rip = check_current.cap_ripple(bg, "PWR", ["C2"], _shared())
+    assert rip["amps"] == 6.5
+    assert rip["terms"][0]["share"]["method"] == "sole"
+    assert "share" not in check_current.ripple_text(rip)
+
+
+def test_duty_figure_is_shared_too(tmp_path_factory):
+    """The duty formula gives the bus's whole ripple as well: 10 A at D = 0.5 is
+    5 A over the two caps."""
+    bg = _board(tmp_path_factory, "dutyshare", _cap_tap("22uF") + _bus_cap("C3", 40))
+    cons = _shared()
+    cons["blocks"] = [dict(INVERTER, operating_point={
+        "vin_v": 28, "iout_a": 10, "duty": 0.5, "bus_net": "PWR"})]
+    rip = check_current.cap_ripple(bg, "PWR", ["C2"], cons)
+    assert rip["amps"] == pytest.approx(2.5)
+    assert rip["terms"][0]["share"]["of_a"] == pytest.approx(5.0)
+    assert "even share across 2 bus caps of 5" in check_current.ripple_text(rip)
+
+
+def test_branch_of_several_bus_caps_carries_their_shares(tmp_path_factory):
+    """One via feeding two of four caps carries both shares, in phase: they add."""
+    bg = _board(tmp_path_factory, "branch2", _cap_tap("22uF") + _bus_cap("C3", 40)
+                + _bus_cap("C4", 44) + _bus_cap("C5", 48))
+    rip = check_current.cap_ripple(bg, "PWR", ["C2", "C3"], _shared())
+    assert rip["amps"] == pytest.approx(6.5 / 2)
+    assert rip["terms"][0]["share"]["branch_caps"] == 2
+    rip = check_current.cap_ripple(bg, "PWR", ["C2", "C3", "C4", "C5"], _shared())
+    assert rip["amps"] == pytest.approx(6.5)
+
+
+def test_decoupling_cap_does_not_take_a_share(tmp_path_factory):
+    bg = _board(tmp_path_factory, "decshare", _cap_tap("22uF")
+                + _sized("C3", 40, "PWR", "GND", "100nF"))
+    rip = check_current.cap_ripple(bg, "PWR", ["C2"], _shared())
+    assert rip["amps"] == 6.5
+
+
+def test_declared_per_cap_figure_wins(tmp_path_factory):
+    bg = _board(tmp_path_factory, "percap", _cap_tap("22uF") + _bus_cap("C3", 40)
+                + _bus_cap("C4", 44))
+    cons = _shared(bus_cap_irms_a=2.0, bus_cap_refs=["C2", "C3"],
+                   bus_cap_irms_source="research/power.md:96")
+    rip = check_current.cap_ripple(bg, "PWR", ["C2"], cons)
+    assert rip["amps"] == 2.0
+    term = rip["terms"][0]
+    assert term["source"] == "research/power.md:96" and term["declared"] is True
+    assert term["share"]["method"] == "declared" and term["share"]["of_a"] == 6.5
+    text = check_current.ripple_text(rip)
+    assert "bridge bus ripple 2 A RMS per cap declared (research/power.md:96)" in text
+    # a cap it doesn't list keeps the even share
+    assert check_current.cap_ripple(bg, "PWR", ["C4"], cons)[
+        "amps"] == pytest.approx(6.5 / 3)
+    # both listed caps on one branch add, but never past the whole figure
+    assert check_current.cap_ripple(bg, "PWR", ["C2", "C3"], cons)["amps"] == 4.0
+    cons = _shared(bus_cap_irms_a=4.0, bus_cap_refs=["C2", "C3"],
+                   bus_cap_irms_source="research/power.md:96")
+    assert check_current.cap_ripple(bg, "PWR", ["C2", "C3"], cons)["amps"] == 6.5
+
+
+@pytest.mark.parametrize("change, why", [
+    ({"bus_cap_irms_a": -1.0}, "negative"),
+    ({"bus_cap_irms_a": 0}, "above 0"),
+    ({"bus_cap_irms_a": "2"}, "a number"),
+    ({"bus_cap_irms_a": True}, "a number"),
+    ({"bus_cap_irms_a": 7.0}, "above the whole"),
+    ({"bus_cap_irms_source": None}, "bus_cap_irms_source"),
+    ({"bus_cap_irms_source": " "}, "bus_cap_irms_source"),
+    ({"bus_cap_refs": None}, "bus_cap_refs"),
+    ({"bus_cap_refs": []}, "bus_cap_refs"),
+    ({"bus_cap_refs": "C2"}, "bus_cap_refs"),
+    ({"bus_cap_refs": ["C2", "C99"]}, "C99"),
+])
+def test_bad_per_cap_figure_leaves_the_rail_unjudged(tmp_path_factory, change, why):
+    bg = _board(tmp_path_factory, "badcap", _cap_tap("22uF") + _bus_cap("C3", 40))
+    op = {"bus_cap_irms_a": 2.0, "bus_cap_refs": ["C2"],
+          "bus_cap_irms_source": "research/power.md:96"}
+    op.update(change)
+    rip = check_current.cap_ripple(bg, "PWR", ["C2"], _shared(**op))
+    assert "amps" not in rip and why in rip["why"]
+
+
+def _far_buck(tmp_path_factory, name, q=True):
+    """C2 at x = 10 and Q1 beside it on the bus; C3 at x = 40 beside the buck U9."""
+    # the star's far loads are ICs, which could be the bus's switch
+    tap = _cap_tap("22uF") if q else re.sub(r'"Reference" "U(\d)"',
+                                            r'"Reference" "R\1"', _cap_tap("22uF"))
+    return _board(tmp_path_factory, name, tap + _bus_cap("C3", 40)
+                  + (_sized("Q1", 12, "PWR", "/HS") if q else "")
+                  + _sized("U9", 42, "PWR", "/SW", fn2="SW")
+                  + _sized("L9", 46, "/SW", "OUT"))
+
+
+def test_far_bucks_input_cap_keeps_its_own_term(tmp_path_factory):
+    """Item 2: C3's nearest switch is the buck, so it reads the buck's input and
+    leaves the bus figure to C2 alone."""
+    bg = _far_buck(tmp_path_factory, "farbuck")
+    cons = _shared()
+    rip = check_current.cap_ripple(bg, "PWR", ["C3"], cons)
+    assert [t["from"] for t in rip["terms"]] == ["U9"]
+    assert rip["amps"] == pytest.approx(0.65 * (5 / 45 * 40 / 45) ** 0.5)
+    assert rip["terms"][0]["nearest_switch"] == "U9"
+    rip = check_current.cap_ripple(bg, "PWR", ["C2"], cons)
+    assert rip["amps"] == 6.5
+    assert [t["from"] for t in rip["terms"]] == ["bridge"]
+    # a branch of both carries each one's term
+    both = check_current.cap_ripple(bg, "PWR", ["C2", "C3"], cons)
+    assert {t["from"] for t in both["terms"]} == {"bridge", "U9"}
+    # and the return side follows, for the rail's figure
+    back = check_current.cap_ripple(bg, "GND", ["C3"], cons)
+    assert [t["from"] for t in back["terms"]] == ["U9"]
+
+
+def test_buck_cap_stays_on_the_bus_when_no_bus_switch_is_found(tmp_path_factory):
+    """With nothing on the net to place the bus at, nearest means nothing: the
+    caps stay bus caps, as they were, rather than dropping to the buck's term."""
+    bg = _far_buck(tmp_path_factory, "nobusq", q=False)
+    rip = check_current.cap_ripple(bg, "PWR", ["C3"], _shared())
+    assert [t["from"] for t in rip["terms"]] == ["bridge"]
+    assert rip["amps"] == pytest.approx(3.25)
+
+
+def test_rail_ripple_takes_the_largest_cap(tmp_path_factory):
+    """Caps of one rail now differ: C1's buck term is the small one, and sorted
+    first it must not stand for the rail or its return."""
+    bg = _board(tmp_path_factory, "railmax", _bus_cap("C1", 40) + _cap_tap("22uF")
+                + _bus_cap("C5", 14) + _sized("Q1", 12, "PWR", "/HS")
+                + _sized("U9", 42, "PWR", "/SW", fn2="SW")
+                + _sized("L9", 46, "/SW", "OUT"))
+    cons = _shared()
+    assert check_current.cap_ripple(bg, "PWR", ["C1"], cons)["amps"] < 1
+    assert check_current.rail_ripple(bg, "PWR", cons) == 3.25
+    assert check_current.rail_ripple(bg, "GND", cons) == 3.25
+
+
+# ---- #816: a boost block on a rail doesn't make the rail's buck a boost
+
+BOOST_OFF_OUT = {"topology": "boost", "name": "U8 boost OUT->HI",
+                 "operating_point": {"vin_v": 5, "vout_v": 12}}
+BUCK_INTO_OUT = {"topology": "buck", "name": "U9 buck PWR->OUT",
+                 "operating_point": {"vin_v": 45, "vout_v": 5, "fsw_khz": 400}}
+
+
+def _out_rail(tmp_path_factory, name, extra=""):
+    """U9 switching from PWR through L9 into OUT, and 22 uF on OUT."""
+    return _board(tmp_path_factory, name, _cap_tap("22uF").replace('"PWR"', '"OUT"')
+                  + _sized("U9", 30, "PWR", "/SW", fn2="SW")
+                  + _sized("L9", 34, "/SW", "OUT", "10uH") + extra)
+
+
+def _out_cons(*blocks):
+    return {"voltages": [{"net": "PWR", "voltage": 45}, {"net": "OUT", "voltage": 5},
+                         {"net": "HI", "voltage": 12}, {"net": "GND", "voltage": 0}],
+            "blocks": list(blocks)}
+
+
+def test_buck_into_a_boosts_input_rail_is_read(tmp_path_factory):
+    """PCB-0018: "L201 is a boost's inductor", because U202's block has vin_v 5."""
+    bg = _out_rail(tmp_path_factory, "buckboost")
+    rip = check_current.cap_ripple(bg, "OUT", ["C2"], _out_cons(
+        BOOST_OFF_OUT, BUCK_INTO_OUT))
+    assert [t["from"] for t in rip["terms"]] == ["U9"]
+    assert rip["terms"][0]["inputs"]["fsw_hz"] == 400e3
+
+
+def test_boost_block_still_names_a_real_boost(tmp_path_factory):
+    """An IC whose output pin no name gives away, on the block's Vout: L8 is its
+    inductor, known only from the block. Its own rail isn't U9's rail."""
+    bg = _board(tmp_path_factory, "realboost", _cap_tap("22uF").replace('"PWR"', '"OUT"')
+                + _sized("U8", 30, "HI", "/SW", fn2="SW")
+                + _sized("L8", 34, "/SW", "OUT", "10uH"))
+    rip = check_current.cap_ripple(bg, "OUT", ["C2"], _out_cons(BOOST_OFF_OUT))
+    assert rip["why"] == "L8 is a boost's inductor; only a buck's ripple is read"
+    # and one with no declared rail above it, known only from the block
+    bg = _board(tmp_path_factory, "realboost2", _cap_tap("22uF").replace('"PWR"', '"OUT"')
+                + _sized("U8", 30, "XX", "/SW", fn2="SW")
+                + _sized("L8", 34, "/SW", "OUT", "10uH"))
+    rip = check_current.cap_ripple(bg, "OUT", ["C2"], _out_cons(BOOST_OFF_OUT))
+    assert rip["why"] == "L8 is a boost's inductor; only a buck's ripple is read"
+
+
+def test_boost_with_its_diode_stays_a_boost_beside_a_buck(tmp_path_factory):
+    """L202 on PCB-0018: U8 on OUT with a diode to HI, next to U9's buck."""
+    bg = _out_rail(tmp_path_factory, "diodeboost", (
+        _sized("U8", 50, "GND", "/SW8", fn2="SW")
+        + _sized("L8", 54, "OUT", "/SW8", "10uH")
+        + _sized("D8", 58, "/SW8", "HI")))
+    rip = check_current.cap_ripple(bg, "OUT", ["C2"], _out_cons(
+        BOOST_OFF_OUT, BUCK_INTO_OUT))
+    assert rip["why"] == "L8 is a boost's inductor; only a buck's ripple is read"

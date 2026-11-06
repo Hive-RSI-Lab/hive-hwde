@@ -1,7 +1,8 @@
 """Mutant: inverter-bus-cap-single-via (usbbuck4).
 
 SIDECAR fault (#816). An inverter is declared on VBUS with a design bus ripple
-of 1.2 A RMS, so C13's one via at (104.0, 124.4), good for 0.5 A, falls short.
+of 1.2 A RMS. C13's even share, 0.6 A across two bus caps, is over its one via
+at (104.0, 124.4), good for 0.5 A.
 The buck U2 alone gives C13 0.19 A (0.4 A at D = 0.66), which that via carries,
 so only the inverter's term can catch it: a check that drops the term passes.
 Must be caught by check_current (kind "insufficient_transition_vias", net VBUS,
