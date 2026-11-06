@@ -116,12 +116,16 @@ The maze (`route_finish --no-rip-board`) then runs on the same boards, frozen in
 | part | nets | routed | left unrouted | DRC errors | run time on the loaded tower |
 |---|---|---|---|---|---|
 | TFBGA-54 | 54 | 54, 100 % | 0 | 0 | 2 min |
-| WLCSP-49 | 49 | 31, 63.3 % | 18 | 0 | 29 to 39 min |
-| FBGA-153 | 153 | 70, 45.8 % | 83 | 0 | 4 h, one run |
+| WLCSP-49 | 49 | 42, 85.7 % | 7 | 0 | 9 min, one run |
+| FBGA-153 | 153 | 91, 59.5 % | 62 | 0 | 55 min, one run |
 
 The maze keeps a pass only if it helps, so what it leaves is unrouted, not a
-violation in copper. WLCSP-49's 18 and FBGA-153's 83 are work for the escape or
-the router.
+violation in copper. WLCSP-49's 7 and FBGA-153's 62 are work for the escape or
+the router. On an HDI build a net starts at the floor width unless a rule sizes
+it, inner layers cost the same as F and B, and each open stub tip keeps a short
+corridor (`EXIT_MM`) that other nets stay out of until its own net has run or
+failed: stubs ending at one x,y leave on their own layers, and before this
+(#784) other nets' routes closed those exits.
 
 rules_gen and route_escape write the same rules (`aiee_hdi_*`): each via type's
 own floors in place of the through-via ones (`A.Via_Type`), and 3 mil track and

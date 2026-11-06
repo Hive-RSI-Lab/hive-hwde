@@ -457,6 +457,35 @@ def test_maze_takes_microvias_on_an_hdi_build(tmp_path):
             "micro", "F.Cu", "In1.Cu", 0.1, 0.25)
 
 
+def _maze_width(pcb, sized=False):
+    bg = geom.BoardGeom.from_file(pcb)
+    rules = rf.board_rules(pcb, bg, min_width=0.2)
+    rules.track_floor = 0.0889  # the field's rule, as on an escaped BGA's board
+    if sized:
+        rules.net_width["SIG"] = 0.25
+    pair = {"net": "SIG", "a": {"pos": [10, 25], "msg": "Pad 1 [SIG] of U2 on F.Cu"},
+            "b": {"pos": [16, 25], "msg": "Pad 1 [SIG] of U3 on F.Cu"}}
+    jobs = rf.plan_routes(bg, rules, [pair], bg.copper_layers)
+    assert jobs[0]["status"] == "routed", jobs[0]
+    return rules, jobs[0]["width"]
+
+
+def test_maze_starts_at_the_floor_width_on_an_hdi_build(tmp_path):
+    """#784: at 0.2 mm the first nets across a 0.4 to 0.5 mm field wall in the rest."""
+    rules, width = _maze_width(_maze_board(tmp_path, TEN))
+    assert width == rules.width_floor("SIG") < rules.width("SIG")
+
+
+def test_maze_keeps_a_net_with_a_width_rule_at_that_width(tmp_path):
+    rules, width = _maze_width(_maze_board(tmp_path, TEN), sized=True)
+    assert width == rules.width("SIG") >= 0.25
+
+
+def test_maze_keeps_its_width_on_a_standard_build(tmp_path):
+    rules, width = _maze_width(_maze_board(tmp_path, "JLC10161H-2116"))
+    assert width == rules.width("SIG") >= 0.2
+
+
 def test_maze_stays_on_through_vias_on_a_standard_build(tmp_path):
     rules, vias = _maze_vias(_maze_board(tmp_path, "JLC10161H-2116"))
     assert rules.spans == [] and len(vias) == 2
