@@ -1037,6 +1037,30 @@ def test_power_ic_input_with_no_volts_says_it_is_unjudged_and_why(
     assert _fact(ws, "U4")["status"] == "unknown"
 
 
+@pytest.mark.parametrize("mpn,attrs,pads,said", [
+    ("TPS26631RGER", TPS26631_ROW, _tps26631_pads("+24V"),
+     "IN/IN_SYS at 24 V within the 60 V row; other pins unrated"),
+    ("TPS26631RGER", TPS26631_ROW, _tps26631_pads("+60V"),
+     "IN/IN_SYS at 60 V within the 60 V row; other pins unrated"),
+    ("TPS26631RGER", TPS26631_ROW, _tps26631_pads("+24V", in_sys="+12V"),
+     "IN_SYS at 12 V, IN at 24 V within the 60 V row; other pins unrated"),
+    ("TPS2051BDBVR", TPS2051B_ROW, _tps2051b_pads("+5V"),
+     "IN at 5 V within the 5.5 V row; other pins unrated"),
+    ("LM66200DRLR", LM66200_ROW, _lm66200_pads("+5V", "+5V"),
+     "VIN1/VIN2 at 5 V within the 5.5 V row; other pins unrated"),
+])
+def test_power_ic_input_within_its_row_says_so_and_stays_unrated(
+        tmp_path, mpn, attrs, pads, said):
+    """A pass is reported, not promoted: the warning and unknown fact stay (#708)."""
+    ws = _power_ic(tmp_path, mpn, attrs, pads)
+    p = _run(ws)
+    [v] = _rating_unrated(p)
+    assert said in v["msg"] and mpn in v["msg"]
+    assert "no datasheet extraction" not in v["msg"]
+    assert v["severity"] == "warning" and _errors(p) == []
+    assert _fact(ws, "U4")["status"] == "unknown"
+
+
 def test_power_ic_names_only_the_input_with_no_volts(tmp_path):
     p = _run(_power_ic(tmp_path, "LM66200DRLR", LM66200_ROW,
                        _lm66200_pads("+5V", "/VB")))

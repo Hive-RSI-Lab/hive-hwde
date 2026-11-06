@@ -23,6 +23,9 @@ cap or power IC known by its family whose parts.json row is empty is also blocke
   input pad's net "has no volts", has "only a pull-up's guess at its volts", or "no pad here
   fits an input" of its datasheet (POWER_IC_FAMILIES). For the first two give the rail a
   voltage; for the last check the part's package and pad names against that datasheet page.
+- A power IC that says "IN at 24 V within the 60 V row; other pins unrated" was judged at its
+  inputs and passed. The warning stands for the pins the row doesn't cover: an extraction
+  (below) is what rates those.
 
 ## Fix ladder (cheapest first)
 1. Rail voltage missing: add it to constraints.json `voltages`.
