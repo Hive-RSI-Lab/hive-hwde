@@ -694,10 +694,8 @@ def test_bare_regulator_blocks_unless_extracted(tmp_path, row):
     ("U4", "TPS61042DRBR"),    # a white-LED driver, next to the TPS61040 boost
     ("U4", "LM51641"),         # a number that only starts with the LM5164
     ("U4", "LM50170"),         # the same for the LM5017
-    ("U4", "LM66200DRLR"),     # an ideal diode
     ("U4", "TPS26631RGER"),    # an e-fuse
     ("U4", "TPS3808G33DBVR"),  # a supervisor
-    ("U4", "TPS60403DBVR"),    # a charge pump
     ("U4", "TPS92515DGQR"),    # an LED driver
     ("U4", "TLV3501AIDBVR"),   # a comparator
     ("U4", "TLV7031DBVR"),     # a comparator
@@ -710,6 +708,75 @@ def test_bare_part_with_no_usable_code_does_not_block(tmp_path, ref, mpn):
     pads = {"1": "+5V", "2": "GND", "3": "+3V3"}
     ws = _ws(tmp_path, [(ref, "C3", pads)], {}, bom)
     assert _no_attrs(_run(ws)) == []
+
+
+# #797: power ICs that are no regulator, each named by its datasheet's title.
+POWER_ICS = [
+    ("TPS60403DBVR", "charge_pump"),       # electrometer U103, C11338
+    ("LM66200DRLR", "dual ideal-diode OR, VBUS_J1/VBUS_J2 -> +5V, no back-feed"),
+                                           # linux-computer U301, C3235556
+    ("LM5069MM-2/NOPB", "hot-swap, auto-retry"),  # hc-power U2, C111822
+]
+
+
+@pytest.mark.parametrize("mpn,role", POWER_ICS + [
+    ("TPS60400DBVR", ""), ("TPS60401DBVR", ""), ("TPS60402DBVR", ""),
+    ("LM5069MM-1/NOPB", ""),
+])
+def test_bare_power_ic_blocks_until_its_row_is_filled(tmp_path, mpn, role):
+    bom = [{"lcsc": "C3", "mpn": mpn, "role": role, "attributes": []}]
+    pads = {"1": "+5V", "2": "GND", "3": "/OUT"}
+    found = _no_attrs(_run(_ws(tmp_path, [("U4", "C3", pads)], {}, bom)))
+    assert [(v["severity"], v["refs"]) for v in found] == [("error", ["U4"])]
+    assert "(power IC)" in found[0]["msg"] and mpn in found[0]["msg"]
+    bom[0]["attributes"] = [{"name": "Input Voltage", "value": "1.6V~5.5V"}]
+    p = _run(_ws(tmp_path / "b", [("U4", "C3", pads)], {}, bom))
+    assert _no_attrs(p) == [] and _errors(p) == []
+
+
+@pytest.mark.parametrize("mpn,role", POWER_ICS)
+def test_bare_power_ic_with_an_extraction_does_not_block(tmp_path, mpn, role):
+    bom = [{"lcsc": "C3", "mpn": mpn, "role": role, "attributes": []}]
+    pads = {"1": "+5V", "2": "GND", "3": "/OUT"}
+    ws = _ws(tmp_path, [("U4", "C3", pads)], {"C3": MCU}, bom)
+    assert _no_attrs(_run(ws)) == []
+
+
+@pytest.mark.parametrize("mpn,role", POWER_ICS)
+def test_power_ic_family_invents_no_rating_and_names_no_rail(
+        tmp_path, mpn, role):
+    """The family says what the part is, for its bare row only. It isn't a
+    regulator: a filled row isn't judged by its highest net (a charge pump's
+    output is below its input, an ideal diode has two inputs), no output is
+    asked of it, and its output net gets no volts."""
+    row = {"lcsc": "C3", "mpn": mpn, "role": role, "attributes": []}
+    pads = {"1": "+12V", "2": "GND", "3": "/RAIL"}
+    assert cr.is_regulator({"ref": "U4"}, row) is False
+    assert cr.reg_by_family("U4", mpn) is False and cr.reg_out_code(mpn) is None
+    bare = _run(_ws(tmp_path, [("U4", "C3", pads)], {}, [row]))
+    assert "/RAIL" not in bare["net_volts"]
+    row["attributes"] = [{"name": "Input Voltage", "value": "1.6V~5.5V"}]
+    p = _run(_ws(tmp_path / "b", [("U4", "C3", pads)], {}, [row]))
+    assert "/RAIL" not in p["net_volts"]
+    assert _errors(p) == [] and _unjudged(p) == []
+    assert [v["refs"] for v in p["violations"]
+            if v["kind"] == "rating_unrated"] == [["U4"]]
+
+
+@pytest.mark.parametrize("ref,mpn", [
+    ("Q4", "LM5069MM-2/NOPB"),  # a family counts on a U/VR/IC part only
+    ("U4", "TPS60404DBVR"),     # past the TPS60400-03 datasheet
+    ("U4", "TPS604031"),        # numbers that only start with a family's
+    ("U4", "LM662001"),
+    ("U4", "LM50691"),
+    ("U4", "LM66100DCKR"),      # a sibling no entry's datasheet covers
+    ("U4", "SN74LVC1G34DBVR"),  # a logic IC
+    ("U4", "BME280"),           # a sensor
+])
+def test_bare_near_miss_of_a_power_ic_family_does_not_block(tmp_path, ref, mpn):
+    bom = [{"lcsc": "C3", "mpn": mpn, "attributes": []}]
+    pads = {"1": "+5V", "2": "GND", "3": "+3V3"}
+    assert _no_attrs(_run(_ws(tmp_path, [(ref, "C3", pads)], {}, bom))) == []
 
 
 def test_bare_coded_regulator_stays_unknown_and_names_no_rail(tmp_path):

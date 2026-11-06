@@ -66,7 +66,8 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
    pin against - no extraction, no row that names or classes the pin, or a
    relative bound whose reference supply has no known voltage. One per
    part, listing the pins. Never a silent pass.
- - rating_no_attributes (error): a rated part (diode, fuse, regulator, cap)
+ - rating_no_attributes (error): a rated part (diode, fuse, regulator, cap,
+   a power-IC family: charge pump, ideal diode, hot-swap controller)
    whose parts.json row has empty `attributes` and which nothing else rates:
    its limit was never compared, so the gate fails until the row is filled
    (parts_enrich.py). A U/VR/IC part whose MPN carries a known family's output
@@ -350,6 +351,24 @@ def reg_by_family(ref: str, mpn: str) -> bool:
     return bool(REG_REF_RE.match(ref)) and (
         reg_out_code(mpn) is not None or
         _SWITCHER_FAMILY_RE.match(mpn.upper()) is not None)
+
+
+# Power ICs that aren't regulators, whose number is all a bare row says about
+# them (#797). Each family's datasheet says what it is. Only an empty row uses
+# this: nothing here judges a filled one, and no rail or rating comes from it.
+_POWER_IC_FAMILY_RE = re.compile(
+    r"TPS6040[0-3](?!\d)|"   # TI TPS6040x: "Unregulated 60-mA Charge Pump
+                             # Voltage Inverter"
+    r"LM66200(?!\d)|"        # TI LM66200: "2.5-A Dual Ideal Diode"
+    r"LM5069(?!\d)")         # TI LM5069: "Hot Swap and In-Rush Current
+                             # Controller"
+
+
+def power_ic_by_family(ref: str, mpn: str) -> bool:
+    """A U/VR/IC part in a power-IC family: for its empty row only, so
+    regulator_findings stays out and a filled row isn't judged as a regulator's."""
+    return bool(REG_REF_RE.match(ref)) and \
+        _POWER_IC_FAMILY_RE.match(mpn.upper()) is not None
 
 
 # Families whose sign the MPN settles. Unknown is the default: a part in
@@ -1353,7 +1372,8 @@ def no_attribute_findings(board: list[dict], bom_by_lcsc: dict, exts: dict,
     gets filled (#675). A diode, cap or regulator with an extraction is rated
     by it; a fuse is not, fuse_findings reads only attributes. A known family's
     MPN code (#751) or switcher family (#763, #774) makes a U/VR/IC part a
-    regulator here, as in regulator_findings. A part with no row at all is not
+    regulator here, as in regulator_findings; a power-IC family (#797) makes it
+    rated here only. A part with no row at all is not
     here: there is nothing to fill yet (the scaffold's empty parts/). This never
     reads the cache or the network, so the same board gives the same answer
     anywhere."""
@@ -1376,6 +1396,8 @@ def no_attribute_findings(board: list[dict], bom_by_lcsc: dict, exts: dict,
         elif is_regulator(b, bom) or \
                 reg_by_family(ref, str(bom.get("mpn") or "")):
             what = "regulator"
+        elif power_ic_by_family(ref, str(bom.get("mpn") or "")):
+            what = "power IC"
         if what:
             refs, whats = by_code.setdefault(b["lcsc"], ([], set()))
             refs.append(ref)

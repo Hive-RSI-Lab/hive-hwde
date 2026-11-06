@@ -2,9 +2,10 @@
 
 A rated part's parts.json row has empty `attributes` and nothing else rates it, so its limit
 was never compared with the board. Rated here means a diode (D*, LED*), a fuse (F*, FU*), a
-cap (C*) or a regulator (U*, VR*, IC* with a fixed output in the MPN, a known family's MPN code
+cap (C*), a regulator (U*, VR*, IC* with a fixed output in the MPN, a known family's MPN code
 such as XC6206P332, a switcher family such as TPS54560B or TPS61040, or a row that says
-so).
+so) or a power IC known by its family (U*, VR*, IC*: charge pump TPS60400-03, ideal diode
+LM66200, hot-swap controller LM5069).
 On precision-daq, filling these rows showed D101 reversed by 5.25 V over its 5 V stand-off,
 and F101's hold current against the 0.6 A rail (#675).
 
@@ -27,6 +28,8 @@ or a rating someone recorded verified in the ledger.
    you checked with `ledger.py set --kind rating --status verified --source <datasheet page>`.
 4. Then read what verify says next. A filled row may now show a real rating_over_voltage,
    rating_reverse_polarity or rating_over_current: that is the point, so fix those too.
+   A power IC's filled row clears this finding but isn't compared with its rails: it stays a
+   rating_unrated warning until an extraction rates its pins.
 
 ## Do not
 - Do not add a row with a made-up attribute to clear this; cite the listing or the datasheet.
@@ -38,4 +41,4 @@ bin/hwde check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --parts <ws>/parts
 ```
 
 ## Sources
-- scripts/check_ratings.py `no_attribute_findings`; hive-hwde #675, #751, #763, #774.
+- scripts/check_ratings.py `no_attribute_findings`; hive-hwde #675, #751, #763, #774, #797.
