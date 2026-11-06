@@ -146,14 +146,14 @@ def test_a_real_intrusion_beside_a_narrow_pad_is_reported():
     assert 21.9 <= vios[0]["pos"][0] <= 22.1
 
 
-def test_a_run_along_the_edge_is_reported_either_side_of_the_hole():
-    """Copper 0.1 mm off the edge passing through the hole: what is left past
-    the area on each side is still too close."""
+def test_a_run_along_the_edge_past_the_hole_is_one_place():
+    """Copper 0.1 mm off the edge passing through the hole: the pad cuts it, but
+    it is one run at one gap (#804), with the hole's own copper left out."""
     run = unary_union([box(10, 49.0, 32, 49.9), box(20.8, 49.9, 21.2, 50)])
     vios = _edge(run, cast=[HOLE])
-    assert len(vios) == 2
-    xs = sorted(v["pos"][0] for v in vios)
-    assert xs[0] < 21 - 0.5 and xs[1] > 21 + 0.5
+    assert len(vios) == 1
+    assert vios[0]["distance_mm"] == pytest.approx(0.1)
+    assert not 21 - 1.0 < vios[0]["pos"][0] < 21 + 1.0
 
 
 def test_each_hole_on_a_piece_exempts_its_own_copper():
@@ -195,3 +195,114 @@ def test_the_band_warning_leaves_out_the_hole_too():
     assert vios[0]["count"] == 1
     assert 60 <= vios[0]["items"][0]["pos"][0] <= 62
     assert _edge(_tabs([20], top=49.75), rules=BAND, cast=[HOLE]) == []
+
+
+# ---- #804: a pad cut out of a run does not split it into more places
+
+def _run(x0, x1, top=49.9):
+    return box(x0, 40, x1, top)
+
+
+def _row(n, pitch=5.0, x0=21.0):
+    return [(x0 + pitch * i, 50, 1.0) for i in range(n)]
+
+
+@pytest.mark.parametrize("n", [1, 2, 3, 5, 8])
+def test_one_run_with_a_row_of_pads_is_one_finding(n):
+    vios = _edge(_run(10, 80), cast=_row(n))
+    assert [v["kind"] for v in vios] == ["dfm_copper_to_edge"]
+    assert vios[0]["distance_mm"] == pytest.approx(0.1)
+    assert "pinches_not_shown" not in vios[0]
+
+
+@pytest.mark.parametrize("n", [1, 2, 3, 5, 8])
+def test_the_band_counts_one_run_as_one_place(n):
+    vios = _edge(_run(10, 80, top=49.75), rules=BAND, cast=_row(n))
+    assert [v["kind"] for v in vios] == ["dfm_copper_to_edge_preferred"]
+    assert vios[0]["count"] == 1
+
+
+def test_pads_whose_areas_overlap_keep_one_run():
+    vios = _edge(_run(10, 40), cast=_row(3, pitch=2.0))
+    assert len(vios) == 1
+
+
+def test_a_run_that_stops_short_of_the_pad_is_its_own_place():
+    """The pad cuts the piece, but neither close run reaches the pad: nothing
+    runs through it, so these are two places, each named at its own gap."""
+    piece = unary_union([box(5, 40, 40, 49), box(5, 49, 15, 49.9),
+                         box(27, 49, 37, 49.85), box(20.5, 49, 21.5, 50)])
+    vios = _edge(piece, cast=[HOLE])
+    assert len(vios) == 2
+    by_x = sorted(vios, key=lambda v: v["pos"][0])
+    assert 5 <= by_x[0]["pos"][0] <= 15
+    assert by_x[0]["distance_mm"] == pytest.approx(0.1)
+    assert 27 <= by_x[1]["pos"][0] <= 37
+    assert by_x[1]["distance_mm"] == pytest.approx(0.15)
+
+
+def test_a_run_the_pad_does_not_touch_still_fails_where_it_is():
+    """Same piece, far along the edge, with the copper between backing off."""
+    piece = unary_union([box(5, 40, 90, 49), box(15, 49, 28, 49.9),
+                         box(60, 49, 70, 49.88)])
+    vios = _edge(piece, cast=[HOLE])
+    far = [v for v in vios if v["pos"][0] > 50]
+    assert len(vios) == 2 and len(far) == 1
+    assert 60 <= far[0]["pos"][0] <= 70
+    assert far[0]["distance_mm"] == pytest.approx(0.12)
+    assert far[0]["kind"] == "dfm_copper_to_edge"
+    assert "0.1200 mm" in far[0]["msg"]
+
+
+def test_a_separate_piece_beside_the_run_keeps_its_own_finding():
+    other = box(60, 40, 70, 49.88)
+    vios = _edge(_run(10, 40), other, cast=_row(2))
+    assert len(vios) == 2
+    assert 60 <= max(v["pos"][0] for v in vios) <= 70
+
+
+def test_an_intrusion_between_two_pads_is_listed_at_its_own_place():
+    """A band-level run with a deeper tab between the pads: the tab is what
+    breaks the rule, at its own position and gap."""
+    piece = unary_union([_run(10, 60, top=49.75), box(30, 49, 32, 49.9)])
+    vios = _edge(piece, rules=BAND, cast=_row(2, pitch=20.0))
+    errors = [v for v in vios if v["kind"] == "dfm_copper_to_edge"]
+    assert len(errors) == 1
+    assert 30 <= errors[0]["pos"][0] <= 32
+    assert errors[0]["distance_mm"] == pytest.approx(0.1)
+
+
+def test_a_dip_either_side_of_a_pad_stays_two_places():
+    """The run joins across the pad, but the gap opens between these two, as it
+    would on an uncut run: two tabs to fix."""
+    piece = unary_union([_run(5, 40, top=49.75), box(10, 49, 12, 49.9),
+                         box(30, 49, 32, 49.9)])
+    vios = _edge(piece, rules=BAND, cast=[HOLE])
+    assert sorted(10 <= v["pos"][0] <= 12 or 30 <= v["pos"][0] <= 32
+                  for v in vios) == [True, True]
+    assert all(v["kind"] == "dfm_copper_to_edge" for v in vios)
+
+
+def test_a_run_on_the_far_edge_of_the_same_piece_stays_its_own_place():
+    piece = box(5, 0.1, 40, 49.9)
+    vios = _edge(piece, cast=[HOLE])
+    assert sorted(v["pos"][1] < 25 for v in vios) == [False, True]
+
+
+def test_the_worst_of_a_cut_run_is_named():
+    """One side closer than the other by more than the rise: the finding sits
+    on the worse side, at its gap."""
+    piece = unary_union([box(10, 40, 21, 49.8), box(21, 40, 32, 49.9)])
+    vios = _edge(piece, cast=[HOLE])
+    assert len(vios) == 1
+    assert vios[0]["pos"][0] > 21
+    assert vios[0]["distance_mm"] == pytest.approx(0.1)
+
+
+def test_with_no_pad_on_the_piece_nothing_moves():
+    """Only a cut joins anything: the same shapes with no castellated pad read
+    as they did."""
+    piece = unary_union([box(5, 40, 90, 49), box(15, 49, 18, 49.9),
+                         box(24, 49, 28, 49.9)])
+    assert len(_edge(piece)) == 2
+    assert len(_edge(piece, cast=[(80, 0, 1.0)])) == 2

@@ -332,13 +332,22 @@ PINCH_RISE_MM = 0.01
 PINCH_CAP_PER_PAIR = 5
 
 
-def _stretches(a, b, t: float) -> list:
-    """The pieces of b that lie within t of a."""
+def _stretches(a, b, t: float, cuts=()) -> list:
+    """The pieces of b that lie within t of a.
+
+    cuts are shapes taken out of b, on the edge by design: pieces that all
+    reach one are one stretch (#804), since the same run carries on past it.
+    """
     near = b.intersection(a.buffer(t))
-    return [p for p in getattr(near, "geoms", [near]) if not p.is_empty]
+    parts = [p for p in getattr(near, "geoms", [near]) if not p.is_empty]
+    for cut in cuts:
+        at = [p for p in parts if p.distance(cut) <= EPS_TOUCH]
+        if len(at) > 1:
+            parts = [p for p in parts if p not in at] + [unary_union(at)]
+    return parts
 
 
-def _minima(a, part, t: float) -> list:
+def _minima(a, part, t: float, cuts=()) -> list:
     """Split part, all within t of a, at each place the gap opens up again.
 
     Halves the limit until the pieces stop dividing. A piece only counts if
@@ -349,27 +358,28 @@ def _minima(a, part, t: float) -> list:
     tighter = (d + t) / 2
     if tighter - d < PINCH_RISE_MM:
         return [part]
-    parts = [p for p in _stretches(a, part, tighter)
+    parts = [p for p in _stretches(a, part, tighter, cuts)
              if p.distance(a) <= tighter - PINCH_RISE_MM]
     if not parts:
         return [part]
-    return [m for p in parts for m in _minima(a, p, tighter)]
+    return [m for p in parts for m in _minima(a, p, tighter, cuts)]
 
 
-def _pinches(a, b, lo: float) -> list:
+def _pinches(a, b, lo: float, cuts=()) -> list:
     """Each distinct place a and b come closer than lo.
 
     Returns [(d, pos, ends), ...], tightest first, with ends as [on a, on b].
     The first is always _gap(a, b), so a finding a pair already had keeps its
     position and a waiver pinned to it still matches. A parallel run ties along
-    its whole length and is one pinch, because the gap never opens within it.
+    its whole length and is one pinch, because the gap never opens within it;
+    cuts (see _stretches) don't open it either.
     """
     pos, ends = _gap(a, b)
     first = Point(ends[1])
     near = [first]
     others = []
-    for stretch in _stretches(a, b, lo):
-        for part in _minima(a, stretch, lo):
+    for stretch in _stretches(a, b, lo, cuts):
+        for part in _minima(a, stretch, lo, cuts):
             if part.distance(first) <= EPS_TOUCH:
                 near.append(part)
             elif _below(part.distance(a), lo):
@@ -564,7 +574,8 @@ def _castellated_at(cast, x: float, y: float, r: float = 0.0) -> bool:
 def check_copper_to_edge(fab, rules, vios: list, cast_pads=()) -> None:
     """cast_pads: castellation.edge_copper(). A castellated pad has to reach the
     edge, so a piece touching its drill loses the pad grown by the floor (the
-    sides of a pad crossing the edge fall inside) before it is measured."""
+    sides of a pad crossing the edge fall inside) before it is measured, and a
+    run going on past that cut stays one place."""
     hard, lo = _floors(rules, "min_copper_to_edge_mm")
     outline = fab.outline
     if lo is None or outline.is_empty:
@@ -580,13 +591,16 @@ def check_copper_to_edge(fab, rules, vios: list, cast_pads=()) -> None:
         for comp in lg.components():
             at_holes = [area for drill, area in areas
                         if comp.intersects(drill)]
-            for area in at_holes:
-                comp = comp.difference(area)  # on the edge by design
+            cuts = []
+            if at_holes:
+                cut = unary_union(at_holes)    # a close row is one cut
+                cuts = list(getattr(cut, "geoms", [cut]))
+                comp = comp.difference(cut)    # on the edge by design
             if comp.is_empty or not _below(comp.distance(edge), lo):
                 continue
             # Copper crossing the outline reads as distance 0; both cases are
             # the same defect (copper too close to / past the board edge).
-            pinches = _pinches(comp, edge, lo)
+            pinches = _pinches(comp, edge, lo, cuts)
             errors, not_shown = _capped(
                 [p for p in pinches if _below(p[0], hard)])
             for n, (gap, pos, ends) in enumerate(errors):
