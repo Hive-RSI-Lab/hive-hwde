@@ -57,13 +57,18 @@ that dies can be blamed on it.
 from __future__ import annotations
 
 import argparse
+import ctypes
 import dataclasses
+import hashlib
 import heapq
 import json
 import math
+import os
 import re
+import subprocess
 import sys
 import time
+from array import array
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -472,7 +477,7 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
         blk=[m.ravel().astype(np.uint8).tobytes() for m in blk],
         vblk=vblk.ravel().astype(np.uint8).tobytes(),
         via=(via_size, via_drill),
-        cost=[c.ravel().tolist() for c in cost],
+        cost=[array("d", c.ravel().astype(np.float64).tobytes()) for c in cost],
         in_a=[m.ravel().astype(np.uint8).tobytes() for m in a],
         in_b=[m.ravel().astype(np.uint8).tobytes() for m in b],
         a_plane=side(side_a, True).ravel().astype(np.uint8).tobytes(),
@@ -550,9 +555,64 @@ def span_for(gr: Grid, k: int, k2: int, c: int):
     return best
 
 
+INF = float("inf")
 _MOVES = [(1, 0, 1.0), (-1, 0, 1.0), (0, 1, 1.0), (0, -1, 1.0),
           (1, 1, math.sqrt(2)), (1, -1, math.sqrt(2)),
           (-1, 1, math.sqrt(2)), (-1, -1, math.sqrt(2))]
+
+
+_astar_lib = None
+
+
+def _load_astar():
+    """route_astar.c as a library, built on first use and cached by its hash.
+    None, and the Python search runs, if there is no C compiler here."""
+    global _astar_lib
+    if _astar_lib is None:
+        _astar_lib = False
+        src = Path(__file__).with_name("route_astar.c")
+        tag = hashlib.sha1(src.read_bytes()).hexdigest()[:12]
+        cache = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "hwde"
+        so = cache / f"route_astar-{tag}.so"
+        try:
+            if not so.exists():
+                cache.mkdir(parents=True, exist_ok=True)
+                tmp = so.with_suffix(f".{os.getpid()}.tmp")
+                subprocess.run(["cc", "-O2", "-shared", "-fPIC", str(src), "-lm", "-o", str(tmp)],
+                               check=True, capture_output=True)
+                tmp.replace(so)
+            _astar_lib = ctypes.CDLL(str(so))
+        except (OSError, subprocess.CalledProcessError) as e:
+            print(f"route_finish: Python search, route_astar.c not built: {e}", file=sys.stderr)
+    return _astar_lib or None
+
+
+def _astar_c(lib, gr: Grid, target, via_cost, max_nodes, deadline, search_weight):
+    """(found node or None, prev) from route_astar.c."""
+    K = len(gr.layers)
+    prev = array("i", [0]) * (K * gr.nx * gr.ny)
+    u8 = ctypes.POINTER(ctypes.c_ubyte)
+    f8 = ctypes.POINTER(ctypes.c_double)
+    def b(x):
+        return ctypes.cast(ctypes.c_char_p(x), u8)
+    costs = [c if isinstance(c, array) else array("d", c) for c in gr.cost]
+    cost_ptrs = (f8 * K)(*[ctypes.cast(c.buffer_info()[0], f8) for c in costs])
+    found = ctypes.c_int32(0)
+    lib.route_astar.argtypes = None
+    rc = lib.route_astar(
+        gr.nx, gr.ny, K, (u8 * K)(*[b(x) for x in gr.blk]), b(gr.vblk), cost_ptrs,
+        (u8 * K)(*[b(x) for x in gr.in_a]), (u8 * K)(*[b(x) for x in gr.in_b]),
+        b(gr.a_plane), b(gr.b_plane), ctypes.c_double(via_cost),
+        ctypes.c_long(max_nodes),
+        ctypes.c_double(-1.0 if deadline is None else deadline),
+        ctypes.c_double(search_weight), target[0], target[1],
+        ctypes.cast(prev.buffer_info()[0], ctypes.POINTER(ctypes.c_int32)),
+        ctypes.byref(found))
+    if rc == 4:
+        raise MemoryError("route_astar")
+    if rc == 2:
+        gr.gave_up = True
+    return (found.value if rc == 0 else None), prev
 
 
 def astar(gr: Grid, target, via_cost: float = 15.0,
@@ -572,8 +632,16 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
     nx, ny, K = gr.nx, gr.ny, len(gr.layers)
     N = nx * ny
     ti, tj = target
-    dist: dict[int, float] = {}
-    prev: dict[int, int] = {}
+    lib = None if gr.span_moves else _load_astar()
+    if lib:
+        found, prev = _astar_c(lib, gr, target, via_cost, max_nodes, deadline, search_weight)
+        return _walk_back(gr, found, prev)
+    # flat per-node arrays: a whole-board grid has ~10M nodes, and dicts of
+    # that size cost several GB. A via drop into B's plane (n < 0) is rare,
+    # and stays in a dict.
+    dist = array("d", [INF]) * (K * N)
+    prev = array("i", [0]) * (K * N)
+    drop_dist: dict[int, float] = {}
     pq: list = []
 
     def h(c):
@@ -598,7 +666,7 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
         if gr.a_plane[c] and via_ok(c):
             for k in range(K):
                 n = k * N + c
-                if via_cost < dist.get(n, 1e18):
+                if via_cost < dist[n]:
                     dist[n] = via_cost
                     prev[n] = -2 - c          # starts with a via at c
                     heapq.heappush(pq, (via_cost + h(c), via_cost, n))
@@ -609,7 +677,7 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
         if n < 0:                      # via drop into side B's plane
             found = n
             break
-        if gcost > dist.get(n, 1e18):
+        if gcost > dist[n]:
             continue
         k, c = divmod(n, N)
         if gr.in_b[k][c]:
@@ -635,7 +703,7 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
                 continue               # no squeezing between two walls
             ng = gcost + step * cost[c2]
             n2 = k * N + c2
-            if ng < dist.get(n2, 1e18):
+            if ng < dist[n2]:
                 dist[n2] = ng
                 prev[n2] = n
                 heapq.heappush(pq, (ng + h(c2), ng, n2))
@@ -645,7 +713,7 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
                     continue
                 n2 = k2 * N + c
                 ng = gcost + via_cost * SPAN_COST[sp.kind]
-                if ng < dist.get(n2, 1e18):
+                if ng < dist[n2]:
                     dist[n2] = ng
                     prev[n2] = n
                     heapq.heappush(pq, (ng + h(c), ng, n2))
@@ -655,19 +723,26 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
                     continue
                 n2 = k2 * N + c
                 ng = gcost + via_cost
-                if ng < dist.get(n2, 1e18):
+                if ng < dist[n2]:
                     dist[n2] = ng
                     prev[n2] = n
                     heapq.heappush(pq, (ng + h(c), ng, n2))
             if gr.b_plane[c]:
                 n2 = -2 - (k * N + c)
                 ng = gcost + via_cost
-                if ng < dist.get(n2, 1e18):
-                    dist[n2] = ng
-                    prev[n2] = n
+                if ng < drop_dist.get(n2, INF):
+                    drop_dist[n2] = ng
                     heapq.heappush(pq, (ng, ng, n2))
+    return _walk_back(gr, found, prev)
+
+
+def _walk_back(gr: Grid, found, prev):
+    """The path astar found, from side A to side B."""
     if found is None:
         return None
+    N = gr.nx * gr.ny
+    nx = gr.nx
+    START = -1
     path = []
     n = found
     if n < 0:                          # ends with a via into B's plane
@@ -934,7 +1009,8 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
     def search(job, hide=False, board=False):
         """(path, grid, width) over the ladder: the window, a wider window,
         then a finer grid at the net's floor width for a pad boxed in by
-        its neighbours. hide: leave this pass's own routes out."""
+        its neighbours, kept close to the ends: under a large --margin that
+        grid is several GB. hide: leave this pass's own routes out."""
         net = job["net"]
         width = rules.width(net)
         held = obs.added
@@ -946,7 +1022,7 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
             for m, g, w, v in (
                     (margin, grid, width, None),
                     (margin * 2.5, grid, width, None),
-                    (margin, grid / 2, rules.width_floor(net), rules.via_floor)):
+                    (min(margin, 4.0), grid / 2, rules.width_floor(net), rules.via_floor)):
                 (ax, ay), (bx, by) = job["pa"], job["pb"]
                 win = (min(ax, bx) - m, min(ay, by) - m,
                        max(ax, bx) + m, max(ay, by) + m)
