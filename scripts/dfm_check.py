@@ -24,9 +24,9 @@ Checks (all thresholds from reference/jlc_capabilities.yaml, keyed
            annular ring (hole vs the pad copper around it). Castellated
            holes (pad_prop_castellated) are exempt from hole/copper-to-edge
            and the ring check - they sit on the edge by design - and are
-           checked by the castellation family instead. Only the copper at
-           the hole is exempt from copper-to-edge (CAST_EDGE_MARGIN_MM), not
-           the rest of its piece
+           checked by the castellation family instead. Only the pad and the
+           copper within the edge floor of it is exempt from copper-to-edge,
+           not the rest of its piece
   castellation  lib/castellation.py over the BOARD file against the
            castellated: block of jlc_capabilities.yaml: drill, hole-to-hole,
            ring, inward pad extension, hole centre on the outline, distance
@@ -561,14 +561,10 @@ def _castellated_at(cast, x: float, y: float, r: float = 0.0) -> bool:
                for cx, cy, d in cast)
 
 
-# What a castellated hole exempts from the edge check (mm past the hole's radius):
-# the copper at the hole, which has to reach the edge. This is the castellated
-# block's recommended ring (0.25), the usual 0.3 floor and its on-outline
-# tolerance (0.05), so the sides of a pad that crosses the edge fall inside.
-CAST_EDGE_MARGIN_MM = 0.6
-
-
-def check_copper_to_edge(fab, rules, vios: list, cast=()) -> None:
+def check_copper_to_edge(fab, rules, vios: list, cast_pads=()) -> None:
+    """cast_pads: castellation.edge_copper(). A castellated pad has to reach the
+    edge, so a piece touching its drill loses the pad grown by the floor (the
+    sides of a pad crossing the edge fall inside) before it is measured."""
     hard, lo = _floors(rules, "min_copper_to_edge_mm")
     outline = fab.outline
     if lo is None or outline.is_empty:
@@ -576,16 +572,14 @@ def check_copper_to_edge(fab, rules, vios: list, cast=()) -> None:
     band: list = []
     band_left = 0
     edge = outline.boundary    # a panel's routed slots are edges too
-    disks = [Point(cx, cy).buffer(d / 2.0) for cx, cy, d in cast]
-    areas = [Point(cx, cy).buffer(d / 2.0 + CAST_EDGE_MARGIN_MM)
-             for cx, cy, d in cast]
+    areas = [(drill, pad.buffer(lo)) for drill, pad in cast_pads]
     for name in fab.copper_layer_names():
         lg = fab.copper(name)
         if lg is None:
             continue
         for comp in lg.components():
-            at_holes = [area for disk, area in zip(disks, areas)
-                        if comp.intersects(disk)]
+            at_holes = [area for drill, area in areas
+                        if comp.intersects(drill)]
             for area in at_holes:
                 comp = comp.difference(area)  # on the edge by design
             if comp.is_empty or not _below(comp.distance(edge), lo):
@@ -1885,7 +1879,8 @@ def run(pcb: Path, fab_dir: Path | None = None, copper_oz: float | None = None,
         if "copper" not in skip:
             check_trace_width(fab, rules, vios)
             check_clearance(fab, rules, vios)
-            check_copper_to_edge(fab, rules, vios, cast)
+            check_copper_to_edge(fab, rules, vios,
+                                 castellation.edge_copper(bg))
             name_gaps(bg, vios)
         zone_fill_skipped = None
         if "zone_fill" not in skip:

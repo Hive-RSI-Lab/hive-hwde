@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import re
+import math
 from pathlib import Path
 
 import pytest
@@ -305,6 +306,48 @@ def test_dfm_finds_a_track_at_the_edge_on_a_castellated_pads_net(tmp_path):
     assert len(edge) == 1, [v["msg"] for v in rep["violations"]]
     assert edge[0]["distance_mm"] == pytest.approx(0.1, abs=0.01)
     assert edge[0]["pos"][0] == pytest.approx(far[0], abs=0.2)
+
+
+def _wide_pad_1(text: str) -> str:
+    """J1's pad 1 at ring 1.0 (3.0 wide on a 1.0 drill), x = 7.15 to 10.15."""
+    return text.replace("(size 1.5 2.05)", "(size 3 2.05)", 1)
+
+
+@pytest.mark.smoke
+def test_dfm_leaves_a_wide_castellated_pad_alone(tmp_path):
+    """#772, through real gerbers: the pad's sides cross the edge past the old
+    disk of hole radius + 0.6, which read as 2 findings at 0.0 mm."""
+    import dfm_check
+    rep = dfm_check.run(_mutant(tmp_path, _wide_pad_1), polarity=False)
+    assert [v["msg"] for v in rep["violations"]
+            if "copper_to_edge" in v["kind"]] == []
+
+
+@pytest.mark.smoke
+def test_dfm_finds_a_track_at_the_edge_beside_a_wide_castellated_pad(tmp_path):
+    """#772, planted through real gerbers: a track leaves the wide pad along
+    the edge, 0.1 mm off it, and runs on past the pad. The exemption stops at
+    the pad grown by the floor, so the track is still reported."""
+    import dfm_check
+    add = ('\t(segment (start 8.65 0.225) (end 4 0.225) (width 0.25) '
+           '(layer "F.Cu") (net 0) (uuid "00000000-0000-4000-8000-000000000772"))\n')
+    planted = _mutant(tmp_path, lambda t: _wide_pad_1(t).replace(
+        "\t(gr_line", add + "\t(gr_line", 1))
+    rep = dfm_check.run(planted, polarity=False)
+    edge = [v for v in rep["violations"] if v["kind"] == "dfm_copper_to_edge"]
+    assert len(edge) == 1, [v["msg"] for v in rep["violations"]]
+    assert edge[0]["distance_mm"] == pytest.approx(0.1, abs=0.01)
+    assert edge[0]["pos"][0] < 7.15 - 0.3
+
+
+def test_edge_copper_gives_each_drilled_pad_its_own_shape():
+    bg = geom.load_board(FIX)
+    got = castellation.edge_copper(bg)
+    assert len(got) == 12
+    drill, copper = got[0]
+    pad = castellation.pads(bg)[0]
+    assert copper.contains(drill.buffer(-0.01)) and copper.contains(pad.poly.buffer(-0.01))
+    assert drill.area == pytest.approx(math.pi * 0.25, rel=0.01)
 
 
 # ------------------------------------------------------- quote and order
