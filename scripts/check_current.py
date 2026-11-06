@@ -199,11 +199,15 @@ takes the rail's converter, read from the board and constraints.json, RMS:
     fsw_khz. It alone is counted when the rail also feeds a switcher.
   buck input: Iout * sqrt(D * (1 - D)), D = Vout / Vin, Iout = the power entry
     of the rail past the switcher's inductor; several converters add in RSS,
-    which assumes they are not synchronized.
+    which assumes they are not synchronized. Vin is the vin_v of the one buck
+    block with that Vout, else the declared rail: a declared voltage is a limit,
+    and the higher Vin understates this figure below D = 0.5.
   class-D or half-bridge bus: Iout * sqrt(D * (1 - D)) from the block's
     operating_point (bus_net, iout_a, duty). The bus draws Iout for D of the
     period, as a buck's input does; #798 sets this shape. With a buck output on
-    the same rail, the two add in RSS.
+    the same rail, the two add in RSS. A bus block with no bus_net leaves every
+    rail it could be on unjudged (any rail not declared below its vin_v): the
+    rail's other converters alone would understate what its caps carry.
 Sources: Freescale/NXP AN4067 rev 1.0 (2010), "Selecting L and C Components in
 the Power Stage of the MC34700 Switching Regulators": section 2.2, output RMS
 dI / sqrt(12); section 3, input RMS Iout * sqrt(D - D^2). dI is the same
@@ -948,6 +952,12 @@ def _buck_input(bg, net: str, ic: str, volts: dict, cons: dict):
     if vin is None or vout is None:
         missing = net if vin is None else out
         return f"{missing} has no declared voltage for {ic}'s duty"
+    declared = [b["operating_point"]["vin_v"] for b in cons.get("blocks") or []
+                if b.get("topology") == "buck"
+                and (b.get("operating_point") or {}).get("vout_v") == vout
+                and b["operating_point"].get("vin_v")]
+    if len(declared) == 1:
+        vin = float(declared[0])
     if vout <= 0 or vin <= vout:
         return f"{ic} isn't a buck from {vin:g} V to {vout:g} V"
     iout = next((e.get("current_a") for e in cons.get("power") or []
@@ -983,6 +993,16 @@ def _bus_terms(net: str, blocks: list):
     return terms
 
 
+def _may_draw_from(block: dict, net: str, volts: dict) -> bool:
+    """A class-D or half-bridge block with no bus_net could be on this rail,
+    unless the rail is declared below the block's own input."""
+    op = block.get("operating_point") or {}
+    if block.get("topology") not in BUS_TOPOLOGIES or op.get("bus_net"):
+        return False
+    vin, rail = op.get("vin_v"), volts.get(net)
+    return vin is None or rail is None or rail >= float(vin)
+
+
 def cap_ripple(bg: geom.BoardGeom, net: str, far: list, cons: dict | None):
     """What the capacitors of branch `far` carry (module docstring, capacitor
     branches): {"amps", "terms"} from the rail's converter, {"why"} when it
@@ -1002,6 +1022,11 @@ def cap_ripple(bg: geom.BoardGeom, net: str, far: list, cons: dict | None):
     buses = _bus_terms(net, blocks)
     if isinstance(buses, str):
         return {"why": buses}
+    unlinked = [b.get("block") or b.get("name") or b["topology"] for b in blocks
+                if _may_draw_from(b, net, volts)]
+    if unlinked:
+        return {"why": f"blocks {unlinked} declare no bus_net, so they may draw "
+                       f"from {net} and its ripple can't be read"}
     outputs = []
     for pad in bg.pads_of(net=net):
         if not re.fullmatch(r"L\d+", pad.ref):
@@ -1013,7 +1038,7 @@ def cap_ripple(bg: geom.BoardGeom, net: str, far: list, cons: dict | None):
                     return {"why": term}
                 outputs.append(term)
     terms = buses + outputs
-    if not terms:
+    if not terms and volts.get(net) != 0:
         for ic in sorted({p.ref for p in bg.pads_of(net=net) if _is_ic(p.ref)
                           and feeds_or_converts(bg, p.ref, net)}):
             term = _buck_input(bg, net, ic, volts, cons)

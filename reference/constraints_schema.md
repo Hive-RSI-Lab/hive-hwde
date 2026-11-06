@@ -438,7 +438,8 @@ Consumers per key (script -> phase):
   // these. A buck block's fsw_khz gives the output ripple when
   // reference/converter_fsw.yaml has no row. A class-d-amp or
   // half-bridge-inverter block declares bus_net (the net its bus cap is on),
-  // iout_a and duty; without them the cap stays unjudged and says why.
+  // iout_a and duty; without them the cap stays unjudged and says why. A block
+  // with no bus_net leaves every rail not declared below its vin_v unjudged.
   "blocks": [{"topology": "buck", "block": "B3", "name": "U1 AP64350 class",
               "operating_point": {"vin_v": 12, "vout_v": 5, "iout_a": 3,
                                   "pdiss_w": 0.8, "board_layers": 4,

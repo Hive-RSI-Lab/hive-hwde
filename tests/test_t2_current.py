@@ -1696,3 +1696,72 @@ def test_cap_track_is_held_to_ripple_above_the_budget(tmp_path_factory):
     assert "ripple 8.00 A" in found[0]["msg"]
     vs, _ = check_current.check_net(bg, entry, cons=cons(2))
     assert not [v for v in _kinds(vs, "undersized_track") if "ripple" in v["msg"]]
+
+
+
+def _two_pad(ref, x, net1, net2, fn2=""):
+    pf = f'(pinfunction "{fn2}")' if fn2 else ""
+    return (f'  (footprint "t:{ref[0]}" (at {x} 8)\n    (layer "F.Cu")\n'
+            f'    (property "Reference" "{ref}" (at 0 0 0))\n'
+            f'    (pad "1" smd rect (at 0 0) (size 0.5 1) (layers "F.Cu") (net "{net1}"))\n'
+            f'    (pad "2" smd rect (at 1 0) (size 0.5 1) (layers "F.Cu") (net "{net2}") {pf})\n'
+            f'  )\n')
+
+
+def _buck_on_pwr(tmp_path_factory, name):
+    """C2's bulk tap on PWR, and U9 switching from PWR through L9 into OUT."""
+    return _board(tmp_path_factory, name, _cap_tap("22uF")
+                  + _two_pad("U9", 30, "PWR", "/SW", "SW")
+                  + _two_pad("L9", 34, "/SW", "OUT"))
+
+
+def _buck_cons(rail_v=45.0, blocks=()):
+    return {"voltages": [{"net": "PWR", "voltage": rail_v},
+                         {"net": "OUT", "voltage": 5},
+                         {"net": "GND", "voltage": 0}],
+            "power": [{"net": "OUT", "current_a": 0.65}],
+            "blocks": list(blocks)}
+
+
+INVERTER = {"topology": "half-bridge-inverter", "block": "bridge",
+            "operating_point": {"vin_v": 28, "iout_a": 10}}
+
+
+def test_undeclared_bus_block_leaves_the_rail_unjudged(tmp_path_factory):
+    """PCB-0018: an inverter block with no bus_net draws amps from caps the
+    buck's input figure knows nothing of, so 0.2 A of buck ripple must not
+    clear them. A rail below the block's vin_v can't be its bus."""
+    bg = _buck_on_pwr(tmp_path_factory, "unlinked")
+    rip = check_current.cap_ripple(bg, "PWR", ["C2"], _buck_cons(blocks=[INVERTER]))
+    assert "amps" not in rip
+    assert "bridge" in rip["why"] and "bus_net" in rip["why"]
+    rip = check_current.cap_ripple(bg, "PWR", ["C2"], _buck_cons(
+        rail_v=12.0, blocks=[INVERTER]))
+    assert rip["terms"][0]["from"] == "U9"
+    linked = dict(INVERTER, operating_point={
+        "vin_v": 28, "iout_a": 10, "duty": 0.5, "bus_net": "PWR"})
+    rip = check_current.cap_ripple(bg, "PWR", ["C2"], _buck_cons(blocks=[linked]))
+    assert [t["from"] for t in rip["terms"]] == ["bridge"]
+
+
+def test_buck_input_duty_uses_the_block_vin(tmp_path_factory):
+    """A declared rail voltage is its limit: PCB-0018's VM is 45 V for a 28 V
+    buck. The block's vin_v gives the duty when one buck block has that Vout."""
+    bg = _buck_on_pwr(tmp_path_factory, "blockvin")
+    buck = {"topology": "buck", "operating_point": {"vin_v": 28, "vout_v": 5}}
+    rip = check_current.cap_ripple(bg, "PWR", ["C2"], _buck_cons(blocks=[buck]))
+    d = 5 / 28
+    assert rip["amps"] == pytest.approx(0.65 * (d * (1 - d)) ** 0.5)
+    assert rip["terms"][0]["inputs"]["vin_v"] == 28
+    rip = check_current.cap_ripple(bg, "PWR", ["C2"], _buck_cons())
+    assert rip["terms"][0]["inputs"]["vin_v"] == 45
+
+
+def test_return_net_cap_reads_no_converter(tmp_path_factory):
+    """A switcher's GND pad doesn't make it a buck from 0 V: PCB-0018 said
+    "U201 isn't a buck from 0 V to 5 V"."""
+    bg = _board(tmp_path_factory, "retnet", _cap_tap("22uF").replace(
+        '"PWR"', '"GND"') + _two_pad("U9", 30, "GND", "/SW", "SW")
+        + _two_pad("L9", 34, "/SW", "OUT"))
+    rip = check_current.cap_ripple(bg, "GND", ["C2"], _buck_cons())
+    assert rip["why"] == "no converter to read on GND"
