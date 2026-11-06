@@ -7,7 +7,9 @@ reason, because the numbers move for known reasons (LEARNINGS 2026-08-27,
 import functools
 import os
 import shutil
+import signal
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
@@ -164,6 +166,53 @@ HOST_SYMBOLS = {
 }
 
 
+# Full-wave solves too long for test-slow (bin/hwde test-em runs them): about a
+# minute to 20 minutes each on the loaded tower, 80 min together at load 45, where
+# the rest of test-slow took 17. They are `slow` too, so bin/hwde test leaves them out.
+# (nodeid without ids -> why)
+EM = {
+    "tests/test_emantenna.py::test_live_half_wave_dipole_directivity_and_z": "runs openEMS and nf2ff on a dipole",
+    "tests/test_emantenna.py::test_live_patch_tm010_against_the_cavity_formula_and_mesh": "runs openEMS at two meshes until the patch rings down",
+    "tests/test_emantenna.py::test_live_palace_patch_is_a_second_solver": "runs a Palace eigenmode solve",
+    "tests/test_emvia.py::test_live_stub_notch_and_its_blind_twin": "runs two openEMS via decks",
+    "tests/test_emvia.py::test_live_palace_driven_agrees_with_openems": "runs gmsh, Palace and openEMS on one via",
+    "tests/test_emvia.py::test_live_launch_reads_a_matched_coax_and_a_passive_launch": "runs two openEMS launch decks",
+    "tests/test_empalace.py::test_live_open_stub_notch": "runs a Palace driven solve",
+    "tests/test_empalace.py::test_live_thru_known_answer": "runs a Palace driven solve",
+    "tests/test_emloss.py::test_live_loss_in_the_deck_vs_on_the_line": "runs openEMS with Lorentz poles at two meshes",
+}
+
+# What one test may take before it fails by name, seconds: a hang then costs its
+# limit and the rest of the run still reports, where it used to look like a suite
+# that never ends. About twice the slowest test of each tier, under load.
+TEST_LIMIT = {"em": 2700, "slow": 900}
+
+
+@contextmanager
+def time_limit(seconds: float, what: str = "this test"):
+    """Fail `what` after `seconds`. The exception lands in the main thread, and
+    subprocess.run kills its child on the way out, so no solver is left running."""
+    def expired(signum, frame):
+        pytest.fail(f"{what} ran past its limit of {seconds:g} s", pytrace=True)
+    old = signal.signal(signal.SIGALRM, expired)
+    signal.setitimer(signal.ITIMER_REAL, seconds)
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, old)
+
+
+@pytest.fixture(autouse=True)
+def _test_limit(request):
+    limit = next((v for k, v in TEST_LIMIT.items() if request.node.get_closest_marker(k)), None)
+    if limit is None:
+        yield
+        return
+    with time_limit(limit, request.node.nodeid):
+        yield
+
+
 @pytest.hookimpl(tryfirst=True)  # before -m deselects by mark
 def pytest_collection_modifyitems(config, items):
     for item in items:
@@ -171,6 +220,9 @@ def pytest_collection_modifyitems(config, items):
         if why:
             item.add_marker(pytest.mark.xfail(reason=why, strict=False))
         if item.nodeid.split("[")[0] in SLOW:
+            item.add_marker(pytest.mark.slow)
+        if item.nodeid.split("[")[0] in EM:
+            item.add_marker(pytest.mark.em)
             item.add_marker(pytest.mark.slow)
     if HOST_SYMBOLS & {i.nodeid for i in items} and not _host_symbols():
         skip_sym = pytest.mark.skip(reason="needs KiCad's stock symbol libraries, this host has none")
