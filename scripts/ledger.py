@@ -36,6 +36,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
+import check_ratings  # noqa: E402
 import datasheet_extract  # noqa: E402
 import ledgerlib  # noqa: E402
 
@@ -45,15 +46,20 @@ SCRIPT = "ledger"
 def doubted_datasheets(ws: Path, kind: str, lcsc: str | None,
                        source: str) -> dict[str, str]:
     """{datasheet: why} for the suspect or placeholder PDFs a fact would rest
-    on: the part's own for rating and pinout (and the source_pdf its extraction
-    was read from), and any PDF in the workspace that --source names."""
+    on: for a pinout the part's own and its extraction's source_pdf, for a
+    rating the PDF its extraction was read from (a rating with no extraction
+    read nothing from a PDF, #799), and any PDF in the workspace that --source
+    names."""
     names = set(re.findall(r"datasheets/([^/\s]+)\.pdf", source))
     if kind in ("rating", "pinout") and lcsc:
-        names.add(lcsc)
+        if kind == "pinout":
+            names.add(lcsc)
         try:
             ext = json.loads((ws / "parts" / f"{lcsc}.json").read_text(
                 encoding="utf-8"))
-            names.add(Path(str(ext.get("source_pdf") or lcsc)).stem)
+            names.add(check_ratings.extraction_pdf(ext, lcsc)
+                      if kind == "rating" else
+                      Path(str(ext.get("source_pdf") or lcsc)).stem)
         except (OSError, ValueError, AttributeError):
             pass
     return datasheet_extract.suspect_datasheets(ws / "parts", names)

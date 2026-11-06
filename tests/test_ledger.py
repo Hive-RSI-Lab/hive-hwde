@@ -527,3 +527,45 @@ def test_stale_placeholder_ref_facts_are_orphans(ws):
     ledgerlib.put(ws, [{"subject": "H1", "kind": "rating",
                         "status": "unknown"}], "test")
     assert "H1/rating" in ledgerlib.orphans(ws)
+
+
+# ------------------------------------------- what a rating actually rests on (#799)
+
+def _rating_ws(ws, ext=None):
+    lcsc = _ds_ws(ws, {"status": "suspect", "reasons": ["no text layer"]})
+    if ext is not None:
+        (ws / "parts" / f"{lcsc}.json").write_text(json.dumps(ext))
+    else:
+        (ws / "parts" / f"{lcsc}.json").unlink(missing_ok=True)
+    return lcsc
+
+
+def _set_rating(ws, source="LCSC listing, read by hand"):
+    return ledger_cli.main(["set", "--workspace", str(ws), "--subject", "U8",
+                            "--kind", "rating", "--status", "verified",
+                            "--source", source])
+
+
+def test_cli_set_rating_is_not_refused_over_a_pdf_nothing_was_read_from(ws):
+    """No extraction: nothing was read from the suspect PDF, so it can't taint
+    a rating the source doesn't rest on."""
+    _rating_ws(ws)
+    assert _set_rating(ws) == 0
+
+
+def test_cli_set_rating_is_refused_when_its_extraction_was_read_from_a_suspect(ws, capsys):
+    _rating_ws(ws, {"mpn": "CH340", "abs_max": []})
+    assert _set_rating(ws) == 2
+    assert "no text layer" in json.loads(capsys.readouterr().out)["error"]
+
+
+def test_cli_set_rating_is_refused_when_its_source_names_the_suspect_pdf(ws, capsys):
+    lcsc = _rating_ws(ws)
+    assert _set_rating(ws, f"parts/datasheets/{lcsc}.pdf p.3") == 2
+    assert "no text layer" in json.loads(capsys.readouterr().out)["error"]
+
+
+def test_cli_set_pinout_still_refused_without_an_extraction(ws, capsys):
+    """A pinout has no listing to rest on: the part's own PDF is what it means."""
+    _rating_ws(ws)
+    assert _set(ws) == 2

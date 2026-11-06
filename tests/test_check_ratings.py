@@ -2118,3 +2118,255 @@ def test_old_entry_with_a_wrong_pdf_is_suspect_with_no_assess_run(tmp_path):
     assert "C1" in facts["suspect_datasheets"]
     assert _u1(facts, "rating")["status"] == "unknown"
     assert not [v for v in viol if v["kind"] == "rating_datasheet_unassessed"]
+
+
+# ---------------------------------------- a listing against the datasheet (#799)
+#
+# Known answers, each read from both the LCSC listing and the part's own PDF
+# (see reference/remediations/rating_listing_disagrees.md for what they mean).
+
+# CH224K: LCSC says "Voltage - Supply 4V~30V". Its datasheet section 8.1.3
+# gives VBUS 13.5 V and VDD 3.6 V: 4-30 V needs a series resistor. These rows
+# are the ones the shipped pd-trigger board's extraction holds.
+CH224K_ROWS = [
+    {"param": "VDD operating supply voltage on pin 1, min (8.1.3)",
+     "value": 3.0, "unit": "V"},
+    {"param": "VDD operating supply voltage on pin 1, max (8.1.3)",
+     "value": 3.6, "unit": "V"},
+    {"param": "VODHV voltage on the VBUS pin (pin 8), min (8.1.3)",
+     "value": -0.5, "unit": "V"},
+    {"param": "VODHV voltage on the VBUS pin (pin 8), max (8.1.3)",
+     "value": 13.5, "unit": "V"},
+    {"param": "VIOCC voltage on CC1 / CC2 / CFG1 (pins 7, 6, 9), max (8.1.3)",
+     "value": 8, "unit": "V"},
+    {"param": "VIOUX voltage on the other pins, max (8.1.3)",
+     "value": "VDD+0.5", "unit": "V"}]
+CH224K = {"lcsc": "C970725", "mpn": "CH224K",
+          "attributes": [{"name": "Voltage - Supply", "value": "4V~30V"}]}
+# WJ500V-5.08-2P: LCSC says 250 V; the datasheet says 300 V (UL), 400 V (IEC).
+WJ500V_ROWS = [{"param": "rated_voltage_UL", "value": 300, "unit": "V"},
+               {"param": "rated_voltage_IEC", "value": 400, "unit": "V"},
+               {"param": "withstanding_voltage_1min", "value": 1600,
+                "unit": "VAC"}]
+WJ500V = {"lcsc": "C8465", "mpn": "WJ500V-5.08-2P",
+          "attributes": [{"name": "Voltage Rating (Max)", "value": "250V"}]}
+# AO3400A: both say VDS 30 V. The gate row must not count against it.
+AO3400A_ROWS = [{"param": "VDS Drain-Source Voltage", "value": 30, "unit": "V"},
+                {"param": "VGS Gate-Source Voltage", "value": "+/-12",
+                 "unit": "V"}]
+AO3400A = {"lcsc": "C20917", "mpn": "AO3400A", "attributes": [
+    {"name": "Drain to Source Voltage", "value": "30V"}]}
+# 1N4148W: 75 V is the VR row; VRM 100 V on the same page is the peak.
+N4148W_ROWS = [{"param": "VRM peak repetitive reverse voltage", "value": 100,
+                "unit": "V"},
+               {"param": "VR reverse voltage", "value": 75, "unit": "V"}]
+N4148W = {"lcsc": "C81598", "mpn": "1N4148W", "attributes": [
+    {"name": "Voltage - DC Reverse(Vr)", "value": "75V"}]}
+# TPS563201: 17 V is the recommended input; abs max sits above it, and a
+# listing of the recommended top is not wrong.
+TPS563201_ROWS = [{"param": "VIN input voltage range, abs max", "value": 19,
+                   "unit": "V"},
+                  {"param": "VIN recommended operating", "value": 17,
+                   "unit": "V"}]
+TPS563201 = {"lcsc": "C116592", "mpn": "TPS563201", "attributes": [
+    {"name": "Voltage - Input (Max)", "value": "17V"}]}
+
+
+def _ext(rows, **kw):
+    return {"abs_max": rows, **kw}
+
+
+def _dis(bom, ext):
+    return [c for c in cr.listing_comparisons(bom, ext) if not c["agree"]]
+
+
+def test_listing_high_is_a_disagreement_ch224k():
+    """Known answer: a listing above the whole part's ratings."""
+    [c] = _dis(CH224K, _ext(CH224K_ROWS))
+    assert c["listing_v"] == 30 and c["datasheet_v"] == 13.5
+    assert c["side"] == "high"
+    assert c["listing_attr"] == "Voltage - Supply"
+    assert "VODHV" in c["datasheet_row"]
+
+
+def test_listing_low_is_a_disagreement_wj500v():
+    """Known answer: 250 V against 300 V (UL), the closer of the two rows, and
+    the 1600 VAC withstanding test is no rating."""
+    [c] = _dis(WJ500V, _ext(WJ500V_ROWS))
+    assert c["listing_v"] == 250 and c["datasheet_v"] == 300
+    assert c["side"] == "low"
+
+
+@pytest.mark.parametrize("bom,rows", [
+    (AO3400A, AO3400A_ROWS), (N4148W, N4148W_ROWS),
+    (TPS563201, TPS563201_ROWS)],
+    ids=["ao3400a", "1n4148w-vr-not-vrm", "tps563201-recommended-top"])
+def test_listing_agrees_with_a_real_datasheet(bom, rows):
+    """Known answers: same number, and a part with a row that is a different
+    limit than the listed one is not a disagreement."""
+    comps = cr.listing_comparisons(bom, _ext(rows))
+    assert comps and all(c["agree"] for c in comps)
+
+
+def test_listing_p_channel_rating_is_compared_by_size():
+    bom = {"lcsc": "C9", "attributes": [
+        {"name": "Drain to Source Voltage", "value": "30V"}]}
+    ext = _ext([{"param": "VDS drain-source voltage", "value": -30, "unit": "V"}])
+    assert not _dis(bom, ext)
+
+
+def test_listing_within_tolerance_agrees():
+    bom = {"lcsc": "C9", "attributes": [
+        {"name": "Reverse Voltage (Vr)", "value": "5V"}]}
+    ok = _ext([{"param": "VRM reverse working voltage", "value": 5.25, "unit": "V"}])
+    assert not _dis(bom, ok)
+    off = _ext([{"param": "VRM reverse working voltage", "value": 5.6, "unit": "V"}])
+    assert [c["side"] for c in _dis(bom, off)] == ["low"]
+
+
+def test_listing_supply_range_low_is_not_a_disagreement():
+    """A supply listing may be a nominal: under the part's limit is no finding,
+    and only a top over everything on the part is."""
+    bom = {"lcsc": "C9", "attributes": [
+        {"name": "Operating Voltage", "value": "3.3V"}]}
+    assert not _dis(bom, _ext([{"param": "VDD supply", "value": 6, "unit": "V"}]))
+
+
+def test_listing_supply_range_is_not_held_to_one_pin():
+    """An input range over VDD but within the VIN pin's limit is the part's."""
+    bom = {"lcsc": "C9", "attributes": [
+        {"name": "Voltage - Supply", "value": "4V~30V"}]}
+    ext = _ext([{"param": "VDD max", "value": 3.6, "unit": "V"},
+                {"param": "VIN pin max", "value": 32, "unit": "V"}])
+    assert not _dis(bom, ext)
+
+
+def test_listing_without_a_datasheet_voltage_is_not_compared():
+    assert cr.listing_comparisons(N4148W, _ext([
+        {"param": "IF forward current", "value": 0.3, "unit": "A"}])) == []
+    assert cr.listing_comparisons(N4148W, {}) == []
+    assert cr.listing_comparisons({"lcsc": "C9", "attributes": []},
+                                  _ext(N4148W_ROWS)) == []
+
+
+def test_listing_pin_ratings_are_datasheet_rows():
+    bom = {"lcsc": "C9", "attributes": [
+        {"name": "Reverse Voltage (Vr)", "value": "100V"}]}
+    ext = {"pinout": [{"pin": "1", "name": "K", "type": "passive"},
+                      {"pin": "2", "name": "A", "type": "passive"}],
+           "pin_ratings": [{"pins": ["K"], "ref": "A", "max": 40, "kind": "voltage",
+                            "source": "VRRM p.1"}]}
+    [c] = _dis(bom, ext)
+    assert c["datasheet_v"] == 40 and c["side"] == "high"
+
+
+def _disagree_ws(tmp_path, rail, attr="50V", ds=25):
+    return _ws(tmp_path,
+               [("D1", "C9", {"1": rail, "2": "GND"})],
+               {"C9": {"mpn": "D", "abs_max": [
+                   {"param": "VR reverse voltage", "value": ds, "unit": "V"}]}},
+               bom=[{"lcsc": "C9", "mpn": "D", "attributes": [
+                   {"name": "Voltage - DC Reverse(Vr)", "value": attr}]}])
+
+
+def _run_listing(ws, trusted=None):
+    viol, facts = cr.run_check(ws / "kicad" / "board.kicad_pcb", ws / "parts",
+                               None, None, trusted=trusted)
+    return [v for v in viol if v["kind"] == "rating_listing_disagrees"], facts
+
+
+@pytest.mark.parametrize("rail", ["+12V", "+30V", "+60V"])
+def test_listing_finding_fires_on_either_side_of_the_rail(tmp_path, rail):
+    """The issue's known answer: 50 V against 25 V, with the rail below both,
+    between them and above both."""
+    [f], facts = _run_listing(_disagree_ws(tmp_path, rail))
+    assert f["severity"] == "warning"
+    assert f["listing_v"] == 50 and f["datasheet_v"] == 25
+    assert f["side"] == "high" and f["refs"] == ["D1"]
+    assert f["rating"] == "reverse" and "50" in f["msg"] and "25" in f["msg"]
+    assert f["check_used"] in ("datasheet", "listing", "package", "both", "none")
+    assert facts["listing_comparison"] == [
+        {"lcsc": "C9", "rating": "reverse", "listing_v": 50.0, "datasheet_v": 25.0,
+         "agree": False, "side": "high"}]
+
+
+def test_listing_matching_numbers_get_no_finding(tmp_path):
+    fs, facts = _run_listing(_disagree_ws(tmp_path, "+12V", attr="25V"))
+    assert fs == []
+    assert [c["agree"] for c in facts["listing_comparison"]] == [True]
+
+
+def test_listing_finding_says_which_number_the_check_used(tmp_path):
+    """An extracted part is judged on its datasheet, never its listing. This
+    diode's extraction has no K/A pins, so nothing judged it at all: the finding
+    has to say that too."""
+    [f], _ = _run_listing(_disagree_ws(tmp_path, "+12V"))
+    assert f["check_used"] == "none"
+    assert "compared neither" in f["msg"]
+    ext = dict(MCU, abs_max=[{"param": "VIN pin max", "value": 6, "unit": "V"}],
+               pin_ratings=[{"pins": ["VDD"], "max": 6, "kind": "voltage",
+                             "source": "VDD p.1"}])
+    ws = _ws(tmp_path / "b", [("U1", "C1", {"1": "+3V3", "2": "GND", "3": "+3V3"})],
+             {"C1": ext},
+             bom=[{"lcsc": "C1", "mpn": "M", "attributes": [
+                 {"name": "Voltage - Supply", "value": "30V"}]}])
+    [f], _ = _run_listing(ws)
+    assert f["check_used"] == "datasheet"
+    assert "used the datasheet" in f["msg"]
+
+
+def test_listing_part_read_from_a_suspect_pdf_is_not_compared(tmp_path):
+    """A number read from a PDF that may be another part's says nothing."""
+    ws = _disagree_ws(tmp_path, "+12V")
+    d = ws / "parts" / "datasheets"
+    d.mkdir()
+    (d / "index.json").write_text(json.dumps(
+        {"C9": {"status": "suspect", "reasons": ["MPN not in the text"]}}))
+    fs, facts = _run_listing(ws)
+    assert fs == [] and facts["listing_comparison"] == []
+    assert facts["listing_not_compared"] == {"C9": "suspect datasheet"}
+
+
+def test_listing_finding_dropped_once_a_person_has_verified(tmp_path):
+    fs, _ = _run_listing(_disagree_ws(tmp_path, "+12V"), trusted={"D1"})
+    assert fs == []
+
+
+def test_listing_finding_names_every_ref(tmp_path):
+    ws = _ws(tmp_path,
+             [("D1", "C9", {"1": "+12V", "2": "GND"}),
+              ("D2", "C9", {"1": "+12V", "2": "GND"})],
+             {"C9": {"mpn": "D", "abs_max": [
+                 {"param": "VR reverse voltage", "value": 25, "unit": "V"}]}},
+             bom=[{"lcsc": "C9", "mpn": "D", "attributes": [
+                 {"name": "Voltage - DC Reverse(Vr)", "value": "50V"}]}])
+    [f], _ = _run_listing(ws)
+    assert f["refs"] == ["D1", "D2"]
+
+
+def test_listing_finding_never_blocks(tmp_path):
+    """The kind reports; it does not by itself fail a board."""
+    p = _run(_disagree_ws(tmp_path, "+12V", attr="50V", ds=25))
+    fs = [v for v in p["violations"] if v["kind"] == "rating_listing_disagrees"]
+    assert fs and all(v["severity"] == "warning" for v in fs)
+
+
+def test_planted_listing_mutant_is_caught():
+    """The golden mutant, through the CLI entry score_checks uses."""
+    mut = ROOT / "tests" / "golden" / "mutants" / \
+        "listing-disagrees-with-datasheet"
+    payload, _ = cr.run(["--pcb", str(mut / "blinky2.kicad_pcb"),
+                         "--parts", str(mut / "parts")])
+    hits = [v for v in payload["violations"]
+            if v.get("kind") == "rating_listing_disagrees"]
+    assert len(hits) == 1, json.dumps(payload["violations"])
+    assert "D1" in hits[0]["refs"] and hits[0]["severity"] == "warning"
+    assert hits[0]["listing_v"] == 50 and hits[0]["datasheet_v"] == 25
+
+
+def test_a_vds_listing_is_not_judged_against_the_gate_row():
+    # IRF640's own extraction: the VDS row is worded so it isn't read, VGS is.
+    bom = {"attributes": [{"name": "Drain to Source Voltage", "value": "200V"}]}
+    ext = {"abs_max": [{"param": "Vgs gate-to-source voltage", "value": "+/-20",
+                        "unit": "V"}]}
+    assert cr.listing_comparisons(bom, ext) == []

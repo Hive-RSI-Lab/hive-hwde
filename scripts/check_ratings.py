@@ -110,6 +110,13 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
  - rating_no_datasheet_read (warning, one per board): parts whose rating fact
    is `listed`, a number compared with no datasheet behind it (#781). It names
    the way to `verified`: `datasheet_extract --fetch`, then extraction.
+ - rating_listing_disagrees (warning, one per part): the distributor's voltage
+   rating and the datasheet's differ by over 10 % on the same rating (#799),
+   whatever the rail. `side` high means the listing overstates the part, the
+   direction a `listed` rating can't catch. `check_used` says which number the
+   rating check read: `datasheet` (an extracted part is never judged on its
+   listing), or `none` when no pin met a known rail. Every comparison is in
+   facts `listing_comparison`.
 Sources and verified/disputed tags: docs/ingest/safety-components.md.
 A pin on a net of unknown voltage is not a finding (counted in facts).
 
@@ -1040,6 +1047,9 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
              "<ws>` and extract each PDF. A part with no number at all: "
              "`parts_enrich`", pins=unread)
         out[-1]["refs"] = unread
+    listing_compared, listing_skipped = listing_findings(
+        board, exts, bom_by_lcsc, read_from, held_back, rated_by_ref, trusted,
+        emit, out)
     facts = {"parts_on_board": len(board), "extractions": sorted(exts),
              "net_volts": {n: {"v": volts[n], "src": vsrc[n]}
                            for n in sorted(volts)},
@@ -1050,7 +1060,9 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
              "operating_range": temp_facts,
              "suspect_datasheets": suspect,
              "unassessed_datasheets": unassessed,
-             "ledger_facts": lfacts}
+             "ledger_facts": lfacts,
+             "listing_comparison": listing_compared,
+             "listing_not_compared": listing_skipped}
     return out, facts
 
 
@@ -1837,6 +1849,171 @@ def extraction_pdf(ext: dict, lcsc: str) -> str:
     name = PDF_NAME_RE.search(str(ext.get("source_pdf") or ""))
     codes = LCSC_CODE_RE.findall(name.group(0)) if name else []
     return lcsc if not codes or lcsc in codes else codes[0]
+
+
+# --- a distributor's listing against the datasheet (#799) ---------------------
+
+# how far apart two numbers for one rating may sit: LCSC rounds (5 V for 5.25 V)
+LISTING_TOL = 0.10
+# what a listing's attribute rates, and the datasheet rows that rate the same
+# thing. Supply is not here: its rows are named after pins, and it is judged
+# against the whole part (listing_comparisons).
+LISTING_FAMILIES = (
+    ("drain_source", re.compile(r"drain.*source|\bvds", re.I),
+     re.compile(r"\bVDSS?\b|drain.?(to.?)?source", re.I)),
+    ("reverse", VR_ATTR_RE,
+     re.compile(r"\bV_?(R|RRM|RWM|RM)\b|reverse|stand-?off|blocking", re.I)),
+    ("rated", re.compile(V_ATTR_RE.pattern + r"|voltage\s*-\s*max", re.I),
+     re.compile(r"rated.?voltage|voltage.?rat(ing|ed)|working voltage", re.I)))
+SUPPLY_ATTR_RE = re.compile(r"input\s*voltage|voltage\s*-\s*input|\bvin\b|"
+                            r"supply\s*voltage|voltage\s*-\s*supply|"
+                            r"operating\s*voltage", re.I)
+# a pin_ratings row rated one terminal against another says its family itself
+LISTING_PIN_PAIRS = {"reverse": ({"K", "CATHODE"}, {"A", "ANODE"}),
+                     "drain_source": ({"D", "DRAIN"}, {"S", "SOURCE"})}
+
+
+def listing_ratings(bom: dict | None) -> list[dict]:
+    """[{rating, attr, v}]: the voltage ratings a parts.json row lists, the top
+    of a range. Supply comes first: V_ATTR_RE also takes a supply's (max)."""
+    out, seen = [], set()
+    for a in (bom or {}).get("attributes") or []:
+        name = str(a.get("name") or "")
+        vs = attr_volts(a.get("value"))
+        if not vs or NOT_VIN_ATTR_RE.search(name):
+            continue
+        rating = "supply" if SUPPLY_ATTR_RE.search(name) else next(
+            (f for f, rx, _ in LISTING_FAMILIES if rx.search(name)), None)
+        if rating and (rating, max(vs)) not in seen:
+            seen.add((rating, max(vs)))
+            out.append({"rating": rating, "attr": name, "v": max(vs)})
+    return out
+
+
+def datasheet_voltage_rows(ext: dict | None) -> list[dict]:
+    """[{v, param, pins}]: an extraction's numeric voltage limits, by size (a
+    P-channel figure prints negative). A limit given as an expression, a test
+    voltage and an AC figure are not ratings to set a listing against."""
+    rows = []
+    for row in (ext or {}).get("abs_max") or []:
+        param = str(row.get("param") or "")
+        kind, scale = unit_kind(row.get("unit"))
+        if kind != "voltage" or SKIP_RE.search(param.upper()) or \
+                re.search(r"\bRMS\b", param, re.I):
+            continue
+        vs = [abs(x) for x in parse_bounds(row.get("value"), param, scale,
+                                           bool(REC_RE.search(param.upper())),
+                                           kind) if isinstance(x, float)]
+        if vs:
+            rows.append({"v": max(vs), "param": param, "pins": set()})
+    for r in (ext or {}).get("pin_ratings") or []:
+        if r.get("kind", "voltage") != "voltage":
+            continue
+        ends = [parse_term(str(r[k]), 1.0) for k in ("min", "max")
+                if r.get(k) is not None]
+        vs = [abs(x) for x in ends if isinstance(x, float)]
+        if vs:
+            rows.append({"v": max(vs),
+                         "param": str(r.get("source") or r.get("pins")),
+                         "pins": {str(n).upper() for n in
+                                  [*(r.get("pins") or []), r.get("ref")] if n}})
+    return rows
+
+
+def _rates_family(row: dict, family: str, rx: re.Pattern) -> bool:
+    pair = LISTING_PIN_PAIRS.get(family)
+    return bool(rx.search(row["param"])) or bool(
+        pair and row["pins"] & pair[0] and row["pins"] & pair[1])
+
+
+def listing_comparisons(bom: dict | None, ext: dict | None) -> list[dict]:
+    """One dict per listed voltage rating that the datasheet can answer:
+    {rating, listing_attr, listing_v, datasheet_row, datasheet_v, agree, side}.
+
+    A datasheet may give one rating several rows (VRM and VR; UL and IEC), so a
+    listing that matches any of them agrees, and otherwise it is set against
+    the closest. For a supply range or a plain rated voltage with no row of its
+    family, all that can be said is that a listing over everything on the part
+    is wrong: one under it may be a nominal, or a figure for one pin. A VDS or a
+    reverse rating with no row of its own says nothing: a part's other rows are
+    other terminals (IRF640: VGS 20 V is no answer to VDS 200 V). side is `high`
+    when the listing overstates the part, `low` when it understates it."""
+    rows = datasheet_voltage_rows(ext)
+    if not rows:
+        return []
+    top = max(rows, key=lambda r: r["v"])
+    res = []
+    for li in listing_ratings(bom):
+        rx = next((x for f, _, x in LISTING_FAMILIES if f == li["rating"]), None)
+        same = [r for r in rows if rx and _rates_family(r, li["rating"], rx)]
+        if same:
+            near = min(same, key=lambda r: abs(r["v"] - li["v"]))
+            agree = abs(near["v"] - li["v"]) <= LISTING_TOL * near["v"]
+        elif li["rating"] in LISTING_PIN_PAIRS:
+            continue
+        else:
+            near = top
+            agree = li["v"] <= near["v"] * (1 + LISTING_TOL)
+        res.append({"rating": li["rating"], "listing_attr": li["attr"],
+                    "listing_v": li["v"], "datasheet_row": near["param"],
+                    "datasheet_v": near["v"], "agree": agree,
+                    "side": None if agree else
+                    "high" if li["v"] > near["v"] else "low"})
+    return res
+
+
+def listing_findings(board: list[dict], exts: dict, bom_by_lcsc: dict,
+                     read_from: dict, held_back: dict, rated: dict,
+                     trusted: set, emit, out: list[dict]
+                     ) -> tuple[list[dict], dict]:
+    """rating_listing_disagrees, one per part and whatever the rail: the worst
+    disagreement, a listing that overstates the part first. A number read from
+    a suspect PDF proves nothing, and a person's verified rating has settled it.
+    Returns what was compared and what could not be, for the survey."""
+    compared_rows, skipped = [], {}
+    for lcsc in sorted(exts):
+        if not listing_ratings(bom_by_lcsc.get(lcsc)):
+            continue
+        if read_from.get(lcsc, lcsc) in held_back:
+            skipped[lcsc] = "suspect datasheet"
+            continue
+        comps = listing_comparisons(bom_by_lcsc.get(lcsc), exts[lcsc])
+        if not comps:
+            skipped[lcsc] = "no voltage row in the extraction"
+            continue
+        compared_rows += [{"lcsc": lcsc, "rating": c["rating"],
+                           "listing_v": c["listing_v"],
+                           "datasheet_v": c["datasheet_v"],
+                           "agree": c["agree"], "side": c["side"]}
+                          for c in comps]
+        refs = sorted(b["ref"] for b in board if b["lcsc"] == lcsc)
+        bad = sorted((c for c in comps if not c["agree"]),
+                     key=lambda c: (c["side"] != "high",
+                                    -abs(c["listing_v"] - c["datasheet_v"])))
+        if not bad or not refs or set(refs) <= trusted:
+            continue
+        c = bad[0]
+        used = "datasheet" if any("datasheet" in rated.get(r, ())
+                                  for r in refs) else "none"
+        word = ("the rating check used the datasheet" if used == "datasheet"
+                else "the rating check compared neither: no pin of it has a "
+                     "datasheet limit on a known rail")
+        what = ("the listing overstates the part, so a rail between the two "
+                "passes a `listed` rating the datasheet forbids"
+                if c["side"] == "high" else
+                "the listing understates the part: a rating read from it is "
+                "only conservative")
+        emit("rating_listing_disagrees", "warning", refs[0], None,
+             f"{', '.join(refs)} ({lcsc}): the listing's {c['listing_attr']} "
+             f"says {_fmt(c['listing_v'])} V and the datasheet's "
+             f"{c['datasheet_row']} says {_fmt(c['datasheet_v'])} V; {what}; "
+             f"{word}. Read the PDF and correct whichever is "
+             "wrong", pins=refs, listing_v=c["listing_v"],
+             datasheet_v=c["datasheet_v"], rating=c["rating"],
+             listing_attr=c["listing_attr"], datasheet_row=c["datasheet_row"],
+             side=c["side"], check_used=used)
+        out[-1]["refs"] = refs
+    return compared_rows, skipped
 
 
 def _rating_wording(tiers: set[str], n: int) -> str:
