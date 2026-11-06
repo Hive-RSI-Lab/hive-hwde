@@ -394,6 +394,27 @@ def test_a_short_run_between_vias_moves_to_the_next_layer():
     assert merge_close_vias(path, 3.0, lambda run, k2: False) == path
 
 
+def test_a_keepout_inside_a_footprint_is_a_wall(tmp_path):
+    """DRC enforces it, so a route through it only comes back rejected."""
+    pts = "(xy 10 0.5) (xy 20 0.5) (xy 20 20) (xy 10 20)"
+    keepout = (f'    (zone (net 0) (net_name "") (layer "F.Cu") (name "PATCH")\n'
+               f'      (keepout (tracks not_allowed) (vias allowed) (pads allowed)'
+               f' (copperpour not_allowed) (footprints allowed))\n'
+               f'      (polygon (pts {pts})))\n')
+    array = (f'  (footprint "t:AE1" (layer "F.Cu") (at 15 10)\n'
+             f'    (property "Reference" "AE1" (at 0 0 0))\n{keepout}  )\n')
+    body = _pad("U1", 5, 15, "SIG") + _pad("U2", 25, 15, "SIG") + array
+    pcb = _board(tmp_path, body)
+    bg = geom.BoardGeom.from_file(pcb)
+    assert [ra["name"] for ra in bg.footprint_rule_areas] == ["PATCH"]
+    assert bg.rule_areas == []
+    _, jobs = _plan(pcb, [_pair("SIG", (5, 15), (25, 15))], via_cost_mm=30, margin=8)
+    assert jobs[0]["status"] == "routed" and jobs[0]["vias"] == 0
+    area = box(10, 0.5, 20, 20)
+    for op in _tracks(jobs[0]):
+        assert LineString([op["start"], op["end"]]).distance(area) > 0
+
+
 def test_a_large_margin_grid_stops_at_the_board():
     """Memory goes by the square of the window, and nothing routes off the board."""
     board = box(20, 20, 130, 92)

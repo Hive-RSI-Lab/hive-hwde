@@ -451,7 +451,7 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
         inside = shapely.contains_xy(poly, X, Y)
         cost[k][inside] *= pour_cost
 
-    for ra in bg.rule_areas:
+    for ra in bg.rule_areas + bg.footprint_rule_areas:
         fl = ra.get("flags", {})
         poly = ra["outline"]
         if poly.is_empty or not poly.intersects(win):
@@ -547,7 +547,7 @@ def _span_moves(obs, rules: Rules, net: str, layers: list, win, args, K: int,
                     stack = shapely.dwithin(
                         it.hole.centroid, shapely.points(X[hit[0]], Y[hit[0]]), 0.01)
                     m[hit[0]] |= hit[1] & ~stack
-        for ra in obs.bg.rule_areas:
+        for ra in obs.bg.rule_areas + obs.bg.footprint_rule_areas:
             if ra.get("flags", {}).get("vias") == "not_allowed" \
                     and not ra["outline"].is_empty and ra["outline"].intersects(win):
                 hit = _mask(ra["outline"], vr + rules.margin, *args)
