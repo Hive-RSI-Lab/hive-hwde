@@ -30,8 +30,8 @@ An agent designs a PCB from a written brief: research, architecture, parts, sche
   toolchain, whole fixture boards through bench or the gates, intake of a
   whole project); `bin/hwde test-slow` runs those, so run it too on a change
   to the checks, bench, intake or `check_env`. `bin/hwde test-em` runs the long
-  full-wave solves test-slow leaves out (`EM` in `tests/conftest.py`, about an
-  hour against test-slow's 10 min), so run it on a change to `scripts/lib/em*`
+  full-wave solves test-slow leaves out (`EM` in `tests/conftest.py`, 80 min
+  against test-slow's 17 on a machine at load 45), so run it on a change to `scripts/lib/em*`
   or `scripts/lib/solvers.py`. A test past its limit (15 min, 45 in `em`) fails
   by name. `bin/hwde test-smoke` runs the
   `smoke` tests, whole flows on a live KiCad; CI runs them on every PR and

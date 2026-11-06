@@ -167,8 +167,8 @@ HOST_SYMBOLS = {
 
 
 # Full-wave solves too long for test-slow (bin/hwde test-em runs them): about a
-# minute to 20 minutes each on the loaded tower, 1 h together, where the rest of
-# test-slow takes 10 min. They are `slow` too, so bin/hwde test leaves them out.
+# minute to 20 minutes each on the loaded tower, 80 min together at load 45, where
+# the rest of test-slow took 17. They are `slow` too, so bin/hwde test leaves them out.
 # (nodeid without ids -> why)
 EM = {
     "tests/test_emantenna.py::test_live_half_wave_dipole_directivity_and_z": "runs openEMS and nf2ff on a dipole",

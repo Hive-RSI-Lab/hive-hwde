@@ -11,7 +11,7 @@
 #   hwde test-slow [args] the tests test leaves out as slow (tests/conftest.py
 #                         SLOW): live toolchain, whole fixture boards
 #   hwde test-em [args]   the long full-wave solves, `em` (tests/conftest.py EM),
-#                         which test-slow leaves out: about an hour on a loaded machine
+#                         which test-slow leaves out: over an hour on a loaded machine
 #   hwde test-smoke [args] the `smoke` tests: whole flows on a live KiCad
 #                         (.github/workflows/smoke.yml runs them on every PR and daily)
 #   hwde check-all        re-run every board's gates from a scratch copy, and
