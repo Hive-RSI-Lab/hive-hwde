@@ -2,7 +2,9 @@
 test marked `kicad_recorded` runs only on the kicad-cli its numbers were
 recorded on (RECORDED_KICAD). On any other version it is skipped with the
 reason, because the numbers move for known reasons (LEARNINGS 2026-08-27,
-"KiCad 10.0.5 vs 10.0.3 deltas") until someone re-baselines them on purpose.
+"KiCad 10.0.5 vs 10.0.3 deltas") until someone re-baselines them on purpose. A
+skip like that is named at the end of the run, and moving the pin without
+re-recording fails tests/test_kicad_pin.py, so the tests can't go quiet (#795).
 """
 import functools
 import os
@@ -14,7 +16,8 @@ from pathlib import Path
 
 import pytest
 
-RECORDED_KICAD = (10, 0, 3)
+RECORDED_KICAD = (10, 0, 6)
+_STRANDED = pytest.StashKey[tuple]()
 
 
 @functools.cache
@@ -240,6 +243,16 @@ def pytest_collection_modifyitems(config, items):
         f"this is {have} (LEARNINGS 2026-08-27)"))
     for item in marked:
         item.add_marker(skip)
+    config.stash[_STRANDED] = (len(marked), have)
+
+
+def pytest_terminal_summary(terminalreporter, config):
+    stranded = config.stash.get(_STRANDED, None)
+    if stranded:
+        n, have = stranded
+        terminalreporter.write_line(
+            f"kicad_recorded: {n} tests did NOT run: numbers recorded on KiCad "
+            f"{'.'.join(map(str, RECORDED_KICAD))}, this is {have}", yellow=True)
 
 
 MODELS = Path(__file__).resolve().parent / "fixtures" / "3dmodels"

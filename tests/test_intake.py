@@ -25,6 +25,7 @@ sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 
 import gerblib  # noqa: E402
+import env  # noqa: E402
 import intake  # noqa: E402
 from checklib import CheckError  # noqa: E402
 
@@ -464,8 +465,22 @@ def test_gerblib_canonical_names_still_win(tmp_path):
 # ---------------------------------------------------------------------------
 # smoke: the two acceptance intakes (need KiCad 10)
 # ---------------------------------------------------------------------------
+def _pinned_demos() -> list[Path]:
+    """The demos beside the pipeline's kicad-cli: <root>/share/kicad/demos, or
+    <root>/usr/share/kicad/demos on an unpacked Linux install."""
+    try:
+        cli = env.find_kicad_cli()
+    except env.EnvError:
+        return []
+    if not cli:
+        return []
+    root = Path(cli).parent.parent
+    return [root / "share" / "kicad" / "demos",
+            root / "usr" / "share" / "kicad" / "demos"]
+
+
 def _demo_dir() -> Path | None:
-    for d in DEMOS:
+    for d in [*_pinned_demos(), *DEMOS]:
         if d.is_dir():
             return d
     return None
@@ -536,6 +551,16 @@ def test_intake_golden_board_runs_every_gate(tmp_path):
     assert (ws / "kicad" / "blinky2-in.net").is_file()
 
 
+@pytest.mark.parametrize("share", ["share", "usr/share"])
+def test_demos_are_found_beside_the_pinned_kicad_cli(tmp_path, monkeypatch, share):
+    """Tools-folder installs keep their demos here, not under /usr/share (#795)."""
+    root = tmp_path / "kicad-x"
+    demos = root / share / "kicad" / "demos"
+    demos.mkdir(parents=True)
+    monkeypatch.setattr(env, "find_kicad_cli", lambda: root / "bin" / "kicad-cli")
+    assert _demo_dir() == demos
+
+
 @pytest.mark.kicad_recorded
 @pytest.mark.smoke
 def test_intake_kicad_demo_upgrades_the_format_and_reports_findings(tmp_path):
@@ -561,7 +586,10 @@ def test_intake_kicad_demo_upgrades_the_format_and_reports_findings(tmp_path):
                 if f["file"].endswith(".kicad_sch")}) == 1
 
     gates = payload["baseline"]["gates"]
-    assert gates["erc"]["status"] == "pass"
+    # the demo's own fp-lib-table lists only "Footprints", and its symbols link
+    # Capacitor_THT and Resistor_THT: KiCad 10.0.6 reports that, nothing else
+    erc = json.loads((ws / "reports" / "gate-erc.json").read_text(encoding="utf-8"))
+    assert {f["check"] for f in erc["failing"]} <= {"footprint_link_issues"}
     # the demo's copper layers are USER-RENAMED (top_cu/bottom_cu): dfm only
     # runs because gerblib keys copper by the Protel extension too
     assert gates["dfm"]["status"] in ("pass", "fail")
