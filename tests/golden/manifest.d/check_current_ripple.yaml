@@ -1,0 +1,15 @@
+# Seeded fault for check_current's bulk-cap ripple figure (#798).
+mutants:
+  buck-input-cap-single-via:
+    board: usbbuck4
+    script: mutations/buck_input_cap_single_via.py
+    check: check_current
+    defect: >-
+      SIDECAR fault: U2's input cap C13 taps VBUS through one via while U2 is
+      declared a 2 A output, so C13 ripples 0.95 A RMS against one via's 0.5 A.
+      VBUS's own 0.5 A budget passes it.
+    expect:
+      kind: insufficient_transition_vias
+      net: VBUS
+      ref: C13
+      pos: [104.0, 124.4]

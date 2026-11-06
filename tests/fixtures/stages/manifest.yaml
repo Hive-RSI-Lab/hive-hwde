@@ -300,9 +300,6 @@ fixtures:
         net: +12V
       - check: check_current
         kind: insufficient_transition_vias
-        net: +12V
-      - check: check_current
-        kind: insufficient_transition_vias
         net: V48_RTN
       - check: check_current
         kind: pour_neckdown

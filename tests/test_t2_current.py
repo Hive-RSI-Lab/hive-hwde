@@ -1344,28 +1344,17 @@ def test_switcher_input_past_a_via_stays_judged(tmp_path_factory):
             facts, "insufficient_transition_vias")] == [["U3"], ["U4"]], name
 
 
-def test_bulk_cap_past_a_via_stays_judged(tmp_path_factory):
-    """Lumina's +12V vias to the buck's output caps (22 uF, pinned as a true
-    defect in carrier_verify): with no plane, a bulk cap's via carries the
-    rail's ripple and inrush. A decoupling cap's tap is a branch, and so is a
-    bulk cap's on a plane-fed rail (core's +3V3), where the plane feeds it."""
-    def tap(value):
-        return _fed_star().replace(
-            '"Reference" "U2" (at 0 0 0))',
-            f'"Reference" "C2" (at 0 0 0))\n    (property "Value" "{value}" '
-            '(at 0 0 0))', 1)
-
+def test_bulk_cap_tap_is_judged_by_ripple_not_budget(tmp_path_factory):
+    """A capacitor's tap is a branch on any rail (#798, once #699 and PR 793's
+    10 uF rule): no converter on the rail, it stays unjudged, plane or not."""
     def positions(vs):
         return [v["pos"] for v in _kinds(vs, "insufficient_transition_vias")]
-    for value in ("22uF 25V X5R 1206", "10uF"):
-        bg = _board(tmp_path_factory, "bulktap", tap(value))
-        vs, _ = check_current.check_net(bg, STAR)
-        assert [10.0, 2.0] in positions(vs), value
-    bg = _board(tmp_path_factory, "decoup", tap("100nF 50V X7R"))
-    vs, facts = check_current.check_net(bg, STAR)
-    assert [10.0, 2.0] not in positions(vs)
-    assert ["C2"] in [u["refs"] for u in facts["unjudged"]]
-    bg = _board(tmp_path_factory, "bulkplane", tap("22uF") + """  (zone (net "PWR") (layer "B.Cu")
+    for value in ("22uF 25V X5R 1206", "10uF", "100nF 50V X7R"):
+        bg = _board(tmp_path_factory, "captap", _cap_tap(value))
+        vs, facts = check_current.check_net(bg, STAR)
+        assert [10.0, 2.0] not in positions(vs), value
+        assert ["C2"] in [u["refs"] for u in facts["unjudged"]], value
+    bg = _board(tmp_path_factory, "bulkplane", _cap_tap("22uF") + """  (zone (net "PWR") (layer "B.Cu")
     (filled_polygon (layer "B.Cu")
       (pts (xy 40 40) (xy 50 40) (xy 50 50) (xy 40 50))))
 """)
@@ -1512,3 +1501,198 @@ def test_core_branch_taps_are_unjudged():
         (85.092, 189.466), (135.708, 153.672)]
     assert {u["kind"] for u in facts["unjudged"]} == {
         "insufficient_transition_vias", "undersized_track"}
+
+
+# ---- #798: a bulk or bus cap's via, at the ripple current it carries
+
+def _cap_tap(value):
+    """_fed_star with its far part U2 made a capacitor of this value."""
+    return _fed_star().replace(
+        '"Reference" "U2" (at 0 0 0))',
+        f'"Reference" "C2" (at 0 0 0))\n    (property "Value" "{value}" '
+        '(at 0 0 0))', 1)
+
+
+def _at(vs, pos):
+    return [v for v in _kinds(vs, "insufficient_transition_vias")
+            if v["pos"] == list(pos)]
+
+
+CORE_KICAD = REPO / "pinned" / "core" / "kicad"
+C7_TAP = (90.987, 172.849)        # core: PVDD's one-via tap to C7, 10 uF
+
+
+def _core_pvdd(pcb=CORE_KICAD / "core.kicad_pcb", current_a=None):
+    """core's PVDD at the bus ripple of a class-D stage: 1.5 A at D = 0.5 is
+    0.75 A RMS, so one via at 0.5 A falls short and two carry it."""
+    cons = json.loads((CORE_KICAD / "constraints.json").read_text(
+        encoding="utf-8"))
+    cons["blocks"] = [{"topology": "class-d-amp", "block": "B1", "name": "t",
+                       "operating_point": {"bus_net": "PVDD", "iout_a": 1.5,
+                                           "duty": 0.5}}]
+    entry = next(e for e in cons["power"] if e["net"] == "PVDD")
+    if current_a is not None:
+        entry = dict(entry, current_a=current_a)
+    return check_current.check_net(geom.load_board(pcb), entry, cons=cons)
+
+
+LUMINA = REPO / "tests" / "fixtures" / "stages" / "lumina_carrier"
+C52_TAPS = ((31.75, 118.0), (34.65, 118.8))
+
+
+def _lumina_12v(pcb=LUMINA / "routed.kicad_pcb"):
+    cons = json.loads((LUMINA / "constraints.json").read_text(encoding="utf-8"))
+    entry = next(e for e in cons["power"] if e["net"] == "+12V")
+    return check_current.check_net(geom.load_board(pcb), entry, cons=cons)
+
+
+def test_lumina_output_caps_pass_at_their_ripple():
+    """Known answer 1 (#798): lumina's vias to its buck's output caps C52/C53
+    no longer fail. They carry the inductor's ripple, ~0.13 A RMS, not the
+    rail's 2 A. The figure and what it comes from are in facts: 12 V from 57 V
+    through 68 uH at 300 kHz."""
+    vs, facts = _lumina_12v()
+    for pos in C52_TAPS:
+        assert not _at(vs, pos), pos
+    rows = [r for r in facts["ripple_caps"]
+            if r["kind"] == "insufficient_transition_vias"]
+    assert sorted(r["pos"] for r in rows) == sorted(map(list, C52_TAPS))
+    for row in rows:
+        assert set(row["refs"]) == {"C52", "C53"}
+        assert row["amps"] == pytest.approx(0.134, abs=0.001)
+        term, = row["terms"]
+        assert term["from"] == "U20"
+        inputs = term["inputs"]
+        assert (inputs["L_h"], inputs["fsw_hz"], inputs["vin_v"],
+                inputs["vout_v"]) == (pytest.approx(68e-6), 300e3, 57.0, 12.0)
+        assert "AN4067" in term["formula"]
+
+
+def test_lumina_load_beside_c52_keeps_the_budget(tmp_path):
+    """a777e's condition on known answer 1: a far side holding any DC load is
+    not a capacitor branch. A resistor to ground next to C52 brings the budget
+    finding back."""
+    text = (LUMINA / "routed.kicad_pcb").read_text(encoding="utf-8")
+    start = text.index('(property "Reference" "C53"')
+    start = text.rindex("(footprint ", 0, start)
+    end = text.index("\n\t(footprint ", start + 1)
+    block = re.sub(r'\(uuid "[^"]*"\)', "", text[start:end])
+    pcb = tmp_path / "routed.kicad_pcb"
+    pcb.write_text(text[:start] + block.replace(
+        '"Reference" "C53"', '"Reference" "R953"').replace(
+        '"22uF', '"1k 0805 was22uF', 1) + text[start:], encoding="utf-8")
+    vs, facts = _lumina_12v(pcb)
+    found = [v for pos in C52_TAPS for v in _at(vs, pos)]
+    assert found and all("ripple" not in v["msg"] and "2.00 A" in v["msg"]
+                         for v in found)
+    assert not facts.get("ripple_caps")
+
+
+def test_ripple_finding_shows_its_inputs():
+    """a777e's condition 2: a reader of a finding can check the number."""
+    vs, _ = _core_pvdd()
+    msg = _at(vs, C7_TAP)[0]["msg"]
+    assert "iout_a=1.5" in msg and "duty=0.5" in msg and "AN4067" in msg
+    assert _at(vs, C7_TAP)[0]["ripple"]["terms"][0]["inputs"] == {
+        "iout_a": 1.5, "duty": 0.5}
+
+
+def test_core_c7_tap_fails_at_its_ripple():
+    """Known answer 2 (#798), first half: hifi core's C7 on a 1-via tap, with
+    a ripple figure one via can't carry, fails as an error, though PVDD is
+    plane-fed."""
+    vs, facts = _core_pvdd()
+    found = _at(vs, C7_TAP)
+    assert found and found[0]["severity"] == "error"
+    assert found[0]["refs"] == ["C7"]
+    assert "0.75 A" in found[0]["msg"] and "ripple" in found[0]["msg"]
+    assert list(C7_TAP) not in [u["pos"] for u in facts.get("unjudged", [])]
+
+
+def test_core_c7_with_vias_that_carry_it_passes(tmp_path):
+    """Known answer 2 (#798), second half: the same cap and figure, with a
+    second via on the tap that overlaps the first on both layers."""
+    text = (CORE_KICAD / "core.kicad_pcb").read_text(encoding="utf-8")
+    start = re.search(r"\(via\s+\(at 90\.987 172\.849\)", text).start()
+    end = text.index("\n\t)", start) + 3
+    via = text[start:end]
+    second = re.sub(r'\s*\(uuid "[^"]*"\)', "", via).replace(
+        "(at 90.987 172.849)", "(at 91.287 172.849)")
+    pcb = tmp_path / "core.kicad_pcb"
+    pcb.write_text(text[:end] + "\n\t" + second + text[end:], encoding="utf-8")
+    vs, facts = _core_pvdd(pcb)
+    assert not _kinds(vs, "insufficient_transition_vias")
+    # at a 2 A budget the two vias fall short of it, so the ripple is what passes
+    vs, facts = _core_pvdd(pcb, current_a=2.0)
+    assert [r for r in facts["ripple_caps"] if r["refs"] == ["C7"]
+            and r["kind"] == "insufficient_transition_vias"
+            and r["amps"] == 0.75 and r["vias"] == 2]
+    assert not [v for v in _kinds(vs, "insufficient_transition_vias")
+                if "C7" in v.get("refs", [])]
+
+
+def test_decoupling_cap_stays_unjudged(tmp_path_factory):
+    """Known answer 3 (#798): a 100 nF cap's tap stays unjudged and says why,
+    even on a rail whose converter can be read."""
+    bg = _board(tmp_path_factory, "decoup798", _cap_tap("100nF 50V X7R"))
+    cons = {"blocks": [{"topology": "class-d-amp", "operating_point": {
+        "bus_net": "PWR", "iout_a": 3, "duty": 0.5}}]}
+    vs, facts = check_current.check_net(bg, STAR, cons=cons)
+    assert _at(vs, (10.0, 2.0)) == []
+    item = next(u for u in facts["unjudged"] if u["refs"] == ["C2"])
+    assert "decoupling" in item["why"]
+
+
+def test_bulk_cap_with_no_converter_stays_unjudged(tmp_path_factory):
+    """#798: a bulk cap with no converter to read has no figure, so it is
+    unjudged and says so. It no longer takes the rail's budget."""
+    for cons in (None, {"voltages": [{"net": "PWR", "voltage": 12}]}):
+        bg = _board(tmp_path_factory, "bulk798", _cap_tap("22uF 25V X5R"))
+        vs, facts = check_current.check_net(bg, STAR, cons=cons)
+        assert _at(vs, (10.0, 2.0)) == []
+        item = next(u for u in facts["unjudged"] if u["refs"] == ["C2"])
+        assert "no converter" in item["why"]
+
+
+def test_planted_single_via_on_buck_input_cap_fails():
+    """Known answer 4 (#798): the planted single via on usbbuck4's C13 fails
+    at 2 * sqrt(0.66 * 0.34) = 0.95 A; the golden at 0.4 A does not."""
+    golden = REPO / "tests" / "golden"
+    def run(cons_path, pcb):
+        cons = json.loads(cons_path.read_text(encoding="utf-8"))
+        entry = next(e for e in cons["power"] if e["net"] == "VBUS")
+        return check_current.check_net(geom.load_board(pcb), entry, cons=cons)
+    mutant = golden / "mutants" / "buck-input-cap-single-via"
+    vs, _ = run(mutant / "constraints.json", mutant / "usbbuck4.kicad_pcb")
+    found = _at(vs, (104.0, 124.4))
+    assert found and found[0]["refs"] == ["C13"]
+    assert "0.95 A" in found[0]["msg"] and "ripple" in found[0]["msg"]
+    cons = json.loads((golden / "usbbuck4" / "constraints.json").read_text(
+        encoding="utf-8"))
+    cons["voltages"] = [{"net": "VBUS", "voltage": 5},
+                        {"net": "+3V3", "voltage": 3.3}]
+    entry = next(e for e in cons["power"] if e["net"] == "VBUS")
+    vs, _ = check_current.check_net(
+        geom.load_board(golden / "usbbuck4" / "usbbuck4.kicad_pcb"), entry,
+        cons=cons)
+    assert _at(vs, (104.0, 124.4)) == []
+
+
+
+
+def test_cap_track_is_held_to_ripple_above_the_budget(tmp_path_factory):
+    """#798: ripple can pass the rail's budget. A strip wide enough for a 1 A
+    rail but not for the 8 A a bus cap carries fails at the ripple, with the
+    figure in its message; 1 A of ripple on the same strip passes."""
+    bg = _board(tmp_path_factory, "ripw", _cap_tap("22uF 25V X5R"))
+    entry = {"net": "PWR", "current_a": 1.0, "via_amps": 100.0}
+    def cons(iout):
+        return {"blocks": [{"topology": "class-d-amp", "operating_point": {
+            "bus_net": "PWR", "iout_a": iout, "duty": 0.5}}]}
+    vs, _ = check_current.check_net(bg, entry, cons=cons(16))
+    found = [v for v in _kinds(vs, "undersized_track")
+             if v.get("refs") == ["C2"] or "ripple" in v["msg"]]
+    assert found and found[0]["severity"] == "error"
+    assert "ripple 8.00 A" in found[0]["msg"]
+    vs, _ = check_current.check_net(bg, entry, cons=cons(2))
+    assert not [v for v in _kinds(vs, "undersized_track") if "ripple" in v["msg"]]

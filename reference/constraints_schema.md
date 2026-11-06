@@ -434,6 +434,11 @@ Consumers per key (script -> phase):
   // U14: the eight dims below are exactly what a buck block must declare to
   // reach `covered` against checklists/buck.yaml - board-level facts
   // (board_layers) are repeated per block, there are no board defaults.
+  // #798: check_current judges a bulk cap's via and track at its ripple from
+  // these. A buck block's fsw_khz gives the output ripple when
+  // reference/converter_fsw.yaml has no row. A class-d-amp or
+  // half-bridge-inverter block declares bus_net (the net its bus cap is on),
+  // iout_a and duty; without them the cap stays unjudged and says why.
   "blocks": [{"topology": "buck", "block": "B3", "name": "U1 AP64350 class",
               "operating_point": {"vin_v": 12, "vout_v": 5, "iout_a": 3,
                                   "pdiss_w": 0.8, "board_layers": 4,
