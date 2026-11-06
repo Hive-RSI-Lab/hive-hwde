@@ -23,8 +23,13 @@ page covers how an agent runs it inside the Hive.
   (`HWDE_TOOLS_DIR`) and the skill's `env.py` finds them all, plus KiCad's
   own python with `pcbnew`, its ngspice, its 3D model loaders and its stock
   symbols (KiCad 10's `.kicad_symdir` libraries, flattened into
-  `~/.cache/hwde/symbols` on first use). If `hwde check` can't find one, ask
-  a warden; don't install KiCad yourself.
+  `~/.cache/hwde/symbols` on first use). If `hwde check` can't find one in a
+  Hive that has no `/hive/tools` (a fresh install on a laptop), run
+  `hwde tools`: it downloads all three into `~/.cache/hwde/tools` (about
+  0.6 GB, no root, each file checked against a pinned sha256; Linux x86_64),
+  adds a Java 21 runtime if the system has none below 17, and tells you if
+  xvfb is missing (that one needs `sudo apt install xvfb`). In a Hive that
+  has `/hive/tools`, ask a warden; don't install KiCad yourself.
 - In another project's test or score check (a fresh HOME, only `/work` and
   `/hive/tools` mounted, no `$HIVE_MODULES`), run hwde as
   `/hive/tools/hwde/bin/hwde`. That's a published copy: `hwde publish <dir>`
