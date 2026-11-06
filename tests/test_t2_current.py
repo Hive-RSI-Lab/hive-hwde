@@ -24,6 +24,7 @@ SCRIPTS = REPO / "scripts"
 PYTHON = sys.executable
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
+import _boards  # noqa: E402
 import check_current  # noqa: E402
 import geom  # noqa: E402
 
@@ -1765,3 +1766,224 @@ def test_return_net_cap_reads_no_converter(tmp_path_factory):
         + _two_pad("L9", 34, "/SW", "OUT"))
     rip = check_current.cap_ripple(bg, "GND", ["C2"], _buck_cons())
     assert rip["why"] == "no converter to read on GND"
+
+
+# ---- #816: a declared bus figure, and a return-side cap at its rail's ripple
+
+DECLARED = {"topology": "half-bridge-inverter", "block": "bridge",
+            "operating_point": {"vin_v": 28, "iout_a": 10, "bus_net": "PWR",
+                                "bus_irms_a": 6.5,
+                                "bus_irms_source": "research/power.md:91"}}
+
+
+def _declared(**changes):
+    op = dict(DECLARED["operating_point"], **changes)
+    return {"blocks": [dict(DECLARED, operating_point={
+        k: v for k, v in op.items() if v is not None})]}
+
+
+def test_declared_bus_figure_over_the_limit_fails(tmp_path_factory):
+    """a777e's condition 4: 6.5 A on one via at 1 A fails, naming the via, the
+    amps and the limit. The figure reads as declared, with its source, never as
+    if computed."""
+    bg = _board(tmp_path_factory, "decl", _cap_tap("22uF 25V X5R"))
+    vs, _ = check_current.check_net(bg, STAR, cons=_declared())
+    found, = _at(vs, (10.0, 2.0))
+    assert found["severity"] == "error" and found["refs"] == ["C2"]
+    assert found["required"] == 7
+    assert "(10.00, 2.00)" in found["msg"] and "6.50 A needs 7" in found["msg"]
+    assert ">= 1 via per 1.0 A" in found["msg"]
+    assert "bus ripple 6.5 A RMS declared (research/power.md:91)" in found["msg"]
+    assert "Iout" not in found["msg"]
+    term, = found["ripple"]["terms"]
+    assert term["declared"] is True and term["amps"] == 6.5
+    assert term["source"] == "research/power.md:91"
+
+
+def test_declared_bus_figure_under_the_limit_passes(tmp_path_factory):
+    """The same via passes once one via carries 6.5 A, and the declared figure
+    is still in facts for a reader."""
+    bg = _board(tmp_path_factory, "declok", _cap_tap("22uF 25V X5R"))
+    vs, facts = check_current.check_net(bg, dict(STAR, via_amps=7.0),
+                                        cons=_declared())
+    assert _at(vs, (10.0, 2.0)) == []
+    row, = facts["declared_bus"]
+    assert row["from"] == "bridge" and row["amps"] == 6.5
+
+
+def test_declared_bus_figure_wins_over_duty(tmp_path_factory):
+    """a777e's condition 2: with both, the declared value is used, and facts say
+    what the duty formula would have given."""
+    bg = _board(tmp_path_factory, "declduty", _cap_tap("22uF 25V X5R"))
+    vs, facts = check_current.check_net(bg, STAR, cons=_declared(duty=0.5))
+    term, = _at(vs, (10.0, 2.0))[0]["ripple"]["terms"]
+    assert term["amps"] == 6.5
+    assert term["duty_formula_a"] == pytest.approx(5.0)
+    assert facts["declared_bus"][0]["duty_formula_a"] == pytest.approx(5.0)
+
+
+@pytest.mark.parametrize("changes, words", [
+    ({"bus_irms_a": -1.0}, "negative"),
+    ({"bus_irms_a": 0}, "above 0"),
+    ({"bus_irms_a": 10.5}, "above iout_a 10"),
+    ({"bus_irms_a": "6.5"}, "a number"),
+    ({"bus_irms_a": True}, "a number"),
+    ({"iout_a": None}, "needs iout_a"),
+    ({"bus_irms_source": None}, "bus_irms_source"),
+    ({"bus_irms_source": " "}, "bus_irms_source"),
+])
+def test_declared_bus_figure_out_of_bounds_is_rejected(
+        tmp_path_factory, changes, words):
+    """a777e's condition 3: a figure that can't be right, or that nothing cites,
+    judges nothing, and the why says so."""
+    bg = _board(tmp_path_factory, "declbad", _cap_tap("22uF 25V X5R"))
+    rip = check_current.cap_ripple(bg, "PWR", ["C2"], _declared(**changes))
+    assert "amps" not in rip
+    assert words in rip["why"] and "bridge" in rip["why"]
+
+
+def _return_tap(value, rail="PWR"):
+    """C2 from GND to `rail`, with its GND pad behind the one via at (10, 2)."""
+    text = _cap_tap(value).replace('"PWR"', '"GND"')
+    head = text.index('"Reference" "C2"')
+    end = text.index("\n", text.index('(pad "1"', head)) - 1  # the footprint's ")"
+    return (text[:end] + f'\n    (pad "2" smd rect (at 1 0) (size 1 1) '
+            f'(layers "B.Cu") (net "{rail}"))' + text[end:])
+
+
+RETURN = {"net": "GND", "current_a": 3.0, "via_amps": 1.0}
+
+
+def _return_cons(*blocks, **volts):
+    return {"voltages": [{"net": "GND", "voltage": 0}] + [
+        {"net": n, "voltage": v} for n, v in volts.items()],
+        "blocks": list(blocks)}
+
+
+def test_return_cap_takes_the_ripple_of_its_rail(tmp_path_factory):
+    """Known answer (b), #816: a cap's current goes in one pad and out the other,
+    so its GND pad carries what its rail pad does."""
+    bg = _board(tmp_path_factory, "retcap", _return_tap("22uF")
+                + _two_pad("U9", 30, "PWR", "/SW", "SW")
+                + _two_pad("L9", 34, "/SW", "OUT"))
+    cons = _buck_cons()
+    rail = check_current.cap_ripple(bg, "PWR", ["C2"], cons)
+    back = check_current.cap_ripple(bg, "GND", ["C2"], cons)
+    assert back["amps"] == pytest.approx(rail["amps"])
+    assert [t["from"] for t in back["terms"]] == ["U9"]
+    assert back["terms"][0]["rail"] == "PWR"
+
+
+def test_return_cap_over_the_limit_fails_at_its_rail(tmp_path_factory):
+    """The GND via of a cap on a 6.5 A bus fails like the rail's own via, as an
+    error, and says which rail the figure is from."""
+    bg = _board(tmp_path_factory, "retfail", _return_tap("22uF"))
+    vs, _ = check_current.check_net(bg, RETURN, cons=_return_cons(DECLARED, PWR=45))
+    found, = _at(vs, (10.0, 2.0))
+    assert found["severity"] == "error" and found["refs"] == ["C2"]
+    assert "6.50 A needs 7" in found["msg"]
+    assert "return of PWR" in found["msg"]
+    vs, _ = check_current.check_net(bg, dict(RETURN, via_amps=7.0),
+                                    cons=_return_cons(DECLARED, PWR=45))
+    assert _at(vs, (10.0, 2.0)) == []
+
+
+def test_return_cap_of_an_unreadable_rail_says_which(tmp_path_factory):
+    """No figure on the rail means none on its return, and the why names the
+    rail rather than GND."""
+    bg = _board(tmp_path_factory, "retwhy", _return_tap("22uF", rail="+3V3"))
+    rip = check_current.cap_ripple(bg, "GND", ["C2"], _return_cons(**{"+3V3": 3.3}))
+    assert "amps" not in rip
+    assert "+3V3" in rip["why"] and "no converter" in rip["why"]
+
+
+def test_return_cap_rails_add_in_rss(tmp_path_factory):
+    """Caps of two rails behind one GND via: the rails add in RSS, as several
+    converters do. A decoupling cap's rail adds no figure, and a cap between two
+    returns has none of its own."""
+    body = _return_tap("22uF") + _two_pad("C7", 30, "GND", "RAIL2") \
+        + _two_pad("C8", 34, "GND", "+3V3") + _two_pad("C9", 38, "GND", "AGND")
+    body = re.sub(r'("Reference" "C7" \(at 0 0 0\)\))',
+                  r'\1\n    (property "Value" "47uF" (at 0 0 0))', body)
+    body = re.sub(r'("Reference" "C8" \(at 0 0 0\)\))',
+                  r'\1\n    (property "Value" "100nF" (at 0 0 0))', body)
+    body = re.sub(r'("Reference" "C9" \(at 0 0 0\)\))',
+                  r'\1\n    (property "Value" "22uF" (at 0 0 0))', body)
+    bg = _board(tmp_path_factory, "retrss", body)
+    two = dict(DECLARED, block="two", operating_point=dict(
+        DECLARED["operating_point"], bus_net="RAIL2", bus_irms_a=2.0))
+    cons = _return_cons(DECLARED, two, PWR=45, RAIL2=45, AGND=0, **{"+3V3": 3.3})
+    rip = check_current.cap_ripple(bg, "GND", ["C2", "C7", "C8", "C9"], cons)
+    assert rip["amps"] == pytest.approx((6.5 ** 2 + 2.0 ** 2) ** 0.5)
+    assert {t["rail"] for t in rip["terms"]} == {"PWR", "RAIL2"}
+    assert check_current.rail_ripple(bg, "GND", cons) == pytest.approx(6.5)
+    rip = check_current.cap_ripple(bg, "GND", ["C9"], cons)
+    assert rip["why"] == "no converter to read on GND"
+
+
+def test_rail_ripple_of_a_return_skips_an_unreadable_rail(tmp_path_factory):
+    """An LDO's cap on GND has no figure, and must not hide the bus's."""
+    body = _return_tap("22uF") + _two_pad("C7", 30, "GND", "+3V3")
+    body = re.sub(r'("Reference" "C7" \(at 0 0 0\)\))',
+                  r'\1\n    (property "Value" "47uF" (at 0 0 0))', body)
+    bg = _board(tmp_path_factory, "retskip", body)
+    cons = _return_cons(DECLARED, PWR=45, **{"+3V3": 3.3})
+    assert check_current.rail_ripple(bg, "GND", cons) == pytest.approx(6.5)
+
+
+def test_return_net_with_no_declared_voltage_draws_nothing(tmp_path_factory):
+    """Item 3, #816, as PCB-0017's B3 said it: "blocks [...] may draw from GND".
+    No block draws from a return, declared 0 V or not."""
+    bg = _board(tmp_path_factory, "retword", _return_tap("22uF"))
+    rip = check_current.cap_ripple(bg, "GND", ["C2"], {
+        "voltages": [{"net": "PWR", "voltage": 12}],
+        "blocks": [dict(INVERTER, operating_point={"iout_a": 10})]})
+    assert "draw from GND" not in rip["why"]
+    assert "PWR" in rip["why"] and "bridge" in rip["why"]
+
+
+def test_planted_inverter_bus_cap_fails(monkeypatch):
+    """Known answer (c), #816: on the mutant, only the inverter's term can catch
+    C13's one via. usbbuck4's own buck gives it 0.19 A, which one via carries,
+    so dropping that term from the check loses the finding."""
+    mutant = REPO / "tests" / "golden" / "mutants" / "inverter-bus-cap-single-via"
+    cons = json.loads((mutant / "constraints.json").read_text(encoding="utf-8"))
+    entry = next(e for e in cons["power"] if e["net"] == "VBUS")
+    bg = geom.load_board(mutant / "usbbuck4.kicad_pcb")
+    vs, _ = check_current.check_net(bg, entry, cons=cons)
+    found, = _at(vs, (104.0, 124.4))
+    assert found["refs"] == ["C13"] and "1.20 A" in found["msg"]
+    monkeypatch.setattr(check_current, "_bus_terms", lambda net, blocks: [])
+    vs, _ = check_current.check_net(bg, entry, cons=cons)
+    assert _at(vs, (104.0, 124.4)) == []
+
+
+def _bldc():
+    """PCB-0018's VM entry and constraints with #816's inputs declared, whether
+    or not the boards repo has them yet."""
+    board = _boards.real_board("PCB-0018-A_bldc-motor-driver")
+    cons = json.loads((board / "kicad" / "constraints.json").read_text(
+        encoding="utf-8"))
+    block = next(b for b in cons["blocks"] if b.get("block") == "power_stage")
+    block["operating_point"].update(
+        bus_net="VM", bus_irms_a=6.5, bus_irms_source="research/power.md:91")
+    return (geom.load_board(next((board / "kicad").glob("*.kicad_pcb"))), cons)
+
+
+def test_pcb0018_vm_caps_read_the_inverter_not_u201():
+    """Known answer (a), #816: the bus caps are judged at the inverter's 6.5 A,
+    the design's own figure, not at U201's input ripple."""
+    bg, cons = _bldc()
+    for ref in ("C401", "C410"):
+        rip = check_current.cap_ripple(bg, "VM", [ref], cons)
+        assert rip["amps"] == 6.5, ref
+        assert [t["from"] for t in rip["terms"]] == ["power_stage"]
+        assert "U201" not in str(rip["terms"])
+
+
+def test_pcb0018_gnd_return_of_a_bus_cap_reads_the_inverter():
+    """Known answer (b) on the real board: C401's GND side takes VM's figure."""
+    bg, cons = _bldc()
+    rip = check_current.cap_ripple(bg, "GND", ["C401"], cons)
+    assert rip["amps"] == 6.5
+    assert rip["terms"][0]["rail"] == "VM"
