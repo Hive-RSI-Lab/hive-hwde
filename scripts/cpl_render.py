@@ -178,7 +178,7 @@ def render(pcb: Path, cpl: dict[str, dict], lcsc: dict[str, str],
             for p in b["pads"]:
                 if p["number"] == "1":
                     ax.add_patch(Polygon(p["poly"], closed=True, fc="none",
-                                         ec="cyan", lw=2.0, zorder=3))
+                                         ec="cyan", lw=2.0, zorder=5))
                     ax.annotate("1", p["center"], color="cyan", fontsize=9,
                                 ha="center", va="center", zorder=6)
             pb = bga_pin1(fp)
