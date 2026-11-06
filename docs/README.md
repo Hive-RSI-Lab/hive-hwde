@@ -633,7 +633,9 @@ first). Its `failed` connections have no path at the rules, which makes
 them a placement or topology finding, unless the reason names `--max-nodes`:
 then the search ran out of nodes, so raise that, or set `--search-weight`
 (2 to 3 reaches far ends across pours with far fewer nodes, not always by the
-shortest route). Allow about 200 MB per million nodes.
+shortest route). `no path` is within the search window, which `--margin` sets
+and the board's outline limits, so a large margin costs search time, not a
+grid over empty space.
 
 When a single `route_finish` run can't finish in the time you have, or stalls
 on the same failures, use `hwde route_close --pcb ... --budget 3600` with the
