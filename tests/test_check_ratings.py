@@ -690,11 +690,11 @@ def test_bare_regulator_blocks_unless_extracted(tmp_path, row):
 
 
 @pytest.mark.parametrize("ref,mpn", [
-    ("U4", "TPS2051BDBVR"),    # a load switch
+    ("U4", "TPS2051CDBVR"),    # a load switch outside the TPS2051B row
     ("U4", "TPS61042DRBR"),    # a white-LED driver, next to the TPS61040 boost
     ("U4", "LM51641"),         # a number that only starts with the LM5164
     ("U4", "LM50170"),         # the same for the LM5017
-    ("U4", "TPS26631RGER"),    # an e-fuse
+    ("U4", "TPS26630RGER"),    # an e-fuse outside the TPS26631 rows
     ("U4", "TPS3808G33DBVR"),  # a supervisor
     ("U4", "TPS92515DGQR"),    # an LED driver
     ("U4", "TLV3501AIDBVR"),   # a comparator
@@ -716,6 +716,9 @@ POWER_ICS = [
     ("LM66200DRLR", "dual ideal-diode OR, VBUS_J1/VBUS_J2 -> +5V, no back-feed"),
                                            # linux-computer U301, C3235556
     ("LM5069MM-2/NOPB", "hot-swap, auto-retry"),  # hc-power U2, C111822
+    ("TPS2051BDBVR", "USB-A power switch"),       # linux-computer U607, C24593
+    ("TPS22918DBVR", "load switch"),              # hc-power U6, C131941
+    ("TPS26631RGER", "eFuse"),                    # rf-plasma U101, C1850273
 ]
 
 
@@ -751,7 +754,7 @@ def test_power_ic_family_invents_no_rating_and_names_no_rail(
     is asked of it, and its output net gets no volts. Here +12V is on no input
     pad, in any of the three tables."""
     row = {"lcsc": "C3", "mpn": mpn, "role": role, "attributes": []}
-    pads = {"1": "+12V", "2": "GND", "3": "/RAIL"}
+    pads = {"4": "+12V", "2": "GND", "3": "/RAIL"}
     assert cr.is_regulator({"ref": "U4"}, row) is False
     assert cr.reg_by_family("U4", mpn) is False and cr.reg_out_code(mpn) is None
     bare = _run(_ws(tmp_path, [("U4", "C3", pads)], {}, [row]))
@@ -801,6 +804,29 @@ def _lm66200_pads(vin1, vin2):
 def _lm5069_pads(rail):
     return {"1": "/SNS", "2": rail, "3": "/UVLO", "4": "/OVLO", "5": "GND",
             "6": "/TIMER", "7": "/PWR", "8": "/PG", "9": "/VOUT", "10": "/GATE"}
+
+
+# #807: the rows are the three boards' own, the pads the datasheets' (SLVS514Q,
+# SLVSD76C, SLVSE94G), laid out as linux-computer U607, hc-power U6 and
+# rf-plasma U101 are, exposed pad 25 included.
+TPS2051B_ROW = [{"name": "Voltage - Supply", "value": "2.7V~5.5V"}]
+TPS22918_ROW = [{"name": "Voltage - Supply", "value": "1V~5.5V"}]
+TPS26631_ROW = [{"name": "Voltage Rating", "value": "4.5V~60V"}]
+
+
+def _tps2051b_pads(rail):
+    return {"1": "/VOUT", "2": "GND", "3": "/FLT", "4": "/EN", "5": rail}
+
+
+def _tps22918_pads(rail):
+    return {"1": rail, "2": "GND", "3": "/EN", "4": "/CT", "5": "/VOUT",
+            "6": "/VOUT"}
+
+
+def _tps26631_pads(rail, in_sys=None):
+    return {"1": rail, "2": rail, "5": in_sys or rail, "6": "/UVLO", "7": "/OVP",
+            "8": "GND", "9": "/DVDT", "10": "/ILIM", "15": "GND", "17": "/VOUT",
+            "18": "/VOUT", "25": "GND"}
 
 
 def _power_ic(tmp_path, mpn, attrs, pads, names=None, ext=None, role="", ref="U4"):
@@ -873,11 +899,186 @@ def test_lm5069_vin_against_its_row(tmp_path, rail, errs):
      {"1": "+12V", "2": "+3V3", "3": "/CFN", "4": "GND", "5": "/CFP"}),
     ("LM66200DRLR", LM66200_ROW, _lm66200_pads("+5V", "+5V") | {"2": "+12V"}),
     ("LM5069MM-2/NOPB", LM5069_ROW, _lm5069_pads("+48V") | {"9": "+100V"}),
+    ("TPS2051BDBVR", TPS2051B_ROW, _tps2051b_pads("+5V") | {"1": "+12V"}),
+    ("TPS22918DBVR", TPS22918_ROW, _tps22918_pads("+5V") | {"6": "+12V"}),
+    ("TPS26631RGER", TPS26631_ROW, _tps26631_pads("+48V") | {"17": "+100V"}),
 ])
 def test_power_ic_is_judged_at_its_input_not_its_highest_net(
         tmp_path, mpn, attrs, pads):
     p = _run(_power_ic(tmp_path, mpn, attrs, pads))
     assert _errors(p) == [] and _unrated(p) == [["U4"]]
+
+
+@pytest.mark.parametrize("mpn,attrs,pads,net,pin,limit", [
+    ("TPS2051BDBVR", TPS2051B_ROW, _tps2051b_pads("+12V"), "+12V", "U4.5", 5.5),
+    ("TPS22918DBVR", TPS22918_ROW, _tps22918_pads("+12V"), "+12V", "U4.1", 5.5),
+    ("TPS26631RGER", TPS26631_ROW, _tps26631_pads("+100V"), "+100V", "U4.1", 60),
+])
+def test_new_power_ic_over_its_input_is_an_error_naming_ref_rail_and_limit(
+        tmp_path, mpn, attrs, pads, net, pin, limit):
+    errs = _errors(_run(_power_ic(tmp_path, mpn, attrs, pads)))
+    assert [(v["kind"], v["refs"], v["net"], v["pin"]) for v in errs] == [
+        ("rating_over_voltage", ["U4"], net, pin)]
+    assert errs[0]["limit_v"] == pytest.approx(limit)
+    for word in ("U4", mpn, net, f"{limit:g} V"):
+        assert word in errs[0]["msg"]
+
+
+@pytest.mark.parametrize("mpn,attrs,pads", [
+    ("TPS2051BDBVR", TPS2051B_ROW, _tps2051b_pads("+5V")),
+    ("TPS22918DBVR", TPS22918_ROW, _tps22918_pads("+3V3")),
+    ("TPS26631RGER", TPS26631_ROW, _tps26631_pads("+24V")),
+    # exactly at the row's top passes, with nothing to spare
+    ("TPS2051BDBVR", TPS2051B_ROW, _tps2051b_pads("+5V5")),
+    ("TPS22918DBVR", TPS22918_ROW, _tps22918_pads("+5V5")),
+    ("TPS26631RGER", TPS26631_ROW, _tps26631_pads("+60V")),
+])
+def test_new_power_ic_within_its_input_passes_and_is_compared(
+        tmp_path, mpn, attrs, pads):
+    p = _run(_power_ic(tmp_path, mpn, attrs, pads))
+    assert _errors(p) == [] and _no_attrs(p) == []
+    assert all("no volts" not in v["msg"] for v in p["violations"])
+
+
+@pytest.mark.parametrize("mpn,attrs,pads,net,limit", [
+    # over the recommended maximum, under the absolute maximum (6 V, 6 V, 67 V)
+    ("TPS2051BDBVR", TPS2051B_ROW, _tps2051b_pads("+5V8"), "+5V8", 5.5),
+    ("TPS22918DBVR", TPS22918_ROW, _tps22918_pads("+5V8"), "+5V8", 5.5),
+    ("TPS26631RGER", TPS26631_ROW, _tps26631_pads("+65V"), "+65V", 60),
+    # 5.25 V and 80 V rows against 5.5 V and 100 V absolute maxima
+    ("TPS60403DBVR", TPS_ROW, _tps_pads("+5V4"), "+5V4", 5.25),
+    ("LM5069MM-2/NOPB", LM5069_ROW, _lm5069_pads("+90V"), "+90V", 80),
+])
+def test_power_ic_bound_is_the_rows_top_not_the_absolute_maximum(
+        tmp_path, mpn, attrs, pads, net, limit):
+    errs = _errors(_run(_power_ic(tmp_path, mpn, attrs, pads)))
+    assert [(v["net"], v["limit_v"]) for v in errs] == [(net, limit)]
+
+
+@pytest.mark.parametrize("pads,net,pin,who", [
+    (_tps26631_pads("+48V", in_sys="+100V"), "+100V", "U4.5", "IN_SYS"),
+    (_tps26631_pads("+100V", in_sys="+48V"), "+100V", "U4.1", "IN"),
+])
+def test_tps26631_judges_both_its_input_pins(tmp_path, pads, net, pin, who):
+    errs = _errors(_run(_power_ic(tmp_path, "TPS26631RGER", TPS26631_ROW, pads)))
+    assert [(v["net"], v["pin"]) for v in errs] == [(net, pin)]
+    assert f"{who} sits on" in errs[0]["msg"]
+
+
+# The same part in another package has its input on other pads (SLVS514Q Table
+# 5-1, SLVSE94G Table 5-1): the MPN's package code picks the pads.
+TPS2051B_D = {"1": "GND", "2": "+12V", "3": "+12V", "4": "/EN", "5": "/FLT",
+              "6": "/VOUT", "7": "/VOUT", "8": "/VOUT"}
+TPS26631_PWP = {"1": "+100V", "2": "+100V", "3": "+100V", "4": "/GATE",
+                "5": "/DRV", "6": "+48V", "7": "/UVLO", "8": "/OVP", "9": "GND",
+                "21": "GND"}
+
+
+@pytest.mark.parametrize("mpn,attrs,pads,pin", [
+    ("TPS2051BDGNR", TPS2051B_ROW, TPS2051B_D | {"9": "GND"}, "U4.2"),
+    ("TPS2051BDR", TPS2051B_ROW, TPS2051B_D, "U4.2"),
+    ("TPS26631PWPR", TPS26631_ROW, TPS26631_PWP, "U4.1"),
+])
+def test_power_ic_package_in_the_mpn_picks_its_input_pads(
+        tmp_path, mpn, attrs, pads, pin):
+    errs = _errors(_run(_power_ic(tmp_path, mpn, attrs, pads)))
+    assert [(v["kind"], v["pin"]) for v in errs] == [("rating_over_voltage", pin)]
+
+
+@pytest.mark.parametrize("mpn,attrs,pads", [
+    # pad 5 is the D package's OC and the PWP package's DRV, no input
+    ("TPS2051BDGNR", TPS2051B_ROW, {"1": "GND", "2": "+5V", "3": "+5V",
+                                    "4": "/EN", "5": "+12V"}),
+    ("TPS26631PWPR", TPS26631_ROW, {"1": "+24V", "2": "+24V", "3": "+24V",
+                                    "5": "+100V", "6": "+24V", "9": "GND"}),
+])
+def test_power_ic_other_packages_pads_are_not_its_input(
+        tmp_path, mpn, attrs, pads):
+    assert _errors(_run(_power_ic(tmp_path, mpn, attrs, pads))) == []
+
+
+@pytest.mark.parametrize("mpn", [
+    "TPS2051CDBVR",    # twin-side U113: a different part, no row of its own
+    "TPS2051BQDBVRQ1", # the automotive part has its own datasheet
+    "TPS2051DBVR",     # no B, an older part
+    "TPS26630RGER",    # read only for TPS26631
+    "TPS22919DCKR",    # a sibling
+])
+def test_near_miss_of_a_new_power_ic_family_has_no_row(mpn):
+    assert cr.power_ic_row(mpn) is None
+
+
+def test_real_board_layouts_of_the_new_families_are_judged_by_number(tmp_path):
+    """Pad 25 is U101's exposed pad: it must not put the part past its package."""
+    errs = _errors(_run(_power_ic(tmp_path, "TPS26631RGER", TPS26631_ROW,
+                                  _tps26631_pads("+100V"), ref="U101")))
+    assert [v["pin"] for v in errs] == ["U101.1"]
+
+
+def _rating_unrated(p, ref="U4"):
+    return [v for v in p["violations"]
+            if v["kind"] == "rating_unrated" and v["refs"] == [ref]]
+
+
+@pytest.mark.parametrize("mpn,attrs,pads,who,net", [
+    ("LM66200DRLR", LM66200_ROW, _lm66200_pads("/VA", "/VA"), "VIN1/VIN2", "/VA"),
+    ("TPS2051BDBVR", TPS2051B_ROW, _tps2051b_pads("/VA"), "IN", "/VA"),
+    ("TPS22918DBVR", TPS22918_ROW, _tps22918_pads("/VA"), "VIN", "/VA"),
+    ("TPS26631RGER", TPS26631_ROW, _tps26631_pads("/VA"), "IN/IN_SYS", "/VA"),
+])
+def test_power_ic_input_with_no_volts_says_it_is_unjudged_and_why(
+        tmp_path, mpn, attrs, pads, who, net):
+    ws = _power_ic(tmp_path, mpn, attrs, pads)
+    p = _run(ws)
+    [v] = _rating_unrated(p)
+    assert v["severity"] == "warning" and _errors(p) == []
+    for word in ("U4", mpn, who, net, "no volts", "not judged"):
+        assert word in v["msg"]
+    assert _fact(ws, "U4")["status"] == "unknown"
+
+
+def test_power_ic_names_only_the_input_with_no_volts(tmp_path):
+    p = _run(_power_ic(tmp_path, "LM66200DRLR", LM66200_ROW,
+                       _lm66200_pads("+5V", "/VB")))
+    [v] = _rating_unrated(p)
+    assert "VIN2" in v["msg"] and "/VB" in v["msg"]
+    assert "VIN1" not in v["msg"] and "+5V" not in v["msg"]
+
+
+def test_power_ic_over_limit_input_still_fires_beside_one_with_no_volts(tmp_path):
+    p = _run(_power_ic(tmp_path, "LM66200DRLR", LM66200_ROW,
+                       _lm66200_pads("+12V", "/VB")))
+    assert [v["net"] for v in _errors(p)] == ["+12V"]
+
+
+def test_power_ic_input_on_a_pull_up_says_its_volts_are_a_guess(tmp_path):
+    bom = [{"lcsc": "C3", "mpn": "TPS22918DBVR", "attributes": TPS22918_ROW}]
+    ws = _ws(tmp_path, [("U4", "C3", _tps22918_pads("/IN")),
+                        ("R1", "", {"1": "/IN", "2": "+12V"}, "R_0402")], {}, bom)
+    [v] = _rating_unrated(_run(ws))
+    for word in ("VIN", "/IN", "pull-up", "not judged"):
+        assert word in v["msg"]
+
+
+@pytest.mark.parametrize("pads,names", [
+    (_tps_pads("+12V") | {"16": "/X"}, None),
+    (_tps_pads("+12V"), {"1": "A_1", "2": "B_2"}),
+])
+def test_power_ic_with_no_input_pad_found_says_so(tmp_path, pads, names):
+    p = _run(_power_ic(tmp_path, "TPS60403DBVR", TPS_ROW, pads, names))
+    [v] = _rating_unrated(p)
+    for word in ("no pad", "not judged", "SLVS324C"):
+        assert word in v["msg"]
+
+
+def test_lm66200_on_vbus_nets_is_judged_from_their_names(tmp_path):
+    """linux-computer U301: no constraint gives VBUS_J1 or VBUS_J2 a voltage,
+    the name rule does (5 V), so it is compared, not left with no volts."""
+    p = _run(_power_ic(tmp_path, "LM66200DRLR", LM66200_ROW,
+                       _lm66200_pads("VBUS_J1", "VBUS_J2"), ref="U301"))
+    assert p["net_volts"]["VBUS_J1"]["v"] == pytest.approx(5.0)
+    assert _errors(p) == []
+    assert all("no volts" not in v["msg"] for v in _rating_unrated(p, "U301"))
 
 
 def test_power_ic_row_with_regulator_words_is_still_judged_at_its_input(tmp_path):
@@ -922,6 +1123,9 @@ def test_power_ic_footprint_past_its_package_is_not_judged_by_number(tmp_path):
     ("TPS60403DBVR", _tps_pads("+12V")),
     ("LM66200DRLR", _lm66200_pads("+12V", "+12V")),
     ("LM5069MM-2/NOPB", _lm5069_pads("+100V")),
+    ("TPS2051BDBVR", _tps2051b_pads("+12V")),
+    ("TPS22918DBVR", _tps22918_pads("+12V")),
+    ("TPS26631RGER", _tps26631_pads("+100V")),
 ])
 def test_power_ic_row_with_no_voltage_stays_unrated(tmp_path, mpn, pads):
     """No number in the row: the table has none to lend and none is invented."""
@@ -968,6 +1172,12 @@ def test_near_miss_of_a_power_ic_family_is_not_judged_by_its_table(
     ("TPS60400", {"IN": "2"}), ("TPS60403", {"IN": "2"}),
     ("LM66200", {"VIN1": "3", "VIN2": "6"}),
     ("LM5069", {"VIN": "2"}),
+    # every pad a part has for its input, in the package the MPN names
+    ("TPS2051BDBV", {"IN": "5"}), ("TPS2051BDGN", {"IN": "2 3"}),
+    ("TPS2051BDR", {"IN": "2 3"}),
+    ("TPS22918DBV", {"VIN": "1"}),
+    ("TPS26631RGE", {"IN": "1 2", "IN_SYS": "5"}),
+    ("TPS26631PWP", {"IN": "1 2 3", "IN_SYS": "6"}),
 ])
 def test_power_ic_table_gives_each_family_its_datasheet_pads(family, pins):
     row = cr.power_ic_row(family + "XYZ")

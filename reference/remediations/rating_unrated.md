@@ -19,6 +19,10 @@ cap or power IC known by its family whose parts.json row is empty is also blocke
   differently (VIN vs IN, AVDD vs VDD). Add a `pin_ratings` entry rather than rewording.
 - "relative to X, whose net has no known voltage": give the rail a voltage (net name,
   power_tree.md table, or constraints.json `voltages`).
+- A power IC whose filled row has a rating but which wasn't judged against it says why: an
+  input pad's net "has no volts", has "only a pull-up's guess at its volts", or "no pad here
+  fits an input" of its datasheet (POWER_IC_FAMILIES). For the first two give the rail a
+  voltage; for the last check the part's package and pad names against that datasheet page.
 
 ## Fix ladder (cheapest first)
 1. Rail voltage missing: add it to constraints.json `voltages`.
@@ -36,4 +40,4 @@ bin/hwde check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --parts <ws>/parts
 ```
 
 ## Sources
-- scripts/check_ratings.py docstring; docs/competitive-research.md backlog item 5.
+- scripts/check_ratings.py docstring; docs/competitive-research.md backlog item 5; hive-hwde #807.
