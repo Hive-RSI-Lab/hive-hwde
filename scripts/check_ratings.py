@@ -82,7 +82,9 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
    rating its filled row gives (regulator_findings; no pad names: its
    highest-voltage net, unless the part steps up); an unextracted power IC
    whose input pad, from its family's datasheet table (POWER_IC_FAMILIES),
-   sits above the top of its filled row's input range (power_ic_findings).
+   sits above the top of its filled row's input range, which is the
+   recommended maximum on every family in the table (power_ic_findings). An
+   input it can't compare says so in its rating_unrated (power_ic_unjudged).
  - rating_regulator_output (error): a regulator whose output pad sits on a
    rail its row (or a fixed output in the MPN, or a known family's MPN code)
    says it can't make, or on a stated rail of the wrong sign for a part its
@@ -364,8 +366,13 @@ def reg_by_family(ref: str, mpn: str) -> bool:
 
 # Power ICs that aren't regulators, whose number is all a bare row says about
 # them (#797). Each family's datasheet says what it is and which pads are its
-# inputs, with the pin count of the one package it comes in (#805). The table
-# holds no rating and names no rail: the limit is the filled row's alone.
+# inputs (space-separated where a name has several pads), with the pin count of
+# the package, exposed pad included (#805). A part sold in several packages gets
+# a row per package, picked by the code in its MPN, since its input moves (#807).
+# The table holds no rating and names no rail: the limit is the filled row's
+# alone. On all six families that top is the datasheet's recommended maximum, not
+# its absolute maximum, and it stays the bound: a rail between the two is outside
+# what the part is specified to run on.
 POWER_IC_FAMILIES = (
     {"mpn": re.compile(r"TPS6040[0-3](?!\d)"),
      # "Unregulated 60-mA Charge Pump Voltage Inverter"
@@ -379,6 +386,25 @@ POWER_IC_FAMILIES = (
      # "Hot Swap and In-Rush Current Controller"
      "input": {"VIN": "2"}, "pins": 10,
      "datasheet": "TI SNVS452G Pin Functions, DGS"},
+    {"mpn": re.compile(r"TPS2051BDBV"),
+     # "TPS20xxB Current-Limited, Power-Distribution Switches"
+     "input": {"IN": "5"}, "pins": 5,
+     "datasheet": "TI SLVS514Q Table 5-1, SOT-23"},
+    {"mpn": re.compile(r"TPS2051BD(?:GN|R|$)"),
+     "input": {"IN": "2 3"}, "pins": 9,
+     "datasheet": "TI SLVS514Q Table 5-1, SOIC and DGN"},
+    {"mpn": re.compile(r"TPS22918DBV"),
+     # "TPS22918 5.5-V, 2-A, 52-mΩ On-Resistance Load Switch"
+     "input": {"VIN": "1"}, "pins": 6,
+     "datasheet": "TI SLVSD76C Pin Functions, DBV"},
+    {"mpn": re.compile(r"TPS26631RGE"),
+     # "TPS2663x 60V, 6A Power Limiting, Surge Protection
+     # Industrial eFuse", with IN_SYS as its second supply pin
+     "input": {"IN": "1 2", "IN_SYS": "5"}, "pins": 25,
+     "datasheet": "TI SLVSE94G Table 5-1, VQFN"},
+    {"mpn": re.compile(r"TPS26631PWP"),
+     "input": {"IN": "1 2 3", "IN_SYS": "6"}, "pins": 21,
+     "datasheet": "TI SLVSE94G Table 5-1, HTSSOP"},
 )
 
 
@@ -827,14 +853,16 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
             continue
         if ext is None:
             bom = bom_by_lcsc.get(b["lcsc"])
-            judge = power_ic_findings if bom and bom.get("attributes") and \
-                power_ic_by_family(ref, str(bom.get("mpn") or "")) \
-                else regulator_findings
+            power_ic = bool(bom and bom.get("attributes") and power_ic_by_family(
+                ref, str(bom.get("mpn") or "")))
+            judge = power_ic_findings if power_ic else regulator_findings
             if judge(b, bom, volts, vsrc, netfns, emit):
                 compared(ref, "distributor")
                 continue
+            why = power_ic_unjudged(b, bom, volts, vsrc, netfns) if power_ic \
+                else None
             if _check_unextracted(b, bom_by_lcsc.get(b["lcsc"]), volts, emit,
-                                  unrated_passives):
+                                  unrated_passives, why):
                 compared(ref, "distributor"
                          if bom_volts(bom_by_lcsc.get(b["lcsc"])) is not None
                          else "package")
@@ -1067,7 +1095,8 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
 
 
 def _check_unextracted(b: dict, bom: dict | None, volts: dict, emit,
-                       unrated_passives: list[str]) -> bool:
+                       unrated_passives: list[str],
+                       why: str | None = None) -> bool:
     """A part with no extraction: a 2-net part's `Voltage Rated` attribute
     is checked across it; anything else is an explicit unrated finding
     (two-terminal BOM parts are collected into one finding by the caller).
@@ -1091,8 +1120,8 @@ def _check_unextracted(b: dict, bom: dict | None, volts: dict, emit,
         return True
     if len(nets) <= 1:
         return False  # a single-net part stresses nothing
-    why = ("no datasheet extraction" if bom or b["lcsc"] else
-           "no LCSC part on the footprint and no extraction")
+    why = why or ("no datasheet extraction" if bom or b["lcsc"] else
+                  "no LCSC part on the footprint and no extraction")
     if bom is not None and len(nets) == 2:
         unrated_passives.append(ref)
         return False
@@ -1219,44 +1248,83 @@ def is_step_up(bom: dict, vin: float) -> bool:
         (out is not None and out[1] > vin * (1 + REG_OUT_TOL))
 
 
+def power_ic_inputs(b: dict, row: dict, netfns: dict) -> dict:
+    """{pad: datasheet name} of a power IC's input pads on this board: by name
+    when the board names its pads, else by number, and only on a footprint that
+    fits the datasheet's package."""
+    ref, pads = b["ref"], b["pads"]
+    names = {p: re.sub(r"_\d+$", "", fn.upper()) for p, fn in
+             dict(netfns.get(ref) or {}, **b.get("fns") or {}).items()
+             if p in pads}
+    if names:
+        return {p: n for p, n in names.items() if n in row["input"]}
+    if set(pads) <= {str(n) for n in range(1, row["pins"] + 1)}:
+        return {p: n for n, ps in row["input"].items() for p in ps.split()
+                if p in pads}
+    return {}
+
+
+def _no_trusted_volts(net: str, volts: dict, vsrc: dict) -> bool:
+    """A pull-up's volts are a guess at the pin, as in regulator_findings."""
+    return volts.get(net) is None or vsrc.get(net) == "pull-up"
+
+
 def power_ic_findings(b: dict, bom: dict, volts: dict, vsrc: dict,
                       netfns: dict, emit) -> bool:
     """An unextracted power IC's filled row against its rails (#805): each input
-    pad against the top of the row's input range. The family table says which
-    pads those are: by name when the board names its pads, else by number, and
-    only on a footprint that fits the datasheet's package. Names the table
-    doesn't hold, or a row with no number, judge nothing, so the part stays
-    unrated. A pull-up's volts are a guess, as in regulator_findings. True when
-    it emitted a finding: an in-limit part keeps its warning and unknown fact,
-    as an in-rating regulator does (#708)."""
+    pad against the top of the row's input range, which power_ic_inputs finds.
+    Names the table doesn't hold, a rail with no volts, or a row with no number,
+    judge nothing, so the part stays unrated. True when it emitted a finding: an
+    in-limit part keeps its warning and unknown fact, as an in-rating regulator
+    does (#708)."""
     rating = reg_vin_rating(bom)
     if not rating:
         return False
     vin, src = rating
     ref, pads = b["ref"], b["pads"]
     row = power_ic_row(str(bom.get("mpn") or ""))
-    names = {p: re.sub(r"_\d+$", "", fn.upper()) for p, fn in
-             dict(netfns.get(ref) or {}, **b.get("fns") or {}).items()
-             if p in pads}
-    if names:
-        inputs = {p: n for p, n in names.items() if n in row["input"]}
-    elif set(pads) <= {str(n) for n in range(1, row["pins"] + 1)}:
-        inputs = {p: n for n, p in row["input"].items() if p in pads}
-    else:
-        inputs = {}
+    inputs = power_ic_inputs(b, row, netfns)
     found = False
     for net in sorted({pads[p] for p in inputs}):
         v = volts.get(net)
-        if v is None or vsrc.get(net) == "pull-up" or v <= vin + EPS:
+        if _no_trusted_volts(net, volts, vsrc) or v <= vin + EPS:
             continue
         on = sorted(p for p in inputs if pads[p] == net)
-        who = "/".join(sorted(inputs[p] for p in on))
+        who = "/".join(sorted({inputs[p] for p in on}))
         emit("rating_over_voltage", "error", ref, net,
              f"{ref} ({bom.get('mpn')}) {who} sits on {net} = {_fmt(v)} V, over "
              f"its {_fmt(vin)} V input rating [{src}; pad from {row['datasheet']}]",
              pin=f"{ref}.{on[0]}", net_v=v, limit_v=vin, rating=src)
         found = True
     return found
+
+
+def power_ic_unjudged(b: dict, bom: dict, volts: dict, vsrc: dict,
+                      netfns: dict) -> str | None:
+    """Why a power IC with a number in its row wasn't compared at an input, for
+    its rating_unrated warning (#807), or None: every input was compared, or the
+    row has no number, which the usual words already say."""
+    rating = reg_vin_rating(bom)
+    if not rating:
+        return None
+    limit = f"its {_fmt(rating[0])} V input rating"
+    mpn, pads = bom.get("mpn"), b["pads"]
+    row = power_ic_row(str(mpn or ""))
+    inputs = power_ic_inputs(b, row, netfns)
+    if not inputs:
+        return (f"{mpn}: no pad here fits an input in {row['datasheet']}, by "
+                f"name or footprint, so it is not judged against {limit}")
+    parts = []
+    for net in sorted({pads[p] for p in inputs}):
+        if _no_trusted_volts(net, volts, vsrc):
+            who = "/".join(sorted({n for p, n in inputs.items() if pads[p] == net}))
+            what = "only a pull-up's guess at its volts" \
+                if volts.get(net) is not None else "no volts"
+            parts.append(f"{who} on {net} has {what}")
+    if not parts:
+        return None
+    return (f"{mpn}: {'; '.join(parts)}, so it is not judged against {limit}: "
+            "give the rail a voltage in the constraints or the power tree")
 
 
 def regulator_findings(b: dict, bom: dict | None, volts: dict, vsrc: dict,
