@@ -1,0 +1,13 @@
+# Switching frequency of a converter whose output-cap ripple check_current
+# reads (#798): dI / sqrt(12), dI = Vout * (1 - D) / (L * fsw). A part with no
+# row and no buck block fsw_khz stays unjudged, and says so.
+#
+# match: a regex tried against the part's Value and MPN fields
+# (case-insensitive). fsw_hz: the datasheet's typical. source: where it was read.
+# verified: true means the datasheet was re-read for this row. Add a row only
+# from a datasheet in hand, never from memory.
+regulators:
+  - match: '^SCT2A25'
+    fsw_hz: 300000
+    source: SCT2A25 datasheet, FSW 260/300/340 kHz, "fixed at 300KHz" (LCSC C5124114)
+    verified: true

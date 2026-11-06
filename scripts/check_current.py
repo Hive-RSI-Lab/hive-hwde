@@ -186,7 +186,38 @@ source on two sides (a two-pad IC may be the heavy load), a parallel path, the
 side with half or more of the loads (a trunk), a declared load, a far side
 holding a diode, a transformer or a switcher's input (known by its switch pin,
 or a switch net with an inductor), or on a rail with no plane a bulk capacitor
-(10 uF and up: its via carries ripple and inrush), an override region, and a derived or inferred entry with no "source".
+beside any other part (the part's DC runs through the same copper), an override
+region, and a derived or inferred entry with no "source".
+
+Capacitor branches (#798): a far side of capacitors only carries no DC, so it is
+judged at the ripple it really carries. Capacitors of 1 uF or less are
+decoupling (check_decoupling's), listed in "unjudged" with a "why". A bigger one
+takes the rail's converter, read from the board and constraints.json, RMS:
+  buck output: dI / sqrt(12), dI = Vout * (1 - D) / (L * fsw), D = Vout / Vin;
+    the inductor from the rail to a switch node, Vin the higher declared rail on
+    the switcher, fsw from reference/converter_fsw.yaml or the buck block's
+    fsw_khz. It alone is counted when the rail also feeds a switcher.
+  buck input: Iout * sqrt(D * (1 - D)), D = Vout / Vin, Iout = the power entry
+    of the rail past the switcher's inductor; several converters add in RSS,
+    which assumes they are not synchronized. Vin is the vin_v of the one buck
+    block with that Vout, else the declared rail: a declared voltage is a limit,
+    and the higher Vin understates this figure below D = 0.5.
+  class-D or half-bridge bus: Iout * sqrt(D * (1 - D)) from the block's
+    operating_point (bus_net, iout_a, duty). The bus draws Iout for D of the
+    period, as a buck's input does; #798 sets this shape. With a buck output on
+    the same rail, the two add in RSS. A bus block with no bus_net leaves every
+    rail it could be on unjudged (any rail not declared below its vin_v): the
+    rail's other converters alone would understate what its caps carry.
+Sources: Freescale/NXP AN4067 rev 1.0 (2010), "Selecting L and C Components in
+the Power Stage of the MC34700 Switching Regulators": section 2.2, output RMS
+dI / sqrt(12); section 3, input RMS Iout * sqrt(D - D^2). dI is the same
+inductor ripple as TI SLVA477C, "Basic Calculation of a Buck Converter's Power
+Stage". The whole figure goes on each capacitor's copper, not shared among
+parallel ones: an upper bound. Copper that carries it passes, with the figure
+and its inputs in facts "ripple_caps"; copper that doesn't fails as an error
+with both in the finding, plane-fed or not. A boost, or a figure with any input
+missing, stays in "unjudged" and its "why" says what is missing: no default is
+assumed. An inrush is a transient, not judged by this steady-state limit.
 
 CLI: --pcb board.kicad_pcb --constraints constraints.json [--out report.json]
      exit 0/1/2 per SPEC section 6.
@@ -241,13 +272,16 @@ VIA_CLUSTER_MM = 2.0           # vias within this distance share current
 WIDTH_TOL_MM = 1e-3
 RETURN_SYNTH_MIN_A = 3.0       # derive return-net coverage at/above this rail
 PLANE_HINT_SINGLE_VIA_FRAC = 0.8  # plane_fed_candidate hint threshold
-BULK_CAP_F = 9.9e-6            # 10 uF and up: bulk, not decoupling (unjudged)
+DECOUPLING_MAX_F = 1e-6        # at or below: decoupling, not bulk (docstring)
 PAD_EXIT_MAX_MM = 1.0          # longest accepted pad-exit neck (docstring)
 TOUCH_MM = 1e-3                # end-to-end / end-on-pad contact tolerance
 THT_JOIN_MM = 1.0              # plated pad joins fill this far out (relief)
 PAD_IN_POUR_FRAC = 0.9         # fill covers this much of a pad "in the pour"
 SWITCH_NODES_YAML = (Path(__file__).resolve().parent.parent / "reference"
                      / "switch_nodes.yaml")
+CONVERTER_FSW_YAML = SWITCH_NODES_YAML.with_name("converter_fsw.yaml")
+BUS_TOPOLOGIES = {"class-d-amp", "half-bridge-inverter"}
+AN4067 = "NXP AN4067"
 INFERRED_DT_C = 60.0           # switch-node screen without constraints
 SWITCH_PIN_NAMES = {"SW", "LX", "PH"}  # unrated-part facts (switch_nodes.yaml)
 MPN_PROPS = ("MPN", "Manufacturer Part Number", "Manufacturer_Part_Number",
@@ -739,11 +773,14 @@ def _copper_graph(bg: geom.BoardGeom, net: str, walls: dict | None = None,
     return nodes, find, hits
 
 
+def _farads(bg: geom.BoardGeom, ref: str) -> float | None:
+    return engcalc.parse_value((bg.footprints.get(ref) or {}).get("value"))
+
+
 def bulk_caps(bg: geom.BoardGeom, net: str) -> set:
     """Refs of the rail's bulk capacitors."""
     def bulk(ref):
-        farads = engcalc.parse_value((bg.footprints.get(ref) or {}).get("value"))
-        return farads is not None and farads >= BULK_CAP_F
+        return _farads(bg, ref) is not None and _farads(bg, ref) > DECOUPLING_MAX_F
     return {p.ref for p in bg.pads_of(net=net)
             if re.fullmatch(r"C\d+", p.ref) and bulk(p.ref)}
 
@@ -804,6 +841,8 @@ def branch_refs(bg: geom.BoardGeom, net: str, sides: list, sources):
     far = set().union(*(s for s in sides if s is not holding[0]), set())
     if not far or far & set(_DECLARED) or _loads(bg, far) is not None:
         return None
+    if all(re.fullmatch(r"C\d+", ref) for ref in far):
+        return sorted(far)               # no DC: judged by its ripple
     if far & stiff or any(feeds_or_converts(bg, ref, net) for ref in far):
         return None
 
@@ -814,6 +853,226 @@ def branch_refs(bg: geom.BoardGeom, net: str, sides: list, sources):
     if 2 * sum(map(is_load, far)) >= sum(map(is_load, rail)):
         return None                      # half the rail's loads: a trunk
     return sorted(far)
+
+
+def _fsw_row(bg: geom.BoardGeom, ref: str, rows: list[dict]) -> dict | None:
+    fp = bg.footprints.get(ref) or {}
+    texts = [fp.get("value") or ""] + [fp["props"].get(k, "") for k in MPN_PROPS]
+    return next((r for r in rows if any(r["rx"].search(t) for t in texts if t)),
+                None)
+
+
+def fsw_rows(path: Path = CONVERTER_FSW_YAML) -> list[dict]:
+    rows = yaml.safe_load(path.read_text(encoding="utf-8"))["regulators"]
+    return [dict(r, rx=re.compile(r["match"], re.I)) for r in rows]
+
+
+def _is_ic(ref: str) -> bool:
+    import check_power_path              # it imports this module
+    return check_power_path._kind(ref) in check_power_path.IC_KINDS
+
+
+def _other_nets(bg: geom.BoardGeom, ref: str, net: str) -> list[str]:
+    return [p.net for p in bg.pads_of(ref=ref) if p.net and p.net != net]
+
+
+def _switchers_on(bg: geom.BoardGeom, node: str) -> list[str]:
+    """ICs driving `node`: its switch pin is on it, or it is a switch net."""
+    return sorted({p.ref for p in bg.pads_of(net=node) if _is_ic(p.ref) and (
+        pin_name(p) in SWITCH_PIN_NAMES or SWITCH_NET.search(node))})
+
+
+def _buck_output(bg, net: str, ind: str, node: str, volts: dict, blocks: list):
+    """The ripple term of inductor `ind` from `net` to switch node `node`, or a
+    string saying what can't be read."""
+    vout = volts.get(net)
+    if vout is None:
+        return f"{net} has no declared voltage for {ind}'s ripple"
+    if any("boost" in str(b.get("topology", "")) and (
+            b.get("operating_point") or {}).get("vin_v") == vout for b in blocks):
+        return f"{ind} is a boost's inductor; only a buck's ripple is read"
+    for pad in bg.pads_of(net=node):
+        if re.fullmatch(r"D\d+", pad.ref) and any(
+                volts.get(n, -math.inf) > vout
+                for n in _other_nets(bg, pad.ref, node)):
+            return f"{ind} is a boost's inductor; only a buck's ripple is read"
+    ics = _switchers_on(bg, node)
+    if len(ics) != 1:
+        return f"{node} has {len(ics)} switcher ICs; can't read {ind}'s input"
+    ic = ics[0]
+    above = {}
+    for p in bg.pads_of(ref=ic):
+        if p.net and p.net != node and volts.get(p.net, -math.inf) > vout:
+            if SOURCE_PIN.fullmatch(pin_name(p) or ""):
+                return f"{ind} is a boost's inductor; only a buck's ripple is read"
+            above[p.net] = volts[p.net]
+    if len(above) != 1:
+        return (f"{ic} has {len(above)} declared rails above {net}; can't read "
+                f"its input voltage")
+    (vin_net, vin), = above.items()
+    henries = engcalc.parse_value((bg.footprints.get(ind) or {}).get("value"))
+    if not henries:
+        return f"{ind} has no readable inductance"
+    row = _fsw_row(bg, ic, fsw_rows())
+    if row:
+        fsw, where = float(row["fsw_hz"]), row["source"]
+    else:
+        found = [b["operating_point"]["fsw_khz"] for b in blocks
+                 if b.get("topology") == "buck"
+                 and (b.get("operating_point") or {}).get("vout_v") == vout
+                 and (b.get("operating_point") or {}).get("fsw_khz")]
+        if len(found) != 1:
+            return (f"{ic}'s switching frequency isn't known: no row in "
+                    f"reference/converter_fsw.yaml, no buck block with fsw_khz "
+                    f"for {vout:g} V")
+        fsw, where = float(found[0]) * 1e3, "buck block fsw_khz"
+    if vout <= 0 or vin <= vout:
+        return f"{ic}'s duty can't be read from {vin:g} V to {vout:g} V"
+    duty = vout / vin
+    ripple = vout * (1 - duty) / (henries * fsw)
+    return {"from": ic, "amps": ripple / math.sqrt(12),
+            "formula": f"dI / sqrt(12), dI = Vout * (1 - Vout / Vin) / (L * fsw) "
+                       f"({AN4067} 2.2)",
+            "inputs": {"L_h": henries, "fsw_hz": fsw, "vin_v": vin, "vout_v": vout,
+                       "inductor": ind, "fsw_source": where}}
+
+
+def _buck_input(bg, net: str, ic: str, volts: dict, cons: dict):
+    """The ripple term of switcher `ic` fed from `net`, or a string saying what
+    can't be read."""
+    outs = sorted({n for p in bg.pads_of(ref=ic)
+                   if p.net and p.net != net and (
+                       pin_name(p) in SWITCH_PIN_NAMES or SWITCH_NET.search(p.net))
+                   for o in bg.pads_of(net=p.net) if re.fullmatch(r"L\d+", o.ref)
+                   for n in _other_nets(bg, o.ref, p.net)})
+    if len(outs) != 1:
+        return f"{ic} switches into {len(outs)} inductor rails; can't read its output"
+    out = outs[0]
+    vin, vout = volts.get(net), volts.get(out)
+    if vin is None or vout is None:
+        missing = net if vin is None else out
+        return f"{missing} has no declared voltage for {ic}'s duty"
+    declared = [b["operating_point"]["vin_v"] for b in cons.get("blocks") or []
+                if b.get("topology") == "buck"
+                and (b.get("operating_point") or {}).get("vout_v") == vout
+                and b["operating_point"].get("vin_v")]
+    if len(declared) == 1:
+        vin = float(declared[0])
+    if vout <= 0 or vin <= vout:
+        return f"{ic} isn't a buck from {vin:g} V to {vout:g} V"
+    iout = next((e.get("current_a") for e in cons.get("power") or []
+                 if e.get("net") == out), None)
+    if iout is None:
+        return f"{out} has no power entry for {ic}'s Iout"
+    duty = vout / vin
+    return {"from": ic, "amps": float(iout) * math.sqrt(duty * (1 - duty)),
+            "formula": f"Iout * sqrt(D * (1 - D)), D = Vout / Vin ({AN4067} 3)",
+            "inputs": {"iout_a": float(iout), "duty": duty, "vin_v": vin,
+                       "vout_v": vout, "out_net": out}}
+
+
+def _bus_terms(net: str, blocks: list):
+    """Ripple terms of the class-D or half-bridge blocks declaring this bus, or
+    a string saying what can't be read."""
+    terms = []
+    for b in blocks:
+        op = b.get("operating_point") or {}
+        if b.get("topology") not in BUS_TOPOLOGIES or op.get("bus_net") != net:
+            continue
+        name = b.get("block") or b.get("name") or b["topology"]
+        duty, iout = op.get("duty"), op.get("iout_a")
+        if duty is None or iout is None:
+            return (f"{b['topology']} block {name} needs iout_a and duty in its "
+                    f"operating_point")
+        if not 0 <= float(duty) <= 1:
+            return f"{b['topology']} block {name} has duty {duty} outside 0..1"
+        terms.append({"from": name,
+                      "amps": float(iout) * math.sqrt(duty * (1 - float(duty))),
+                      "formula": f"Iout * sqrt(D * (1 - D)) (#798; {AN4067} 3)",
+                      "inputs": {"iout_a": float(iout), "duty": float(duty)}})
+    return terms
+
+
+def _may_draw_from(block: dict, net: str, volts: dict) -> bool:
+    """A class-D or half-bridge block with no bus_net could be on this rail,
+    unless the rail is declared below the block's own input."""
+    op = block.get("operating_point") or {}
+    if block.get("topology") not in BUS_TOPOLOGIES or op.get("bus_net"):
+        return False
+    vin, rail = op.get("vin_v"), volts.get(net)
+    return vin is None or rail is None or rail >= float(vin)
+
+
+def cap_ripple(bg: geom.BoardGeom, net: str, far: list, cons: dict | None):
+    """What the capacitors of branch `far` carry (module docstring, capacitor
+    branches): {"amps", "terms"} from the rail's converter, {"why"} when it
+    stays unjudged, None when `far` holds anything but capacitors."""
+    if not all(re.fullmatch(r"C\d+", ref) for ref in far):
+        return None
+    values = [_farads(bg, ref) for ref in far]
+    if not any(v is not None and v > DECOUPLING_MAX_F for v in values):
+        return {"why": "decoupling, 1 uF or less: check_decoupling's" if all(
+            v is not None for v in values) else "capacitor value not readable"}
+    cons = cons or {}
+    blocks = cons.get("blocks") or []
+    volts = {}
+    for row in cons.get("voltages") or []:
+        if row.get("net") and row.get("voltage") is not None:
+            volts[row["net"]] = float(row["voltage"])
+    buses = _bus_terms(net, blocks)
+    if isinstance(buses, str):
+        return {"why": buses}
+    unlinked = [b.get("block") or b.get("name") or b["topology"] for b in blocks
+                if _may_draw_from(b, net, volts)]
+    if unlinked:
+        return {"why": f"blocks {unlinked} declare no bus_net, so they may draw "
+                       f"from {net} and its ripple can't be read"}
+    outputs = []
+    for pad in bg.pads_of(net=net):
+        if not re.fullmatch(r"L\d+", pad.ref):
+            continue
+        for node in _other_nets(bg, pad.ref, net):
+            if _switchers_on(bg, node):
+                term = _buck_output(bg, net, pad.ref, node, volts, blocks)
+                if isinstance(term, str):
+                    return {"why": term}
+                outputs.append(term)
+    terms = buses + outputs
+    if not terms and volts.get(net) != 0:
+        for ic in sorted({p.ref for p in bg.pads_of(net=net) if _is_ic(p.ref)
+                          and feeds_or_converts(bg, p.ref, net)}):
+            term = _buck_input(bg, net, ic, volts, cons)
+            if isinstance(term, str):
+                return {"why": term}
+            terms.append(term)
+    if not terms:
+        unlinked = [b.get("block") or b.get("name") for b in blocks
+                    if b.get("topology") in BUS_TOPOLOGIES
+                    and not (b.get("operating_point") or {}).get("bus_net")]
+        return {"why": f"no converter to read on {net}" + (
+            f"; blocks {unlinked} declare no bus_net" if unlinked else "")}
+    return {"amps": math.sqrt(sum(t["amps"] ** 2 for t in terms)), "terms": terms}
+
+
+def rail_ripple(bg: geom.BoardGeom, net: str, cons: dict | None) -> float:
+    """The ripple figure of this rail's bulk caps, 0 when it has none or none
+    can be read. It can pass the rail's budget (a buck's input carries more
+    RMS than DC below D = 0.5), so copper that meets the budget is held to it
+    too once it proves a capacitor branch."""
+    caps = bulk_caps(bg, net)
+    rip = cap_ripple(bg, net, sorted(caps)[:1], cons) if caps else None
+    return rip["amps"] if rip and "amps" in rip else 0.0
+
+
+def ripple_text(rip: dict) -> str:
+    """The figure and its inputs, for a finding's message."""
+    parts = []
+    for t in rip["terms"]:
+        args = ", ".join(f"{k}={v:.4g}" if isinstance(v, float) else f"{k}={v}"
+                         for k, v in t["inputs"].items())
+        parts.append(f"{t['from']} {t['amps']:.3f} A = {t['formula']} with {args}")
+    return f"capacitor branch judged at its ripple {rip['amps']:.2f} A RMS: " + \
+        "; ".join(parts)
 
 
 def _neck_sides(bg: geom.BoardGeom, net: str, layer: str, fill,
@@ -1027,7 +1286,7 @@ def track_leaf_bound(bg: geom.BoardGeom, sides: list | None):
     return best
 
 
-def check_net(bg: geom.BoardGeom, entry: dict):
+def check_net(bg: geom.BoardGeom, entry: dict, cons: dict | None = None):
     net = entry.get("net")
     if not net:
         raise CheckError('power entry without "net"')
@@ -1106,6 +1365,72 @@ def check_net(bg: geom.BoardGeom, entry: dict):
         violations.append(v)
         undersized.append((v, t))
 
+    ripple_caps: list[dict] = []
+
+    def judge_branch_track(v, t, far):
+        """A thin track on branch `far`: past a capacitor branch, its ripple
+        (module docstring); else what it carries is unknown."""
+        nonlocal violations
+        rip = cap_ripple(bg, net, far, cons)
+        if rip and "amps" in rip:
+            req = required_width_mm(rip["amps"], dt_c, cu[t.layer])
+            if t.width + WIDTH_TOL_MM < req:
+                msg = (f"{net} track {t.width:.3f} mm wide on {t.layer}; "
+                       f"IPC-2152 needs {req:.3f} mm for {rip['amps']:.2f} A at "
+                       f"dT={dt_c:.0f}C; {ripple_text(rip)}")
+                v["msg"] = v["items"][0]["msg"] = msg
+                v["severity"] = "error"
+                v.pop("advisory", None)
+                v.update(required_mm=checklib.rnd(req), current_a=rip["amps"],
+                         refs=far, ripple=rip)
+                return
+            ripple_caps.append({"kind": "undersized_track", "layer": t.layer,
+                                "pos": v["pos"], "refs": far,
+                                "amps": checklib.rnd(rip["amps"]),
+                                "terms": rip["terms"]})
+        else:
+            item = {"kind": "undersized_track", "layer": t.layer,
+                    "pos": v["pos"], "refs": far}
+            if rip:
+                item["why"] = rip["why"]
+            unjudged.append(item)
+        violations = [x for x in violations if x is not v]
+        undersized.remove((v, t))
+
+    # ---- a capacitor branch's track that meets the budget but not its ripple
+    rail = rail_ripple(bg, net, cons) if sources else 0.0
+    if rail > budget:
+        wide = [(t, required_width_mm(rail, dt_c, cu[t.layer]))
+                for t in bg.tracks_of(net)
+                if region_current(entry, t.shape.interpolate(
+                    0.5, normalized=True).coords[0]) is None
+                and t.width + WIDTH_TOL_MM >= required_width_mm(
+                    budget, dt_c, cu[t.layer])]
+        wide = [x for x in wide if x[0].width + WIDTH_TOL_MM < x[1]]
+        exits = pad_exit_necks(bg, net, wide) if wide else {}
+        for t, req in wide:
+            sides = None if id(t) in exits else track_sides(bg, net, t)
+            far = branch_refs(bg, net, sides, sources) if sides else None
+            rip = cap_ripple(bg, net, far, cons) if far else None
+            if not rip or "amps" not in rip:
+                continue
+            req = required_width_mm(rip["amps"], dt_c, cu[t.layer])
+            if t.width + WIDTH_TOL_MM < req:
+                x0, y0 = t.shape.coords[0]
+                x1, y1 = t.shape.coords[-1]
+                violations.append(violation(
+                    SCRIPT, "error",
+                    t.shape.interpolate(0.5, normalized=True).coords[0],
+                    t.layer, net, far,
+                    f"{net} track {t.width:.3f} mm wide on {t.layer}; IPC-2152 "
+                    f"needs {req:.3f} mm for {rip['amps']:.2f} A at "
+                    f"dT={dt_c:.0f}C; {ripple_text(rip)}", SCRIPT,
+                    kind="undersized_track", width_mm=checklib.rnd(t.width),
+                    required_mm=checklib.rnd(req), current_a=rip["amps"],
+                    ripple=rip, bridge=True,
+                    segment={"start": [checklib.rnd(x0), checklib.rnd(y0)],
+                             "end": [checklib.rnd(x1), checklib.rnd(y1)]}))
+
     # ---- bridge labeling (LEARNINGS 2026-07-29: cut edge = sole path)
     if undersized:
         g = netconn.build(bg, net, include_zones=True)
@@ -1137,11 +1462,7 @@ def check_net(bg: geom.BoardGeom, entry: dict):
                     sides and sources
                     and region_current(entry, mid) is None) else None
                 if far:
-                    violations = [x for x in violations if x is not v]
-                    undersized.remove((v, t))
-                    unjudged.append({"kind": "undersized_track",
-                                     "layer": t.layer, "pos": v["pos"],
-                                     "refs": far})
+                    judge_branch_track(v, t, far)
                 continue
             amps, refs = leaf
             req = required_width_mm(amps, dt_c, cu[t.layer])
@@ -1176,6 +1497,7 @@ def check_net(bg: geom.BoardGeom, entry: dict):
                 continue
             amps = budget
             ov = None
+            rip = None
             req = required_width_mm(budget, dt_c, cu[layer])
             neck = pour_neck(bg, net, layer, fill, req,
                              others_at(budget, layer))
@@ -1208,11 +1530,25 @@ def check_net(bg: geom.BoardGeom, entry: dict):
                 far = neck_branch(bg, net, layer, fill, req,
                                   others_at(amps, layer), sources) if (
                     neck is not None and ov is None and sources) else None
-                if far:
-                    unjudged.append({
-                        "kind": "pour_neckdown", "layer": layer,
-                        "pos": [checklib.rnd(neck[1][0]),
-                                checklib.rnd(neck[1][1])], "refs": far})
+                rip = cap_ripple(bg, net, far, cons) if far else None
+                pos_at = [checklib.rnd(neck[1][0]),
+                          checklib.rnd(neck[1][1])] if far else None
+                if rip and "amps" in rip:
+                    amps = rip["amps"]
+                    req = required_width_mm(amps, dt_c, cu[layer])
+                    neck = pour_neck(bg, net, layer, fill, req,
+                                     others_at(amps, layer))
+                    if neck is None:
+                        ripple_caps.append({
+                            "kind": "pour_neckdown", "layer": layer,
+                            "pos": pos_at, "refs": far,
+                            "amps": checklib.rnd(amps), "terms": rip["terms"]})
+                elif far:
+                    item = {"kind": "pour_neckdown", "layer": layer,
+                            "pos": pos_at, "refs": far}
+                    if rip:
+                        item["why"] = rip["why"]
+                    unjudged.append(item)
                     neck = None
             if neck is not None:
                 width, pos = neck
@@ -1224,6 +1560,9 @@ def check_net(bg: geom.BoardGeom, entry: dict):
                     msg += (f"; leaf branch: {', '.join(leaf[1])} draw at "
                             f"most {amps:.3f} A")
                     extras["leaf_loads"] = leaf[1]
+                elif rip and "amps" in rip:
+                    msg += f"; {ripple_text(rip)}"
+                    extras["ripple"] = rip
                 if derived:
                     # derived return entry: the budget itself is a heuristic
                     # (max declared rail), so the neck is a labeled screen,
@@ -1264,6 +1603,8 @@ def check_net(bg: geom.BoardGeom, entry: dict):
         ov = region_current(entry, (cx, cy))
         amps = budget if ov is None else ov
         need = max(1, math.ceil(amps / via_amps))
+        rip = far = None
+        over = ov is None and len(group) * via_amps < rail
         leaf = cluster_leaf_bound(bg, net, group) \
             if len(group) < need else None
         if leaf is not None and leaf[0] < amps:
@@ -1278,26 +1619,39 @@ def check_net(bg: geom.BoardGeom, entry: dict):
         else:
             leaf = None
             branch = cluster_branch(bg, net, group, sources) if (
-                len(group) < need and ov is None and sources) else None
+                (len(group) < need or over) and ov is None and sources) else None
             if branch:
                 far, copper = branch
-                unjudged.append({
-                    "kind": "insufficient_transition_vias",
-                    "pos": [checklib.rnd(cx), checklib.rnd(cy)], "refs": far})
+                rip = cap_ripple(bg, net, far, cons)
+                if len(group) >= need and not (rip and "amps" in rip):
+                    continue                 # meets the budget, no figure
                 # a thin track on that branch carries no more than it does
                 for v, t in list(undersized):
                     mid = t.shape.interpolate(0.5, normalized=True).coords[0]
                     if region_current(entry, mid) is None and any(
                             l == t.layer and part.intersects(Point(mid))
                             for l, part in copper):
-                        violations = [x for x in violations if x is not v]
-                        undersized.remove((v, t))
-                        unjudged.append({"kind": "undersized_track",
-                                         "layer": t.layer, "pos": v["pos"],
-                                         "refs": far})
-                continue
+                        judge_branch_track(v, t, far)
+                if rip and "amps" in rip:
+                    amps = rip["amps"]
+                    need = max(1, math.ceil(amps / via_amps))
+                    if len(group) >= need:
+                        ripple_caps.append({
+                            "kind": "insufficient_transition_vias",
+                            "pos": [checklib.rnd(cx), checklib.rnd(cy)],
+                            "refs": far, "amps": checklib.rnd(amps),
+                            "vias": len(group), "terms": rip["terms"]})
+                else:
+                    item = {"kind": "insufficient_transition_vias",
+                            "pos": [checklib.rnd(cx), checklib.rnd(cy)],
+                            "refs": far}
+                    if rip:
+                        item["why"] = rip["why"]
+                    unjudged.append(item)
+                    continue
+        judged_ripple = rip is not None and "amps" in rip
         if len(group) < need:
-            advisory = plane_fed and ov is None
+            advisory = plane_fed and ov is None and not judged_ripple
             if bundle:
                 msg = (f"{net} pour-to-pour transition near ({cx:.2f}, "
                        f"{cy:.2f}) has {len(group)} via(s) or plated "
@@ -1313,13 +1667,17 @@ def check_net(bg: geom.BoardGeom, entry: dict):
                 msg += (f"; leaf branch: {', '.join(leaf[1])} draw at most "
                         f"{amps:.3f} A")
                 extras["leaf_loads"] = leaf[1]
+            if judged_ripple:
+                msg += f"; {ripple_text(rip)}"
+                extras["ripple"] = rip
             if advisory:
                 msg += ("; advisory: plane-fed rail, per-cluster current "
                         "unattributed (each via is a leaf tap off the plane)")
                 extras["advisory"] = True
             violations.append(violation(
                 SCRIPT, "warning" if advisory else "error", (cx, cy), None,
-                net, [], msg, SCRIPT, kind="insufficient_transition_vias",
+                net, far if judged_ripple else [], msg, SCRIPT,
+                kind="insufficient_transition_vias",
                 vias=len(group), required=need, **extras))
 
     facts = {"net": net, "current_a": budget, "dt_c": dt_c,
@@ -1340,6 +1698,8 @@ def check_net(bg: geom.BoardGeom, entry: dict):
         facts["leaf_branches"] = leaf_branches
     if unjudged:
         facts["unjudged"] = unjudged
+    if ripple_caps:
+        facts["ripple_caps"] = ripple_caps
     if exits:
         seen = []
         for info in exits.values():
@@ -1455,12 +1815,12 @@ def run(argv=None):
     violations: list[dict] = []
     checked: list[dict] = []
     for entry in entries:
-        vs, facts = check_net(bg, entry)
+        vs, facts = check_net(bg, entry, cons)
         violations.extend(vs)
         checked.append(facts)
     inferred, unrated = inferred_switch_entries(entries, bg, switch_rows())
     for entry in inferred:
-        vs, facts = check_net(bg, entry)
+        vs, facts = check_net(bg, entry, cons)
         for v in vs:
             v["severity"] = "warning"
             v["msg"] = v["items"][0]["msg"] = (
@@ -1477,7 +1837,7 @@ def run(argv=None):
                             from_part=entry["from_part"]))
     ret_entry = derived_return_entry(entries, bg)
     if ret_entry is not None:
-        vs, facts = check_net(bg, ret_entry)
+        vs, facts = check_net(bg, ret_entry, cons)
         violations.extend(vs)
         checked.append(facts)
 
