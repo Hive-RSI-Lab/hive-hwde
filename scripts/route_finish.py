@@ -443,7 +443,7 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
         inside = shapely.contains_xy(poly, X, Y)
         cost[k][inside] *= pour_cost
 
-    for ra in bg.rule_areas:
+    for ra in bg.rule_areas + bg.footprint_rule_areas:
         fl = ra.get("flags", {})
         poly = ra["outline"]
         if poly.is_empty or not poly.intersects(win):
@@ -539,7 +539,7 @@ def _span_moves(obs, rules: Rules, net: str, layers: list, win, args, K: int,
                     stack = shapely.dwithin(
                         it.hole.centroid, shapely.points(X[hit[0]], Y[hit[0]]), 0.01)
                     m[hit[0]] |= hit[1] & ~stack
-        for ra in obs.bg.rule_areas:
+        for ra in obs.bg.rule_areas + obs.bg.footprint_rule_areas:
             if ra.get("flags", {}).get("vias") == "not_allowed" \
                     and not ra["outline"].is_empty and ra["outline"].intersects(win):
                 hit = _mask(ra["outline"], vr + rules.margin, *args)
@@ -1184,8 +1184,12 @@ def _named_conns(after: dict, uuid_conn: dict) -> dict[int, list]:
         for it in v.get("items", []):
             if it.get("uuid") in uuid_conn:
                 checks = bad.setdefault(uuid_conn[it["uuid"]], [])
-                if v.get("check") not in checks:
-                    checks.append(v.get("check"))
+                pos = it.get("pos") or {}
+                label = v.get("check")
+                if "x" in pos and "y" in pos:
+                    label = f'{label}@({pos["x"]:.2f},{pos["y"]:.2f})'
+                if label not in checks:
+                    checks.append(label)
     return bad
 
 
@@ -1363,8 +1367,12 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
             b_err, a_err = err_counts(cur), err_counts(after)
             grew = {k: [b_err.get(k, 0), v] for k, v in a_err.items()
                     if v > b_err.get(k, 0)}
+            b_nets, a_nets = unconnected_by_net(cur), unconnected_by_net(after)
             entry.update(unconnected_before=b_un, unconnected_after=a_un,
-                         grew=grew)
+                         grew=grew,
+                         opens_changed={k: [b_nets.get(k, 0), a_nets.get(k, 0)]
+                                        for k in sorted({*b_nets, *a_nets})
+                                        if b_nets.get(k, 0) != a_nets.get(k, 0)})
             board_rip = any(j.get("rip_uuids") for j in jobs)
             for j in jobs:
                 touched.update(j.get("ripped_nets", []))
@@ -1387,6 +1395,8 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
                 cur = after
             else:
                 entry["kept"] = False
+                if os.environ.get("ROUTE_FINISH_KEEP_REJECTED"):
+                    shutil.copy2(staged, os.environ["ROUTE_FINISH_KEEP_REJECTED"])
                 shutil.copy2(backup, staged)
                 break
         if checkpoint is not None:
