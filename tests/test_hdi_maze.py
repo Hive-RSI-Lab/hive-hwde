@@ -206,3 +206,47 @@ def test_too_close_via_names_a_route_crowding_its_own_vias():
     assert rf.too_close_via(gr, far, rules) is None
     stacked = [(0, 0, 0), (1, 0, 0), (1, 0, 1), (1, 0, 0), (4, 1, 0)]
     assert rf.too_close_via(gr, stacked, rules) is None
+
+
+def _ring_job(net, dist):
+    return {"net": net, "dist": dist}
+
+
+def test_outer_first_takes_a_chips_outer_ring_before_its_inner_one():
+    """#823: shortest first left the far rows' stub tips walled in. Corners and
+    edges of a ball field go first, then inwards, shortest first on a tie."""
+    exits = {f"/{n}": [("F.Cu", at, (0.0, 1.0))] for n, at in {
+        "corner": (0.0, 0.0), "edge": (1.0, 0.0), "far": (2.0, 0.0),
+        "left": (0.0, 1.0), "mid": (1.0, 1.0), "right": (2.0, 1.0),
+        "b0": (0.0, 2.0), "b1": (1.0, 2.0), "b2": (2.0, 2.0)}.items()}
+    jobs = [_ring_job("/mid", 1.0), _ring_job("/edge", 2.0),
+            _ring_job("/corner", 9.0), _ring_job("/far", 8.0),
+            _ring_job("/b0", 7.0), _ring_job("/b2", 6.0),
+            _ring_job("/left", 5.0), _ring_job("/right", 4.0),
+            _ring_job("/b1", 3.0)]
+    assert [j["net"] for j in rf.outer_first(jobs, exits)] == [
+        "/b2", "/b0", "/far", "/corner",
+        "/edge", "/b1", "/right", "/left", "/mid"]
+
+
+def test_outer_first_ranks_each_chip_from_its_own_centre():
+    """A second chip's tips don't pull the first one's centre away."""
+    exits = {"/a_in": [("F.Cu", (0.0, 0.0), (0.0, 1.0))],
+             "/a_out": [("F.Cu", (1.0, 0.0), (0.0, 1.0))],
+             "/a_out2": [("F.Cu", (-1.0, 0.0), (0.0, 1.0))],
+             "/b_in": [("F.Cu", (50.0, 0.0), (0.0, 1.0))],
+             "/b_out": [("F.Cu", (51.0, 0.0), (0.0, 1.0))],
+             "/b_out2": [("F.Cu", (49.0, 0.0), (0.0, 1.0))]}
+    order = [j["net"] for j in rf.outer_first(
+        [_ring_job(n, 1.0) for n in exits], exits)]
+    assert order.index("/a_out") < order.index("/a_in")
+    assert order.index("/b_out") < order.index("/b_in")
+    assert order.index("/b_out2") < order.index("/b_in")
+
+
+def test_outer_first_leaves_nets_with_no_open_tip_after_in_shortest_order():
+    exits = {"/t": [("F.Cu", (0.0, 0.0), (0.0, 1.0))]}
+    jobs = [_ring_job("/long", 9.0), _ring_job("/t", 5.0),
+            _ring_job("/short", 1.0)]
+    assert [j["net"] for j in rf.outer_first(jobs, exits)] == [
+        "/t", "/short", "/long"]

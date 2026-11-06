@@ -96,6 +96,7 @@ KICAD_HOLE_TO_HOLE = 0.25     # board setup default min hole to hole
 SAME_NET_HOLE_MM = 0.13       # JLC HDI, one net, edge to edge (jlc_capabilities hdi)
 EXIT_MM = 1.0                 # #784, how far an open stub tip's corridor runs
 VIA_RETRIES = 6               # #784, searches again for a route's too-close vias
+CHIP_LINK_MM = 3.0            # #823, tips this close are one chip's ball field
 
 
 # ------------------------------------------------------------------ rules
@@ -982,6 +983,39 @@ def exit_keepouts(exits: dict, open_nets, routing: str, length: float,
             for layer, (x, y), (dx, dy) in exits.get(net, ())]
 
 
+def outer_first(jobs: list[dict], exits: dict) -> list[dict]:
+    """Jobs in the order to route an escaped ball field: each chip's outer tips
+    first, working inwards, shortest first on a tie; then the nets with no open
+    tip, shortest first. Shortest-first filled the board around the far rows
+    before they ran and walled their tips in (#823). A chip is the tips joined
+    within CHIP_LINK_MM of each other."""
+    tips = [(net, at) for net, ends in exits.items() for _, at, _d in ends]
+    group = list(range(len(tips)))
+
+    def find(i):
+        while group[i] != i:
+            group[i] = group[group[i]]
+            i = group[i]
+        return i
+
+    for i, (_, (x, y)) in enumerate(tips):
+        for j in range(i):
+            (u, v) = tips[j][1]
+            if math.hypot(x - u, y - v) <= CHIP_LINK_MM:
+                group[find(i)] = find(j)
+    chips: dict[int, list] = {}
+    for i, (_, at) in enumerate(tips):
+        chips.setdefault(find(i), []).append(at)
+    ring: dict[str, float] = {}
+    for i, (net, (x, y)) in enumerate(tips):
+        ats = chips[find(i)]
+        r = math.hypot(x - sum(a[0] for a in ats) / len(ats),
+                       y - sum(a[1] for a in ats) / len(ats))
+        ring[net] = max(ring.get(net, 0.0), round(r, 3))
+    return sorted(jobs, key=lambda j: (
+        (0, -ring[j["net"]]) if j["net"] in ring else (1, 0.0), j["dist"]))
+
+
 def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
                 layers: list[str], *, grid: float = 0.1, margin: float = 4.0,
                 max_conns: int | None = None, max_nodes: int = 3_000_000,
@@ -1059,6 +1093,7 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
             j.update(status="skipped", reason="over --max-conns")
         todo = todo[:max_conns]
     exits = stub_exits(bg) if rules.spans else {}
+    todo = outer_first(todo, exits)
     inner_cost = {"inner_cost": 1.0} if rules.spans else {}
 
     def search(job, hide=False, board=False):
