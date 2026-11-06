@@ -16,6 +16,11 @@ time, on a fine grid (default 0.1 mm) with 8-way moves and through vias:
   On an HDI build (#477) a layer change may also take any span the build
   laminates, at its own size and JLC's HDI numbers, for a share of a through
   via's cost (SPAN_COST): a microvia is the cheap way down one layer.
+- An HDI build's nets start at their floor width and the smallest legal via,
+  unless a rule sizes their copper, and every layer costs the same, because
+  the field's stubs fill the board's outer layers first. While a net is still
+  open, its stub tips keep a corridor (EXIT_MM) straight ahead on their own
+  layer, so that nets routed earlier don't wall it in (#784).
 - Other-net zone fills are not walls (they refill around new copper) but cost
   more to cross, so a route only splits a pour when it must; a piece it cuts
   off is joined by the next pass.
@@ -76,6 +81,7 @@ import shapely  # noqa: E402
 import shapely.ops  # noqa: E402
 from shapely.geometry import LineString, Point, box  # noqa: E402
 from shapely.strtree import STRtree  # noqa: E402
+from scipy import ndimage  # noqa: E402
 
 import checklib  # noqa: E402
 import env  # noqa: E402
@@ -88,6 +94,8 @@ from checklib import CheckError  # noqa: E402
 KICAD_HOLE_CLEARANCE = 0.25   # board setup default min hole clearance
 KICAD_HOLE_TO_HOLE = 0.25     # board setup default min hole to hole
 SAME_NET_HOLE_MM = 0.13       # JLC HDI, one net, edge to edge (jlc_capabilities hdi)
+EXIT_MM = 1.0                 # #784, how far an open stub tip's corridor runs
+VIA_RETRIES = 6               # #784, searches again for a route's too-close vias
 
 
 # ------------------------------------------------------------------ rules
@@ -554,6 +562,62 @@ _MOVES = [(1, 0, 1.0), (-1, 0, 1.0), (0, 1, 1.0), (0, -1, 1.0),
           (-1, 1, math.sqrt(2)), (-1, -1, math.sqrt(2))]
 
 
+def no_path(gr: Grid) -> bool:
+    """True when sides A and B share no connected free region, so astar can't
+    succeed and needn't search (#784: most of a dense field's time went on
+    searches like that). Every move astar has is one of these links, so this
+    never refutes a search that would have found a path."""
+    if any(gr.a_plane) or any(gr.b_plane):
+        return False
+    K = len(gr.layers)
+
+    def cells(mask):
+        return np.frombuffer(mask, np.uint8).reshape(gr.ny, gr.nx)
+
+    free = [cells(b) == 0 for b in gr.blk]
+    in_a = [(cells(b) > 0) & f for b, f in zip(gr.in_a, free)]
+    in_b = [(cells(b) > 0) & f for b, f in zip(gr.in_b, free)]
+    if not any(a.any() for a in in_a) or not any(b.any() for b in in_b):
+        return True
+    labels, regions = [], 0
+    for k in range(K):
+        lab, count = ndimage.label(free[k], np.ones((3, 3), bool))
+        lab = lab.astype(np.int64)
+        lab[lab > 0] += regions
+        labels.append(lab)
+        regions += count
+    parent = np.arange(regions + 1)
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def join(k, k2, where):
+        """Join the regions a layer change at these cells connects."""
+        pairs = np.stack([labels[k][where], labels[k2][where]], 1)
+        for x, y in np.unique(pairs, axis=0).tolist():
+            if x and y:
+                parent[find(x)] = find(y)
+
+    through = (cells(gr.vblk) == 0) & np.logical_and.reduce(free)
+    if through.any():
+        for k in range(1, K):
+            join(0, k, through)
+    for k, moves in enumerate(gr.span_moves or []):
+        for k2, _span, mask, clear in moves:
+            if k2 > k:
+                join(k, k2, (cells(mask) == 0)
+                     & np.logical_and.reduce([free[q] for q in clear]))
+
+    def reached(side):
+        return {find(x) for k in range(K)
+                for x in np.unique(labels[k][side[k]]).tolist()}
+
+    return not reached(in_a) & reached(in_b)
+
+
 def astar(gr: Grid, target, via_cost: float = 15.0,
           max_nodes: int = 3_000_000, deadline: float | None = None):
     """Multi-source search from side A's free cells to side B's.
@@ -715,14 +779,41 @@ def _can_move_run(gr: Grid, run: list, k2: int) -> bool:
         and not any(gr.blk[k2][y * gr.nx + x] for x, y, _ in run)
 
 
+def too_close_via(gr: Grid, path: list, rules: Rules) -> tuple | None:
+    """(k, cell) of a layer change this path makes too near its own last one,
+    where merge_close_vias couldn't help, or None. The search can't see this:
+    one net's vias don't block each other while it runs, and DRC would take the
+    whole route out afterwards (#784)."""
+    if not rules.spans or any(q[2] == -1 for q in path):
+        return None
+    path = _merged(gr, path, rules)
+    vias = []
+    for (i, j, k), (i2, j2, k2) in zip(path, path[1:]):
+        if k != k2:
+            sp = span_for(gr, k, k2, j * gr.nx + i)
+            drill = sp.drill if sp else gr.via[1]
+            for x, y, d in vias:
+                gap = math.dist((x, y), (i, j)) * gr.g - (d + drill) / 2
+                if (x, y) != (i, j) \
+                        and gap < rules.span_hole_to_hole + rules.margin:
+                    return k, j * gr.nx + i
+            vias.append((i, j, drill))
+    return None
+
+
+def _merged(gr: Grid, path: list, rules: Rules) -> list:
+    """path_to_ops' own merge of an HDI route's close vias."""
+    return merge_close_vias(
+        path, (SAME_NET_HOLE_MM + rules.via_floor[1]) / gr.g,
+        lambda run, k2: _can_move_run(gr, run, k2))
+
+
 def path_to_ops(gr: Grid, path, net: str, width: float, rules: Rules) -> list:
     """Grid path -> route_edit ops: one track per straight run, a via at
     every layer change and at a plane drop (k = -1). A layer change on an HDI
     build takes the span the search priced it at (#477)."""
     if rules.spans:
-        path = merge_close_vias(
-            path, (SAME_NET_HOLE_MM + rules.via_floor[1]) / gr.g,
-            lambda run, k2: _can_move_run(gr, run, k2))
+        path = _merged(gr, path, rules)
     ops = []
     vias = []
     runs: list[list] = []
@@ -847,6 +938,50 @@ def conn_key(net: str, a, b) -> tuple:
     return (net, *sorted((tuple(a), tuple(b))))
 
 
+def stub_exits(bg: geom.BoardGeom) -> dict[str, list]:
+    """{net: [(layer, (x, y), (dx, dy))]}: where each net's stubs end in open
+    board and the way they head there. A track end is open when no other track
+    of the net shares that layer and point and no via or pad of the net is on
+    it. Stubs of different nets end at one x,y on different layers, so a tip's
+    only way out is often straight ahead on its own layer (#784)."""
+    ends: dict[tuple, list] = {}
+    for t in bg.tracks_of():
+        if not t.net:
+            continue
+        coords = list(t.shape.coords)
+        for at, back in ((coords[0], coords[1]), (coords[-1], coords[-2])):
+            key = (t.net, t.layer, round(at[0], 3), round(at[1], 3))
+            ends.setdefault(key, []).append((at, back))
+    vias = {(v.net, round(v.at[0], 3), round(v.at[1], 3)) for v in bg.vias_of()}
+    pads: dict[str, list] = {}
+    for p in bg.pads_of():
+        pads.setdefault(p.net, []).append(p.poly)
+    exits: dict[str, list] = {}
+    for (net, layer, x, y), seen in ends.items():
+        if len(seen) > 1 or (net, x, y) in vias:
+            continue
+        (ax, ay), (bx, by) = seen[0]
+        if any(p.distance(Point(ax, ay)) < 0.01 for p in pads.get(net, ())):
+            continue
+        d = math.hypot(ax - bx, ay - by)
+        if d:
+            exits.setdefault(net, []).append(
+                (layer, (ax, ay), ((ax - bx) / d, (ay - by) / d)))
+    return exits
+
+
+def exit_keepouts(exits: dict, open_nets, routing: str, length: float,
+                  half) -> list[Item]:
+    """The corridors past the open tips of open_nets, as that net's own copper,
+    so they stop every net but their owner. half(net): half the corridor's
+    width. routing: the net being routed, whose own corridors aren't needed."""
+    return [Item(net, frozenset({layer}),
+                 LineString([(x, y), (x + dx * length, y + dy * length)]),
+                 half(net))
+            for net in dict.fromkeys(open_nets) if net != routing
+            for layer, (x, y), (dx, dy) in exits.get(net, ())]
+
+
 def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
                 layers: list[str], *, grid: float = 0.1, margin: float = 4.0,
                 max_conns: int | None = None, max_nodes: int = 3_000_000,
@@ -923,32 +1058,53 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
         for j in todo[max_conns:]:
             j.update(status="skipped", reason="over --max-conns")
         todo = todo[:max_conns]
+    exits = stub_exits(bg) if rules.spans else {}
+    inner_cost = {"inner_cost": 1.0} if rules.spans else {}
+
     def search(job, hide=False, board=False):
         """(path, grid, width) over the ladder: the window, a wider window,
         then a finer grid at the net's floor width for a pad boxed in by
-        its neighbours. hide: leave this pass's own routes out."""
+        its neighbours. An HDI build's net with no rule on its copper takes
+        the floor width from the start. hide: leave this pass's own routes
+        out."""
         net = job["net"]
-        width = rules.width(net)
+        floor = rules.width_floor(net), rules.via_floor
+        start = (floor if rules.spans and net not in keep_nets
+                 else (rules.width(net), None))
         held = obs.added
         if hide:
             obs.added = []
+        obs.added = obs.added + exit_keepouts(
+            exits, [j["net"] for j in todo
+                    if j.get("status") in (None, "ripped")],
+            net, EXIT_MM, lambda nt: rules.width_floor(nt) / 2)
         if board:
             obs.soft_board = keep_nets
         try:
-            for m, g, w, v in (
-                    (margin, grid, width, None),
-                    (margin * 2.5, grid, width, None),
-                    (margin, grid / 2, rules.width_floor(net), rules.via_floor)):
+            for m, g, (w, v) in (
+                    (margin, grid, start),
+                    (margin * 2.5, grid, start),
+                    (margin, grid / 2, floor)):
                 (ax, ay), (bx, by) = job["pa"], job["pb"]
                 win = (min(ax, bx) - m, min(ay, by) - m,
                        max(ax, bx) + m, max(ay, by) + m)
                 gr = build_grid(obs, rules, net, job["side_a"],
                                 job["side_b"], layers, win, g, width=w,
-                                via=v)
+                                via=v, **inner_cost)
+                if no_path(gr):
+                    continue
                 target = (int(round((bx - gr.x0) / g)),
                           int(round((by - gr.y0) / g)))
-                path = astar(gr, target, via_cost=via_cost_mm / g,
-                             max_nodes=max_nodes, deadline=deadline)
+                for _ in range(VIA_RETRIES + 1):
+                    path = astar(gr, target, via_cost=via_cost_mm / g,
+                                 max_nodes=max_nodes, deadline=deadline)
+                    near = path and too_close_via(gr, path, rules)
+                    if not near:
+                        break
+                    # search again with that layer change's cell closed
+                    k, c = near
+                    gr.blk[k] = gr.blk[k][:c] + b"\1" + gr.blk[k][c + 1:]
+                    path = None
                 if path:
                     return path, gr, w
         finally:
