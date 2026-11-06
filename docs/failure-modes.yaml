@@ -584,7 +584,7 @@ modes:
     power switch, load switch or eFuse family), which blocks as rating_no_attributes;
     a filled regulator's row is judged against its rails but stays unverified,
     a known power-IC family's against the rail on the input pad its datasheet names,
-    saying so by name when that rail has no volts,
+    saying so by name when that rail has no volts, and that it is within the row when not,
     and an extracted regulator's output pin against a rail the board states,
     warning as rating_regulator_output_unjudged if nothing says what it makes;
     a known family's MPN code or switcher family judges a filled row too and

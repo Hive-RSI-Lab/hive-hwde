@@ -83,8 +83,9 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
    highest-voltage net, unless the part steps up); an unextracted power IC
    whose input pad, from its family's datasheet table (POWER_IC_FAMILIES),
    sits above the top of its filled row's input range, which is the
-   recommended maximum on every family in the table (power_ic_findings). An
-   input it can't compare says so in its rating_unrated (power_ic_unjudged).
+   recommended maximum on every family in the table (power_ic_findings). Its
+   rating_unrated says what became of the inputs: an input it can't compare, or
+   else that they are within the row (power_ic_why_unrated).
  - rating_regulator_output (error): a regulator whose output pad sits on a
    rail its row (or a fixed output in the MPN, or a known family's MPN code)
    says it can't make, or on a stated rail of the wrong sign for a part its
@@ -859,7 +860,7 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
             if judge(b, bom, volts, vsrc, netfns, emit):
                 compared(ref, "distributor")
                 continue
-            why = power_ic_unjudged(b, bom, volts, vsrc, netfns) if power_ic \
+            why = power_ic_why_unrated(b, bom, volts, vsrc, netfns) if power_ic \
                 else None
             if _check_unextracted(b, bom_by_lcsc.get(b["lcsc"]), volts, emit,
                                   unrated_passives, why):
@@ -1299,11 +1300,12 @@ def power_ic_findings(b: dict, bom: dict, volts: dict, vsrc: dict,
     return found
 
 
-def power_ic_unjudged(b: dict, bom: dict, volts: dict, vsrc: dict,
-                      netfns: dict) -> str | None:
-    """Why a power IC with a number in its row wasn't compared at an input, for
-    its rating_unrated warning (#807), or None: every input was compared, or the
-    row has no number, which the usual words already say."""
+def power_ic_why_unrated(b: dict, bom: dict, volts: dict, vsrc: dict,
+                        netfns: dict) -> str | None:
+    """What became of a power IC's inputs, for its rating_unrated warning: why
+    one wasn't compared (#807), else that all are within the row and only the
+    other pins are unrated. None when the row has no number, which the usual
+    words already say. Called only once power_ic_findings found nothing over."""
     rating = reg_vin_rating(bom)
     if not rating:
         return None
@@ -1314,15 +1316,18 @@ def power_ic_unjudged(b: dict, bom: dict, volts: dict, vsrc: dict,
     if not inputs:
         return (f"{mpn}: no pad here fits an input in {row['datasheet']}, by "
                 f"name or footprint, so it is not judged against {limit}")
-    parts = []
+    parts, within = [], []
     for net in sorted({pads[p] for p in inputs}):
+        who = "/".join(sorted({n for p, n in inputs.items() if pads[p] == net}))
         if _no_trusted_volts(net, volts, vsrc):
-            who = "/".join(sorted({n for p, n in inputs.items() if pads[p] == net}))
             what = "only a pull-up's guess at its volts" \
                 if volts.get(net) is not None else "no volts"
             parts.append(f"{who} on {net} has {what}")
+        else:
+            within.append(f"{who} at {_fmt(volts[net])} V")
     if not parts:
-        return None
+        return (f"{mpn}: {', '.join(within)} within the {_fmt(rating[0])} V row; "
+                "other pins unrated")
     return (f"{mpn}: {'; '.join(parts)}, so it is not judged against {limit}: "
             "give the rail a voltage in the constraints or the power tree")
 
