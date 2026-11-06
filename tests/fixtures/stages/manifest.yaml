@@ -34,10 +34,10 @@ fixtures:
       note: 'UNTOUCHED easyeda2kicad pulls (C14663 0603 cap, C2286 red LED, C7421520 DIP switch,
         C5184243 GCT USB-C), the test_lib_hygiene corpus frozen 2026-08-06. Known answer on
         KiCad 10.0.6: 18 real-DRC violations before fpfix (profile pinned in
-        args.expect_before_by_check), 4 after fix_lib + refdes norm, all hole_clearance on the
-        USB-C''s own pads against its NPTH pegs, which a KiCad default rule flags and the
-        vendor geometry keeps (#795). A before-count drift means an fpfix behavior change that
-        must re-record this baseline in the same commit.'
+        args.expect_before_by_check), 0 after fix_lib + refdes norm. 10.0.6 also checks the
+        USB-C''s own pads against its NPTH pegs (10.0.3 skipped them); fpfix rule H shortens
+        those pads to clear (#795, #813). A before-count drift means an fpfix behavior change
+        that must re-record this baseline in the same commit.'
     files:
       fp_c0603:
         path: tests/fixtures/lib/pristine/C0603.kicad_mod
@@ -152,7 +152,7 @@ fixtures:
     dirs:
       fp_lib:
         path: tests/fixtures/stages/pd_trigger/lib
-        sha256: a8578dcb4f8cbc5507522ab6e8e53b9238299249eb45cd197be5058fe3de3c07
+        sha256: b9606749df32aee828e1a5a00d1fe7f914419156916aa56635e7d0a1ee3fda56
     args:
       name: bench-pdtrigger
       layers: 2
@@ -168,7 +168,7 @@ fixtures:
     files:
       pcb:
         path: tests/fixtures/stages/pd_trigger/place/pd-trigger.kicad_pcb
-        sha256: 8a91725f657a4f48c811f234e542d38a24e24afb7bf299b319907ed8e0ece838
+        sha256: 67dee08ca69455d6e540045e157577591223aca1626f4e5c8369506dbb7f858f
       pro:
         path: tests/fixtures/stages/pd_trigger/place/pd-trigger.kicad_pro
         sha256: 3b9c6ea6b1ab97a7b2c27f29ba33ba8b775fee82b3beba08e241a84ae2b0b01f
@@ -210,7 +210,7 @@ fixtures:
     files:
       pcb:
         path: tests/fixtures/stages/pd_trigger/route/pd-trigger.kicad_pcb
-        sha256: 55104b0fe93d72deb9301fd6a35a1ebeecccf5b28b45c4e1f3cfdaa41a58cb8e
+        sha256: 65ba3e63e65138e2eded8baed49bbe7eea40d0b901fb28407abb271d4e6accff
       pro:
         path: tests/fixtures/stages/pd_trigger/route/pd-trigger.kicad_pro
         sha256: 3b9c6ea6b1ab97a7b2c27f29ba33ba8b775fee82b3beba08e241a84ae2b0b01f
@@ -243,7 +243,7 @@ fixtures:
     files:
       pcb:
         path: tests/fixtures/stages/pd_trigger/route/pd-trigger.kicad_pcb
-        sha256: 55104b0fe93d72deb9301fd6a35a1ebeecccf5b28b45c4e1f3cfdaa41a58cb8e
+        sha256: 65ba3e63e65138e2eded8baed49bbe7eea40d0b901fb28407abb271d4e6accff
       constraints:
         path: tests/fixtures/stages/pd_trigger/constraints.json
         sha256: e44d7987dddcd08ff0f2ba975abe5c09d4c8e597f72c9a85a892c9f7a7edeec5
@@ -331,7 +331,7 @@ fixtures:
     files:
       pcb:
         path: tests/fixtures/stages/pd_trigger/prefix_p8/pd-trigger.kicad_pcb
-        sha256: 964c86cdd3303c8d03b591103f7ece281e9a3839d02656a074a7216d7c06216a
+        sha256: fd4a2fea1443f85f0c4375a355735c11d18dc662b28228144efd3d76d5521a4b
       constraints:
         path: tests/fixtures/stages/pd_trigger/constraints.json
         sha256: e44d7987dddcd08ff0f2ba975abe5c09d4c8e597f72c9a85a892c9f7a7edeec5
@@ -405,7 +405,7 @@ fixtures:
     files:
       pcb:
         path: tests/fixtures/stages/pd_trigger/route/pd-trigger.kicad_pcb
-        sha256: 55104b0fe93d72deb9301fd6a35a1ebeecccf5b28b45c4e1f3cfdaa41a58cb8e
+        sha256: 65ba3e63e65138e2eded8baed49bbe7eea40d0b901fb28407abb271d4e6accff
       netlist:
         path: tests/fixtures/stages/pd_trigger/pd-trigger.net
         sha256: 7100c1fad6d436c3696efabb0a8a31392854a4d74a3bfa57b403284560e2de2d
@@ -453,7 +453,7 @@ fixtures:
     files:
       pcb:
         path: tests/fixtures/stages/pd_trigger/route/pd-trigger.kicad_pcb
-        sha256: 55104b0fe93d72deb9301fd6a35a1ebeecccf5b28b45c4e1f3cfdaa41a58cb8e
+        sha256: 65ba3e63e65138e2eded8baed49bbe7eea40d0b901fb28407abb271d4e6accff
     dirs:
       fab:
         path: tests/fixtures/stages/pd_trigger/fab

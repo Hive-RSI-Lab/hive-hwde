@@ -149,6 +149,65 @@ def test_every_fixture_ends_clean_and_the_fix_is_idempotent(lib):
     assert second["changed"] == 0 and second["actions"] == 0
 
 
+def test_rule_h_shortens_pads_from_the_peg_end_until_they_clear(lib):
+    """The GCT pattern's GND and VBUS pads crowd its NPTH pegs (#813). Each is
+    shortened from the end that faces the peg, just enough to clear KiCad's
+    0.25 mm. The far end, where the lead lands, stays put. No other pad moves."""
+    def pads(text):
+        nodes = [(h, s, e, fpfix._parse(text[s:e]))
+                 for h, s, e in fpfix.top_level_nodes(text) if h == "pad"]
+        holes = fpfix._npth_holes(nodes)
+        out = {}
+        for _h, _s, _e, n in nodes:
+            if fpfix._unnamed(n):
+                continue
+            q = fpfix._pad_poly(n, 0.0)
+            out[fpfix._pad_number(n)] = (q.bounds, min(fpfix._hole_gap(q, h)
+                                                       for h in holes))
+        return out
+
+    fpfix.fix_lib(lib, names=[USBC], fix_peg_pads=False)
+    before = pads((lib / f"{USBC}.kicad_mod").read_text(encoding="utf-8"))
+    rep = fpfix.fix_lib(lib, names=[USBC])
+    trims = {a["pad"]: a for a in _actions(rep, USBC) if a["rule"] == "H"}
+    assert set(trims) == {"A1-B12", "B1-A12", "A4-B9", "B4-A9"}
+    assert all(a["action"] == "trim_pad_at_peg" for a in trims.values())
+    assert {p: a["trim_mm"] for p, a in trims.items()} == {
+        "A1-B12": 0.08, "B1-A12": 0.08, "A4-B9": 0.05, "B4-A9": 0.05}
+    after = pads((lib / f"{USBC}.kicad_mod").read_text(encoding="utf-8"))
+    for name, (bb, gap) in after.items():
+        b0, g0 = before[name]
+        if name in trims:
+            assert g0 < fpfix.HOLE_CLEARANCE <= gap, name
+            assert bb[1] == pytest.approx(b0[1]), f"{name}: the far (lead) end moved"
+            assert bb[0] == pytest.approx(b0[0]) and bb[2] == pytest.approx(b0[2])
+            assert b0[3] - bb[3] == pytest.approx(trims[name]["trim_mm"])
+        else:
+            assert bb == pytest.approx(b0), f"{name} moved"
+    assert fpfix.fix_lib(lib, names=[USBC])["changed"] == 0
+
+
+def test_rule_h_leaves_a_pad_alone_when_the_cut_would_be_too_deep(tmp_path):
+    """A pad that would lose more than MAX_PEG_TRIM of its length to clear its
+    peg is residue, along either axis, and is left unchanged."""
+    d = tmp_path / "x.pretty"
+    d.mkdir()
+    src = ('(module deep (layer F.Cu)\n'
+           '  (pad 1 smd rect (at 0 0) (size 0.6 1.0) (layers F.Cu F.Paste F.Mask))\n'
+           '  (pad 2 smd rect (at 3 0) (size 0.6 1.0) (layers F.Cu F.Paste F.Mask))\n'
+           '  (pad "" np_thru_hole circle (at 0 0.8) (size 0.6 0.6) (drill 0.6) (layers *.Cu *.Mask))\n'
+           '  (pad "" np_thru_hole circle (at 3.7 0) (size 0.6 0.6) (drill 0.6) (layers *.Cu *.Mask))\n'
+           ')\n')
+    (d / "deep.kicad_mod").write_text(src, encoding="utf-8")
+    rep = fpfix.fix_lib(d, fix_courtyard=False)
+    h = {a["pad"]: a for a in _actions(rep, "deep") if a.get("rule") == "H"}
+    assert {p: a["action"] for p, a in h.items()} == {
+        "1": "residue_peg_clearance", "2": "residue_peg_clearance"}
+    assert rep["status"] == "residue"
+    text = (d / "deep.kicad_mod").read_text(encoding="utf-8")
+    assert "(at 0 0) (size 0.6 1.0)" in text and "(at 3 0) (size 0.6 1.0)" in text
+
+
 def test_footprint_names_containing_dots_are_matched_whole():
     """Path().stem would strip '.3-BL' from '...-LS9.3-BL' and skip the part."""
     assert fpfix._fp_stem(f"{SWITCH}.kicad_mod") == SWITCH
@@ -184,16 +243,62 @@ def test_cli_contract(tmp_path, lib):
 @pytest.mark.kicad_recorded
 @pytest.mark.smoke
 def test_scratch_drc_pristine_then_fixed(lib):
-    """18 -> 4 violations, measured the way EDITS.md measured them. The 4 left
-    are the USB-C's own pads against its own peg holes (0.18 and 0.21 mm against
-    KiCad's 0.25 mm hole clearance): vendor geometry that fpfix doesn't move."""
+    """18 -> 0 violations, measured the way EDITS.md measured them. KiCad
+    10.0.6 also checks the USB-C's own pads against its own NPTH pegs (0.18
+    and 0.21 mm against KiCad's 0.25 mm hole clearance), which 10.0.3 skipped;
+    rule H shortens those pads, so they clear too (#813)."""
     before = fpfix.scratch_drc(lib)
     assert before["counts"]["total"] == 18
     assert before["by_check"] == {"annular_width": 2, "clearance": 2, "hole_clearance": 2,
                                   "padstack": 2, "silk_overlap": 8, "silk_over_copper": 2}
     fpfix.fix_lib(lib)
     after = fpfix.scratch_drc(lib)
-    assert after["by_check"] == {"hole_clearance": 4}
+    assert after["by_check"] == {}
+
+
+PD_ROUTE = ROOT / "tests" / "fixtures" / "stages" / "pd_trigger" / "route"
+
+
+def _j1_peg_board_xy(text: str, local=(2.89, -1.30)):
+    """Board position of a J1 peg (KiCad: y down, angle counter-clockwise)."""
+    import math
+    import re
+    m = re.search(r'\(footprint "aiee:USB-C-SMD_MC-311D".*?\(at ([-\d.]+) ([-\d.]+) ([-\d.]+)\)',
+                  text, re.S)
+    fx, fy, a = (float(v) for v in m.groups())
+    th = math.radians(a)
+    x, y = local
+    return (fx + x * math.cos(th) + y * math.sin(th),
+            fy - x * math.sin(th) + y * math.cos(th))
+
+
+@pytest.mark.kicad_recorded
+@pytest.mark.smoke
+def test_pd_trigger_route_j1_clears_its_pegs_and_a_real_violation_still_fails(tmp_path):
+    """#813: the routed fixture is DRC-clean on KiCad 10.0.6 because rule H
+    trimmed J1's pads, not because the check was loosened. A via planted
+    0.1 mm from a J1 peg must still be a hole_clearance error."""
+    import env
+    import kc
+    cli = env.find_kicad_cli()
+    for f in PD_ROUTE.glob("pd-trigger.kicad_*"):
+        shutil.copy(f, tmp_path / f.name)
+    pcb = tmp_path / "pd-trigger.kicad_pcb"
+    clean = kc.run_drc(cli, pcb)
+    assert [v for v in clean["violations"] if v["check"] == "hole_clearance"] == []
+
+    text = pcb.read_text(encoding="utf-8")
+    # peg r 0.325 + via r 0.3 + 0.1 mm, on the side away from the pads
+    vx, vy = _j1_peg_board_xy(text, (2.89 + 0.725, -1.30))
+    via = (f'\t(via\n\t\t(at {vx:.4f} {vy:.4f})\n\t\t(size 0.6)\n\t\t(drill 0.3)\n'
+           '\t\t(layers "F.Cu" "B.Cu")\n\t\t(net "GND")\n'
+           '\t\t(uuid "8130a5e2-0000-4000-8000-000000000813")\n\t)\n')
+    pcb.write_text(text.rstrip()[:-1] + via + ")\n", encoding="utf-8")
+    dirty = kc.run_drc(cli, pcb)
+    hits = [v for v in dirty["violations"] if v["check"] == "hole_clearance"]
+    assert hits, "a via 0.1 mm from a J1 peg must fail hole_clearance"
+    assert any("8130a5e2-0000-4000-8000-000000000813" in [i.get("uuid") for i in v["items"]]
+               for v in hits)
 
 
 @pytest.mark.smoke

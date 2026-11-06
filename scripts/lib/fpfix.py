@@ -47,6 +47,21 @@ them measured against real DRC on the shipped boards (LEARNINGS 2026-07-28
      keeps its own type; with both and no type at all it is residue: only the
      part's drawing says how it is fitted.
 
+  H  pad copper too close to the footprint's own NPTH: the GCT USB4105 pattern
+     (pulled as USB-C-SMD_MC-311D) puts its 0.6 mm GND/VBUS pads 0.18 and
+     0.21 mm from its 0.65 mm locating pegs, under KiCad's 0.25 mm board-setup
+     hole clearance, which a custom DRU rule cannot relax. JLC's
+     NPTH-to-copper floor is 0.20 mm. KiCad up to 10.0.3 never checked
+     these pairs: it skipped any hole whose pad doesn't flash the layer, and
+     an NPTH with drill == size is exactly that case (fixed in KiCad commit
+     759cb3c4, issue 24355, hive-hwde#813). So C's "0 violations" on 10.0.3
+     hid them. The fix is the one the shipped hifi and emc-ref boards made by
+     hand: an SMD pad whose END faces the hole is SHORTENED from that end, on
+     a PEG_TRIM_GRID, until it clears by HOLE_CLEARANCE + PEG_TRIM_MARGIN. The
+     far end, where the lead lands, doesn't move. A trim over
+     MAX_PEG_TRIM of the pad's length, or a pad the hole sits beside rather
+     than beyond, is residue.
+
 Flags (reported, never fixed: only the part's drawing can settle them), from
 the footprint's own 3D model when lib_pull fetched one (body_flags):
   model_off_footprint  the model's pins below the board miss the footprint's
@@ -72,9 +87,9 @@ Library API:
   analyze(text, **opts)  -> {"items": [...], "worst_gap_mm": float|None, ...}
   fix_file(path, **opts) -> report dict
 
-Board API (rules E and G):
-  fix_board(pcb, dry_run=False) -> report dict: the courtyards and placement
-  types of the footprints PLACED on a board, which KiCad copies in and a library fix does
+Board API (rules E, G and H):
+  fix_board(pcb, dry_run=False) -> report dict: the courtyards, placement
+  types and peg-facing pad ends of the footprints PLACED on a board, which KiCad copies in and a library fix does
   not reach. Run it after fixing the library the board was built from.
 
 CLI (SPEC section 6): fpfix.py --lib <dir>.pretty [--dry-run] [--out r.json]
@@ -110,6 +125,16 @@ COURTYARD_EXCESS = 0.25
 COURTYARD_GRID = 0.05
 # Copper outside a courtyard below this (mm2) is arc sampling, not a miss.
 COURTYARD_TOL_MM2 = 1e-3
+# Rule H: KiCad's board-setup min_hole_clearance (rules_gen.KICAD_HOLE_CLEARANCE_MM);
+# no custom rule can go below it, so a pad must clear its own NPTH by this.
+HOLE_CLEARANCE = 0.25
+# Kept above the bar so KiCad's own rounding can't put the trimmed pad back on it.
+PEG_TRIM_MARGIN = 0.005
+# Trims come in whole steps of this, so a shortened pad stays a round number.
+PEG_TRIM_GRID = 0.01
+# A pad shortened by more than this fraction of its length loses too much land:
+# residue (the hifi boards cut 6-9 %, emc-ref 10 %).
+MAX_PEG_TRIM = 0.2
 # Fraction of the nominal glyph height used as per-character advance (stroke font).
 TEXT_ADVANCE = 0.75
 
@@ -445,8 +470,10 @@ def sanitize(text: str, *, min_gap: float = MIN_GAP,
              fix_body_text: bool = True,
              fix_courtyard: bool = True,
              fix_ep_vias: bool = True,
-             fix_attr: bool = True) -> tuple[str, list[dict]]:
-    """Apply rules A-G. Returns (new_text, actions); idempotent."""
+             fix_attr: bool = True,
+             fix_peg_pads: bool = True,
+             hole_clearance: float = HOLE_CLEARANCE) -> tuple[str, list[dict]]:
+    """Apply rules A-H. Returns (new_text, actions); idempotent."""
     nodes, copper, silk = _collect(text)
     actions: list[dict] = []
     edits: list[tuple[int, int, str | None, str]] = []  # start, end, replacement|None
@@ -585,6 +612,15 @@ def sanitize(text: str, *, min_gap: float = MIN_GAP,
         else:
             out = out[:start] + repl + out[end:]
 
+    # ---- H: pad ends facing the footprint's own NPTH, after C made the pegs
+    # NPTH (so the pass reads the text C wrote)
+    if fix_peg_pads:
+        pnodes = [(h, s, e, _parse(out[s:e])) for h, s, e in top_level_nodes(out)
+                  if h == "pad"]
+        ph = peg_trim_edits(out, pnodes, clearance=hole_clearance)
+        out = _apply(out, [(s, e, r) for s, e, r, _ in ph if r is not None])
+        actions += [act for *_, act in ph]
+
     # ---- G: the placement type (attr) the pads give, after F numbered the
     # thermal vias (they then count as the EP's, not as pins)
     if fix_attr:
@@ -658,6 +694,145 @@ def ep_via_edits(text: str, nodes) -> list[tuple[int, int, str, dict]]:
                                 "at": [round(v, 3) for v in at[:2]],
                                 "pad": num,
                                 "paste_dropped": new.count("Paste") < sub.count("Paste")}))
+    return out
+
+
+def _npth_holes(nodes):
+    """(centre, radius, poly) of every NPTH in a footprint; radius None for
+    a non-circular hole, which is measured by its polygon instead."""
+    out = []
+    for head, _s, _e, node in nodes:
+        if head != "pad" or len(node) < 4 or str(_tok(node[2])) != "np_thru_hole":
+            continue
+        a, d = _nums(_kid(node, "at")), _nums(_kid(node, "drill"))
+        poly = _hole_poly(node)
+        if len(a) < 2 or not d or poly is None:
+            continue
+        r = d[0] / 2.0 if len(d) < 2 or abs(d[0] - d[1]) < 1e-9 else None
+        out.append(((a[0], a[1]), r, poly))
+    return out
+
+
+def _hole_gap(pad, hole) -> float:
+    (cx, cy), r, poly = hole
+    if r is not None:          # exact for a circle: no arc sampling error
+        return pad.distance(Point(cx, cy)) - r
+    return pad.distance(poly)
+
+
+_NUM = re.compile(r"-?\d+(?:\.\d+)?")
+
+
+def _fmt(v: float, like: str) -> str:
+    """v with as many decimals as the number it replaces, or more when v
+    needs them (a 0.05 trim moves the centre 0.025): rounding must never
+    move the pad's far edge."""
+    dec = len(like.split(".")[1]) if "." in like else 0
+    while dec < 4 and abs(round(v, dec) - v) > 1e-9:
+        dec += 1
+    s = f"{v:.{dec}f}"
+    return s[1:] if s.startswith("-") and float(s) == 0 else s
+
+
+def _set_nums(sub: str, key: str, vals: list[float]) -> str:
+    """Rewrite the first len(vals) numbers of the (key ...) node in a pad."""
+    m = re.search(r"\(" + key + r"\s+([^()]*)\)", sub)
+    if m is None:
+        raise FpFixError(f"pad has no ({key} ...): {sub[:60]}")
+    body = m.group(1)
+    toks = list(_NUM.finditer(body))
+    if len(toks) < len(vals):
+        raise FpFixError(f"pad ({key} ...) is short: {sub[:60]}")
+    new, last = [], 0
+    for tok, v in zip(toks, vals):
+        new.append(body[last:tok.start()] + _fmt(v, tok.group(0)))
+        last = tok.end()
+    new.append(body[last:])
+    return sub[:m.start(1)] + "".join(new) + sub[m.end(1):]
+
+
+def peg_trim_edits(text: str, nodes, rot_offset: float = 0.0,
+                   clearance: float = HOLE_CLEARANCE):
+    """Rule H: (start, end, replacement|None, action) per numbered SMD pad
+    closer than `clearance` to an NPTH of its own footprint. The pad is
+    shortened along the axis that points at the hole, from the hole's end;
+    the far edge stays where it is. Footprint-local frame throughout (on a
+    board, rot_offset is minus the footprint's angle)."""
+    holes = _npth_holes(nodes)
+    if not holes:
+        return []
+    out = []
+    for head, s, e, node in nodes:
+        if head != "pad" or len(node) < 4 or _unnamed(node):
+            continue
+        if str(_tok(node[2])) != "smd":
+            continue
+        pad = _pad_poly(node, rot_offset)
+        if pad is None:
+            continue
+        near = [h for h in holes if _hole_gap(pad, h) < clearance - 1e-9]
+        if not near:
+            continue
+        gap0 = min(_hole_gap(pad, h) for h in near)
+        a, sz = _nums(_kid(node, "at")), _nums(_kid(node, "size"))
+        shape = str(_tok(node[3]))
+        rot = ((a[2] if len(a) >= 3 else 0.0) + rot_offset) % 360.0
+        act = {"rule": "H", "pad": _pad_number(node),
+               "at": [round(v, 3) for v in a[:2]],
+               "size": [round(v, 3) for v in sz[:2]],
+               "gap_mm": round(gap0, 4), "clearance_mm": clearance}
+
+        def residue(why):
+            out.append((s, e, None, dict(act, action="residue_peg_clearance",
+                                         detail=why)))
+
+        quarter = min(rot % 90.0, 90.0 - rot % 90.0) < 1e-6
+        if shape not in ("rect", "roundrect") or not quarter:
+            residue(f"{shape} pad at {rot:g} deg: only an axis-aligned rect "
+                    "or roundrect is shortened")
+            continue
+        # which size index runs along local x: 0 at 0/180 deg, 1 at 90/270
+        ix = 0 if round(rot / 90.0) % 2 == 0 else 1
+        half = (sz[ix] / 2.0, sz[1 - ix] / 2.0)       # local x, local y
+        hx, hy = near[0][0] if len(near) == 1 else min(
+            near, key=lambda h: _hole_gap(pad, h))[0]
+        dx, dy = hx - a[0], hy - a[1]
+        # the hole must lie beyond one END of the pad, not beside it
+        axis = 0 if abs(dx) / half[0] >= abs(dy) / half[1] else 1
+        toward = (dx if axis == 0 else dy)
+        if abs(toward) <= half[axis] + 1e-9:
+            residue("the hole sits beside the pad, not beyond an end")
+            continue
+        sign = 1.0 if toward > 0 else -1.0
+        length = sz[ix] if axis == 0 else sz[1 - ix]
+        rr = _kid(node, "roundrect_rratio")
+        rratio = _nums(rr)[0] if rr is not None and _nums(rr) else 0.25
+        found = None
+        steps = int(math.floor(MAX_PEG_TRIM * length / PEG_TRIM_GRID + 1e-9))
+        for k in range(1, steps + 1):
+            t = k * PEG_TRIM_GRID
+            cx = a[0] - (sign * t / 2.0 if axis == 0 else 0.0)
+            cy = a[1] - (sign * t / 2.0 if axis == 1 else 0.0)
+            nsz = list(sz[:2])
+            nsz[ix if axis == 0 else 1 - ix] = length - t
+            q = geom._pad_polygon(shape, nsz[0], nsz[1], rratio, (cx, cy),
+                                  rot)
+            g = min(_hole_gap(q, h) for h in holes)
+            if g >= clearance + PEG_TRIM_MARGIN - 1e-9:
+                found = (t, cx, cy, nsz, g)
+                break
+        if found is None:
+            residue(f"clearing {clearance:g} mm needs more than "
+                    f"{MAX_PEG_TRIM:.0%} of the pad's {length:g} mm length")
+            continue
+        t, cx, cy, nsz, g = found
+        sub = text[s:e]
+        new = _set_nums(sub, "at", [cx, cy])
+        new = _set_nums(new, "size", nsz)
+        out.append((s, e, new, dict(act, action="trim_pad_at_peg",
+                                    trim_mm=round(t, 4),
+                                    to_size=[round(v, 4) for v in nsz],
+                                    new_gap_mm=round(g, 4))))
     return out
 
 
@@ -1026,7 +1201,7 @@ def _apply(text: str, edits) -> str:
 
 
 def fix_board(pcb: str | Path, *, dry_run: bool = False) -> dict:
-    """Rules E and G on every footprint placed on a board, in place."""
+    """Rules E, G and H on every footprint placed on a board, in place."""
     p = Path(pcb)
     text = p.read_text(encoding="utf-8")
     edits, rows = [], []
@@ -1048,9 +1223,12 @@ def fix_board(pcb: str | Path, *, dry_run: bool = False) -> dict:
                                           for h, _, _, n in nodes if h == "pad")
                               if q is not None])
         fe = courtyard_edits(sub, nodes, copper)
-        new = _apply(sub, [(a, b, r) for a, b, r, _ in fe]) if fe else sub
+        fh = peg_trim_edits(sub, nodes, -fangle)
+        new = _apply(sub, [(a, b, r) for a, b, r, _ in fe]
+                     + [(a, b, r) for a, b, r, _ in fh if r is not None])
         new, g = attr_edit(new, -fangle)
-        acts = [act for *_, act in fe if act] + ([g] if g else [])
+        acts = ([act for *_, act in fe if act] + [act for *_, act in fh]
+                + ([g] if g else []))
         if new == sub and not acts:
             continue
         if new != sub:
@@ -1120,7 +1298,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     src = ap.add_mutually_exclusive_group(required=True)
     src.add_argument("--lib", help="a .pretty directory")
-    src.add_argument("--pcb", help="a board: rules E and G on its placed footprints")
+    src.add_argument("--pcb", help="a board: rules E, G and H on its placed footprints")
     ap.add_argument("--only", nargs="+", help="limit to these footprint names")
     ap.add_argument("--min-gap", type=float, default=MIN_GAP,
                     help=f"silk-to-copper bar, mm (default {MIN_GAP})")
@@ -1135,6 +1313,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="leave an exposed pad's unnumbered vias alone")
     ap.add_argument("--no-attr", action="store_true",
                     help="leave the placement type (attr) alone")
+    ap.add_argument("--no-peg-pads", action="store_true",
+                    help="leave pad ends that crowd the footprint's own NPTH alone")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--verify-drc", action="store_true",
                     help="measure the result with real DRC on a scratch board")
@@ -1152,7 +1332,8 @@ def main(argv: list[str] | None = None) -> int:
                               fix_pegs=not args.no_pegs,
                               fix_body_text=not args.no_body_text,
                               fix_ep_vias=not args.no_ep_vias,
-                              fix_attr=not args.no_attr)
+                              fix_attr=not args.no_attr,
+                              fix_peg_pads=not args.no_peg_pads)
         if args.verify_drc and args.lib:
             drc = scratch_drc(args.lib, args.only)
             payload["drc"] = {"status": drc["status"], "counts": drc["counts"],
