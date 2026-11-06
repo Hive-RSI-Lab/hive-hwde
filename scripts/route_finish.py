@@ -354,13 +354,26 @@ def _mask(shape, r, X, Y, x0, y0, g, nx, ny):
     return at, shapely.dwithin(shape, shapely.points(X[at], Y[at]), r)
 
 
+def _on_board(window, outline, slack: float = 1.0):
+    """window cut to the board and a little past it, for a pad over the edge.
+    Nothing routes off the board, and a grid over empty space costs memory by
+    the square of --margin: 200 mm on a 110 mm board was 9 GB, not 0.5."""
+    if outline is None or outline.is_empty:
+        return window
+    bx0, by0, bx1, by1 = outline.bounds
+    minx, miny, maxx, maxy = window
+    cut = (max(minx, bx0 - slack), max(miny, by0 - slack),
+           min(maxx, bx1 + slack), min(maxy, by1 + slack))
+    return cut if cut[0] < cut[2] and cut[1] < cut[3] else window
+
+
 def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
                side_b: dict, layers: list, window, g: float,
                pour_cost: float = 3.0, inner_cost: float = 2.0,
                width: float | None = None, via=None,
                rip_cost: float = 40.0) -> Grid:
     bg = obs.bg
-    minx, miny, maxx, maxy = window
+    minx, miny, maxx, maxy = _on_board(window, bg.outline)
     x0 = math.floor(minx / g) * g
     y0 = math.floor(miny / g) * g
     nx = int(math.ceil((maxx - x0) / g)) + 1

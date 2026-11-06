@@ -10,7 +10,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from shapely.geometry import LineString, Point
+from shapely.geometry import LineString, Point, box
 
 REPO = Path(__file__).resolve().parents[1]
 SCRIPTS = REPO / "scripts"
@@ -392,6 +392,15 @@ def test_a_short_run_between_vias_moves_to_the_next_layer():
     # hw-lab hdi-bga: the search never looked at the moved via's cell. With no span
     # there, the move fell back to a through via on the heater and a coupon via.
     assert merge_close_vias(path, 3.0, lambda run, k2: False) == path
+
+
+def test_a_large_margin_grid_stops_at_the_board():
+    """Memory goes by the square of the window, and nothing routes off the board."""
+    board = box(20, 20, 130, 92)
+    assert rf._on_board((-180, -180, 330, 292), board) == (19, 19, 131, 93)
+    assert rf._on_board((50, 50, 60, 60), board) == (50, 50, 60, 60)
+    assert rf._on_board((-180, -180, 330, 292), None) == (-180, -180, 330, 292)
+    assert rf._on_board((200, 200, 210, 210), board) == (200, 200, 210, 210)
 
 
 def test_c_search_finds_the_same_path_as_python(monkeypatch):
