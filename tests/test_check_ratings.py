@@ -745,10 +745,11 @@ def test_bare_power_ic_with_an_extraction_does_not_block(tmp_path, mpn, role):
 @pytest.mark.parametrize("mpn,role", POWER_ICS)
 def test_power_ic_family_invents_no_rating_and_names_no_rail(
         tmp_path, mpn, role):
-    """The family says what the part is, for its bare row only. It isn't a
-    regulator: a filled row isn't judged by its highest net (a charge pump's
-    output is below its input, an ideal diode has two inputs), no output is
-    asked of it, and its output net gets no volts."""
+    """The family says what the part is and which pad is its input, no rating.
+    It isn't a regulator: a filled row isn't judged by its highest net (a charge
+    pump's output is below its input, an ideal diode has two inputs), no output
+    is asked of it, and its output net gets no volts. Here +12V is on no input
+    pad, in any of the three tables."""
     row = {"lcsc": "C3", "mpn": mpn, "role": role, "attributes": []}
     pads = {"1": "+12V", "2": "GND", "3": "/RAIL"}
     assert cr.is_regulator({"ref": "U4"}, row) is False
@@ -777,6 +778,201 @@ def test_bare_near_miss_of_a_power_ic_family_does_not_block(tmp_path, ref, mpn):
     bom = [{"lcsc": "C3", "mpn": mpn, "attributes": []}]
     pads = {"1": "+5V", "2": "GND", "3": "+3V3"}
     assert _no_attrs(_run(_ws(tmp_path, [(ref, "C3", pads)], {}, bom))) == []
+
+
+# #805: a power IC's filled row against its rails. The rows are the listings'
+# own (~/.cache/hwde/lcsc_listing), the pads the datasheets' (SLVS324C, SLVSG04,
+# SNVS452G), and the 12 V and 100 V rails the faults.
+TPS_ROW = [{"name": "Operating Voltage", "value": "1.8V~5.25V"},
+           {"name": "Output Voltage", "value": "-5.5V~-1.6V"}]
+LM66200_ROW = [{"name": "Input Voltage (Vin)", "value": "1.6V~5.5V"}]
+LM5069_ROW = [{"name": "Voltage Rating", "value": "9V~80V"}]
+
+
+def _tps_pads(rail):
+    return {"1": "/VNEG", "2": rail, "3": "/CFN", "4": "GND", "5": "/CFP"}
+
+
+def _lm66200_pads(vin1, vin2):
+    return {"1": "GND", "2": "/VOUT", "3": vin1, "4": "GND", "5": "GND",
+            "6": vin2, "7": "/VOUT"}
+
+
+def _lm5069_pads(rail):
+    return {"1": "/SNS", "2": rail, "3": "/UVLO", "4": "/OVLO", "5": "GND",
+            "6": "/TIMER", "7": "/PWR", "8": "/PG", "9": "/VOUT", "10": "/GATE"}
+
+
+def _power_ic(tmp_path, mpn, attrs, pads, names=None, ext=None, role="", ref="U4"):
+    bom = [{"lcsc": "C3", "mpn": mpn, "role": role, "attributes": attrs}]
+    ws = _ws(tmp_path, [(ref, "C3", pads)], {"C3": ext} if ext else {}, bom)
+    if names:
+        nodes = " ".join(
+            f'(net (name "{pads[p]}") (node (ref "{ref}") (pin "{p}") '
+            f'(pinfunction "{n}")))' for p, n in names.items())
+        (ws / "kicad" / "board.net").write_text(f"(export (nets {nodes}))")
+    return ws
+
+
+def _unrated(p):
+    return [v["refs"] for v in p["violations"] if v["kind"] == "rating_unrated"]
+
+
+def test_tps60403_on_12v_is_an_error_naming_ref_rail_and_limit(tmp_path):
+    ws = _power_ic(tmp_path, "TPS60403DBVR", TPS_ROW, _tps_pads("+12V"))
+    errs = _errors(_run(ws))
+    assert [(v["kind"], v["refs"], v["net"], v["pin"]) for v in errs] == [
+        ("rating_over_voltage", ["U4"], "+12V", "U4.2")]
+    assert errs[0]["net_v"] == pytest.approx(12.0)
+    assert errs[0]["limit_v"] == pytest.approx(5.25)
+    assert errs[0]["rating"] == "parts.json Operating Voltage = 1.8V~5.25V"
+    for word in ("U4", "TPS60403DBVR", "+12V", "12 V", "5.25 V"):
+        assert word in errs[0]["msg"]
+    # compared with the row, so its fact says so and where the number came from
+    f = _fact(ws, "U4")
+    assert (f["status"], f["rated_from"]) == ("failed", "distributor")
+
+
+@pytest.mark.parametrize("rail", ["+3V3", "+5V"])
+def test_tps60403_in_its_limit_is_no_error_and_stays_unrated(tmp_path, rail):
+    ws = _power_ic(tmp_path, "TPS60403DBVR", TPS_ROW, _tps_pads(rail))
+    p = _run(ws)
+    assert _errors(p) == [] and _unrated(p) == [["U4"]]
+    assert _fact(ws, "U4")["status"] == "unknown"
+
+
+@pytest.mark.parametrize("vin1,vin2,over", [
+    ("+5V", "+3V3", []),
+    ("+12V", "+5V", [("+12V", "U4.3")]),
+    ("+5V", "+12V", [("+12V", "U4.6")]),    # either input
+    ("+12V", "+24V", [("+12V", "U4.3"), ("+24V", "U4.6")]),
+])
+def test_lm66200_either_input_over_its_limit(tmp_path, vin1, vin2, over):
+    p = _run(_power_ic(tmp_path, "LM66200DRLR", LM66200_ROW,
+                       _lm66200_pads(vin1, vin2)))
+    errs = _errors(p)
+    assert sorted((v["net"], v["pin"]) for v in errs) == over
+    assert all(v["kind"] == "rating_over_voltage" and v["refs"] == ["U4"] and
+               v["limit_v"] == pytest.approx(5.5) for v in errs)
+    if not over:
+        assert _unrated(p) == [["U4"]]
+
+
+@pytest.mark.parametrize("rail,errs", [("+48V", []), ("+100V", ["+100V"])])
+def test_lm5069_vin_against_its_row(tmp_path, rail, errs):
+    found = _errors(_run(_power_ic(tmp_path, "LM5069MM-2/NOPB", LM5069_ROW,
+                                   _lm5069_pads(rail))))
+    assert [v["net"] for v in found] == errs
+    assert all(v["kind"] == "rating_over_voltage" and v["pin"] == "U4.2" and
+               v["limit_v"] == pytest.approx(80.0) for v in found)
+
+
+@pytest.mark.parametrize("mpn,attrs,pads", [
+    # the high rail is on a pad the table doesn't call an input
+    ("TPS60403DBVR", TPS_ROW,
+     {"1": "+12V", "2": "+3V3", "3": "/CFN", "4": "GND", "5": "/CFP"}),
+    ("LM66200DRLR", LM66200_ROW, _lm66200_pads("+5V", "+5V") | {"2": "+12V"}),
+    ("LM5069MM-2/NOPB", LM5069_ROW, _lm5069_pads("+48V") | {"9": "+100V"}),
+])
+def test_power_ic_is_judged_at_its_input_not_its_highest_net(
+        tmp_path, mpn, attrs, pads):
+    p = _run(_power_ic(tmp_path, mpn, attrs, pads))
+    assert _errors(p) == [] and _unrated(p) == [["U4"]]
+
+
+def test_power_ic_row_with_regulator_words_is_still_judged_at_its_input(tmp_path):
+    """A family's table outranks the words: no highest-net guess, no second
+    finding from regulator_findings."""
+    role = "charge pump voltage regulator"
+    over = {"1": "+24V", "2": "+12V", "3": "/CFN", "4": "GND", "5": "/CFP"}
+    errs = _errors(_run(_power_ic(tmp_path, "TPS60403DBVR", TPS_ROW, over,
+                                  role=role)))
+    assert [(v["net"], v["pin"]) for v in errs] == [("+12V", "U4.2")]
+    fine = {"1": "+12V", "2": "+3V3", "3": "/CFN", "4": "GND", "5": "/CFP"}
+    assert _errors(_run(_power_ic(tmp_path / "b", "TPS60403DBVR", TPS_ROW, fine,
+                                  role=role))) == []
+
+
+def test_power_ic_pad_names_say_which_pad_is_its_input(tmp_path):
+    """Names are the table's too, and outrank its numbers: this symbol has IN
+    on pad 1."""
+    pads = {"1": "+12V", "2": "+3V3", "3": "/CFN", "4": "GND", "5": "/CFP"}
+    names = {"1": "IN_1", "2": "OUT_2"}
+    errs = _errors(_run(_power_ic(tmp_path, "TPS60403DBVR", TPS_ROW, pads, names)))
+    assert [(v["net"], v["pin"]) for v in errs] == [("+12V", "U4.1")]
+    assert "IN" in errs[0]["msg"]
+
+
+def test_power_ic_with_names_the_table_lacks_is_not_judged(tmp_path):
+    """The board has names and none is the datasheet's input: nothing says
+    which pad it is, so no pad number stands in for it."""
+    names = {"1": "A_1", "2": "B_2"}
+    p = _run(_power_ic(tmp_path, "TPS60403DBVR", TPS_ROW, _tps_pads("+12V"), names))
+    assert _errors(p) == [] and _unrated(p) == [["U4"]]
+
+
+def test_power_ic_footprint_past_its_package_is_not_judged_by_number(tmp_path):
+    """Pad 2 of a 16-pad footprint isn't the 5-pin DBV package's IN."""
+    pads = _tps_pads("+12V") | {"16": "/X"}
+    p = _run(_power_ic(tmp_path, "TPS60403DBVR", TPS_ROW, pads))
+    assert _errors(p) == [] and _unrated(p) == [["U4"]]
+
+
+@pytest.mark.parametrize("mpn,pads", [
+    ("TPS60403DBVR", _tps_pads("+12V")),
+    ("LM66200DRLR", _lm66200_pads("+12V", "+12V")),
+    ("LM5069MM-2/NOPB", _lm5069_pads("+100V")),
+])
+def test_power_ic_row_with_no_voltage_stays_unrated(tmp_path, mpn, pads):
+    """No number in the row: the table has none to lend and none is invented."""
+    attrs = [{"name": "Package", "value": "SOT-23"},
+             {"name": "Output Voltage", "value": "-5.5V~-1.6V"}]
+    ws = _power_ic(tmp_path, mpn, attrs, pads)
+    p = _run(ws)
+    assert _errors(p) == [] and _unrated(p) == [["U4"]]
+    assert _no_attrs(p) == [] and _fact(ws, "U4")["status"] == "unknown"
+
+
+def test_power_ic_input_on_a_pull_up_guess_is_not_judged(tmp_path):
+    """A pull-up's volts are a guess at the pin, as for a regulator."""
+    bom = [{"lcsc": "C3", "mpn": "TPS60403DBVR", "attributes": TPS_ROW}]
+    ws = _ws(tmp_path, [("U4", "C3", _tps_pads("/IN")),
+                        ("R1", "", {"1": "/IN", "2": "+12V"}, "R_0402")], {}, bom)
+    assert [v for v in _errors(_run(ws)) if v["refs"] == ["U4"]] == []
+
+
+def test_power_ic_extraction_outranks_its_row(tmp_path):
+    ws = _power_ic(tmp_path, "TPS60403DBVR", TPS_ROW,
+                   {"1": "+3V3", "2": "GND", "3": "/A", "4": "/B"}, ext=MCU)
+    assert [v for v in _errors(_run(ws)) if "input rating" in v["msg"]] == []
+    over = _power_ic(tmp_path / "b", "TPS60403DBVR", TPS_ROW,
+                     {"1": "+12V", "2": "+12V", "3": "/A", "4": "/B"}, ext=MCU)
+    errs = _errors(_run(over))
+    assert errs and all("input rating" not in v["msg"] for v in errs)
+
+
+@pytest.mark.parametrize("ref,mpn", [
+    ("Q4", "LM66200DRLR"),      # a family counts on a U/VR/IC part only
+    ("U4", "TPS60404DBVR"),     # past the TPS60400-03 datasheet
+    ("U4", "LM66100DCKR"),      # a sibling no entry's datasheet covers
+    ("U4", "SN74LVC1G34DBVR"),  # a logic IC
+])
+def test_near_miss_of_a_power_ic_family_is_not_judged_by_its_table(
+        tmp_path, ref, mpn):
+    ws = _power_ic(tmp_path, mpn, LM66200_ROW,
+                   _lm66200_pads("+12V", "+12V"), ref=ref)
+    assert _errors(_run(ws)) == []
+
+
+@pytest.mark.parametrize("family,pins", [
+    ("TPS60400", {"IN": "2"}), ("TPS60403", {"IN": "2"}),
+    ("LM66200", {"VIN1": "3", "VIN2": "6"}),
+    ("LM5069", {"VIN": "2"}),
+])
+def test_power_ic_table_gives_each_family_its_datasheet_pads(family, pins):
+    row = cr.power_ic_row(family + "XYZ")
+    assert row["input"] == pins
+    assert row["datasheet"]     # cited, per family
 
 
 def test_bare_coded_regulator_stays_unknown_and_names_no_rail(tmp_path):

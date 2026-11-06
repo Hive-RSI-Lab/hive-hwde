@@ -80,7 +80,9 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
    under the rail it sits on (it must hold the rail off once open); an
    unextracted regulator whose input or enable pad sits above the input
    rating its filled row gives (regulator_findings; no pad names: its
-   highest-voltage net, unless the part steps up).
+   highest-voltage net, unless the part steps up); an unextracted power IC
+   whose input pad, from its family's datasheet table (POWER_IC_FAMILIES),
+   sits above the top of its filled row's input range (power_ic_findings).
  - rating_regulator_output (error): a regulator whose output pad sits on a
    rail its row (or a fixed output in the MPN, or a known family's MPN code)
    says it can't make, or on a stated rail of the wrong sign for a part its
@@ -354,21 +356,35 @@ def reg_by_family(ref: str, mpn: str) -> bool:
 
 
 # Power ICs that aren't regulators, whose number is all a bare row says about
-# them (#797). Each family's datasheet says what it is. Only an empty row uses
-# this: nothing here judges a filled one, and no rail or rating comes from it.
-_POWER_IC_FAMILY_RE = re.compile(
-    r"TPS6040[0-3](?!\d)|"   # TI TPS6040x: "Unregulated 60-mA Charge Pump
-                             # Voltage Inverter"
-    r"LM66200(?!\d)|"        # TI LM66200: "2.5-A Dual Ideal Diode"
-    r"LM5069(?!\d)")         # TI LM5069: "Hot Swap and In-Rush Current
-                             # Controller"
+# them (#797). Each family's datasheet says what it is and which pads are its
+# inputs, with the pin count of the one package it comes in (#805). The table
+# holds no rating and names no rail: the limit is the filled row's alone.
+POWER_IC_FAMILIES = (
+    {"mpn": re.compile(r"TPS6040[0-3](?!\d)"),
+     # "Unregulated 60-mA Charge Pump Voltage Inverter"
+     "input": {"IN": "2"}, "pins": 5,
+     "datasheet": "TI SLVS324C Table 6-1, DBV"},
+    {"mpn": re.compile(r"LM66200(?!\d)"),
+     # "2.5-A Dual Ideal Diode"
+     "input": {"VIN1": "3", "VIN2": "6"}, "pins": 8,
+     "datasheet": "TI SLVSG04 Table 5-1, DRL"},
+    {"mpn": re.compile(r"LM5069(?!\d)"),
+     # "Hot Swap and In-Rush Current Controller"
+     "input": {"VIN": "2"}, "pins": 10,
+     "datasheet": "TI SNVS452G Pin Functions, DGS"},
+)
+
+
+def power_ic_row(mpn: str) -> dict | None:
+    """The family table's row for this MPN, or None."""
+    return next((r for r in POWER_IC_FAMILIES if r["mpn"].match(mpn.upper())),
+                None)
 
 
 def power_ic_by_family(ref: str, mpn: str) -> bool:
-    """A U/VR/IC part in a power-IC family: for its empty row only, so
-    regulator_findings stays out and a filled row isn't judged as a regulator's."""
-    return bool(REG_REF_RE.match(ref)) and \
-        _POWER_IC_FAMILY_RE.match(mpn.upper()) is not None
+    """A U/VR/IC part in a power-IC family: regulator_findings stays out, so its
+    filled row isn't judged as a regulator's."""
+    return bool(REG_REF_RE.match(ref)) and power_ic_row(mpn) is not None
 
 
 # Families whose sign the MPN settles. Unknown is the default: a part in
@@ -803,8 +819,11 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                          limit_v=dio["vr"], rating=dio["src"])
             continue
         if ext is None:
-            if regulator_findings(b, bom_by_lcsc.get(b["lcsc"]), volts, vsrc,
-                                  netfns, emit):
+            bom = bom_by_lcsc.get(b["lcsc"])
+            judge = power_ic_findings if bom and bom.get("attributes") and \
+                power_ic_by_family(ref, str(bom.get("mpn") or "")) \
+                else regulator_findings
+            if judge(b, bom, volts, vsrc, netfns, emit):
                 compared(ref, "distributor")
                 continue
             if _check_unextracted(b, bom_by_lcsc.get(b["lcsc"]), volts, emit,
@@ -1188,6 +1207,46 @@ def is_step_up(bom: dict, vin: float) -> bool:
         (out is not None and out[1] > vin * (1 + REG_OUT_TOL))
 
 
+def power_ic_findings(b: dict, bom: dict, volts: dict, vsrc: dict,
+                      netfns: dict, emit) -> bool:
+    """An unextracted power IC's filled row against its rails (#805): each input
+    pad against the top of the row's input range. The family table says which
+    pads those are: by name when the board names its pads, else by number, and
+    only on a footprint that fits the datasheet's package. Names the table
+    doesn't hold, or a row with no number, judge nothing, so the part stays
+    unrated. A pull-up's volts are a guess, as in regulator_findings. True when
+    it emitted a finding: an in-limit part keeps its warning and unknown fact,
+    as an in-rating regulator does (#708)."""
+    rating = reg_vin_rating(bom)
+    if not rating:
+        return False
+    vin, src = rating
+    ref, pads = b["ref"], b["pads"]
+    row = power_ic_row(str(bom.get("mpn") or ""))
+    names = {p: re.sub(r"_\d+$", "", fn.upper()) for p, fn in
+             dict(netfns.get(ref) or {}, **b.get("fns") or {}).items()
+             if p in pads}
+    if names:
+        inputs = {p: n for p, n in names.items() if n in row["input"]}
+    elif set(pads) <= {str(n) for n in range(1, row["pins"] + 1)}:
+        inputs = {p: n for n, p in row["input"].items() if p in pads}
+    else:
+        inputs = {}
+    found = False
+    for net in sorted({pads[p] for p in inputs}):
+        v = volts.get(net)
+        if v is None or vsrc.get(net) == "pull-up" or v <= vin + EPS:
+            continue
+        on = sorted(p for p in inputs if pads[p] == net)
+        who = "/".join(sorted(inputs[p] for p in on))
+        emit("rating_over_voltage", "error", ref, net,
+             f"{ref} ({bom.get('mpn')}) {who} sits on {net} = {_fmt(v)} V, over "
+             f"its {_fmt(vin)} V input rating [{src}; pad from {row['datasheet']}]",
+             pin=f"{ref}.{on[0]}", net_v=v, limit_v=vin, rating=src)
+        found = True
+    return found
+
+
 def regulator_findings(b: dict, bom: dict | None, volts: dict, vsrc: dict,
                        netfns: dict, emit) -> bool:
     """An unextracted regulator's filled row against its rails (#708): the
@@ -1373,7 +1432,7 @@ def no_attribute_findings(board: list[dict], bom_by_lcsc: dict, exts: dict,
     by it; a fuse is not, fuse_findings reads only attributes. A known family's
     MPN code (#751) or switcher family (#763, #774) makes a U/VR/IC part a
     regulator here, as in regulator_findings; a power-IC family (#797) makes it
-    rated here only. A part with no row at all is not
+    rated here too. A part with no row at all is not
     here: there is nothing to fill yet (the scaffold's empty parts/). This never
     reads the cache or the network, so the same board gives the same answer
     anywhere."""

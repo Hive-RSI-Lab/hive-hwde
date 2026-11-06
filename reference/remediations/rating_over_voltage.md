@@ -6,7 +6,8 @@ datasheet extraction - a 3.6 V-max MCU input on a 5 V rail, an EN pin wired stra
 limiting element voltage (an 0402 bleeder on 60 V: Umax 50 V, D/CRCW e3), a fuse or PPTC
 whose voltage rating is under the rail it must hold off once it opens, a regulator with no
 extraction whose input or enable pad sits above the input rating in its parts.json row (a
-6 V LDO on +12V). When the bound is relative (VDD+0.3), the message
+6 V LDO on +12V), a charge pump, ideal diode or hot-swap controller of a known family whose
+input pad does the same (a TPS60403 on +12V). When the bound is relative (VDD+0.3), the message
 says "input above supply": the pin sees more than its own supply allows. No DRC sees this;
 it is a respin.
 
@@ -36,6 +37,10 @@ it is a respin.
   the msg. With no pad names in the netlist the highest-voltage net is taken as its input, and
   the msg says so: if that net is really its output, name the pads or add the extraction,
   which outranks the row. A row that says "boost" or "step-up" isn't judged that way.
+- A power IC judged from its row: the limit is the row's too, and the msg cites the datasheet
+  page its input pad came from (POWER_IC_FAMILIES). The row may quote a recommended maximum
+  below the absolute one (TPS60403: 5.25 V listed, 5.5 V abs max): check the page before
+  accepting a rail between them, and add the extraction, which outranks the row.
 
 ## Fix ladder (cheapest first)
 1. Wrong rail: move the pin to the rail it was meant for (3V3, not 5V) in the schematic.

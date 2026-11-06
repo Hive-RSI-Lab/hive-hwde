@@ -1,0 +1,18 @@
+{
+  "parts": [
+    {
+      "ref_prefix_hint": "U",
+      "mpn": "LM66200DRLR",
+      "lcsc": "C3235556",
+      "value": "LM66200DRLR",
+      "package": "SOT-5X3-8",
+      "attributes": [
+        {
+          "name": "Input Voltage (Vin)",
+          "value": "1.6V~4V"
+        }
+      ],
+      "role": "U2 dual ideal-diode OR"
+    }
+  ]
+}

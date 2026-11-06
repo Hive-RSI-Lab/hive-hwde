@@ -550,7 +550,7 @@ modes:
     rule: rating_over_voltage,rating_over_current,rating_regulator_output
     level: L2
   target_level: L2
-  gap: only parts with extraction
+  gap: only parts with extraction, or a regulator or known power IC's filled row
   hit_on:
   - rf-de-20m
   sources:
@@ -583,6 +583,7 @@ modes:
     empty (diode, fuse, regulator, cap, a charge pump, ideal diode or hot-swap
     family), which blocks as rating_no_attributes;
     a filled regulator's row is judged against its rails but stays unverified,
+    a known power-IC family's against the rail on the input pad its datasheet names,
     and an extracted regulator's output pin against a rail the board states,
     warning as rating_regulator_output_unjudged if nothing says what it makes;
     a known family's MPN code or switcher family judges a filled row too and

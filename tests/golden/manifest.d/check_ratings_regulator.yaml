@@ -1,4 +1,4 @@
-# Seeded faults for check_ratings' regulator row against its rails (hive-hwde #708).
+# Seeded faults for check_ratings' regulator row against its rails (hive-hwde #708, #805).
 mutants:
   ldo-over-input:
     board: blinky2
@@ -74,4 +74,16 @@ mutants:
       OUT pad is on +3V3: right magnitude, wrong sign
     expect:
       kind: rating_regulator_output
+      ref: U2
+  power-ic-over-input:
+    board: blinky2
+    script: mutations/power_ic_over_input.py
+    check: check_ratings
+    defect: >-
+      SIDECAR fault (+ an LCSC property on U2 so the parts dir finds it):
+      parts/parts.json lists U2 as an LM66200 rating its input at 4 V, with no
+      extraction and no regulator word; the family table's VIN1 is pad 3, on
+      +5V, so only the table and the row can judge it
+    expect:
+      kind: rating_over_voltage
       ref: U2
