@@ -29,6 +29,7 @@ the pcbnew round-trip oracle used only by the S3 tests.
     .pads_of(net=None, layer=None, ref=None) -> list[Pad]
     .zones_of(net=None, layer=None)     -> list[Zone]    (copper zones only)
     .rule_areas                         keepout areas [{name, layers, outline}]
+    .footprint_rule_areas               the same, from inside footprints
                                         (never copper, never "unfilled")
 
     .net_copper(net, layer)         -> (Multi)Polygon: union of ALL copper
@@ -663,6 +664,7 @@ class BoardGeom:
         self._pads: list[Pad] = []
         self._zones: list[Zone] = []
         self.rule_areas: list[dict] = []  # keepout areas: {name, layers, outline}
+        self.footprint_rule_areas: list[dict] = []  # the same, inside footprints
         # every np_thru_hole pad, with or without copper layers (a pad with
         # none is not in _pads): route_auto keeps the router off them and
         # stitch_vias keeps its drills hole-to-hole clear of them
@@ -797,6 +799,10 @@ class BoardGeom:
 
     def _parse_footprints(self, root):
         for fp in _kids(root, "footprint"):
+            # A zone in a footprint is saved in board coordinates, not the
+            # footprint's, and DRC enforces its keepout like any other.
+            self.footprint_rule_areas += [self._rule_area(z) for z in _kids(fp, "zone")
+                                          if _kid(z, "keepout") is not None]
             at = _kid(fp, "at")
             fnums = _nums(at) if at is not None else [0, 0, 0]
             fx, fy = fnums[0], fnums[1]
@@ -898,6 +904,22 @@ class BoardGeom:
         if layers:
             self._pads.append(made)
 
+    def _rule_area(self, zone) -> dict:
+        name_node = _kid(zone, "name")
+        poly_node = _kid(zone, "polygon")
+        pts = (_pts(_kid(poly_node, "pts"))
+               if poly_node is not None and _kid(poly_node, "pts") else [])
+        return {
+            "name": _strs(name_node)[0] if name_node and _strs(name_node) else "",
+            "layers": self._zone_layers(zone),
+            "outline": Polygon(pts) if len(pts) >= 3 else Polygon(),
+            # Keepout flags ({"footprints": "not_allowed", ...}); not
+            # serialised. A rule area that only scopes a rule has all
+            # of them "allowed".
+            "flags": {_tok(k[0]): _tok(k[1]) for k in _kid(zone, "keepout")[1:]
+                      if _is_node(k) and len(k) > 1},
+        }
+
     def _parse_zones(self, root):
         zid = 0
         for zone in _kids(root, "zone"):
@@ -907,20 +929,7 @@ class BoardGeom:
                 # the zone list or the freshness gate would flag it as an
                 # eternally-unfilled zone (the plane-split mutant carries one).
                 # Outline kept as metadata (S9 placement keepouts).
-                name_node = _kid(zone, "name")
-                poly_node = _kid(zone, "polygon")
-                pts = (_pts(_kid(poly_node, "pts"))
-                       if poly_node is not None and _kid(poly_node, "pts") else [])
-                self.rule_areas.append({
-                    "name": _strs(name_node)[0] if name_node and _strs(name_node) else "",
-                    "layers": declared,
-                    "outline": Polygon(pts) if len(pts) >= 3 else Polygon(),
-                    # Keepout flags ({"footprints": "not_allowed", ...}); not
-                    # serialised. A rule area that only scopes a rule has all
-                    # of them "allowed".
-                    "flags": {_tok(k[0]): _tok(k[1]) for k in _kid(zone, "keepout")[1:]
-                              if _is_node(k) and len(k) > 1},
-                })
+                self.rule_areas.append(self._rule_area(zone))
                 continue
             net = self._resolve_net(zone) or ""
             fills: dict[str, list[Polygon]] = {}

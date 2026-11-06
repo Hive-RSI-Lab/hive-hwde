@@ -62,13 +62,18 @@ that dies can be blamed on it.
 from __future__ import annotations
 
 import argparse
+import ctypes
 import dataclasses
+import hashlib
 import heapq
 import json
 import math
+import os
 import re
+import subprocess
 import sys
 import time
+from array import array
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -337,13 +342,15 @@ class Grid:
     b_plane: bytes
     # #477, per k: (k2, span, its via mask, the k its via must find clear)
     span_moves: list = field(default_factory=list)
+    gave_up: bool = False   # astar stopped at max_nodes, not out of cells
 
     def xy(self, i: int, j: int) -> tuple[float, float]:
         return (round(self.x0 + i * self.g, 4), round(self.y0 + j * self.g, 4))
 
 
-def _mask(shape, r, X, Y, P, x0, y0, g, nx, ny):
-    """Bool mask of grid points within r of shape (sub-window only)."""
+def _mask(shape, r, X, Y, x0, y0, g, nx, ny):
+    """Bool mask of grid points within r of shape (sub-window only). Its points
+    are made here: all of a whole-board grid's as shapely objects is ~6 GB."""
     b = shape.bounds
     i0 = max(0, int(math.floor((b[0] - r - x0) / g)))
     i1 = min(nx - 1, int(math.ceil((b[2] + r - x0) / g)))
@@ -351,8 +358,21 @@ def _mask(shape, r, X, Y, P, x0, y0, g, nx, ny):
     j1 = min(ny - 1, int(math.ceil((b[3] + r - y0) / g)))
     if i0 > i1 or j0 > j1:
         return None
-    sub = P[j0:j1 + 1, i0:i1 + 1]
-    return (slice(j0, j1 + 1), slice(i0, i1 + 1)), shapely.dwithin(shape, sub, r)
+    at = (slice(j0, j1 + 1), slice(i0, i1 + 1))
+    return at, shapely.dwithin(shape, shapely.points(X[at], Y[at]), r)
+
+
+def _on_board(window, outline, slack: float = 1.0):
+    """window cut to the board and a little past it, for a pad over the edge.
+    Nothing routes off the board, and a grid over empty space costs memory by
+    the square of --margin: 200 mm on a 110 mm board was 9 GB, not 0.5."""
+    if outline is None or outline.is_empty:
+        return window
+    bx0, by0, bx1, by1 = outline.bounds
+    minx, miny, maxx, maxy = window
+    cut = (max(minx, bx0 - slack), max(miny, by0 - slack),
+           min(maxx, bx1 + slack), min(maxy, by1 + slack))
+    return cut if cut[0] < cut[2] and cut[1] < cut[3] else window
 
 
 def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
@@ -361,7 +381,7 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
                width: float | None = None, via=None,
                rip_cost: float = 40.0) -> Grid:
     bg = obs.bg
-    minx, miny, maxx, maxy = window
+    minx, miny, maxx, maxy = _on_board(window, bg.outline)
     x0 = math.floor(minx / g) * g
     y0 = math.floor(miny / g) * g
     nx = int(math.ceil((maxx - x0) / g)) + 1
@@ -369,7 +389,6 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
     xs = x0 + np.arange(nx) * g
     ys = y0 + np.arange(ny) * g
     X, Y = np.meshgrid(xs, ys)
-    P = shapely.points(X, Y)
     win = box(x0 - 1, y0 - 1, x0 + nx * g + 1, y0 + ny * g + 1)
     w = rules.width(net) if width is None else width
     via_size, via_drill = via or (rules.via_size, rules.via_drill)
@@ -379,7 +398,7 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
     vblk = np.zeros((ny, nx), bool)
     cost = [np.full((ny, nx), inner_cost if layer not in (
         bg.copper_layers[0], bg.copper_layers[-1]) else 1.0) for layer in layers]
-    args = (X, Y, P, x0, y0, g, nx, ny)
+    args = (X, Y, x0, y0, g, nx, ny)
 
     soft = obs.soft_board
     for it in obs.near(win):
@@ -432,7 +451,7 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
         inside = shapely.contains_xy(poly, X, Y)
         cost[k][inside] *= pour_cost
 
-    for ra in bg.rule_areas:
+    for ra in bg.rule_areas + bg.footprint_rule_areas:
         fl = ra.get("flags", {})
         poly = ra["outline"]
         if poly.is_empty or not poly.intersects(win):
@@ -479,7 +498,7 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
         blk=[m.ravel().astype(np.uint8).tobytes() for m in blk],
         vblk=vblk.ravel().astype(np.uint8).tobytes(),
         via=(via_size, via_drill),
-        cost=[c.ravel().tolist() for c in cost],
+        cost=[array("d", c.ravel().astype(np.float64).tobytes()) for c in cost],
         in_a=[m.ravel().astype(np.uint8).tobytes() for m in a],
         in_b=[m.ravel().astype(np.uint8).tobytes() for m in b],
         a_plane=side(side_a, True).ravel().astype(np.uint8).tobytes(),
@@ -503,7 +522,7 @@ def _span_moves(obs, rules: Rules, net: str, layers: list, win, args, K: int,
         if len(ks) < 2:
             continue
         vr = sp.size / 2
-        m = np.zeros((args[7], args[6]), bool)
+        m = np.zeros((args[6], args[5]), bool)
         for it in obs.near(win):
             if not on & set(it.layers):
                 continue
@@ -525,9 +544,10 @@ def _span_moves(obs, rules: Rules, net: str, layers: list, win, args, K: int,
                 hit = _mask(it.hole, sp.drill / 2 + rules.margin
                             + SAME_NET_HOLE_MM, *args)
                 if hit:
-                    stack = shapely.dwithin(it.hole.centroid, args[2][hit[0]], 0.01)
+                    stack = shapely.dwithin(
+                        it.hole.centroid, shapely.points(X[hit[0]], Y[hit[0]]), 0.01)
                     m[hit[0]] |= hit[1] & ~stack
-        for ra in obs.bg.rule_areas:
+        for ra in obs.bg.rule_areas + obs.bg.footprint_rule_areas:
             if ra.get("flags", {}).get("vias") == "not_allowed" \
                     and not ra["outline"].is_empty and ra["outline"].intersects(win):
                 hit = _mask(ra["outline"], vr + rules.margin, *args)
@@ -557,6 +577,7 @@ def span_for(gr: Grid, k: int, k2: int, c: int):
     return best
 
 
+INF = float("inf")
 _MOVES = [(1, 0, 1.0), (-1, 0, 1.0), (0, 1, 1.0), (0, -1, 1.0),
           (1, 1, math.sqrt(2)), (1, -1, math.sqrt(2)),
           (-1, 1, math.sqrt(2)), (-1, -1, math.sqrt(2))]
@@ -618,25 +639,92 @@ def no_path(gr: Grid) -> bool:
     return not reached(in_a) & reached(in_b)
 
 
+_astar_lib = None
+
+
+def _load_astar():
+    """route_astar.c as a library, built on first use and cached by its hash.
+    None, and the Python search runs, if there is no C compiler here."""
+    global _astar_lib
+    if _astar_lib is None:
+        _astar_lib = False
+        src = Path(__file__).with_name("route_astar.c")
+        tag = hashlib.sha1(src.read_bytes()).hexdigest()[:12]
+        cache = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "hwde"
+        so = cache / f"route_astar-{tag}.so"
+        try:
+            if not so.exists():
+                cache.mkdir(parents=True, exist_ok=True)
+                tmp = so.with_suffix(f".{os.getpid()}.tmp")
+                subprocess.run(["cc", "-O2", "-shared", "-fPIC", str(src), "-lm", "-o", str(tmp)],
+                               check=True, capture_output=True)
+                tmp.replace(so)
+            _astar_lib = ctypes.CDLL(str(so))
+        except (OSError, subprocess.CalledProcessError) as e:
+            print(f"route_finish: Python search, route_astar.c not built: {e}", file=sys.stderr)
+    return _astar_lib or None
+
+
+def _astar_c(lib, gr: Grid, target, via_cost, max_nodes, deadline, search_weight):
+    """(found node or None, prev) from route_astar.c."""
+    K = len(gr.layers)
+    prev = array("i", [0]) * (K * gr.nx * gr.ny)
+    u8 = ctypes.POINTER(ctypes.c_ubyte)
+    f8 = ctypes.POINTER(ctypes.c_double)
+    def b(x):
+        return ctypes.cast(ctypes.c_char_p(x), u8)
+    costs = [c if isinstance(c, array) else array("d", c) for c in gr.cost]
+    cost_ptrs = (f8 * K)(*[ctypes.cast(c.buffer_info()[0], f8) for c in costs])
+    found = ctypes.c_int32(0)
+    lib.route_astar.argtypes = None
+    rc = lib.route_astar(
+        gr.nx, gr.ny, K, (u8 * K)(*[b(x) for x in gr.blk]), b(gr.vblk), cost_ptrs,
+        (u8 * K)(*[b(x) for x in gr.in_a]), (u8 * K)(*[b(x) for x in gr.in_b]),
+        b(gr.a_plane), b(gr.b_plane), ctypes.c_double(via_cost),
+        ctypes.c_long(max_nodes),
+        ctypes.c_double(-1.0 if deadline is None else deadline),
+        ctypes.c_double(search_weight), target[0], target[1],
+        ctypes.cast(prev.buffer_info()[0], ctypes.POINTER(ctypes.c_int32)),
+        ctypes.byref(found))
+    if rc == 4:
+        raise MemoryError("route_astar")
+    if rc == 2:
+        gr.gave_up = True
+    return (found.value if rc == 0 else None), prev
+
+
 def astar(gr: Grid, target, via_cost: float = 15.0,
-          max_nodes: int = 3_000_000, deadline: float | None = None):
+          max_nodes: int = 3_000_000, deadline: float | None = None,
+          search_weight: float = 1.0):
     """Multi-source search from side A's free cells to side B's.
 
     Nodes are (cell, k); a via (layer change, or a drop into a plane-layer
     side) costs via_cost grid steps, an HDI build's span a share of that
     (SPAN_COST, #477). Returns [(i, j, k, via_here)] from A to
     B, where a final/initial entry with k = -1 is a via into a plane, or None.
+    None after max_nodes sets gr.gave_up: a path may still exist.
+    search_weight > 1 inflates the distance estimate: far fewer nodes on a
+    long route across pours (each step there costs several times the
+    estimate), for a route that may not be the shortest.
     """
     nx, ny, K = gr.nx, gr.ny, len(gr.layers)
     N = nx * ny
     ti, tj = target
-    dist: dict[int, float] = {}
-    prev: dict[int, int] = {}
+    lib = None if gr.span_moves else _load_astar()
+    if lib:
+        found, prev = _astar_c(lib, gr, target, via_cost, max_nodes, deadline, search_weight)
+        return _walk_back(gr, found, prev)
+    # flat per-node arrays: a whole-board grid has ~10M nodes, and dicts of
+    # that size cost several GB. A via drop into B's plane (n < 0) is rare,
+    # and stays in a dict.
+    dist = array("d", [INF]) * (K * N)
+    prev = array("i", [0]) * (K * N)
+    drop_dist: dict[int, float] = {}
     pq: list = []
 
     def h(c):
         di, dj = abs(c % nx - ti), abs(c // nx - tj)
-        return max(di, dj) + (math.sqrt(2) - 1) * min(di, dj)
+        return search_weight * (max(di, dj) + (math.sqrt(2) - 1) * min(di, dj))
 
     def via_ok(c):
         if gr.vblk[c]:
@@ -656,7 +744,7 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
         if gr.a_plane[c] and via_ok(c):
             for k in range(K):
                 n = k * N + c
-                if via_cost < dist.get(n, 1e18):
+                if via_cost < dist[n]:
                     dist[n] = via_cost
                     prev[n] = -2 - c          # starts with a via at c
                     heapq.heappush(pq, (via_cost + h(c), via_cost, n))
@@ -667,7 +755,7 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
         if n < 0:                      # via drop into side B's plane
             found = n
             break
-        if gcost > dist.get(n, 1e18):
+        if gcost > dist[n]:
             continue
         k, c = divmod(n, N)
         if gr.in_b[k][c]:
@@ -675,6 +763,7 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
             break
         expanded += 1
         if expanded > max_nodes:
+            gr.gave_up = True
             break
         if deadline is not None and not expanded & 0x3FFF \
                 and time.monotonic() >= deadline:
@@ -692,7 +781,7 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
                 continue               # no squeezing between two walls
             ng = gcost + step * cost[c2]
             n2 = k * N + c2
-            if ng < dist.get(n2, 1e18):
+            if ng < dist[n2]:
                 dist[n2] = ng
                 prev[n2] = n
                 heapq.heappush(pq, (ng + h(c2), ng, n2))
@@ -702,7 +791,7 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
                     continue
                 n2 = k2 * N + c
                 ng = gcost + via_cost * SPAN_COST[sp.kind]
-                if ng < dist.get(n2, 1e18):
+                if ng < dist[n2]:
                     dist[n2] = ng
                     prev[n2] = n
                     heapq.heappush(pq, (ng + h(c), ng, n2))
@@ -712,19 +801,26 @@ def astar(gr: Grid, target, via_cost: float = 15.0,
                     continue
                 n2 = k2 * N + c
                 ng = gcost + via_cost
-                if ng < dist.get(n2, 1e18):
+                if ng < dist[n2]:
                     dist[n2] = ng
                     prev[n2] = n
                     heapq.heappush(pq, (ng + h(c), ng, n2))
             if gr.b_plane[c]:
                 n2 = -2 - (k * N + c)
                 ng = gcost + via_cost
-                if ng < dist.get(n2, 1e18):
-                    dist[n2] = ng
-                    prev[n2] = n
+                if ng < drop_dist.get(n2, INF):
+                    drop_dist[n2] = ng
                     heapq.heappush(pq, (ng, ng, n2))
+    return _walk_back(gr, found, prev)
+
+
+def _walk_back(gr: Grid, found, prev):
+    """The path astar found, from side A to side B."""
     if found is None:
         return None
+    N = gr.nx * gr.ny
+    nx = gr.nx
+    START = -1
     path = []
     n = found
     if n < 0:                          # ends with a via into B's plane
@@ -985,6 +1081,7 @@ def exit_keepouts(exits: dict, open_nets, routing: str, length: float,
 def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
                 layers: list[str], *, grid: float = 0.1, margin: float = 4.0,
                 max_conns: int | None = None, max_nodes: int = 3_000_000,
+                search_weight: float = 1.0,
                 via_cost_mm: float = 1.5, rip_board: bool = False,
                 rip_board_nets: int = 4, ripped_out: list | None = None,
                 log=None, skip: set | None = None,
@@ -1064,7 +1161,8 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
     def search(job, hide=False, board=False):
         """(path, grid, width) over the ladder: the window, a wider window,
         then a finer grid at the net's floor width for a pad boxed in by
-        its neighbours. An HDI build's net with no rule on its copper takes
+        its neighbours, kept close to the ends: under a large --margin that
+        grid is several GB. An HDI build's net with no rule on its copper takes
         the floor width from the start. hide: leave this pass's own routes
         out."""
         net = job["net"]
@@ -1084,7 +1182,7 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
             for m, g, (w, v) in (
                     (margin, grid, start),
                     (margin * 2.5, grid, start),
-                    (margin, grid / 2, floor)):
+                    (min(margin, 4.0), grid / 2, floor)):
                 (ax, ay), (bx, by) = job["pa"], job["pb"]
                 win = (min(ax, bx) - m, min(ay, by) - m,
                        max(ax, bx) + m, max(ay, by) + m)
@@ -1097,7 +1195,8 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
                           int(round((by - gr.y0) / g)))
                 for _ in range(VIA_RETRIES + 1):
                     path = astar(gr, target, via_cost=via_cost_mm / g,
-                                 max_nodes=max_nodes, deadline=deadline)
+                                 max_nodes=max_nodes, deadline=deadline,
+                                 search_weight=search_weight)
                     near = path and too_close_via(gr, path, rules)
                     if not near:
                         break
@@ -1107,6 +1206,7 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
                     path = None
                 if path:
                     return path, gr, w
+                job["gave_up"] = job.get("gave_up") or gr.gave_up
         finally:
             obs.added = held
             obs.soft_board = None
@@ -1218,7 +1318,9 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
             if expired():
                 job.update(status="skipped", reason="cut by the deadline")
             else:
-                job.update(status="failed", reason="no path on the grid")
+                job.update(status="failed", reason=(
+                    "search stopped at --max-nodes; a path may exist"
+                    if job.get("gave_up") else "no path on the grid"))
         if log:
             log(f"{steps} {job['net']}: {job['status']}")
     for j in jobs:
@@ -1259,7 +1361,9 @@ def _one_pass(cli, staged, drc, opts, *, parity, refill, log):
                        margin=opts["margin"], max_conns=opts["max_conns"],
                        rip_board=opts["rip_board"], ripped_out=rip, log=log,
                        skip=opts["skip"], keep_nets_extra=opts["keep_nets"],
-                       deadline=opts["deadline"], on_try=opts["on_try"])
+                       deadline=opts["deadline"], on_try=opts["on_try"],
+                       max_nodes=opts["max_nodes"],
+                       search_weight=opts["search_weight"])
     if opts["skip"] is not None:
         # a chunk of route_close: it tries these again next round, so the
         # chunk's later passes don't spend their time on them
@@ -1317,7 +1421,9 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
                   passes: int = 6, rip_errors: bool = False,
                   rip_board: bool = True, keep_nets: set | None = None,
                   log=None, skip_conns=None,
-                  deadline: float | None = None, on_try=None) -> dict:
+                  deadline: float | None = None, on_try=None,
+                  max_nodes: int = 3_000_000,
+                  search_weight: float = 1.0) -> dict:
     """Route the staged board's unconnected pairs in place, in passes: a
     route can split another net's pour, and the next pass joins the piece.
     A pass is kept only when the unconnected count drops and no error type
@@ -1331,7 +1437,8 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
                 via_drill=via_drill, max_conns=max_conns,
                 rip_board=rip_board, drc_s=0.0, deadline=deadline,
                 skip=None if skip_conns is None else set(skip_conns),
-                keep_nets=keep_nets, on_try=on_try)
+                keep_nets=keep_nets, on_try=on_try, max_nodes=max_nodes,
+                search_weight=search_weight)
     start_un = sum(unconnected_by_net(drc).values())
     facts: dict = {"unconnected_before": start_un,
                    "errors_before": err_counts(drc), "passes": []}
@@ -1344,7 +1451,8 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
         jobs = plan_routes(bg, rules, unconnected_pairs(drc, opts["nets"]),
                            lays, grid=grid, margin=margin,
                            max_conns=max_conns, rip_board=rip_board, log=log,
-                           skip=opts["skip"], keep_nets_extra=keep_nets)
+                           skip=opts["skip"], keep_nets_extra=keep_nets,
+                           max_nodes=max_nodes, search_weight=search_weight)
         facts.update(kept=False, rules=_rules_facts(rules), layers=lays,
                      connections=jobs,
                      routed=sum(j["status"] == "routed" for j in jobs))
@@ -1565,10 +1673,16 @@ def add_routing_args(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--clearance-margin", type=float, default=0.02)
     ap.add_argument("--via-size", type=float, default=None)
     ap.add_argument("--via-drill", type=float, default=None)
+    ap.add_argument("--max-nodes", type=int, default=3_000_000,
+                    help="nodes one search may expand before it gives up")
+    ap.add_argument("--search-weight", type=float, default=1.0,
+                    help="inflate the search's distance estimate: above 1, "
+                         "far fewer nodes on long routes, not always shortest")
 
 
 ROUTING_FLAGS = ("nets", "layers", "grid", "margin", "min_width",
-                 "clearance_margin", "via_size", "via_drill")
+                 "clearance_margin", "via_size", "via_drill", "max_nodes",
+                 "search_weight")
 
 
 def run(argv: list[str] | None = None):
@@ -1664,7 +1778,8 @@ def run(argv: list[str] | None = None):
                                               (args.protect_nets or "").split(","))),
         deadline=(None if args.plan_seconds is None
                   else started + args.plan_seconds),
-        on_try=on_try)
+        on_try=on_try, max_nodes=args.max_nodes,
+        search_weight=args.search_weight)
     final = facts.pop("drc", None) or drc
     if facts.get("kept") and not args.dry_run:
         routelib.swap_in(staged, pcb)

@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import math
 import sys
+import types
+from array import array
 from pathlib import Path
 
+import numpy as np
 import pytest
-from shapely.geometry import LineString, Point
+from shapely.geometry import LineString, Point, box
 
 REPO = Path(__file__).resolve().parents[1]
 SCRIPTS = REPO / "scripts"
@@ -187,6 +190,21 @@ def test_no_path_is_reported_not_forced(tmp_path):
     _, jobs = _plan(pcb, [_pair("SIG", (5, 15), (25, 15))])
     assert jobs[0]["status"] == "failed"
     assert "ops" not in jobs[0]
+
+
+def test_search_stopped_by_node_limit_says_so(tmp_path):
+    body = _pad("U1", 5, 15, "SIG") + _pad("U2", 25, 15, "SIG")
+    pcb = _board(tmp_path, body)
+    _, jobs = _plan(pcb, [_pair("SIG", (5, 15), (25, 15))], max_nodes=5)
+    assert jobs[0]["status"] == "failed"
+    assert "--max-nodes" in jobs[0]["reason"]
+
+
+def test_search_weight_still_finds_the_route(tmp_path):
+    body = _pad("U1", 5, 15, "SIG") + _pad("U2", 25, 15, "SIG")
+    pcb = _board(tmp_path, body)
+    _, jobs = _plan(pcb, [_pair("SIG", (5, 15), (25, 15))], search_weight=3.0)
+    assert jobs[0]["status"] == "routed"
 
 
 def test_later_routes_keep_clear_of_earlier_ones(tmp_path):
@@ -374,3 +392,63 @@ def test_a_short_run_between_vias_moves_to_the_next_layer():
     # hw-lab hdi-bga: the search never looked at the moved via's cell. With no span
     # there, the move fell back to a through via on the heater and a coupon via.
     assert merge_close_vias(path, 3.0, lambda run, k2: False) == path
+
+
+def test_a_keepout_inside_a_footprint_is_a_wall(tmp_path):
+    """DRC enforces it, so a route through it only comes back rejected."""
+    pts = "(xy 10 0.5) (xy 20 0.5) (xy 20 20) (xy 10 20)"
+    keepout = (f'    (zone (net 0) (net_name "") (layer "F.Cu") (name "PATCH")\n'
+               f'      (keepout (tracks not_allowed) (vias allowed) (pads allowed)'
+               f' (copperpour not_allowed) (footprints allowed))\n'
+               f'      (polygon (pts {pts})))\n')
+    array = (f'  (footprint "t:AE1" (layer "F.Cu") (at 15 10)\n'
+             f'    (property "Reference" "AE1" (at 0 0 0))\n{keepout}  )\n')
+    body = _pad("U1", 5, 15, "SIG") + _pad("U2", 25, 15, "SIG") + array
+    pcb = _board(tmp_path, body)
+    bg = geom.BoardGeom.from_file(pcb)
+    assert [ra["name"] for ra in bg.footprint_rule_areas] == ["PATCH"]
+    assert bg.rule_areas == []
+    _, jobs = _plan(pcb, [_pair("SIG", (5, 15), (25, 15))], via_cost_mm=30, margin=8)
+    assert jobs[0]["status"] == "routed" and jobs[0]["vias"] == 0
+    area = box(10, 0.5, 20, 20)
+    for op in _tracks(jobs[0]):
+        assert LineString([op["start"], op["end"]]).distance(area) > 0
+
+
+def test_a_large_margin_grid_stops_at_the_board():
+    """Memory goes by the square of the window, and nothing routes off the board."""
+    board = box(20, 20, 130, 92)
+    assert rf._on_board((-180, -180, 330, 292), board) == (19, 19, 131, 93)
+    assert rf._on_board((50, 50, 60, 60), board) == (50, 50, 60, 60)
+    assert rf._on_board((-180, -180, 330, 292), None) == (-180, -180, 330, 292)
+    assert rf._on_board((200, 200, 210, 210), board) == (200, 200, 210, 210)
+
+
+def test_c_search_finds_the_same_path_as_python(monkeypatch):
+    """route_astar.c is only a faster astar: same nodes, costs and tie-breaks."""
+    if rf._load_astar() is None:
+        pytest.skip("no C compiler")
+    nx, ny, K = 60, 40, 2
+    for seed in range(20):
+        rng = np.random.default_rng(seed)
+        blk = [(rng.random((ny, nx)) < 0.25) for _ in range(K)]
+        in_a = [np.zeros((ny, nx), bool) for _ in range(K)]
+        in_b = [np.zeros((ny, nx), bool) for _ in range(K)]
+        in_a[0][20, 2] = True
+        in_b[1][20, 57] = True
+        for k in range(K):
+            blk[k][in_a[k] | in_b[k]] = False
+        def by(x):
+            return x.ravel().astype(np.uint8).tobytes()
+        zero = bytes(nx * ny)
+        gr = types.SimpleNamespace(
+            nx=nx, ny=ny, layers=["F.Cu", "B.Cu"], span_moves=None, gave_up=False,
+            blk=[by(b) for b in blk], vblk=by(rng.random((ny, nx)) < 0.3),
+            cost=[array("d", (1.0 + rng.random((ny, nx))).ravel().tobytes()) for _ in range(K)],
+            in_a=[by(x) for x in in_a], in_b=[by(x) for x in in_b],
+            a_plane=zero, b_plane=zero)
+        fast = rf.astar(gr, (57, 20), search_weight=1.5)
+        monkeypatch.setattr(rf, "_load_astar", lambda: None)
+        slow = rf.astar(gr, (57, 20), search_weight=1.5)
+        monkeypatch.undo()
+        assert fast == slow
