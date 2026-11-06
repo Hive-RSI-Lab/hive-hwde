@@ -35,6 +35,9 @@ PD = REPO / "tests" / "fixtures" / "stages" / "pd_trigger"
 PD_PCB = PD / "route" / "pd-trigger.kicad_pcb"
 PD_NET = PD / "pd-trigger.net"
 PD_LIB = PD / "lib"
+# DRC on the routed pd-trigger since KiCad 10.0.5: J1's own pads against its own
+# peg holes, 0.18 and 0.21 mm against the 0.25 mm hole clearance. Vendor geometry.
+USBC_OWN_HOLES = 4
 CARRIER = REPO / "tests" / "fixtures" / "stages" / "lumina_carrier"
 CA_PCB = CARRIER / "routed.kicad_pcb"
 CA_NET = CARRIER / "lumina-carrier.net"
@@ -205,6 +208,18 @@ def _normalized_delta(a: Path, b: Path) -> list[str]:
     return [ln for ln in difflib.unified_diff(_norm_lines(a), _norm_lines(b),
                                               lineterm="", n=0)
             if ln[:1] in "+-" and ln[:3] not in ("+++", "---")]
+
+
+def _fill_change_mm2(a: Path, b: Path) -> float:
+    """Area of copper fill in one board and not the other, all zones."""
+    from shapely.ops import unary_union
+    total = 0.0
+    for za, zb in zip(geom.BoardGeom.from_file(a).zones_of(),
+                      geom.BoardGeom.from_file(b).zones_of(), strict=True):
+        for layer in {*za.fills, *zb.fills}:
+            total += unary_union(za.fills.get(layer, [])).symmetric_difference(
+                unary_union(zb.fills.get(layer, []))).area
+    return total
 
 
 # ---------------------------------------------------------------------------
@@ -550,13 +565,17 @@ def test_swap_apply_fields_only_bom_cpl_and_state(tmp_path):
     payload = _run(pcb, net, "--state", str(ws / "state.json"))
     assert payload["status"] == "pass"
     assert payload["applied"]["worker"]["fields_updated"] == ["C5"]
-    assert payload["applied"]["drc"]["after"]["total"] == 0
+    assert payload["applied"]["drc"]["after"]["total"] == USBC_OWN_HOLES
 
-    delta = _normalized_delta(orig, pcb)
+    # the apply refills zones, and this KiCad tessellates a fill a little
+    # differently from the one that saved the fixture: fill vertices aside
+    delta = [ln for ln in _normalized_delta(orig, pcb)
+             if not ln[1:].lstrip().startswith("(xy ")]
     assert delta, "value change must appear"
     for line in delta:
         assert "(property" in line or "LCSC" in line, \
             f"non-field change leaked into the board: {line}"
+    assert _fill_change_mm2(orig, pcb) < 0.1
 
     # copper + placement inventories identical
     a, b = geom.BoardGeom.from_file(orig), geom.BoardGeom.from_file(pcb)
@@ -614,7 +633,7 @@ def test_del_apply_rips_orphans_and_silk(tmp_path):
     # silk-residue verify is vacuous (review finding: GetLayerName says
     # "F.Silkscreen" while sexpr carries "F.SilkS")
     assert texts[0]["layer"] == "F.SilkS"
-    assert payload["applied"]["drc"]["after"]["total"] == 0
+    assert payload["applied"]["drc"]["after"]["total"] == USBC_OWN_HOLES
     assert payload["applied"]["drc"]["dangling_after"] == 0
     assert payload["applied"]["refilled"] is True
 
@@ -667,7 +686,10 @@ def test_replace_c2_reaches_drc_zero(tmp_path):
     import kc
     rep = kc.run_drc(env_mod.find_kicad_cli(), pcb, refill=True,
                      save_board=True)
-    assert rep["counts"]["total"] == 0  # 0 errors AND 0 warnings
+    # no warnings and nothing but J1's own holes
+    assert {v["check"] for v in rep["violations"]} == {"hole_clearance"}
+    assert all("J1" in v["refs"] for v in rep["violations"])
+    assert rep["counts"]["total"] == USBC_OWN_HOLES
 
 
 def payload_orphans_tracks(before_bg) -> list[tuple]:
@@ -842,7 +864,7 @@ def test_zero_length_crumb_inside_deleted_pad_is_removed(tmp_path):
     payload = _run(pcb, _dump_net(tree, tmp_path / "m.net"))
     assert payload["status"] == "pass"
     assert payload["applied"]["worker"]["removed_items"] == 3  # stub+via+crumb
-    assert payload["applied"]["drc"]["after"]["total"] == 0
+    assert payload["applied"]["drc"]["after"]["total"] == USBC_OWN_HOLES
     after = geom.load_board(pcb, refresh=True)
     assert not any(t.length == 0 for t in after.tracks_of())
 

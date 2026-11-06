@@ -656,6 +656,49 @@ def _lib_symbol_names(text: str) -> set[str]:
                           r'exclude_from_sim|in_bom|power|property)', text))
 
 
+def _lib_symbols_span(text: str) -> tuple[int, int] | None:
+    """Where the balanced (lib_symbols ...) block sits in a sheet, or None."""
+    block = re.search(r"\(lib_symbols\b", text)
+    if not block:
+        return None
+    depth = 0
+    j = block.start()
+    while j < len(text):
+        c = text[j]
+        if c == '"':                          # skip a quoted string (escapes included)
+            j += 1
+            while j < len(text) and text[j] != '"':
+                j += 2 if text[j] == "\\" else 1
+        elif c == "(":
+            depth += 1
+        elif c == ")":
+            depth -= 1
+            if depth == 0:
+                return block.start(), j + 1
+        j += 1
+    return None
+
+
+def restore_lib_symbols(sch_path: Path, original: str) -> bool:
+    """Put back the lib_symbols block a kicad-sch-api save just rewrote.
+
+    save() re-serialises every symbol from the library cache, so the sheet
+    takes whatever the installed stock library says now. The KiCad 10.0.6
+    Device:Crystal_GND24 has pin 2 at the bottom with pin 4; a sheet drawn
+    against the older symbol has its wire at the top, so moving one field
+    left that wire dangling and renamed the pin in the netlist. Moving a field
+    must not change a part. Returns True when the block was replaced.
+    """
+    was = _lib_symbols_span(original)
+    text = sch_path.read_text(encoding="utf-8")
+    now = _lib_symbols_span(text)
+    if was is None or now is None:
+        return False
+    sch_path.write_text(text[:now[0]] + original[was[0]:was[1]] + text[now[1]:],
+                        encoding="utf-8")
+    return True
+
+
 _PRIVATE_PROP_RE = re.compile(r'\n[ \t]*\(property "private" ')
 
 
@@ -711,7 +754,8 @@ def write_placements(sch_path: Path, result: dict) -> dict:
     with contextlib.redirect_stdout(quiet), contextlib.redirect_stderr(quiet):
         import kicad_sch_api as ksa
         libs = _register_project_libs(sch_path)
-        before = _lib_symbol_names(sch_path.read_text(encoding="utf-8"))
+        original = sch_path.read_text(encoding="utf-8")
+        before = _lib_symbol_names(original)
         sch = ksa.Schematic.load(str(sch_path))
         by_ref = {c.reference: c for c in sch.components}
         applied = 0
@@ -728,6 +772,7 @@ def write_placements(sch_path: Path, result: dict) -> dict:
             applied += 1
         if applied:
             sch.save()
+            restore_lib_symbols(sch_path, original)
     stripped = strip_private_properties(sch_path)   # KiCad-10 lib notes ksa mangles
     after = _lib_symbol_names(sch_path.read_text(encoding="utf-8"))
     if before - after:

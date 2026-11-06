@@ -26,7 +26,7 @@ score.json metric classes (the determinism contract, LEARNINGS 2026-08-06
   metrics       offline-deterministic (pure venv).  Declared noise: ZERO -
                 two runs on one fixture must match exactly (everything is
                 rounded via checklib.rnd conventions upstream).
-  metrics_live  deterministic GIVEN the pinned toolchain (kicad-cli 10.0.3
+  metrics_live  deterministic GIVEN the pinned toolchain (kicad-cli 10.0.6
                 ERC/DRC/netlist-export legs).  Exact-compare too, but only
                 present when kicad-cli resolves; tests needing them are
                 smoke-marked.

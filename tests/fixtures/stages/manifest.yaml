@@ -32,9 +32,11 @@ fixtures:
       method: reference
       captured: '2026-08-06'
       note: 'UNTOUCHED easyeda2kicad pulls (C14663 0603 cap, C2286 red LED, C7421520 DIP switch,
-        C5184243 GCT USB-C), the test_lib_hygiene corpus frozen 2026-08-06. Known answer: 16
-        real-DRC violations before fpfix (profile pinned in args.expect_before_by_check), 0
-        after fix_lib + refdes norm. A before-count drift means an fpfix behavior change that
+        C5184243 GCT USB-C), the test_lib_hygiene corpus frozen 2026-08-06. Known answer on
+        KiCad 10.0.6: 18 real-DRC violations before fpfix (profile pinned in
+        args.expect_before_by_check), 4 after fix_lib + refdes norm, all hole_clearance on the
+        USB-C''s own pads against its NPTH pegs, which a KiCad default rule flags and the
+        vendor geometry keeps (#795). A before-count drift means an fpfix behavior change that
         must re-record this baseline in the same commit.'
     files:
       fp_c0603:
@@ -56,6 +58,7 @@ fixtures:
     args:
       expect_before_by_check:
         annular_width: 2
+        hole_clearance: 2
         clearance: 2
         padstack: 2
         silk_overlap: 8
@@ -106,7 +109,9 @@ fixtures:
       note: 'shipped hierarchical schematic (root + usb/power/mcu children) - the first
         multi-sheet P4 fixture (T6 P4-3); sheets copied verbatim from the committed
         workspace (child Sheetfile refs resolve inside the fixture dir); golden_net
-        exported from the frozen root copy at capture (kicad-cli 10.0.3, LF-normalized)'
+        re-exported from the frozen root copy on kicad-cli 10.0.6, LF-normalized, source
+        path made repo-relative (#795): adds 30 one-pin unconnected-(...) nets and classes
+        +3V3 and VBUS as Power, as the .kicad_pro says; no real net or its pins moved'
     files:
       sch:
         path: tests/fixtures/stages/usb_buck/sch/usb-buck.kicad_sch
@@ -125,7 +130,7 @@ fixtures:
         sha256: c6ffbe93d5297bc9ed07be65b4022d8befb5e692287095d67ca65de7e50270b0
       golden_net:
         path: tests/fixtures/stages/usb_buck/sch/usb-buck.net
-        sha256: bb8920e789e8582d0e1bee53847b4bae506ab364f94c7f6fd01bd004680a9c33
+        sha256: 483369ef47d67bdf75f17696fd2a378c1ed80bdd1cd86e072ede67b1d66fc5a5
   pd_trigger_board_init:
     stage: P5
     board: pd-trigger
