@@ -41,7 +41,9 @@ sys.path.insert(0, str(HERE))
 
 HWDE = os.environ.get("HWDE_BIN", str(HERE / "hwde"))
 SKILL = ROOT / "scripts"
-STEPS = ("erc", "drc_routed", "verify", "fab", "dfm")
+# fab last: fab_export refuses a board that changed after a recorded gate, so every
+# gate must have re-passed (and re-recorded its digest) before it runs.
+STEPS = ("erc", "drc_routed", "verify", "dfm", "fab")
 _ROW = re.compile(r"^\|\s*([a-z0-9][a-z0-9-]*)\s*\|(.*)\|\s*$")
 
 

@@ -45,12 +45,12 @@
 #
 # Nothing here installs anything outside HOME but publish's <dir>: KiCad and
 # freerouting are the Hive's (in its shared tools folder, put there through a
-# warden); the venv is built from requirements.lock with the Hive's uv on
+# warden) or, with none, `hwde tools` fetches them into HOME; the venv is built from requirements.lock with the Hive's uv on
 # first use, and the knowledge records' source PDFs are fetched from upstream
 # (bin/sources.py). A published copy carries its own Python 3.14 with the
 # packages installed in it, and its own PDFs, and uses those instead.
 set -e
-here=$(cd "$(dirname "$0")/.." && pwd)
+here=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)   # follow the link `hive module add` puts in ~/.local/bin
 
 # A published copy runs the installed module's code with its own python when
 # the module is in sight (agents see $HIVE_MODULES; a check sees it once the
@@ -75,6 +75,12 @@ finduv() {
 if [ "${1:-}" = pin ]; then
 	shift
 	exec python3 "$here/bin/pin.py" "$@"
+fi
+# tools fetches KiCad, freerouting and KiCadRoutingTools into $state/tools
+# (no root, no venv; stdlib python): for a Hive with no shared tools folder.
+if [ "${1:-}" = tools ]; then
+	shift
+	exec python3 "$here/bin/tools.py" "$@"
 fi
 # The score measures hwde as it is, not as its shims patch it: every shim is
 # off for it and for the gates it runs.
@@ -115,7 +121,14 @@ wa() { [ -z "${HWDE_NO_SHIMS:-}" ] && grep -q "^| *$1 *|" "$here/docs/workaround
 
 # KiCad (the newest kicad-*/ AppDir), freerouting and KiCadRoutingTools are
 # in the shared tools folder; scripts/lib/env.py finds each there itself.
-export HWDE_TOOLS_DIR=${HWDE_TOOLS_DIR:-$tools}
+# A Hive with no shared folder (a fresh install) gets them from `hwde tools`,
+# which puts them in $state/tools; that is used when the shared one has no KiCad.
+if [ -z "${HWDE_TOOLS_DIR:-}" ]; then
+	HWDE_TOOLS_DIR=$tools
+	for k in "$tools"/kicad-*; do [ -d "$k" ] && found=1; done
+	[ -z "${found:-}" ] && [ -d "$state/tools" ] && HWDE_TOOLS_DIR=$state/tools
+fi
+export HWDE_TOOLS_DIR
 # The knowledge records cite manufacturers' PDFs the module doesn't carry
 # (NOTICE): docs/knowledge-sources.txt pins them at upstream's commit, and
 # bin/sources.py fetches them into HOME (a published copy carries its own)
