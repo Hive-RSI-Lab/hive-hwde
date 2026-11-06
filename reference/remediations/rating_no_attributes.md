@@ -28,8 +28,8 @@ or a rating someone recorded verified in the ledger.
    you checked with `ledger.py set --kind rating --status verified --source <datasheet page>`.
 4. Then read what verify says next. A filled row may now show a real rating_over_voltage,
    rating_reverse_polarity or rating_over_current: that is the point, so fix those too.
-   A power IC's filled row clears this finding but isn't compared with its rails: it stays a
-   rating_unrated warning until an extraction rates its pins.
+   A power IC's filled row is compared with the rail on its input pad, and in its limit it
+   stays a rating_unrated warning until an extraction rates its other pins.
 
 ## Do not
 - Do not add a row with a made-up attribute to clear this; cite the listing or the datasheet.
@@ -41,4 +41,4 @@ bin/hwde check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --parts <ws>/parts
 ```
 
 ## Sources
-- scripts/check_ratings.py `no_attribute_findings`; hive-hwde #675, #751, #763, #774, #797.
+- scripts/check_ratings.py `no_attribute_findings`; hive-hwde #675, #751, #763, #774, #797, #805.
