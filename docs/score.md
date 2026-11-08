@@ -24,6 +24,20 @@ Each board is a pin, `pinned/<board>.json`:
   they land.
 - **hwde-led-test**: this repo's own board, `boards/hwde-led-test`, where it
   is.
+- **digits-v1**, **oasis-v0-2** and **minuet-v3**: open-hardware KiCad boards
+  built outside hwde that published errata (justinlindh/digits, AGPL-3.0;
+  justbuchanan/oasis, Apache-2.0; brown-studios/minuet, MIT). Only
+  their KiCad sources and licence are copied, into `pinned/<board>/kicad/`,
+  with a fresh `state.json` (every gate owed), by `bin/hwde pin <board> --from
+  <clone> --commit <sha> --path <dir> --url <url> --license <spdx> --errata
+  <file>`. The pin's `source` names the project, its licence and its errata
+  file, and lists what in the errata is not a defect of the board (a design
+  note, a firmware bug) and so is not in the ledger. Every erratum that is a
+  defect of the board is a `real` entry carrying the errata's URL at the
+  pinned commit in `source`; one hwde misses is charged as missed, and has an
+  issue naming the check that would catch it. hwde has no requirements,
+  constraints or parts data for these boards, so the checks that need them
+  find nothing: that is part of what they measure.
 
 `bin/score.py` holds the sha256 of every pin and its files (`PINS`). A board
 whose files don't match it stops the score and fails the test. A pinned board
@@ -38,7 +52,7 @@ changes.
 ## The ledger
 
 Each pinned board has a ledger of its known findings,
-`pinned/known/<board>.json`: `{"known": [entry, ...]}`. An entry names one
+`pinned/known/<board>.json`: `{"board": board, "known": [entry, ...]}`. An entry names one
 finding as the score sees it, by where it is rather than how it is worded
 (`gate`, `check`, `kind`, `net`, `refs`, `pos` within 0.05 mm; the `message` only for
 a finding with none of those), and carries a `verdict` and a `reason`:

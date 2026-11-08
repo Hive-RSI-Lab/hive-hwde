@@ -186,3 +186,60 @@ def test_a_bare_row_the_pin_names_with_a_reason_is_allowed(pin):
     assert score.bare_rows(pin) == []
     pin.bare_parts["C42"] = " "
     assert score.bare_rows(pin) == ["C42"]
+
+
+# ------------------------------------------------- foreign boards (#403)
+
+def _foreign_pins():
+    return [p for p in sorted((ROOT / "pinned").glob("*.json"))
+            if "source" in json.loads(p.read_text(encoding="utf-8"))]
+
+
+def test_foreign_pins_name_their_open_source_and_errata():
+    pins = _foreign_pins()
+    assert len(pins) >= 2
+    for pf in pins:
+        src = json.loads(pf.read_text(encoding="utf-8"))["source"]
+        assert src["url"].startswith("https://github.com/") and src["license"]
+        assert src["errata"]
+        d = ROOT / "pinned" / pf.stem
+        assert any(n.name.upper().startswith(("LICENSE", "LICENCE", "COPYING"))
+                   for n in d.iterdir()), pf.stem
+        assert len(list((d / "kicad").glob("*.kicad_pro"))) == 1
+
+
+def test_every_erratum_is_held_real_with_its_source():
+    for pf in _foreign_pins():
+        led = json.loads((ROOT / "pinned" / "known" / pf.name).read_text(encoding="utf-8"))
+        assert led["board"] == pf.stem
+        errata = [e for e in led["known"] if "source" in e]
+        assert errata, pf.stem
+        for e in errata:
+            assert e["verdict"] == "real"
+            assert e["source"].startswith("https://github.com/") and "/blob/" in e["source"]
+
+
+def test_foreign_pin_copies_only_kicad_sources_and_the_licence(tmp_path):
+    import subprocess
+    import pin as pinmod
+    assert pinmod.kicad_source("a/b.kicad_pcb") and pinmod.kicad_source("fp-lib-table")
+    assert not pinmod.kicad_source("a/b.step") and not pinmod.kicad_source("README.md")
+    repo = tmp_path / "repo"
+    (repo / "hw" / "lib").mkdir(parents=True)
+    for rel, body in {"LICENSE": "MIT", "README.md": "x", "hw/x.kicad_pro": "{}",
+                      "hw/x.kicad_pcb": "(kicad_pcb)", "hw/x.step": "big",
+                      "hw/lib/p.kicad_mod": "(footprint)"}.items():
+        (repo / rel).write_text(body)
+    git = ["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@t"]
+    subprocess.run(git[:3] + ["init", "-q"], check=True)
+    subprocess.run(git + ["add", "."], check=True)
+    subprocess.run(git + ["commit", "-qm", "x"], check=True)
+    sha = subprocess.run(git[:3] + ["rev-parse", "HEAD"], check=True,
+                         capture_output=True, text=True).stdout.strip()
+    dest = tmp_path / "pinned" / "x"
+    pinmod.foreign(repo, sha, "hw", "x", dest)
+    got = sorted(str(p.relative_to(dest)) for p in dest.rglob("*") if p.is_file())
+    assert got == ["LICENSE", "kicad/lib/p.kicad_mod", "kicad/x.kicad_pcb",
+                   "kicad/x.kicad_pro", "state.json"]
+    st = json.loads((dest / "state.json").read_text())
+    assert st["workspace"] == "pinned/x"

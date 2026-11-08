@@ -30,9 +30,26 @@ from pathlib import Path
 
 from gerbonara import ExcellonFile, GerberFile
 from gerbonara.graphic_objects import Arc, Flash, Line, Region
+from gerbonara.rs274x import GerberParser
 from shapely import set_precision
 from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import polygonize, unary_union
+
+# KiCad 10 writes `%TD.AperFunction*%` where no .AperFunction is set (minuet
+# v3's F.Cu, line 508), and gerbonara refuses the whole file for it. There is
+# nothing to delete, so deleting nothing is the right reading.
+_parse_attribute = GerberParser._parse_attribute
+
+
+def _tolerant_attribute(self, match):
+    try:
+        return _parse_attribute(self, match)
+    except SyntaxError as e:
+        if match["type"] != "TD" or "previously undefined" not in str(e):
+            raise
+
+
+GerberParser._parse_attribute = _tolerant_attribute
 
 # kicad-cli names exports "<board>-<Layer_Name>.<ext>"; the layer token is what
 # we key on so the board name never matters.
