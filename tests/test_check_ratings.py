@@ -154,7 +154,8 @@ def test_power_tree_range_and_tolerance_cells(tmp_path):
 
 def _ws(tmp_path: Path, fps: list[tuple], parts: dict, bom=None,
         tree: str | None = None) -> Path:
-    """fps: (ref, lcsc, {pad: net}[, footprint]); parts: {lcsc: extraction}."""
+    """fps: (ref, lcsc, {pad: net}[, footprint[, value]]); parts: {lcsc:
+    extraction}."""
     ws = tmp_path / "ws"
     (ws / "kicad").mkdir(parents=True)
     (ws / "parts").mkdir()
@@ -162,7 +163,9 @@ def _ws(tmp_path: Path, fps: list[tuple], parts: dict, bom=None,
     for ref, lcsc, pads, *fp in fps:
         lines.append(f'  (footprint "{fp[0] if fp else "x"}" '
                      f'(property "Reference" "{ref}")'
-                     f' (property "LCSC" "{lcsc}")')
+                     f' (property "LCSC" "{lcsc}")'
+                     + (f' (property "Value" "{fp[1]}")' if len(fp) > 1
+                        else ""))
         for num, net in pads.items():
             lines.append(f'    (pad "{num}" smd rect (net "{net}"))')
         lines.append("  )")
@@ -1660,10 +1663,121 @@ def test_extraction_with_no_mpn_uses_the_rows_for_a_fixed_buck(tmp_path):
 ])
 @pytest.mark.parametrize("fb", ["+3V3", "FB_DIV"])
 def test_adjustable_parts_fb_stays_out(tmp_path, mpn, over, fb):
+    """No fixed-output claim is taken from an adjustable part. (AP63200's FB
+    straight on +3V3 is judged from its Vref since #832: tested below.)"""
+    if mpn == "AP63200WU-7" and fb == "+3V3":
+        pytest.skip("judged by its Vref (#832)")
     ws = _ws(tmp_path, [("U4", "C9", _buck_pads(fb))],
              {"C9": _fixed_buck(mpn, **over)})
     p = _run(ws)
     assert _out_errs(p) == [] and _unjudged(p) == []
+
+
+# ---------------------------------- adjustable: Vout from the FB divider (#832)
+
+ADJ = {"description": "buck, adjustable output"}
+
+
+def _adj_ws(tmp_path, out, top="100k", bot="32k", mpn="AP63200WU-7",
+            bom=None, **over):
+    """AP63200 (Vref 0.8 V) with top R1 out->FB and bottom R2 FB->GND:
+    100k / 32k makes 0.8 * (1 + 100/32) = 3.3 V."""
+    fps = [("U4", "C9", _buck_pads("FB_DIV")),
+           ("R1", "C1", {"1": out, "2": "FB_DIV"}, "R_0402", top),
+           ("R2", "C2", {"1": "FB_DIV", "2": "GND"}, "R_0402", bot)]
+    return _ws(tmp_path, fps, {"C9": _fixed_buck(mpn, **{**ADJ, **over})},
+               bom)
+
+
+def test_adjustable_divider_making_its_rail_passes(tmp_path):
+    p = _run(_adj_ws(tmp_path, "+3V3"))
+    assert _out_errs(p) == [] and _unjudged(p) == []
+
+
+def test_adjustable_divider_making_the_wrong_rail_blocks(tmp_path):
+    errs = _out_errs(_run(_adj_ws(tmp_path, "+5V")))
+    assert [(e["refs"], e["net"], e["pin"]) for e in errs] == \
+        [(["U4"], "+5V", "U4.1")]
+    assert errs[0]["net_v"] == 5.0
+    assert errs[0]["limit_v"] == pytest.approx(3.3, abs=0.01)
+    assert "R1 100k / R2 32k" in errs[0]["msg"]
+
+
+def test_adjustable_divider_checked_against_the_block_vout(tmp_path):
+    """The block's stated vout_v is a claim too: a divider on an unnamed net
+    that makes 3.3 V under a "5 V" block is flagged."""
+    ws = _adj_ws(tmp_path, "VOUT_A")
+    c = tmp_path / "constraints.json"
+    blk = {"name": "U4 AP63200 5 V", "operating_point": {"vout_v": 5.0}}
+    c.write_text(json.dumps({"blocks": [blk]}))
+    errs = _out_errs(_run(ws, c))
+    assert len(errs) == 1 and "vout_v = 5" in errs[0]["msg"]
+    blk["operating_point"]["vout_v"] = 3.3
+    c.write_text(json.dumps({"blocks": [blk]}))
+    assert _out_errs(_run(ws, c)) == []
+
+
+def test_adjustable_divider_window_takes_the_resistor_tolerance(tmp_path):
+    """3.5 V is outside 1 % resistors' window around 3.3 V (3.20-3.40),
+    inside 5 %'s (3.0-3.6)."""
+    tight = _ws(tmp_path / "a", [("U4", "C9", _buck_pads("FB_DIV")),
+                                 ("R1", "C1", {"1": "+3V5", "2": "FB_DIV"},
+                                  "R_0402", "100k"),
+                                 ("R2", "C2", {"1": "FB_DIV", "2": "GND"},
+                                  "R_0402", "32k")],
+                {"C9": _fixed_buck("AP63200WU-7", **ADJ)})
+    assert len(_out_errs(_run(tight))) == 1
+    bom = [{"lcsc": c, "mpn": "RES", "attributes": [
+        {"name": "Tolerance", "value": "±5%"}]} for c in ("C1", "C2")]
+    loose = _ws(tmp_path / "b", [("U4", "C9", _buck_pads("FB_DIV")),
+                                 ("R1", "C1", {"1": "+3V5", "2": "FB_DIV"},
+                                  "R_0402", "100k"),
+                                 ("R2", "C2", {"1": "FB_DIV", "2": "GND"},
+                                  "R_0402", "32k")],
+                {"C9": _fixed_buck("AP63200WU-7", **ADJ)}, bom)
+    assert _out_errs(_run(loose)) == []
+
+
+def test_adjustable_divider_with_no_vref_says_so(tmp_path):
+    """No Vref row: the warning names the divider and the missing row."""
+    p = _run(_adj_ws(tmp_path, "+5V", mpn="ZZ9999"))
+    assert _out_errs(p) == []
+    u = _unjudged(p)
+    assert len(u) == 1 and "R1 100k / R2 32k" in u[0]["msg"]
+    assert "regulator_vref.yaml" in u[0]["msg"]
+
+
+def test_fixed_part_with_a_vref_row_keeps_its_fixed_judgement(tmp_path):
+    """AP63205 matches the AP6320x Vref row too, but its FB on its own rail
+    is a fixed output, not a 0.8 V divider tap."""
+    ws = _ws(tmp_path, [("U4", "C9", _buck_pads("+5V"))],
+             {"C9": _fixed_buck()})
+    p = _run(ws)
+    assert _out_errs(p) == [] and _unjudged(p) == []
+
+
+def test_adjustable_fb_straight_on_a_rail_makes_vref(tmp_path):
+    ws = _ws(tmp_path, [("U4", "C9", _buck_pads("+3V3"))],
+             {"C9": _fixed_buck("AP63200WU-7", **ADJ)})
+    errs = _out_errs(_run(ws))
+    assert [(e["net"], e["limit_v"]) for e in errs] == [("+3V3", 0.8)]
+
+
+def test_lite_main_dividers_judge_clean(tmp_path):
+    """Known answer (#832): lite-main's U2 TPS54302 R9 100k / R10 13k makes
+    5.18 V and U3 SY8089 R11 150k / R12 33k makes 3.33 V, as stated. Run on
+    a copy: the check writes the workspace's ledger, and the pin is hashed."""
+    import shutil
+    ws = tmp_path / "lite-main"
+    for d in ("kicad", "parts", "architecture"):
+        shutil.copytree(ROOT / "pinned" / "lite-main" / d, ws / d)
+    p, _ = cr.run(["--pcb", str(ws / "kicad" / "lite-main.kicad_pcb"),
+                   "--constraints",
+                   str(ws / "architecture" / "constraints.json")])
+    bad = [v for v in p["violations"]
+           if v["kind"].startswith("rating_regulator_output")
+           and set(v.get("refs") or []) & {"U2", "U3"}]
+    assert bad == []
 
 
 def test_fixed_buck_fb_on_a_net_with_no_stated_rail_is_not_judged(tmp_path):
@@ -2013,7 +2127,9 @@ BUCK_NAMES = {"1": "VIN", "3": "FB"}
     ("AP63203WU-7", "3.8V~32V", "+3V3", []),
     ("AP63203WU-7", "3.8V~32V", "+5V", ["rating_regulator_output"]),
     ("AP63205WU-7", "3.8V~18V", "+5V", ["rating_over_voltage"]),
-    ("TLV62569PDDCR", "2.5V~5.5V", "+3V3", ["rating_over_voltage"]),
+    # adjustable, FB straight on +3V3: it makes its 0.6 V Vref (#832)
+    ("TLV62569PDDCR", "2.5V~5.5V", "+3V3", ["rating_over_voltage",
+                                            "rating_regulator_output"]),
     ("TPS54560BDDAR", "4.5V~60V", "+5V", []),
 ])
 def test_filled_buck_is_compared(tmp_path, mpn, vin, rail, kinds):

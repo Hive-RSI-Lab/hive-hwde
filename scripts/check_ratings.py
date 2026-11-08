@@ -92,10 +92,16 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
    family or words call positive or negative. Unextracted: a pad named in the
    netlist. Extracted: a power_out pin named as an output, against a rail the
    board itself states (constraints, power tree, net name); its output may
-   also come from the extraction.
+   also come from the extraction. Adjustable (#832): the Vout its FB divider
+   and datasheet Vref (reference/regulator_vref.yaml) make, worst case over
+   both tolerances (engcalc.fb_vout), outside the rail the divider's top
+   sits on or the vout_v of a constraints block that names the ref; FB
+   straight on a stated rail makes Vref, judged only for a part nothing
+   calls fixed.
  - rating_regulator_output_unjudged (warning): a regulator where nothing says
    what it makes. Extracted: with an output pin on the board. Unextracted:
-   with a filled row.
+   with a filled row. Adjustable: a divider on FB with no Vref row for the
+   part.
  - rating_over_temperature (error): the board's ambient above a part's
    operating range (parts.json "Operating Temperature", or the
    extraction's operating_temp_c), or constraints ambient_min_c below it
@@ -849,6 +855,9 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
         rated_by_ref.setdefault(ref, set()).add(tier)
 
     netfns = net_pinfunctions(pcb)
+    fb_ctx = {"board": board, "bom_by_lcsc": bom_by_lcsc, "volts": volts,
+              "vsrc": vsrc, "blocks": block_vouts(constraints),
+              "vrefs": load_vrefs()}
     diodes = {b["ref"]: d for b in board
               if (d := diode_reverse(b, exts.get(b["lcsc"]),
                                      bom_by_lcsc.get(b["lcsc"]), netfns))}
@@ -878,8 +887,9 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
             bom = bom_by_lcsc.get(b["lcsc"])
             power_ic = bool(bom and bom.get("attributes") and power_ic_by_family(
                 ref, str(bom.get("mpn") or "")))
-            judge = power_ic_findings if power_ic else regulator_findings
-            if judge(b, bom, volts, vsrc, netfns, emit):
+            if (power_ic_findings(b, bom, volts, vsrc, netfns, emit)
+                    if power_ic else regulator_findings(
+                        b, bom, volts, vsrc, netfns, emit, fb_ctx)):
                 compared(ref, "distributor")
                 continue
             why = power_ic_why_unrated(b, bom, volts, vsrc, netfns) if power_ic \
@@ -891,7 +901,7 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                          else "package")
             continue
         extracted_output_findings(b, ext, bom_by_lcsc.get(b["lcsc"]), volts,
-                                  vsrc, emit)
+                                  vsrc, emit, fb_ctx)
         ratings = part_ratings(ext)
         name_of = {p["pin"]: p for p in ext.get("pinout") or []}
         pair_refs = {r["ref"] for rows in ratings.values()
@@ -1392,7 +1402,7 @@ def power_ic_why_unrated(b: dict, bom: dict, volts: dict, vsrc: dict,
 
 
 def regulator_findings(b: dict, bom: dict | None, volts: dict, vsrc: dict,
-                       netfns: dict, emit) -> bool:
+                       netfns: dict, emit, fb_ctx: dict | None = None) -> bool:
     """An unextracted regulator's filled row against its rails (#708): the
     input and enable pads against the input rating, the output pad against
     what the row says it makes. Pads are told apart by name; with no pad names
@@ -1453,8 +1463,13 @@ def regulator_findings(b: dict, bom: dict | None, volts: dict, vsrc: dict,
             found |= _output_finding(
                 ref, part, net, known.get(net), pads, made, emit,
                 sign if vsrc.get(net) in RAIL_SOURCES else None)
-    elif not NOT_REG_RE.search(" ".join(str(bom.get(k) or "")
-                                        for k in REG_ROW_TEXT)):
+    judged, hit = divider_findings(b, part, [b.get("value") or "", mpn],
+                                   fb_pins_unextracted(b, names, mpn), fb_ctx,
+                                   emit, fixed=made is not None)
+    if judged:
+        return found or hit
+    if not made and not NOT_REG_RE.search(" ".join(str(bom.get(k) or "")
+                                                   for k in REG_ROW_TEXT)):
         on = f"on {', '.join(nets)} " if nets else ""
         emit("rating_regulator_output_unjudged", "warning", ref,
              nets[0] if nets else None,
@@ -1527,8 +1542,170 @@ def extraction_out_range(ext: dict) -> tuple[float, float, str] | None:
     return _fixed_range(v, f"MPN code {mpn}") if v is not None else None
 
 
+# --- adjustable regulators: the FB divider's Vout (#832) ----------------------
+
+VREF_YAML = HERE.parent / "reference" / "regulator_vref.yaml"
+# sim_board.FB_FN less VOS: on TI parts (TPS6208x) an output sense, not a tap
+FB_PAD_RE = re.compile(r"^(V?FB\d?|ADJ|VSENSE)$")
+TOL_ATTR_RE = re.compile(r"^Tolerance", re.I)
+
+
+def load_vrefs(path: Path = VREF_YAML) -> list[dict]:
+    """reference/regulator_vref.yaml's rows (sim_board reads the same)."""
+    if not path.is_file():
+        return []
+    import yaml
+    return (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get(
+        "regulators") or []
+
+
+def find_vref(texts: list[str], table: list[dict]):
+    """(vref, tol, source, verified) of the first row a value or MPN matches."""
+    for txt in texts:
+        for row in table:
+            if txt and re.search(row["match"], txt, re.I):
+                return (float(row["vref"]), float(row.get("tol", 0.02)),
+                        row.get("source", "regulator_vref.yaml"),
+                        bool(row.get("verified")))
+    return None
+
+
+def block_vouts(constraints: dict | None) -> dict[str, tuple[float, str]]:
+    """ref -> (vout_v, block) from the constraints blocks that name a ref in
+    their name ("U2 TPS54302 5 V") and give an operating_point vout_v."""
+    out: dict[str, tuple[float, str]] = {}
+    for blk in (constraints or {}).get("blocks") or []:
+        v = (blk.get("operating_point") or {}).get("vout_v")
+        if not isinstance(v, (int, float)) or isinstance(v, bool) or v <= 0:
+            continue
+        label = str(blk.get("block") or blk.get("name") or "")
+        for ref in re.findall(r"\b([A-Z]{1,3}\d+)\b", str(blk.get("name")
+                                                            or "")):
+            out.setdefault(ref, (float(v), label))
+    return out
+
+
+def fb_divider(b: dict, fb_pins: list[str], ctx: dict) -> dict | None:
+    """The divider on a regulator's FB pad: {fb, out, r_top, r_bot, ratio,
+    rtol}; out is the net the top resistor's other end sits on, and an FB pad
+    straight on a rail the board states has ratio 1. None when the FB net has
+    no plain one-top/one-bottom divider of parsed values."""
+    for fb in sorted({b["pads"][p] for p in fb_pins if p in b["pads"]}):
+        if is_ground(fb):
+            continue
+        if ctx["vsrc"].get(fb) in RAIL_SOURCES:
+            return {"fb": fb, "out": fb, "ratio": 1.0, "rtol": 0.0,
+                    "r_top": None, "r_bot": None}
+        tops, bots = [], []
+        for r in ctx["board"]:
+            nets = set(r["pads"].values())
+            if not re.match(r"^R\d", r["ref"]) or len(nets) != 2 or \
+                    fb not in nets:
+                continue
+            (other,) = nets - {fb}
+            (bots if is_ground(other) else tops).append((r, other))
+        if len(tops) != 1 or len(bots) != 1:
+            continue
+        (rt, out), (rb, _) = tops[0], bots[0]
+        vt, vb = (engcalc.parse_value(x["value"]) for x in (rt, rb))
+        if not vt or not vb:
+            continue
+        rtol = 0.01
+        for r in (rt, rb):
+            try:
+                import tolerance
+                p = tolerance.part_tolerance(
+                    "R", r["value"], _attr(ctx["bom_by_lcsc"].get(r["lcsc"]),
+                                           TOL_ATTR_RE), nom=1.0)
+                if p is not None:
+                    rtol = max(rtol, 1 - p.lo, p.hi - 1)
+            except Exception:  # noqa: BLE001 - a band we can't read: 1 %
+                pass
+        return {"fb": fb, "out": out, "ratio": 1 + vt / vb, "rtol": rtol,
+                "r_top": f"{rt['ref']} {rt['value']}",
+                "r_bot": f"{rb['ref']} {rb['value']}"}
+    return None
+
+
+def divider_findings(b: dict, part: str, texts: list[str],
+                     fb_pins: list[str], ctx: dict | None, emit,
+                     fixed: bool = False) -> tuple[bool, bool]:
+    """An adjustable regulator's output from its FB divider and the datasheet
+    Vref (reference/regulator_vref.yaml), against what the board says it makes:
+    the rail its top resistor sits on, when the board states that rail, and
+    the vout_v of a constraints block that names the part (#832). Only a
+    stated value outside the worst-case window (engcalc.fb_vout over Vref and
+    resistor tolerance) is an error. An FB pad straight on a rail is judged
+    only with a known Vref and when nothing calls the part fixed (fixed: its
+    row, extraction or MPN names an output, so FB may be its output sense).
+    (judged, emitted): judged when a divider was found, so the output needs
+    no other 'unjudged' warning; emitted when it raised a finding."""
+    if not ctx or not fb_pins:
+        return False, False
+    div = fb_divider(b, fb_pins, ctx)
+    if div is None:
+        return False, False
+    ref = b["ref"]
+    vr = find_vref(texts, ctx["vrefs"])
+    if not div["r_top"] and (fixed or vr is None):
+        return False, False
+    how = (f"{div['r_top']} / {div['r_bot']} on {div['fb']}"
+           if div["r_top"] else f"FB on {div['fb']}")
+    if vr is None:
+        emit("rating_regulator_output_unjudged", "warning", ref, div["out"],
+             f"{part} sets its output with {how}, but its Vref isn't in "
+             f"reference/regulator_vref.yaml, so the output wasn't judged. "
+             f"Add a row with the datasheet's VFB")
+        return True, False
+    vref, vtol, src, verified = vr
+    if div["r_top"]:
+        rt = div["ratio"] - 1.0
+        fbv = engcalc.fb_vout(vref, rt, 1.0, div["rtol"], vtol)
+    else:
+        fbv = {"nom": vref, "min": vref * (1 - vtol), "max": vref * (1 + vtol)}
+    lo, hi = fbv["min"], fbv["max"]
+    rating = f"Vref {_fmt(vref)} V ±{_fmt(vtol * 100)}% ({src}" + \
+        ("" if verified else "; unverified") + ")"
+    stated = []
+    if ctx["vsrc"].get(div["out"]) in RAIL_SOURCES:
+        stated.append((div["out"], ctx["volts"][div["out"]],
+                       f"{div['out']} = {_fmt(ctx['volts'][div['out']])} V"))
+    if ref in ctx["blocks"]:
+        v, blk = ctx["blocks"][ref]
+        stated.append((div["out"], v, f"constraints {blk} vout_v = {_fmt(v)} V"))
+    on = sorted(p for p, n in b["pads"].items() if n == div["fb"])
+    emitted = False
+    for net, v, what in stated:
+        if lo - EPS <= abs(v) <= hi + EPS:
+            continue
+        emit("rating_regulator_output", "error", ref, net,
+             f"{part} makes {_fmt(fbv['nom'])} V ({_fmt(lo)}-{_fmt(hi)} V) "
+             f"from {how}, but {what} [{rating}]",
+             pin=f"{ref}.{on[0]}" if on else None, net_v=v,
+             limit_v=fbv["nom"], rating=rating)
+        emitted = True
+    return True, emitted
+
+
+def fb_pins_unextracted(b: dict, names: dict, mpn: str) -> list[str]:
+    """An unextracted adjustable part's FB pads, by pad name."""
+    if reg_fixed_part(mpn) is not None:
+        return []
+    return [p for p, n in names.items() if FB_PAD_RE.match(n)]
+
+
+def fb_pins_extracted(b: dict, ext: dict, mpn: str) -> list[str]:
+    """An extracted adjustable part's FB pads, by pinout name."""
+    if reg_fixed_part(mpn) is not None:
+        return []
+    return [p["pin"] for p in ext.get("pinout") or []
+            if p["pin"] in b["pads"]
+            and any(FB_PAD_RE.match(a) for a in aliases(p["name"]))]
+
+
 def extracted_output_findings(b: dict, ext: dict, bom: dict | None,
-                              volts: dict, vsrc: dict, emit) -> None:
+                              volts: dict, vsrc: dict, emit,
+                              fb_ctx: dict | None = None) -> None:
     """An extracted regulator's output pin against its rail (#721), read as
     regulator_findings reads a filled row: the row's output, else a fixed
     output in the extraction's or the row's MPN, else what the extraction says
@@ -1559,7 +1736,11 @@ def extracted_output_findings(b: dict, ext: dict, bom: dict | None,
             if vsrc.get(net) in RAIL_SOURCES:
                 _output_finding(b["ref"], part, net, volts[net], b["pads"],
                                 made, emit, sign)
-    elif nets and not NOT_REG_RE.search(" ".join(
+    if divider_findings(b, part, [b.get("value") or "", known_mpn],
+                        fb_pins_extracted(b, ext, known_mpn), fb_ctx,
+                        emit, fixed=made is not None)[0]:
+        return
+    if not made and nets and not NOT_REG_RE.search(" ".join(
             [desc] + [str(bom.get(k) or "") for k in REG_ROW_TEXT])):
         emit("rating_regulator_output_unjudged", "warning", b["ref"], nets[0],
              f"{part} is a regulator, but its parts.json row, extraction and "
