@@ -356,3 +356,33 @@ def test_part_on_polarity():
     assert check_straps.part_on("DRVOFF", False, "low") is True
     assert check_straps.part_on("SDA", False, "high") is None
     assert check_straps.part_on("ONE", False, "high") is None
+
+
+# ------------------------------------------- codec input rows (#831)
+
+def _codec_on_strap(tmp_path, value, pin, fn, strap=("14", "IO12_14")):
+    comps = {"U7": "ESP32-WROVER-E-N8R8", "U5": value}
+    nets = {"+3V3": [("U7", "2", "3V3_2")], "GND": [("U7", "1", "GND_1")],
+            "/mcu/ESP_EN": [("U7", "3", "EN_3")],
+            "/SIG": [("U7", strap[0], strap[1]), ("U5", pin, fn)]}
+    pcb = _netlist(tmp_path, comps, nets)
+    payload, _ = check_straps.run(["--pcb", str(pcb), "--netlist",
+                                   str(tmp_path / "s.net")])
+    return _by_kind(payload)
+
+
+def test_codec_input_pins_dont_drive_a_strap(tmp_path):
+    """ES9018K2M / ES7243E / ES8388 clock and data pins are inputs at
+    reset (datasheet-cited rows), so the strap isn't strap_unknown."""
+    for value, pin, fn in (("ES9018K2M", "5", "DATA1_5"),
+                           ("ES7243E", "7", "MCLK_7"),
+                           ("ES8388", "2", "MCLK_2")):
+        k = _codec_on_strap(tmp_path, value, pin, fn)
+        assert "strap_unknown" not in k, (value, k)
+
+
+def test_codec_master_clock_pin_still_flags_a_strap(tmp_path):
+    """ES8388 SCLK defaults to master (an output at reset): that pin has no
+    input row, so a strap on it stays flagged."""
+    k = _codec_on_strap(tmp_path, "ES8388", "1", "SCLK_1")
+    assert "strap_unknown" in k

@@ -434,10 +434,25 @@ class _FileLint:
                         isinstance(e, dict) and isinstance(e.get("why"), str)
                         and e["why"].strip()
                         and isinstance(e.get("refs"), list)
-                        and len(e["refs"]) == 2 for e in allow):
+                        and len(e["refs"]) == 2
+                        and (e.get("up_to_mm") is None
+                             or (isinstance(e["up_to_mm"], (int, float))
+                                 and not isinstance(e["up_to_mm"], bool)
+                                 and e["up_to_mm"] > 0))
+                        for e in allow):
                     self.add("error", "bad_type",
                              f"{path}: mechanical.allow_body_overlap must be a "
-                             "list of {refs: [A, B], why: text}", path)
+                             "list of {refs: [A, B], why: text, up_to_mm?: number}", path)
+                off = val.get("allow_off_board", []) \
+                    if isinstance(val, dict) else None
+                if not isinstance(off, list) or not all(
+                        isinstance(e, dict) and isinstance(e.get("why"), str)
+                        and e["why"].strip()
+                        and isinstance(e.get("refs"), list) and e["refs"]
+                        for e in off):
+                    self.add("error", "bad_type",
+                             f"{path}: mechanical.allow_off_board must be a "
+                             "list of {refs: [A, ...], why: text}", path)
             elif key == "testpoints":
                 # check_testpoints (#470): probe rules and the nets in scope
                 nums = {"probe_mm", "fixture_mm", "pitch_mm", "body_mm",

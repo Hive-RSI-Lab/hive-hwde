@@ -265,6 +265,21 @@ parts:
     pins: '^(BCK|DIN|LRCK|SCK|XSMT|FMT|FLT|DEMP)$'
     source: TI PCM5102A SLAS859 pin functions (digital inputs)
     verified: false
+  - match: '^ES9018K2M'
+    kind: input
+    pins: '^(DATA_CLK|DATA[12]|SCL|SDA|ADDR|RESETB|GPIO[12])$'
+    source: ESS ES9018K2M datasheet v3.7 (2021-04-22) p.4 pin descriptions, Reset State column (DATA_CLK, DATA1, DATA2, SCL, SDA, ADDR, RESETB, GPIO1, GPIO2 all Tri-stated; DATA_CLK is an output only in master mode, a register setting)
+    verified: true
+  - match: '^ES7243E'
+    kind: input
+    pins: '^(MCLK|SCLK|LRCK|TDMIN|AD[01]|CCLK|CDATA)$'
+    source: Everest ES7243E datasheet rev 2.0 (June 2019) p.4 pin table (MCLK, TDMIN, AD0, AD1, CCLK are inputs) and p.13 (register MSC bit 6 = 0 slave mode, default, so SCLK and LRCK are inputs at reset)
+    verified: true
+  - match: '^ES8388'
+    kind: input
+    pins: '^(MCLK|DSDIN|CE|CCLK|[LR]IN[12])$'
+    source: Everest ES8388 datasheet rev 5.0 (July 2018) p.6 pin table (MCLK, DSDIN, CE, CCLK, LIN/RIN are inputs). SCLK and LRCK are left out on purpose - register 8 MSC defaults to master (p.16) - so a strap on them stays flagged
+    verified: true
 
 # Oscillators are found by their pins, not their Value: a part whose
 # reference starts with Y, X or OSC and which has an output pin (`output`)
