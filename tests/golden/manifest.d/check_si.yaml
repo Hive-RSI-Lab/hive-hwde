@@ -10,3 +10,13 @@ mutants:
     expect:
       kind: si_unterminated_clock
       net: /MCO
+  si-teardrop-clock:
+    board: usbbuck4
+    script: mutations/si_teardrop_clock.py
+    check: check_si
+    defect: >-
+      the si-unterminated-clock fault plus a teardrop zone on /MCO; before
+      #633 any zone made its net a "power net", so check_si skipped MCO
+    expect:
+      kind: si_unterminated_clock
+      net: /MCO

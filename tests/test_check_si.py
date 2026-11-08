@@ -130,6 +130,43 @@ def test_long_mcu_clock_without_series_r_warns(tmp_path):
     assert 40 < net["critical_mm"] < 80
 
 
+def teardrop(net, x, y, layer="F.Cu"):
+    """A KiCad teardrop zone: `(attr (teardrop ...))`, filled, on `net`."""
+    pts = f"(xy {x} {y - 0.3}) (xy {x + 1} {y}) (xy {x} {y + 0.3})"
+    return (f'  (zone (net "{net}") (layer "{layer}") (priority 30001)\n'
+            f'    (attr (teardrop (type padvia)))\n'
+            f'    (polygon (pts {pts}))\n'
+            f'    (filled_polygon (layer "{layer}") (pts {pts})))\n')
+
+
+def test_teardropped_net_is_still_checked(tmp_path):
+    """#633: a teardrop is a zone, and every zone's net was taken for a
+    power net and skipped, so a board with teardrops went unchecked."""
+    body = (fp("U1", 4, 10, "MCU", [("1", 0, "/SPI_CLK")])
+            + fp("U2", 96, 10, "FLASH", [("1", 0, "/SPI_CLK")])
+            + clock_line("/SPI_CLK", 4, 96)
+            + teardrop("/SPI_CLK", 4, 10) + teardrop("/SPI_CLK", 95, 10))
+    got = board(tmp_path, body)
+    assert ("si_unterminated_clock", "/SPI_CLK") in kinds(got)
+    # a real pour on the net still makes it a power net
+    pour = ('  (zone (net "/SPI_CLK") (layer "B.Cu")\n'
+            '    (polygon (pts (xy 10 20) (xy 20 20) (xy 20 30)))\n'
+            '    (filled_polygon (layer "B.Cu")'
+            ' (pts (xy 10 20) (xy 20 20) (xy 20 30))))\n')
+    assert ("si_unterminated_clock", "/SPI_CLK") not in kinds(
+        board(tmp_path, body + pour))
+
+
+def test_geom_reads_teardrop_attr():
+    import geom
+    bg = geom.load_board(REPO / "tests" / "fixtures" / "teardrops"
+                         / "led_dropped.kicad_pcb")
+    drops = [z for z in bg.zones_of() if z.teardrop]
+    assert {z.net for z in drops} == {"GND", "+5V"}
+    assert len(drops) == 3
+    assert len(drops) < len(bg.zones_of())    # the GND pour is not a drop
+
+
 def test_short_clock_is_lumped(tmp_path):
     body = (fp("U1", 4, 10, "MCU", [("1", 0, "/SPI_CLK")])
             + fp("U2", 30, 10, "FLASH", [("1", 0, "/SPI_CLK")])

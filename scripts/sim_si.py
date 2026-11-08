@@ -604,7 +604,7 @@ def run(argv=None):
         if args.constraints and Path(args.constraints).is_file() else {}
     bg = geom.load_board(Path(args.pcb))
     power = {p.get("net") for p in cons.get("power", []) if isinstance(p, dict)}
-    power |= {z.net for z in bg.zones_of() if z.net}
+    power |= {z.net for z in bg.zones_of() if z.net and not z.teardrop}  # #633
     lm = check_si.LineModel(bg)
     if not bg.tracks_of(args.aggressor) or not bg.tracks_of(args.victim):
         raise CheckError("a net has no tracks on this board")

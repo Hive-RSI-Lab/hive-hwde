@@ -498,7 +498,9 @@ def run(argv=None):
     bg = geom.load_board(Path(args.pcb))
     si = cons.get("si") or {}
     power_nets = {p.get("net") for p in cons.get("power", []) if isinstance(p, dict)}
-    power_nets |= {z.net for z in bg.zones_of() if z.net}
+    # a teardrop is a zone too, but not a pour: counting it made every
+    # teardropped signal net a power net and skipped it (#633)
+    power_nets |= {z.net for z in bg.zones_of() if z.net and not z.teardrop}
     lm = LineModel(bg)
     specs = resolve(bg, cons, power_nets)
     declared_hs = {e.get("net") for e in cons.get("high_speed", []) if isinstance(e, dict)}
