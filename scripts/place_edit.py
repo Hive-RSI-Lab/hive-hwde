@@ -19,9 +19,11 @@ only then does os.replace() swap it in (same volume -> atomic). Any failure
 leaves the original board byte-identical. Re-applying the same op list is
 idempotent (ops are absolute). exit 0 applied+verified / 2 error (rolled back).
 
-set_pad re-nets ("" clears), and/or resizes a footprint's pads; set_dnp sets
+set_pad re-nets ("" clears), resizes and/or sets the zone connection
+(solid|thermal|none|inherit) of a footprint's pads; set_dnp sets
 its do-not-populate flag. --op JSON (repeatable) takes ops inline instead of
---ops FILE.
+--ops FILE. --refill refills zones on the staged copy before the swap (with
+the board's .kicad_pro/.kicad_dru beside it), as route_edit --refill does.
 
 set_text (hide / resize / re-layer a Reference or Value field) is the fix
 for a refdes with no legal spot near its own pads (dense 0603 rows): on a
@@ -80,7 +82,10 @@ OP_FIELDS = {  # op -> (required, optional)
     # rewire board_update refuses because copper touches the pad - rip it
     # with route_edit first), resize pads (an annular-ring DFM fix), mark a
     # part do-not-populate
-    "set_pad": ({"ref", "pad"}, {"net", "size"}),
+    # zone_connection: solid|thermal|none|inherit per pad (the boards'
+    # pad_zone_full / j1_shell_solid scripts: a USB-C power pin or a
+    # connector shell joined to its plane without thermal spokes)
+    "set_pad": ({"ref", "pad"}, {"net", "size", "zone_connection"}),
     "set_dnp": ({"ref", "dnp"}, set()),
 }
 TEXT_LAYERS = {"F.SilkS", "B.SilkS", "F.Fab", "B.Fab"}
@@ -90,6 +95,9 @@ FOOTPRINT_OPS = {"place", "move", "rotate", "flip"}  # copper-relevant ops
 TEXT_OPS = ("add_text", "remove_text", "move_text", "set_text")
 SILK_LAYERS = {"F.SilkS", "B.SilkS"}
 SIZE_TOL = 1e-3  # mm
+# set_pad zone_connection -> the pad's saved (zone_connect N), None = absent
+# (inherit). Same numbers as KiCad 10's ZONE_CONNECTION enum.
+ZONE_CONNECT = {"inherit": None, "none": 0, "thermal": 1, "solid": 2}
 
 
 def silk_text_floor() -> tuple[float, float]:
@@ -190,8 +198,12 @@ def _validate_set_pad(i: int, op: dict) -> None:
     if not (isinstance(pads, list) and pads
             and all(isinstance(p, str) and p for p in pads)):
         raise CheckError(f"ops[{i}]: pad must be a pad number or a list")
-    if not op.keys() & {"net", "size"}:
-        raise CheckError(f"ops[{i}] (set_pad): needs net and/or size")
+    if not op.keys() & {"net", "size", "zone_connection"}:
+        raise CheckError(f"ops[{i}] (set_pad): needs net, size and/or "
+                         "zone_connection")
+    if "zone_connection" in op and op["zone_connection"] not in ZONE_CONNECT:
+        raise CheckError(f"ops[{i}]: zone_connection must be one of "
+                         f"{sorted(ZONE_CONNECT)}")
     if "net" in op and not isinstance(op["net"], str):
         raise CheckError(f"ops[{i}]: net must be a string (\"\" = no net)")
     if "size" in op:
@@ -471,6 +483,29 @@ def _dnp_refs(pcb: Path) -> set[str]:
     return out
 
 
+def _pad_zone_connects(pcb: Path, ref: str) -> dict[str, list]:
+    """{pad number: [zone_connect of each pad with it, None = inherit]} of
+    one footprint in the saved file (a shell has several pads numbered S1)."""
+    import sexpdata
+    data = sexpdata.loads(pcb.read_text(encoding="utf-8"))
+    for node in data[1:]:
+        if _sx_head(node) != "footprint":
+            continue
+        if not any(_sx_head(s) == "property" and len(s) >= 3
+                   and _sx_str(s[1]).lower() == "reference"
+                   and _sx_str(s[2]) == ref for s in node[1:]):
+            continue
+        out: dict[str, list] = {}
+        for pad in node[1:]:
+            if _sx_head(pad) != "pad" or len(pad) < 2:
+                continue
+            zc = next((int(s[1]) for s in pad[2:]
+                       if _sx_head(s) == "zone_connect" and len(s) > 1), None)
+            out.setdefault(_sx_str(pad[1]), []).append(zc)
+        return out
+    return {}
+
+
 def _verify_parts(pcb: Path, ops: list[dict]) -> list[str]:
     """set_pad / set_dnp landed, read back independently of the worker."""
     part_ops = [op for op in ops if op["op"] in ("set_pad", "set_dnp")]
@@ -488,6 +523,14 @@ def _verify_parts(pcb: Path, ops: list[dict]) -> list[str]:
                                 f"{op['ref'] in dnp}")
             continue
         nums = [op["pad"]] if isinstance(op["pad"], str) else op["pad"]
+        if "zone_connection" in op:
+            want = ZONE_CONNECT[op["zone_connection"]]
+            have = _pad_zone_connects(pcb, op["ref"])
+            for n in nums:
+                if any(z != want for z in have.get(n, [want])):
+                    problems.append(
+                        f"set_pad {op['ref']}.{n}: zone_connect "
+                        f"{have.get(n)} != {op['zone_connection']}")
         got = {p.number: p for p in bg.pads_of(ref=op["ref"])}
         for n in nums:
             p = got.get(n)
@@ -532,7 +575,7 @@ def _refuse_routed_renet(pcb: Path, ops: list[dict]) -> None:
                 "whole net with route_edit rename_net")
 
 
-def apply_ops(pcb: Path, ops: list[dict]) -> dict:
+def apply_ops(pcb: Path, ops: list[dict], *, refill: bool = False) -> dict:
     """Validate refs, stage, run the SWIG worker, verify, atomically swap in.
 
     Returns the worker's per-op results. Raises CheckError (original board
@@ -591,6 +634,11 @@ def apply_ops(pcb: Path, ops: list[dict]) -> dict:
         if problems:
             raise CheckError("post-apply verify failed (rolled back): "
                              + "; ".join(problems))
+        if refill:  # a pad's zone connection or size changes the fill
+            if str(SCRIPTS) not in sys.path:
+                sys.path.insert(0, str(SCRIPTS))
+            import route_edit
+            route_edit._refill(cli, pcb, staged)
         os.replace(staged, pcb)
         return result["results"]
     finally:
@@ -628,6 +676,9 @@ def run(argv: list[str] | None = None):
                          "tracks/vias (they invalidate the gate place / "
                          "check_decoupling oracles - rip the affected nets "
                          "first and re-run drc_routed after)")
+    ap.add_argument("--refill", action="store_true",
+                    help="refill zones on the staged copy before the swap "
+                         "(after set_pad zone_connection/size)")
     ap.add_argument("--out-report", default=None)
     args = ap.parse_args(argv)
 
@@ -647,9 +698,10 @@ def run(argv: list[str] | None = None):
             "affected nets FIRST, then move, then route fresh). Pass "
             "--allow-routed to proceed deliberately and re-run drc_routed "
             "after")
-    results = apply_ops(pcb, ops)
+    results = apply_ops(pcb, ops, refill=args.refill)
     payload = {"script": "place_edit", "status": "pass", "board": args.pcb,
-               "applied": len(ops), "verified": True, "results": results}
+               "applied": len(ops), "verified": True,
+               "refilled": args.refill, "results": results}
     if fp_ops and routed:
         payload["routed_board"] = True
         payload["warnings"] = ["footprint ops applied on a routed board "

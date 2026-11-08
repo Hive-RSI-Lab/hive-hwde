@@ -45,9 +45,13 @@ unscriptable):
 
 Pad and part-attribute ops (U-ECO: the hi-fi boards scripted these by hand):
   {"op": "set_pad", "ref": R, "pad": N | [N...], ["net": NAME | ""],
-   ["size": mm | [w, h]]}
+   ["size": mm | [w, h]], ["zone_connection": "solid"|"thermal"|"none"|
+   "inherit"]}
      - re-nets (a net not on the board is created; "" clears it, for an NC
-       pin) and/or resizes the named pads. Absolute, so idempotent.
+       pin), resizes and/or sets the zone connection of the named pads
+       (solid = no thermal spokes, for a pad carrying amps into a plane;
+       inherit = the footprint's/zone's setting again). Zones are not
+       refilled here: refill after. Absolute, so idempotent.
   {"op": "set_dnp", "ref": R, "dnp": bool}
 
 The board is saved ONLY if every op applied; any failure exits 3 with a JSON
@@ -257,34 +261,12 @@ def apply_silk_clear(board, op: dict) -> dict:
             "only_offboard": keep_inside, "region": op.get("region")}
 
 
-def apply_set_pad(board, op: dict) -> dict:
-    fp = board.FindFootprintByReference(op["ref"])
-    if fp is None:
-        raise KeyError(f"footprint '{op['ref']}' not on board")
-    nums = [op["pad"]] if isinstance(op["pad"], str) else list(op["pad"])
-    pads = [p for p in fp.Pads() if p.GetNumber() in nums]
-    missing = set(nums) - {p.GetNumber() for p in pads}
-    if missing:
-        raise KeyError(f"{op['ref']}: no pad {sorted(missing)}")
-    net = None
-    if op.get("net"):
-        net = board.FindNet(op["net"])
-        if net is None:
-            net = pcbnew.NETINFO_ITEM(board, op["net"])
-            board.Add(net)
-    size = op.get("size")
-    if size is not None and not isinstance(size, list):
-        size = [size, size]
-    for p in pads:
-        if "net" in op:
-            if net is None:
-                p.SetNetCode(0)
-            else:
-                p.SetNet(net)
-        if size is not None:
-            p.SetSize(pcbnew.VECTOR2I(iu(size[0]), iu(size[1])))
-    return {"ref": op["ref"], "pads": sorted(p.GetNumber() for p in pads),
-            "net": op.get("net"), "size": size}
+# set_pad zone_connection word -> pcbnew enum name. "inherit" clears the
+# pad's own setting so the footprint's (then the zone's) applies again.
+ZONE_CONNECTIONS = {"inherit": "ZONE_CONNECTION_INHERITED",
+                    "none": "ZONE_CONNECTION_NONE",
+                    "thermal": "ZONE_CONNECTION_THERMAL",
+                    "solid": "ZONE_CONNECTION_FULL"}
 
 
 def apply_set_pad(board, op: dict) -> dict:
@@ -305,6 +287,9 @@ def apply_set_pad(board, op: dict) -> dict:
     size = op.get("size")
     if size is not None and not isinstance(size, list):
         size = [size, size]
+    zc = op.get("zone_connection")
+    if zc is not None:
+        zc = getattr(pcbnew, ZONE_CONNECTIONS[zc])
     for p in pads:
         if "net" in op:
             if net is None:
@@ -313,8 +298,11 @@ def apply_set_pad(board, op: dict) -> dict:
                 p.SetNet(net)
         if size is not None:
             p.SetSize(pcbnew.VECTOR2I(iu(size[0]), iu(size[1])))
+        if zc is not None:
+            p.SetLocalZoneConnection(zc)
     return {"ref": op["ref"], "pads": sorted(p.GetNumber() for p in pads),
-            "net": op.get("net"), "size": size}
+            "net": op.get("net"), "size": size,
+            "zone_connection": op.get("zone_connection")}
 
 
 def apply_op(board, op: dict) -> dict:

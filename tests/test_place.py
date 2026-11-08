@@ -615,7 +615,7 @@ def test_text_ops_exempt_from_routed_guard(tmp_path_factory, tmp_path,
     p = _pcb(tmp_path_factory, "guardtxt", _fp("C1", 10, 10) + _SEG)
     called = {}
     monkeypatch.setattr(place_edit, "apply_ops",
-                        lambda pcb, ops: called.setdefault("ops", ops) or [])
+                        lambda pcb, ops, **k: called.setdefault("ops", ops) or [])
     f = _ops_file(tmp_path, [{"op": "move_text", "ref": "C1",
                               "field": "reference", "x": 9.0, "y": 8.0}])
     payload, _ = place_edit.run(["--pcb", str(p), "--ops", str(f)])
@@ -626,7 +626,7 @@ def test_text_ops_exempt_from_routed_guard(tmp_path_factory, tmp_path,
 def test_allow_routed_flag_applies_and_warns(tmp_path_factory, tmp_path,
                                              monkeypatch):
     p = _pcb(tmp_path_factory, "guardflag", _fp("C1", 10, 10) + _SEG)
-    monkeypatch.setattr(place_edit, "apply_ops", lambda pcb, ops: [])
+    monkeypatch.setattr(place_edit, "apply_ops", lambda pcb, ops, **k: [])
     f = _ops_file(tmp_path, [{"op": "move", "ref": "C1", "x": 1, "y": 1}])
     payload, _ = place_edit.run(["--pcb", str(p), "--ops", str(f),
                                  "--allow-routed"])
