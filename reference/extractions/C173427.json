@@ -1,0 +1,33 @@
+{
+  "mpn": "BZT52C15",
+  "lcsc": "C173427",
+  "package": "SOD-123",
+  "description": "MDD (Microdiode) BZT52C15 15V 500mW zener diode, SOD-123",
+  "pinout": [
+    {
+      "pin": "1",
+      "name": "K",
+      "type": "passive",
+      "notes": "cathode (bar)"
+    },
+    {
+      "pin": "2",
+      "name": "A",
+      "type": "passive",
+      "notes": "anode"
+    }
+  ],
+  "pin_ratings": [
+    {
+      "pins": [
+        "K"
+      ],
+      "kind": "voltage",
+      "level": "recommended",
+      "max": 15.75,
+      "ref": "A",
+      "source": "MDD BZT52C2V0-BZT52C75 datasheet Rev:2025A6 p.3 Electrical Characteristics: 'BZT52C15 WJ VZT(at IZT) 14.25 / 15 / 15.75 V, IZT 5 mA' (zener voltage range; the datasheet gives no reverse-voltage absolute maximum, only Pd 500 mW on p.1); above this a zener conducts, so a clamp use is intended, bound is the top of its zener range"
+    }
+  ],
+  "source_pdf": "MDD (Microdiode Semiconductor) BZT52C2V0-BZT52C75 Surface Mount Zener Diode, Rev:2025A6, 4 pages, cathode bar on p.1; https://datasheet.lcsc.com/datasheet/pdf/61190d79e0f948958471ae8476bcd111.pdf?productCode=C173427 sha256 08e6b35c15019212ad07755560542157b65da781130b575d7d10c2ae6e875c1a"
+}

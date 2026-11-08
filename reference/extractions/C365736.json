@@ -23,7 +23,7 @@
     {"pin": "17", "name": "AVDD", "type": "power_in", "notes": "analog supply"},
     {"pin": "18", "name": "AGND", "type": "ground", "notes": "analog ground"},
     {"pin": "19", "name": "ADCVREF", "type": "analog", "notes": "decoupling capacitor (pin drawing p.5 labels it DACVREF)", "self_driven": true},
-    {"pin": "20", "name": "VMID", "type": "analog", "notes": "decoupling capacitor"},
+    {"pin": "20", "name": "VMID", "type": "analog", "notes": "decoupling capacitor; pin description p.6 table lists it as type O (output): 'VMID O Decoupling capacitor'", "self_driven": true},
     {"pin": "21", "name": "RIN2", "type": "input", "notes": "right channel input 2"},
     {"pin": "22", "name": "LIN2", "type": "input", "notes": "left channel input 2"},
     {"pin": "23", "name": "RIN1", "type": "input", "notes": "right channel input 1"},

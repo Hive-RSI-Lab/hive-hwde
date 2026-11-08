@@ -1993,7 +1993,7 @@
    "pos": null,
    "kind": "rating_unrated",
    "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+   "reason": "not a defect of the board: J2 (C12074 HR911105A RJ45) stays unrated by the #835 decision, which gives a magnetics jack no voltage row; hwde's coverage gap"
   },
   {
    "gate": "verify",
@@ -2005,7 +2005,7 @@
    "pos": null,
    "kind": "rating_unrated",
    "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+   "reason": "not a defect of the board: the maker's datasheet (SCTF SX3M49.152B10F20TNN, 05/12/2026, 9 pages) states no absolute-maximum or VDD+0.3 row for OE, only VIH 0.7 VDD / VIL 0.3 VDD (p.1), so by the #835 decision OE stays unrated; hwde's coverage gap"
   },
   {
    "gate": "verify",
@@ -2017,7 +2017,7 @@
    "pos": null,
    "kind": "rating_unrated",
    "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
+   "reason": "not a defect of the board: the maker's datasheet (YXC YSO110TR, undated) states no absolute-maximum or VDD+0.3 row for OE, only enable 70 % VDD / disable 30 % VDD (p.1), so by the #835 decision OE stays unrated; hwde's coverage gap"
   },
   {
    "gate": "verify",
@@ -2386,37 +2386,6 @@
    "kind": "si_crosstalk_sim",
    "verdict": "real",
    "reason": "/I2S_DOUT_MAIN beside /I2S_LRCK (53 mm): sim_si puts 262 mV on the receiver with no driver declared (worst orientation), past the 165 mV budget, inside the 396 mV margin; with both nets driven from the one IC it still reads 256-377 mV, so it isn't the orientation"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "C228",
-    "C231",
-    "C234",
-    "C237",
-    "C326",
-    "C329",
-    "C332",
-    "C335"
-   ],
-   "pos": null,
-   "kind": "rating_no_attributes",
-   "verdict": "real",
-   "reason": "real: pinned core's parts/parts.json holds no attributes for this rated part, so no rating of it can be judged until the row is filled (scripts/parts_enrich.py)"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "C8"
-   ],
-   "pos": null,
-   "kind": "rating_no_attributes",
-   "verdict": "real",
-   "reason": "real: pinned core's parts/parts.json holds no attributes for this rated part, so no rating of it can be judged until the row is filled (scripts/parts_enrich.py)"
   },
   {
    "gate": "verify",
@@ -4348,26 +4317,12 @@
    "check": "check_ratings",
    "net": null,
    "refs": [
-    "C228",
-    "C231",
-    "C234",
-    "C237",
-    "C326",
-    "C329",
-    "C332",
-    "C335",
-    "C8",
-    "D2",
-    "D4",
-    "J10",
-    "J11",
-    "J6",
-    "J7"
+    "D4"
    ],
    "pos": null,
    "kind": "rating_unrated",
    "verdict": "false",
-   "reason": "not a defect of the board: no rating source for these parts: their LCSC codes (C1588 1nF, C377773 2.2uF, C474881 SPK A L) have no JLC listing, so parts_enrich left their rows bare (named under bare_parts in the pin), D2/D4 (BZT52C zeners) list no rating hwde reads and J6/J7/J10/J11 have none, and the datasheet library has none for them; hwde's coverage gap"
+   "reason": "not a defect of the board: D4's datasheet row is in the library (MDD BZT52C15, zener range 14.25-15.75 V, p.3) but it is rated against its anode, the Q1 gate node, and the board states no voltage for that net; hwde's coverage gap"
   },
   {
    "gate": "verify",

@@ -1,0 +1,32 @@
+{
+  "mpn": "KF301-5.0-2P",
+  "lcsc": "C474881",
+  "package": "Plugin,P=5mm",
+  "description": "Cixi Kefa (KEFA) KF301-5.0 2-pole 5.0mm PCB screw terminal block, 300V 16A (UL use group B)",
+  "pinout": [
+    {
+      "pin": "1",
+      "name": "P1",
+      "type": "passive"
+    },
+    {
+      "pin": "2",
+      "name": "P2",
+      "type": "passive"
+    }
+  ],
+  "pin_ratings": [
+    {
+      "pins": [
+        "P1",
+        "P2"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -300,
+      "max": 300,
+      "source": "Cixi Kefa KF301-5.0 drawing rev A (21.03.13) p.1 UL/CUL Technical Data: 'Use Group B, Rated Voltage [V] 300, Rated Current [A] 16' (contact rating, applied to every pole)"
+    }
+  ],
+  "source_pdf": "Cixi Kefa Electronic KF301-5.0 customer drawing, rev A dated 21.03.13, 1 page, poles numbered by position on p.1; https://datasheet.lcsc.com/datasheet/pdf/dbe48a1bef5e997cc12dba31bc0ac67e.pdf?productCode=C474881 sha256 d5758ddb6887651bcf00755cf80ce380bd6d45326f677aead92f9004240b1600"
+}

@@ -120,18 +120,6 @@
   },
   {
    "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "U2"
-   ],
-   "pos": null,
-   "kind": "rating_unrated",
-   "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
-  },
-  {
-   "gate": "verify",
    "check": "check_straps",
    "net": "/LED_R",
    "refs": [

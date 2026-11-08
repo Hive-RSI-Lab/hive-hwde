@@ -1,0 +1,32 @@
+{
+  "mpn": "CL21A225KBQNNNE",
+  "lcsc": "C377773",
+  "package": "C0805",
+  "description": "Samsung Electro-Mechanics CL21A225KBQNNNE 2.2uF 50V X5R 0805 MLCC",
+  "pinout": [
+    {
+      "pin": "1",
+      "name": "1",
+      "type": "passive"
+    },
+    {
+      "pin": "2",
+      "name": "2",
+      "type": "passive"
+    }
+  ],
+  "pin_ratings": [
+    {
+      "pins": [
+        "1"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -50,
+      "max": 50,
+      "ref": "2",
+      "source": "Samsung MLCC catalog Nov 2015 p.20 Product Lineup (Standard & High Capacitors-X5R): '8 CL21A225KBQNNN 2.2uF 50 10% 1.40' (Rated Voltage (Vdc) column; the catalog lists the part without the packaging letter that LCSC's model adds); non-polar, rated across the two terminals"
+    }
+  ],
+  "source_pdf": "Samsung Electro-Mechanics MLCC catalog (Nov 2015), 84 pages; https://datasheet.lcsc.com/datasheet/pdf/02336ea48ea44ca18c72517dd3cb7b47.pdf?productCode=C377773 sha256 96baebe4bd0ce363e87be28b5b003f511f1502e084a6fc4f02333ded56c808f6 (PDF page numbers; there is no pin map: a 2-terminal chip, pads 1 and 2 interchangeable)"
+}

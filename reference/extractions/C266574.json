@@ -1,0 +1,33 @@
+{
+  "mpn": "BZT52C33",
+  "lcsc": "C266574",
+  "package": "SOD-123",
+  "description": "BORN BZT52C33 33V 500mW zener diode, SOD-123",
+  "pinout": [
+    {
+      "pin": "1",
+      "name": "K",
+      "type": "passive",
+      "notes": "cathode (bar)"
+    },
+    {
+      "pin": "2",
+      "name": "A",
+      "type": "passive",
+      "notes": "anode"
+    }
+  ],
+  "pin_ratings": [
+    {
+      "pins": [
+        "K"
+      ],
+      "kind": "voltage",
+      "level": "recommended",
+      "max": 35.0,
+      "ref": "A",
+      "source": "BORN BZT52Cxx Zener Diode datasheet Revision 2022-Jan-1-A p.2 Typical Performance Characteristics: 'BZT52C33 WR Nom 33 Min 31.0 Max 35.0 V at IZT 2 mA' (zener voltage range; the datasheet gives no reverse-voltage absolute maximum, only PD 500 mW on p.1); above this a zener conducts, so a clamp use is intended, bound is the top of its zener range"
+    }
+  ],
+  "source_pdf": "BORN Semiconductor BZT52Cxx Zener Diode datasheet, Revision 2022-Jan-1-A, 7 pages, SOD-123 package on p.1; https://datasheet.lcsc.com/datasheet/pdf/db5b88347dc197750943ecc89973ddd1.pdf?productCode=C266574 sha256 d51cb38ad8ab5502af80396fb690580c4b85fce834f7e40a96a6bfb9484bd6d7"
+}
