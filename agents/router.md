@@ -182,7 +182,11 @@ rules as routing constraints; cite the record id when you apply one.
   place_edit's `set_pad` / `set_dnp` (`"zone_connection": "solid"` joins a
   pad to the pour without thermal spokes, for a power pin; pass
   place_edit `--refill` so the fill follows); a part's own silk in a box is `silk_clear` with a
-  `region`. A package swap is board_update with the new footprint in the
+  `region` (or `over_pads` for the silk on its own pads, `edge_mm` for silk
+  too near the board edge, `at`/`uuid` for one item). The silk DRC findings
+  silk_place could not place go to `hwde silk_fix --pcb B`: it hides each
+  named Reference/Value field, deletes each named footprint graphic, and
+  checks DRC moved nothing else. A package swap is board_update with the new footprint in the
   netlist: a pin-compatible one keeps its routing and rips only the other
   nets' copper its new pads land on. Don't write a pcbnew script for an
   edit these cover; if one is missing, add the op to hwde.
