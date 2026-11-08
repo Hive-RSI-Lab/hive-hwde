@@ -178,7 +178,8 @@ def classify(bg, constraints: dict | None, pro: dict | None) -> tuple[dict, list
     c = constraints or {}
     cls: dict[str, str] = {}
     groups: list[list[str]] = []
-    zone_nets = {z.net for z in bg.zones_of() if z.net}
+    # teardrop zones are not planes (#633)
+    zone_nets = {z.net for z in bg.zones_of() if z.net and not z.teardrop}
     plane = zone_nets | {p.get("net") for p in c.get("planes", []) or []}
     pairs = [(d.get("p"), d.get("n")) for d in c.get("diff_pairs", []) or []]
     named = {n for pr in pairs for n in pr}

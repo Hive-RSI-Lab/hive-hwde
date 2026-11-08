@@ -296,6 +296,10 @@ class Zone:
     # `(name ...)` and the first outline ring `(polygon (pts ...))`
     name: str = ""
     outline: tuple = ()
+    # `(attr (teardrop ...))`: KiCad builds one of these per track joining a
+    # teardropped via or pad. It is copper of that net but not a pour, so a
+    # "nets with a zone are planes" rule must skip it (#633).
+    teardrop: bool = False
 
     @property
     def filled(self) -> bool:
@@ -952,6 +956,7 @@ class BoardGeom:
             cp = _kid(zone, "connect_pads")
             cl = _kid(cp, "clearance") if cp is not None else None
             nm = _kid(zone, "name")
+            at = _kid(zone, "attr")
             pg = _kid(zone, "polygon")
             ring = _pts(_kid(pg, "pts")) if pg is not None and \
                 _kid(pg, "pts") is not None else []
@@ -961,7 +966,9 @@ class BoardGeom:
                                     else None,
                                     name=_strs(nm)[0] if nm is not None
                                     and _strs(nm) else "",
-                                    outline=tuple(ring)))
+                                    outline=tuple(ring),
+                                    teardrop=at is not None
+                                    and _kid(at, "teardrop") is not None))
             zid += 1
 
     def _parse_outline(self, root) -> Polygon:

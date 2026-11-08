@@ -505,7 +505,8 @@ class Engine:
         inner = set(model.bg.copper_layers[1:-1])
         self.plane_nets = sorted(
             {z.net for z in model.bg.zones_of()
-             if z.net and inner.intersection(z.layers)} & set(self.nets))
+             if z.net and not z.teardrop and inner.intersection(z.layers)}
+            & set(self.nets))
         self.pitch = net_pitch_units(model.path, self.nets)
         planes = set(self.plane_nets)
         self.cong_nets = [n for n in self.nets if n not in planes]
