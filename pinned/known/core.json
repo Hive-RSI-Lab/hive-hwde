@@ -4317,18 +4317,6 @@
    "check": "check_ratings",
    "net": null,
    "refs": [
-    "D4"
-   ],
-   "pos": null,
-   "kind": "rating_unrated",
-   "verdict": "false",
-   "reason": "not a defect of the board: D4's datasheet row is in the library (MDD BZT52C15, zener range 14.25-15.75 V, p.3) but it is rated against its anode, the Q1 gate node, and the board states no voltage for that net; hwde's coverage gap"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
     "C1",
     "C10",
     "C11",

@@ -1,0 +1,14 @@
+# Seeded fault for check_ratings' bound on a net with no stated voltage (hive-hwde #864).
+mutants:
+  clamped-net-over-rating:
+    board: blinky2
+    script: mutations/clamped_net_over_rating.py
+    check: check_ratings
+    defect: >-
+      SIDECAR fault + board edits: D1 becomes a 3.3 V zener from +5V onto
+      /LED_A (no stated voltage), so the net is bounded to about 1.7..5.7 V;
+      C7, moved onto /LED_A and extracted as a 1 V input, is over its
+      rating at that bound
+    expect:
+      kind: rating_over_voltage
+      ref: C7
