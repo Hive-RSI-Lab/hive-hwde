@@ -321,17 +321,21 @@ def check_net(bg: geom.BoardGeom, entry: dict, k_cli: float):
             continue
         layers_used.append(layer)
         centerline = unary_union([t.shape for t in tracks])
-        for ref_layer in bg.adjacent_copper(layer):
-            if ref_layer is None:
-                continue
-            declared = reference_net_for(entry, layer)
-            ref_net, waiver, coverage = resolve_reference(
-                bg, corridor, declared, ref_layer)
+        declared = reference_net_for(entry, layer)
+        refs = {r: resolve_reference(bg, corridor, declared, r)
+                for r in bg.adjacent_copper(layer) if r is not None}
+        # A stripline with a plane on one side returns on that side: an
+        # adjacent signal layer with no zone fill under the corridor is not
+        # its reference (its only copper there is via pads, all "void").
+        planed = {r for r, (_, _, cov) in refs.items() if cov > 0}
+        for ref_layer, (ref_net, waiver, coverage) in refs.items():
             resolution[(layer, ref_layer)] = {
                 "signal_layer": layer, "ref_layer": ref_layer,
                 "declared": declared, "resolved": ref_net,
                 "waiver_class": WAIVER_CLASS if waiver else None,
                 "corridor_coverage": checklib.rnd(coverage)}
+            if planed and ref_layer not in planed:
+                continue
             ref_copper = bg.net_copper(ref_net, ref_layer)
             if ref_copper.is_empty:
                 violations.append(violation(
