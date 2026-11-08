@@ -14,3 +14,18 @@ mutants:
       net: "+3V3"
       ref: U1
       pos: [130.0, 122.0]
+  source-stub-necked:
+    board: usbbuck4
+    script: mutations/source_stub_necked.py
+    check: check_current
+    defect: >-
+      SIDECAR + copper fault: +3V3 is plane-fed with L1 named as its source at
+      0.4 A, and the track that takes L1's output toward the rail is necked to
+      0.1 mm, below the 0.15 mm that current needs. A stub holding the named
+      source carries its output, so it must be an error, not a full-budget
+      warning.
+    expect:
+      kind: undersized_track
+      net: "+3V3"
+      ref: L1
+      pos: [119.9, 106.9]
