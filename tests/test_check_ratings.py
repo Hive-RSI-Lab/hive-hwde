@@ -3069,3 +3069,52 @@ def test_an_unmarked_analog_pin_stays_unrated(tmp_path):
              {"C9": DRV})
     un = [v for v in _run(ws)["violations"] if v["kind"] == "rating_unrated"]
     assert un and "CFG" in un[0]["msg"]
+
+
+# --- #864: a net with no stated voltage, bounded by its feed and a clamp ----
+
+def _zener(vz):
+    return {"mpn": "TESTZ", "pinout": [
+        {"pin": "1", "name": "K", "type": "passive"},
+        {"pin": "2", "name": "A", "type": "passive"}],
+        "pin_ratings": [{"pins": ["K"], "kind": "voltage", "level": "recommended",
+                         "max": vz, "ref": "A", "source": "test p.1 Vz"}]}
+
+
+PFET = {"mpn": "TESTPFET", "pinout": [
+    {"pin": "1", "name": "G", "type": "input"},
+    {"pin": "2", "name": "S", "type": "passive"}],
+    "pin_ratings": [{"pins": ["G"], "kind": "voltage", "level": "abs_max",
+                     "min": -10, "max": 10, "ref": "S", "source": "test p.1 Vgs"}]}
+
+
+def _gate(tmp_path, vz, pd="500mW"):
+    fps = [("Q1", "C20", {"1": "/G", "2": "+12V"}),
+           ("D1", "C21", {"1": "+12V", "2": "/G"}),
+           ("R1", "C22", {"1": "+12V", "2": "/G"}, "x", "100k"),
+           ("R2", "C22", {"1": "/G", "2": "/PD"}, "x", "100k")]
+    bom = [{"lcsc": "C21", "mpn": "TESTZ", "attributes": [
+        {"name": "Pd - Power Dissipation", "value": pd}]}]
+    return _run(_ws(tmp_path, fps, {"C20": PFET, "C21": _zener(vz)}, bom=bom))
+
+
+def test_clamped_gate_net_is_bounded_and_the_clamp_judged(tmp_path):
+    p = _gate(tmp_path, 8)          # gate in 4..12 V: Vgs -8..0 inside +-10
+    bad = [v for v in p["violations"] if v["kind"] in
+           ("rating_over_voltage", "rating_reverse_polarity",
+            "rating_over_current", "rating_unrated") and
+           any(r in ("Q1", "D1") for r in v["refs"])]
+    assert not bad
+
+
+def test_a_clamp_too_loose_for_the_gate_is_caught(tmp_path):
+    p = _gate(tmp_path, 15)         # gate down to 0 V: Vgs -12 under -10
+    hit = [v for v in p["violations"] if v["refs"] == ["Q1"]]
+    assert [v["kind"] for v in hit] == ["rating_reverse_polarity"]
+    assert hit[0]["severity"] == "warning"
+
+
+def test_a_clamp_its_feed_could_burn_is_flagged(tmp_path):
+    p = _gate(tmp_path, 8, pd="0.5mW")
+    assert any(v["kind"] == "rating_over_current" and v["refs"] == ["D1"]
+               for v in p["violations"])

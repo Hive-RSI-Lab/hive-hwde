@@ -20,6 +20,15 @@ Inputs (pure Python, no KiCad run):
    pin), then the net name (+5V, 3V3, +12V, -5V, VBUS = 5 V; GND*/VSS* = 0).
    A signal net with no voltage of its own takes the highest rail it is
    pulled up to through a 2-pad resistor.
+   A net with no voltage of its own that carries a zener clamp (a 2-pad K/A
+   part with a recommended K-vs-A max, K on a known net) and nothing but
+   resistors, capacitors, input pins and the clamp is bounded (#864): it lies
+   in the hull of what its feed resistors reach (a known net's volts, else the
+   board's rails), narrowed by the clamp to K - Vz .. K + a diode drop. The
+   other parts on it are judged at both ends of that bound (a warning: the
+   bound is derived). The clamp is not judged against the bound it makes: it
+   passes when the current its feed can force through it, times its Vz, stays
+   under the parts.json Pd; over it, rating_over_current.
 
 Ratings per pin: the extraction's structured `pin_ratings` entries first
 (pins, kind voltage|current, level abs_max|recommended, min/max as a number
@@ -775,6 +784,122 @@ def _board_features(bom: list[dict]) -> set[str]:
     return out
 
 
+# --- nets the board states no voltage for (#864) --------------------------
+
+_OHM_MULT = {"": 1.0, "R": 1.0, "k": 1e3, "K": 1e3, "M": 1e6}
+DIODE_DROP_V = 0.7
+PD_ATTR_RE = re.compile(r"Pd|Power Dissipation", re.I)
+
+
+def _ohms(value: str) -> float | None:
+    """Ohms from a resistor Value (470k, 4k7, 10R, 2.2M), else None."""
+    tok = str(value or "").split()[:1]
+    if not tok:
+        return None
+    tok = tok[0].replace("\u03a9", "R").replace("\u2126", "R")
+    m = re.fullmatch(r"(\d+)([RkKM])(\d+)", tok)
+    if m:
+        return float(f"{m.group(1)}.{m.group(3)}") * _OHM_MULT[m.group(2)]
+    m = re.fullmatch(r"(\d+(?:\.\d+)?)([RkKM]?)", tok)
+    return float(m.group(1)) * _OHM_MULT[m.group(2)] if m else None
+
+
+def _watts(text: str | None) -> float | None:
+    m = re.fullmatch(r"\s*(\d+(?:\.\d+)?)\s*(m?)W\s*", text or "")
+    if not m:
+        return None
+    return float(m.group(1)) * (1e-3 if m.group(2) else 1.0)
+
+
+def clamp_row(b: dict, ext: dict | None) -> tuple[str, float] | None:
+    """A zener-style clamp: two pads, a K pin whose recommended voltage row
+    is a max against A. (K net's pad, Vz top), else None."""
+    if ext is None or len(b["pads"]) != 2:
+        return None
+    names = {p["pin"]: p["name"] for p in ext.get("pinout") or []}
+    if sorted(names.get(k, "") for k in b["pads"]) != ["A", "K"]:
+        return None
+    rows = part_ratings(ext)
+    for pin, nm in names.items():
+        if nm != "K":
+            continue
+        for r in rows.get(pin, {}).get(("voltage", "rec"), []):
+            if r["ref"] == "A" and isinstance(r["hi"], float) and r["hi"] > 0:
+                return pin, r["hi"]
+    return None
+
+
+def unstated_net_bounds(board: list[dict], exts: dict, bom_by_lcsc: dict,
+                        volts: dict) -> tuple[dict, dict]:
+    """(bounds, clamp_power) for nets with no stated voltage.
+
+    bounds[net] = (lo, hi, why): the voltage the net can reach. A net is
+    bounded only when everything on it is a resistor, a capacitor, an input
+    pin or a clamp (no driver we do not know about). Each resistor to a
+    known net contributes that net's voltage, each to an unknown net the
+    board's rails; the net lies in the hull of those. A zener clamp whose K
+    is on a known net then narrows it: A >= K - Vz, A <= K + a diode drop.
+    clamp_power[ref] = (watts the clamp can dissipate, its Pd): a clamp is
+    judged by the power it can carry, not against the bound it makes."""
+    floor = min([0.0, *volts.values()])
+    ceil = max([0.0, *volts.values()])
+    on: dict[str, list] = {}
+    for b in board:
+        for pad, net in b["pads"].items():
+            if net not in volts:
+                on.setdefault(net, []).append((b, pad))
+    bounds: dict[str, tuple] = {}
+    clamp_power: dict[str, tuple] = {}
+    for net, pins in on.items():
+        pts, ohms, clamps, ok = [], [], [], True
+        for b, pad in pins:
+            ref, ext = b["ref"], exts.get(b["lcsc"])
+            if clamp_row(b, ext):
+                clamps.append(b)
+                continue
+            if re.match(r"^R\d", ref) and len(b["pads"]) == 2:
+                other = next((n for q, n in b["pads"].items() if q != pad), None)
+                r = _ohms(b.get("value"))
+                if other is None or other == net or r is None or r <= 0:
+                    ok = False
+                    break
+                pts.append(volts.get(other, None))
+                ohms.append((r, volts.get(other)))
+                continue
+            if re.match(r"^C\d", ref):
+                continue
+            ptype = next((p["type"] for p in (ext or {}).get("pinout") or []
+                          if p["pin"] == pad), None)
+            if ptype not in ("input", "passive"):
+                ok = False
+                break
+        if not ok or not ohms or not clamps:
+            continue    # a bare hull of the board's rails proves nothing
+        lo = min(floor if v is None else v for v in pts)
+        hi = max(ceil if v is None else v for v in pts)
+        why = "feed resistors"
+        feed_lo, feed_hi = lo, hi
+        for c in clamps:
+            kpin, vz = clamp_row(c, exts.get(c["lcsc"]))
+            knet = c["pads"][kpin]
+            if knet in volts:
+                lo, hi = max(lo, volts[knet] - vz), min(hi, volts[knet] + DIODE_DROP_V)
+                why = f"feed resistors, clamped by {c['ref']}"
+        if lo > hi + EPS:
+            continue
+        bounds[net] = (lo, hi, why)
+        for c in clamps:  # the clamp's own evidence excludes itself
+            kpin, vz = clamp_row(c, exts.get(c["lcsc"]))
+            pd = _watts(_attr(bom_by_lcsc.get(c["lcsc"]), PD_ATTR_RE))
+            if pd is None or c["pads"][kpin] not in volts:
+                continue
+            amps = sum(max(abs(volts[c["pads"][kpin]] - (floor if v is None else v)),
+                           abs(volts[c["pads"][kpin]] - (ceil if v is None else v))) / r
+                       for r, v in ohms)
+            clamp_power[c["ref"]] = (amps * vz, pd)
+    return bounds, clamp_power
+
+
 def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
               power_tree: Path | None,
               cons_dir: Path | None = None,
@@ -869,6 +994,7 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
     diodes = {b["ref"]: d for b in board
               if (d := diode_reverse(b, exts.get(b["lcsc"]),
                                      bom_by_lcsc.get(b["lcsc"]), netfns))}
+    bounds, clamp_power = unstated_net_bounds(board, exts, bom_by_lcsc, volts)
     for b in sorted(board, key=lambda x: x["ref"]):
         ref, pads = b["ref"], b["pads"]
         if not pads:
@@ -1044,6 +1170,39 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
             if v is not None and vsrc[net] == "pull-up" \
                     and p["type"] == "power_in":
                 v = None  # a series resistor into a supply pin: drop unknown
+            if v is None and net in bounds:
+                lo_n, hi_n, bwhy = bounds[net]
+                judged = True
+                for r in vabs:
+                    vr = ref_volts(r["ref"]) if r["ref"] else 0.0
+                    lo, _ = resolve(r["lo"])
+                    hi, _ = resolve(r["hi"])
+                    if vr is None or isinstance(r["lo"], tuple) \
+                            or isinstance(r["hi"], tuple):
+                        judged = False
+                        continue
+                    rel = f" vs {r['ref']}" if r["ref"] else ""
+                    span = f"{_fmt(lo_n)}..{_fmt(hi_n)} V ({bwhy})"
+                    base = dict(pin=f"{ref}.{pin}", rating=r["src"],
+                                bound_v=[lo_n, hi_n])
+                    if hi is not None and hi_n - vr > hi + EPS:
+                        emit("rating_over_voltage", "warning", ref, net,
+                             f"{label} on {net}, which the board states no "
+                             f"voltage for but which lies in {span}, reaches "
+                             f"{_fmt(hi_n - vr)} V{rel}, over its absolute "
+                             f"max {_fmt(hi)} V [{r['src']}]", limit_v=hi, **base)
+                    elif lo is not None and lo_n - vr < lo - EPS:
+                        emit("rating_reverse_polarity", "warning", ref, net,
+                             f"{label} on {net}, which the board states no "
+                             f"voltage for but which lies in {span}, reaches "
+                             f"{_fmt(lo_n - vr)} V{rel}, below its absolute "
+                             f"min {_fmt(lo)} V [{r['src']}]", limit_v=lo, **base)
+                if judged and vabs:
+                    checked_pins += 1
+                    compared(ref, "datasheet")
+                else:
+                    unknown_net_pins += 1
+                continue
             if v is None:
                 unknown_net_pins += 1
                 continue
@@ -1055,6 +1214,16 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                     vp, rel = v, ""
                     if r["ref"]:
                         vr = ref_volts(r["ref"])
+                        if vr is None and ref in clamp_power \
+                                and clamp_power[ref][0] <= clamp_power[ref][1]:
+                            continue  # a clamp the feed resistors cannot burn
+                        if vr is None and ref in clamp_power:
+                            emit("rating_over_current", "warning", ref, net,
+                                 f"{label} is a clamp that can carry "
+                                 f"{clamp_power[ref][0]:.2g} W from its feed, "
+                                 f"over its {clamp_power[ref][1]:.2g} W "
+                                 "power rating", pin=f"{ref}.{pin}")
+                            continue
                         if vr is None:
                             # the ref's net is unknown but lies within the
                             # board's rails: judged when the rating holds at
