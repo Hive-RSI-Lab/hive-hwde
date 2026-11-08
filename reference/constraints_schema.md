@@ -221,7 +221,10 @@ Consumers per key (script -> phase):
   // voltage_pairs (T2): explicit net-PAIR differential that node voltages
   // cannot express (bridge/AC inputs - two 57 V taps carry 114 V between
   // them). Overrides the derived difference for that pair; a pair declared
-  // <= 30 V WAIVES the derived check (recorded in the report).
+  // <= 30 V WAIVES the derived check (recorded in the report). A pair
+  // below the larger declared `voltages` figure of its own two nets warns
+  // (creepage_pair_understated) unless it carries "why": the override
+  // would otherwise relax spacing with no reason on record (#651).
   "voltage_pairs": [{"a": "/poe/POE_TAP_A1", "b": "/poe/POE_TAP_A2",
                      "voltage": 114}],
   // coating (T2) selects the IPC-2221 Table 6-1 row per item type:

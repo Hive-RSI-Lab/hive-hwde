@@ -102,7 +102,7 @@ SECTIONS: dict[str, dict[str, dict[str, str]]] = {
     },
     "voltage_pairs": {
         "required": {"a": "str", "b": "str", "voltage": "num"},
-        "optional": {},
+        "optional": {"why": "str"},
     },
     "thermal": {
         "required": {"ref": "str", "power_w": "num"},

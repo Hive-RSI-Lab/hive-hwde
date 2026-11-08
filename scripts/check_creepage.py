@@ -70,6 +70,10 @@ voltages (a bridge/AC input that node voltages cannot express); an explicit
 pair overrides the `voltages`-derived difference for that net pair - INCLUDING
 a pair declared <= 30 V, which WAIVES the derived check for that pair (the
 waiver is recorded in skipped_low_voltage_pairs).
+A pair declared BELOW the larger declared node voltage of its own two nets
+(pair-scoped or waived alike) raises a `creepage_pair_understated` warning
+unless the entry carries a `"why"` string (#651): the override would
+otherwise relax the spacing with nothing on record to say it is safe.
 `--coating` overrides the constraints key; default "none".
 """
 from __future__ import annotations
@@ -174,6 +178,33 @@ def voltage_pair_list(cons: dict) -> list[tuple[str, str, float]]:
         if a == b:
             raise CheckError(f"voltage_pairs entry names the same net twice: {a!r}")
         out.append((a, b, abs(float(entry["voltage"]))))
+    return out
+
+
+def understated_pairs(cons: dict, vmap: dict) -> list[dict]:
+    """voltage_pairs entries declared below the larger declared node voltage
+    of their own two nets, with no `why` (#651).
+
+    An explicit pair OVERRIDES the voltages-derived difference, so a pair
+    written too low silently relaxes the spacing: hw-lab mains-psu declared
+    HV_BULK-DRAIN at 219 V while 375 V sits across it with the FET on, and
+    1.25 mm passed where 2.5 mm was needed. The node voltages bound the
+    worst case (the other net at 0 V), so a pair below max(|V_a|, |V_b|)
+    needs a stated reason. Only declared node voltages count: a pair whose
+    nets are both absent from `voltages` (a bridge input) is never flagged.
+    """
+    out = []
+    for entry in cons.get("voltage_pairs", []):
+        a, b = entry["a"], entry["b"]
+        v = abs(float(entry["voltage"]))
+        known = [n for n in (a, b) if n in vmap]
+        if not known or str(entry.get("why") or "").strip():
+            continue
+        node = max(known, key=lambda n: abs(vmap[n]))
+        if v >= abs(vmap[node]):
+            continue
+        out.append({"a": a, "b": b, "voltage": v, "node_net": node,
+                    "node_voltage": abs(vmap[node])})
     return out
 
 
@@ -517,6 +548,19 @@ def run(argv=None):
         checked.append({"net": a, "other_net": b, "voltage": v,
                         "voltage_pair": True, "pairs_checked": len(summ),
                         "pairs": summ})
+
+    for u in understated_pairs(cons, vmap):
+        violations.append(violation(
+            SCRIPT, "warning", None, None, u["a"], [],
+            (f"voltage_pairs {u['a']}-{u['b']} declares {u['voltage']:.0f} V, "
+             f"below {u['node_net']}'s own {u['node_voltage']:.0f} V; the pair "
+             f"overrides the derived difference, so spacing is judged at the "
+             f"lower figure. Raise it, or add a \"why\" saying why the nets "
+             f"never see more"),
+            SCRIPT, kind="creepage_pair_understated", other_net=u["b"],
+            pair_voltage=checklib.rnd(u["voltage"]),
+            node_net=u["node_net"],
+            node_voltage=checklib.rnd(u["node_voltage"])))
 
     # sidecar-adoption lint (T6, facts only - never a violation): when no
     # coating is declared and findings were adjudicated on the uncoated

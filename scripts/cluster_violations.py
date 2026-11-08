@@ -56,6 +56,9 @@ FIXER_HINTS = {
     "diffpair_via_asymmetry": "router", "diffpair_missing_net": "schematic",
     "diffpair_open_trunk": "router",
     "creepage": "placement", "plane_missing": "plane",
+    # a voltage_pairs entry below its own nets' declared voltage: the fix is
+    # the constraints entry (raise it or give a why), not the copper
+    "creepage_pair_understated": "review",
     "thermal_area": "plane", "thermal_vias": "router",
     "silk_over_pad": "silk", "silk_illegible": "silk", "silk_thin": "silk",
     "silk_misattributed": "silk", "route_style": "router",
