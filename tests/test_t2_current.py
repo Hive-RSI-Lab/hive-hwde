@@ -178,13 +178,30 @@ def stub_bg(tmp_path_factory):
 
 def test_plane_fed_stub_of_unknown_load_is_unjudged(stub_bg):
     """U2's draw is unknown: its stub is not charged the rail's 1.0 A. U1's
-    via holds the source, so it keeps the full-budget screen."""
+    via holds the named source, whose output the entry gives (1.0 A): one
+    via is short for it, so that stays an error (#845)."""
     vs, facts = check_current.check_net(stub_bg, STUB_ENTRY)
     assert [(v["kind"], v["pos"], v["severity"]) for v in vs] == [
-        ("insufficient_transition_vias", [2.0, 5.0], "warning")]
+        ("insufficient_transition_vias", [2.0, 5.0], "error")]
+    assert vs[0]["source_stub"] is True and "source stub" in vs[0]["msg"]
     assert {(u["kind"], tuple(u["refs"])) for u in facts["unjudged"]} == {
         ("undersized_track", ("U2",)),
         ("insufficient_transition_vias", ("U2",))}
+
+
+def test_source_stub_with_enough_vias_passes(stub_bg):
+    """The same source stub at 0.5 A needs one via and has it."""
+    vs, _ = check_current.check_net(stub_bg, dict(STUB_ENTRY, current_a=0.5))
+    assert [v for v in vs if v.get("source_stub")] == []
+
+
+def test_unnamed_source_stub_stays_advisory(stub_bg):
+    """No named source: the output current is not known, so the full-budget
+    screen stays a warning."""
+    entry = {k: v for k, v in STUB_ENTRY.items() if k != "source"}
+    vs, _ = check_current.check_net(stub_bg, entry)
+    assert [v for v in vs if v.get("source_stub")] == []
+    assert all(v["severity"] == "warning" for v in vs)
 
 
 def test_plane_fed_stub_judged_at_its_load(stub_bg):
@@ -200,7 +217,8 @@ def test_plane_fed_stub_undersized_for_its_load_is_error(stub_bg):
     not an advisory warning."""
     vs, _ = check_current.check_net(
         stub_bg, dict(STUB_ENTRY, loads={"U2": 0.9}))
-    bad = [v for v in vs if v["severity"] == "error"]
+    bad = [v for v in vs if v["severity"] == "error"
+           and not v.get("source_stub")]
     assert {v["kind"] for v in bad} == {"undersized_track",
                                         "insufficient_transition_vias"}
     assert all(v["leaf_loads"] == ["U2"] and v["current_a"] == 0.9
@@ -382,6 +400,26 @@ def test_stub_inside_pad_dropped(tmp_path_factory):
     assert sorted(v["layer"] for v in thin) == ["B.Cu", "F.Cu"]
     assert all(v["pos"] == [16.5, 5.0] for v in thin)
     assert facts["pour_taps"] == [[15.1, 5.0]]
+
+
+def test_bridge_wholly_inside_own_pour_dropped(tmp_path_factory):
+    """A track that is a graph bridge (the graph has no zone copper) but lies
+    wholly in its own net's fill carries nothing of its own: dropped (#844).
+    Cut the pour away from half of it and the half outside is judged again."""
+    seg = ('  (segment (start 5 5) (end 5 8) (width 0.25) (layer "F.Cu") '
+           '(net "PH"))\n'
+           '  (via (at 5 8) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") '
+           '(net "PH"))\n'
+           '  (segment (start 5 8) (end 12 8) (width 0.25) (layer "B.Cu") '
+           '(net "PH"))\n')
+    bg = _board(tmp_path_factory, "bridgeinpour", _TAP_POUR + seg)
+    vs, facts = check_current.check_net(bg, ENTRY_PH)
+    assert [v for v in _kinds(vs, "undersized_track")
+            if v["layer"] == "F.Cu"] == []
+    cut = _TAP_POUR.replace("(xy 10 10) (xy 0 10)", "(xy 10 6) (xy 0 6)")
+    bg = _board(tmp_path_factory, "bridgecut", cut + seg)
+    vs, _f = check_current.check_net(bg, ENTRY_PH)
+    assert [v for v in _kinds(vs, "undersized_track") if v["layer"] == "F.Cu"]
 
 
 def test_sole_path_tap_out_of_pour_still_fails(tmp_path_factory):
@@ -2056,3 +2094,36 @@ def test_pcb0018_gnd_return_of_a_bus_cap_reads_the_inverter():
     rip = check_current.cap_ripple(bg, "GND", ["C401"], cons)
     assert rip["amps"] == 6.5
     assert rip["terms"][0]["rail"] == "VM"
+
+
+def _conn_board(tmp_path_factory, name, ref, ptype):
+    pt = f' (pintype "{ptype}")' if ptype else ""
+    body = f"""  (footprint "t:C" (at 2 5)
+    (layer "F.Cu")
+    (property "Reference" "{ref}" (at 0 0 0))
+    (pad "1" smd rect (at 0 0) (size 1 1) (layers "F.Cu") (net "+5V"){pt}))
+  (footprint "t:U" (at 12 5)
+    (layer "F.Cu")
+    (property "Reference" "U9" (at 0 0 0))
+    (pad "1" smd rect (at 0 0) (size 1 1) (layers "F.Cu") (net "+5V")))
+"""
+    return _board(tmp_path_factory, name, body)
+
+
+def test_connector_source_is_decided_by_pin_type(tmp_path_factory):
+    """#846: power_out makes any connector-like part a source; power_in makes
+    a J header a load; a passive or untyped pin falls back to the prefix."""
+    cases = [("USB1", "power_out", True), ("J1", "power_in", False),
+             ("J1", "passive", True), ("J1", "", True), ("TB1", "", True),
+             ("R5", "", False)]
+    for i, (ref, ptype, want) in enumerate(cases):
+        bg = _conn_board(tmp_path_factory, f"conn{i}", ref, ptype)
+        assert check_current._is_connector(bg, ref, "+5V") is want, cases[i]
+    bg = _conn_board(tmp_path_factory, "connin", "J1", "power_in")
+    assert check_current._only_power_in(bg, "J1", "+5V")
+    # J1 takes the rail's current: with nothing else a source, a stub that
+    # feeds only J1 is not a trunk by the source rule
+    assert check_current.stub_feeds(
+        bg, "+5V", ["U9"], ({"J1"}, {"J1"}, set())) is True   # half the loads
+    assert check_current.stub_feeds(
+        bg, "+5V", ["J1"], ({"J1"}, {"J1"}, set())) is True

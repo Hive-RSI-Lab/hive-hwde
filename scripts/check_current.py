@@ -30,6 +30,17 @@ then it only parallels the other pour and no load current crosses into it
 and back out. A cluster with any via a track or a loose pad feeds keeps the
 per-cluster rule, so a track that changes layers is judged as before.
 
+Plane-fed rails, follow-ups (#844, #845, #846):
+ - a track lying inside its own same-net fill, pads and vias (>= COVERED_FRAC
+   of its area) is a tap in the pour and carries no load current of its own,
+   even when it bridges two parts of the graph (#844);
+ - a stub that holds a source is judged against that source's output when the
+   power entry names `source`: too narrow, or too few vias, is an error
+   (`source_stub`); without `source` it stays an advisory warning (#845);
+ - whether a connector pin is a source or a load follows the pad's KiCad
+   pintype (power_out = source, power_in only = load); passive or untyped
+   pins fall back to the reference-prefix rule (#846).
+
 Pad-exit necks (PCB-0019-A SW_L1/SW_L2: 0.30 mm off a TPS63001's 0.24 mm
 pads at 0.5 mm pitch, where a 0.5 mm track breaks clearance to the next pin,
 so no layout clears the finding). A run of undersized same-net, same-layer
@@ -455,6 +466,21 @@ def inside_pad_copper(bg: geom.BoardGeom, net: str, t) -> bool:
     if not cover:
         return False
     return t.shape.difference(unary_union(cover)).length <= TOUCH_MM
+
+
+def covered_by_own_copper(bg: geom.BoardGeom, net: str, t, fills=None) -> bool:
+    """True when track `t` lies (all but COVERED_FRAC of its area) inside the
+    same-net fill, pads and vias of its layer: the copper around it carries
+    the current, so the track's own width is not the section that counts,
+    whether or not the track graph (which has no zone copper) calls it a
+    bridge."""
+    if fills is None:
+        fills = {l: bg.zone_fill(net, l) for l in bg.layers_with_zone(net)}
+    cover = geom._union(
+        [p.poly for p in bg.pads_of(net, t.layer)]
+        + [v.poly for v in bg.vias_of(net, t.layer)]
+        + ([fills[t.layer]] if t.layer in fills else []))
+    return t.poly.difference(cover).area <= COVERED_FRAC * t.poly.area
 
 
 def _stitches(bg: geom.BoardGeom, net: str, fills: dict) -> list[dict]:
@@ -1465,13 +1491,8 @@ def stub_refs(bg: geom.BoardGeom, net: str, items: list):
     if not fills:
         return None
     track = items[0] if isinstance(items[0], geom.Track) else None
-    if track is not None:
-        cover = geom._union(
-            [p.poly for p in bg.pads_of(net, track.layer)]
-            + [v.poly for v in bg.vias_of(net, track.layer)]
-            + ([fills[track.layer]] if track.layer in fills else []))
-        if track.poly.difference(cover).area <= COVERED_FRAC * track.poly.area:
-            return "covered"
+    if track is not None and covered_by_own_copper(bg, net, track, fills):
+        return "covered"
     nodes, find, hits, tapped = _stub_graph(
         bg, net, fills, frozenset(id(x) for x in items))
 
@@ -1510,17 +1531,47 @@ def stub_refs(bg: geom.BoardGeom, net: str, items: list):
                    if any(find(i) in fed for i in hits(p))})
 
 
+CONNECTOR_REF = re.compile(r"(?:J|P|CN|USB|TB|BT)\d+")
+
+
+def _is_connector(bg: geom.BoardGeom, ref: str, net: str) -> bool:
+    """Whether `ref` is a connector on `net` for the purpose of "the rail's
+    source when nothing else sources it" (#846). The pin type the symbol
+    gives its pads on the net decides: power_out is a source, power_in a
+    load (an output-only header on a rail fed off-board). A part whose pads
+    there are passive or untyped falls back to its reference prefix."""
+    types = _pin_types(bg, ref, net)
+    if "power_out" in types:
+        return True
+    if types == {"power_in"}:
+        return False
+    return bool(CONNECTOR_REF.fullmatch(ref))
+
+
+def _pin_types(bg: geom.BoardGeom, ref: str, net: str) -> set:
+    return {p.pintype for p in bg.pads_of(ref=ref) if p.net == net} - {""}
+
+
+def _only_power_in(bg: geom.BoardGeom, ref: str, net: str) -> bool:
+    """A connector whose pads on the rail are all power_in takes the rail's
+    current; it does not source it (#846)."""
+    return CONNECTOR_REF.fullmatch(ref) is not None \
+        and _pin_types(bg, ref, net) == {"power_in"}
+
+
 def stub_feeds(bg: geom.BoardGeom, net: str, refs: list, sources) -> bool:
     """Whether a plane-fed stub feeding `refs` may carry the rail's budget:
     it holds the rail's source (a connector only when the rail has no other
     source), or half the rail's loads."""
     _every, pure, _stiff = sources
-    own = {r for r in pure if not re.fullmatch(r"(?:J|P|CN)\d+", r)}
-    if set(refs) & (own or pure):
+    own = {r for r in pure if not _is_connector(bg, r, net)}
+    conn = {r for r in pure - own if not _only_power_in(bg, r, net)}
+    srcs = own or conn
+    if set(refs) & srcs:
         return True
 
     def is_load(ref):
-        return ref not in (own or pure) and not re.fullmatch(r"C\d+", ref) \
+        return ref not in srcs and not re.fullmatch(r"C\d+", ref) \
             and (ref in _DECLARED or load_bound(bg, ref) is None)
     rail = {p.ref for p in bg.pads_of(net=net)}
     n = sum(map(is_load, refs))
@@ -1545,6 +1596,24 @@ def _stub_error(v, t, items, amps, refs, net, dt_c, cu, need, via_amps):
     v.pop("advisory", None)
     v.update(current_a=amps, leaf_loads=refs,
              refs=sorted(set(v.get("refs") or []) | set(refs)))
+
+
+def _source_stub_error(v, t, items, refs, net, amps, dt_c, cu, via_amps):
+    """A stub that holds the source the power entry names carries that
+    source's output, the entry's current_a: the advisory screen becomes an
+    error naming it (#845). Without a named source the output is not known
+    and the screen stays advisory."""
+    need = max(1, math.ceil(amps / via_amps))
+    if t is not None:
+        if t.width + WIDTH_TOL_MM >= required_width_mm(amps, dt_c, cu[t.layer]):
+            return
+    elif len(items) >= need:
+        return
+    _stub_error(v, t, items, amps, refs, net, dt_c, cu, need, via_amps)
+    v["msg"] = v["items"][0]["msg"] = v["msg"].replace(
+        "plane-fed stub:", "source stub:").replace("draw at most",
+                                                   "output")
+    v["source_stub"] = True
 
 
 def check_net(bg: geom.BoardGeom, entry: dict, cons: dict | None = None):
@@ -1704,9 +1773,10 @@ def check_net(bg: geom.BoardGeom, entry: dict, cons: dict | None = None):
         for v, t in undersized:
             eid = edge_of.get(id(t))
             v["bridge"] = True if eid is None else eid in bridges
-        # non-bridge taps inside their own pour carry no load current
+        # taps inside their own pour or copper carry no load current of their own
         shunted = [(v, t) for v, t in undersized
-                   if not v["bridge"] and (pour_shunted(bg, net, t)
+                   if covered_by_own_copper(bg, net, t)
+                   or not v["bridge"] and (pour_shunted(bg, net, t)
                                            or inside_pad_copper(bg, net, t))]
         if shunted:
             drop = {id(v) for v, _ in shunted}
@@ -1952,6 +2022,11 @@ def check_net(bg: geom.BoardGeom, entry: dict, cons: dict | None = None):
             refs = stub_refs(bg, net, items) if items else None
             if refs is None or refs != "covered" and stub_feeds(
                     bg, net, refs, sources):
+                if refs is not None and entry.get("source") \
+                        and set(refs) & set(sources[1]):
+                    _source_stub_error(v, tracks.get(id(v)), items,
+                                       sorted(set(refs) & set(sources[1])),
+                                       net, budget, dt_c, cu, via_amps)
                 continue                 # a trunk: the full-budget screen
             t = tracks.get(id(v))
             if refs == "covered":
