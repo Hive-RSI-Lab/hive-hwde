@@ -83,8 +83,8 @@
     214.507
    ],
    "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+   "verdict": "false",
+   "reason": "false (#828): a leaf stub off the In2 +3V3 plane (J3 to ultra-front ~0.05 A, R132, U8 CH340B, C44, U13, the L10:2-R15:1 divider) charged the rail's whole 0.8 A budget; the stub carries only its load's current"
   },
   {
    "gate": "verify",
@@ -96,8 +96,8 @@
     214.407
    ],
    "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+   "verdict": "false",
+   "reason": "false (#828): a leaf stub off the In2 +3V3 plane (J3 to ultra-front ~0.05 A, R132, U8 CH340B, C44, U13, the L10:2-R15:1 divider) charged the rail's whole 0.8 A budget; the stub carries only its load's current"
   },
   {
    "gate": "verify",
@@ -109,8 +109,8 @@
     214.457
    ],
    "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+   "verdict": "false",
+   "reason": "false (#828): a leaf stub off the In2 +3V3 plane (J3 to ultra-front ~0.05 A, R132, U8 CH340B, C44, U13, the L10:2-R15:1 divider) charged the rail's whole 0.8 A budget; the stub carries only its load's current"
   },
   {
    "gate": "verify",
@@ -122,8 +122,8 @@
     215.207
    ],
    "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+   "verdict": "false",
+   "reason": "false (#828): a leaf stub off the In2 +3V3 plane (J3 to ultra-front ~0.05 A, R132, U8 CH340B, C44, U13, the L10:2-R15:1 divider) charged the rail's whole 0.8 A budget; the stub carries only its load's current"
   },
   {
    "gate": "verify",
@@ -135,8 +135,8 @@
     214.857
    ],
    "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+   "verdict": "false",
+   "reason": "false (#828): a leaf stub off the In2 +3V3 plane (J3 to ultra-front ~0.05 A, R132, U8 CH340B, C44, U13, the L10:2-R15:1 divider) charged the rail's whole 0.8 A budget; the stub carries only its load's current"
   },
   {
    "gate": "verify",
@@ -148,8 +148,8 @@
     142.65
    ],
    "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+   "verdict": "false",
+   "reason": "false (#828): a leaf stub off the In2 +3V3 plane (J3 to ultra-front ~0.05 A, R132, U8 CH340B, C44, U13, the L10:2-R15:1 divider) charged the rail's whole 0.8 A budget; the stub carries only its load's current"
   },
   {
    "gate": "verify",
@@ -161,8 +161,8 @@
     215.457
    ],
    "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+   "verdict": "false",
+   "reason": "false (#828): a leaf stub off the In2 +3V3 plane (J3 to ultra-front ~0.05 A, R132, U8 CH340B, C44, U13, the L10:2-R15:1 divider) charged the rail's whole 0.8 A budget; the stub carries only its load's current"
   },
   {
    "gate": "verify",
@@ -174,8 +174,8 @@
     214.407
    ],
    "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+   "verdict": "false",
+   "reason": "false (#828): a leaf stub off the In2 +3V3 plane (J3 to ultra-front ~0.05 A, R132, U8 CH340B, C44, U13, the L10:2-R15:1 divider) charged the rail's whole 0.8 A budget; the stub carries only its load's current"
   },
   {
    "gate": "verify",
@@ -187,8 +187,8 @@
     193.323
    ],
    "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+   "verdict": "false",
+   "reason": "false (#828): a leaf stub off the In2 +3V3 plane (J3 to ultra-front ~0.05 A, R132, U8 CH340B, C44, U13, the L10:2-R15:1 divider) charged the rail's whole 0.8 A budget; the stub carries only its load's current"
   },
   {
    "gate": "verify",
@@ -200,8 +200,8 @@
     214.757
    ],
    "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+   "verdict": "false",
+   "reason": "false (#828): a leaf stub off the In2 +3V3 plane (J3 to ultra-front ~0.05 A, R132, U8 CH340B, C44, U13, the L10:2-R15:1 divider) charged the rail's whole 0.8 A budget; the stub carries only its load's current"
   },
   {
    "gate": "verify",
@@ -213,8 +213,8 @@
     202.947
    ],
    "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+   "verdict": "false",
+   "reason": "false (#828): a leaf stub off the In2 +3V3 plane (J3 to ultra-front ~0.05 A, R132, U8 CH340B, C44, U13, the L10:2-R15:1 divider) charged the rail's whole 0.8 A budget; the stub carries only its load's current"
   },
   {
    "gate": "verify",
@@ -226,8 +226,8 @@
     214.607
    ],
    "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+   "verdict": "false",
+   "reason": "false (#828): a leaf stub off the In2 +3V3 plane (J3 to ultra-front ~0.05 A, R132, U8 CH340B, C44, U13, the L10:2-R15:1 divider) charged the rail's whole 0.8 A budget; the stub carries only its load's current"
   },
   {
    "gate": "verify",
@@ -239,8 +239,8 @@
     212.407
    ],
    "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+   "verdict": "false",
+   "reason": "false (#828): a leaf stub off the In2 +3V3 plane (J3 to ultra-front ~0.05 A, R132, U8 CH340B, C44, U13, the L10:2-R15:1 divider) charged the rail's whole 0.8 A budget; the stub carries only its load's current"
   },
   {
    "gate": "verify",
@@ -252,8 +252,8 @@
     184.7
    ],
    "kind": "undersized_track",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+   "verdict": "false",
+   "reason": "false (#828): a leaf stub off the In2 +3V3 plane (J3 to ultra-front ~0.05 A, R132, U8 CH340B, C44, U13, the L10:2-R15:1 divider) charged the rail's whole 0.8 A budget; the stub carries only its load's current"
   },
   {
    "gate": "verify",
@@ -265,8 +265,8 @@
     214.107
    ],
    "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+   "verdict": "false",
+   "reason": "false (#828): a leaf stub off the In2 +3V3 plane (J3 to ultra-front ~0.05 A, R132, U8 CH340B, C44, U13, the L10:2-R15:1 divider) charged the rail's whole 0.8 A budget; the stub carries only its load's current"
   },
   {
    "gate": "verify",
@@ -278,8 +278,8 @@
     189.466
    ],
    "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+   "verdict": "false",
+   "reason": "false (#828): a leaf stub off the In2 +3V3 plane (J3 to ultra-front ~0.05 A, R132, U8 CH340B, C44, U13, the L10:2-R15:1 divider) charged the rail's whole 0.8 A budget; the stub carries only its load's current"
   },
   {
    "gate": "verify",
@@ -291,8 +291,8 @@
     212.307
    ],
    "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+   "verdict": "false",
+   "reason": "false (#828): a leaf stub off the In2 +3V3 plane (J3 to ultra-front ~0.05 A, R132, U8 CH340B, C44, U13, the L10:2-R15:1 divider) charged the rail's whole 0.8 A budget; the stub carries only its load's current"
   },
   {
    "gate": "verify",
@@ -304,8 +304,8 @@
     215.107
    ],
    "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+   "verdict": "false",
+   "reason": "false (#828): a leaf stub off the In2 +3V3 plane (J3 to ultra-front ~0.05 A, R132, U8 CH340B, C44, U13, the L10:2-R15:1 divider) charged the rail's whole 0.8 A budget; the stub carries only its load's current"
   },
   {
    "gate": "verify",
@@ -317,8 +317,8 @@
     153.672
    ],
    "kind": "insufficient_transition_vias",
-   "verdict": "?",
-   "reason": "plane-fed rail judged at its full budget on one segment (hwde can't attribute per-segment current); real only where the segment carries it"
+   "verdict": "false",
+   "reason": "false (#828): a leaf stub off the In2 +3V3 plane (J3 to ultra-front ~0.05 A, R132, U8 CH340B, C44, U13, the L10:2-R15:1 divider) charged the rail's whole 0.8 A budget; the stub carries only its load's current"
   },
   {
    "gate": "verify",
@@ -2703,8 +2703,8 @@
     209.697
    ],
    "kind": "strap_unknown",
-   "verdict": "?",
-   "reason": "hwde doesn't know the other part's reset state; real only if it drives the strap"
+   "verdict": "false",
+   "reason": "false (#831): the strap pin drives a codec/DAC input (ES9018K2M/ES7243E/ES8388 are high-Z or slave-clock inputs at reset); reset_states.yaml just lacks those parts"
   },
   {
    "gate": "verify",
@@ -3481,6 +3481,2153 @@
    "kind": "rating_no_attributes",
    "verdict": "real",
    "reason": "real: pinned core's parts/parts.json holds no attributes for this rated part, so no rating of it can be judged until the row is filled (scripts/parts_enrich.py)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_decoupling",
+   "net": "+3V3E",
+   "refs": [
+    "C43",
+    "U9"
+   ],
+   "pos": [
+    59.491,
+    203.08
+   ],
+   "kind": "decoupler_copper",
+   "verdict": "real",
+   "reason": "C43's copper path to U9 on +3V3E is 20.3 mm, well past the decoupler limit; measured on the board"
+  },
+  {
+   "gate": "verify",
+   "check": "check_body_clash",
+   "net": null,
+   "refs": [
+    "J4",
+    "J5"
+   ],
+   "pos": [
+    113.85,
+    127.5
+   ],
+   "kind": "body_clash",
+   "verdict": "false",
+   "reason": "false (#829): the XDJK RCA library model's ear is ~3.6 mm wider than the datasheet's 16 mm body; the real J4/J5 bodies sit ~2 mm apart"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ep_paste",
+   "net": "GND",
+   "refs": [
+    "U10"
+   ],
+   "pos": [
+    120.587,
+    149.497
+   ],
+   "kind": "paste_on_via",
+   "verdict": "real",
+   "reason": "exposed pad pasted 1:1 (IPC-7093 wants 50-80 % coverage in windows) and/or open vias under the paste: voids, float and wicking; checked against the pad and paste layers"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ep_paste",
+   "net": "GND",
+   "refs": [
+    "U10"
+   ],
+   "pos": [
+    120.587,
+    151.897
+   ],
+   "kind": "paste_on_via",
+   "verdict": "real",
+   "reason": "exposed pad pasted 1:1 (IPC-7093 wants 50-80 % coverage in windows) and/or open vias under the paste: voids, float and wicking; checked against the pad and paste layers"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ep_paste",
+   "net": "GND",
+   "refs": [
+    "U10"
+   ],
+   "pos": [
+    121.787,
+    151.897
+   ],
+   "kind": "paste_on_via",
+   "verdict": "real",
+   "reason": "exposed pad pasted 1:1 (IPC-7093 wants 50-80 % coverage in windows) and/or open vias under the paste: voids, float and wicking; checked against the pad and paste layers"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ep_paste",
+   "net": "GND",
+   "refs": [
+    "U10"
+   ],
+   "pos": [
+    121.787,
+    150.697
+   ],
+   "kind": "paste_on_via",
+   "verdict": "real",
+   "reason": "exposed pad pasted 1:1 (IPC-7093 wants 50-80 % coverage in windows) and/or open vias under the paste: voids, float and wicking; checked against the pad and paste layers"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ep_paste",
+   "net": "GND",
+   "refs": [
+    "U9"
+   ],
+   "pos": [
+    63.587,
+    202.697
+   ],
+   "kind": "paste_on_via",
+   "verdict": "real",
+   "reason": "exposed pad pasted 1:1 (IPC-7093 wants 50-80 % coverage in windows) and/or open vias under the paste: voids, float and wicking; checked against the pad and paste layers"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ep_paste",
+   "net": "GND",
+   "refs": [
+    "U10"
+   ],
+   "pos": [
+    119.387,
+    151.897
+   ],
+   "kind": "paste_on_via",
+   "verdict": "real",
+   "reason": "exposed pad pasted 1:1 (IPC-7093 wants 50-80 % coverage in windows) and/or open vias under the paste: voids, float and wicking; checked against the pad and paste layers"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ep_paste",
+   "net": "GND",
+   "refs": [
+    "U10"
+   ],
+   "pos": [
+    121.787,
+    149.497
+   ],
+   "kind": "paste_on_via",
+   "verdict": "real",
+   "reason": "exposed pad pasted 1:1 (IPC-7093 wants 50-80 % coverage in windows) and/or open vias under the paste: voids, float and wicking; checked against the pad and paste layers"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ep_paste",
+   "net": "GND",
+   "refs": [
+    "U13"
+   ],
+   "pos": [
+    135.15,
+    151.15
+   ],
+   "kind": "paste_on_via",
+   "verdict": "real",
+   "reason": "exposed pad pasted 1:1 (IPC-7093 wants 50-80 % coverage in windows) and/or open vias under the paste: voids, float and wicking; checked against the pad and paste layers"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ep_paste",
+   "net": "GND",
+   "refs": [
+    "U10"
+   ],
+   "pos": [
+    119.387,
+    149.497
+   ],
+   "kind": "paste_on_via",
+   "verdict": "real",
+   "reason": "exposed pad pasted 1:1 (IPC-7093 wants 50-80 % coverage in windows) and/or open vias under the paste: voids, float and wicking; checked against the pad and paste layers"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ep_paste",
+   "net": "GND",
+   "refs": [
+    "U10"
+   ],
+   "pos": [
+    119.387,
+    150.697
+   ],
+   "kind": "paste_on_via",
+   "verdict": "real",
+   "reason": "exposed pad pasted 1:1 (IPC-7093 wants 50-80 % coverage in windows) and/or open vias under the paste: voids, float and wicking; checked against the pad and paste layers"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ep_paste",
+   "net": "GND",
+   "refs": [
+    "U10"
+   ],
+   "pos": [
+    120.587,
+    150.697
+   ],
+   "kind": "paste_on_via",
+   "verdict": "real",
+   "reason": "exposed pad pasted 1:1 (IPC-7093 wants 50-80 % coverage in windows) and/or open vias under the paste: voids, float and wicking; checked against the pad and paste layers"
+  },
+  {
+   "gate": "verify",
+   "check": "check_kelvin",
+   "net": "VBUS_IN",
+   "refs": [
+    "R1",
+    "U3"
+   ],
+   "pos": [
+    40.59,
+    186.26
+   ],
+   "kind": "kelvin_error",
+   "verdict": "real",
+   "reason": "neither sense tap is Kelvin: R18's VBUS_IN tap joins the In2 VBUS_IN plane that carries J1's current, and R19's tap leaves a via inside R1:2's pad whose barrel carries load current"
+  },
+  {
+   "gate": "verify",
+   "check": "check_decoupling",
+   "net": "+3V3A",
+   "refs": [
+    "C53",
+    "U10"
+   ],
+   "pos": [
+    116.762,
+    145.976
+   ],
+   "kind": "decoupler_copper",
+   "verdict": "real",
+   "reason": "C53's copper path to U10 on +3V3A is 13.7 mm, well past the decoupler limit; measured on the board"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "C1",
+    "C10",
+    "C100",
+    "C101",
+    "C102",
+    "C11",
+    "C110",
+    "C111",
+    "C112",
+    "C12",
+    "C120",
+    "C121",
+    "C122",
+    "C123",
+    "C124",
+    "C125",
+    "C126",
+    "C13",
+    "C130",
+    "C131",
+    "C132",
+    "C136",
+    "C137",
+    "C14",
+    "C142",
+    "C143",
+    "C15",
+    "C150",
+    "C151",
+    "C16",
+    "C17",
+    "C18",
+    "C19",
+    "C2",
+    "C201",
+    "C202",
+    "C204",
+    "C206",
+    "C207",
+    "C208",
+    "C209",
+    "C21",
+    "C210",
+    "C211",
+    "C218",
+    "C219",
+    "C22",
+    "C220",
+    "C221",
+    "C222",
+    "C223",
+    "C224",
+    "C225",
+    "C226",
+    "C228",
+    "C229",
+    "C231",
+    "C232",
+    "C234",
+    "C235",
+    "C237",
+    "C3",
+    "C30",
+    "C301",
+    "C302",
+    "C304",
+    "C306",
+    "C307",
+    "C308",
+    "C309",
+    "C31",
+    "C310",
+    "C311",
+    "C312",
+    "C316",
+    "C317",
+    "C318",
+    "C319",
+    "C32",
+    "C320",
+    "C321",
+    "C322",
+    "C323",
+    "C324",
+    "C326",
+    "C327",
+    "C329",
+    "C33",
+    "C330",
+    "C332",
+    "C333",
+    "C335",
+    "C34",
+    "C37",
+    "C38",
+    "C39",
+    "C4",
+    "C40",
+    "C400",
+    "C41",
+    "C42",
+    "C43",
+    "C44",
+    "C45",
+    "C46",
+    "C47",
+    "C5",
+    "C50",
+    "C51",
+    "C52",
+    "C53",
+    "C54",
+    "C55",
+    "C56",
+    "C57",
+    "C58",
+    "C59",
+    "C6",
+    "C64",
+    "C65",
+    "C66",
+    "C67",
+    "C68",
+    "C69",
+    "C7",
+    "C70",
+    "C71",
+    "C72",
+    "C8",
+    "C9",
+    "D1",
+    "D2",
+    "D3",
+    "D4",
+    "FB1",
+    "FB2",
+    "FB3",
+    "J10",
+    "J11",
+    "J6",
+    "J7",
+    "L1",
+    "L10",
+    "L2",
+    "L3",
+    "L4",
+    "L5",
+    "L6",
+    "L7",
+    "L8",
+    "L9",
+    "SW2",
+    "SW3"
+   ],
+   "pos": null,
+   "kind": "rating_unrated",
+   "verdict": "?",
+   "reason": ""
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "R1",
+    "R17",
+    "R18",
+    "R19",
+    "R20",
+    "R205",
+    "R30",
+    "R305",
+    "R34",
+    "R35",
+    "R36",
+    "R400",
+    "R50",
+    "R51",
+    "R52",
+    "R53",
+    "R54",
+    "R55",
+    "R56",
+    "R58",
+    "R62",
+    "R63",
+    "R64",
+    "R65",
+    "R66"
+   ],
+   "pos": null,
+   "kind": "rating_no_datasheet_read",
+   "verdict": "real",
+   "reason": "true of the board: these parts' ratings are distributor attributes or package tables with no datasheet read (no PDF extraction in parts/); the fix is datasheet_extract --fetch on the board"
+  },
+  {
+   "gate": "verify",
+   "check": "check_body_clash",
+   "net": null,
+   "refs": [
+    "J11",
+    "J4"
+   ],
+   "pos": [
+    101.037,
+    130.697
+   ],
+   "kind": "body_tight",
+   "verdict": "real",
+   "reason": "J11 and J4 bodies closer than the assembly clearance; checked on the board"
+  },
+  {
+   "gate": "verify",
+   "check": "check_body_clash",
+   "net": null,
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    43.45,
+    128.25
+   ],
+   "kind": "body_past_courtyard",
+   "verdict": "real",
+   "reason": "the 3D body reaches past the courtyard, so the placement clearance the courtyard promises isn't real; checked the model extent against the courtyard on the board"
+  },
+  {
+   "gate": "verify",
+   "check": "check_body_clash",
+   "net": null,
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    95.55,
+    126.15
+   ],
+   "kind": "body_past_courtyard",
+   "verdict": "real",
+   "reason": "the 3D body reaches past the courtyard, so the placement clearance the courtyard promises isn't real; checked the model extent against the courtyard on the board"
+  },
+  {
+   "gate": "verify",
+   "check": "check_body_clash",
+   "net": null,
+   "refs": [
+    "J10"
+   ],
+   "pos": [
+    76.35,
+    128.25
+   ],
+   "kind": "body_past_courtyard",
+   "verdict": "real",
+   "reason": "the 3D body reaches past the courtyard, so the placement clearance the courtyard promises isn't real; checked the model extent against the courtyard on the board"
+  },
+  {
+   "gate": "verify",
+   "check": "check_body_clash",
+   "net": null,
+   "refs": [
+    "J5"
+   ],
+   "pos": [
+    113.55,
+    126.15
+   ],
+   "kind": "body_past_courtyard",
+   "verdict": "real",
+   "reason": "the 3D body reaches past the courtyard, so the placement clearance the courtyard promises isn't real; checked the model extent against the courtyard on the board"
+  },
+  {
+   "gate": "verify",
+   "check": "check_body_clash",
+   "net": null,
+   "refs": [
+    "U18"
+   ],
+   "pos": [
+    76.55,
+    221.85
+   ],
+   "kind": "body_past_courtyard",
+   "verdict": "real",
+   "reason": "the 3D body reaches past the courtyard, so the placement clearance the courtyard promises isn't real; checked the model extent against the courtyard on the board"
+  },
+  {
+   "gate": "verify",
+   "check": "check_body_clash",
+   "net": null,
+   "refs": [
+    "U18"
+   ],
+   "pos": [
+    76.55,
+    221.85
+   ],
+   "kind": "body_off_board",
+   "verdict": "false",
+   "reason": "false (#830): U18 overhangs the edge on purpose (IR receiver lens faces out); the check exempts only connectors"
+  },
+  {
+   "gate": "verify",
+   "check": "check_body_clash",
+   "net": null,
+   "refs": [
+    "U7"
+   ],
+   "pos": [
+    156.15,
+    191.65
+   ],
+   "kind": "body_off_board",
+   "verdict": "false",
+   "reason": "false (#830): U7 overhangs the edge on purpose (WROVER antenna end belongs at the edge); the check exempts only connectors"
+  },
+  {
+   "gate": "verify",
+   "check": "check_body_clash",
+   "net": null,
+   "refs": [
+    "J11"
+   ],
+   "pos": [
+    88.85,
+    128.25
+   ],
+   "kind": "body_past_courtyard",
+   "verdict": "real",
+   "reason": "the 3D body reaches past the courtyard, so the placement clearance the courtyard promises isn't real; checked the model extent against the courtyard on the board"
+  },
+  {
+   "gate": "verify",
+   "check": "check_body_clash",
+   "net": null,
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    55.95,
+    128.25
+   ],
+   "kind": "body_past_courtyard",
+   "verdict": "real",
+   "reason": "the 3D body reaches past the courtyard, so the placement clearance the courtyard promises isn't real; checked the model extent against the courtyard on the board"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ep_paste",
+   "net": null,
+   "refs": [
+    "U13"
+   ],
+   "pos": [
+    134.587,
+    151.697
+   ],
+   "kind": "ep_paste_high",
+   "verdict": "real",
+   "reason": "exposed pad pasted 1:1 (IPC-7093 wants 50-80 % coverage in windows) and/or open vias under the paste: voids, float and wicking; checked against the pad and paste layers"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ep_paste",
+   "net": null,
+   "refs": [
+    "U1"
+   ],
+   "pos": [
+    43.587,
+    187.697
+   ],
+   "kind": "ep_paste_high",
+   "verdict": "real",
+   "reason": "exposed pad pasted 1:1 (IPC-7093 wants 50-80 % coverage in windows) and/or open vias under the paste: voids, float and wicking; checked against the pad and paste layers"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ep_paste",
+   "net": null,
+   "refs": [
+    "U9"
+   ],
+   "pos": [
+    63.587,
+    202.697
+   ],
+   "kind": "ep_paste_high",
+   "verdict": "real",
+   "reason": "exposed pad pasted 1:1 (IPC-7093 wants 50-80 % coverage in windows) and/or open vias under the paste: voids, float and wicking; checked against the pad and paste layers"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ep_paste",
+   "net": null,
+   "refs": [
+    "U10"
+   ],
+   "pos": [
+    120.587,
+    150.697
+   ],
+   "kind": "ep_paste_high",
+   "verdict": "real",
+   "reason": "exposed pad pasted 1:1 (IPC-7093 wants 50-80 % coverage in windows) and/or open vias under the paste: voids, float and wicking; checked against the pad and paste layers"
+  },
+  {
+   "gate": "verify",
+   "check": "check_testpoints",
+   "net": "+3V3A",
+   "refs": [],
+   "pos": null,
+   "kind": "tp_rail_no_access",
+   "verdict": "real",
+   "reason": "+3V3A has no test point: only pasted 0402 and fine-pitch pads and two 0.7 mm vias, nothing a probe or bed-of-nails can take"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "VBUS",
+   "refs": [
+    "C10"
+   ],
+   "pos": [
+    64.206,
+    174.356
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C10"
+   ],
+   "pos": [
+    67.208,
+    174.731
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/linein/ADC_SRC_L",
+   "refs": [
+    "C101"
+   ],
+   "pos": [
+    131.3,
+    156.69
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C112"
+   ],
+   "pos": [
+    140.2,
+    152.8
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C123"
+   ],
+   "pos": [
+    137.087,
+    147.197
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C13"
+   ],
+   "pos": [
+    88.621,
+    170.449
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/linein/TAPA_R",
+   "refs": [
+    "C136"
+   ],
+   "pos": [
+    101.38,
+    144.0
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C14"
+   ],
+   "pos": [
+    88.749,
+    172.936
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "+3V3",
+   "refs": [
+    "C16"
+   ],
+   "pos": [
+    91.425,
+    170.433
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "+3V3",
+   "refs": [
+    "C17"
+   ],
+   "pos": [
+    94.48,
+    171.789
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C18"
+   ],
+   "pos": [
+    128.35,
+    173.55
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C19"
+   ],
+   "pos": [
+    125.8,
+    174.15
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C201"
+   ],
+   "pos": [
+    37.228,
+    166.166
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "PVDD",
+   "refs": [
+    "C207"
+   ],
+   "pos": [
+    55.16,
+    160.397
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "PVDD",
+   "refs": [
+    "C209"
+   ],
+   "pos": [
+    37.029,
+    161.684
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C21"
+   ],
+   "pos": [
+    91.45,
+    165.25
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C219"
+   ],
+   "pos": [
+    41.511,
+    170.449
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/amp_a/A_OUT1M",
+   "refs": [
+    "C222"
+   ],
+   "pos": [
+    36.579,
+    131.384
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/amp_a/A_OUT2P",
+   "refs": [
+    "C225"
+   ],
+   "pos": [
+    63.437,
+    158.256
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C231"
+   ],
+   "pos": [
+    53.087,
+    131.197
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "+3V3",
+   "refs": [
+    "C30"
+   ],
+   "pos": [
+    144.097,
+    188.584
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "PVDD",
+   "refs": [
+    "C307"
+   ],
+   "pos": [
+    88.387,
+    162.549
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "PVDD",
+   "refs": [
+    "C308"
+   ],
+   "pos": [
+    89.022,
+    158.597
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C317"
+   ],
+   "pos": [
+    67.208,
+    161.883
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C324"
+   ],
+   "pos": [
+    71.49,
+    131.904
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C326"
+   ],
+   "pos": [
+    75.37,
+    131.555
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C332"
+   ],
+   "pos": [
+    92.904,
+    131.904
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C333"
+   ],
+   "pos": [
+    90.539,
+    135.697
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C335"
+   ],
+   "pos": [
+    94.389,
+    136.004
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "+3V3",
+   "refs": [
+    "C44"
+   ],
+   "pos": [
+    67.237,
+    203.007
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C50"
+   ],
+   "pos": [
+    125.65,
+    147.85
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C52"
+   ],
+   "pos": [
+    126.3,
+    150.5
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C57"
+   ],
+   "pos": [
+    124.95,
+    142.55
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "C66"
+   ],
+   "pos": [
+    110.942,
+    153.935
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "VBUS",
+   "refs": [
+    "C8"
+   ],
+   "pos": [
+    60.99,
+    172.567
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "VBUS_IN",
+   "refs": [
+    "D1"
+   ],
+   "pos": [
+    45.587,
+    175.707
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "D1"
+   ],
+   "pos": [
+    45.587,
+    170.337
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "VBUS",
+   "refs": [
+    "D4"
+   ],
+   "pos": [
+    59.391,
+    182.62
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "J3"
+   ],
+   "pos": [
+    61.087,
+    219.197
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "J3"
+   ],
+   "pos": [
+    48.147,
+    218.487
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "+3V3",
+   "refs": [
+    "L10"
+   ],
+   "pos": [
+    74.387,
+    183.897
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/rails/BUCK5_LX",
+   "refs": [
+    "L9"
+   ],
+   "pos": [
+    71.207,
+    172.157
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "VBUS",
+   "refs": [
+    "Q1"
+   ],
+   "pos": [
+    54.314,
+    175.939
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "VBUS",
+   "refs": [
+    "Q1"
+   ],
+   "pos": [
+    55.81,
+    176.04
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "VBUS",
+   "refs": [
+    "Q1"
+   ],
+   "pos": [
+    57.364,
+    176.04
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "PVDD",
+   "refs": [
+    "Q1"
+   ],
+   "pos": [
+    58.443,
+    170.25
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/power_in/PD_PG",
+   "refs": [
+    "Q2"
+   ],
+   "pos": [
+    57.59,
+    178.77
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "Q3"
+   ],
+   "pos": [
+    62.925,
+    179.014
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "VBUS_IN",
+   "refs": [
+    "R1"
+   ],
+   "pos": [
+    43.867,
+    180.697
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "VBUS",
+   "refs": [
+    "R1"
+   ],
+   "pos": [
+    50.657,
+    180.697
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "R101"
+   ],
+   "pos": [
+    110.55,
+    160.3
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/TAP_SEL_IO",
+   "refs": [
+    "R133"
+   ],
+   "pos": [
+    106.617,
+    155.477
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/linein/TAPA_R",
+   "refs": [
+    "R137"
+   ],
+   "pos": [
+    101.68,
+    142.4
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/linein/TAP_R",
+   "refs": [
+    "R150"
+   ],
+   "pos": [
+    102.4,
+    145.71
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "R16"
+   ],
+   "pos": [
+    68.3,
+    185.65
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/power_in/PD_PG",
+   "refs": [
+    "R20"
+   ],
+   "pos": [
+    52.187,
+    185.067
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "R313"
+   ],
+   "pos": [
+    82.156,
+    167.874
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "+3V3",
+   "refs": [
+    "R34"
+   ],
+   "pos": [
+    98.4,
+    180.05
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "R43"
+   ],
+   "pos": [
+    114.819,
+    188.067
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/DAC_EN",
+   "refs": [
+    "R44"
+   ],
+   "pos": [
+    110.564,
+    157.864
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "R7"
+   ],
+   "pos": [
+    71.49,
+    179.014
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/OPT_SPDIF",
+   "refs": [
+    "R70"
+   ],
+   "pos": [
+    127.287,
+    141.397
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "+5VA",
+   "refs": [
+    "R90"
+   ],
+   "pos": [
+    119.9,
+    172.184
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "R91"
+   ],
+   "pos": [
+    117.55,
+    172.85
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "SW2"
+   ],
+   "pos": [
+    101.087,
+    219.197
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "SW3"
+   ],
+   "pos": [
+    109.087,
+    219.197
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/DAC_EN",
+   "refs": [
+    "U10"
+   ],
+   "pos": [
+    117.699,
+    152.297
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "U12"
+   ],
+   "pos": [
+    114.467,
+    148.567
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "U12"
+   ],
+   "pos": [
+    111.25,
+    141.9
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "U14"
+   ],
+   "pos": [
+    106.587,
+    171.607
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "U15"
+   ],
+   "pos": [
+    50.474,
+    165.172
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "U15"
+   ],
+   "pos": [
+    51.34,
+    157.304
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "U15"
+   ],
+   "pos": [
+    40.759,
+    157.304
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "U16"
+   ],
+   "pos": [
+    84.339,
+    166.166
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "U16"
+   ],
+   "pos": [
+    84.339,
+    157.6
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/amp_b/B_OUT2M",
+   "refs": [
+    "U16"
+   ],
+   "pos": [
+    82.577,
+    158.479
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/amp_b/B_OUT2P",
+   "refs": [
+    "U16"
+   ],
+   "pos": [
+    79.937,
+    158.797
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/amp_b/B_OUT1P",
+   "refs": [
+    "U16"
+   ],
+   "pos": [
+    75.403,
+    158.338
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "U16"
+   ],
+   "pos": [
+    75.773,
+    166.166
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "U17"
+   ],
+   "pos": [
+    116.2,
+    185.75
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "U17"
+   ],
+   "pos": [
+    109.667,
+    185.317
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/TAP_SEL_IO",
+   "refs": [
+    "U17"
+   ],
+   "pos": [
+    111.617,
+    179.177
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "U17"
+   ],
+   "pos": [
+    110.967,
+    180.177
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/mcu/ESP_EN",
+   "refs": [
+    "U17"
+   ],
+   "pos": [
+    110.317,
+    186.117
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "U2"
+   ],
+   "pos": [
+    49.387,
+    190.98
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/linein/TAP_SEL",
+   "refs": [
+    "U20"
+   ],
+   "pos": [
+    102.63,
+    156.12
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/linein/ADC_SRC_L",
+   "refs": [
+    "U20"
+   ],
+   "pos": [
+    102.7,
+    152.09
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/linein/TAP_SEL",
+   "refs": [
+    "U20"
+   ],
+   "pos": [
+    104.9,
+    156.31
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/linein/ADC_SRC_R",
+   "refs": [
+    "U20"
+   ],
+   "pos": [
+    105.0,
+    152.69
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "U3"
+   ],
+   "pos": [
+    48.6,
+    185.75
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "U6"
+   ],
+   "pos": [
+    127.737,
+    170.563
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "+3V3",
+   "refs": [
+    "U7"
+   ],
+   "pos": [
+    147.374,
+    191.048
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "/RMII_TXD1",
+   "refs": [
+    "U7"
+   ],
+   "pos": [
+    146.049,
+    209.653
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "U7"
+   ],
+   "pos": [
+    141.087,
+    199.197
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "+3V3",
+   "refs": [
+    "U8"
+   ],
+   "pos": [
+    85.092,
+    189.466
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "+3V3",
+   "refs": [
+    "Y1"
+   ],
+   "pos": [
+    118.979,
+    144.483
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "Y1"
+   ],
+   "pos": [
+    121.7,
+    144.2
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "+3V3",
+   "refs": [
+    "Y1"
+   ],
+   "pos": [
+    118.979,
+    141.911
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "+3V3",
+   "refs": [
+    "Y2"
+   ],
+   "pos": [
+    68.979,
+    197.411
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [
+    "U18"
+   ],
+   "pos": null,
+   "kind": "cpl_no_silk_mark",
+   "verdict": "real",
+   "reason": "U18 (IRM-3638T THT) has no pin-1 dot or chamfer on its own silk; JLC will email to confirm orientation and hold the order"
   }
  ]
 }

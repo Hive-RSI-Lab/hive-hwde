@@ -23,8 +23,49 @@
    ],
    "pos": null,
    "kind": "rating_reverse_polarity",
-   "verdict": "?",
-   "reason": "only if J1 can be plugged in reversed"
+   "verdict": "real",
+   "reason": "J1 is an unkeyed 1x2 2.54 mm header (PZ254V-11-02P), so it can be plugged in reversed; D1 then blocks the 5.25 V rail against its 5 V VR (KT-0603G)"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "C1",
+    "D1",
+    "J1",
+    "R1"
+   ],
+   "pos": null,
+   "kind": "rating_datasheet_unassessed",
+   "verdict": "real",
+   "reason": "true of the board: parts/datasheets/index.json lists the four PDFs but none is on disk, so nothing ties them to the MPNs"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "C1",
+    "J1",
+    "R1"
+   ],
+   "pos": null,
+   "kind": "rating_no_datasheet_read",
+   "verdict": "real",
+   "reason": "true of the board: these parts' ratings are distributor attributes or package tables with no datasheet read (no PDF extraction in parts/); the fix is datasheet_extract --fetch on the board"
+  },
+  {
+   "gate": "verify",
+   "check": "check_body_clash",
+   "net": null,
+   "refs": [
+    "J1"
+   ],
+   "pos": null,
+   "kind": "body_unjudged",
+   "verdict": "real",
+   "reason": "the footprints point at aiee.3dshapes .wrl models the board doesn't ship, so no body can be judged until the models are added"
   }
  ]
 }

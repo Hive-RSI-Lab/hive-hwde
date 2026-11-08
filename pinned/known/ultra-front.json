@@ -246,6 +246,68 @@
    "kind": "io_reset_floating",
    "verdict": "real",
    "reason": "the IO floats from power-on until firmware drives it; no pull fitted"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": null,
+   "refs": [
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "C5",
+    "C6",
+    "C7",
+    "R1",
+    "R10",
+    "R13",
+    "R17",
+    "R18",
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "R6",
+    "R7",
+    "R8",
+    "R9",
+    "SW1",
+    "SW2",
+    "SW3"
+   ],
+   "pos": null,
+   "kind": "rating_no_datasheet_read",
+   "verdict": "real",
+   "reason": "true of the board: these parts' ratings are distributor attributes or package tables with no datasheet read (no PDF extraction in parts/); the fix is datasheet_extract --fetch on the board"
+  },
+  {
+   "gate": "verify",
+   "check": "check_body_clash",
+   "net": null,
+   "refs": [
+    "J1",
+    "J2"
+   ],
+   "pos": null,
+   "kind": "body_unjudged",
+   "verdict": "real",
+   "reason": "the footprints point at aiee.3dshapes .wrl models the board doesn't ship, so no body can be judged until the models are added"
+  },
+  {
+   "gate": "verify",
+   "check": "check_wicking",
+   "net": "GND",
+   "refs": [
+    "J1"
+   ],
+   "pos": [
+    -2.385,
+    63.69
+   ],
+   "kind": "wick_via_in_pad",
+   "verdict": "real",
+   "reason": "open via in a pasted pad with no fill or cap: solder wicks down the barrel and starves the joint; spot-checked 13 against the board (vias untented, unfilled, inside the pad's paste)"
   }
  ]
 }
