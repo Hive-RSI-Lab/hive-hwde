@@ -3118,3 +3118,90 @@ def test_a_clamp_its_feed_could_burn_is_flagged(tmp_path):
     p = _gate(tmp_path, 8, pd="0.5mW")
     assert any(v["kind"] == "rating_over_current" and v["refs"] == ["D1"]
                for v in p["violations"])
+
+
+# --- #867 #868 #869: more ways to bound a net with no stated voltage --------
+
+def _tvs(vz):
+    """A TVS states its limit as an abs-max K-vs-A row (#867)."""
+    d = _zener(vz)
+    d["pin_ratings"][0]["level"] = "abs_max"
+    return d
+
+
+NFET = {"mpn": "TESTNFET", "pinout": [
+    {"pin": "1", "name": "G", "type": "input"},
+    {"pin": "2", "name": "S", "type": "passive"}],
+    "pin_ratings": [{"pins": ["G"], "kind": "voltage", "level": "abs_max",
+                     "min": -10, "max": 10, "ref": "S", "source": "test p.1 Vgs"}]}
+
+
+def _q1(p):
+    return [v for v in p["violations"] if v["refs"] == ["Q1"]]
+
+
+def test_an_abs_max_tvs_bounds_the_gate_like_a_zener(tmp_path):
+    fps = [("Q1", "C20", {"1": "/G", "2": "+12V"}),
+           ("D1", "C21", {"1": "+12V", "2": "/G"}),
+           ("R1", "C22", {"1": "+12V", "2": "/G"}, "x", "100k"),
+           ("R2", "C22", {"1": "/G", "2": "/PD"}, "x", "100k")]
+    ok = _run(_ws(tmp_path / "a", fps, {"C20": PFET, "C21": _tvs(8)}))
+    assert not _q1(ok)
+    loose = _run(_ws(tmp_path / "b", fps, {"C20": PFET, "C21": _tvs(15)}))
+    assert [v["kind"] for v in _q1(loose)] == ["rating_reverse_polarity"]
+
+
+def _kside(tmp_path, vz):
+    """The clamp's K is on the unstated gate net, its A on a known net."""
+    fps = [("Q1", "C20", {"1": "/G", "2": "GND"}),
+           ("D1", "C21", {"1": "/G", "2": "GND"}),
+           ("R1", "C22", {"1": "+12V", "2": "/G"}, "x", "100k"),
+           ("R2", "C22", {"1": "/G", "2": "/PD"}, "x", "100k")]
+    return _run(_ws(tmp_path, fps, {"C20": NFET, "C21": _zener(vz)}))
+
+
+def test_a_clamp_with_k_on_the_unknown_net_bounds_it(tmp_path):
+    assert not _q1(_kside(tmp_path, 8))     # gate -0.7..8 V, Vgs inside +-10
+
+
+def test_a_k_side_clamp_too_loose_is_caught(tmp_path):
+    hit = _q1(_kside(tmp_path, 15))         # gate up to 12 V over +10
+    assert [v["kind"] for v in hit] == ["rating_over_voltage"]
+
+
+def test_chained_clamps_settle_from_the_known_end(tmp_path):
+    fps = [("Q1", "C20", {"1": "/G2", "2": "+12V"}),
+           ("D1", "C21", {"1": "+12V", "2": "/G1"}),
+           ("R1", "C22", {"1": "+12V", "2": "/G1"}, "x", "100k"),
+           ("R2", "C22", {"1": "/G1", "2": "/G2"}, "x", "1k"),
+           ("D2", "C21", {"1": "/G1", "2": "/G2"})]
+    p = _run(_ws(tmp_path, fps, {"C20": PFET, "C21": _zener(5)}))
+    # G1 sits 7..12.7 V; G2 is K-side of D1 chain: it must at least be bounded,
+    # so Q1's gate is judged rather than left unrated
+    assert not any(v["kind"] == "rating_unrated" and v["refs"] == ["Q1"]
+                   for v in p["violations"])
+
+
+DRV2 = {"mpn": "TESTDRV2", "pinout": [
+    {"pin": "1", "name": "VDD", "type": "power_in"},
+    {"pin": "2", "name": "GND", "type": "ground"},
+    {"pin": "3", "name": "OUT", "type": "output"}]}
+
+
+def _driven(tmp_path, vdd, source):
+    fps = [("U1", "C30", {"1": vdd, "2": "GND", "3": "/G"}),
+           ("Q1", "C20", {"1": "/G", "2": source})]
+    return _run(_ws(tmp_path, fps, {"C20": PFET, "C30": DRV2}))
+
+
+def test_a_net_driven_by_an_output_is_bounded_by_its_rail(tmp_path):
+    assert not _q1(_driven(tmp_path, "+5V", "+5V"))
+
+
+def test_a_driver_rail_too_far_from_the_gate_source_is_caught(tmp_path):
+    hit = _q1(_driven(tmp_path, "+5V", "+12V"))    # G 0..5 V, S 12 V: Vgs -12
+    assert [v["kind"] for v in hit] == ["rating_reverse_polarity"]
+
+
+def test_a_driver_on_an_unknown_supply_leaves_the_net_unbounded(tmp_path):
+    assert not _q1(_driven(tmp_path, "/VX", "+12V"))   # nothing derived, nothing said

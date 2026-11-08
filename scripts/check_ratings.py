@@ -812,21 +812,40 @@ def _watts(text: str | None) -> float | None:
 
 
 def clamp_row(b: dict, ext: dict | None) -> tuple[str, float] | None:
-    """A zener-style clamp: two pads, a K pin whose recommended voltage row
-    is a max against A. (K net's pad, Vz top), else None."""
+    """A diode-style clamp: two pads, a K pin whose voltage row is a max
+    against A, recommended level first, else abs-max (a TVS states its limit
+    as an abs-max row, #867). (K pad, Vz top), else None."""
     if ext is None or len(b["pads"]) != 2:
         return None
     names = {p["pin"]: p["name"] for p in ext.get("pinout") or []}
     if sorted(names.get(k, "") for k in b["pads"]) != ["A", "K"]:
         return None
     rows = part_ratings(ext)
-    for pin, nm in names.items():
-        if nm != "K":
-            continue
-        for r in rows.get(pin, {}).get(("voltage", "rec"), []):
-            if r["ref"] == "A" and isinstance(r["hi"], float) and r["hi"] > 0:
-                return pin, r["hi"]
+    for level in ("rec", "abs"):
+        for pin, nm in names.items():
+            if nm != "K":
+                continue
+            for r in rows.get(pin, {}).get(("voltage", level), []):
+                if r["ref"] == "A" and isinstance(r["hi"], float) and r["hi"] > 0:
+                    return pin, r["hi"]
     return None
+
+
+def driver_rail(b: dict, ext: dict | None, pad: str,
+                volts: dict) -> tuple[float, float] | None:
+    """(lo, hi) a push-pull output pin can reach: its own part's supply
+    pins, all on known nets (#869). None for a pin that is not an output, or
+    when a supply pin sits on a net with no stated voltage."""
+    pins = (ext or {}).get("pinout") or []
+    me = next((p for p in pins if p["pin"] == pad), None)
+    if me is None or me["type"] not in ("output", "power_out"):
+        return None
+    rails = [b["pads"].get(p["pin"]) for p in pins
+             if p["type"] in ("power_in", "ground") and p["pin"] in b["pads"]]
+    vs = [volts.get(n) for n in rails if n is not None]
+    if not vs or any(v is None for v in vs) or len(vs) < len(rails):
+        return None
+    return min(vs), max(vs)
 
 
 def unstated_net_bounds(board: list[dict], exts: dict, bom_by_lcsc: dict,
@@ -835,10 +854,15 @@ def unstated_net_bounds(board: list[dict], exts: dict, bom_by_lcsc: dict,
 
     bounds[net] = (lo, hi, why): the voltage the net can reach. A net is
     bounded only when everything on it is a resistor, a capacitor, an input
-    pin or a clamp (no driver we do not know about). Each resistor to a
-    known net contributes that net's voltage, each to an unknown net the
-    board's rails; the net lies in the hull of those. A zener clamp whose K
-    is on a known net then narrows it: A >= K - Vz, A <= K + a diode drop.
+    pin, a clamp or a driver whose supply we know (no driver we do not know
+    about). Each resistor to a known net contributes that net's voltage, each
+    to an unknown net the board's rails; the net lies in the hull of those. A
+    push-pull output pin contributes its own part's supply rails (#869). A
+    diode clamp (a zener or TVS: a recommended or abs-max K-vs-A row, #867)
+    whose other side is on a known net then narrows it: A >= K - Vz,
+    A <= K + a diode drop when the net is on A; K <= A + Vz, K >= A - a diode
+    drop when it is on K (#868). A clamp's other side may itself be a bounded
+    net (chained clamps): its bound is used when it has no stated voltage.
     clamp_power[ref] = (watts the clamp can dissipate, its Pd): a clamp is
     judged by the power it can carry, not against the bound it makes."""
     floor = min([0.0, *volts.values()])
@@ -848,14 +872,13 @@ def unstated_net_bounds(board: list[dict], exts: dict, bom_by_lcsc: dict,
         for pad, net in b["pads"].items():
             if net not in volts:
                 on.setdefault(net, []).append((b, pad))
-    bounds: dict[str, tuple] = {}
-    clamp_power: dict[str, tuple] = {}
+    cand: dict[str, dict] = {}
     for net, pins in on.items():
-        pts, ohms, clamps, ok = [], [], [], True
+        pts, ohms, clamps, drivers, ok = [], [], [], [], True
         for b, pad in pins:
             ref, ext = b["ref"], exts.get(b["lcsc"])
             if clamp_row(b, ext):
-                clamps.append(b)
+                clamps.append((b, pad))
                 continue
             if re.match(r"^R\d", ref) and len(b["pads"]) == 2:
                 other = next((n for q, n in b["pads"].items() if q != pad), None)
@@ -870,33 +893,69 @@ def unstated_net_bounds(board: list[dict], exts: dict, bom_by_lcsc: dict,
                 continue
             ptype = next((p["type"] for p in (ext or {}).get("pinout") or []
                           if p["pin"] == pad), None)
-            if ptype not in ("input", "passive"):
+            if ptype in ("input", "passive"):
+                continue
+            rail = driver_rail(b, ext, pad, volts)
+            if rail is None:
                 ok = False
                 break
-        if not ok or not ohms or not clamps:
+            drivers.append((b, rail))
+        if not ok or not (ohms and clamps or drivers):
             continue    # a bare hull of the board's rails proves nothing
-        lo = min(floor if v is None else v for v in pts)
-        hi = max(ceil if v is None else v for v in pts)
-        why = "feed resistors"
-        feed_lo, feed_hi = lo, hi
-        for c in clamps:
-            kpin, vz = clamp_row(c, exts.get(c["lcsc"]))
-            knet = c["pads"][kpin]
-            if knet in volts:
-                lo, hi = max(lo, volts[knet] - vz), min(hi, volts[knet] + DIODE_DROP_V)
-                why = f"feed resistors, clamped by {c['ref']}"
-        if lo > hi + EPS:
-            continue
-        bounds[net] = (lo, hi, why)
-        for c in clamps:  # the clamp's own evidence excludes itself
-            kpin, vz = clamp_row(c, exts.get(c["lcsc"]))
-            pd = _watts(_attr(bom_by_lcsc.get(c["lcsc"]), PD_ATTR_RE))
-            if pd is None or c["pads"][kpin] not in volts:
+        cand[net] = {"pts": pts, "ohms": ohms, "clamps": clamps,
+                     "drivers": drivers}
+    bounds: dict[str, tuple] = {}
+    clamp_power: dict[str, tuple] = {}
+
+    def settle(net: str, c: dict) -> tuple | None:
+        pts = c["pts"]
+        los = [floor if v is None else v for v in pts]
+        his = [ceil if v is None else v for v in pts]
+        for _d, (dl, dh) in c["drivers"]:
+            los.append(dl)
+            his.append(dh)
+        lo, hi = min(los), max(his)
+        why = "feed resistors" if pts else "driver supply"
+        for cb, pad in c["clamps"]:
+            kpin, vz = clamp_row(cb, exts.get(cb["lcsc"]))
+            other = next(n for q, n in cb["pads"].items() if q != pad)
+            if other in volts:
+                olo = ohi = volts[other]
+            elif other in bounds:
+                olo, ohi = bounds[other][:2]
+            else:
                 continue
-            amps = sum(max(abs(volts[c["pads"][kpin]] - (floor if v is None else v)),
-                           abs(volts[c["pads"][kpin]] - (ceil if v is None else v))) / r
-                       for r, v in ohms)
-            clamp_power[c["ref"]] = (amps * vz, pd)
+            if pad == kpin:     # net on K: A is the other side
+                lo, hi = max(lo, olo - DIODE_DROP_V), min(hi, ohi + vz)
+            else:               # net on A: K is the other side
+                lo, hi = max(lo, olo - vz), min(hi, ohi + DIODE_DROP_V)
+            why = f"{why}, clamped by {cb['ref']}"
+        if lo > hi + EPS:
+            return None
+        return lo, hi, why
+
+    for last in (False, False, True):   # chained clamps settle from the known end in
+        for net, c in cand.items():
+            if net in bounds:
+                continue
+            got = settle(net, c)
+            # a clamp whose other side is still unknown waits for a later
+            # pass; the last pass takes the plain feed hull
+            if got and (last or c["drivers"] or "clamped by" in got[2]
+                        or not c["clamps"]):
+                bounds[net] = got
+    for net, c in cand.items():
+        if net not in bounds:
+            continue
+        for cb, pad in c["clamps"]:
+            kpin, vz = clamp_row(cb, exts.get(cb["lcsc"]))
+            pd = _watts(_attr(bom_by_lcsc.get(cb["lcsc"]), PD_ATTR_RE))
+            if pd is None or cb["pads"][kpin] not in volts or not c["ohms"]:
+                continue
+            amps = sum(max(abs(volts[cb["pads"][kpin]] - (floor if v is None else v)),
+                           abs(volts[cb["pads"][kpin]] - (ceil if v is None else v))) / r
+                       for r, v in c["ohms"])
+            clamp_power[cb["ref"]] = (amps * vz, pd)
     return bounds, clamp_power
 
 
