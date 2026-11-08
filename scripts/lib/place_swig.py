@@ -39,7 +39,13 @@ unscriptable):
      - deletes a footprint's own GRAPHIC silk (lines/arcs/circles/polys) on
        that layer, never its Reference/Value text. `only_offboard` keeps the
        items fully inside the board outline; `region` (board mm) deletes
-       only the items lying wholly inside that box. The only scripted way to fix
+       only the items lying wholly inside that box. `over_pads` deletes only
+       the items within 0.1 mm of one of the part's own pads; `edge_mm`
+       only those closer than that to the board-edge box or past it; `at`
+       [x, y] (board mm) only the one item whose box (grown 0.05 mm) holds
+       that point - where DRC put a silk finding; `uuid` [..] only the items
+       with those uuids (DRC reports name them). Filters combine (all must
+       hold). The only scripted way to fix
        footprint-INTERNAL silk on an already-placed board (a library edit
        cannot reach one without re-running board_init and losing placement).
 
@@ -206,6 +212,14 @@ def _inside(inner: tuple, outer: tuple) -> bool:
             and inner[2] <= outer[2] and inner[3] <= outer[3])
 
 
+def _grow(b: tuple, d: int) -> tuple:
+    return (b[0] - d, b[1] - d, b[2] + d, b[3] + d)
+
+
+def _touches(a: tuple, b: tuple) -> bool:
+    return a[0] <= b[2] and b[0] <= a[2] and a[1] <= b[3] and b[1] <= a[3]
+
+
 def apply_silk_clear(board, op: dict) -> dict:
     """{"op": "silk_clear", "ref": R, ["layer": "F.SilkS"],
         ["only_offboard": true]}
@@ -238,9 +252,24 @@ def apply_silk_clear(board, op: dict) -> dict:
     region = op.get("region")
     if region is not None:
         region = (iu(region[0]), iu(region[1]), iu(region[2]), iu(region[3]))
-    if keep_inside and EDGE_BOX is None:
-        raise RuntimeError("only_offboard needs the board-edge box cached "
-                           "before the first removal - see main()")
+    over_pads = bool(op.get("over_pads"))
+    edge_mm = op.get("edge_mm")
+    at = op.get("at")
+    if (keep_inside or edge_mm is not None) and EDGE_BOX is None:
+        raise RuntimeError("only_offboard/edge_mm need the board-edge box "
+                           "cached before the first removal - see main()")
+    inner = None
+    if edge_mm is not None:
+        m = iu(edge_mm)
+        inner = (EDGE_BOX[0] + m, EDGE_BOX[1] + m,
+                 EDGE_BOX[2] - m, EDGE_BOX[3] - m)
+    pad_boxes = []
+    if over_pads:   # silk_clear.py: a segment across a pad's mask opening
+        pad_boxes = [_box(p.GetBoundingBox()) for p in fp.Pads()]
+    grow_pad, grow_at = iu(0.1), iu(0.05)
+    if at is not None:
+        at = (iu(at[0]), iu(at[1]))
+    uuids = set(op["uuid"]) if op.get("uuid") is not None else None
     victims = []
     for item in list(fp.GraphicalItems()):
         if item.GetLayer() != lid:
@@ -252,6 +281,20 @@ def apply_silk_clear(board, op: dict) -> dict:
         if region is not None \
                 and not _inside(_box(item.GetBoundingBox()), region):
             continue          # silk_rm.py: one end of a body outline only
+        if uuids is not None and item.m_Uuid.AsString() not in uuids:
+            continue
+        bb = _box(item.GetBoundingBox())
+        if inner is not None and _inside(bb, inner):
+            continue          # silk_edge.py: clear of the edge band
+        if over_pads and not any(_touches(_grow(bb, grow_pad), pb)
+                                 for pb in pad_boxes):
+            continue
+        if at is not None:
+            g = _grow(bb, grow_at)
+            if not (g[0] <= at[0] <= g[2] and g[1] <= at[1] <= g[3]):
+                continue
+            victims.append(item)
+            break             # silk_clean.py: the one item DRC pointed at
         victims.append(item)
     _KEEPALIVE.append(fp)
     _KEEPALIVE.extend(victims)
@@ -357,7 +400,8 @@ def _run(job) -> int:
     # removed (KiCad 10.0.5, measured) - and returning its BOX2I into a later
     # op corrupts the next FindFootprintByReference into a bare SwigPyObject.
     # Take it once, up front, as plain ints.
-    if any(o.get("op") == "silk_clear" and o.get("only_offboard")
+    if any(o.get("op") == "silk_clear"
+           and (o.get("only_offboard") or o.get("edge_mm") is not None)
            for o in job["ops"]):
         EDGE_BOX = _box(board.GetBoardEdgesBoundingBox())
     results = []

@@ -76,7 +76,8 @@ OP_FIELDS = {  # op -> (required, optional)
     # footprint-INTERNAL silk graphics on an already-placed board: a library
     # edit cannot reach one without re-running board_init (and losing the
     # placement), so this is the only scripted route. Never touches text.
-    "silk_clear": ({"ref"}, {"layer", "only_offboard", "region"}),
+    "silk_clear": ({"ref"}, {"layer", "only_offboard", "region",
+                             "over_pads", "edge_mm", "at", "uuid"}),
     # pad and part-attribute ECOs (the hi-fi boards' pad_nets / pad_nonet /
     # pad_size / set_dnp scripts): re-net or clear a pad (an NC pin, a
     # rewire board_update refuses because copper touches the pad - rip it
@@ -179,9 +180,24 @@ def validate_ops(doc: dict) -> list[dict]:
         if kind == "silk_clear":
             if op.get("layer", "F.SilkS") not in ("F.SilkS", "B.SilkS"):
                 raise CheckError(f"ops[{i}]: layer must be F.SilkS|B.SilkS")
-            if "only_offboard" in op and not isinstance(op["only_offboard"],
-                                                        bool):
-                raise CheckError(f"ops[{i}]: only_offboard must be a boolean")
+            for flag in ("only_offboard", "over_pads"):
+                if flag in op and not isinstance(op[flag], bool):
+                    raise CheckError(f"ops[{i}]: {flag} must be a boolean")
+            e = op.get("edge_mm")
+            if e is not None and (isinstance(e, bool)
+                                  or not isinstance(e, (int, float)) or e < 0):
+                raise CheckError(f"ops[{i}]: edge_mm must be a number >= 0")
+            a = op.get("at")
+            if a is not None and not (
+                    isinstance(a, list) and len(a) == 2
+                    and all(isinstance(x, (int, float))
+                            and not isinstance(x, bool) for x in a)):
+                raise CheckError(f"ops[{i}]: at must be [x, y] mm")
+            u = op.get("uuid")
+            if u is not None and not (
+                    isinstance(u, list) and u
+                    and all(isinstance(x, str) and x for x in u)):
+                raise CheckError(f"ops[{i}]: uuid must be a list of uuids")
             r = op.get("region")
             if r is not None and not (
                     isinstance(r, list) and len(r) == 4

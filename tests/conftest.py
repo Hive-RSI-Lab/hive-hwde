@@ -124,6 +124,8 @@ SLOW = {
     "tests/test_bench.py::test_offline_fixture_matches_baseline": _BOARD,
     "tests/test_route_tune.py::test_tune_blinky2_live": _TOOLS,
     "tests/test_pad_zone_connection.py::test_live_pad_zone_full_on_a_copy_of_core": _TOOLS,
+    "tests/test_silk_fix.py::test_live_silk_fix_clears_the_findings_on_a_copy_of_core": _TOOLS,
+    "tests/test_silk_fix.py::test_live_over_pads_and_edge_mm_on_a_copy_of_core": _TOOLS,
     "tests/test_teardrops.py::test_live_teardrops_led_count_drc_idempotent": _TOOLS,
     "tests/test_teardrops.py::test_live_teardrops_bb_adc_count": _TOOLS,
     "tests/test_dfm_zone_fill.py::test_live_refill_confirms_dfm1": _TOOLS,

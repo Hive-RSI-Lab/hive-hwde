@@ -336,8 +336,9 @@ Special cases:
   needed after P5): stop the loop, present the tradeoff. Since T8 this is
   usually `add-part`/`swap-part`/`remove-part`, which preserve placement and
   routing - a true rewind to P4/P5 is the last resort, not the first.
-- Silk findings: scripted fixes (silk_place.py, place_edit add_text/move_text/
-  set_text); pin-locked labels ONLY; footprint-INTERNAL silk stays librarian.
+- Silk findings: scripted fixes (silk_place.py, then silk_fix.py for what
+  it could not place; place_edit add_text/move_text/set_text/silk_clear);
+  pin-locked labels ONLY; footprint-INTERNAL silk stays librarian.
 
 **Change approach** (the loop is not converging, or the fix is out of reach):
 render the board (`scripts/render.py`), write a digest (what failed, what was
