@@ -1,4 +1,4 @@
-# Seeded faults for check_ratings' regulator row against its rails (hive-hwde #708, #805).
+# Seeded faults for check_ratings' regulator row against its rails (hive-hwde #708, #805, #832).
 mutants:
   ldo-over-input:
     board: blinky2
@@ -22,6 +22,19 @@ mutants:
     expect:
       kind: rating_regulator_output
       ref: U2
+  adj-buck-fb-on-rail:
+    board: blinky2
+    script: mutations/adj_buck_fb_on_rail.py
+    check: check_ratings
+    defect: >-
+      SIDECAR fault (+ an LCSC property on U2 so the parts dir finds it):
+      a datasheet extraction of the adjustable AP63200 has its FB pin straight
+      on +3V3 with no divider, so it makes Vref (0.8 V); it has no output pin
+      or fixed output, so only FB and its Vref say what it makes (#832)
+    expect:
+      kind: rating_regulator_output
+      ref: U2
+      net: "+3V3"
   ldo-wrong-output:
     board: blinky2
     script: mutations/ldo_wrong_output.py

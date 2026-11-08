@@ -14,10 +14,20 @@ regulators:
     tol: 0.025
     source: TI SLVSDN4 (TPS54302) 7.5 Electrical Characteristics, VFB 0.581-0.611
     verified: false
+  - match: '^AP6320[01]'        # AP63200 / AP63201; AP63203/5 are fixed
+    vref: 0.8
+    tol: 0.015
+    source: Diodes AP63200/AP63201/AP63203/AP63205 datasheet, VFB 0.788-0.812
+    verified: false
   - match: '^SY8089'
     vref: 0.6
     tol: 0.02
     source: Silergy SY8089 datasheet, VFB
+    verified: false
+  - match: '^SY8303'
+    vref: 0.6
+    tol: 0.02
+    source: Silergy SY8303 datasheet, VFB
     verified: false
   - match: '^SY8113'
     vref: 0.6
