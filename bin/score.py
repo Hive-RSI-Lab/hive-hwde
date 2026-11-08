@@ -48,9 +48,9 @@ CRASH = 100
 # bin/pin.py writes this block; don't edit it by hand.
 # pins:begin
 PINS = {
-    "core": "12623e7d65f75f3180dab68d0e7c87aedc4adc1e19cfb6db2b7b7db1162d77db",
+    "core": "667bfa4f7f3d2553fc8de9bc9f5b4301869ff21bbe33852cc04a10ed428e0c02",
     "hwde-led-test": "7051f8a4ea9babdfc50aeefa9f8288ebd9318a9a382628ad95c3755207704e1c",
-    "lite-main": "15c6e7f33edb1ef4aef621b8e39146b0ac0ea3c8879d6e0ad6d394d996f5967b",
+    "lite-main": "38dd634066b734a613a634f86d48a9f6f2158e536dd95748719c5da42bdfc983",
     "ultra-front": "b981ed98a33bf09475370400204356ad52e734c1d9126fd3aa63de19156518ca",
 }
 # pins:end
@@ -64,6 +64,7 @@ class Pin:
     commit: str
     design: list[str] = field(default_factory=list)
     stand_in: dict[str, str] = field(default_factory=dict)
+    bare_parts: dict[str, str] = field(default_factory=dict)
     unclassified: list[str] = field(default_factory=list)
     path: Path | None = None
 
@@ -72,7 +73,8 @@ def read_pin(path: Path) -> Pin:
     d = json.loads(path.read_text(encoding="utf-8"))
     return Pin(d.get("board") or path.stem, ROOT / d["dir"], d.get("project", ""),
                d.get("commit", ""), list(d.get("design", [])),
-               dict(d.get("stand_in", {})), list(d.get("unclassified", [])), path)
+               dict(d.get("stand_in", {})), dict(d.get("bare_parts", {})),
+               list(d.get("unclassified", [])), path)
 
 
 def _local_state(p: Path) -> bool:
@@ -106,6 +108,23 @@ def digest(pin: Pin) -> str:
     return h.hexdigest()
 
 
+def bare_rows(pin: Pin) -> list[str]:
+    """The LCSC codes of the board's parts/parts.json rows that carry no
+    `attributes`, which the pin doesn't name under `bare_parts` with a reason
+    (#834). check_ratings, sim_board and mlcc_dcbias judge a part by those
+    attributes; a bare row leaves a cap's rating unknown and puts its part in
+    a coverage-gap finding the score then holds as false. scripts/parts_enrich.py
+    fills them; a code JLC's search doesn't know is named in the pin."""
+    f = pin.dir / "parts" / "parts.json"
+    if not f.is_file():
+        return []
+    rows = json.loads(f.read_text(encoding="utf-8"))
+    rows = rows.get("parts", []) if isinstance(rows, dict) else rows
+    return sorted({str(r["lcsc"]) for r in rows if isinstance(r, dict) and r.get("lcsc")
+                   and not r.get("attributes")
+                   and not str(pin.bare_parts.get(str(r["lcsc"]), "")).strip()})
+
+
 def problems(pin: Pin) -> list[str]:
     """What makes a pin unfit to score: files changed since bin/pin.py stamped
     it, or a script list that doesn't match the board's scripts."""
@@ -115,6 +134,11 @@ def problems(pin: Pin) -> list[str]:
     if PINS.get(pin.name) != digest(pin):
         out.append(f"{pin.name}: its files or pin differ from the digest in bin/score.py "
                    f"(re-pin with bin/hwde pin, or put them back)")
+    bare = bare_rows(pin)
+    if bare:
+        out.append(f"{pin.name}: parts/parts.json rows with no attributes: {', '.join(bare)} "
+                   f"(run scripts/parts_enrich.py --workspace {pin.dir.relative_to(ROOT)}, "
+                   f"or name a code JLC doesn't know under bare_parts in the pin, with why)")
     have = set(scripts(pin.dir))
     listed = pin.design + list(pin.stand_in) + pin.unclassified
     for s, n in Counter(listed).items():

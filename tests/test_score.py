@@ -161,3 +161,28 @@ def test_digest_ignores_kicad_local_state(tmp_path):
                  "fp-info-cache"):
         (tmp_path / name).write_text("local", encoding="utf-8")
     assert score.files(tmp_path) == before == ["a.kicad_pcb"]
+
+
+def _parts(pin, rows):
+    (pin.dir / "parts").mkdir(exist_ok=True)
+    (pin.dir / "parts" / "parts.json").write_text(json.dumps({"parts": rows}))
+
+
+def test_a_pin_with_bare_parts_rows_is_refused(pin):
+    """Planted fault (#834): core's parts.json rows once carried empty
+    attributes, so check_ratings could rate no cap and called 139 parts a
+    coverage gap. A pinned board with such rows must stop the score."""
+    _parts(pin, [{"refdes": ["C1"], "lcsc": "C1525", "attributes": {"Voltage Rated": "50V"}},
+                 {"refdes": ["C2"], "lcsc": "C2286", "attributes": {}},
+                 {"refdes": ["C3"], "lcsc": "C9"}])
+    assert score.bare_rows(pin) == ["C2286", "C9"]
+    assert any("C2286" in m and "parts_enrich" in m for m in score.problems(pin))
+
+
+def test_a_bare_row_the_pin_names_with_a_reason_is_allowed(pin):
+    _parts(pin, [{"refdes": ["U1"], "lcsc": "C42", "attributes": {}}])
+    assert score.bare_rows(pin) == ["C42"]
+    pin.bare_parts["C42"] = "JLC search has no listing for this code"
+    assert score.bare_rows(pin) == []
+    pin.bare_parts["C42"] = " "
+    assert score.bare_rows(pin) == ["C42"]

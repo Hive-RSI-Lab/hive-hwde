@@ -66,5 +66,13 @@
   "kicad/gen/via_array.py": "no hwde script builds a power patch with a via array between a pad and the planes",
   "kicad/gen/via_taps.py": "no hwde script maze-routes an unconnected pad to its net's vias"
  },
- "unclassified": []
+ "unclassified": [],
+ "bare_parts": {
+  "C377773": "parts_enrich asked JLC's search for this exact code and got no listing back (not_reached), so no attributes exist to fill",
+  "C17223620": "parts_enrich asked JLC's search for this exact code and got no listing back (not_reached), so no attributes exist to fill",
+  "C475500": "parts_enrich asked JLC's search for this exact code and got no listing back (not_reached), so no attributes exist to fill",
+  "C1588": "parts_enrich asked JLC's search for this exact code and got no listing back (not_reached), so no attributes exist to fill",
+  "C474881": "parts_enrich asked JLC's search for this exact code and got no listing back (not_reached), so no attributes exist to fill",
+  "C42421366": "parts_enrich asked JLC's search for this exact code and got no listing back (not_reached), so no attributes exist to fill"
+ }
 }
