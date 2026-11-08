@@ -18,7 +18,9 @@ rules_gen sizes boards with, and tests/test_board_setup.py can regenerate it.
 Fab floor: a width under the stackup's fab minimum trace (the vendor's
 profile, lib/fabfloors.vendor_profile) is pinned at that minimum and the
 gap solved (`gap_solved: true`), as rules_gen does on JLC's 6-layer inner
-layers. Only applied to vendor entries; JLC's tables predate it.
+layers, and a pair's gap is never under the fab's clearance (outer layers
+the outer clearance; rules_gen.pair_gap, issue #741). Only applied to vendor
+entries; JLC's tables predate it.
 
   hwde stackup_rows --stackup OSHPARK-4L-1.6-FR408HR
 
@@ -44,31 +46,48 @@ PROFILES = (("se_50", "single", 50), ("diff_90", "diff", 90),
 NOTES = {"diff_90": "USB 2.0 / ULPI", "diff_100": "Ethernet / LVDS / general 100R"}
 
 
-def fab_floor(stackup: dict) -> float:
-    """Min trace width (mm) of the entry's fab; 0 for JLC entries (their
-    tables are unpinned)."""
+def _fab_row(stackup: dict) -> dict | None:
+    """The entry's fab capability row; None for JLC entries (their tables
+    are unpinned) and a vendor that publishes no rules for the build."""
     vendor = fabfloors.vendor_of(stackup)
     if vendor is None:
-        return 0.0
+        return None
     coppers = [ly for ly in stackup["stack"] if ly["type"] == "copper"]
     try:
         _, row = fabfloors.profile(stackup["layers"],
                                    float(coppers[0].get("copper_oz", 1.0)),
                                    vendor=vendor)
     except fabfloors.FabFloorError:
-        return 0.0   # the vendor publishes no rules for this build (AISLER 8L)
-    return float(row["min_trace_width_mm"])
+        return None   # the vendor publishes no rules for this build (AISLER 8L)
+    return row
+
+
+def fab_floor(stackup: dict) -> float:
+    """Min trace width (mm) of the entry's fab; 0 for JLC entries (their
+    tables are unpinned)."""
+    row = _fab_row(stackup)
+    return float(row["min_trace_width_mm"]) if row else 0.0
+
+
+def gap_floor(stackup: dict) -> tuple[float, float]:
+    """(outer, inner) clearance (mm) of the entry's fab, no pair's gap under
+    it; (0, 0) for JLC entries."""
+    row = _fab_row(stackup)
+    if not row:
+        return 0.0, 0.0
+    return fabfloors.outer_clearance(row), float(row["min_clearance_mm"])
 
 
 def _outer(kind: str, z: float, h: float, t: float, er: float,
-           floor: float, method: str) -> dict:
+           floor: float, method: str, gfloor: float = 0.0) -> dict:
     if kind == "single":
         w = imp.solve_width(z, h, t, er, method=method)
         if w >= floor:
             return {"width_mm": round(w, 4)}
         return _reach({"width_mm": round(floor, 4), "below_fab_floor": True},
                       imp.microstrip_z0(floor, h, t, er, method), z)
-    w, g = imp.diff_pair(z, h, t, er, method=method)
+    w, g = imp.diff_pair(z, h, t, er, gap=rules_gen.pair_gap(h, gfloor),
+                         method=method)
     if w < floor:
         w, g = imp.diff_pair(z, h, t, er, width=floor, method=method)
         return _reach({"width_mm": w, "gap_mm": g, "gap_solved": True},
@@ -86,15 +105,17 @@ def _reach(row: dict, z_got: float, z_target: float) -> dict:
     return row
 
 
-def outer_rows(stackup: dict, floor: float = 0.0) -> list[dict]:
+def outer_rows(stackup: dict, floor: float = 0.0,
+               gfloor: float = 0.0) -> list[dict]:
     h, er, oz = rules_gen.outer_microstrip_params(stackup)
     t = imp.CU_OZ_MM.get(oz, 0.035)
     rows = []
     for prof, kind, z in PROFILES:
         row = {"profile": prof, "kind": kind, "impedance_ohm": z,
                "layer": "outer", "reference": "nearest_plane"}
-        row.update(_outer(kind, z, h, t, er, floor, "field"))
-        row["closed_form"] = _outer(kind, z, h, t, er, floor, "closed_form")
+        row.update(_outer(kind, z, h, t, er, floor, "field", gfloor))
+        row["closed_form"] = _outer(kind, z, h, t, er, floor, "closed_form",
+                                    gfloor)
         if prof in NOTES:
             row["note"] = NOTES[prof]
         rows.append(row)
@@ -108,7 +129,8 @@ def inner_layers(stackup: dict) -> list[str]:
     return names[2:-2]
 
 
-def inner_rows(stackup: dict, floor: float = 0.0) -> list[dict]:
+def inner_rows(stackup: dict, floor: float = 0.0,
+               gfloor: float = 0.0) -> list[dict]:
     names = [ly["name"] for ly in stackup["stack"] if ly["type"] == "copper"]
     rows = []
     for lname in inner_layers(stackup):
@@ -117,7 +139,8 @@ def inner_rows(stackup: dict, floor: float = 0.0) -> list[dict]:
         geo = rules_gen.stripline_layers(
             stackup, {"planes": [{"layer": r} for r in refs]})[lname]
         for prof, kind, z in PROFILES:
-            g = rules_gen.stripline_geometry(float(z), geo, kind == "diff", floor)
+            g = rules_gen.stripline_geometry(float(z), geo, kind == "diff",
+                                             floor, gfloor)
             row = {"profile": prof, "kind": kind, "impedance_ohm": z,
                    "layer": lname, "reference": refs, "model": "stripline",
                    "width_mm": g["width_mm"]}
@@ -134,9 +157,10 @@ def inner_rows(stackup: dict, floor: float = 0.0) -> list[dict]:
 
 def rows_for(stackup: dict) -> list[dict]:
     floor = fab_floor(stackup)
-    rows = outer_rows(stackup, floor)
+    g_out, g_in = gap_floor(stackup)
+    rows = outer_rows(stackup, floor, g_out)
     if fabfloors.vendor_of(stackup) is not None:
-        rows += inner_rows(stackup, floor)
+        rows += inner_rows(stackup, floor, g_in)
     return rows
 
 

@@ -201,6 +201,42 @@ def test_vendor_stackup_rows_regenerate(name):
         assert r["width_mm"] >= floor - 1e-9, f"{name} {r['layer']} {r['profile']}"
         if r.get("gap_solved"):
             assert abs(r["width_mm"] - floor) < 1e-9
+    assert _gaps_under_clearance(s) == [], name
+
+
+def _gaps_under_clearance(s):
+    """Rows whose pair gap is under the fab's clearance (outer layers: the
+    outer clearance): a gap no fab draws (issue #741)."""
+    import stackup_rows
+    g_out, g_in = stackup_rows.gap_floor(s)
+    return [f"{r['layer']} {r['profile']} gap {r['gap_mm']}"
+            for r in s["controlled_impedance"]
+            if r.get("gap_mm") is not None
+            and r["gap_mm"] < (g_out if r["layer"] == "outer" else g_in) - 1e-9]
+
+
+def test_a_gap_under_the_clearance_is_caught():
+    """Planted fault for the gap floor: PCBWay 8L's diff_90 as it shipped
+    before #741 (0.13 mm against 6 mil) fails the check, and rows_for never
+    gives it again."""
+    import copy
+    import stackup_rows
+    s = copy.deepcopy(VENDOR_STACKS["PCBWAY-8L-1.6-2116"])
+    row = next(r for r in s["controlled_impedance"]
+               if r["layer"] == "outer" and r["profile"] == "diff_90")
+    row["gap_mm"] = 0.13
+    assert _gaps_under_clearance(s) == ["outer diff_90 gap 0.13"]
+    assert stackup_rows.gap_floor(s) == (0.1524, 0.1524)
+    fresh = next(r for r in stackup_rows.rows_for(s)
+                 if r["layer"] == "outer" and r["profile"] == "diff_90")
+    assert fresh["gap_mm"] == pytest.approx(0.1524)
+
+
+def test_pair_gap_holds_the_clearance():
+    assert rules_gen.pair_gap(0.1) == 0.13
+    assert rules_gen.pair_gap(0.5) == 0.30
+    assert rules_gen.pair_gap(0.1, 0.1524) == 0.1524
+    assert rules_gen.pair_gap(0.2, 0.1524) == 0.2
 
 
 @pytest.mark.skipif(not imp.SOLVER_OK, reason="field solver needs numpy/scipy")
