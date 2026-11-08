@@ -65,6 +65,7 @@ FIXER_HINTS = {
     # divider, a clamp, a level shifter) or a different part; unrated is a
     # missing extraction row
     "rating_over_voltage": "schematic", "rating_reverse_polarity": "schematic",
+    "rating_diode_forward": "schematic",
     "rating_outside_recommended": "schematic",
     "rating_over_current": "parts", "rating_unrated": "parts",
     "rating_no_attributes": "parts", "rating_regulator_output": "parts",

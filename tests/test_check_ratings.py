@@ -394,17 +394,73 @@ def test_diode_reverse_attribute_and_netlist_pin_names(tmp_path):
         [("rating_reverse_polarity", "D1.2")]
     assert "pad names" in errs[0]["msg"]
     # with no netlist, pad 1 is the cathode (KiCad's convention): the same
-    # pads are then forward biased, checked clean and rated
+    # pads are then forward biased - within the reverse rating and rated,
+    # but conducting straight across the rail (#645)
     ws2 = _ws(tmp_path / "b", [("D1", "C8", {"1": "GND", "2": "+5V"})],
               {}, bom)
     p = _run(ws2)
-    assert _errors(p) == []
+    assert [e["kind"] for e in _errors(p)] == ["rating_diode_forward"]
     assert not any(v["kind"] == "rating_unrated" for v in p["violations"])
     ws3 = _ws(tmp_path / "c", [("D1", "C8", {"1": "+5V", "2": "GND"})],
               {}, bom)
     errs = _errors(_run(ws3))
     assert [e["pin"] for e in errs] == ["D1.1"]
     assert "pad 1 taken as the cathode" in errs[0]["msg"]
+
+
+TVS = {"lcsc": "C9", "mpn": "SMBJ5.0A", "attributes": [
+    {"name": "Type", "value": "TVS"},
+    {"name": "Polarity", "value": "Unidirectional"}]}
+
+
+def _forward(p):
+    return [v for v in p["violations"] if v["kind"] == "rating_diode_forward"]
+
+
+def test_diode_forward_on_ground_and_backwards_clamp(tmp_path):
+    # #645: a unidirectional TVS with its anode on the rail and cathode on
+    # ground conducts across the rail; every rating holds
+    ws = _ws(tmp_path, [("D1", "C9", {"1": "GND", "2": "+3V3"})], {}, [TVS])
+    f = _forward(_run(ws))
+    assert [(v["pin"], v["severity"]) for v in f] == [("D1.2", "error")]
+    assert f[0]["net_v"] == pytest.approx(3.3)
+    assert "(TVS)" in f[0]["msg"]
+    # fitted the right way (cathode on the rail): clean
+    ws = _ws(tmp_path / "b", [("D1", "C9", {"1": "+3V3", "2": "GND"})], {},
+             [TVS])
+    assert _forward(_run(ws)) == []
+    # a clamp between two rails, anode on the higher one: backwards too
+    ws = _ws(tmp_path / "c", [("D1", "C9", {"1": "+3V3", "2": "+5V"})], {},
+             [TVS])
+    assert [v["pin"] for v in _forward(_run(ws))] == ["D1.2"]
+
+
+def test_diode_forward_left_alone(tmp_path):
+    # a plain diode forward from one rail to another is an OR-ing path
+    bom = [{"lcsc": "C8", "mpn": "1N5819", "attributes": []}]
+    ws = _ws(tmp_path, [("D1", "C8", {"1": "+3V3", "2": "+5V"})], {}, bom)
+    assert _forward(_run(ws)) == []
+    # a bidirectional clamp has no wrong way round
+    bi = [dict(TVS, mpn="SMBJ5.0CA", attributes=[
+        {"name": "Type", "value": "TVS"}])]
+    ws = _ws(tmp_path / "b", [("D1", "C9", {"1": "GND", "2": "+3V3"})], {},
+             bi)
+    assert _forward(_run(ws)) == []
+    # an anode whose volts are only guessed through a pull-up (an LED
+    # behind its resistor) is not judged
+    ws = _ws(tmp_path / "c", [("R1", "", {"1": "+3V3", "2": "/LED_A"}),
+                              ("D1", "C9", {"1": "GND", "2": "/LED_A"})],
+             {}, [TVS])
+    assert _forward(_run(ws)) == []
+
+
+def test_clamp_kind():
+    assert cr.clamp_kind(TVS) == ("TVS", False)
+    assert cr.clamp_kind({"mpn": "SMBJ30CA"}) == ("TVS", True)
+    assert cr.clamp_kind({"mpn": "BZT52C15", "attributes": [
+        {"name": "Zener Voltage (Nom)", "value": "15V"}]}) == ("Zener", False)
+    assert cr.clamp_kind({"mpn": "1N4148W", "attributes": []}) == (None, False)
+    assert cr.clamp_kind(None) == (None, False)
 
 
 def test_hwde_led_test_d1_reversed_input(tmp_path):
@@ -2363,7 +2419,7 @@ def test_attribute_rating_is_listed_and_says_distributor(tmp_path):
 
 
 def test_diode_attribute_rating_is_listed(tmp_path):
-    ws = _ws(tmp_path, [("D1", "C7", {"1": "GND", "2": "+5V"})], {}, [DIODE])
+    ws = _ws(tmp_path, [("D1", "C7", {"1": "+5V", "2": "GND"})], {}, [DIODE])
     f = _fact(ws, "D1")
     assert (f["status"], f["rated_from"]) == ("listed", "distributor")
 

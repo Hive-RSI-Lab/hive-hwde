@@ -1,0 +1,30 @@
+{
+  "parts": [
+    {
+      "ref_prefix_hint": "D",
+      "mpn": "SMBJ5.0A",
+      "lcsc": "C113956",
+      "value": "SMBJ5.0A",
+      "package": "SMB",
+      "attributes": [
+        {
+          "name": "Type",
+          "value": "TVS"
+        },
+        {
+          "name": "Polarity",
+          "value": "Unidirectional"
+        },
+        {
+          "name": "Reverse Stand-Off Voltage (Vrwm)",
+          "value": "5V"
+        },
+        {
+          "name": "Clamping Voltage",
+          "value": "9.2V"
+        }
+      ],
+      "role": "D1 3V3 rail clamp"
+    }
+  ]
+}

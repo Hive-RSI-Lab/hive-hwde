@@ -1,0 +1,13 @@
+# check_ratings rating_diode_forward (#645): a diode that conducts all the time
+mutants:
+  tvs-forward-on-rail:
+    board: blinky2
+    script: mutations/tvs_forward_on_rail.py
+    check: check_ratings
+    defect: >-
+      SIDECAR + board fault: D1 listed as a unidirectional TVS (SMBJ5.0A) with
+      its anode pad moved onto +3V3 and its cathode left on GND, so the clamp
+      is fitted backwards and conducts across the rail; every rating holds
+    expect:
+      kind: rating_diode_forward
+      ref: D1
