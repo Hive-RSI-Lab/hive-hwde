@@ -5,10 +5,10 @@
  "board": "lumina-carrier",
  "metrics": {
   "errors": 190,
-  "warnings": 240,
+  "warnings": 209,
   "by_check": {
    "check_return_path": 4,
-   "check_current": 53,
+   "check_current": 22,
    "check_decoupling": 14,
    "check_diffpair": 3,
    "check_creepage": 26,
@@ -60,7 +60,7 @@
    "ep_paste_low": 1,
    "ep_paste_missing": 1,
    "gnd_stub_long": 1,
-   "insufficient_transition_vias": 9,
+   "insufficient_transition_vias": 6,
    "model_path_absolute": 2,
    "model_path_unanchored": 21,
    "paste_on_via": 11,
@@ -69,7 +69,7 @@
    "route_style": 108,
    "silk_misattributed": 3,
    "strap_unknown": 1,
-   "undersized_track": 42,
+   "undersized_track": 14,
    "wick_via_in_pad": 74
   },
   "si": {
@@ -83,7 +83,7 @@
  "metrics_live": null,
  "penalties": {
   "errors": 190.0,
-  "warnings": 240.0,
+  "warnings": 209.0,
   "known_answer_missed": 0.0,
   "forbidden_errors": 0.0
  },
@@ -97,7 +97,7 @@
  },
  "e2e": null,
  "_baseline": {
-  "created": "2026-11-05",
+  "created": "2026-11-08",
   "kicad_version": null
  }
 }
