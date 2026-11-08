@@ -1,0 +1,150 @@
+{
+ "mpn": "CH340B",
+ "lcsc": "C81010",
+ "package": "SOP-16",
+ "description": "WCH CH340B USB to serial bridge, SOP-16, internal clock and EEPROM, 3.3 V or 5 V supply",
+ "pinout": [
+  {
+   "pin": "1",
+   "name": "GND",
+   "type": "ground"
+  },
+  {
+   "pin": "2",
+   "name": "TXD",
+   "type": "output",
+   "notes": "serial data output"
+  },
+  {
+   "pin": "3",
+   "name": "RXD",
+   "type": "input",
+   "notes": "serial data input"
+  },
+  {
+   "pin": "4",
+   "name": "V3",
+   "type": "power_in",
+   "notes": "internal 3.3 V node: tie to VCC at 3.3 V supply, 0.1uF decoupling at 5 V"
+  },
+  {
+   "pin": "5",
+   "name": "UD+",
+   "type": "bidirectional",
+   "notes": "USB D+"
+  },
+  {
+   "pin": "6",
+   "name": "UD-",
+   "type": "bidirectional",
+   "notes": "USB D-"
+  },
+  {
+   "pin": "7",
+   "name": "RST#",
+   "type": "input",
+   "notes": "CH340B: external reset, active low, internal pull-up"
+  },
+  {
+   "pin": "8",
+   "name": "NC",
+   "type": "nc",
+   "notes": "CH340B: no connect, must float"
+  },
+  {
+   "pin": "9",
+   "name": "CTS#",
+   "type": "input",
+   "notes": "modem input"
+  },
+  {
+   "pin": "10",
+   "name": "DSR#",
+   "type": "input",
+   "notes": "modem input"
+  },
+  {
+   "pin": "11",
+   "name": "RI#",
+   "type": "input",
+   "notes": "modem input"
+  },
+  {
+   "pin": "12",
+   "name": "DCD#",
+   "type": "input",
+   "notes": "modem input"
+  },
+  {
+   "pin": "13",
+   "name": "DTR#",
+   "type": "output",
+   "notes": "modem output"
+  },
+  {
+   "pin": "14",
+   "name": "RTS#",
+   "type": "output",
+   "notes": "modem output"
+  },
+  {
+   "pin": "15",
+   "name": "TNOW",
+   "type": "output",
+   "notes": "CH340B: serial transmit-in-progress indicator, active high"
+  },
+  {
+   "pin": "16",
+   "name": "VCC",
+   "type": "power_in",
+   "notes": "positive supply, 0.1uF decoupling"
+  }
+ ],
+ "abs_max": [
+  {
+   "param": "VCC supply voltage",
+   "value": "-0.5~6.0",
+   "unit": "V"
+  },
+  {
+   "param": "VIO voltage on input or output pins",
+   "value": "-0.5~VCC+0.5",
+   "unit": "V"
+  }
+ ],
+ "pin_ratings": [
+  {
+   "pins": [
+    "VCC",
+    "V3"
+   ],
+   "kind": "voltage",
+   "level": "abs_max",
+   "min": -0.5,
+   "max": 6.0,
+   "source": "WCH CH340 manual (1) version 3D p.5 6.1 Absolute Maximum: 'VCC 电源电压 -0.5 6.0 V' (V3 is the internal 3.3 V node tied to VCC at 3.3 V supply per p.3 section 5.1; no separate V3 rating given)"
+  },
+  {
+   "pins": [
+    "TXD",
+    "RXD",
+    "UD+",
+    "UD-",
+    "RST#",
+    "CTS#",
+    "DSR#",
+    "RI#",
+    "DCD#",
+    "DTR#",
+    "RTS#",
+    "TNOW"
+   ],
+   "kind": "voltage",
+   "level": "abs_max",
+   "min": -0.5,
+   "max": "VCC+0.5",
+   "source": "WCH CH340 manual (1) version 3D p.5 6.1 Absolute Maximum: 'VIO 输入或者输出引脚上的电压 -0.5 VCC+0.5 V'"
+  }
+ ],
+ "source_pdf": "WCH CH340 manual (1) USB to serial chip CH340, version 3D (Chinese), 10 pages, pin map p.2-3 section 4 table (SOP16 column), abs max p.5; https://datasheet.lcsc.com/datasheet/pdf/a3b2ca2c7638da2635df3f5b1d90bcc0.pdf?productCode=C81010 sha256 6a6922d3c4de2d4fc9b7fb2c938985d2bbd73cd381813f10e940b492baebb7c0"
+}

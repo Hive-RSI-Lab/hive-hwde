@@ -2969,7 +2969,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C2286"
+		(property "LCSC" "C12624"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)

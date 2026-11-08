@@ -1,0 +1,41 @@
+{
+  "mpn": "XDJK-0271-1650",
+  "lcsc": "C7527522",
+  "package": "CONN-TH_XDJK-0271-1650",
+  "description": "Lian Xin Technology XDJK-0271-1650 dual-stack RCA jack (1x2), right angle, through hole",
+  "pinout": [
+    {
+      "pin": "1",
+      "name": "P1",
+      "type": "passive",
+      "notes": "signal pin; datasheet schematic does not label the three pins"
+    },
+    {
+      "pin": "2",
+      "name": "P2",
+      "type": "passive",
+      "notes": "middle pin; datasheet does not state it is the shield/ground"
+    },
+    {
+      "pin": "3",
+      "name": "P3",
+      "type": "passive",
+      "notes": "signal pin"
+    }
+  ],
+  "pin_ratings": [
+    {
+      "pins": [
+        "P1",
+        "P2",
+        "P3"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -50,
+      "max": 50,
+      "source": "Lian Xin Tech XDJK-0271-1650 drawing A-AV2-7A1 p.1 Technical requirements: '额定负荷: DC50V 0.2A' (contact rating, applied to every pin)"
+    }
+  ],
+  "source_pdf": "Lian Xin Technology (连欣科技) XDJK-0271-1650 RCA 1x2 jack drawing A-AV2-7A1, no revision printed, 1 page, 3 pins on p.1; https://datasheet.lcsc.com/datasheet/pdf/cbaf8cf8928ffb469887fc06219bfd04.pdf?productCode=C7527522 sha256 2d3b60492793fe65a250ae1242b77db646b78c1f4770a7054df07484166dc925"
+}

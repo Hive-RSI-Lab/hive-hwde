@@ -1,0 +1,269 @@
+{
+ "mpn": "ESP32-WROVER-E-N8R8",
+ "lcsc": "C2973667",
+ "package": "WIFI-SMD ESP32-WROVER-E (SMD module, 39 pads incl. thermal pad 39)",
+ "description": "Espressif ESP32-WROVER-E-N8R8 Wi-Fi/BT module (ESP32-D0WDR2-V3, 8 MB flash, 8 MB PSRAM), 3.3 V",
+ "pinout": [
+  {
+   "pin": "1",
+   "name": "GND",
+   "type": "ground"
+  },
+  {
+   "pin": "2",
+   "name": "3V3",
+   "type": "power_in",
+   "notes": "3.3 V supply"
+  },
+  {
+   "pin": "3",
+   "name": "EN",
+   "type": "input",
+   "notes": "chip enable, active high"
+  },
+  {
+   "pin": "4",
+   "name": "SENSOR_VP",
+   "type": "input"
+  },
+  {
+   "pin": "5",
+   "name": "SENSOR_VN",
+   "type": "input"
+  },
+  {
+   "pin": "6",
+   "name": "IO34",
+   "type": "input"
+  },
+  {
+   "pin": "7",
+   "name": "IO35",
+   "type": "input"
+  },
+  {
+   "pin": "8",
+   "name": "IO32",
+   "type": "bidirectional"
+  },
+  {
+   "pin": "9",
+   "name": "IO33",
+   "type": "bidirectional"
+  },
+  {
+   "pin": "10",
+   "name": "IO25",
+   "type": "bidirectional"
+  },
+  {
+   "pin": "11",
+   "name": "IO26",
+   "type": "bidirectional"
+  },
+  {
+   "pin": "12",
+   "name": "IO27",
+   "type": "bidirectional"
+  },
+  {
+   "pin": "13",
+   "name": "IO14",
+   "type": "bidirectional"
+  },
+  {
+   "pin": "14",
+   "name": "IO12",
+   "type": "bidirectional"
+  },
+  {
+   "pin": "15",
+   "name": "GND",
+   "type": "ground"
+  },
+  {
+   "pin": "16",
+   "name": "IO13",
+   "type": "bidirectional"
+  },
+  {
+   "pin": "17",
+   "name": "NC",
+   "type": "nc"
+  },
+  {
+   "pin": "18",
+   "name": "NC",
+   "type": "nc"
+  },
+  {
+   "pin": "19",
+   "name": "NC",
+   "type": "nc"
+  },
+  {
+   "pin": "20",
+   "name": "NC",
+   "type": "nc"
+  },
+  {
+   "pin": "21",
+   "name": "NC",
+   "type": "nc"
+  },
+  {
+   "pin": "22",
+   "name": "NC",
+   "type": "nc"
+  },
+  {
+   "pin": "23",
+   "name": "IO15",
+   "type": "bidirectional"
+  },
+  {
+   "pin": "24",
+   "name": "IO2",
+   "type": "bidirectional"
+  },
+  {
+   "pin": "25",
+   "name": "IO0",
+   "type": "bidirectional"
+  },
+  {
+   "pin": "26",
+   "name": "IO4",
+   "type": "bidirectional"
+  },
+  {
+   "pin": "27",
+   "name": "NC",
+   "type": "nc"
+  },
+  {
+   "pin": "28",
+   "name": "NC",
+   "type": "nc"
+  },
+  {
+   "pin": "29",
+   "name": "IO5",
+   "type": "bidirectional"
+  },
+  {
+   "pin": "30",
+   "name": "IO18",
+   "type": "bidirectional"
+  },
+  {
+   "pin": "31",
+   "name": "IO19",
+   "type": "bidirectional"
+  },
+  {
+   "pin": "32",
+   "name": "NC",
+   "type": "nc"
+  },
+  {
+   "pin": "33",
+   "name": "IO21",
+   "type": "bidirectional"
+  },
+  {
+   "pin": "34",
+   "name": "RXD0",
+   "type": "bidirectional"
+  },
+  {
+   "pin": "35",
+   "name": "TXD0",
+   "type": "bidirectional"
+  },
+  {
+   "pin": "36",
+   "name": "IO22",
+   "type": "bidirectional"
+  },
+  {
+   "pin": "37",
+   "name": "IO23",
+   "type": "bidirectional"
+  },
+  {
+   "pin": "38",
+   "name": "GND",
+   "type": "ground"
+  },
+  {
+   "pin": "39",
+   "name": "GND",
+   "type": "ground",
+   "notes": "thermal pad (pin 39)"
+  }
+ ],
+ "abs_max": [
+  {
+   "param": "VDD33 supply voltage",
+   "value": "-0.3~3.6",
+   "unit": "V"
+  },
+  {
+   "param": "Ioutput total IO output current",
+   "value": 1100,
+   "unit": "mA"
+  }
+ ],
+ "pin_ratings": [
+  {
+   "pins": [
+    "3V3"
+   ],
+   "kind": "voltage",
+   "level": "abs_max",
+   "min": -0.3,
+   "max": 3.6,
+   "source": "Espressif ESP32-WROVER-E & ESP32-WROVER-IE datasheet v1.9 p.17 Table 7 Absolute Maximum Ratings (6.1): 'VDD33 供电电压 -0.3 3.6 V'"
+  },
+  {
+   "pins": [
+    "EN",
+    "SENSOR_VP",
+    "SENSOR_VN",
+    "IO34",
+    "IO35",
+    "IO32",
+    "IO33",
+    "IO25",
+    "IO26",
+    "IO27",
+    "IO14",
+    "IO12",
+    "IO13",
+    "IO15",
+    "IO2",
+    "IO0",
+    "IO4",
+    "IO5",
+    "IO18",
+    "IO19",
+    "IO21",
+    "RXD0",
+    "TXD0",
+    "IO22",
+    "IO23"
+   ],
+   "kind": "voltage",
+   "level": "recommended",
+   "min": -0.3,
+   "max": "3V3+0.3",
+   "source": "Espressif ESP32-WROVER-E & ESP32-WROVER-IE datasheet v1.9 p.17 Table 9 DC Characteristics (3.3 V, 25C): 'VIH 高电平输入电压 0.75xVDD .. VDD+0.3 V; VIL 低电平输入电压 -0.3 .. 0.25xVDD V' (no per-pin abs max given; applied to all IO and EN pins)"
+  }
+ ],
+ "exposed_pad": {
+  "present": true,
+  "connect_to": "GND"
+ },
+ "source_pdf": "Espressif ESP32-WROVER-E & ESP32-WROVER-IE Datasheet (Chinese) v1.9, 30 pages, pin map p.11 (Fig 5) and pin table p.12 (Table 4), abs max p.17; https://datasheet.lcsc.com/datasheet/pdf/e741a62b50999937ba63daf52c5654c5.pdf?productCode=C2973667 sha256 d7aacf1cc66f0d297992f452fa59f2f8d53d1b3f2caf9b45388ead1f850d0d8c"
+}

@@ -1,0 +1,255 @@
+{
+ "mpn": "LAN8720A",
+ "lcsc": "C45223",
+ "package": "QFN-24 (4x4, exposed pad)",
+ "description": "Microchip LAN8720A small footprint RMII 10/100 Ethernet PHY with HP Auto-MDIX (LCSC LAN8720A-CP-TR)",
+ "pinout": [
+  {
+   "pin": "1",
+   "name": "VDD2A",
+   "type": "power_in",
+   "notes": "+3.3 V analog port power channel 2 and internal regulator"
+  },
+  {
+   "pin": "2",
+   "name": "LED2/nINTSEL",
+   "type": "bidirectional",
+   "notes": "LED output / nINTSEL strap"
+  },
+  {
+   "pin": "3",
+   "name": "LED1/REGOFF",
+   "type": "bidirectional",
+   "notes": "LED output / REGOFF strap"
+  },
+  {
+   "pin": "4",
+   "name": "XTAL2",
+   "type": "analog",
+   "notes": "crystal output"
+  },
+  {
+   "pin": "5",
+   "name": "XTAL1/CLKIN",
+   "type": "clock",
+   "notes": "crystal input / external 50 MHz clock input"
+  },
+  {
+   "pin": "6",
+   "name": "VDDCR",
+   "type": "power_out",
+   "notes": "+1.2 V digital core, from on-chip regulator unless REGOFF"
+  },
+  {
+   "pin": "7",
+   "name": "RXD1/MODE1",
+   "type": "output"
+  },
+  {
+   "pin": "8",
+   "name": "RXD0/MODE0",
+   "type": "output"
+  },
+  {
+   "pin": "9",
+   "name": "VDDIO",
+   "type": "power_in",
+   "notes": "+1.6 V to +3.6 V variable I/O power"
+  },
+  {
+   "pin": "10",
+   "name": "RXER/PHYAD0",
+   "type": "output"
+  },
+  {
+   "pin": "11",
+   "name": "CRS_DV/MODE2",
+   "type": "output"
+  },
+  {
+   "pin": "12",
+   "name": "MDIO",
+   "type": "bidirectional",
+   "notes": "management data"
+  },
+  {
+   "pin": "13",
+   "name": "MDC",
+   "type": "input",
+   "notes": "management clock"
+  },
+  {
+   "pin": "14",
+   "name": "nINT/REFCLKO",
+   "type": "open_collector",
+   "notes": "interrupt / reference clock out"
+  },
+  {
+   "pin": "15",
+   "name": "nRST",
+   "type": "input",
+   "notes": "active-low reset"
+  },
+  {
+   "pin": "16",
+   "name": "TXEN",
+   "type": "input"
+  },
+  {
+   "pin": "17",
+   "name": "TXD0",
+   "type": "input"
+  },
+  {
+   "pin": "18",
+   "name": "TXD1",
+   "type": "input"
+  },
+  {
+   "pin": "19",
+   "name": "VDD1A",
+   "type": "power_in",
+   "notes": "+3.3 V analog port power channel 1"
+  },
+  {
+   "pin": "20",
+   "name": "TXN",
+   "type": "analog"
+  },
+  {
+   "pin": "21",
+   "name": "TXP",
+   "type": "analog"
+  },
+  {
+   "pin": "22",
+   "name": "RXN",
+   "type": "analog"
+  },
+  {
+   "pin": "23",
+   "name": "RXP",
+   "type": "analog"
+  },
+  {
+   "pin": "24",
+   "name": "RBIAS",
+   "type": "analog",
+   "notes": "12.1k 1% resistor to ground"
+  },
+  {
+   "pin": "25",
+   "name": "VSS",
+   "type": "ground",
+   "notes": "exposed pad, connect to ground plane"
+  }
+ ],
+ "abs_max": [
+  {
+   "param": "Supply voltage (VDDIO, VDD1A, VDD2A)",
+   "value": "-0.5~3.6",
+   "unit": "V"
+  },
+  {
+   "param": "Digital core supply voltage (VDDCR)",
+   "value": "-0.5~1.5",
+   "unit": "V"
+  },
+  {
+   "param": "Positive voltage on signal pins",
+   "value": 6,
+   "unit": "V"
+  },
+  {
+   "param": "Negative voltage on signal pins",
+   "value": -0.5,
+   "unit": "V"
+  },
+  {
+   "param": "Positive voltage on XTAL1/CLKIN",
+   "value": 4.6,
+   "unit": "V"
+  },
+  {
+   "param": "Positive voltage on XTAL2",
+   "value": 2.5,
+   "unit": "V"
+  }
+ ],
+ "pin_ratings": [
+  {
+   "pins": [
+    "VDDIO",
+    "VDD1A",
+    "VDD2A"
+   ],
+   "kind": "voltage",
+   "level": "abs_max",
+   "min": -0.5,
+   "max": 3.6,
+   "source": "Microchip/SMSC LAN8720A/LAN8720Ai Rev. 1.4 (08-23-12) p.63 5.1 Absolute Maximum Ratings: 'Supply Voltage (VDDIO, VDD1A, VDD2A) -0.5V to +3.6V'"
+  },
+  {
+   "pins": [
+    "VDDCR"
+   ],
+   "kind": "voltage",
+   "level": "abs_max",
+   "min": -0.5,
+   "max": 1.5,
+   "source": "Microchip/SMSC LAN8720A/LAN8720Ai Rev. 1.4 (08-23-12) p.63 5.1 Absolute Maximum Ratings: 'Digital Core Supply Voltage (VDDCR) -0.5V to +1.5V'"
+  },
+  {
+   "pins": [
+    "XTAL1/CLKIN"
+   ],
+   "kind": "voltage",
+   "level": "abs_max",
+   "min": -0.5,
+   "max": 4.6,
+   "source": "Microchip/SMSC LAN8720A/LAN8720Ai Rev. 1.4 (08-23-12) p.63 5.1 Absolute Maximum Ratings: 'Positive voltage on XTAL1/CLKIN, with respect to ground +4.6V'; 'Negative voltage on signal pins -0.5V'"
+  },
+  {
+   "pins": [
+    "XTAL2"
+   ],
+   "kind": "voltage",
+   "level": "abs_max",
+   "min": -0.5,
+   "max": 2.5,
+   "source": "Microchip/SMSC LAN8720A/LAN8720Ai Rev. 1.4 (08-23-12) p.63 5.1 Absolute Maximum Ratings: 'Positive voltage on XTAL2, with respect to ground +2.5V'; 'Negative voltage on signal pins -0.5V'"
+  },
+  {
+   "pins": [
+    "LED2/nINTSEL",
+    "LED1/REGOFF",
+    "RXD1/MODE1",
+    "RXD0/MODE0",
+    "RXER/PHYAD0",
+    "CRS_DV/MODE2",
+    "MDIO",
+    "MDC",
+    "nINT/REFCLKO",
+    "nRST",
+    "TXEN",
+    "TXD0",
+    "TXD1",
+    "TXN",
+    "TXP",
+    "RXN",
+    "RXP",
+    "RBIAS"
+   ],
+   "kind": "voltage",
+   "level": "abs_max",
+   "min": -0.5,
+   "max": 6,
+   "source": "Microchip/SMSC LAN8720A/LAN8720Ai Rev. 1.4 (08-23-12) p.63 5.1 Absolute Maximum Ratings: 'Positive voltage on signal pins, with respect to ground +6V'; 'Negative voltage on signal pins -0.5V' (p.16 Note: digital signals are not 5V tolerant)"
+  }
+ ],
+ "exposed_pad": {
+  "present": true,
+  "connect_to": "GND"
+ },
+ "source_pdf": "Microchip (SMSC) LAN8720A/LAN8720Ai Small Footprint RMII 10/100 Ethernet Transceiver with HP Auto-MDIX Support, Rev. 1.4 (08-23-12), 79 pages, pin map p.15 Table 2.8; https://datasheet.lcsc.com/datasheet/pdf/c1e31e60066942ea86081a2000722af0.pdf?productCode=C45223 sha256 886cf468ebeb777448bf2e74a694cb621f6af1d9ca6a700e732e5e1d6ab03188"
+}

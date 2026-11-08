@@ -1,0 +1,34 @@
+{
+  "mpn": "TS5A23157",
+  "lcsc": "C11133",
+  "package": "MSOP-10 (VSSOP-10 DGS)",
+  "description": "TI TS5A23157 dual 10-ohm SPDT analog switch, 1.65-5.5 V supply, VSSOP-10 (LCSC TS5A23157DGSR)",
+  "pinout": [
+    {"pin": "1", "name": "IN1", "type": "input", "notes": "select pin for switch 1"},
+    {"pin": "2", "name": "NO1", "type": "analog", "notes": "normally open I/O, switch 1"},
+    {"pin": "3", "name": "GND", "type": "ground"},
+    {"pin": "4", "name": "NO2", "type": "analog", "notes": "normally open I/O, switch 2"},
+    {"pin": "5", "name": "IN2", "type": "input", "notes": "select pin for switch 2"},
+    {"pin": "6", "name": "COM2", "type": "analog", "notes": "common I/O, switch 2"},
+    {"pin": "7", "name": "NC2", "type": "analog", "notes": "normally closed I/O, switch 2"},
+    {"pin": "8", "name": "V+", "type": "power_in", "notes": "power supply"},
+    {"pin": "9", "name": "NC1", "type": "analog", "notes": "normally closed I/O, switch 1"},
+    {"pin": "10", "name": "COM1", "type": "analog", "notes": "common I/O, switch 1"}
+  ],
+  "abs_max": [
+    {"param": "V+ supply voltage", "value": "-0.5~6.5", "unit": "V"},
+    {"param": "VNC, VNO, VCOM analog voltage (limited to 5.5 V max)", "value": "-0.5~V+ + 0.5", "unit": "V"},
+    {"param": "VIN digital input voltage", "value": "-0.5~6.5", "unit": "V"},
+    {"param": "II/OK analog port diode current", "value": "+-50", "unit": "mA"},
+    {"param": "On-state switch current", "value": "+-50", "unit": "mA"}
+  ],
+  "pin_ratings": [
+    {"pins": ["V+"], "kind": "voltage", "level": "abs_max", "min": -0.5, "max": 6.5,
+     "source": "TI SCDS165E (Jun 2015) p.4 6.1 Absolute Maximum Ratings: 'V+ Supply voltage -0.5 6.5 V'"},
+    {"pins": ["NO1", "NO2", "NC1", "NC2", "COM1", "COM2"], "kind": "voltage", "level": "abs_max", "min": -0.5, "max": 5.5,
+     "source": "TI SCDS165E (Jun 2015) p.4 6.1 Absolute Maximum Ratings: 'VNC VNO VCOM Analog voltage -0.5 V+ + 0.5 V', note (4) 'This value is limited to 5.5 V maximum'"},
+    {"pins": ["IN1", "IN2"], "kind": "voltage", "level": "abs_max", "min": -0.5, "max": 6.5,
+     "source": "TI SCDS165E (Jun 2015) p.4 6.1 Absolute Maximum Ratings: 'VIN Digital input voltage -0.5 6.5 V'"}
+  ],
+  "source_pdf": "TI TS5A23157 Dual 10-Ohm SPDT Analog Switch, SCDS165E May 2004 revised June 2015, 30 pages, pin map p.3 'Pin Functions'; https://datasheet.lcsc.com/datasheet/pdf/87fad0a79513429990728fb85f309552.pdf?productCode=C11133 sha256 9664b6b58ae3aef5386df3880b846835ab170e9d4aeb5175bb29e41a94faa25f"
+}

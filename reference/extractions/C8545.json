@@ -1,0 +1,23 @@
+{
+  "mpn": "2N7002",
+  "lcsc": "C8545",
+  "package": "SOT-23",
+  "description": "JSCJ (Jiangsu Changjing) 2N7002 N-channel MOSFET, SOT-23",
+  "pinout": [
+    {"pin": "1", "name": "G", "type": "input", "notes": "gate"},
+    {"pin": "2", "name": "S", "type": "passive", "notes": "source"},
+    {"pin": "3", "name": "D", "type": "passive", "notes": "drain"}
+  ],
+  "abs_max": [
+    {"param": "VDS drain-source voltage", "value": 60, "unit": "V"},
+    {"param": "VGS gate-source voltage", "value": "-20~20", "unit": "V"},
+    {"param": "ID continuous drain current", "value": 0.115, "unit": "A"}
+  ],
+  "pin_ratings": [
+    {"pins": ["D"], "kind": "voltage", "level": "abs_max", "max": 60, "ref": "S",
+     "source": "JSCJ 2N7002 SOT-23 datasheet Rev J Sep 2016 p.1 Maximum Ratings: 'Drain-Source Voltage VDS 60 V'"},
+    {"pins": ["G"], "kind": "voltage", "level": "abs_max", "min": -20, "max": 20, "ref": "S",
+     "source": "JSCJ 2N7002 SOT-23 datasheet Rev J Sep 2016 p.1 Maximum Ratings: 'Gate-Source Voltage VGS ±20 V'"}
+  ],
+  "source_pdf": "Jiangsu Changjiang Electronics (JSCJ) 2N7002 SOT-23 Plastic-Encapsulate MOSFETS, J Sep 2016, 5 pages, pin map p.1 '1. GATE 2. SOURCE 3. DRAIN'; https://datasheet.lcsc.com/datasheet/pdf/a141b8bd86b14475955ac8c4d3eea0a8.pdf?productCode=C8545 sha256 7941fb423af7c6c6c8979063a7e8819bb19217ece275efcce18948950a41d9f6"
+}

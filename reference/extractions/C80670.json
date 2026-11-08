@@ -1,0 +1,105 @@
+{
+  "mpn": "LP5907MFX-3.3/NOPB",
+  "lcsc": "C80670",
+  "package": "SOT-23-5",
+  "description": "TI LP5907 3.3V 250mA ultra-low-noise LDO, SOT-23-5 (DBV)",
+  "pinout": [
+    {
+      "pin": "1",
+      "name": "IN",
+      "type": "power_in"
+    },
+    {
+      "pin": "2",
+      "name": "GND",
+      "type": "ground"
+    },
+    {
+      "pin": "3",
+      "name": "EN",
+      "type": "input",
+      "notes": "internal 1M pull-down"
+    },
+    {
+      "pin": "4",
+      "name": "N/C",
+      "type": "nc",
+      "notes": "no internal connection"
+    },
+    {
+      "pin": "5",
+      "name": "OUT",
+      "type": "power_out"
+    }
+  ],
+  "abs_max": [
+    {
+      "param": "VIN",
+      "value": "-0.3~6",
+      "unit": "V"
+    },
+    {
+      "param": "VOUT",
+      "value": "-0.3~VIN+0.3 (max 6)",
+      "unit": "V"
+    },
+    {
+      "param": "VEN",
+      "value": "-0.3~VIN+0.3 (max 6)",
+      "unit": "V"
+    }
+  ],
+  "pin_ratings": [
+    {
+      "pins": [
+        "IN"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.3,
+      "max": 6,
+      "source": "TI LP5907 datasheet (ZHCSD40H, Rev. H Nov 2014) p.4 6.1 Absolute Maximum Ratings: 'VIN Input voltage -0.3 6 V'"
+    },
+    {
+      "pins": [
+        "EN"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.3,
+      "max": "IN+0.3",
+      "source": "TI LP5907 datasheet (ZHCSD40H, Rev. H Nov 2014) p.4 6.1 Absolute Maximum Ratings: 'VEN Enable input voltage -0.3 to (VIN + 0.3 V), 6 V'"
+    },
+    {
+      "pins": [
+        "EN"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.3,
+      "max": 6,
+      "source": "TI LP5907 datasheet (ZHCSD40H, Rev. H Nov 2014) p.4 6.1 Absolute Maximum Ratings: 'VEN Enable input voltage ... 6 V'"
+    },
+    {
+      "pins": [
+        "OUT"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.3,
+      "max": "IN+0.3",
+      "source": "TI LP5907 datasheet (ZHCSD40H, Rev. H Nov 2014) p.4 6.1 Absolute Maximum Ratings: 'VOUT Output voltage -0.3 to (VIN + 0.3 V), 6 V'"
+    },
+    {
+      "pins": [
+        "OUT"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.3,
+      "max": 6,
+      "source": "TI LP5907 datasheet (ZHCSD40H, Rev. H Nov 2014) p.4 6.1 Absolute Maximum Ratings: 'VOUT Output voltage ... 6 V'"
+    }
+  ],
+  "source_pdf": "TI LP5907 ultra-low-noise 250mA LDO (ZHCSD40H, Rev. H Nov 2014), 34 pages, pin map p.3 SOT-23 (DBV) 'IN 1, GND 2, EN 3, N/C 4, OUT 5'; https://datasheet.lcsc.com/datasheet/pdf/d894ffb2f5e2411caf5da6ae9a5fdf7d.pdf?productCode=C80670 sha256 b45948d0449ab80b7a44039ac2862605389b7ecf6e8c317e5d80692dc205a39d"
+}

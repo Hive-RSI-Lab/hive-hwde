@@ -1,0 +1,114 @@
+{
+  "mpn": "USB4085-GF-A",
+  "lcsc": "C7095263",
+  "package": "USC-C-SMD_USB4085-GF-A",
+  "description": "GCT USB4085 USB 2.0 Type-C receptacle, dip type, PCB top mount, gold flash",
+  "pinout": [
+    {
+      "pin": "A1",
+      "name": "GND",
+      "type": "ground"
+    },
+    {
+      "pin": "A12",
+      "name": "GND",
+      "type": "ground"
+    },
+    {
+      "pin": "B1",
+      "name": "GND",
+      "type": "ground"
+    },
+    {
+      "pin": "B12",
+      "name": "GND",
+      "type": "ground"
+    },
+    {
+      "pin": "A4",
+      "name": "VBUS",
+      "type": "power_in"
+    },
+    {
+      "pin": "A9",
+      "name": "VBUS",
+      "type": "power_in"
+    },
+    {
+      "pin": "B4",
+      "name": "VBUS",
+      "type": "power_in"
+    },
+    {
+      "pin": "B9",
+      "name": "VBUS",
+      "type": "power_in"
+    },
+    {
+      "pin": "A5",
+      "name": "CC1",
+      "type": "bidirectional"
+    },
+    {
+      "pin": "B5",
+      "name": "CC2",
+      "type": "bidirectional"
+    },
+    {
+      "pin": "A6",
+      "name": "Dp1",
+      "type": "bidirectional"
+    },
+    {
+      "pin": "A7",
+      "name": "Dn1",
+      "type": "bidirectional"
+    },
+    {
+      "pin": "B6",
+      "name": "Dp2",
+      "type": "bidirectional"
+    },
+    {
+      "pin": "B7",
+      "name": "Dn2",
+      "type": "bidirectional"
+    },
+    {
+      "pin": "A8",
+      "name": "SBU1",
+      "type": "bidirectional"
+    },
+    {
+      "pin": "B8",
+      "name": "SBU2",
+      "type": "bidirectional"
+    },
+    {
+      "pin": "S1",
+      "name": "SHELL",
+      "type": "ground"
+    }
+  ],
+  "pin_ratings": [
+    {
+      "pins": [
+        "VBUS",
+        "CC1",
+        "CC2",
+        "Dp1",
+        "Dn1",
+        "Dp2",
+        "Dn2",
+        "SBU1",
+        "SBU2"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -48,
+      "max": 48,
+      "source": "GCT USB4085 drawing Rev B (9 Apr 2018, PCN 28/02/23) p.1 Specifications/Electrical: 'Voltage Rating: 48V DC' (contact rating, applied to every contact pin)"
+    }
+  ],
+  "source_pdf": "Global Connector Technology (GCT) USB4085 USB Type-C Charging Product Drawing, Rev B 9th April 2018, 3 pages, pin map p.1 'A1 GND ... A4 VBUS ... SHELL GND'; https://datasheet.lcsc.com/datasheet/pdf/4a21f579cbd8ed3a7bfff8b4bbd49e52.pdf?productCode=C7095263 sha256 39afb82c5104579e8c2db4f4e758825c48cab1c4b06d4c61c62056470ff09e9e"
+}

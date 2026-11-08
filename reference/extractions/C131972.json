@@ -1,0 +1,217 @@
+{
+ "mpn": "TCA9539",
+ "lcsc": "C131972",
+ "package": "TSSOP-24",
+ "description": "TI TCA9539 16-bit I2C/SMBus I/O expander with interrupt, reset and configuration registers, TSSOP-24 (PW)",
+ "pinout": [
+  {
+   "pin": "1",
+   "name": "INT",
+   "type": "open_collector",
+   "notes": "interrupt open-drain output, active low"
+  },
+  {
+   "pin": "2",
+   "name": "A1",
+   "type": "input",
+   "notes": "address input 1"
+  },
+  {
+   "pin": "3",
+   "name": "RESET",
+   "type": "input",
+   "notes": "active-low reset input"
+  },
+  {
+   "pin": "4",
+   "name": "P00",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "5",
+   "name": "P01",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "6",
+   "name": "P02",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "7",
+   "name": "P03",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "8",
+   "name": "P04",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "9",
+   "name": "P05",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "10",
+   "name": "P06",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "11",
+   "name": "P07",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "12",
+   "name": "GND",
+   "type": "ground"
+  },
+  {
+   "pin": "13",
+   "name": "P10",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "14",
+   "name": "P11",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "15",
+   "name": "P12",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "16",
+   "name": "P13",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "17",
+   "name": "P14",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "18",
+   "name": "P15",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "19",
+   "name": "P16",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "20",
+   "name": "P17",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "21",
+   "name": "A0",
+   "type": "input",
+   "notes": "address input 0"
+  },
+  {
+   "pin": "22",
+   "name": "SCL",
+   "type": "input",
+   "notes": "I2C clock"
+  },
+  {
+   "pin": "23",
+   "name": "SDA",
+   "type": "bidirectional",
+   "notes": "I2C data"
+  },
+  {
+   "pin": "24",
+   "name": "VCC",
+   "type": "power_in",
+   "notes": "supply"
+  }
+ ],
+ "abs_max": [
+  {
+   "param": "VCC supply voltage",
+   "value": "-0.5~6",
+   "unit": "V"
+  },
+  {
+   "param": "VI input voltage",
+   "value": "-0.5~6",
+   "unit": "V"
+  },
+  {
+   "param": "VO output voltage",
+   "value": "-0.5~6",
+   "unit": "V"
+  },
+  {
+   "param": "IOL continuous output low current",
+   "value": 50,
+   "unit": "mA"
+  }
+ ],
+ "pin_ratings": [
+  {
+   "pins": [
+    "VCC"
+   ],
+   "kind": "voltage",
+   "level": "abs_max",
+   "min": -0.5,
+   "max": 6,
+   "source": "TI SCPS202C (May 2016) p.5 6.1 Absolute Maximum Ratings: 'VCC Supply voltage -0.5 6 V'"
+  },
+  {
+   "pins": [
+    "INT",
+    "A1",
+    "RESET",
+    "P00",
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07",
+    "P10",
+    "P11",
+    "P12",
+    "P13",
+    "P14",
+    "P15",
+    "P16",
+    "P17",
+    "A0",
+    "SCL",
+    "SDA"
+   ],
+   "kind": "voltage",
+   "level": "abs_max",
+   "min": -0.5,
+   "max": 6,
+   "source": "TI SCPS202C (May 2016) p.5 6.1 Absolute Maximum Ratings: 'VI Input voltage -0.5 6 V' and 'VO Output voltage -0.5 6 V'"
+  }
+ ],
+ "source_pdf": "TI TCA9539 Low Voltage 16-Bit I2C and SMBus Low-Power I/O Expander, SCPS202C Oct 2009 revised May 2016, 46 pages, pin map p.3 'Pin Functions' (TSSOP column); https://datasheet.lcsc.com/datasheet/pdf/af75e320e13548b68de2e2893c8303b4.pdf?productCode=C131972 sha256 95f2d79b8aa515f1e8d66f58c539e744083efc3e67e17f082c7bef8e60205cb9"
+}

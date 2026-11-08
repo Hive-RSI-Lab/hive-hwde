@@ -1,0 +1,24 @@
+{
+  "mpn": "S8050",
+  "lcsc": "C2146",
+  "package": "SOT-23",
+  "description": "JSCJ (Jiangsu Changjing) S8050 NPN transistor, SOT-23, marking J3Y",
+  "pinout": [
+    {"pin": "1", "name": "B", "type": "input", "notes": "base"},
+    {"pin": "2", "name": "E", "type": "passive", "notes": "emitter"},
+    {"pin": "3", "name": "C", "type": "passive", "notes": "collector"}
+  ],
+  "abs_max": [
+    {"param": "VCBO collector-base voltage", "value": 40, "unit": "V"},
+    {"param": "VCEO collector-emitter voltage", "value": 25, "unit": "V"},
+    {"param": "VEBO emitter-base voltage", "value": 5, "unit": "V"},
+    {"param": "IC collector current", "value": 500, "unit": "mA"}
+  ],
+  "pin_ratings": [
+    {"pins": ["C"], "kind": "voltage", "level": "abs_max", "max": 25, "ref": "E",
+     "source": "JSCJ S8050 SOT-23 datasheet Rev 2.0 p.1 Maximum Ratings: 'VCEO Collector-Emitter Voltage 25 V'"},
+    {"pins": ["B"], "kind": "voltage", "level": "abs_max", "min": -5, "ref": "E",
+     "source": "JSCJ S8050 SOT-23 datasheet Rev 2.0 p.1 Maximum Ratings: 'VEBO Emitter-Base Voltage 5 V'"}
+  ],
+  "source_pdf": "JSCJ S8050 SOT-23 Plastic-Encapsulate Transistors, Rev 2.0, 4 pages, pin map p.1 '1. BASE 2. EMITTER 3. COLLECTOR'; https://datasheet.lcsc.com/datasheet/pdf/916f796ed66ea3166350dbd91c9a46f7.pdf?productCode=C2146 sha256 02c34a6b6f6840adc94fbea81a7c6a738cc9f4c417dbf4c717df58f5a3e13271"
+}

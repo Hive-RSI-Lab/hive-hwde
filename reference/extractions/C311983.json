@@ -1,0 +1,122 @@
+{
+  "mpn": "TPS54302DDCR",
+  "lcsc": "C311983",
+  "package": "TSOT-23-6",
+  "description": "TI TPS54302 4.5-28V, 3A synchronous buck converter, SOT-23-6 (DDC)",
+  "pinout": [
+    {
+      "pin": "1",
+      "name": "GND",
+      "type": "ground"
+    },
+    {
+      "pin": "2",
+      "name": "SW",
+      "type": "output",
+      "notes": "switch node"
+    },
+    {
+      "pin": "3",
+      "name": "VIN",
+      "type": "power_in"
+    },
+    {
+      "pin": "4",
+      "name": "FB",
+      "type": "input"
+    },
+    {
+      "pin": "5",
+      "name": "EN",
+      "type": "input",
+      "notes": "float to enable"
+    },
+    {
+      "pin": "6",
+      "name": "BOOT",
+      "type": "passive",
+      "notes": "bootstrap, 0.1uF to SW"
+    }
+  ],
+  "abs_max": [
+    {
+      "param": "VIN",
+      "value": "-0.3~30",
+      "unit": "V"
+    },
+    {
+      "param": "EN",
+      "value": "-0.3~7",
+      "unit": "V"
+    },
+    {
+      "param": "FB",
+      "value": "-0.3~7",
+      "unit": "V"
+    },
+    {
+      "param": "BOOT-SW",
+      "value": "-0.3~7",
+      "unit": "V"
+    },
+    {
+      "param": "SW",
+      "value": "-0.3~30",
+      "unit": "V"
+    }
+  ],
+  "pin_ratings": [
+    {
+      "pins": [
+        "VIN"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.3,
+      "max": 30,
+      "source": "TI TPS54302 datasheet (ZHCSF83A, Rev. A May 2016) p.4 6.1 Absolute Maximum Ratings: 'VIN -0.3 30 V'"
+    },
+    {
+      "pins": [
+        "EN"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.3,
+      "max": 7,
+      "source": "TI TPS54302 datasheet (ZHCSF83A, Rev. A May 2016) p.4 6.1 Absolute Maximum Ratings: 'EN -0.3 7 V'"
+    },
+    {
+      "pins": [
+        "FB"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.3,
+      "max": 7,
+      "source": "TI TPS54302 datasheet (ZHCSF83A, Rev. A May 2016) p.4 6.1 Absolute Maximum Ratings: 'FB -0.3 7 V'"
+    },
+    {
+      "pins": [
+        "SW"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.3,
+      "max": 30,
+      "source": "TI TPS54302 datasheet (ZHCSF83A, Rev. A May 2016) p.4 6.1 Absolute Maximum Ratings: 'SW -0.3 30 V'"
+    },
+    {
+      "pins": [
+        "BOOT"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.3,
+      "max": 7,
+      "ref": "SW",
+      "source": "TI TPS54302 datasheet (ZHCSF83A, Rev. A May 2016) p.4 6.1 Absolute Maximum Ratings: 'BOOT-SW -0.3 7 V'"
+    }
+  ],
+  "source_pdf": "TI TPS54302 4.5V-28V input, 3A synchronous buck converter (ZHCSF83A Rev. A, May 2016), 29 pages, pin map p.3 'GND 1, SW 2, VIN 3, FB 4, EN 5, BOOT 6'; https://datasheet.lcsc.com/datasheet/pdf/dd7a4984f2d3ca9a2264b937537aa471.pdf?productCode=C311983 sha256 8078b9be130cdb8efbbc0e6e993051937a15d13cec7c6355b5065eaf722c918e"
+}

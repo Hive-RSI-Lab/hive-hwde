@@ -1,0 +1,212 @@
+{
+ "mpn": "TCA9535PWR(UMW)",
+ "lcsc": "C22396388",
+ "package": "TSSOP-24",
+ "description": "UMW (UTD) TCA9535 16-bit I2C I/O expander with interrupt output, TSSOP-24 (pin 3 is A2 on this variant)",
+ "pinout": [
+  {
+   "pin": "1",
+   "name": "INT",
+   "type": "open_collector",
+   "notes": "interrupt open-drain output, active low"
+  },
+  {
+   "pin": "2",
+   "name": "A1",
+   "type": "input",
+   "notes": "address input 1"
+  },
+  {
+   "pin": "3",
+   "name": "A2",
+   "type": "input",
+   "notes": "address input 2"
+  },
+  {
+   "pin": "4",
+   "name": "P00",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "5",
+   "name": "P01",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "6",
+   "name": "P02",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "7",
+   "name": "P03",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "8",
+   "name": "P04",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "9",
+   "name": "P05",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "10",
+   "name": "P06",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "11",
+   "name": "P07",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "12",
+   "name": "GND",
+   "type": "ground"
+  },
+  {
+   "pin": "13",
+   "name": "P10",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "14",
+   "name": "P11",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "15",
+   "name": "P12",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "16",
+   "name": "P13",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "17",
+   "name": "P14",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "18",
+   "name": "P15",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "19",
+   "name": "P16",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "20",
+   "name": "P17",
+   "type": "bidirectional",
+   "notes": "P-port I/O"
+  },
+  {
+   "pin": "21",
+   "name": "A0",
+   "type": "input",
+   "notes": "address input 0"
+  },
+  {
+   "pin": "22",
+   "name": "SCL",
+   "type": "input",
+   "notes": "I2C clock"
+  },
+  {
+   "pin": "23",
+   "name": "SDA",
+   "type": "bidirectional",
+   "notes": "I2C data"
+  },
+  {
+   "pin": "24",
+   "name": "VCC",
+   "type": "power_in",
+   "notes": "supply"
+  }
+ ],
+ "abs_max": [
+  {
+   "param": "Input Voltage",
+   "value": "-0.5~6",
+   "unit": "V"
+  },
+  {
+   "param": "Input-output clamp current",
+   "value": "+-20",
+   "unit": "mA"
+  },
+  {
+   "param": "Continuous output current",
+   "value": "+-50",
+   "unit": "mA"
+  }
+ ],
+ "pin_ratings": [
+  {
+   "pins": [
+    "VCC"
+   ],
+   "kind": "voltage",
+   "level": "recommended",
+   "min": 1.6,
+   "max": 5.5,
+   "source": "UMW TCA9535/539/555 Jun.2025 p.5 8 Electrical Characteristics: 'Supply Voltage VCC 1.6 3.3 5.5 V' (no separate VCC abs max given; abs max table lists only 'Input Voltage -0.5 6 V')"
+  },
+  {
+   "pins": [
+    "INT",
+    "A1",
+    "A2",
+    "P00",
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07",
+    "P10",
+    "P11",
+    "P12",
+    "P13",
+    "P14",
+    "P15",
+    "P16",
+    "P17",
+    "A0",
+    "SCL",
+    "SDA"
+   ],
+   "kind": "voltage",
+   "level": "abs_max",
+   "min": -0.5,
+   "max": 6,
+   "source": "UMW TCA9535/539/555 Jun.2025 p.4 6 Absolute Maximum Ratings: 'Input Voltage -0.5 6 V'"
+  }
+ ],
+ "source_pdf": "UMW (UTD Semiconductor) TCA9535/539/555 16-bit I2C-bus I/O Expander with Interrupt Output, Jun.2025, 20 pages, pin map p.3 '5.Pinning Information' (TSSOP column); https://datasheet.lcsc.com/datasheet/pdf/7935197bddb8deeea95201ae83ce3777.pdf?productCode=C22396388 sha256 11ecf82339e41b05e45a4ae39098556327f62f3b55095aa090c61b1239581aa1"
+}

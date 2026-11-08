@@ -1,0 +1,76 @@
+{
+  "mpn": "EC11",
+  "lcsc": "C361165",
+  "package": "SW-TH_EC11E1820402",
+  "description": "ALPS ALPINE EC11E vertical incremental rotary encoder with push switch (LCSC model EC11E1834403, drawing no. 5), 5V DC contact rating",
+  "pinout": [
+    {
+      "pin": "A",
+      "name": "A",
+      "type": "passive",
+      "notes": "encoder phase A contact (drawing no.5)"
+    },
+    {
+      "pin": "B",
+      "name": "B",
+      "type": "passive",
+      "notes": "encoder phase B contact"
+    },
+    {
+      "pin": "C",
+      "name": "C",
+      "type": "passive",
+      "notes": "encoder common"
+    },
+    {
+      "pin": "D",
+      "name": "D",
+      "type": "passive",
+      "notes": "push switch contact"
+    },
+    {
+      "pin": "E",
+      "name": "E",
+      "type": "passive",
+      "notes": "push switch contact"
+    },
+    {
+      "pin": "F",
+      "name": "DUMMY",
+      "type": "ground",
+      "notes": "dummy/mounting terminal (board pad; tied to GND on board)"
+    },
+    {
+      "pin": "G",
+      "name": "DUMMY",
+      "type": "ground",
+      "notes": "dummy/mounting terminal (board pad; tied to GND on board)"
+    }
+  ],
+  "pin_ratings": [
+    {
+      "kind": "voltage",
+      "level": "recommended",
+      "min": -5,
+      "max": 5,
+      "pins": [
+        "A",
+        "B",
+        "C"
+      ],
+      "source": "ALPS ALPINE EC11 catalogue pp.276-288 PDF p.1 main specs: '额定 10mA 5V DC' (encoder contact rating)"
+    },
+    {
+      "kind": "voltage",
+      "level": "recommended",
+      "min": -5,
+      "max": 5,
+      "pins": [
+        "D",
+        "E"
+      ],
+      "source": "ALPS ALPINE EC11 catalogue pp.276-288 PDF p.10 附属开关规格 2. EC11E/EC111 Series: '额定 0.1A 5V DC (500μA 5V DC min. ratings)' (switch contact rating)"
+    }
+  ],
+  "source_pdf": "ALPS ALPINE EC11 11型金属轴型 catalogue extract (pp.276-288), no revision/date printed, 13 pages, terminal map p.3 drawing no.5 'A C B / D E'; https://datasheet.lcsc.com/datasheet/pdf/e2bff97de883671230ffbfe4ac480be6.pdf?productCode=C361165 sha256 3e579b733897a786527766631d50f82dda4fffb0bc9398e8680171724b2b1933"
+}

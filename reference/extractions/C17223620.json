@@ -1,0 +1,24 @@
+{
+  "mpn": "PLR237/T8BK",
+  "lcsc": "C17223620",
+  "package": "OPTO-TH PLR237 fiber optic receiver, 5 pins",
+  "description": "Everlight PLR237/T8BK Photolink fiber optic (TOSLINK) receiver, 25 Mb/s, 3.0-5.5 V, TTL output",
+  "pinout": [
+    {"pin": "1", "name": "Vout", "type": "output", "notes": "digital output"},
+    {"pin": "2", "name": "GND", "type": "ground"},
+    {"pin": "3", "name": "Vcc", "type": "power_in"},
+    {"pin": "4", "name": "NC", "type": "nc"},
+    {"pin": "5", "name": "NC", "type": "nc"}
+  ],
+  "abs_max": [
+    {"param": "Supply voltage Vcc", "value": "-0.5~5.5", "unit": "V"},
+    {"param": "Output voltage Vout", "value": "Vcc+0.3", "unit": "V"}
+  ],
+  "pin_ratings": [
+    {"pins": ["Vcc"], "kind": "voltage", "level": "abs_max", "min": -0.5, "max": 5.5,
+     "source": "Everlight PLR237/T8BK DPL-0000262 Rev.1 (Ver.1, 04/07/2021) p.2 Absolute Maximum Ratings: 'Supply Voltage Vcc -0.5 ~ +5.5 V'"},
+    {"pins": ["Vout"], "kind": "voltage", "level": "abs_max", "max": "Vcc+0.3",
+     "source": "Everlight PLR237/T8BK DPL-0000262 Rev.1 (Ver.1, 04/07/2021) p.2 Absolute Maximum Ratings: 'Output Voltage Vout Vcc +0.3 V'"}
+  ],
+  "source_pdf": "Everlight Photolink Fiber Optic Receiver PLR237/T8BK, DPL-0000262 Rev.1 (Ver.1 release 04/07/2021), 7 pages, pin map p.5 'Pin Function: 1.Vout 2.GND 3.Vcc 4.NC 5.NC'; https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/5335/PLR237-T8BK_Rev1_3-9-10.pdf sha256 3248f108bb09fb71dd60b025283758d3a505ca46fcd8f5d2018bc2bbaabc591f"
+}

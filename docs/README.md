@@ -72,6 +72,9 @@ page covers how an agent runs it inside the Hive.
   boards/<name>` forces it): a datasheet matches by naming the MPN or by an
   ordering table (`reference/ordering_codes.yaml`) that decodes it, else it is
   suspect. An entry with no PDF on disk stays unassessed until `--fetch`.
+  A part with no `parts/<lcsc>.json` is rated from hwde's own library,
+  `reference/extractions/<lcsc>.json`, when it has an entry (rules in its
+  README: every number cited to a datasheet page).
 - Every board with a netlist gets `hwde sim_board --workspace boards/<name>
   --out boards/<name>/reports/sim_board.json`: ngspice over the board's own
   passives and discretes (KiCad 10's bundled libngspice, found by this

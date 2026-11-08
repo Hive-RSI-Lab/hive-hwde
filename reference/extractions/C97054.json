@@ -1,0 +1,105 @@
+{
+  "mpn": "SY8303AIC",
+  "lcsc": "C97054",
+  "package": "TSOT-23-8",
+  "description": "Silergy SY8303 4.5-40V, 3A synchronous buck, TSOT23-8",
+  "pinout": [
+    {
+      "pin": "1",
+      "name": "FB",
+      "type": "input"
+    },
+    {
+      "pin": "2",
+      "name": "FS",
+      "type": "analog",
+      "notes": "frequency-set resistor to ground"
+    },
+    {
+      "pin": "3",
+      "name": "GND",
+      "type": "ground"
+    },
+    {
+      "pin": "4",
+      "name": "GND",
+      "type": "ground"
+    },
+    {
+      "pin": "5",
+      "name": "IN",
+      "type": "power_in"
+    },
+    {
+      "pin": "6",
+      "name": "LX",
+      "type": "output",
+      "notes": "inductor switch node"
+    },
+    {
+      "pin": "7",
+      "name": "BS",
+      "type": "passive",
+      "notes": "bootstrap, 10nF to LX"
+    },
+    {
+      "pin": "8",
+      "name": "EN",
+      "type": "input",
+      "notes": "do not float"
+    }
+  ],
+  "abs_max": [
+    {
+      "param": "IN to GND",
+      "value": "-0.3~40",
+      "unit": "V"
+    },
+    {
+      "param": "LX, FB, EN, FS to GND",
+      "value": "-0.3~40",
+      "unit": "V"
+    },
+    {
+      "param": "BS-LX",
+      "value": 4,
+      "unit": "V"
+    }
+  ],
+  "pin_ratings": [
+    {
+      "pins": [
+        "IN"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.3,
+      "max": 40,
+      "source": "Silergy AN_SY8303 Rev.0.9A p.2 Absolute Maximum Ratings: 'IN to GND -0.3V to 40V'"
+    },
+    {
+      "pins": [
+        "LX",
+        "FB",
+        "EN",
+        "FS"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.3,
+      "max": 40,
+      "source": "Silergy AN_SY8303 Rev.0.9A p.2 Absolute Maximum Ratings: 'LX, FB, EN, FS to GND -0.3V to 40V'"
+    },
+    {
+      "pins": [
+        "BS"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "max": 4,
+      "ref": "LX",
+      "source": "Silergy AN_SY8303 Rev.0.9A p.2 Absolute Maximum Ratings: 'BS-LX 4V'"
+    }
+  ],
+  "source_pdf": "Silergy AN_SY8303 Rev.0.9A (20151022) Applications Note, 9 pages, pin map p.2 'FB 1, FS 2, GND 3, GND 4, IN 5, LX 6, BS 7, EN 8'; https://datasheet.lcsc.com/datasheet/pdf/e1a61b84c1934bfd84df3c719ade0020.pdf?productCode=C97054 sha256 337629d344cdcb835c77fe904b8314c875be0f93f7aa3a6019e4832745834373"
+}

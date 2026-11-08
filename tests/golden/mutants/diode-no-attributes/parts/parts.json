@@ -2,9 +2,9 @@
   "parts": [
     {
       "ref_prefix_hint": "D",
-      "mpn": "KT-0603R",
-      "lcsc": "C2286",
-      "value": "red",
+      "mpn": "KT-0603G",
+      "lcsc": "C12624",
+      "value": "green",
       "package": "0603",
       "attributes": [],
       "role": "D1 status LED"

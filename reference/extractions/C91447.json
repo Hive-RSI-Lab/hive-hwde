@@ -1,0 +1,20 @@
+{
+  "mpn": "IRM-H638T/TR2",
+  "lcsc": "C91447",
+  "package": "SMD-4P 5x4 mm",
+  "description": "Everlight IRM-H638T/TR2 38 kHz SMD infrared remote receiver module, 2.7-5.5 V",
+  "pinout": [
+    {"pin": "1", "name": "GND", "type": "ground"},
+    {"pin": "2", "name": "GND", "type": "ground"},
+    {"pin": "3", "name": "OUT", "type": "output", "notes": "demodulated output"},
+    {"pin": "4", "name": "Vcc", "type": "power_in", "notes": "supply, RC filter close to Vcc/GND"}
+  ],
+  "abs_max": [
+    {"param": "Vs supply voltage", "value": 6, "unit": "V"}
+  ],
+  "pin_ratings": [
+    {"pins": ["Vcc"], "kind": "voltage", "level": "abs_max", "max": 6,
+     "source": "Everlight IRM-H6XXT/TR2 DMO-0000008 Rev 3 (01 Jan 2025) p.3 Absolute Maximum Ratings: 'Supply Voltage Vs 6 V'"}
+  ],
+  "source_pdf": "Everlight Infrared Receiver Module IRM-H6XXT/TR2 Series, DMO-0000008 Ver.3 release 01/14/2025, 11 pages, pin map p.1 '1. GND 2. GND 3. OUT 4. Vcc'; https://www.everlighteurope.com/custom/files/datasheets/DMO-0000008.pdf sha256 6ba15dc59077b2a3357495e5cbfe9b68378a275ae1750e02e77f9d6f2663d22e"
+}

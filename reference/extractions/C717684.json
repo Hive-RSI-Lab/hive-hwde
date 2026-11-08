@@ -1,0 +1,17 @@
+{
+  "mpn": "OT322550MJBA4SL",
+  "lcsc": "C717684",
+  "package": "SMD 3.2x2.5mm 4-pin",
+  "description": "YXC YSO110TR wide-voltage CMOS crystal oscillator, 50MHz, 3.2x2.5mm, tri-state",
+  "pinout": [
+    {"pin": "1", "name": "OE", "type": "input", "notes": "tri-state; enable high or floating, disable low or GND"},
+    {"pin": "2", "name": "GND", "type": "ground"},
+    {"pin": "3", "name": "OUT", "type": "output", "notes": "CMOS output"},
+    {"pin": "4", "name": "VDD", "type": "power_in"}
+  ],
+  "pin_ratings": [
+    {"pins": ["VDD"], "kind": "voltage", "level": "recommended", "min": 1.8, "max": 3.3,
+     "source": "YXC YSO110TR datasheet (undated) p.1 Specifications: 'Supply Voltage VDD 1.8V ~ 3.3V'"}
+  ],
+  "source_pdf": "YXC YSO110TR Wide Voltage Crystal Oscillator, undated, 4 pages, pin map p.2 (1 Tri-state, 2 GND, 3 OUTPUT, 4 VDD); https://datasheet.lcsc.com/datasheet/pdf/b336a5b52993e15e0134a8f3d7decec7.pdf?productCode=C717684 sha256 d155dd2bc59fe81f90c6c434328061beb8159ce3c6d0538de4ce96c34d44b8e5"
+}

@@ -1,0 +1,21 @@
+{
+  "mpn": "KT-0603R",
+  "lcsc": "C2286",
+  "package": "0603 (1.6x0.8x0.6mm)",
+  "description": "Hubei KENTO (Hubei Kuangtong Electronics) KT-0603R red LED, 0603, transparent planar lens",
+  "pinout": [
+    {"pin": "1", "name": "A", "type": "passive", "notes": "anode (+)"},
+    {"pin": "2", "name": "K", "type": "passive", "notes": "cathode (-)"}
+  ],
+  "abs_max": [
+    {"param": "Pd power dissipation", "value": 40, "unit": "mW"},
+    {"param": "IFP peak forward current (1/10 duty, 0.1ms)", "value": 60, "unit": "mA"},
+    {"param": "IF DC forward current", "value": 25, "unit": "mA"},
+    {"param": "VR backward voltage", "value": 5, "unit": "V"}
+  ],
+  "pin_ratings": [
+    {"pins": ["K"], "kind": "voltage", "level": "abs_max", "max": 5, "ref": "A",
+     "source": "Hubei KENTO KT-0603R (0603-0.6 red) Specification for approval Rev A.0 2018-12-06 p.3 Absolute Maximum Ratings: 'Backward Voltage VR 5 V'"}
+  ],
+  "source_pdf": "Hubei KENTO Electronics (Hubei Kuangtong) Specification for approval KT-0603R (0603-0.6 red), Rev A.0, issued 2018-12-06, 11 pages, pin map p.2 (outline drawing: 1 marked +, 2 marked -; diode symbol anode at pin 1); https://datasheet.lcsc.com/datasheet/pdf/011ec3e8cb1e825f6961d29bc4db4c7a.pdf?productCode=C2286 sha256 a3bac1cc9c59cb306ad03512945cce12c87bb54252abc223b796e1d20d41d4a1"
+}
