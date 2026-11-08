@@ -177,6 +177,10 @@ DATASHEET_SCHEMA: dict = {
                     "name": {"type": "string", "minLength": 1},
                     "type": {"type": "string", "enum": PIN_TYPES},
                     "notes": {"type": "string"},
+                    # a pin the part drives itself that isn't typed output
+                    # (a reference or charge-pump node): check_ratings
+                    # covers it by the part's supply rating (#835)
+                    "self_driven": {"type": "boolean"},
                 },
             },
         },

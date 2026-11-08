@@ -29,7 +29,47 @@
      "qty": 100,
      "price": 0.8958
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40℃~+85℃"
+    },
+    {
+     "name": "Detection color",
+     "value": "Black"
+    },
+    {
+     "name": "Number of Ports",
+     "value": "1"
+    },
+    {
+     "name": "Current Rating-Power",
+     "value": "5A"
+    },
+    {
+     "name": "Voltage Rating",
+     "value": "48V"
+    },
+    {
+     "name": "Connector Type",
+     "value": "Type-C"
+    },
+    {
+     "name": "Gender",
+     "value": "Female"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Right Angle"
+    },
+    {
+     "name": "Protocol Standard",
+     "value": "USB 2.0"
+    }
+   ],
+   "description": "-40℃~+85℃ 1 48V 5A Black Female Right Angle Type-C USB 2.0 插件 USB Connectors ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2410010204_Global-Connector-Technology-USB4085-GF-A_C7095263.pdf"
   },
   {
    "refdes": [
@@ -71,7 +111,51 @@
      "qty": 9000,
      "price": 0.0258
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-65℃~+150℃"
+    },
+    {
+     "name": "Type",
+     "value": "TVS"
+    },
+    {
+     "name": "Peak Pulse Power Dissipation (Ppp)",
+     "value": "600W@10/1000us"
+    },
+    {
+     "name": "Number of Channels",
+     "value": "Single-channel"
+    },
+    {
+     "name": "Clamping Voltage",
+     "value": "48.4V"
+    },
+    {
+     "name": "Polarity",
+     "value": "Unidirectional"
+    },
+    {
+     "name": "Peak Pulse Current (Ipp)",
+     "value": "12.4A@10/1000us"
+    },
+    {
+     "name": "Voltage - Breakdown",
+     "value": "36.8V"
+    },
+    {
+     "name": "Reverse Stand-Off Voltage (Vrwm)",
+     "value": "30V"
+    },
+    {
+     "name": "Reverse Leakage Current (Ir)",
+     "value": "1uA"
+    }
+   ],
+   "description": "-65℃~+150℃ 12.4A@10/1000us 1uA 30V 36.8V 48.4V 600W@10/1000us TVS Unidirectional DO-214AA(SMB) ESD and Surge Protection (TVS/ESD) ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2407291900_MDD-Microdiode-Semiconductor-SMBJ30A_C113998.pdf"
   },
   {
    "refdes": [
@@ -113,7 +197,55 @@
      "qty": 9000,
      "price": 0.0222
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+125℃"
+    },
+    {
+     "name": "Type",
+     "value": "ESD"
+    },
+    {
+     "name": "Junction Capacitance",
+     "value": "0.35pF、0.8pF"
+    },
+    {
+     "name": "Peak Pulse Power Dissipation (Ppp)",
+     "value": "150W@8/20us"
+    },
+    {
+     "name": "Number of Channels",
+     "value": "2"
+    },
+    {
+     "name": "level of protection",
+     "value": "IEC 61000-4-2、IEC 61000-4-5、IEC 61000-4-4"
+    },
+    {
+     "name": "Clamping Voltage",
+     "value": "15V"
+    },
+    {
+     "name": "Peak Pulse Current (Ipp)",
+     "value": "6A@8/20us"
+    },
+    {
+     "name": "Voltage - Breakdown",
+     "value": "6V"
+    },
+    {
+     "name": "Reverse Stand-Off Voltage (Vrwm)",
+     "value": "5V"
+    },
+    {
+     "name": "Reverse Leakage Current (Ir)",
+     "value": "100nA"
+    }
+   ],
+   "description": "0.35pF、0.8pF 100nA 150W@8/20us 15V 2 5V 6A@8/20us 6V ESD SOT-23-6 ESD and Surge Protection (TVS/ESD) ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2311091738_UMW-Youtai-Semiconductor-Co---Ltd--USBLC6-2SC6_C2687116.pdf"
   },
   {
    "refdes": [
@@ -155,7 +287,42 @@
      "qty": 1000,
      "price": 0.231
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40℃~+105℃"
+    },
+    {
+     "name": "Type",
+     "value": "Power Receiver Controller"
+    },
+    {
+     "name": "Number of Channels",
+     "value": "1C"
+    },
+    {
+     "name": "Output Power",
+     "value": "140W"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "4V~30V"
+    },
+    {
+     "name": "Features",
+     "value": "Overvoltage Protection、Automatic protocol detection"
+    },
+    {
+     "name": "Protocol",
+     "value": "PD 3.2、BC 1.2、AVS、PPS、SPR"
+    },
+    {
+     "name": "Output Voltage",
+     "value": "5V、9V、12V、15V、20V、28V"
+    }
+   ],
+   "description": "-40℃~+105℃ 140W 1C 4V~30V 5V、9V、12V、15V、20V、28V PD 3.2、BC 1.2、AVS、PPS、SPR Power Receiver Controller DFN-10-EP(2x2) USB PD ROHS"
   },
   {
    "refdes": [
@@ -197,7 +364,39 @@
      "qty": 50200,
      "price": 0.0006
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "210kΩ"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 210kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2308241947_FOJAN-FRC0402F2103TS_C2998176.pdf"
   },
   {
    "refdes": [
@@ -285,7 +484,39 @@
      "qty": 50200,
      "price": 0.0013
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "10kΩ"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 10kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2411221126_UNI-ROYAL-Uniroyal-Elec-0402WGF1002TCE_C25744.pdf"
   },
   {
    "refdes": [
@@ -331,7 +562,39 @@
      "qty": 50200,
      "price": 0.0007
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "10Ω"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±200ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 10Ω 50V 62.5mW Thick Film Resistor ±1% ±200ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2411221126_UNI-ROYAL-Uniroyal-Elec-0402WGF100JTCE_C25077.pdf"
   },
   {
    "refdes": [
@@ -397,7 +660,27 @@
      "qty": 10000,
      "price": 0.0253
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±10%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "1uF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X7R"
+    }
+   ],
+   "description": "1uF 50V X7R ±10% 0805 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL21B105KBFNNNE_C28323.pdf"
   },
   {
    "refdes": [
@@ -439,7 +722,35 @@
      "qty": 8000,
      "price": 0.0403
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "10mΩ"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "3W"
+    },
+    {
+     "name": "Type",
+     "value": "Current Sense Resistor"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Surface-mount (SMD)"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±50ppm/℃"
+    }
+   ],
+   "description": "10mΩ 3W Current Sense Resistor SMD ±1% ±50ppm/℃ 2512 Current Sense Resistors / Shunt Resistors ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_TA-I-Tech-RLP25FEGR010_C393070.pdf"
   },
   {
    "refdes": [
@@ -481,7 +792,71 @@
      "qty": 1000,
      "price": 0.4864
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40℃~+125℃"
+    },
+    {
+     "name": "Vos - Input Offset Voltage",
+     "value": "50uV"
+    },
+    {
+     "name": "Input Offset Voltage Drift(Vos TC)",
+     "value": "0.5uV/℃"
+    },
+    {
+     "name": "Single Supply",
+     "value": "1.7V~5.5V"
+    },
+    {
+     "name": "Slew Rate",
+     "value": "0.3V/us"
+    },
+    {
+     "name": "Common Mode Rejection Ratio (CMRR)",
+     "value": "150dB"
+    },
+    {
+     "name": "Differential Voltage",
+     "value": "±42V"
+    },
+    {
+     "name": "Number of Channels",
+     "value": "1"
+    },
+    {
+     "name": "Vcm - Common Mode Voltage",
+     "value": "-200mV~40V"
+    },
+    {
+     "name": "Bandwidth",
+     "value": "45kHz"
+    },
+    {
+     "name": "Noise density(eN)",
+     "value": "75nV/√Hz"
+    },
+    {
+     "name": "Quiescent Current",
+     "value": "48uA"
+    },
+    {
+     "name": "Features",
+     "value": "High-side detection、Low-side detection、Zero drift / auto-zero、Programmable output reference level、Analog output interface、External shunt"
+    },
+    {
+     "name": "Ib - Input Bias Current",
+     "value": "500pA"
+    },
+    {
+     "name": "Gain",
+     "value": "25V/V"
+    }
+   ],
+   "description": "-200mV~40V -40℃~+125℃ 0.3V/us 0.5uV/℃ 1 1.7V~5.5V 150dB 25V/V 45kHz 48uA 500pA 50uV 75nV/√Hz High-side detection、Low-side detection、Bidirectional detection、Zero drift / auto-zero、Analog output interface、Input filter、Enable/shutdown function ±42V SC-70-6 Current Sense Amplifiers ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2302221330_Texas-Instruments-INA186A1IDCKR_C2058311.pdf"
   },
   {
    "refdes": [
@@ -567,7 +942,27 @@
      "qty": 50200,
      "price": 0.0016
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "16V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±10%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "100nF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X7R"
+    }
+   ],
+   "description": "100nF 16V X7R ±10% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL05B104KO5NNNC_C1525.pdf"
   },
   {
    "refdes": [
@@ -609,7 +1004,27 @@
      "qty": 100000,
      "price": 0.0044
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±10%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "100nF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X7R"
+    }
+   ],
+   "description": "100nF 50V X7R ±10% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL05B104KB54PNC_C307331.pdf"
   },
   {
    "refdes": [
@@ -653,7 +1068,39 @@
      "qty": 50200,
      "price": 0.0008
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "1kΩ"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 1kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010216_UNI-ROYAL-Uniroyal-Elec-0402WGF1001TCE_C11702.pdf"
   },
   {
    "refdes": [
@@ -703,7 +1150,27 @@
      "qty": 50200,
      "price": 0.002
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±10%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "10nF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X7R"
+    }
+   ],
+   "description": "10nF 50V X7R ±10% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL05B103KB5NNNC_C15195.pdf"
   },
   {
    "refdes": [
@@ -745,7 +1212,63 @@
      "qty": 6000,
      "price": 0.1537
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+150℃"
+    },
+    {
+     "name": "Vgs",
+     "value": "±20V"
+    },
+    {
+     "name": "Gate Charge(Qg)",
+     "value": "55nC@10V"
+    },
+    {
+     "name": "Reverse Transfer Capacitance (Crss@Vds)",
+     "value": "180pF"
+    },
+    {
+     "name": "Current - Continuous Drain(Id)",
+     "value": "10A"
+    },
+    {
+     "name": "Drain to Source Voltage",
+     "value": "40V"
+    },
+    {
+     "name": "Output Capacitance(Coss)",
+     "value": "260pF"
+    },
+    {
+     "name": "RDS(on)",
+     "value": "15mΩ@10V"
+    },
+    {
+     "name": "Input Capacitance(Ciss)",
+     "value": "3nF"
+    },
+    {
+     "name": "Type",
+     "value": "P-Channel"
+    },
+    {
+     "name": "Gate Threshold Voltage (Vgs(th))",
+     "value": "1.7V"
+    },
+    {
+     "name": "Number",
+     "value": "1 P-Channel"
+    },
+    {
+     "name": "Pd - Power Dissipation",
+     "value": "3.1W"
+    }
+   ],
+   "description": "-55℃~+150℃ 1 P-Channel 1.7V 10A 15mΩ@10V 180pF 3.1W 3nF 40V 55nC@10V SOIC-8 MOSFETs ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1809200040_Alpha---Omega-Semicon-AO4485_C51499.pdf"
   },
   {
    "refdes": [
@@ -789,7 +1312,39 @@
      "qty": 50200,
      "price": 0.0006
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "470kΩ"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 470kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010100_UNI-ROYAL-Uniroyal-Elec-0402WGF4703TCE_C25790.pdf"
   },
   {
    "refdes": [
@@ -841,7 +1396,27 @@
      "qty": 48000,
      "price": 0.0049
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±10%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "100nF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X7R"
+    }
+   ],
+   "description": "100nF 50V X7R ±10% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2211101700_YAGEO-CC0603KRX7R9BB104_C14663.pdf"
   },
   {
    "refdes": [
@@ -925,7 +1500,39 @@
      "qty": 51000,
      "price": 0.0073
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Diode Configuration",
+     "value": "1 Independent"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±5%"
+    },
+    {
+     "name": "Impedance(Zzt)",
+     "value": "40Ω"
+    },
+    {
+     "name": "Zener Voltage(Range)",
+     "value": "14.25V~15.75V"
+    },
+    {
+     "name": "Zener Voltage(Nom)",
+     "value": "15V"
+    },
+    {
+     "name": "Pd - Power Dissipation",
+     "value": "500mW"
+    },
+    {
+     "name": "Reverse Leakage Current (Ir)",
+     "value": "100nA@11V"
+    }
+   ],
+   "description": "1 Independent 100nA@11V 14.25V~15.75V 15V 40Ω 500mW SOD-123 Zener Diodes ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2407261727_MDD-Microdiode-Semiconductor-BZT52C15_C173427.pdf"
   },
   {
    "refdes": [
@@ -967,7 +1574,55 @@
      "qty": 51000,
      "price": 0.009
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Vgs",
+     "value": "±20V"
+    },
+    {
+     "name": "Reverse Transfer Capacitance (Crss@Vds)",
+     "value": "5pF"
+    },
+    {
+     "name": "Current - Continuous Drain(Id)",
+     "value": "115mA"
+    },
+    {
+     "name": "Drain to Source Voltage",
+     "value": "60V"
+    },
+    {
+     "name": "Output Capacitance(Coss)",
+     "value": "25pF"
+    },
+    {
+     "name": "RDS(on)",
+     "value": "5Ω@10V"
+    },
+    {
+     "name": "Input Capacitance(Ciss)",
+     "value": "50pF"
+    },
+    {
+     "name": "Type",
+     "value": "N-Channel"
+    },
+    {
+     "name": "Gate Threshold Voltage (Vgs(th))",
+     "value": "2.5V"
+    },
+    {
+     "name": "Number",
+     "value": "1 N-channel"
+    },
+    {
+     "name": "Pd - Power Dissipation",
+     "value": "225mW"
+    }
+   ],
+   "description": "1 N-channel 115mA 2.5V 225mW 25pF 50pF 5pF 5Ω@10V 60V N-Channel ±20V SOT-23 MOSFETs ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Jiangsu-Changjing-Electronics-Technology-Co---Ltd--2N7002_C8545.pdf"
   },
   {
    "refdes": [
@@ -1049,7 +1704,39 @@
      "qty": 50200,
      "price": 0.0008
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "100kΩ"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 100kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010100_UNI-ROYAL-Uniroyal-Elec-0402WGF1003TCE_C25741.pdf"
   },
   {
    "refdes": [
@@ -1091,7 +1778,39 @@
      "qty": 51000,
      "price": 0.0077
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Diode Configuration",
+     "value": "1 Independent"
+    },
+    {
+     "name": "Impedance(Zzk)",
+     "value": "325Ω"
+    },
+    {
+     "name": "Impedance(Zzt)",
+     "value": "80Ω"
+    },
+    {
+     "name": "Zener Voltage(Range)",
+     "value": "31V~35V"
+    },
+    {
+     "name": "Zener Voltage(Nom)",
+     "value": "33V"
+    },
+    {
+     "name": "Pd - Power Dissipation",
+     "value": "500mW"
+    },
+    {
+     "name": "Reverse Leakage Current (Ir)",
+     "value": "500nA@0.1V"
+    }
+   ],
+   "description": "1 Independent 31V~35V 325Ω 33V 500mW 500nA@0.1V 80Ω SOD-123 Zener Diodes ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_BORN-BZT52C33_C266574.pdf"
   },
   {
    "refdes": [
@@ -1141,7 +1860,55 @@
      "qty": 51000,
      "price": 0.0077
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+150℃"
+    },
+    {
+     "name": "Transition frequency(fT)",
+     "value": "150MHz"
+    },
+    {
+     "name": "Collector - Emitter Voltage VCEO",
+     "value": "25V"
+    },
+    {
+     "name": "Number",
+     "value": "1 NPN"
+    },
+    {
+     "name": "DC Current Gain",
+     "value": "200"
+    },
+    {
+     "name": "Current - Collector(Ic)",
+     "value": "500mA"
+    },
+    {
+     "name": "Vce Saturation(VCE(sat))",
+     "value": "600mV"
+    },
+    {
+     "name": "Emitter-Base Voltage(Vebo)",
+     "value": "5V"
+    },
+    {
+     "name": "Pd - Power Dissipation",
+     "value": "300mW"
+    },
+    {
+     "name": "type",
+     "value": "NPN"
+    },
+    {
+     "name": "Current - Collector Cutoff",
+     "value": "100nA"
+    }
+   ],
+   "description": "-55℃~+150℃ 1 NPN 100nA 150MHz 200 25V 300mW 500mA 5V 600mV NPN SOT-23 Bipolar (BJT) ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2310131500_Jiangsu-Changjing-Electronics-Technology-Co---Ltd--S8050-J3Y-RANGE-200-350_C2146.pdf"
   },
   {
    "refdes": [
@@ -1187,7 +1954,51 @@
      "qty": 5000,
      "price": 0.1165
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+105℃"
+    },
+    {
+     "name": "Lifetime",
+     "value": "2000hrs@105℃"
+    },
+    {
+     "name": "Pin Spacing",
+     "value": "5mm"
+    },
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Height - Seated (Max)",
+     "value": "20mm"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±20%"
+    },
+    {
+     "name": "Polarity type",
+     "value": "Polarized"
+    },
+    {
+     "name": "Capacitance",
+     "value": "470uF"
+    },
+    {
+     "name": "Ripple Current",
+     "value": "600mA@120Hz"
+    },
+    {
+     "name": "Diameter",
+     "value": "10mm"
+    }
+   ],
+   "description": "-25℃~+105℃ 10mm 2000hrs@105℃ 20mm 470uF 50V 5mm ±20% 插件,D10xL20mm Aluminum Electrolytic Capacitors - Leaded ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Rubycon-50PX470MEFC10X20_C88733.pdf"
   },
   {
    "refdes": [
@@ -1231,7 +2042,27 @@
      "qty": 10000,
      "price": 0.1409
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±10%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "10uF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X5R"
+    }
+   ],
+   "description": "10uF 50V X5R ±10% 1206 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL31A106KBHNNNE_C13585.pdf"
   },
   {
    "refdes": [
@@ -1273,7 +2104,59 @@
      "qty": 1000,
      "price": 0.3358
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40℃~+105℃"
+    },
+    {
+     "name": "Function",
+     "value": "Step-down type"
+    },
+    {
+     "name": "Synchronous Rectifier",
+     "value": "Yes"
+    },
+    {
+     "name": "Frequency - Switching",
+     "value": "500kHz~2.5MHz"
+    },
+    {
+     "name": "Output Type",
+     "value": "Adjustable"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "4.5V~40V"
+    },
+    {
+     "name": "Output Current",
+     "value": "3A"
+    },
+    {
+     "name": "Quiescent Current",
+     "value": "18uA"
+    },
+    {
+     "name": "Features",
+     "value": "Light load efficient mode、Cycle-by-cycle current limiting"
+    },
+    {
+     "name": "Switch tube (built-in/external)",
+     "value": "Built-in"
+    },
+    {
+     "name": "Topology",
+     "value": "Buck"
+    },
+    {
+     "name": "Number of Outputs",
+     "value": "1"
+    }
+   ],
+   "description": "-40℃~+105℃ 1 18uA 3A 4.5V~40V 500kHz~2.5MHz Adjustable Buck Buck Built-in Yes TSOT-23-8 DC-DC Converters ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1811151653_Silergy-Corp-SY8303AIC_C97054.pdf"
   },
   {
    "refdes": [
@@ -1315,7 +2198,35 @@
      "qty": 10000,
      "price": 0.0325
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Current - Saturation(Isat)",
+     "value": "3.2A"
+    },
+    {
+     "name": "Inductance",
+     "value": "4.7uH"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±20%"
+    },
+    {
+     "name": "Current Rating",
+     "value": "2A"
+    },
+    {
+     "name": "Application Grade",
+     "value": "Consumer grade"
+    },
+    {
+     "name": "DC Resistance(DCR)",
+     "value": "78mΩ"
+    }
+   ],
+   "description": "2A 3.2A 4.7uH 78mΩ ±20% SMD,4x4mm Power Inductors ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2310251551_Sunlord-SWPA4030S4R7MT_C57269.pdf"
   },
   {
    "refdes": [
@@ -1357,7 +2268,39 @@
      "qty": 50200,
      "price": 0.0005
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "15kΩ"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 15kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010100_UNI-ROYAL-Uniroyal-Elec-0402WGF1502TCE_C25756.pdf"
   },
   {
    "refdes": [
@@ -1407,7 +2350,39 @@
      "qty": 50200,
      "price": 0.0012
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "2kΩ"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 2kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010230_UNI-ROYAL-Uniroyal-Elec-0402WGF2001TCE_C4109.pdf"
   },
   {
    "refdes": [
@@ -1457,7 +2432,27 @@
      "qty": 20000,
      "price": 0.1055
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "25V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±20%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "22uF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X5R"
+    }
+   ],
+   "description": "22uF 25V X5R ±20% 0805 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL21A226MAQNNNE_C45783.pdf"
   },
   {
    "refdes": [
@@ -1499,7 +2494,59 @@
      "qty": 6000,
      "price": 0.0482
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40℃~+125℃@(TA/TJ)"
+    },
+    {
+     "name": "Function",
+     "value": "Step-down type"
+    },
+    {
+     "name": "Synchronous Rectifier",
+     "value": "Yes"
+    },
+    {
+     "name": "Frequency - Switching",
+     "value": "1.5MHz"
+    },
+    {
+     "name": "Output Type",
+     "value": "Adjustable"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "2.5V~5.5V"
+    },
+    {
+     "name": "Output Current",
+     "value": "2A"
+    },
+    {
+     "name": "Quiescent Current",
+     "value": "50uA"
+    },
+    {
+     "name": "Features",
+     "value": "Output discharge、Hiccup current limiting"
+    },
+    {
+     "name": "Switch tube (built-in/external)",
+     "value": "Built-in"
+    },
+    {
+     "name": "Topology",
+     "value": "Buck"
+    },
+    {
+     "name": "Number of Outputs",
+     "value": "1"
+    }
+   ],
+   "description": "-40℃~+125℃@(TA/TJ) 1 1.5MHz 2.5V~5.5V 2A 50uA Adjustable Buck Buck Built-in Yes SOT-23-5 DC-DC Converters ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2001171834_Silergy-Corp-SY8089A1AAC_C479074.pdf"
   },
   {
    "refdes": [
@@ -1553,7 +2600,27 @@
      "qty": 20000,
      "price": 0.0115
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "10V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±10%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "10uF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X5R"
+    }
+   ],
+   "description": "10V 10uF X5R ±10% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL10A106KP8NNNC_C19702.pdf"
   },
   {
    "refdes": [
@@ -1595,7 +2662,27 @@
      "qty": 10000,
      "price": 0.0335
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Inductance",
+     "value": "2.2uH"
+    },
+    {
+     "name": "Type",
+     "value": "Wire-wound inductor"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±20%"
+    },
+    {
+     "name": "Application Grade",
+     "value": "Consumer grade"
+    }
+   ],
+   "description": "2.2uH Wire-wound inductor ±20% SMD,4x4mm Power Inductors ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2310251551_Sunlord-SWPA4030S2R2MT_C36409.pdf"
   },
   {
    "refdes": [
@@ -1637,7 +2724,39 @@
      "qty": 50200,
      "price": 0.0005
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "22kΩ"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 22kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010100_UNI-ROYAL-Uniroyal-Elec-0402WGF2202TCE_C25768.pdf"
   },
   {
    "refdes": [
@@ -1679,7 +2798,59 @@
      "qty": 6000,
      "price": 0.0852
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Power Supply Rejection Ratio (PSRR)",
+     "value": "82dB@(1kHz)"
+    },
+    {
+     "name": "standby current",
+     "value": "12uA"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-40℃~+125℃@(Tj)"
+    },
+    {
+     "name": "Noise",
+     "value": "10uVrms"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "5.5V"
+    },
+    {
+     "name": "Output Type",
+     "value": "Fixed"
+    },
+    {
+     "name": "Output Current",
+     "value": "250mA"
+    },
+    {
+     "name": "Features",
+     "value": "Short Circuit Protection、Thermal shutdown、Enable control、Input under-voltage protection、Output discharge"
+    },
+    {
+     "name": "Output Configuration",
+     "value": "Positive"
+    },
+    {
+     "name": "Output Voltage",
+     "value": "3.3V"
+    },
+    {
+     "name": "Voltage Dropout",
+     "value": "250mV@(250mA)"
+    },
+    {
+     "name": "Number of Outputs",
+     "value": "1"
+    }
+   ],
+   "description": "-40℃~+125℃@(Tj) 1 10uVrms 12uA 250mA 250mV@(250mA) 3.3V 5.5V 82dB@(1kHz) Fixed Positive Short Circuit Protection、Thermal shutdown、Enable control、Input under-voltage protection、Output discharge SOT-23-5 Voltage Regulators - Linear, Low Drop Out (LDO) Regulators ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1810271029_Texas-Instruments-LP5907MFX-3-3-NOPB_C80670.pdf"
   },
   {
    "refdes": [
@@ -1757,7 +2928,27 @@
      "qty": 100000,
      "price": 0.0034
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "25V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±10%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "1uF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X5R"
+    }
+   ],
+   "description": "1uF 25V X5R ±10% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL05A105KA5NQNC_C52923.pdf"
   },
   {
    "refdes": [
@@ -1803,7 +2994,35 @@
      "qty": 48000,
      "price": 0.0084
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+125℃"
+    },
+    {
+     "name": "Impedance @ Frequency",
+     "value": "120Ω@100MHz"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±25%"
+    },
+    {
+     "name": "Current Rating",
+     "value": "2A"
+    },
+    {
+     "name": "Number of Circuits",
+     "value": "1"
+    },
+    {
+     "name": "DC Resistance(DCR)",
+     "value": "50mΩ"
+    }
+   ],
+   "description": "-55℃~+125℃ 1 120Ω@100MHz 2A 50mΩ ±25% 0603 Ferrite Beads ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Murata-Electronics-BLM18PG121SN1D_C14709.pdf"
   },
   {
    "refdes": [
@@ -1845,7 +3064,59 @@
      "qty": 18,
      "price": 3.7339
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Antenna Type",
+     "value": "On-board PCB Antenna"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-40℃~+85℃"
+    },
+    {
+     "name": "Sensitivity",
+     "value": "-97dBm"
+    },
+    {
+     "name": "Output Power",
+     "value": "20.5dBm"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "3V~3.6V"
+    },
+    {
+     "name": "Frequency",
+     "value": "2.4GHz"
+    },
+    {
+     "name": "Features",
+     "value": "Integrated Bluetooth function、Over-the-air (OTA) update"
+    },
+    {
+     "name": "Utilized IC / Part",
+     "value": "ESP32-DOWD-V3"
+    },
+    {
+     "name": "Interface Type",
+     "value": "UART、SDIO、SPI、I2C"
+    },
+    {
+     "name": "Receive  Current",
+     "value": "108mA"
+    },
+    {
+     "name": "Wireless Standard",
+     "value": "Bluetooth4.2"
+    },
+    {
+     "name": "Send  Current",
+     "value": "350mA"
+    }
+   ],
+   "description": "-40℃~+85℃ -97dBm 108mA 2.4GHz 20.5dBm 350mA 3V~3.6V Bluetooth4.2 ESP32-DOWD-V3 On-board PCB Antenna UART、SDIO、SPI、I2C SMD,31.4x18mm WiFi Modules ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2207151200_Espressif-Systems-ESP32-WROVER-E-N8R8_C2973667.pdf"
   },
   {
    "refdes": [
@@ -1887,7 +3158,35 @@
      "qty": 1000,
      "price": 0.5077
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Data Rate",
+     "value": "2Mbps"
+    },
+    {
+     "name": "Applications Function",
+     "value": "Transceiver"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "3.3V、5V"
+    },
+    {
+     "name": "USB Protocol",
+     "value": "USB 2.0"
+    },
+    {
+     "name": "Current - Supply",
+     "value": "15mA"
+    },
+    {
+     "name": "Quiescent Supply Current",
+     "value": "200uA"
+    }
+   ],
+   "description": "15mA 200uA 2Mbps 3.3V、5V Transceiver USB 2.0 SOP-16 USB Converters ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2403131142_WCH-Jiangsu-Qin-Heng-CH340B_C81010.pdf"
   },
   {
    "refdes": [
@@ -1933,7 +3232,39 @@
      "qty": 50200,
      "price": 0.0006
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "2.2kΩ"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 2.2kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010045_UNI-ROYAL-Uniroyal-Elec-0402WGF2201TCE_C25879.pdf"
   },
   {
    "refdes": [
@@ -1963,7 +3294,67 @@
      "qty": 100,
      "price": 0.7959
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Output Logic Level - Low",
+     "value": "400mV"
+    },
+    {
+     "name": "Number of Supporting Devices",
+     "value": "4"
+    },
+    {
+     "name": "Clock Frequency",
+     "value": "400kHz"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-40℃~+85℃"
+    },
+    {
+     "name": "Output Logic Level - High",
+     "value": "4.1V"
+    },
+    {
+     "name": "Output Type",
+     "value": "Push-Pull"
+    },
+    {
+     "name": "Current - Output High(IOH)",
+     "value": "10mA"
+    },
+    {
+     "name": "Number of I/O",
+     "value": "16"
+    },
+    {
+     "name": "Interrupt Output",
+     "value": "Interrupt Output"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "1.65V~5.5V"
+    },
+    {
+     "name": "Features",
+     "value": "Reset function、Cascade and address expansion、Built-in LED driver"
+    },
+    {
+     "name": "Current - Output Low(IOL)",
+     "value": "25mA"
+    },
+    {
+     "name": "Quiescent Supply Current",
+     "value": "1.5uA"
+    },
+    {
+     "name": "Interface",
+     "value": "I2C、SMBus"
+    }
+   ],
+   "description": "-40℃~+85℃ 1.5uA 1.65V~5.5V 10mA 16 25mA 4 4.1V 400kHz 400mV I2C、SMBus Interrupt Output Push-Pull Reset function、Cascading and address extension、Built-in LED driver TSSOP-24 I/O Expanders ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Texas-Instruments-TCA9539PWR_C131972.pdf"
   },
   {
    "refdes": [
@@ -2005,7 +3396,43 @@
      "qty": 1000,
      "price": 0.4291
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "0℃~+85℃"
+    },
+    {
+     "name": "Type",
+     "value": "PHY Transceiver"
+    },
+    {
+     "name": "Data Rate",
+     "value": "10Mbit/s、100Mbit/s"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "1.6V~3.6V"
+    },
+    {
+     "name": "Number of ports",
+     "value": "1"
+    },
+    {
+     "name": "Features",
+     "value": "Programmable LED indication、Low-power mode、Power-on reset"
+    },
+    {
+     "name": "MAC Interface",
+     "value": "RMII"
+    },
+    {
+     "name": "Ethernet Speed Standards",
+     "value": "10BASE-T、100BASE-TX"
+    }
+   ],
+   "description": "0℃~+85℃ 1 1.6V~3.6V 10BASE-T、100BASE-TX 10Mbit/s、100Mbit/s PHY Transceiver Programmable LED indication、Low-power mode、Power-on reset RMII QFN-24-EP(4x4) Ethernet Transceivers ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1811021214_Microchip-Tech-LAN8720A-CP-TR_C45223.pdf"
   },
   {
    "refdes": [
@@ -2047,7 +3474,35 @@
      "qty": 6000,
      "price": 0.2637
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40℃~+85℃"
+    },
+    {
+     "name": "Normal temperature Frequency Tolerance",
+     "value": "±10ppm"
+    },
+    {
+     "name": "Output Type",
+     "value": "CMOS"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "1.8V~3.3V"
+    },
+    {
+     "name": "Frequency Stability",
+     "value": "±20ppm"
+    },
+    {
+     "name": "Frequency",
+     "value": "50MHz"
+    }
+   ],
+   "description": "-40℃~+85℃ 1.8V~3.3V 50MHz CMOS ±10ppm ±20ppm SMD3225-4P Crystal Oscillators ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2407310922_YXC-Crystal-Oscillators-OT322550MJBA4SL_C717684.pdf"
   },
   {
    "refdes": [
@@ -2095,7 +3550,39 @@
      "qty": 50200,
      "price": 0.0007
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "33Ω"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 33Ω 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2205311900_UNI-ROYAL-Uniroyal-Elec-0402WGF330JTCE_C25105.pdf"
   },
   {
    "refdes": [
@@ -2137,7 +3624,39 @@
      "qty": 50200,
      "price": 0.0009
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "12kΩ"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 12kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010100_UNI-ROYAL-Uniroyal-Elec-0402WGF1202TCE_C25752.pdf"
   },
   {
    "refdes": [
@@ -2179,7 +3698,39 @@
      "qty": 50200,
      "price": 0.0013
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "1.5kΩ"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 1.5kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010045_UNI-ROYAL-Uniroyal-Elec-0402WGF1501TCE_C25867.pdf"
   },
   {
    "refdes": [
@@ -2227,7 +3778,39 @@
      "qty": 50200,
      "price": 0.0008
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "49.9Ω"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 49.9Ω 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2205311900_UNI-ROYAL-Uniroyal-Elec-0402WGF499JTCE_C25120.pdf"
   },
   {
    "refdes": [
@@ -2269,7 +3852,63 @@
      "qty": 992,
      "price": 0.904
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "0℃~+70℃"
+    },
+    {
+     "name": "PoE",
+     "value": "Non-PoE"
+    },
+    {
+     "name": "LED",
+     "value": "With LED"
+    },
+    {
+     "name": "Shielding",
+     "value": "Shielded"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Right Angle"
+    },
+    {
+     "name": "Number of Ports",
+     "value": "1"
+    },
+    {
+     "name": "Length",
+     "value": "21.3mm"
+    },
+    {
+     "name": "Contact Plating",
+     "value": "Gold"
+    },
+    {
+     "name": "Connector Type",
+     "value": "RJ45 Jack"
+    },
+    {
+     "name": "Contact Material",
+     "value": "Phosphor Bronze"
+    },
+    {
+     "name": "Supplementary Features",
+     "value": "Filtered"
+    },
+    {
+     "name": "Height",
+     "value": "13.5mm"
+    },
+    {
+     "name": "Width",
+     "value": "16.04mm"
+    }
+   ],
+   "description": "0℃~+70℃ 1 Filtered Gold Non-PoE Phosphor bronze RJ45 Jack Right Angle Shielded With LED 插件 Ethernet Connectors / Modular Connectors (RJ45 RJ11) ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2409302333_HANRUN-Zhongshan-HanRun-Elec-HR911105A_C12074.pdf"
   },
   {
    "refdes": [
@@ -2311,7 +3950,39 @@
      "qty": 1000,
      "price": 2.1798
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Function",
+     "value": "Power-down mode、Integrated modulator、Programmable gain、Soft reset"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-20℃~+70℃"
+    },
+    {
+     "name": "Update Rate",
+     "value": "11.2MHz"
+    },
+    {
+     "name": "Number of Channels",
+     "value": "2"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "1.8V~3.3V"
+    },
+    {
+     "name": "Resolution (Bits)",
+     "value": "32"
+    },
+    {
+     "name": "Interface",
+     "value": "I2C"
+    }
+   ],
+   "description": "-20℃~+70℃ 1.8V~3.3V 11.2MHz 2 32 I2C QFN-28-EP(5x5) Digital to Analog Converters (DAC) ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2411261516_ESS-Tech-ES9018K2M_C2688377.pdf"
   },
   {
    "refdes": [
@@ -2363,7 +4034,27 @@
      "qty": 8000,
      "price": 0.0086
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "16V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±10%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "4.7uF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X5R"
+    }
+   ],
+   "description": "16V 4.7uF X5R ±10% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL10A475KO8NNNC_C19666.pdf"
   },
   {
    "refdes": [
@@ -2405,7 +4096,39 @@
      "qty": 1000,
      "price": 0.2653
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40℃~+85℃"
+    },
+    {
+     "name": "Normal temperature Frequency Tolerance",
+     "value": "±10ppm"
+    },
+    {
+     "name": "Output Type",
+     "value": "CMOS"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "3.3V"
+    },
+    {
+     "name": "Frequency Stability",
+     "value": "±20ppm"
+    },
+    {
+     "name": "Frequency",
+     "value": "49.152MHz"
+    },
+    {
+     "name": "Current - Supply",
+     "value": "20mA"
+    }
+   ],
+   "description": "-40℃~+85℃ 20mA 3.3V 49.152MHz CMOS ±10ppm ±20ppm SMD3225-4P Crystal Oscillators ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2406051021_Shenzhen-SCTF-Elec-SX3M49-152B10F20TNN_C7431354.pdf"
   },
   {
    "refdes": [
@@ -2447,7 +4170,75 @@
      "qty": 1000,
      "price": 0.3833
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40℃~+85℃"
+    },
+    {
+     "name": "Vos - Input Offset Voltage",
+     "value": "500uV"
+    },
+    {
+     "name": "Input Offset Current(Ios)",
+     "value": "10pA"
+    },
+    {
+     "name": "Output Current",
+     "value": "50mA"
+    },
+    {
+     "name": "Input Offset Voltage Drift(Vos TC)",
+     "value": "2uV/℃"
+    },
+    {
+     "name": "Slew Rate",
+     "value": "9V/us"
+    },
+    {
+     "name": "Gain Bandwidth Product",
+     "value": "16MHz"
+    },
+    {
+     "name": "Single supply",
+     "value": "4.5V~36V"
+    },
+    {
+     "name": "Common Mode Rejection Ratio(CMRR)",
+     "value": "110dB"
+    },
+    {
+     "name": "Rail to Rail",
+     "value": "Rail-to-rail output"
+    },
+    {
+     "name": "Number of Channels",
+     "value": "2"
+    },
+    {
+     "name": "Input Voltage Noise Density",
+     "value": "4.5nV/√Hz@1kHz"
+    },
+    {
+     "name": "Quiescent Current",
+     "value": "2mA"
+    },
+    {
+     "name": "Features",
+     "value": "Built-in compensation、ESD Protection"
+    },
+    {
+     "name": "Ib - Input Bias Current",
+     "value": "10pA"
+    },
+    {
+     "name": "Dual Supply",
+     "value": "-18V~-2.25V、2.25V~18V"
+    }
+   ],
+   "description": "-18V~-2.25V、2.25V~18V -40℃~+85℃ 10pA 10pA 110dB 16MHz 2 2mA 2uV/℃ 4.5V~36V 4.5nV/√Hz@1kHz 500uV 50mA 9V/us Built-in compensation、ESD protection Rail-to-rail output SOIC-8-150mil Operational Amplifier ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1810181618_Texas-Instruments-OPA1678IDR_C192421.pdf"
   },
   {
    "refdes": [
@@ -2495,7 +4286,39 @@
      "qty": 50200,
      "price": 0.0015
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "1.3kΩ"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 1.3kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010045_UNI-ROYAL-Uniroyal-Elec-0402WGF1301TCE_C25866.pdf"
   },
   {
    "refdes": [
@@ -2547,7 +4370,27 @@
      "qty": 50200,
      "price": 0.0019
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±10%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "1nF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X7R"
+    }
+   ],
+   "description": "1nF 50V X7R ±10% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_FH--Guangdong-Fenghua-Advanced-Tech-0402B102K500NT_C1523.pdf"
   },
   {
    "refdes": [
@@ -2597,7 +4440,39 @@
      "qty": 50200,
      "price": 0.0008
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "470Ω"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 470Ω 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2205311900_UNI-ROYAL-Uniroyal-Elec-0402WGF4700TCE_C25117.pdf"
   },
   {
    "refdes": [
@@ -2639,7 +4514,47 @@
      "qty": 1000,
      "price": 0.8631
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-25℃~+85℃"
+    },
+    {
+     "name": "The Chip Type",
+     "value": "Audio Decoder"
+    },
+    {
+     "name": "Number of Channels",
+     "value": "2"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "1.8V~3.3V"
+    },
+    {
+     "name": "Quiescent Current (Iq)",
+     "value": "500uA"
+    },
+    {
+     "name": "Sampling Rate",
+     "value": "384kHz"
+    },
+    {
+     "name": "Features",
+     "value": "Digital filtering、Power-down mode"
+    },
+    {
+     "name": "Interface Type",
+     "value": "I2S"
+    },
+    {
+     "name": "Resolution (Bits)",
+     "value": "32"
+    }
+   ],
+   "description": "-25℃~+85℃ 1.8V~3.3V 2 32 384kHz 500uA 50MHz Audio Decoder Digital filtering、Power-down mode I2S TSSOP-20 ADCs/DACs - Special Purpose ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2409291903_Texas-Instruments-PCM5102APWR_C107671.pdf"
   },
   {
    "refdes": [
@@ -2685,7 +4600,27 @@
      "qty": 48000,
      "price": 0.0062
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "16V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±10%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "2.2uF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X5R"
+    }
+   ],
+   "description": "16V 2.2uF X5R ±10% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL10A225KO8NNNC_C23630.pdf"
   },
   {
    "refdes": [
@@ -2729,7 +4664,39 @@
      "qty": 4000,
      "price": 0.1268
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40℃~+70℃"
+    },
+    {
+     "name": "Voltage Rating (Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Number of Ports",
+     "value": "2"
+    },
+    {
+     "name": "Color",
+     "value": "Black"
+    },
+    {
+     "name": "Current Rating",
+     "value": "200mA"
+    },
+    {
+     "name": "Connector Type",
+     "value": "RCA Jack"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Right Angle"
+    }
+   ],
+   "description": "-40℃~+70℃ 2 200mA 50V Black RCA Jack Right Angle 插件 RCA Connector ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2309181810_Lian-Xin-Technology-XDJK-0271-1650_C7527522.pdf"
   },
   {
    "refdes": [
@@ -2777,7 +4744,39 @@
      "qty": 50200,
      "price": 0.0011
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "4.7kΩ"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 4.7kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010045_UNI-ROYAL-Uniroyal-Elec-0402WGF4701TCE_C25900.pdf"
   },
   {
    "refdes": [
@@ -2821,7 +4820,27 @@
      "qty": 20000,
      "price": 0.0135
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "25V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±10%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "4.7uF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X5R"
+    }
+   ],
+   "description": "25V 4.7uF X5R ±10% 0805 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL21A475KAQNNNE_C1779.pdf"
   },
   {
    "refdes": [
@@ -2863,7 +4882,47 @@
      "qty": 1000,
      "price": 0.2572
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40℃~+85℃"
+    },
+    {
+     "name": "The Chip Type",
+     "value": "Audio Analog-to-Digital Converter"
+    },
+    {
+     "name": "Architecture",
+     "value": "Sigma-Delta"
+    },
+    {
+     "name": "Number of Channels",
+     "value": "16"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "1.7V~3.6V"
+    },
+    {
+     "name": "Sampling Rate",
+     "value": "48000Hz"
+    },
+    {
+     "name": "Features",
+     "value": "Programmable gain、Power-down mode"
+    },
+    {
+     "name": "Interface Type",
+     "value": "I2S"
+    },
+    {
+     "name": "Resolution (Bits)",
+     "value": "24"
+    }
+   ],
+   "description": "-40℃~+85℃ 1.7V~3.6V 16 24 48000Hz Audio Analog-to-Digital Converter I2S Programmable gain、Power-down mode Sigma-Delta QFN-20 ADCs/DACs - Special Purpose ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2208291730_Everest-semi-Everest-Semiconductor-ES7243E_C2929446.pdf"
   },
   {
    "refdes": [
@@ -2907,7 +4966,55 @@
      "qty": 1000,
      "price": 0.2375
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Ron",
+     "value": "10Ω"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-40℃~+85℃"
+    },
+    {
+     "name": "Con",
+     "value": "17.5pF"
+    },
+    {
+     "name": "Number of Channels",
+     "value": "2"
+    },
+    {
+     "name": "Switch Circuit",
+     "value": "2:1"
+    },
+    {
+     "name": "Voltage - Supply",
+     "value": "1.65V~5.5V"
+    },
+    {
+     "name": "Bandwidth",
+     "value": "220MHz"
+    },
+    {
+     "name": "Charge Injection",
+     "value": "7pC"
+    },
+    {
+     "name": "Features",
+     "value": "Bidirectional analog channel、Glitch-free switching"
+    },
+    {
+     "name": "Turn-off time",
+     "value": "800ps"
+    },
+    {
+     "name": "Turn-on time",
+     "value": "1.7ns"
+    }
+   ],
+   "description": "-40℃~+85℃ 1.65V~5.5V 1.7ns 10Ω 17.5pF 2 220MHz 2:1 800ps MSOP-10 Analog Switches, Multiplexers ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Texas-Instruments-TS5A23157DGSR_C11133.pdf"
   },
   {
    "refdes": [
@@ -2951,7 +5058,39 @@
      "qty": 50200,
      "price": 0.0008
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "150kΩ"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "100mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "75V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 100mW 150kΩ 75V Thick Film Resistor ±1% ±100ppm/℃ 0603 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010130_UNI-ROYAL-Uniroyal-Elec-0603WAF1503T5E_C22807.pdf"
   },
   {
    "refdes": [
@@ -2995,7 +5134,27 @@
      "qty": 100000,
      "price": 0.0027
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±10%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "470pF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X7R"
+    }
+   ],
+   "description": "470pF 50V X7R ±10% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_FH--Guangdong-Fenghua-Advanced-Tech-0603B471K500NT_C1620.pdf"
   },
   {
    "refdes": [
@@ -3043,7 +5202,39 @@
      "qty": 50200,
      "price": 0.001
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "47kΩ"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 47kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010100_UNI-ROYAL-Uniroyal-Elec-0402WGF4702TCE_C25792.pdf"
   },
   {
    "refdes": [
@@ -3085,7 +5276,8 @@
      "qty": 1020,
      "price": 0.9679
     }
-   ]
+   ],
+   "description": "- Fiber Optical Transceivers ROHS"
   },
   {
    "refdes": [
@@ -3193,7 +5385,39 @@
      "qty": 50200,
      "price": 0.0014
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "4.7Ω"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "100mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "75V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±400ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 100mW 4.7Ω 75V Thick Film Resistor ±1% ±400ppm/℃ 0603 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010116_UNI-ROYAL-Uniroyal-Elec-0603WAF470KT5E_C23164.pdf"
   },
   {
    "refdes": [
@@ -3253,7 +5477,27 @@
      "qty": 48000,
      "price": 0.0067
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±10%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "33nF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X7R"
+    }
+   ],
+   "description": "33nF 50V X7R ±10% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL10B333KB8NNNC_C21117.pdf"
   },
   {
    "refdes": [
@@ -3295,7 +5539,39 @@
      "qty": 50200,
      "price": 0.0006
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "20kΩ"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 20kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010100_UNI-ROYAL-Uniroyal-Elec-0402WGF2002TCE_C25765.pdf"
   },
   {
    "refdes": [
@@ -3351,7 +5627,27 @@
      "qty": 20000,
      "price": 0.0253
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "25V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±10%"
+    },
+    {
+     "name": "Capacitance",
+     "value": "10uF"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "X5R"
+    }
+   ],
+   "description": "10uF 25V X5R ±10% 0805 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Samsung-Electro-Mechanics-CL21A106KAYNNNE_C15850.pdf"
   },
   {
    "refdes": [
@@ -3407,7 +5703,35 @@
      "qty": 5000,
      "price": 0.1302
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Current - Saturation(Isat)",
+     "value": "10A"
+    },
+    {
+     "name": "Inductance",
+     "value": "10uH"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±20%"
+    },
+    {
+     "name": "Current Rating",
+     "value": "6A"
+    },
+    {
+     "name": "Application Grade",
+     "value": "Consumer grade"
+    },
+    {
+     "name": "DC Resistance(DCR)",
+     "value": "30mΩ"
+    }
+   ],
+   "description": "10A 10uH 30mΩ 6A ±20% SMD,8.5x8mm Power Inductors ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2201201800_PROD-Tech-PSPMAA0805-100M-ANP_C2962885.pdf"
   },
   {
    "refdes": [
@@ -3553,7 +5877,39 @@
      "qty": 50200,
      "price": 0.0006
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "75kΩ"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 50V 62.5mW 75kΩ Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010045_UNI-ROYAL-Uniroyal-Elec-0402WGF7502TCE_C25798.pdf"
   },
   {
    "refdes": [
@@ -3595,7 +5951,39 @@
      "qty": 50200,
      "price": 0.0006
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "0Ω"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±800ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 0Ω 50V 62.5mW Thick Film Resistor ±1% ±800ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2206010216_UNI-ROYAL-Uniroyal-Elec-0402WGF0000TCE_C17168.pdf"
   },
   {
    "refdes": [
@@ -3637,7 +6025,47 @@
      "qty": 960,
      "price": 1.1595
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Number of Detents / Pulses (Incremental)",
+     "value": "0/18"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-40℃~+85℃"
+    },
+    {
+     "name": "Rated Voltage (Max)",
+     "value": "5V"
+    },
+    {
+     "name": "Current Rating (Max)",
+     "value": "10mA"
+    },
+    {
+     "name": "Encoder Type",
+     "value": "Incremental"
+    },
+    {
+     "name": "Output Form",
+     "value": "Two-phase output"
+    },
+    {
+     "name": "Shaft Reset",
+     "value": "Non-self-resetting"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Straight"
+    },
+    {
+     "name": "Whether to Press Down",
+     "value": "Support"
+    }
+   ],
+   "description": "-40℃~+85℃ 10mA 5V Non-resettable Straight Support Two-phase output 插件 Rotary Encoders ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_ALPSALPINE-EC11E1834403_C361165.pdf"
   },
   {
    "refdes": [
@@ -3681,7 +6109,67 @@
      "qty": 20000,
      "price": 0.0111
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-30℃~+85℃"
+    },
+    {
+     "name": "Contact Current",
+     "value": "50mA"
+    },
+    {
+     "name": "Voltage Rating",
+     "value": "12V"
+    },
+    {
+     "name": "Actuator Style",
+     "value": "Round Button"
+    },
+    {
+     "name": "with Bracket",
+     "value": "Without Bracket"
+    },
+    {
+     "name": "Switch Height",
+     "value": "1.5mm"
+    },
+    {
+     "name": "Circuit",
+     "value": "SPST"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Surface Mount,Vertical"
+    },
+    {
+     "name": "Actuator/Cap Color",
+     "value": "Gold"
+    },
+    {
+     "name": "Operating Force",
+     "value": "1.6N"
+    },
+    {
+     "name": "Length",
+     "value": "5.1mm"
+    },
+    {
+     "name": "Life",
+     "value": "100,000 cycles"
+    },
+    {
+     "name": "With Lamp",
+     "value": "No"
+    },
+    {
+     "name": "Width",
+     "value": "5.1mm"
+    }
+   ],
+   "description": "-30℃~+85℃ 1.5mm 1.6N 100,000 cycles 12V 5.1mm 5.1mm 50mA Gold No Round Button SPST Surface Mount,Vertical Without Bracket SMD-4P,5.1x5.1mm Tactile Switches ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_XKB-Connection-TS-1187A-B-A-B_C318884.pdf"
   },
   {
    "refdes": [
@@ -3723,7 +6211,8 @@
      "qty": 5000,
      "price": 0.0939
     }
-   ]
+   ],
+   "description": "SIP-3-2.54mm Infrared Remote Receiver (IRM) ROHS"
   },
   {
    "refdes": [
@@ -3765,7 +6254,39 @@
      "qty": 50200,
      "price": 0.0008
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Resistance",
+     "value": "100Ω"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-55℃~+155℃"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "62.5mW"
+    },
+    {
+     "name": "Type",
+     "value": "Thick Film Resistor"
+    },
+    {
+     "name": "Voltage-Supply(Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Tolerance",
+     "value": "±1%"
+    },
+    {
+     "name": "Temperature Coefficient",
+     "value": "±100ppm/℃"
+    }
+   ],
+   "description": "-55℃~+155℃ 100Ω 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2205311900_UNI-ROYAL-Uniroyal-Elec-0402WGF1000TCE_C25076.pdf"
   },
   {
    "refdes": [
@@ -3807,7 +6328,59 @@
      "qty": 100000,
      "price": 0.0036
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Wavelength - Dominant",
+     "value": "615nm~630nm"
+    },
+    {
+     "name": "Operating Temperature",
+     "value": "-40℃~+85℃"
+    },
+    {
+     "name": "Test Current",
+     "value": "20mA"
+    },
+    {
+     "name": "Viewing Angle",
+     "value": "120°"
+    },
+    {
+     "name": "Lamp Holder Type",
+     "value": "1.6mm x 0.8mm square LED"
+    },
+    {
+     "name": "Luminous Intensity",
+     "value": "300mcd"
+    },
+    {
+     "name": "Power(Watts)",
+     "value": "40mW"
+    },
+    {
+     "name": "Diode Configuration",
+     "value": "Discrete Diode"
+    },
+    {
+     "name": "Illumination Color",
+     "value": "Red"
+    },
+    {
+     "name": "Lens Color",
+     "value": "Water Clear"
+    },
+    {
+     "name": "Peak Wavelength",
+     "value": "645nm"
+    },
+    {
+     "name": "Voltage - Forward(Vf)",
+     "value": "1.8V~2.4V"
+    }
+   ],
+   "description": "-40℃~+85℃ 1.6mm x 0.8mm square LED 1.8V~2.4V 120° 20mA 300mcd 40mW 615nm~630nm 645nm Discrete Diode Red Water Clear 0603 LED Indication - Discrete ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1810231112_Hubei-KENTO-Elec-KT-0603R_C2286.pdf"
   },
   {
    "refdes": [
@@ -3849,7 +6422,59 @@
      "qty": 4000,
      "price": 0.0574
     }
-   ]
+   ],
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-25℃~+85℃"
+    },
+    {
+     "name": "Locking Feature",
+     "value": "Flip-Top"
+    },
+    {
+     "name": "Rated Voltage (Max)",
+     "value": "50V"
+    },
+    {
+     "name": "Current Rating (Max)",
+     "value": "500mA"
+    },
+    {
+     "name": "Contact Plating",
+     "value": "Tin"
+    },
+    {
+     "name": "Contact Material",
+     "value": "Phosphor Bronze"
+    },
+    {
+     "name": "Pitch",
+     "value": "0.5mm"
+    },
+    {
+     "name": "Number of Contacts",
+     "value": "20P"
+    },
+    {
+     "name": "Contact Type",
+     "value": "Bottom Contact"
+    },
+    {
+     "name": "Height Above Board",
+     "value": "2mm"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Surface Mount, Right Angle"
+    },
+    {
+     "name": "FFC, FCB Thickness",
+     "value": "0.3mm"
+    }
+   ],
+   "description": "-25℃~+85℃ 0.3mm 0.5mm 20P 2mm 500mA 50V Bottom Contact Hinged Lid Phosphor bronze Surface Mount, Right Angle Tin SMD,P=0.5mm,卧贴 FFC, FPC (Flat Flexible) Connector Assemblies ROHS",
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2109221030_XUNPU-FPC-05F-20PH20_C2856803.pdf"
   }
  ]
 }

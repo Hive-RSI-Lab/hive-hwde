@@ -66,9 +66,10 @@ def test_clean_shipped_board_has_no_error_and_says_what_it_could_not_rate():
     assert _errors(p) == []
     assert p["pins_checked"] > 0
     unrated = [v for v in p["violations"] if v["kind"] == "rating_unrated"]
-    # never a silent pass: the regulator's unrated VOUT and the bare
-    # passives are named, as warnings
-    assert any("AMS1117" in v["msg"] and "VOUT" in v["msg"] for v in unrated)
+    # never a silent pass: the bare passives are named, as warnings, and the
+    # regulator's self-driven VOUT is named as covered by the supply rule
+    assert unrated
+    assert any("VOUT" in c for c in p["pins_covered_by_rule"])
     assert all(v["severity"] == "warning" for v in unrated)
     # the rails came from the power tree and the regulator, not guessed
     assert p["net_volts"]["+3V3"] == {"v": 3.3, "src": "power_tree"}
@@ -2839,3 +2840,60 @@ def test_library_entry_is_valid_and_cites_its_datasheet(path):
         assert re.search(r"\bp\.\s?\d+", row["source"]), row
         assert set(row["pins"]) <= pins, row
         assert row.get("ref") is None or row["ref"] in pins, row
+
+
+# --- #835: pins the part drives itself, and bootstrap pins ----------------
+
+DRV = {"mpn": "TESTDRV", "pinout": [
+    {"pin": "1", "name": "VDD", "type": "power_in"},
+    {"pin": "2", "name": "GND", "type": "ground"},
+    {"pin": "3", "name": "OUT", "type": "output"},
+    {"pin": "4", "name": "VREF", "type": "analog", "self_driven": True},
+    {"pin": "5", "name": "BST", "type": "passive"},
+    {"pin": "6", "name": "SW", "type": "output"},
+    {"pin": "7", "name": "CFG", "type": "analog"}],
+    "pin_ratings": [{"pins": ["VDD"], "kind": "voltage", "level": "abs_max",
+                     "min": -0.3, "max": 3.9,
+                     "source": "test datasheet p.1: 'VDD -0.3 3.9 V'"},
+                    {"pins": ["SW"], "kind": "voltage", "level": "abs_max",
+                     "min": -0.3, "max": 3.9, "source": "test p.1 'SW 3.9 V'"}]}
+
+
+def _drv(tmp_path, out_net, bst_net="/BST", extra=()):
+    fps = [("U1", "C9", {"1": "+3V3", "2": "GND", "3": out_net, "4": "/VREF",
+                         "5": bst_net, "6": "/SW"}),
+           ("C1", "C10", {"1": "/BST", "2": "/SW"}),
+           ("C2", "C10", {"1": "/VREF", "2": "GND"}), *extra]
+    return _run(_ws(tmp_path, fps, {"C9": DRV}))
+
+
+def test_driven_pin_is_covered_by_the_supply_rating(tmp_path):
+    p = _drv(tmp_path, "/OUTN")
+    assert not _errors(p)
+    un = [v for v in p["violations"] if v["kind"] == "rating_unrated"]
+    # OUT, VREF and the bootstrap pin are covered; only nothing is left for U1
+    assert not [v for v in un if "U1" in v["msg"]]
+    assert any("U1.4" in c for c in p["pins_covered_by_rule"])
+
+
+def test_external_rail_on_a_driven_pin_above_its_supply_is_an_error(tmp_path):
+    p = _drv(tmp_path, "+5V")          # a 5 V rail driving the part's OUT
+    errs = _errors(p)
+    assert [e["pin"] for e in errs] == ["U1.3"]
+    assert "covered by its supply rating" in errs[0]["msg"]
+    assert errs[0]["limit_v"] == pytest.approx(3.9)
+
+
+def test_bootstrap_net_with_an_extra_connection_is_not_covered(tmp_path):
+    p = _drv(tmp_path, "/OUTN", extra=[("R1", "C11", {"1": "/BST", "2": "GND"})])
+    un = [v for v in p["violations"] if v["kind"] == "rating_unrated"
+          and "U1" in v["msg"]]
+    assert un and "BST" in un[0]["msg"]
+    assert not any("U1.5" in c for c in p["pins_covered_by_rule"])
+
+
+def test_an_unmarked_analog_pin_stays_unrated(tmp_path):
+    ws = _ws(tmp_path, [("U1", "C9", {"1": "+3V3", "2": "GND", "7": "/X"})],
+             {"C9": DRV})
+    un = [v for v in _run(ws)["violations"] if v["kind"] == "rating_unrated"]
+    assert un and "CFG" in un[0]["msg"]
