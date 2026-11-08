@@ -550,13 +550,23 @@ def test_dru_footprint_scope_on_the_other_layer_stays_error(tmp_path_factory,
 
 @pytest.mark.parametrize("cond, want", [
     ("A.insideCourtyard('U301')",
-     {"ref": "U301", "side": None, "courtyard": True, "both_member": False}),
+     {"ref": "U301", "side": None, "courtyard": True, "both_member": False,
+      "no_zone": False}),
     ("(A.intersectsCourtyard('U3') && B.intersectsCourtyard('U3'))",
-     {"ref": "U3", "side": None, "courtyard": True, "both_member": False}),
+     {"ref": "U3", "side": None, "courtyard": True, "both_member": False,
+      "no_zone": False}),
     ("A.intersectsFrontCourtyard( 'U3' )",
-     {"ref": "U3", "side": "front", "courtyard": True, "both_member": False}),
+     {"ref": "U3", "side": "front", "courtyard": True, "both_member": False,
+      "no_zone": False}),
     ("A.memberOfFootprint('U3') && B.memberOfFootprint('U3')",
-     {"ref": "U3", "side": None, "courtyard": False, "both_member": True}),
+     {"ref": "U3", "side": None, "courtyard": False, "both_member": True,
+      "no_zone": False}),
+    ("A.intersectsCourtyard('U3') && B.intersectsCourtyard('U3') && "
+     "A.Type != 'Zone' && B.Type != 'Zone'",
+     {"ref": "U3", "side": None, "courtyard": True, "both_member": False,
+      "no_zone": True}),
+    ("A.insideCourtyard('U3') && !B.insideCourtyard('U3')", None),
+    ("A.insideCourtyard('U3') && A.Type != 'Track'", None),
     ("A.insideCourtyard('U*')", None),
     ("A.insideCourtyard('U3') && B.insideCourtyard('U4')", None),
     ("A.insideCourtyard('U3') || B.insideCourtyard('U3')", None),
@@ -566,3 +576,26 @@ def test_dru_footprint_scope_on_the_other_layer_stays_error(tmp_path_factory,
 ])
 def test_parse_footprint_scope_forms(cond, want):
     assert check_creepage.parse_footprint_scope(cond) == want
+
+
+def test_dru_footprint_scope_without_zones_never_demotes_a_zone():
+    """#649: rules_gen's package rating leaves zones out (`A.Type !=
+    'Zone'`), so a pour under the part keeps the IPC verdict while a
+    fanout track at the same gap is still covered."""
+    from shapely.geometry import Point, box
+    cy = box(8, 0, 12, 4)
+    sc = {**check_creepage.parse_footprint_scope(
+        _U9_COND + " && A.Type != 'Zone' && B.Type != 'Zone'"),
+        "rule": "pkg", "min_mm": 0.13, "layer": None, "courtyard_poly": cy}
+    pad = ("pad", None, {}, "U9")
+    pa, pb = Point(10, 2.5), Point(10, 2.8)
+    assert check_creepage.scope_for(pad, ("track", None, {}, None), pa, pb,
+                                    [sc]) is sc
+    assert check_creepage.scope_for(pad, ("zone", None, {}, None), pa, pb,
+                                    [sc]) is None
+    assert check_creepage.scope_for(("zone", None, {}, None), pad, pb, pa,
+                                    [sc]) is None
+    # a hand-written courtyard rule without the term still covers the pour
+    old = {**sc, "no_zone": False}
+    assert check_creepage.scope_for(pad, ("zone", None, {}, None), pa, pb,
+                                    [old]) is old

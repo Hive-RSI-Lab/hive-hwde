@@ -686,7 +686,9 @@ def package_rules(constraints: dict) -> tuple[list[Rule], list[dict]]:
     0.4 mm pad gap). Emitted after the HV rules, so inside that one
     courtyard it wins over the net-wide IPC value; the condition has
     exactly the shape check_creepage honours as waiver_class
-    "dru_footprint_scope" (pairs stay visible as warnings at P8)."""
+    "dru_footprint_scope" (pairs stay visible as warnings at P8). The
+    courtyard form leaves zones out (#649): a pour under the part keeps
+    the net-wide clearance."""
     rules: list[Rule] = []
     facts: list[dict] = []
     for e in constraints.get("package_ratings", []) or []:
@@ -705,8 +707,14 @@ def package_rules(constraints: dict) -> tuple[list[Rule], list[dict]]:
         if layer is not None and layer not in ("F.Cu", "B.Cu"):
             raise ValueError(f"package_ratings {ref}: layer {layer!r} is not "
                              "F.Cu or B.Cu")
+        cond = f"A.{term}('{ref}') && B.{term}('{ref}')"
+        if term == "intersectsCourtyard":
+            # #649: the courtyard also holds every pour under the part (a
+            # PGND fill 0.2 mm from a 600 V drain patch passed DRC). The
+            # rating is for the part's own pins and fanout, not for fills.
+            cond += " && A.Type != 'Zone' && B.Type != 'Zone'"
         rules.append(Rule(name, "clearance", round(clr, 4),
-                          condition=f"A.{term}('{ref}') && B.{term}('{ref}')",
+                          condition=cond,
                           layer=f'"{layer}"' if layer else None))
         fact = {"ref": ref, "clearance_mm": round(clr, 4),
                 "why": e.get("why", ""), "rule": name}

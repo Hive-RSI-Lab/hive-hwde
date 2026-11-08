@@ -36,9 +36,11 @@ dru_rule and scope_ref - again never dropped - only when ALL of these hold:
     naming F.Cu or B.Cu (then it is honoured on that layer only), and its
     condition is nothing but `&&`-joined A./B. insideCourtyard,
     intersectsCourtyard, intersectsFrontCourtyard, intersectsBackCourtyard
-    or memberOfFootprint terms naming one literal reference. Any other term
-    (net names, ||, !, wildcards) makes the rule unreadable here, so it is
-    not honoured and the IPC verdict stands;
+    or memberOfFootprint terms naming one literal reference, plus optional
+    `A.Type != 'Zone'` / `B.Type != 'Zone'` terms (then no zone is governed:
+    rules_gen's package_ratings rules carry them, #649). Any other term
+    (net names, ||, other !, wildcards) makes the rule unreadable here, so it
+    is not honoured and the IPC verdict stands;
   - one item is a pad of that footprint, and the other is that
     footprint's pad or a track, via or zone - never another footprint's
     pad, so part-to-part spacing keeps the full IPC requirement;
@@ -197,14 +199,24 @@ def _strip_parens(s: str) -> str:
     return s
 
 
+_NO_ZONE_RE = re.compile(r"^[AB]\.Type\s*!=\s*'Zone'$")
+
+
 def parse_footprint_scope(condition: str | None) -> dict | None:
     """A DRU condition that ONLY scopes to one footprint -> {ref, sides,
-    courtyard, both_member}; anything else -> None (not honoured)."""
-    if not condition or "||" in condition or "!" in condition:
+    courtyard, both_member, no_zone}; anything else -> None (not honoured).
+    `A.Type != 'Zone'` / `B.Type != 'Zone'` terms (rules_gen's
+    package_ratings, #649) are read as "this rule governs no zone"."""
+    if not condition or "||" in condition:
         return None
     refs, sides, fns, member_ab = set(), set(), set(), set()
+    no_zone = False
     for term in _strip_parens(condition).split("&&"):
-        m = _SCOPE_TERM_RE.match(_strip_parens(term))
+        term = _strip_parens(term)
+        if _NO_ZONE_RE.match(term):
+            no_zone = True
+            continue
+        m = None if "!" in term else _SCOPE_TERM_RE.match(term)
         if not m:
             return None
         ab, fn, ref = m.groups()
@@ -218,7 +230,7 @@ def parse_footprint_scope(condition: str | None) -> dict | None:
         return None
     return {"ref": refs.pop(), "side": sides.pop() if sides else None,
             "courtyard": any(f != "memberOfFootprint" for f in fns),
-            "both_member": member_ab == {"A", "B"}}
+            "both_member": member_ab == {"A", "B"}, "no_zone": no_zone}
 
 
 def dru_footprint_scopes(pcb: Path) -> list[dict]:
@@ -270,6 +282,8 @@ def scope_for(a, b, pa, pb, scopes, layer=None) -> dict | None:
         if not any(own) or foreign:
             continue
         if sc["both_member"] and not all(own):
+            continue
+        if sc.get("no_zone") and any(it[0] == "zone" for it in (a, b)):
             continue
         if sc["courtyard"]:
             cy = sc.get("courtyard_poly")

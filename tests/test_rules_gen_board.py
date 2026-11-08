@@ -150,12 +150,14 @@ def test_package_ratings_emit_a_footprint_scoped_clearance_after_hv():
     assert pkg > max(i for i, n in enumerate(names) if n.startswith("aiee_hv_"))
     r = rules[pkg]
     assert r.constraint == "clearance" and r.minv == 0.1
+    # #649: zones are left out, so a pour under the part keeps the HV rule
     assert r.condition == ("A.intersectsCourtyard('U2') && "
-                           "B.intersectsCourtyard('U2')")
+                           "B.intersectsCourtyard('U2') && "
+                           "A.Type != 'Zone' && B.Type != 'Zone'")
     assert report["package_rules"][0]["why"].startswith("LM5069")
-    # check_creepage can read the scope back
-    for term in r.condition.split(" && "):
-        assert cc._SCOPE_TERM_RE.match(term)
+    # check_creepage can read the scope back, zones excluded
+    sc = cc.parse_footprint_scope(r.condition)
+    assert sc["ref"] == "U2" and sc["courtyard"] and sc["no_zone"]
 
 
 def test_package_ratings_reject_a_wildcard_ref():
