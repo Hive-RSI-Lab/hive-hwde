@@ -146,7 +146,12 @@ Consumers per key (script -> phase):
   // battery in its holder, a part under a shield). Each needs a why. Anything
   // else that overlaps is an error.
   "mechanical": {"allow_body_overlap": [
-    {"refs": ["BT1", "J9"], "why": "the cell sits in its holder"}]},
+    {"refs": ["BT1", "J9"], "why": "the cell sits in its holder"}],
+    // up_to_mm caps an allowance for a library model wider than its
+    // datasheet body (an overlong ear): a deeper overlap still fails.
+    // body_off_board: a part that overhangs the edge on purpose. IR receivers
+    // and ESP32 modules are exempt by class already; anything else needs this.
+    "allow_off_board": [{"refs": ["U3"], "why": "the sensor lens faces out"}]},
 
   // check_surge (P8, #492): IEC 61000-4-5 surge / 61000-4-4 EFT on cable
   // ports. Only declared ports are judged. kind picks the assumed level from

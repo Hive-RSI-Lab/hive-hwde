@@ -187,6 +187,49 @@ def test_a_connector_mouth_past_the_edge_isnt_past_its_courtyard(tmp_path):
     assert "body_off_board" in _kinds(pcb)[0]
 
 
+def test_an_overlong_model_ear_is_allowed_only_up_to_its_excess(tmp_path):
+    """#829: the model's ear is wider than the datasheet body by a known
+    amount; an overlap that deep is the model's error, a deeper one is real."""
+    big = _wrl(tmp_path / "big.wrl", [(-5, -5, 0, 5, 5, 10)])
+    ear = {"refs": ["J1", "J2"], "why": "datasheet body 10 mm; ear 0.6 mm over",
+           "up_to_mm": 0.7}
+    cons = {"mechanical": {"allow_body_overlap": [ear]}}
+    near = _board(tmp_path, _fp("J1", 50, 50, big), _fp("J2", 59.5, 50, big))
+    assert "body_clash" in _kinds(near)[0]                 # 0.5 mm, undeclared
+    assert "body_clash" not in _kinds(near, cons)[0]
+    deep = _board(tmp_path, _fp("J1", 50, 50, big), _fp("J2", 58, 50, big))
+    assert "body_clash" in _kinds(deep, cons)[0]           # 2 mm: a real clash
+
+
+def _val(v):
+    return f'(property "Value" "{v}" (at 0 0) (layer "F.Fab"))'
+
+
+def test_parts_meant_to_overhang_are_exempt_by_class_or_intent(tmp_path):
+    """#830: an IR receiver and an antenna module overhang on purpose; the
+    exemption is by part class or a declared why, never by ref."""
+    sma = _wrl(tmp_path / "sma.wrl", [(-3, -3, 0, 12, 3, 6)])
+    ir = _fp("U18", 95, 50, sma, cy=20, name="aiee:OPTO-TH_IRM-3638T",
+             extra=_val("IRM-3638T"))
+    esp = _fp("U7", 95, 20, sma, cy=20, name="aiee:WIFI-SMD_ESP32-WROVER-IE8MB",
+              extra=_val("ESP32-WROVER-E-N8R8"))
+    assert "body_off_board" not in _kinds(_board(tmp_path, ir, esp))[0]
+    # planted: the same overhang on a part of neither class still warns,
+    # whatever its ref
+    for ref in ("U18", "U7"):
+        other = _fp(ref, 95, 50, sma, cy=20, extra=_val("74HC595"))
+        assert "body_off_board" in _kinds(_board(tmp_path, other))[0]
+    # declared intent, with its why
+    other = _fp("U3", 95, 50, sma, cy=20, extra=_val("74HC595"))
+    cons = {"mechanical": {"allow_off_board": [
+        {"refs": ["U3"], "why": "the sensor lens faces out"}]}}
+    assert "body_off_board" not in _kinds(_board(tmp_path, other), cons)[0]
+    import checklib
+    with pytest.raises(checklib.CheckError):
+        cbc.check(_board(tmp_path, other),
+                  {"mechanical": {"allow_off_board": [{"refs": ["U3"]}]}})
+
+
 def test_a_body_over_a_mounting_hole(tmp_path):
     chip = _wrl(tmp_path / "chip.wrl", [(-1, -1, 0, 1, 1, 2)])
     hole = '(pad "" np_thru_hole circle (at 0 0) (size 3.2 3.2) (drill 3.2) (layers "*.Cu"))'

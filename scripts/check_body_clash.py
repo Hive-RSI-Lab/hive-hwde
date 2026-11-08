@@ -31,13 +31,21 @@ Findings, one per pair or part, kind:
                     (the drill's width at any height, a screw head's width up
                     to HEAD_HEIGHT_MM).
   body_off_board    warning: a part that isn't a connector has a body past the
-                    outline by more than OFF_BOARD_MM.
+                    outline by more than OFF_BOARD_MM. Parts meant to overhang
+                    are exempt by class (an IR receiver, an ESP32 module with
+                    its antenna end: EDGE_PART, matched on the footprint name or
+                    value) or by a declared intent, constraints
+                    `mechanical.allow_off_board`: [{refs: [A], why: "..."}].
   body_unjudged     warning, one per board: connectors (J, CN, X, P) with no
                     readable model, so nothing here judged them.
 
 A part with no model can't be judged, and the report's not_judged says which.
 Deliberate nesting (a battery in its holder, a part under a shield) goes in
 constraints `mechanical.allow_body_overlap`: [{refs: [A, B], why: "..."}].
+A library model that is wider than the datasheet body (an overlong ear) adds
+`up_to_mm`: the overlap is allowed only while it is no deeper than that excess,
+so a real clash deeper than the model's error still fails. The why cites the
+datasheet dimension.
 This check doesn't judge whether the model is the real part: that's
 check_model_fit (model on its pads) and the drawing.
 
@@ -82,6 +90,11 @@ OFF_BOARD_MM = 0.5         # a body this far past the outline
 HEAD_RADIUS_X = 1.8        # screw head width, as a share of the drill
 HEAD_HEIGHT_MM = 3.0       # how high a screw head and driver bit need it clear
 BOARD_BAND_MM = 0.05       # inside the board's material nothing is a clash
+# parts whose job is to overhang the edge: an IR receiver's lens, a Wi-Fi
+# module's antenna end (matched on footprint name or value, never on ref)
+EDGE_PART = re.compile(
+    r"(IRM-\d|TSOP\d|VS1838|SFH ?5110|IR[_ -]?RECEIVER"
+    r"|ESP32-(WROOM|WROVER)|ESP32-S\d-WROOM)", re.I)
 EDGE_REFS = re.compile(r"^(J|CN|X|P|USB|ANT|SW|S)\d", re.I)
 CONNECTOR_REFS = re.compile(r"^(J|CN|X|P)\d", re.I)
 SKIP_UNJUDGED = re.compile(r"^(TP|FID|H|MH|LOGO|NT|REF|G)\d*$", re.I)
@@ -400,7 +413,37 @@ def allowed_pairs(constraints: dict | None) -> dict[frozenset, str]:
             raise checklib.CheckError(
                 "mechanical.allow_body_overlap entries need two refs and a why:"
                 f" {e}")
-        out[frozenset(refs)] = why
+        up = e.get("up_to_mm")
+        if up is not None and not (isinstance(up, (int, float)) and up > 0):
+            raise checklib.CheckError(
+                "mechanical.allow_body_overlap up_to_mm must be a number > 0:"
+                f" {e}")
+        out[frozenset(refs)] = (why, up)
+    return out
+
+
+def _values(pcb: Path) -> dict[str, str]:
+    """ref -> Value property, read from the file text."""
+    out = {}
+    for fp in re.split(r"\n\s*\(footprint ", Path(pcb).read_text(
+            encoding="utf-8", errors="replace"))[1:]:
+        r = re.search(r'\(property "Reference" "([^"]*)"', fp)
+        v = re.search(r'\(property "Value" "([^"]*)"', fp)
+        if r and v:
+            out[r.group(1)] = v.group(1)
+    return out
+
+
+def allowed_off_board(constraints: dict | None) -> set[str]:
+    out = set()
+    mech = (constraints or {}).get("mechanical") or {}
+    for e in mech.get("allow_off_board") or []:
+        refs, why = e.get("refs") or [], e.get("why") or ""
+        if not refs or not why:
+            raise checklib.CheckError(
+                "mechanical.allow_off_board entries need refs and a why:"
+                f" {e}")
+        out.update(refs)
     return out
 
 
@@ -408,6 +451,8 @@ def check(pcb: Path, constraints: dict | None = None, model_dirs=()):
     bg = geom.load_board(pcb)
     thickness = float(bg.thickness or 1.6)
     allow = allowed_pairs(constraints)
+    off_ok = allowed_off_board(constraints)
+    values = _values(pcb)
     parts, facts = bodies(pcb, thickness, model_dirs)
     viols: list[dict] = []
     place = placelib.PlaceModel(pcb)
@@ -465,7 +510,10 @@ def check(pcb: Path, constraints: dict | None = None, model_dirs=()):
                     "real outline in the library, or fix the model if the "
                     "drawing disagrees",
                     SCRIPT, kind="body_past_courtyard", past_mm=round(d, 2)))
-        if outline is not None and not EDGE_REFS.match(b.ref):
+        fpid = fp.fpid if fp is not None else ""
+        if (outline is not None and not EDGE_REFS.match(b.ref)
+                and b.ref not in off_ok
+                and not EDGE_PART.search(f"{fpid} {values.get(b.ref, '')}")):
             d, at = _past(pts, outline)
             if d > OFF_BOARD_MM:
                 viols.append(checklib.violation(
@@ -543,8 +591,9 @@ def _pair(a, b, thickness, allow, used_allow, tall, viols) -> None:
                      "z": [round(float(c0[2]), 2), round(float(c1[2]), 2)]}
             pos = (float(c0[0] + c1[0]) / 2, float(c0[1] + c1[1]) / 2)
             if depth >= max(CLASH_MM, 2.5 * vox):
-                if key in allow:
-                    used_allow[f"{a.ref}+{b.ref}"] = allow[key]
+                if key in allow and (allow[key][1] is None
+                                     or depth <= allow[key][1] + vox):
+                    used_allow[f"{a.ref}+{b.ref}"] = allow[key][0]
                     return
                 viols.append(checklib.violation(
                     SCRIPT, "error", pos, layer, None, [a.ref, b.ref],

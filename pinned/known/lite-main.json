@@ -618,21 +618,6 @@
    "reason": "the path's narrowest track carries less than the rail's budget"
   },
   {
-   "gate": "verify",
-   "check": "check_straps",
-   "net": "/I2S_MCLK",
-   "refs": [
-    "U5"
-   ],
-   "pos": [
-    47.445,
-    119.323
-   ],
-   "kind": "strap_unknown",
-   "verdict": "false",
-   "reason": "false (#831): the strap pin drives a codec/DAC input (ES9018K2M/ES7243E/ES8388 are high-Z or slave-clock inputs at reset); reset_states.yaml just lacks those parts"
-  },
-  {
    "gate": "dfm",
    "check": "dfm",
    "net": null,

@@ -2694,21 +2694,6 @@
   {
    "gate": "verify",
    "check": "check_straps",
-   "net": "/I2S_BCK",
-   "refs": [
-    "U7"
-   ],
-   "pos": [
-    130.837,
-    209.697
-   ],
-   "kind": "strap_unknown",
-   "verdict": "false",
-   "reason": "false (#831): the strap pin drives a codec/DAC input (ES9018K2M/ES7243E/ES8388 are high-Z or slave-clock inputs at reset); reset_states.yaml just lacks those parts"
-  },
-  {
-   "gate": "verify",
-   "check": "check_straps",
    "net": "/LED_STATUS",
    "refs": [
     "U17"
@@ -3500,22 +3485,6 @@
   },
   {
    "gate": "verify",
-   "check": "check_body_clash",
-   "net": null,
-   "refs": [
-    "J4",
-    "J5"
-   ],
-   "pos": [
-    113.85,
-    127.5
-   ],
-   "kind": "body_clash",
-   "verdict": "false",
-   "reason": "false (#829): the XDJK RCA library model's ear is ~3.6 mm wider than the datasheet's 16 mm body; the real J4/J5 bodies sit ~2 mm apart"
-  },
-  {
-   "gate": "verify",
    "check": "check_ep_paste",
    "net": "GND",
    "refs": [
@@ -4001,36 +3970,6 @@
    "kind": "body_past_courtyard",
    "verdict": "real",
    "reason": "the 3D body reaches past the courtyard, so the placement clearance the courtyard promises isn't real; checked the model extent against the courtyard on the board"
-  },
-  {
-   "gate": "verify",
-   "check": "check_body_clash",
-   "net": null,
-   "refs": [
-    "U18"
-   ],
-   "pos": [
-    76.55,
-    221.85
-   ],
-   "kind": "body_off_board",
-   "verdict": "false",
-   "reason": "false (#830): U18 overhangs the edge on purpose (IR receiver lens faces out); the check exempts only connectors"
-  },
-  {
-   "gate": "verify",
-   "check": "check_body_clash",
-   "net": null,
-   "refs": [
-    "U7"
-   ],
-   "pos": [
-    156.15,
-    191.65
-   ],
-   "kind": "body_off_board",
-   "verdict": "false",
-   "reason": "false (#830): U7 overhangs the edge on purpose (WROVER antenna end belongs at the edge); the check exempts only connectors"
   },
   {
    "gate": "verify",
