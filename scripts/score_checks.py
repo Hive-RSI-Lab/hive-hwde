@@ -13,7 +13,8 @@ check on its own:
            a name taken twice is an error) - one planted fault each, owned
            by one check. The owning check catches it when one of its findings
            matches every key of the mutant's `expect` (kind, net, layer, ref in
-           refs, pair as a set, pos within POS_TOL_MM); otherwise it is a miss.
+           refs, pair as a set, pos within POS_TOL_MM, severity); otherwise it is
+           a miss.
            A mutant dir's own constraints.json / decoupling.json / parts/
            override the golden's (a fault may be planted in a sidecar).
   boards   finished boards in the boards repo (env.boards_root(); state.json
@@ -162,6 +163,8 @@ def catches(expect: dict, v: dict) -> bool:
     if "pair" in expect and set(v.get("pair") or []) != set(expect["pair"]):
         return False
     if "pos" in expect and not _near(expect["pos"], v.get("pos")):
+        return False
+    if "severity" in expect and v.get("severity") != expect["severity"]:
         return False
     return True
 

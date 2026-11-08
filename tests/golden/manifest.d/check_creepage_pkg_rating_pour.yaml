@@ -1,0 +1,16 @@
+# check_creepage + rules_gen package_ratings (#649): a package rating that
+# also lowered the clearance of a pour under the part
+mutants:
+  pkg-rating-pour:
+    board: blinky2
+    script: mutations/pkg_rating_pour.py
+    check: check_creepage
+    defect: >-
+      SIDECAR fault (copper unchanged): +5V declared 100 V and J1 given a
+      0.2 mm package rating; the generated courtyard rule must not cover the
+      golden's 0.50 mm +5V-to-GND pour gap at J1 pad 1 (IPC-2221 wants 0.60 mm)
+    expect:
+      kind: creepage
+      net: "+5V"
+      ref: J1
+      severity: error

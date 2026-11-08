@@ -1,0 +1,36 @@
+{
+  "_comment": "S4 verification inputs for the blinky2 golden (test fixture; the pipeline's P2 phase generates this file for real designs). Net names use the board convention: local-label nets /NAME, power nets bare.",
+  "high_speed": [
+    {
+      "net": "/OSC_IN",
+      "reference": "GND"
+    },
+    {
+      "net": "/OSC_OUT",
+      "reference": "GND"
+    }
+  ],
+  "power": [
+    {
+      "net": "+3V3",
+      "current_a": 0.4
+    },
+    {
+      "net": "+5V",
+      "current_a": 0.5
+    }
+  ],
+  "voltages": [
+    {
+      "net": "+5V",
+      "voltage": 100
+    }
+  ],
+  "package_ratings": [
+    {
+      "ref": "J1",
+      "clearance_mm": 0.2,
+      "why": "connector rated at its own pitch"
+    }
+  ]
+}

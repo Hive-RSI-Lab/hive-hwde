@@ -191,3 +191,13 @@ def test_score_cannot_be_read_when_the_faults_cannot_run(monkeypatch, capsys):
     monkeypatch.setattr(strength, "faults", boom)
     assert score.main() == 1
     assert "could not run" in capsys.readouterr().err
+
+
+def test_an_expected_severity_must_match():
+    """#649: a waived warning at the planted spot is not the catch; a
+    mutant may ask for the error itself."""
+    import score_checks
+    v = {"kind": "creepage", "refs": ["J1"], "severity": "warning"}
+    assert score_checks.catches({"kind": "creepage", "ref": "J1"}, v)
+    assert not score_checks.catches({"kind": "creepage", "severity": "error"}, v)
+    assert score_checks.catches({"severity": "error"}, {**v, "severity": "error"})
