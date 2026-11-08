@@ -133,7 +133,22 @@ net-wide budget is unattributable per cluster/segment (LEARNINGS 2026-07-29:
    at the full budget but downgraded to severity "warning" with extras
    advisory=true (a labeled worst-case screen);
  - INSIDE an override region: error at the override current (a declared
-   regulator-feed tap stays enforceable).
+   regulator-feed tap stays enforceable);
+ - plane-fed stubs (#828): an advisory track or via cluster that takes
+   current off the plane to leaf pads is charged what those pads draw, not
+   the plane's whole budget (19 false findings on core, each a resistor, IC
+   or cap tap). A track counts as a stub when exactly one of its ends reaches
+   the fill (a loop back to the fill counts only when both ends tap it at one
+   place, within PLANE_TAP_MM); a via cluster when it reaches the fill at one
+   place. What lies past the tap is the stub's leaf refs. The screen stays
+   advisory when the refs hold a source (a regulator, inductor, or a
+   connector when nothing else sources the rail) or at least half the rail's
+   loads (that is the trunk). Otherwise: all-cap refs are judged as a
+   decoupling branch (#699); unbounded loads go to facts "unjudged"; bounded
+   loads are judged at their sum and, when short, become an ERROR naming
+   them (leaf_loads, current_a), else a facts "leaf_branches" entry with
+   stub=true. A track whose area is at most COVERED_FRAC outside pad, via
+   and fill copper carries nothing of its own and goes to "pour_taps".
 
 IPC-2152 basis: 10 degC chart readings at 1 oz outer copper (interpolation
 table vendored from kicad-happy, MIT), converted to copper cross-section so
@@ -281,6 +296,8 @@ VIA_AMPS_DEFAULT = 0.5         # spec: >= 1 via per 0.5 A at transitions
 VIA_CLUSTER_MM = 2.0           # vias within this distance share current
 WIDTH_TOL_MM = 1e-3
 RETURN_SYNTH_MIN_A = 3.0       # derive return-net coverage at/above this rail
+PLANE_TAP_MM = 2.0     # plane-fed stubs: fill touches this close are one tap
+COVERED_FRAC = 0.01    # a track this much outside fill and pads adds no copper
 PLANE_HINT_SINGLE_VIA_FRAC = 0.8  # plane_fed_candidate hint threshold
 DECOUPLING_MAX_F = 1e-6        # at or below: decoupling, not bulk (docstring)
 PAD_EXIT_MAX_MM = 1.0          # longest accepted pad-exit neck (docstring)
@@ -1383,6 +1400,153 @@ def track_leaf_bound(bg: geom.BoardGeom, sides: list | None):
     return best
 
 
+def _stub_graph(bg: geom.BoardGeom, net: str, fills: dict,
+                skip: frozenset = frozenset()):
+    """The net's copper outside its fills, minus the items whose id() is in
+    `skip`: (nodes [(layer, part)], root(i), hits(item), tapped roots - the
+    parts that touch a same-layer fill)."""
+    nodes = []
+    for l in bg.copper_layers:
+        cop = geom._union([x.poly for x in (bg.tracks_of(net, l)
+                                            + bg.pads_of(net, l)
+                                            + bg.vias_of(net, l))
+                           if id(x) not in skip])
+        if cop.is_empty:
+            continue
+        nodes += [(l, g) for g in getattr(cop, "geoms", [cop])
+                  if g.geom_type == "Polygon" and not g.is_empty]
+    parent = list(range(len(nodes)))
+
+    def find(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+    tree = STRtree([g for _, g in nodes]) if nodes else None
+
+    def hits(item) -> list[int]:
+        if tree is None:
+            return []
+        return [int(i) for i in tree.query(item.poly, predicate="intersects")
+                if nodes[int(i)][0] in item.layers]
+    links = [x for x in bg.vias_of(net) if id(x) not in skip]
+    links += [x for x in bg.pads_of(net) if id(x) not in skip
+              and x.drill is not None and len(x.layers) > 1]
+    for it in links:
+        h = hits(it)
+        for i in h[1:]:
+            parent[find(i)] = find(h[0])
+    tapped = {find(i) for i, (l, part) in enumerate(nodes)
+              if l in fills and part.intersects(fills[l])}
+    return nodes, find, hits, tapped
+
+
+def _places(shapes: list) -> int:
+    """How many places `shapes` make, joining any PLANE_TAP_MM apart."""
+    parent = list(range(len(shapes)))
+
+    def pfind(i):
+        while parent[i] != i:
+            i = parent[i]
+        return i
+    for i in range(len(shapes)):
+        for j in range(i):
+            if shapes[i].distance(shapes[j]) <= PLANE_TAP_MM:
+                parent[pfind(i)] = pfind(j)
+    return len({pfind(i) for i in range(len(shapes))})
+
+
+def stub_refs(bg: geom.BoardGeom, net: str, items: list):
+    """What a track or via cluster on a plane-fed rail feeds off the plane:
+    "covered" when the track's copper lies inside the fill and pads of its
+    layer, sorted refs, or None when it does not hang off the plane at one
+    place (module docstring, plane-fed stubs)."""
+    fills = {l: bg.zone_fill(net, l) for l in bg.layers_with_zone(net)}
+    if not fills:
+        return None
+    track = items[0] if isinstance(items[0], geom.Track) else None
+    if track is not None:
+        cover = geom._union(
+            [p.poly for p in bg.pads_of(net, track.layer)]
+            + [v.poly for v in bg.vias_of(net, track.layer)]
+            + ([fills[track.layer]] if track.layer in fills else []))
+        if track.poly.difference(cover).area <= COVERED_FRAC * track.poly.area:
+            return "covered"
+    nodes, find, hits, tapped = _stub_graph(
+        bg, net, fills, frozenset(id(x) for x in items))
+
+    def roots(shape, layers) -> set:
+        return {find(i) for i, (l, part) in enumerate(nodes)
+                if l in layers and part.intersects(shape)}
+
+    def taps(rs) -> list:
+        return [part.intersection(fills[l]) for i, (l, part) in enumerate(nodes)
+                if find(i) in rs and l in fills and part.intersects(fills[l])]
+    if track is not None:
+        ends = [roots(Point(c).buffer(track.width / 2.0 + 0.01),
+                      (track.layer,))
+                for c in (track.shape.coords[0], track.shape.coords[-1])]
+        touched = roots(track.poly.buffer(0.01), (track.layer,))
+        if ends[0] & ends[1]:
+            # a loop inside one stub: it carries no more than the stub
+            fed = touched
+            if len(touched) != 1 or _places(taps(touched)) != 1:
+                return None
+        else:
+            fed = touched - tapped
+            if len(touched & tapped) != 1:
+                return None              # not fed off the plane at one end
+    else:
+        own = [it.poly for it in items
+               if any(l in fills and it.poly.intersects(fills[l])
+                      for l in it.layers)]
+        if not own:
+            return None                  # the cluster does not reach a fill
+        fed = set().union(*(roots(it.poly.buffer(0.01), it.layers)
+                            for it in items))
+        if _places(own + taps(fed & tapped)) != 1:
+            return None                  # a parallel path through the plane
+    return sorted({p.ref for p in bg.pads_of(net)
+                   if any(find(i) in fed for i in hits(p))})
+
+
+def stub_feeds(bg: geom.BoardGeom, net: str, refs: list, sources) -> bool:
+    """Whether a plane-fed stub feeding `refs` may carry the rail's budget:
+    it holds the rail's source (a connector only when the rail has no other
+    source), or half the rail's loads."""
+    _every, pure, _stiff = sources
+    own = {r for r in pure if not re.fullmatch(r"(?:J|P|CN)\d+", r)}
+    if set(refs) & (own or pure):
+        return True
+
+    def is_load(ref):
+        return ref not in (own or pure) and not re.fullmatch(r"C\d+", ref) \
+            and (ref in _DECLARED or load_bound(bg, ref) is None)
+    rail = {p.ref for p in bg.pads_of(net=net)}
+    n = sum(map(is_load, refs))
+    return n > 0 and 2 * n >= sum(map(is_load, rail))
+
+
+def _stub_error(v, t, items, amps, refs, net, dt_c, cu, need, via_amps):
+    """Turn advisory finding `v` into an error at its plane-fed stub's loads."""
+    tail = (f"; plane-fed stub: {', '.join(refs)} draw at most {amps:.3f} A")
+    if t is not None:
+        req = required_width_mm(amps, dt_c, cu[t.layer])
+        msg = (f"{net} track {t.width:.3f} mm wide on {t.layer}; IPC-2152 "
+               f"needs {req:.3f} mm for {amps:.3f} A at dT={dt_c:.0f}C" + tail)
+        v.update(required_mm=checklib.rnd(req))
+    else:
+        msg = (f"{net} layer transition at ({v['pos'][0]:.2f}, "
+               f"{v['pos'][1]:.2f}) has {len(items)} via(s); {amps:.2f} A "
+               f"needs {need} (>= 1 via per {via_amps} A)" + tail)
+        v.update(required=need)
+    v["msg"] = v["items"][0]["msg"] = msg
+    v["severity"] = "error"
+    v.pop("advisory", None)
+    v.update(current_a=amps, leaf_loads=refs,
+             refs=sorted(set(v.get("refs") or []) | set(refs)))
+
+
 def check_net(bg: geom.BoardGeom, entry: dict, cons: dict | None = None):
     net = entry.get("net")
     if not net:
@@ -1693,6 +1857,7 @@ def check_net(bg: geom.BoardGeom, entry: dict, cons: dict | None = None):
             pth_pieces(bg, net, pieces)
         judged += [(g, True) for g in stitch_bundles(
             barrels, pooled, anchored_pieces(bg, net, pieces))]
+    via_groups: dict[int, list] = {}     # advisory finding -> its vias
     for group, bundle in judged:
         at = [getattr(b, "at", None) or b.center for b in group]
         cx = sum(x for x, _ in at) / len(at)
@@ -1776,6 +1941,50 @@ def check_net(bg: geom.BoardGeom, entry: dict, cons: dict | None = None):
                 net, far if judged_ripple else [], msg, SCRIPT,
                 kind="insufficient_transition_vias",
                 vias=len(group), required=need, **extras))
+            if advisory:
+                via_groups[id(violations[-1])] = group
+
+    # ---- plane-fed stubs: an advisory finding is judged at its stub's loads
+    if plane_fed and not derived and sources:
+        tracks = {id(v): t for v, t in undersized}
+        for v in [x for x in violations if x.get("advisory")]:
+            items = [tracks[id(v)]] if id(v) in tracks else via_groups.get(id(v))
+            refs = stub_refs(bg, net, items) if items else None
+            if refs is None or refs != "covered" and stub_feeds(
+                    bg, net, refs, sources):
+                continue                 # a trunk: the full-budget screen
+            t = tracks.get(id(v))
+            if refs == "covered":
+                pour_taps.append(v["pos"])
+            elif refs and all(re.fullmatch(r"C\d+", r) for r in refs) \
+                    and t is not None:
+                v.pop("advisory", None)
+                judge_branch_track(v, t, refs)
+                continue
+            elif refs and _loads(bg, [r for r in refs
+                                      if not re.fullmatch(r"C\d+", r)]) is None:
+                if t is not None:
+                    judge_branch_track(v, t, refs)
+                    continue
+                unjudged.append({"kind": v["kind"], "pos": v["pos"],
+                                 "refs": refs})
+            else:
+                dc = [r for r in refs if not re.fullmatch(r"C\d+", r)]
+                amps = _loads(bg, dc) or 0.0
+                need = max(1, math.ceil(amps / via_amps))
+                short = t.width + WIDTH_TOL_MM < required_width_mm(
+                    amps, dt_c, cu[t.layer]) if t is not None \
+                    else len(items) < need
+                if short:
+                    _stub_error(v, t, items, amps, dc, net, dt_c, cu, need,
+                                via_amps)
+                    continue
+                leaf_branches.append({"kind": v["kind"], "pos": v["pos"],
+                                      "current_a": checklib.rnd(amps),
+                                      "loads": dc, "stub": True})
+            violations = [x for x in violations if x is not v]
+            if t is not None:
+                undersized.remove((v, t))
 
     facts = {"net": net, "current_a": budget, "dt_c": dt_c,
              "required_mm_by_layer": {

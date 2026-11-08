@@ -1,0 +1,16 @@
+# Seeded fault for check_current's plane-fed stub figure (#828).
+mutants:
+  plane-fed-stub-necked:
+    board: usbbuck4
+    script: mutations/plane_fed_stub_necked.py
+    check: check_current
+    defect: >-
+      SIDECAR + copper fault: +3V3 is plane-fed and U1 draws 0.3 A from it, and
+      the stub that feeds U1 off the plane is necked to 0.12 mm, below the
+      0.15 mm its own load needs. The plane's budget no longer lands on leaf
+      stubs, so only the stub's own load can catch it.
+    expect:
+      kind: undersized_track
+      net: "+3V3"
+      ref: U1
+      pos: [130.0, 122.0]
