@@ -121,7 +121,8 @@ def test_voltage_pairs_below_30v_recorded(tmp_path_factory, tmp_path):
     bg = _poe_board(tmp_path_factory, "poe_lv")
     payload = _run(bg, _cons(tmp_path, {
         "voltages": _POE_VOLTAGES,
-        "voltage_pairs": [{"a": POE_A1, "b": POE_A2, "voltage": 24}]}))
+        "voltage_pairs": [{"a": POE_A1, "b": POE_A2, "voltage": 24,
+                           "why": "test: taps never separate"}]}))
     assert payload["status"] == "pass"
     assert payload["skipped_low_voltage_pairs"] == [
         {"a": POE_A1, "b": POE_A2, "voltage": 24}]
@@ -352,7 +353,8 @@ def test_low_voltage_pair_waives_derived_sweep(tmp_path_factory, tmp_path):
     # explicit 24 V pair: derived check for this pair is waived, recorded
     (tmp_path / "constraints.json").unlink()
     both = {**volts,
-            "voltage_pairs": [{"a": "HV", "b": "GND", "voltage": 24}]}
+            "voltage_pairs": [{"a": "HV", "b": "GND", "voltage": 24,
+                               "why": "test: same-phase pair"}]}
     payload = _run(bg, _cons(tmp_path, both))
     assert payload["status"] == "pass"
     assert payload["violations"] == []
@@ -599,3 +601,79 @@ def test_dru_footprint_scope_without_zones_never_demotes_a_zone():
     old = {**sc, "no_zone": False}
     assert check_creepage.scope_for(pad, ("zone", None, {}, None), pa, pb,
                                     [old]) is old
+
+
+# ---- #651: a pair declared below its own nets' node voltage ---------------
+# hw-lab mains-psu: HV_BULK-DRAIN declared 219 V, but with the FET on the
+# full 375 V bulk sits across it; the pair override relaxed the spacing.
+
+_GAP_BODY = ('  (segment (start 2 2) (end 18 2) (width 0.5) (layer "F.Cu") '
+             '(net "HV_BULK"))\n'
+             '  (segment (start 2 3.6) (end 18 3.6) (width 0.5) (layer "F.Cu") '
+             '(net "DRAIN"))\n')                # 1.10 mm gap
+
+
+def _understated(payload):
+    return [v for v in payload["violations"]
+            if v.get("kind") == "creepage_pair_understated"]
+
+
+def test_understated_pair_warns(tmp_path_factory, tmp_path):
+    bg = _board(tmp_path_factory, "understated", _GAP_BODY)
+    payload = _run(bg, _cons(tmp_path, {
+        "voltages": [{"net": "HV_BULK", "voltage": 375}],
+        "voltage_pairs": [{"a": "HV_BULK", "b": "DRAIN", "voltage": 219}]}))
+    (u,) = _understated(payload)
+    assert u["severity"] == "warning"
+    assert u["net"] == "HV_BULK" and u["other_net"] == "DRAIN"
+    assert u["pair_voltage"] == 219 and u["node_voltage"] == 375
+    assert u["node_net"] == "HV_BULK"
+    # the warning does not change the verdict: the pair still owns the
+    # sweep and the 1.10 mm gap is judged at the declared 219 V (B2 1.25 mm)
+    creep = [v for v in payload["violations"] if v.get("kind") == "creepage"]
+    assert creep and all(v["delta_v"] == 219 for v in creep)
+
+
+def test_understated_pair_both_nets_declared(tmp_path_factory, tmp_path):
+    """Both nets declared: the larger |V| is the floor (node_net names it)."""
+    bg = _board(tmp_path_factory, "understated2", _GAP_BODY)
+    payload = _run(bg, _cons(tmp_path, {
+        "voltages": [{"net": "HV_BULK", "voltage": 375},
+                     {"net": "DRAIN", "voltage": -400}],
+        "voltage_pairs": [{"a": "HV_BULK", "b": "DRAIN", "voltage": 380}]}))
+    (u,) = _understated(payload)
+    assert u["node_net"] == "DRAIN" and u["node_voltage"] == 400
+
+
+def test_understated_pair_quiet_cases(tmp_path_factory, tmp_path):
+    """No warning when the pair meets the node voltage, gives a why, or
+    names only undeclared nets (a bridge input)."""
+    bg = _board(tmp_path_factory, "understated3", _GAP_BODY)
+    volts = [{"net": "HV_BULK", "voltage": 375}]
+    for pair in ({"voltage": 375},
+                 {"voltage": 219, "why": "clamped: RCD snubber holds DRAIN"},
+                 ):
+        p = _cons(tmp_path, {"voltages": volts, "voltage_pairs": [
+            {"a": "HV_BULK", "b": "DRAIN", **pair}]})
+        assert _understated(_run(bg, p)) == []
+        p.unlink()
+    p = _cons(tmp_path, {"voltage_pairs": [
+        {"a": "HV_BULK", "b": "DRAIN", "voltage": 114}]})
+    assert _understated(_run(bg, p)) == []
+
+
+def test_low_voltage_waiver_without_why_warns(tmp_path_factory, tmp_path):
+    """A <= 30 V pair waives the derived check outright; with no why and a
+    declared 100 V node that waiver is flagged, though still honoured."""
+    body = ('  (segment (start 2 2) (end 18 2) (width 0.5) (layer "F.Cu") '
+            '(net "HV"))\n'
+            '  (segment (start 2 2.8) (end 18 2.8) (width 0.5) (layer "F.Cu") '
+            '(net "GND"))\n')
+    bg = _board(tmp_path_factory, "lvwaive2", body)
+    payload = _run(bg, _cons(tmp_path, {
+        "voltages": [{"net": "HV", "voltage": 100}],
+        "voltage_pairs": [{"a": "HV", "b": "GND", "voltage": 24}]}))
+    assert [v["kind"] for v in payload["violations"]] == [
+        "creepage_pair_understated"]
+    assert payload["skipped_low_voltage_pairs"] == [
+        {"a": "HV", "b": "GND", "voltage": 24.0}]

@@ -1,0 +1,16 @@
+# check_creepage voltage_pairs floor (#651): a pair declared below its own
+# net's declared voltage, with no why, relaxes the spacing silently
+mutants:
+  pair-understated:
+    board: blinky2
+    script: mutations/pair_understated.py
+    check: check_creepage
+    defect: >-
+      SIDECAR fault (copper unchanged): +5V declared 100 V, then a
+      voltage_pairs entry declares +5V-to-GND at 24 V with no why; the
+      pair waives the sweep and the golden's 0.50 mm gap at J1 pad 1
+      (0.60 mm needed at 100 V) passes
+    expect:
+      kind: creepage_pair_understated
+      net: "+5V"
+      severity: warning

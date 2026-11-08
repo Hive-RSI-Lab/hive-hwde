@@ -143,6 +143,10 @@ def test_voltage_pairs_shape(tmp_path):
     vs, _ = lint_doc(tmp_path, {"voltage_pairs": [
         {"a": "/POE_TAP_A1", "b": "/POE_TAP_A2", "voltage": 114}]})
     assert not errors(vs) and not warnings(vs)
+    vs, _ = lint_doc(tmp_path, {"voltage_pairs": [
+        {"a": "/HV_BULK", "b": "/DRAIN", "voltage": 219,
+         "why": "RCD snubber clamps DRAIN"}]}, "why.json")
+    assert not errors(vs) and not warnings(vs)
     vs, _ = lint_doc(tmp_path, {"voltage_pairs": [{"a": "/X", "voltage": 114}]},
                      "bad.json")
     assert [e["kind"] for e in errors(vs)] == ["missing_key"]
