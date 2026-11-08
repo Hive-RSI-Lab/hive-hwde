@@ -1,0 +1,11 @@
+# check_transformer: a transformer's windings are wired as its maker's drawing
+# and the design's topology say: a flyback's rectifiers block in the on-time,
+# the drawing's bridges join only its windings, and the turns the wiring
+# selects are the ones declared (issue #644). Reads the board's own
+# <board>.net beside it and reference/transformers.yaml; constraints.json may
+# declare a part's topology and turns (transformers).
+name: check_transformer
+needs: []
+args: []
+optional:
+  constraints: [--constraints, "{constraints}"]
