@@ -655,7 +655,7 @@
    "pos": null,
    "kind": "cpl_offset",
    "verdict": "false",
-   "reason": "false: no gate reports it at hwde 81adb34 (current cpl_verify gives 0.0 mm for J2/J3; the footprint's oval drills take the datasheet's 0.8 mm pin stagger at the same pad centroid as the LCSC model); fixed already, so no new issue"
+   "reason": "false (#640, fixed by 7f65e45): cpl_verify before it gave J2/J3 0.793 mm (a mean over pads that didn't match); from 7f65e45 on it gives 0.0 mm and no gate reports it. The footprint's oval drills take the datasheet's 0.8 mm pin stagger at the LCSC model's pad centroid"
   },
   {
    "gate": "dfm",
@@ -667,7 +667,7 @@
    "pos": null,
    "kind": "cpl_offset",
    "verdict": "false",
-   "reason": "false: no gate reports it at hwde 81adb34 (current cpl_verify gives 0.0 mm for J2/J3; the footprint's oval drills take the datasheet's 0.8 mm pin stagger at the same pad centroid as the LCSC model); fixed already, so no new issue"
+   "reason": "false (#640, fixed by 7f65e45): cpl_verify before it gave J2/J3 0.793 mm (a mean over pads that didn't match); from 7f65e45 on it gives 0.0 mm and no gate reports it. The footprint's oval drills take the datasheet's 0.8 mm pin stagger at the LCSC model's pad centroid"
   },
   {
    "gate": "verify",
