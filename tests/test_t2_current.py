@@ -148,6 +148,67 @@ def test_plane_fed_clean_rail_passes(tmp_path_factory):
 
 # ---- fixture B: declared plane-fed without a plane -------------------------
 
+# ---- #828: plane-fed stubs carry their own loads, not the rail's budget
+# B.Cu plane fed by U1 through one via, with loads U3 and U4 on it; U2 hangs
+# off the plane on a single via and a 0.15 mm F.Cu stub. At 1.0 A / 0.5 A per via both screen out.
+
+STUB_BODY = PLANE_FED_BODY.split("  (via")[0] + """  (via (at 2 5) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net "+3V3"))
+  (footprint "t:U" (at 2 5)
+    (layer "F.Cu")
+    (property "Reference" "U1" (at 0 0 0))
+    (pad "1" smd rect (at 0 0) (size 1 1) (layers "F.Cu") (net "+3V3")))
+  (via (at 12 5) (size 0.6) (drill 0.3) (layers "F.Cu" "B.Cu") (net "+3V3"))
+  (segment (start 12 5) (end 16 5) (width 0.15) (layer "F.Cu") (net "+3V3"))
+  (footprint "t:U" (at 16.5 5)
+    (layer "F.Cu")
+    (property "Reference" "U2" (at 0 0 0))
+    (pad "1" smd rect (at 0 0) (size 1 1) (layers "F.Cu") (net "+3V3")))
+""" + "".join(f"""  (footprint "t:U" (at 7 {y})
+    (layer "B.Cu")
+    (property "Reference" "U{i}" (at 0 0 0))
+    (pad "1" smd rect (at 0 0) (size 1 1) (layers "B.Cu") (net "+3V3")))
+""" for i, y in ((3, 2), (4, 8)))
+STUB_ENTRY = dict(ENTRY_A, plane_fed=True, source="U1")
+
+
+@pytest.fixture(scope="module")
+def stub_bg(tmp_path_factory):
+    return _board(tmp_path_factory, "planestub", STUB_BODY)
+
+
+def test_plane_fed_stub_of_unknown_load_is_unjudged(stub_bg):
+    """U2's draw is unknown: its stub is not charged the rail's 1.0 A. U1's
+    via holds the source, so it keeps the full-budget screen."""
+    vs, facts = check_current.check_net(stub_bg, STUB_ENTRY)
+    assert [(v["kind"], v["pos"], v["severity"]) for v in vs] == [
+        ("insufficient_transition_vias", [2.0, 5.0], "warning")]
+    assert {(u["kind"], tuple(u["refs"])) for u in facts["unjudged"]} == {
+        ("undersized_track", ("U2",)),
+        ("insufficient_transition_vias", ("U2",))}
+
+
+def test_plane_fed_stub_judged_at_its_load(stub_bg):
+    vs, facts = check_current.check_net(
+        stub_bg, dict(STUB_ENTRY, loads={"U2": 0.1}))
+    assert [v["pos"] for v in vs] == [[2.0, 5.0]]
+    assert {b["kind"] for b in facts["leaf_branches"]} == {
+        "undersized_track", "insufficient_transition_vias"}
+
+
+def test_plane_fed_stub_undersized_for_its_load_is_error(stub_bg):
+    """Keep it loud: 0.9 A through one via and a 0.15 mm track is an error,
+    not an advisory warning."""
+    vs, _ = check_current.check_net(
+        stub_bg, dict(STUB_ENTRY, loads={"U2": 0.9}))
+    bad = [v for v in vs if v["severity"] == "error"]
+    assert {v["kind"] for v in bad} == {"undersized_track",
+                                        "insufficient_transition_vias"}
+    assert all(v["leaf_loads"] == ["U2"] and v["current_a"] == 0.9
+               and "advisory" not in v for v in bad)
+    via = _kinds(bad, "insufficient_transition_vias")[0]
+    assert via["required"] == 2 and "plane-fed stub" in via["msg"]
+
+
 def test_plane_missing_is_error(tmp_path_factory):
     body = ('  (segment (start 1 5) (end 5 5) (width 1) (layer "F.Cu") '
             '(net "+3V3"))\n')
@@ -1486,20 +1547,28 @@ def test_thin_loop_past_a_branch_via_is_unjudged(tmp_path_factory):
 
 def test_core_branch_taps_are_unjudged():
     """Known answer: of core's 26 single-via findings at the 3V3 rail's 0.8 A,
-    21 are branches and leave the warnings with their refs. Five stay: the
-    two at J3, one each at U8 and U13, one inside the plane."""
+    21 are branches and leave the warnings with their refs. The other five
+    are plane-fed stubs (#828): the two at J3 and one each at U8 and U13 feed
+    a part of unknown draw, so they are unjudged too; the one at 51.84, 212.31
+    reaches no pad and carries nothing. No finding is left on the rail."""
     kicad = REPO / "pinned" / "core" / "kicad"
     cons = json.loads((kicad / "constraints.json").read_text(encoding="utf-8"))
     entry = next(e for e in cons["power"] if e["net"] == "+3V3")
     vs, facts = check_current.check_net(
         geom.load_board(kicad / "core.kicad_pcb"), entry)
     taps = _unjudged(facts, "insufficient_transition_vias")
-    assert len(taps) == 21 and all(u["refs"] for u in taps)
-    assert not {"J3", "U8", "U13", "L10"} & {r for u in taps for r in u["refs"]}
-    assert sorted(tuple(v["pos"]) for v in _kinds(
-        vs, "insufficient_transition_vias")) == [
-        (50.137, 214.107), (51.837, 212.307), (60.437, 215.107),
-        (85.092, 189.466), (135.708, 153.672)]
+    assert len(taps) == 25 and all(u["refs"] for u in taps)
+    stubs = {tuple(u["pos"]): u["refs"] for u in taps
+             if set(u["refs"]) & {"J3", "U8", "U13"}}
+    assert stubs == {(50.137, 214.107): ["J3"], (60.437, 215.107): ["J3"],
+                     (85.092, 189.466): ["U8"], (135.708, 153.672): ["U13"]}
+    assert "L10" not in {r for u in taps for r in u["refs"]}
+    assert vs == []
+    empty = [b for b in facts["leaf_branches"] if b.get("stub")
+             and b["kind"] == "insufficient_transition_vias"]
+    assert empty == [{"kind": "insufficient_transition_vias",
+                      "pos": [51.837, 212.307], "current_a": 0.0,
+                      "loads": [], "stub": True}]
     assert {u["kind"] for u in facts["unjudged"]} == {
         "insufficient_transition_vias", "undersized_track"}
 
