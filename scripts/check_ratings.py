@@ -53,6 +53,13 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
    diode draws no current), and every diode it then reverse-biases past its
    reverse rating is named. "The LED blocks reverse current" is checked
    against the LED's VR, not taken on trust.
+ - rating_diode_forward (error): a 2-terminal diode (D*/LED*) wired to
+   conduct all the time - its anode on a stated rail with its cathode on
+   ground, or a TVS/Zener clamp (parts.json Type, or its MPN family) with
+   its anode above its cathode, fitted backwards (#645). Cathode found as
+   for the reverse check. A plain diode forward between two rails (OR-ing),
+   a bidirectional clamp and a net whose volts came through a pull-up are
+   left alone. Not a rating, so it does not count as rating the part.
  - rating_outside_recommended (warning): above a recommended max, or a
    supply pin below its recommended min.
  - rating_over_current (warning): a power_out pin whose net's
@@ -1133,6 +1140,8 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                  f"{dio['how']}]", pin=f"{ref}.{dio['k']}", net_v=vk - va,
                  limit_v=dio["vr"], rating=dio["src"],
                  scenario=f"{conn['ref']} reversed")
+    diode_forward_findings(board, bom_by_lcsc, exts, netfns, volts, vsrc,
+                           emit)
     amb = ambient(constraints, cons_dir)
     before_fuses = dict(checked_by_ref)
     fuse_facts = fuse_findings(board, bom_by_lcsc, volts, vsrc, currents,
@@ -2132,20 +2141,123 @@ def diode_reverse(b: dict, ext: dict | None, bom: dict | None,
     if vr is None:
         return None
     if k is None:
-        fns = dict(netfns.get(b["ref"]) or {}, **b.get("fns") or {})
-        for pad, fn in fns.items():
-            name = re.sub(r"_\d+$", "", fn.upper())
-            if name in ("K", "CATHODE"):
-                k = pad
-            elif name in ("A", "ANODE"):
-                a = pad
-        how = "pad names"
-        if k is None or a is None:
-            k, a, how = "1", "2", "pad 1 taken as the cathode (KiCad's " \
-                "diode convention)"
+        k, a, how = _cathode_by_pads(b, netfns)
     if k not in b["pads"] or a not in b["pads"]:
         return None
     return {"k": k, "a": a, "vr": vr, "src": src, "how": how}
+
+
+def _cathode_by_pads(b: dict, netfns: dict) -> tuple[str, str, str]:
+    """(cathode pad, anode pad, how) from the pads' K/A names, else pad 1 as
+    the cathode (the KiCad diode and LED convention)."""
+    k = a = None
+    fns = dict(netfns.get(b["ref"]) or {}, **b.get("fns") or {})
+    for pad, fn in fns.items():
+        name = re.sub(r"_\d+$", "", fn.upper())
+        if name in ("K", "CATHODE"):
+            k = pad
+        elif name in ("A", "ANODE"):
+            a = pad
+    if k is None or a is None:
+        return "1", "2", "pad 1 taken as the cathode (KiCad's diode convention)"
+    return k, a, "pad names"
+
+
+def diode_pads(b: dict, ext: dict | None, netfns: dict) -> dict | None:
+    """A 2-terminal diode's cathode and anode pads, whatever its ratings:
+    {k, a, how}; the extraction's K/A pins first, then _cathode_by_pads.
+    None for anything that is not a D*/LED* part with two pads."""
+    if not re.match(r"^(?:D|LED)\d", b["ref"]) or len(b["pads"]) != 2:
+        return None
+    if ext:
+        idx = pin_index(ext.get("pinout") or [])
+        ks, as_ = idx.get("K") or [], idx.get("A") or []
+        if ks and as_:
+            k, a, how = ks[0]["pin"], as_[0]["pin"], "pinout"
+        else:
+            k, a, how = _cathode_by_pads(b, netfns)
+    else:
+        k, a, how = _cathode_by_pads(b, netfns)
+    if k not in b["pads"] or a not in b["pads"] or k == a:
+        return None
+    return {"k": k, "a": a, "how": how}
+
+
+CLAMP_MPN_RE = re.compile(
+    r"^(?:SMBJ|SMAJ|SMCJ|SMDJ|P4SMA|P6SMB|P6KE|1\.5KE|1N47|1N52|1N53|BZX|BZT|"
+    r"MMSZ|MM3Z|PESD|ESD|TPD|SP0|SM712|PRTR|USBLC|SRV|RCLAMP|LESD|CDSOD|"
+    r"TVS|SMF|SD\d)", re.I)
+
+
+def clamp_kind(bom: dict | None) -> tuple[str | None, bool]:
+    """('TVS'/'Zener'/'ESD' or None, bidirectional) for a diode's parts.json
+    row: its Type attribute, else its MPN family; bidirectional from a
+    Polarity attribute or a 'CA' suffix on a TVS family MPN."""
+    atts = {str(x.get("name") or "").lower(): str(x.get("value") or "")
+            for x in (bom or {}).get("attributes") or []}
+    mpn = str((bom or {}).get("mpn") or "")
+    desc = " ".join([str((bom or {}).get("description") or ""),
+                     atts.get("type", ""), atts.get("polarity", "")]).lower()
+    kind = None
+    t = atts.get("type", "").lower()
+    if "tvs" in t:
+        kind = "TVS"
+    elif "zener" in t or "zener" in desc or any("zener" in n for n in atts):
+        kind = "Zener"
+    elif "esd" in t:
+        kind = "ESD"
+    elif CLAMP_MPN_RE.match(mpn):
+        kind = "TVS"
+    bi = "bidirectional" in desc or "bi-directional" in desc or bool(
+        re.match(r"^(?:SMBJ|SMAJ|SMCJ|SMDJ|P4SMA|P6SMB|P6KE|1\.5KE)"
+                 r"[\d.]+CA\b", mpn, re.I))
+    return kind, bi
+
+
+FWD_MIN = 0.5    # V: a forward bias past this conducts in any silicon diode
+
+
+def diode_forward_findings(board, bom_by_lcsc, exts, netfns, volts, vsrc,
+                           emit) -> None:
+    """rating_diode_forward: a diode wired so it conducts all the time. A
+    diode whose anode sits on a stated rail and whose cathode is on ground
+    shorts the rail through itself; a TVS or Zener clamp whose anode sits
+    above its cathode is fitted backwards (it should block until the rail
+    passes its breakdown) and clamps the rail at one diode drop. A plain
+    diode forward between two rails is an OR-ing or a supply path and is
+    left alone, as is a bidirectional clamp and any net whose volts are only
+    guessed through a pull-up."""
+    for b in sorted(board, key=lambda x: x["ref"]):
+        bom = bom_by_lcsc.get(b["lcsc"])
+        dio = diode_pads(b, exts.get(b["lcsc"]), netfns)
+        if not dio:
+            continue
+        kind, bi = clamp_kind(bom)
+        if bi:
+            continue
+        nk, na = b["pads"][dio["k"]], b["pads"][dio["a"]]
+        vk, va = volts.get(nk), volts.get(na)
+        if vk is None or va is None or "pull-up" in (vsrc.get(nk),
+                                                      vsrc.get(na)):
+            continue
+        fwd = va - vk  # not a rating, so not counted in compared()
+        if fwd <= FWD_MIN + EPS:
+            continue
+        if is_ground(nk):
+            why = f"the anode is on {na} and the cathode on ground {nk}, " \
+                "so it conducts across the rail"
+        elif kind in ("TVS", "Zener"):
+            why = f"a {kind} clamp should block its rail (cathode to the " \
+                "higher net) until breakdown; forward biased it clamps the " \
+                "rail at one diode drop"
+        else:
+            continue
+        emit("rating_diode_forward", "error", b["ref"], na,
+             f"{b['ref']}{' (' + kind + ')' if kind else ''} is forward "
+             f"biased by {_fmt(fwd)} V (anode {na} = {_fmt(va)} V, cathode "
+             f"{nk} = {_fmt(vk)} V): {why} - is it fitted backwards? "
+             f"[{dio['how']}]", pin=f"{b['ref']}.{dio['a']}", net_v=fwd,
+             limit_v=FWD_MIN, rating=dio["how"])
 
 
 def reversed_input_volts(board: list[dict], volts: dict, vsrc: dict,
