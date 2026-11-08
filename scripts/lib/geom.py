@@ -350,6 +350,14 @@ class Stackup:
         gaps = self.dielectrics[i:j] or self.dielectrics
         return sum(d["epsilon_r"] for d in gaps) / len(gaps)
 
+    def side(self, layer: str, ref: str) -> tuple[float, float, str]:
+        """(height, epsilon_r, kind) of the dielectric from `layer` to `ref`,
+        as impedance.stripline_sides takes it; kind "" unless they are
+        neighbours (core | prepreg, from the stackup block)."""
+        i, j = sorted((self.index(layer), self.index(ref)))
+        kind = self.dielectrics[i].get("kind", "") if j == i + 1 else ""
+        return self.height_between(layer, ref), self.epsilon_between(layer, ref), kind
+
     def tand_between(self, a: str, b: str) -> tuple[Optional[float], str]:
         """(tan d, material) of the dielectric between two copper layers. tan d
         is weighted by height, None when no gap carries one."""

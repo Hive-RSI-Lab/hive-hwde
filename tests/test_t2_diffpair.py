@@ -437,3 +437,27 @@ def test_diffpair_resolve_pairs_sense_default_only_when_discovered(tmp_path_fact
     # an explicit entry classifies itself: no name default applied to it
     ex = check_diffpair.resolve_pairs(bg, {"diff_pairs": [{"p": "/ISNS_P", "n": "/ISNS_N"}]})
     assert "kind" not in ex[0]
+
+
+def test_diffpair_stripline_sits_on_the_core():
+    """#663: an inner pair between a thin core and a thick prepreg is solved
+    with the trace on the core, not on the thicker dielectric."""
+    import impedance
+    if not impedance.SOLVER_OK:
+        pytest.skip("field solver needs numpy/scipy")
+    cu = ["F.Cu", "In1.Cu", "In2.Cu", "B.Cu"]
+    st = geom.Stackup(cu, 1.6, [
+        {"above": "F.Cu", "below": "In1.Cu", "height": 0.11, "epsilon_r": 3.23, "kind": "prepreg"},
+        {"above": "In1.Cu", "below": "In2.Cu", "height": 0.10, "epsilon_r": 3.66, "kind": "core"},
+        {"above": "In2.Cu", "below": "B.Cu", "height": 1.20, "epsilon_r": 3.23, "kind": "prepreg"},
+    ], {c: 0.0175 for c in cu}, assumed=False, source="test")
+
+    class BG:
+        copper_layers = cu
+        stackup = st
+
+    z, model = check_diffpair.layer_zdiff(BG, "In2.Cu", 0.127, 0.24)
+    assert model == "stripline"
+    on_core = impedance.field_stripline(0.127, 0.10, 1.20, 0.0175, 3.66, 3.23, 0.24)["zdiff"]
+    on_thick = impedance.field_stripline(0.127, 1.20, 0.10, 0.0175, 3.23, 3.66, 0.24)["zdiff"]
+    assert z == pytest.approx(on_core) and abs(z - on_thick) > 3

@@ -121,3 +121,16 @@ def test_solve_width_roundtrip_field_and_closed_form():
 
 def test_default_method_is_field():
     assert imp.SOLVER_OK and imp.default_method() == "field"
+
+
+def test_stripline_sides_puts_the_trace_on_the_core():
+    """#663: the inner trace sits on the core (etched on it), whichever side
+    is thicker; two cores take the thinner, no core the thicker."""
+    core, pp = (0.10, 3.66, "core"), (0.30, 3.23, "prepreg")
+    assert imp.stripline_sides(core, pp) == ((0.10, 3.66), (0.30, 3.23))
+    assert imp.stripline_sides(pp, core) == ((0.10, 3.66), (0.30, 3.23))
+    thin, thick = (0.1016, 3.66, "core"), (0.9431, 3.66, "core")
+    assert imp.stripline_sides(thick, thin) == ((0.1016, 3.66), (0.9431, 3.66))
+    a, b = (0.2, 4.1, "prepreg"), (0.5, 4.3, "")
+    assert imp.stripline_sides(a, b) == ((0.5, 4.3), (0.2, 4.1))
+    assert imp.stripline_sides(b, a) == ((0.5, 4.3), (0.2, 4.1))
