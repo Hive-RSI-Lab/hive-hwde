@@ -6,7 +6,7 @@
   "pinout": [
     {"pin": "1", "name": "MODSEL", "type": "input", "notes": "mode select, LOW = BD mode"},
     {"pin": "2", "name": "SDZ", "type": "input", "notes": "shutdown, LOW = outputs Hi-Z"},
-    {"pin": "3", "name": "FAULTZ", "type": "open_collector", "notes": "fault, open drain"},
+    {"pin": "3", "name": "FAULTZ", "type": "open_collector", "notes": "fault, open drain; pin table SLOS708E p.4 lists it as type DO: 'General fault reporting including Over-temp, DC Detect. Open drain.'", "self_driven": true},
     {"pin": "4", "name": "RINP", "type": "input", "notes": "positive audio input, right channel"},
     {"pin": "5", "name": "RINN", "type": "input", "notes": "negative audio input, right channel"},
     {"pin": "6", "name": "PLIMIT", "type": "input", "notes": "power limit adjust"},

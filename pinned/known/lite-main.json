@@ -366,30 +366,6 @@
   },
   {
    "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "U7"
-   ],
-   "pos": null,
-   "kind": "rating_unrated",
-   "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "U8"
-   ],
-   "pos": null,
-   "kind": "rating_unrated",
-   "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
-  },
-  {
-   "gate": "verify",
    "check": "check_antenna",
    "net": null,
    "refs": [
@@ -688,10 +664,8 @@
     "C51",
     "C52",
     "C53",
-    "C54",
     "C55",
     "C56",
-    "C57",
     "C58",
     "C59",
     "C7",

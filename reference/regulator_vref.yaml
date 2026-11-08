@@ -21,14 +21,23 @@ regulators:
     verified: false
   - match: '^SY8089'
     vref: 0.6
-    tol: 0.02
-    source: Silergy SY8089 datasheet, VFB
-    verified: false
+    tol: 0.015
+    source: >-
+      Silergy AN_SY8089A1 Rev. 0.0, p.3, Electrical Characteristics: 'Feedback
+      Reference Voltage VREF IOUT=0.5A, CCM 591 600 609 mV'; p.2 pin FB:
+      'VOUT=0.6x(1+RH/RL)'. URL
+      https://datasheet.lcsc.com/datasheet/pdf/0ca32da5d5c125881791fee9f2de17c1.pdf?productCode=C479074
+      sha256 8587214d50cc945ae8bfa57439a47c50f9fb38f83f52eb1b8088e94c84e6d171
+    verified: true
   - match: '^SY8303'
     vref: 0.6
-    tol: 0.02
-    source: Silergy SY8303 datasheet, VFB
-    verified: false
+    tol: 0.015
+    source: >-
+      Silergy AN_SY8303 Rev. 0.9A, p.3, Electrical Characteristics: 'Feedback
+      Reference VREF 0.591 0.6 0.609 V'; p.2 pin FB: 'VOUT=0.6*(1+R1/R2)'. URL
+      https://datasheet.lcsc.com/datasheet/pdf/e1a61b84c1934bfd84df3c719ade0020.pdf?productCode=C97054
+      sha256 337629d344cdcb835c77fe904b8314c875be0f93f7aa3a6019e4832745834373
+    verified: true
   - match: '^SY8113'
     vref: 0.6
     tol: 0.02
