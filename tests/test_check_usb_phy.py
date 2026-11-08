@@ -128,6 +128,52 @@ def test_esd_array_is_not_the_phy_and_unknown_ic_warns(tmp_path):
     assert _kinds(p) == ["usb_phy_unknown"]
 
 
+def _choked(phy, dp_pin, dm_pin, choke="DLW21HN900SQ2L", pins=None,
+            pullup=None):
+    """`_micro` with a 4-pad choke L1 between J1 and the PHY: pins
+    {connector-side D+, PHY-side D+, connector-side D-, PHY-side D-},
+    1/2/4/3 as hw-lab emc-lab's L501 (issue #647). The pull-up sits on the
+    PHY side."""
+    a, b, c, d = pins or ("1", "2", "4", "3")
+    comps, nets = _micro(phy, dp_pin, dm_pin)
+    comps["L1"] = choke
+    nets["/USB_DP"] = [("J1", "3", "D+_3"), ("L1", a, "")]
+    nets["/USB_DP_U"] = [("L1", b, ""), ("U1", dp_pin[0], dp_pin[1])]
+    nets["/USB_DM"] = [("J1", "2", "D-_2"), ("L1", c, "")]
+    nets["/USB_DM_U"] = [("L1", d, ""), ("U1", dm_pin[0], dm_pin[1])]
+    if pullup:
+        comps["R3"] = pullup
+        nets["/USB_DP_U"].append(("R3", "1", ""))
+        nets["+3V3"].append(("R3", "2", ""))
+    return comps, nets
+
+
+def test_a_known_choke_is_walked_through_to_the_phy(tmp_path):
+    p = _run(tmp_path, *_choked(*F103, pullup="1k5"))
+    assert _kinds(p) == []
+    assert p["checked"][0]["phys"][0]["chokes"] == ["L1"]
+    p = _run(tmp_path, *_choked(*F103, pullup="10k"))
+    assert _kinds(p) == ["usb_dp_pullup_value"]
+    rp = ("RP2040", ("47", "USB_DP_47"), ("46", "USB_DM_46"))
+    assert _kinds(_run(tmp_path, *_choked(*rp))) == \
+        ["usb_series_r_missing"] * 2
+
+
+def test_an_unknown_choke_is_named_as_a_choke(tmp_path):
+    p = _run(tmp_path, *_choked(*F103, choke="XYZ-CMC-90", pullup="10k"))
+    assert _kinds(p) == ["usb_choke_unknown"]
+    assert p["violations"][0]["refs"] == ["L1"]
+    assert "windings" in p["violations"][0]["msg"]
+
+
+def test_a_turned_choke_shorts_the_pair(tmp_path):
+    """Turned 90 degrees on its footprint: D+ on 1, D- on 2 (one winding)."""
+    p = _run(tmp_path, *_choked(*F103, pins=("1", "4", "2", "3"),
+                                pullup="1k5"))
+    assert _kinds(p) == ["usb_choke_shorts_pair"]
+    assert p["violations"][0]["refs"] == ["J1", "L1"]
+
+
 def test_dm_pullup_fails(tmp_path):
     comps, nets = _micro(F103[0], F103[1], F103[2], pullup=("R3", "1k5"))
     comps["R4"] = "1k5"
@@ -208,5 +254,8 @@ def test_joins_verify_all():
 
 def test_every_row_names_its_source():
     kb = check_usb_phy.load_kb()
-    for row in kb["phys"] + kb["cc_sinks"]:
+    for row in kb["phys"] + kb["cc_sinks"] + kb["chokes"]:
         assert row.get("source"), row["name"]
+    for row in kb["chokes"]:
+        pads = [p for w in row["windings"] for p in w]
+        assert sorted(pads) == ["1", "2", "3", "4"], row["name"]

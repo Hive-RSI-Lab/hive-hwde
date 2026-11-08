@@ -115,6 +115,21 @@ phys:
 # charger/PD sinks that only watch DP/DM for BC1.2 or QC.
 not_phy: '^(USBLC6|TPD\dE|TPD\dS|PESD|ESD|SRV05|IP42\d\d|RCLAMP|SP05\d\d|ULC|CH22[14]|ECMF)'
 
+# Common-mode chokes on D+/D-. windings: the pad pairs, one per line, from the
+# datasheet's equivalent circuit. check_usb_phy walks D+ (and D-) through the
+# winding it enters on to the PHY behind; D+ walking into D- is a choke
+# turned on its footprint (usb_choke_shorts_pair).
+chokes:
+  - name: Murata DLW21HN (0805 wire-wound common-mode choke)
+    match: '^DLW21HN'
+    windings: [["1", "2"], ["4", "3"]]
+    source: >-
+      Murata DLW21HN data sheet ("Common Mode Choke Coil Wire Wound Type",
+      DLW21HN900HQ2/121HQ2), Equivalent Circuit: one winding (1)-(2), the
+      other (4)-(3), no polarity. hw-lab emc-lab wires L501
+      (DLW21HN900SQ2L) so: J7 D+ on 1, the ESP32-S3's D+ on 2, D- on 4
+      and 3 (issue #647)
+
 # USB-C sink controllers on CC1/CC2. rd: internal (rd_ohm inside the part) |
 # external (the board fits Rd).
 cc_sinks:

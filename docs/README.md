@@ -604,7 +604,13 @@ HTSSOP-32 stays `smd`. Parts marked `board_only`, `exclude_from_bom` or
 `check_usb_phy` (verify suite) reads the board's netlist from each connector
 pin named D+/D-/DP/DM/DP1... to the first IC, through 0 R and ferrites. A
 resistor of 100 ohm or less on the way is a series element, and a larger one
-is a pull. It holds the IC to what its own vendor's document says, row by
+is a pull. A 4-pad common-mode choke (L, FL, CMC, T or FB with four pins) is
+walked through by its `chokes` row's windings (Murata DLW21HN): D+ on a
+winding's one end carries on from its other end. A choke with no row is a
+warning `usb_choke_unknown` (add its windings), and a choke wired so D+
+reaches D- through one winding, as one turned on its footprint, is an error
+`usb_choke_shorts_pair`. Faults `usb-choke-pullup-weak` and
+`usb-choke-turned` (issue #647). It holds the IC to what its own vendor's document says, row by
 row in `reference/usb_phys.yaml` (WCH CH340, the STM32 lines of AN4879
 Rev 5, NXP LPC per AN11392, RP2040, ESP32-S3):
 

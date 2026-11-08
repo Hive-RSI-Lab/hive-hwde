@@ -11,3 +11,26 @@ mutants:
     expect:
       kind: usb_dp_pullup_value
       ref: R3
+  usb-choke-pullup-weak:
+    board: usbbuck4
+    script: mutations/usb_choke_pullup_weak.py
+    check: check_usb_phy
+    defect: >-
+      NETLIST fault: a DLW21HN common-mode choke L9 sits between J1 and the
+      STM32F103 (hw-lab emc-lab's L501) and the D+ pull-up R3 behind it is
+      10 k, not 1.5 k; before issue #647 the check took the choke for the
+      PHY and judged nothing past it
+    expect:
+      kind: usb_dp_pullup_value
+      ref: R3
+  usb-choke-turned:
+    board: usbbuck4
+    script: mutations/usb_choke_turned.py
+    check: check_usb_phy
+    defect: >-
+      NETLIST fault: the DLW21HN choke L9 between J1 and the STM32F103 is
+      wired turned on its footprint, D+ on pad 1 and D- on pad 2 (one
+      winding), so D+ and D- are shorted at DC (issue #647)
+    expect:
+      kind: usb_choke_shorts_pair
+      ref: L9
