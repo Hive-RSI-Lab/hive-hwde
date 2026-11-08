@@ -2,8 +2,9 @@
 
 SIDECAR + one board property. D1 (the LED) gets an `LCSC` property on the board
 (goldens carry none; check_ratings finds parts through it) and this mutant's
-parts/ dir lists that LCSC part (C2286) with empty `attributes` and no
-extraction: a rated part nothing rates.
+parts/ dir lists that LCSC part (C12624, KT-0603G) with empty `attributes`,
+no extraction, and no entry in reference/extractions: a rated part nothing
+rates.
 Must be caught by check_ratings (kind "rating_no_attributes").
 """
 import sys
@@ -12,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import mutlib
 
-LCSC = "C2286"
+LCSC = "C12624"
 PROP = (f'(property "LCSC" "{LCSC}"\n'
         '\t\t\t(at 0 0 0)\n'
         '\t\t\t(layer "F.Fab")\n'
@@ -21,8 +22,8 @@ PROP = (f'(property "LCSC" "{LCSC}"\n'
         '\t\t\t(effects\n\t\t\t\t(font\n\t\t\t\t\t(size 1 1)\n'
         '\t\t\t\t\t(thickness 0.15)\n\t\t\t\t)\n\t\t\t)\n\t\t)\n\t\t')
 PARTS = {"parts": [{
-    "ref_prefix_hint": "D", "mpn": "KT-0603R", "lcsc": LCSC,
-    "value": "red", "package": "0603", "attributes": [],
+    "ref_prefix_hint": "D", "mpn": "KT-0603G", "lcsc": LCSC,
+    "value": "green", "package": "0603", "attributes": [],
     "role": "D1 status LED"}]}
 
 

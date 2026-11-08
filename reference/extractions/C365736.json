@@ -1,0 +1,50 @@
+{
+  "mpn": "ES8388",
+  "lcsc": "C365736",
+  "package": "QFN-28 4x4 mm, 0.45 mm pitch, exposed pad",
+  "description": "Everest Semiconductor ES8388 low power stereo audio CODEC with headphone amplifier, QFN-28",
+  "pinout": [
+    {"pin": "1", "name": "MCLK", "type": "input", "notes": "master clock"},
+    {"pin": "2", "name": "DVDD", "type": "power_in", "notes": "digital core supply"},
+    {"pin": "3", "name": "PVDD", "type": "power_in", "notes": "digital IO supply"},
+    {"pin": "4", "name": "DGND", "type": "ground", "notes": "digital ground"},
+    {"pin": "5", "name": "SCLK", "type": "bidirectional", "notes": "audio data bit clock"},
+    {"pin": "6", "name": "DSDIN", "type": "input", "notes": "DAC audio data"},
+    {"pin": "7", "name": "LRCK", "type": "bidirectional", "notes": "audio data left/right clock"},
+    {"pin": "8", "name": "ASDOUT", "type": "output", "notes": "ADC audio data"},
+    {"pin": "9", "name": "NC", "type": "nc"},
+    {"pin": "10", "name": "VREF", "type": "analog", "notes": "decoupling capacitor"},
+    {"pin": "11", "name": "ROUT1", "type": "output", "notes": "right output 1"},
+    {"pin": "12", "name": "LOUT1", "type": "output", "notes": "left output 1"},
+    {"pin": "13", "name": "HPGND", "type": "ground", "notes": "ground for analog output drivers"},
+    {"pin": "14", "name": "ROUT2", "type": "output", "notes": "right output 2"},
+    {"pin": "15", "name": "LOUT2", "type": "output", "notes": "left output 2"},
+    {"pin": "16", "name": "HPVDD", "type": "power_in", "notes": "supply for analog output drivers"},
+    {"pin": "17", "name": "AVDD", "type": "power_in", "notes": "analog supply"},
+    {"pin": "18", "name": "AGND", "type": "ground", "notes": "analog ground"},
+    {"pin": "19", "name": "ADCVREF", "type": "analog", "notes": "decoupling capacitor (pin drawing p.5 labels it DACVREF)"},
+    {"pin": "20", "name": "VMID", "type": "analog", "notes": "decoupling capacitor"},
+    {"pin": "21", "name": "RIN2", "type": "input", "notes": "right channel input 2"},
+    {"pin": "22", "name": "LIN2", "type": "input", "notes": "left channel input 2"},
+    {"pin": "23", "name": "RIN1", "type": "input", "notes": "right channel input 1"},
+    {"pin": "24", "name": "LIN1", "type": "input", "notes": "left channel input 1"},
+    {"pin": "25", "name": "NC", "type": "nc"},
+    {"pin": "26", "name": "CE", "type": "input", "notes": "control select / device address"},
+    {"pin": "27", "name": "CDATA", "type": "bidirectional", "notes": "control data (SDA in 2-wire mode)"},
+    {"pin": "28", "name": "CCLK", "type": "input", "notes": "control clock (SCL in 2-wire mode)"},
+    {"pin": "29", "name": "EP", "type": "ground", "notes": "exposed pad (p.35 package drawing; datasheet gives no connection note); tied to GND on board"}
+  ],
+  "abs_max": [
+    {"param": "Analog supply voltage level", "value": "-0.3~5.0", "unit": "V"},
+    {"param": "Digital supply voltage level", "value": "-0.3~5.0", "unit": "V"},
+    {"param": "Input voltage range", "value": "DGND-0.3~DVDD+0.3", "unit": "V"}
+  ],
+  "pin_ratings": [
+    {"pins": ["AVDD", "DVDD", "PVDD", "HPVDD"], "kind": "voltage", "level": "abs_max", "min": -0.3, "max": 5.0,
+     "source": "Everest Semiconductor ES8388 Rev 5.0 (July 2018) p.30 8.1 Absolute Maximum Ratings: 'Analog Supply Voltage Level -0.3V +5.0V; Digital Supply Voltage Level -0.3V +5.0V' (HPVDD taken as analog supply)"},
+    {"pins": ["MCLK", "SCLK", "DSDIN", "LRCK", "ASDOUT", "CE", "CDATA", "CCLK", "LIN1", "RIN1", "LIN2", "RIN2"], "kind": "voltage", "level": "abs_max", "min": -0.3, "max": "DVDD+0.3",
+     "source": "Everest Semiconductor ES8388 Rev 5.0 (July 2018) p.30 8.1 Absolute Maximum Ratings: 'Input Voltage range DGND-0.3V DVDD+0.3V' (single row for all input pins, incl. analog inputs and output ASDOUT)"}
+  ],
+  "exposed_pad": {"present": true, "connect_to": "GND"},
+  "source_pdf": "Everest Semiconductor ES8388 Low Power Stereo Audio CODEC With Headphone Amplifier, Rev 5.0 July 2018, 36 pages, pin map p.5-6 '2 28-PIN QFN AND PIN DESCRIPTIONS'; https://datasheet.lcsc.com/datasheet/pdf/b5b69a0d4875954a40e8f8a3f42483af.pdf?productCode=C365736 sha256 db9300f79df430d022b754b29eb1b6b17ca08e3b91d3ba833606dadc65898258"
+}

@@ -1,0 +1,21 @@
+{
+  "mpn": "IRM-3638T",
+  "lcsc": "C42421366",
+  "package": "DIP-3 infrared receiver module",
+  "description": "Everlight IRM-3638T 38 kHz DIP infrared remote receiver module, 2.7-5.5 V",
+  "pinout": [
+    {"pin": "1", "name": "OUT", "type": "output", "notes": "demodulated output"},
+    {"pin": "2", "name": "GND", "type": "ground"},
+    {"pin": "3", "name": "Vcc", "type": "power_in", "notes": "supply, RC filter close to Vcc/GND"}
+  ],
+  "abs_max": [
+    {"param": "Supply voltage Vcc", "value": 6, "unit": "V"}
+  ],
+  "pin_ratings": [
+    {"pins": ["Vcc"], "kind": "voltage", "level": "abs_max", "max": 6,
+     "source": "Everlight IRM-36XXT Series DMO-0000371 Rev 7 (Ver.7, 02/10/2026) p.3 Absolute Maximum Ratings: 'Supply Voltage Vcc 6 V'"},
+    {"pins": ["OUT"], "kind": "voltage", "level": "recommended", "min": 0, "max": "Vcc",
+     "source": "Everlight IRM-36XXT Series DMO-0000371 Rev 7 p.3 Electro-Optical Characteristics: 'High level output voltage VOH Vcc-0.4 V (ISOURCE<=1uA)'; no abs max rating given for OUT, this is the output swing"}
+  ],
+  "source_pdf": "Everlight Infrared Receiver Module IRM-36XXT Series, DMO-0000371 Rev 7 (Ver.7 release 02/10/2026), 9 pages, pin map p.1 '1. OUT 2. GND 3. Vcc'; https://www.everlighteurope.com/custom/files/datasheets/DMO-0000371.pdf sha256 1418e298c2df806f27d124bfb34b3afb05f51aab6221fca61ea970f475fe65e2"
+}

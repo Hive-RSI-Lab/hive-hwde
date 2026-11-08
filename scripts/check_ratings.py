@@ -783,9 +783,8 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                    if p.get("lcsc")}
     exts: dict[str, dict] = {}
     for lcsc in {b["lcsc"] for b in board if b["lcsc"]}:
-        f = parts_dir / f"{lcsc}.json"
-        if f.is_file():
-            exts[lcsc] = checklib.load_json(f, f"extraction {f.name}")
+        if (ext := load_extraction(parts_dir, lcsc)) is not None:
+            exts[lcsc] = ext
 
     nets = {n for b in board for n in b["pads"].values()}
     volts: dict[str, float] = {}
@@ -964,9 +963,24 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                     if r["ref"]:
                         vr = ref_volts(r["ref"])
                         if vr is None:
-                            unrated.append(f"{pin} {p['name']}: rated against "
-                                           f"{r['ref']}, whose net has no "
-                                           "known voltage")
+                            # the ref's net is unknown but lies within the
+                            # board's rails: judged when the rating holds at
+                            # both extremes (an LED's anode, an emitter)
+                            floor = min([0.0, *volts.values()])
+                            ceil = max([0.0, *volts.values()])
+                            lo, _ = resolve(r["lo"])
+                            hi, _ = resolve(r["hi"])
+                            if (hi is not None or lo is not None) \
+                                    and not (isinstance(r["lo"], tuple)
+                                             or isinstance(r["hi"], tuple)) \
+                                    and (hi is None or v - floor <= hi + EPS) \
+                                    and (lo is None or v - ceil >= lo - EPS):
+                                continue
+                            unrated.append(
+                                f"{pin} {p['name']}: rated against "
+                                f"{r['ref']}, whose net has no known voltage"
+                                f" (at the board's rails, {_fmt(floor)}.."
+                                f"{_fmt(ceil)} V, it could break the rating)")
                             continue
                         vp, rel = v - vr, f" vs {r['ref']}"
                     lo, lo_name = resolve(r["lo"])
@@ -1118,6 +1132,26 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
     return out, facts
 
 
+LIBRARY_DIR = HERE.parent / "reference" / "extractions"
+
+
+def load_extraction(parts_dir: Path, lcsc: str) -> dict | None:
+    """The part's extraction: the board's own parts/<lcsc>.json, else hwde's
+    library entry reference/extractions/<lcsc>.json (read from the maker's
+    datasheet, every rating row citing its page - see that folder's
+    README.md), else None. The board's own wins: it may be a later
+    revision of the part."""
+    for f in (parts_dir / f"{lcsc}.json", LIBRARY_DIR / f"{lcsc}.json"):
+        if f.is_file():
+            return checklib.load_json(f, f"extraction {f.name}")
+    return None
+
+
+# inductors and ferrite beads are rated by current, and the volts across them
+# are their DC drop: no voltage rating is missing, so they are not unrated
+NO_VOLTAGE_RATING_RE = re.compile(r"^(?:L|FB)\d")
+
+
 def _check_unextracted(b: dict, bom: dict | None, volts: dict, emit,
                        unrated_passives: list[str],
                        why: str | None = None) -> bool:
@@ -1146,6 +1180,8 @@ def _check_unextracted(b: dict, bom: dict | None, volts: dict, emit,
         return False  # a single-net part stresses nothing
     why = why or ("no datasheet extraction" if bom or b["lcsc"] else
                   "no LCSC part on the footprint and no extraction")
+    if len(nets) == 2 and NO_VOLTAGE_RATING_RE.match(ref):
+        return False
     if bom is not None and len(nets) == 2:
         unrated_passives.append(ref)
         return False

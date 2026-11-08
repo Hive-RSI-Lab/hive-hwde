@@ -1,0 +1,44 @@
+{
+  "mpn": "DB128V-5.08-4P-GN-S",
+  "lcsc": "C2915641",
+  "package": "Plugin,P=5.08mm",
+  "description": "DORABO DB128V-5.08 4-pole 5.08mm PCB screw terminal block, green, slotted, 300V 16A (UL use group B)",
+  "pinout": [
+    {
+      "pin": "1",
+      "name": "P1",
+      "type": "passive"
+    },
+    {
+      "pin": "2",
+      "name": "P2",
+      "type": "passive"
+    },
+    {
+      "pin": "3",
+      "name": "P3",
+      "type": "passive"
+    },
+    {
+      "pin": "4",
+      "name": "P4",
+      "type": "passive"
+    }
+  ],
+  "pin_ratings": [
+    {
+      "pins": [
+        "P1",
+        "P2",
+        "P3",
+        "P4"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -300,
+      "max": 300,
+      "source": "DORABO DB128V-5.08-XXP-C-S drawing rev T0-1 (2022.10.27) p.1 UL/CUL Technical Data: 'Use Group B, Rated Voltage [V] 300, Rated Current [A] 16' (contact rating, applied to every pole)"
+    }
+  ],
+  "source_pdf": "Ningbo Dorabo Electric DB128V-5.08-XXP-C-S customer drawing, rev T0-1 dated 2022.10.27, 1 page, poles numbered by position on p.1; https://datasheet.lcsc.com/datasheet/pdf/0408088817074badc5f16ce78cd8fa03.pdf?productCode=C2915641 sha256 c1272cc5b6fb62ce5f694f7c4ecc1b8e2ae63b64510059d490f3fe66ff68dcb8"
+}

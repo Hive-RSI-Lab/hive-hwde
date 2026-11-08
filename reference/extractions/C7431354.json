@@ -1,0 +1,17 @@
+{
+  "mpn": "SX3M49.152B10F20TNN",
+  "lcsc": "C7431354",
+  "package": "SMD 3.2x2.5mm 4-pin",
+  "description": "SCTF SX3M-series 3.3V CMOS crystal oscillator, 49.152MHz, 3.2x2.5mm (3C series), tri-state",
+  "pinout": [
+    {"pin": "1", "name": "OE", "type": "input", "notes": "tri-state; output enabled if OE logic 1 or open"},
+    {"pin": "2", "name": "GND", "type": "ground"},
+    {"pin": "3", "name": "OUT", "type": "output", "notes": "CMOS output"},
+    {"pin": "4", "name": "VDD", "type": "power_in"}
+  ],
+  "pin_ratings": [
+    {"pins": ["VDD"], "kind": "voltage", "level": "recommended", "min": 2.97, "max": 3.63,
+     "source": "SCTF MHz Crystal Oscillator datasheet rev 05/12/2026 p.1 Electrical Specifications: 'Supply Voltage Vdd 2.97 3.3 3.63 V' (3.3V option, part code B)"}
+  ],
+  "source_pdf": "SCTF MHz Crystal Oscillator 0C/1C/2C/3C/5C/7C series, Revision 05/12/2026, 9 pages, pin map p.4 (3C series: 1 Tri-State, 2 GND, 3 Output, 4 Vdd); https://datasheet.lcsc.com/datasheet/pdf/2c141c761514440bde9cd51811e8f0e6.pdf?productCode=C7431354 sha256 66a8aa0b6c81314a9590ebdc9d8b4f3e4cff417ad9b23dfba328508b23c8903b"
+}

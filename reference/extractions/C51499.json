@@ -1,0 +1,29 @@
+{
+  "mpn": "AO4485",
+  "lcsc": "C51499",
+  "package": "SOIC-8",
+  "description": "Alpha & Omega AO4485 40V P-channel MOSFET, SOIC-8",
+  "pinout": [
+    {"pin": "1", "name": "S", "type": "passive", "notes": "source"},
+    {"pin": "2", "name": "S", "type": "passive", "notes": "source"},
+    {"pin": "3", "name": "S", "type": "passive", "notes": "source"},
+    {"pin": "4", "name": "G", "type": "input", "notes": "gate"},
+    {"pin": "5", "name": "D", "type": "passive", "notes": "drain"},
+    {"pin": "6", "name": "D", "type": "passive", "notes": "drain"},
+    {"pin": "7", "name": "D", "type": "passive", "notes": "drain"},
+    {"pin": "8", "name": "D", "type": "passive", "notes": "drain"}
+  ],
+  "abs_max": [
+    {"param": "VDS drain-source voltage", "value": -40, "unit": "V"},
+    {"param": "VGS gate-source voltage", "value": "-20~20", "unit": "V"},
+    {"param": "ID continuous drain current TA=25C steady state", "value": -10, "unit": "A"},
+    {"param": "IDM pulsed drain current", "value": -120, "unit": "A"}
+  ],
+  "pin_ratings": [
+    {"pins": ["D"], "kind": "voltage", "level": "abs_max", "min": -40, "ref": "S",
+     "source": "AOS AO4485 Rev1 Nov 2010 p.1 Absolute Maximum Ratings: 'Drain-Source Voltage VDS -40 V'"},
+    {"pins": ["G"], "kind": "voltage", "level": "abs_max", "min": -20, "max": 20, "ref": "S",
+     "source": "AOS AO4485 Rev1 Nov 2010 p.1 Absolute Maximum Ratings: 'Gate-Source Voltage VGS ±20 V'"}
+  ],
+  "source_pdf": "Alpha & Omega Semiconductor AO4485 40V P-Channel MOSFET, Rev1 Nov 2010, 4 pages, pin map p.1 (SOIC-8 top view: pins 1-3 S, 4 G, 5-8 D); https://datasheet.lcsc.com/datasheet/pdf/7531395f3a0b4b219b8d760e6ed76353.pdf?productCode=C51499 sha256 6b2dbb13d4a153a409d39bba4b082299ca31a40c3ac424bd0dd29bb65769dcdd"
+}

@@ -1,0 +1,117 @@
+{
+  "mpn": "TYPE-C-31-M-12",
+  "lcsc": "C165948",
+  "package": "SMD",
+  "description": "HRO (Korean Hroparts) TYPE-C-31-M-12 16-pin USB Type-C receptacle, SMD right angle, 5A, 20V",
+  "pinout": [
+    {
+      "pin": "A1B12",
+      "name": "GND",
+      "type": "ground",
+      "notes": "datasheet A1/B12 shared pad"
+    },
+    {
+      "pin": "B1A12",
+      "name": "GND",
+      "type": "ground",
+      "notes": "datasheet B1/A12 shared pad"
+    },
+    {
+      "pin": "A4B9",
+      "name": "VBUS",
+      "type": "power_in",
+      "notes": "datasheet A4/B9 shared pad"
+    },
+    {
+      "pin": "B4A9",
+      "name": "VBUS",
+      "type": "power_in",
+      "notes": "datasheet B4/A9 shared pad"
+    },
+    {
+      "pin": "A5",
+      "name": "CC1",
+      "type": "bidirectional"
+    },
+    {
+      "pin": "B5",
+      "name": "CC2",
+      "type": "bidirectional"
+    },
+    {
+      "pin": "A6",
+      "name": "DP1",
+      "type": "bidirectional"
+    },
+    {
+      "pin": "A7",
+      "name": "DN1",
+      "type": "bidirectional"
+    },
+    {
+      "pin": "B6",
+      "name": "DP2",
+      "type": "bidirectional"
+    },
+    {
+      "pin": "B7",
+      "name": "DN2",
+      "type": "bidirectional"
+    },
+    {
+      "pin": "A8",
+      "name": "SBU1",
+      "type": "bidirectional"
+    },
+    {
+      "pin": "B8",
+      "name": "SBU2",
+      "type": "bidirectional"
+    },
+    {
+      "pin": "1",
+      "name": "SHELL",
+      "type": "ground",
+      "notes": "shell tab (board pad; datasheet pin table does not list it)"
+    },
+    {
+      "pin": "2",
+      "name": "SHELL",
+      "type": "ground",
+      "notes": "shell tab"
+    },
+    {
+      "pin": "3",
+      "name": "SHELL",
+      "type": "ground",
+      "notes": "shell tab"
+    },
+    {
+      "pin": "4",
+      "name": "SHELL",
+      "type": "ground",
+      "notes": "shell tab"
+    }
+  ],
+  "pin_ratings": [
+    {
+      "pins": [
+        "VBUS",
+        "CC1",
+        "CC2",
+        "DP1",
+        "DN1",
+        "DP2",
+        "DN2",
+        "SBU1",
+        "SBU2"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -20,
+      "max": 20,
+      "source": "HRO TYPE-C-31-M-12 drawing (2020.12.08, REV A) p.1 Note 4 Electrical performance: 'VOLTAGE RATING: 20V' (contact rating, applied to every contact pin)"
+    }
+  ],
+  "source_pdf": "HRO Electronics (Korean Hroparts Elec) TYPE-C-31-M-12 drawing, REV A dated 2020.12.08, 1 page, pin map p.1 table 'A1 GND B12 GND ... A4 VBUS B9 VBUS'; https://datasheet.lcsc.com/datasheet/pdf/9e56b777c022540fcce7c7f67825f55e.pdf?productCode=C165948 sha256 6ae33d50ac47820114661138dc4e4659f40fdc5d4f485b46685dfec338da1a9e"
+}

@@ -1,0 +1,86 @@
+{
+  "mpn": "SY8089A1AAC",
+  "lcsc": "C479074",
+  "package": "TSOT-23-5",
+  "description": "Silergy SY8089A1 2.5-5.5V, 2A, 1.5MHz synchronous buck, SOT23-5",
+  "pinout": [
+    {
+      "pin": "1",
+      "name": "EN",
+      "type": "input",
+      "notes": "do not float"
+    },
+    {
+      "pin": "2",
+      "name": "GND",
+      "type": "ground"
+    },
+    {
+      "pin": "3",
+      "name": "LX",
+      "type": "output",
+      "notes": "inductor switch node"
+    },
+    {
+      "pin": "4",
+      "name": "IN",
+      "type": "power_in"
+    },
+    {
+      "pin": "5",
+      "name": "FB",
+      "type": "input"
+    }
+  ],
+  "abs_max": [
+    {
+      "param": "Supply input voltage",
+      "value": "-0.3~6.0",
+      "unit": "V"
+    },
+    {
+      "param": "FB, EN voltage",
+      "value": "-0.3~VIN+0.6",
+      "unit": "V"
+    },
+    {
+      "param": "LX voltage",
+      "value": "-0.3~6.0",
+      "unit": "V"
+    }
+  ],
+  "pin_ratings": [
+    {
+      "pins": [
+        "IN"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.3,
+      "max": 6,
+      "source": "Silergy AN_SY8089A1 Rev.0.0 p.3 Absolute Maximum Ratings: 'Supply Input Voltage -0.3V to 6.0V'"
+    },
+    {
+      "pins": [
+        "FB",
+        "EN"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.3,
+      "max": "IN+0.6",
+      "source": "Silergy AN_SY8089A1 Rev.0.0 p.3 Absolute Maximum Ratings: 'FB, EN Voltage -0.3V to VIN+0.6V'"
+    },
+    {
+      "pins": [
+        "LX"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.3,
+      "max": 6,
+      "source": "Silergy AN_SY8089A1 Rev.0.0 p.3 Absolute Maximum Ratings: 'LX Voltage -0.3V(*1) to 6.0V(*2)'"
+    }
+  ],
+  "source_pdf": "Silergy AN_SY8089A1 Rev.0.0 Advanced Design Specification (2018), 10 pages, pin map p.2 'EN 1, GND 2, LX 3, IN 4, FB 5'; https://datasheet.lcsc.com/datasheet/pdf/0ca32da5d5c125881791fee9f2de17c1.pdf?productCode=C479074 sha256 8587214d50cc945ae8bfa57439a47c50f9fb38f83f52eb1b8088e94c84e6d171"
+}

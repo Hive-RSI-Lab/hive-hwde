@@ -369,174 +369,6 @@
    "check": "check_ratings",
    "net": null,
    "refs": [
-    "J1"
-   ],
-   "pos": null,
-   "kind": "rating_unrated",
-   "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "J2"
-   ],
-   "pos": null,
-   "kind": "rating_unrated",
-   "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "J3"
-   ],
-   "pos": null,
-   "kind": "rating_unrated",
-   "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "J4"
-   ],
-   "pos": null,
-   "kind": "rating_unrated",
-   "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "Q1"
-   ],
-   "pos": null,
-   "kind": "rating_unrated",
-   "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "Q2"
-   ],
-   "pos": null,
-   "kind": "rating_unrated",
-   "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "Q3"
-   ],
-   "pos": null,
-   "kind": "rating_unrated",
-   "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "Q4"
-   ],
-   "pos": null,
-   "kind": "rating_unrated",
-   "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "U1"
-   ],
-   "pos": null,
-   "kind": "rating_unrated",
-   "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "U2"
-   ],
-   "pos": null,
-   "kind": "rating_unrated",
-   "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "U3"
-   ],
-   "pos": null,
-   "kind": "rating_unrated",
-   "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "U4"
-   ],
-   "pos": null,
-   "kind": "rating_unrated",
-   "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "U5"
-   ],
-   "pos": null,
-   "kind": "rating_unrated",
-   "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "U6"
-   ],
-   "pos": null,
-   "kind": "rating_unrated",
-   "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
     "U7"
    ],
    "pos": null,
@@ -550,36 +382,6 @@
    "net": null,
    "refs": [
     "U8"
-   ],
-   "pos": null,
-   "kind": "rating_unrated",
-   "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "U9"
-   ],
-   "pos": null,
-   "kind": "rating_unrated",
-   "verdict": "false",
-   "reason": "not a defect of the board: hwde has no datasheet extraction or rating for the part, so it couldn't check it; hwde's coverage gap"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "D2",
-    "L1",
-    "L2",
-    "L3",
-    "L4",
-    "L5",
-    "L6"
    ],
    "pos": null,
    "kind": "rating_unrated",
@@ -856,30 +658,6 @@
    "kind": "decoupler_ground_copper",
    "verdict": "real",
    "reason": "C5:2 sits on a 40 mm2 F.Cu GND island whose own vias reach only B.Cu slivers; the return reaches U2's ground via the via at (83.51,78.41), ~19 mm or more, over the 15 mm limit (the reported 68.7 mm overstates it, the defect stands)"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "U2"
-   ],
-   "pos": null,
-   "kind": "rating_regulator_output_unjudged",
-   "verdict": "false",
-   "reason": "false (#832): adjustable buck, no row can hold its output; the board states it (constraints B3 vout_v 5) and the divider gives it (R9 100k/R10 13k: 5.18 V)"
-  },
-  {
-   "gate": "verify",
-   "check": "check_ratings",
-   "net": null,
-   "refs": [
-    "U3"
-   ],
-   "pos": null,
-   "kind": "rating_regulator_output_unjudged",
-   "verdict": "false",
-   "reason": "false (#832): adjustable buck, no row can hold its output; the board states it (constraints B4 vout_v 3.3) and the divider gives it (R11 150k/R12 33k: 3.33 V)"
   },
   {
    "gate": "verify",
@@ -1352,6 +1130,30 @@
    "kind": "cpl_no_silk_mark",
    "verdict": "real",
    "reason": "U9 (IRM-3638T THT) has no pin-1 dot or chamfer on its own silk; JLC will email to confirm orientation and hold the order"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": "VBUS",
+   "refs": [
+    "J1"
+   ],
+   "pos": null,
+   "kind": "rating_over_voltage",
+   "verdict": "real",
+   "reason": "real: VBUS is 21 V (constraints: PD 20 V +5%) and the HRO TYPE-C-31-M-12 drawing (2020.12.08, REV A) p.1 Note 4 rates every contact 'VOLTAGE RATING: 20V'; a 20 V PD contract runs the receptacle above its rating"
+  },
+  {
+   "gate": "verify",
+   "check": "check_ratings",
+   "net": "VBUS",
+   "refs": [
+    "J1"
+   ],
+   "pos": null,
+   "kind": "rating_over_voltage",
+   "verdict": "real",
+   "reason": "real: VBUS is 21 V (constraints: PD 20 V +5%) and the HRO TYPE-C-31-M-12 drawing (2020.12.08, REV A) p.1 Note 4 rates every contact 'VOLTAGE RATING: 20V'; a 20 V PD contract runs the receptacle above its rating"
   }
  ]
 }

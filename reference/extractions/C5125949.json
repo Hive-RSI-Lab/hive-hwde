@@ -1,0 +1,29 @@
+{
+  "mpn": "AO4485",
+  "lcsc": "C5125949",
+  "package": "SOP-8",
+  "description": "UMW (UTD Semiconductor) AO4485 -40V P-channel MOSFET, SOP-8",
+  "pinout": [
+    {"pin": "1", "name": "S", "type": "passive", "notes": "source"},
+    {"pin": "2", "name": "S", "type": "passive", "notes": "source"},
+    {"pin": "3", "name": "S", "type": "passive", "notes": "source"},
+    {"pin": "4", "name": "G", "type": "input", "notes": "gate"},
+    {"pin": "5", "name": "D", "type": "passive", "notes": "drain"},
+    {"pin": "6", "name": "D", "type": "passive", "notes": "drain"},
+    {"pin": "7", "name": "D", "type": "passive", "notes": "drain"},
+    {"pin": "8", "name": "D", "type": "passive", "notes": "drain"}
+  ],
+  "abs_max": [
+    {"param": "VDS drain-source voltage", "value": -40, "unit": "V"},
+    {"param": "VGS gate-source voltage", "value": "-20~20", "unit": "V"},
+    {"param": "ID continuous drain current TA=25C steady state", "value": -10, "unit": "A"},
+    {"param": "IDM pulsed drain current", "value": -120, "unit": "A"}
+  ],
+  "pin_ratings": [
+    {"pins": ["D"], "kind": "voltage", "level": "abs_max", "min": -40, "ref": "S",
+     "source": "UMW AO4485 datasheet Nov.2024 p.1 4.Absolute Maximum Ratings: 'Drain-Source Voltage VDS -40 V'"},
+    {"pins": ["G"], "kind": "voltage", "level": "abs_max", "min": -20, "max": 20, "ref": "S",
+     "source": "UMW AO4485 datasheet Nov.2024 p.1 4.Absolute Maximum Ratings: 'Gate-Source Voltage VGS ±20 V'"}
+  ],
+  "source_pdf": "UMW (UTD Semiconductor) AO4485 -40V P-Channel MOSFET, Nov.2024, 9 pages, pin map p.1 '3.Pinning information: 4 G, 1,2,3 S, 5,6,7,8 D'; https://datasheet.lcsc.com/datasheet/pdf/a7e9aa204f7177a68742ac15e4445644.pdf?productCode=C5125949 sha256 644b869d0509335ad2dcca5c15e5e1154d82cc1fba74516ee132a028c1ce2eb7"
+}

@@ -1,0 +1,45 @@
+{
+  "mpn": "ES7243E",
+  "lcsc": "C2929446",
+  "package": "QFN-20 3x3 mm, 0.4 mm pitch, exposed pad",
+  "description": "Everest Semiconductor ES7243E high performance stereo audio ADC, QFN-20",
+  "pinout": [
+    {"pin": "1", "name": "VDDP", "type": "power_in", "notes": "supply for digital input and output"},
+    {"pin": "2", "name": "TDMIN", "type": "input", "notes": "TDM data in"},
+    {"pin": "3", "name": "SDOUT/AD2", "type": "output", "notes": "serial data out / I2C address AD2"},
+    {"pin": "4", "name": "GNDD", "type": "ground", "notes": "digital ground"},
+    {"pin": "5", "name": "VDDD", "type": "power_in", "notes": "digital supply"},
+    {"pin": "6", "name": "SCLK", "type": "bidirectional", "notes": "serial data bit clock"},
+    {"pin": "7", "name": "LRCK", "type": "bidirectional", "notes": "serial data frame clock"},
+    {"pin": "8", "name": "AD1", "type": "input", "notes": "I2C address"},
+    {"pin": "9", "name": "AINLP", "type": "analog", "notes": "left analog input positive"},
+    {"pin": "10", "name": "AINLN", "type": "analog", "notes": "left analog input negative"},
+    {"pin": "11", "name": "REFQ", "type": "analog", "notes": "filtering capacitor connection"},
+    {"pin": "12", "name": "VDDA", "type": "power_in", "notes": "analog supply"},
+    {"pin": "13", "name": "GNDA", "type": "ground", "notes": "analog ground"},
+    {"pin": "14", "name": "REFP", "type": "analog", "notes": "filtering capacitor connection"},
+    {"pin": "15", "name": "AINRN", "type": "analog", "notes": "right analog input negative"},
+    {"pin": "16", "name": "AINRP", "type": "analog", "notes": "right analog input positive"},
+    {"pin": "17", "name": "AD0", "type": "input", "notes": "I2C address"},
+    {"pin": "18", "name": "CDATA", "type": "bidirectional", "notes": "I2C data"},
+    {"pin": "19", "name": "CCLK", "type": "input", "notes": "I2C clock"},
+    {"pin": "20", "name": "MCLK", "type": "input", "notes": "master clock"},
+    {"pin": "21", "name": "EP", "type": "ground", "notes": "exposed die-attach pad (p.28 package drawing; datasheet gives no connection note); tied to GND on board"}
+  ],
+  "abs_max": [
+    {"param": "Analog supply voltage level", "value": "-0.3~3.6", "unit": "V"},
+    {"param": "Digital supply voltage level", "value": "-0.3~3.6", "unit": "V"},
+    {"param": "Analog input voltage range", "value": "GNDA-0.3~VDDA+0.3", "unit": "V"},
+    {"param": "Digital input voltage range", "value": "GNDD-0.3~VDDP+0.3", "unit": "V"}
+  ],
+  "pin_ratings": [
+    {"pins": ["VDDA", "VDDD", "VDDP"], "kind": "voltage", "level": "abs_max", "min": -0.3, "max": 3.6,
+     "source": "Everest Semiconductor ES7243E Rev 2.0 (June 2019) p.10 Absolute Maximum Ratings: 'Analog Supply Voltage Level -0.3V +3.6V; Digital Supply Voltage Level -0.3V +3.6V'"},
+    {"pins": ["AINLP", "AINLN", "AINRP", "AINRN"], "kind": "voltage", "level": "abs_max", "min": -0.3, "max": "VDDA+0.3",
+     "source": "Everest Semiconductor ES7243E Rev 2.0 (June 2019) p.10 Absolute Maximum Ratings: 'Analog Input Voltage Range GNDA-0.3V VDDA+0.3V'"},
+    {"pins": ["TDMIN", "SDOUT/AD2", "SCLK", "LRCK", "AD0", "AD1", "CDATA", "CCLK", "MCLK"], "kind": "voltage", "level": "abs_max", "min": -0.3, "max": "VDDP+0.3",
+     "source": "Everest Semiconductor ES7243E Rev 2.0 (June 2019) p.10 Absolute Maximum Ratings: 'Digital Input Voltage Range GNDD-0.3V VDDP+0.3V' (applied to all digital pins, incl. output SDOUT/AD2)"}
+  ],
+  "exposed_pad": {"present": true, "connect_to": "GND"},
+  "source_pdf": "Everest Semiconductor ES7243E High Performance Stereo Audio ADC, Rev 2.0 June 2019, 29 pages, pin map p.4 '1. PIN OUT AND DESCRIPTION'; https://datasheet.lcsc.com/datasheet/pdf/10e61669b8a917d8734e668515fa8fdb.pdf?productCode=C2929446 sha256 8101df269caab456bbd09c3aa182c25e730116ed3862c660157a09438332c7de"
+}

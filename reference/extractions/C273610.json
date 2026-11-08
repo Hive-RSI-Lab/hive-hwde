@@ -1,0 +1,23 @@
+{
+  "mpn": "TJ-S1615SW6TGLCCYRGB-A5",
+  "lcsc": "C273610",
+  "package": "SMD-4P 1.6x1.5mm",
+  "description": "TOGIALED (Tongjia) common-anode RGB LED, 1.6x1.5mm SMD, water clear",
+  "pinout": [
+    {"pin": "1", "name": "A", "type": "passive", "notes": "common anode"},
+    {"pin": "2", "name": "KB", "type": "passive", "notes": "blue cathode"},
+    {"pin": "3", "name": "KG", "type": "passive", "notes": "green cathode"},
+    {"pin": "4", "name": "KR", "type": "passive", "notes": "red cathode"}
+  ],
+  "abs_max": [
+    {"param": "Vr reverse voltage", "value": 5, "unit": "V"},
+    {"param": "If forward current", "value": 30, "unit": "mA"},
+    {"param": "Pd power dissipation R", "value": 72, "unit": "mW"},
+    {"param": "Pd power dissipation G/B", "value": 111, "unit": "mW"}
+  ],
+  "pin_ratings": [
+    {"pins": ["KR", "KG", "KB"], "kind": "voltage", "level": "abs_max", "max": 5, "ref": "A",
+     "source": "TOGIALED TJ-S1615SW6TGLCCYRGB-A5 approval spec (undated) p.3 Absolute maximum ratings: 'Reverse voltage Vr 5 V'"}
+  ],
+  "source_pdf": "TOGIALED (Taiwan/Dongguan Tongjia Optoelectronics) Specification For Approval TJ-S1615SW6TGLCCYRGB-A5, undated, 11 pages, pin map p.2 (schematic: pin 1 common, 2 B, 3 G, 4 R); https://datasheet.lcsc.com/datasheet/pdf/57e2e7cd0aa0e65668a78210327920fa.pdf?productCode=C273610 sha256 35b5c3c078f335eb3d031f26a3a81b90496b98c71eb799c21298750f053940eb"
+}

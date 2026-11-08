@@ -1,0 +1,24 @@
+{
+  "mpn": "MMBT3904",
+  "lcsc": "C20526",
+  "package": "SOT-23",
+  "description": "JSCJ (Jiangsu Changjing) MMBT3904 NPN transistor, SOT-23, marking 1AM, hFE 100-300",
+  "pinout": [
+    {"pin": "1", "name": "B", "type": "input", "notes": "base"},
+    {"pin": "2", "name": "E", "type": "passive", "notes": "emitter"},
+    {"pin": "3", "name": "C", "type": "passive", "notes": "collector"}
+  ],
+  "abs_max": [
+    {"param": "VCBO collector-base voltage", "value": 60, "unit": "V"},
+    {"param": "VCEO collector-emitter voltage", "value": 40, "unit": "V"},
+    {"param": "VEBO emitter-base voltage", "value": 6, "unit": "V"},
+    {"param": "IC collector current", "value": 200, "unit": "mA"}
+  ],
+  "pin_ratings": [
+    {"pins": ["C"], "kind": "voltage", "level": "abs_max", "max": 40, "ref": "E",
+     "source": "JSCJ MMBT3904 SOT-23 datasheet Rev 2.1 p.1 Maximum Ratings: 'VCEO Collector-Emitter Voltage 40 V'"},
+    {"pins": ["B"], "kind": "voltage", "level": "abs_max", "min": -6, "ref": "E",
+     "source": "JSCJ MMBT3904 SOT-23 datasheet Rev 2.1 p.1 Maximum Ratings: 'VEBO Emitter-Base Voltage 6 V'"}
+  ],
+  "source_pdf": "JSCJ MMBT3904 SOT-23 Plastic-Encapsulate Transistors, Rev 2.1, 4 pages, pin map p.1 '1. BASE 2. EMITTER 3. COLLECTOR'; https://datasheet.lcsc.com/datasheet/pdf/9335632bcfa83df8351353eab379720e.pdf?productCode=C20526 sha256 6c2034cb0bd0d85be51c9c4f82aad838a688aa70c20de1a71681be8ec02b659b"
+}

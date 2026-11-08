@@ -1,0 +1,54 @@
+{
+  "mpn": "USBLC6-2SC6",
+  "lcsc": "C2687116",
+  "package": "SOT-23-6",
+  "description": "UMW USBLC6-2SC6 low-capacitance ESD protection array, SOT23-6",
+  "pinout": [
+    {
+      "pin": "1",
+      "name": "I/O1",
+      "type": "passive"
+    },
+    {
+      "pin": "2",
+      "name": "GND",
+      "type": "ground"
+    },
+    {
+      "pin": "3",
+      "name": "I/O2",
+      "type": "passive"
+    },
+    {
+      "pin": "4",
+      "name": "I/O2",
+      "type": "passive"
+    },
+    {
+      "pin": "5",
+      "name": "VBUS",
+      "type": "passive",
+      "notes": "protected rail, diode-steered"
+    },
+    {
+      "pin": "6",
+      "name": "I/O1",
+      "type": "passive"
+    }
+  ],
+  "pin_ratings": [
+    {
+      "pins": [
+        "I/O1",
+        "I/O2",
+        "VBUS"
+      ],
+      "kind": "voltage",
+      "level": "recommended",
+      "min": -5,
+      "max": 5,
+      "source": "UMW USBLC6-2SC6 datasheet Nov.2024 p.3 Electrical Characteristic: 'Reverse stand-off voltage VRWM 5 V' (no pin abs-max voltage is given; VBR min 6 V at 1mA)"
+    }
+  ],
+  "source_pdf": "UMW (UTD Semiconductor) USBLC6-2SC6 datasheet, Nov.2024, 7 pages, pin map p.1 Pinning information 'I/O1 6, VBUS 5, I/O2 4 / I/O1 1, GND 2, I/O2 3'; https://datasheet.lcsc.com/datasheet/pdf/cb339b3dae40ca0f3986b4e9f6690755.pdf?productCode=C2687116 sha256 973ea7520f3cd820e2c9326fcf3ee3ca5239cff491d6f42de057573942dcdf83"
+}

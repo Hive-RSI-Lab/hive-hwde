@@ -1,0 +1,45 @@
+{
+  "mpn": "PCM5102APWR",
+  "lcsc": "C107671",
+  "package": "TSSOP-20",
+  "description": "TI PCM5102A 112 dB stereo audio DAC with PLL and 32-bit 384 kHz PCM interface, TSSOP-20 (PW)",
+  "pinout": [
+    {"pin": "1", "name": "CPVDD", "type": "power_in", "notes": "charge pump supply 3.3 V"},
+    {"pin": "2", "name": "CAPP", "type": "analog", "notes": "charge pump flying cap positive terminal"},
+    {"pin": "3", "name": "CPGND", "type": "ground", "notes": "charge pump ground"},
+    {"pin": "4", "name": "CAPM", "type": "analog", "notes": "charge pump flying cap negative-rail terminal"},
+    {"pin": "5", "name": "VNEG", "type": "analog", "notes": "negative charge pump rail, -3.3 V, decoupling"},
+    {"pin": "6", "name": "OUTL", "type": "output", "notes": "analog output left"},
+    {"pin": "7", "name": "OUTR", "type": "output", "notes": "analog output right"},
+    {"pin": "8", "name": "AVDD", "type": "power_in", "notes": "analog supply 3.3 V"},
+    {"pin": "9", "name": "AGND", "type": "ground"},
+    {"pin": "10", "name": "DEMP", "type": "input", "notes": "de-emphasis control"},
+    {"pin": "11", "name": "FLT", "type": "input", "notes": "filter select"},
+    {"pin": "12", "name": "SCK", "type": "input", "notes": "system clock input"},
+    {"pin": "13", "name": "BCK", "type": "input", "notes": "audio bit clock input"},
+    {"pin": "14", "name": "DIN", "type": "input", "notes": "audio data input"},
+    {"pin": "15", "name": "LRCK", "type": "input", "notes": "audio word clock input"},
+    {"pin": "16", "name": "FMT", "type": "input", "notes": "audio format select"},
+    {"pin": "17", "name": "XSMT", "type": "input", "notes": "soft mute control"},
+    {"pin": "18", "name": "LDOO", "type": "power_out", "notes": "internal logic supply rail for decoupling, or external 1.8 V supply"},
+    {"pin": "19", "name": "DGND", "type": "ground"},
+    {"pin": "20", "name": "DVDD", "type": "power_in", "notes": "digital supply 1.8 V or 3.3 V"}
+  ],
+  "abs_max": [
+    {"param": "Supply voltage AVDD, CPVDD, DVDD", "value": "-0.3~3.9", "unit": "V"},
+    {"param": "Supply voltage LDO with DVDD at 1.8 V", "value": "-0.3~2.25", "unit": "V"},
+    {"param": "Digital input voltage, DVDD at 1.8 V", "value": "-0.3~2.25", "unit": "V"},
+    {"param": "Digital input voltage, DVDD at 3.3 V", "value": "-0.3~3.9", "unit": "V"},
+    {"param": "Analog input voltage", "value": "-0.3~3.9", "unit": "V"},
+    {"param": "Operating junction temperature range", "value": "-40~130", "unit": "C"}
+  ],
+  "pin_ratings": [
+    {"pins": ["AVDD", "CPVDD", "DVDD"], "kind": "voltage", "level": "abs_max", "min": -0.3, "max": 3.9,
+     "source": "TI PCM5102A ZHCSA60C (May 2012, rev. May 2015, Chinese edition) p.6 8.1 Absolute Maximum Ratings: 'AVDD, CPVDD, DVDD -0.3 3.9 V'"},
+    {"pins": ["LDOO"], "kind": "voltage", "level": "abs_max", "min": -0.3, "max": 2.25,
+     "source": "TI PCM5102A ZHCSA60C (May 2012, rev. May 2015, Chinese edition) p.6 8.1 Absolute Maximum Ratings: 'Supply voltage: LDO with DVDD at 1.8 V -0.3 2.25 V'"},
+    {"pins": ["DEMP", "FLT", "SCK", "BCK", "DIN", "LRCK", "FMT", "XSMT"], "kind": "voltage", "level": "abs_max", "min": -0.3, "max": 3.9,
+     "source": "TI PCM5102A ZHCSA60C (May 2012, rev. May 2015, Chinese edition) p.6 8.1 Absolute Maximum Ratings: 'Digital input voltage DVDD at 3.3 V -0.3 3.9 V' (2.25 V when DVDD is 1.8 V)"}
+  ],
+  "source_pdf": "TI PCM5100A/PCM5101A/PCM5102A(-Q1) 2VRMS DirectPath 112/106/100 dB audio stereo DAC, Chinese edition ZHCSA60C May 2012 revised May 2015, 43 pages, pin map p.5 'Pin Functions'; https://datasheet.lcsc.com/datasheet/pdf/427cb50cd71d4fa092a8afe7bc909457.pdf?productCode=C107671 sha256 82970ecf973a6c13a4c729c43889501d4b5b4258614a9941a5660d3c355b3c3b"
+}

@@ -1,0 +1,23 @@
+{
+  "mpn": "AO3400A",
+  "lcsc": "C20917",
+  "package": "SOT-23",
+  "description": "Alpha & Omega AO3400A 30V N-channel MOSFET, SOT-23",
+  "pinout": [
+    {"pin": "1", "name": "G", "type": "input", "notes": "gate"},
+    {"pin": "2", "name": "S", "type": "passive", "notes": "source"},
+    {"pin": "3", "name": "D", "type": "passive", "notes": "drain"}
+  ],
+  "abs_max": [
+    {"param": "VDS drain-source voltage", "value": 30, "unit": "V"},
+    {"param": "VGS gate-source voltage", "value": "-12~12", "unit": "V"},
+    {"param": "ID continuous drain current TA=25C", "value": 5.7, "unit": "A"}
+  ],
+  "pin_ratings": [
+    {"pins": ["D"], "kind": "voltage", "level": "abs_max", "max": 30, "ref": "S",
+     "source": "AOS AO3400A Rev 3 Dec 2011 p.1 Absolute Maximum Ratings: 'Drain-Source Voltage VDS 30 V'"},
+    {"pins": ["G"], "kind": "voltage", "level": "abs_max", "min": -12, "max": 12, "ref": "S",
+     "source": "AOS AO3400A Rev 3 Dec 2011 p.1 Absolute Maximum Ratings: 'Gate-Source Voltage VGS ±12 V'"}
+  ],
+  "source_pdf": "Alpha & Omega Semiconductor AO3400A 30V N-Channel MOSFET, Rev 3 Dec 2011, 5 pages, pin map p.1 (SOT23 top view: G, S, D = pins 1, 2, 3); https://datasheet.lcsc.com/datasheet/pdf/130876b936da464599428c58fd8de8f6.pdf?productCode=C20917 sha256 e5bfeef6cd3aa209f2e191ba42d5616259e8e7143ff01ed6c532b8ec3b13ab73"
+}

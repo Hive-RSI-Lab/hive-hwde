@@ -1,0 +1,163 @@
+{
+  "mpn": "CH224A",
+  "lcsc": "C42459160",
+  "package": "ESSOP-10 EP",
+  "description": "WCH CH224A USB PD 3.2 EPR sink controller, ESSOP10 with exposed pad",
+  "pinout": [
+    {
+      "pin": "1",
+      "name": "VHV",
+      "type": "power_in",
+      "notes": "operating supply input, 1uF to ground"
+    },
+    {
+      "pin": "2",
+      "name": "CFG2/SCL",
+      "type": "bidirectional",
+      "notes": "CFG2 or I2C clock, internal pull-up"
+    },
+    {
+      "pin": "3",
+      "name": "CFG3/SDA",
+      "type": "bidirectional",
+      "notes": "CFG3 or I2C data, internal pull-up"
+    },
+    {
+      "pin": "4",
+      "name": "DP",
+      "type": "bidirectional",
+      "notes": "USB D+"
+    },
+    {
+      "pin": "5",
+      "name": "DM",
+      "type": "bidirectional",
+      "notes": "USB D-"
+    },
+    {
+      "pin": "6",
+      "name": "CC2",
+      "type": "bidirectional",
+      "notes": "Type-C CC2 (datasheet pin 6)"
+    },
+    {
+      "pin": "7",
+      "name": "CC1",
+      "type": "bidirectional",
+      "notes": "Type-C CC1 (datasheet pin 7)"
+    },
+    {
+      "pin": "8",
+      "name": "VBUS",
+      "type": "input",
+      "notes": "voltage detect, must be shorted to VHV"
+    },
+    {
+      "pin": "9",
+      "name": "CFG1",
+      "type": "input",
+      "notes": "config input 1"
+    },
+    {
+      "pin": "10",
+      "name": "PG",
+      "type": "open_collector",
+      "notes": "Power Good, active low"
+    },
+    {
+      "pin": "11",
+      "name": "GND",
+      "type": "ground",
+      "notes": "exposed pad (datasheet pin 0), ground"
+    }
+  ],
+  "abs_max": [
+    {
+      "param": "VHV operating supply voltage",
+      "value": "-0.5~32",
+      "unit": "V"
+    },
+    {
+      "param": "VIOHV PG, VBUS pin voltage",
+      "value": "-0.5~32",
+      "unit": "V"
+    },
+    {
+      "param": "VIOCC CC1, CC2 pin voltage",
+      "value": "-0.5~32",
+      "unit": "V"
+    },
+    {
+      "param": "VIOUX DP, DM, CFG1 pin voltage",
+      "value": "-0.5~3.8",
+      "unit": "V"
+    },
+    {
+      "param": "VIOFT CFG2, CFG3 pin voltage",
+      "value": "-0.5~6.5",
+      "unit": "V"
+    }
+  ],
+  "pin_ratings": [
+    {
+      "pins": [
+        "VHV"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.5,
+      "max": 32,
+      "source": "WCH CH224 Datasheet V2.0 p.14 8.1.1 CH224Q/A Absolute Maximum Value: 'VHV Operating power supply voltage -0.5 32.0 V'"
+    },
+    {
+      "pins": [
+        "PG",
+        "VBUS"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.5,
+      "max": 32,
+      "source": "WCH CH224 Datasheet V2.0 p.14 8.1.1 CH224Q/A Absolute Maximum Value: 'VIOHV Voltage on high-voltage capable pins (PG, VBUS) -0.5 32.0 V'"
+    },
+    {
+      "pins": [
+        "CC1",
+        "CC2"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.5,
+      "max": 32,
+      "source": "WCH CH224 Datasheet V2.0 p.14 8.1.1 CH224Q/A Absolute Maximum Value: 'VIOCC Voltage on pin CC1, CC2 -0.5 32.0 V'"
+    },
+    {
+      "pins": [
+        "DP",
+        "DM",
+        "CFG1"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.5,
+      "max": 3.8,
+      "source": "WCH CH224 Datasheet V2.0 p.14 8.1.1 CH224Q/A Absolute Maximum Value: 'VIOUX Voltage on pin DP, DM, CFG1 -0.5 3.8 V'"
+    },
+    {
+      "pins": [
+        "CFG2/SCL",
+        "CFG3/SDA"
+      ],
+      "kind": "voltage",
+      "level": "abs_max",
+      "min": -0.5,
+      "max": 6.5,
+      "source": "WCH CH224 Datasheet V2.0 p.14 8.1.1 CH224Q/A Absolute Maximum Value: 'VIOFT Voltage on pin CFG2, CFG3 -0.5 6.5 V'"
+    }
+  ],
+  "exposed_pad": {
+    "present": true,
+    "connect_to": "GND"
+  },
+  "source_pdf": "WCH CH224 Datasheet (CH224Q/CH224A/CH224K...), Version 2.0, 19 pages, pin map p.2-3 Table 4-1 '1 VHV ... 6 CC2, 7 CC1, 0 GND EPAD'; https://datasheet.lcsc.com/datasheet/pdf/f56dde934d16c45798d3e354825a31c3.pdf?productCode=C42459160 sha256 3961c67d7f277764ad3e095e2e83fc497ec1850bfc3d887e96198db312b1bfb8"
+}

@@ -1,0 +1,29 @@
+{
+  "mpn": "OPA1678IDR",
+  "lcsc": "C192421",
+  "package": "SOIC-8",
+  "description": "TI OPA1678 dual low-distortion audio op amp, SOIC-8 (D package)",
+  "pinout": [
+    {"pin": "1", "name": "OUT A", "type": "output"},
+    {"pin": "2", "name": "-IN A", "type": "input", "notes": "inverting input, channel A"},
+    {"pin": "3", "name": "+IN A", "type": "input", "notes": "noninverting input, channel A"},
+    {"pin": "4", "name": "V-", "type": "ground", "notes": "negative supply; ground on this single-supply board"},
+    {"pin": "5", "name": "+IN B", "type": "input", "notes": "noninverting input, channel B"},
+    {"pin": "6", "name": "-IN B", "type": "input", "notes": "inverting input, channel B"},
+    {"pin": "7", "name": "OUT B", "type": "output"},
+    {"pin": "8", "name": "V+", "type": "power_in", "notes": "positive supply"}
+  ],
+  "abs_max": [
+    {"param": "Supply voltage VS = (V+) - (V-)", "value": 40, "unit": "V"},
+    {"param": "Input voltage", "value": "(V-)-0.5~(V+)+0.5", "unit": "V"},
+    {"param": "Input current (all pins except power-supply pins)", "value": "-10~10", "unit": "mA"},
+    {"param": "Junction temperature TJ", "value": 200, "unit": "C"}
+  ],
+  "pin_ratings": [
+    {"pins": ["V+"], "kind": "voltage", "level": "abs_max", "max": 40, "ref": "V-",
+     "source": "TI OPA1678/OPA1679 SBOS855 (February 2017) p.5 Absolute Maximum Ratings: 'Supply voltage, VS = (V+) - (V-) 40 V'"},
+    {"pins": ["+IN A", "-IN A", "+IN B", "-IN B"], "kind": "voltage", "level": "abs_max", "min": "(V-)-0.5", "max": "(V+)+0.5",
+     "source": "TI OPA1678/OPA1679 SBOS855 (February 2017) p.5 Absolute Maximum Ratings: 'Voltage Input (V-) - 0.5 / (V+) + 0.5 V'"}
+  ],
+  "source_pdf": "TI OPA1678/OPA1679 OPA167x Low-Distortion Audio Operational Amplifiers, SBOS855 February 2017, 47 pages, pin map p.3 'Pin Functions: OPA1678'; https://datasheet.lcsc.com/datasheet/pdf/ad5892476247963c6a215ccf8f2eb7b8.pdf?productCode=C192421 sha256 e4936dd46ef55264827984fd366337742b18d8de212dd2888a3dd3f2550ec5cd"
+}

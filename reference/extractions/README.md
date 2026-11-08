@@ -1,0 +1,37 @@
+# Extraction library
+
+hwde's own datasheet extractions, one file per LCSC part: `<LCSC>.json`, in the
+same schema as a board's `parts/<lcsc>.json` (`datasheet_extract.py`,
+`DATASHEET_SCHEMA`).
+
+`check_ratings` uses the board's own `parts/<lcsc>.json` when it has one.
+Otherwise it falls back to the entry here, so a common part is judged on
+every board that places it instead of being reported `rating_unrated`. The
+board's own extraction always wins, because it may describe a later revision.
+
+## Rules for an entry
+
+Fact, not fiction: every number comes from the datasheet the part's maker
+publishes for that exact LCSC code. A distributor listing, another vendor's
+datasheet for the same MPN, or memory does not count.
+
+- `lcsc` is the file's name. `pinout[].pin` is the pad number the KiCad
+  footprint uses, and `name` is the datasheet's pin name.
+- Every pin that is connected and is not ground or nc needs at least one
+  `pin_ratings` row of `kind: "voltage"`. The exception is a pin used only as
+  the `ref` of another row (an emitter, a source, an anode).
+- Every row's `source` cites the document, its revision, `p.N` and the table,
+  and quotes the line: `"JSCJ S8050 SOT-23 datasheet Rev 2.0 p.1 Maximum
+  Ratings: 'VCEO Collector-Emitter Voltage 25 V'"`.
+- `source_pdf` gives the maker, title, revision, page count, the page of the
+  pin map, the URL, and `sha256 <hex>` of the copy that was read.
+- Bounds relative to another pin use `ref`: a BJT's VCEO is `max` on C with
+  `ref: "E"`, and a P-FET's VDS is `min` on D with `ref: "S"`.
+- If a pin has no rating in the PDF, leave it unrated: it is better reported
+  as unrated than given a number nobody read. Connectors and switches use
+  the contact rating printed for every contact.
+
+PDFs are not committed (copyright). The URL and sha256 let anyone fetch the
+same copy and re-check it.
+`tests/test_check_ratings.py::test_library_entry_is_valid_and_cites_its_datasheet`
+checks every entry for schema, LCSC, URL, sha256 and page citations.

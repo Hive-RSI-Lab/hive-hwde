@@ -10,6 +10,7 @@ fires and the one that must not. Pure Python: no KiCad run.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -2716,3 +2717,125 @@ def test_a_vds_listing_is_not_judged_against_the_gate_row():
     ext = {"abs_max": [{"param": "Vgs gate-to-source voltage", "value": "+/-20",
                         "unit": "V"}]}
     assert cr.listing_comparisons(bom, ext) == []
+
+
+# ---------------------------------------------------- the extraction library
+# reference/extractions/<lcsc>.json: hwde's own datasheet reads, which a board
+# with no parts/<lcsc>.json falls back to, so a common part is judged on every
+# board that uses it rather than left unrated.
+
+NPN = {"mpn": "TESTNPN", "pinout": [
+    {"pin": "1", "name": "B", "type": "input"},
+    {"pin": "2", "name": "E", "type": "passive"},
+    {"pin": "3", "name": "C", "type": "passive"}],
+    "pin_ratings": [
+        {"pins": ["C"], "kind": "voltage", "level": "abs_max", "max": 25,
+         "ref": "E", "source": "test p.1: 'VCEO 25 V'"},
+        {"pins": ["B"], "kind": "voltage", "level": "abs_max", "min": -5,
+         "ref": "E", "source": "test p.1: 'VEBO 5 V'"}]}
+
+
+def _lib(monkeypatch, tmp_path, entries):
+    lib = tmp_path / "lib"
+    lib.mkdir()
+    for lcsc, ext in entries.items():
+        (lib / f"{lcsc}.json").write_text(json.dumps(ext))
+    monkeypatch.setattr(cr, "LIBRARY_DIR", lib)
+
+
+def test_library_extraction_judges_a_part_the_board_has_none_for(
+        tmp_path, monkeypatch):
+    _lib(monkeypatch, tmp_path, {"C77": NPN})
+    ws = _ws(tmp_path, [("Q1", "C77", {"1": "+3V3", "2": "GND",
+                                       "3": "+48V"})], {})
+    p = _run(ws)
+    errs = _errors(p)
+    assert [e["pin"] for e in errs] == ["Q1.3"]
+    assert errs[0]["limit_v"] == pytest.approx(25)
+    assert not [v for v in p["violations"] if v["kind"] == "rating_unrated"
+                and "Q1" in (v.get("refs") or [])]
+
+
+def test_board_extraction_wins_over_the_library(tmp_path, monkeypatch):
+    _lib(monkeypatch, tmp_path, {"C77": NPN})
+    own = json.loads(json.dumps(NPN))
+    own["pin_ratings"][0]["max"] = 60
+    ws = _ws(tmp_path, [("Q1", "C77", {"1": "+3V3", "2": "GND",
+                                       "3": "+48V"})], {"C77": own})
+    assert _errors(_run(ws)) == []
+
+
+def test_no_library_entry_is_still_unrated(tmp_path, monkeypatch):
+    _lib(monkeypatch, tmp_path, {})
+    ws = _ws(tmp_path, [("Q1", "C77", {"1": "+3V3", "2": "GND",
+                                       "3": "+48V"})], {})
+    p = _run(ws)
+    assert any(v["kind"] == "rating_unrated" and v["refs"] == ["Q1"]
+               for v in p["violations"])
+
+
+def test_inductors_and_beads_are_not_voltage_unrated(tmp_path):
+    bom = [{"lcsc": "C5", "mpn": "IND", "attributes": []},
+           {"lcsc": "C6", "mpn": "BEAD", "attributes": []},
+           {"lcsc": "C7", "mpn": "CAP", "attributes": []}]
+    ws = _ws(tmp_path, [("L1", "C5", {"1": "SW", "2": "+5V"}),
+                        ("FB1", "C6", {"1": "+5V", "2": "+5VA"}),
+                        ("C1", "C7", {"1": "+5V", "2": "GND"})], {}, bom)
+    p = _run(ws)
+    grouped = [v for v in p["violations"] if v["kind"] == "rating_unrated"
+               and "two-terminal" in v["msg"]]
+    assert [g["refs"] for g in grouped] == [["C1"]]
+
+
+def _q1_unrated(p):
+    return [v for v in p["violations"] if v["kind"] == "rating_unrated"
+            and v["refs"] == ["Q1"]]
+
+
+def test_rating_against_an_unknown_net_is_judged_at_the_board_rails(
+        tmp_path, monkeypatch):
+    # emitter on a node no constraint names: VCE is at most +12V - 0 V = 12 V,
+    # inside VCEO 25 V, so C is judged, not left unrated. B stays unrated:
+    # VEBO's -5 V against an unknown emitter could break at the rails
+    _lib(monkeypatch, tmp_path, {"C77": NPN})
+    ws = _ws(tmp_path, [("Q1", "C77", {"1": "+3V3", "2": "/EMIT",
+                                       "3": "+12V"})], {})
+    p = _run(ws)
+    assert _errors(p) == []
+    [u] = _q1_unrated(p)
+    assert u["pins"] == ["1 B: rated against E, whose net has no known "
+                         "voltage (at the board's rails, 0..12 V, it could "
+                         "break the rating)"]
+
+
+def test_rating_against_an_unknown_net_that_could_break_it_stays_unrated(
+        tmp_path, monkeypatch):
+    # +48V on C over an unknown emitter could be 48 V VCE: not passed silently
+    _lib(monkeypatch, tmp_path, {"C77": NPN})
+    ws = _ws(tmp_path, [("Q1", "C77", {"1": "+3V3", "2": "/EMIT",
+                                       "3": "+48V"})], {})
+    p = _run(ws)
+    assert _errors(p) == []
+    [u] = _q1_unrated(p)
+    assert "rated against E" in u["msg"] and "could break" in u["msg"]
+
+
+LIBRARY = sorted((ROOT / "reference" / "extractions").glob("C*.json"))
+
+
+@pytest.mark.parametrize("path", LIBRARY, ids=lambda p: p.stem)
+def test_library_entry_is_valid_and_cites_its_datasheet(path):
+    """Fact, not fiction: every entry is schema-valid, names its LCSC code,
+    records the PDF's URL and sha256, and every rating row cites a page."""
+    ext = json.loads(path.read_text())
+    jsonschema.validate(ext, datasheet_extract.DATASHEET_SCHEMA)
+    assert ext["lcsc"] == path.stem
+    src = ext["source_pdf"]
+    assert "http" in src and re.search(r"sha256 [0-9a-f]{64}", src), src
+    pins = {p["pin"] for p in ext["pinout"]} | \
+        {p["name"] for p in ext["pinout"]}
+    assert ext.get("pin_ratings"), "a library entry exists to rate pins"
+    for row in ext["pin_ratings"]:
+        assert re.search(r"\bp\.\s?\d+", row["source"]), row
+        assert set(row["pins"]) <= pins, row
+        assert row.get("ref") is None or row["ref"] in pins, row
