@@ -30,6 +30,13 @@ rules as routing constraints; cite the record id when you apply one.
    (and share settings) become one zone over their union, so a pour can be
    drawn as several rects; ones with different settings stay apart (a
    note says so) and need a track across the seam.
+   A same-net copper patch that joins a power pad to its plane vias (a
+   power stage's switch node, a 5 A input) is `hwde zone_patch --pcb B
+   --net PVDD --region X0,Y0,X1,Y1 --vias 6` (or `--poly "x,y ..."` for an
+   L-shape): a priority-5 solid zone named PATCH_<net> above the pour, the
+   vias placed clear of other copper and SMD pads, refilled and checked.
+   The same call reshapes an existing patch; `--remove` drops it and keeps
+   its vias.
 0a. A board with a BGA (any fine-pitch ball grid; route_escape finds them
    by geometry): `scripts/route_escape.py --pcb <board>` after rules_gen
    and the planes. It fans each field out with KRT bga_fanout (dog-bone

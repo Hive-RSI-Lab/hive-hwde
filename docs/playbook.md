@@ -185,7 +185,10 @@ weighed like any other report:
   (`[{"net", "from", "to", "current_a"}]`), each net's budget, and a USB PD
   input's contract (`pd_source`, or 3 A derived when a PD sink IC is on the
   board). Write budgets at the real current - a 0.5 A budget on a 5 A VBUS
-  passes every piece check_current judges.
+  passes every piece check_current judges. A cut at a layer change is
+  fixed with `scripts/zone_patch.py --pcb <pcb> --net <net> --region
+  x0,y0,x1,y1 --vias N`: a solid PATCH_<net> zone over the pad with N vias
+  down to the plane.
 - `scripts/soa_check.py --fet <mpn> --hotswap --c 940u --v 28 --t-ramp 10m`
   (or `--csv` of a simulated t,vds,id; `--at 10m` for the SOA power):
   a MOSFET's peak Tj through one pulse, for a written margin.
