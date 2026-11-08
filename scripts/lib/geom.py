@@ -293,6 +293,9 @@ class Zone:
     # leaves to other nets' copper (netclass or DRU rules can only widen
     # it). None when the zone does not say.
     clearance: Optional[float] = None
+    # `(name ...)` and the first outline ring `(polygon (pts ...))`
+    name: str = ""
+    outline: tuple = ()
 
     @property
     def filled(self) -> bool:
@@ -948,10 +951,17 @@ class BoardGeom:
                         fills.setdefault(fln, []).append(poly)
             cp = _kid(zone, "connect_pads")
             cl = _kid(cp, "clearance") if cp is not None else None
+            nm = _kid(zone, "name")
+            pg = _kid(zone, "polygon")
+            ring = _pts(_kid(pg, "pts")) if pg is not None and \
+                _kid(pg, "pts") is not None else []
             self._zones.append(Zone(net=net, layers=declared or tuple(fills.keys()),
                                     fills=fills, zone_id=zid,
                                     clearance=_nums(cl)[0] if cl and _nums(cl)
-                                    else None))
+                                    else None,
+                                    name=_strs(nm)[0] if nm is not None
+                                    and _strs(nm) else "",
+                                    outline=tuple(ring)))
             zid += 1
 
     def _parse_outline(self, root) -> Polygon:

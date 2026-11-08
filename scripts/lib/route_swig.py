@@ -62,7 +62,12 @@ job JSON: {"verb": ..., "result": out.json, ...} with verbs:
         {"net": "GND", "layer": "In1.Cu", "poly": [[x,y], ...] |
          "rect": [x1,y1,x2,y2], "priority": 0, "min_island_mm2": null,
          "clearance": mm, "min_width": mm,
-         "connect": "solid"|"thermal"|null}   # solid -> (connect_pads yes)
+         "connect": "solid"|"thermal"|null,   # solid -> (connect_pads yes)
+         "name": "PATCH_VBUS"}                # optional (zone_name)
+      "remove" (optional): [{"name": "PATCH_VBUS", "layer": "F.Cu",
+         "inside": [x1,y1,x2,y2]}] drops the zones of that name and layer
+      whose bounding box lies inside the box (0.05 mm slack) - after every
+      addition, just before the save (zone_patch.py's replace / remove).
 """
 import json
 import sys
@@ -336,6 +341,7 @@ def verb_add_zones(job):
     board = pcbnew.LoadBoard(job["board"])
     _set_layer_types(board, job.get("layer_types"))
     made = []
+    fresh = set()
     for i, z in enumerate(job["zones"]):
         zone = pcbnew.ZONE(board)
         zone.SetLayer(_layer_id(board, z["layer"]))
@@ -361,13 +367,38 @@ def verb_add_zones(job):
         outline.NewOutline()
         for x, y in pts:
             outline.Append(iu(x), iu(y))
+        if z.get("name"):
+            zone.SetZoneName(str(z["name"]))
         zone.SetIsFilled(False)
         board.Add(zone)
+        fresh.add(zone.m_Uuid.AsString())
         made.append({"index": i, "net": z["net"], "layer": z["layer"],
-                     "points": len(pts)})
+                     "points": len(pts), "uuid": zone.m_Uuid.AsString()})
+    # removals LAST (see apply_ops), never the zones this job just added
+    gone, gone_ids = [], set()
+    for r in job.get("remove") or []:
+        lid = _layer_id(board, r["layer"])
+        x1, y1, x2, y2 = r["inside"]
+        slack = iu(0.05)
+        for zone in board.Zones():
+            u = zone.m_Uuid.AsString()
+            if u in fresh or u in gone_ids \
+                    or zone.GetZoneName() != r["name"] \
+                    or not zone.IsOnLayer(lid):
+                continue
+            bb = zone.GetBoundingBox()
+            if bb.GetX() >= iu(x1) - slack and bb.GetRight() <= iu(x2) + slack \
+                    and bb.GetY() >= iu(y1) - slack \
+                    and bb.GetBottom() <= iu(y2) + slack:
+                gone.append(zone)
+                gone_ids.add(u)
+    removed = [{"name": zone.GetZoneName(),
+                "uuid": zone.m_Uuid.AsString()} for zone in gone]
+    for zone in gone:
+        board.Remove(zone)
     if not board.Save(job["out"]):
         raise RuntimeError("board.Save failed: %s" % job["out"])
-    return {"zones": made, "out": job["out"]}
+    return {"zones": made, "removed": removed, "out": job["out"]}
 
 
 def verb_set_rule_areas(job):
