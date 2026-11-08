@@ -1,0 +1,239 @@
+{
+ "script": "check_esd",
+ "status": "violations",
+ "board": "core.kicad_pcb",
+ "counts": {
+  "total": 2,
+  "by_severity": {
+   "warning": 2
+  },
+  "by_source": {
+   "check_esd": 2
+  }
+ },
+ "violations": [
+  {
+   "check": "check_esd",
+   "severity": "warning",
+   "pos": [
+    48.637,
+    189.047
+   ],
+   "layer": null,
+   "net": "/USB_DP",
+   "refs": [
+    "J1",
+    "U2"
+   ],
+   "msg": "J1 pin A6 (/USB_DP): the clamp U2 is 22.5 mm of track from the pin (> 10 mm): the strike's loop radiates into everything along it; move the clamp to the connector",
+   "source": "check_esd",
+   "items": [
+    {
+     "msg": "J1 pin A6 (/USB_DP): the clamp U2 is 22.5 mm of track from the pin (> 10 mm): the strike's loop radiates into everything along it; move the clamp to the connector",
+     "pos": [
+      48.637,
+      189.047
+     ]
+    }
+   ],
+   "kind": "esd_clamp_far",
+   "mm": 22.52
+  },
+  {
+   "check": "check_esd",
+   "severity": "warning",
+   "pos": [
+    50.537,
+    189.047
+   ],
+   "layer": null,
+   "net": "/USB_DM",
+   "refs": [
+    "J1",
+    "U2"
+   ],
+   "msg": "J1 pin A7 (/USB_DM): the clamp U2 is 18.7 mm of track from the pin (> 10 mm): the strike's loop radiates into everything along it; move the clamp to the connector",
+   "source": "check_esd",
+   "items": [
+    {
+     "msg": "J1 pin A7 (/USB_DM): the clamp U2 is 18.7 mm of track from the pin (> 10 mm): the strike's loop radiates into everything along it; move the clamp to the connector",
+     "pos": [
+      50.537,
+      189.047
+     ]
+    }
+   ],
+   "kind": "esd_clamp_far",
+   "mm": 18.73
+  }
+ ],
+ "checked": [
+  {
+   "level_kv": 8.0,
+   "di_dt_a_per_s": 37500000000.0,
+   "connectors": [
+    "J1",
+    "J10",
+    "J11",
+    "J2",
+    "J4",
+    "J5",
+    "J6",
+    "J7"
+   ],
+   "internal_by_value": [
+    "J3"
+   ],
+   "clamps": [
+    "D1",
+    "D6",
+    "D7",
+    "D8",
+    "D9",
+    "U2"
+   ],
+   "lines": [
+    {
+     "connector": "J1",
+     "pin": "A4",
+     "net": "VBUS_IN",
+     "power": true,
+     "clamp": "D1",
+     "clamp_pin": "1",
+     "mm": 5.13,
+     "routed": false,
+     "vias": 0,
+     "stub_mm": 0.0,
+     "ground_via_mm": 0.0,
+     "est_extra_nh": 0.0,
+     "est_extra_v": 0.0
+    },
+    {
+     "connector": "J1",
+     "pin": "A5",
+     "net": "/power_in/CC1",
+     "power": false,
+     "clamp": "D6",
+     "clamp_pin": "1",
+     "mm": 7.77,
+     "routed": false,
+     "vias": 0,
+     "stub_mm": 0.0,
+     "ground_via_mm": 0.0,
+     "est_extra_nh": 0.0,
+     "est_extra_v": 0.0
+    },
+    {
+     "connector": "J1",
+     "pin": "A6",
+     "net": "/USB_DP",
+     "power": false,
+     "clamp": "U2",
+     "clamp_pin": "6",
+     "mm": 22.52,
+     "routed": true,
+     "vias": 0,
+     "stub_mm": 0.0,
+     "ground_via_mm": 0.0,
+     "est_extra_nh": 0.0,
+     "est_extra_v": 0.0
+    },
+    {
+     "connector": "J1",
+     "pin": "A7",
+     "net": "/USB_DM",
+     "power": false,
+     "clamp": "U2",
+     "clamp_pin": "4",
+     "mm": 18.73,
+     "routed": true,
+     "vias": 0,
+     "stub_mm": 1.42,
+     "ground_via_mm": 0.0,
+     "est_extra_nh": 1.42,
+     "est_extra_v": 53.2
+    },
+    {
+     "connector": "J1",
+     "pin": "B5",
+     "net": "/power_in/CC2",
+     "power": false,
+     "clamp": "D9",
+     "clamp_pin": "2",
+     "mm": 0.89,
+     "routed": true,
+     "vias": 0,
+     "stub_mm": 0.89,
+     "ground_via_mm": 0.0,
+     "est_extra_nh": 0.89,
+     "est_extra_v": 33.4
+    },
+    {
+     "connector": "J4",
+     "pin": "1",
+     "net": "/dac/SUB1_OUT",
+     "power": false,
+     "clamp": "D7",
+     "clamp_pin": "1",
+     "mm": 2.62,
+     "routed": true,
+     "vias": 0,
+     "stub_mm": 2.62,
+     "ground_via_mm": 0.0,
+     "est_extra_nh": 2.62,
+     "est_extra_v": 98.1
+    },
+    {
+     "connector": "J4",
+     "pin": "3",
+     "net": "/dac/SUB2_OUT",
+     "power": false,
+     "clamp": "D7",
+     "clamp_pin": "2",
+     "mm": 2.64,
+     "routed": true,
+     "vias": 0,
+     "stub_mm": 2.64,
+     "ground_via_mm": 0.0,
+     "est_extra_nh": 2.64,
+     "est_extra_v": 99.2
+    },
+    {
+     "connector": "J5",
+     "pin": "1",
+     "net": "/linein/LIN_L",
+     "power": false,
+     "clamp": "D8",
+     "clamp_pin": "1",
+     "mm": 5.96,
+     "routed": false,
+     "vias": 0,
+     "stub_mm": 0.0,
+     "ground_via_mm": 0.0,
+     "est_extra_nh": 0.0,
+     "est_extra_v": 0.0
+    },
+    {
+     "connector": "J5",
+     "pin": "3",
+     "net": "/linein/LIN_R",
+     "power": false,
+     "clamp": "D8",
+     "clamp_pin": "2",
+     "mm": 1.45,
+     "routed": true,
+     "vias": 0,
+     "stub_mm": 1.45,
+     "ground_via_mm": 0.0,
+     "est_extra_nh": 1.45,
+     "est_extra_v": 54.5
+    }
+   ]
+  }
+ ],
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-31T19:25:18+00:00",
+ "input": "kicad/core.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:630542ce7ba57dc295cc63170c7ff137d680b2911d73032c71e3add858619ae6"
+}

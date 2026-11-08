@@ -4,6 +4,7 @@
 #   sh build.sh board    fresh board: board_init, rules_gen, placement, antenna
 #                        keep-out, pours, power vias (unrouted)
 #   sh build.sh route    Freerouting via route_auto, then stitch_vias
+#   sh build.sh stitch   full GND stitching pass on the committed board
 # hwde is the module's runner (hive-hwde/bin/hwde); HWDE overrides it.
 set -e
 cd "$(dirname "$0")"
@@ -33,8 +34,10 @@ board)
 	h rules_gen --constraints kicad/constraints.json --layers 2 --out-dru kicad/lite-main.kicad_dru \
 		--pro kicad/lite-main.kicad_pro >reports/rules-gen.json
 	python3 kicad/gen/pro_clearance.py kicad/lite-main.kicad_pro >/dev/null
+	cat kicad/gen/extra_rules.dru >>kicad/lite-main.kicad_dru
 	python3 kicad/gen/place.py >kicad/place-ops.json
 	h place_edit --pcb kicad/lite-main.kicad_pcb --ops kicad/place-ops.json --out-report reports/place-edit.json >/dev/null
+	kpy kicad/gen/h4_npth.py kicad/lite-main.kicad_pcb >/dev/null
 	kpy kicad/gen/keepout.py kicad/lite-main.kicad_pcb >/dev/null
 	python3 kicad/gen/power.py >/dev/null
 	h planes_gen --pcb kicad/lite-main.kicad_pcb --out-report route/planes_gen.json >/dev/null
@@ -65,6 +68,10 @@ if [ "$step" = finish ]; then
 	h place_edit --pcb kicad/lite-main.kicad_pcb --ops kicad/silk-fix-ops.json --allow-routed --out-report reports/silk-fix.json >/dev/null
 	kpy kicad/gen/snap_outline.py kicad/lite-main.kicad_pcb
 	cp kicad/lite-main.kicad_pcb routing/post-silk.kicad_pcb
+fi
+# full GND stitching at the auto pitch (sh build.sh stitch); keep-outs are respected
+if [ "$step" = stitch ]; then
+	h stitch_vias --pcb kicad/lite-main.kicad_pcb --constraints kicad/constraints.json --nets GND --pitch auto --max-vias 800 --out-report route/stitch_full.json
 fi
 # fab package: Gerbers, drill, BOM, CPL (sh build.sh fab); then the dfm gate
 if [ "$step" = fab ]; then

@@ -2196,6 +2196,281 @@
 				)
 			)
 		)
+		(symbol "aiee:PESD5V0S2BT,215"
+			(pin_names
+				(hide yes)
+			)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "D"
+				(id 0)
+				(at 0 15.24 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "PESD5V0S2BT,215"
+				(id 1)
+				(at 0 -15.24 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "aiee:SOT-23_L2.9-W1.3-P1.90-LS2.4-BR"
+				(id 2)
+				(at 0 -17.78 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					) hide
+				)
+			)
+			(property "Datasheet" "https://lcsc.com/product-detail/Diodes-ESD_NXP_PESD5V0S2BT_PESD5V0S2BT_C49338.html"
+				(id 3)
+				(at 0 -20.32 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					) hide
+				)
+			)
+			(property "Manufacturer" "Nexperia(安世)"
+				(id 4)
+				(at 0 -22.86 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					) hide
+				)
+			)
+			(property "MPN" "PESD5V0S2BT,215"
+				(id 5)
+				(at 0 -25.4 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					) hide
+				)
+			)
+			(property "LCSC Part" "C49338"
+				(id 6)
+				(at 0 -27.94 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					) hide
+				)
+			)
+			(property "ki_keywords" "ESD Protection Devices"
+				(id 8)
+				(at 0 -30.48 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					) hide
+				)
+			)
+			(property "ki_description" "PESD5V0S2BT"
+				(id 9)
+				(at 0 -33.02 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					) hide
+				)
+			)
+			(symbol "PESD5V0S2BT,215_0_1"
+				(rectangle
+					(start -10.16 5.08)
+					(end 10.16 -5.08)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(arc
+					(start 0.25 2.54)
+					(mid -0.25 2.54)
+					(end 0.25 2.54)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -5.08 -5.08) (xy -5.08 2.54) (xy 5.08 2.54)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0.0000 5.08) (xy 0.0000 2.54)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -2.54 -2.54) (xy -7.87 -2.54)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -7.87 -2.54) (xy -7.87 -1.78)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 5.08 2.54) (xy 5.08 -5.08)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 7.62 -2.54) (xy 2.29 -2.54)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 2.29 -2.54) (xy 2.29 -1.78)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -7.62 0.0000) (xy -5.08 -2.54) (xy -2.54 0.0000) (xy -7.62 0.0000)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(polyline
+					(pts
+						(xy 2.54 0.0000) (xy 5.08 -2.54) (xy 7.62 0.0000) (xy 2.54 0.0000)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(pin passive line
+					(at -5.08 -10.16 90)
+					(length 5.08)
+					(name "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 5.08 -10.16 90)
+					(length 5.08)
+					(name "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 0.0000 10.16 270)
+					(length 5.08)
+					(name "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "aiee:ES9018K2M")
@@ -5644,7 +5919,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "10uF"
+		(property "Value" "100uF"
 			(at 238.252 99.06 0.0000)
 			(effects
 				(font
@@ -5653,7 +5928,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "aiee:C0603"
+		(property "Footprint" "aiee:C1206"
 			(at 235.9152 93.98 0.0000)
 			(effects
 				(font
@@ -5662,7 +5937,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C19702"
+		(property "LCSC" "C15008"
 			(at 237.49 102.8699 0)
 			(effects
 				(font
@@ -7290,7 +7565,7 @@
 			)
 		)
 		(property "Value" "SUB OUT"
-			(at 504.7246 92.71 0.0000)
+			(at 494.5646 92.71 0.0000)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7379,6 +7654,120 @@
 			(project "dac"
 				(path "/caa78795-1512-4865-b6c8-dd81dc66e7f0"
 					(reference "#PWR5059")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "aiee:PESD5V0S2BT,215")
+		(at 528.32 104.14 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced no)
+		(uuid "bfe627fb-edb4-5b5d-8820-f57aefac7d42")
+		(property "Reference" "D7"
+			(at 527.3306 115.57 0.0000)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "PESD5V0S2BT"
+			(at 516.89 92.71 0.0000)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "aiee:SOT-23_L2.9-W1.3-P1.90-LS2.4-BR"
+			(at 528.32 86.36 0.0000)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C49338"
+			(at 530.86 109.2199 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "MPN" "PESD5V0S2BT,215"
+			(at 530.86 109.2199 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "1"
+			(uuid "8d9789ea-9337-5eec-a173-82e241a6f78f")
+		)
+		(pin "2"
+			(uuid "579bf7a1-ca1b-5633-896f-3218acba23f4")
+		)
+		(pin "3"
+			(uuid "95b756d1-8eb0-5830-9b88-eafe5848d62a")
+		)
+		(instances
+			(project "dac"
+				(path "/caa78795-1512-4865-b6c8-dd81dc66e7f0"
+					(reference "D7")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 528.32 91.44 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced no)
+		(uuid "1e74b9e0-c43c-571b-b4d1-3993aca6bd19")
+		(property "Reference" "#PWR5060"
+			(at 528.32 85.09 0.0000)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 529.59 95.25 0.0000)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "1"
+			(uuid "9e0e3433-fc20-59c1-9088-1e545ad65f14")
+		)
+		(instances
+			(project "dac"
+				(path "/caa78795-1512-4865-b6c8-dd81dc66e7f0"
+					(reference "#PWR5060")
 					(unit 1)
 				)
 			)
@@ -8824,6 +9213,36 @@
 		)
 		(uuid "f4056810-2c4f-4f58-9c09-20c4191d7a3d")
 	)
+	(wire
+		(pts
+			(xy 523.24 114.3) (xy 523.24 116.84)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "36766801-75f6-5522-bb0a-f6ffb6912eeb")
+	)
+	(wire
+		(pts
+			(xy 533.4 114.3) (xy 533.4 116.84)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "dcf0abd8-c059-5873-bf73-134930ba183c")
+	)
+	(wire
+		(pts
+			(xy 528.32 93.98) (xy 528.32 91.44)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4efc2961-edd2-5c33-bd59-7c80075dc18e")
+	)
 	(label "DAC_EN"
 		(at 12.7 25.4 180)
 		(effects
@@ -10263,6 +10682,36 @@
 			(justify right bottom)
 		)
 		(uuid "ba5b6f8c-ead8-4d0d-9f34-3c441def5208")
+	)
+	(label "SUB1_OUT"
+		(at 523.24 116.84 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "e4e2ede4-3307-5004-a682-7154cb7549b9")
+	)
+	(label "SUB2_OUT"
+		(at 533.4 116.84 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "a5bef7ba-01ae-51b3-8e77-73321380027d")
+	)
+	(label "GND"
+		(at 528.32 91.44 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "bbecfba2-a511-59d5-a906-bcefd2bea383")
 	)
 	(hierarchical_label "DAC_EN"
 		(shape input)

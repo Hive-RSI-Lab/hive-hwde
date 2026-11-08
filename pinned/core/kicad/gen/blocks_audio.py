@@ -51,7 +51,11 @@ for ch, n in (("L", 72), ("R", 80)):
     C(f"C{n + 71}", "1nF", f"OP{ch}_N", f"MAIN_{ch}")
 R("R90", "470R", "+5VA", "VREF", role="2.4 V reference, stiff against the 2x4.3k DAC legs")
 R("R91", "470R", "VREF", "GND")
-C("C64", "10uF", "VREF", pkg="0603")
+# review-3 R3-AUDIO-1: VREF reaches MAIN at unity and the amp at 24 dB, so a
+# +5VA dip from a Wi-Fi burst ticked at the speaker (27 mVpp per 10 mV at
+# 10 uF, corner 68 Hz); 100 uF puts the corner at 6.8 Hz: 3.5 mVpp and 20 dB
+# more L/R separation (docs/review-3/sims/audio/tb_vref_*)
+C("C64", "100uF", "VREF", pkg="1206")
 
 # ------------------------------------------------------------ B8 sub DAC
 P("U12", A + "PCM5102APWR", "PCM5102A", A + "TSSOP-20_L6.5-W4.4-P0.65-LS6.4-BL",
@@ -74,11 +78,21 @@ C("C71", "1nF", "SUB1_OUT")
 C("C72", "1nF", "SUB2_OUT")
 P("J4", A + "XDJK-0271-1650", "SUB OUT", A + "CONN-TH_XDJK-0271-1650",
   {"1": "SUB1_OUT", "2": "GND", "3": "SUB2_OUT"}, lcsc="C7527522", mpn="XDJK-0271-1650", role="stacked dual RCA: SUB1 (top) / SUB2")
+# sub out ESD at the RCA (issue #133): bidirectional 5 V, the 2 Vrms
+# (2.8 V peak) ground-centred signal stays inside it.
+P("D7", A + "PESD5V0S2BT,215", "PESD5V0S2BT", A + "SOT-23_L2.9-W1.3-P1.90-LS2.4-BR",
+  {"1": "SUB1_OUT", "2": "SUB2_OUT", "3": "GND"}, lcsc="C49338", mpn="PESD5V0S2BT,215",
+  role="sub out ESD")
 
 # ------------------------------------------------------------ B9 line in
 sheet("linein")
 P("J5", A + "XDJK-0271-1650", "LINE IN", A + "CONN-TH_XDJK-0271-1650",
   {"1": "LIN_L", "2": "GND", "3": "LIN_R"}, lcsc="C7527522", mpn="XDJK-0271-1650", role="stacked dual RCA: line in L (top) / R")
+# line in ESD at the RCA (issue #133): bidirectional 5 V, the 2 Vrms
+# (2.8 V peak) ground-centred signal stays inside it.
+P("D8", A + "PESD5V0S2BT,215", "PESD5V0S2BT", A + "SOT-23_L2.9-W1.3-P1.90-LS2.4-BR",
+  {"1": "LIN_L", "2": "LIN_R", "3": "GND"}, lcsc="C49338", mpn="PESD5V0S2BT,215",
+  role="line in ESD")
 for ch, n in (("L", 100), ("R", 110)):
     R(f"R{n}", "4.7k", f"LIN_{ch}", f"LDIV_{ch}", role="halve 2 Vrms to 1 Vrms")
     R(f"R{n + 1}", "4.7k", f"LDIV_{ch}", "GND")

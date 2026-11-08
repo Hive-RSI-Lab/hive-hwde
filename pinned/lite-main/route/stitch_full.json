@@ -1,0 +1,2788 @@
+{
+ "script": "stitch_vias",
+ "status": "pass",
+ "board": "lite-main.kicad_pcb",
+ "counts": {
+  "total": 0,
+  "by_severity": {},
+  "by_source": {}
+ },
+ "violations": [],
+ "requested": 0,
+ "placed": 273,
+ "skipped": [],
+ "via_size": 0.6,
+ "via_drill": 0.3,
+ "clearance_mm": 0.127,
+ "dry_run": false,
+ "applied": true,
+ "refilled": true,
+ "apply_by_status": {
+  "added": 273
+ },
+ "ops": [
+  {
+   "op": "add_via",
+   "at": [
+    25.506,
+    71.53
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    25.506,
+    75.813
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    25.506,
+    80.095
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    25.506,
+    84.378
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    25.506,
+    88.661
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    25.506,
+    92.944
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    25.506,
+    97.226
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    25.506,
+    101.509
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    29.789,
+    67.247
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    29.789,
+    71.53
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    29.789,
+    75.813
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    29.789,
+    80.095
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    29.789,
+    84.378
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    29.789,
+    88.661
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    29.789,
+    92.944
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    29.789,
+    97.226
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    29.789,
+    101.509
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    34.072,
+    62.964
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    34.072,
+    67.247
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    34.072,
+    71.53
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    34.072,
+    80.095
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    34.072,
+    84.378
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    34.072,
+    88.661
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    34.072,
+    92.944
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    34.072,
+    97.226
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    34.072,
+    101.509
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    34.072,
+    105.792
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    34.072,
+    114.357
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    34.072,
+    144.337
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    34.072,
+    148.619
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    38.355,
+    62.964
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    38.355,
+    67.247
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    38.355,
+    71.53
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    38.355,
+    144.337
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    38.355,
+    148.619
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    42.637,
+    62.964
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    42.637,
+    67.247
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    42.637,
+    71.53
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    42.637,
+    75.813
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    42.637,
+    80.095
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    42.637,
+    88.661
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    42.637,
+    92.944
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    42.637,
+    97.226
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    42.637,
+    101.509
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    42.637,
+    105.792
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    42.637,
+    144.337
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    42.637,
+    148.619
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    46.92,
+    62.964
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    46.92,
+    67.247
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    46.92,
+    71.53
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    46.92,
+    92.944
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    46.92,
+    97.226
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    46.92,
+    127.206
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    46.92,
+    140.054
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    46.92,
+    144.337
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    46.92,
+    148.619
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    51.203,
+    62.964
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    51.203,
+    67.247
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    51.203,
+    71.53
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    51.203,
+    80.095
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    51.203,
+    140.054
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    51.203,
+    144.337
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    51.203,
+    148.619
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    55.486,
+    62.964
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    55.486,
+    67.247
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    55.486,
+    71.53
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    55.486,
+    80.095
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    55.486,
+    97.226
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    55.486,
+    140.054
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    55.486,
+    144.337
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    55.486,
+    148.619
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    59.768,
+    62.964
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    59.768,
+    67.247
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    59.768,
+    71.53
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    59.768,
+    80.095
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    59.768,
+    101.509
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    59.768,
+    105.792
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    59.768,
+    114.357
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    59.768,
+    127.206
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    59.768,
+    140.054
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    59.768,
+    144.337
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    59.768,
+    148.619
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    64.051,
+    62.964
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    64.051,
+    67.247
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    64.051,
+    71.53
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    64.051,
+    75.813
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    64.051,
+    97.226
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    64.051,
+    105.792
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    64.051,
+    114.357
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    64.051,
+    140.054
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    64.051,
+    144.337
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    64.051,
+    148.619
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    68.334,
+    62.964
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    68.334,
+    67.247
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    68.334,
+    71.53
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    68.334,
+    97.226
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    68.334,
+    105.792
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    68.334,
+    114.357
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    68.334,
+    127.206
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    68.334,
+    144.337
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    72.617,
+    67.247
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    72.617,
+    71.53
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    72.617,
+    92.944
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    72.617,
+    105.792
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    72.617,
+    140.054
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    72.617,
+    148.619
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    76.899,
+    84.378
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    76.899,
+    114.357
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    76.899,
+    131.488
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    76.899,
+    135.771
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    81.182,
+    62.964
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    81.182,
+    122.923
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    81.182,
+    127.206
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    81.182,
+    131.488
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    81.182,
+    135.771
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    81.182,
+    140.054
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    81.182,
+    148.619
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    85.465,
+    80.095
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    85.465,
+    84.378
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    85.465,
+    88.661
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    85.465,
+    92.944
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    85.465,
+    105.792
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    85.465,
+    122.923
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    85.465,
+    127.206
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    85.465,
+    131.488
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    85.465,
+    135.771
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    85.465,
+    140.054
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    89.748,
+    62.964
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    89.748,
+    67.247
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    89.748,
+    105.792
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    89.748,
+    110.075
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    89.748,
+    114.357
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    89.748,
+    122.923
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    89.748,
+    127.206
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    89.748,
+    131.488
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    89.748,
+    135.771
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    89.748,
+    140.054
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    94.03,
+    114.357
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    94.03,
+    118.64
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    94.03,
+    122.923
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    94.03,
+    127.206
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    94.03,
+    131.488
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    94.03,
+    135.771
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    94.03,
+    140.054
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    98.313,
+    67.247
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    98.313,
+    75.813
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    98.313,
+    97.226
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    98.313,
+    105.792
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    98.313,
+    122.923
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    98.313,
+    127.206
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    98.313,
+    131.488
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    98.313,
+    135.771
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    98.313,
+    140.054
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    102.596,
+    62.964
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    102.596,
+    67.247
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    102.596,
+    75.813
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    102.596,
+    122.923
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    102.596,
+    127.206
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    102.596,
+    131.488
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    102.596,
+    135.771
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    102.596,
+    140.054
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    102.596,
+    148.619
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    106.879,
+    62.964
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    106.879,
+    67.247
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    106.879,
+    71.53
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    106.879,
+    105.792
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    106.879,
+    118.64
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    106.879,
+    122.923
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    106.879,
+    127.206
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    106.879,
+    131.488
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    106.879,
+    135.771
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    106.879,
+    140.054
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    111.161,
+    110.075
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    111.161,
+    118.64
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    111.161,
+    122.923
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    111.161,
+    127.206
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    111.161,
+    131.488
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    111.161,
+    135.771
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    111.161,
+    144.337
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    111.161,
+    148.619
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    115.444,
+    62.964
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    115.444,
+    71.53
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    115.444,
+    105.792
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    115.444,
+    118.64
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    115.444,
+    122.923
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    115.444,
+    127.206
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    115.444,
+    131.488
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    115.444,
+    135.771
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    115.444,
+    144.337
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    115.444,
+    148.619
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    119.727,
+    62.964
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    119.727,
+    71.53
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    119.727,
+    105.792
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    119.727,
+    110.075
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    119.727,
+    114.357
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    119.727,
+    118.64
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    119.727,
+    122.923
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    119.727,
+    127.206
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    119.727,
+    131.488
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    119.727,
+    135.771
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    119.727,
+    140.054
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    119.727,
+    144.337
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    119.727,
+    148.619
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    124.01,
+    67.247
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    124.01,
+    71.53
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    124.01,
+    75.813
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    124.01,
+    84.378
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    124.01,
+    88.661
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    124.01,
+    92.944
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    124.01,
+    97.226
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    124.01,
+    101.509
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    124.01,
+    105.792
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    124.01,
+    110.075
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    124.01,
+    114.357
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    124.01,
+    118.64
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    124.01,
+    122.923
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    124.01,
+    127.206
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    124.01,
+    131.488
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    124.01,
+    135.771
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    124.01,
+    140.054
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    124.01,
+    144.337
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    124.01,
+    148.619
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    128.292,
+    62.964
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    128.292,
+    71.53
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    128.292,
+    75.813
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    128.292,
+    84.378
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    128.292,
+    88.661
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    128.292,
+    92.944
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    128.292,
+    97.226
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    128.292,
+    101.509
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    128.292,
+    105.792
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    128.292,
+    110.075
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    128.292,
+    114.357
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    128.292,
+    118.64
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    128.292,
+    122.923
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    128.292,
+    127.206
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    128.292,
+    131.488
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    128.292,
+    135.771
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    128.292,
+    140.054
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    128.292,
+    144.337
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    128.292,
+    148.619
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    132.575,
+    84.378
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    132.575,
+    88.661
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    132.575,
+    92.944
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    132.575,
+    97.226
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    132.575,
+    101.509
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    132.575,
+    105.792
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    132.575,
+    110.075
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    132.575,
+    114.357
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    132.575,
+    118.64
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    132.575,
+    122.923
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    132.575,
+    127.206
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    132.575,
+    131.488
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    132.575,
+    135.771
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    132.575,
+    140.054
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    132.575,
+    144.337
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    132.575,
+    148.619
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    136.858,
+    62.964
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    136.858,
+    67.247
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    136.858,
+    75.813
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    136.858,
+    80.095
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    136.858,
+    92.944
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    136.858,
+    97.226
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    136.858,
+    101.509
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    136.858,
+    105.792
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    136.858,
+    110.075
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    136.858,
+    114.357
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    136.858,
+    118.64
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    136.858,
+    122.923
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    136.858,
+    127.206
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    136.858,
+    131.488
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    136.858,
+    135.771
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    136.858,
+    140.054
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  }
+ ],
+ "mode": "stitch",
+ "pitch_mm": 4.283,
+ "t_rise_ns": 1.0,
+ "nets": {
+  "GND": {
+   "plane_layers": [
+    "F.Cu",
+    "B.Cu"
+   ],
+   "pads": {
+    "requested": 0,
+    "placed": 0,
+    "skipped": 0
+   },
+   "area": {
+    "candidates": 497,
+    "placed": 273,
+    "rejected": {
+     "hole_to_hole": 8,
+     "near_same_net_via": 86,
+     "single_layer_contact": 75,
+     "foreign_copper": 39,
+     "fill_edge": 16
+    },
+    "capped": false
+   }
+  }
+ },
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-11-05T18:25:08+00:00",
+ "input": "/home/hive2/.cache/h2-tmp/a2446-lite/boards/lite-main/kicad/lite-main.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:eef16d9e94f6c77b4a3491f553f2fe708a4db2194787217bf61653d96ce35ca6"
+}

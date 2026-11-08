@@ -11,6 +11,7 @@ $H board_init --netlist kicad/core.net --name core --out kicad --layers 4 \
 $H rules_gen --constraints kicad/constraints.json --layers 4 \
   --out-dru kicad/core.kicad_dru --pro kicad/core.kicad_pro \
   --out reports/rules_gen.json >/dev/null
+cat kicad/gen/extra_rules.dru >>kicad/core.kicad_dru
 python3 kicad/gen/pro_vias.py >/dev/null
 cp kicad/core.kicad_pcb /tmp/core_anchored.kicad_pcb
 ~/.cache/hwde/bin/python3 kicad/gen/satellites.py

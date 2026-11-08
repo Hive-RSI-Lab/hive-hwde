@@ -17,34 +17,29 @@
    "severity": "warning",
    "pos": null,
    "layer": null,
-   "net": "+3V3A",
+   "net": "IR_VCC",
    "refs": [
-    "C16",
-    "C32",
-    "C33",
-    "C34",
-    "U4",
-    "U7"
+    "U9"
    ],
-   "msg": "declared power net '+3V3A' feeds no power_in pin",
+   "msg": "net 'IR_VCC' feeds power_in pins (U9.3) but is not declared in constraints power[]/voltages[]",
    "source": "audit.netlist",
    "items": [
     {
-     "msg": "declared power net '+3V3A' feeds no power_in pin",
+     "msg": "net 'IR_VCC' feeds power_in pins (U9.3) but is not declared in constraints power[]/voltages[]",
      "pos": null
     }
    ],
-   "kind": "power_no_consumers"
+   "kind": "power_undeclared"
   }
  ],
  "mode": "audit",
- "nets": 118,
- "components": 145,
- "unconnected_pins": 29,
+ "nets": 122,
+ "components": 164,
+ "unconnected_pins": 27,
  "constraint_nets_checked": 16,
- "constraint_refs_checked": 2,
- "pins_expected": 452,
- "pins_connected": 452,
+ "constraint_refs_checked": 7,
+ "pins_expected": 499,
+ "pins_connected": 499,
  "decoupling_associations": 25,
  "power": [
   {
@@ -61,128 +56,37 @@
   {
    "net": "PVDD",
    "nodes": 21,
-   "power_in": 0,
-   "power_out": 0,
-   "passive_fed_via": [
-    "C2",
-    "R17"
-   ]
+   "power_in": 5,
+   "power_out": 0
   },
   {
    "net": "GND",
-   "nodes": 109,
-   "power_in": 0,
-   "power_out": 0,
-   "passive_fed_via": [
-    "C1",
-    "C10",
-    "C11",
-    "C12",
-    "C13",
-    "C15",
-    "C16",
-    "C17",
-    "C18",
-    "C20",
-    "C21",
-    "C22",
-    "C23",
-    "C24",
-    "C25",
-    "C26",
-    "C3",
-    "C30",
-    "C31",
-    "C32",
-    "C33",
-    "C34",
-    "C35",
-    "C36",
-    "C37",
-    "C38",
-    "C39",
-    "C4",
-    "C40",
-    "C42",
-    "C45",
-    "C5",
-    "C50",
-    "C51",
-    "C52",
-    "C53",
-    "C54",
-    "C55",
-    "C56",
-    "C57",
-    "C58",
-    "C59",
-    "C61",
-    "C63",
-    "C68",
-    "C69",
-    "C7",
-    "C70",
-    "C71",
-    "C8",
-    "C80",
-    "C81",
-    "C83",
-    "D1",
-    "D2",
-    "R1",
-    "R10",
-    "R12",
-    "R14",
-    "R16",
-    "R18",
-    "R31",
-    "R34",
-    "R37",
-    "R39",
-    "R50",
-    "R52",
-    "R67",
-    "R69",
-    "R8"
-   ]
+   "nodes": 120,
+   "power_in": 16,
+   "power_out": 0
   },
   {
    "net": "+5V",
-   "nodes": 13,
+   "nodes": 16,
    "power_in": 0,
    "power_out": 0,
    "passive_fed_via": [
     "C9",
     "L5",
+    "R80",
     "R9"
    ]
   },
   {
    "net": "+3V3",
-   "nodes": 27,
-   "power_in": 0,
-   "power_out": 0,
-   "passive_fed_via": [
-    "C14",
-    "L6",
-    "R11",
-    "R20",
-    "R21",
-    "R22",
-    "R23",
-    "R4",
-    "R53",
-    "R60",
-    "R61",
-    "R62",
-    "R63",
-    "R65"
-   ]
+   "nodes": 28,
+   "power_in": 3,
+   "power_out": 0
   },
   {
    "net": "+3V3A",
    "nodes": 7,
-   "power_in": 0,
+   "power_in": 1,
    "power_out": 0
   },
   {
@@ -227,7 +131,7 @@
   },
   {
    "net": "/SPK_L_P",
-   "nodes": 4,
+   "nodes": 5,
    "power_in": 0,
    "power_out": 0,
    "passive_fed_via": [
@@ -237,7 +141,7 @@
   },
   {
    "net": "/SPK_L_N",
-   "nodes": 3,
+   "nodes": 4,
    "power_in": 0,
    "power_out": 0,
    "passive_fed_via": [
@@ -246,7 +150,7 @@
   },
   {
    "net": "/SPK_R_P",
-   "nodes": 4,
+   "nodes": 5,
    "power_in": 0,
    "power_out": 0,
    "passive_fed_via": [
@@ -256,7 +160,7 @@
   },
   {
    "net": "/SPK_R_N",
-   "nodes": 3,
+   "nodes": 4,
    "power_in": 0,
    "power_out": 0,
    "passive_fed_via": [
@@ -283,9 +187,13 @@
    ]
   }
  ],
+ "common_mode_inputs_checked": 0,
+ "amp_inputs_dc_checked": 0,
+ "polarized_caps_checked": 0,
+ "min_gain_loops_checked": 0,
  "report_schema": 1,
  "checker_version": 1,
- "generated_at": "2026-10-29T05:27:10+00:00",
+ "generated_at": "2026-11-05T15:52:09+00:00",
  "input": "kicad/lite-main.net",
- "input_digest": "netlist_canonical:613a037a655af1782a40026eb6382962240e50bd995d011ab03c259e21223dc7"
+ "input_digest": "netlist_canonical:379e6992437de06b139a2b0a559ba8d66c3a3ef52e48d030dc54b78231203877"
 }

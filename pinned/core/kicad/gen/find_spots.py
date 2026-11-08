@@ -9,7 +9,8 @@ part becomes an obstacle for the next. Writes the placements JSON.
 SPEC: {"REF": {"near": [x, y], "size": [w, h], "deg": 0}, ...} in board mm
 (a part already on the board uses its own courtyard; "size" is then optional)
 (courtyard size at deg 0; absolute KiCad coordinates); "nets": [...] lists the
-part's own nets, whose tracks it may sit on.
+part's own nets, whose tracks it may sit on. "side": "back" places on B.Cu
+(B courtyards and B.Cu copper are the obstacles then).
 """
 import json
 import math
@@ -24,12 +25,21 @@ MM = pcbnew.ToMM
 MARGIN = 0.25          # courtyard-to-courtyard
 COPPER = 0.35          # body edge to a top track/via/pad of another net
 
+BACK = any(s.get("side") == "back" for s in spec.values())
+CRT, CU = (pcbnew.B_CrtYd, pcbnew.B_Cu) if BACK else (pcbnew.F_CrtYd, pcbnew.F_Cu)
 rects = []             # (x0, y0, x1, y1) keep-outs
+segs_pads = []         # B side: other-side parts' B.Cu pads
 for fp in b.GetFootprints():
     if fp.GetReference() in spec:
         continue
     fp.BuildCourtyardCaches()
-    cy = fp.GetCourtyard(pcbnew.F_CrtYd)
+    cy = fp.GetCourtyard(CRT)
+    if BACK and not cy.OutlineCount():
+        for p in fp.Pads():
+            if p.IsOnLayer(CU):
+                pb = p.GetBoundingBox()
+                segs_pads.append((MM(pb.GetX()), MM(pb.GetY()), MM(pb.GetRight()), MM(pb.GetBottom()), p.GetNetname()))
+        continue
     if cy.OutlineCount():
         bb = cy.BBox()
     else:
@@ -44,11 +54,14 @@ for t in b.GetTracks():
     if t.GetClass() == "PCB_VIA":
         c, r = t.GetPosition(), MM(t.GetWidth(pcbnew.F_Cu)) / 2
         segs.append((MM(c.x), MM(c.y), MM(c.x), MM(c.y), r, t.GetNetname()))
-    elif t.GetLayer() == pcbnew.F_Cu:
+    elif t.GetLayer() == CU:
         s, e = t.GetStart(), t.GetEnd()
         segs.append((MM(s.x), MM(s.y), MM(e.x), MM(e.y), MM(t.GetWidth()) / 2, t.GetNetname()))
+for (x0, y0, x1, y1, net) in segs_pads:
+    segs.append((x0, y0, x1, y0, 0, net)); segs.append((x0, y1, x1, y1, 0, net))
+    segs.append((x0, y0, x0, y1, 0, net)); segs.append((x1, y0, x1, y1, 0, net))
 for z in b.Zones():
-    if z.GetIsRuleArea():
+    if z.GetIsRuleArea() and (z.IsOnLayer(CU) or not BACK):
         bb = z.GetBoundingBox()
         rects.append((MM(bb.GetX()), MM(bb.GetY()), MM(bb.GetRight()), MM(bb.GetBottom())))
 eb = b.GetBoardEdgesBoundingBox()
@@ -90,7 +103,9 @@ onboard = {}
 for fp in b.GetFootprints():
     if fp.GetReference() in spec:
         fp.BuildCourtyardCaches()
-        cy = fp.GetCourtyard(pcbnew.F_CrtYd)
+        cy = fp.GetCourtyard(CRT if fp.IsFlipped() == BACK else pcbnew.F_CrtYd)
+        if not cy.OutlineCount():
+            cy = fp.GetCourtyard(pcbnew.F_CrtYd if fp.IsFlipped() else pcbnew.B_CrtYd)
         bb = cy.BBox() if cy.OutlineCount() else fp.GetBoundingBox(False)
         dw, dh = MM(bb.GetWidth()), MM(bb.GetHeight())
         if round(fp.GetOrientationDegrees()) % 180:
@@ -121,6 +136,6 @@ for ref, s in spec.items():
         sys.exit(f"{ref}: no free spot near {nx},{ny}")
     cx, cy, dg, *r = found
     rects.append(tuple(r))
-    out[ref] = {"x": cx, "y": cy, "deg": dg, "side": "front"}
+    out[ref] = {"x": cx, "y": cy, "deg": dg, "side": "back" if BACK else "front"}
     print(ref, out[ref], f"{math.hypot(cx - nx, cy - ny):.1f} mm from target")
 json.dump(out, open(out_path, "w"), indent=1)

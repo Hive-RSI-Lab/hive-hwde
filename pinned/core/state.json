@@ -4,21 +4,21 @@
  "workspace_schema": 2,
  "workspace": "/work/boards/core",
  "created": "2026-10-28T11:07:23",
- "updated": "2026-10-30T03:36:19",
+ "updated": "2026-11-01T00:03:48",
  "phase": "P9",
  "gates": {
   "erc": {
    "phase": "P4",
    "status": "pass",
-   "attempts": 15,
+   "attempts": 20,
    "last": {
-    "ts": "2026-10-30T03:36:19",
+    "ts": "2026-10-30T03:40:45",
     "status": "pass",
     "failing_count": 0,
     "total": 0,
     "inputs": {
      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
-     "pro": "json_canonical:42925dd8a0c1216e069ccc2ed2fa0cbfe77b2d528c605ebaf41900fd755f9b9e"
+     "pro": "json_canonical:ade210d648016346219e733a80aa291be83b7604227024277df89bb7b23acc28"
     }
    },
    "history": [
@@ -163,14 +163,145 @@
      }
     },
     {
-     "ts": "2026-10-30T03:36:19",
+     "ts": "2026-10-29T10:29:57",
      "status": "pass",
      "failing_count": 0,
      "total": 0,
      "inputs": {
       "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
-      "pro": "json_canonical:42925dd8a0c1216e069ccc2ed2fa0cbfe77b2d528c605ebaf41900fd755f9b9e"
+      "pro": "json_canonical:ade210d648016346219e733a80aa291be83b7604227024277df89bb7b23acc28"
      }
+    },
+    {
+     "ts": "2026-10-29T11:00:53",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "pro": "json_canonical:ade210d648016346219e733a80aa291be83b7604227024277df89bb7b23acc28"
+     }
+    },
+    {
+     "ts": "2026-10-29T23:35:22",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "pro": "json_canonical:ade210d648016346219e733a80aa291be83b7604227024277df89bb7b23acc28"
+     }
+    },
+    {
+     "ts": "2026-10-29T23:42:59",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "pro": "json_canonical:ade210d648016346219e733a80aa291be83b7604227024277df89bb7b23acc28"
+     }
+    },
+    {
+     "ts": "2026-10-29T23:53:12",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "pro": "json_canonical:ade210d648016346219e733a80aa291be83b7604227024277df89bb7b23acc28"
+     }
+    },
+    {
+     "ts": "2026-10-30T03:40:45",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "pro": "json_canonical:ade210d648016346219e733a80aa291be83b7604227024277df89bb7b23acc28"
+     }
+    }
+   ],
+   "stale": [
+    {
+     "ts": "2026-10-31T14:44:13",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C228",
+      "C231",
+      "C234",
+      "C237",
+      "C326",
+      "C329",
+      "C332",
+      "C335"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T15:25:03",
+     "edit_class": "add_part",
+     "refs": [
+      "D6",
+      "D7",
+      "D8",
+      "D9"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T20:04:50",
+     "edit_class": "add_part",
+     "refs": [
+      "J20",
+      "J21",
+      "J22",
+      "J23",
+      "J24",
+      "J25",
+      "J26",
+      "J27"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T20:04:50",
+     "edit_class": "del_part",
+     "refs": [
+      "J10",
+      "J11",
+      "J6",
+      "J7"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T23:23:14",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C4",
+      "C8"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T23:25:29",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C4",
+      "C8"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T23:26:18",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C4",
+      "C8"
+     ],
+     "human_hold": 2
     }
    ]
   },
@@ -515,19 +646,58 @@
       "place_waivers": null
      }
     }
+   ],
+   "stale": [
+    {
+     "ts": "2026-10-31T15:25:03",
+     "edit_class": "add_part",
+     "refs": [
+      "D6",
+      "D7",
+      "D8",
+      "D9"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T20:04:50",
+     "edit_class": "add_part",
+     "refs": [
+      "J20",
+      "J21",
+      "J22",
+      "J23",
+      "J24",
+      "J25",
+      "J26",
+      "J27"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T20:04:50",
+     "edit_class": "del_part",
+     "refs": [
+      "J10",
+      "J11",
+      "J6",
+      "J7"
+     ],
+     "human_hold": 2
+    }
    ]
   },
   "drc_routed": {
    "phase": "P7",
    "status": "pass",
-   "attempts": 340,
+   "attempts": 352,
    "last": {
-    "ts": "2026-10-30T03:33:25",
+    "ts": "2026-11-01T00:02:15",
     "status": "pass",
     "failing_count": 0,
     "total": 0,
     "inputs": {
-     "pcb": "sexpr_no_uuid:c0299371b762fefa69d56b34d9e9a08e05a67b743d611e6dc8ac15ee0ac8aa3b",
+     "pcb": "sexpr_no_uuid:9404a8f45ec38bad54a9b99a380066a7e7f45cdb3be2048ff5c4594627d2b906",
      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
      "pro": "json_canonical:42925dd8a0c1216e069ccc2ed2fa0cbfe77b2d528c605ebaf41900fd755f9b9e",
      "dru": "text_eol:c177b210be31868735c5b9abbf69f708f5f9323ea51180f0c1f8f095ea824202"
@@ -4603,12 +4773,156 @@
      }
     },
     {
-     "ts": "2026-10-30T03:33:25",
+     "ts": "2026-10-29T11:00:58",
      "status": "pass",
      "failing_count": 0,
      "total": 0,
      "inputs": {
-      "pcb": "sexpr_no_uuid:c0299371b762fefa69d56b34d9e9a08e05a67b743d611e6dc8ac15ee0ac8aa3b",
+      "pcb": "sexpr_no_uuid:8939771d6e4fa167d6bcd83592b3db2b3729eaa8170f12b9e640cc14b2b5deb7",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "pro": "json_canonical:ade210d648016346219e733a80aa291be83b7604227024277df89bb7b23acc28",
+      "dru": "text_eol:c177b210be31868735c5b9abbf69f708f5f9323ea51180f0c1f8f095ea824202"
+     }
+    },
+    {
+     "ts": "2026-10-29T11:11:36",
+     "status": "fail",
+     "failing_count": 9,
+     "total": 9,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:82842b9d18630aa55fc9368bdd7dc3f02030bf76183524218a1e4526a60194e3",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "pro": "json_canonical:ade210d648016346219e733a80aa291be83b7604227024277df89bb7b23acc28",
+      "dru": "text_eol:c177b210be31868735c5b9abbf69f708f5f9323ea51180f0c1f8f095ea824202"
+     }
+    },
+    {
+     "ts": "2026-10-29T11:13:57",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:3223986cd3ce0a73f676b4a992e72cd1ccbdfd4cd2c9b67474aa04e0f9812d5b",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "pro": "json_canonical:ade210d648016346219e733a80aa291be83b7604227024277df89bb7b23acc28",
+      "dru": "text_eol:c177b210be31868735c5b9abbf69f708f5f9323ea51180f0c1f8f095ea824202"
+     }
+    },
+    {
+     "ts": "2026-10-30T18:11:30",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:893c05fc50aaa4c9c60cae241fefc9b5bb9525385d15e5fedfaeef725f584eb4",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "pro": "json_canonical:42925dd8a0c1216e069ccc2ed2fa0cbfe77b2d528c605ebaf41900fd755f9b9e",
+      "dru": "text_eol:c177b210be31868735c5b9abbf69f708f5f9323ea51180f0c1f8f095ea824202"
+     }
+    },
+    {
+     "ts": "2026-10-30T20:31:10",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:374ad028f6951dc593730d2cf25e4bb1ee9828c5755e2a720c05e3fa0225728a",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "pro": "json_canonical:42925dd8a0c1216e069ccc2ed2fa0cbfe77b2d528c605ebaf41900fd755f9b9e",
+      "dru": "text_eol:c177b210be31868735c5b9abbf69f708f5f9323ea51180f0c1f8f095ea824202"
+     }
+    },
+    {
+     "ts": "2026-10-30T20:36:51",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:374ad028f6951dc593730d2cf25e4bb1ee9828c5755e2a720c05e3fa0225728a",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "pro": "json_canonical:42925dd8a0c1216e069ccc2ed2fa0cbfe77b2d528c605ebaf41900fd755f9b9e",
+      "dru": "text_eol:c177b210be31868735c5b9abbf69f708f5f9323ea51180f0c1f8f095ea824202"
+     }
+    },
+    {
+     "ts": "2026-10-31T14:48:31",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:c01aad9e5b659b0a2366b07144f684b9c8bf37f05d442cf600aa13ac7589b88c",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "pro": "json_canonical:42925dd8a0c1216e069ccc2ed2fa0cbfe77b2d528c605ebaf41900fd755f9b9e",
+      "dru": "text_eol:c177b210be31868735c5b9abbf69f708f5f9323ea51180f0c1f8f095ea824202"
+     }
+    },
+    {
+     "ts": "2026-10-31T15:25:33",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:630542ce7ba57dc295cc63170c7ff137d680b2911d73032c71e3add858619ae6",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "pro": "json_canonical:42925dd8a0c1216e069ccc2ed2fa0cbfe77b2d528c605ebaf41900fd755f9b9e",
+      "dru": "text_eol:c177b210be31868735c5b9abbf69f708f5f9323ea51180f0c1f8f095ea824202"
+     }
+    },
+    {
+     "ts": "2026-10-31T23:40:01",
+     "status": "fail",
+     "failing_count": 36,
+     "total": 36,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:0fd17f7dba3842af48cc85c8bf18c5a9030b086298d5346473f5fd2088a362f9",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "pro": "json_canonical:42925dd8a0c1216e069ccc2ed2fa0cbfe77b2d528c605ebaf41900fd755f9b9e",
+      "dru": "text_eol:c177b210be31868735c5b9abbf69f708f5f9323ea51180f0c1f8f095ea824202"
+     }
+    },
+    {
+     "ts": "2026-10-31T23:42:44",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:d4a6845212d49bf30874eef8443e6e9ffa92eba7811457a37685c7c776c8abb4",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "pro": "json_canonical:42925dd8a0c1216e069ccc2ed2fa0cbfe77b2d528c605ebaf41900fd755f9b9e",
+      "dru": "text_eol:c177b210be31868735c5b9abbf69f708f5f9323ea51180f0c1f8f095ea824202"
+     }
+    },
+    {
+     "ts": "2026-10-31T23:45:59",
+     "status": "fail",
+     "failing_count": 1,
+     "total": 1,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:c59e5db4a1222ea973f7324a66a3ef5e404a4cdcccbb2f0faa0fa2865cb8581e",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "pro": "json_canonical:42925dd8a0c1216e069ccc2ed2fa0cbfe77b2d528c605ebaf41900fd755f9b9e",
+      "dru": "text_eol:c177b210be31868735c5b9abbf69f708f5f9323ea51180f0c1f8f095ea824202"
+     }
+    },
+    {
+     "ts": "2026-10-31T23:46:16",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:2e695198d08495041ff29f45c32ecddbe2f5b97f3606fe42c472f68bc243557a",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "pro": "json_canonical:42925dd8a0c1216e069ccc2ed2fa0cbfe77b2d528c605ebaf41900fd755f9b9e",
+      "dru": "text_eol:c177b210be31868735c5b9abbf69f708f5f9323ea51180f0c1f8f095ea824202"
+     }
+    },
+    {
+     "ts": "2026-11-01T00:02:15",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:9404a8f45ec38bad54a9b99a380066a7e7f45cdb3be2048ff5c4594627d2b906",
       "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
       "pro": "json_canonical:42925dd8a0c1216e069ccc2ed2fa0cbfe77b2d528c605ebaf41900fd755f9b9e",
       "dru": "text_eol:c177b210be31868735c5b9abbf69f708f5f9323ea51180f0c1f8f095ea824202"
@@ -4618,16 +4932,16 @@
   },
   "verify": {
    "phase": "P8",
-   "status": "fail",
-   "attempts": 10,
+   "status": "pass",
+   "attempts": 12,
    "last": {
-    "ts": "2026-10-30T03:35:09",
-    "status": "fail",
-    "failing_count": 2,
-    "total": 167,
+    "ts": "2026-10-29T11:14:08",
+    "status": "pass",
+    "failing_count": 0,
+    "total": 177,
     "inputs": {
-     "pcb": "sexpr_no_uuid:c0299371b762fefa69d56b34d9e9a08e05a67b743d611e6dc8ac15ee0ac8aa3b",
-     "constraints": "json_canonical:3a213a3298e12e627b39ab82331226bffd6c18582288a4dfa8774b2547522349",
+     "pcb": "sexpr_no_uuid:3223986cd3ce0a73f676b4a992e72cd1ccbdfd4cd2c9b67474aa04e0f9812d5b",
+     "constraints": "json_canonical:6f0866f02a4f89d73bae6df5c9fda405cf4fa28296844884f5b3827bb41f2614",
      "decoupling": "json_canonical:7e759350e42c493293b29d46193ba5934d5c131dd8262b3f6f08de943ba02362",
      "waivers": "json_canonical:b617b01d130b74a9c5e33240470e7ef866d297c5b8d1032d7b06f0753517010a"
     }
@@ -4742,30 +5056,135 @@
      }
     },
     {
-     "ts": "2026-10-30T03:35:09",
+     "ts": "2026-10-29T11:01:05",
      "status": "fail",
-     "failing_count": 2,
-     "total": 167,
+     "failing_count": 3,
+     "total": 180,
      "inputs": {
-      "pcb": "sexpr_no_uuid:c0299371b762fefa69d56b34d9e9a08e05a67b743d611e6dc8ac15ee0ac8aa3b",
-      "constraints": "json_canonical:3a213a3298e12e627b39ab82331226bffd6c18582288a4dfa8774b2547522349",
+      "pcb": "sexpr_no_uuid:8939771d6e4fa167d6bcd83592b3db2b3729eaa8170f12b9e640cc14b2b5deb7",
+      "constraints": "json_canonical:6f0866f02a4f89d73bae6df5c9fda405cf4fa28296844884f5b3827bb41f2614",
       "decoupling": "json_canonical:7e759350e42c493293b29d46193ba5934d5c131dd8262b3f6f08de943ba02362",
       "waivers": "json_canonical:b617b01d130b74a9c5e33240470e7ef866d297c5b8d1032d7b06f0753517010a"
      }
+    },
+    {
+     "ts": "2026-10-29T11:11:52",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 177,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:82842b9d18630aa55fc9368bdd7dc3f02030bf76183524218a1e4526a60194e3",
+      "constraints": "json_canonical:6f0866f02a4f89d73bae6df5c9fda405cf4fa28296844884f5b3827bb41f2614",
+      "decoupling": "json_canonical:7e759350e42c493293b29d46193ba5934d5c131dd8262b3f6f08de943ba02362",
+      "waivers": "json_canonical:b617b01d130b74a9c5e33240470e7ef866d297c5b8d1032d7b06f0753517010a"
+     }
+    },
+    {
+     "ts": "2026-10-29T11:14:08",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 177,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:3223986cd3ce0a73f676b4a992e72cd1ccbdfd4cd2c9b67474aa04e0f9812d5b",
+      "constraints": "json_canonical:6f0866f02a4f89d73bae6df5c9fda405cf4fa28296844884f5b3827bb41f2614",
+      "decoupling": "json_canonical:7e759350e42c493293b29d46193ba5934d5c131dd8262b3f6f08de943ba02362",
+      "waivers": "json_canonical:b617b01d130b74a9c5e33240470e7ef866d297c5b8d1032d7b06f0753517010a"
+     }
+    }
+   ],
+   "stale": [
+    {
+     "ts": "2026-10-31T14:44:13",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C228",
+      "C231",
+      "C234",
+      "C237",
+      "C326",
+      "C329",
+      "C332",
+      "C335"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T15:25:03",
+     "edit_class": "add_part",
+     "refs": [
+      "D6",
+      "D7",
+      "D8",
+      "D9"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T20:04:50",
+     "edit_class": "add_part",
+     "refs": [
+      "J20",
+      "J21",
+      "J22",
+      "J23",
+      "J24",
+      "J25",
+      "J26",
+      "J27"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T20:04:50",
+     "edit_class": "del_part",
+     "refs": [
+      "J10",
+      "J11",
+      "J6",
+      "J7"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T23:23:14",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C4",
+      "C8"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T23:25:29",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C4",
+      "C8"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T23:26:18",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C4",
+      "C8"
+     ],
+     "human_hold": 2
     }
    ]
   },
   "dfm": {
    "phase": "P9",
    "status": "pass",
-   "attempts": 5,
+   "attempts": 13,
    "last": {
-    "ts": "2026-10-30T03:36:04",
+    "ts": "2026-11-01T00:03:48",
     "status": "pass",
     "failing_count": 0,
-    "total": 0,
+    "total": 6,
     "inputs": {
-     "pcb": "sexpr_no_uuid:c0299371b762fefa69d56b34d9e9a08e05a67b743d611e6dc8ac15ee0ac8aa3b",
+     "pcb": "sexpr_no_uuid:9404a8f45ec38bad54a9b99a380066a7e7f45cdb3be2048ff5c4594627d2b906",
      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
      "parts": null
     }
@@ -4816,12 +5235,100 @@
      }
     },
     {
-     "ts": "2026-10-30T03:36:04",
+     "ts": "2026-10-29T11:01:26",
      "status": "pass",
      "failing_count": 0,
      "total": 0,
      "inputs": {
-      "pcb": "sexpr_no_uuid:c0299371b762fefa69d56b34d9e9a08e05a67b743d611e6dc8ac15ee0ac8aa3b",
+      "pcb": "sexpr_no_uuid:8939771d6e4fa167d6bcd83592b3db2b3729eaa8170f12b9e640cc14b2b5deb7",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "parts": null
+     }
+    },
+    {
+     "ts": "2026-10-29T11:14:25",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 0,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:3223986cd3ce0a73f676b4a992e72cd1ccbdfd4cd2c9b67474aa04e0f9812d5b",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "parts": null
+     }
+    },
+    {
+     "ts": "2026-10-30T18:13:09",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 2,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:893c05fc50aaa4c9c60cae241fefc9b5bb9525385d15e5fedfaeef725f584eb4",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "parts": null
+     }
+    },
+    {
+     "ts": "2026-10-30T20:37:51",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 12,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:374ad028f6951dc593730d2cf25e4bb1ee9828c5755e2a720c05e3fa0225728a",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "parts": null
+     }
+    },
+    {
+     "ts": "2026-10-31T14:49:27",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 2,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:c01aad9e5b659b0a2366b07144f684b9c8bf37f05d442cf600aa13ac7589b88c",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "parts": null
+     }
+    },
+    {
+     "ts": "2026-10-31T15:26:31",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 6,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:630542ce7ba57dc295cc63170c7ff137d680b2911d73032c71e3add858619ae6",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "parts": null
+     }
+    },
+    {
+     "ts": "2026-10-31T23:44:30",
+     "status": "fail",
+     "failing_count": 2,
+     "total": 8,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:d4a6845212d49bf30874eef8443e6e9ffa92eba7811457a37685c7c776c8abb4",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "parts": null
+     }
+    },
+    {
+     "ts": "2026-10-31T23:48:23",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 6,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:2e695198d08495041ff29f45c32ecddbe2f5b97f3606fe42c472f68bc243557a",
+      "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
+      "parts": null
+     }
+    },
+    {
+     "ts": "2026-11-01T00:03:48",
+     "status": "pass",
+     "failing_count": 0,
+     "total": 6,
+     "inputs": {
+      "pcb": "sexpr_no_uuid:9404a8f45ec38bad54a9b99a380066a7e7f45cdb3be2048ff5c4594627d2b906",
       "sch": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
       "parts": null
      }
@@ -4835,31 +5342,31 @@
    "path": "kicad/core.kicad_sch",
    "kind": "sch",
    "sha256": "sexpr_no_uuid:c55b039920eba1accb45b5a27c17f104bb57fdae2beaa929676ec0bd5f3b93b8",
-   "hashed": "2026-10-30T03:36:19"
+   "hashed": "2026-11-01T00:03:48"
   },
   "pro": {
    "path": "kicad/core.kicad_pro",
    "kind": "pro",
    "sha256": "json_canonical:42925dd8a0c1216e069ccc2ed2fa0cbfe77b2d528c605ebaf41900fd755f9b9e",
-   "hashed": "2026-10-30T03:36:19"
+   "hashed": "2026-11-01T00:02:15"
   },
   "pcb": {
    "path": "kicad/core.kicad_pcb",
    "kind": "pcb",
-   "sha256": "sexpr_no_uuid:c0299371b762fefa69d56b34d9e9a08e05a67b743d611e6dc8ac15ee0ac8aa3b",
-   "hashed": "2026-10-30T03:36:04"
+   "sha256": "sexpr_no_uuid:9404a8f45ec38bad54a9b99a380066a7e7f45cdb3be2048ff5c4594627d2b906",
+   "hashed": "2026-11-01T00:03:48"
   },
   "constraints": {
    "path": "kicad/constraints.json",
    "kind": "constraints",
-   "sha256": "json_canonical:3a213a3298e12e627b39ab82331226bffd6c18582288a4dfa8774b2547522349",
-   "hashed": "2026-10-30T03:35:09"
+   "sha256": "json_canonical:6f0866f02a4f89d73bae6df5c9fda405cf4fa28296844884f5b3827bb41f2614",
+   "hashed": "2026-10-29T11:14:08"
   },
   "decoupling": {
    "path": "kicad/decoupling.json",
    "kind": "decoupling",
    "sha256": "json_canonical:7e759350e42c493293b29d46193ba5934d5c131dd8262b3f6f08de943ba02362",
-   "hashed": "2026-10-30T03:35:09"
+   "hashed": "2026-10-29T11:14:08"
   },
   "place_waivers": {
    "path": "reports/place-waivers.json",
@@ -4871,19 +5378,412 @@
    "path": "kicad/core.kicad_dru",
    "kind": "dru",
    "sha256": "text_eol:c177b210be31868735c5b9abbf69f708f5f9323ea51180f0c1f8f095ea824202",
-   "hashed": "2026-10-30T03:33:25"
+   "hashed": "2026-11-01T00:02:15"
   },
   "waivers": {
    "path": "reports/verify-waivers.json",
    "kind": "waivers",
    "sha256": "json_canonical:b617b01d130b74a9c5e33240470e7ef866d297c5b8d1032d7b06f0753517010a",
-   "hashed": "2026-10-30T03:35:09"
+   "hashed": "2026-10-29T11:14:08"
   },
   "parts": {
    "path": "kicad/parts.json",
    "kind": "parts",
    "sha256": null,
-   "hashed": "2026-10-30T03:36:04"
+   "hashed": "2026-11-01T00:03:48"
+  },
+  "netlist": {
+   "path": "kicad/core.net",
+   "kind": "netlist",
+   "sha256": "netlist_canonical:6133c372064e70f82cd46ded48cc3de51742a4b32bc43f5118df62210c8acd95",
+   "hashed": "2026-10-31T14:44:13",
+   "stale": [
+    {
+     "ts": "2026-10-31T14:44:13",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C228",
+      "C231",
+      "C234",
+      "C237",
+      "C326",
+      "C329",
+      "C332",
+      "C335"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T15:25:03",
+     "edit_class": "add_part",
+     "refs": [
+      "D6",
+      "D7",
+      "D8",
+      "D9"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T20:04:50",
+     "edit_class": "add_part",
+     "refs": [
+      "J20",
+      "J21",
+      "J22",
+      "J23",
+      "J24",
+      "J25",
+      "J26",
+      "J27"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T20:04:50",
+     "edit_class": "del_part",
+     "refs": [
+      "J10",
+      "J11",
+      "J6",
+      "J7"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T23:23:14",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C4",
+      "C8"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T23:25:29",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C4",
+      "C8"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T23:26:18",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C4",
+      "C8"
+     ],
+     "human_hold": 2
+    }
+   ]
+  },
+  "bom": {
+   "path": "fab/BOM.csv",
+   "kind": "bom",
+   "sha256": "text_eol:2022b6670cd053006c0738b2c28a24f9f86859a1169caf10ccdcef4ca877b72a",
+   "hashed": "2026-10-31T14:44:13",
+   "stale": [
+    {
+     "ts": "2026-10-31T14:44:13",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C228",
+      "C231",
+      "C234",
+      "C237",
+      "C326",
+      "C329",
+      "C332",
+      "C335"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T15:25:03",
+     "edit_class": "add_part",
+     "refs": [
+      "D6",
+      "D7",
+      "D8",
+      "D9"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T20:04:50",
+     "edit_class": "add_part",
+     "refs": [
+      "J20",
+      "J21",
+      "J22",
+      "J23",
+      "J24",
+      "J25",
+      "J26",
+      "J27"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T20:04:50",
+     "edit_class": "del_part",
+     "refs": [
+      "J10",
+      "J11",
+      "J6",
+      "J7"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T23:23:14",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C4",
+      "C8"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T23:25:29",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C4",
+      "C8"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T23:26:18",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C4",
+      "C8"
+     ],
+     "human_hold": 2
+    }
+   ]
+  },
+  "bom_full": {
+   "path": "fab/BOM-full.csv",
+   "kind": "bom_full",
+   "sha256": "text_eol:a2253e69065d1cf7e999bfc9fd8642484a8b1755683e5e40aca3d9ee2f680ce5",
+   "hashed": "2026-10-31T14:44:13",
+   "stale": [
+    {
+     "ts": "2026-10-31T14:44:13",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C228",
+      "C231",
+      "C234",
+      "C237",
+      "C326",
+      "C329",
+      "C332",
+      "C335"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T15:25:03",
+     "edit_class": "add_part",
+     "refs": [
+      "D6",
+      "D7",
+      "D8",
+      "D9"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T20:04:50",
+     "edit_class": "add_part",
+     "refs": [
+      "J20",
+      "J21",
+      "J22",
+      "J23",
+      "J24",
+      "J25",
+      "J26",
+      "J27"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T20:04:50",
+     "edit_class": "del_part",
+     "refs": [
+      "J10",
+      "J11",
+      "J6",
+      "J7"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T23:23:14",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C4",
+      "C8"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T23:25:29",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C4",
+      "C8"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T23:26:18",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C4",
+      "C8"
+     ],
+     "human_hold": 2
+    }
+   ]
+  },
+  "cpl": {
+   "path": "fab/CPL.csv",
+   "kind": "cpl",
+   "sha256": "text_eol:89b2c1f9edbbcd1c88f613e5a5dfaf8bdc85c4d408b753bc288e3284787bf0a0",
+   "hashed": "2026-10-31T14:44:13",
+   "stale": [
+    {
+     "ts": "2026-10-31T14:44:13",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C228",
+      "C231",
+      "C234",
+      "C237",
+      "C326",
+      "C329",
+      "C332",
+      "C335"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T15:25:03",
+     "edit_class": "add_part",
+     "refs": [
+      "D6",
+      "D7",
+      "D8",
+      "D9"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T20:04:50",
+     "edit_class": "add_part",
+     "refs": [
+      "J20",
+      "J21",
+      "J22",
+      "J23",
+      "J24",
+      "J25",
+      "J26",
+      "J27"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T20:04:50",
+     "edit_class": "del_part",
+     "refs": [
+      "J10",
+      "J11",
+      "J6",
+      "J7"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T23:23:14",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C4",
+      "C8"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T23:25:29",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C4",
+      "C8"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T23:26:18",
+     "edit_class": "swap_part_same_fp",
+     "refs": [
+      "C4",
+      "C8"
+     ],
+     "human_hold": 2
+    }
+   ]
+  },
+  "gerbers": {
+   "path": "fab/core_gerbers.zip",
+   "kind": "gerbers",
+   "sha256": "gerber_design:6fb8d0c8b08782c51a213d461af9e722470c8008eee50bf1e155b2fb06730744",
+   "hashed": "2026-10-31T15:25:03",
+   "stale": [
+    {
+     "ts": "2026-10-31T15:25:03",
+     "edit_class": "add_part",
+     "refs": [
+      "D6",
+      "D7",
+      "D8",
+      "D9"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T20:04:50",
+     "edit_class": "add_part",
+     "refs": [
+      "J20",
+      "J21",
+      "J22",
+      "J23",
+      "J24",
+      "J25",
+      "J26",
+      "J27"
+     ],
+     "human_hold": 2
+    },
+    {
+     "ts": "2026-10-31T20:04:50",
+     "edit_class": "del_part",
+     "refs": [
+      "J10",
+      "J11",
+      "J6",
+      "J7"
+     ],
+     "human_hold": 2
+    }
+   ]
   }
  },
  "open_issues": [],
@@ -4912,7 +5812,231 @@
   }
  },
  "decisions": [],
- "edits": [],
+ "edits": [
+  {
+   "ts": "2026-10-31T14:44:13",
+   "class": "swap_part_same_fp",
+   "refs": [
+    "C228",
+    "C231",
+    "C234",
+    "C237",
+    "C326",
+    "C329",
+    "C332",
+    "C335"
+   ],
+   "note": null,
+   "human_hold": 2,
+   "gates": [
+    "erc",
+    "verify",
+    "sim",
+    "dfm"
+   ],
+   "gates_marked": [
+    "erc",
+    "verify",
+    "dfm"
+   ],
+   "stale_artifacts": [
+    "netlist",
+    "bom",
+    "bom_full",
+    "cpl"
+   ]
+  },
+  {
+   "ts": "2026-10-31T15:25:03",
+   "class": "add_part",
+   "refs": [
+    "D6",
+    "D7",
+    "D8",
+    "D9"
+   ],
+   "note": null,
+   "human_hold": 2,
+   "gates": [
+    "erc",
+    "place",
+    "drc",
+    "drc_routed",
+    "verify",
+    "sim",
+    "dfm"
+   ],
+   "gates_marked": [
+    "erc",
+    "place",
+    "drc_routed",
+    "verify",
+    "dfm"
+   ],
+   "stale_artifacts": [
+    "netlist",
+    "gerbers",
+    "bom",
+    "bom_full",
+    "cpl"
+   ]
+  },
+  {
+   "ts": "2026-10-31T20:04:50",
+   "class": "add_part",
+   "refs": [
+    "J20",
+    "J21",
+    "J22",
+    "J23",
+    "J24",
+    "J25",
+    "J26",
+    "J27"
+   ],
+   "note": null,
+   "human_hold": 2,
+   "gates": [
+    "erc",
+    "place",
+    "drc",
+    "drc_routed",
+    "verify",
+    "sim",
+    "dfm"
+   ],
+   "gates_marked": [
+    "erc",
+    "place",
+    "drc_routed",
+    "verify",
+    "dfm"
+   ],
+   "stale_artifacts": [
+    "netlist",
+    "gerbers",
+    "bom",
+    "bom_full",
+    "cpl"
+   ]
+  },
+  {
+   "ts": "2026-10-31T20:04:50",
+   "class": "del_part",
+   "refs": [
+    "J10",
+    "J11",
+    "J6",
+    "J7"
+   ],
+   "note": null,
+   "human_hold": 2,
+   "gates": [
+    "erc",
+    "place",
+    "drc",
+    "drc_routed",
+    "verify",
+    "sim",
+    "dfm"
+   ],
+   "gates_marked": [
+    "erc",
+    "place",
+    "drc_routed",
+    "verify",
+    "dfm"
+   ],
+   "stale_artifacts": [
+    "netlist",
+    "gerbers",
+    "bom",
+    "bom_full",
+    "cpl"
+   ]
+  },
+  {
+   "ts": "2026-10-31T23:23:14",
+   "class": "swap_part_same_fp",
+   "refs": [
+    "C4",
+    "C8"
+   ],
+   "note": null,
+   "human_hold": 2,
+   "gates": [
+    "erc",
+    "verify",
+    "sim",
+    "dfm"
+   ],
+   "gates_marked": [
+    "erc",
+    "verify",
+    "dfm"
+   ],
+   "stale_artifacts": [
+    "netlist",
+    "bom",
+    "bom_full",
+    "cpl"
+   ]
+  },
+  {
+   "ts": "2026-10-31T23:25:29",
+   "class": "swap_part_same_fp",
+   "refs": [
+    "C4",
+    "C8"
+   ],
+   "note": null,
+   "human_hold": 2,
+   "gates": [
+    "erc",
+    "verify",
+    "sim",
+    "dfm"
+   ],
+   "gates_marked": [
+    "erc",
+    "verify",
+    "dfm"
+   ],
+   "stale_artifacts": [
+    "netlist",
+    "bom",
+    "bom_full",
+    "cpl"
+   ]
+  },
+  {
+   "ts": "2026-10-31T23:26:18",
+   "class": "swap_part_same_fp",
+   "refs": [
+    "C4",
+    "C8"
+   ],
+   "note": null,
+   "human_hold": 2,
+   "gates": [
+    "erc",
+    "verify",
+    "sim",
+    "dfm"
+   ],
+   "gates_marked": [
+    "erc",
+    "verify",
+    "dfm"
+   ],
+   "stale_artifacts": [
+    "netlist",
+    "bom",
+    "bom_full",
+    "cpl"
+   ]
+  }
+ ],
  "spawns": [],
  "history": [
   {
@@ -8102,7 +9226,23 @@
    "failing_count": 0
   },
   {
-   "ts": "2026-10-30T03:33:25",
+   "ts": "2026-10-29T10:29:57",
+   "event": "gate",
+   "gate": "erc",
+   "status": "pass",
+   "attempt": 15,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-29T11:00:53",
+   "event": "gate",
+   "gate": "erc",
+   "status": "pass",
+   "attempt": 16,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-29T11:00:58",
    "event": "gate",
    "gate": "drc_routed",
    "status": "pass",
@@ -8110,15 +9250,15 @@
    "failing_count": 0
   },
   {
-   "ts": "2026-10-30T03:35:09",
+   "ts": "2026-10-29T11:01:05",
    "event": "gate",
    "gate": "verify",
    "status": "fail",
    "attempt": 10,
-   "failing_count": 2
+   "failing_count": 3
   },
   {
-   "ts": "2026-10-30T03:36:04",
+   "ts": "2026-10-29T11:01:26",
    "event": "gate",
    "gate": "dfm",
    "status": "pass",
@@ -8126,11 +9266,297 @@
    "failing_count": 0
   },
   {
-   "ts": "2026-10-30T03:36:19",
+   "ts": "2026-10-29T11:11:36",
+   "event": "gate",
+   "gate": "drc_routed",
+   "status": "fail",
+   "attempt": 341,
+   "failing_count": 9
+  },
+  {
+   "ts": "2026-10-29T11:11:52",
+   "event": "gate",
+   "gate": "verify",
+   "status": "pass",
+   "attempt": 11,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-29T11:13:57",
+   "event": "gate",
+   "gate": "drc_routed",
+   "status": "pass",
+   "attempt": 342,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-29T11:14:08",
+   "event": "gate",
+   "gate": "verify",
+   "status": "pass",
+   "attempt": 12,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-29T11:14:25",
+   "event": "gate",
+   "gate": "dfm",
+   "status": "pass",
+   "attempt": 6,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-29T23:35:22",
    "event": "gate",
    "gate": "erc",
    "status": "pass",
-   "attempt": 15,
+   "attempt": 17,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-29T23:42:59",
+   "event": "gate",
+   "gate": "erc",
+   "status": "pass",
+   "attempt": 18,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-29T23:53:12",
+   "event": "gate",
+   "gate": "erc",
+   "status": "pass",
+   "attempt": 19,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-30T03:40:45",
+   "event": "gate",
+   "gate": "erc",
+   "status": "pass",
+   "attempt": 20,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-30T18:11:30",
+   "event": "gate",
+   "gate": "drc_routed",
+   "status": "pass",
+   "attempt": 343,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-30T18:13:09",
+   "event": "gate",
+   "gate": "dfm",
+   "status": "pass",
+   "attempt": 7,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-30T20:31:10",
+   "event": "gate",
+   "gate": "drc_routed",
+   "status": "pass",
+   "attempt": 344,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-30T20:36:51",
+   "event": "gate",
+   "gate": "drc_routed",
+   "status": "pass",
+   "attempt": 345,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-30T20:37:51",
+   "event": "gate",
+   "gate": "dfm",
+   "status": "pass",
+   "attempt": 8,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-31T14:44:13",
+   "event": "edit",
+   "edit_class": "swap_part_same_fp",
+   "refs": [
+    "C228",
+    "C231",
+    "C234",
+    "C237",
+    "C326",
+    "C329",
+    "C332",
+    "C335"
+   ],
+   "human_hold": 2
+  },
+  {
+   "ts": "2026-10-31T14:48:31",
+   "event": "gate",
+   "gate": "drc_routed",
+   "status": "pass",
+   "attempt": 346,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-31T14:49:27",
+   "event": "gate",
+   "gate": "dfm",
+   "status": "pass",
+   "attempt": 9,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-31T15:25:03",
+   "event": "edit",
+   "edit_class": "add_part",
+   "refs": [
+    "D6",
+    "D7",
+    "D8",
+    "D9"
+   ],
+   "human_hold": 2
+  },
+  {
+   "ts": "2026-10-31T15:25:33",
+   "event": "gate",
+   "gate": "drc_routed",
+   "status": "pass",
+   "attempt": 347,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-31T15:26:31",
+   "event": "gate",
+   "gate": "dfm",
+   "status": "pass",
+   "attempt": 10,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-31T20:04:50",
+   "event": "edit",
+   "edit_class": "add_part",
+   "refs": [
+    "J20",
+    "J21",
+    "J22",
+    "J23",
+    "J24",
+    "J25",
+    "J26",
+    "J27"
+   ],
+   "human_hold": 2
+  },
+  {
+   "ts": "2026-10-31T20:04:50",
+   "event": "edit",
+   "edit_class": "del_part",
+   "refs": [
+    "J10",
+    "J11",
+    "J6",
+    "J7"
+   ],
+   "human_hold": 2
+  },
+  {
+   "ts": "2026-10-31T23:23:14",
+   "event": "edit",
+   "edit_class": "swap_part_same_fp",
+   "refs": [
+    "C4",
+    "C8"
+   ],
+   "human_hold": 2
+  },
+  {
+   "ts": "2026-10-31T23:25:29",
+   "event": "edit",
+   "edit_class": "swap_part_same_fp",
+   "refs": [
+    "C4",
+    "C8"
+   ],
+   "human_hold": 2
+  },
+  {
+   "ts": "2026-10-31T23:26:18",
+   "event": "edit",
+   "edit_class": "swap_part_same_fp",
+   "refs": [
+    "C4",
+    "C8"
+   ],
+   "human_hold": 2
+  },
+  {
+   "ts": "2026-10-31T23:40:01",
+   "event": "gate",
+   "gate": "drc_routed",
+   "status": "fail",
+   "attempt": 348,
+   "failing_count": 36
+  },
+  {
+   "ts": "2026-10-31T23:42:44",
+   "event": "gate",
+   "gate": "drc_routed",
+   "status": "pass",
+   "attempt": 349,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-31T23:44:30",
+   "event": "gate",
+   "gate": "dfm",
+   "status": "fail",
+   "attempt": 11,
+   "failing_count": 2
+  },
+  {
+   "ts": "2026-10-31T23:45:59",
+   "event": "gate",
+   "gate": "drc_routed",
+   "status": "fail",
+   "attempt": 350,
+   "failing_count": 1
+  },
+  {
+   "ts": "2026-10-31T23:46:16",
+   "event": "gate",
+   "gate": "drc_routed",
+   "status": "pass",
+   "attempt": 351,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-10-31T23:48:23",
+   "event": "gate",
+   "gate": "dfm",
+   "status": "pass",
+   "attempt": 12,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-11-01T00:02:15",
+   "event": "gate",
+   "gate": "drc_routed",
+   "status": "pass",
+   "attempt": 352,
+   "failing_count": 0
+  },
+  {
+   "ts": "2026-11-01T00:03:48",
+   "event": "gate",
+   "gate": "dfm",
+   "status": "pass",
+   "attempt": 13,
    "failing_count": 0
   }
  ]

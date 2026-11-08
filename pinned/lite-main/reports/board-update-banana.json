@@ -1,0 +1,243 @@
+{
+ "script": "board_update",
+ "status": "pass",
+ "board": "/work/boards/lite-main/kicad/lite-main.kicad_pcb",
+ "netlist": "kicad/lite-main.net",
+ "dry_run": false,
+ "plan": {
+  "swap_same_fp": [],
+  "swap_new_fp": [
+   {
+    "ref": "J4",
+    "fp_old": "aiee:CONN-TH_4P-P5.08_DIBO_DB128V-5.08",
+    "fp_new": "aiee:CONN-TH_24.243.1_RED",
+    "value": "24.243 red",
+    "fields": {
+     "LCSC": "C7437321"
+    },
+    "pads": {
+     "1": "/SPK_L_P",
+     "2": "/SPK_L_P"
+    },
+    "dnp": false,
+    "pos": [
+     105.665,
+     65.923
+    ],
+    "deg": 0.0,
+    "side": "front",
+    "nets_old": [
+     "/SPK_L_N",
+     "/SPK_L_P",
+     "/SPK_R_N",
+     "/SPK_R_P"
+    ],
+    "same_spot": false,
+    "keep_copper": false
+   }
+  ],
+  "add": [
+   {
+    "ref": "J5",
+    "fp": "aiee:CONN-TH_24.243.2",
+    "value": "24.243 black",
+    "fields": {
+     "LCSC": "C7437322"
+    },
+    "pads": {
+     "1": "/SPK_L_N",
+     "2": "/SPK_L_N"
+    },
+    "dnp": false
+   },
+   {
+    "ref": "J6",
+    "fp": "aiee:CONN-TH_24.243.1_RED",
+    "value": "24.243 red",
+    "fields": {
+     "LCSC": "C7437321"
+    },
+    "pads": {
+     "1": "/SPK_R_P",
+     "2": "/SPK_R_P"
+    },
+    "dnp": false
+   },
+   {
+    "ref": "J7",
+    "fp": "aiee:CONN-TH_24.243.2",
+    "value": "24.243 black",
+    "fields": {
+     "LCSC": "C7437322"
+    },
+    "pads": {
+     "1": "/SPK_R_N",
+     "2": "/SPK_R_N"
+    },
+    "dnp": false
+   }
+  ],
+  "del": [],
+  "rewire": [],
+  "unsupported": [],
+  "notes": [
+   "board_only footprints ignored: H1, H2, H3, H4",
+   "J4: footprint swap rips its routing (del + add): placed somewhere new"
+  ]
+ },
+ "warnings": [
+  "J5: declared position (110.765, 70.323) overlaps an existing courtyard or leaves the outline - applied as declared",
+  "J6: declared position (121.765, 70.323) overlaps an existing courtyard or leaves the outline - applied as declared",
+  "J7: declared position (132.765, 70.323) overlaps an existing courtyard or leaves the outline - applied as declared",
+  "J4: declared position (99.765, 70.323) overlaps an existing courtyard or leaves the outline - applied as declared",
+  "DRC gained 50 non-unconnected error(s) - run the fix loop, then the drc_routed gate",
+  "4 new unconnected item(s) (the added/rewired parts' ratsnest) - route via the fix loop"
+ ],
+ "orphans": {
+  "affected_nets": [
+   "/SPK_L_N",
+   "/SPK_L_P",
+   "/SPK_R_N",
+   "/SPK_R_P"
+  ],
+  "tracks": 0,
+  "vias": 0,
+  "netconn_unanchored_kept": []
+ },
+ "applied": {
+  "worker": {
+   "fields_updated": [],
+   "added": [
+    {
+     "ref": "J5",
+     "x": 110.765,
+     "y": 70.323,
+     "deg": 90.0,
+     "side": "front",
+     "pads_netted": 2
+    },
+    {
+     "ref": "J6",
+     "x": 121.765,
+     "y": 70.323,
+     "deg": 90.0,
+     "side": "front",
+     "pads_netted": 2
+    },
+    {
+     "ref": "J7",
+     "x": 132.765,
+     "y": 70.323,
+     "deg": 90.0,
+     "side": "front",
+     "pads_netted": 2
+    },
+    {
+     "ref": "J4",
+     "x": 99.765,
+     "y": 70.323,
+     "deg": 90.0,
+     "side": "front",
+     "pads_netted": 2
+    }
+   ],
+   "pads_renetted": [],
+   "removed_refs": [
+    "J4"
+   ],
+   "removed_items": 0,
+   "removed_texts": [],
+   "absent_uuids": []
+  },
+  "refilled": true,
+  "ripped": {
+   "tracks": 0,
+   "vias": 0,
+   "rounds": 1
+  },
+  "drc": {
+   "before": {
+    "total": 10,
+    "by_severity": {
+     "error": 10
+    },
+    "by_source": {
+     "unconnected": 10
+    }
+   },
+   "after": {
+    "total": 99,
+    "by_severity": {
+     "error": 64,
+     "warning": 35
+    },
+    "by_source": {
+     "drc": 85,
+     "unconnected": 14
+    }
+   },
+   "dangling_before": 0,
+   "dangling_after": 0,
+   "unconnected_before": 10,
+   "unconnected_after": 14,
+   "new_errors": 50
+  }
+ },
+ "placements": {
+  "J5": {
+   "x": 110.765,
+   "y": 70.323,
+   "deg": 90.0,
+   "side": "front"
+  },
+  "J6": {
+   "x": 121.765,
+   "y": 70.323,
+   "deg": 90.0,
+   "side": "front"
+  },
+  "J7": {
+   "x": 132.765,
+   "y": 70.323,
+   "deg": 90.0,
+   "side": "front"
+  },
+  "J4": {
+   "x": 99.765,
+   "y": 70.323,
+   "deg": 90.0,
+   "side": "front"
+  }
+ },
+ "state": {
+  "file": "state.json",
+  "classes": [
+   {
+    "class": "swap_part_new_fp",
+    "refs": [
+     "J4"
+    ],
+    "human_hold": 2
+   },
+   {
+    "class": "add_part",
+    "refs": [
+     "J5",
+     "J6",
+     "J7"
+    ],
+    "human_hold": 2
+   }
+  ],
+  "human_hold": 2
+ },
+ "gates_to_rerun": [
+  "dfm",
+  "drc",
+  "drc_routed",
+  "erc",
+  "place",
+  "sim",
+  "verify"
+ ]
+}

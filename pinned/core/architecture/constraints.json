@@ -2,22 +2,74 @@
  "power": [
   {
    "net": "VBUS_IN",
-   "current_a": 0.5,
+   "current_a": 5.0,
    "dt_c": 10,
    "plane_fed": true,
    "pdn": false
   },
   {
    "net": "VBUS",
-   "current_a": 0.5,
+   "current_a": 5.0,
    "dt_c": 10,
-   "plane_fed": true
+   "plane_fed": true,
+   "overrides": [
+    {
+     "near": [
+      51.0,
+      180.0
+     ],
+     "radius_mm": 3.5,
+     "current_a": 3.0
+    }
+   ]
   },
   {
    "net": "PVDD",
-   "current_a": 0.5,
+   "current_a": 5.0,
    "dt_c": 10,
-   "plane_fed": true
+   "plane_fed": true,
+   "overrides": [
+    {
+     "near": [
+      43.437,
+      154.8
+     ],
+     "radius_mm": 4.0,
+     "current_a": 2.5
+    },
+    {
+     "near": [
+      48.387,
+      154.8
+     ],
+     "radius_mm": 4.0,
+     "current_a": 2.5
+    },
+    {
+     "near": [
+      76.337,
+      154.8
+     ],
+     "radius_mm": 4.0,
+     "current_a": 2.5
+    },
+    {
+     "near": [
+      81.287,
+      154.8
+     ],
+     "radius_mm": 4.0,
+     "current_a": 2.5
+    },
+    {
+     "near": [
+      56.5,
+      168.3
+     ],
+     "radius_mm": 2.5,
+     "current_a": 3.0
+    }
+   ]
   },
   {
    "net": "+5V",
@@ -224,7 +276,7 @@
    "pdn": false
   },
   {
-   "net": "/amp_a/A_SPK_L+",
+   "net": "/A_SPK_L+",
    "current_a": 0.5,
    "dt_c": 20,
    "pdn": false
@@ -236,7 +288,7 @@
    "pdn": false
   },
   {
-   "net": "/amp_a/A_SPK_R+",
+   "net": "/A_SPK_R+",
    "current_a": 0.5,
    "dt_c": 20,
    "pdn": false
@@ -350,12 +402,26 @@
    "dt_c": 40
   },
   {
-   "ref": "U15",
-   "power_w": 3.0,
    "net": "GND",
-   "dt_c": 60,
-   "theta_ja_c_w": 8.0,
-   "theta_source": "TPA3221 SLASEE9C 6.4: RthJC(top) 1.1 C/W into a bolted 40x40x20 mm heatsink (~4 C/W) + ~2.9 C/W interface/pad; the slug is on top, so PCB copper is not the heat path"
+   "tj_max_c": 110,
+   "dt_c": 50,
+   "theta_ja_c_w": 23.5,
+   "theta_source": "TI SLASEN3B 7.4: TPA3220 DDW on a JEDEC 2s2p board, thermal pad soldered. Core's 1 oz / 0.5 oz board is ~10 % worse (26 C/W; task 261029-075354)",
+   "power_w": 2.0,
+   "power_max_w": 10.0,
+   "governor": "firmware hifi_gov 60 s average of speaker power: Plus 19 W (HIFI_SPLIT, one channel per chip: 9.6 W/ch into 4 ohm, 14.8 W/ch into 6 ohm), Ultra 9 W one zone / 17 W both (4.4 W/ch into 4 ohm), at 30 C room in the vented box (firmware-requirements C2). power_w is that governed chip loss, ~2.0 W; power_max_w one channel's share of the supply-limited sine",
+   "ref": "U15"
+  },
+  {
+   "net": "GND",
+   "tj_max_c": 110,
+   "dt_c": 50,
+   "theta_ja_c_w": 23.5,
+   "theta_source": "TI SLASEN3B 7.4: TPA3220 DDW on a JEDEC 2s2p board, thermal pad soldered. Core's 1 oz / 0.5 oz board is ~10 % worse (26 C/W; task 261029-075354)",
+   "power_w": 2.0,
+   "power_max_w": 10.0,
+   "governor": "firmware hifi_gov 60 s average of speaker power: Plus 19 W (HIFI_SPLIT, one channel per chip: 9.6 W/ch into 4 ohm, 14.8 W/ch into 6 ohm), Ultra 9 W one zone / 17 W both (4.4 W/ch into 4 ohm), at 30 C room in the vented box (firmware-requirements C2). power_w is that governed chip loss, ~2.0 W; power_max_w one channel's share of the supply-limited sine",
+   "ref": "U16"
   }
  ],
  "placement": {
@@ -470,12 +536,12 @@
    {
     "ref": "U15",
     "side": "front",
-    "reason": "heatsink on top slug"
+    "reason": "thermal pad soldered to the GND planes; vents over and under it"
    },
    {
     "ref": "U16",
     "side": "front",
-    "reason": "heatsink on top slug"
+    "reason": "thermal pad soldered to the GND planes; vents over and under it"
    }
   ],
   "fixed": [
@@ -557,7 +623,7 @@
    "region": [
     52.087,
     168.197,
-    62.087,
+    71.587,
     171.697
    ]
   },
@@ -578,7 +644,7 @@
     47.887,
     172.197,
     71.587,
-    182.697
+    183.597
    ]
   },
   {
@@ -616,7 +682,7 @@
    "net": "+3V3",
    "region": [
     47.887,
-    183.197,
+    184.097,
     72.087,
     191.197
    ]
@@ -630,6 +696,129 @@
    "net": "GND"
   }
  ],
- "power_notes": "Track widths here are sized for the tracks that remain: plane taps and short stubs. The main currents ride on copper the width rules can't see: VBUS_IN/VBUS/PVDD/+3V3 on In2 plane regions plus F.Cu pours, and the amp OUT/SPK nets (3.7 A rms continuous sine, 2 x 56 W governor-capped) on the solid fan-in pours from kicad/gen/power_zones.py. check_irdrop covers those paths at P8. +5V is budgeted at 1.1 A, what the SY8303 delivers at the worst case of its loads: the SY8089 3V3 buck's input at the +3V3 budget of 0.8 A (ESP32 radio peaks; 3.3 x 0.8 / (0.88 x 5.0) = 0.60 A), LP5907 3V3A 0.10 A, +5VA 0.05 A, two TPA3221 VDD/GVDD/AVDD 0.10 A, the ultra-front board over J3 0.15 A and the CH340C 0.02 A (1.02 A). The trunk from L9 to U5's VIN is 0.58-0.60 mm, past the 0.56 mm that 1.1 A needs at dT=10, and BUCK5_LX carries the same 1.1 A. Every other +5V track is a branch off that trunk and sits in an override at 0.4 A: by a DC solve of the routed copper the most any branch carries is 0.29 A (amp A, CH340C and the front board, west), and the buck output caps' (C13/C14) and the 3V3 buck's input cap's (C15) ripple stays under 0.4 A rms; 0.35 mm tracks carry 0.7 A, so the branches have margin. No override circle reaches a trunk segment's midpoint.",
- "diff_pairs_note": "Explicitly empty. The USB full-speed pair (12 Mb/s) and the two 100BASE-TX pairs run about 10 mm, so coupling them adds nothing measurable, and the router doesn't couple pairs (route_critical's KRT diff pass shorted). They are routed as ordinary nets at the Default width."
+ "power_notes": "VBUS_IN, VBUS and PVDD are budgeted at the real 5 A, the 28 V x 5 A PD contract (the firmware governor holds sustained input near 13 W, so 5 A is the peak), and every layer's pour carries it on its own (check_current): In1/In2 are 1 oz, and kicad/gen/power_trunk.py cleared the GND stitch grid from the In2 power planes and reshaped their zones after planes_gen (the In2 regions here are the rectangles planes_gen lays; that script's ZONES are the outlines on the board). Overrides at 3.0 A, VBUS at R1's output pad and PVDD at Q1's drain: there the F.Cu patches (review-2 POWER-1) only spread the pad's current into their 7-10 vias to the In2 plane, so a neck between via groups carries at most the share of the vias past it (4 of 7, 2.9 A). PVDD overrides at 2.5 A: each F.Cu finger between an amp's output pins feeds one bridge, so at full stereo drive on Plus (U15 only) a finger carries half the 5 A; the pin pitch fixes its 1.6-1.75 mm width, and its five vias into the In2 plane sit 1-4 mm from the pins. kicad/core.kicad_dru keeps its width rules: re-running rules_gen from these budgets would ask every plane tap for trunk width, as it reads no plane_fed. Track widths here are sized for the tracks that remain: plane taps and short stubs. The main currents ride on copper the width rules can't see: VBUS_IN/VBUS/PVDD/+3V3 on In2 plane regions plus F.Cu pours, and the amp OUT/SPK nets (3.7 A rms continuous sine, 2 x 56 W governor-capped) on the solid fan-in pours from kicad/gen/power_zones.py. check_irdrop covers those paths at P8. +5V is budgeted at 1.1 A, what the SY8303 delivers at the worst case of its loads: the SY8089 3V3 buck's input at the +3V3 budget of 0.8 A (ESP32 radio peaks; 3.3 x 0.8 / (0.88 x 5.0) = 0.60 A), LP5907 3V3A 0.10 A, +5VA 0.05 A, two TPA3221 VDD/GVDD/AVDD 0.10 A, the ultra-front board over J3 0.15 A and the CH340C 0.02 A (1.02 A). The trunk from L9 to U5's VIN is 0.58-0.60 mm, past the 0.56 mm that 1.1 A needs at dT=10, and BUCK5_LX carries the same 1.1 A. Every other +5V track is a branch off that trunk and sits in an override at 0.4 A: by a DC solve of the routed copper the most any branch carries is 0.29 A (amp A, CH340C and the front board, west), and the buck output caps' (C13/C14) and the 3V3 buck's input cap's (C15) ripple stays under 0.4 A rms; 0.35 mm tracks carry 0.7 A, so the branches have margin. No override circle reaches a trunk segment's midpoint. The real VBUS/PVDD current is the PD contract's 5 A (pd_source): check_power_path's max-flow over all layers carries it (J1->R1 7.45 A, R1->Q1 5.32 A, Q1->U15 7.45 A at dT 10 C). check_current's per-layer pour-neck rule fails at 5 A (In2 VBUS_IN/VBUS necks 1.9-2.2 mm, PVDD 0.81 mm on In2 and 1.0-1.5 mm on F.Cu, against 4.3 mm at dT 30 C), so its budgets stay at the tap-track 0.5 A and widening those necks is a follow-up task. The firmware governor holds the sustained input to ~13 W (0.47 A) and bursts to the 1 s supply budget.",
+ "diff_pairs_note": "Explicitly empty. The USB full-speed pair (12 Mb/s) and the two 100BASE-TX pairs run about 10 mm, so coupling them adds nothing measurable, and the router doesn't couple pairs (route_critical's KRT diff pass shorted). They are routed as ordinary nets at the Default width.",
+ "pd_source": {
+  "contract_v": 28,
+  "contract_a": 5
+ },
+ "enclosure": {
+  "box_mm": [
+   132.4,
+   112.4,
+   39.8
+  ],
+  "wall_mm": 2.4,
+  "material": "PETG",
+  "room_c": 30,
+  "other_w": 3.0,
+  "inlet_mm2": 1730,
+  "riser_mm2": 1565,
+  "outlet_mm2": 1598,
+  "stack_mm": 32,
+  "floor": "feet",
+  "note": "Plus box as built on main (enclosure/core_box.py vent_plan, task 261030-074523 / PR #102): low wall and floor inlets 1730 mm2, 7 mm S+E riser strips 1565 mm2, lid grille over both amps 1598 mm2, stack 32 mm. Ultra: 135.4 x 114.4 x 49.2 mm, 1516/1578/1736 mm2, stack 39. other_w: the rest of core (~2.5 W) plus the output filters at the governed level (~0.5 W)"
+ },
+ "ripple": [
+  {
+   "ref": "C5",
+   "irms_a": 0.43,
+   "rated_irms_a": 0.6,
+   "freq_multiplier": 1.2,
+   "source": "Rubycon 50PX470MEFC10X20: 600 mA at 120 Hz, x1.20 at >= 10 kHz (PX datasheet); split per docs/review-2/thermal.md 5, scaled to the governed 12 W",
+   "irms_max_a": 1.25,
+   "life_h": 2000,
+   "rated_c": 105,
+   "life_min_h": 30000,
+   "chem": "electrolytic"
+  },
+  {
+   "ref": "C6",
+   "irms_a": 0.43,
+   "rated_irms_a": 0.6,
+   "freq_multiplier": 1.2,
+   "source": "Rubycon 50PX470MEFC10X20: 600 mA at 120 Hz, x1.20 at >= 10 kHz (PX datasheet); split per docs/review-2/thermal.md 5, scaled to the governed 12 W",
+   "irms_max_a": 1.25,
+   "life_h": 2000,
+   "rated_c": 105,
+   "life_min_h": 30000,
+   "chem": "electrolytic"
+  }
+ ],
+ "power_paths": [
+  {
+   "net": "VBUS",
+   "from": "R1",
+   "to": "Q1",
+   "current_a": 5.0,
+   "note": "the PD contract's 5 A through the shunt into the PVDD switch"
+  },
+  {
+   "net": "+3V3",
+   "from": "L10",
+   "to": "U7",
+   "current_a": 0.8,
+   "note": "ESP32-WROVER radio TX bursts reach ~500 mA (Espressif: supply >= 500 mA), plus the rest of +3V3"
+  },
+  {
+   "net": "+3V3",
+   "from": "L10",
+   "to": "U8",
+   "current_a": 0.05
+  },
+  {
+   "net": "+3V3",
+   "from": "L10",
+   "to": "U13",
+   "current_a": 0.05
+  },
+  {
+   "net": "+3V3",
+   "from": "L10",
+   "to": "J3",
+   "current_a": 0.1
+  },
+  {
+   "net": "PVDD",
+   "from": "Q1",
+   "to": "U15",
+   "current_a": 5.0,
+   "note": "PVDD carries the contract's 5 A on Plus"
+  },
+  {
+   "net": "PVDD",
+   "from": "Q1",
+   "to": "U16",
+   "current_a": 5.0,
+   "note": "and on Ultra across both zones"
+  },
+  {
+   "net": "VBUS",
+   "from": "R1",
+   "to": "Q3",
+   "current_a": 0.05,
+   "note": "Q3 unit 2's collector: the PVDD fast-off follower charges Q1's gate (~15 mA for ~2 ms), a signal path, not the PD contract's"
+  },
+  {
+   "net": "+5V",
+   "from": "L9",
+   "to": "U5",
+   "current_a": 1.1,
+   "note": "the trunk to the 3V3 buck (power_notes)"
+  },
+  {
+   "net": "+5V",
+   "from": "L9",
+   "to": "U6",
+   "current_a": 0.1,
+   "note": "LP5907 3V3A"
+  },
+  {
+   "net": "+5V",
+   "from": "L9",
+   "to": "J3",
+   "current_a": 0.15,
+   "note": "the ultra-front board over the FFC"
+  }
+ ]
 }

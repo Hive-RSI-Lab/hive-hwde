@@ -57,6 +57,26 @@
    "layer": "F.SilkS"
   },
   {
+   "op": "silk_clear",
+   "ref": "J4",
+   "layer": "F.SilkS"
+  },
+  {
+   "op": "silk_clear",
+   "ref": "J5",
+   "layer": "F.SilkS"
+  },
+  {
+   "op": "silk_clear",
+   "ref": "J6",
+   "layer": "F.SilkS"
+  },
+  {
+   "op": "silk_clear",
+   "ref": "J7",
+   "layer": "F.SilkS"
+  },
+  {
    "op": "set_text",
    "ref": "U2",
    "field": "reference",
@@ -81,6 +101,109 @@
    "hide": true
   },
   {
+   "op": "set_text",
+   "ref": "R5",
+   "field": "reference",
+   "hide": true
+  },
+  {
+   "op": "set_text",
+   "ref": "J4",
+   "field": "reference",
+   "hide": true
+  },
+  {
+   "op": "set_text",
+   "ref": "J5",
+   "field": "reference",
+   "hide": true
+  },
+  {
+   "op": "set_text",
+   "ref": "J6",
+   "field": "reference",
+   "hide": true
+  },
+  {
+   "op": "set_text",
+   "ref": "J7",
+   "field": "reference",
+   "hide": true
+  },
+  {
+   "op": "silk_clear",
+   "ref": "Q11",
+   "layer": "F.SilkS"
+  },
+  {
+   "op": "silk_clear",
+   "ref": "Q12",
+   "layer": "F.SilkS"
+  },
+  {
+   "op": "silk_clear",
+   "ref": "Q13",
+   "layer": "F.SilkS"
+  },
+  {
+   "op": "silk_clear",
+   "ref": "Q14",
+   "layer": "F.SilkS"
+  },
+  {
+   "op": "silk_clear",
+   "ref": "Q15",
+   "layer": "F.SilkS"
+  },
+  {
+   "op": "set_text",
+   "ref": "Q13",
+   "field": "reference",
+   "hide": true
+  },
+  {
+   "op": "set_text",
+   "ref": "Q15",
+   "field": "reference",
+   "hide": true
+  },
+  {
+   "op": "set_text",
+   "ref": "R82",
+   "field": "reference",
+   "hide": true
+  },
+  {
+   "op": "set_text",
+   "ref": "R39",
+   "field": "reference",
+   "hide": true
+  },
+  {
+   "op": "set_text",
+   "ref": "C9",
+   "field": "reference",
+   "hide": true
+  },
+  {
+   "op": "set_text",
+   "ref": "C33",
+   "field": "reference",
+   "hide": true
+  },
+  {
+   "op": "set_text",
+   "ref": "R38",
+   "field": "reference",
+   "hide": true
+  },
+  {
+   "op": "set_text",
+   "ref": "C32",
+   "field": "reference",
+   "hide": true
+  },
+  {
    "op": "add_text",
    "text": "+",
    "x": 83.865,
@@ -100,36 +223,36 @@
   },
   {
    "op": "add_text",
-   "text": "L+",
-   "x": 98.045,
-   "y": 72.623,
+   "text": "J4 L+",
+   "x": 100.265,
+   "y": 70.323,
    "layer": "F.SilkS",
    "size": 1.2,
    "thickness": 0.2
   },
   {
    "op": "add_text",
-   "text": "L-",
-   "x": 103.125,
-   "y": 72.623,
+   "text": "J5 L-",
+   "x": 111.265,
+   "y": 70.323,
    "layer": "F.SilkS",
    "size": 1.2,
    "thickness": 0.2
   },
   {
    "op": "add_text",
-   "text": "R+",
-   "x": 108.205,
-   "y": 72.623,
+   "text": "J6 R+",
+   "x": 122.265,
+   "y": 70.323,
    "layer": "F.SilkS",
    "size": 1.2,
    "thickness": 0.2
   },
   {
    "op": "add_text",
-   "text": "R-",
-   "x": 113.285,
-   "y": 72.623,
+   "text": "J7 R-",
+   "x": 133.265,
+   "y": 70.323,
    "layer": "F.SilkS",
    "size": 1.2,
    "thickness": 0.2

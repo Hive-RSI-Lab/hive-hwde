@@ -172,7 +172,7 @@
    "cap": "C80",
    "ic": "U9",
    "pin": "3",
-   "rail": "/IR_VCC",
+   "rail": "IR_VCC",
    "value": "4.7uF"
   }
  ]

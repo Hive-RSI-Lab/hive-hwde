@@ -4,8 +4,8 @@
   "phase": "P8",
   "tool": "verify",
   "input": "kicad/core.kicad_pcb",
-  "input_digest": "sexpr_no_uuid:c0299371b762fefa69d56b34d9e9a08e05a67b743d611e6dc8ac15ee0ac8aa3b",
-  "status": "fail",
+  "input_digest": "sexpr_no_uuid:bd8e6b3043c1b7a6ae6c5089e6be7bea70688dc56850572b30552596a26d718a",
+  "status": "pass",
   "criteria": {
     "fail_severities": [
       "error"
@@ -13,10 +13,9 @@
     "max_count": 0
   },
   "counts": {
-    "total": 167,
+    "total": 165,
     "by_severity": {
-      "warning": 165,
-      "error": 2
+      "warning": 165
     },
     "by_source": {
       "check_current": 1,
@@ -25,7 +24,6 @@
       "check_route_style": 121,
       "check_pdn": 2,
       "check_ratings": 36,
-      "check_power_path": 2,
       "verify_all": 1
     },
     "by_check": {
@@ -44,91 +42,11 @@
       "check_courtyard": 0,
       "check_mate_pins": 0,
       "check_model_paths": 0,
-      "check_power_path": 2,
       "verify_all": 1
     }
   },
-  "failing_count": 2,
-  "failing": [
-    {
-      "check": "check_power_path",
-      "severity": "error",
-      "pos": [
-        72.187,
-        178.876
-      ],
-      "layer": null,
-      "net": "+5V",
-      "refs": [
-        "J3",
-        "L9"
-      ],
-      "msg": "+5V L9 -> J3 carries 0.7 A at dT 10 C against 1.1 A (constraints power budget); bottleneck: 0.35 mm on F.Cu at [72.187, 178.876]",
-      "source": "check_power_path",
-      "items": [
-        {
-          "msg": "+5V L9 -> J3 carries 0.7 A at dT 10 C against 1.1 A (constraints power budget); bottleneck: 0.35 mm on F.Cu at [72.187, 178.876]",
-          "pos": [
-            72.187,
-            178.876
-          ]
-        }
-      ],
-      "kind": "path_capacity",
-      "amps": 0.7,
-      "current_a": 1.1,
-      "neck_tracks": [
-        {
-          "layer": "F.Cu",
-          "width_mm": 0.35,
-          "at": [
-            72.187,
-            178.876
-          ]
-        }
-      ],
-      "neck_vias": []
-    },
-    {
-      "check": "check_power_path",
-      "severity": "error",
-      "pos": [
-        80.914,
-        180.912
-      ],
-      "layer": null,
-      "net": "+5V",
-      "refs": [
-        "L9",
-        "U6"
-      ],
-      "msg": "+5V L9 -> U6 carries 0.7 A at dT 10 C against 1.1 A (constraints power budget); bottleneck: 0.35 mm on F.Cu at [80.914, 180.912]",
-      "source": "check_power_path",
-      "items": [
-        {
-          "msg": "+5V L9 -> U6 carries 0.7 A at dT 10 C against 1.1 A (constraints power budget); bottleneck: 0.35 mm on F.Cu at [80.914, 180.912]",
-          "pos": [
-            80.914,
-            180.912
-          ]
-        }
-      ],
-      "kind": "path_capacity",
-      "amps": 0.7,
-      "current_a": 1.1,
-      "neck_tracks": [
-        {
-          "layer": "F.Cu",
-          "width_mm": 0.35,
-          "at": [
-            80.914,
-            180.912
-          ]
-        }
-      ],
-      "neck_vias": []
-    }
-  ],
+  "failing_count": 0,
+  "failing": [],
   "warnings_count": 165,
   "warnings": [
     {
@@ -14576,11 +14494,11 @@
         "SW2",
         "SW3"
       ],
-      "msg": "262 two-terminal part(s) have no extraction and no voltage-rated attribute in parts.json: C1, C10, C100, C101, C102, C11, C110, C111, C112, C12, C120, C121, C122, C123, C124, C125, C126, C13, C130, C131, C132, C136, C137, C14, C142, C143, C15, C150, C151, C16, C17, C18, C19, C2, C201, C202, C204, C206, C207, C208, C209, C21, C210, C211, C218, C219, C22, C220, C221, C222, C223, C224, C225, C226, C228, C229, C231, C232, C234, C235, C237, C3, C30, C301, C302, C304, C306, C307, C308, C309, C31, C310, C311, C312, C316, C317, C318, C319, C32, C320, C321, C322, C323, C324, C326, C327, C329, C33, C330, C332, C333, C335, C34, C37, C38, C39, C4, C40, C400, C41, C42, C43, C44, C45, C46, C47, C5, C50, C51, C52, C53, C54, C55, C56, C57, C58, C59, C6, C64, C65, C66, C67, C68, C69, C7, C70, C71, C72, C8, C9, D1, D2, D3, D4, FB1, FB2, FB3, J10, J11, J6, J7, L1, L10, L2, L3, L4, L5, L6, L7, L8, L9, R1, R10, R100, R101, R102, R11, R110, R111, R112, R12, R120, R121, R122, R13, R130, R131, R132, R133, R134, R135, R136, R137, R138, R14, R149, R15, R150, R16, R17, R18, R19, R2, R20, R203, R205, R212, R213, R214, R215, R216, R217, R227, R230, R233, R236, R3, R30, R303, R305, R31, R313, R314, R315, R32, R325, R328, R33, R331, R334, R34, R35, R36, R4, R40, R400, R401, R402, R403, R41, R42, R43, R44, R45, R5, R50, R51, R52, R53, R54, R55, R56, R57, R58, R6, R60, R61, R62, R63, R64, R65, R66, R67, R7, R70, R71, R72, R73, R74, R75, R8, R80, R81, R82, R83, R9, R90, R91, R92, R93, SW2, SW3 (C1, C10, C100, C101, C102, C11, C110, C111, C112, C12, C120, C121, C122, C123, C124, C125, C126, C13, C130, C131, C132, C136, C137, C14, C142, C143, C15, C150, C151, C16, C17, C18, C19, C2, C201, C202, C204, C206, C207, C208, C209, C21, C210, C211, C218, C219, C22, C220, C221, C222, C223, C224, C225, C226, C228, C229, C231, C232, C234, C235, C237, C3, C30, C301, C302, C304, C306, C307, C308, C309, C31, C310, C311, C312, C316, C317, C318, C319, C32, C320, C321, C322, C323, C324, C326, C327, C329, C33, C330, C332, C333, C335, C34, C37, C38, C39, C4, C40, C400, C41, C42, C43, C44, C45, C46, C47, C5, C50, C51, C52, C53, C54, C55, C56, C57, C58, C59, C6, C64, C65, C66, C67, C68, C69, C7, C70, C71, C72, C8, C9, D1, D2, D3, D4, FB1, FB2, FB3, J10, J11, J6, J7, L1, L10, L2, L3, L4, L5, L6, L7, L8, L9, R1, R10, R100, R101, R102, R11, R110, R111, R112, R12, R120, R121, R122, R13, R130, R131, R132, R133, R134, R135, R136, R137, R138, R14, R149, R15, R150, R16, R17, R18, R19, R2, R20, R203, R205, R212, R213, R214, R215, R216, R217, R227, R230, R233, R236, R3, R30, R303, R305, R31, R313, R314, R315, R32, R325, R328, R33, R331, R334, R34, R35, R36, R4, R40, R400, R401, R402, R403, R41, R42, R43, R44, R45, R5, R50, R51, R52, R53, R54, R55, R56, R57, R58, R6, R60, R61, R62, R63, R64, R65, R66, R67, R7, R70, R71, R72, R73, R74, R75, R8, R80, R81, R82, R83, R9, R90, R91, R92, R93, SW2, SW3: the parts.json line carries no attributes - keep parts_search's row whole)",
+      "msg": "262 two-terminal part(s) have no extraction and no voltage-rated attribute in parts.json: C1, C10, C100, C101, C102, C11, C110, C111, C112, C12, C120, C121, C122, C123, C124, C125, C126, C13, C130, C131, C132, C136, C137, C14, C142, C143, C15, C150, C151, C16, C17, C18, C19, C2, C201, C202, C204, C206, C207, C208, C209, C21, C210, C211, C218, C219, C22, C220, C221, C222, C223, C224, C225, C226, C228, C229, C231, C232, C234, C235, C237, C3, C30, C301, C302, C304, C306, C307, C308, C309, C31, C310, C311, C312, C316, C317, C318, C319, C32, C320, C321, C322, C323, C324, C326, C327, C329, C33, C330, C332, C333, C335, C34, C37, C38, C39, C4, C40, C400, C41, C42, C43, C44, C45, C46, C47, C5, C50, C51, C52, C53, C54, C55, C56, C57, C58, C59, C6, C64, C65, C66, C67, C68, C69, C7, C70, C71, C72, C8, C9, D1, D2, D3, D4, FB1, FB2, FB3, J10, J11, J6, J7, L1, L10, L2, L3, L4, L5, L6, L7, L8, L9, R1, R10, R100, R101, R102, R11, R110, R111, R112, R12, R120, R121, R122, R13, R130, R131, R132, R133, R134, R135, R136, R137, R138, R14, R149, R15, R150, R16, R17, R18, R19, R2, R20, R203, R205, R212, R213, R214, R215, R216, R217, R227, R230, R233, R236, R3, R30, R303, R305, R31, R313, R314, R315, R32, R325, R328, R33, R331, R334, R34, R35, R36, R4, R40, R400, R401, R402, R403, R41, R42, R43, R44, R45, R5, R50, R51, R52, R53, R54, R55, R56, R57, R58, R6, R60, R61, R62, R63, R64, R65, R66, R67, R7, R70, R71, R72, R73, R74, R75, R8, R80, R81, R82, R83, R9, R90, R91, R92, R93, SW2, SW3",
       "source": "check_ratings",
       "items": [
         {
-          "msg": "262 two-terminal part(s) have no extraction and no voltage-rated attribute in parts.json: C1, C10, C100, C101, C102, C11, C110, C111, C112, C12, C120, C121, C122, C123, C124, C125, C126, C13, C130, C131, C132, C136, C137, C14, C142, C143, C15, C150, C151, C16, C17, C18, C19, C2, C201, C202, C204, C206, C207, C208, C209, C21, C210, C211, C218, C219, C22, C220, C221, C222, C223, C224, C225, C226, C228, C229, C231, C232, C234, C235, C237, C3, C30, C301, C302, C304, C306, C307, C308, C309, C31, C310, C311, C312, C316, C317, C318, C319, C32, C320, C321, C322, C323, C324, C326, C327, C329, C33, C330, C332, C333, C335, C34, C37, C38, C39, C4, C40, C400, C41, C42, C43, C44, C45, C46, C47, C5, C50, C51, C52, C53, C54, C55, C56, C57, C58, C59, C6, C64, C65, C66, C67, C68, C69, C7, C70, C71, C72, C8, C9, D1, D2, D3, D4, FB1, FB2, FB3, J10, J11, J6, J7, L1, L10, L2, L3, L4, L5, L6, L7, L8, L9, R1, R10, R100, R101, R102, R11, R110, R111, R112, R12, R120, R121, R122, R13, R130, R131, R132, R133, R134, R135, R136, R137, R138, R14, R149, R15, R150, R16, R17, R18, R19, R2, R20, R203, R205, R212, R213, R214, R215, R216, R217, R227, R230, R233, R236, R3, R30, R303, R305, R31, R313, R314, R315, R32, R325, R328, R33, R331, R334, R34, R35, R36, R4, R40, R400, R401, R402, R403, R41, R42, R43, R44, R45, R5, R50, R51, R52, R53, R54, R55, R56, R57, R58, R6, R60, R61, R62, R63, R64, R65, R66, R67, R7, R70, R71, R72, R73, R74, R75, R8, R80, R81, R82, R83, R9, R90, R91, R92, R93, SW2, SW3 (C1, C10, C100, C101, C102, C11, C110, C111, C112, C12, C120, C121, C122, C123, C124, C125, C126, C13, C130, C131, C132, C136, C137, C14, C142, C143, C15, C150, C151, C16, C17, C18, C19, C2, C201, C202, C204, C206, C207, C208, C209, C21, C210, C211, C218, C219, C22, C220, C221, C222, C223, C224, C225, C226, C228, C229, C231, C232, C234, C235, C237, C3, C30, C301, C302, C304, C306, C307, C308, C309, C31, C310, C311, C312, C316, C317, C318, C319, C32, C320, C321, C322, C323, C324, C326, C327, C329, C33, C330, C332, C333, C335, C34, C37, C38, C39, C4, C40, C400, C41, C42, C43, C44, C45, C46, C47, C5, C50, C51, C52, C53, C54, C55, C56, C57, C58, C59, C6, C64, C65, C66, C67, C68, C69, C7, C70, C71, C72, C8, C9, D1, D2, D3, D4, FB1, FB2, FB3, J10, J11, J6, J7, L1, L10, L2, L3, L4, L5, L6, L7, L8, L9, R1, R10, R100, R101, R102, R11, R110, R111, R112, R12, R120, R121, R122, R13, R130, R131, R132, R133, R134, R135, R136, R137, R138, R14, R149, R15, R150, R16, R17, R18, R19, R2, R20, R203, R205, R212, R213, R214, R215, R216, R217, R227, R230, R233, R236, R3, R30, R303, R305, R31, R313, R314, R315, R32, R325, R328, R33, R331, R334, R34, R35, R36, R4, R40, R400, R401, R402, R403, R41, R42, R43, R44, R45, R5, R50, R51, R52, R53, R54, R55, R56, R57, R58, R6, R60, R61, R62, R63, R64, R65, R66, R67, R7, R70, R71, R72, R73, R74, R75, R8, R80, R81, R82, R83, R9, R90, R91, R92, R93, SW2, SW3: the parts.json line carries no attributes - keep parts_search's row whole)",
+          "msg": "262 two-terminal part(s) have no extraction and no voltage-rated attribute in parts.json: C1, C10, C100, C101, C102, C11, C110, C111, C112, C12, C120, C121, C122, C123, C124, C125, C126, C13, C130, C131, C132, C136, C137, C14, C142, C143, C15, C150, C151, C16, C17, C18, C19, C2, C201, C202, C204, C206, C207, C208, C209, C21, C210, C211, C218, C219, C22, C220, C221, C222, C223, C224, C225, C226, C228, C229, C231, C232, C234, C235, C237, C3, C30, C301, C302, C304, C306, C307, C308, C309, C31, C310, C311, C312, C316, C317, C318, C319, C32, C320, C321, C322, C323, C324, C326, C327, C329, C33, C330, C332, C333, C335, C34, C37, C38, C39, C4, C40, C400, C41, C42, C43, C44, C45, C46, C47, C5, C50, C51, C52, C53, C54, C55, C56, C57, C58, C59, C6, C64, C65, C66, C67, C68, C69, C7, C70, C71, C72, C8, C9, D1, D2, D3, D4, FB1, FB2, FB3, J10, J11, J6, J7, L1, L10, L2, L3, L4, L5, L6, L7, L8, L9, R1, R10, R100, R101, R102, R11, R110, R111, R112, R12, R120, R121, R122, R13, R130, R131, R132, R133, R134, R135, R136, R137, R138, R14, R149, R15, R150, R16, R17, R18, R19, R2, R20, R203, R205, R212, R213, R214, R215, R216, R217, R227, R230, R233, R236, R3, R30, R303, R305, R31, R313, R314, R315, R32, R325, R328, R33, R331, R334, R34, R35, R36, R4, R40, R400, R401, R402, R403, R41, R42, R43, R44, R45, R5, R50, R51, R52, R53, R54, R55, R56, R57, R58, R6, R60, R61, R62, R63, R64, R65, R66, R67, R7, R70, R71, R72, R73, R74, R75, R8, R80, R81, R82, R83, R9, R90, R91, R92, R93, SW2, SW3",
           "pos": null
         }
       ],
@@ -14888,8 +14806,7 @@
       "check_bom_sync",
       "check_courtyard",
       "check_mate_pins",
-      "check_model_paths",
-      "check_power_path"
+      "check_model_paths"
     ],
     "ran": [
       "check_return_path",
@@ -14906,8 +14823,7 @@
       "check_bom_sync",
       "check_courtyard",
       "check_mate_pins",
-      "check_model_paths",
-      "check_power_path"
+      "check_model_paths"
     ],
     "passed": [
       "check_return_path",
@@ -14926,9 +14842,7 @@
       "check_mate_pins",
       "check_model_paths"
     ],
-    "failed": [
-      "check_power_path"
-    ],
+    "failed": [],
     "waived": [],
     "not_applicable": {},
     "skipped_error": {}
@@ -14938,11 +14852,11 @@
     "recorded": true,
     "workspace": ".",
     "gate": "verify",
-    "status": "fail",
-    "attempts": 10,
+    "status": "pass",
+    "attempts": 9,
     "inputs": {
-      "pcb": "sexpr_no_uuid:c0299371b762fefa69d56b34d9e9a08e05a67b743d611e6dc8ac15ee0ac8aa3b",
-      "constraints": "json_canonical:3a213a3298e12e627b39ab82331226bffd6c18582288a4dfa8774b2547522349",
+      "pcb": "sexpr_no_uuid:bd8e6b3043c1b7a6ae6c5089e6be7bea70688dc56850572b30552596a26d718a",
+      "constraints": "json_canonical:79ac6f7f649e43c1ae962cf7ac7d0114366e7ea7cab6459c60e8da80dc6f97d0",
       "decoupling": "json_canonical:7e759350e42c493293b29d46193ba5934d5c131dd8262b3f6f08de943ba02362",
       "waivers": "json_canonical:b617b01d130b74a9c5e33240470e7ef866d297c5b8d1032d7b06f0753517010a"
     }

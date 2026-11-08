@@ -67,7 +67,7 @@
         (stroke (width 0) (type default))
         (fill (type none))
       )
-      (pin passive line
+      (pin power_in line
         (at 15.24 21.59 180)
         (length 2.54)
         (name "GND" (effects (font (size 1.27 1.27))))
@@ -205,7 +205,7 @@
         (name "IO13" (effects (font (size 1.27 1.27))))
         (number "16" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at -15.24 -13.97 0)
         (length 2.54)
         (name "GND" (effects (font (size 1.27 1.27))))
@@ -289,13 +289,13 @@
         (name "3V3" (effects (font (size 1.27 1.27))))
         (number "2" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at -15.24 21.59 0)
         (length 2.54)
         (name "GND" (effects (font (size 1.27 1.27))))
         (number "1" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at 15.24 24.13 180)
         (length 2.54)
         (name "GND" (effects (font (size 1.27 1.27))))
@@ -668,7 +668,7 @@
         (stroke (width 0) (type default))
         (fill (type none))
       )
-      (pin passive line
+      (pin power_in line
         (at -11.43 8.89 0)
         (length 2.54)
         (name "GND" (effects (font (size 1.27 1.27))))
@@ -758,7 +758,7 @@
         (name "R232" (effects (font (size 1.27 1.27))))
         (number "15" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at 11.43 8.89 180)
         (length 2.54)
         (name "VCC" (effects (font (size 1.27 1.27))))
@@ -1178,7 +1178,7 @@
         (stroke (width 0) (type default))
         (fill (type none))
       )
-      (pin passive line
+      (pin power_in line
         (at -12.70 2.54 0)
         (length 2.54)
         (name "GND" (effects (font (size 1.27 1.27))))
@@ -1295,7 +1295,7 @@
         (name "EN" (effects (font (size 1.27 1.27))))
         (number "1" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at -8.89 -0.00 0)
         (length 2.54)
         (name "GND" (effects (font (size 1.27 1.27))))
@@ -1400,7 +1400,7 @@
         (name "IN" (effects (font (size 1.27 1.27))))
         (number "1" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at -10.16 -0.00 0)
         (length 2.54)
         (name "GND" (effects (font (size 1.27 1.27))))
@@ -1833,19 +1833,19 @@
         (name "MCLK" (effects (font (size 1.27 1.27))))
         (number "1" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at -15.24 12.70 0)
         (length 2.54)
         (name "DVDD" (effects (font (size 1.27 1.27))))
         (number "2" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at -15.24 10.16 0)
         (length 2.54)
         (name "PVDD" (effects (font (size 1.27 1.27))))
         (number "3" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at -15.24 7.62 0)
         (length 2.54)
         (name "DGND" (effects (font (size 1.27 1.27))))
@@ -1923,13 +1923,13 @@
         (name "HPVDD" (effects (font (size 1.27 1.27))))
         (number "16" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at 15.24 -12.70 180)
         (length 2.54)
         (name "AVDD" (effects (font (size 1.27 1.27))))
         (number "17" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at 15.24 -10.16 180)
         (length 2.54)
         (name "AGND" (effects (font (size 1.27 1.27))))
@@ -2124,7 +2124,7 @@
         (name "GAIN/SLV" (effects (font (size 1.27 1.27))))
         (number "8" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at -15.24 -2.54 0)
         (length 2.54)
         (name "GND" (effects (font (size 1.27 1.27))))
@@ -2172,19 +2172,19 @@
         (name "SYNC" (effects (font (size 1.27 1.27))))
         (number "16" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at 15.24 -20.32 180)
         (length 2.54)
         (name "AVCC" (effects (font (size 1.27 1.27))))
         (number "17" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at 15.24 -17.78 180)
         (length 2.54)
         (name "PVCC" (effects (font (size 1.27 1.27))))
         (number "18" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at 15.24 -15.24 180)
         (length 2.54)
         (name "PVCC" (effects (font (size 1.27 1.27))))
@@ -2202,7 +2202,7 @@
         (name "OUTNL" (effects (font (size 1.27 1.27))))
         (number "21" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at 15.24 -7.62 180)
         (length 2.54)
         (name "GND" (effects (font (size 1.27 1.27))))
@@ -2220,7 +2220,7 @@
         (name "BSPL" (effects (font (size 1.27 1.27))))
         (number "24" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at 15.24 -0.00 180)
         (length 2.54)
         (name "GND" (effects (font (size 1.27 1.27))))
@@ -2238,7 +2238,7 @@
         (name "OUTNR" (effects (font (size 1.27 1.27))))
         (number "27" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at 15.24 7.62 180)
         (length 2.54)
         (name "GND" (effects (font (size 1.27 1.27))))
@@ -2256,13 +2256,13 @@
         (name "BSPR" (effects (font (size 1.27 1.27))))
         (number "30" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at 15.24 15.24 180)
         (length 2.54)
         (name "PVCC" (effects (font (size 1.27 1.27))))
         (number "31" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at 15.24 17.78 180)
         (length 2.54)
         (name "PVCC" (effects (font (size 1.27 1.27))))
@@ -3042,7 +3042,7 @@
     )
   )
 
-  (symbol "SMBJ20A_C364296"
+  (symbol "SMBJ22A_C151920"
     (in_bom yes)
     (on_board yes)
     (property
@@ -3054,7 +3054,7 @@
     )
     (property
       "Value"
-      "SMBJ20A_C364296"
+      "SMBJ22A_C151920"
       (id 1)
       (at 0 -5.08 0)
       (effects (font (size 1.27 1.27) ) )
@@ -3068,28 +3068,28 @@
     )
     (property
       "Datasheet"
-      "https://lcsc.com/product-detail/Others_MDD-Jiangsu-Yutai-Elec-SMBJ20A_C364296.html"
+      "https://www.lcsc.com/product-detail/esd-and-surge-protection-tvs-esd_born-smbj22a_C151920.html"
       (id 3)
       (at 0 -10.16 0)
       (effects (font (size 1.27 1.27) ) hide)
     )
     (property
       "Manufacturer"
-      "MDD(辰达半导体)"
+      "BORN"
       (id 4)
       (at 0 -12.70 0)
       (effects (font (size 1.27 1.27) ) hide)
     )
     (property
       "MPN"
-      "SMBJ20A"
+      "SMBJ22A"
       (id 5)
       (at 0 -15.24 0)
       (effects (font (size 1.27 1.27) ) hide)
     )
     (property
       "LCSC Part"
-      "C364296"
+      "C151920"
       (id 6)
       (at 0 -17.78 0)
       (effects (font (size 1.27 1.27) ) hide)
@@ -3101,7 +3101,7 @@
       (at 0 -20.32 0)
       (effects (font (size 1.27 1.27) ) hide)
     )
-    (symbol "SMBJ20A_C364296_0_1"
+    (symbol "SMBJ22A_C151920_0_1"
       (polyline
         (pts
           (xy 1.27 1.52) (xy -1.27 -0.00) (xy 1.27 -1.78) (xy 1.27 1.52)
@@ -3490,7 +3490,7 @@
         (name "PG" (effects (font (size 1.27 1.27))))
         (number "10" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at 2.54 8.89 270)
         (length 2.54)
         (name "GND" (effects (font (size 1.27 1.27))))
@@ -3614,13 +3614,13 @@
         (stroke (width 0) (type default))
         (fill (type background))
       )
-      (pin passive line
+      (pin power_in line
         (at 5.08 -11.43 90)
         (length 5.08)
         (name "VCC" (effects (font (size 1.27 1.27))))
         (number "3" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at 0.00 -11.43 90)
         (length 5.08)
         (name "GND" (effects (font (size 1.27 1.27))))
@@ -3885,7 +3885,7 @@
         (stroke (width 0) (type default))
         (fill (type none))
       )
-      (pin passive line
+      (pin power_in line
         (at -12.70 8.89 0)
         (length 2.54)
         (name "GND" (effects (font (size 1.27 1.27))))
@@ -3975,11 +3975,568 @@
         (name "TNOW" (effects (font (size 1.27 1.27))))
         (number "15" (effects (font (size 1.27 1.27))))
       )
-      (pin passive line
+      (pin power_in line
         (at 12.70 8.89 180)
         (length 2.54)
         (name "VCC" (effects (font (size 1.27 1.27))))
         (number "16" (effects (font (size 1.27 1.27))))
+      )
+    )
+  )
+
+  (symbol "24.243.1"
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "CN"
+      (id 0)
+      (at 0 6.35 0)
+      (effects (font (size 1.27 1.27) ) )
+    )
+    (property
+      "Value"
+      "24.243.1"
+      (id 1)
+      (at 0 -6.35 0)
+      (effects (font (size 1.27 1.27) ) )
+    )
+    (property
+      "Footprint"
+      "aiee:CONN-TH_24.243.1_RED"
+      (id 2)
+      (at 0 -8.89 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "Datasheet"
+      "https://www.lcsc.com/datasheet/C7437321.pdf"
+      (id 3)
+      (at 0 -11.43 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "Manufacturer"
+      "AMASS(艾迈斯)"
+      (id 4)
+      (at 0 -13.97 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "MPN"
+      "24.243.1"
+      (id 5)
+      (at 0 -16.51 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "LCSC Part"
+      "C7437321"
+      (id 6)
+      (at 0 -19.05 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "ki_keywords"
+      "Banana Connectors/Alligator Clips"
+      (id 8)
+      (at 0 -21.59 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (symbol "24.243.1_0_1"
+      (rectangle
+        (start -1.27 3.81)
+        (end 3.81 -3.81)
+        (stroke (width 0) (type default))
+        (fill (type background))
+      )
+      (circle
+        (center 0.00 2.54)
+        (radius 0.38)
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (pin passive line
+        (at -3.81 1.27 0)
+        (length 2.54)
+        (name "1" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27))))
+      )
+      (pin passive line
+        (at -3.81 -1.27 0)
+        (length 2.54)
+        (name "2" (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.27 1.27))))
+      )
+    )
+  )
+
+  (symbol "24.243.2"
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "CN"
+      (id 0)
+      (at 0 6.35 0)
+      (effects (font (size 1.27 1.27) ) )
+    )
+    (property
+      "Value"
+      "24.243.2"
+      (id 1)
+      (at 0 -6.35 0)
+      (effects (font (size 1.27 1.27) ) )
+    )
+    (property
+      "Footprint"
+      "aiee:CONN-TH_24.243.2"
+      (id 2)
+      (at 0 -8.89 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "Datasheet"
+      "https://www.lcsc.com/datasheet/C7437322.pdf"
+      (id 3)
+      (at 0 -11.43 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "Manufacturer"
+      "AMASS(艾迈斯)"
+      (id 4)
+      (at 0 -13.97 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "MPN"
+      "24.243.2"
+      (id 5)
+      (at 0 -16.51 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "LCSC Part"
+      "C7437322"
+      (id 6)
+      (at 0 -19.05 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "ki_keywords"
+      "Banana Connectors/Alligator Clips"
+      (id 8)
+      (at 0 -21.59 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (symbol "24.243.2_0_1"
+      (rectangle
+        (start -1.27 3.81)
+        (end 3.81 -3.81)
+        (stroke (width 0) (type default))
+        (fill (type background))
+      )
+      (circle
+        (center 0.00 2.54)
+        (radius 0.38)
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (pin passive line
+        (at -3.81 1.27 0)
+        (length 2.54)
+        (name "1" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27))))
+      )
+      (pin passive line
+        (at -3.81 -1.27 0)
+        (length 2.54)
+        (name "2" (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.27 1.27))))
+      )
+    )
+  )
+  (symbol "2N7002"
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "Q"
+      (id 0)
+      (at 0 10.16 0)
+      (effects (font (size 1.27 1.27) ) )
+    )
+    (property
+      "Value"
+      "2N7002"
+      (id 1)
+      (at 0 -10.16 0)
+      (effects (font (size 1.27 1.27) ) )
+    )
+    (property
+      "Footprint"
+      "aiee:SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR"
+      (id 2)
+      (at 0 -12.70 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "Datasheet"
+      "https://lcsc.com/product-detail/MOSFET_2N7002-7002_C8545.html"
+      (id 3)
+      (at 0 -15.24 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "Manufacturer"
+      "CJ(江苏长电/长晶)"
+      (id 4)
+      (at 0 -17.78 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "MPN"
+      "2N7002"
+      (id 5)
+      (at 0 -20.32 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "LCSC Part"
+      "C8545"
+      (id 6)
+      (at 0 -22.86 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "ki_keywords"
+      "MOSFETs"
+      (id 8)
+      (at 0 -25.40 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "ki_description"
+      "2N7002 7002"
+      (id 9)
+      (at 0 -27.94 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (symbol "2N7002_0_1"
+      (polyline
+        (pts
+          (xy 0.00 1.78) (xy 2.54 1.78) (xy 2.54 2.54) (xy 5.08 2.54) (xy 5.08 0.51)
+        )
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy 0.00 -0.00) (xy 2.54 -0.00) (xy 2.54 -2.54) (xy 5.08 -2.54) (xy 5.08 -0.76)
+        )
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy 2.54 -1.78) (xy 0.00 -1.78)
+        )
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy -0.51 2.29) (xy -0.51 -2.29)
+        )
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy 0.00 2.29) (xy 0.00 1.27)
+        )
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy 0.00 -0.51) (xy 0.00 0.51)
+        )
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy 0.00 -2.29) (xy 0.00 -1.27)
+        )
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy -2.54 -0.00) (xy -0.51 -0.00)
+        )
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy 6.10 0.51) (xy 5.59 0.51) (xy 4.57 0.51) (xy 4.06 0.51)
+        )
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy 0.00 -0.00) (xy 1.52 -0.51) (xy 1.52 0.51) (xy 0.00 -0.00)
+        )
+        (stroke (width 0) (type default))
+        (fill (type background))
+      )
+      (polyline
+        (pts
+          (xy 5.08 0.51) (xy 4.32 -0.76) (xy 5.84 -0.76) (xy 5.08 0.51)
+        )
+        (stroke (width 0) (type default))
+        (fill (type background))
+      )
+      (pin passive line
+        (at 2.54 5.08 270)
+        (length 2.54)
+        (name "D" (effects (font (size 1.27 1.27))))
+        (number "3" (effects (font (size 1.27 1.27))))
+      )
+      (pin passive line
+        (at -5.08 -0.00 0)
+        (length 2.54)
+        (name "G" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27))))
+      )
+      (pin passive line
+        (at 2.54 -5.08 90)
+        (length 2.54)
+        (name "S" (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.27 1.27))))
+      )
+    )
+  )
+
+  (symbol "PESDNC2FD5VB"
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "D"
+      (id 0)
+      (at 0 5.08 0)
+      (effects (font (size 1.27 1.27) ) )
+    )
+    (property
+      "Value"
+      "PESDNC2FD5VB"
+      (id 1)
+      (at 0 -5.08 0)
+      (effects (font (size 1.27 1.27) ) )
+    )
+    (property
+      "Footprint"
+      "aiee:DFN1006-2L-BI"
+      (id 2)
+      (at 0 -7.62 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "Datasheet"
+      "https://lcsc.com/product-detail/Diodes-ESD_PESDNC2FD5VB_C110694.html"
+      (id 3)
+      (at 0 -10.16 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "Manufacturer"
+      "Prisemi(芯导)"
+      (id 4)
+      (at 0 -12.70 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "MPN"
+      "PESDNC2FD5VB"
+      (id 5)
+      (at 0 -15.24 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "LCSC Part"
+      "C110694"
+      (id 6)
+      (at 0 -17.78 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "ki_keywords"
+      "ESD Protection Devices"
+      (id 8)
+      (at 0 -20.32 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (symbol "PESDNC2FD5VB_0_1"
+      (polyline
+        (pts
+          (xy -0.51 1.52) (xy -0.51 1.52) (xy 0.00 1.52) (xy 0.00 -1.52) (xy 0.51 -1.52) (xy 0.51 -1.52)
+        )
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy -2.54 1.27) (xy 0.00 -0.00) (xy -2.54 -1.27) (xy -2.54 1.27)
+        )
+        (stroke (width 0) (type default))
+        (fill (type background))
+      )
+      (polyline
+        (pts
+          (xy 2.54 1.27) (xy 0.00 -0.00) (xy 2.54 -1.27) (xy 2.54 1.27)
+        )
+        (stroke (width 0) (type default))
+        (fill (type background))
+      )
+      (pin passive line
+        (at 5.08 -0.00 180)
+        (length 2.54)
+        (name "2" (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.27 1.27))))
+      )
+      (pin passive line
+        (at -5.08 -0.00 0)
+        (length 2.54)
+        (name "1" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27))))
+      )
+    )
+  )
+
+  (symbol "X6511WVS-08H-C60D48R2"
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "H"
+      (id 0)
+      (at 0 13.97 0)
+      (effects (font (size 1.27 1.27) ) )
+    )
+    (property
+      "Value"
+      "X6511WVS-08H-C60D48R2"
+      (id 1)
+      (at 0 -13.97 0)
+      (effects (font (size 1.27 1.27) ) )
+    )
+    (property
+      "Footprint"
+      "aiee:HDR-SMD_8P-P2.54-V-M-LS4.8_R2"
+      (id 2)
+      (at 0 -16.51 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "Datasheet"
+      "https://www.lcsc.com/datasheet/C2883765.pdf"
+      (id 3)
+      (at 0 -19.05 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "Manufacturer"
+      "XKB Connection(中国星坤)"
+      (id 4)
+      (at 0 -21.59 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "MPN"
+      "X6511WVS-08H-C60D48R2"
+      (id 5)
+      (at 0 -24.13 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "LCSC Part"
+      "C2883765"
+      (id 6)
+      (at 0 -26.67 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "ki_keywords"
+      "Pin Headers"
+      (id 8)
+      (at 0 -29.21 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (symbol "X6511WVS-08H-C60D48R2_0_1"
+      (rectangle
+        (start -1.27 11.43)
+        (end 3.81 -11.43)
+        (stroke (width 0) (type default))
+        (fill (type background))
+      )
+      (circle
+        (center 0.00 10.16)
+        (radius 0.38)
+        (stroke (width 0) (type default))
+        (fill (type none))
+      )
+      (pin passive line
+        (at -3.81 8.89 0)
+        (length 2.54)
+        (name "1" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27))))
+      )
+      (pin passive line
+        (at -3.81 6.35 0)
+        (length 2.54)
+        (name "2" (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.27 1.27))))
+      )
+      (pin passive line
+        (at -3.81 3.81 0)
+        (length 2.54)
+        (name "3" (effects (font (size 1.27 1.27))))
+        (number "3" (effects (font (size 1.27 1.27))))
+      )
+      (pin passive line
+        (at -3.81 1.27 0)
+        (length 2.54)
+        (name "4" (effects (font (size 1.27 1.27))))
+        (number "4" (effects (font (size 1.27 1.27))))
+      )
+      (pin passive line
+        (at -3.81 -1.27 0)
+        (length 2.54)
+        (name "5" (effects (font (size 1.27 1.27))))
+        (number "5" (effects (font (size 1.27 1.27))))
+      )
+      (pin passive line
+        (at -3.81 -3.81 0)
+        (length 2.54)
+        (name "6" (effects (font (size 1.27 1.27))))
+        (number "6" (effects (font (size 1.27 1.27))))
+      )
+      (pin passive line
+        (at -3.81 -6.35 0)
+        (length 2.54)
+        (name "7" (effects (font (size 1.27 1.27))))
+        (number "7" (effects (font (size 1.27 1.27))))
+      )
+      (pin passive line
+        (at -3.81 -8.89 0)
+        (length 2.54)
+        (name "8" (effects (font (size 1.27 1.27))))
+        (number "8" (effects (font (size 1.27 1.27))))
       )
     )
   )

@@ -1,0 +1,207 @@
+{
+ "script": "check_esd",
+ "status": "violations",
+ "board": "lite-main.kicad_pcb",
+ "counts": {
+  "total": 2,
+  "by_severity": {
+   "warning": 2
+  },
+  "by_source": {
+   "check_esd": 2
+  }
+ },
+ "violations": [
+  {
+   "check": "check_esd",
+   "severity": "warning",
+   "pos": [
+    81.115,
+    67.778
+   ],
+   "layer": null,
+   "net": "/USB_DM",
+   "refs": [
+    "D8",
+    "J1"
+   ],
+   "msg": "J1 pin A7 (/USB_DM): 2 via(s) between the pin and the clamp D8 (~1.2 nH each): keep the line on one layer to the clamp",
+   "source": "check_esd",
+   "items": [
+    {
+     "msg": "J1 pin A7 (/USB_DM): 2 via(s) between the pin and the clamp D8 (~1.2 nH each): keep the line on one layer to the clamp",
+     "pos": [
+      81.115,
+      67.778
+     ]
+    }
+   ],
+   "kind": "esd_via_first",
+   "vias": 2
+  },
+  {
+   "check": "check_esd",
+   "severity": "warning",
+   "pos": [
+    74.18,
+    68.45
+   ],
+   "layer": null,
+   "net": "/USB_DM",
+   "refs": [
+    "D8",
+    "J1"
+   ],
+   "msg": "J1 pin A7 (/USB_DM): the clamp D8 is 13.8 mm of track from the pin (> 10 mm): the strike's loop radiates into everything along it; move the clamp to the connector",
+   "source": "check_esd",
+   "items": [
+    {
+     "msg": "J1 pin A7 (/USB_DM): the clamp D8 is 13.8 mm of track from the pin (> 10 mm): the strike's loop radiates into everything along it; move the clamp to the connector",
+     "pos": [
+      74.18,
+      68.45
+     ]
+    }
+   ],
+   "kind": "esd_clamp_far",
+   "mm": 13.84
+  }
+ ],
+ "checked": [
+  {
+   "level_kv": 8.0,
+   "di_dt_a_per_s": 37500000000.0,
+   "connectors": [
+    "J1",
+    "J2",
+    "J3",
+    "J4",
+    "J5",
+    "J6",
+    "J7"
+   ],
+   "internal_by_value": [],
+   "clamps": [
+    "D1",
+    "D3",
+    "D4",
+    "D5",
+    "D6",
+    "D7",
+    "D8"
+   ],
+   "lines": [
+    {
+     "connector": "J1",
+     "pin": "A4B9",
+     "net": "VBUS",
+     "power": true,
+     "clamp": "D1",
+     "clamp_pin": "1",
+     "mm": 5.57,
+     "routed": false,
+     "vias": 0,
+     "stub_mm": 0.0,
+     "ground_via_mm": 0.0,
+     "est_extra_nh": 0.0,
+     "est_extra_v": 0.0
+    },
+    {
+     "connector": "J1",
+     "pin": "A6",
+     "net": "/USB_DP",
+     "power": false,
+     "clamp": "D7",
+     "clamp_pin": "1",
+     "mm": 9.43,
+     "routed": true,
+     "vias": 0,
+     "stub_mm": 1.73,
+     "ground_via_mm": 0.32,
+     "est_extra_nh": 2.05,
+     "est_extra_v": 76.7
+    },
+    {
+     "connector": "J1",
+     "pin": "A7",
+     "net": "/USB_DM",
+     "power": false,
+     "clamp": "D8",
+     "clamp_pin": "1",
+     "mm": 13.84,
+     "routed": true,
+     "vias": 2,
+     "stub_mm": 1.3,
+     "ground_via_mm": 1.11,
+     "est_extra_nh": 2.41,
+     "est_extra_v": 90.3
+    },
+    {
+     "connector": "J2",
+     "pin": "1",
+     "net": "/LINEIN_L",
+     "power": false,
+     "clamp": "D3",
+     "clamp_pin": "1",
+     "mm": 3.64,
+     "routed": true,
+     "vias": 0,
+     "stub_mm": 3.64,
+     "ground_via_mm": 0.37,
+     "est_extra_nh": 4.01,
+     "est_extra_v": 150.3
+    },
+    {
+     "connector": "J2",
+     "pin": "3",
+     "net": "/LINEIN_R",
+     "power": false,
+     "clamp": "D4",
+     "clamp_pin": "1",
+     "mm": 2.96,
+     "routed": true,
+     "vias": 0,
+     "stub_mm": 2.96,
+     "ground_via_mm": 0.37,
+     "est_extra_nh": 3.33,
+     "est_extra_v": 124.9
+    },
+    {
+     "connector": "J3",
+     "pin": "1",
+     "net": "/SUB_L",
+     "power": false,
+     "clamp": "D5",
+     "clamp_pin": "1",
+     "mm": 3.06,
+     "routed": true,
+     "vias": 0,
+     "stub_mm": 3.06,
+     "ground_via_mm": 0.4,
+     "est_extra_nh": 3.46,
+     "est_extra_v": 129.8
+    },
+    {
+     "connector": "J3",
+     "pin": "3",
+     "net": "/SUB_R",
+     "power": false,
+     "clamp": "D6",
+     "clamp_pin": "1",
+     "mm": 3.64,
+     "routed": true,
+     "vias": 0,
+     "stub_mm": 1.11,
+     "ground_via_mm": 0.37,
+     "est_extra_nh": 1.48,
+     "est_extra_v": 55.5
+    }
+   ]
+  }
+ ],
+ "report_schema": 1,
+ "checker_version": 1,
+ "generated_at": "2026-10-31T20:50:40+00:00",
+ "input": "kicad/lite-main.kicad_pcb",
+ "input_digest": "sexpr_no_uuid:0fdc4844245a7b17999ba91ac7c97bcffc4c278f298601a1bec5957e0ba878f9"
+}

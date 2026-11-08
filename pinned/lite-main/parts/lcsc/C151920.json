@@ -1,0 +1,96 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C151920",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C151920",
+   "mpn": "SMBJ22A",
+   "brand": "BORN",
+   "description": "16.9A@10/1000us 1uA 22V 26.9V 35.5V 600W@10/1000us TVS Unidirectional DO-214AA(SMB) ESD and Surge Protection (TVS/ESD) ROHS",
+   "package": "DO-214AA(SMB)",
+   "category": "ESD and Surge Protection (TVS/ESD)",
+   "type": "Extended",
+   "basic": false,
+   "stock": 8290,
+   "price": 0.0686,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0686
+    },
+    {
+     "qty": 100,
+     "price": 0.0551
+    },
+    {
+     "qty": 300,
+     "price": 0.0484
+    },
+    {
+     "qty": 3000,
+     "price": 0.0409
+    },
+    {
+     "qty": 6000,
+     "price": 0.0369
+    },
+    {
+     "qty": 9000,
+     "price": 0.035
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_BORN-SMBJ22A_C151920.pdf",
+   "url": "https://www.lcsc.com/product-detail/esd-and-surge-protection-tvs-esd_born-smbj22a_C151920.html",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-55\u2103~+150\u2103"
+    },
+    {
+     "name": "Type",
+     "value": "TVS"
+    },
+    {
+     "name": "Peak Pulse Power Dissipation (Ppp)",
+     "value": "600W@10/1000us"
+    },
+    {
+     "name": "Number of Channels",
+     "value": "Single-channel"
+    },
+    {
+     "name": "Clamping Voltage",
+     "value": "35.5V"
+    },
+    {
+     "name": "Polarity",
+     "value": "Unidirectional"
+    },
+    {
+     "name": "Peak Pulse Current (Ipp)",
+     "value": "16.9A@10/1000us"
+    },
+    {
+     "name": "Voltage - Breakdown",
+     "value": "26.9V"
+    },
+    {
+     "name": "Reverse Stand-Off Voltage (Vrwm)",
+     "value": "22V"
+    },
+    {
+     "name": "Reverse Leakage Current (Ir)",
+     "value": "1uA"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

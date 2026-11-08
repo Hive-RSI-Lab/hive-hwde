@@ -1,0 +1,60 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C7437322",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C7437322",
+   "mpn": "24.243.2",
+   "brand": "Changzhou Amass Elec",
+   "description": "24A 60V Terminal \u63d2\u4ef6 Banana Connectors / Alligator Clips ROHS",
+   "package": "Plugin",
+   "category": "Banana Connectors / Alligator Clips",
+   "type": "Extended",
+   "basic": false,
+   "stock": 3301,
+   "price": 0.4179,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.4179
+    },
+    {
+     "qty": 10,
+     "price": 0.3934
+    },
+    {
+     "qty": 250,
+     "price": 0.3327
+    },
+    {
+     "qty": 1000,
+     "price": 0.3196
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2312302256_Changzhou-Amass-Elec-24-243-2_C7437322.pdf",
+   "url": "https://www.lcsc.com/product-detail/banana-connectors-alligator-clips_changzhou-amass-elec-24-243-2_C7437322.html",
+   "attributes": [
+    {
+     "name": "Voltage Rating",
+     "value": "60V"
+    },
+    {
+     "name": "Current Rating",
+     "value": "24A"
+    },
+    {
+     "name": "Connector Type",
+     "value": "Terminal"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

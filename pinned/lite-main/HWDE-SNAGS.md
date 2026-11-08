@@ -61,5 +61,6 @@ tool briefs where they are hwde's:
 | 30 | `build.sh sch` | Regenerating the schematic rewrites `kicad/lite-main.kicad_pro` without its board rules and net classes. | The committed `.kicad_pro` is restored after `sch`. |
 | 31 | `board_update --lib` | Takes the folder that holds `<lib>.pretty`, not the `.pretty` itself, and KiCad's stock libraries (`/hive/tools/kicad-10.0.6/share/kicad/footprints`) aren't on its path. | Passed both roots. |
 | 32 | `route_auto` on a routed board | Freerouting printed "job started" and nothing else for 25 min (machine load ~40), twice; the KRT fallback then made the board worse (243 violations). | New nets routed with `kicad/gen/miniroute.py` (from core) and short hand tracks; the KRT result was discarded. |
-| 33 | KiCad python | Iterating `GetTracks()`/`GraphicalItems()` after a `Remove()` raises `'SwigPyObject' object is not iterable`. | Collect first, remove after (`rip_at.py`, `silk_clear.py`). |
+| 33 | KiCad python | Iterating `GetTracks()`/`GraphicalItems()` after a `Remove()` raises `'SwigPyObject' object is not iterable`. | Collect first, remove after (`rip_at.py`). |
 | 34 | `find_spots.py` (board-local) | `GetCourtyard()` is empty until `BuildCourtyardCaches()`. | Called first. |
+| 35 | `check_antenna` | A bare NPTH pad with the stock footprint's `*.Cu` layers counts as copper beside the antenna. | `gen/h4_npth.py` leaves that pad on the mask layers only. |

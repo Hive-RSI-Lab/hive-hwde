@@ -4,7 +4,7 @@
   "phase": "P9",
   "tool": "dfm",
   "input": "kicad/lite-main.kicad_pcb",
-  "input_digest": "sexpr_no_uuid:1e52fa6db57895dc45bd3638912caa67c3839903ccb0f552f024b203fbcfa61c",
+  "input_digest": "sexpr_no_uuid:eef16d9e94f6c77b4a3491f553f2fe708a4db2194787217bf61653d96ce35ca6",
   "status": "pass",
   "criteria": {
     "fail_severities": [
@@ -13,17 +13,17 @@
     "max_count": 0
   },
   "counts": {
-    "total": 3,
+    "total": 1,
     "by_severity": {
-      "warning": 3
+      "warning": 1
     },
     "by_source": {
-      "check.dfm": 3
+      "check.dfm": 1
     }
   },
   "failing_count": 0,
   "failing": [],
-  "warnings_count": 3,
+  "warnings_count": 1,
   "warnings": [
     {
       "check": "dfm",
@@ -35,11 +35,11 @@
       "layer": "F.Silkscreen",
       "net": null,
       "refs": [],
-      "msg": "255 silk strokes below JLC minimum width 0.15 mm (narrowest 0.0600 mm) on F.Silkscreen",
+      "msg": "263 silk strokes below JLC minimum width 0.15 mm (narrowest 0.0600 mm) on F.Silkscreen",
       "source": "check.dfm",
       "items": [
         {
-          "msg": "255 silk strokes below JLC minimum width 0.15 mm (narrowest 0.0600 mm) on F.Silkscreen",
+          "msg": "263 silk strokes below JLC minimum width 0.15 mm (narrowest 0.0600 mm) on F.Silkscreen",
           "pos": [
             56.865,
             89.313
@@ -49,47 +49,7 @@
       "kind": "dfm_silk_width",
       "width_mm": 0.06,
       "min_mm": 0.15,
-      "count": 255
-    },
-    {
-      "check": "dfm",
-      "severity": "warning",
-      "pos": null,
-      "layer": null,
-      "net": null,
-      "refs": [
-        "J2"
-      ],
-      "msg": "J2: the LCSC model's pad centre sits 0.793 mm from the board's at the CPL position",
-      "source": "check.dfm",
-      "items": [
-        {
-          "msg": "J2: the LCSC model's pad centre sits 0.793 mm from the board's at the CPL position",
-          "pos": null
-        }
-      ],
-      "kind": "cpl_offset",
-      "offset_mm": 0.793
-    },
-    {
-      "check": "dfm",
-      "severity": "warning",
-      "pos": null,
-      "layer": null,
-      "net": null,
-      "refs": [
-        "J3"
-      ],
-      "msg": "J3: the LCSC model's pad centre sits 0.793 mm from the board's at the CPL position",
-      "source": "check.dfm",
-      "items": [
-        {
-          "msg": "J3: the LCSC model's pad centre sits 0.793 mm from the board's at the CPL position",
-          "pos": null
-        }
-      ],
-      "kind": "cpl_offset",
-      "offset_mm": 0.793
+      "count": 263
     }
   ],
   "coverage": {
@@ -97,6 +57,7 @@
     "required": [
       "copper",
       "copper_to_edge",
+      "zone_fill",
       "drill",
       "hole_to_edge",
       "silk",
@@ -105,11 +66,14 @@
       "placement_visual",
       "bom",
       "release",
-      "castellation"
+      "castellation",
+      "netlist",
+      "teardrop"
     ],
     "ran": [
       "copper",
       "copper_to_edge",
+      "zone_fill",
       "drill",
       "hole_to_edge",
       "silk",
@@ -117,11 +81,14 @@
       "placement",
       "bom",
       "release",
-      "castellation"
+      "castellation",
+      "netlist",
+      "teardrop"
     ],
     "passed": [
       "copper",
       "copper_to_edge",
+      "zone_fill",
       "drill",
       "hole_to_edge",
       "silk",
@@ -129,7 +96,9 @@
       "placement",
       "bom",
       "release",
-      "castellation"
+      "castellation",
+      "netlist",
+      "teardrop"
     ],
     "failed": [],
     "waived": [],
@@ -144,10 +113,10 @@
     "workspace": ".",
     "gate": "dfm",
     "status": "pass",
-    "attempts": 5,
+    "attempts": 14,
     "inputs": {
-      "pcb": "sexpr_no_uuid:1e52fa6db57895dc45bd3638912caa67c3839903ccb0f552f024b203fbcfa61c",
-      "sch": "sexpr_no_uuid:d4eba34366f6cc6f8a0a5733603d4935ad63fd423df854aac0bce704d95048e2",
+      "pcb": "sexpr_no_uuid:eef16d9e94f6c77b4a3491f553f2fe708a4db2194787217bf61653d96ce35ca6",
+      "sch": "sexpr_no_uuid:3f7dc1a2332b1f9ab5201d8875d79d4a110ecb583f1ea8b07ed5d49bba443a34",
       "parts": null
     }
   }

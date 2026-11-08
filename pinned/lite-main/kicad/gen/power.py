@@ -91,7 +91,7 @@ for u in (64.0, 65.3, 66.6, 67.9, 69.2):
 for u in (88.0, 90.0, 92.0, 94.0, 96.0):
     via(u, 34.0, "PVDD")
 
-for name in ("kicad/constraints.json", "architecture/constraints.json"):
+for name in ("kicad/constraints.json",):
     c = json.loads((WS / name).read_text())
     c["planes"] = planes
     (WS / name).write_text(json.dumps(c, indent=1) + "\n")

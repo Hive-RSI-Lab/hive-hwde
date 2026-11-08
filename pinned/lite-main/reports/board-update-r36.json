@@ -1,0 +1,104 @@
+{
+ "script": "board_update",
+ "status": "pass",
+ "board": "/work/boards/lite-main/kicad/lite-main.kicad_pcb",
+ "netlist": "kicad/lite-main.net",
+ "dry_run": false,
+ "plan": {
+  "swap_same_fp": [
+   {
+    "ref": "R36",
+    "fp": "Resistor_SMD:R_0603_1608Metric",
+    "value": [
+     "100R",
+     "1k"
+    ],
+    "fields": {
+     "LCSC": [
+      "C22775",
+      "C21190"
+     ]
+    },
+    "board_extra_fields": [
+     "KiLib_Generator"
+    ]
+   },
+   {
+    "ref": "R38",
+    "fp": "Resistor_SMD:R_0603_1608Metric",
+    "value": [
+     "100R",
+     "1k"
+    ],
+    "fields": {
+     "LCSC": [
+      "C22775",
+      "C21190"
+     ]
+    },
+    "board_extra_fields": [
+     "KiLib_Generator"
+    ]
+   }
+  ],
+  "swap_new_fp": [],
+  "add": [],
+  "del": [],
+  "rewire": [],
+  "unsupported": [],
+  "notes": [
+   "board_only footprints ignored: H1, H2, H3, H4"
+  ]
+ },
+ "warnings": [],
+ "orphans": {
+  "affected_nets": [],
+  "tracks": 0,
+  "vias": 0,
+  "netconn_unanchored_kept": []
+ },
+ "applied": {
+  "worker": {
+   "fields_updated": [
+    "R36",
+    "R38"
+   ],
+   "added": [],
+   "pads_renetted": [],
+   "removed_refs": [],
+   "removed_items": 0,
+   "removed_texts": [],
+   "absent_uuids": []
+  },
+  "refilled": true,
+  "ripped": {
+   "tracks": 0,
+   "vias": 0,
+   "rounds": 1
+  },
+  "drc": {
+   "before": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "after": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "dangling_before": 0,
+   "dangling_after": 0,
+   "unconnected_before": 0,
+   "unconnected_after": 0,
+   "new_errors": 0
+  }
+ },
+ "placements": {},
+ "gates_to_rerun": [
+  "dfm",
+  "erc",
+  "sim",
+  "verify"
+ ]
+}

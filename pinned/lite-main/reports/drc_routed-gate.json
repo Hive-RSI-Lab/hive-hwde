@@ -4,7 +4,7 @@
   "phase": "P7",
   "tool": "drc",
   "input": "kicad/lite-main.kicad_pcb",
-  "input_digest": "sexpr_no_uuid:a6939851d23f1dfc3dc1af4577df5cb85c3ac8db585c27cb403ec14279ad7b00",
+  "input_digest": "sexpr_no_uuid:844a8610f33b406956a3c5fd989d97bef496fadff1209ce82f1a0a6b28413fa3",
   "status": "pass",
   "criteria": {
     "fail_severities": [
@@ -28,12 +28,12 @@
     "workspace": ".",
     "gate": "drc_routed",
     "status": "pass",
-    "attempts": 162,
+    "attempts": 175,
     "inputs": {
-      "pcb": "sexpr_no_uuid:a6939851d23f1dfc3dc1af4577df5cb85c3ac8db585c27cb403ec14279ad7b00",
-      "sch": "sexpr_no_uuid:d4eba34366f6cc6f8a0a5733603d4935ad63fd423df854aac0bce704d95048e2",
+      "pcb": "sexpr_no_uuid:844a8610f33b406956a3c5fd989d97bef496fadff1209ce82f1a0a6b28413fa3",
+      "sch": "sexpr_no_uuid:3f7dc1a2332b1f9ab5201d8875d79d4a110ecb583f1ea8b07ed5d49bba443a34",
       "pro": "json_canonical:68c7fa5e93e710c46aadc42519fee152f529f73d7ac3eeaf38dd8f4bb9a3b72d",
-      "dru": "text_eol:1c2c46730fe53045a7b7ec69777530c5426c64527d6d603afc5cb0aa57649014"
+      "dru": "text_eol:6c0346b92a6a6b439fff98cc9076af3ee868ac1c036530cef874de33c7d12f14"
     }
   }
 }

@@ -1,0 +1,312 @@
+{
+ "script": "route_edit",
+ "status": "pass",
+ "board": "kicad/lite-main.kicad_pcb",
+ "applied": 39,
+ "verified": true,
+ "by_status": {
+  "removed": 5,
+  "added": 34
+ },
+ "refilled": false,
+ "results": [
+  {
+   "op": "rip",
+   "count": 2,
+   "status": "removed",
+   "uuids": [
+    "0b47e3c5-bb3a-4a05-989e-e3b78213d7b0",
+    "5398e269-da9e-4b72-acad-c971bb7c716d"
+   ]
+  },
+  {
+   "op": "rip",
+   "count": 1,
+   "status": "removed",
+   "uuids": [
+    "17863b2b-bd78-4fa8-8374-09c03a3f6fef"
+   ]
+  },
+  {
+   "op": "rip",
+   "count": 1,
+   "status": "removed",
+   "uuids": [
+    "49f22ffc-a02a-4ffc-bd90-86ddfe705330"
+   ]
+  },
+  {
+   "op": "rip",
+   "count": 1,
+   "status": "removed",
+   "uuids": [
+    "f7c5de3a-895c-431e-bbf0-4c51a5d61787"
+   ]
+  },
+  {
+   "op": "rip",
+   "count": 1,
+   "status": "removed",
+   "uuids": [
+    "66e7c63e-87cf-4ae5-abe0-a71e5c59cefc"
+   ]
+  },
+  {
+   "op": "add_path",
+   "count": 1,
+   "status": "added",
+   "segments": [
+    "added"
+   ]
+  },
+  {
+   "op": "add_path",
+   "count": 1,
+   "status": "added",
+   "segments": [
+    "added"
+   ]
+  },
+  {
+   "op": "add_path",
+   "count": 1,
+   "status": "added",
+   "segments": [
+    "added"
+   ]
+  },
+  {
+   "op": "add_path",
+   "count": 1,
+   "status": "added",
+   "segments": [
+    "added"
+   ]
+  },
+  {
+   "op": "add_path",
+   "count": 2,
+   "status": "added",
+   "segments": [
+    "added",
+    "added"
+   ]
+  },
+  {
+   "op": "add_path",
+   "count": 3,
+   "status": "added",
+   "segments": [
+    "added",
+    "added",
+    "added"
+   ]
+  },
+  {
+   "op": "add_path",
+   "count": 1,
+   "status": "added",
+   "segments": [
+    "added"
+   ]
+  },
+  {
+   "op": "add_path",
+   "count": 3,
+   "status": "added",
+   "segments": [
+    "added",
+    "added",
+    "added"
+   ]
+  },
+  {
+   "op": "add_path",
+   "count": 1,
+   "status": "added",
+   "segments": [
+    "added"
+   ]
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "ef06bf42-534b-4ffd-8da9-df9596daf583"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "843005d6-9b73-4b3d-abd5-b4dcbb99dd19"
+  },
+  {
+   "op": "add_path",
+   "count": 2,
+   "status": "added",
+   "segments": [
+    "added",
+    "added"
+   ]
+  },
+  {
+   "op": "add_path",
+   "count": 2,
+   "status": "added",
+   "segments": [
+    "added",
+    "added"
+   ]
+  },
+  {
+   "op": "add_path",
+   "count": 4,
+   "status": "added",
+   "segments": [
+    "added",
+    "added",
+    "added",
+    "added"
+   ]
+  },
+  {
+   "op": "add_path",
+   "count": 1,
+   "status": "added",
+   "segments": [
+    "added"
+   ]
+  },
+  {
+   "op": "add_path",
+   "count": 3,
+   "status": "added",
+   "segments": [
+    "added",
+    "added",
+    "added"
+   ]
+  },
+  {
+   "op": "add_path",
+   "count": 1,
+   "status": "added",
+   "segments": [
+    "added"
+   ]
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "413a03bf-add9-4641-95a4-8119a57d637a"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "df755d79-b21e-4d53-9d29-f68dcdba0959"
+  },
+  {
+   "op": "add_path",
+   "count": 2,
+   "status": "added",
+   "segments": [
+    "added",
+    "added"
+   ]
+  },
+  {
+   "op": "add_path",
+   "count": 6,
+   "status": "added",
+   "segments": [
+    "added",
+    "added",
+    "added",
+    "added",
+    "added",
+    "added"
+   ]
+  },
+  {
+   "op": "add_path",
+   "count": 3,
+   "status": "added",
+   "segments": [
+    "added",
+    "added",
+    "added"
+   ]
+  },
+  {
+   "op": "add_path",
+   "count": 2,
+   "status": "added",
+   "segments": [
+    "added",
+    "added"
+   ]
+  },
+  {
+   "op": "add_path",
+   "count": 2,
+   "status": "added",
+   "segments": [
+    "added",
+    "added"
+   ]
+  },
+  {
+   "op": "add_path",
+   "count": 3,
+   "status": "added",
+   "segments": [
+    "added",
+    "added",
+    "added"
+   ]
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "a61a4a91-28f6-4ebe-9f84-47cbcb56a42d"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "0361d3df-de47-4f68-a35c-d26005a05837"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "3968cd40-fa4b-42a9-b76d-b4c0d381dae3"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "58dae678-6f94-40ab-8b29-62bdb33fbb0c"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "afb0093d-2581-46de-8ff2-9ebf21af7ee4"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "f9789bcd-3643-4f05-8e83-7bea793526e4"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "3b357b84-c419-4891-8564-cf9d6f5c06f2"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "53aab67f-799e-45a9-83c3-fdbf071acb87"
+  },
+  {
+   "op": "add_via",
+   "status": "added",
+   "uuid": "04e6b2ea-dc03-49a7-bb6e-575c2007494a"
+  }
+ ]
+}

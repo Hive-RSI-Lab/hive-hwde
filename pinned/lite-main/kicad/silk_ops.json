@@ -3,355 +3,131 @@
  "ops": [
   {
    "op": "move_text",
-   "ref": "J3",
+   "ref": "Q11",
    "field": "reference",
-   "x": 62.465,
-   "y": 80.498,
+   "x": 68.9,
+   "y": 94.8,
    "deg": 0.0
   },
   {
    "op": "move_text",
-   "ref": "U1",
+   "ref": "Q12",
    "field": "reference",
-   "x": 80.615,
-   "y": 69.248,
+   "x": 65.35,
+   "y": 94.8,
    "deg": 0.0
   },
   {
    "op": "move_text",
-   "ref": "C3",
+   "ref": "Q14",
    "field": "reference",
-   "x": 76.865,
-   "y": 84.148,
+   "x": 60.3,
+   "y": 89.65,
    "deg": 0.0
   },
   {
    "op": "move_text",
-   "ref": "C44",
+   "ref": "R10",
    "field": "reference",
-   "x": 42.21,
-   "y": 87.923,
+   "x": 73.07,
+   "y": 89.023,
    "deg": 90.0
   },
   {
    "op": "move_text",
-   "ref": "C81",
+   "ref": "R37",
    "field": "reference",
-   "x": 46.845,
-   "y": 85.4,
-   "deg": 90.0
-  },
-  {
-   "op": "move_text",
-   "ref": "C82",
-   "field": "reference",
-   "x": 49.0,
-   "y": 86.905,
-   "deg": 0.0
-  },
-  {
-   "op": "move_text",
-   "ref": "Q4",
-   "field": "reference",
-   "x": 84.865,
-   "y": 73.223,
-   "deg": 0.0
-  },
-  {
-   "op": "move_text",
-   "ref": "C19",
-   "field": "reference",
-   "x": 87.1,
-   "y": 80.785,
-   "deg": 0.0
-  },
-  {
-   "op": "move_text",
-   "ref": "L5",
-   "field": "reference",
-   "x": 86.24,
-   "y": 89.523,
-   "deg": 90.0
-  },
-  {
-   "op": "move_text",
-   "ref": "R33",
-   "field": "reference",
-   "x": 46.52,
-   "y": 82.323,
+   "x": 63.52,
+   "y": 84.423,
    "deg": 90.0
   },
   {
    "op": "move_text",
    "ref": "R38",
    "field": "reference",
-   "x": 64.71,
-   "y": 85.623,
+   "x": 69.02,
+   "y": 82.623,
    "deg": 90.0
   },
   {
    "op": "move_text",
-   "ref": "R67",
+   "ref": "C32",
    "field": "reference",
-   "x": 49.0,
-   "y": 80.645,
-   "deg": 0.0
-  },
-  {
-   "op": "move_text",
-   "ref": "L2",
-   "field": "reference",
-   "x": 95.64,
-   "y": 87.323,
-   "deg": 0.0
-  },
-  {
-   "op": "move_text",
-   "ref": "L3",
-   "field": "reference",
-   "x": 104.14,
-   "y": 87.323,
-   "deg": 0.0
-  },
-  {
-   "op": "move_text",
-   "ref": "R39",
-   "field": "reference",
-   "x": 67.365,
-   "y": 87.578,
-   "deg": 0.0
-  },
-  {
-   "op": "move_text",
-   "ref": "R66",
-   "field": "reference",
-   "x": 85.17,
-   "y": 84.465,
-   "deg": 0.0
-  },
-  {
-   "op": "move_text",
-   "ref": "R9",
-   "field": "reference",
-   "x": 73.07,
-   "y": 85.823,
+   "x": 54.71,
+   "y": 90.323,
    "deg": 90.0
   },
   {
    "op": "move_text",
-   "ref": "C39",
+   "ref": "C37",
    "field": "reference",
-   "x": 49.365,
+   "x": 52.365,
    "y": 88.418,
    "deg": 0.0
   },
   {
    "op": "move_text",
-   "ref": "C5",
-   "field": "reference",
-   "x": 81.42,
-   "y": 84.123,
-   "deg": 90.0
-  },
-  {
-   "op": "move_text",
-   "ref": "C61",
-   "field": "reference",
-   "x": 100.52,
-   "y": 116.223,
-   "deg": 90.0
-  },
-  {
-   "op": "move_text",
    "ref": "C84",
    "field": "reference",
-   "x": 55.005,
-   "y": 86.0,
-   "deg": 90.0
-  },
-  {
-   "op": "move_text",
-   "ref": "J2",
-   "field": "reference",
-   "x": 52.04,
-   "y": 71.573,
-   "deg": 90.0
-  },
-  {
-   "op": "move_text",
-   "ref": "L1",
-   "field": "reference",
-   "x": 87.14,
-   "y": 87.323,
-   "deg": 0.0
-  },
-  {
-   "op": "move_text",
-   "ref": "R50",
-   "field": "reference",
-   "x": 104.565,
-   "y": 115.478,
-   "deg": 0.0
-  },
-  {
-   "op": "move_text",
-   "ref": "C26",
-   "field": "reference",
-   "x": 98.99,
-   "y": 118.685,
-   "deg": 0.0
-  },
-  {
-   "op": "move_text",
-   "ref": "C41",
-   "field": "reference",
-   "x": 36.21,
-   "y": 84.923,
-   "deg": 90.0
-  },
-  {
-   "op": "move_text",
-   "ref": "C83",
-   "field": "reference",
-   "x": 55.005,
-   "y": 82.4,
-   "deg": 90.0
-  },
-  {
-   "op": "move_text",
-   "ref": "C9",
-   "field": "reference",
-   "x": 68.365,
-   "y": 89.228,
-   "deg": 0.0
-  },
-  {
-   "op": "move_text",
-   "ref": "J1",
-   "field": "reference",
-   "x": 75.49,
-   "y": 64.543,
-   "deg": 90.0
-  },
-  {
-   "op": "move_text",
-   "ref": "R69",
-   "field": "reference",
    "x": 52.6,
-   "y": 80.645,
+   "y": 86.905,
    "deg": 0.0
-  },
-  {
-   "op": "move_text",
-   "ref": "C42",
-   "field": "reference",
-   "x": 36.21,
-   "y": 88.723,
-   "deg": 90.0
-  },
-  {
-   "op": "move_text",
-   "ref": "C53",
-   "field": "reference",
-   "x": 108.21,
-   "y": 100.823,
-   "deg": 90.0
-  },
-  {
-   "op": "move_text",
-   "ref": "C70",
-   "field": "reference",
-   "x": 109.84,
-   "y": 78.823,
-   "deg": 90.0
   },
   {
    "op": "move_text",
    "ref": "R36",
    "field": "reference",
    "x": 59.21,
-   "y": 85.623,
+   "y": 84.123,
    "deg": 90.0
   },
   {
    "op": "move_text",
-   "ref": "C12",
+   "ref": "R81",
    "field": "reference",
-   "x": 81.74,
-   "y": 107.323,
-   "deg": 90.0
-  },
-  {
-   "op": "move_text",
-   "ref": "C52",
-   "field": "reference",
-   "x": 112.74,
-   "y": 103.823,
-   "deg": 90.0
-  },
-  {
-   "op": "move_text",
-   "ref": "C54",
-   "field": "reference",
-   "x": 112.52,
-   "y": 100.023,
-   "deg": 90.0
-  },
-  {
-   "op": "move_text",
-   "ref": "C56",
-   "field": "reference",
-   "x": 92.01,
-   "y": 100.823,
-   "deg": 90.0
-  },
-  {
-   "op": "move_text",
-   "ref": "R14",
-   "field": "reference",
-   "x": 61.71,
-   "y": 111.123,
-   "deg": 90.0
-  },
-  {
-   "op": "move_text",
-   "ref": "C25",
-   "field": "reference",
-   "x": 86.9,
-   "y": 96.625,
+   "x": 56.4,
+   "y": 86.245,
    "deg": 0.0
   },
   {
    "op": "move_text",
-   "ref": "C51",
+   "ref": "C48",
    "field": "reference",
-   "x": 112.74,
-   "y": 107.023,
+   "x": 64.71,
+   "y": 81.323,
    "deg": 90.0
   },
   {
    "op": "move_text",
-   "ref": "C55",
+   "ref": "C90",
    "field": "reference",
-   "x": 91.79,
-   "y": 104.323,
+   "x": 74.6,
+   "y": 94.655,
+   "deg": 0.0
+  },
+  {
+   "op": "move_text",
+   "ref": "R80",
+   "field": "reference",
+   "x": 75.655,
+   "y": 92.25,
    "deg": 90.0
   },
   {
    "op": "move_text",
-   "ref": "R68",
+   "ref": "C35",
    "field": "reference",
-   "x": 103.47,
-   "y": 76.865,
-   "deg": 0.0
+   "x": 61.52,
+   "y": 96.823,
+   "deg": 90.0
   },
   {
    "op": "move_text",
-   "ref": "L4",
+   "ref": "Q1",
    "field": "reference",
-   "x": 112.64,
-   "y": 87.323,
-   "deg": 0.0
+   "x": 95.1025,
+   "y": 66.3155,
+   "deg": 90.0
   }
  ]
 }

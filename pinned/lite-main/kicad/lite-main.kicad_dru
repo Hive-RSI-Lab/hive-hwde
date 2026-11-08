@@ -94,3 +94,12 @@
 	(constraint track_width (min 0.5000mm))
 	(condition "A.NetName == '/BUCK3_LX' && A.Type == 'track'")
 )
+
+# review-4 R4-BAN-3: the GND pour stood 0.127 mm off the banana sockets'
+# solder rings, a hand/wave-solder bridge away from shorting a speaker
+# output to GND; 0.3 mm round each socket pad (build.sh appends this after
+# rules_gen)
+(rule "banana_ring_to_gnd"
+	(constraint clearance (min 0.3mm))
+	(condition "(A.memberOfFootprint('J4') || A.memberOfFootprint('J5') || A.memberOfFootprint('J6') || A.memberOfFootprint('J7')) && A.Type == 'Pad' && B.Type == 'Zone' && B.NetName == 'GND'")
+)

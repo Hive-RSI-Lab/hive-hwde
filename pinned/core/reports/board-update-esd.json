@@ -1,0 +1,216 @@
+{
+ "script": "board_update",
+ "status": "pass",
+ "board": "/home/hive2/projects/hifi-esd/boards/core/kicad/core.kicad_pcb",
+ "netlist": "kicad/core.net",
+ "dry_run": false,
+ "plan": {
+  "swap_same_fp": [],
+  "swap_new_fp": [],
+  "add": [
+   {
+    "ref": "D6",
+    "fp": "aiee:SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BL-2",
+    "value": "NUP2105L",
+    "fields": {
+     "LCSC": "C14486",
+     "MPN": "NUP2105LT1G"
+    },
+    "pads": {
+     "1": "/power_in/CC1",
+     "3": "GND",
+     "2": "unconnected-(D6-Pad2)"
+    },
+    "dnp": false
+   },
+   {
+    "ref": "D7",
+    "fp": "aiee:SOT-23_L2.9-W1.3-P1.90-LS2.4-BR",
+    "value": "PESD5V0S2BT",
+    "fields": {
+     "LCSC": "C49338",
+     "MPN": "PESD5V0S2BT,215"
+    },
+    "pads": {
+     "1": "/dac/SUB1_OUT",
+     "2": "/dac/SUB2_OUT",
+     "3": "GND"
+    },
+    "dnp": false
+   },
+   {
+    "ref": "D8",
+    "fp": "aiee:SOT-23_L2.9-W1.3-P1.90-LS2.4-BR",
+    "value": "PESD5V0S2BT",
+    "fields": {
+     "LCSC": "C49338",
+     "MPN": "PESD5V0S2BT,215"
+    },
+    "pads": {
+     "1": "/linein/LIN_L",
+     "2": "/linein/LIN_R",
+     "3": "GND"
+    },
+    "dnp": false
+   },
+   {
+    "ref": "D9",
+    "fp": "aiee:SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BL-2",
+    "value": "NUP2105L",
+    "fields": {
+     "LCSC": "C14486",
+     "MPN": "NUP2105LT1G"
+    },
+    "pads": {
+     "2": "/power_in/CC2",
+     "3": "GND",
+     "1": "unconnected-(D9-Pad1)"
+    },
+    "dnp": false
+   }
+  ],
+  "del": [],
+  "rewire": [],
+  "unsupported": [],
+  "notes": [
+   "board_only footprints ignored: H1, H2, H3, H4"
+  ]
+ },
+ "warnings": [
+  "D6: declared position (45.4, 183.3) overlaps an existing courtyard or leaves the outline - applied as declared",
+  "D7: declared position (107.6, 136.7) overlaps an existing courtyard or leaves the outline - applied as declared",
+  "D8: declared position (124.8, 136.3) overlaps an existing courtyard or leaves the outline - applied as declared",
+  "D9: declared position (37.0, 180.4) overlaps an existing courtyard or leaves the outline - applied as declared",
+  "5 new unconnected item(s) (the added/rewired parts' ratsnest) - route via the fix loop"
+ ],
+ "orphans": {
+  "affected_nets": [],
+  "tracks": 0,
+  "vias": 0,
+  "netconn_unanchored_kept": []
+ },
+ "applied": {
+  "worker": {
+   "fields_updated": [],
+   "added": [
+    {
+     "ref": "D6",
+     "x": 45.4,
+     "y": 183.3,
+     "deg": 90.0,
+     "side": "back",
+     "pads_netted": 3
+    },
+    {
+     "ref": "D7",
+     "x": 107.6,
+     "y": 136.7,
+     "deg": -90.0,
+     "side": "back",
+     "pads_netted": 3
+    },
+    {
+     "ref": "D8",
+     "x": 124.8,
+     "y": 136.3,
+     "deg": 180.0,
+     "side": "back",
+     "pads_netted": 3
+    },
+    {
+     "ref": "D9",
+     "x": 37.0,
+     "y": 180.4,
+     "deg": 0.0,
+     "side": "back",
+     "pads_netted": 3
+    }
+   ],
+   "pads_renetted": [],
+   "removed_refs": [],
+   "removed_items": 0,
+   "removed_texts": [],
+   "absent_uuids": []
+  },
+  "refilled": true,
+  "ripped": {
+   "tracks": 0,
+   "vias": 0,
+   "rounds": 1
+  },
+  "drc": {
+   "before": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "after": {
+    "total": 10,
+    "by_severity": {
+     "warning": 5,
+     "error": 5
+    },
+    "by_source": {
+     "drc": 5,
+     "unconnected": 5
+    }
+   },
+   "dangling_before": 0,
+   "dangling_after": 0,
+   "unconnected_before": 0,
+   "unconnected_after": 5,
+   "new_errors": 0
+  }
+ },
+ "placements": {
+  "D6": {
+   "x": 45.4,
+   "y": 183.3,
+   "deg": 90.0,
+   "side": "back"
+  },
+  "D7": {
+   "x": 107.6,
+   "y": 136.7,
+   "deg": 270.0,
+   "side": "back"
+  },
+  "D8": {
+   "x": 124.8,
+   "y": 136.3,
+   "deg": 180.0,
+   "side": "back"
+  },
+  "D9": {
+   "x": 37.0,
+   "y": 180.4,
+   "deg": 0.0,
+   "side": "back"
+  }
+ },
+ "state": {
+  "file": "state.json",
+  "classes": [
+   {
+    "class": "add_part",
+    "refs": [
+     "D6",
+     "D7",
+     "D8",
+     "D9"
+    ],
+    "human_hold": 2
+   }
+  ],
+  "human_hold": 2
+ },
+ "gates_to_rerun": [
+  "dfm",
+  "drc",
+  "drc_routed",
+  "erc",
+  "place",
+  "sim",
+  "verify"
+ ]
+}

@@ -1,6 +1,6 @@
-# rebuildable or bulky: 3D models (lib_pull re-fetches them), route work dirs,
+# rebuildable or bulky: STEP models (lib_pull re-fetches them; the .wrl models stay, for renders and check_body_clash), route work dirs,
 # per-step board snapshots, KiCad lock/local files
-lib/aiee.3dshapes/
+lib/aiee.3dshapes/*.step
 kicad/route/
 kicad/route_critical/
 kicad/*.lock

@@ -1,0 +1,261 @@
+{
+ "script": "board_update",
+ "status": "pass",
+ "board": "/home/hive2/projects/hifi-lite-esd/boards/lite-main/kicad/lite-main.kicad_pcb",
+ "netlist": "kicad/lite-main.net",
+ "dry_run": false,
+ "plan": {
+  "swap_same_fp": [],
+  "swap_new_fp": [],
+  "add": [
+   {
+    "ref": "D3",
+    "fp": "aiee:DFN1006-2L-BI",
+    "value": "PESDNC2FD5VB",
+    "fields": {
+     "LCSC": "C110694"
+    },
+    "pads": {
+     "1": "/LINEIN_L",
+     "2": "GND"
+    },
+    "dnp": false
+   },
+   {
+    "ref": "D4",
+    "fp": "aiee:DFN1006-2L-BI",
+    "value": "PESDNC2FD5VB",
+    "fields": {
+     "LCSC": "C110694"
+    },
+    "pads": {
+     "1": "/LINEIN_R",
+     "2": "GND"
+    },
+    "dnp": false
+   },
+   {
+    "ref": "D5",
+    "fp": "aiee:DFN1006-2L-BI",
+    "value": "PESDNC2FD5VB",
+    "fields": {
+     "LCSC": "C110694"
+    },
+    "pads": {
+     "1": "/SUB_L",
+     "2": "GND"
+    },
+    "dnp": false
+   },
+   {
+    "ref": "D6",
+    "fp": "aiee:DFN1006-2L-BI",
+    "value": "PESDNC2FD5VB",
+    "fields": {
+     "LCSC": "C110694"
+    },
+    "pads": {
+     "1": "/SUB_R",
+     "2": "GND"
+    },
+    "dnp": false
+   },
+   {
+    "ref": "D7",
+    "fp": "aiee:DFN1006-2L-BI",
+    "value": "PESDNC2FD5VB",
+    "fields": {
+     "LCSC": "C110694"
+    },
+    "pads": {
+     "1": "/USB_DP",
+     "2": "GND"
+    },
+    "dnp": false
+   },
+   {
+    "ref": "D8",
+    "fp": "aiee:DFN1006-2L-BI",
+    "value": "PESDNC2FD5VB",
+    "fields": {
+     "LCSC": "C110694"
+    },
+    "pads": {
+     "1": "/USB_DM",
+     "2": "GND"
+    },
+    "dnp": false
+   }
+  ],
+  "del": [],
+  "rewire": [],
+  "unsupported": [],
+  "notes": [
+   "board_only footprints ignored: H1, H2, H3, H4"
+  ]
+ },
+ "warnings": [
+  "D7: declared position (75.114, 64.6) overlaps an existing courtyard or leaves the outline - applied as declared",
+  "6 new unconnected item(s) (the added/rewired parts' ratsnest) - route via the fix loop"
+ ],
+ "orphans": {
+  "affected_nets": [],
+  "tracks": 0,
+  "vias": 0,
+  "netconn_unanchored_kept": []
+ },
+ "applied": {
+  "worker": {
+   "fields_updated": [],
+   "added": [
+    {
+     "ref": "D3",
+     "x": 46.885,
+     "y": 80.71,
+     "deg": 0.0,
+     "side": "front",
+     "pads_netted": 2
+    },
+    {
+     "ref": "D4",
+     "x": 38.885,
+     "y": 80.71,
+     "deg": 0.0,
+     "side": "front",
+     "pads_netted": 2
+    },
+    {
+     "ref": "D5",
+     "x": 68.245,
+     "y": 80.71,
+     "deg": 180.0,
+     "side": "front",
+     "pads_netted": 2
+    },
+    {
+     "ref": "D6",
+     "x": 61.085,
+     "y": 80.71,
+     "deg": 0.0,
+     "side": "front",
+     "pads_netted": 2
+    },
+    {
+     "ref": "D7",
+     "x": 75.114,
+     "y": 64.6,
+     "deg": 180.0,
+     "side": "front",
+     "pads_netted": 2
+    },
+    {
+     "ref": "D8",
+     "x": 74.6,
+     "y": 68.45,
+     "deg": 0.0,
+     "side": "front",
+     "pads_netted": 2
+    }
+   ],
+   "pads_renetted": [],
+   "removed_refs": [],
+   "removed_items": 0,
+   "removed_texts": [],
+   "absent_uuids": []
+  },
+  "refilled": true,
+  "ripped": {
+   "tracks": 0,
+   "vias": 0,
+   "rounds": 1
+  },
+  "drc": {
+   "before": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "after": {
+    "total": 17,
+    "by_severity": {
+     "warning": 11,
+     "error": 6
+    },
+    "by_source": {
+     "drc": 11,
+     "unconnected": 6
+    }
+   },
+   "dangling_before": 0,
+   "dangling_after": 0,
+   "unconnected_before": 0,
+   "unconnected_after": 6,
+   "new_errors": 0
+  }
+ },
+ "placements": {
+  "D3": {
+   "x": 46.885,
+   "y": 80.71,
+   "deg": 0.0,
+   "side": "front"
+  },
+  "D4": {
+   "x": 38.885,
+   "y": 80.71,
+   "deg": 0.0,
+   "side": "front"
+  },
+  "D5": {
+   "x": 68.245,
+   "y": 80.71,
+   "deg": 180.0,
+   "side": "front"
+  },
+  "D6": {
+   "x": 61.085,
+   "y": 80.71,
+   "deg": 0.0,
+   "side": "front"
+  },
+  "D7": {
+   "x": 75.114,
+   "y": 64.6,
+   "deg": 180.0,
+   "side": "front"
+  },
+  "D8": {
+   "x": 74.6,
+   "y": 68.45,
+   "deg": 0.0,
+   "side": "front"
+  }
+ },
+ "state": {
+  "file": "state.json",
+  "classes": [
+   {
+    "class": "add_part",
+    "refs": [
+     "D3",
+     "D4",
+     "D5",
+     "D6",
+     "D7",
+     "D8"
+    ],
+    "human_hold": 2
+   }
+  ],
+  "human_hold": 2
+ },
+ "gates_to_rerun": [
+  "dfm",
+  "drc",
+  "drc_routed",
+  "erc",
+  "place",
+  "sim",
+  "verify"
+ ]
+}

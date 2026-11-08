@@ -1,0 +1,100 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C110694",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C110694",
+   "mpn": "PESDNC2FD5VB",
+   "brand": "Shanghai Prisemi Elec",
+   "description": "1 10V\u300113V\u300115V 15pF 1uA 5.5A@8/20us 5V 6.7V 80W@8/20us Bidirectional ESD IEC 61000-4-2\u3001IEC 61000-4-4 DFN1006-2L ESD and Surge Protection (TVS/ESD) ROHS",
+   "package": "DFN1006-2L",
+   "category": "ESD and Surge Protection (TVS/ESD)",
+   "type": "Extended",
+   "basic": false,
+   "stock": 4095744,
+   "price": 0.0086,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0086
+    },
+    {
+     "qty": 1000,
+     "price": 0.0067
+    },
+    {
+     "qty": 3000,
+     "price": 0.0057
+    },
+    {
+     "qty": 10000,
+     "price": 0.0051
+    },
+    {
+     "qty": 50000,
+     "price": 0.0046
+    },
+    {
+     "qty": 100000,
+     "price": 0.0043
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/1811131834_Shanghai-Prisemi-Elec-PESDNC2FD5VB_C110694.pdf",
+   "url": "https://www.lcsc.com/product-detail/esd-and-surge-protection-tvs-esd_shanghai-prisemi-elec-pesdnc2fd5vb_C110694.html",
+   "attributes": [
+    {
+     "name": "Type",
+     "value": "ESD"
+    },
+    {
+     "name": "Junction Capacitance",
+     "value": "15pF"
+    },
+    {
+     "name": "Peak Pulse Power Dissipation (Ppp)",
+     "value": "80W@8/20us"
+    },
+    {
+     "name": "Number of Channels",
+     "value": "Single-channel"
+    },
+    {
+     "name": "level of protection",
+     "value": "IEC 61000-4-2\u3001IEC 61000-4-4"
+    },
+    {
+     "name": "Clamping Voltage",
+     "value": "15V"
+    },
+    {
+     "name": "Polarity",
+     "value": "Bidirectional"
+    },
+    {
+     "name": "Peak Pulse Current (Ipp)",
+     "value": "5.5A@8/20us"
+    },
+    {
+     "name": "Voltage - Breakdown",
+     "value": "6.7V"
+    },
+    {
+     "name": "Reverse Stand-Off Voltage (Vrwm)",
+     "value": "5V"
+    },
+    {
+     "name": "Reverse Leakage Current (Ir)",
+     "value": "1uA"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

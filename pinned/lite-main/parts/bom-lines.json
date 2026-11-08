@@ -43,9 +43,9 @@
  },
  {
   "ref": "D1",
-  "lcsc": "C364296",
-  "value": "SMBJ20A",
-  "role": "VBUS TVS 20 V standoff"
+  "lcsc": "C151920",
+  "value": "SMBJ22A",
+  "role": "VBUS TVS 22 V standoff"
  },
  {
   "ref": "Q1",
@@ -553,8 +553,8 @@
  },
  {
   "ref": "R36",
-  "lcsc": "C22775",
-  "value": "100R",
+  "lcsc": "C21190",
+  "value": "1k",
   "role": "sub out build-out"
  },
  {
@@ -571,8 +571,8 @@
  },
  {
   "ref": "R38",
-  "lcsc": "C22775",
-  "value": "100R",
+  "lcsc": "C21190",
+  "value": "1k",
   "role": "sub out build-out"
  },
  {
@@ -793,9 +793,27 @@
  },
  {
   "ref": "J4",
-  "lcsc": "C2915641",
-  "value": "DB128V-5.08-4P",
-  "role": "speaker terminal L+ L- R+ R-"
+  "lcsc": "C7437321",
+  "value": "24.243 red",
+  "role": "speaker banana socket L+"
+ },
+ {
+  "ref": "J5",
+  "lcsc": "C7437322",
+  "value": "24.243 black",
+  "role": "speaker banana socket L-"
+ },
+ {
+  "ref": "J6",
+  "lcsc": "C7437321",
+  "value": "24.243 red",
+  "role": "speaker banana socket R+"
+ },
+ {
+  "ref": "J7",
+  "lcsc": "C7437322",
+  "value": "24.243 black",
+  "role": "speaker banana socket R-"
  },
  {
   "ref": "SW1",
@@ -868,5 +886,101 @@
   "lcsc": "C2286",
   "value": "red",
   "role": "status LED"
+ },
+ {
+  "ref": "Q11",
+  "lcsc": "C20526",
+  "value": "MMBT3904",
+  "role": "diode (B-C to E): +5V into the mute reservoir"
+ },
+ {
+  "ref": "C90",
+  "lcsc": "C45783",
+  "value": "22uF/25V",
+  "role": "mute reservoir: holds SUB_MUTE up for seconds"
+ },
+ {
+  "ref": "R80",
+  "lcsc": "C25808",
+  "value": "120k",
+  "role": "+5V sense divider top (off below ~4.1 V)"
+ },
+ {
+  "ref": "R81",
+  "lcsc": "C31850",
+  "value": "22k",
+  "role": "+5V sense divider bottom"
+ },
+ {
+  "ref": "Q12",
+  "lcsc": "C20526",
+  "value": "MMBT3904",
+  "role": "+5V good: holds SUB_MUTE low"
+ },
+ {
+  "ref": "R82",
+  "lcsc": "C25819",
+  "value": "47k",
+  "role": "mute pull-up from the reservoir"
+ },
+ {
+  "ref": "Q13",
+  "lcsc": "C8545",
+  "value": "2N7002",
+  "role": "sub L mute, signal side"
+ },
+ {
+  "ref": "Q15",
+  "lcsc": "C8545",
+  "value": "2N7002",
+  "role": "sub R mute, signal side"
+ },
+ {
+  "ref": "Q14",
+  "lcsc": "C8545",
+  "value": "2N7002",
+  "role": "sub mute, ground side (both channels)"
+ },
+ {
+  "ref": "D3",
+  "lcsc": "C110694",
+  "value": "PESDNC2FD5VB",
+  "role": "LINEIN_L ESD clamp"
+ },
+ {
+  "ref": "D4",
+  "lcsc": "C110694",
+  "value": "PESDNC2FD5VB",
+  "role": "LINEIN_R ESD clamp"
+ },
+ {
+  "ref": "D5",
+  "lcsc": "C110694",
+  "value": "PESDNC2FD5VB",
+  "role": "SUB_L ESD clamp"
+ },
+ {
+  "ref": "D6",
+  "lcsc": "C110694",
+  "value": "PESDNC2FD5VB",
+  "role": "SUB_R ESD clamp"
+ },
+ {
+  "ref": "D7",
+  "lcsc": "C110694",
+  "value": "PESDNC2FD5VB",
+  "role": "USB_DP ESD clamp"
+ },
+ {
+  "ref": "D8",
+  "lcsc": "C110694",
+  "value": "PESDNC2FD5VB",
+  "role": "USB_DM ESD clamp"
+ },
+ {
+  "ref": "J8",
+  "lcsc": "C2883765",
+  "value": "ESP32 spare header",
+  "role": "spare-use ESP32 header (UART0, GPIO, I2C, 3.3 V)"
  }
 ]

@@ -124,6 +124,8 @@ def main() -> int:
         "stand_in": dict(sorted(stand_in.items())),
         "unclassified": sorted(have - set(design) - set(stand_in)),
     }
+    if old.get("bare_parts"):
+        pin["bare_parts"] = old["bare_parts"]
     pf.write_text(json.dumps(pin, indent=1) + "\n", encoding="utf-8")
     print(f"pinned {args.board} at {pin['project']}@{sha[:7]}: {len(have)} script(s), "
           f"{len(pin['unclassified'])} unclassified")

@@ -2,22 +2,74 @@
  "power": [
   {
    "net": "VBUS_IN",
-   "current_a": 0.5,
+   "current_a": 5.0,
    "dt_c": 10,
    "plane_fed": true,
    "pdn": false
   },
   {
    "net": "VBUS",
-   "current_a": 0.5,
+   "current_a": 5.0,
    "dt_c": 10,
-   "plane_fed": true
+   "plane_fed": true,
+   "overrides": [
+    {
+     "near": [
+      51.0,
+      180.0
+     ],
+     "radius_mm": 3.5,
+     "current_a": 3.0
+    }
+   ]
   },
   {
    "net": "PVDD",
-   "current_a": 0.5,
+   "current_a": 5.0,
    "dt_c": 10,
-   "plane_fed": true
+   "plane_fed": true,
+   "overrides": [
+    {
+     "near": [
+      43.437,
+      154.8
+     ],
+     "radius_mm": 4.0,
+     "current_a": 2.5
+    },
+    {
+     "near": [
+      48.387,
+      154.8
+     ],
+     "radius_mm": 4.0,
+     "current_a": 2.5
+    },
+    {
+     "near": [
+      76.337,
+      154.8
+     ],
+     "radius_mm": 4.0,
+     "current_a": 2.5
+    },
+    {
+     "near": [
+      81.287,
+      154.8
+     ],
+     "radius_mm": 4.0,
+     "current_a": 2.5
+    },
+    {
+     "near": [
+      56.5,
+      168.3
+     ],
+     "radius_mm": 2.5,
+     "current_a": 3.0
+    }
+   ]
   },
   {
    "net": "+5V",
@@ -350,12 +402,26 @@
    "dt_c": 40
   },
   {
-   "ref": "U15",
-   "power_w": 3.5,
    "net": "GND",
-   "dt_c": 65,
-   "theta_ja_c_w": 18.0,
-   "theta_source": "review-2 THERMAL-1/9 (2026-10-29): 3.5 W at 1/8 power into 4 ohm (SLASEE9C fig 6-9). RthJC(top) 1.1 C/W + 0.2 mm 3 W/mK pad ~0.9 C/W + a lid-pressed 19x12 mm finned heatsink <= 20 C/W in still air, in parallel with the board (44.8 C/W no-heatsink RthJA): ~18 C/W, Tj ~45 + 63 = 108 C. Not the 8 C/W of a bolted 40x40 heatsink, which the board has no room for."
+   "tj_max_c": 110,
+   "dt_c": 50,
+   "theta_ja_c_w": 23.5,
+   "theta_source": "TI SLASEN3B 7.4: TPA3220 DDW on a JEDEC 2s2p board, thermal pad soldered. Core's 1 oz / 0.5 oz board is ~10 % worse (26 C/W; task 261029-075354)",
+   "power_w": 2.0,
+   "power_max_w": 10.0,
+   "governor": "firmware hifi_gov 60 s average of speaker power: Plus 19 W (HIFI_SPLIT, one channel per chip: 9.6 W/ch into 4 ohm, 14.8 W/ch into 6 ohm), Ultra 9 W one zone / 17 W both (4.4 W/ch into 4 ohm), at 30 C room in the vented box (firmware-requirements C2). power_w is that governed chip loss, ~2.0 W; power_max_w one channel's share of the supply-limited sine",
+   "ref": "U15"
+  },
+  {
+   "net": "GND",
+   "tj_max_c": 110,
+   "dt_c": 50,
+   "theta_ja_c_w": 23.5,
+   "theta_source": "TI SLASEN3B 7.4: TPA3220 DDW on a JEDEC 2s2p board, thermal pad soldered. Core's 1 oz / 0.5 oz board is ~10 % worse (26 C/W; task 261029-075354)",
+   "power_w": 2.0,
+   "power_max_w": 10.0,
+   "governor": "firmware hifi_gov 60 s average of speaker power: Plus 19 W (HIFI_SPLIT, one channel per chip: 9.6 W/ch into 4 ohm, 14.8 W/ch into 6 ohm), Ultra 9 W one zone / 17 W both (4.4 W/ch into 4 ohm), at 30 C room in the vented box (firmware-requirements C2). power_w is that governed chip loss, ~2.0 W; power_max_w one channel's share of the supply-limited sine",
+   "ref": "U16"
   }
  ],
  "placement": {
@@ -371,39 +437,59 @@
     "pos": 0.6
    },
    {
+    "ref": "J20",
+    "edge": "top",
+    "pos": 0.1
+   },
+   {
+    "ref": "J21",
+    "edge": "top",
+    "pos": 0.171
+   },
+   {
+    "ref": "J22",
+    "edge": "top",
+    "pos": 0.242
+   },
+   {
+    "ref": "J23",
+    "edge": "top",
+    "pos": 0.314
+   },
+   {
+    "ref": "J24",
+    "edge": "top",
+    "pos": 0.385
+   },
+   {
+    "ref": "J25",
+    "edge": "top",
+    "pos": 0.456
+   },
+   {
+    "ref": "J26",
+    "edge": "top",
+    "pos": 0.527
+   },
+   {
+    "ref": "J27",
+    "edge": "top",
+    "pos": 0.598
+   },
+   {
     "ref": "U19",
     "edge": "top",
-    "pos": 0.86
-   },
-   {
-    "ref": "J6",
-    "edge": "top",
-    "pos": 0.08
-   },
-   {
-    "ref": "J7",
-    "edge": "top",
-    "pos": 0.2
+    "pos": 0.905
    },
    {
     "ref": "J4",
     "edge": "top",
-    "pos": 0.38
+    "pos": 0.696
    },
    {
     "ref": "J5",
     "edge": "top",
-    "pos": 0.55
-   },
-   {
-    "ref": "J10",
-    "edge": "top",
-    "pos": 0.75
-   },
-   {
-    "ref": "J11",
-    "edge": "top",
-    "pos": 0.9
+    "pos": 0.812
    },
    {
     "ref": "SW1",
@@ -470,19 +556,23 @@
    {
     "ref": "U15",
     "side": "front",
-    "reason": "heatsink on top slug"
+    "reason": "thermal pad soldered to the GND planes; vents over and under it"
    },
    {
     "ref": "U16",
     "side": "front",
-    "reason": "heatsink on top slug"
+    "reason": "thermal pad soldered to the GND planes; vents over and under it"
    }
   ],
   "fixed": [
-   "J6",
-   "J7",
-   "J10",
-   "J11",
+   "J20",
+   "J21",
+   "J22",
+   "J23",
+   "J24",
+   "J25",
+   "J26",
+   "J27",
    "J4",
    "J5",
    "U19",
@@ -557,7 +647,7 @@
    "region": [
     52.087,
     168.197,
-    62.087,
+    71.587,
     171.697
    ]
   },
@@ -578,7 +668,7 @@
     47.887,
     172.197,
     71.587,
-    182.697
+    183.597
    ]
   },
   {
@@ -616,7 +706,7 @@
    "net": "+3V3",
    "region": [
     47.887,
-    183.197,
+    184.097,
     72.087,
     191.197
    ]
@@ -630,7 +720,163 @@
    "net": "GND"
   }
  ],
- "power_notes": "Track widths here are sized for the tracks that remain: plane taps and short stubs. The main currents ride on copper the width rules can't see: VBUS_IN/VBUS/PVDD/+3V3 on In2 plane regions plus F.Cu pours, and the amp OUT/SPK nets (3.7 A rms continuous sine, 2 x 56 W governor-capped) on the solid fan-in pours from kicad/gen/power_zones.py. check_irdrop covers those paths at P8. +5V is budgeted at 1.1 A, what the SY8303 delivers at the worst case of its loads: the SY8089 3V3 buck's input at the +3V3 budget of 0.8 A (ESP32 radio peaks; 3.3 x 0.8 / (0.88 x 5.0) = 0.60 A), LP5907 3V3A 0.10 A, +5VA 0.05 A, two TPA3221 VDD/GVDD/AVDD 0.10 A, the ultra-front board over J3 0.15 A and the CH340C 0.02 A (1.02 A). The trunk from L9 to U5's VIN is 0.58-0.60 mm, past the 0.56 mm that 1.1 A needs at dT=10, and BUCK5_LX carries the same 1.1 A. Every other +5V track is a branch off that trunk and sits in an override at 0.4 A: by a DC solve of the routed copper the most any branch carries is 0.29 A (amp A, CH340C and the front board, west), and the buck output caps' (C13/C14) and the 3V3 buck's input cap's (C15) ripple stays under 0.4 A rms; 0.35 mm tracks carry 0.7 A, so the branches have margin. No override circle reaches a trunk segment's midpoint.",
+ "power_notes": "VBUS_IN, VBUS and PVDD are budgeted at the real 5 A, the 28 V x 5 A PD contract (the firmware governor holds sustained input near 13 W, so 5 A is the peak), and every layer's pour carries it on its own (check_current): In1/In2 are 1 oz, and kicad/gen/power_trunk.py cleared the GND stitch grid from the In2 power planes and reshaped their zones after planes_gen (the In2 regions here are the rectangles planes_gen lays; that script's ZONES are the outlines on the board). Overrides at 3.0 A, VBUS at R1's output pad and PVDD at Q1's drain: there the F.Cu patches (review-2 POWER-1) only spread the pad's current into their 7-10 vias to the In2 plane, so a neck between via groups carries at most the share of the vias past it (4 of 7, 2.9 A). PVDD overrides at 2.5 A: each F.Cu finger between an amp's output pins feeds one bridge, so at full stereo drive on Plus (U15 only) a finger carries half the 5 A; the pin pitch fixes its 1.6-1.75 mm width, and its five vias into the In2 plane sit 1-4 mm from the pins. kicad/core.kicad_dru keeps its width rules: re-running rules_gen from these budgets would ask every plane tap for trunk width, as it reads no plane_fed. Track widths here are sized for the tracks that remain: plane taps and short stubs. The main currents ride on copper the width rules can't see: VBUS_IN/VBUS/PVDD/+3V3 on In2 plane regions plus F.Cu pours, and the amp OUT/SPK nets (3.7 A rms continuous sine, 2 x 56 W governor-capped) on the solid fan-in pours from kicad/gen/power_zones.py. check_irdrop covers those paths at P8. +5V is budgeted at 1.1 A, what the SY8303 delivers at the worst case of its loads: the SY8089 3V3 buck's input at the +3V3 budget of 0.8 A (ESP32 radio peaks; 3.3 x 0.8 / (0.88 x 5.0) = 0.60 A), LP5907 3V3A 0.10 A, +5VA 0.05 A, two TPA3221 VDD/GVDD/AVDD 0.10 A, the ultra-front board over J3 0.15 A and the CH340C 0.02 A (1.02 A). The trunk from L9 to U5's VIN is 0.58-0.60 mm, past the 0.56 mm that 1.1 A needs at dT=10, and BUCK5_LX carries the same 1.1 A. Every other +5V track is a branch off that trunk and sits in an override at 0.4 A: by a DC solve of the routed copper the most any branch carries is 0.29 A (amp A, CH340C and the front board, west), and the buck output caps' (C13/C14) and the 3V3 buck's input cap's (C15) ripple stays under 0.4 A rms; 0.35 mm tracks carry 0.7 A, so the branches have margin. No override circle reaches a trunk segment's midpoint. The firmware governor holds the sustained input to ~13 W (0.47 A) and bursts to the 1 s supply budget.",
  "diff_pairs_note": "Explicitly empty. The USB full-speed pair (12 Mb/s) and the two 100BASE-TX pairs run about 10 mm, so coupling them adds nothing measurable, and the router doesn't couple pairs (route_critical's KRT diff pass shorted). They are routed as ordinary nets at the Default width.",
-  "mechanical": {"allow_body_overlap": [{"refs": ["J4", "J5"], "up_to_mm": 1.8, "why": "XDJK RCA library model's side ear is ~3.6 mm wider than the datasheet's 16 mm body; an overlap deeper than the 1.8 mm excess per side is still a clash (#829)"}]}
+ "pd_source": {
+  "contract_v": 28,
+  "contract_a": 5
+ },
+ "enclosure": {
+  "box_mm": [
+   166.8,
+   125.4,
+   39.8
+  ],
+  "wall_mm": 2.4,
+  "material": "PETG",
+  "room_c": 30,
+  "other_w": 3.0,
+  "inlet_mm2": 2118,
+  "riser_mm2": 1928,
+  "outlet_mm2": 1622,
+  "stack_mm": 32,
+  "floor": "feet",
+  "note": "Plus box after the banana-socket row (enclosure/core_box.py vent_plan, 2026-11-01, issues #117/#124: core 154.4 x 113): low wall and floor inlets 2118 mm2, 7 mm S+E riser strips 1928 mm2 (the notch beside the board's front right, open to the lid, not counted), lid grille over both amps plus E-strip slots 1622 mm2, stack 32 mm. Ultra: 169.8 x 127.4 x 49.2 mm, 1748/1901/1778 mm2, stack 39. other_w: the rest of core (~2.5 W) plus the output filters at the governed level (~0.5 W)"
+ },
+ "ripple": [
+  {
+   "ref": "C5",
+   "irms_a": 0.45,
+   "rated_irms_a": 0.6,
+   "freq_multiplier": 1.2,
+   "source": "Rubycon 50PX470MEFC10X20: 600 mA at 120 Hz, x1.20 at >= 10 kHz (PX datasheet); ripple from docs/review-6/c5c6_ripple.py at the governed 19 W (Plus) into 4 ohm; irms_max_a is the DJ-direct full sine, at most 24 s before the guard trips (about 1 K of rise). Estimates, not measured",
+   "irms_max_a": 0.85,
+   "life_h": 2000,
+   "rated_c": 105,
+   "life_min_h": 30000,
+   "chem": "electrolytic"
+  },
+  {
+   "ref": "C6",
+   "irms_a": 0.45,
+   "rated_irms_a": 0.6,
+   "freq_multiplier": 1.2,
+   "source": "Rubycon 50PX470MEFC10X20: 600 mA at 120 Hz, x1.20 at >= 10 kHz (PX datasheet); ripple from docs/review-6/c5c6_ripple.py at the governed 19 W (Plus) into 4 ohm; irms_max_a is the DJ-direct full sine, at most 24 s before the guard trips (about 1 K of rise). Estimates, not measured",
+   "irms_max_a": 0.85,
+   "life_h": 2000,
+   "rated_c": 105,
+   "life_min_h": 30000,
+   "chem": "electrolytic"
+  },
+  {
+   "ref": "C311",
+   "irms_a": 0.45,
+   "rated_irms_a": 0.6,
+   "freq_multiplier": 1.2,
+   "source": "Rubycon 50PX470MEFC10X20: 600 mA at 120 Hz, x1.20 at >= 10 kHz (PX datasheet); ripple from docs/review-6/c5c6_ripple.py at the governed 19 W (Plus) into 4 ohm; irms_max_a is the DJ-direct full sine, at most 24 s before the guard trips (about 1 K of rise). Estimates, not measured",
+   "irms_max_a": 0.85,
+   "life_h": 2000,
+   "rated_c": 105,
+   "life_min_h": 30000,
+   "chem": "electrolytic"
+  }
+ ],
+ "power_paths": [
+  {
+   "net": "VBUS",
+   "from": "R1",
+   "to": "Q1",
+   "current_a": 5.0,
+   "note": "the PD contract's 5 A through the shunt into the PVDD switch"
+  },
+  {
+   "net": "+3V3",
+   "from": "L10",
+   "to": "U7",
+   "current_a": 0.8,
+   "note": "ESP32-WROVER radio TX bursts reach ~500 mA (Espressif: supply >= 500 mA), plus the rest of +3V3"
+  },
+  {
+   "net": "+3V3",
+   "from": "L10",
+   "to": "U8",
+   "current_a": 0.05
+  },
+  {
+   "net": "+3V3",
+   "from": "L10",
+   "to": "U13",
+   "current_a": 0.05
+  },
+  {
+   "net": "+3V3",
+   "from": "L10",
+   "to": "J3",
+   "current_a": 0.1
+  },
+  {
+   "net": "PVDD",
+   "from": "Q1",
+   "to": "U15",
+   "current_a": 5.0,
+   "note": "PVDD carries the contract's 5 A on Plus"
+  },
+  {
+   "net": "PVDD",
+   "from": "Q1",
+   "to": "U16",
+   "current_a": 5.0,
+   "note": "and on Ultra across both zones"
+  },
+  {
+   "net": "VBUS",
+   "from": "R1",
+   "to": "Q3",
+   "current_a": 0.05,
+   "note": "Q3 unit 2's collector: the PVDD fast-off follower charges Q1's gate (~15 mA for ~2 ms), a signal path, not the PD contract's"
+  },
+  {
+   "net": "+5V",
+   "from": "L9",
+   "to": "U5",
+   "current_a": 1.1,
+   "note": "the trunk to the 3V3 buck (power_notes)"
+  },
+  {
+   "net": "+5V",
+   "from": "L9",
+   "to": "U6",
+   "current_a": 0.1,
+   "note": "LP5907 3V3A"
+  },
+  {
+   "net": "+5V",
+   "from": "L9",
+   "to": "J3",
+   "current_a": 0.15,
+   "note": "the ultra-front board over the FFC"
+  }
+ ],
+ "esd": {
+  "level_kv": 8,
+  "exempt_nets": [
+   "/A_SPK_L+",
+   "/amp_a/A_SPK_L-",
+   "/A_SPK_R+",
+   "/amp_a/A_SPK_R-",
+   "/amp_b/B_SPK_L+",
+   "/amp_b/B_SPK_L-",
+   "/amp_b/B_SPK_R+",
+   "/amp_b/B_SPK_R-",
+   "/ethernet/ETH_TXP",
+   "/ethernet/ETH_TXN",
+   "/ethernet/ETH_RXP",
+   "/ethernet/ETH_RXN",
+   "+3V3E"
+  ],
+  "exempt_notes": {
+   "speaker outputs (J6/J7/J10/J11)": "each leg's LC filter cap (1 uF X7R, plus the 470 nF Zobel) sits about 6 mm from the binding post, and the 10 uH inductor stands between it and the TPA3220 pin. An IEC 61000-4-2 8 kV contact strike carries 150 pF x 8 kV = 1.2 uC: about 0.8 V on 1.47 uF. The inductor blocks the ns edge from the amp. A TVS would add nothing (docs/boards/core-esd.md).",
+   "Ethernet (J2)": "HR911105A is a MagJack: the cable side ends on the integrated transformers and Bob Smith termination (1500 Vrms isolation), so the strike never reaches these PHY-side pins directly. +3V3E is the centre-tap supply on the PHY side."
+  }
+ }
 }

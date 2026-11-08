@@ -4,7 +4,7 @@
   "phase": "P8",
   "tool": "verify",
   "input": "kicad/lite-main.kicad_pcb",
-  "input_digest": "sexpr_no_uuid:1e52fa6db57895dc45bd3638912caa67c3839903ccb0f552f024b203fbcfa61c",
+  "input_digest": "sexpr_no_uuid:0c80c6bb5b268b7c07addeb0029bab98d041d625e84ad5976003582567987b76",
   "status": "pass",
   "criteria": {
     "fail_severities": [
@@ -13,16 +13,19 @@
     "max_count": 0
   },
   "counts": {
-    "total": 45,
+    "total": 46,
     "by_severity": {
-      "warning": 44,
+      "warning": 45,
       "error": 1
     },
     "by_source": {
       "check_decoupling": 1,
       "check_thermal": 1,
-      "check_route_style": 25,
-      "check_ratings": 18
+      "check_route_style": 24,
+      "check_ratings": 17,
+      "check_antenna": 1,
+      "check_power_path": 1,
+      "check_straps": 1
     },
     "by_check": {
       "check_return_path": 0,
@@ -32,19 +35,22 @@
       "check_creepage": 0,
       "check_thermal": 1,
       "check_silk": 0,
-      "check_route_style": 25,
+      "check_route_style": 24,
       "check_mating": 0,
       "check_pdn": 0,
-      "check_ratings": 18,
+      "check_ratings": 17,
+      "check_antenna": 1,
       "check_bom_sync": 0,
       "check_courtyard": 0,
       "check_mate_pins": 0,
-      "check_model_paths": 0
+      "check_model_paths": 0,
+      "check_power_path": 1,
+      "check_straps": 1
     }
   },
   "failing_count": 0,
   "failing": [],
-  "warnings_count": 44,
+  "warnings_count": 45,
   "warnings": [
     {
       "check": "check_decoupling",
@@ -98,7 +104,7 @@
             70.7931,
             125.9896
           ],
-          "uuid": "3340323d-3edf-47a4-8588-fec66990f7ce"
+          "uuid": "c77c5edb-5b7a-4442-aa49-88eef7ab49b8"
         }
       ],
       "kind": "route_style",
@@ -657,31 +663,6 @@
       "check": "check_route_style",
       "severity": "warning",
       "pos": [
-        90.6359,
-        76.906
-      ],
-      "layer": "F.Cu",
-      "net": "/SPK_L_P",
-      "refs": [],
-      "msg": "1 needless jog(s): a sidestep smaller than the track clears nothing on /SPK_L_P F.Cu",
-      "source": "check_route_style",
-      "items": [
-        {
-          "msg": "sidestep 0.465 mm",
-          "pos": [
-            90.6359,
-            76.906
-          ],
-          "uuid": "f0a1b365-82e3-4849-a52e-ff2af3be73f5"
-        }
-      ],
-      "kind": "route_style",
-      "style": "jog"
-    },
-    {
-      "check": "check_route_style",
-      "severity": "warning",
-      "pos": [
         55.4363,
         94.0531
       ],
@@ -989,7 +970,7 @@
       "layer": "F.Cu",
       "net": "/TAP_R",
       "refs": [],
-      "msg": "36 needless jog(s): a sidestep smaller than the track clears nothing on /TAP_R F.Cu",
+      "msg": "29 needless jog(s): a sidestep smaller than the track clears nothing on /TAP_R F.Cu",
       "source": "check_route_style",
       "items": [
         {
@@ -1223,62 +1204,6 @@
             84.245
           ],
           "uuid": "4e08bc85-17fa-4d00-a1e2-1bf39c5a4d48"
-        },
-        {
-          "msg": "sidestep 0.100 mm",
-          "pos": [
-            80.42,
-            85.345
-          ],
-          "uuid": "17d69960-f926-47ec-a28a-0237070b1702"
-        },
-        {
-          "msg": "sidestep 0.071 mm",
-          "pos": [
-            80.52,
-            85.295
-          ],
-          "uuid": "2a7fd34d-6caf-415b-a7f9-98f6d1ea644b"
-        },
-        {
-          "msg": "sidestep 0.100 mm",
-          "pos": [
-            80.62,
-            85.245
-          ],
-          "uuid": "7792236d-be99-432d-be47-ab90a18c48d0"
-        },
-        {
-          "msg": "sidestep 0.100 mm",
-          "pos": [
-            81.12,
-            85.145
-          ],
-          "uuid": "1ef31cb4-6792-472d-aea1-eccb8d4ce4b3"
-        },
-        {
-          "msg": "sidestep 0.071 mm",
-          "pos": [
-            81.22,
-            85.095
-          ],
-          "uuid": "0164cb0b-fca3-4e63-beec-e7b71c5e4462"
-        },
-        {
-          "msg": "sidestep 0.200 mm",
-          "pos": [
-            81.37,
-            84.995
-          ],
-          "uuid": "355072d2-a2f2-4d66-9024-328ffb693917"
-        },
-        {
-          "msg": "sidestep 0.100 mm",
-          "pos": [
-            100.62,
-            83.345
-          ],
-          "uuid": "8035a3ae-d043-4c6e-98e6-b31344e8fe75"
         }
       ],
       "kind": "route_style",
@@ -1657,28 +1582,6 @@
       "layer": null,
       "net": null,
       "refs": [
-        "J4"
-      ],
-      "msg": "J4 (C2915641): no datasheet extraction",
-      "source": "check_ratings",
-      "items": [
-        {
-          "msg": "J4 (C2915641): no datasheet extraction",
-          "pos": null
-        }
-      ],
-      "kind": "rating_unrated",
-      "pins": [
-        "no datasheet extraction"
-      ]
-    },
-    {
-      "check": "check_ratings",
-      "severity": "warning",
-      "pos": null,
-      "layer": null,
-      "net": null,
-      "refs": [
         "Q1"
       ],
       "msg": "Q1 (C5125949): no datasheet extraction",
@@ -1965,127 +1868,136 @@
       "layer": null,
       "net": null,
       "refs": [
-        "D1",
         "D2",
         "L1",
         "L2",
         "L3",
         "L4",
         "L5",
-        "L6",
-        "R1",
-        "R10",
-        "R11",
-        "R12",
-        "R13",
-        "R14",
-        "R15",
-        "R16",
-        "R17",
-        "R18",
-        "R2",
-        "R20",
-        "R21",
-        "R22",
-        "R23",
-        "R24",
-        "R25",
-        "R3",
-        "R30",
-        "R31",
-        "R33",
-        "R34",
-        "R36",
-        "R37",
-        "R38",
-        "R39",
-        "R4",
-        "R5",
-        "R50",
-        "R51",
-        "R52",
-        "R53",
-        "R54",
-        "R6",
-        "R60",
-        "R61",
-        "R62",
-        "R63",
-        "R64",
-        "R65",
-        "R66",
-        "R67",
-        "R68",
-        "R69",
-        "R7",
-        "R8",
-        "R9"
+        "L6"
       ],
-      "msg": "55 two-terminal part(s) have no extraction and no voltage-rated attribute in parts.json: D1, D2, L1, L2, L3, L4, L5, L6, R1, R10, R11, R12, R13, R14, R15, R16, R17, R18, R2, R20, R21, R22, R23, R24, R25, R3, R30, R31, R33, R34, R36, R37, R38, R39, R4, R5, R50, R51, R52, R53, R54, R6, R60, R61, R62, R63, R64, R65, R66, R67, R68, R69, R7, R8, R9",
+      "msg": "7 two-terminal part(s) have no extraction and no voltage-rated attribute in parts.json: D2, L1, L2, L3, L4, L5, L6",
       "source": "check_ratings",
       "items": [
         {
-          "msg": "55 two-terminal part(s) have no extraction and no voltage-rated attribute in parts.json: D1, D2, L1, L2, L3, L4, L5, L6, R1, R10, R11, R12, R13, R14, R15, R16, R17, R18, R2, R20, R21, R22, R23, R24, R25, R3, R30, R31, R33, R34, R36, R37, R38, R39, R4, R5, R50, R51, R52, R53, R54, R6, R60, R61, R62, R63, R64, R65, R66, R67, R68, R69, R7, R8, R9",
+          "msg": "7 two-terminal part(s) have no extraction and no voltage-rated attribute in parts.json: D2, L1, L2, L3, L4, L5, L6",
           "pos": null
         }
       ],
       "kind": "rating_unrated",
       "pins": [
-        "D1",
         "D2",
         "L1",
         "L2",
         "L3",
         "L4",
         "L5",
-        "L6",
-        "R1",
-        "R10",
-        "R11",
-        "R12",
-        "R13",
-        "R14",
-        "R15",
-        "R16",
-        "R17",
-        "R18",
-        "R2",
-        "R20",
-        "R21",
-        "R22",
-        "R23",
-        "R24",
-        "R25",
-        "R3",
-        "R30",
-        "R31",
-        "R33",
-        "R34",
-        "R36",
-        "R37",
-        "R38",
-        "R39",
-        "R4",
-        "R5",
-        "R50",
-        "R51",
-        "R52",
-        "R53",
-        "R54",
-        "R6",
-        "R60",
-        "R61",
-        "R62",
-        "R63",
-        "R64",
-        "R65",
-        "R66",
-        "R67",
-        "R68",
-        "R69",
-        "R7",
-        "R8",
-        "R9"
+        "L6"
+      ]
+    },
+    {
+      "check": "check_antenna",
+      "severity": "warning",
+      "pos": [
+        26.495,
+        128.323
+      ],
+      "layer": null,
+      "net": null,
+      "refs": [
+        "U5"
+      ],
+      "msg": "U5: copper starts 2.2 mm beside the antenna (Espressif asks for 15 mm clear along the edge, or the board cut away there): widen the keepout or notch the board",
+      "source": "check_antenna",
+      "items": [
+        {
+          "msg": "U5: copper starts 2.2 mm beside the antenna (Espressif asks for 15 mm clear along the edge, or the board cut away there): widen the keepout or notch the board",
+          "pos": [
+            26.495,
+            128.323
+          ]
+        }
+      ],
+      "kind": "antenna_side_clearance",
+      "cleared_mm": [
+        2.25,
+        2.25
+      ]
+    },
+    {
+      "check": "check_power_path",
+      "severity": "warning",
+      "pos": [
+        83.765,
+        68.523
+      ],
+      "layer": null,
+      "net": "VBUS",
+      "refs": [
+        "J1",
+        "Q1"
+      ],
+      "msg": "VBUS J1 -> Q1 carries 2.17 A at dT 10 C against 3 A (USB PD input (U1 CH224A is a PD sink: 3 A assumed)); bottleneck: 0.6 mm on F.Cu at [83.765, 68.523]; 0.5 mm on F.Cu at [78.965, 68.523]",
+      "source": "check_power_path",
+      "items": [
+        {
+          "msg": "VBUS J1 -> Q1 carries 2.17 A at dT 10 C against 3 A (USB PD input (U1 CH224A is a PD sink: 3 A assumed)); bottleneck: 0.6 mm on F.Cu at [83.765, 68.523]; 0.5 mm on F.Cu at [78.965, 68.523]",
+          "pos": [
+            83.765,
+            68.523
+          ]
+        }
+      ],
+      "kind": "path_capacity",
+      "amps": 2.1666666666666665,
+      "current_a": 3.0,
+      "neck_tracks": [
+        {
+          "layer": "F.Cu",
+          "width_mm": 0.6,
+          "at": [
+            83.765,
+            68.523
+          ]
+        },
+        {
+          "layer": "F.Cu",
+          "width_mm": 0.5,
+          "at": [
+            78.965,
+            68.523
+          ]
+        }
+      ],
+      "neck_vias": []
+    },
+    {
+      "check": "check_straps",
+      "severity": "warning",
+      "pos": [
+        47.445,
+        119.323
+      ],
+      "layer": null,
+      "net": "/I2S_MCLK",
+      "refs": [
+        "U5"
+      ],
+      "msg": "U5 IO0 (pin 25, /I2S_MCLK) also reaches U7.1 (MCLK) ES8388, whose reset state hwde doesn't know: confirm each is an input or hi-Z until the strap latches (or add the part to reset_states.yaml)",
+      "source": "check_straps",
+      "items": [
+        {
+          "msg": "U5 IO0 (pin 25, /I2S_MCLK) also reaches U7.1 (MCLK) ES8388, whose reset state hwde doesn't know: confirm each is an input or hi-Z until the strap latches (or add the part to reset_states.yaml)",
+          "pos": [
+            47.445,
+            119.323
+          ]
+        }
+      ],
+      "kind": "strap_unknown",
+      "strap": "IO0",
+      "unknown": [
+        "U7.1 (MCLK) ES8388"
       ]
     }
   ],
@@ -2103,11 +2015,11 @@
       "refs": [
         "U8"
       ],
-      "msg": "U8 dissipates 2.00 W through 306 mm2 top + 573 mm2 back GND copper and 26 thermal via(s): ~95 C rise (theta_JA ~48 C/W) > 80 C allowed; add thermal vias into a back-side GND pour",
+      "msg": "U8 dissipates 2.00 W through 298 mm2 top + 573 mm2 back GND copper and 26 thermal via(s): ~96 C rise (theta_JA ~48 C/W) > 80 C allowed; add thermal vias into a back-side GND pour",
       "source": "check_thermal",
       "items": [
         {
-          "msg": "U8 dissipates 2.00 W through 306 mm2 top + 573 mm2 back GND copper and 26 thermal via(s): ~95 C rise (theta_JA ~48 C/W) > 80 C allowed; add thermal vias into a back-side GND pour",
+          "msg": "U8 dissipates 2.00 W through 298 mm2 top + 573 mm2 back GND copper and 26 thermal via(s): ~96 C rise (theta_JA ~48 C/W) > 80 C allowed; add thermal vias into a back-side GND pour",
           "pos": [
             101.8654,
             105.323
@@ -2117,8 +2029,8 @@
       "kind": "thermal_area",
       "power_w": 2.0,
       "area_mm2": 645.0,
-      "theta_ja": 47.548,
-      "rise_c": 95.0961,
+      "theta_ja": 47.798,
+      "rise_c": 95.5959,
       "dt_allowed_c": 80.0
     }
   ],
@@ -2136,10 +2048,13 @@
       "check_mating",
       "check_pdn",
       "check_ratings",
+      "check_antenna",
       "check_bom_sync",
       "check_courtyard",
       "check_mate_pins",
-      "check_model_paths"
+      "check_model_paths",
+      "check_power_path",
+      "check_straps"
     ],
     "ran": [
       "check_return_path",
@@ -2153,10 +2068,13 @@
       "check_mating",
       "check_pdn",
       "check_ratings",
+      "check_antenna",
       "check_bom_sync",
       "check_courtyard",
       "check_mate_pins",
-      "check_model_paths"
+      "check_model_paths",
+      "check_power_path",
+      "check_straps"
     ],
     "passed": [
       "check_return_path",
@@ -2169,10 +2087,13 @@
       "check_mating",
       "check_pdn",
       "check_ratings",
+      "check_antenna",
       "check_bom_sync",
       "check_courtyard",
       "check_mate_pins",
-      "check_model_paths"
+      "check_model_paths",
+      "check_power_path",
+      "check_straps"
     ],
     "failed": [],
     "waived": [
@@ -2187,11 +2108,11 @@
     "workspace": ".",
     "gate": "verify",
     "status": "pass",
-    "attempts": 7,
+    "attempts": 10,
     "inputs": {
-      "pcb": "sexpr_no_uuid:1e52fa6db57895dc45bd3638912caa67c3839903ccb0f552f024b203fbcfa61c",
-      "constraints": "json_canonical:bddbb1b84a07eaf0b52456568888c02226ad1317a93e8020e9b9e780b98c7ab5",
-      "decoupling": "json_canonical:83d4aa9fc41ad6fde56012fff8a8e86b567621103cd7a118d91157b10ede6600",
+      "pcb": "sexpr_no_uuid:0c80c6bb5b268b7c07addeb0029bab98d041d625e84ad5976003582567987b76",
+      "constraints": "json_canonical:cacfa391a2117361ee110695717a72c34805822141ee48d0833edb8052bb5b0d",
+      "decoupling": "json_canonical:6e0abe76bc94c3adf63834a0af08af32a591dddde239022232419170e70162aa",
       "waivers": "json_canonical:fd04b3c398f91596a08605fd91c32f9be2d338bcc3860a37e636c7fd5a133f39"
     }
   }

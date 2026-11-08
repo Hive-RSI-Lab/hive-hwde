@@ -1,0 +1,186 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C8545",
+ "total": 4,
+ "count": 3,
+ "results": [
+  {
+   "lcsc": "C8545",
+   "mpn": "2N7002",
+   "brand": "Jiangsu Changjing Electronics Technology Co., Ltd.",
+   "description": "1 N-channel 115mA 2.5V 225mW 25pF 50pF 5pF 5\u03a9@10V 60V N-Channel \u00b120V SOT-23 MOSFETs ROHS",
+   "package": "SOT-23",
+   "category": "MOSFETs",
+   "type": "Basic",
+   "basic": true,
+   "stock": 3412544,
+   "price": 0.0166,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.0166
+    },
+    {
+     "qty": 500,
+     "price": 0.0129
+    },
+    {
+     "qty": 3000,
+     "price": 0.0113
+    },
+    {
+     "qty": 6000,
+     "price": 0.01
+    },
+    {
+     "qty": 24000,
+     "price": 0.0096
+    },
+    {
+     "qty": 51000,
+     "price": 0.0092
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_Jiangsu-Changjing-Electronics-Technology-Co---Ltd--2N7002_C8545.pdf",
+   "url": "https://www.lcsc.com/product-detail/mosfets_jiangsu-changjing-electronics-technology-co-ltd-2n7002_C8545.html",
+   "attributes": [
+    {
+     "name": "Vgs",
+     "value": "\u00b120V"
+    },
+    {
+     "name": "Reverse Transfer Capacitance (Crss@Vds)",
+     "value": "5pF"
+    },
+    {
+     "name": "Current - Continuous Drain(Id)",
+     "value": "115mA"
+    },
+    {
+     "name": "Drain to Source Voltage",
+     "value": "60V"
+    },
+    {
+     "name": "Output Capacitance(Coss)",
+     "value": "25pF"
+    },
+    {
+     "name": "RDS(on)",
+     "value": "5\u03a9@10V"
+    },
+    {
+     "name": "Input Capacitance(Ciss)",
+     "value": "50pF"
+    },
+    {
+     "name": "Type",
+     "value": "N-Channel"
+    },
+    {
+     "name": "Gate Threshold Voltage (Vgs(th))",
+     "value": "2.5V"
+    },
+    {
+     "name": "Number",
+     "value": "1 N-channel"
+    },
+    {
+     "name": "Pd - Power Dissipation",
+     "value": "225mW"
+    }
+   ],
+   "rank": 0
+  },
+  {
+   "lcsc": "C6675234",
+   "mpn": "MPC8545PXATGD557",
+   "brand": "NXP Semicon",
+   "description": "FCPBGA-783(29x29) Microcontrollers (MCU/MPU/SOC) ROHS",
+   "package": "FCPBGA-783(29x29)",
+   "category": "Microcontrollers (MCU/MPU/SOC)",
+   "type": "Extended",
+   "basic": false,
+   "stock": 0,
+   "price": 2.863,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 2.863
+    },
+    {
+     "qty": 10,
+     "price": 2.863
+    },
+    {
+     "qty": 30,
+     "price": 2.863
+    },
+    {
+     "qty": 200,
+     "price": 1.1423
+    },
+    {
+     "qty": 500,
+     "price": 1.1046
+    },
+    {
+     "qty": 1000,
+     "price": 1.0866
+    }
+   ],
+   "min_qty": 4,
+   "datasheet": "",
+   "url": "https://www.lcsc.com/product-detail/microcontrollers-mcu-mpu-soc_nxp-semicon-mpc8545pxatgd557_C6675234.html",
+   "attributes": [],
+   "rank": 1
+  },
+  {
+   "lcsc": "C7231804",
+   "mpn": "MPC8545VTAQGD557",
+   "brand": "NXP Semicon",
+   "description": "FCPBGA-783(29x29) Microcontrollers (MCU/MPU/SOC) ROHS",
+   "package": "FCPBGA-783(29x29)",
+   "category": "Microcontrollers (MCU/MPU/SOC)",
+   "type": "Extended",
+   "basic": false,
+   "stock": 0,
+   "price": 2.863,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 2.863
+    },
+    {
+     "qty": 10,
+     "price": 2.863
+    },
+    {
+     "qty": 30,
+     "price": 2.863
+    },
+    {
+     "qty": 200,
+     "price": 1.1423
+    },
+    {
+     "qty": 500,
+     "price": 1.1046
+    },
+    {
+     "qty": 1000,
+     "price": 1.0866
+    }
+   ],
+   "min_qty": 4,
+   "datasheet": "",
+   "url": "https://www.lcsc.com/product-detail/microcontrollers-mcu-mpu-soc_nxp-semicon-mpc8545vtaqgd557_C7231804.html",
+   "attributes": [],
+   "rank": 2
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

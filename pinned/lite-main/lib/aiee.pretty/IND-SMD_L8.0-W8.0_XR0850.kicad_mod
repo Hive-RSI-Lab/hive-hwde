@@ -1,5 +1,5 @@
 (module easyeda2kicad:IND-SMD_L8.0-W8.0_XR0850 (layer F.Cu) (tedit 5DC5F6A4)
-	(attr through_hole)
+	(attr smd)
 	(fp_text reference REF** (at 0 -4.825) (layer F.SilkS)
 		(effects (font (size 1 1) (thickness 0.15)))
 	)

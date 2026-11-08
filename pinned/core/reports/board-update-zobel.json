@@ -1,0 +1,232 @@
+{
+ "script": "board_update",
+ "status": "pass",
+ "board": "/home/hive2/projects/hifi-zobel/boards/core/kicad/core.kicad_pcb",
+ "netlist": "kicad/core.net",
+ "dry_run": false,
+ "plan": {
+  "swap_same_fp": [
+   {
+    "ref": "C228",
+    "fp": "aiee:C0603",
+    "value": [
+     "1nF",
+     "470nF"
+    ],
+    "fields": {
+     "LCSC": [
+      "C1588",
+      "C513577"
+     ]
+    },
+    "board_extra_fields": [
+     "LCSC Part"
+    ]
+   },
+   {
+    "ref": "C231",
+    "fp": "aiee:C0603",
+    "value": [
+     "1nF",
+     "470nF"
+    ],
+    "fields": {
+     "LCSC": [
+      "C1588",
+      "C513577"
+     ]
+    },
+    "board_extra_fields": [
+     "LCSC Part"
+    ]
+   },
+   {
+    "ref": "C234",
+    "fp": "aiee:C0603",
+    "value": [
+     "1nF",
+     "470nF"
+    ],
+    "fields": {
+     "LCSC": [
+      "C1588",
+      "C513577"
+     ]
+    },
+    "board_extra_fields": [
+     "LCSC Part"
+    ]
+   },
+   {
+    "ref": "C237",
+    "fp": "aiee:C0603",
+    "value": [
+     "1nF",
+     "470nF"
+    ],
+    "fields": {
+     "LCSC": [
+      "C1588",
+      "C513577"
+     ]
+    },
+    "board_extra_fields": [
+     "LCSC Part"
+    ]
+   },
+   {
+    "ref": "C326",
+    "fp": "aiee:C0603",
+    "value": [
+     "1nF",
+     "470nF"
+    ],
+    "fields": {
+     "LCSC": [
+      "C1588",
+      "C513577"
+     ]
+    },
+    "board_extra_fields": [
+     "LCSC Part"
+    ]
+   },
+   {
+    "ref": "C329",
+    "fp": "aiee:C0603",
+    "value": [
+     "1nF",
+     "470nF"
+    ],
+    "fields": {
+     "LCSC": [
+      "C1588",
+      "C513577"
+     ]
+    },
+    "board_extra_fields": [
+     "LCSC Part"
+    ]
+   },
+   {
+    "ref": "C332",
+    "fp": "aiee:C0603",
+    "value": [
+     "1nF",
+     "470nF"
+    ],
+    "fields": {
+     "LCSC": [
+      "C1588",
+      "C513577"
+     ]
+    },
+    "board_extra_fields": [
+     "LCSC Part"
+    ]
+   },
+   {
+    "ref": "C335",
+    "fp": "aiee:C0603",
+    "value": [
+     "1nF",
+     "470nF"
+    ],
+    "fields": {
+     "LCSC": [
+      "C1588",
+      "C513577"
+     ]
+    },
+    "board_extra_fields": [
+     "LCSC Part"
+    ]
+   }
+  ],
+  "swap_new_fp": [],
+  "add": [],
+  "del": [],
+  "rewire": [],
+  "unsupported": [],
+  "notes": [
+   "board_only footprints ignored: H1, H2, H3, H4"
+  ]
+ },
+ "warnings": [],
+ "orphans": {
+  "affected_nets": [],
+  "tracks": 0,
+  "vias": 0,
+  "netconn_unanchored_kept": []
+ },
+ "applied": {
+  "worker": {
+   "fields_updated": [
+    "C228",
+    "C231",
+    "C234",
+    "C237",
+    "C326",
+    "C329",
+    "C332",
+    "C335"
+   ],
+   "added": [],
+   "pads_renetted": [],
+   "removed_refs": [],
+   "removed_items": 0,
+   "removed_texts": [],
+   "absent_uuids": []
+  },
+  "refilled": true,
+  "ripped": {
+   "tracks": 0,
+   "vias": 0,
+   "rounds": 1
+  },
+  "drc": {
+   "before": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "after": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "dangling_before": 0,
+   "dangling_after": 0,
+   "unconnected_before": 0,
+   "unconnected_after": 0,
+   "new_errors": 0
+  }
+ },
+ "placements": {},
+ "state": {
+  "file": "state.json",
+  "classes": [
+   {
+    "class": "swap_part_same_fp",
+    "refs": [
+     "C228",
+     "C231",
+     "C234",
+     "C237",
+     "C326",
+     "C329",
+     "C332",
+     "C335"
+    ],
+    "human_hold": 2
+   }
+  ],
+  "human_hold": 2
+ },
+ "gates_to_rerun": [
+  "dfm",
+  "erc",
+  "sim",
+  "verify"
+ ]
+}

@@ -1,4 +1,4 @@
-"""core: TPA3221 zones A and B (B10, B11) and the UI (B12, B14)."""
+"""core: TPA3220 zones A and B (B10, B11) and the UI (B12, B14)."""
 from __future__ import annotations
 
 from design import C, P, R, sheet
@@ -7,12 +7,14 @@ A = "aiee:"
 
 
 def zone(z: str, base: int, ultra: bool):
-    """One TPA3221 stereo BTL stage. Zone A is the controller, zone B the
-    peripheral clocked from it."""
+    """One TPA3220 stereo BTL stage. Zone A is the controller, zone B the
+    peripheral clocked from it. The TPA3220 is the TPA3221 with its thermal
+    pad underneath (pin-for-pin, SLASEN3B table 5), so it cools into the
+    board's GND planes and needs no heatsink fitted by hand."""
     sheet(f"amp_{z.lower()}", dnp=ultra)
     u = f"U{15 if z == 'A' else 16}"
     n = lambda s: f"{z}_{s}"  # noqa: E731
-    P(u, A + "TPA3221DDVR", "TPA3221", A + "HTSSOP-44_L14.0-W6.1-P0.64-LS8.1-BL",
+    P(u, A + "TPA3220DDWR", "TPA3220", A + "HTSSOP-44-1EP_L14.0-W6.1-P0.64-LS8.1-EP7.3x4.43",
       {"n:VDD": "+5V", "n:GAIN/SLV": n("GAIN"), "n:~{OTW_CLIP}": "AMP_OTW",
        "n:~{FAULT}": "AMP_FAULT", "n:GND": "GND", "n:IN1_P": n("IN1P"),
        "n:IN1_M": n("IN1M"), "n:~{RESET}": f"AMP_{z}_RST", "n:HEAD": "GND",
@@ -22,7 +24,7 @@ def zone(z: str, base: int, ultra: bool):
        "n:BST1_P": n("BST1P"), "n:BST2_M": n("BST2M"), "n:BST2_P": n("BST2P"),
        "n:OUT1_M": n("OUT1M"), "n:OUT1_P": n("OUT1P"), "n:OUT2_M": n("OUT2M"),
        "n:OUT2_P": n("OUT2P"), "n:PVDD": "PVDD"},
-      lcsc="C475500", role=f"zone {z} class-D amp, 2 x 77 W into 4 ohm at 28 V")
+      lcsc="C2879306", role=f"zone {z} class-D amp, pad-down, 2 x 77 W into 4 ohm at 28 V (1% THD peak)")
     i = base
     def nr():
         nonlocal i
@@ -35,8 +37,9 @@ def zone(z: str, base: int, ultra: bool):
     C(f"C{nr()}", "1uF", n("AVDD"), ic=u, pin="21")
     R(f"R{nr()}", "4.7R", "+5V", n("GVDD"), pkg="0603")
     C(f"C{nr()}", "1uF", n("GVDD"), ic=u, pin="22")
+    # PVDD HF pair per pin group, on B.Cu under the pins (review-3 R3-AMP-2)
     for pin in ("29", "36"):
-        C(f"C{nr()}", "1uF/50V", "PVDD", pkg="0805", ic=u, pin=pin)
+        C(f"C{nr()}", "1uF/100V", "PVDD", pkg="1206", ic=u, pin=pin)
         C(f"C{nr()}", "100nF/50V", "PVDD", pkg="0603", ic=u, pin=pin)
     if z == "B":
         P(f"C{nr()}", "Device:C_Polarized", "470uF/50V",
@@ -66,7 +69,7 @@ def zone(z: str, base: int, ultra: bool):
         C(f"C{nr()}", "33nF/50V", n(b), n(o), pkg="0603")
     # output filters + snubbers
     lbase = 1 if z == "A" else 5
-    jbase = 6 if z == "A" else 10
+    jbase = 20 if z == "A" else 24
     # L1 top-left, L2 bottom-left, L3 bottom-right, L4 top-right (anchors.py).
     # The amp's inversion is undone in the DAC stage (U11 inputs swapped), so
     # OUTx_P is the + terminal here.
@@ -78,18 +81,33 @@ def zone(z: str, base: int, ultra: bool):
           {"1": n(o), "2": net}, lcsc="C2962885",
           role="output filter 10 uH, Isat 10 A (= TPA3221 OC limit)")
         C(f"C{nr()}", "1uF/50V", net, pkg="0805")
+        # Zobel per leg (issue #137): 4.7R + 470nF damps the 10uH/1uF filter
+        # with no speaker from +40 dB to +16 dB at ~45 kHz (docs/boards/core-zobel.md).
         R(f"R{nr()}", "4.7R", net, n(o + "_SN"), pkg="0603")
-        C(f"C{nr()}", "1nF/50V", n(o + "_SN"), pkg="0603")
-    # speaker terminals: one 2-way 5 mm screw terminal per channel; the
-    # enclosure's banana sockets / binding posts wire to these
-    for k, ch in enumerate(("L", "R")):
-        P(f"J{jbase + k}", A + "KF301-5.0-2P", f"SPK {z} {ch}", A + "x",
-          {"1": f"{z}_SPK_{ch}+", "2": f"{z}_SPK_{ch}-"}, lcsc="C474881", mpn="KF301-5.0-2P",
-          role=f"zone {z} {ch} speaker terminal, 17 A", nc_rest=True)
+        C(f"C{nr()}", "470nF/50V", n(o + "_SN"), pkg="0603")
+    # speaker outputs: one 4 mm banana socket per leg (Amass 24.243,
+    # right-angle PCB mount, 24 A, JLC fits them, as on Lite), red + and
+    # black -, their bores through the rear wall: banana plugs go straight
+    # in and nothing is wired by hand (issues #117, #124). Both pins of a
+    # socket are its one contact (pin 1 at the back, pin 2 by the nose).
+    # J20-J27 run along the rear edge: A L+ L- R+ R-, B L+ L- R+ R-. Plus
+    # plays L on zone A and R on zone B (HIFI_SPLIT), so it fits only A L
+    # and B R; A R and B L are Ultra's.
+    for k, (ch, sign) in enumerate((("L", "+"), ("L", "-"), ("R", "+"), ("R", "-"))):
+        red = sign == "+"
+        P(f"J{jbase + k}", A + ("24.243.1" if red else "24.243.2"),
+          f"24.243 {'red' if red else 'black'}", A + "x",
+          {"1": f"{z}_SPK_{ch}{sign}", "2": f"{z}_SPK_{ch}{sign}"},
+          lcsc="C7437321" if red else "C7437322", mpn="24.243.1" if red else "24.243.2",
+          dnp=(z, ch) in (("A", "R"), ("B", "L")),
+          role=f"zone {z} {ch}{sign} speaker banana socket, 4 mm, 24 A")
 
 
 zone("A", 200, ultra=False)
-zone("B", 300, ultra=True)
+# Zone B is fitted on Plus too: Plus plays L on zone A and R on zone B, one
+# channel per TPA3220, so each chip carries half the heat (docs/review-2/
+# heatsink-options.md: one pad-down chip can't hold loud music at 4 ohm)
+zone("B", 300, ultra=False)
 
 # ------------------------------------------------------------ B12 UI
 sheet("ui")

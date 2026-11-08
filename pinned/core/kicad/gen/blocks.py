@@ -21,6 +21,15 @@ P("D1", A + "SMBJ30A_C113998", "SMBJ30A", A + "SMB_L4.6-W3.6-LS5.3-RD",
 P("U2", A + "USBLC6-2SC6_C2687116", "USBLC6-2SC6", A + "SOT-23-6_L2.9-W1.6-P0.95-LS2.8-BL",
   {"1": "USB_DP", "6": "USB_DP", "3": "USB_DM", "4": "USB_DM", "2": "GND",
    "5": "+5V"}, lcsc="C2687116", role="USB D+/D- ESD")
+# CC clamps at the receptacle (issue #133): 24 V working voltage (breaks down
+# at 26.2 V min), far above CC's 5.5 V; ~30 pF is well under the 620 pF a PD
+# BMC receiver tolerates (cReceiver). One dual part per CC line, the other
+# channel unused: J1's two pin rows leave CC1 (A5) reachable only from the
+# right and CC2 (B5) only from the left. docs/boards/core-esd.md.
+for ref, cc in (("D6", {"1": "CC1", "2": "NC"}), ("D9", {"1": "NC", "2": "CC2"})):
+    P(ref, A + "NUP2105LT1G", "NUP2105L", A + "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BL-2",
+      {**cc, "3": "GND"}, lcsc="C14486", mpn="NUP2105LT1G",
+      role="USB-C CC ESD")
 # PG (pin 10, open drain, low = contract good) gates the PVDD switch like the
 # Lite's: review-2 POWER-6, PVDD drops in hardware when the contract is lost.
 P("U1", A + "CH224Q_C46061833", "CH224Q", A + "DFN-10_L2.0-W2.0-P0.40-BL-EP",
@@ -51,8 +60,10 @@ P("Q1", A + "AO4485", "AO4485", A + "SOIC-8_L5.0-W4.0-P1.27-LS6.0-BL",
 # (docs/review-2/sims/power/tb_core_fw_on_28v_FIX.cir), 2.5x SOA margin.
 R("R4", "470k", "VBUS", "PVDD_G")
 R("R5", "470k", "PVDD_G", "PVDD_PD")
-C("C4", "100nF/50V", "PVDD_G", "PVDD", pkg="0603", role="soft-start gate-drain")
-C("C8", "2.2uF/50V", "VBUS", "PVDD_G", pkg="0805",
+# review-5 R5-PA-1: C4 100n -> 220n and C8 2.2u -> 4.7u slow the ramp further so
+# Q1 stays inside its SOA (docs/review-5/pa.md); C8 sits across D4's 15 V clamp
+C("C4", "220nF/50V", "PVDD_G", "PVDD", pkg="0603", role="soft-start gate-drain")
+C("C8", "4.7uF/25V", "VBUS", "PVDD_G", pkg="0805",
   role="gate-source: holds Q1 off while VBUS steps (attach, 5 V to 28 V)")
 P("D4", A + "BZT52C15", "BZT52C15", A + "x", {"n:K": "VBUS", "n:A": "PVDD_G"},
   lcsc="C173427", role="Q1 gate-source clamp, 15 V")
@@ -61,14 +72,28 @@ P("Q2", A + "2N7002", "2N7002", A + "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
   role="PVDD enable: firmware (PVDD_EN) AND the PD contract (PG low)")
 R("R6", "1k", "PVDD_EN", "PVDD_ENG")
 R("R7", "100k", "PVDD_ENG", "GND")
+# Fast turn-off (hwde sim_inrush hard_reset): with Q2 off, R4 alone takes
+# ~1 s to bring Q1's gate back to VBUS (R4·C8), so Q1 was still on when a
+# hard-reset source came back and charged PVDD's 940 uF through it (14 A).
+# Now R404 pulls PVDD_PD to VBUS the moment Q2 lets go (PG lost, PVDD_EN
+# low or the OV trip), and Q3's second NPN follows it as an emitter
+# follower, dragging the gate to VBUS in ~2 ms. D5 keeps that NPN's
+# base-emitter off the ~14 V reverse bias while Q2 is on.
+R("R404", "100k", "VBUS", "PVDD_PD", role="Q1 fast-off: pulls the drive node to VBUS when Q2 is off")
+P("D5", A + "BAS16L,315", "BAS16L", A + "SOD-882_L1.0-W0.6-RD",
+  {"2": "PVDD_PD", "1": "PVDD_OFFB"}, lcsc="C99382",
+  role="Q1 fast-off: blocks the follower's base-emitter reverse bias while Q2 is on")
 P("D2", A + "BZT52C33_C266574", "BZT52C33", A + "x",
   {"1": "VBUS", "2": "OV_Z"}, lcsc="C266574",
-  role="33 V zener: gross-overvoltage trip, ~32-36 V (TPA3221 abs max 37 V)")
+  role="33 V zener: gross-overvoltage trip, ~32-36 V (TPA3220 abs max 37 V)")
 R("R8", "10k", "OV_Z", "OV_B")
 R("R9", "10k", "OV_B", "GND")
-P("Q3", A + "S8050_C2146", "S8050", A + "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
-  {"n:B": "OV_B", "n:E": "GND", "n:C": "PVDD_ENG"}, lcsc="C2146", basic=True,
-  role="pulls PVDD enable low above ~31 V")
+# Q3: two NPNs in one SOT-363. Unit 1 (pins 1-2-6) is the OV trip, unit 2
+# (pins 3-4-5) the Q1 fast-off follower (Vce <= 15 V, held by D4).
+P("Q3", A + "MMDT3904-7-F", "MMDT3904", A + "SOT-363_L2.0-W1.3-P0.65-LS2.1-TL",
+  {"2": "OV_B", "1": "GND", "6": "PVDD_ENG",
+   "5": "PVDD_OFFB", "4": "PVDD_G", "3": "VBUS"}, lcsc="C83572",
+  role="unit 1 pulls PVDD enable low above ~31 V; unit 2 pulls Q1's gate to VBUS when Q2 is off")
 P("C5", "Device:C_Polarized", "470uF/50V", A + "CAP-TH_BD10.0-P5.00-D1.0-FD",
   {"1": "PVDD", "2": "GND"}, lcsc="C88733", role="PVDD bulk, zone A")
 P("C6", "Device:C_Polarized", "470uF/50V", A + "CAP-TH_BD10.0-P5.00-D1.0-FD",

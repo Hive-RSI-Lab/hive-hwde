@@ -1,5 +1,26 @@
-{"waivers": [
- {"check": "check_decoupling", "kind": "decoupler_loop", "net": "+3V3", "refs": ["C31", "U7"],
-  "reason": "U7 is the ESP32-WROVER-E module, which carries its own 3V3 decoupling on its module PCB. C30 (22 uF) and C31 (100 nF) are bulk/backup at the module pin, and the loop the check measures includes the module's GND pad distance. Espressif's module reference design needs only a 10-22 uF + 0.1 uF pair near pin 2, with no loop limit.",
-  "approved": "core worker 261028-145641 (person delegated sign-offs: 'go on with best judgement and record the choice')"}
-]}
+{
+ "waivers": [
+  {
+   "check": "check_decoupling",
+   "kind": "decoupler_loop",
+   "net": "+3V3",
+   "refs": [
+    "C31",
+    "U7"
+   ],
+   "reason": "U7 is the ESP32-WROVER-E module, which carries its own 3V3 decoupling on its module PCB. C30 (22 uF) and C31 (100 nF) are bulk/backup at the module pin, and the loop the check measures includes the module's GND pad distance. Espressif's module reference design needs only a 10-22 uF + 0.1 uF pair near pin 2, with no loop limit.",
+   "approved": "core worker 261028-145641 (person delegated sign-offs: 'go on with best judgement and record the choice')"
+  },
+  {
+   "check": "check_kelvin",
+   "kind": "kelvin_error",
+   "net": "VBUS_IN",
+   "refs": [
+    "R1",
+    "U3"
+   ],
+   "reason": "U3 (INA186A1) reads R1 (10 mOhm) about 5.6% high: 0.441 mOhm of VBUS_IN copper before R18's tap and 0.124 mOhm of VBUS before R19's (check_kelvin, good to about +/-30% of that copper). No layout change: it reads high, so the governor and DJ direct's contract trip act early, which is the safe direction, at a cost of about 7 W of the 126 W limit at 28 V until bring-up. Copper's tempco moves the figure by under 1% over a 40 C rise, so a gain set at bring-up removes it (ISENSE_V_PER_A, docs/firmware.md). Moving the taps means a new isolated track across the input pour and new Gerbers on an order-ready board.",
+   "approved": "af884, 2026-11-03 (person delegated sign-offs: 'go on with best judgement and record the choice')"
+  }
+ ]
+}

@@ -164,7 +164,7 @@ B_IO = Region(20, 640, 1140)
 
 # ---- B1 USB-C, TVS, CH224Q ------------------------------------------------
 # rails: driven by the connector / regulators; power symbols make them global
-rails(B_PWR, ["VBUS", "PVDD", "+5V", "+3V3", "+3V3A", "GND"])
+rails(B_PWR, ["VBUS", "PVDD", "+5V", "+3V3", "+3V3A", "IR_VCC", "GND"])
 
 # HRO TYPE-C-31-M-12 (C165948), 20 V / 5 A: the USB4105-GF-A-120 had 0 free at
 # JLC on 2026-10-29 (docs/bom-stock.md). Same pad positions as the USB4105
@@ -191,10 +191,11 @@ r(B_PWR, "R1", "120k", "PD_CFG1", "GND", role="CH224Q Rset: 20 V (table 5-1)")
 r(B_PWR, "R2", "0R", "PD_SCL", "I2C_SCL", role="link: CH224Q I2C onto the codec bus (depopulate if its pull-up exceeds 3.6 V)")
 r(B_PWR, "R3", "0R", "PD_SDA", "I2C_SDA", role="link: CH224Q I2C onto the codec bus")
 r(B_PWR, "R4", "10k", "PD_PG", "+3V3", role="PG pull-up")
-# SMBJ20A: breakdown 22.2-24.5 V sits above PD 20 V +5 %, clamps nearer the
-# 30 V abs-max of TPS54302/TPA3118 than a 24 V part (review 2026-10-28)
-ic(B_PWR, "D1", "C364296", "SMBJ20A", {"1": "VBUS", "2": "GND"},  # pin 1 = cathode bar
-   role="VBUS TVS 20 V standoff")
+# SMBJ22A: standoff 22 V holds PD 20 V +5 % (21 V) below VRWM, as hwde's
+# usbc-pd-sink rule 7 asks (working >= 22 V). The SMBJ20A it replaces had VRWM
+# 20 V, under the 21 V rail. Same SMB footprint, pin 1 = K (2026-10-30)
+ic(B_PWR, "D1", "C151920", "SMBJ22A", {"1": "VBUS", "2": "GND"},  # pin 1 = cathode bar
+   role="VBUS TVS 22 V standoff")
 
 # ---- B2 PVDD switch ---------------------------------------------------------
 ic(B_PWR, "Q1", "C5125949", "AO4485",
@@ -285,12 +286,12 @@ ESP = {
     "14": "NC",           # GPIO12 (MTDI strap: internal pull-down = 3.3 V flash)
     "16": "BTN_VOLUP",    # GPIO13
     "17": "NC", "18": "NC", "19": "NC", "20": "NC", "21": "NC", "22": "NC",  # flash
-    "23": "NC",           # GPIO15
+    "23": "GPIO15",       # GPIO15
     "24": "NC",           # GPIO2
     "25": "I2S_MCLK",     # GPIO0 (boot strap, MCLK out)
     "26": "PD_PG",        # GPIO4
     "27": "NC", "28": "NC",  # GPIO16/17: PSRAM
-    "29": "NC",           # GPIO5
+    "29": "GPIO5",        # GPIO5
     "30": "PVDD_EN",      # GPIO18
     "31": "BTN_PLAY",     # GPIO19
     "32": "NC",
@@ -370,10 +371,13 @@ for side, n in (("L", 0), ("R", 1)):
     r(B_AUD, f"R{67 + 2 * n}", "10k", f"TAP_{side}", "GND", role="speaker tap divider bottom")
     c(B_AUD, f"C{81 + 2 * n}", "470pF", f"TAP_{side}", role="speaker tap carrier filter")
     c(B_AUD, f"C{82 + 2 * n}", "1uF", f"TAP_{side}", f"TAP_{side}_C", role="speaker tap coupling")
-# sub outs: 10 uF coupling, 100R build-out, 47k bleeder
+# sub outs: 10 uF coupling, 1k build-out, 47k bleeder. The build-out was 100R;
+# 1k lets the power-fail mute (below) hold the thump at the hot corner and
+# limits a strike on the RCA tip (review-4 R4-PAD-1, R3-SYSTEM-7); into a
+# 10k sub input it costs 0.8 dB
 for side, n in (("L", 0), ("R", 1)):
     c(B_AUD, f"C{47 + n}", "10uF", f"SUB_{side}_RAW", f"SUB_{side}_AC", role="sub out coupling")
-    r(B_AUD, f"R{36 + 2 * n}", "100R", f"SUB_{side}_AC", f"SUB_{side}", role="sub out build-out")
+    r(B_AUD, f"R{36 + 2 * n}", "1k", f"SUB_{side}_AC", f"SUB_{side}", role="sub out build-out")
     r(B_AUD, f"R{37 + 2 * n}", "47k", f"SUB_{side}", "GND", role="sub out bleeder")
 
 # ---- B9 TPA3118D2 (SLOS708G pin table, table 1, figure 34 values) ----------
@@ -428,12 +432,14 @@ for i, (out, spk) in enumerate((("OUT_L_P", "SPK_L_P"), ("OUT_L_N", "SPK_L_N"),
 # jack (red, R); see parts/datasheets.md
 ic(B_IO, "J2", "C7527522", "RCA line in", {"1": "LINEIN_L", "2": "GND", "3": "LINEIN_R"}, role="line in L/R (FLX4)")
 ic(B_IO, "J3", "C7527522", "RCA sub out", {"1": "SUB_L", "2": "GND", "3": "SUB_R"}, role="sub out L/R")
-# speakers: one 4-way 5.08 mm screw terminal (16 A); the enclosure's 4 mm
-# binding posts wire to it (GC4010-F has no EasyEDA footprint and is a bullet
-# connector, not a banana socket - see README "Decisions")
-ic(B_IO, "J4", "C2915641", "DB128V-5.08-4P",
-   {"1": "SPK_L_P", "2": "SPK_L_N", "3": "SPK_R_P", "4": "SPK_R_N"},
-   role="speaker terminal L+ L- R+ R-")
+# speakers: four 4 mm banana sockets (Amass 24.243, right-angle PCB mount,
+# 24 A, JLC fits them), red + and black - per channel, their bores through
+# the rear wall: the person plugs banana plugs in and wires nothing. Both of
+# each socket's pins are its contact (pin 1 at the back, pin 2 by the nose).
+for ref, lcsc, colour, net in (("J4", "C7437321", "red", "SPK_L_P"), ("J5", "C7437322", "black", "SPK_L_N"),
+                               ("J6", "C7437321", "red", "SPK_R_P"), ("J7", "C7437322", "black", "SPK_R_N")):
+    ic(B_IO, ref, lcsc, f"24.243 {colour}", {"1": net, "2": net},
+       role=f"speaker banana socket {net[4]}{'+' if net.endswith('P') else '-'}")
 for i, net in enumerate(("BTN_VOLDN", "BTN_VOLUP", "BTN_PLAY")):
     # pads 1/2 and 3/4 are the switch's two internally joined pairs
     ic(B_IO, f"SW{1 + i}", "C318884", "TS-1187A",
@@ -451,11 +457,62 @@ r(B_IO, "R64", "1k", "LED_DRV", "LED_A", role="LED current 1.3 mA")
 ic(B_IO, "D2", "C2286", "red", {"1": "LED_A", "2": "GND"}, expect={"1": "A", "2": "K"},
    role="status LED")
 
+# ---- sub-out power-fail mute (review-3 R3-AUDIO-2) ---------------------------
+# The ES8388's LOUT2/ROUT2 sit at VMID 1.65 V behind C47/C48; when the USB-C is
+# pulled, +3V3A and VMID collapse in ~2 ms and the -1.65 V step reaches a
+# mains-powered sub as a full-scale thump (docs/review-3/sims/audio/
+# tb_lite_sub_thump_*). Q12 senses +5V (120k/22k: off below ~4.1 V; the 5 V-only
+# port's 4.6 V and the buck's 5.0 V keep it on); once it lets go, R82 lifts
+# SUB_MUTE to the reservoir C90 (charged through Q11 as a diode, which nothing
+# else draws on) and the back-to-back 2N7002s (Q13/Q15 to Q14) short SUB_L/SUB_R to GND,
+# for seconds, while C47/C48 discharge through R36/R38. Off, SUB_MUTE sits at
+# Q12's saturation (<0.1 V); the body diodes of Q13/Q15 and Q14 face each other, so the
+# signal's swing (+-1.4 V) passes no body diode.
+ic(B_IO, "Q11", "C20526", "MMBT3904", {"1": "+5V", "3": "+5V", "2": "MUTE_RES"},
+   expect={"1": "B", "2": "E", "3": "C"}, role="diode (B-C to E): +5V into the mute reservoir")
+c(B_IO, "C90", "22uF/25V", "MUTE_RES", role="mute reservoir: holds SUB_MUTE up for seconds")
+r(B_IO, "R80", "120k", "+5V", "MUTE_DET", role="+5V sense divider top (off below ~4.1 V)")
+r(B_IO, "R81", "22k", "MUTE_DET", "GND", role="+5V sense divider bottom")
+ic(B_IO, "Q12", "C20526", "MMBT3904", {"1": "MUTE_DET", "2": "GND", "3": "SUB_MUTE"},
+   expect={"1": "B", "2": "E", "3": "C"}, role="+5V good: holds SUB_MUTE low")
+r(B_IO, "R82", "47k", "MUTE_RES", "SUB_MUTE", role="mute pull-up from the reservoir")
+for side, q in (("L", "Q13"), ("R", "Q15")):
+    ic(B_IO, q, "C8545", "2N7002", {"3": f"SUB_{side}", "1": "SUB_MUTE", "2": "MUTE_S"},
+       expect={"1": "G", "2": "S", "3": "D"}, role=f"sub {side} mute, signal side")
+# one ground-side FET serves both: with all three off, no body diode faces
+# into MUTE_S from either SUB line or GND, so the channels stay apart
+ic(B_IO, "Q14", "C8545", "2N7002", {"3": "GND", "1": "SUB_MUTE", "2": "MUTE_S"},
+   expect={"1": "G", "2": "S", "3": "D"}, role="sub mute, ground side (both channels)")
+
+# ---- ESD clamps at the connectors a person touches (issue #133) --------------
+# hwde check_esd (TI SLVA680: clamp first, at the connector, short to ground).
+# Lite stays top-side only (cheap JLC assembly), so each line gets its own
+# 0402-sized bidirectional clamp on F.Cu where the top side has room:
+# PESDNC2FD5VB (C110694, DFN1006-2L): 5 V working, 15 pF, IEC 61000-4-2.
+# RCA lines are ground-centred, at most 2 Vrms (2.8 V peak): inside 5 V;
+# 1 uA leakage max beside 15k (line in) and the sub-out's 1k.
+# USB full speed (CH340B) takes 15 pF. CC has no top-side room ahead of the
+# CH224A (2 mm from J1) and is exempt in constraints.json; docs/boards/lite-esd.md.
+for ref, net in (("D3", "LINEIN_L"), ("D4", "LINEIN_R"), ("D5", "SUB_L"),
+                 ("D6", "SUB_R"), ("D7", "USB_DP"), ("D8", "USB_DM")):
+    ic(B_IO, ref, "C110694", "PESDNC2FD5VB", {"1": net, "2": "GND"},
+       role=f"{net} ESD clamp")
+
+# ---- Spare-use header (docs/boards/lite-header.md) ----------------------------
+# Eight SMD pins JLC fits, so the board stays useful as an ESP32 dev board if
+# the audio side doesn't work: 3.3 V, GND, the I2C bus, UART0 and the two spare
+# GPIOs that route cleanly. GPIO5 and GPIO15 are boot straps and UART0 shares
+# the CH340B, so what's wired here must respect both (silk and doc say how).
+ic(B_MCU, "J8", "C2883765", "ESP32 spare header",
+   {"1": "U0TXD", "2": "GND", "3": "U0RXD", "4": "+3V3",
+    "5": "GPIO5", "6": "I2C_SDA", "7": "GPIO15", "8": "I2C_SCL"},
+   role="spare-use ESP32 header (UART0, GPIO, I2C, 3.3 V)")
+
 if __name__ == "__main__":
     out = sheet.save(WS / "kicad")
     # decoupling.json carries FINAL netlist names: rails are global power
     # nets (bare), everything else on the root sheet is "/NAME".
-    POWER = {"VBUS", "PVDD", "+5V", "+3V3", "+3V3A", "GND"}
+    POWER = {"VBUS", "PVDD", "+5V", "+3V3", "+3V3A", "IR_VCC", "GND"}
     for d in DECOUP:
         for k in ("rail", "gnd"):
             if k in d and d[k] not in POWER:

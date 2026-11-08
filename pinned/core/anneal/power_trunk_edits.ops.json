@@ -1,0 +1,441 @@
+{
+ "version": 1,
+ "ops": [
+  {
+   "op": "remove",
+   "uuid": "1db623d1-9da4-4bfb-9a33-deddd41cb972"
+  },
+  {
+   "op": "remove",
+   "uuid": "bcebe21f-294f-4a42-aeca-98d8319028d7"
+  },
+  {
+   "op": "remove",
+   "uuid": "290a62ee-e1e7-44e7-b6b9-75f1e0913f1c"
+  },
+  {
+   "op": "remove",
+   "uuid": "befa47c6-6f41-43bb-949f-80a4faf9ed93"
+  },
+  {
+   "op": "remove",
+   "uuid": "095b8c8b-7c75-40bc-b0f9-958b9253f107"
+  },
+  {
+   "op": "remove",
+   "uuid": "ac9eba4d-2182-4f91-a3c2-6e0e9c4fe1fa"
+  },
+  {
+   "op": "remove",
+   "uuid": "97296ff5-30fa-4247-bc18-5c2566dd6a90"
+  },
+  {
+   "op": "remove",
+   "uuid": "21433b07-0320-4935-8a13-134b6cd90fd7"
+  },
+  {
+   "op": "remove",
+   "uuid": "2f65c1ed-0b3d-4bb6-87b8-69568005d07e"
+  },
+  {
+   "op": "remove",
+   "uuid": "7cabf0b5-4264-485f-b86d-25d553659b35"
+  },
+  {
+   "op": "remove",
+   "uuid": "cfe66bd7-b776-4661-a23a-cb208151c50d"
+  },
+  {
+   "op": "remove",
+   "uuid": "567b8335-ce13-4375-abf9-61a6141c3f47"
+  },
+  {
+   "op": "remove",
+   "uuid": "e2e3a31a-7d5c-4210-97ed-f18fd4e6d2cc"
+  },
+  {
+   "op": "remove",
+   "uuid": "f859b40a-e7b1-40ae-b934-a415c9e2b906"
+  },
+  {
+   "op": "remove",
+   "uuid": "eb4f93e0-b822-4303-b5c7-8ea8a537c4d3"
+  },
+  {
+   "op": "remove",
+   "uuid": "6b88a7dc-191f-4c51-b52b-b43a65c5c463"
+  },
+  {
+   "op": "remove",
+   "uuid": "54ebe348-24f1-4d91-a2ae-6cc26505edcf"
+  },
+  {
+   "op": "remove",
+   "uuid": "461d1899-94ac-4873-8946-1a0206908027"
+  },
+  {
+   "op": "remove",
+   "uuid": "f28a1979-65ab-4478-a1d4-c210436830e7"
+  },
+  {
+   "op": "remove",
+   "uuid": "e4e89ae0-9a5d-4e31-8eb9-cfbb93f52041"
+  },
+  {
+   "op": "remove",
+   "uuid": "e5dc2aa1-806c-4e9a-8736-f7f5858a7e86"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    59.6891,
+    167.6374
+   ],
+   "size": 0.7,
+   "drill": 0.3,
+   "net": "VBUS"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    59.8792,
+    167.8275
+   ],
+   "end": [
+    59.6891,
+    167.6374
+   ],
+   "width": 0.25,
+   "layer": "F.Cu",
+   "net": "VBUS"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    59.6891,
+    168.0176
+   ],
+   "end": [
+    59.6891,
+    167.6374
+   ],
+   "width": 0.25,
+   "layer": "B.Cu",
+   "net": "VBUS"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    66.95,
+    174.0
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    40.0,
+    187.501
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "VBUS_IN"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    40.588,
+    186.913
+   ],
+   "end": [
+    40.0,
+    187.501
+   ],
+   "width": 0.3,
+   "layer": "F.Cu",
+   "net": "VBUS_IN"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    39.34,
+    180.83
+   ],
+   "end": [
+    38.6,
+    180.83
+   ],
+   "width": 0.3,
+   "layer": "B.Cu",
+   "net": "VBUS_IN"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    38.6,
+    180.83
+   ],
+   "end": [
+    37.85,
+    181.58
+   ],
+   "width": 0.3,
+   "layer": "B.Cu",
+   "net": "VBUS_IN"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    37.85,
+    181.58
+   ],
+   "end": [
+    37.85,
+    186.0
+   ],
+   "width": 0.3,
+   "layer": "B.Cu",
+   "net": "VBUS_IN"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    37.85,
+    186.0
+   ],
+   "end": [
+    39.351,
+    187.501
+   ],
+   "width": 0.3,
+   "layer": "B.Cu",
+   "net": "VBUS_IN"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    39.351,
+    187.501
+   ],
+   "end": [
+    40.0,
+    187.501
+   ],
+   "width": 0.3,
+   "layer": "B.Cu",
+   "net": "VBUS_IN"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    66.95,
+    174.0
+   ],
+   "end": [
+    67.7,
+    174.0
+   ],
+   "width": 0.4,
+   "layer": "F.Cu",
+   "net": "GND"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    43.437,
+    151.597
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "PVDD"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    43.437,
+    152.397
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "PVDD"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    43.437,
+    153.197
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "PVDD"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    48.387,
+    151.597
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "PVDD"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    48.387,
+    152.397
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "PVDD"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    48.387,
+    153.197
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "PVDD"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    76.337,
+    151.597
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "PVDD"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    76.337,
+    152.397
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "PVDD"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    76.337,
+    153.197
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "PVDD"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    81.287,
+    151.597
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "PVDD"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    81.287,
+    152.397
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "PVDD"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    81.287,
+    153.197
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "PVDD"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    54.494,
+    178.253
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "+5V"
+  },
+  {
+   "op": "add_via",
+   "at": [
+    52.738,
+    212.606
+   ],
+   "size": 0.6,
+   "drill": 0.3,
+   "net": "+5V"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    54.494,
+    178.253
+   ],
+   "end": [
+    53.893,
+    177.652
+   ],
+   "width": 0.355,
+   "layer": "F.Cu",
+   "net": "+5V"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    52.738,
+    212.606
+   ],
+   "end": [
+    52.137,
+    213.207
+   ],
+   "width": 0.355,
+   "layer": "F.Cu",
+   "net": "+5V"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    54.494,
+    178.253
+   ],
+   "end": [
+    53.893,
+    177.652
+   ],
+   "width": 0.355,
+   "layer": "B.Cu",
+   "net": "+5V"
+  },
+  {
+   "op": "add_track",
+   "start": [
+    52.738,
+    212.606
+   ],
+   "end": [
+    52.137,
+    213.207
+   ],
+   "width": 0.355,
+   "layer": "B.Cu",
+   "net": "+5V"
+  }
+ ]
+}

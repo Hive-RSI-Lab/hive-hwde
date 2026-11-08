@@ -1,0 +1,116 @@
+{
+ "script": "parts_search",
+ "status": "pass",
+ "source": "live",
+ "query": "C2883765",
+ "total": 1,
+ "count": 1,
+ "results": [
+  {
+   "lcsc": "C2883765",
+   "mpn": "X6511WVS-08H-C60D48R2",
+   "brand": "XKB Connection",
+   "description": "-40\u2103~+105\u2103 1 1x8P 2.54mm 2.54mm 2.5mm 250V 3A 8P Black Brass Gold Pin Header SMD,P=2.54mm(\u4ea4\u9519\u811a) Pin Headers ROHS",
+   "package": "SMD,P=2.54mm(Staggered pins)",
+   "category": "Pin Headers",
+   "type": "Extended",
+   "basic": false,
+   "stock": 2697,
+   "price": 0.2575,
+   "price_breaks": [
+    {
+     "qty": 1,
+     "price": 0.2575
+    },
+    {
+     "qty": 50,
+     "price": 0.2071
+    },
+    {
+     "qty": 150,
+     "price": 0.1853
+    },
+    {
+     "qty": 500,
+     "price": 0.1584
+    },
+    {
+     "qty": 2500,
+     "price": 0.1404
+    },
+    {
+     "qty": 5000,
+     "price": 0.1332
+    }
+   ],
+   "min_qty": 1,
+   "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2110100430_XKB-Connection-X6511WVS-08H-C60D48R2_C2883765.pdf",
+   "url": "https://www.lcsc.com/product-detail/pin-headers_xkb-connection-x6511wvs-08h-c60d48r2_C2883765.html",
+   "attributes": [
+    {
+     "name": "Operating Temperature",
+     "value": "-40\u2103~+105\u2103"
+    },
+    {
+     "name": "Number of Rows",
+     "value": "1"
+    },
+    {
+     "name": "Voltage Rating (Max)",
+     "value": "250V"
+    },
+    {
+     "name": "Insulation Height",
+     "value": "2.5mm"
+    },
+    {
+     "name": "Color",
+     "value": "Black"
+    },
+    {
+     "name": "Current Rating",
+     "value": "3A"
+    },
+    {
+     "name": "Row Spacing",
+     "value": "2.54mm"
+    },
+    {
+     "name": "Mounting Type",
+     "value": "Surface Mount,Vertical"
+    },
+    {
+     "name": "Contact Plating",
+     "value": "Gold"
+    },
+    {
+     "name": "Number of Pins",
+     "value": "8P"
+    },
+    {
+     "name": "Pitch",
+     "value": "2.54mm"
+    },
+    {
+     "name": "Contact Material",
+     "value": "Brass"
+    },
+    {
+     "name": "Pin Structure",
+     "value": "1x8P"
+    },
+    {
+     "name": "Length of Mating Pin",
+     "value": "6mm"
+    },
+    {
+     "name": "Circluar Pins/Square Pins",
+     "value": "Square pin"
+    }
+   ],
+   "rank": 0
+  }
+ ],
+ "filters": {},
+ "placeholders_filtered": 0
+}

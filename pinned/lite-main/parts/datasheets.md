@@ -11,5 +11,5 @@ are the vendors' or mirrors.
 | ES8388 | Everest ES8388 rev 5.0, https://www.armdesigner.com/download/ES8388_datasheet.pdf | 28-pin QFN pin table; decoupling values from Espressif's ESP32-LyraT v4 schematic, https://dl.espressif.com/dl/schematics/esp32-lyrat-v4-schematic.pdf |
 | TPS54302 | TI SLVSDG6C, https://www.ti.com/lit/ds/symlink/tps54302.pdf | pin table (GND 1, SW 2, VIN 3, FB 4, EN 5 float = on, BOOT 6), table 7-2 (5 V: 10 uH, 44 uF, 100k/13.3k, 75 pF) |
 | XDJK-0271-1650 | footprint geometry cross-checked against the open M2-IO-Emulator-Board footprint notes (Lian Xin drawing A-AV2-7A1) | stacked dual RCA: pad 2 = sleeve, pad 1 = top jack (white, L), pad 3 = bottom jack (red, R); 2 locating pegs the EasyEDA footprint omits |
-| CH340C, SY8089A1AAC, LP5907, AO4485, MMBT3904, IRM-H638T, TS-1187A, SMBJ24A, LED, RVT 220 uF | the EasyEDA symbol/footprint pin names (lib/aiee.kicad_sym), checked against the well-known pinouts | |
+| CH340C, SY8089A1AAC, LP5907, AO4485, MMBT3904, IRM-H638T, TS-1187A, SMBJ22A (BORN SMBJ series table: VRWM 22 V, VBR 24.4-26.9 V, Vc 35.5 V), LED, RVT 220 uF | the EasyEDA symbol/footprint pin names (lib/aiee.kicad_sym), checked against the well-known pinouts | |
 | ESP32-WROVER-E | EasyEDA symbol pin names (IO numbers); strapping and PSRAM pins per Espressif's WROVER-E datasheet | |

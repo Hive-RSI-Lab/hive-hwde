@@ -24,6 +24,14 @@ C("C30", "22uF", "+3V3", pkg="0805", ic="U7", pin="2")
 C("C31", "100nF", "+3V3", ic="U7", pin="2")
 R("R30", "10k", "+3V3", "ESP_EN")
 C("C32", "1uF", "ESP_EN")
+# review-3 R3-DIGITAL-1: a brownout reset re-reads GPIO0 without moving EN, so
+# the expander (reset = ESP_EN) keeps the 50 MHz PHY clock on the strap pin and
+# the ESP32 can land in download mode. The supervisor pulls EN low at 2.93 V,
+# above the ESP32's brownout trip, so the expander and the clock reset too;
+# open drain, wired with the auto-program transistor and C32
+P("U21", A + "TLV803SDBZR", "TLV803S", A + "SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+  {"n:GND": "GND", "n:~{RESET}": "ESP_EN", "n:VDD": "+3V3"}, lcsc="C132016", mpn="TLV803SDBZR",
+  role="3V3 supervisor on EN, 2.93 V, open drain")
 R("R31", "10k", "+3V3", "ETH_CLK", role="GPIO0 boot strap pull-up")
 # CH340B serial + auto-reset (CH340C not buyable at JLC, 2026-10-29; the B
 # differs only on pins 7/8/15, all open here; same SOP-16 land)

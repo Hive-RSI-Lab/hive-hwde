@@ -1,0 +1,182 @@
+{
+ "script": "board_update",
+ "status": "pass",
+ "board": "/work/boards/core/kicad/core.kicad_pcb",
+ "netlist": "kicad/core.net",
+ "dry_run": false,
+ "plan": {
+  "swap_same_fp": [],
+  "swap_new_fp": [
+   {
+    "ref": "C64",
+    "fp_old": "aiee:C0603",
+    "fp_new": "aiee:C1206",
+    "value": "100uF",
+    "fields": {
+     "LCSC": "C15008"
+    },
+    "pads": {
+     "1": "/VREF",
+     "2": "GND"
+    },
+    "dnp": false,
+    "pos": [
+     121.146,
+     167.299
+    ],
+    "deg": 90.0,
+    "side": "front",
+    "nets_old": [
+     "/VREF",
+     "GND"
+    ],
+    "same_spot": false,
+    "keep_copper": false
+   }
+  ],
+  "add": [
+   {
+    "ref": "U21",
+    "fp": "aiee:SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+    "value": "TLV803S",
+    "fields": {
+     "LCSC": "C132016"
+    },
+    "pads": {
+     "3": "+3V3",
+     "2": "/mcu/ESP_EN",
+     "1": "GND"
+    },
+    "dnp": false
+   }
+  ],
+  "del": [],
+  "rewire": [],
+  "unsupported": [],
+  "notes": [
+   "board_only footprints ignored: H1, H2, H3, H4",
+   "C64: footprint swap rips its routing (del + add): placed somewhere new"
+  ]
+ },
+ "warnings": [
+  "C64: declared position (122.75, 170.6) overlaps an existing courtyard or leaves the outline - applied as declared",
+  "DRC gained 1 non-unconnected error(s) - run the fix loop, then the drc_routed gate",
+  "3 new unconnected item(s) (the added/rewired parts' ratsnest) - route via the fix loop"
+ ],
+ "orphans": {
+  "affected_nets": [
+   "/VREF",
+   "GND"
+  ],
+  "tracks": 0,
+  "vias": 0,
+  "netconn_unanchored_kept": [
+   {
+    "net": "GND",
+    "kind": "track",
+    "layer": "In2.Cu",
+    "uuid": "13070bc1-a197-47a9-9e26-7fa3db2b6f9d"
+   },
+   {
+    "net": "GND",
+    "kind": "track",
+    "layer": "In2.Cu",
+    "uuid": "749be8cb-1ac4-42d1-8086-1e3a80c77c54"
+   },
+   {
+    "net": "GND",
+    "kind": "track",
+    "layer": "In2.Cu",
+    "uuid": "a749c6a0-bfe0-438a-bee1-0097936dc0a1"
+   },
+   {
+    "net": "GND",
+    "kind": "track",
+    "layer": "In2.Cu",
+    "uuid": "c0297c4d-ef15-4b0e-9ec3-3651dde36392"
+   }
+  ]
+ },
+ "applied": {
+  "worker": {
+   "fields_updated": [],
+   "added": [
+    {
+     "ref": "U21",
+     "x": 137.0,
+     "y": 183.5,
+     "deg": 180.0,
+     "side": "front",
+     "pads_netted": 3
+    },
+    {
+     "ref": "C64",
+     "x": 122.75,
+     "y": 170.6,
+     "deg": 90.0,
+     "side": "front",
+     "pads_netted": 2
+    }
+   ],
+   "pads_renetted": [],
+   "removed_refs": [
+    "C64"
+   ],
+   "removed_items": 0,
+   "removed_texts": [],
+   "absent_uuids": []
+  },
+  "refilled": true,
+  "ripped": {
+   "tracks": 0,
+   "vias": 0,
+   "rounds": 1
+  },
+  "drc": {
+   "before": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "after": {
+    "total": 16,
+    "by_severity": {
+     "error": 4,
+     "warning": 12
+    },
+    "by_source": {
+     "drc": 13,
+     "unconnected": 3
+    }
+   },
+   "dangling_before": 0,
+   "dangling_after": 0,
+   "unconnected_before": 0,
+   "unconnected_after": 3,
+   "new_errors": 1
+  }
+ },
+ "placements": {
+  "U21": {
+   "x": 137.0,
+   "y": 183.5,
+   "deg": 180.0,
+   "side": "front"
+  },
+  "C64": {
+   "x": 122.75,
+   "y": 170.6,
+   "deg": 90.0,
+   "side": "front"
+  }
+ },
+ "gates_to_rerun": [
+  "dfm",
+  "drc",
+  "drc_routed",
+  "erc",
+  "place",
+  "sim",
+  "verify"
+ ]
+}

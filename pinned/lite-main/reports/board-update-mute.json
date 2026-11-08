@@ -1,0 +1,373 @@
+{
+ "script": "board_update",
+ "status": "pass",
+ "board": "/work/boards/lite-main/kicad/lite-main.kicad_pcb",
+ "netlist": "kicad/lite-main.net",
+ "dry_run": false,
+ "plan": {
+  "swap_same_fp": [
+   {
+    "ref": "R36",
+    "fp": "Resistor_SMD:R_0603_1608Metric",
+    "value": [
+     "100R",
+     "1k"
+    ],
+    "fields": {
+     "LCSC": [
+      "C22775",
+      "C21190"
+     ]
+    },
+    "board_extra_fields": [
+     "KiLib_Generator"
+    ]
+   },
+   {
+    "ref": "R38",
+    "fp": "Resistor_SMD:R_0603_1608Metric",
+    "value": [
+     "100R",
+     "1k"
+    ],
+    "fields": {
+     "LCSC": [
+      "C22775",
+      "C21190"
+     ]
+    },
+    "board_extra_fields": [
+     "KiLib_Generator"
+    ]
+   }
+  ],
+  "swap_new_fp": [],
+  "add": [
+   {
+    "ref": "C90",
+    "fp": "Capacitor_SMD:C_0805_2012Metric",
+    "value": "22uF",
+    "fields": {
+     "LCSC": "C45783"
+    },
+    "pads": {
+     "1": "/MUTE_RES",
+     "2": "GND"
+    },
+    "dnp": false
+   },
+   {
+    "ref": "Q11",
+    "fp": "aiee:SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+    "value": "MMBT3904",
+    "fields": {
+     "LCSC": "C20526"
+    },
+    "pads": {
+     "1": "+5V",
+     "3": "+5V",
+     "2": "/MUTE_RES"
+    },
+    "dnp": false
+   },
+   {
+    "ref": "Q12",
+    "fp": "aiee:SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+    "value": "MMBT3904",
+    "fields": {
+     "LCSC": "C20526"
+    },
+    "pads": {
+     "1": "/MUTE_DET",
+     "3": "/SUB_MUTE",
+     "2": "GND"
+    },
+    "dnp": false
+   },
+   {
+    "ref": "Q13",
+    "fp": "aiee:SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+    "value": "2N7002",
+    "fields": {
+     "LCSC": "C8545"
+    },
+    "pads": {
+     "2": "/MUTE_S",
+     "3": "/SUB_L",
+     "1": "/SUB_MUTE"
+    },
+    "dnp": false
+   },
+   {
+    "ref": "Q14",
+    "fp": "aiee:SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+    "value": "2N7002",
+    "fields": {
+     "LCSC": "C8545"
+    },
+    "pads": {
+     "2": "/MUTE_S",
+     "1": "/SUB_MUTE",
+     "3": "GND"
+    },
+    "dnp": false
+   },
+   {
+    "ref": "Q15",
+    "fp": "aiee:SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR",
+    "value": "2N7002",
+    "fields": {
+     "LCSC": "C8545"
+    },
+    "pads": {
+     "2": "/MUTE_S",
+     "1": "/SUB_MUTE",
+     "3": "/SUB_R"
+    },
+    "dnp": false
+   },
+   {
+    "ref": "R80",
+    "fp": "Resistor_SMD:R_0603_1608Metric",
+    "value": "120k",
+    "fields": {
+     "LCSC": "C25808"
+    },
+    "pads": {
+     "1": "+5V",
+     "2": "/MUTE_DET"
+    },
+    "dnp": false
+   },
+   {
+    "ref": "R81",
+    "fp": "Resistor_SMD:R_0603_1608Metric",
+    "value": "22k",
+    "fields": {
+     "LCSC": "C31850"
+    },
+    "pads": {
+     "1": "/MUTE_DET",
+     "2": "GND"
+    },
+    "dnp": false
+   },
+   {
+    "ref": "R82",
+    "fp": "Resistor_SMD:R_0603_1608Metric",
+    "value": "47k",
+    "fields": {
+     "LCSC": "C25819"
+    },
+    "pads": {
+     "1": "/MUTE_RES",
+     "2": "/SUB_MUTE"
+    },
+    "dnp": false
+   }
+  ],
+  "del": [],
+  "rewire": [],
+  "unsupported": [],
+  "notes": [
+   "board_only footprints ignored: H1, H2, H3, H4"
+  ]
+ },
+ "warnings": [
+  "Q11: declared position (68.9, 92.1) overlaps an existing courtyard or leaves the outline - applied as declared",
+  "Q12: declared position (65.35, 92.1) overlaps an existing courtyard or leaves the outline - applied as declared",
+  "Q13: declared position (63.9, 89.0) overlaps an existing courtyard or leaves the outline - applied as declared",
+  "Q14: declared position (61.8, 92.1) overlaps an existing courtyard or leaves the outline - applied as declared",
+  "Q15: declared position (67.45, 89.0) overlaps an existing courtyard or leaves the outline - applied as declared",
+  "R80: declared position (73.5, 91.25) overlaps an existing courtyard or leaves the outline - applied as declared",
+  "R82: declared position (59.4, 87.9) overlaps an existing courtyard or leaves the outline - applied as declared",
+  "14 new unconnected item(s) (the added/rewired parts' ratsnest) - route via the fix loop"
+ ],
+ "orphans": {
+  "affected_nets": [],
+  "tracks": 0,
+  "vias": 0,
+  "netconn_unanchored_kept": []
+ },
+ "applied": {
+  "worker": {
+   "fields_updated": [
+    "R36",
+    "R38"
+   ],
+   "added": [
+    {
+     "ref": "C90",
+     "x": 72.6,
+     "y": 93.0,
+     "deg": 0.0,
+     "side": "front",
+     "pads_netted": 2
+    },
+    {
+     "ref": "Q11",
+     "x": 68.9,
+     "y": 92.1,
+     "deg": 0.0,
+     "side": "front",
+     "pads_netted": 3
+    },
+    {
+     "ref": "Q12",
+     "x": 65.35,
+     "y": 92.1,
+     "deg": 0.0,
+     "side": "front",
+     "pads_netted": 3
+    },
+    {
+     "ref": "Q13",
+     "x": 63.9,
+     "y": 89.0,
+     "deg": 0.0,
+     "side": "front",
+     "pads_netted": 3
+    },
+    {
+     "ref": "Q14",
+     "x": 61.8,
+     "y": 92.1,
+     "deg": 0.0,
+     "side": "front",
+     "pads_netted": 3
+    },
+    {
+     "ref": "Q15",
+     "x": 67.45,
+     "y": 89.0,
+     "deg": 0.0,
+     "side": "front",
+     "pads_netted": 3
+    },
+    {
+     "ref": "R80",
+     "x": 73.5,
+     "y": 91.25,
+     "deg": 180.0,
+     "side": "front",
+     "pads_netted": 2
+    },
+    {
+     "ref": "R81",
+     "x": 56.4,
+     "y": 87.9,
+     "deg": 0.0,
+     "side": "front",
+     "pads_netted": 2
+    },
+    {
+     "ref": "R82",
+     "x": 59.4,
+     "y": 87.9,
+     "deg": 0.0,
+     "side": "front",
+     "pads_netted": 2
+    }
+   ],
+   "pads_renetted": [],
+   "removed_refs": [],
+   "removed_items": 0,
+   "removed_texts": [],
+   "absent_uuids": []
+  },
+  "refilled": true,
+  "ripped": {
+   "tracks": 0,
+   "vias": 0,
+   "rounds": 1
+  },
+  "drc": {
+   "before": {
+    "total": 0,
+    "by_severity": {},
+    "by_source": {}
+   },
+   "after": {
+    "total": 64,
+    "by_severity": {
+     "warning": 50,
+     "error": 14
+    },
+    "by_source": {
+     "drc": 50,
+     "unconnected": 14
+    }
+   },
+   "dangling_before": 0,
+   "dangling_after": 0,
+   "unconnected_before": 0,
+   "unconnected_after": 14,
+   "new_errors": 0
+  }
+ },
+ "placements": {
+  "C90": {
+   "x": 72.6,
+   "y": 93.0,
+   "deg": 0.0,
+   "side": "front"
+  },
+  "Q11": {
+   "x": 68.9,
+   "y": 92.1,
+   "deg": 0.0,
+   "side": "front"
+  },
+  "Q12": {
+   "x": 65.35,
+   "y": 92.1,
+   "deg": 0.0,
+   "side": "front"
+  },
+  "Q13": {
+   "x": 63.9,
+   "y": 89.0,
+   "deg": 0.0,
+   "side": "front"
+  },
+  "Q14": {
+   "x": 61.8,
+   "y": 92.1,
+   "deg": 0.0,
+   "side": "front"
+  },
+  "Q15": {
+   "x": 67.45,
+   "y": 89.0,
+   "deg": 0.0,
+   "side": "front"
+  },
+  "R80": {
+   "x": 73.5,
+   "y": 91.25,
+   "deg": 180.0,
+   "side": "front"
+  },
+  "R81": {
+   "x": 56.4,
+   "y": 87.9,
+   "deg": 0.0,
+   "side": "front"
+  },
+  "R82": {
+   "x": 59.4,
+   "y": 87.9,
+   "deg": 0.0,
+   "side": "front"
+  }
+ },
+ "gates_to_rerun": [
+  "dfm",
+  "drc",
+  "drc_routed",
+  "erc",
+  "place",
+  "sim",
+  "verify"
+ ]
+}

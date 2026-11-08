@@ -134,3 +134,12 @@
 	(constraint track_width (min 0.5000mm))
 	(condition "A.NetName == '/rails/BUCK3_LX' && A.Type == 'track'")
 )
+
+# review-6 R6-m2 (repeat of R4-BAN-3 on Lite): the GND pour stood ~0.1 mm off the
+# banana sockets' solder rings, a hand/wave-solder bridge from shorting a
+# speaker leg to GND. 0.3 mm round each socket pad. rebuild_board.sh appends
+# this after rules_gen.
+(rule "banana_ring_to_gnd"
+	(constraint clearance (min 0.3mm))
+	(condition "(A.memberOfFootprint('J20') || A.memberOfFootprint('J21') || A.memberOfFootprint('J22') || A.memberOfFootprint('J23') || A.memberOfFootprint('J24') || A.memberOfFootprint('J25') || A.memberOfFootprint('J26') || A.memberOfFootprint('J27')) && A.Type == 'Pad' && B.Type == 'Zone' && B.NetName == 'GND'")
+)

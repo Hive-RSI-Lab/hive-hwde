@@ -1,0 +1,912 @@
+{
+ "script": "board_edit",
+ "status": "pass",
+ "board": "kicad/lite-main.kicad_pcb",
+ "mode": "fixed",
+ "applied": true,
+ "outline": {
+  "before": {
+   "bbox": [
+    22.865,
+    60.323,
+    122.865,
+    150.323
+   ],
+   "w": 100.0,
+   "h": 90.0,
+   "corner_radius": 2.0,
+   "faces": 1,
+   "arcs": 4,
+   "items": {
+    "gr_line": 4,
+    "gr_arc": 4
+   },
+   "area_mm2": 8996.546,
+   "ideal": true,
+   "deviation_mm": 0.0024
+  },
+  "after": {
+   "bbox": [
+    22.865,
+    60.323,
+    140.865,
+    150.323
+   ],
+   "w": 118.0,
+   "h": 90.0,
+   "corner_radius": 2.0,
+   "cutouts": [],
+   "area_mm2": 10616.561,
+   "anchor": "topleft"
+  }
+ },
+ "fab_floors": {
+  "profile": "2layer_1oz",
+  "layers": 2,
+  "copper_oz": 1.0,
+  "copper_oz_source": "stackup",
+  "min_copper_to_edge_mm": 0.3,
+  "min_hole_to_edge_mm": 0.5
+ },
+ "blocking": [],
+ "preexisting": [
+  {
+   "kind": "footprint_outside",
+   "key": "H1",
+   "msg": "H1 extends 0.55 mm2 outside the outline",
+   "metric": 0.5527,
+   "worse_when": "higher",
+   "refs": [
+    "H1"
+   ],
+   "pos": [
+    26.415,
+    63.8731
+   ]
+  },
+  {
+   "kind": "footprint_outside",
+   "key": "H2",
+   "msg": "H2 extends 0.55 mm2 outside the outline",
+   "metric": 0.5527,
+   "worse_when": "higher",
+   "refs": [
+    "H2"
+   ],
+   "pos": [
+    119.315,
+    63.8731
+   ]
+  },
+  {
+   "kind": "footprint_outside",
+   "key": "H3",
+   "msg": "H3 extends 0.55 mm2 outside the outline",
+   "metric": 0.553,
+   "worse_when": "higher",
+   "refs": [
+    "H3"
+   ],
+   "pos": [
+    119.315,
+    146.7731
+   ]
+  },
+  {
+   "kind": "footprint_outside",
+   "key": "H4",
+   "msg": "H4 extends 0.55 mm2 outside the outline",
+   "metric": 0.553,
+   "worse_when": "higher",
+   "refs": [
+    "H4"
+   ],
+   "pos": [
+    26.415,
+    146.7731
+   ]
+  },
+  {
+   "kind": "footprint_outside",
+   "key": "J1",
+   "msg": "J1 extends 0.31 mm2 outside the outline",
+   "metric": 0.312,
+   "worse_when": "higher",
+   "refs": [
+    "J1"
+   ],
+   "pos": [
+    81.365,
+    64.543
+   ]
+  },
+  {
+   "kind": "footprint_outside",
+   "key": "J4",
+   "msg": "J4 extends 16.61 mm2 outside the outline",
+   "metric": 16.605,
+   "worse_when": "higher",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    99.4834,
+    70.1885
+   ]
+  },
+  {
+   "kind": "footprint_outside",
+   "key": "J5",
+   "msg": "J5 extends 16.61 mm2 outside the outline",
+   "metric": 16.605,
+   "worse_when": "higher",
+   "refs": [
+    "J5"
+   ],
+   "pos": [
+    110.4834,
+    70.1885
+   ]
+  },
+  {
+   "kind": "footprint_outside",
+   "key": "J6",
+   "msg": "J6 extends 101.80 mm2 outside the outline",
+   "metric": 101.7972,
+   "worse_when": "higher",
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    121.4834,
+    70.1885
+   ]
+  },
+  {
+   "kind": "footprint_outside",
+   "key": "J7",
+   "msg": "J7 extends 245.05 mm2 outside the outline",
+   "metric": 245.05,
+   "worse_when": "higher",
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    132.4834,
+    70.1885
+   ]
+  },
+  {
+   "kind": "copper_to_edge",
+   "key": "pad:J7.1",
+   "msg": "pad J7.1 (/SPK_R_N) is 0.000 mm from the board edge, floor 0.3 mm",
+   "metric": 0.0,
+   "worse_when": "lower",
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    132.765,
+    78.173
+   ]
+  },
+  {
+   "kind": "hole_to_edge",
+   "key": "paddrill:J7.1",
+   "msg": "pad J7.1 drill is 0.000 mm from the board edge, floor 0.5 mm",
+   "metric": 0.0,
+   "worse_when": "lower",
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    132.765,
+    78.173
+   ]
+  },
+  {
+   "kind": "copper_to_edge",
+   "key": "pad:J7.2",
+   "msg": "pad J7.2 (/SPK_R_N) is 0.000 mm from the board edge, floor 0.3 mm",
+   "metric": 0.0,
+   "worse_when": "lower",
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    132.765,
+    62.473
+   ]
+  },
+  {
+   "kind": "hole_to_edge",
+   "key": "paddrill:J7.2",
+   "msg": "pad J7.2 drill is 0.000 mm from the board edge, floor 0.5 mm",
+   "metric": 0.0,
+   "worse_when": "lower",
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    132.765,
+    62.473
+   ]
+  },
+  {
+   "kind": "copper_to_edge",
+   "key": "pad:J6.1",
+   "msg": "pad J6.1 (/SPK_R_P) is 0.000 mm from the board edge, floor 0.3 mm",
+   "metric": 0.0,
+   "worse_when": "lower",
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    121.765,
+    78.173
+   ]
+  },
+  {
+   "kind": "hole_to_edge",
+   "key": "paddrill:J6.1",
+   "msg": "pad J6.1 drill is 0.100 mm from the board edge, floor 0.5 mm",
+   "metric": 0.1,
+   "worse_when": "lower",
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    121.765,
+    78.173
+   ]
+  },
+  {
+   "kind": "copper_to_edge",
+   "key": "pad:J6.2",
+   "msg": "pad J6.2 (/SPK_R_P) is 0.000 mm from the board edge, floor 0.3 mm",
+   "metric": 0.0,
+   "worse_when": "lower",
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    121.765,
+    62.473
+   ]
+  },
+  {
+   "kind": "hole_to_edge",
+   "key": "paddrill:J6.2",
+   "msg": "pad J6.2 drill is 0.100 mm from the board edge, floor 0.5 mm",
+   "metric": 0.1,
+   "worse_when": "lower",
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    121.765,
+    62.473
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::94.415,60.173",
+   "msg": "silk line of J4 on F.SilkS loses 0.20 mm2 outside the outline",
+   "metric": 0.199,
+   "worse_when": "higher",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    94.415,
+    60.173
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::94.115,70.923",
+   "msg": "silk line of J4 on F.SilkS loses 0.06 mm2 outside the outline",
+   "metric": 0.062,
+   "worse_when": "higher",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    94.115,
+    70.923
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::99.765,60.173",
+   "msg": "silk line of J4 on F.SilkS loses 2.57 mm2 outside the outline",
+   "metric": 2.574,
+   "worse_when": "higher",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    99.765,
+    60.173
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::94.715,70.923",
+   "msg": "silk line of J4 on F.SilkS loses 0.06 mm2 outside the outline",
+   "metric": 0.062,
+   "worse_when": "higher",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    94.715,
+    70.923
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::99.765,57.673",
+   "msg": "silk line of J4 on F.SilkS loses 1.55 mm2 outside the outline",
+   "metric": 1.549,
+   "worse_when": "higher",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    99.765,
+    57.673
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::96.765,58.923",
+   "msg": "silk line of J4 on F.SilkS loses 0.67 mm2 outside the outline",
+   "metric": 0.674,
+   "worse_when": "higher",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    96.765,
+    58.923
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::102.765,58.923",
+   "msg": "silk line of J4 on F.SilkS loses 0.67 mm2 outside the outline",
+   "metric": 0.674,
+   "worse_when": "higher",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    102.765,
+    58.923
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::104.815,70.908",
+   "msg": "silk line of J4 on F.SilkS loses 0.06 mm2 outside the outline",
+   "metric": 0.062,
+   "worse_when": "higher",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    104.815,
+    70.908
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:text:H2:119.315,59.723",
+   "msg": "silk text 'H2' of H2 on F.SilkS loses 3.17 mm2 outside the outline",
+   "metric": 3.171,
+   "worse_when": "higher",
+   "refs": [
+    "H2"
+   ],
+   "pos": [
+    119.315,
+    59.7231
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::105.415,60.173",
+   "msg": "silk line of J5 on F.SilkS loses 0.20 mm2 outside the outline",
+   "metric": 0.199,
+   "worse_when": "higher",
+   "refs": [
+    "J5"
+   ],
+   "pos": [
+    105.415,
+    60.173
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::105.115,70.923",
+   "msg": "silk line of J5 on F.SilkS loses 0.06 mm2 outside the outline",
+   "metric": 0.062,
+   "worse_when": "higher",
+   "refs": [
+    "J5"
+   ],
+   "pos": [
+    105.115,
+    70.923
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::110.765,60.173",
+   "msg": "silk line of J5 on F.SilkS loses 2.57 mm2 outside the outline",
+   "metric": 2.574,
+   "worse_when": "higher",
+   "refs": [
+    "J5"
+   ],
+   "pos": [
+    110.765,
+    60.173
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::105.715,70.923",
+   "msg": "silk line of J5 on F.SilkS loses 0.06 mm2 outside the outline",
+   "metric": 0.062,
+   "worse_when": "higher",
+   "refs": [
+    "J5"
+   ],
+   "pos": [
+    105.715,
+    70.923
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::110.765,57.673",
+   "msg": "silk line of J5 on F.SilkS loses 1.55 mm2 outside the outline",
+   "metric": 1.549,
+   "worse_when": "higher",
+   "refs": [
+    "J5"
+   ],
+   "pos": [
+    110.765,
+    57.673
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::107.765,58.923",
+   "msg": "silk line of J5 on F.SilkS loses 0.67 mm2 outside the outline",
+   "metric": 0.674,
+   "worse_when": "higher",
+   "refs": [
+    "J5"
+   ],
+   "pos": [
+    107.765,
+    58.923
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::113.765,58.923",
+   "msg": "silk line of J5 on F.SilkS loses 0.67 mm2 outside the outline",
+   "metric": 0.674,
+   "worse_when": "higher",
+   "refs": [
+    "J5"
+   ],
+   "pos": [
+    113.765,
+    58.923
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::115.815,70.908",
+   "msg": "silk line of J5 on F.SilkS loses 0.06 mm2 outside the outline",
+   "metric": 0.062,
+   "worse_when": "higher",
+   "refs": [
+    "J5"
+   ],
+   "pos": [
+    115.815,
+    70.908
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:text:H1:26.415,59.723",
+   "msg": "silk text 'H1' of H1 on F.SilkS loses 3.17 mm2 outside the outline",
+   "metric": 3.171,
+   "worse_when": "higher",
+   "refs": [
+    "H1"
+   ],
+   "pos": [
+    26.415,
+    59.7231
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:text:J7:126.290,70.323",
+   "msg": "silk text 'J7' of J7 on F.SilkS loses 3.76 mm2 outside the outline",
+   "metric": 3.7625,
+   "worse_when": "higher",
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    126.29,
+    70.323
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::127.415,60.173",
+   "msg": "silk line of J7 on F.SilkS loses 0.20 mm2 outside the outline",
+   "metric": 0.199,
+   "worse_when": "higher",
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    127.415,
+    60.173
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::127.115,70.923",
+   "msg": "silk line of J7 on F.SilkS loses 5.42 mm2 outside the outline",
+   "metric": 5.424,
+   "worse_when": "higher",
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    127.115,
+    70.923
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::132.765,60.173",
+   "msg": "silk line of J7 on F.SilkS loses 2.57 mm2 outside the outline",
+   "metric": 2.574,
+   "worse_when": "higher",
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    132.765,
+    60.173
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::127.415,81.673",
+   "msg": "silk line of J7 on F.SilkS loses 0.20 mm2 outside the outline",
+   "metric": 0.199,
+   "worse_when": "higher",
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    127.415,
+    81.673
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::127.715,70.923",
+   "msg": "silk line of J7 on F.SilkS loses 5.42 mm2 outside the outline",
+   "metric": 5.424,
+   "worse_when": "higher",
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    127.715,
+    70.923
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::132.765,57.673",
+   "msg": "silk line of J7 on F.SilkS loses 1.55 mm2 outside the outline",
+   "metric": 1.549,
+   "worse_when": "higher",
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    132.765,
+    57.673
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::129.765,58.923",
+   "msg": "silk line of J7 on F.SilkS loses 0.67 mm2 outside the outline",
+   "metric": 0.674,
+   "worse_when": "higher",
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    129.765,
+    58.923
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::135.765,58.923",
+   "msg": "silk line of J7 on F.SilkS loses 0.67 mm2 outside the outline",
+   "metric": 0.674,
+   "worse_when": "higher",
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    135.765,
+    58.923
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::137.815,70.908",
+   "msg": "silk line of J7 on F.SilkS loses 5.42 mm2 outside the outline",
+   "metric": 5.4165,
+   "worse_when": "higher",
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    137.815,
+    70.908
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::132.765,81.673",
+   "msg": "silk line of J7 on F.SilkS loses 2.57 mm2 outside the outline",
+   "metric": 2.574,
+   "worse_when": "higher",
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    132.765,
+    81.673
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:circle::137.815,81.673",
+   "msg": "silk circle of J7 on F.SilkS loses 0.03 mm2 outside the outline",
+   "metric": 0.0346,
+   "worse_when": "higher",
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    137.815,
+    81.673
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::116.415,60.173",
+   "msg": "silk line of J6 on F.SilkS loses 0.20 mm2 outside the outline",
+   "metric": 0.199,
+   "worse_when": "higher",
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    116.415,
+    60.173
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::116.115,70.923",
+   "msg": "silk line of J6 on F.SilkS loses 0.06 mm2 outside the outline",
+   "metric": 0.062,
+   "worse_when": "higher",
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    116.115,
+    70.923
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::121.765,60.173",
+   "msg": "silk line of J6 on F.SilkS loses 2.57 mm2 outside the outline",
+   "metric": 2.574,
+   "worse_when": "higher",
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    121.765,
+    60.173
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::116.715,70.923",
+   "msg": "silk line of J6 on F.SilkS loses 0.06 mm2 outside the outline",
+   "metric": 0.062,
+   "worse_when": "higher",
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    116.715,
+    70.923
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::121.765,57.673",
+   "msg": "silk line of J6 on F.SilkS loses 1.55 mm2 outside the outline",
+   "metric": 1.549,
+   "worse_when": "higher",
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    121.765,
+    57.673
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::118.765,58.923",
+   "msg": "silk line of J6 on F.SilkS loses 0.67 mm2 outside the outline",
+   "metric": 0.674,
+   "worse_when": "higher",
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    118.765,
+    58.923
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::124.765,58.923",
+   "msg": "silk line of J6 on F.SilkS loses 0.67 mm2 outside the outline",
+   "metric": 0.674,
+   "worse_when": "higher",
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    124.765,
+    58.923
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::126.815,70.908",
+   "msg": "silk line of J6 on F.SilkS loses 5.42 mm2 outside the outline",
+   "metric": 5.4165,
+   "worse_when": "higher",
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    126.815,
+    70.908
+   ]
+  },
+  {
+   "kind": "silk_clipped",
+   "key": "silk:F:line::121.765,81.673",
+   "msg": "silk line of J6 on F.SilkS loses 1.01 mm2 outside the outline",
+   "metric": 1.012,
+   "worse_when": "higher",
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    121.765,
+    81.673
+   ]
+  }
+ ],
+ "warnings": [
+  "the board grew: zone OUTLINES do not follow the edge, so the pours still stop at the old boundary - re-run planes_gen (and stitch_vias) if they should reach the new one"
+ ],
+ "edit_class": "outline_change",
+ "gates_to_rerun": [
+  "dfm",
+  "drc",
+  "drc_routed",
+  "place",
+  "verify"
+ ],
+ "human_hold": 2,
+ "worker": {
+  "removed_edge_items": 8,
+  "bbox": [
+   22.865,
+   60.323,
+   140.865,
+   150.323
+  ],
+  "corner_radius": 2.0,
+  "cutouts": [],
+  "notes": []
+ },
+ "refilled": true,
+ "drc": {
+  "before": {
+   "total": 99,
+   "by_severity": {
+    "error": 64,
+    "warning": 35
+   },
+   "by_source": {
+    "drc": 85,
+    "unconnected": 14
+   }
+  },
+  "after": {
+   "total": 101,
+   "by_severity": {
+    "error": 62,
+    "warning": 39
+   },
+   "by_source": {
+    "drc": 87,
+    "unconnected": 14
+   }
+  },
+  "errors_before": 50,
+  "errors_after": 48
+ },
+ "record": {
+  "ok": true,
+  "recorded": true,
+  "workspace": ".",
+  "class": "outline_change",
+  "human_hold": 2,
+  "gates": [
+   "place",
+   "drc",
+   "drc_routed",
+   "verify",
+   "dfm"
+  ],
+  "gates_marked": [
+   "place",
+   "drc_routed",
+   "verify",
+   "dfm"
+  ],
+  "stale_artifacts": [
+   "gerbers"
+  ]
+ }
+}

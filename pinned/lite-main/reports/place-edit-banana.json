@@ -1,0 +1,133 @@
+{
+ "script": "place_edit",
+ "status": "pass",
+ "board": "kicad/lite-main.kicad_pcb",
+ "applied": 15,
+ "verified": true,
+ "results": [
+  {
+   "ref": "J4",
+   "x": 100.265,
+   "y": 70.323,
+   "deg": 90.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "J5",
+   "x": 111.265,
+   "y": 70.323,
+   "deg": 90.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "J6",
+   "x": 122.265,
+   "y": 70.323,
+   "deg": 90.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "J7",
+   "x": 133.265,
+   "y": 70.323,
+   "deg": 90.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "L1",
+   "x": 89.865,
+   "y": 89.523,
+   "deg": 90.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "L2",
+   "x": 98.365,
+   "y": 89.523,
+   "deg": 90.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "L3",
+   "x": 106.865,
+   "y": 89.523,
+   "deg": 90.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "L4",
+   "x": 115.365,
+   "y": 89.523,
+   "deg": 90.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "C68",
+   "x": 89.865,
+   "y": 82.873,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "C69",
+   "x": 98.365,
+   "y": 82.873,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "C70",
+   "x": 106.865,
+   "y": 82.873,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "C71",
+   "x": 115.365,
+   "y": 82.873,
+   "deg": 180.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "R68",
+   "x": 102.615,
+   "y": 82.873,
+   "deg": 180.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "H2",
+   "x": 137.315,
+   "y": 87.323,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  },
+  {
+   "ref": "H3",
+   "x": 137.315,
+   "y": 146.773,
+   "deg": 0.0,
+   "side": "front",
+   "locked": false
+  }
+ ],
+ "routed_board": true,
+ "warnings": [
+  "footprint ops applied on a routed board (--allow-routed): re-run the drc_routed gate"
+ ]
+}

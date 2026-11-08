@@ -7,9 +7,11 @@ from pathlib import Path
 _bi = Path(__file__).resolve().parents[2] / "reports" / "board_init.json"
 X0, Y0 = json.loads(_bi.read_text())["outline_origin"]  # board top-left
 A = {
-    # rear edge: speaker terminals (wire entry to the rear), RCAs, TOSLINK
-    "J6": (14.5, 5.5, 180), "J7": (27, 5.5, 180),
-    "J10": (47.4, 5.5, 180), "J11": (59.9, 5.5, 180),
+    # rear edge: RCAs, TOSLINK. The first-spin anchors (120 x 100 board). The
+    # banana-socket ECO (2026-11-01) moved the rear edge 13 mm back and these
+    # three 34.4 mm right onto a wing; the sockets J20-J27 that replaced the
+    # screw terminals J6/J7/J10/J11 are placed by banana_placements.json
+    # (README "Banana sockets"). A from-scratch rebuild needs both updated.
     "J4": (73, 14.5, 180), "J5": (91, 14.5, 180), "U19": (105.4, 10.5, 180),
     # zone A / zone B amps with 2x2 inductor blocks behind them
     "L1": (5.5, 18.8, 90), "L2": (5.5, 29.7, 90), "L3": (17.6, 29.7, 90), "L4": (17.6, 18.8, 90),
