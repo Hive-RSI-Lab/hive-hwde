@@ -840,6 +840,7 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                              kind=kind, **extra))
 
     unrated_passives: list[str] = []
+    covered_pins: list[str] = []
     checked_by_ref: dict[str, int] = {}
     rated_by_ref: dict[str, set[str]] = {}
 
@@ -918,7 +919,48 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
             v = ref_volts(bound[0])
             return (None if v is None else v + bound[1]), bound[0]
 
+        def self_driven(p):
+            """A pin the part itself drives: an output, a power output, or a
+            pin the extraction marks `self_driven` (a reference or
+            charge-pump node)."""
+            return p["type"] in ("output", "power_out") or bool(p.get("self_driven"))
+
+        def supply_rows():
+            """The part's supply rating: the abs-max rows (else recommended)
+            on its power_in pins, as (hi, ref name, source). Only a stated max
+            counts."""
+            got = {}
+            for level in ("abs", "rec"):
+                for q in ext.get("pinout") or []:
+                    if q["type"] != "power_in":
+                        continue
+                    for r in ratings.get(q["pin"], {}).get(("voltage", level), []):
+                        hi, _ = resolve(r["hi"]) if not isinstance(r["hi"], tuple) \
+                            else (None, None)
+                        if hi is not None:
+                            got[(hi, r["ref"], r["src"])] = None
+                if got:
+                    break
+            return [(hi, rf, src) for hi, rf, src in got]
+
+        def bootstrap_net(ref_, pin_, net_):
+            """A bootstrap pin whose net reaches only one two-pad capacitor,
+            whose other pad is on the net of the part's own switch pin."""
+            on = [(b2["ref"], pad) for b2 in board for pad, n2 in b2["pads"].items()
+                  if n2 == net_ and (b2["ref"], pad) != (ref_, pin_)]
+            if len(on) != 1 or not on[0][0].startswith("C"):
+                return False
+            cap = next(b2 for b2 in board if b2["ref"] == on[0][0])
+            if len(cap["pads"]) != 2:
+                return False
+            other = next(n2 for pad, n2 in cap["pads"].items() if pad != on[0][1])
+            return any(n2 == other and pad != pin_
+                       and str((name_of.get(pad) or {}).get("name", "")).upper()
+                       .startswith(("OUT", "SW", "LX", "PH"))
+                       for pad, n2 in pads.items())
+
         unrated: list[str] = []
+        covered_by_rule: list[str] = []
         for pin, net in sorted(pads.items()):
             p = name_of.get(pin)
             if p is None or p["type"] == "nc":
@@ -946,6 +988,40 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
             if not vabs and not vrec and p["name"] in pair_refs:
                 continue  # the other side of a pair rating (a diode's A)
             if not vabs and not vrec:
+                if self_driven(p):
+                    sup = supply_rows()
+                    if sup:
+                        # a pin the part drives itself (#835): its supply's
+                        # rating covers it; only a net from outside the part
+                        # is judged, against that supply rating
+                        if v is not None and vsrc[net] != "pull-up":
+                            for hi, hi_name, src in sup:
+                                vr = ref_volts(hi_name) if hi_name else 0.0
+                                if vr is None:
+                                    continue
+                                if v - vr > hi + EPS:
+                                    emit("rating_over_voltage", "error", ref, net,
+                                         f"{label} is a pin the part drives itself, "
+                                         f"covered by its supply rating (rule, not a "
+                                         f"datasheet row on this pin), and an outside "
+                                         f"net holds {net} = {_fmt(v - vr)} V "
+                                         f"({vsrc[net]}), over that supply's "
+                                         f"{_fmt(hi)} V [{src}]",
+                                         pin=f"{ref}.{pin}", net_v=v, limit_v=hi,
+                                         rating=src, rule="driven-pin-supply-cover")
+                                    break
+                            else:
+                                checked_pins += 1
+                                compared(ref, "datasheet")
+                        covered_by_rule.append(f"{ref}.{pin} {p['name']}: driven by the "
+                                               "part, covered by its supply rating")
+                        continue
+                if p["name"].upper().startswith(("BS", "BOOT")) \
+                        and bootstrap_net(ref, pin, net):
+                    covered_by_rule.append(f"{ref}.{pin} {p['name']}: bootstrap net "
+                                           "of only the cap and the part's own "
+                                           "switch pin")
+                    continue
                 unrated.append(f"{pin} {p['name']}: no rating names it")
                 continue
             if v is not None and vsrc[net] == "pull-up" \
@@ -1018,6 +1094,7 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                              f"its recommended {_fmt(lo) if lo is not None else '-'}"
                              f"..{_fmt(hi) if hi is not None else '-'} V "
                              f"[{r['src']}]", **base)
+        covered_pins.extend(covered_by_rule)
         if unrated:
             emit("rating_unrated", "warning", ref, None,
                  f"{ref} ({ext.get('mpn')}): {len(unrated)} connected pin(s) "
@@ -1120,6 +1197,7 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
              "net_volts": {n: {"v": volts[n], "src": vsrc[n]}
                            for n in sorted(volts)},
              "pins_checked": checked_pins,
+             "pins_covered_by_rule": covered_pins,
              "reversed_inputs": reversed_inputs,
              "pins_on_unknown_nets": unknown_net_pins,
              "ambient": amb, "fuses": fuse_facts,
