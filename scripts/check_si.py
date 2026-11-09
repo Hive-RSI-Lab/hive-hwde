@@ -199,9 +199,8 @@ class LineModel:
             ref = below or above
             return ("ms", st.height_between(layer, ref), t,
                     st.epsilon_between(layer, ref))
-        sides = sorted(((st.height_between(layer, r), st.epsilon_between(layer, r))
-                        for r in (above, below)), reverse=True)
-        (hb, eb), (hf, ef) = sides
+        (hb, eb), (hf, ef) = impedance.stripline_sides(st.side(layer, above),
+                                                       st.side(layer, below))
         return ("sl", hb, hf, t, eb, ef)
 
     def height(self, layer) -> float:

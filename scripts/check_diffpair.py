@@ -607,8 +607,8 @@ def check_pair(bg: geom.BoardGeom, spec: dict):
 def layer_zdiff(bg, layer: str, w: float, s: float) -> tuple[float | None, str]:
     """(Zdiff, model) of a pair of width w and edge gap s on `layer`: an
     outer layer as coated microstrip over its neighbour, an inner one as
-    stripline sitting on the THICKER neighbouring dielectric (the core, on
-    every JLC stackup) and embedded in the thinner (prepreg). (None, "") when
+    stripline sitting on the dielectric it was etched on (the core;
+    impedance.stripline_sides) and embedded in the other. (None, "") when
     the stackup has no reference plane."""
     if len(bg.copper_layers) < 2 or not bg.stackup.dielectrics:
         return None, ""
@@ -619,10 +619,8 @@ def layer_zdiff(bg, layer: str, w: float, s: float) -> tuple[float | None, str]:
         return impedance.field_microstrip(
             w, bg.stackup.height_between(layer, ref), t,
             bg.stackup.epsilon_between(layer, ref), s)["zdiff"], "coated microstrip"
-    sides = sorted(((bg.stackup.height_between(layer, r),
-                     bg.stackup.epsilon_between(layer, r)) for r in (above, below)),
-                   reverse=True)
-    (hb, eb), (hf, ef) = sides
+    (hb, eb), (hf, ef) = impedance.stripline_sides(bg.stackup.side(layer, above),
+                                                   bg.stackup.side(layer, below))
     return impedance.field_stripline(w, hb, hf, t, eb, ef, s)["zdiff"], "stripline"
 
 
@@ -630,8 +628,8 @@ def pair_impedance(bg, p, n, gap_c2c) -> dict:
     """Zdiff of the pair as drawn on its main layer (the layer carrying most of
     its length): the length-dominant track width and the median centre-to-
     centre gap minus that width. An inner layer is solved as stripline with
-    the trace sitting on the THICKER neighbouring dielectric (the core, on
-    every JLC stackup) and embedded in the thinner (prepreg)."""
+    the trace sitting on the dielectric it was etched on (the core;
+    impedance.stripline_sides) and embedded in the other."""
     tracks = bg.tracks_of(p) + bg.tracks_of(n)
     by_layer: dict[str, float] = {}
     for t in tracks:

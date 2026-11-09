@@ -266,6 +266,25 @@ def field_cpwg(w: float, g: float, h: float, t: float, er: float,
     return {"z0": z, "eps_eff": ee}
 
 
+def stripline_sides(up: tuple, dn: tuple) -> tuple[tuple[float, float], tuple[float, float]]:
+    """((h_base, er_base), (h_fill, er_fill)) of an inner trace from its two
+    neighbouring dielectrics, each (height, epsilon_r, kind) with kind "core",
+    "prepreg" or "" (#663). A core is bought with copper on its faces, so the
+    trace was etched on the CORE side: h_base is the core, whichever is
+    thicker. Two cores (OSH Park 6L calls its 0.93 mm centre a core too): the
+    thinner, since a laminate between two cores holds a bonding prepreg and
+    the thin 2113 is the one carrying the copper; OSH Park's own table agrees
+    within ~3 % this way and ~11 % the other. No core on either side: the
+    thicker, the old convention."""
+    cu, cd = up[2] == "core", dn[2] == "core"
+    if cu != cd:
+        base, fill = (up, dn) if cu else (dn, up)
+    else:
+        thick, thin = sorted([up, dn], key=lambda x: x[0], reverse=True)
+        base, fill = (thin, thick) if cu else (thick, thin)
+    return (base[0], base[1]), (fill[0], fill[1])
+
+
 def field_stripline(w: float, h_base: float, h_fill: float, t: float,
                     er_base: float, er_fill: float, s: float | None = None,
                     even: bool = False) -> dict:

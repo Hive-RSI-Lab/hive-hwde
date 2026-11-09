@@ -345,6 +345,13 @@ def _series_dielectric(stack: list[dict], a: int, b: int) -> tuple[float, float]
     return h, h / inv
 
 
+def _gap_kind(stack: list[dict], a: int, b: int) -> str:
+    """core | prepreg | "" for the gap between stack rows a and b, as
+    geom.Stackup reads a board's: core only when every ply is core."""
+    kinds = {ly["type"] for ly in stack[a + 1:b] if ly["type"] in ("core", "prepreg")}
+    return "core" if kinds == {"core"} else "prepreg" if kinds else ""
+
+
 def plane_layers(stackup: dict, constraints: dict) -> set[str]:
     """Copper layers that carry a pour: constraints planes' layers, else
     planes_gen's defaults (the 2nd and 3rd copper on 4+ layers)."""
@@ -358,9 +365,9 @@ def plane_layers(stackup: dict, constraints: dict) -> set[str]:
 def stripline_layers(stackup: dict, constraints: dict) -> dict[str, dict]:
     """Inner signal layers that are stripline: a pour on the copper layer
     above AND below, none on the layer itself. Each maps to the geometry
-    impedance.field_stripline takes: the trace sits on the THICKER dielectric
-    (h_base, the core on JLC builds) and is embedded in the thinner (h_fill,
-    prepreg) - the same convention check_diffpair solves with."""
+    impedance.field_stripline takes: the trace sits on the dielectric it was
+    etched on (h_base, the core; impedance.stripline_sides) and is embedded
+    in the other (h_fill) - the same rule check_diffpair solves with."""
     stack = stackup.get("stack") or []
     rows = [i for i, ly in enumerate(stack) if ly["type"] == "copper"]
     names = [stack[i]["name"] for i in rows]
@@ -370,9 +377,11 @@ def stripline_layers(stackup: dict, constraints: dict) -> dict[str, dict]:
         name = names[k]
         if name in pours or names[k - 1] not in pours or names[k + 1] not in pours:
             continue
-        up = _series_dielectric(stack, rows[k - 1], rows[k])
-        dn = _series_dielectric(stack, rows[k], rows[k + 1])
-        (hb, eb), (hf, ef) = sorted([up, dn], reverse=True)
+        up = (*_series_dielectric(stack, rows[k - 1], rows[k]),
+              _gap_kind(stack, rows[k - 1], rows[k]))
+        dn = (*_series_dielectric(stack, rows[k], rows[k + 1]),
+              _gap_kind(stack, rows[k], rows[k + 1]))
+        (hb, eb), (hf, ef) = imp.stripline_sides(up, dn)
         t = float(stack[rows[k]].get("thickness_mm")
                   or CU_OZ_MM.get(stack[rows[k]].get("copper_oz", 0.5), 0.0175))
         out[name] = {"h_base": round(hb, 4), "er_base": round(eb, 3),
@@ -384,21 +393,23 @@ def stripline_layers(stackup: dict, constraints: dict) -> dict[str, dict]:
 def stripline_geometry(z_target: float, geo: dict, diff: bool,
                        floor: float = 0.0) -> dict:
     """Width (and, for a pair, the gap) whose stripline impedance on `geo` is
-    z_target. A pair's gap is pinned at clamp(h_fill, 0.13, 0.30), the outer
+    z_target. A pair's gap is pinned at clamp(h, 0.13, 0.30), h the thinner
+    of the two dielectrics (h_base or h_fill, #663), the outer
     pairs' convention (tight coupling, a gap the fab draws), and the width
     solved; when that width is under the fab floor the width is pinned at
     the floor and the gap solved instead (a thin prepreg makes a 100 ohm
     pair narrow: JLC's 6-layer L3 wants 0.078 mm at 0.13 mm)."""
     hb, hf, t = geo["h_base"], geo["h_fill"], geo["t"]
     eb, ef = geo["er_base"], geo["er_fill"]
-    s = min(max(hf, 0.13), 0.30) if diff else None
+    h_near = min(hb, hf)
+    s = min(max(h_near, 0.13), 0.30) if diff else None
     key = "zdiff" if diff else "z0"
 
     def z_of(w: float, gap: float | None = s) -> float:
         return imp.field_stripline(w, hb, hf, t, eb, ef, gap)[key]
 
     # Z falls with width; a guess from the thinner side's height
-    w = imp._secant_log(z_of, float(z_target), max(0.05, 0.8 * hf), 0.02, 2.0)
+    w = imp._secant_log(z_of, float(z_target), max(0.05, 0.8 * h_near), 0.02, 2.0)
     out = {"model": "stripline"}
     if w < floor:
         w = floor

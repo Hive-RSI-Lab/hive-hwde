@@ -2991,19 +2991,15 @@ stackups:
       layer: In2.Cu
       reference: &id007 [In1.Cu, In3.Cu]
       model: stripline
-      width_mm: 0.127
-      below_fab_floor: true
-      z_ohm: 49.8
+      width_mm: 0.1541
     - profile: diff_90
       kind: diff
       impedance_ohm: 90
       layer: In2.Cu
       reference: *id007
       model: stripline
-      width_mm: 0.127
-      gap_mm: 0.1862
-      gap_solved: true
-      z_ohm: 90.0
+      width_mm: 0.1287
+      gap_mm: 0.13
     - profile: diff_100
       kind: diff
       impedance_ohm: 100
@@ -3011,28 +3007,24 @@ stackups:
       reference: *id007
       model: stripline
       width_mm: 0.127
-      gap_mm: 1.0
+      gap_mm: 0.2394
       gap_solved: true
-      z_ohm: 99.2
+      z_ohm: 100.0
     - profile: se_50
       kind: single
       impedance_ohm: 50
       layer: In3.Cu
       reference: &id008 [In2.Cu, In4.Cu]
       model: stripline
-      width_mm: 0.127
-      below_fab_floor: true
-      z_ohm: 49.8
+      width_mm: 0.1541
     - profile: diff_90
       kind: diff
       impedance_ohm: 90
       layer: In3.Cu
       reference: *id008
       model: stripline
-      width_mm: 0.127
-      gap_mm: 0.1862
-      gap_solved: true
-      z_ohm: 90.0
+      width_mm: 0.1287
+      gap_mm: 0.13
     - profile: diff_100
       kind: diff
       impedance_ohm: 100
@@ -3040,9 +3032,9 @@ stackups:
       reference: *id008
       model: stripline
       width_mm: 0.127
-      gap_mm: 1.0
+      gap_mm: 0.2394
       gap_solved: true
-      z_ohm: 99.2
+      z_ohm: 100.0
     fab_table:
     - {layer: outer, kind: single, impedance_ohm: 50, width_mm: 0.2108, fab_z_ohm: 50.1, hwde_z_ohm: 50.3}
     - {layer: outer, kind: diff, impedance_ohm: 90, width_mm: 0.1727, gap_mm: 0.1321, fab_z_ohm: 89.6, hwde_z_ohm: 90.0}
@@ -3053,9 +3045,9 @@ stackups:
       width_mm: 0.16
       reference: [In1.Cu, In3.Cu]
       fab_z_ohm: 50.0
-      disagrees: 'hwde''s stripline gives ~11 % lower Z at OSH Park''s inner geometry (In2 sits 0.10 mm from In1 and 0.93 mm from In3, so it is nearly embedded
-        microstrip). Which is right is what the zcoupon panel (hw-lab #53) measures.'
-      hwde_z_ohm: 44.4
+      note: 'Agrees since #663 (the trace etched on the 0.10 mm 2113 core, not the 0.93 mm centre; it read ~11 % low before). Still 2-3 % low, unexplained;
+        the zcoupon panel (hw-lab #53) measures it.'
+      hwde_z_ohm: 49.1
     - layer: In2.Cu
       kind: diff
       impedance_ohm: 90
@@ -3063,9 +3055,9 @@ stackups:
       gap_mm: 0.1549
       reference: [In1.Cu, In3.Cu]
       fab_z_ohm: 89.9
-      disagrees: 'hwde''s stripline gives ~11 % lower Z at OSH Park''s inner geometry (In2 sits 0.10 mm from In1 and 0.93 mm from In3, so it is nearly embedded
-        microstrip). Which is right is what the zcoupon panel (hw-lab #53) measures.'
-      hwde_z_ohm: 81.2
+      note: 'Agrees since #663 (the trace etched on the 0.10 mm 2113 core, not the 0.93 mm centre; it read ~11 % low before). Still 2-3 % low, unexplained;
+        the zcoupon panel (hw-lab #53) measures it.'
+      hwde_z_ohm: 87.2
     - layer: In2.Cu
       kind: diff
       impedance_ohm: 100
@@ -3073,9 +3065,9 @@ stackups:
       gap_mm: 0.1778
       reference: [In1.Cu, In3.Cu]
       fab_z_ohm: 99.1
-      disagrees: 'hwde''s stripline gives ~11 % lower Z at OSH Park''s inner geometry (In2 sits 0.10 mm from In1 and 0.93 mm from In3, so it is nearly embedded
-        microstrip). Which is right is what the zcoupon panel (hw-lab #53) measures.'
-      hwde_z_ohm: 89.4
+      note: 'Agrees since #663 (the trace etched on the 0.10 mm 2113 core, not the 0.93 mm centre; it read ~11 % low before). Still 2-3 % low, unexplained;
+        the zcoupon panel (hw-lab #53) measures it.'
+      hwde_z_ohm: 95.8
   AISLER-4L-1.6-1080:
     description: AISLER 4-layer 1.6 mm 35 um (ENIG), 2x1080 prepreg, 1.2 mm core.
     vendor: aisler
@@ -3195,14 +3187,14 @@ stackups:
       layer: In2.Cu
       reference: &id009 [In1.Cu, In3.Cu]
       model: stripline
-      width_mm: 0.2303
+      width_mm: 0.2377
     - profile: diff_90
       kind: diff
       impedance_ohm: 90
       layer: In2.Cu
       reference: *id009
       model: stripline
-      width_mm: 0.2273
+      width_mm: 0.2342
       gap_mm: 0.3
     - profile: diff_100
       kind: diff
@@ -3210,7 +3202,7 @@ stackups:
       layer: In2.Cu
       reference: *id009
       model: stripline
-      width_mm: 0.1715
+      width_mm: 0.1762
       gap_mm: 0.3
     - profile: se_50
       kind: single
@@ -3218,14 +3210,14 @@ stackups:
       layer: In3.Cu
       reference: &id010 [In2.Cu, In4.Cu]
       model: stripline
-      width_mm: 0.2303
+      width_mm: 0.2377
     - profile: diff_90
       kind: diff
       impedance_ohm: 90
       layer: In3.Cu
       reference: *id010
       model: stripline
-      width_mm: 0.2273
+      width_mm: 0.2342
       gap_mm: 0.3
     - profile: diff_100
       kind: diff
@@ -3233,7 +3225,7 @@ stackups:
       layer: In3.Cu
       reference: *id010
       model: stripline
-      width_mm: 0.1715
+      width_mm: 0.1762
       gap_mm: 0.3
     fab_table:
     - {layer: outer, kind: single, impedance_ohm: 50, width_mm: 0.395, hwde_z_ohm: 50.2}
@@ -3305,14 +3297,14 @@ stackups:
       layer: In2.Cu
       reference: &id011 [In1.Cu, In3.Cu]
       model: stripline
-      width_mm: 0.1452
+      width_mm: 0.1568
     - profile: diff_90
       kind: diff
       impedance_ohm: 90
       layer: In2.Cu
       reference: *id011
       model: stripline
-      width_mm: 0.1371
+      width_mm: 0.1466
       gap_mm: 0.2
     - profile: diff_100
       kind: diff
@@ -3320,7 +3312,7 @@ stackups:
       layer: In2.Cu
       reference: *id011
       model: stripline
-      width_mm: 0.0997
+      width_mm: 0.1072
       gap_mm: 0.2
     - profile: se_50
       kind: single
@@ -3328,14 +3320,14 @@ stackups:
       layer: In3.Cu
       reference: &id012 [In2.Cu, In4.Cu]
       model: stripline
-      width_mm: 0.1557
+      width_mm: 0.1652
     - profile: diff_90
       kind: diff
       impedance_ohm: 90
       layer: In3.Cu
       reference: *id012
       model: stripline
-      width_mm: 0.148
+      width_mm: 0.1551
       gap_mm: 0.2
     - profile: diff_100
       kind: diff
@@ -3343,7 +3335,7 @@ stackups:
       layer: In3.Cu
       reference: *id012
       model: stripline
-      width_mm: 0.1095
+      width_mm: 0.1142
       gap_mm: 0.2
     - profile: se_50
       kind: single
@@ -3351,14 +3343,14 @@ stackups:
       layer: In4.Cu
       reference: &id013 [In3.Cu, In5.Cu]
       model: stripline
-      width_mm: 0.1557
+      width_mm: 0.1652
     - profile: diff_90
       kind: diff
       impedance_ohm: 90
       layer: In4.Cu
       reference: *id013
       model: stripline
-      width_mm: 0.148
+      width_mm: 0.1551
       gap_mm: 0.2
     - profile: diff_100
       kind: diff
@@ -3366,7 +3358,7 @@ stackups:
       layer: In4.Cu
       reference: *id013
       model: stripline
-      width_mm: 0.1095
+      width_mm: 0.1142
       gap_mm: 0.2
     - profile: se_50
       kind: single
@@ -3374,14 +3366,14 @@ stackups:
       layer: In5.Cu
       reference: &id014 [In4.Cu, In6.Cu]
       model: stripline
-      width_mm: 0.1452
+      width_mm: 0.1568
     - profile: diff_90
       kind: diff
       impedance_ohm: 90
       layer: In5.Cu
       reference: *id014
       model: stripline
-      width_mm: 0.1371
+      width_mm: 0.1466
       gap_mm: 0.2
     - profile: diff_100
       kind: diff
@@ -3389,7 +3381,7 @@ stackups:
       layer: In5.Cu
       reference: *id014
       model: stripline
-      width_mm: 0.0997
+      width_mm: 0.1072
       gap_mm: 0.2
     fab_table:
     - {layer: outer, kind: single, impedance_ohm: 50, width_mm: 0.245, hwde_z_ohm: 49.2}
