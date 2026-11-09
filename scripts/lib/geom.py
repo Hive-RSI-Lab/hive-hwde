@@ -1134,12 +1134,16 @@ class BoardGeom:
         """Refuse to run on stale/unfilled zones.
 
         Fast mode (default): raise StaleFillError if any zone has an outline but
-        no fill. Thorough mode (refill=True): additionally run the S0-verified
+        no fill - unless KiCad's own refill leaves that zone empty too (a zone
+        drawn where higher-priority copper or clearances leave no room fills to
+        nothing; minuet v3's GND zone 257 is one). Thorough mode (refill=True):
+        additionally run the S0-verified
         `kicad-cli pcb drc --refill-zones --save-board` on a temp copy and raise
         if any zone's fill area drifts by more than `area_tol` (relative) - i.e.
         the committed fill is stale versus a fresh refill.
         """
-        unfilled = self.unfilled_zones()
+        unfilled = [z for z in self.unfilled_zones()
+                    if z.zone_id not in self._empty_by_refill()]
         if unfilled:
             raise StaleFillError(
                 f"{len(unfilled)} zone(s) unfilled in {self.path.name}: "
@@ -1161,6 +1165,33 @@ class BoardGeom:
                             f"differs from fresh {a1:.3f} mm^2 (> {area_tol:.0%})")
         finally:
             _cleanup(fresh)
+
+    def _empty_by_refill(self) -> set[int]:
+        """Ids of this board's unfilled zones that a fresh KiCad refill leaves
+        empty as well. Zones are matched by net, layers and outline (a refill
+        renumbers: it regenerates teardrop zones). Empty when there is nothing
+        to ask about, or KiCad can't be asked (then every unfilled zone counts
+        as stale, as before)."""
+        if getattr(self, "_refill_empty", None) is not None:
+            return self._refill_empty
+        self._refill_empty = set()
+        unfilled = self.unfilled_zones()
+        if not unfilled:
+            return self._refill_empty
+        try:
+            fresh = _refill_copy(self.path)
+        except Exception:                       # no kicad-cli, or it failed
+            return self._refill_empty
+        try:
+            other = BoardGeom.from_file(fresh)
+            filled = {(z.net, z.layers, z.outline) for z in other._zones if z.filled}
+            known = {(z.net, z.layers, z.outline) for z in other._zones}
+            self._refill_empty = {z.zone_id for z in unfilled
+                                  if (z.net, z.layers, z.outline) in known
+                                  and (z.net, z.layers, z.outline) not in filled}
+        finally:
+            _cleanup(fresh)
+        return self._refill_empty
 
     # -------------------------------------------------- summary
     def summary(self) -> dict:

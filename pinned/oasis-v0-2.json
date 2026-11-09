@@ -1,0 +1,18 @@
+{
+ "board": "oasis-v0-2",
+ "project": "oasis",
+ "commit": "3462f162f80e11c78705218441af37639d87bfdc",
+ "dir": "pinned/oasis-v0-2",
+ "design": [],
+ "stand_in": {},
+ "unclassified": [],
+ "source": {
+  "url": "https://github.com/justbuchanan/oasis",
+  "license": "Apache-2.0",
+  "path": "pcb/fabricated-boards/v0.2/kicad",
+  "errata": "pcb/fabricated-boards/v0.2/errata.md",
+  "not_in_ledger": [
+   "'buttons aren't actually necessary': a design note, not a defect"
+  ]
+ }
+}

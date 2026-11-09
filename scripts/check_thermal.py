@@ -1090,8 +1090,10 @@ def run(argv=None):
     if ripple:
         extra["ripple"] = ripple
 
-    payload = checklib.report(SCRIPT, args.pcb, violations, checked=checked,
-                              **extra)
+    payload = checklib.report(
+        SCRIPT, args.pcb, violations, checked=checked,
+        nothing_to_judge=None if checked or ripple else
+        "no thermal or ripple entries in constraints", **extra)
     return payload, args.out
 
 

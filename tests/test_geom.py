@@ -330,6 +330,35 @@ def test_unfilled_zone_detected(syn):
         syn.assert_fresh()
 
 
+def _fresh(syn) -> geom.BoardGeom:
+    return geom.BoardGeom.from_file(syn.path)  # its own refill cache
+
+
+def test_zone_kicad_also_leaves_empty_is_not_stale(syn, tmp_path, monkeypatch):
+    """A zone KiCad's own refill fills to nothing isn't stale (minuet v3's
+    GND zone 257): an unfilled zone that a refill leaves unfilled passes."""
+    import shutil
+
+    def same(pcb):
+        d = tmp_path / "refill"
+        d.mkdir()
+        return Path(shutil.copy(pcb, d / pcb.name))
+    monkeypatch.setattr(geom, "_refill_copy", same)
+    bg = _fresh(syn)
+    assert bg._empty_by_refill() == {z.zone_id for z in bg.unfilled_zones()}
+    bg.assert_fresh()
+
+
+def test_unfilled_zone_stale_when_kicad_cant_say(syn, monkeypatch):
+    def fail(pcb):
+        raise geom.StaleFillError("no kicad-cli")
+    monkeypatch.setattr(geom, "_refill_copy", fail)
+    bg = _fresh(syn)
+    assert bg._empty_by_refill() == set()
+    with pytest.raises(geom.StaleFillError):
+        bg.assert_fresh()
+
+
 def test_fill_status(syn):
     status = syn.fill_status()
     assert sum(status.values()) == 1  # one filled, one not

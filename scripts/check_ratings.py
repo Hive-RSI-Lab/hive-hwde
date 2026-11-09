@@ -143,7 +143,11 @@ Findings (kind = violation `kind`, remediations under reference/remediations/):
    listing), or `none` when no pin met a known rail. Every comparison is in
    facts `listing_comparison`.
 Sources and verified/disputed tags: docs/ingest/safety-components.md.
-A pin on a net of unknown voltage is not a finding (counted in facts).
+A pin on a net of unknown voltage is not a finding (counted in facts); a
+supply pin on one is named in not_judged by rail, since nothing compared it
+(#601). A connected pad the extraction's pinout has no row for is
+rating_unrated. A board where nothing could be compared with known volts
+reports nothing_to_judge.
 
 The fact ledger (lib/ledgerlib.py): each refdes gets a `rating` fact (verified
 when a datasheet's rating was compared with known volts and held, listed when
@@ -971,6 +975,7 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
 
     out: list[dict] = []
     unknown_net_pins = 0
+    unknown_rails: dict[str, list[str]] = {}
     checked_pins = 0
 
     def emit(kind, sev, ref, net, msg, **extra):
@@ -1104,9 +1109,17 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
 
         unrated: list[str] = []
         covered_by_rule: list[str] = []
+        if not name_of and pads:
+            unrated.append("the extraction has no pinout")
         for pin, net in sorted(pads.items()):
             p = name_of.get(pin)
-            if p is None or p["type"] == "nc":
+            if p is None:
+                # a ground pad (the usual EP) stresses nothing to compare
+                if name_of and not is_ground(net):
+                    unrated.append(f"{pin}: on {net}, not in the extraction's "
+                                   "pinout")
+                continue
+            if p["type"] == "nc":
                 continue
             label = f"{ref}.{pin} ({p['name']})"
             v = volts.get(net)
@@ -1205,6 +1218,8 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
                 continue
             if v is None:
                 unknown_net_pins += 1
+                if p["type"] == "power_in":
+                    unknown_rails.setdefault(net, []).append(f"{ref}.{pin}")
                 continue
             checked_pins += 1
             compared(ref, "datasheet")
@@ -1388,6 +1403,13 @@ def run_check(pcb: Path, parts_dir: Path, constraints: dict | None,
              "pins_covered_by_rule": covered_pins,
              "reversed_inputs": reversed_inputs,
              "pins_on_unknown_nets": unknown_net_pins,
+             "not_judged": [
+                 f"{net}: no known voltage, so {len(pins)} supply pin(s) were "
+                 f"not compared ({', '.join(pins[:6])}"
+                 f"{' ...' if len(pins) > 6 else ''})"
+                 for net, pins in sorted(unknown_rails.items())],
+             "nothing_to_judge": None if checked_by_ref else
+             "no rating could be compared with a known voltage",
              "ambient": amb, "fuses": fuse_facts,
              "operating_range": temp_facts,
              "suspect_datasheets": suspect,

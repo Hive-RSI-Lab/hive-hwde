@@ -550,3 +550,15 @@ def test_a_board_with_something_to_judge_is_not_nothing(tmp_path):
                            '(layer "F.Cu") (net 0))\n')
     p = check_route_style.run(["--pcb", str(pcb)])[0]
     assert "nothing_to_judge" not in p
+
+
+def test_gerber_td_of_an_unset_attribute_reads():
+    """KiCad 10 writes `%TD.AperFunction*%` with no .AperFunction set (minuet
+    v3's F.Cu); the file still reads, and a bad attribute still raises."""
+    head = "%FSLAX46Y46*%\n%MOMM*%\n%ADD10C,0.100000*%\n"
+    ok = head + "%TD.AperFunction*%\nD10*\nX0Y0D03*\nM02*\n"
+    g = gerblib.GerberFile.from_string(ok)
+    assert len(g.objects) == 1
+    with pytest.raises(SyntaxError):
+        gerblib.GerberFile.from_string(
+            head + "%TF.Part,Single*%\n%TD.Part*%\nM02*\n")
