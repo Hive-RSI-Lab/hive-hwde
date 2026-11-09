@@ -1,0 +1,20 @@
+{
+ "board": "minuet-v3",
+ "project": "minuet",
+ "commit": "1e43aa3df01b33522db23f4b2139f89b5689da99",
+ "dir": "pinned/minuet-v3",
+ "design": [],
+ "stand_in": {},
+ "unclassified": [],
+ "source": {
+  "url": "https://github.com/brown-studios/minuet",
+  "license": "MIT",
+  "path": "hardware/minuet/v3",
+  "errata": "hardware/minuet/v3/design-and-errata.md",
+  "not_in_ledger": [
+   "lid motor end-of-travel detection is unreliable: a firmware/control-scheme issue, not a static board defect",
+   "spontaneous resets in WiFi AP mode: internal to the ESP32-C3 module, fixed in firmware (TX power)",
+   "MCF8316D brake vs I2C watchdog: a chip bug TI acknowledged, not a board defect"
+  ]
+ }
+}

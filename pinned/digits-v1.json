@@ -1,0 +1,20 @@
+{
+ "board": "digits-v1",
+ "project": "digits",
+ "commit": "9807030c8411bf854910b6e2bf4707fa4b47f7bf",
+ "dir": "pinned/digits-v1",
+ "design": [],
+ "stand_in": {},
+ "unclassified": [],
+ "source": {
+  "url": "https://github.com/justinlindh/digits",
+  "license": "AGPL-3.0",
+  "path": "hardware/pcb/v1/kicad",
+  "errata": "hardware/pcb/v1/ERRATA.md",
+  "not_in_ledger": [
+   "recommended improvement 3 (reverse-polarity protection on J3's 12 V input): a suggested hardening, not a defect the board shipped with",
+   "recommended improvement 4 (bulk/HF decoupling at the Pi's 5 V input): a suggested hardening, not a defect the board shipped with",
+   "recommended improvement 5 (J1 pin 4 +5V as well as pin 2): the author calls it not critical; not a defect"
+  ]
+ }
+}

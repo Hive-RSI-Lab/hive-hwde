@@ -1,0 +1,2451 @@
+{
+ "board": "digits-v1",
+ "known": [
+  {
+   "gate": "erc",
+   "check": "isolated_pin_label",
+   "net": null,
+   "refs": [],
+   "pos": [
+    0.216,
+    1.079
+   ],
+   "verdict": "real",
+   "reason": "erratum 4: J7's BELL_1/BELL_2 labels reach no other part; the bell terminal is disconnected",
+   "source": "https://github.com/justinlindh/digits/blob/9807030c8411bf854910b6e2bf4707fa4b47f7bf/hardware/pcb/v1/ERRATA.md"
+  },
+  {
+   "gate": "erc",
+   "check": "isolated_pin_label",
+   "net": null,
+   "refs": [],
+   "pos": [
+    0.216,
+    1.105
+   ],
+   "verdict": "real",
+   "reason": "erratum 4: J7's BELL_1/BELL_2 labels reach no other part; the bell terminal is disconnected",
+   "source": "https://github.com/justinlindh/digits/blob/9807030c8411bf854910b6e2bf4707fa4b47f7bf/hardware/pcb/v1/ERRATA.md"
+  },
+  {
+   "gate": "erc",
+   "check": "footprint_link_issues",
+   "net": "Screw_Terminal_01x02",
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    0.267,
+    1.079
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "Screw_Terminal_01x02",
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    0.267,
+    1.079
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "footprint_link_issues",
+   "net": "R",
+   "refs": [
+    "R1"
+   ],
+   "pos": [
+    0.343,
+    1.219
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "R",
+   "refs": [
+    "R1"
+   ],
+   "pos": [
+    0.343,
+    1.219
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "GND",
+   "refs": [
+    "PWR011"
+   ],
+   "pos": [
+    0.432,
+    1.283
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "isolated_pin_label",
+   "net": null,
+   "refs": [],
+   "pos": [
+    0.445,
+    0.343
+   ],
+   "verdict": "real",
+   "reason": "KiCad's own ERC on the pinned schematic"
+  },
+  {
+   "gate": "erc",
+   "check": "footprint_link_issues",
+   "net": "Conn_01x02",
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    0.483,
+    1.257
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "Conn_01x02",
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    0.483,
+    1.257
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "footprint_link_issues",
+   "net": "Conn_01x02",
+   "refs": [
+    "J10"
+   ],
+   "pos": [
+    0.495,
+    0.216
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "Conn_01x02",
+   "refs": [
+    "J10"
+   ],
+   "pos": [
+    0.495,
+    0.216
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "footprint_link_issues",
+   "net": "Conn_01x03",
+   "refs": [
+    "J9"
+   ],
+   "pos": [
+    0.495,
+    0.343
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "Conn_01x03",
+   "refs": [
+    "J9"
+   ],
+   "pos": [
+    0.495,
+    0.343
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "footprint_link_issues",
+   "net": "SW_Push",
+   "refs": [
+    "SW1"
+   ],
+   "pos": [
+    0.495,
+    0.546
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "SW_Push",
+   "refs": [
+    "SW1"
+   ],
+   "pos": [
+    0.495,
+    0.546
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "footprint_link_issues",
+   "net": "Conn_01x07",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    0.495,
+    0.953
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "Conn_01x07",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    0.495,
+    0.953
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "GND",
+   "refs": [
+    "PWR010"
+   ],
+   "pos": [
+    0.546,
+    0.546
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "footprint_link_issues",
+   "net": "Barrel_Jack_Switch",
+   "refs": [
+    "J3"
+   ],
+   "pos": [
+    0.61,
+    1.422
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "Barrel_Jack_Switch",
+   "refs": [
+    "J3"
+   ],
+   "pos": [
+    0.61,
+    1.422
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "GND",
+   "refs": [
+    "PWR07"
+   ],
+   "pos": [
+    0.686,
+    1.448
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "PWR_FLAG",
+   "refs": [
+    "FLG02"
+   ],
+   "pos": [
+    0.737,
+    1.397
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "footprint_link_issues",
+   "net": "Conn_01x04",
+   "refs": [
+    "J8"
+   ],
+   "pos": [
+    0.8,
+    0.318
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "Conn_01x04",
+   "refs": [
+    "J8"
+   ],
+   "pos": [
+    0.8,
+    0.318
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "GND",
+   "refs": [
+    "PWR09"
+   ],
+   "pos": [
+    0.813,
+    1.689
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "+12V",
+   "refs": [
+    "PWR08"
+   ],
+   "pos": [
+    0.838,
+    1.397
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "footprint_link_issues",
+   "net": "Conn_01x04",
+   "refs": [
+    "J5"
+   ],
+   "pos": [
+    0.864,
+    1.638
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "Conn_01x04",
+   "refs": [
+    "J5"
+   ],
+   "pos": [
+    0.864,
+    1.638
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "footprint_link_issues",
+   "net": "C_Polarized",
+   "refs": [
+    "C1"
+   ],
+   "pos": [
+    0.927,
+    1.435
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "C_Polarized",
+   "refs": [
+    "C1"
+   ],
+   "pos": [
+    0.927,
+    1.435
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "GND",
+   "refs": [
+    "PWR01"
+   ],
+   "pos": [
+    0.927,
+    1.473
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "PWR_FLAG",
+   "refs": [
+    "FLG01"
+   ],
+   "pos": [
+    1.029,
+    0.508
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "footprint_link_issues",
+   "net": "C",
+   "refs": [
+    "C3"
+   ],
+   "pos": [
+    1.041,
+    0.305
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "C",
+   "refs": [
+    "C3"
+   ],
+   "pos": [
+    1.041,
+    0.305
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "footprint_link_issues",
+   "net": "RaspberryPi_Pico",
+   "refs": [
+    "A1"
+   ],
+   "pos": [
+    1.079,
+    0.978
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "RaspberryPi_Pico",
+   "refs": [
+    "A1"
+   ],
+   "pos": [
+    1.079,
+    0.978
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "GND",
+   "refs": [
+    "PWR012"
+   ],
+   "pos": [
+    1.079,
+    1.333
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "footprint_link_issues",
+   "net": "L",
+   "refs": [
+    "L1"
+   ],
+   "pos": [
+    1.118,
+    1.676
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "L",
+   "refs": [
+    "L1"
+   ],
+   "pos": [
+    1.118,
+    1.676
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "footprint_link_issues",
+   "net": "D_Schottky",
+   "refs": [
+    "D1"
+   ],
+   "pos": [
+    1.156,
+    1.575
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "D_Schottky",
+   "refs": [
+    "D1"
+   ],
+   "pos": [
+    1.156,
+    1.575
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "GND",
+   "refs": [
+    "PWR04"
+   ],
+   "pos": [
+    1.194,
+    1.575
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "+5V",
+   "refs": [
+    "PWR03"
+   ],
+   "pos": [
+    1.295,
+    1.537
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "footprint_link_issues",
+   "net": "C_Polarized",
+   "refs": [
+    "C2"
+   ],
+   "pos": [
+    1.295,
+    1.575
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "C_Polarized",
+   "refs": [
+    "C2"
+   ],
+   "pos": [
+    1.295,
+    1.575
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "GND",
+   "refs": [
+    "PWR02"
+   ],
+   "pos": [
+    1.295,
+    1.613
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "GND",
+   "refs": [
+    "PWR05"
+   ],
+   "pos": [
+    1.384,
+    1.448
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "footprint_link_issues",
+   "net": "Conn_01x03",
+   "refs": [
+    "J2"
+   ],
+   "pos": [
+    1.435,
+    0.762
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "Conn_01x03",
+   "refs": [
+    "J2"
+   ],
+   "pos": [
+    1.435,
+    0.762
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "footprint_link_issues",
+   "net": "LM2596S-5",
+   "refs": [
+    "U1"
+   ],
+   "pos": [
+    1.511,
+    1.422
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "LM2596S-5",
+   "refs": [
+    "U1"
+   ],
+   "pos": [
+    1.511,
+    1.422
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "GND",
+   "refs": [
+    "PWR06"
+   ],
+   "pos": [
+    1.511,
+    1.499
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "footprint_link_issues",
+   "net": "Conn_02x20_Odd_Even",
+   "refs": [
+    "J1"
+   ],
+   "pos": [
+    1.676,
+    0.965
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "erc",
+   "check": "lib_symbol_issues",
+   "net": "Conn_02x20_Odd_Even",
+   "refs": [
+    "J1"
+   ],
+   "pos": [
+    1.676,
+    0.965
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "silk_edge_clearance",
+   "net": null,
+   "refs": [
+    "L1"
+   ],
+   "pos": [
+    15.0,
+    14.46
+   ],
+   "verdict": "real",
+   "reason": "KiCad's own DRC on the pinned board"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "C1"
+   ],
+   "pos": [
+    27.5,
+    64.96
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "SW1"
+   ],
+   "pos": [
+    62.4,
+    31.96
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "A1"
+   ],
+   "pos": [
+    47.61,
+    43.39
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "D1"
+   ],
+   "pos": [
+    18.0,
+    55.46
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "C3"
+   ],
+   "pos": [
+    85.14,
+    22.76
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "H3"
+   ],
+   "pos": [
+    87.4,
+    30.46
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "J3"
+   ],
+   "pos": [
+    22.7,
+    29.46
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "H1"
+   ],
+   "pos": [
+    23.4,
+    47.96
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "H2"
+   ],
+   "pos": [
+    82.3,
+    61.16
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "J7"
+   ],
+   "pos": [
+    84.868,
+    53.46
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "J10"
+   ],
+   "pos": [
+    81.27,
+    23.48
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "C2"
+   ],
+   "pos": [
+    29.5,
+    47.96
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    62.5,
+    43.96
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "J2"
+   ],
+   "pos": [
+    63.3,
+    66.585
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "U1"
+   ],
+   "pos": [
+    28.65,
+    37.56
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "J8"
+   ],
+   "pos": [
+    81.5,
+    17.96
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "J9"
+   ],
+   "pos": [
+    79.5,
+    37.46
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    66.75,
+    47.01
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "J5"
+   ],
+   "pos": [
+    67.5,
+    53.84
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "L1"
+   ],
+   "pos": [
+    17.0,
+    64.96
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "R1"
+   ],
+   "pos": [
+    61.69,
+    40.46
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "lib_footprint_issues",
+   "net": null,
+   "refs": [
+    "J1"
+   ],
+   "pos": [
+    75.5,
+    17.94
+   ],
+   "verdict": "false",
+   "reason": "the libraries are KiCad's stock ones; the score env has no global sym/fp-lib-table, so KiCad can't find them (hwde's env, not the board)"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "silk_overlap",
+   "net": null,
+   "refs": [
+    "A1"
+   ],
+   "pos": [
+    53.0,
+    68.0
+   ],
+   "verdict": "real",
+   "reason": "KiCad's own DRC on the pinned board"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "silk_overlap",
+   "net": null,
+   "refs": [
+    "A1"
+   ],
+   "pos": [
+    53.0,
+    68.0
+   ],
+   "verdict": "real",
+   "reason": "KiCad's own DRC on the pinned board"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "silk_overlap",
+   "net": null,
+   "refs": [
+    "J4",
+    "J6"
+   ],
+   "pos": [
+    65.0,
+    48.46
+   ],
+   "verdict": "real",
+   "reason": "KiCad's own DRC on the pinned board"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "silk_overlap",
+   "net": null,
+   "refs": [
+    "J4",
+    "J6"
+   ],
+   "pos": [
+    65.0,
+    48.46
+   ],
+   "verdict": "real",
+   "reason": "KiCad's own DRC on the pinned board"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "silk_overlap",
+   "net": null,
+   "refs": [
+    "D1",
+    "L1"
+   ],
+   "pos": [
+    19.5,
+    58.71
+   ],
+   "verdict": "real",
+   "reason": "KiCad's own DRC on the pinned board"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "silk_overlap",
+   "net": null,
+   "refs": [
+    "R1",
+    "SW1"
+   ],
+   "pos": [
+    63.4,
+    37.46
+   ],
+   "verdict": "real",
+   "reason": "KiCad's own DRC on the pinned board"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "silk_overlap",
+   "net": null,
+   "refs": [
+    "C3",
+    "J8"
+   ],
+   "pos": [
+    86.39,
+    20.71
+   ],
+   "verdict": "real",
+   "reason": "KiCad's own DRC on the pinned board"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "silk_over_copper",
+   "net": null,
+   "refs": [
+    "A1"
+   ],
+   "pos": [
+    53.0,
+    68.0
+   ],
+   "verdict": "real",
+   "reason": "KiCad's own DRC on the pinned board"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "silk_over_copper",
+   "net": "/UART_RX_PI",
+   "refs": [
+    "A1"
+   ],
+   "pos": [
+    53.0,
+    68.0
+   ],
+   "verdict": "real",
+   "reason": "KiCad's own DRC on the pinned board"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "silk_over_copper",
+   "net": "/UART_RX_PI",
+   "refs": [
+    "A1"
+   ],
+   "pos": [
+    53.0,
+    68.0
+   ],
+   "verdict": "real",
+   "reason": "KiCad's own DRC on the pinned board"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "silk_over_copper",
+   "net": "GND",
+   "refs": [
+    "C2",
+    "U1"
+   ],
+   "pos": [
+    31.25,
+    42.71
+   ],
+   "verdict": "real",
+   "reason": "KiCad's own DRC on the pinned board"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "net_conflict",
+   "net": "Net-(D1-K)",
+   "refs": [
+    "D1"
+   ],
+   "pos": [
+    18.0,
+    55.46
+   ],
+   "verdict": "real",
+   "reason": "KiCad's own DRC on the pinned board"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "net_conflict",
+   "net": "Net-(D1-K)",
+   "refs": [
+    "L1"
+   ],
+   "pos": [
+    17.0,
+    64.96
+   ],
+   "verdict": "real",
+   "reason": "KiCad's own DRC on the pinned board"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "net_conflict",
+   "net": "Net-(D1-K)",
+   "refs": [
+    "U1"
+   ],
+   "pos": [
+    21.0,
+    35.86
+   ],
+   "verdict": "real",
+   "reason": "KiCad's own DRC on the pinned board"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "extra_footprint",
+   "net": null,
+   "refs": [
+    "H3"
+   ],
+   "pos": [
+    87.4,
+    30.46
+   ],
+   "verdict": "real",
+   "reason": "KiCad's own DRC on the pinned board"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "extra_footprint",
+   "net": null,
+   "refs": [
+    "H1"
+   ],
+   "pos": [
+    23.4,
+    47.96
+   ],
+   "verdict": "real",
+   "reason": "KiCad's own DRC on the pinned board"
+  },
+  {
+   "gate": "drc_routed",
+   "check": "extra_footprint",
+   "net": null,
+   "refs": [
+    "H2"
+   ],
+   "pos": [
+    82.3,
+    61.16
+   ],
+   "verdict": "real",
+   "reason": "KiCad's own DRC on the pinned board"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/UART_RX_PI",
+   "refs": [
+    "A1"
+   ],
+   "pos": [
+    57.3,
+    67.52
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "real",
+   "reason": "KiCad's own DRC agrees (silk_over_copper on A1): the 'Digits v1.1' text runs over A1's pad"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/UART_RX_PI",
+   "refs": [
+    "A1"
+   ],
+   "pos": [
+    56.5,
+    67.52
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "real",
+   "reason": "KiCad's own DRC agrees (silk_over_copper on A1): the 'Digits v1.1' text runs over A1's pad"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/KP_COL0",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    62.5,
+    43.96
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/KP_COL1",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    62.5,
+    45.46
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/KP_COL2",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    62.5,
+    46.96
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/KP_ROW3",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    62.5,
+    48.46
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/KP_ROW2",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    62.5,
+    49.96
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/KP_ROW1",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    62.5,
+    51.46
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/KP_ROW0",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    62.5,
+    52.96
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/KP_COL0",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    62.5,
+    43.96
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/KP_COL1",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    62.5,
+    45.46
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/KP_COL2",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    62.5,
+    46.96
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/KP_ROW3",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    62.5,
+    48.46
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/KP_ROW2",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    62.5,
+    49.96
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/KP_ROW1",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    62.5,
+    51.46
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/KP_ROW0",
+   "refs": [
+    "J4"
+   ],
+   "pos": [
+    62.5,
+    52.96
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/MIC_HOT",
+   "refs": [
+    "J8"
+   ],
+   "pos": [
+    81.5,
+    17.96
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/EAR_P",
+   "refs": [
+    "J8"
+   ],
+   "pos": [
+    83.0,
+    17.96
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/EAR_N",
+   "refs": [
+    "J8"
+   ],
+   "pos": [
+    84.5,
+    17.96
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/MIC_GND",
+   "refs": [
+    "J8"
+   ],
+   "pos": [
+    86.0,
+    17.96
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/MIC_HOT",
+   "refs": [
+    "J8"
+   ],
+   "pos": [
+    81.5,
+    17.96
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/EAR_P",
+   "refs": [
+    "J8"
+   ],
+   "pos": [
+    83.0,
+    17.96
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/EAR_N",
+   "refs": [
+    "J8"
+   ],
+   "pos": [
+    84.5,
+    17.96
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "/MIC_GND",
+   "refs": [
+    "J8"
+   ],
+   "pos": [
+    86.0,
+    17.96
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "Net-(J6-Pin_1)",
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    66.75,
+    47.01
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "GND",
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    68.25,
+    47.01
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "Net-(J6-Pin_1)",
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    66.75,
+    47.01
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": "GND",
+   "refs": [
+    "J6"
+   ],
+   "pos": [
+    68.25,
+    47.01
+   ],
+   "kind": "silk_over_pad",
+   "verdict": "false",
+   "reason": "the rect/poly is an outline (fill none); check_silk reads it as filled, so it 'covers' every pad inside it"
+  },
+  {
+   "gate": "verify",
+   "check": "mating",
+   "net": null,
+   "refs": [
+    "A1",
+    "J4"
+   ],
+   "pos": [
+    62.05,
+    48.46
+   ],
+   "kind": "mating_zone_blocked",
+   "verdict": "?",
+   "reason": ""
+  },
+  {
+   "gate": "verify",
+   "check": "check_fp_attr",
+   "net": null,
+   "refs": [
+    "A1"
+   ],
+   "pos": [
+    47.61,
+    43.39
+   ],
+   "kind": "fp_attr_mismatch",
+   "verdict": "real",
+   "reason": "measured: the footprint's attributes disagree with the part"
+  },
+  {
+   "gate": "verify",
+   "check": "mate_pins",
+   "net": "unconnected-(J1-Pin_1-Pad1)",
+   "refs": [
+    "J1"
+   ],
+   "pos": [
+    75.5,
+    17.94
+   ],
+   "kind": "mate_mirrored_pinout",
+   "verdict": "real",
+   "reason": "erratum 2: J1 on B.Cu turned 180 deg swaps the Pi header's odd/even columns for mating from below",
+   "source": "https://github.com/justinlindh/digits/blob/9807030c8411bf854910b6e2bf4707fa4b47f7bf/hardware/pcb/v1/ERRATA.md"
+  },
+  {
+   "gate": "verify",
+   "check": "check_model_fit",
+   "net": null,
+   "refs": [
+    "U1"
+   ],
+   "pos": [
+    28.65,
+    37.56
+   ],
+   "kind": "model_rotation",
+   "verdict": "?",
+   "reason": ""
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": null,
+   "refs": [
+    "C1"
+   ],
+   "pos": [
+    30.0,
+    58.71
+   ],
+   "kind": "silk_misattributed",
+   "verdict": "real",
+   "reason": "measured: the refdes sits mm beyond its own pads and next to another part, so it reads as that part's label"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": null,
+   "refs": [
+    "H1"
+   ],
+   "pos": [
+    23.4,
+    43.81
+   ],
+   "kind": "silk_misattributed",
+   "verdict": "real",
+   "reason": "measured: the refdes sits mm beyond its own pads and next to another part, so it reads as that part's label"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": null,
+   "refs": [
+    "C2"
+   ],
+   "pos": [
+    31.25,
+    42.71
+   ],
+   "kind": "silk_misattributed",
+   "verdict": "real",
+   "reason": "measured: the refdes sits mm beyond its own pads and next to another part, so it reads as that part's label"
+  },
+  {
+   "gate": "verify",
+   "check": "check_silk",
+   "net": null,
+   "refs": [
+    "L1"
+   ],
+   "pos": [
+    19.5,
+    58.71
+   ],
+   "kind": "silk_misattributed",
+   "verdict": "real",
+   "reason": "measured: the refdes sits mm beyond its own pads and next to another part, so it reads as that part's label"
+  },
+  {
+   "gate": "verify",
+   "check": "check_route_style",
+   "net": "GND",
+   "refs": [],
+   "pos": [
+    36.555,
+    35.879
+   ],
+   "kind": "route_style",
+   "verdict": "real",
+   "reason": "measured: staircase/acute routing a router left; DRC-clean, but worth cleaning"
+  },
+  {
+   "gate": "verify",
+   "check": "check_body_clash",
+   "net": null,
+   "refs": [
+    "L1"
+   ],
+   "pos": [
+    14.45,
+    64.95
+   ],
+   "kind": "body_off_board",
+   "verdict": "?",
+   "reason": ""
+  },
+  {
+   "gate": "verify",
+   "check": "check_body_clash",
+   "net": null,
+   "refs": [
+    "J4",
+    "J6",
+    "J8"
+   ],
+   "pos": null,
+   "kind": "body_unjudged",
+   "verdict": "real",
+   "reason": "the connectors carry no readable 3D model, so their bodies can't be checked"
+  },
+  {
+   "gate": "verify",
+   "check": "check_connector_fit",
+   "net": null,
+   "refs": [
+    "J1"
+   ],
+   "pos": [
+    75.5,
+    17.94
+   ],
+   "kind": "tht_hole_ipc2222",
+   "verdict": "real",
+   "reason": "measured: 1.00 mm holes for 0.64 mm square pins, under IPC-2222's lead + 0.15 mm"
+  },
+  {
+   "gate": "verify",
+   "check": "check_connector_fit",
+   "net": null,
+   "refs": [
+    "J10"
+   ],
+   "pos": [
+    81.27,
+    23.48
+   ],
+   "kind": "tht_hole_ipc2222",
+   "verdict": "real",
+   "reason": "measured: 1.00 mm holes for 0.64 mm square pins, under IPC-2222's lead + 0.15 mm"
+  },
+  {
+   "gate": "verify",
+   "check": "check_connector_fit",
+   "net": null,
+   "refs": [
+    "J5"
+   ],
+   "pos": [
+    67.5,
+    53.84
+   ],
+   "kind": "tht_hole_ipc2222",
+   "verdict": "real",
+   "reason": "measured: 1.00 mm holes for 0.64 mm square pins, under IPC-2222's lead + 0.15 mm"
+  },
+  {
+   "gate": "verify",
+   "check": "check_connector_fit",
+   "net": null,
+   "refs": [
+    "J9"
+   ],
+   "pos": [
+    79.5,
+    37.46
+   ],
+   "kind": "tht_hole_ipc2222",
+   "verdict": "real",
+   "reason": "measured: 1.00 mm holes for 0.64 mm square pins, under IPC-2222's lead + 0.15 mm"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    62.5,
+    43.96
+   ],
+   "kind": "dfm_annular_ring",
+   "verdict": "real",
+   "reason": "measured: the JST pads leave a 0.15 mm ring, under JLC's 0.18 mm PTH minimum"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    62.5,
+    45.46
+   ],
+   "kind": "dfm_annular_ring",
+   "verdict": "real",
+   "reason": "measured: the JST pads leave a 0.15 mm ring, under JLC's 0.18 mm PTH minimum"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    62.5,
+    46.96
+   ],
+   "kind": "dfm_annular_ring",
+   "verdict": "real",
+   "reason": "measured: the JST pads leave a 0.15 mm ring, under JLC's 0.18 mm PTH minimum"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    62.5,
+    48.46
+   ],
+   "kind": "dfm_annular_ring",
+   "verdict": "real",
+   "reason": "measured: the JST pads leave a 0.15 mm ring, under JLC's 0.18 mm PTH minimum"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    62.5,
+    49.96
+   ],
+   "kind": "dfm_annular_ring",
+   "verdict": "real",
+   "reason": "measured: the JST pads leave a 0.15 mm ring, under JLC's 0.18 mm PTH minimum"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    62.5,
+    51.46
+   ],
+   "kind": "dfm_annular_ring",
+   "verdict": "real",
+   "reason": "measured: the JST pads leave a 0.15 mm ring, under JLC's 0.18 mm PTH minimum"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    62.5,
+    52.96
+   ],
+   "kind": "dfm_annular_ring",
+   "verdict": "real",
+   "reason": "measured: the JST pads leave a 0.15 mm ring, under JLC's 0.18 mm PTH minimum"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    66.75,
+    47.01
+   ],
+   "kind": "dfm_annular_ring",
+   "verdict": "real",
+   "reason": "measured: the JST pads leave a 0.15 mm ring, under JLC's 0.18 mm PTH minimum"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    68.25,
+    47.01
+   ],
+   "kind": "dfm_annular_ring",
+   "verdict": "real",
+   "reason": "measured: the JST pads leave a 0.15 mm ring, under JLC's 0.18 mm PTH minimum"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    81.5,
+    17.96
+   ],
+   "kind": "dfm_annular_ring",
+   "verdict": "real",
+   "reason": "measured: the JST pads leave a 0.15 mm ring, under JLC's 0.18 mm PTH minimum"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    83.0,
+    17.96
+   ],
+   "kind": "dfm_annular_ring",
+   "verdict": "real",
+   "reason": "measured: the JST pads leave a 0.15 mm ring, under JLC's 0.18 mm PTH minimum"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    84.5,
+    17.96
+   ],
+   "kind": "dfm_annular_ring",
+   "verdict": "real",
+   "reason": "measured: the JST pads leave a 0.15 mm ring, under JLC's 0.18 mm PTH minimum"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    86.0,
+    17.96
+   ],
+   "kind": "dfm_annular_ring",
+   "verdict": "real",
+   "reason": "measured: the JST pads leave a 0.15 mm ring, under JLC's 0.18 mm PTH minimum"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [
+    "U1"
+   ],
+   "pos": [
+    30.15,
+    37.56
+   ],
+   "kind": "dfm_silk_over_pad",
+   "verdict": "real",
+   "reason": "silk runs onto a pad's mask opening; the fab clips it, so that silk doesn't print as drawn"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [
+    "U1"
+   ],
+   "pos": [
+    30.15,
+    37.56
+   ],
+   "kind": "dfm_silk_over_pad",
+   "verdict": "real",
+   "reason": "silk runs onto a pad's mask opening; the fab clips it, so that silk doesn't print as drawn"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    51.156,
+    67.37
+   ],
+   "kind": "dfm_silk_over_pad",
+   "verdict": "real",
+   "reason": "silk runs onto a pad's mask opening; the fab clips it, so that silk doesn't print as drawn"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    49.402,
+    67.37
+   ],
+   "kind": "dfm_silk_over_pad",
+   "verdict": "real",
+   "reason": "silk runs onto a pad's mask opening; the fab clips it, so that silk doesn't print as drawn"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    49.946,
+    68.156
+   ],
+   "kind": "dfm_silk_over_pad",
+   "verdict": "real",
+   "reason": "silk runs onto a pad's mask opening; the fab clips it, so that silk doesn't print as drawn"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    51.156,
+    67.881
+   ],
+   "kind": "dfm_silk_over_pad",
+   "verdict": "real",
+   "reason": "silk runs onto a pad's mask opening; the fab clips it, so that silk doesn't print as drawn"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [
+    "A1"
+   ],
+   "pos": [
+    57.3,
+    67.52
+   ],
+   "kind": "dfm_silk_over_pad",
+   "verdict": "real",
+   "reason": "silk runs onto a pad's mask opening; the fab clips it, so that silk doesn't print as drawn"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [
+    "A1"
+   ],
+   "pos": [
+    57.3,
+    67.52
+   ],
+   "kind": "dfm_silk_over_pad",
+   "verdict": "real",
+   "reason": "silk runs onto a pad's mask opening; the fab clips it, so that silk doesn't print as drawn"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [
+    "D1"
+   ],
+   "pos": [
+    24.35,
+    55.46
+   ],
+   "kind": "pad_net_mismatch",
+   "verdict": "real",
+   "reason": "Net-(D1-K) on the board vs /VSW in the schematic: the board wasn't updated from the schematic (KiCad's net_conflict agrees)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [
+    "L1"
+   ],
+   "pos": [
+    19.5,
+    64.96
+   ],
+   "kind": "pad_net_mismatch",
+   "verdict": "real",
+   "reason": "Net-(D1-K) on the board vs /VSW in the schematic: the board wasn't updated from the schematic (KiCad's net_conflict agrees)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [
+    "U1"
+   ],
+   "pos": [
+    21.0,
+    37.56
+   ],
+   "kind": "pad_net_mismatch",
+   "verdict": "real",
+   "reason": "Net-(D1-K) on the board vs /VSW in the schematic: the board wasn't updated from the schematic (KiCad's net_conflict agrees)"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    25.02,
+    62.085
+   ],
+   "kind": "dfm_silk_width",
+   "verdict": "real",
+   "reason": "silk strokes under JLC's 0.15 mm minimum won't print"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    49.41,
+    67.864
+   ],
+   "kind": "dfm_silk_over_pad",
+   "verdict": "real",
+   "reason": "silk runs onto a pad's mask opening; the fab clips it, so that silk doesn't print as drawn"
+  },
+  {
+   "gate": "dfm",
+   "check": "dfm",
+   "net": null,
+   "refs": [],
+   "pos": [
+    71.58,
+    42.07
+   ],
+   "kind": "dfm_silk_width",
+   "verdict": "real",
+   "reason": "silk strokes under JLC's 0.15 mm minimum won't print"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "kind": "undersized_track",
+   "net": "Net-(D1-K)",
+   "refs": [
+    "U1"
+   ],
+   "pos": [
+    18.6684,
+    35.7725
+   ],
+   "verdict": "real",
+   "reason": "erratum 1: the LM2596 switching node is routed 0.25 mm (Default class) for 3 A+ peak",
+   "source": "https://github.com/justinlindh/digits/blob/9807030c8411bf854910b6e2bf4707fa4b47f7bf/hardware/pcb/v1/ERRATA.md"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "kind": "undersized_track",
+   "net": "Net-(D1-K)",
+   "refs": [
+    "U1"
+   ],
+   "pos": [
+    16.9622,
+    36.3103
+   ],
+   "verdict": "real",
+   "reason": "erratum 1: the LM2596 switching node is routed 0.25 mm (Default class) for 3 A+ peak",
+   "source": "https://github.com/justinlindh/digits/blob/9807030c8411bf854910b6e2bf4707fa4b47f7bf/hardware/pcb/v1/ERRATA.md"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "kind": "undersized_track",
+   "net": "Net-(D1-K)",
+   "refs": [
+    "U1"
+   ],
+   "pos": [
+    17.5,
+    46.1541
+   ],
+   "verdict": "real",
+   "reason": "erratum 1: the LM2596 switching node is routed 0.25 mm (Default class) for 3 A+ peak",
+   "source": "https://github.com/justinlindh/digits/blob/9807030c8411bf854910b6e2bf4707fa4b47f7bf/hardware/pcb/v1/ERRATA.md"
+  },
+  {
+   "gate": "verify",
+   "check": "check_current",
+   "kind": "undersized_track",
+   "net": "Net-(D1-K)",
+   "refs": [
+    "U1"
+   ],
+   "pos": [
+    17.5,
+    59.96
+   ],
+   "verdict": "real",
+   "reason": "erratum 1: the LM2596 switching node is routed 0.25 mm (Default class) for 3 A+ peak",
+   "source": "https://github.com/justinlindh/digits/blob/9807030c8411bf854910b6e2bf4707fa4b47f7bf/hardware/pcb/v1/ERRATA.md"
+  },
+  {
+   "gate": "verify",
+   "check": "netlist_audit",
+   "kind": "ground_island",
+   "net": "/MIC_GND",
+   "refs": [
+    "C3",
+    "J8",
+    "J9"
+   ],
+   "pos": null,
+   "verdict": "real",
+   "reason": "erratum 3: MIC_GND is a local label that never reaches GND; only C3.2, J8.4 and J9.3 touch it",
+   "source": "https://github.com/justinlindh/digits/blob/9807030c8411bf854910b6e2bf4707fa4b47f7bf/hardware/pcb/v1/ERRATA.md"
+  },
+  {
+   "gate": "verify",
+   "check": "netlist_audit",
+   "net": "/BELL_1",
+   "refs": [
+    "J7"
+   ],
+   "pos": null,
+   "verdict": "real",
+   "reason": "erratum 4: J7's BELL_1/BELL_2 labels reach no other part; the bell terminal is disconnected",
+   "source": "https://github.com/justinlindh/digits/blob/9807030c8411bf854910b6e2bf4707fa4b47f7bf/hardware/pcb/v1/ERRATA.md",
+   "kind": "dangling_net"
+  },
+  {
+   "gate": "verify",
+   "check": "netlist_audit",
+   "net": "/BELL_2",
+   "refs": [
+    "J7"
+   ],
+   "pos": null,
+   "verdict": "real",
+   "reason": "erratum 4: J7's BELL_1/BELL_2 labels reach no other part; the bell terminal is disconnected",
+   "source": "https://github.com/justinlindh/digits/blob/9807030c8411bf854910b6e2bf4707fa4b47f7bf/hardware/pcb/v1/ERRATA.md",
+   "kind": "dangling_net"
+  }
+ ]
+}
