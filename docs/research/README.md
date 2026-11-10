@@ -1,33 +1,33 @@
 # From research to checks
 
-pcb-flow follows current EE research and turns what holds up into tests,
+hwde follows current EE research and turns what holds up into tests,
 scripts, simulations and design guidelines. The person asked for it on
 10-30: "find all the cutting edge research and work, and turn it into tests
 and scripts and simulations, and then also design guidelines and learnings".
 They also said: "Dont blindly trust everything u find out there". So a paper
 is a lead to check, never a fact. A claim becomes a guideline only once
-pcb-flow's own model, simulation or measurement has reproduced it.
+hwde's own model, simulation or measurement has reproduced it.
 
-`pcb-flow papers` (scripts/papers.py) runs the pipeline. The ledger is
+`hwde papers` (scripts/papers.py) runs the pipeline. The ledger is
 [`reference/research/papers.yaml`](../../reference/research/papers.yaml) and
 the topics are [`reference/research/watch.yaml`](../../reference/research/watch.yaml).
 
 ## The loop
 
-1. **Scan.** `pcb-flow papers due` lists the topics whose interval has passed.
-   `pcb-flow papers scan --due --add` searches OpenAlex for each one's queries.
+1. **Scan.** `hwde papers due` lists the topics whose interval has passed.
+   `hwde papers scan --due --add` searches OpenAlex for each one's queries.
    OpenAlex covers journals, conferences and arXiv, and needs no key. Works
    the ledger hasn't seen go in as `candidate`, with their access and trust
-   signals. A topic is one question pcb-flow answers from folklore today, plus
+   signals. A topic is one question hwde answers from folklore today, plus
    the tools its answer would sharpen.
-2. **Triage.** `pcb-flow papers triage ID --keep|--drop --why ".."`. Keep what a
-   named pcb-flow tool could check or use, and say which. Drop what is off-topic
+2. **Triage.** `hwde papers triage ID --keep|--drop --why ".."`. Keep what a
+   named hwde tool could check or use, and say which. Drop what is off-topic
    or chip-level. A dropped paper stays in the ledger so no scan brings it back.
-3. **Get a legitimate copy.** `pcb-flow papers fetch ID` tries each open copy
+3. **Get a legitimate copy.** `hwde papers fetch ID` tries each open copy
    OpenAlex listed, in turn, and keeps the first real PDF in the cache
    (`~/.cache/hwde-papers`, outside the repo, because the copies are the
    publishers' and authors'). It writes the PDF's text alongside.
-   `pcb-flow papers access ID --write` looks again through OpenAlex, then
+   `hwde papers access ID --write` looks again through OpenAlex, then
    Unpaywall (set `HWDE_RESEARCH_MAILTO`; Unpaywall wants a real address),
    then Semantic Scholar. A host whose bot wall turns the agent away is
    recorded as `blocked`, and the agent doesn't try to get past it. Shadow
@@ -43,30 +43,30 @@ the topics are [`reference/research/watch.yaml`](../../reference/research/watch.
    was read (page, section, table, equation), and `read_from: full_text` or
    `abstract`. A claim the paper repeats from another source says so, and
    the primary goes on the queue.
-6. **Check.** Each claim gets pcb-flow's own verdict:
+6. **Check.** Each claim gets hwde's own verdict:
    - `reproduced`, `partial` or `refuted` needs `evidence` and a
      `finding`. The evidence is a test (`tests/<file>.py::<test>`, whose
      source names the claim id) or a script or sim file that names it.
      `tests/test_research_claims.py` holds the tests: each computes what
-     pcb-flow's own model says (check_current's IPC-2152 table, check_pdn_z's
+     hwde's own model says (check_current's IPC-2152 table, check_pdn_z's
      branch model, lib/mlcc.py's bias curve...) and asserts the verdict. A
-     test that starts failing means pcb-flow's model moved or the claim was
+     test that starts failing means hwde's model moved or the claim was
      misread, and the ledger entry needs another look.
    - `untested` needs a `plan`: the test, script, simulation or coupon board
      that would check it.
    - `not_checkable` needs a `why`.
 7. **Guideline.** A reproduced or partial claim may carry a `guideline`
-   (what a designer should do, within the scope pcb-flow checked).
+   (what a designer should do, within the scope hwde checked).
    [guidelines.md](guidelines.md) is built from them, and
    [claims.md](claims.md) lists every claim with its verdict.
-   `pcb-flow papers docs` rewrites both, and the test fails when they're stale.
-   A guideline that changes how pcb-flow should design goes on as a check, a
+   `hwde papers docs` rewrites both, and the test fails when they're stale.
+   A guideline that changes how hwde should design goes on as a check, a
    recipe or a playbook rule, filed as its own brief when it's bigger than
    the claim.
 
-`pcb-flow papers queue` prints the work in order: triage, read, test, the
-paywalled list and the blocked list. `pcb-flow papers lint` holds every promise
-above, and `bin/pcb-flow test` runs it.
+`hwde papers queue` prints the work in order: triage, read, test, the
+paywalled list and the blocked list. `hwde papers lint` holds every promise
+above, and `bin/hwde test` runs it.
 
 ## Trust
 
@@ -76,15 +76,15 @@ A retracted paper's claims can't become guidelines. A paper with odd signs
 (a paid-index "impact factor", data too clean for the method, text that
 disagrees with its own tables) gets a `trust.note`. The 2026 trace-fuse
 paper in the ledger is the worked example. Its "IPC-2152" ratings are 1.5
-to 2x what pcb-flow's IPC-2152 table allows. Its stated overload exponents
+to 2x what hwde's IPC-2152 table allows. Its stated overload exponents
 (-1.7 and -2.3) disagree with its own Table 1 (3.1 to 4.0). Both are
 refuted by tests, and its fuse-temperature claim waits on a coupon board.
 
 ## Keeping it standing
 
-The topics carry `every_days` and `last_scanned`, so `pcb-flow papers due` says
+The topics carry `every_days` and `last_scanned`, so `hwde papers due` says
 when a scan is owed. A sweep or lead that finds topics due runs `scan --due
 --add` and the triage, then files a brief for any reading or checking
 bigger than a sitting. The ingestion runs (`docs/ingest/`, the EE map) and
-design reviews add topics whenever they find pcb-flow answering a question
+design reviews add topics whenever they find hwde answering a question
 from folklore.

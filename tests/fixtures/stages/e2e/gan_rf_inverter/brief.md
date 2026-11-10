@@ -1,6 +1,6 @@
 # PCB-0023-A gan-rf-inverter — brief
 
-The brief pcb-flow was given for PCB-0023-A (boards brief/task.md), with only the repo bookkeeping taken out: register lines, sibling boards' rows, PR and library filing.
+The brief hwde was given for PCB-0023-A (boards brief/task.md), with only the repo bookkeeping taken out: register lines, sibling boards' rows, PR and library filing.
 
 PWM LINK (shared by all three; don't change it without saying so first in the PR): 50-ohm coax on SMA. The source is back-terminated in 50 ohm and delivers >=2.5 V high into a 50-ohm load, edges <=1.5 ns. The receiver terminates in 50 ohm (0-ohm/DNP option to go high-Z), reads high at >=2.0 V, survives 0-6 V at the SMA, and works from a Siglent SDG6032X (the owner's reference source, up to 10 Vpp into 50 ohm) as well as from PCB-0025.
 
