@@ -42,9 +42,9 @@ cap or power IC known by its family whose parts.json row is empty is also blocke
 
 ## Verify
 ```
-bin/hwde datasheet_extract --validate <ws>/parts/<LCSC>.json
-bin/hwde check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --parts <ws>/parts
+bin/pcb-flow datasheet_extract --validate <ws>/parts/<LCSC>.json
+bin/pcb-flow check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --parts <ws>/parts
 ```
 
 ## Sources
-- scripts/check_ratings.py docstring; docs/competitive-research.md backlog item 5; hive-hwde #807.
+- scripts/check_ratings.py docstring; docs/competitive-research.md backlog item 5; hive-pcb-flow #807.

@@ -1,4 +1,4 @@
-# Analog and audio: what was read, what held up, what hwde does about it
+# Analog and audio: what was read, what held up, what pcb-flow does about it
 
 EE ingestion run, domain analog and audio (task 261031-011721-ad1cf4e572,
 issue #302), 2026-10-31. It covers op-amp circuits and stability, class-D
@@ -7,7 +7,7 @@ line-level and speaker interfaces.
 
 Every rule below has a status:
 
-- **verified**: reproduced by a script here (`hwde analog_verify`, where
+- **verified**: reproduced by a script here (`pcb-flow analog_verify`, where
   ngspice and the calculation agree), or stated by two independent sources.
 - **conditional**: true only under conditions the folk version drops. The
   tool encodes the formula, not the folk constant.
@@ -19,11 +19,11 @@ It is marked [summary] when only a search-result summary was seen; those
 need reading before a check rests on them alone. analog.com timed out on
 every fetch in this run, so the ADI items are summary-level.
 
-## What hwde gained
+## What pcb-flow gained
 
 | Tool | What it does | Proof |
 |---|---|---|
-| `hwde analog_calc noise` | Input-referred noise of a stage: en, in·Rs, in·(Rf‖Rg) and the thermal noise of Rs and Rf‖Rg, summed as powers, with the dominant term named and the noise figure. | ngspice `.noise` on 1 kΩ: 4.0578 nV/√Hz on both sides |
+| `pcb-flow analog_calc noise` | Input-referred noise of a stage: en, in·Rs, in·(Rf‖Rg) and the thermal noise of Rs and Rf‖Rg, summed as powers, with the dominant term named and the noise figure. | ngspice `.noise` on 1 kΩ: 4.0578 nV/√Hz on both sides |
 | `analog_calc level`, `bridge`, `damping` | dBu/dBV/Vrms, bridging loss, and the response tilt a source impedance gives a load whose impedance swings Zmin..Zmax (what the "1/8 rule" approximates) | arithmetic; test_analog_calc |
 | `analog_calc hpf`, `bias` | A coupling cap's corner with source and load in series, stacked corners, and the drift rate of an input with no DC path (Ib/C) | ngspice AC: 1.505 Hz sim vs 1.5015 Hz calc |
 | `analog_calc fpbw` | Full-power bandwidth SR/(2π·Vpk), or the slew a level needs | derivation |
@@ -31,7 +31,7 @@ every fetch in this run, so the ADI items are summary-level.
 | `analog_calc lc` | Class-D LC filter, BTL or SE: f0, Q, peak, loss at 20 kHz, attenuation at fsw, and the peak with the load doubled and with it gone. Or L and C for a target f0 and Q. | ngspice AC on a BTL pair: peak, 20 kHz and fsw within 0.05 dB / 0.2 dB |
 | `analog_calc classd` | Output power at clipping and at 10 % THD from PVDD, load, Rds(on) and DCR | clip-ratio derivation below |
 | `analog_calc sar` | SAR charge-bucket RC: kickback, the residual after t_acq in LSB, and the time and number of τ to ½ LSB | ngspice transient of the charge share, within 1 % |
-| `hwde analog_verify` | Re-runs every case above against KiCad's ngspice, plus two engine facts. Exit 1 if any disagree. | itself; tests/test_analog_calc.py runs it |
+| `pcb-flow analog_verify` | Re-runs every case above against KiCad's ngspice, plus two engine facts. Exit 1 if any disagree. | itself; tests/test_analog_calc.py runs it |
 | netlist_audit `opamp_input_no_dc_path` (error) | An op-amp, comparator or in-amp input whose net reaches only capacitors, diodes, test points and other inputs through R/L/bead/jumper chains: no path for bias current. | tests/test_amp_dc_path.py; the hifi core board's 6 amp inputs pass |
 | netlist_audit `opamp_input_dc_via_connector_only` (warning) | The input's only DC path is a connector pin, so it floats with the cable out. | same |
 | netlist_audit `polarized_cap_reverse` (warning) | An electrolytic or tantalum whose + side rests more than 0.5 V below its − side, by the same rail/resistor solve `input_common_mode` uses | same; core's 470 µF PVDD caps pass once PVDD's volts are declared |
@@ -56,7 +56,7 @@ every fetch in this run, so the ADI items are summary-level.
 
 | # | Rule | Status | How |
 |---|---|---|---|
-| A1 | Every op-amp/in-amp input needs a DC return path for its bias current. Without one it drifts to a rail at Ib/C (10 nA into 1 µF is 10 mV/s). | **verified** | ADI AN-937 and Analog Dialogue "Avoiding common problems when designing amplifier circuits" (Kitchin) [summary]; hwde's own in-amp records (in-bias-current-return-path); topology check built |
+| A1 | Every op-amp/in-amp input needs a DC return path for its bias current. Without one it drifts to a rail at Ib/C (10 nA into 1 µF is 10 mV/s). | **verified** | ADI AN-937 and Analog Dialogue "Avoiding common problems when designing amplifier circuits" (Kitchin) [summary]; pcb-flow's own in-amp records (in-bias-current-return-path); topology check built |
 | A2 | Cap load: the load pole 1/(2π(Ro+Riso)CL) erodes phase margin, and Riso adds a zero 1/(2π·Riso·CL) that restores it. | **verified** | ngspice loop gain against `cap_load_pm`; ADI AAE-25/AAE-32, TI "Three ways to stabilize op amp capacitive loads" [summary] |
 | A3 | "PM 45° → about 23 % overshoot; 60° → about 9 %" | **conditional** | Exact for a two-pole loop (ngspice step: 39.7 % at PM 31° both ways). With Riso the zero adds overshoot (17 % measured where the formula says 12 %), so treat the estimate as a floor. |
 | A4 | Raising the noise gain stabilizes a cap load with no Riso | **verified** | NG 4 takes 1 nF/50 Ω from 31° to 57° (ngspice); ADI AAE-25 [summary] |
@@ -95,7 +95,7 @@ every fetch in this run, so the ADI items are summary-level.
 
 | # | Rule | Status | How |
 |---|---|---|---|
-| G1 | One solid ground plane, partitioned by placement; no trace crosses a split | **verified** (two sources) | Ott, "Split ground planes" [read]; ADI MT-031, TI SLYT499 [summary]. hwde's check_return_path already covers plane crossings. |
+| G1 | One solid ground plane, partitioned by placement; no trace crosses a split | **verified** (two sources) | Ott, "Split ground planes" [read]; ADI MT-031, TI SLYT499 [summary]. pcb-flow's check_return_path already covers plane crossings. |
 | G2 | "Always split AGND and DGND and join them at a star point" | **disputed** | MT-031 [summary]: tie a converter's AGND/DGND at the chip to one plane when its digital current is low. Some datasheets (AD7656) ask for separate planes. Ott [read]: one plane removes the question. Defer to the part's datasheet. |
 | L1 | +4 dBu = 1.228 V, −10 dBV = 0.316 V; they are 11.8 dB apart, not 14 | **verified** | arithmetic |
 | L2 | Line interfaces need 600 Ω matching | **folklore** outside telecom/broadcast | Modern practice is bridging: Zout 50–600 Ω into Zin ≥ 10 kΩ (Rane, SVC [summary]); 600 Ω into 10 kΩ loses 0.5 dB. |
@@ -147,7 +147,7 @@ Filed as briefs: 1 (task 261031-013846-8ebea62ba7), 2 (261031-013847-69dd276ae7)
 ## Open-source tools looked at (ideas, not dependencies)
 
 ngspice (`.noise`, `fourier`, `.meas`) is in use here. PySpice/InSpice is
-already hwde's binding. Zero/LISO (op-amp noise with a part library) is the
+already pcb-flow's binding. Zero/LISO (op-amp noise with a part library) is the
 model for follow-up 7. Lcapy gives closed-form f0/Q. scikit-rf could model
 bead + cap resonance (D7). endolith/waveform_analysis is a THD+N reference
 with a flattop window. JYKlabs Audio-Measurement-Tools covers AES17's

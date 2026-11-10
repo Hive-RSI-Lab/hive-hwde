@@ -55,9 +55,9 @@ Two copper items sit closer than the clearance constraint governing them. msg ca
 
 ## Verify
 ```
-bin/hwde route_edit --pcb boards/<ws>/kicad/<board>.kicad_pcb --ops boards/<ws>/work/fix-<id>.json --out-report boards/<ws>/work/fix-<id>.rep.json
-bin/hwde kc drc boards/<ws>/kicad/<board>.kicad_pcb --refill --save-board --all-track-errors --out boards/<ws>/work/drc-after.json
-bin/hwde gate --gate drc_routed boards/<ws>/kicad/<board>.kicad_pcb --out boards/<ws>/work/gate-after.json
+bin/pcb-flow route_edit --pcb boards/<ws>/kicad/<board>.kicad_pcb --ops boards/<ws>/work/fix-<id>.json --out-report boards/<ws>/work/fix-<id>.rep.json
+bin/pcb-flow kc drc boards/<ws>/kicad/<board>.kicad_pcb --refill --save-board --all-track-errors --out boards/<ws>/work/drc-after.json
+bin/pcb-flow gate --gate drc_routed boards/<ws>/kicad/<board>.kicad_pcb --out boards/<ws>/work/gate-after.json
 ```
 
 ## Sources

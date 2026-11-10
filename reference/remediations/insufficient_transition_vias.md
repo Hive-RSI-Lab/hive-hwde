@@ -50,9 +50,9 @@ never per-branch.
 
 ## Verify
 ```
-bin/hwde check_current --pcb boards/lumina-carrier/kicad/lumina-carrier.kicad_pcb --constraints boards/lumina-carrier/kicad/constraints.json
-bin/hwde gate --gate drc_routed boards/lumina-carrier/kicad/lumina-carrier.kicad_pcb
-bin/hwde gate --gate verify boards/lumina-carrier/kicad/lumina-carrier.kicad_pcb
+bin/pcb-flow check_current --pcb boards/lumina-carrier/kicad/lumina-carrier.kicad_pcb --constraints boards/lumina-carrier/kicad/constraints.json
+bin/pcb-flow gate --gate drc_routed boards/lumina-carrier/kicad/lumina-carrier.kicad_pcb
+bin/pcb-flow gate --gate verify boards/lumina-carrier/kicad/lumina-carrier.kicad_pcb
 ```
 Compare `checked[].via_clusters` before/after - it must not increase. Run drc_routed as well: an added via can
 regress via_dangling / hole_to_hole, which the verify gate never looks at.

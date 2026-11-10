@@ -1,6 +1,6 @@
 # JLC CPL rotation for bottom-side parts
 
-**Rule hwde uses:** CPL rotation = (180 - KiCad rotation + correction) mod 360, read from below. Position is the board's own coordinates, not mirrored. `correction` is the model fit (`cpl_verify.py`), or `jlc_rotations.csv` when there's no model.
+**Rule pcb-flow uses:** CPL rotation = (180 - KiCad rotation + correction) mod 360, read from below. Position is the board's own coordinates, not mirrored. `correction` is the model fit (`cpl_verify.py`), or `jlc_rotations.csv` when there's no model.
 
 **Where it comes from. It isn't a JLC statement.**
 - Bouni `kicad-jlcpcb-tools`, `fabrication.py`: `rotation = (180 - rotation) % 360` for a bottom part ("bottom angles need to be mirrored on Y-axis"), then the correction is added. A position offset has its x negated on the bottom. Read 2026-11-02.

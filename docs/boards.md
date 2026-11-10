@@ -1,20 +1,20 @@
-# Boards built with hwde in other projects
+# Boards built with pcb-flow in other projects
 
-hwde's real boards are built in the projects that need them, not in this
+pcb-flow's real boards are built in the projects that need them, not in this
 repo: the hi-fi receiver's boards are in hifi-receiver-2's `boards/`. The
-score ([score.md](score.md)) re-runs hwde's gates on a copy of each one,
+score ([score.md](score.md)) re-runs pcb-flow's gates on a copy of each one,
 pinned in `pinned/<board>/` at one commit of its project, and charges the
 board-local scripts its pin, `pinned/<board>.json`, lists as `stand_in`.
 
-**Who refreshes a pin:** the worker who takes a board through hwde's gates
-in its own project, once its main holds the board: `bin/hwde pin <board>
+**Who refreshes a pin:** the worker who takes a board through pcb-flow's gates
+in its own project, once its main holds the board: `bin/pcb-flow pin <board>
 --from <the project's clone> --commit <sha>`, classifying each new script,
 in a commit that names the project's commit. The board's ledger,
 `pinned/known/<board>.json`, stays: drop the entries for defects the new
-board fixed, add its new findings with `bin/hwde score --board <board>
---draft-known`, judge them, and `bin/hwde pin --digests`. Workarounds that have a probe
+board fixed, add its new findings with `bin/pcb-flow score --board <board>
+--draft-known`, judge them, and `bin/pcb-flow pin --digests`. Workarounds that have a probe
 also get a row in [workarounds.md](workarounds.md), or extend an existing
-row's `boards` when it's the same cause. `bin/hwde check-all` re-runs only
+row's `boards` when it's the same cause. `bin/pcb-flow check-all` re-runs only
 this repo's boards; a board here is re-checked by its own project's test.
 
 | board | project | pinned at | where |
@@ -52,7 +52,7 @@ them as `stand_in` scripts of their pins:
   clearance or refill zones (`kicad/gen/refill.py`); it refills with
   `--refill` now, and takes the rip/renet/add-path/rename ECOs and
   place_edit the pad/DNP ones that `kicad/gen/rip*.py`, `add_*.py`,
-  `rename_net.py`, `pad_*.py` and `set_dnp.py` did by hand; no hwde script draws
+  `rename_net.py`, `pad_*.py` and `set_dnp.py` did by hand; no pcb-flow script draws
   a copper keep-out (`kicad/gen/keepout.py`, the ESP32 antenna and the NPTH
   pegs); stitch_vias' hole-to-hole misses (`kicad/gen/fix_holes.py`).
 - **lite-main: footprints by hand.** The stacked RCA's courtyard and pegs
@@ -66,7 +66,7 @@ them as `stand_in` scripts of their pins:
   planes_gen should take as one op; each pin names the gap.
 - **core: the TPA3220 package swap (hifi-receiver-2 PR #68).** Task
   261029-075354 swapped U15/U16 to the exposed-pad HTSSOP with throwaway
-  pcbnew scripts, none committed. Each is an hwde op now: `swap_fp` +
+  pcbnew scripts, none committed. Each is an pcb-flow op now: `swap_fp` +
   `rip_ep` are board_update's copper-keeping swap (clash rip included),
   `set_dnp` its netlist DNP sync; `widen`, `move_via`, `fix_dangle`
   (`join_end`) and `set5v` (`copy_from`) are route_edit ops; `silk_rm` is

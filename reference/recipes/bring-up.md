@@ -29,7 +29,7 @@ self-test before load; quiet levels before loud).
   every rail and status, drives outputs at a quiet level and reads them back
   through the loopback taps. The hive-fw module builds and flashes the
   firmware; the bench lives in the board's project, not here.
-- `scripts/bench.py` is NOT a hardware bench: it scores hwde's own pipeline
+- `scripts/bench.py` is NOT a hardware bench: it scores pcb-flow's own pipeline
   stages on frozen fixtures. Do not reach for it here.
 - Bench-only items (power into a real load, a thermocouple, a listen) go to
   the person in ONE batch, with exact wiring and what to send back.
@@ -68,4 +68,4 @@ contingency the board carries, a firmware change, or a rework (a
 `fix-finding` / `swap-part` run for the next spin). Append what the board
 taught to the project's LEARNINGS (dated, one claim per heading): a failure
 the first-spin review missed is a class for reference/first-spin.md and,
-where a check could catch it, a tool for hive-hwde.
+where a check could catch it, a tool for hive-pcb-flow.

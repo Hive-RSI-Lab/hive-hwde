@@ -43,9 +43,9 @@ exec "$@"
 
 
 @pytest.mark.parametrize("args,what", [
-    (["route_auto", "--pcb", "x.kicad_pcb"], "hwde route_auto"),
-    (["gate.py", "dfm"], "hwde gate"),
-    (["check-all"], "hwde check-all (every board's gates)"),
+    (["route_auto", "--pcb", "x.kicad_pcb"], "pcb-flow route_auto"),
+    (["gate.py", "dfm"], "pcb-flow gate"),
+    (["check-all"], "pcb-flow check-all (every board's gates)"),
 ])
 def test_heavy_commands_wait_for_a_lease(tmp_path, args, what):
     hive, py = _run(tmp_path, args)

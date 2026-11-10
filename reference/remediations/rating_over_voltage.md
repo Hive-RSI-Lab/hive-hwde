@@ -64,8 +64,8 @@ After P5 any added part is board surgery - see reference/recipes/add-part.md.
 
 ## Verify
 ```
-bin/hwde check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --constraints <ws>/kicad/constraints.json
-bin/hwde gate --gate verify <ws>/kicad/<board>.kicad_pcb
+bin/pcb-flow check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --constraints <ws>/kicad/constraints.json
+bin/pcb-flow gate --gate verify <ws>/kicad/<board>.kicad_pcb
 ```
 
 ## Sources

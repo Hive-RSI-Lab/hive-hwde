@@ -1,6 +1,6 @@
 # Solvers
 
-hwde's simulators beyond the KiCad-bundled ngspice that `sim_run` and
+pcb-flow's simulators beyond the KiCad-bundled ngspice that `sim_run` and
 `sim_board` drive. They come from the Hive's read-only IIC-OSIC-TOOLS tree
 (`/opt/eda-toolchain/iic-osic-tools-*`, the chip-flow module's toolchain);
 `scripts/lib/solvers.py` finds it (or `HWDE_EDA_TOOLCHAIN`) and runs each
@@ -16,14 +16,14 @@ binary through the image's own loader. Nothing is installed.
 | OpenVAF | Verilog-A to OSDI compiler, for compact models in ngspice | 20260616 (OpenVAF-reloaded) | `solvers.compile_va` |
 | FastHenry2 | quasi-static L / R extraction | 3.0.1 | `lib/emsolve.py` |
 | FasterCap | quasi-static C extraction | 6.0.7 | `lib/emsolve.py` |
-| thermalfv | board-plane heat spreading + electro-thermal coupling | hwde's own | `lib/thermalfv.py` |
+| thermalfv | board-plane heat spreading + electro-thermal coupling | pcb-flow's own | `lib/thermalfv.py` |
 
-`hwde sim_solve probe` lists them; `hwde sim_solve validate` checks them.
+`pcb-flow sim_solve probe` lists them; `pcb-flow sim_solve validate` checks them.
 
 ## Trust: every solver earns it on a case with a known answer
 
 A solver's number goes into a board's review only while its validation
-case passes. `hwde sim_solve validate` runs each solver on one case whose
+case passes. `pcb-flow sim_solve validate` runs each solver on one case whose
 answer is closed form and reports the error against a stated tolerance.
 Measured on this machine, 2026-10-30:
 
@@ -43,7 +43,7 @@ Measured on this machine, 2026-10-30:
 | thermal_point | thermalfv | point source on a plate, θ(r) = P/(2πkt)·K0(mr), r = 3, 5, 10 mm | +0.15% worst | 1% |
 | electrothermal | thermalfv | strip at fixed volts, R rising with T: hAθ = V²/(R0(1+αθ)) | 0.000% | 1% |
 
-A case that fails is a defect of hwde's deck or reader, or of the tree,
+A case that fails is a defect of pcb-flow's deck or reader, or of the tree,
 not of a board: fix it before using the solver. Its tolerance is the
 reference's own accuracy plus the discretisation a minutes-long solve
 allows, and should only tighten.
@@ -69,7 +69,7 @@ machine.
   `OMPI_MCA_ess_singleton_isolated=1` let them start as a single rank
   without spawning `orted`. hwloc warns that `/sys` is missing (the
   sandbox), which is harmless.
-- **Heavy.** `bin/hwde` runs `sim_solve` under `hive heavy`, one heavy
+- **Heavy.** `bin/pcb-flow` runs `sim_solve` under `hive heavy`, one heavy
   job on the machine at a time. Palace and the thermal cases take seconds;
   openEMS takes minutes.
 - **Load.** Xyce loads Trilinos's large shared libraries. With the disk
@@ -79,7 +79,7 @@ machine.
   full-wave ones in test-em.
 - **XSPICE and OSDI (#499).** The tree's own `spinit` names
   `/foss/tools/...` for its code models, which isn't here, so `solvers.command`
-  points ngspice's `SPICE_SCRIPTS` at hwde's spinit
+  points ngspice's `SPICE_SCRIPTS` at pcb-flow's spinit
   (`~/.cache/hwde/ngspice-init/<tree>/spinit`) with a `codemodel` line per
   `lib/ngspice/*.cm` the tree really has (analog, digital, spice2poly, table,
   tlines, xtradev, xtraevt). `A` devices, `d_*` gates and flops, `adc_bridge`
@@ -92,13 +92,13 @@ machine.
   (`solvers.compile_va`, cached in `~/.cache/hwde/osdi/` by source hash).
   The tree's prebuilt `.osdi` (psp103_nqs, r3_cmc, bsimcmg) are in
   `lib/ngspice/`; vacask's under `foss/tools/vacask/lib/vacask/mod/` are for
-  VACASK. `bin/openvaf` is an absolute symlink into `/foss`: hwde runs
+  VACASK. `bin/openvaf` is an absolute symlink into `/foss`: pcb-flow runs
   `openvaf-r`. Gotcha: an integrator cap with no DC path needs `uic` and an
   `.ic`, or the operating point is singular and the loop starts saturated.
 
 ## Studies for boards
 
-- `hwde sim_solve line --w W --h H --er ER [--t T] [--z-target OHM]`: a
+- `pcb-flow sim_solve line --w W --h H --er ER [--t T] [--z-target OHM]`: a
   bare microstrip in openEMS, read by three voltage and two current probes
   (Z0 = √(V·dV/dx ⁄ I·dI/dx), exact on a uniform line whatever its standing
   wave). It is set beside impedance.py's 2D quasi-static solve of the same
@@ -107,8 +107,8 @@ machine.
   53.34 Ω full-wave against 53.70 Ω quasi-static (−0.68%). This is the check for an RF board's controlled
   impedance before the fab's calculator is trusted.
 
-- `hwde sim_solve planar-geom --pcb B --region X0,Y0,X1,Y1 --port X,Y,DIR,W ...`
-  then `hwde sim_solve planar --geom G.json [--excite all|0,1] [--touchstone F.s2p]`:
+- `pcb-flow sim_solve planar-geom --pcb B --region X0,Y0,X1,Y1 --port X,Y,DIR,W ...`
+  then `pcb-flow sim_solve planar --geom G.json [--excite all|0,1] [--touchstone F.s2p]`:
   S-parameters of a planar microstrip circuit cut from a board. planar-geom
   takes every copper item on one layer in the region (any net; custom pads
   as drawn, via geom.py's new `_custom_pad`; NPTH skipped; holes split since
@@ -126,7 +126,7 @@ machine.
   answer is noise. Limits: infinite ground (so not antennas, nor a coupon's
   finite ground), ports must leave the circuit straight.
 
-- `hwde sim_solve board --pcb B --region X0,Y0,X1,Y1 --port X,Y,DIR[,LAYER[,W]] ...
+- `pcb-flow sim_solve board --pcb B --region X0,Y0,X1,Y1 --port X,Y,DIR[,LAYER[,W]] ...
   [--part REF=OHMS] [--symmetric] [--touchstone F.s2p] [--deck-only DIR]`
   (#455, `lib/emboard.py`): S-parameters of a region of a board with
   every copper layer of its stackup, not one layer over an infinite
@@ -319,7 +319,7 @@ machine.
 
 ## S-parameter files: quality and macromodel (#483)
 
-`hwde sparam check F.sNp` and `hwde sparam fit F.sNp --out F.cir`
+`pcb-flow sparam check F.sNp` and `pcb-flow sparam fit F.sNp --out F.cir`
 (`scripts/sparam.py`, `lib/sparam.py`).
 
 - **check** gives the IEEE P370-2020 frequency-domain quality metrics,
@@ -344,7 +344,7 @@ machine.
   under 90 degrees of transmission phase, and a phase that extrapolates
   to 0 at DC.
 - **fit** runs scikit-rf's VectorFitting (Gustavsen & Semlyen). It is
-  imported from the tree's dist-packages, so hwde's lock doesn't change.
+  imported from the tree's dist-packages, so pcb-flow's lock doesn't change.
   It takes the lowest order whose rms |dS| is under `--target-error`
   (default 1e-3), enforces passivity, and writes `.SUBCKT NAME p1 .. pN`
   (ground-referenced, z0 from the file). `--verify` runs that subckt
@@ -367,13 +367,13 @@ scikit-rf gotchas, worked around in lib/sparam.py:
 - With a DC point in the data its fit is 1e-2 worse, so the DC point is
   dropped before fitting.
 - auto_fit is unstable (a 1e-13 change in the data moved it from 6 to 8
-  poles). hwde does its own order search on a copy decimated to 400
+  poles). pcb-flow does its own order search on a copy decimated to 400
   points, then fits the chosen order on every point.
 - The fit leaves real poles at 1e14-1e30 rad/s. Written as SPICE, they
   become sub-pOhm resistors that ngspice clamps, which wrecks the model.
   They are folded into the constant term.
 - `is_passive()` has no tolerance, and a ladder's S(inf) = diag(1, -1)
-  sits on the unit circle. hwde judges passivity itself on 0..10 f_max and
+  sits on the unit circle. pcb-flow judges passivity itself on 0..10 f_max and
   at infinity, with a 1e-6 tolerance.
 - `Network.passivity` is an element-wise sqrt of S^H S. Only its diagonal
   means anything.
@@ -418,13 +418,13 @@ segmentation_unconverged). Treat a plane like that as not yet modelled.
 
 ## PCB antennas (#481, #371)
 
-`hwde sim_solve antenna` solves a board's own antenna copper in openEMS on its
+`pcb-flow sim_solve antenna` solves a board's own antenna copper in openEMS on its
 finite ground, with a PML_8 box and NF2FF: S11, Zin, gain pattern, directivity,
 radiation efficiency (`scripts/lib/emantenna.py`). The port is lumped, in the
 plane across a gap or between layers:
 
 ```
-hwde sim_solve antenna --pcb B --feed X,Y,F.Cu,B.Cu --band 2.3e9,2.6e9 \
+pcb-flow sim_solve antenna --pcb B --feed X,Y,F.Cu,B.Cu --band 2.3e9,2.6e9 \
     --region X0,Y0,X1,Y1 --ground GND_A9 [--outline X0,Y0,X1,Y1] [--cut BOX] \
     [--short BOX] [--fine MM] [--loss] [--converge] [--threads 4] --out DIR
 ```
@@ -494,11 +494,11 @@ goes, so it sits on the ground edge: 0.08 mm off reads as a 10% copper differenc
 
 ## Vias and launches in 3D (#479, #599)
 
-`hwde sim_solve via` solves one via in openEMS, cut from a board
+`pcb-flow sim_solve via` solves one via in openEMS, cut from a board
 (`--pcb B --via X,Y`) or from a stack (`stackups.yaml`): signal barrel, pads,
 antipads, return vias, stub. It writes an s2p and reports S, effective Z from a
 TDR of S11, the stub notch against `check_via_stubs`'s closed form, and the power
-lost, 1-(|S11|^2+|S22|^2)/2-|S21 S12|. `hwde sim_solve launch` does an edge SMA on a line: a
+lost, 1-(|S11|^2+|S22|^2)/2-|S21 S12|. `pcb-flow sim_solve launch` does an edge SMA on a line: a
 coax port on the jack's face and two runs, the coax absorbing and then shorted
 (`scripts/lib/emvia.py`). The Palace cross-check on one via is
 `emvia.palace_run`, not a flag. `check_via_stubs` gains `via_return_far` and
@@ -600,7 +600,7 @@ hw-lab VNA is the reference still to come.
 ## HFSS
 
 Ansys HFSS is the commercial full-wave reference. A licence is money and
-the person's call. hwde does not drive it, and nothing here assumes it.
+the person's call. pcb-flow does not drive it, and nothing here assumes it.
 Palace (FEM, the same method as HFSS) and openEMS (FDTD) are the open
 stand-ins, each held to its validation case. If the person buys a licence,
 a deck exporter beside `lib/emsolve.py`'s would let HFSS check the same

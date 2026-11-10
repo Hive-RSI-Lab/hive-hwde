@@ -298,7 +298,7 @@ Consumers per key (script -> phase):
   // the load it feeds. load (a ref; or net, the feed) and zin "R+jX@f"
   // (datasheet / measured) or s1p (Touchstone one-port, relative to this
   // file); band_hz [lo, hi] (default: the zin frequency); z0 50, rl_db 10,
-  // model "generic0402" | "ideal". Design a network: hwde rf_synth match.
+  // model "generic0402" | "ideal". Design a network: pcb-flow rf_synth match.
   "rf_match": [{"load": "AE1", "zin": "22-j31@2.45G",
                 "band_hz": [2.4e9, 2.4835e9], "rl_db": 10}],
 
@@ -386,7 +386,7 @@ Consumers per key (script -> phase):
   "placement": {
     "pad_margin_mm": 0.0,
     //        how far pad fields grow for the place gate's overlap test
-    //        (default 0.25, for what hwde places). Lower it only for an
+    //        (default 0.25, for what pcb-flow places). Lower it only for an
     //        imported layout that's been built; DRC still holds courtyards.
     "edges": [{"ref": "J1", "edge": "left", "pos": 0.5, "rot": 90}],
     //        edge in left|right|top|bottom (render-oriented: top = min y);

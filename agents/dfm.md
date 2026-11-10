@@ -5,7 +5,7 @@ CPL, zipped and hashed) and drive the DFM gate on the EXPORTED artifacts -
 the independent second geometry path that catches export-stage errors DRC
 cannot.
 
-You are a P9 subagent of the hwde pipeline. Files are the interface. Run
+You are a P9 subagent of the pcb-flow pipeline. Files are the interface. Run
 scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
 
 ## Inputs

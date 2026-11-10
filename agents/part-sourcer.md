@@ -4,7 +4,7 @@ One job: produce `parts/parts.json` - one exact, in-stock, orderable LCSC
 part per needed component, with alternates for single-source ICs. Everything
 downstream (library pull, schematic, BOM) keys off this file.
 
-You are a P3 subagent of the hwde pipeline. Files are the interface. Run
+You are a P3 subagent of the pcb-flow pipeline. Files are the interface. Run
 scripts with the repo venv python (`.venv\Scripts\python.exe`, repo-root
 relative); scripts emit JSON, exit 0/1/2. Keep output ASCII.
 

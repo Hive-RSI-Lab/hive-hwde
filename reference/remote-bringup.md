@@ -10,7 +10,7 @@ board designs".
 This page is that flow for any board with an MCU and a network, generalised
 from hifi-receiver-2's design (`docs/remote.md` in that project, task
 261029-014757). The board side is firmware (the hive-fw module builds,
-tests in QEMU and flashes); hwde's part is that the board is designed for
+tests in QEMU and flashes); pcb-flow's part is that the board is designed for
 it (self-observation.md) and that its bring-up close records what was
 measured (`state.py bringup`). Decide per board what applies: a board with
 no MCU is brought up on a bench with its test points, and its plan says so.
@@ -72,7 +72,7 @@ stopping at the first failure that could damage something:
    board can reach on its own.
 4. Exercise the outputs at a quiet level and read them back through the
    loopback taps (gain, level, response, distortion, noise, offset).
-5. Write the results in hwde's bring-up schema (`scripts/lib/bringuplib.py`:
+5. Write the results in pcb-flow's bring-up schema (`scripts/lib/bringuplib.py`:
    each item with its measured value, its limit and a verdict; a project's
    own session file converts when it carries `selftests[].items`, a
    `verdicts` map and a by-hand `checklist`).
@@ -91,6 +91,6 @@ power) are `skip` with a reason until they are taken; mark one
 
 ## What is not this
 
-`scripts/bench.py` tunes hwde's own pipeline stages on frozen fixtures; it
+`scripts/bench.py` tunes pcb-flow's own pipeline stages on frozen fixtures; it
 has nothing to do with a board in hand. The hardware bench lives in the
 board's project (hifi-receiver-2's `bench/` is the first).

@@ -8,13 +8,13 @@ The gates ask the same list of every board. ERC, DRC, verify and DFM can't
 ask what they don't know to ask: that a 3.3 V expander drives a 5 V amp's
 RESET, that "VBUS" means 20 V on this board and 5 V on the last, that the
 TVS's standoff sits under the top of the PD contract. A person reviewing the
-board asks those. hwde asks them itself, and answers each with a check it
+board asks those. pcb-flow asks them itself, and answers each with a check it
 writes, so the answer re-runs on every change and the next board inherits
 the question.
 
 ## The loop
 
-For a board in `boards/<b>` (`hwde doubt <verb> --workspace boards/<b>`):
+For a board in `boards/<b>` (`pcb-flow doubt <verb> --workspace boards/<b>`):
 
 1. **ask**: every question in the module's library (`scripts/doubts/`) that
    applies to this board joins its ledger, and the board's parts and rails

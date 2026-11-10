@@ -54,8 +54,8 @@ rework on the shipped batch).
 
 ## Verify
 ```
-bin/hwde check_decoupling --pcb <ws>/kicad/<board>.kicad_pcb --metadata <ws>/kicad/decoupling.json
-bin/hwde gate --gate verify <ws>/kicad/<board>.kicad_pcb
+bin/pcb-flow check_decoupling --pcb <ws>/kicad/<board>.kicad_pcb --metadata <ws>/kicad/decoupling.json
+bin/pcb-flow gate --gate verify <ws>/kicad/<board>.kicad_pcb
 ```
 
 ## Sources

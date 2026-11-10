@@ -3,7 +3,7 @@
 Task 261031-011721-ff0fd27245 (issue #305), 2026-10-30/31. This is one of the
 parallel EE ingestion runs, one per domain (the others are in
 `reference/ingest/*.md`). Domain: the open-source EDA and EE tools, scripts and
-libraries hwde could use. For each one: what it would add, its licence, and
+libraries pcb-flow could use. For each one: what it would add, its licence, and
 whether it runs here. A claim counts as **verified** only after I ran it on
 this machine or reproduced it by a calculation. **Two-source** means it rests
 on two independent published sources that I did not run. **Disputed** means
@@ -14,19 +14,19 @@ work drops.
 
 Scripts that reproduce the numbers are in
 [`tools-ecosystem/`](tools-ecosystem/). Each one runs on its own; they are not
-part of `bin/hwde test`.
+part of `bin/pcb-flow test`.
 
-## What hwde already uses
+## What pcb-flow already uses
 
 KiCad 10.0.6 (`kicad-cli`: drc, erc, gerbers, drill, pos, netlist, bom, step,
 vrml, render, pdf, svg, upgrade), KiCad's bundled libngspice through InSpice
 (the PySpice fork, GPL-3.0), freerouting 2.2.4, KiCadRoutingTools, gerbonara
 (Apache-2.0), kiutils (GPL-3.0), kicad-sch-api (MIT), easyeda2kicad
 (AGPL-3.0), hierplace and kinet2pcb (MIT), and its own 2D field solver
-(`scripts/lib/impedance.py`, numpy/scipy). hwde itself is MIT. Every
+(`scripts/lib/impedance.py`, numpy/scipy). pcb-flow itself is MIT. Every
 GPL/AGPL tool on this list runs as a separate program or an unmodified
-import. hwde ships none of them, and nothing serves them over a network, so
-none of them changes hwde's licence. (That is the usual reading of the GPL
+import. pcb-flow ships none of them, and nothing serves them over a network, so
+none of them changes pcb-flow's licence. (That is the usual reading of the GPL
 for separate programs. I have not checked it with a lawyer.)
 
 ## Found: the Hive already has the big solvers
@@ -45,7 +45,7 @@ hive-chip-flow uses. It holds these tools (versions are from its
 | Xyce | 7.10 | GPL-3.0 | **not yet**. This is the MPI build, and OpenMPI's singleton init execs `orted` by name, which fails outside the image. It needs bin/eda's shim directory, and that is broken for this tool (see the problem below). |
 | Qucs-S | 26.1.1 | GPL-2.0 | GUI plus filter/attenuator/line synthesis tools. There is no qucsator-rf in the tree. Not run. |
 
-hwde uses none of them. hive-chip-flow's `bin/eda` is supposed to run any
+pcb-flow uses none of them. hive-chip-flow's `bin/eda` is supposed to run any
 tool in the tree, but its generic fallback fails for Xyce, openEMS, FasterCap
 and fasthenry with "don't know how to run". The cause is that
 `$T/foss/tools/bin/<tool>` is an absolute symlink into `/foss/...`, and the
@@ -60,20 +60,20 @@ copies (verified: "GLIBC_2.43 not found").
 
 ## Verified results
 
-### V1. hwde's impedance solver agrees with two independent methods; IPC-2141 breaks past w/h ≈ 2
+### V1. pcb-flow's impedance solver agrees with two independent methods; IPC-2141 breaks past w/h ≈ 2
 
 Uncoated surface microstrip, t = 35 µm. The JLC 4-layer outer prepreg is
 h = 0.2104 mm with εr 4.4. A 2-layer 1.6 mm board is h = 1.5 mm with εr 4.5.
-Each case was solved three ways: hwde's own solver
+Each case was solved three ways: pcb-flow's own solver
 (`impedance.field_microstrip(..., mask=None)`), scikit-rf 2.2.0's `MLine`
 (Hammerstad-Jensen with the thickness correction, no dispersion; BSD-3), and
-the IPC-2141 formula (hwde's `closed_form` fallback). FasterCap 2D BEM was the
+the IPC-2141 formula (pcb-flow's `closed_form` fallback). FasterCap 2D BEM was the
 fourth method, with a 40·max(w,h) finite ground strip. Run them with
 `z0_hwde.py`, `z0_hj.py` and `fc_ms.py` on `z0_cases.txt`. FasterCap
 finished only the w = 0.2 mm case. At `-a0.002` the wider cases ran past
 15 minutes each and I stopped them, so they're still to do (gap G2).
 
-| w mm | h mm | w/h | H-J Ω | hwde Ω | FasterCap Ω | IPC-2141 Ω | hwde vs H-J | IPC vs H-J | JLC mask shifts hwde by |
+| w mm | h mm | w/h | H-J Ω | pcb-flow Ω | FasterCap Ω | IPC-2141 Ω | pcb-flow vs H-J | IPC vs H-J | JLC mask shifts pcb-flow by |
 |---|---|---|---|---|---|---|---|---|---|
 | 0.10 | 0.2104 | 0.48 | 87.96 | 88.42 | | 86.35 | +0.5% | −1.8% | −6.9% |
 | 0.20 | 0.2104 | 0.95 | 67.94 | 68.34 | 68.11 | 67.29 | +0.6% | −1.0% | −5.0% |
@@ -85,22 +85,22 @@ finished only the w = 0.2 mm case. At `-a0.002` the wider cases ran past
 | 2.90 | 1.5 | 1.93 | 48.75 | 48.92 | | 47.86 | +0.4% | −1.8% | −0.6% |
 | 5.00 | 1.5 | 3.33 | 34.27 | 34.32 | | 28.59 | +0.2% | **−16.6%** | −0.4% |
 
-- **Verified:** hwde's field solver is within 0.6% of Hammerstad-Jensen
+- **Verified:** pcb-flow's field solver is within 0.6% of Hammerstad-Jensen
   everywhere, and within 0.4% of FasterCap on the one case it finished (FasterCap is
   within 0.25% of H-J there). These are three
   independent methods (finite volume, a published closed-form fit, boundary
-  elements), so the solver hwde uses by default can be trusted to about 1%
+  elements), so the solver pcb-flow uses by default can be trusted to about 1%
   for uncoated microstrip. That is well inside the ±10% JLC promises on a
   controlled-impedance order.
 - **Folklore:** "IPC-2141 is good enough for a first cut". At w/h = 2.85 it
   is 14% low, and at 4.75 it is 44% low. The formula's own validity range,
-  0.1 ≤ w/h ≤ 2.0 (hwde's docstring says "~0.1–3"), is real, and past it the
-  formula is badly wrong. hwde uses it only when scipy is missing, but
+  0.1 ≤ w/h ≤ 2.0 (pcb-flow's docstring says "~0.1–3"), is real, and past it the
+  formula is badly wrong. pcb-flow uses it only when scipy is missing, but
   anything that quotes it (an agent's hand calc, a review) should state the
   range. **Gap G7.**
 - **Verified, one solver, one external source:** JLC's solder mask lowers a
   thin outer trace's Z0 by 4–7%, enough to move a 50 Ω design outside a ±5%
-  window. Here I measured it only with hwde's solver. JLC's own calculator
+  window. Here I measured it only with pcb-flow's solver. JLC's own calculator
   models the same coating (the parameters are quoted in `impedance.py`), so
   the direction is two-source but the size of the shift is one-source.
   FasterCap could confirm it (gap G2).
@@ -118,7 +118,7 @@ finished only the w = 0.2 mm case. At `-a0.002` the wider cases ran past
 R = 0.5 Ω, L = C = 10 µ, 5 V step with a 1 µs ramp. The analytic peak is
 7.2217 V at 32.95 µs. ngspice-47 from the tree gives 7.2208 V at 32.95 µs
 (−0.01%). **Verified** (`/tmp` run, circuit in the table above). Xyce would
-make a second simulator to diff against hwde's InSpice/libngspice results
+make a second simulator to diff against pcb-flow's InSpice/libngspice results
 (gap G5), but it doesn't start here yet.
 
 ### V3. KLC's footprint checker finds a real assembly error on lite-main
@@ -159,21 +159,21 @@ ones that matter:
 
 - PCB: J1's courtyard overhangs the edge by 0.03 mm, and J2/J3 sit 0.0 mm
   from the edge (edge connectors, so expected, but worth comparing with
-  hwde's `check_courtyard`/dfm). Thermal vias on U1 are 4 against its
+  pcb-flow's `check_courtyard`/dfm). Thermal vias on U1 are 4 against its
   rule's 5, and on U7 2 against 5. No fiducials. Test-point coverage is
   0/114 nets.
 - Schematic: "CC1/CC2 missing 5.1k pull-down at J1" and "CFG2/CFG3 missing
   pull-up" on U1 = CH224A. These are **probably false positives**: the
   CH224 family has its own Rd on CC. I didn't check that against the
   datasheet here. It also reports "0/54 parts have MPNs", because it doesn't
-  read hwde's `LCSC Part` field, so its sourcing checks are blind on hwde
+  read pcb-flow's `LCSC Part` field, so its sourcing checks are blind on pcb-flow
   boards.
 - **Disputed:** its thermal-via minimum of "5" and its fiducial-required
   error. JLC places boards without board fiducials when the panel has them.
   That belongs to the dfm-assembly ingestion.
 
 The value is the disagreements, not the findings. Every finding where it and
-hwde's verify disagree is either a missing hwde check or a false positive
+pcb-flow's verify disagree is either a missing pcb-flow check or a false positive
 worth recording. **Gap G3.**
 
 ### V5. Fab and bring-up outputs that run on the Hive's KiCad as it is
@@ -196,9 +196,9 @@ worth recording. **Gap G3.**
   project always has `net_settings`. Any tool that reads the project (KiKit,
   KiBot, kicad-happy's netclass checks) trips on it. **Gap G8.**
 - **KiBot 1.9.1** (GPL-3.0): installs (verified). Not run. It overlaps
-  hwde's fab_export, and its value would be the many output formats.
+  pcb-flow's fab_export, and its value would be the many output formats.
   Low priority.
-- **kicad-cli exports hwde doesn't use** (all verified on lite-main):
+- **kicad-cli exports pcb-flow doesn't use** (all verified on lite-main):
   `pcb export stats --format json` (counts, minimum clearance 0.128 mm,
   minimum drill, copper area: a cheap cross-check of dfm), `pcb export
   ipcd356` (the IPC-D-356 netlist a bare-board tester uses; 290 through and
@@ -228,10 +228,10 @@ worth recording. **Gap G3.**
 - **pyems** (MIT): a Python front end that builds openEMS models of PCB
   structures (microstrip, vias, coax). It would cut a via or connector
   S-parameter model down to a short script. Unverified on openEMS v0.37.
-- **SKiDL** (MIT) and **atopile** (MIT): circuits as code. hwde's own
+- **SKiDL** (MIT) and **atopile** (MIT): circuits as code. pcb-flow's own
   `kicad/gen/*.py` already covers this. Inspiration only.
 - **KiCad-Diff / kiri** (MIT): visual schematic and PCB diffs for a
-  review. That overlaps hwde's `layer_views`.
+  review. That overlaps pcb-flow's `layer_views`.
 - **Elmer FEM** (GPL/LGPL) and **gmsh**: board thermal FEM. Neither is on
   the machine. The emc-thermal ingestion's call.
 - **spicelib** (GPL-3.0): runs and parses LTspice/ngspice/Xyce raw files. It
@@ -249,19 +249,19 @@ briefs (the lead's pace). The rest wait here for the lead.
    mismatch by its pads and says so. Verify fails a mismatch the fix didn't
    reach. Case: pinned lite-main L1–L4 (`tht` in bom-cpl.json today), and
    U8/J1 must stay `smd`.
-2. **G2 (filed 261031-014449-039fec1de3) Run the Hive's field solvers from hwde.** Add `hwde eda
-   <tool>`, or a fixed chip-flow `bin/eda` hwde finds the same way bin/hwde
+2. **G2 (filed 261031-014449-039fec1de3) Run the Hive's field solvers from pcb-flow.** Add `pcb-flow eda
+   <tool>`, or a fixed chip-flow `bin/eda` pcb-flow finds the same way bin/pcb-flow
    finds the KiCad tools, for FasterCap, FastHenry, openEMS, Palace and
    ngspice-47. A test pins `impedance.py` against FasterCap, with JLC's
    mask, on the V1 cases where the tree exists (skipped elsewhere).
    FastHenry gives the loop inductance of a buck's hot loop (the
    power/emc ingestions need it). Case: V1's table. Mask case: 0.1 mm at
    h = 0.2104 shifts by −6.9%, and FasterCap must agree within 2%.
-3. **G3 (filed 261031-014457-617b9614e4) Second-opinion review.** `hwde second_opinion` runs
+3. **G3 (filed 261031-014457-617b9614e4) Second-opinion review.** `pcb-flow second_opinion` runs
    kicad-happy's deterministic analysers (pinned commit) on a board, maps
-   their findings to hwde's verify check ids, and lists every
-   disagreement. A disagreement is closed by a new or changed hwde check,
-   or by a recorded false positive with its reason. Teach it hwde's
+   their findings to pcb-flow's verify check ids, and lists every
+   disagreement. A disagreement is closed by a new or changed pcb-flow check,
+   or by a recorded false positive with its reason. Teach it pcb-flow's
    `LCSC Part` field. Case: lite-main (U1 thermal vias, J1 courtyard edge
    overhang 0.03 mm, CH224A CC "missing Rd", which should be recorded as a
    false positive).
@@ -290,7 +290,7 @@ briefs (the lead's pace). The rest wait here for the lead.
    parametric and a check sandbox needs no network. Stock stays live
    (72 h rule). Case: find a 10 µH ≥ 6 A 8×8 inductor without the keyword
    search.
-10. **G10 Panelization.** `hwde panel` (KiKit) for small boards: JLC
+10. **G10 Panelization.** `pcb-flow panel` (KiKit) for small boards: JLC
     prices by panel, and a 13×10 mm board like hwde-led-test is under
     JLC's assembly minimum on its own. Depends on G8.
 11. **G11 S-parameter checks.** openEMS (via pyems) or Palace models of a

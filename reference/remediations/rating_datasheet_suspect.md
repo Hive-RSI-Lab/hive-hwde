@@ -25,17 +25,17 @@ do anything: the check reads text, so it can't tell these apart.
   document.
 
 ## Fix ladder (cheapest first)
-1. Truncated, unparsable or placeholder: `bin/hwde datasheet_extract --fetch <ws> --lcsc <code>` again.
+1. Truncated, unparsable or placeholder: `bin/pcb-flow datasheet_extract --fetch <ws> --lcsc <code>` again.
 2. No text layer: find the same document with text (the maker's site, not the distributor's copy)
    and put it at parts/datasheets/<lcsc>.pdf; the next read judges it. If there is none, read the
-   pages with `bin/hwde datasheet_extract --pdf <file> --render <dir>`, then step 5.
+   pages with `bin/pcb-flow datasheet_extract --pdf <file> --render <dir>`, then step 5.
 3. Series document that never names the series: get the maker's document that does. With a real PDF
    in hand that has an ordering table, add a scheme to reference/ordering_codes.yaml with a test, and
    the MPN decodes against it.
 4. No ordering table: look for the maker's ordering or part-numbering page and use that PDF, or
    step 3 if it is a scheme many parts share.
 5. You read it yourself and it is that part's: record the fact and why, in the ledger:
-   `bin/hwde ledger set --workspace <ws> --subject <ref> --kind rating --status verified
+   `bin/pcb-flow ledger set --workspace <ws> --subject <ref> --kind rating --status verified
    --source <page> --force "why"`.
    The warning stays. It says the check could not tie the file to the part, which is still so.
 6. It is another part's document: delete the PDF, and `--fetch` or find the right one.
@@ -49,7 +49,7 @@ do anything: the check reads text, so it can't tell these apart.
 
 ## Verify
 ```
-bin/hwde check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --constraints <ws>/kicad/constraints.json
+bin/pcb-flow check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --constraints <ws>/kicad/constraints.json
 ```
 The part's warning is gone (or, after step 5, stays with the reason on record in the ledger).
 

@@ -11,7 +11,7 @@ here: check_ratings and the ledger judge them when they read the index (#768).
 - Fields: refs [every part affected]; `unassessed_datasheets` in the report lists the LCSC codes.
 
 ## Fix ladder (cheapest first)
-1. No PDF: `bin/hwde datasheet_extract --fetch <ws>` downloads and assesses.
+1. No PDF: `bin/pcb-flow datasheet_extract --fetch <ws>` downloads and assesses.
 2. No MPN: give the parts.json line its MPN; the next read judges the PDF.
 3. Suspect after that: rating_datasheet_suspect says why.
 
@@ -20,5 +20,5 @@ here: check_ratings and the ledger judge them when they read the index (#768).
 
 ## Verify
 ```
-bin/hwde check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --constraints <ws>/kicad/constraints.json
+bin/pcb-flow check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --constraints <ws>/kicad/constraints.json
 ```

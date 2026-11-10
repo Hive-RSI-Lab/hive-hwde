@@ -20,7 +20,7 @@ venv python. Keep output ASCII.
   `fab/BOM.csv`, `fab/CPL.csv`, Gerbers.
 - The product's requirements (the brief): loads, supplies, temperatures,
   enclosure, what the person will plug it into.
-- hwde's checks where they fit (`check_current`, `check_thermal`,
+- pcb-flow's checks where they fit (`check_current`, `check_thermal`,
   `check_irdrop`, `check_pdn_z`, `check_return_path`, `check_ratings`,
   `check_creepage`, `check_straps`, `check_reset_drive`, `check_antenna`, `check_observability`,
   `sim_board.py`, `eng_calc.py`).
@@ -53,14 +53,14 @@ venv python. Keep output ASCII.
 - What the board cannot tell about itself in your domain (a rail no ADC
   reads, a fault pin no GPIO watches, an output no tap sees) is a finding
   if it would hide a failure at bring-up: reference/self-observation.md.
-- A check hwde has no tool for goes under tools_wanted. One you can answer
+- A check pcb-flow has no tool for goes under tools_wanted. One you can answer
   from the board's files, write as a doubt check instead and run it
-  (`hwde doubt add`, reference/doubt.md): it re-runs on every change.
+  (`pcb-flow doubt add`, reference/doubt.md): it re-runs on every change.
 - Every finding names its fault class: the id in `docs/failure-modes.yaml`
   (the module's registry; search its `mode` and `catch` lines) whose mode
   it is, or `"fault_class": "new"` with a one-line `class_mode` that would
   fit any board, not this one ("op-amp common-mode past its limit on its
-  real supply", not "U12 clips"). `caught_by` names the hwde check that
+  real supply", not "U12 clips"). `caught_by` names the pcb-flow check that
   flagged it, when you ran one and it did. A class is how this review
   becomes a check for the next board (reference/first-spin.md).
 

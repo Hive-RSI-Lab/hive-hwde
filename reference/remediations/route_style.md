@@ -65,9 +65,9 @@ straight and 45-degree traces, no needless arcs (owner, from the g0-sense render
 
 ## Verify
 ```
-bin/hwde route_edit --pcb boards/<ws>/kicad/<board>.kicad_pcb --ops work/fix/ops.json --out-report work/fix/edit.json
-bin/hwde check_route_style --pcb boards/<ws>/kicad/<board>.kicad_pcb --out work/fix/style.json
-bin/hwde kc drc boards/<ws>/kicad/<board>.kicad_pcb --parity --all-track-errors --refill --out work/fix/drc.json
+bin/pcb-flow route_edit --pcb boards/<ws>/kicad/<board>.kicad_pcb --ops work/fix/ops.json --out-report work/fix/edit.json
+bin/pcb-flow check_route_style --pcb boards/<ws>/kicad/<board>.kicad_pcb --out work/fix/style.json
+bin/pcb-flow kc drc boards/<ws>/kicad/<board>.kicad_pcb --parity --all-track-errors --refill --out work/fix/drc.json
 ```
 
 ## Sources

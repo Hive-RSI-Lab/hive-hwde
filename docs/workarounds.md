@@ -1,10 +1,10 @@
 # Workarounds
 
-Every place where hwde gets a board through its gates only because something
-worked around a defect in the module's scripts, by a shim in `bin/hwde` or by an edit
-made by hand in a board's files. The test (`bin/hwde test`, and
-`bin/hwde check-all` after its boards) holds it to the truth. The score
-(`bin/hwde score`, [score.md](score.md)) doesn't read it: it runs the gates
+Every place where pcb-flow gets a board through its gates only because something
+worked around a defect in the module's scripts, by a shim in `bin/pcb-flow` or by an edit
+made by hand in a board's files. The test (`bin/pcb-flow test`, and
+`bin/pcb-flow check-all` after its boards) holds it to the truth. The score
+(`bin/pcb-flow score`, [score.md](score.md)) doesn't read it: it runs the gates
 with every shim off and charges what they find.
 
 - Each row's id has a probe, `tests/workarounds/<id>.py`, that exits 0 while
@@ -13,7 +13,7 @@ with every shim off and charges what they find.
   without fixing the cause fails it. A row whose probe says it's fixed fails
   the test too: take the workaround out (the shim, or redo the board's step
   without the hand edit) and remove the row.
-- A shim in `bin/hwde` runs only while its row is here (`wa <id>`), so
+- A shim in `bin/pcb-flow` runs only while its row is here (`wa <id>`), so
   delisting it also turns it off for the gates.
 
 `steps` are the gate steps whose input the workaround made or changed, out of

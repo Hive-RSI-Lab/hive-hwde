@@ -4,7 +4,7 @@ DRC, the verify suite and check_diffpair say whether a routed board is
 legal. None of them says whether it is a good layout. A DDR byte lane can be
 matched to the picosecond and still be one long zig-zag. In the talk that
 started this, a person steered a router through many rounds until that route
-was compact. hwde now does those rounds itself.
+was compact. pcb-flow now does those rounds itself.
 
 ## `route_quality.py`: the score
 
@@ -26,7 +26,7 @@ octilinear (0/45/90 degree) minimum spanning tree over its pads.
   route never counts as a perfect one.
 
 `--min-quality Q` turns each net below Q into a warning. The score is not in
-the verify suite or in `bin/hwde score`, because it measures taste, not
+the verify suite or in `bin/pcb-flow score`, because it measures taste, not
 failure. The router acts on it (agents/router.md step 4a).
 
 Scores on the pinned boards as they stand:

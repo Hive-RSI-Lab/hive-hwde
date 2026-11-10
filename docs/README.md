@@ -1,38 +1,38 @@
-# Designing a board with hwde in the Hive
+# Designing a board with pcb-flow in the Hive
 
-hwde is the Hive's KiCad design module. It takes a board from a written
+pcb-flow is the Hive's KiCad design module. It takes a board from a written
 brief to checked KiCad files and a JLCPCB fab package, or another
 vendor's ([vendors.md](vendors.md): PCBWay, OSH Park, Aisler, Eurocircuits,
 Seeed Fusion; their rules, files, sourcing and prices). The way through is
 [playbook.md](playbook.md); the agent roles are in [`agents/`](../agents/),
 the scripts in [`scripts/`](../scripts/) and their tables, recipes and
-knowledge in [`reference/`](../reference/). It began as ihsan-sa/hwde's Claude
+knowledge in [`reference/`](../reference/). It began as ihsan-sa/pcb-flow's Claude
 Code skill ([where it came from](upstream.md)), but it isn't a skill: nothing
 here is loaded by `/hwde`, and nothing needs to stay as upstream has it. This
 page covers how an agent runs it inside the Hive.
 
 ## Before you start
 
-- Run `hwde check` (`$HIVE_MODULES/hive-hwde/bin/hwde check --quiet`). It must
+- Run `pcb-flow check` (`$HIVE_MODULES/hive-hwde/bin/pcb-flow check --quiet`). It must
   exit 0. On first use it builds the module's Python venv in your HOME from
   `requirements.lock`, using the Hive's uv; that takes about 15 s.
 - KiCad 10.0.6, freerouting 2.2.4 and KiCadRoutingTools 0.19.0 (for
   `route_critical` and route_auto's KRT finish) are the Hive's, read-only
   in `/hive/tools` (put there through a warden). Java 25 is the system's.
-  `bin/hwde` points the skill at that folder
+  `bin/pcb-flow` points the skill at that folder
   (`HWDE_TOOLS_DIR`) and the skill's `env.py` finds them all, plus KiCad's
   own python with `pcbnew`, its ngspice, its 3D model loaders and its stock
   symbols (KiCad 10's `.kicad_symdir` libraries, flattened into
-  `~/.cache/hwde/symbols` on first use). If `hwde check` can't find one in a
+  `~/.cache/hwde/symbols` on first use). If `pcb-flow check` can't find one in a
   Hive that has no `/hive/tools` (a fresh install on a laptop), run
-  `hwde tools`: it downloads all three into `~/.cache/hwde/tools` (about
+  `pcb-flow tools`: it downloads all three into `~/.cache/hwde/tools` (about
   0.6 GB, no root, each file checked against a pinned sha256; Linux x86_64),
   adds a Java 21 runtime if the system has none below 17, and tells you if
   xvfb is missing (that one needs `sudo apt install xvfb`). In a Hive that
   has `/hive/tools`, ask a warden; don't install KiCad yourself.
 - In another project's test or score check (a fresh HOME, only `/work` and
-  `/hive/tools` mounted, no `$HIVE_MODULES`), run hwde as
-  `/hive/tools/hwde/bin/hwde`. That's a published copy: `hwde publish <dir>`
+  `/hive/tools` mounted, no `$HIVE_MODULES`), run pcb-flow as
+  `/hive/tools/hwde/bin/pcb-flow`. That's a published copy: `pcb-flow publish <dir>`
   builds it at `<dir>/hwde` with its own Python 3.14 and the lock's packages
   installed, so it starts with no venv to build and no download, and writes
   `<dir>/hwde.version`. The copy runs the installed module's code
@@ -51,18 +51,18 @@ page covers how an agent runs it inside the Hive.
 
 ## Running it
 
-- `hwde <script> [args]` runs `scripts/<script>.py` with the venv python
+- `pcb-flow <script> [args]` runs `scripts/<script>.py` with the venv python
   and the `HWDE_*` pins set. Where the playbook, a recipe or a role prompt
-  says `scripts/<x>.py`, run `hwde <x>`. With no X
+  says `scripts/<x>.py`, run `pcb-flow <x>`. With no X
   display it runs the script under its own Xvfb, with GLX off because H0's
   NVIDIA libraries crash Xvfb.
-- `eval "$(hwde env)"` puts the same pins in your shell. Its `HWDE_PY` and
+- `eval "$(pcb-flow env)"` puts the same pins in your shell. Its `HWDE_PY` and
   `HWDE_MODULE` (the module's root) are what a board's own generator script
   (`kicad/gen/*.py`) runs with:
   `PYTHONPATH=$HWDE_MODULE/scripts:$HWDE_MODULE/scripts/lib $HWDE_PY kicad/gen/root.py`.
   `HWDE_SKILL`, its old name, is still set to the same path for boards that
   use it.
-- Part datasheets: `hwde datasheet_extract --fetch boards/<name>` puts
+- Part datasheets: `pcb-flow datasheet_extract --fetch boards/<name>` puts
   each parts.json line's PDF in `parts/datasheets/<lcsc>.pdf` (not
   committed; `index.json` beside them keeps URL and sha256). LCSC's
   wmsc.lcsc.com answers with a 140-byte script redirect, not the PDF;
@@ -72,35 +72,35 @@ page covers how an agent runs it inside the Hive.
   boards/<name>` forces it): a datasheet matches by naming the MPN or by an
   ordering table (`reference/ordering_codes.yaml`) that decodes it, else it is
   suspect. An entry with no PDF on disk stays unassessed until `--fetch`.
-  A part with no `parts/<lcsc>.json` is rated from hwde's own library,
+  A part with no `parts/<lcsc>.json` is rated from pcb-flow's own library,
   `reference/extractions/<lcsc>.json`, when it has an entry (rules in its
   README: every number cited to a datasheet page).
-- Every board with a netlist gets `hwde sim_board --workspace boards/<name>
+- Every board with a netlist gets `pcb-flow sim_board --workspace boards/<name>
   --out boards/<name>/reports/sim_board.json`: ngspice over the board's own
   passives and discretes (KiCad 10's bundled libngspice, found by this
   wrapper), with the hand calcs a reviewer would do and a `known_unknowns`
   list. A review answers each known unknown from a datasheet or states the
-  margin it rests on; `hwde eng_calc <calc> ...` gives the numbers a written
+  margin it rests on; `pcb-flow eng_calc <calc> ...` gives the numbers a written
   margin cites.
 - Every board with a power input also gets its power paths checked:
-  `hwde sim_inrush --workspace boards/<name> --out boards/<name>/reports/sim_inrush.json`
+  `pcb-flow sim_inrush --workspace boards/<name> --out boards/<name>/reports/sim_inrush.json`
   (load switches against a USB PD source: inrush, a switch that conducts
   with firmware off, turn-on SOA as a peak junction temperature, hard
-  reset), `hwde check_power_path` (in the verify suite: the current each
+  reset), `pcb-flow check_power_path` (in the verify suite: the current each
   pad-track-via chain carries, against the budget, `power_paths` and the
-  PD contract) and `hwde mlcc_dcbias --workspace boards/<name>` (ceramics
+  PD contract) and `pcb-flow mlcc_dcbias --workspace boards/<name>` (ceramics
   at their DC bias). Put the PD contract in constraints.json as
   `"pd_source": {"contract_v": .., "contract_a": ..}` and the real current
-  of each high-current run in `power_paths`; `hwde soa_check` gives a FET's
+  of each high-current run in `power_paths`; `pcb-flow soa_check` gives a FET's
   Tj for a written margin. These are what hifi-receiver-2's first-spin
   power review did by hand (its docs/review-2/power.md).
 - A board with analog or audio stages gets its hand numbers from
-  `hwde analog_calc <calc>`: stage noise (`noise`), line levels and
+  `pcb-flow analog_calc <calc>`: stage noise (`noise`), line levels and
   bridging (`level`, `bridge`, `damping`), coupling corners (`hpf`),
   slew (`fpbw`), op-amp phase margin into a cap load and the Riso that
   fixes it (`riso`), class-D LC filters and output power (`lc`,
   `classd`), and a SAR ADC's charge-bucket settling (`sar`).
-  `hwde analog_verify` re-proves each one against ngspice.
+  `pcb-flow analog_verify` re-proves each one against ngspice.
   netlist_audit errors on an op-amp/comparator/in-amp input with no DC
   path for its bias current (`opamp_input_no_dc_path`), and warns on one
   held only by a connector and on a reverse-biased electrolytic
@@ -108,7 +108,7 @@ page covers how an agent runs it inside the Hive.
   folklore, and the ngspice traps (`x^3` drops the sign; THD needs a
   max timestep) are in
   [reference/ingest/analog-audio.md](../reference/ingest/analog-audio.md).
-- A board that runs firmware gets `hwde check_fw --board boards/<name>`,
+- A board that runs firmware gets `pcb-flow check_fw --board boards/<name>`,
   run at every schematic change, not first at bring-up. It runs hive-fw's
   `fw constraints` (with `fw pins` inside it) for each firmware target whose
   board is this one in fw's `targets.json` (or `--target`), reading the
@@ -123,24 +123,24 @@ page covers how an agent runs it inside the Hive.
   Exit 0 pass, 1 problems, 2 when fw (one with `constraints`) isn't found:
   it looks at `--fw`, `$HWDE_FW`, then hive-fw in `$HIVE_MODULES`. A check
   sandbox sees neither, so it is an agent's check, not a per-PR one.
-- Start from `hwde task_router --task "<the ask>" --workspace boards/<name>`
+- Start from `pcb-flow task_router --task "<the ask>" --workspace boards/<name>`
   and follow its recipe (`reference/recipes/<verb>.md`). The whole pipeline
   is `full-run`.
 - The playbook's roles run as helper agents: `hive agent spawn --role worker
   --brief @<file>`, or your harness's own subagent tool for a short
   read-and-report role ([playbook.md](playbook.md), "Agent spawn template").
   Give each one its role prompt (`agents/<role>.md`), the workspace paths, and
-  the `hwde` command line in place of the venv python. Record each spawn with
-  `hwde state spawn`. Reviewers always get fresh context.
+  the `pcb-flow` command line in place of the venv python. Record each spawn with
+  `pcb-flow state spawn`. Reviewers always get fresh context.
 
 ## Documents: the design doc and the board guide
 
-`hwde report_gen --workspace boards/<name>` builds the board's design doc
+`pcb-flow report_gen --workspace boards/<name>` builds the board's design doc
 (`--kind highlight` and `--kind full` the shorter and longer ones), and the
 `board-guide` agent writes the owner's guide. Both are set in the
-pdf-material-builder skill's house style. `bin/hwde` finds that skill in
+pdf-material-builder skill's house style. `bin/pcb-flow` finds that skill in
 `~/.claude/skills/`, then `/opt/pdf-material-builder` (where this machine has
-it), then `$HIVE_PROJECTS/pdf-material-builder`, and `hwde env` prints it as
+it), then `$HIVE_PROJECTS/pdf-material-builder`, and `pcb-flow env` prints it as
 `HWDE_PDF_MATERIAL_BUILDER`. Where none is installed, `HWDE_HOUSE_STYLE` points
 at the module's plainer stand-in (`bin/house-style-fallback/`), so report_gen
 still builds the PDF rather than stopping at `--tex-only`, and the guide is
@@ -154,11 +154,11 @@ verify_all's own `reports/checks/summary.json`, `verify-summary.json`,
 
 ## Checkpoints are reports, not stops
 
-hwde's checks are tools you run, not a stage machine: `set-phase` warns
+pcb-flow's checks are tools you run, not a stage machine: `set-phase` warns
 instead of refusing, the fix-loop and cross-stage budgets count past zero
 (`over: true`), `board_init` notes a fixed outline instead of refusing it, and
 release (`attest.py`) needs the gates passed, not the person's sign-off. Going
-past a default is your judgment; record why with `hwde state decision`.
+past a default is your judgment; record why with `pcb-flow state decision`.
 
 H1 (architecture), H2 (schematic), H3 and H4 (verified board) are reports you
 write and keep going. Bring the person only what is theirs: waiving an
@@ -168,7 +168,7 @@ packet to the project's lead: the files to read on your branch, a digest of 10
 lines or fewer, and the exact question with your recommended answer; the lead
 puts it to the person. Don't use a warden request for it, and don't wait on
 it: carry on with your recommendation, say so in the packet, and rework if the
-answer is no. Record answers with `hwde state human` (a rejected H4 blocks
+answer is no. Record answers with `pcb-flow state human` (a rejected H4 blocks
 release until reworked).
 
 ## Know what the board doesn't know
@@ -178,13 +178,13 @@ JLC stock, the part JLC will really place, whether JLC still sells it; per
 part: pin ratings, pinout, footprint), verified with its source and date,
 failed, or unknown. A rating compared with a distributor's or a package table's
 number, no datasheet read, is listed, and that doesn't stop an order. The checks fill it in as they run, and one that can't
-tell writes unknown. `bin/hwde ledger report --workspace <ws>` lists the gaps.
-`bin/hwde ledger set ... --source "..."` records a fact you checked yourself;
+tell writes unknown. `bin/pcb-flow ledger report --workspace <ws>` lists the gaps.
+`bin/pcb-flow ledger set ... --source "..."` records a fact you checked yourself;
 verified is refused over a suspect or placeholder datasheet unless
 `--force "why"` says why.
 A board isn't ready to order (attest refuses, order-ready drops) while any
 fact is failed or unknown. Stock is good for 72 hours, so run
-`bin/hwde stock_check --workspace <ws>` right before the order packet; the
+`bin/pcb-flow stock_check --workspace <ws>` right before the order packet; the
 person's flow is "I order it, it arrives, I plug it in", with no surprise at
 JLC's BOM review.
 
@@ -192,16 +192,16 @@ JLC's BOM review.
 
 A coverage checklist (`reference/knowledge/checklists/<id>.yaml`, or one a
 research task drafts under `<ws>/research/checklists/`) says which knowledge
-classes a block needs before hwde claims it knows enough to design one.
+classes a block needs before pcb-flow claims it knows enough to design one.
 Upstream, a checklist counted only once the person approved it. Here a
 checklist also counts once an independent agent has ruled it:
 
-    bin/hwde checklist_verify packet --checklist <id> --packet <dir> --key <file>
+    bin/pcb-flow checklist_verify packet --checklist <id> --packet <dir> --key <file>
     # spawn agents/checklist-verifier.md (fresh context, not the checklist's
     # author) on <dir> only; it writes a verdicts JSON
-    bin/hwde checklist_verify rule --checklist <id> --packet <dir> --key <file> \
+    bin/pcb-flow checklist_verify rule --checklist <id> --packet <dir> --key <file> \
         --verdicts <its JSON> --write
-    bin/hwde checklist_verify status        # which checklists count, and why not
+    bin/pcb-flow checklist_verify status        # which checklists count, and why not
 
 The packet hides the checklist among at least three planted mutants of it: a
 required class dropped or swapped, an unrelated class added, a number in a
@@ -230,21 +230,21 @@ designs." Take it as far as each board needs, and record how far:
 
 - Design the board to see itself (`reference/self-observation.md`): rail
   dividers into spare ADC pins, status pins to GPIO, output loopback taps, a
-  USB console. `bin/hwde check_observability --workspace <ws>` lists each
+  USB console. `bin/pcb-flow check_observability --workspace <ws>` lists each
   rail as self / test_point / blind and each PG/FAULT/INT as watched or not.
 - Before the order, a first-spin review (`reference/first-spin.md`): one
   `domain-reviewer` per domain, every margin a number, contingencies on the
-  board, every blocker and major answered. `bin/hwde first_spin --workspace
+  board, every blocker and major answered. `bin/pcb-flow first_spin --workspace
   <ws>` says what is still open and merges the tools the reviewers wanted;
-  file those to hive-hwde.
-- Doubt the board (`reference/doubt.md`, `agents/doubter.md`): `bin/hwde
+  file those to hive-pcb-flow.
+- Doubt the board (`reference/doubt.md`, `agents/doubter.md`): `bin/pcb-flow
   doubt ask|add|fact|run|dispose|status|promote --workspace <ws>`. The
   agent forms its own questions about how this board could fail, writes a
   check for each under `<ws>/doubts/checks/`, and closes every unknown with
   a cited fact; general checks are promoted into `scripts/doubts/`, which
   every board is asked.
 - Boards in hand: the `bring-up` verb and `reference/remote-bringup.md`.
-  `bin/hwde state bringup --workspace <ws> --results bringup/results.json`
+  `bin/pcb-flow state bringup --workspace <ws> --results bringup/results.json`
   closes it with the measurements (a project bench's session.json converts);
   a bare `bringup_passed` is refused, and `bring-up-passed` cites the file.
 
@@ -256,7 +256,7 @@ and `bench/`).
 A board's `README.md`, at the root of its workspace, says what the board is,
 the design decisions and why they were made, how to rebuild and re-check it,
 and how to test a built one. It has to make sense to someone who has never
-heard of hwde. Write it when the run starts and keep it current at every
+heard of pcb-flow. Write it when the run starts and keep it current at every
 stage: a decision recorded in `state.json` belongs in the README the same day.
 A run isn't finished until its README matches the board.
 [`boards/hwde-led-test/README.md`](../boards/hwde-led-test/README.md) shows
@@ -269,38 +269,38 @@ working around it. When a script, check, prompt or recipe gets in the way or
 gets something wrong (a false finding, a missing case, an agent role that left
 out a field, a path that only works upstream), note it with the file it lives
 in. Fix it in this module if it's small and yours to make. Otherwise file it
-as its own change: `hive agent brief --project hive-hwde --title ...
+as its own change: `hive agent brief --project hive-pcb-flow --title ...
 --done ...`. Board-local workarounds are the failure mode. List what you hit
 in your account.
 
 A fix to a script goes in with a test under `tests/` (run them with
-`eval "$(bin/hwde env)"; $HWDE_PY -m pytest -q tests`), and a line in
+`eval "$(bin/pcb-flow env)"; $HWDE_PY -m pytest -q tests`), and a line in
 [upstream.md](upstream.md) so an update from upstream keeps it.
 
 A workaround you can't avoid gets a row in [workarounds.md](workarounds.md)
 naming the gate steps it touched, and a probe in `tests/workarounds/` that
-exits 0 while its cause stands. The test (`bin/hwde test`) fails while a row
-and its probe disagree. A shim in `bin/hwde` checks its row (`wa <id>`), so
+exits 0 while its cause stands. The test (`bin/pcb-flow test`) fails while a row
+and its probe disagree. A shim in `bin/pcb-flow` checks its row (`wa <id>`), so
 it runs only while it's listed. When you fix a cause, its probe starts exiting
 10: take the workaround out, delete the row, and keep the probe as a guard.
 
-The score (`bin/hwde score`, [score.md](score.md)) doesn't read that table:
+The score (`bin/pcb-flow score`, [score.md](score.md)) doesn't read that table:
 it re-runs the gates on the boards pinned in `pinned/`, with every shim off,
 and counts what they find plus each board-local stand-in script. A fix in
-hwde that clears a finding on those boards raises it at once. When a product
+pcb-flow that clears a finding on those boards raises it at once. When a product
 board you build in another project drops a stand-in script or changes in
-another way worth measuring, re-pin it: `bin/hwde pin <board> --from <clone>
+another way worth measuring, re-pin it: `bin/pcb-flow pin <board> --from <clone>
 --commit <sha>`, classify any new script in `pinned/<board>.json`, run
-`bin/hwde pin --digests`, and name the commit in the commit message.
+`bin/pcb-flow pin --digests`, and name the commit in the commit message.
 
 Research is held to the same standard: a paper is a lead to check, not a
-fact. `hwde papers` ([research/README.md](research/README.md)) follows the
+fact. `pcb-flow papers` ([research/README.md](research/README.md)) follows the
 topics in `reference/research/watch.yaml`. It keeps every paper it has seen
 in `reference/research/papers.yaml`, reads only legitimate open copies (the
 rest go on the person's list, [research/paywalled.md](research/paywalled.md)),
-and gives each claim hwde's own verdict, with the test that reached it. Only
-claims hwde reproduced become [guidelines](research/guidelines.md). When
-`hwde papers due` lists topics, scan them; when a design leans on a rule of
+and gives each claim pcb-flow's own verdict, with the test that reached it. Only
+claims pcb-flow reproduced become [guidelines](research/guidelines.md). When
+`pcb-flow papers due` lists topics, scan them; when a design leans on a rule of
 thumb nobody has checked, add a topic.
 
 Record each run's wall time per stage (the `phase` events in
@@ -397,7 +397,7 @@ delay, Z0, critical length, termination and worst neighbours, pass or fail.
 `constraints.json` `si` declares, corrects or ignores nets
 (`reference/constraints_schema.md`).
 
-The three worst crosstalk estimates are also simulated (`hwde sim_si --pcb B
+The three worst crosstalk estimates are also simulated (`pcb-flow sim_si --pcb B
 --xtalk --aggressor A --victim V` runs one by hand): both nets' routed paths as
 T lines and coupled sections with a 2x2 L, C from the same field solver, the
 driver's R and any series R behind a ramp, the receiver's R and C at the far end
@@ -489,7 +489,7 @@ is the same symbol; two copies of a sheet file pair by ref number mod 100.
 A part only one channel has is reported and keeps normal placement.
 place_metrics and route_quality report `channel_symmetry`: the share of each
 target's parts and copper sitting exactly where the source's land (1.0 = an
-exact stamp). KiCad 10's own Repeat Layout needs the GUI, so hwde does the
+exact stamp). KiCad 10's own Repeat Layout needs the GUI, so pcb-flow does the
 transform itself.
 
 ## Op-amp outputs into a cable or a big capacitor
@@ -514,7 +514,7 @@ INA186 drives its 10 nF filter through 1 kohm: no findings.
 
 ## ESD at the connectors, and what the ingest runs found
 
-`bin/hwde check_esd --pcb <board> [--constraints c.json]` (run by hand for
+`bin/pcb-flow check_esd --pcb <board> [--constraints c.json]` (run by hand for
 now; it joins the verify suite once its findings on the pinned boards are
 judged) checks that every line leaving the board through a connector reaches
 a TVS / ESD clamp first, with no via or branch before it, the clamp near the
@@ -636,7 +636,7 @@ then routes what is still unconnected. It is a grid maze router that works
 at the board's own rules: it joins pads, stubs and cut-off pour pieces (with
 a via into the plane), and frees a walled-in pad by ripping the fewest
 signal nets in the way. It never rips pour nets or nets with a width rule.
-Run it alone on any routed board (`hwde route_finish --pcb ... --dry-run`
+Run it alone on any routed board (`pcb-flow route_finish --pcb ... --dry-run`
 first). Its `failed` connections have no path at the rules, which makes
 them a placement or topology finding, unless the reason names `--max-nodes`:
 then the search ran out of nodes, so raise that, or set `--search-weight`
@@ -646,7 +646,7 @@ and the board's outline limits, so a large margin costs search time, not a
 grid over empty space.
 
 When a single `route_finish` run can't finish in the time you have, or stalls
-on the same failures, use `hwde route_close --pcb ... --budget 3600` with the
+on the same failures, use `pcb-flow route_close --pcb ... --budget 3600` with the
 same routing options, and no loop of your own. It runs `route_finish` in chunks
 and keeps each good one, and every open connection gets a try each round. It
 resumes from its state on disk if run again, undoes a chunk that changes
@@ -664,7 +664,7 @@ VBUS_IN track and a 77 mm long haul.
 
 ## Boards from other EDA tools, and back
 
-`hwde eda_io import <file> --out <dir>` brings in a board from Altium
+`pcb-flow eda_io import <file> --out <dir>` brings in a board from Altium
 (.PcbDoc), Allegro/OrCAD PCB Editor (a Fabmaster extract .txt), Eagle and
 Fusion's EAGLE export (.brd), EasyEDA Std (.json) and PADS (.asc) through
 KiCad's own importer. KiCad says "Successfully saved" even when it skips a
@@ -675,7 +675,7 @@ objects per layer, parts by reference, nets by name, vias, the outline. It
 also refills the zones, runs DRC at the imported rules, and writes
 `losses.md`: **Lost** (copper, parts or the outline, exit 1), **Check**
 (renames, unrouted, netless pads, layers with drawings that were dropped)
-and **Note**, then what the path never carries. Then `hwde intake --source
+and **Note**, then what the path never carries. Then `pcb-flow intake --source
 <dir>` makes it a workspace. It lands at P6/P8 with no schematic:
 kicad-cli has no schematic importer, so the schematic comes in through
 Eeschema's GUI importer or is redrawn.
@@ -694,7 +694,7 @@ On KiCad's own QA boards with KiCad 10.0.6:
   Altium from EasyEDA Pro instead. Allegro's binary .brd and OrCAD Capture
   have no importer at all. eda_io says so and exits 2.
 
-`hwde eda_io export <board>.kicad_pcb --to altium,allegro,orcad,pads,eagle,fusion,easyeda,neutral`
+`pcb-flow eda_io export <board>.kicad_pcb --to altium,allegro,orcad,pads,eagle,fusion,easyeda,neutral`
 writes what each tool reads: the KiCad project (Altium's Import Wizard,
 EasyEDA), IPC-2581 and ODB++ (Allegro/OrCAD, PADS, CAM), Allegro Telesis,
 OrCAD and PADS netlists, GenCAD, IPC-D-356 and STEP (`--step`). It reads the
@@ -704,7 +704,7 @@ them. The netlists are checked against the board's nets. Per target,
 carry. Allegro/PADS need their own footprints by name. Eagle and Fusion
 Electronics have no editable path from anything KiCad writes, so only
 IPC-2581 and STEP go. None of those other tools runs here, so the steps on
-their side are their makers' documented imports, not tested. `hwde eda_io
+their side are their makers' documented imports, not tested. `pcb-flow eda_io
 formats` prints the table.
 
 ## What it never does
@@ -723,8 +723,8 @@ nothing in the Hive should ask for them.
 - DigiKey/Mouser price lookups need API keys and stay off.
 - The knowledge records cite manufacturer PDFs that the module doesn't carry
   (see NOTICE). `docs/knowledge-sources.txt` pins them at upstream's commit;
-  `bin/hwde` fetches them into `$HOME/.cache/hwde/knowledge-sources` the first
-  time `knowledge`, `research`, `check-all` or `hwde sources` runs (37 MB,
+  `bin/pcb-flow` fetches them into `$HOME/.cache/hwde/knowledge-sources` the first
+  time `knowledge`, `research`, `check-all` or `pcb-flow sources` runs (37 MB,
   each checked against its git blob sha) and points `HWDE_KNOWLEDGE_SOURCES`
   there. A record `research promote` adds with a new PDF puts that PDF in the
   same cache, so it isn't in the module or upstream's list.
@@ -735,7 +735,7 @@ nothing in the Hive should ask for them.
 
 ## The first board
 
-[`boards/hwde-led-test/`](../boards/hwde-led-test/) is the first board hwde
+[`boards/hwde-led-test/`](../boards/hwde-led-test/) is the first board pcb-flow
 made in the Hive: a 2-layer, 13.4 x 10.5 mm board with a 5 V header, a bulk
 cap and a green LED with its resistor. It went through every stage up to P9,
 and ERC, place, drc_routed, verify and dfm all pass. Read its `log/P*-digest.md`
@@ -746,12 +746,12 @@ for what each stage did and `LEARNINGS.md` for what it taught.
 What each EE ingestion run found, with every rule marked verified, disputed
 or folklore, and its ranked gap list: [dfm-assembly](../reference/ingest/dfm-assembly.md),
 [analog-audio](../reference/ingest/analog-audio.md).
-`hwde check_paste --pcb <board> [--stencil-mm 0.10]` (stencil area ratio,
+`pcb-flow check_paste --pcb <board> [--stencil-mm 0.10]` (stencil area ratio,
 exposed-pad paste) came from it; run it in the DFM/assembly review. It is
 not in the verify suite yet (task 261031-013753-d3238414d5).
 
 - [reference/ingest/tools-ecosystem.md](../reference/ingest/tools-ecosystem.md):
-  open-source EDA and EE tools against hwde. The Hive already has openEMS,
+  open-source EDA and EE tools against pcb-flow. The Hive already has openEMS,
   FasterCap, FastHenry, Palace and ngspice-47 in its IIC-OSIC-TOOLS tree;
-  hwde's impedance solver checked against two independent methods; KLC and
+  pcb-flow's impedance solver checked against two independent methods; KLC and
   kicad-happy run on lite-main; a ranked gap list.

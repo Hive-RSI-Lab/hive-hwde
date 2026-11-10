@@ -1,6 +1,6 @@
 # Vendors: fabs and assemblers beyond JLCPCB
 
-hwde started as a JLCPCB pipeline: its fab rules, prices, rotations and part
+pcb-flow started as a JLCPCB pipeline: its fab rules, prices, rotations and part
 numbers are all JLC's. This page covers the other vendors. Each vendor gets a
 profile in `reference/vendors/<id>.yaml`, and `vendor.py` uses those profiles
 to:
@@ -24,13 +24,13 @@ JLC remains the default everywhere. `dfm_check` and `order_quote` read JLC's
 tables unless `--vendor` names another profile.
 
 ```
-hwde vendor list
-hwde vendor show pcbway
-hwde vendor fit --pcb kicad/board.kicad_pcb [--fab-dir fab] [--vendors all] [--assembly] [--qty 5,10]
-hwde vendor package --workspace boards/X --vendor pcbway
-hwde vendor choose --workspace boards/X --vendor pcbway
-hwde dfm_check --pcb ... --vendor oshpark
-hwde order_quote --pcb ... --vendor aisler
+pcb-flow vendor list
+pcb-flow vendor show pcbway
+pcb-flow vendor fit --pcb kicad/board.kicad_pcb [--fab-dir fab] [--vendors all] [--assembly] [--qty 5,10]
+pcb-flow vendor package --workspace boards/X --vendor pcbway
+pcb-flow vendor choose --workspace boards/X --vendor pcbway
+pcb-flow dfm_check --pcb ... --vendor oshpark
+pcb-flow order_quote --pcb ... --vendor aisler
 ```
 
 ## Profile schema
@@ -217,7 +217,7 @@ publish, next to JLC's: `PCBWAY-4L-1.6-7628`, `PCBWAY-6L-1.6-7628`,
 come from JLC's row and are listed in `_floors_from_jlc`. A build with no
 vendor rules (AISLER 8L) is refused. `defaults` stay JLC.
 
-The impedance tables come from `hwde stackup_rows --stackup <NAME>`. Widths
+The impedance tables come from `pcb-flow stackup_rows --stackup <NAME>`. Widths
 under the vendor's min trace are pinned and the gap solved. `unreachable:
 true` marks a pinned row that still misses its target, such as a 100 ohm
 stripline pair on a thin dielectric. `fab_table` is the fab's own published

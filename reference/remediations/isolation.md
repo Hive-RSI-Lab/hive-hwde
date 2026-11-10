@@ -41,5 +41,5 @@ or touching across it, or a part across it with no rating that covers it.
 
 ## Verify
 ```
-bin/hwde check_isolation --pcb boards/<name>/kicad/<name>.kicad_pcb --constraints boards/<name>/kicad/constraints.json
+bin/pcb-flow check_isolation --pcb boards/<name>/kicad/<name>.kicad_pcb --constraints boards/<name>/kicad/constraints.json
 ```

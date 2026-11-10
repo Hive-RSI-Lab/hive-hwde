@@ -1,6 +1,6 @@
 # Extraction library
 
-hwde's own datasheet extractions, one file per LCSC part: `<LCSC>.json`, in the
+pcb-flow's own datasheet extractions, one file per LCSC part: `<LCSC>.json`, in the
 same schema as a board's `parts/<lcsc>.json` (`datasheet_extract.py`,
 `DATASHEET_SCHEMA`).
 

@@ -2,7 +2,7 @@
 
 One of the domain notes from the 2026-10-31 ingestion run (task
 261031-011721-e8a4a99307, issue #304). The person's ask: cast a wide net over
-free EE sources, keep what is true, and turn it into hwde tests and tools.
+free EE sources, keep what is true, and turn it into pcb-flow tests and tools.
 "Dont blindly trust everything u find out there."
 
 How to read it: each rule has an id and a status.
@@ -13,11 +13,11 @@ How to read it: each rule has an id and a status.
 - **disputed**: sources disagree, or our reproduction disagrees with the
   source. What disagrees is written next to it.
 - **folklore**: widely repeated, with no derivation, measurement or second
-  source behind it. Often measured to be wrong. hwde does not check it.
+  source behind it. Often measured to be wrong. pcb-flow does not check it.
 - **judgement**: the direction is verified but the number is a choice (a
   threshold no source fixes). A check using one says it is a judgement.
 
-Run `verify.py` with the venv python (`eval "$(bin/hwde env)"` first for
+Run `verify.py` with the venv python (`eval "$(bin/pcb-flow env)"` first for
 `--spice`, which needs KiCad's ngspice). It prints every number below.
 
 ## Sources read
@@ -65,7 +65,7 @@ university and author pages, and open tools. No pirated books.
 
 ### check_esd on the pinned boards (run by hand, not scored)
 
-`bin/hwde check_esd --pcb pinned/<b>/kicad/<b>.kicad_pcb`:
+`bin/pcb-flow check_esd --pcb pinned/<b>/kicad/<b>.kicad_pcb`:
 
 - **lite-main**: USB-C J1 D+/D- (`/USB_DP`, `/USB_DM`) run straight to the
   CH340B (U6) with **no ESD clamp**. CC1/CC2 run to the CH224A with none
@@ -110,9 +110,9 @@ are not optional by any of the sources above.
 | TH-5 | "Copper area saturates near 1 in² (645 mm²)" (check_thermal's curve: θ floors at 55 C/W on 2 layers) | **disputed**. An exact annular-fin model (1 oz, 2 mm source, h = 10 W/m²K on both faces) still gains 3× from 645 mm² to an infinite sheet (92 → 32 K/W), and reaches within 10 % of the sheet only at ~4900 mm² (2 oz: ~9100 mm²). The empirical flattening comes from vendor test boards that are themselves small. check_thermal errs high (safe), but its "add vias, more copper won't help" advice may be wrong on a big board | `fin_theta`, `fin_saturation_area`; gap G4 |
 | TH-6 | Forced air: h grows like √v (laminar), so the first 100-200 LFM buy the most | **verified** direction (check_thermal already uses TI's measured factors and says linear errs high) | covered |
 
-## Gaps: what hwde should do next
+## Gaps: what pcb-flow should do next
 
-Ranked, most worth doing first. G1-G4 are filed as hive-hwde briefs
+Ranked, most worth doing first. G1-G4 are filed as hive-pcb-flow briefs
 (tasks 261031-012852-03534ea0dc, -7b1ff6e275, -ab4e83fa07, -44d25c4409).
 File the rest in this order as in-flight work drops: G8, G6, G5, G7, G9.
 

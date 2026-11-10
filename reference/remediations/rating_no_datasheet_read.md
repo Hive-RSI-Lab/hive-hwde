@@ -14,10 +14,10 @@ Yes, as a statement about the evidence. It doesn't say the number is wrong: a li
 and until a datasheet is read nothing here would notice.
 
 ## Fix ladder (cheapest first)
-1. `bin/hwde datasheet_extract --fetch <ws>` downloads and judges each PDF.
+1. `bin/pcb-flow datasheet_extract --fetch <ws>` downloads and judges each PDF.
 2. Extract the ones that matter most (datasheet-extractor agent, `--pdf FILE`). An extracted part's
    pins are then compared with its datasheet, and its fact reads `verified`.
-3. A part you read yourself: `bin/hwde ledger set --workspace <ws> --subject R1 --kind rating
+3. A part you read yourself: `bin/pcb-flow ledger set --workspace <ws> --subject R1 --kind rating
    --status verified --source "datasheet, page"`.
 4. A part with no number at all is a different finding (rating_unrated, rating_no_attributes):
    `parts_enrich.py --workspace <ws>` fills its attributes, which takes it from unknown to listed.
@@ -27,5 +27,5 @@ and until a datasheet is read nothing here would notice.
 
 ## Verify
 ```
-bin/hwde check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --constraints <ws>/kicad/constraints.json
+bin/pcb-flow check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --constraints <ws>/kicad/constraints.json
 ```

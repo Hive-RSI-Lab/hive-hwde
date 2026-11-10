@@ -52,10 +52,10 @@ neighbour's label or body outline. Warning severity: never fails P6 `drc`, alway
 
 ## Verify
 ```
-bin/hwde place_edit --pcb boards/<ws>/kicad/<board>.kicad_pcb --ops work/silk/ops.json --out-report work/silk/apply.json
-bin/hwde kc drc boards/<ws>/kicad/<board>.kicad_pcb --out work/silk/drc.json
-bin/hwde gate --gate drc_routed boards/<ws>/kicad/<board>.kicad_pcb --out work/silk/gate.json
-bin/hwde render boards/<ws>/kicad/<board>.kicad_pcb --views top --out-dir work/silk
+bin/pcb-flow place_edit --pcb boards/<ws>/kicad/<board>.kicad_pcb --ops work/silk/ops.json --out-report work/silk/apply.json
+bin/pcb-flow kc drc boards/<ws>/kicad/<board>.kicad_pcb --out work/silk/drc.json
+bin/pcb-flow gate --gate drc_routed boards/<ws>/kicad/<board>.kicad_pcb --out work/silk/gate.json
+bin/pcb-flow render boards/<ws>/kicad/<board>.kicad_pcb --views top --out-dir work/silk
 ```
 Read the render back: a DRC-clean label nearer a neighbour than its own part is still wrong, and
 nothing in the pipeline catches that (LEARNINGS 1958).

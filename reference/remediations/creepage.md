@@ -63,8 +63,8 @@ have same-layer copper closer than the IPC-2221 Table 6-1 minimum for the adjudi
 
 ## Verify
 ```
-bin/hwde check_creepage --pcb boards/<name>/kicad/<name>.kicad_pcb --constraints boards/<name>/kicad/constraints.json
-bin/hwde gate --gate verify boards/<name>/kicad/<name>.kicad_pcb
+bin/pcb-flow check_creepage --pcb boards/<name>/kicad/<name>.kicad_pcb --constraints boards/<name>/kicad/constraints.json
+bin/pcb-flow gate --gate verify boards/<name>/kicad/<name>.kicad_pcb
 ```
 
 ## Sources

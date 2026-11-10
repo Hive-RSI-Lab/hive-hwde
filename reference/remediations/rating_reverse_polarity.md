@@ -42,7 +42,7 @@ reverse rating (VR, often only 5 V for an LED).
 
 ## Verify
 ```
-bin/hwde check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --constraints <ws>/kicad/constraints.json
+bin/pcb-flow check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --constraints <ws>/kicad/constraints.json
 ```
 
 ## Sources

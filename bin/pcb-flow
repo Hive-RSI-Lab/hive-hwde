@@ -1,0 +1,341 @@
+#!/bin/sh
+# pcb-flow inside the Hive: points the scripts at the Hive's shared tools folder
+# (HWDE_TOOLS_DIR; scripts/lib/env.py finds KiCad, freerouting and
+# KiCadRoutingTools there), keeps the module's Python venv in the agent's
+# own HOME, and runs its scripts.
+#
+#   pcb-flow env              print the exports (eval "$(pcb-flow env)")
+#   pcb-flow check            check_env: every tool the pipeline needs
+#   pcb-flow test [args]      the scripts' unit tests and the workaround probes,
+#                         no KiCad runs of whole boards (the per-PR test)
+#   pcb-flow test-slow [args] the tests test leaves out as slow (tests/conftest.py
+#                         SLOW): live toolchain, whole fixture boards
+#   pcb-flow test-em [args]   the long full-wave solves, `em` (tests/conftest.py EM),
+#                         which test-slow leaves out: over an hour on a loaded machine
+#   pcb-flow test-smoke [args] the `smoke` tests: whole flows on a live KiCad
+#                         (.github/workflows/smoke.yml runs them on every PR and daily)
+#   pcb-flow check-all        re-run every board's gates from a scratch copy, and
+#                         check docs/workarounds.md against its probes (slow)
+#   pcb-flow sources          fetch the knowledge records' source PDFs into HOME
+#                         (first use of knowledge, research or check-all
+#                         does it too) and print where they are
+#   pcb-flow score            re-run the gates on the pinned boards, shims off, and
+#                         count what they find, and check the checks still catch
+#                         pcb-flow's planted faults (the score; docs/score.md)
+#   pcb-flow pin BOARD --from CLONE --commit SHA
+#                         refresh a pinned board (bin/pin.py)
+#   pcb-flow publish <dir>    put a self-contained copy at <dir>/hwde (a warden
+#                         runs it into the Hive's tools folder, so a check
+#                         sandbox, which mounts only /work and /hive/tools,
+#                         has /hive/tools/hwde/bin/pcb-flow with no venv to build)
+#                         A published copy hands each command to the
+#                         installed module (/hive/modules/hive-hwde, which
+#                         follows main at every merge) whenever it can see
+#                         it and both pin the same requirements.lock, so
+#                         only a lock change needs a new publish.
+#   pcb-flow <script> [args]  run scripts/<script>.py with the venv python
+#                         (or the published copy's own)
+#
+# A shim here that works around a defect in the scripts runs only while its id
+# is listed in docs/workarounds.md (wa <id>): delisting it turns it off.
+#
+# test, check-all and the scripts that run a whole board, the router or a sim
+# wait for `hive heavy`'s machine-wide lock inside a Hive turn (at most 10
+# minutes, then run anyway): give the shell command a timeout to match.
+#
+# Nothing here installs anything outside HOME but publish's <dir>: KiCad and
+# freerouting are the Hive's (in its shared tools folder, put there through a
+# warden) or, with none, `pcb-flow tools` fetches them into HOME; the venv is built from requirements.lock with the Hive's uv on
+# first use, and the knowledge records' source PDFs are fetched from upstream
+# (bin/sources.py). A published copy carries its own Python 3.14 with the
+# packages installed in it, and its own PDFs, and uses those instead.
+set -e
+here=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)   # follow the link `hive module add` puts in ~/.local/bin
+
+# A published copy runs the installed module's code with its own python when
+# the module is in sight (agents see $HIVE_MODULES; a check sees it once the
+# Hive mounts it) and the two lock the same packages; else its own code.
+if [ -f "$here/VERSION" ] && [ -z "${HWDE_PUBLISHED:-}" ]; then
+	# The module's folder and command under the new name first, then the old
+	# (hive-hwde, bin/hwde): a Hive that installed it before the rename.
+	for mod in "${HIVE_MODULES:-/hive/modules}/hive-pcb-flow" "${HIVE_MODULES:-/hive/modules}/hive-hwde"; do
+		for run in "$mod/bin/pcb-flow" "$mod/bin/hwde"; do
+			if [ -x "$run" ] && [ ! -f "$mod/VERSION" ] && cmp -s "$mod/requirements.lock" "$here/requirements.lock"; then
+				HWDE_PUBLISHED=$here exec "$run" "$@"
+			fi
+		done
+	done
+fi
+pub=${HWDE_PUBLISHED:-$here}
+tools=${HIVE_TOOLS:-/hive/tools}
+state=${HWDE_HOME:-$HOME/.cache/hwde}
+venv=${HWDE_VENV:-$state/venv}
+finduv() {
+	uv=$(command -v uv || true)
+	[ -z "$uv" ] && [ -x "$tools/uv/bin/uv" ] && uv=$tools/uv/bin/uv
+	[ -n "$uv" ] || { echo "pcb-flow: needs uv (hive agent install --tool uv)" >&2; exit 127; }
+}
+
+# pin copies files with git: no KiCad, no venv.
+if [ "${1:-}" = pin ]; then
+	shift
+	exec python3 "$here/bin/pin.py" "$@"
+fi
+# tools fetches KiCad, freerouting and KiCadRoutingTools into $state/tools
+# (no root, no venv; stdlib python): for a Hive with no shared tools folder.
+if [ "${1:-}" = tools ]; then
+	shift
+	exec python3 "$here/bin/tools.py" "$@"
+fi
+# The score measures pcb-flow as it is, not as its shims patch it: every shim is
+# off for it and for the gates it runs.
+[ "${1:-}" = score ] && export HWDE_NO_SHIMS=1
+
+# publish builds the copy beside <dir>/hwde and swaps it in, so a check that
+# is running keeps the old one whole. Its python is a python-build-standalone
+# (relocatable: the host's path to the tools folder isn't /hive/tools), with
+# no venv, whose symlinks and pyvenv.cfg would name the host's path.
+if [ "${1:-}" = publish ]; then
+	[ -n "${2:-}" ] && [ -d "$2" ] || { echo "usage: pcb-flow publish <existing dir>" >&2; exit 2; }
+	dest=$(cd "$2" && pwd)
+	finduv
+	ver=$(git -C "$here" rev-parse --short HEAD 2>/dev/null || date -u +%Y%m%d%H%M%S)
+	new=$dest/.hwde-new-$$
+	rm -rf "$new"
+	trap 'rm -rf "$new"' EXIT
+	mkdir -p "$new"
+	(cd "$here" && tar cf - bin docs agents scripts reference requirements.lock module.json LICENSE NOTICE README.md) | (cd "$new" && tar xf -)
+	"$uv" python install -q --install-dir "$new/python" --no-bin 3.14 >&2
+	find "$new/python" -maxdepth 1 -type l -exec rm {} + # absolute links to $new
+	py=$(ls -d "$new"/python/cpython-3.14.*/bin/python3.14 | sort -V | tail -n 1)
+	grep -v '^pywin32==' "$here/requirements.lock" >"$new/python/requirements.txt"
+	"$uv" pip install -q --python "$py" --break-system-packages -r "$new/python/requirements.txt" >&2
+	"$py" -c 'import kicad_sch_api, pytest' # the copy runs, or nothing is swapped
+	# A check sandbox has no network: the copy carries the source PDFs.
+	python3 "$here/bin/sources.py" fetch "$new/knowledge-sources"
+	echo "$ver" >"$new/VERSION"
+	rm -rf "$dest/.hwde-old"
+	[ -d "$dest/hwde" ] && mv "$dest/hwde" "$dest/.hwde-old"
+	mv "$new" "$dest/hwde"
+	rm -rf "$dest/.hwde-old"
+	echo "$ver" >"$dest/hwde.version"
+	echo "pcb-flow $ver published at $dest/hwde (run $dest/hwde/bin/hwde)"
+	exit 0
+fi
+wa() { [ -z "${HWDE_NO_SHIMS:-}" ] && grep -q "^| *$1 *|" "$here/docs/workarounds.md" 2>/dev/null; }
+
+# KiCad (the newest kicad-*/ AppDir), freerouting and KiCadRoutingTools are
+# in the shared tools folder; scripts/lib/env.py finds each there itself.
+# A Hive with no shared folder (a fresh install) gets them from `pcb-flow tools`,
+# which puts them in $state/tools; that is used when the shared one has no KiCad.
+if [ -z "${HWDE_TOOLS_DIR:-}" ]; then
+	HWDE_TOOLS_DIR=$tools
+	for k in "$tools"/kicad-*; do [ -d "$k" ] && found=1; done
+	[ -z "${found:-}" ] && [ -d "$state/tools" ] && HWDE_TOOLS_DIR=$state/tools
+fi
+export HWDE_TOOLS_DIR
+# The knowledge records cite manufacturers' PDFs the module doesn't carry
+# (NOTICE): docs/knowledge-sources.txt pins them at upstream's commit, and
+# bin/sources.py fetches them into HOME (a published copy carries its own)
+# the first time a command that checks citations runs, or `pcb-flow sources`.
+if [ -z "${HWDE_KNOWLEDGE_SOURCES:-}" ]; then
+	srcdir=$pub/knowledge-sources
+	[ -d "$srcdir" ] || srcdir=$state/knowledge-sources
+	if [ ! "$srcdir/.complete" -nt "$here/docs/knowledge-sources.txt" ]; then
+		case ${1:-} in
+		knowledge | knowledge.py | research | research.py | checklist_verify | checklist_verify.py | check-all | sources)
+			python3 "$here/bin/sources.py" fetch "$srcdir" || true ;;
+		esac
+	fi
+	[ "$srcdir/.complete" -nt "$here/docs/knowledge-sources.txt" ] && HWDE_KNOWLEDGE_SOURCES=$srcdir
+fi
+# report_gen and the board guide are set in the pdf-material-builder skill's
+# house style: an explicit pin, else the skill in HOME, else the machine's
+# install (/opt), else a clone among the Hive's projects. With none, report_gen
+# gets the module's plainer stand-in, so it still builds a PDF.
+if [ -z "${HWDE_PDF_MATERIAL_BUILDER:-}" ]; then
+	for d in "$HOME/.claude/skills/pdf-material-builder" /opt/pdf-material-builder "${HIVE_PROJECTS:-/hive/projects}/pdf-material-builder"; do
+		[ -f "$d/references/house-style/housestyle.sty" ] && { HWDE_PDF_MATERIAL_BUILDER=$d; break; }
+	done
+fi
+if [ -z "${HWDE_HOUSE_STYLE:-}" ]; then
+	HWDE_HOUSE_STYLE=$here/bin/house-style-fallback
+	[ -f "${HWDE_PDF_MATERIAL_BUILDER:-/nonexistent}/references/house-style/housestyle.sty" ] && HWDE_HOUSE_STYLE=$HWDE_PDF_MATERIAL_BUILDER/references/house-style
+fi
+if [ -z "${HWDE_DIAGRAM_MAKER:-}" ] && [ -f "${HWDE_PDF_MATERIAL_BUILDER:-/nonexistent}/diagram-maker/scripts/export.sh" ]; then
+	HWDE_DIAGRAM_MAKER=$HWDE_PDF_MATERIAL_BUILDER/diagram-maker
+fi
+# Boards live in the project the agent works in, under boards/.
+HWDE_BOARDS_ROOT=${HWDE_BOARDS_ROOT:-$PWD/boards}
+
+# A published copy's own python (an explicit HWDE_VENV still wins); else the
+# venv in HOME, built when missing and updated when the lock's contents change.
+# The stamp holds a copy of the lock it was built from. A new clone's lock has
+# a new mtime and the same contents, and the venv is shared by every running
+# job, so mtime alone must not touch it, and an update must not --clear it.
+py=
+[ -z "${HWDE_VENV:-}" ] && py=$(ls -d "$pub"/python/cpython-3.14.*/bin/python3.14 2>/dev/null | sort -V | tail -n 1)
+own=$py
+[ -n "$py" ] || py=$venv/bin/python
+venv_stale() {
+	[ ! -x "$py" ] || [ ! -f "$venv/.hwde-lock" ] || {
+		[ "$here/requirements.lock" -nt "$venv/.hwde-lock" ] && ! cmp -s "$here/requirements.lock" "$venv/.hwde-lock"
+	}
+}
+if [ -z "$own" ] && venv_stale; then
+	finduv
+	mkdir -p "$state"
+	(
+		# Two first uses at once: the second waits here, then finds it built.
+		if command -v flock >/dev/null; then flock 9; fi
+		venv_stale || exit 0
+		req=$(mktemp "$state/requirements.XXXXXX")
+		trap 'rm -f "$req"' EXIT
+		grep -v '^pywin32==' "$here/requirements.lock" >"$req"
+		[ -x "$py" ] || "$uv" venv -q --clear --python 3.14 "$venv" >&2
+		VIRTUAL_ENV=$venv "$uv" pip install -q -r "$req" >&2
+		cp "$here/requirements.lock" "$venv/.hwde-lock.new"
+		mv "$venv/.hwde-lock.new" "$venv/.hwde-lock"
+	) 9>"$state/venv-build.lock"
+fi
+
+# HWDE_PY lets a script tell the runner's venv from another python (partslib's hint).
+export HWDE_PY="$py"
+export HWDE_KNOWLEDGE_SOURCES HWDE_BOARDS_ROOT HWDE_HOUSE_STYLE
+[ -n "${HWDE_KNOWLEDGE_SOURCES:-}" ] || unset HWDE_KNOWLEDGE_SOURCES
+[ -n "${HWDE_PDF_MATERIAL_BUILDER:-}" ] && export HWDE_PDF_MATERIAL_BUILDER
+[ -n "${HWDE_DIAGRAM_MAKER:-}" ] && export HWDE_DIAGRAM_MAKER
+# KiCad's SWIG paths need an X display: with none, a script runs under its own
+# Xvfb (xvfb-run), gone when the script ends. GLX stays off: H0's Xvfb crashes
+# loading it through the NVIDIA EGL libraries, and KiCad doesn't need it here.
+xvfb=
+[ -z "${DISPLAY:-}" ] && command -v xvfb-run >/dev/null 2>&1 && xvfb=1
+# A heavy command (a pytest suite, the router, whole-board gates) runs under
+# `hive heavy`, which runs one heavy command at a time on the machine: on
+# 10-28 ten pcb-flow suites and freerouting at once took a 20-core load to 137.
+# Not when it is already inside one (check-all's gates, a test that runs
+# pcb-flow) or the hive at hand has no `hive heavy` (it replaced `hive agent
+# heavy` on 10-30): then it runs bare.
+heavy=
+lease() {
+	[ -n "$heavy" ] && [ -z "${HWDE_HEAVY_HELD:-}" ] && command -v hive >/dev/null 2>&1 &&
+		hive heavy </dev/null 2>&1 | grep -q '^usage: hive heavy'
+}
+x() {
+	[ -n "$xvfb" ] && set -- xvfb-run -a -s "-extension GLX" "$@"
+	if lease; then
+		export HWDE_HEAVY_HELD=1
+		exec hive heavy --what "$heavy" --patience 10m -- "$@"
+	fi
+	[ -n "$heavy" ] && export HWDE_HEAVY_HELD=1
+	exec "$@"
+}
+
+case "${1:-}" in
+env)
+	for v in HWDE_TOOLS_DIR HWDE_KNOWLEDGE_SOURCES HWDE_BOARDS_ROOT HWDE_HOUSE_STYLE HWDE_PDF_MATERIAL_BUILDER HWDE_DIAGRAM_MAKER; do
+		eval "val=\${$v:-}"
+		[ -n "$val" ] && printf "export %s='%s'\n" "$v" "$val"
+	done
+	# The tools as the scripts' env.py resolves them (a pin set here wins
+	# there too), so a shell or CI sees what every script will use; a tool
+	# it can't find is left out. KICAD_SYMBOL_DIR is the flat copies. A tree
+	# without the scripts (a test's stand-in) resolves nothing.
+	[ ! -f "$here/scripts/lib/env.py" ] ||
+	"$py" - "$here/scripts/lib" <<-'EOF'
+		import os, sys
+		sys.path.insert(0, sys.argv[1])
+		import env
+		def out(name, get):
+		    try:
+		        val = get()
+		    except (env.EnvError, OSError):
+		        return
+		    if val:
+		        print(f"export {name}='{val}'")
+		out("HWDE_KICAD_CLI", env.find_kicad_cli)
+		out("HWDE_FREEROUTING_JAR", env.find_freerouting_jar)
+		out("HWDE_JAVA", lambda: (env.find_java() or (None,))[0])
+		out("HWDE_KRT_DIR", env.find_krt)
+		out("HWDE_NGSPICE_DLL", env.find_ngspice_dll)
+		def symbols():
+		    env.export_kicad_symbol_dir()
+		    return os.environ.get("KICAD_SYMBOL_DIR")
+		out("KICAD_SYMBOL_DIR", symbols)
+	EOF
+	# HWDE_SKILL is HWDE_MODULE's old name, which boards written before the move still read.
+	printf "export HWDE_MODULE='%s'\nexport HWDE_SKILL='%s'\nexport HWDE_PY='%s'\n" "$here" "$here" "$py"
+	;;
+test | test-slow | test-em | test-smoke)
+	# tests/: upstream's unit tests (no smoke or net marks: those need a live
+	# KiCad run or the internet) and test_workarounds.py, the probes. Boards
+	# root is an empty scratch dir, so a test that wants a real board skips;
+	# whole boards are check-all's.
+	#
+	# Its scratch files (pytest's tmp_path, the boards root, TMPDIR) go on /dev/shm
+	# when it has room, and nothing fsyncs (HWDE_NO_FSYNC, safelib): the
+	# suite is file-heavy, not CPU-heavy, and on the Hive's loaded disk
+	# its plain writes and fsyncs took it from ~4 to over 30 minutes. The
+	# scratch dir goes when the run ends; the run prints its time and its
+	# slowest tests. test-slow runs the `slow` ones it leaves out, test-em the
+	# long full-wave solves (`em`, also `slow`), test-smoke the `smoke` ones:
+	# whole flows on a live KiCad, which CI runs on every PR and daily.
+	marks="not smoke and not net and not slow"
+	[ "$1" = test-slow ] && marks="slow and not em and not smoke and not net"
+	[ "$1" = test-em ] && marks="em and not smoke and not net"
+	[ "$1" = test-smoke ] && marks="smoke and not net"
+	shift
+	export HWDE_BIN="$here/bin/pcb-flow" HWDE_STATE="$state"
+	export HWDE_NO_FSYNC=1
+	# OpenBLAS busy-waits under load: a run stalled for over 45 min with it (#498).
+	export OPENBLAS_NUM_THREADS="${OPENBLAS_NUM_THREADS:-1}"
+	base=${TMPDIR:-/tmp}
+	shm=$(df -Pk /dev/shm 2>/dev/null | awk 'NR==2 {print $4}')
+	[ -w /dev/shm ] && [ "${shm:-0}" -ge 524288 ] && base=/dev/shm
+	scratch=$(mktemp -d "$base/hwde-test-XXXXXX")
+	HWDE_BOARDS_ROOT=$scratch/noboards
+	mkdir "$HWDE_BOARDS_ROOT" "$scratch/tmp"
+	cd "$here"
+	heavy="pcb-flow test (the module's pytest suite)"
+	x sh -c 'scratch=$1; shift; t0=$(date +%s)
+		TMPDIR=$scratch/tmp "$@"; rc=$? # the probes and scripts temp files too
+		rm -rf "$scratch"
+		echo "pcb-flow test: $(($(date +%s) - t0))s (scratch on ${scratch%/*})"
+		exit $rc' sh "$scratch" \
+		"$py" -m pytest -m "$marks" --basetemp="$scratch/pytest" \
+		--durations=15 "$@"
+	;;
+check-all)
+	shift
+	export HWDE_BIN="$here/bin/pcb-flow" HWDE_STATE="$state"
+	heavy="pcb-flow check-all (every board's gates)"
+	x "$py" "$here/bin/check_all.py" "$@"
+	;;
+score)
+	shift
+	export HWDE_BIN="$here/bin/pcb-flow"
+	heavy="pcb-flow score (the gates on every pinned board)"
+	x "$py" "$here/bin/score.py" "$@"
+	;;
+sources)
+	[ -n "${HWDE_KNOWLEDGE_SOURCES:-}" ] || { echo "pcb-flow: knowledge sources not fetched (see above)" >&2; exit 1; }
+	echo "$HWDE_KNOWLEDGE_SOURCES"
+	;;
+check)
+	shift
+	x "$py" "$here/scripts/check_env.py" "$@"
+	;;
+"" | -h | --help)
+	sed -n '2,36p' "$0" | sed 's/^# \{0,1\}//'
+	;;
+*)
+	s=${1%.py}
+	shift
+	# The scripts that run KiCad over a whole board, the router or a sim.
+	case $s in
+	route_auto | route_critical | route_escape | route_tune | place_anneal | gate | verify_all | bench | render | sim_run | sim_si | sim_solve | fab_export)
+		heavy="pcb-flow $s" ;;
+	esac
+	x "$py" "$here/scripts/$s.py" "$@"
+	;;
+esac

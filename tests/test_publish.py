@@ -77,6 +77,20 @@ def test_published_copy_runs_the_module_at_main(tmp_path):
     assert not (home / ".cache" / "hwde" / "venv").exists()
 
 
+def test_published_copy_finds_the_module_under_its_new_name(tmp_path):
+    """After the rename the folder is hive-pcb-flow and the command bin/pcb-flow."""
+    copy, py = fake_copy(tmp_path)
+    mod = tmp_path / "modules" / "hive-pcb-flow"
+    (mod / "bin").mkdir(parents=True)
+    shutil.copy2(ROOT / "bin" / "pcb-flow", mod / "bin" / "pcb-flow")
+    (mod / "requirements.lock").write_text((ROOT / "requirements.lock").read_text())
+    home = tmp_path / "home"
+    home.mkdir()
+    r = run(copy / "bin" / "hwde", home, "env", modules=mod.parent)
+    assert r.returncode == 0, r.stderr
+    assert f"export HWDE_MODULE='{mod}'" in r.stdout
+
+
 def test_published_copy_keeps_its_own_code_when_the_lock_moved(tmp_path):
     copy, py = fake_copy(tmp_path)
     mod = fake_module(tmp_path, (ROOT / "requirements.lock").read_text() + "newpkg==1.0\n")
@@ -91,4 +105,4 @@ def test_published_copy_keeps_its_own_code_when_the_lock_moved(tmp_path):
 def test_publish_needs_an_existing_dir(tmp_path):
     r = run(ROOT / "bin" / "hwde", tmp_path, "publish", str(tmp_path / "missing"))
     assert r.returncode == 2
-    assert "usage: hwde publish" in r.stderr
+    assert "usage: pcb-flow publish" in r.stderr

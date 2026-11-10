@@ -34,10 +34,10 @@ A conductor on an exported copper gerber is narrower than the fab profile's
 ## Verify
 
 ```
-bin/hwde route_edit --pcb <ws>/kicad/<board>.kicad_pcb --ops <ws>/work/widen_ops.json --out-report <ws>/work/widen_report.json
-bin/hwde gate --gate dfm <ws>/kicad/<board>.kicad_pcb --out <ws>/work/dfm_after.json
-bin/hwde gate --gate drc_routed <ws>/kicad/<board>.kicad_pcb --out <ws>/work/drc_after.json
-bin/hwde dfm_check --pcb <ws>/kicad/<board>.kicad_pcb --out <ws>/work/dfm_facts.json
+bin/pcb-flow route_edit --pcb <ws>/kicad/<board>.kicad_pcb --ops <ws>/work/widen_ops.json --out-report <ws>/work/widen_report.json
+bin/pcb-flow gate --gate dfm <ws>/kicad/<board>.kicad_pcb --out <ws>/work/dfm_after.json
+bin/pcb-flow gate --gate drc_routed <ws>/kicad/<board>.kicad_pcb --out <ws>/work/drc_after.json
+bin/pcb-flow dfm_check --pcb <ws>/kicad/<board>.kicad_pcb --out <ws>/work/dfm_facts.json
 ```
 
 Both gates must pass: widening copper is the classic way to trade a `dfm_trace_width` error for a

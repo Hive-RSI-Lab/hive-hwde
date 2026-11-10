@@ -1,14 +1,14 @@
 # The score
 
-`bin/hwde score` measures what this checkout of hwde gets wrong on real
+`bin/pcb-flow score` measures what this checkout of pcb-flow gets wrong on real
 boards held fixed: the findings it raises that aren't defects of the board,
 and the known defects it no longer raises. The boards stay the same between
-measures, and hwde is the one thing that changes, so a better hwde moves the
-number. A true finding on a frozen board is the board's, not hwde's, and
-costs nothing: hwde can't move it, and charging it would read a check made
+measures, and pcb-flow is the one thing that changes, so a better pcb-flow moves the
+number. A true finding on a frozen board is the board's, not pcb-flow's, and
+costs nothing: pcb-flow can't move it, and charging it would read a check made
 sharp enough to find a new real defect as a loss. The person's test
 for the module is "build the hifi board, design new tools, work on them, see
-how that improves the board" (hive-hwde chat, 2026-10-28 10:18). This page
+how that improves the board" (hive-pcb-flow chat, 2026-10-28 10:18). This page
 is the definition. It is written once: a change to it is a change to what
 the Hive measures, and needs to be argued for as one.
 
@@ -25,27 +25,27 @@ Each board is a pin, `pinned/<board>.json`:
 - **hwde-led-test**: this repo's own board, `boards/hwde-led-test`, where it
   is.
 - **digits-v1**, **oasis-v0-2** and **minuet-v3**: open-hardware KiCad boards
-  built outside hwde that published errata (justinlindh/digits, AGPL-3.0;
+  built outside pcb-flow that published errata (justinlindh/digits, AGPL-3.0;
   justbuchanan/oasis, Apache-2.0; brown-studios/minuet, MIT). Only
   their KiCad sources and licence are copied, into `pinned/<board>/kicad/`,
-  with a fresh `state.json` (every gate owed), by `bin/hwde pin <board> --from
+  with a fresh `state.json` (every gate owed), by `bin/pcb-flow pin <board> --from
   <clone> --commit <sha> --path <dir> --url <url> --license <spdx> --errata
   <file>`. The pin's `source` names the project, its licence and its errata
   file, and lists what in the errata is not a defect of the board (a design
   note, a firmware bug) and so is not in the ledger. Every erratum that is a
   defect of the board is a `real` entry carrying the errata's URL at the
-  pinned commit in `source`; one hwde misses is charged as missed, and has an
-  issue naming the check that would catch it. hwde has no requirements,
+  pinned commit in `source`; one pcb-flow misses is charged as missed, and has an
+  issue naming the check that would catch it. pcb-flow has no requirements,
   constraints or parts data for these boards, so the checks that need them
   find nothing: that is part of what they measure.
 
 `bin/score.py` holds the sha256 of every pin and its files (`PINS`). A board
 whose files don't match it stops the score and fails the test. A pinned board
-changes only through `bin/hwde pin <board> --from <clone> --commit <sha>`,
+changes only through `bin/pcb-flow pin <board> --from <clone> --commit <sha>`,
 which copies the board and writes the digests into `bin/score.py`. The commit
 that does that names the hifi-receiver-2 commit. Because it changes the
 score's own file, the score starts a new baseline there instead of reading
-the refresh as a gain or a loss. `bin/hwde pin --digests` re-stamps the
+the refresh as a gain or a loss. `bin/pcb-flow pin --digests` re-stamps the
 digests alone, after a pin's scripts are classified or this repo's board
 changes.
 
@@ -59,15 +59,15 @@ a finding with none of those), and carries a `verdict` and a `reason`:
 
 - **real**: a defect of the pinned board (a router's staircase, a track
   really under its current, a real ERC conflict). The reason says why.
-- **false**: hwde's mistake (a check misreading a footprint, a screen
+- **false**: pcb-flow's mistake (a check misreading a footprint, a screen
   that charges a decoupling cap the rail's full current). The reason says
-  what hwde gets wrong, so the next agent knows what to fix.
+  what pcb-flow gets wrong, so the next agent knows what to fix.
 - **?**: not judged yet.
 
-An entry is one finding: two alike take two entries. `bin/hwde score
+An entry is one finding: two alike take two entries. `bin/pcb-flow score
 --draft-known` adds every finding the ledger doesn't hold to it as `?`, for
 someone to judge. The ledger is part of the pin's digest, so a verdict
-changes `bin/score.py` (`bin/hwde pin --digests` re-stamps it) and starts a
+changes `bin/score.py` (`bin/pcb-flow pin --digests` re-stamps it) and starts a
 new baseline: judging a finding is a change to what is measured, not a gain.
 A re-pin keeps the ledger; entries for defects the new board fixed must go
 (they would read as missed), and its new findings are drafted and judged.
@@ -75,22 +75,22 @@ A re-pin keeps the ledger; entries for defects the new board fixed must go
 ## What is charged
 
 For every pinned board, a scratch copy goes through `erc`, `drc_routed`,
-`verify` and `dfm`, the same `bin/hwde gate` runs `check-all` makes. Every
-shim in `bin/hwde` is off (`HWDE_NO_SHIMS`), so a gate gets no help hwde
+`verify` and `dfm`, the same `bin/pcb-flow gate` runs `check-all` makes. Every
+shim in `bin/pcb-flow` is off (`HWDE_NO_SHIMS`), so a gate gets no help pcb-flow
 doesn't ship. The findings are each finding a gate fails on that no waiver
 covers (the board's own `reports/verify-waivers.json`, applied by the gate
 as always) and each warning no waiver in that file covers. One charge is:
 
 1. each finding the ledger holds **false**;
 2. each finding the ledger doesn't hold as judged (`?`, or not in it): an
-   unjudged finding may be hwde's mistake until someone says otherwise;
-3. each **real** entry no finding matches: a known defect hwde has stopped
+   unjudged finding may be pcb-flow's mistake until someone says otherwise;
+3. each **real** entry no finding matches: a known defect pcb-flow has stopped
    seeing (not for a gate that couldn't run, which is charged as a crash);
 4. each warning past a gate's cap (`gate.WARNINGS_CAP`, which the score
    lifts to 100000 through `HWDE_GATE_WARNINGS_CAP`), which would travel
    only as a count and couldn't be judged;
 5. each board-local script listed in the pin under `stand_in`: a script in
-   the board's files that does what an hwde script should (a router, a
+   the board's files that does what an pcb-flow script should (a router, a
    via fixer, a zone refill), with the gap it fills. A script under
    `design` is the board's own source (its schematic generator, placement
    plan, plane plan, build recipe) and costs nothing. A `.py` or `.sh` the
@@ -114,7 +114,7 @@ number.
 
 ## The planted faults
 
-The charges come from hwde's own checks, so a check made looser finds less
+The charges come from pcb-flow's own checks, so a check made looser finds less
 and the score would rise with nothing on the boards better. Before the
 boards, `bin/strength.py` runs faults planted where each gate's verdict comes
 from, through the same code the gates run, offline, in seconds:
@@ -154,7 +154,7 @@ board's project, or a looser `rules_gen` floor, still gets through.
 
 ## What moves it
 
-- A fix in hwde that clears a false or unjudged finding on a pinned board
+- A fix in pcb-flow that clears a false or unjudged finding on a pinned board
   (a check that stops misreading a footprint, a gate that stops flagging a
   correct track) raises it at once. Nothing has to be re-run or written by
   hand.
@@ -166,7 +166,7 @@ board's project, or a looser `rules_gen` floor, still gets through.
   new baseline instead of reading as a loss. A new check's false findings
   stay charged; that is its cost.
 - Judging an unjudged finding real starts a new baseline; it isn't a gain.
-- A board that drops a stand-in script, because hwde now does that job, is
+- A board that drops a stand-in script, because pcb-flow now does that job, is
   re-pinned at the commit that dropped it. The re-pin is a new baseline.
 - Removing a row from `docs/workarounds.md` changes nothing: the score
   doesn't read that file. The table and its probes still hold the shims and
@@ -198,5 +198,5 @@ minutes a check gets. If the boards grow past that, measure only the boards
 whose pinned files, or the skill scripts their gates call, changed since the
 last kept measure. A gate that can't run is tried three times, 30 s apart.
 If KiCad itself didn't start (`EnvError`, such as kicad-cli's version probe
-timing out under load), the score gives no number rather than charge hwde
+timing out under load), the score gives no number rather than charge pcb-flow
 for the machine.
