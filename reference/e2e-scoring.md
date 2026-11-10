@@ -30,8 +30,8 @@ meaningless, so a driver that shows the agent `tests/` has spent the brief.
 
 Calibration briefs restate a shipped board's brief (bb-ldo, bb-buck, bb-adc,
 bb-amp) and, with no `--artifact`, score that board from the boards repo
-(`args.calibration_board`). hwde has seen them, so they check the scorer, not
-hwde. The five held-out briefs have never been run; with no `--artifact` they
+(`args.calibration_board`). pcb-flow has seen them, so they check the scorer, not
+pcb-flow. The five held-out briefs have never been run; with no `--artifact` they
 score 0.
 
 `bounds.yaml` keys (`load_bounds` refuses anything else, and refuses a file

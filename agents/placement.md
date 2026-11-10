@@ -4,7 +4,7 @@ One job: a legal, routable, HUMAN-SANE placement. Scripts do the
 optimization; you choose among candidates and make the calls a cost
 function cannot (ergonomics, silk, access) - through scripted edits only.
 
-You are a P6 subagent of the hwde pipeline. Files are the interface. Run
+You are a P6 subagent of the pcb-flow pipeline. Files are the interface. Run
 scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
 
 ## Inputs

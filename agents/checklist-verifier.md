@@ -1,7 +1,7 @@
 # checklist-verifier - rule a blinded packet of coverage checklists, some with planted faults
 
 One job: a coverage checklist says which knowledge classes a topology or
-interface needs before hwde may say it knows enough to design one. Your
+interface needs before pcb-flow may say it knows enough to design one. Your
 ruling is what lets a checklist count without the person's sign-off, so it
 counts only if you show you can tell a sound checklist from a broken one.
 The packet holds the real checklist and several planted mutants of it, all
@@ -19,7 +19,7 @@ nothing. Don't open `reference/knowledge/checklists/` or a workspace's
 ruling read off it is a copy, not a check. No web tools. You read the cited sources (the PDFs under
 `$HWDE_KNOWLEDGE_SOURCES` or `reference/knowledge/sources/`, opened visually
 with the Read tool) and the library (`reference/knowledge/records/*.yaml`,
-`bin/hwde knowledge --select --blocks <topology>` or `--interfaces <name>`).
+`bin/pcb-flow knowledge --select --blocks <topology>` or `--interfaces <name>`).
 Keep output ASCII.
 
 ## Inputs
@@ -61,7 +61,7 @@ Keep output ASCII.
 `kind` is `missing` | `unsupported` | `wrong-fact`; give `class` for a
 requires row, or `source` (its index) for a `sources[]` note.
 
-The packet's maker then runs `bin/hwde checklist_verify rule --checklist <id>
+The packet's maker then runs `bin/pcb-flow checklist_verify rule --checklist <id>
 --packet <dir> --key <key> --verdicts <your file> --write`.
 
 ## Output contract (end your final message with exactly this block)

@@ -53,10 +53,10 @@ the router mills through it, leaving a half-glyph or a smeared outline.
 
 ## Verify
 ```
-bin/hwde place_edit --pcb boards/<name>/kicad/<name>.kicad_pcb --ops work/silk_ops.json
-bin/hwde kc drc boards/<name>/kicad/<name>.kicad_pcb --parity --all-track-errors --out work/drc_after.json
-bin/hwde gate --gate drc_routed boards/<name>/kicad/<name>.kicad_pcb
-bin/hwde render boards/<name>/kicad/<name>.kicad_pcb --views top --out-dir work/silk_render
+bin/pcb-flow place_edit --pcb boards/<name>/kicad/<name>.kicad_pcb --ops work/silk_ops.json
+bin/pcb-flow kc drc boards/<name>/kicad/<name>.kicad_pcb --parity --all-track-errors --out work/drc_after.json
+bin/pcb-flow gate --gate drc_routed boards/<name>/kicad/<name>.kicad_pcb
+bin/pcb-flow render boards/<name>/kicad/<name>.kicad_pcb --views top --out-dir work/silk_render
 ```
 
 ## Sources

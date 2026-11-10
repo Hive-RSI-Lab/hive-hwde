@@ -56,9 +56,9 @@ vertex with same-net copper (track end, via, pad, or same-net fill).
 
 ## Verify
 ```
-bin/hwde route_edit --pcb boards/<ws>/kicad/<board>.kicad_pcb --ops work/fix/ops.json --out-report work/fix/edit.json
-bin/hwde kc drc boards/<ws>/kicad/<board>.kicad_pcb --parity --all-track-errors --refill --save-board --out work/fix/drc.json
-bin/hwde gate --gate drc_routed boards/<ws>/kicad/<board>.kicad_pcb
+bin/pcb-flow route_edit --pcb boards/<ws>/kicad/<board>.kicad_pcb --ops work/fix/ops.json --out-report work/fix/edit.json
+bin/pcb-flow kc drc boards/<ws>/kicad/<board>.kicad_pcb --parity --all-track-errors --refill --save-board --out work/fix/drc.json
+bin/pcb-flow gate --gate drc_routed boards/<ws>/kicad/<board>.kicad_pcb
 ```
 
 ## Sources

@@ -48,9 +48,9 @@ Two authorities emit this id and `msg` names which fired: the board-setup floor 
 
 ## Verify
 ```
-bin/hwde route_edit --pcb boards/<ws>/kicad/<board>.kicad_pcb --ops work/fix-<id>.json --out-report work/fix-<id>-edit.json
-bin/hwde kc drc boards/<ws>/kicad/<board>.kicad_pcb --refill --save-board --out work/drc_refill.json
-bin/hwde gate --gate drc_routed boards/<ws>/kicad/<board>.kicad_pcb --out work/drc_after.json
+bin/pcb-flow route_edit --pcb boards/<ws>/kicad/<board>.kicad_pcb --ops work/fix-<id>.json --out-report work/fix-<id>-edit.json
+bin/pcb-flow kc drc boards/<ws>/kicad/<board>.kicad_pcb --refill --save-board --out work/drc_refill.json
+bin/pcb-flow gate --gate drc_routed boards/<ws>/kicad/<board>.kicad_pcb --out work/drc_after.json
 ```
 
 ## Sources

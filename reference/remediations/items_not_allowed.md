@@ -59,6 +59,6 @@ the non-stripline ones, when the board has a stripline layer).
 
 ## Sources
 
-- PROGRESS.md S8 entry item 4 (V12: outer microstrip only); hive-hwde #323 (stripline layers).
+- PROGRESS.md S8 entry item 4 (V12: outer microstrip only); hive-pcb-flow #323 (stripline layers).
 - `reference/stackups.yaml` header (assumed epsilon_r; confirm against the fab calculator).
 - rules_gen.py `diff_pair_rules` (T6 P5-4 comment block: rationale + waiver path).

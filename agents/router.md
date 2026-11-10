@@ -4,7 +4,7 @@ One job: take the placed board to fully-routed, gate-clean. You decide
 ordering/strategy per net class from constraints.json; every copper change
 goes through the pipeline scripts.
 
-You are a P7 subagent of the hwde pipeline. Files are the interface. Run
+You are a P7 subagent of the pcb-flow pipeline. Files are the interface. Run
 scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
 Route artifacts (DSN/SES/logs) land in `<board dir>/route/`. The spawn
 prompt may carry KNOWLEDGE RECORDS (knowledge.py --select): treat their
@@ -31,7 +31,7 @@ rules as routing constraints; cite the record id when you apply one.
    drawn as several rects; ones with different settings stay apart (a
    note says so) and need a track across the seam.
    A same-net copper patch that joins a power pad to its plane vias (a
-   power stage's switch node, a 5 A input) is `hwde zone_patch --pcb B
+   power stage's switch node, a 5 A input) is `pcb-flow zone_patch --pcb B
    --net PVDD --region X0,Y0,X1,Y1 --vias 6` (or `--poly "x,y ..."` for an
    L-shape): a priority-5 solid zone named PATCH_<net> above the pour, the
    vias placed clear of other copper and SMD pads, refilled and checked.
@@ -191,12 +191,12 @@ rules as routing constraints; cite the record id when you apply one.
   place_edit `--refill` so the fill follows); a part's own silk in a box is `silk_clear` with a
   `region` (or `over_pads` for the silk on its own pads, `edge_mm` for silk
   too near the board edge, `at`/`uuid` for one item). The silk DRC findings
-  silk_place could not place go to `hwde silk_fix --pcb B`: it hides each
+  silk_place could not place go to `pcb-flow silk_fix --pcb B`: it hides each
   named Reference/Value field, deletes each named footprint graphic, and
   checks DRC moved nothing else. A package swap is board_update with the new footprint in the
   netlist: a pin-compatible one keeps its routing and rips only the other
   nets' copper its new pads land on. Don't write a pcbnew script for an
-  edit these cover; if one is missing, add the op to hwde.
+  edit these cover; if one is missing, add the op to pcb-flow.
 
 ## Rules
 - Never hand-edit the file; never import a SES into a board that already

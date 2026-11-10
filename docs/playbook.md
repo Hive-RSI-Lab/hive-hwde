@@ -1,10 +1,10 @@
-# hwde playbook
+# pcb-flow playbook
 
-How an agent runs a board through hwde: the phases, gates, fix loop and
-sign-offs. It began as ihsan-sa/hwde's Claude Code skill (`SKILL.md`, see
+How an agent runs a board through pcb-flow: the phases, gates, fix loop and
+sign-offs. It began as ihsan-sa/pcb-flow's Claude Code skill (`SKILL.md`, see
 [upstream.md](upstream.md)) and is the module's own now; change it when it's
 wrong. In the Hive, read [README.md](README.md) first: it says how the
-sign-offs, boards and tools work here. `scripts/x.py` below is `bin/hwde x`.
+sign-offs, boards and tools work here. `scripts/x.py` below is `bin/pcb-flow x`.
 
 You are an EE picking up a project in whatever state it is in. YOU decide what
 to spawn, what to run and how to react to what the checks say; the scripts do
@@ -89,12 +89,12 @@ spec is a recorded decision shown at H1.
    (`gate_coverage`) when you advance past a gate with no recorded result,
    and history keeps it; release still needs it on record.
 4. **Gates carry `--workspace`, and commit on pass**: `scripts/gate.py --gate
-   <g> <input> --workspace <ws> --commit "hwde <board>: <gate> pass"`.
+   <g> <input> --workspace <ws> --commit "pcb-flow <board>: <gate> pass"`.
    `--workspace` records the result (input hashes, attempt, freshness) - a
    report on disk that state.json never saw is not evidence. Commits happen
    only on pass, never pushes. Rollback for in-flight fix loops is
    `state.py snapshot/restore`.
-5. **Scripts run through `bin/hwde`** (`hwde <script> [args]`): the module's
+5. **Scripts run through `bin/pcb-flow`** (`pcb-flow <script> [args]`): the module's
    venv python, with the tool pins set as `HWDE_*` env vars. All scripts: JSON out, exit 0 pass / 1 violations /
    2 error (an exit-2 payload carries remediation - read it). ASCII only.
 6. **Ask the person in batches**, only what is theirs (above) - never
@@ -132,7 +132,7 @@ Machine gates (defined in `reference/gates.yaml`, run via
 Tools that are not gates, run from P4 on (every exported netlist) and
 weighed like any other report:
 - `scripts/sim_solve.py`: the open field and circuit solvers beyond
-  KiCad's ngspice (Xyce, openEMS, Palace, FastHenry, FasterCap, hwde's own
+  KiCad's ngspice (Xyce, openEMS, Palace, FastHenry, FasterCap, pcb-flow's own
   thermal/electro-thermal plane solver), each held to a closed-form case by
   `sim_solve validate`; `sim_solve line` checks a microstrip's Z0 full-wave
   against impedance.py; `sim_solve board` gives the S-parameters of a
@@ -212,7 +212,7 @@ weighed like any other report:
   and guided wavelength, quarter wave, lambda/10, a length's phase and
   delay; microstrip eps_eff from the field solver with Getsinger
   dispersion at f), `lmatch` (the L-sections, Pozar 5.1).
-- Matching networks: `hwde rf_synth match --z R+jX@f | --s1p F --f0 ..
+- Matching networks: `pcb-flow rf_synth match --z R+jX@f | --s1p F --f0 ..
   --bw ..` gives every L-section and the pi/T networks for a loaded Q,
   snapped to E-series parts with 0402 parasitics, the return loss across
   the band before and after snapping, and an ngspice tolerance Monte Carlo
@@ -273,11 +273,11 @@ scaled by you to the board - not a gate; record how far you took it
   `domain-reviewer` per domain with fresh eyes, every margin a number,
   contingencies on the board where a margin can't be closed on paper, every
   blocker/major answered. `scripts/first_spin.py --workspace <ws>` lists
-  what is still open and merges the tools wanted (file them to hive-hwde).
+  what is still open and merges the tools wanted (file them to hive-pcb-flow).
   The same review, cold, on any board you hold (built, imported, after an
   ECO) when you judge it worth it: every finding names its fault class in
-  `docs/failure-modes.yaml`, and `--briefs` drafts a hive-hwde brief for
-  each class no hwde check caught, so each review leaves a check behind.
+  `docs/failure-modes.yaml`, and `--briefs` drafts a hive-pcb-flow brief for
+  each class no pcb-flow check caught, so each review leaves a check behind.
 - **Bring it up** (boards in hand): the `bring-up` verb and
   `reference/remote-bringup.md`. `state.py bringup --results <file>`
   closes it with the measurements (`scripts/lib/bringuplib.py` schema);
@@ -288,7 +288,7 @@ scaled by you to the board - not a gate; record how far you took it
 **New workspace** (`full-run`, or `review` of an outside project): the recipe's
 first steps are `check_env.py` (exit 0 required; on failure present its
 remediation strings and stop) and `state.py init --workspace ~/dev/boards/<name>`
-(the boards repo, `HWDE_BOARDS_ROOT`; hwde holds no boards of its own), which
+(the boards repo, `HWDE_BOARDS_ROOT`; pcb-flow holds no boards of its own), which
 creates the workspace + standard subdirs there so gate commits work. Copy user
 inputs into `brief/`. A numbered board's dir and KiCad project are `<PN>_<name>`;
 `<board>` in a KiCad/fab file name means that (`{project}`); see `lib/boardreg.py`.
@@ -442,7 +442,7 @@ substitution in the spawn ledger. Never silently drop to a weaker tier.
 - RF laminate at JLC: 2-layer RO4350B only (stackups `JLC_HF2_RO4350B_*`,
   jlc_capabilities.yaml `materials`). RO4003C and Rogers + FR-4 hybrids are
   not sold there and are refused by name; JLC sells no impedance control on
-  the HF line, so its widths are hwde's own solve at design Dk 3.66.
+  the HF line, so its widths are pcb-flow's own solve at design Dk 3.66.
 - JLCDFM and payment are human steps by design (no public APIs).
 - kipy/IPC is the KiCad-11 migration target; this pin drives SWIG bundled
   python via the edit scripts - never bypass them.

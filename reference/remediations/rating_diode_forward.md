@@ -34,8 +34,8 @@ negative (#645).
 
 ## Verify
 ```
-bin/hwde check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --constraints <ws>/kicad/constraints.json
+bin/pcb-flow check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --constraints <ws>/kicad/constraints.json
 ```
 
 ## Sources
-- scripts/check_ratings.py docstring; hive-hwde issue #645.
+- scripts/check_ratings.py docstring; hive-pcb-flow issue #645.

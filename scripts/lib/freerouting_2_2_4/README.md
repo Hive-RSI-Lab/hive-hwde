@@ -17,7 +17,7 @@ on where the routes happen to land, so a check of the DSN can't predict it.
 `tests/fixtures/freerouting/stub_overlap.dsn` is a one-net repro.
 
 **The change.** After 50 passes the loop stops, logs a line starting
-`hwde: normalize_traces stopped`, and leaves the traces as they are. Runs that
+`pcb-flow: normalize_traces stopped`, and leaves the traces as they are. Runs that
 never reach 50 passes don't change.
 
 **Remove it** when the tools move to a Freerouting with its own cap: 2.5.0 has

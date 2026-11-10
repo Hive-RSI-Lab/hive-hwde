@@ -19,7 +19,7 @@ per domain. Say in a decision (`state.py decision`) how far you took it.
 
 It generalises hifi-receiver-2's first-spin review (task 261029-020622,
 `docs/review-2/` in that project): six domain reviewers on two boards found
-6 blockers and 21 majors that hwde's gates had not caught, and listed
+6 blockers and 21 majors that pcb-flow's gates had not caught, and listed
 248 known unknowns. Every one of them is a
 class of mistake worth knowing (the table at the end).
 
@@ -32,7 +32,7 @@ schematic at P4 (`schematic-reviewer`) and the routed board at P8
 is the domain-by-domain engineering pass that decides whether to spend the
 person's money.
 
-It is also the **cold design review** for any board hwde has, not only one
+It is also the **cold design review** for any board pcb-flow has, not only one
 about to be ordered: a board built before a check existed, a board from
 outside (`review` verb), a board after its ECO. Whoever holds the board
 judges when one is worth it (the person: light, no fixed pipeline; it is
@@ -49,7 +49,7 @@ fable/high; opus/high for parts and DFM). The usual domains:
 | analog / audio | headroom at every stage (common-mode, output swing on its real supply), gain staging to clip, input coupling corners, switch thresholds at the logic levels driving them |
 | digital | straps and reset states at power-on and on an MCU-only reset (internal pulls of every attached IC), clocks against their limits, firmware support for every interface, antenna keep-out |
 | thermal | Tj at the stated load for every hot part from the datasheet's own theta (pad-up packages need a heatsink path, not vias), enclosure air |
-| DFM / assembly | footprints against the maker's drawing (posts, slots, annulus, edge), paste on exposed pads and stencil release (`hwde check_paste`), finish for the finest pitch, CPL rotation against JLC's model |
+| DFM / assembly | footprints against the maker's drawing (posts, slots, annulus, edge), paste on exposed pads and stencil release (`pcb-flow check_paste`), finish for the finest pitch, CPL rotation against JLC's model |
 | parts | pin-to-pad against the datasheet pin table for every IC and connector, stock and lifecycle, ratings |
 
 Give each the same brief (the role prompt carries the rules): the board
@@ -76,8 +76,8 @@ The rules every reviewer keeps:
 - Every fact the domain relies on is a **known unknown** until checked:
   verified (source, date), unverified, or wrong; `could_stop_board` marks
   the ones that matter. Be exhaustive there.
-- A check hwde has no tool for goes under **tools wanted**: what it would
-  check and why. Those become hive-hwde briefs (`hive agent queue`): this is
+- A check pcb-flow has no tool for goes under **tools wanted**: what it would
+  check and why. Those become hive-pcb-flow briefs (`hive agent queue`): this is
   how the module learns from every board.
   A check the reviewer can write from the board's files, it writes as a
   doubt check (`reference/doubt.md`, `agents/doubter.md`) and runs: the
@@ -121,7 +121,7 @@ repeat. The review is worth most when the next board doesn't need a person
 to find it. So every finding names its class, an id in the module's registry
 `docs/failure-modes.yaml` (each mode, the check that covers it and its level
 L0-L3), or `"fault_class": "new"` with a one-line `class_mode`; and
-`caught_by` names the hwde check that flagged it, when one did.
+`caught_by` names the pcb-flow check that flagged it, when one did.
 
 `first_spin.py` groups the findings by class (the schematic and board
 reviewers' `reports/review-*.json` join in) and judges each against the
@@ -129,7 +129,7 @@ registry:
 
 | Verdict | Means | What follows |
 |---|---|---|
-| caught | an hwde check flagged every finding in it | nothing: the check works |
+| caught | an pcb-flow check flagged every finding in it | nothing: the check works |
 | check_blind | the registry names a check, and the reviewer still found it | that check misses this board: a fix brief, with this board as its test |
 | no_check | the class is known, nothing checks it | a brief for the check |
 | new_class | not in the registry | a brief for the check, and the class added to the registry |
@@ -137,8 +137,8 @@ registry:
 A blocker or major with no class is open, like one with no disposition.
 `--briefs <file>` writes a draft brief (title, done, known) for every
 check_blind, no_check and new_class class with a blocker or major in it.
-Read them, merge or drop what is one fix, and file them on hive-hwde (in the
-Hive: `hive agent brief --project hive-hwde --title ... --done ... --known
+Read them, merge or drop what is one fix, and file them on hive-pcb-flow (in the
+Hive: `hive agent brief --project hive-pcb-flow --title ... --done ... --known
 ...`). When a check lands, its worker sets the class's coverage in
 `docs/failure-modes.yaml`, so the next review of a board like this one
 reads `caught`, and the review moves on to what machines still can't see.
@@ -156,7 +156,7 @@ review's worker wrote 4 by hand.
 `boards/hwde-led-test/reports/first-spin/` is the smallest case: one
 reviewer took power, parts and DFM on a four-part board (no blocker or
 major; 4 minors). With `--brief-severity minor` it drafted 4 briefs: two
-became hive-hwde tasks 261029-221632 (check_ratings blind to an LED's
+became hive-pcb-flow tasks 261029-221632 (check_ratings blind to an LED's
 reverse rating, RATE-03) and 261029-221623 (a stale zone fill carried
 into the Gerbers, a new class); the extended-part cost and the LED's Vf
 read as typical were left as notes.

@@ -10,8 +10,8 @@ engineering record (every gate, decision and digest). The guide is for a
 person holding the board: short, plain, and complete about the things they
 must do.
 
-You are a P9 subagent of the hwde pipeline, spawned after the `dfm` gate
-passed and the fab package exists. Files are the interface. Run hwde scripts
+You are a P9 subagent of the pcb-flow pipeline, spawned after the `dfm` gate
+passed and the fab package exists. Files are the interface. Run pcb-flow scripts
 with the repo venv python (`.venv/bin/python` on Linux,
 `.venv\Scripts\python.exe` on Windows); JSON out, exit 0/1/2.
 
@@ -39,7 +39,7 @@ with the repo venv python (`.venv/bin/python` on Linux,
 
 ## Steps
 1. Read the pdf-material-builder skill (`$HWDE_PDF_MATERIAL_BUILDER/SKILL.md`,
-   else `~/.claude/skills/pdf-material-builder/SKILL.md`; `hwde env` prints
+   else `~/.claude/skills/pdf-material-builder/SKILL.md`; `pcb-flow env` prints
    where it is) and follow it as a SMALL `technical-doc` build: short template
    (`assets/short-template.tex`), no intake, one author (you), its two
    reviewers (math/number check + cold edit). Its house style, voice rules
@@ -86,7 +86,7 @@ with the repo venv python (`.venv/bin/python` on Linux,
      split: print its `reason` beside it. When `breakdown` is `none`, print
      the total alone and say why in one sentence from `breakdown_reason`;
      never share a total out across steps yourself. Under the table, in a
-     sentence or two: how the split was made (by when hwde recorded each
+     sentence or two: how the split was made (by when pcb-flow recorded each
      step), each `shared` round's cost and what else it paid for (outside
      the total), and, when `loop_logged_usd` is lower than the total, that
      the loop log missed `timed_out_iterations` timed-out iterations and
@@ -97,7 +97,7 @@ with the repo venv python (`.venv/bin/python` on Linux,
      no session found), say in one line that the cost was not recorded.
 3. Build with the skill's `scripts/build.sh`, run its `scripts/style-check.sh`,
    render the pages to PNG and look at them. Fix and rebuild until clean.
-   With no pdf-material-builder on the machine (`hwde env` names no
+   With no pdf-material-builder on the machine (`pcb-flow env` names no
    `HWDE_PDF_MATERIAL_BUILDER`), write the same sections in a plain
    `article` with `\usepackage{housestyle}` and build it with lualatex, twice,
    with `HWDE_HOUSE_STYLE` (the module's stand-in) first on `TEXINPUTS`; there

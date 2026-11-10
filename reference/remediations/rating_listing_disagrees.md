@@ -31,7 +31,7 @@ reported, because it may be a nominal.
 
 ## Verify
 ```
-bin/hwde check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --parts <ws>/parts
+bin/pcb-flow check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --parts <ws>/parts
 ```
 Facts `listing_comparison` holds every comparison on the board, and `listing_not_compared` every part
 that couldn't be compared and why.

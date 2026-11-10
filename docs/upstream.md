@@ -1,6 +1,6 @@
 # Where it came from
 
-hwde began as ihsan-sa/hwde's Claude Code skill, `.claude/skills/hwde/` at
+pcb-flow began as ihsan-sa/pcb-flow's Claude Code skill, `.claude/skills/hwde/` at
 `5d7bbe52483ca0bc6bf28a56e4c1e0d24b5ca4b7`. That skill is frozen: this module
 doesn't follow it, copy it over itself, or keep its layout. Change, slim or
 rename anything here when it earns it.
@@ -21,7 +21,7 @@ What moved where:
   `scripts/lib/knowledgelib.py`'s `SOURCES_DIR` reads `HWDE_KNOWLEDGE_SOURCES`.
   `docs/knowledge-sources.txt` pins them at upstream's commit above (git blob
   sha, size, name, from the GitHub contents API for that folder), and
-  `bin/sources.py` fetches them from upstream into HOME; `bin/hwde` points
+  `bin/sources.py` fetches them from upstream into HOME; `bin/pcb-flow` points
   `HWDE_KNOWLEDGE_SOURCES` there.
 - `scripts/parts_search.py --kind/--category` (with
   `reference/part_kinds.yaml` and `category_search` in
@@ -131,7 +131,7 @@ What moved where:
   up to `approved`. `researchlib` takes a verified research checklist too.
 - A shared tools folder (`HWDE_TOOLS_DIR`, the Hive's `/hive/tools`) is
   searched the way upstream searches its own `tools/`, so the scripts find
-  the Hive's tools themselves and `bin/hwde` needs no wrappers:
+  the Hive's tools themselves and `bin/pcb-flow` needs no wrappers:
   - `scripts/lib/env.py`: `kicad_installs` takes KiCad AppImage AppDirs at
     `<tools>/kicad-*/` (`bin/kicad-cli` runs as is); `find_kicad_python`
     takes the AppDir's `bin/python3.<n>`; `find_ngspice_dll` its
@@ -187,13 +187,13 @@ module's own. The plans, docker setup and design notes stayed upstream.
 
 Everything else that's specific to the Hive is in `bin/` and `docs/`:
 
-- `bin/hwde` wraps the Hive's KiCad AppImage (kicad-cli, KiCad's python with
+- `bin/pcb-flow` wraps the Hive's KiCad AppImage (kicad-cli, KiCad's python with
   pcbnew, ngspice, the 3D model loaders the render preflight looks for).
   It also builds the venv and runs scripts under Xvfb with GLX off.
 - `bin/flatten-symdirs.py` exists because KiCad 10 ships its stock symbols
   as one-file-per-symbol `.kicad_symdir` folders, and kicad-sch-api 0.5.6
   can't read those. It writes flat `power` and `Device` libraries into HOME,
-  and `bin/hwde` points `KICAD_SYMBOL_DIR` at them.
+  and `bin/pcb-flow` points `KICAD_SYMBOL_DIR` at them.
 - `bin/house-style-fallback/housestyle.sty` defines the few house-style
   commands report_gen writes, on stock LaTeX, for machines without the
   pdf-material-builder skill.

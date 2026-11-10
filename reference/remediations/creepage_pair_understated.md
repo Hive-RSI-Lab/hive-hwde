@@ -32,9 +32,9 @@ it waives the derived check outright.
 
 ## Verify
 ```
-bin/hwde check_creepage --pcb boards/<name>/kicad/<name>.kicad_pcb --constraints boards/<name>/kicad/constraints.json
+bin/pcb-flow check_creepage --pcb boards/<name>/kicad/<name>.kicad_pcb --constraints boards/<name>/kicad/constraints.json
 ```
 
 ## Sources
-- hive-hwde issue #651 (hw-lab mains-psu HV_BULK-DRAIN, 219 V declared, 375 V real)
+- hive-pcb-flow issue #651 (hw-lab mains-psu HV_BULK-DRAIN, 219 V declared, 375 V real)
 - check_creepage.py `understated_pairs`; rules_gen.py voltage_pairs rule emission

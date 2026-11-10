@@ -1,6 +1,6 @@
 # Many-layer and HDI boards
 
-hwde builds boards of 2 to 32 copper layers (JLC: "1-32 layers"), with
+pcb-flow builds boards of 2 to 32 copper layers (JLC: "1-32 layers"), with
 blind, buried and laser micro vias on JLC's HDI builds. Issue #317.
 
 ## Stackups
@@ -36,12 +36,12 @@ the numbers.
 
 JLC's impedance calculator serves every lamination it builds without an
 account (`POST https://jlcpcb.com/api/jlcTools/impedance/selectPageImpedanceDefaultTemplate`).
-`hwde stackup_fetch` reads it:
+`pcb-flow stackup_fetch` reads it:
 
 ```
-hwde stackup_fetch list --prefix JLC08 --thickness 1.6 --inner-oz 0.5
-hwde stackup_fetch list --prefix JLCH08            # HDI builds, with their via spans
-hwde stackup_fetch entry --name JLC08161H-1080 --fixture tests/fixtures/jlc_stackups
+pcb-flow stackup_fetch list --prefix JLC08 --thickness 1.6 --inner-oz 0.5
+pcb-flow stackup_fetch list --prefix JLCH08            # HDI builds, with their via spans
+pcb-flow stackup_fetch entry --name JLC08161H-1080 --fixture tests/fixtures/jlc_stackups
 ```
 
 `entry` prints the stackups.yaml entry (stack, epsilon_r per ply, series
@@ -157,7 +157,7 @@ holds the hits and the zip to the board's vias.
   Freerouting takes them in order. KiCad's SES import calls each one buried, and
   route_auto puts the span's type back (`retype_vias`). Off by default because
   stubs slow Freerouting: on a UFBGA-64 fixture passes take 1-2 min without them.
-  Stock 2.2.4 hung outright on stubs and on locked wires (#477, #657, #665); hwde
+  Stock 2.2.4 hung outright on stubs and on locked wires (#477, #657, #665); pcb-flow
   now runs it with that loop bounded (`scripts/lib/freerouting_2_2_4/README.md`).
   On an escaped board use route_finish's maze, which takes the spans at
   0.3 (micro) and 0.6 (buried) of a through via's cost.

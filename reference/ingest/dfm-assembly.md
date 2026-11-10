@@ -6,7 +6,7 @@ sources are free to read: vendor pages, app notes, vendor-hosted IPC
 summaries, open-source rule files and first-person post-mortems. No paywalled
 IPC text was read, so every IPC number here comes second-hand.
 
-Each rule hwde could turn into a check is marked with one of three verdicts:
+Each rule pcb-flow could turn into a check is marked with one of three verdicts:
 
 - **verified**: reproduced by a script here, or two independent sources agree.
 - **disputed**: the sources disagree. Both sides are given.
@@ -19,7 +19,7 @@ Scripts, run from the repo root:
 - `PYTHONPATH=scripts:scripts/lib $HWDE_PY reference/ingest/dfm-assembly/paste_margin_vs_kicad.py`
   compares `check_paste`'s paste-aperture model with what kicad-cli plots.
 
-## What hwde already does (read before adding)
+## What pcb-flow already does (read before adding)
 
 - **dfm_check** (Gerber level) checks:
   - trace, gap and copper-to-edge;
@@ -44,7 +44,7 @@ Nothing checked paste volume or stencil release, tombstoning balance, probe
 access, fiducials and rails, solder wicking into vias, or the mask-colour
 bridge.
 
-## New this run: `hwde check_paste`
+## New this run: `pcb-flow check_paste`
 
 `scripts/check_paste.py` (tests: `tests/test_check_paste.py`) reads paste
 apertures from the board file using KiCad's own margin rules. The model
@@ -81,7 +81,7 @@ down unless the order asks for 1:1. The board should not rely on that.
 |---|---|---|
 | Area ratio A/(P·t) ≥ 0.66 and aspect ratio W/t ≥ 1.5 (IPC-7525) | verified | NXP AN1902 §5.2.3; JLC stencil blog. stencil_rules.py: a 0201 (0.3²) aperture is 0.625 on 0.12 and 0.75 on 0.10; a 0.4 mm-pitch lead (0.2×0.6) is 0.625 on 0.12 and 0.75 on 0.10. For any aperture longer than it is wide, the area ratio is the binding limit |
 | Use a 0.10 mm foil for pitch ≤ 0.4 mm or 0201, and 0.12 mm for 0603 or 0.5 mm pitch | verified | JLC stencil-order help and blog; NXP AN1902 Table 3 (100–125 µm at 0.4 mm). The calculation above agrees |
-| JLC has a default stencil thickness | folklore | "Select by JLCPCB": its engineers choose from 0.10 to 0.20 mm. hwde should state the thickness in the order |
+| JLC has a default stencil thickness | folklore | "Select by JLCPCB": its engineers choose from 0.10 to 0.20 mm. pcb-flow should state the thickness in the order |
 | Leadless exposed-pad paste at 50–80 %, as a window pane | verified | Microchip/Amkor 50–80 %; NXP 60–65 %; TI SLUA271 about 50 %; Broadcom 60–85 %. stencil_rules.py: 2×2 panes on 1.7, 2.6 and 3.3 mm exposed pads give 42–53 % and each pane still prints |
 | Every exposed pad gets panes | disputed | TI PowerPAD (HTSSOP/TQFP) asks for a single 1:1 opening (SLOA120). check_paste exempts leaded packages |
 | Perimeter-pad aperture reduction of 5–20 % | disputed | JLC 5–7 %, forums 10 %, Venture 10–20 %, TI QFN 1:1. Not a check |
@@ -145,7 +145,7 @@ down unless the order asks for 1:1. The board should not rely on that.
 
 ### First-spin failure classes (18 first-person post-mortems: Hackaday, hackaday.io, SparkFun, EEVblog, KiCad forum, Glasgow, Bunnie)
 
-| Class | Sources | hwde today |
+| Class | Sources | pcb-flow today |
 |---|---|---|
 | Wrong footprint or package variant (pin numbering, a WS2812 footprint used for an SK6812) | 7 | fp_verify against a datasheet extract; pin-to-pad review in first-spin.md |
 | Mirrored pinout (top/bottom view, male/female header, bottom-side connector) | 5 | check_mate_pins and check_mating for mated pairs; **no check for a connector on the bottom side** |
@@ -166,7 +166,7 @@ down unless the order asks for 1:1. The board should not rely on that.
    and weight. Board case: the pinned lite-main (2-layer) has PTH rings
    under JLC's 0.18 that dfm passes today: U8 at 0.155 mm, and the H1–H4
    mounting-hole pads at 0.15. *Filed: 261031-013747-40c904f2ef.*
-2. **Put check_paste in the verify suite, and order the stencil hwde
+2. **Put check_paste in the verify suite, and order the stencil pcb-flow
    needs.** Steps: register it in checks.d; plant a fault (a full-paste QFN
    exposed pad); judge the 7 findings on the pinned boards in
    `pinned/known/`; have order_submit request 0.10 mm (or a 1:1 or pane

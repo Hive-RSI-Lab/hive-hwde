@@ -57,9 +57,9 @@ whole rail even when every track passes.
 
 ## Verify
 ```
-bin/hwde check_current --pcb <ws>/kicad/<board>.kicad_pcb --constraints <ws>/kicad/constraints.json
-bin/hwde gate --gate verify <ws>/kicad/<board>.kicad_pcb
-bin/hwde gate --gate drc_routed <ws>/kicad/<board>.kicad_pcb
+bin/pcb-flow check_current --pcb <ws>/kicad/<board>.kicad_pcb --constraints <ws>/kicad/constraints.json
+bin/pcb-flow gate --gate verify <ws>/kicad/<board>.kicad_pcb
+bin/pcb-flow gate --gate drc_routed <ws>/kicad/<board>.kicad_pcb
 ```
 
 ## Sources

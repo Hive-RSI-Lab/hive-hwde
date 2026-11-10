@@ -38,8 +38,8 @@ or a rating someone recorded verified in the ledger.
 
 ## Verify
 ```
-bin/hwde check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --parts <ws>/parts
+bin/pcb-flow check_ratings --pcb <ws>/kicad/<board>.kicad_pcb --parts <ws>/parts
 ```
 
 ## Sources
-- scripts/check_ratings.py `no_attribute_findings`; hive-hwde #675, #751, #763, #774, #797, #805, #807.
+- scripts/check_ratings.py `no_attribute_findings`; hive-pcb-flow #675, #751, #763, #774, #797, #805, #807.

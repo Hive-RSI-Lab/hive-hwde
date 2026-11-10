@@ -3,7 +3,7 @@
 Two shapes, and the router picks by whether a `source` was given.
 
 **external** (`--arg source=<path to a KiCad project>`): `intake.py` copies the
-project into a normal hwde workspace and runs every gate as a BASELINE. The
+project into a normal pcb-flow workspace and runs every gate as a BASELINE. The
 source is never written to (sha256-verified before/after) - if the owner wants
 fixes applied to their own tree, that is a separate, explicit copy-back.
 
