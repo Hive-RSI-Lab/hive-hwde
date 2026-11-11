@@ -53,6 +53,16 @@ adder is one forum-reported point; `castellatedHoles` 1 has not been through
 a live calculate yet; and the corner and other-edge checks need a cornered
 outline, so a fully rounded outline skips them.
 
+## Paste on a custom-shape exposed pad
+
+A negative `solder_paste_margin` on a custom-shape exposed pad removed all of
+its paste on one 2-layer board's USB-C part. `check_ep_paste` grows each
+primitive of a custom pad by the margin, so a negative one can shrink thin
+primitives to nothing and it reports `ep_paste_missing`. Leave the pad's
+margin alone and draw the aperture as a separate paste-only pad (or paste-layer
+graphic), which `check_ep_paste` counts as paste for the pad it covers. The
+cause on KiCad's side was seen once, not confirmed against its source.
+
 ## When the librarian is needed
 
 Scripted fixes cover silk, refdes and the common passives. Spawn `librarian`

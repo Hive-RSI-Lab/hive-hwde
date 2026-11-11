@@ -27,6 +27,37 @@ That is by design: DRC's unconnected items ARE the ratsnest. Route them through
 usually enough for a decoupler; the standard loop took a replaced cap to DRC
 0/0 in the T8 acceptance).
 
+## A part added by hand: check what the library cannot tell you
+
+An EasyEDA footprint or symbol cannot be trusted for pad count or supply
+voltage. One oscillator's pulled footprint had 6 pads and tied its N.C. pin to
+GND; the real part has 4 terminals. Read the maker's sheet for the exact
+ordering code.
+
+- A distributor's voltage range is for the series, and can disagree with the
+  sheet for one ordering code (a 1.7-3.3 V listing for a part whose code is
+  3.0 V +-5%, abs max 4.0 V). Run it at the sheet's voltage.
+- A footprint added with your own pcbnew script (board_init and board_update
+  hide these fields; a script of yours does not) comes in with `LCSC` and
+  `MPN` visible on F.Silkscreen, 1.27 mm text up to 28 mm wide. The sign:
+  hundreds of `silk_overlap` warnings whose items span far beyond the part,
+  and failing dfm silk. Hide those fields. `fp.SetField(name, value)` on a
+  loaded footprint makes that field visible too, so hide it in the same
+  script. A copied footprint also carries the old `LCSC Part` value: set it.
+- The board's `LCSC Part` field and the schematic's `LCSC` field can drift
+  after a swap, so the BOM and the stock check read different parts. Sync them
+  and diff the BOM after any swap.
+- Changing a land means re-checking the courtyard: pads widened past their
+  courtyard raise a new `check_courtyard` error that DRC does not show. Change
+  the library footprint and the placed copy together.
+- A dfm `wrong_offset` naming a part you moved, at a distance equal to the
+  move, means the position CSV is stale: re-export fab before rerunning dfm.
+- `check_model_fit` can read marking shapes on a 3D model as leads. Check by
+  eye before moving a land because of it.
+- A new power trunk can ring off a piece of the F.Cu GND pour. DRC reports an
+  unconnected zone against itself at no useful position: look for fill
+  polygons with no GND via, then add one.
+
 ## Choosing the region
 
 A decoupler's region comes from its IC pin, not from free space:

@@ -44,6 +44,43 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    footprints without orchestrator approval (a manual edit must be flagged
    in the summary).
 
+## Known part traps
+
+Facts about specific pulled parts that no check sees. Check the part's library
+entry against its line here before you accept it.
+
+- **USB-C `USB-C_SMD-TYPE-C-31-M-12` (EasyEDA/LCSC).** The GND
+  (A1B12/B1A12) and VBUS (A4B9/B4A9) pads are custom pads whose `gr_poly`
+  primitive has `(width 0.1)`. The stroke adds 0.05 mm per side, so the pads
+  come out 0.7 mm wide instead of the datasheet's 0.6 and the gaps to their
+  neighbours are 0.100 mm: 2 DRC errors against a 0.1016 mm floor (J1 GND to
+  VBUS), and not worth an exception rule. Set the stroke to 0 in the library
+  footprint (`sed -i 's/(width 0\.1)/(width 0)/'` on
+  `lib/<lib>.pretty/USB-C_SMD-TYPE-C-31-M-12_1.kicad_mod`: 4 hits, all in the
+  pad primitives). On a board already placed, change the same 4 `(width 0.1)`
+  inside the J1 footprint's `(primitives ...)` blocks, not its silk lines.
+  Seen on 2-layer (0.127 mm rules) and 4-layer boards. This is the pad
+  geometry, separate from the 3D-model fit above.
+- **Hirose DF12NB 50-pin (C3020266) and 60-pin (C2847989).** EasyEDA names the
+  symbol `DF12NB` for both, so `lib_pull` of the 50-pin collides with the
+  60-pin symbol already in `aiee.kicad_sym`. Pull the 60-pin once and derive
+  both symbols in a script: `DF12NB_60` is the pulled symbol renamed;
+  `DF12NB_50` is the same with pins 51-60 dropped and its
+  LCSC/MPN/Value/Datasheet/Footprint fields set (assert the pin count after:
+  52 for the 50-pin, 50 plus 2 tabs). Rename the top symbol and its unit
+  sub-symbols (`NAME_0_1`) in ONE `re.sub` with the lookahead
+  `\(symbol "OLD(?=["_])`; two passes, or no lookahead, renames units twice or
+  hits other symbols that share the prefix. A footprint that holds both
+  connectors in one outline has the same problem: split it so each Hirose part
+  gets its own BOM/CPL line.
+- **LCSC right-angle 2x6 female Pmod socket (C41417336,
+  `HDR-TH_12P-P2.54-H-F-R2-C6-S2.54-W12.7-N`).** Its pads are numbered by
+  column pair, not by Pmod pin: pad 2k-1 is in the far row, pad 2k in the row
+  next to the body. Pmod pin p is pad 2p-1 for p 1..6 and pad 2(p-6) for p
+  7..12. Wiring the symbol pad = Pmod pin swaps every signal, and ERC cannot
+  see it: only a pad-by-pad check against the footprint does. At rotation 0
+  the body lies at +y (y -2.42..+11.42) and pad 1 is at (6.35, -1.27).
+
 ## Output contract (end your final message with exactly this block)
 FILES: <lib paths + registered tables + overlay SVGs>
 GATE: fp_verify: <n passed / n failed / warnings>
