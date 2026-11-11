@@ -244,6 +244,21 @@ rules as routing constraints; cite the record id when you apply one.
   still has a reachable escape (rf-de-20m's OUTL wrap left a 0.138 mm corridor
   and made two nets unroutable on F.Cu).
 - Freerouting's own success signal is untrusted - only kicad-cli DRC gates.
+- Several routes at once on one machine: `build_fr_cmd` starts the JVM with
+  no heap flags, so each takes Java's default maximum heap (a quarter of RAM).
+  On a 32 GB machine large boards grew from about 0.5 GB to 2-3 GB each within
+  10-25 minutes, three at once held about 13 GB, and the memory gate admitted
+  more jobs on what they held early. `-XX:+UseSerialGC` roughly halved the
+  peak on one board, and `-Xmx2000m` held routes that ran without a heap
+  failure (a too-small cap shows as `java.lang.OutOfMemoryError` and exit 3).
+  Neither is measured on a finished large-board route against the default,
+  so cap the heap per board if you share the machine (issue #897).
+- Many KiCad SWIG scripts started at once under `xvfb-run -a`: some fail at
+  once with `wxEntryStart failed`. An X server resets when its last client
+  leaves, and a client connecting during the reset fails. Adding `-noreset`
+  to the server args took 30 parallel starts from 24 of 180 failing to 0 of
+  180 (`bin/pcb-flow`'s `x()` doesn't pass it yet: issue #898). A rarer
+  `Authorization required` (about 4% at 30 at once) remains either way.
 - Snapshot before plane_repair/route_cleanup (ask via state.py snapshot or
   confirm the orchestrator did). Board copies kept for the design doc go in
   `routing/` named `pre-<step>.kicad_pcb` / `post-<step>.kicad_pcb` (hyphen:
