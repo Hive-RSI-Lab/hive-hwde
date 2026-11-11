@@ -21,6 +21,9 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    (silk-over-pad must stay visible for the check).
 2. `scripts/bom_cpl.py --pcb ... --out-dir fab/ --parts parts/parts.json
    --out reports/bom_cpl.json`
+   (`--parts` takes the parts.json file, not the parts directory: given a
+   directory the run reports `status: error` and leaves the old BOM.csv and
+   CPL.csv in place, so a stale fab dir looks current - read the status.)
    - `BOM-full.csv` (the BOM OF RECORD: every intended part with its
    `Assembly Class` + `Instructions`), `BOM.csv` (the UPLOAD: `smt_placed`
    and `tht` only, JLC's four columns, one row per LCSC part), `prebuy.csv` (placed
@@ -71,6 +74,11 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    cpl_render in a few minutes, not to treat it as no model. Do not edit
    its verdicts -
    dfm_check merges them in the next step.
+   The merge matches verdicts by designator only, with no digest of the part
+   behind them: after you swap, move, rotate or reshape a part, cpl_visual.json
+   still holds the old verdict for that ref and the strict gate passes on it.
+   Rerun cpl_render and the image pass (at least for the changed refs) after
+   any such change.
 4. Gate: `scripts/gate.py --gate dfm kicad/<board>.kicad_pcb` - runs
    dfm_check on a scratch export: copper (trace/clearance/edge), drill
    (size/spacing/annular), mask/silk, release completeness, and **CPL
@@ -117,6 +125,10 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    and `dfm_net_short` reports shorts that aren't in the copper. Keep
    every panel ref at 6 characters or fewer. Net names keep their last 14
    characters, so put a copy tag at the end of a net name, not the front.
+   At release, attest re-judges `reports/dfm_release.json` with the
+   board's `reports/verify-waivers.json` only (`releaselib.waivers_for_input`).
+   A dfm waiver kept in another file and passed with `--waivers` clears the
+   gate run but not attest: put dfm waivers in verify-waivers.json.
 5. On gate failure: report; the orchestrator dispatches fixers (do not fix
    routing/placement yourself).
 

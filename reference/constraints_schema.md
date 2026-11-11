@@ -180,6 +180,15 @@ Consumers per key (script -> phase):
   // line-earth modes on dc_power and mains. nets (globs) narrows the lines
   // (a USB-C port: VBUS). clamps overrides a clamp's ratings {vbr, vc, ipp_a
   // (8/20), ppk_w, vrwm}; abs_max a pin's limit (ref or ref.pin).
+  // The clamp is modelled as a straight line from vbr at 0 A to vc at ipp_a.
+  // A part whose datasheet breakdown (at 1 mA) sits far below its clamp at
+  // 1 A (an ESD array: 13.3 V breakdown, 19 V at 1 A) is then judged too
+  // low at small currents: give vbr from the 1 A row.
+  // nets are matched against the connector's own pad nets only. A glob that
+  // names a net past a series resistor or filter matches no line, and the
+  // port is judged on nothing with no warning (nothing_to_judge is set only
+  // when no port is declared). Leave nets out for the kind's default, and
+  // check the report lists lines for every port.
   "surge": {"environment": "residential",
             "ports": {"J1": {"kind": "dc_power", "cable_m": 2, "nets": ["VBUS"],
                              "level_kv": 0.5}},
