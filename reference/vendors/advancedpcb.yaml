@@ -47,6 +47,7 @@ design_rules:
     min_via_diameter_mm: 0.254       # .005" drill + 2 x 2.5 mil ring; the sheet's .008" pad would leave 1.5 mil
     min_copper_to_edge_mm: 0.254     # .010" outer (.015" inner, .020" preferred)
     min_copper_to_hole_mm: 0.1524    # .006" advanced column ("Minimum Cu Clearance to Hole")
+    min_hole_to_hole_mm: 0.254       # NOT on the sheet: .010" drill wall to drill wall, a design value pending the fab's written confirmation. Without it JLC's 0.5 (plated pads) filled in and blocked every 0.5 mm-pitch via field.
     min_silk_width_mm: 0.127         # .005"
     min_solder_mask_dam_mm: 0.0762   # .003" advanced column web
     outer_copper_oz: 1.0
@@ -60,6 +61,7 @@ design_rules:
     min_via_diameter_mm: 0.254       # .005" drill + 2 x 2.5 mil ring; the sheet's .008" pad would leave 1.5 mil
     min_copper_to_edge_mm: 0.254     # .010" outer (.015" inner, .020" preferred)
     min_copper_to_hole_mm: 0.1524    # .006" advanced column ("Minimum Cu Clearance to Hole")
+    min_hole_to_hole_mm: 0.254       # NOT on the sheet: .010" drill wall to drill wall, a design value pending the fab's written confirmation. Without it JLC's 0.5 (plated pads) filled in and blocked every 0.5 mm-pitch via field.
     min_silk_width_mm: 0.127         # .005"
     min_solder_mask_dam_mm: 0.0762   # .003" advanced column web
     outer_copper_oz: 1.0
