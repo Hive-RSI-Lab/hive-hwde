@@ -44,7 +44,7 @@ design_rules:
     min_via_drill_mm: 0.127          # .005" advanced column
     min_hole_diameter_mm: 0.127
     min_annular_ring_mm: 0.0635      # (.008" min pad - .005" drill) / 2 = 1.5 mil; 2.5 mil used
-    min_via_diameter_mm: 0.2032      # .008" advanced column minimum pad
+    min_via_diameter_mm: 0.254       # .005" drill + 2 x 2.5 mil ring; the sheet's .008" pad would leave 1.5 mil
     min_copper_to_edge_mm: 0.254     # .010" outer (.015" inner, .020" preferred)
     min_copper_to_hole_mm: 0.1524    # .006" advanced column ("Minimum Cu Clearance to Hole")
     min_silk_width_mm: 0.127         # .005"
@@ -57,7 +57,7 @@ design_rules:
     min_via_drill_mm: 0.127          # .005" advanced column
     min_hole_diameter_mm: 0.127
     min_annular_ring_mm: 0.0635
-    min_via_diameter_mm: 0.2032      # .008" advanced column minimum pad
+    min_via_diameter_mm: 0.254       # .005" drill + 2 x 2.5 mil ring; the sheet's .008" pad would leave 1.5 mil
     min_copper_to_edge_mm: 0.254     # .010" outer (.015" inner, .020" preferred)
     min_copper_to_hole_mm: 0.1524    # .006" advanced column ("Minimum Cu Clearance to Hole")
     min_silk_width_mm: 0.127         # .005"

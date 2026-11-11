@@ -253,8 +253,10 @@ def _bga_refs(bg) -> list[str]:
 
 def class_via_diameter(cap: dict) -> float:
     """Netclass via pad: the fab's minimum pad, raised so the minimum drill
-    keeps the minimum annular ring (advancedpcb: 0.2032 pad on a 0.127 drill
-    left a 0.032 ring, under the 0.0635 floor)."""
+    keeps the minimum annular ring. The shipped vendor rows already agree
+    (test_fab #443); a workspace vendor file copied from a capability sheet
+    may not (a 0.2032 pad on a 0.127 drill leaves 0.038, under a 0.0635
+    ring floor)."""
     ring = float(cap.get("min_annular_ring_mm", 0.0))
     return round(max(float(cap["min_via_diameter_mm"]),
                      float(cap["min_via_drill_mm"]) + 2 * ring), 4)

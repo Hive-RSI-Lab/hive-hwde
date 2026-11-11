@@ -1490,9 +1490,11 @@ def test_update_pro_floors_class_clearance_at_hole_clearance(tmp_path):
 def test_published_hole_clearance_and_class_via_ring(tmp_path):
     """advancedpcb publishes copper-to-hole (0.1524 mm): it reaches
     min_hole_clearance and check_pro holds the project to it, where KiCad's
-    0.25 default used to stand in. Its 0.2032 minimum pad on a 0.127 drill
-    leaves a 0.038 ring, under its own 0.0635 floor, so the netclass via is
-    drill + 2 rings. A JLC row states no copper-to-hole and is unchanged."""
+    0.25 default used to stand in. A vendor row whose minimum pad leaves
+    less than its own ring on the minimum drill (a workspace file copied
+    from the sheet: 0.2032 on 0.127 is a 0.038 ring, floor 0.0635) gets a
+    netclass via of drill + 2 rings. A JLC row states no copper-to-hole
+    and is unchanged."""
     _, cap = fabfloors.profile(4, 1.0, vendor="advancedpcb")
     assert fabfloors.pro_rules(cap)["min_hole_clearance"] == pytest.approx(0.1524)
     assert rules_gen.class_via_diameter(cap) == pytest.approx(0.254)
@@ -1506,6 +1508,9 @@ def test_published_hole_clearance_and_class_via_ring(tmp_path):
     assert fabfloors.check_pro(pro, cap) == []
     rules["min_hole_clearance"] = 0.1
     assert any("min_hole_clearance" in m for m in fabfloors.check_pro(pro, cap))
+
+    sheet = dict(cap, min_via_diameter_mm=0.2032)
+    assert rules_gen.class_via_diameter(sheet) == pytest.approx(0.254)
 
     _, jlc = fabfloors.profile(4, 1.0)
     assert "min_hole_clearance" not in fabfloors.pro_rules(jlc)
