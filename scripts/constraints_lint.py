@@ -128,7 +128,7 @@ SECTIONS: dict[str, dict[str, dict[str, str]]] = {
     # rules_gen: a part rated for its nets at its own pin pitch
     "package_ratings": {
         "required": {"ref": "str", "clearance_mm": "num"},
-        "optional": {"why": "str", "pads_only": "bool"},
+        "optional": {"why": "str", "pads_only": "bool", "layer": "str"},
     },
     # place_replicate (#482): a source channel stamped into its targets
     "channels": {
@@ -514,7 +514,7 @@ class _FileLint:
                              f"contract is max {SCOUT_MAX_CANDIDATES}; full "
                              "sweeps belong in research/raw/ via "
                              "parts_search --out", path)
-            elif key in KNOWN_ENVELOPE:
+            elif key in KNOWN_ENVELOPE or key in SCHEMA_TOP_KEYS:
                 pass
             else:
                 self._unknown_key(

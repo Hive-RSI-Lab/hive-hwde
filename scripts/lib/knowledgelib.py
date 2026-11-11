@@ -1292,6 +1292,13 @@ def workspace_slots(ws: Path | str) -> dict:
                     if cand.is_file():
                         ext = cand
                         break
+            if ext is None and mpn:     # boards with no LCSC ids key by MPN
+                safe = re.sub(r"[^A-Za-z0-9._-]", "-", mpn)
+                for d in ext_dirs:
+                    cand = d / f"{safe}.json"
+                    if cand.is_file():
+                        ext = cand
+                        break
             if hint not in IC_REF_HINTS and ext is None:
                 continue
             notes: list[str] = []
