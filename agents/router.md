@@ -87,6 +87,21 @@ rules as routing constraints; cite the record id when you apply one.
    same options, not a loop of your own: chunks that each save, every open
    connection tried each round, resume by rerunning, diff pairs protected.
    Read `facts.stop_reason`, `facts.still_failing` and `facts.next`.
+   Traps found in use: `--protect-board start` can undo good routes after
+   you hand-edit copper, so point it at the placed board file instead.
+   route_finish keeps a pass only while the TOTAL unconnected count drops
+   (`_pass_helped`), so a route that closes its open but cuts a GND island
+   nets zero and is undone: close the island first. KiCad's DRC report caps
+   each violation type (`DRC_UNCONNECTED_CAP` in route_finish), so a count at
+   the cap means "at least".
+   On a 2-layer board where a part's pin order puts a rail between a pair
+   (an ESD array with VBUS between D+ and D-), the feed must cross the pair.
+   check_return_path flags a crossing over 0.01 mm but excises a disk around
+   each via (via radius plus zone clearance, about 0.95 mm on the reported
+   board): keep the B.Cu tunnel short, a via pair straddling each line within
+   that disk, and carry the rest on F.Cu, and verify passes with no waiver.
+   route_auto re-routes some hand-routed tracks, so re-run check_diffpair
+   after each route_auto pass.
 4. `scripts/plane_repair.py --pcb <board>` - detects electrically-split
    pours and repairs (bridge/jumper ladder). Mutates in place; on exit 1
    restore the pre-step snapshot (orchestrator has one) and report.

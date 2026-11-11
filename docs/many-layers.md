@@ -131,6 +131,10 @@ rules_gen and route_escape write the same rules (`aiee_hdi_*`): each via type's
 own floors in place of the through-via ones (`A.Via_Type`), and 3 mil track and
 clearance for what touches the field's courtyard. KiCad warns `holes_co_located`
 on a microvia stacked on a buried via: a warning, and the stack is intended.
+Its count also depends on the order of the vias in the board file: the same
+copper gave 4 or 6 across runs, so don't use the count as a known answer in a
+test or read a change in it as a copper change (`tests/test_hdi_maze.py`
+leaves it out).
 
 `dfm_check` holds a board on an HDI build to JLC's HDI line (3 mil track and
 clearance, the laser's hole and ring). It measures a span's ring only on the

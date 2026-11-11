@@ -44,6 +44,36 @@ whole rail even when every track passes.
    whose escapes are shorter than the via pitch: it cannot be retrofitted at P8
    (LEARNINGS 2026-07-29 line 1588 - 26 of 44 clusters had ZERO feasible positions).
 
+## A pour that fills differently in a scratch copy
+
+`pcbnew.ZONE_FILLER` (and every script that saves through pcbnew) fills with
+only the rules it finds beside the board file. A copy in `$TMPDIR` without the
+board's `.kicad_pro` and `.kicad_dru` loses the custom clearance rules (a
+tight courtyard clearance, say), and a pour through a BGA field can break into
+islands. `kicad-cli pcb drc --refill-zones` refills correctly, so DRC can show
+0 unconnected while the STORED fill, which the Gerbers use, is open. Check the
+stored fill: load the board, `BuildConnectivity()`, and
+`GetConnectivity().GetUnconnectedCount(False)` must be 0. Fix: copy the
+`.kicad_pro` and `.kicad_dru` beside every scratch copy, or finish in the
+project dir with `kicad-cli pcb drc --refill-zones --save-board`.
+
+## Stitching GND through a power pour
+
+`stitch_vias` at a regular pitch (`--pitch auto`) through a power pour on an
+inner layer can fail `pour_neckdown` even when the board was clean and DRC
+passes: the antipads (about 0.96 mm across) chain along the pitch and narrow
+the pour. One reported board went from clean to 3.33 mm and 2.30 mm on two
+rails against 3.50 mm needed for 5 A, at a 4.28 mm pitch.
+
+- The reported `pos` is a representative point, not the pinch, so removing vias
+  near it does not help, and checkerboard thinning did not either.
+- What worked: test each planned via in the pour on its own and keep it only if
+  `check_current` still reports no `pour_neck`. That dropped 6 of 278 vias.
+  Write the planned positions, apply them one at a time on a scratch copy
+  (with the `.kicad_dru` beside it, above), and keep a via only if the neck
+  stays clear.
+- Do this before the verify gate, which is slow on a big board.
+
 ## Do not
 - Do not bridge the neck with a rule-width TRACK through the same channel: the DRU width floor
   that applies to tracks is why the pour was used; a zone is width-rule-exempt, a track is not

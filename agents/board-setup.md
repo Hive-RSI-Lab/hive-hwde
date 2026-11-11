@@ -19,6 +19,11 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    [--outline auto|WxH] [--origin keep|auto|X,Y] [--mounting-holes auto|N]
    [--mounting-hole-fp LIB:NAME] [--corner-radius auto|R]
    [--schematic kicad/<top>.kicad_sch] [--fp-lib <workspace>/lib]`
+   (`--fp-lib` is required whenever the footprints live in the project's own
+   library (`lib/aiee.pretty`): board_init reads `<fp-lib dir>/<Lib>.pretty/`
+   and the system library only, never the project's `fp-lib-table`. Without
+   it a clean project fails with `footprint not found: aiee:C0603`. Pass the
+   folder that holds the `.pretty`, here `lib`.)
    (`<project>` is the workspace directory name - `<PN>_<name>` on a
    numbered board, so never assume it equals `state.json`'s board)
    - creates `kicad/<project>.kicad_pcb` + `.kicad_pro`: parts loaded, pad
@@ -70,7 +75,11 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    the named stackup exits 2). Check the JSON's `capability_class` matches
    the board's copper (e.g. `2layer_2oz` on a 2-oz build). kicad-cli
    AUTO-LOADS the .kicad_dru sitting beside the board; violated custom
-   rules report `rule 'aiee_*'` in their message. Generic rules come first,
+   rules report `rule 'aiee_*'` in their message. That auto-load is by file
+   name beside the board: a scratch copy of the board (in `$TMPDIR`, a staged
+   dir) without its `.kicad_pro` and `.kicad_dru` is judged and refilled
+   under KiCad's defaults, so copy both beside it, named like the copy's
+   stem, before any DRC or refill there (see pour_neckdown.md). Generic rules come first,
    specific per-net rules last - later rules win; do not reorder the file.
    - `--pro` also writes ONE NETCLASS PER REQUIRED POWER WIDTH
    (`Pwr_<width>mm`; rails at or under the Default width stay Default) and

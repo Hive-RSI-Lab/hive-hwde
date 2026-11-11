@@ -17,6 +17,15 @@ also get a row in [workarounds.md](workarounds.md), or extend an existing
 row's `boards` when it's the same cause. `bin/pcb-flow check-all` re-runs only
 this repo's boards; a board here is re-checked by its own project's test.
 
+Running `check_ratings` (or any ledger writer) on a pinned board writes
+`ledger.json` into `pinned/<board>/`. The pin digest hashes that tree, so
+`test_score`, `test_strength` and `test_golden` then fail with a digest
+mismatch and `bin/pcb-flow score` refuses the board. In a test, copy the
+board's `kicad/`, `parts/` and `architecture/` into `tmp_path` and run the
+check there (`test_lite_main_dividers_judge_clean` in
+`tests/test_check_ratings.py`); `HWDE_LEDGER_WRITE=0` also stops the writes
+(the test suite sets it). If it already happened, `git checkout -- pinned`.
+
 | board | project | pinned at | where |
 |---|---|---|---|
 | lite-main | hifi-receiver-2 | 56e91aa | `boards/lite-main`: 2 layers, 130 parts (USB-C PD, ESP32, codec, 2 x 43 W class-D); its snags are `HWDE-SNAGS.md` |
