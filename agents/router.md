@@ -49,6 +49,18 @@ rules as routing constraints; cite the record id when you apply one.
    (`left_for_routers`) are ordinary route_critical / route_auto work; a
    0.5 mm field that fails the budget needs via-in-pad or HDI, which is
    a fab decision for the person, not a script to write.
+   Escape budget at 0.8 mm pitch: the limits that bind are the board's
+   `.kicad_dru` (the `aiee_bga_escape_*` clearance, hole-to-hole edge to
+   edge), not the fab floors. With hole-to-hole 0.5 mm the vias must sit on
+   the ball lattice, and a ~0.09 mm stripline track between two lattice vias
+   has about 0.01 mm of slack: a router's grid margin must stay under that
+   or the channels close. Decouplers on the far side under the field block
+   the second escape layer. Between two BGAs, count the lanes a corridor
+   offers against the vias you plan to put in it before tuning a router:
+   each via takes the room of several lanes on every inner layer. On one
+   3 mm corridor carrying 25 address/control nets, a hand-laid fan of tip
+   vias made the negotiated router worse; letting those nets run on the
+   outer layer between the chips (fewer vias) converged DRC-clean.
 1. `scripts/route_critical.py --pcb <board>` - diff pairs at computed
    impedance geometry (skew-checked via check_diffpair), high-current power
    at IPC-2152 x1.5 width, RF at impedance width + fence handoff. It SKIPS

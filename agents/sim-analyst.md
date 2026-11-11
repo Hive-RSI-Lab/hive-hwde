@@ -78,6 +78,10 @@ Write `kicad/sims/<name>.cir` + `kicad/sims/<name>.bounds.json`:
   `.options savecurrents`; `.options rshunt=1e9` is auto-injected (a
   floating node otherwise makes the solve matrix singular); measure names
   come back lowercased.
+- To measure an operating point, sweep instead: `.dc V1 9 11 1` and
+  `.measure dc x FIND v(out) AT=10` (a one-point sweep's AT fails). Through
+  the shared-library engine, vectors are named by the bare node (`out`,
+  not `v(out)`). An integrator cap with no DC path needs `uic` and an `.ic`.
 - Calibrate before committing: run the bench, read the measured values,
   set windows that pass with real margin AND fail the defect you seeded to
   check (mutate one value, confirm the bound trips, revert).
