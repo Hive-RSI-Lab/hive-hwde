@@ -242,7 +242,7 @@ def _closer(tmp_path, pcb, **kw):
     defaults = dict(pcb=str(pcb), nets=None, layers="auto", grid=0.1,
                     margin=4.0, min_width=0.2, clearance_margin=0.02,
                     via_size=None, via_drill=None, max_nodes=3_000_000,
-                    search_weight=1.0, budget=600.0,
+                    search_weight=1.0, via_in_pad_refs=None, budget=600.0,
                     chunk_timeout=30, chunk_conns=4, runner="none",
                     state_dir=None, fresh=False, rip_board="never",
                     protect_nets=None, protect_board=None, allow_nets=None,

@@ -14,6 +14,7 @@ Contract:
               [kind: micro|blind|buried, top, bot]  # a span (#477)
     remove    {uuid}                         # track, via or zone; absent=noop
     set_net   {uuid, net}                            # worker-level (renet)
+    set_via_fill {uuid, filled}                      # filling + capping
     set_width {uuid, width} / set_point {uuid, which: start|end|at, to}
                                      # the worker's, emitted by the driver only
 
@@ -45,6 +46,14 @@ worker ops above, so they share the atomic apply + verify:
                                            layer - track end, via, pad
                                            centre - within radius (0.6 mm)
                                            - fix_dangle.py
+    fill_vias {SELECTOR, [filled]}        the selected vias get filling and
+                                           capping set (IPC-4761 Type VII,
+                                           filled + capped) per via, or
+                                           cleared with filled: false - so
+                                           check_wicking and fab_export's
+                                           via_fill_facts read them filled;
+                                           pads: ["U301"] picks U301's
+                                           via-in-pad
     copy_from {pcb, SELECTOR}             adds the tracks/vias the selector
                                            picks on ANOTHER board (an older
                                            revision); after a rip of the
@@ -111,6 +120,7 @@ OP_FIELDS = {  # op -> (required, optional)
     "add_via": ({"at", "size", "drill", "net"}, {"kind", "top", "bot"}),
     "remove": ({"uuid"}, set()),
     "set_net": ({"uuid", "net"}, set()),
+    "set_via_fill": ({"uuid", "filled"}, set()),
 }
 SELECT_KEYS = {"net", "layer", "kind", "region", "at", "radius", "touch",
                "pads", "uuid_prefix"}
@@ -124,8 +134,9 @@ ECO_FIELDS = {  # selector ops, resolved by the driver into OP_FIELDS ops
     "move_via": ({"at", "to"}, {"net", "drag"}),
     "join_end": ({"at"}, {"net", "layer", "radius"}),
     "copy_from": ({"pcb"}, SELECT_KEYS),
+    "fill_vias": (set(), SELECT_KEYS | {"filled"}),
 }
-SELECTOR_OPS = ("rip", "renet", "set_width", "copy_from")
+SELECTOR_OPS = ("rip", "renet", "set_width", "copy_from", "fill_vias")
 AT_TOL = 0.02    # mm: default `at` radius (the hand scripts' 20000 nm)
 JOIN_RADIUS = 0.6  # mm: join_end's default reach (fix_dangle.py's)
 POS_TOL = 1e-3   # mm
@@ -182,6 +193,10 @@ def validate_ops(doc: dict) -> list[dict]:
             _validate_selector(i, op)
         if kind == "set_width" and op.get("kind", "track") != "track":
             raise CheckError(f"ops[{i}]: set_width selects tracks only")
+        if kind == "fill_vias" and op.get("kind", "via") != "via":
+            raise CheckError(f"ops[{i}]: fill_vias selects vias only")
+        if "filled" in op and not isinstance(op["filled"], bool):
+            raise CheckError(f"ops[{i}]: filled must be true or false")
         if "drag" in op and not isinstance(op["drag"], bool):
             raise CheckError(f"ops[{i}]: drag must be true or false")
         if kind == "join_end" and "radius" in op \
@@ -312,6 +327,11 @@ def resolve_ops(bg, ops: list[dict]) -> tuple[list[dict], list[list[int]]]:
                       "width": op["width"]}
                      for it in select_items(bg, {**op, "kind": "track"})
                      if abs(it.width - op["width"]) > POS_TOL]
+        elif kind == "fill_vias":
+            sel = {k: v for k, v in op.items() if k != "filled"}
+            flat += [{"op": "set_via_fill", "uuid": it.uuid,
+                      "filled": op.get("filled", True)}
+                     for it in select_items(bg, {**sel, "kind": "via"})]
         elif kind == "move_via":
             flat += _resolve_move_via(bg, op)
         elif kind == "join_end":
@@ -453,6 +473,8 @@ def _close(a: tuple[float, float], b) -> bool:
 def _verify(staged: Path, ops: list[dict]) -> list[str]:
     bg = geom.BoardGeom.from_file(staged)
     text = staged.read_text(encoding="utf-8")
+    fills = _via_fills(staged) if any(op["op"] == "set_via_fill"
+                                      for op in ops) else {}
     problems = []
     for i, op in enumerate(ops):
         kind = op["op"]
@@ -514,6 +536,14 @@ def _verify(staged: Path, ops: list[dict]) -> list[str]:
                 if not _close(tuple(op["to"]), got):
                     problems.append(f"ops[{i}]: {op['uuid']} {op['which']} "
                                     f"at {got}, not {op['to']}")
+        elif kind == "set_via_fill":
+            got = fills.get(op["uuid"])
+            if got is None:
+                problems.append(f"ops[{i}]: via {op['uuid']} not in saved "
+                                "board")
+            elif got != (op["filled"], op["filled"]):
+                problems.append(f"ops[{i}]: via {op['uuid']} filling/"
+                                f"capping {got}, not {op['filled']}")
         elif kind == "rename_net":
             left = (len(bg.tracks_of(net=op["from"]))
                     + len(bg.vias_of(net=op["from"]))
@@ -523,6 +553,19 @@ def _verify(staged: Path, ops: list[dict]) -> list[str]:
                 problems.append(f"ops[{i}]: {left} items still on "
                                 f"{op['from']}")
     return problems
+
+
+def _via_fills(pcb: Path) -> dict:
+    """uuid -> (filled, capped) per via, board defaults applied - the
+    reading check_wicking and fab_export.via_fill_facts use."""
+    import sexpdata
+    if str(SCRIPTS) not in sys.path:
+        sys.path.insert(0, str(SCRIPTS))
+    import check_wicking as cw
+    root = sexpdata.loads(pcb.read_text(encoding="utf-8"))
+    dflt = cw.board_defaults(root)
+    return {v["uuid"]: (bool(v["filled"]), bool(v["capped"]))
+            for v in cw.read_vias(root, dflt, ["F.Cu", "B.Cu"])}
 
 
 def apply_ops(pcb: Path, ops: list[dict], *, refill: bool = False) -> list:
@@ -600,10 +643,16 @@ def _fold(op: dict, results: list[dict], flat: list[dict]) -> dict:
            "status": "absent" if not results else
            {"rip": "removed", "renet": "renetted", "add_path": "added",
             "set_width": "changed", "move_via": "moved",
-            "join_end": "added", "copy_from": "added"}[op["op"]]}
-    if op["op"] in ("rip", "renet", "set_width", "move_via"):
+            "join_end": "added", "copy_from": "added",
+            "fill_vias": "filled" if op.get("filled", True)
+            else "unfilled"}[op["op"]]}
+    if op["op"] in ("rip", "renet", "set_width", "move_via", "fill_vias"):
         out["uuids"] = [f["uuid"] for f in flat]
-    else:
+    if op["op"] == "fill_vias":
+        out["segments"] = [r["status"] for r in results]
+        if results and all(r["status"] == "exists" for r in results):
+            out["status"] = "exists"
+    elif op["op"] not in ("rip", "renet", "set_width", "move_via"):
         out["segments"] = [r["status"] for r in results]
     return out
 
