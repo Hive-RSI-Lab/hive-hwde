@@ -98,6 +98,11 @@ stamped part; change the source and re-stamp.
 ## Gate (run it yourself before returning)
 `scripts/gate.py --gate place kicad/<board>.kicad_pcb` - exit 0 required;
 warnings (courtyard_missing) pass but list them.
+The place gate judges placement only and runs no copper clearance DRC: a
+board can pass it with hundreds of clearance errors, or a part reversed
+into pre-drawn copper. Run `scripts/gate.py --gate drc kicad/<board>.kicad_pcb`
+too before handing the board to routing; a constant DRC count from
+Freerouting's first pass is the late sign of the same thing.
 
 ## Rules
 - ALL edits via place_edit ops (no raw edits; never move locked/board_only

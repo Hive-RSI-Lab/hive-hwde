@@ -112,6 +112,11 @@ scripts with the repo venv python; JSON out, exit 0/1/2. Keep output ASCII.
    part with NO source at all, a `smt_placed` part with no placement, a
    populate quantity the classes contradict, and a shipped BOM/CPL that lists
    a part the classes exclude are ERRORS.
+   IPC-D-356 gives a refdes 6 characters. On a panel, a copy suffix that
+   takes a ref past 6 (U201_B1, SW201B1) is cut, the cut ref matches no pad,
+   and `dfm_net_short` reports shorts that aren't in the copper. Keep
+   every panel ref at 6 characters or fewer. Net names keep their last 14
+   characters, so put a copy tag at the end of a net name, not the front.
 5. On gate failure: report; the orchestrator dispatches fixers (do not fix
    routing/placement yourself).
 
