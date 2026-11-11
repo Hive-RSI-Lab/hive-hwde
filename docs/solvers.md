@@ -459,6 +459,15 @@ Three things decided the numbers:
 - **The mesh.** Without #622's clear thirds cells the patch read 2.226 GHz at 2 mm
   and 2.274 at 1 mm. Lines nearer than 0.6 of `fine` merge, because the time step
   follows the least cell: the 1 mm dipole went from about 16e9 to 5e9 cell-steps.
+  The merge can also drop the feed: a pinned line never gives way to another
+  pinned or edge line, so when the feed sits within 0.6 of `fine` of a
+  conductor edge's line, the feed line is the one skipped. The port then
+  drives nothing, its V and I come back exactly 0, and the solve stops with a
+  ZeroDivisionError at the impedance only after the whole run. Seen at
+  `fine` 0.35 and 0.5 mm on a printed antenna whose feed had mesh lines
+  0.23 mm either side; 0.3 mm and finer had a live port. Until it fails up front (#904), keep `fine` at
+  0.3 mm or below near a feed between close edges, and read an all-zero port
+  as this.
 - **The record.** Three corner-to-corner trips of the domain after the pulse. A
   run whose last tenth is over 1e-3 of its peak reruns from zero for a length
   extrapolated from its decay. So `converge` starts the finer mesh on the record
@@ -507,6 +516,12 @@ rule of thumb) and prints `f_em_est_ghz` beside its bound.
 
 Read these before relying on a number:
 
+- Give a deck the antipad the board really has. In KiCad a
+  plane's hole around a signal via is the larger of the antipad and the
+  zone's clearance, and that clearance has the netclass clearance as its
+  floor: a smaller zone local clearance or a `.kicad_dru` rule on its own
+  did not shrink the hole on a 6-layer coupon. Measure the hole on the
+  filled board or its gerber, not from the rule you wrote.
 - The closed form c/(4 L sqrt(er)) is an upper bound. The pads load the stub: a
   2.4 mm stub reads as 2.8 mm, a 1.15 mm one as 1.6 mm. `viastub.EM_LOAD_MM` is
   0.45 mm from those two stacks, a figure to read beside the bound; the check's
