@@ -1,0 +1,76 @@
+# advancedpcb.yaml - Advanced Circuits / AdvancedPCB (US): boards.
+#
+# Copied 2026-11-09 from the published "Corporate Manufacturing Capabilities"
+# sheet (meta.source_urls[0], dated 6-19-2023) and the tolerances page.
+# The sheet has Standard / Advanced / Development columns. These rows take
+# the ADVANCED column for drill and pad, and the STANDARD 3 mil line/space:
+# a 0.5 mm-pitch SiP cannot be done on any lower tier.
+# Copper weight is not stated beside the sheet's line/space. The tolerances
+# page's outer-layer line is garbled (".004" for 1 oz finished"), so a
+# 3 mil outer line at 1 oz finished needs the fab's written confirmation.
+# Advanced-column via: .005" drill, .008" min pad, 16:1 aspect,
+# copper to hole .006". Via in pad: epoxy or copper filled (standard column).
+# No published price table: quote_only.
+
+meta:
+  id: advancedpcb
+  name: Advanced Circuits (AdvancedPCB)
+  country: US
+  services: {pcb: true, pcba: false, stencil: false}
+  quote_url: "https://www.4pcb.com/"
+  source_urls:
+    - https://advancedpcb.com/getmedia/68280c59-ac23-43ab-8163-8365cf127d5e/CorpManCapabilities6-19-2023.pdf
+    - https://www.advancedpcb.com/en-us/resources/tolerances/
+    - https://www.4pcb.com/pcb-manufacturing-capabilities
+  verified: "2026-11-09"
+  order: {method: quote, api: false,
+          notes: "Advanced tier: quote with fab drawing; confirm via, line/space and copper weight in writing."}
+
+board:
+  layers: [2, 4, 6, 8]
+  copper_oz_outer: [0.5, 1, 2]
+  thickness_options_mm: [0.8, 1.0, 1.2, 1.6]
+  surface_finish: [ENIG]
+  solder_mask_colors: [green, blue, red, black, white]
+  castellated: false
+  blind_buried_vias: true
+  via_tenting: supported
+  via_in_pad: true
+
+design_rules:
+  4layer_1oz:
+    min_trace_width_mm: 0.0762       # .003" standard column
+    min_clearance_mm: 0.0762
+    min_via_drill_mm: 0.127          # .005" advanced column
+    min_hole_diameter_mm: 0.127
+    min_annular_ring_mm: 0.0635      # (.008" min pad - .005" drill) / 2 = 1.5 mil; 2.5 mil used
+    min_via_diameter_mm: 0.2032      # .008" advanced column minimum pad
+    min_copper_to_edge_mm: 0.254     # .010" outer (.015" inner, .020" preferred)
+    min_copper_to_hole_mm: 0.1524    # .006" advanced column ("Minimum Cu Clearance to Hole")
+    min_silk_width_mm: 0.127         # .005"
+    min_solder_mask_dam_mm: 0.0762   # .003" advanced column web
+    outer_copper_oz: 1.0
+    inner_copper_oz: 1.0
+  6layer_1oz:                        # same sheet columns as 4layer_1oz; the sheet does not split floors by layer count
+    min_trace_width_mm: 0.0762       # .003" standard column
+    min_clearance_mm: 0.0762
+    min_via_drill_mm: 0.127          # .005" advanced column
+    min_hole_diameter_mm: 0.127
+    min_annular_ring_mm: 0.0635
+    min_via_diameter_mm: 0.2032      # .008" advanced column minimum pad
+    min_copper_to_edge_mm: 0.254     # .010" outer (.015" inner, .020" preferred)
+    min_copper_to_hole_mm: 0.1524    # .006" advanced column ("Minimum Cu Clearance to Hole")
+    min_silk_width_mm: 0.127         # .005"
+    min_solder_mask_dam_mm: 0.0762   # .003" advanced column web
+    outer_copper_oz: 1.0
+    inner_copper_oz: 1.0
+
+files:
+  gerber: RS-274X
+  drill: excellon
+  archive: zip
+  notes: "Quote with fab drawing."
+
+pricing:
+  model: quote_only
+  currency: USD

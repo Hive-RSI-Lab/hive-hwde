@@ -356,6 +356,14 @@ def stackup_freshness(stackup: dict, today: _dt.date | None = None,
     ordering owner. NOT a bench metric: age is today-dependent, and score_p5
     cherry-picks its metric fields (test-pinned)."""
     prov = (stackup or {}).get("provenance") or {}
+    if prov.get("method") == "design_intent":
+        # Our own lamination for a fab that builds to the drawing: no date
+        # makes it true, so say it on every run, impedance rows or not.
+        return {"verified": str(prov.get("verified")), "age_days": None,
+                "warning": ("design-intent stackup: the fab publishes none and "
+                            "epsilon_r is assumed - send the stack with the "
+                            "order and have the fab confirm or substitute it "
+                            "before routing controlled impedance")}
     if prov.get("method") not in ("jlc_open_api", "jlc_calculator_template"):
         return None
     if not (stackup or {}).get("controlled_impedance"):
