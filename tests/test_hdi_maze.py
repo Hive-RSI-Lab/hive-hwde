@@ -84,18 +84,19 @@ def test_live_tfbga54_maze_finishes(tmp_path):
 
 
 @pytest.mark.smoke
-def test_live_wlcsp49_maze_stops_at_7_of_49(tmp_path):
-    """Smoke, not test-slow: 9 min on the loaded tower, one run. 85.7 % routed; pass
-    3 gains nothing, so the maze stops there. The 7 left are real work for the
-    escape or the router, not a goal."""
+def test_live_wlcsp49_maze_stops_at_5_of_49(tmp_path):
+    """Smoke, not test-slow: 9 min on the loaded tower, one run. 89.8 % routed; pass
+    3 gains nothing, so the maze stops there. The 5 left are real work for the
+    escape or the router, not a goal. Before the maze kept its vias out of
+    their own net's SMD pads it was 41/1/0 routed and 7 left."""
     _need_tools()
     payload = _maze(tmp_path, "wlcsp49_0.4", "--no-rip-board")
     assert [p["by_status"] for p in payload["facts"]["passes"]] == [
         {"routed": 41, "failed": 8},
-        {"routed": 1, "failed": 7},
-        {"failed": 7}]
-    _answers(payload, before=49, after=7, warnings={
-        "track_dangling": 21, "silk_over_copper": 15, "lib_footprint_issues": 2})
+        {"routed": 3, "failed": 5},
+        {"failed": 5}]
+    _answers(payload, before=49, after=5, warnings={
+        "track_dangling": 20, "silk_over_copper": 15, "lib_footprint_issues": 2})
 
 
 @pytest.mark.smoke
