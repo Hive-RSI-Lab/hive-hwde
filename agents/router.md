@@ -135,6 +135,17 @@ rules as routing constraints; cite the record id when you apply one.
    route_finish with `--via-size`/`--via-drill`. On a route_finish rerun,
    `--skip-conns` leaves out connections already known to fail, and
    `--protect-nets` keeps copper it must not rip.
+   check_diffpair and the other path walkers (`lib/netconn.py`) join a via
+   to a track only at the track's end: a via dropped on the middle of a
+   segment reads as a break, and the pair's skew jumps. Split the track at
+   the via.
+   The maze pass keeps its result when the board's TOTAL unconnected count
+   drops. It can rip other nets' tracks for a connection, fail that
+   connection, and still be kept because it closed GND islands elsewhere,
+   so the signal nets you care about end worse than Freerouting left them.
+   Compare the work dir's `rung*.ses` / `prefinish_*.kicad_pcb` with the
+   final board before trusting the report's list; `--no-krt-finish
+   --no-maze-finish` skips the finish passes.
 4. `scripts/plane_repair.py --pcb <board>` - detects electrically-split
    pours and repairs (bridge/jumper ladder). Mutates in place; on exit 1
    restore the pre-step snapshot (orchestrator has one) and report.

@@ -52,6 +52,17 @@ ordering code.
 - An EasyEDA symbol can be named after another part's MPN (one LED's symbol
   carries a different LED's part number). Set the Value field by hand after
   `lib_pull`; don't trust the symbol name.
+- In a pcbnew script, after `board.Remove(item)` later calls
+  (`board.Tracks()`, `GetNetInfo()`, `fp.GraphicalItems()`) can return bare
+  `SwigPyObject`s with no attributes. Take your lists and net handles first,
+  add, and remove last; or do one edit per process.
+- `ZONE.SetOutline(poly)` keeps a pointer to the SHAPE_POLY_SET, not a copy.
+  A polygon built in a helper's local and dropped on return is collected by
+  Python, and the next zone fill segfaults. Keep a reference to it until the
+  board is saved.
+- BAT Wireless edge SMAs (BWSMA-KE-P001, the LCSC footprint): pad 5 is the
+  centre pin, pads 1-4 are the ground legs. ERC cannot see a signal wired to
+  pad 1; check every coax connector's pin map against its footprint's pads.
 - The board's `LCSC Part` field and the schematic's `LCSC` field can drift
   after a swap, so the BOM and the stock check read different parts. Sync them
   and diff the BOM after any swap.
@@ -64,7 +75,14 @@ ordering code.
   eye before moving a land because of it.
 - A new power trunk can ring off a piece of the F.Cu GND pour. DRC reports an
   unconnected zone against itself at no useful position: look for fill
-  polygons with no GND via, then add one.
+  polygons with no GND via, then add one. One `unconnected_items` line can stand for many
+  cut-off pieces of the same zone (seven floating decoupler ground pads on
+  one board), so count filled outlines that hold a pad and no via rather
+  than DRC lines, and place decoupler ground vias before routing: after it
+  there may be no legal spot.
+- On a GND pour, `ZONE_CONNECTION_THT_THERMAL` gives SMD pads a solid
+  connection and through-hole pads spokes; on one board it cleared most
+  `starved_thermal` errors at once.
 
 ## Choosing the region
 
