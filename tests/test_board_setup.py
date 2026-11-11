@@ -96,12 +96,17 @@ def test_stackups_carry_verification_provenance():
         prov = s.get("provenance")
         assert isinstance(prov, dict), f"{name}: no provenance block"
         assert prov.get("method") in {"jlc_open_api", "jlc_calculator_template",
-                                      "vendor_page", "none"}, \
+                                      "vendor_page", "design_intent", "none"}, \
             f"{name}: unknown provenance method {prov.get('method')!r}"
         assert prov.get("verified"), f"{name}: provenance has no date"
         if prov["method"] == "jlc_open_api":
             assert prov.get("template_code"), f"{name}: no JLC template code"
             assert prov.get("endpoint"), f"{name}: no endpoint recorded"
+        if prov["method"] == "design_intent":
+            # Our lamination, not the fab's: never claimed verified or measured.
+            assert prov.get("live_verified") is False, name
+            assert s.get("epsilon_r_assumed") is True, name
+            assert prov.get("source", "").startswith("https://"), name
         if s["available"] is False:
             ret = s.get("retired") or {}
             assert ret.get("reason"), f"{name}: retired without a reason"
@@ -170,7 +175,8 @@ def test_vendor_stackups_present():
         vendors.load(s["vendor"])                  # a real profile
         assert name.startswith(s["vendor"].upper() + "-"), name
         prov = s["provenance"]
-        assert prov["method"] == "vendor_page" and prov["source"].startswith("https://")
+        assert prov["method"] in ("vendor_page", "design_intent")
+        assert prov["source"].startswith("https://"), name
         for ly in s["stack"]:
             if ly["type"] != "copper":
                 assert ly["epsilon_r"] > 3 and ly["thickness_mm"] > 0, name
@@ -1481,6 +1487,35 @@ def test_update_pro_floors_class_clearance_at_hole_clearance(tmp_path):
     assert got["clearance"] == pytest.approx(cap["min_clearance_mm"])
 
 
+def test_published_hole_clearance_and_class_via_ring(tmp_path):
+    """advancedpcb publishes copper-to-hole (0.1524 mm): it reaches
+    min_hole_clearance and check_pro holds the project to it, where KiCad's
+    0.25 default used to stand in. A vendor row whose minimum pad leaves
+    less than its own ring on the minimum drill (a workspace file copied
+    from the sheet: 0.2032 on 0.127 is a 0.038 ring, floor 0.0635) gets a
+    netclass via of drill + 2 rings. A JLC row states no copper-to-hole
+    and is unchanged."""
+    _, cap = fabfloors.profile(4, 1.0, vendor="advancedpcb")
+    assert fabfloors.pro_rules(cap)["min_hole_clearance"] == pytest.approx(0.1524)
+    assert rules_gen.class_via_diameter(cap) == pytest.approx(0.254)
+    pro_path = tmp_path / "b.kicad_pro"
+    board_init.write_pro(pro_path, cap)
+    rules_gen.update_pro(pro_path, [], [], cap)
+    pro = json.loads(pro_path.read_text("utf-8"))
+    rules = pro["board"]["design_settings"]["rules"]
+    assert rules["min_hole_clearance"] == pytest.approx(0.1524)
+    assert pro["net_settings"]["classes"][0]["via_diameter"] == pytest.approx(0.254)
+    assert fabfloors.check_pro(pro, cap) == []
+    rules["min_hole_clearance"] = 0.1
+    assert any("min_hole_clearance" in m for m in fabfloors.check_pro(pro, cap))
+
+    sheet = dict(cap, min_via_diameter_mm=0.2032)
+    assert rules_gen.class_via_diameter(sheet) == pytest.approx(0.254)
+
+    _, jlc = fabfloors.profile(4, 1.0)
+    assert "min_hole_clearance" not in fabfloors.pro_rules(jlc)
+    assert rules_gen.class_via_diameter(jlc) == pytest.approx(jlc["min_via_diameter_mm"])
+
 @pytest.mark.smoke
 def test_hv_clearance_reaches_the_dsn(cli, tmp_path):
     """Live proof on the route path: rules_gen --pro with VBUS at 48 V, then
@@ -1770,6 +1805,16 @@ def test_stackup_freshness_quiet_when_fresh_or_uncontrolled():
     s2 = _stackup("JLC2313_1.6_2oz")
     assert board_init.stackup_freshness(s2, today=_fresh_date(2030, 1, 1)) is None
 
+
+def test_stackup_freshness_always_warns_on_design_intent():
+    """A design-intent stack (the fab publishes none: advancedpcb) is our
+    lamination with an assumed epsilon_r; no verified date makes it the
+    fab's, so board_init says so on every run."""
+    for name in ("ADVANCEDPCB-4L-1.2-FR4", "ADVANCEDPCB-6L-1.2-FR4"):
+        f = board_init.stackup_freshness(_stackup(name),
+                                         today=_fresh_date(2026, 11, 10))
+        assert f and f["age_days"] is None, name
+        assert "confirm" in f["warning"], name
 
 def test_bench_score_p5_excludes_freshness():
     """stackup_freshness is today-dependent - it must NEVER enter the bench

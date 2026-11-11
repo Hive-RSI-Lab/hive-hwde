@@ -62,6 +62,14 @@ PRO_RULE_KEYS = {
     "min_copper_edge_clearance": "min_copper_to_edge_mm",
 }
 
+# Floors a profile MAY state. A profile without the key leaves the project
+# on KiCad's stock value; every JLC row does. Without this, a fab's published
+# copper-to-hole limit could not reach min_hole_clearance, and KiCad's 0.25 mm
+# default was silently applied as if it were the fab's.
+OPTIONAL_PRO_RULE_KEYS = {
+    "min_hole_clearance": "min_copper_to_hole_mm",
+}
+
 # The DRC checks that enforce those minimums, pinned to ERROR. KiCad's own
 # default for `hole_to_hole` is *warning*, which is how two sub-fab drill
 # pairs reached the DFM gate on lumina-carrier; the rest default to error
@@ -207,8 +215,12 @@ def profile(layers: int, outer_oz: float,
 
 def pro_rules(cap: dict) -> dict:
     """board.design_settings.rules block for a capability row."""
-    return {pro_key: float(cap[cap_key])
-            for pro_key, cap_key in PRO_RULE_KEYS.items()}
+    rules = {pro_key: float(cap[cap_key])
+             for pro_key, cap_key in PRO_RULE_KEYS.items()}
+    rules.update({pro_key: float(cap[cap_key])
+                  for pro_key, cap_key in OPTIONAL_PRO_RULE_KEYS.items()
+                  if cap_key in cap})
+    return rules
 
 
 def pro_rule_severities() -> dict:
@@ -228,7 +240,9 @@ def check_pro(pro: dict, cap: dict) -> list[str]:
     rules = ds.get("rules") or {}
     sev = ds.get("rule_severities") or {}
     bad: list[str] = []
-    for pro_key, cap_key in PRO_RULE_KEYS.items():
+    stated = {**PRO_RULE_KEYS,
+              **{p: c for p, c in OPTIONAL_PRO_RULE_KEYS.items() if c in cap}}
+    for pro_key, cap_key in stated.items():
         want = float(cap[cap_key])
         got = rules.get(pro_key)
         if got is None:

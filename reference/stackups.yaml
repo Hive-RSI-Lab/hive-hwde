@@ -3,7 +3,7 @@
 # .kicad_pcb) and rules_gen.py (diff-pair width/gap, net classes / DRU).
 #
 # ---------------------------------------------------------------- provenance
-# Every entry carries a `provenance` block and an `available` flag. Two
+# Every entry carries a `provenance` block and an `available` flag. These
 # methods appear:
 #
 #   method: jlc_open_api   - the lamination was READ BACK FROM JLC, live, via
@@ -23,6 +23,11 @@
 #     API returns ZERO templates for stencilLayer=2 at 1 oz AND 2 oz, verified
 #     live 2026-08-06, because JLC offers no impedance-controlled 2-layer
 #     product - so there is nothing to read back).
+#   method: design_intent  - the fab publishes NO stack and builds to the
+#     customer's drawing (Advanced Circuits): the lamination is ours, sized to
+#     the fab's published drill/aspect floors (`source`), epsilon_r ASSUMED.
+#     The fab must confirm or substitute it before build; board_init says so
+#     on every run that uses one.
 #
 # THE OFFERING CHURNS - re-verify before designing against a template. Live
 # proof: JLC04161H-7628G was offered on 2026-07-30 and was GONE by 2026-08-06
@@ -2875,6 +2880,154 @@ stackups:
       gap_solved: true
       z_ohm: 90.5
       unreachable: true
+  ADVANCEDPCB-4L-1.2-FR4:
+    description: Advanced Circuits 4-layer design-intent stack for 0.5 mm BGA, 1.2 mm, Tg170 FR4, 1 oz finished on all layers. Not a published vendor stack; the fab must confirm or substitute before build.
+    vendor: advancedpcb
+    available: true
+    thickness_mm: 1.2
+    finished_allowance_mm: 0.06
+    copper_finish: ENIG
+    dielectric_constraints: false
+    epsilon_r_assumed: true
+    epsilon_r_source: assumed_typical_fr4
+    provenance: {method: design_intent, source: 'https://advancedpcb.com/getmedia/68280c59-ac23-43ab-8163-8365cf127d5e/CorpManCapabilities6-19-2023.pdf', verified: '2026-11-09', live_verified: false,
+      note: 'Vendor does not publish a stack. Dk 4.2 assumed. 1.2 mm chosen so a 0.127 mm drill stays near 9.4:1.'}
+    layers: 4
+    stack_total_mm: 1.14
+    finished_thickness_mm: 1.2
+    stack:
+    - {name: F.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 1, type: prepreg, thickness_mm: 0.12, material: FR4 2116, epsilon_r: 4.2, loss_tangent: 0.02}
+    - {name: In1.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 2, type: core, thickness_mm: 0.76, material: FR4 core, epsilon_r: 4.2, loss_tangent: 0.02}
+    - {name: In2.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 3, type: prepreg, thickness_mm: 0.12, material: FR4 2116, epsilon_r: 4.2, loss_tangent: 0.02}
+    - {name: B.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    controlled_impedance:
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.1908
+      closed_form: {width_mm: 0.1862}
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.1471
+      gap_mm: 0.13
+      closed_form: {width_mm: 0.1614, gap_mm: 0.13}
+      note: USB 2.0 / ULPI
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.1085
+      gap_mm: 0.13
+      closed_form: {width_mm: 0.1303, gap_mm: 0.13}
+      note: Ethernet / LVDS / general 100R
+  ADVANCEDPCB-6L-1.2-FR4:
+    description: Advanced Circuits 6-layer design-intent stack for 0.5 mm BGA, 1.2 mm, Tg170 FR4, 1 oz finished on all layers, sig/GND/sig/PWR/GND/sig with thin prepreg under each outer layer. Not a published vendor stack; the fab must confirm or substitute before build.
+    vendor: advancedpcb
+    available: true
+    thickness_mm: 1.2
+    finished_allowance_mm: 0.06
+    copper_finish: ENIG
+    dielectric_constraints: false
+    epsilon_r_assumed: true
+    epsilon_r_source: assumed_typical_fr4
+    provenance: {method: design_intent, source: 'https://advancedpcb.com/getmedia/68280c59-ac23-43ab-8163-8365cf127d5e/CorpManCapabilities6-19-2023.pdf', verified: '2026-11-10', live_verified: false,
+      note: 'Vendor does not publish a stack. Dk 4.2 assumed. 1.2 mm chosen so a 0.127 mm drill stays near 9.4:1. Symmetric 0.1/0.2/0.33/0.2/0.1 mm dielectrics; controlled_impedance rows from stackup_rows.py (impedance.py field solver).'}
+    layers: 6
+    stack_total_mm: 1.14
+    finished_thickness_mm: 1.2
+    stack:
+    - {name: F.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 1, type: prepreg, thickness_mm: 0.1, material: FR4 2113, epsilon_r: 4.2, loss_tangent: 0.02}
+    - {name: In1.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 2, type: core, thickness_mm: 0.2, material: FR4 core, epsilon_r: 4.2, loss_tangent: 0.02}
+    - {name: In2.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 3, type: prepreg, thickness_mm: 0.33, material: FR4 prepreg, epsilon_r: 4.2, loss_tangent: 0.02}
+    - {name: In3.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 4, type: core, thickness_mm: 0.2, material: FR4 core, epsilon_r: 4.2, loss_tangent: 0.02}
+    - {name: In4.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    - {name: dielectric 5, type: prepreg, thickness_mm: 0.1, material: FR4 2113, epsilon_r: 4.2, loss_tangent: 0.02}
+    - {name: B.Cu, type: copper, thickness_mm: 0.035, copper_oz: 1.0}
+    controlled_impedance:
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.1532
+      closed_form: {width_mm: 0.1479}
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.1256
+      gap_mm: 0.13
+      closed_form: {width_mm: 0.1367, gap_mm: 0.13}
+      note: USB 2.0 / ULPI
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: outer
+      reference: nearest_plane
+      width_mm: 0.093
+      gap_mm: 0.13
+      closed_form: {width_mm: 0.1104, gap_mm: 0.13}
+      note: Ethernet / LVDS / general 100R
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: In2.Cu
+      reference: [In1.Cu, In3.Cu]
+      model: stripline
+      width_mm: 0.1841
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: In2.Cu
+      reference: [In1.Cu, In3.Cu]
+      model: stripline
+      width_mm: 0.1616
+      gap_mm: 0.2
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: In2.Cu
+      reference: [In1.Cu, In3.Cu]
+      model: stripline
+      width_mm: 0.1177
+      gap_mm: 0.2
+    - profile: se_50
+      kind: single
+      impedance_ohm: 50
+      layer: In3.Cu
+      reference: [In2.Cu, In4.Cu]
+      model: stripline
+      width_mm: 0.1841
+    - profile: diff_90
+      kind: diff
+      impedance_ohm: 90
+      layer: In3.Cu
+      reference: [In2.Cu, In4.Cu]
+      model: stripline
+      width_mm: 0.1616
+      gap_mm: 0.2
+    - profile: diff_100
+      kind: diff
+      impedance_ohm: 100
+      layer: In3.Cu
+      reference: [In2.Cu, In4.Cu]
+      model: stripline
+      width_mm: 0.1177
+      gap_mm: 0.2
   OSHPARK-4L-1.6-FR408HR:
     description: OSH Park 4-layer prototype, 1.6 mm, Isola FR408HR, 1 oz outer (clad+plated, 0.0432 mm) / 0.5 oz inner.
     vendor: oshpark

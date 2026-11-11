@@ -251,6 +251,17 @@ def _bga_refs(bg) -> list[str]:
     return [b.ref.replace("'", "") for b in bgalib.find_bgas(bg)]
 
 
+def class_via_diameter(cap: dict) -> float:
+    """Netclass via pad: the fab's minimum pad, raised so the minimum drill
+    keeps the minimum annular ring. The shipped vendor rows already agree
+    (test_fab #443); a workspace vendor file copied from a capability sheet
+    may not (a 0.2032 pad on a 0.127 drill leaves 0.038, under a 0.0635
+    ring floor)."""
+    ring = float(cap.get("min_annular_ring_mm", 0.0))
+    return round(max(float(cap["min_via_diameter_mm"]),
+                     float(cap["min_via_drill_mm"]) + 2 * ring), 4)
+
+
 def bga_rules(bg, cap: dict, stackup: dict | None = None
               ) -> tuple[list[Rule], list[dict]]:
     """The escape clearance inside each ball grid's courtyard (#325): the
@@ -267,7 +278,8 @@ def bga_rules(bg, cap: dict, stackup: dict | None = None
               "via_diameter": cap["min_via_diameter_mm"],
               "via_drill": cap["min_via_drill_mm"],
               "annular": cap.get("min_annular_ring_mm", 0.0),
-              "hole_clearance": KICAD_HOLE_CLEARANCE_MM}
+              "hole_clearance": float(cap.get("min_copper_to_hole_mm",
+                                              KICAD_HOLE_CLEARANCE_MM))}
     rules: list[Rule] = []
     facts: list[dict] = []
     hdi = hdilib.is_hdi(stackup)
@@ -938,7 +950,7 @@ def net_classes(constraints: dict, power_facts: list[dict],
                    dpw: float = 0.2, dpg: float = 0.25) -> dict:
         return {
             "name": name, "clearance": round(clearance, 4), "track_width": round(track, 4),
-            "via_diameter": cap["min_via_diameter_mm"], "via_drill": cap["min_via_drill_mm"],
+            "via_diameter": class_via_diameter(cap), "via_drill": cap["min_via_drill_mm"],
             "diff_pair_width": round(dpw, 4), "diff_pair_gap": round(dpg, 4),
             "diff_pair_via_gap": round(dpg, 4),
             "microvia_diameter": 0.3, "microvia_drill": 0.1, "line_style": 0,
@@ -1026,7 +1038,7 @@ def default_class(cap: dict) -> dict:
     return {
         "name": "Default", "clearance": fabfloors.outer_clearance(cap),
         "track_width": max(cap["min_trace_width_mm"], 0.2),
-        "via_diameter": cap["min_via_diameter_mm"], "via_drill": cap["min_via_drill_mm"],
+        "via_diameter": class_via_diameter(cap), "via_drill": cap["min_via_drill_mm"],
         "diff_pair_width": 0.2, "diff_pair_gap": 0.25, "diff_pair_via_gap": 0.25,
         "microvia_diameter": 0.3, "microvia_drill": 0.1, "line_style": 0,
         "bus_width": 12, "wire_width": 6,
@@ -1048,8 +1060,10 @@ def update_pro(pro_path: Path, classes: list[dict], patterns: list[dict],
     pro = json.loads(pro_path.read_text(encoding="utf-8")) if pro_path.exists() else {}
     board = pro.setdefault("board", {})
     ds = board.setdefault("design_settings", {})
-    hole_clr = float((ds.get("rules") or {}).get("min_hole_clearance",
-                                                 KICAD_HOLE_CLEARANCE_MM))
+    # The floors being written win: the class floor below must see this run's
+    # min_hole_clearance, not the one left in the file by the previous run.
+    hole_clr = float({**(ds.get("rules") or {}), **fabfloors.pro_rules(cap)}
+                     .get("min_hole_clearance", KICAD_HOLE_CLEARANCE_MM))
     all_classes = []
     for c in [default_class(cap)] + classes:
         floor = hole_clearance_floor(c, hole_clr)
