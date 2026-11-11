@@ -92,7 +92,11 @@ spec is a recorded decision shown at H1.
    <g> <input> --workspace <ws> --commit "pcb-flow <board>: <gate> pass"`.
    `--workspace` records the result (input hashes, attempt, freshness) - a
    report on disk that state.json never saw is not evidence. Commits happen
-   only on pass, never pushes. Rollback for in-flight fix loops is
+   only on pass, never pushes. `--commit` needs the input inside a
+   `boards/<name>/` workspace under the boards root (`HWDE_BOARDS_ROOT`);
+   for a board kept anywhere else the gate prints "requested commit did not
+   occur" and exits 2 even when it passed. There, leave `--commit` off,
+   read the gate's own verdict, and commit the board yourself. Rollback for in-flight fix loops is
    `state.py snapshot/restore`.
 5. **Scripts run through `bin/pcb-flow`** (`pcb-flow <script> [args]`): the module's
    venv python, with the tool pins set as `HWDE_*` env vars. All scripts: JSON out, exit 0 pass / 1 violations /

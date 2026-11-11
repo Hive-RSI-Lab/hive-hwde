@@ -44,6 +44,14 @@ ordering code.
   and failing dfm silk. Hide those fields. `fp.SetField(name, value)` on a
   loaded footprint makes that field visible too, so hide it in the same
   script. A copied footprint also carries the old `LCSC Part` value: set it.
+- A library footprint shared by many values (one 0603 resistor or capacitor
+  footprint) must not carry an `LCSC Part` value of its own. bom_cpl reads
+  the LCSC number off the board's footprints, so every instance without its
+  own field inherits that one part, and 1k with 10k (or 100 nF with 10 uF)
+  merge into one BOM line. Put the LCSC field on every symbol instance.
+- An EasyEDA symbol can be named after another part's MPN (one LED's symbol
+  carries a different LED's part number). Set the Value field by hand after
+  `lib_pull`; don't trust the symbol name.
 - The board's `LCSC Part` field and the schematic's `LCSC` field can drift
   after a swap, so the BOM and the stock check read different parts. Sync them
   and diff the BOM after any swap.

@@ -80,6 +80,14 @@ entry against its line here before you accept it.
   7..12. Wiring the symbol pad = Pmod pin swaps every signal, and ERC cannot
   see it: only a pad-by-pad check against the footprint does. At rotation 0
   the body lies at +y (y -2.42..+11.42) and pad 1 is at (6.35, -1.27).
+- **Tiny Tapeout's `PMODPeriph2B` 2x6 header footprint.** Its pads use Pmod
+  numbering (1-6 in one row, 7-12 in the other), while LCSC's 2x6 header
+  model is numbered odd/even, so dfm's cpl_verify reports `no_fit` on each
+  header. For a header soldered by hand, give parts.json a line with
+  `"refs": [...]` and `"assembly_class": "hand_install"`: the class applies
+  only to the refs listed, and takes the headers out of the CPL. Its silk is
+  0.12 mm (under JLC's 0.15 mm) and runs past the board edge when the header
+  sits at the edge: widen it to 0.15 mm and trim it.
 
 ## Output contract (end your final message with exactly this block)
 FILES: <lib paths + registered tables + overlay SVGs>

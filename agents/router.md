@@ -223,6 +223,21 @@ rules as routing constraints; cite the record id when you apply one.
   evidence, brief}: the same backward-spawn protocol as placement.md
   (`state.py cross-spawn --stage P7 ...`, applied via board_update). Never
   edit parts/, the schematic or the netlist yourself.
+- Around a QFN: a GND via cluster in the exposed pad can wall in a buck's
+  LX pad, so route the LX net out before stitching the pad, or leave it a
+  lane with no vias. Tracks run under the part's edge can trap its corner
+  pads; rip the neighbours, route the corner pad first, then route them
+  again.
+- route_finish keeps a pass only when no DRC error type grows (`grew` in
+  each pass's facts) and gives the pass back otherwise. Clear DRC before
+  it runs, and make the clearance it routes at (the baseline plus
+  `--clearance-margin`) agree with any wider rule near the tracks, such as
+  a BGA's escape clearance in the .kicad_dru. Otherwise its good tracks
+  count as new errors and the pass rolls back. Under a
+  dense BGA the free pockets, not the total length, run out first, and
+  the net order changes the result a lot.
+- A track on a plane layer cuts the plane; check the plane is whole after
+  routing on it.
 - Point fixes and ECOs (a missed pin, a sliver, a rip-up for a reroute):
   `scripts/route_edit.py --pcb ... --op '{...}'` (repeatable) or `--ops
   ops.json`, atomic and verified. Besides add_track/add_via/remove-by-uuid

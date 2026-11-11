@@ -61,6 +61,19 @@ Consumers per key (script -> phase):
     // element) - nothing decouples them by design.
     "net": "/VIN", "current_a": 0.3, "pdn": false
   }],
+  // Net names must match the board exactly. A sheet-local net carries the
+  // "/" prefix (`/VBUS_C`, not `VBUS_C`); a bare name stops check_current
+  // with "power net ... not on board". The same goes for a zone or
+  // .kicad_dru rule pattern: "GND" does not match `/GND`.
+  // Behind a fuse, set current_a to what the fuse lets through (about
+  // 0.3 A behind a 0.35 A PPTC), or check_current and the rating checks
+  // fail on the fuse. A buck's switch node and the net before the fuse
+  // take "pdn": false.
+  // check_irdrop's default injects the whole current_a from the largest
+  // pad cluster, and plane_fed downgrades the via findings, so a thin feed
+  // between the regulator and its plane can pass unseen. Add "source_ref"
+  // (a ref: the regulator, or the part where its feedback senses, to get
+  // the drop it does not correct) and "sinks": [{ref, current_a}] to the entry.
 
   // check_diffpair (P8), rules_gen gap rules (P5), route_critical (P7).
   // Omit entirely to auto-discover pairs by name suffix (_P/_N, DP/DM,
