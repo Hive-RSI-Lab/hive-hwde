@@ -63,6 +63,18 @@ margin alone and draw the aperture as a separate paste-only pad (or paste-layer
 graphic), which `check_ep_paste` counts as paste for the pad it covers. The
 cause on KiCad's side was seen once, not confirmed against its source.
 
+## Solder jumpers (copper only, nothing to buy)
+
+Give the footprint `(attr smd exclude_from_pos_files exclude_from_bom)`.
+Without `smd` (no type at all) check_fp_attr reports `fp_attr_unspecified`.
+With `exclude_from_pos_files` alone, bom_cpl classes the jumper
+`hand_install` and lists it as a part to fit by hand. The schematic symbol
+must say `in_bom no` too, or KiCad DRC's `footprint_symbol_mismatch` fails
+drc_routed: a symbol made in the library with `in_bom no` keeps it, because
+schlib copies the library symbol's `in_bom`/`on_board` flags onto each
+instance (`schlib.lib_flags`). Older generated schematics wrote `in_bom
+yes` on the instance; regenerate or fix the saved .kicad_sch.
+
 ## When the librarian is needed
 
 Scripted fixes cover silk, refdes and the common passives. Spawn `librarian`

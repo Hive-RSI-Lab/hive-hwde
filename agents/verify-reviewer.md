@@ -58,6 +58,19 @@ with the repo venv python. Keep output ASCII.
   The owner's U11 routing teaching may later turn this into rules.
 - Warnings triage: every verify_all WARNING gets a verdict - real risk
   (escalate to error in your findings) or justified waiver (say why).
+  Cold reviews of many boards rated these warnings respin-grade again and
+  again: `esd_clamp_far` (clamp far along copper from the connector pin),
+  `antenna_side_clearance` (copper beside the antenna, not under it) and
+  `wick_via_in_pad` (an open via in a small pad). Read each one, never
+  wave it through as a warning.
+- Gaps no check covers yet, found by hand in those reviews: HASL ordered
+  for a part at 0.5 mm pitch or finer (dfm has no finish-vs-pitch rule);
+  a Kelvin sense pair that passes check_kelvin's resistance test but runs
+  apart (it has no loop-area test), or a feedback or sense tap taken
+  upstream of a load's drop; creepage or isolation that passes only
+  because the declared voltage is low or missing (use the switch node's
+  peak swing); prose in the design docs that the board contradicts; and a
+  sim or measurement plan made on another stack-up than the board's.
 
 ## Findings format
 `reports/review-board.md` (prose, worst first, reference render filenames)
