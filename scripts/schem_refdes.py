@@ -155,10 +155,23 @@ def text_box(text: str, at: tuple[float, float], size, thick: float,
 
 # ------------------------------------------------------------- symbol library
 
-def _lib_graphics(sym) -> tuple[list, list]:
-    """(graphic geometries, pin segments) of a lib symbol, in library coords."""
+def _sub_unit(sub) -> tuple[int, int] | None:
+    """(unit, body style) from a `NAME_U_B` sub-symbol, None if not that form."""
+    m = re.search(r"_(\d+)_(\d+)$", str(_tok(sub[1])))
+    return (int(m.group(1)), int(m.group(2))) if m else None
+
+
+def _lib_graphics(sym, unit: int | None = None) -> tuple[list, list]:
+    """(graphic geometries, pin segments) of a lib symbol, in library coords.
+
+    With `unit`, only what that unit draws: its own sub-symbol plus the unit-0
+    one common to all units (body style 1 only)."""
     graphics, pins = [], []
     for sub in [sym] + _kids(sym, "symbol"):
+        if unit is not None and sub is not sym:
+            ub = _sub_unit(sub)
+            if ub is not None and (ub[0] not in (0, unit) or ub[1] > 1):
+                continue
         for g in sub[1:] if isinstance(sub, list) else []:
             if not isinstance(g, list) or not g:
                 continue
@@ -211,7 +224,17 @@ def parse_lib_symbols(root) -> dict:
         graphics, pins = _lib_graphics(sym)
         out[lib_id] = {"graphics": graphics, "pins": pins,
                        "power": _yes(sym, "power") or lib_id.startswith("power:")}
+        nums = {ub[0] for ub in map(_sub_unit, _kids(sym, "symbol")) if ub and ub[0]}
+        if len(nums) > 1:
+            out[lib_id]["units"] = {
+                u: dict(zip(("graphics", "pins"), _lib_graphics(sym, u))) for u in nums}
     return out
+
+
+def lib_unit(lib: dict, unit: int) -> dict:
+    """The geometry one placed unit draws. A multi-unit symbol's units are
+    drawn at their own origins, so the whole-symbol union overstates them."""
+    return lib.get("units", {}).get(unit, lib)
 
 
 # ------------------------------------------------------------------ transform
@@ -297,6 +320,7 @@ class Sheet:
                 "lib_id": str(_tok(lib[1])) if len(lib) > 1 else "",
                 "at": (at[0], at[1], at[2] if len(at) >= 3 else 0.0),
                 "mirror": str(_tok(mir[1])) if mir is not None and len(mir) > 1 else None,
+                "unit": int(_nums(_kid(s, "unit"))[0]) if _kid(s, "unit") is not None else 1,
                 "props": props,
             })
         out.sort(key=lambda s: (_ref_key(s["ref"]), s["at"][0], s["at"][1]))
@@ -363,9 +387,14 @@ class Sheet:
         return items
 
     # -- per-symbol geometry
+    def lib_of(self, sym: dict) -> dict | None:
+        """Library geometry of this placed unit, None if the symbol is unknown."""
+        lib = self.libs.get(sym["lib_id"])
+        return None if lib is None else lib_unit(lib, sym.get("unit", 1))
+
     def body(self, sym: dict):
         """Drawn extent of the symbol: graphics plus pin lines (no text)."""
-        lib = self.libs.get(sym["lib_id"])
+        lib = self.lib_of(sym)
         if lib is None:
             return None
         geoms = [_xform_geom(g, sym["at"], sym["mirror"])
@@ -381,14 +410,14 @@ class Sheet:
         b = self.body(sym)
         if b is None:
             return None
-        lib = self.libs[sym["lib_id"]]
+        lib = self.lib_of(sym)
         bands = [_xform_geom(seg, sym["at"], sym["mirror"]).buffer(PIN_TEXT_BAND)
                  for seg in lib["pins"] if seg.length > 0]
         return unary_union([b] + bands) if bands else b
 
     def pin_dirs(self, sym: dict) -> list[tuple[float, float]]:
         """Unit vectors, in page coords, of each pin's outward direction."""
-        lib = self.libs.get(sym["lib_id"])
+        lib = self.lib_of(sym)
         if lib is None:
             return []
         out = []
