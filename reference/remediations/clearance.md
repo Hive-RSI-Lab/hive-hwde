@@ -21,6 +21,10 @@ Two copper items sit closer than the clearance constraint governing them. msg ca
 - Board not sitting next to its own .kicad_pro / .kicad_dru / fp-lib-table: KiCad silently falls back
   to DEFAULT rules, so the numbers come from another rule set (LEARNINGS 754). Check this first if
   the rule name is unfamiliar.
+- The rule name is a netclass where you expected a custom rule: one condition KiCad can't evaluate
+  in a board-local .kicad_dru (for example `A.Length`, `A.Track_Length`) silently drops EVERY custom
+  rule in the file, with no error from kicad-cli. `A.Parent.Reference` matches nothing; scope a rule
+  to a part with `A.memberOfFootprint('REF')`. Test a new rule by its effect on the violation count.
 - Numbers that contradict the DRU you just read: two same-constraint rules can both match and the
   LATER one in file order wins (LEARNINGS 222). Trust the rule name in msg only.
 - Not a false positive but the classic blind spot: the other item may be an UNNETTED pad

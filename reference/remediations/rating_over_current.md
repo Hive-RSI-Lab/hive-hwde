@@ -20,6 +20,9 @@ A part carries more current than it is rated for at the board's ambient:
   The part's own derating table wins: a waiver citing that table's figure at the ambient is
   the right answer when it holds.
 - The ambient: the report's `ambient.src`. Without ambient_c it is 25 C.
+- What is NOT checked: a series part in a high-current path (a 0R jumper, a ferrite bead, an
+  inductor) gets no current check here: a 1 A 0402 jumper carrying 1.1 A passed. Check those
+  parts' current rating by hand.
 
 ## Fix ladder (cheapest first)
 1. The next current rating up in the same package (same footprint) through the part-sourcer:
