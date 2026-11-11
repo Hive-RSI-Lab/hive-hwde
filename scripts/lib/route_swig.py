@@ -41,6 +41,7 @@ job JSON: {"verb": ..., "result": out.json, ...} with verbs:
         {"op": "remove", "uuid": "..."}        # track, via or zone; absent = no-op
         {"op": "set_net", "uuid": "...", "net": "NAME"}   # renet one item
         {"op": "set_width", "uuid": "...", "width": mm}   # a track or arc
+        {"op": "set_via_fill", "uuid": "...", "filled": bool}  # fill + cap
         {"op": "set_point", "uuid": "...", "which": "start"|"end"|"at",
          "to": [x,y]}      # move a track's end or a via's centre in place
         {"op": "rename_net", "from": "OLD", "to": "NEW"}
@@ -304,6 +305,22 @@ def verb_apply_ops(job):
                 same = abs(cur.x - to.x) <= tol and abs(cur.y - to.y) <= tol
                 if not same:
                     getattr(item, put)(to)
+            results.append({"op": kind, "status": "exists" if same
+                            else "changed"})
+        elif kind == "set_via_fill":
+            item = by_uuid.get(op["uuid"])
+            if item is None or item.GetClass() != "PCB_VIA":
+                raise ValueError("ops[%d]: via %s not on board"
+                                 % (i, op["uuid"]))
+            if op["filled"]:
+                fm, cm = pcbnew.FILLING_MODE_FILLED, pcbnew.CAPPING_MODE_CAPPED
+            else:
+                fm = pcbnew.FILLING_MODE_NOT_FILLED
+                cm = pcbnew.CAPPING_MODE_NOT_CAPPED
+            same = item.GetFillingMode() == fm and item.GetCappingMode() == cm
+            if not same:
+                item.SetFillingMode(fm)
+                item.SetCappingMode(cm)
             results.append({"op": kind, "status": "exists" if same
                             else "changed"})
         elif kind == "rename_net":

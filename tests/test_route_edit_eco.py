@@ -394,3 +394,48 @@ def test_place_edit_silk_clear_region(kicad, pd):
              "region": [x, y - 10, x + 10, y + 10]})])
     left = silk(pd)
     assert 0 < left < total
+
+
+# ------------------------------------------------------------ fill_vias
+
+@pytest.mark.parametrize("op, msg", [
+    ({"op": "fill_vias"}, "needs at least one of"),
+    ({"op": "fill_vias", "net": "A", "kind": "track"}, "selects vias only"),
+    ({"op": "fill_vias", "net": "A", "filled": "yes"}, "filled must be"),
+])
+def test_validate_refuses_fill_vias(op, msg):
+    with pytest.raises(CheckError, match=msg):
+        _v(op)
+
+
+def test_resolve_fill_vias_picks_vias_only(bg):
+    flat, spans = route_edit.resolve_ops(bg, _v(
+        {"op": "fill_vias", "net": "/CC1"},
+        {"op": "fill_vias", "net": "/CC1", "filled": False}))
+    vias = [v.uuid for v in bg.vias_of(net="/CC1")]
+    assert vias
+    assert [f["uuid"] for f in (flat[j] for j in spans[0])] == vias
+    assert {f["filled"] for f in (flat[j] for j in spans[0])} == {True}
+    assert {flat[j]["filled"] for j in spans[1]} == {False}
+
+
+def test_route_edit_fill_vias_apply(kicad, pd):
+    """Per-via filling + capping (IPC-4761 Type VII): check_wicking's reader
+    (which fab_export.via_fill_facts reuses) sees exactly those vias filled,
+    a re-run changes nothing, and filled: false clears them."""
+    before = geom.BoardGeom.from_file(pd)
+    want = {v.uuid for v in before.vias_of(net="/CC1")}
+    others = {v.uuid for v in before.vias_of()} - want
+    payload, _ = route_edit.run(["--pcb", str(pd), "--op",
+                                 '{"op": "fill_vias", "net": "/CC1"}'])
+    r = payload["results"][0]
+    assert r["status"] == "filled" and r["count"] == len(want)
+    fills = route_edit._via_fills(pd)
+    assert all(fills[u] == (True, True) for u in want)
+    assert all(fills[u] == (False, False) for u in others)
+    again, _ = route_edit.run(["--pcb", str(pd), "--op",
+                               '{"op": "fill_vias", "net": "/CC1"}'])
+    assert again["results"][0]["segments"] == ["exists"] * len(want)
+    route_edit.run(["--pcb", str(pd), "--op",
+                    '{"op": "fill_vias", "net": "/CC1", "filled": false}'])
+    assert all(v == (False, False) for v in route_edit._via_fills(pd).values())

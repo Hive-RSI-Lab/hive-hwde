@@ -2,6 +2,7 @@
 reads from a board, its islands, and the routes it plans around copper."""
 from __future__ import annotations
 
+import json
 import math
 import sys
 import types
@@ -185,6 +186,42 @@ def test_no_via_in_an_own_smd_pad(tmp_path):
             dx = min(abs(x - 5), abs(x - 25)) - 1.0
             dy = abs(y - 15) - 1.0
             assert max(dx, dy) >= keep - 0.05, op["at"]
+
+
+def test_via_in_pad_refs_take_a_via_in_their_pads(tmp_path):
+    # approved filled via-in-pad: U1's pad, ringed in on F.Cu, may hold the
+    # via; U2's still may not
+    body = _pad("U1", 5, 15, "SIG", size=2.0) + _pad("U2", 25, 15, "SIG",
+                                                       size=2.0)
+    ring = [(3.6, 13.6), (6.4, 13.6), (6.4, 16.4), (3.6, 16.4), (3.6, 13.6)]
+    for (x1, y1), (x2, y2) in zip(ring, ring[1:]):
+        body += _seg(x1, y1, x2, y2, 0.25, "F.Cu", "+3V3")
+    pcb = _board(tmp_path, body)
+    bg = geom.BoardGeom.from_file(pcb)
+    rules = rf.board_rules(pcb, bg)
+    shut = rf.plan_routes(bg, rules, [_pair("SIG", (5, 15), (25, 15))],
+                          bg.copper_layers, rip_board=False)[0]
+    assert shut["status"] != "routed"
+    rules.via_in_pad_refs = frozenset({"U1"})
+    job = rf.plan_routes(bg, rules, [_pair("SIG", (5, 15), (25, 15))],
+                         bg.copper_layers, rip_board=False)[0]
+    assert job["status"] == "routed" and job["vias"] >= 1
+    vias = [op["at"] for op in job["ops"] if op["op"] == "add_via"]
+    keep = rules.via_drill / 2 + rf.VIA_PAD_KEEP_MM
+    assert any(abs(x - 5) < 1.0 and abs(y - 15) < 1.0 for x, y in vias), vias
+    json.dumps(rf._rules_facts(rules))   # the report stays JSON
+    for x, y in vias:
+        if abs(x - 25) < 5:
+            assert max(abs(x - 25) - 1.0, abs(y - 15) - 1.0) >= keep - 0.05
+
+
+def test_via_in_pad_refs_is_a_routing_flag():
+    import argparse
+    ap = argparse.ArgumentParser()
+    rf.add_routing_args(ap)
+    assert ap.parse_args(["--via-in-pad-refs", "U1,U2"]).via_in_pad_refs \
+        == "U1,U2"
+    assert "via_in_pad_refs" in rf.ROUTING_FLAGS
 
 
 def test_vias_under_a_full_wall(tmp_path):

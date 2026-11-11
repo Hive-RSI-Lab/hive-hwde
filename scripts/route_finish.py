@@ -125,6 +125,8 @@ class Rules:
     span_hole_clearance: float = 0.15
     span_hole_to_hole: float = 0.24
     copper: list = field(default_factory=list)
+    via_in_pad_refs: frozenset = frozenset()   # refs whose own-net SMD pads
+    #                                          take a via (filled + capped)
 
     def width(self, net: str) -> float:
         w = max(self.net_width.get(net, 0.0) + 0.001, self.min_width)
@@ -272,6 +274,7 @@ class Item:
     uuid: str | None = None  # a board track or via route_finish may rip
     tied: frozenset = frozenset()  # nets this copper may touch (a net tie's)
     smd: bool = False      # an SMD pad: no via of its own net inside it
+    ref: str = ""          # a pad's footprint ref
 
 
 class Obstacles:
@@ -293,7 +296,7 @@ class Obstacles:
             dp = p.drill_poly if p.drill else None
             items.append(Item(p.net or "", frozenset(p.layers) & cu, p.poly,
                               0.0, dp if dp is not None and not dp.is_empty
-                              else None, smd=p.kind == "smd"))
+                              else None, smd=p.kind == "smd", ref=p.ref))
         # DRC sees this copper as netless, so a track through it is a short
         for c in bg.fp_copper:
             items.append(Item("", frozenset({c["layer"]}), c["shape"], 0.0,
@@ -431,10 +434,12 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
                     + rules.margin), *args)
                 if m:
                     vblk[m[0]] |= m[1]
-        if it.smd and not other:
+        if it.smd and not other and it.ref not in rules.via_in_pad_refs:
             # no via in its own net's SMD pad: the open barrel wicks the
             # joint's solder (check_wicking wick_via_in_pad), and via-in-pad
-            # is a paid fab option a route may not take on its own
+            # is a paid fab option a route may not take on its own; only
+            # --via-in-pad-refs parts take one (fill them after: route_edit
+            # fill_vias)
             m = _mask(it.shape, via_drill / 2 + VIA_PAD_KEEP_MM, *args)
             if m:
                 vblk[m[0]] |= m[1]
@@ -1364,6 +1369,7 @@ def _one_pass(cli, staged, drc, opts, *, parity, refill, log):
     rules = board_rules(staged, bg, min_width=opts["min_width"],
                         margin=opts["clearance_margin"],
                         via_size=opts["via_size"], via_drill=opts["via_drill"])
+    rules.via_in_pad_refs = opts["via_in_pad_refs"]
     lays = routable_layers(bg, opts["layers"])
     pairs = unconnected_pairs(drc, opts["nets"])
     rip: list = []
@@ -1433,7 +1439,8 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
                   log=None, skip_conns=None,
                   deadline: float | None = None, on_try=None,
                   max_nodes: int = 3_000_000,
-                  search_weight: float = 1.0) -> dict:
+                  search_weight: float = 1.0,
+                  via_in_pad_refs=None) -> dict:
     """Route the staged board's unconnected pairs in place, in passes: a
     route can split another net's pour, and the next pass joins the piece.
     A pass is kept only when the unconnected count drops and no error type
@@ -1448,7 +1455,8 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
                 rip_board=rip_board, drc_s=0.0, deadline=deadline,
                 skip=None if skip_conns is None else set(skip_conns),
                 keep_nets=keep_nets, on_try=on_try, max_nodes=max_nodes,
-                search_weight=search_weight)
+                search_weight=search_weight,
+                via_in_pad_refs=frozenset(via_in_pad_refs or ()))
     start_un = sum(unconnected_by_net(drc).values())
     facts: dict = {"unconnected_before": start_un,
                    "errors_before": err_counts(drc), "passes": []}
@@ -1457,6 +1465,7 @@ def finish_staged(cli: Path, staged: Path, drc: dict, *, nets=None,
         rules = board_rules(staged, bg, min_width=min_width,
                             margin=clearance_margin, via_size=via_size,
                             via_drill=via_drill)
+        rules.via_in_pad_refs = opts["via_in_pad_refs"]
         lays = routable_layers(bg, layers)
         jobs = plan_routes(bg, rules, unconnected_pairs(drc, opts["nets"]),
                            lays, grid=grid, margin=margin,
@@ -1669,6 +1678,7 @@ def _rules_facts(rules: Rules) -> dict:
     # An HDI board's Rules carry hdilib.Span objects; the report is JSON (#477).
     if facts.get("spans"):
         facts["spans"] = [dataclasses.asdict(s) for s in facts["spans"]]
+    facts["via_in_pad_refs"] = sorted(facts.get("via_in_pad_refs", ()))
     return facts
 
 
@@ -1688,11 +1698,15 @@ def add_routing_args(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--search-weight", type=float, default=1.0,
                     help="inflate the search's distance estimate: above 1, "
                          "far fewer nodes on long routes, not always shortest")
+    ap.add_argument("--via-in-pad-refs", default=None,
+                    help="refs (comma list) whose own-net SMD pads may take a"
+                         " via: approved filled+capped via-in-pad only; mark"
+                         " them filled after (route_edit fill_vias)")
 
 
 ROUTING_FLAGS = ("nets", "layers", "grid", "margin", "min_width",
                  "clearance_margin", "via_size", "via_drill", "max_nodes",
-                 "search_weight")
+                 "search_weight", "via_in_pad_refs")
 
 
 def run(argv: list[str] | None = None):
@@ -1789,7 +1803,9 @@ def run(argv: list[str] | None = None):
         deadline=(None if args.plan_seconds is None
                   else started + args.plan_seconds),
         on_try=on_try, max_nodes=args.max_nodes,
-        search_weight=args.search_weight)
+        search_weight=args.search_weight,
+        via_in_pad_refs=set(filter(None, (args.via_in_pad_refs or "")
+                                   .split(","))))
     final = facts.pop("drc", None) or drc
     if facts.get("kept") and not args.dry_run:
         routelib.swap_in(staged, pcb)
