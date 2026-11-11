@@ -12,7 +12,7 @@ Contract:
     add_track {start:[x,y], end:[x,y], width, layer, net}
     add_via   {at:[x,y], size, drill, net}          # through via
               [kind: micro|blind|buried, top, bot]  # a span (#477)
-    remove    {uuid}                                 # track or via; absent=noop
+    remove    {uuid}                         # track, via or zone; absent=noop
     set_net   {uuid, net}                            # worker-level (renet)
     set_width {uuid, width} / set_point {uuid, which: start|end|at, to}
                                      # the worker's, emitted by the driver only

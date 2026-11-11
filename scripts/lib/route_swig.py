@@ -38,7 +38,7 @@ job JSON: {"verb": ..., "result": out.json, ...} with verbs:
          "layer": "F.Cu", "net": "NAME"}
         {"op": "add_via", "at": [x,y], "size": mm, "drill": mm, "net": "NAME"}
             # optional, a span (#477): "kind": micro|blind|buried, "top", "bot"
-        {"op": "remove", "uuid": "..."}        # track or via; absent = no-op
+        {"op": "remove", "uuid": "..."}        # track, via or zone; absent = no-op
         {"op": "set_net", "uuid": "...", "net": "NAME"}   # renet one item
         {"op": "set_width", "uuid": "...", "width": mm}   # a track or arc
         {"op": "set_point", "uuid": "...", "which": "start"|"end"|"at",
@@ -213,6 +213,9 @@ def verb_apply_ops(job):
     by_uuid = {}
     for t in board.GetTracks():
         by_uuid[t.m_Uuid.AsString()] = t
+    # remove also takes a zone uuid (a superseded plane planes_gen left);
+    # kept apart so set_width/set_point/set_net stay track/via only.
+    zone_by_uuid = {z.m_Uuid.AsString(): z for z in board.Zones()}
 
     results = []
     to_remove = []
@@ -318,7 +321,7 @@ def verb_apply_ops(job):
             results.append({"op": kind, "status": "renamed" if n else
                             "absent", "count": n})
         elif kind == "remove":
-            item = by_uuid.get(op["uuid"])
+            item = by_uuid.get(op["uuid"]) or zone_by_uuid.get(op["uuid"])
             if item is None:
                 results.append({"op": kind, "status": "absent"})
             else:

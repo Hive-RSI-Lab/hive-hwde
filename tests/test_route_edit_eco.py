@@ -225,6 +225,21 @@ def test_renet_of_pad_tied_copper_rolls_back(kicad, pd):
     assert pd.read_bytes() == raw
 
 
+def test_remove_takes_a_zone_uuid(kicad, pd):
+    """A superseded plane (one planes_gen left behind) is removed by its uuid
+    like a track or via; before, `remove` looked only at tracks and vias and
+    reported the zone absent, and the dead pour stayed on the board."""
+    text = pd.read_text(encoding="utf-8")
+    uuid = "7a436be0-2999-4f58-bc4c-bab947d6e41b"          # the VBUS pour
+    assert uuid in text
+    n = len(geom.BoardGeom.from_file(pd).zones_of(net="VBUS"))
+    payload, _ = route_edit.run([
+        "--pcb", str(pd), "--op", json.dumps({"op": "remove", "uuid": uuid})])
+    assert payload["results"][0]["status"] == "removed"
+    assert len(geom.BoardGeom.from_file(pd).zones_of(net="VBUS")) == n - 1
+    assert uuid not in pd.read_text(encoding="utf-8")
+
+
 def test_place_edit_pad_and_dnp(kicad, pd):
     payload, _ = place_edit.run([
         "--pcb", str(pd),

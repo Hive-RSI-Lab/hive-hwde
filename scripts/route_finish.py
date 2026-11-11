@@ -100,6 +100,8 @@ KICAD_HOLE_CLEARANCE = 0.25   # board setup default min hole clearance
 KICAD_HOLE_TO_HOLE = 0.25     # board setup default min hole to hole
 SAME_NET_HOLE_MM = 0.13       # JLC HDI, one net, edge to edge (jlc_capabilities hdi)
 EXIT_MM = 1.0                 # #784, how far an open stub tip's corridor runs
+VIA_PAD_KEEP_MM = 0.1         # drill edge to an own-net SMD pad: past its
+#                               mask opening and registration (check_wicking)
 VIA_RETRIES = 6               # #784, searches again for a route's too-close vias
 
 
@@ -269,6 +271,7 @@ class Item:
     conn: int = -1         # route_finish connection that added it
     uuid: str | None = None  # a board track or via route_finish may rip
     tied: frozenset = frozenset()  # nets this copper may touch (a net tie's)
+    smd: bool = False      # an SMD pad: no via of its own net inside it
 
 
 class Obstacles:
@@ -290,7 +293,7 @@ class Obstacles:
             dp = p.drill_poly if p.drill else None
             items.append(Item(p.net or "", frozenset(p.layers) & cu, p.poly,
                               0.0, dp if dp is not None and not dp.is_empty
-                              else None))
+                              else None, smd=p.kind == "smd"))
         # DRC sees this copper as netless, so a track through it is a short
         for c in bg.fp_copper:
             items.append(Item("", frozenset({c["layer"]}), c["shape"], 0.0,
@@ -428,6 +431,13 @@ def build_grid(obs: Obstacles, rules: Rules, net: str, side_a: dict,
                     + rules.margin), *args)
                 if m:
                     vblk[m[0]] |= m[1]
+        if it.smd and not other:
+            # no via in its own net's SMD pad: the open barrel wicks the
+            # joint's solder (check_wicking wick_via_in_pad), and via-in-pad
+            # is a paid fab option a route may not take on its own
+            m = _mask(it.shape, via_drill / 2 + VIA_PAD_KEEP_MM, *args)
+            if m:
+                vblk[m[0]] |= m[1]
         if it.hole is not None:
             if other:
                 m = _mask(it.hole, rules.hole_clearance + w / 2 + rules.margin,

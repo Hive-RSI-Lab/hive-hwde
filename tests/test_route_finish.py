@@ -169,6 +169,24 @@ def test_a_net_tie_bridge_does_not_block_its_own_nets(tmp_path):
     assert sum(math.dist(op["start"], op["end"]) for op in _tracks(jobs[0])) < 21
 
 
+def test_no_via_in_an_own_smd_pad(tmp_path):
+    # a wall leaves only B.Cu; the vias must sit off both 2 mm SIG pads
+    body = _pad("U1", 5, 15, "SIG", size=2.0) + _pad("U2", 25, 15, "SIG",
+                                                       size=2.0)
+    body += _seg(15, 0.1, 15, 29.9, 0.25, "F.Cu", "+3V3")
+    pcb = _board(tmp_path, body)
+    rules, jobs = _plan(pcb, [_pair("SIG", (5, 15), (25, 15))])
+    job = jobs[0]
+    assert job["status"] == "routed" and job["vias"] == 2
+    keep = rules.via_drill / 2 + rf.VIA_PAD_KEEP_MM
+    for op in job["ops"]:
+        if op["op"] == "add_via":
+            x, y = op["at"]
+            dx = min(abs(x - 5), abs(x - 25)) - 1.0
+            dy = abs(y - 15) - 1.0
+            assert max(dx, dy) >= keep - 0.05, op["at"]
+
+
 def test_vias_under_a_full_wall(tmp_path):
     body = _pad("U1", 5, 15, "SIG") + _pad("U2", 25, 15, "SIG")
     body += _seg(15, 0.1, 15, 29.9, 0.25, "F.Cu", "+3V3")
