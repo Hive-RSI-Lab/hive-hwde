@@ -102,6 +102,27 @@ rules as routing constraints; cite the record id when you apply one.
    that disk, and carry the rest on F.Cu, and verify passes with no waiver.
    route_auto re-routes some hand-routed tracks, so re-run check_diffpair
    after each route_auto pass.
+   Run length: `--timeout-s` (default 3600) is a hard wall-clock cap on
+   EACH rung. A rung killed at the cap writes no SES, and Freerouting's log
+   is only written when the process ends, so every pass that rung made is
+   lost. Time pass 1, size the cap for the passes you need, and use
+   `--max-rungs 1` to try a single rung. The `--stall-s` kill can't tell a
+   slow first pass from a wedged one, and an outer job timeout around
+   route_auto or route_finish has the same all-or-nothing effect: route_finish
+   works on a staged copy and writes the board only at the end, so give it
+   `--plan-seconds` under the job limit or use route_close.
+   Inputs: `--power-layers auto` takes only inner layers that hold a fill
+   and NO tracks, so a plane layer with a single track on it is silently
+   routed on; name the layers yourself (and see #628). Pre-drawn RF or
+   other hand copper can still be moved by Freerouting: put those nets in a
+   class and pass `--exclude-classes`. The DSN gives each class one width,
+   so a wide rail class can't leave a fine-pitch pad that sits on a plane
+   net: draw a short stub and a via per such pad before route_auto. The
+   maze finish picks the board's most common through via, which a row of
+   drawn test-coupon vias can skew (route_auto has no flag for it): rerun
+   route_finish with `--via-size`/`--via-drill`. On a route_finish rerun,
+   `--skip-conns` leaves out connections already known to fail, and
+   `--protect-nets` keeps copper it must not rip.
 4. `scripts/plane_repair.py --pcb <board>` - detects electrically-split
    pours and repairs (bridge/jumper ladder). Mutates in place; on exit 1
    restore the pre-step snapshot (orchestrator has one) and report.
@@ -175,7 +196,9 @@ rules as routing constraints; cite the record id when you apply one.
    drill wander) with no drop (`dfm_ring_breakout`) and, on flex, any
    join with none (`dfm_teardrop_missing`).
 6. Gate: `scripts/gate.py --gate drc_routed kicad/<board>.kicad_pcb` -
-   exit 0 (parity + all track errors, err+warn zero).
+   exit 0 (parity + all track errors, err+warn zero). Check the exit code,
+   not just the report: a wrong board path exits 2 before any check runs
+   and leaves the previous report on disk.
 
 ## When nets remain unrouted
 - route_auto already ladders retries. If its facts carry
