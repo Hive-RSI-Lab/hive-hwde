@@ -56,6 +56,21 @@ with the repo venv python. Keep output ASCII.
   far longer than the gap it clears, staircases of 45s where one diagonal
   would do. Warning severity, `kind: route_style_visual`, domain router.
   The owner's U11 routing teaching may later turn this into rules.
+- Checks that judged nothing: in `summary.json`, a check under
+  `coverage.nothing_to_judge` (status `nothing_to_judge`) ran but found
+  nothing it could judge (no MCU on an MCU check, no `length_groups` because
+  `--constraints` wasn't passed). It fails no gate, and it is not a pass:
+  confirm the board really has nothing of that kind. `coverage.not_judged`
+  lists what a check that judged other things had to leave out (a part with
+  no 3D model, a net with no declared edge rate); each entry is unreviewed.
+- Waivers: a waiver that matches no finding is listed in the gate result as
+  `waivers_unmatched` (and on stderr). It changes no grade on an advisory
+  gate, but a strict gate (`verify_release`, `dfm_release`) fails on it, and
+  an attestation naming it reads invalid. A waiver that carries `pos`
+  matches only within 0.01 mm of it, so a finding that moved after a
+  re-route kills that waiver even on the right net. Remove the entry or
+  re-approve it against the current finding; don't copy old waivers forward
+  unchecked.
 - Warnings triage: every verify_all WARNING gets a verdict - real risk
   (escalate to error in your findings) or justified waiver (say why).
 

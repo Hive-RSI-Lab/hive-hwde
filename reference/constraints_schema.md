@@ -46,7 +46,14 @@ Consumers per key (script -> phase):
     // one tap, not current_a: tap_current_a, else via_amps, else 0.5 A. So
     // declare the rail's REAL current and its pour in "planes"; rules_gen
     // warns when a plane_fed net has no plane there.
-    "plane_fed": true, "tap_current_a": 0.5
+    "plane_fed": true, "tap_current_a": 0.5,
+    // loads (check_current): per-part current in A. A branch via, track or
+    // neck is judged at the sum of the declared loads past it, so a star of
+    // three 1 A loads on a 3 A rail needs 1 A per branch, not 3. An
+    // undeclared part (other than a sense-pin tap or a chip resistor, which
+    // are bounded) may draw the whole budget, so its branch is judged at
+    // current_a: declare loads before widening branch copper.
+    "loads": {"U402": 0.12}
   }, {
     // width-only entry: "pdn": false opts a net OUT of check_pdn's
     // decoupling inventory. Use for nets declared solely so rules_gen sizes

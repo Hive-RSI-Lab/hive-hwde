@@ -108,6 +108,17 @@ Freerouting's first pass is the late sign of the same thing.
 - ALL edits via place_edit ops (no raw edits; never move locked/board_only
   refs; UUIDs regenerate on save - compare parsed positions). Satellites
   ride their anchors (cluster = move unit); never orphan a decoupler.
+- BGA to BGA (DRAM beside a SoC): choose the memory's side and rotation
+  before route_escape, from both ball maps plotted in board coordinates.
+  Put the memory against the controller's memory-ball corner. Escape knobs
+  (via-in-pad, pairs-first, steering) only shift how many balls stay
+  unescaped when the partner sits on the wrong side; moving the part clears
+  them. On x16 DDR3 the CK and DQS balls sit in the columns either side of
+  the centre gap, so one of them is always on the far side; send its stubs
+  into the gap.
+- `placement.keepouts` are checked by the place gate: keep them clear of BGA
+  courtyards and of the decouplers route_escape will nudge, or the gate
+  fails on parts that have to be there.
 - BUILD MODE (U18): at a `canonical` or `bounded` binding - `state.py resume`
   reports it, `reference/build-modes.md` defines it - the board SIZE is an
   output of this stage. Your outline is PROVISIONAL room: place to the
