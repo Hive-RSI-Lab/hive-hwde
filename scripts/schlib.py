@@ -619,6 +619,7 @@ class Sheet:
         # silently wiped by that later whole-file re-save (measured: with
         # the call before place_fields, J3/J4 came back `(dnp no)`).
         apply_native_dnp(self._dnp, path)
+        apply_hier_shapes(self.hier_pins, path)
         if keep_uuids:
             self.uuid_map = stable_uuids(path, previous, self.name)
         if project:
@@ -898,6 +899,19 @@ def apply_pin_number_fixups(fixups: list[dict], sch_path: Path) -> None:
             text = text[:li] + seg + text[end:]
             pos = li + len(seg)
     sch_path.write_text(text, encoding="utf-8")
+
+
+def apply_hier_shapes(shapes: dict[str, str], sch_path: Path) -> None:
+    """kicad-sch-api writes every hierarchical label as `(shape input)` whatever
+    it was given. Put back the shape each `hier_pin` declared, after the last
+    whole-file re-save, so the sheet and its pin on the root agree."""
+    text = sch_path.read_text(encoding="utf-8")
+
+    def fix(m: re.Match) -> str:
+        return m.group(1) + shapes.get(m.group(2), m.group(3)) + m.group(4)
+
+    sch_path.write_text(re.sub(r'(\(hierarchical_label "((?:[^"\\]|\\.)*)"\s*\(shape )(\w+)(\))',
+                               fix, text), encoding="utf-8")
 
 
 def apply_native_dnp(refs: list[str], sch_path: Path) -> None:

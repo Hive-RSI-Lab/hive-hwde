@@ -687,3 +687,62 @@ def test_lib_pull_autofix_reports_the_flags(flagged):
     out = lib_pull._autofix(flagged, [RCA, HTSSOP], dry_run=True)
     assert {f["flag"] for f in out["flags"]} == {"peg_without_hole", "body_outside_courtyard"}
     assert {f["footprint"] for f in out["flags"]} == {RCA}
+
+
+# ------------------------------------------- schem_refdes multi-unit symbols
+
+_DUAL = """(kicad_sch
+  (lib_symbols
+    (symbol "Amp:Dual"
+      (symbol "Dual_0_1"
+        (polyline (pts (xy 0 0) (xy 0 1))))
+      (symbol "Dual_1_1"
+        (rectangle (start -5 -5) (end 5 5))
+        (pin input line (at -7.54 0 0) (length 2.54)))
+      (symbol "Dual_2_1"
+        (rectangle (start 20 -5) (end 30 5))
+        (pin input line (at 17.46 0 0) (length 2.54)))
+      (symbol "Dual_2_2"
+        (rectangle (start 60 -5) (end 70 5)))))
+  (symbol (lib_id "Amp:Dual") (at 100 100 0) (unit 2)
+    (property "Reference" "U1" (at 100 90 0)))
+  (symbol (lib_id "Amp:Dual") (at 100 200 0)
+    (property "Reference" "U2" (at 100 190 0))))
+"""
+
+
+def test_multi_unit_symbol_body_is_only_its_own_unit(tmp_path):
+    """A placed unit draws its own sub-symbol plus the unit-0 common one, body
+    style 1 only. The union of every unit overstated U1 (unit 2) by the
+    whole of unit 1 and the De Morgan body, which pushed fields off it."""
+    p = tmp_path / "dual.kicad_sch"
+    p.write_text(_DUAL, encoding="utf-8")
+    sheet = sr.Sheet(p)
+    lib = sheet.libs["Amp:Dual"]
+    assert set(lib["units"]) == {1, 2}
+    by_ref = {s["ref"]: s for s in sheet.symbols}
+    assert by_ref["U1"]["unit"] == 2 and by_ref["U2"]["unit"] == 1
+    x0, _, x1, _ = sheet.body(by_ref["U1"]).bounds
+    assert (x0, x1) == pytest.approx((100.0, 130.0))   # pin end .. rect, unit 2
+    x0, _, x1, _ = sheet.body(by_ref["U2"]).bounds
+    assert (x0, x1) == pytest.approx((92.46, 105.0))   # unit 1 only
+    # a single-unit symbol keeps its whole geometry
+    assert sr.lib_unit({"graphics": [], "pins": []}, 3) == {"graphics": [], "pins": []}
+
+
+# ------------------------------------------------------ schlib.apply_hier_shapes
+
+def test_apply_hier_shapes_puts_back_each_declared_shape(tmp_path):
+    """kicad-sch-api saves every hierarchical label as `(shape input)`; the
+    shapes the sheet's hier_pins declared must come back, others untouched."""
+    sch = tmp_path / "child.kicad_sch"
+    sch.write_text('(kicad_sch\n'
+                   '\t(hierarchical_label "SDA"\n\t\t(shape input)\n\t\t(at 1 2 0)\n\t)\n'
+                   '\t(hierarchical_label "VOUT" (shape input) (at 3 4 0))\n'
+                   '\t(hierarchical_label "EN" (shape input) (at 5 6 0))\n)\n',
+                   encoding="utf-8")
+    schlib.apply_hier_shapes({"SDA": "bidirectional", "VOUT": "output"}, sch)
+    text = sch.read_text(encoding="utf-8")
+    assert '(hierarchical_label "SDA"\n\t\t(shape bidirectional)' in text
+    assert '(hierarchical_label "VOUT" (shape output)' in text
+    assert '(hierarchical_label "EN" (shape input)' in text

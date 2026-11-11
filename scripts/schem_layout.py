@@ -231,7 +231,8 @@ class Sym:
         at = at or self.new_at or self.at
         pts = []
         if self.geo:
-            for g in self.geo["graphics"] + self.geo["pins"]:
+            geo = sr.lib_unit(self.geo, self.unit)
+            for g in geo["graphics"] + geo["pins"]:
                 x0, y0, x1, y1 = sr._xform_geom(g, at, self.mirror).bounds
                 pts += [(x0, y0), (x1, y1)]
         if not pts:
@@ -2125,10 +2126,10 @@ def netlist(sch: Path) -> dict:
         ref = str(sr._tok(sr._kid(c, "ref")[1]))
         stamps = sr._kid(c, "tstamps")
         path = sr._kid(c, "sheetpath")
-        # kicad-cli lists a multi-unit part's other units in page order, so only
-        # the first stamp has a fixed place; the set of them must still match
+        # kicad-cli lists a multi-unit part's units in page order, which moves
+        # when a redraw moves them; the set of stamps is what must still match
         ids = [str(sr._tok(x)) for x in (stamps or [])[1:]]
-        nets[f"#comp {ref}"] = ids[:1] + sorted(ids[1:]) + \
+        nets[f"#comp {ref}"] = sorted(ids) + \
             [str(sr._tok(sr._kid(path, "tstamps")[1]))] if path is not None else []
     return nets
 
