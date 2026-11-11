@@ -338,3 +338,22 @@ def test_note_beside_a_documented_key_is_not_a_misspelling(tmp_path):
     payload, _ = constraints_lint.run(["--file", str(p)])
     kinds = {v["kind"] for v in payload["violations"]}
     assert "misspelled_key" not in kinds and "unknown_key" in kinds
+
+
+def test_documented_top_keys_without_a_branch_are_not_unknown(tmp_path):
+    """si, antennas and pcb_antennas are in SCHEMA_TOP_KEYS but had no branch
+    of their own, so the lint called each one unknown and suggested itself
+    ("unknown key 'si' - did you mean 'si'?")."""
+    for key, val in (("si", {"nets": []}), ("antennas", []),
+                     ("pcb_antennas", [])):
+        violations, _ = lint_doc(tmp_path, {key: val})
+        assert not [v for v in violations if "unknown key" in v["msg"]], key
+
+
+def test_package_ratings_accept_the_layer_rules_gen_reads(tmp_path):
+    """rules_gen reads package_ratings[].layer (the part's own copper side);
+    the lint must not warn that it is an unknown key."""
+    violations, _ = lint_doc(tmp_path, {"package_ratings": [
+        {"ref": "U2", "clearance_mm": 0.1, "why": "0.4 mm WLCSP",
+         "layer": "F.Cu"}]})
+    assert not [v for v in violations if "layer" in v["msg"]], violations

@@ -417,3 +417,26 @@ def test_agents_and_checklist_default_to_stdc14_with_named_opt_outs():
     mcu = (SKILL / "reference" / "checklists" / "mcu.md").read_text(
         encoding="utf-8")
     assert "STDC14" in mcu and "TC2030" in mcu
+
+
+def test_workspace_slots_find_an_extraction_keyed_by_mpn(tmp_path):
+    """A board built off JLC has no LCSC ids, so its datasheet extractions
+    are named by MPN (path-unsafe characters folded to '-'). The part slot
+    must still find the file and count its layout notes."""
+    ws = tmp_path / "ws"
+    (ws / "parts").mkdir(parents=True)
+    (ws / "parts" / "parts.json").write_text(json.dumps({"parts": [
+        {"mpn": "TPS62A01/DRL", "ref_prefix_hint": "U"},
+        {"mpn": "GRM155R71C104KA88D", "ref_prefix_hint": "C"}]}),
+        encoding="utf-8")
+    (ws / "parts" / "TPS62A01-DRL.json").write_text(json.dumps(
+        {"mpn": "TPS62A01/DRL", "layout_notes": ["keep the SW loop short",
+                                                 "via the GND pad"]}),
+        encoding="utf-8")
+    slots = {s["id"]: s for s in knowledgelib.workspace_slots(ws)["slots"]}
+    ic = slots["part:TPS62A01/DRL"]
+    assert ic["lcsc"] is None
+    assert ic["extraction"]["file"].endswith("parts/TPS62A01-DRL.json")
+    assert ic["extraction"]["layout_notes"] == 2
+    # a passive with no extraction on disk is still not a slot
+    assert "part:GRM155R71C104KA88D" not in slots
