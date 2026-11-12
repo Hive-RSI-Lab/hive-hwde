@@ -23,7 +23,10 @@ constraints.json "length_groups": a list of
      "ref_net": "DRAM_SDQS0_P",              # optional: one reference net
      "ref_nets": ["DRAM_SDQS0_*"],           # optional: several (globs ok)
      "ref_stat": "min",                      # min (default) | max | mean of
-                                             #   the reference nets' lengths
+                                             #   the reference nets' lengths,
+                                             #   or sum: one clock split by a
+                                             #   series resistor (CLK_R + CLK);
+                                             #   every part must be routed
      "tol_mm": 0.635,                        # |length - reference| limit
      "window_mm": [-5.08, 0],                # optional: length - reference
                                              #   must fall in [lo, hi]; replaces
@@ -79,7 +82,7 @@ from checklib import CheckError, violation  # noqa: E402
 SCRIPT = "check_length_groups"
 C_MM_PER_PS = 0.299792458      # speed of light, mm/ps
 DEFAULT_ER = 4.5               # FR4, when the stackup has no dielectric
-REF_STATS = ("min", "max", "mean")
+REF_STATS = ("min", "max", "mean", "sum")
 SEVERITIES = ("error", "warning")
 GROUP_KEYS = {"name", "nets", "ref_net", "ref_nets", "ref_stat", "tol_mm",
               "window_mm", "max_mm", "min_mm", "not_longer_than", "terminals",
@@ -349,9 +352,13 @@ def check_group(bg, g: dict, cache: dict):
     ref_lens = [usable[n]["length_mm"] for n in refs if n in usable]
     member_lens = {n: usable[n]["length_mm"] for n in nets if n in usable}
     if refs:
-        if ref_lens:
-            ref_len = {"min": min, "max": max,
-                       "mean": statistics.fmean}[stat](ref_lens)
+        if stat == "sum" and len(ref_lens) < len(refs):
+            # a partial sum is a short reference, not a smaller one: judge
+            # nothing until every part of the chain is routed and joined
+            ref_len, ref_what = None, "reference not fully routed"
+        elif ref_lens:
+            ref_len = {"min": min, "max": max, "mean": statistics.fmean,
+                       "sum": math.fsum}[stat](ref_lens)
             ref_what = f"{stat} of {', '.join(r for r in refs if r in usable)}"
         else:
             ref_len, ref_what = None, "reference not routed"

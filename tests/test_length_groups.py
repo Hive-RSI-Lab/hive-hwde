@@ -180,6 +180,37 @@ def test_no_reference_matches_to_longest(tmp_path):
     assert all(v["adjust_mm"] == pytest.approx(2.0) for v in p["violations"])
 
 
+def _series_clock(tmp_path, route_clk=True):
+    """/D0 runs U1 -> U2 (40 mm); the clock runs U1 -> R1 as /CLK_R (20 mm)
+    and R1 -> U2 as /CLK (20 mm): one 40 mm clock split by a series resistor."""
+    body = (fp("U1", 5, 5, [("1", 0, 0, "/D0"), ("2", 0, 3, "/CLK_R")])
+            + fp("R1", 25, 8, [("1", -0.5, 0, "/CLK_R"), ("2", 0.5, 0, "/CLK")])
+            + fp("U2", 45, 5, [("1", 0, 0, "/D0"), ("2", 0, 3, "/CLK")])
+            + seg(5, 5, 45, 5, "/D0") + seg(5, 8, 24.5, 8, "/CLK_R"))
+    if route_clk:
+        body += seg(25.5, 8, 45, 8, "/CLK")
+    return _pcb(tmp_path, body, "series")
+
+
+def test_sum_reference_spans_a_series_resistor(tmp_path):
+    g = {"name": "MMC", "nets": ["/D0"], "ref_nets": ["/CLK_R", "/CLK"],
+         "tol_mm": 2.0}
+    # min of the two halves is ~20 mm: the 40 mm data net looks 20 mm long
+    assert "length_group_mismatch" in kinds(run(_series_clock(tmp_path), [g]))
+    p = run(_series_clock(tmp_path), [{**g, "ref_stat": "sum"}])
+    assert p["status"] == "pass", p["violations"]
+    assert p["groups"][0]["reference_mm"] == pytest.approx(40.0, abs=1.1)
+
+
+def test_sum_reference_needs_every_part(tmp_path):
+    g = {"name": "MMC", "nets": ["/D0"], "ref_nets": ["/CLK_R", "/CLK"],
+         "ref_stat": "sum", "tol_mm": 2.0}
+    p = run(_series_clock(tmp_path, route_clk=False), [g])
+    assert "length_group_mismatch" not in kinds(p)
+    assert "length_group_unrouted" in kinds(p)
+    assert p["groups"][0]["reference_mm"] is None
+
+
 def test_window_and_bounds(tmp_path):
     pcb = board_bus(tmp_path, {"/D0": 1.0, "/D1": 6.0, "/DQS": 2.0})
     # window [-5.08, 0] below DQS (42 mm): D1 (46) is over, D2 (40) inside
