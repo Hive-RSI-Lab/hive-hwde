@@ -107,7 +107,9 @@ Consumers per key (script -> phase):
   // (track + via barrel, pad to pad) held to its group's reference. nets,
   // ref_nets, not_longer_than take fnmatch globs, with or without the
   // sheet's leading "/". No ref_net(s): matched to the group's longest
-  // member. ref_stat min|max|mean of the reference nets (default min).
+  // member. ref_stat min|max|mean of the reference nets (default min), or
+  // sum: one clock split by a series resistor (CLK_R + CLK), judged only
+  // once every part is routed.
   // window_mm [lo, hi] (length - reference) replaces the symmetric tol_mm;
   // max_mm / min_mm / not_longer_than (no net longer than the shortest of
   // these) are absolute bounds. terminals limits the path ends to these
