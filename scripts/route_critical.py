@@ -58,7 +58,11 @@ KRT facts this adapter encodes (all machine-verified against KRT 0.19.0):
     resistor across P and N (a differential termination: DDR CK's 100 ohm at
     the DRAM) is detached the same way while two other terminals remain, so
     KRT routes a 2-terminal pair from the escape tips instead of a chain of
-    legs from the pads (#529).
+    legs from the pads (#529). So is a diode with one pad on each half (an
+    ESD clamp tapping the pair, esd_tap_pads), and a connector that lands
+    the pair twice (USB-C A and B rows) keeps only the row nearest the far
+    end (duplicate_row_pads): otherwise the clamp and the 1.7 mm row-to-row
+    hop are legs of their own and the pair is 'electrically-short'.
   * Pairs out of escaped BGAs (#529): route_diff runs through
     lib/krt_launch.py --via-joint-ends. KRT's stub free-end finder reports a
     dog-bone via joint as a free end, so a pair started at the via inside the
@@ -676,17 +680,42 @@ def _footprint_block(text: str, ref: str) -> tuple[int, int]:
     raise CheckError(f"unbalanced footprint block for {ref!r}")
 
 
-def detach_stub_pads(text: str, targets: list[tuple[str, str]]
+def _pad_block(block: str, number: str) -> tuple[int, int]:
+    """(start, end) of the (pad "number" ...) node inside a footprint block."""
+    m = re.search(r'\(pad\s+"%s"\s' % re.escape(number), block)
+    if not m:
+        raise CheckError(f"pad {number!r} not found in footprint block")
+    depth = 0
+    for i in range(m.start(), len(block)):
+        if block[i] == "(":
+            depth += 1
+        elif block[i] == ")":
+            depth -= 1
+            if depth == 0:
+                return m.start(), i + 1
+    raise CheckError(f"unbalanced pad block {number!r}")
+
+
+def detach_stub_pads(text: str, targets: list[tuple]
                      ) -> tuple[str, list[tuple[str, str]]]:
     """Remove the (net ...) node of every pad of net inside footprint ref,
-    for each (ref, net) target. Returns (new_text, restores) where restores
-    is [(detached_block, original_block)] for restore_stub_pads."""
+    for each (ref, net) target; a (ref, net, number) target detaches that
+    one pad only (a connector's second row). Returns (new_text, restores)
+    where restores is [(detached_block, original_block)] for
+    restore_stub_pads."""
     restores: list[tuple[str, str]] = []
-    for ref, net in targets:
+    for target in targets:
+        ref, net = target[0], target[1]
+        number = target[2] if len(target) > 2 else None
         start, end = _footprint_block(text, ref)
         block = text[start:end]
         pat = _NET_NODE.format(name=re.escape(net))
-        newblock, nsub = re.subn(pat, "", block)
+        if number is None:
+            newblock, nsub = re.subn(pat, "", block)
+        else:
+            ps, pe = _pad_block(block, number)
+            pad, nsub = re.subn(pat, "", block[ps:pe])
+            newblock = block[:ps] + pad + block[pe:]
         if nsub == 0:
             raise CheckError(f"no pad of net {net!r} found in footprint {ref!r}")
         if text.count(block) != 1:
@@ -761,6 +790,69 @@ def termination_pads(bg: geom.BoardGeom, p: str, n: str
     others = {pad.ref for net in (p, n) for pad in bg.pads_of(net=net)} \
         - {r for r, _ in out}
     return out if len(others) >= 2 else []
+
+
+ESD_TAP_REF = re.compile(r"^D\d")      # a diode array: TVS / ESD clamp
+
+
+def esd_tap_pads(bg: geom.BoardGeom, p: str, n: str
+                 ) -> list[tuple[str, str]]:
+    """(ref, net) of every diode part with exactly ONE pad on p and ONE on n
+    (a TPD2E2U06-style ESD clamp hanging off the pair). It shares a ref
+    across both halves, so matched_terminals makes it a third trunk end and
+    KRT routes the pair as a chain of legs through it; a clamp off the
+    straight line (or a short leg to the connector) then defers the whole
+    pair to single-ended as 'electrically-short'. A flow-through clamp (two
+    pads per net) IS inline and stays a terminal. Detached only while the
+    pair keeps two other terminal refs; the tap is a short single-ended
+    stub for route_auto, as termination_pads."""
+    refs: dict[str, list] = {}
+    for net in (p, n):
+        for pad in bg.pads_of(net=net):
+            refs.setdefault(pad.ref, []).append(pad)
+    out = []
+    for ref, pads in sorted(refs.items()):
+        if ESD_TAP_REF.match(ref) and len(pads) == 2 \
+                and {q.net for q in pads} == {p, n}:
+            out += [(ref, p), (ref, n)]
+    others = set(refs) - {r for r, _ in out}
+    return out if len(others) >= 2 else []
+
+
+def duplicate_row_pads(bg: geom.BoardGeom, p: str, n: str,
+                       skip: set[str] = frozenset()
+                       ) -> list[tuple[str, str, str]]:
+    """(ref, net, pad) of every extra row of a connector that lands the pair
+    twice (USB-C A6/A7 + B6/B7). KRT makes each row its own terminal, so
+    the A-to-B hop becomes a ~1.7 mm leg that is deferred single-ended and
+    the pair reports 'partial'. The row whose midpoint is nearest the other
+    terminal refs (those not in `skip`) is kept; the others are detached
+    pad by pad and their short row-to-row hop is left for route_auto."""
+    p_pads, n_pads = bg.pads_of(net=p), bg.pads_of(net=n)
+    refs = {q.ref for q in p_pads + n_pads} - set(skip)
+    out: list[tuple[str, str, str]] = []
+    for ref in sorted(refs):
+        rp = [q for q in p_pads if q.ref == ref]
+        rn = [q for q in n_pads if q.ref == ref]
+        if len(rp) < 2 or len(rn) < 2:
+            continue
+        far = [q for q in p_pads + n_pads if q.ref in refs and q.ref != ref]
+        if not far:
+            continue
+        cx = sum(q.center[0] for q in far) / len(far)
+        cy = sum(q.center[1] for q in far) / len(far)
+        rows = []
+        for pp in rp:
+            nn = min(rn, key=lambda q: math.hypot(q.center[0] - pp.center[0],
+                                                  q.center[1] - pp.center[1]))
+            mx = (pp.center[0] + nn.center[0]) / 2
+            my = (pp.center[1] + nn.center[1]) / 2
+            rows.append((math.hypot(mx - cx, my - cy), pp, nn))
+        rows.sort(key=lambda r: r[0])
+        keep = {rows[0][1].number, rows[0][2].number}
+        out += [(ref, p, q.number) for q in rp if q.number not in keep]
+        out += [(ref, n, q.number) for q in rn if q.number not in keep]
+    return out
 
 
 # ------------------------------------------------------------ KRT invocation
@@ -1092,12 +1184,16 @@ def route_diff_item(ctx: dict, spec: dict) -> tuple[dict | None, dict | None]:
 
     stubs = unmatched_stub_pads(bg, p, n)
     terms = [t for t in termination_pads(bg, p, n) if t not in stubs]
+    terms += [t for t in esd_tap_pads(bg, p, n)
+              if t not in stubs and t not in terms]
     stubs = sorted(stubs + terms)
+    stubs += duplicate_row_pads(bg, p, n, skip={r for r, *_ in stubs})
     original_text = staged.read_text(encoding="utf-8")
     launch = None
     # a pair pinned to an outer layer keeps its outer-layer escape stubs
     if plan and (not pinned or pinned[0] in bg.copper_layers[1:-1]):
-        launch = launch_pair(ctx, bg, p, n, plan, {r for r, _ in stubs})
+        launch = launch_pair(ctx, bg, p, n, plan,
+                             {s[0] for s in stubs if len(s) == 2})
     pre_uuids = _copper_uuids(staged)
     restores: list[tuple[str, str]] = []
     if stubs:

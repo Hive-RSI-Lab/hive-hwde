@@ -269,6 +269,67 @@ def test_unmatched_stub_pads_finds_pullup(tmp_path):
         [("R9", "/USB_DP")]
 
 
+def _usbc_esd_board(tmp_path) -> Path:
+    """J1 USB-C lands the pair twice (A6/A7, B6/B7 swapped), D5 an ESD clamp
+    taps it (one pad per half + GND), D6 a flow-through clamp (two pads per
+    half), U1 the far end."""
+    body = _fp("J1", 5, 20, pads=_pad("A6", 0, -0.25, "/USB_DP")
+               + _pad("A7", 0, 0.25, "/USB_DM")
+               + _pad("B6", -1.7, 0.25, "/USB_DP")
+               + _pad("B7", -1.7, -0.25, "/USB_DM"))
+    body += _fp("D5", 20, 26, pads=_pad("3", 0, 0, "/USB_DP")
+                + _pad("5", 1, 0, "/USB_DM") + _pad("2", 0.5, 1, "GND"))
+    body += _fp("U1", 40, 20,
+                pads=_pad("1", 0, 0, "/USB_DP") + _pad("2", 0, 0.5, "/USB_DM"))
+    return _pcb(tmp_path, "usbc_esd", body)
+
+
+def test_esd_tap_pads_detaches_clamp_only(tmp_path):
+    bg = geom.BoardGeom.from_file(_usbc_esd_board(tmp_path))
+    assert rc.esd_tap_pads(bg, "/USB_DP", "/USB_DM") == [
+        ("D5", "/USB_DP"), ("D5", "/USB_DM")]
+
+
+def test_esd_tap_pads_keeps_flow_through_and_two_terminal(tmp_path):
+    body = _fp("D6", 20, 20, pads=_pad("1", 0, 0, "/USB_DP")
+               + _pad("2", 0, 0.5, "/USB_DM") + _pad("9", 2, 0, "/USB_DP")
+               + _pad("8", 2, 0.5, "/USB_DM"))
+    body += _fp("U1", 40, 20,
+                pads=_pad("1", 0, 0, "/USB_DP") + _pad("2", 0, 0.5, "/USB_DM"))
+    bg = geom.BoardGeom.from_file(_pcb(tmp_path, "flow", body))
+    assert rc.esd_tap_pads(bg, "/USB_DP", "/USB_DM") == []
+    # a clamp that IS one of only two terminals stays a terminal
+    body = _fp("D5", 20, 20, pads=_pad("3", 0, 0, "/USB_DP")
+               + _pad("5", 1, 0, "/USB_DM"))
+    body += _fp("U1", 40, 20,
+                pads=_pad("1", 0, 0, "/USB_DP") + _pad("2", 0, 0.5, "/USB_DM"))
+    bg = geom.BoardGeom.from_file(_pcb(tmp_path, "two", body))
+    assert rc.esd_tap_pads(bg, "/USB_DP", "/USB_DM") == []
+
+
+def test_duplicate_row_pads_keeps_row_nearest_far_end(tmp_path):
+    bg = geom.BoardGeom.from_file(_usbc_esd_board(tmp_path))
+    got = rc.duplicate_row_pads(bg, "/USB_DP", "/USB_DM", skip={"D5"})
+    assert got == [("J1", "/USB_DP", "B6"), ("J1", "/USB_DM", "B7")]
+    # a single-row part is never touched
+    assert all(r == "J1" for r, *_ in got)
+
+
+def test_detach_single_pad_roundtrip(tmp_path):
+    original = _usbc_esd_board(tmp_path).read_text(encoding="utf-8")
+    detached, restores = rc.detach_stub_pads(
+        original, [("J1", "/USB_DP", "B6"), ("J1", "/USB_DM", "B7")])
+    s, e = rc._footprint_block(detached, "J1")
+    block = detached[s:e]
+    assert block.count('(net "/USB_DP")') == 1      # A6 kept, B6 detached
+    assert block.count('(net "/USB_DM")') == 1
+    a6 = block[rc._pad_block(block, "A6")[0]:rc._pad_block(block, "A6")[1]]
+    assert '(net "/USB_DP")' in a6
+    assert rc.restore_stub_pads(detached, restores) == original
+    with pytest.raises(CheckError):
+        rc.detach_stub_pads(original, [("J1", "/USB_DP", "Z9")])
+
+
 def test_detach_restore_roundtrip(tmp_path):
     original = _pair_board(tmp_path).read_text(encoding="utf-8")
     detached, restores = rc.detach_stub_pads(original, [("R9", "/USB_DP")])
