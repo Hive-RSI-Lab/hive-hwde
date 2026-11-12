@@ -66,7 +66,8 @@ job JSON: {"verb": ..., "result": out.json, ...} with verbs:
          "connect": "solid"|"thermal"|null,   # solid -> (connect_pads yes)
          "name": "PATCH_VBUS"}                # optional (zone_name)
       "remove" (optional): [{"name": "PATCH_VBUS", "layer": "F.Cu",
-         "inside": [x1,y1,x2,y2]}] drops the zones of that name and layer
+         "inside": [x1,y1,x2,y2], "net": "VBUS"}] drops the zones of that
+         name and layer (and net, when given; "" names an unnamed zone)
       whose bounding box lies inside the box (0.05 mm slack) - after every
       addition, just before the save (zone_patch.py's replace / remove).
 """
@@ -404,6 +405,8 @@ def verb_add_zones(job):
             u = zone.m_Uuid.AsString()
             if u in fresh or u in gone_ids \
                     or zone.GetZoneName() != r["name"] \
+                    or (r.get("net") is not None
+                        and zone.GetNetname() != r["net"]) \
                     or not zone.IsOnLayer(lid):
                 continue
             bb = zone.GetBoundingBox()

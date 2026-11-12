@@ -525,6 +525,36 @@ def test_existing_cover_skips_replan(tmp_path):
     assert any("not re-added" in n for n in meta2["notes"])
 
 
+_SHORT_ZONE = """  (zone (net "GND") (layer "B.Cu")
+    (polygon (pts (xy 0.5 0.5) (xy 59.5 0.5) (xy 59.5 35.5) (xy 0.5 35.5)))
+    (filled_polygon (layer "B.Cu")
+      (pts (xy 0.5 0.5) (xy 59.5 0.5) (xy 59.5 35.5) (xy 0.5 35.5)))
+  )
+"""
+
+
+def test_grown_board_regrows_stale_zone_outline(tmp_path):
+    # the pour was drawn on a 60x36 board that board_edit grew to 60x40:
+    # the fill still covers > 80%, but the OUTLINE stops at y=35.5
+    con = {"planes": [{"net": "GND", "layer": "B.Cu"}]}
+    bg = _bg(tmp_path, body=_basic_body() + _SHORT_ZONE)
+    plan, meta = planes_gen.build_plan(bg, con)
+    assert not plan[0].get("_existing")
+    assert plan[0]["_regrow"] == [{"name": "", "net": "GND", "layer": "B.Cu",
+                                   "inside": [0.5, 0.5, 59.5, 35.5]}]
+    assert any("board grew" in n for n in meta["notes"])
+    # an outline that already reaches the planned region stays "existing"
+    bg2 = _bg(tmp_path, name="b2", body=_basic_body() + _SHORT_ZONE.replace(
+        "35.5", "39.5"))
+    plan2, _ = planes_gen.build_plan(bg2, con)
+    assert plan2[0]["_existing"] and not plan2[0].get("_regrow")
+    # a same-net zone that is not inside the region is never replaced
+    con3 = {"planes": [{"net": "GND", "layer": "B.Cu",
+                        "region": [0.5, 0.5, 40, 39.5]}]}
+    plan3, _ = planes_gen.build_plan(bg, con3)
+    assert not plan3[0].get("_regrow")
+
+
 # ============================================================ smoke fixtures
 
 @pytest.fixture(scope="session")

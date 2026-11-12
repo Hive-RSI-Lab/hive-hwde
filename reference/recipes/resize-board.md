@@ -34,6 +34,9 @@ This is the point of the script, and the flow a `canonical` learning run takes:
 4. Re-run `planes_gen` if the board GREW - a zone's outline is a fixed polygon
    drawn when the plane was generated; it does not follow the edge outward, so
    the pour stops at the old boundary until it is re-poured (the report warns).
+   planes_gen sees the stale outline (the zone's polygon misses part of the
+   planned region while its fill still covers most of it) and replaces it with
+   the planned one: status "regrown" in its facts.zones.
 5. Route (P7). Zones refill as part of the edit, but a re-poured plane needs
    `stitch_vias` again.
 
