@@ -771,6 +771,10 @@ def test_rip_new_copper_keeps_old_and_other_nets(tmp_path, monkeypatch):
     assert n == 2
     assert sorted(o["uuid"] for o in seen) == ["new-a", "new-va"]
     assert all(o["op"] == "remove" for o in seen)
+    # haos-voice pass 6: a net that failed part-way has no fact but its
+    # partial copper is new - named so the rollback can rip it
+    assert rc._new_copper_nets(pcb, {"old-a"}) == {"A", "B"}
+    assert rc._new_copper_nets(pcb, {"old-a", "new-b"}) == {"A"}
 
 
 # ============================================================ pure: bus (#546)
@@ -793,3 +797,43 @@ def test_bus_specs_from_length_groups():
     assert got == [{"name": "B0", "nets": ["/D0", "/D1", "/DM"]},
                    {"name": "CMD", "nets": ["/A0", "/CS"]}]
     assert rc.bus_specs({}, nets, set()) == []
+
+
+def test_nets_starving_thermals_names_new_copper_next_to_the_pad(monkeypatch):
+    """haos-voice pass 6: /OSPI0_D5 on B.Cu cut one of C342's two GND
+    spokes; the error names only GND, so the near new copper is named."""
+    from types import SimpleNamespace as NS
+    from shapely.geometry import LineString, Point
+
+    def trk(net, layer, a, b, uuid):
+        return NS(net=net, layer=layer, uuid=uuid,
+                  poly=LineString([a, b]).buffer(0.05))
+
+    def via(net, at, uuid):
+        return NS(net=net, uuid=uuid, poly=Point(at).buffer(0.127))
+
+    tracks = [trk("/D5", "B.Cu", (65.55, 43.95), (66.95, 45.35), "n1"),
+              trk("/TOP", "F.Cu", (65.1, 44.3), (65.1, 44.8), "n2"),
+              trk("/FAR", "B.Cu", (70, 50), (71, 50), "n3"),
+              trk("/OLD", "B.Cu", (65.1, 44.3), (65.1, 44.8), "o1")]
+    vias = [via("/V", (65.6, 44.52), "n4")]
+    pads = [NS(center=(65.1, 44.52), size=(0.6, 0.5))]
+    bg = NS(tracks_of=lambda: tracks, vias_of=lambda: vias,
+            pads_of=lambda: pads)
+    monkeypatch.setattr(rc.geom.BoardGeom, "from_file",
+                        staticmethod(lambda p: bg))
+    starved = {"check": "starved_thermal", "severity": "error",
+               "items": [{"msg": "Zone [GND] on B.Cu, priority 0",
+                          "pos": [9.5, 9.5]},
+                         {"msg": "Pad 2 [GND] of C342 on B.Cu",
+                          "pos": [65.1, 44.52]}]}
+    before = {"violations": []}
+    after = {"violations": [starved]}
+    nets = {"/D5", "/TOP", "/FAR", "/OLD", "/V"}
+    got = rc.nets_starving_thermals(before, after, nets, Path("x"), {"o1"})
+    # the B.Cu track and the via are near; /TOP is on another
+    # layer, /FAR is far, /OLD's copper was there before the run
+    assert got == {"/D5", "/V"}
+    # no growth in starved_thermal: nothing named
+    assert rc.nets_starving_thermals(after, after, nets, Path("x"),
+                                     {"o1"}) == set()
