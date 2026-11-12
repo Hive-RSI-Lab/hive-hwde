@@ -146,7 +146,7 @@ SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 
-from shapely.geometry import box  # noqa: E402
+from shapely.geometry import Point, box  # noqa: E402
 from shapely.ops import unary_union  # noqa: E402
 
 import check_current  # noqa: E402  (required_width_mm - rules_gen's helper)
@@ -1630,6 +1630,53 @@ def nets_in_new_errors(before: dict, after: dict, nets: set[str]) -> set[str]:
     return out
 
 
+_STARVED_PAD_RE = re.compile(r"^Pad \S+ \[[^\]]*\] of (\S+) on (\S+)")
+
+
+def nets_starving_thermals(before: dict, after: dict, nets: set[str],
+                           staged: Path, old_uuids: set[str],
+                           margin_mm: float = 0.5) -> set[str]:
+    """The routed nets whose NEW copper starved a plane pad's thermal spokes.
+    A starved_thermal error names only the zone and the pad (both on the
+    plane net), never the track that cut the spoke, so nets_in_new_errors
+    cannot rip it and the whole run rolls back (haos-voice pass 6:
+    /OSPI0_D1 and /OSPI0_D5 on B.Cu past C336/C342's GND pads under the
+    AM62 cut one of two spokes each). Named here: each routed net with a
+    new track on the pad's layer, or a new via, within the pad's half
+    extent + `margin_mm` of the pad centre."""
+    if "starved_thermal" not in set(drc_delta(before, after)["new"]):
+        return set()
+    spots = []
+    for v in after["violations"]:
+        if v.get("check") != "starved_thermal" or v.get("severity") != "error":
+            continue
+        for item in v.get("items", []):
+            m = _STARVED_PAD_RE.match(item.get("msg", ""))
+            if m and item.get("pos"):
+                spots.append((m.group(2), tuple(item["pos"])))
+    if not spots:
+        return set()
+    bg = geom.BoardGeom.from_file(staged)
+    pads = list(bg.pads_of())
+    new = [x for x in list(bg.tracks_of()) + list(bg.vias_of())
+           if x.net in nets and x.uuid and x.uuid not in old_uuids]
+    out: set[str] = set()
+    for layer, pos in spots:
+        half = 0.0
+        for p in pads:
+            if math.dist(p.center, pos) < 1e-3:
+                half = max(p.size) / 2.0
+                break
+        reach = half + margin_mm
+        pt = Point(pos)
+        for x in new:
+            # a via counts on any layer: its pad or barrel sits in the pour
+            on = getattr(x, "layer", layer) == layer
+            if on and x.poly.distance(pt) <= reach:
+                out.add(x.net)
+    return out
+
+
 def rip_new_copper(staged: Path, old_uuids: set[str], nets: set[str]) -> int:
     """Remove every track/via of `nets` that was not on the board before
     this run (uuid not in old_uuids). Returns the items removed."""
@@ -1640,6 +1687,13 @@ def rip_new_copper(staged: Path, old_uuids: set[str], nets: set[str]) -> int:
     if ops:
         route_edit.apply_ops(staged, ops)
     return len(ops)
+
+
+def _new_copper_nets(pcb: Path, old_uuids: set[str]) -> set[str]:
+    """The nets with a track or via that was not on the board before."""
+    bg = geom.BoardGeom.from_file(pcb)
+    return {x.net for x in list(bg.tracks_of()) + list(bg.vias_of())
+            if x.net and x.uuid and x.uuid not in old_uuids}
 
 
 def _copper_uuids(pcb: Path) -> set[str]:
@@ -1804,10 +1858,14 @@ def run(argv: list[str] | None = None):
     if delta["new"]:
         # keep what routed clean: rip only the nets whose new copper is in a
         # new error, and re-check once
-        bad = nets_in_new_errors(before, after,
-                                 {n for f in routed
-                                  if not f.get("plane_carried")
-                                  for n in f["nets"]})
+        # a net that failed part-way keeps its partial copper (route.py
+        # keeps partial successes) but has no fact: name it by its new
+        # copper (haos-voice pass 6: a failed +3V3 kept a 0.96 mm track
+        # across U202's 0.4 mm-pitch pins, 8 shorting_items, unrippable)
+        mine = {n for f in routed if not f.get("plane_carried")
+                for n in f["nets"]} | _new_copper_nets(staged, old_uuids)
+        bad = nets_in_new_errors(before, after, mine) | \
+            nets_starving_thermals(before, after, mine, staged, old_uuids)
         if bad:
             # half a pair is no use: a rolled-back net takes its partner
             for f in routed:
