@@ -53,6 +53,12 @@ Idempotency: a planned zone whose (net, layer, region) is already covered
 re-adding it would duplicate the pour and KiCad 10 DRC flags overlapping
 same-priority zones (zones_intersect) even for the SAME net (S11-verified).
 
+A board that GREW after the pour (board_edit) is the exception: when the
+existing same-net zone OUTLINES on the layer miss more than REGROW_TOL of
+the planned region and each such zone lies wholly inside it, those zones
+are removed and the planned one added in their place (status "regrown").
+That is what lets "re-run planes_gen" after a resize reach the new edge.
+
 Known limitation: zero-fill detection intersects the net's fill with the
 planned region - a PRE-EXISTING same-net fill inside the region can mask a
 new zone that filled to nothing (zone creation itself is count-verified).
@@ -91,6 +97,7 @@ VIA_MARGIN_MM = 0.05    # via annulus must stay this far inside the pad
 EP_MIN_MM2 = 4.0        # exposed-pad heuristic floor (largest netted SMD pad)
 FILL_EPS_MM2 = 0.01     # below this a planned zone counts as unfilled
 EXISTING_COVER = 0.80   # existing-fill coverage above which an entry is skipped
+REGROW_TOL_MM2 = 1.0    # zone-outline shortfall below which a pour is current
 
 _INNER_RE = re.compile(r"^In\d+\.Cu$")
 _PLANE_KEYS = {"net", "layer", "region", "priority", "min_island_mm2",
@@ -360,6 +367,14 @@ def build_plan(bg: geom.BoardGeom, constraints: dict | None,
     for z in plan:
         cov = _existing_cover(bg, z["net"], z["layer"], _shape(z))
         if cov >= EXISTING_COVER:
+            stale = _stale_outlines(bg, z)
+            if stale:
+                z["_regrow"] = stale
+                notes.append(f"existing {z['net']} zone on {z['layer']} "
+                             "stops short of the planned region (the board "
+                             "grew); its outline is replaced by the planned "
+                             "one")
+                continue
             z["_existing"] = round(cov, 3)
             notes.append(f"existing {z['net']} fill covers "
                          f"{cov:.0%} of the {z['layer']} region; zone not "
@@ -367,6 +382,38 @@ def build_plan(bg: geom.BoardGeom, constraints: dict | None,
     assign_priorities(plan)
     return plan, {"source": source, "added_for_reference": added,
                   "notes": notes}
+
+
+def _stale_outlines(bg: geom.BoardGeom, z: dict) -> list[dict]:
+    """add_zones "remove" entries for the same-net zones on z's layer whose
+    OUTLINES no longer reach the planned region - a board that grew after
+    the pour (board_edit) leaves the plane's polygon at the old edge, and
+    "existing fill covers it" would otherwise keep it there for good.
+    Empty when the outlines already cover the region (to REGROW_TOL), or
+    when a stale zone is not wholly inside the region (then it is not a
+    smaller copy of this plane, and replacing it could lose copper)."""
+    region = _shape(z)
+    if not hasattr(region, "area"):
+        region = box(*region)
+    target = region.intersection(bg.outline) if not bg.outline.is_empty \
+        else region
+    zones = [q for q in bg.zones_of(z["net"], z["layer"])
+             if not q.teardrop and len(q.outline) >= 3
+             and tuple(q.layers) == (z["layer"],)]
+    if not zones or target.is_empty:
+        return []
+    polys = [Polygon(q.outline).buffer(0) for q in zones]
+    missing = target.difference(unary_union(polys)).area
+    if missing <= max(REGROW_TOL_MM2, 0.01 * target.area):
+        return []
+    # inside the UNCLIPPED region: a rounded board corner clips the target
+    # but not the (rectangular) zone outline drawn from the same region
+    grown = region.buffer(0.05)
+    stale = [(q, pg) for q, pg in zip(zones, polys) if grown.covers(pg)]
+    if not stale:
+        return []
+    return [{"name": q.name, "net": q.net, "layer": z["layer"],
+             "inside": [round(v, 4) for v in pg.bounds]} for q, pg in stale]
 
 
 def _existing_cover(bg: geom.BoardGeom, net: str, layer: str, region) -> float:
@@ -615,7 +662,7 @@ def verify_zones(after: geom.BoardGeom, plan: list[dict],
                            "region": list(z["_rect"]),
                            "priority": z["priority"],
                            "status": "existing" if z.get("_existing")
-                           else "added",
+                           else "regrown" if z.get("_regrow") else "added",
                            "area_mm2": round(area, 3), "islands": islands})
         if area < FILL_EPS_MM2:
             x1, y1, x2, y2 = z["_rect"]
@@ -674,7 +721,10 @@ def run(argv: list[str] | None = None):
     zones = worker_zones(to_add)
     layer_types = plane_layer_types(plan)
     plane_nets = {z["net"] for z in plan}
+    removes = [r for z in plan for r in z.get("_regrow") or []]
     pre_counts = {(n, l): len(bg.zones_of(net=n, layer=l))
+                  - sum(1 for r in removes
+                        if (r["net"], r["layer"]) == (n, l))
                   for n, l in {(z["net"], z["layer"]) for z in to_add}}
 
     cli = env.find_kicad_cli()
@@ -691,6 +741,7 @@ def run(argv: list[str] | None = None):
         # on a re-run.
         routelib.run_worker(bp, {"verb": "add_zones", "board": str(staged),
                                  "out": str(staged), "zones": zones,
+                                 "remove": removes,
                                  "layer_types": layer_types}, stage)
 
         # 2. thermal vias under exposed pads (atomic op list on the staged copy)
