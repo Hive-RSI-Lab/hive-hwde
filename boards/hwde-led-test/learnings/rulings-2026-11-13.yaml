@@ -1,0 +1,33 @@
+# pcb-flow LEARNINGS queue ruling pass, 2026-11-13 (a1794). Apply: learnings.py resolve --workspace <ws> --batch <this file>
+version: 1
+rulings:
+  - entry: 2026-10-28-part-sourcer-must-write-refdes-on-every
+    status: declined
+    kind: superseded
+    reason: >-
+      Already fixed in the module (bom_cpl binds refdes-less lines by LCSC, V_ATTR_RE and check_ratings, fpfix rule E, check_courtyard), as the entry itself records.
+
+  - entry: 2026-10-28-keep-parts-search-attributes-in-parts-json
+    status: declined
+    kind: superseded
+    reason: >-
+      Already fixed in the module (bom_cpl binds refdes-less lines by LCSC, V_ATTR_RE and check_ratings, fpfix rule E, check_courtyard), as the entry itself records.
+
+  - entry: 2026-10-28-easyeda-0603-courtyards-are-the-body-outline
+    status: declined
+    kind: superseded
+    reason: >-
+      Already fixed in the module (bom_cpl binds refdes-less lines by LCSC, V_ATTR_RE and check_ratings, fpfix rule E, check_courtyard), as the entry itself records.
+
+  - entry: 2026-10-28-a-board-with-no-ic-still-needs
+    status: declined
+    kind: not_actionable
+    reason: >-
+      Entry has no body to act on.
+
+  - entry: 2026-10-28-fit-margin-must-leave-room-for-refdes
+    status: declined
+    kind: superseded
+    reason: >-
+      Already fixed in the module (bom_cpl binds refdes-less lines by LCSC, V_ATTR_RE and check_ratings, fpfix rule E, check_courtyard), as the entry itself records.
+
