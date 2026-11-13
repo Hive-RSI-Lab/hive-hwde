@@ -70,6 +70,15 @@ refs to parts from the board.
 - Do not invent parts from memory; parts_search or it does not exist.
 - parts_search drops JLC placeholder rows; no fetchable datasheet = unverified.
 
+## Traps found on boards (2026-08 to 2026-10 runs)
+
+- A JLC "External" reference attribute can lie: the 8-pin MCP3202 bonds VDD and VREF to one pin. Check the pin table, not the parametrics.
+- Compare gain error and offset in volts, not LSBs and not INL: a 12-bit part's +-5 LSB gain error is 6.10 mV at 5 V full scale, bigger than a 16-bit part's.
+- One LCSC search term can return a genuine row and six clone brands under the same MPN pattern; a clone's datasheet can give 5 mV offset against tens of microvolts. Check the brand.
+- A reference family's dropout is per member and not monotonic in output voltage; the "300 mV at 2 mA" headline applies to VOUT >= 3 V only. Use the per-member row.
+- LCSC's datasheet URL can resolve to a "Datasheet temporarily unavailable" stub for a real, in-stock part that `parts_search` passes through as sourced. Fetch the datasheet before accepting the part.
+- Source impedance and divider total resistance are one decision: 1 kohm into 100 kohm is 1 % of reading, 10x a 5 mV budget, while each number looks conservative.
+
 ## Output contract (end your final message with exactly this block)
 FILES: <paths written>
 GATE: none

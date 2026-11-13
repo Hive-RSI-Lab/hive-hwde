@@ -89,6 +89,16 @@ entry against its line here before you accept it.
   0.12 mm (under JLC's 0.15 mm) and runs past the board edge when the header
   sits at the edge: widen it to 0.15 mm and trim it.
 
+## Traps found on boards (2026-08 to 2026-10 runs)
+
+- EasyEDA courtyards are the body outline: on 11 of 11 pulled footprints the pads sat outside F.CrtYd (R0603 +-0.80 x 0.40 against pads to +-1.15). Grow every pulled courtyard to the pads + 0.25 mm (`fpfix` rule E) before placement.
+- `MountingHole_*_Pad_Via` puts its ring vias 0.425 mm apart, under JLC's 0.5 mm hole-to-hole floor (36 DRC errors on an M2.5). Use the `_Pad` variant.
+- An in-stock LCSC part can have no EasyEDA CAD record at all: `lib_pull` fails it with "Failed to fetch data from EasyEDA API" while its family siblings pull clean. A rate limit clears; an absent CAD record never will. Probe `EasyedaApi().get_cad_data_of_component()` (an empty `{}` means absent) before retrying, then derive the symbol from a sibling.
+- `fp_verify` has no drill-vs-pin check. A pulled THT footprint was drilled 1.30 mm against the vendor's own 1.50 mm for a 0.90 mm square pin (0.027 mm diametral clearance by its diagonal). Compare drills to the datasheet's PCB LAYOUT panel by hand.
+- `fp_verify` never compares `land_pattern.row_spacing_mm`, though `datasheet_extract` fills it. On a two-row leaded package a wrong row spacing slides both rows off the leads while pad count and pitch pass. Measure it by hand.
+- A footprint can contradict itself: `CONN-TH_2P-P5.00_WJ500V-5.08-2P` draws its silk entry arrows on the opposite face from its own 3D model's openings, and a render check then certifies the wrong orientation. Its wire entry is at local -Y, the opposite of the KF128 / DB128L family. For any new screw terminal prove the entry face from an orthographic side render AND the courtyard asymmetry, and note that a KF128 3D model is rotated 180 degrees, so its top-view "teeth" are the rear ledge.
+- A THT footprint with `attr through_hole` but no `exclude_from_pos_files` is classed `smt_placed` by `bom_cpl` and written into the CPL, which reports `pass`. Set `"assembly_class": "hand_install"` on the part.
+
 ## Output contract (end your final message with exactly this block)
 FILES: <lib paths + registered tables + overlay SVGs>
 GATE: fp_verify: <n passed / n failed / warnings>

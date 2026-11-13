@@ -59,6 +59,22 @@ sheet that a person drew, or a root with sheet boxes, isn't redrawn.
    kicad/constraints.json --decoupling kicad/decoupling.json` when you own
    the root: exit 0 required (missing_net/metadata_mismatch are errors).
 
+## Traps found on boards (2026-08 to 2026-10 runs)
+
+- Pulled symbols can arrive with every pin `unspecified` (ERC `pin_to_pin` on all nets): type connectors, switches, LEDs and FETs passive and the ICs from their datasheets. A `power_in` pin fed only through a resistor needs a PWR_FLAG.
+- Tying unused bidirectional I/Os straight to a PWR_FLAG'd GND warns (`pin_to_pin`, Bidirectional vs Power output). One 10 k to GND for all of them is ERC-clean and safer.
+- A pulled 2-pin passive names its pins "1"/"2", the same strings as the numbers. KiCad prints pin names inside the body, so they overprint into one garbled glyph, and no gate notices (ERC and `schem_refdes` are clean). Hide the pin names on pulled 2-pin symbols.
+- A pulled symbol can have its pin ANGLES reversed against its graphics: the leads are drawn away from the plates and `schlib.stub_dir` emits the stubs inward. Fix the symbol's pin angles; rotating the part does not.
+- Every KiCad power symbol is exactly 2.54 mm tall. On a 2.54 mm pin pitch its body lands on the neighbouring pin's label. Hang the rail symbol in its own cluster, not on the pin stub.
+- Two pins of one part are two nodes on the sheet even when they are one node inside the package (an LDO's VOUT and tab). A run drawn off the tab that never touches the rail's symbol leaves an unnamed net, and ERC stays at 0. Only `netlist_audit` catches it; run it.
+- An already-retyped pulled library can still hide one ERC-blocking pin: a buck's BOOT came typed `power_in` with no schematic-visible driver, giving the single `power_pin_not_driven` finding on the sheet. Check every pin of each pulled IC, not only the ones you retyped.
+- A freshly pulled symbol arrives untyped even when its siblings were retyped (both pins of a resistor typed `input`). Run `lib_pin_types.py` after every pull.
+- `place_ic_with_decoupling`'s default `caps_dx` (12.7 mm) is too small for this library's 2-pin symbols (pins at +-5.08 mm), so each cap's stub ends on its neighbour's label anchor. Pass a wider `caps_dx`.
+- KiCad 10 ERC does not distinguish a `no_connect`-typed pin with an NC marker from one without. The marker is documentation, not a checked fact.
+- `schlib` rejects a label landing on a wire, but nothing checks a hand-drawn wire running over a foreign label anchor or pin. Check the segment against every anchor on the sheet.
+- A remote sense is its own net with one single-point tie part. Drawing it as a wire to a node that is "the same net" stops being true once a plane is poured (the pin becomes one of sixteen GND nodes).
+- KiCad draws text-box overflow outside the frame instead of clipping it, and ERC and `netlist_audit` do not see graphics. Render any generated schematic text and read it.
+
 ## Output contract (end your final message with exactly this block)
 FILES: kicad/gen/<sheet>.py + built artifacts
 GATE: erc/netlist_audit results if you ran them, else "not run (sheet-only)"

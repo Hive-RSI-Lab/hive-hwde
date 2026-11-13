@@ -130,6 +130,17 @@ Freerouting's first pass is the late sign of the same thing.
   of edge slack because placement optimized to fit. At `constrained` /
   `product` the given size binds exactly as before.
 
+## Traps found on boards (2026-08 to 2026-10 runs)
+
+- Model a display tail's real outline, not its mouth: a layout aligned the tail end with the socket's contact pads (3 mm too far in) and kept out only the 6.5 mm end while the tail is ~20.5 mm wide for its last 10 mm. Read the panel drawing and add keepouts for both.
+- `placement.edges` is graded against the outline that is on the board. At a canonical binding that is the provisional `board_init --outline auto` shape, so edge-pinned connectors pin to an arbitrary width and `--outline fit` then inherits it (88.29 mm against a derived 50 mm on one board). Place to the canonical layout, grow the room, place, then fit. Moving the edge parts in fixes the width only; the aspect stays inherited, so compare candidate shapes.
+- `reports/board_init.json`'s `outline_bbox` is `[xmin, ymin, xmax, ymax]`, not a size. Read as 41.0 x 57.7 mm it inverted which dimension was scarce (the board was 28.02 x 44.69 mm).
+- `--outline fit` clips to the CURRENT outline before taking the bbox, so a layout that extends past the provisional edge fits to a SMALLER board silently. Order: grow (`--outline WxH`, generous in both axes), place, fit.
+- `silk_place` solves against the outline on the board and skips `board_only` refs (mounting holes) by design, exiting 0 with "moved 0". Run it after the fit, and move a hole's refdes with `place_edit move_text` (coordinates are in the place-edit report).
+- Silk can pass `check_silk` and DRC and be invisible: a refdes placed in a pocket inside a tall through-hole body's envelope is hidden under it. Look at the render. Centring two edge connectors on a small square can also leave a silk channel under one label height; measure silk-to-silk, and remember a footprint's own polarity cross prints in the channel.
+- A connector's pole order against the IC's pin order can force exactly one crossing on a pair, and it is topological (rotation preserves orientation; only a reflection of one part removes it). Enumerate before you spend iterations on it.
+- A late pin change must sweep every artifact that states the pin order, not only the ones a gate reads (`requirements.md`, `architecture/blocks.md`, the delivered design-doc PDF). A hand-wired board with a wrong legend is a destroyed-IC path.
+
 ## Output contract (end your final message with exactly this block)
 FILES: <board + anneal reports + renders>
 GATE: place: <pass/fail + violation count>; hpwl <seed -> final mm>;
