@@ -32,7 +32,9 @@ its name or constraints.json, and the part is never asked.
 - Says the wrong sign: check the datasheet. A family listed wrongly is a fix to `_NEG_REG_RE` or
   `_POS_REG_RE` in check_ratings.py; a part whose row words mislead needs its words corrected.
 - Check the rail's volts: a net NAME is a guess. Put the real figure in constraints.json
-  `voltages`.
+  `voltages`. That figure is the rail's worst case, so over an adjustable part's FB divider
+  it passes from the divider's lowest output to 10 % over its nominal (+5V at 5.25 V over a
+  4.99 V divider); a power-tree or net-name figure must sit inside the divider's window.
 
 ## Fix ladder (cheapest first)
 1. Wrong part in the row: source the variant that makes the rail (AP2112-3.3, not -5.0).
