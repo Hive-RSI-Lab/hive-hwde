@@ -1,0 +1,37 @@
+# The rail an IC's I/O pins swing to, for sim_board's io scenarios, where
+# that is not the IC's highest supply. Without a row, io_high drives an IC's
+# I/O nets to the highest rail on its power-named pins: a USB-PD sink fed
+# from VBUS_IN (up to 21 V) whose GPIOs run from its own 3.3 V regulator
+# would drive a FAULT LED at 21 V and read some 77 mA from a pin the
+# datasheet gives 4 mA.
+#
+# match: a regex tried against the part's MPN (parts.json) and its value
+# (case-insensitive). supply_pins: a regex tried against each pin's function
+# names (upper case): the pins whose rail the I/O swings to (the highest of
+# them, if several are on rails). volts (optional): the level when none of
+# those pins is on a declared rail (an internal regulator's output, only
+# decoupled); a board with neither keeps the IC on its highest supply and
+# lists a known unknown. source: where it came from. `verified: false`
+# means typed from memory of the datasheet, not re-read: the review that
+# relies on it reads the datasheet once and flips it (with the date).
+#
+# A board can name its own: constraints.json `io_supply` ({"U3": "VDDD"}, a
+# pin number or function name, on a declared rail) or
+# `sim_board.py --io-supply U3=VDDD`, which win over a row. Only the pins the
+# io scenarios drive (GPIO and status names, SoC pads, pin_modes io or od)
+# take this level; the IC's other pins still count its highest supply.
+parts:
+  - match: '^CYPD3177'
+    supply_pins: '^VDDD$'
+    volts: 3.3
+    source: >-
+      Infineon EZ-PD BCR datasheet 002-25383 revision *C (2024-09-18),
+      section 2: "When powered through VBUS_IN, the internal regulator
+      generates VDDD of 3.3 V for chip operation". Table 1, pin 23 VDDD:
+      "Output of internal 3.3 V regulator". Table 5: VGPIO_ABS -0.5 to VDDD
+      +0.5 V. Table 8: VOH_3V VDDD -0.6 V at IOH = 4 mA, VOL_3V 0.6 V at
+      IOL = 10 mA. Section 4.1: FAULT "is driven to Logic HIGH" when the
+      adapter cannot meet VBUS_MIN/VBUS_MAX or the current setting, or VBUS_IN
+      is 20 % outside them, and "is driven to Logic LOW otherwise" (read
+      2026-11-13)
+    verified: true

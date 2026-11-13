@@ -262,9 +262,19 @@ Consumers per key (script -> phase):
   // ADC input on a peak detector, an unused pad). Without it, pins with a
   // GPIO name (PB11, IO5) or an SoC pad function (ENET2_TX_EN,
   // UART4_TX_DATA) are driven, unless the net is named as analog (ADC_x,
-  // x_SNS, x_DIV, x_MON). `--pin-mode U1.PB11=analog` does the same.
+  // x_SNS, x_DIV, x_MON). `--pin-mode U1.PB11=analog` does the same. An
+  // SDA/SCL pin marked input or nc is a strap sharing the name (a USB
+  // hub's CFG_SEL0/SCL), not an I2C line: no pull-up finding for it.
   "pin_modes": {"U1": {"PB11": "analog", "PC3": "analog"},
                 "U100": {"B15": "output"}},
+  // io_supply (sim_board): the pin whose rail an IC's driven I/O swings to,
+  // by refdes and pin number or function name, where that is not the IC's
+  // highest supply: a USB-PD sink fed from VBUS whose GPIOs run from its
+  // own 3.3 V VDDD. The pin must be on a rail (declare it in `voltages`).
+  // Wins over the part's row in reference/io_supply.yaml; without either,
+  // io_high drives the IC's I/O at its highest supply.
+  // `--io-supply U101=VDDD` does the same.
+  "io_supply": {"U101": "VDDD"},
   // voltage_pairs (T2): explicit net-PAIR differential that node voltages
   // cannot express (bridge/AC inputs - two 57 V taps carry 114 V between
   // them). Overrides the derived difference for that pair; a pair declared

@@ -168,7 +168,10 @@ weighed like any other report:
   fact it could not decide (a Vref not verified, a Vgs rating not known).
   Each known unknown gets a datasheet answer or a stated margin in the
   review; pin what you learn with `--vref`/`--rail` or in
-  `reference/regulator_vref.yaml`.
+  `reference/regulator_vref.yaml`. An IC whose I/O runs from its own
+  regulator rather than its highest supply (a USB-PD sink's VDDD) gets a
+  row in `reference/io_supply.yaml` or `io_supply` in constraints, or the
+  io scenarios drive its pins at VBUS.
 - `scripts/sim_inrush.py --workspace <ws>`: the board's load switches
   against a USB PD source (`lib/pdsource.py`: slewed steps behind a cable,
   a source that cannot sink, a hard reset). Same netlist model as

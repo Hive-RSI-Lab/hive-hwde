@@ -648,3 +648,158 @@ def test_engine_soc_board(tmp_path, need_engine):
                for u in rep["known_unknowns"])
     assert any(u["ref"] == "U8" and u["what"].startswith("pin 2 (HB)")
                for u in rep["known_unknowns"])
+
+
+# A USB-PD sink fed from VBUS_IN (21 V) whose GPIOs run from its own 3.3 V
+# regulator (VDDD, only decoupled): its FAULT drives a 220 R + red LED. At
+# its highest supply the io scenarios would push ~77 mA through a pin the
+# datasheet gives 4 mA. A USB hub's SDA/SCL pins double as config straps
+# (NON_REM1, CFG_SEL0) held by pull-downs: no I2C bus once pin_modes says
+# input.
+PDSINK_BOARD = [
+    ("U101", "CYPD3177-24LQXQ", "QFN-24", {
+        "1": ("VBUS_IN", "VBUS_IN"), "23": ("/VDDD", "VDDD"),
+        "25": ("GND", "GND"), "9": ("/FAULT", "FAULT")}),
+    ("C101", "1uF", "C_0402_1005Metric", {"1": ("/VDDD", ""),
+                                          "2": ("GND", "")}),
+    ("R109", "220", "R_0402_1005Metric", {"1": ("/FAULT", ""),
+                                          "2": ("/FAULT_A", "")}),
+    ("D104", "red", "LED_0603_1608Metric", {"1": ("GND", "K"),
+                                            "2": ("/FAULT_A", "A")}),
+    ("U701", "USB2514B", "QFN-36", {
+        "5": ("+3V3", "VDD33"), "37": ("GND", "GND"),
+        "22": ("/HUB_NON_REM1", "SDA/SMBDATA/NON_REM1"),
+        "24": ("/HUB_CFG_SEL0", "SCL/SMBCLK/CFG_SEL0")}),
+    ("R701", "10k", "R_0402_1005Metric", {"1": ("/HUB_NON_REM1", ""),
+                                          "2": ("GND", "")}),
+    ("R702", "10k", "R_0402_1005Metric", {"1": ("/HUB_CFG_SEL0", ""),
+                                          "2": ("GND", "")}),
+]
+PDSINK_VOLTS = [{"net": "VBUS_IN", "voltage": 21}]
+HUB_STRAPS = {"U701": {"22": "input", "24": "input"}}
+
+
+def _pdsink(tmp_path, volts=PDSINK_VOLTS):
+    b = sim_board.load_board(write_net(tmp_path / "pd.net", PDSINK_BOARD))
+    rails = sim_board.resolve_rails(b, {}, {"voltages": volts}, None, {})
+    return b, rails, sim_board.build_model(b, {}, rails)
+
+
+def test_io_supply_table_rows_are_well_formed():
+    rows = sim_board.load_io_supply()
+    assert rows
+    for r in rows:
+        assert r["match"] and r["supply_pins"] and r["source"].strip()
+        assert isinstance(r.get("verified"), bool)
+        assert r.get("volts") is None or 0.8 <= float(r["volts"]) <= 5.5
+
+
+def test_io_supply_from_table(tmp_path):
+    b, rails, model = _pdsink(tmp_path)
+    assert rails["VBUS_IN"][0] == 21 and "/VDDD" not in rails
+    # no row: the old answer, FAULT driven at VBUS
+    io, od = sim_board.io_nets(b, rails, model)
+    assert io["/FAULT"] == 21 and "/FAULT" in od
+    unknowns = []
+    spec = sim_board.io_supply_specs(b, {}, rails, {},
+                                     sim_board.load_io_supply(), unknowns)
+    assert spec["U101"]["pins"] == ["23"] and spec["U101"]["volts"] == 3.3
+    assert "002-25383" in spec["U101"]["source"] and unknowns == []
+    io, od = sim_board.io_nets(b, rails, model, None, None, spec)
+    assert io["/FAULT"] == 3.3 and "/FAULT" in od
+    # the MPN in parts.json matches too; a declared VDDD rail wins over
+    # the row's volts
+    b, rails, model = _pdsink(tmp_path, PDSINK_VOLTS + [
+        {"net": "/VDDD", "voltage": 3.0}])
+    parts = {"U101": {"mpn": "CYPD3177-24LQXQT"}}
+    b["comps"]["U101"]["value"] = "PD_SINK"
+    spec = sim_board.io_supply_specs(b, parts, rails, {},
+                                     sim_board.load_io_supply(), [])
+    assert sim_board.ic_io_supply(b["comps"]["U101"], rails,
+                                  spec["U101"]) == 3.0
+    assert sim_board.io_nets(b, rails, model, None, None,
+                             spec)[0]["/FAULT"] == 3.0
+
+
+def test_io_supply_row_that_does_not_fit(tmp_path):
+    b, rails, _ = _pdsink(tmp_path)
+    yml = tmp_path / "io_supply.yaml"
+    for pins, volts, why in (("^VCCIO$", "3.3", "no pin matches"),
+                             ("^VDDD$", "null", "on no rail")):
+        yml.write_text(f"parts:\n  - match: '^CYPD3177'\n"
+                       f"    supply_pins: '{pins}'\n    volts: {volts}\n"
+                       f"    source: test\n    verified: false\n",
+                       encoding="utf-8")
+        unknowns = []
+        assert sim_board.io_supply_specs(
+            b, {}, rails, {}, sim_board.load_io_supply(yml), unknowns) == {}
+        (u,) = unknowns
+        assert u["ref"] == "U101" and why in u["why"], u
+
+
+def test_io_supply_pinned(tmp_path):
+    pinned = sim_board.io_supply_pinned({"io_supply": {"U101": "VDDD"}},
+                                        ["U101=23"])
+    assert pinned == {"U101": ("23", "--io-supply")}
+    assert sim_board.io_supply_pinned(None) == {}
+    for cons, cli in (({"io_supply": {"U101": ""}}, None),
+                      ({"io_supply": ["U101"]}, None),
+                      (None, ["U101"]), (None, ["=VDDD"]), (None, ["U1="])):
+        with pytest.raises(sim_board.checklib.CheckError):
+            sim_board.io_supply_pinned(cons, cli)
+    b, rails, model = _pdsink(tmp_path, PDSINK_VOLTS + [
+        {"net": "/VDDD", "voltage": 3.3}])
+    spec = sim_board.io_supply_specs(
+        b, {}, rails, {"U101": ("vddd", "constraints io_supply")}, [], [])
+    assert spec["U101"] == {"pins": ["23"], "volts": None,
+                            "source": "constraints io_supply"}
+    assert sim_board.io_nets(b, rails, model, None, None,
+                             spec)[0]["/FAULT"] == 3.3
+    b, rails, _ = _pdsink(tmp_path)
+    for ref, key, msg in (("U9", "VDDD", "no IC U9"),
+                          ("R109", "1", "no IC R109"),
+                          ("U101", "VCCQ", "has no pin VCCQ"),
+                          ("U101", "VDDD", "/VDDD, not a rail")):
+        with pytest.raises(sim_board.checklib.CheckError, match=msg):
+            sim_board.io_supply_specs(b, {}, rails,
+                                      {ref: (key, "--io-supply")}, [], [])
+
+
+def test_i2c_strap_pins_sharing_the_name(tmp_path):
+    b, rails, model = _pdsink(tmp_path)
+    opts = {"i2c_cb_pf": None, "i2c_khz": 400}
+    vios, facts = [], {}
+    sim_board.i2c_findings(b, rails, model, opts, vios, [], facts)
+    assert sorted(v["net"] for v in vios
+                  if v["kind"] == "i2c_pullup_missing") == \
+        ["/HUB_CFG_SEL0", "/HUB_NON_REM1"]
+    vios = []
+    sim_board.i2c_findings(b, rails, model, {**opts, "pin_modes":
+                           sim_board.pin_modes({"pin_modes": HUB_STRAPS},
+                                               None)}, vios, [], facts)
+    assert vios == [] and facts["i2c"] == []
+
+
+def test_engine_pd_sink_fault_led(tmp_path, need_engine):
+    (tmp_path / "kicad").mkdir()
+    net = write_net(tmp_path / "kicad" / "pd.net", PDSINK_BOARD)
+    (tmp_path / "kicad" / "constraints.json").write_text(json.dumps(
+        {"voltages": PDSINK_VOLTS, "pin_modes": HUB_STRAPS}),
+        encoding="utf-8")
+    out = tmp_path / "sim.json"
+    subprocess.run([sys.executable, str(SCRIPTS / "sim_board.py"),
+                    "--workspace", str(tmp_path), "--out", str(out)],
+                   capture_output=True, text=True, timeout=300)
+    rep = json.loads(out.read_text(encoding="utf-8"))
+    (led,) = rep["leds"]
+    # (3.3 - ~1.9) / (220 + 25 + RS), not (21 - ~2) / ...
+    assert 4e-3 < led["current_a"]["io_high"] < 7e-3
+    for kind in ("led_overcurrent", "gpio_overcurrent", "resistor_overpower",
+                 "i2c_pullup_missing"):
+        assert _kinds(rep, kind) == [], kind
+    (s,) = rep["io_supply"]
+    assert (s["ref"], s["pins"], s["volts"]) == ("U101", ["23"], 3.3)
+    cp = subprocess.run([sys.executable, str(SCRIPTS / "sim_board.py"),
+                         "--net", str(net), "--io-supply", "U101"],
+                        capture_output=True, text=True, timeout=300)
+    assert cp.returncode == 2 and "want REF=PIN" in cp.stdout

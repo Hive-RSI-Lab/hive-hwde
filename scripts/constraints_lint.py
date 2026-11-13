@@ -192,7 +192,7 @@ ENCLOSURE = {"box_mm": "num_list", "stl": "str_or_list", "wall_mm": "num",
              "floor": "str"}
 SCHEMA_TOP_KEYS = set(SECTIONS) | {"placement", "coating", "antennas", "pcb_antennas", "si",
                                    "enclosure", "ambient_c", "ambient_min_c",
-                                   "cable_pf", "pin_modes", "ddr",
+                                   "cable_pf", "pin_modes", "io_supply", "ddr",
                                    "testpoints", "rf_match", "surge", "isolation",
                                    "mechanical", "transformers"}
 ENVELOPE_ALIASES = {"power_constraints": "power",
@@ -435,6 +435,13 @@ class _FileLint:
                     self.add("error", "bad_type",
                              f"{path}: pin_modes must be {{ref: {{pin: "
                              "mode}}}", path)
+            elif key == "io_supply":
+                # sim_board: {ref: pin number or function its I/O swings to}
+                if not (isinstance(val, dict) and all(
+                        isinstance(v, str) and v.strip()
+                        for v in val.values())):
+                    self.add("error", "bad_type",
+                             f"{path}: io_supply must be {{ref: pin}}", path)
             elif key == "mechanical":
                 # check_body_clash (#608): deliberate nesting, each with a why
                 allow = val.get("allow_body_overlap", []) \

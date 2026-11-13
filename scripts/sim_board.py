@@ -15,7 +15,11 @@ reviewer would otherwise work out by hand:
               models follow on their own. Not driven: a net named as
               analog (ADC_x, x_SNS, x_DIV), and pins constraints
               `pin_modes` / --pin-mode mark analog, input or nc
-    io_high   every IC I/O net driven to its IC's supply
+    io_high   every IC I/O net driven to its IC's I/O supply: the
+              highest rail on its power pins, or the pin
+              reference/io_supply.yaml, constraints `io_supply` or
+              --io-supply names (a USB-PD sink fed from VBUS whose GPIOs
+              run from its own 3.3 V VDDD)
     io_run    io_high, but status lines (PG, FAULT, INT...) asserted low:
               the powered-up state load switches and enables see
   plus one transient: rails ramp 0 -> V over --ramp-ms with every R, C, L
@@ -55,7 +59,10 @@ Findings (violation kind; severity):
                           reaches 90 % (warning). One an IC pin drives is
                           listed, not judged.
   i2c_pullup_*            missing (warning), too strong for 3 mA sink
-                          (error), too weak for the bus speed (warning)
+                          (error), too weak for the bus speed (warning).
+                          A line is a net named SDA/SCL or on an SDA/SCL
+                          pin, except a pin pin_modes marks input or nc
+                          (a strap sharing the name)
   mosfet_vgs              |Vgs| over the part's rating (error), or over
                           12 V with no rating known (warning)
   mosfet_underdrive       the FET's on-state |Vgs| (the scenario that
@@ -92,7 +99,8 @@ CLI:
   sim_board.py --workspace boards/<b> [--out reports/sim_board.json]
   sim_board.py --net x.net [--constraints c.json] [--parts parts/]
                [--rail VBUS=20] [--rail-min VBUS=9] [--vref U2=0.596]
-               [--pin-mode U1.PB11=analog] [--i2c-khz 400]
+               [--pin-mode U1.PB11=analog] [--io-supply U3=VDDD]
+               [--i2c-khz 400]
                [--i2c-cb-pf 50] [--ramp-ms 1] [--timeout 120]
 Exit 0 pass / 1 violations / 2 error.
 """
@@ -124,6 +132,7 @@ from lib import env  # noqa: E402
 SCRIPT = "sim_board"
 SOURCE = "sim_board"
 VREF_YAML = SCRIPTS.parent / "reference" / "regulator_vref.yaml"
+IO_SUPPLY_YAML = SCRIPTS.parent / "reference" / "io_supply.yaml"
 
 GPIO_FN = re.compile(
     r"^(GPIO\d*|IO\d+|P[A-K]?\d+|PIO\d+|D\d+|A\d+|RXD?\d?|TXD?\d?|U\d?[RT]XD?"
@@ -576,6 +585,106 @@ def ic_supply(c: dict, rails: dict) -> float | None:
     return v if v and v > 0 else None
 
 
+def load_io_supply(path: Path = IO_SUPPLY_YAML) -> list[dict]:
+    if not path.is_file():
+        return []
+    rows = (yaml.safe_load(path.read_text(encoding="utf-8")) or {}) \
+        .get("parts") or []
+    return [{**r, "_m": re.compile(r["match"], re.I),
+             "_p": re.compile(r["supply_pins"])} for r in rows]
+
+
+def io_supply_pinned(constraints: dict | None,
+                     overrides: list[str] | None = None
+                     ) -> dict[str, tuple[str, str]]:
+    """{ref: (pin number or function, source)} from constraints `io_supply`
+    ({"U3": "VDDD"}) and --io-supply REF=PIN (which wins)."""
+    raw = (constraints or {}).get("io_supply") or {}
+    if not isinstance(raw, dict) or not all(
+            isinstance(v, str) and v.strip() for v in raw.values()):
+        raise checklib.CheckError("constraints io_supply: want {ref: pin}")
+    out = {str(r).strip(): (v.strip(), "constraints io_supply")
+           for r, v in raw.items()}
+    for it in overrides or []:
+        r, sep, k = it.partition("=")
+        if not sep or not r.strip() or not k.strip():
+            raise checklib.CheckError(f"--io-supply {it!r}: want REF=PIN")
+        out[r.strip()] = (k.strip(), "--io-supply")
+    return out
+
+
+def io_supply_specs(board: dict, parts: dict, rails: dict, pinned: dict,
+                    table: list[dict], unknowns: list[dict]) -> dict:
+    """{ref: {pins, volts, source}}: the pins whose rail an IC's I/O swings
+    to, where that is not its highest supply. `pinned` (io_supply_pinned)
+    first: its pin must exist and be on a rail. Then the first
+    reference/io_supply.yaml row that matches the part's MPN or value; a
+    row whose pins the IC lacks, or that are off every rail with no volts
+    in the row, goes to `unknowns` and leaves the IC on its highest
+    supply."""
+    out: dict[str, dict] = {}
+    for ref, (key, src) in sorted(pinned.items()):
+        c = board["comps"].get(ref)
+        if c is None or c["kind"] not in ("U", "IC"):
+            raise checklib.CheckError(f"{src} {ref}={key}: no IC {ref} on "
+                                      "the board")
+        k = key.upper()
+        pins = sorted((pin for pin, p in c["pins"].items()
+                       if pin.upper() == k or k in p["fn"]), key=_natural)
+        if not pins:
+            raise checklib.CheckError(f"{src} {ref}={key}: {ref} has no pin "
+                                      f"{key}")
+        if not any(c["pins"][pin]["net"] in rails for pin in pins):
+            raise checklib.CheckError(
+                f"{src} {ref}={key}: {ref} pin {key} is on "
+                f"{c['pins'][pins[0]]['net']}, not a rail: give its voltage "
+                "in constraints voltages or --rail")
+        out[ref] = {"pins": pins, "volts": None, "source": src}
+    for c in sorted(board["comps"].values(), key=lambda x: _natural(x["ref"])):
+        if c["kind"] not in ("U", "IC") or c["ref"] in out:
+            continue
+        names = [x for x in ((parts.get(c["ref"]) or {}).get("mpn"),
+                             c["value"]) if x]
+        row = next((r for r in table
+                    if any(r["_m"].search(x) for x in names)), None)
+        if row is None:
+            continue
+        pins = sorted((pin for pin, p in c["pins"].items()
+                       if any(row["_p"].match(f) for f in p["fn"])),
+                      key=_natural)
+        volts = row.get("volts")
+        src = ("reference/io_supply.yaml: "
+               + " ".join(str(row.get("source", "")).split())
+               + ("" if row.get("verified") else ", not re-read"))
+        if pins and (volts or any(c["pins"][p]["net"] in rails
+                                  for p in pins)):
+            out[c["ref"]] = {"pins": pins,
+                             "volts": float(volts) if volts else None,
+                             "source": src}
+            continue
+        unknowns.append({
+            "ref": c["ref"], "what": f"{c['value']} I/O supply",
+            "why": ("reference/io_supply.yaml gives its I/O supply as the "
+                    f"pin {row['supply_pins']}, but "
+                    + ("no pin matches" if not pins else
+                       "that pin is on no rail and the row gives no volts")
+                    + ": its I/O is driven at its highest supply (name the "
+                      "pin in constraints io_supply)")})
+    return out
+
+
+def ic_io_supply(c: dict, rails: dict, spec: dict | None) -> float | None:
+    """The level an IC's I/O pins swing to: the highest rail on its
+    io_supply pins, else the row's volts, else its supply (ic_supply)."""
+    if spec:
+        on = [rails[c["pins"][p]["net"]][0] for p in spec["pins"]
+              if c["pins"][p]["net"] in rails]
+        v = max(on) if on else spec.get("volts")
+        if v and v > 0:
+            return v
+    return ic_supply(c, rails)
+
+
 OPEN_DRAIN_FN = re.compile(r"^N?(PG|PGOOD|POK|FAULT\w*|INT\w*|IRQ|ALERT"
                            r"|CHRG|STAT\w*)$")
 
@@ -634,16 +743,18 @@ def pin_role(c: dict, pin: str, p: dict, modes: dict | None
 
 
 def io_nets(board: dict, rails: dict, model: dict,
-            modes: dict | None = None, skipped: list | None = None
-            ) -> tuple[dict, set]:
+            modes: dict | None = None, skipped: list | None = None,
+            io_supply: dict | None = None) -> tuple[dict, set]:
     """({net: drive volts}, open-drain nets) for IC I/O nets: a net on a
     GPIO-named IC pin or an SoC pad named by its function (ENET2_TX_EN),
     not a rail, not an analog-named net (ADC_x, x_SNS), with `modes`
     (pin_modes) overriding per pin. Nets joined by a 0-ohm link count as one
     and get one drive (on the first of them), at the lowest supply of the
-    ICs on any of them. Open-drain nets are those with a status-named pin
-    (PG, FAULT, INT...). `skipped` collects the pins left undriven by
-    pin_modes or an analog net name."""
+    ICs on any of them: a driven pin counts its IC's I/O supply
+    (`io_supply`, io_supply_specs), any other pin its highest supply.
+    Open-drain nets are those with a status-named pin (PG, FAULT, INT...).
+    `skipped` collects the pins left undriven by pin_modes or an analog net
+    name."""
     grp = _groups_by_zero_ohm(model)
     supply: dict[str, float] = {}
     io: set[str] = set()
@@ -653,13 +764,15 @@ def io_nets(board: dict, rails: dict, model: dict,
         if c["kind"] not in ("U", "IC"):
             continue
         vs = ic_supply(c, rails)
+        vio = ic_io_supply(c, rails, (io_supply or {}).get(c["ref"]))
         for pin, p in c["pins"].items():
             n = p["net"]
             if n in rails or n in model["grounds"] or vs is None:
                 continue
             g = grp[n]
-            supply[g] = min(supply.get(g, vs), vs)
             mode, why = pin_role(c, pin, p, modes)
+            v = vio if mode in ("io", "od") else vs
+            supply[g] = min(supply.get(g, v), v)
             if mode == "off":
                 if why == "pin_modes":
                     off.add(g)
@@ -942,7 +1055,11 @@ def analyze(board: dict, parts: dict, rails: dict, opts: dict) -> tuple:
     model = build_model(board, parts, rails)
     grounds = model["grounds"]
     skipped: list[dict] = []
-    io, od = io_nets(board, rails, model, opts.get("pin_modes"), skipped)
+    sup_unknowns: list[dict] = []
+    io_sup = io_supply_specs(board, parts, rails, opts.get("io_supply") or {},
+                             load_io_supply(), sup_unknowns)
+    io, od = io_nets(board, rails, model, opts.get("pin_modes"), skipped,
+                     io_sup)
     # io_run: outputs high and status lines (PG, FAULT...) asserted low -
     # the powered-up, running state most enables and load switches see.
     scen = {"default": {}, "io_low": {n: 0.0 for n in io}, "io_high": io,
@@ -963,7 +1080,8 @@ def analyze(board: dict, parts: dict, rails: dict, opts: dict) -> tuple:
     if mins:
         lo = {n: ((mins[n], src) if n in mins else (v, src))
               for n, (v, src) in rails.items()}
-        io_lo, od_lo = io_nets(board, lo, model, opts.get("pin_modes"))
+        io_lo, od_lo = io_nets(board, lo, model, opts.get("pin_modes"),
+                               io_supply=io_sup)
         runs += [(f"{name}@min", lo, d) for name, d in
                  (("default", {}), ("io_low", {n: 0.0 for n in io_lo}),
                   ("io_high", io_lo),
@@ -984,9 +1102,14 @@ def analyze(board: dict, parts: dict, rails: dict, opts: dict) -> tuple:
     unknowns: list[dict] = [
         {"ref": u["ref"], "what": f"{u['value']} not simulated",
          "why": u["why"]} for u in model["unmodelled"]
-        if not u["why"].startswith("IC/")]
+        if not u["why"].startswith("IC/")] + sup_unknowns
     facts: dict = {"scenarios": {k: {"io_nets_driven": len(d)}
                                  for k, _, d in runs}}
+    if io_sup:
+        facts["io_supply"] = [
+            {"ref": r, "pins": s["pins"],
+             "volts": ic_io_supply(board["comps"][r], rails, s),
+             "source": s["source"]} for r, s in sorted(io_sup.items())]
     if skipped:
         facts["io_pins_not_driven"] = skipped[:50]
     if mins:
@@ -1539,13 +1662,18 @@ def i2c_findings(board, rails, model, opts, vios, unknowns, facts):
     for n, r in grp.items():
         members.setdefault(r, set()).add(n)
     buses = {}
+    modes = opts.get("pin_modes")
     for c in board["comps"].values():
-        for p in c["pins"].values():
+        for pin, p in c["pins"].items():
             r = grp.get(p["net"])
             if r is None or p["net"] in rails:
                 continue
             name = check_ratings.base_net(p["net"])
-            if I2C_RE.search(name) or {"SDA", "SCL"} & set(p["fn"]):
+            # an SDA/SCL pin pin_modes marks input/nc is a strap sharing the
+            # name (a hub's CFG_SEL0/SCL), not a bus by itself
+            by_fn = bool({"SDA", "SCL"} & set(p["fn"])) and \
+                pin_role(c, pin, p, modes) != ("off", "pin_modes")
+            if I2C_RE.search(name) or by_fn:
                 buses.setdefault(r, {"ics": set()})
             if r in buses and c["kind"] in ("U", "IC"):
                 buses[r]["ics"].add(c["ref"])
@@ -1744,6 +1872,7 @@ def run(a) -> dict:
             "rail_min": rail_mins(rails, cons,
                                   _pairs(a.rail_min, "--rail-min")),
             "pin_modes": pin_modes(cons, a.pin_mode),
+            "io_supply": io_supply_pinned(cons, a.io_supply),
             "vref": _pairs(a.vref, "--vref"), "i2c_khz": a.i2c_khz,
             "i2c_cb_pf": a.i2c_cb_pf,
             "ambient_c": (cons or {}).get("ambient_c")
@@ -1790,6 +1919,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--pin-mode", action="append", default=[],
                     help="REF.PIN=MODE (io/output, od, analog/input/nc): "
                          "how the io scenarios treat an IC pin")
+    ap.add_argument("--io-supply", action="append", default=[],
+                    help="REF=PIN (number or function): the supply pin an "
+                         "IC's I/O swings to, over reference/io_supply.yaml")
     ap.add_argument("--vref", action="append", default=[],
                     help="REF=volts, a regulator's FB reference")
     ap.add_argument("--i2c-khz", type=int, default=400,
