@@ -50,11 +50,11 @@ CRASH = 100
 PINS = {
     "core": "a99d9bace26e14c48e9c160d26d24ca5b34903c66a99a4a82a67c6b64030fd8a",
     "digits-v1": "9e0da1682142b785a75e4273ec6e0e465f2ddb22326fdfb0689ef94cf9aa0241",
-    "hwde-led-test": "7051f8a4ea9babdfc50aeefa9f8288ebd9318a9a382628ad95c3755207704e1c",
+    "hwde-led-test": "703f061b4277e434bddaa0acb388153ce3232eb6bd5e2908b44f78cdf7ae2b4f",
     "lite-main": "2ed9994f7c202a3905a1532b01a4d0faffdb892942bef838166fbd3aa4e2a2ec",
     "minuet-v3": "28062de8e6609e77331b0a2df54a0f37039009159e11d8d492fce5c624d0fc70",
     "oasis-v0-2": "9a7af666351feb8d0b4d3792744ad0a34a92558e32cdca6dca69f0c2f1f5a211",
-    "ultra-front": "422227a4e583eb59e90451730b0aa6e7b0254b72e7d93b72fd16cc315a7d5259",
+    "ultra-front": "bddfc3abdc82eec9cfdd6da10a1773b658e7b9fae2f54729f2f45aa20990159a",
 }
 # pins:end
 
@@ -89,10 +89,17 @@ def _local_state(p: Path) -> bool:
             or n.startswith("_autosave-") or n == "fp-info-cache")
 
 
+# A board's top-level learnings/ is its LEARNINGS queue and rulings: a log
+# that grows every time a row is ruled, which no gate or score reads. Pinning
+# it turned main red on a routine ruling (#966), so it stays out of the digest.
+NOT_DESIGN_DIRS = ("learnings",)
+
+
 def files(d: Path) -> list[str]:
     return sorted(str(p.relative_to(d)) for p in d.rglob("*")
                   if p.is_file() and "__pycache__" not in p.parts
-                  and not _local_state(p))
+                  and not _local_state(p)
+                  and p.relative_to(d).parts[0] not in NOT_DESIGN_DIRS)
 
 
 def scripts(d: Path) -> list[str]:

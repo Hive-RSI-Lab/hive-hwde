@@ -163,6 +163,20 @@ def test_digest_ignores_kicad_local_state(tmp_path):
     assert score.files(tmp_path) == before == ["a.kicad_pcb"]
 
 
+def test_digest_ignores_the_learnings_log_but_not_the_design(tmp_path):
+    """#966 ruled rows in pinned/ultra-front/learnings/ and every score on
+    main stopped on a digest mismatch. The learnings log is not the design;
+    a file under a design folder must still move the digest."""
+    (tmp_path / "a.kicad_pcb").write_text("x", encoding="utf-8")
+    before = score.files(tmp_path)
+    (tmp_path / "learnings").mkdir()
+    (tmp_path / "learnings" / "queue.yaml").write_text("- row", encoding="utf-8")
+    assert score.files(tmp_path) == before
+    (tmp_path / "kicad" / "learnings").mkdir(parents=True)
+    (tmp_path / "kicad" / "learnings" / "x.kicad_sch").write_text("s", encoding="utf-8")
+    assert score.files(tmp_path) == ["a.kicad_pcb", "kicad/learnings/x.kicad_sch"]
+
+
 def _parts(pin, rows):
     (pin.dir / "parts").mkdir(exist_ok=True)
     (pin.dir / "parts" / "parts.json").write_text(json.dumps({"parts": rows}))
