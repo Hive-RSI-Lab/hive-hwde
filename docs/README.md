@@ -736,7 +736,11 @@ clears every other net's copper and hole at the board's rules, with a stub on
 the pad's own layer. It looks outward first, never under the part, and skips
 a pad that already has a via of its net nearby. A pad with no spot is joined
 to its own copper close by, or is reported as a `pad_fanout_incomplete`
-warning. `--plan` only reports, `--out-ops` writes the `route_edit` ops.
+warning. `--via-in-pad` puts that pad's via at its centre instead, when the
+pad holds the whole via, and sets it filled and capped so `fab_export`'s
+`VIA-FILL.md` asks the fab for it; it stops on a board whose layer count the
+fab doesn't fill vias on. `--plan` only reports, `--out-ops` writes the
+`route_edit` ops.
 
 ## Boards from other EDA tools, and back
 

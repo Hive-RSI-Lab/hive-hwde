@@ -98,7 +98,12 @@ stub to it on the pad's layer, or a short join to the net's own copper when
 no spot clears (lib/padfanout.py). The ops go through route_edit
 (atomic, verified); --plan only reports them, --out-ops writes them.
 --fan-width and --fan-via SIZE/DRILL override the net's width and the
-board's common via. KRT is not used.
+board's common via. KRT is not used. With --via-in-pad (#940) a pad with
+neither gets a via at its centre if its copper holds the whole via; the
+fab must fill and cap vias at the board's layer count (jlc_pricing.yaml
+options.via_fill_epoxy) or the run stops, and each such via is set filled
+and capped, so fab_export's VIA-FILL.md carries it to the order. --out-ops
+writes those fill ops under "then", to apply after "ops".
 
 Facts: per BGA the geometry, budget, method, requested / escaped / kept
 nets, the balls left for the routers, via-in-pad stripped, caps moved; the
@@ -608,9 +613,12 @@ def run(argv: list[str] | None = None):
                                          "underpad"], default=None,
                     help="KRT engine (default: dogbone when the budget fits, "
                          "else channel)")
-    ap.add_argument("--allow-via-in-pad", action="store_true",
+    ap.add_argument("--allow-via-in-pad", "--via-in-pad",
+                    dest="allow_via_in_pad", action="store_true",
                     help="keep KRT's via-in-pad fallbacks (a paid fab option: "
-                         "filled, capped vias)")
+                         "filled, capped vias); with --pads, a pad with no "
+                         "spot outside and nothing to join gets a filled, "
+                         "capped via at its centre (#940)")
     ap.add_argument("--no-cap-nudge", action="store_true",
                     help="never move decouplers; balls whose via lands on one "
                          "are ripped instead")
@@ -911,8 +919,21 @@ def run(argv: list[str] | None = None):
     return payload, args.out_report
 
 
+def filled_via_layers() -> set[int]:
+    """Copper layer counts the fab fills and caps vias on (POFV,
+    jlc_pricing.yaml options.via_fill_epoxy)."""
+    import order_quote
+    table = (order_quote.load_pricing(order_quote.PRICING).get("options")
+             or {}).get("via_fill_epoxy") or {}
+    return {int(k) for k in table}
+
+
 def pad_fanout(args):
-    """--pads: lib/padfanout's vias and stubs, applied with route_edit."""
+    """--pads: lib/padfanout's vias and stubs, applied with route_edit.
+    With --via-in-pad a via may sit in its pad (#940): only on a layer count
+    the fab fills vias on, and each such via gets filling and capping set
+    (route_edit fill_vias), so check_wicking reads it closed and fab_export
+    writes VIA-FILL.md for the order."""
     import padfanout
     import route_edit
     pcb = Path(args.pcb).resolve()
@@ -928,14 +949,33 @@ def pad_fanout(args):
     if args.fan_width is not None and args.fan_width <= 0:
         raise CheckError("--fan-width must be positive")
     bg = geom.BoardGeom.from_file(pcb)
+    vip = bool(args.allow_via_in_pad)
+    if vip:
+        n = len(bg.copper_layers)
+        offered = filled_via_layers()
+        if n not in offered:
+            raise CheckError(
+                f"--via-in-pad: the fab fills and caps vias only on "
+                f"{', '.join(map(str, sorted(offered))) or 'no'}-layer "
+                f"boards (jlc_pricing.yaml options.via_fill_epoxy); this "
+                f"board has {n} copper layers")
     specs = [s.strip() for s in args.pads.split(",") if s.strip()]
-    ops, rows = padfanout.Fanout(bg, width=args.fan_width, via=via).fan(specs)
+    ops, rows = padfanout.Fanout(bg, width=args.fan_width, via=via,
+                                 via_in_pad=vip).fan(specs)
+    # a selector sees the board as it was before its list ran, so the
+    # vias in pads are filled by a second list once they exist
+    fill = [{"op": "fill_vias", "kind": "via", "net": r["net"],
+             "at": r["at"], "filled": True}
+            for r in rows if r["result"] == "via in pad"]
     if args.out_ops:
         Path(args.out_ops).write_text(json.dumps(
-            {"version": 1, "ops": ops}, indent=1) + "\n", encoding="utf-8")
+            {"version": 1, "ops": ops, **({"then": fill} if fill else {})},
+            indent=1) + "\n", encoding="utf-8")
     applied = bool(ops) and not args.plan
     if applied:
         route_edit.apply_ops(pcb, ops)
+        if fill:
+            route_edit.apply_ops(pcb, fill)
     violations = [violation(
         SCRIPT, "warning", None, None, None, [r["pad"].split(".")[0]],
         f"{r['pad']} ({r['net'] or 'no net'}): {r['result']}", SCRIPT,
@@ -943,7 +983,8 @@ def pad_fanout(args):
         for r in rows if r["result"] in ("no spot", "no net",
                                          "no copper layer")]
     payload = checklib.report(SCRIPT, str(pcb), violations, facts={
-        "pads": rows, "ops": len(ops), "board_updated": applied})
+        "pads": rows, "ops": len(ops), "board_updated": applied,
+        "via_in_pad": len(fill)})
     return payload, args.out_report
 
 
