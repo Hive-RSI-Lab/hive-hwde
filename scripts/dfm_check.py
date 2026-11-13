@@ -1735,7 +1735,7 @@ def check_netlist(fab, pcb: Path, bg, gdir: Path, tmp: Path,
             import kc
             src = tmp / f"{pcb.stem}.ipc"
             res = fab_export.export_ipc_absolute(kc.resolve_cli(), pcb, src,
-                                                 gdir)
+                                                 gdir, bg)
             if res.get("status") != "pass":
                 return {}, ("kicad-cli ipcd356 export failed: "
                             f"{res.get('stderr_tail')}")
@@ -1765,7 +1765,11 @@ def check_netlist(fab, pcb: Path, bg, gdir: Path, tmp: Path,
             CHECK, "error", (x, y), sh["island"]["layer"], None,
             sorted({p["ref"] for p in sh["near"]} - {"VIA"}),
             f"short in the shipped copper: nets {', '.join(sh['nets'])} are "
-            f"one conductor (nearest test points {near})", SOURCE,
+            f"one conductor (nearest test points {near})"
+            + (" - the IPC-D-356 names these islands apart (jumper pads), "
+               "but the copper joins them: re-export the netlist with the "
+               "gerbers, or fix the copper" if sh.get("jumper") else ""),
+            SOURCE,
             kind="dfm_net_short", nets=sh["nets"], points=sh["points"],
             island=sh["island"]))
     for op in res["opens"]:

@@ -254,27 +254,38 @@ def net_tie_classes(pcb_text: str, bg) -> dict[str, int]:
 _JUMPER = re.compile(r"\(jumper_pad_groups((?:\s*\((?:\s*\"[^\"]*\")+\s*\))+)\s*\)")
 _DUP_JUMPER = re.compile(r"\(duplicate_pad_numbers_are_jumpers\s+yes\s*\)")
 _PAD_NUM = re.compile(r'\(pad\s+"([^"]*)"')
+_DNP = re.compile(r"\(attr\b[^)]*\bdnp\b|\(dnp\s+yes\s*\)")
+_JUMPER_NAME = re.compile(r"~J\d+$")
 
 
 def jumper_groups(pcb_text: str) -> list[tuple[str, tuple[str, ...]]]:
     """Pads a footprint joins inside the part -> [(ref, pad numbers)]:
     each `jumper_pad_groups` group, and with
     `duplicate_pad_numbers_are_jumpers yes` each number used by more than
-    one pad (a group of one: its pads share the number)."""
+    one pad (a group of one: its pads share the number).
+
+    Left out, so a split there stays an open: a do-not-populate part (on
+    the assembled board nothing joins its pads), and a group whose pin
+    numbers, cut to D-356's 4 characters, match another pad of the part."""
+    if ("jumper_pad_groups" not in pcb_text
+            and "duplicate_pad_numbers_are_jumpers" not in pcb_text):
+        return []
     out = []
     for m in re.finditer(r"\(footprint\s", pcb_text):
         block = pcb_text[m.start():_sexp_end(pcb_text, m.start())]
         ref = _REF.search(block)
-        if not ref:
+        if not ref or _DNP.search(block):
             continue
+        nums = _PAD_NUM.findall(block)
         jg = _JUMPER.search(block)
         if jg:
             for group in re.findall(r"\(((?:\s*\"[^\"]*\")+)\s*\)", jg.group(1)):
                 pins = tuple(re.findall(r'"([^"]*)"', group))
-                if len(pins) > 1:
+                cut = {p[:4] for p in pins}
+                if len(pins) > 1 and not any(
+                        n[:4] in cut for n in nums if n not in pins):
                     out.append((ref.group(1), pins))
         if _DUP_JUMPER.search(block):
-            nums = _PAD_NUM.findall(block)
             for num in sorted({n for n in nums if n and nums.count(n) > 1}):
                 out.append((ref.group(1), (num,)))
     return out
@@ -409,14 +420,9 @@ def compare(fab, d: D356, ties: dict[str, int] | None = None,
         x0, y0, x1, y1 = islands[layer][i].bounds
         return {"layer": layer, "bbox": [round(v, 3) for v in (x0, y0, x1, y1)]}
 
-    shorts = []
-    for root, by_net in nets_in.items():
-        if len(by_net) < 2:
-            continue
-        nets = sorted(by_net)
-        if len({ties.get(nm, ("solo", nm)) for nm in nets}) == 1:
-            continue          # a net tie joins exactly these nets
+    def short(root, by_net, **extra) -> dict:
         # the nearest pair of points from different nets: where to look
+        nets = sorted(by_net)
         best = None
         for a in range(len(nets)):
             for b in range(a + 1, len(nets)):
@@ -426,12 +432,29 @@ def compare(fab, d: D356, ties: dict[str, int] | None = None,
                         if best is None or dd < best[0]:
                             best = (dd, pa, pb)
         _, pa, pb = best
-        shorts.append({
+        return {
             "nets": nets,
             "near": [pa.as_dict(), pb.as_dict()],
             "at": [round((pa.x + pb.x) / 2, 3), round((pa.y + pb.y) / 2, 3)],
             "points": {nm: [p.label for p in by_net[nm]][:6] for nm in nets},
-            "island": where(root)})
+            "island": where(root), **extra}
+
+    shorts = []
+    for root, by_net in nets_in.items():
+        if len(by_net) < 2:
+            # one board net, but islands named apart (split_jumper_islands)
+            # meet in this copper: the tester reads the two names as a short
+            by_name: dict = defaultdict(list)
+            for tps in by_net.values():
+                for p in tps:
+                    by_name[p.net].append(p)
+            if len(by_name) > 1 and any(_JUMPER_NAME.search(n) for n in by_name):
+                shorts.append(short(root, by_name, jumper=True))
+            continue
+        nets = sorted(by_net)
+        if len({ties.get(nm, ("solo", nm)) for nm in nets}) == 1:
+            continue          # a net tie joins exactly these nets
+        shorts.append(short(root, by_net))
     # pad label -> the jumper group ids it is in. D-356 keeps 4 characters
     # of a pin number.
     jump_of: dict = defaultdict(set)
@@ -459,7 +482,7 @@ def compare(fab, d: D356, ties: dict[str, int] | None = None,
         if jumper_joined(by_root):
             names = [sorted({p.net for p in f}) for f in frags]
             shared = sorted(set.intersection(*(set(n) for n in names))) \
-                if len(frags) > 1 else []
+                or sorted(set().union(*names))
             own = all(len(set(a) & set(b)) == 0
                       for i, a in enumerate(names) for b in names[i + 1:])
             jumper_splits.append({
@@ -504,8 +527,10 @@ def split_jumper_islands(text: str, splits: list[dict]) -> tuple[str, list[dict]
     `splits` is compare()'s `jumper_splits`; a split whose islands already
     have names of their own is left. -> (new text, renames)."""
     lines = text.splitlines()
+    eol = "\r\n" if "\r\n" in text else "\n"
     aliases = {m.group(1): m.group(2) for ln in lines if (m := _ALIAS.match(ln))}
-    used = set(aliases.values()) | {ln[3:17].strip() for ln in lines if ln[:3] in ("317", "327", "367")}
+    used = set(aliases.values()) | {
+        ln[3:17].strip() for ln in lines if ln[:3] in ("317", "327", "367")}
     renames = []
     for sp in splits:
         if sp.get("own_names"):
@@ -527,4 +552,4 @@ def split_jumper_islands(text: str, splits: list[dict]) -> tuple[str, list[dict]
                 lines[i] = ln[:3] + f"{name:<14}" + ln[17:]
             renames.append({"net": sp["net"], "from": base, "to": name,
                             "points": len(frag)})
-    return "\n".join(lines) + ("\n" if text.endswith("\n") else ""), renames
+    return eol.join(lines) + (eol if text.endswith("\n") else ""), renames

@@ -202,7 +202,8 @@ def aux_origin(pcb: Path) -> tuple[float, float] | None:
     return None
 
 
-def name_jumper_islands(pcb: Path, ipc_file: Path, gerber_dir: Path) -> list[dict]:
+def name_jumper_islands(pcb: Path, ipc_file: Path, gerber_dir: Path,
+                        bg=None) -> list[dict]:
     """#962: a net a part joins only inside itself (the footprint's
     `jumper_pad_groups`, e.g. a flow-through USBLC6's pins 1-6 and 3-4) is
     two copper islands on the bare board, but kicad-cli names both alike, so
@@ -216,7 +217,7 @@ def name_jumper_islands(pcb: Path, ipc_file: Path, gerber_dir: Path) -> list[dic
         return []
     text = ipc_file.read_text(encoding="utf-8", errors="replace")
     d = ipcd356.parse(text)
-    bg = geom.load_board(pcb)
+    bg = bg if bg is not None else geom.load_board(pcb)
     ipcd356.resolve(d, bg)
     res = ipcd356.compare(gerblib.open_fab(gerber_dir), d,
                           ipcd356.net_tie_classes(pcb_text, bg), jumpers)
@@ -227,12 +228,18 @@ def name_jumper_islands(pcb: Path, ipc_file: Path, gerber_dir: Path) -> list[dic
 
 
 def export_ipc_absolute(cli: Path, pcb: Path, ipc_file: Path,
-                        gerber_dir: Path | None = None) -> dict:
+                        gerber_dir: Path | None = None, bg=None) -> dict:
     """The netlist, then (with `gerber_dir`, the gerbers it ships beside)
-    each jumper island named apart (name_jumper_islands)."""
+    each jumper island named apart (name_jumper_islands). If the naming
+    fails, the file stays kicad-cli's (a later netlist compare reports the
+    jumper open) and `jumper_rename_error` says why."""
     res = _export_ipc_absolute(cli, pcb, ipc_file)
     if gerber_dir is not None and res.get("status") == "pass":
-        res["jumper_renames"] = name_jumper_islands(pcb, ipc_file, gerber_dir)
+        try:
+            res["jumper_renames"] = name_jumper_islands(pcb, ipc_file,
+                                                        gerber_dir, bg)
+        except Exception as exc:  # noqa: BLE001 (the export itself stands)
+            res["jumper_rename_error"] = f"{type(exc).__name__}: {exc}"
     return res
 
 
@@ -406,6 +413,10 @@ def run(pcb: Path, out_dir: Path, name: str | None = None,
     n = export_ipc_absolute(cli, pcb, ipc_file, gerber_dir)
     if n.get("status") != "pass":
         raise RuntimeError(f"ipcd356 export failed: {n.get('stderr_tail') or n}")
+    if n.get("jumper_rename_error"):
+        print(f"fab_export: jumper islands not named apart in {ipc_file.name} "
+              f"({n['jumper_rename_error']}); dfm_check will report the "
+              "E-test open", file=sys.stderr)
     pos_file = out_dir / f"{name}-pos.csv"
     p = kc.export_pos(cli, pcb, pos_file, side="both", fmt="csv", units="mm")
     if p.get("status") != "pass":
@@ -443,6 +454,8 @@ def run(pcb: Path, out_dir: Path, name: str | None = None,
         "ipc_netlist": str(ipc_file),
         **({"ipc_jumper_renames": n["jumper_renames"]}
            if n.get("jumper_renames") else {}),
+        **({"ipc_jumper_rename_error": n["jumper_rename_error"]}
+           if n.get("jumper_rename_error") else {}),
         "files": files_meta,
         "gerber_zip": str(zip_path) if zip_path else None,
         "gerber_zip_sha256": zip_sha,

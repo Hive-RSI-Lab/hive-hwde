@@ -447,6 +447,122 @@ def test_dfm_check_passes_a_jumper_split_named_apart(tmp_path, monkeypatch):
     assert facts["netlist"]["jumper_splits"] == 1
 
 
+
+def test_dnp_and_cut_pin_clashes_are_no_jumpers():
+    # nothing joins a do-not-populate part's pads on the assembled board
+    for dnp in ('(attr smd dnp)', '(dnp yes)'):
+        assert ipcd356.jumper_groups(JUMPER_PCB.replace(
+            "(jumper_pad_groups", dnp + " (jumper_pad_groups")) == []
+    # D-356 keeps 4 characters: SHLD1/SHLD2 would also catch SHLD3
+    shld = ('(kicad_pcb (footprint "USB" (property "Reference" "J1")\n'
+            '  (jumper_pad_groups ("SHLD1" "SHLD2") ("A1" "B1"))\n'
+            '  (pad "SHLD1" smd) (pad "SHLD2" smd) (pad "SHLD3" smd)\n'
+            '  (pad "A1" smd) (pad "B1" smd)))\n')
+    assert ipcd356.jumper_groups(shld) == [("J1", ("A1", "B1"))]
+    assert ipcd356.jumper_groups('(kicad_pcb (footprint "R"))') == []
+
+
+def test_islands_named_apart_but_joined_in_copper_are_a_short(tmp_path):
+    # a stale rename: the copper now joins U1-1's island and U1-6's
+    fab = stack(tmp_path, {"F.Cu": [flash(1, 1), flash(4, 1), flash(1, 2),
+                                    flash(4, 2), "D11*",
+                                    f"X{gx(1)}Y{gx(-1)}D02*",
+                                    f"X{gx(4)}Y{gx(-1)}D01*",
+                                    f"X{gx(1)}Y{gx(-2)}D02*",
+                                    f"X{gx(4)}Y{gx(-2)}D01*",
+                                    f"X{gx(4)}Y{gx(-1)}D02*",
+                                    f"X{gx(4)}Y{gx(-2)}D01*"],
+                            "B.Cu": []}, {})
+    _, text, bg = _jumper_case(tmp_path / "x", ipc_net_6="USB_DP~J1")
+    d = ipcd356.parse(text)
+    ipcd356.resolve(d, bg)
+    res = ipcd356.compare(fab, d, jumpers=ipcd356.jumper_groups(JUMPER_PCB))
+    (sh,) = res["shorts"]
+    assert sh["nets"] == ["USB_DP", "USB_DP~J1"] and sh["jumper"]
+    assert res["opens"] == []
+
+
+def test_duplicate_number_jumpers_split_and_rename(tmp_path):
+    pcb = ('(kicad_pcb (footprint "SW" (property "Reference" "U1")\n'
+           '  (duplicate_pad_numbers_are_jumpers yes)\n'
+           '  (pad "1" smd) (pad "1" smd)))\n')
+    fab, text, bg = _jumper_case(tmp_path)
+    text = text.replace("U1    -6   ", "U1    -1   ")
+    jumpers = ipcd356.jumper_groups(pcb)
+    assert jumpers == [("U1", ("1",))]
+    d = ipcd356.parse(text)
+    ipcd356.resolve(d, bg)
+    res = ipcd356.compare(fab, d, jumpers=jumpers)
+    assert [o.get("jumper") for o in res["opens"]] == [True]
+    new, (r,) = ipcd356.split_jumper_islands(text, res["jumper_splits"])
+    d2 = ipcd356.parse(new)
+    ipcd356.resolve(d2, bg)
+    assert ipcd356.compare(fab, d2, jumpers=jumpers)["opens"] == []
+
+
+def test_a_jumper_island_joined_through_a_via(tmp_path):
+    # U1-6's island runs F.Cu -> via at (3, 2) -> B.Cu to J2-1
+    fab = stack(tmp_path, {"F.Cu": [flash(1, 1), flash(4, 1), flash(1, 2),
+                                    flash(3, 2), "D11*",
+                                    f"X{gx(1)}Y{gx(-1)}D02*",
+                                    f"X{gx(4)}Y{gx(-1)}D01*",
+                                    f"X{gx(1)}Y{gx(-2)}D02*",
+                                    f"X{gx(3)}Y{gx(-2)}D01*"],
+                           "In1.Cu": [], "In2.Cu": [],
+                           "B.Cu": [flash(3, 2), flash(4, 2), "D11*",
+                                    f"X{gx(3)}Y{gx(-2)}D02*",
+                                    f"X{gx(4)}Y{gx(-2)}D01*"]},
+                {"s.drl": drill([(3, 2)])})
+    text = d356(rec("327", "USB_DP", "U1", "1", 1, 1, 1),
+                rec("327", "USB_DP", "J1", "1", 4, 1, 1),
+                rec("327", "USB_DP", "U1", "6", 1, 2, 1),
+                rec("327", "USB_DP", "J2", "1", 4, 2, 4))
+    jumpers = ipcd356.jumper_groups(JUMPER_PCB)
+    res = ipcd356.compare(fab, ipcd356.parse(text), jumpers=jumpers)
+    (sp,) = res["jumper_splits"]
+    assert sp["n_fragments"] == 2 and [o["jumper"] for o in res["opens"]] == [True]
+    new, (r,) = ipcd356.split_jumper_islands(text, res["jumper_splits"])
+    assert r["points"] == 2
+    res2 = ipcd356.compare(fab, ipcd356.parse(new), jumpers=jumpers)
+    assert res2["opens"] == [] and res2["shorts"] == []
+
+
+def test_renames_resolve_aliases_stay_unique_and_keep_crlf():
+    lines = ["P  CODE 00", "P  UNITS CUST 0", "P  NNAME1     /USB_DP",
+             rec("327", "NNAME1", "U1", "1", 1, 1, 1),
+             rec("327", "NNAME1", "U1", "6", 1, 2, 1),
+             rec("327", "/USB_DP~J1", "U9", "1", 9, 9, 1), "999"]
+    text = "\r\n".join(lines) + "\r\n"
+    sp = {"net": "/USB_DP", "own_names": False, "points": [[3], [4]]}
+    new, (r,) = ipcd356.split_jumper_islands(text, [sp])
+    assert (r["from"], r["to"]) == ("/USB_DP", "/USB_DP~J2")
+    assert new.count("\r\n") == text.count("\r\n") and "\n\n" not in new
+    assert [p.net for p in ipcd356.parse(new).points] == \
+        ["/USB_DP", "/USB_DP~J2", "/USB_DP~J1"]
+
+
+def test_export_leaves_a_board_without_jumpers_and_survives_a_failed_rename(
+        tmp_path, monkeypatch):
+    import fab_export
+    pcb = tmp_path / "r.kicad_pcb"
+    pcb.write_text('(kicad_pcb (footprint "R" (property "Reference" "R1")))\n')
+    ipc = tmp_path / "r.ipc"
+    text = d356(rec("327", "A", "R1", "1", 1, 1, 1))
+    ipc.write_text(text)
+    assert fab_export.name_jumper_islands(pcb, ipc, tmp_path) == []
+    assert ipc.read_text() == text
+
+    monkeypatch.setattr(fab_export, "_export_ipc_absolute",
+                        lambda cli, pcb, f: {"status": "pass"})
+    def boom(*a, **k):
+        raise ipcd356.D356Error("no gerbers")
+    monkeypatch.setattr(fab_export, "name_jumper_islands", boom)
+    res = fab_export.export_ipc_absolute(Path("cli"), pcb, ipc, tmp_path)
+    assert res["status"] == "pass"
+    assert res["jumper_rename_error"] == "D356Error: no gerbers"
+    assert ipc.read_text() == text
+
+
 def test_truncated_names_are_told_apart_and_reported():
     """kicad-cli keeps the last 14 characters: two unconnected-(...-PAD5)
     nets can share one D-356 name."""
