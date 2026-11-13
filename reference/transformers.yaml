@@ -1,0 +1,34 @@
+# Transformer windings, row by row from each maker's drawing, for
+# check_transformer (issue #644). A row matches a part's Value (regex, case
+# blind) and gives its physical windings, each from its dotted pin (dot) to
+# its other end (end) with its turns, plus the pins the drawing bridges and
+# the topology the part is built for (a board's constraints.json
+# `transformers` can say otherwise).
+#
+#   windings:  [{name, dot, end, turns, taps: [pins], shield: bool}]
+#              turns may be relative (a drawing that gives only ratios):
+#              only their ratios are judged. A tap pin is a winding's own
+#              tap, legal to leave open. A shield winding may have one end
+#              wired and the other open.
+#   primary:   the winding the switch drives
+#   bridges:   [[pin, pin]] the drawing joins on the board to put two
+#              windings in series; the joined node connects to nothing else
+#   topology:  flyback | forward
+#   source:    the drawing (and revision) the row was read from
+transformers:
+  - match: '^750314727\b'
+    name: Wurth 750314727 (12 V 2 A flyback for TI UCC28740, PMP9638)
+    topology: flyback
+    primary: primary
+    windings:
+      - {name: primary, dot: "3", end: "1", turns: 40, taps: ["2"]}
+      - {name: aux, dot: "5", end: "4", turns: 11}
+      - {name: sec_a, dot: "8", end: "11", turns: 5}
+      - {name: sec_b, dot: "10", end: "13", turns: 2}
+    bridges: [["10", "11"]]
+    source: >-
+      Wurth 750314727 drawing rev 6C: dots on 3, 5, 8 and 10; ratios
+      (3-1):(8-11) 8:1, (3-1):(10-13) 20:1, (3-1):(5-4) 3.636:1; the
+      "SEC 12V, 2A" bracket spans 8 to 13 with 10 and 11 bridged. TI PMP9638
+      (TIDRBY7) turns 40:11:5:2, pin 3 on the drain, rectifier anode on 8
+      (hw-lab mains-psu, cold review 1 finding 1)

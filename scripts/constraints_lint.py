@@ -192,7 +192,7 @@ SCHEMA_TOP_KEYS = set(SECTIONS) | {"placement", "coating", "antennas", "pcb_ante
                                    "enclosure", "ambient_c", "ambient_min_c",
                                    "cable_pf", "pin_modes", "ddr",
                                    "testpoints", "rf_match", "surge", "isolation",
-                                   "mechanical"}
+                                   "mechanical", "transformers"}
 ENVELOPE_ALIASES = {"power_constraints": "power",
                     "thermal_constraints": "thermal",
                     "voltage_constraints": "voltages"}

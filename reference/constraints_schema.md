@@ -304,6 +304,13 @@ Consumers per key (script -> phase):
   // "external" (u.FL / IPEX) skips it.
   "antennas": {"U7": "pcb"},
 
+  // check_transformer (P8, #644): a transformer's topology (flyback |
+  // forward, default its row's in reference/transformers.yaml) and the turns
+  // each winding in use should have, keyed by its two outer pins ("8-13":
+  // the 12 V winding from 8 to 13 through the drawing's 10-11 bridge).
+  "transformers": {"T1": {"topology": "flyback",
+                          "turns": {"8-13": 7, "5-4": 11}}},
+
   // check_antenna (P8, #371): a board's own antenna copper (IFA, meander,
   // patch, chip antenna). No footprint says where it is, so the row does.
   // nets, refs or poly name the copper (a poly takes what it touches).

@@ -627,6 +627,40 @@ An IC the file doesn't know is a warning naming it. Add its row with the
 datasheet's section rather than copying another vendor's habit. lite-main
 and core (CH340B, CH224A/Q) pass clean.
 
+## A transformer's phasing
+
+`check_transformer` (verify suite) reads each transformer in the board's
+netlist against its maker's drawing, row by row in
+`reference/transformers.yaml` (each winding's dotted pin, other end and
+turns, the pins the drawing bridges, and the topology the part is built
+for). hw-lab mains-psu passed erc, verify and attest with its flyback wired
+as a forward: bulk on the dotted primary pin, the drain on the other, the
+rectifier's anode on the dotted secondary pin. Its output and aux diodes
+then conduct in the on-time, and VDD heads for 103 V against the
+controller's 38 V.
+
+- phasing: the switch end is the primary pin on a transistor's drain or
+  collector (or an IC's DRAIN/SW/LX pin), and each other winding's
+  rectifier is the diode on its switching end (the end with fewer parts,
+  through series resistors of 100 ohm or less). A flyback wants the switch
+  and the anode on like-dotted pins; a forward, unlike. A mismatch is
+  `xfmr_phase`. constraints.json `transformers` may declare the topology.
+- bridges: a bridge the drawing puts on the board joins two windings in
+  series and nothing else. Pins on two nets are `xfmr_bridge_missing`, and a
+  bridge node tied to other parts (mains-psu's 10 and 11 on its return) is
+  `xfmr_bridge_loaded`.
+- windings: both ends on one net is `xfmr_winding_shorted`; one end wired
+  and the other open is a warning, `xfmr_winding_open`.
+- turns: windings joined on a net count as one, from its outer ends.
+  constraints.json `transformers: {T1: {turns: {"8-13": 7}}}` fails
+  (`xfmr_turns`) when 8 and 13 aren't that winding's two ends or its turns
+  differ, naming what the wiring uses (mains-psu had 8-11, 5 turns).
+
+A T-part with no row, a primary with no switch found, or a winding
+rectified by a FET goes in not_judged. Add a part's row from its drawing,
+with the revision. Planted fault `xfmr-forward`: a 750314727 added to
+usbbuck4 wired as mains-psu had it.
+
 ## Finishing a dense board's routing
 
 `route_auto` ends with `route_finish`, so a dense board needs no copper

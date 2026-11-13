@@ -1,0 +1,15 @@
+# Seeded fault for check_transformer (a transformer's phasing, issue #644).
+mutants:
+  xfmr-forward:
+    board: usbbuck4
+    script: mutations/xfmr_forward.py
+    check: check_transformer
+    defect: >-
+      NETLIST fault: a 750314727 flyback transformer with the input on dotted
+      primary pin 3, the switch drain on pin 1 and the rectifier's anode on
+      dotted secondary pin 8 (hw-lab mains-psu's wiring): a forward
+      converter, its rectifier conducting in the on-time; ERC sees every pin
+      connected
+    expect:
+      kind: xfmr_phase
+      ref: T9

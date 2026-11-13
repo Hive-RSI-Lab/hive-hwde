@@ -503,7 +503,7 @@ GOLDEN_NOTHING_TO_JUDGE = {
     "check_antenna", "check_cap_load", "check_creepage", "check_ddr_timing", "check_diffpair",
     "check_isolation", "check_kelvin", "check_length_groups", "check_mate_pins",
     "check_reset_drive", "check_rf_match", "check_stackup", "check_surge", "check_thermal",
-    "check_usb_phy", "check_via_stubs",
+    "check_transformer", "check_usb_phy", "check_via_stubs",
 }
 
 
