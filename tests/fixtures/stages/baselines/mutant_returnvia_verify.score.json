@@ -45,7 +45,8 @@
    "check_usb_phy": 0,
    "check_via_stubs": 0,
    "check_vias": 0,
-   "check_wicking": 1
+   "check_wicking": 1,
+   "netlist_audit": 0
   },
   "by_kind": {
    "body_unjudged": 1,
