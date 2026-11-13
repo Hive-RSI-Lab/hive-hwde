@@ -40,6 +40,7 @@ OFFLINE_FIXTURES = [
     ("P8", "mutant_planesplit_verify"), ("P8", "mutant_returnvia_verify"),
     ("P8", "mutant_gndchoke_verify"),
     ("P9", "pd_trigger_dfm"), ("P9", "mutant_cpl_dfm"),
+    ("P9", "oasis_cpl_dfm"),
     ("P10", "pd_trigger_order"),
 ]
 SMOKE_FIXTURES = [

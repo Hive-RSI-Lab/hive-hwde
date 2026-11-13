@@ -30,7 +30,14 @@ Each board is a pin, `pinned/<board>.json`:
   their KiCad sources and licence are copied, into `pinned/<board>/kicad/`,
   with a fresh `state.json` (every gate owed), by `bin/pcb-flow pin <board> --from
   <clone> --commit <sha> --path <dir> --url <url> --license <spdx> --errata
-  <file>`. The pin's `source` names the project, its licence and its errata
+  <file>`. A board that published the CPL it sent its assembler is pinned
+  with `--cpl <file>` too: the pin copies it to `fab/CPL.csv` and keeps the
+  EasyEDA models its checks fetch beside it in `fab/easyeda` (kept across a
+  re-pin). dfm then checks that CPL's rotations with no `parts.json`: the
+  LCSC numbers come off the board's footprints, and a row with none is a part
+  the assembler did not place. A CPL with no models kept beside it and no
+  `parts.json` is not checked, so a verdict never depends on what one
+  machine has cached. The pin's `source` names the project, its licence and its errata
   file, and lists what in the errata is not a defect of the board (a design
   note, a firmware bug) and so is not in the ledger. Every erratum that is a
   defect of the board is a `real` entry carrying the errata's URL at the

@@ -11,6 +11,7 @@
   "license": "Apache-2.0",
   "path": "pcb/fabricated-boards/v0.2/kicad",
   "errata": "pcb/fabricated-boards/v0.2/errata.md",
+  "cpl": "pcb/fabricated-boards/v0.2/positions.csv",
   "not_in_ledger": [
    "'buttons aren't actually necessary': a design note, not a defect"
   ]

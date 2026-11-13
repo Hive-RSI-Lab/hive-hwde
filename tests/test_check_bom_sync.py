@@ -148,6 +148,21 @@ def test_unknown_designator_in_bom(tmp_path):
     assert _errors(viols, "bom_ref_unknown")[0]["pos"] is None
 
 
+def test_cpl_designators_match_whatever_their_case(tmp_path):
+    # oasis: the board says boot1, the CPL it shipped to JLC says BOOT1. JLC
+    # matches either way, so the case alone is no unknown or missing ref -
+    # but a ref no footprint folds to still is
+    pcb = _workspace(tmp_path)
+    cpl = tmp_path / "CPL.csv"
+    lines = cpl.read_text(encoding="utf-8").splitlines()
+    body = [lines[0]] + [ln.lower() if ln.startswith("C4,") else ln
+                         for ln in lines[1:]]
+    cpl.write_text("\n".join(body) + "\nr99,1,1,0,top\n", encoding="utf-8")
+    viols, _ = _run(pcb)
+    assert _refs(_errors(viols), "bom_ref_unknown") == {"r99"}
+    assert _errors(viols, "bom_ref_missing") == []
+
+
 def test_parts_json_dnp_class_counts(tmp_path):
     pcb = _workspace(tmp_path)
     parts = tmp_path / "parts.json"

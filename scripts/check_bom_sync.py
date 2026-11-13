@@ -24,7 +24,9 @@ Rules, each a finding's `kind` (error unless marked):
    BOM.csv or CPL.csv, or a ref of any class but board_feature is absent from
    BOM-full.csv (the BOM of record).
  - bom_ref_unknown: BOM.csv, CPL.csv or BOM-full.csv names a designator that is
-   no footprint on the board.
+   no footprint on the board. A designator matches whatever its case, as at
+   JLC (the board's boot1 is the CPL's BOOT1), unless two footprints differ
+   only by case.
  - bom_package_mismatch: the part a ref is bought as (its LCSC number, from
    the board's footprint field, parts.json or BOM.csv - each is checked) is
    a chip of another size than the footprint's (an 0402 resistor on an 0603
@@ -303,12 +305,26 @@ def check(pcb: Path, fab_dir: Path | None, parts: Path | None,
                 f"{ref} is SMD with exclude_from_pos_files and no parts.json "
                 "class, so it became hand_install from the attr alone")
 
+    # JLC matches a designator whatever its case (oasis's board has boot1,
+    # the CPL it shipped BOOT1), so a fab file's ref takes the board's
+    # spelling when exactly one footprint folds to it.
+    folded: dict[str, list[str]] = {}
+    for ref in fps:
+        folded.setdefault(ref.casefold(), []).append(ref)
+
+    def board_ref(ref: str) -> str:
+        if ref in fps:
+            return ref
+        hit = folded.get(ref.casefold(), [])
+        return hit[0] if len(hit) == 1 else ref
+
     legs = {"schematic": bool(sch), "parts": have_parts, "fab": False}
     files: dict[str, set[str]] = {}
     if fab_dir is not None:
         for name in FAB_FILES:
             if (fab_dir / name).is_file():
-                files[name] = csv_designators(fab_dir / name)
+                files[name] = {board_ref(r)
+                               for r in csv_designators(fab_dir / name)}
     legs["fab"] = bool(files)
 
     # The part each ref is bought as against its pad's chip size. Every
@@ -322,7 +338,7 @@ def check(pcb: Path, fab_dir: Path | None, parts: Path | None,
             bought.setdefault((ref, rec["lcsc"]), []).append("parts.json")
     if fab_dir is not None and (fab_dir / "BOM.csv").is_file():
         for ref, code in csv_lcsc(fab_dir / "BOM.csv").items():
-            bought.setdefault((ref, code), []).append("BOM.csv")
+            bought.setdefault((board_ref(ref), code), []).append("BOM.csv")
     known = part_packages(records, parts if have_parts else None)
     table = lcsc_packages.load() if table is None else table
     unknown: set[str] = set()

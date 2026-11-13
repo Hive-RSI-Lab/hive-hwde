@@ -1691,3 +1691,151 @@ def test_a_ball_grid_is_judged_whatever_its_ref(tmp_path):
     pcb = tmp_path / "m.kicad_pcb"
     pcb.write_text("(kicad_pcb (version 20240108) " + body + ")")
     assert _mark_row(pcb, "M1")[0]["silk_mark"] == "wrong"
+
+
+# ------- a foreign board's shipped CPL (oasis v0.2, #880) -------
+
+def test_a_keyed_two_pad_housing_goes_on_one_way_only():
+    """oasis v0.2's mister1: a JST PH whose LCSC model numbers its pads the
+    other way to KiCad's. JLC placed it 180 off; a plain two-pad part (a
+    resistor) may sit either way round, a keyed housing may not."""
+    model = _model([("1", 1.0, 0.0), ("2", -1.0, 0.0)], package="CONN-SMD_2P")
+    board = [("1", -1.0, 0.0), ("2", 1.0, 0.0)]
+    jst = cv.analyse(_kfp("mister1", board,
+                          name="Connector_JST:JST_PH_S2B-PH-SM4-TB_1x02"), model)
+    assert jst["verdict"] == "ok" and jst["corrections"] == [180.0]
+    assert cv.analyse(_kfp("BT1", board, name="aiee:CR2032"),
+                      _model(model.pads and [("1", 1.0, 0.0), ("2", -1.0, 0.0)])
+                      )["corrections"] == [180.0]
+    r = cv.analyse(_kfp("R1", board, name="Resistor_SMD:R_0603"),
+                   _model([("1", 1.0, 0.0), ("2", -1.0, 0.0)], package="R0603"))
+    assert r["corrections"] == [0.0, 180.0] and "either way" in r["basis"]
+
+
+def test_an_unkeyed_single_row_header_sits_either_way_round():
+    pads = [(str(i), 0.0, (i - 2.5) * 2.54) for i in range(1, 5)]
+    model = _model([(n, x, -y) for n, x, y in pads], package="HDR-TH_4P")
+    a = cv.analyse(_kfp("J3", pads,
+                        name="Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"),
+                   model)
+    assert a["verdict"] == "ok" and a["corrections"] == [0.0, 180.0]
+    # the same pads as a keyed JST housing: one way only
+    b = cv.analyse(_kfp("J3", pads, name="Connector_JST:JST_XH_B4B-XH-A_1x04"),
+                   model)
+    assert b["corrections"] == [180.0]
+
+
+def test_a_lone_pin_named_a_is_no_polarity():
+    """LCSC's TS-1187A switch (C318884) names pin 1 A: that is not an anode
+    without a K beside it, so the part is not held to one way round."""
+    fp = _kfp("SW1", [("1", -1.0, 0.0), ("2", 1.0, 0.0)], name="aiee:SW-SMD")
+    assert not cv.is_polar(fp, _model([("1", -1, 0), ("2", 1, 0)], {"1": "A", "2": "B"}))
+    assert cv.is_polar(fp, _model([("1", -1, 0), ("2", 1, 0)], {"1": "A", "2": "K"}))
+    assert cv.is_polar(fp, _model([("1", -1, 0), ("2", 1, 0)], {"1": "+", "2": "-"}))
+
+
+def test_a_switch_with_shared_pad_numbers_fits_by_geometry():
+    """oasis's TS-1187A: the board numbers its four pads 1,1,2,2, the model
+    1-4. A number fit lands, but only geometry says the part sits."""
+    model = _model([("1", -3.0, -1.85), ("2", 3.0, -1.85), ("3", -3.0, 1.85),
+                    ("4", 3.0, 1.85)], {"1": "A", "2": "A", "3": "B", "4": "B"},
+                   package="SW-SMD_4P")
+    board = [("1", -3.0, -1.85), ("1", 3.0, -1.85), ("2", -3.0, 1.85),
+             ("2", 3.0, 1.85)]
+    a = cv.analyse(_kfp("SW2", board, name="Button_Switch_SMD:SW_SPST_TL3342"),
+                   model)
+    assert a["verdict"] == "ok" and "geometry" in a["basis"]
+    assert 0.0 in a["corrections"] and 180.0 in a["corrections"]
+
+
+def test_an_exposed_pad_split_differently_is_fitted_on_the_rest():
+    """oasis U1 (ESP32-C3-WROOM-02): the model's thermal pad is three entries
+    round the centre, the board's one off in a corner. Its centre is dragged
+    off; the perimeter pads, alike on both sides, still fit."""
+    ring = [("1", -4.0, -4.0), ("2", 4.0, -4.0), ("3", 4.0, 4.0), ("4", -4.0, 4.0)]
+    model = _model(ring + [("5", x, 0.0) for x in (-1.0, 0.0, 1.0)])
+    board = ring + [("5", 1.5, 1.5)]
+    a = cv.analyse(_kfp("U1", board), model)
+    assert a["verdict"] == "ok" and a["corrections"] == [0.0]
+    # turned, the perimeter fit still finds the turn
+    turned = [(n, -y, x) for n, x, y in ring] + [("5", -1.5, 1.5)]
+    assert cv.analyse(_kfp("U1", turned), model)["corrections"] == [90.0] or \
+        cv.analyse(_kfp("U1", turned), model)["corrections"] == [270.0]
+
+
+def test_pads_a_micron_apart_are_one_row_not_a_two_micron_pitch():
+    fp = _kfp("U7", [("1", -1.174999, 0.0), ("2", -1.175001, 0.5),
+                     ("3", 1.175, 0.0), ("4", 1.175, 0.5)])
+    assert cv.offset_limit_mm(fp) > 0.01
+
+
+def test_read_cpl_reads_past_a_byte_order_mark(tmp_path):
+    p = tmp_path / "positions.csv"
+    p.write_bytes("﻿Designator,Mid X,Mid Y,Layer,Rotation\n"
+                  "MISTER1,10,-10,top,90\n".encode("utf-8"))
+    assert cv.read_cpl(p)["MISTER1"]["rot"] == 90.0
+
+
+def test_designators_match_the_board_whatever_their_case(ws):
+    """Fabrication Toolkit upper-cases designators (mister1 ships MISTER1) and
+    JLC matches them so: the row is the board's part, not 'not on the board'."""
+    pcb, cache = ws
+    cpl = {k.lower(): v for k, v in _cpl(U1=90, C1=0).items()}
+    v, _ = _verdicts(pcb, cache, cpl)
+    assert v["U1"]["verdict"] == "ok" and v["C1"]["verdict"] == "ok"
+
+
+def test_a_row_with_no_lcsc_number_is_not_placed_on_a_foreign_cpl(ws):
+    """oasis's D1-D5 are in its CPL with no LCSC part: JLC does not place
+    them. hwde's own CPL holds only placed parts, so there it still fails."""
+    pcb, cache = ws
+    cpl = _cpl(X1=0, U1=90)
+    rep = cv.verify(pcb, cpl, LCSC, cache, fetch=False, unsourced_placed=False)
+    v = {p["ref"]: p for p in rep["parts"]}
+    assert v["X1"]["verdict"] == "not_placed" and v["U1"]["verdict"] == "ok"
+    own = {p["ref"]: p for p in cv.verify(pcb, cpl, LCSC, cache,
+                                          fetch=False)["parts"]}
+    assert own["X1"]["verdict"] != "not_placed"
+
+
+def test_dfm_checks_a_shipped_cpl_without_parts_json(ws, tmp_path,
+                                                     monkeypatch):
+    """A foreign board ships fab/CPL.csv and no parts.json: placement reads
+    the LCSC numbers off the board, the models kept beside the CPL in
+    fab/easyeda, and skips a row the board gives no LCSC number."""
+    pcb, cache = ws
+    monkeypatch.delenv("HWDE_EASYEDA_CACHE", raising=False)
+    monkeypatch.delenv("AIEE_EASYEDA_CACHE", raising=False)
+    text = pcb.read_text()
+    for ref, code in {"U1": "C116592", "C1": "C106245"}.items():
+        text = text.replace(f'(property "Reference" "{ref}")',
+                            f'(property "Reference" "{ref}") '
+                            f'(property "LCSC" "{code}")')
+    pcb.write_text(text)
+    fab = tmp_path / "fab"
+    shutil.copytree(cache, fab / "easyeda")
+    cpl = _cpl_csv(fab / "CPL.csv", [("U1", 10, 270), ("C1", 40, 0), ("X1", 60, 0)])
+    assert cv.lcsc_map(pcb, None).get("U1") == "C116592"
+    assert dfm_check._placement_cache(cpl, None, True) == fab / "easyeda"
+    vios: list = []
+    facts = dfm_check.check_placement(pcb, cpl, None, None, None, False, vios,
+                                      shipped=True)
+    assert [(v["kind"], v["refs"]) for v in _no_mark_warning_aside(vios)] == [
+        ("cpl_rotation", ["U1"])]
+    assert not any("X1" in (v.get("refs") or []) for v in vios)
+    assert facts
+
+
+def test_a_shipped_package_without_its_models_is_not_written_into(
+        tmp_path, monkeypatch):
+    """A shipped CPL with no fab/easyeda beside it (our own fab package, a
+    bench fixture) reads the shared cache: a dfm run never adds a dir to the
+    package it checks."""
+    monkeypatch.delenv("HWDE_EASYEDA_CACHE", raising=False)
+    monkeypatch.delenv("AIEE_EASYEDA_CACHE", raising=False)
+    cpl = tmp_path / "fab" / "CPL.csv"
+    assert dfm_check._placement_cache(cpl, None, True) == (
+        cv.default_cache(None))
+    parts = tmp_path / "board" / "parts.json"
+    assert dfm_check._placement_cache(cpl, parts, False) == (
+        tmp_path / "board" / "easyeda")

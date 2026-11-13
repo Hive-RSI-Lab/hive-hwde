@@ -89,8 +89,12 @@ boards:
     source_quote: "the part on the jlcpcb order is rotated 180 from what I have in my pcb layout"
     fault_class: DFA (CPL rotation)
     verdict: missed
-    note: cpl_verify renders the CPL against the footprint for hwde's own fab package; the foreign board has no CPL in the tree, so nothing was there to read.
-    follow_up: none new - cpl_verify covers it on an hwde fab package
+    note: >-
+      The corpus run reads the clone's KiCad files only, not the CPL. The
+      board did publish the CPL it sent JLC (v0.2/positions.csv): pinned as
+      oasis-v0-2/fab/CPL.csv, dfm checks it with no parts.json and finds
+      mister1 (a keyed JST-PH) 180 deg off (#880; bench oasis_cpl_dfm).
+    follow_up: none new - dfm's shipped-CPL check catches it on the pinned board (#880)
 - id: minuet
   url: https://github.com/brown-studios/minuet
   commit: 1e43aa3df01b33522db23f4b2139f89b5689da99
