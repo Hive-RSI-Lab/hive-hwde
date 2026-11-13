@@ -11,9 +11,15 @@ entries:
   - P3
   - library
   stage: P3
-  proposed_level: null
+  proposed_level: L0
   targets: []
-  status: pending
+  status: promoted
+  resolution:
+    kind: prompt_line
+    artifacts:
+    - agents/librarian.md
+    reason: 'Lesson added to agents/librarian.md under "Traps found on boards" (hive-pcb-flow #965).'
+    date: '2026-11-13'
 - entry: 2026-10-28-pulled-symbols-have-every-pin-unspecified
   line: 8
   date: '2026-10-28'
@@ -22,9 +28,15 @@ entries:
   - P4
   - erc
   stage: P4
-  proposed_level: null
+  proposed_level: L0
   targets: []
-  status: pending
+  status: promoted
+  resolution:
+    kind: prompt_line
+    artifacts:
+    - agents/schematic-block.md
+    reason: 'Lesson added to agents/schematic-block.md under "Traps found on boards" (hive-pcb-flow #965).'
+    date: '2026-11-13'
 - entry: 2026-10-28-a-bidirectional-pin-on-a-pwr-flag
   line: 14
   date: '2026-10-28'
@@ -33,9 +45,15 @@ entries:
   - P4
   - erc
   stage: P4
-  proposed_level: null
+  proposed_level: L0
   targets: []
-  status: pending
+  status: promoted
+  resolution:
+    kind: prompt_line
+    artifacts:
+    - agents/schematic-block.md
+    reason: 'Lesson added to agents/schematic-block.md under "Traps found on boards" (hive-pcb-flow #965).'
+    date: '2026-11-13'
 - entry: 2026-10-28-mountinghole-pad-via-fails-jlc-s-hole
   line: 18
   date: '2026-10-28'
@@ -44,9 +62,15 @@ entries:
   - P5
   - holes
   stage: P5
-  proposed_level: null
+  proposed_level: L0
   targets: []
-  status: pending
+  status: promoted
+  resolution:
+    kind: prompt_line
+    artifacts:
+    - agents/librarian.md
+    reason: 'Lesson added to agents/librarian.md under "Traps found on boards" (hive-pcb-flow #965).'
+    date: '2026-11-13'
 - entry: 2026-10-28-an-fpc-socket-mated-by-an-on
   line: 22
   date: '2026-10-28'
@@ -57,7 +81,13 @@ entries:
   stage: P6
   proposed_level: null
   targets: []
-  status: pending
+  status: declined
+  resolution:
+    kind: not_actionable
+    artifacts: []
+    reason: A code or gate defect, not a prompt or doc lesson; tracked as a code issue (Lesson issue on
+      hive-pcb-flow, or filed upstream at the time) rather than as a promotion.
+    date: '2026-11-13'
 - entry: 2026-10-28-pad-net-changes-are-refused-even-before
   line: 27
   date: '2026-10-28'
@@ -68,7 +98,13 @@ entries:
   stage: P6
   proposed_level: null
   targets: []
-  status: pending
+  status: declined
+  resolution:
+    kind: not_actionable
+    artifacts: []
+    reason: A code or gate defect, not a prompt or doc lesson; tracked as a code issue (Lesson issue on
+      hive-pcb-flow, or filed upstream at the time) rather than as a promotion.
+    date: '2026-11-13'
 - entry: 2026-10-28-a-0-5-mm-ffc-pin-can
   line: 32
   date: '2026-10-28'
@@ -77,9 +113,15 @@ entries:
   - P7
   - routing
   stage: P7
-  proposed_level: null
+  proposed_level: L0
   targets: []
-  status: pending
+  status: promoted
+  resolution:
+    kind: prompt_line
+    artifacts:
+    - agents/router.md
+    reason: 'Lesson added to agents/router.md under "Traps found on boards" (hive-pcb-flow #965).'
+    date: '2026-11-13'
 - entry: 2026-10-28-the-place-verify-gate-takes-any-non
   line: 38
   date: '2026-10-28'
@@ -90,7 +132,13 @@ entries:
   stage: P6
   proposed_level: null
   targets: []
-  status: pending
+  status: declined
+  resolution:
+    kind: not_actionable
+    artifacts: []
+    reason: A code or gate defect, not a prompt or doc lesson; tracked as a code issue (Lesson issue on
+      hive-pcb-flow, or filed upstream at the time) rather than as a promotion.
+    date: '2026-11-13'
 - entry: 2026-10-28-model-a-display-tail-s-real-outline
   line: 42
   date: '2026-10-28'
@@ -99,9 +147,15 @@ entries:
   - P6
   - mechanical
   stage: P6
-  proposed_level: null
+  proposed_level: L0
   targets: []
-  status: pending
+  status: promoted
+  resolution:
+    kind: prompt_line
+    artifacts:
+    - agents/placement.md
+    reason: 'Lesson added to agents/placement.md under "Traps found on boards" (hive-pcb-flow #965).'
+    date: '2026-11-13'
 - entry: 2026-10-28-freerouting-ignores-copper-to-edge-and-hole
   line: 48
   date: '2026-10-28'
@@ -110,9 +164,15 @@ entries:
   - P7
   - routing
   stage: P7
-  proposed_level: null
+  proposed_level: L0
   targets: []
-  status: pending
+  status: promoted
+  resolution:
+    kind: prompt_line
+    artifacts:
+    - agents/router.md
+    reason: 'Lesson added to agents/router.md under "Traps found on boards" (hive-pcb-flow #965).'
+    date: '2026-11-13'
 - entry: 2026-10-28-route-gnd-as-a-net-before-pouring
   line: 53
   date: '2026-10-28'
@@ -121,9 +181,15 @@ entries:
   - P7
   - routing
   stage: P7
-  proposed_level: null
+  proposed_level: L0
   targets: []
-  status: pending
+  status: promoted
+  resolution:
+    kind: prompt_line
+    artifacts:
+    - agents/router.md
+    reason: 'Lesson added to agents/router.md under "Traps found on boards" (hive-pcb-flow #965).'
+    date: '2026-11-13'
 - entry: 2026-10-28-ses-import-can-drop-connections-freerouting-reported
   line: 60
   date: '2026-10-28'
@@ -132,6 +198,12 @@ entries:
   - P7
   - routing
   stage: P7
-  proposed_level: null
+  proposed_level: L0
   targets: []
-  status: pending
+  status: promoted
+  resolution:
+    kind: prompt_line
+    artifacts:
+    - agents/router.md
+    reason: 'Lesson added to agents/router.md under "Traps found on boards" (hive-pcb-flow #965).'
+    date: '2026-11-13'

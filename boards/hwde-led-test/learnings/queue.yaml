@@ -13,7 +13,13 @@ entries:
   stage: P3
   proposed_level: null
   targets: []
-  status: pending
+  status: declined
+  resolution:
+    kind: superseded
+    artifacts: []
+    reason: Already fixed in the module (bom_cpl binds refdes-less lines by LCSC, V_ATTR_RE and check_ratings,
+      fpfix rule E, check_courtyard), as the entry itself records.
+    date: '2026-11-13'
 - entry: 2026-10-28-keep-parts-search-attributes-in-parts-json
   line: 8
   date: '2026-10-28'
@@ -24,7 +30,13 @@ entries:
   stage: P3
   proposed_level: null
   targets: []
-  status: pending
+  status: declined
+  resolution:
+    kind: superseded
+    artifacts: []
+    reason: Already fixed in the module (bom_cpl binds refdes-less lines by LCSC, V_ATTR_RE and check_ratings,
+      fpfix rule E, check_courtyard), as the entry itself records.
+    date: '2026-11-13'
 - entry: 2026-10-28-easyeda-0603-courtyards-are-the-body-outline
   line: 13
   date: '2026-10-28'
@@ -35,7 +47,13 @@ entries:
   stage: P3
   proposed_level: null
   targets: []
-  status: pending
+  status: declined
+  resolution:
+    kind: superseded
+    artifacts: []
+    reason: Already fixed in the module (bom_cpl binds refdes-less lines by LCSC, V_ATTR_RE and check_ratings,
+      fpfix rule E, check_courtyard), as the entry itself records.
+    date: '2026-11-13'
 - entry: 2026-10-28-a-board-with-no-ic-still-needs
   line: 17
   date: '2026-10-28'
@@ -46,7 +64,12 @@ entries:
   stage: P8
   proposed_level: null
   targets: []
-  status: pending
+  status: declined
+  resolution:
+    kind: not_actionable
+    artifacts: []
+    reason: Entry has no body to act on.
+    date: '2026-11-13'
 - entry: 2026-10-28-fit-margin-must-leave-room-for-refdes
   line: 21
   date: '2026-10-28'
@@ -57,4 +80,10 @@ entries:
   stage: P6
   proposed_level: null
   targets: []
-  status: pending
+  status: declined
+  resolution:
+    kind: superseded
+    artifacts: []
+    reason: Already fixed in the module (bom_cpl binds refdes-less lines by LCSC, V_ATTR_RE and check_ratings,
+      fpfix rule E, check_courtyard), as the entry itself records.
+    date: '2026-11-13'

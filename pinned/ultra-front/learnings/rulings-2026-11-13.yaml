@@ -1,0 +1,93 @@
+# pcb-flow LEARNINGS queue ruling pass, 2026-11-13 (a1794). Apply: learnings.py resolve --workspace <ws> --batch <this file>
+version: 1
+rulings:
+  - entry: 2026-10-28-easyeda-courtyards-are-still-the-body-outline
+    status: promoted
+    kind: prompt_line
+    level: L0
+    artifacts: [agents/librarian.md]
+    reason: >-
+      Lesson added to agents/librarian.md under "Traps found on boards" (hive-pcb-flow #965).
+
+  - entry: 2026-10-28-pulled-symbols-have-every-pin-unspecified
+    status: promoted
+    kind: prompt_line
+    level: L0
+    artifacts: [agents/schematic-block.md]
+    reason: >-
+      Lesson added to agents/schematic-block.md under "Traps found on boards" (hive-pcb-flow #965).
+
+  - entry: 2026-10-28-a-bidirectional-pin-on-a-pwr-flag
+    status: promoted
+    kind: prompt_line
+    level: L0
+    artifacts: [agents/schematic-block.md]
+    reason: >-
+      Lesson added to agents/schematic-block.md under "Traps found on boards" (hive-pcb-flow #965).
+
+  - entry: 2026-10-28-mountinghole-pad-via-fails-jlc-s-hole
+    status: promoted
+    kind: prompt_line
+    level: L0
+    artifacts: [agents/librarian.md]
+    reason: >-
+      Lesson added to agents/librarian.md under "Traps found on boards" (hive-pcb-flow #965).
+
+  - entry: 2026-10-28-an-fpc-socket-mated-by-an-on
+    status: declined
+    kind: not_actionable
+    reason: >-
+      A code or gate defect, not a prompt or doc lesson; tracked as a code issue (Lesson issue on hive-pcb-flow, or filed upstream at the time) rather than as a promotion.
+
+  - entry: 2026-10-28-pad-net-changes-are-refused-even-before
+    status: declined
+    kind: not_actionable
+    reason: >-
+      A code or gate defect, not a prompt or doc lesson; tracked as a code issue (Lesson issue on hive-pcb-flow, or filed upstream at the time) rather than as a promotion.
+
+  - entry: 2026-10-28-a-0-5-mm-ffc-pin-can
+    status: promoted
+    kind: prompt_line
+    level: L0
+    artifacts: [agents/router.md]
+    reason: >-
+      Lesson added to agents/router.md under "Traps found on boards" (hive-pcb-flow #965).
+
+  - entry: 2026-10-28-the-place-verify-gate-takes-any-non
+    status: declined
+    kind: not_actionable
+    reason: >-
+      A code or gate defect, not a prompt or doc lesson; tracked as a code issue (Lesson issue on hive-pcb-flow, or filed upstream at the time) rather than as a promotion.
+
+  - entry: 2026-10-28-model-a-display-tail-s-real-outline
+    status: promoted
+    kind: prompt_line
+    level: L0
+    artifacts: [agents/placement.md]
+    reason: >-
+      Lesson added to agents/placement.md under "Traps found on boards" (hive-pcb-flow #965).
+
+  - entry: 2026-10-28-freerouting-ignores-copper-to-edge-and-hole
+    status: promoted
+    kind: prompt_line
+    level: L0
+    artifacts: [agents/router.md]
+    reason: >-
+      Lesson added to agents/router.md under "Traps found on boards" (hive-pcb-flow #965).
+
+  - entry: 2026-10-28-route-gnd-as-a-net-before-pouring
+    status: promoted
+    kind: prompt_line
+    level: L0
+    artifacts: [agents/router.md]
+    reason: >-
+      Lesson added to agents/router.md under "Traps found on boards" (hive-pcb-flow #965).
+
+  - entry: 2026-10-28-ses-import-can-drop-connections-freerouting-reported
+    status: promoted
+    kind: prompt_line
+    level: L0
+    artifacts: [agents/router.md]
+    reason: >-
+      Lesson added to agents/router.md under "Traps found on boards" (hive-pcb-flow #965).
+
