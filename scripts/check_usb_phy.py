@@ -13,19 +13,24 @@ On USB-C, Rd is 5.1 k +/-20% total, internal included (Type-C R2.5 Table
 receptacle with none. ERC sees resistors either way. Each part's needs are
 in reference/usb_phys.yaml, row by row from the vendor's own document.
 
-How the lines are read: from each connector pin named D+/DP/DP1/D-/DM/DN...,
-the net is walked through 0 R, ferrites and inductors (joined), and through
-any resistor of series_max_ohm (100) or less (a series element). A larger
-resistor is a pull: to a rail (its volts from the net name), or to a GPIO
-or a transistor (switched). A two-pad solder jumper (JP/SJ/SB/NT) is walked
-through as closed; a solder-pad breakout of more pads is an access point on
-the line, not a PHY. A 4-pad common-mode choke in reference/usb_phys.yaml
-`chokes` is walked through along the winding the line enters on, to the
-PHY behind it; one the file doesn't know stops the walk with a warning. The first IC reached is the PHY, unless it is
-in not_phy (an ESD array, a charger sink watching DP/DM). CC is read the
-same way from pins named CC/CC1/CC2: a pull to GND is an Rd, to a positive
-rail an Rp (a source or DRP port, not checked), and a known sink controller
-adds its own Rd behind any series resistor.
+How the lines are read: from each connector pin named D+/DP/DP1/D-/DM/DN...
+(D+1/D-1 and D+2/D-2 on a stacked dual USB-A), the net is walked through
+0 R, ferrites and inductors (joined), and through any resistor of
+series_max_ohm (100) or less (a series element). A larger resistor is a
+pull: to a rail (its volts from the net name), or to a GPIO or a transistor
+(switched). A two-pad solder jumper (JP/SJ/SB/NT) is walked through as
+closed; a solder-pad breakout of more pads is an access point on the line,
+not a PHY. A 4-pad common-mode choke in reference/usb_phys.yaml `chokes` is
+walked through along the winding the line enters on, to the PHY behind it;
+one the file doesn't know stops the walk with a warning. The first IC
+reached is the PHY, unless it is in not_phy (an ESD array, a charger sink
+watching DP/DM). Each D+ is judged with the D- that reaches its PHY on the
+matching pin (USBDP_DN2 with USBDM_DN2, USB0_DP with USB0_DM), so each port
+of a hub or of a dual connector is read whole. A USB link between two ICs on
+the board (a SoC to a hub's upstream port) has no connector on it and isn't
+read. CC is read the same way from pins named CC/CC1/CC2: a pull to GND is
+an Rd, to a positive rail an Rp (a source or DRP port, not checked), and a
+known sink controller adds its own Rd behind any series resistor.
 
 Findings:
   usb_series_r_unwanted  error: a series resistor between the connector and
@@ -47,8 +52,9 @@ Findings:
   usb_choke_shorts_pair  error: D+ walks into D- through a choke's winding
                          (D+ and D- on one winding: a turned or mis-pinned
                          footprint shorts the pair)
-  usb_c_orientation      error: a USB-C receptacle's two D+ (or D-) pins
-                         aren't joined, so the device works one way up only
+  usb_c_orientation      error: a USB-C receptacle's (a connector with CC
+                         pins) two D+ (or D-) pins aren't joined, so the
+                         device works one way up only
   usb_cc_rd_missing      error: a sink's CC pin with no Rd at all (no VBUS
                          from a C-to-C cable)
   usb_cc_rd_value        error: CC's total Rd outside 5.1 k +/-20% (two Rd
@@ -88,8 +94,9 @@ from check_straps import (CONNECTOR_PREFIXES, PASSIVE_PREFIXES, Board,  # noqa: 
 SCRIPT = "check_usb_phy"
 SOURCE = SCRIPT
 KB_YAML = HERE.parent / "reference" / "usb_phys.yaml"
-DP_RE = re.compile(r"^(D\+|DP[12]?|D_P|USB_?D\+|USB_?DP)$")
-DM_RE = re.compile(r"^(D-|D[MN][12]?|D_[MN]|USB_?D-|USB_?D[MN])$")
+# D+1/D-1, D+2/D-2: a stacked dual USB-A's two ports
+DP_RE = re.compile(r"^(D\+[12]?|DP[12]?|D_P|USB_?D\+|USB_?DP)$")
+DM_RE = re.compile(r"^(D-[12]?|D[MN][12]?|D_[MN]|USB_?D-|USB_?D[MN])$")
 CC_RE = re.compile(r"^CC[12]?$")
 SWITCH_PREFIXES = ("Q", "U", "IC")
 # solder jumpers and solder pads: never a PHY. Two pads in line are walked
@@ -390,6 +397,15 @@ def check_pullup(board, bg, kb, phy, row, dp, dpw, dmw) -> list:
     return viols
 
 
+def partner(dp_name: str, dm_name: str) -> bool:
+    """dm_name is dp_name with its D+ mark turned into D-'s, and nothing
+    else changed: USBDP_DN1 / USBDM_DN1, USB0_DP / USB0_DM, UD+ / UD-."""
+    if len(dp_name) != len(dm_name):
+        return False
+    diff = [(a, b) for a, b in zip(dp_name, dm_name) if a != b]
+    return len(diff) == 1 and diff[0][0] in "P+" and diff[0][1] in "MN-"
+
+
 def check_data(board, bg, kb, conns) -> tuple[list, list]:
     bus = kb["usb_bus"]
     viols, facts = [], []
@@ -467,14 +483,14 @@ def check_data(board, bg, kb, conns) -> tuple[list, list]:
                                   "skipped": f"pin {ent['name']} isn't "
                                              f"{row['name']}"})
                     continue
-                dm, dmw = None, None
-                for w in dmws:
-                    for e in w["ics"]:
-                        if e["ref"] == phy:
-                            dm, dmw = e, w
-                            break
-                    if dm:
-                        break
+                # this D+'s own D-: the PHY pin named as its partner
+                # (USBDM_DN2 for USBDP_DN2), else the first that reaches
+                # the PHY at all (STM32's PA11/PA12 carry no D+/D- mark)
+                cands = [(e, w) for w in dmws for e in w["ics"]
+                         if e["ref"] == phy]
+                dm, dmw = next(((e, w) for e, w in cands
+                                if partner(ent["name"], e["name"])),
+                               cands[0] if cands else (None, None))
                 viols += check_phy(board, bg, kb, phy, row, ent, dm)
                 viols += check_pullup(board, bg, kb, phy, row, ent, dpw, dmw)
                 facts.append({
@@ -593,8 +609,10 @@ def check(pcb: Path, netlist: Path | None = None, kb: dict | None = None):
     conns = connectors(board)
     viols, cc_facts = [], []
     for cref, c in sorted(conns.items()):
-        viols += check_orientation(board, bg, cref, c)
+        # only a USB-C receptacle (it has CC pins) carries one port's D+
+        # twice; a stacked dual USB-A's D+1/D+2 are two ports
         if c["cc"]:
+            viols += check_orientation(board, bg, cref, c)
             v, f = check_cc(board, bg, kb, cref, c)
             viols += v
             cc_facts += f

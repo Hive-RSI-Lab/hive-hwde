@@ -2,7 +2,8 @@
 # controller does with its CC pins. check_usb_phy reads it.
 #
 # Every row comes from the vendor's own document, read for this file
-# (2026-10-31, task 261031-013152-62102f19cb). The section is given so the next
+# (2026-10-31, task 261031-013152-62102f19cb; the USB251xB hub, AM62x /
+# OSD62x-PM and CYPD3177 rows on 2026-11-13). The section is given so the next
 # reader can check it. A part not listed here gets a usb_phy_unknown or
 # usb_cc_unknown warning. Add it, with its datasheet, rather than copying
 # another vendor's habit. The "22-27 ohm always" folk rule is wrong both ways:
@@ -110,6 +111,48 @@ phys:
       recommended to reserve series resistors (initial value can be 22/33
       ohm) and capacitors to ground ... close to the chip". The USB pull-up
       is the chip's own (USB_SERIAL_JTAG_DP_PULLUP).
+  - name: Microchip USB2512B/USB2513B/USB2514B hub (upstream and downstream ports)
+    match: '^USB251[234]B'
+    series_r: none
+    dp_pullup: internal
+    source: >-
+      Microchip USB251xB/xBi data sheet DS00001692C, section 1.0: every
+      series termination resistor and D+/D- pull-up and pull-down is inside
+      the hub. Verbatim: "All required resistors on the USB ports are
+      integrated into the hub. This includes all series termination
+      resistors and all required pull-down and pull-up resistors on D+ and
+      D- pins." Features list: "Fully integrated USB termination and
+      pull-up/pull-down resistors". Table 1-1 covers the USB2512B, USB2513B
+      and USB2514B and their industrial Bi parts. On a downstream port the
+      hub's own resistors are the host's pull-downs, so nothing goes outside
+      there either (row added 2026-11-13).
+  - name: TI AM62x (AM620/AM623/AM625) and Octavo OSD62x-PM, USB0/USB1
+    match: '^([XP]?AM62(0[124]|3[124]|5[124])|OSD6254-1G-IPM)'
+    pins: '^USB[01]_D[PM]$'
+    series_r: none
+    dp_pullup: internal
+    source: >-
+      TI SPRADO3B (AM62x schematic design guidelines and review checklist,
+      revised September 2025), section 7.4.2.1: USBn_DP/USBn_DM go straight
+      to the connector, with no series resistor or capacitor. Verbatim: "The
+      recommendation is to connect USBn_DM (n = 0-1) and USBn_DP (n = 0-1)
+      signals directly (without any series resistor or filter capacitor)";
+      its schematic review list, item 2: "Direct connection of the USB
+      signals from the processor to the USB connector". TI's AM62x data
+      sheet SPRSP58C, section 6.8.9: USB0 and USB1 are "compliant with
+      Universal Serial Bus Revision 2.0 Specification". Neither document
+      names a D+ pull-up: this row reads it as internal because TI wants
+      nothing but the pins on the lines. Octavo OSD62x-PM datasheet revision
+      2.0 (2026-01-16), section 5.1: the SiP's signals "have the same
+      function as the equivalent pin in the AM62x"; Table 5-7 maps USB0/USB1
+      DP/DM to the AM62x balls, and Table 4-1's only USB resistor inside is
+      RCALIB's 499 ohm. Octavo's OSD62x-PM schematic checklist, 62_USB_7:
+      "USBx_DP and USBx_DM should never have any series resistors or
+      capacitance on these signals". The match is the orderable parts:
+      SPRSP58C's package addendum (AM6201/02/04, AM6231/32/34,
+      AM6251/52/54, with TI's X or P prefix), and Octavo's Tables 2-2 to
+      2-6 (OSD6254-1G-IPM, -ES for samples). AM625SIP has its own data sheet
+      and isn't matched (row added 2026-11-13).
 
 # Parts that sit on D+/D- without being the device's PHY: ESD arrays, and
 # charger/PD sinks that only watch DP/DM for BC1.2 or QC.
@@ -147,3 +190,15 @@ cc_sinks:
     source: >-
       WCH CH224 datasheet V2.0, section 6.3 (CH224D) and 6.4 (CH221K)
       reference schematics: a 5.1 kohm from each of CC1 and CC2 to GND.
+  - name: Infineon EZ-PD BCR CYPD3177
+    match: '^CYPD3177'
+    rd: internal
+    rd_ohm: 5100
+    source: >-
+      Infineon EZ-PD BCR datasheet 002-25383 revision *C (2024-09-18), Table
+      15: Rd (UFP CC termination) 4.59-5.1-5.61 kohm, and the dead-battery
+      Rd_DB 4.08-5.1-6.12 kohm, both inside the part. Section 1.1.1: "The
+      USBPD block includes the termination resistor RD and its switch as
+      required by the USBPD spec ... EZ-PD BCR has a dead battery RD resistor
+      bonded to both the CC pins", so CC1/CC2 go to the receptacle with
+      nothing to GND (row added 2026-11-13).
