@@ -11,21 +11,28 @@ schematic-level structural problems BEFORE board work starts:
    (placement edges/groups/fixed/separation, thermal[].ref) that is not a
    netlist component - a P4 refdes rename/split would otherwise silently
    mute the constraint (place_anneal drops unknown refs; ladder row 86).
+   Under --pcb a ref the board marks (attr board_only) - a mounting hole,
+   fiducial or logo, never in a schematic - is not missing.
  - diffpair_naming (warning): an explicit diff_pairs entry whose p/n names
    do not follow a recognized differential suffix convention (_P/_N, DP/DM,
    D+/D-; check_diffpair.py's conservative families).
  - diffpair_unpaired (warning): a netlist net carrying a strong differential
-   suffix whose partner net is absent.
+   suffix whose partner net is absent. <STEM>_N with an active-low control
+   stem (INT, RST, CS, EN, ...) is a single-ended signal, not half a pair.
  - power_no_consumers (warning): a declared power net with no power_in pin
    AND no series escape - a 2-pin member whose far pin leaves the rail to a
    non-ground net (passive loads - LEDs, droppers, fuses - never carry
    pintype power_in; such rails are recorded as passive_fed, not warned).
+   A transistor on the rail with a driven control pin (a low-side switch)
+   is an escape too, and an IC supply pin the symbol types passive
+   (VDD/VCC/AVDD/VCCA/...) is a consumer (supply_pins_typed_passive).
  - pin_no_net (warning): a symbol pin (per the export's own libparts/units
    inventory) that appears in NO net, not even an unconnected-* singleton.
    Hierarchical exports DROP no-connect singleton nets, so these pads reach
    board_init with no net at all and nothing else reports them (row 68).
  - power_undeclared (warning): a net feeding power_in pins that is neither
-   declared (power[] / voltages[]) nor ground-named (GND*/;*GND/VSS*/0V).
+   declared (power[] / voltages[]) nor ground-named (GND*/;*GND/VSS*/0V),
+   nor a tap of a declared rail through a 2-pin R/L/bead (an RC sub-rail).
  - dangling_net (warning): a single-pin net not named unconnected-* - the
    classic label-typo signature (label misspelled on one stub).
  - ground_island (warning): a ground-named net (not chassis/earth/shield)
@@ -811,9 +818,19 @@ def _constraint_nets(constraints: dict) -> dict[str, list[str]]:
     return where
 
 
+# single-ended active-low control signals spelled <STEM>_N: their _N means
+# "active low", not the minus leg of a pair (ultra-front /FRONT_INT_N)
+_ACTIVE_LOW_STEM_RE = re.compile(
+    r"(?:^|[/_.])(?:INT|IRQ|RST|RESET|NRST|CS|SS|EN|ENABLE|WAKE|ALERT|"
+    r"RDY|READY|OE|WE|RE|WR|RD|PD|PWDN|SHDN|SD|FAULT|FLT|BUSY|PG|PGOOD|"
+    r"STBY|SLEEP|LDAC|CLR|DRDY|HOLD|WP|ACK|BOOT|MUTE)$", re.I)
+
+
 def _suffix_partner(name: str) -> str | None:
     """Expected partner net name if `name` carries a strong diff suffix."""
     up = name.upper()
+    if up.endswith("_N") and _ACTIVE_LOW_STEM_RE.search(up[:-2]):
+        return None
     for a, b in STRONG_SUFFIXES:
         for tok, other in ((a, b), (b, a)):
             if up.endswith(tok):
@@ -856,15 +873,59 @@ def _constraint_refs(constraints: dict) -> dict[str, list[str]]:
     return where
 
 
+# an IC supply pin the symbol types passive (ES9018K2M AVCC_L, PCM5102A
+# CPVDD, ES7243E VDDA, ES8388 HPVDD): a consumer all the same
+_SUPPLY_PIN_RE = re.compile(r"^[A-Z]{0,3}V(?:DD|CC)[A-Z0-9_]*$|^V[+]$|^VS[+]?$")
+# a transistor on a rail: a low-side switch's drain / collector carries the
+# load current down to its source (ultra-front /BL_K: backlight cathode)
+_SWITCH_REF_RE = re.compile(r"^Q\d")
+# a series element that makes a filtered tap of a rail (RC / LC / bead)
+_FILTER_REF_RE = re.compile(r"^(R|L|FB)\d")
+
+
+def _supply_pin_consumers(members: list[dict],
+                          comp_pins: dict[str, dict[str, str]]) -> list[str]:
+    """Members on a non-2-pin part whose pin is named as a supply input
+    (VDD/VCC/AVDD/VCCA/...), whatever pintype the symbol gave it."""
+    return sorted({m["ref"] for m in members
+                   if len(comp_pins.get(m["ref"], {})) > 2
+                   and _SUPPLY_PIN_RE.match(
+                       (m.get("pinfunction") or "").upper())})
+
+
+def _filtered_from(net: str, members: list[dict],
+                   comp_pins: dict[str, dict[str, str]],
+                   declared: set) -> list[str]:
+    """Declared rails this net taps through a 2-pin R/L/bead member: an
+    RC-filtered sub-rail of a declared rail (ultra-front /IR_VCC)."""
+    out = set()
+    for m in members:
+        pins = comp_pins.get(m["ref"], {})
+        if len(pins) != 2 or not _FILTER_REF_RE.match(m["ref"]):
+            continue
+        other = next((n for p, n in pins.items() if p != m["pin"]), None)
+        if other and other != net and other in declared:
+            out.add(other)
+    return sorted(out)
+
+
 def _series_escapes(rail: str, members: list[dict],
                     comp_pins: dict[str, dict[str, str]]) -> list[str]:
     """2-pin members whose far pin leaves the rail through a non-ground,
     non-NC net: current has a path out through a series/load element
     (polyfuse, dropper, LED resistor), which never carries pintype
-    power_in. A typo'd dead rail (source + caps to GND only) has none."""
+    power_in. A typo'd dead rail (source + caps to GND only) has none.
+    A transistor on the rail whose control pin is driven (a net that is
+    neither the rail, ground nor NC) switches a load through it too."""
     out = set()
     for m in members:
         pins = comp_pins.get(m["ref"], {})
+        if _SWITCH_REF_RE.match(m["ref"]) and len(pins) >= 3:
+            if any(n != rail and not _is_ground_name(n)
+                   and not n.startswith("unconnected-")
+                   for p, n in pins.items() if p != m["pin"]):
+                out.add(m["ref"])
+            continue
         if len(pins) != 2:
             continue
         other = next((n for p, n in pins.items() if p != m["pin"]), None)
@@ -874,9 +935,29 @@ def _series_escapes(rail: str, members: list[dict],
     return sorted(out)
 
 
+def _board_only_refs(pcb: Path) -> set[str]:
+    """Refs of the board's footprints marked (attr ... board_only): KiCad's
+    flag for a part that lives on the board and not in the schematic
+    (mounting holes, fiducials, logos), so never in the netlist."""
+    out: set[str] = set()
+    try:
+        text = pcb.read_text(errors="replace")
+    except OSError:
+        return out
+    for blk in re.split(r"\n\s*\(footprint ", text)[1:]:
+        if not re.search(r"\(attr[^)]*\bboard_only\b", blk):
+            continue
+        m = (re.search(r'\(property "Reference" "([^"]+)"', blk)
+             or re.search(r'\(fp_text reference "?([^"\s)]+)', blk))
+        if m:
+            out.add(m.group(1))
+    return out
+
+
 def audit(parsed: dict, constraints: dict,
           decoupling: dict | None,
-          pin_requirements: list[dict] | None = None
+          pin_requirements: list[dict] | None = None,
+          board_only_refs: set[str] | None = None
           ) -> tuple[list[dict], dict]:
     nets = parsed["nets"]
     comps = parsed["components"]
@@ -898,8 +979,9 @@ def audit(parsed: dict, constraints: dict,
     # 1b. every constraints-referenced refdes exists (ladder row 86: a
     # refdes rename/split must not silently mute a placement constraint)
     ref_where = _constraint_refs(constraints)
+    board_only_refs = board_only_refs or set()
     for ref, sources in sorted(ref_where.items()):
-        if ref not in comps:
+        if ref not in comps and ref not in board_only_refs:
             v("error", "missing_ref", None, [ref],
               f"constraints ref '{ref}' ({', '.join(sources)}) not in "
               f"netlist components", constraint_sources=sources)
@@ -948,11 +1030,15 @@ def audit(parsed: dict, constraints: dict,
         if n_in == 0:
             # passive loads (LEDs, droppers, fuses) never carry power_in:
             # a series escape means the rail feeds SOMETHING - record the
-            # fact instead of a false-positive warning (T6 calibration)
+            # fact instead of a false-positive warning (T6 calibration);
+            # so does an IC supply pin the symbol typed passive
             escapes = _series_escapes(net, members, comp_pins)
+            supply = _supply_pin_consumers(members, comp_pins)
             if escapes:
                 fact["passive_fed_via"] = escapes
-            else:
+            if supply:
+                fact["supply_pins_typed_passive"] = supply
+            if not escapes and not supply:
                 v("warning", "power_no_consumers", net,
                   sorted({m["ref"] for m in members}),
                   f"declared power net '{net}' feeds no power_in pin")
@@ -964,6 +1050,9 @@ def audit(parsed: dict, constraints: dict,
             continue
         feeders = [m for m in nets[name]
                    if _base_type(m["pintype"]) == "power_in"]
+        if feeders and _filtered_from(name, nets[name], comp_pins,
+                                      declared_all):
+            continue  # a filtered tap of a declared rail is that rail
         if feeders:
             v("warning", "power_undeclared", name,
               sorted({m["ref"] for m in feeders}),
@@ -1334,7 +1423,8 @@ def audit(parsed: dict, constraints: dict,
 
 
 def run_audit(netlist: Path, constraints_path: Path | None,
-              decoupling_path: Path | None, out: str | None):
+              decoupling_path: Path | None, out: str | None,
+              pcb: Path | None = None):
     """Audit NETLIST. With no constraints file the netlist's own faults
     still count (dangling_net, ground_island, sot23_pinout, ...); only
     power_undeclared is dropped, since with nothing declared every rail
@@ -1344,7 +1434,9 @@ def run_audit(netlist: Path, constraints_path: Path | None,
                    if constraints_path else {})
     decoupling = (checklib.load_json(decoupling_path, "decoupling metadata")
                   if decoupling_path else None)
-    violations, facts = audit(parsed, constraints, decoupling)
+    violations, facts = audit(
+        parsed, constraints, decoupling,
+        board_only_refs=_board_only_refs(pcb) if pcb else None)
     if constraints_path is None:
         violations = [x for x in violations
                       if x.get("kind") != "power_undeclared"]
@@ -1427,7 +1519,7 @@ def run(argv=None):
     return run_audit(netlist,
                      Path(args.constraints) if args.constraints else None,
                      Path(args.decoupling) if args.decoupling else None,
-                     args.out)
+                     args.out, pcb=Path(args.pcb) if args.pcb else None)
 
 
 def main(argv=None) -> int:
