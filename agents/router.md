@@ -297,6 +297,18 @@ rules as routing constraints; cite the record id when you apply one.
   to the server args took 30 parallel starts from 24 of 180 failing to 0 of
   180 (`bin/pcb-flow`'s `x()` doesn't pass it yet: issue #898). A rarer
   `Authorization required` (about 4% at 30 at once) remains either way.
+- An edit chain you replay from a base board (ops files or specs applied in
+  order) must never remove copper by uuid or uuid prefix: rip by net, layer
+  and endpoints (or a via's `at`) instead. KiCad gives every track a script
+  creates a fresh uuid on each run, so a later step that removes an earlier
+  step's track by uuid matches nothing on a clean rebuild. route_edit treats
+  an absent removal as a no-op, so the run stays quiet. On a radar board this
+  left a 3V3 track in place and shorted it to a GND pad (DRC 0 -> 3 errors),
+  and it only showed when the whole chain was replayed from the base: replays
+  on the session's own intermediate board kept the old uuid and looked clean.
+  After a replay, compare the rebuilt board with the committed one (tracks,
+  vias and footprints as geometric sets) and treat any absent removal as a
+  failure.
 - Snapshot before plane_repair/route_cleanup (ask via state.py snapshot or
   confirm the orchestrator did). Board copies kept for the design doc go in
   `routing/` named `pre-<step>.kicad_pcb` / `post-<step>.kicad_pcb` (hyphen:
