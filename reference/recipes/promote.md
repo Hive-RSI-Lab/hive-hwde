@@ -52,9 +52,10 @@ A promotion WRITES SOMEWHERE. Pick the level, make the edit, then record it:
       --status promoted --kind script_check --level L2 \
       --reason "<why it climbs>" --targets scripts/check_current.py
 
-`root_learnings` is the only kind the tool performs for you - it appends the
-entry verbatim (with a provenance line) and writes the triage row, because the
-suite checks those two files against each other:
+`root_learnings` is the only kind the tool performs for you - it writes the
+entry verbatim (with a provenance line) to a new file in the module's
+`learnings.d/`, its triage row as the last line, so the two never drift apart;
+`learnings.py triage` then counts it. It refuses when `learnings.d/` is missing:
 
     learnings.py resolve --workspace ~/dev/boards/<b> --entry <id> \
       --status promoted --kind root_learnings --level L2 \
