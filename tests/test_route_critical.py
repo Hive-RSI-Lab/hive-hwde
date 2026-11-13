@@ -460,6 +460,66 @@ def test_power_net_clearances_raises_track_nets_only(tmp_path):
     assert json.loads(out2.read_text(encoding="utf-8")) == {"/USB_DP": 0.225}
 
 
+def _seg(x1, y1, x2, y2, net, uid, w=0.2):
+    return (f'  (segment (start {x1} {y1}) (end {x2} {y2}) (width {w}) '
+            f'(layer "F.Cu") (net "{net}") (uuid "{uid}"))\n')
+
+
+def test_normalize_power_widths_widens_only_where_clearance_holds(
+        tmp_path, monkeypatch):
+    """#957: the voice board's +5V (1.56 mm floor) was widened blind round
+    its buck - 18 shorts, 40 mask bridges. Planted faults: a foreign GND pad
+    beside a narrow power segment, a segment by the board edge, and a second
+    power net whose widen would hit the first net's widened copper. Each is
+    left narrow and listed; the free segment is widened, the crumb dropped. (uuids: hex, as
+    route_critical._SEG_BLOCK_RE reads them.)"""
+    seen = []
+    monkeypatch.setattr(rc.route_edit, "apply_ops",
+                        lambda path, ops: seen.extend(ops))
+    body = _fp("C1", 12, 20.6, pads=_pad("2", 0, 0, "GND"))
+    body += _seg(10, 10, 14, 10, "P5", "f1")
+    body += _seg(10, 20, 14, 20, "P5", "b1")
+    body += _seg(20, 10, 20.02, 10, "P5", "c1")
+    body += _seg(20, 39.6, 24, 39.6, "P5", "e1")
+    body += _seg(30, 5, 34, 5, "P5", "a1")
+    body += _seg(30, 6, 34, 6, "P9", "a2")
+    body += _seg(30, 15, 34, 15, "P9", "d1", w=1.0)
+    pcb = _pcb(tmp_path, "norm", body)
+    specs = [{"net": "P5", "ipc_min_mm": 1.0}, {"net": "P9", "ipc_min_mm": 1.0}]
+    r = rc.normalize_power_widths(pcb, specs, clearance=0.1,
+                                  edge_clearance=0.25)
+    removed = {o["uuid"] for o in seen if o["op"] == "remove"}
+    assert removed == {"f1", "c1", "a1"}
+    adds = [o for o in seen if o["op"] == "add_track"]
+    assert [(o["start"], o["width"], o["net"]) for o in adds] == \
+        [([10.0, 10.0], 1.0, "P5"), ([30.0, 5.0], 1.0, "P5")]
+    assert r["widened"] == 2 and r["crumbs_removed"] == 1
+    assert [(b["net"], b["start"]) for b in r["blocked"]] == \
+        [("P5", [10.0, 20.0]), ("P5", [20.0, 39.6]), ("P9", [30.0, 6.0])]
+    assert r["blocked"][0]["width_mm"] == 0.2
+    assert r["blocked"][0]["want_mm"] == 1.0
+    # no edge clearance given: the edge segment widens; copper that would
+    # overlap the pad outright stays blocked even at zero clearance
+    seen.clear()
+    r0 = rc.normalize_power_widths(pcb, specs[:1])
+    assert r0["widened"] == 3
+    assert [b["start"] for b in r0["blocked"]] == [[10.0, 20.0]]
+
+
+def test_power_width_blocked_one_error_per_net():
+    blocked = [{"net": "+5V", "layer": "F.Cu", "start": [1, 2], "end": [3, 2],
+                "width_mm": 0.2, "want_mm": 1.5576}] * 3
+    blocked += [{"net": "+9V", "layer": "B.Cu", "start": [5, 5],
+                 "end": [6, 5], "width_mm": 0.2, "want_mm": 1.248}]
+    vs = rc.power_width_blocked(blocked)
+    assert [(v["net"], v["severity"], v["kind"]) for v in vs] == \
+        [("+5V", "error", "power_width_blocked"),
+         ("+9V", "error", "power_width_blocked")]
+    assert "3 segment(s)" in vs[0]["msg"]
+    assert "1.5576 mm floor" in vs[0]["msg"]
+    assert rc.power_width_blocked([]) == []
+
+
 def test_run_krt_passes_net_clearances_and_captures_stdout(tmp_path,
                                                           monkeypatch):
     seen = {}

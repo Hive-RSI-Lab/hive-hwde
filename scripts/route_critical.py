@@ -146,7 +146,8 @@ SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(SCRIPTS / "lib"))
 
-from shapely.geometry import Point, box  # noqa: E402
+from shapely import STRtree  # noqa: E402
+from shapely.geometry import LineString, Point, box  # noqa: E402
 from shapely.ops import unary_union  # noqa: E402
 
 import check_current  # noqa: E402  (required_width_mm - rules_gen's helper)
@@ -1427,7 +1428,28 @@ _SEG_FIELD_RES = {
 CRUMB_MM = 0.05
 
 
-def normalize_power_widths(staged: Path, specs: list[dict]) -> dict:
+def _widen_fits(poly, net: str, layer: str, trees: dict, added: list,
+                clearance: float, keep_in) -> bool:
+    """True when `poly` (a widened `net` segment on `layer`) keeps
+    `clearance` from every other net's wired copper on that layer - the
+    board's own (trees[layer]: STRtree + nets) and segments widened earlier
+    in this pass (`added`) - and stays inside `keep_in` (the outline eroded
+    by the edge clearance) when that is given."""
+    if keep_in is not None and not poly.within(keep_in):
+        return False
+    grown = poly.buffer(clearance - 1e-4) if clearance > 0 else poly
+    tree, polys, nets = trees.get(layer, (None, [], []))
+    if tree is not None:
+        for i in tree.query(grown):
+            if nets[int(i)] != net and grown.intersects(polys[int(i)]):
+                return False
+    return not any(ly == layer and n != net and grown.intersects(q)
+                   for ly, n, q in added)
+
+
+def normalize_power_widths(staged: Path, specs: list[dict],
+                           clearance: float = 0.0,
+                           edge_clearance: float | None = None) -> dict:
     """Post-KRT width discipline (S11 acceptance finding): KRT can emit a few
     base-width segments and sub-grid crumbs on power nets even with
     --no-power-tap-neckdown, which violate rules_gen's aiee_pwr_width_* DRU
@@ -1436,10 +1458,32 @@ def normalize_power_widths(staged: Path, specs: list[dict]) -> dict:
     (remove + re-add via route_edit - atomic, verified) and drop crumbs
     (< 0.05 mm). Targeting the floor, not the 1.5x-margined command, keeps
     legitimate fine-pitch neckdowns of low-current nets intact.
-    Returns {"widened": n, "crumbs_removed": n}."""
+
+    #957: a widen is applied only when the widened segment keeps `clearance`
+    from every other net's tracks, pads and vias (unnetted pads included)
+    and, with `edge_clearance`, stays that far inside the outline. KRT's
+    narrow segments are pad entries between foreign pads; widening them
+    blind (the voice board's +5V to 1.56 mm round its buck) shorted 18
+    places and bridged mask at 40. A segment that can't take its floor is
+    left as KRT drew it and listed in "blocked" - the honest track_width
+    error, which the caller reports, instead of a short.
+    Returns {"widened": n, "crumbs_removed": n, "blocked": [...]}."""
     want = {s["net"]: s["ipc_min_mm"] for s in specs}
     text = staged.read_text(encoding="utf-8")
-    ops = []
+    bg = geom.BoardGeom.from_file(staged)
+    keep_in = None
+    if edge_clearance is not None and bg.outline is not None \
+            and not bg.outline.is_empty:
+        keep_in = bg.outline.buffer(-edge_clearance + 1e-4)
+    trees: dict = {}
+    for layer in bg.copper_layers:
+        items = [(t.poly, t.net) for t in bg.tracks_of(layer=layer)]
+        items += [(p.poly, p.net) for p in bg.pads_of(layer=layer)]
+        items += [(v.poly, v.net) for v in bg.vias_of(layer=layer)]
+        if items:
+            polys = [q for q, _n in items]
+            trees[layer] = (STRtree(polys), polys, [n for _q, n in items])
+    ops, added, blocked = [], [], []
     widened = crumbs = 0
     for m in _SEG_BLOCK_RE.finditer(text):
         block, uid = m.group(0), m.group(1)
@@ -1453,16 +1497,26 @@ def normalize_power_widths(staged: Path, specs: list[dict]) -> dict:
         sx, sy = map(float, _SEG_FIELD_RES["start"].search(block).groups())
         ex, ey = map(float, _SEG_FIELD_RES["end"].search(block).groups())
         layer = _SEG_FIELD_RES["layer"].search(block).group(1)
-        ops.append({"op": "remove", "uuid": uid})
         if math.hypot(ex - sx, ey - sy) < CRUMB_MM:
+            ops.append({"op": "remove", "uuid": uid})
             crumbs += 1
             continue
+        line = LineString([(sx, sy), (ex, ey)])
+        poly = line.buffer(want[net] / 2.0)
+        if not _widen_fits(poly, net, layer, trees, added, clearance,
+                           keep_in):
+            blocked.append({"net": net, "layer": layer,
+                            "start": [sx, sy], "end": [ex, ey],
+                            "width_mm": w, "want_mm": want[net]})
+            continue
+        ops.append({"op": "remove", "uuid": uid})
         ops.append({"op": "add_track", "start": [sx, sy], "end": [ex, ey],
                     "width": want[net], "layer": layer, "net": net})
+        added.append((layer, net, poly))
         widened += 1
     if ops:
         route_edit.apply_ops(staged, ops)
-    return {"widened": widened, "crumbs_removed": crumbs}
+    return {"widened": widened, "crumbs_removed": crumbs, "blocked": blocked}
 
 
 def power_net_clearances(ctx: dict, obstacle_nets: list[str]) -> Path | None:
@@ -1546,10 +1600,35 @@ def route_power_item(ctx: dict, specs: list[dict]) -> tuple[list, list]:
             ncl)
         facts.extend(f)
         vs.extend(v)
-    norm = normalize_power_widths(ctx["staged"], live)
+    norm = normalize_power_widths(ctx["staged"], live,
+                                  clearance=ctx["floors"]["clearance"],
+                                  edge_clearance=ctx["floors"][
+                                      "edge_clearance"])
     if facts:
         facts[0]["width_normalization"] = norm
+    vs.extend(power_width_blocked(norm["blocked"]))
     return facts, violations + vs
+
+
+def power_width_blocked(blocked: list[dict]) -> list[dict]:
+    """One error per power net with segments normalize_power_widths could
+    not raise to the net's floor without breaking clearance (#957)."""
+    by_net: dict[str, list[dict]] = {}
+    for b in blocked:
+        by_net.setdefault(b["net"], []).append(b)
+    out = []
+    for net, segs in sorted(by_net.items()):
+        first = segs[0]
+        out.append(violation(
+            SCRIPT, "error", first["start"], first["layer"], net, [],
+            f"power net {net}: {len(segs)} segment(s) below its "
+            f"{first['want_mm']} mm floor could not be widened without "
+            "breaking clearance to other nets' copper - left narrow; "
+            "pour fan-in or a neck rule at those pads "
+            "(reference/remediations/track_width.md step 4)",
+            SCRIPT, kind="power_width_blocked", segments=segs[:20],
+            want_mm=first["want_mm"]))
+    return out
 
 
 def route_rf_item(ctx: dict, specs: list[dict]) -> tuple[list, list]:
