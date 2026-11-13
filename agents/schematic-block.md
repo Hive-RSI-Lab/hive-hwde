@@ -60,9 +60,9 @@ sheet that a person drew, or a root with sheet boxes, isn't redrawn.
    the root: exit 0 required (missing_net/metadata_mismatch are errors).
 
 ## Traps found on boards (2026-08 to 2026-10 runs)
+
 - Pulled symbols can arrive with every pin `unspecified` (ERC `pin_to_pin` on all nets): type connectors, switches, LEDs and FETs passive and the ICs from their datasheets. A `power_in` pin fed only through a resistor needs a PWR_FLAG.
 - Tying unused bidirectional I/Os straight to a PWR_FLAG'd GND warns (`pin_to_pin`, Bidirectional vs Power output). One 10 k to GND for all of them is ERC-clean and safer.
-
 - A pulled 2-pin passive names its pins "1"/"2", the same strings as the numbers. KiCad prints pin names inside the body, so they overprint into one garbled glyph, and no gate notices (ERC and `schem_refdes` are clean). Hide the pin names on pulled 2-pin symbols.
 - A pulled symbol can have its pin ANGLES reversed against its graphics: the leads are drawn away from the plates and `schlib.stub_dir` emits the stubs inward. Fix the symbol's pin angles; rotating the part does not.
 - Every KiCad power symbol is exactly 2.54 mm tall. On a 2.54 mm pin pitch its body lands on the neighbouring pin's label. Hang the rail symbol in its own cluster, not on the pin stub.

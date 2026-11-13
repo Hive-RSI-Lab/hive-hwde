@@ -303,8 +303,8 @@ rules as routing constraints; cite the record id when you apply one.
   report_gen renders them; `pre_`/`post_` is only read for old workspaces).
 
 ## Traps found on boards (2026-08 to 2026-10 runs)
-- A 0.5 mm FFC pin can be boxed in by its neighbours' fan-out (SDA trapped between SCL and INT after Freerouting). Rip the neighbour and route both with a small grid A* or `route_edit`; the resulting B.Cu tracks can split the GND pour into islands, which a second GND pour on the other layer rejoins.
 
+- A 0.5 mm FFC pin can be boxed in by its neighbours' fan-out (SDA trapped between SCL and INT after Freerouting). Rip the neighbour and route both with a small grid A* or `route_edit`; the resulting B.Cu tracks can split the GND pour into islands, which a second GND pour on the other layer rejoins.
 - A zone's default pad connection is thermal relief. In a tight corridor the gaps from the pad and its neighbour overlap and no fill forms: `starved_thermal` plus a real `unconnected_items` (a pad on its own pour island while the layer reports a healthy "2 islands"). Re-pour with `"connect": "solid"` in a planes sidecar entry. A pad geometry-capped at one spoke also clears with a short same-net track from the pad into open fill, before any zone edit. A 3 A pour needs solid pads.
 - Read pad extents from `geom.pads_of().poly.bounds`, never from the raw `(size w h)`: the pad carries its own rotation, and `route_edit` accepts an op that misses its pad by 1.3 mm (the error shows up later as `unconnected_items` and `track_dangling` naming a track by length). Assert every `add_track` endpoint is covered by the target pad's `poly` before emitting ops.
 - `planes_gen` thermal-via grid: it reads no `constraints.thermal[ref].min_vias`, so `min_vias: 0` does not stop it drilling from a live-tab pour (an LDO's VOUT tab) into the GND plane. Check `--dry-run` first.
