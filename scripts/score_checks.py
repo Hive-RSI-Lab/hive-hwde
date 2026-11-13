@@ -349,8 +349,10 @@ def score(jobs: list[dict], triage: list[dict], n_jobs: int,
                 cell["misses"] += 1
             findings.append({**where, "verdict": "error", "why": res["error"]})
             continue
+        # a finding is this check's when either field names it:
+        # netlist_audit's carry source "audit.netlist", check its own name
         vs = [v for v in res["violations"]
-              if (v.get("source") or v.get("check")) == name]
+              if name in (v.get("source"), v.get("check"))]
         if job["corpus"] == "mutants":
             hit = next((v for v in vs if catches(job["expect"], v)), None)
             if hit is not None:

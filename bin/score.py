@@ -48,13 +48,13 @@ CRASH = 100
 # bin/pin.py writes this block; don't edit it by hand.
 # pins:begin
 PINS = {
-    "core": "a99d9bace26e14c48e9c160d26d24ca5b34903c66a99a4a82a67c6b64030fd8a",
+    "core": "cea3e82c5206ed1d854b88234a9d8fbd6fa04d25978ad4c2cec78d3d4ebf49df",
     "digits-v1": "9e0da1682142b785a75e4273ec6e0e465f2ddb22326fdfb0689ef94cf9aa0241",
     "hwde-led-test": "7051f8a4ea9babdfc50aeefa9f8288ebd9318a9a382628ad95c3755207704e1c",
-    "lite-main": "2ed9994f7c202a3905a1532b01a4d0faffdb892942bef838166fbd3aa4e2a2ec",
+    "lite-main": "87658442c57c6b1b4bc57f40ff3cb0adede7ebc8ab08e9b6b845aeba607b2e59",
     "minuet-v3": "28062de8e6609e77331b0a2df54a0f37039009159e11d8d492fce5c624d0fc70",
     "oasis-v0-2": "9a7af666351feb8d0b4d3792744ad0a34a92558e32cdca6dca69f0c2f1f5a211",
-    "ultra-front": "422227a4e583eb59e90451730b0aa6e7b0254b72e7d93b72fd16cc315a7d5259",
+    "ultra-front": "79b09ea10daa21d57cb6929f2cd8c6a1c7c71d789ce553af165b12a6c84613ac",
 }
 # pins:end
 

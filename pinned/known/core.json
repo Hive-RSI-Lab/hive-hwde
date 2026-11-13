@@ -4408,6 +4408,78 @@
    "kind": "rating_no_datasheet_read",
    "verdict": "real",
    "reason": "true of the board: these parts' ratings are distributor attributes or package tables with no datasheet read (no PDF extraction in parts/); the fix is datasheet_extract --fetch on the board"
+  },
+  {
+   "gate": "verify",
+   "check": "netlist_audit",
+   "net": null,
+   "refs": [
+    "H1"
+   ],
+   "pos": null,
+   "kind": "missing_ref",
+   "verdict": "false",
+   "reason": "false (#877): H1 is a mounting hole placed on the board only; constraints.json pins it but the schematic never had it, which is normal for holes"
+  },
+  {
+   "gate": "verify",
+   "check": "netlist_audit",
+   "net": null,
+   "refs": [
+    "H2"
+   ],
+   "pos": null,
+   "kind": "missing_ref",
+   "verdict": "false",
+   "reason": "false (#877): H2 is a mounting hole placed on the board only; constraints.json pins it but the schematic never had it, which is normal for holes"
+  },
+  {
+   "gate": "verify",
+   "check": "netlist_audit",
+   "net": null,
+   "refs": [
+    "H3"
+   ],
+   "pos": null,
+   "kind": "missing_ref",
+   "verdict": "false",
+   "reason": "false (#877): H3 is a mounting hole placed on the board only; constraints.json pins it but the schematic never had it, which is normal for holes"
+  },
+  {
+   "gate": "verify",
+   "check": "netlist_audit",
+   "net": null,
+   "refs": [
+    "H4"
+   ],
+   "pos": null,
+   "kind": "missing_ref",
+   "verdict": "false",
+   "reason": "false (#877): H4 is a mounting hole placed on the board only; constraints.json pins it but the schematic never had it, which is normal for holes"
+  },
+  {
+   "gate": "verify",
+   "check": "netlist_audit",
+   "net": "+3V3A",
+   "refs": [
+    "C122",
+    "C19",
+    "C50",
+    "C51",
+    "C52",
+    "C53",
+    "C54",
+    "C68",
+    "C69",
+    "U10",
+    "U12",
+    "U13",
+    "U6"
+   ],
+   "pos": null,
+   "kind": "power_no_consumers",
+   "verdict": "false",
+   "reason": "false (#877): +3V3A feeds U10 AVCC/VCCA, U12 CPVDD/AVDD and U13 VDDA; their symbols type those supply pins passive, so the audit sees no power_in"
   }
  ]
 }
