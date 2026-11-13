@@ -241,6 +241,97 @@ def test_typec_dp_pins_not_joined_fail(tmp_path):
     assert _kinds(p) == ["usb_c_orientation"]
 
 
+def test_cypd3177_is_its_own_rd(tmp_path):
+    """Infineon 002-25383 Table 15: Rd and the dead-battery Rd are inside."""
+    assert _kinds(_run(tmp_path, *_typec("CYPD3177-24LQXQ", rd=None))) == []
+    p = _run(tmp_path, *_typec("CYPD3177-24LQXQ"))
+    assert _kinds(p) == ["usb_cc_rd_value"] * 2
+
+
+OSD = ("OSD6254-1G-IPM", ("V12", "USB0_DP_V12"), ("U12", "USB0_DM_U12"))
+
+
+def test_am62x_and_osd62x_pm_connect_usb_directly(tmp_path):
+    """TI SPRADO3B 7.4.2.1 and Octavo's checklist 62_USB_7: USBn_DP/DM go
+    to the connector with nothing in series and no pull-up."""
+    for soc in ("OSD6254-1G-IPM", "OSD6254-1G-IPM-ES", "AM6254ATCGGAALW",
+                "AM6252ATCGHAALW"):
+        p = _run(tmp_path, *_micro(soc, OSD[1], OSD[2]))
+        assert _kinds(p) == [], soc
+    p = _run(tmp_path, *_micro(*OSD, series={"D+": ("R1", "22R"),
+                                             "D-": ("R2", "22R")}))
+    assert _kinds(p) == ["usb_series_r_unwanted"] * 2
+    assert "SPRADO3B" in p["violations"][0]["msg"]
+    p = _run(tmp_path, *_micro(*OSD, pullup=("R3", "1k5")))
+    assert _kinds(p) == ["usb_dp_pullup_extra"]
+    # AM625SIP has a data sheet of its own; another Octavo SiP isn't the PM
+    for other in ("AM625SIP", "OSD32MP157C-512M-BAA"):
+        p = _run(tmp_path, *_micro(other, OSD[1], OSD[2]))
+        assert _kinds(p) == ["usb_phy_unknown"], other
+
+
+def _dual_usba(series=None, pullup=None, open2=False):
+    """A stacked dual USB-A J1 (D+1/D-1 port 1, D+2/D-2 port 2) on a
+    USB2514B's downstream ports 1 and 2. series and pullup: {line: (ref,
+    value)}, line one of D+1, D-1, D+2, D-2; a pull-up goes to +3V3. open2:
+    port 2's pins left unconnected."""
+    series, pullup = series or {}, pullup or {}
+    comps = {"J1": "UJ2-ADH-3-TH", "U1": "USB2514B-AEZG"}
+    nets = {"+3V3": [("U1", "5", "VDD33_5")],
+            "GND": [("J1", "4", "GND1_4"), ("J1", "8", "GND2_8")]}
+    hub = {"D+1": ("2", "USBDP_DN1"), "D-1": ("1", "USBDM_DN1"),
+           "D+2": ("4", "USBDP_DN2"), "D-2": ("3", "USBDM_DN2")}
+    jpins = {"D+1": "3", "D-1": "2", "D+2": "7", "D-2": "6"}
+    for line, (upin, uname) in hub.items():
+        jp = ("J1", jpins[line], f"{line}_{jpins[line]}")
+        if open2 and line.endswith("2"):
+            nets[f"unconnected-(J1-{line}-Pad{jpins[line]})"] = [jp]
+            continue
+        net = f"/USBA{line[-1]}_{'DP' if line[1] == '+' else 'DM'}"
+        nets[net] = [jp]
+        u = ("U1", upin, f"{uname}_{upin}")
+        if line in series:
+            ref, val = series[line]
+            comps[ref] = val
+            nets[net].append((ref, "1", ""))
+            nets[net + "_U"] = [(ref, "2", ""), u]
+        else:
+            nets[net].append(u)
+        if line in pullup:
+            ref, val = pullup[line]
+            comps[ref] = val
+            nets[net].append((ref, "1", ""))
+            nets["+3V3"].append((ref, "2", ""))
+    return comps, nets
+
+
+def test_hub_ports_on_a_dual_usba_are_read_port_by_port(tmp_path):
+    """DS00001692C section 1.0: every resistor is inside the USB251xB. Each
+    D+ is judged with its own port's D-, so a fault on port 2's D- shows."""
+    p = _run(tmp_path, *_dual_usba())
+    assert _kinds(p) == []
+    assert p["checked"][0]["connectors"] == ["J1"]
+    assert len(p["checked"][0]["phys"]) == 2
+    p = _run(tmp_path, *_dual_usba(series={"D-2": ("R1", "22R")}))
+    assert _kinds(p) == ["usb_series_r_unwanted"]
+    assert p["violations"][0]["refs"] == ["R1", "U1"]
+    p = _run(tmp_path, *_dual_usba(pullup={"D-2": ("R4", "1k5")}))
+    assert _kinds(p) == ["usb_dm_pullup"]
+
+
+def test_a_dual_usba_is_not_a_typec_receptacle(tmp_path):
+    """D+1 and D+2 are two ports, not one port's two rows of pins."""
+    assert _kinds(_run(tmp_path, *_dual_usba(open2=True))) == []
+
+
+def test_partner_pairs_by_the_phy_pin_name():
+    assert check_usb_phy.partner("USBDP_DN2", "USBDM_DN2")
+    assert not check_usb_phy.partner("USBDP_DN2", "USBDM_DN1")
+    assert check_usb_phy.partner("USB0_DP", "USB0_DM")
+    assert check_usb_phy.partner("UD+", "UD-")
+    assert not check_usb_phy.partner("PA12", "PA11")
+
+
 def test_no_netlist_passes(tmp_path):
     pcb = _netlist(tmp_path, {}, {})
     (tmp_path / "s.net").unlink()
