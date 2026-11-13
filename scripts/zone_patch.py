@@ -3,6 +3,8 @@
   hwde zone_patch --pcb B.kicad_pcb --net NET --region X0,Y0,X1,Y1
                   [--poly "x,y x,y x,y ..."] [--layer F.Cu] [--vias N]
                   [--via-size 0.6] [--via-drill 0.3] [--remove] [--dry-run]
+  hwde zone_patch --pcb B.kicad_pcb --net NET --from END --to END
+                  [--half-width 0.5] [--layer F.Cu] ...
 
 A patch is a solid zone named PATCH_<net> that sits above the pour
 (priority 5, solid pad connection, clearance 0.2, min width 0.25). It joins a
@@ -20,6 +22,13 @@ for at least 6 x 0.3 mm vias at every layer change of a 5 A path.
     SMD pad (no via in pad), keep the 0.5 mm hole-to-hole floor to every hole,
     and stay 0.6 mm inside the board edge.
   - --remove drops the patch zones in --region and keeps their vias.
+  - --from/--to is corridor mode (#926): the outline is the path a maze
+    router (lib/mazeroute.py) finds from one END to the other on --layer,
+    around other nets' copper with the board's clearances, buffered by
+    --half-width. An END is "U1.3", "U1" (its pads on NET) or "x,y". Use it
+    to pour a wide supply strip through a gap in a fence of vias, where a
+    hand-drawn polygon would clip a via. --region, when given, only bounds
+    which old patches are replaced.
 
 The edit runs on a staged copy. The zone goes in through the SWIG worker
 (route_swig add_zones) and the vias through route_edit. The copy is then
@@ -88,6 +97,27 @@ def _outline(args) -> tuple[list[list[float]], list[float]]:
     if not Polygon(pts).is_valid or Polygon(pts).area <= 0:
         raise CheckError("patch outline is not a simple polygon")
     return pts, region
+
+
+def corridor_outline(bg, args) -> tuple[list[list[float]], list[float]]:
+    """(outline, selection box) of the corridor from --from to --to."""
+    import mazeroute
+    poly = mazeroute.Router(bg, layers=[args.layer]).corridor(
+        args.net, args.from_, args.to, args.half_width)[0].get(args.layer)
+    if poly is None or poly.is_empty:
+        raise CheckError(f"corridor {args.from_} -> {args.to}: no copper on "
+                         f"{args.layer}")
+    poly = poly.simplify(0.01)
+    if poly.geom_type != "Polygon":   # one strip: keep its biggest piece
+        poly = max(poly.geoms, key=lambda g: g.area)
+    pts = [[round(x, 4), round(y, 4)] for x, y in poly.exterior.coords[:-1]]
+    box = _nums(args.region, 4, "--region") if args.region else None
+    if box:
+        box = [min(box[0], box[2]), min(box[1], box[3]),
+               max(box[0], box[2]), max(box[1], box[3])]
+    else:
+        box = list(poly.bounds)
+    return pts, box
 
 
 def _in_box(pts, box, slack=0.05) -> bool:
@@ -179,6 +209,11 @@ def run(argv: list[str] | None = None):
     ap.add_argument("--net", required=True)
     ap.add_argument("--region", default=None, help="X0,Y0,X1,Y1 mm")
     ap.add_argument("--poly", default=None, help='"x,y x,y x,y ..." mm')
+    ap.add_argument("--from", dest="from_", default=None,
+                    help="corridor mode: END the strip starts at")
+    ap.add_argument("--to", default=None, help="corridor mode: END it ends at")
+    ap.add_argument("--half-width", type=float, default=0.5,
+                    help="corridor mode: half the strip's width, mm")
     ap.add_argument("--layer", default="F.Cu")
     ap.add_argument("--vias", type=int, default=0)
     ap.add_argument("--via-size", type=float, default=0.6)
@@ -193,12 +228,24 @@ def run(argv: list[str] | None = None):
         raise CheckError(f"board not found: {pcb}")
     if args.vias < 0 or not 0 < args.via_drill < args.via_size:
         raise CheckError("--vias >= 0 and 0 < --via-drill < --via-size")
-    pts, box = _outline(args)
+    corridor = bool(args.from_ or args.to)
+    if corridor:
+        if not (args.from_ and args.to):
+            raise CheckError("corridor mode wants both --from and --to")
+        if args.poly or args.remove:
+            raise CheckError("--from/--to make the outline: no --poly or "
+                             "--remove with them")
+        if args.half_width <= 0:
+            raise CheckError("--half-width must be > 0")
+    else:
+        pts, box = _outline(args)
     bg = geom.load_board(pcb, refresh=True)
     if args.net not in bg.nets:
         raise CheckError(f"net '{args.net}' not on board")
     if args.layer not in bg.copper_layers:
         raise CheckError(f"'{args.layer}' is not a copper layer")
+    if corridor:
+        pts, box = corridor_outline(bg, args)
     name = f"PATCH_{args.net}"
     old = patches(bg, args.net, args.layer, box)
     if args.remove:
@@ -206,7 +253,8 @@ def run(argv: list[str] | None = None):
     else:
         have, new = plan_vias(bg, args.net, pts, args.vias, args.via_size,
                               args.via_drill)
-    facts = {"net": args.net, "layer": args.layer, "zone": name,
+    facts = {"corridor": [args.from_, args.to] if corridor else None,
+             "net": args.net, "layer": args.layer, "zone": name,
              "outline": None if args.remove else pts,
              "replaced" if not args.remove else "removed": len(old),
              "vias_wanted": args.vias, "vias_had": len(have),

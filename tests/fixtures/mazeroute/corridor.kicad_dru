@@ -1,0 +1,10 @@
+(version 1)
+(rule "aiee_clearance_floor"
+	(constraint clearance (min 0.1500mm))
+)
+(rule "aiee_hole_to_hole_floor"
+	(constraint hole_to_hole (min 0.5000mm))
+)
+(rule "aiee_edge_clearance_floor"
+	(constraint edge_clearance (min 0.3000mm))
+)
