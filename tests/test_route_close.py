@@ -439,3 +439,61 @@ def test_routing_flags_match_the_parser():
     ap = argparse.ArgumentParser()
     rf.add_routing_args(ap)
     assert {a.dest for a in ap._actions} - {"help"} == set(rf.ROUTING_FLAGS)
+
+
+# ------------------------------------------------------------ group step (#938)
+
+def test_group_end_reads_drc_items():
+    assert rc.group_end({"msg": "Pad 1 [C] of C1 on F.Cu",
+                         "pos": [5, 12]}) == "C1.1"
+    assert rc.group_end({"msg": "Pad A3 [D0] of U1 on F.Cu",
+                         "pos": [5, 12]}) == "U1.A3"
+    assert rc.group_end({"msg": "Track [GND] on B.Cu, length 6.8 mm",
+                         "pos": [15.0, 1.5]}) == "15.0,1.5@B.Cu"
+    assert rc.group_end({"msg": "Via [GND] on F.Cu - B.Cu",
+                         "pos": [1, 2]}) == "1,2"
+    assert rc.group_end({"msg": "Zone [GND] on F.Cu", "pos": [1, 2]}) is None
+
+
+def _group_tight(tmp_path):
+    import shutil
+    src = REPO / "tests" / "fixtures" / "mazeroute"
+    for f in src.glob("group_tight.*"):
+        shutil.copy2(f, tmp_path / f.name)
+    return tmp_path / "group_tight.kicad_pcb"
+
+
+def _live_close(tmp_path):
+    pcb = _group_tight(tmp_path)
+    payload, _ = rc.run(["--pcb", str(pcb), "--layers", "F.Cu",
+                         "--runner", "none", "--budget", "280"])
+    return payload["facts"]
+
+
+@pytest.fixture
+def kicad():
+    import env
+    cli = env.find_kicad_cli()
+    if cli is None or env.find_kicad_python(cli) is None:
+        pytest.skip("KiCad bundled python not installed")
+    return cli
+
+
+def test_live_group_step_closes_a_shared_channel(kicad, tmp_path):
+    """Three nets through one 1.33 mm gap: one at a time C never fits, the
+    group step routes A, B and C together. GND (the wall's own gap) stays:
+    power nets are never grouped."""
+    f = _live_close(tmp_path)
+    assert f["grouped"] == 1
+    assert set(f["open_by_net"]) == {"GND"}
+    assert f["errors_after"] == {}
+
+
+def test_live_without_the_group_step_c_stays_open(kicad, tmp_path,
+                                                  monkeypatch):
+    """The planted fault: no group grids, no group route - one of A, B, C
+    (which one depends on the order) is left."""
+    monkeypatch.setattr(rc, "GROUP_GRIDS", ())
+    f = _live_close(tmp_path)
+    assert f["grouped"] == 0
+    assert set(f["open_by_net"]) & {"A", "B", "C"}

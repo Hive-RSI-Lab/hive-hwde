@@ -26,6 +26,14 @@ runs route_finish in small chunks and keeps each good one:
   protected net, is undone. Open connections on protected nets aren't routed
   (the maze would route a pair single-ended, #613) unless --allow-nets names
   them. Their copper stays protected either way.
+- A round that closes nothing tries group routes first (#938): each
+  connection that failed pulls in the connections open at the start whose
+  search windows (--margin round its two ends) overlap its own; those nets
+  are put back as the run found them and routed at once by route_edit's
+  route_group (PathFinder), which shares a channel that one-at-a-time
+  routing fills in the wrong order. Kept only with fewer open, no error type
+  grown and protected copper whole; then another round. facts.grouped counts
+  the groups kept.
 - It stops when a full round closes nothing, and says why: the facts name the
   connections and nets left, how often each failed, and what to try next.
 
@@ -76,6 +84,8 @@ NOT_ROUTABLE = {"geometry already joins both items",
 DEAD_LIMIT = 4        # chunks in a row that die with nothing to blame
 LOW_TIME_S = 60       # don't start a chunk with less of the budget left
 STATE_VERSION = 1
+GROUP_MAX_JOBS = 8    # connections one group route takes at most (#938)
+GROUP_GRIDS = (0.05, 0.025)  # mm: a group that finds no route tries finer
 
 
 def default_runner() -> list[str]:
@@ -106,6 +116,34 @@ def key_of(conn: dict) -> list:
 
 def key_str(key: list) -> str:
     return json.dumps([key[0], *sorted(key[1:])])
+
+
+def group_end(item: dict) -> str | None:
+    """A DRC unconnected item as a route_edit END: a pad by name, a track
+    end or via by place (on the track's layer). None for anything else."""
+    import re
+
+    msg, pos = item.get("msg", ""), item.get("pos")
+    m = re.match(r"Pad (\S+) \[.*\] of (\S+) on ", msg)
+    if m:
+        return f"{m.group(2)}.{m.group(1)}"
+    if not pos:
+        return None
+    xy = f"{pos[0]},{pos[1]}"
+    m = re.match(r"Track \[.*\] on (\S+?),", msg)
+    if m:
+        return f"{xy}@{m.group(1)}"
+    return xy if msg.startswith("Via ") else None
+
+
+def _overlap(a, b) -> bool:
+    return a[0] <= b[2] and b[0] <= a[2] and a[1] <= b[3] and b[1] <= a[3]
+
+
+def _gap(a, b) -> float:
+    dx = max(b[0] - a[2], a[0] - b[2], 0.0)
+    dy = max(b[1] - a[3], a[1] - b[3], 0.0)
+    return (dx * dx + dy * dy) ** 0.5
 
 
 # ------------------------------------------------------------------ copper
@@ -434,6 +472,8 @@ class Closer:
         self.st["drc_s"] = res["report"]["facts"].get("drc_s", 0.0)
         if self.st["start_left"] is None:
             self.st["start_left"] = left_of(self.report)
+            # the open connections a group step routes again (#938)
+            write_json(self.dir / "start_report.json", self.report)
         if self.st["round_start"] is None:
             self.st["round_start"] = left_of(self.report)
         self.log(chunk=self.st["chunk"], measure=True, s=res["s"],
@@ -622,6 +662,160 @@ class Closer:
                 and left >= rf.DRC_UNCONNECTED_CAP
                 and self.st["routed"] > self.st.get("round_routed", 0))
 
+    # ---------------------------------------------------- group routes
+
+    def group_jobs(self) -> list[list[dict]]:
+        """Clusters of open connections to route together (#938), largest
+        first. Each stuck connection (one that failed this round) pulls in
+        every connection that was open when the run began whose search window
+        overlaps its own, and with a net all of that net's: the group step
+        puts those nets back as the run found them and routes them all at
+        once with route_edit's route_group (PathFinder), which can share a
+        channel that one-at-a-time routing fills in the wrong order. Nets
+        never grouped: protected ones, power, pour and rule-width nets (as
+        reroute), out of --nets. A cluster needs two or more connections and
+        at most GROUP_MAX_JOBS."""
+        import geom
+        import route_finish as rf
+        from check_testpoints import is_power
+
+        path = self.dir / "start_report.json"
+        if not path.is_file() or not self.st["last_failed"]:
+            return []
+        start = checklib.load_json(path, "start report")
+        bg = geom.BoardGeom.from_file(self.pcb)
+        # sized by rule, so never ripped (mazeroute.Router.keep_nets)
+        never = ({z.net for z in bg.zones_of()}
+                 | set(rf.board_rules(self.pcb, bg).net_width) | {""})
+        margin = self.args.margin
+        conns = []
+        for v in start["violations"]:
+            net = v.get("net")
+            items = v.get("items") or []
+            if v.get("source") != "unconnected" or not net or len(items) < 2:
+                continue
+            ends = [group_end(it) for it in items[:2]]
+            ok = (None not in ends and net not in never and not is_power(net)
+                  and (self.scope is None or net in self.scope)
+                  and (net not in self.protected or net in self.allowed))
+            xs = [it["pos"][0] for it in items[:2]]
+            ys = [it["pos"][1] for it in items[:2]]
+            conns.append({"net": net, "from": ends[0], "to": ends[1],
+                          "ok": ok, "box": (min(xs) - margin, min(ys) - margin,
+                                            max(xs) + margin,
+                                            max(ys) + margin)})
+        by_net: dict[str, list[dict]] = {}
+        for c in conns:
+            by_net.setdefault(c["net"], []).append(c)
+        out, seen = [], set()
+        for f in self.st["last_failed"].values():
+            if f["net"] not in by_net or not all(
+                    c["ok"] for c in by_net[f["net"]]):
+                continue
+            xs, ys = (f["a"][0], f["b"][0]), (f["a"][1], f["b"][1])
+            box = (min(xs) - margin, min(ys) - margin, max(xs) + margin,
+                   max(ys) + margin)
+            near = sorted({c["net"] for c in conns
+                           if c["ok"] and _overlap(box, c["box"])}
+                          - {f["net"]},
+                          key=lambda n: min(_gap(box, c["box"])
+                                            for c in by_net[n]))
+            jobs = list(by_net[f["net"]])
+            for net in near:
+                if all(c["ok"] for c in by_net[net]) and \
+                        len(jobs) + len(by_net[net]) <= GROUP_MAX_JOBS:
+                    jobs += by_net[net]
+            key = tuple(sorted({j["net"] for j in jobs}))
+            if len(jobs) >= 2 and len(jobs) <= GROUP_MAX_JOBS \
+                    and key not in seen:
+                seen.add(key)
+                out.append([{k: j[k] for k in ("net", "from", "to")}
+                            for j in jobs])
+        return sorted(out, key=len, reverse=True)
+
+    def try_groups(self) -> bool:
+        """Route each cluster from group_jobs together; keep a cluster's board
+        only if it has fewer open connections, no error type grew, and the
+        protected copper held. True when one was kept."""
+        import route_finish as rf
+
+        tried = self.st.setdefault("group_tried", [])
+        for jobs in self.group_jobs():
+            nets = sorted({j["net"] for j in jobs})
+            key = json.dumps([self.st["board_sha"], nets])
+            if key in tried:
+                continue
+            tried.append(key)
+            for grid in GROUP_GRIDS:
+                if self.remaining() < LOW_TIME_S:
+                    return False
+                res = self.group_chunk(nets, jobs, grid)
+                try:
+                    rep = res["report"]
+                    if rep is None:
+                        self.log(chunk=self.st["chunk"], group=nets,
+                                 grid=grid, kept=False, s=res["s"],
+                                 why=res.get("why", "")[-200:])
+                        self.say(f"group {','.join(nets)} at grid {grid}:"
+                                 " no route")
+                        continue
+                    before, after = left_of(self.report), left_of(rep)
+                    errs, errs0 = rf.err_counts(rep), rf.err_counts(self.report)
+                    grew = sorted(k for k, n in errs.items()
+                                  if n > errs0.get(k, 0))
+                    hurt = guard(res["board"], self.base, self.protected,
+                                 self.allowed)
+                    kept = (after < before and not grew and not hurt["lost"]
+                            and not hurt["added_nets"])
+                    self.log(chunk=self.st["chunk"], group=nets, grid=grid,
+                             kept=kept, s=res["s"], left=after, grew=grew,
+                             lost=hurt["lost"])
+                    self.say(f"group {','.join(nets)} at grid {grid}:"
+                             f" {before} -> {after} open"
+                             + (", kept" if kept else ", undone"
+                                + (f" ({', '.join(grew)} grew)" if grew
+                                   else "")))
+                    if kept:
+                        self.adopt(res)
+                        self.st["kept_chunks"] += 1
+                        self.st["grouped"] = self.st.get("grouped", 0) + 1
+                        self.save()
+                        return True
+                    break   # it routed: a finer grid won't do better
+                finally:
+                    shutil.rmtree(res["dir"], ignore_errors=True)
+            self.save()
+        return False
+
+    def group_chunk(self, nets: list[str], jobs: list[dict],
+                    grid: float) -> dict:
+        """route_edit on a copy of the board: the nets put back as the run
+        found them (rip, then copy_from the start board), then one
+        route_group; then refill and DRC. No report when route_edit
+        refused."""
+        start = self.dir / "start.kicad_pcb"
+        group = {"op": "route_group", "jobs": jobs, "grid": grid}
+        if self.args.layers and self.args.layers != "auto":
+            group["layers"] = self.args.layers.split(",")
+        ops = {"version": 1, "ops": [
+            {"op": "rip", "net": nets},
+            {"op": "copy_from", "pcb": str(start), "net": nets}, group]}
+        timeout = int(min(self.args.chunk_timeout, self.remaining()))
+        hwde = str(REPO / "bin" / "hwde")
+
+        def argv(pcb, rep, work, skip, trace):
+            write_json(rep.parent / "ops.json", ops)
+            measure = chunk_argv(
+                self.args, pcb, rep, work, nets=(), skip_file=skip, conns=0,
+                rip=False, protect=(), plan_s=0, start_report=None,
+                trace=trace, measure=True)
+            # route_edit's failure leaves no report: the measure never runs
+            return ["sh", "-c", 'sh "$1" route_edit --pcb "$2" --ops "$3"'
+                    ' || exit 3; shift 3; exec "$@"', "group", hwde,
+                    str(pcb), str(rep.parent / "ops.json"), *measure]
+
+        return self.run_chunk(argv, timeout)
+
     def run_all(self) -> str:
         args = self.args
         now_sha = sha(self.pcb)
@@ -650,6 +844,8 @@ class Closer:
                 return "closed"
             if self.progressed(start, left):
                 pass
+            elif self.try_groups():
+                self.say("a group route closed some: another round")
             elif args.rip_board == "stalled" and not self.st["ripping"]:
                 self.say("no progress: allowing board rip-up from here")
                 self.st["ripping"] = True
@@ -701,6 +897,7 @@ class Closer:
             "kept_chunks": self.st["kept_chunks"],
             "undone_for_protected_copper": self.st["rejected_chunks"],
             "routed": self.st["routed"],
+            "grouped": self.st.get("grouped", 0),
             "elapsed_s": int(time.monotonic() - self.started),
             "open_by_net": {n: by_net[n] for n in left_nets},
             "protected_open": prot,
