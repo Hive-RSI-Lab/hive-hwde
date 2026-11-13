@@ -699,7 +699,9 @@ same routing options, and no loop of your own. It runs `route_finish` in chunks
 and keeps each good one, and every open connection gets a try each round. It
 resumes from its state on disk if run again, undoes a chunk that changes
 protected copper (`constraints.json` diff pairs by default), and stops when a
-round closes nothing. Its `facts` give the count left, the failing connections
+round closes nothing. Before it stops it routes the failing connections and
+the open ones near them together (`route_edit`'s `route_group`), and keeps
+that only if fewer stay open (`facts.grouped`). Its `facts` give the count left, the failing connections
 and nets, and what to try next, so there is no chunk log to read. Each chunk
 goes through `--runner` (`heavy --quick` where `heavy` exists, else run
 directly).

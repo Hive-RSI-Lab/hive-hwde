@@ -16,6 +16,9 @@ Each is a two-layer board with nets GND, A, B, C and a .kicad_dru beside it.
                       and B (y=14); a 2 mm GND wall on F.Cu at x=15 with one
                       1.4 mm gap. Routed one at a time A, B, C fails at C;
                       routed as a group all three fit (#928).
+  group_tight.kicad_pcb  group with a 1.33 mm gap: route_close's rounds
+                      close A and B and never C; its group step (route_group
+                      at 0.025 mm) closes all three (#938).
 """
 from pathlib import Path
 
@@ -91,6 +94,10 @@ def group(path, gap=1.4):
     return write(path, body, 30, 20)
 
 
+def group_tight(path):
+    return group(path, gap=1.33)
+
+
 if __name__ == "__main__":
-    for make in (corridor, reroute, group):
+    for make in (corridor, reroute, group, group_tight):
         print(make(HERE / f"{make.__name__}.kicad_pcb"))
