@@ -77,6 +77,7 @@ refs to parts from the board.
 - One LCSC search term can return a genuine row and six clone brands under the same MPN pattern; a clone's datasheet can give 5 mV offset against tens of microvolts. Check the brand.
 - A reference family's dropout is per member and not monotonic in output voltage; the "300 mV at 2 mA" headline applies to VOUT >= 3 V only. Use the per-member row.
 - LCSC's datasheet URL can resolve to a "Datasheet temporarily unavailable" stub for a real, in-stock part that `parts_search` passes through as sourced. Fetch the datasheet before accepting the part.
+- A half-pitch DIP switch's datasheet rarely says which side is ON. Read it off the LCSC product photo (the printed ON arrow) before the schematic fixes the default state.
 - Source impedance and divider total resistance are one decision: 1 kohm into 100 kohm is 1 % of reading, 10x a 5 mV budget, while each number looks conservative.
 
 ## Output contract (end your final message with exactly this block)
