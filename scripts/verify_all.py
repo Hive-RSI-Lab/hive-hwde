@@ -101,8 +101,11 @@ INPUT_KEYS = ("constraints", "decoupling", "parts")
 BUILTIN_CHECKS = [
     {"name": "check_return_path", "needs": ["constraints"],
      "args": lambda a: ["--constraints", a["constraints"]]},
-    {"name": "check_current", "needs": ["constraints"],
-     "args": lambda a: ["--constraints", a["constraints"]]},
+    # No constraints.json still judges the switch nodes inferred from the
+    # parts (an LM2596's SW pin at its rated current).
+    {"name": "check_current", "needs": [],
+     "args": lambda a: (["--constraints", a["constraints"]]
+                        if a.get("constraints") else [])},
     {"name": "check_decoupling", "needs": ["decoupling"],
      "args": lambda a: ["--metadata", a["decoupling"]]},
     {"name": "check_diffpair", "needs": [],

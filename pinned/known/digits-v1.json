@@ -2408,6 +2408,21 @@
   },
   {
    "gate": "verify",
+   "check": "check_current",
+   "kind": "insufficient_transition_vias",
+   "net": "Net-(D1-K)",
+   "refs": [
+    "U1"
+   ],
+   "pos": [
+    16.4243,
+    35.7725
+   ],
+   "verdict": "real",
+   "reason": "erratum 1's LM2596 switch node changes layer through one via at (16.42, 35.77); its 3 A peak needs several vias, as it needs a wider track"
+  },
+  {
+   "gate": "verify",
    "check": "netlist_audit",
    "kind": "ground_island",
    "net": "/MIC_GND",

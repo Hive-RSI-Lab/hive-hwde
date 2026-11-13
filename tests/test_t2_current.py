@@ -1219,6 +1219,20 @@ def test_switch_node_cli_warns_without_constraints(tmp_path_factory):
     assert "U1" in v["refs"] and "constraints.json" in v["msg"]
 
 
+
+def test_switch_node_judged_with_no_constraints_file(tmp_path_factory):
+    # #876: a board with no constraints.json at all (digits v1) still gets
+    # its switch node judged, and verify_all runs the check on it.
+    bg = _board(tmp_path_factory, "bucknofile", _buck(0.25))
+    payload = check_current.run(["--pcb", str(bg.path)])[0]
+    assert payload["counts"]["by_severity"] == {"warning": 1}
+    assert payload["violations"][0]["from_part"] == "U1"
+    import verify_all
+    row = next(c for c in verify_all.BUILTIN_CHECKS
+               if c["name"] == "check_current")
+    assert row["needs"] == [] and row["args"]({"pcb": "x"}) == []
+    assert row["args"]({"constraints": "c.json"}) == ["--constraints", "c.json"]
+
 # ---- per-load current: branch vias of a star (#676, #650) -------------------
 # U1 feeds a 2 mm F.Cu trunk (x=10, y 2..8); three single vias 3 mm apart each
 # drop to B.Cu and a 0.8 mm strip to one load. 3 A rail, three 1 A loads.

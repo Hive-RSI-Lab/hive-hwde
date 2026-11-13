@@ -1,0 +1,18 @@
+# Seeded fault for check_current on a board with no constraints.json (#876).
+mutants:
+  switch-node-necked-no-constraints:
+    board: usbbuck4
+    script: mutations/switch_node_necked_no_constraints.py
+    check: check_current
+    no_sidecars: [constraints]
+    defect: >-
+      Copper fault, no constraints.json: U2 (AP63203WU, 2 A) has its switch
+      pin named SW and the /SW segment (112.6,104.1)->(117.9,104.1) is necked
+      from 0.8 mm to 0.2 mm. The board names no power currents, so only the
+      switch node inferred from the part table can catch it (the digits v1
+      LM2596 miss).
+    expect:
+      kind: undersized_track
+      net: "/SW"
+      ref: U2
+      pos: [115.25, 104.1]

@@ -220,3 +220,18 @@ def test_manifest_fragment_merged_and_guarded(tmp_path):
     frag.write_text("golden_boards: {x: {dir: x}}\n", encoding="utf-8")
     with pytest.raises(checklib.CheckError, match="one `mutants:` mapping"):
         sc.load_manifest(golden)
+
+
+def test_mutant_no_sidecars_drops_the_golden_fallback(tmp_path):
+    # #876: a fault on a board with no constraints.json - the golden's own
+    # constraints must not leak into the mutant's inputs
+    golden = tmp_path / "golden"
+    (golden / "b").mkdir(parents=True)
+    (golden / "b" / "constraints.json").write_text("{}", encoding="utf-8")
+    (golden / "mutants" / "m").mkdir(parents=True)
+    row = {"board": "b", "check": "check_current", "expect": {"kind": "k"}}
+    jobs = sc.mutant_jobs({"mutants": {"m": row}}, ["check_current"], golden)
+    assert "constraints" in jobs[0]["inputs"]
+    row["no_sidecars"] = ["constraints"]
+    jobs = sc.mutant_jobs({"mutants": {"m": row}}, ["check_current"], golden)
+    assert "constraints" not in jobs[0]["inputs"]
