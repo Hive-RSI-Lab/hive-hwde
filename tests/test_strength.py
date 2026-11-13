@@ -54,7 +54,8 @@ def test_a_gate_that_stops_failing_warnings_lets_one_through(monkeypatch, found)
     assert set(_missed(strength.gate_faults(found))) == {
         "gate erc: erc unconnected_wire_endpoint (warning)",
         "gate dfm: check.dfm dfm_hole_to_hole (error)",
-        "gate dfm: check.dfm dfm_hole_size (error)"}
+        "gate dfm: check.dfm dfm_hole_size (error)",
+        "gate dfm: check.dfm dfm_hole_to_inner_copper (error)"}
 
 
 def _seen(monkeypatch):
