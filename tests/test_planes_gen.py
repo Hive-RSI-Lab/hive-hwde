@@ -292,8 +292,55 @@ def test_worker_zone_dicts_and_layer_types(tmp_path):
     assert zones[1]["min_width"] == 0.3
     assert zones[1]["min_island_mm2"] == 2.0
     # ONLY inner plane layers become "power"; the outer pour stays signal
-    assert planes_gen.plane_layer_types(plan) == {"In1.Cu": "power",
-                                                  "In2.Cu": "power"}
+    assert planes_gen.plane_layer_types(plan, bg) == (
+        {"In1.Cu": "power", "In2.Cu": "power"}, [])
+
+
+def _seg(net: str, layer: str, x1, y1, x2, y2) -> str:
+    return (f'  (segment (start {x1} {y1}) (end {x2} {y2}) (width 0.2) '
+            f'(layer "{layer}") (net "{net}"))\n')
+
+
+def test_layer_type_region_pour_stays_signal(tmp_path):
+    # #925: one small region pour on an inner routing layer must not turn
+    # the layer into a plane (power) in the stackup
+    body = _basic_body() + _seg("SIG", "In2.Cu", 5, 30, 25, 30)
+    bg = _bg(tmp_path, layers=4, body=body)
+    plan, _ = planes_gen.build_plan(bg, {"planes": [
+        {"net": "GND", "layer": "In1.Cu"},
+        {"net": "VCC", "layer": "In2.Cu", "region": [17, 5, 29, 15.5],
+         "connect": "solid"}]})
+    types, notes = planes_gen.plane_layer_types(plan, bg)
+    assert types == {"In1.Cu": "power"}
+    assert len(notes) == 1 and notes[0].startswith("In2.Cu ")
+    assert "cover 5% of the board" in notes[0]
+    assert "1 track(s) of other nets (SIG)" in notes[0]
+
+
+def test_layer_type_full_pour_with_routing_stays_signal(tmp_path):
+    # a full pour on a layer that still carries another net's tracks is a
+    # mixed layer, not a plane; tracks of the poured net itself don't count
+    body = (_basic_body() + _seg("SIG", "In2.Cu", 5, 30, 25, 30)
+            + _seg("GND", "In1.Cu", 5, 5, 9, 5))
+    bg = _bg(tmp_path, layers=4, body=body)
+    plan, _ = planes_gen.build_plan(bg, {"planes": [
+        {"net": "GND", "layer": "In1.Cu"},
+        {"net": "VCC", "layer": "In2.Cu"}]})
+    types, notes = planes_gen.plane_layer_types(plan, bg)
+    assert types == {"In1.Cu": "power"}
+    assert notes == ["In2.Cu layer type not set to power: it carries 1 "
+                     "track(s) of other nets (SIG)"]
+
+
+def test_layer_type_tiled_regions_count_as_plane(tmp_path):
+    # two region pours that together cover the board make a (split) plane
+    bg = _bg(tmp_path, layers=4)
+    plan, _ = planes_gen.build_plan(bg, {"planes": [
+        {"net": "GND", "layer": "In1.Cu"},
+        {"net": "VCC", "layer": "In2.Cu", "region": [0.5, 0.5, 30, 39.5]},
+        {"net": "SIG", "layer": "In2.Cu", "region": [30, 0.5, 59.5, 39.5]}]})
+    assert planes_gen.plane_layer_types(plan, bg) == (
+        {"In1.Cu": "power", "In2.Cu": "power"}, [])
 
 
 # ============================================================ pure: thermal vias
