@@ -2741,9 +2741,9 @@ stackups:
       impedance_ohm: 90
       layer: outer
       reference: nearest_plane
-      width_mm: 0.1322
-      gap_mm: 0.13
-      closed_form: {width_mm: 0.1463, gap_mm: 0.13}
+      width_mm: 0.1452
+      gap_mm: 0.1524
+      closed_form: {width_mm: 0.1554, gap_mm: 0.1524}
       note: USB 2.0 / ULPI
     - profile: diff_100
       kind: diff

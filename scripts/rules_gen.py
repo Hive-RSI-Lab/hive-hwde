@@ -402,19 +402,29 @@ def stripline_layers(stackup: dict, constraints: dict) -> dict[str, dict]:
     return out
 
 
+def pair_gap(h: float, gap_floor: float = 0.0) -> float:
+    """The gap a pair is drawn at before its width is solved: clamp(h, 0.13,
+    0.30) (tight coupling), never under the fab's clearance `gap_floor`. A
+    gap under the clearance is no pair a fab builds: on a board drawn in
+    zones the fill shaves one side to the clearance, and the pair is
+    unbalanced (issue #741, PCBWay 8L's 0.13 mm against 6 mil)."""
+    return max(min(max(h, 0.13), 0.30), gap_floor)
+
+
 def stripline_geometry(z_target: float, geo: dict, diff: bool,
-                       floor: float = 0.0) -> dict:
+                       floor: float = 0.0, gap_floor: float = 0.0) -> dict:
     """Width (and, for a pair, the gap) whose stripline impedance on `geo` is
     z_target. A pair's gap is pinned at clamp(h, 0.13, 0.30), h the thinner
     of the two dielectrics (h_base or h_fill, #663), the outer
-    pairs' convention (tight coupling, a gap the fab draws), and the width
+    pairs' convention (tight coupling, a gap the fab draws; pair_gap: never
+    under `gap_floor`, the fab's clearance, #741), and the width
     solved; when that width is under the fab floor the width is pinned at
     the floor and the gap solved instead (a thin prepreg makes a 100 ohm
     pair narrow: JLC's 6-layer L3 wants 0.078 mm at 0.13 mm)."""
     hb, hf, t = geo["h_base"], geo["h_fill"], geo["t"]
     eb, ef = geo["er_base"], geo["er_fill"]
     h_near = min(hb, hf)
-    s = min(max(h_near, 0.13), 0.30) if diff else None
+    s = pair_gap(h_near, gap_floor) if diff else None
     key = "zdiff" if diff else "z0"
 
     def z_of(w: float, gap: float | None = s) -> float:
@@ -461,14 +471,16 @@ def _width_window(w: float, floor: float) -> str:
 
 
 def diff_pair_rules(pairs: list[dict], stackup: dict, constraints: dict | None = None,
-                    floor: float = 0.0, bga_refs: list[str] | None = None
+                    floor: float = 0.0, bga_refs: list[str] | None = None,
+                    gap_floor: tuple[float, float] = (0.0, 0.0)
                     ) -> tuple[list[Rule], list[dict]]:
     """diff_pair_gap rule + computed width/gap per pair (impedance.py).
 
     Inner layers: a stripline layer (stripline_layers: a pour above and
     below) gets its own solved width/gap as layer-scoped track_width and
     diff_pair_gap rules; any other inner layer keeps the guard (a named
-    disallow-track), since nothing there is a reference to size against."""
+    disallow-track), since nothing there is a reference to size against.
+    gap_floor: (outer, inner) clearance no pair gap is drawn under."""
     rules: list[Rule] = []
     facts: list[dict] = []
     # outer microstrip: dielectric gap to the nearest inner plane + its er
@@ -478,7 +490,8 @@ def diff_pair_rules(pairs: list[dict], stackup: dict, constraints: dict | None =
              if ly["type"] == "copper"][1:-1]
     for dp in pairs:
         w, gap = imp.diff_pair(float(dp["impedance_ohm"]), h,
-                               imp.CU_OZ_MM.get(cu_oz, 0.035), er)
+                               imp.CU_OZ_MM.get(cu_oz, 0.035), er,
+                               gap=pair_gap(h, gap_floor[0]))
         pinned = w < floor
         if pinned:   # under the fab's min trace: pin the width, solve the gap
             w, gap = imp.diff_pair(float(dp["impedance_ohm"]), h,
@@ -493,7 +506,7 @@ def diff_pair_rules(pairs: list[dict], stackup: dict, constraints: dict | None =
         for lname, geo in strip.items():
             try:
                 g = stripline_geometry(float(dp["impedance_ohm"]), geo, diff=True,
-                                       floor=floor)
+                                       floor=floor, gap_floor=gap_floor[1])
             except (ValueError, RuntimeError, ZeroDivisionError) as e:
                 layers[lname] = {"note": f"stripline not solved: {e}"}
                 continue
@@ -1136,7 +1149,10 @@ def build(constraints: dict, cap: dict, stackup: dict, baseline_only: bool,
         pairs = detect_diff_pairs(constraints)
         floor = float(cap.get("min_trace_width_mm", 0.0) or 0.0)
         bga_refs = _bga_refs(bg)
-        dr, df = diff_pair_rules(pairs, stackup, constraints, floor, bga_refs)
+        gap_floor = ((fabfloors.outer_clearance(cap), float(cap["min_clearance_mm"]))
+                     if "min_clearance_mm" in cap else (0.0, 0.0))
+        dr, df = diff_pair_rules(pairs, stackup, constraints, floor, bga_refs,
+                                 gap_floor)
         zr, zf = impedance_rules(constraints, stackup, pairs, floor, bga_refs)
         hr, hf = voltage_rules(constraints, cap)
         kr, kf = package_rules(constraints)
