@@ -406,6 +406,16 @@ def _distinct_placed(parts_json: Path | None) -> int:
                 and e.get("assembly_class", PLACED) in ASSEMBLED})
 
 
+def _offered(asked: list[str], allowed) -> list[str]:
+    """The asked options the line offers (case-blind); none of them offered
+    -> every option the line has. No list -> the asked ones, unchecked."""
+    allowed = [str(a) for a in allowed or []]
+    if not allowed:
+        return asked
+    low = {a.lower() for a in allowed}
+    return [x for x in asked if x.lower() in low] or allowed
+
+
 def run(pcb: Path, qtys: list[int], finishes: list[str], colors: list[str],
         assembly: bool = False, parts_json: Path | None = None,
         pricing_path: Path | None = None, thickness: float | None = None,
@@ -425,6 +435,11 @@ def run(pcb: Path, qtys: list[int], finishes: list[str], colors: list[str],
         pricing = prof["pricing"]
         if pricing.get("model") == "quote_only":
             return quote_only(pcb, prof)
+        # only what the vendor offers: OSH Park is purple ENIG, so the CLI's
+        # green/HASL default would quote a board they don't make (#700)
+        board_v = prof.get("board") or {}
+        finishes = _offered(finishes, board_v.get("surface_finish"))
+        colors = _offered(colors, board_v.get("solder_mask_colors"))
         if pricing.get("model") == "per_area":
             # one area rate covers every finish/colour the vendor offers
             finishes, colors = finishes[:1], colors[:1]
@@ -459,12 +474,8 @@ def run(pcb: Path, qtys: list[int], finishes: list[str], colors: list[str],
         mrow = fabmaterial.row(material)
         allowed_f = [str(f) for f in mrow.get("surface_finish") or []]
         allowed_c = [str(c) for c in mrow.get("solder_mask_colors") or []]
-        finishes = [f for f in finishes
-                    if not allowed_f or f.upper() in
-                    {a.upper() for a in allowed_f}] or allowed_f
-        colors = [c for c in colors
-                  if not allowed_c or c.lower() in
-                  {a.lower() for a in allowed_c}] or allowed_c
+        finishes = _offered(finishes, allowed_f)
+        colors = _offered(colors, allowed_c)
     if thickness is None:
         # FR-4 keeps its 1.6 mm default; an HF board's thickness is its
         # stackup's finished one (board_init wrote it into (general))

@@ -68,6 +68,16 @@ DRILL_FAULTS = (
     ("drill-0.12", "dfm_hole_size", {"lone": 0.12}),
 )
 DRILL_BOARD = "pd_trigger_dfm"
+# (name, kind, vendor, capability row, gap mm): an inner-layer plane planted
+# in the same gerber set with its antipad this far from a plated hole's wall,
+# under the vendor's plated-drill-to-inner-copper floor (OSH Park 10 mil,
+# #700). pd-trigger is 2 layers, so the plane is a new In1.Cu gerber and the
+# row is the vendor's 4-layer one; lowering that floor past the gap lets it
+# through.
+INNER_FAULTS = (
+    ("hole-to-inner-copper-0.15", "dfm_hole_to_inner_copper", "oshpark",
+     "4layer_1oz", 0.15),
+)
 # Real findings for the gates whose tool is KiCad's (no kicad-cli offline):
 # tests/golden/gates/<name>.json, a report kc.py wrote, holding the findings
 # picked from it (README.md there says from which runs).
@@ -248,6 +258,60 @@ def _plant(drl: str, fault: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _inner_plane(fab, gap: float) -> tuple[str, tuple[float, float]]:
+    """An In1.Cu gerber: a 2 mm square plane frame around the first plated
+    hole with no other hole within 3 mm, its square antipad `gap` from the
+    hole's wall. -> (gerber text, the hole's centre)."""
+    holes = [h for h in fab.holes if h.plated]
+    for h in holes:
+        if all(((h.x - o.x) ** 2 + (h.y - o.y) ** 2) ** .5 > 3.0
+               for o in fab.holes if o is not h):
+            break
+    else:
+        raise ValueError("no lone plated hole to plant beside")
+    a, b = h.diameter / 2.0 + gap, h.diameter / 2.0 + gap + 1.0
+
+    def um(v: float) -> int:
+        return round(v * 1e6)
+    rects = ((-b, -b, b, -a), (-b, a, b, b), (-b, -a, -a, a), (a, -a, b, a))
+    out = ["%TF.FileFunction,Copper,L2,Inr*%", "%FSLAX46Y46*%", "%MOMM*%",
+           "%LPD*%", "G01*"]
+    for x0, y0, x1, y1 in rects:
+        # gerber Y is up, the board's (and fab.holes') Y is down
+        x0, x1, y0, y1 = h.x + x0, h.x + x1, -h.y + y0, -h.y + y1
+        out += ["G36*", f"X{um(x0)}Y{um(y0)}D02*", f"X{um(x1)}Y{um(y0)}D01*",
+                f"X{um(x1)}Y{um(y1)}D01*", f"X{um(x0)}Y{um(y1)}D01*",
+                f"X{um(x0)}Y{um(y0)}D01*", "G37*"]
+    return "\n".join(out + ["M02*"]) + "\n", (h.x, h.y)
+
+
+def inner_faults(src: Path, tmp: Path, found: dict | None = None
+                 ) -> list[tuple[str, str, bool]]:
+    """INNER_FAULTS, each held by dfm_check's hole-to-inner-copper measure
+    on the vendor's own capability row."""
+    import dfm_check
+    import gerblib
+    import vendors
+    out = []
+    for name, kind, vendor, row, gap in INNER_FAULTS:
+        rules = vendors.load(vendor)["design_rules"][row]
+        work = tmp / name
+        shutil.copytree(src, work)
+        stem = next(work.glob("*-F_Cu.*")).name.split("-F_Cu.")[0]
+        text, at = _inner_plane(gerblib.FabStack(work), gap)
+        (work / f"{stem}-In1_Cu.gbr").write_text(text, encoding="utf-8")
+        vios: list = []
+        dfm_check.check_hole_to_inner(gerblib.FabStack(work), rules, vios)
+        new = [v for v in vios if v.get("kind") == kind
+               and v.get("severity") == "error"
+               and v.get("pos") and abs(v["pos"][0] - at[0]) < 0.01
+               and abs(v["pos"][1] - at[1]) < 0.01]
+        if found is not None:
+            found.setdefault("dfm", []).extend(new)
+        out.append(("dfm", f"dfm {name} ({kind}, {vendor} {row})", bool(new)))
+    return out
+
+
 def dfm_faults(found: dict | None = None) -> list[tuple[str, str, bool]]:
     import benchlib
     import yaml
@@ -276,6 +340,7 @@ def dfm_faults(found: dict | None = None) -> list[tuple[str, str, bool]]:
             if found is not None:
                 found.setdefault("dfm", []).extend(new)
             out.append(("dfm", f"dfm {name} ({kind})", bool(new)))
+        out += inner_faults(src, Path(tmp), found)
     return out
 
 

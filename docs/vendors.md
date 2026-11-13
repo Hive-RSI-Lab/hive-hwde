@@ -69,6 +69,9 @@ design_rules:                     # key "<layers>layer_<outer oz>oz", the
     min_solder_mask_dam_mm: 0.1
     outer_copper_oz: 1.0
     inner_copper_oz: 0.0
+    # optional: min_hole_to_inner_copper_mm (plated hole to inner-layer
+    # copper; OSH Park 4/6-layer). rules_gen writes it as an inner-layer
+    # hole_clearance rule and dfm_check measures it on In*.Cu gerbers.
 castellated: {...}                # optional, keys as jlc_capabilities.yaml
 
 board:

@@ -28,7 +28,8 @@ def test_every_planted_fault_is_caught():
     steps = {s for s, _, _ in fs}
     assert steps == set(strength.FAILS_ON), steps     # each gate the score counts
     assert sum(s == "verify" for s, _, _ in fs) >= 16
-    assert sum(s == "dfm" for s, _, _ in fs) >= 1 + len(strength.DRILL_FAULTS)
+    assert sum(s == "dfm" for s, _, _ in fs) >= (1 + len(strength.DRILL_FAULTS)
+                                                 + len(strength.INNER_FAULTS))
 
 
 @pytest.fixture(scope="module")
@@ -53,7 +54,8 @@ def test_a_gate_that_stops_failing_warnings_lets_one_through(monkeypatch, found)
     assert set(_missed(strength.gate_faults(found))) == {
         "gate erc: erc unconnected_wire_endpoint (warning)",
         "gate dfm: check.dfm dfm_hole_to_hole (error)",
-        "gate dfm: check.dfm dfm_hole_size (error)"}
+        "gate dfm: check.dfm dfm_hole_size (error)",
+        "gate dfm: check.dfm dfm_hole_to_inner_copper (error)"}
 
 
 def _seen(monkeypatch):
