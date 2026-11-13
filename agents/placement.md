@@ -131,6 +131,7 @@ Freerouting's first pass is the late sign of the same thing.
   `product` the given size binds exactly as before.
 
 ## Traps found on boards (2026-08 to 2026-10 runs)
+- Model a display tail's real outline, not its mouth: a layout aligned the tail end with the socket's contact pads (3 mm too far in) and kept out only the 6.5 mm end while the tail is ~20.5 mm wide for its last 10 mm. Read the panel drawing and add keepouts for both.
 
 - `placement.edges` is graded against the outline that is on the board. At a canonical binding that is the provisional `board_init --outline auto` shape, so edge-pinned connectors pin to an arbitrary width and `--outline fit` then inherits it (88.29 mm against a derived 50 mm on one board). Place to the canonical layout, grow the room, place, then fit. Moving the edge parts in fixes the width only; the aspect stays inherited, so compare candidate shapes.
 - `reports/board_init.json`'s `outline_bbox` is `[xmin, ymin, xmax, ymax]`, not a size. Read as 41.0 x 57.7 mm it inverted which dimension was scarce (the board was 28.02 x 44.69 mm).
