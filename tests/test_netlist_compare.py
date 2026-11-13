@@ -446,6 +446,38 @@ def test_dfm_check_passes_a_jumper_split_named_apart(tmp_path, monkeypatch):
     assert vios == [] and facts["netlist"]["opens"] == 0
     assert facts["netlist"]["jumper_splits"] == 1
 
+def test_the_rename_keeps_a_crlf_file_crlf(tmp_path, monkeypatch):
+    import fab_export
+    pcb = tmp_path / "j.kicad_pcb"
+    pcb.write_text(JUMPER_PCB)
+    fab, text, bg = _jumper_case(tmp_path / "g")
+    ipc = tmp_path / "g" / "j.ipc"
+    ipc.write_bytes(text.replace("\n", "\r\n").encode())
+    monkeypatch.setattr(geom, "load_board", lambda p: bg)
+    (r,) = fab_export.name_jumper_islands(pcb, ipc, tmp_path / "g")
+    raw = ipc.read_bytes()
+    assert b"USB_DP~J1" in raw and raw.count(b"\n") == raw.count(b"\r\n")
+    assert not list((tmp_path / "g").glob("*.part"))
+
+
+def test_dfm_check_names_a_failed_rename(tmp_path, monkeypatch):
+    import fab_export
+    import kc
+    pcb = tmp_path / "j.kicad_pcb"
+    pcb.write_text(JUMPER_PCB)
+    fab, text, bg = _jumper_case(tmp_path / "g")
+
+    def export(cli, pcb, f, gdir, bg):
+        f.write_text(text)
+        return {"status": "pass", "jumper_rename_error": "D356Error: bad"}
+    monkeypatch.setattr(fab_export, "export_ipc_absolute", export)
+    monkeypatch.setattr(kc, "resolve_cli", lambda: Path("cli"))
+    vios: list = []
+    facts, skip = dfm_check.check_netlist(fab, pcb, bg, tmp_path / "g",
+                                          tmp_path, vios)
+    assert skip is None and facts["netlist"]["source"] == "board"
+    (v,) = vios
+    assert v["jumper"] and "naming itself failed (D356Error: bad)" in v["msg"]
 
 
 def test_dnp_and_cut_pin_clashes_are_no_jumpers():
@@ -460,6 +492,12 @@ def test_dnp_and_cut_pin_clashes_are_no_jumpers():
             '  (pad "A1" smd) (pad "B1" smd)))\n')
     assert ipcd356.jumper_groups(shld) == [("J1", ("A1", "B1"))]
     assert ipcd356.jumper_groups('(kicad_pcb (footprint "R"))') == []
+    # and a duplicated pin cut to 4 characters would catch its neighbour
+    dup = ('(kicad_pcb (footprint "SW" (property "Reference" "S1")\n'
+           '  (duplicate_pad_numbers_are_jumpers yes)\n'
+           '  (pad "ABCD1" smd) (pad "ABCD1" smd) (pad "ABCD2" smd)\n'
+           '  (pad "7" smd) (pad "7" smd)))\n')
+    assert ipcd356.jumper_groups(dup) == [("S1", ("7",))]
 
 
 def test_islands_named_apart_but_joined_in_copper_are_a_short(tmp_path):

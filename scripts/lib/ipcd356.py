@@ -287,7 +287,8 @@ def jumper_groups(pcb_text: str) -> list[tuple[str, tuple[str, ...]]]:
                     out.append((ref.group(1), pins))
         if _DUP_JUMPER.search(block):
             for num in sorted({n for n in nums if n and nums.count(n) > 1}):
-                out.append((ref.group(1), (num,)))
+                if not any(n[:4] == num[:4] for n in nums if n != num):
+                    out.append((ref.group(1), (num,)))
     return out
 
 

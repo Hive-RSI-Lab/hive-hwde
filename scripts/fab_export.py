@@ -33,6 +33,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
 import zipfile
@@ -215,7 +216,8 @@ def name_jumper_islands(pcb: Path, ipc_file: Path, gerber_dir: Path,
     jumpers = ipcd356.jumper_groups(pcb_text)
     if not jumpers:
         return []
-    text = ipc_file.read_text(encoding="utf-8", errors="replace")
+    # bytes, so a CRLF file stays CRLF
+    text = ipc_file.read_bytes().decode("utf-8", errors="replace")
     d = ipcd356.parse(text)
     bg = bg if bg is not None else geom.load_board(pcb)
     ipcd356.resolve(d, bg)
@@ -223,7 +225,10 @@ def name_jumper_islands(pcb: Path, ipc_file: Path, gerber_dir: Path,
                           ipcd356.net_tie_classes(pcb_text, bg), jumpers)
     new, renames = ipcd356.split_jumper_islands(text, res["jumper_splits"])
     if renames:
-        ipc_file.write_text(new, encoding="utf-8")
+        # beside the file, then one rename: a failed write ships no half file
+        part = ipc_file.with_name(ipc_file.name + ".part")
+        part.write_text(new, encoding="utf-8", newline="")
+        os.replace(part, ipc_file)
     return renames
 
 

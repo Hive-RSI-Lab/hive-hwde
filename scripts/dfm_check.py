@@ -1728,6 +1728,7 @@ def check_netlist(fab, pcb: Path, bg, gdir: Path, tmp: Path,
     import ipcd356
     src = _shipped_netlist(gdir)
     origin = "package"
+    rename_error = None
     if src is None:
         origin = "board"
         try:
@@ -1739,6 +1740,7 @@ def check_netlist(fab, pcb: Path, bg, gdir: Path, tmp: Path,
             if res.get("status") != "pass":
                 return {}, ("kicad-cli ipcd356 export failed: "
                             f"{res.get('stderr_tail')}")
+            rename_error = res.get("jumper_rename_error")
         except Exception as exc:  # noqa: BLE001 (no kicad-cli = coverage hole)
             return {}, f"no IPC-D-356 netlist ({type(exc).__name__}: {exc})"
     try:
@@ -1786,12 +1788,15 @@ def check_netlist(fab, pcb: Path, bg, gdir: Path, tmp: Path,
             if op.get("jumper"):
                 msg = (f"net {op['net']} is {op['n_fragments']} copper islands "
                        "joined only inside a part (jumper pads), but the "
-                       "IPC-D-356 netlist gives them one name "
+                       "IPC-D-356 netlist does not name each island apart "
                        f"({', '.join(op['shared_names'])}): a bare-board "
                        "tester reads that as an open and fails a good board. "
                        "Re-export with fab_export, which names each island "
                        "apart ("
                        f"{'; '.join(', '.join(f[:4]) for f in op['fragments'][:4])})")
+                if rename_error:
+                    msg += (" - here the island naming itself failed "
+                            f"({rename_error}): fix that first")
             refs = sorted({lbl.split("-")[0] for f in op["fragments"]
                            for lbl in f} - {"VIA"})
         vios.append(checklib.violation(
