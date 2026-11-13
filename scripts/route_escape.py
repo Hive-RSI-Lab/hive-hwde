@@ -81,6 +81,15 @@ ball whose net has an inner plane gets a stack to that plane.
 Power and ground balls are not fanned (KRT treats them as plane balls: they
 want one via straight to their plane - stitch_vias' job).
 
+Pad fanout (#929): --pads U5.3,U5.7,L1.1 fans out named pads of any part
+(QFN and SOT power pins, inductor and regulator pads) instead of ball grids:
+a via beside each pad that clears every other net's copper and hole, and a
+stub to it on the pad's layer, or a short join to the net's own copper when
+no spot clears (lib/padfanout.py). The ops go through route_edit
+(atomic, verified); --plan only reports them, --out-ops writes them.
+--fan-width and --fan-via SIZE/DRILL override the net's width and the
+board's common via. KRT is not used.
+
 Facts: per BGA the geometry, budget, method, requested / escaped / kept
 nets, the balls left for the routers, via-in-pad stripped, caps moved; the
 DRU rules written; the DRC delta.
@@ -597,7 +606,19 @@ def run(argv: list[str] | None = None):
                     help="per-KRT-invocation process timeout")
     ap.add_argument("--work-dir", default=None)
     ap.add_argument("--out-report", default=None)
+    ap.add_argument("--pads", default=None,
+                    help="pad fanout (#929): comma list of REF.PAD to give "
+                         "a via and stub each, not a BGA escape")
+    ap.add_argument("--fan-width", type=float, default=None,
+                    help="--pads: stub width (default: the net's width)")
+    ap.add_argument("--fan-via", default=None,
+                    help="--pads: via SIZE/DRILL in mm (default: the "
+                         "board's most common through via)")
+    ap.add_argument("--out-ops", default=None,
+                    help="--pads: write the route_edit ops here")
     args = ap.parse_args(argv)
+    if args.pads:
+        return pad_fanout(args)
 
     pcb = Path(args.pcb).resolve()
     if not pcb.is_file():
@@ -831,6 +852,42 @@ def run(argv: list[str] | None = None):
         "board_updated": board_updated,
         "work_dir": str(work),
     })
+    return payload, args.out_report
+
+
+def pad_fanout(args):
+    """--pads: lib/padfanout's vias and stubs, applied with route_edit."""
+    import padfanout
+    import route_edit
+    pcb = Path(args.pcb).resolve()
+    if not pcb.is_file():
+        raise CheckError(f"board not found: {pcb}")
+    via = None
+    if args.fan_via:
+        try:
+            size, drill = (float(x) for x in args.fan_via.split("/"))
+        except ValueError as e:
+            raise CheckError("--fan-via wants SIZE/DRILL, e.g. 0.45/0.2") from e
+        via = (size, drill)
+    if args.fan_width is not None and args.fan_width <= 0:
+        raise CheckError("--fan-width must be positive")
+    bg = geom.BoardGeom.from_file(pcb)
+    specs = [s.strip() for s in args.pads.split(",") if s.strip()]
+    ops, rows = padfanout.Fanout(bg, width=args.fan_width, via=via).fan(specs)
+    if args.out_ops:
+        Path(args.out_ops).write_text(json.dumps(
+            {"version": 1, "ops": ops}, indent=1) + "\n", encoding="utf-8")
+    applied = bool(ops) and not args.plan
+    if applied:
+        route_edit.apply_ops(pcb, ops)
+    violations = [violation(
+        SCRIPT, "warning", None, None, None, [r["pad"].split(".")[0]],
+        f"{r['pad']} ({r['net'] or 'no net'}): {r['result']}", SCRIPT,
+        kind="pad_fanout_incomplete", nets=[r["net"]] if r["net"] else [])
+        for r in rows if r["result"] in ("no spot", "no net",
+                                         "no copper layer")]
+    payload = checklib.report(SCRIPT, str(pcb), violations, facts={
+        "pads": rows, "ops": len(ops), "board_updated": applied})
     return payload, args.out_report
 
 

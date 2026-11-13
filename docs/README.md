@@ -719,6 +719,15 @@ ripped, one Freerouting rung left 54 unconnected and 16 DRC errors.
 no DRC errors. What remained was a 0.4 mm-pitch QFN pocket walled in by a
 VBUS_IN track and a 77 mm long haul.
 
+Before the planes go in, fan out the power and ground pins that need a via:
+`pcb-flow route_escape --pcb ... --pads U5.3,U5.7,L1.1` puts a via next to
+each named pad of any part (a QFN or SOT pin, an inductor's pad) where it
+clears every other net's copper and hole at the board's rules, with a stub on
+the pad's own layer. It looks outward first, never under the part, and skips
+a pad that already has a via of its net nearby. A pad with no spot is joined
+to its own copper close by, or is reported as a `pad_fanout_incomplete`
+warning. `--plan` only reports, `--out-ops` writes the `route_edit` ops.
+
 ## Boards from other EDA tools, and back
 
 `pcb-flow eda_io import <file> --out <dir>` brings in a board from Altium
