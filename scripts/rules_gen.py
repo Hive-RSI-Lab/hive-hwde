@@ -10,7 +10,10 @@ expressible as a rule becomes a named DRC violation, so the standard DRC gate
      stackup's own outer copper unless --copper-oz overrides, and an explicit
      mismatch against a named stackup is refused, T6 P5-1) + DESIGN rules from
      constraints:
-       - power nets  -> minimum track width (IPC-2152 via check_current) per net
+       - power nets  -> minimum track width (IPC-2152 via check_current) per net,
+         floored at the entry's min_width_mm; a "switch_node" entry also gets
+         no-via, one-layer and keep-away rules, and (with --pcb) an undeclared
+         regulator switch pin's net gets a width at its rating (#924, #923)
        - diff pairs  -> diff_pair_gap rule + differential width (impedance.py +
          stackup); on an inner STRIPLINE layer (a pour on the layers above and
          below, from constraints planes) a layer-scoped width/gap solved with
@@ -194,6 +197,11 @@ def power_rules(constraints: dict, cu_mm: float) -> tuple[list[Rule], list[dict]
                              cur, dt, cu_mm), 4),
                          "plane_declared": net in plane_nets})
         w = check_current.required_width_mm(sized, dt, cu_mm)
+        if entry.get("min_width_mm") is not None:
+            # a stated floor (a switch node's 0.5 mm at 0.6 A): never under
+            # the current's own width, and no dt_c to pick to reach it (#923)
+            fact["declared_min_width_mm"] = float(entry["min_width_mm"])
+            w = max(w, float(entry["min_width_mm"]))
         safe = re.sub(r"[^A-Za-z0-9]", "_", net).strip("_")
         rules.append(Rule(f"aiee_pwr_width_{safe}", "track_width", round(w, 4),
                           condition=f"A.NetName == '{net}' && A.Type == 'track'"))
@@ -243,6 +251,102 @@ def neck_rules(bg, power_facts: list[dict], cap: dict
                           round(narrow[ref], 4), "neck_mm": neck,
                           "width_mm": w, "rule": name})
     return rules, facts
+
+
+SWITCH_KEEP_AWAY_MM = 1.0   # switch_node.keep_away_mm default
+
+
+def switch_node_rules(constraints: dict, bg, power_facts: list[dict],
+                      cu_mm: float) -> tuple[list[Rule], list[dict], list[str]]:
+    """Switch-node rules (#924, #923 point 6). A power entry with
+    "switch_node" ({ref?, layer?, keep_away?, keep_away_mm?} or true) is a
+    regulator's SW/LX net: one short run on the regulator's side, so
+    rules_gen forbids vias on it and tracks on every other layer, and keeps
+    its copper keep_away_mm from the pads of each keep_away ref (mic,
+    antenna, crystal). Its width is the entry's own power rule (current_a,
+    min_width_mm) and its neck stays the courtyard neck rule.
+
+    With a board, a switch pin's net that no power entry names gets a width
+    rule too, at the regulator's rated current at check_current's screen dT
+    (the same entry check_current judges it by), so the router no longer
+    lays it at signal width: inferred, warned, no via/layer rules - those
+    need the designer's word. A switch pin on a part the table doesn't know
+    is only warned. Returns (rules, facts, warnings); inferred facts are
+    appended to power_facts so they get a net class."""
+    rules: list[Rule] = []
+    facts: list[dict] = []
+    warnings: list[str] = []
+    width_of = {f["net"]: f["min_width_mm"] for f in power_facts}
+    for entry in constraints.get("power", []) or []:
+        sw = entry.get("switch_node")
+        if not sw:
+            continue
+        sw = sw if isinstance(sw, dict) else {}
+        net = entry["net"]
+        pins = []
+        if bg is not None:
+            pins = [p for p in bg.pads_of(net=net)
+                    if (p.ref == sw["ref"] if sw.get("ref") else
+                        check_current.pin_name(p)
+                        in check_current.SWITCH_PIN_NAMES)]
+        ref = sw.get("ref") or (pins[0].ref if pins else None)
+        layer = sw.get("layer") or next(
+            (ly for p in pins for ly in p.layers if ly in ("F.Cu", "B.Cu")),
+            "F.Cu")
+        cond = f"A.NetName == '{net}'"
+        safe = _safe(net)
+        rules.append(Rule(f"aiee_sw_novia_{safe}", "disallow via",
+                          condition=cond, comment=(
+                              f"{net}: switch node{f' of {ref}' if ref else ''}"
+                              f" - one run on {layer}, no vias, no other layer")))
+        rules.append(Rule(f"aiee_sw_layer_{safe}", "disallow track",
+                          condition=f"{cond} && A.Layer != '{layer}'"))
+        away = float(sw.get("keep_away_mm", SWITCH_KEEP_AWAY_MM))
+        keep = list(sw.get("keep_away") or [])
+        for r in keep:
+            if any(ch in r for ch in "*?"):
+                raise SystemExit(f"power {net}: switch_node keep_away {r!r} "
+                                 "is a wildcard; name each part")
+            rules.append(Rule(f"aiee_sw_away_{safe}_{_safe(r)}", "clearance",
+                              round(away, 4), condition=(
+                                  f"{cond} && B.memberOfFootprint('{r}')")))
+        if bg is not None and ref is None:
+            warnings.append(f"{net} is declared a switch node but no pad on "
+                            "it is a switch pin (SW/LX/PH); name the "
+                            "regulator in switch_node.ref")
+        facts.append({"net": net, "ref": ref, "layer": layer,
+                      "width_mm": width_of.get(net), "keep_away": keep,
+                      "keep_away_mm": away if keep else None})
+    if bg is None:
+        return rules, facts, warnings
+    entries = constraints.get("power", []) or []
+    inferred, unrated = check_current.inferred_switch_entries(
+        entries, bg, check_current.switch_rows())
+    for e in inferred:
+        net = e["net"]
+        w = round(check_current.required_width_mm(e["current_a"], e["dt_c"],
+                                                  cu_mm), 4)
+        rules.append(Rule(f"aiee_pwr_width_{_safe(net)}", "track_width", w,
+                          condition=f"A.NetName == '{net}' && A.Type == 'track'",
+                          comment=(f"{net}: {e['from_part']} ({e['part']})'s "
+                                   f"switch node, inferred at its rated "
+                                   f"{e['current_a']:g} A")))
+        power_facts.append({"net": net, "current_a": e["current_a"],
+                            "dt_c": e["dt_c"], "min_width_mm": w,
+                            "inferred_switch_node": True,
+                            "from_part": e["from_part"]})
+        facts.append({"net": net, "ref": e["from_part"], "inferred": True,
+                      "width_mm": w})
+        warnings.append(f"{net} is {e['from_part']} ({e['part']})'s switch "
+                        f"node and no power entry names it: sized for its "
+                        f"rated {e['current_a']:g} A; declare it in power "
+                        "with this board's current and switch_node")
+    for u in unrated:
+        warnings.append(f"{u['net']} is on {u['ref']}'s {u['pin']} pin, a "
+                        "switch node with no power entry and a part "
+                        "switch_nodes.yaml doesn't rate: declare it in power "
+                        "with switch_node")
+    return rules, facts, warnings
 
 
 def _bga_refs(bg) -> list[str]:
@@ -1148,6 +1252,7 @@ def build(constraints: dict, cap: dict, stackup: dict, baseline_only: bool,
                     "hv_rules": [], "necks": []}
     if not baseline_only:
         pr, pf = power_rules(constraints, cu_mm)
+        sr, sf, sw_warn = switch_node_rules(constraints, bg, pf, cu_mm)
         nr, nf = neck_rules(bg, pf, cap) if bg is not None else ([], [])
         pairs = detect_diff_pairs(constraints)
         floor = float(cap.get("min_trace_width_mm", 0.0) or 0.0)
@@ -1163,10 +1268,17 @@ def build(constraints: dict, cap: dict, stackup: dict, baseline_only: bool,
         # HV and package-rating clearances stay last: KiCad's later rule
         # wins, and a courtyard's escape clearance must never undercut them
         ir, if_ = isolation_rules(constraints, cap, stackup, hf, bg)
-        rules += pr + nr + dr + zr + br + hr + kr + ir
+        # switch-node width rules ride with the power widths (the necks
+        # after them win in the courtyard); their via/layer/keep-away
+        # rules come after the necks, before HV and isolation
+        sw_width = [r for r in sr if r.constraint == 'track_width']
+        sw_other = [r for r in sr if r.constraint != 'track_width']
+        rules += pr + sw_width + nr + sw_other + dr + zr + br + hr + kr + ir
         report["package_rules"] = kf
         report["isolation_rules"] = if_
         report["necks"] = nf
+        report["switch_nodes"] = sf
+        report["switch_warnings"] = sw_warn
         report["bga_escape"] = bf
         report["renamed_rules"] = unique_rule_names(rules)
         classes, patterns = net_classes(constraints, pf, df, cap, hf)
@@ -1343,11 +1455,13 @@ def main(argv: list[str] | None = None) -> int:
             "isolation_rules": report.get("isolation_rules", []),
             "package_rules": report.get("package_rules", []),
             "necks": report["necks"],
+            "switch_nodes": report.get("switch_nodes", []),
             "warnings": [
                 f"{f['net']} is plane_fed but constraints planes has no pour "
                 "for it: its taps are sized for the plane that isn't there"
                 for f in report["power"]
-                if f.get("plane_fed") and not f.get("plane_declared")],
+                if f.get("plane_fed") and not f.get("plane_declared")]
+            + report.get("switch_warnings", []),
             "pcb": str(pcb) if bg is not None else None,
             "classes": [c["name"] for c in report["classes"]],
             "class_clearances": {c["name"]: c["clearance"]

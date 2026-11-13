@@ -55,6 +55,22 @@ Consumers per key (script -> phase):
     // current_a: declare loads before widening branch copper.
     "loads": {"U402": 0.12}
   }, {
+    // A buck's switch node (#924, #923 point 6). "min_width_mm" is a width
+    // floor for any power entry: rules_gen lays max(IPC width, min_width_mm),
+    // never less. "switch_node" (true, or an object) makes rules_gen emit
+    // aiee_sw_novia_<net> (no vias), aiee_sw_layer_<net> (tracks only on
+    // "layer", default the switch pin's side, else F.Cu) and one
+    // aiee_sw_away_<net>_<ref> clearance of "keep_away_mm" (default 1.0)
+    // per ref in "keep_away" (exact refs; a wildcard is refused).
+    // route_critical lays switch nodes before every other power net.
+    // With --pcb, a declared node with no SW/LX/PH pad is warned; an
+    // UNDECLARED net on a regulator's switch pin listed in
+    // reference/switch_nodes.yaml gets a width at that part's rating (dT 60)
+    // and a warning to declare it; an unrated switch pin is only warned.
+    "net": "/LX", "current_a": 0.6, "min_width_mm": 0.5, "pdn": false,
+    "switch_node": {"ref": "U3", "layer": "F.Cu",
+                    "keep_away": ["MK1", "U5"], "keep_away_mm": 2.0}
+  }, {
     // width-only entry: "pdn": false opts a net OUT of check_pdn's
     // decoupling inventory. Use for nets declared solely so rules_gen sizes
     // their trace (e.g. the raw-input stub BEFORE a reverse-polarity

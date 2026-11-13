@@ -304,10 +304,15 @@ def power_specs(constraints: dict, cu_mm: float = 0.035) -> list[dict]:
         cur = float(entry["current_a"])
         dt = float(entry.get("dt_c", 10.0))
         ipc = round(check_current.required_width_mm(cur, dt, cu_mm), 4)
+        w = power_width_mm(cur, dt, cu_mm)
+        if entry.get("min_width_mm") is not None:   # rules_gen's floor (#923)
+            w = round(max(w, float(entry["min_width_mm"])), 4)
         specs.append({"net": net, "current_a": cur, "dt_c": dt,
-                      "ipc_min_mm": ipc,
-                      "width_mm": power_width_mm(cur, dt, cu_mm)})
-    return specs
+                      "ipc_min_mm": ipc, "width_mm": w,
+                      "switch_node": bool(entry.get("switch_node"))})
+    # a switch node goes first, while the pins to its inductor are open
+    # (#924): its one short run on one layer has no detour to fall back on
+    return sorted(specs, key=lambda s: not s["switch_node"])
 
 
 def plan_order(only: str | None, plan: dict | None) -> list[str]:
