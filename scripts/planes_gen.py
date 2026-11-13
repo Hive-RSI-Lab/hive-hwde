@@ -58,7 +58,8 @@ same-priority zones (zones_intersect) even for the SAME net (S11-verified).
 A board that GREW after the pour (board_edit) is the exception: when the
 existing same-net zone OUTLINES on the layer miss more than REGROW_TOL of
 the planned region and each such zone lies wholly inside it, those zones
-are removed and the planned one added in their place (status "regrown").
+are removed (at any fill coverage: a board that grew a lot is the same
+case, #923 point 2) and the planned one added in their place (status "regrown").
 That is what lets "re-run planes_gen" after a resize reach the new edge.
 
 Known limitation: zero-fill detection intersects the net's fill with the
@@ -369,16 +370,19 @@ def build_plan(bg: geom.BoardGeom, constraints: dict | None,
     plan, merge_notes = merge_same_net(plan)
     notes += merge_notes
     for z in plan:
+        # stale outlines first, at ANY coverage (#923 point 2): a board that
+        # grew by more than 1 - EXISTING_COVER left the old zone in place
+        # beside the new one, and DRC called the pair zones_intersect
+        stale = _stale_outlines(bg, z)
+        if stale:
+            z["_regrow"] = stale
+            notes.append(f"existing {z['net']} zone on {z['layer']} "
+                         "stops short of the planned region (the board "
+                         "grew); its outline is replaced by the planned "
+                         "one")
+            continue
         cov = _existing_cover(bg, z["net"], z["layer"], _shape(z))
         if cov >= EXISTING_COVER:
-            stale = _stale_outlines(bg, z)
-            if stale:
-                z["_regrow"] = stale
-                notes.append(f"existing {z['net']} zone on {z['layer']} "
-                             "stops short of the planned region (the board "
-                             "grew); its outline is replaced by the planned "
-                             "one")
-                continue
             z["_existing"] = round(cov, 3)
             notes.append(f"existing {z['net']} fill covers "
                          f"{cov:.0%} of the {z['layer']} region; zone not "

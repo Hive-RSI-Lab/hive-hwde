@@ -602,6 +602,27 @@ def test_grown_board_regrows_stale_zone_outline(tmp_path):
     assert not plan3[0].get("_regrow")
 
 
+
+_SMALL_ZONE = _SHORT_ZONE.replace("59.5", "29.5").replace("35.5", "19.5")
+
+
+def test_board_grown_far_past_its_pour_still_drops_the_old_zone(tmp_path):
+    """#923 point 2, planted: the pour was drawn on a 30x20 board that grew
+    to 60x40, so the old fill covers well under EXISTING_COVER. The old
+    zone used to stay beside the new one (DRC zones_intersect); it must be
+    removed and the planned zone added in its place."""
+    con = {"planes": [{"net": "GND", "layer": "B.Cu"}]}
+    bg = _bg(tmp_path, body=_basic_body() + _SMALL_ZONE)
+    cov = planes_gen._existing_cover(bg, "GND", "B.Cu",
+                                     planes_gen._shape(planes_gen.build_plan(
+                                         bg, con)[0][0]))
+    assert cov < planes_gen.EXISTING_COVER
+    plan, meta = planes_gen.build_plan(bg, con)
+    assert not plan[0].get("_existing")
+    assert plan[0]["_regrow"] == [{"name": "", "net": "GND", "layer": "B.Cu",
+                                   "inside": [0.5, 0.5, 29.5, 19.5]}]
+    assert any("board grew" in n for n in meta["notes"])
+
 # ============================================================ smoke fixtures
 
 @pytest.fixture(scope="session")
