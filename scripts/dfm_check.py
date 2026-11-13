@@ -1705,9 +1705,10 @@ def check_netlist(fab, pcb: Path, bg, gdir: Path, tmp: Path,
     except ipcd356.D356Error as exc:
         return {}, f"IPC-D-356 netlist unreadable: {exc}"
     clashes = ipcd356.resolve(d356, bg)
-    ties = ipcd356.net_tie_classes(
-        pcb.read_text(encoding="utf-8", errors="replace"), bg)
-    res = ipcd356.compare(fab, d356, ties)
+    pcb_text = pcb.read_text(encoding="utf-8", errors="replace")
+    ties = ipcd356.net_tie_classes(pcb_text, bg)
+    res = ipcd356.compare(fab, d356, ties,
+                          ipcd356.jumper_pad_groups(pcb_text))
     for c in clashes:
         vios.append(checklib.violation(
             CHECK, "warning", None, None, None, [],

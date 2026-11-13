@@ -333,6 +333,26 @@ def test_net_tie_short_is_the_design(tmp_path):
     assert ipcd356.compare(fab, d, ties)["shorts"] == []
 
 
+def test_jumper_pads_join_one_net(tmp_path):
+    """A THS4541 ties FB to OUT inside the part (jumper_pad_groups): copper
+    that meets only there is one net. A different net on a jumper pad still
+    stays apart."""
+    pcb = ('(kicad_pcb (footprint "TQFN-16"\n'
+           '  (property "Reference" "U1")\n'
+           '  (jumper_pad_groups\n    ("1" "11")\n    ("10" "4")\n  )\n'
+           '  (pad "1" smd) (pad "11" smd)))\n')
+    groups = ipcd356.jumper_pad_groups(pcb)
+    assert groups == [{("U1", "1"), ("U1", "11")}, {("U1", "10"), ("U1", "4")}]
+    fab = stack(tmp_path, {"F.Cu": [flash(1, 1), flash(5, 1), flash(9, 1)],
+                           "B.Cu": []}, {})
+    d = ipcd356.parse(d356(rec("327", "OUTN", "U1", "1", 1, 1, 1),
+                           rec("327", "OUTN", "U1", "11", 5, 1, 1),
+                           rec("327", "OUTP", "U1", "10", 9, 1, 1)))
+    assert ipcd356.compare(fab, d)["opens"] != []
+    res = ipcd356.compare(fab, d, None, groups)
+    assert res["opens"] == [] and res["shorts"] == []
+
+
 def test_truncated_names_are_told_apart_and_reported():
     """kicad-cli keeps the last 14 characters: two unconnected-(...-PAD5)
     nets can share one D-356 name."""

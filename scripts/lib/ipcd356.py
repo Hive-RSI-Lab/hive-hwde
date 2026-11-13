@@ -237,6 +237,27 @@ def net_tie_classes(pcb_text: str, bg) -> dict[str, int]:
     return {n: roots.index(find(n)) for n in parent}
 
 
+_JUMPERS = re.compile(r"\(jumper_pad_groups((?:\s*\((?:\s*\"[^\"]*\")+\s*\))+)\s*\)")
+
+
+def jumper_pad_groups(pcb_text: str) -> list[set[tuple[str, str]]]:
+    """Pads a footprint joins inside the part (KiCad's jumper_pad_groups, e.g.
+    a THS4541's FB and OUT pins) -> one set of (ref, pin) per group. Copper
+    pieces that meet only at such pads are one net, not an open."""
+    groups: list[set[tuple[str, str]]] = []
+    for m in re.finditer(r"\(footprint\s", pcb_text):
+        block = pcb_text[m.start():_sexp_end(pcb_text, m.start())]
+        jp = _JUMPERS.search(block)
+        ref = _REF.search(block)
+        if not jp or not ref:
+            continue
+        for group in re.findall(r"\(((?:\s*\"[^\"]*\")+)\s*\)", jp.group(1)):
+            pins = re.findall(r'"([^"]*)"', group)
+            if len(pins) > 1:
+                groups.append({(ref.group(1), pin) for pin in pins})
+    return groups
+
+
 # ------------------------------------------------------------ copper side
 
 class _DSU:
@@ -275,11 +296,15 @@ def drill_span(path, n_layers: int) -> tuple[int, int]:
     return 1, n_layers
 
 
-def compare(fab, d: D356, ties: dict[str, int] | None = None) -> dict:
-    """Connectivity of the shipped copper vs the D-356 netlist."""
+def compare(fab, d: D356, ties: dict[str, int] | None = None,
+            jumpers: list[set[tuple[str, str]]] | None = None) -> dict:
+    """Connectivity of the shipped copper vs the D-356 netlist. `jumpers`
+    (jumper_pad_groups) join the copper at pads of one net that the part
+    connects inside itself."""
     import gerblib
 
     ties = ties or {}
+    jumpers = jumpers or []
     layers = fab.copper_layer_names()
     n = len(layers)
     islands: dict[str, list] = {}
@@ -344,6 +369,7 @@ def compare(fab, d: D356, ties: dict[str, int] | None = None) -> dict:
     roots_of: dict = defaultdict(lambda: defaultdict(list))  # net -> root -> tps
     no_copper = []
     n_points = 0
+    located = []
     for tp in d.points:
         if tp.code == "367" or tp.key == NO_NET:
             continue
@@ -352,6 +378,18 @@ def compare(fab, d: D356, ties: dict[str, int] | None = None) -> dict:
         if node is None:
             no_copper.append(tp)
             continue
+        located.append((tp, node))
+    # A part that joins its own pads (jumper_pad_groups) carries the net
+    # between them; only pads of one net, so a mislabelled group hides no
+    # short.
+    at_pad = {(tp.ref, tp.pin, tp.key): node for tp, node in located}
+    for group in jumpers:
+        for net in {k for (_, _, k) in at_pad}:
+            nodes = [at_pad[(r, p, net)] for r, p in sorted(group)
+                     if (r, p, net) in at_pad]
+            for node in nodes[1:]:
+                dsu.union(nodes[0], node)
+    for tp, node in located:
         root = dsu.find(node)
         nets_in[root][tp.key].append(tp)
         roots_of[tp.key][root].append(tp)
