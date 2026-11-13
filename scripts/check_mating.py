@@ -28,7 +28,12 @@ gate.   exit 0/1/2 per SPEC section 6.
 A J/P/CN/CON part whose footprint no family matches isn't judged: the report's
 not_judged names each (a side-entry wire-to-board socket no row knows reads
 the same as a test pad, until a row is added), and a board where nothing was
-judged reports nothing_to_judge.
+judged reports nothing_to_judge. One of them whose courtyard comes within
+matinglib.EDGE_NEAR_MM of the outline is also in edge_unjudged ({ref,
+footprint, pos, edge_gap_mm}): an edge connector nobody showed faces off the
+board (#911, the laptop board's backwards microSD). verify_all --strict
+makes each an error (mating_edge_unjudged), so the release gate fails until
+a family row, a placement.mates entry or a waiver naming it covers it.
 """
 from __future__ import annotations
 
@@ -67,11 +72,22 @@ def run(argv=None):
         v["check"] = "mating"
         v["source"] = SCRIPT
     judged = {f["ref"] for f in facts}
-    left = sorted(f"{r} ({matinglib._name(f.fpid)})"
-                  for r, f in model.footprints.items()
-                  if CONNECTOR_REF.match(r) and r not in judged)
+    unjudged = sorted(r for r in model.footprints
+                      if CONNECTOR_REF.match(r) and r not in judged)
+    left = [f"{r} ({matinglib._name(model.footprints[r].fpid)})"
+            for r in unjudged]
+    edge = []
+    for r in unjudged:
+        f = model.footprints[r]
+        gap = matinglib.edge_gap_mm(model, f)
+        if gap is not None and gap <= matinglib.EDGE_NEAR_MM:
+            c = f.center_abs()
+            edge.append({"ref": r, "footprint": matinglib._name(f.fpid),
+                         "pos": [checklib.rnd(c[0]), checklib.rnd(c[1])],
+                         "edge_gap_mm": checklib.rnd(gap, 2)})
     return checklib.report(
         SCRIPT, str(pcb), violations, connectors=facts, not_judged=left,
+        edge_unjudged=edge,
         nothing_to_judge=None if facts else
         "no connector reference/connector_mating.yaml knows"), args.out
 

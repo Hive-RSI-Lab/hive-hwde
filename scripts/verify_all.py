@@ -77,6 +77,11 @@ entry for that kind whose refs and reason name the connectors (durable,
 since the release gate is strict). check_mate_pins is left out: it has
 nothing to judge on any board without a mating pair, which is most.
 
+Edge connectors get the same at release even when others were judged (#911):
+each entry of check_mating's edge_unjudged (a J/P/CN part within a few mm of
+the outline that no family knows) becomes a check_mating error, kind
+mating_edge_unjudged, under --strict.
+
 Exit: 0 all pass, 1 any violations, 2 any check errored (could not verify),
 a strict coverage failure, or a bad invocation.
 
@@ -303,6 +308,7 @@ def run_one(check: dict, inputs: dict, reports_dir: Path,
         "violations": payload.get("violations", []),
         "nothing_to_judge": payload.get("nothing_to_judge"),
         "not_judged": payload.get("not_judged"),
+        "edge_unjudged": payload.get("edge_unjudged"),
     }
 
 
@@ -404,12 +410,40 @@ def connector_unjudged(r: dict, strict: bool) -> dict | None:
         not_judged=left)
 
 
+def edge_unjudged(r: dict, strict: bool) -> list[dict]:
+    """Under strict, an error for each edge connector check_mating could not
+    judge (#911): no family row says which way it mates, so nothing showed
+    its mouth faces off the board."""
+    if not strict or r["name"] != "check_mating":
+        return []
+    out = []
+    for e in r.get("edge_unjudged") or []:
+        out.append(checklib.violation(
+            "mating", "error", e.get("pos"), None, None, [e["ref"]],
+            f"{e['ref']} ({e.get('footprint')}) sits "
+            f"{e.get('edge_gap_mm')} mm from the board edge but no "
+            "connector_mating.yaml family knows it, so nothing checked that "
+            "its mating face points off the board - add a family row (and a "
+            "`mouth` entry if the pads don't show it), declare it in "
+            "constraints placement.mates, or waive kind mating_edge_unjudged "
+            "for this ref with the drawing you checked it against",
+            "check_mating", kind="mating_edge_unjudged",
+            footprint=e.get("footprint"), edge_gap_mm=e.get("edge_gap_mm")))
+    return out
+
+
 def merge(board, results: list[dict], na: dict | None = None,
           strict: bool = False) -> dict:
     all_v: list[dict] = []
     checks: dict[str, dict] = {}
     by_check: dict[str, int] = {}
     errored = False
+    # #911: check_mating's unjudged edge connectors are its own errors at
+    # release, so they count against it in coverage too
+    results = [{**r, "violations": r["violations"] + edge,
+                "status": "violations" if r["status"] == "pass" else
+                r["status"]} if (edge := edge_unjudged(r, strict)) else r
+               for r in results]
     for r in results:
         for v in r["violations"]:
             all_v.append(v)

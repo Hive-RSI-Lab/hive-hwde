@@ -95,6 +95,10 @@ AXES = {"+x": (1.0, 0.0), "-x": (-1.0, 0.0), "+y": (0.0, 1.0), "-y": (0.0, -1.0)
 KINDS = ("mating_faces_inward", "mating_mouth_inset", "mating_zone_blocked",
          "mating_model_reversed", "mating_mate_misaligned",
          "mating_mate_invalid", "mating_direction_unknown")
+# a connector whose courtyard comes this close to the board outline is an
+# edge connector: one no family knows can't be shown to face off the board
+# (check_mating's edge_unjudged; an error at release, #911)
+EDGE_NEAR_MM = 3.0
 # what placement.mates[].mate may name: the mate lies on this board
 MATES = ("onboard_flex",)
 # a declared family for a mates entry whose footprint name matches none
@@ -167,6 +171,19 @@ def mouth_local(f, table: dict | None = None) -> str | None:
     if math.hypot(dx, dy) < 0.3:
         return None
     return _snap(dx, dy)
+
+
+def edge_gap_mm(model, f) -> float | None:
+    """How far the footprint's courtyard stays inside the board outline at
+    its closest (0 or less: it reaches or crosses the edge), or None with no
+    outline."""
+    outline = getattr(model, "outline", None)
+    if outline is None or outline.is_empty:
+        return None
+    body = f.extents_abs()
+    if not outline.contains(body):
+        return 0.0
+    return float(outline.exterior.distance(body))
 
 
 def _to_abs_dir(f, d: str) -> tuple[float, float]:
@@ -372,12 +389,20 @@ def model_corners_local(f, meta: dict | None,
 def model_span_mm(f, d: str, meta: dict | None,
                   pcb: Path) -> tuple[float, float] | None:
     """How far the 3D model reaches behind (first, negative) and ahead of
-    (second) the contact pads along the copper's mouth direction `d`."""
+    (second) the contact pads along the copper's mouth direction `d`.
+
+    None when the contact pads sit at the front of the body (a `mouth`
+    override that points toward them, as on Molex 104031 inner-lead
+    microSD): the measure assumes pads at the back, so it says nothing
+    there and model_reversed must not fire (#911)."""
     corners = model_corners_local(f, meta, pcb)
     cc = contact_centroid(f)
     if corners is None or cc is None:
         return None
     u = AXES[d]
+    body = f.extents_local().centroid
+    if (cc[0] - body.x) * u[0] + (cc[1] - body.y) * u[1] > 0.3:
+        return None
     along = [(x - cc[0]) * u[0] + (y - cc[1]) * u[1] for x, y in corners]
     return min(along), max(along)
 

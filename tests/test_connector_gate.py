@@ -22,8 +22,8 @@ import verify_all  # noqa: E402
 from test_mating import _board, _fp, _pad, small, usbc  # noqa: E402
 
 KIND = "connector_check_unjudged"
-# The laptop board's J6, a Molex 104031 microSD whose card mouth is at the
-# solder tails: no family row knows the name.
+# The laptop board's J6 pad layout under a name no family row knows (the
+# real SIM-SMD_8P-1040310811 has a card_slot row since #911).
 SD_PADS = "".join(_pad(str(i + 1), -3.3 + 1.1 * i, 5.0, 0.7, 1.4)
                   for i in range(8))
 SD_CY = (-7.0, -6.0, 7.0, 6.5)
@@ -35,7 +35,7 @@ def _check(name):
 
 def _planted(tmp_path):
     """An unrecognised edge connector at the board edge, nothing else."""
-    return _board(tmp_path, _fp("J6", "SIM-SMD_8P-1040310811", 15.0, 13.0,
+    return _board(tmp_path, _fp("J6", "SOCKET-SMD_8P-UNLISTED", 15.0, 13.0,
                                 pads=SD_PADS, cy=SD_CY)
                   + small("R1", 5.0, 5.0), w=30.0, h=20.0)
 
@@ -86,7 +86,10 @@ def test_a_waiver_must_name_every_connector(tmp_path):
     base = {"check": "verify_all", "kind": KIND, "net": None,
             "reason": "J6 microSD mouth checked by hand against the Molex "
                       "104031 drawing", "approved": "test 2026-11-13"}
-    assert gate.evaluate("verify", g, m, [{**base, "refs": ["J6"]}])[
+    # it sits at the edge, so #911's mating_edge_unjudged needs its own
+    edge = {**base, "check": "mating", "kind": "mating_edge_unjudged",
+            "refs": ["J6"]}
+    assert gate.evaluate("verify", g, m, [{**base, "refs": ["J6"]}, edge])[
         "status"] != "fail"
     # naming some other part does not cover J6
     assert gate.evaluate("verify", g, m, [{**base, "refs": ["J1"]}])[
