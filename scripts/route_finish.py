@@ -104,6 +104,9 @@ VIA_PAD_KEEP_MM = 0.1         # drill edge to an own-net SMD pad: past its
 #                               mask opening and registration (check_wicking)
 NECK_REACH_MM = 0.75          # #924, how far past its pads a neck may run:
 #                               inside check_current's 1 mm pad exit
+FINE_MARGIN_MM = 0.005        # #923 point 3, the fine rung's clearance margin:
+#                               0.5 mm-pitch balls leave ~0.25 mm, which a floor
+#                               track fits under 0.005 but not the default 0.02
 VIA_RETRIES = 6               # #784, searches again for a route's too-close vias
 
 
@@ -1267,7 +1270,8 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
         """(path, grid, width) over the ladder: the window, a wider window,
         then a finer grid at the net's floor width for a pad boxed in by
         its neighbours, kept close to the ends: under a large --margin that
-        grid is several GB. An HDI build's net with no rule on its copper takes
+        grid is several GB. That rung's clearance margin is FINE_MARGIN_MM,
+        so a floor track fits between 0.5 mm-pitch balls (#923). An HDI build's net with no rule on its copper takes
         the floor width from the start. hide: leave this pass's own routes
         out."""
         net = job["net"]
@@ -1283,15 +1287,17 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
             net, EXIT_MM, lambda nt: rules.width_floor(nt) / 2)
         if board:
             obs.soft_board = keep_nets
+        fine = dataclasses.replace(
+            rules, margin=min(rules.margin, FINE_MARGIN_MM))
         try:
-            for m, g, (w, v) in (
-                    (margin, grid, start),
-                    (margin * 2.5, grid, start),
-                    (min(margin, 4.0), grid / 2, floor)):
+            for m, g, (w, v), rr in (
+                    (margin, grid, start, rules),
+                    (margin * 2.5, grid, start, rules),
+                    (min(margin, 4.0), grid / 2, floor, fine)):
                 (ax, ay), (bx, by) = job["pa"], job["pb"]
                 win = (min(ax, bx) - m, min(ay, by) - m,
                        max(ax, bx) + m, max(ay, by) + m)
-                gr = build_grid(obs, rules, net, job["side_a"],
+                gr = build_grid(obs, rr, net, job["side_a"],
                                 job["side_b"], layers, win, g, width=w,
                                 via=v, **inner_cost)
                 if no_path(gr):
@@ -1302,7 +1308,7 @@ def plan_routes(bg: geom.BoardGeom, rules: Rules, pairs: list[dict],
                     path = astar(gr, target, via_cost=via_cost_mm / g,
                                  max_nodes=max_nodes, deadline=deadline,
                                  search_weight=search_weight)
-                    near = path and too_close_via(gr, path, rules)
+                    near = path and too_close_via(gr, path, rr)
                     if not near:
                         break
                     # search again with that layer change's cell closed

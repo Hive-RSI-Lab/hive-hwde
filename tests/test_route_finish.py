@@ -602,3 +602,68 @@ def test_straights_split_where_the_neck_ends():
     # the step off the last neck cell is still the neck's
     assert got == [((0, 0), (2, 0), 0.2), ((2, 0), (4, 0), 0.8),
                    ((4, 0), (4, 1), 0.8)]
+
+
+# ------------------------------------------------------- fine pitch (#923)
+
+BGA_DRU = """(version 1)
+(rule "aiee_clearance_floor"
+	(constraint clearance (min 0.0750mm))
+)
+(rule "aiee_track_width_floor"
+	(constraint track_width (min 0.0762mm))
+)
+"""
+
+
+def _bga(ref, x, y):
+    """A 3 x 3 corner of a 0.5 mm-pitch BGA, 0.25 mm pads: the middle ball
+    +3V3, its ring GND. Every way out runs between two ring balls 0.25 mm
+    apart."""
+    pads = "".join(
+        f'    (pad "{3 * r + c + 1}" smd rect (at {(c - 1) * 0.5} {(r - 1) * 0.5})'
+        f' (size 0.25 0.25) (layers "F.Cu")'
+        f' (net "{"+3V3" if (r, c) == (1, 1) else "GND"}"))\n'
+        for r in range(3) for c in range(3))
+    return (f'  (footprint "t:{ref}" (layer "F.Cu") (at {x} {y})\n'
+            f'    (property "Reference" "{ref}" (at 0 0 0))\n'
+            + pads + "  )\n")
+
+
+def _bga_plan(tmp_path):
+    body = _bga("U1", 10, 15) + _pad("U2", 10, 5, "+3V3", size=1.5)
+    pcb = _board(tmp_path, body, dru=BGA_DRU)
+    pcb.with_suffix(".kicad_pro").write_text(json.dumps({"board": {
+        "design_settings": {"rules": {"min_track_width": 0.0762}}}}),
+        encoding="utf-8")
+    return _plan(pcb, [_pair("+3V3", (10, 15), (10, 5),
+                              amsg="Pad 5 [+3V3] of U1 on F.Cu",
+                              bmsg="Pad 1 [+3V3] of U2 on F.Cu")])
+
+
+def test_the_fine_rung_takes_a_ball_out_between_its_neighbours(tmp_path):
+    """#923 point 3: at the default grid and clearance margin a 0.077 mm
+    floor track needs 0.077 + 2 x (0.075 + 0.02) = 0.267 mm between two
+    balls 0.25 mm apart. The fine rung's margin lets it through."""
+    rules, jobs = _bga_plan(tmp_path)
+    assert rules.margin == 0.02 and rules.track_floor == 0.0762
+    job = jobs[0]
+    assert job["status"] == "routed", job
+    tracks = _tracks(job)
+    assert {op["width"] for op in tracks} == {rules.width_floor("+3V3")}
+    # every run keeps DRC's clearance (not the margin) off the GND balls
+    balls = [box(10 + c * 0.5 - 0.125, 15 + r * 0.5 - 0.125,
+                 10 + c * 0.5 + 0.125, 15 + r * 0.5 + 0.125)
+             for r in (-1, 0, 1) for c in (-1, 0, 1) if (r, c) != (0, 0)]
+    for op in tracks:
+        seg = LineString([op["start"], op["end"]])
+        for b in balls:
+            assert seg.distance(b) - op["width"] / 2 >= 0.075 - 1e-6
+    route_edit.validate_ops({"version": 1, "ops": job["ops"]})
+
+
+def test_at_the_coarse_margin_the_ball_is_boxed_in(tmp_path, monkeypatch):
+    """The planted fault: the fine rung at the global 0.02 mm margin."""
+    monkeypatch.setattr(rf, "FINE_MARGIN_MM", 0.02)
+    _, jobs = _bga_plan(tmp_path)
+    assert jobs[0]["status"] != "routed"
