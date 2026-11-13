@@ -19,7 +19,9 @@ any resistor of series_max_ohm (100) or less (a series element). A larger
 resistor is a pull: to a rail (its volts from the net name), or to a GPIO
 or a transistor (switched). A two-pad solder jumper (JP/SJ/SB/NT) is walked
 through as closed; a solder-pad breakout of more pads is an access point on
-the line, not a PHY. The first IC reached is the PHY, unless it is
+the line, not a PHY. A 4-pad common-mode choke in reference/usb_phys.yaml
+`chokes` is walked through along the winding the line enters on, to the
+PHY behind it; one the file doesn't know stops the walk with a warning. The first IC reached is the PHY, unless it is
 in not_phy (an ESD array, a charger sink watching DP/DM). CC is read the
 same way from pins named CC/CC1/CC2: a pull to GND is an Rd, to a positive
 rail an Rp (a source or DRP port, not checked), and a known sink controller
@@ -40,6 +42,11 @@ Findings:
                          own (the two in parallel)
   usb_dm_pullup          error: a pull-up on D- (a low-speed device's mark)
   usb_phy_unknown        warning: an IC on D+/D- the file doesn't know
+  usb_choke_unknown      warning: a 4-pad choke on D+/D- the file doesn't
+                         know, so the PHY behind it wasn't checked
+  usb_choke_shorts_pair  error: D+ walks into D- through a choke's winding
+                         (D+ and D- on one winding: a turned or mis-pinned
+                         footprint shorts the pair)
   usb_c_orientation      error: a USB-C receptacle's two D+ (or D-) pins
                          aren't joined, so the device works one way up only
   usb_cc_rd_missing      error: a sink's CC pin with no Rd at all (no VBUS
@@ -90,6 +97,9 @@ SWITCH_PREFIXES = ("Q", "U", "IC")
 # breakout's VBUS/D+/D-/GND pads) and the walk leaves it.
 JUMPER_PREFIXES = ("JP", "SJ", "SB", "NT")
 MAX_DEPTH = 3
+# a 4-pad part with one of these prefixes on a data line is a common-mode
+# choke: walked through when usb_phys.yaml `chokes` knows its windings
+CHOKE_PREFIXES = ("L", "FL", "CMC", "T", "FB")
 DM_PULLUP_MAX_OHM = 10000   # a pull-up this strong on D- marks low speed
 USB_SRC = ("USB 2.0 Pull-up/pull-down resistors ECN, section 7.1.5.1: "
            "1.5 kohm +/-5% to 3.0-3.6 V")
@@ -105,6 +115,8 @@ def load_kb(path: Path = KB_YAML) -> dict:
             row["_match"] = re.compile(row["match"], re.I)
             row["_pins"] = re.compile(row["pins"], re.I) \
                 if row.get("pins") else None
+    for row in doc.get("chokes") or []:
+        row["_match"] = re.compile(row["match"], re.I)
     doc["_not_phy"] = re.compile(doc.get("not_phy") or "$^", re.I)
     return doc
 
@@ -122,10 +134,28 @@ def is_ic(board: Board, ref: str) -> bool:
                 or p in JUMPER_PREFIXES or ref in board.shorts)
 
 
-def walk(board: Board, g0: str, series_max: float) -> dict:
+def is_choke(board: Board, ref: str) -> bool:
+    return prefix(ref) in CHOKE_PREFIXES and len(board.pins[ref]) == 4
+
+
+def winding_partner(row: dict, pin: str) -> str | None:
+    for a, b in row["windings"]:
+        if pin == a:
+            return b
+        if pin == b:
+            return a
+    return None
+
+
+def walk(board: Board, g0: str, series_max: float,
+         chokes: list | None = None) -> dict:
     """What hangs on a signal from net group g0: ICs with the series
-    resistors between (ics), pulls (pulls) and unparsed resistors."""
-    out = {"ics": [], "pulls": [], "unparsed": [], "jumpers": []}
+    resistors between (ics), pulls (pulls) and unparsed resistors, the
+    chokes walked through (chokes) and those the file doesn't know
+    (unknown_chokes, as (ref, pin)), and every net group reached (groups).
+    With chokes None (the CC walk) a choke is read like any other part."""
+    out = {"ics": [], "pulls": [], "unparsed": [], "jumpers": [],
+           "chokes": [], "unknown_chokes": []}
     seen = set()
 
     def visit(g, path, depth):
@@ -141,6 +171,20 @@ def walk(board: Board, g0: str, series_max: float) -> dict:
                             and depth < MAX_DEPTH:
                         out["jumpers"].append(ref)
                         visit(og, path, depth + 1)
+                continue
+            if chokes is not None and is_choke(board, ref):
+                row = row_for(chokes, board.value(ref))
+                if row is None:
+                    out["unknown_chokes"].append((ref, pin))
+                    continue
+                other = winding_partner(row, pin)
+                if other is None or other not in board.pins[ref]:
+                    continue
+                og = board.net(ref, other)
+                if og not in seen and not board.unconnected(og) \
+                        and depth < MAX_DEPTH:
+                    out["chokes"].append(ref)
+                    visit(og, path, depth + 1)
                 continue
             if prefix(ref) == "R" and len(board.pins[ref]) == 2:
                 if ref in {r for r, _ in path}:
@@ -172,6 +216,7 @@ def walk(board: Board, g0: str, series_max: float) -> dict:
                                    "name": board.pins[ref][pin]["name"],
                                    "path": list(path)})
     visit(g0, [], 0)
+    out["groups"] = seen
     return out
 
 
@@ -356,13 +401,45 @@ def check_data(board, bg, kb, conns) -> tuple[list, list]:
         dms = {g for g in dms if not board.unconnected(g)}
         done |= dps | dms
         for gdp in sorted(dps):
-            dpw = walk(board, gdp, bus["series_max_ohm"])
-            dmws = [walk(board, g, bus["series_max_ohm"]) for g in sorted(dms)]
+            chokes = kb.get("chokes")
+            dpw = walk(board, gdp, bus["series_max_ohm"], chokes)
+            dmws = [walk(board, g, bus["series_max_ohm"], chokes)
+                    for g in sorted(dms)]
             for w in (dpw, *dmws):
                 for ref in w["unparsed"]:
                     facts.append({"connector": cref, "not_judged":
                                   f"{ref} ({board.value(ref)}) on the data "
                                   "lines has no readable value"})
+                for ref, pin in w["unknown_chokes"]:
+                    if ref in unknown:
+                        continue
+                    unknown.add(ref)
+                    viols.append(checklib.violation(
+                        SCRIPT, "warning", pad_pos(bg, ref, pin), None,
+                        board.label(board.net(ref, pin)), [ref],
+                        f"{ref} ({board.value(ref)}) is a 4-pad choke on "
+                        f"{cref}'s data lines but reference/usb_phys.yaml "
+                        "`chokes` doesn't know its windings, so the PHY "
+                        "behind it wasn't checked: add its row from its "
+                        "datasheet's equivalent circuit", SOURCE,
+                        kind="usb_choke_unknown"))
+            dm_groups = set(dms).union(*(w["groups"] for w in dmws))
+            if dpw["chokes"] and dpw["groups"] & dm_groups:
+                via = sorted(set(dpw["chokes"]))
+                viols.append(checklib.violation(
+                    SCRIPT, "error",
+                    pad_pos(bg, cref, next(p for p in c["dp"]
+                                           if board.net(cref, p) == gdp)),
+                    None,
+                    board.label(gdp), [cref, *via],
+                    f"{cref}'s D+ ({board.label(gdp)}) reaches its D- "
+                    f"through {', '.join(via)}: D+ and D- are on one "
+                    "winding of the common-mode choke, which shorts the "
+                    "pair (a turned or mis-pinned footprint). Each line "
+                    "goes through its own winding, as the datasheet's "
+                    "equivalent circuit pairs the pads", SOURCE,
+                    kind="usb_choke_shorts_pair", chokes=via))
+                continue
             if not dpw["ics"]:
                 facts.append({"connector": cref, "not_judged":
                               f"{cref} D+ ({board.label(gdp)}) reaches no IC"})
@@ -407,6 +484,7 @@ def check_data(board, bg, kb, conns) -> tuple[list, list]:
                                "D-": [r for r, _ in dm["path"]]
                                if dm else None},
                     "jumpers": dpw["jumpers"],
+                    "chokes": dpw["chokes"],
                     "dp_pullups": [p["ref"] for p in pullups(dpw)]})
     return viols, facts
 
