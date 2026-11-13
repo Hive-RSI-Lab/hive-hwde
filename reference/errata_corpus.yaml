@@ -82,7 +82,7 @@ boards:
     catch: {script: check_bom_sync, kind: bom_package_mismatch, refs: [Rfbb1]}
     note: >-
       check_bom_sync --live reads each LCSC number off the board and JLC's
-      package for it; on an hwde fab package stock_check makes the same
+      package for it; on a pcb-flow fab package stock_check makes the same
       comparison against BOM.csv's footprint. v0.3 buys C844759, an 0603.
   - id: oasis-3
     summary: MISTER1 connector placed 180 deg off at JLC assembly
@@ -95,6 +95,19 @@ boards:
       oasis-v0-2/fab/CPL.csv, dfm checks it with no parts.json and finds
       mister1 (a keyed JST-PH) 180 deg off (#880; bench oasis_cpl_dfm).
     follow_up: none new - dfm's shipped-CPL check catches it on the pinned board (#880)
+  - id: oasis-4
+    summary: J1 power-input wire holes too big (SolderWire-2.5sqmm, 3.0 mm drill)
+    source_quote: "power input connection/holes are too big"
+    fault_class: DFA (THT hole vs lead)
+    verdict: caught
+    catch: {script: check_connector_fit, kind: tht_hole_loose, refs: [J1]}
+    note: >-
+      J1 is a solder-wire footprint with no part to hold it to, so
+      check_connector_fit sizes the wire from the copper feeding the pads:
+      +18V's only feed is a pour's four 0.5 mm thermal spokes, about 5.4 A
+      at a 20 degC rise (IPC-2221), a 0.75 mm^2 wire with a 1.25 mm
+      conductor, which leaves 1.75 mm in the 3.0 mm hole. v0.3 drops the
+      solder-wire pads for a header, and the finding is gone.
 - id: minuet
   url: https://github.com/brown-studios/minuet
   commit: 1e43aa3df01b33522db23f4b2139f89b5689da99

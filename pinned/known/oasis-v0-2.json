@@ -3917,7 +3917,10 @@
    "refs": [
     "J1"
    ],
-   "pos": null,
+   "pos": [
+    125.206,
+    48.319
+   ],
    "verdict": "real",
    "reason": "erratum: the power input (J1) holes are too big",
    "source": "https://github.com/justbuchanan/oasis/blob/3462f162f80e11c78705218441af37639d87bfdc/pcb/fabricated-boards/v0.2/errata.md"
