@@ -277,6 +277,7 @@ def switch_node_rules(constraints: dict, bg, power_facts: list[dict],
     facts: list[dict] = []
     warnings: list[str] = []
     width_of = {f["net"]: f["min_width_mm"] for f in power_facts}
+    rows = check_current.switch_rows()
     for entry in constraints.get("power", []) or []:
         sw = entry.get("switch_node")
         if not sw:
@@ -287,8 +288,7 @@ def switch_node_rules(constraints: dict, bg, power_facts: list[dict],
         if bg is not None:
             pins = [p for p in bg.pads_of(net=net)
                     if (p.ref == sw["ref"] if sw.get("ref") else
-                        check_current.pin_name(p)
-                        in check_current.SWITCH_PIN_NAMES)]
+                        check_current.is_switch_pin(p, bg, rows))]
         ref = sw.get("ref") or (pins[0].ref if pins else None)
         layer = sw.get("layer") or next(
             (ly for p in pins for ly in p.layers if ly in ("F.Cu", "B.Cu")),
@@ -312,7 +312,7 @@ def switch_node_rules(constraints: dict, bg, power_facts: list[dict],
                                   f"{cond} && B.memberOfFootprint('{r}')")))
         if bg is not None and ref is None:
             warnings.append(f"{net} is declared a switch node but no pad on "
-                            "it is a switch pin (SW/LX/PH); name the "
+                            "it is a switch pin (SW/LX/PH or switch_nodes.yaml); name the "
                             "regulator in switch_node.ref")
         facts.append({"net": net, "ref": ref, "layer": layer,
                       "width_mm": width_of.get(net), "keep_away": keep,
@@ -321,7 +321,7 @@ def switch_node_rules(constraints: dict, bg, power_facts: list[dict],
         return rules, facts, warnings
     entries = constraints.get("power", []) or []
     inferred, unrated = check_current.inferred_switch_entries(
-        entries, bg, check_current.switch_rows())
+        entries, bg, rows)
     for e in inferred:
         net = e["net"]
         w = round(check_current.required_width_mm(e["current_a"], e["dt_c"],

@@ -174,6 +174,23 @@ def test_a_declared_switch_node_with_no_switch_pin_is_warned(tmp_path):
                for w in report["switch_warnings"])
 
 
+def test_a_declared_switch_node_on_a_rated_parts_own_pin_is_found(tmp_path):
+    """A declared node with no ref finds its regulator the way check_current
+    infers one (#946): an LM2596's switch pin is OUT, which switch_nodes.yaml
+    rates and the bare SW/LX/PH names miss, so no 'no switch pin' warning
+    and the part's side sets the layer."""
+    body = BASE + _fp("U2", 10, 20, [("2", 0, "Net-(U2-SW)", "OUT")],
+                      value="LM2596S-5.0", layer="B.Cu")
+    bg = geom.BoardGeom.from_file(_write(tmp_path, body))
+    c = {"power": [{"net": "Net-(U2-SW)", "current_a": 2.0, "dt_c": 10,
+                    "pdn": False, "switch_node": True}]}
+    rules, report = rules_gen.build(c, CAP, STK4, False, bg)
+    assert not any("no pad on it is a switch pin" in w
+                   for w in report["switch_warnings"])
+    fact = next(f for f in report["switch_nodes"] if f["net"] == "Net-(U2-SW)")
+    assert (fact["ref"], fact["layer"]) == ("U2", "B.Cu")
+
+
 # ---------------------------------------------------------------- live DRC
 
 def _drc(pcb):
