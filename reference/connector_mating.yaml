@@ -46,10 +46,14 @@ defaults:
   tall_mm: 3.0
 
 families:
+  # 87520: Amphenol FCI's through-hole USB-A receptacle, named by part number
+  # alone in EasyEDA (laptop hub J4/J5, #911)
   - {family: usb_a, entry: horizontal, plug_mm: 30.0,
-     match: 'USB-?A\b|USB_A'}
+     match: 'USB-?A\b|USB_A|(^|[^0-9])87520-'}
+  # USB_C_Receptacle_* / USB_C_Plug_*: KiCad's stock library names (laptop hub
+  # J1, minuet J6 went unjudged, #911)
   - {family: usb_c, entry: horizontal, plug_mm: 20.0,
-     match: 'US[BC]-?C|TYPE-?C'}
+     match: 'US[BC]-?C|TYPE-?C|USB_C_(RECEPTACLE|PLUG)'}
   - {family: usb_micro_mini, entry: horizontal, plug_mm: 20.0,
      match: 'MICRO-?USB|MINI-?USB|USB_MICRO|USB_MINI|USB-SMD_USB-111|USB-?B\b|USB_B'}
   - {family: barrel_jack, entry: horizontal, plug_mm: 25.0,
@@ -57,7 +61,7 @@ families:
   - {family: rj45, entry: horizontal, plug_mm: 30.0,
      match: 'RJ-?45|8P8C'}
   - {family: card_slot, entry: horizontal, plug_mm: 15.0,
-     match: 'MICRO-?SD|TF-?CARD|TF-(SMD|PUSH)|SD-?CARD|SIM-?CARD|NANO-?SIM'}
+     match: 'MICRO-?SD|TF-?CARD|TF-(SMD|PUSH)|SD-?CARD|SIM-?CARD|NANO-?SIM|(^|[^0-9])104031-?\d'}
   # a wire-to-board plug or an FPC tail is held by its wires, so a short
   # ledge of board in front of the mouth does not stop it going in
   - {family: fpc_ffc, entry: horizontal, plug_mm: 8.0, grip_mm: 2.0,
@@ -109,3 +113,8 @@ families:
 mouth:
   # the pads don't show it; the 3D model's bore is at local +X (LISN review B1)
   '24\.243': '+x'
+  # Molex 104031 microSD ("inner lead"): the card goes in at the end with the
+  # 8 signal tails (drawing SD-104031-001), the opposite of what the pad
+  # rule reads. EasyEDA's SIM-SMD_8P-1040310811 has those tails at local +y.
+  # The laptop hub shipped J6 backwards because no row knew it (#911).
+  '(^|[^0-9])104031-?0811': '+y'

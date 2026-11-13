@@ -147,7 +147,10 @@ gates:
       check is a coverage failure (exit 2). Checks may only be excused via
       constraints.json verification.not_applicable entries carrying reason +
       approved, or per-violation waivers (reason + approved) in
-      verify-waivers.json.
+      verify-waivers.json. A connector check (check_mating,
+      check_connector_fit) that judged no connector on a board that has some
+      is an error (connector_check_unjudged, #910), waived only by an entry
+      whose refs name every connector.
 
   dfm_release:
     phase: P10
