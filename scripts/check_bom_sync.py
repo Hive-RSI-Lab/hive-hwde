@@ -30,9 +30,11 @@ Rules, each a finding's `kind` (error unless marked):
    a chip of another size than the footprint's (an 0402 resistor on an 0603
    pad: oasis v0.2 Rfbb1, which JLC's BOM review caught and hwde did not,
    docs/errata-corpus.md). The part's package comes from the workspace's part
-   data (parts.json's `package`, parts/<LCSC>.json) and, with --live, from
-   JLC's own record (lib/stocklib.py); a part with neither is named in
-   `skipped`, never passed. Only chip sizes compare (engcalc.package_code:
+   data (parts.json's `package`, parts/<LCSC>.json), then the pinned table
+   of JLC's records (reference/lcsc_packages.json, lcsc_packages.py: how a
+   foreign board with no part data is judged offline, as the score and CI
+   run), and, with --live, from JLC's own record (lib/stocklib.py); a part
+   with none is named in `skipped`, never passed. Only chip sizes compare (engcalc.package_code:
    0201..2512 on both sides); a SOT or QFN part is not this rule's.
  - bom_pos_excluded (warning): an SMD footprint carries
    `exclude_from_pos_files` (and neither `exclude_from_bom` nor
@@ -70,6 +72,7 @@ sys.path.insert(0, str(HERE / "lib"))
 import bom_cpl  # noqa: E402
 import checklib  # noqa: E402
 import engcalc  # noqa: E402
+import lcsc_packages  # noqa: E402
 import stocklib  # noqa: E402
 from checklib import violation  # noqa: E402
 
@@ -208,6 +211,18 @@ def part_packages(records: list[dict], parts: Path | None) -> dict:
     return out
 
 
+def table_package(code: str, table: dict) -> dict | None:
+    """{package, model, source} from the pinned table, None if absent."""
+    ent = table.get(code)
+    if not isinstance(ent, dict):
+        return None
+    return {"package": str(ent.get("package") or ""),
+            "model": ent.get("model") or None,
+            "source": "JLC's record of "
+                      f"{ent.get('read') or 'an earlier date'}, "
+                      "reference/lcsc_packages.json"}
+
+
 def jlc_package(code: str, fetch=None) -> dict | None:
     """{package, model, source} from JLC's record, None if JLC has none.
     stocklib.SourceError when JLC can't be asked."""
@@ -239,7 +254,7 @@ def find_parts(pcb: Path, given: str | None) -> Path | None:
 
 
 def check(pcb: Path, fab_dir: Path | None, parts: Path | None,
-          live: bool = False, fetch=None) -> tuple:
+          live: bool = False, fetch=None, table: dict | None = None) -> tuple:
     fps = board_footprints(pcb)
     sch_path = pcb.with_suffix(".kicad_sch")
     sch = schematic_dnp(sch_path) if sch_path.is_file() else {}
@@ -309,6 +324,7 @@ def check(pcb: Path, fab_dir: Path | None, parts: Path | None,
         for ref, code in csv_lcsc(fab_dir / "BOM.csv").items():
             bought.setdefault((ref, code), []).append("BOM.csv")
     known = part_packages(records, parts if have_parts else None)
+    table = lcsc_packages.load() if table is None else table
     unknown: set[str] = set()
     compared = 0
     for (ref, code), where in sorted(bought.items(), key=lambda kv: (
@@ -319,6 +335,8 @@ def check(pcb: Path, fab_dir: Path | None, parts: Path | None,
         pad = engcalc.package_code(fp["fpid"])
         if pad is None:
             continue
+        if code not in known and code in table:
+            known[code] = table_package(code, table)
         if code not in known and live:
             try:
                 known[code] = jlc_package(code, fetch)

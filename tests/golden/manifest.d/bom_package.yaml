@@ -1,0 +1,13 @@
+# Seeded BOM part-size fault for check_bom_sync run by the verify gate (#879).
+mutants:
+  bom-package-0402-on-0603:
+    board: usbbuck4
+    script: mutations/bom_package_0402_on_0603.py
+    check: check_bom_sync
+    defect: >-
+      BOM fault: R3's LCSC field names C25867, an 0402 resistor, on its 0603
+      footprint, so the part bought won't fit the pads (the oasis v0.2 Rfbb1
+      miss). No parts.json: the package comes from the pinned table.
+    expect:
+      kind: bom_package_mismatch
+      ref: R3

@@ -250,7 +250,8 @@ def test_package_from_parts_file_and_bom_csv(tmp_path):
 def test_unknown_package_is_skipped_not_passed_and_live_asks_jlc(tmp_path):
     pcb = _workspace(tmp_path, fab=False)
     parts = _parts(tmp_path, [{"refdes": ["R1"], "lcsc": "C844504"}])
-    viols, legs = _run(pcb, parts)
+    # an empty table: the code is in neither the part data nor the table
+    viols, legs = check_bom_sync.check(pcb, None, parts, table={})
     assert _errors(viols, "bom_package_mismatch") == []
     assert any(s.startswith("packages") and "C844504" in s
                for s in legs["skipped"])
@@ -261,6 +262,72 @@ def test_unknown_package_is_skipped_not_passed_and_live_asks_jlc(tmp_path):
             "componentModelEn": "CRCW040222K1FKED",
             "componentSpecificationEn": "0402"}]}}}
     viols, legs = check_bom_sync.check(pcb, None, parts, live=True,
-                                       fetch=fetch)
+                                       fetch=fetch, table={})
     assert _refs(_errors(viols), "bom_package_mismatch") == {"R1"}
     assert "CRCW040222K1FKED" in viols[0]["msg"]
+
+
+# ---- #879: the pinned package table judges a foreign board offline
+
+def _lcsc_on(pcb_text, ref, code):
+    return MUT.mutlib.edit_footprint(
+        pcb_text, ref, '\t\t(property "Reference" "%s"' % ref,
+        '\t\t(property "LCSC" "%s" (at 0 0 0) (layer "F.Fab") (hide yes))\n'
+        '\t\t(property "Reference" "%s"' % (code, ref), f"{ref} LCSC")
+
+
+def test_the_pinned_table_judges_a_board_with_no_part_data(tmp_path):
+    # oasis v0.2's shape: the LCSC number is on the board, no parts.json,
+    # no network - the table alone says C844504 is an 0402
+    pcb = _workspace(tmp_path, _lcsc_on(GOLDEN_PCB, "R1", "C844504"),
+                     fab=False)
+    table = {"C844504": {"package": "0402", "model": "CRCW040222K1FKED",
+                         "read": "2026-11-13"}}
+
+    def no_network(*a, **k):
+        raise AssertionError("the table must answer before the network")
+    viols, legs = check_bom_sync.check(pcb, None, None, live=True,
+                                       fetch=no_network, table=table)
+    hits = _errors(viols, "bom_package_mismatch")
+    assert _refs(hits, "bom_package_mismatch") == {"R1"}
+    assert "reference/lcsc_packages.json" in hits[0]["msg"]
+    assert "2026-11-13" in hits[0]["msg"]
+    assert legs["packages"] == 1
+
+
+def test_a_matching_table_part_passes_and_part_data_outranks_it(tmp_path):
+    pcb = _workspace(tmp_path, _lcsc_on(GOLDEN_PCB, "R1", "C22843"),
+                     fab=False)
+    # the table says 0603, as the pad is: compared and quiet
+    table = {"C22843": {"package": "0603", "model": "0603WAF1501T5E"}}
+    viols, legs = check_bom_sync.check(pcb, None, None, table=table)
+    assert _errors(viols, "bom_package_mismatch") == []
+    assert legs["packages"] == 1
+    # the workspace's own parts.json is read first: it says 0402 here
+    parts = _parts(tmp_path, [{"refdes": ["R1"], "lcsc": "C22843",
+                               "package": "0402"}])
+    viols, _ = check_bom_sync.check(pcb, None, parts, table=table)
+    assert _refs(_errors(viols), "bom_package_mismatch") == {"R1"}
+
+
+def test_the_shipped_table_knows_the_oasis_rfbb1_part():
+    import lcsc_packages
+    assert lcsc_packages.load()["C844504"]["package"] == "0402"
+
+
+def test_lcsc_packages_add_reads_jlc_and_records_a_missing_code(tmp_path):
+    import lcsc_packages
+
+    def fetch(method, url, body=None):
+        if body["keyword"] == "C1":
+            return {"code": 200, "data": {"componentPageInfo": {"list": [{
+                "componentCode": "C1", "componentModelEn": "M1",
+                "componentSpecificationEn": "0805"}]}}}
+        return {"code": 200, "data": {"componentPageInfo": {"list": []}}}
+    parts = {}
+    assert lcsc_packages.add(["C1", "C2"], parts, fetch=fetch) == []
+    assert parts["C1"]["package"] == "0805" and parts["C2"]["package"] == ""
+    path = tmp_path / "t.json"
+    lcsc_packages.save(parts, path)
+    assert set(lcsc_packages.load(path)) == {"C1", "C2"}
+    assert lcsc_packages.load(tmp_path / "absent.json") == {}
