@@ -173,6 +173,55 @@ def test_declared_net_strip_split_stays_error(tmp_path_factory):
     assert rec["resolved"] == "GND" and rec["waiver_class"] is None
 
 
+# ------------- fixture E: stripline beside a plane-less signal layer
+
+def _board6(tmp_path_factory, name: str, body: str) -> geom.BoardGeom:
+    text = f"""(kicad_pcb
+  (version 20260206) (generator "test")
+  (general (thickness 1.6))
+  (layers (0 "F.Cu" signal) (4 "In1.Cu" signal) (6 "In2.Cu" signal)
+    (8 "In3.Cu" signal) (10 "In4.Cu" signal) (2 "B.Cu" signal)
+    (25 "Edge.Cuts" user))
+  (setup)
+  (gr_rect (start 0 0) (end 20 10) (stroke (width 0.1)) (fill no)
+    (layer "Edge.Cuts"))
+{body})
+"""
+    p = tmp_path_factory.mktemp(name) / f"{name}.kicad_pcb"
+    p.write_text(text, encoding="utf-8")
+    return geom.load_board(p)
+
+
+IN3_TRACK = ('  (segment (start 1 1) (end 9 1) (width 0.2) (layer "In3.Cu")'
+             ' (net "SIG"))\n')
+GND_VIA_ON_TRACK = ('  (via (at 5 1.3) (size 0.6) (drill 0.3)'
+                    ' (layers "F.Cu" "B.Cu") (net "GND"))\n')
+IN4_GND = IN1_GND.replace("In1.Cu", "In4.Cu")
+IN4_GND_SPLIT = IN2_PWR_SPLIT.replace("In2.Cu", "In4.Cu").replace(
+    '"+3V3"', '"GND"')
+
+
+def test_stripline_returns_on_its_one_plane(tmp_path_factory):
+    """In3 trace with a solid GND plane on In4 and only signals on In2:
+    GND via pads on In2 are not a reference plane, so no corridor_void."""
+    bg = _board6(tmp_path_factory, "oneplane",
+                 IN3_TRACK + GND_VIA_ON_TRACK + IN4_GND)
+    assert not bg.net_copper("GND", "In2.Cu").is_empty
+    vs, facts = check_return_path.check_net(bg, dict(HS_GND), 3.0)
+    assert vs == []
+    assert {r["ref_layer"] for r in facts["reference_resolution"]} == {
+        "In2.Cu", "In4.Cu"}
+
+
+def test_stripline_split_in_its_one_plane_stays_error(tmp_path_factory):
+    bg = _board6(tmp_path_factory, "oneplanesplit",
+                 IN3_TRACK + GND_VIA_ON_TRACK + IN4_GND_SPLIT)
+    vs, _ = check_return_path.check_net(bg, dict(HS_GND), 3.0)
+    voids = [v for v in vs if v["kind"] == "corridor_void"]
+    assert [v["layer"] for v in voids] == ["In4.Cu"]
+    assert voids[0]["severity"] == "error"
+
+
 # ------------------------------- fixture D: transitions under waiver mode
 
 TRANS_SIG = """  (segment (start 1 5) (end 5 5) (width 0.2) (layer "F.Cu") (net "SIG"))
